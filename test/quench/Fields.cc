@@ -545,7 +545,50 @@ void Fields::fromFieldSet(const atlas::FieldSet & fset) {
           for (atlas::idx_t jnode = 0; jnode < field_input.shape(0); ++jnode) {
             for (atlas::idx_t jlevel = 0; jlevel < field_input.shape(1); ++jlevel) {
               view_input(jnode, jlevel) = view_local(jnode, jlevel);
-             }
+            }
+          }
+        }
+
+        if (geom_->gridConfig().getString("type") == "regular_lonlat") {
+          // Copy poles points
+          atlas::functionspace::StructuredColumns fs(geom_->functionSpace());
+          atlas::StructuredGrid grid = fs.grid();
+          auto view = atlas::array::make_view<double, 2>(field_input);
+          auto view_i = atlas::array::make_view<int, 1>(fs.index_i());
+          auto view_j = atlas::array::make_view<int, 1>(fs.index_j());
+          std::vector<double> north(field_input.shape(1), 0.0);
+          std::vector<double> south(field_input.shape(1), 0.0);
+          for (atlas::idx_t j = fs.j_begin(); j < fs.j_end(); ++j) {
+            for (atlas::idx_t i = fs.i_begin(j); i < fs.i_end(j); ++i) {
+              atlas::idx_t jnode = fs.index(i, j);
+              if ((view_j(jnode) == 1)  && (view_i(jnode) == 1)) {
+                for (atlas::idx_t jlevel = 0; jlevel < field_input.shape(1); ++jlevel) {
+                  north[jlevel] = view(jnode,jlevel);
+                }
+              }
+              if ((view_j(jnode) == grid.ny())  && (view_i(jnode) == 1)) {
+                for (atlas::idx_t jlevel = 0; jlevel < field_input.shape(1); ++jlevel) {
+                  south[jlevel] = view(jnode,jlevel);
+                }
+              }
+            }
+          }
+          geom_->getComm().allReduceInPlace(north.begin(), north.end(), eckit::mpi::sum());
+          geom_->getComm().allReduceInPlace(south.begin(), south.end(), eckit::mpi::sum());
+          for (atlas::idx_t j = fs.j_begin_halo(); j < fs.j_end_halo(); ++j) {
+            for (atlas::idx_t i = fs.i_begin_halo(j); i < fs.i_end_halo(j); ++i) {
+              atlas::idx_t jnode = fs.index(i, j);
+              if (view_j(jnode) == 1) {
+                for (atlas::idx_t jlevel = 0; jlevel < field_input.shape(1); ++jlevel) {
+                  view(jnode,jlevel) = north[jlevel];
+                }
+              }
+              if (view_j(jnode) == grid.ny()) {
+                for (atlas::idx_t jlevel = 0; jlevel < field_input.shape(1); ++jlevel) {
+                  view(jnode,jlevel) = south[jlevel];
+                }
+              }
+            }
           }
         }
       } else {
@@ -615,11 +658,11 @@ void Fields::read(const eckit::Configuration & config) {
         // Copy data
         atlas::Field field = globalData[vars_[jvar]];
         auto varView = atlas::array::make_view<double, 2>(field);
-        for (atlas::idx_t iz = 0; iz < nz; ++iz) {
-          for (atlas::idx_t iy = 0; iy < ny; ++iy) {
-            for (atlas::idx_t ix = 0; ix < grid.nx(iy); ++ix) {
-              atlas::gidx_t gidx = grid.index(ix, iy);
-              varView(gidx, iz) = zvar[ix][iy][iz];
+        for (atlas::idx_t k = 0; k < nz; ++k) {
+          for (atlas::idx_t j = 0; j < ny; ++j) {
+            for (atlas::idx_t i = 0; i < grid.nx(j); ++i) {
+              atlas::gidx_t gidx = grid.index(i, j);
+              varView(gidx, k) = zvar[i][j][k];
             }
           }
         }
@@ -737,11 +780,11 @@ void Fields::write(const eckit::Configuration & config) const {
       double zlat[nx][ny];
       auto lonView = atlas::array::make_view<double, 1>(lonGlobal);
       auto latView = atlas::array::make_view<double, 1>(latGlobal);
-      for (atlas::idx_t iy = 0; iy < ny; ++iy) {
-        for (atlas::idx_t ix = 0; ix < grid.nx(iy); ++ix) {
-          atlas::gidx_t gidx = grid.index(ix, iy);
-          zlon[ix][iy] = lonView(gidx);
-          zlat[ix][iy] = latView(gidx);
+      for (atlas::idx_t j = 0; j < ny; ++j) {
+        for (atlas::idx_t i = 0; i < grid.nx(j); ++i) {
+          atlas::gidx_t gidx = grid.index(i, j);
+          zlon[i][j] = lonView(gidx);
+          zlat[i][j] = latView(gidx);
         }
       }
 
@@ -754,11 +797,11 @@ void Fields::write(const eckit::Configuration & config) const {
         atlas::Field field = globalData[vars_[jvar]];
         auto varView = atlas::array::make_view<double, 2>(field);
         double zvar[nx][ny][nz];
-        for (atlas::idx_t iz = 0; iz < nz; ++iz) {
-          for (atlas::idx_t iy = 0; iy < ny; ++iy) {
-            for (atlas::idx_t ix = 0; ix < grid.nx(iy); ++ix) {
-              atlas::gidx_t gidx = grid.index(ix, iy);
-              zvar[ix][iy][iz] = varView(gidx, iz);
+        for (atlas::idx_t k = 0; k < nz; ++k) {
+          for (atlas::idx_t j = 0; j < ny; ++j) {
+            for (atlas::idx_t i = 0; i < grid.nx(j); ++i) {
+              atlas::gidx_t gidx = grid.index(i, j);
+              zvar[i][j][k] = varView(gidx, k);
             }
           }
         }

@@ -72,7 +72,8 @@ class Geometry : public util::Printable,
   Geometry(const Geometry &);
 
   const eckit::mpi::Comm & getComm() const {return comm_;}
-  atlas::Grid grid() const {return grid_;}
+  const eckit::LocalConfiguration gridConfig() const {return gridConfig_;}
+  const atlas::Grid grid() const {return grid_;}
   const atlas::FunctionSpace & functionSpace() const {return functionSpace_;}
   atlas::FunctionSpace & functionSpace() {return functionSpace_;}
   const atlas::FieldSet & extraFields() const {return extraFields_;}

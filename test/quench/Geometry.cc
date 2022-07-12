@@ -37,13 +37,13 @@ Geometry::Geometry(const Parameters_ & params,
     halo_ = 0;
   }
 
+  // Setup grid
+  gridConfig_ = params.grid.value();
+  oops::Log::info() << "Grid config: " << gridConfig_ << std::endl;
+  grid_ = atlas::Grid(gridConfig_);
+
   if (params.functionSpace.value() == "StructuredColumns") {
     // StructuredColumns function space
-
-    // Setup grid
-    gridConfig_ = params.grid.value();
-    oops::Log::info() << "Grid config: " << gridConfig_ << std::endl;
-    grid_ = atlas::Grid(gridConfig_);
 
     // Setup partitioner
     const atlas::grid::Partitioner partitioner(params.partitioner.value());
@@ -56,12 +56,7 @@ Geometry::Geometry(const Parameters_ & params,
                      atlas::option::halo(halo_));
   } else if (params.functionSpace.value() == "NodeColumns") {
     if (comm_.size() == 1) {
-      // Setup grid
-      gridConfig_ = params.grid.value();
-      oops::Log::info() << "Grid config: " << gridConfig_ << std::endl;
-      grid_ = atlas::Grid(gridConfig_);
-      std::string gridName = gridConfig_.getString("name");
-      if (gridName.substr(0, 2).compare("CS") == 0) {
+      if (gridConfig_.getString("name").substr(0, 2).compare("CS") == 0) {
 // TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
 #if atlas_TRANS_FOUND
         mesh_ = atlas::MeshGenerator("cubedsphere_dual").generate(grid_);
@@ -93,6 +88,8 @@ Geometry::Geometry(const Parameters_ & params,
 
   // Fill extra geometry fields
   extraFields_ = atlas::FieldSet();
+
+  // Vertical unit
   atlas::Field vunit = functionSpace_.createField<double>(
     atlas::option::name("vunit") | atlas::option::levels(levels_));
   auto view = atlas::array::make_view<double, 2>(vunit);
@@ -102,6 +99,30 @@ Geometry::Geometry(const Parameters_ & params,
     }
   }
   extraFields_->add(vunit);
+
+  // Halo mask
+  if (gridConfig_.getString("type") == "regular_lonlat") {
+    atlas::functionspace::StructuredColumns fs(functionSpace_);
+    atlas::StructuredGrid grid = fs.grid();
+    atlas::Field hmask = fs.createField<int>(atlas::option::name("hmask")
+      | atlas::option::levels(0));
+    auto view = atlas::array::make_view<int, 1>(hmask);
+    auto view_i = atlas::array::make_view<int, 1>(fs.index_i());
+    auto view_j = atlas::array::make_view<int, 1>(fs.index_j());
+    for (atlas::idx_t j = fs.j_begin_halo(); j < fs.j_end_halo(); ++j) {
+      for (atlas::idx_t i = fs.i_begin_halo(j); i < fs.i_end_halo(j); ++i) {
+        atlas::idx_t jnode = fs.index(i, j);
+        if (((view_j(jnode) == 1) || (view_j(jnode) == grid.ny())) && (view_i(jnode) != 1)) {
+          view(jnode) = 0;
+        } else {
+          view(jnode) = 1;
+        }
+      }
+    }
+
+    // Add field
+    extraFields_->add(hmask);
+  }
 
   // Print summary
   this->print(oops::Log::info());
@@ -113,16 +134,12 @@ Geometry::Geometry(const Geometry & other) : comm_(other.comm_), levels_(other.l
   gridConfig_ = other.gridConfig_;
   grid_ = atlas::Grid(gridConfig_);
 
-  // Grid name
-  std::string gridName;
-  if (gridConfig_.has("name"))
-    gridName = gridConfig_.getString("name");
-
   // Copy function space
   if (other.functionSpace_.type() == "StructuredColumns") {
     functionSpace_ = atlas::functionspace::StructuredColumns(other.functionSpace_);
   } else if (other.functionSpace_.type() == "NodeColumns") {
-    if (gridName.substr(0, 2).compare("CS") == 0) {
+  // Grid name
+    if (gridConfig_.getString("name").substr(0, 2).compare("CS") == 0) {
 // TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
 #if atlas_TRANS_FOUND
       functionSpace_ = atlas::functionspace::CubedSphereNodeColumns(other.functionSpace_);
