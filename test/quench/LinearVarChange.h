@@ -40,12 +40,12 @@ class LinearVarChange: public util::Printable {
   LinearVarChange(const Geometry &, const Parameters_ &) {}
 
 /// Perform linear transforms
-  void multiply(Increment &, const oops::Variables &) const {}
-  void multiplyInverse(Increment &, const oops::Variables &) const {}
-  void multiplyAD(Increment &, const oops::Variables &) const {}
-  void multiplyInverseAD(Increment &, const oops::Variables &) const {}
+  void changeVarTL(Increment &, const oops::Variables &) const {}
+  void changeVarInverseTL(Increment &, const oops::Variables &) const {}
+  void changeVarAD(Increment &, const oops::Variables &) const {}
+  void changeVarInverseAD(Increment &, const oops::Variables &) const {}
 
-  void setTrajectory(const State &, const State &) {}
+  void changeVarTraj(const State &, const oops::Variables &) {}
 
  private:
   void print(std::ostream &) const override {}
