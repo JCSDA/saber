@@ -340,6 +340,11 @@ if( SABER_TEST_OOPS )
                             SOURCES mains/quenchDirac.cc
                             LIBS    quench
                                     saber )
+
+    ecbuild_add_executable( TARGET  saber_quench_convertstate.x
+                            SOURCES mains/quenchConvertState.cc
+                            LIBS    quench
+                                    saber )
 endif()
 
 # Mono-core tests
@@ -774,6 +779,19 @@ if( SABER_TEST_OOPS )
                               COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_dirac.x
                               ARGS testinput/${test}.yaml
                               DEPENDS saber_quench_dirac.x )
+        endif()
+    endforeach()
+
+    # ConvertState tests
+    foreach( test ${saber_test_oops} )
+        string( FIND ${test} "quench_convertstate" quench )
+        if( quench MATCHES 0 )
+            ecbuild_add_test( TARGET saber_test_${test}
+                              MPI ${mpi}
+                              OMP ${omp}
+                              COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_convertstate.x
+                              ARGS testinput/${test}.yaml
+                              DEPENDS saber_quench_convertstate.x )
         endif()
     endforeach()
 endif()

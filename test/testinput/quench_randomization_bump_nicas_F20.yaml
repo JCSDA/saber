@@ -3,7 +3,7 @@ geometry:
   grid:
     type : regular_gaussian
     N : 20
-  levels: 10
+  levels: 1
   halo: 3
 variables: &vars [var]
 background:

@@ -17,16 +17,6 @@
 
 #include "atlas/field.h"
 #include "atlas/functionspace.h"
-#include "atlas/grid/detail/partitioner/CubedSpherePartitioner.h"
-#include "atlas/grid/Distribution.h"
-#include "atlas/grid/Partitioner.h"
-#include "atlas/mesh/Mesh.h"
-#include "atlas/meshgenerator.h"
-// TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
-#if atlas_TRANS_FOUND
-#include "atlas/meshgenerator/detail/CubedSphereDualMeshGenerator.h"
-#include "atlas/meshgenerator/detail/CubedSphereMeshGenerator.h"
-#endif
 #include "atlas/output/Gmsh.h"
 #include "atlas/util/Config.h"
 
@@ -38,7 +28,13 @@
 #include "oops/util/Logger.h"
 #include "oops/util/Random.h"
 
+
+#include "atlas/interpolation.h"
+
+
 #include "quench/Geometry.h"
+
+#include "saber/src/saber/interpolation/AtlasInterpWrapper.h"
 
 #define ERR(e) {printf("Error: %s\n", nc_strerror(e)); exit(1);}
 
@@ -49,6 +45,8 @@ Fields::Fields(const Geometry & geom, const oops::Variables & vars,
                const util::DateTime & time):
   geom_(new Geometry(geom)), vars_(vars), time_(time)
 {
+  oops::Log::trace() << "Fields::Fields starting" << std::endl;
+
   // Reset ATLAS fieldset
   fset_ = atlas::FieldSet();
 
@@ -61,13 +59,20 @@ Fields::Fields(const Geometry & geom, const oops::Variables & vars,
 
   // Set fields to zero
   this->zero();
+
+  oops::Log::trace() << "Fields::Fields done" << std::endl;
 }
 // -----------------------------------------------------------------------------
 Fields::Fields(const Fields & other, const Geometry & geom):
   geom_(new Geometry(geom)), vars_(other.vars_), time_(other.time_)
 {
+  oops::Log::trace() << "Fields::Fields starting" << std::endl;
+
   // Reset ATLAS fieldset
   fset_ = atlas::FieldSet();
+
+  // Check number of levels
+  if (geom_->levels() != geom.levels()) ABORT("different number of levels, cannot interpolate");
 
   // Create fields
   for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
@@ -76,31 +81,19 @@ Fields::Fields(const Fields & other, const Geometry & geom):
     fset_.add(field);
   }
 
-  // Copy - TODO(Benjamin): interpolate
-  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-    atlas::Field field = fset_[vars_[jvar]];
-    atlas::Field fieldOther = other.fset_[vars_[jvar]];
-    if (field.rank() == 1) {
-      auto view = atlas::array::make_view<double, 1>(field);
-      auto viewOther = atlas::array::make_view<double, 1>(fieldOther);
-      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-        view(jnode) = viewOther(jnode);
-      }
-    } else if (field.rank() == 2) {
-     auto view = atlas::array::make_view<double, 2>(field);
-     auto viewOther = atlas::array::make_view<double, 2>(fieldOther);
-     for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-       for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-         view(jnode, jlevel) = viewOther(jnode, jlevel);
-       }
-      }
-    }
-  }
+  // Interpolate 
+  oops::Log::trace() << "Initialize AtlasInterpWrapper" << std::endl;
+  saber::interpolation::AtlasInterpWrapper interp(other.geom_->partitioner(), other.geom_->functionSpace(), geom.grid(), geom.functionSpace());
+  interp.execute(other.fset_, fset_);
+
+  oops::Log::trace() << "Fields::Fields done" << std::endl;
 }
 // -----------------------------------------------------------------------------
 Fields::Fields(const Fields & other, const bool copy):
   geom_(other.geom_), vars_(other.vars_), time_(other.time_)
 {
+  oops::Log::trace() << "Fields::Fields starting" << std::endl;
+
   // Reset ATLAS fieldset
   fset_ = atlas::FieldSet();
 
@@ -136,6 +129,8 @@ Fields::Fields(const Fields & other, const bool copy):
       }
     }
   }
+
+  oops::Log::trace() << "Fields::Fields done" << std::endl;
 }
 // -----------------------------------------------------------------------------
 Fields::Fields(const Fields & other):
@@ -433,6 +428,7 @@ void Fields::dirac(const eckit::Configuration & config) {
     }
 
     if (geom_->functionSpace().type() == "StructuredColumns") {
+      // StructuredColumns
       atlas::functionspace::StructuredColumns fs(geom_->functionSpace());
       atlas::Field field_gi = fs.global_index();
       auto view_gi = atlas::array::make_view<atlas::gidx_t, 1>(field_gi);
@@ -456,33 +452,44 @@ void Fields::dirac(const eckit::Configuration & config) {
         }
       }
     } else if (geom_->functionSpace().type() == "NodeColumns") {
+      // NodeColumns
+      atlas::Field field_gi;
       if (geom_->grid().name().substr(0, 2).compare("CS") == 0) {
+        // CubedSphere
 // TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
 #if atlas_TRANS_FOUND
         atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
-        atlas::Field field_gi = fs.global_index();
-        auto view_gi = atlas::array::make_view<atlas::gidx_t, 1>(field_gi);
-        atlas::Field field_var = fset_[variable[jdir]];
-        if (field_var.rank() == 1) {
-          auto view_var = atlas::array::make_view<double, 1>(field_var);
-          for (atlas::idx_t jnode = 0; jnode < field_var.shape(0); ++jnode) {
-            if (index[jdir] == view_gi(jnode)) {
-              view_var(jnode) = 1.0;
-            }
-          }
-        } else if (field_var.rank() == 2) {
-          if (level[jdir] <= 0 || level[jdir] > field_var.shape(1)) {
-            ABORT("dirac level is too large");
-          }
-          auto view_var = atlas::array::make_view<double, 2>(field_var);
-          for (atlas::idx_t jnode = 0; jnode < field_var.shape(0); ++jnode) {
-            if (index[jdir] == view_gi(jnode)) {
-              view_var(jnode, level[jdir]-1) = 1.0;
-            }
+        field_gi = fs.global_index();
+#else
+        ABORT("TRANS required");
+#endif
+      } else {
+        // Other NodeColumns
+        atlas::functionspace::NodeColumns fs(geom_->functionSpace());
+        field_gi = fs.global_index();
+      }
+      auto view_gi = atlas::array::make_view<atlas::gidx_t, 1>(field_gi);
+      atlas::Field field_var = fset_[variable[jdir]];
+      if (field_var.rank() == 1) {
+        auto view_var = atlas::array::make_view<double, 1>(field_var);
+        for (atlas::idx_t jnode = 0; jnode < field_var.shape(0); ++jnode) {
+          if (index[jdir] == view_gi(jnode)) {
+            view_var(jnode) = 1.0;
           }
         }
-#endif
+      } else if (field_var.rank() == 2) {
+        if (level[jdir] <= 0 || level[jdir] > field_var.shape(1)) {
+          ABORT("dirac level is too large");
+        }
+        auto view_var = atlas::array::make_view<double, 2>(field_var);
+        for (atlas::idx_t jnode = 0; jnode < field_var.shape(0); ++jnode) {
+          if (index[jdir] == view_gi(jnode)) {
+            view_var(jnode, level[jdir]-1) = 1.0;
+          }
+        }
       }
+    } else {
+      ABORT(geom_->functionSpace().type() + " function space not supported yet");
     }
   }
 }
@@ -549,7 +556,7 @@ void Fields::fromFieldSet(const atlas::FieldSet & fset) {
           }
         }
 
-        if (geom_->gridConfig().getString("type") == "regular_lonlat") {
+        if (geom_->gridType() == "regular_lonlat") {
           // Copy poles points
           atlas::functionspace::StructuredColumns fs(geom_->functionSpace());
           atlas::StructuredGrid grid = fs.grid();
@@ -610,12 +617,15 @@ void Fields::read(const eckit::Configuration & config) {
     filepath.append(out.str());
   }
 
+  // Common objects
+    atlas::FieldSet globalData;
+
   // NetCDF input
   if (geom_->functionSpace().type() == "StructuredColumns") {
+    // StructuredColumns
     atlas::functionspace::StructuredColumns fs(geom_->functionSpace());
 
     // Create global data fieldset
-    atlas::FieldSet globalData;
     for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
       atlas::Field field = fs.createField<double>(atlas::option::name(vars_[jvar])
         | atlas::option::levels(geom_->levels()) | atlas::option::global());
@@ -652,7 +662,7 @@ void Fields::read(const eckit::Configuration & config) {
 
       for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
         // Read data
-        double zvar[nx][ny][nz];
+        double zvar[nz][ny][nx];
         if ((retval = nc_get_var_double(ncid, var_id[jvar], &zvar[0][0][0]))) ERR(retval);
 
         // Copy data
@@ -662,7 +672,7 @@ void Fields::read(const eckit::Configuration & config) {
           for (atlas::idx_t j = 0; j < ny; ++j) {
             for (atlas::idx_t i = 0; i < grid.nx(j); ++i) {
               atlas::gidx_t gidx = grid.index(i, j);
-              varView(gidx, k) = zvar[i][j][k];
+              varView(gidx, k) = zvar[k][j][i];
             }
           }
         }
@@ -671,9 +681,110 @@ void Fields::read(const eckit::Configuration & config) {
       // Close file
       if ((retval = nc_close(ncid))) ERR(retval);
     }
+  } else if (geom_->functionSpace().type() == "NodeColumns") {
+    // NodeColumns
+    atlas::idx_t nb_nodes;
+    if (geom_->grid().name().substr(0, 2).compare("CS") == 0) {
+      // CubedSphere
+// TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
+#if atlas_TRANS_FOUND
+      atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
+#else
+      ABORT("TRANS required");
+#endif
 
-    // Scatter data from main processor
+      // Create global data fieldset
+      for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+        atlas::Field field = fs.createField<double>(atlas::option::name(vars_[jvar])
+          | atlas::option::levels(geom_->levels()) | atlas::option::global());
+        globalData.add(field);
+      }
+
+      // Get global number of nodes
+      nb_nodes = fs.nb_nodes_global();
+    } else {
+      // Other NodeColumns
+      atlas::functionspace::NodeColumns fs(geom_->functionSpace());
+
+      // Create global data fieldset
+      for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+        atlas::Field field = fs.createField<double>(atlas::option::name(vars_[jvar])
+          | atlas::option::levels(geom_->levels()) | atlas::option::global());
+        globalData.add(field);
+      }
+
+      // Get global number of nodes
+      nb_nodes = fs.nb_nodes_global();
+    }
+
+    if (geom_->getComm().rank() == 0) {
+      // Get first field
+      atlas::Field field = globalData.field(0);
+
+      // Get number of levels
+      atlas::idx_t nz = field.levels();
+
+      // NetCDF IDs
+      int ncid, retval, var_id[vars_.size()];
+
+      // NetCDF file path
+      std::string ncfilepath = filepath;
+      ncfilepath.append(".nc");
+      oops::Log::info() << "Reading file: " << ncfilepath << std::endl;
+
+      // Open NetCDF file
+      if ((retval = nc_open(ncfilepath.c_str(), NC_NOWRITE, &ncid))) ERR(retval);
+
+      // Get variables
+      for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+        if ((retval = nc_inq_varid(ncid, vars_[jvar].c_str(), &var_id[jvar]))) ERR(retval);
+      }
+
+      for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+        // Read data
+        double zvar[nz][nb_nodes];
+        if ((retval = nc_get_var_double(ncid, var_id[jvar], &zvar[0][0]))) ERR(retval);
+
+        // Copy data
+        atlas::Field field = globalData[vars_[jvar]];
+        auto varView = atlas::array::make_view<double, 2>(field);
+        for (atlas::idx_t k = 0; k < nz; ++k) {
+          for (atlas::idx_t i = 0; i < nb_nodes; ++i) {
+            varView(i, k) = zvar[k][i];
+          }
+        }
+      }
+
+      // Close file
+      if ((retval = nc_close(ncid))) ERR(retval);
+    }
+  } else {
+    ABORT(geom_->functionSpace().type() + " function space not supported yet");
+  }
+
+  // Scatter data from main processor
+  if (geom_->functionSpace().type() == "StructuredColumns") {
+    // StructuredColumns
+    atlas::functionspace::StructuredColumns fs(geom_->functionSpace());
     fs.scatter(globalData, fset_);
+  } else if (geom_->functionSpace().type() == "NodeColumns") {
+    // NodeColumns
+    if (geom_->grid().name().substr(0, 2).compare("CS") == 0) {
+      // CubedSphere
+// TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
+#if atlas_TRANS_FOUND
+      atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
+#else
+      ABORT("TRANS required");
+#endif
+      fs.scatter(globalData, fset_);
+    } else {
+      // Other NodeColumns
+      atlas::functionspace::NodeColumns fs(geom_->functionSpace());
+      fs.scatter(globalData, fset_);
+    }
+  } else {
+    ABORT(geom_->functionSpace().type() + " function space not supported yet");
   }
 }
 // -----------------------------------------------------------------------------
@@ -687,15 +798,27 @@ void Fields::write(const eckit::Configuration & config) const {
     filepath.append(out.str());
   }
 
+  // Missing value
+  double msv(-999.0);  // TODO(Benjamin) should be missing values
+
+  // Common objects
+  atlas::FieldSet localCoordinates;
+  atlas::Field lonLocal;
+  atlas::Field latLocal;
+  atlas::FieldSet globalCoordinates;
+  atlas::Field lonGlobal;
+  atlas::Field latGlobal;
+  atlas::FieldSet globalData;
+
   // NetCDF output
   if (geom_->functionSpace().type() == "StructuredColumns") {
+    // StructuredColumns
     atlas::functionspace::StructuredColumns fs(geom_->functionSpace());
 
     // Create local coordinates fieldset
-    atlas::FieldSet localCoordinates;
-    atlas::Field lonLocal = fs.createField<double>(atlas::option::name("lon"));
+    lonLocal = fs.createField<double>(atlas::option::name("lon"));
     localCoordinates.add(lonLocal);
-    atlas::Field latLocal = fs.createField<double>(atlas::option::name("lat"));
+    latLocal = fs.createField<double>(atlas::option::name("lat"));
     localCoordinates.add(latLocal);
     auto lonlatView = atlas::array::make_view<double, 2>(fs.xy());
     auto lonView = atlas::array::make_view<double, 1>(lonLocal);
@@ -706,11 +829,10 @@ void Fields::write(const eckit::Configuration & config) const {
     }
 
     // Create global coordinates fieldset
-    atlas::FieldSet globalCoordinates;
-    atlas::Field lonGlobal = fs.createField<double>(atlas::option::name("lon")
+    lonGlobal = fs.createField<double>(atlas::option::name("lon")
       | atlas::option::global());
     globalCoordinates.add(lonGlobal);
-    atlas::Field latGlobal = fs.createField<double>(atlas::option::name("lat")
+    latGlobal = fs.createField<double>(atlas::option::name("lat")
       | atlas::option::global());
     globalCoordinates.add(latGlobal);
 
@@ -718,7 +840,6 @@ void Fields::write(const eckit::Configuration & config) const {
     fs.gather(localCoordinates, globalCoordinates);
 
     // Create global data fieldset
-    atlas::FieldSet globalData;
     for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
       atlas::Field field = fs.createField<double>(atlas::option::name(vars_[jvar])
         | atlas::option::levels(geom_->levels()) | atlas::option::global());
@@ -762,29 +883,40 @@ void Fields::write(const eckit::Configuration & config) const {
       d2D_id[1] = ny_id;
       if ((retval = nc_def_var(ncid, "lon", NC_DOUBLE, 2, d2D_id, &lon_id))) ERR(retval);
       if ((retval = nc_def_var(ncid, "lat", NC_DOUBLE, 2, d2D_id, &lat_id))) ERR(retval);
+      if ((retval = nc_put_att_double(ncid, lon_id, "_FillValue", NC_DOUBLE, 1, &msv)))
+        ERR(retval);
+      if ((retval = nc_put_att_double(ncid, lat_id, "_FillValue", NC_DOUBLE, 1, &msv)))
+        ERR(retval);
 
       // Define variables
-      d3D_id[0] = nx_id;
+      d3D_id[0] = nz_id;
       d3D_id[1] = ny_id;
-      d3D_id[2] = nz_id;
+      d3D_id[2] = nx_id;
       for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
         if ((retval = nc_def_var(ncid, vars_[jvar].c_str(), NC_DOUBLE, 3, d3D_id,
           &var_id[jvar]))) ERR(retval);
+        if ((retval = nc_put_att_double(ncid, var_id[jvar], "_FillValue", NC_DOUBLE, 1, &msv)))
+          ERR(retval);
       }
+
 
       // End definition mode
       if ((retval = nc_enddef(ncid))) ERR(retval);
 
       // Copy coordinates
-      double zlon[nx][ny];
-      double zlat[nx][ny];
+      double zlon[ny][nx];
+      double zlat[ny][nx];
       auto lonView = atlas::array::make_view<double, 1>(lonGlobal);
       auto latView = atlas::array::make_view<double, 1>(latGlobal);
       for (atlas::idx_t j = 0; j < ny; ++j) {
+        for (atlas::idx_t i = 0; i < nx; ++i) {
+          zlon[j][i] = msv;
+          zlat[j][i] = msv;
+        }
         for (atlas::idx_t i = 0; i < grid.nx(j); ++i) {
           atlas::gidx_t gidx = grid.index(i, j);
-          zlon[i][j] = lonView(gidx);
-          zlat[i][j] = latView(gidx);
+          zlon[j][i] = lonView(gidx);
+          zlat[j][i] = latView(gidx);
         }
       }
 
@@ -796,12 +928,15 @@ void Fields::write(const eckit::Configuration & config) const {
         // Copy data
         atlas::Field field = globalData[vars_[jvar]];
         auto varView = atlas::array::make_view<double, 2>(field);
-        double zvar[nx][ny][nz];
+        double zvar[nz][ny][nx];
         for (atlas::idx_t k = 0; k < nz; ++k) {
           for (atlas::idx_t j = 0; j < ny; ++j) {
+            for (atlas::idx_t i = 0; i < nx; ++i) {
+              zvar[k][j][i] = msv;
+            }
             for (atlas::idx_t i = 0; i < grid.nx(j); ++i) {
               atlas::gidx_t gidx = grid.index(i, j);
-              zvar[i][j][k] = varView(gidx, k);
+              zvar[k][j][i] = varView(gidx, k);
             }
           }
         }
@@ -813,6 +948,170 @@ void Fields::write(const eckit::Configuration & config) const {
       // Close file
       if ((retval = nc_close(ncid))) ERR(retval);
     }
+  } else if (geom_->functionSpace().type() == "NodeColumns") {
+    // NodeColumns
+    atlas::idx_t nb_nodes;
+    if (geom_->grid().name().substr(0, 2).compare("CS") == 0) {
+      // CubedSphere
+// TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
+#if atlas_TRANS_FOUND
+      atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
+#else
+      ABORT("TRANS required");
+#endif
+
+      // Create local coordinates fieldset
+      lonLocal = fs.createField<double>(atlas::option::name("lon"));
+      localCoordinates.add(lonLocal);
+      latLocal = fs.createField<double>(atlas::option::name("lat"));
+      localCoordinates.add(latLocal);
+      auto lonlatView = atlas::array::make_view<double, 2>(fs.lonlat());
+      auto lonView = atlas::array::make_view<double, 1>(lonLocal);
+      auto latView = atlas::array::make_view<double, 1>(latLocal);
+      for (atlas::idx_t jnode = 0; jnode < lonLocal.shape(0); ++jnode) {
+         lonView(jnode) = lonlatView(jnode, 0);
+         latView(jnode) = lonlatView(jnode, 1);
+      }
+
+      // Create global coordinates fieldset
+      atlas::FieldSet globalCoordinates;
+      lonGlobal = fs.createField<double>(atlas::option::name("lon")
+        | atlas::option::global());
+      globalCoordinates.add(lonGlobal);
+      latGlobal = fs.createField<double>(atlas::option::name("lat")
+        | atlas::option::global());
+      globalCoordinates.add(latGlobal);
+
+      // Gather coordinates on main processor
+      fs.gather(localCoordinates, globalCoordinates);
+
+      // Create global data fieldset
+      for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+        atlas::Field field = fs.createField<double>(atlas::option::name(vars_[jvar])
+          | atlas::option::levels(geom_->levels()) | atlas::option::global());
+        globalData.add(field);
+      }
+
+      // Gather data on main processor
+      fs.gather(fset_, globalData);
+
+      // Get global number of nodes
+      nb_nodes = fs.nb_nodes_global();
+    } else {
+      // Other NodeColumns
+      atlas::functionspace::NodeColumns fs(geom_->functionSpace());
+
+      // Create local coordinates fieldset
+      lonLocal = fs.createField<double>(atlas::option::name("lon"));
+      localCoordinates.add(lonLocal);
+      latLocal = fs.createField<double>(atlas::option::name("lat"));
+      localCoordinates.add(latLocal);
+      auto lonlatView = atlas::array::make_view<double, 2>(fs.lonlat());
+      auto lonView = atlas::array::make_view<double, 1>(lonLocal);
+      auto latView = atlas::array::make_view<double, 1>(latLocal);
+      for (atlas::idx_t jnode = 0; jnode < lonLocal.shape(0); ++jnode) {
+         lonView(jnode) = lonlatView(jnode, 0);
+         latView(jnode) = lonlatView(jnode, 1);
+      }
+
+      // Create global coordinates fieldset
+      lonGlobal = fs.createField<double>(atlas::option::name("lon")
+        | atlas::option::global());
+      globalCoordinates.add(lonGlobal);
+      latGlobal = fs.createField<double>(atlas::option::name("lat")
+        | atlas::option::global());
+      globalCoordinates.add(latGlobal);
+
+      // Gather coordinates on main processor
+      fs.gather(localCoordinates, globalCoordinates);
+
+      // Create global data fieldset
+      for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+        atlas::Field field = fs.createField<double>(atlas::option::name(vars_[jvar])
+          | atlas::option::levels(geom_->levels()) | atlas::option::global());
+        globalData.add(field);
+      }
+
+      // Gather data on main processor
+      fs.gather(fset_, globalData);
+
+      // Get global number of nodes
+      nb_nodes = fs.nb_nodes_global();
+    }
+
+    if (geom_->getComm().rank() == 0) {
+      // Get first field
+      atlas::Field field = globalData.field(0);
+
+      // Get number of levels
+      atlas::idx_t nz = field.levels();
+
+      // NetCDF IDs
+      int ncid, retval, nb_nodes_id, nz_id, d1D_id[1], d2D_id[2], 
+        lon_id, lat_id, var_id[vars_.size()];
+
+      // NetCDF file path
+      std::string ncfilepath = filepath;
+      ncfilepath.append(".nc");
+      oops::Log::info() << "Writing file: " << ncfilepath << std::endl;
+
+      // Create NetCDF file
+      if ((retval = nc_create(ncfilepath.c_str(), NC_CLOBBER, &ncid))) ERR(retval);
+
+      // Create dimensions
+      if ((retval = nc_def_dim(ncid, "nb_nodes", nb_nodes, &nb_nodes_id))) ERR(retval);
+      if ((retval = nc_def_dim(ncid, "nz", nz, &nz_id))) ERR(retval);
+
+      // Define coordinates
+      d1D_id[0] = nb_nodes_id;
+      if ((retval = nc_def_var(ncid, "lon", NC_DOUBLE, 1, d1D_id, &lon_id))) ERR(retval);
+      if ((retval = nc_def_var(ncid, "lat", NC_DOUBLE, 1, d1D_id, &lat_id))) ERR(retval);
+
+      // Define variables
+      d2D_id[0] = nz_id;
+      d2D_id[1] = nb_nodes_id;
+      for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+        if ((retval = nc_def_var(ncid, vars_[jvar].c_str(), NC_DOUBLE, 2, d2D_id,
+          &var_id[jvar]))) ERR(retval);
+      }
+
+      // End definition mode
+      if ((retval = nc_enddef(ncid))) ERR(retval);
+
+      // Copy coordinates
+      double zlon[nb_nodes];
+      double zlat[nb_nodes];
+      auto lonView = atlas::array::make_view<double, 1>(lonGlobal);
+      auto latView = atlas::array::make_view<double, 1>(latGlobal);
+      for (atlas::idx_t i = 0; i < nb_nodes; ++i) {
+        zlon[i] = lonView(i);
+        zlat[i] = latView(i);
+      }
+
+      // Write coordinates
+      if ((retval = nc_put_var_double(ncid, lon_id, &zlon[0]))) ERR(retval);
+      if ((retval = nc_put_var_double(ncid, lat_id, &zlat[0]))) ERR(retval);
+
+      for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+        // Copy data
+        atlas::Field field = globalData[vars_[jvar]];
+        auto varView = atlas::array::make_view<double, 2>(field);
+        double zvar[nz][nb_nodes];
+        for (atlas::idx_t k = 0; k < nz; ++k) {
+          for (atlas::idx_t i = 0; i < nb_nodes; ++i) {
+            zvar[k][i] = varView(i, k);
+          }
+        }
+
+        // Write data
+        if ((retval = nc_put_var_double(ncid, var_id[jvar], &zvar[0][0]))) ERR(retval);
+      }
+
+      // Close file
+      if ((retval = nc_close(ncid))) ERR(retval);
+    }
+  } else {
+    ABORT(geom_->functionSpace().type() + " function space not supported yet");
   }
 
   // GMSH file path
@@ -826,23 +1125,9 @@ void Fields::write(const eckit::Configuration & config) const {
   atlas::util::Config("info", true);
   atlas::output::Gmsh gmsh(gmshfilepath, gmshConfig);
 
-  if (geom_->functionSpace().type() == "StructuredColumns") {
-    const auto meshGen = atlas::MeshGenerator("structured");
-    const auto mesh = atlas::Mesh(meshGen.generate(geom_->grid()));
-    gmsh.write(mesh);
-    gmsh.write(fset_, fset_[0].functionspace());
-  } else if (geom_->functionSpace()->type() == "NodeColumns") {
-    if (geom_->grid().name().substr(0, 2).compare("CS") == 0) {
-// TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
-#if atlas_TRANS_FOUND
-      const auto meshConfig = atlas::util::Config("partitioner", "cubedsphere");
-      const auto meshGen = atlas::MeshGenerator("cubedsphere_dual", meshConfig);
-      const auto mesh = atlas::Mesh(meshGen.generate(geom_->grid()));
-      gmsh.write(mesh);
-      gmsh.write(fset_, fset_[0].functionspace());
-#endif
-    }
-  }
+   // Write GMSH
+  gmsh.write(geom_->mesh());
+  gmsh.write(fset_, fset_[0].functionspace());
 }
 // -----------------------------------------------------------------------------
 double Fields::norm() const {

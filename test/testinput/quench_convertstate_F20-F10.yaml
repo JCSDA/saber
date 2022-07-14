@@ -1,0 +1,24 @@
+input geometry:
+  function space: StructuredColumns
+  grid:
+    type : regular_gaussian
+    N : 20
+  levels: 1
+  halo: 3
+output geometry:
+  function space: StructuredColumns
+  grid:
+    type : regular_gaussian
+    N : 10
+  levels: 1
+  halo: 1
+states:
+- input:
+    date: 2010-01-01T12:00:00Z
+    filepath: testdata/quench_randomization_bump_nicas_F20/member_000001
+    state variables: [var]
+  output:
+    filepath: testdata/quench_convertstate_F20-F10/member_000001
+
+test:
+  reference filename: testref/quench_convertstate_F20-F10/test.log.out

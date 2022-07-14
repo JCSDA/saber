@@ -13,7 +13,7 @@
 
 #include "oops/util/Printable.h"
 
-#include "quench/LinearVarChangeParams.h"
+#include "quench/LinearVariableChangeParameters.h"
 
 // Forward declarations
 namespace eckit {
@@ -32,12 +32,12 @@ namespace quench {
 // -----------------------------------------------------------------------------
 /// quench linear change of variable
 
-class LinearVarChange: public util::Printable {
+class LinearVariableChange: public util::Printable {
  public:
-  typedef LinearVarChangeParams Parameters_;
-  static const std::string classname() {return "quench::LinearVarChange";}
+  typedef LinearVariableChangeParameters Parameters_;
+  static const std::string classname() {return "quench::LinearVariableChange";}
 
-  LinearVarChange(const Geometry &, const Parameters_ &) {}
+  LinearVariableChange(const Geometry &, const Parameters_ &) {}
 
 /// Perform linear transforms
   void changeVarTL(Increment &, const oops::Variables &) const {}
@@ -48,7 +48,7 @@ class LinearVarChange: public util::Printable {
   void changeVarTraj(const State &, const oops::Variables &) {}
 
  private:
-  void print(std::ostream &) const override {}
+  void print(std::ostream & os) const override {os << "LinearVariableChange";};
 };
 // -----------------------------------------------------------------------------
 

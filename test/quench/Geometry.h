@@ -72,8 +72,10 @@ class Geometry : public util::Printable,
   Geometry(const Geometry &);
 
   const eckit::mpi::Comm & getComm() const {return comm_;}
-  const eckit::LocalConfiguration gridConfig() const {return gridConfig_;}
   const atlas::Grid grid() const {return grid_;}
+  const std::string gridType() const {return gridType_;}
+  const atlas::grid::Partitioner partitioner() const {return partitioner_;}
+  const atlas::Mesh mesh() const {return mesh_;}
   const atlas::FunctionSpace & functionSpace() const {return functionSpace_;}
   atlas::FunctionSpace & functionSpace() {return functionSpace_;}
   const atlas::FieldSet & extraFields() const {return extraFields_;}
@@ -88,8 +90,9 @@ class Geometry : public util::Printable,
  private:
   void print(std::ostream &) const;
   const eckit::mpi::Comm & comm_;
-  eckit::LocalConfiguration gridConfig_;
   atlas::Grid grid_;
+  std::string gridType_;
+  atlas::grid::Partitioner partitioner_;
   atlas::Mesh mesh_;
   atlas::FunctionSpace functionSpace_;
   atlas::FieldSet extraFields_;

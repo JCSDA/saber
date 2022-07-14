@@ -38,39 +38,48 @@ Geometry::Geometry(const Parameters_ & params,
   }
 
   // Setup grid
-  gridConfig_ = params.grid.value();
-  oops::Log::info() << "Grid config: " << gridConfig_ << std::endl;
-  grid_ = atlas::Grid(gridConfig_);
+  eckit::LocalConfiguration gridConfig(params.grid.value());
+  oops::Log::info() << "Grid config: " << gridConfig << std::endl;
+  grid_ = atlas::Grid(gridConfig);
+  gridType_ = gridConfig.getString("type", "");
 
   if (params.functionSpace.value() == "StructuredColumns") {
-    // StructuredColumns function space
+    // StructuredColumns
 
     // Setup partitioner
-    const atlas::grid::Partitioner partitioner(params.partitioner.value());
+    partitioner_ = atlas::grid::Partitioner("trans");
 
     // Setup distribution
-    const atlas::grid::Distribution distribution(grid_, partitioner);
+    const atlas::grid::Distribution distribution(grid_, partitioner_);
 
     // Setup function space
     functionSpace_ = atlas::functionspace::StructuredColumns(grid_, distribution,
                      atlas::option::halo(halo_));
+
+    // Setup mesh
+    mesh_ = atlas::MeshGenerator("structured").generate(grid_, partitioner_);
   } else if (params.functionSpace.value() == "NodeColumns") {
     if (comm_.size() == 1) {
-      if (gridConfig_.getString("name").substr(0, 2).compare("CS") == 0) {
+      // NodeColumns
+      if (grid_.name().substr(0, 2).compare("CS") == 0) {
+        // CubedSphere
 // TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
 #if atlas_TRANS_FOUND
         mesh_ = atlas::MeshGenerator("cubedsphere_dual").generate(grid_);
         functionSpace_ = atlas::functionspace::CubedSphereNodeColumns(mesh_);
+#else
+        ABORT("TRANS required");
 #endif
       } else {
-        mesh_ = atlas::MeshGenerator("cubedsphere_dual").generate(grid_);
+        // NodeColumns
+        mesh_ = atlas::MeshGenerator("delaunay").generate(grid_);
         functionSpace_ = atlas::functionspace::NodeColumns(mesh_);
       }
     } else {
-      ABORT(params.functionSpace.value() + " function space on multiple PEs not implemented yet");
+      ABORT("NodeColumns function space on multiple PEs not supported yet");
     }
   } else {
-    ABORT(params.functionSpace.value() + " function space not implemented yet");
+    ABORT(params.functionSpace.value() + " function space not supported yet");
   }
 
   // Number of levels
@@ -101,7 +110,7 @@ Geometry::Geometry(const Parameters_ & params,
   extraFields_->add(vunit);
 
   // Halo mask
-  if (gridConfig_.getString("type") == "regular_lonlat") {
+  if (gridConfig.getString("type") == "regular_lonlat") {
     atlas::functionspace::StructuredColumns fs(functionSpace_);
     atlas::StructuredGrid grid = fs.grid();
     atlas::Field hmask = fs.createField<int>(atlas::option::name("hmask")
@@ -130,25 +139,29 @@ Geometry::Geometry(const Parameters_ & params,
 // -----------------------------------------------------------------------------
 Geometry::Geometry(const Geometry & other) : comm_(other.comm_), levels_(other.levels_),
   vunit_(other.vunit_), halo_(other.halo_) {
-  // Copy grid
-  gridConfig_ = other.gridConfig_;
-  grid_ = atlas::Grid(gridConfig_);
+  // Copy grid TODO (in header ?)
+  grid_ = other.grid_;
+  partitioner_ = other.partitioner_;
+  mesh_ = other.mesh_;
 
   // Copy function space
   if (other.functionSpace_.type() == "StructuredColumns") {
+    // StructuredColumns
     functionSpace_ = atlas::functionspace::StructuredColumns(other.functionSpace_);
   } else if (other.functionSpace_.type() == "NodeColumns") {
-  // Grid name
-    if (gridConfig_.getString("name").substr(0, 2).compare("CS") == 0) {
+    // NodeColumns
+    if (grid_.name().substr(0, 2).compare("CS") == 0) {
+      // CubedSphere
 // TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
 #if atlas_TRANS_FOUND
       functionSpace_ = atlas::functionspace::CubedSphereNodeColumns(other.functionSpace_);
 #endif
     } else {
+      // Other NodeColumns
       functionSpace_ = atlas::functionspace::NodeColumns(other.functionSpace_);
     }
   } else {
-    ABORT(other.functionSpace_.type() + " function space not implemented yet");
+    ABORT(other.functionSpace_.type() + " function space not supported yet");
   }
 
   // Copy extra fields
