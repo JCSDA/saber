@@ -45,7 +45,7 @@ class GeometryParameters : public oops::Parameters {
   oops::RequiredParameter<eckit::LocalConfiguration> grid{"grid", this};
 
   /// Partitioner
-  oops::Parameter<std::string> partitioner{"partitioner", "checkerboard", this};
+  oops::Parameter<std::string> partitioner{"partitioner", "trans", this};
 
   /// Number of levels
   oops::Parameter<size_t> levels{"levels", 1, this};

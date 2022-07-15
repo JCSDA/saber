@@ -32,6 +32,7 @@ qg_error_covariance_training_bump_vbal_update
 qg_truth
 interpolation_bump
 quench_convertstate_F20-F10
+quench_convertstate_F20-unstructured
 quench_dirac_bump_nicas
 quench_error_covariance_training_bump_hdiag_hyb-rnd
 quench_error_covariance_training_bump_hdiag_hyb-ens

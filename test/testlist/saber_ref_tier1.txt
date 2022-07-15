@@ -527,6 +527,7 @@ qg_error_covariance_training_bump_vbal_update/test.log.out
 qg_truth/test.log.out
 interpolation_bump/test.log.out
 quench_convertstate_F20-F10/test.log.out
+quench_convertstate_F20-unstructured/test.log.out
 quench_dirac_bump_nicas/test.log.out
 quench_dirac_gsi_global/test.log.out
 quench_dirac_gsi_gmao_global/test.log.out

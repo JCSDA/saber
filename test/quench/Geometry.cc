@@ -16,6 +16,8 @@
 #include "atlas/meshgenerator.h"
 #include "atlas/projection.h"
 #include "atlas/util/Point.h"
+#include "atlas/util/PolygonLocator.h"
+#include "atlas/util/PolygonXY.h"
 
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
@@ -26,6 +28,9 @@ namespace quench {
 // -----------------------------------------------------------------------------
 Geometry::Geometry(const Parameters_ & params,
                    const eckit::mpi::Comm & comm) : comm_(comm), levels_(1) {
+
+// TODO: trace everywhere, deal with unstructured grids (for interpolation output)
+
   // Initialize eckit communicator for ATLAS
   eckit::mpi::setCommDefault(comm_.name().c_str());
 
@@ -41,16 +46,15 @@ Geometry::Geometry(const Parameters_ & params,
   eckit::LocalConfiguration gridConfig(params.grid.value());
   oops::Log::info() << "Grid config: " << gridConfig << std::endl;
   grid_ = atlas::Grid(gridConfig);
-  gridType_ = gridConfig.getString("type", "");
 
-  if (params.functionSpace.value() == "StructuredColumns") {
-    // StructuredColumns
-
-    // Setup partitioner
-    partitioner_ = atlas::grid::Partitioner("trans");
+  // Setup partitioner
+  partitioner_ = atlas::grid::Partitioner(params.partitioner.value());
 
     // Setup distribution
     const atlas::grid::Distribution distribution(grid_, partitioner_);
+
+  if (params.functionSpace.value() == "StructuredColumns") {
+    // StructuredColumns
 
     // Setup function space
     functionSpace_ = atlas::functionspace::StructuredColumns(grid_, distribution,
@@ -78,6 +82,12 @@ Geometry::Geometry(const Parameters_ & params,
     } else {
       ABORT("NodeColumns function space on multiple PEs not supported yet");
     }
+  } else if (params.functionSpace.value() == "PointCloud") {
+    // Setup function space
+    functionSpace_ = atlas::functionspace::PointCloud(grid_);
+
+    // Setup mesh
+//    mesh_ = atlas::MeshGenerator("delaunay").generate(grid_);
   } else {
     ABORT(params.functionSpace.value() + " function space not supported yet");
   }
@@ -110,7 +120,7 @@ Geometry::Geometry(const Parameters_ & params,
   extraFields_->add(vunit);
 
   // Halo mask
-  if (gridConfig.getString("type") == "regular_lonlat") {
+  if (grid_.name().substr(0, 1).compare("L") == 0) {
     atlas::functionspace::StructuredColumns fs(functionSpace_);
     atlas::StructuredGrid grid = fs.grid();
     atlas::Field hmask = fs.createField<int>(atlas::option::name("hmask")
@@ -160,6 +170,8 @@ Geometry::Geometry(const Geometry & other) : comm_(other.comm_), levels_(other.l
       // Other NodeColumns
       functionSpace_ = atlas::functionspace::NodeColumns(other.functionSpace_);
     }
+  } else if (other.functionSpace_.type() == "PointCloud") {
+      functionSpace_ = atlas::functionspace::PointCloud(other.functionSpace_);
   } else {
     ABORT(other.functionSpace_.type() + " function space not supported yet");
   }
@@ -179,10 +191,10 @@ void Geometry::print(std::ostream & os) const {
   os << "Quench geometry grid:" << std::endl;
   os << "- name: " << grid_.name() << std::endl;
   os << "- size: " << grid_.size() << std::endl;
+  os << "Partitioner:" << std::endl;
+  os << "- type: " << partitioner_.type() << std::endl;
   os << "Function space:" << std::endl;
   os << "- type: " << functionSpace_.type() << std::endl;
-  os << "- size: " << functionSpace_.size() << std::endl;
-  os << "- nb_partitions: " << functionSpace_.nb_partitions() << std::endl;
   os << "- halo: " << halo_ << std::endl;
   os << "Vertical levels: " << std::endl;
   os << "- number: " << levels_ << std::endl;
