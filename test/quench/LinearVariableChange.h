@@ -5,8 +5,8 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef QUENCH_LINEARVARCHANGE_H_
-#define QUENCH_LINEARVARCHANGE_H_
+#ifndef QUENCH_LINEARVARIABLECHANGE_H_
+#define QUENCH_LINEARVARIABLECHANGE_H_
 
 #include <ostream>
 #include <string>
@@ -53,4 +53,4 @@ class LinearVariableChange: public util::Printable {
 // -----------------------------------------------------------------------------
 
 }  // namespace quench
-#endif  // QUENCH_LINEARVARCHANGE_H_
+#endif  // QUENCH_LINEARVARIABLECHANGE_H_

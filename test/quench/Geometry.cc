@@ -8,6 +8,8 @@
 #include "quench/Geometry.h"
 
 #include <math.h>
+#include <netcdf.h>
+
 #include <sstream>
 
 #include "atlas/field.h"
@@ -23,14 +25,13 @@
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/Logger.h"
 
+#define ERR(e) {printf("Error: %s\n", nc_strerror(e)); ABORT("NetCDF error");}
+
 // -----------------------------------------------------------------------------
 namespace quench {
 // -----------------------------------------------------------------------------
 Geometry::Geometry(const Parameters_ & params,
                    const eckit::mpi::Comm & comm) : comm_(comm), levels_(1) {
-
-// TODO: trace everywhere, deal with unstructured grids (for interpolation output)
-
   // Initialize eckit communicator for ATLAS
   eckit::mpi::setCommDefault(comm_.name().c_str());
 
@@ -43,15 +44,74 @@ Geometry::Geometry(const Parameters_ & params,
   }
 
   // Setup grid
-  eckit::LocalConfiguration gridConfig(params.grid.value());
-  oops::Log::info() << "Grid config: " << gridConfig << std::endl;
-  grid_ = atlas::Grid(gridConfig);
+  const boost::optional<eckit::LocalConfiguration> &gridParams = params.grid.value();
+  const boost::optional<std::string> &gridInputParams = params.gridInput.value();
+  if (gridParams != boost::none) {
+    oops::Log::info() << "Grid config: " << *gridParams << std::endl;
+    grid_ = atlas::Grid(*gridParams);
+  } else if (gridInputParams != boost::none) {
+    oops::Log::info() << "Grid input file: " << *gridInputParams << std::endl;
+
+    // Grid size
+    size_t nlocs = 0;
+
+    // NetCDF IDs
+    int ncid, retval, nlocs_id, grp_id, lon_id, lat_id;
+
+    if (comm_.rank() == 0) {
+      // Open NetCDF file
+      if ((retval = nc_open(gridInputParams->c_str(), NC_NOWRITE, &ncid))) ERR(retval);
+
+      // Get nlocs
+      if ((retval = nc_inq_dimid(ncid, "nlocs", &nlocs_id))) ERR(retval);
+      if ((retval = nc_inq_dimlen(ncid, nlocs_id, &nlocs))) ERR(retval);
+    }
+
+    // Broadcast size
+    comm_.broadcast(nlocs, 0);
+
+    // Coordinates
+    std::vector<double> xy(2*nlocs);
+
+    if (comm_.rank() == 0) {
+      // Get lon/lat
+      if ((retval = nc_inq_ncid(ncid, "MetaData", &grp_id))) ERR(retval);
+      if ((retval = nc_inq_varid(grp_id, "longitude", &lon_id))) ERR(retval);
+      if ((retval = nc_inq_varid(grp_id, "latitude", &lat_id))) ERR(retval);
+
+      // Read data
+      double zlon[nlocs][1];
+      double zlat[nlocs][1];
+      if ((retval = nc_get_var_double(grp_id, lon_id, &zlon[0][0]))) ERR(retval);
+      if ((retval = nc_get_var_double(grp_id, lat_id, &zlat[0][0]))) ERR(retval);
+
+      // Copy data
+      for (size_t i = 0; i < nlocs; ++i) {
+        xy[2*i] = zlon[i][0];
+        xy[2*i+1] = zlat[i][0];
+      }
+
+      // Close file
+      if ((retval = nc_close(ncid))) ERR(retval);
+    }
+
+    // Broadcast coordinates
+    comm_.broadcast(xy.begin(), xy.end(), 0);
+
+    // Define grid configuration
+    eckit::LocalConfiguration gridConfig;
+    gridConfig.set("type", "unstructured");
+    gridConfig.set("xy", xy);
+    grid_ = atlas::Grid(gridConfig);
+  } else {
+    ABORT("Grid or grid input file required");
+  }
 
   // Setup partitioner
   partitioner_ = atlas::grid::Partitioner(params.partitioner.value());
 
-    // Setup distribution
-    const atlas::grid::Distribution distribution(grid_, partitioner_);
+  // Setup distribution
+  const atlas::grid::Distribution distribution(grid_, partitioner_);
 
   if (params.functionSpace.value() == "StructuredColumns") {
     // StructuredColumns

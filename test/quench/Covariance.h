@@ -45,7 +45,7 @@ class Covariance : public util::Printable,
   void randomize(Increment &) const {}
 
  private:
-  void print(std::ostream & os) const {os << "Covariance";};
+  void print(std::ostream & os) const {os << "Covariance";}
 };
 // -----------------------------------------------------------------------------
 

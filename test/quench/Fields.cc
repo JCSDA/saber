@@ -9,6 +9,7 @@
 
 #include <netcdf.h>
 
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -77,8 +78,9 @@ Fields::Fields(const Fields & other, const Geometry & geom):
     fset_.add(field);
   }
 
-  // Interpolate 
-  saber::interpolation::AtlasInterpWrapper interp(other.geom_->partitioner(), other.geom_->functionSpace(), geom.grid(), geom.functionSpace());
+  // Interpolate
+  saber::interpolation::AtlasInterpWrapper interp(other.geom_->partitioner(),
+    other.geom_->functionSpace(), geom.grid(), geom.functionSpace());
   interp.execute(other.fset_, fset_);
 
   oops::Log::trace() << "Fields::Fields done" << std::endl;
@@ -437,7 +439,6 @@ void Fields::dirac(const eckit::Configuration & config) {
     // Find local task
     size_t localTask(-1);
     if (geom_->getComm().rank() == 0) {
-
       localTask = std::distance(std::begin(distances), std::min_element(std::begin(distances),
         std::end(distances)));
     }
@@ -535,12 +536,12 @@ void Fields::fromFieldSet(const atlas::FieldSet & fset) {
               atlas::idx_t jnode = fs.index(i, j);
               if ((view_j(jnode) == 1)  && (view_i(jnode) == 1)) {
                 for (atlas::idx_t jlevel = 0; jlevel < field_input.shape(1); ++jlevel) {
-                  north[jlevel] = view(jnode,jlevel);
+                  north[jlevel] = view(jnode, jlevel);
                 }
               }
               if ((view_j(jnode) == grid.ny())  && (view_i(jnode) == 1)) {
                 for (atlas::idx_t jlevel = 0; jlevel < field_input.shape(1); ++jlevel) {
-                  south[jlevel] = view(jnode,jlevel);
+                  south[jlevel] = view(jnode, jlevel);
                 }
               }
             }
@@ -552,12 +553,12 @@ void Fields::fromFieldSet(const atlas::FieldSet & fset) {
               atlas::idx_t jnode = fs.index(i, j);
               if (view_j(jnode) == 1) {
                 for (atlas::idx_t jlevel = 0; jlevel < field_input.shape(1); ++jlevel) {
-                  view(jnode,jlevel) = north[jlevel];
+                  view(jnode, jlevel) = north[jlevel];
                 }
               }
               if (view_j(jnode) == grid.ny()) {
                 for (atlas::idx_t jlevel = 0; jlevel < field_input.shape(1); ++jlevel) {
-                  view(jnode,jlevel) = south[jlevel];
+                  view(jnode, jlevel) = south[jlevel];
                 }
               }
             }
@@ -996,7 +997,7 @@ void Fields::write(const eckit::Configuration & config) const {
       atlas::idx_t nz = globalData.field(0).levels();
 
       // NetCDF IDs
-      int ncid, retval, nb_nodes_id, nz_id, d1D_id[1], d2D_id[2], 
+      int ncid, retval, nb_nodes_id, nz_id, d1D_id[1], d2D_id[2],
         lon_id, lat_id, var_id[vars_.size()];
 
       // NetCDF file path
@@ -1028,18 +1029,18 @@ void Fields::write(const eckit::Configuration & config) const {
       if ((retval = nc_enddef(ncid))) ERR(retval);
 
       // Copy coordinates
-      double zlon[nb_nodes];
-      double zlat[nb_nodes];
+      double zlon[nb_nodes][1];
+      double zlat[nb_nodes][1];
       auto lonView = atlas::array::make_view<double, 1>(lonGlobal);
       auto latView = atlas::array::make_view<double, 1>(latGlobal);
       for (atlas::idx_t i = 0; i < nb_nodes; ++i) {
-        zlon[i] = lonView(i);
-        zlat[i] = latView(i);
+        zlon[i][0] = lonView(i);
+        zlat[i][0] = latView(i);
       }
 
       // Write coordinates
-      if ((retval = nc_put_var_double(ncid, lon_id, &zlon[0]))) ERR(retval);
-      if ((retval = nc_put_var_double(ncid, lat_id, &zlat[0]))) ERR(retval);
+      if ((retval = nc_put_var_double(ncid, lon_id, &zlon[0][0]))) ERR(retval);
+      if ((retval = nc_put_var_double(ncid, lat_id, &zlat[0][0]))) ERR(retval);
 
       for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
         // Copy data
@@ -1068,7 +1069,7 @@ void Fields::write(const eckit::Configuration & config) const {
       atlas::idx_t nz = fset_.field(0).levels();
 
       // NetCDF IDs
-      int ncid, retval, nlocs_id, nz_id, d1D_id[1], d2D_id[2], 
+      int ncid, retval, nlocs_id, nz_id, d1D_id[1], d2D_id[2],
         lon_id, lat_id, var_id[vars_.size()];
 
       // NetCDF file path
@@ -1100,17 +1101,17 @@ void Fields::write(const eckit::Configuration & config) const {
       if ((retval = nc_enddef(ncid))) ERR(retval);
 
       // Copy coordinates
-      double zlon[nlocs];
-      double zlat[nlocs];
+      double zlon[nlocs][1];
+      double zlat[nlocs][1];
       auto lonlatView = atlas::array::make_view<double, 2>(fs.lonlat());
       for (atlas::idx_t i = 0; i < nlocs; ++i) {
-        zlon[i] = lonlatView(i, 0);
-        zlat[i] = lonlatView(i, 1);
+        zlon[i][0] = lonlatView(i, 0);
+        zlat[i][0] = lonlatView(i, 1);
       }
 
       // Write coordinates
-      if ((retval = nc_put_var_double(ncid, lon_id, &zlon[0]))) ERR(retval);
-      if ((retval = nc_put_var_double(ncid, lat_id, &zlat[0]))) ERR(retval);
+      if ((retval = nc_put_var_double(ncid, lon_id, &zlon[0][0]))) ERR(retval);
+      if ((retval = nc_put_var_double(ncid, lat_id, &zlat[0][0]))) ERR(retval);
 
       for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
         // Copy data

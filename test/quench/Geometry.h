@@ -42,7 +42,10 @@ class GeometryParameters : public oops::Parameters {
   oops::RequiredParameter<std::string> functionSpace{"function space", this};
 
   /// Grid
-  oops::RequiredParameter<eckit::LocalConfiguration> grid{"grid", this};
+  oops::OptionalParameter<eckit::LocalConfiguration> grid{"grid", this};
+
+  /// Grid input file (NetCDF format)
+  oops::OptionalParameter<std::string> gridInput{"grid input file", this};
 
   /// Partitioner
   oops::Parameter<std::string> partitioner{"partitioner", "trans", this};
