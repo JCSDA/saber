@@ -653,6 +653,7 @@ void Fields::read(const eckit::Configuration & config) {
 #if atlas_TRANS_FOUND
       atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
 #else
+      atlas::FunctionSpace fs;
       ABORT("TRANS required");
 #endif
 
@@ -734,6 +735,7 @@ void Fields::read(const eckit::Configuration & config) {
 #if atlas_TRANS_FOUND
       atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
 #else
+      atlas::FunctionSpace fs;
       ABORT("TRANS required");
 #endif
       fs.scatter(globalData, fset_);
@@ -911,6 +913,7 @@ void Fields::write(const eckit::Configuration & config) const {
 #if atlas_TRANS_FOUND
       atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
 #else
+      atlas::FunctionSpace fs;
       ABORT("TRANS required");
 #endif
 
