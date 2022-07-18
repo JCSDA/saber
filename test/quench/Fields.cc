@@ -648,14 +648,10 @@ void Fields::read(const eckit::Configuration & config) {
     // NodeColumns
     atlas::idx_t nb_nodes;
     if (geom_->grid().name().substr(0, 2).compare("CS") == 0) {
-      // CubedSphere
 // TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
 #if atlas_TRANS_FOUND
+      // CubedSphere
       atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
-#else
-      atlas::FunctionSpace fs;
-      ABORT("TRANS required");
-#endif
 
       // Create global data fieldset
       for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
@@ -666,6 +662,9 @@ void Fields::read(const eckit::Configuration & config) {
 
       // Get global number of nodes
       nb_nodes = fs.nb_nodes_global();
+#else
+      ABORT("TRANS required");
+#endif
     } else {
       // Other NodeColumns
       atlas::functionspace::NodeColumns fs(geom_->functionSpace());
@@ -730,15 +729,14 @@ void Fields::read(const eckit::Configuration & config) {
   } else if (geom_->functionSpace().type() == "NodeColumns") {
     // NodeColumns
     if (geom_->grid().name().substr(0, 2).compare("CS") == 0) {
-      // CubedSphere
 // TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
 #if atlas_TRANS_FOUND
+      // CubedSphere
       atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
+      fs.scatter(globalData, fset_);
 #else
-      atlas::FunctionSpace fs;
       ABORT("TRANS required");
 #endif
-      fs.scatter(globalData, fset_);
     } else {
       // Other NodeColumns
       atlas::functionspace::NodeColumns fs(geom_->functionSpace());
@@ -908,14 +906,10 @@ void Fields::write(const eckit::Configuration & config) const {
     // NodeColumns
     atlas::idx_t nb_nodes;
     if (geom_->grid().name().substr(0, 2).compare("CS") == 0) {
-      // CubedSphere
 // TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
 #if atlas_TRANS_FOUND
+      // CubedSphere
       atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
-#else
-      atlas::FunctionSpace fs;
-      ABORT("TRANS required");
-#endif
 
       // Create local coordinates fieldset
       lonLocal = fs.createField<double>(atlas::option::name("lon"));
@@ -953,6 +947,9 @@ void Fields::write(const eckit::Configuration & config) const {
 
       // Get global number of nodes
       nb_nodes = fs.nb_nodes_global();
+#else
+      ABORT("TRANS required");
+#endif
     } else {
       // Other NodeColumns
       atlas::functionspace::NodeColumns fs(geom_->functionSpace());
