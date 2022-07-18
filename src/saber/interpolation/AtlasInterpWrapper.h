@@ -206,12 +206,29 @@ AtlasInterpWrapper::AtlasInterpWrapper(const atlas::grid::Partitioner & srcParti
         points.push_back(point);
       }
     }
+
+    // Add extra points if needed
+    auto ghostView = atlas::array::make_view<int, 1>(srcFunctionSpace.ghost());
+    lonlatView = atlas::array::make_view<double, 2>(srcFunctionSpace.lonlat());
+    for (atlas::idx_t jnode = 0; jnode < srcFunctionSpace.size(); ++jnode) {
+      if (ghostView(jnode) == 0) {
+        if (points.size() == 0) {
+           atlas::PointLonLat pointLonLat(lonlatView(jnode, 0), lonlatView(jnode, 1));
+           pointLonLat.normalise();
+           atlas::PointXY point(pointLonLat);
+           points.push_back(point);
+        }
+      }
+    }
+
+    // Create local output function space
     localOutputFunctionSpace_ = atlas::functionspace::PointCloud(points);
 
     // Interpolation setup
     if (localOutputFunctionSpace_.size() > 0) {
       interp_ = detail::createAtlasInterpolation(srcFunctionSpace, localOutputFunctionSpace_);
     }
+
   } else {
     // Other output function space
 
@@ -253,35 +270,34 @@ void AtlasInterpWrapper::execute(const atlas::Field & srcField,
     // Global vector initialization
     std::vector<double> globalData(fs.size()*outputField.levels(), 0.0);
 
-    if (localFs.size() > 0) {
-      // Local output field setup
-      atlas::Field localOutputField = localOutputFunctionSpace_.createField<double>(
+    // Local output field setup
+    atlas::Field localOutputField = localOutputFunctionSpace_.createField<double>(
       atlas::option::name(outputField.name()) | atlas::option::levels(outputField.levels()));
 
-      // Interpolation from source field to local output field
-      interp_.execute(srcTmpField, localOutputField);
+    // Interpolation from source field to local output field
+    interp_.execute(srcTmpField, localOutputField);
 
-      // Copy of local output field into global vector
-      auto localOutputView = atlas::array::make_view<double, 2>(localOutputField);
-      atlas::idx_t globalInc = 0;
-      for (atlas::idx_t k = 0; k < outputField.levels(); ++k) {
-        atlas::idx_t localInc = 0;
-        for (atlas::idx_t i = 0; i < fs.size(); ++i) {
-          if (eckit::mpi::comm().rank() == localTask_[i]) {
-            globalData[globalInc] = localOutputView(localInc, k);
-            localInc += 1;
-          }
-          globalInc += 1;
+    // Copy of local output field into global vector
+    auto localOutputView = atlas::array::make_view<double, 2>(localOutputField);
+    atlas::idx_t globalInc = 0;
+    for (atlas::idx_t k = 0; k < outputField.levels(); ++k) {
+      atlas::idx_t localInc = 0;
+      for (atlas::idx_t i = 0; i < fs.size(); ++i) {
+        if (eckit::mpi::comm().rank() == localTask_[i]) {
+          globalData[globalInc] = localOutputView(localInc, k);
+          localInc += 1;
         }
+        globalInc += 1;
       }
     }
+
 
     // Sum of global vector over MPI tasks
     eckit::mpi::comm().allReduceInPlace(globalData.begin(), globalData.end(), eckit::mpi::sum());
 
     // Copy of global vector into global field
     auto outputView = atlas::array::make_view<double, 2>(outputField);
-    atlas::idx_t globalInc = 0;
+    globalInc = 0;
     for (atlas::idx_t k = 0; k < outputField.levels(); ++k) {
       for (atlas::idx_t i = 0; i < fs.size(); ++i) {
         outputView(i, k) = globalData[globalInc];

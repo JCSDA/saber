@@ -44,8 +44,8 @@ class GeometryParameters : public oops::Parameters {
   /// Grid
   oops::OptionalParameter<eckit::LocalConfiguration> grid{"grid", this};
 
-  /// Grid input file (NetCDF format)
-  oops::OptionalParameter<std::string> iodaGridFile{"ioda grid file", this};
+  /// IODA input file (NetCDF format) to get longitude/latitude
+  oops::OptionalParameter<std::string> iodaFile{"ioda file", this};
 
   /// Partitioner
   oops::Parameter<std::string> partitioner{"partitioner", "trans", this};

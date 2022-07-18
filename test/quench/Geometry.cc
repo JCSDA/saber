@@ -45,12 +45,12 @@ Geometry::Geometry(const Parameters_ & params,
 
   // Setup grid
   const boost::optional<eckit::LocalConfiguration> &gridParams = params.grid.value();
-  const boost::optional<std::string> &iodaGridFile = params.iodaGridFile.value();
+  const boost::optional<std::string> &iodaFile = params.iodaFile.value();
   if (gridParams != boost::none) {
     oops::Log::info() << "Grid config: " << *gridParams << std::endl;
     grid_ = atlas::Grid(*gridParams);
-  } else if (iodaGridFile != boost::none) {
-    oops::Log::info() << "Grid input file: " << *iodaGridFile << std::endl;
+  } else if (iodaFile != boost::none) {
+    oops::Log::info() << "Grid input file: " << *iodaFile << std::endl;
 
     // Grid size
     size_t nlocs = 0;
@@ -60,7 +60,7 @@ Geometry::Geometry(const Parameters_ & params,
 
     if (comm_.rank() == 0) {
       // Open NetCDF file
-      if ((retval = nc_open(iodaGridFile->c_str(), NC_NOWRITE, &ncid))) ERR(retval);
+      if ((retval = nc_open(iodaFile->c_str(), NC_NOWRITE, &ncid))) ERR(retval);
 
       // Get nlocs
       if ((retval = nc_inq_dimid(ncid, "nlocs", &nlocs_id))) ERR(retval);

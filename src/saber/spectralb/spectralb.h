@@ -159,8 +159,8 @@ SpectralB<MODEL>::SpectralB(const Geometry_ & resol,
   gaussGrid_(params.gaussGridUid),
   gaussFunctionSpace_(detail::createGaussFunctionSpace(gaussGrid_)),
   gaussFieldSet_(detail::allocateGaussFieldset(gaussFunctionSpace_, gaussNames_, modelFieldSet_)),
-  interp_(atlas::grid::Partitioner(new TransPartitioner()), gaussFunctionSpace_, detail::createOutputGrid(params),
-    detail::createOutputFunctionSpace(*modelFieldSet_)),
+  interp_(atlas::grid::Partitioner(new TransPartitioner()), gaussFunctionSpace_,
+    detail::createOutputGrid(params), detail::createOutputFunctionSpace(*modelFieldSet_)),
   variance_opt_(detail::createVarianceOpt(params)),
   cs_(std::make_unique<const CovStat_ErrorCov<MODEL>>(resol, vars, params))
 {
