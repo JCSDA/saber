@@ -49,6 +49,7 @@ endif()
 # Optionals
 find_package( oops QUIET OPTIONAL_COMPONENTS qg )
 find_package( gsibclim QUIET )
+find_package( vader QUIET )
 
 # Optional SABER blocks
 if( gsibclim_FOUND )
@@ -72,6 +73,19 @@ else()
     message( STATUS "ATLAS version lower than 0.29.0" )
     message( STATUS "SABER block SPECTRALB is not enabled" )
     add_definitions(-Datlas_TRANS_FOUND=0)
+endif()
+if( vader_FOUND )
+    if ( ENABLE_VADER_MO )
+      message( STATUS "SABER blocks VADER are enabled (with MO-specific blocks)" )
+      add_definitions(-DENABLE_VADER_MO=1)
+    else()
+      message( STATUS "SABER blocks VADER are enabled (without MO-specific blocks)" )
+      add_definitions(-DENABLE_VADER_MO=0)
+    endif()
+    add_definitions(-DENABLE_VADER=1)
+else()
+    message( STATUS "SABER blocks VADER are not enabled" )
+    add_definitions(-DENABLE_VADER=0)
 endif()
 
 ## SABER instrumentation
