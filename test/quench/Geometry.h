@@ -48,7 +48,7 @@ class GeometryParameters : public oops::Parameters {
   oops::OptionalParameter<std::string> iodaFile{"ioda file", this};
 
   /// Partitioner
-  oops::Parameter<std::string> partitioner{"partitioner", "trans", this};
+  oops::Parameter<std::string> partitioner{"partitioner", "equal_regions", this};
 
   /// Number of levels
   oops::Parameter<size_t> levels{"levels", 1, this};

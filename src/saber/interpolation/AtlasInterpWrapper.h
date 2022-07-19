@@ -88,11 +88,6 @@ atlas::FunctionSpace createTargetFunctionSpace(
   const std::string & outputFunctionSpaceType) {
   oops::Log::trace() << "createTargetFunctionSpace starting" << std::endl;
 
-  // Check source partitioner type
-  if (srcPartitioner.type() != "trans") {
-    ABORT("createTargetFunctionSpace: trans partitioner required");
-  }
-
   // Get or compute source mesh
   atlas::Mesh srcMesh;
   if (srcFunctionSpace.type() == "StructuredColumns") {
