@@ -284,7 +284,8 @@ if( SABER_TEST_OOPS )
     ecbuild_add_executable( TARGET  saber_qg_4dvar.x
                             SOURCES mains/qg4DVar.cc
                             LIBS    ${oops_qg_LIBRARIES}
-                                    saber )
+                                    saber
+                                    vader )
 
     ecbuild_add_executable( TARGET  saber_qg_convertstate.x
                             SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../oops/qg/mains/qgConvertState.cc
@@ -293,7 +294,8 @@ if( SABER_TEST_OOPS )
     ecbuild_add_executable( TARGET  saber_qg_dirac.x
                             SOURCES mains/qgDirac.cc
                             LIBS    ${oops_qg_LIBRARIES}
-                                    saber )
+                                    saber
+                                    vader )
 
     ecbuild_add_executable( TARGET  saber_qg_ens_recenter.x
                             SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../oops/qg/mains/qgEnsRecenter.cc
@@ -302,7 +304,8 @@ if( SABER_TEST_OOPS )
     ecbuild_add_executable( TARGET  saber_qg_error_covariance_training.x
                             SOURCES mains/qgErrorCovarianceTraining.cc
                             LIBS    ${oops_qg_LIBRARIES}
-                                    saber )
+                                    saber
+                                    vader )
 
     ecbuild_add_executable( TARGET  saber_qg_forecast.x
                             SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../oops/qg/mains/qgForecast.cc
@@ -319,32 +322,38 @@ if( SABER_TEST_OOPS )
 #    ecbuild_add_executable( TARGET  saber_interpolation_bump.x
 #                            SOURCES mains/InterpolationBump.cc
 #                            LIBS    ${oops_qg_LIBRARIES}
-#                                    saber )
+#                                    saber
+#                                    vader )
 
     ecbuild_add_executable( TARGET  saber_quench_randomization.x
                             SOURCES mains/quenchRandomization.cc
                             LIBS    quench
-                                    saber )
+                                    saber
+                                    vader )
 
     ecbuild_add_executable( TARGET  saber_quench_error_covariance_training.x
                             SOURCES mains/quenchErrorCovarianceTraining.cc
                             LIBS    quench
-                                    saber )
+                                    saber
+                                    vader )
 
     ecbuild_add_executable( TARGET  saber_quench_saber_block_test.x
                             SOURCES mains/quenchSaberBlockTest.cc
                             LIBS    quench
-                                    saber )
+                                    saber
+                                    vader )
 
     ecbuild_add_executable( TARGET  saber_quench_dirac.x
                             SOURCES mains/quenchDirac.cc
                             LIBS    quench
-                                    saber )
+                                    saber
+                                    vader )
 
     ecbuild_add_executable( TARGET  saber_quench_convertstate.x
                             SOURCES mains/quenchConvertState.cc
                             LIBS    quench
-                                    saber )
+                                    saber
+                                    vader )
 endif()
 
 # Mono-core tests

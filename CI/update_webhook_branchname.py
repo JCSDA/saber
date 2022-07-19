@@ -24,7 +24,7 @@ commitId = sys.argv[2]
 
 
 # check other repos
-repoList = ["atlas", "oops", "ioda", "ufo", "soca", "fv3-jedi", "mpas-jedi"]
+repoList = ["atlas", "oops", "vader", "ioda", "ufo", "soca", "fv3-jedi", "mpas-jedi"]
 
 token = os.getenv('GIT_PASS', '...')
 g = Github(token)

@@ -72,6 +72,9 @@ phases:
       # oops
       - ./clone.sh jcsda-internal/oops $CODEBUILD_GIT_BRANCH /jcsda/saber-bundle oops ${GIT_BASE_BRANCH} develop
 
+      # vader
+      - ./clone.sh jcsda-internal/vader $CODEBUILD_GIT_BRANCH /jcsda/saber-bundle vader ${GIT_BASE_BRANCH} develop
+
       # saber
       - ./clone.sh jcsda-internal/saber $CODEBUILD_GIT_BRANCH /jcsda/saber-bundle saber ${GIT_BASE_BRANCH} develop
 

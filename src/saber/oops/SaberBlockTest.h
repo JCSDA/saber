@@ -161,7 +161,7 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       dx1save = dx1;
       dx2save = dx2;
 
-      // Apply central block
+      // Apply non-central blocks
       it->multiply(dx1.fieldSet());
       it->multiplyAD(dx2.fieldSet());
 
@@ -204,30 +204,35 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
 
     // Inverse test for other blocks
     for (icst_ it = saberBlocks_.begin(); it != saberBlocks_.end(); ++it) {
+      if (it->iterativeInverse()) {
+        oops::Log::test() << "Inverse test for non-central block " << it->name()
+          << ": not implemented for iterative inverse" << std::endl;
+      } else {
       // Generate random increments and save them
-      dx1.random();
-      dx2.random();
-      dx1save = dx1;
-      dx2save = dx2;
+        dx1.random();
+        dx2.random();
+        dx1save = dx1;
+        dx2save = dx2;
 
-      // Apply central block
-      it->multiply(dx1.fieldSet());
-      it->inverseMultiply(dx1.fieldSet());
-      it->multiplyAD(dx2.fieldSet());
-      it->inverseMultiplyAD(dx2.fieldSet());
+        // Apply central block
+        it->multiply(dx1.fieldSet());
+        it->inverseMultiply(dx1.fieldSet());
+        it->multiplyAD(dx2.fieldSet());
+        it->inverseMultiplyAD(dx2.fieldSet());
 
-      // ATLAS fieldset to Increment_
-      dx1.synchronizeFields();
-      dx2.synchronizeFields();
+        // ATLAS fieldset to Increment_
+        dx1.synchronizeFields();
+        dx2.synchronizeFields();
 
-      // Compute adjoint test
-      dx1 -= dx1save;
-      dx2 -= dx2save;
-      const double dp1 = dx1.norm()/dx1save.norm();
-      const double dp2 = dx2.norm()/dx2save.norm();
-      oops::Log::test() << "Inverse test for block " << it->name() << std::endl;
-      ASSERT(dp1 < params.inverseTolerance.value());
-      ASSERT(dp2 < params.inverseTolerance.value());
+        // Compute adjoint test
+        dx1 -= dx1save;
+        dx2 -= dx2save;
+        const double dp1 = dx1.norm()/dx1save.norm();
+        const double dp2 = dx2.norm()/dx2save.norm();
+        oops::Log::test() << "Inverse test for block " << it->name() << std::endl;
+        ASSERT(dp1 < params.inverseTolerance.value());
+        ASSERT(dp2 < params.inverseTolerance.value());
+      }
     }
 
     return 0;
