@@ -1069,7 +1069,7 @@ void Fields::write(const eckit::Configuration & config) const {
       atlas::idx_t nz = fset_.field(0).levels();
 
       // NetCDF IDs
-      int ncid, retval, nlocs_id, nz_id, d1D_id[1], d2D_id[2],
+      int ncid, retval, nlocs_id, nz_id[vars_.size()], d1D_id[1], d2D_id[2],
         lon_id, lat_id, var_id[vars_.size()];
 
       // NetCDF file path
@@ -1082,7 +1082,6 @@ void Fields::write(const eckit::Configuration & config) const {
 
       // Create dimensions
       if ((retval = nc_def_dim(ncid, "nlocs", nlocs, &nlocs_id))) ERR(retval);
-      if ((retval = nc_def_dim(ncid, "nz", nz, &nz_id))) ERR(retval);
 
       // Define coordinates
       d1D_id[0] = nlocs_id;
@@ -1091,8 +1090,11 @@ void Fields::write(const eckit::Configuration & config) const {
 
       // Define variables
       d2D_id[0] = nlocs_id;
-      d2D_id[1] = nz_id;
       for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+        std::string nz_nval = vars_[jvar];
+        nz_nval.append("_nval");
+        if ((retval = nc_def_dim(ncid, nz_nval.c_str(), nz, &nz_id[jvar]))) ERR(retval);
+        d2D_id[1] = nz_id[jvar];
         if ((retval = nc_def_var(ncid, vars_[jvar].c_str(), NC_DOUBLE, 2, d2D_id,
           &var_id[jvar]))) ERR(retval);
       }
