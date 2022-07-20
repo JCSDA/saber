@@ -281,11 +281,17 @@ ecbuild_add_executable( TARGET  saber_bump.x
 fckit_target_preprocess_fypp( saber_bump.x )
 
 if( SABER_TEST_OOPS )
+    if( vader_FOUND )
+        set( vader_LIBRARIES "vader" )
+    else()
+        set( vader_LIBRARIES "" )
+    endif()
+
     ecbuild_add_executable( TARGET  saber_qg_4dvar.x
                             SOURCES mains/qg4DVar.cc
                             LIBS    ${oops_qg_LIBRARIES}
-                                    saber
-                                    vader )
+                                    ${vader_LIBRARIES}
+                                    saber )
 
     ecbuild_add_executable( TARGET  saber_qg_convertstate.x
                             SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../oops/qg/mains/qgConvertState.cc
@@ -294,8 +300,8 @@ if( SABER_TEST_OOPS )
     ecbuild_add_executable( TARGET  saber_qg_dirac.x
                             SOURCES mains/qgDirac.cc
                             LIBS    ${oops_qg_LIBRARIES}
-                                    saber
-                                    vader )
+                                    ${vader_LIBRARIES}
+                                    saber )
 
     ecbuild_add_executable( TARGET  saber_qg_ens_recenter.x
                             SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../oops/qg/mains/qgEnsRecenter.cc
@@ -304,8 +310,8 @@ if( SABER_TEST_OOPS )
     ecbuild_add_executable( TARGET  saber_qg_error_covariance_training.x
                             SOURCES mains/qgErrorCovarianceTraining.cc
                             LIBS    ${oops_qg_LIBRARIES}
-                                    saber
-                                    vader )
+                                    ${vader_LIBRARIES}
+                                    saber )
 
     ecbuild_add_executable( TARGET  saber_qg_forecast.x
                             SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../oops/qg/mains/qgForecast.cc
@@ -322,38 +328,38 @@ if( SABER_TEST_OOPS )
 #    ecbuild_add_executable( TARGET  saber_interpolation_bump.x
 #                            SOURCES mains/InterpolationBump.cc
 #                            LIBS    ${oops_qg_LIBRARIES}
-#                                    saber
-#                                    vader )
+#                                    ${vader_LIBRARIES}
+#                                    saber )
 
     ecbuild_add_executable( TARGET  saber_quench_randomization.x
                             SOURCES mains/quenchRandomization.cc
                             LIBS    quench
-                                    saber
-                                    vader )
+                                    ${vader_LIBRARIES}
+                                    saber )
 
     ecbuild_add_executable( TARGET  saber_quench_error_covariance_training.x
                             SOURCES mains/quenchErrorCovarianceTraining.cc
                             LIBS    quench
-                                    saber
-                                    vader )
+                                    ${vader_LIBRARIES}
+                                    saber )
 
     ecbuild_add_executable( TARGET  saber_quench_saber_block_test.x
                             SOURCES mains/quenchSaberBlockTest.cc
                             LIBS    quench
-                                    saber
-                                    vader )
+                                    ${vader_LIBRARIES}
+                                    saber )
 
     ecbuild_add_executable( TARGET  saber_quench_dirac.x
                             SOURCES mains/quenchDirac.cc
                             LIBS    quench
-                                    saber
-                                    vader )
+                                    ${vader_LIBRARIES}
+                                    saber )
 
     ecbuild_add_executable( TARGET  saber_quench_convertstate.x
                             SOURCES mains/quenchConvertState.cc
                             LIBS    quench
-                                    saber
-                                    vader )
+                                    ${vader_LIBRARIES}
+                                    saber )
 endif()
 
 # Mono-core tests
@@ -788,19 +794,6 @@ if( SABER_TEST_OOPS )
                               COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_dirac.x
                               ARGS testinput/${test}.yaml
                               DEPENDS saber_quench_dirac.x )
-        endif()
-    endforeach()
-
-    # ConvertState tests
-    foreach( test ${saber_test_oops} )
-        string( FIND ${test} "quench_convertstate" quench )
-        if( quench MATCHES 0 )
-            ecbuild_add_test( TARGET saber_test_${test}
-                              MPI ${mpi}
-                              OMP ${omp}
-                              COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_convertstate.x
-                              ARGS testinput/${test}.yaml
-                              DEPENDS saber_quench_convertstate.x )
         endif()
     endforeach()
 endif()
