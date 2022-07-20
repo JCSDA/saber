@@ -260,7 +260,7 @@ integer(kind_int),pointer :: gmask_ptr(:,:)
 real(kind_real) :: dlat,dlon
 real(kind_real),allocatable :: lon_mga(:),lat_mga(:)
 real(kind_real),allocatable :: lon_inf(:),lon_sup(:),lat_inf(:),lat_sup(:)
-real(kind_real),pointer :: area_ptr(:),vunit_ptr(:,:)
+real(kind_real),pointer :: area_ptr(:,:),vunit_ptr(:,:)
 logical :: found
 type(atlas_field) :: afield_area,afield_vunit,afield_gmask
 
@@ -501,7 +501,7 @@ model%fieldset = atlas_fieldset()
 
 ! Add area
 if (mpl%msv%isanynot(model%area)) then
-   afield_area = model%afunctionspace%create_field(name='area',kind=atlas_real(kind_real),levels=0)
+   afield_area = model%afunctionspace%create_field(name='area',kind=atlas_real(kind_real),levels=1)
    call afield_area%data(area_ptr)
    call model%fieldset%add(afield_area)
 end if
@@ -522,7 +522,7 @@ do img=1,model%nmg
    if (model%mg_to_proc(img)==mpl%myproc) then
       imga = imga+1
       model%mga_to_mg(imga) = img
-      if (mpl%msv%isanynot(model%area)) area_ptr(imga) = model%area(img)*req**2
+      if (mpl%msv%isanynot(model%area)) area_ptr(1,imga) = model%area(img)*req**2
       vunit_ptr(:,imga) = model%vunit(img,:)
       do il0=1,model%nl0
          if (model%mask(img,il0)) then
