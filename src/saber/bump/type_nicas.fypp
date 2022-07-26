@@ -12,7 +12,7 @@ use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_status
 use tools_const, only: zero,one,two,ten,rad2deg,reqkm,pi
 use tools_func, only: fletcher32,sphere_dist,zss_sum
 use tools_kinds, only: kind_real,huge_real
-use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,define_dim,check_dim,define_var,put_var,close_file
+use tools_netcdf, only: create_file,open_file,define_grp,define_dim,inquire_dim,check_dim,define_var,put_var,close_file
 use tools_qsort, only: qsort
 use type_bpar, only: bpar_type
 use type_cmat, only: cmat_type
@@ -227,9 +227,13 @@ do iproc=1,mpl%nproc
       ! Open file
       ncid = open_file(mpl,nam%fname_nicas,iproc)
 
-      ! Check dimensions
+      ! Check subset Sc0 on halo A size
       if (.not.check_dim(mpl,ncid,'nc0a',geom%proc_to_nc0a(iproc))) call mpl%abort('${subr}$','wrong size for dimension nc0a')
-      if (.not.check_dim(mpl,ncid,'nl0',geom%nl0)) call mpl%abort('${subr}$','wrong size for dimension nl0')
+
+      ! Check number of levels (TODO: nl0 is now defined at block level, whole block should be removed at some point)
+      if (mpl%msv%isnot(inquire_dim(mpl,ncid,'nl0'))) then
+         if (.not.check_dim(mpl,ncid,'nl0',geom%nl0)) call mpl%abort('${subr}$','wrong size for dimension nl0')
+      end if
 
       if (iproc==iprocio) then
          do ib=1,bpar%nbe
@@ -343,7 +347,7 @@ type(geom_type),intent(in) :: geom       !< Geometry
 type(bpar_type),intent(in) :: bpar       !< Block parameters
 
 ! Local variables
-integer :: ncid,nc0a_id,nl0_id
+integer :: ncid,nc0a_id
 integer :: ib,icmp,iproc,iprocio
 type(nicas_type) :: nicas_tmp
 
@@ -375,7 +379,6 @@ do iproc=1,mpl%nproc
       else
          nc0a_id = mpl%msv%vali
       end if
-      nl0_id = define_dim(mpl,ncid,'nl0',geom%nl0)
 
       if (iproc==iprocio) then
          do ib=1,bpar%nbe
@@ -384,11 +387,10 @@ do iproc=1,mpl%nproc
                nicas%blk(ib)%ncid = ncid
                do icmp=1,nicas%blk(ib)%ncmp
                   nicas%blk(ib)%cmp(icmp)%nc0a_id = nc0a_id
-                  nicas%blk(ib)%cmp(icmp)%nl0_id = nl0_id
                end do
 
                ! Write data (definition mode)
-               call nicas%blk(ib)%write_local_def(mpl,nam,bpar)
+               call nicas%blk(ib)%write_local_def(mpl,nam,geom,bpar)
             end if
          end do
 
@@ -409,11 +411,10 @@ do iproc=1,mpl%nproc
                nicas_tmp%blk(ib)%ncid = ncid
                do icmp=1,nicas%blk(ib)%ncmp
                   nicas_tmp%blk(ib)%cmp(icmp)%nc0a_id = nc0a_id
-                  nicas_tmp%blk(ib)%cmp(icmp)%nl0_id = nl0_id
                end do
 
                ! Write data (definition mode)
-               call nicas_tmp%blk(ib)%write_local_def(mpl,nam,bpar)
+               call nicas_tmp%blk(ib)%write_local_def(mpl,nam,geom,bpar)
             end if
          end do
 
@@ -525,7 +526,6 @@ ncid = create_file(mpl,nam%fname_nicas)
 
 ! Define dimensions
 nc0_id = define_dim(mpl,ncid,'nc0',geom%nc0)
-nl0_id = define_dim(mpl,ncid,'nl0',geom%nl0)
 
 do ib=1,bpar%nbe
    if (bpar%nicas_block(ib)) then
@@ -533,11 +533,10 @@ do ib=1,bpar%nbe
       nicas%blk(ib)%ncid = ncid
       do icmp=1,nicas%blk(ib)%ncmp
          nicas%blk(ib)%cmp(icmp)%nc0_id = nc0_id
-         nicas%blk(ib)%cmp(icmp)%nl0_id = nl0_id
       end do
 
       ! Write global data (definition mode)
-      if (bpar%nicas_block(ib)) call nicas%blk(ib)%write_global_def(mpl,nam,bpar)
+      if (bpar%nicas_block(ib)) call nicas%blk(ib)%write_global_def(mpl,nam,geom,bpar)
    end if
 end do
 

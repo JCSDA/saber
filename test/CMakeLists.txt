@@ -213,24 +213,34 @@ else( DEFINED GIT_TAG_FUNC )
                              ${CMAKE_BINARY_DIR} )
     
     # Executables
+    if( vader_FOUND )
+        set( vader_LIBRARIES "vader" )
+    else()
+        set( vader_LIBRARIES "" )
+    endif()
+
     ecbuild_add_executable( TARGET  saber_quench_randomization.x
                             SOURCES mains/quenchRandomization.cc
                             LIBS    quench
+                                    ${vader_LIBRARIES}
                                     saber )
     
     ecbuild_add_executable( TARGET  saber_quench_error_covariance_training.x
                             SOURCES mains/quenchErrorCovarianceTraining.cc
                             LIBS    quench
+                                    ${vader_LIBRARIES}
                                     saber )
     
     ecbuild_add_executable( TARGET  saber_quench_saber_block_test.x
                             SOURCES mains/quenchSaberBlockTest.cc
                             LIBS    quench
+                                    ${vader_LIBRARIES}
                                     saber )
     
     ecbuild_add_executable( TARGET  saber_quench_dirac.x
                             SOURCES mains/quenchDirac.cc
                             LIBS    quench
+                                    ${vader_LIBRARIES}
                                     saber )
     
     # BUMP tests

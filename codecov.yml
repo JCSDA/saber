@@ -9,4 +9,5 @@ coverage:
 
 ignore:
   - "jcsda/src_repo/oops"
+  - "jcsda/src_repo/vader"
   - "jcsda/src_repo/saber/test"
