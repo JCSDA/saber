@@ -11,6 +11,7 @@ module type_nicas_cmp
 use atlas_module, only: atlas_structuredgrid
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 !$ use omp_lib
+use tools_atlas, only: get_grid
 use tools_const, only: zero,quarter,half,tenth,one,two,three,four,five,hundred,pi,req,reqkm,deg2rad,rad2deg
 use tools_fit, only: tensor_d2h
 use tools_func, only: lonlatmod,sphere_dist,inside,convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count
@@ -2273,7 +2274,6 @@ real(kind_real),allocatable :: grad_ref_c1a(:,:),grad_ssrf_c1a(:,:),grad_op_c1a(
 logical :: valid
 logical :: mask_hor_c0a(geom%nc0a),lcheck_c0b(geom%nc0u)
 logical,allocatable :: gmask_c1(:),gmask_c1a(:)
-character(len=6) :: gridid
 type(atlas_structuredgrid) :: agrid
 type(linop_type),allocatable :: grad(:)
 
@@ -2386,10 +2386,9 @@ do il1=1,nicas_cmp%nl1
          write(mpl%info,'(a19,a)') '','Use an octahedral grid for subset Sc1 '
          call mpl%flush
 
-         ! Octahedral grid
-         n = int(-4.5_kind_real+sqrt(20.25_kind_real+quarter*(real(nicas_cmp%hor(il1)%nc1,kind_real)*four*pi/geom%area_max_c0)))+1
-         write(gridid,'(a,i5.5)') 'O',n
-         agrid = atlas_structuredgrid(gridid)
+         ! Global grid
+         n = int(real(nicas_cmp%hor(il1)%nc1,kind_real)*four*pi/geom%area_max_c0)+1
+         call get_grid(mpl,n,agrid)
 
          ! Count valid and local points
          nicas_cmp%hor(il1)%nc1a = 0
@@ -2424,7 +2423,7 @@ do il1=1,nicas_cmp%nl1
          allocate(nicas_cmp%hor(il1)%lat_c1a(nicas_cmp%hor(il1)%nc1a))
          allocate(nicas_cmp%hor(il1)%vunit_c1a(nicas_cmp%hor(il1)%nc1a))
 
-         ! Copy octahedral grid lon/lat and vunit
+         ! Copy grid lon/lat and vunit
          ic1a = 0
          do iy=1,int(agrid%ny(),kind_int)
             do ix=1,int(agrid%nx(iy),kind_int)

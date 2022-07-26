@@ -7,9 +7,6 @@
 #ifndef SABER_SPECTRALB_COVARIANCESTATISTICS_H_
 #define SABER_SPECTRALB_COVARIANCESTATISTICS_H_
 
-#include <Eigen/Core>
-#include <Eigen/StdVector>
-
 #include <map>
 #include <memory>
 #include <ostream>
@@ -23,8 +20,8 @@
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"
 
-#include "atlas/array/MakeView.h"
-#include "atlas/field/Field.h"
+#include "atlas/array.h"
+#include "atlas/field.h"
 
 #include "saber/spectralb/CovarianceStatisticsUtils.h"
 #include "saber/spectralb/spectralbParameters.h"
@@ -53,21 +50,19 @@ class CovStat_ErrorCov {
   /// \details getSpectralUMatrix() gets the square root of the spectral vertical covariances for
   ///          each total wavenumber and active variable
   ///          spectral vertical covariance = UMatrix UMatrix^T
-  const std::map<std::string, std::vector<Eigen::MatrixXf>> & getSpectralUMatrices()  const {
+  const atlas::FieldSet & getSpectralUMatrices()  const {
     return spectralUMatrices_;
   }
 
   /// \details getSpectralVerticalCovariances() gets the spectral vertical covariances for
   ///          each total wavenumber and active variable
-  const std::map<std::string, std::vector<Eigen::MatrixXf>> &
-      getSpectralVerticalCovariances()  const {
+  const atlas::FieldSet & getSpectralVerticalCovariances()  const {
     return spectralVerticalCovariances_;
   }
 
   /// \details getSpectralVerticalCovariances() gets the spectral vertical covariances for
   ///          each total wavenumber and active variable
-  const std::map<std::string, std::vector<Eigen::MatrixXf>> &
-      getSpectralVerticalCorrelations()  const {
+  const atlas::FieldSet & getSpectralVerticalCorrelations()  const {
     return spectralVerticalCorrelations_;
   }
 
@@ -80,15 +75,15 @@ class CovStat_ErrorCov {
   std::vector<std::size_t> netCDFSpectralBins_;
   // square root of the spectral vertical covariances
   // with the number of spectral bins will be that of the cov file
-  std::map<std::string, std::vector<Eigen::MatrixXf>> spectralUMatrices_;
+  atlas::FieldSet spectralUMatrices_;
   // spectral vertical covariances
   // with the number of spectral bins to be that for the gaussian grid resolution
-  std::map<std::string, std::vector<Eigen::MatrixXf>> spectralVerticalCovariances_;
-  // spectral standard deviations
-  std::map<std::string, Eigen::VectorXd> spectralSD_;
+  atlas::FieldSet spectralVerticalCovariances_;
+  // spectral standard deviations with model level
+  atlas::FieldSet spectralSD_;
   // spectral vertical correlations
   // with the number of spectral bins to be that for the gaussian grid resolution
-  std::map<std::string, std::vector<Eigen::MatrixXf>> spectralVerticalCorrelations_;
+  atlas::FieldSet spectralVerticalCorrelations_;
 
   void print(std::ostream &) const;
 };

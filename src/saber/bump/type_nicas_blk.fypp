@@ -16,8 +16,7 @@ use tools_fit, only: tensor_d2h
 use tools_func, only: lonlatmod,sphere_dist,inside,convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count
 use tools_gc99, only: fit_func_sqrt
 use tools_kinds, only: kind_int,kind_real,kind_long,huge_int,huge_real
-use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim_size,check_dim,define_var,inquire_var, &
- & inquire_var_presence,put_var,get_var
+use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim,check_dim
 use tools_qsort, only: qsort
 use tools_repro, only: supeq,sup,inf,infeq,eq,indist
 use type_bpar, only: bpar_type
@@ -181,6 +180,11 @@ call mpl%flush
 ! Get group
 nicas_blk%blkid = inquire_grp(mpl,nicas_blk%ncid,blkname)
 
+! Check number of levels (TODO: first if condition should be removed at some point)
+if (mpl%msv%isnot(inquire_dim(mpl,nicas_blk%blkid,'nl0'))) then
+   if (.not.check_dim(mpl,nicas_blk%blkid,'nl0',geom%nl0)) call mpl%abort('${subr}$','wrong size for dimension nl0')
+end if
+
 ! Get number of components
 call get_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp,1)
 
@@ -226,7 +230,7 @@ end subroutine nicas_blk_read_local
 ! Subroutine: nicas_blk_write_local_def
 !> Write data for local I/O, definition mode
 !----------------------------------------------------------------------
-subroutine nicas_blk_write_local_def(nicas_blk,mpl,nam,bpar)
+subroutine nicas_blk_write_local_def(nicas_blk,mpl,nam,geom,bpar)
 
 implicit none
 
@@ -234,10 +238,11 @@ implicit none
 class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
 type(mpl_type),intent(inout) :: mpl              !< MPI data
 type(nam_type),intent(in) :: nam                 !< Namelist
+type(geom_type),intent(in) :: geom               !< Geometry
 type(bpar_type),intent(in) :: bpar               !< Block parameters
 
 ! Local variables
-integer :: icmp
+integer :: icmp,nl0_id
 character(len=1024) :: blkname,cmpname
 
 ! Set name
@@ -260,6 +265,9 @@ nicas_blk%blkid = define_grp(mpl,nicas_blk%ncid,blkname)
 ! Write number of components
 call put_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp)
 
+! Define number of levels
+nl0_id = define_dim(mpl,nicas_blk%blkid,'nl0',geom%nl0)
+
 do icmp=1,nicas_blk%ncmp
    ! Get component
    write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
@@ -271,6 +279,9 @@ do icmp=1,nicas_blk%ncmp
       write(cmpname,'(a,i1)') 'cmp_',icmp
       nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%blkid,cmpname)
    end if
+
+   ! Copy number of levels
+   nicas_blk%cmp(icmp)%nl0_id = nl0_id
 
    ! Component work
    call nicas_blk%cmp(icmp)%write_local_def(mpl)
@@ -590,7 +601,7 @@ end subroutine nicas_blk_read_global
 ! Subroutine: nicas_blk_write_global_def
 !> Write data for global I/O, definition mode
 !----------------------------------------------------------------------
-subroutine nicas_blk_write_global_def(nicas_blk,mpl,nam,bpar)
+subroutine nicas_blk_write_global_def(nicas_blk,mpl,nam,geom,bpar)
 
 implicit none
 
@@ -598,10 +609,11 @@ implicit none
 class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data
 type(mpl_type),intent(inout) :: mpl              !< MPI data
 type(nam_type),intent(in) :: nam                 !< Namelist
+type(geom_type),intent(in) :: geom               !< Geometry
 type(bpar_type),intent(in) :: bpar               !< Block parameters
 
 ! Local variables
-integer :: icmp
+integer :: icmp,nl0_id
 character(len=1024) :: blkname,cmpname
 
 ! Set name
@@ -624,6 +636,9 @@ nicas_blk%blkid = define_grp(mpl,nicas_blk%ncid,blkname)
 ! Write number of components
 call put_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp)
 
+! Define number of levels
+nl0_id = define_dim(mpl,nicas_blk%blkid,'nl0',geom%nl0)
+
 do icmp=1,nicas_blk%ncmp
    ! Get component
    write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
@@ -635,6 +650,9 @@ do icmp=1,nicas_blk%ncmp
       write(cmpname,'(a,i1)') 'cmp_',icmp
       nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%blkid,cmpname)
    end if
+
+   ! Copy number of levels
+   nicas_blk%cmp(icmp)%nl0_id = nl0_id
 
    ! Component work
    call nicas_blk%cmp(icmp)%write_global_def(mpl,nam)

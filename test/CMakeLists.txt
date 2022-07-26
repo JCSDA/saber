@@ -208,9 +208,9 @@ else( DEFINED GIT_TAG_FUNC )
 
     if( DEFINED ENV{ECBUILD_DOWNLOAD_BASE_URL} )
         set( ECBUILD_DOWNLOAD_BASE_URL "$ENV{ECBUILD_DOWNLOAD_BASE_URL}/saber/${GIT_TAG_FUNC}" )
-        set( checksum "1")
+        set( checksum "0")
     else()
-        set( ECBUILD_DOWNLOAD_BASE_URL https://dashrepo.ucar.edu/api/v1/dataset/147b_jcsda/version/1.0.0/file )
+        set( ECBUILD_DOWNLOAD_BASE_URL https://gdex.ucar.edu/dataset/jedi-skylab/file )
         set( checksum "0")
     endif()
     message( STATUS "Files downloaded from: " ${ECBUILD_DOWNLOAD_BASE_URL} )
@@ -222,7 +222,7 @@ else( DEFINED GIT_TAG_FUNC )
     list( APPEND SABER_DATA_DOWNLOADER_ARGS
           ${ECBUILD_DOWNLOAD_BASE_URL}
           ${CMAKE_SOURCE_DIR}/test-data-release
-          "saber_testinput_tier_1.tar.gz"
+          "saber_testinput_tier_1_1.3.0.tar.gz"
           ${checksum} )
 
     # Create test-data-release in source directory
@@ -281,9 +281,16 @@ ecbuild_add_executable( TARGET  saber_bump.x
 fckit_target_preprocess_fypp( saber_bump.x )
 
 if( SABER_TEST_OOPS )
+    if( vader_FOUND )
+        set( vader_LIBRARIES "vader" )
+    else()
+        set( vader_LIBRARIES "" )
+    endif()
+
     ecbuild_add_executable( TARGET  saber_qg_4dvar.x
                             SOURCES mains/qg4DVar.cc
                             LIBS    ${oops_qg_LIBRARIES}
+                                    ${vader_LIBRARIES}
                                     saber )
 
     ecbuild_add_executable( TARGET  saber_qg_convertstate.x
@@ -293,6 +300,7 @@ if( SABER_TEST_OOPS )
     ecbuild_add_executable( TARGET  saber_qg_dirac.x
                             SOURCES mains/qgDirac.cc
                             LIBS    ${oops_qg_LIBRARIES}
+                                    ${vader_LIBRARIES}
                                     saber )
 
     ecbuild_add_executable( TARGET  saber_qg_ens_recenter.x
@@ -302,6 +310,7 @@ if( SABER_TEST_OOPS )
     ecbuild_add_executable( TARGET  saber_qg_error_covariance_training.x
                             SOURCES mains/qgErrorCovarianceTraining.cc
                             LIBS    ${oops_qg_LIBRARIES}
+                                    ${vader_LIBRARIES}
                                     saber )
 
     ecbuild_add_executable( TARGET  saber_qg_forecast.x
@@ -319,26 +328,31 @@ if( SABER_TEST_OOPS )
 #    ecbuild_add_executable( TARGET  saber_interpolation_bump.x
 #                            SOURCES mains/InterpolationBump.cc
 #                            LIBS    ${oops_qg_LIBRARIES}
+#                                    ${vader_LIBRARIES}
 #                                    saber )
 
     ecbuild_add_executable( TARGET  saber_quench_randomization.x
                             SOURCES mains/quenchRandomization.cc
                             LIBS    quench
+                                    ${vader_LIBRARIES}
                                     saber )
 
     ecbuild_add_executable( TARGET  saber_quench_error_covariance_training.x
                             SOURCES mains/quenchErrorCovarianceTraining.cc
                             LIBS    quench
+                                    ${vader_LIBRARIES}
                                     saber )
 
     ecbuild_add_executable( TARGET  saber_quench_saber_block_test.x
                             SOURCES mains/quenchSaberBlockTest.cc
                             LIBS    quench
+                                    ${vader_LIBRARIES}
                                     saber )
 
     ecbuild_add_executable( TARGET  saber_quench_dirac.x
                             SOURCES mains/quenchDirac.cc
                             LIBS    quench
+                                    ${vader_LIBRARIES}
                                     saber )
 endif()
 

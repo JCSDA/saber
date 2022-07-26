@@ -705,6 +705,8 @@
 #:set subr_list = subr_list + ["model_read"]
 #:set subr_list = subr_list + ["model_read_member"]
 #:set subr_list = subr_list + ["model_load_ens"]
+#:set subr_list = subr_list + ["atlas_get_global_grid"]
+#:set subr_list = subr_list + ["atlas_get_regional_grid"]
 #:set subr_list = subr_list + ["atlas_field_to_array_int_r2"]
 #:set subr_list = subr_list + ["atlas_field_to_array_real_r2"]
 #:set subr_list = subr_list + ["atlas_field_to_array_int_r3"]
