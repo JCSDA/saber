@@ -29,8 +29,8 @@
 #include "atlas/util/PolygonXY.h"
 
 #include "oops/util/abor1_cpp.h"
+#include "oops/util/Logger.h"
 #include "oops/util/ObjectCounter.h"
-#include "oops/util/Printable.h"
 
 
 namespace atlas {
@@ -62,8 +62,7 @@ class AtlasInterpWrapper {
   void executeAdjoint(atlas::FieldSet &, const atlas::FieldSet &) const;
 
  private:
-  void print(std::ostream &) const {}
-  atlas::FunctionSpace localOutputFunctionSpace_;
+  atlas::FunctionSpace localDstFunctionSpace_;
   std::vector<size_t> localTask_;
   atlas::FunctionSpace targetFunctionSpace_;
   atlas::Interpolation interp_;
@@ -84,46 +83,46 @@ namespace detail {
 atlas::FunctionSpace createTargetFunctionSpace(
   const atlas::grid::Partitioner & srcPartitioner,
   const atlas::FunctionSpace & srcFunctionSpace,
-  const atlas::Grid & outputGrid,
-  const std::string & outputFunctionSpaceType) {
+  const atlas::Grid & dstGrid,
+  const std::string & dstFunctionSpaceType) {
   oops::Log::trace() << "createTargetFunctionSpace starting" << std::endl;
 
   // Get or compute source mesh
   atlas::Mesh srcMesh;
   if (srcFunctionSpace.type() == "StructuredColumns") {
-    atlas::functionspace::StructuredColumns fs(srcFunctionSpace);
+    const atlas::functionspace::StructuredColumns fs(srcFunctionSpace);
     srcMesh = atlas::MeshGenerator("structured").generate(fs.grid(), srcPartitioner);
   } else if (srcFunctionSpace.type() == "NodeColumns") {
-    atlas::functionspace::NodeColumns fs(srcFunctionSpace);
+    const atlas::functionspace::NodeColumns fs(srcFunctionSpace);
     srcMesh = fs.mesh();
   } else {
     ABORT(srcFunctionSpace.type() + " source function space not supported yet");
   }
 
   // Get target partitioner from source mesh
-  atlas::grid::MatchingMeshPartitioner targetPartitioner(srcMesh);
+  const atlas::grid::MatchingMeshPartitioner targetPartitioner(srcMesh);
 
   // Create target function space
   atlas::FunctionSpace targetFunctionSpace;
-  if (outputFunctionSpaceType == "StructuredColumns") {
+  if (dstFunctionSpaceType == "StructuredColumns") {
     // StructuredColumns
-    const atlas::grid::Distribution distribution(outputGrid, targetPartitioner);
-    targetFunctionSpace = atlas::functionspace::StructuredColumns(outputGrid, distribution);
-  } else if (outputFunctionSpaceType == "NodeColumns") {
+    const atlas::grid::Distribution distribution(dstGrid, targetPartitioner);
+    targetFunctionSpace = atlas::functionspace::StructuredColumns(dstGrid, distribution);
+  } else if (dstFunctionSpaceType == "NodeColumns") {
     // NodeColumns
-    if (outputGrid.name().substr(0, 2).compare("CS") == 0) {
+    if (dstGrid.name().compare(0, 2, std::string{"CS"}) == 0) {
       // CubedSphere
-      atlas::Mesh targetMesh = atlas::MeshGenerator("cubedsphere").generate(outputGrid,
+      const atlas::Mesh targetMesh = atlas::MeshGenerator("cubedsphere").generate(dstGrid,
         targetPartitioner);
       targetFunctionSpace = atlas::functionspace::CubedSphereNodeColumns(targetMesh);
     } else {
       // Other NodeColumns (TODO: not working!)
-      atlas::Mesh targetMesh = atlas::MeshGenerator("delaunay").generate(outputGrid,
+      const atlas::Mesh targetMesh = atlas::MeshGenerator("delaunay").generate(dstGrid,
         targetPartitioner);
       targetFunctionSpace = atlas::functionspace::NodeColumns(targetMesh);
     }
   } else {
-    ABORT(outputFunctionSpaceType + " output function space type not supported yet");
+    ABORT(dstFunctionSpaceType + " destination function space type not supported yet");
     targetFunctionSpace = atlas::FunctionSpace();
   }
 
@@ -133,23 +132,23 @@ atlas::FunctionSpace createTargetFunctionSpace(
 
 // -----------------------------------------------------------------------------
 
-atlas::Interpolation createAtlasInterpolation(const atlas::FunctionSpace & inputFunctionSpace,
+atlas::Interpolation createAtlasInterpolation(const atlas::FunctionSpace & srcFunctionSpace,
                                               const atlas::FunctionSpace & matchingFunctionSpace) {
   oops::Log::trace() << "createAtlasInterpolation starting" << std::endl;
 
   atlas::util::Config interpConfig;
-  if (inputFunctionSpace.type() == "StructuredColumns") {
+  if (srcFunctionSpace.type() == "StructuredColumns") {
     // StructuredColumns
     interpConfig.set("type", "structured-linear2D");
-  } else if (inputFunctionSpace.type() == "NodeColumns") {
+  } else if (srcFunctionSpace.type() == "NodeColumns") {
     // NodeColumns
     interpConfig.set("type", "unstructured-bilinear-lonlat");
   } else {
-    ABORT(inputFunctionSpace.type() + " source function space type not supported yet");
+    ABORT(srcFunctionSpace.type() + " source function space type not supported yet");
   }
   interpConfig.set("adjoint", "true");
 
-  atlas::Interpolation interp(interpConfig, inputFunctionSpace, matchingFunctionSpace);
+  const atlas::Interpolation interp(interpConfig, srcFunctionSpace, matchingFunctionSpace);
   oops::Log::trace() << "createAtlasInterpolation done" << std::endl;
   return interp;
 }
@@ -158,9 +157,9 @@ atlas::Interpolation createAtlasInterpolation(const atlas::FunctionSpace & input
 
 atlas::Redistribution createAtlasRedistribution(
     const atlas::FunctionSpace & matchingFunctionSpace,
-    const atlas::FunctionSpace & outputFunctionSpace) {
+    const atlas::FunctionSpace & dstFunctionSpace) {
   oops::Log::trace() << "createAtlasRedistribution starting" << std::endl;
-  atlas::Redistribution redistr(matchingFunctionSpace, outputFunctionSpace);
+  const atlas::Redistribution redistr(matchingFunctionSpace, dstFunctionSpace);
   oops::Log::trace() << "createAtlasRedistribution done" << std::endl;
   return redistr;
 }
@@ -178,24 +177,24 @@ namespace interpolation {
 
 AtlasInterpWrapper::AtlasInterpWrapper(const atlas::grid::Partitioner & srcPartitioner,
                                        const atlas::FunctionSpace & srcFunctionSpace,
-                                       const atlas::Grid & outputGrid,
-                                       const atlas::FunctionSpace & outputFunctionSpace) :
-  localOutputFunctionSpace_(), targetFunctionSpace_(), interp_(), redistr_() {
+                                       const atlas::Grid & dstGrid,
+                                       const atlas::FunctionSpace & dstFunctionSpace) :
+  localDstFunctionSpace_(), targetFunctionSpace_(), interp_(), redistr_() {
   oops::Log::trace() << "AtlasInterpWrapper::AtlasInterpWrapper starting" << std::endl;
 
-  if (outputFunctionSpace.type() == "PointCloud") {
-    // PointCloud output function space
-    atlas::functionspace::PointCloud fs(outputFunctionSpace);
+  if (dstFunctionSpace.type() == "PointCloud") {
+    // PointCloud destination function space
+    atlas::functionspace::PointCloud fs(dstFunctionSpace);
 
     // Splitting points between distribution polygons
-    atlas::util::ListPolygonXY polygons(srcFunctionSpace.polygons());
-    atlas::util::PolygonLocator find_partition(polygons);
+    const atlas::util::ListPolygonXY polygons(srcFunctionSpace.polygons());
+    const atlas::util::PolygonLocator find_partition(polygons);
     std::vector<atlas::PointXY> points;
     auto lonlatView = atlas::array::make_view<double, 2>(fs.lonlat());
     for (atlas::idx_t i = 0; i < fs.size(); ++i) {
       atlas::PointLonLat pointLonLat(lonlatView(i, 0), lonlatView(i, 1));
       pointLonLat.normalise();
-      atlas::PointXY point(pointLonLat);
+      const atlas::PointXY point(pointLonLat);
       localTask_.push_back(find_partition(point));
       if (eckit::mpi::comm().rank() == localTask_[i]) {
         points.push_back(point);
@@ -210,32 +209,32 @@ AtlasInterpWrapper::AtlasInterpWrapper(const atlas::grid::Partitioner & srcParti
         if (points.size() == 0) {
            atlas::PointLonLat pointLonLat(lonlatView(jnode, 0), lonlatView(jnode, 1));
            pointLonLat.normalise();
-           atlas::PointXY point(pointLonLat);
+           const atlas::PointXY point(pointLonLat);
            points.push_back(point);
         }
       }
     }
 
-    // Create local output function space
-    localOutputFunctionSpace_ = atlas::functionspace::PointCloud(points);
+    // Create local destination function space
+    localDstFunctionSpace_ = atlas::functionspace::PointCloud(points);
 
     // Interpolation setup
-    if (localOutputFunctionSpace_.size() > 0) {
-      interp_ = detail::createAtlasInterpolation(srcFunctionSpace, localOutputFunctionSpace_);
+    if (localDstFunctionSpace_.size() > 0) {
+      interp_ = detail::createAtlasInterpolation(srcFunctionSpace, localDstFunctionSpace_);
     }
 
   } else {
-    // Other output function space
+    // Other destination function space
 
     // Target function space setup
     targetFunctionSpace_ = detail::createTargetFunctionSpace(srcPartitioner, srcFunctionSpace,
-      outputGrid, outputFunctionSpace.type());
+      dstGrid, dstFunctionSpace.type());
 
     // Interpolation
     interp_ = detail::createAtlasInterpolation(srcFunctionSpace, targetFunctionSpace_);
 
     // Redistribution
-    redistr_ = detail::createAtlasRedistribution(targetFunctionSpace_, outputFunctionSpace);
+    redistr_ = detail::createAtlasRedistribution(targetFunctionSpace_, dstFunctionSpace);
   }
 
   oops::Log::trace() << "AtlasInterpWrapper::AtlasInterpWrapper done" << std::endl;
@@ -244,12 +243,12 @@ AtlasInterpWrapper::AtlasInterpWrapper(const atlas::grid::Partitioner & srcParti
 //-------------------------------------------------------------------------------------------------
 
 void AtlasInterpWrapper::execute(const atlas::Field & srcField,
-                                 atlas::Field & outputField) const {
+                                 atlas::Field & dstField) const {
   // Empty source field setup
   atlas::Field srcTmpField = srcField.functionspace().createField(srcField);
 
   // Copy of source field
-  auto srcView = atlas::array::make_view<double, 2>(srcField);
+  const auto srcView = atlas::array::make_view<double, 2>(srcField);
   auto srcTmpView = atlas::array::make_view<double, 2>(srcTmpField);
   for (atlas::idx_t t = 0; t < srcField.shape(0); ++t) {
     for (atlas::idx_t k = 0; k < srcField.shape(1); ++k) {
@@ -257,29 +256,29 @@ void AtlasInterpWrapper::execute(const atlas::Field & srcField,
     }
   }
 
-  if (outputField.functionspace().type() == "PointCloud") {
-    // PointCloud output function space
-    atlas::functionspace::PointCloud fs(outputField.functionspace());
-    atlas::functionspace::PointCloud localFs(localOutputFunctionSpace_);
+  if (dstField.functionspace().type() == "PointCloud") {
+    // PointCloud destination function space
+    const atlas::functionspace::PointCloud fs(dstField.functionspace());
+    const atlas::functionspace::PointCloud localFs(localDstFunctionSpace_);
 
     // Global vector initialization
-    std::vector<double> globalData(fs.size()*outputField.levels(), 0.0);
+    std::vector<double> globalData(fs.size()*dstField.levels(), 0.0);
 
-    // Local output field setup
-    atlas::Field localOutputField = localOutputFunctionSpace_.createField<double>(
-      atlas::option::name(outputField.name()) | atlas::option::levels(outputField.levels()));
+    // Local destination field setup
+    atlas::Field localDstField = localDstFunctionSpace_.createField<double>(
+      atlas::option::name(dstField.name()) | atlas::option::levels(dstField.levels()));
 
-    // Interpolation from source field to local output field
-    interp_.execute(srcTmpField, localOutputField);
+    // Interpolation from source field to local destination field
+    interp_.execute(srcTmpField, localDstField);
 
-    // Copy of local output field into global vector
-    auto localOutputView = atlas::array::make_view<double, 2>(localOutputField);
+    // Copy of local destination field into global vector
+    const auto localDstView = atlas::array::make_view<double, 2>(localDstField);
     atlas::idx_t globalInc = 0;
-    for (atlas::idx_t k = 0; k < outputField.levels(); ++k) {
+    for (atlas::idx_t k = 0; k < dstField.levels(); ++k) {
       atlas::idx_t localInc = 0;
       for (atlas::idx_t i = 0; i < fs.size(); ++i) {
         if (eckit::mpi::comm().rank() == localTask_[i]) {
-          globalData[globalInc] = localOutputView(localInc, k);
+          globalData[globalInc] = localDstView(localInc, k);
           localInc += 1;
         }
         globalInc += 1;
@@ -291,20 +290,20 @@ void AtlasInterpWrapper::execute(const atlas::Field & srcField,
     eckit::mpi::comm().allReduceInPlace(globalData.begin(), globalData.end(), eckit::mpi::sum());
 
     // Copy of global vector into global field
-    auto outputView = atlas::array::make_view<double, 2>(outputField);
+    auto dstView = atlas::array::make_view<double, 2>(dstField);
     globalInc = 0;
-    for (atlas::idx_t k = 0; k < outputField.levels(); ++k) {
+    for (atlas::idx_t k = 0; k < dstField.levels(); ++k) {
       for (atlas::idx_t i = 0; i < fs.size(); ++i) {
-        outputView(i, k) = globalData[globalInc];
+        dstView(i, k) = globalData[globalInc];
         globalInc += 1;
       }
     }
   } else {
-    // Other output function space
+    // Other destination function space
 
     // Empty target field setup
     auto targetField =
-      targetFunctionSpace_.createField<double>(atlas::option::name(outputField.name()) |
+      targetFunctionSpace_.createField<double>(atlas::option::name(dstField.name()) |
                                             atlas::option::levels(srcField.levels()));
 
     // Target field initialization
@@ -314,53 +313,53 @@ void AtlasInterpWrapper::execute(const atlas::Field & srcField,
     // Interpolation from source field to target field
     interp_.execute(srcTmpField, targetField);
 
-    // Redistribution from target field to output field
-    redistr_.execute(targetField, outputField);
+    // Redistribution from target field to destination field
+    redistr_.execute(targetField, dstField);
 
     // Halo exchange
-    outputField.haloExchange();
+    dstField.haloExchange();
   }
 }
 
 // -----------------------------------------------------------------------------
 
 void AtlasInterpWrapper::executeAdjoint(atlas::Field & srcField,
-                                        const atlas::Field & outputField) const {
+                                        const atlas::Field & dstField) const {
   oops::Log::trace() << "AtlasInterpWrapper::executeAdjoint start "
-                        "srcFieldName outputFieldName" <<
-                        srcField.name() << " " << outputField.name() << std::endl;
+                        "srcFieldName dstFieldName" <<
+                        srcField.name() << " " << dstField.name() << std::endl;
 
-  if (outputField.functionspace().type() == "PointCloud") {
-    // PointCloud output function space
-    ABORT("Adjoint not supported for PointCloud output function space yet");
+  if (dstField.functionspace().type() == "PointCloud") {
+    // PointCloud destination function space
+    ABORT("Adjoint not supported for PointCloud destination function space yet");
   } else {
-    // Other output function space
+    // Other destination function space
 
-    // Empty output field setup
-    atlas::Field outputTmp = outputField.functionspace().createField(outputField);
+    // Empty destination field setup
+    atlas::Field dstTmp = dstField.functionspace().createField(dstField);
 
-    // Copy of output field
-    auto outputView = atlas::array::make_view<double, 2>(outputField);
-    auto outputTmpView = atlas::array::make_view<double, 2>(outputTmp);
-    for (atlas::idx_t t = 0; t < outputField.shape(0); ++t) {
-      for (atlas::idx_t k = 0; k < outputField.shape(1); ++k) {
-        outputTmpView(t, k) = outputView(t, k);
+    // Copy of destination field
+    const auto dstView = atlas::array::make_view<double, 2>(dstField);
+    auto dstTmpView = atlas::array::make_view<double, 2>(dstTmp);
+    for (atlas::idx_t t = 0; t < dstField.shape(0); ++t) {
+      for (atlas::idx_t k = 0; k < dstField.shape(1); ++k) {
+        dstTmpView(t, k) = dstView(t, k);
       }
     }
 
     // Halo exchange
-    outputTmp.adjointHaloExchange();
+    dstTmp.adjointHaloExchange();
 
     // Empty target field setup
     auto targetField = targetFunctionSpace_.createField<double>(
-    atlas::option::name(outputField.name()) | atlas::option::levels(outputField.levels()));
+    atlas::option::name(dstField.name()) | atlas::option::levels(dstField.levels()));
 
     // Target field initialization
     auto targetView = atlas::array::make_view<double, 2>(targetField);
     targetView.assign(0.0);
 
-    // Redistribution from output field to target field
-    redistr_.execute(outputTmp, targetField);
+    // Redistribution from destination field to target field
+    redistr_.execute(dstTmp, targetField);
 
     // Source field initialization
     auto srcView = atlas::array::make_view<double, 2>(srcField);

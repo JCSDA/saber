@@ -8,9 +8,6 @@
 #ifndef QUENCH_VARIABLECHANGEPARAMETERS_H_
 #define QUENCH_VARIABLECHANGEPARAMETERS_H_
 
-#include <ostream>
-#include <string>
-
 #include "oops/base/VariableChangeParametersBase.h"
 #include "oops/util/Printable.h"
 

@@ -33,7 +33,7 @@
 
 #include "saber/src/saber/interpolation/AtlasInterpWrapper.h"
 
-#define ERR(e) {printf("Error: %s\n", nc_strerror(e)); ABORT("NetCDF error");}
+#define ERR(e) {ABORT(nc_strerror(e));}
 
 // -----------------------------------------------------------------------------
 namespace quench {
@@ -48,9 +48,9 @@ Fields::Fields(const Geometry & geom, const oops::Variables & vars,
   fset_ = atlas::FieldSet();
 
   // Create fields
-  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+  for (const auto var : vars_.variables()) {
     atlas::Field field = geom_->functionSpace().createField<double>(
-      atlas::option::name(vars_[jvar]) | atlas::option::levels(geom_->levels()));
+      atlas::option::name(var) | atlas::option::levels(geom_->levels()));
     fset_.add(field);
   }
 
@@ -72,9 +72,9 @@ Fields::Fields(const Fields & other, const Geometry & geom):
   if (geom_->levels() != geom.levels()) ABORT("different number of levels, cannot interpolate");
 
   // Create fields
-  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+  for (const auto var : vars_.variables()) {
     atlas::Field field = geom_->functionSpace().createField<double>(
-      atlas::option::name(vars_[jvar]) | atlas::option::levels(geom_->levels()));
+      atlas::option::name(var) | atlas::option::levels(geom_->levels()));
     fset_.add(field);
   }
 
@@ -95,9 +95,9 @@ Fields::Fields(const Fields & other, const bool copy):
   fset_ = atlas::FieldSet();
 
   // Create fields
-  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+  for (const auto var : vars_.variables()) {
     atlas::Field field = geom_->functionSpace().createField<double>(
-      atlas::option::name(vars_[jvar]) | atlas::option::levels(geom_->levels()));
+      atlas::option::name(var) | atlas::option::levels(geom_->levels()));
     fset_.add(field);
   }
 
@@ -106,16 +106,10 @@ Fields::Fields(const Fields & other, const bool copy):
 
   // Copy if necessary
   if (copy) {
-    for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-      atlas::Field field = fset_[vars_[jvar]];
-      atlas::Field fieldOther = other.fset_[vars_[jvar]];
-      if (field.rank() == 1) {
-        auto view = atlas::array::make_view<double, 1>(field);
-        auto viewOther = atlas::array::make_view<double, 1>(fieldOther);
-        for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-          view(jnode) = viewOther(jnode);
-        }
-      } else if (field.rank() == 2) {
+    for (const auto var : vars_.variables()) {
+      atlas::Field field = fset_[var];
+      atlas::Field fieldOther = other.fset_[var];
+      if (field.rank() == 2) {
         auto view = atlas::array::make_view<double, 2>(field);
         auto viewOther = atlas::array::make_view<double, 2>(fieldOther);
         for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
@@ -137,17 +131,11 @@ Fields::Fields(const Fields & other):
   fset_ = atlas::FieldSet();
 
   // Create fields and copy data
-  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+  for (const auto var : vars_.variables()) {
     atlas::Field field = geom_->functionSpace().createField<double>(
-      atlas::option::name(vars_[jvar]) | atlas::option::levels(geom_->levels()));
-    atlas::Field fieldOther = other.fset_[vars_[jvar]];
-    if (field.rank() == 1) {
-      auto view = atlas::array::make_view<double, 1>(field);
-      auto viewOther = atlas::array::make_view<double, 1>(fieldOther);
-      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-        view(jnode) = viewOther(jnode);
-      }
-    } else if (field.rank() == 2) {
+      atlas::option::name(var) | atlas::option::levels(geom_->levels()));
+    atlas::Field fieldOther = other.fset_[var];
+    if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
       auto viewOther = atlas::array::make_view<double, 2>(fieldOther);
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
@@ -161,14 +149,9 @@ Fields::Fields(const Fields & other):
 }
 // -----------------------------------------------------------------------------
 void Fields::zero() {
-  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-    atlas::Field field = fset_[vars_[jvar]];
-    if (field.rank() == 1) {
-      auto view = atlas::array::make_view<double, 1>(field);
-      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-        view(jnode) = 0.0;
-      }
-    } else if (field.rank() == 2) {
+  for (const auto var : vars_.variables()) {
+    atlas::Field field = fset_[var];
+    if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
@@ -180,16 +163,10 @@ void Fields::zero() {
 }
 // -----------------------------------------------------------------------------
 Fields & Fields::operator=(const Fields & rhs) {
-  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-    atlas::Field field = fset_[vars_[jvar]];
-    atlas::Field fieldRhs = rhs.fset_[vars_[jvar]];
-    if (field.rank() == 1) {
-      auto view = atlas::array::make_view<double, 1>(field);
-      auto viewRhs = atlas::array::make_view<double, 1>(fieldRhs);
-      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-        view(jnode) = viewRhs(jnode);
-      }
-    } else if (field.rank() == 2) {
+  for (const auto var : vars_.variables()) {
+    atlas::Field field = fset_[var];
+    atlas::Field fieldRhs = rhs.fset_[var];
+    if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
       auto viewRhs = atlas::array::make_view<double, 2>(fieldRhs);
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
@@ -204,16 +181,10 @@ Fields & Fields::operator=(const Fields & rhs) {
 }
 // -----------------------------------------------------------------------------
 Fields & Fields::operator+=(const Fields & rhs) {
-  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-    atlas::Field field = fset_[vars_[jvar]];
-    atlas::Field fieldRhs = rhs.fset_[vars_[jvar]];
-    if (field.rank() == 1) {
-      auto view = atlas::array::make_view<double, 1>(field);
-      auto viewRhs = atlas::array::make_view<double, 1>(fieldRhs);
-      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-        view(jnode) += viewRhs(jnode);
-      }
-    } else if (field.rank() == 2) {
+  for (const auto var : vars_.variables()) {
+    atlas::Field field = fset_[var];
+    atlas::Field fieldRhs = rhs.fset_[var];
+    if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
       auto viewRhs = atlas::array::make_view<double, 2>(fieldRhs);
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
@@ -227,16 +198,10 @@ Fields & Fields::operator+=(const Fields & rhs) {
 }
 // -----------------------------------------------------------------------------
 Fields & Fields::operator-=(const Fields & rhs) {
-  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-    atlas::Field field = fset_[vars_[jvar]];
-    atlas::Field fieldRhs = rhs.fset_[vars_[jvar]];
-    if (field.rank() == 1) {
-      auto view = atlas::array::make_view<double, 1>(field);
-      auto viewRhs = atlas::array::make_view<double, 1>(fieldRhs);
-      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-        view(jnode) -= viewRhs(jnode);
-      }
-    } else if (field.rank() == 2) {
+  for (const auto var : vars_.variables()) {
+    atlas::Field field = fset_[var];
+    atlas::Field fieldRhs = rhs.fset_[var];
+    if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
       auto viewRhs = atlas::array::make_view<double, 2>(fieldRhs);
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
@@ -250,14 +215,9 @@ Fields & Fields::operator-=(const Fields & rhs) {
 }
 // -----------------------------------------------------------------------------
 Fields & Fields::operator*=(const double & zz) {
-  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-    atlas::Field field = fset_[vars_[jvar]];
-    if (field.rank() == 1) {
-      auto view = atlas::array::make_view<double, 1>(field);
-      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-        view(jnode) *= zz;
-      }
-    } else if (field.rank() == 2) {
+  for (const auto var : vars_.variables()) {
+    atlas::Field field = fset_[var];
+    if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
@@ -270,17 +230,10 @@ Fields & Fields::operator*=(const double & zz) {
 }
 // -----------------------------------------------------------------------------
 void Fields::axpy(const double & zz, const Fields & rhs) {
-  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-    atlas::Field field = fset_[vars_[jvar]];
-    atlas::Field fieldRhs = rhs.fset_[vars_[jvar]];
-    if (field.rank() == 1) {
-      auto view = atlas::array::make_view<double, 1>(field);
-      auto viewRhs = atlas::array::make_view<double, 1>(fieldRhs);
-      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-        view(jnode) *= zz;
-        view(jnode) += viewRhs(jnode);
-      }
-    } else if (field.rank() == 2) {
+  for (const auto var : vars_.variables()) {
+    atlas::Field field = fset_[var];
+    atlas::Field fieldRhs = rhs.fset_[var];
+    if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
       auto viewRhs = atlas::array::make_view<double, 2>(fieldRhs);
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
@@ -297,16 +250,10 @@ double Fields::dot_product_with(const Fields & fld2) const {
   double zz = 0;
   atlas::Field ghost = geom_->functionSpace().ghost();
   auto ghostView = atlas::array::make_view<int, 1>(ghost);
-  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-    atlas::Field field1 = fset_[vars_[jvar]];
-    atlas::Field field2 = fld2.fset_[vars_[jvar]];
-    if (field1.rank() == 1) {
-      auto view1 = atlas::array::make_view<double, 1>(field1);
-      auto view2 = atlas::array::make_view<double, 1>(field2);
-      for (atlas::idx_t jnode = 0; jnode < field1.shape(0); ++jnode) {
-        if (ghostView(jnode) == 0) zz += view1(jnode)*view2(jnode);
-      }
-    } else if (field1.rank() == 2) {
+  for (const auto var : vars_.variables()) {
+    atlas::Field field1 = fset_[var];
+    atlas::Field field2 = fld2.fset_[var];
+    if (field1.rank() == 2) {
       auto view1 = atlas::array::make_view<double, 2>(field1);
       auto view2 = atlas::array::make_view<double, 2>(field2);
       for (atlas::idx_t jnode = 0; jnode < field1.shape(0); ++jnode) {
@@ -321,16 +268,10 @@ double Fields::dot_product_with(const Fields & fld2) const {
 }
 // -----------------------------------------------------------------------------
 void Fields::schur_product_with(const Fields & dx) {
-  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-    atlas::Field field = fset_[vars_[jvar]];
-    atlas::Field fieldDx = dx.fset_[vars_[jvar]];
-    if (field.rank() == 1) {
-      auto view = atlas::array::make_view<double, 1>(field);
-      auto viewDx = atlas::array::make_view<double, 1>(fieldDx);
-      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-        view(jnode) *= viewDx(jnode);
-      }
-    } else if (field.rank() == 2) {
+  for (const auto var : vars_.variables()) {
+    atlas::Field field = fset_[var];
+    atlas::Field fieldDx = dx.fset_[var];
+    if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
       auto viewDx = atlas::array::make_view<double, 2>(fieldDx);
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
@@ -347,13 +288,9 @@ void Fields::random() {
   size_t n = 0;
   atlas::Field ghost = geom_->functionSpace().ghost();
   auto ghostView = atlas::array::make_view<int, 1>(ghost);
-  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-    atlas::Field field = fset_[vars_[jvar]];
-    if (field.rank() == 1) {
-      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-        if (ghostView(jnode) == 0) n += 1;
-      }
-    } else if (field.rank() == 2) {
+  for (const auto var : vars_.variables()) {
+    atlas::Field field = fset_[var];
+    if (field.rank() == 2) {
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         if (ghostView(jnode) == 0) n += field.shape(1);
       }
@@ -365,17 +302,9 @@ void Fields::random() {
 
   // Copy random values
   n = 0;
-  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-    atlas::Field field = fset_[vars_[jvar]];
-    if (field.rank() == 1) {
-      auto view = atlas::array::make_view<double, 1>(field);
-      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-        if (ghostView(jnode) == 0) {
-          view(jnode) = rand_vec[n];
-          n += 1;
-        }
-      }
-    } else if (field.rank() == 2) {
+  for (const auto var : vars_.variables()) {
+    atlas::Field field = fset_[var];
+    if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         if (ghostView(jnode) == 0) {
@@ -446,10 +375,7 @@ void Fields::dirac(const eckit::Configuration & config) {
 
     if (geom_->getComm().rank() == localTask) {
       // Add Dirac impulse
-      if (field.rank() == 1) {
-        auto view = atlas::array::make_view<double, 1>(field);
-        view(index) = 1.0;
-      } else if (field.rank() == 2) {
+      if (field.rank() == 2) {
         auto view = atlas::array::make_view<double, 2>(field);
         view(index, level[jdir]-1) = 1.0;
       }
@@ -458,18 +384,11 @@ void Fields::dirac(const eckit::Configuration & config) {
 }
 // -----------------------------------------------------------------------------
 void Fields::diff(const Fields & x1, const Fields & x2) {
-  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-    atlas::Field field = fset_[vars_[jvar]];
-    atlas::Field fieldx1 = x1.fset_[vars_[jvar]];
-    atlas::Field fieldx2 = x2.fset_[vars_[jvar]];
-    if (field.rank() == 1) {
-      auto view = atlas::array::make_view<double, 1>(field);
-      auto viewx1 = atlas::array::make_view<double, 1>(fieldx1);
-      auto viewx2 = atlas::array::make_view<double, 1>(fieldx2);
-      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-        view(jnode) = viewx1(jnode)-viewx2(jnode);
-      }
-    } else if (field.rank() == 2) {
+  for (const auto var : vars_.variables()) {
+    atlas::Field field = fset_[var];
+    atlas::Field fieldx1 = x1.fset_[var];
+    atlas::Field fieldx2 = x2.fset_[var];
+    if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
       auto viewx1 = atlas::array::make_view<double, 2>(fieldx1);
       auto viewx2 = atlas::array::make_view<double, 2>(fieldx2);
@@ -488,13 +407,11 @@ void Fields::toFieldSet(atlas::FieldSet & fset) const {
       fset->add(fset_[var]);
       atlas::Field field_input = fset_[var];
       atlas::Field field_local = fset[var];
-      if (field_input != field_local) {
-        auto view_input = atlas::array::make_view<double, 2>(field_input);
-        auto view_local = atlas::array::make_view<double, 2>(field_local);
-        for (atlas::idx_t jnode = 0; jnode < field_input.shape(0); ++jnode) {
-          for (atlas::idx_t jlevel = 0; jlevel < field_input.shape(1); ++jlevel) {
-            view_local(jnode, jlevel) = view_input(jnode, jlevel);
-          }
+      auto view_input = atlas::array::make_view<double, 2>(field_input);
+      auto view_local = atlas::array::make_view<double, 2>(field_local);
+      for (atlas::idx_t jnode = 0; jnode < field_input.shape(0); ++jnode) {
+        for (atlas::idx_t jlevel = 0; jlevel < field_input.shape(1); ++jlevel) {
+          view_local(jnode, jlevel) = view_input(jnode, jlevel);
         }
       }
     } else {
@@ -511,14 +428,11 @@ void Fields::fromFieldSet(const atlas::FieldSet & fset) {
       if (fset.has_field(var)) {
         atlas::Field field_input = fset_[var];
         atlas::Field field_local = fset[var];
-        if (field_input != field_local) {
-          auto view_input = atlas::array::make_view<double, 2>(field_input);
-          auto view_local = atlas::array::make_view<double, 2>(field_local);
-          view_input.assign(0.0);
-          for (atlas::idx_t jnode = 0; jnode < field_input.shape(0); ++jnode) {
-            for (atlas::idx_t jlevel = 0; jlevel < field_input.shape(1); ++jlevel) {
-              if (ghostView(jnode) == 0) view_input(jnode, jlevel) = view_local(jnode, jlevel);
-            }
+        auto view_input = atlas::array::make_view<double, 2>(field_input);
+        auto view_local = atlas::array::make_view<double, 2>(field_local);
+        for (atlas::idx_t jnode = 0; jnode < field_input.shape(0); ++jnode) {
+          for (atlas::idx_t jlevel = 0; jlevel < field_input.shape(1); ++jlevel) {
+            if (ghostView(jnode) == 0) view_input(jnode, jlevel) = view_local(jnode, jlevel);
           }
         }
 
@@ -592,8 +506,8 @@ void Fields::read(const eckit::Configuration & config) {
     atlas::functionspace::StructuredColumns fs(geom_->functionSpace());
 
     // Create global data fieldset
-    for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-      atlas::Field field = fs.createField<double>(atlas::option::name(vars_[jvar])
+    for (const auto var : vars_.variables()) {
+      atlas::Field field = fs.createField<double>(atlas::option::name(var)
         | atlas::option::levels(geom_->levels()) | atlas::option::global());
       globalData.add(field);
     }
@@ -647,15 +561,15 @@ void Fields::read(const eckit::Configuration & config) {
   } else if (geom_->functionSpace().type() == "NodeColumns") {
     // NodeColumns
     atlas::idx_t nb_nodes;
-    if (geom_->grid().name().substr(0, 2).compare("CS") == 0) {
+    if (geom_->grid().name().compare(0, 2, std::string{"CS"}) == 0) {
 // TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
 #if atlas_TRANS_FOUND
       // CubedSphere
       atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
 
       // Create global data fieldset
-      for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-        atlas::Field field = fs.createField<double>(atlas::option::name(vars_[jvar])
+      for (const auto var : vars_.variables()) {
+        atlas::Field field = fs.createField<double>(atlas::option::name(var)
           | atlas::option::levels(geom_->levels()) | atlas::option::global());
         globalData.add(field);
       }
@@ -670,8 +584,8 @@ void Fields::read(const eckit::Configuration & config) {
       atlas::functionspace::NodeColumns fs(geom_->functionSpace());
 
       // Create global data fieldset
-      for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-        atlas::Field field = fs.createField<double>(atlas::option::name(vars_[jvar])
+      for (const auto var : vars_.variables()) {
+        atlas::Field field = fs.createField<double>(atlas::option::name(var)
           | atlas::option::levels(geom_->levels()) | atlas::option::global());
         globalData.add(field);
       }
@@ -728,7 +642,7 @@ void Fields::read(const eckit::Configuration & config) {
     fs.scatter(globalData, fset_);
   } else if (geom_->functionSpace().type() == "NodeColumns") {
     // NodeColumns
-    if (geom_->grid().name().substr(0, 2).compare("CS") == 0) {
+    if (geom_->grid().name().compare(0, 2, std::string{"CS"}) == 0) {
 // TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
 #if atlas_TRANS_FOUND
       // CubedSphere
@@ -799,8 +713,8 @@ void Fields::write(const eckit::Configuration & config) const {
     fs.gather(localCoordinates, globalCoordinates);
 
     // Create global data fieldset
-    for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-      atlas::Field field = fs.createField<double>(atlas::option::name(vars_[jvar])
+    for (const auto var : vars_.variables()) {
+      atlas::Field field = fs.createField<double>(atlas::option::name(var)
         | atlas::option::levels(geom_->levels()) | atlas::option::global());
       globalData.add(field);
     }
@@ -905,7 +819,7 @@ void Fields::write(const eckit::Configuration & config) const {
   } else if (geom_->functionSpace().type() == "NodeColumns") {
     // NodeColumns
     atlas::idx_t nb_nodes;
-    if (geom_->grid().name().substr(0, 2).compare("CS") == 0) {
+    if (geom_->grid().name().compare(0, 2, std::string{"CS"}) == 0) {
 // TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
 #if atlas_TRANS_FOUND
       // CubedSphere
@@ -936,8 +850,8 @@ void Fields::write(const eckit::Configuration & config) const {
       fs.gather(localCoordinates, globalCoordinates);
 
       // Create global data fieldset
-      for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-        atlas::Field field = fs.createField<double>(atlas::option::name(vars_[jvar])
+      for (const auto var : vars_.variables()) {
+        atlas::Field field = fs.createField<double>(atlas::option::name(var)
           | atlas::option::levels(geom_->levels()) | atlas::option::global());
         globalData.add(field);
       }
@@ -979,8 +893,8 @@ void Fields::write(const eckit::Configuration & config) const {
       fs.gather(localCoordinates, globalCoordinates);
 
       // Create global data fieldset
-      for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-        atlas::Field field = fs.createField<double>(atlas::option::name(vars_[jvar])
+      for (const auto var : vars_.variables()) {
+        atlas::Field field = fs.createField<double>(atlas::option::name(var)
           | atlas::option::levels(geom_->levels()) | atlas::option::global());
         globalData.add(field);
       }
@@ -1167,15 +1081,10 @@ void Fields::print(std::ostream & os) const {
 
   atlas::Field ghost = geom_->functionSpace().ghost();
   auto ghostView = atlas::array::make_view<int, 1>(ghost);
-  for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+  for (const auto var : vars_.variables()) {
     double zz = 0.0;
-    atlas::Field field = fset_[vars_[jvar]];
-    if (field.rank() == 1) {
-      auto view = atlas::array::make_view<double, 1>(field);
-      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-        if (ghostView(jnode) == 0) zz += view(jnode)*view(jnode);
-      }
-    } else if (field.rank() == 2) {
+    atlas::Field field = fset_[var];
+    if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
@@ -1185,7 +1094,7 @@ void Fields::print(std::ostream & os) const {
     }
     this->geom_->getComm().allReduceInPlace(zz, eckit::mpi::sum());
     zz = sqrt(zz);
-    os << "  " << vars_[jvar] << ": " << zz << std::endl;
+    os << "  " << var << ": " << zz << std::endl;
   }
 }
 // -----------------------------------------------------------------------------

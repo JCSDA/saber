@@ -25,7 +25,7 @@
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/Logger.h"
 
-#define ERR(e) {printf("Error: %s\n", nc_strerror(e)); ABORT("NetCDF error");}
+#define ERR(e) {ABORT(nc_strerror(e));}
 
 // -----------------------------------------------------------------------------
 namespace quench {
@@ -125,7 +125,7 @@ Geometry::Geometry(const Parameters_ & params,
   } else if (params.functionSpace.value() == "NodeColumns") {
     if (comm_.size() == 1) {
       // NodeColumns
-      if (grid_.name().substr(0, 2).compare("CS") == 0) {
+      if (grid_.name().compare(0, 2, std::string{"CS"}) == 0) {
         // CubedSphere
 // TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
 #if atlas_TRANS_FOUND
@@ -180,7 +180,7 @@ Geometry::Geometry(const Parameters_ & params,
   extraFields_->add(vunit);
 
   // Halo mask
-  if (grid_.name().substr(0, 1).compare("L") == 0) {
+  if (grid_.name().compare(0, 1, std::string{"L"}) == 0) {
     atlas::functionspace::StructuredColumns fs(functionSpace_);
     atlas::StructuredGrid grid = fs.grid();
     atlas::Field hmask = fs.createField<int>(atlas::option::name("hmask")
@@ -220,7 +220,7 @@ Geometry::Geometry(const Geometry & other) : comm_(other.comm_), levels_(other.l
     functionSpace_ = atlas::functionspace::StructuredColumns(other.functionSpace_);
   } else if (other.functionSpace_.type() == "NodeColumns") {
     // NodeColumns
-    if (grid_.name().substr(0, 2).compare("CS") == 0) {
+    if (grid_.name().compare(0, 2, std::string{"CS"}) == 0) {
       // CubedSphere
 // TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
 #if atlas_TRANS_FOUND
