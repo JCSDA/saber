@@ -164,7 +164,7 @@ character(len=*),intent(in),optional :: lev2d        !< Level for 2D variables
 ! Local variables
 integer :: nmga,nnodes,nl0,nl2d,il0
 integer :: shp(${rank}$)
-${ftype[dtype]}$,pointer :: ptr_1(:),ptr_2(:,:)
+${ftype[dtype]}$,pointer :: ptr(:,:)
 character(len=1024) :: llev2d
 
 ! Set name
@@ -198,28 +198,26 @@ if (nmga/=nnodes) call mpl%abort('${subr}$','wrong number of nodes for field '//
 array = ${zero[dtype]}$
 
 ! Copy data
-! afield%levels() is 0 for 2D ATLAS fields, positive for 3D fields
-! For the 2D case (afield%levels()==0), the field is copied:
+! For the 2D case (afield%levels()==1), the field is copied:
 ! - at the first level of array if (lev2d=='first')
 ! - at the last level of array if (lev2d=='last')
-if (afield%levels()==0) then
+call afield%data(ptr)
+if (afield%levels()==1) then
    if (trim(llev2d)=='first') then
       nl2d = 1
    elseif (trim(llev2d)=='last') then
       nl2d = nl0
    end if
-   call afield%data(ptr_1)
    if (nmga>0) then
-      #{if rank == 2}# array(:,nl2d) = ptr_1(1:nmga) #{endif}#
-      #{if rank == 3}# array(:,:,nl2d) = reshape(ptr_1(1:nmga),shp(1:2)) #{endif}#
+      #{if rank == 2}# array(:,nl2d) = ptr(1,1:nmga) #{endif}#
+      #{if rank == 3}# array(:,:,nl2d) = reshape(ptr(1,1:nmga),shp(1:2)) #{endif}#
    end if
 else
    if (nl0>afield%levels()) call mpl%abort('${subr}$','not enough levels in ATLAS field')
-   call afield%data(ptr_2)
    if (nmga>0) then
       do il0=1,nl0
-         #{if rank == 2}# array(:,il0) = ptr_2(il0,1:nmga) #{endif}#
-         #{if rank == 3}# array(:,:,il0) = reshape(ptr_2(il0,1:nmga),shp(1:2)) #{endif}#
+         #{if rank == 2}# array(:,il0) = ptr(il0,1:nmga) #{endif}#
+         #{if rank == 3}# array(:,:,il0) = reshape(ptr(il0,1:nmga),shp(1:2)) #{endif}#
       end do
    end if
 end if
@@ -301,7 +299,7 @@ character(len=*),intent(in),optional :: lev2d        !< Level for 2D variables
 ! Local variables
 integer :: nmga,nnodes,nl0,nl2d,il0
 integer :: shp(${rank}$)
-${ftype[dtype]}$,pointer :: ptr_1(:),ptr_2(:,:)
+${ftype[dtype]}$,pointer :: ptr(:,:)
 character(len=1024) :: llev2d
 type(atlas_functionspace) :: afunctionspace
 
@@ -333,28 +331,26 @@ nnodes = product(shp(1:${rank}$-1))
 if (nmga/=nnodes) call mpl%abort('${subr}$','wrong number of nodes for field '//afield%name())
 
 ! Copy data
-! afield%levels() is 0 for 2D ATLAS fields, positive for 3D fields
-! For the 2D case (afield%levels()==0), the field is copied:
+! For the 2D case (afield%levels()==1), the field is copied:
 ! - at the first level of array if (lev2d=='first')
 ! - at the last level of array if (lev2d=='last')
-if (afield%levels()==0) then
+call afield%data(ptr)
+if (afield%levels()==1) then
    if (trim(llev2d)=='first') then
       nl2d = 1
    elseif (trim(llev2d)=='last') then
       nl2d = nl0
    end if
-   call afield%data(ptr_1)
    if (nmga>0) then
-      #{if rank == 2}# ptr_1(1:nmga) = array(:,nl2d) #{endif}#
-      #{if rank == 3}# ptr_1(1:nmga) = reshape(array(:,:,nl2d),(/product(shp(1:2))/)) #{endif}#
+      #{if rank == 2}# ptr(1,1:nmga) = array(:,nl2d) #{endif}#
+      #{if rank == 3}# ptr(1,1:nmga) = reshape(array(:,:,nl2d),(/product(shp(1:2))/)) #{endif}#
    end if
 else
    if (nl0>afield%levels()) call mpl%abort('${subr}$','not enough levels in ATLAS field')
-   call afield%data(ptr_2)
    if (nmga>0) then
       do il0=1,nl0
-         #{if rank == 2}# ptr_2(il0,1:nmga) = array(:,il0) #{endif}#
-         #{if rank == 3}# ptr_2(il0,1:nmga) = reshape(array(:,:,il0),(/product(shp(1:2))/)) #{endif}#
+         #{if rank == 2}# ptr(il0,1:nmga) = array(:,il0) #{endif}#
+         #{if rank == 3}# ptr(il0,1:nmga) = reshape(array(:,:,il0),(/product(shp(1:2))/)) #{endif}#
       end do
    end if
 end if
