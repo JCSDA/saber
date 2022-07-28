@@ -402,6 +402,10 @@ void Fields::diff(const Fields & x1, const Fields & x2) {
 }
 // -----------------------------------------------------------------------------
 void Fields::toFieldSet(atlas::FieldSet & fset) const {
+  // Halo exchange
+  geom_->functionSpace().haloExchange(fset_);
+
+  // Copy values (including halo points)
   for (auto var : vars_.variables()) {
     if (fset_.has_field(var)) {
       fset->add(fset_[var]);
@@ -420,9 +424,36 @@ void Fields::toFieldSet(atlas::FieldSet & fset) const {
   }
 }
 // -----------------------------------------------------------------------------
+void Fields::toFieldSetAD(const atlas::FieldSet & fset) {
+  // Copy values (including halo points)
+  for (auto var : vars_.variables()) {
+    if (fset_.has_field(var)) {
+      if (fset.has_field(var)) {
+        atlas::Field field_input = fset_[var];
+        atlas::Field field_local = fset[var];
+        auto view_input = atlas::array::make_view<double, 2>(field_input);
+        auto view_local = atlas::array::make_view<double, 2>(field_local);
+        for (atlas::idx_t jnode = 0; jnode < field_input.shape(0); ++jnode) {
+          for (atlas::idx_t jlevel = 0; jlevel < field_input.shape(1); ++jlevel) {
+            view_input(jnode, jlevel) = view_local(jnode, jlevel);
+          }
+        }
+      }
+    } else {
+      ABORT("Variable " + var + " not in source fieldset");
+    }
+  }
+
+  // Halo exchange adjoint
+  geom_->functionSpace().adjointHaloExchange(fset_);
+}
+// -----------------------------------------------------------------------------
 void Fields::fromFieldSet(const atlas::FieldSet & fset) {
+  // Get ghost points mask
   atlas::Field ghost = geom_->functionSpace().ghost();
   auto ghostView = atlas::array::make_view<int, 1>(ghost);
+
+  // Copy values (excluding halo points)
   for (auto var : vars_.variables()) {
     if (fset_.has_field(var)) {
       if (fset.has_field(var)) {
