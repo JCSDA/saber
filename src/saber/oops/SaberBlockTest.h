@@ -142,8 +142,8 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       saberCentralBlock_->multiply(dx2.fieldSet());
 
       // ATLAS fieldset to Increment_
-      dx1.synchronizeFields();
-      dx2.synchronizeFields();
+      dx1.synchronizeFieldsAD();
+      dx2.synchronizeFieldsAD();
 
       // Compute adjoint test
       const double dp1 = dx1.dot_product_with(dx2save);
@@ -166,8 +166,8 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       it->multiplyAD(dx2.fieldSet());
 
       // ATLAS fieldset to Increment_
-      dx1.synchronizeFields();
-      dx2.synchronizeFields();
+      dx1.synchronizeFieldsAD();
+      dx2.synchronizeFieldsAD();
 
       // Compute adjoint test
       const double dp1 = dx1.dot_product_with(dx2save);
@@ -191,7 +191,7 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         saberCentralBlock_->inverseMultiply(dx1.fieldSet());
 
         // ATLAS fieldset to Increment_
-        dx1.synchronizeFields();
+        dx1.synchronizeFieldsAD();
 
         // Compute inverse test
         dx1 -= dx1save;
@@ -221,8 +221,8 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         it->inverseMultiplyAD(dx2.fieldSet());
 
         // ATLAS fieldset to Increment_
-        dx1.synchronizeFields();
-        dx2.synchronizeFields();
+        dx1.synchronizeFieldsAD();
+        dx2.synchronizeFieldsAD();
 
         // Compute adjoint test
         dx1 -= dx1save;

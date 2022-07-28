@@ -335,6 +335,7 @@ if (nmga/=nnodes) call mpl%abort('${subr}$','wrong number of nodes for field '//
 ! - at the first level of array if (lev2d=='first')
 ! - at the last level of array if (lev2d=='last')
 call afield%data(ptr)
+ptr(:,:) = ${zero[dtype]}$
 if (afield%levels()==1) then
    if (trim(llev2d)=='first') then
       nl2d = 1
@@ -354,10 +355,6 @@ else
       end do
    end if
 end if
-
-! Halo exchange
-afunctionspace = afield%functionspace()
-call afunctionspace%halo_exchange(afield)
 
 ! Probe out
 @:probe_out()

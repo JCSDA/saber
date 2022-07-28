@@ -188,7 +188,7 @@ void ErrorCovariance<MODEL>::doRandomize(Increment_ & dx) const {
   }
 
   // ATLAS fieldset to Increment_
-  dx.synchronizeFields();
+  dx.synchronizeFieldsAD();
 
   oops::Log::trace() << "ErrorCovariance<MODEL>::doRandomize done" << std::endl;
 }
@@ -220,7 +220,7 @@ void ErrorCovariance<MODEL>::doMultiply(const Increment_ & dxi,
   }
 
   // ATLAS fieldset to Increment_
-  dxo.synchronizeFields();
+  dxo.synchronizeFieldsAD();
 
   oops::Log::trace() << "ErrorCovariance<MODEL>::doMultiply done" << std::endl;
 }
@@ -249,7 +249,7 @@ void ErrorCovariance<MODEL>::doInverseMultiply(const Increment_ & dxi,
     if (saberCentralBlock_->iterativeInverse()) {
       if (saberBlocks_.size() > 0) {
         // ATLAS fieldset to Increment_
-        dxo.synchronizeFields();
+        dxo.synchronizeFieldsAD();
       } else {
         syncNeeded = false;
       }
@@ -274,7 +274,7 @@ void ErrorCovariance<MODEL>::doInverseMultiply(const Increment_ & dxi,
 
   // ATLAS fieldset to Increment_
   if (syncNeeded) {
-    dxo.synchronizeFields();
+    dxo.synchronizeFieldsAD();
   }
 
   oops::Log::trace() << "ErrorCovariance<MODEL>::doInverseMultiply done" << std::endl;
@@ -299,7 +299,7 @@ void ErrorCovariance<MODEL>::multiply(const Increment_ & dxi,
   }
 
   // ATLAS fieldset to Increment_
-  dxo.synchronizeFields();
+  dxo.synchronizeFieldsAD();
 
   oops::Log::trace() << "ErrorCovariance<MODEL>::multiply done" << std::endl;
 }
