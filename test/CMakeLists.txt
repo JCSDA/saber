@@ -354,6 +354,12 @@ if( SABER_TEST_OOPS )
                             LIBS    quench
                                     ${vader_LIBRARIES}
                                     saber )
+
+    ecbuild_add_executable( TARGET  saber_quench_convertstate.x
+                            SOURCES mains/quenchConvertState.cc
+                            LIBS    quench
+                                    ${vader_LIBRARIES}
+                                    saber )
 endif()
 
 # Mono-core tests

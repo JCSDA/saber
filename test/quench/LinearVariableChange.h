@@ -5,15 +5,15 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef QUENCH_LINEARVARCHANGE_H_
-#define QUENCH_LINEARVARCHANGE_H_
+#ifndef QUENCH_LINEARVARIABLECHANGE_H_
+#define QUENCH_LINEARVARIABLECHANGE_H_
 
 #include <ostream>
 #include <string>
 
 #include "oops/util/Printable.h"
 
-#include "quench/LinearVarChangeParams.h"
+#include "quench/LinearVariableChangeParameters.h"
 
 // Forward declarations
 namespace eckit {
@@ -32,12 +32,12 @@ namespace quench {
 // -----------------------------------------------------------------------------
 /// quench linear change of variable
 
-class LinearVarChange: public util::Printable {
+class LinearVariableChange: public util::Printable {
  public:
-  typedef LinearVarChangeParams Parameters_;
-  static const std::string classname() {return "quench::LinearVarChange";}
+  typedef LinearVariableChangeParameters Parameters_;
+  static const std::string classname() {return "quench::LinearVariableChange";}
 
-  LinearVarChange(const Geometry &, const Parameters_ &) {}
+  LinearVariableChange(const Geometry &, const Parameters_ &) {}
 
 /// Perform linear transforms
   void changeVarTL(Increment &, const oops::Variables &) const {}
@@ -48,9 +48,9 @@ class LinearVarChange: public util::Printable {
   void changeVarTraj(const State &, const oops::Variables &) {}
 
  private:
-  void print(std::ostream &) const override {}
+  void print(std::ostream & os) const override {os << "LinearVariableChange";};
 };
 // -----------------------------------------------------------------------------
 
 }  // namespace quench
-#endif  // QUENCH_LINEARVARCHANGE_H_
+#endif  // QUENCH_LINEARVARIABLECHANGE_H_

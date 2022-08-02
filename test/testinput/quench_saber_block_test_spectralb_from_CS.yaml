@@ -2,6 +2,7 @@ geometry:
   function space: NodeColumns
   grid:
     name : CS-LFR-15
+  partitioner: checkerboard
   levels: 70
 variables: &vars [psi_inc]
 background:

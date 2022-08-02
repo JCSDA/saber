@@ -14,8 +14,12 @@ interpolatorbump_mod.fypp
 if( oops_FOUND )
     list(APPEND interpolation_src_files_list
 
+    # BUMP interpolator
     InterpolatorBump.h
     InterpolatorBump.cc
+
+    # ATLAS interpolation wrapper
+    AtlasInterpWrapper.h
 
     )
 endif()
