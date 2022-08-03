@@ -5,26 +5,22 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef QUENCH_LINEARVARCHANGEPARAMS_H_
-#define QUENCH_LINEARVARCHANGEPARAMS_H_
-
-#include <ostream>
-#include <string>
+#ifndef QUENCH_LINEARVARIABLECHANGEPARAMETERS_H_
+#define QUENCH_LINEARVARIABLECHANGEPARAMETERS_H_
 
 #include "oops/base/LinearVariableChangeParametersBase.h"
 
 namespace quench {
 
 // -------------------------------------------------------------------------------------------------
-/// No change of linear variable parameters
+/// \brief Parameters passed to the LinearVariableChange class.
 
-class LinearVarChangeParams : public oops::LinearVariableChangeParametersBase {
-  OOPS_CONCRETE_PARAMETERS(LinearVarChangeParams, LinearVariableChangeParametersBase)
+class LinearVariableChangeParameters : public oops::LinearVariableChangeParametersBase {
+  OOPS_CONCRETE_PARAMETERS(LinearVariableChangeParameters, LinearVariableChangeParametersBase)
  public:
-  // Linear variable change parameters would go here.
 };
 
 // -------------------------------------------------------------------------------------------------
 
 }  // namespace quench
-#endif  // QUENCH_LINEARVARCHANGEPARAMS_H_
+#endif  // QUENCH_LINEARVARIABLECHANGEPARAMETERS_H_

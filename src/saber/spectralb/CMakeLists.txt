@@ -15,7 +15,6 @@ if( atlas_TRANS_FOUND )
     spectralb_cvtderivtypes_mod.F90
     spectralb_netcdf_mod.F90
     spectralbParameters.h
-    AtlasInterpWrapper.h
     SPCTRL_Cov.h
 
     )
