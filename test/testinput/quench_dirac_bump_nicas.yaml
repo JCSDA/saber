@@ -13,7 +13,8 @@ background error:
       prefix: quench_dirac_bump_nicas/test
       strategy: specific_univariate
 dirac:
-  index: [1000]
+  lon: [1.980931]
+  lat: [44.220188]
   level: [1]
   variable: *vars
 geometry:

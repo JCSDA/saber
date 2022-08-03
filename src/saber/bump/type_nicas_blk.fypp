@@ -950,7 +950,7 @@ do icmp=1,nicas_blk%ncmp
    allocate(nicas_blk%cmp(icmp)%rvs(geom%nc0a,geom%nl0))
 
    ! Initialization
-   nicas_blk%cmp(icmp)%a = mpl%msv%valr
+   nicas_blk%cmp(icmp)%a = zero
    nicas_blk%cmp(icmp)%rh = mpl%msv%valr
    if (nicas_blk%cmp(icmp)%anisotropic) then
       nicas_blk%cmp(icmp)%H11 = mpl%msv%valr

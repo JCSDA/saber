@@ -19,7 +19,8 @@ background error:
       gauss_grid_uid: F15
       umatrix_netcdf_names: [PSI_inc_Uv_matrix]
 dirac:
-  index: [1000]
+  lon: [1.980931]
+  lat: [44.220188]
   level: [1]
   variable: *vars
 output dirac:

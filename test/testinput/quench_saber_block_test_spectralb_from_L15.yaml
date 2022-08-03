@@ -2,6 +2,7 @@ geometry:
   function space: StructuredColumns
   grid:
     name : L15
+  partitioner: checkerboard
   levels: 70
 variables: &vars [psi_inc]
 background:

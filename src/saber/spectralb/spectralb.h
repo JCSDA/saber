@@ -29,10 +29,11 @@
 #include "atlas/trans/ifs/TransIFS.h"
 #include "atlas/trans/Trans.h"
 
-#include "saber/spectralb/AtlasInterpWrapper.h"
+#include "saber/interpolation/AtlasInterpWrapper.h"
 #include "saber/spectralb/CovarianceStatistics.h"
 #include "saber/spectralb/spectralbParameters.h"
 
+using atlas::grid::detail::partitioner::TransPartitioner;
 
 namespace saber {
 namespace spectralb {
@@ -74,6 +75,24 @@ std::shared_ptr<atlas::FieldSet> allocateGaussFieldset(
   return gaussFieldSet;
 }
 
+// -----------------------------------------------------------------------------
+
+template<typename MODEL>
+atlas::Grid createOutputGrid(const spectralbParameters<MODEL> & params) {
+  std::string gridName((params.outputGridUid.value() != boost::none ?
+                        params.outputGridUid.value().get() :
+                        params.gaussGridUid));
+  return atlas::Grid(gridName);
+}
+
+// -----------------------------------------------------------------------------
+
+atlas::FunctionSpace createOutputFunctionSpace(const atlas::FieldSet & fset) {
+  return fset[0].functionspace();
+}
+
+// -----------------------------------------------------------------------------
+
 template<typename MODEL>
 bool createVarianceOpt(const spectralbParameters<MODEL> & params) {
   return (params.varianceOpt.value() != boost::none ?
@@ -97,7 +116,6 @@ class SpectralB {
   typedef oops::Geometry<MODEL>        Geometry_;
   typedef oops::Increment<MODEL>       Increment_;
   typedef oops::State<MODEL>           State_;
-  typedef AtlasInterpWrapper<MODEL>    AtlasInterp_;
 
   SpectralB(const Geometry_ &,
                  const oops::Variables &,
@@ -115,9 +133,9 @@ class SpectralB {
   std::shared_ptr<const atlas::FieldSet> modelFieldSet_;
   std::vector<std::string> gaussNames_;
   atlas::StructuredGrid gaussGrid_;
-  atlas::functionspace::StructuredColumns gaussFS_;
+  atlas::functionspace::StructuredColumns gaussFunctionSpace_;
   std::shared_ptr<atlas::FieldSet> gaussFieldSet_;
-  AtlasInterp_ interp_;
+  saber::interpolation::AtlasInterpWrapper interp_;
   bool variance_opt_;
   std::unique_ptr<const CovStat_ErrorCov<MODEL>> cs_;
 
@@ -134,14 +152,15 @@ using atlas::idx_t;
 
 template<typename MODEL>
 SpectralB<MODEL>::SpectralB(const Geometry_ & resol,
-                                      const oops::Variables & vars,
-                                      const Parameters_ & params) :
+                            const oops::Variables & vars,
+                            const Parameters_ & params) :
   modelFieldSet_(std::make_shared<const atlas::FieldSet>(createFieldsSpace(resol, vars))),
   gaussNames_(vars.variables()),
   gaussGrid_(params.gaussGridUid),
-  gaussFS_(detail::createGaussFunctionSpace(gaussGrid_)),
-  gaussFieldSet_(detail::allocateGaussFieldset(gaussFS_, gaussNames_, modelFieldSet_)),
-  interp_(params, modelFieldSet_),
+  gaussFunctionSpace_(detail::createGaussFunctionSpace(gaussGrid_)),
+  gaussFieldSet_(detail::allocateGaussFieldset(gaussFunctionSpace_, gaussNames_, modelFieldSet_)),
+  interp_(atlas::grid::Partitioner(new TransPartitioner()), gaussFunctionSpace_,
+    detail::createOutputGrid(params), detail::createOutputFunctionSpace(*modelFieldSet_)),
   variance_opt_(detail::createVarianceOpt(params)),
   cs_(std::make_unique<const CovStat_ErrorCov<MODEL>>(resol, vars, params))
 {
@@ -174,7 +193,7 @@ void SpectralB<MODEL>::multiply_InterpAndCov(atlas::FieldSet & modelGridFieldSet
   // assuming that all fields in modelGridFieldSet have the same number of levels
   atlas::functionspace::Spectral specFS(2*N-1,
                                         atlas::option::levels(modelGridFieldSet[0].levels()));
-  atlas::trans::Trans transIFS(gaussFS_, specFS);
+  atlas::trans::Trans transIFS(gaussFunctionSpace_, specFS);
 
   interp_.executeAdjoint(*gaussFieldSet_, modelGridFieldSet);
 
@@ -250,7 +269,6 @@ atlas::FieldSet SpectralB<MODEL>::createFieldsSpace(const Geometry_ & geom,
 }
 
 // -----------------------------------------------------------------------------
-
 
 template<typename MODEL>
 void SpectralB<MODEL>::applySpectralB(

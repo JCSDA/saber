@@ -5,20 +5,20 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef QUENCH_COVARIANCEPARAMS_H_
-#define QUENCH_COVARIANCEPARAMS_H_
+#ifndef QUENCH_COVARIANCEPARAMETERS_H_
+#define QUENCH_COVARIANCEPARAMETERS_H_
 
 #include "oops/base/ModelSpaceCovarianceParametersBase.h"
 
-#include "quench/LinearVarChange.h"
+#include "quench/LinearVariableChange.h"
 #include "quench/TraitsFwd.h"
 
 namespace quench {
 // -----------------------------------------------------------------------------
-/// \brief Parameters passed to the CovarianceParams class.
+/// \brief Parameters passed to the Covariance class.
 
-class CovarianceParams : public oops::ModelSpaceCovarianceParametersBase<quench::Traits>{
-  OOPS_CONCRETE_PARAMETERS(CovarianceParams,
+class CovarianceParameters : public oops::ModelSpaceCovarianceParametersBase<quench::Traits>{
+  OOPS_CONCRETE_PARAMETERS(CovarianceParameters,
                            oops::ModelSpaceCovarianceParametersBase<quench::Traits>)
 
  public:
@@ -26,4 +26,4 @@ class CovarianceParams : public oops::ModelSpaceCovarianceParametersBase<quench:
 // -----------------------------------------------------------------------------
 
 }  // namespace quench
-#endif  // QUENCH_COVARIANCEPARAMS_H_
+#endif  // QUENCH_COVARIANCEPARAMETERS_H_
