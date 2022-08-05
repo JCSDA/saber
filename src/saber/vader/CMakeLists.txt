@@ -14,6 +14,7 @@ if ( ENABLE_VADER_MO )
     list(APPEND vader_src_files_list
 
     AirTemperatureSaberBlock.h
+    MoistIncrOpSaberBlock.h
 
     )
 endif()
