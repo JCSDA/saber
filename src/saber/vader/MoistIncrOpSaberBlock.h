@@ -100,19 +100,24 @@ MoistIncrOpSaberBlock<MODEL>::MoistIncrOpSaberBlock(const Geometry_ &,  // resol
 
   // Need to setup derived state fields that we need.
   std::vector<std::string> requiredStateVariables{
-      "potential_temperature",
-      "exner",  // on theta levels ("exner_levels_minus_one" is on rho levels)
-      "air_temperature",  // to be populated in evalAirTemperature
-      "svp", "dlsvpdT",  // to be populated in evalSatVaporPressure
-      "air_pressure",
-      "qsat",  // to be populated in evalSatSpecificHumidity
-      "specific_humidity", "mass_content_of_cloud_liquid_water_in_atmosphere_layer",
-      "mass_content_of_cloud_ice_in_atmosphere_layer", "qrain",
-      "rht",  // to be populated in evalTotalRelativeHumidity
-      "liquid_cloud_volume_fraction_in_atmosphere_layer",
-      "ice_cloud_volume_fraction_in_atmosphere_layer",
-      "cleff", "cfeff"  // to be populated in getMIOFields
-      };
+    "potential_temperature",  // from file
+    "exner",  // on theta levels from file ("exner_levels_minus_one" is on rho levels)
+    "air_pressure",  // on theta levels from file ("air_pressure_levels_minus_one" is on rho levels)
+    "air_temperature",  // to be populated in evalAirTemperature
+    "m_v", "m_ci", "m_cl", "m_r",  // mixing ratios from file
+    "m_t",  // to be populated in evalTotalMassMoistAir
+    "svp", "dlsvpdT",  // to be populated in evalSatVaporPressure
+    "qsat",  // to be populated in evalSatSpecificHumidity
+    "specific_humidity",  // to be populated in evalSpecificHumidity
+    "mass_content_of_cloud_liquid_water_in_atmosphere_layer",
+      // to be populated in evalMassCloudLiquid
+    "mass_content_of_cloud_ice_in_atmosphere_layer",  // to be populated in evalMassCloudIce
+    "qrain",  // to be populated in evalMassRain
+    "rht",  // to be populated in evalTotalRelativeHumidity
+    "liquid_cloud_volume_fraction_in_atmosphere_layer",  // from file
+    "ice_cloud_volume_fraction_in_atmosphere_layer",  // from file
+    "cleff", "cfeff"  // to be populated in getMIOFields
+  };
 
   // Check that they are allocated (i.e. exist in the state fieldset)
   // Use meta data to see if they are populated with actual data.
@@ -129,13 +134,14 @@ MoistIncrOpSaberBlock<MODEL>::MoistIncrOpSaberBlock(const Geometry_ &,  // resol
   }
 
   mo::evalAirTemperature(augmentedStateFieldSet_);
-
+  mo::evalTotalMassMoistAir(augmentedStateFieldSet_);
   mo::evalSatVaporPressure(augmentedStateFieldSet_);
-
   mo::evalSatSpecificHumidity(augmentedStateFieldSet_);
-
+  mo::evalSpecificHumidity(augmentedStateFieldSet_);
+  mo::evalMassCloudLiquid(augmentedStateFieldSet_);
+  mo::evalMassCloudIce(augmentedStateFieldSet_);
+  mo::evalMassRain(augmentedStateFieldSet_);
   mo::evalTotalRelativeHumidity(augmentedStateFieldSet_);
-
   mo::functions::getMIOFields(augmentedStateFieldSet_);
 
   oops::Log::trace() << classname() << "::MoistIncrOpSaberBlock done" << std::endl;

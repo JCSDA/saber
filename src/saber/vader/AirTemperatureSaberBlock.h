@@ -154,9 +154,9 @@ void AirTemperatureSaberBlock<MODEL>::multiply(atlas::FieldSet & fset) const {
 
 template<typename MODEL>
 void AirTemperatureSaberBlock<MODEL>::inverseMultiply(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::inverseMultiply starting" << std::endl;
-
-  oops::Log::trace() << classname() << "::inverseMultiply done" << std::endl;
+  oops::Log::trace() << classname()
+                     << "::inverseMultiply not meaningful so fieldset unchanged"
+                     << std::endl;
 }
 
 // -----------------------------------------------------------------------------
@@ -172,9 +172,9 @@ void AirTemperatureSaberBlock<MODEL>::multiplyAD(atlas::FieldSet & fset) const {
 
 template<typename MODEL>
 void AirTemperatureSaberBlock<MODEL>::inverseMultiplyAD(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::inverseMultiplyAD starting" << std::endl;
-  this->inverseMultiply(fset);
-  oops::Log::trace() << classname() << "::inverseMultiplyAD done" << std::endl;
+  oops::Log::trace() << classname()
+                     << "::inverseMultiplyAD not meaningful so fieldset unchanged"
+                     << std::endl;
 }
 
 // -----------------------------------------------------------------------------
