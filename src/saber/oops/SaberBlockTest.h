@@ -148,8 +148,10 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       // Compute adjoint test
       const double dp1 = dx1.dot_product_with(dx2save);
       const double dp2 = dx2.dot_product_with(dx1save);
-      oops::Log::test() << "Adjoint test for central block " << saberCentralBlock_->name()
-        << std::endl;
+
+      oops::Log::test() << "Adjoint test for central block " << saberCentralBlock_->name() <<
+                           ": y^t (Ax) = " << dp1 <<
+                           "; x^t (Ay) = " << dp2 << std::endl;
       ASSERT(0.5*abs(dp1-dp2)/(dp1+dp2) < params.adjointTolerance.value());
     }
 
@@ -172,7 +174,9 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       // Compute adjoint test
       const double dp1 = dx1.dot_product_with(dx2save);
       const double dp2 = dx2.dot_product_with(dx1save);
-      oops::Log::test() << "Adjoint test for block " << it->name() << std::endl;
+      oops::Log::test() << "Adjoint test for block " << it->name() <<
+                            ": y^t (Ax) = " << dp1 <<
+                            "; x^t (A^t y) = " << dp2 << std::endl;
       ASSERT(0.5*abs(dp1-dp2)/(dp1+dp2) < params.adjointTolerance.value());
     }
 
