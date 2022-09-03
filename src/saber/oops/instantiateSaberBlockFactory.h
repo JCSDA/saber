@@ -24,6 +24,8 @@
 #if ENABLE_VADER
   #if ENABLE_VADER_MO
     #include "saber/vader/AirTemperatureSaberBlock.h"
+    #include "saber/vader/DryAirDensitySaberBlock.h"
+    #include "saber/vader/MoistIncrOpSaberBlock.h"
   #endif
 #endif
 
@@ -67,6 +69,10 @@ void instantiateSaberBlockFactory() {
     // MO-specific VADER-based blocks
     static SaberBlockMaker<MODEL, AirTemperatureSaberBlock<MODEL> >
            makerAirTemperatureSaberBlock_("mo_air_temperature");
+    static SaberBlockMaker<MODEL, DryAirDensitySaberBlock<MODEL> >
+                makerDryAirDensitySaberBlock_("mo_dry_air_density");
+    static SaberBlockMaker<MODEL, MoistIncrOpSaberBlock<MODEL> >
+           makerMoistIncrOpSaberBlock_("mo_moistincrop");
   #endif
 #endif
 
