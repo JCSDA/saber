@@ -5,8 +5,8 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_VADER_AIRTEMPERATURESABERBLOCK_H_
-#define SABER_VADER_AIRTEMPERATURESABERBLOCK_H_
+#ifndef SABER_VADER_HYDROSTATICEXNERSABERBLOCK_H_
+#define SABER_VADER_HYDROSTATICEXNERSABERBLOCK_H_
 
 #include <memory>
 #include <string>
@@ -23,10 +23,11 @@
 #include "oops/base/Increment.h"
 #include "oops/base/State.h"
 #include "oops/base/Variables.h"
-#include "oops/util/FieldSetOperations.h"
 
 #include "saber/oops/SaberBlockBase.h"
 #include "saber/oops/SaberBlockParametersBase.h"
+#include "saber/vader/CovarianceStatisticsUtils.h"
+#include "saber/vader/HydrostaticExnerParameters.h"
 
 namespace oops {
   class Variables;
@@ -35,30 +36,36 @@ namespace oops {
 namespace saber {
 
 // -----------------------------------------------------------------------------
-
-class AirTemperatureSaberBlockParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(AirTemperatureSaberBlockParameters, SaberBlockParametersBase)
+template <typename MODEL>
+class HydrostaticExnerSaberBlockParameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(HydrostaticExnerSaberBlockParameters, SaberBlockParametersBase)
  public:
+  oops::RequiredParameter<hydrostaticexnerParameters<MODEL>>
+    hydrostaticexnerParams{"covariance data", this};
 };
 
 // -----------------------------------------------------------------------------
-
+// This saber block is here to do 3 jobs
+// 1) the vertical regression on geostrophic pressure
+// 2) summing the result with unbalanced pressure to create hydrostatic_pressure
+// 3) converting hydrostatic pressure to exner pressure.
+// -----------------------------------------------------------------------------
 template <typename MODEL>
-class AirTemperatureSaberBlock : public SaberBlockBase<MODEL> {
+class HydrostaticExnerSaberBlock : public SaberBlockBase<MODEL> {
   typedef oops::Geometry<MODEL>             Geometry_;
   typedef oops::Increment<MODEL>            Increment_;
   typedef oops::State<MODEL>                State_;
 
  public:
-  static const std::string classname() {return "saber::AirTemperatureSaberBlock";}
+  static const std::string classname() {return "saber::HydrostaticExnerSaberBlock";}
 
-  typedef AirTemperatureSaberBlockParameters Parameters_;
+  typedef HydrostaticExnerSaberBlockParameters<MODEL> Parameters_;
 
-  AirTemperatureSaberBlock(const Geometry_ &,
+  HydrostaticExnerSaberBlock(const Geometry_ &,
          const Parameters_ &,
          const State_ &,
          const State_ &);
-  virtual ~AirTemperatureSaberBlock();
+  virtual ~HydrostaticExnerSaberBlock();
 
   void randomize(atlas::FieldSet &) const override;
   void multiply(atlas::FieldSet &) const override;
@@ -68,19 +75,24 @@ class AirTemperatureSaberBlock : public SaberBlockBase<MODEL> {
 
  private:
   void print(std::ostream &) const override;
+  oops::Variables inputVars_;
+  atlas::FieldSet covFieldSet_;
   atlas::FieldSet augmentedStateFieldSet_;
 };
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-AirTemperatureSaberBlock<MODEL>::AirTemperatureSaberBlock(const Geometry_ & resol,
-                      const AirTemperatureSaberBlockParameters & params,
+HydrostaticExnerSaberBlock<MODEL>::HydrostaticExnerSaberBlock(const Geometry_ & resol,
+                      const Parameters_ & params,
                       const State_ & xb,
                       const State_ & fg)
-  : SaberBlockBase<MODEL>(params), augmentedStateFieldSet_()
+  : SaberBlockBase<MODEL>(params),
+    inputVars_(params.inputVars.value()),
+    covFieldSet_(createGpRegressionStats(resol, inputVars_, params.hydrostaticexnerParams.value())),
+    augmentedStateFieldSet_()
 {
-  oops::Log::trace() << classname() << "::AirTemperatureSaberBlock starting" << std::endl;
+  oops::Log::trace() << classname() << "::HydrostaticExnerSaberBlock starting" << std::endl;
 
   // Setup and check input/output variables
   const oops::Variables inputVars = params.inputVars.value();
@@ -97,18 +109,14 @@ AirTemperatureSaberBlock<MODEL>::AirTemperatureSaberBlock(const Geometry_ & reso
     activeVars += inputVars;
   }
 
-  // Need to setup derived state fields that we need.
-  std::vector<std::string> requiredStateVariables{"exner_levels_minus_one",
-                                                  "potential_temperature"};
-
-  std::vector<std::string> requiredGeometryVariables{"height_levels",
-                                                     "height"};
+  std::vector<std::string> requiredStateVariables{
+    "air_pressure_levels_minus_one", "exner_levels_minus_one"};
 
   // Check that they are allocated (i.e. exist in the state fieldset)
   // Use meta data to see if they are populated with actual data.
   for (auto & s : requiredStateVariables) {
     if (!xb.variables().has(s)) {
-      oops::Log::info() << "AirTemperatureSaberBlock variable " << s <<
+      oops::Log::info() << "HydrostaticExnerSaberBlock variable " << s <<
                            " is not part of state object." << std::endl;
     }
   }
@@ -118,44 +126,48 @@ AirTemperatureSaberBlock<MODEL>::AirTemperatureSaberBlock(const Geometry_ & reso
     augmentedStateFieldSet_.add(xb.fieldSet()[s]);
   }
 
-  for (const auto & s : requiredGeometryVariables) {
-    augmentedStateFieldSet_.add(resol.extraFields()[s]);
+  // Need to setup derived state fields that we need.
+  std::vector<std::string> requiredCovarianceVariables{
+    "vertical_regression_matrices", "interpolation_weights"};
+
+  for (const auto & s : requiredCovarianceVariables) {
+    augmentedStateFieldSet_.add(covFieldSet_[s]);
   }
 
-  oops::Log::trace() << classname() << "::AirTemperatureSaberBlock done" << std::endl;
+  oops::Log::trace() << classname() << "::HydrostaticExnerSaberBlock done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-AirTemperatureSaberBlock<MODEL>::~AirTemperatureSaberBlock() {
-  oops::Log::trace() << classname() << "::~AirTemperatureSaberBlock starting" << std::endl;
-  util::Timer timer(classname(), "~AirTemperatureSaberBlock");
-  oops::Log::trace() << classname() << "::~AirTemperatureSaberBlock done" << std::endl;
+HydrostaticExnerSaberBlock<MODEL>::~HydrostaticExnerSaberBlock() {
+  oops::Log::trace() << classname() << "::~HydrostaticExnerSaberBlock starting" << std::endl;
+  util::Timer timer(classname(), "~HydrostaticExnerSaberBlock");
+  oops::Log::trace() << classname() << "::~HydrostaticExnerSaberBlock done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void AirTemperatureSaberBlock<MODEL>::randomize(atlas::FieldSet & fset) const {
+void HydrostaticExnerSaberBlock<MODEL>::randomize(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::randomize starting" << std::endl;
-  throw eckit::NotImplemented("AirTemperatureSaberBlock<MODEL>::randomize", Here());
+  throw eckit::NotImplemented("HydrostaticExnerSaberBlock<MODEL>::randomize", Here());
   oops::Log::trace() << classname() << "::randomize done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void AirTemperatureSaberBlock<MODEL>::multiply(atlas::FieldSet & fset) const {
+void HydrostaticExnerSaberBlock<MODEL>::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  mo::evalAirTemperatureTL(fset, augmentedStateFieldSet_);
+  mo::evalHydrostaticExnerTL(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void AirTemperatureSaberBlock<MODEL>::inverseMultiply(atlas::FieldSet & fset) const {
+void HydrostaticExnerSaberBlock<MODEL>::inverseMultiply(atlas::FieldSet & fset) const {
   oops::Log::info() << classname()
                     << "::inverseMultiply not meaningful so fieldset unchanged"
                     << std::endl;
@@ -164,16 +176,16 @@ void AirTemperatureSaberBlock<MODEL>::inverseMultiply(atlas::FieldSet & fset) co
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void AirTemperatureSaberBlock<MODEL>::multiplyAD(atlas::FieldSet & fset) const {
+void HydrostaticExnerSaberBlock<MODEL>::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  mo::evalAirTemperatureAD(fset, augmentedStateFieldSet_);
+  mo::evalHydrostaticExnerAD(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void AirTemperatureSaberBlock<MODEL>::inverseMultiplyAD(atlas::FieldSet & fset) const {
+void HydrostaticExnerSaberBlock<MODEL>::inverseMultiplyAD(atlas::FieldSet & fset) const {
   oops::Log::info() << classname()
                     << "::inverseMultiplyAD not meaningful so fieldset unchanged"
                     << std::endl;
@@ -182,7 +194,7 @@ void AirTemperatureSaberBlock<MODEL>::inverseMultiplyAD(atlas::FieldSet & fset) 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void AirTemperatureSaberBlock<MODEL>::print(std::ostream & os) const {
+void HydrostaticExnerSaberBlock<MODEL>::print(std::ostream & os) const {
   os << classname();
 }
 
@@ -190,4 +202,4 @@ void AirTemperatureSaberBlock<MODEL>::print(std::ostream & os) const {
 
 }  // namespace saber
 
-#endif  // SABER_VADER_AIRTEMPERATURESABERBLOCK_H_
+#endif  // SABER_VADER_HYDROSTATICEXNERSABERBLOCK_H_

@@ -15,6 +15,8 @@
 #include "atlas/array.h"
 #include "atlas/field.h"
 
+#include "eckit/exception/Exceptions.h"
+
 #include "mo/control2analysis_linearvarchange.h"
 #include "mo/control2analysis_varchange.h"
 #include "mo/model2geovals_varchange.h"
@@ -138,7 +140,7 @@ DryAirDensitySaberBlock<MODEL>::~DryAirDensitySaberBlock() {
 template<typename MODEL>
 void DryAirDensitySaberBlock<MODEL>::randomize(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::randomize starting" << std::endl;
-  ABORT("DryAirDensitySaberBlock<MODEL>::randomize: not implemented");
+  throw eckit::NotImplemented("DryAirDensitySaberBlock<MODEL>::randomize", Here());
   oops::Log::trace() << classname() << "::randomize done" << std::endl;
 }  // randomize
 
@@ -151,9 +153,9 @@ void DryAirDensitySaberBlock<MODEL>::multiply(atlas::FieldSet & fset) const {
 
 template<typename MODEL>
 void DryAirDensitySaberBlock<MODEL>::inverseMultiply(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname()
-                     << "::inverseMultiply not meaningful so fieldset unchanged"
-                     << std::endl;
+  oops::Log::info() << classname()
+                    << "::inverseMultiply not meaningful so fieldset unchanged"
+                    << std::endl;
 }  // inverseMultiply
 
 template<typename MODEL>
@@ -165,9 +167,9 @@ void DryAirDensitySaberBlock<MODEL>::multiplyAD(atlas::FieldSet & fset) const {
 
 template<typename MODEL>
 void DryAirDensitySaberBlock<MODEL>::inverseMultiplyAD(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname()
-                     << "::inverseMultiplyAD not meaningful so fieldset unchanged"
-                     << std::endl;
+  oops::Log::info() << classname()
+                    << "::inverseMultiplyAD not meaningful so fieldset unchanged"
+                    << std::endl;
 }  // inverseMultiplyAD
 
 template<typename MODEL>
