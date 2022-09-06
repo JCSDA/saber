@@ -134,6 +134,7 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       // Generate random increments and save them
       dx1.random();
       dx2.random();
+
       dx1save = dx1;
       dx2save = dx2;
 

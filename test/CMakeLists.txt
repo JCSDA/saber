@@ -183,7 +183,7 @@ if( oops_FOUND )
                                   DEPENDS saber_quench_randomization.x )
             endif()
         endforeach()
-    
+
         # Error covariance training tests
         foreach( test ${saber_test_full} )
             string( FIND ${test} "error_covariance_training" result )
@@ -196,30 +196,38 @@ if( oops_FOUND )
                                   DEPENDS saber_quench_error_covariance_training.x )
             endif()
         endforeach()
-    
+
         # Adjoint/inverse tests
         foreach( test ${saber_test_full} )
-            string( FIND ${test} "saber_block_test" result )
-            if( result MATCHES 0 )
-                ecbuild_add_test( TARGET saber_test_${test}_${mpi}-${omp}
-                                  MPI ${mpi}
-                                  OMP ${omp}
-                                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_saber_block_test.x
-                                  ARGS testinput/${test}.yaml
-                                  DEPENDS saber_quench_saber_block_test.x )
+            # Special check for spectralb (TODO: should be removed when spectralb works with more than 1 MPI task) 
+            string( FIND ${test} "spectralb" result )
+            if( ( result EQUAL -1 ) OR ( ${mpi} LESS_EQUAL 1 AND ${omp} LESS_EQUAL 1 ) )
+                string( FIND ${test} "saber_block_test" result )
+                if( result MATCHES 0 )
+                    ecbuild_add_test( TARGET saber_test_${test}_${mpi}-${omp}
+                                      MPI ${mpi}
+                                      OMP ${omp}
+                                      COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_saber_block_test.x
+                                      ARGS testinput/${test}.yaml
+                                      DEPENDS saber_quench_saber_block_test.x )
+                endif()
             endif()
         endforeach()
     
         # Dirac tests
         foreach( test ${saber_test_full} )
-            string( FIND ${test} "dirac" result )
-            if( result MATCHES 0 )
-                ecbuild_add_test( TARGET saber_test_${test}_${mpi}-${omp}
-                                  MPI ${mpi}
-                                  OMP ${omp}
-                                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_dirac.x
-                                  ARGS testinput/${test}.yaml
-                                  DEPENDS saber_quench_dirac.x )
+            # Special check for spectralb (TODO: should be removed when spectralb works with more than 1 MPI task) 
+            string( FIND ${test} "spectralb" result )
+            if( ( result EQUAL -1 ) OR ( ${mpi} LESS_EQUAL 1 AND ${omp} LESS_EQUAL 1 ) )
+                string( FIND ${test} "dirac" result )
+                if( result MATCHES 0 )
+                    ecbuild_add_test( TARGET saber_test_${test}_${mpi}-${omp}
+                                      MPI ${mpi}
+                                      OMP ${omp}
+                                      COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_dirac.x
+                                      ARGS testinput/${test}.yaml
+                                      DEPENDS saber_quench_dirac.x )
+                endif()
             endif()
         endforeach()
 
@@ -230,9 +238,9 @@ if( oops_FOUND )
                 ecbuild_add_test( TARGET saber_test_${test}_${mpi}-${omp}
                                   MPI ${mpi}
                                   OMP ${omp}
-                                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_dirac.x
+                                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_convertstate.x
                                   ARGS testinput/${test}.yaml
-                                  DEPENDS saber_quench_dirac.x )
+                                  DEPENDS saber_quench_convertstate.x )
             endif()
         endforeach()
 

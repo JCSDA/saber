@@ -1,20 +1,21 @@
 geometry:
   function space: StructuredColumns
   grid:
-    type : regular_gaussian
-    N : 20
+    type: regular_gaussian
+    N: 20
   levels: 10
-  halo: 3
-variables: &vars [var]
+  halo: 0
+variables: &id001
+- var1
 background:
-  date: 2010-01-01T12:00:00Z
-  state variables: *vars
+  date: '2010-01-01T12:00:00Z'
+  state variables: *id001
 saber blocks:
 - saber block name: BUMP_NICAS
   saber central block: true
   iterative inverse: true
-  input variables: *vars
-  output variables: *vars
+  input variables: *id001
+  output variables: *id001
   bump:
     testing: true
     datadir: testdata
@@ -22,6 +23,5 @@ saber blocks:
     load_nicas_local: true
     prefix: saber_block_test_bump_nicas/_MPI_-_OMP_
     strategy: specific_univariate
-
 test:
   reference filename: testref/saber_block_test_bump_nicas.ref

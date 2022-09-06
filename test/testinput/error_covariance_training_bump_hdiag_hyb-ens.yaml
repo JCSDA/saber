@@ -1,53 +1,54 @@
 geometry:
   function space: StructuredColumns
   grid:
-    type : regular_gaussian
-    N : 20
+    type: regular_gaussian
+    N: 20
   levels: 10
   halo: 3
 lowres geometry:
   function space: StructuredColumns
   grid:
-    type : regular_gaussian
-    N : 10
+    type: regular_gaussian
+    N: 10
   levels: 10
   halo: 3
-input variables: &vars [var]
+input variables: &id001
+- var1
 background:
-  date: 2010-01-01T12:00:00Z
-  state variables: *vars
+  date: '2010-01-01T12:00:00Z'
+  state variables: *id001
 ensemble:
   members from template:
     template:
-      date: 2010-01-01T12:00:00Z
+      date: '2010-01-01T12:00:00Z'
       filepath: testdata/randomization_bump_nicas_F20L10/member_%mem%
-      state variables: *vars
+      state variables: *id001
     pattern: '%mem%'
     nmembers: 10
     zero padding: 6
 lowres ensemble:
   members from template:
     template:
-      date: 2010-01-01T12:00:00Z
+      date: '2010-01-01T12:00:00Z'
       filepath: testdata/randomization_bump_nicas_F10L10/member_%mem%
-      state variables: *vars
+      state variables: *id001
     pattern: '%mem%'
     nmembers: 50
     zero padding: 6
 bump:
   datadir: testdata
-  dc: 500.0e3
+  prefix: error_covariance_training_bump_hdiag_hyb-ens/_MPI_-_OMP_
+  testing: true
   method: hyb-ens
+  strategy: specific_univariate
+  new_hdiag: true
+  write_hdiag: true
   nc1: 500
   nc3: 15
+  dc: 500.0e3
+  nl0r: 10
   ne: 10
   ne_lr: 50
-  new_hdiag: true
-  nl0r: 10
-  prefix: error_covariance_training_bump_hdiag_hyb-ens/_MPI_-_OMP_
-  strategy: specific_univariate
-  testing: true
-  write_hdiag: true
   output:
   - filepath: testdata/error_covariance_training_bump_hdiag_hyb-ens/_MPI_-_OMP__loc_rh
     parameter: loc_rh
@@ -61,6 +62,5 @@ bump:
     parameter: loc_rv_lr
   - filepath: testdata/error_covariance_training_bump_hdiag_hyb-ens/_MPI_-_OMP__hyb_coef_ens_lr
     parameter: hyb_coef_ens_lr
-
 test:
   reference filename: testref/error_covariance_training_bump_hdiag_hyb-ens.ref

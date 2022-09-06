@@ -263,7 +263,7 @@ double Fields::dot_product_with(const Fields & fld2) const {
       }
     }
   }
-  this->geom_->getComm().allReduceInPlace(zz, eckit::mpi::sum());
+  geom_->getComm().allReduceInPlace(zz, eckit::mpi::sum());
   return zz;
 }
 // -----------------------------------------------------------------------------
@@ -296,18 +296,65 @@ void Fields::random() {
       }
     }
   }
+  geom_->getComm().allReduceInPlace(n, eckit::mpi::sum());
 
-  // Random vector
-  util::NormalDistribution<double>rand_vec(n, 0.0, 1.0, 1);
+  // Global fieldset
+  atlas::FieldSet globalData;
 
-  // Copy random values
-  n = 0;
-  for (const auto var : vars_.variables()) {
-    atlas::Field field = fset_[var];
-    if (field.rank() == 2) {
-      auto view = atlas::array::make_view<double, 2>(field);
-      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-        if (ghostView(jnode) == 0) {
+  // Create global data fieldset
+  if (geom_->functionSpace().type() == "StructuredColumns") {
+    // StructuredColumns
+    atlas::functionspace::StructuredColumns fs(geom_->functionSpace());
+
+    // Create global data fieldset
+    for (const auto var : vars_.variables()) {
+      atlas::Field field = fs.createField<double>(atlas::option::name(var)
+        | atlas::option::levels(geom_->levels()) | atlas::option::global());
+      globalData.add(field);
+    }
+  } else if (geom_->functionSpace().type() == "NodeColumns") {
+    // NodeColumns
+    if (geom_->grid().name().compare(0, 2, std::string{"CS"}) == 0) {
+// TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
+#if atlas_TRANS_FOUND
+      // CubedSphere
+      atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
+
+      // Create global data fieldset
+      for (const auto var : vars_.variables()) {
+        atlas::Field field = fs.createField<double>(atlas::option::name(var)
+          | atlas::option::levels(geom_->levels()) | atlas::option::global());
+        globalData.add(field);
+      }
+#else
+      ABORT("TRANS required");
+#endif
+    } else {
+      // Other NodeColumns
+      atlas::functionspace::NodeColumns fs(geom_->functionSpace());
+
+      // Create global data fieldset
+      for (const auto var : vars_.variables()) {
+        atlas::Field field = fs.createField<double>(atlas::option::name(var)
+          | atlas::option::levels(geom_->levels()) | atlas::option::global());
+        globalData.add(field);
+      }
+    }
+  } else {
+    ABORT(geom_->functionSpace().type() + " function space not supported yet");
+  }
+
+  if (geom_->getComm().rank() == 0) {
+    // Random vector
+    util::NormalDistribution<double>rand_vec(n, 0.0, 1.0, 1);
+
+    // Copy random values
+    n = 0;
+    for (const auto var : vars_.variables()) {
+      atlas::Field field = globalData[var];
+      if (field.rank() == 2) {
+        auto view = atlas::array::make_view<double, 2>(field);
+        for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
           for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
             view(jnode, jlevel) = rand_vec[n];
             n += 1;
@@ -315,6 +362,31 @@ void Fields::random() {
         }
       }
     }
+  }
+
+  // Scatter data from main processor
+  if (geom_->functionSpace().type() == "StructuredColumns") {
+    // StructuredColumns
+    atlas::functionspace::StructuredColumns fs(geom_->functionSpace());
+    fs.scatter(globalData, fset_);
+  } else if (geom_->functionSpace().type() == "NodeColumns") {
+    // NodeColumns
+    if (geom_->grid().name().compare(0, 2, std::string{"CS"}) == 0) {
+// TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
+#if atlas_TRANS_FOUND
+      // CubedSphere
+      atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
+      fs.scatter(globalData, fset_);
+#else
+      ABORT("TRANS required");
+#endif
+    } else {
+      // Other NodeColumns
+      atlas::functionspace::NodeColumns fs(geom_->functionSpace());
+      fs.scatter(globalData, fset_);
+    }
+  } else {
+    ABORT(geom_->functionSpace().type() + " function space not supported yet");
   }
 }
 // -----------------------------------------------------------------------------
@@ -497,7 +569,7 @@ void Fields::read(const eckit::Configuration & config) {
     filepath.append(out.str());
   }
 
-  // Common object
+  // Global fieldset
   atlas::FieldSet globalData;
 
   // NetCDF input
@@ -674,7 +746,7 @@ void Fields::write(const eckit::Configuration & config) const {
   // Missing value
   double msv(-999.0);  // TODO(Benjamin) should be missing values
 
-  // Common objects
+  // Local and global fieldsets
   atlas::FieldSet localCoordinates;
   atlas::Field lonLocal;
   atlas::Field latLocal;
@@ -1093,7 +1165,9 @@ void Fields::print(std::ostream & os) const {
         }
       }
     }
-    this->geom_->getComm().allReduceInPlace(zz, eckit::mpi::sum());
+    if (geom_->functionSpace().type() != "PointCloud") {
+      geom_->getComm().allReduceInPlace(zz, eckit::mpi::sum());
+    }
     zz = sqrt(zz);
     os << "  " << var << ": " << zz;
   }

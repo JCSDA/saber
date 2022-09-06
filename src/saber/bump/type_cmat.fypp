@@ -309,26 +309,24 @@ if (nam%forced_radii) then
    end if
 
    ! Convolution parameters
-   if (nam%forced_radii) then
-      write(mpl%info,'(a7,a)') '','Copy namelist radii into C matrix'
-      call mpl%flush
+   write(mpl%info,'(a7,a)') '','Copy namelist radii into C matrix'
+   call mpl%flush
 
-      do iv=0,nam%nv
-         ib = bpar%v_to_b(iv)
-         if (ib>0) then
-            if (bpar%nicas_block(ib)) then
-               ! Copy support radii and number of components
-               do il0=1,geom%nl0
-                  do icmp=1,ncmp(ib)
-                     cmat%blk(ib)%a(:,il0,icmp) = one/real(ncmp(ib),kind_real)
-                     cmat%blk(ib)%rh(:,il0,icmp) = nam%rh(il0,iv)/real(2**(icmp-1),kind_real)
-                     cmat%blk(ib)%rv(:,il0,icmp) = nam%rv(il0,iv)/real(2**(icmp-1),kind_real)
-                  end do
+   do iv=0,nam%nv
+      ib = bpar%v_to_b(iv)
+      if (ib>0) then
+         if (bpar%nicas_block(ib)) then
+            ! Copy support radii and number of components
+            do il0=1,geom%nl0
+               do icmp=1,ncmp(ib)
+                  cmat%blk(ib)%a(:,il0,icmp) = one/real(ncmp(ib),kind_real)
+                  cmat%blk(ib)%rh(:,il0,icmp) = nam%rh(il0,iv)/real(2**(icmp-1),kind_real)
+                  cmat%blk(ib)%rv(:,il0,icmp) = nam%rv(il0,iv)/real(2**(icmp-1),kind_real)
                end do
-            end if
+            end do
          end if
-      end do
-   end if
+      end if
+   end do
 end if
 
 ! Probe out

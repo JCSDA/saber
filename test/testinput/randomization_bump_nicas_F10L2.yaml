@@ -1,39 +1,44 @@
 geometry:
   function space: StructuredColumns
   grid:
-    type : regular_gaussian
-    N : 10
+    type: regular_gaussian
+    N: 10
   levels: 2
   halo: 0
-variables: &vars [var1,var2]
+variables: &id001
+- var1
+- var2
 background:
-  date: 2010-01-01T12:00:00Z
-  state variables: *vars
+  date: '2010-01-01T12:00:00Z'
+  state variables: *id001
 background error:
   covariance model: SABER
   saber blocks:
   - saber block name: BUMP_NICAS
     saber central block: true
-    input variables: *vars
-    output variables: *vars
+    input variables: *id001
+    output variables: *id001
     bump:
       datadir: testdata
-      forced_radii: true
-      method: cor
-      new_nicas: true
       prefix: randomization_bump_nicas_F10L2/_MPI_-_OMP_
-      resol: 4.0
-      rh:
-        var1: [7.0e6]
-        var2: [8.0e6]
-      rv:
-        var1: [2.0]
-        var2: [4.0]
-      strategy: specific_univariate
       testing: true
+      method: cor
+      strategy: specific_univariate
+      new_nicas: true
+      resol: 4.0
+      forced_radii: true
+      rh:
+        var1:
+        - 7.0e6
+        var2:
+        - 8.0e6
+      rv:
+        var1:
+        - 2.0
+        var2:
+        - 4.0
   randomization size: 25
 output:
   filepath: testdata/randomization_bump_nicas_F10L2/member
-
 test:
   reference filename: testref/randomization_bump_nicas_F10L2.ref

@@ -8,10 +8,11 @@
 #ifndef SABER_BUMP_BUMP_H_
 #define SABER_BUMP_BUMP_H_
 
+#include <omp.h>
+
 #include <algorithm>
 #include <fstream>
 #include <memory>
-#include <omp.h>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -99,30 +100,6 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(BUMP_Parameters, oops::Parameters)
 
  public:
-  // External parameters
-
-  // Universe radius (increment)
-  oops::OptionalParameter<eckit::LocalConfiguration> universeRadius{"universe radius", this};
-  // Components input parameters
-  oops::OptionalParameter<BUMPInputNcmpParameters> inputNcmp{"input number of components", this};
-  // Input parameters
-  oops::OptionalParameter<std::vector<BUMPInputParameters<MODEL>>> input{"input", this};
-  // Ensemble 1 parameters
-  oops::OptionalParameter<eckit::LocalConfiguration> ensemble1{"ensemble", this};
-  // Ensemble 2 parameters
-  oops::OptionalParameter<eckit::LocalConfiguration> ensemble2{"lowres ensemble", this};
-  // Missing value (real)
-  oops::OptionalParameter<double> msvalr{"msvalr", this};
-  // Grids
-  oops::OptionalParameter<eckit::LocalConfiguration> grids{"grids", this};
-  // Output number of components
-  oops::OptionalParameter<BUMPOutputNcmpParameters> outputNcmp{"output number of components", this};
-  // Output parameters
-  oops::OptionalParameter<std::vector<BUMPOutputParameters<MODEL>>> output{"output", this};
-  // Operators application
-  oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> appConfs{"operators application",
-    this};
-
   // Internal parameters
 
   // general_param
@@ -482,6 +459,30 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<int> wind_nsg{"wind_nsg", this};
   // Wind inflation to compensate the Savitzky-Golay smoothing
   oops::OptionalParameter<double> wind_inflation{"wind_inflation", this};
+
+  // External parameters
+
+  // Universe radius (increment)
+  oops::OptionalParameter<eckit::LocalConfiguration> universeRadius{"universe radius", this};
+  // Components input parameters
+  oops::OptionalParameter<BUMPInputNcmpParameters> inputNcmp{"input number of components", this};
+  // Input parameters
+  oops::OptionalParameter<std::vector<BUMPInputParameters<MODEL>>> input{"input", this};
+  // Ensemble 1 parameters
+  oops::OptionalParameter<eckit::LocalConfiguration> ensemble1{"ensemble", this};
+  // Ensemble 2 parameters
+  oops::OptionalParameter<eckit::LocalConfiguration> ensemble2{"lowres ensemble", this};
+  // Missing value (real)
+  oops::OptionalParameter<double> msvalr{"msvalr", this};
+  // Grids
+  oops::OptionalParameter<eckit::LocalConfiguration> grids{"grids", this};
+  // Output number of components
+  oops::OptionalParameter<BUMPOutputNcmpParameters> outputNcmp{"output number of components", this};
+  // Output parameters
+  oops::OptionalParameter<std::vector<BUMPOutputParameters<MODEL>>> output{"output", this};
+  // Operators application
+  oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> appConfs{"operators application",
+    this};
 };
 
 // -----------------------------------------------------------------------------
@@ -585,8 +586,8 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
       {
           omp = std::to_string(omp_get_num_threads());
       }
-      if (verbosity_) oops::Log::info() << "Info     : Number of MPI tasks:      " << mpi << std::endl;
-      if (verbosity_) oops::Log::info() << "Info     : Number of OpenMP threads: " << omp << std::endl;
+      if (verbosity_) oops::Log::info() << "Info     : MPI tasks:      " << mpi << std::endl;
+      if (verbosity_) oops::Log::info() << "Info     : OpenMP threads: " << omp << std::endl;
 
       // Replace patterns
       std::cout << "AVANT :" << fullConfig << std::endl;

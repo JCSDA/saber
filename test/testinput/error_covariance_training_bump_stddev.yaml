@@ -1,20 +1,21 @@
 geometry:
   function space: StructuredColumns
   grid:
-    type : regular_gaussian
-    N : 20
+    type: regular_gaussian
+    N: 20
   levels: 10
   halo: 3
-input variables: &vars [var]
+input variables: &id001
+- var1
 background:
-  date: 2010-01-01T12:00:00Z
-  state variables: *vars
+  date: '2010-01-01T12:00:00Z'
+  state variables: *id001
 ensemble:
   members from template:
     template:
-      date: 2010-01-01T12:00:00Z
+      date: '2010-01-01T12:00:00Z'
       filepath: testdata/randomization_bump_nicas_F20L10/member_%mem%
-      state variables: *vars
+      state variables: *id001
     pattern: '%mem%'
     nmembers: 10
     zero padding: 6
@@ -25,8 +26,7 @@ bump:
   new_var: true
   ne: 10
   output:
-  - filepath: testdata/error_covariance_training_bump_stddev/_MPI_-_OMP__stddev
+  - filepath: testdata/error_covariance_training_bump_stddev/stddev
     parameter: stddev
-
 test:
   reference filename: testref/error_covariance_training_bump_stddev.ref

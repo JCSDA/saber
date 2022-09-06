@@ -1,49 +1,59 @@
 geometry:
   function space: StructuredColumns
   grid:
-    type : regular_gaussian
-    N : 10
+    type: regular_gaussian
+    N: 10
   levels: 2
   halo: 0
-input variables: &vars [var1,var2]
+input variables: &id001
+- var1
+- var2
 background:
-  date: 2010-01-01T12:00:00Z
-  state variables: *vars
+  date: '2010-01-01T12:00:00Z'
+  state variables: *id001
 ensemble:
   members from template:
     template:
-      date: 2010-01-01T12:00:00Z
+      date: '2010-01-01T12:00:00Z'
       filepath: testdata/randomization_bump_nicas_F10L2/member_%mem%
-      state variables: *vars
+      state variables: *id001
     pattern: '%mem%'
     nmembers: 25
     zero padding: 6
 bump:
   datadir: testdata
-  dc: 800.0e3
-  diag_rhflt: 2000.0e3
-  lat_ldwv: [7.0,55.0,63.0]
-  local_diag: true
-  local_rad: 1000.0e3
-  lon_ldwv: [0.0,22.0,-127.0]
+  prefix: error_covariance_training_bump_hdiag_ldwv/_MPI_-_OMP_
+  testing: true
   method: cor
-  name_ldwv: ["A","B","C"]
+  strategy: specific_univariate
+  new_hdiag: true
+  write_hdiag: true
   nc1: 500
   nc2: 250
   nc3: 10
-  ne: 25
-  new_hdiag: true
+  dc: 800.0e3
   nl0r: 2
+  ne: 25
+  local_diag: true
+  local_rad: 1000.0e3
+  diag_rhflt: 2000.0e3
   nldwv: 3
-  prefix: error_covariance_training_bump_hdiag_ldwv/_MPI_-_OMP_
-  strategy: specific_univariate
-  testing: true
-  write_hdiag: true
+  lon_ldwv:
+  - 0.0
+  - 22.0
+  - -127.0
+  lat_ldwv:
+  - 7.0
+  - 55.0
+  - 63.0
+  name_ldwv:
+  - A
+  - B
+  - C
   output:
   - filepath: testdata/error_covariance_training_bump_hdiag_ldwv/_MPI_-_OMP__cor_rh
     parameter: cor_rh
   - filepath: testdata/error_covariance_training_bump_hdiag_ldwv/_MPI_-_OMP__cor_rv
     parameter: cor_rv
-
 test:
   reference filename: testref/error_covariance_training_bump_hdiag_ldwv.ref
