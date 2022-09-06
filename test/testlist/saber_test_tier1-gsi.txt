@@ -1,2 +1,2 @@
-quench_dirac_gsi_global
-quench_dirac_gsi_gmao_global
+dirac_gsi_global
+dirac_gsi_gmao_global

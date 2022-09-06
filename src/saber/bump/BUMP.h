@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <fstream>
 #include <memory>
+#include <omp.h>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -554,7 +555,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
   oops::Log::trace() << "BUMP<MODEL>::BUMP construction starting" << std::endl;
 
   // BUMP verbosity level ('all', 'main' or 'none')
-  const boost::optional<std::string> &verbosity = params.verbosity.value();
+  const boost::optional<std::string> &verbosity = params_.verbosity.value();
   if (verbosity == boost::none) {
     verbosity_ = true;
   } else {
@@ -569,6 +570,36 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
     }
   }
 
+  // If testing is activated, replace _MPI_ and _OMP_ patterns
+  const boost::optional<bool> &testing = params_.testing.value();
+  if (testing != boost::none) {
+    if (testing) {
+      // Convert to eckit configuration
+      eckit::LocalConfiguration fullConfig;
+      params_.serialize(fullConfig);
+
+      // Get number of MPI tasks and OpenMP threads
+      std::string mpi(std::to_string(geom1.getComm().size()));
+      std::string omp("1");
+      # pragma omp parallel
+      {
+          omp = std::to_string(omp_get_num_threads());
+      }
+      if (verbosity_) oops::Log::info() << "Info     : Number of MPI tasks:      " << mpi << std::endl;
+      if (verbosity_) oops::Log::info() << "Info     : Number of OpenMP threads: " << omp << std::endl;
+
+      // Replace patterns
+      std::cout << "AVANT :" << fullConfig << std::endl;
+      util::seekAndReplace(fullConfig, "_MPI_", mpi);
+      util::seekAndReplace(fullConfig, "_OMP_", omp);
+      std::cout << "APRES :" << fullConfig << std::endl;
+
+      // Convert back to parameters
+      params_.deserialize(fullConfig);
+    }
+  }
+
+
   // Define base increments
   Increment_ dx1(geom1, activeVars_, xb.validTime());
   Increment_ dx2(geom2, activeVars_, xb.validTime());
@@ -576,7 +607,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
   // Get ensemble 1 size if ensemble 1 is available
   int ens1_ne = 0;
   if (ens1) ens1_ne = ens1->size();
-  const boost::optional<eckit::LocalConfiguration> &ensembleConfig1 = params.ensemble1.value();
+  const boost::optional<eckit::LocalConfiguration> &ensembleConfig1 = params_.ensemble1.value();
   std::vector<eckit::LocalConfiguration> membersConfig1;
   if (ensembleConfig1 != boost::none) {
     // Abort if both "members" and "members from template" are specified
@@ -626,7 +657,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
   // Get ensemble 2 size if ensemble 2 is available
   int ens2_ne = 0;
   if (ens2) ens2_ne = ens2->size();
-  const boost::optional<eckit::LocalConfiguration> &ensembleConfig2 = params.ensemble2.value();
+  const boost::optional<eckit::LocalConfiguration> &ensembleConfig2 = params_.ensemble2.value();
   std::vector<eckit::LocalConfiguration> membersConfig2;
   if (ensembleConfig2 != boost::none) {
     // Abort if both "members" and "members from template" are specified
@@ -676,7 +707,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
   // Read universe size
   if (verbosity_) oops::Log::info() << "Info     : Read universe radius" << std::endl;
   atlas::FieldSet universe_rad = atlas::FieldSet();
-  const boost::optional<eckit::LocalConfiguration> &universeRadius = params.universeRadius.value();
+  const boost::optional<eckit::LocalConfiguration> &universeRadius = params_.universeRadius.value();
   if (universeRadius != boost::none) {
     // Read universe radius
     dx1.read(*universeRadius);
@@ -688,7 +719,7 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
   }
 
   // Add ensemble sizes
-  eckit::LocalConfiguration conf(params.toConfiguration());
+  eckit::LocalConfiguration conf(params_.toConfiguration());
   if (!conf.has("ens1_ne")) conf.set("ens1_ne", ens1_ne);
   if (!conf.has("ens2_ne")) conf.set("ens2_ne", ens2_ne);
 

@@ -25,9 +25,6 @@ rm -fr ${CMAKE_CURRENT_BINARY_DIR}/testref
 # Make working directories
 mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/testdata
 mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/testinput
-for mpixomp in ${mpixomp_list}; do
-   mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/testinput/${mpixomp}
-done
 mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/testref
 while IFS= read -r line; do
    mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/testdata/${line}

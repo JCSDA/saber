@@ -1,0 +1,897 @@
+       Compute independent levels:  1[10] 
+          Level   1:   1737034820
+          Level   2:   1737034820
+          Level   3:   1737034820
+          Level   4:   1737034820
+          Level   5:   1737034820
+          Level   6:   1737034820
+          Level   7:   1737034820
+          Level   8:   1737034820
+          Level   9:   1737034820
+          Level  10:   1737034820
+          Model grid size:             3200
+          Subset Sc0 size:             3200
+          Number of duplicated points (halo):         0 (  0.00%)
+          Min. / max. longitudes: -175.5 /   180.0
+          Min. / max. latitudes:   -86.6 /    86.6
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   3 ~> 100.0%
+             Level   4 ~> 100.0%
+             Level   5 ~> 100.0%
+             Level   6 ~> 100.0%
+             Level   7 ~> 100.0%
+             Level   8 ~> 100.0%
+             Level   9 ~> 100.0%
+             Level  10 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. unit
+             Level   2 ~>  0.200E+01 vert. unit
+             Level   3 ~>  0.300E+01 vert. unit
+             Level   4 ~>  0.400E+01 vert. unit
+             Level   5 ~>  0.500E+01 vert. unit
+             Level   6 ~>  0.600E+01 vert. unit
+             Level   7 ~>  0.700E+01 vert. unit
+             Level   8 ~>  0.800E+01 vert. unit
+             Level   9 ~>  0.900E+01 vert. unit
+             Level  10 ~>  0.100E+02 vert. unit
+             Effective levels:   1   4   7  10 
+                   Horizontal support radius:    5000.00 km (   5000.00 km -    5000.00 km)
+                   Estimated nc1 from horizontal support radius:      376
+                   Final nc1:      376
+             Effective horizontal resolution:  3.99
+                   Decimate full grid, at least      376 points required
+                       2496 valid points found
+                   Horizontal support radius:    5000.00 km (   5000.00 km -    5000.00 km)
+                   Estimated nc1 from horizontal support radius:      376
+                   Final nc1:      376
+             Effective horizontal resolution:  3.99
+                   Decimate full grid, at least      376 points required
+                       2496 valid points found
+                   Horizontal support radius:    5000.00 km (   5000.00 km -    5000.00 km)
+                   Estimated nc1 from horizontal support radius:      376
+                   Final nc1:      376
+             Effective horizontal resolution:  3.99
+                   Decimate full grid, at least      376 points required
+                       2496 valid points found
+                   Horizontal support radius:    5000.00 km (   5000.00 km -    5000.00 km)
+                   Estimated nc1 from horizontal support radius:      376
+                   Final nc1:      376
+             Effective horizontal resolution:  3.99
+                   Decimate full grid, at least      376 points required
+                       2496 valid points found
+             nc1(  1) =        376
+             nc1(  2) =        376
+             nc1(  3) =        376
+             nc1(  4) =        376
+             ns =             1504
+             Effective levels:   1   4   7  10 
+                   Horizontal support radius:    6000.00 km (   6000.00 km -    6000.00 km)
+                   Estimated nc1 from horizontal support radius:      261
+                   Final nc1:      261
+             Effective horizontal resolution:  3.99
+                   Decimate full grid, at least      261 points required
+                       2080 valid points found
+                   Horizontal support radius:    6000.00 km (   6000.00 km -    6000.00 km)
+                   Estimated nc1 from horizontal support radius:      261
+                   Final nc1:      261
+             Effective horizontal resolution:  3.99
+                   Decimate full grid, at least      261 points required
+                       2080 valid points found
+                   Horizontal support radius:    6000.00 km (   6000.00 km -    6000.00 km)
+                   Estimated nc1 from horizontal support radius:      261
+                   Final nc1:      261
+             Effective horizontal resolution:  3.99
+                   Decimate full grid, at least      261 points required
+                       2080 valid points found
+                   Horizontal support radius:    6000.00 km (   6000.00 km -    6000.00 km)
+                   Estimated nc1 from horizontal support radius:      261
+                   Final nc1:      261
+             Effective horizontal resolution:  3.99
+                   Decimate full grid, at least      261 points required
+                       2080 valid points found
+             nc1(  1) =        261
+             nc1(  2) =        261
+             nc1(  3) =        261
+             nc1(  4) =        261
+             ns =             1044
+Member 0: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.9766802155771450e+02
+  var2: 1.5930258261926812e+02
+Member 1: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.7961336040960956e+02
+  var2: 1.5623913394962369e+02
+Member 2: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.6345343734296102e+02
+  var2: 1.7012681646264838e+02
+Member 3: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.6397319950786684e+02
+  var2: 1.5746448543931979e+02
+Member 4: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.7850008664122984e+02
+  var2: 1.5480691839233566e+02
+Member 5: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.7458246725586756e+02
+  var2: 1.7077344223842022e+02
+Member 6: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.6219253650950557e+02
+  var2: 1.8114325995105639e+02
+Member 7: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 2.0298977932175009e+02
+  var2: 1.5604146808347713e+02
+Member 8: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.8001648495597721e+02
+  var2: 1.5852527809633486e+02
+Member 9: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.7487941162233372e+02
+  var2: 1.6727756678728068e+02
+Member 10: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.5918522741663750e+02
+  var2: 1.5590102649446300e+02
+Member 11: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.5614166054737478e+02
+  var2: 1.5598923614683201e+02
+Member 12: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.8458775540714348e+02
+  var2: 1.8625717811490878e+02
+Member 13: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.8456795623645783e+02
+  var2: 1.6940795740407185e+02
+Member 14: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.7056812687998416e+02
+  var2: 1.7457199172668027e+02
+Member 15: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.8881214581438499e+02
+  var2: 1.9228310469782841e+02
+Member 16: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.8725064168748418e+02
+  var2: 1.6286900756043428e+02
+Member 17: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.8081216903106690e+02
+  var2: 1.9568705938685724e+02
+Member 18: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.6366560050492237e+02
+  var2: 1.7378176538637106e+02
+Member 19: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.7600136310756238e+02
+  var2: 1.4707986938607161e+02
+Member 20: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.6010288175945652e+02
+  var2: 1.8481056323429095e+02
+Member 21: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.7518510007586832e+02
+  var2: 1.8165894644465337e+02
+Member 22: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.9154987617012830e+02
+  var2: 1.8009664895165992e+02
+Member 23: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.7051926146020176e+02
+  var2: 1.8887182414322271e+02
+Member 24: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 2.0934117531310611e+02
+  var2: 2.1895572456772729e+02
+Member 25: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.8853891379484540e+02
+  var2: 1.5685090019239715e+02
+Member 26: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.6828873378758894e+02
+  var2: 1.7252240424636426e+02
+Member 27: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.9130656782427675e+02
+  var2: 1.6314591562955763e+02
+Member 28: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.7998303535177936e+02
+  var2: 1.7244187500523810e+02
+Member 29: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.8052095452548085e+02
+  var2: 1.8148431600135461e+02
+Member 30: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.8005570458912368e+02
+  var2: 1.5686635569708994e+02
+Member 31: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 2.0039535502658444e+02
+  var2: 1.7385310354222133e+02
+Member 32: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.6552024489865278e+02
+  var2: 1.6703009713359796e+02
+Member 33: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.6483417077941587e+02
+  var2: 1.6795538451744807e+02
+Member 34: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.5845387291529545e+02
+  var2: 1.8834466479522266e+02
+Member 35: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.7050996555340726e+02
+  var2: 1.7599549329422382e+02
+Member 36: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.6708065666828978e+02
+  var2: 1.9710164883553679e+02
+Member 37: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.4701138158734645e+02
+  var2: 1.9284186558186164e+02
+Member 38: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.8887319124794919e+02
+  var2: 1.8824265409855116e+02
+Member 39: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.7454953800127450e+02
+  var2: 1.6796936340671141e+02
+Member 40: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.7042018276552284e+02
+  var2: 1.7899084067284070e+02
+Member 41: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.8122044874063525e+02
+  var2: 1.9756384058537620e+02
+Member 42: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.8532656426257006e+02
+  var2: 1.6262132273869571e+02
+Member 43: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.9402508521628502e+02
+  var2: 1.7862333552668608e+02
+Member 44: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.6642735851615356e+02
+  var2: 2.2310753863829774e+02
+Member 45: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.7029367205989496e+02
+  var2: 1.9045972798608562e+02
+Member 46: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.7835373136693821e+02
+  var2: 2.0982702114997608e+02
+Member 47: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.5922226075601341e+02
+  var2: 1.7026411262172081e+02
+Member 48: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.7945681774305106e+02
+  var2: 1.7079790316222872e+02
+Member 49: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F20
+- size: 3200
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 3
+Vertical levels: 
+- number: 10
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Fields:
+  var1: 1.9418914833025829e+02
+  var2: 1.8245466379579142e+02

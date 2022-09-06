@@ -1,0 +1,61 @@
+       Compute independent levels:  1[2] 
+          Level   1:  -1556544766
+          Level   2:  -1556544766
+          Model grid size:              800
+          Subset Sc0 size:              800
+          Number of duplicated points (halo):         0 (  0.00%)
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -83.3 /    83.3
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. unit
+             Level   2 ~>  0.200E+01 vert. unit
+          Level   1 ~> 100.0%
+          Level   2 ~> 100.0%
+          Profile A computed at lon/lat:    0.0 /    4.4
+          Profile B computed at lon/lat:   18.0 /   57.0
+          Profile C computed at lon/lat: -126.0 /   65.8
+          Decimate full grid, at least      497 points required
+               797 valid points found
+          nc1 =      500
+          Decimate full grid, at least      247 points required
+               497 valid points found
+          nc2 =      250
+          Compute independent levels:  1[2] 
+          Compute independent levels:  1[2] 
+          Compute independent levels:  1[2] 
+          Compute independent levels:  1[2] 
+          Compute independent levels:  1[2] 
+          Compute independent levels:  1[2] 
+          Compute independent levels:  1[2] 
+          Compute independent levels:  1[2] 
+          Compute independent levels:  1[2] 
+          Compute independent levels:  1[2] 
+          Compute independent levels:  1[2] 
+             -90.00 deg.  ~>100-100-100-100-100-100-100-100-100-100 
+             -90.00 deg.  ~>100-100-100-100-100-100-100-100-100-100 
+                Level:   1 ~> cov. at class zero:  0.93E+00
+                Level:   2 ~> cov. at class zero:  0.89E+00
+                Level:   1 ~> cov. at class zero:  0.99E+00
+                Level:   2 ~> cov. at class zero:  0.10E+01
+             Block var1-var1:  0.31501808E+00 for    10040 diagnostic points
+             Block var2-var2:  0.28319382E+00 for    10040 diagnostic points
+                Level:   1 ~> cor. at class zero:        1.00
+                Level:   2 ~> cor. at class zero:        1.00
+                   Level:   1 ~> amplitude:        1.00
+                                 cor. hor. support:      7282.08 km
+                                 cor. ver. support:         0.98 vertical units
+                   Level:   2 ~> amplitude:        1.00
+                                 cor. hor. support:      7076.44 km
+                                 cor. ver. support:         0.98 vertical units
+                Level:   1 ~> cor. at class zero:        1.00
+                Level:   2 ~> cor. at class zero:        1.00
+                   Level:   1 ~> amplitude:        1.00
+                                 cor. hor. support:      8080.67 km
+                                 cor. ver. support:         4.96 vertical units
+                   Level:   2 ~> amplitude:        1.00
+                                 cor. hor. support:      8280.72 km
+                                 cor. ver. support:         4.96 vertical units
+Norm of BUMP output parameter cor_rh - 1: 4.4601612022396702e+08
+Norm of BUMP output parameter cor_rv - 1: 2.1831995159739702e+02

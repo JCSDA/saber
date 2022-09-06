@@ -1,0 +1,24 @@
+input geometry:
+  function space: StructuredColumns
+  grid:
+    type : regular_gaussian
+    N : 20
+  levels: 10
+  halo: 1
+output geometry:
+  function space: StructuredColumns
+  grid:
+    type : regular_gaussian
+    N : 10
+  levels: 10
+  halo: 1
+states:
+- input:
+    date: 2010-01-01T12:00:00Z
+    filepath: testdata/randomization_bump_nicas_F20L10/member_000001
+    state variables: [var]
+  output:
+    filepath: testdata/convertstate_F20-F10/member_000001
+
+test:
+  reference filename: testref/convertstate_F20-F10.ref

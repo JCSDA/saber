@@ -1,0 +1,175 @@
+       Compute independent levels:  1[10] 
+          Level   1:  -1556544766
+          Level   2:  -1556544766
+          Level   3:  -1556544766
+          Level   4:  -1556544766
+          Level   5:  -1556544766
+          Level   6:  -1556544766
+          Level   7:  -1556544766
+          Level   8:  -1556544766
+          Level   9:  -1556544766
+          Level  10:  -1556544766
+          Model grid size:              800
+          Subset Sc0 size:              800
+          Number of duplicated points (halo):         0 (  0.00%)
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -83.3 /    83.3
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   3 ~> 100.0%
+             Level   4 ~> 100.0%
+             Level   5 ~> 100.0%
+             Level   6 ~> 100.0%
+             Level   7 ~> 100.0%
+             Level   8 ~> 100.0%
+             Level   9 ~> 100.0%
+             Level  10 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. unit
+             Level   2 ~>  0.200E+01 vert. unit
+             Level   3 ~>  0.300E+01 vert. unit
+             Level   4 ~>  0.400E+01 vert. unit
+             Level   5 ~>  0.500E+01 vert. unit
+             Level   6 ~>  0.600E+01 vert. unit
+             Level   7 ~>  0.700E+01 vert. unit
+             Level   8 ~>  0.800E+01 vert. unit
+             Level   9 ~>  0.900E+01 vert. unit
+             Level  10 ~>  0.100E+02 vert. unit
+          Level   1 ~> 100.0%
+          Level   2 ~> 100.0%
+          Level   3 ~> 100.0%
+          Level   4 ~> 100.0%
+          Level   5 ~> 100.0%
+          Level   6 ~> 100.0%
+          Level   7 ~> 100.0%
+          Level   8 ~> 100.0%
+          Level   9 ~> 100.0%
+          Level  10 ~> 100.0%
+          Decimate full grid, at least      500 points required
+               800 valid points found
+          nc1 =      500
+          Compute independent levels:  1[10] 
+          Compute independent levels:  1[10] 
+          Compute independent levels:  1[10] 
+          Compute independent levels:  1[10] 
+          Compute independent levels:  1[10] 
+          Compute independent levels:  1[10] 
+          Compute independent levels:  1[10] 
+          Compute independent levels:  1[10] 
+          Compute independent levels:  1[10] 
+          Compute independent levels:  1[10] 
+          Compute independent levels:  1[10] 
+             -90.00 deg.  ~>100-100-100-100-100-100-100-100-100-100 
+             -90.00 deg.  ~>100-100-100-100-100-100-100-100-100-100 
+             -90.00 deg.  ~>100-100-100-100-100-100-100-100-100-100 
+             -90.00 deg.  ~>100-100-100-100-100-100-100-100-100-100 
+             -90.00 deg.  ~>100-100-100-100-100-100-100-100-100-100 
+             -90.00 deg.  ~>100-100-100-100-100-100-100-100-100-100 
+             -90.00 deg.  ~>100-100-100-100-100-100-100-100-100-100 
+             -90.00 deg.  ~>100-100-100-100-100-100-100-100-100-100 
+             -90.00 deg.  ~>100-100-100-100-100-100-100-100-100-100 
+             -90.00 deg.  ~>100-100-100-100-100-100-100-100-100-100 
+                Level:   1 ~> cov. at class zero:  0.10E+01
+                Level:   2 ~> cov. at class zero:  0.10E+01
+                Level:   3 ~> cov. at class zero:  0.10E+01
+                Level:   4 ~> cov. at class zero:  0.11E+01
+                Level:   5 ~> cov. at class zero:  0.11E+01
+                Level:   6 ~> cov. at class zero:  0.11E+01
+                Level:   7 ~> cov. at class zero:  0.10E+01
+                Level:   8 ~> cov. at class zero:  0.11E+01
+                Level:   9 ~> cov. at class zero:  0.97E+00
+                Level:  10 ~> cov. at class zero:  0.94E+00
+                Level:   1 ~> cov. at class zero:  0.11E+01
+                Level:   2 ~> cov. at class zero:  0.10E+01
+                Level:   3 ~> cov. at class zero:  0.10E+01
+                Level:   4 ~> cov. at class zero:  0.92E+00
+                Level:   5 ~> cov. at class zero:  0.90E+00
+                Level:   6 ~> cov. at class zero:  0.86E+00
+                Level:   7 ~> cov. at class zero:  0.93E+00
+                Level:   8 ~> cov. at class zero:  0.10E+01
+                Level:   9 ~> cov. at class zero:  0.10E+01
+                Level:  10 ~> cov. at class zero:  0.10E+01
+             Block var1-var1:  0.17372085E+00 for      500 diagnostic points
+             Block var2-var2:  0.17453376E+00 for      500 diagnostic points
+                Level:   1 ~> cor. at class zero:        1.00
+                Level:   2 ~> cor. at class zero:        1.00
+                Level:   3 ~> cor. at class zero:        1.00
+                Level:   4 ~> cor. at class zero:        1.00
+                Level:   5 ~> cor. at class zero:        1.00
+                Level:   6 ~> cor. at class zero:        1.00
+                Level:   7 ~> cor. at class zero:        1.00
+                Level:   8 ~> cor. at class zero:        1.00
+                Level:   9 ~> cor. at class zero:        1.00
+                Level:  10 ~> cor. at class zero:        1.00
+                   Level:   1 ~> amplitude:        1.00
+                                 cor. hor. support:      7603.45 km
+                                 cor. ver. support:         5.59 vertical units
+                   Level:   2 ~> amplitude:        1.00
+                                 cor. hor. support:      7616.07 km
+                                 cor. ver. support:         5.67 vertical units
+                   Level:   3 ~> amplitude:        1.00
+                                 cor. hor. support:      7686.48 km
+                                 cor. ver. support:         5.71 vertical units
+                   Level:   4 ~> amplitude:        1.00
+                                 cor. hor. support:      7817.21 km
+                                 cor. ver. support:         5.89 vertical units
+                   Level:   5 ~> amplitude:        1.00
+                                 cor. hor. support:      7901.16 km
+                                 cor. ver. support:         5.92 vertical units
+                   Level:   6 ~> amplitude:        1.00
+                                 cor. hor. support:      7833.34 km
+                                 cor. ver. support:         5.94 vertical units
+                   Level:   7 ~> amplitude:        1.00
+                                 cor. hor. support:      7635.04 km
+                                 cor. ver. support:         5.82 vertical units
+                   Level:   8 ~> amplitude:        1.00
+                                 cor. hor. support:      7406.92 km
+                                 cor. ver. support:         5.84 vertical units
+                   Level:   9 ~> amplitude:        1.00
+                                 cor. hor. support:      7230.80 km
+                                 cor. ver. support:         5.81 vertical units
+                   Level:  10 ~> amplitude:        1.00
+                                 cor. hor. support:      7174.74 km
+                                 cor. ver. support:         5.80 vertical units
+                Level:   1 ~> cor. at class zero:        1.00
+                Level:   2 ~> cor. at class zero:        1.00
+                Level:   3 ~> cor. at class zero:        1.00
+                Level:   4 ~> cor. at class zero:        1.00
+                Level:   5 ~> cor. at class zero:        1.00
+                Level:   6 ~> cor. at class zero:        1.00
+                Level:   7 ~> cor. at class zero:        1.00
+                Level:   8 ~> cor. at class zero:        1.00
+                Level:   9 ~> cor. at class zero:        1.00
+                Level:  10 ~> cor. at class zero:        1.00
+                   Level:   1 ~> amplitude:        1.00
+                                 cor. hor. support:      8336.61 km
+                                 cor. ver. support:         6.74 vertical units
+                   Level:   2 ~> amplitude:        1.00
+                                 cor. hor. support:      8269.29 km
+                                 cor. ver. support:         6.62 vertical units
+                   Level:   3 ~> amplitude:        1.00
+                                 cor. hor. support:      8124.44 km
+                                 cor. ver. support:         6.47 vertical units
+                   Level:   4 ~> amplitude:        1.00
+                                 cor. hor. support:      8006.23 km
+                                 cor. ver. support:         6.36 vertical units
+                   Level:   5 ~> amplitude:        1.00
+                                 cor. hor. support:      8084.05 km
+                                 cor. ver. support:         6.14 vertical units
+                   Level:   6 ~> amplitude:        1.00
+                                 cor. hor. support:      8423.37 km
+                                 cor. ver. support:         6.10 vertical units
+                   Level:   7 ~> amplitude:        1.00
+                                 cor. hor. support:      8906.96 km
+                                 cor. ver. support:         6.13 vertical units
+                   Level:   8 ~> amplitude:        1.00
+                                 cor. hor. support:      9135.87 km
+                                 cor. ver. support:         6.33 vertical units
+                   Level:   9 ~> amplitude:        1.00
+                                 cor. hor. support:      8979.99 km
+                                 cor. ver. support:         6.38 vertical units
+                   Level:  10 ~> amplitude:        1.00
+                                 cor. hor. support:      8742.56 km
+                                 cor. ver. support:         6.30 vertical units
+Norm of BUMP output parameter cor_rh - 1: 1.0201478213099762e+09
+Norm of BUMP output parameter cor_rv - 1: 7.7004999047487058e+02

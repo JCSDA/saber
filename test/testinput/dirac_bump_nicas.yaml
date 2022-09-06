@@ -1,0 +1,34 @@
+background error:
+  covariance model: SABER
+  saber blocks:
+  - saber block name: BUMP_NICAS
+    saber central block: true
+    input variables: &vars [var]
+    output variables: *vars
+    bump:
+      datadir: testdata
+      prefix: dirac_bump_nicas/_MPI_-_OMP_
+      testing: true
+      strategy: specific_univariate
+      load_nicas_local: true
+      fname_nicas: error_covariance_training_bump_nicas/_MPI_-_OMP__nicas
+dirac:
+  lon: [1.980931]
+  lat: [44.220188]
+  level: [1]
+  variable: *vars
+geometry:
+  function space: StructuredColumns
+  grid:
+    type : regular_gaussian
+    N : 20
+  levels: 10
+  halo: 3
+initial condition:
+  date: 2010-01-01T12:00:00Z
+  state variables: *vars
+output dirac:
+  filepath: testdata/dirac_bump_nicas/dirac_%id%
+
+test:
+  reference filename: testref/dirac_bump_nicas.ref

@@ -1,0 +1,33 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type : regular_gaussian
+    N : 20
+  levels: 10
+  halo: 3
+input variables: &vars [var]
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables: *vars
+bump:
+  datadir: testdata
+  prefix: error_covariance_training_bump_nicas/_MPI_-_OMP_
+  testing: true
+  method: cor
+  strategy: specific_univariate
+  new_nicas: true
+  write_nicas_local: true
+  resol: 8.0
+  forced_radii: true
+  rh:
+    var: [10.0e6]
+  rv:
+    var: [10]
+  output:
+  - filepath: testdata/error_covariance_training_bump_nicas/_MPI_-_OMP__cor_rh
+    parameter: cor_rh
+  - filepath: testdata/error_covariance_training_bump_nicas/_MPI_-_OMP__cor_rv
+    parameter: cor_rv
+
+test:
+  reference filename: testref/error_covariance_training_bump_nicas.ref
