@@ -87,3 +87,5 @@
                    Level:   2 ~> amplitude:        1.00
                                  loc. hor. support:     11204.81 km
                                  loc. ver. support:         5.75 vertical units
+Norm of BUMP output parameter cor_rh - 1: 4.3479870704234552e+08
+Norm of BUMP output parameter cor_rv - 1: 1.3751079038778460e+02

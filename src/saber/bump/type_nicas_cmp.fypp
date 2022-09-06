@@ -20,7 +20,7 @@ use tools_kinds, only: kind_int,kind_real,kind_long,huge_int,huge_real
 use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim_size,check_dim,define_var,inquire_var, &
  & inquire_var_presence,put_var,get_var
 use tools_qsort, only: qsort
-use tools_repro, only: supeq,sup,inf,infeq,eq,indist
+use tools_repro, only: supeq,sup,inf,infeq,eq,indist,rth
 use type_bpar, only: bpar_type
 use type_com, only: com_type
 use type_cv_cmp, only: cv_cmp_type
@@ -4366,8 +4366,11 @@ call nicas_cmp%apply_interp_horizontal_ad(mpl,geom,gamma_save,alpha)
 ! Print result
 call mpl%dot_prod(alpha,alpha_save,sum1)
 call mpl%dot_prod(gamma,gamma_save,sum2)
-write(mpl%test,'(a10,a,e15.8,a,e15.8,a,e15.8)') '','Interpolation adjoint test (horizontal):  ', &
+write(mpl%info,'(a10,a,e15.8,a,e15.8,a,e15.8)') '','Interpolation adjoint test (horizontal) values:  ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
+if (nicas_cmp%verbosity) call mpl%flush
+write(mpl%test,'(a10,a,l1)') '','Interpolation adjoint test (horizontal) result:  ', &
+ & two*abs(sum1-sum2)/abs(sum1+sum2)<rth
 if (nicas_cmp%verbosity) call mpl%flush
 
 ! Interpolation (vertical)
@@ -4386,8 +4389,11 @@ call nicas_cmp%apply_interp_vertical_ad(mpl,geom,fld_save,gamma)
 ! Print result
 call mpl%dot_prod(gamma,gamma_save,sum1)
 call mpl%dot_prod(fld,fld_save,sum2)
-write(mpl%test,'(a10,a,e15.8,a,e15.8,a,e15.8)') '','Interpolation adjoint test (vertical):    ', &
+write(mpl%info,'(a10,a,e15.8,a,e15.8,a,e15.8)') '','Interpolation adjoint test (vertical) values:    ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
+if (nicas_cmp%verbosity) call mpl%flush
+write(mpl%test,'(a10,a,l1)') '','Interpolation adjoint test (vertical) result:    ', &
+ & two*abs(sum1-sum2)/abs(sum1+sum2)<rth
 if (nicas_cmp%verbosity) call mpl%flush
 
 ! Interpolation (total)
@@ -4406,8 +4412,11 @@ call nicas_cmp%apply_interp_ad(mpl,geom,fld_save,alpha)
 ! Print result
 call mpl%dot_prod(alpha,alpha_save,sum1)
 call mpl%dot_prod(fld,fld_save,sum2)
-write(mpl%test,'(a10,a,e15.8,a,e15.8,a,e15.8)') '','Interpolation adjoint test (total):       ', &
+write(mpl%info,'(a10,a,e15.8,a,e15.8,a,e15.8)') '','Interpolation adjoint test (total) values:       ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
+if (nicas_cmp%verbosity) call mpl%flush
+write(mpl%test,'(a10,a,l1)') '','Interpolation adjoint test (total) result:       ', &
+ & two*abs(sum1-sum2)/abs(sum1+sum2)<rth
 if (nicas_cmp%verbosity) call mpl%flush
 
 ! Allocation
@@ -4427,8 +4436,11 @@ call nicas_cmp%com_s_AB%ext(mpl,alpha2_save,alpha2)
 ! Print result
 call mpl%dot_prod(alpha1,alpha2_save,sum1)
 call mpl%dot_prod(alpha2,alpha1_save,sum2)
-write(mpl%test,'(a10,a,e15.8,a,e15.8,a,e15.8)') '','Communication AB adjoint test:            ', &
+write(mpl%info,'(a10,a,e15.8,a,e15.8,a,e15.8)') '','Communication AB adjoint test values:            ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
+if (nicas_cmp%verbosity) call mpl%flush
+write(mpl%test,'(a10,a,l1)') '','Communication AB adjoint test result:            ', &
+ & two*abs(sum1-sum2)/abs(sum1+sum2)<rth
 if (nicas_cmp%verbosity) call mpl%flush
 
 ! Release memory
@@ -4454,8 +4466,11 @@ call nicas_cmp%com_s_AC%ext(mpl,alpha2_save,alpha2)
 ! Print result
 call mpl%dot_prod(alpha1,alpha2_save,sum1)
 call mpl%dot_prod(alpha2,alpha1_save,sum2)
-write(mpl%test,'(a10,a,e15.8,a,e15.8,a,e15.8)') '','Communication AC adjoint test:            ', &
+write(mpl%info,'(a10,a,e15.8,a,e15.8,a,e15.8)') '','Communication AC adjoint test values:            ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
+if (nicas_cmp%verbosity) call mpl%flush
+write(mpl%test,'(a10,a,l1)') '','Communication AC adjoint test result:            ', &
+ & two*abs(sum1-sum2)/abs(sum1+sum2)<rth
 if (nicas_cmp%verbosity) call mpl%flush
 
 ! Allocation
@@ -4485,8 +4500,11 @@ call nicas_cmp%com_s_AC%red(mpl,alpha_c,alpha2_save)
 ! Print result
 call mpl%dot_prod(alpha1,alpha2_save,sum1)
 call mpl%dot_prod(alpha2,alpha1_save,sum2)
-write(mpl%test,'(a10,a,e15.8,a,e15.8,a,e15.8)') '','Convolution / communication adjoint test: ', &
+write(mpl%info,'(a10,a,e15.8,a,e15.8,a,e15.8)') '','Convolution / communication adjoint test values: ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
+if (nicas_cmp%verbosity) call mpl%flush
+write(mpl%test,'(a10,a,l1)') '','Convolution / communication adjoint test result: ', &
+ & two*abs(sum1-sum2)/abs(sum1+sum2)<rth
 if (nicas_cmp%verbosity) call mpl%flush
 
 ! Release memory
@@ -4510,8 +4528,11 @@ call nicas_cmp%apply_sqrt_ad(mpl,geom,fld2,cv_cmp2)
 ! Print result
 call mpl%dot_prod(cv_cmp1%alpha,cv_cmp2%alpha,sum1)
 call mpl%dot_prod(fld1,fld2,sum2)
-write(mpl%test,'(a10,a,e15.8,a,e15.8,a,e15.8)') '','Component NICAS adjoint test:             ', &
+write(mpl%info,'(a10,a,e15.8,a,e15.8,a,e15.8)') '','Component NICAS adjoint test values:             ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
+if (nicas_cmp%verbosity) call mpl%flush
+write(mpl%test,'(a10,a,l1)') '','Component NICAS adjoint test result:             ', &
+ & two*abs(sum1-sum2)/abs(sum1+sum2)<rth
 if (nicas_cmp%verbosity) call mpl%flush
 
 ! Release memory

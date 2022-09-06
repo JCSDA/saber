@@ -14,6 +14,7 @@ use tools_func, only: fletcher32,sphere_dist,zss_sum
 use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: create_file,open_file,define_grp,define_dim,inquire_dim,check_dim,define_var,put_var,close_file
 use tools_qsort, only: qsort
+use tools_repro, only: rth
 use type_bpar, only: bpar_type
 use type_cmat, only: cmat_type
 use type_com, only: com_type
@@ -1593,14 +1594,20 @@ end if
 ! Print result
 call mpl%dot_prod(fld1,fld2_save,sum1)
 call mpl%dot_prod(fld2,fld1_save,sum2)
-write(mpl%test,'(a,e15.8,a,e15.8,a,e15.8)') '--- Full NICAS adjoint test:                        ', &
+write(mpl%info,'(a,e15.8,a,e15.8,a,e15.8)') '--- Full NICAS adjoint test values:                        ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
+call mpl%flush
+write(mpl%test,'(a,l1)') '    Full NICAS adjoint test result:                        ', &
+ & two*abs(sum1-sum2)/abs(sum1+sum2)<rth
 call mpl%flush
 if (lbens) then
    call mpl%dot_prod(fld1_bens,fld2_save,sum1)
    call mpl%dot_prod(fld2_bens,fld1_save,sum2)
-   write(mpl%test,'(a,e15.8,a,e15.8,a,e15.8)') '--- Ensemble B adjoint test:                        ', &
+   write(mpl%info,'(a,e15.8,a,e15.8,a,e15.8)') '--- Ensemble B adjoint test values:                        ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
+   call mpl%flush
+   write(mpl%test,'(a,l1)') '    Ensemble B adjoint test result:                        ', &
+ & two*abs(sum1-sum2)/abs(sum1+sum2)<rth
    call mpl%flush
 end if
 

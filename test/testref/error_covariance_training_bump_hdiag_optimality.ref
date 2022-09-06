@@ -1,0 +1,188 @@
+       Compute independent levels:  1[2] 
+          Level   1:  -1556544766
+          Level   2:  -1556544766
+          Model grid size:              800
+          Subset Sc0 size:              800
+          Number of duplicated points (halo):         0 (  0.00%)
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -83.3 /    83.3
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. unit
+             Level   2 ~>  0.200E+01 vert. unit
+             Effective levels:   1   2 
+                   Horizontal support radius:    7000.00 km (   7000.00 km -    7000.00 km)
+                   Estimated nc1 from horizontal support radius:     1730
+                   Final nc1:      800
+             Effective horizontal resolution:  8.16
+                   Horizontal support radius:    7000.00 km (   7000.00 km -    7000.00 km)
+                   Estimated nc1 from horizontal support radius:     1730
+                   Final nc1:      800
+             Effective horizontal resolution:  8.16
+             nc1(  1) =        800
+             nc1(  2) =        800
+             ns =             1600
+          Level   1 ~> 100.0%
+          Level   2 ~> 100.0%
+          Decimate full grid, at least      500 points required
+               800 valid points found
+          nc1 =      500
+          Compute independent levels:  1[2] 
+          Compute independent levels:  1[2] 
+          Compute independent levels:  1[2] 
+          Compute independent levels:  1[2] 
+          Compute independent levels:  1[2] 
+          Compute independent levels:  1[2] 
+          Compute independent levels:  1[2] 
+          Compute independent levels:  1[2] 
+          Compute independent levels:  1[2] 
+          Compute independent levels:  1[2] 
+          Compute independent levels:  1[2] 
+             -90.00 deg.  ~>100-100-100-100-100-100-100-100-100-100 
+             -90.00 deg.  ~>100-100-100-100-100-100-100-100-100-100 
+                Level:   1 ~> cov. at class zero:  0.10E+01
+                Level:   2 ~> cov. at class zero:  0.10E+01
+             Block var1-var1:  0.90314427E-01 for       20 diagnostic points
+                Level:   1 ~> cor. at class zero:        1.00
+                Level:   2 ~> cor. at class zero:        1.00
+                   Level:   1 ~> amplitude:        1.00
+                                 cor. hor. support:      6997.96 km
+                                 cor. ver. support:         0.00 vertical units
+                   Level:   2 ~> amplitude:        1.00
+                                 cor. hor. support:      6994.56 km
+                                 cor. ver. support:         0.00 vertical units
+             Block var1-var1:  0.29666803E+00 for       18 diagnostic points
+                Level:   1 ~> loc. at class zero:       0.92
+                Level:   2 ~> loc. at class zero:       0.92
+                   Level:   1 ~> amplitude:        1.00
+                                 loc. hor. support:      9248.00 km
+                                 loc. ver. support:         0.00 vertical units
+                   Level:   2 ~> amplitude:        1.00
+                                 loc. hor. support:      9339.88 km
+                                 loc. ver. support:         0.00 vertical units
+             Effective levels:   1   2 
+                   Horizontal support radius:    7398.40 km (   7398.40 km -    7398.40 km)
+                   Estimated nc1 from horizontal support radius:     1549
+                   Final nc1:      800
+             Effective horizontal resolution:  8.62
+                   Horizontal support radius:    7471.91 km (   7471.91 km -    7471.91 km)
+                   Estimated nc1 from horizontal support radius:     1519
+                   Final nc1:      800
+             Effective horizontal resolution:  8.71
+             nc1(  1) =        800
+             nc1(  2) =        800
+             ns =             1600
+             Effective levels:   1   2 
+                   Horizontal support radius:    7860.80 km (   7860.80 km -    7860.80 km)
+                   Estimated nc1 from horizontal support radius:     1372
+                   Final nc1:      800
+             Effective horizontal resolution:  9.16
+                   Horizontal support radius:    7938.90 km (   7938.90 km -    7938.90 km)
+                   Estimated nc1 from horizontal support radius:     1345
+                   Final nc1:      800
+             Effective horizontal resolution:  9.25
+             nc1(  1) =        800
+             nc1(  2) =        800
+             ns =             1600
+             Effective levels:   1   2 
+                   Horizontal support radius:    8323.20 km (   8323.20 km -    8323.20 km)
+                   Estimated nc1 from horizontal support radius:     1224
+                   Final nc1:      800
+             Effective horizontal resolution:  9.70
+                   Horizontal support radius:    8405.89 km (   8405.89 km -    8405.89 km)
+                   Estimated nc1 from horizontal support radius:     1200
+                   Final nc1:      800
+             Effective horizontal resolution:  9.80
+             nc1(  1) =        800
+             nc1(  2) =        800
+             ns =             1600
+             Effective levels:   1   2 
+                   Horizontal support radius:    8785.60 km (   8785.60 km -    8785.60 km)
+                   Estimated nc1 from horizontal support radius:     1098
+                   Final nc1:      800
+             Effective horizontal resolution: 10.24
+                   Horizontal support radius:    8872.89 km (   8872.89 km -    8872.89 km)
+                   Estimated nc1 from horizontal support radius:     1077
+                   Final nc1:      800
+             Effective horizontal resolution: 10.34
+             nc1(  1) =        800
+             nc1(  2) =        800
+             ns =             1600
+             Effective levels:   1   2 
+                   Horizontal support radius:    9248.00 km (   9248.00 km -    9248.00 km)
+                   Estimated nc1 from horizontal support radius:      991
+                   Final nc1:      800
+             Effective horizontal resolution: 10.78
+                   Horizontal support radius:    9339.88 km (   9339.88 km -    9339.88 km)
+                   Estimated nc1 from horizontal support radius:      972
+                   Final nc1:      800
+             Effective horizontal resolution: 10.88
+             nc1(  1) =        800
+             nc1(  2) =        800
+             ns =             1600
+             Effective levels:   1   2 
+                   Horizontal support radius:    9710.40 km (   9710.40 km -    9710.40 km)
+                   Estimated nc1 from horizontal support radius:      899
+                   Final nc1:      800
+             Effective horizontal resolution: 11.32
+                   Horizontal support radius:    9806.88 km (   9806.88 km -    9806.88 km)
+                   Estimated nc1 from horizontal support radius:      881
+                   Final nc1:      800
+             Effective horizontal resolution: 11.43
+             nc1(  1) =        800
+             nc1(  2) =        800
+             ns =             1600
+             Effective levels:   1   2 
+                   Horizontal support radius:   10172.80 km (  10172.80 km -   10172.80 km)
+                   Estimated nc1 from horizontal support radius:      819
+                   Final nc1:      800
+             Effective horizontal resolution: 11.86
+                   Horizontal support radius:   10273.87 km (  10273.87 km -   10273.87 km)
+                   Estimated nc1 from horizontal support radius:      803
+                   Final nc1:      800
+             Effective horizontal resolution: 11.97
+             nc1(  1) =        800
+             nc1(  2) =        800
+             ns =             1600
+             Effective levels:   1   2 
+                   Horizontal support radius:   10635.20 km (  10635.20 km -   10635.20 km)
+                   Estimated nc1 from horizontal support radius:      749
+                   Final nc1:      749
+             Effective horizontal resolution: 11.99
+                   Decimate full grid, at least      749 points required
+                        800 valid points found
+                   Horizontal support radius:   10740.87 km (  10740.87 km -   10740.87 km)
+                   Estimated nc1 from horizontal support radius:      735
+                   Final nc1:      735
+             Effective horizontal resolution: 12.00
+                   Decimate full grid, at least      735 points required
+                        800 valid points found
+             nc1(  1) =        749
+             nc1(  2) =        735
+             ns =             1484
+             Effective levels:   1   2 
+                   Horizontal support radius:   11097.60 km (  11097.60 km -   11097.60 km)
+                   Estimated nc1 from horizontal support radius:      688
+                   Final nc1:      688
+             Effective horizontal resolution: 11.99
+                   Decimate full grid, at least      688 points required
+                        800 valid points found
+                   Horizontal support radius:   11207.86 km (  11207.86 km -   11207.86 km)
+                   Estimated nc1 from horizontal support radius:      675
+                   Final nc1:      675
+             Effective horizontal resolution: 12.00
+                   Decimate full grid, at least      675 points required
+                        800 valid points found
+             nc1(  1) =        688
+             nc1(  2) =        675
+             ns =             1363
+       Factor 0.80, MSE:  0.17549748E+02 
+       Factor 0.85, MSE:  0.17453221E+02 
+       Factor 0.90, MSE:  0.17365842E+02 
+       Factor 0.95, MSE:  0.17287620E+02 
+       Factor 1.00, MSE:  0.17220471E+02 
+       Factor 1.05, MSE:  0.17169405E+02 
+       Factor 1.10, MSE:  0.17123542E+02 <~ best localization
+       Factor 1.15, MSE:  0.17133625E+02 
+       Factor 1.20, MSE:  0.17136570E+02 

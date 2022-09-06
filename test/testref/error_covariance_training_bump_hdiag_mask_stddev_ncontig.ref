@@ -1,0 +1,55 @@
+       Compute independent levels:  1[2] 
+          Level   1:  -1556544766
+          Level   2:  -1556544766
+          Model grid size:              800
+          Subset Sc0 size:              800
+          Number of duplicated points (halo):         0 (  0.00%)
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -83.3 /    83.3
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. unit
+             Level   2 ~>  0.200E+01 vert. unit
+          Level   1 ~>  63.2%
+          Level   2 ~>  63.2%
+          Decimate full grid, at least      500 points required
+               506 valid points found
+          nc1 =      500
+          Compute independent levels:  1[2] 
+          Compute independent levels:  1[2] 
+          Compute independent levels:  1[2] 
+          Compute independent levels:  1[2] 
+          Compute independent levels:  1[2] 
+          Compute independent levels:  1[2] 
+          Compute independent levels:  1[2] 
+          Compute independent levels:  1[2] 
+          Compute independent levels:  1[2] 
+          Compute independent levels:  1[2] 
+          Compute independent levels:  1[2] 
+             -90.00 deg.  ~>100-83-73-68-65-67-62-66-69-75 
+             -90.00 deg.  ~>100-83-73-68-65-67-62-66-69-75 
+                Level:   1 ~> cov. at class zero:  0.93E+00
+                Level:   2 ~> cov. at class zero:  0.93E+00
+                Level:   1 ~> cov. at class zero:  0.96E+00
+                Level:   2 ~> cov. at class zero:  0.95E+00
+             Block var1-var1:  0.12687850E+00 for       40 diagnostic points
+             Block var2-var2:  0.15794792E+00 for       40 diagnostic points
+                Level:   1 ~> cor. at class zero:        1.00
+                Level:   2 ~> cor. at class zero:        1.00
+                   Level:   1 ~> amplitude:        1.00
+                                 cor. hor. support:      7248.34 km
+                                 cor. ver. support:         1.22 vertical units
+                   Level:   2 ~> amplitude:        1.00
+                                 cor. hor. support:      7699.10 km
+                                 cor. ver. support:         1.22 vertical units
+                Level:   1 ~> cor. at class zero:        1.00
+                Level:   2 ~> cor. at class zero:        1.00
+                   Level:   1 ~> amplitude:        1.00
+                                 cor. hor. support:      8281.27 km
+                                 cor. ver. support:         4.93 vertical units
+                   Level:   2 ~> amplitude:        1.00
+                                 cor. hor. support:      8425.60 km
+                                 cor. ver. support:         4.93 vertical units
+Norm of BUMP output parameter cor_rh - 1: 4.4845039931231230e+08
+Norm of BUMP output parameter cor_rv - 1: 2.0303446293768818e+02

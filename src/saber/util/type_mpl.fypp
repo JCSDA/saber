@@ -391,6 +391,9 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
 
    ! Check warning message
    if (trim(mpl%wng)/='no_message') then
+      ! Add prefix
+      if (mpl%previous_advance_flag) mpl%wng = 'Warning  : '//trim(mpl%wng)
+
       ! Write message
       if (ladvance_flag) then
          if (mpl%msv%is(mpl%lunit)) then

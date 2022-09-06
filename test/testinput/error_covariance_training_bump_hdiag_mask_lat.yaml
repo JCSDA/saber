@@ -22,22 +22,22 @@ ensemble:
     zero padding: 6
 bump:
   datadir: testdata
-  prefix: error_covariance_training_bump_hdiag_loc_histograms/_MPI_-_OMP_
+  prefix: error_covariance_training_bump_hdiag_mask_lat/_MPI_-_OMP_
   testing: true
-  method: loc
-  strategy: common
+  method: cor
+  strategy: specific_univariate
   new_hdiag: true
   write_hdiag: true
+  mask_type: lat-30030
   nc1: 500
   nc3: 10
   dc: 800.0e3
   nl0r: 2
   ne: 25
-  gen_kurt_th: 10
   output:
-  - filepath: testdata/error_covariance_training_bump_hdiag_loc_histograms/_MPI_-_OMP__cor_rh
+  - filepath: testdata/error_covariance_training_bump_hdiag_mask_lat/_MPI_-_OMP__cor_rh
     parameter: cor_rh
-  - filepath: testdata/error_covariance_training_bump_hdiag_loc_histograms/_MPI_-_OMP__cor_rv
+  - filepath: testdata/error_covariance_training_bump_hdiag_mask_lat/_MPI_-_OMP__cor_rv
     parameter: cor_rv
 test:
-  reference filename: testref/error_covariance_training_bump_hdiag_loc_histograms.ref
+  reference filename: testref/error_covariance_training_bump_hdiag_mask_lat.ref

@@ -18,7 +18,7 @@ use tools_gc99, only: fit_func_sqrt
 use tools_kinds, only: kind_int,kind_real,kind_long,huge_int,huge_real
 use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim,check_dim
 use tools_qsort, only: qsort
-use tools_repro, only: supeq,sup,inf,infeq,eq,indist
+use tools_repro, only: supeq,sup,inf,infeq,eq,indist,rth
 use type_bpar, only: bpar_type
 use type_cmat_blk, only: cmat_blk_type
 use type_com, only: com_type
@@ -1131,8 +1131,11 @@ do icmp=1,nicas_blk%ncmp
    sum1 = sum1+sum1_tmp
 end do
 call mpl%dot_prod(fld1,fld2,sum2)
-write(mpl%test,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Block NICAS adjoint test:                    ', &
+write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Block NICAS adjoint test values:                    ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
+if (nicas_blk%verbosity) call mpl%flush
+write(mpl%test,'(a7,a,l1)') '','Block NICAS adjoint test result:                    ', &
+ & two*abs(sum1-sum2)/abs(sum1+sum2)<rth
 if (nicas_blk%verbosity) call mpl%flush
 
 ! Release memory
