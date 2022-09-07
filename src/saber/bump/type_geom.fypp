@@ -19,7 +19,7 @@ use tools_func, only: fletcher32,lonlatmod,grid_hash,independent_levels,sphere_d
  & vector_product,cx_to_cxa,cx_to_proc,cx_to_cxu,convert_l2i,convert_i2l,zss_maxval,zss_minval,zss_sum,zss_count
 use tools_kinds, only: kind_int,kind_real,huge_real,huge_int
 use tools_qsort, only: qsort
-use tools_repro, only: inf,sup,eq,infeq,indist
+use tools_repro, only: inf,sup,eq,infeq,indist,rth
 use tools_stripack, only: area
 use type_com, only: com_type
 use type_fieldset, only: fieldset_type
@@ -2146,11 +2146,12 @@ else
       nfac = 2*nfac
 
       ! Number of required points at global scale
-      nss_real = real(nfac*ns,kind_real)*four*pi/geom%area_max_c0
+      nss_real = real(nfac*ns,kind_real)*four*pi/geom%area_max_c0*(one+rth)
 
       if (nss_real<real(nssmax,kind_real)) then
          ! Global grid
          call get_grid(mpl,floor(nss_real),agrid,nss)
+         print*, "toto",nss_real,nss
 
          ! Initialization
          lmask_cxa = .false.
