@@ -2291,7 +2291,7 @@ if (samp%sc2) then
    call samp%tree_c1u%init(samp%lon_c1u,samp%lat_c1u)
 
    ! Setup mesh
-   call samp%mesh_c1u%alloc(samp%nc1u,.false.)
+   call samp%mesh_c1u%alloc(samp%nc1u)
    call samp%mesh_c1u%init(mpl,rng,samp%lon_c1u,samp%lat_c1u,hull_bnd=.true.)
 end if
 
