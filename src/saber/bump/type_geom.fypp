@@ -2151,7 +2151,6 @@ else
       if (nss_real<real(nssmax,kind_real)) then
          ! Global grid
          call get_grid(mpl,floor(nss_real),agrid,nss)
-         print*, "toto",nss_real,nss
 
          ! Initialization
          lmask_cxa = .false.

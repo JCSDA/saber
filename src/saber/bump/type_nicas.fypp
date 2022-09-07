@@ -801,7 +801,6 @@ else
    write(mpl%info,'(a)') '--- Copy and filter C matrix data'
    call mpl%flush
    do ib=1,bpar%nbe
-      print*, ib
       if (bpar%nicas_block(ib)) call nicas%blk(ib)%copy_cmat(mpl,nam,geom,bpar,cmat%blk(ib))
    end do
 end if
