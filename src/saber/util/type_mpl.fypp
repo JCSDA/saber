@@ -10,9 +10,9 @@
 module type_mpl
 
 use fckit_log_module, only: fckit_log
-use logger_mod, only: oops_log
 use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_status
 use iso_fortran_env, only: output_unit
+use logger_mod, only: oops_log
 !$ use omp_lib
 use tools_const, only: zero,one,ten,hundred
 use tools_kinds, only: kind_int,kind_float,kind_double,kind_real
@@ -305,16 +305,14 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
       ! Write message
       if (ladvance_flag) then
          if (mpl%msv%is(mpl%lunit)) then
-            call oops_log%debug(mpl%debug)
-            call fckit_log%flush()
+            call oops_log%debug(mpl%debug,flush=.true.)
          else
             write(mpl%lunit,'(a)') trim(mpl%debug)
             call flush(mpl%lunit)
          end if
       else
          if (mpl%msv%is(mpl%lunit)) then
-            call oops_log%debug(mpl%debug,newl=.false.)
-            call fckit_log%flush()
+            call oops_log%debug(mpl%debug,newl=.false.,flush=.true.)
          else
             write(mpl%lunit,'(a)',advance='no') trim(mpl%debug)
             call flush(mpl%lunit)
@@ -333,16 +331,14 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
       ! Write message
       if (ladvance_flag) then
          if (mpl%msv%is(mpl%lunit)) then
-            call oops_log%info(mpl%info)
-            call fckit_log%flush()
+            call oops_log%info(mpl%info,flush=.true.)
          else
             write(mpl%lunit,'(a)') trim(mpl%info)
             call flush(mpl%lunit)
          end if
       else
          if (mpl%msv%is(mpl%lunit)) then
-            call oops_log%info(mpl%info,newl=.false.)
-            call fckit_log%flush()
+            call oops_log%info(mpl%info,newl=.false.,flush=.true.)
          else
             write(mpl%lunit,'(a)',advance='no') trim(mpl%info)
             call flush(mpl%lunit)
@@ -362,11 +358,10 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
       if (ladvance_flag) then
          if (mpl%msv%is(mpl%lunit)) then
             if (mpl%testing) then
-               call oops_log%test(mpl%test)
+               call oops_log%test(mpl%test,flush=.true.)
             else
-               call oops_log%info(mpl%test)
+               call oops_log%info(mpl%test,flush=.true.)
             end if
-            call fckit_log%flush()
          else
             write(mpl%lunit,'(a)') trim(mpl%test)
             call flush(mpl%lunit)
@@ -374,11 +369,10 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
       else
          if (mpl%msv%is(mpl%lunit)) then
             if (mpl%testing) then
-               call oops_log%test(mpl%test,newl=.false.)
+               call oops_log%test(mpl%test,newl=.false.,flush=.true.)
             else
-               call oops_log%info(mpl%test,newl=.false.)
+               call oops_log%info(mpl%test,newl=.false.,flush=.true.)
             end if
-            call fckit_log%flush()
          else
             write(mpl%lunit,'(a)',advance='no') trim(mpl%test)
             call flush(mpl%lunit)
@@ -397,16 +391,14 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
       ! Write message
       if (ladvance_flag) then
          if (mpl%msv%is(mpl%lunit)) then
-            call oops_log%warning(mpl%wng)
-            call fckit_log%flush()
+            call oops_log%warning(mpl%wng,flush=.true.)
          else
             write(mpl%lunit,'(a)') trim(mpl%wng_color)//trim(mpl%wng)//trim(mpl%black)
             call flush(mpl%lunit)
          end if
       else
          if (mpl%msv%is(mpl%lunit)) then
-            call oops_log%warning(mpl%wng,newl=.false.)
-            call fckit_log%flush()
+            call oops_log%warning(mpl%wng,newl=.false.,flush=.true.)
          else
             write(mpl%lunit,'(a)',advance='no') trim(mpl%wng_color)//trim(mpl%wng)//trim(mpl%black)
             call flush(mpl%lunit)
@@ -422,16 +414,14 @@ if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)
       ! Write message
       if (ladvance_flag) then
          if (mpl%msv%is(mpl%lunit)) then
-            call oops_log%error(mpl%err)
-            call fckit_log%flush()
+            call oops_log%error(mpl%err,flush=.true.)
          else
             write(mpl%lunit,'(a)') trim(mpl%err_color)//trim(mpl%err)//trim(mpl%black)
             call flush(mpl%lunit)
          end if
       else
          if (mpl%msv%is(mpl%lunit)) then
-            call oops_log%error(mpl%err,newl=.false.)
-            call fckit_log%flush()
+            call oops_log%error(mpl%err,newl=.false.,flush=.true.)
          else
             write(mpl%lunit,'(a)',advance='no') trim(mpl%err_color)//trim(mpl%err)//trim(mpl%black)
             call flush(mpl%lunit)

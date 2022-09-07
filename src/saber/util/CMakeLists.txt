@@ -3,7 +3,7 @@
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
-set( util_src_files
+list(APPEND util_src_files_list
 
 tools_atlas.fypp
 tools_const.fypp
@@ -15,6 +15,22 @@ type_mpl.fypp
 type_msv.fypp
 type_probe.fypp
 type_rng.fypp
+
+)
+
+if ( NOT oops_FOUND )
+
+    list(APPEND util_src_files_list
+
+    logger_mod.fypp
+
+    )
+
+endif()
+
+set( util_src_files
+
+${util_src_files_list}
 
 PARENT_SCOPE
 )

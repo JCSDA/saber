@@ -9,7 +9,7 @@ list(APPEND spectralb_src_files_list
     spectralb_netcdf_mod.F90
 )
 
-if( atlas_TRANS_FOUND )
+if( oops_FOUND AND atlas_TRANS_FOUND )
     list(APPEND spectralb_src_files_list
 
     CovarianceStatistics.h
