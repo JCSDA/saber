@@ -4,6 +4,7 @@ geometry:
     type: regular_gaussian
     N: 20
   levels: 10
+  landsea mask: true
   halo: 3
 variables: &id001
 - var1

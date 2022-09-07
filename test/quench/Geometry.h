@@ -56,6 +56,9 @@ class GeometryParameters : public oops::Parameters {
   /// Vertical unit
   oops::OptionalParameter<std::vector<double>> vunit{"vunit", this};
 
+  /// Land-sea mask
+  oops::OptionalParameter<bool> landsea_mask{"landsea mask", this};
+
   /// Halo size
   oops::OptionalParameter<size_t> halo{"halo", this};
 };
@@ -84,8 +87,6 @@ class Geometry : public util::Printable,
   const atlas::FieldSet & extraFields() const {return extraFields_;}
   atlas::FieldSet & extraFields() {return extraFields_;}
   size_t levels() const {return levels_;}
-  std::vector<double> vunit() const {return vunit_;}
-  size_t halo() const {return halo_;}
 
   std::vector<size_t> variableSizes(const oops::Variables & vars) const;
   void latlon(std::vector<double> &, std::vector<double> &, const bool) const {}
@@ -97,6 +98,7 @@ class Geometry : public util::Printable,
   std::string gridType_;
   atlas::grid::Partitioner partitioner_;
   atlas::Mesh mesh_;
+  atlas::Field gmask_;
   atlas::FunctionSpace functionSpace_;
   atlas::FieldSet extraFields_;
   size_t levels_;

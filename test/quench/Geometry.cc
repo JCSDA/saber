@@ -165,6 +165,182 @@ Geometry::Geometry(const Parameters_ & params,
     }
   }
 
+  // Default mask, set to 1 (true)
+  gmask_ = functionSpace_.createField<int>(
+    atlas::option::name("gmask") | atlas::option::levels(levels_));
+  auto maskView = atlas::array::make_view<int, 2>(gmask_);
+  for (atlas::idx_t jnode = 0; jnode < gmask_.shape(0); ++jnode) {
+    for (atlas::idx_t jlevel = 0; jlevel < gmask_.shape(1); ++jlevel) {
+       maskView(jnode, jlevel) = 1;
+    }
+  }
+
+  // Land-sea mask
+  const boost::optional<bool> &landsea_mask = params.landsea_mask.value();
+  if (landsea_mask != boost::none) {
+    if (*landsea_mask) {
+      // Lon/lat sizes
+      size_t nlon = 0;
+      size_t nlat = 0;
+
+      // NetCDF IDs
+      int ncid, retval, nlon_id, nlat_id, lon_id, lat_id, lsm_id;
+
+      if (comm_.rank() == 0) {
+        // Open NetCDF file
+        if ((retval = nc_open("/home/benjamin/code/bundle/saber/test/testdata/landsea.nc", NC_NOWRITE, &ncid))) ERR(retval);
+
+        // Get lon/lat sizes
+        if ((retval = nc_inq_dimid(ncid, "lon", &nlon_id))) ERR(retval);
+        if ((retval = nc_inq_dimid(ncid, "lat", &nlat_id))) ERR(retval);
+        if ((retval = nc_inq_dimlen(ncid, nlon_id, &nlon))) ERR(retval);
+        if ((retval = nc_inq_dimlen(ncid, nlat_id, &nlat))) ERR(retval);
+      }
+
+      // Broadcast lon/lat sizes
+      comm_.broadcast(nlon, 0);
+      comm_.broadcast(nlat, 0);
+
+      // Coordinates and land-sea mask
+      std::vector<double> lon(nlon);
+      std::vector<double> lat(nlat);
+      std::vector<int> lsm(nlat*nlon);
+
+      if (comm_.rank() == 0) {
+        // Get lon/lat
+        if ((retval = nc_inq_varid(ncid, "lon", &lon_id))) ERR(retval);
+        if ((retval = nc_inq_varid(ncid, "lat", &lat_id))) ERR(retval);
+        if ((retval = nc_inq_varid(ncid, "LSMASK", &lsm_id))) ERR(retval);
+
+        // Read data
+        float zlon[nlon][1];
+        float zlat[nlat][1];
+        uint8_t zlsm[nlat][nlon];
+        if ((retval = nc_get_var_float(ncid, lon_id, &zlon[0][0]))) ERR(retval);
+        if ((retval = nc_get_var_float(ncid, lat_id, &zlat[0][0]))) ERR(retval);
+        if ((retval = nc_get_var_ubyte(ncid, lsm_id, &zlsm[0][0]))) ERR(retval);
+
+        // Copy data
+        for (size_t ilon = 0; ilon < nlon; ++ilon) {
+          lon[ilon] = zlon[ilon][0];
+        }
+        for (size_t ilat = 0; ilat < nlat; ++ilat) {
+          lat[ilat] = zlat[ilat][0];
+        }
+        for (size_t ilat = 0; ilat < nlat; ++ilat) {
+          for (size_t ilon = 0; ilon < nlon; ++ilon) {
+            lsm[ilat*nlon+ilon] = static_cast<int>(zlsm[ilat][ilon]);
+          }
+        }
+      }
+
+      // Close file
+      if ((retval = nc_close(ncid))) ERR(retval);
+
+      // Broadcast coordinates and land-sea mask
+      comm_.broadcast(lon.begin(), lon.end(), 0);
+      comm_.broadcast(lat.begin(), lat.end(), 0);
+      comm_.broadcast(lsm.begin(), lsm.end(), 0);
+      double dlon = lon[1]-lon[0];
+      double dlat = lat[1]-lat[0];
+
+      // Lon/lat variables
+      double zlon, zlat, dzlon, dzlat;
+      int ilonm, ilonp, ilon, ilatm, ilatp, ilat;
+
+      if (functionSpace_.type() == "StructuredColumns") {
+        // StructuredColumns
+        atlas::functionspace::StructuredColumns fs(functionSpace_);
+
+        // Create local coordinates fieldset
+        auto lonlatView = atlas::array::make_view<double, 2>(fs.xy());
+        for (atlas::idx_t jnode = 0; jnode < fs.xy().shape(0); ++jnode) {
+          // Longitude
+          zlon = lonlatView(jnode, 0);
+          if (zlon < lon[0]) { 
+            ilonm = nlon-1;
+            ilonp = 0;
+            dzlon = zlon-lon[ilonm]+360.0;
+          } else if (zlon < lon[nlon-1]) {
+            ilonm = (zlon-lon[0])/dlon;
+            ilonp = ilonm+1;
+            dzlon = zlon-lon[ilonm];
+          } else {
+            ilonm = nlon-1;
+            ilonp = 0;
+            dzlon = zlon-lon[ilonm];
+          }
+          if (dzlon < 0.5*dlon) {
+            ilon = ilonm;
+          } else {
+            ilon = ilonp;
+          }
+
+          // Latitude
+          zlat = lonlatView(jnode, 1);
+          if (zlat < lat[0]) { 
+            ilatm = 0;
+            ilatp = 0;
+            dzlat = 0.0;
+          } else if (zlat < lat[nlat-1]) {
+            ilatm = (zlat-lat[0])/dlat;
+            ilatp = ilatm+1;
+            dzlat = zlat-lat[ilatm];
+          } else {
+            ilatm = nlat-1;
+            ilatp = nlat-1;
+            dzlat = 0.0;
+          }
+          if (dzlat < 0.5*dlat) {
+            ilat = ilatm;
+          } else {
+            ilat = ilatp;
+          }
+
+          // Get nearest neighbor value
+          for (size_t jlevel = 0; jlevel < levels_; ++jlevel) {
+            // Keep ocean points only
+            if (lsm[ilat*nlon+ilon] == 0) {
+              maskView(jnode, jlevel) = 1;
+            } else {
+              maskView(jnode, jlevel) = 0;
+            }
+          }
+        }
+      } else if (functionSpace_.type() == "NodeColumns") {
+        // NodeColumns
+        if (grid_.name().compare(0, 2, std::string{"CS"}) == 0) {
+// TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
+#if atlas_TRANS_FOUND
+          // CubedSphere
+          atlas::functionspace::CubedSphereNodeColumns fs(functionSpace_);
+
+          // Create local coordinates fieldset
+          auto lonlatView = atlas::array::make_view<double, 2>(fs.lonlat());
+          for (atlas::idx_t jnode = 0; jnode < fs.lonlat().shape(0); ++jnode) {
+            zlon = lonlatView(jnode, 0);
+            zlat = lonlatView(jnode, 1);
+          }
+#else
+          ABORT("TRANS required");
+#endif
+        } else {
+          // Other NodeColumns
+          atlas::functionspace::NodeColumns fs(functionSpace_);
+
+          // Create local coordinates fieldset
+          auto lonlatView = atlas::array::make_view<double, 2>(fs.lonlat());
+          for (atlas::idx_t jnode = 0; jnode < fs.lonlat().shape(0); ++jnode) {
+            zlon = lonlatView(jnode, 0);
+            zlat = lonlatView(jnode, 1);
+          }
+        }
+      } else {
+        ABORT(functionSpace_.type() + " function space not supported yet");
+      }
+    }
+  }
+
   // Fill extra geometry fields
   extraFields_ = atlas::FieldSet();
 
@@ -173,11 +349,14 @@ Geometry::Geometry(const Parameters_ & params,
     atlas::option::name("vunit") | atlas::option::levels(levels_));
   auto view = atlas::array::make_view<double, 2>(vunit);
   for (atlas::idx_t jnode = 0; jnode < vunit.shape(0); ++jnode) {
-    for (atlas::idx_t jlevel = 0; jlevel < vunit.shape(1); ++jlevel) {
+    for (size_t jlevel = 0; jlevel < levels_; ++jlevel) {
        view(jnode, jlevel) = vunit_[jlevel];
     }
   }
   extraFields_->add(vunit);
+
+  // Geographical mask
+  extraFields_->add(gmask_);
 
   // Halo mask
   if (grid_.name().compare(0, 1, std::string{"L"}) == 0) {
@@ -240,6 +419,8 @@ Geometry::Geometry(const Geometry & other) : comm_(other.comm_), levels_(other.l
   extraFields_ = atlas::FieldSet();
   atlas::Field vunit = (*other.extraFields())["vunit"];
   extraFields_->add(vunit);
+  atlas::Field gmask = (*other.extraFields())["gmask"];
+  extraFields_->add(gmask);
 }
 // -------------------------------------------------------------------------------------------------
 std::vector<size_t> Geometry::variableSizes(const oops::Variables & vars) const {
@@ -259,6 +440,7 @@ void Geometry::print(std::ostream & os) const {
   os << "Vertical levels: " << std::endl;
   os << "- number: " << levels_ << std::endl;
   os << "- vunit: " << vunit_ << std::endl;
+  os << "Mask size: " << "TODO" << std::endl;
 }
 // -----------------------------------------------------------------------------
 }  // namespace quench

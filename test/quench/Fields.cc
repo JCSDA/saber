@@ -120,7 +120,6 @@ Fields::Fields(const Fields & other, const bool copy):
       }
     }
   }
-
   oops::Log::trace() << "Fields::Fields done" << std::endl;
 }
 // -----------------------------------------------------------------------------
@@ -753,6 +752,7 @@ void Fields::write(const eckit::Configuration & config) const {
   atlas::FieldSet globalCoordinates;
   atlas::Field lonGlobal;
   atlas::Field latGlobal;
+  atlas::Field gmaskGlobal;
   atlas::FieldSet globalData;
 
   // NetCDF output
@@ -765,10 +765,11 @@ void Fields::write(const eckit::Configuration & config) const {
     localCoordinates.add(lonLocal);
     latLocal = fs.createField<double>(atlas::option::name("lat"));
     localCoordinates.add(latLocal);
+    localCoordinates.add(geom_->extraFields().field("gmask"));
     auto lonlatView = atlas::array::make_view<double, 2>(fs.xy());
     auto lonView = atlas::array::make_view<double, 1>(lonLocal);
     auto latView = atlas::array::make_view<double, 1>(latLocal);
-    for (atlas::idx_t jnode = 0; jnode < lonLocal.shape(0); ++jnode) {
+    for (atlas::idx_t jnode = 0; jnode < fs.xy().shape(0); ++jnode) {
        lonView(jnode) = lonlatView(jnode, 0);
        latView(jnode) = lonlatView(jnode, 1);
     }
@@ -780,6 +781,9 @@ void Fields::write(const eckit::Configuration & config) const {
     latGlobal = fs.createField<double>(atlas::option::name("lat")
       | atlas::option::global());
     globalCoordinates.add(latGlobal);
+    gmaskGlobal = fs.createField<int>(atlas::option::name("gmask")
+      | atlas::option::levels(geom_->levels()) | atlas::option::global());
+    globalCoordinates.add(gmaskGlobal);
 
     // Gather coordinates on main processor
     fs.gather(localCoordinates, globalCoordinates);
@@ -805,7 +809,7 @@ void Fields::write(const eckit::Configuration & config) const {
 
       // NetCDF IDs
       int ncid, retval, nx_id, ny_id, nz_id, d2D_id[2], d3D_id[3],
-        lon_id, lat_id, var_id[vars_.size()];
+        lon_id, lat_id, gmask_id, var_id[vars_.size()];
 
       // NetCDF file path
       std::string ncfilepath = filepath;
@@ -819,21 +823,24 @@ void Fields::write(const eckit::Configuration & config) const {
       if ((retval = nc_def_dim(ncid, "nx", nx, &nx_id))) ERR(retval);
       if ((retval = nc_def_dim(ncid, "ny", ny, &ny_id))) ERR(retval);
       if ((retval = nc_def_dim(ncid, "nz", nz, &nz_id))) ERR(retval);
-
-      // Define coordinates
       d2D_id[0] = nx_id;
       d2D_id[1] = ny_id;
+      d3D_id[0] = nz_id;
+      d3D_id[1] = ny_id;
+      d3D_id[2] = nx_id;
+
+      // Define coordinates
       if ((retval = nc_def_var(ncid, "lon", NC_DOUBLE, 2, d2D_id, &lon_id))) ERR(retval);
       if ((retval = nc_def_var(ncid, "lat", NC_DOUBLE, 2, d2D_id, &lat_id))) ERR(retval);
+      if ((retval = nc_def_var(ncid, "gmask", NC_INT, 3, d3D_id, &gmask_id))) ERR(retval);
       if ((retval = nc_put_att_double(ncid, lon_id, "_FillValue", NC_DOUBLE, 1, &msv)))
         ERR(retval);
       if ((retval = nc_put_att_double(ncid, lat_id, "_FillValue", NC_DOUBLE, 1, &msv)))
         ERR(retval);
+      if ((retval = nc_put_att_double(ncid, gmask_id, "_FillValue", NC_INT, 1, &msv)))
+        ERR(retval);
 
       // Define variables
-      d3D_id[0] = nz_id;
-      d3D_id[1] = ny_id;
-      d3D_id[2] = nx_id;
       for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
         if ((retval = nc_def_var(ncid, vars_[jvar].c_str(), NC_DOUBLE, 3, d3D_id,
           &var_id[jvar]))) ERR(retval);
@@ -847,23 +854,32 @@ void Fields::write(const eckit::Configuration & config) const {
       // Copy coordinates
       double zlon[ny][nx];
       double zlat[ny][nx];
+      int zgmask[nz][ny][nx];
       auto lonView = atlas::array::make_view<double, 1>(lonGlobal);
       auto latView = atlas::array::make_view<double, 1>(latGlobal);
+      auto gmaskView = atlas::array::make_view<int, 2>(gmaskGlobal);
       for (atlas::idx_t j = 0; j < ny; ++j) {
         for (atlas::idx_t i = 0; i < nx; ++i) {
           zlon[j][i] = msv;
           zlat[j][i] = msv;
+          for (atlas::idx_t k = 0; k < nz; ++k) {
+            zgmask[k][j][i] = msv;
+          }
         }
         for (atlas::idx_t i = 0; i < grid.nx(j); ++i) {
           atlas::gidx_t gidx = grid.index(i, j);
           zlon[j][i] = lonView(gidx);
           zlat[j][i] = latView(gidx);
+          for (atlas::idx_t k = 0; k < nz; ++k) {
+            zgmask[k][j][i] = gmaskView(gidx, k);
+          }
         }
       }
 
       // Write coordinates
       if ((retval = nc_put_var_double(ncid, lon_id, &zlon[0][0]))) ERR(retval);
       if ((retval = nc_put_var_double(ncid, lat_id, &zlat[0][0]))) ERR(retval);
+      if ((retval = nc_put_var_int(ncid, gmask_id, &zgmask[0][0][0]))) ERR(retval);
 
       for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
         // Copy data
@@ -905,7 +921,7 @@ void Fields::write(const eckit::Configuration & config) const {
       auto lonlatView = atlas::array::make_view<double, 2>(fs.lonlat());
       auto lonView = atlas::array::make_view<double, 1>(lonLocal);
       auto latView = atlas::array::make_view<double, 1>(latLocal);
-      for (atlas::idx_t jnode = 0; jnode < lonLocal.shape(0); ++jnode) {
+      for (atlas::idx_t jnode = 0; jnode < fs.lonlat().shape(0); ++jnode) {
          lonView(jnode) = lonlatView(jnode, 0);
          latView(jnode) = lonlatView(jnode, 1);
       }
@@ -948,7 +964,7 @@ void Fields::write(const eckit::Configuration & config) const {
       auto lonlatView = atlas::array::make_view<double, 2>(fs.lonlat());
       auto lonView = atlas::array::make_view<double, 1>(lonLocal);
       auto latView = atlas::array::make_view<double, 1>(latLocal);
-      for (atlas::idx_t jnode = 0; jnode < lonLocal.shape(0); ++jnode) {
+      for (atlas::idx_t jnode = 0; jnode < fs.lonlat().shape(0); ++jnode) {
          lonView(jnode) = lonlatView(jnode, 0);
          latView(jnode) = lonlatView(jnode, 1);
       }
