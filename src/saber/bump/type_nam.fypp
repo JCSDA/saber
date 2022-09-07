@@ -47,7 +47,6 @@ type nam_type
    logical :: parallel_io                                     !< Parallel NetCDF I/O
    integer :: nprocio                                         !< Number of I/O processors
    real(kind_real) :: universe_rad                            !< Universe radius [in meters]
-   logical :: use_cgal                                        !< Use CGAL for mesh generation (or STRIPACK instead)
    logical :: write_c0                                        !< Write subset Sc0 fields (full grid) using BUMP I/O
 
    ! driver_param
@@ -276,7 +275,6 @@ nam%rth = 1.0e-12_kind_real
 nam%parallel_io = .true.
 nam%nprocio = min(nproc,nprociomax)
 nam%universe_rad = pi*req
-nam%use_cgal = .false.
 nam%write_c0 = .false.
 
 ! driver_param default
@@ -513,7 +511,6 @@ real(kind_real) :: rth
 logical :: parallel_io
 integer :: nprocio
 real(kind_real) :: universe_rad
-logical :: use_cgal
 logical :: write_c0
 character(len=1024) :: method
 character(len=1024) :: strategy
@@ -675,7 +672,6 @@ namelist/general_param/ &
  & parallel_io, &
  & nprocio, &
  & universe_rad, &
- & use_cgal, &
  & write_c0
 namelist/driver_param/ &
  & method, &
@@ -847,7 +843,6 @@ if (mpl%main) then
    parallel_io = .true.
    nprocio = min(mpl%nproc,nprociomax)
    universe_rad = pi*req
-   use_cgal = .false.
    write_c0 = .false.
 
    ! driver_param default
@@ -1069,7 +1064,6 @@ if (mpl%main) then
    nam%parallel_io = parallel_io
    nam%nprocio = nprocio
    nam%universe_rad = universe_rad
-   nam%use_cgal = use_cgal
    nam%write_c0 = write_c0
 
    ! driver_param
@@ -1286,7 +1280,6 @@ call mpl%f_comm%broadcast(nam%rth,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%parallel_io,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nprocio,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%universe_rad,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%use_cgal,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%write_c0,mpl%rootproc-1)
 
 ! driver_param
@@ -1517,7 +1510,6 @@ if (conf%has('rth')) call conf%get_or_die('rth',nam%rth)
 if (conf%has('parallel_io')) call conf%get_or_die('parallel_io',nam%parallel_io)
 if (conf%has('nprocio')) call conf%get_or_die('nprocio',nam%nprocio)
 if (conf%has('universe_rad')) call conf%get_or_die('universe_rad',nam%universe_rad)
-if (conf%has('use_cgal')) call conf%get_or_die('use_cgal',nam%use_cgal)
 if (conf%has('write_c0')) call conf%get_or_die('write_c0',nam%write_c0)
 
 ! driver_param
@@ -2544,7 +2536,6 @@ call mpl%write('rth',nam%rth)
 call mpl%write('parallel_io',nam%parallel_io)
 call mpl%write('nprocio',nam%nprocio)
 call mpl%write('universe_rad',nam%universe_rad*req)
-call mpl%write('use_cgal',nam%use_cgal)
 call mpl%write('write_c0',nam%write_c0)
 
 ! driver_param

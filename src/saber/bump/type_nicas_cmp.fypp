@@ -2562,7 +2562,7 @@ do il1=1,nicas_cmp%nl1
 
    ! Allocation
    allocate(gmask_c1(nicas_cmp%hor(il1)%nc1))
-   call mesh_c1%alloc(nicas_cmp%hor(il1)%nc1,nam%use_cgal)
+   call mesh_c1%alloc(nicas_cmp%hor(il1)%nc1)
    call tree_c1%alloc(mpl,nicas_cmp%hor(il1)%nc1)
 
    ! Initialization

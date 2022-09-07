@@ -359,7 +359,7 @@ call mpl%flush
 call geom%tree_c0u%alloc(mpl,geom%nc0u)
 call geom%tree_c0u%init(geom%lon_c0u,geom%lat_c0u)
 
-! Setup mesh (using stripack, since CGAL cannot compute boundary nodes)
+! Setup mesh
 write(mpl%info,'(a7,a)') '','Setup mesh'
 call mpl%flush
 call geom%mesh_c0u%alloc(geom%nc0u,.false.)

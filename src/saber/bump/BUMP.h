@@ -129,8 +129,6 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<int> nprocio{"nprocio", this};
   // Universe radius [in meters]
   oops::OptionalParameter<double> universe_rad{"universe_rad", this};
-  // Use CGAL for mesh generation (or STRIPACK instead)
-  oops::OptionalParameter<bool> use_cgal{"use_cgal", this};
   // Write subset Sc0 fields (full grid) using BUMP I/O
   oops::OptionalParameter<bool> write_c0{"write_c0", this};
 
@@ -590,10 +588,8 @@ BUMP<MODEL>::BUMP(const Geometry_ & geom1,
       if (verbosity_) oops::Log::info() << "Info     : OpenMP threads: " << omp << std::endl;
 
       // Replace patterns
-      std::cout << "AVANT :" << fullConfig << std::endl;
       util::seekAndReplace(fullConfig, "_MPI_", mpi);
       util::seekAndReplace(fullConfig, "_OMP_", omp);
-      std::cout << "APRES :" << fullConfig << std::endl;
 
       // Convert back to parameters
       params_.deserialize(fullConfig);

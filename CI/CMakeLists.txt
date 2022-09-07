@@ -29,12 +29,6 @@ ecbuild_bundle( PROJECT oops GIT "https://github.com/JCSDA-internal/oops.git" )
 ecbuild_bundle( PROJECT vader GIT "https://github.com/JCSDA-internal/vader.git" )
 ecbuild_bundle( PROJECT saber GIT "https://github.com/JCSDA-internal/saber.git" )
 
-# saber-data
-find_branch_name(REPO_DIR_NAME saber)
-if( NOT DEFINED ENV{LOCAL_PATH_JEDI_TESTFILES} AND NOT DEFINED ${GIT_TAG_FUNC} )
-  ecbuild_bundle( PROJECT saber-data GIT "https://github.com/JCSDA-internal/saber-data.git" )
-endif()
-
 ecbuild_bundle_finalize()
 
 include(cmake/cdash-integration.cmake)

@@ -2460,7 +2460,7 @@ allocate(smask_c2a(samp%nc2a,geom%nl0i))
 allocate(smask_c2(samp%nc2,geom%nl0i))
 allocate(smask_hor_c2(samp%nc2))
 if (.not.samp%lat_bands) then
-   call mesh_c2%alloc(samp%nc2,nam%use_cgal)
+   call mesh_c2%alloc(samp%nc2)
    call tree_c2%alloc(mpl,samp%nc2)
 end if
 allocate(samp%interp_c2b_to_c0a(geom%nl0i))

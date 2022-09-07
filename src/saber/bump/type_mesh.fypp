@@ -39,7 +39,6 @@ end type row_type
 type mesh_type
    ! Mesh structure
    integer :: n                            !< Number of points
-   logical :: use_cgal                     !< Use CGAL for mesh generation
    type(row_type),allocatable :: rows(:)   !< Connectivity table rows
    integer :: maxcols                      !< Maximum number of columns
    integer,allocatable :: order(:)         !< Order of shuffled points
@@ -83,14 +82,13 @@ contains
 ! Subroutine: mesh_alloc
 !> Allocation
 !----------------------------------------------------------------------
-subroutine mesh_alloc(mesh,n,use_cgal)
+subroutine mesh_alloc(mesh,n)
 
 implicit none
 
 ! Passed variables
 class(mesh_type),intent(inout) :: mesh !< Mesh
 integer,intent(in) :: n                !< Mesh size
-logical,intent(in) :: use_cgal         !< Use CGAL option
 
 ! Set name
 @:set_name(mesh_alloc)
@@ -100,7 +98,6 @@ logical,intent(in) :: use_cgal         !< Use CGAL option
 
 ! Initialization
 mesh%n = n
-mesh%use_cgal = use_cgal
 
 ! Allocation
 allocate(mesh%order(mesh%n))
@@ -111,11 +108,9 @@ allocate(mesh%x(mesh%n))
 allocate(mesh%y(mesh%n))
 allocate(mesh%z(mesh%n))
 allocate(mesh%rows(mesh%n))
-if (.not.mesh%use_cgal) then
-   allocate(mesh%list(6*(mesh%n-2)))
-   allocate(mesh%lptr(6*(mesh%n-2)))
-   allocate(mesh%lend(mesh%n))
-end if
+allocate(mesh%list(6*(mesh%n-2)))
+allocate(mesh%lptr(6*(mesh%n-2)))
+allocate(mesh%lend(mesh%n))
 
 ! Probe out
 @:probe_out()
@@ -216,162 +211,49 @@ do i=1,mesh%n
    call lonlatmod(mesh%lon(i),mesh%lat(i))
 end do
 
-if (mesh%use_cgal) then
-   ! Use ATLAS/CGAL mesh
+! Allocation
+allocate(near(mesh%n))
+allocate(next(mesh%n))
+allocate(dist(mesh%n))
 
-   ! Allocation
-   allocate(lonlat(2,mesh%n))
+! Create mesh
+mesh%list = 0
+mesh%lend = 0
+mesh%lnew = 0
 
-   ! Copy coordinates and convert to degrees
-   lonlat(1,:) = mesh%lon*rad2deg
-   lonlat(2,:) = mesh%lat*rad2deg
+! Call TRMESH
+call trmesh(mpl,mesh%n,mesh%x,mesh%y,mesh%z,mesh%list,mesh%lptr,mesh%lend,mesh%lnew,near,next,dist)
 
-   ! Create unstructured grid
-   agrid = atlas_unstructuredgrid(lonlat)
-
-   ! Mesh generator
-   ameshgenerator = atlas_meshgenerator('delaunay')
-
-   ! Create mesh from grid
-   amesh = ameshgenerator%generate(agrid)
-
-   ! Build connectivity
-   call atlas_build_edges(amesh)
-   call atlas_build_node_to_edge_connectivity(amesh)
-
-   ! Get connectivity
-   anodes = amesh%nodes()
-   aconnectivity = anodes%edge_connectivity()
-
-   ! Check number of rows
-   if (aconnectivity%rows()/=mesh%n) call mpl%abort('${subr}$','number of rows should be equal to the number of points')
-
-   ! Allocation
-   maxedge = 0
-   do i=1,mesh%n
-      call aconnectivity%row(i,row,cols)
-      mesh%rows(i)%cols = cols
-      maxedge = max(maxedge,zss_maxval(row(1:cols)))
-      allocate(mesh%rows(i)%nodes(mesh%rows(i)%cols))
+! Count neighbors
+do i=1,mesh%n
+   mesh%rows(i)%cols = 0
+   j = mesh%lend(i)
+   init = .true.
+   do while ((j/=mesh%lend(i)).or.init)
+      mesh%rows(i)%cols = mesh%rows(i)%cols+1
+      j = mesh%lptr(j)
+      init = .false.
    end do
-   allocate(nodes(maxedge,2))
+end do
 
-   ! Fill nodes for each edge
-   nodes = mpl%msv%vali
-   do i=1,mesh%n
-      call aconnectivity%row(i,row,cols)
-      do j=1,mesh%rows(i)%cols
-         k = row(j)
-         if (mpl%msv%is(nodes(k,1))) then
-            ! First point
-            nodes(k,1) = i
-         elseif (mpl%msv%is(nodes(k,2))) then
-            ! Second point
-            nodes(k,2) = i
-         else
-            ! Error
-            call mpl%abort('${subr}$','third node for the same edge')
-         end if
-      end do
+! Find neighbors indices
+do i=1,mesh%n
+   allocate(mesh%rows(i)%nodes(mesh%rows(i)%cols))
+   mesh%rows(i)%cols = 0
+   j = mesh%lend(i)
+   init = .true.
+   do while ((j/=mesh%lend(i)).or.init)
+      mesh%rows(i)%cols = mesh%rows(i)%cols+1
+      mesh%rows(i)%nodes(mesh%rows(i)%cols) = abs(mesh%list(j))
+      j = mesh%lptr(j)
+      init = .false.
    end do
+end do
 
-   ! Fill nodes index in connectivity list
-   do i=1,mesh%n
-      call aconnectivity%row(i,row,cols)
-      do j=1,mesh%rows(i)%cols
-         k = row(j)
-         if (i==nodes(k,1)) then
-            ! Node is first point
-            mesh%rows(i)%nodes(j) = nodes(k,2)
-         elseif (i==nodes(k,2)) then
-            ! Node is second point
-            mesh%rows(i)%nodes(j) = nodes(k,1)
-         else
-            ! Error
-            call mpl%abort('${subr}$','no node for the this edge')
-         end if
-      end do
-   end do
-
-   ! Sort nodes in counter-clockwise order
-   do i=1,mesh%n
-      ! Allocation
-      allocate(x(mesh%rows(i)%cols))
-      allocate(y(mesh%rows(i)%cols))
-      allocate(z(mesh%rows(i)%cols))
-      allocate(order(mesh%rows(i)%cols))
-
-      ! Copy coordinates
-      x = mesh%x(mesh%rows(i)%nodes)
-      y = mesh%y(mesh%rows(i)%nodes)
-      z = mesh%z(mesh%rows(i)%nodes)
-
-      ! Sort nodes
-      call order_cc(mpl,mesh%lon(i),mesh%lat(i),mesh%rows(i)%cols,x,y,z,order)
-      mesh%rows(i)%nodes = mesh%rows(i)%nodes(order)
-
-      ! Release memory
-      deallocate(x)
-      deallocate(y)
-      deallocate(z)
-      deallocate(order)
-   end do
-
-   ! Release memory
-   deallocate(lonlat)
-   deallocate(nodes)
-   call agrid%final()
-   call amesh%final()
-   call ameshgenerator%final()
-   call anodes%final()
-   call aconnectivity%final()
-else
-   ! Use STRIPACK
-
-   ! Allocation
-   allocate(near(mesh%n))
-   allocate(next(mesh%n))
-   allocate(dist(mesh%n))
-
-   ! Create mesh
-   mesh%list = 0
-   mesh%lend = 0
-   mesh%lnew = 0
-
-   ! Call TRMESH
-   call trmesh(mpl,mesh%n,mesh%x,mesh%y,mesh%z,mesh%list,mesh%lptr,mesh%lend,mesh%lnew,near,next,dist)
-
-   ! Count neighbors
-   do i=1,mesh%n
-      mesh%rows(i)%cols = 0
-      j = mesh%lend(i)
-      init = .true.
-      do while ((j/=mesh%lend(i)).or.init)
-         mesh%rows(i)%cols = mesh%rows(i)%cols+1
-         j = mesh%lptr(j)
-         init = .false.
-      end do
-   end do
-
-   ! Find neighbors indices
-   do i=1,mesh%n
-      allocate(mesh%rows(i)%nodes(mesh%rows(i)%cols))
-      mesh%rows(i)%cols = 0
-      j = mesh%lend(i)
-      init = .true.
-      do while ((j/=mesh%lend(i)).or.init)
-         mesh%rows(i)%cols = mesh%rows(i)%cols+1
-         mesh%rows(i)%nodes(mesh%rows(i)%cols) = abs(mesh%list(j))
-         j = mesh%lptr(j)
-         init = .false.
-      end do
-   end do
-
-   ! Release memory
-   deallocate(near)
-   deallocate(next)
-   deallocate(dist)
-end if
+! Release memory
+deallocate(near)
+deallocate(next)
+deallocate(dist)
 
 ! Maximum number of columns
 mesh%maxcols = 0
@@ -493,113 +375,26 @@ logical :: found,cflag(3),valid
 ! Transform to cartesian coordinates
 call lonlat2xyz(mpl,lon,lat,xyz(1),xyz(2),xyz(3))
 
-if (mesh%use_cgal) then
-   ! Initialization
-   found = .false.
-   nn = 1
-   ib = mpl%msv%vali
-   b = mpl%msv%valr
+! Allocation
+allocate(nn_index(1))
 
-   do while ((.not.found).and.(nn<=nnmax))
-      ! Allocation
-      if (nn>mesh%n) call mpl%abort('${subr}$','cannot find a triangle containing this point')
-      allocate(nn_index(nn))
-      allocate(nn_dist(nn))
+! Find the next nearest neighbor
+call tree%find_nearest_neighbors(lon,lat,1,nn_index)
 
-      ! Find the next nearest neighbor
-      call tree%find_nearest_neighbors(lon,lat,nn,nn_index,nn_dist)
-      i = mesh%order_inv(nn_index(nn))
+! Compute barycentric coordinates
+b = zero
+ib = 0
+call trfind(nn_index(1),xyz,mesh%n,mesh%x,mesh%y,mesh%z,mesh%list,mesh%lptr,mesh%lend,b(1),b(2),b(3),ib(1),ib(2),ib(3))
 
-      ! Check distance
-      if (nn_dist(nn)>zero) then
-         ! Loop over neigbors
-         do j=1,mesh%rows(i)%cols
-            ! Find the two other vertices of the triangle
-            k = mesh%rows(i)%nodes(j)
-            if (j<mesh%rows(i)%cols) then
-               knext = mesh%rows(i)%nodes(j+1)
-            else
-               knext = mesh%rows(i)%nodes(1)
-            end if
-
-            ! Compute weights
-            pi = (/mesh%x(i),mesh%y(i),mesh%z(i)/)
-            pk = (/mesh%x(k),mesh%y(k),mesh%z(k)/)
-            pknext = (/mesh%x(knext),mesh%y(knext),mesh%z(knext)/)
-            call det(pk,pknext,xyz,b(1),cflag(1))
-            call det(pknext,pi,xyz,b(2),cflag(2))
-            call det(pi,pk,xyz,b(3),cflag(3))
-
-            ! Check if the points are colinear
-            if (count(cflag)>=2) then
-               ! At least two non-flat triangles, check if weights are positive
-               valid = .true.
-               do l=1,3
-                  if (cflag(l)) valid = valid.and.(b(l)>zero)
-               end do
-               if (valid) then
-                  ib(1) = nn_index(nn)
-                  ib(2) = mesh%order(k)
-                  ib(3) = mesh%order(knext)
-                  b = max(b,zero)
-                  b = b/sum(b)
-                  found = .true.
-                  exit
-               end if
-            elseif (count(cflag)==0) then
-               ! Only flat triangles, pick the two closest nodes
-               deallocate(nn_index)
-               deallocate(nn_dist)
-               allocate(nn_index(3))
-               allocate(nn_dist(3))
-               call tree%find_nearest_neighbors(lon,lat,3,nn_index,nn_dist)
-               ib = nn_index
-               b(1) = nn_dist(2)
-               b(2) = nn_dist(1)
-               b(3) = zero
-               b = b/sum(b)
-               found = .true.
-               exit
-            end if
-         end do
-      else
-         ib(1) = nn_index(nn)
-         ib(2) = nn_index(nn)
-         ib(3) = nn_index(nn)
-         b(1) = one
-         b(2) = zero
-         b(3) = zero
-      end if
-
-      ! Release memory
-      deallocate(nn_index)
-      deallocate(nn_dist)
-
-      ! Update number of neighbors
-      nn = nn+1
-   end do
+! Transform indices
+if (all(ib>0)) then
+   ib = mesh%order(ib)
 else
-   ! Allocation
-   allocate(nn_index(1))
-
-   ! Find the next nearest neighbor
-   call tree%find_nearest_neighbors(lon,lat,1,nn_index)
-
-   ! Compute barycentric coordinates
-   b = zero
-   ib = 0
-   call trfind(nn_index(1),xyz,mesh%n,mesh%x,mesh%y,mesh%z,mesh%list,mesh%lptr,mesh%lend,b(1),b(2),b(3),ib(1),ib(2),ib(3))
-
-   ! Transform indices
-   if (all(ib>0)) then
-      ib = mesh%order(ib)
-   else
-      ib = mpl%msv%vali
-   end if
-
-   ! Release memory
-   deallocate(nn_index)
+   ib = mpl%msv%vali
 end if
+
+! Release memory
+deallocate(nn_index)
 
 ! Order
 if (mpl%msv%isallnot(ib)) then

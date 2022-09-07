@@ -1,0 +1,61 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_gaussian
+    N: 10
+  levels: 2
+  halo: 0
+input variables: &id001
+- var1
+- var2
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables: *id001
+ensemble:
+  members from template:
+    template:
+      date: '2010-01-01T12:00:00Z'
+      filepath: testdata/randomization_bump_nicas_F10L2/member_%mem%
+      state variables: *id001
+    pattern: '%mem%'
+    nmembers: 25
+    zero padding: 6
+bump:
+  datadir: testdata
+  prefix: error_covariance_training_bump_hdiag-nicas_local_rad/_MPI_-_OMP_
+  testing: true
+  method: loc
+  strategy: common
+  new_hdiag: true
+  write_hdiag: true
+  new_nicas: true
+  write_nicas_local: true
+  check_adjoints: true
+  check_normalization: 10
+  check_dirac: true
+  nc1: 500
+  nc3: 10
+  dc: 800.0e3
+  nl0r: 2
+  ne: 25
+  local_diag: true
+  local_rad: 2000.0e3
+  resol: 4.0
+  ndir: 1
+  londir:
+  - -85.0
+  latdir:
+  - 65.0
+  levdir:
+  - 1
+  ivdir:
+  - 1
+  output:
+  - filepath: testdata/error_covariance_training_bump_hdiag-nicas_local_rad/_MPI_-_OMP__cor_rh
+    parameter: cor_rh
+  - filepath: testdata/error_covariance_training_bump_hdiag-nicas_local_rad/_MPI_-_OMP__cor_rv
+    parameter: cor_rv
+  - filepath: testdata/error_covariance_training_bump_hdiag-nicas_local_rad/_MPI_-_OMP__nicas_norm
+    parameter: nicas_norm
+test:
+  reference filename: testref/error_covariance_training_bump_hdiag-nicas_local_rad.ref
