@@ -60,8 +60,7 @@ class Fields : public util::Printable,
 
 // ATLAS FieldSet
   void toFieldSet(atlas::FieldSet &) const;
-  void toFieldSetAD(const atlas::FieldSet &)
-    {ABORT("toFieldSetAD not implemented");}
+  void toFieldSetAD(const atlas::FieldSet &);
   void fromFieldSet(const atlas::FieldSet &);
 
 // Utilities

@@ -70,27 +70,27 @@
              -90.00 deg.  ~>100-99-100-99-100-100-100-100-100-100 
              -90.00 deg.  ~>100-99-100-99-100-100-100-100-100-100 
                 Level:   1 ~> cov. at class zero:  0.10E+01
-                Level:   2 ~> cov. at class zero:  0.11E+01
-                Level:   3 ~> cov. at class zero:  0.11E+01
-                Level:   4 ~> cov. at class zero:  0.97E+00
-                Level:   5 ~> cov. at class zero:  0.94E+00
+                Level:   2 ~> cov. at class zero:  0.10E+01
+                Level:   3 ~> cov. at class zero:  0.10E+01
+                Level:   4 ~> cov. at class zero:  0.93E+00
+                Level:   5 ~> cov. at class zero:  0.95E+00
                 Level:   6 ~> cov. at class zero:  0.92E+00
                 Level:   7 ~> cov. at class zero:  0.93E+00
                 Level:   8 ~> cov. at class zero:  0.93E+00
                 Level:   9 ~> cov. at class zero:  0.10E+01
                 Level:  10 ~> cov. at class zero:  0.11E+01
-                Level:   1 ~> cov. at class zero:  0.97E+00
-                Level:   2 ~> cov. at class zero:  0.97E+00
+                Level:   1 ~> cov. at class zero:  0.99E+00
+                Level:   2 ~> cov. at class zero:  0.99E+00
                 Level:   3 ~> cov. at class zero:  0.96E+00
                 Level:   4 ~> cov. at class zero:  0.96E+00
-                Level:   5 ~> cov. at class zero:  0.99E+00
-                Level:   6 ~> cov. at class zero:  0.99E+00
+                Level:   5 ~> cov. at class zero:  0.98E+00
+                Level:   6 ~> cov. at class zero:  0.98E+00
                 Level:   7 ~> cov. at class zero:  0.10E+01
                 Level:   8 ~> cov. at class zero:  0.11E+01
-                Level:   9 ~> cov. at class zero:  0.11E+01
-                Level:  10 ~> cov. at class zero:  0.95E+00
-             Block var1-var1:  0.19641632E+00 for      500 diagnostic points
-             Block var2-var2:  0.16561806E+00 for      500 diagnostic points
+                Level:   9 ~> cov. at class zero:  0.10E+01
+                Level:  10 ~> cov. at class zero:  0.96E+00
+             Block var1-var1:  0.17536273E+00 for      500 diagnostic points
+             Block var2-var2:  0.17560619E+00 for      500 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                 Level:   3 ~> cor. at class zero:        1.00
@@ -102,35 +102,35 @@
                 Level:   9 ~> cor. at class zero:        1.00
                 Level:  10 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      7685.43 km
-                                 cor. ver. support:         5.64 vertical units
+                                 cor. hor. support:      7544.51 km
+                                 cor. ver. support:         5.37 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      7842.70 km
-                                 cor. ver. support:         5.62 vertical units
+                                 cor. hor. support:      7625.65 km
+                                 cor. ver. support:         5.39 vertical units
                    Level:   3 ~> amplitude:        1.00
-                                 cor. hor. support:      7906.60 km
-                                 cor. ver. support:         5.52 vertical units
-                   Level:   4 ~> amplitude:        1.00
-                                 cor. hor. support:      7708.36 km
-                                 cor. ver. support:         5.55 vertical units
-                   Level:   5 ~> amplitude:        1.00
-                                 cor. hor. support:      7437.97 km
-                                 cor. ver. support:         5.43 vertical units
-                   Level:   6 ~> amplitude:        1.00
-                                 cor. hor. support:      7259.81 km
+                                 cor. hor. support:      7667.45 km
                                  cor. ver. support:         5.35 vertical units
+                   Level:   4 ~> amplitude:        1.00
+                                 cor. hor. support:      7539.16 km
+                                 cor. ver. support:         5.42 vertical units
+                   Level:   5 ~> amplitude:        1.00
+                                 cor. hor. support:      7374.29 km
+                                 cor. ver. support:         5.37 vertical units
+                   Level:   6 ~> amplitude:        1.00
+                                 cor. hor. support:      7281.49 km
+                                 cor. ver. support:         5.37 vertical units
                    Level:   7 ~> amplitude:        1.00
-                                 cor. hor. support:      7136.02 km
-                                 cor. ver. support:         5.24 vertical units
+                                 cor. hor. support:      7186.07 km
+                                 cor. ver. support:         5.30 vertical units
                    Level:   8 ~> amplitude:        1.00
-                                 cor. hor. support:      7106.91 km
-                                 cor. ver. support:         5.22 vertical units
+                                 cor. hor. support:      7092.67 km
+                                 cor. ver. support:         5.31 vertical units
                    Level:   9 ~> amplitude:        1.00
-                                 cor. hor. support:      7222.00 km
-                                 cor. ver. support:         5.09 vertical units
+                                 cor. hor. support:      7103.86 km
+                                 cor. ver. support:         5.20 vertical units
                    Level:  10 ~> amplitude:        1.00
-                                 cor. hor. support:      7354.57 km
-                                 cor. ver. support:         5.07 vertical units
+                                 cor. hor. support:      7175.63 km
+                                 cor. ver. support:         5.17 vertical units
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                 Level:   3 ~> cor. at class zero:        1.00
@@ -142,34 +142,34 @@
                 Level:   9 ~> cor. at class zero:        1.00
                 Level:  10 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      8149.32 km
-                                 cor. ver. support:         6.90 vertical units
+                                 cor. hor. support:      8335.85 km
+                                 cor. ver. support:         6.99 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      8151.29 km
-                                 cor. ver. support:         6.79 vertical units
+                                 cor. hor. support:      8309.48 km
+                                 cor. ver. support:         6.86 vertical units
                    Level:   3 ~> amplitude:        1.00
-                                 cor. hor. support:      8219.02 km
-                                 cor. ver. support:         6.68 vertical units
+                                 cor. hor. support:      8258.00 km
+                                 cor. ver. support:         6.76 vertical units
                    Level:   4 ~> amplitude:        1.00
-                                 cor. hor. support:      8462.83 km
-                                 cor. ver. support:         6.70 vertical units
+                                 cor. hor. support:      8276.02 km
+                                 cor. ver. support:         6.80 vertical units
                    Level:   5 ~> amplitude:        1.00
-                                 cor. hor. support:      8749.99 km
-                                 cor. ver. support:         6.61 vertical units
-                   Level:   6 ~> amplitude:        1.00
-                                 cor. hor. support:      8821.67 km
-                                 cor. ver. support:         6.65 vertical units
-                   Level:   7 ~> amplitude:        1.00
-                                 cor. hor. support:      8834.59 km
-                                 cor. ver. support:         6.62 vertical units
-                   Level:   8 ~> amplitude:        1.00
-                                 cor. hor. support:      9022.08 km
+                                 cor. hor. support:      8436.46 km
                                  cor. ver. support:         6.72 vertical units
+                   Level:   6 ~> amplitude:        1.00
+                                 cor. hor. support:      8668.09 km
+                                 cor. ver. support:         6.75 vertical units
+                   Level:   7 ~> amplitude:        1.00
+                                 cor. hor. support:      8958.78 km
+                                 cor. ver. support:         6.68 vertical units
+                   Level:   8 ~> amplitude:        1.00
+                                 cor. hor. support:      9256.85 km
+                                 cor. ver. support:         6.74 vertical units
                    Level:   9 ~> amplitude:        1.00
-                                 cor. hor. support:      9154.85 km
+                                 cor. hor. support:      9306.05 km
                                  cor. ver. support:         6.70 vertical units
                    Level:  10 ~> amplitude:        1.00
-                                 cor. hor. support:      9086.43 km
-                                 cor. ver. support:         6.55 vertical units
-Norm of BUMP output parameter cor_rh - 1: 8.4121409631571949e+08
-Norm of BUMP output parameter cor_rv - 1: 6.3080653316645157e+02
+                                 cor. hor. support:      9152.16 km
+                                 cor. ver. support:         6.54 vertical units
+Norm of BUMP output parameter cor_rh - 1: 8.3780392349840140e+08
+Norm of BUMP output parameter cor_rv - 1: 6.3217825357751565e+02

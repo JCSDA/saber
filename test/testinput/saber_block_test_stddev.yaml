@@ -4,8 +4,8 @@ geometry:
     type: regular_gaussian
     N: 20
   levels: 10
-  mask type: sea
-  halo: 1
+  mask type: none
+  halo: 0
 variables: &id001
 - var1
 background:

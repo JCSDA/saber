@@ -106,7 +106,7 @@ void Localization<MODEL>::randomize(Increment_ & dx) const {
   saberBlock_->randomize(dx.fieldSet());
 
   // ATLAS fieldset to Increment_
-  dx.synchronizeFields();
+  dx.synchronizeFieldsAD();
 
   oops::Log::trace() << "Localization:randomize done" << std::endl;
 }
@@ -121,7 +121,7 @@ void Localization<MODEL>::multiply(Increment_ & dx) const {
   saberBlock_->multiply(dx.fieldSet());
 
   // ATLAS fieldset to Increment_
-  dx.synchronizeFields();
+  dx.synchronizeFieldsAD();
 
   oops::Log::trace() << "Localization:multiply done" << std::endl;
 }

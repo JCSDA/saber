@@ -27,27 +27,27 @@
           Compute independent levels:  1[2] 
              -90.00 deg.  ~>100-92-81-73-68-59-55-35-37-31 
              -90.00 deg.  ~>100-92-81-73-68-59-55-35-37-31 
-                Level:   1 ~> cov. at class zero:  0.93E+00
+                Level:   1 ~> cov. at class zero:  0.92E+00
                 Level:   2 ~> cov. at class zero:  0.10E+01
-                Level:   1 ~> cov. at class zero:  0.10E+01
-                Level:   2 ~> cov. at class zero:  0.10E+01
-             Block var1-var1:  0.18216828E+00 for       40 diagnostic points
-             Block var2-var2:  0.23310957E+00 for       40 diagnostic points
+                Level:   1 ~> cov. at class zero:  0.11E+01
+                Level:   2 ~> cov. at class zero:  0.11E+01
+             Block var1-var1:  0.17106017E+00 for       40 diagnostic points
+             Block var2-var2:  0.22671143E+00 for       40 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      7137.47 km
-                                 cor. ver. support:         1.45 vertical units
+                                 cor. hor. support:      6659.31 km
+                                 cor. ver. support:         1.30 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      6904.99 km
-                                 cor. ver. support:         1.45 vertical units
+                                 cor. hor. support:      6969.67 km
+                                 cor. ver. support:         1.30 vertical units
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      9177.48 km
-                                 cor. ver. support:         5.27 vertical units
+                                 cor. hor. support:      8685.10 km
+                                 cor. ver. support:         5.38 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      8978.74 km
-                                 cor. ver. support:         5.27 vertical units
-Norm of BUMP output parameter cor_rh - 1: 3.7718922520429623e+08
-Norm of BUMP output parameter cor_rv - 1: 1.7962874406023451e+02
+                                 cor. hor. support:      9120.81 km
+                                 cor. ver. support:         5.38 vertical units
+Norm of BUMP output parameter cor_rh - 1: 3.6855556138803297e+08
+Norm of BUMP output parameter cor_rv - 1: 1.8197788763772695e+02

@@ -27,6 +27,7 @@
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/Logger.h"
+#include "oops/util/missingValues.h"
 #include "oops/util/Random.h"
 
 #include "quench/Geometry.h"
@@ -148,11 +149,11 @@ Fields::Fields(const Fields & other):
 }
 // -----------------------------------------------------------------------------
 void Fields::zero() {
+  auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   for (const auto var : vars_.variables()) {
     atlas::Field field = fset_[var];
     if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
-      auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
           if (gmaskView(jnode, jlevel) == 1) view(jnode, jlevel) = 0.0;
@@ -181,13 +182,13 @@ Fields & Fields::operator=(const Fields & rhs) {
 }
 // -----------------------------------------------------------------------------
 Fields & Fields::operator+=(const Fields & rhs) {
+  auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   for (const auto var : vars_.variables()) {
     atlas::Field field = fset_[var];
     atlas::Field fieldRhs = rhs.fset_[var];
     if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
       auto viewRhs = atlas::array::make_view<double, 2>(fieldRhs);
-      auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
           if (gmaskView(jnode, jlevel) == 1) view(jnode, jlevel) += viewRhs(jnode, jlevel);
@@ -199,13 +200,13 @@ Fields & Fields::operator+=(const Fields & rhs) {
 }
 // -----------------------------------------------------------------------------
 Fields & Fields::operator-=(const Fields & rhs) {
+  auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   for (const auto var : vars_.variables()) {
     atlas::Field field = fset_[var];
     atlas::Field fieldRhs = rhs.fset_[var];
     if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
       auto viewRhs = atlas::array::make_view<double, 2>(fieldRhs);
-      auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
           if (gmaskView(jnode, jlevel) == 1) view(jnode, jlevel) -= viewRhs(jnode, jlevel);
@@ -217,11 +218,11 @@ Fields & Fields::operator-=(const Fields & rhs) {
 }
 // -----------------------------------------------------------------------------
 Fields & Fields::operator*=(const double & zz) {
+  auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   for (const auto var : vars_.variables()) {
     atlas::Field field = fset_[var];
     if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
-      auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
           if (gmaskView(jnode, jlevel) == 1) view(jnode, jlevel) *= zz;
@@ -233,13 +234,13 @@ Fields & Fields::operator*=(const double & zz) {
 }
 // -----------------------------------------------------------------------------
 void Fields::axpy(const double & zz, const Fields & rhs) {
+  auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   for (const auto var : vars_.variables()) {
     atlas::Field field = fset_[var];
     atlas::Field fieldRhs = rhs.fset_[var];
     if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
       auto viewRhs = atlas::array::make_view<double, 2>(fieldRhs);
-      auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
           if (gmaskView(jnode, jlevel) == 1) {
@@ -254,6 +255,7 @@ void Fields::axpy(const double & zz, const Fields & rhs) {
 // -----------------------------------------------------------------------------
 double Fields::dot_product_with(const Fields & fld2) const {
   double zz = 0;
+  auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
   for (const auto var : vars_.variables()) {
     atlas::Field field1 = fset_[var];
@@ -261,7 +263,6 @@ double Fields::dot_product_with(const Fields & fld2) const {
     if (field1.rank() == 2) {
       auto view1 = atlas::array::make_view<double, 2>(field1);
       auto view2 = atlas::array::make_view<double, 2>(field2);
-      auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
       for (atlas::idx_t jnode = 0; jnode < field1.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
           if (gmaskView(jnode, jlevel) == 1 and ghostView(jnode) == 0) {
@@ -276,13 +277,13 @@ double Fields::dot_product_with(const Fields & fld2) const {
 }
 // -----------------------------------------------------------------------------
 void Fields::schur_product_with(const Fields & dx) {
+  auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   for (const auto var : vars_.variables()) {
     atlas::Field field = fset_[var];
     atlas::Field fieldDx = dx.fset_[var];
     if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
       auto viewDx = atlas::array::make_view<double, 2>(fieldDx);
-      auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
           if (gmaskView(jnode, jlevel) == 1) view(jnode, jlevel) *= viewDx(jnode, jlevel);
@@ -295,11 +296,11 @@ void Fields::schur_product_with(const Fields & dx) {
 void Fields::random() {
   // Total size
   size_t n = 0;
+  auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
   for (const auto var : vars_.variables()) {
     atlas::Field field = fset_[var];
     if (field.rank() == 2) {
-      auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
           if (gmaskView(jnode, jlevel) == 1 and ghostView(jnode) == 0) ++n;
@@ -309,20 +310,32 @@ void Fields::random() {
   }
   geom_->getComm().allReduceInPlace(n, eckit::mpi::sum());
 
-  // Global fieldset
-  atlas::FieldSet globalData;
+  // Local masks
+  atlas::FieldSet localMasks;
+  localMasks.add(geom_->extraFields().field("gmask"));
+  localMasks.add(geom_->functionSpace().ghost());
 
-  // Create global data fieldset
+  // Global masks
+  atlas::FieldSet globalMasks;
+  atlas::Field gmaskGlobal = geom_->functionSpace().createField<int>(atlas::option::name("gmask")
+    | atlas::option::levels(geom_->levels()) | atlas::option::global());
+  globalMasks.add(gmaskGlobal);
+  atlas::Field ghostGlobal = geom_->functionSpace().createField<int>(atlas::option::name("ghost") | atlas::option::global());
+  globalMasks.add(ghostGlobal);
+
+  // Global data
+  atlas::FieldSet globalData;
+  for (const auto var : vars_.variables()) {
+    atlas::Field field = geom_->functionSpace().createField<double>(atlas::option::name(var)
+      | atlas::option::levels(geom_->levels()) | atlas::option::global());
+    globalData.add(field);
+  }
+
+  // Gather masks on main processor
   if (geom_->functionSpace().type() == "StructuredColumns") {
     // StructuredColumns
     atlas::functionspace::StructuredColumns fs(geom_->functionSpace());
-
-    // Create global data fieldset
-    for (const auto var : vars_.variables()) {
-      atlas::Field field = fs.createField<double>(atlas::option::name(var)
-        | atlas::option::levels(geom_->levels()) | atlas::option::global());
-      globalData.add(field);
-    }
+    fs.gather(localMasks, globalMasks);
   } else if (geom_->functionSpace().type() == "NodeColumns") {
     // NodeColumns
     if (geom_->grid().name().compare(0, 2, std::string{"CS"}) == 0) {
@@ -330,26 +343,14 @@ void Fields::random() {
 #if atlas_TRANS_FOUND
       // CubedSphere
       atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
-
-      // Create global data fieldset
-      for (const auto var : vars_.variables()) {
-        atlas::Field field = fs.createField<double>(atlas::option::name(var)
-          | atlas::option::levels(geom_->levels()) | atlas::option::global());
-        globalData.add(field);
-      }
+      fs.gather(localMasks, globalMasks);
 #else
       ABORT("TRANS required");
 #endif
     } else {
       // Other NodeColumns
       atlas::functionspace::NodeColumns fs(geom_->functionSpace());
-
-      // Create global data fieldset
-      for (const auto var : vars_.variables()) {
-        atlas::Field field = fs.createField<double>(atlas::option::name(var)
-          | atlas::option::levels(geom_->levels()) | atlas::option::global());
-        globalData.add(field);
-      }
+      fs.gather(localMasks, globalMasks);
     }
   } else {
     ABORT(geom_->functionSpace().type() + " function space not supported yet");
@@ -361,11 +362,12 @@ void Fields::random() {
 
     // Copy random values
     n = 0;
+    auto gmaskView = atlas::array::make_view<int, 2>(globalMasks.field("gmask"));
+    auto ghostView = atlas::array::make_view<int, 1>(globalMasks.field("ghost"));
     for (const auto var : vars_.variables()) {
       atlas::Field field = globalData[var];
       if (field.rank() == 2) {
         auto view = atlas::array::make_view<double, 2>(field);
-        auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
         for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
           for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
             if (gmaskView(jnode, jlevel) == 1 and ghostView(jnode) == 0) {
@@ -470,6 +472,7 @@ void Fields::dirac(const eckit::Configuration & config) {
 }
 // -----------------------------------------------------------------------------
 void Fields::diff(const Fields & x1, const Fields & x2) {
+  auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   for (const auto var : vars_.variables()) {
     atlas::Field field = fset_[var];
     atlas::Field fieldx1 = x1.fset_[var];
@@ -478,7 +481,6 @@ void Fields::diff(const Fields & x1, const Fields & x2) {
       auto view = atlas::array::make_view<double, 2>(field);
       auto viewx1 = atlas::array::make_view<double, 2>(fieldx1);
       auto viewx2 = atlas::array::make_view<double, 2>(fieldx2);
-      auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
           if (gmaskView(jnode, jlevel) == 1) view(jnode, jlevel)
@@ -508,8 +510,35 @@ void Fields::toFieldSet(atlas::FieldSet & fset) const {
   }
 }
 // -----------------------------------------------------------------------------
+void Fields::toFieldSetAD(const atlas::FieldSet & fset) {
+  // Copy values (including halo points)
+  for (auto var : vars_.variables()) {
+    if (fset_.has_field(var)) {
+      if (fset.has_field(var)) {
+        atlas::Field field_input = fset_[var];
+        atlas::Field field_local = fset[var];
+        auto view_input = atlas::array::make_view<double, 2>(field_input);
+        auto view_local = atlas::array::make_view<double, 2>(field_local);
+        for (atlas::idx_t jnode = 0; jnode < field_input.shape(0); ++jnode) {
+          for (atlas::idx_t jlevel = 0; jlevel < field_input.shape(1); ++jlevel) {
+            view_input(jnode, jlevel) = view_local(jnode, jlevel);
+          }
+        }
+      }
+    } else {
+      ABORT("Variable " + var + " not in source fieldset");
+    }
+  }
+
+  // Halo exchange adjoint
+  geom_->functionSpace().adjointHaloExchange(fset_);
+}
+// -----------------------------------------------------------------------------
 void Fields::fromFieldSet(const atlas::FieldSet & fset) {
+  // Get ghost points mask
   auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
+
+  // Copy values (excluding halo points)
   for (auto var : vars_.variables()) {
     if (fset_.has_field(var)) {
       if (fset.has_field(var)) {
@@ -584,20 +613,18 @@ void Fields::read(const eckit::Configuration & config) {
     filepath.append(out.str());
   }
 
-  // Global fieldset
+  // Global data
   atlas::FieldSet globalData;
+  for (const auto var : vars_.variables()) {
+    atlas::Field field = geom_->functionSpace().createField<double>(atlas::option::name(var)
+      | atlas::option::levels(geom_->levels()) | atlas::option::global());
+    globalData.add(field);
+  }
 
   // NetCDF input
   if (geom_->functionSpace().type() == "StructuredColumns") {
     // StructuredColumns
     atlas::functionspace::StructuredColumns fs(geom_->functionSpace());
-
-    // Create global data fieldset
-    for (const auto var : vars_.variables()) {
-      atlas::Field field = fs.createField<double>(atlas::option::name(var)
-        | atlas::option::levels(geom_->levels()) | atlas::option::global());
-      globalData.add(field);
-    }
 
     if (geom_->getComm().rank() == 0) {
       // Get grid
@@ -634,8 +661,8 @@ void Fields::read(const eckit::Configuration & config) {
         auto varView = atlas::array::make_view<double, 2>(globalData[vars_[jvar]]);
         for (atlas::idx_t k = 0; k < nz; ++k) {
           for (atlas::idx_t j = 0; j < ny; ++j) {
-            for (atlas::idx_t i = 0; i < grid.nx(j); ++i) {
-              atlas::gidx_t gidx = grid.index(i, j);
+            for (atlas::idx_t i = 0; i < grid.nx(ny-1-j); ++i) {
+              atlas::gidx_t gidx = grid.index(i, ny-1-j);
               varView(gidx, k) = zvar[k][j][i];
             }
           }
@@ -654,13 +681,6 @@ void Fields::read(const eckit::Configuration & config) {
       // CubedSphere
       atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
 
-      // Create global data fieldset
-      for (const auto var : vars_.variables()) {
-        atlas::Field field = fs.createField<double>(atlas::option::name(var)
-          | atlas::option::levels(geom_->levels()) | atlas::option::global());
-        globalData.add(field);
-      }
-
       // Get global number of nodes
       nb_nodes = fs.nb_nodes_global();
 #else
@@ -669,13 +689,6 @@ void Fields::read(const eckit::Configuration & config) {
     } else {
       // Other NodeColumns
       atlas::functionspace::NodeColumns fs(geom_->functionSpace());
-
-      // Create global data fieldset
-      for (const auto var : vars_.variables()) {
-        atlas::Field field = fs.createField<double>(atlas::option::name(var)
-          | atlas::option::levels(geom_->levels()) | atlas::option::global());
-        globalData.add(field);
-      }
 
       // Get global number of nodes
       nb_nodes = fs.nb_nodes_global();
@@ -759,57 +772,56 @@ void Fields::write(const eckit::Configuration & config) const {
   }
 
   // Missing value
-  double msv(-999.0);  // TODO(Benjamin) should be missing values
+  const double msvalr = util::missingValue(double());
+  const int msvali = util::missingValue(int());
 
-  // Local and global fieldsets
+  // Local coordinates
   atlas::FieldSet localCoordinates;
-  atlas::Field lonLocal;
-  atlas::Field latLocal;
+  atlas::Field lonLocal = geom_->functionSpace().createField<double>(atlas::option::name("lon"));
+  localCoordinates.add(lonLocal);
+  atlas::Field latLocal = geom_->functionSpace().createField<double>(atlas::option::name("lat"));
+  localCoordinates.add(latLocal);
+  localCoordinates.add(geom_->extraFields().field("gmask"));
+  auto lonViewLocal = atlas::array::make_view<double, 1>(lonLocal);
+  auto latViewLocal = atlas::array::make_view<double, 1>(latLocal);
+
+  // Global coordinates
   atlas::FieldSet globalCoordinates;
-  atlas::Field lonGlobal;
-  atlas::Field latGlobal;
-  atlas::Field gmaskGlobal;
+  atlas::Field lonGlobal = geom_->functionSpace().createField<double>(atlas::option::name("lon")
+    | atlas::option::global());
+  globalCoordinates.add(lonGlobal);
+  atlas::Field latGlobal = geom_->functionSpace().createField<double>(atlas::option::name("lat")
+    | atlas::option::global());
+  globalCoordinates.add(latGlobal);
+  atlas::Field gmaskGlobal = geom_->functionSpace().createField<int>(atlas::option::name("gmask")
+    | atlas::option::levels(geom_->levels()) | atlas::option::global());
+  globalCoordinates.add(gmaskGlobal);
+  auto lonViewGlobal = atlas::array::make_view<double, 1>(lonGlobal);
+  auto latViewGlobal = atlas::array::make_view<double, 1>(latGlobal);
+  auto gmaskViewGlobal = atlas::array::make_view<int, 2>(gmaskGlobal);
+
+  // Global data
   atlas::FieldSet globalData;
+  for (const auto var : vars_.variables()) {
+    atlas::Field field = geom_->functionSpace().createField<double>(atlas::option::name(var)
+      | atlas::option::levels(geom_->levels()) | atlas::option::global());
+    globalData.add(field);
+  }
 
   // NetCDF output
   if (geom_->functionSpace().type() == "StructuredColumns") {
     // StructuredColumns
     atlas::functionspace::StructuredColumns fs(geom_->functionSpace());
 
-    // Create local coordinates fieldset
-    lonLocal = fs.createField<double>(atlas::option::name("lon"));
-    localCoordinates.add(lonLocal);
-    latLocal = fs.createField<double>(atlas::option::name("lat"));
-    localCoordinates.add(latLocal);
-    localCoordinates.add(geom_->extraFields().field("gmask"));
+    // Local coordinates
     auto lonlatView = atlas::array::make_view<double, 2>(fs.xy());
-    auto lonView = atlas::array::make_view<double, 1>(lonLocal);
-    auto latView = atlas::array::make_view<double, 1>(latLocal);
     for (atlas::idx_t jnode = 0; jnode < fs.xy().shape(0); ++jnode) {
-       lonView(jnode) = lonlatView(jnode, 0);
-       latView(jnode) = lonlatView(jnode, 1);
+       lonViewLocal(jnode) = lonlatView(jnode, 0);
+       latViewLocal(jnode) = lonlatView(jnode, 1);
     }
-
-    // Create global coordinates fieldset
-    lonGlobal = fs.createField<double>(atlas::option::name("lon")
-      | atlas::option::global());
-    globalCoordinates.add(lonGlobal);
-    latGlobal = fs.createField<double>(atlas::option::name("lat")
-      | atlas::option::global());
-    globalCoordinates.add(latGlobal);
-    gmaskGlobal = fs.createField<int>(atlas::option::name("gmask")
-      | atlas::option::levels(geom_->levels()) | atlas::option::global());
-    globalCoordinates.add(gmaskGlobal);
 
     // Gather coordinates on main processor
     fs.gather(localCoordinates, globalCoordinates);
-
-    // Create global data fieldset
-    for (const auto var : vars_.variables()) {
-      atlas::Field field = fs.createField<double>(atlas::option::name(var)
-        | atlas::option::levels(geom_->levels()) | atlas::option::global());
-      globalData.add(field);
-    }
 
     // Gather data on main processor
     fs.gather(fset_, globalData);
@@ -849,18 +861,18 @@ void Fields::write(const eckit::Configuration & config) const {
       if ((retval = nc_def_var(ncid, "lon", NC_DOUBLE, 2, d2D_id, &lon_id))) ERR(retval);
       if ((retval = nc_def_var(ncid, "lat", NC_DOUBLE, 2, d2D_id, &lat_id))) ERR(retval);
       if ((retval = nc_def_var(ncid, "gmask", NC_INT, 3, d3D_id, &gmask_id))) ERR(retval);
-      if ((retval = nc_put_att_double(ncid, lon_id, "_FillValue", NC_DOUBLE, 1, &msv)))
+      if ((retval = nc_put_att_double(ncid, lon_id, "_FillValue", NC_DOUBLE, 1, &msvalr)))
         ERR(retval);
-      if ((retval = nc_put_att_double(ncid, lat_id, "_FillValue", NC_DOUBLE, 1, &msv)))
+      if ((retval = nc_put_att_double(ncid, lat_id, "_FillValue", NC_DOUBLE, 1, &msvalr)))
         ERR(retval);
-      if ((retval = nc_put_att_double(ncid, gmask_id, "_FillValue", NC_INT, 1, &msv)))
+      if ((retval = nc_put_att_int(ncid, gmask_id, "_FillValue", NC_INT, 1, &msvali)))
         ERR(retval);
 
       // Define variables
       for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
         if ((retval = nc_def_var(ncid, vars_[jvar].c_str(), NC_DOUBLE, 3, d3D_id,
           &var_id[jvar]))) ERR(retval);
-        if ((retval = nc_put_att_double(ncid, var_id[jvar], "_FillValue", NC_DOUBLE, 1, &msv)))
+        if ((retval = nc_put_att_double(ncid, var_id[jvar], "_FillValue", NC_DOUBLE, 1, &msvalr)))
           ERR(retval);
       }
 
@@ -871,23 +883,20 @@ void Fields::write(const eckit::Configuration & config) const {
       double zlon[ny][nx];
       double zlat[ny][nx];
       int zgmask[nz][ny][nx];
-      auto lonView = atlas::array::make_view<double, 1>(lonGlobal);
-      auto latView = atlas::array::make_view<double, 1>(latGlobal);
-      auto gmaskView = atlas::array::make_view<int, 2>(gmaskGlobal);
       for (atlas::idx_t j = 0; j < ny; ++j) {
         for (atlas::idx_t i = 0; i < nx; ++i) {
-          zlon[j][i] = msv;
-          zlat[j][i] = msv;
+          zlon[j][i] = msvalr;
+          zlat[j][i] = msvalr;
           for (atlas::idx_t k = 0; k < nz; ++k) {
-            zgmask[k][j][i] = msv;
+            zgmask[k][j][i] = msvali;
           }
         }
         for (atlas::idx_t i = 0; i < grid.nx(ny-1-j); ++i) {
           atlas::gidx_t gidx = grid.index(i, ny-1-j);
-          zlon[j][i] = lonView(gidx);
-          zlat[j][i] = latView(gidx);
+          zlon[j][i] = lonViewGlobal(gidx);
+          zlat[j][i] = latViewGlobal(gidx);
           for (atlas::idx_t k = 0; k < nz; ++k) {
-            zgmask[k][j][i] = gmaskView(gidx, k);
+            zgmask[k][j][i] = gmaskViewGlobal(gidx, k);
           }
         }
       }
@@ -904,11 +913,11 @@ void Fields::write(const eckit::Configuration & config) const {
         for (atlas::idx_t k = 0; k < nz; ++k) {
           for (atlas::idx_t j = 0; j < ny; ++j) {
             for (atlas::idx_t i = 0; i < nx; ++i) {
-              zvar[k][j][i] = msv;
+              zvar[k][j][i] = msvalr;
             }
             for (atlas::idx_t i = 0; i < grid.nx(ny-1-j); ++i) {
               atlas::gidx_t gidx = grid.index(i, ny-1-j);
-              if (gmaskView(gidx, k) == 1) {
+              if (gmaskViewGlobal(gidx, k) == 1) {
                 zvar[k][j][i] = varView(gidx, k);
               }
             }
@@ -931,36 +940,15 @@ void Fields::write(const eckit::Configuration & config) const {
       // CubedSphere
       atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
 
-      // Create local coordinates fieldset
-      lonLocal = fs.createField<double>(atlas::option::name("lon"));
-      localCoordinates.add(lonLocal);
-      latLocal = fs.createField<double>(atlas::option::name("lat"));
-      localCoordinates.add(latLocal);
+      // Local coordinates
       auto lonlatView = atlas::array::make_view<double, 2>(fs.lonlat());
-      auto lonView = atlas::array::make_view<double, 1>(lonLocal);
-      auto latView = atlas::array::make_view<double, 1>(latLocal);
       for (atlas::idx_t jnode = 0; jnode < fs.lonlat().shape(0); ++jnode) {
-         lonView(jnode) = lonlatView(jnode, 0);
-         latView(jnode) = lonlatView(jnode, 1);
+         lonViewLocal(jnode) = lonlatView(jnode, 0);
+         latViewLocal(jnode) = lonlatView(jnode, 1);
       }
-
-      // Create global coordinates fieldset
-      lonGlobal = fs.createField<double>(atlas::option::name("lon")
-        | atlas::option::global());
-      globalCoordinates.add(lonGlobal);
-      latGlobal = fs.createField<double>(atlas::option::name("lat")
-        | atlas::option::global());
-      globalCoordinates.add(latGlobal);
 
       // Gather coordinates on main processor
       fs.gather(localCoordinates, globalCoordinates);
-
-      // Create global data fieldset
-      for (const auto var : vars_.variables()) {
-        atlas::Field field = fs.createField<double>(atlas::option::name(var)
-          | atlas::option::levels(geom_->levels()) | atlas::option::global());
-        globalData.add(field);
-      }
 
       // Gather data on main processor
       fs.gather(fset_, globalData);
@@ -974,36 +962,15 @@ void Fields::write(const eckit::Configuration & config) const {
       // Other NodeColumns
       atlas::functionspace::NodeColumns fs(geom_->functionSpace());
 
-      // Create local coordinates fieldset
-      lonLocal = fs.createField<double>(atlas::option::name("lon"));
-      localCoordinates.add(lonLocal);
-      latLocal = fs.createField<double>(atlas::option::name("lat"));
-      localCoordinates.add(latLocal);
+      // Local coordinates
       auto lonlatView = atlas::array::make_view<double, 2>(fs.lonlat());
-      auto lonView = atlas::array::make_view<double, 1>(lonLocal);
-      auto latView = atlas::array::make_view<double, 1>(latLocal);
       for (atlas::idx_t jnode = 0; jnode < fs.lonlat().shape(0); ++jnode) {
-         lonView(jnode) = lonlatView(jnode, 0);
-         latView(jnode) = lonlatView(jnode, 1);
+         lonViewLocal(jnode) = lonlatView(jnode, 0);
+         latViewLocal(jnode) = lonlatView(jnode, 1);
       }
-
-      // Create global coordinates fieldset
-      lonGlobal = fs.createField<double>(atlas::option::name("lon")
-        | atlas::option::global());
-      globalCoordinates.add(lonGlobal);
-      latGlobal = fs.createField<double>(atlas::option::name("lat")
-        | atlas::option::global());
-      globalCoordinates.add(latGlobal);
 
       // Gather coordinates on main processor
       fs.gather(localCoordinates, globalCoordinates);
-
-      // Create global data fieldset
-      for (const auto var : vars_.variables()) {
-        atlas::Field field = fs.createField<double>(atlas::option::name(var)
-          | atlas::option::levels(geom_->levels()) | atlas::option::global());
-        globalData.add(field);
-      }
 
       // Gather data on main processor
       fs.gather(fset_, globalData);
@@ -1051,11 +1018,9 @@ void Fields::write(const eckit::Configuration & config) const {
       // Copy coordinates
       double zlon[nb_nodes][1];
       double zlat[nb_nodes][1];
-      auto lonView = atlas::array::make_view<double, 1>(lonGlobal);
-      auto latView = atlas::array::make_view<double, 1>(latGlobal);
       for (atlas::idx_t i = 0; i < nb_nodes; ++i) {
-        zlon[i][0] = lonView(i);
-        zlat[i][0] = latView(i);
+        zlon[i][0] = lonViewGlobal(i);
+        zlat[i][0] = latViewGlobal(i);
       }
 
       // Write coordinates
@@ -1184,6 +1149,7 @@ void Fields::print(std::ostream & os) const {
   os << std::endl;
   os << *geom_;
   os << "Fields:";
+  auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
   for (const auto var : vars_.variables()) {
     os << std::endl;
@@ -1191,7 +1157,6 @@ void Fields::print(std::ostream & os) const {
     atlas::Field field = fset_[var];
     if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
-      auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
           if (gmaskView(jnode, jlevel) == 1 and ghostView(jnode) == 0) {
