@@ -1,3 +1,15 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_gaussian
+    N: 15
+  levels: 127
+initial condition:
+  date: '2010-01-01T12:00:00Z'
+  state variables:
+  - stream_function
+  - velocity_potential
+  - air_temperature
 background error:
   covariance model: SABER
   saber blocks:
@@ -38,18 +50,6 @@ dirac:
   - 1
   variable:
   - stream_function
-geometry:
-  function space: StructuredColumns
-  grid:
-    type: regular_gaussian
-    N: 15
-  levels: 127
-initial condition:
-  date: '2010-01-01T12:00:00Z'
-  state variables:
-  - stream_function
-  - velocity_potential
-  - air_temperature
 output dirac:
   filepath: testdata/dirac_gsi_global/dirac_%id%
 test:

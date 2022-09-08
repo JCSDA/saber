@@ -1,10 +1,21 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_gaussian
+    N: 20
+  levels: 10
+  mask type: sea
+  halo: 1
+initial condition:
+  date: '2010-01-01T12:00:00Z'
+  state variables: &id001
+  - var1
 background error:
   covariance model: SABER
   saber blocks:
   - saber block name: BUMP_NICAS
     saber central block: true
-    input variables: &id001
-    - var1
+    input variables: *id001
     output variables: *id001
     bump:
       datadir: testdata
@@ -21,16 +32,6 @@ dirac:
   level:
   - 1
   variable: *id001
-geometry:
-  function space: StructuredColumns
-  grid:
-    type: regular_gaussian
-    N: 20
-  levels: 10
-  halo: 3
-initial condition:
-  date: '2010-01-01T12:00:00Z'
-  state variables: *id001
 output dirac:
   filepath: testdata/dirac_bump_nicas/dirac_%id%
 test:

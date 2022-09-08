@@ -152,9 +152,10 @@ void Fields::zero() {
     atlas::Field field = fset_[var];
     if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
+      auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          view(jnode, jlevel) = 0.0;
+          if (gmaskView(jnode, jlevel) == 1) view(jnode, jlevel) = 0.0;
         }
       }
     }
@@ -186,9 +187,10 @@ Fields & Fields::operator+=(const Fields & rhs) {
     if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
       auto viewRhs = atlas::array::make_view<double, 2>(fieldRhs);
+      auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          view(jnode, jlevel) += viewRhs(jnode, jlevel);
+          if (gmaskView(jnode, jlevel) == 1) view(jnode, jlevel) += viewRhs(jnode, jlevel);
         }
       }
     }
@@ -203,9 +205,10 @@ Fields & Fields::operator-=(const Fields & rhs) {
     if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
       auto viewRhs = atlas::array::make_view<double, 2>(fieldRhs);
+      auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          view(jnode, jlevel) -= viewRhs(jnode, jlevel);
+          if (gmaskView(jnode, jlevel) == 1) view(jnode, jlevel) -= viewRhs(jnode, jlevel);
         }
       }
     }
@@ -218,9 +221,10 @@ Fields & Fields::operator*=(const double & zz) {
     atlas::Field field = fset_[var];
     if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
+      auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          view(jnode, jlevel) *= zz;
+          if (gmaskView(jnode, jlevel) == 1) view(jnode, jlevel) *= zz;
         }
       }
     }
@@ -235,10 +239,13 @@ void Fields::axpy(const double & zz, const Fields & rhs) {
     if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
       auto viewRhs = atlas::array::make_view<double, 2>(fieldRhs);
+      auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          view(jnode, jlevel) *= zz;
-          view(jnode, jlevel) += viewRhs(jnode, jlevel);
+          if (gmaskView(jnode, jlevel) == 1) {
+            view(jnode, jlevel) *= zz;
+            view(jnode, jlevel) += viewRhs(jnode, jlevel);
+          }
         }
       }
     }
@@ -247,17 +254,19 @@ void Fields::axpy(const double & zz, const Fields & rhs) {
 // -----------------------------------------------------------------------------
 double Fields::dot_product_with(const Fields & fld2) const {
   double zz = 0;
-  atlas::Field ghost = geom_->functionSpace().ghost();
-  auto ghostView = atlas::array::make_view<int, 1>(ghost);
+  auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
   for (const auto var : vars_.variables()) {
     atlas::Field field1 = fset_[var];
     atlas::Field field2 = fld2.fset_[var];
     if (field1.rank() == 2) {
       auto view1 = atlas::array::make_view<double, 2>(field1);
       auto view2 = atlas::array::make_view<double, 2>(field2);
+      auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
       for (atlas::idx_t jnode = 0; jnode < field1.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
-          if (ghostView(jnode) == 0) zz += view1(jnode, jlevel)*view2(jnode, jlevel);
+          if (gmaskView(jnode, jlevel) == 1 and ghostView(jnode) == 0) {
+            zz += view1(jnode, jlevel)*view2(jnode, jlevel);
+          }
         }
       }
     }
@@ -273,9 +282,10 @@ void Fields::schur_product_with(const Fields & dx) {
     if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
       auto viewDx = atlas::array::make_view<double, 2>(fieldDx);
+      auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          view(jnode, jlevel) *= viewDx(jnode, jlevel);
+          if (gmaskView(jnode, jlevel) == 1) view(jnode, jlevel) *= viewDx(jnode, jlevel);
         }
       }
     }
@@ -285,13 +295,15 @@ void Fields::schur_product_with(const Fields & dx) {
 void Fields::random() {
   // Total size
   size_t n = 0;
-  atlas::Field ghost = geom_->functionSpace().ghost();
-  auto ghostView = atlas::array::make_view<int, 1>(ghost);
+  auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
   for (const auto var : vars_.variables()) {
     atlas::Field field = fset_[var];
     if (field.rank() == 2) {
+      auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-        if (ghostView(jnode) == 0) n += field.shape(1);
+        for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+          if (gmaskView(jnode, jlevel) == 1 and ghostView(jnode) == 0) ++n;
+        }
       }
     }
   }
@@ -353,10 +365,13 @@ void Fields::random() {
       atlas::Field field = globalData[var];
       if (field.rank() == 2) {
         auto view = atlas::array::make_view<double, 2>(field);
+        auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
         for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
           for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-            view(jnode, jlevel) = rand_vec[n];
-            n += 1;
+            if (gmaskView(jnode, jlevel) == 1 and ghostView(jnode) == 0) {
+              view(jnode, jlevel) = rand_vec[n];
+              ++n;
+            }
           }
         }
       }
@@ -406,7 +421,7 @@ void Fields::dirac(const eckit::Configuration & config) {
   search.reserve(geom_->functionSpace().size());
   auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
   auto lonlatView = atlas::array::make_view<double, 2>(geom_->functionSpace().lonlat());
-  atlas::idx_t n{0};
+  atlas::idx_t n = 0;
   for (atlas::idx_t jnode = 0; jnode < geom_->functionSpace().size(); ++jnode) {
     if (ghostView(jnode) == 0) {
       atlas::PointLonLat pointLonLat(lonlatView(jnode, 0), lonlatView(jnode, 1));
@@ -463,9 +478,11 @@ void Fields::diff(const Fields & x1, const Fields & x2) {
       auto view = atlas::array::make_view<double, 2>(field);
       auto viewx1 = atlas::array::make_view<double, 2>(fieldx1);
       auto viewx2 = atlas::array::make_view<double, 2>(fieldx2);
+      auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          view(jnode, jlevel) = viewx1(jnode, jlevel)-viewx2(jnode, jlevel);
+          if (gmaskView(jnode, jlevel) == 1) view(jnode, jlevel)
+            = viewx1(jnode, jlevel)-viewx2(jnode, jlevel);
         }
       }
     }
@@ -492,8 +509,7 @@ void Fields::toFieldSet(atlas::FieldSet & fset) const {
 }
 // -----------------------------------------------------------------------------
 void Fields::fromFieldSet(const atlas::FieldSet & fset) {
-  atlas::Field ghost = geom_->functionSpace().ghost();
-  auto ghostView = atlas::array::make_view<int, 1>(ghost);
+  auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
   for (auto var : vars_.variables()) {
     if (fset_.has_field(var)) {
       if (fset.has_field(var)) {
@@ -866,8 +882,8 @@ void Fields::write(const eckit::Configuration & config) const {
             zgmask[k][j][i] = msv;
           }
         }
-        for (atlas::idx_t i = 0; i < grid.nx(j); ++i) {
-          atlas::gidx_t gidx = grid.index(i, j);
+        for (atlas::idx_t i = 0; i < grid.nx(ny-1-j); ++i) {
+          atlas::gidx_t gidx = grid.index(i, ny-1-j);
           zlon[j][i] = lonView(gidx);
           zlat[j][i] = latView(gidx);
           for (atlas::idx_t k = 0; k < nz; ++k) {
@@ -890,9 +906,11 @@ void Fields::write(const eckit::Configuration & config) const {
             for (atlas::idx_t i = 0; i < nx; ++i) {
               zvar[k][j][i] = msv;
             }
-            for (atlas::idx_t i = 0; i < grid.nx(j); ++i) {
-              atlas::gidx_t gidx = grid.index(i, j);
-              zvar[k][j][i] = varView(gidx, k);
+            for (atlas::idx_t i = 0; i < grid.nx(ny-1-j); ++i) {
+              atlas::gidx_t gidx = grid.index(i, ny-1-j);
+              if (gmaskView(gidx, k) == 1) {
+                zvar[k][j][i] = varView(gidx, k);
+              }
             }
           }
         }
@@ -1166,18 +1184,19 @@ void Fields::print(std::ostream & os) const {
   os << std::endl;
   os << *geom_;
   os << "Fields:";
-
-  atlas::Field ghost = geom_->functionSpace().ghost();
-  auto ghostView = atlas::array::make_view<int, 1>(ghost);
+  auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
   for (const auto var : vars_.variables()) {
     os << std::endl;
     double zz = 0.0;
     atlas::Field field = fset_[var];
     if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
+      auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          if (ghostView(jnode) == 0) zz += view(jnode, jlevel)*view(jnode, jlevel);
+          if (gmaskView(jnode, jlevel) == 1 and ghostView(jnode) == 0) {
+            zz += view(jnode, jlevel)*view(jnode, jlevel);
+          }
         }
       }
     }

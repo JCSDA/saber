@@ -7,39 +7,40 @@ Partitioner:
 - type: equal_regions
 Function space:
 - type: StructuredColumns
-- halo: 3
+- halo: 1
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Mask size: 66%
 Fields:
-  var1: 1.0000000000000000e+00
+  var1: 0.0000000000000000e+00
        Compute independent levels:  1[10] 
-          Level   1:   1737034820
-          Level   2:   1737034820
-          Level   3:   1737034820
-          Level   4:   1737034820
-          Level   5:   1737034820
-          Level   6:   1737034820
-          Level   7:   1737034820
-          Level   8:   1737034820
-          Level   9:   1737034820
-          Level  10:   1737034820
+          Level   1:   1027596219
+          Level   2:   1027596219
+          Level   3:   1027596219
+          Level   4:   1027596219
+          Level   5:   1027596219
+          Level   6:   1027596219
+          Level   7:   1027596219
+          Level   8:   1027596219
+          Level   9:   1027596219
+          Level  10:   1027596219
           Model grid size:             3200
           Subset Sc0 size:             3200
           Number of duplicated points (halo):         0 (  0.00%)
           Min. / max. longitudes: -175.5 /   180.0
           Min. / max. latitudes:   -86.6 /    86.6
-          Domain area (% of Earth area): 0.100E+03%
-             Level   1 ~> 100.0%
-             Level   2 ~> 100.0%
-             Level   3 ~> 100.0%
-             Level   4 ~> 100.0%
-             Level   5 ~> 100.0%
-             Level   6 ~> 100.0%
-             Level   7 ~> 100.0%
-             Level   8 ~> 100.0%
-             Level   9 ~> 100.0%
-             Level  10 ~> 100.0%
+          Domain area (% of Earth area): 0.660E+02%
+             Level   1 ~>  66.0%
+             Level   2 ~>  66.0%
+             Level   3 ~>  66.0%
+             Level   4 ~>  66.0%
+             Level   5 ~>  66.0%
+             Level   6 ~>  66.0%
+             Level   7 ~>  66.0%
+             Level   8 ~>  66.0%
+             Level   9 ~>  66.0%
+             Level  10 ~>  66.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
              Level   3 ~>  0.300E+01 vert. unit
@@ -59,9 +60,10 @@ Partitioner:
 - type: equal_regions
 Function space:
 - type: StructuredColumns
-- halo: 3
+- halo: 1
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+Mask size: 66%
 Fields:
-  var1: 2.4787029228402179e+01
+  var1: 0.0000000000000000e+00

@@ -176,9 +176,9 @@ Geometry::Geometry(const Parameters_ & params,
   }
 
   // Land-sea mask
-  const boost::optional<bool> &landsea_mask = params.landsea_mask.value();
-  if (landsea_mask != boost::none) {
-    if (*landsea_mask) {
+  const boost::optional<std::string> &mask_type = params.mask_type.value();
+  if (mask_type != boost::none) {
+    if (*mask_type == "sea" or *mask_type == "land") {
       // Lon/lat sizes
       size_t nlon = 0;
       size_t nlat = 0;
@@ -232,10 +232,10 @@ Geometry::Geometry(const Parameters_ & params,
             lsm[ilat*nlon+ilon] = static_cast<int>(zlsm[ilat][ilon]);
           }
         }
-      }
 
-      // Close file
-      if ((retval = nc_close(ncid))) ERR(retval);
+        // Close file
+        if ((retval = nc_close(ncid))) ERR(retval);
+      }
 
       // Broadcast coordinates and land-sea mask
       comm_.broadcast(lon.begin(), lon.end(), 0);
@@ -299,46 +299,48 @@ Geometry::Geometry(const Parameters_ & params,
 
           // Get nearest neighbor value
           for (size_t jlevel = 0; jlevel < levels_; ++jlevel) {
-            // Keep ocean points only
-            if (lsm[ilat*nlon+ilon] == 0) {
-              maskView(jnode, jlevel) = 1;
-            } else {
-              maskView(jnode, jlevel) = 0;
+            if (*mask_type == "sea") {
+              // Keep ocean points only
+              if (lsm[ilat*nlon+ilon] == 0) {
+                maskView(jnode, jlevel) = 1;
+              } else {
+                maskView(jnode, jlevel) = 0;
+              }
+            } else if (*mask_type == "land") {
+              // Keep land points only
+              if (lsm[ilat*nlon+ilon] == 1) {
+                maskView(jnode, jlevel) = 1;
+              } else {
+                maskView(jnode, jlevel) = 0;
+              }
             }
           }
         }
-      } else if (functionSpace_.type() == "NodeColumns") {
-        // NodeColumns
-        if (grid_.name().compare(0, 2, std::string{"CS"}) == 0) {
-// TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
-#if atlas_TRANS_FOUND
-          // CubedSphere
-          atlas::functionspace::CubedSphereNodeColumns fs(functionSpace_);
-
-          // Create local coordinates fieldset
-          auto lonlatView = atlas::array::make_view<double, 2>(fs.lonlat());
-          for (atlas::idx_t jnode = 0; jnode < fs.lonlat().shape(0); ++jnode) {
-            zlon = lonlatView(jnode, 0);
-            zlat = lonlatView(jnode, 1);
-          }
-#else
-          ABORT("TRANS required");
-#endif
-        } else {
-          // Other NodeColumns
-          atlas::functionspace::NodeColumns fs(functionSpace_);
-
-          // Create local coordinates fieldset
-          auto lonlatView = atlas::array::make_view<double, 2>(fs.lonlat());
-          for (atlas::idx_t jnode = 0; jnode < fs.lonlat().shape(0); ++jnode) {
-            zlon = lonlatView(jnode, 0);
-            zlat = lonlatView(jnode, 1);
-          }
-        }
       } else {
-        ABORT(functionSpace_.type() + " function space not supported yet");
+        ABORT("Mask not supported for the " + functionSpace_.type() + " function space yet");
       }
     }
+  }
+
+  // Mask size
+  gmaskSize_ = 0.0;
+  double domainSize = 0.0;
+  atlas::Field ghost = functionSpace_.ghost();
+  auto ghostView = atlas::array::make_view<int, 1>(ghost);
+  for (atlas::idx_t jnode = 0; jnode < gmask_.shape(0); ++jnode) {
+    for (atlas::idx_t jlevel = 0; jlevel < gmask_.shape(1); ++jlevel) {
+      if (ghostView(jnode) == 0) {
+        if (maskView(jnode, jlevel) == 1) {
+          gmaskSize_ += 1.0;
+        }
+        domainSize += 1.0;
+      }
+    }
+  }
+  comm_.allReduceInPlace(gmaskSize_, eckit::mpi::sum());
+  comm_.allReduceInPlace(domainSize, eckit::mpi::sum());
+  if (domainSize > 0.0) {
+    gmaskSize_ = gmaskSize_/domainSize;
   }
 
   // Fill extra geometry fields
@@ -421,6 +423,7 @@ Geometry::Geometry(const Geometry & other) : comm_(other.comm_), levels_(other.l
   extraFields_->add(vunit);
   atlas::Field gmask = (*other.extraFields())["gmask"];
   extraFields_->add(gmask);
+  gmaskSize_ = other.gmaskSize_;
 }
 // -------------------------------------------------------------------------------------------------
 std::vector<size_t> Geometry::variableSizes(const oops::Variables & vars) const {
@@ -440,7 +443,7 @@ void Geometry::print(std::ostream & os) const {
   os << "Vertical levels: " << std::endl;
   os << "- number: " << levels_ << std::endl;
   os << "- vunit: " << vunit_ << std::endl;
-  os << "Mask size: " << "TODO" << std::endl;
+  os << "Mask size: " << static_cast<int>(gmaskSize_*100.0) << "%" << std::endl;
 }
 // -----------------------------------------------------------------------------
 }  // namespace quench

@@ -1,20 +1,20 @@
        Compute independent levels:  1[2] 
-          Level   1:  -1556544766
-          Level   2:  -1556544766
+          Level   1:    764360948
+          Level   2:    764360948
           Model grid size:              800
           Subset Sc0 size:              800
           Number of duplicated points (halo):         0 (  0.00%)
           Min. / max. longitudes: -171.0 /   180.0
           Min. / max. latitudes:   -83.3 /    83.3
-          Domain area (% of Earth area): 0.100E+03%
-             Level   1 ~> 100.0%
-             Level   2 ~> 100.0%
+          Domain area (% of Earth area): 0.675E+02%
+             Level   1 ~>  67.5%
+             Level   2 ~>  67.5%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
           Decimate full grid, at least      500 points required
-               800 valid points found
+               540 valid points found
           nc1 =      500
           Compute independent levels:  1[2] 
           Compute independent levels:  1[2] 
@@ -27,62 +27,62 @@
           Compute independent levels:  1[2] 
           Compute independent levels:  1[2] 
           Compute independent levels:  1[2] 
-             -90.00 deg.  ~>100-100-100-100-100-100-100-100-100-100 
-             -90.00 deg.  ~>100-100-100-100-100-100-100-100-100-100 
-                Level:   1 ~> cov. at class zero:  0.93E+00
-                Level:   2 ~> cov. at class zero:  0.89E+00
-                Level:   1 ~> cov. at class zero:  0.99E+00
+             -90.00 deg.  ~>100-99-100-99-100-100-100-100-100-100 
+             -90.00 deg.  ~>100-99-100-99-100-100-100-100-100-100 
+                Level:   1 ~> cov. at class zero:  0.96E+00
                 Level:   2 ~> cov. at class zero:  0.10E+01
-             Block var1-var1:  0.88869302E-01 for       40 diagnostic points
-             Block var2-var2:  0.15661546E+00 for       40 diagnostic points
+                Level:   1 ~> cov. at class zero:  0.96E+00
+                Level:   2 ~> cov. at class zero:  0.94E+00
+             Block var1-var1:  0.17741680E+00 for       40 diagnostic points
+             Block var2-var2:  0.17212026E+00 for       40 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      7382.66 km
-                                 cor. ver. support:         0.98 vertical units
+                                 cor. hor. support:      7674.48 km
+                                 cor. ver. support:         1.46 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      7106.53 km
-                                 cor. ver. support:         0.98 vertical units
+                                 cor. hor. support:      7335.11 km
+                                 cor. ver. support:         1.46 vertical units
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      8002.97 km
-                                 cor. ver. support:         4.95 vertical units
+                                 cor. hor. support:      8993.04 km
+                                 cor. ver. support:         4.74 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      8275.93 km
-                                 cor. ver. support:         4.95 vertical units
+                                 cor. hor. support:      8001.56 km
+                                 cor. ver. support:         4.74 vertical units
              Effective levels:   1   2 
-                   Horizontal support radius:    7382.66 km (   7382.66 km -    7382.66 km)
-                   Estimated nc1 from horizontal support radius:      172
-                   Final nc1:      172
-             Effective horizontal resolution:  3.99
-                   Decimate full grid, at least      172 points required
-                        760 valid points found
-                   Horizontal support radius:    7106.53 km (   7106.53 km -    7106.53 km)
-                   Estimated nc1 from horizontal support radius:      186
-                   Final nc1:      186
-             Effective horizontal resolution:  3.99
-                   Decimate full grid, at least      186 points required
-                        760 valid points found
-             nc1(  1) =        172
-             nc1(  2) =        186
-             ns =              358
-             Effective levels:   1   2 
-                   Horizontal support radius:    8002.97 km (   8002.97 km -    8002.97 km)
-                   Estimated nc1 from horizontal support radius:      147
-                   Final nc1:      147
+                   Horizontal support radius:    7674.48 km (   7674.48 km -    7674.48 km)
+                   Estimated nc1 from horizontal support radius:      108
+                   Final nc1:      108
              Effective horizontal resolution:  4.00
-                   Decimate full grid, at least      147 points required
-                        744 valid points found
-                   Horizontal support radius:    8275.93 km (   8275.93 km -    8275.93 km)
-                   Estimated nc1 from horizontal support radius:      137
-                   Final nc1:      137
+                   Decimate full grid, at least      108 points required
+                        513 valid points found
+                   Horizontal support radius:    7335.11 km (   7335.11 km -    7335.11 km)
+                   Estimated nc1 from horizontal support radius:      118
+                   Final nc1:      118
+             Effective horizontal resolution:  4.00
+                   Decimate full grid, at least      118 points required
+                        518 valid points found
+             nc1(  1) =        108
+             nc1(  2) =        118
+             ns =              226
+             Effective levels:   1   2 
+                   Horizontal support radius:    8993.04 km (   8993.04 km -    8993.04 km)
+                   Estimated nc1 from horizontal support radius:       78
+                   Final nc1:       78
+             Effective horizontal resolution:  3.98
+                   Decimate full grid, at least       78 points required
+                        493 valid points found
+                   Horizontal support radius:    8001.56 km (   8001.56 km -    8001.56 km)
+                   Estimated nc1 from horizontal support radius:       99
+                   Final nc1:       99
              Effective horizontal resolution:  3.99
-                   Decimate full grid, at least      137 points required
-                        736 valid points found
-             nc1(  1) =        147
-             nc1(  2) =        137
-             ns =              284
+                   Decimate full grid, at least       99 points required
+                        513 valid points found
+             nc1(  1) =         78
+             nc1(  2) =         99
+             ns =              177
     Full NICAS adjoint test result:                        T
        Block NICAS adjoint test result:                    T
           Interpolation adjoint test (horizontal) result:  T
@@ -110,6 +110,6 @@
            -81.0 /   65.8:  0.0000000
           Level   1:  0.0000000 -  0.0000000
           Level   2:  0.0000000 -  0.0000000
-Norm of BUMP output parameter cor_rh - 1: 4.3593114577101386e+08
-Norm of BUMP output parameter cor_rv - 1: 2.0196435916355736e+02
-Norm of BUMP output parameter nicas_norm - 1: 6.1989276544622236e+01
+Norm of BUMP output parameter cor_rh - 1: 3.7296727801662225e+08
+Norm of BUMP output parameter cor_rv - 1: 1.6312130251519753e+02
+Norm of BUMP output parameter nicas_norm - 1: 5.2135956129225264e+01

@@ -4,7 +4,8 @@ geometry:
     type: regular_gaussian
     N: 20
   levels: 10
-  halo: 3
+  mask type: sea
+  halo: 1
 lowres geometry:
   function space: StructuredColumns
   grid:

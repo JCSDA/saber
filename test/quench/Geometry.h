@@ -56,8 +56,8 @@ class GeometryParameters : public oops::Parameters {
   /// Vertical unit
   oops::OptionalParameter<std::vector<double>> vunit{"vunit", this};
 
-  /// Land-sea mask
-  oops::OptionalParameter<bool> landsea_mask{"landsea mask", this};
+  /// Mask type
+  oops::OptionalParameter<std::string> mask_type{"mask type", this};
 
   /// Halo size
   oops::OptionalParameter<size_t> halo{"halo", this};
@@ -99,6 +99,7 @@ class Geometry : public util::Printable,
   atlas::grid::Partitioner partitioner_;
   atlas::Mesh mesh_;
   atlas::Field gmask_;
+  double gmaskSize_;
   atlas::FunctionSpace functionSpace_;
   atlas::FieldSet extraFields_;
   size_t levels_;

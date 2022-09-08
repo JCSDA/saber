@@ -1,20 +1,20 @@
        Compute independent levels:  1[2] 
-          Level   1:  -1556544766
-          Level   2:  -1556544766
+          Level   1:    764360948
+          Level   2:    764360948
           Model grid size:              800
           Subset Sc0 size:              800
           Number of duplicated points (halo):         0 (  0.00%)
           Min. / max. longitudes: -171.0 /   180.0
           Min. / max. latitudes:   -83.3 /    83.3
-          Domain area (% of Earth area): 0.100E+03%
-             Level   1 ~> 100.0%
-             Level   2 ~> 100.0%
+          Domain area (% of Earth area): 0.675E+02%
+             Level   1 ~>  67.5%
+             Level   2 ~>  67.5%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
           Decimate full grid, at least      500 points required
-               800 valid points found
+               540 valid points found
           nc1 =      500
           Compute independent levels:  1[2] 
           Compute independent levels:  1[2] 
@@ -27,29 +27,29 @@
           Compute independent levels:  1[2] 
           Compute independent levels:  1[2] 
           Compute independent levels:  1[2] 
-             -90.00 deg.  ~>100-100-100-100-100-100-100-100-100-100 
-             -90.00 deg.  ~>100-100-100-100-100-100-100-100-100-100 
-                Level:   1 ~> cov. at class zero:  0.93E+00
-                Level:   2 ~> cov. at class zero:  0.89E+00
-                Level:   1 ~> cov. at class zero:  0.99E+00
+             -90.00 deg.  ~>100-99-100-99-100-100-100-100-100-100 
+             -90.00 deg.  ~>100-99-100-99-100-100-100-100-100-100 
+                Level:   1 ~> cov. at class zero:  0.96E+00
                 Level:   2 ~> cov. at class zero:  0.10E+01
-             Block var1-var1:  0.88869302E-01 for       40 diagnostic points
-             Block var2-var2:  0.15661546E+00 for       40 diagnostic points
+                Level:   1 ~> cov. at class zero:  0.96E+00
+                Level:   2 ~> cov. at class zero:  0.94E+00
+             Block var1-var1:  0.17741680E+00 for       40 diagnostic points
+             Block var2-var2:  0.17212026E+00 for       40 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      7382.66 km
-                                 cor. ver. support:         0.98 vertical units
+                                 cor. hor. support:      7674.48 km
+                                 cor. ver. support:         1.46 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      7106.53 km
-                                 cor. ver. support:         0.98 vertical units
+                                 cor. hor. support:      7335.11 km
+                                 cor. ver. support:         1.46 vertical units
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      8002.97 km
-                                 cor. ver. support:         4.95 vertical units
+                                 cor. hor. support:      8993.04 km
+                                 cor. ver. support:         4.74 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      8275.93 km
-                                 cor. ver. support:         4.95 vertical units
-Norm of BUMP output parameter cor_rh - 1: 4.3593114577102113e+08
-Norm of BUMP output parameter cor_rv - 1: 2.0196435916355739e+02
+                                 cor. hor. support:      8001.56 km
+                                 cor. ver. support:         4.74 vertical units
+Norm of BUMP output parameter cor_rh - 1: 3.7296727801662225e+08
+Norm of BUMP output parameter cor_rv - 1: 1.6312130251519753e+02
