@@ -16,6 +16,7 @@ if ( ENABLE_VADER_MO )
     AirTemperatureSaberBlock.h
     CovarianceStatisticsUtils.h
     DryAirDensitySaberBlock.h
+    HydroBalSaberBlock.h
     HydrostaticExnerParameters.h
     HydrostaticExnerSaberBlock.h
     MoistIncrOpSaberBlock.h
