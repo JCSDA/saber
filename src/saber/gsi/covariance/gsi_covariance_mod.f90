@@ -20,12 +20,18 @@ use random_mod
 ! saber
 use gsi_grid_mod,                   only: gsi_grid
 
-! gsibclim
-use m_gsibclim,                     only: gsibclim_init
-use m_gsibclim,                     only: gsibclim_cv_space
-use m_gsibclim,                     only: gsibclim_sv_space
-use m_gsibclim,                     only: gsibclim_befname
-use m_gsibclim,                     only: gsibclim_final
+! gsibec
+use m_gsibec,                     only: gsibec_init
+use m_gsibec,                     only: gsibec_cv_space
+use m_gsibec,                     only: gsibec_sv_space
+use m_gsibec,                     only: gsibec_befname
+use m_gsibec,                     only: gsibec_init_guess
+use m_gsibec,                     only: gsibec_set_guess
+!use m_gsibec,                    only: gsibec_final
+
+use guess_grids,                    only: gsiguess_bkgcov_init  ! temporary
+use gsi_metguess_mod,               only: gsi_metguess_get
+
 use gsi_bundlemod,                  only: gsi_bundle
 use gsi_bundlemod,                  only: gsi_bundlegetpointer
 use control_vectors,                only: control_vector
@@ -80,11 +86,17 @@ type(atlas_fieldset),      intent(in)    :: firstguess
 ! Locals
 character(len=*), parameter :: myname_=myname//'*create'
 character(len=:), allocatable :: nml,bef
-logical :: central
-integer :: layout(2)
+real(kind=kind_real), pointer :: rank2(:,:)=>NULL()
+real(kind=kind_real), allocatable :: tmp(:)
+logical :: central,bkgmock
+integer :: layout(2),ier,n,k,npz,itbd
+integer :: ngsivars2d,ngsivars3d
+character(len=20),allocatable :: gsivars(:)
+character(len=20),allocatable :: usrvars(:)
+character(len=30),allocatable :: tbdvars(:)
 
-type(atlas_field) :: afield
-real(kind=kind_real), pointer :: t(:,:)
+real(kind=kind_real), pointer :: tv(:,:)
+real(kind=kind_real), pointer :: oz(:,:)
 
 ! Hold communicator
 ! -----------------
@@ -111,13 +123,111 @@ if (.not. self%noGSI) then
 ! Initialize GSI-Berror components
 ! --------------------------------
   layout=self%grid%layout
-! layout=-1
-  call gsibclim_init(self%cv)
+  call gsibec_init(self%cv,self%lat2,self%lon2,bkgmock=bkgmock,nmlfile=nml,befile=bef,layout=layout,comm=comm%communicator())
+  call gsibec_init_guess()
+
+! Initialize and set background fields needed by GSI Berror formulation/operators
+! -------------------------------------------------------------------------------
+  if (bkgmock) then
+     call gsiguess_bkgcov_init()
+  else
+     ! the correct way to handle the guess vars is to get what the met-guess
+     ! from GSI vars are, sip through the JEDI firstguess, copy over what is
+     ! found and and construct what is missing.  
+
+     call gsi_metguess_get('dim::2d',ngsivars2d,ier)
+     call gsi_metguess_get('dim::3d',ngsivars3d,ier)
+     allocate(tbdvars(ngsivars2d+ngsivars3d))
+
+     ! Inquire about rank-2 vars in GSI met-guess
+     itbd=0
+     if (ngsivars2d>0) then
+         allocate(gsivars(ngsivars2d),usrvars(ngsivars2d))
+         call gsi_metguess_get('gsinames::2d',gsivars,ier)
+         call gsi_metguess_get('usrnames::2d',usrvars,ier)
+         do n=1,ngsivars2d
+            itbd=itbd+1
+            tbdvars(itbd) = 'unfilled-'//trim(gsivars(n))
+            call get_rank2_(rank2,firstguess,trim(usrvars(n)),ier)
+            if(ier==0) then
+               call bkg_set2_(trim(gsivars(n)))
+               tbdvars(itbd) = 'filled-'//trim(gsivars(n))
+            else
+               tbdvars(itbd) = trim(gsivars(n))
+            endif
+         enddo
+         deallocate(gsivars,usrvars)
+     endif
+     ! Inquire about rank-3 vars in GSI met-guess
+     if (ngsivars3d>0) then
+         allocate(gsivars(ngsivars3d),usrvars(ngsivars3d))
+         call gsi_metguess_get('gsinames::3d',gsivars,ier)
+         call gsi_metguess_get('usrnames::3d',usrvars,ier)
+         do n=1,ngsivars3d
+            itbd=itbd+1
+            tbdvars(itbd) = 'unfilled-'//trim(gsivars(n))
+            call get_rank2_(rank2,firstguess,trim(usrvars(n)),ier)
+            if(ier==0) then
+               call bkg_set3_(trim(gsivars(n)))
+               tbdvars(itbd) = 'filled-'//trim(gsivars(n))
+            else
+               tbdvars(itbd) = trim(gsivars(n))
+            endif
+         enddo
+         deallocate(gsivars,usrvars)
+     endif
+ 
+!    Auxiliar vars for GSI-B
+!    -----------------------  
+     call gsiguess_bkgcov_init(tbdvars)
+     if (size(tbdvars)>0) then
+       if (any(tbdvars(:)(1:6)/='filled')) then
+          do n=1,size(tbdvars)
+             print *, myname_, ' ', trim(tbdvars(n))
+          enddo
+          call abor1_ftn(myname_//": missing fields in fg ")
+       endif
+     endif
+     deallocate(tbdvars)
+     
+  endif
+
 endif
 
-! Get background (temporary test of the functionality)
-afield = background%field('air_temperature')
-call afield%data(t)
+contains
+  subroutine bkg_set2_(varname)
+
+  character(len=*), intent(in) :: varname
+  real(kind=kind_real), allocatable :: aux(:,:)
+
+  allocate(aux(self%lat2,self%lon2))
+  call addhalo_(rank2(1,:),aux)
+  call gsibec_set_guess(varname,aux)
+  deallocate(aux)
+
+  end subroutine bkg_set2_
+  subroutine bkg_set3_(varname)
+
+  character(len=*), intent(in) :: varname
+  real(kind=kind_real), allocatable :: aux(:,:,:)
+
+  integer k,npz
+
+  npz=size(rank2,1)
+  allocate(aux(self%lat2,self%lon2,npz))
+  if (self%grid%vflip) then
+     do k=1,npz
+        call addhalo_(rank2(k,:),aux(:,:,npz-k+1))
+     enddo
+  else
+     do k=1,npz
+        call addhalo_(rank2(k,:),aux(:,:,k))
+     enddo
+  endif
+  call gsibec_set_guess(varname,aux)
+  deallocate(aux)
+
+  end subroutine bkg_set3_
 
 end subroutine create
 
@@ -131,7 +241,7 @@ class(gsi_covariance) :: self
 ! Locals
 
 if (.not. self%noGSI) then
-   call gsibclim_final(.false.)
+!! call gsibec_final(.false.)
 endif
 
 ! Delete the grid
@@ -151,38 +261,62 @@ type(atlas_fieldset),  intent(inout) :: fields
 ! Locals
 type(atlas_field) :: afield
 real(kind=kind_real), pointer :: psi(:,:), chi(:,:), t(:,:), q(:,:), qi(:,:), ql(:,:), o3(:,:)
-real(kind=kind_real), pointer :: ps(:)
+real(kind=kind_real), pointer :: u(:,:), v(:,:)
+real(kind=kind_real), pointer :: ps(:,:)
 
 integer, parameter :: rseed = 3
 
 ! Get Atlas field
-afield = fields%field('stream_function')
-call afield%data(psi)
+if (fields%has_field('stream_function').and.fields%has_field('velocity_potential')) then 
+  afield = fields%field('stream_function')
+  call afield%data(psi)
+  afield = fields%field('velocity_potential')
+  call afield%data(chi)
+elseif (fields%has_field('eastward_wind').and.fields%has_field('northward_wind')) then 
+  afield = fields%field('eastward_wind')
+  call afield%data(u)
+  afield = fields%field('northward_wind')
+  call afield%data(v)
+endif
 
-afield = fields%field('velocity_potential')
-call afield%data(chi)
+if (fields%has_field('air_temperature')) then
+  afield = fields%field('air_temperature')
+  call afield%data(t)
+endif
 
-afield = fields%field('air_temperature')
-call afield%data(t)
+if (fields%has_field('surface_pressure')) then
+  afield = fields%field('surface_pressure')
+  call afield%data(ps)
+endif
 
-afield = fields%field('surface_pressure')
-call afield%data(ps)
+if (fields%has_field('specific_humidity')) then
+  afield = fields%field('specific_humidity')
+  call afield%data(q)
+endif
 
-afield = fields%field('specific_humidity')
-call afield%data(q)
+if (fields%has_field('cloud_liquid_ice')) then
+  afield = fields%field('cloud_liquid_ice')
+  call afield%data(qi)
+endif
 
-afield = fields%field('cloud_liquid_ice')
-call afield%data(qi)
+if (fields%has_field('cloud_liquid_water')) then
+  afield = fields%field('cloud_liquid_water')
+  call afield%data(ql)
+endif
 
-afield = fields%field('cloud_liquid_water')
-call afield%data(ql)
-
-afield = fields%field('ozone_mass_mixing_ratio')
-call afield%data(o3)
+if (fields%has_field('ozone_mass_mixing_ratio')) then
+  afield = fields%field('ozone_mass_mixing_ratio')
+  call afield%data(o3)
+endif
 
 
 ! Set fields to random numbers
-call normal_distribution(psi, 0.0_kind_real, 1.0_kind_real, rseed)
+if (associated(psi)) then
+  call normal_distribution(psi, 0.0_kind_real, 1.0_kind_real, rseed)
+endif
+if (associated(u)) then
+  call normal_distribution(u, 0.0_kind_real, 1.0_kind_real, rseed)
+endif
 
 
 end subroutine randomize
@@ -196,8 +330,8 @@ class(gsi_covariance), intent(inout) :: self
 type(atlas_fieldset),  intent(inout) :: fields
 
 ! Locals
+character(len=*), parameter :: myname_=myname//'*multiply'
 type(atlas_field) :: afield
-real(kind=kind_real), pointer :: rank1(:)       =>NULL()
 real(kind=kind_real), pointer :: rank2(:,:)     =>NULL()
 real(kind=kind_real), pointer :: gsivar3d(:,:,:)=>NULL()
 real(kind=kind_real), pointer :: gsivar2d(:,:)  =>NULL()
@@ -207,17 +341,18 @@ real(kind=kind_real), allocatable :: aux1(:)
 type(control_vector) :: gsicv
 type(gsi_bundle) :: gsisv(1)
 integer :: isc,iec,jsc,jec,npz
-integer :: iv,k,ier
+integer :: iv,k,ier,itbd
 integer,parameter :: hw=1
 logical nosgi
 integer, parameter :: rseed = 3
 
-character(len=20), allocatable :: gvars2d(:),gvars3d(:)
+character(len=20),allocatable :: gvars2d(:),gvars3d(:)
+character(len=30),allocatable :: tbdvars(:),needvrs(:)
 
 ! afield = fields%field('surface_pressure')
-! call afield%data(rank1)
-! rank1 = 0.0_kind_real
-! rank1(int(size(rank1)/2)) = 1.0_kind_real
+! call afield%data(rank2)
+! rank2 = 0.0_kind_real
+! rank2(1,int(size(rank1)/2)) = 1.0_kind_real
 ! return
 if (self%noGSI) return
 
@@ -241,33 +376,58 @@ else
    gvars2d=svars2d; gvars3d=svars3d
    call allocate_state(gsisv(1))
 endif
+allocate(tbdvars(size(gvars2d)+size(gvars3d)))
+allocate(needvrs(size(gvars2d)+size(gvars3d)))
+tbdvars="null"
+itbd=0
+do iv = 1,size(gvars2d)
+   itbd=itbd+1
+   tbdvars(itbd) = "unfilled-"//trim(gvars2d(iv))
+enddo
+do iv = 1,size(gvars3d)
+   itbd=itbd+1
+   tbdvars(itbd) = "unfilled-"//trim(gvars3d(iv))
+enddo
 
-! Convert GSI bundle fields to Atlas (fieldsets)
-! ----------------------------------------------
+! Convert Atlas fieldsets to GSI bundle fields
+! --------------------------------------------
+itbd=0
 do iv=1,size(gvars2d)
+   itbd=itbd+1
    if (self%cv) then
       call gsi_bundlegetpointer (gsicv%step(1),gvars2d(iv),gsivar2d,ier)
    else
       call gsi_bundlegetpointer (     gsisv(1),gvars2d(iv),gsivar2d,ier)
    endif
    if (ier/=0) cycle
-   call get_rank1_(ier)
-   if (ier/=0) cycle
+   call get_rank2_(rank2,fields,trim(gvars2d(iv)),ier)
+   if (ier==0) then
+      tbdvars(itbd) = 'filled-'//trim(gvars2d(iv))
+   else
+      tbdvars(itbd) = trim(gvars2d(iv))
+      cycle
+   endif
    allocate(aux(size(gsivar2d,1),size(gsivar2d,2)))
-   call addhalo_(rank1,aux)
+   call addhalo_(rank2(1,:),aux)
    gsivar2d=aux
    deallocate(aux)
 enddo
 do iv=1,size(gvars3d)
+   itbd=itbd+1
    if (self%cv) then
       call gsi_bundlegetpointer (gsicv%step(1),gvars3d(iv),gsivar3d,ier)
    else
       call gsi_bundlegetpointer (     gsisv(1),gvars3d(iv),gsivar3d,ier)
    endif
    if (ier/=0) cycle
-   call get_rank2_(ier)
-   if (ier/=0) cycle
- allocate(aux(size(gsivar3d,1),size(gsivar3d,2)))
+   call get_rank2_(rank2,fields,trim(gvars3d(iv)),ier)
+   if (ier==0) then
+      tbdvars(itbd) = 'filled-'//trim(gvars3d(iv))
+   else
+      tbdvars(itbd) = trim(gvars3d(iv))
+      cycle
+   endif
+   allocate(aux(size(gsivar3d,1),size(gsivar3d,2)))
    if (self%grid%vflip) then
       do k=1,npz
          call addhalo_(rank2(k,:),aux)
@@ -279,15 +439,30 @@ do iv=1,size(gvars3d)
          gsivar3d(:,:,k)=aux
       enddo
    endif
- deallocate(aux)
+   deallocate(aux)
 enddo
+needvrs=tbdvars
+
+! fill in missing fields
+if (self%cv) then
+  call cvfix_(gsicv,fields,self%grid%vflip,needvrs,'adm')
+else
+  call svfix_(gsisv(1),fields,self%grid%vflip,needvrs,'adm')
+endif
+! check that all variables are consistently available
+if (any(needvrs(:)(1:6)/='filled')) then
+  do iv=1,size(needvrs)
+     print *, myname_, '*adm:: ', trim(needvrs(iv))  ! need single PE write/out
+  enddo
+  call abor1_ftn(myname_//": missing fields in cv(adm) ")
+endif
 
 ! Apply GSI B-error operator
 ! --------------------------
 if (self%cv) then
-   call gsibclim_cv_space()
+   call gsibec_cv_space(gsicv,internalcv=.false.,bypassbe=self%bypassGSIbe)
 else
-   call gsibclim_sv_space()
+   call gsibec_sv_space(gsisv,internalsv=.false.,bypassbe=self%bypassGSIbe)
 endif
 
 ! Convert back to Atlas Fields
@@ -299,11 +474,11 @@ do iv=1,size(gvars2d)
       call gsi_bundlegetpointer (gsisv(1),gvars2d(iv),gsivar2d,ier)
    endif
    if (ier/=0) cycle
-   call get_rank1_(ier)
+   call get_rank2_(rank2,fields,trim(gvars2d(iv)),ier)
    if (ier/=0) cycle
-   allocate(aux1(size(rank1)))
+   allocate(aux1(size(rank2,2)))
    call remhalo_(gsivar2d,aux1)
-   rank1=aux1
+   rank2(1,:)=aux1
    deallocate(aux1)
 enddo
 do iv=1,size(gvars3d)
@@ -313,7 +488,7 @@ do iv=1,size(gvars3d)
       call gsi_bundlegetpointer (gsisv(1),gvars3d(iv),gsivar3d,ier)
    endif
    if (ier/=0) cycle
-   call get_rank2_(ier)
+   call get_rank2_(rank2,fields,trim(gvars3d(iv)),ier)
    if (ier/=0) cycle
    allocate(aux1(size(rank2,2)))
    if (self%grid%vflip) then
@@ -327,8 +502,24 @@ do iv=1,size(gvars3d)
          rank2(k,:)=aux1
       enddo
    endif
- deallocate(aux1)
+   deallocate(aux1)
 enddo
+
+! Fill in missing fields
+needvrs=tbdvars
+if (self%cv) then
+  call cvfix_(gsicv,fields,self%grid%vflip,needvrs,'tlm')
+else
+  call svfix_(gsisv(1),fields,self%grid%vflip,needvrs,'tlm')
+endif
+! Check that all variables are consistently available
+if (any(needvrs(:)(1:6)/='filled')) then
+  do iv=1,size(needvrs)
+     print *, myname_, '*tlm:: ', trim(needvrs(iv))  ! need single PE write/out
+  enddo
+  call abor1_ftn(myname_//": missing fields in cv(tlm) ")
+endif
+
 
 ! Release pointer
 ! ---------------
@@ -337,129 +528,12 @@ if (self%cv) then
 else
    call deallocate_state(gsisv(1))
 endif
+deallocate(needvrs)
+deallocate(tbdvars)
 deallocate(gvars2d,gvars3d)
 call afield%final()
 
-contains
-   subroutine get_rank1_(ier)
-   integer ier
-   ier=-1
-   if (trim(gvars2d(iv)) == 'ps') then
-      if (.not.fields%has_field('surface_pressure')) return
-      afield = fields%field('surface_pressure')
-      call afield%data(rank1)
-      ier=0
-   endif
-   if (trim(gvars2d(iv)) == 'sst') then
-      if (.not.fields%has_field('skin_surface_temperature')) return
-      afield = fields%field('skin_surface_temperature')
-      call afield%data(rank1)
-      ier=0
-   endif
-   end subroutine get_rank1_
-
-   subroutine get_rank2_(ier)
-   integer ier
-   ier=-1
-   if (trim(gvars3d(iv)) == 'u') then
-      if (.not.fields%has_field('eastward_wind')) return
-      afield = fields%field('eastward_wind')
-      call afield%data(rank2)
-      ier=0
-   endif
-   if (trim(gvars3d(iv)) == 'v') then
-      if (.not.fields%has_field('northward_wind')) return
-      afield = fields%field('northward_wind')
-      call afield%data(rank2)
-      ier=0
-   endif
-   if (trim(gvars3d(iv)) == 'sf') then
-      if (.not.fields%has_field('stream_function')) return
-      afield = fields%field('stream_function')
-      call afield%data(rank2)
-      ier=0
-   endif
-   if (trim(gvars3d(iv)) == 'vp') then
-      if (.not.fields%has_field('velocity_potential')) return
-      afield = fields%field('velocity_potential')
-      call afield%data(rank2)
-      ier=0
-   endif
-   if (trim(gvars3d(iv)) == 't' .or. trim(gvars3d(iv)) == 'tv') then  ! this needs attention
-      if (.not.fields%has_field('air_temperature')) return
-      afield = fields%field('air_temperature')
-      call afield%data(rank2)
-      ier=0
-   endif
-   if (trim(gvars3d(iv)) == 'q') then ! rh
-      if (.not.fields%has_field('specific_humidity')) return
-      afield = fields%field('specific_humidity')
-      call afield%data(rank2)
-      ier=0
-   endif
-   if (trim(gvars3d(iv)) == 'qi') then
-      if (.not.fields%has_field('cloud_liquid_ice')) return
-      afield = fields%field('cloud_liquid_ice')
-      call afield%data(rank2)
-      ier=0
-   endif
-   if (trim(gvars3d(iv)) == 'ql') then
-      if (.not.fields%has_field('cloud_liquid_water')) return
-      afield = fields%field('cloud_liquid_water')
-      call afield%data(rank2)
-      ier=0
-   endif
-   if (trim(gvars3d(iv)) == 'qr') then
-      if (.not.fields%has_field('cloud_liquid_rain')) return
-      afield = fields%field('cloud_liquid_rain')
-      call afield%data(rank2)
-      ier=0
-   endif
-   if (trim(gvars3d(iv)) == 'qs') then
-      if (.not.fields%has_field('cloud_liquid_snow')) return
-      afield = fields%field('cloud_liquid_snow')
-      call afield%data(rank2)
-      ier=0
-   endif
-   if (trim(gvars3d(iv)) == 'cw') then
-      if (.not.fields%has_field('cloud_water')) return
-      afield = fields%field('cloud_water')
-      call afield%data(rank2)
-      ier=0
-   endif
-   if (trim(gvars3d(iv)) == 'oz') then
-      if (.not.fields%has_field('ozone_mass_mixing_ratio')) return
-      afield = fields%field('ozone_mass_mixing_ratio')
-      call afield%data(rank2)
-      ier=0
-   endif
-   end subroutine get_rank2_
-
-   subroutine addhalo_(rank,var)
-   real(kind=kind_real),intent(in) :: rank(:)
-   real(kind=kind_real),intent(inout):: var(:,:)
-   integer ii,jj,iii,jjj,jnode
-   jnode=1
-   do jj=2,self%lat2-1
-      do ii=2,self%lon2-1
-         var(jj,ii) = rank(jnode)
-         jnode = jnode + 1
-      enddo
-   enddo
-   end subroutine addhalo_
-
-   subroutine remhalo_(var,rank)
-   real(kind=kind_real),intent(in) :: var(:,:)
-   real(kind=kind_real),intent(out):: rank(:)
-   integer ii,jj,iii,jjj,jnode
-   jnode=1
-   do jj=2,self%lat2-1
-      do ii=2,self%lon2-1
-         rank(jnode) = var(jj,ii)
-         jnode = jnode + 1
-      enddo
-   enddo
-   end subroutine remhalo_
+!contains
 
 
 end subroutine multiply
@@ -484,5 +558,319 @@ type(atlas_fieldset),  intent(inout) :: fields
 end subroutine multiply_ad
 
 ! --------------------------------------------------------------------------------------------------
+
+   subroutine get_rank2_(rank2,fields,vname,ier)
+   character(len=*),intent(in):: vname
+   type(atlas_fieldset), intent(in):: fields
+   real(kind=kind_real), pointer :: rank2(:,:)
+   type(atlas_field) :: afield
+   integer,intent(out):: ier
+   ier=-1
+   if (trim(vname) == 'ps') then
+      if (.not.fields%has_field('surface_pressure')) return
+      afield = fields%field('surface_pressure')
+      call afield%data(rank2)
+      ier=0
+   endif
+   if (trim(vname) == 'air_pressure_thickness') then
+      if (.not.fields%has_field('air_pressure_thickness')) return
+      afield = fields%field('air_pressure_thickness')
+      call afield%data(rank2)
+      ier=0
+   endif
+   if (trim(vname) == 'sst') then
+      if (.not.fields%has_field('skin_surface_temperature')) return
+      afield = fields%field('skin_surface_temperature')
+      call afield%data(rank2)
+      ier=0
+   endif
+   if (trim(vname) == 'u' .or. trim(vname) == 'ua' ) then
+      if (.not.fields%has_field('eastward_wind')) return
+      afield = fields%field('eastward_wind')
+      call afield%data(rank2)
+      ier=0
+   endif
+   if (trim(vname) == 'v' .or. trim(vname) == 'va' ) then
+      if (.not.fields%has_field('northward_wind')) return
+      afield = fields%field('northward_wind')
+      call afield%data(rank2)
+      ier=0
+   endif
+   if (trim(vname) == 'sf') then
+      if (.not.fields%has_field('stream_function')) return
+      afield = fields%field('stream_function')
+      call afield%data(rank2)
+      ier=0
+   endif
+   if (trim(vname) == 'vp') then
+      if (.not.fields%has_field('velocity_potential')) return
+      afield = fields%field('velocity_potential')
+      call afield%data(rank2)
+      ier=0
+   endif
+   if (trim(vname) == 't' .or. trim(vname) == 'tsen' ) then
+      if (.not.fields%has_field('air_temperature')) return
+      afield = fields%field('air_temperature')
+      call afield%data(rank2)
+      ier=0
+   endif
+!  if (trim(vname) == 'tv' ) then
+!     if (.not.fields%has_field('virtual_temperature')) return
+!     afield = fields%field('virtual_temperature')
+!     call afield%data(rank2)
+!     ier=0
+!  endif
+   if (trim(vname) == 'q' .or. trim(vname) == 'sphum' ) then
+      if (.not.fields%has_field('specific_humidity')) return
+      afield = fields%field('specific_humidity')
+      call afield%data(rank2)
+      ier=0
+   endif
+   if (trim(vname) == 'qi') then
+      if (.not.fields%has_field('cloud_liquid_ice')) return
+      afield = fields%field('cloud_liquid_ice')
+      call afield%data(rank2)
+      ier=0
+   endif
+   if (trim(vname) == 'ql') then
+      if (.not.fields%has_field('cloud_liquid_water')) return
+      afield = fields%field('cloud_liquid_water')
+      call afield%data(rank2)
+      ier=0
+   endif
+   if (trim(vname) == 'qr') then
+      if (.not.fields%has_field('cloud_liquid_rain')) return
+      afield = fields%field('cloud_liquid_rain')
+      call afield%data(rank2)
+      ier=0
+   endif
+   if (trim(vname) == 'qs') then
+      if (.not.fields%has_field('cloud_liquid_snow')) return
+      afield = fields%field('cloud_liquid_snow')
+      call afield%data(rank2)
+      ier=0
+   endif
+!  if (trim(vname) == 'cw') then
+!     if (.not.fields%has_field('cloud_water')) return
+!     afield = fields%field('cloud_water')
+!     call afield%data(rank2)
+!     ier=0
+!  endif
+   if (trim(vname) == 'oz' .or. trim(vname) == 'o3ppmv' ) then
+      if (.not.fields%has_field('mole_fraction_of_ozone_in_air')) return
+      afield = fields%field('mole_fraction_of_ozone_in_air')
+      call afield%data(rank2)
+      ier=0
+   endif
+   if (trim(vname) == 'o3mr') then
+      if (.not.fields%has_field('ozone_mass_mixing_ratio')) return
+      afield = fields%field('ozone_mass_mixing_ratio')
+      call afield%data(rank2)
+      ier=0
+   endif
+   if (trim(vname) == 'phis' ) then
+      if (.not.fields%has_field('sfc_geopotential_height_times_grav')) return
+      afield = fields%field('sfc_geopotential_height_times_grav')
+      call afield%data(rank2)
+      ier=0
+   endif
+   end subroutine get_rank2_
+
+   subroutine addhalo_(rank,var)
+   real(kind=kind_real),intent(in) :: rank(:)
+   real(kind=kind_real),intent(inout):: var(:,:)
+   integer ii,jj,iii,jjj,jnode
+   integer mylat2,mylon2,ndim
+   mylat2 = size(var,1)
+   mylon2 = size(var,2)
+   ndim = (mylat2-2)*(mylon2-2)
+   jnode=1
+   var = sum(rank(jnode:ndim))/ndim ! RT_TBD: hack to fill in halo
+   do jj=2,mylat2-1
+      do ii=2,mylon2-1
+         var(jj,ii) = rank(jnode)
+         jnode = jnode + 1
+      enddo
+   enddo
+   end subroutine addhalo_
+
+   subroutine remhalo_(var,rank)
+   real(kind=kind_real),intent(in) :: var(:,:)
+   real(kind=kind_real),intent(out):: rank(:)
+   integer ii,jj,iii,jjj,jnode
+   integer mylat2,mylon2
+   mylat2 = size(var,1)
+   mylon2 = size(var,2)
+   jnode=1
+   do jj=2,mylat2-1
+      do ii=2,mylon2-1
+         rank(jnode) = var(jj,ii)
+         jnode = jnode + 1
+      enddo
+   enddo
+   end subroutine remhalo_
+
+   subroutine cvfix_(gsicv,jedicv,vflip,need,which)
+ 
+   use control_vectors, only: control_vector
+   use gsi_bundlemod, only: gsi_bundlegetpointer
+   use gsi_metguess_mod, only: gsi_metguess_bundle
+   use gsi_metguess_mod, only: gsi_metguess_get
+   use gsi_convert_cv_mod, only: gsi_tv_to_t_tl
+   use gsi_convert_cv_mod, only: gsi_tv_to_t_ad
+ 
+   implicit none
+
+   type(control_vector),intent(inout) :: gsicv
+   type(atlas_fieldset),intent(inout) :: jedicv
+   logical,intent(in) :: vflip
+   character(len=*),intent(inout) :: need(:)
+   character(len=*),intent(in) :: which
+! 
+   real(kind=kind_real), allocatable :: t_pt(:,:,:)
+   real(kind=kind_real), pointer ::    tv(:,:,:)=>NULL()
+   real(kind=kind_real), pointer :: tv_pt(:,:,:)=>NULL()
+   real(kind=kind_real), pointer ::     q(:,:,:)=>NULL()
+   real(kind=kind_real), pointer ::  q_pt(:,:,:)=>NULL()
+   real(kind=kind_real), pointer ::   rank2(:,:)=>NULL()
+   real(kind=kind_real), allocatable :: aux1(:)
+   integer k,npz,ier
+!
+   if(size(need)<1) return
+   if (any(need=='tv')) then
+      ! from first guess ...
+      call gsi_bundlegetpointer(gsi_metguess_bundle(1),'q' ,q ,ier)
+      call gsi_bundlegetpointer(gsi_metguess_bundle(1),'tv',tv,ier)
+      ! from GSI cv ...
+      call gsi_bundlegetpointer(gsicv%step(1),'q' ,q_pt ,ier)
+      call gsi_bundlegetpointer(gsicv%step(1),'tv',tv_pt,ier)
+      ! from JEDI cv ...
+      call get_rank2_(rank2,jedicv,'t',ier)
+      npz=size(q,3)
+      allocate(t_pt(size(q,1),size(q,2),size(q,3)))
+      if (vflip) then
+         do k=1,npz
+            call addhalo_(rank2(k,:),t_pt(:,:,npz-k+1))
+         enddo
+      else
+         do k=1,npz
+            call addhalo_(rank2(k,:),t_pt(:,:,k))
+         enddo
+      endif
+      ! retrieve missing field
+      if(which=='tlm') then
+        call gsi_tv_to_t_tl(tv,tv_pt,q,q_pt,t_pt)
+        ! pass it back to JEDI ...
+        allocate(aux1(size(rank2,2)))
+        if (vflip) then
+           do k=1,npz
+              call remhalo_(t_pt(:,:,k),aux1)
+              rank2(npz-k+1,:)=aux1
+           enddo
+        else
+           do k=1,npz
+              call remhalo_(t_pt(:,:,k),aux1)
+              rank2(k,:)=aux1
+           enddo
+        endif
+        deallocate(aux1)
+        where(need=='tv')
+           need='filled-'//need
+        endwhere
+      endif
+      if(which=='adm') then
+        call gsi_tv_to_t_ad(tv,tv_pt,q,q_pt,t_pt)
+        where(need=='tv')
+           need='filled-'//need
+        endwhere
+      endif
+      deallocate(t_pt)
+   endif
+   end subroutine cvfix_
+
+   subroutine svfix_(gsisv,jedicv,vflip,need,which)
+ 
+   use gsi_bundlemod, only: gsi_bundle
+   use gsi_bundlemod, only: gsi_bundlegetpointer
+   use gsi_metguess_mod, only: gsi_metguess_bundle
+   use gsi_metguess_mod, only: gsi_metguess_get
+   use gsi_convert_cv_mod, only: gsi_tv_to_t_tl
+   use gsi_convert_cv_mod, only: gsi_tv_to_t_ad
+ 
+   implicit none
+
+   type(gsi_bundle),intent(inout) :: gsisv
+   type(atlas_fieldset),intent(inout) :: jedicv
+   logical,intent(in) :: vflip
+   character(len=*),intent(inout) :: need(:)
+   character(len=*),intent(in) :: which
+! 
+   real(kind=kind_real), allocatable :: t_pt(:,:,:)
+   real(kind=kind_real), pointer ::       tv(:,:,:)=>NULL()
+   real(kind=kind_real), pointer ::    tv_pt(:,:,:)=>NULL()
+   real(kind=kind_real), pointer ::        q(:,:,:)=>NULL()
+   real(kind=kind_real), pointer ::     q_pt(:,:,:)=>NULL()
+   real(kind=kind_real), pointer ::      rank2(:,:)=>NULL()
+   real(kind=kind_real), allocatable :: aux1(:)
+   integer k,npz,ier
+!
+   if(size(need)<1) return
+
+   if (any(need=='prse')) then
+        where(need=='prse')  ! gsi will take care of this
+           need='filled-'//need
+        endwhere
+   endif
+
+   if (any(need=='tv')) then
+      ! from first guess ...
+      call gsi_bundlegetpointer(gsi_metguess_bundle(1),'q' ,q ,ier)
+      call gsi_bundlegetpointer(gsi_metguess_bundle(1),'tv',tv,ier)
+      ! from GSI cv ...
+      call gsi_bundlegetpointer(gsisv,'q' ,q_pt ,ier)
+      call gsi_bundlegetpointer(gsisv,'tv',tv_pt,ier)
+      ! from JEDI cv ...
+      call get_rank2_(rank2,jedicv,'t',ier)
+      npz=size(q,3)
+      allocate(t_pt(size(q,1),size(q,2),size(q,3)))
+      if (vflip) then
+         do k=1,npz
+            call addhalo_(rank2(k,:),t_pt(:,:,npz-k+1))
+         enddo
+      else
+         do k=1,npz
+            call addhalo_(rank2(k,:),t_pt(:,:,k))
+         enddo
+      endif
+      ! retrieve missing field
+      if(which=='tlm') then
+        call gsi_tv_to_t_tl(tv,tv_pt,q,q_pt,t_pt)
+        where(need=='tv')
+           need='filled-'//need
+        endwhere
+        ! pass it back to JEDI ...
+        allocate(aux1(size(rank2,2)))
+        if (vflip) then
+           do k=1,npz
+              call remhalo_(t_pt(:,:,k),aux1)
+              rank2(npz-k+1,:)=aux1
+           enddo
+        else
+           do k=1,npz
+              call remhalo_(t_pt(:,:,k),aux1)
+              rank2(k,:)=aux1
+           enddo
+        endif
+        deallocate(aux1)
+      endif
+      if(which=='adm') then
+        call gsi_tv_to_t_ad(tv,tv_pt,q,q_pt,t_pt)
+        where(need=='tv')
+           need='filled-'//need
+        endwhere
+      endif
+      deallocate(t_pt)
+   endif
+   end subroutine svfix_
 
 end module gsi_covariance_mod

@@ -529,8 +529,8 @@ interpolation_bump/test.log.out
 quench_convertstate_F20-F10/test.log.out
 quench_convertstate_F20-unstructured/test.log.out
 quench_dirac_bump_nicas/test.log.out
-quench_dirac_gsi_global/test.log.out
-quench_dirac_gsi_gmao_global/test.log.out
+quench_dirac_gsi_geos_global/test.log.out
+quench_dirac_gsi_gfs_global/test.log.out
 quench_dirac_spectralb/test.log.out
 quench_dirac_spectralb_from_L15/test.log.out
 quench_dirac_spectralb_from_CS/test.log.out

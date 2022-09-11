@@ -27,6 +27,7 @@ ecbuild_add_option( FEATURE OMP
 ecbuild_bundle( PROJECT jedicmake GIT "https://github.com/JCSDA-internal/jedi-cmake.git" )
 ecbuild_bundle( PROJECT oops GIT "https://github.com/JCSDA-internal/oops.git" )
 ecbuild_bundle( PROJECT vader GIT "https://github.com/JCSDA-internal/vader.git" )
+ecbuild_bundle( PROJECT gsibec GIT "https://github.com/GEOS-ESM/GSIbec.git" )
 ecbuild_bundle( PROJECT saber GIT "https://github.com/JCSDA-internal/saber.git" )
 
 # saber-data

@@ -48,16 +48,17 @@ endif()
 
 # Optionals
 find_package( oops QUIET OPTIONAL_COMPONENTS qg )
-find_package( gsibclim QUIET )
+find_package( gsibec 1.0.2 QUIET )
 find_package( vader QUIET )
 
 # Optional SABER blocks
-if( gsibclim_FOUND )
+if( gsibec_FOUND )
+    find_package( sp QUIET )
     message( STATUS "SABER block GSI is enabled" )
-    add_definitions(-Dgsibclim_FOUND=1)
+    add_definitions(-DENABLE_GSIBEC=1)
 else()
     message( STATUS "SABER block GSI is not enabled" )
-    add_definitions(-Dgsibclim_FOUND=0)
+    add_definitions(-DENABLE_GSIBEC=0)
 endif()
 # TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
 if( atlas_VERSION GREATER_EQUAL 0.29.0 )

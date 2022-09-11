@@ -12,10 +12,12 @@
 #include "saber/bump/BUMP_PsiChiToUV.h"
 #include "saber/bump/BUMP_StdDev.h"
 #include "saber/bump/BUMP_VerticalBalance.h"
-#if gsibclim_FOUND
+
+#if ENABLE_GSIBEC
   #include "saber/gsi/covariance/GSI_Covariance.h"
   #include "saber/gsi/interpolation/GSI_Interpolation.h"
 #endif
+
 #include "saber/oops/ID.h"
 #include "saber/oops/StdDev.h"
 #if atlas_TRANS_FOUND
@@ -48,8 +50,8 @@ void instantiateSaberBlockFactory() {
   static SaberBlockMaker<MODEL, BUMP_VerticalBalance<MODEL> >
          makerBUMP_VerticalBalance_("BUMP_VerticalBalance");
 
-#if gsibclim_FOUND
   // GSI operators
+#if ENABLE_GSIBEC
   static SaberBlockMaker<MODEL, gsi::Covariance<MODEL>>
          makerGSI_Covariance_("gsi covariance");
   static SaberBlockMaker<MODEL, gsi::Interpolation<MODEL>>
