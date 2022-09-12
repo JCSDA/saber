@@ -5,8 +5,8 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_VADER_HYDROSTATICEXNERSABERBLOCK_H_
-#define SABER_VADER_HYDROSTATICEXNERSABERBLOCK_H_
+#ifndef SABER_VADER_HYDROBALSABERBLOCK_H_
+#define SABER_VADER_HYDROBALSABERBLOCK_H_
 
 #include <memory>
 #include <string>
@@ -20,6 +20,7 @@
 #include "mo/common_varchange.h"
 #include "mo/control2analysis_linearvarchange.h"
 #include "mo/control2analysis_varchange.h"
+#include "mo/model2geovals_varchange.h"
 
 #include "oops/base/Geometry.h"
 #include "oops/base/Increment.h"
@@ -29,7 +30,6 @@
 #include "saber/oops/SaberBlockBase.h"
 #include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/vader/CovarianceStatisticsUtils.h"
-#include "saber/vader/HydrostaticExnerParameters.h"
 
 namespace oops {
   class Variables;
@@ -39,35 +39,31 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 template <typename MODEL>
-class HydrostaticExnerSaberBlockParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(HydrostaticExnerSaberBlockParameters, SaberBlockParametersBase)
+class HydroBalSaberBlockParameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(HydroBalSaberBlockParameters, SaberBlockParametersBase)
  public:
-  oops::RequiredParameter<hydrostaticexnerParameters<MODEL>>
-    hydrostaticexnerParams{"covariance data", this};
 };
 
 // -----------------------------------------------------------------------------
-// This saber block is here to do 3 jobs
-// 1) the vertical regression on geostrophic pressure
-// 2) summing the result with unbalanced pressure to create hydrostatic_pressure
-// 3) converting hydrostatic pressure to exner pressure.
+// This saber block is here
+//
 // -----------------------------------------------------------------------------
 template <typename MODEL>
-class HydrostaticExnerSaberBlock : public SaberBlockBase<MODEL> {
+class HydroBalSaberBlock : public SaberBlockBase<MODEL> {
   typedef oops::Geometry<MODEL>             Geometry_;
   typedef oops::Increment<MODEL>            Increment_;
   typedef oops::State<MODEL>                State_;
 
  public:
-  static const std::string classname() {return "saber::HydrostaticExnerSaberBlock";}
+  static const std::string classname() {return "saber::HydroBalSaberBlock";}
 
-  typedef HydrostaticExnerSaberBlockParameters<MODEL> Parameters_;
+  typedef HydroBalSaberBlockParameters<MODEL> Parameters_;
 
-  HydrostaticExnerSaberBlock(const Geometry_ &,
+  HydroBalSaberBlock(const Geometry_ &,
          const Parameters_ &,
          const State_ &,
          const State_ &);
-  virtual ~HydrostaticExnerSaberBlock();
+  virtual ~HydroBalSaberBlock();
 
   void randomize(atlas::FieldSet &) const override;
   void multiply(atlas::FieldSet &) const override;
@@ -78,24 +74,21 @@ class HydrostaticExnerSaberBlock : public SaberBlockBase<MODEL> {
  private:
   void print(std::ostream &) const override;
   oops::Variables inputVars_;
-  atlas::FieldSet covFieldSet_;
   atlas::FieldSet augmentedStateFieldSet_;
 };
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-HydrostaticExnerSaberBlock<MODEL>::HydrostaticExnerSaberBlock(const Geometry_ & resol,
+HydroBalSaberBlock<MODEL>::HydroBalSaberBlock(const Geometry_ & resol,
                       const Parameters_ & params,
                       const State_ & xb,
                       const State_ & fg)
   : SaberBlockBase<MODEL>(params),
     inputVars_(params.inputVars.value()),
-    covFieldSet_(createGpRegressionStats(resol,
-                                         inputVars_, params.hydrostaticexnerParams.value())),
     augmentedStateFieldSet_()
 {
-  oops::Log::trace() << classname() << "::HydrostaticExnerSaberBlock starting" << std::endl;
+  oops::Log::trace() << classname() << "::HydroBalSaberBlock starting" << std::endl;
 
   // Setup and check input/output variables
   const oops::Variables inputVars = params.inputVars.value();
@@ -114,20 +107,16 @@ HydrostaticExnerSaberBlock<MODEL>::HydrostaticExnerSaberBlock(const Geometry_ & 
 
   std::vector<std::string> requiredStateVariables{
     "air_temperature",
-    "air_pressure_levels_minus_one",
-    "exner_levels_minus_one",
-    "exner",
-    "potential_temperature",
-    "air_pressure_levels",
     "air_pressure",
+    "potential_temperature",   // from file
+    "exner",  // from file on theta levels ("exner_levels_minus_one" is on rho levels)
     "m_v", "m_ci", "m_cl", "m_r",  // mixing ratios from file
     "m_t",  //  to be populated in evalTotalMassMoistAir
     "svp", "dlsvpdT",  //  to be populated in evalSatVaporPressure
     "qsat",  // to be populated in evalSatSpecificHumidity
     "specific_humidity",  //  to be populated in evalSpecificHumidity
-    "virtual_potential_temperature",
-    "hydrostatic_exner_levels", "hydrostatic_pressure_levels"
-     };
+    "virtual_potential_temperature"
+  };
 
   std::vector<std::string> requiredGeometryVariables{"height_levels"};
 
@@ -135,7 +124,7 @@ HydrostaticExnerSaberBlock<MODEL>::HydrostaticExnerSaberBlock(const Geometry_ & 
   // Use meta data to see if they are populated with actual data.
   for (auto & s : requiredStateVariables) {
     if (!xb.variables().has(s)) {
-      oops::Log::info() << "HydrostaticExnerSaberBlock variable " << s <<
+      oops::Log::info() << "HydroBalSaberBlock variable " << s <<
                            " is not part of state object." << std::endl;
     }
   }
@@ -145,93 +134,115 @@ HydrostaticExnerSaberBlock<MODEL>::HydrostaticExnerSaberBlock(const Geometry_ & 
     augmentedStateFieldSet_.add(xb.fieldSet()[s]);
   }
 
-  for (const auto & s : requiredGeometryVariables) {
-    augmentedStateFieldSet_.add(resol.extraFields()[s]);
-  }
-
-  // we will need geometry here for height variables.
-  mo::evalAirPressureLevels(augmentedStateFieldSet_);
+  // check how virtual potential temperature is calculated.
   mo::evalAirTemperature(augmentedStateFieldSet_);
   mo::evalTotalMassMoistAir(augmentedStateFieldSet_);
   mo::evalSatVaporPressure(augmentedStateFieldSet_);
   mo::evalSatSpecificHumidity(augmentedStateFieldSet_);
   mo::evalSpecificHumidity(augmentedStateFieldSet_);
   mo::evalVirtualPotentialTemperature(augmentedStateFieldSet_);
-  mo::evalHydrostaticExnerLevels(augmentedStateFieldSet_);
-  mo::evalHydrostaticPressureLevels(augmentedStateFieldSet_);
 
-
-  // Need to setup derived state fields that we need.
-  std::vector<std::string> requiredCovarianceVariables{
-    "vertical_regression_matrices", "interpolation_weights"};
-
-  for (const auto & s : requiredCovarianceVariables) {
-    augmentedStateFieldSet_.add(covFieldSet_[s]);
+  for (const auto & s : requiredGeometryVariables) {
+    augmentedStateFieldSet_.add(resol.extraFields()[s]);
   }
 
-  oops::Log::trace() << classname() << "::HydrostaticExnerSaberBlock done" << std::endl;
+  for (auto & fld : augmentedStateFieldSet_) {
+    double zz(0.0);
+    auto view1 = atlas::array::make_view<double, 2>(fld);
+    for (atlas::idx_t jnode = 0; jnode < fld.shape(0); ++jnode) {
+      for (atlas::idx_t jlevel = 0; jlevel < fld.shape(1); ++jlevel) {
+        zz += view1(jnode, jlevel) * view1(jnode, jlevel);
+      }
+    }
+    std::cout << "norm state fld :: " << fld.name() << " " << zz << std::endl;
+  }
+
+  oops::Log::trace() << classname() << "::HydroBalSaberBlock done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-HydrostaticExnerSaberBlock<MODEL>::~HydrostaticExnerSaberBlock() {
-  oops::Log::trace() << classname() << "::~HydrostaticExnerSaberBlock starting" << std::endl;
-  util::Timer timer(classname(), "~HydrostaticExnerSaberBlock");
-  oops::Log::trace() << classname() << "::~HydrostaticExnerSaberBlock done" << std::endl;
+HydroBalSaberBlock<MODEL>::~HydroBalSaberBlock() {
+  oops::Log::trace() << classname() << "::~HydroBalSaberBlock starting" << std::endl;
+  util::Timer timer(classname(), "~HydroBalSaberBlock");
+  oops::Log::trace() << classname() << "::~HydroBalSaberBlock done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void HydrostaticExnerSaberBlock<MODEL>::randomize(atlas::FieldSet & fset) const {
+void HydroBalSaberBlock<MODEL>::randomize(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::randomize starting" << std::endl;
-  throw eckit::NotImplemented("HydrostaticExnerSaberBlock<MODEL>::randomize", Here());
+  throw eckit::NotImplemented("HydroBalSaberBlock<MODEL>::randomize", Here());
   oops::Log::trace() << classname() << "::randomize done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void HydrostaticExnerSaberBlock<MODEL>::multiply(atlas::FieldSet & fset) const {
+void HydroBalSaberBlock<MODEL>::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  mo::evalHydrostaticPressureTL(fset, augmentedStateFieldSet_);
-  mo::evalHydrostaticExnerTL(fset, augmentedStateFieldSet_);
+
+  for (auto & fld : fset) {
+    double zz(0.0);
+    auto view1 = atlas::array::make_view<double, 2>(fld);
+    for (atlas::idx_t jnode = 0; jnode < fld.shape(0); ++jnode) {
+      for (atlas::idx_t jlevel = 0; jlevel < fld.shape(1); ++jlevel) {
+        zz += view1(jnode, jlevel)*view1(jnode, jlevel);
+      }
+    }
+    std::cout << "norm state inc before fld :: " << fld.name() << " " << zz << std::endl;
+  }
+
+
+  mo::hexner2ThetavTL(fset, augmentedStateFieldSet_);
+
+  for (auto & fld : fset) {
+    double zz(0.0);
+    auto view1 = atlas::array::make_view<double, 2>(fld);
+    for (atlas::idx_t jnode = 0; jnode < fld.shape(0); ++jnode) {
+      for (atlas::idx_t jlevel = 0; jlevel < fld.shape(1); ++jlevel) {
+        zz += view1(jnode, jlevel)*view1(jnode, jlevel);
+      }
+    }
+    std::cout << "norm state inc after fld :: " << fld.name() << " " << zz << std::endl;
+  }
+
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void HydrostaticExnerSaberBlock<MODEL>::inverseMultiply(atlas::FieldSet & fset) const {
-  oops::Log::info() << classname()
-                    << "::inverseMultiply not meaningful so fieldset unchanged"
-                    << std::endl;
+void HydroBalSaberBlock<MODEL>::inverseMultiply(atlas::FieldSet & fset) const {
+  oops::Log::trace() << classname() << "::inverseMultiply starting" << std::endl;
+  mo::thetavP2HexnerTL(fset, augmentedStateFieldSet_);
+  oops::Log::trace() << classname() << "::inverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void HydrostaticExnerSaberBlock<MODEL>::multiplyAD(atlas::FieldSet & fset) const {
+void HydroBalSaberBlock<MODEL>::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  mo::evalHydrostaticExnerAD(fset, augmentedStateFieldSet_);
-  mo::evalHydrostaticPressureAD(fset, augmentedStateFieldSet_);
+  mo::hexner2ThetavAD(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void HydrostaticExnerSaberBlock<MODEL>::inverseMultiplyAD(atlas::FieldSet & fset) const {
-  oops::Log::info() << classname()
-                    << "::inverseMultiplyAD not meaningful so fieldset unchanged"
-                    << std::endl;
+void HydroBalSaberBlock<MODEL>::inverseMultiplyAD(atlas::FieldSet & fset) const {
+  oops::Log::trace() << classname() << "::inverseMultiplyAD starting" << std::endl;
+  mo::thetavP2HexnerAD(fset, augmentedStateFieldSet_);
+  oops::Log::trace() << classname() << "::inverseMultiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void HydrostaticExnerSaberBlock<MODEL>::print(std::ostream & os) const {
+void HydroBalSaberBlock<MODEL>::print(std::ostream & os) const {
   os << classname();
 }
 
@@ -239,4 +250,4 @@ void HydrostaticExnerSaberBlock<MODEL>::print(std::ostream & os) const {
 
 }  // namespace saber
 
-#endif  // SABER_VADER_HYDROSTATICEXNERSABERBLOCK_H_
+#endif  // SABER_VADER_HYDROBALSABERBLOCK_H_

@@ -45,9 +45,13 @@ if(@oops_FOUND@) # oops_FOUND
     set(saber_oops_FOUND True) #COMPONENT 'oops'
 endif()
 
-if(@gsiblcim_FOUND@) # gsiblcim_FOUND
-    find_dependency(gsiblcim)
-    set(saber_gsiblcim_FOUND True) #COMPONENT 'gsiblcim'
+if(@gsibec_FOUND@) # gsibec_FOUND
+    find_dependency(gsibec)
+    set(saber_gsibec_FOUND True) #COMPONENT 'gsibec'
+    if(@sp_FOUND@) # sp_FOUND
+       find_dependency(sp)
+       set(sp_FOUND True) #COMPONENT 'sp'
+    endif()
 endif()
 
 if(@vader_FOUND@) # vader_FOUND

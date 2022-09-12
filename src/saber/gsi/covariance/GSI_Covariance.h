@@ -25,6 +25,7 @@
 
 #include "saber/gsi/covariance/GSI_Covariance.interface.h"
 #include "saber/gsi/grid/GSI_Grid.h"
+#include "saber/gsi/interpolation/GSI_InterpolationImpl.h"
 #include "saber/oops/SaberBlockBase.h"
 
 
@@ -40,8 +41,8 @@ namespace gsi {
 
 // -------------------------------------------------------------------------------------------------
 
-class CovarianceParameters : public GridParameters {
-  OOPS_CONCRETE_PARAMETERS(CovarianceParameters, GridParameters)
+class CovarianceParameters : public InterpolationImplParameters {
+  OOPS_CONCRETE_PARAMETERS(CovarianceParameters, InterpolationImplParameters)
 };
 
 // -------------------------------------------------------------------------------------------------
@@ -94,11 +95,19 @@ Covariance<MODEL>::Covariance(const Geometry_ & geom, const Parameters_ & params
   // Function space
   gsiGridFuncSpace_ = atlas::functionspace::PointCloud(grid_.functionSpace().get());
 
-  // Need to convert background and first guess to Atlas and GSI grid.
+  // Convert background and first guess to field sets that can be modified
+  atlas::FieldSet xbgFieldSet(xbg.fieldSet().get());
+  atlas::FieldSet xfgFieldSet(xfg.fieldSet().get());
+
+  // Interpolate background and first guess to background error model grid
+  InterpolationImpl interp_(geom.getComm(), geom.functionSpace(),
+                            params, xbg.variables().variables());
+  interp_.multiply(xbgFieldSet);
+  interp_.multiply(xfgFieldSet);
 
   // Create covariance module
   gsi_covariance_create_f90(keySelf_, geom.getComm(), params.toConfiguration(),
-                            xbg.fieldSet().get(), xfg.fieldSet().get());
+                            xbgFieldSet.get(), xfgFieldSet.get());
 
   oops::Log::trace() << classname() << "::Covariance done" << std::endl;
 }

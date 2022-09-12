@@ -17,6 +17,7 @@ if ( oops_FOUND )
         AirTemperatureSaberBlock.h
         CovarianceStatisticsUtils.h
         DryAirDensitySaberBlock.h
+        HydroBalSaberBlock.h
         HydrostaticExnerParameters.h
         HydrostaticExnerSaberBlock.h
         MoistIncrOpSaberBlock.h
