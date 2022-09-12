@@ -140,7 +140,7 @@ void BUMP_NICAS<MODEL>::inverseMultiply(atlas::FieldSet & fset) const {
 template<typename MODEL>
 void BUMP_NICAS<MODEL>::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  ABORT("BUMP_NICAS<MODEL>::multiplyAD: not implemented");
+  bump_->multiplyNicas(fset);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
