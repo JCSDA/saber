@@ -22,6 +22,7 @@
 #include "oops/util/Duration.h"
 #include "oops/util/Logger.h"
 
+#include "saber/oops/ReadInputFields.h"
 #include "saber/oops/SaberBlockBase.h"
 #include "saber/oops/SaberBlockParametersBase.h"
 
@@ -68,18 +69,31 @@ Localization<MODEL>::Localization(const Geometry_ & resol,
   if (myslot == 0) {
     // Get parameters from configuration
     const eckit::LocalConfiguration saberBlock(conf, "saber block");
-    SaberBlockParametersWrapper parameters;
-    parameters.validateAndDeserialize(saberBlock);
+    SaberBlockParametersWrapper saberBlockParamWrapper;
+    saberBlockParamWrapper.validateAndDeserialize(saberBlock);
 
-    // Create dummy FieldSet
+    const SaberBlockParametersBase & saberBlockParams = saberBlockParamWrapper.saberBlockParameters;
+
+    // Create dummy FieldSet (for xb and fg)
     atlas::FieldSet dummyFs;
+
+    // Create dummy time
+    util::DateTime dummyTime(1977, 5, 25, 0, 0, 0);
+
+    // Get block input fields
+    std::vector<atlas::FieldSet> fsetVec = readInputFields(
+      resol,
+      saberBlockParams.inputVars.value(),
+      dummyTime,
+      saberBlockParams.inputFields.value());
 
     // Create SABER block
     saberBlock_.reset(SaberBlockFactory::create(resol.functionSpace(),
                                                 resol.extraFields(),
-                                                parameters.saberBlockParameters,
+                                                saberBlockParams,
                                                 dummyFs,
-                                                dummyFs));
+                                                dummyFs,
+                                                fsetVec));
   }
 
   oops::Log::trace() << "Localization:Localization done" << std::endl;

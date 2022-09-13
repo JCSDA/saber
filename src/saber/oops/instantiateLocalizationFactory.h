@@ -10,7 +10,6 @@
 
 #include "oops/generic/LocalizationBase.h"
 
-#include "saber/oops/instantiateSaberBlockFactory.h"
 #include "saber/oops/Localization.h"
 
 namespace saber {
@@ -19,8 +18,6 @@ namespace saber {
 
 template <typename MODEL> void instantiateLocalizationFactory() {
   static oops::LocalizationMaker<MODEL, Localization<MODEL> >  makerSABER_("SABER");
-
-  instantiateSaberBlockFactory();
 }
 
 // -----------------------------------------------------------------------------

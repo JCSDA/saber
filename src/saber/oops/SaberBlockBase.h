@@ -13,6 +13,9 @@
 #include <string>
 #include <vector>
 
+#include "atlas/field.h"
+#include "atlas/functionspace.h"
+
 #include <boost/noncopyable.hpp>
 
 #include "oops/base/Variables.h"
@@ -37,8 +40,6 @@ class SaberBlockBase : public util::Printable, private boost::noncopyable {
   explicit SaberBlockBase(const SaberBlockParametersBase & params);
   virtual ~SaberBlockBase() {}
 
-  virtual void initialize(const std::vector<atlas::FieldSet> &) = 0;
-
   virtual void randomize(atlas::FieldSet &) const = 0;
   virtual void multiply(atlas::FieldSet &) const = 0;
   virtual void inverseMultiply(atlas::FieldSet &) const = 0;
@@ -52,11 +53,6 @@ class SaberBlockBase : public util::Printable, private boost::noncopyable {
   bool iterativeInverse_;
   std::string name_;
 };
-
-// -----------------------------------------------------------------------------
-
-SaberBlockBase::SaberBlockBase(const SaberBlockParametersBase & params)
-  : iterativeInverse_(params.iterativeInverse.value()), name_(params.saberBlockName.value()) {}
 
 // =============================================================================
 
@@ -80,7 +76,8 @@ class SaberBlockFactory {
                                  const atlas::FieldSet &,
                                  const SaberBlockParametersBase &,
                                  const atlas::FieldSet &,
-                                 const atlas::FieldSet &);
+                                 const atlas::FieldSet &,
+                                 const std::vector<atlas::FieldSet> &);
 
   static std::unique_ptr<SaberBlockParametersBase> createParameters(const std::string &name);
 
@@ -98,7 +95,8 @@ class SaberBlockFactory {
                                 const atlas::FieldSet &,
                                 const SaberBlockParametersBase &,
                                 const atlas::FieldSet &,
-                                const atlas::FieldSet &) = 0;
+                                const atlas::FieldSet &,
+                                const std::vector<atlas::FieldSet> &) = 0;
 
   virtual std::unique_ptr<SaberBlockParametersBase> makeParameters() const = 0;
 
@@ -118,8 +116,10 @@ class SaberBlockMaker : public SaberBlockFactory {
                         const atlas::FieldSet & extraFields,
                         const SaberBlockParametersBase & params,
                         const atlas::FieldSet & xb,
-                        const atlas::FieldSet & fg) override {
-    return new T(functionSpace, extraFields, dynamic_cast<const Parameters_&>(params), xb, fg);
+                        const atlas::FieldSet & fg,
+                        const std::vector<atlas::FieldSet> & fsetVec) override {
+    return new T(functionSpace, extraFields, dynamic_cast<const Parameters_&>(params),
+                 xb, fg, fsetVec);
   }
 
   std::unique_ptr<SaberBlockParametersBase> makeParameters() const override {
@@ -129,47 +129,6 @@ class SaberBlockMaker : public SaberBlockFactory {
  public:
   explicit SaberBlockMaker(const std::string & name) : SaberBlockFactory(name) {}
 };
-
-// -----------------------------------------------------------------------------
-
-SaberBlockFactory::SaberBlockFactory(const std::string & name) {
-  if (getMakers().find(name) != getMakers().end()) {
-    oops::Log::error() << name << " already registered in saber::SaberBlockFactory." << std::endl;
-    ABORT("Element already registered in saber::SaberBlockFactory.");
-  }
-  getMakers()[name] = this;
-}
-
-// -----------------------------------------------------------------------------
-
-SaberBlockBase * SaberBlockFactory::create(const atlas::FunctionSpace & functionSpace,
-                                           const atlas::FieldSet & extraFields,
-                                           const SaberBlockParametersBase & params,
-                                           const atlas::FieldSet & xb,
-                                           const atlas::FieldSet & fg) {
-  oops::Log::trace() << "SaberBlockBase::create starting" << std::endl;
-  const std::string id = params.saberBlockName.value();
-  typename std::map<std::string, SaberBlockFactory*>::iterator jsb = getMakers().find(id);
-  if (jsb == getMakers().end()) {
-    oops::Log::error() << id << " does not exist in saber::SaberBlockFactory." << std::endl;
-    ABORT("Element does not exist in saber::SaberBlockFactory.");
-  }
-  SaberBlockBase * ptr = jsb->second->make(functionSpace, extraFields, params, xb, fg);
-  oops::Log::trace() << "SaberBlockBase::create done" << std::endl;
-  return ptr;
-}
-
-// -----------------------------------------------------------------------------
-
-std::unique_ptr<SaberBlockParametersBase>
-SaberBlockFactory::createParameters(const std::string &name) {
-  typename std::map<std::string, SaberBlockFactory*>::iterator it =
-      getMakers().find(name);
-  if (it == getMakers().end()) {
-    throw std::runtime_error(name + " does not exist in saber::SaberBlockFactory");
-  }
-  return it->second->makeParameters();
-}
 
 // -----------------------------------------------------------------------------
 

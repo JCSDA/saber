@@ -151,10 +151,8 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & resol,
                                                            resol.extraFields(),
                                                            saberBlockParams,
                                                            xb.fieldSet(),
-                                                           fg.fieldSet()));
-
-        // Initialize block
-        saberCentralBlock_->initialize(fsetVec);
+                                                           fg.fieldSet(),
+                                                           fsetVec));
       }
     } else {
       // Create block
@@ -162,9 +160,8 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & resol,
                                                        resol.extraFields(),
                                                        saberBlockParams,
                                                        xb.fieldSet(),
-                                                       fg.fieldSet()));
-      // Initialize block
-      saberBlocks_.back().initialize(fsetVec);
+                                                       fg.fieldSet(),
+                                                       fsetVec));
     }
   }
 

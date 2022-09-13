@@ -8,18 +8,20 @@ if( oops_FOUND )
 
     # SABER blocks base
     SaberBlockBase.h
+    SaberBlockBase.cc
     SaberBlockParametersBase.h
 
     # ID block
     ID.h
+    ID.cc
 
     # StdDev block
     StdDev.h
+    StdDev.cc
 
     # Factories
     instantiateCovarFactory.h
     instantiateLocalizationFactory.h
-    instantiateSaberBlockFactory.h
 
     # Utilities
     ReadInputFields.h

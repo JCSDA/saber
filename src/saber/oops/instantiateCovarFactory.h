@@ -12,7 +12,6 @@
 
 #include "saber/oops/ErrorCovariance.h"
 #include "saber/oops/instantiateLocalizationFactory.h"
-#include "saber/oops/instantiateSaberBlockFactory.h"
 
 namespace saber {
 
@@ -23,7 +22,6 @@ template <typename MODEL> void instantiateCovarFactory() {
   static oops::CovarMaker<MODEL, ErrorCovariance<MODEL> > makerSABER_("SABER");
 
   instantiateLocalizationFactory<MODEL>();
-  instantiateSaberBlockFactory();
 }
 
 // -----------------------------------------------------------------------------
