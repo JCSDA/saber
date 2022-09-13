@@ -89,11 +89,12 @@ Localization<MODEL>::Localization(const Geometry_ & resol,
 
     // Create SABER block
     saberBlock_.reset(SaberBlockFactory::create(resol.functionSpace(),
-                                                resol.extraFields(),
-                                                saberBlockParams,
-                                                dummyFs,
-                                                dummyFs,
-                                                fsetVec));
+                      resol.extraFields(),
+                      resol.variableSizes(saberBlockParams.inputVars.value()),
+                      saberBlockParams,
+                      dummyFs,
+                      dummyFs,
+                      fsetVec));
   }
 
   oops::Log::trace() << "Localization:Localization done" << std::endl;

@@ -74,6 +74,7 @@ class SaberBlockFactory {
  public:
   static SaberBlockBase * create(const atlas::FunctionSpace &,
                                  const atlas::FieldSet &,
+                                 const std::vector<size_t> &,
                                  const SaberBlockParametersBase &,
                                  const atlas::FieldSet &,
                                  const atlas::FieldSet &,
@@ -93,6 +94,7 @@ class SaberBlockFactory {
  private:
   virtual SaberBlockBase * make(const atlas::FunctionSpace &,
                                 const atlas::FieldSet &,
+                                const std::vector<size_t> &,
                                 const SaberBlockParametersBase &,
                                 const atlas::FieldSet &,
                                 const atlas::FieldSet &,
@@ -114,12 +116,13 @@ class SaberBlockMaker : public SaberBlockFactory {
 
   SaberBlockBase * make(const atlas::FunctionSpace & functionSpace,
                         const atlas::FieldSet & extraFields,
+                        const std::vector<size_t> & variableSizes,
                         const SaberBlockParametersBase & params,
                         const atlas::FieldSet & xb,
                         const atlas::FieldSet & fg,
                         const std::vector<atlas::FieldSet> & fsetVec) override {
-    return new T(functionSpace, extraFields, dynamic_cast<const Parameters_&>(params),
-                 xb, fg, fsetVec);
+    return new T(functionSpace, extraFields, variableSizes,
+                 dynamic_cast<const Parameters_&>(params), xb, fg, fsetVec);
   }
 
   std::unique_ptr<SaberBlockParametersBase> makeParameters() const override {

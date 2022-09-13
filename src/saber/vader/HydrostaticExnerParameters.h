@@ -23,7 +23,7 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 /// \brief Parameters passed to the Error Covariance class.
-template <typename MODEL> class hydrostaticexnerParameters : public oops::Parameters {
+class hydrostaticexnerParameters : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(hydrostaticexnerParameters, oops::Parameters)
 
  public:

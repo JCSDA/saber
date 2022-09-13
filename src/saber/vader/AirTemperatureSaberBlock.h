@@ -12,18 +12,12 @@
 #include <string>
 #include <vector>
 
-#include "atlas/array.h"
 #include "atlas/field.h"
+#include "atlas/functionspace.h"
 
 #include "eckit/exception/Exceptions.h"
 
-#include "mo/control2analysis_linearvarchange.h"
-
-#include "oops/base/Geometry.h"
-#include "oops/base/Increment.h"
-#include "oops/base/State.h"
 #include "oops/base/Variables.h"
-#include "oops/util/FieldSetOperations.h"
 
 #include "saber/oops/SaberBlockBase.h"
 #include "saber/oops/SaberBlockParametersBase.h"
@@ -43,21 +37,19 @@ class AirTemperatureSaberBlockParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-template <typename MODEL>
-class AirTemperatureSaberBlock : public SaberBlockBase<MODEL> {
-  typedef oops::Geometry<MODEL>             Geometry_;
-  typedef oops::Increment<MODEL>            Increment_;
-  typedef oops::State<MODEL>                State_;
-
+class AirTemperatureSaberBlock : public SaberBlockBase {
  public:
   static const std::string classname() {return "saber::AirTemperatureSaberBlock";}
 
   typedef AirTemperatureSaberBlockParameters Parameters_;
 
-  AirTemperatureSaberBlock(const Geometry_ &,
-         const Parameters_ &,
-         const State_ &,
-         const State_ &);
+  AirTemperatureSaberBlock(const atlas::FunctionSpace &,
+                           const atlas::FieldSet &,
+                           const std::vector<size_t> &,
+                           const Parameters_ &,
+                           const atlas::FieldSet &,
+                           const atlas::FieldSet &,
+                           const std::vector<atlas::FieldSet> &);
   virtual ~AirTemperatureSaberBlock();
 
   void randomize(atlas::FieldSet &) const override;
@@ -70,121 +62,6 @@ class AirTemperatureSaberBlock : public SaberBlockBase<MODEL> {
   void print(std::ostream &) const override;
   atlas::FieldSet augmentedStateFieldSet_;
 };
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-AirTemperatureSaberBlock<MODEL>::AirTemperatureSaberBlock(const Geometry_ & resol,
-                      const AirTemperatureSaberBlockParameters & params,
-                      const State_ & xb,
-                      const State_ & fg)
-  : SaberBlockBase<MODEL>(params), augmentedStateFieldSet_()
-{
-  oops::Log::trace() << classname() << "::AirTemperatureSaberBlock starting" << std::endl;
-
-  // Setup and check input/output variables
-  const oops::Variables inputVars = params.inputVars.value();
-  const oops::Variables outputVars = params.outputVars.value();
-  ASSERT(inputVars == outputVars);
-
-  // Active variables
-  const boost::optional<oops::Variables> &activeVarsPtr = params.activeVars.value();
-  oops::Variables activeVars;
-  if (activeVarsPtr != boost::none) {
-    activeVars += *activeVarsPtr;
-    ASSERT(activeVars <= inputVars);
-  } else {
-    activeVars += inputVars;
-  }
-
-  // Need to setup derived state fields that we need.
-  std::vector<std::string> requiredStateVariables{"exner_levels_minus_one",
-                                                  "potential_temperature"};
-
-  std::vector<std::string> requiredGeometryVariables{"height_levels",
-                                                     "height"};
-
-  // Check that they are allocated (i.e. exist in the state fieldset)
-  // Use meta data to see if they are populated with actual data.
-  for (auto & s : requiredStateVariables) {
-    if (!xb.variables().has(s)) {
-      oops::Log::info() << "AirTemperatureSaberBlock variable " << s <<
-                           " is not part of state object." << std::endl;
-    }
-  }
-
-  augmentedStateFieldSet_.clear();
-  for (const auto & s : requiredStateVariables) {
-    augmentedStateFieldSet_.add(xb.fieldSet()[s]);
-  }
-
-  for (const auto & s : requiredGeometryVariables) {
-    augmentedStateFieldSet_.add(resol.extraFields()[s]);
-  }
-
-  oops::Log::trace() << classname() << "::AirTemperatureSaberBlock done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-AirTemperatureSaberBlock<MODEL>::~AirTemperatureSaberBlock() {
-  oops::Log::trace() << classname() << "::~AirTemperatureSaberBlock starting" << std::endl;
-  util::Timer timer(classname(), "~AirTemperatureSaberBlock");
-  oops::Log::trace() << classname() << "::~AirTemperatureSaberBlock done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void AirTemperatureSaberBlock<MODEL>::randomize(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::randomize starting" << std::endl;
-  throw eckit::NotImplemented("AirTemperatureSaberBlock<MODEL>::randomize", Here());
-  oops::Log::trace() << classname() << "::randomize done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void AirTemperatureSaberBlock<MODEL>::multiply(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  mo::evalAirTemperatureTL(fset, augmentedStateFieldSet_);
-  oops::Log::trace() << classname() << "::multiply done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void AirTemperatureSaberBlock<MODEL>::inverseMultiply(atlas::FieldSet & fset) const {
-  oops::Log::info() << classname()
-                    << "::inverseMultiply not meaningful so fieldset unchanged"
-                    << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void AirTemperatureSaberBlock<MODEL>::multiplyAD(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  mo::evalAirTemperatureAD(fset, augmentedStateFieldSet_);
-  oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void AirTemperatureSaberBlock<MODEL>::inverseMultiplyAD(atlas::FieldSet & fset) const {
-  oops::Log::info() << classname()
-                    << "::inverseMultiplyAD not meaningful so fieldset unchanged"
-                    << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void AirTemperatureSaberBlock<MODEL>::print(std::ostream & os) const {
-  os << classname();
-}
 
 // -----------------------------------------------------------------------------
 

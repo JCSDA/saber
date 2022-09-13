@@ -30,6 +30,7 @@ static SaberBlockMaker<StdDev> makerStdDev_("StdDev");
 
 StdDev::StdDev(const atlas::FunctionSpace & functionSpace,
                const atlas::FieldSet & extraFields,
+               const std::vector<size_t> & variableSizes,
                const Parameters_ & params,
                const atlas::FieldSet & xb,
                const atlas::FieldSet & fg,

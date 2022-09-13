@@ -41,6 +41,7 @@ class StdDev : public SaberBlockBase {
 
   StdDev(const atlas::FunctionSpace &,
          const atlas::FieldSet &,
+         const std::vector<size_t> &,
          const Parameters_ &,
          const atlas::FieldSet &,
          const atlas::FieldSet &,

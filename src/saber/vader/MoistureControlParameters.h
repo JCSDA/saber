@@ -23,7 +23,7 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 /// \brief Parameters passed to the Error Covariance class.
-template <typename MODEL> class moisturecontrolParameters : public oops::Parameters {
+class moisturecontrolParameters : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(moisturecontrolParameters, oops::Parameters)
 
  public:

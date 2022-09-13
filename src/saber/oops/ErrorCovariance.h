@@ -148,20 +148,22 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & resol,
       } else {
         // Create block
         saberCentralBlock_.reset(SaberBlockFactory::create(resol.functionSpace(),
-                                                           resol.extraFields(),
-                                                           saberBlockParams,
-                                                           xb.fieldSet(),
-                                                           fg.fieldSet(),
-                                                           fsetVec));
+                                 resol.extraFields(),
+                                 resol.variableSizes(saberBlockParams.inputVars.value()),
+                                 saberBlockParams,
+                                 xb.fieldSet(),
+                                 fg.fieldSet(),
+                                 fsetVec));
       }
     } else {
       // Create block
       saberBlocks_.push_back(SaberBlockFactory::create(resol.functionSpace(),
-                                                       resol.extraFields(),
-                                                       saberBlockParams,
-                                                       xb.fieldSet(),
-                                                       fg.fieldSet(),
-                                                       fsetVec));
+                             resol.extraFields(),
+                             resol.variableSizes(saberBlockParams.inputVars.value()),
+                             saberBlockParams,
+                             xb.fieldSet(),
+                             fg.fieldSet(),
+                             fsetVec));
     }
   }
 
