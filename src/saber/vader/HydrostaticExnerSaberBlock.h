@@ -49,7 +49,8 @@ class HydrostaticExnerSaberBlock : public SaberBlockBase {
 
   typedef HydrostaticExnerSaberBlockParameters Parameters_;
 
-  HydrostaticExnerSaberBlock(const atlas::FunctionSpace &,
+  HydrostaticExnerSaberBlock(const eckit::mpi::Comm &,
+                             const atlas::FunctionSpace &,
                              const atlas::FieldSet &,
                              const std::vector<size_t> &,
                              const Parameters_ &,

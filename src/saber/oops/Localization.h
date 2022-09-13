@@ -88,7 +88,8 @@ Localization<MODEL>::Localization(const Geometry_ & resol,
       saberBlockParams.inputFields.value());
 
     // Create SABER block
-    saberBlock_.reset(SaberBlockFactory::create(resol.functionSpace(),
+    saberBlock_.reset(SaberBlockFactory::create(resol.getComm(),
+                      resol.functionSpace(),
                       resol.extraFields(),
                       resol.variableSizes(saberBlockParams.inputVars.value()),
                       saberBlockParams,

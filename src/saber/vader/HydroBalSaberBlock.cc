@@ -41,7 +41,8 @@ static SaberBlockMaker<HydroBalSaberBlock>
 
 // -----------------------------------------------------------------------------
 
-HydroBalSaberBlock::HydroBalSaberBlock(const atlas::FunctionSpace & functionSpace,
+HydroBalSaberBlock::HydroBalSaberBlock(const eckit::mpi::Comm & comm,
+                                       const atlas::FunctionSpace & functionSpace,
                                        const atlas::FieldSet & extraFields,
                                        const std::vector<size_t> & variableSizes,
                                        const Parameters_ & params,

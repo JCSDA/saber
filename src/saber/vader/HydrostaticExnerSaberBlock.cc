@@ -42,7 +42,8 @@ static SaberBlockMaker<HydrostaticExnerSaberBlock>
 
 // -----------------------------------------------------------------------------
 
-HydrostaticExnerSaberBlock::HydrostaticExnerSaberBlock(const atlas::FunctionSpace & functionSpace,
+HydrostaticExnerSaberBlock::HydrostaticExnerSaberBlock(const eckit::mpi::Comm & comm,
+                                                       const atlas::FunctionSpace & functionSpace,
                                                        const atlas::FieldSet & extraFields,
                                                        const std::vector<size_t> & variableSizes,
                                                        const Parameters_ & params,

@@ -147,7 +147,8 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & resol,
         ABORT("Central block should be the first block, only one allowed!");
       } else {
         // Create block
-        saberCentralBlock_.reset(SaberBlockFactory::create(resol.functionSpace(),
+        saberCentralBlock_.reset(SaberBlockFactory::create(resol.getComm(),
+                                 resol.functionSpace(),
                                  resol.extraFields(),
                                  resol.variableSizes(saberBlockParams.inputVars.value()),
                                  saberBlockParams,
@@ -157,7 +158,8 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & resol,
       }
     } else {
       // Create block
-      saberBlocks_.push_back(SaberBlockFactory::create(resol.functionSpace(),
+      saberBlocks_.push_back(SaberBlockFactory::create(resol.getComm(),
+                             resol.functionSpace(),
                              resol.extraFields(),
                              resol.variableSizes(saberBlockParams.inputVars.value()),
                              saberBlockParams,

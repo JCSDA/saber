@@ -39,7 +39,8 @@ static SaberBlockMaker<DryAirDensitySaberBlock>
 
 // -----------------------------------------------------------------------------
 
-DryAirDensitySaberBlock::DryAirDensitySaberBlock(const atlas::FunctionSpace & functionSpace,
+DryAirDensitySaberBlock::DryAirDensitySaberBlock(const eckit::mpi::Comm & comm,
+                                                 const atlas::FunctionSpace & functionSpace,
                                                  const atlas::FieldSet & extraFields,
                                                  const std::vector<size_t> & variableSizes,
                                                  const Parameters_ & params,

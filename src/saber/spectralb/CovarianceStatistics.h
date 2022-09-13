@@ -35,16 +35,14 @@ namespace saber {
 namespace spectralb {
 
 // 'CovStat_ErrorCov': class for covariance statistics associated with the error covariance;
-template<typename MODEL>
 class CovStat_ErrorCov {
-  typedef oops::Geometry<MODEL>      Geometry_;
-  typedef spectralbParameters<MODEL> Parameters_;
+  typedef spectralbParameters Parameters_;
 
  public:
   static const std::string classname() {return "saber::CovStat_ErrorCov";}
 
-  CovStat_ErrorCov(const Geometry_ & geom_,
-                   const oops::Variables & vars,
+  CovStat_ErrorCov(const std::vector<size_t> &,
+                   const oops::Variables &,
                    const Parameters_ &);
 
   /// \details getSpectralUMatrix() gets the square root of the spectral vertical covariances for
@@ -96,12 +94,11 @@ class CovStat_ErrorCov {
 namespace saber {
 namespace spectralb {
 
-template<typename MODEL>
-CovStat_ErrorCov<MODEL>::CovStat_ErrorCov(const Geometry_ & geom_,
-                                          const oops::Variables & vars,
-                                          const Parameters_ & params) :
+CovStat_ErrorCov::CovStat_ErrorCov(const std::vector<size_t> & variableSizes,
+                                   const oops::Variables & vars,
+                                   const Parameters_ & params) :
   covarianceFileName_(params.covarianceFile),
-  modelLevels_(geom_.variableSizes(vars)[0]),
+  modelLevels_(variableSizes[0]),
   netCDFSpectralBins_(getNetCDFSpectralBins(params)),
   spectralUMatrices_(createUMatrices(vars, modelLevels_,
                                      netCDFSpectralBins_, params)),
@@ -114,7 +111,7 @@ CovStat_ErrorCov<MODEL>::CovStat_ErrorCov(const Geometry_ & geom_,
                                 vars, modelLevels_, spectralVerticalCovariances_,
                                 spectralSD_))
 {
-  for (std::size_t lvl : geom_.variableSizes(vars)) {
+  for (std::size_t lvl : variableSizes) {
     if (static_cast<int>(lvl) != modelLevels_) {
       throw eckit::UnexpectedState("spectral covariance block assumes all fields have "
                                    "same number of model levels");
@@ -122,8 +119,7 @@ CovStat_ErrorCov<MODEL>::CovStat_ErrorCov(const Geometry_ & geom_,
   }
 }
 
-template<typename MODEL>
-void CovStat_ErrorCov<MODEL>::print(std::ostream & os) const {
+void CovStat_ErrorCov::print(std::ostream & os) const {
   oops::Log::trace() <<
     "Covariance Statistics (SABER spectral B, error covariance) print starting" << std::endl;
 

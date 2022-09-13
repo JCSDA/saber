@@ -41,7 +41,8 @@ class DryAirDensitySaberBlock : public SaberBlockBase {
 
   typedef DryAirDensitySaberBlockParameters Parameters_;
 
-  DryAirDensitySaberBlock(const atlas::FunctionSpace &,
+  DryAirDensitySaberBlock(const eckit::mpi::Comm &,
+                          const atlas::FunctionSpace &,
                           const atlas::FieldSet &,
                           const std::vector<size_t> &,
                           const Parameters_ &,

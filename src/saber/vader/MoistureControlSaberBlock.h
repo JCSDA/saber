@@ -47,7 +47,8 @@ class MoistureControlSaberBlock : public SaberBlockBase {
 
   typedef MoistureControlSaberBlockParameters Parameters_;
 
-  MoistureControlSaberBlock(const atlas::FunctionSpace &,
+  MoistureControlSaberBlock(const eckit::mpi::Comm &,
+                            const atlas::FunctionSpace &,
                             const atlas::FieldSet &,
                             const std::vector<size_t> &,
                             const Parameters_ &,

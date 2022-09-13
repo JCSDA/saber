@@ -14,13 +14,14 @@
 
 #include "atlas/field.h"
 
-#include "oops/base/Geometry.h"
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 
 #include "saber/oops/SaberBlockBase.h"
 #include "saber/oops/SaberBlockParametersBase.h"
+
 #include "saber/spectralb/spectralb.h"
+#include "saber/spectralb/spectralbParameters.h"
 
 namespace oops {
   class Variables;
@@ -30,31 +31,30 @@ namespace saber {
 namespace spectralb {
 
 // -----------------------------------------------------------------------------
-template <typename MODEL>
 class SPCTRL_COVParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(SPCTRL_COVParameters, SaberBlockParametersBase)
 
  public:
-  oops::RequiredParameter<spectralbParameters<MODEL>> spectralbParams{"spectralb", this};
+  oops::RequiredParameter<spectralbParameters> spectralbParams{"spectralb", this};
 };
 
 // -----------------------------------------------------------------------------
 
-template <typename MODEL>
-class SPCTRL_COV : public SaberBlockBase<MODEL> {
-  typedef oops::Geometry<MODEL> Geometry_;
-  typedef oops::State<MODEL>    State_;
-  typedef SpectralB<MODEL>      SpectralB_;
+class SPCTRL_COV : public SaberBlockBase {
 
  public:
   static const std::string classname() {return "saber::lfricspectralb::SPCTRL_COV";}
 
-  typedef SPCTRL_COVParameters<MODEL> Parameters_;
+  typedef SPCTRL_COVParameters Parameters_;
 
-  SPCTRL_COV(const Geometry_ &,
-                  const Parameters_ &,
-                  const State_ &,
-                  const State_ &);
+  SPCTRL_COV(const eckit::mpi::Comm &,
+             const atlas::FunctionSpace &,
+             const atlas::FieldSet &,
+             const std::vector<size_t> &,
+             const Parameters_ &,
+             const atlas::FieldSet &,
+             const atlas::FieldSet &,
+             const std::vector<atlas::FieldSet> &);
   virtual ~SPCTRL_COV();
 
   void randomize(atlas::FieldSet &) const override;
@@ -65,99 +65,8 @@ class SPCTRL_COV : public SaberBlockBase<MODEL> {
 
  private:
   void print(std::ostream &) const override;
-  std::unique_ptr<SpectralB_> spectralb_;
+  std::unique_ptr<SpectralB> spectralb_;
 };
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-SPCTRL_COV<MODEL>::SPCTRL_COV(const Geometry_ & resol, const Parameters_ & params,
-                                        const State_ & xb, const State_ & fg)
-  : SaberBlockBase<MODEL>(params), spectralb_()
-{
-  oops::Log::trace() << classname() << "::SPCTRL_COV starting" << std::endl;
-
-  // Setup and check input/ouput variables
-  const oops::Variables inputVars = params.inputVars.value();
-  const oops::Variables outputVars = params.outputVars.value();
-  ASSERT(inputVars == outputVars);
-
-  // Active variables
-  const boost::optional<oops::Variables> &activeVarsPtr = params.activeVars.value();
-  oops::Variables activeVars;
-  if (activeVarsPtr != boost::none) {
-    activeVars += *activeVarsPtr;
-    ASSERT(activeVars <= inputVars);
-  } else {
-    activeVars += inputVars;
-  }
-
-  // Initialize SpectralB_
-  spectralb_.reset(new SpectralB_(resol, activeVars, params.spectralbParams.value()));
-
-  oops::Log::trace() << classname() << "::SPCTRL_COV done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-SPCTRL_COV<MODEL>::~SPCTRL_COV() {
-  oops::Log::trace() << classname() << "::~SPCTRL_COV starting" << std::endl;
-  util::Timer timer(classname(), "~SPCTRL_COV");
-  oops::Log::trace() << classname() << "::~SPCTRL_COV done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void SPCTRL_COV<MODEL>::randomize(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::randomize starting" << std::endl;
-  ABORT("SPCTRL_COV<MODEL>::randomize: not implemented");
-  oops::Log::trace() << classname() << "::randomize done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void SPCTRL_COV<MODEL>::multiply(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  spectralb_->multiply_InterpAndCov(fset);
-  oops::Log::trace() << classname() << "::multiply done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void SPCTRL_COV<MODEL>::inverseMultiply(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::inverseMultiply starting" << std::endl;
-  ABORT("SPCTRL_COV<MODEL>::inverseMultiply: not implemented");
-  oops::Log::trace() << classname() << "::inverseMultiply done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void SPCTRL_COV<MODEL>::multiplyAD(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  ABORT("SPCTRL_COV<MODEL>::multiplyAD: not implemented");
-  oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void SPCTRL_COV<MODEL>::inverseMultiplyAD(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::inverseMultiplyAD starting" << std::endl;
-  ABORT("SPCTRL_COV<MODEL>::inverseMultiplyAD: not implemented");
-  oops::Log::trace() << classname() << "::inverseMultiplyAD done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void SPCTRL_COV<MODEL>::print(std::ostream & os) const {
-  os << classname();
-}
 
 // -----------------------------------------------------------------------------
 

@@ -43,7 +43,8 @@ class AirTemperatureSaberBlock : public SaberBlockBase {
 
   typedef AirTemperatureSaberBlockParameters Parameters_;
 
-  AirTemperatureSaberBlock(const atlas::FunctionSpace &,
+  AirTemperatureSaberBlock(const eckit::mpi::Comm &,
+                           const atlas::FunctionSpace &,
                            const atlas::FieldSet &,
                            const std::vector<size_t> &,
                            const Parameters_ &,

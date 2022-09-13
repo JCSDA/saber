@@ -41,7 +41,8 @@ class HydroBalSaberBlock : public SaberBlockBase {
 
   typedef HydroBalSaberBlockParameters Parameters_;
 
-  HydroBalSaberBlock(const atlas::FunctionSpace &,
+  HydroBalSaberBlock(const eckit::mpi::Comm &,
+                     const atlas::FunctionSpace &,
                      const atlas::FieldSet &,
                      const std::vector<size_t> &,
                      const Parameters_ &,

@@ -40,7 +40,8 @@ static SaberBlockMaker<MoistIncrOpSaberBlock>
 
 // -----------------------------------------------------------------------------
 
-MoistIncrOpSaberBlock::MoistIncrOpSaberBlock(const atlas::FunctionSpace & functionSpace,
+MoistIncrOpSaberBlock::MoistIncrOpSaberBlock(const eckit::mpi::Comm & comm,
+                                             const atlas::FunctionSpace & functionSpace,
                                              const atlas::FieldSet & extraFields,
                                              const std::vector<size_t> & variableSizes,
                                              const Parameters_ & params,

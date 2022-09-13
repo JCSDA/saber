@@ -14,7 +14,6 @@
 #include <vector>
 
 #include "atlas/field.h"
-#include "atlas/functionspace.h"
 
 #include "saber/spectralb/spectralb_covstats_interface.h"
 #include "saber/spectralb/spectralbParameters.h"
@@ -25,9 +24,7 @@
 namespace saber {
 namespace spectralb {
 
-template<typename MODEL>
-std::vector<std::size_t> getNetCDFSpectralBins(
-                             const spectralbParameters<MODEL> & params) {
+std::vector<std::size_t> getNetCDFSpectralBins(const spectralbParameters & params) {
   oops::Variables netCDFVars(params.umatrixNetCDFNames);
 
   std::vector<std::size_t> netCDFSpectralBins(netCDFVars.size());
@@ -49,13 +46,10 @@ std::vector<std::size_t> getNetCDFSpectralBins(
   return netCDFSpectralBins;
 }
 
-template<typename MODEL>
-atlas::FieldSet
-createUMatrices(const oops::Variables & activeVars,
-                const int modelLevels,
-                const std::vector<std::size_t> & netCDFSpectralBins,
-                const spectralbParameters<MODEL> & params)
-{
+atlas::FieldSet createUMatrices(const oops::Variables & activeVars,
+                                const int modelLevels,
+                                const std::vector<std::size_t> & netCDFSpectralBins,
+                                const spectralbParameters & params) {
   // we are currently not using globalNons_ here
   // however in the near future we may want to scale the spectral covariances
   // so that they can be run at lower
@@ -109,14 +103,11 @@ createUMatrices(const oops::Variables & activeVars,
 //        where we need the square root of B and for covariance sampling via randomsiation.
 //        Also it is easier the calculate spectralVerticalCovariances from the UMatrices than
 //        visa versa.
-template<typename MODEL>
-atlas::FieldSet
-createSpectralCovariances(
-    const oops::Variables & activeVars,
-    const int modelLevels,
-    const std::vector<std::size_t> & netCDFSpectralBins,
-    const atlas::FieldSet & spectralUMatrices,
-    const spectralbParameters<MODEL> & params)
+atlas::FieldSet createSpectralCovariances(const oops::Variables & activeVars,
+                                          const int modelLevels,
+                                          const std::vector<std::size_t> & netCDFSpectralBins,
+                                          const atlas::FieldSet & spectralUMatrices,
+                                          const spectralbParameters & params)
 {
   std::string gaussGridUid = params.gaussGridUid;
   // extract resolution find position where string has a number
@@ -159,12 +150,9 @@ createSpectralCovariances(
   return spectralVerticalCovariances;
 }
 
-atlas::FieldSet
-createSpectralSD(
-    const oops::Variables & activeVars,
-    const int modelLevels,
-    const atlas::FieldSet & spectralVerticalCovariances)
-{
+atlas::FieldSet createSpectralSD(const oops::Variables & activeVars,
+                                 const int modelLevels,
+                                 const atlas::FieldSet & spectralVerticalCovariances) {
   atlas::FieldSet spectralSDs;
 
   for (std::string var : activeVars.variables()) {
@@ -189,13 +177,10 @@ createSpectralSD(
   return spectralSDs;
 }
 
-atlas::FieldSet
-createSpectralCorrelations(
-    const oops::Variables & activeVars,
-    const int modelLevels,
-    const atlas::FieldSet & spectralVerticalCovariances,
-    const atlas::FieldSet & spectralSDs)
-{
+atlas::FieldSet createSpectralCorrelations(const oops::Variables & activeVars,
+                                           const int modelLevels,
+                                           const atlas::FieldSet & spectralVerticalCovariances,
+                                           const atlas::FieldSet & spectralSDs) {
   atlas::FieldSet spectralCorrelations;
 
   for (std::string var : activeVars.variables()) {

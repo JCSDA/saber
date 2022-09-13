@@ -39,7 +39,8 @@ class StdDev : public SaberBlockBase {
 
   typedef StdDevParameters Parameters_;
 
-  StdDev(const atlas::FunctionSpace &,
+  StdDev(const eckit::mpi::Comm &,
+         const atlas::FunctionSpace &,
          const atlas::FieldSet &,
          const std::vector<size_t> &,
          const Parameters_ &,

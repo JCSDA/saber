@@ -14,23 +14,13 @@
 
 #include "atlas/field.h"
 #include "atlas/functionspace.h"
-#include "atlas/grid.h"
-#include "atlas/library.h"
-#include "atlas/runtime/Log.h"
 
-#include "oops/base/Geometry.h"
-#include "oops/base/State.h"
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 
 #include "saber/gsi/covariance/GSI_Covariance.interface.h"
-#include "saber/gsi/grid/GSI_Grid.h"
 #include "saber/gsi/interpolation/GSI_InterpolationImpl.h"
 #include "saber/oops/SaberBlockBase.h"
-
-
-using atlas::option::levels;
-using atlas::option::name;
 
 namespace oops {
   class Variables;
@@ -47,17 +37,20 @@ class CovarianceParameters : public InterpolationImplParameters {
 
 // -------------------------------------------------------------------------------------------------
 
-template <typename MODEL>
-class Covariance : public SaberBlockBase<MODEL> {
-  typedef oops::Geometry<MODEL> Geometry_;
-  typedef oops::State<MODEL>    State_;
-
+class Covariance : public SaberBlockBase {
  public:
   static const std::string classname() {return "saber::gsi::Covariance";}
 
   typedef CovarianceParameters Parameters_;
 
-  Covariance(const Geometry_ &, const Parameters_ &, const State_ &, const State_ &);
+  Covariance(const eckit::mpi::Comm &,
+             const atlas::FunctionSpace &,
+             const atlas::FieldSet &,
+             const std::vector<size_t> &,
+             const Parameters_ &,
+             const atlas::FieldSet &,
+             const atlas::FieldSet &,
+             const std::vector<atlas::FieldSet> &);
   virtual ~Covariance();
 
   void randomize(atlas::FieldSet &) const override;
@@ -77,125 +70,6 @@ class Covariance : public SaberBlockBase<MODEL> {
   // Grid
   Grid grid_;
 };
-
-// -------------------------------------------------------------------------------------------------
-
-template<typename MODEL>
-Covariance<MODEL>::Covariance(const Geometry_ & geom, const Parameters_ & params,
-                              const State_ & xbg, const State_ & xfg)
-  : SaberBlockBase<MODEL>(params), variables_(), grid_(geom.getComm(), params)
-{
-  oops::Log::trace() << classname() << "::Covariance starting" << std::endl;
-  util::Timer timer(classname(), "Covariance");
-
-  // Assert that there is no variable change in this block
-  ASSERT(params.inputVars.value() == params.outputVars.value());
-  variables_ = params.inputVars.value().variables();
-
-  // Function space
-  gsiGridFuncSpace_ = atlas::functionspace::PointCloud(grid_.functionSpace().get());
-
-  // Convert background and first guess to field sets that can be modified
-  atlas::FieldSet xbgFieldSet(xbg.fieldSet().get());
-  atlas::FieldSet xfgFieldSet(xfg.fieldSet().get());
-
-  // Interpolate background and first guess to background error model grid
-  InterpolationImpl interp_(geom.getComm(), geom.functionSpace(),
-                            params, xbg.variables().variables());
-  interp_.multiply(xbgFieldSet);
-  interp_.multiply(xfgFieldSet);
-
-  // Create covariance module
-  gsi_covariance_create_f90(keySelf_, geom.getComm(), params.toConfiguration(),
-                            xbgFieldSet.get(), xfgFieldSet.get());
-
-  oops::Log::trace() << classname() << "::Covariance done" << std::endl;
-}
-
-// -------------------------------------------------------------------------------------------------
-
-template<typename MODEL>
-Covariance<MODEL>::~Covariance() {
-  oops::Log::trace() << classname() << "::~Covariance starting" << std::endl;
-  util::Timer timer(classname(), "~Covariance");
-  gsi_covariance_delete_f90(keySelf_);
-  oops::Log::trace() << classname() << "::~Covariance done" << std::endl;
-}
-
-// -------------------------------------------------------------------------------------------------
-
-template<typename MODEL>
-void Covariance<MODEL>::randomize(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::randomize starting" << std::endl;
-  util::Timer timer(classname(), "randomize");
-
-  // Ignore incoming fields and create new ones based on the block function space
-  // ----------------------------------------------------------------------------
-  atlas::FieldSet newFields = atlas::FieldSet();
-
-  // Loop over saber (model) fields and create corresponding fields on gsi grid
-  for (auto sabField : fset) {
-      // Get the name
-      const auto fieldName = name(sabField.name());
-
-      // Ensure that the field name is in the input/output list
-      const std::string fieldNameStr = fieldName.getString("name");
-      if (std::find(variables_.begin(), variables_.end(), fieldNameStr) == variables_.end()) {
-        ABORT("Field " + fieldNameStr + " not found in the " + classname() + " variables.");
-      }
-
-      // Create the gsi grid field and add to Fieldset
-      newFields.add(gsiGridFuncSpace_.createField<double>(fieldName | levels(sabField.levels())));
-  }
-
-  // Replace whatever fields are coming in with the gsi grid fields
-  fset = newFields;
-
-  // Call implementation
-  gsi_covariance_randomize_f90(keySelf_, fset.get());
-  oops::Log::trace() << classname() << "::randomize done" << std::endl;
-}
-
-// -------------------------------------------------------------------------------------------------
-
-template<typename MODEL>
-void Covariance<MODEL>::multiply(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  util::Timer timer(classname(), "multiply");
-  gsi_covariance_multiply_f90(keySelf_, fset.get());
-  oops::Log::trace() << classname() << "::multiply done" << std::endl;
-}
-
-// -------------------------------------------------------------------------------------------------
-
-template<typename MODEL>
-void Covariance<MODEL>::inverseMultiply(atlas::FieldSet & fset) const {
-  ABORT(classname() + "inverseMultiply: not implemented");
-}
-
-// -------------------------------------------------------------------------------------------------
-
-template<typename MODEL>
-void Covariance<MODEL>::multiplyAD(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  util::Timer timer(classname(), "multiplyAD");
-  gsi_covariance_multiply_ad_f90(keySelf_, fset.get());
-  oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
-}
-
-// -------------------------------------------------------------------------------------------------
-
-template<typename MODEL>
-void Covariance<MODEL>::inverseMultiplyAD(atlas::FieldSet & fset) const {
-  ABORT(classname() + "inverseMultiplyAD: not implemented");
-}
-
-// -------------------------------------------------------------------------------------------------
-
-template<typename MODEL>
-void Covariance<MODEL>::print(std::ostream & os) const {
-  os << classname();
-}
 
 // -------------------------------------------------------------------------------------------------
 

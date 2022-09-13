@@ -37,7 +37,8 @@ static SaberBlockMaker<AirTemperatureSaberBlock>
 
 // -----------------------------------------------------------------------------
 
-AirTemperatureSaberBlock::AirTemperatureSaberBlock(const atlas::FunctionSpace & functionSpace,
+AirTemperatureSaberBlock::AirTemperatureSaberBlock(const eckit::mpi::Comm & comm,
+                                                   const atlas::FunctionSpace & functionSpace,
                                                    const atlas::FieldSet & extraFields,
                                                    const std::vector<size_t> & variableSizes,
                                                    const Parameters_ & params,

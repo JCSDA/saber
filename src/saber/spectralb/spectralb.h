@@ -77,8 +77,7 @@ std::shared_ptr<atlas::FieldSet> allocateGaussFieldset(
 
 // -----------------------------------------------------------------------------
 
-template<typename MODEL>
-atlas::Grid createOutputGrid(const spectralbParameters<MODEL> & params) {
+atlas::Grid createOutputGrid(const spectralbParameters & params) {
   std::string gridName((params.outputGridUid.value() != boost::none ?
                         params.outputGridUid.value().get() :
                         params.gaussGridUid));
@@ -93,8 +92,7 @@ atlas::FunctionSpace createOutputFunctionSpace(const atlas::FieldSet & fset) {
 
 // -----------------------------------------------------------------------------
 
-template<typename MODEL>
-bool createVarianceOpt(const spectralbParameters<MODEL> & params) {
+bool createVarianceOpt(const spectralbParameters & params) {
   return (params.varianceOpt.value() != boost::none ?
           params.varianceOpt.value().get() :
           false);
@@ -109,24 +107,22 @@ namespace saber {
 namespace spectralb {
 // -----------------------------------------------------------------------------
 
-template<typename MODEL>
 class SpectralB {
  public:
-  typedef spectralbParameters<MODEL> Parameters_;
-  typedef oops::Geometry<MODEL>        Geometry_;
-  typedef oops::Increment<MODEL>       Increment_;
-  typedef oops::State<MODEL>           State_;
+  typedef spectralbParameters Parameters_;
 
-  SpectralB(const Geometry_ &,
-                 const oops::Variables &,
-                 const Parameters_ &);
+  SpectralB(const atlas::FunctionSpace &,
+            const std::vector<size_t> &,
+            const oops::Variables &,
+            const Parameters_ &);
   ~SpectralB();
 
-  void linearize(const State_ &, const Geometry_ &);
+  void randomize(atlas::FieldSet & modelGridFieldSet) const;
   void multiply_InterpAndCov(atlas::FieldSet &) const;
-  void inverseMultiply(const Increment_ &, Increment_ &) const;
-  void randomize(Increment_ &) const;
-  static atlas::FieldSet createFieldsSpace(const Geometry_ &, const oops::Variables & vars);
+  void inverseMultiply(atlas::FieldSet & modelGridFieldSet) const;
+  static atlas::FieldSet createFieldsSpace(const atlas::FunctionSpace &,
+                                           const std::vector<size_t> &,
+                                           const oops::Variables &);
 
  private:
   void print(std::ostream &) const;
@@ -137,7 +133,7 @@ class SpectralB {
   std::shared_ptr<atlas::FieldSet> gaussFieldSet_;
   saber::interpolation::AtlasInterpWrapper interp_;
   bool variance_opt_;
-  std::unique_ptr<const CovStat_ErrorCov<MODEL>> cs_;
+  std::unique_ptr<const CovStat_ErrorCov> cs_;
 
   // this method applies the adjoint of the inverse transform
   // then does a convolution with the spectral vertical covariances
@@ -150,11 +146,13 @@ class SpectralB {
 using atlas::array::make_view;
 using atlas::idx_t;
 
-template<typename MODEL>
-SpectralB<MODEL>::SpectralB(const Geometry_ & resol,
-                            const oops::Variables & vars,
-                            const Parameters_ & params) :
-  modelFieldSet_(std::make_shared<const atlas::FieldSet>(createFieldsSpace(resol, vars))),
+SpectralB::SpectralB(const atlas::FunctionSpace & functionSpace,
+                     const std::vector<size_t> & variableSizes,
+                     const oops::Variables & vars,
+                     const Parameters_ & params) :
+  modelFieldSet_(std::make_shared<const atlas::FieldSet>(createFieldsSpace(functionSpace,
+                                                                           variableSizes,
+                                                                           vars))),
   gaussNames_(vars.variables()),
   gaussGrid_(params.gaussGridUid),
   gaussFunctionSpace_(detail::createGaussFunctionSpace(gaussGrid_)),
@@ -162,31 +160,21 @@ SpectralB<MODEL>::SpectralB(const Geometry_ & resol,
   interp_(atlas::grid::Partitioner(new TransPartitioner()), gaussFunctionSpace_,
     detail::createOutputGrid(params), detail::createOutputFunctionSpace(*modelFieldSet_)),
   variance_opt_(detail::createVarianceOpt(params)),
-  cs_(std::make_unique<const CovStat_ErrorCov<MODEL>>(resol, vars, params))
+  cs_(std::make_unique<const CovStat_ErrorCov>(variableSizes, vars, params))
 {
-  oops::Log::trace() << "SpectralB<MODEL>::SpectralB done" << std::endl;
+  oops::Log::trace() << "SpectralB::SpectralB done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-template<typename MODEL>
-SpectralB<MODEL>::~SpectralB() {
-  oops::Log::trace() << "SpectralB<MODEL> destructed" << std::endl;
+SpectralB::~SpectralB() {
+  oops::Log::trace() << "SpectralB destructed" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-template<typename MODEL>
-void SpectralB<MODEL>::linearize(const State_ &,
-                                 const Geometry_ & resol) {
-  oops::Log::trace() << "SpectralB<MODEL> linearize" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void SpectralB<MODEL>::multiply_InterpAndCov(atlas::FieldSet & modelGridFieldSet) const {
-  oops::Log::trace() << "SpectralB<MODEL> multiply_InterpAndCov start" << std::endl;
+void SpectralB::multiply_InterpAndCov(atlas::FieldSet & modelGridFieldSet) const {
+  oops::Log::trace() << "SpectralB multiply_InterpAndCov start" << std::endl;
 
   auto N = atlas::GaussianGrid(gaussGrid_).N();
 
@@ -208,42 +196,39 @@ void SpectralB<MODEL>::multiply_InterpAndCov(atlas::FieldSet & modelGridFieldSet
 
   interp_.execute(*gaussFieldSet_, modelGridFieldSet);
 
-  oops::Log::trace() << "SpectralB<MODEL> multiply_InterpAndCov end"
+  oops::Log::trace() << "SpectralB multiply_InterpAndCov end"
                      << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-template<typename MODEL>
-void SpectralB<MODEL>::inverseMultiply(const Increment_ & dxin,
-                                       Increment_ & dxout) const {
+void SpectralB::inverseMultiply(atlas::FieldSet & modelGridFieldSet) const {
   std::string err_message =
-    "saber::SpectralB<MODEL>::inverseMultiply not implemented ";
+    "saber::SpectralB::inverseMultiply not implemented ";
   throw eckit::NotImplemented(err_message, Here());
-  oops::Log::trace() << "SpectralB<MODEL> inverseMultiply" << std::endl;
+  oops::Log::trace() << "SpectralB inverseMultiply" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-template<typename MODEL>
-void SpectralB<MODEL>::randomize(Increment_ & dx) const {
-  oops::Log::trace() << "SpectralB<MODEL> randomize" << std::endl;
+void SpectralB::randomize(atlas::FieldSet & modelGridFieldSet) const {
+  oops::Log::trace() << "SpectralB randomize" << std::endl;
   std::string err_message =
-    "saber::SpectralB<MODEL>::randomise not implemented ";
+    "saber::SpectralB::randomise not implemented ";
   throw eckit::NotImplemented(err_message, Here());
 }
 
 // -----------------------------------------------------------------------------
 
-template<typename MODEL>
-void SpectralB<MODEL>::print(std::ostream & os) const {
-  os << "SpectralB<MODEL>::print not implemented";
+void SpectralB::print(std::ostream & os) const {
+  os << "SpectralB::print not implemented";
 }
 
 // -----------------------------------------------------------------------------
-template<typename MODEL>
-atlas::FieldSet SpectralB<MODEL>::createFieldsSpace(const Geometry_ & geom,
-                                                    const oops::Variables & vars) {
+
+atlas::FieldSet SpectralB::createFieldsSpace(const atlas::FunctionSpace & functionSpace,
+                                             const std::vector<size_t> & variableSizes,
+                                             const oops::Variables & vars) {
   oops::Log::trace() << "start createFieldsSpace:: Rank, Variables = "
                      << atlas::mpi::rank() << " " << vars << std::endl;
 
@@ -251,10 +236,10 @@ atlas::FieldSet SpectralB<MODEL>::createFieldsSpace(const Geometry_ & geom,
 
   ASSERT(vars.size() > 0);
 
-  std::vector<size_t> sizes = geom.variableSizes(vars);
+  std::vector<size_t> sizes = variableSizes;
 
   for (unsigned int i = 0; i < vars.size(); ++i) {
-    atlas::FunctionSpace nodesFs = geom.functionSpace();
+    atlas::FunctionSpace nodesFs = functionSpace;
 
     atlas::Field tempField =
       nodesFs.createField<double>(atlas::option::name(vars[i]) |
@@ -270,8 +255,7 @@ atlas::FieldSet SpectralB<MODEL>::createFieldsSpace(const Geometry_ & geom,
 
 // -----------------------------------------------------------------------------
 
-template<typename MODEL>
-void SpectralB<MODEL>::applySpectralB(
+void SpectralB::applySpectralB(
     const atlas::FieldSet & spectralVerticalCovariances,
     const atlas::functionspace::Spectral & specFS,
     const atlas::trans::Trans & transIFS,
@@ -282,7 +266,7 @@ void SpectralB<MODEL>::applySpectralB(
   //   (total wavenumber is n1)
   // 3) the application of the inverse spectral transform
 
-  oops::Log::trace() << "SpectralB<MODEL>::applySpectralB start" << std::endl;
+  oops::Log::trace() << "SpectralB::applySpectralB start" << std::endl;
 
   std::vector<std::string> fieldNames = gaussFields.field_names();
 
@@ -339,7 +323,7 @@ void SpectralB<MODEL>::applySpectralB(
 
   transIFS.invtrans(specFields, gaussFields);
 
-  oops::Log::trace() << "SpectralB<MODEL>::applySpectralB end" << std::endl;
+  oops::Log::trace() << "SpectralB::applySpectralB end" << std::endl;
 
   return;
 }

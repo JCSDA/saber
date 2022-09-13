@@ -49,7 +49,8 @@ SaberBlockFactory::SaberBlockFactory(const std::string & name) {
 
 // -----------------------------------------------------------------------------
 
-SaberBlockBase * SaberBlockFactory::create(const atlas::FunctionSpace & functionSpace,
+SaberBlockBase * SaberBlockFactory::create(const eckit::mpi::Comm & comm,
+                                           const atlas::FunctionSpace & functionSpace,
                                            const atlas::FieldSet & extraFields,
                                            const std::vector<size_t> & variableSizes,
                                            const SaberBlockParametersBase & params,
@@ -63,7 +64,7 @@ SaberBlockBase * SaberBlockFactory::create(const atlas::FunctionSpace & function
     oops::Log::error() << id << " does not exist in saber::SaberBlockFactory." << std::endl;
     ABORT("Element does not exist in saber::SaberBlockFactory.");
   }
-  SaberBlockBase * ptr = jsb->second->make(functionSpace, extraFields, variableSizes,
+  SaberBlockBase * ptr = jsb->second->make(comm, functionSpace, extraFields, variableSizes,
                                            params, xb, fg, fsetVec);
   oops::Log::trace() << "SaberBlockBase::create done" << std::endl;
   return ptr;

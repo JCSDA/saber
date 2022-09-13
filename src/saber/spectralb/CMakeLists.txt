@@ -18,6 +18,7 @@ if( atlas_TRANS_FOUND )
     spectralb_covstats_interface.h
     spectralb_covstats_interface.F90
     spectralbParameters.h
+    SPCTRL_Cov.cc
     SPCTRL_Cov.h
 
     )

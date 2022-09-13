@@ -37,7 +37,8 @@ class ID : public SaberBlockBase {
 
   typedef IDParameters Parameters_;
 
-  ID(const atlas::FunctionSpace &,
+  ID(const eckit::mpi::Comm &,
+     const atlas::FunctionSpace &,
      const atlas::FieldSet &,
      const std::vector<size_t> &,
      const Parameters_ &,

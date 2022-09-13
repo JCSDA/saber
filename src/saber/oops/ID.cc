@@ -24,7 +24,8 @@ static SaberBlockMaker<ID> makerID_("ID");
 
 // -----------------------------------------------------------------------------
 
-ID::ID(const atlas::FunctionSpace & functionSpace,
+ID::ID(const eckit::mpi::Comm & comm,
+       const atlas::FunctionSpace & functionSpace,
        const atlas::FieldSet & extraFields,
        const std::vector<size_t> & variableSizes,
        const Parameters_ & params,

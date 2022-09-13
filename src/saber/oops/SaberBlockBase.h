@@ -72,7 +72,8 @@ class SaberBlockParametersWrapper : public oops::Parameters {
 class SaberBlockFactory {
 
  public:
-  static SaberBlockBase * create(const atlas::FunctionSpace &,
+  static SaberBlockBase * create(const eckit::mpi::Comm &,
+                                 const atlas::FunctionSpace &,
                                  const atlas::FieldSet &,
                                  const std::vector<size_t> &,
                                  const SaberBlockParametersBase &,
@@ -92,7 +93,8 @@ class SaberBlockFactory {
   explicit SaberBlockFactory(const std::string &name);
 
  private:
-  virtual SaberBlockBase * make(const atlas::FunctionSpace &,
+  virtual SaberBlockBase * make(const eckit::mpi::Comm &,
+                                const atlas::FunctionSpace &,
                                 const atlas::FieldSet &,
                                 const std::vector<size_t> &,
                                 const SaberBlockParametersBase &,
@@ -114,14 +116,15 @@ template<class T>
 class SaberBlockMaker : public SaberBlockFactory {
   typedef typename T::Parameters_ Parameters_;
 
-  SaberBlockBase * make(const atlas::FunctionSpace & functionSpace,
+  SaberBlockBase * make(const eckit::mpi::Comm & comm,
+                        const atlas::FunctionSpace & functionSpace,
                         const atlas::FieldSet & extraFields,
                         const std::vector<size_t> & variableSizes,
                         const SaberBlockParametersBase & params,
                         const atlas::FieldSet & xb,
                         const atlas::FieldSet & fg,
                         const std::vector<atlas::FieldSet> & fsetVec) override {
-    return new T(functionSpace, extraFields, variableSizes,
+    return new T(comm, functionSpace, extraFields, variableSizes,
                  dynamic_cast<const Parameters_&>(params), xb, fg, fsetVec);
   }
 

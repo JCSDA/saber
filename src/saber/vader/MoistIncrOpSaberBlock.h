@@ -43,7 +43,8 @@ class MoistIncrOpSaberBlock : public SaberBlockBase {
 
   typedef MoistIncrOpSaberBlockParameters Parameters_;
 
-  MoistIncrOpSaberBlock(const atlas::FunctionSpace &,
+  MoistIncrOpSaberBlock(const eckit::mpi::Comm &,
+                        const atlas::FunctionSpace &,
                         const atlas::FieldSet &,
                         const std::vector<size_t> &,
                         const Parameters_ &,

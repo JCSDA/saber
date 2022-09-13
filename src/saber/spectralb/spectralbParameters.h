@@ -23,7 +23,7 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 /// \brief Parameters passed to the Error Covariance class.
-template <typename MODEL> class spectralbParameters : public oops::Parameters {
+class spectralbParameters : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(spectralbParameters, oops::Parameters)
 
  public:
