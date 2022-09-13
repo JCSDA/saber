@@ -31,6 +31,7 @@ class SaberBlockParametersBase : public oops::Parameters {
   oops::RequiredParameter<oops::Variables> inputVars{"input variables", this};
   oops::RequiredParameter<oops::Variables> outputVars{"output variables", this};
   oops::OptionalParameter<oops::Variables> activeVars{"active variables", this};
+  oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> inputFields{"input fields", this};
 };
 
 // -----------------------------------------------------------------------------

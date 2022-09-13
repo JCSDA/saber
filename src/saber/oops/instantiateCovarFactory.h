@@ -23,7 +23,7 @@ template <typename MODEL> void instantiateCovarFactory() {
   static oops::CovarMaker<MODEL, ErrorCovariance<MODEL> > makerSABER_("SABER");
 
   instantiateLocalizationFactory<MODEL>();
-  instantiateSaberBlockFactory<MODEL>();
+  instantiateSaberBlockFactory();
 }
 
 // -----------------------------------------------------------------------------

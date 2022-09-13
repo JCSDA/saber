@@ -12,7 +12,7 @@
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
-  saber::instantiateSaberBlockFactory<quench::Traits>();
+  saber::instantiateSaberBlockFactory();
   saber::SaberBlockTest<quench::Traits> dir;
   return run.execute(dir);
 }

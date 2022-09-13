@@ -41,8 +41,6 @@ template<typename MODEL>
 class Localization : public oops::LocalizationBase<MODEL> {
   typedef oops::Geometry<MODEL>               Geometry_;
   typedef oops::Increment<MODEL>              Increment_;
-  typedef SaberBlockBase<MODEL>               SaberBlockBase_;
-  typedef SaberBlockParametersWrapper<MODEL>  SaberBlockParametersWrapper_;
   typedef oops::State<MODEL>                  State_;
 
  public:
@@ -54,7 +52,7 @@ class Localization : public oops::LocalizationBase<MODEL> {
 
  private:
   void print(std::ostream &) const override;
-  std::unique_ptr<SaberBlockBase_> saberBlock_;
+  std::unique_ptr<SaberBlockBase> saberBlock_;
 };
 
 // =============================================================================
@@ -70,17 +68,18 @@ Localization<MODEL>::Localization(const Geometry_ & resol,
   if (myslot == 0) {
     // Get parameters from configuration
     const eckit::LocalConfiguration saberBlock(conf, "saber block");
-    SaberBlockParametersWrapper_ parameters;
+    SaberBlockParametersWrapper parameters;
     parameters.validateAndDeserialize(saberBlock);
 
-    // Create dummy state
-    const oops::Variables inputVars(saberBlock, "input variables");
-    util::DateTime dummyTime(1977, 5, 25, 0, 0, 0);
-    State_ dummyState(resol, inputVars, dummyTime);
+    // Create dummy FieldSet
+    atlas::FieldSet dummyFs;
 
     // Create SABER block
-    saberBlock_.reset(SaberBlockFactory<MODEL>::create(resol, parameters.saberBlockParameters,
-      dummyState, dummyState));
+    saberBlock_.reset(SaberBlockFactory::create(resol.functionSpace(),
+                                                resol.extraFields(),
+                                                parameters.saberBlockParameters,
+                                                dummyFs,
+                                                dummyFs));
   }
 
   oops::Log::trace() << "Localization:Localization done" << std::endl;

@@ -8,6 +8,7 @@
 #ifndef SABER_OOPS_INSTANTIATESABERBLOCKFACTORY_H_
 #define SABER_OOPS_INSTANTIATESABERBLOCKFACTORY_H_
 
+/* TODO(Benjamin)
 #include "saber/bump/BUMP_NICAS.h"
 #include "saber/bump/BUMP_PsiChiToUV.h"
 #include "saber/bump/BUMP_StdDev.h"
@@ -17,9 +18,10 @@
   #include "saber/gsi/covariance/GSI_Covariance.h"
   #include "saber/gsi/interpolation/GSI_Interpolation.h"
 #endif
-
+*/
 #include "saber/oops/ID.h"
 #include "saber/oops/StdDev.h"
+/* TODO(Benjamin)
 #if atlas_TRANS_FOUND
   #include "saber/spectralb/SPCTRL_Cov.h"
 #endif
@@ -33,13 +35,13 @@
     #include "saber/vader/MoistureControlSaberBlock.h"
   #endif
 #endif
-
+*/
 namespace saber {
 
 // -----------------------------------------------------------------------------
 
-template <typename MODEL>
 void instantiateSaberBlockFactory() {
+/* TODO(Benjamin)
   // BUMP
   static SaberBlockMaker<MODEL, BUMP_NICAS<MODEL> >
          makerBUMP_NICAS_("BUMP_NICAS");
@@ -57,11 +59,13 @@ void instantiateSaberBlockFactory() {
   static SaberBlockMaker<MODEL, gsi::Interpolation<MODEL>>
          makerGSI_Interpolation_("gsi interpolation to model grid");
 #endif
-
+*/
   // Identity
-  static SaberBlockMaker<MODEL, ID<MODEL> >
-         makerID_("ID");
+  static SaberBlockMaker<ID> makerID_("ID");
 
+  // StdDev
+  static SaberBlockMaker<StdDev> makerStdDev_("StdDev");
+/* TODO(Benjamin)
 #if atlas_TRANS_FOUND
   // Spectral B
   static SaberBlockMaker<MODEL, spectralb::SPCTRL_COV<MODEL> >
@@ -86,10 +90,7 @@ void instantiateSaberBlockFactory() {
            makerMoistIncrOpSaberBlock_("mo_moistincrop");
   #endif
 #endif
-
-  // StdDev
-  static SaberBlockMaker<MODEL, StdDev<MODEL> >
-         makerStdDev_("StdDev");
+*/
 }
 
 // -----------------------------------------------------------------------------

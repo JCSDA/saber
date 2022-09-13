@@ -7,7 +7,8 @@ background error:
   - saber block name: StdDev
     input variables: [x]
     output variables: [x]
-    file:
+    input fields:
+    - parameter: StdDev
       filename: testdata/qg_error_covariance_training_bump_cov/stddev.an.2010-01-01T12:00:00Z.nc
 dirac:
   date: 2010-01-01T12:00:00Z

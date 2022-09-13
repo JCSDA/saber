@@ -14,9 +14,6 @@
 
 #include "atlas/field.h"
 
-#include "oops/base/Geometry.h"
-#include "oops/base/Increment.h"
-#include "oops/base/State.h"
 #include "oops/base/Variables.h"
 #include "oops/util/FieldSetOperations.h"
 
@@ -33,29 +30,24 @@ namespace saber {
 
 class StdDevParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(StdDevParameters, SaberBlockParametersBase)
-
- public:
-  oops::RequiredParameter<eckit::LocalConfiguration> fileConfig{"file", this};
 };
 
 // -----------------------------------------------------------------------------
 
-template <typename MODEL>
-class StdDev : public SaberBlockBase<MODEL> {
-  typedef oops::Geometry<MODEL>             Geometry_;
-  typedef oops::Increment<MODEL>            Increment_;
-  typedef oops::State<MODEL>                State_;
-
+class StdDev : public SaberBlockBase {
  public:
   static const std::string classname() {return "saber::StdDev";}
 
   typedef StdDevParameters Parameters_;
 
-  StdDev(const Geometry_ &,
+  StdDev(const atlas::FunctionSpace &,
+         const atlas::FieldSet &,
          const Parameters_ &,
-         const State_ &,
-         const State_ &);
+         const atlas::FieldSet &,
+         const atlas::FieldSet &);
   virtual ~StdDev();
+
+  void initialize(const std::vector<atlas::FieldSet> &) override;
 
   void randomize(atlas::FieldSet &) const override;
   void multiply(atlas::FieldSet &) const override;
@@ -65,17 +57,17 @@ class StdDev : public SaberBlockBase<MODEL> {
 
  private:
   void print(std::ostream &) const override;
-  atlas::FieldSet stdDevFieldSet_;
+  atlas::FieldSet stdDevFset_;
 };
 
 // -----------------------------------------------------------------------------
 
-template<typename MODEL>
-StdDev<MODEL>::StdDev(const Geometry_ & resol,
-                      const StdDevParameters & params,
-                      const State_ & xb,
-                      const State_ & fg)
-  : SaberBlockBase<MODEL>(params), stdDevFieldSet_()
+StdDev::StdDev(const atlas::FunctionSpace & functionSpace,
+               const atlas::FieldSet & extraFields,
+               const Parameters_ & params,
+               const atlas::FieldSet & xb,
+               const atlas::FieldSet & fg)
+  : SaberBlockBase(params), stdDevFset_()
 {
   oops::Log::trace() << classname() << "::StdDev starting" << std::endl;
 
@@ -94,24 +86,12 @@ StdDev<MODEL>::StdDev(const Geometry_ & resol,
     activeVars += inputVars;
   }
 
-  // Setup increment
-  Increment_ stdDev(resol, activeVars, xb.validTime());
-  stdDev.read(params.fileConfig.value());
-  oops::Log::test() << "Norm of stddev: " << stdDev.norm() << std::endl;
-
-  // Increment_ to ATLAS fieldset
-  stdDevFieldSet_.clear();
-  for (const auto & field : stdDev.fieldSet()) {
-      stdDevFieldSet_.add(field);
-  }
-
   oops::Log::trace() << classname() << "::StdDev done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-template<typename MODEL>
-StdDev<MODEL>::~StdDev() {
+StdDev::~StdDev() {
   oops::Log::trace() << classname() << "::~StdDev starting" << std::endl;
   util::Timer timer(classname(), "~StdDev");
   oops::Log::trace() << classname() << "::~StdDev done" << std::endl;
@@ -119,35 +99,53 @@ StdDev<MODEL>::~StdDev() {
 
 // -----------------------------------------------------------------------------
 
-template<typename MODEL>
-void StdDev<MODEL>::randomize(atlas::FieldSet & fset) const {
+void StdDev::initialize(const std::vector<atlas::FieldSet> & fsetVec)  {
+  oops::Log::trace() << classname() << "::initialize starting" << std::endl;
+
+  // Check fsetVec size
+  std::cout << "fsetVec.size() " << fsetVec.size() << std::endl;
+  ASSERT(fsetVec.size() == 1);
+
+  // Check FieldSet name
+  std::cout << "fsetVec[0].name() " << fsetVec[0].name() << std::endl;
+  ASSERT(fsetVec[0].name() == "StdDev");
+
+  // Copy std-dev fields
+  stdDevFset_.clear();
+  for (const auto & field : fsetVec[0]) {
+      stdDevFset_.add(field);
+  }
+
+  oops::Log::trace() << classname() << "::initialize done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void StdDev::randomize(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::randomize starting" << std::endl;
-  ABORT("StdDev<MODEL>::randomize: not implemented");
+  ABORT("StdDev::randomize: not implemented");
   oops::Log::trace() << classname() << "::randomize done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-template<typename MODEL>
-void StdDev<MODEL>::multiply(atlas::FieldSet & fset) const {
+void StdDev::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  util::FieldSetMultiply(fset, stdDevFieldSet_);
+  util::FieldSetMultiply(fset, stdDevFset_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-template<typename MODEL>
-void StdDev<MODEL>::inverseMultiply(atlas::FieldSet & fset) const {
+void StdDev::inverseMultiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::inverseMultiply starting" << std::endl;
-  util::FieldSetDivide(fset, stdDevFieldSet_);
+  util::FieldSetDivide(fset, stdDevFset_);
   oops::Log::trace() << classname() << "::inverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-template<typename MODEL>
-void StdDev<MODEL>::multiplyAD(atlas::FieldSet & fset) const {
+void StdDev::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
   this->multiply(fset);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
@@ -155,8 +153,7 @@ void StdDev<MODEL>::multiplyAD(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-template<typename MODEL>
-void StdDev<MODEL>::inverseMultiplyAD(atlas::FieldSet & fset) const {
+void StdDev::inverseMultiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::inverseMultiplyAD starting" << std::endl;
   this->inverseMultiply(fset);
   oops::Log::trace() << classname() << "::inverseMultiplyAD done" << std::endl;
@@ -164,8 +161,7 @@ void StdDev<MODEL>::inverseMultiplyAD(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-template<typename MODEL>
-void StdDev<MODEL>::print(std::ostream & os) const {
+void StdDev::print(std::ostream & os) const {
   os << classname();
 }
 

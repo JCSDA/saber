@@ -44,7 +44,6 @@ template <typename MODEL> class SaberBlockTestParameters
  public:
   typedef typename oops::Geometry<MODEL>::Parameters_ GeometryParameters_;
   typedef typename oops::State<MODEL>::Parameters_    StateParameters_;
-  typedef SaberBlockParametersWrapper<MODEL>          SaberBlockParametersWrapper_;
 
   /// Geometry parameters
   oops::RequiredParameter<GeometryParameters_> geometry{"geometry", this};
@@ -56,7 +55,7 @@ template <typename MODEL> class SaberBlockTestParameters
   oops::RequiredParameter<StateParameters_> background{"background", this};
 
   /// SABER blocks
-  oops::RequiredParameter<std::vector<SaberBlockParametersWrapper<MODEL>>>
+  oops::RequiredParameter<std::vector<SaberBlockParametersWrapper>>
     saberBlocks{"saber blocks", this};
 
   /// Adjoint test tolerance
@@ -71,13 +70,7 @@ template <typename MODEL> class SaberBlockTestParameters
 template <typename MODEL> class SaberBlockTest : public oops::Application {
   typedef oops::Geometry<MODEL>                           Geometry_;
   typedef oops::Increment<MODEL>                          Increment_;
-  typedef SaberBlockBase<MODEL>                           SaberBlockBase_;
-  typedef SaberBlockParametersWrapper<MODEL>              SaberBlockParametersWrapper_;
-  typedef typename SaberBlockVec_::iterator               iter_;
-  typedef typename SaberBlockVec_::const_iterator         icst_;
-  typedef typename SaberBlockVec_::const_reverse_iterator ircst_;
   typedef oops::State<MODEL>                              State_;
-  typedef SaberBlockTestParameters<MODEL>                 SaberBlockTestParameters_;
 
  public:
   static const std::string classname() {return "saber::SaberBlockTest";}
@@ -90,7 +83,7 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
     util::Timer timer(classname(), "execute");
 
     // Deserialize parameters
-    SaberBlockTestParameters_ params;
+    SaberBlockTestParameters<MODEL> params;
     if (validate) params.validate(fullConfig);
     params.deserialize(fullConfig);
 
@@ -102,47 +95,38 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
 
     // Setup background state
     const State_ xx(geom, params.background);
+/*
+    // Vector of FieldSets
+    std::vector<atlas::FieldSet> fsvec;
+
+    // Initialize first FieldSet
+    Increment_ dx(geom, vars, xx.validTime());
+    fsvec.push_back(dx.fieldset());
 
     // Loop over SABER blocks
     std::unique_ptr<SaberBlockBase_> saberBlock_;
-    for (const SaberBlockParametersWrapper_ & saberBlockParamWrapper :
-         params.saberBlocks.value()) {
-      const SaberBlockParametersBase & saberBlockParams = 
-        saberBlockParamWrapper.saberBlockParameters;
+    for (SaberBlockParametersWrapper_::reverse_iterator it = params.saberBlocks.value().rbegin();
+      it != params.saberBlocks.value().rend(); ++it) {
+      const SaberBlockParametersBase & saberBlockParams = it.saberBlockParameters;
 
       // Create block
       saberBlock_.reset(SaberBlockFactory<MODEL>::create(geom, saberBlockParams, xx, xx));
 
-      // Create test increments
-      Increment_ dx1TLAD(geom, saberBlockParams.inputVars().value(), xx.validTime());
-      Increment_ dx2TLAD(geom, saberBlockParams.outputVars().value(), xx.validTime());
-      Increment_ dx1TLADsave(geom, saberBlockParams.inputVars().value(), xx.validTime());
-      Increment_ dx2TLADsave(geom, saberBlockParams.outputVars().value(), xx.validTime());
-      Increment_ dx1Inv(geom, saberBlockParams.inputVars().value(), xx.validTime());
-      Increment_ dx2Inv(geom, saberBlockParams.outputVars().value(), xx.validTime());
-      Increment_ dx1Invsave(geom, saberBlockParams.inputVars().value(), xx.validTime());
-      Increment_ dx2Invsave(geom, saberBlockParams.outputVars().value(), xx.validTime());
-
-      // Generate random increments
-      dx1TLAD.random();
-      dx2TLAD.random();
-      dx1Inv.random();
-      dx2Inv.random();
-
-      // Save increments
-      dx1TLADsave = dx1TLAD;
-      dx2TLADsave = dx2TLAD;
-      dx1Invsave = dx1Inv;
-      dx2Invsave = dx2Inv;
-
       // Adjoint test
 
-      // Apply block
-      saberBlock_->multiply(dx1TLAD.fieldSet());
-      saberBlock_->multiplyAD(dx2TLAD.fieldSet());
+      // Apply adjoint block
+      saberBlock_->multiplyAD();
+
+      // 
+      Increment_ dx2TLAD(dx1TLAD);
+      dx2TLAD.random();
+      Increment_ dx2TLADsave(dx2TLAD, true);
+  
+      // Apply forward block
+      saberBlock_->multiply(dx2TLAD.fieldSet());
 
       // ATLAS fieldset to Increment_
-      dx1TLAD.synchronizeFields();
+      dx1TLAD.synchronizeFieldsAD();
       dx2TLAD.synchronizeFields();
 
       // Compute adjoint test
@@ -175,7 +159,7 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       ASSERT(dp1 < params.inverseTolerance.value());
       ASSERT(dp2 < params.inverseTolerance.value());
     }
-
+*/
     return 0;
   }
 

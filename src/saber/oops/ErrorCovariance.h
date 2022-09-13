@@ -28,6 +28,7 @@
 #include "oops/util/Printable.h"
 #include "oops/util/Timer.h"
 
+#include "saber/oops/ReadInputFields.h"
 #include "saber/oops/SaberBlockBase.h"
 #include "saber/oops/SaberBlockParametersBase.h"
 
@@ -49,7 +50,7 @@ class ErrorCovarianceParameters : public oops::ModelSpaceCovarianceParametersBas
   OOPS_CONCRETE_PARAMETERS(ErrorCovarianceParameters,
                            oops::ModelSpaceCovarianceParametersBase<MODEL>)
  public:
-  oops::RequiredParameter<std::vector<SaberBlockParametersWrapper<MODEL>>>
+  oops::RequiredParameter<std::vector<SaberBlockParametersWrapper>>
       saberBlocks{"saber blocks", this};
 };
 
@@ -61,9 +62,7 @@ class ErrorCovariance : public oops::ModelSpaceCovarianceBase<MODEL>,
                         private util::ObjectCounter<ErrorCovariance<MODEL>> {
   typedef oops::Geometry<MODEL>                           Geometry_;
   typedef oops::Increment<MODEL>                          Increment_;
-  typedef SaberBlockBase<MODEL>                           SaberBlockBase_;
-  typedef SaberBlockParametersWrapper<MODEL>              SaberBlockParametersWrapper_;
-  typedef typename boost::ptr_vector<SaberBlockBase_>     SaberBlockVec_;
+  typedef typename boost::ptr_vector<SaberBlockBase>      SaberBlockVec_;
   typedef typename SaberBlockVec_::iterator               iter_;
   typedef typename SaberBlockVec_::const_iterator         icst_;
   typedef typename SaberBlockVec_::const_reverse_iterator ircst_;
@@ -92,7 +91,7 @@ class ErrorCovariance : public oops::ModelSpaceCovarianceBase<MODEL>,
 
   void print(std::ostream &) const override;
 
-  std::unique_ptr<SaberBlockBase_> saberCentralBlock_;
+  std::unique_ptr<SaberBlockBase> saberCentralBlock_;
   SaberBlockVec_ saberBlocks_;
 };
 
@@ -102,7 +101,8 @@ template<typename MODEL>
 ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & resol,
                                         const oops::Variables & inputVars,
                                         const Parameters_ & params,
-                                        const State_ & xb, const State_ & fg)
+                                        const State_ & xb,
+                                        const State_ & fg)
   : oops::ModelSpaceCovarianceBase<MODEL>(resol, params, xb, fg), saberCentralBlock_(),
     saberBlocks_()
 {
@@ -112,7 +112,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & resol,
   oops::Variables vars_in(inputVars);
   oops::Variables vars_out;
 
-  for (const SaberBlockParametersWrapper_ & saberBlockParamWrapper :
+  for (const SaberBlockParametersWrapper & saberBlockParamWrapper :
        boost::adaptors::reverse(params.saberBlocks.value())) {
     const SaberBlockParametersBase & saberBlockParams = saberBlockParamWrapper.saberBlockParameters;
     vars_out = saberBlockParams.outputVars.value();
@@ -130,19 +130,41 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & resol,
     vars_in = saberBlockParams.inputVars.value();
   }
 
-  // Create SABER blocks
-  for (const SaberBlockParametersWrapper_ & saberBlockParamWrapper :
+  // Create SABER blocks and initialize them
+  for (const SaberBlockParametersWrapper & saberBlockParamWrapper :
        params.saberBlocks.value()) {
     const SaberBlockParametersBase & saberBlockParams = saberBlockParamWrapper.saberBlockParameters;
+
+    // Get block input fields
+    std::vector<atlas::FieldSet> fsetVec = readInputFields(
+      resol,
+      saberBlockParams.inputVars.value(),
+      xb.validTime(),
+      saberBlockParams.inputFields.value());
+
     if (saberBlockParams.saberCentralBlock.value()) {
       if (saberCentralBlock_ || (saberBlocks_.size() != 0)) {
         ABORT("Central block should be the first block, only one allowed!");
       } else {
-        saberCentralBlock_.reset(SaberBlockFactory<MODEL>::create(resol, saberBlockParams, xb,
-          fg));
+        // Create block
+        saberCentralBlock_.reset(SaberBlockFactory::create(resol.functionSpace(),
+                                                           resol.extraFields(),
+                                                           saberBlockParams,
+                                                           xb.fieldSet(),
+                                                           fg.fieldSet()));
+
+        // Initialize block
+        saberCentralBlock_->initialize(fsetVec);
       }
     } else {
-      saberBlocks_.push_back(SaberBlockFactory<MODEL>::create(resol, saberBlockParams, xb, fg));
+      // Create block
+      saberBlocks_.push_back(SaberBlockFactory::create(resol.functionSpace(),
+                                                       resol.extraFields(),
+                                                       saberBlockParams,
+                                                       xb.fieldSet(),
+                                                       fg.fieldSet()));
+      // Initialize block
+      saberBlocks_.back().initialize(fsetVec);
     }
   }
 

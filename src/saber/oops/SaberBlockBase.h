@@ -15,8 +15,6 @@
 
 #include <boost/noncopyable.hpp>
 
-#include "oops/base/Geometry.h"
-#include "oops/base/State.h"
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/AssociativeContainers.h"
@@ -34,11 +32,12 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-template <typename MODEL>
 class SaberBlockBase : public util::Printable, private boost::noncopyable {
  public:
   explicit SaberBlockBase(const SaberBlockParametersBase & params);
   virtual ~SaberBlockBase() {}
+
+  virtual void initialize(const std::vector<atlas::FieldSet> &) = 0;
 
   virtual void randomize(atlas::FieldSet &) const = 0;
   virtual void multiply(atlas::FieldSet &) const = 0;
@@ -56,37 +55,32 @@ class SaberBlockBase : public util::Printable, private boost::noncopyable {
 
 // -----------------------------------------------------------------------------
 
-template <typename MODEL>
-SaberBlockBase<MODEL>::SaberBlockBase(const SaberBlockParametersBase & params)
+SaberBlockBase::SaberBlockBase(const SaberBlockParametersBase & params)
   : iterativeInverse_(params.iterativeInverse.value()), name_(params.saberBlockName.value()) {}
 
 // =============================================================================
 
-template <typename MODEL>
 class SaberBlockFactory;
 
 // -----------------------------------------------------------------------------
 
-template <typename MODEL>
 class SaberBlockParametersWrapper : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(SaberBlockParametersWrapper, Parameters)
  public:
-  oops::RequiredPolymorphicParameter<SaberBlockParametersBase, SaberBlockFactory<MODEL>>
+  oops::RequiredPolymorphicParameter<SaberBlockParametersBase, SaberBlockFactory>
     saberBlockParameters{"saber block name", this};
 };
 
 // =============================================================================
 
-template <typename MODEL>
 class SaberBlockFactory {
-  typedef oops::Geometry<MODEL> Geometry_;
-  typedef oops::State<MODEL>    State_;
 
  public:
-  static SaberBlockBase<MODEL> * create(const Geometry_ &,
-                                        const SaberBlockParametersBase &,
-                                        const State_ & xb,
-                                        const State_ & fg);
+  static SaberBlockBase * create(const atlas::FunctionSpace &,
+                                 const atlas::FieldSet &,
+                                 const SaberBlockParametersBase &,
+                                 const atlas::FieldSet &,
+                                 const atlas::FieldSet &);
 
   static std::unique_ptr<SaberBlockParametersBase> createParameters(const std::string &name);
 
@@ -100,32 +94,32 @@ class SaberBlockFactory {
   explicit SaberBlockFactory(const std::string &name);
 
  private:
-  virtual SaberBlockBase<MODEL> * make(const Geometry_ &,
-                                       const SaberBlockParametersBase &,
-                                       const State_ &,
-                                       const State_ &) = 0;
+  virtual SaberBlockBase * make(const atlas::FunctionSpace &,
+                                const atlas::FieldSet &,
+                                const SaberBlockParametersBase &,
+                                const atlas::FieldSet &,
+                                const atlas::FieldSet &) = 0;
 
   virtual std::unique_ptr<SaberBlockParametersBase> makeParameters() const = 0;
 
-  static std::map < std::string, SaberBlockFactory<MODEL> * > & getMakers() {
-    static std::map < std::string, SaberBlockFactory<MODEL> * > makers_;
+  static std::map < std::string, SaberBlockFactory * > & getMakers() {
+    static std::map < std::string, SaberBlockFactory * > makers_;
     return makers_;
   }
 };
 
 // -----------------------------------------------------------------------------
 
-template<class MODEL, class T>
-class SaberBlockMaker : public SaberBlockFactory<MODEL> {
+template<class T>
+class SaberBlockMaker : public SaberBlockFactory {
   typedef typename T::Parameters_ Parameters_;
-  typedef oops::Geometry<MODEL>   Geometry_;
-  typedef oops::State<MODEL>      State_;
 
-  SaberBlockBase<MODEL> * make(const Geometry_ & geom,
-                               const SaberBlockParametersBase & params,
-                               const State_ & xb,
-                               const State_ & fg) override {
-    return new T(geom, dynamic_cast<const Parameters_&>(params), xb, fg);
+  SaberBlockBase * make(const atlas::FunctionSpace & functionSpace,
+                        const atlas::FieldSet & extraFields,
+                        const SaberBlockParametersBase & params,
+                        const atlas::FieldSet & xb,
+                        const atlas::FieldSet & fg) override {
+    return new T(functionSpace, extraFields, dynamic_cast<const Parameters_&>(params), xb, fg);
   }
 
   std::unique_ptr<SaberBlockParametersBase> makeParameters() const override {
@@ -133,13 +127,12 @@ class SaberBlockMaker : public SaberBlockFactory<MODEL> {
   }
 
  public:
-  explicit SaberBlockMaker(const std::string & name) : SaberBlockFactory<MODEL>(name) {}
+  explicit SaberBlockMaker(const std::string & name) : SaberBlockFactory(name) {}
 };
 
 // -----------------------------------------------------------------------------
 
-template <typename MODEL>
-SaberBlockFactory<MODEL>::SaberBlockFactory(const std::string & name) {
+SaberBlockFactory::SaberBlockFactory(const std::string & name) {
   if (getMakers().find(name) != getMakers().end()) {
     oops::Log::error() << name << " already registered in saber::SaberBlockFactory." << std::endl;
     ABORT("Element already registered in saber::SaberBlockFactory.");
@@ -149,29 +142,28 @@ SaberBlockFactory<MODEL>::SaberBlockFactory(const std::string & name) {
 
 // -----------------------------------------------------------------------------
 
-template <typename MODEL>
-SaberBlockBase<MODEL> * SaberBlockFactory<MODEL>::create(const Geometry_ & geom,
-                                                         const SaberBlockParametersBase & params,
-                                                         const State_& xb,
-                                                         const State_ & fg) {
-  oops::Log::trace() << "SaberBlockBase<MODEL>::create starting" << std::endl;
+SaberBlockBase * SaberBlockFactory::create(const atlas::FunctionSpace & functionSpace,
+                                           const atlas::FieldSet & extraFields,
+                                           const SaberBlockParametersBase & params,
+                                           const atlas::FieldSet & xb,
+                                           const atlas::FieldSet & fg) {
+  oops::Log::trace() << "SaberBlockBase::create starting" << std::endl;
   const std::string id = params.saberBlockName.value();
-  typename std::map<std::string, SaberBlockFactory<MODEL>*>::iterator jsb = getMakers().find(id);
+  typename std::map<std::string, SaberBlockFactory*>::iterator jsb = getMakers().find(id);
   if (jsb == getMakers().end()) {
     oops::Log::error() << id << " does not exist in saber::SaberBlockFactory." << std::endl;
     ABORT("Element does not exist in saber::SaberBlockFactory.");
   }
-  SaberBlockBase<MODEL> * ptr = jsb->second->make(geom, params, xb, fg);
-  oops::Log::trace() << "SaberBlockBase<MODEL>::create done" << std::endl;
+  SaberBlockBase * ptr = jsb->second->make(functionSpace, extraFields, params, xb, fg);
+  oops::Log::trace() << "SaberBlockBase::create done" << std::endl;
   return ptr;
 }
 
 // -----------------------------------------------------------------------------
 
-template <typename MODEL>
 std::unique_ptr<SaberBlockParametersBase>
-SaberBlockFactory<MODEL>::createParameters(const std::string &name) {
-  typename std::map<std::string, SaberBlockFactory<MODEL>*>::iterator it =
+SaberBlockFactory::createParameters(const std::string &name) {
+  typename std::map<std::string, SaberBlockFactory*>::iterator it =
       getMakers().find(name);
   if (it == getMakers().end()) {
     throw std::runtime_error(name + " does not exist in saber::SaberBlockFactory");

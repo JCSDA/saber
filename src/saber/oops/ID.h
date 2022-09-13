@@ -12,9 +12,6 @@
 #include <string>
 #include <vector>
 
-#include "oops/base/Geometry.h"
-#include "oops/base/Variables.h"
-
 #include "saber/oops/SaberBlockBase.h"
 #include "saber/oops/SaberBlockParametersBase.h"
 
@@ -32,21 +29,20 @@ class IDParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-template <typename MODEL>
-class ID : public SaberBlockBase<MODEL> {
-  typedef oops::Geometry<MODEL>  Geometry_;
-  typedef oops::State<MODEL>     State_;
-
+class ID : public SaberBlockBase {
  public:
   static const std::string classname() {return "saber::ID";}
 
   typedef IDParameters Parameters_;
 
-  ID(const Geometry_ &,
+  ID(const atlas::FunctionSpace &,
+     const atlas::FieldSet &,
      const Parameters_ &,
-     const State_ &,
-     const State_ &);
+     const atlas::FieldSet &,
+     const atlas::FieldSet &);
   virtual ~ID();
+
+  void initialize(const std::vector<atlas::FieldSet> &) override;
 
   void randomize(atlas::FieldSet &) const override;
   void multiply(atlas::FieldSet &) const override;
@@ -60,12 +56,12 @@ class ID : public SaberBlockBase<MODEL> {
 
 // -----------------------------------------------------------------------------
 
-template<typename MODEL>
-ID<MODEL>::ID(const Geometry_ & resol,
-              const Parameters_ & params,
-              const State_ & xb,
-              const State_ & fg)
-  : SaberBlockBase<MODEL>(params)
+ID::ID(const atlas::FunctionSpace & functionSpace,
+       const atlas::FieldSet & extraFields,
+       const Parameters_ & params,
+       const atlas::FieldSet & xb,
+       const atlas::FieldSet & fg)
+  : SaberBlockBase(params)
 {
   oops::Log::trace() << classname() << "::ID starting" << std::endl;
   oops::Log::trace() << classname() << "::ID done" << std::endl;
@@ -73,8 +69,7 @@ ID<MODEL>::ID(const Geometry_ & resol,
 
 // -----------------------------------------------------------------------------
 
-template<typename MODEL>
-ID<MODEL>::~ID() {
+ID::~ID() {
   oops::Log::trace() << classname() << "::~ID starting" << std::endl;
   util::Timer timer(classname(), "~ID");
   oops::Log::trace() << classname() << "::~ID done" << std::endl;
@@ -82,48 +77,49 @@ ID<MODEL>::~ID() {
 
 // -----------------------------------------------------------------------------
 
-template<typename MODEL>
-void ID<MODEL>::randomize(atlas::FieldSet & fset) const {
+void ID::initialize(const std::vector<atlas::FieldSet> & fsetVec) {
+  oops::Log::trace() << classname() << "::initialize starting" << std::endl;
+  oops::Log::trace() << classname() << "::initialize done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void ID::randomize(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::randomize starting" << std::endl;
   oops::Log::trace() << classname() << "::randomize done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-template<typename MODEL>
-void ID<MODEL>::multiply(atlas::FieldSet & fset) const {
+void ID::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-template<typename MODEL>
-void ID<MODEL>::inverseMultiply(atlas::FieldSet & fset) const {
+void ID::inverseMultiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::inverseMultiply starting" << std::endl;
   oops::Log::trace() << classname() << "::inverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-template<typename MODEL>
-void ID<MODEL>::multiplyAD(atlas::FieldSet & fset) const {
+void ID::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-template<typename MODEL>
-void ID<MODEL>::inverseMultiplyAD(atlas::FieldSet & fset) const {
+void ID::inverseMultiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::inverseMultiplyAD starting" << std::endl;
   oops::Log::trace() << classname() << "::inverseMultiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-template<typename MODEL>
-void ID<MODEL>::print(std::ostream & os) const {
+void ID::print(std::ostream & os) const {
   os << classname();
 }
 

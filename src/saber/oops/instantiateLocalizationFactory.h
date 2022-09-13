@@ -20,7 +20,7 @@ namespace saber {
 template <typename MODEL> void instantiateLocalizationFactory() {
   static oops::LocalizationMaker<MODEL, Localization<MODEL> >  makerSABER_("SABER");
 
-  instantiateSaberBlockFactory<MODEL>();
+  instantiateSaberBlockFactory();
 }
 
 // -----------------------------------------------------------------------------

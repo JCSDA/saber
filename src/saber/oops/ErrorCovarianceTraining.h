@@ -245,6 +245,20 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
          ens2.reset(new Ensemble_(*geom2, inputVars, *ensemble2Base, *ensemble2Pairs));
       }
     }
+/* TODO(Benjamin)
+    // Get fieldsets
+    const atlas::FieldSet * xxFset = xx.fieldSet();
+    std::vector<const atlas::FieldSet *> ens1Fset;
+    if (ens1) {
+      for (int ie = 0; ie < ens1->size(); ++ie) {
+        ens1Fset.push_back((*ens1)[ie].fieldSet());
+      }
+    }
+    if (ens2) {
+      for (int ie = 0; ie < ens2->size(); ++ie) {
+        ens2Fset.push_back((*ens2)[ie].fieldSet());
+      }
+    }
 
     // Select SABER library training
 
@@ -252,9 +266,18 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
     const boost::optional<BUMP_Parameters<MODEL>> &bumpParams = params.bumpParams.value();
     if (bumpParams != boost::none) {
       // Do training
-      BUMP_ bump(geom1, *geom2, inputVars, *bumpParams, xx, xx, ens1, ens2);
+      BUMP_ bump(geom1.functionSpace(),
+                 geom1.extraFields(),
+                 geom2->functionSpace(),
+                 geom2->extraFields(),
+                 inputVars,
+                 *bumpParams,
+                 xxFset,
+                 xxFset,
+                 ens1Fset,
+                 ens2Fset);
     }
-
+*/
     // Delete pointer
     if (geom2Params != boost::none) {
       delete geom2;

@@ -21,6 +21,9 @@ if( oops_FOUND )
     instantiateLocalizationFactory.h
     instantiateSaberBlockFactory.h
 
+    # Utilities
+    ReadInputFields.h
+
     # Drivers
     ErrorCovariance.h
     Localization.h
