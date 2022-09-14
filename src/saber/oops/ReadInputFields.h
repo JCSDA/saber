@@ -54,7 +54,7 @@ std::vector<atlas::FieldSet> readInputFields(
 
         // Transform Increment into FieldSet               
         std::string name = inputField.getString("parameter");
-        oops::Log::test() << "Reading " << name << std::endl;
+        oops::Log::test() << "Norm of " << name << ":" << dx.norm() << std::endl;
         atlas::FieldSet fset;
         fset.name() = name;
         for (const atlas::Field field : dx.fieldSet()) {

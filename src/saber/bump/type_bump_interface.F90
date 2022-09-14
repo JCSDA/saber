@@ -611,7 +611,7 @@ type(bump_type),pointer :: bump
 call bump_registry%get(key_bump,bump)
 
 ! Call Fortran
-call bump%set_ncmp(igeom+1,c_ncmp)
+call bump%set_ncmp(igeom,c_ncmp)
 
 end subroutine bump_set_ncmp_c
 

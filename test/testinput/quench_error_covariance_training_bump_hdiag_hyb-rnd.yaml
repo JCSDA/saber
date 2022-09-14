@@ -58,15 +58,15 @@ bump:
   prefix: quench_error_covariance_training_bump_hdiag_hyb-rnd/test
   strategy: specific_univariate
   write_hdiag: true
-  output:
-  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-rnd/loc_rh
-    parameter: loc_rh
-  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-rnd/loc_rv
-    parameter: loc_rv
-  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-rnd/hyb_coef_ens
-    parameter: hyb_coef_ens
-  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-rnd/hyb_coef_sta
-    parameter: hyb_coef_sta
+output:
+- filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-rnd/loc_rh
+  parameter: loc_rh
+- filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-rnd/loc_rv
+  parameter: loc_rv
+- filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-rnd/hyb_coef_ens
+  parameter: hyb_coef_ens
+- filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-rnd/hyb_coef_sta
+  parameter: hyb_coef_sta
 
 test:
   reference filename: testref/quench_error_covariance_training_bump_hdiag_hyb-rnd/test.log.out

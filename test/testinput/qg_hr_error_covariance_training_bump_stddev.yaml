@@ -10,11 +10,11 @@ bump:
   var_niter: 1
   var_rhflt:
     q: [2000.0e3]
-  output:
-  - datadir: testdata/qg_hr_error_covariance_training_bump_stddev
-    exp: stddev
-    parameter: stddev
-    type: an
+output:
+- datadir: testdata/qg_hr_error_covariance_training_bump_stddev
+  exp: stddev
+  parameter: stddev
+  type: an
 ensemble:
   members from template:
     template:

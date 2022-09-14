@@ -17,23 +17,18 @@ bump:
   latdir: [15.0,15.0,15.0,15.0,15.0,45.0,45.0,45.0,45.0,45.0,45.0,75.0,75.0,75.0]
   levdir: [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
   ivdir: [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-  input number of components:
-    filepath: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/ncmp
-  input:
-  - component: 1
-    filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/nicas_norm_1.an.2010-01-01T12:00:00Z.nc
-    parameter: nicas_norm
-  - component: 2
-    filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/nicas_norm_2.an.2010-01-01T12:00:00Z.nc
-    parameter: nicas_norm
-  - component: 3
-    filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/nicas_norm_3.an.2010-01-01T12:00:00Z.nc
-    parameter: nicas_norm
-  output:
-  - datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp_load_nicas
-    exp: dirac_nicas
-    parameter: dirac_nicas
-    type: an
+input fields:
+- parameter: nicas_norm::1
+  filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/nicas_norm_1.an.2010-01-01T12:00:00Z.nc
+- parameter: nicas_norm::2
+  filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/nicas_norm_2.an.2010-01-01T12:00:00Z.nc
+- parameter: nicas_norm::3
+  filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/nicas_norm_3.an.2010-01-01T12:00:00Z.nc
+output:
+- parameter: dirac_nicas
+  datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp_load_nicas
+  exp: dirac_nicas
+  type: an
 ensemble:
   members from template:
     template:

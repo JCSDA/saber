@@ -21,11 +21,6 @@ bump:
   latdir: [15.0,15.0,15.0,15.0,15.0,45.0,45.0,45.0,45.0,45.0,45.0,75.0,75.0,75.0]
   levdir: [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
   ivdir: [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-  output:
-  - datadir: testdata/qg_error_covariance_training_bump_vbal_update
-    exp: dirac_vbal
-    parameter: dirac_vbal
-    type: an
   ensemble:
     members from template:
       template:
@@ -33,6 +28,11 @@ bump:
         filename: testdata/qg_gen_ens_pert_B/forecast.ens.%mem%.2009-12-31T00:00:00Z.P1DT12H.nc
       pattern: '%mem%'
       nmembers: 10
+output:
+- datadir: testdata/qg_error_covariance_training_bump_vbal_update
+  exp: dirac_vbal
+  parameter: dirac_vbal
+  type: an
 geometry:
   nx: 40
   ny: 20

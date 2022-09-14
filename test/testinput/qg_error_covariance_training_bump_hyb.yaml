@@ -26,27 +26,27 @@ bump:
   strategy: common
   write_hdiag: true
   write_nicas_local: true
-  output:
-  - datadir: testdata/qg_error_covariance_training_bump_hyb
-    exp: loc_rh
-    parameter: loc_rh
-    type: an
-  - datadir: testdata/qg_error_covariance_training_bump_hyb
-    exp: loc_rv
-    parameter: loc_rv
-    type: an
-  - datadir: testdata/qg_error_covariance_training_bump_hyb
-    exp: hyb_coef_ens
-    parameter: hyb_coef_ens
-    type: an
-  - datadir: testdata/qg_error_covariance_training_bump_hyb
-    exp: hyb_coef_sta
-    parameter: hyb_coef_sta
-    type: an
-  - datadir: testdata/qg_error_covariance_training_bump_hyb
-    exp: nicas_norm
-    parameter: nicas_norm
-    type: an
+output:
+- datadir: testdata/qg_error_covariance_training_bump_hyb
+  exp: loc_rh
+  parameter: loc_rh
+  type: an
+- datadir: testdata/qg_error_covariance_training_bump_hyb
+  exp: loc_rv
+  parameter: loc_rv
+  type: an
+- datadir: testdata/qg_error_covariance_training_bump_hyb
+  exp: hyb_coef_ens
+  parameter: hyb_coef_ens
+  type: an
+- datadir: testdata/qg_error_covariance_training_bump_hyb
+  exp: hyb_coef_sta
+  parameter: hyb_coef_sta
+  type: an
+- datadir: testdata/qg_error_covariance_training_bump_hyb
+  exp: nicas_norm
+  parameter: nicas_norm
+  type: an
 ensemble:
   members from template:
     template:

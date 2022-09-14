@@ -338,6 +338,7 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
 
       // Load ensemble members sequentially
       if (bump->memberConfig1().size() > 0) {
+        ens1_ne = bump->memberConfig1().size();
         Increment_ dx1(geom1, inputVars, xx.validTime());
 
         for (size_t ie = 0; ie < ens1_ne; ++ie) {
@@ -368,6 +369,7 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
         }
       }
       if (bump->memberConfig2().size() > 0) {
+        ens2_ne = bump->memberConfig2().size();
         Increment_ dx2(*geom2, inputVars, xx.validTime());
 
         for (size_t ie = 0; ie < ens2_ne; ++ie) {

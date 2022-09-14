@@ -21,11 +21,11 @@ bump:
   latdir: [15.0,15.0,15.0,15.0,15.0,45.0,45.0,45.0,45.0,45.0,45.0,75.0,75.0,75.0]
   levdir: [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
   ivdir: [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-  output:
-  - datadir: testdata/qg_error_covariance_training_bump_vbal_new
-    exp: dirac_vbal
-    parameter: dirac_vbal
-    type: an
+output:
+- datadir: testdata/qg_error_covariance_training_bump_vbal_new
+  exp: dirac_vbal
+  parameter: dirac_vbal
+  type: an
 ensemble:
   members from template:
     template:

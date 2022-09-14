@@ -94,11 +94,11 @@ class BUMP {
   void partialDealloc() const;
 
  private:
-  const oops::Variables activeVars_;
   BUMP_Parameters params_;
+  const oops::Variables activeVars_;
+  std::vector<int> keyBUMP_;
   std::vector<eckit::LocalConfiguration> membersConfig1_;
   std::vector<eckit::LocalConfiguration> membersConfig2_;
-  std::vector<int> keyBUMP_;
   std::vector<oops::Variables> activeVarsPerGrid_;
 };
 

@@ -18,56 +18,45 @@ bump:
   latdir: [15.0,15.0,15.0,15.0,15.0,45.0,45.0,45.0,45.0,45.0,45.0,75.0,75.0,75.0]
   levdir: [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
   ivdir: [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-  input number of components:
-    filepath: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/ncmp
-  input:
-  - component: 1
-    filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/cor_a_1.an.2010-01-01T12:00:00Z.nc
-    parameter: a
-  - component: 2
-    filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/cor_a_2.an.2010-01-01T12:00:00Z.nc
-    parameter: a
-  - component: 3
-    filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/cor_a_3.an.2010-01-01T12:00:00Z.nc
-    parameter: a
-  - component: 1
-    filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/cor_rh_1.an.2010-01-01T12:00:00Z.nc
-    parameter: rh
-  - component: 2
-    filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/cor_rh_2.an.2010-01-01T12:00:00Z.nc
-    parameter: rh
-  - component: 3
-    filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/cor_rh_3.an.2010-01-01T12:00:00Z.nc
-    parameter: rh
-  - component: 1
-    filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/cor_rv_1.an.2010-01-01T12:00:00Z.nc
-    parameter: rv
-  - component: 2
-    filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/cor_rv_2.an.2010-01-01T12:00:00Z.nc
-    parameter: rv
-  - component: 3
-    filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/cor_rv_3.an.2010-01-01T12:00:00Z.nc
-    parameter: rv
-  output:
-  - datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp_load_cor
-    exp: dirac_nicas
-    parameter: dirac_nicas
-    type: an
-  - component: 1
-    datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp_load_cor
-    exp: nicas_norm_1
-    parameter: nicas_norm
-    type: an
-  - component: 2
-    datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp_load_cor
-    exp: nicas_norm_2
-    parameter: nicas_norm
-    type: an
-  - component: 3
-    datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp_load_cor
-    exp: nicas_norm_3
-    parameter: nicas_norm
-    type: an
+input:
+- parameter: a::1
+  filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/cor_a_1.an.2010-01-01T12:00:00Z.nc
+- parameter: a::2
+  filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/cor_a_2.an.2010-01-01T12:00:00Z.nc
+- parameter: a::3
+  filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/cor_a_3.an.2010-01-01T12:00:00Z.nc
+- parameter: rh::1
+  filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/cor_rh_1.an.2010-01-01T12:00:00Z.nc
+- parameter: rh::2
+  filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/cor_rh_2.an.2010-01-01T12:00:00Z.nc
+- parameter: rh::3
+  filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/cor_rh_3.an.2010-01-01T12:00:00Z.nc
+- parameter: rv::1
+  filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/cor_rv_1.an.2010-01-01T12:00:00Z.nc
+- parameter: rv::2
+  filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/cor_rv_2.an.2010-01-01T12:00:00Z.nc
+- parameter: rv::3
+  filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/cor_rv_3.an.2010-01-01T12:00:00Z.nc
+output:
+- datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp_load_cor
+  exp: dirac_nicas
+  parameter: dirac_nicas
+  type: an
+- component: 1
+  datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp_load_cor
+  exp: nicas_norm_1
+  parameter: nicas_norm
+  type: an
+- component: 2
+  datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp_load_cor
+  exp: nicas_norm_2
+  parameter: nicas_norm
+  type: an
+- component: 3
+  datadir: testdata/qg_hr_error_covariance_training_bump_cov_ncmp_load_cor
+  exp: nicas_norm_3
+  parameter: nicas_norm
+  type: an
 ensemble:
   members from template:
     template:
