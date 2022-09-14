@@ -15,11 +15,12 @@ if( atlas_TRANS_FOUND )
     CovarianceStatistics.h
     CovarianceStatisticsUtils.h
     spectralb.h
+    spectralbnointerp.h
     spectralb_covstats_interface.h
     spectralb_covstats_interface.F90
     spectralbParameters.h
     SPCTRL_Cov.h
-
+    SPNOINTERP_Cov.h
     )
 endif()
 

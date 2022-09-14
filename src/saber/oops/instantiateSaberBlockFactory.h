@@ -22,6 +22,7 @@
 #include "saber/oops/StdDev.h"
 #if atlas_TRANS_FOUND
   #include "saber/spectralb/SPCTRL_Cov.h"
+  #include "saber/spectralb/SPNOINTERP_Cov.h"
 #endif
 #if ENABLE_VADER
   #if ENABLE_VADER_MO
@@ -66,6 +67,8 @@ void instantiateSaberBlockFactory() {
   // Spectral B
   static SaberBlockMaker<MODEL, spectralb::SPCTRL_COV<MODEL> >
          makerSPCTRL_COV_("SPCTRL_COV");
+  static SaberBlockMaker<MODEL, spectralb::SPNOINTERP_COV<MODEL> >
+         makerSPNOINTERP_COV_("SPNOINTERP_COV");
 #endif
 
 #if ENABLE_VADER
