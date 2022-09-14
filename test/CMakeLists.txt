@@ -192,7 +192,7 @@ endif()
 
 # Define branch name
 if( DEFINED ENV{SABER_TESTFILES_BRANCH} )
-    # Branch specified by environment
+    # Branch specified by environment
     set( GIT_BRANCH_SABER $ENV{SABER_TESTFILES_BRANCH} )
     message( STATUS "Branch name provided by user: ${GIT_BRANCH_SABER}" )
 else()
@@ -255,14 +255,14 @@ else( DEFINED GIT_TAG_FUNC )
     set ( SOURCE_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME} )
     set ( DEST_FILE ${CMAKE_BINARY_DIR}/bin/${FILENAME} )
 
-    # Set configure file
+    # Set configure file
     if( EXISTS "${SOURCE_FILE}.in" )
       configure_file( ${SOURCE_FILE}.in ${DEST_FILE} @ONLY )
     else()
       configure_file( ${SOURCE_FILE}    ${DEST_FILE} @ONLY )
     endif()
 
-    # Add download script
+    # Add download script
     add_custom_target( bin_saber_test_download_script ALL
                        COMMAND chmod +x ${DEST_FILE}
                        DEPENDS ${DEST_FILE} )
@@ -513,7 +513,7 @@ endif()
 
 # Post-comparisons (between tests)
 
-# Compare read and write tests
+# Compare read and write tests
 list( APPEND read-write_test mom )
 list( APPEND read-write_test nicas_global )
 list( APPEND read-write_test nicas_local )
@@ -574,7 +574,7 @@ foreach( test ${read-write_test} )
 endforeach()
 
 if( SABER_TEST_TIER GREATER 1 )
-    # Compare ensemble-based and covariance-based vertical balance
+    # Compare ensemble-based and covariance-based vertical balance
     ecbuild_add_test( TARGET       saber_test_bump_vbal_ens-cov_post
                       TYPE SCRIPT
                       COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
@@ -913,6 +913,15 @@ if( SABER_TEST_SPECTRALB )
   foreach( test ${saber_test_spectralb} )
       string( FIND ${test} "quench_saber_block_test" quench )
       if( quench MATCHES 0 )
+          if ( test MATCHES quench_saber_block_test_spectralb_from_CS )
+              set( mpi 1 )
+          elseif(  test MATCHES quench_saber_block_test_spectralb_from_L15  )
+              set( mpi 1 )
+          elseif(  test MATCHES quench_saber_block_test_spectralb  )
+              set( mpi 4 )
+          else()
+              set( mpi 1 )
+          endif ()
           ecbuild_add_test( TARGET saber_test_${test}
                             MPI ${mpi}
                             OMP ${omp}

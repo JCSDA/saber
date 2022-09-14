@@ -117,15 +117,12 @@ class SpectralB {
             const Parameters_ &);
   ~SpectralB();
 
-  void randomize(atlas::FieldSet & modelGridFieldSet) const;
   void multiply_InterpAndCov(atlas::FieldSet &) const;
-  void inverseMultiply(atlas::FieldSet & modelGridFieldSet) const;
   static atlas::FieldSet createFieldsSpace(const atlas::FunctionSpace &,
                                            const std::vector<size_t> &,
                                            const oops::Variables &);
 
  private:
-  void print(std::ostream &) const;
   std::shared_ptr<const atlas::FieldSet> modelFieldSet_;
   std::vector<std::string> gaussNames_;
   atlas::StructuredGrid gaussGrid_;
@@ -198,30 +195,6 @@ void SpectralB::multiply_InterpAndCov(atlas::FieldSet & modelGridFieldSet) const
 
   oops::Log::trace() << "SpectralB multiply_InterpAndCov end"
                      << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-void SpectralB::inverseMultiply(atlas::FieldSet & modelGridFieldSet) const {
-  std::string err_message =
-    "saber::SpectralB::inverseMultiply not implemented ";
-  throw eckit::NotImplemented(err_message, Here());
-  oops::Log::trace() << "SpectralB inverseMultiply" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-void SpectralB::randomize(atlas::FieldSet & modelGridFieldSet) const {
-  oops::Log::trace() << "SpectralB randomize" << std::endl;
-  std::string err_message =
-    "saber::SpectralB::randomise not implemented ";
-  throw eckit::NotImplemented(err_message, Here());
-}
-
-// -----------------------------------------------------------------------------
-
-void SpectralB::print(std::ostream & os) const {
-  os << "SpectralB::print not implemented";
 }
 
 // -----------------------------------------------------------------------------

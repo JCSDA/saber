@@ -12,15 +12,18 @@ list(APPEND spectralb_src_files_list
 if( atlas_TRANS_FOUND )
     list(APPEND spectralb_src_files_list
 
+    CovarianceStatistics.cc
     CovarianceStatistics.h
     CovarianceStatisticsUtils.h
     spectralb.h
+    spectralbnointerp.h
     spectralb_covstats_interface.h
     spectralb_covstats_interface.F90
     spectralbParameters.h
     SPCTRL_Cov.cc
     SPCTRL_Cov.h
-
+    SPNOINTERP_Cov.cc
+    SPNOINTERP_Cov.h
     )
 endif()
 

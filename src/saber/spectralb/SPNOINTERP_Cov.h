@@ -5,22 +5,22 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_SPECTRALB_SPCTRL_COV_H_
-#define SABER_SPECTRALB_SPCTRL_COV_H_
+#ifndef SABER_SPECTRALB_SPNOINTERP_COV_H_
+#define SABER_SPECTRALB_SPNOINTERP_COV_H_
 
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "atlas/field.h"
+#include "atlas/functionspace.h"
 
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 
 #include "saber/oops/SaberBlockBase.h"
 #include "saber/oops/SaberBlockParametersBase.h"
-
-#include "saber/spectralb/spectralb.h"
+#include "saber/spectralb/spectralbnointerp.h"
 #include "saber/spectralb/spectralbParameters.h"
 
 namespace oops {
@@ -32,8 +32,8 @@ namespace spectralb {
 
 // -----------------------------------------------------------------------------
 
-class SPCTRL_COVParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(SPCTRL_COVParameters, SaberBlockParametersBase)
+class SPNOINTERP_COVParameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(SPNOINTERP_COVParameters, SaberBlockParametersBase)
 
  public:
   oops::RequiredParameter<spectralbParameters> spectralbParams{"spectralb", this};
@@ -41,21 +41,21 @@ class SPCTRL_COVParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class SPCTRL_COV : public SaberBlockBase {
+class SPNOINTERP_COV : public SaberBlockBase {
  public:
-  static const std::string classname() {return "saber::lfricspectralb::SPCTRL_COV";}
+  static const std::string classname() {return "saber::lfricspectralb::SPNOINTERP_COV";}
 
-  typedef SPCTRL_COVParameters Parameters_;
+  typedef SPNOINTERP_COVParameters Parameters_;
 
-  SPCTRL_COV(const eckit::mpi::Comm &,
-             const atlas::FunctionSpace &,
-             const atlas::FieldSet &,
-             const std::vector<size_t> &,
-             const Parameters_ &,
-             const atlas::FieldSet &,
-             const atlas::FieldSet &,
-             const std::vector<atlas::FieldSet> &);
-  virtual ~SPCTRL_COV();
+  SPNOINTERP_COV(const eckit::mpi::Comm &,
+                 const atlas::FunctionSpace &,
+                 const atlas::FieldSet &,
+                 const std::vector<size_t> &,
+                 const Parameters_ &,
+                 const atlas::FieldSet &,
+                 const atlas::FieldSet &,
+                 const std::vector<atlas::FieldSet> &);
+  virtual ~SPNOINTERP_COV();
 
   void randomize(atlas::FieldSet &) const override;
   void multiply(atlas::FieldSet &) const override;
@@ -65,7 +65,7 @@ class SPCTRL_COV : public SaberBlockBase {
 
  private:
   void print(std::ostream &) const override;
-  std::unique_ptr<SpectralB> spectralb_;
+  std::unique_ptr<SpectralBNoInterp> spectralb_;
 };
 
 // -----------------------------------------------------------------------------
@@ -73,4 +73,4 @@ class SPCTRL_COV : public SaberBlockBase {
 }  // namespace spectralb
 }  // namespace saber
 
-#endif  // SABER_SPECTRALB_SPCTRL_COV_H_
+#endif  // SABER_SPECTRALB_SPNOINTERP_COV_H_

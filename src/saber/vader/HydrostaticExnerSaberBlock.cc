@@ -155,6 +155,11 @@ void HydrostaticExnerSaberBlock::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   mo::evalHydrostaticPressureTL(fset, augmentedStateFieldSet_);
   mo::evalHydrostaticExnerTL(fset, augmentedStateFieldSet_);
+  const auto hydrostaticPressureView =
+      atlas::array::make_view<const double, 2>(fset["hydrostatic_pressure_levels"]);
+  auto airPressureView =
+      atlas::array::make_view<double, 2>(fset["air_pressure_levels"]);
+  airPressureView.assign(hydrostaticPressureView);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
@@ -170,6 +175,17 @@ void HydrostaticExnerSaberBlock::inverseMultiply(atlas::FieldSet & fset) const {
 
 void HydrostaticExnerSaberBlock::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
+  auto airPressureView =
+      atlas::array::make_view<double, 2>(fset["air_pressure_levels"]);
+  auto hydrostaticPressureView =
+      atlas::array::make_view<double, 2>(fset["hydrostatic_pressure_levels"]);
+
+  for (atlas::idx_t jn = 0; jn < fset["hydrostatic_exner_levels"].shape(0); ++jn) {
+    for (atlas::idx_t jl = 0; jl < fset["hydrostatic_exner_levels"].shape(1); ++jl) {
+      hydrostaticPressureView(jn, jl) += airPressureView(jn, jl);
+      airPressureView(jn, jl) = 0.0;
+    }
+  }
   mo::evalHydrostaticExnerAD(fset, augmentedStateFieldSet_);
   mo::evalHydrostaticPressureAD(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
