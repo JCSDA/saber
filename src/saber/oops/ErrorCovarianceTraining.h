@@ -392,6 +392,56 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
 
       // Partial deallocation
       bump->partialDealloc();
+
+      // Apply operators
+      const boost::optional<std::vector<eckit::LocalConfiguration>>
+        &appConfs = bumpParams->appConfs.value();
+      if (appConfs != boost::none) {
+        oops::Log::info() <<
+        "-------------------------------------------------------------------" << std::endl;
+        oops::Log::info() << "--- Apply operators" << std::endl;
+        if (appConfs->size() > 0) {
+          for (const auto & appConf : *appConfs) {
+            // Read input file
+            eckit::LocalConfiguration inputConf(appConf, "input");
+            oops::Log::info() << "       - Input file: " << inputConf << std::endl;
+            Increment_ dx1(geom1, inputVars, xx.validTime());
+            dx1.read(inputConf);
+
+            // Apply BUMP operator
+            std::vector<std::string> bumpOperators;
+            appConf.get("bump operators", bumpOperators);
+            for (const auto & bumpOperator : bumpOperators) {
+              oops::Log::info() << "         Apply operator " << bumpOperator << std::endl;
+              if (bumpOperator == "multiplyVbal") {
+                bump->multiplyVbal(dx1.fieldSet());
+              } else if (bumpOperator == "inverseMultiplyVbal") {
+                bump->inverseMultiplyVbal(dx1.fieldSet());
+              } else if (bumpOperator == "multiplyVbalAd") {
+                bump->multiplyVbalAd(dx1.fieldSet());
+              } else if (bumpOperator == "inverseMultiplyAd") {
+                bump->inverseMultiplyVbalAd(dx1.fieldSet());
+              } else if (bumpOperator == "multiplyStdDev") {
+                bump->multiplyStdDev(dx1.fieldSet());
+              } else if (bumpOperator == "inverseMultiplyStdDev") {
+                bump->inverseMultiplyStdDev(dx1.fieldSet());
+              } else if (bumpOperator == "multiplyNicas") {
+                bump->multiplyNicas(dx1.fieldSet());
+              } else {
+                  ABORT("Wrong bump operator: " + bumpOperator);
+              }
+            }
+
+            // ATLAS fieldset to Increment_
+            dx1.synchronizeFields();
+
+            // Write file
+            eckit::LocalConfiguration outputConf(appConf, "output");
+            oops::Log::info() << "         Output file: " << outputConf << std::endl;
+            dx1.write(outputConf);
+          }
+        }
+      }
     }
 
     // Write output parameters to file
