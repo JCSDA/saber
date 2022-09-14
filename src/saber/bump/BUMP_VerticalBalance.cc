@@ -5,7 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "saber/oops/StdDev.h"
+#include "saber/bump/BUMP_VerticalBalance.h"
 
 #include <memory>
 #include <string>
@@ -13,32 +13,37 @@
 
 #include "atlas/field.h"
 
+#include "oops/base/Geometry.h"
 #include "oops/base/Variables.h"
-#include "oops/util/FieldSetOperations.h"
-#include "oops/util/Timer.h"
 
+#include "saber/bump/BUMP.h"
 #include "saber/oops/SaberBlockBase.h"
 #include "saber/oops/SaberBlockParametersBase.h"
+
+namespace oops {
+  class Variables;
+}
 
 namespace saber {
 
 // -----------------------------------------------------------------------------
 
-static SaberBlockMaker<StdDev> makerStdDev_("StdDev");
+static SaberBlockMaker<BUMP_VerticalBalance> makerBUMP_VerticalBalance_("BUMP_VerticalBalance");
 
 // -----------------------------------------------------------------------------
 
-StdDev::StdDev(const eckit::mpi::Comm & comm,
-               const atlas::FunctionSpace & functionSpace,
-               const atlas::FieldSet & extraFields,
-               const std::vector<size_t> & variableSizes,
-               const Parameters_ & params,
-               const atlas::FieldSet & xb,
-               const atlas::FieldSet & fg,
-               const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberBlockBase(params), stdDevFset_()
+BUMP_VerticalBalance::BUMP_VerticalBalance(const eckit::mpi::Comm & comm,
+                                           const atlas::FunctionSpace & functionSpace,
+                                           const atlas::FieldSet & extraFields,
+                                           const std::vector<size_t> & variableSizes,
+                                           const Parameters_ & params,
+                                           const atlas::FieldSet & xb,
+                                           const atlas::FieldSet & fg,
+                                           const std::vector<atlas::FieldSet> & fsetVec)
+  : SaberBlockBase(params), bump_()
 {
-  oops::Log::trace() << classname() << "::StdDev starting" << std::endl;
+  oops::Log::trace() << classname() << "::BUMP_VerticalBalance starting"
+                     << std::endl;
 
   // Setup and check input/ouput variables
   const oops::Variables inputVars = params.inputVars.value();
@@ -55,70 +60,75 @@ StdDev::StdDev(const eckit::mpi::Comm & comm,
     activeVars += inputVars;
   }
 
-  // Copy stddev field
-  stdDevFset_.clear();
-  for (const auto & fset : fsetVec) {
-    if (fset.name() == "StdDev") {
-      for (const auto & field : fset) {
-        stdDevFset_.add(field);
-      }
-    }
-  }
+  // Initialize BUMP
+  bump_.reset(new BUMP(comm,
+                       functionSpace,
+                       extraFields,
+                       variableSizes,
+                       activeVars,
+                       params.bumpParams.value(),
+                       fsetVec));
 
-  oops::Log::trace() << classname() << "::StdDev done" << std::endl;
+  // Run drivers
+  bump_->runDrivers();
+
+  // Partial deallocation
+  bump_->partialDealloc();
+
+  oops::Log::trace() << classname() << "::BUMP_VerticalBalance done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-StdDev::~StdDev() {
-  oops::Log::trace() << classname() << "::~StdDev starting" << std::endl;
-  util::Timer timer(classname(), "~StdDev");
-  oops::Log::trace() << classname() << "::~StdDev done" << std::endl;
+BUMP_VerticalBalance::~BUMP_VerticalBalance() {
+  oops::Log::trace() << classname() << "::~BUMP_VerticalBalance starting" << std::endl;
+  util::Timer timer(classname(), "~BUMP_VerticalBalance");
+  oops::Log::trace() << classname() << "::~BUMP_VerticalBalance done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void StdDev::randomize(atlas::FieldSet & fset) const {
+void BUMP_VerticalBalance::randomize(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::randomize starting" << std::endl;
-  ABORT("StdDev::randomize: not implemented");
+  this->multiply(fset);
   oops::Log::trace() << classname() << "::randomize done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void StdDev::multiply(atlas::FieldSet & fset) const {
+void BUMP_VerticalBalance::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  util::FieldSetMultiply(fset, stdDevFset_);
+  bump_->multiplyVbal(fset);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void StdDev::inverseMultiply(atlas::FieldSet & fset) const {
+void BUMP_VerticalBalance::inverseMultiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::inverseMultiply starting" << std::endl;
-  util::FieldSetDivide(fset, stdDevFset_);
+  bump_->inverseMultiplyVbal(fset);
   oops::Log::trace() << classname() << "::inverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void StdDev::multiplyAD(atlas::FieldSet & fset) const {
+void BUMP_VerticalBalance::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  this->multiply(fset);
+  bump_->multiplyVbalAd(fset);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void StdDev::inverseMultiplyAD(atlas::FieldSet & fset) const {
+void BUMP_VerticalBalance::inverseMultiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::inverseMultiplyAD starting" << std::endl;
-  this->inverseMultiply(fset);
+  bump_->inverseMultiplyVbalAd(fset);
   oops::Log::trace() << classname() << "::inverseMultiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void StdDev::print(std::ostream & os) const {
+void BUMP_VerticalBalance::print(std::ostream & os) const {
   os << classname();
 }
 

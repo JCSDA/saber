@@ -88,7 +88,6 @@ contains
    procedure :: randomize => bump_randomize
    procedure :: psichi_to_uv => bump_psichi_to_uv
    procedure :: psichi_to_uv_ad => bump_psichi_to_uv_ad
-   procedure :: get_ncmp => bump_get_ncmp
    procedure :: get_parameter => bump_get_parameter
    procedure :: test_get_parameter => bump_test_get_parameter
    procedure :: set_ncmp => bump_set_ncmp
@@ -1799,47 +1798,6 @@ call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
 
 end subroutine bump_psichi_to_uv_ad
 
-
-!----------------------------------------------------------------------
-! Subroutine: bump_get_ncmp
-!> Get number of components
-!----------------------------------------------------------------------
-subroutine bump_get_ncmp(bump,iv,ncmp)
-
-implicit none
-
-! Passed variables
-class(bump_type),intent(inout) :: bump !< BUMP
-integer,intent(in) :: iv               !< Variable index
-integer,intent(inout) :: ncmp          !< Number of components
-
-! Set name
-@:set_name(bump_get_ncmp)
-
-! Get instance
-@:get_instance(bump)
-
-! Probe in
-@:probe_in()
-
-write(bump%mpl%info,'(a7,a)') '','Get number of components'
-call bump%mpl%flush
-
-! Check variable index
-if ((iv<1).or.(iv>bump%nam%nv)) call bump%mpl%abort('${subr}$','variable index out of bounds')
-
-! Copy
-if (bump%nam%forced_radii) then
-   ncmp = one
-else
-   ncmp = bump%nam%fit_ncmp(iv)
-end if
-
-! Probe out
-@:probe_out()
-
-end subroutine bump_get_ncmp
-
 !----------------------------------------------------------------------
 ! Subroutine: bump_get_parameter
 !> Get parameter
@@ -2239,17 +2197,17 @@ end subroutine bump_test_get_parameter
 ! Subroutine: bump_set_ncmp
 !> Set number of components
 !----------------------------------------------------------------------
-subroutine bump_set_ncmp(bump,iv,ncmp)
+subroutine bump_set_ncmp(bump,igeom,ncmp)
 
 implicit none
 
 ! Passed variables
 class(bump_type),intent(inout) :: bump !< BUMP
-integer,intent(in) :: iv               !< Variable index
+integer,intent(in) :: igeom            !< Geometry index
 integer,intent(in) :: ncmp             !< Number of components
 
 ! Local variables
-integer :: ib
+integer :: iv,ib
 
 ! Set name
 @:set_name(bump_set_ncmp)
@@ -2263,24 +2221,28 @@ integer :: ib
 write(bump%mpl%info,'(a7,a)') '','Set number of components'
 call bump%mpl%flush
 
-! Check variable index
-if ((iv<1).or.(iv>bump%nam%nv)) call bump%mpl%abort('${subr}$','variable index out of bounds')
-
 ! Check allocation
-if (.not.allocated(bump%cmat(1)%blk)) allocate(bump%cmat(1)%blk(bump%bpar%nbe))
-if (.not.allocated(bump%nicas(1)%blk)) allocate(bump%nicas(1)%blk(bump%bpar%nbe))
+if (.not.allocated(bump%cmat(igeom)%blk)) allocate(bump%cmat(igeom)%blk(bump%bpar%nbe))
+if (.not.allocated(bump%nicas(igeom)%blk)) allocate(bump%nicas(igeom)%blk(bump%bpar%nbe))
 
-! Set block index
 select case (trim(bump%nam%strategy))
 case ('specific_univariate','specific_multivariate')
-   ib = bump%bpar%v_to_b(iv)
-case ('common','common_weighted')
-   ib = bump%bpar%nbe
-end select
+   do iv=1,bump%nam%nv
+      ! Set block index
+      ib = bump%bpar%v_to_b(iv)
 
-! Copy
-bump%cmat(1)%blk(ib)%ncmp = ncmp
-bump%nicas(1)%blk(ib)%ncmp = ncmp
+      ! Copy
+      bump%cmat(igeom)%blk(ib)%ncmp = ncmp
+      bump%nicas(igeom)%blk(ib)%ncmp = ncmp
+   end do
+case ('common','common_weighted')
+   ! Set block index
+   ib = bump%bpar%nbe
+
+   ! Copy
+   bump%cmat(igeom)%blk(ib)%ncmp = ncmp
+   bump%nicas(igeom)%blk(ib)%ncmp = ncmp
+end select
 
 ! Probe out
 @:probe_out()

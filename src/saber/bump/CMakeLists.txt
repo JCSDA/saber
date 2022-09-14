@@ -48,10 +48,16 @@ type_wind.fypp
 if( oops_FOUND )
     list(APPEND bump_src_files_list
 
+    BUMP.cc
     BUMP.h
+    BUMP_NICAS.cc
     BUMP_NICAS.h
+    BUMP_Parameters.h
+    BUMP_PsiChiToUV.cc
     BUMP_PsiChiToUV.h
+    BUMP_StdDev.cc
     BUMP_StdDev.h
+    BUMP_VerticalBalance.cc
     BUMP_VerticalBalance.h
 
     )
