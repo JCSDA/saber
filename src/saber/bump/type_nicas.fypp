@@ -930,7 +930,7 @@ if (nam%check_dirac) then
       if (allocated(ens%mem).and.(trim(nam%method)/='cor')) allocate(nicas%bens_id(nam%nv))
 
       ! Create file
-      ncid = create_file(mpl,trim(nam%prefix)//'_dirac')
+      ncid = create_file(mpl,trim(nam%prefix)//'dirac')
 
       ! Define dimensions
       nc0_id = define_dim(mpl,ncid,'nc0',geom%nc0)
@@ -1795,7 +1795,7 @@ nam%ens1_ne = ens1_ne
 
 if (mpl%main) then
    ! Create file
-   ncid = create_file(mpl,trim(nam%prefix)//'_randomization',0)
+   ncid = create_file(mpl,trim(nam%prefix)//'randomization',0)
 
    ! Define dimensions
    ntest_id = define_dim(mpl,ncid,'ntest',ntest)

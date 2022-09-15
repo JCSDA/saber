@@ -1711,7 +1711,7 @@ end do
 
 if (nam%write_c0) then
    ! Create file
-   ncid = create_file(mpl,trim(nam%prefix)//'_dirac')
+   ncid = create_file(mpl,trim(nam%prefix)//'dirac')
 
    ! Define dimensions
    nc0_id = define_dim(mpl,ncid,'nc0',geom%nc0)

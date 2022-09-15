@@ -318,10 +318,10 @@ if (bump%mpl%main) call system_clock(sc)
 call bump%mpl%f_comm%broadcast(sc,bump%mpl%rootproc-1)
 if (bump%mpl%pioproc(bump%mpl%myproc)) then
    color = 1
-   write(cname,'(a,i12.12)') trim(bump%mpl%f_comm%name())//'_'//trim(bump%nam%prefix)//'_io_',sc
+   write(cname,'(a,i12.12)') trim(bump%mpl%f_comm%name())//'_'//trim(bump%nam%prefix)//'io_',sc
 else
    color = 0
-   write(cname,'(a,i12.12)') trim(bump%mpl%f_comm%name())//'_'//trim(bump%nam%prefix)//'_no_io_',sc
+   write(cname,'(a,i12.12)') trim(bump%mpl%f_comm%name())//'_'//trim(bump%nam%prefix)//'no_io_',sc
 endif
 bump%mpl%f_comm_io = bump%mpl%f_comm%split(color,cname)
 

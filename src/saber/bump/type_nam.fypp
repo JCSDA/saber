@@ -2034,8 +2034,8 @@ if (conf%has('output')) then
    do iconf=1,size(confs)
       call confs(iconf)%get_or_die('parameter',str)
       parameter = str
-      if (trim(parameter)=='nicas_norm') nam%output_nicas_norm = .true.
-      if (trim(parameter)=='nicas_a') nam%output_nicas_a = .true.
+      if (parameter=='nicas_norm') nam%output_nicas_norm = .true.
+      if (parameter=='nicas_a') nam%output_nicas_a = .true.
    end do
 end if
 
@@ -2095,16 +2095,16 @@ if (nam%nldwv>0) nam%lat_ldwv(1:nam%nldwv) = nam%lat_ldwv(1:nam%nldwv)*deg2rad
 
 ! Forced parameters for backward compatibility
 if (nam%new_hdiag.and.(.not.(nam%update_mom.or.nam%load_mom))) nam%new_mom = .true.
+if (nam%prefix/='') nam%prefix = trim(nam%prefix)//'_'
 
 ! Check general_param
-if (trim(nam%datadir)=='') call mpl%abort('${subr}$','datadir not specified')
-if (trim(nam%prefix)=='') call mpl%abort('${subr}$','prefix not specified')
-select case (trim(nam%model))
+if (nam%datadir=='') call mpl%abort('${subr}$','datadir not specified')
+select case (nam%model)
 case ('aro','arp','fv3','gem','geos','gfs','ifs','mpas','nemo','norcpm','online','qg','res','wrf')
 case default
    call mpl%abort('${subr}$','wrong model')
 end select
-select case (trim(nam%verbosity))
+select case (nam%verbosity)
 case ('all','main','none')
 case default
    call mpl%abort('${subr}$','wrong verbosity level')
@@ -2120,14 +2120,14 @@ end if
 
 ! Check driver_param
 if (nam%new_hdiag.or.nam%check_optimality) then
-   select case (trim(nam%method))
+   select case (nam%method)
    case ('cor','loc','hyb-rnd','hyb-ens')
    case default
       call mpl%abort('${subr}$','wrong method')
    end select
 end if
 if (nam%new_hdiag.or.nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
-   select case (trim(nam%strategy))
+   select case (nam%strategy)
    case ('diag_all','common','common_weighted','specific_univariate','specific_multivariate')
    case default
       call mpl%abort('${subr}$','wrong strategy')
@@ -2156,23 +2156,23 @@ if (nam%new_hdiag.and.(.not.(nam%new_mom.or.nam%update_mom.or.nam%load_mom))) &
 if (nam%check_dirac.and..not.(nam%new_vbal.or.nam%load_vbal.or.(nam%new_hdiag.and.nam%write_hdiag).or.nam%new_nicas &
  & .or.nam%load_nicas_local.or.nam%load_nicas_global)) call mpl%abort('${subr}$','check_dirac not available')
 if (nam%check_randomization) then
-   if (trim(nam%method)/='cor') call mpl%abort('${subr}$','cor method required for check_randomization')
+   if (nam%method/='cor') call mpl%abort('${subr}$','cor method required for check_randomization')
    if (.not.nam%new_nicas) call mpl%abort('${subr}$','new_nicas required for check_randomization')
 end if
 if (nam%check_consistency) then
-   if (trim(nam%method)/='cor') call mpl%abort('${subr}$','cor method required for check_consistency')
+   if (nam%method/='cor') call mpl%abort('${subr}$','cor method required for check_consistency')
    if (.not.nam%new_hdiag) call mpl%abort('${subr}$','new_hdiag required for check_consistency')
    if (nam%new_nicas) call mpl%abort('${subr}$','new_nicas forbidden for check_consistency')
 end if
 if (nam%check_optimality) then
-   if (trim(nam%method)/='loc') call mpl%abort('${subr}$','loc method required for check_optimality')
+   if (nam%method/='loc') call mpl%abort('${subr}$','loc method required for check_optimality')
    if (.not.nam%new_hdiag) call mpl%abort('${subr}$','new_hdiag required for check_optimality')
    if (nam%new_nicas) call mpl%abort('${subr}$','new_nicas forbidden for check_optimality')
 end if
 if (nam%check_no_point_mpi.and.nam%check_no_point_mask) &
  & call mpl%abort('${subr}$','check_no_point_mpi and check_no_point_mask are exclusive')
 if (nam%check_set_param.and.(.not.nam%new_nicas)) call mpl%abort('${subr}$','new_nicas required for check_set_param')
-if (nam%check_get_param.and.(.not.(nam%new_hdiag.and.(trim(nam%method)=='hyb-rnd')))) &
+if (nam%check_get_param.and.(.not.(nam%new_hdiag.and.(nam%method=='hyb-rnd')))) &
  & call mpl%abort('${subr}$','new_var or update_var, and new_hdiag, and hyb-rnd method required for check_get_param')
 if (nam%check_apply_vbal.and..not.(nam%new_vbal.or.nam%load_vbal)) &
  & call mpl%abort('${subr}$','new_vbal or load_vbal required for check_apply_vbal')
@@ -2183,24 +2183,24 @@ if (nam%check_apply_nicas.and..not.(nam%new_nicas.or.nam%load_nicas_local.or.nam
 
 ! Check and set files_param
 nam%fname_var_used = any(nam%fname_var/='')
-nam%fname_var(0) = trim(nam%prefix)//'_var'
+nam%fname_var(0) = trim(nam%prefix)//'var'
 do isub=1,nsubmax
    if (nam%fname_var(isub)=='') write(nam%fname_var(isub),'(a,a,i6.6)') trim(nam%fname_var(0)),'_',isub
 end do
-if (nam%fname_samp=='') nam%fname_samp = trim(nam%prefix)//'_sampling'
+if (nam%fname_samp=='') nam%fname_samp = trim(nam%prefix)//'sampling'
 nam%fname_vbal_cov_used = any(nam%fname_vbal_cov/='')
-nam%fname_vbal_cov(0) = trim(nam%prefix)//'_vbal_cov'
+nam%fname_vbal_cov(0) = trim(nam%prefix)//'vbal_cov'
 do isub=1,nsubmax
    if (nam%fname_vbal_cov(isub)=='') write(nam%fname_vbal_cov(isub),'(a,a,i6.6)') trim(nam%fname_vbal_cov(0)),'_',isub
 end do
-if (nam%fname_vbal=='') nam%fname_vbal = trim(nam%prefix)//'_vbal'
+if (nam%fname_vbal=='') nam%fname_vbal = trim(nam%prefix)//'vbal'
 nam%fname_mom_used = any(nam%fname_mom/='')
-nam%fname_mom(0) = trim(nam%prefix)//'_mom'
+nam%fname_mom(0) = trim(nam%prefix)//'mom'
 do isub=1,nsubmax
    if (nam%fname_mom(isub)=='') write(nam%fname_mom(isub),'(a,a,i6.6)') trim(nam%fname_mom(0)),'_',isub
 end do
-if (nam%fname_nicas=='') nam%fname_nicas = trim(nam%prefix)//'_nicas'
-if (nam%fname_wind=='') nam%fname_wind = trim(nam%prefix)//'_wind'
+if (nam%fname_nicas=='') nam%fname_nicas = trim(nam%prefix)//'nicas'
+if (nam%fname_wind=='') nam%fname_wind = trim(nam%prefix)//'wind'
 
 ! Check model_param
 if (nam%nl0<=0) call mpl%abort('${subr}$','nl0 should be positive')
@@ -2208,17 +2208,17 @@ do il0=1,nam%nl0
    if (nam%levs(il0)<=0) call mpl%abort('${subr}$','levs should be positive')
    if (count(nam%levs(1:nam%nl0)==nam%levs(il0))>1) call mpl%abort('${subr}$','duplicated levels')
 end do
-if ((trim(nam%lev2d)/='first').and.(trim(nam%lev2d)/='last')) call mpl%abort('${subr}$','wrong lev2d value')
+if ((nam%lev2d/='first').and.(nam%lev2d/='last')) call mpl%abort('${subr}$','wrong lev2d value')
 if (nam%new_vbal_cov.or.nam%load_vbal_cov.or.nam%new_vbal.or.nam%load_vbal.or.nam%new_var.or.nam%update_var.or.nam%load_var.or. &
  & nam%new_hdiag.or.nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
    if (nam%nv<=0) call mpl%abort('${subr}$','nv should be positive')
    do iv=1,nam%nv
       write(ivchar,'(i2.2)') iv
-      if (trim(nam%variables(iv))=='') call mpl%abort('${subr}$','variables not specified for variable '//ivchar)
+      if (nam%variables(iv)=='') call mpl%abort('${subr}$','variables not specified for variable '//ivchar)
    end do
    do i=1,niokvmax
-      if (((trim(nam%io_keys(i))/='').and.(trim(nam%io_values(i))=='')).or. &
- & ((trim(nam%io_keys(i))=='').and.(trim(nam%io_values(i))/=''))) &
+      if (((nam%io_keys(i)/='').and.(nam%io_values(i)=='')).or. &
+ & ((nam%io_keys(i)=='').and.(nam%io_values(i)/=''))) &
  & call mpl%abort('${subr}$','io_keys and io_values are not consistent')
    end do
 end if
@@ -2234,7 +2234,7 @@ if (nam%new_normality.or.nam%new_vbal_cov.or.nam%update_vbal_cov.or.(nam%new_vba
 end if
 
 ! Check ens2_param
-if ((nam%new_mom.or.nam%update_mom).and.((trim(nam%method)=='hyb-rnd').or.(trim(nam%method)=='hyb-ens'))) then
+if ((nam%new_mom.or.nam%update_mom).and.((nam%method=='hyb-rnd').or.(nam%method=='hyb-ens'))) then
    if (nam%ens2_nsub<1) call mpl%abort('${subr}$','ens2_nsub should be non-negative')
    if (mod(nam%ens2_ne,nam%ens2_nsub)/=0) call mpl%abort('${subr}$','ens2_nsub should be a divider of ens2_ne')
    if (nam%ens2_ne/nam%ens2_nsub<=3) call mpl%abort('${subr}$','ens2_ne/ens2_nsub should be larger than 3')
@@ -2247,7 +2247,7 @@ if (nam%new_vbal_cov.or.nam%new_vbal.or.nam%new_hdiag.or.nam%check_optimality) t
  & call mpl%abort('${subr}$','load_samp_local and write_samp_local are exclusive')
    if (nam%load_samp_global.and.nam%write_samp_global) &
  & call mpl%abort('${subr}$','load_samp_global and write_samp_global are exclusive')
-   select case (trim(nam%diag_draw_type))
+   select case (nam%diag_draw_type)
    case ('random_uniform')
    case ('random_coast')
       if (.not.(nam%Lcoast>zero)) call mpl%abort ('${subr}$','Lcoast should be positive')
@@ -2257,12 +2257,12 @@ if (nam%new_vbal_cov.or.nam%new_vbal.or.nam%new_hdiag.or.nam%check_optimality) t
    case default
       call mpl%abort('${subr}$','wrong diag_draw_type')
    end select
-   select case (trim(nam%mask_type))
+   select case (nam%mask_type)
    case ('ldwv')
       if (nam%nldwv<=0) call mpl%abort('${subr}$','nldwv should not be negative for mask_type = ldwv')
    case ('stddev')
       do iv=1,nam%nv
-         select case (trim(nam%mask_lu(iv)))
+         select case (nam%mask_lu(iv))
          case ('lower','upper')
          case default
             call mpl%abort('${subr}$','wrong mask_lu')
@@ -2338,11 +2338,11 @@ if (nam%new_var) then
    end if
 end if
 if (nam%new_hdiag.or.nam%check_optimality) then
-   select case (trim(nam%method))
+   select case (nam%method)
    case ('loc','hyb-rnd','hyb-ens')
       if (nam%ne<=3) call mpl%abort('${subr}$','ne should be larger than 3')
    end select
-   select case (trim(nam%method))
+   select case (nam%method)
    case ('hyb-rnd','hyb-ens')
       if (nam%ne_lr<=3) call mpl%abort('${subr}$','ne_lr should be larger than 3')
    end select
@@ -2367,9 +2367,9 @@ end if
 
 ! Check ensemble sizes
 if (nam%new_hdiag) then
-   if (trim(nam%method)/='cor') then
+   if (nam%method/='cor') then
       if (nam%ne>nam%ens1_ne) call mpl%warning('${subr}$','ensemble size larger than ens1_ne (might enhance sampling noise)')
-      select case (trim(nam%method))
+      select case (nam%method)
       case ('hyb-rnd','hyb-ens')
          if (nam%ne_lr>nam%ens2_ne) call mpl%warning('${subr}$', &
  & 'hybrid ensemble size larger than ens2_ne (might enhance sampling noise)')
@@ -2394,13 +2394,13 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
    end if
    if (nam%forced_radii) then
       if (nam%new_hdiag.and.(.not.(nam%check_consistency.or.nam%check_optimality))) then
-         select case (trim(nam%method))
+         select case (nam%method)
          case ('hyb-rnd')
          case default
            call mpl%abort('${subr}$','new_hdiag forbidden for forced_radii in this case')
          end select
       end if
-      if ((trim(nam%strategy)=='common').or.(trim(nam%strategy)=='common_weighted')) then
+      if ((nam%strategy=='common').or.(nam%strategy=='common_weighted')) then
          ivmin = 0
          ivmax = 0
       else
@@ -2415,7 +2415,7 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
          end do
       end do
    end if
-   if (trim(nam%strategy)=='common_weighted') then
+   if (nam%strategy=='common_weighted') then
       if (all(nam%loc_wgt<zero)) then
          call mpl%abort('${subr}$','loc_wgt should be specified and non-negative for the common_weighted strategy')
       else
@@ -2438,7 +2438,7 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
          deallocate(loc_wgt)
       end if
    end if
-   select case (trim(nam%nicas_draw_type))
+   select case (nam%nicas_draw_type)
    case ('random_uniform')
    case ('random_coast')
       if (.not.(nam%Lcoast>zero)) call mpl%abort ('${subr}$','Lcoast should be positive')
@@ -2480,7 +2480,7 @@ if (nam%new_hdiag) then
  & call mpl%abort('${subr}$','lat_ldwv should lie between -90 and 90')
          do ildwv=1,nam%nldwv
             write(ildwvchar,'(i2.2)') ildwv
-            if (trim(nam%name_ldwv(ildwv))=='') call mpl%abort('${subr}$','name_ldwv not specified for profile '//ildwvchar)
+            if (nam%name_ldwv(ildwv)=='') call mpl%abort('${subr}$','name_ldwv not specified for profile '//ildwvchar)
          end do
       end if
    end if
@@ -2781,7 +2781,7 @@ integer :: i
 ! Loop over I/O key-value couples
 io_value = io_key
 do i=1,niokvmax
-   if (trim(nam%io_keys(i))==trim(io_key)) then
+   if (nam%io_keys(i)==io_key) then
       io_value = nam%io_values(i)
       exit
    end if
