@@ -23,8 +23,8 @@
 #include "oops/util/Logger.h"
 
 #include "saber/oops/ReadInputFields.h"
-#include "saber/oops/SaberBlockBase.h"
-#include "saber/oops/SaberBlockParametersBase.h"
+#include "saber/oops/SaberCentralBlockBase.h"
+#include "saber/oops/SaberCentralBlockParametersBase.h"
 
 namespace eckit {
   class Configuration;
@@ -45,7 +45,9 @@ class Localization : public oops::LocalizationBase<MODEL> {
   typedef oops::State<MODEL>                  State_;
 
  public:
-  Localization(const Geometry_ &, const eckit::Configuration &);
+  Localization(const Geometry_ &,
+               const oops::Variables &,
+               const eckit::Configuration &);
   ~Localization();
 
   void randomize(Increment_ &) const override;
@@ -53,26 +55,27 @@ class Localization : public oops::LocalizationBase<MODEL> {
 
  private:
   void print(std::ostream &) const override;
-  std::unique_ptr<SaberBlockBase> saberBlock_;
+  std::unique_ptr<SaberCentralBlockBase> saberCentralBlock_;
 };
 
 // =============================================================================
 
 template<typename MODEL>
 Localization<MODEL>::Localization(const Geometry_ & resol,
+                                  const oops::Variables & incVars,
                                   const eckit::Configuration & conf)
-  : saberBlock_()
+  : saberCentralBlock_()
 {
   oops::Log::trace() << "Localization::Localization starting" << std::endl;
 
   size_t myslot = resol.timeComm().rank();
   if (myslot == 0) {
     // Get parameters from configuration
-    const eckit::LocalConfiguration saberBlock(conf, "saber block");
-    SaberBlockParametersWrapper saberBlockParamWrapper;
-    saberBlockParamWrapper.validateAndDeserialize(saberBlock);
+    const eckit::LocalConfiguration saberCentralBlock(conf, "saber central block");
+    SaberCentralBlockParametersWrapper saberCentralBlockParamWrapper;
+    saberCentralBlockParamWrapper.validateAndDeserialize(saberCentralBlock);
 
-    const SaberBlockParametersBase & saberBlockParams = saberBlockParamWrapper.saberBlockParameters;
+    const SaberCentralBlockParametersBase & saberCentralBlockParams = saberCentralBlockParamWrapper.saberCentralBlockParameters;
 
     // Create dummy FieldSet (for xb and fg)
     atlas::FieldSet dummyFs;
@@ -80,22 +83,27 @@ Localization<MODEL>::Localization(const Geometry_ & resol,
     // Create dummy time
     util::DateTime dummyTime(1977, 5, 25, 0, 0, 0);
 
-    // Get block input fields
+    // Local configuration to add parameters
+    eckit::LocalConfiguration centralConf;
+    saberCentralBlockParams.serialize(centralConf);
+    centralConf.set("inout variables", incVars.variables());
+
+    // Read input fields (on model increment geometry)
     std::vector<atlas::FieldSet> fsetVec = readInputFields(
       resol,
-      saberBlockParams.inputVars.value(),
+      incVars,
       dummyTime,
-      saberBlockParams.inputFields.value());
+      saberCentralBlockParams.inputFields.value());
 
-    // Create SABER block
-    saberBlock_.reset(SaberBlockFactory::create(resol.getComm(),
-                      resol.functionSpace(),
-                      resol.extraFields(),
-                      resol.variableSizes(saberBlockParams.inputVars.value()),
-                      saberBlockParams,
-                      dummyFs,
-                      dummyFs,
-                      fsetVec));
+    // Create central block
+    saberCentralBlock_.reset(SaberCentralBlockFactory::create(resol.getComm(),
+                             resol.functionSpace(),
+                             resol.extraFields(),
+                             resol.variableSizes(incVars),
+                             centralConf,
+                             dummyFs,
+                             dummyFs,
+                             fsetVec));
   }
 
   oops::Log::trace() << "Localization:Localization done" << std::endl;
@@ -118,7 +126,7 @@ void Localization<MODEL>::randomize(Increment_ & dx) const {
   dx.random();
 
   // Central block randomization
-  saberBlock_->randomize(dx.fieldSet());
+  saberCentralBlock_->randomize(dx.fieldSet());
 
   // ATLAS fieldset to Increment_
   dx.synchronizeFields();
@@ -133,7 +141,7 @@ void Localization<MODEL>::multiply(Increment_ & dx) const {
   oops::Log::trace() << "Localization:multiply starting" << std::endl;
 
   // Central block multiplication
-  saberBlock_->multiply(dx.fieldSet());
+  saberCentralBlock_->multiply(dx.fieldSet());
 
   // ATLAS fieldset to Increment_
   dx.synchronizeFields();

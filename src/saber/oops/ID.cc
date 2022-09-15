@@ -13,28 +13,40 @@
 
 #include "oops/util/Timer.h"
 
-#include "saber/oops/SaberBlockBase.h"
-#include "saber/oops/SaberBlockParametersBase.h"
+#include "saber/oops/SaberCentralBlockBase.h"
+#include "saber/oops/SaberCentralBlockParametersBase.h"
 
 namespace saber {
 
 // -----------------------------------------------------------------------------
 
-static SaberBlockMaker<ID> makerID_("ID");
+static SaberCentralBlockMaker<ID> makerID_("ID");
 
 // -----------------------------------------------------------------------------
 
 ID::ID(const eckit::mpi::Comm & comm,
-       const atlas::FunctionSpace & functionSpace,
-       const atlas::FieldSet & extraFields,
-       const std::vector<size_t> & variableSizes,
-       const Parameters_ & params,
+       const atlas::FunctionSpace & inputFunctionSpace,
+       const atlas::FieldSet & inputExtraFields,
+       const std::vector<size_t> & inputVariableSizes,
+       const eckit::Configuration & conf,
        const atlas::FieldSet & xb,
        const atlas::FieldSet & fg,
        const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberBlockBase(params)
+  : SaberCentralBlockBase(conf)
 {
   oops::Log::trace() << classname() << "::ID starting" << std::endl;
+
+  // Deserialize configuration
+  IDParameters params;
+  params.validateAndDeserialize(conf);
+
+  // Check variables
+  const oops::Variables inoutVars = params.inoutVars.value();
+  const oops::Variables activeVars = params.activeVars.value();
+  for (const auto & var : activeVars.variables()) {
+    ASSERT(inoutVars.has(var));
+  }
+
   oops::Log::trace() << classname() << "::ID done" << std::endl;
 }
 
@@ -58,27 +70,6 @@ void ID::randomize(atlas::FieldSet & fset) const {
 void ID::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-void ID::inverseMultiply(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::inverseMultiply starting" << std::endl;
-  oops::Log::trace() << classname() << "::inverseMultiply done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-void ID::multiplyAD(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-void ID::inverseMultiplyAD(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::inverseMultiplyAD starting" << std::endl;
-  oops::Log::trace() << classname() << "::inverseMultiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

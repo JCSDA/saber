@@ -14,8 +14,8 @@
 
 #include "atlas/field.h"
 
-#include "saber/oops/SaberBlockBase.h"
-#include "saber/oops/SaberBlockParametersBase.h"
+#include "saber/oops/SaberCentralBlockBase.h"
+#include "saber/oops/SaberCentralBlockParametersBase.h"
 
 namespace oops {
   class Variables;
@@ -25,13 +25,13 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-class IDParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(IDParameters, SaberBlockParametersBase)
+class IDParameters : public SaberCentralBlockExtendedParametersBase {
+  OOPS_CONCRETE_PARAMETERS(IDParameters, SaberCentralBlockExtendedParametersBase)
 };
 
 // -----------------------------------------------------------------------------
 
-class ID : public SaberBlockBase {
+class ID : public SaberCentralBlockBase {
  public:
   static const std::string classname() {return "saber::ID";}
 
@@ -41,7 +41,7 @@ class ID : public SaberBlockBase {
      const atlas::FunctionSpace &,
      const atlas::FieldSet &,
      const std::vector<size_t> &,
-     const Parameters_ &,
+     const eckit::Configuration &,
      const atlas::FieldSet &,
      const atlas::FieldSet &,
      const std::vector<atlas::FieldSet> &);
@@ -49,9 +49,6 @@ class ID : public SaberBlockBase {
 
   void randomize(atlas::FieldSet &) const override;
   void multiply(atlas::FieldSet &) const override;
-  void inverseMultiply(atlas::FieldSet &) const override;
-  void multiplyAD(atlas::FieldSet &) const override;
-  void inverseMultiplyAD(atlas::FieldSet &) const override;
 
  private:
   void print(std::ostream &) const override;

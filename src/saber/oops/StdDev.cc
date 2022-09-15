@@ -17,42 +17,43 @@
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/Timer.h"
 
-#include "saber/oops/SaberBlockBase.h"
-#include "saber/oops/SaberBlockParametersBase.h"
+#include "saber/oops/SaberOuterBlockBase.h"
+#include "saber/oops/SaberOuterBlockParametersBase.h"
 
 namespace saber {
 
 // -----------------------------------------------------------------------------
 
-static SaberBlockMaker<StdDev> makerStdDev_("StdDev");
+static SaberOuterBlockMaker<StdDev> makerStdDev_("StdDev");
 
 // -----------------------------------------------------------------------------
 
 StdDev::StdDev(const eckit::mpi::Comm & comm,
-               const atlas::FunctionSpace & functionSpace,
-               const atlas::FieldSet & extraFields,
-               const std::vector<size_t> & variableSizes,
-               const Parameters_ & params,
+               const atlas::FunctionSpace & inputFunctionSpace,
+               const atlas::FieldSet & inputExtraFields,
+               const std::vector<size_t> & inputVariableSizes,
+               const atlas::FunctionSpace & outputFunctionSpace,
+               const atlas::FieldSet & outputExtraFields,
+               const std::vector<size_t> & outputVariableSizes,
+               const eckit::Configuration & conf,
                const atlas::FieldSet & xb,
                const atlas::FieldSet & fg,
                const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberBlockBase(params), stdDevFset_()
+  : SaberOuterBlockBase(conf), stdDevFset_()
 {
   oops::Log::trace() << classname() << "::StdDev starting" << std::endl;
 
-  // Setup and check input/ouput variables
-  const oops::Variables inputVars = params.inputVars.value();
-  const oops::Variables outputVars = params.outputVars.value();
-  ASSERT(inputVars == outputVars);
+  // Deserialize configuration
+  StdDevParameters params;
+  params.validateAndDeserialize(conf);
 
-  // Active variables
-  const boost::optional<oops::Variables> &activeVarsPtr = params.activeVars.value();
-  oops::Variables activeVars;
-  if (activeVarsPtr != boost::none) {
-    activeVars += *activeVarsPtr;
-    ASSERT(activeVars <= inputVars);
-  } else {
-    activeVars += inputVars;
+  // Check variables
+  const oops::Variables inputVars = *params.inputVars.value();
+  const oops::Variables outputVars = params.outputVars.value();
+  const oops::Variables activeVars = params.activeVars.value();
+  ASSERT(inputVars == outputVars);
+  for (const auto & var : activeVars.variables()) {
+    ASSERT(inputVars.has(var));
   }
 
   // Copy stddev field
@@ -78,14 +79,6 @@ StdDev::~StdDev() {
 
 // -----------------------------------------------------------------------------
 
-void StdDev::randomize(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::randomize starting" << std::endl;
-  ABORT("StdDev::randomize: not implemented");
-  oops::Log::trace() << classname() << "::randomize done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
 void StdDev::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   util::FieldSetMultiply(fset, stdDevFset_);
@@ -94,26 +87,18 @@ void StdDev::multiply(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void StdDev::inverseMultiply(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::inverseMultiply starting" << std::endl;
-  util::FieldSetDivide(fset, stdDevFset_);
-  oops::Log::trace() << classname() << "::inverseMultiply done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
 void StdDev::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  this->multiply(fset);
+  util::FieldSetMultiply(fset, stdDevFset_);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void StdDev::inverseMultiplyAD(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::inverseMultiplyAD starting" << std::endl;
-  this->inverseMultiply(fset);
-  oops::Log::trace() << classname() << "::inverseMultiplyAD done" << std::endl;
+void StdDev::calibrationInverseMultiply(atlas::FieldSet & fset) const {
+  oops::Log::trace() << classname() << "::calibrationInverseMultiply starting" << std::endl;
+  util::FieldSetDivide(fset, stdDevFset_);
+  oops::Log::trace() << classname() << "::calibrationInverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
