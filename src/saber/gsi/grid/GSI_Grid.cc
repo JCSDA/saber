@@ -19,17 +19,20 @@
 #include "oops/util/Timer.h"
 
 #include "saber/gsi/grid/GSI_Grid.interface.h"
-#include "saber/oops/SaberBlockParametersBase.h"
 
 namespace saber {
 namespace gsi {
 
 // -------------------------------------------------------------------------------------------------
 
-Grid::Grid(const eckit::mpi::Comm & comm, const Parameters_ & params)
+Grid::Grid(const eckit::mpi::Comm & comm, const eckit::Configuration & conf)
 {
   oops::Log::trace() << classname() << "::Grid starting" << std::endl;
   util::Timer timer(classname(), "Grid");
+
+  // Deserialize configuration
+  GridParameters params;
+  params.validateAndDeserialize(conf);
 
   // Create grid
   gsi_grid_create_f90(keySelf_, params.toConfiguration(), comm);

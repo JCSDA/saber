@@ -11,11 +11,8 @@ background:
   state variables: *vars
 background error:
   covariance model: SABER
-  saber blocks:
-  - saber block name: BUMP_NICAS
-    saber central block: true
-    input variables: *vars
-    output variables: *vars
+  saber central block:
+    saber block name: BUMP_NICAS
     bump:
       datadir: testdata
       forced_radii: true

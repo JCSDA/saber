@@ -17,8 +17,8 @@
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 
-#include "saber/oops/SaberBlockBase.h"
-#include "saber/oops/SaberBlockParametersBase.h"
+#include "saber/oops/SaberCentralBlockBase.h"
+#include "saber/oops/SaberCentralBlockParametersBase.h"
 
 #include "saber/spectralb/spectralb.h"
 #include "saber/spectralb/spectralbParameters.h"
@@ -32,8 +32,8 @@ namespace spectralb {
 
 // -----------------------------------------------------------------------------
 
-class SPCTRL_COVParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(SPCTRL_COVParameters, SaberBlockParametersBase)
+class SPCTRL_COVParameters : public SaberCentralBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(SPCTRL_COVParameters, SaberCentralBlockParametersBase)
 
  public:
   oops::RequiredParameter<spectralbParameters> spectralbParams{"spectralb", this};
@@ -41,27 +41,24 @@ class SPCTRL_COVParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class SPCTRL_COV : public SaberBlockBase {
+class SPCTRL_COV : public SaberCentralBlockBase {
  public:
   static const std::string classname() {return "saber::lfricspectralb::SPCTRL_COV";}
 
   typedef SPCTRL_COVParameters Parameters_;
 
   SPCTRL_COV(const eckit::mpi::Comm &,
-             const atlas::FunctionSpace &,
-             const atlas::FieldSet &,
-             const std::vector<size_t> &,
-             const Parameters_ &,
-             const atlas::FieldSet &,
-             const atlas::FieldSet &,
-             const std::vector<atlas::FieldSet> &);
+     const atlas::FunctionSpace &,
+     const atlas::FieldSet &,
+     const std::vector<size_t> &,
+     const eckit::Configuration &,
+     const atlas::FieldSet &,
+     const atlas::FieldSet &,
+     const std::vector<atlas::FieldSet> &);
   virtual ~SPCTRL_COV();
 
   void randomize(atlas::FieldSet &) const override;
   void multiply(atlas::FieldSet &) const override;
-  void inverseMultiply(atlas::FieldSet &) const override;
-  void multiplyAD(atlas::FieldSet &) const override;
-  void inverseMultiplyAD(atlas::FieldSet &) const override;
 
  private:
   void print(std::ostream &) const override;

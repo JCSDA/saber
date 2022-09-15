@@ -2,10 +2,9 @@ background error:
   covariance model: ensemble
   localization:
     localization method: SABER
-    saber block:
+    saber central block:
       saber block name: ID
-      input variables: [x]
-      output variables: [x]
+      active variables: [x]
   members from template:
     template:
       states:

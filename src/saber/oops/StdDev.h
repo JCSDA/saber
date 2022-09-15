@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_OOPS_STDDEV_H_
-#define SABER_OOPS_STDDEV_H_
+#pragma once
 
 #include <memory>
 #include <string>
@@ -27,8 +26,8 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-class StdDevParameters : public SaberOuterBlockExtendedParametersBase {
-  OOPS_CONCRETE_PARAMETERS(StdDevParameters, SaberOuterBlockExtendedParametersBase)
+class StdDevParameters : public SaberOuterBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(StdDevParameters, SaberOuterBlockParametersBase)
 };
 
 // -----------------------------------------------------------------------------
@@ -64,5 +63,3 @@ class StdDev : public SaberOuterBlockBase {
 // -----------------------------------------------------------------------------
 
 }  // namespace saber
-
-#endif  // SABER_OOPS_STDDEV_H_

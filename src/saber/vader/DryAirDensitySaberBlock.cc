@@ -23,8 +23,8 @@
 #include "oops/base/Variables.h"
 #include "oops/util/Timer.h"
 
-#include "saber/oops/SaberBlockBase.h"
-#include "saber/oops/SaberBlockParametersBase.h"
+#include "saber/oops/SaberOuterBlockBase.h"
+#include "saber/oops/SaberOuterBlockParametersBase.h"
 
 namespace oops {
   class Variables;
@@ -34,37 +34,29 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-static SaberBlockMaker<DryAirDensitySaberBlock>
+static SaberOuterBlockMaker<DryAirDensitySaberBlock>
        makerDryAirDensitySaberBlock_("mo_dry_air_density");
 
 // -----------------------------------------------------------------------------
 
 DryAirDensitySaberBlock::DryAirDensitySaberBlock(const eckit::mpi::Comm & comm,
-                                                 const atlas::FunctionSpace & functionSpace,
-                                                 const atlas::FieldSet & extraFields,
-                                                 const std::vector<size_t> & variableSizes,
-                                                 const Parameters_ & params,
-                                                 const atlas::FieldSet & xb,
-                                                 const atlas::FieldSet & fg,
-                                                 const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberBlockBase(params), augmentedStateFieldSet_()
+               const atlas::FunctionSpace & inputFunctionSpace,
+               const atlas::FieldSet & inputExtraFields,
+               const std::vector<size_t> & inputVariableSizes,
+               const atlas::FunctionSpace & outputFunctionSpace,
+               const atlas::FieldSet & outputExtraFields,
+               const std::vector<size_t> & outputVariableSizes,
+               const eckit::Configuration & conf,
+               const atlas::FieldSet & xb,
+               const atlas::FieldSet & fg,
+               const std::vector<atlas::FieldSet> & fsetVec)
+  : SaberOuterBlockBase(conf), augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::DryAirDensitySaberBlock starting" << std::endl;
 
-  // Setup and check input/output variables
-  const oops::Variables inputVars = params.inputVars.value();
-  const oops::Variables outputVars = params.outputVars.value();
-  ASSERT(inputVars == outputVars);
-
-  // Active variables
-  const boost::optional<oops::Variables> &activeVarsPtr = params.activeVars.value();
-  oops::Variables activeVars;
-  if (activeVarsPtr != boost::none) {
-    activeVars += *activeVarsPtr;
-    ASSERT(activeVars <= inputVars);
-  } else {
-    activeVars += inputVars;
-  }
+  // Deserialize configuration
+  DryAirDensitySaberBlockParameters params;
+  params.deserialize(conf);
 
   // Need to setup derived state fields that we need.
   std::vector<std::string> requiredStateVariables{ "exner_levels_minus_one",
@@ -91,7 +83,7 @@ DryAirDensitySaberBlock::DryAirDensitySaberBlock(const eckit::mpi::Comm & comm,
   }
 
   for (const auto & s : requiredGeometryVariables) {
-    augmentedStateFieldSet_.add(extraFields[s]);
+    augmentedStateFieldSet_.add(inputExtraFields[s]);
   }
 
   mo::evalAirTemperature(augmentedStateFieldSet_);
@@ -110,27 +102,12 @@ DryAirDensitySaberBlock::~DryAirDensitySaberBlock() {
 
 // -----------------------------------------------------------------------------
 
-void DryAirDensitySaberBlock::randomize(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::randomize starting" << std::endl;
-  throw eckit::NotImplemented("DryAirDensitySaberBlock::randomize", Here());
-  oops::Log::trace() << classname() << "::randomize done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
 void DryAirDensitySaberBlock::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   mo::evalDryAirDensityTL(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
-// -----------------------------------------------------------------------------
-
-void DryAirDensitySaberBlock::inverseMultiply(atlas::FieldSet & fset) const {
-  oops::Log::info() << classname()
-                    << "::inverseMultiply not meaningful so fieldset unchanged"
-                    << std::endl;
-}
 
 // -----------------------------------------------------------------------------
 
@@ -142,9 +119,9 @@ void DryAirDensitySaberBlock::multiplyAD(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void DryAirDensitySaberBlock::inverseMultiplyAD(atlas::FieldSet & fset) const {
+void DryAirDensitySaberBlock::calibrationInverseMultiply(atlas::FieldSet & fset) const {
   oops::Log::info() << classname()
-                    << "::inverseMultiplyAD not meaningful so fieldset unchanged"
+                    << "::calibrationInverseMultiply not meaningful so fieldset unchanged"
                     << std::endl;
 }
 

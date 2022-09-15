@@ -25,9 +25,9 @@ static SaberCentralBlockMaker<ID> makerID_("ID");
 // -----------------------------------------------------------------------------
 
 ID::ID(const eckit::mpi::Comm & comm,
-       const atlas::FunctionSpace & inputFunctionSpace,
-       const atlas::FieldSet & inputExtraFields,
-       const std::vector<size_t> & inputVariableSizes,
+       const atlas::FunctionSpace & functionSpace,
+       const atlas::FieldSet & extraFields,
+       const std::vector<size_t> & variableSizes,
        const eckit::Configuration & conf,
        const atlas::FieldSet & xb,
        const atlas::FieldSet & fg,
@@ -39,13 +39,6 @@ ID::ID(const eckit::mpi::Comm & comm,
   // Deserialize configuration
   IDParameters params;
   params.validateAndDeserialize(conf);
-
-  // Check variables
-  const oops::Variables inoutVars = params.inoutVars.value();
-  const oops::Variables activeVars = params.activeVars.value();
-  for (const auto & var : activeVars.variables()) {
-    ASSERT(inoutVars.has(var));
-  }
 
   oops::Log::trace() << classname() << "::ID done" << std::endl;
 }

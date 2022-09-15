@@ -25,8 +25,8 @@
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/Timer.h"
 
-#include "saber/oops/SaberBlockBase.h"
-#include "saber/oops/SaberBlockParametersBase.h"
+#include "saber/oops/SaberOuterBlockBase.h"
+#include "saber/oops/SaberOuterBlockParametersBase.h"
 #include "saber/vader/CovarianceStatisticsUtils.h"
 #include "saber/vader/MoistureControlParameters.h"
 
@@ -38,40 +38,32 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-static SaberBlockMaker<MoistureControlSaberBlock>
+static SaberOuterBlockMaker<MoistureControlSaberBlock> 
        makerMoistureControlBlock_("mo_moisture_control");
 
 // -----------------------------------------------------------------------------
 
 MoistureControlSaberBlock::MoistureControlSaberBlock(const eckit::mpi::Comm & comm,
-                                                     const atlas::FunctionSpace & functionSpace,
-                                                     const atlas::FieldSet & extraFields,
-                                                     const std::vector<size_t> & variableSizes,
-                                                     const Parameters_ & params,
-                                                     const atlas::FieldSet & xb,
-                                                     const atlas::FieldSet & fg,
-                                                     const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberBlockBase(params),
-    inputVars_(params.inputVars.value()),
-    covFieldSet_(createMuStats(extraFields, params.moisturecontrolParams.value())),
-    augmentedStateFieldSet_()
+               const atlas::FunctionSpace & inputFunctionSpace,
+               const atlas::FieldSet & inputExtraFields,
+               const std::vector<size_t> & inputVariableSizes,
+               const atlas::FunctionSpace & outputFunctionSpace,
+               const atlas::FieldSet & outputExtraFields,
+               const std::vector<size_t> & outputVariableSizes,
+               const eckit::Configuration & conf,
+               const atlas::FieldSet & xb,
+               const atlas::FieldSet & fg,
+               const std::vector<atlas::FieldSet> & fsetVec)
+  : SaberOuterBlockBase(conf), augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::MoistureControlSaberBlock starting" << std::endl;
 
-  // Setup and check input/output variables
-  const oops::Variables inputVars = params.inputVars.value();
-  const oops::Variables outputVars = params.outputVars.value();
-  ASSERT(inputVars == outputVars);
+  // Deserialize configuration
+  MoistureControlSaberBlockParameters params;
+  params.deserialize(conf);
 
-  // Active variables
-  const boost::optional<oops::Variables> &activeVarsPtr = params.activeVars.value();
-  oops::Variables activeVars;
-  if (activeVarsPtr != boost::none) {
-    activeVars += *activeVarsPtr;
-    ASSERT(activeVars <= inputVars);
-  } else {
-    activeVars += inputVars;
-  }
+  // Covariance FieldSet
+  covFieldSet_ = createMuStats(inputExtraFields, params.moisturecontrolParams.value());
 
   std::vector<std::string> requiredStateVariables{
     "air_temperature",
@@ -142,26 +134,10 @@ MoistureControlSaberBlock::~MoistureControlSaberBlock() {
 
 // -----------------------------------------------------------------------------
 
-void MoistureControlSaberBlock::randomize(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::randomize starting" << std::endl;
-  throw eckit::NotImplemented("MoistureControlSaberBlock::randomize", Here());
-  oops::Log::trace() << classname() << "::randomize done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
 void MoistureControlSaberBlock::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   mo::evalQtThetaTL(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-void MoistureControlSaberBlock::inverseMultiply(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::inverseMultiply starting" << std::endl;
-  mo::evalMuThetavTL(fset, augmentedStateFieldSet_);
-  oops::Log::trace() << classname() << "::inverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
@@ -174,10 +150,10 @@ void MoistureControlSaberBlock::multiplyAD(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void MoistureControlSaberBlock::inverseMultiplyAD(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::inverseMultiplyAD starting" << std::endl;
+void MoistureControlSaberBlock::calibrationInverseMultiply(atlas::FieldSet & fset) const {
+  oops::Log::trace() << classname() << "::calibrationInverseMultiply starting" << std::endl;
   mo::evalMuThetavAD(fset, augmentedStateFieldSet_);
-  oops::Log::trace() << classname() << "::inverseMultiplyAD done" << std::endl;
+  oops::Log::trace() << classname() << "::calibrationInverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_VADER_MOISTINCROPSABERBLOCK_H_
-#define SABER_VADER_MOISTINCROPSABERBLOCK_H_
+#pragma once
 
 #include <memory>
 #include <string>
@@ -19,8 +18,8 @@
 
 #include "oops/base/Variables.h"
 
-#include "saber/oops/SaberBlockBase.h"
-#include "saber/oops/SaberBlockParametersBase.h"
+#include "saber/oops/SaberOuterBlockBase.h"
+#include "saber/oops/SaberOuterBlockParametersBase.h"
 
 namespace oops {
   class Variables;
@@ -30,34 +29,35 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-class MoistIncrOpSaberBlockParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(MoistIncrOpSaberBlockParameters, SaberBlockParametersBase)
+class MoistIncrOpSaberBlockParameters : public SaberOuterBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(MoistIncrOpSaberBlockParameters, SaberOuterBlockParametersBase)
  public:
 };
 
 // -----------------------------------------------------------------------------
 
-class MoistIncrOpSaberBlock : public SaberBlockBase {
+class MoistIncrOpSaberBlock : public SaberOuterBlockBase {
  public:
   static const std::string classname() {return "saber::AirTemperatureSaberBlock";}
 
   typedef MoistIncrOpSaberBlockParameters Parameters_;
 
   MoistIncrOpSaberBlock(const eckit::mpi::Comm &,
-                        const atlas::FunctionSpace &,
-                        const atlas::FieldSet &,
-                        const std::vector<size_t> &,
-                        const Parameters_ &,
-                        const atlas::FieldSet &,
-                        const atlas::FieldSet &,
-                        const std::vector<atlas::FieldSet> &);
+         const atlas::FunctionSpace &,
+         const atlas::FieldSet &,
+         const std::vector<size_t> &,
+         const atlas::FunctionSpace &,
+         const atlas::FieldSet &,
+         const std::vector<size_t> &,
+         const eckit::Configuration &,
+         const atlas::FieldSet &,
+         const atlas::FieldSet &,
+         const std::vector<atlas::FieldSet> &);
   virtual ~MoistIncrOpSaberBlock();
 
-  void randomize(atlas::FieldSet &) const override;
   void multiply(atlas::FieldSet &) const override;
-  void inverseMultiply(atlas::FieldSet &) const override;
   void multiplyAD(atlas::FieldSet &) const override;
-  void inverseMultiplyAD(atlas::FieldSet &) const override;
+  void calibrationInverseMultiply(atlas::FieldSet &) const override;
 
  private:
   void print(std::ostream &) const override;
@@ -67,5 +67,3 @@ class MoistIncrOpSaberBlock : public SaberBlockBase {
 // -----------------------------------------------------------------------------
 
 }  // namespace saber
-
-#endif  // SABER_VADER_MOISTINCROPSABERBLOCK_H_

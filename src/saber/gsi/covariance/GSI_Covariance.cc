@@ -24,7 +24,7 @@
 #include "saber/gsi/covariance/GSI_Covariance.interface.h"
 #include "saber/gsi/grid/GSI_Grid.h"
 #include "saber/gsi/interpolation/GSI_InterpolationImpl.h"
-#include "saber/oops/SaberBlockBase.h"
+#include "saber/oops/SaberCentralBlockBase.h"
 
 namespace oops {
   class Variables;
@@ -35,26 +35,36 @@ namespace gsi {
 
 // -------------------------------------------------------------------------------------------------
 
-static SaberBlockMaker<gsi::Covariance> makerGSI_Covariance_("gsi covariance");
+static SaberCentralBlockMaker<gsi::Covariance> makerGSI_Covariance_("gsi covariance");
 
 // -------------------------------------------------------------------------------------------------
 
 Covariance::Covariance(const eckit::mpi::Comm & comm,
-                       const atlas::FunctionSpace & functionSpace,
-                       const atlas::FieldSet & extraFields,
-                       const std::vector<size_t> & variableSizes,
-                       const Parameters_ & params,
-                       const atlas::FieldSet & xb,
-                       const atlas::FieldSet & fg,
-                       const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberBlockBase(params), variables_(), grid_(comm, params)
+       const atlas::FunctionSpace & functionSpace,
+       const atlas::FieldSet & extraFields,
+       const std::vector<size_t> & variableSizes,
+       const eckit::Configuration & conf,
+       const atlas::FieldSet & xb,
+       const atlas::FieldSet & fg,
+       const std::vector<atlas::FieldSet> & fsetVec)
+  : SaberCentralBlockBase(conf), variables_(), grid_(comm, conf)
 {
   oops::Log::trace() << classname() << "::Covariance starting" << std::endl;
   util::Timer timer(classname(), "Covariance");
 
+  // Deserialize configuration
+  CovarianceParameters params;
+  params.validateAndDeserialize(conf);
+
+  // Check variables
+  const oops::Variables inoutVars = params.inoutVars.value();
+  const oops::Variables activeVars = params.activeVars.value();
+  for (const auto & var : activeVars.variables()) {
+    ASSERT(inoutVars.has(var));
+  }
+
   // Assert that there is no variable change in this block
-  ASSERT(params.inputVars.value() == params.outputVars.value());
-  variables_ = params.inputVars.value().variables();
+  variables_ = inoutVars.variables();
 
   // Function space
   gsiGridFuncSpace_ = atlas::functionspace::PointCloud(grid_.functionSpace().get());
@@ -64,7 +74,7 @@ Covariance::Covariance(const eckit::mpi::Comm & comm,
   atlas::FieldSet xfgFieldSet(fg.get());
 
   // Interpolate background and first guess to background error model grid
-  InterpolationImpl interp_(comm, functionSpace, params, params.inputVars.value().variables());
+  InterpolationImpl interp_(comm, functionSpace, params.interp, params.inoutVars.value().variables());
   interp_.multiply(xbgFieldSet);
   interp_.multiply(xfgFieldSet);
 
@@ -125,27 +135,6 @@ void Covariance::multiply(atlas::FieldSet & fset) const {
   util::Timer timer(classname(), "multiply");
   gsi_covariance_multiply_f90(keySelf_, fset.get());
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
-}
-
-// -------------------------------------------------------------------------------------------------
-
-void Covariance::inverseMultiply(atlas::FieldSet & fset) const {
-  ABORT(classname() + "inverseMultiply: not implemented");
-}
-
-// -------------------------------------------------------------------------------------------------
-
-void Covariance::multiplyAD(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  util::Timer timer(classname(), "multiplyAD");
-  gsi_covariance_multiply_ad_f90(keySelf_, fset.get());
-  oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
-}
-
-// -------------------------------------------------------------------------------------------------
-
-void Covariance::inverseMultiplyAD(atlas::FieldSet & fset) const {
-  ABORT(classname() + "inverseMultiplyAD: not implemented");
 }
 
 // -------------------------------------------------------------------------------------------------

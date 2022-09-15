@@ -15,17 +15,19 @@
 #include "atlas/functionspace.h"
 
 #include "oops/util/abor1_cpp.h"
+#include "oops/util/parameters/Parameter.h"
+#include "oops/util/parameters/Parameters.h"
+#include "oops/util/parameters/RequiredParameter.h"
 
 #include "saber/gsi/grid/GSI_Grid.interface.h"
-#include "saber/oops/SaberBlockParametersBase.h"
 
 namespace saber {
 namespace gsi {
 
 // -------------------------------------------------------------------------------------------------
 
-class GridParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(GridParameters, SaberBlockParametersBase)
+class GridParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(GridParameters, Parameters)
 
  public:
   // File containing grid and coefficients
@@ -51,10 +53,8 @@ class Grid {
  public:
   static const std::string classname() {return "saber::gsi::Grid";}
 
-  typedef GridParameters Parameters_;
-
   // Constructor & destructor
-  Grid(const eckit::mpi::Comm &, const Parameters_ &);
+  Grid(const eckit::mpi::Comm &, const eckit::Configuration &);
   ~Grid();
 
   // Accessor functions

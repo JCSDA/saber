@@ -24,8 +24,6 @@ if( gsibec_FOUND )
     # Interpolation block
     interpolation/GSI_Interpolation.cc
     interpolation/GSI_Interpolation.h
-    interpolation/GSI_InterpolationImpl.cc
-    interpolation/GSI_InterpolationImpl.h
 
 
     # Unstructured interpolation code ported from oops (until new interp code can be used)

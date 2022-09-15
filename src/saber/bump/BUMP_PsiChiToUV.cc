@@ -19,8 +19,8 @@
 
 #include "saber/bump/BUMP.h"
 #include "saber/bump/BUMP_Parameters.h"
-#include "saber/oops/SaberBlockBase.h"
-#include "saber/oops/SaberBlockParametersBase.h"
+#include "saber/oops/SaberOuterBlockBase.h"
+#include "saber/oops/SaberOuterBlockParametersBase.h"
 
 namespace oops {
   class Variables;
@@ -30,55 +30,35 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-static SaberBlockMaker<BUMP_PsiChiToUV> makerBUMP_PsiChiToUV_("BUMP_PsiChiToUV");
+static SaberOuterBlockMaker<BUMP_PsiChiToUV> makerBUMP_PsiChiToUV_("BUMP_PsiChiToUV");
 
 // -----------------------------------------------------------------------------
 
 BUMP_PsiChiToUV::BUMP_PsiChiToUV(const eckit::mpi::Comm & comm,
-                                 const atlas::FunctionSpace & functionSpace,
-                                 const atlas::FieldSet & extraFields,
-                                 const std::vector<size_t> & variableSizes,
-                                 const Parameters_ & params,
-                                 const atlas::FieldSet & xb,
-                                 const atlas::FieldSet & fg,
-                                 const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberBlockBase(params), bump_()
+               const atlas::FunctionSpace & inputFunctionSpace,
+               const atlas::FieldSet & inputExtraFields,
+               const std::vector<size_t> & inputVariableSizes,
+               const atlas::FunctionSpace & outputFunctionSpace,
+               const atlas::FieldSet & outputExtraFields,
+               const std::vector<size_t> & outputVariableSizes,
+               const eckit::Configuration & conf,
+               const atlas::FieldSet & xb,
+               const atlas::FieldSet & fg,
+               const std::vector<atlas::FieldSet> & fsetVec)
+  : SaberOuterBlockBase(conf), bump_()
 {
   oops::Log::trace() << classname() << "::BUMP_PsiChiToUV starting" << std::endl;
 
-  // Setup and check input/ouput variables (only two variables should be different)
-  const oops::Variables inputVars = params.inputVars.value();
-  const oops::Variables outputVars = params.outputVars.value();
-  size_t sameVarsInput = 0;
-  for (size_t jvar = 0; jvar < inputVars.size(); ++jvar) {
-    if (outputVars.has(inputVars[jvar])) sameVarsInput += 1;
-  }
-  ASSERT(sameVarsInput == inputVars.size()-2);
-  size_t sameVarsOutput = 0;
-  for (size_t jvar = 0; jvar < outputVars.size(); ++jvar) {
-    if (inputVars.has(outputVars[jvar])) sameVarsOutput += 1;
-  }
-  ASSERT(sameVarsOutput == outputVars.size()-2);
-
-  // Active variables
-  oops::Variables allVars;
-  allVars += inputVars;
-  allVars += outputVars;
-  const boost::optional<oops::Variables> &activeVarsPtr = params.activeVars.value();
-  oops::Variables activeVars;
-  if (activeVarsPtr != boost::none) {
-    activeVars += *activeVarsPtr;
-    ASSERT(activeVars <= allVars);
-  } else {
-    activeVars += allVars;
-  }
+  // Deserialize configuration
+  BUMP_PsiChiToUVParameters params;
+  params.deserialize(conf);
 
   // Initialize BUMP
   bump_.reset(new BUMP(comm,
-                       functionSpace,
-                       extraFields,
-                       variableSizes,
-                       activeVars,
+                       inputFunctionSpace,
+                       inputExtraFields,
+                       inputVariableSizes,
+                       *params.activeVars.value(),
                        params.bumpParams.value(),
                        fsetVec));
 
@@ -101,27 +81,10 @@ BUMP_PsiChiToUV::~BUMP_PsiChiToUV() {
 
 // -----------------------------------------------------------------------------
 
-void BUMP_PsiChiToUV::randomize(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::randomize starting" << std::endl;
-  this->multiply(fset);
-  oops::Log::trace() << classname() << "::randomize done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
 void BUMP_PsiChiToUV::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   bump_->multiplyPsiChiToUV(fset);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-void BUMP_PsiChiToUV::inverseMultiply(atlas::FieldSet & fset)
-  const {
-  oops::Log::trace() << classname() << "::inverseMultiply starting" << std::endl;
-  ABORT("BUMP_PsiChiToUV::inverseMultiply: not implemented");
-  oops::Log::trace() << classname() << "::inverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
@@ -134,11 +97,13 @@ void BUMP_PsiChiToUV::multiplyAD(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void BUMP_PsiChiToUV::inverseMultiplyAD(atlas::FieldSet & fset)
+void BUMP_PsiChiToUV::calibrationInverseMultiply(atlas::FieldSet & fset)
   const {
-  oops::Log::trace() << classname() << "::inverseMultiplyAD starting" << std::endl;
-  ABORT("BUMP_PsiChiToUV::inverseMultiplyAD: not implemented");
-  oops::Log::trace() << classname() << "::inverseMultiplyAD done" << std::endl;
+  oops::Log::trace() << classname() << "::calibrationInverseMultiply starting" << std::endl;
+  oops::Log::info() << classname()
+                    << "::calibrationInverseMultiply not meaningful so fieldset unchanged"
+                    << std::endl;
+  oops::Log::trace() << classname() << "::calibrationInverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

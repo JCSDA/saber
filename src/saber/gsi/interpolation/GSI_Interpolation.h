@@ -21,8 +21,10 @@
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 
-#include "saber/oops/SaberBlockBase.h"
-#include "saber/gsi/interpolation/GSI_InterpolationImpl.h"
+#include "saber/oops/SaberOuterBlockBase.h"
+#include "saber/gsi/grid/GSI_Grid.h"
+#include "saber/gsi/interpolation/unstructured_interp/UnstructuredInterpolation.h"
+#include "saber/oops/SaberOuterBlockParametersBase.h"
 
 namespace oops {
   class Variables;
@@ -33,38 +35,56 @@ namespace gsi {
 
 // -------------------------------------------------------------------------------------------------
 
-class InterpolationParameters : public InterpolationImplParameters {
-  OOPS_CONCRETE_PARAMETERS(InterpolationParameters, InterpolationImplParameters)
+class InterpolationImplParameters : public SaberOuterBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(InterpolationImplParameters, SaberOuterBlockParametersBase)
+
+ public:
+  // Grid
+  oops::RequiredParameter<GridParameters> grid{"grid", this};
+
+  // Interpolation method
+  oops::Parameter<std::string> interpMethod{"interpolation method", "barycent", this};
 };
 
 // -------------------------------------------------------------------------------------------------
 
-class Interpolation : public SaberBlockBase {
+class Interpolation : public SaberOuterBlockBase {
  public:
   static const std::string classname() {return "saber::gsi::Interpolation";}
 
   typedef InterpolationParameters Parameters_;
 
   Interpolation(const eckit::mpi::Comm &,
-                const atlas::FunctionSpace &,
-                const atlas::FieldSet &,
-                const std::vector<size_t> &,
-                const Parameters_ &,
-                const atlas::FieldSet &,
-                const atlas::FieldSet &,
-                const std::vector<atlas::FieldSet> &);
+         const atlas::FunctionSpace &,
+         const atlas::FieldSet &,
+         const std::vector<size_t> &,
+         const atlas::FunctionSpace &,
+         const atlas::FieldSet &,
+         const std::vector<size_t> &,
+         const eckit::Configuration &,
+         const atlas::FieldSet &,
+         const atlas::FieldSet &,
+         const std::vector<atlas::FieldSet> &);
   virtual ~Interpolation();
 
-  void randomize(atlas::FieldSet &) const override;
   void multiply(atlas::FieldSet &) const override;
-  void inverseMultiply(atlas::FieldSet &) const override;
   void multiplyAD(atlas::FieldSet &) const override;
-  void inverseMultiplyAD(atlas::FieldSet &) const override;
+  void calibrationInverseMultiply(atlas::FieldSet &) const override;
 
  private:
   void print(std::ostream &) const override;
-  // GSI Interpolation implementation
-  InterpolationImpl interpolationImpl_;
+
+  // Interpolation object
+  std::unique_ptr<UnstructuredInterpolation> interpolator_;
+  // Function spaces
+  atlas::FunctionSpace gsiGridFuncSpace_;
+  atlas::FunctionSpace modGridFuncSpace_;
+  // Variables
+  std::vector<std::string> variables_;
+  // Expected number of levels in GSI grid
+  int gsiLevels_;
+  // Grid
+  Grid grid_;
 };
 
 // -------------------------------------------------------------------------------------------------

@@ -16,8 +16,8 @@
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 
-#include "saber/oops/SaberBlockBase.h"
-#include "saber/oops/SaberBlockParametersBase.h"
+#include "saber/oops/SaberCentralBlockBase.h"
+#include "saber/oops/SaberCentralBlockParametersBase.h"
 #include "saber/spectralb/spectralb.h"
 
 namespace oops {
@@ -29,40 +29,30 @@ namespace spectralb {
 
 // -----------------------------------------------------------------------------
 
-static SaberBlockMaker<SPCTRL_COV> makerSPCTRL_COV_("SPCTRL_COV");
+static SaberCentralBlockMaker<SPCTRL_COV> makerSPCTRL_COV_("SPCTRL_COV");
 
 // -----------------------------------------------------------------------------
 
 SPCTRL_COV::SPCTRL_COV(const eckit::mpi::Comm & comm,
-                       const atlas::FunctionSpace & functionSpace,
-                       const atlas::FieldSet & extraFields,
-                       const std::vector<size_t> & variableSizes,
-                       const Parameters_ & params,
-                       const atlas::FieldSet & xb,
-                       const atlas::FieldSet & fg,
-                       const std::vector<atlas::FieldSet> & fsetVec)
- : SaberBlockBase(params), spectralb_() {
+       const atlas::FunctionSpace & functionSpace,
+       const atlas::FieldSet & extraFields,
+       const std::vector<size_t> & variableSizes,
+       const eckit::Configuration & conf,
+       const atlas::FieldSet & xb,
+       const atlas::FieldSet & fg,
+       const std::vector<atlas::FieldSet> & fsetVec)
+ : SaberCentralBlockBase(conf), spectralb_()
+{
   oops::Log::trace() << classname() << "::SPCTRL_COV starting" << std::endl;
 
-  // Setup and check input/ouput variables
-  const oops::Variables inputVars = params.inputVars.value();
-  const oops::Variables outputVars = params.outputVars.value();
-  ASSERT(inputVars == outputVars);
-
-  // Active variables
-  const boost::optional<oops::Variables> &activeVarsPtr = params.activeVars.value();
-  oops::Variables activeVars;
-  if (activeVarsPtr != boost::none) {
-    activeVars += *activeVarsPtr;
-    ASSERT(activeVars <= inputVars);
-  } else {
-    activeVars += inputVars;
-  }
+  // Deserialize configuration
+  SPCTRL_COVParameters params;
+  params.validateAndDeserialize(conf);
 
   // Initialize SpectralB
   spectralb_.reset(new SpectralB(functionSpace,
                                  variableSizes,
-                                 activeVars,
+                                 *params.activeVars.value(),
                                  params.spectralbParams.value()));
 
   oops::Log::trace() << classname() << "::SPCTRL_COV done" << std::endl;
@@ -90,30 +80,6 @@ void SPCTRL_COV::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   spectralb_->multiply_InterpAndCov(fset);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-void SPCTRL_COV::inverseMultiply(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::inverseMultiply starting" << std::endl;
-  ABORT("SPCTRL_COV::inverseMultiply: not implemented");
-  oops::Log::trace() << classname() << "::inverseMultiply done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-void SPCTRL_COV::multiplyAD(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  ABORT("SPCTRL_COV::multiplyAD: not implemented");
-  oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-void SPCTRL_COV::inverseMultiplyAD(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::inverseMultiplyAD starting" << std::endl;
-  ABORT("SPCTRL_COV::inverseMultiplyAD: not implemented");
-  oops::Log::trace() << classname() << "::inverseMultiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

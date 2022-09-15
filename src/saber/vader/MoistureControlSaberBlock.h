@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_VADER_MOISTURECONTROLSABERBLOCK_H_
-#define SABER_VADER_MOISTURECONTROLSABERBLOCK_H_
+#pragma once
 
 #include <memory>
 #include <string>
@@ -19,8 +18,8 @@
 
 #include "oops/base/Variables.h"
 
-#include "saber/oops/SaberBlockBase.h"
-#include "saber/oops/SaberBlockParametersBase.h"
+#include "saber/oops/SaberOuterBlockBase.h"
+#include "saber/oops/SaberOuterBlockParametersBase.h"
 #include "saber/vader/MoistureControlParameters.h"
 
 namespace oops {
@@ -30,8 +29,8 @@ namespace oops {
 namespace saber {
 
 // -----------------------------------------------------------------------------
-class MoistureControlSaberBlockParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(MoistureControlSaberBlockParameters, SaberBlockParametersBase)
+class MoistureControlSaberBlockParameters : public SaberOuterBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(MoistureControlSaberBlockParameters, SaberOuterBlockParametersBase)
  public:
   oops::RequiredParameter<moisturecontrolParameters>
     moisturecontrolParams{"covariance data", this};
@@ -41,31 +40,31 @@ class MoistureControlSaberBlockParameters : public SaberBlockParametersBase {
 // This saber block is here
 //
 // -----------------------------------------------------------------------------
-class MoistureControlSaberBlock : public SaberBlockBase {
+class MoistureControlSaberBlock : public SaberOuterBlockBase {
  public:
   static const std::string classname() {return "saber::MoistureControlSaberBlock";}
 
   typedef MoistureControlSaberBlockParameters Parameters_;
 
   MoistureControlSaberBlock(const eckit::mpi::Comm &,
-                            const atlas::FunctionSpace &,
-                            const atlas::FieldSet &,
-                            const std::vector<size_t> &,
-                            const Parameters_ &,
-                            const atlas::FieldSet &,
-                            const atlas::FieldSet &,
-                            const std::vector<atlas::FieldSet> &);
+         const atlas::FunctionSpace &,
+         const atlas::FieldSet &,
+         const std::vector<size_t> &,
+         const atlas::FunctionSpace &,
+         const atlas::FieldSet &,
+         const std::vector<size_t> &,
+         const eckit::Configuration &,
+         const atlas::FieldSet &,
+         const atlas::FieldSet &,
+         const std::vector<atlas::FieldSet> &);
   virtual ~MoistureControlSaberBlock();
 
-  void randomize(atlas::FieldSet &) const override;
   void multiply(atlas::FieldSet &) const override;
-  void inverseMultiply(atlas::FieldSet &) const override;
   void multiplyAD(atlas::FieldSet &) const override;
-  void inverseMultiplyAD(atlas::FieldSet &) const override;
+  void calibrationInverseMultiply(atlas::FieldSet &) const override;
 
  private:
   void print(std::ostream &) const override;
-  oops::Variables inputVars_;
   atlas::FieldSet covFieldSet_;
   atlas::FieldSet augmentedStateFieldSet_;
 };
@@ -73,6 +72,3 @@ class MoistureControlSaberBlock : public SaberBlockBase {
 // -----------------------------------------------------------------------------
 
 }  // namespace saber
-
-#endif  // SABER_VADER_MOISTURECONTROLSABERBLOCK_H_
-

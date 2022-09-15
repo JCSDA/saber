@@ -20,7 +20,8 @@
 
 #include "saber/gsi/covariance/GSI_Covariance.interface.h"
 #include "saber/gsi/interpolation/GSI_InterpolationImpl.h"
-#include "saber/oops/SaberBlockBase.h"
+#include "saber/oops/SaberCentralBlockBase.h"
+#include "saber/oops/SaberCentralBlockParametersBase.h"
 
 namespace oops {
   class Variables;
@@ -31,33 +32,32 @@ namespace gsi {
 
 // -------------------------------------------------------------------------------------------------
 
-class CovarianceParameters : public InterpolationImplParameters {
-  OOPS_CONCRETE_PARAMETERS(CovarianceParameters, InterpolationImplParameters)
+class CovarianceParameters : public SaberCentralBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(CovarianceParameters, SaberCentralBlockParametersBase)
+ public:
+  
 };
 
 // -------------------------------------------------------------------------------------------------
 
-class Covariance : public SaberBlockBase {
+class Covariance : public SaberCentralBlockBase {
  public:
   static const std::string classname() {return "saber::gsi::Covariance";}
 
   typedef CovarianceParameters Parameters_;
 
   Covariance(const eckit::mpi::Comm &,
-             const atlas::FunctionSpace &,
-             const atlas::FieldSet &,
-             const std::vector<size_t> &,
-             const Parameters_ &,
-             const atlas::FieldSet &,
-             const atlas::FieldSet &,
-             const std::vector<atlas::FieldSet> &);
+     const atlas::FunctionSpace &,
+     const atlas::FieldSet &,
+     const std::vector<size_t> &,
+     const eckit::Configuration &,
+     const atlas::FieldSet &,
+     const atlas::FieldSet &,
+     const std::vector<atlas::FieldSet> &);
   virtual ~Covariance();
 
   void randomize(atlas::FieldSet &) const override;
   void multiply(atlas::FieldSet &) const override;
-  void inverseMultiply(atlas::FieldSet &) const override;
-  void multiplyAD(atlas::FieldSet &) const override;
-  void inverseMultiplyAD(atlas::FieldSet &) const override;
 
  private:
   void print(std::ostream &) const override;

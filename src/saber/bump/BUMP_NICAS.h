@@ -20,8 +20,8 @@
 
 #include "saber/bump/BUMP.h"
 #include "saber/bump/BUMP_Parameters.h"
-#include "saber/oops/SaberBlockBase.h"
-#include "saber/oops/SaberBlockParametersBase.h"
+#include "saber/oops/SaberCentralBlockBase.h"
+#include "saber/oops/SaberCentralBlockParametersBase.h"
 
 namespace oops {
   class Variables;
@@ -31,8 +31,8 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-class BUMP_NICASParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(BUMP_NICASParameters, SaberBlockParametersBase)
+class BUMP_NICASParameters : public SaberCentralBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(BUMP_NICASParameters, SaberCentralBlockParametersBase)
 
  public:
   oops::RequiredParameter<BUMP_Parameters> bumpParams{"bump", this};
@@ -40,27 +40,24 @@ class BUMP_NICASParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class BUMP_NICAS : public SaberBlockBase {
+class BUMP_NICAS : public SaberCentralBlockBase {
  public:
   static const std::string classname() {return "saber::BUMP_NICAS";}
 
   typedef BUMP_NICASParameters Parameters_;
 
   BUMP_NICAS(const eckit::mpi::Comm &,
-             const atlas::FunctionSpace &,
-             const atlas::FieldSet &,
-             const std::vector<size_t> &,
-             const Parameters_ &,
-             const atlas::FieldSet &,
-             const atlas::FieldSet &,
-             const std::vector<atlas::FieldSet> &);
+     const atlas::FunctionSpace &,
+     const atlas::FieldSet &,
+     const std::vector<size_t> &,
+     const eckit::Configuration &,
+     const atlas::FieldSet &,
+     const atlas::FieldSet &,
+     const std::vector<atlas::FieldSet> &);
   virtual ~BUMP_NICAS();
 
   void randomize(atlas::FieldSet &) const override;
   void multiply(atlas::FieldSet &) const override;
-  void inverseMultiply(atlas::FieldSet &) const override;
-  void multiplyAD(atlas::FieldSet &) const override;
-  void inverseMultiplyAD(atlas::FieldSet &) const override;
 
  private:
   void print(std::ostream &) const override;

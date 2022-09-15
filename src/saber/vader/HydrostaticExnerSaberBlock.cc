@@ -24,8 +24,8 @@
 #include "oops/base/Variables.h"
 #include "oops/util/Timer.h"
 
-#include "saber/oops/SaberBlockBase.h"
-#include "saber/oops/SaberBlockParametersBase.h"
+#include "saber/oops/SaberOuterBlockBase.h"
+#include "saber/oops/SaberOuterBlockParametersBase.h"
 #include "saber/vader/CovarianceStatisticsUtils.h"
 #include "saber/vader/HydrostaticExnerParameters.h"
 
@@ -37,41 +37,34 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-static SaberBlockMaker<HydrostaticExnerSaberBlock>
+static SaberOuterBlockMaker<HydrostaticExnerSaberBlock>
        makerHydrostaticExnerSaberBlock_("mo_hydrostatic_exner");
 
 // -----------------------------------------------------------------------------
 
 HydrostaticExnerSaberBlock::HydrostaticExnerSaberBlock(const eckit::mpi::Comm & comm,
-                                                       const atlas::FunctionSpace & functionSpace,
-                                                       const atlas::FieldSet & extraFields,
-                                                       const std::vector<size_t> & variableSizes,
-                                                       const Parameters_ & params,
-                                                       const atlas::FieldSet & xb,
-                                                       const atlas::FieldSet & fg,
-                                                       const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberBlockBase(params),
-    inputVars_(params.inputVars.value()),
-    covFieldSet_(createGpRegressionStats(functionSpace, extraFields, variableSizes,
-                                         inputVars_, params.hydrostaticexnerParams.value())),
+               const atlas::FunctionSpace & inputFunctionSpace,
+               const atlas::FieldSet & inputExtraFields,
+               const std::vector<size_t> & inputVariableSizes,
+               const atlas::FunctionSpace & outputFunctionSpace,
+               const atlas::FieldSet & outputExtraFields,
+               const std::vector<size_t> & outputVariableSizes,
+               const eckit::Configuration & conf,
+               const atlas::FieldSet & xb,
+               const atlas::FieldSet & fg,
+               const std::vector<atlas::FieldSet> & fsetVec)
+  : SaberOuterBlockBase(conf),
     augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::HydrostaticExnerSaberBlock starting" << std::endl;
 
-  // Setup and check input/output variables
-  const oops::Variables inputVars = params.inputVars.value();
-  const oops::Variables outputVars = params.outputVars.value();
-  ASSERT(inputVars == outputVars);
+  // Deserialize configuration
+  HydrostaticExnerSaberBlockParameters params;
+  params.deserialize(conf);
 
-  // Active variables
-  const boost::optional<oops::Variables> &activeVarsPtr = params.activeVars.value();
-  oops::Variables activeVars;
-  if (activeVarsPtr != boost::none) {
-    activeVars += *activeVarsPtr;
-    ASSERT(activeVars <= inputVars);
-  } else {
-    activeVars += inputVars;
-  }
+  // Covariance FieldSet
+  covFieldSet_ = createGpRegressionStats(inputFunctionSpace, inputExtraFields, inputVariableSizes,
+                                         *params.activeVars.value(), params.hydrostaticexnerParams.value());
 
   std::vector<std::string> requiredStateVariables{
     "air_temperature",
@@ -107,7 +100,7 @@ HydrostaticExnerSaberBlock::HydrostaticExnerSaberBlock(const eckit::mpi::Comm & 
   }
 
   for (const auto & s : requiredGeometryVariables) {
-    augmentedStateFieldSet_.add(extraFields[s]);
+    augmentedStateFieldSet_.add(inputExtraFields[s]);
   }
 
   // we will need geometry here for height variables.
@@ -143,14 +136,6 @@ HydrostaticExnerSaberBlock::~HydrostaticExnerSaberBlock() {
 
 // -----------------------------------------------------------------------------
 
-void HydrostaticExnerSaberBlock::randomize(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::randomize starting" << std::endl;
-  throw eckit::NotImplemented("HydrostaticExnerSaberBlock::randomize", Here());
-  oops::Log::trace() << classname() << "::randomize done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
 void HydrostaticExnerSaberBlock::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   mo::evalHydrostaticPressureTL(fset, augmentedStateFieldSet_);
@@ -161,14 +146,6 @@ void HydrostaticExnerSaberBlock::multiply(atlas::FieldSet & fset) const {
       atlas::array::make_view<double, 2>(fset["air_pressure_levels"]);
   airPressureView.assign(hydrostaticPressureView);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-void HydrostaticExnerSaberBlock::inverseMultiply(atlas::FieldSet & fset) const {
-  oops::Log::info() << classname()
-                    << "::inverseMultiply not meaningful so fieldset unchanged"
-                    << std::endl;
 }
 
 // -----------------------------------------------------------------------------
@@ -193,9 +170,9 @@ void HydrostaticExnerSaberBlock::multiplyAD(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void HydrostaticExnerSaberBlock::inverseMultiplyAD(atlas::FieldSet & fset) const {
+void HydrostaticExnerSaberBlock::calibrationInverseMultiply(atlas::FieldSet & fset) const {
   oops::Log::info() << classname()
-                    << "::inverseMultiplyAD not meaningful so fieldset unchanged"
+                    << "::calibrationInverseMultiply not meaningful so fieldset unchanged"
                     << std::endl;
 }
 

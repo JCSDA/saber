@@ -25,8 +25,8 @@
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/Timer.h"
 
-#include "saber/oops/SaberBlockBase.h"
-#include "saber/oops/SaberBlockParametersBase.h"
+#include "saber/oops/SaberOuterBlockBase.h"
+#include "saber/oops/SaberOuterBlockParametersBase.h"
 
 namespace oops {
   class Variables;
@@ -35,37 +35,29 @@ namespace oops {
 namespace saber {
 
 // -----------------------------------------------------------------------------
-static SaberBlockMaker<MoistIncrOpSaberBlock>
-       makerMoistIncrOpSaberBlock_("mo_moistincrop");
+static SaberOuterBlockMaker<MoistIncrOpSaberBlock>
+  makerMoistIncrOpSaberBlock_("mo_moistincrop");
 
 // -----------------------------------------------------------------------------
 
 MoistIncrOpSaberBlock::MoistIncrOpSaberBlock(const eckit::mpi::Comm & comm,
-                                             const atlas::FunctionSpace & functionSpace,
-                                             const atlas::FieldSet & extraFields,
-                                             const std::vector<size_t> & variableSizes,
-                                             const Parameters_ & params,
-                                             const atlas::FieldSet & xb,
-                                             const atlas::FieldSet & fg,
-                                             const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberBlockBase(params), augmentedStateFieldSet_()
+               const atlas::FunctionSpace & inputFunctionSpace,
+               const atlas::FieldSet & inputExtraFields,
+               const std::vector<size_t> & inputVariableSizes,
+               const atlas::FunctionSpace & outputFunctionSpace,
+               const atlas::FieldSet & outputExtraFields,
+               const std::vector<size_t> & outputVariableSizes,
+               const eckit::Configuration & conf,
+               const atlas::FieldSet & xb,
+               const atlas::FieldSet & fg,
+               const std::vector<atlas::FieldSet> & fsetVec)
+  : SaberOuterBlockBase(conf), augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::MoistIncrOpSaberBlock starting" << std::endl;
 
-  // Setup and check input/output variables
-  const oops::Variables inputVars = params.inputVars.value();
-  const oops::Variables outputVars = params.outputVars.value();
-  ASSERT(inputVars == outputVars);
-
-  // Active variables
-  const boost::optional<oops::Variables> &activeVarsPtr = params.activeVars.value();
-  oops::Variables activeVars;
-  if (activeVarsPtr != boost::none) {
-    activeVars += *activeVarsPtr;
-    ASSERT(activeVars <= inputVars);
-  } else {
-    activeVars += inputVars;
-  }
+  // Deserialize configuration
+  MoistIncrOpSaberBlockParameters params;
+  params.deserialize(conf);
 
   // Need to setup derived state fields that we need.
   std::vector<std::string> requiredStateVariables{
@@ -126,26 +118,10 @@ MoistIncrOpSaberBlock::~MoistIncrOpSaberBlock() {
 
 // -----------------------------------------------------------------------------
 
-void MoistIncrOpSaberBlock::randomize(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::randomize starting" << std::endl;
-  throw eckit::NotImplemented("MoistIncrOpSaberBlock::randomize", Here());
-  oops::Log::trace() << classname() << "::randomize done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
 void MoistIncrOpSaberBlock::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   mo::qtTemperature2qqclqcfTL(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-void MoistIncrOpSaberBlock::inverseMultiply(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::inverseMultiply starting" << std::endl;
-  mo::qqclqcf2qtTL(fset, augmentedStateFieldSet_);
-  oops::Log::trace() << classname() << "::inverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
@@ -158,10 +134,10 @@ void MoistIncrOpSaberBlock::multiplyAD(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void MoistIncrOpSaberBlock::inverseMultiplyAD(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::inverseMultiplyAD starting" << std::endl;
+void MoistIncrOpSaberBlock::calibrationInverseMultiply(atlas::FieldSet & fset) const {
+  oops::Log::trace() << classname() << "::calibrationInverseMultiply starting" << std::endl;
   mo::qqclqcf2qtAD(fset, augmentedStateFieldSet_);
-  oops::Log::trace() << classname() << "::inverseMultiplyAD done" << std::endl;
+  oops::Log::trace() << classname() << "::calibrationInverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

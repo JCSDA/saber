@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0. 
  */
 
-#ifndef SABER_VADER_COVARIANCESTATISTICSUTILS_H_
-#define SABER_VADER_COVARIANCESTATISTICSUTILS_H_
+#pragma once
 
 #include <iostream>
 #include <map>
@@ -51,4 +50,3 @@ void populateInterpMuStats(atlas::FieldSet &,
                            const atlas::Field &);
 
 }  // namespace saber
-#endif  // SABER_VADER_COVARIANCESTATISTICSUTILS_H_

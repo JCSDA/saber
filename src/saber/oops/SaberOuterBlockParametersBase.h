@@ -25,17 +25,10 @@ class SaberOuterBlockParametersBase : public oops::Parameters {
  public:
   oops::RequiredParameter<std::string> saberBlockName{"saber block name", this};
   oops::OptionalParameter<oops::Variables> inputVars{"input variables", this};
-  oops::RequiredParameter<oops::Variables> activeVars{"active variables", this};
+  oops::OptionalParameter<oops::Variables> activeVars{"active variables", this};
   oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> inputFields{"input fields", this};
-};
 
-// -----------------------------------------------------------------------------
-
-class SaberOuterBlockExtendedParametersBase : public SaberOuterBlockParametersBase {
-  OOPS_ABSTRACT_PARAMETERS(SaberOuterBlockExtendedParametersBase, SaberOuterBlockParametersBase)
- public:
-  oops::RequiredParameter<oops::Variables> outputVars{"output variables", this};
-
+  oops::Parameter<oops::Variables> outputVars{"output variables", oops::Variables(), this};
 };
 
 // -----------------------------------------------------------------------------

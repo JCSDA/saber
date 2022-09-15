@@ -17,8 +17,8 @@
 #include "oops/base/Variables.h"
 
 #include "saber/bump/BUMP.h"
-#include "saber/oops/SaberBlockBase.h"
-#include "saber/oops/SaberBlockParametersBase.h"
+#include "saber/oops/SaberOuterBlockBase.h"
+#include "saber/oops/SaberOuterBlockParametersBase.h"
 
 namespace oops {
   class Variables;
@@ -28,44 +28,36 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-static SaberBlockMaker<BUMP_VerticalBalance> makerBUMP_VerticalBalance_("BUMP_VerticalBalance");
+static SaberOuterBlockMaker<BUMP_VerticalBalance> makerBUMP_VerticalBalance_("BUMP_VerticalBalance");
 
 // -----------------------------------------------------------------------------
 
 BUMP_VerticalBalance::BUMP_VerticalBalance(const eckit::mpi::Comm & comm,
-                                           const atlas::FunctionSpace & functionSpace,
-                                           const atlas::FieldSet & extraFields,
-                                           const std::vector<size_t> & variableSizes,
-                                           const Parameters_ & params,
-                                           const atlas::FieldSet & xb,
-                                           const atlas::FieldSet & fg,
-                                           const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberBlockBase(params), bump_()
+               const atlas::FunctionSpace & inputFunctionSpace,
+               const atlas::FieldSet & inputExtraFields,
+               const std::vector<size_t> & inputVariableSizes,
+               const atlas::FunctionSpace & outputFunctionSpace,
+               const atlas::FieldSet & outputExtraFields,
+               const std::vector<size_t> & outputVariableSizes,
+               const eckit::Configuration & conf,
+               const atlas::FieldSet & xb,
+               const atlas::FieldSet & fg,
+               const std::vector<atlas::FieldSet> & fsetVec)
+  : SaberOuterBlockBase(conf), bump_()
 {
   oops::Log::trace() << classname() << "::BUMP_VerticalBalance starting"
                      << std::endl;
 
-  // Setup and check input/ouput variables
-  const oops::Variables inputVars = params.inputVars.value();
-  const oops::Variables outputVars = params.outputVars.value();
-  ASSERT(inputVars == outputVars);
-
-  // Active variables
-  const boost::optional<oops::Variables> &activeVarsPtr = params.activeVars.value();
-  oops::Variables activeVars;
-  if (activeVarsPtr != boost::none) {
-    activeVars += *activeVarsPtr;
-    ASSERT(activeVars <= inputVars);
-  } else {
-    activeVars += inputVars;
-  }
+  // Deserialize configuration
+  BUMP_VerticalBalanceParameters params;
+  params.deserialize(conf);
 
   // Initialize BUMP
   bump_.reset(new BUMP(comm,
-                       functionSpace,
-                       extraFields,
-                       variableSizes,
-                       activeVars,
+                       inputFunctionSpace,
+                       inputExtraFields,
+                       inputVariableSizes,
+                       *params.activeVars.value(),
                        params.bumpParams.value(),
                        fsetVec));
 
@@ -88,26 +80,10 @@ BUMP_VerticalBalance::~BUMP_VerticalBalance() {
 
 // -----------------------------------------------------------------------------
 
-void BUMP_VerticalBalance::randomize(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::randomize starting" << std::endl;
-  this->multiply(fset);
-  oops::Log::trace() << classname() << "::randomize done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
 void BUMP_VerticalBalance::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   bump_->multiplyVbal(fset);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-void BUMP_VerticalBalance::inverseMultiply(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::inverseMultiply starting" << std::endl;
-  bump_->inverseMultiplyVbal(fset);
-  oops::Log::trace() << classname() << "::inverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
@@ -120,10 +96,10 @@ void BUMP_VerticalBalance::multiplyAD(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void BUMP_VerticalBalance::inverseMultiplyAD(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::inverseMultiplyAD starting" << std::endl;
+void BUMP_VerticalBalance::calibrationInverseMultiply(atlas::FieldSet & fset) const {
+  oops::Log::trace() << classname() << "::calibrationInverseMultiply starting" << std::endl;
   bump_->inverseMultiplyVbalAd(fset);
-  oops::Log::trace() << classname() << "::inverseMultiplyAD done" << std::endl;
+  oops::Log::trace() << classname() << "::calibrationInverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

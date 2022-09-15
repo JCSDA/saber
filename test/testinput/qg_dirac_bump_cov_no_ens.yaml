@@ -1,16 +1,14 @@
 background error:
   covariance model: SABER
-  saber blocks:
-  - saber block name: BUMP_NICAS
-    saber central block: true
-    input variables: [x]
-    output variables: [x]
+  saber central block:
+    saber block name: BUMP_NICAS
     bump:
       datadir: testdata
       fname_nicas: qg_error_covariance_training_bump_cov_no_ens/test_nicas
       load_nicas_local: true
       prefix: qg_dirac_bump_cov_no_ens/test
       strategy: specific_univariate
+  saber outer blocks:
   - saber block name: StdDev
     input variables: [x]
     output variables: [x]

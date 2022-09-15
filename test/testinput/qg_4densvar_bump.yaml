@@ -24,10 +24,8 @@ cost function:
     covariance model: ensemble
     localization:
       localization method: SABER
-      saber block:
+      saber central block:
         saber block name: BUMP_NICAS
-        input variables: [x]
-        output variables: [x]
         bump:
           datadir: testdata
           fname_nicas: qg_error_covariance_training_bump_loc/test_nicas

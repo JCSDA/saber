@@ -25,8 +25,8 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-class IDParameters : public SaberCentralBlockExtendedParametersBase {
-  OOPS_CONCRETE_PARAMETERS(IDParameters, SaberCentralBlockExtendedParametersBase)
+class IDParameters : public SaberCentralBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(IDParameters, SaberCentralBlockParametersBase)
 };
 
 // -----------------------------------------------------------------------------

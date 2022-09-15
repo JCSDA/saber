@@ -18,8 +18,8 @@
 #include "oops/util/abor1_cpp.h"
 
 #include "saber/bump/BUMP.h"
-#include "saber/oops/SaberBlockBase.h"
-#include "saber/oops/SaberBlockParametersBase.h"
+#include "saber/oops/SaberCentralBlockBase.h"
+#include "saber/oops/SaberCentralBlockParametersBase.h"
 
 namespace oops {
   class Variables;
@@ -29,43 +29,32 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-static SaberBlockMaker<BUMP_NICAS> makerBUMP_NICAS_("BUMP_NICAS");
+static SaberCentralBlockMaker<BUMP_NICAS> makerBUMP_NICAS_("BUMP_NICAS");
 
 // -----------------------------------------------------------------------------
 
 BUMP_NICAS::BUMP_NICAS(const eckit::mpi::Comm & comm,
-                       const atlas::FunctionSpace & functionSpace,
-                       const atlas::FieldSet & extraFields,
-                       const std::vector<size_t> & variableSizes,
-                       const Parameters_ & params,
-                       const atlas::FieldSet & xb,
-                       const atlas::FieldSet & fg,
-                       const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberBlockBase(params), bump_()
+       const atlas::FunctionSpace & functionSpace,
+       const atlas::FieldSet & extraFields,
+       const std::vector<size_t> & variableSizes,
+       const eckit::Configuration & conf,
+       const atlas::FieldSet & xb,
+       const atlas::FieldSet & fg,
+       const std::vector<atlas::FieldSet> & fsetVec)
+  : SaberCentralBlockBase(conf), bump_()
 {
   oops::Log::trace() << classname() << "::BUMP_NICAS starting" << std::endl;
 
-  // Setup and check input/ouput variables
-  const oops::Variables inputVars = params.inputVars.value();
-  const oops::Variables outputVars = params.outputVars.value();
-  ASSERT(inputVars == outputVars);
-
-  // Active variables
-  const boost::optional<oops::Variables> &activeVarsPtr = params.activeVars.value();
-  oops::Variables activeVars;
-  if (activeVarsPtr != boost::none) {
-    activeVars += *activeVarsPtr;
-    ASSERT(activeVars <= inputVars);
-  } else {
-    activeVars += inputVars;
-  }
+  // Deserialize configuration
+  BUMP_NICASParameters params;
+  params.validateAndDeserialize(conf);
 
   // Initialize BUMP
   bump_.reset(new BUMP(comm,
                        functionSpace,
                        extraFields,
                        variableSizes,
-                       activeVars,
+                       *params.activeVars.value(),
                        params.bumpParams.value(),
                        fsetVec));
 
@@ -100,30 +89,6 @@ void BUMP_NICAS::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   bump_->multiplyNicas(fset);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-void BUMP_NICAS::inverseMultiply(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::inverseMultiply starting" << std::endl;
-  ABORT("BUMP_NICAS::inverseMultiply: not implemented");
-  oops::Log::trace() << classname() << "::inverseMultiply done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-void BUMP_NICAS::multiplyAD(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  bump_->multiplyNicas(fset);
-  oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-void BUMP_NICAS::inverseMultiplyAD(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::inverseMultiplyAD starting" << std::endl;
-  ABORT("BUMP_NICAS::inverseMultiplyAD: not implemented");
-  oops::Log::trace() << classname() << "::inverseMultiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

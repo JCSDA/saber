@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_VADER_HYDROSTATICEXNERSABERBLOCK_H_
-#define SABER_VADER_HYDROSTATICEXNERSABERBLOCK_H_
+#pragma once
 
 #include <memory>
 #include <string>
@@ -19,8 +18,8 @@
 
 #include "oops/base/Variables.h"
 
-#include "saber/oops/SaberBlockBase.h"
-#include "saber/oops/SaberBlockParametersBase.h"
+#include "saber/oops/SaberOuterBlockBase.h"
+#include "saber/oops/SaberOuterBlockParametersBase.h"
 #include "saber/vader/HydrostaticExnerParameters.h"
 
 namespace oops {
@@ -30,8 +29,8 @@ namespace oops {
 namespace saber {
 
 // -----------------------------------------------------------------------------
-class HydrostaticExnerSaberBlockParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(HydrostaticExnerSaberBlockParameters, SaberBlockParametersBase)
+class HydrostaticExnerSaberBlockParameters : public SaberOuterBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(HydrostaticExnerSaberBlockParameters, SaberOuterBlockParametersBase)
  public:
   oops::RequiredParameter<hydrostaticexnerParameters>
     hydrostaticexnerParams{"covariance data", this};
@@ -43,31 +42,31 @@ class HydrostaticExnerSaberBlockParameters : public SaberBlockParametersBase {
 // 2) summing the result with unbalanced pressure to create hydrostatic_pressure
 // 3) converting hydrostatic pressure to exner pressure.
 // -----------------------------------------------------------------------------
-class HydrostaticExnerSaberBlock : public SaberBlockBase {
+class HydrostaticExnerSaberBlock : public SaberOuterBlockBase {
  public:
   static const std::string classname() {return "saber::HydrostaticExnerSaberBlock";}
 
   typedef HydrostaticExnerSaberBlockParameters Parameters_;
 
   HydrostaticExnerSaberBlock(const eckit::mpi::Comm &,
-                             const atlas::FunctionSpace &,
-                             const atlas::FieldSet &,
-                             const std::vector<size_t> &,
-                             const Parameters_ &,
-                             const atlas::FieldSet &,
-                             const atlas::FieldSet &,
-                             const std::vector<atlas::FieldSet> &);
+         const atlas::FunctionSpace &,
+         const atlas::FieldSet &,
+         const std::vector<size_t> &,
+         const atlas::FunctionSpace &,
+         const atlas::FieldSet &,
+         const std::vector<size_t> &,
+         const eckit::Configuration &,
+         const atlas::FieldSet &,
+         const atlas::FieldSet &,
+         const std::vector<atlas::FieldSet> &);
   virtual ~HydrostaticExnerSaberBlock();
 
-  void randomize(atlas::FieldSet &) const override;
   void multiply(atlas::FieldSet &) const override;
-  void inverseMultiply(atlas::FieldSet &) const override;
   void multiplyAD(atlas::FieldSet &) const override;
-  void inverseMultiplyAD(atlas::FieldSet &) const override;
+  void calibrationInverseMultiply(atlas::FieldSet &) const override;
 
  private:
   void print(std::ostream &) const override;
-  oops::Variables inputVars_;
   atlas::FieldSet covFieldSet_;
   atlas::FieldSet augmentedStateFieldSet_;
 };
@@ -75,5 +74,3 @@ class HydrostaticExnerSaberBlock : public SaberBlockBase {
 // -----------------------------------------------------------------------------
 
 }  // namespace saber
-
-#endif  // SABER_VADER_HYDROSTATICEXNERSABERBLOCK_H_

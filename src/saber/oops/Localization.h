@@ -74,7 +74,6 @@ Localization<MODEL>::Localization(const Geometry_ & resol,
     const eckit::LocalConfiguration saberCentralBlock(conf, "saber central block");
     SaberCentralBlockParametersWrapper saberCentralBlockParamWrapper;
     saberCentralBlockParamWrapper.validateAndDeserialize(saberCentralBlock);
-
     const SaberCentralBlockParametersBase & saberCentralBlockParams = saberCentralBlockParamWrapper.saberCentralBlockParameters;
 
     // Create dummy FieldSet (for xb and fg)
@@ -83,15 +82,35 @@ Localization<MODEL>::Localization(const Geometry_ & resol,
     // Create dummy time
     util::DateTime dummyTime(1977, 5, 25, 0, 0, 0);
 
+    // Define input/output variables
+    oops::Variables inoutVars = incVars;
+
     // Local configuration to add parameters
     eckit::LocalConfiguration centralConf;
     saberCentralBlockParams.serialize(centralConf);
-    centralConf.set("inout variables", incVars.variables());
+    centralConf.set("inout variables", inoutVars.variables());
+
+    // Define active variables
+    oops::Variables activeVars;
+    const boost::optional<oops::Variables> &optionalActiveVars = saberCentralBlockParams.activeVars.value();
+    if (optionalActiveVars != boost::none) {
+       // Active variables specified
+       activeVars = *optionalActiveVars;
+    } else {
+       // No active variables specified, assuming they are the same as output variables
+       activeVars = inoutVars;
+       centralConf.set("active variables", activeVars.variables());
+    }
+
+    // Check that active variables are present
+    for (const auto & var : activeVars.variables()) {
+      ASSERT(inoutVars.has(var));
+    }
 
     // Read input fields (on model increment geometry)
     std::vector<atlas::FieldSet> fsetVec = readInputFields(
       resol,
-      incVars,
+      inoutVars,
       dummyTime,
       saberCentralBlockParams.inputFields.value());
 
@@ -99,7 +118,7 @@ Localization<MODEL>::Localization(const Geometry_ & resol,
     saberCentralBlock_.reset(SaberCentralBlockFactory::create(resol.getComm(),
                              resol.functionSpace(),
                              resol.extraFields(),
-                             resol.variableSizes(incVars),
+                             resol.variableSizes(inoutVars),
                              centralConf,
                              dummyFs,
                              dummyFs,

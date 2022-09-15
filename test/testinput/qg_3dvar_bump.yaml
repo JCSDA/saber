@@ -12,21 +12,16 @@ cost function:
     filename: testdata/qg_forecast/forecast.fc.2009-12-31T00:00:00Z.P1DT12H.nc
   background error:
     covariance model: SABER
-    saber blocks:
-    - saber block name: BUMP_NICAS
-      saber central block: true
-      iterative inverse: true
-      input variables: [x]
-      output variables: [x]
+    saber central block:
+      saber block name: BUMP_NICAS
       bump:
         datadir: testdata
         fname_nicas: qg_error_covariance_training_bump_cov/test_nicas
         load_nicas_local: true
         prefix: qg_3dvar_bump/test
         strategy: specific_univariate
+    saber outer blocks:
     - saber block name: StdDev
-      input variables: [x]
-      output variables: [x]
       input fields:
       - parameter: StdDev
         filename: testdata/qg_error_covariance_training_bump_cov/stddev.an.2010-01-01T12:00:00Z.nc

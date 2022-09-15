@@ -45,22 +45,13 @@ StdDev::StdDev(const eckit::mpi::Comm & comm,
 
   // Deserialize configuration
   StdDevParameters params;
-  params.validateAndDeserialize(conf);
-
-  // Check variables
-  const oops::Variables inputVars = *params.inputVars.value();
-  const oops::Variables outputVars = params.outputVars.value();
-  const oops::Variables activeVars = params.activeVars.value();
-  ASSERT(inputVars == outputVars);
-  for (const auto & var : activeVars.variables()) {
-    ASSERT(inputVars.has(var));
-  }
+  params.deserialize(conf);
 
   // Copy stddev field
   stdDevFset_.clear();
   for (const auto & fset : fsetVec) {
     if (fset.name() == "StdDev") {
-      for (const auto & field : fset) {
+      for (const auto & field : fset) { // TODO: should it be only active variables?
         stdDevFset_.add(field);
       }
     }
