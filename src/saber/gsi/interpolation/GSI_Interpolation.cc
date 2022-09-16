@@ -44,7 +44,7 @@ Interpolation::Interpolation(const eckit::mpi::Comm & comm,
                const atlas::FieldSet & xb,
                const atlas::FieldSet & fg,
                const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberOuterBlockBase(conf),  interpolator_(), modGridFuncSpace_(outputFunctionSpace), variables_(), grid_(comm, params)
+  : SaberOuterBlockBase(conf), outputFunctionSpace_(outputFunctionSpace)
 {
   oops::Log::trace() << classname() << "::Interpolation starting" << std::endl;
   util::Timer timer(classname(), "Interpolation");
@@ -53,31 +53,25 @@ Interpolation::Interpolation(const eckit::mpi::Comm & comm,
   InterpolationParameters params;
   params.deserialize(conf);
 
+  // Setup GSI grid
+  grid_ = Grid(comm, params.grid.value());
+
   // Input geometry and variables
-  inputFunctionSpace_ = outputFunctionSpace;
-  inputExtraFields_ = outputExtraFields;
+  inputFunctionSpace_ = atlas::functionspace::PointCloud(grid_.functionSpace());
+  inputExtraFields_ = outputExtraFields; // TODO: interpolate that?
   inputVars_ = params.outputVars.value();
 
-  : interpolator_(), modGridFuncSpace_(modelGrid), variables_(), grid_(comm, params)
-{
-  oops::Log::trace() << classname() << "::InterpolationImpl starting" << std::endl;
-  util::Timer timer(classname(), "InterpolationImpl");
-
   // Object wide copy of the variables
-  variables_ = variables;
+  variables_ = inputVars_.variables();
 
   // Get number of levels
   gsiLevels_ = grid_.levels();
 
-  // Get functionspace for the GSI grid
-  gsiGridFuncSpace_ = atlas::functionspace::PointCloud(grid_.functionSpace());
-
   // Create the interpolator
-  interpolator_.reset(new UnstructuredInterpolation(params.toConfiguration(),
-                                                    gsiGridFuncSpace_,
-                                                    modGridFuncSpace_,
+  interpolator_.reset(new UnstructuredInterpolation(conf,
+                                                    inputFunctionSpace_,
+                                                    outputFunctionSpace_,
                                                     nullptr, comm));
-
 
   oops::Log::trace() << classname() << "::Interpolation done" << std::endl;
 }
@@ -102,7 +96,7 @@ void Interpolation::multiply(atlas::FieldSet & fset) const {
   // Loop over saber (gsi) fields and create corresponding model fields
   for (auto sabField : fset) {
       // Get the name
-      const auto fieldName = name(sabField.name());
+      const auto fieldName = atlas::option::name(sabField.name());
 
       // Ensure that the field name is in the input/output list
       const std::string fieldNameStr = fieldName.getString("name");
@@ -111,7 +105,8 @@ void Interpolation::multiply(atlas::FieldSet & fset) const {
       }
 
       // Create the model field and add to Fieldset
-      modFields.add(modGridFuncSpace_.createField<double>(fieldName | levels(sabField.levels())));
+      modFields.add(outputFunctionSpace_.createField<double>(atlas::option::name(fieldName)
+      | atlas::option::levels(sabField.levels())));
   }
 
   // Do the interpolation from GSI grid to model grid
@@ -135,7 +130,7 @@ void Interpolation::multiplyAD(atlas::FieldSet & fset) const {
   // Loop over saber (model) fields and create corresponding GSI fields
   for (auto sabField : fset) {
       // Get the name
-      const auto fieldName = name(sabField.name());
+      const auto fieldName = atlas::option::name(sabField.name());
 
       // Ensure that the field name is in the input/output list
       const std::string fieldNameStr = fieldName.getString("name");
@@ -144,7 +139,8 @@ void Interpolation::multiplyAD(atlas::FieldSet & fset) const {
       }
 
       // Create the field and add to Fieldset
-      gsiFields.add(gsiGridFuncSpace_.createField<double>(fieldName | levels(sabField.levels())));
+      gsiFields.add(inputFunctionSpace_.createField<double>(atlas::option::name(fieldName)
+        | atlas::option::levels(sabField.levels())));
   }
 
   // Do the adjoint of interpolation from GSI grid to model grid

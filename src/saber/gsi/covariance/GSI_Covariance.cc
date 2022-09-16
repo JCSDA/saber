@@ -47,7 +47,7 @@ Covariance::Covariance(const eckit::mpi::Comm & comm,
        const atlas::FieldSet & xb,
        const atlas::FieldSet & fg,
        const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberCentralBlockBase(conf), variables_(), grid_(comm, conf)
+  : SaberCentralBlockBase(conf), gsiGridFuncSpace_(functionSpace)
 {
   oops::Log::trace() << classname() << "::Covariance starting" << std::endl;
   util::Timer timer(classname(), "Covariance");
@@ -56,31 +56,11 @@ Covariance::Covariance(const eckit::mpi::Comm & comm,
   CovarianceParameters params;
   params.validateAndDeserialize(conf);
 
-  // Check variables
-  const oops::Variables inoutVars = params.inoutVars.value();
-  const oops::Variables activeVars = params.activeVars.value();
-  for (const auto & var : activeVars.variables()) {
-    ASSERT(inoutVars.has(var));
-  }
-
-  // Assert that there is no variable change in this block
-  variables_ = inoutVars.variables();
-
-  // Function space
-  gsiGridFuncSpace_ = atlas::functionspace::PointCloud(grid_.functionSpace().get());
-
-  // Convert background and first guess to field sets that can be modified
-  atlas::FieldSet xbgFieldSet(xb.get());
-  atlas::FieldSet xfgFieldSet(fg.get());
-
-  // Interpolate background and first guess to background error model grid
-  InterpolationImpl interp_(comm, functionSpace, params.interp, params.inoutVars.value().variables());
-  interp_.multiply(xbgFieldSet);
-  interp_.multiply(xfgFieldSet);
+  // Object wide copy of the variables
+  variables_ = params.inoutVars.value().variables();
 
   // Create covariance module
-  gsi_covariance_create_f90(keySelf_, comm, params.toConfiguration(),
-                            xbgFieldSet.get(), xfgFieldSet.get());
+  gsi_covariance_create_f90(keySelf_, comm, params.toConfiguration(), xb.get(), fg.get());
 
   oops::Log::trace() << classname() << "::Covariance done" << std::endl;
 }

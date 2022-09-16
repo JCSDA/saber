@@ -4,8 +4,7 @@
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
 # Build list of subdirs with files to add
-#set(_subdirs bump external gsi interpolation model oops spectralb util vader)
-set(_subdirs bump external interpolation model oops spectralb util vader)
+set(_subdirs bump external gsi interpolation model oops spectralb util vader)
 foreach( _subdir IN LISTS _subdirs )
     add_subdirectory( ${_subdir} )
     list( TRANSFORM ${_subdir}_src_files PREPEND ${_subdir}/ )

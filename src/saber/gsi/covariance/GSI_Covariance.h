@@ -34,8 +34,6 @@ namespace gsi {
 
 class CovarianceParameters : public SaberCentralBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(CovarianceParameters, SaberCentralBlockParametersBase)
- public:
-  
 };
 
 // -------------------------------------------------------------------------------------------------
@@ -65,10 +63,8 @@ class Covariance : public SaberCentralBlockBase {
   CovarianceKey keySelf_;
   // Variables
   std::vector<std::string> variables_;
-  // Function space
+  // GSI grid FunctionSpace
   atlas::FunctionSpace gsiGridFuncSpace_;
-  // Grid
-  Grid grid_;
 };
 
 // -------------------------------------------------------------------------------------------------

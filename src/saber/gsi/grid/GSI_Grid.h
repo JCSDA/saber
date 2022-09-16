@@ -54,7 +54,8 @@ class Grid {
   static const std::string classname() {return "saber::gsi::Grid";}
 
   // Constructor & destructor
-  Grid(const eckit::mpi::Comm &, const eckit::Configuration &);
+  explicit Grid() {};
+  Grid(const eckit::mpi::Comm &, const GridParameters &);
   ~Grid();
 
   // Accessor functions

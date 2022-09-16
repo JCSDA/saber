@@ -25,14 +25,10 @@ namespace gsi {
 
 // -------------------------------------------------------------------------------------------------
 
-Grid::Grid(const eckit::mpi::Comm & comm, const eckit::Configuration & conf)
+Grid::Grid(const eckit::mpi::Comm & comm, const GridParameters & params)
 {
   oops::Log::trace() << classname() << "::Grid starting" << std::endl;
   util::Timer timer(classname(), "Grid");
-
-  // Deserialize configuration
-  GridParameters params;
-  params.validateAndDeserialize(conf);
 
   // Create grid
   gsi_grid_create_f90(keySelf_, params.toConfiguration(), comm);

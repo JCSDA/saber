@@ -35,15 +35,12 @@ namespace gsi {
 
 // -------------------------------------------------------------------------------------------------
 
-class InterpolationImplParameters : public SaberOuterBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(InterpolationImplParameters, SaberOuterBlockParametersBase)
+class InterpolationParameters : public SaberOuterBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(InterpolationParameters, SaberOuterBlockParametersBase)
 
  public:
   // Grid
   oops::RequiredParameter<GridParameters> grid{"grid", this};
-
-  // Interpolation method
-  oops::Parameter<std::string> interpMethod{"interpolation method", "barycent", this};
 };
 
 // -------------------------------------------------------------------------------------------------
@@ -73,15 +70,14 @@ class Interpolation : public SaberOuterBlockBase {
 
   // Interpolation object
   std::unique_ptr<UnstructuredInterpolation> interpolator_;
-  // Function spaces
-  atlas::FunctionSpace gsiGridFuncSpace_;
-  atlas::FunctionSpace modGridFuncSpace_;
   // Variables
   std::vector<std::string> variables_;
   // Expected number of levels in GSI grid
   int gsiLevels_;
   // Grid
   Grid grid_;
+  // Output FunctionSpace
+  atlas::FunctionSpace outputFunctionSpace_;
 };
 
 // -------------------------------------------------------------------------------------------------
