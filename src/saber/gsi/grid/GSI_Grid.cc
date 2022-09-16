@@ -25,13 +25,13 @@ namespace gsi {
 
 // -------------------------------------------------------------------------------------------------
 
-Grid::Grid(const eckit::mpi::Comm & comm, const GridParameters & params)
+Grid::Grid(const eckit::mpi::Comm & comm, const eckit::Configuration & conf)
 {
   oops::Log::trace() << classname() << "::Grid starting" << std::endl;
   util::Timer timer(classname(), "Grid");
 
   // Create grid
-  gsi_grid_create_f90(keySelf_, params.toConfiguration(), comm);
+  gsi_grid_create_f90(keySelf_, conf, comm);
 
   // Get number of levels
   gsi_grid_get_levels_f90(keySelf_, gsiLevels_);

@@ -44,7 +44,7 @@ Interpolation::Interpolation(const eckit::mpi::Comm & comm,
                const atlas::FieldSet & xb,
                const atlas::FieldSet & fg,
                const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberOuterBlockBase(conf), outputFunctionSpace_(outputFunctionSpace)
+  : SaberOuterBlockBase(conf), grid_(comm, conf), outputFunctionSpace_(outputFunctionSpace)
 {
   oops::Log::trace() << classname() << "::Interpolation starting" << std::endl;
   util::Timer timer(classname(), "Interpolation");
@@ -53,11 +53,8 @@ Interpolation::Interpolation(const eckit::mpi::Comm & comm,
   InterpolationParameters params;
   params.deserialize(conf);
 
-  // Setup GSI grid
-  grid_ = Grid(comm, params.grid.value());
-
   // Input geometry and variables
-  inputFunctionSpace_ = atlas::functionspace::PointCloud(grid_.functionSpace());
+  inputFunctionSpace_ = grid_.functionSpace();
   inputExtraFields_ = outputExtraFields; // TODO: interpolate that?
   inputVars_ = params.outputVars.value();
 
@@ -95,17 +92,13 @@ void Interpolation::multiply(atlas::FieldSet & fset) const {
 
   // Loop over saber (gsi) fields and create corresponding model fields
   for (auto sabField : fset) {
-      // Get the name
-      const auto fieldName = atlas::option::name(sabField.name());
-
       // Ensure that the field name is in the input/output list
-      const std::string fieldNameStr = fieldName.getString("name");
-      if (std::find(variables_.begin(), variables_.end(), fieldNameStr) == variables_.end()) {
-        ABORT("Field " + fieldNameStr + " not found in the " + classname() + " variables.");
+      if (std::find(variables_.begin(), variables_.end(), sabField.name()) == variables_.end()) {
+        ABORT("Field " + sabField.name() + " not found in the " + classname() + " variables.");
       }
 
       // Create the model field and add to Fieldset
-      modFields.add(outputFunctionSpace_.createField<double>(atlas::option::name(fieldName)
+      modFields.add(outputFunctionSpace_.createField<double>(atlas::option::name(sabField.name())
       | atlas::option::levels(sabField.levels())));
   }
 

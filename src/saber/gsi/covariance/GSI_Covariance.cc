@@ -85,18 +85,14 @@ void Covariance::randomize(atlas::FieldSet & fset) const {
   atlas::FieldSet newFields = atlas::FieldSet();
 
   // Loop over saber (model) fields and create corresponding fields on gsi grid
-  for (auto sabField : fset) {
-      // Get the name
-      const auto fieldName = atlas::option::name(sabField.name());
-
+  for (const auto & sabField : fset) {
       // Ensure that the field name is in the input/output list
-      const std::string fieldNameStr = fieldName.getString("name");
-      if (std::find(variables_.begin(), variables_.end(), fieldNameStr) == variables_.end()) {
-        ABORT("Field " + fieldNameStr + " not found in the " + classname() + " variables.");
+      if (std::find(variables_.begin(), variables_.end(), sabField.name()) == variables_.end()) {
+        ABORT("Field " + sabField.name() + " not found in the " + classname() + " variables.");
       }
 
       // Create the gsi grid field and add to Fieldset
-      newFields.add(gsiGridFuncSpace_.createField<double>(fieldName
+      newFields.add(gsiGridFuncSpace_.createField<double>(atlas::option::name(sabField.name())
         | atlas::option::levels(sabField.levels())));
   }
 

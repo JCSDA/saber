@@ -28,23 +28,6 @@ namespace gsi {
 
 class GridParameters : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(GridParameters, Parameters)
-
- public:
-  // File containing grid and coefficients
-  oops::RequiredParameter<std::string> GSIFile{"gsi error covariance file", this};
-  oops::RequiredParameter<std::string> GSINML{"gsi berror namelist file", this};
-
-  // Handle vertical top-2-bottom and vice-verse wrt to GSI
-  oops::Parameter<bool> vflip{"flip vertical grid", true, this};
-
-  // Processor layout
-  oops::Parameter<size_t> layoutx{"processor layout x direction", 1, this};
-  oops::Parameter<size_t> layouty{"processor layout y direction", 1, this};
-
-  // Debugging mode
-  oops::Parameter<bool> debugMode{"debugging mode", false, this};
-  oops::Parameter<bool> bypassGSI{"debugging bypass gsi", false, this};
-  oops::Parameter<bool> bypassGSIbe{"debugging deep bypass gsi B error", false, this};
 };
 
 // -------------------------------------------------------------------------------------------------
@@ -54,8 +37,7 @@ class Grid {
   static const std::string classname() {return "saber::gsi::Grid";}
 
   // Constructor & destructor
-  explicit Grid() {};
-  Grid(const eckit::mpi::Comm &, const GridParameters &);
+  Grid(const eckit::mpi::Comm &, const eckit::Configuration &);
   ~Grid();
 
   // Accessor functions

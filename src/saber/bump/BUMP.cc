@@ -54,7 +54,8 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
            const std::vector<atlas::FieldSet> & fsetVec2,
            const size_t & ens1_ne_in,
            const size_t & ens2_ne_in)
- : activeVars_(activeVars), keyBUMP_(), membersConfig1_(), membersConfig2_(), activeVarsPerGrid_() {
+ : activeVars_(activeVars), keyBUMP_(), membersConfig1_(), membersConfig2_(), activeVarsPerGrid_(),
+   functionSpace1_(functionSpace1) {
   oops::Log::trace() << "BUMP::BUMP construction starting" << std::endl;
 
   // Get ensemble 1 size
@@ -242,7 +243,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
     if (fset.name() != "universe radius") {
       size_t pos = fset.name().find("::");
       if (pos != std::string::npos) {
-        size_t component = std::stoi(fset.name().substr(pos+1));
+        size_t component = std::stoi(fset.name().substr(pos+2));
         ncmp1 = std::max(ncmp1, component);
       }
     }
@@ -252,7 +253,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
     if (fset.name() != "universe radius") {
       size_t pos = fset.name().find("::");
       if (pos != std::string::npos) {
-        size_t component = std::stoi(fset.name().substr(pos+1));
+        size_t component = std::stoi(fset.name().substr(pos+2));
         ncmp2 = std::max(ncmp2, component);
       }
     }
@@ -267,7 +268,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
       size_t pos = fset.name().find("::");
       if (pos != std::string::npos) {
         // Get component
-        component = std::stoi(fset.name().substr(pos+1));
+        component = std::stoi(fset.name().substr(pos+2));
         name = fset.name().substr(0,pos);
       }
       this->setParameter(name, component, fset);
@@ -281,7 +282,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
       size_t pos = fset.name().find("::");
       if (pos != std::string::npos) {
         // Get component
-        component = std::stoi(fset.name().substr(pos+1));
+        component = std::stoi(fset.name().substr(pos+2));
         name = fset.name().substr(0,pos);
       }
       this->setParameter(name, component, fset);
@@ -355,101 +356,101 @@ void BUMP::runDrivers() const {
 // -----------------------------------------------------------------------------
 
 void BUMP::multiplyVbal(atlas::FieldSet & fset) const {
-  fset.get()->adjointHaloExchange(); // Should be in Fortran when interface is added
+  if (functionSpace1_.type() != "PointCloud") fset.get()->adjointHaloExchange(); // TODO(Benjamin): should be in Fortran when ATLAS interface is added
   for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_apply_vbal_f90(keyBUMP_[jgrid], fset.get());
   }
-  fset.get()->haloExchange(); // Should be in Fortran when interface is added
+  if (functionSpace1_.type() != "PointCloud") fset.get()->haloExchange(); // TODO(Benjamin): should be in Fortran when ATLAS interface is added
 }
 
 // -----------------------------------------------------------------------------
 
 void BUMP::inverseMultiplyVbal(atlas::FieldSet & fset) const {
-  fset.get()->adjointHaloExchange(); // Should be in Fortran when interface is added
+  if (functionSpace1_.type() != "PointCloud") fset.get()->adjointHaloExchange(); // TODO(Benjamin): should be in Fortran when ATLAS interface is added
   for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_apply_vbal_inv_f90(keyBUMP_[jgrid], fset.get());
   }
-  fset.get()->haloExchange(); // Should be in Fortran when interface is added
+  if (functionSpace1_.type() != "PointCloud") fset.get()->haloExchange(); // TODO(Benjamin): should be in Fortran when ATLAS interface is added
 }
 
 // -----------------------------------------------------------------------------
 
 void BUMP::multiplyVbalAd(atlas::FieldSet & fset) const {
-  fset.get()->adjointHaloExchange(); // Should be in Fortran when interface is added
+  if (functionSpace1_.type() != "PointCloud") fset.get()->adjointHaloExchange(); // TODO(Benjamin): should be in Fortran when ATLAS interface is added
   for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_apply_vbal_ad_f90(keyBUMP_[jgrid], fset.get());
   }
-  fset.get()->haloExchange(); // Should be in Fortran when interface is added
+  if (functionSpace1_.type() != "PointCloud") fset.get()->haloExchange(); // TODO(Benjamin): should be in Fortran when ATLAS interface is added
 }
 
 // -----------------------------------------------------------------------------
 
 void BUMP::inverseMultiplyVbalAd(atlas::FieldSet & fset) const {
-  fset.get()->adjointHaloExchange(); // Should be in Fortran when interface is added
+  if (functionSpace1_.type() != "PointCloud") fset.get()->adjointHaloExchange(); // TODO(Benjamin): should be in Fortran when ATLAS interface is added
   for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_apply_vbal_inv_ad_f90(keyBUMP_[jgrid], fset.get());
   }
-  fset.get()->haloExchange(); // Should be in Fortran when interface is added
+  if (functionSpace1_.type() != "PointCloud") fset.get()->haloExchange(); // TODO(Benjamin): should be in Fortran when ATLAS interface is added
 }
 
 // -----------------------------------------------------------------------------
 
 void BUMP::multiplyStdDev(atlas::FieldSet & fset) const {
-  fset.get()->adjointHaloExchange(); // Should be in Fortran when interface is added
+  if (functionSpace1_.type() != "PointCloud") fset.get()->adjointHaloExchange(); // TODO(Benjamin): should be in Fortran when ATLAS interface is added
   for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_apply_stddev_f90(keyBUMP_[jgrid], fset.get());
   }
-  fset.get()->haloExchange(); // Should be in Fortran when interface is added
+  if (functionSpace1_.type() != "PointCloud") fset.get()->haloExchange(); // TODO(Benjamin): should be in Fortran when ATLAS interface is added
 }
 
 // -----------------------------------------------------------------------------
 
 void BUMP::inverseMultiplyStdDev(atlas::FieldSet & fset) const {
-  fset.get()->adjointHaloExchange(); // Should be in Fortran when interface is added
+  if (functionSpace1_.type() != "PointCloud") fset.get()->adjointHaloExchange(); // TODO(Benjamin): should be in Fortran when ATLAS interface is added
   for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_apply_stddev_inv_f90(keyBUMP_[jgrid], fset.get());
   }
-  fset.get()->haloExchange(); // Should be in Fortran when interface is added
+  if (functionSpace1_.type() != "PointCloud") fset.get()->haloExchange(); // TODO(Benjamin): should be in Fortran when ATLAS interface is added
 }
 
 // -----------------------------------------------------------------------------
 
 void BUMP::randomizeNicas(atlas::FieldSet & fset) const {
-  fset.get()->adjointHaloExchange(); // Should be in Fortran when interface is added
+  if (functionSpace1_.type() != "PointCloud") fset.get()->adjointHaloExchange(); // TODO(Benjamin): should be in Fortran when ATLAS interface is added
   for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_randomize_f90(keyBUMP_[jgrid], fset.get());
   }
-  fset.get()->haloExchange(); // Should be in Fortran when interface is added
+  if (functionSpace1_.type() != "PointCloud") fset.get()->haloExchange(); // TODO(Benjamin): should be in Fortran when ATLAS interface is added
 }
 
 // -----------------------------------------------------------------------------
 
 void BUMP::multiplyNicas(atlas::FieldSet & fset) const {
-  fset.get()->adjointHaloExchange(); // Should be in Fortran when interface is added
+  if (functionSpace1_.type() != "PointCloud") fset.get()->adjointHaloExchange(); // TODO(Benjamin): should be in Fortran when ATLAS interface is added
   for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_apply_nicas_f90(keyBUMP_[jgrid], fset.get());
   }
-  fset.get()->haloExchange(); // Should be in Fortran when interface is added
+  if (functionSpace1_.type() != "PointCloud") fset.get()->haloExchange(); // TODO(Benjamin): should be in Fortran when ATLAS interface is added
 }
 
 // -----------------------------------------------------------------------------
 
 void BUMP::multiplyPsiChiToUV(atlas::FieldSet & fset) const {
-  fset.get()->adjointHaloExchange(); // Should be in Fortran when interface is added
+  if (functionSpace1_.type() != "PointCloud") fset.get()->adjointHaloExchange(); // TODO(Benjamin): should be in Fortran when ATLAS interface is added
   for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_psichi_to_uv_f90(keyBUMP_[jgrid], fset.get());
   }
-  fset.get()->haloExchange(); // Should be in Fortran when interface is added
+  if (functionSpace1_.type() != "PointCloud") fset.get()->haloExchange(); // TODO(Benjamin): should be in Fortran when ATLAS interface is added
 }
 
 // -----------------------------------------------------------------------------
 
 void BUMP::multiplyPsiChiToUVAd(atlas::FieldSet & fset) const {
-  fset.get()->adjointHaloExchange(); // Should be in Fortran when interface is added
+  if (functionSpace1_.type() != "PointCloud") fset.get()->adjointHaloExchange(); // TODO(Benjamin): should be in Fortran when ATLAS interface is added
   for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_psichi_to_uv_ad_f90(keyBUMP_[jgrid], fset.get());
   }
-  fset.get()->haloExchange(); // Should be in Fortran when interface is added
+  if (functionSpace1_.type() != "PointCloud") fset.get()->haloExchange(); // TODO(Benjamin): should be in Fortran when ATLAS interface is added
 }
 
 // -----------------------------------------------------------------------------

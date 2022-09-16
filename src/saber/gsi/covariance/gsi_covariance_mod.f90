@@ -109,10 +109,6 @@ self%rank = comm%rank()
 
 call config%get_or_die("debugging bypass gsi", self%noGSI)
 if (.not. self%noGSI) then
-  call config%get_or_die("saber central block", central)
-  if (.not. central) then
-     call abor1_ftn(myname_//": not ready to handle sqrt(B) case")
-  endif
   call config%get_or_die("debugging deep bypass gsi B error", self%bypassGSIbe)
 
 ! Get required name of resources for GSI B error

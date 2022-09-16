@@ -185,7 +185,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
       outputVars = inputVars;
     }
   }
-
+  std::cout << "Params:"  << params.toConfiguration() << std::endl;
   // Get central block parameters
   const SaberCentralBlockParametersWrapper & saberCentralBlockParamWrapper = params.saberCentralBlock.value();
   const SaberCentralBlockParametersBase & saberCentralBlockParams = saberCentralBlockParamWrapper.saberCentralBlockParameters;

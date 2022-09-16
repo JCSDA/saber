@@ -56,8 +56,8 @@ class BUMP {
        const oops::Variables &,
        const BUMP_Parameters &,
        const std::vector<atlas::FieldSet> &,
-       const atlas::FunctionSpace & functionSpace = NULL,
-       const atlas::FieldSet & fieldSet = NULL,
+       const atlas::FunctionSpace & functionSpace2 = NULL,
+       const atlas::FieldSet & extraFields2 = NULL,
        const std::vector<atlas::FieldSet> & fsetVec2 = {},
        const size_t & ens1_ne_in = 0,
        const size_t & ens2_ne_in = 0);
@@ -100,6 +100,7 @@ class BUMP {
   std::vector<eckit::LocalConfiguration> membersConfig1_;
   std::vector<eckit::LocalConfiguration> membersConfig2_;
   std::vector<oops::Variables> activeVarsPerGrid_;
+  atlas::FunctionSpace functionSpace1_; // TODO(Benjamin): should be removed when haloExchange is done in Fortran
 };
 
 // -----------------------------------------------------------------------------

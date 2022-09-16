@@ -39,8 +39,21 @@ class InterpolationParameters : public SaberOuterBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(InterpolationParameters, SaberOuterBlockParametersBase)
 
  public:
-  // Grid
-  oops::RequiredParameter<GridParameters> grid{"grid", this};
+  // File containing grid and coefficients
+  oops::RequiredParameter<std::string> GSIFile{"gsi error covariance file", this};
+  oops::RequiredParameter<std::string> GSINML{"gsi berror namelist file", this};
+
+  // Handle vertical top-2-bottom and vice-verse wrt to GSI
+  oops::Parameter<bool> vflip{"flip vertical grid", true, this};
+
+  // Processor layout
+  oops::Parameter<size_t> layoutx{"processor layout x direction", 1, this};
+  oops::Parameter<size_t> layouty{"processor layout y direction", 1, this};
+
+  // Debugging mode
+  oops::Parameter<bool> debugMode{"debugging mode", false, this};
+  oops::Parameter<bool> bypassGSI{"debugging bypass gsi", false, this};
+  oops::Parameter<bool> bypassGSIbe{"debugging deep bypass gsi B error", false, this};
 };
 
 // -------------------------------------------------------------------------------------------------
@@ -68,6 +81,8 @@ class Interpolation : public SaberOuterBlockBase {
  private:
   void print(std::ostream &) const override;
 
+  // Parameters
+  InterpolationParameters params_;
   // Interpolation object
   std::unique_ptr<UnstructuredInterpolation> interpolator_;
   // Variables

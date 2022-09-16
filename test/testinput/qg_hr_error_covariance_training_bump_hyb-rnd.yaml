@@ -4,21 +4,18 @@ background:
   state variables: [q]
 background error:
   covariance model: SABER
-  saber blocks:
-  - saber block name: BUMP_NICAS
-    saber central block: true
-    input variables: [q]
-    output variables: [q]
+  saber central block:
+    saber block name: BUMP_NICAS
     bump:
       datadir: testdata
       fname_nicas: qg_hr_error_covariance_training_bump_cov_inhomo-aniso/test_nicas
       load_nicas_local: true
       prefix: qg_hr_error_covariance_training_bump_hyb-rnd/test
       strategy: specific_univariate
+  saber outer blocks:
   - saber block name: StdDev
-    input variables: [q]
-    output variables: [q]
-    file:
+    input fields:
+    - parameter: StdDev
       filename: testdata/qg_hr_error_covariance_training_bump_stddev/stddev.an.2010-01-01T12:00:00Z.nc
   randomization size: 30
 bump:
