@@ -62,7 +62,7 @@ HydrostaticExnerSaberBlock::HydrostaticExnerSaberBlock(const eckit::mpi::Comm & 
   // Input geometry and variables
   inputFunctionSpace_ = outputFunctionSpace;
   inputExtraFields_ = outputExtraFields;
-  inputVars_ = params.outputVars.value(); // TODO(Marek): is it correct?
+  inputVars_ = params.outputVars.value();
 
   // Covariance FieldSet
   covFieldSet_ = createGpRegressionStats(outputFunctionSpace, outputExtraFields, activeVariableSizes,

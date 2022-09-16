@@ -56,7 +56,7 @@ AirTemperatureSaberBlock::AirTemperatureSaberBlock(const eckit::mpi::Comm & comm
   // Input geometry and variables
   inputFunctionSpace_ = outputFunctionSpace;
   inputExtraFields_ = outputExtraFields;
-  inputVars_ = params.outputVars.value(); // TODO(Marek): is it correct?
+  inputVars_ = params.outputVars.value();
 
   // Need to setup derived state fields that we need.
   std::vector<std::string> requiredStateVariables{"exner_levels_minus_one",

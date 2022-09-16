@@ -10,8 +10,6 @@ background error:
       strategy: specific_univariate
   saber outer blocks:
   - saber block name: StdDev
-    input variables: [x]
-    output variables: [x]
     input fields:
     - parameter: StdDev
       filename: testdata/qg_error_covariance_training_bump_cov_no_ens/stddev.an.2010-01-01T12:00:00Z.nc

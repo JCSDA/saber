@@ -11,6 +11,8 @@
 #include <memory>
 #include <string>
 #include <vector>
+
+#include "boost/range/adaptors.hpp"
 #include <boost/ptr_container/ptr_vector.hpp>
 
 #include "oops/base/Increment.h"
@@ -21,11 +23,13 @@
 #include "oops/util/Logger.h"
 #include "oops/util/parameters/Parameter.h"
 #include "oops/util/parameters/RequiredParameter.h"
+#include "oops/util/Random.h"
 
-/*
-#include "saber/oops/SaberBlockBase.h"
-#include "saber/oops/SaberBlockParametersBase.h"
-*/
+#include "saber/oops/ReadInputFields.h"
+#include "saber/oops/SaberCentralBlockBase.h"
+#include "saber/oops/SaberCentralBlockParametersBase.h"
+#include "saber/oops/SaberOuterBlockBase.h"
+#include "saber/oops/SaberOuterBlockParametersBase.h"
 
 namespace eckit {
   class Configuration;
@@ -57,8 +61,10 @@ template <typename MODEL> class SaberBlockTestParameters
   oops::RequiredParameter<StateParameters_> background{"background", this};
 
   /// SABER blocks
-//  oops::RequiredParameter<std::vector<SaberBlockParametersWrapper>>
-//    saberBlocks{"saber blocks", this};
+  oops::OptionalParameter<SaberCentralBlockParametersWrapper>
+    saberCentralBlock{"saber central block", this};
+  oops::OptionalParameter<std::vector<SaberOuterBlockParametersWrapper>>
+    saberOuterBlocks{"saber outer blocks", this};
 
   /// Adjoint test tolerance
   oops::Parameter<double> adjointTolerance{"adjoint test tolerance", 1.0e-12, this};
@@ -70,9 +76,13 @@ template <typename MODEL> class SaberBlockTestParameters
 // -----------------------------------------------------------------------------
 
 template <typename MODEL> class SaberBlockTest : public oops::Application {
-  typedef oops::Geometry<MODEL>                           Geometry_;
-  typedef oops::Increment<MODEL>                          Increment_;
-  typedef oops::State<MODEL>                              State_;
+  typedef oops::Geometry<MODEL>                                Geometry_;
+  typedef oops::Increment<MODEL>                               Increment_;
+  typedef typename boost::ptr_vector<SaberOuterBlockBase>      SaberOuterBlockVec_;
+  typedef typename SaberOuterBlockVec_::iterator               iter_;
+  typedef typename SaberOuterBlockVec_::const_iterator         icst_;
+  typedef typename SaberOuterBlockVec_::const_reverse_iterator ircst_;
+  typedef oops::State<MODEL>                                   State_;
 
  public:
   static const std::string classname() {return "saber::SaberBlockTest";}
@@ -93,19 +103,23 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
     const Geometry_ geom(params.geometry, this->getComm());
 
     // Setup variables
-    const oops::Variables vars(params.variables);
+    const oops::Variables incVars(params.variables);
 
     // Setup background state
     const State_ xx(geom, params.background);
-/*
+
+    // Saber blocks
+    std::unique_ptr<SaberCentralBlockBase> saberCentralBlock_;
+    SaberOuterBlockVec_ saberOuterBlocks_;
+
     // Local copy of background and first guess
     State_ xbLocal(xx);
     State_ fgLocal(xx);
 
     // Initial and output variables and geometry
-    oops::Variables outputVars(vars);
-    atlas::FunctionSpace outputFunctionSpace = resol.functionSpace();
-    atlas::FieldSet outputExtraFields = resol.extraFields();
+    oops::Variables outputVars(incVars);
+    atlas::FunctionSpace outputFunctionSpace = geom.functionSpace();
+    atlas::FieldSet outputExtraFields = geom.extraFields();
 
     // Build outer blocks successively
     const boost::optional<std::vector<SaberOuterBlockParametersWrapper>> &saberOuterBlocks = params.saberOuterBlocks.value();
@@ -121,18 +135,6 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         saberOuterBlockParams.serialize(outerConf);
         outerConf.set("output variables", outputVars.variables());
   
-        // Define input variables
-        oops::Variables inputVars;
-        const boost::optional<oops::Variables> &optionalInputVars = saberOuterBlockParams.inputVars.value();
-        if (optionalInputVars != boost::none) {
-           // Input variables specified
-           inputVars = *optionalInputVars;
-        } else {
-           // No input variables specified, assuming they are the same as output variables
-           inputVars = outputVars;
-           outerConf.set("input variables", inputVars.variables());
-        }
-  
         // Define active variables
         oops::Variables activeVars;
         const boost::optional<oops::Variables> &optionalActiveVars = saberOuterBlockParams.activeVars.value();
@@ -144,32 +146,20 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
            activeVars = outputVars;
            outerConf.set("active variables", activeVars.variables());
         }
-  
-        // Check that active variables are present
-        for (const auto & var : activeVars.variables()) {
-          ASSERT(inputVars.has(var) || outputVars.has(var));
-        }
-  
-        // Define input geometry (TODO: access it from the block, only copy right now)
-        atlas::FunctionSpace inputFunctionSpace = outputFunctionSpace;
-        atlas::FieldSet inputExtraFields = outputExtraFields;
-  
+
         // Read input fields (on model increment geometry)
         std::vector<atlas::FieldSet> fsetVec = readInputFields(
-          resol,
-          inputVars,
-          xb.validTime(),
+          geom,
+          activeVars,
+          xx.validTime(),
           saberOuterBlockParams.inputFields.value());
   
         // Create outer block
         oops::Log::info() << "Creating outer block: " << saberOuterBlockParams.saberBlockName.value() << std::endl;
-        saberOuterBlocks_.push_back(SaberOuterBlockFactory::create(resol.getComm(),
-                                    inputFunctionSpace,
-                                    inputExtraFields,
-                                    resol.variableSizes(inputVars),
+        saberOuterBlocks_.push_back(SaberOuterBlockFactory::create(geom.getComm(),
                                     outputFunctionSpace,
                                     outputExtraFields,
-                                    resol.variableSizes(outputVars),
+                                    geom.variableSizes(activeVars),
                                     outerConf,
                                     xbLocal.fieldSet(),
                                     fgLocal.fieldSet(),
@@ -179,66 +169,30 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         saberOuterBlocks_.back().calibrationInverseMultiply(xbLocal.fieldSet());
         saberOuterBlocks_.back().calibrationInverseMultiply(fgLocal.fieldSet());
   
-        // Input variables and geometry of this block will be output variables and geometry of the next one
-        outputVars = inputVars;
-        outputFunctionSpace = inputFunctionSpace;
-        outputExtraFields = inputExtraFields;
-      }
-    }
-  
-    // Get central block parameters
-    const SaberCentralBlockParametersWrapper & saberCentralBlockParamWrapper = params.saberCentralBlocks.value();
-    const SaberCentralBlockParametersBase & saberCentralBlockParams = saberCentralBlockParamWrapper.saberCentralBlockParameters;
-  
-    // Define input/output variables
-    oops::Variables inoutVars = outputVars;
-  
-    // Local configuration to add parameters
-    eckit::LocalConfiguration centralConf;
-    saberCentralBlockParams.serialize(centralConf);
-    centralConf.set("inout variables", inoutVars.variables());
-  
-    // Define active variables
-    oops::Variables activeVars;
-    const boost::optional<oops::Variables> &optionalActiveVars = saberCentralBlockParams.activeVars.value();
-    if (optionalActiveVars != boost::none) {
-       // Active variables specified
-       activeVars = *optionalActiveVars;
-    } else {
-       // No active variables specified, assuming they are the same as output variables
-       activeVars = inoutVars;
-       centralConf.set("active variables", activeVars.variables());
-    }
-  
-    // Check that active variables are present
-    for (const auto & var : activeVars.variables()) {
-      ASSERT(inoutVars.has(var));
-    }
-  
-    // Read input fields (on model increment geometry)
-    std::vector<atlas::FieldSet> fsetVec = readInputFields(
-      resol,
-      inoutVars,
-      xb.validTime(),
-      saberCentralBlockParams.inputFields.value());
-  
-    // Create central block
-    saberCentralBlock_.reset(SaberCentralBlockFactory::create(resol.getComm(),
-                             outputFunctionSpace,
-                             outputExtraFields,
-                             resol.variableSizes(inoutVars),
-                             centralConf,
-                             xbLocal.fieldSet(),
-                             fgLocal.fieldSet(),
-                             fsetVec));
+        // Access input geometry and variables of the current block
+        const oops::Variables inputVars = saberOuterBlocks_.back().inputVars();
+        const atlas::FunctionSpace inputFunctionSpace = saberOuterBlocks_.back().inputFunctionSpace();
+        const atlas::FieldSet inputExtraFields = saberOuterBlocks_.back().inputExtraFields();
 
+        // Check that active variables are present in either input or output variables, or both
+        for (const auto & var : activeVars.variables()) {
+          ASSERT(inputVars.has(var) || outputVars.has(var));
+        }
 
- TODO: tester chaque bloc individuellement, au fur et a mesure
+        // Adjoint test
 
-      // Adjoint test
+        // Variables sizes
+        std::vector<size_t> variableSizes = geom.variableSizes(inputVars);
 
-      // Apply adjoint block
-      saberBlock_->multiplyAD();
+        // Create random input FieldSet
+        atlas::FieldSet inputFset = createRandomFieldSet(inputFunctionSpace,
+                                                         variableSizes,
+                                                         inputVars);
+/*
+        // Save input and output Fieldsets
+
+        // Apply adjoint block
+        saberBlock_->multiplyAD();
 
       // 
       Increment_ dx2TLAD(dx1TLAD);
@@ -261,34 +215,127 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
                            ": x^t (Ay) = " << dp2 << std::endl;
       ASSERT(0.5*abs(dp1-dp2)/(dp1+dp2) < params.adjointTolerance.value());
 
-      // Left inverse test
-
-      // Apply block
-      it->multiply(dx1Inv.fieldSet());
-      it->inverseMultiply(dx1Inv.fieldSet());
-      it->multiplyAD(dx2Inv.fieldSet());
-      it->inverseMultiplyAD(dx2Inv.fieldSet());
-
-      // ATLAS fieldset to Increment_
-      dx1Inv.synchronizeFields();
-      dx2Inv.synchronizeFields();
-
-      // Compute inverse test
-      dx1Inv -= dx1Invsave;
-      dx2Inv -= dx2Invsave;
-      const double dp1 = dx1Inv.norm()/dx1Invsave.norm();
-      const double dp2 = dx2Inv.norm()/dx2Invsave.norm();
-      oops::Log::test() << "Inverse test for block " << it->name() << std::endl;
-      ASSERT(dp1 < params.inverseTolerance.value());
-      ASSERT(dp2 < params.inverseTolerance.value());
+  */
+        // Update output geometry and variables for the next block
+        outputFunctionSpace = inputFunctionSpace;
+        outputExtraFields = inputExtraFields;
+        outputVars = inputVars;
+      }
     }
-*/
+
+    const boost::optional<SaberCentralBlockParametersWrapper> &saberCentralBlock = params.saberCentralBlock.value();
+    if (saberCentralBlock != boost::none) {
+      // Get central block parameters
+      const SaberCentralBlockParametersBase & saberCentralBlockParams = saberCentralBlock->saberCentralBlockParameters;
+    
+      // Define input/output variables
+      oops::Variables inoutVars = outputVars;
+    
+      // Local configuration to add parameters
+      eckit::LocalConfiguration centralConf;
+      saberCentralBlockParams.serialize(centralConf);
+      centralConf.set("inout variables", inoutVars.variables());
+    
+      // Define active variables
+      oops::Variables activeVars;
+      const boost::optional<oops::Variables> &optionalActiveVars = saberCentralBlockParams.activeVars.value();
+      if (optionalActiveVars != boost::none) {
+         // Active variables specified
+         activeVars = *optionalActiveVars;
+      } else {
+         // No active variables specified, assuming they are the same as output variables
+         activeVars = inoutVars;
+         centralConf.set("active variables", activeVars.variables());
+      }
+    
+      // Read input fields (on model increment geometry)
+      std::vector<atlas::FieldSet> fsetVec = readInputFields(
+        geom,
+        activeVars,
+        xx.validTime(),
+        saberCentralBlockParams.inputFields.value());
+    
+      // Create central block
+      saberCentralBlock_.reset(SaberCentralBlockFactory::create(geom.getComm(),
+                               outputFunctionSpace,
+                               outputExtraFields,
+                               geom.variableSizes(activeVars),
+                               centralConf,
+                               xbLocal.fieldSet(),
+                               fgLocal.fieldSet(),
+                               fsetVec));
+    
+      // Check that active variables are present in input/output variables
+      for (const auto & var : activeVars.variables()) {
+        ASSERT(inoutVars.has(var));
+      }
+    }
+
     return 0;
   }
 
  private:
   std::string appname() const override {
     return "saber::SaberBlockTest<" + MODEL::name() + ">";
+  }
+
+  // -----------------------------------------------------------------------------
+  // TODO: should be in OOPS?
+  atlas::FieldSet createRandomFieldSet(const atlas::FunctionSpace & functionSpace,
+                                       const std::vector<size_t> & variableSizes,
+                                       const oops::Variables & vars) {
+  
+    // Get ghost points
+    atlas::Field ghost = functionSpace.ghost();
+    auto ghostView = atlas::array::make_view<int, 1>(ghost);
+  
+    // Create FieldSet
+    atlas::FieldSet fset;
+    for (size_t jvar = 0; jvar < vars.size(); ++jvar) {
+      // Create field
+      atlas::Field field = functionSpace.createField<double>(
+        atlas::option::name(vars.variables()[jvar])
+        | atlas::option::levels(variableSizes[jvar]));
+  
+      // Get field owned size
+      size_t n = 0;
+      if (field.rank() == 2) {
+        auto view = atlas::array::make_view<double, 2>(field);
+        for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+          for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+            if (ghostView(jnode) == 0) ++n;
+          }
+        }
+      }
+
+      // Generate random vector
+      util::NormalDistribution<double> rand_vec(n, 0.0, 1.0, 1);
+  
+      // Populate with random numbers
+      n = 0;
+      if (field.rank() == 2) {
+        auto view = atlas::array::make_view<double, 2>(field);
+        for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+          for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+            if (ghostView(jnode) == 0) {
+              view(jnode, jlevel) = rand_vec[n];
+              ++n;
+            } else {
+              view(jnode, jlevel) = 0.0;
+            }
+          }
+        }
+      }       
+  
+      // Add field
+      fset.add(field);
+    }
+  
+    // Halo exchange
+    fset.haloExchange();
+  
+    // Return FieldSet
+    return fset;
   }
 };
 

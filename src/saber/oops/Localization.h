@@ -61,14 +61,14 @@ class Localization : public oops::LocalizationBase<MODEL> {
 // =============================================================================
 
 template<typename MODEL>
-Localization<MODEL>::Localization(const Geometry_ & resol,
+Localization<MODEL>::Localization(const Geometry_ & geom,
                                   const oops::Variables & incVars,
                                   const eckit::Configuration & conf)
   : saberCentralBlock_()
 {
   oops::Log::trace() << "Localization::Localization starting" << std::endl;
 
-  size_t myslot = resol.timeComm().rank();
+  size_t myslot = geom.timeComm().rank();
   if (myslot == 0) {
     // Get parameters from configuration
     const eckit::LocalConfiguration saberCentralBlock(conf, "saber central block");
@@ -104,16 +104,16 @@ Localization<MODEL>::Localization(const Geometry_ & resol,
 
     // Read input fields (on model increment geometry)
     std::vector<atlas::FieldSet> fsetVec = readInputFields(
-      resol,
+      geom,
       activeVars,
       dummyTime,
       saberCentralBlockParams.inputFields.value());
 
     // Create central block
-    saberCentralBlock_.reset(SaberCentralBlockFactory::create(resol.getComm(),
-                             resol.functionSpace(),
-                             resol.extraFields(),
-                             resol.variableSizes(activeVars),
+    saberCentralBlock_.reset(SaberCentralBlockFactory::create(geom.getComm(),
+                             geom.functionSpace(),
+                             geom.extraFields(),
+                             geom.variableSizes(activeVars),
                              centralConf,
                              dummyFs,
                              dummyFs,

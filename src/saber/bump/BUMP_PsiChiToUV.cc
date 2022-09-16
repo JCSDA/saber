@@ -53,7 +53,25 @@ BUMP_PsiChiToUV::BUMP_PsiChiToUV(const eckit::mpi::Comm & comm,
   // Input geometry and variables
   inputFunctionSpace_ = outputFunctionSpace;
   inputExtraFields_ = outputExtraFields;
-  inputVars_ = params.outputVars.value(); // TODO(Benjamin): remove u/v, add psi/chi
+
+  // Check active variables size
+  ASSERT(params.activeVars.value()->size() == 4);
+
+  // Only two active variables should be part of output variables, other two are input variables
+  size_t activeVarsInOutput = 0;
+  for (const auto var : params.outputVars.value().variables()) {
+    if (params.activeVars.value()->has(var)) {
+      activeVarsInOutput += 1;
+    } else {
+      inputVars_.push_back(var);
+    }
+  }
+  ASSERT(activeVarsInOutput == 2);
+  for (const auto var : params.activeVars.value()->variables()) {
+    if (!params.outputVars.value().has(var)) {
+      inputVars_.push_back(var);
+    }
+  }
 
   // Initialize BUMP
   bump_.reset(new BUMP(comm,

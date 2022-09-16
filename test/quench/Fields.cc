@@ -298,7 +298,7 @@ void Fields::random() {
   }
 
   // Random vector
-  util::NormalDistribution<double>rand_vec(n, 0.0, 1.0, 1);
+  util::NormalDistribution<double> rand_vec(n, 0.0, 1.0, 1);
 
   // Copy random values
   n = 0;
@@ -310,7 +310,7 @@ void Fields::random() {
         if (ghostView(jnode) == 0) {
           for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
             view(jnode, jlevel) = rand_vec[n];
-            n += 1;
+            ++n;
           }
         }
       }

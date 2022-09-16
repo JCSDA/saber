@@ -62,7 +62,7 @@ MoistureControlSaberBlock::MoistureControlSaberBlock(const eckit::mpi::Comm & co
   // Input geometry and variables
   inputFunctionSpace_ = outputFunctionSpace;
   inputExtraFields_ = outputExtraFields;
-  inputVars_ = params.outputVars.value(); // TODO(Marek): is it correct?
+  inputVars_ = params.outputVars.value();
 
   // Covariance FieldSet
   covFieldSet_ = createMuStats(outputExtraFields, params.moisturecontrolParams.value());

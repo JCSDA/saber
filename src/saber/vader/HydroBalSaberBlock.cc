@@ -61,7 +61,7 @@ HydroBalSaberBlock::HydroBalSaberBlock(const eckit::mpi::Comm & comm,
   // Input geometry and variables
   inputFunctionSpace_ = outputFunctionSpace;
   inputExtraFields_ = outputExtraFields;
-  inputVars_ = params.outputVars.value(); // TODO(Marek): is it correct?
+  inputVars_ = params.outputVars.value();
 
   std::vector<std::string> requiredStateVariables{
     "air_temperature",

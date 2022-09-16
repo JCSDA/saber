@@ -18,7 +18,7 @@ bump:
   latdir: [15.0,15.0,15.0,15.0,15.0,45.0,45.0,45.0,45.0,45.0,45.0,75.0,75.0,75.0]
   levdir: [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
   ivdir: [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-input:
+input fields:
 - parameter: a::1
   filename: testdata/qg_hr_error_covariance_training_bump_cov_ncmp/cor_a_1.an.2010-01-01T12:00:00Z.nc
 - parameter: a::2
