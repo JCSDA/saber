@@ -9,12 +9,8 @@ variables: &vars [psi_inc]
 background:
   date: 2010-01-01T12:00:00Z
   state variables: *vars
-saber blocks:
-- saber block name: SPNOINTERP_COV
-  saber central block: true
-  iterative inverse: true
-  input variables: *vars
-  output variables: *vars
+saber central block:
+  saber block name: SPNOINTERP_COV
   spectralb:
     covariance_file: testdata/CovStats.nc
     gauss_grid_uid: F15
