@@ -27,7 +27,7 @@ static SaberCentralBlockMaker<ID> makerID_("ID");
 ID::ID(const eckit::mpi::Comm & comm,
        const atlas::FunctionSpace & functionSpace,
        const atlas::FieldSet & extraFields,
-       const std::vector<size_t> & variableSizes,
+       const std::vector<size_t> & activeVariableSizes,
        const eckit::Configuration & conf,
        const atlas::FieldSet & xb,
        const atlas::FieldSet & fg,

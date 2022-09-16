@@ -43,12 +43,9 @@ static SaberOuterBlockMaker<HydrostaticExnerSaberBlock>
 // -----------------------------------------------------------------------------
 
 HydrostaticExnerSaberBlock::HydrostaticExnerSaberBlock(const eckit::mpi::Comm & comm,
-               const atlas::FunctionSpace & inputFunctionSpace,
-               const atlas::FieldSet & inputExtraFields,
-               const std::vector<size_t> & inputVariableSizes,
                const atlas::FunctionSpace & outputFunctionSpace,
                const atlas::FieldSet & outputExtraFields,
-               const std::vector<size_t> & outputVariableSizes,
+               const std::vector<size_t> & activeVariableSizes,
                const eckit::Configuration & conf,
                const atlas::FieldSet & xb,
                const atlas::FieldSet & fg,
@@ -62,8 +59,13 @@ HydrostaticExnerSaberBlock::HydrostaticExnerSaberBlock(const eckit::mpi::Comm & 
   HydrostaticExnerSaberBlockParameters params;
   params.deserialize(conf);
 
+  // Input geometry and variables
+  inputFunctionSpace_ = outputFunctionSpace;
+  inputExtraFields_ = outputExtraFields;
+  inputVars_ = params.outputVars.value(); // TODO(Marek): is it correct?
+
   // Covariance FieldSet
-  covFieldSet_ = createGpRegressionStats(inputFunctionSpace, inputExtraFields, inputVariableSizes,
+  covFieldSet_ = createGpRegressionStats(outputFunctionSpace, outputExtraFields, activeVariableSizes,
                                          *params.activeVars.value(), params.hydrostaticexnerParams.value());
 
   std::vector<std::string> requiredStateVariables{
@@ -100,7 +102,7 @@ HydrostaticExnerSaberBlock::HydrostaticExnerSaberBlock(const eckit::mpi::Comm & 
   }
 
   for (const auto & s : requiredGeometryVariables) {
-    augmentedStateFieldSet_.add(inputExtraFields[s]);
+    augmentedStateFieldSet_.add(outputExtraFields[s]);
   }
 
   // we will need geometry here for height variables.

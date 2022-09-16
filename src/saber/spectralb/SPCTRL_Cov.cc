@@ -36,7 +36,7 @@ static SaberCentralBlockMaker<SPCTRL_COV> makerSPCTRL_COV_("SPCTRL_COV");
 SPCTRL_COV::SPCTRL_COV(const eckit::mpi::Comm & comm,
        const atlas::FunctionSpace & functionSpace,
        const atlas::FieldSet & extraFields,
-       const std::vector<size_t> & variableSizes,
+       const std::vector<size_t> & activeVariableSizes,
        const eckit::Configuration & conf,
        const atlas::FieldSet & xb,
        const atlas::FieldSet & fg,
@@ -51,7 +51,7 @@ SPCTRL_COV::SPCTRL_COV(const eckit::mpi::Comm & comm,
 
   // Initialize SpectralB
   spectralb_.reset(new SpectralB(functionSpace,
-                                 variableSizes,
+                                 activeVariableSizes,
                                  *params.activeVars.value(),
                                  params.spectralbParams.value()));
 

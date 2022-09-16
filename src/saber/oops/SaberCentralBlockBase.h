@@ -113,12 +113,12 @@ class SaberCentralBlockMaker : public SaberCentralBlockFactory {
   SaberCentralBlockBase * make(const eckit::mpi::Comm & comm,
                                const atlas::FunctionSpace & functionSpace,
                                const atlas::FieldSet & extraFields,
-                               const std::vector<size_t> & variableSizes,
+                               const std::vector<size_t> & activeVariableSizes,
                                const eckit::Configuration & conf,
                                const atlas::FieldSet & xb,
                                const atlas::FieldSet & fg,
                                const std::vector<atlas::FieldSet> & fsetVec) override {
-    return new T(comm, functionSpace, extraFields, variableSizes,
+    return new T(comm, functionSpace, extraFields, activeVariableSizes,
                  conf, xb, fg, fsetVec);
   }
 

@@ -23,11 +23,12 @@ namespace saber {
 class SaberOuterBlockParametersBase : public oops::Parameters {
   OOPS_ABSTRACT_PARAMETERS(SaberOuterBlockParametersBase, Parameters)
  public:
+  // Parameters from the yaml
   oops::RequiredParameter<std::string> saberBlockName{"saber block name", this};
-  oops::OptionalParameter<oops::Variables> inputVars{"input variables", this};
   oops::OptionalParameter<oops::Variables> activeVars{"active variables", this};
   oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> inputFields{"input fields", this};
 
+  // Parameters for the recursive construction
   oops::Parameter<oops::Variables> outputVars{"output variables", oops::Variables(), this};
 };
 

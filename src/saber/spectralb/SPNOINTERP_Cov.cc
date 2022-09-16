@@ -37,7 +37,7 @@ static SaberCentralBlockMaker<SPNOINTERP_COV>  makerSPNOINTERP_COV_("SPNOINTERP_
 SPNOINTERP_COV::SPNOINTERP_COV(const eckit::mpi::Comm & comm,
        const atlas::FunctionSpace & functionSpace,
        const atlas::FieldSet & extraFields,
-       const std::vector<size_t> & variableSizes,
+       const std::vector<size_t> & activeVariableSizes,
        const eckit::Configuration & conf,
        const atlas::FieldSet & xb,
        const atlas::FieldSet & fg,
@@ -51,7 +51,7 @@ SPNOINTERP_COV::SPNOINTERP_COV(const eckit::mpi::Comm & comm,
   params.validateAndDeserialize(conf);
 
   // Initialize SpectralBNoInterp
-  spectralb_.reset(new SpectralBNoInterp(variableSizes,
+  spectralb_.reset(new SpectralBNoInterp(activeVariableSizes,
                                          *params.activeVars.value(),
                                          params.spectralbParams.value()));
 

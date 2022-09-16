@@ -102,15 +102,10 @@ Localization<MODEL>::Localization(const Geometry_ & resol,
        centralConf.set("active variables", activeVars.variables());
     }
 
-    // Check that active variables are present
-    for (const auto & var : activeVars.variables()) {
-      ASSERT(inoutVars.has(var));
-    }
-
     // Read input fields (on model increment geometry)
     std::vector<atlas::FieldSet> fsetVec = readInputFields(
       resol,
-      inoutVars,
+      activeVars,
       dummyTime,
       saberCentralBlockParams.inputFields.value());
 
@@ -118,11 +113,16 @@ Localization<MODEL>::Localization(const Geometry_ & resol,
     saberCentralBlock_.reset(SaberCentralBlockFactory::create(resol.getComm(),
                              resol.functionSpace(),
                              resol.extraFields(),
-                             resol.variableSizes(inoutVars),
+                             resol.variableSizes(activeVars),
                              centralConf,
                              dummyFs,
                              dummyFs,
                              fsetVec));
+
+    // Check that active variables are present in input/output variables
+    for (const auto & var : activeVars.variables()) {
+      ASSERT(inoutVars.has(var));
+    }
   }
 
   oops::Log::trace() << "Localization:Localization done" << std::endl;

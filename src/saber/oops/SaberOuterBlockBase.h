@@ -39,11 +39,21 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
   explicit SaberOuterBlockBase(const eckit::Configuration & conf);
   virtual ~SaberOuterBlockBase() {}
 
+  const oops::Variables inputVars() {return inputVars_;}
+  const atlas::FunctionSpace inputFunctionSpace() {return inputFunctionSpace_;}
+  const atlas::FieldSet inputExtraFields() {return inputExtraFields_;}
+
   virtual void multiply(atlas::FieldSet &) const = 0;
   virtual void multiplyAD(atlas::FieldSet &) const = 0;
   virtual void calibrationInverseMultiply(atlas::FieldSet &) const = 0;
 
   const std::string name() const {return name_;}
+
+ protected:
+  oops::Variables inputVars_;
+  atlas::FunctionSpace inputFunctionSpace_;
+  atlas::FieldSet inputExtraFields_;
+
  private:
   virtual void print(std::ostream &) const = 0;
   std::string name_;
@@ -71,9 +81,6 @@ class SaberOuterBlockFactory {
                                       const atlas::FunctionSpace &,
                                       const atlas::FieldSet &,
                                       const std::vector<size_t> &,
-                                      const atlas::FunctionSpace &,
-                                      const atlas::FieldSet &,
-                                      const std::vector<size_t> &,
                                       const eckit::Configuration &,
                                       const atlas::FieldSet &,
                                       const atlas::FieldSet &,
@@ -92,9 +99,6 @@ class SaberOuterBlockFactory {
 
  private:
   virtual SaberOuterBlockBase * make(const eckit::mpi::Comm &,
-                                     const atlas::FunctionSpace &,
-                                     const atlas::FieldSet &,
-                                     const std::vector<size_t> &,
                                      const atlas::FunctionSpace &,
                                      const atlas::FieldSet &,
                                      const std::vector<size_t> &,
@@ -118,18 +122,14 @@ class SaberOuterBlockMaker : public SaberOuterBlockFactory {
   typedef typename T::Parameters_ Parameters_;
 
   SaberOuterBlockBase * make(const eckit::mpi::Comm & comm,
-                             const atlas::FunctionSpace & inputFunctionSpace,
-                             const atlas::FieldSet & inputExtraFields,
-                             const std::vector<size_t> & inputVariableSizes,
                              const atlas::FunctionSpace & outputFunctionSpace,
                              const atlas::FieldSet & outputExtraFields,
-                             const std::vector<size_t> & outputVariableSizes,
+                             const std::vector<size_t> & activeVariableSizes,
                              const eckit::Configuration & conf,
                              const atlas::FieldSet & xb,
                              const atlas::FieldSet & fg,
                              const std::vector<atlas::FieldSet> & fsetVec) override {
-    return new T(comm, inputFunctionSpace, inputExtraFields, inputVariableSizes,
-                 outputFunctionSpace, outputExtraFields, outputVariableSizes,
+    return new T(comm, outputFunctionSpace, outputExtraFields, activeVariableSizes,
                  conf, xb, fg, fsetVec);
   }
 

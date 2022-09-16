@@ -42,12 +42,9 @@ static SaberOuterBlockMaker<HydroBalSaberBlock>
 // -----------------------------------------------------------------------------
 
 HydroBalSaberBlock::HydroBalSaberBlock(const eckit::mpi::Comm & comm,
-               const atlas::FunctionSpace & inputFunctionSpace,
-               const atlas::FieldSet & inputExtraFields,
-               const std::vector<size_t> & inputVariableSizes,
                const atlas::FunctionSpace & outputFunctionSpace,
                const atlas::FieldSet & outputExtraFields,
-               const std::vector<size_t> & outputVariableSizes,
+               const std::vector<size_t> & activeVariableSizes,
                const eckit::Configuration & conf,
                const atlas::FieldSet & xb,
                const atlas::FieldSet & fg,
@@ -60,6 +57,11 @@ HydroBalSaberBlock::HydroBalSaberBlock(const eckit::mpi::Comm & comm,
   // Deserialize configuration
   HydroBalSaberBlockParameters params;
   params.deserialize(conf);
+
+  // Input geometry and variables
+  inputFunctionSpace_ = outputFunctionSpace;
+  inputExtraFields_ = outputExtraFields;
+  inputVars_ = params.outputVars.value(); // TODO(Marek): is it correct?
 
   std::vector<std::string> requiredStateVariables{
     "air_temperature",
@@ -99,7 +101,7 @@ HydroBalSaberBlock::HydroBalSaberBlock(const eckit::mpi::Comm & comm,
   mo::evalVirtualPotentialTemperature(augmentedStateFieldSet_);
 
   for (const auto & s : requiredGeometryVariables) {
-    augmentedStateFieldSet_.add(inputExtraFields[s]);
+    augmentedStateFieldSet_.add(outputExtraFields[s]);
   }
 
   for (auto & fld : augmentedStateFieldSet_) {

@@ -29,12 +29,9 @@ static SaberOuterBlockMaker<StdDev> makerStdDev_("StdDev");
 // -----------------------------------------------------------------------------
 
 StdDev::StdDev(const eckit::mpi::Comm & comm,
-               const atlas::FunctionSpace & inputFunctionSpace,
-               const atlas::FieldSet & inputExtraFields,
-               const std::vector<size_t> & inputVariableSizes,
                const atlas::FunctionSpace & outputFunctionSpace,
                const atlas::FieldSet & outputExtraFields,
-               const std::vector<size_t> & outputVariableSizes,
+               const std::vector<size_t> & activeVariableSizes,
                const eckit::Configuration & conf,
                const atlas::FieldSet & xb,
                const atlas::FieldSet & fg,
@@ -46,6 +43,11 @@ StdDev::StdDev(const eckit::mpi::Comm & comm,
   // Deserialize configuration
   StdDevParameters params;
   params.deserialize(conf);
+
+  // Input geometry and variables
+  inputFunctionSpace_ = outputFunctionSpace;
+  inputExtraFields_ = outputExtraFields;
+  inputVars_ = params.outputVars.value();
 
   // Copy stddev field
   stdDevFset_.clear();

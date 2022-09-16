@@ -50,12 +50,9 @@ SaberOuterBlockFactory::SaberOuterBlockFactory(const std::string & name) {
 // -----------------------------------------------------------------------------
 
 SaberOuterBlockBase * SaberOuterBlockFactory::create(const eckit::mpi::Comm & comm,
-                             const atlas::FunctionSpace & inputFunctionSpace,
-                             const atlas::FieldSet & inputExtraFields,
-                             const std::vector<size_t> & inputVariableSizes,
                              const atlas::FunctionSpace & outputFunctionSpace,
                              const atlas::FieldSet & outputExtraFields,
-                             const std::vector<size_t> & outputVariableSizes,
+                             const std::vector<size_t> & activeVariableSizes,
                              const eckit::Configuration & conf,
                              const atlas::FieldSet & xb,
                              const atlas::FieldSet & fg,
@@ -67,9 +64,8 @@ SaberOuterBlockBase * SaberOuterBlockFactory::create(const eckit::mpi::Comm & co
     oops::Log::error() << id << " does not exist in saber::SaberOuterBlockFactory." << std::endl;
     ABORT("Element does not exist in saber::SaberOuterBlockFactory.");
   }
-  SaberOuterBlockBase * ptr = jsb->second->make(comm, inputFunctionSpace, inputExtraFields,
-                 inputVariableSizes, outputFunctionSpace, outputExtraFields, outputVariableSizes,
-                 conf, xb, fg, fsetVec);
+  SaberOuterBlockBase * ptr = jsb->second->make(comm, outputFunctionSpace, outputExtraFields,
+                 activeVariableSizes, conf, xb, fg, fsetVec);
   oops::Log::trace() << "SaberOuterBlockBase::create done" << std::endl;
   return ptr;
 }

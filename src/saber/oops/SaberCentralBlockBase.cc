@@ -53,7 +53,7 @@ SaberCentralBlockBase * SaberCentralBlockFactory::create(
   const eckit::mpi::Comm & comm,
   const atlas::FunctionSpace & functionSpace,
   const atlas::FieldSet & extraFields,
-  const std::vector<size_t> & variableSizes,
+  const std::vector<size_t> & activeVariableSizes,
   const eckit::Configuration & conf,
   const atlas::FieldSet & xb,
   const atlas::FieldSet & fg,
@@ -65,8 +65,8 @@ SaberCentralBlockBase * SaberCentralBlockFactory::create(
     oops::Log::error() << id << " does not exist in saber::SaberCentralBlockFactory." << std::endl;
     ABORT("Element does not exist in saber::SaberCentralBlockFactory.");
   }
-  SaberCentralBlockBase * ptr = jsb->second->make(comm, functionSpace, extraFields, variableSizes,
-                                                  conf, xb, fg, fsetVec);
+  SaberCentralBlockBase * ptr = jsb->second->make(comm, functionSpace, extraFields,
+                                                  activeVariableSizes, conf, xb, fg, fsetVec);
   oops::Log::trace() << "SaberCentralBlockBase::create done" << std::endl;
   return ptr;
 }

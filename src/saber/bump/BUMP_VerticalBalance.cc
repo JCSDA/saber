@@ -33,9 +33,6 @@ static SaberOuterBlockMaker<BUMP_VerticalBalance> makerBUMP_VerticalBalance_("BU
 // -----------------------------------------------------------------------------
 
 BUMP_VerticalBalance::BUMP_VerticalBalance(const eckit::mpi::Comm & comm,
-               const atlas::FunctionSpace & inputFunctionSpace,
-               const atlas::FieldSet & inputExtraFields,
-               const std::vector<size_t> & inputVariableSizes,
                const atlas::FunctionSpace & outputFunctionSpace,
                const atlas::FieldSet & outputExtraFields,
                const std::vector<size_t> & outputVariableSizes,
@@ -52,11 +49,16 @@ BUMP_VerticalBalance::BUMP_VerticalBalance(const eckit::mpi::Comm & comm,
   BUMP_VerticalBalanceParameters params;
   params.deserialize(conf);
 
+  // Input geometry and variables
+  inputFunctionSpace_ = outputFunctionSpace;
+  inputExtraFields_ = outputExtraFields;
+  inputVars_ = params.outputVars.value();
+
   // Initialize BUMP
   bump_.reset(new BUMP(comm,
-                       inputFunctionSpace,
-                       inputExtraFields,
-                       inputVariableSizes,
+                       outputFunctionSpace,
+                       outputExtraFields,
+                       outputVariableSizes,
                        *params.activeVars.value(),
                        params.bumpParams.value(),
                        fsetVec));

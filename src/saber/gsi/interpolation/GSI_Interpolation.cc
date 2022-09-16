@@ -37,12 +37,9 @@ static SaberOuterBlockMaker<gsi::Interpolation>
 // -------------------------------------------------------------------------------------------------
 
 Interpolation::Interpolation(const eckit::mpi::Comm & comm,
-               const atlas::FunctionSpace & inputFunctionSpace,
-               const atlas::FieldSet & inputExtraFields,
-               const std::vector<size_t> & inputVariableSizes,
                const atlas::FunctionSpace & outputFunctionSpace,
                const atlas::FieldSet & outputExtraFields,
-               const std::vector<size_t> & outputVariableSizes,
+               const std::vector<size_t> & activeVariableSizes,
                const eckit::Configuration & conf,
                const atlas::FieldSet & xb,
                const atlas::FieldSet & fg,
@@ -56,14 +53,10 @@ Interpolation::Interpolation(const eckit::mpi::Comm & comm,
   InterpolationParameters params;
   params.deserialize(conf);
 
-  // Check variables
-  const oops::Variables inputVars = *params.inputVars.value();
-  const oops::Variables outputVars = params.outputVars.value();
-  const oops::Variables activeVars = params.activeVars.value();
-  ASSERT(inputVars == outputVars);
-  for (const auto & var : activeVars.variables()) {
-    ASSERT(inputVars.has(var));
-  }
+  // Input geometry and variables
+  inputFunctionSpace_ = outputFunctionSpace;
+  inputExtraFields_ = outputExtraFields;
+  inputVars_ = params.outputVars.value();
 
   : interpolator_(), modGridFuncSpace_(modelGrid), variables_(), grid_(comm, params)
 {
