@@ -91,7 +91,7 @@ phases:
       - ./clone.sh jcsda-internal/saber-data $CODEBUILD_GIT_BRANCH /jcsda/saber-bundle saber-data ${GIT_BASE_BRANCH} develop
 
       # gsibec
-      - ./clone.sh geos-esm/GSIbec $CODEBUILD_GIT_BRANCH /jcsda/saber-bundle gsibec ${GIT_BASE_BRANCH} 1.0.2
+      - ./clone.sh geos-esm/GSIbec $CODEBUILD_GIT_BRANCH /jcsda/saber-bundle gsibec ${GIT_BASE_BRANCH} 1.0.4
 
       # move CMakeLists.txt
       - cp CMakeLists.txt /jcsda/saber-bundle
