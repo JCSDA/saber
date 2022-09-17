@@ -9,8 +9,8 @@ background error:
     debugging mode: false
   saber outer blocks:
   - saber block name: gsi interpolation to model grid
-    gsi error covariance file: testdata/gsi-coeffs-gmao-global-l72x72y46.nc4
-    gsi berror namelist file: testinput/quench_dirac_gsi_geos_global.nml
+    gsi error covariance file: testdata/gsi-coeffs-global-l127x64y32.nc4
+    gsi berror namelist file: testinput/quench_dirac_gsi_gfs_global.nml
     processor layout x direction: 1
     processor layout y direction: 1
     debugging mode: false
