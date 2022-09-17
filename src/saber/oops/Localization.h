@@ -45,7 +45,9 @@ class Localization : public oops::LocalizationBase<MODEL> {
   typedef oops::State<MODEL>                  State_;
 
  public:
-  Localization(const Geometry_ &, const eckit::Configuration &);
+  Localization(const Geometry_ &,
+               const oops::Variables &,
+               const eckit::Configuration &);
   ~Localization();
 
   void randomize(Increment_ &) const override;
@@ -60,6 +62,7 @@ class Localization : public oops::LocalizationBase<MODEL> {
 
 template<typename MODEL>
 Localization<MODEL>::Localization(const Geometry_ & resol,
+                                  const oops::Variables & vars,
                                   const eckit::Configuration & conf)
   : saberBlock_()
 {
