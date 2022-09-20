@@ -22,6 +22,10 @@ use kinds,                          only: kind_real
 ! saber
 use gsi_utils_mod,                  only: nccheck
 
+! gsibec
+use gsimod,                         only: gsimain_gridopts
+use general_sub2grid_mod,           only: general_deter_subdomain_withLayout
+
 implicit none
 private
 public gsi_grid
@@ -32,8 +36,10 @@ type :: gsi_grid
   character(len=2055) :: filename
   integer :: npx, npy, npz          ! Grid points in global grid
   integer :: layout(2)              ! Number of processors in x (index 1) and y (index 2) directions
+  integer :: lat2,lon2
   integer :: isc, iec, jsc, jec     ! Start and ending grid points for each processor
   logical :: vflip                  ! Flip vertical grid (gsi k=1=top)
+  logical :: noGSI
   real(kind=kind_real), allocatable :: lats(:), lons(:)
   real(kind=kind_real), allocatable :: grid_lats(:,:), grid_lons(:,:)
   integer :: ngrid ! Number of grid points for each processor
@@ -62,11 +68,21 @@ type(fckit_mpi_comm),      intent(in)    :: comm
 ! Locals
 integer :: ncid, dimid(3), varid(2)
 character(len=:), allocatable :: str
-integer :: posx, posy, i, j, jj, npx_per_proc, npy_per_proc
+character(len=:), allocatable :: nml
+integer :: posx, posy, i, j, jj, npx_per_proc, npy_per_proc, npe
+integer :: nlon,nlat
+integer :: lon2,lat2
+integer :: lon1,lat1
+logical :: bkgmock,cv
+logical :: period
+logical :: verbose
+logical,allocatable :: period_s(:) 
+integer,allocatable :: ilat1(:),istart(:),jlon1(:),jstart(:)
 
 ! Create copy of comm
 ! -------------------
 self%comm = comm
+verbose = comm%rank()==0
 
 ! Debug mode
 ! ----------
@@ -106,6 +122,7 @@ call comm%broadcast(self%npz, 0)
 allocate(self%lons(self%npx))
 allocate(self%lats(self%npy))
 
+npe = self%npx*self%npy
 
 ! Read the latitude and longitude
 ! -------------------------------
@@ -141,6 +158,38 @@ call conf%get_or_die("processor layout y direction", self%layout(2))
 if (.not. self%layout(1)*self%layout(2) == comm%size()) &
   call abor1_ftn("GSI grid: number of processor in layout does not match number in communicator")
 
+
+! Doing gsi stuff ...
+! -------------------
+call conf%get_or_die("debugging bypass gsi", self%noGSI)
+if (.not. self%noGSI) then
+
+! Get required name of resources for GSI B error
+! ----------------------------------------------
+  call conf%get_or_die("gsi berror namelist file",  nml)
+
+! Initial GSI
+! -----------
+  allocate(period_s(npe))
+  allocate(ilat1(npe),istart(npe),jlon1(npe),jstart(npe))
+  call gsimain_gridopts (nml,gnlat=nlat,gnlon=nlon)
+  call general_deter_subdomain_withLayout(npe,self%layout(1),self%layout(2),comm%rank(),&
+                nlat,nlon,.false.,period,period_s,&
+                lon1,lon2,lat1,lat2,ilat1,istart,jlon1,jstart,verbose)
+  self%lat2=lat2
+  self%lon2=lon2
+
+if ( self%debug ) then
+  if(self%comm%rank() == 0) then
+    do j=1,self%layout(1)*self%layout(2)
+       write(6,'(a,6(i5,1x))') 'grid per gsi: ', j, istart(j),jstart(j), &
+                                                     ilat1(j), jlon1(j), lon1*lat1
+    enddo
+  endif
+endif
+
+endif
+
 ! Grid point per processor in each direction
 npx_per_proc = floor(real(self%npx, kind_real)/real(self%layout(1), kind_real))
 npy_per_proc = floor(real(self%npy, kind_real)/real(self%layout(2), kind_real))
@@ -161,7 +210,21 @@ self%jsc = posy * npy_per_proc + 1
 self%jec = self%jsc + npy_per_proc - 1
 if (posy == self%layout(2) -1) self%jec = self%npy
 
+if (.not.self%noGSI) then
+  do j=1,self%layout(1)*self%layout(2)
+     if(comm%rank()==j-1) then
+       self%isc = jstart(j)
+       self%iec = jstart(j) + jlon1(j) - 1
+       self%jsc = istart(j)
+       self%jec = istart(j) + ilat1(j) - 1
+     endif
+  end do
+endif
+
 self%ngrid = (self%iec-self%isc+1)*(self%jec-self%jsc+1)
+if (self%ngrid /= lat1*lon1) then
+  call abor1_ftn("gsi_grid_mod: inconsistent distribution")
+endif
 
 ! Create arrays of lon/lat to be compatible with interpolation
 allocate(self%grid_lons(self%isc:self%iec, self%jsc:self%jec))
@@ -175,10 +238,19 @@ do j = self%jsc, self%jec
 enddo
 
 if ( self%debug ) then
-  do j=1,self%layout(1)*self%layout(2)
-     if(self%comm%rank() == 0) &
-     write(6,'(a,4(i5,1x))') 'grid dist indexes: task, is,ie, js,je ', self%isc, self%iec, self%jsc,self%jec
-  enddo
+ if(self%comm%rank() == 0) then
+    do j=1,self%layout(1)*self%layout(2)
+       write(6,'(a,6(i5,1x))') 'grid dist indexes: task, is,ie, js,je ', j, &
+                                self%isc, self%iec, &
+                                self%jsc, self%jec, &
+                                self%ngrid
+    enddo
+ endif
+endif
+
+if(.not.self%noGSI) then
+  deallocate(period_s)
+  deallocate(ilat1,istart,jlon1,jstart)
 endif
 
 end subroutine create
@@ -278,9 +350,9 @@ call lonlat_field%data(real_ptr)
 
 ! Fill lon/lat
 real_ptr(1,:) = reshape(self%grid_lons(self%isc:self%iec, &
-                                            self%jsc:self%jec), (/self%ngrid/))
+                                       self%jsc:self%jec), (/self%ngrid/))
 real_ptr(2,:) = reshape(self%grid_lats(self%isc:self%iec, &
-                                            self%jsc:self%jec), (/self%ngrid/))
+                                       self%jsc:self%jec), (/self%ngrid/))
 
 ! Add field to fieldset
 call grid_fieldset%add(lonlat_field)
