@@ -25,6 +25,8 @@ ecbuild_add_option( FEATURE OMP
                     DESCRIPTION "Use OpenMP" )
 
 ecbuild_bundle( PROJECT jedicmake GIT "https://github.com/JCSDA-internal/jedi-cmake.git" )
+include( jedicmake/cmake/Functions/git_functions.cmake  )
+
 ecbuild_bundle( PROJECT oops GIT "https://github.com/JCSDA-internal/oops.git" )
 ecbuild_bundle( PROJECT vader GIT "https://github.com/JCSDA-internal/vader.git" )
 ecbuild_bundle( PROJECT gsibec GIT "https://github.com/GEOS-ESM/GSIbec.git" )

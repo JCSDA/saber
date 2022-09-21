@@ -27,7 +27,7 @@ use m_gsibec,                     only: gsibec_sv_space
 use m_gsibec,                     only: gsibec_befname
 use m_gsibec,                     only: gsibec_init_guess
 use m_gsibec,                     only: gsibec_set_guess
-!use m_gsibec,                    only: gsibec_final
+use m_gsibec,                     only: gsibec_final
 
 use guess_grids,                    only: gsiguess_bkgcov_init  ! temporary
 use gsi_metguess_mod,               only: gsi_metguess_get
@@ -52,12 +52,10 @@ public gsi_covariance
 ! Fortran class header
 type :: gsi_covariance
   type(gsi_grid) :: grid
-  logical :: noGSI
   logical :: bypassGSIbe
   logical :: cv   ! cv=.true.; sv=.false.
   integer :: mp_comm_world
   integer :: rank
-  integer :: lat2,lon2 ! these belog to gsi_grid
   contains
     procedure, public :: create
     procedure, public :: delete
@@ -88,8 +86,10 @@ character(len=*), parameter :: myname_=myname//'*create'
 character(len=:), allocatable :: nml,bef
 real(kind=kind_real), pointer :: rank2(:,:)=>NULL()
 real(kind=kind_real), allocatable :: tmp(:)
-logical :: central,bkgmock
-integer :: layout(2),ier,n,k,npz,itbd
+logical :: central
+logical :: bkgmock
+!integer :: layout(2)
+integer :: ier,n,k,npz,itbd
 integer :: ngsivars2d,ngsivars3d
 character(len=20),allocatable :: gsivars(:)
 character(len=20),allocatable :: usrvars(:)
@@ -107,8 +107,7 @@ real(kind=kind_real), pointer :: oz(:,:)
 call self%grid%create(config, comm)
 self%rank = comm%rank()
 
-call config%get_or_die("debugging bypass gsi", self%noGSI)
-if (.not. self%noGSI) then
+if (.not. self%grid%noGSI) then
   call config%get_or_die("debugging deep bypass gsi B error", self%bypassGSIbe)
 
 ! Get required name of resources for GSI B error
@@ -118,8 +117,8 @@ if (.not. self%noGSI) then
 
 ! Initialize GSI-Berror components
 ! --------------------------------
-  layout=self%grid%layout
-  call gsibec_init(self%cv,self%lat2,self%lon2,bkgmock=bkgmock,nmlfile=nml,befile=bef,layout=layout,comm=comm%communicator())
+  call gsibec_init(self%cv,bkgmock=bkgmock,nmlfile=nml,befile=bef,&
+                   layout=self%grid%layout,comm=comm%communicator())
   call gsibec_init_guess()
 
 ! Initialize and set background fields needed by GSI Berror formulation/operators
@@ -196,7 +195,8 @@ contains
   character(len=*), intent(in) :: varname
   real(kind=kind_real), allocatable :: aux(:,:)
 
-  allocate(aux(self%lat2,self%lon2))
+! print *, 'Atlas 2-dim: ', size(rank2,2), ' gsi-vec: ', self%grid%lat2,' ', self%grid%lon2
+  allocate(aux(self%grid%lat2,self%grid%lon2))
   call addhalo_(rank2(1,:),aux)
   call gsibec_set_guess(varname,aux)
   deallocate(aux)
@@ -209,8 +209,9 @@ contains
 
   integer k,npz
 
+! print *, 'Atlas 3-dim: ', size(rank2,2), ' gsi-vec: ', self%grid%lat2,' ', self%grid%lon2
   npz=size(rank2,1)
-  allocate(aux(self%lat2,self%lon2,npz))
+  allocate(aux(self%grid%lat2,self%grid%lon2,npz))
   if (self%grid%vflip) then
      do k=1,npz
         call addhalo_(rank2(k,:),aux(:,:,npz-k+1))
@@ -236,7 +237,7 @@ class(gsi_covariance) :: self
 
 ! Locals
 
-if (.not. self%noGSI) then
+if (.not. self%grid%noGSI) then
 !! call gsibec_final(.false.)
 endif
 
@@ -350,7 +351,7 @@ character(len=30),allocatable :: tbdvars(:),needvrs(:)
 ! rank2 = 0.0_kind_real
 ! rank2(1,int(size(rank1)/2)) = 1.0_kind_real
 ! return
-if (self%noGSI) return
+if (self%grid%noGSI) return
 
 !   gsi-surface: k=1
 !   quench-surface: k=1

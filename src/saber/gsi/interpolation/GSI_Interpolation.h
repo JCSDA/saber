@@ -21,9 +21,9 @@
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 
-#include "saber/oops/SaberOuterBlockBase.h"
 #include "saber/gsi/grid/GSI_Grid.h"
 #include "saber/gsi/interpolation/unstructured_interp/UnstructuredInterpolation.h"
+#include "saber/oops/SaberOuterBlockBase.h"
 #include "saber/oops/SaberOuterBlockParametersBase.h"
 
 namespace oops {
@@ -53,7 +53,6 @@ class InterpolationParameters : public SaberOuterBlockParametersBase {
   // Debugging mode
   oops::Parameter<bool> debugMode{"debugging mode", false, this};
   oops::Parameter<bool> bypassGSI{"debugging bypass gsi", false, this};
-  oops::Parameter<bool> bypassGSIbe{"debugging deep bypass gsi B error", false, this};
 };
 
 // -------------------------------------------------------------------------------------------------

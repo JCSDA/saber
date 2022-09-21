@@ -31,7 +31,7 @@ namespace gsi {
 
 // -------------------------------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<gsi::Interpolation> 
+static SaberOuterBlockMaker<gsi::Interpolation>
   makerGSI_Interpolation_("gsi interpolation to model grid");
 
 // -------------------------------------------------------------------------------------------------
@@ -55,7 +55,7 @@ Interpolation::Interpolation(const eckit::mpi::Comm & comm,
 
   // Input geometry and variables
   inputFunctionSpace_ = grid_.functionSpace();
-  inputExtraFields_ = outputExtraFields; // TODO: interpolate that?
+  inputExtraFields_ = outputExtraFields;  // TODO(Benjamin): interpolate that?
   inputVars_ = params.outputVars.value();
 
   // Object wide copy of the variables
@@ -151,7 +151,6 @@ void Interpolation::calibrationInverseMultiply(atlas::FieldSet & fset) const {
   oops::Log::info() << classname()
                     << "::calibrationInverseMultiply not meaningful so fieldset unchanged"
                     << std::endl;
-
 }
 
 // -------------------------------------------------------------------------------------------------

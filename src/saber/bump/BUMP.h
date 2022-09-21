@@ -100,7 +100,6 @@ class BUMP {
   std::vector<eckit::LocalConfiguration> membersConfig1_;
   std::vector<eckit::LocalConfiguration> membersConfig2_;
   std::vector<oops::Variables> activeVarsPerGrid_;
-  atlas::FunctionSpace functionSpace1_; // TODO(Benjamin): should be removed when haloExchange is done in Fortran
 };
 
 // -----------------------------------------------------------------------------

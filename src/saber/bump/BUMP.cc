@@ -53,9 +53,8 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
            const atlas::FieldSet & extraFields2,
            const std::vector<atlas::FieldSet> & fsetVec2,
            const size_t & ens1_ne_in,
-           const size_t & ens2_ne_in)
- : activeVars_(activeVars), keyBUMP_(), membersConfig1_(), membersConfig2_(), activeVarsPerGrid_(),
-   functionSpace1_(functionSpace1) {
+           const size_t & ens2_ne_in) :
+  activeVars_(activeVars), keyBUMP_(), membersConfig1_(), membersConfig2_(), activeVarsPerGrid_() {
   oops::Log::trace() << "BUMP::BUMP construction starting" << std::endl;
 
   // Get ensemble 1 size
@@ -269,7 +268,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
       if (pos != std::string::npos) {
         // Get component
         component = std::stoi(fset.name().substr(pos+2));
-        name = fset.name().substr(0,pos);
+        name = fset.name().substr(0, pos);
       }
       this->setParameter(name, component, fset);
     }
@@ -283,7 +282,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
       if (pos != std::string::npos) {
         // Get component
         component = std::stoi(fset.name().substr(pos+2));
-        name = fset.name().substr(0,pos);
+        name = fset.name().substr(0, pos);
       }
       this->setParameter(name, component, fset);
     }

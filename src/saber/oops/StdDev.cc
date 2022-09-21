@@ -53,8 +53,8 @@ StdDev::StdDev(const eckit::mpi::Comm & comm,
   stdDevFset_.clear();
   for (const auto & fset : fsetVec) {
     if (fset.name() == "StdDev") {
-      for (const auto & field : fset) { // TODO: should it be only active variables?
-        stdDevFset_.add(field);
+      for (const auto & var : params.activeVars.value()->variables()) {
+        stdDevFset_.add(fset.field(var));
       }
     }
   }

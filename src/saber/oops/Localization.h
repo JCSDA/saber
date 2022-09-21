@@ -74,7 +74,8 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
     const eckit::LocalConfiguration saberCentralBlock(conf, "saber central block");
     SaberCentralBlockParametersWrapper saberCentralBlockParamWrapper;
     saberCentralBlockParamWrapper.validateAndDeserialize(saberCentralBlock);
-    const SaberCentralBlockParametersBase & saberCentralBlockParams = saberCentralBlockParamWrapper.saberCentralBlockParameters;
+    const SaberCentralBlockParametersBase & saberCentralBlockParams =
+      saberCentralBlockParamWrapper.saberCentralBlockParameters;
 
     // Create dummy FieldSet (for xb and fg)
     atlas::FieldSet dummyFs;
@@ -92,7 +93,8 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
 
     // Define active variables
     oops::Variables activeVars;
-    const boost::optional<oops::Variables> &optionalActiveVars = saberCentralBlockParams.activeVars.value();
+    const boost::optional<oops::Variables> &optionalActiveVars =
+      saberCentralBlockParams.activeVars.value();
     if (optionalActiveVars != boost::none) {
        // Active variables specified
        activeVars = *optionalActiveVars;

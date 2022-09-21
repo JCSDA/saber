@@ -19,7 +19,6 @@
 #include "oops/util/abor1_cpp.h"
 
 #include "saber/gsi/covariance/GSI_Covariance.interface.h"
-#include "saber/gsi/interpolation/GSI_InterpolationImpl.h"
 #include "saber/oops/SaberCentralBlockBase.h"
 #include "saber/oops/SaberCentralBlockParametersBase.h"
 

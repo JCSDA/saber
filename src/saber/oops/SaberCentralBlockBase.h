@@ -64,7 +64,6 @@ class SaberCentralBlockParametersWrapper : public oops::Parameters {
 // =============================================================================
 
 class SaberCentralBlockFactory {
-
  public:
   static SaberCentralBlockBase * create(const eckit::mpi::Comm &,
                                  const atlas::FunctionSpace &,

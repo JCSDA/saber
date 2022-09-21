@@ -122,13 +122,15 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
   oops::Variables outputVars(incVars);
 
   // Build outer blocks successively
-  const boost::optional<std::vector<SaberOuterBlockParametersWrapper>> &saberOuterBlocks = params.saberOuterBlocks.value();
+  const boost::optional<std::vector<SaberOuterBlockParametersWrapper>> &saberOuterBlocks =
+    params.saberOuterBlocks.value();
   if (saberOuterBlocks != boost::none) {
     // Loop in reverse order
     for (const SaberOuterBlockParametersWrapper & saberOuterBlockParamWrapper :
       boost::adaptors::reverse(*saberOuterBlocks)) {
       // Get outer block parameters
-      const SaberOuterBlockParametersBase & saberOuterBlockParams = saberOuterBlockParamWrapper.saberOuterBlockParameters;
+      const SaberOuterBlockParametersBase & saberOuterBlockParams =
+        saberOuterBlockParamWrapper.saberOuterBlockParameters;
 
       // Local configuration to add parameters
       eckit::LocalConfiguration outerConf;
@@ -137,7 +139,8 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
 
       // Define active variables
       oops::Variables activeVars;
-      const boost::optional<oops::Variables> &optionalActiveVars = saberOuterBlockParams.activeVars.value();
+      const boost::optional<oops::Variables> &optionalActiveVars =
+        saberOuterBlockParams.activeVars.value();
       if (optionalActiveVars != boost::none) {
          // Active variables specified
          activeVars = *optionalActiveVars;
@@ -155,7 +158,8 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
         saberOuterBlockParams.inputFields.value());
 
       // Create outer block
-      oops::Log::info() << "Creating outer block: " << saberOuterBlockParams.saberBlockName.value() << std::endl;
+      oops::Log::info() << "Creating outer block: " << saberOuterBlockParams.saberBlockName.value()
+                        << std::endl;
       saberOuterBlocks_.push_back(SaberOuterBlockFactory::create(geom.getComm(),
                                   outputFunctionSpace,
                                   outputExtraFields,
@@ -187,8 +191,10 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
   }
   std::cout << "Params:"  << params.toConfiguration() << std::endl;
   // Get central block parameters
-  const SaberCentralBlockParametersWrapper & saberCentralBlockParamWrapper = params.saberCentralBlock.value();
-  const SaberCentralBlockParametersBase & saberCentralBlockParams = saberCentralBlockParamWrapper.saberCentralBlockParameters;
+  const SaberCentralBlockParametersWrapper & saberCentralBlockParamWrapper =
+    params.saberCentralBlock.value();
+  const SaberCentralBlockParametersBase & saberCentralBlockParams =
+    saberCentralBlockParamWrapper.saberCentralBlockParameters;
 
   // Define input/output variables
   oops::Variables inoutVars = outputVars;
@@ -200,7 +206,8 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
 
   // Define active variables
   oops::Variables activeVars;
-  const boost::optional<oops::Variables> &optionalActiveVars = saberCentralBlockParams.activeVars.value();
+  const boost::optional<oops::Variables> &optionalActiveVars =
+    saberCentralBlockParams.activeVars.value();
   if (optionalActiveVars != boost::none) {
      // Active variables specified
      activeVars = *optionalActiveVars;

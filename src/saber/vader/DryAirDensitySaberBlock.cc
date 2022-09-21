@@ -92,7 +92,7 @@ DryAirDensitySaberBlock::DryAirDensitySaberBlock(const eckit::mpi::Comm & comm,
   mo::evalDryAirDensity(augmentedStateFieldSet_);
 
   oops::Log::trace() << classname() << "::DryAirDensitySaberBlock done" << std::endl;
-}  
+}
 
 // -----------------------------------------------------------------------------
 

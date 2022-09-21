@@ -41,7 +41,8 @@ SaberCentralBlockBase::SaberCentralBlockBase(const eckit::Configuration & conf)
 
 SaberCentralBlockFactory::SaberCentralBlockFactory(const std::string & name) {
   if (getMakers().find(name) != getMakers().end()) {
-    oops::Log::error() << name << " already registered in saber::SaberCentralBlockFactory." << std::endl;
+    oops::Log::error() << name << " already registered in saber::SaberCentralBlockFactory."
+                       << std::endl;
     ABORT("Element already registered in saber::SaberCentralBlockFactory.");
   }
   getMakers()[name] = this;

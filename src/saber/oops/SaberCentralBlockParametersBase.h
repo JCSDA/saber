@@ -8,6 +8,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "oops/base/ParameterTraitsVariables.h"
 #include "oops/base/Variables.h"

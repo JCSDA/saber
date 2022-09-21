@@ -89,6 +89,7 @@ class Geometry : public util::Printable,
 
   std::vector<size_t> variableSizes(const oops::Variables & vars) const;
   void latlon(std::vector<double> &, std::vector<double> &, const bool) const {}
+  bool levelsAreTopDown() const {return true;}
 
  private:
   void print(std::ostream &) const;

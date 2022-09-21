@@ -20,10 +20,10 @@
 
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
+#include "oops/util/Timer.h"
 
 #include "saber/gsi/covariance/GSI_Covariance.interface.h"
 #include "saber/gsi/grid/GSI_Grid.h"
-#include "saber/gsi/interpolation/GSI_InterpolationImpl.h"
 #include "saber/oops/SaberCentralBlockBase.h"
 
 namespace oops {

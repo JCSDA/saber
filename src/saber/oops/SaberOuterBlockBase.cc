@@ -41,7 +41,8 @@ SaberOuterBlockBase::SaberOuterBlockBase(const eckit::Configuration & conf)
 
 SaberOuterBlockFactory::SaberOuterBlockFactory(const std::string & name) {
   if (getMakers().find(name) != getMakers().end()) {
-    oops::Log::error() << name << " already registered in saber::SaberOuterBlockFactory." << std::endl;
+    oops::Log::error() << name << " already registered in saber::SaberOuterBlockFactory."
+                       << std::endl;
     ABORT("Element already registered in saber::SaberOuterBlockFactory.");
   }
   getMakers()[name] = this;

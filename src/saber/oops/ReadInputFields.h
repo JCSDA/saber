@@ -38,7 +38,6 @@ std::vector<atlas::FieldSet> readInputFields(
   const oops::Variables & vars,
   const util::DateTime & date,
   const boost::optional<std::vector<eckit::LocalConfiguration>> & inputFields) {
-
   // Vector of FieldSets
   std::vector<atlas::FieldSet> fsetVec;
 
@@ -48,11 +47,12 @@ std::vector<atlas::FieldSet> readInputFields(
       // Loop over block input fields
       for (const auto & inputField : *inputFields) {
         // Read block input field as Increment
-        // TODO(Benjamin): here we assume that all input fields have the background geometry and block input variables
+        // TODO(Benjamin): here we assume that all input fields have the background geometry
+        // and block input variables
         oops::Increment<MODEL> dx(resol, vars, date);
         dx.read(inputField);
 
-        // Transform Increment into FieldSet               
+        // Transform Increment into FieldSet
         std::string name = inputField.getString("parameter");
         oops::Log::test() << "Norm of " << name << ":" << dx.norm() << std::endl;
         atlas::FieldSet fset;

@@ -38,7 +38,7 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<MoistureControlSaberBlock> 
+static SaberOuterBlockMaker<MoistureControlSaberBlock>
        makerMoistureControlBlock_("mo_moisture_control");
 
 // -----------------------------------------------------------------------------

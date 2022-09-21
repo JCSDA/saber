@@ -65,8 +65,9 @@ HydrostaticExnerSaberBlock::HydrostaticExnerSaberBlock(const eckit::mpi::Comm & 
   inputVars_ = params.outputVars.value();
 
   // Covariance FieldSet
-  covFieldSet_ = createGpRegressionStats(outputFunctionSpace, outputExtraFields, activeVariableSizes,
-                                         *params.activeVars.value(), params.hydrostaticexnerParams.value());
+  covFieldSet_ = createGpRegressionStats(outputFunctionSpace, outputExtraFields,
+                                         activeVariableSizes, *params.activeVars.value(),
+                                         params.hydrostaticexnerParams.value());
 
   std::vector<std::string> requiredStateVariables{
     "air_temperature",

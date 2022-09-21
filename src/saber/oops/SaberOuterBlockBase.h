@@ -75,7 +75,6 @@ class SaberOuterBlockParametersWrapper : public oops::Parameters {
 // =============================================================================
 
 class SaberOuterBlockFactory {
-
  public:
   static SaberOuterBlockBase * create(const eckit::mpi::Comm &,
                                       const atlas::FunctionSpace &,

@@ -28,7 +28,8 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<BUMP_VerticalBalance> makerBUMP_VerticalBalance_("BUMP_VerticalBalance");
+static SaberOuterBlockMaker<BUMP_VerticalBalance>
+  makerBUMP_VerticalBalance_("BUMP_VerticalBalance");
 
 // -----------------------------------------------------------------------------
 

@@ -48,7 +48,7 @@ endif()
 
 # Optionals
 find_package( oops QUIET OPTIONAL_COMPONENTS qg )
-find_package( gsibec 1.0.2 QUIET )
+find_package( gsibec 1.0.4 QUIET )
 find_package( vader QUIET )
 
 # Optional SABER blocks
@@ -59,11 +59,13 @@ else()
     message( STATUS "SABER block GSI is not enabled" )
 endif()
 # TODO(Benjamin): remove this line once ATLAS is upgraded to 0.30.0 everywhere
+set( ENABLE_SPECTRALB 0 )
 if( atlas_VERSION GREATER_EQUAL 0.30.0 )
     message( STATUS "ATLAS version higher or equal to 0.30.0" )
     if( atlas_TRANS_FOUND )
         message( STATUS "SABER block SPECTRALB is enabled" )
         add_definitions(-Datlas_TRANS_FOUND=1)
+        set( ENABLE_SPECTRALB 1 )
     else()
         message( STATUS "SABER block SPECTRALB is not enabled" )
         add_definitions(-Datlas_TRANS_FOUND=0)
