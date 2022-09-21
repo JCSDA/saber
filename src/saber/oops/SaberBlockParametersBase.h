@@ -9,6 +9,7 @@
 #define SABER_OOPS_SABERBLOCKPARAMETERSBASE_H_
 
 #include <string>
+#include <vector>
 
 #include "oops/base/ParameterTraitsVariables.h"
 #include "oops/base/Variables.h"

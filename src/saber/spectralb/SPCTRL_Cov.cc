@@ -40,8 +40,8 @@ SPCTRL_COV::SPCTRL_COV(const eckit::mpi::Comm & comm,
                        const Parameters_ & params,
                        const atlas::FieldSet & xb,
                        const atlas::FieldSet & fg,
-                       const std::vector<atlas::FieldSet> & fsetVec)
- : SaberBlockBase(params), spectralb_() {
+                       const std::vector<atlas::FieldSet> & fsetVec) :
+  SaberBlockBase(params), spectralb_() {
   oops::Log::trace() << classname() << "::SPCTRL_COV starting" << std::endl;
 
   // Setup and check input/ouput variables

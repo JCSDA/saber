@@ -10,6 +10,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "oops/base/Increment.h"
 #include "oops/base/IncrementEnsemble.h"
@@ -120,7 +121,7 @@ template <typename MODEL> class ErrorCovarianceTrainingParameters
   oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> inputFields{"input fields", this};
 
   /// Input fields 2
-  oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> 
+  oops::OptionalParameter<std::vector<eckit::LocalConfiguration>>
     inputFields2{"lowres input fields", this};
 
   /// BUMP training parameters
@@ -296,7 +297,7 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
     if (ens1) ens1_ne = ens1->size();
     if (ens2) ens2_ne = ens2->size();
 
-    // BUMP 
+    // BUMP
     const boost::optional<BUMP_Parameters> &bumpParams = params.bumpParams.value();
     if (bumpParams != boost::none) {
       // Constructor

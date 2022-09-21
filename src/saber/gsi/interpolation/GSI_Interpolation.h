@@ -21,8 +21,8 @@
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 
-#include "saber/oops/SaberBlockBase.h"
 #include "saber/gsi/interpolation/GSI_InterpolationImpl.h"
+#include "saber/oops/SaberBlockBase.h"
 
 namespace oops {
   class Variables;
