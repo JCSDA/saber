@@ -21,19 +21,19 @@ use random_mod
 use gsi_grid_mod,                   only: gsi_grid
 
 ! gsibec
-use m_gsibec,                     only: gsibec_init
-use m_gsibec,                     only: gsibec_cv_space
-use m_gsibec,                     only: gsibec_sv_space
-use m_gsibec,                     only: gsibec_befname
-use m_gsibec,                     only: gsibec_init_guess
-use m_gsibec,                     only: gsibec_set_guess
-use m_gsibec,                     only: gsibec_final
+use m_gsibec,                       only: gsibec_init
+use m_gsibec,                       only: gsibec_cv_space
+use m_gsibec,                       only: gsibec_sv_space
+use m_gsibec,                       only: gsibec_befname
+use m_gsibec,                       only: gsibec_init_guess
+use m_gsibec,                       only: gsibec_set_guess
+use m_gsibec,                       only: gsibec_final
 
 use guess_grids,                    only: gsiguess_bkgcov_init  ! temporary
 use gsi_metguess_mod,               only: gsi_metguess_get
-
 use gsi_bundlemod,                  only: gsi_bundle
 use gsi_bundlemod,                  only: gsi_bundlegetpointer
+
 use control_vectors,                only: control_vector
 use control_vectors,                only: cvars2d,cvars3d
 use control_vectors,                only: allocate_cv
@@ -199,7 +199,7 @@ contains
   character(len=*), intent(in) :: varname
   real(kind=kind_real), allocatable :: aux(:,:)
 
-! print *, 'Atlas 2-dim: ', size(rank2,2), ' gsi-vec: ', self%grid%lat2,' ', self%grid%lon2
+  print *, 'Atlas 2-dim: ', size(rank2,2), ' gsi-vec: ', self%grid%lat2,' ', self%grid%lon2
   allocate(aux(self%grid%lat2,self%grid%lon2))
   call addhalo_(rank2(1,:),aux)
   call gsibec_set_guess(varname,aux)
@@ -340,7 +340,7 @@ real(kind=kind_real), allocatable :: aux(:,:)
 real(kind=kind_real), allocatable :: aux1(:)
 
 type(control_vector) :: gsicv
-type(gsi_bundle) :: gsisv(1)
+type(gsi_bundle),allocatable :: gsisv(:)
 integer :: isc,iec,jsc,jec,npz
 integer :: iv,k,ier,itbd
 integer,parameter :: hw=1
@@ -375,6 +375,7 @@ if (self%cv) then
 else
    allocate(gvars2d(size(svars2d)),gvars3d(size(svars3d)))
    gvars2d=svars2d; gvars3d=svars3d
+   allocate(gsisv(1))
    call allocate_state(gsisv(1))
 endif
 allocate(tbdvars(size(gvars2d)+size(gvars3d)))
@@ -528,6 +529,7 @@ if (self%cv) then
    call deallocate_cv(gsicv)
 else
    call deallocate_state(gsisv(1))
+   deallocate(gsisv)
 endif
 deallocate(needvrs)
 deallocate(tbdvars)
