@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef QUENCH_INCREMENT_H_
-#define QUENCH_INCREMENT_H_
+#pragma once
 
 #include <memory>
 #include <ostream>
@@ -103,5 +102,3 @@ class Increment : public util::Printable,
 // -----------------------------------------------------------------------------
 
 }  // namespace quench
-
-#endif  // QUENCH_INCREMENT_H_

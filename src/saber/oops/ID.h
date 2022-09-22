@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_OOPS_ID_H_
-#define SABER_OOPS_ID_H_
+#pragma once
 
 #include <memory>
 #include <string>
@@ -57,5 +56,3 @@ class ID : public SaberCentralBlockBase {
 // -----------------------------------------------------------------------------
 
 }  // namespace saber
-
-#endif  // SABER_OOPS_ID_H_

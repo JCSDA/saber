@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_BUMP_BUMP_STDDEV_H_
-#define SABER_BUMP_BUMP_STDDEV_H_
+#pragma once
 
 #include <memory>
 #include <string>
@@ -68,5 +67,3 @@ class BUMP_StdDev : public SaberOuterBlockBase {
 // -----------------------------------------------------------------------------
 
 }  // namespace saber
-
-#endif  // SABER_BUMP_BUMP_STDDEV_H_

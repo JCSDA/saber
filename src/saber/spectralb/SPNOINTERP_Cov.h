@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_SPECTRALB_SPNOINTERP_COV_H_
-#define SABER_SPECTRALB_SPNOINTERP_COV_H_
+#pragma once
 
 #include <memory>
 #include <string>
@@ -69,5 +68,3 @@ class SPNOINTERP_COV : public SaberCentralBlockBase {
 
 }  // namespace spectralb
 }  // namespace saber
-
-#endif  // SABER_SPECTRALB_SPNOINTERP_COV_H_

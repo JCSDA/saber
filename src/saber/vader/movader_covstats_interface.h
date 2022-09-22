@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_VADER_MOVADER_COVSTATS_INTERFACE_H_
-#define SABER_VADER_MOVADER_COVSTATS_INTERFACE_H_
+#pragma once
 
 // Forward declarations
 namespace eckit {
@@ -50,5 +49,4 @@ void covMuStats_f90(
 // -----------------------------------------------------------------------------
 
 }  // namespace saber
-#endif  // SABER_VADER_MOVADER_COVSTATS_INTERFACE_H_
 

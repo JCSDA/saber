@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0. 
  */
 
-#ifndef SABER_SPECTRALB_SPECTRALBNOINTERP_H_
-#define SABER_SPECTRALB_SPECTRALBNOINTERP_H_
+#pragma once
 
 #include <algorithm>
 #include <cmath>
@@ -226,5 +225,3 @@ void SpectralBNoInterp::applySpectralBNoInterp(
 
 }  // namespace spectralb
 }  // namespace saber
-
-#endif  // SABER_SPECTRALB_SPECTRALBNOINTERP_H_

@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0. 
  */
 
-#ifndef SABER_SPECTRALB_COVARIANCESTATISTICSUTILS_H_
-#define SABER_SPECTRALB_COVARIANCESTATISTICSUTILS_H_
+#pragma once
 
 #include <iostream>
 #include <map>
@@ -232,5 +231,3 @@ atlas::FieldSet createSpectralCorrelations(const oops::Variables & activeVars,
 
 }  // namespace spectralb
 }  // namespace saber
-
-#endif  // SABER_SPECTRALB_COVARIANCESTATISTICSUTILS_H_

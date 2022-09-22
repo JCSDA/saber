@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_BUMP_TYPE_BUMP_H_
-#define SABER_BUMP_TYPE_BUMP_H_
+#pragma once
 
 #include "atlas/field/FieldSet.h"
 #include "atlas/functionspace/detail/FunctionSpaceImpl.h"
@@ -59,5 +58,3 @@ extern "C" {
   void bump_dealloc_f90(const int &);
 }
 }  // namespace saber
-
-#endif  // SABER_BUMP_TYPE_BUMP_H_

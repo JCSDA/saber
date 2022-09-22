@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_OOPS_ERRORCOVARIANCE_H_
-#define SABER_OOPS_ERRORCOVARIANCE_H_
+#pragma once
 
 #include <memory>
 #include <string>
@@ -336,5 +335,3 @@ void ErrorCovariance<MODEL>::print(std::ostream & os) const {
 // -----------------------------------------------------------------------------
 
 }  // namespace saber
-
-#endif  // SABER_OOPS_ERRORCOVARIANCE_H_

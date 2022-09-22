@@ -100,7 +100,7 @@ endif()
 
 ## Sources
 add_subdirectory( src/saber )
-add_subdirectory( tools ) # tools is needed for test
+add_subdirectory( tools )
 add_subdirectory( test )
 if( ENABLE_SABER_DOC )
     add_subdirectory( docs )

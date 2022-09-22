@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_OOPS_INSTANTIATELOCALIZATIONFACTORY_H_
-#define SABER_OOPS_INSTANTIATELOCALIZATIONFACTORY_H_
+#pragma once
 
 #include "oops/generic/LocalizationBase.h"
 
@@ -23,5 +22,3 @@ template <typename MODEL> void instantiateLocalizationFactory() {
 // -----------------------------------------------------------------------------
 
 }  // namespace saber
-
-#endif  // SABER_OOPS_INSTANTIATELOCALIZATIONFACTORY_H_

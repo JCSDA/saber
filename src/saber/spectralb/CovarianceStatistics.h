@@ -4,8 +4,8 @@
  * This software is licensed under the terms of the Apache Licence Version 2.0 
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0. 
  */
-#ifndef SABER_SPECTRALB_COVARIANCESTATISTICS_H_
-#define SABER_SPECTRALB_COVARIANCESTATISTICS_H_
+
+#pragma once
 
 #include <map>
 #include <memory>
@@ -82,5 +82,3 @@ class CovStat_ErrorCov {
 
 }  // namespace spectralb
 }  // namespace saber
-
-#endif  // SABER_SPECTRALB_COVARIANCESTATISTICS_H_

@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_INTERPOLATION_ATLASINTERPWRAPPER_H_
-#define SABER_INTERPOLATION_ATLASINTERPWRAPPER_H_
+#pragma once
 
 #include <map>
 #include <memory>
@@ -394,7 +393,3 @@ void AtlasInterpWrapper::executeAdjoint(atlas::FieldSet & srcFieldSet,
 
 }  // namespace interpolation
 }  // namespace saber
-
-// ------------------------------------------------------------------------------------------------
-
-#endif  // SABER_INTERPOLATION_ATLASINTERPWRAPPER_H_

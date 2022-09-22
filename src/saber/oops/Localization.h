@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_OOPS_LOCALIZATION_H_
-#define SABER_OOPS_LOCALIZATION_H_
+#pragma once
 
 #include <memory>
 #include <sstream>
@@ -180,5 +179,3 @@ void Localization<MODEL>::print(std::ostream & os) const {
 // -----------------------------------------------------------------------------
 
 }  // namespace saber
-
-#endif  // SABER_OOPS_LOCALIZATION_H_

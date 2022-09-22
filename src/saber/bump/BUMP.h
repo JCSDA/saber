@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_BUMP_BUMP_H_
-#define SABER_BUMP_BUMP_H_
+#pragma once
 
 #include <algorithm>
 #include <fstream>
@@ -105,5 +104,3 @@ class BUMP {
 // -----------------------------------------------------------------------------
 
 }  // namespace saber
-
-#endif  // SABER_BUMP_BUMP_H_

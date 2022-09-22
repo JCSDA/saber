@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_VADER_MOISTURECONTROLPARAMETERS_H_
-#define SABER_VADER_MOISTURECONTROLPARAMETERS_H_
+#pragma once
 
 #include <string>
 #include <vector>
@@ -33,5 +32,3 @@ class moisturecontrolParameters : public oops::Parameters {
 };
 // -----------------------------------------------------------------------------
 }  // namespace saber
-
-#endif  // SABER_VADER_MOISTURECONTROLPARAMETERS_H_

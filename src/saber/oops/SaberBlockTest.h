@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_OOPS_SABERBLOCKTEST_H_
-#define SABER_OOPS_SABERBLOCKTEST_H_
+#pragma once
 
 #include <memory>
 #include <string>
@@ -454,5 +453,3 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
 // -----------------------------------------------------------------------------
 
 }  // namespace saber
-
-#endif  // SABER_OOPS_SABERBLOCKTEST_H_
