@@ -33,5 +33,4 @@ output dirac:
   filepath: testdata/quench_dirac_gsi_geos_global/dirac_%id%
 
 test:
-  float relative tolerance: 1.5e-6
   reference filename: testref/quench_dirac_gsi_geos_global/test.log.out
