@@ -15,6 +15,8 @@ if( atlas_TRANS_FOUND )
     CovarianceStatistics.cc
     CovarianceStatistics.h
     CovarianceStatisticsUtils.h
+    gaussutils.h
+    gaussutils.cc
     spectralb.h
     spectralbnointerp.h
     spectralb_covstats_interface.h
@@ -24,6 +26,8 @@ if( atlas_TRANS_FOUND )
     SPCTRL_Cov.h
     SPNOINTERP_Cov.cc
     SPNOINTERP_Cov.h
+    SPTOUV.cc
+    SPTOUV.h
     )
 endif()
 
