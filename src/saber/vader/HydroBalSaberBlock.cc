@@ -171,7 +171,6 @@ void HydroBalSaberBlock::multiplyAD(atlas::FieldSet & fset) const {
 
 void HydroBalSaberBlock::calibrationInverseMultiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::calibrationInverseMultiply starting" << std::endl;
-  mo::thetavP2HexnerAD(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::calibrationInverseMultiply done" << std::endl;
 }
 

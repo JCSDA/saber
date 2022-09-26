@@ -138,7 +138,6 @@ void MoistIncrOpSaberBlock::multiplyAD(atlas::FieldSet & fset) const {
 
 void MoistIncrOpSaberBlock::calibrationInverseMultiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::calibrationInverseMultiply starting" << std::endl;
-  mo::qqclqcf2qtAD(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::calibrationInverseMultiply done" << std::endl;
 }
 
