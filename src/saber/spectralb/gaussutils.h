@@ -55,5 +55,4 @@ atlas::FieldSet allocateGaussFieldset(
     const oops::Variables & gaussNames,
     const std::vector<std::size_t> & variableSizes);
 
-
-} // namespace saber
+}  // namespace saber

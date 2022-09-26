@@ -15,6 +15,7 @@ saber central block:
     covariance_file: testdata/CovStats.nc
     gauss_grid_uid: F15
     umatrix_netcdf_names: [PSI_inc_Uv_matrix]
+    variance_opt: true
 
 test:
   reference filename: testref/quench_saber_block_test_spectralb/test.log.out

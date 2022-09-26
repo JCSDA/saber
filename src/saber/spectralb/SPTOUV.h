@@ -72,7 +72,6 @@ class SPTOUV : public SaberOuterBlockBase {
   atlas::trans::Trans transFS_;
 
   void print(std::ostream &) const override;
-
 };
 
 }  // namespace spectralb

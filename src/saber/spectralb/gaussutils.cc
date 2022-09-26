@@ -36,7 +36,7 @@ void applyNtimesNplus1SpectralScaling(const std::string & outputName,
   const auto zonal_wavenumbers = specFS.zonal_wavenumbers();
   const int nb_zonal_wavenumbers = zonal_wavenumbers.size();
 
-  double a = atlas::util::Earth::radius(); // radius of earth;
+  double a = atlas::util::Earth::radius();  // radius of earth;
   int i(0);
   for (int jm = 0; jm < nb_zonal_wavenumbers; ++jm) {
     const int m1 = zonal_wavenumbers(jm);
@@ -51,12 +51,9 @@ void applyNtimesNplus1SpectralScaling(const std::string & outputName,
   fld.rename(outputName);
 }
 
-
-
 atlas::functionspace::Spectral
     createSpectralFunctionSpace(const atlas::StructuredGrid & gaussGrid,
                                 const std::vector<std::size_t> & variableSizes) {
-
   auto N = atlas::GaussianGrid(gaussGrid).N();
   return  atlas::functionspace::Spectral(2*N-1,
        atlas::option::levels(static_cast<atlas::idx_t>(variableSizes[0])));
@@ -66,7 +63,6 @@ atlas::Field allocateGaussUVField(
     const atlas::FunctionSpace & gaussFS,
     const oops::Variables & activeVariables,
     const std::vector<std::size_t> & activeVariableSizes) {
-
   std::array<size_t, 2> indx;
   std::array<size_t, 2> levels;
   if (activeVariables.has("vorticity") && activeVariables.has("divergence")) {
@@ -91,7 +87,6 @@ atlas::Field allocateGaussUVField(
                        << "streamfunction and velocity potential "
                        << std::endl;
     throw std::runtime_error("vertical levels are inconsistent");
-
   }
 
   atlas::idx_t modellevels = static_cast<atlas::idx_t>(levels[0]);
@@ -107,7 +102,6 @@ atlas::FieldSet allocateSpectralVortDiv(
     const atlas::functionspace::Spectral & specfs,
     const oops::Variables & activeVariables,
     const std::vector<std::size_t> & activeVariableSizes) {
-
   std::array<size_t, 2> indx;
   std::array<size_t, 2> levels;
   if (activeVariables.has("vorticity") && activeVariables.has("divergence")) {
@@ -145,8 +139,6 @@ atlas::FieldSet allocateSpectralVortDiv(
 
 atlas::FieldSet convertUVToFieldSet(const atlas::Field & uvField) {
   atlas::FieldSet uvfset;
-
-  // halo exchange?
   // It might make sense to either have
   //     both uvField and uvFieldSet having a halo.
   //     have uvField without halo and uvFieldSet with
@@ -183,7 +175,6 @@ atlas::FieldSet convertUVToFieldSet(const atlas::Field & uvField) {
 
 
 atlas::Field convertUVToFieldSetAD(const atlas::FieldSet & fset) {
-
   atlas::idx_t modellevels = static_cast<atlas::idx_t>(fset["eastward_wind"].levels());
   auto sc = atlas::functionspace::StructuredColumns(fset["eastward_wind"].functionspace());
 
@@ -244,7 +235,4 @@ atlas::FieldSet allocateGaussFieldset(
   return gaussFieldSet;
 }
 
-
-
-
-} // namespace saber
+}  // namespace saber

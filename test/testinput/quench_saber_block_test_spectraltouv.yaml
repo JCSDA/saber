@@ -1,0 +1,19 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type : regular_gaussian
+    N : 15
+  levels: 70
+  partitioner: ectrans
+variables: &vars [psi_inc,chi_inc,northward_wind,eastward_wind]
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables: [eastward_wind,northward_wind]
+saber central block:
+  saber block name: ID
+saber outer blocks:
+- saber block name: SPTOUV
+  gauss_grid_uid: F15
+
+test:
+  reference filename: testref/quench_saber_block_test_spectraltouv/test.log.out

@@ -544,5 +544,6 @@ quench_randomization_bump_nicas_F20/test.log.out
 quench_saber_block_test_bump_nicas/test.log.out
 quench_saber_block_test_bump_stddev/test.log.out
 quench_saber_block_test_spectralb/test.log.out
+quench_saber_block_test_spectraltouv/test.log.out
 quench_saber_block_test_spectralb_from_L15/test.log.out
 quench_saber_block_test_spectralb_from_CS/test.log.out

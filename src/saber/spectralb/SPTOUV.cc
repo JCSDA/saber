@@ -14,8 +14,8 @@
 #include "atlas/grid.h"
 
 #include "oops/base/Variables.h"
-#include "oops/util/Timer.h"
 #include "oops/util/abor1_cpp.h"
+#include "oops/util/Timer.h"
 
 #include "saber/oops/SaberOuterBlockBase.h"
 #include "saber/oops/SaberOuterBlockParametersBase.h"
@@ -70,7 +70,6 @@ SPTOUV::SPTOUV(const eckit::mpi::Comm & comm,
   gaussGrid_ = atlas::StructuredGrid(params.gaussGridUid);
   activeVars_ = params.activeVars.value().get();
   transFS_ = atlas::trans::Trans(outputFunctionSpace_, inputFunctionSpace_);
-
 
   oops::Log::trace() << classname() << "::SPTOUV done" << std::endl;
 }
