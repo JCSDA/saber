@@ -379,8 +379,8 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
                   << std::endl;
 
         std::cout << "before pop"  <<std::endl;
-        int i(0);
-        //std::size_t r{0};
+
+        /*
         view.assign(0.0);
         if (field.name().compare("streamfunction") == 0) {
            view(2, 0) = 0.5;
@@ -388,45 +388,38 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         if (field.name().compare("velocity_potential") == 0) {
            view(8, 0) = 0.5;
         }
+        */
 
-        /*
+
+        int i(0);
+        std::size_t r{0};
+
         for (int jm = 0; jm < nb_zonal_wavenumbers; ++jm) {
           const int m = zonal_wavenumbers(jm);
           for (std::size_t n1 = m; n1 <= static_cast<std::size_t>(totalWavenumber); ++n1) {
             for (std::size_t img = 0; img < 2; ++img) {
               for (atlas::idx_t jl = 0; jl < field.levels(); ++jl) {
-            //  for (atlas::idx_t jl = 0; jl < field.shape(1); ++jl) {
 
                 std::cout << " spectral in m n i imag " <<  field.name() << " " <<
-                             jm << " " << m << " " << n1   << " "<< static_cast<std::size_t>(totalWavenumber)
+                          jm << " " << m << " " << n1   << " "<< static_cast<std::size_t>(totalWavenumber)
                           << " " <<  img <<  " " << jl << std::endl;
 
-                // For comparison with lfric-lite test
-                if ((m == 0) && (n1 == 1) && (img = 0) && (field.name().compare("streamfunction") == 0)) {
-                  view(i, jl) = 1.0;
-                } else if ((m == 1) && (n1 == 1) && (img = 0) && (field.name().compare("velocity_potential") == 0)) {
-                  view(i, jl) = 1.0;
-                } else {
-                  view(i, jl) = 0.0;
-                }
-
-                ++i;
-
                 //TO DO - zeroing the (m,n)=0 only true for wind derived fields.
-                if ((m1 == 0) && (n1 == 0)) {
+                if ((m == 0) && (n1 == 0)) {
                   view(i, jl) = 0.0;
                 }
-                if ((m1 == 0) && (img == 1)) {
+                if ((m == 0) && (img == 1)) {
                   view(i, jl) = 0.0;
                 } else {
                   view(i, jl) = rand_vec[r];
                 }
+                 ++i;
 
               }
             }
           }
         }
-*/
+
       }
       // Add field
       fset.add(field);
