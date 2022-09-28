@@ -127,6 +127,7 @@ Fields::Fields(const Fields & other, const bool copy):
 Fields::Fields(const Fields & other):
   geom_(other.geom_), vars_(other.vars_), time_(other.time_)
 {
+  oops::Log::trace() << "Fields::Fields(const Fields & other) starting" << std::endl;
   // Reset ATLAS fieldset
   fset_ = atlas::FieldSet();
 
@@ -146,9 +147,11 @@ Fields::Fields(const Fields & other):
     }
     fset_.add(field);
   }
+  oops::Log::trace() << "Fields::Fields(const Fields & other) done" << std::endl;
 }
 // -----------------------------------------------------------------------------
 void Fields::zero() {
+  oops::Log::trace() << "Fields::zero starting" << std::endl;
   for (const auto var : vars_.variables()) {
     atlas::Field field = fset_[var];
     if (field.rank() == 2) {
@@ -160,9 +163,11 @@ void Fields::zero() {
       }
     }
   }
+  oops::Log::trace() << "Fields::zero end" << std::endl;
 }
 // -----------------------------------------------------------------------------
 Fields & Fields::operator=(const Fields & rhs) {
+  oops::Log::trace() << "Fields::operator=(const Fields & rhs) starting" << std::endl;
   for (const auto var : vars_.variables()) {
     atlas::Field field = fset_[var];
     atlas::Field fieldRhs = rhs.fset_[var];
@@ -177,10 +182,12 @@ Fields & Fields::operator=(const Fields & rhs) {
     }
   }
   time_ = rhs.time_;
+  oops::Log::trace() << "Fields::operator=(const Fields & rhs) end" << std::endl;
   return *this;
 }
 // -----------------------------------------------------------------------------
 Fields & Fields::operator+=(const Fields & rhs) {
+  oops::Log::trace() << "Fields::operator+=(const Fields & rhs) starting" << std::endl;
   for (const auto var : vars_.variables()) {
     atlas::Field field = fset_[var];
     atlas::Field fieldRhs = rhs.fset_[var];
@@ -194,10 +201,12 @@ Fields & Fields::operator+=(const Fields & rhs) {
       }
     }
   }
+  oops::Log::trace() << "Fields::operator+=(const Fields & rhs) done" << std::endl;
   return *this;
 }
 // -----------------------------------------------------------------------------
 Fields & Fields::operator-=(const Fields & rhs) {
+  oops::Log::trace() << "Fields::operator-=(const Fields & rhs) starting" << std::endl;
   for (const auto var : vars_.variables()) {
     atlas::Field field = fset_[var];
     atlas::Field fieldRhs = rhs.fset_[var];
@@ -211,10 +220,12 @@ Fields & Fields::operator-=(const Fields & rhs) {
       }
     }
   }
+  oops::Log::trace() << "Fields::operator-=(const Fields & rhs) done" << std::endl;
   return *this;
 }
 // -----------------------------------------------------------------------------
 Fields & Fields::operator*=(const double & zz) {
+  oops::Log::trace() << "Fields::operator*=(const Fields & rhs) starting" << std::endl;
   for (const auto var : vars_.variables()) {
     atlas::Field field = fset_[var];
     if (field.rank() == 2) {
@@ -226,10 +237,12 @@ Fields & Fields::operator*=(const double & zz) {
       }
     }
   }
+  oops::Log::trace() << "Fields::operator*=(const Fields & rhs) done" << std::endl;
   return *this;
 }
 // -----------------------------------------------------------------------------
 void Fields::axpy(const double & zz, const Fields & rhs) {
+  oops::Log::trace() << "Fields::axpy starting" << std::endl;
   for (const auto var : vars_.variables()) {
     atlas::Field field = fset_[var];
     atlas::Field fieldRhs = rhs.fset_[var];
@@ -244,9 +257,11 @@ void Fields::axpy(const double & zz, const Fields & rhs) {
       }
     }
   }
+  oops::Log::trace() << "Fields::axpy done" << std::endl;
 }
 // -----------------------------------------------------------------------------
 double Fields::dot_product_with(const Fields & fld2) const {
+  oops::Log::trace() << "Fields::dot_product_with starting" << std::endl;
   double zz = 0;
   atlas::Field ghost = geom_->functionSpace().ghost();
   auto ghostView = atlas::array::make_view<int, 1>(ghost);
@@ -264,10 +279,12 @@ double Fields::dot_product_with(const Fields & fld2) const {
     }
   }
   this->geom_->getComm().allReduceInPlace(zz, eckit::mpi::sum());
+  oops::Log::trace() << "Fields::dot_product_with done" << std::endl;
   return zz;
 }
 // -----------------------------------------------------------------------------
 void Fields::schur_product_with(const Fields & dx) {
+  oops::Log::trace() << "Fields::schur_product_with starting" << std::endl;
   for (const auto var : vars_.variables()) {
     atlas::Field field = fset_[var];
     atlas::Field fieldDx = dx.fset_[var];
@@ -281,9 +298,11 @@ void Fields::schur_product_with(const Fields & dx) {
       }
     }
   }
+  oops::Log::trace() << "Fields::schur_product_with done" << std::endl;
 }
 // -----------------------------------------------------------------------------
 void Fields::random() {
+  oops::Log::trace() << "Fields::random starting" << std::endl;
   // Total size
   size_t n = 0;
   atlas::Field ghost = geom_->functionSpace().ghost();
@@ -316,9 +335,11 @@ void Fields::random() {
       }
     }
   }
+  oops::Log::trace() << "Fields::random done" << std::endl;
 }
 // -----------------------------------------------------------------------------
 void Fields::dirac(const eckit::Configuration & config) {
+  oops::Log::trace() << "Fields::dirac starting" << std::endl;
   // Get dirac specifications
   std::vector<double> lon = config.getDoubleVector("lon");
   std::vector<double> lat = config.getDoubleVector("lat");
@@ -381,9 +402,11 @@ void Fields::dirac(const eckit::Configuration & config) {
       }
     }
   }
+  oops::Log::trace() << "Fields::dirac done" << std::endl;
 }
 // -----------------------------------------------------------------------------
 void Fields::diff(const Fields & x1, const Fields & x2) {
+  oops::Log::trace() << "Fields::diff starting" << std::endl;
   for (const auto var : vars_.variables()) {
     atlas::Field field = fset_[var];
     atlas::Field fieldx1 = x1.fset_[var];
@@ -399,9 +422,11 @@ void Fields::diff(const Fields & x1, const Fields & x2) {
       }
     }
   }
+  oops::Log::trace() << "Fields::diff done" << std::endl;
 }
 // -----------------------------------------------------------------------------
 void Fields::toFieldSet(atlas::FieldSet & fset) const {
+  oops::Log::trace() << "Fields::toFieldSet starting" << std::endl;
   for (auto var : vars_.variables()) {
     if (fset_.has_field(var)) {
       fset->add(fset_[var]);
@@ -418,9 +443,11 @@ void Fields::toFieldSet(atlas::FieldSet & fset) const {
       ABORT("Variable " + var + " not in source fieldset");
     }
   }
+  oops::Log::trace() << "Fields::toFieldSet done" << std::endl;
 }
 // -----------------------------------------------------------------------------
 void Fields::fromFieldSet(const atlas::FieldSet & fset) {
+  oops::Log::trace() << "Fields::fromFieldSet starting" << std::endl;
   atlas::Field ghost = geom_->functionSpace().ghost();
   auto ghostView = atlas::array::make_view<int, 1>(ghost);
   for (auto var : vars_.variables()) {
@@ -485,6 +512,7 @@ void Fields::fromFieldSet(const atlas::FieldSet & fset) {
       ABORT("Variable " + var + " not in source fieldset");
     }
   }
+  oops::Log::trace() << "Fields::fromFieldSet done" << std::endl;
 }
 // -----------------------------------------------------------------------------
 void Fields::read(const eckit::Configuration & config) {

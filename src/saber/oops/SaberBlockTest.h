@@ -14,6 +14,10 @@
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/range/adaptors.hpp>
 
+#include "atlas/functionspace.h"
+#include "atlas/util/Constants.h"
+#include "atlas/util/CoordinateEnums.h"
+
 #include "oops/base/Increment.h"
 #include "oops/base/State.h"
 #include "oops/base/Variables.h"
@@ -29,6 +33,7 @@
 #include "saber/oops/SaberCentralBlockParametersBase.h"
 #include "saber/oops/SaberOuterBlockBase.h"
 #include "saber/oops/SaberOuterBlockParametersBase.h"
+
 
 namespace eckit {
   class Configuration;
@@ -173,6 +178,8 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         const atlas::FunctionSpace inputFunctionSpace = saberOuterBlock_->inputFunctionSpace();
         const atlas::FieldSet inputExtraFields = saberOuterBlock_->inputExtraFields();
 
+        std::cout << "test input vars " << inputVars.variables() << std::endl;
+
         // Check that active variables are present in either input or output variables, or both
         for (const auto & var : activeVars.variables()) {
           ASSERT(inputVars.has(var) || outputVars.has(var));
@@ -184,9 +191,11 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         std::vector<size_t> inputVariableSizes = geom.variableSizes(inputVars);
 
         // Create random input FieldSet
-        atlas::FieldSet inputFset = createRandomFieldSet(inputFunctionSpace,
-                                                         inputVariableSizes,
-                                                         inputVars);
+        std::cout << "before random input FieldSet" << inputFunctionSpace.type() << " "
+                  << inputVars.variables() << std::endl;
+        atlas::FieldSet inputFset = (inputFunctionSpace.type() == "Spectral" ?
+          createSpectralRandomFieldSet(inputFunctionSpace, inputVariableSizes, inputVars) :
+          createRandomFieldSet(inputFunctionSpace, inputVariableSizes, inputVars));
 
         // Copy input FieldSet
         atlas::FieldSet inputFsetSave = copyFieldSet(inputFset);
@@ -195,9 +204,12 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         std::vector<size_t> outputVariableSizes = geom.variableSizes(outputVars);
 
         // Create random output FieldSet
-        atlas::FieldSet outputFset = createRandomFieldSet(outputFunctionSpace,
-                                                          outputVariableSizes,
-                                                          outputVars);
+        atlas::FieldSet outputFset = (outputFunctionSpace.type() == "Spectral" ?
+          createSpectralRandomFieldSet(outputFunctionSpace, outputVariableSizes, outputVars) :
+          createRandomFieldSet(outputFunctionSpace, outputVariableSizes, outputVars));
+
+        std::cout << "before random output FieldSet" << outputFunctionSpace.type() << " "
+                  << outputVars.variables() << std::endl;
 
         // Copy output FieldSet
         atlas::FieldSet outputFsetSave = copyFieldSet(outputFset);
@@ -207,10 +219,12 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         saberOuterBlock_->multiplyAD(outputFset);
 
         // Compute adjoint test
+        std::cout << "before dp1 " <<std::endl;
         const double dp1 = dot_product(inputFset, outputFsetSave, geom.getComm());
+        std::cout << "before dp2 " <<std::endl;
         const double dp2 = dot_product(outputFset, inputFsetSave, geom.getComm());
         oops::Log::info() << "Adjoint test for outer block " << saberOuterBlock_->name()
-                          << ": y^t (Ax) = " << dp1 << ": x^t (Ay) = " << dp2 << std::endl;
+                          << ": y^t (Ax) = " << dp1 << ": x^t (A^t y) = " << dp2 << std::endl;
         ASSERT(abs(dp1) > 0.0);
         ASSERT(abs(dp2) > 0.0);
         oops::Log::test() << "Adjoint test for outer block " << saberOuterBlock_->name();
@@ -304,6 +318,8 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       saberCentralBlock_->multiply(outputFset);
 
       // Compute adjoint test
+
+
       const double dp1 = dot_product(inputFset, outputFsetSave, geom.getComm());
       const double dp2 = dot_product(outputFset, inputFsetSave, geom.getComm());
       oops::Log::info() << "Adjoint test for central block " << saberCentralBlock_->name()
@@ -329,6 +345,105 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
 
   // -----------------------------------------------------------------------------
   // TODO(Benjamin): should be moved in OOPS?
+
+  atlas::FieldSet createSpectralRandomFieldSet(const atlas::FunctionSpace & functionSpace,
+                                               const std::vector<size_t> & variableSizes,
+                                               const oops::Variables & vars) const {
+
+    // Create FieldSet
+    atlas::FieldSet fset;
+
+    for (size_t jvar = 0; jvar < vars.size(); ++jvar) {
+      // Create field
+      atlas::Field field = functionSpace.createField<double>(
+        atlas::option::name(vars.variables()[jvar]) | atlas::option::levels(variableSizes[jvar]));
+    //  atlas::option::name(vars.variables()[jvar]) | atlas::option::levels(1));
+
+      // Generate random vector
+      util::NormalDistribution<double> rand_vec(size_t(field.shape(0) * field.shape(1)),
+                                                0.0, 1.0, 1);
+      std::vector<double> rand_vec2(rand_vec.data());
+      if (field.rank() == 2) {
+
+        std::cout << "before cast"  << field.functionspace().type() << std::endl;
+        auto specFS = atlas::functionspace::Spectral(field.functionspace());
+
+        const int totalWavenumber = specFS.truncation();
+        const auto zonal_wavenumbers = specFS.zonal_wavenumbers();
+        const int nb_zonal_wavenumbers = zonal_wavenumbers.size();
+        auto view = atlas::array::make_view<double, 2>(field);
+
+        std::cout << specFS.valid() << " " << totalWavenumber <<  " " << nb_zonal_wavenumbers
+                  << " " << field.shape(1) << " " << zonal_wavenumbers(0)  << " " << zonal_wavenumbers(1)
+                  << " " << zonal_wavenumbers(2)  << " " << zonal_wavenumbers(3)
+                  << std::endl;
+
+        std::cout << "before pop"  <<std::endl;
+        int i(0);
+        //std::size_t r{0};
+        view.assign(0.0);
+        if (field.name().compare("streamfunction") == 0) {
+           view(2, 0) = 0.5;
+        }
+        if (field.name().compare("velocity_potential") == 0) {
+           view(8, 0) = 0.5;
+        }
+
+        /*
+        for (int jm = 0; jm < nb_zonal_wavenumbers; ++jm) {
+          const int m = zonal_wavenumbers(jm);
+          for (std::size_t n1 = m; n1 <= static_cast<std::size_t>(totalWavenumber); ++n1) {
+            for (std::size_t img = 0; img < 2; ++img) {
+              for (atlas::idx_t jl = 0; jl < field.levels(); ++jl) {
+            //  for (atlas::idx_t jl = 0; jl < field.shape(1); ++jl) {
+
+                std::cout << " spectral in m n i imag " <<  field.name() << " " <<
+                             jm << " " << m << " " << n1   << " "<< static_cast<std::size_t>(totalWavenumber)
+                          << " " <<  img <<  " " << jl << std::endl;
+
+                // For comparison with lfric-lite test
+                if ((m == 0) && (n1 == 1) && (img = 0) && (field.name().compare("streamfunction") == 0)) {
+                  view(i, jl) = 1.0;
+                } else if ((m == 1) && (n1 == 1) && (img = 0) && (field.name().compare("velocity_potential") == 0)) {
+                  view(i, jl) = 1.0;
+                } else {
+                  view(i, jl) = 0.0;
+                }
+
+                ++i;
+
+                //TO DO - zeroing the (m,n)=0 only true for wind derived fields.
+                if ((m1 == 0) && (n1 == 0)) {
+                  view(i, jl) = 0.0;
+                }
+                if ((m1 == 0) && (img == 1)) {
+                  view(i, jl) = 0.0;
+                } else {
+                  view(i, jl) = rand_vec[r];
+                }
+
+              }
+            }
+          }
+        }
+*/
+      }
+      // Add field
+      fset.add(field);
+    }
+
+    for (size_t jvar = 0; jvar < vars.size(); ++jvar) {
+      auto view = atlas::array::make_view<double, 2>(fset[jvar]);
+      for (atlas::idx_t jnode = 0; jnode < fset[jvar].shape(0); ++jnode) {
+        std::cout << "spec rand = " << fset[jvar].name()
+                  << " " << jnode << " " << view(jnode, 0) << std::endl;
+      }
+    }
+
+    // Return FieldSet
+    return fset;
+  }
+
   atlas::FieldSet createRandomFieldSet(const atlas::FunctionSpace & functionSpace,
                                        const std::vector<size_t> & variableSizes,
                                        const oops::Variables & vars) const {
@@ -353,20 +468,45 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       }
 
       // Generate random vector
-      util::NormalDistribution<double> rand_vec(n, 0.0, 1.0, 1);
+      util::NormalDistribution<double>rand_vec(n, 0.0, 1.0, 1);
+      std::vector<double> rand_vec2(rand_vec.data());
+
 
       // Populate with random numbers
       n = 0;
       if (field.rank() == 2) {
         auto view = atlas::array::make_view<double, 2>(field);
+        auto lonlatview = atlas::array::make_view<double, 2>(field.functionspace().lonlat());
+
         for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
           for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+            // for comparison with lfric-lite jedi
+            if (field.name().compare("eastward_wind") == 0) {
+              view(jnode, jlevel) = std::sqrt(3.0) / 2.0  *
+                  std::cos(lonlatview(jnode, atlas::LAT) * atlas::util::Constants::degreesToRadians()) +
+                  std::sqrt(3.0 / 2.0) *
+                  std::sin(lonlatview(jnode, atlas::LON) * atlas::util::Constants::degreesToRadians());
+
+                  std::sqrt(3.0 / 2.0) *
+                  std::cos(lonlatview(jnode, atlas::LON) * atlas::util::Constants::degreesToRadians()) *
+                  std::sin(lonlatview(jnode, atlas::LAT) * atlas::util::Constants::degreesToRadians());
+
+            }
+            if (field.name().compare("northward_wind") == 0) {
+              view(jnode, jlevel) =
+                  std::sqrt(3.0 / 2.0) *
+                  std::cos(lonlatview(jnode, atlas::LON) * atlas::util::Constants::degreesToRadians()) *
+                  std::sin(lonlatview(jnode, atlas::LAT) * atlas::util::Constants::degreesToRadians());
+            }
+
+            /*
             if (ghostView(jnode) == 0) {
-              view(jnode, jlevel) = rand_vec[n];
+              view(jnode, jlevel) = rand_vec2[n];
               ++n;
             } else {
               view(jnode, jlevel) = 0.0;
             }
+            */
           }
         }
       }
@@ -377,6 +517,16 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
 
     // Halo exchange
     fset.haloExchange();
+
+
+    for (atlas::idx_t jvar = 0; jvar < fset.size(); ++jvar) {
+      auto view = atlas::array::make_view<double, 2>(fset[jvar]);
+      for (atlas::idx_t jnode = 0; jnode < fset[jvar].shape(0); ++jnode) {
+        std::cout << "rand = " << fset[jvar].name()  << " " << vars.variables()[jvar]
+                  << " " << jnode << " " << view(jnode, 0) << std::endl;
+      }
+    }
+
 
     // Return FieldSet
     return fset;
@@ -418,25 +568,74 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
                      const atlas::FieldSet & fset2,
                      const eckit::mpi::Comm & comm) const {
     // Check FieldSets size
+
+    std::cout << " dot product fspace type " << fset1[0].functionspace().type() << " "
+              <<  fset2[0].functionspace().type() << std::endl;
     ASSERT(fset1.size() == fset2.size());
 
-    // Compute dot product
     double dp = 0.0;
-    for (const auto & field1 : fset1) {
-      if (field1.rank() == 2) {
-        atlas::Field field2 = fset2.field(field1.name());
+    // Compute dot product
+    if (fset1[0].functionspace().type().compare("Spectral") == 0) {
+      // Need to cast to spectral functionspace here for additional methods.
+      for (const auto & field1 : fset1) {
+        if (field1.rank() == 2) {
+          auto specFS = atlas::functionspace::Spectral(fset1[0].functionspace());
 
-        // Check fields consistency
-        ASSERT(field2.rank() == 2);
-        ASSERT(field1.shape(0) == field2.shape(0));
-        ASSERT(field1.shape(1) == field2.shape(1));
+          const int totalWavenumber = specFS.truncation();
+          const auto zonal_wavenumbers = specFS.zonal_wavenumbers();
+          const int nb_zonal_wavenumbers = zonal_wavenumbers.size();
 
-        // Add contributions
-        auto view1 = atlas::array::make_view<double, 2>(field1);
-        auto view2 = atlas::array::make_view<double, 2>(field2);
-        for (atlas::idx_t jnode = 0; jnode < field1.shape(0); ++jnode) {
-          for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
+          atlas::Field field2 = fset2.field(field1.name());
+
+          // Check fields consistency
+          ASSERT(field2.rank() == 2);
+          ASSERT(field1.shape(0) == field2.shape(0));
+          ASSERT(field1.shape(1) == field2.shape(1));
+          auto view1 = atlas::array::make_view<double, 2>(field1);
+          auto view2 = atlas::array::make_view<double, 2>(field2);
+          int i(0);
+          for (int jm = 0; jm < nb_zonal_wavenumbers; ++jm) {
+            const int m1 = zonal_wavenumbers(jm);
+            for (std::size_t n1 = m1; n1 <= static_cast<std::size_t>(totalWavenumber); ++n1) {
+              for (std::size_t img = 0; img < 2; ++img, ++i) {
+                for (atlas::idx_t jl = 0; jl < field1.levels(); ++jl) {
+                  if (m1 == 0) {
+                    dp += view1(i, jl) * view2(i, jl);
+                  } else {
+                    // to account for the contribution from the implicit
+                    // complex conjugate coefficients.
+                    dp += 2.0 * view1(i, jl) * view2(i, jl);
+                  }
+                  std::cout << " spectral m n i imag " << m1 << " " << n1 << " " << i
+                            << " "<< img << " " << view1(i, jl) << " " << view2(i, jl) << std::endl;
+                }
+              }
+            }
+          }
+        }
+      }
+
+
+    } else {
+      for (const auto & field1 : fset1) {
+        if (field1.rank() == 2) {
+          atlas::Field field2 = fset2.field(field1.name());
+
+          std::cout << " dot product field shape(0) " << field1.name() << " "
+                    <<  field1.shape(0) << " " << field2.shape(0) << std::endl;
+
+          // Check fields consistency
+          ASSERT(field2.rank() == 2);
+          ASSERT(field1.shape(0) == field2.shape(0));
+          ASSERT(field1.shape(1) == field2.shape(1));
+
+          // Add contributions
+          auto view1 = atlas::array::make_view<double, 2>(field1);
+          auto view2 = atlas::array::make_view<double, 2>(field2);
+          for (atlas::idx_t jnode = 0; jnode < field1.shape(0); ++jnode) {
+            for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
               dp += view1(jnode, jlevel)*view2(jnode, jlevel);
+            }
           }
         }
       }

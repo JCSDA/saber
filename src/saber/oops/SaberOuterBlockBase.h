@@ -37,6 +37,12 @@ namespace saber {
 class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
  public:
   explicit SaberOuterBlockBase(const eckit::Configuration & conf);
+
+  explicit SaberOuterBlockBase(const eckit::Configuration & conf,
+                               const oops::Variables & variables,
+                               const atlas::FunctionSpace & functionSpace,
+                               const atlas::FieldSet & fset);
+
   virtual ~SaberOuterBlockBase() {}
 
   const oops::Variables inputVars() {return inputVars_;}
@@ -49,7 +55,7 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
 
   const std::string name() const {return name_;}
 
- protected:
+ public:
   oops::Variables inputVars_;
   atlas::FunctionSpace inputFunctionSpace_;
   atlas::FieldSet inputExtraFields_;

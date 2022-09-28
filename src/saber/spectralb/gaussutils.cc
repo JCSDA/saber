@@ -21,34 +21,72 @@ std::vector<std::size_t> createActiveVariableSizes(const oops::Variables & activ
                                                    const oops::Variables & inputVars,
                                                    const std::vector<std::size_t> & variableSizes) {
   std::vector<std::size_t> activeVariableSizes(activeVars.size(), 0.0);
-  std::size_t i(0);
   for (std::size_t i = 0; i < activeVars.variables().size(); ++i) {
     activeVariableSizes[i] = variableSizes[inputVars.find(activeVars[i])];
   }
   return activeVariableSizes;
 }
 
-void applyNtimesNplus1SpectralScaling(const std::string & outputName,
+void applyNtimesNplus1SpectralScaling(const oops::Variables & inputNames,
+                                      const oops::Variables & outputNames,
                                       const atlas::functionspace::Spectral & specFS,
                                       const atlas::idx_t & totalWavenumber,
-                                      atlas::Field & fld) {
-  auto fldView = atlas::array::make_view<double, 2>(fld);
+                                      atlas::FieldSet & fSet) {
+
   const auto zonal_wavenumbers = specFS.zonal_wavenumbers();
   const int nb_zonal_wavenumbers = zonal_wavenumbers.size();
 
-  double a = atlas::util::Earth::radius();  // radius of earth;
-  int i(0);
-  for (int jm = 0; jm < nb_zonal_wavenumbers; ++jm) {
-    const int m1 = zonal_wavenumbers(jm);
-    for (std::size_t n1 = m1; n1 <= static_cast<std::size_t>(totalWavenumber); ++n1) {
-      for (std::size_t img = 0; img < 2; ++img, ++i) {
-        for (atlas::idx_t jl = 0; jl < fld.levels(); ++jl) {
-          fldView(i, jl) = n1 * (n1 + 1) *  fldView(i, jl) / a;
+  // copy fields that are not associated with inputNames
+  atlas::FieldSet fsetTemp;
+  for (atlas::Field & f : fSet) {
+    if (!(inputNames.has(f.name()))) {
+      fsetTemp.add(f);
+    }
+  }
+
+  std::cout << "scaling fsetTemp size" << fsetTemp.size() << std::endl;
+
+  atlas::FieldSet fsetScaled;
+  for (std::size_t var = 0; var < inputNames.variables().size(); ++var) {
+    atlas::Field scaledFld = fSet[inputNames[var]];
+    auto fldView = atlas::array::make_view<double, 2>(scaledFld);
+
+    double a = atlas::util::Earth::radius();  // radius of earth;
+    int i(0);
+    for (int jm = 0; jm < nb_zonal_wavenumbers; ++jm) {
+      const int m1 = zonal_wavenumbers(jm);
+      for (std::size_t n1 = m1; n1 <= static_cast<std::size_t>(2 * totalWavenumber - 1); ++n1) {
+        for (std::size_t img = 0; img < 2; ++img, ++i) {
+          std::cout << "scaling i n1 m1" << i << " " << n1 << " " << m1 << std::endl;
+          for (atlas::idx_t jl = 0; jl < fSet[inputNames[var]].levels(); ++jl) {
+            fldView(i, jl) = n1 * (n1 + 1) *  fldView(i, jl) / a;
+          }
         }
       }
     }
+    scaledFld.rename(outputNames[var]);
+    fsetScaled.add(scaledFld);
   }
-  fld.rename(outputName);
+
+  fSet = fsetTemp;
+
+  for (auto & f : fsetScaled) {
+    fSet.add(f);
+  }
+
+  for (auto & f : fSet) {
+    std::cout<< "scaling names " << f.name()  << std::endl;
+    auto fldView = atlas::array::make_view<double, 2>(f);
+    for (atlas::idx_t jnode = 0; jnode < f.shape(0); ++jnode) {
+      for (atlas::idx_t jlevel = 0; jlevel < f.shape(1); ++jlevel) {
+        std::cout << f.name() << " " << jnode << " " << jlevel << fldView(jnode, jlevel)
+                  <<  " " << fldView(jnode, jlevel) * atlas::util::Earth::radius() << std::endl;
+      }
+    }
+
+
+  }
+
 }
 
 atlas::functionspace::Spectral
@@ -63,8 +101,18 @@ atlas::Field allocateGaussUVField(
     const atlas::FunctionSpace & gaussFS,
     const oops::Variables & activeVariables,
     const std::vector<std::size_t> & activeVariableSizes) {
-  std::array<size_t, 2> indx;
-  std::array<size_t, 2> levels;
+
+  std::cout << "start " << activeVariableSizes.size() << std::endl;
+  for (std::size_t i : activeVariableSizes) {
+    std::cout << i << std::endl;
+  }
+
+  for (auto s : activeVariables.variables()) {
+    std::cout << s << std::endl;
+  }
+
+  std::array<size_t, 2> indx{{0,0}};
+  std::array<size_t, 2> levels{{0,0}};
   if (activeVariables.has("vorticity") && activeVariables.has("divergence")) {
     indx[0] = activeVariables.find("vorticity");
     indx[1] = activeVariables.find("divergence");
@@ -74,20 +122,28 @@ atlas::Field allocateGaussUVField(
   } else {
     // error trap
     oops::Log::error() << "ERROR - either vorticity and divergence "
-                       << "or streamfunction and veclocity potential "
+                       << "or streamfunction and velocity_potential "
                        << "not present " << std::endl;
     throw std::runtime_error("input fields mis-specified");
   }
   // check that levels in indx[0] and indx[1] the same.
+
   levels[0] = activeVariableSizes[indx[0]];
   levels[1] = activeVariableSizes[indx[1]];
+
   if (levels[0] != levels[1]) {
     oops::Log::error() << "ERROR - the number of model levels in "
                        << "vorticity and divergence or "
                        << "streamfunction and velocity potential "
+                       << indx[0] << " "
+                       << indx[1] << " "
+                       << levels[0] << " "
+                       << levels[1]
                        << std::endl;
     throw std::runtime_error("vertical levels are inconsistent");
   }
+
+  std::cout << "before model levels" << std::endl;
 
   atlas::idx_t modellevels = static_cast<atlas::idx_t>(levels[0]);
 
@@ -145,14 +201,12 @@ atlas::FieldSet convertUVToFieldSet(const atlas::Field & uvField) {
   // I am going with the latter.
 
   atlas::Field u = uvField.functionspace().createField<double>
-      (atlas::option::name("northward_wind") |
-       atlas::option::levels(uvField.levels()) |
-       atlas::option::halo(1));
+      (atlas::option::name("eastward_wind") |
+       atlas::option::levels(uvField.levels()));
 
   atlas::Field v = uvField.functionspace().createField<double>
-      (atlas::option::name("eastward_wind") |
-       atlas::option::levels(uvField.levels()) |
-       atlas::option::halo(1));
+      (atlas::option::name("northward_wind") |
+       atlas::option::levels(uvField.levels()));
 
   auto uView = atlas::array::make_view<double, 2>(u);
   auto vView = atlas::array::make_view<double, 2>(v);
@@ -184,7 +238,7 @@ atlas::Field convertUVToFieldSetAD(const atlas::FieldSet & fset) {
 
 
   fset["eastward_wind"].adjointHaloExchange();
-  fset["northwar_wind"].adjointHaloExchange();
+  fset["northward_wind"].adjointHaloExchange();
 
   auto uView = atlas::array::make_view<double, 2>(fset["eastward_wind"]);
   auto vView = atlas::array::make_view<double, 2>(fset["northward_wind"]);

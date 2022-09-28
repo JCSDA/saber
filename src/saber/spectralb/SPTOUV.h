@@ -63,12 +63,14 @@ class SPTOUV : public SaberOuterBlockBase {
   void calibrationInverseMultiply(atlas::FieldSet &) const override;
 
  private:
+  Parameters_ params_;
   atlas::FunctionSpace outputFunctionSpace_;
-  atlas::StructuredGrid gaussGrid_;
+  oops::Variables outputVars_;
   oops::Variables inputVars_;
-  oops::Variables activeVars_;
   std::vector<std::size_t> activeVariableSizes_;
+  atlas::StructuredGrid gaussGrid_;
   atlas::functionspace::Spectral specFS_;
+  atlas::FunctionSpace inputFunctionSpace_;
   atlas::trans::Trans transFS_;
 
   void print(std::ostream &) const override;

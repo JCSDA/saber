@@ -22,10 +22,11 @@ std::vector<std::size_t> createActiveVariableSizes(const oops::Variables & activ
                                                    const oops::Variables & inputVars,
                                                    const std::vector<std::size_t> & variableSizes);
 
-void applyNtimesNplus1SpectralScaling(const std::string & outputName,
+void applyNtimesNplus1SpectralScaling(const oops::Variables & inputNames,
+                                      const oops::Variables & outputNames,
                                       const atlas::functionspace::Spectral & specFS,
                                       const atlas::idx_t & totalWavenumber,
-                                      atlas::Field & fld);
+                                      atlas::FieldSet & fSet);
 
 atlas::Field allocateGaussUVField(
     const atlas::FunctionSpace & gaussFS,

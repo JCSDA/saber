@@ -37,6 +37,15 @@ namespace saber {
 SaberOuterBlockBase::SaberOuterBlockBase(const eckit::Configuration & conf)
   : name_(conf.getString("saber block name")) {}
 
+
+SaberOuterBlockBase::SaberOuterBlockBase(const eckit::Configuration & conf,
+                                         const oops::Variables & inputvariables,
+                                         const atlas::FunctionSpace & functionSpace,
+                                         const atlas::FieldSet & fset) :
+    inputVars_(inputvariables), inputFunctionSpace_(functionSpace),
+    inputExtraFields_(fset),
+    name_(conf.getString("saber block name")) {}
+
 // -----------------------------------------------------------------------------
 
 SaberOuterBlockFactory::SaberOuterBlockFactory(const std::string & name) {
