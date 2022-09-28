@@ -178,8 +178,6 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         const atlas::FunctionSpace inputFunctionSpace = saberOuterBlock_->inputFunctionSpace();
         const atlas::FieldSet inputExtraFields = saberOuterBlock_->inputExtraFields();
 
-        std::cout << "test input vars " << inputVars.variables() << std::endl;
-
         // Check that active variables are present in either input or output variables, or both
         for (const auto & var : activeVars.variables()) {
           ASSERT(inputVars.has(var) || outputVars.has(var));
@@ -191,8 +189,6 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         std::vector<size_t> inputVariableSizes = geom.variableSizes(inputVars);
 
         // Create random input FieldSet
-        std::cout << "before random input FieldSet" << inputFunctionSpace.type() << " "
-                  << inputVars.variables() << std::endl;
         atlas::FieldSet inputFset = (inputFunctionSpace.type() == "Spectral" ?
           createSpectralRandomFieldSet(inputFunctionSpace, inputVariableSizes, inputVars) :
           createRandomFieldSet(inputFunctionSpace, inputVariableSizes, inputVars));
@@ -208,9 +204,6 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
           createSpectralRandomFieldSet(outputFunctionSpace, outputVariableSizes, outputVars) :
           createRandomFieldSet(outputFunctionSpace, outputVariableSizes, outputVars));
 
-        std::cout << "before random output FieldSet" << outputFunctionSpace.type() << " "
-                  << outputVars.variables() << std::endl;
-
         // Copy output FieldSet
         atlas::FieldSet outputFsetSave = copyFieldSet(outputFset);
 
@@ -219,9 +212,7 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         saberOuterBlock_->multiplyAD(outputFset);
 
         // Compute adjoint test
-        std::cout << "before dp1 " <<std::endl;
         const double dp1 = dot_product(inputFset, outputFsetSave, geom.getComm());
-        std::cout << "before dp2 " <<std::endl;
         const double dp2 = dot_product(outputFset, inputFsetSave, geom.getComm());
         oops::Log::info() << "Adjoint test for outer block " << saberOuterBlock_->name()
                           << ": y^t (Ax) = " << dp1 << ": x^t (A^t y) = " << dp2 << std::endl;
@@ -357,39 +348,17 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       // Create field
       atlas::Field field = functionSpace.createField<double>(
         atlas::option::name(vars.variables()[jvar]) | atlas::option::levels(variableSizes[jvar]));
-    //  atlas::option::name(vars.variables()[jvar]) | atlas::option::levels(1));
 
       // Generate random vector
       util::NormalDistribution<double> rand_vec(size_t(field.shape(0) * field.shape(1)),
                                                 0.0, 1.0, 1);
       std::vector<double> rand_vec2(rand_vec.data());
       if (field.rank() == 2) {
-
-        std::cout << "before cast"  << field.functionspace().type() << std::endl;
         auto specFS = atlas::functionspace::Spectral(field.functionspace());
-
         const int totalWavenumber = specFS.truncation();
         const auto zonal_wavenumbers = specFS.zonal_wavenumbers();
         const int nb_zonal_wavenumbers = zonal_wavenumbers.size();
         auto view = atlas::array::make_view<double, 2>(field);
-
-        std::cout << specFS.valid() << " " << totalWavenumber <<  " " << nb_zonal_wavenumbers
-                  << " " << field.shape(1) << " " << zonal_wavenumbers(0)  << " " << zonal_wavenumbers(1)
-                  << " " << zonal_wavenumbers(2)  << " " << zonal_wavenumbers(3)
-                  << std::endl;
-
-        std::cout << "before pop"  <<std::endl;
-
-        /*
-        view.assign(0.0);
-        if (field.name().compare("streamfunction") == 0) {
-           view(2, 0) = 0.5;
-        }
-        if (field.name().compare("velocity_potential") == 0) {
-           view(8, 0) = 0.5;
-        }
-        */
-
 
         int i(0);
         std::size_t r{0};
@@ -399,22 +368,13 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
           for (std::size_t n1 = m; n1 <= static_cast<std::size_t>(totalWavenumber); ++n1) {
             for (std::size_t img = 0; img < 2; ++img) {
               for (atlas::idx_t jl = 0; jl < field.levels(); ++jl) {
-
-                std::cout << " spectral in m n i imag " <<  field.name() << " " <<
-                          jm << " " << m << " " << n1   << " "<< static_cast<std::size_t>(totalWavenumber)
-                          << " " <<  img <<  " " << jl << std::endl;
-
-                //TO DO - zeroing the (m,n)=0 only true for wind derived fields.
-                if ((m == 0) && (n1 == 0)) {
-                  view(i, jl) = 0.0;
-                }
                 if ((m == 0) && (img == 1)) {
                   view(i, jl) = 0.0;
                 } else {
                   view(i, jl) = rand_vec[r];
                 }
                  ++i;
-
+                 ++r;
               }
             }
           }
@@ -423,14 +383,6 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       }
       // Add field
       fset.add(field);
-    }
-
-    for (size_t jvar = 0; jvar < vars.size(); ++jvar) {
-      auto view = atlas::array::make_view<double, 2>(fset[jvar]);
-      for (atlas::idx_t jnode = 0; jnode < fset[jvar].shape(0); ++jnode) {
-        std::cout << "spec rand = " << fset[jvar].name()
-                  << " " << jnode << " " << view(jnode, 0) << std::endl;
-      }
     }
 
     // Return FieldSet
@@ -464,42 +416,19 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       util::NormalDistribution<double>rand_vec(n, 0.0, 1.0, 1);
       std::vector<double> rand_vec2(rand_vec.data());
 
-
       // Populate with random numbers
       n = 0;
       if (field.rank() == 2) {
         auto view = atlas::array::make_view<double, 2>(field);
-        auto lonlatview = atlas::array::make_view<double, 2>(field.functionspace().lonlat());
 
         for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
           for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-            // for comparison with lfric-lite jedi
-            if (field.name().compare("eastward_wind") == 0) {
-              view(jnode, jlevel) = std::sqrt(3.0) / 2.0  *
-                  std::cos(lonlatview(jnode, atlas::LAT) * atlas::util::Constants::degreesToRadians()) +
-                  std::sqrt(3.0 / 2.0) *
-                  std::sin(lonlatview(jnode, atlas::LON) * atlas::util::Constants::degreesToRadians());
-
-                  std::sqrt(3.0 / 2.0) *
-                  std::cos(lonlatview(jnode, atlas::LON) * atlas::util::Constants::degreesToRadians()) *
-                  std::sin(lonlatview(jnode, atlas::LAT) * atlas::util::Constants::degreesToRadians());
-
-            }
-            if (field.name().compare("northward_wind") == 0) {
-              view(jnode, jlevel) =
-                  std::sqrt(3.0 / 2.0) *
-                  std::cos(lonlatview(jnode, atlas::LON) * atlas::util::Constants::degreesToRadians()) *
-                  std::sin(lonlatview(jnode, atlas::LAT) * atlas::util::Constants::degreesToRadians());
-            }
-
-            /*
             if (ghostView(jnode) == 0) {
               view(jnode, jlevel) = rand_vec2[n];
               ++n;
             } else {
               view(jnode, jlevel) = 0.0;
             }
-            */
           }
         }
       }
@@ -510,16 +439,6 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
 
     // Halo exchange
     fset.haloExchange();
-
-
-    for (atlas::idx_t jvar = 0; jvar < fset.size(); ++jvar) {
-      auto view = atlas::array::make_view<double, 2>(fset[jvar]);
-      for (atlas::idx_t jnode = 0; jnode < fset[jvar].shape(0); ++jnode) {
-        std::cout << "rand = " << fset[jvar].name()  << " " << vars.variables()[jvar]
-                  << " " << jnode << " " << view(jnode, 0) << std::endl;
-      }
-    }
-
 
     // Return FieldSet
     return fset;
@@ -561,9 +480,6 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
                      const atlas::FieldSet & fset2,
                      const eckit::mpi::Comm & comm) const {
     // Check FieldSets size
-
-    std::cout << " dot product fspace type " << fset1[0].functionspace().type() << " "
-              <<  fset2[0].functionspace().type() << std::endl;
     ASSERT(fset1.size() == fset2.size());
 
     double dp = 0.0;
@@ -573,11 +489,9 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       for (const auto & field1 : fset1) {
         if (field1.rank() == 2) {
           auto specFS = atlas::functionspace::Spectral(fset1[0].functionspace());
-
           const int totalWavenumber = specFS.truncation();
           const auto zonal_wavenumbers = specFS.zonal_wavenumbers();
           const int nb_zonal_wavenumbers = zonal_wavenumbers.size();
-
           atlas::Field field2 = fset2.field(field1.name());
 
           // Check fields consistency
@@ -599,8 +513,6 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
                     // complex conjugate coefficients.
                     dp += 2.0 * view1(i, jl) * view2(i, jl);
                   }
-                  std::cout << " spectral m n i imag " << m1 << " " << n1 << " " << i
-                            << " "<< img << " " << view1(i, jl) << " " << view2(i, jl) << std::endl;
                 }
               }
             }
@@ -613,9 +525,6 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       for (const auto & field1 : fset1) {
         if (field1.rank() == 2) {
           atlas::Field field2 = fset2.field(field1.name());
-
-          std::cout << " dot product field shape(0) " << field1.name() << " "
-                    <<  field1.shape(0) << " " << field2.shape(0) << std::endl;
 
           // Check fields consistency
           ASSERT(field2.rank() == 2);
