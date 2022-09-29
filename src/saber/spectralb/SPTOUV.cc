@@ -12,9 +12,12 @@
 #include "atlas/array.h"
 #include "atlas/field.h"
 #include "atlas/grid.h"
+#include "atlas/trans/Trans.h"
+#include "atlas/util/Earth.h"
 
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
+#include "oops/util/Logger.h"
 #include "oops/util/Timer.h"
 
 #include "saber/oops/SaberOuterBlockBase.h"
@@ -283,18 +286,18 @@ SPTOUV::SPTOUV(const eckit::mpi::Comm & comm,
     params_(createSPTOUVParams(conf)),
     outputFunctionSpace_(atlas::FunctionSpace(outputFunctionSpace)),
     outputVars_(params_.outputVars.value()),
-    inputVars_(createInputVars(params_)),
+    innerVars_(createInputVars(params_)),
     activeVariableSizes_(activeVariableSizes),
     gaussGrid_(atlas::StructuredGrid(params_.gaussGridUid)),
     specFS_(createSpectralFunctionSpace(gaussGrid_, activeVariableSizes)),
-    inputFunctionSpace_(atlas::FunctionSpace(specFS_)),
-    transFS_(atlas::trans::Trans(outputFunctionSpace_, inputFunctionSpace_))
+    innerFunctionSpace_(atlas::FunctionSpace(specFS_)),
+    transFS_(atlas::trans::Trans(outputFunctionSpace_, innerFunctionSpace_))
 
 {
   oops::Log::trace() << classname() << "::SPTOUV starting" << std::endl;
-  SaberOuterBlockBase::inputFunctionSpace_ = inputFunctionSpace_;
-  SaberOuterBlockBase::inputVars_ = inputVars_;
-  SaberOuterBlockBase::inputExtraFields_ = outputExtraFields;
+  inputFunctionSpace_ = innerFunctionSpace_;
+  inputVars_ = innerVars_;
+  inputExtraFields_ = outputExtraFields;
 
   std::cout << "SPTOUV inputVars " << inputVars_.variables() << std::endl;
 

@@ -55,7 +55,7 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
 
   const std::string name() const {return name_;}
 
- public:
+ protected:
   oops::Variables inputVars_;
   atlas::FunctionSpace inputFunctionSpace_;
   atlas::FieldSet inputExtraFields_;
