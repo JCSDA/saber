@@ -38,11 +38,6 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
  public:
   explicit SaberOuterBlockBase(const eckit::Configuration & conf);
 
-  explicit SaberOuterBlockBase(const eckit::Configuration & conf,
-                               const oops::Variables & variables,
-                               const atlas::FunctionSpace & functionSpace,
-                               const atlas::FieldSet & fset);
-
   virtual ~SaberOuterBlockBase() {}
 
   const oops::Variables inputVars() {return inputVars_;}
