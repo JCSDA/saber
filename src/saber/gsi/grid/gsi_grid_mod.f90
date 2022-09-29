@@ -25,7 +25,7 @@ use gsi_utils_mod,                  only: nccheck
 ! gsibec
 use gsimod,                         only: gsimain_gridopts
 use m_gsibec,                       only: gsibec_get_grid
-!use m_gsibec,                       only: gsibec_set_grid
+use m_gsibec,                       only: gsibec_set_grid
 
 implicit none
 private
@@ -69,7 +69,6 @@ type(fckit_mpi_comm),      intent(in)    :: comm
 ! Locals
 integer :: ncid, dimid(3), varid(2)
 character(len=:), allocatable :: str
-character(len=:), allocatable :: nml
 integer :: posx, posy, i, j, jj
 logical :: bkgmock,cv
 logical :: verbose
@@ -101,8 +100,6 @@ if (comm%rank() == 0) then
   call conf%get_or_die("gsi error covariance file", str)
   self%filename = str
 
-  ! Open NetCDF
-  call nccheck(nf90_open(trim(self%filename), NF90_NOWRITE, ncid), "nf90_open "//trim(self%filename))
 endif
 
 if (self%noGSI) then
@@ -110,13 +107,6 @@ if (self%noGSI) then
 else
   call wGSI()
 endif
-
-! Close NetCDF with GSI grid info
-if (comm%rank() == 0) then
-
-  call nccheck(nf90_close(ncid), "nf90_close")
-
-end if
 
 ! Create arrays of lon/lat to be compatible with interpolation
 allocate(self%grid_lons(self%isc:self%iec, self%jsc:self%jec))
@@ -150,6 +140,7 @@ contains
 
   integer :: npe,igdim
   logical :: eqspace
+  character(len=:), allocatable :: nml,vgrdfn
   real(kind=kind_real), allocatable :: mylats(:), mylons(:)
 
   npe = self%layout(1)*self%layout(2)
@@ -161,6 +152,7 @@ contains
   ! Get required name of resources for GSI B error
   ! ----------------------------------------------
    call conf%get_or_die("gsi berror namelist file",  nml)
+   call conf%get_or_die("gsi akbk",  vgrdfn)
 
   ! Initialize GSIbec grid
   ! ----------------------
@@ -177,19 +169,27 @@ contains
   ! Read the latitudes and longitudes per GSIbec
   ! --------------------------------------------
   call gsibec_get_grid (eqspace,'degree',self%lats,self%lons)
-! call gsibec_set_grid (geom%ak,geos%bk) ! when geom available in saber
+  call gsibec_set_grid (comm%rank(),vgrdfn)
 
-  ! Read the latitude and longitude
-  ! -------------------------------
+  ! If debugging, read the latitude and longitude from file
+  ! and compare with those from GSIbec
+  ! ---------------------------------------------
   if (self%debug .and. comm%rank() == 0) then
 
     allocate(mylons(self%npx))
     allocate(mylats(self%npy))
+
+    ! Open NetCDF
+    call nccheck(nf90_open(trim(self%filename), NF90_NOWRITE, ncid), "nf90_open "//trim(self%filename))
+
     call nccheck(nf90_inq_varid(ncid, "lon", varid(1)), "nf90_inq_varid lon")
     call nccheck(nf90_inq_varid(ncid, "lat", varid(2)), "nf90_inq_varid lat")
 
     call nccheck(nf90_get_var(ncid, varid(1), mylons), "nf90_get_var lon" )
     call nccheck(nf90_get_var(ncid, varid(2), mylats), "nf90_get_var lat" )
+
+    ! Close NetCDF with GSI grid info
+    call nccheck(nf90_close(ncid), "nf90_close")
 
     do i=1,self%npx
        print *, 'lons: gsi, file: ',self%lons(i),mylons(i) 
@@ -219,6 +219,9 @@ contains
 ! Read the GSI grid info from file
 ! --------------------------------
   if (comm%rank() == 0) then
+
+    ! Open NetCDF
+    call nccheck(nf90_open(trim(self%filename), NF90_NOWRITE, ncid), "nf90_open "//trim(self%filename))
 
     ! Get grid dimension from file
     call nccheck(nf90_inq_dimid(ncid, "lon", dimid(1)), "nf90_inq_dimid lon")
@@ -252,6 +255,9 @@ contains
 
     call nccheck(nf90_get_var(ncid, varid(1), self%lons), "nf90_get_var lon" )
     call nccheck(nf90_get_var(ncid, varid(2), self%lats), "nf90_get_var lat" )
+
+    ! Close NetCDF with GSI grid info
+    call nccheck(nf90_close(ncid), "nf90_close")
 
   end if
 

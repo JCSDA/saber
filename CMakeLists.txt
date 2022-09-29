@@ -48,7 +48,7 @@ endif()
 
 # Optionals
 find_package( oops QUIET OPTIONAL_COMPONENTS qg )
-find_package( gsibec 1.0.5 QUIET )
+find_package( gsibec 1.0.6 QUIET )
 find_package( vader QUIET )
 
 # Optional SABER blocks
