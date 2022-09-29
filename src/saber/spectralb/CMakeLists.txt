@@ -15,8 +15,6 @@ if( atlas_TRANS_FOUND )
     CovarianceStatistics.cc
     CovarianceStatistics.h
     CovarianceStatisticsUtils.h
-    gaussutils.h
-    gaussutils.cc
     spectralb.h
     spectralbnointerp.h
     spectralb_covstats_interface.h
