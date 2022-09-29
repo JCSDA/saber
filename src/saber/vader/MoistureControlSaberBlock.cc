@@ -44,14 +44,13 @@ static SaberOuterBlockMaker<MoistureControlSaberBlock>
 // -----------------------------------------------------------------------------
 
 MoistureControlSaberBlock::MoistureControlSaberBlock(const eckit::mpi::Comm & comm,
-               const atlas::FunctionSpace & outputFunctionSpace,
-               const atlas::FieldSet & outputExtraFields,
+               const oops::GeometryData & outputGeometryData,
                const std::vector<size_t> & activeVariableSizes,
                const eckit::Configuration & conf,
                const atlas::FieldSet & xb,
                const atlas::FieldSet & fg,
                const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberOuterBlockBase(conf), augmentedStateFieldSet_()
+  : SaberOuterBlockBase(conf), inputGeometryData_(outputGeometryData), augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::MoistureControlSaberBlock starting" << std::endl;
 
@@ -59,13 +58,12 @@ MoistureControlSaberBlock::MoistureControlSaberBlock(const eckit::mpi::Comm & co
   MoistureControlSaberBlockParameters params;
   params.deserialize(conf);
 
-  // Input geometry and variables
-  inputFunctionSpace_ = outputFunctionSpace;
-  inputExtraFields_ = outputExtraFields;
+  // Input variables
   inputVars_ = params.outputVars.value();
 
   // Covariance FieldSet
-  covFieldSet_ = createMuStats(outputExtraFields, params.moisturecontrolParams.value());
+  covFieldSet_ = createMuStats(outputGeometryData.fieldSet(),
+                               params.moisturecontrolParams.value());
 
   std::vector<std::string> requiredStateVariables{
     "air_temperature",

@@ -43,15 +43,13 @@ static SaberOuterBlockMaker<HydrostaticExnerSaberBlock>
 // -----------------------------------------------------------------------------
 
 HydrostaticExnerSaberBlock::HydrostaticExnerSaberBlock(const eckit::mpi::Comm & comm,
-               const atlas::FunctionSpace & outputFunctionSpace,
-               const atlas::FieldSet & outputExtraFields,
+               const oops::GeometryData & outputGeometryData,
                const std::vector<size_t> & activeVariableSizes,
                const eckit::Configuration & conf,
                const atlas::FieldSet & xb,
                const atlas::FieldSet & fg,
                const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberOuterBlockBase(conf),
-    augmentedStateFieldSet_()
+  : SaberOuterBlockBase(conf), inputGeometryData_(outputGeometryData), augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::HydrostaticExnerSaberBlock starting" << std::endl;
 
@@ -59,13 +57,12 @@ HydrostaticExnerSaberBlock::HydrostaticExnerSaberBlock(const eckit::mpi::Comm & 
   HydrostaticExnerSaberBlockParameters params;
   params.deserialize(conf);
 
-  // Input geometry and variables
-  inputFunctionSpace_ = outputFunctionSpace;
-  inputExtraFields_ = outputExtraFields;
+  // Input variables
   inputVars_ = params.outputVars.value();
 
   // Covariance FieldSet
-  covFieldSet_ = createGpRegressionStats(outputFunctionSpace, outputExtraFields,
+  covFieldSet_ = createGpRegressionStats(outputGeometryData.functionSpace(),
+                                         outputGeometryData.fieldSet(),
                                          activeVariableSizes, *params.activeVars.value(),
                                          params.hydrostaticexnerParams.value());
 
@@ -103,7 +100,7 @@ HydrostaticExnerSaberBlock::HydrostaticExnerSaberBlock(const eckit::mpi::Comm & 
   }
 
   for (const auto & s : requiredGeometryVariables) {
-    augmentedStateFieldSet_.add(outputExtraFields[s]);
+    augmentedStateFieldSet_.add(outputGeometryData.fieldSet()[s]);
   }
 
   // we will need geometry here for height variables.

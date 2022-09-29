@@ -13,6 +13,7 @@
 
 #include "atlas/field.h"
 
+#include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/Timer.h"
@@ -29,14 +30,13 @@ static SaberOuterBlockMaker<StdDev> makerStdDev_("StdDev");
 // -----------------------------------------------------------------------------
 
 StdDev::StdDev(const eckit::mpi::Comm & comm,
-               const atlas::FunctionSpace & outputFunctionSpace,
-               const atlas::FieldSet & outputExtraFields,
+               const oops::GeometryData & outputGeometryData,
                const std::vector<size_t> & activeVariableSizes,
                const eckit::Configuration & conf,
                const atlas::FieldSet & xb,
                const atlas::FieldSet & fg,
                const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberOuterBlockBase(conf), stdDevFset_()
+  : SaberOuterBlockBase(conf), inputGeometryData_(outputGeometryData), stdDevFset_()
 {
   oops::Log::trace() << classname() << "::StdDev starting" << std::endl;
 
@@ -44,9 +44,7 @@ StdDev::StdDev(const eckit::mpi::Comm & comm,
   StdDevParameters params;
   params.deserialize(conf);
 
-  // Input geometry and variables
-  inputFunctionSpace_ = outputFunctionSpace;
-  inputExtraFields_ = outputExtraFields;
+  // Input variables
   inputVars_ = params.outputVars.value();
 
   // Copy stddev field

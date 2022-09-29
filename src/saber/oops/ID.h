@@ -13,6 +13,8 @@
 
 #include "atlas/field.h"
 
+#include "oops/base/GeometryData.h"
+
 #include "saber/oops/SaberCentralBlockBase.h"
 #include "saber/oops/SaberCentralBlockParametersBase.h"
 
@@ -37,8 +39,7 @@ class ID : public SaberCentralBlockBase {
   typedef IDParameters Parameters_;
 
   ID(const eckit::mpi::Comm &,
-     const atlas::FunctionSpace &,
-     const atlas::FieldSet &,
+     const oops::GeometryData &,
      const std::vector<size_t> &,
      const eckit::Configuration &,
      const atlas::FieldSet &,

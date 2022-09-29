@@ -54,6 +54,7 @@ class Localization : public oops::LocalizationBase<MODEL> {
 
  private:
   void print(std::ostream &) const override;
+  std::vector<std::reference_wrapper<const oops::GeometryData>> geometryData_;
   std::unique_ptr<SaberCentralBlockBase> saberCentralBlock_;
 };
 
@@ -110,10 +111,12 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
       dummyTime,
       saberCentralBlockParams.inputFields.value());
 
+    // Input Geometry
+    geometryData_.push_back(geom.generic());
+
     // Create central block
     saberCentralBlock_.reset(SaberCentralBlockFactory::create(geom.getComm(),
-                             geom.functionSpace(),
-                             geom.extraFields(),
+                             geometryData_.back().get(),
                              geom.variableSizes(activeVars),
                              centralConf,
                              dummyFs,

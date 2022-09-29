@@ -77,6 +77,7 @@ template <typename MODEL> class SaberBlockTestParameters
 template <typename MODEL> class SaberBlockTest : public oops::Application {
   typedef oops::Geometry<MODEL>                                Geometry_;
   typedef oops::Increment<MODEL>                               Increment_;
+  typedef typename boost::ptr_vector<SaberOuterBlockBase>      SaberOuterBlockVec_;
   typedef oops::State<MODEL>                                   State_;
 
  public:
@@ -104,17 +105,17 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
     const State_ xx(geom, params.background);
 
     // SABER blocks
-    std::unique_ptr<SaberOuterBlockBase> saberOuterBlock_;
     std::unique_ptr<SaberCentralBlockBase> saberCentralBlock_;
+    SaberOuterBlockVec_ saberOuterBlocks_;
 
     // Local copy of background and first guess
     State_ xbLocal(xx);
     State_ fgLocal(xx);
 
-    // Initial and output variables and geometry
+    // Initial output geometry and variables
+    std::vector<std::reference_wrapper<const oops::GeometryData>> outputGeometryData_;
+    outputGeometryData_.push_back(geom.generic());
     oops::Variables outputVars(incVars);
-    atlas::FunctionSpace outputFunctionSpace = geom.functionSpace();
-    atlas::FieldSet outputExtraFields = geom.extraFields();
 
     // Build outer blocks successively
     const boost::optional<std::vector<SaberOuterBlockParametersWrapper>> &saberOuterBlocks =
@@ -155,23 +156,21 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         // Create outer block
         oops::Log::info() << "Creating outer block: "
                           << saberOuterBlockParams.saberBlockName.value() << std::endl;
-        saberOuterBlock_.reset(SaberOuterBlockFactory::create(geom.getComm(),
-                               outputFunctionSpace,
-                               outputExtraFields,
-                               geom.variableSizes(activeVars),
-                               outerConf,
-                               xbLocal.fieldSet(),
-                               fgLocal.fieldSet(),
-                               fsetVec));
+        saberOuterBlocks_.push_back(SaberOuterBlockFactory::create(geom.getComm(),
+                                    outputGeometryData_.back().get(),
+                                    geom.variableSizes(activeVars),
+                                    outerConf,
+                                    xbLocal.fieldSet(),
+                                    fgLocal.fieldSet(),
+                                    fsetVec));
 
         // Apply calibration inverse on xb and fg
-        saberOuterBlock_->calibrationInverseMultiply(xbLocal.fieldSet());
-        saberOuterBlock_->calibrationInverseMultiply(fgLocal.fieldSet());
+        saberOuterBlocks_.back().calibrationInverseMultiply(xbLocal.fieldSet());
+        saberOuterBlocks_.back().calibrationInverseMultiply(fgLocal.fieldSet());
 
-        // Access input geometry and variables of the current block
-        const oops::Variables inputVars = saberOuterBlock_->inputVars();
-        const atlas::FunctionSpace inputFunctionSpace = saberOuterBlock_->inputFunctionSpace();
-        const atlas::FieldSet inputExtraFields = saberOuterBlock_->inputExtraFields();
+        // Access input geometry and variables
+        const oops::GeometryData & inputGeometryData = saberOuterBlocks_.back().inputGeometryData();
+        const oops::Variables inputVars = saberOuterBlocks_.back().inputVars();
 
         // Check that active variables are present in either input or output variables, or both
         for (const auto & var : activeVars.variables()) {
@@ -184,7 +183,7 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         std::vector<size_t> inputVariableSizes = geom.variableSizes(inputVars);
 
         // Create random input FieldSet
-        atlas::FieldSet inputFset = createRandomFieldSet(inputFunctionSpace,
+        atlas::FieldSet inputFset = createRandomFieldSet(inputGeometryData.functionSpace(),
                                                          inputVariableSizes,
                                                          inputVars);
 
@@ -195,25 +194,26 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         std::vector<size_t> outputVariableSizes = geom.variableSizes(outputVars);
 
         // Create random output FieldSet
-        atlas::FieldSet outputFset = createRandomFieldSet(outputFunctionSpace,
-                                                          outputVariableSizes,
-                                                          outputVars);
+        atlas::FieldSet outputFset =
+          createRandomFieldSet(outputGeometryData_.back().get().functionSpace(),
+                               outputVariableSizes,
+                               outputVars);
 
         // Copy output FieldSet
         atlas::FieldSet outputFsetSave = copyFieldSet(outputFset);
 
         // Apply forward and adjoint multiplication
-        saberOuterBlock_->multiply(inputFset);
-        saberOuterBlock_->multiplyAD(outputFset);
+        saberOuterBlocks_.back().multiply(inputFset);
+        saberOuterBlocks_.back().multiplyAD(outputFset);
 
         // Compute adjoint test
         const double dp1 = dot_product(inputFset, outputFsetSave, geom.getComm());
         const double dp2 = dot_product(outputFset, inputFsetSave, geom.getComm());
-        oops::Log::info() << "Adjoint test for outer block " << saberOuterBlock_->name()
+        oops::Log::info() << "Adjoint test for outer block " << saberOuterBlocks_.back().name()
                           << ": y^t (Ax) = " << dp1 << ": x^t (Ay) = " << dp2 << std::endl;
         ASSERT(abs(dp1) > 0.0);
         ASSERT(abs(dp2) > 0.0);
-        oops::Log::test() << "Adjoint test for outer block " << saberOuterBlock_->name();
+        oops::Log::test() << "Adjoint test for outer block " << saberOuterBlocks_.back().name();
         if (0.5*abs(dp1-dp2)/(dp1+dp2) < params.adjointTolerance.value()) {
           oops::Log::test() << " passed" << std::endl;
         } else {
@@ -222,8 +222,7 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         }
 
         // Update output geometry and variables for the next block
-        outputFunctionSpace = inputFunctionSpace;
-        outputExtraFields = inputExtraFields;
+        outputGeometryData_.push_back(inputGeometryData);
         outputVars = inputVars;
       }
     }
@@ -265,8 +264,7 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
 
       // Create central block
       saberCentralBlock_.reset(SaberCentralBlockFactory::create(geom.getComm(),
-                               outputFunctionSpace,
-                               outputExtraFields,
+                               outputGeometryData_.back().get(),
                                geom.variableSizes(activeVars),
                                centralConf,
                                xbLocal.fieldSet(),
@@ -284,17 +282,19 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       std::vector<size_t> inoutVariableSizes = geom.variableSizes(inoutVars);
 
       // Create random input FieldSet
-      atlas::FieldSet inputFset = createRandomFieldSet(outputFunctionSpace,
-                                                       inoutVariableSizes,
-                                                       inoutVars);
+      atlas::FieldSet inputFset =
+        createRandomFieldSet(outputGeometryData_.back().get().functionSpace(),
+                             inoutVariableSizes,
+                             inoutVars);
 
       // Copy input FieldSet
       atlas::FieldSet inputFsetSave = copyFieldSet(inputFset);
 
       // Create random output FieldSet
-      atlas::FieldSet outputFset = createRandomFieldSet(outputFunctionSpace,
-                                                       inoutVariableSizes,
-                                                       inoutVars);
+      atlas::FieldSet outputFset =
+        createRandomFieldSet(outputGeometryData_.back().get().functionSpace(),
+                             inoutVariableSizes,
+                             inoutVars);
 
       // Copy output FieldSet
       atlas::FieldSet outputFsetSave = copyFieldSet(outputFset);

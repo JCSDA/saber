@@ -34,8 +34,7 @@ static SaberCentralBlockMaker<BUMP_NICAS> makerBUMP_NICAS_("BUMP_NICAS");
 // -----------------------------------------------------------------------------
 
 BUMP_NICAS::BUMP_NICAS(const eckit::mpi::Comm & comm,
-       const atlas::FunctionSpace & functionSpace,
-       const atlas::FieldSet & extraFields,
+       const oops::GeometryData & geometryData,
        const std::vector<size_t> & activeVariableSizes,
        const eckit::Configuration & conf,
        const atlas::FieldSet & xb,
@@ -51,8 +50,8 @@ BUMP_NICAS::BUMP_NICAS(const eckit::mpi::Comm & comm,
 
   // Initialize BUMP
   bump_.reset(new BUMP(comm,
-                       functionSpace,
-                       extraFields,
+                       geometryData.functionSpace(),
+                       geometryData.fieldSet(),
                        activeVariableSizes,
                        *params.activeVars.value(),
                        params.bumpParams.value(),

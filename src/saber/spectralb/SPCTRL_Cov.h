@@ -47,8 +47,7 @@ class SPCTRL_COV : public SaberCentralBlockBase {
   typedef SPCTRL_COVParameters Parameters_;
 
   SPCTRL_COV(const eckit::mpi::Comm &,
-     const atlas::FunctionSpace &,
-     const atlas::FieldSet &,
+     const oops::GeometryData &,
      const std::vector<size_t> &,
      const eckit::Configuration &,
      const atlas::FieldSet &,

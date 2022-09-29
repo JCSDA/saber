@@ -13,10 +13,10 @@
 #include <vector>
 
 #include "atlas/field.h"
-#include "atlas/functionspace.h"
 
 #include <boost/noncopyable.hpp>
 
+#include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/AssociativeContainers.h"
@@ -52,8 +52,7 @@ SaberCentralBlockFactory::SaberCentralBlockFactory(const std::string & name) {
 
 SaberCentralBlockBase * SaberCentralBlockFactory::create(
   const eckit::mpi::Comm & comm,
-  const atlas::FunctionSpace & functionSpace,
-  const atlas::FieldSet & extraFields,
+  const oops::GeometryData & geometryData,
   const std::vector<size_t> & activeVariableSizes,
   const eckit::Configuration & conf,
   const atlas::FieldSet & xb,
@@ -66,8 +65,8 @@ SaberCentralBlockBase * SaberCentralBlockFactory::create(
     oops::Log::error() << id << " does not exist in saber::SaberCentralBlockFactory." << std::endl;
     ABORT("Element does not exist in saber::SaberCentralBlockFactory.");
   }
-  SaberCentralBlockBase * ptr = jsb->second->make(comm, functionSpace, extraFields,
-                                                  activeVariableSizes, conf, xb, fg, fsetVec);
+  SaberCentralBlockBase * ptr = jsb->second->make(comm, geometryData, activeVariableSizes, conf,
+                                                  xb, fg, fsetVec);
   oops::Log::trace() << "SaberCentralBlockBase::create done" << std::endl;
   return ptr;
 }

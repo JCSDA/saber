@@ -35,24 +35,19 @@ static SaberOuterBlockMaker<BUMP_PsiChiToUV> makerBUMP_PsiChiToUV_("BUMP_PsiChiT
 // -----------------------------------------------------------------------------
 
 BUMP_PsiChiToUV::BUMP_PsiChiToUV(const eckit::mpi::Comm & comm,
-               const atlas::FunctionSpace & outputFunctionSpace,
-               const atlas::FieldSet & outputExtraFields,
+               const oops::GeometryData & outputGeometryData,
                const std::vector<size_t> & activeVariableSizes,
                const eckit::Configuration & conf,
                const atlas::FieldSet & xb,
                const atlas::FieldSet & fg,
                const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberOuterBlockBase(conf), bump_()
+  : SaberOuterBlockBase(conf), inputGeometryData_(outputGeometryData), bump_()
 {
   oops::Log::trace() << classname() << "::BUMP_PsiChiToUV starting" << std::endl;
 
   // Deserialize configuration
   BUMP_PsiChiToUVParameters params;
   params.deserialize(conf);
-
-  // Input geometry and variables
-  inputFunctionSpace_ = outputFunctionSpace;
-  inputExtraFields_ = outputExtraFields;
 
   // Check active variables size
   ASSERT(params.activeVars.value()->size() == 4);
@@ -75,8 +70,8 @@ BUMP_PsiChiToUV::BUMP_PsiChiToUV(const eckit::mpi::Comm & comm,
 
   // Initialize BUMP
   bump_.reset(new BUMP(comm,
-                       outputFunctionSpace,
-                       outputExtraFields,
+                       outputGeometryData.functionSpace(),
+                       outputGeometryData.fieldSet(),
                        activeVariableSizes,
                        *params.activeVars.value(),
                        params.bumpParams.value(),

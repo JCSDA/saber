@@ -14,6 +14,7 @@
 #include "atlas/field.h"
 
 #include "oops/base/Geometry.h"
+#include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 
@@ -46,8 +47,7 @@ class BUMP_NICAS : public SaberCentralBlockBase {
   typedef BUMP_NICASParameters Parameters_;
 
   BUMP_NICAS(const eckit::mpi::Comm &,
-     const atlas::FunctionSpace &,
-     const atlas::FieldSet &,
+     const oops::GeometryData &,
      const std::vector<size_t> &,
      const eckit::Configuration &,
      const atlas::FieldSet &,

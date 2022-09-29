@@ -18,6 +18,7 @@
 #include "atlas/library.h"
 #include "atlas/runtime/Log.h"
 
+#include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 
@@ -65,8 +66,7 @@ class Interpolation : public SaberOuterBlockBase {
   typedef InterpolationParameters Parameters_;
 
   Interpolation(const eckit::mpi::Comm &,
-         const atlas::FunctionSpace &,
-         const atlas::FieldSet &,
+         const oops::GeometryData &,
          const std::vector<size_t> &,
          const eckit::Configuration &,
          const atlas::FieldSet &,
@@ -74,12 +74,17 @@ class Interpolation : public SaberOuterBlockBase {
          const std::vector<atlas::FieldSet> &);
   virtual ~Interpolation();
 
+  const oops::GeometryData & inputGeometryData() const override {return *inputGeometryData_;}
+  const oops::Variables & inputVars() const override {return inputVars_;}
+
   void multiply(atlas::FieldSet &) const override;
   void multiplyAD(atlas::FieldSet &) const override;
   void calibrationInverseMultiply(atlas::FieldSet &) const override;
 
  private:
   void print(std::ostream &) const override;
+  std::unique_ptr<const oops::GeometryData> inputGeometryData_;
+  oops::Variables inputVars_;
 
   // Parameters
   InterpolationParameters params_;

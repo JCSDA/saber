@@ -13,6 +13,8 @@
 
 #include "oops/util/Timer.h"
 
+#include "oops/base/GeometryData.h"
+
 #include "saber/oops/SaberCentralBlockBase.h"
 #include "saber/oops/SaberCentralBlockParametersBase.h"
 
@@ -25,8 +27,7 @@ static SaberCentralBlockMaker<ID> makerID_("ID");
 // -----------------------------------------------------------------------------
 
 ID::ID(const eckit::mpi::Comm & comm,
-       const atlas::FunctionSpace & functionSpace,
-       const atlas::FieldSet & extraFields,
+       const oops::GeometryData & geometryData,
        const std::vector<size_t> & activeVariableSizes,
        const eckit::Configuration & conf,
        const atlas::FieldSet & xb,

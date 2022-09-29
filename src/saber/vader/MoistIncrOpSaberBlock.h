@@ -43,8 +43,7 @@ class MoistIncrOpSaberBlock : public SaberOuterBlockBase {
   typedef MoistIncrOpSaberBlockParameters Parameters_;
 
   MoistIncrOpSaberBlock(const eckit::mpi::Comm &,
-         const atlas::FunctionSpace &,
-         const atlas::FieldSet &,
+         const oops::GeometryData &,
          const std::vector<size_t> &,
          const eckit::Configuration &,
          const atlas::FieldSet &,
@@ -52,12 +51,17 @@ class MoistIncrOpSaberBlock : public SaberOuterBlockBase {
          const std::vector<atlas::FieldSet> &);
   virtual ~MoistIncrOpSaberBlock();
 
+  const oops::GeometryData & inputGeometryData() const override {return inputGeometryData_;}
+  const oops::Variables & inputVars() const override {return inputVars_;}
+
   void multiply(atlas::FieldSet &) const override;
   void multiplyAD(atlas::FieldSet &) const override;
   void calibrationInverseMultiply(atlas::FieldSet &) const override;
 
  private:
   void print(std::ostream &) const override;
+  const oops::GeometryData & inputGeometryData_;
+  oops::Variables inputVars_;
   atlas::FieldSet augmentedStateFieldSet_;
 };
 

@@ -14,6 +14,7 @@
 #include "atlas/field.h"
 
 #include "oops/base/Geometry.h"
+#include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 
@@ -46,8 +47,7 @@ class BUMP_PsiChiToUV : public SaberOuterBlockBase {
   typedef BUMP_PsiChiToUVParameters Parameters_;
 
   BUMP_PsiChiToUV(const eckit::mpi::Comm &,
-         const atlas::FunctionSpace &,
-         const atlas::FieldSet &,
+         const oops::GeometryData &,
          const std::vector<size_t> &,
          const eckit::Configuration &,
          const atlas::FieldSet &,
@@ -55,12 +55,17 @@ class BUMP_PsiChiToUV : public SaberOuterBlockBase {
          const std::vector<atlas::FieldSet> &);
   virtual ~BUMP_PsiChiToUV();
 
+  const oops::GeometryData & inputGeometryData() const override {return inputGeometryData_;}
+  const oops::Variables & inputVars() const override {return inputVars_;}
+
   void multiply(atlas::FieldSet &) const override;
   void multiplyAD(atlas::FieldSet &) const override;
   void calibrationInverseMultiply(atlas::FieldSet &) const override;
 
  private:
   void print(std::ostream &) const override;
+  const oops::GeometryData & inputGeometryData_;
+  oops::Variables inputVars_;
   std::unique_ptr<BUMP> bump_;
 };
 

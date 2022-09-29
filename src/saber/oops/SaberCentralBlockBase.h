@@ -13,10 +13,10 @@
 #include <vector>
 
 #include "atlas/field.h"
-#include "atlas/functionspace.h"
 
 #include <boost/noncopyable.hpp>
 
+#include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/AssociativeContainers.h"
@@ -66,8 +66,7 @@ class SaberCentralBlockParametersWrapper : public oops::Parameters {
 class SaberCentralBlockFactory {
  public:
   static SaberCentralBlockBase * create(const eckit::mpi::Comm &,
-                                 const atlas::FunctionSpace &,
-                                 const atlas::FieldSet &,
+                                 const oops::GeometryData &,
                                  const std::vector<size_t> &,
                                  const eckit::Configuration &,
                                  const atlas::FieldSet &,
@@ -87,8 +86,7 @@ class SaberCentralBlockFactory {
 
  private:
   virtual SaberCentralBlockBase * make(const eckit::mpi::Comm &,
-                                       const atlas::FunctionSpace &,
-                                       const atlas::FieldSet &,
+                                       const oops::GeometryData &,
                                        const std::vector<size_t> &,
                                        const eckit::Configuration &,
                                        const atlas::FieldSet &,
@@ -110,14 +108,13 @@ class SaberCentralBlockMaker : public SaberCentralBlockFactory {
   typedef typename T::Parameters_ Parameters_;
 
   SaberCentralBlockBase * make(const eckit::mpi::Comm & comm,
-                               const atlas::FunctionSpace & functionSpace,
-                               const atlas::FieldSet & extraFields,
+                               const oops::GeometryData & geometryData,
                                const std::vector<size_t> & activeVariableSizes,
                                const eckit::Configuration & conf,
                                const atlas::FieldSet & xb,
                                const atlas::FieldSet & fg,
                                const std::vector<atlas::FieldSet> & fsetVec) override {
-    return new T(comm, functionSpace, extraFields, activeVariableSizes,
+    return new T(comm, geometryData, activeVariableSizes,
                  conf, xb, fg, fsetVec);
   }
 

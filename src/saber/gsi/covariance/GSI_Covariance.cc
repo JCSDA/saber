@@ -40,14 +40,13 @@ static SaberCentralBlockMaker<gsi::Covariance> makerGSI_Covariance_("gsi covaria
 // -------------------------------------------------------------------------------------------------
 
 Covariance::Covariance(const eckit::mpi::Comm & comm,
-       const atlas::FunctionSpace & functionSpace,
-       const atlas::FieldSet & extraFields,
+       const oops::GeometryData & geometryData,
        const std::vector<size_t> & activeVariableSizes,
        const eckit::Configuration & conf,
        const atlas::FieldSet & xb,
        const atlas::FieldSet & fg,
        const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberCentralBlockBase(conf), gsiGridFuncSpace_(functionSpace)
+  : SaberCentralBlockBase(conf), gsiGridFuncSpace_(geometryData.functionSpace())
 {
   oops::Log::trace() << classname() << "::Covariance starting" << std::endl;
   util::Timer timer(classname(), "Covariance");

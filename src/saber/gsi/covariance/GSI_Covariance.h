@@ -15,6 +15,7 @@
 #include "atlas/field.h"
 #include "atlas/functionspace.h"
 
+#include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 
@@ -62,8 +63,7 @@ class Covariance : public SaberCentralBlockBase {
   typedef CovarianceParameters Parameters_;
 
   Covariance(const eckit::mpi::Comm &,
-     const atlas::FunctionSpace &,
-     const atlas::FieldSet &,
+     const oops::GeometryData &,
      const std::vector<size_t> &,
      const eckit::Configuration &,
      const atlas::FieldSet &,

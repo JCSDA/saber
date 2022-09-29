@@ -13,10 +13,10 @@
 #include <vector>
 
 #include "atlas/field.h"
-#include "atlas/functionspace.h"
 
 #include <boost/noncopyable.hpp>
 
+#include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/AssociativeContainers.h"
@@ -51,8 +51,7 @@ SaberOuterBlockFactory::SaberOuterBlockFactory(const std::string & name) {
 // -----------------------------------------------------------------------------
 
 SaberOuterBlockBase * SaberOuterBlockFactory::create(const eckit::mpi::Comm & comm,
-                             const atlas::FunctionSpace & outputFunctionSpace,
-                             const atlas::FieldSet & outputExtraFields,
+                             const oops::GeometryData & outputGeometryData,
                              const std::vector<size_t> & activeVariableSizes,
                              const eckit::Configuration & conf,
                              const atlas::FieldSet & xb,
@@ -65,8 +64,8 @@ SaberOuterBlockBase * SaberOuterBlockFactory::create(const eckit::mpi::Comm & co
     oops::Log::error() << id << " does not exist in saber::SaberOuterBlockFactory." << std::endl;
     ABORT("Element does not exist in saber::SaberOuterBlockFactory.");
   }
-  SaberOuterBlockBase * ptr = jsb->second->make(comm, outputFunctionSpace, outputExtraFields,
-                 activeVariableSizes, conf, xb, fg, fsetVec);
+  SaberOuterBlockBase * ptr = jsb->second->make(comm, outputGeometryData, activeVariableSizes, conf,
+                                                xb, fg, fsetVec);
   oops::Log::trace() << "SaberOuterBlockBase::create done" << std::endl;
   return ptr;
 }

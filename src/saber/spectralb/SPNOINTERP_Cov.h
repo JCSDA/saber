@@ -47,8 +47,7 @@ class SPNOINTERP_COV : public SaberCentralBlockBase {
   typedef SPNOINTERP_COVParameters Parameters_;
 
   SPNOINTERP_COV(const eckit::mpi::Comm &,
-     const atlas::FunctionSpace &,
-     const atlas::FieldSet &,
+     const oops::GeometryData &,
      const std::vector<size_t> &,
      const eckit::Configuration &,
      const atlas::FieldSet &,

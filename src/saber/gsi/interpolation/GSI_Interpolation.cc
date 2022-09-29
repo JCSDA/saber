@@ -37,14 +37,14 @@ static SaberOuterBlockMaker<gsi::Interpolation>
 // -------------------------------------------------------------------------------------------------
 
 Interpolation::Interpolation(const eckit::mpi::Comm & comm,
-               const atlas::FunctionSpace & outputFunctionSpace,
-               const atlas::FieldSet & outputExtraFields,
+               const oops::GeometryData & outputGeometryData,
                const std::vector<size_t> & activeVariableSizes,
                const eckit::Configuration & conf,
                const atlas::FieldSet & xb,
                const atlas::FieldSet & fg,
                const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberOuterBlockBase(conf), grid_(comm, conf), outputFunctionSpace_(outputFunctionSpace)
+  : SaberOuterBlockBase(conf), grid_(comm, conf),
+    outputFunctionSpace_(outputGeometryData.functionSpace())
 {
   oops::Log::trace() << classname() << "::Interpolation starting" << std::endl;
   util::Timer timer(classname(), "Interpolation");
@@ -53,9 +53,11 @@ Interpolation::Interpolation(const eckit::mpi::Comm & comm,
   InterpolationParameters params;
   params.deserialize(conf);
 
-  // Input geometry and variables
-  inputFunctionSpace_ = grid_.functionSpace();
-  inputExtraFields_ = outputExtraFields;  // TODO(Benjamin): interpolate that?
+  // Input geometry and variables (TODO(Benjamin): interpolate extraFields?)
+  inputGeometryData_.reset(new oops::GeometryData(grid_.functionSpace(),
+                                                  outputGeometryData.fieldSet(),
+                                                  outputGeometryData.levelsAreTopDown(),
+                                                  outputGeometryData.comm()));
   inputVars_ = params.outputVars.value();
 
   // Object wide copy of the variables
@@ -66,7 +68,7 @@ Interpolation::Interpolation(const eckit::mpi::Comm & comm,
 
   // Create the interpolator
   interpolator_.reset(new UnstructuredInterpolation(conf,
-                                                    inputFunctionSpace_,
+                                                    inputGeometryData_->functionSpace(),
                                                     outputFunctionSpace_,
                                                     nullptr, comm));
 
@@ -132,8 +134,8 @@ void Interpolation::multiplyAD(atlas::FieldSet & fset) const {
       }
 
       // Create the field and add to Fieldset
-      gsiFields.add(inputFunctionSpace_.createField<double>(atlas::option::name(fieldName)
-        | atlas::option::levels(sabField.levels())));
+      gsiFields.add(inputGeometryData_->functionSpace().createField<double>(
+        atlas::option::name(fieldName) | atlas::option::levels(sabField.levels())));
   }
 
   // Do the adjoint of interpolation from GSI grid to model grid

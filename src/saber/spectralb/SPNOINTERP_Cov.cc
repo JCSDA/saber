@@ -12,7 +12,6 @@
 #include <vector>
 
 #include "atlas/field.h"
-#include "atlas/functionspace.h"
 
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
@@ -35,8 +34,7 @@ static SaberCentralBlockMaker<SPNOINTERP_COV>  makerSPNOINTERP_COV_("SPNOINTERP_
 // -----------------------------------------------------------------------------
 
 SPNOINTERP_COV::SPNOINTERP_COV(const eckit::mpi::Comm & comm,
-       const atlas::FunctionSpace & functionSpace,
-       const atlas::FieldSet & extraFields,
+       const oops::GeometryData & geometryData,
        const std::vector<size_t> & activeVariableSizes,
        const eckit::Configuration & conf,
        const atlas::FieldSet & xb,

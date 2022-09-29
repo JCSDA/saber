@@ -33,14 +33,13 @@ static SaberOuterBlockMaker<BUMP_StdDev> makerBUMP_StdDev_("BUMP_StdDev");
 // -----------------------------------------------------------------------------
 
 BUMP_StdDev::BUMP_StdDev(const eckit::mpi::Comm & comm,
-               const atlas::FunctionSpace & outputFunctionSpace,
-               const atlas::FieldSet & outputExtraFields,
+               const oops::GeometryData & outputGeometryData,
                const std::vector<size_t> & activeVariableSizes,
                const eckit::Configuration & conf,
                const atlas::FieldSet & xb,
                const atlas::FieldSet & fg,
                const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberOuterBlockBase(conf), bump_()
+  : SaberOuterBlockBase(conf), inputGeometryData_(outputGeometryData), bump_()
 {
   oops::Log::trace() << classname() << "::BUMP_StdDev starting" << std::endl;
 
@@ -48,15 +47,13 @@ BUMP_StdDev::BUMP_StdDev(const eckit::mpi::Comm & comm,
   BUMP_StdDevParameters params;
   params.deserialize(conf);
 
-  // Input geometry and variables
-  inputFunctionSpace_ = outputFunctionSpace;
-  inputExtraFields_ = outputExtraFields;
+  // Input variables
   inputVars_ = params.outputVars.value();
 
   // Initialize BUMP
   bump_.reset(new BUMP(comm,
-                       outputFunctionSpace,
-                       outputExtraFields,
+                       outputGeometryData.functionSpace(),
+                       outputGeometryData.fieldSet(),
                        activeVariableSizes,
                        *params.activeVars.value(),
                        params.bumpParams.value(),
