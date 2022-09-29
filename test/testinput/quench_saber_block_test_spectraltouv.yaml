@@ -5,13 +5,14 @@ geometry:
     N : 2
   levels: 1
   partitioner: ectrans
-  halo: 0
+  halo: 1
 variables: &vars [eastward_wind,northward_wind]
 background:
   date: 2010-01-01T12:00:00Z
   state variables: [eastward_wind,northward_wind]
 saber outer blocks:
 - saber block name: SPTOUV
-  gauss_grid_uid: F2
+  gauss grid uid: F2
+  use streamfunction and velocity potential: true
 test:
   reference filename: testref/quench_saber_block_test_spectraltouv/test.log.out

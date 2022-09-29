@@ -482,9 +482,11 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
 
     double dp = 0.0;
     // Compute dot product
-    if (fset1[0].functionspace().type().compare("Spectral") == 0) {
+
+    for (const auto & field1 : fset1) {
+      if (field1.functionspace().type().compare("Spectral") == 0) {
       // Need to cast to spectral functionspace here for additional methods.
-      for (const auto & field1 : fset1) {
+
         if (field1.rank() == 2) {
           auto specFS = atlas::functionspace::Spectral(fset1[0].functionspace());
           const int totalWavenumber = specFS.truncation();
@@ -493,6 +495,7 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
           atlas::Field field2 = fset2.field(field1.name());
 
           // Check fields consistency
+          ASSERT(field2.functionspace().type().compare("Spectral") == 0);
           ASSERT(field2.rank() == 2);
           ASSERT(field1.shape(0) == field2.shape(0));
           ASSERT(field1.shape(1) == field2.shape(1));
@@ -516,9 +519,7 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
             }
           }
         }
-      }
-    } else {
-      for (const auto & field1 : fset1) {
+      } else {
         if (field1.rank() == 2) {
           atlas::Field field2 = fset2.field(field1.name());
 

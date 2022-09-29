@@ -34,8 +34,11 @@ namespace spectralb {
 class SPTOUVParameters : public SaberOuterBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(SPTOUVParameters, SaberOuterBlockParametersBase)
  public:
-  oops::RequiredParameter<std::string> gaussGridUid{"gauss_grid_uid",
+  oops::RequiredParameter<std::string> gaussGridUid{"gauss grid uid",
     "Gauss Grid UID", this};
+  oops::Parameter<bool> useStreamFunctionVelocityPotential{
+    "use streamfunction and velocity potential", false, this};
+
 };
 
 // -----------------------------------------------------------------------------

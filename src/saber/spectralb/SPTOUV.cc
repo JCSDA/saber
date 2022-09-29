@@ -181,11 +181,14 @@ oops::Variables createInputVars(const SPTOUVParameters & params) {
       inputVars.push_back(var);
     }
   }
-  inputVars.push_back("streamfunction");
-  inputVars.push_back("velocity_potential");
-  //  inputVars.push_back("vorticity");
-  //  inputVars.push_back("divergence");
 
+  if (params.useStreamFunctionVelocityPotential.value()) {
+    inputVars.push_back("streamfunction");
+    inputVars.push_back("velocity_potential");
+  } else {
+    inputVars.push_back("vorticity");
+    inputVars.push_back("divergence");
+  }
   return inputVars;
 }
 
@@ -307,7 +310,7 @@ SPTOUV::~SPTOUV() {
 
 // -----------------------------------------------------------------------------
 void SPTOUV::multiply(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::multiply starting" << std::endl;
+  oops::Log::trace() << classname() << "::multiply starting " << fset.field_names() << std::endl;
 
   // Create empty Model fieldset
   atlas::FieldSet newFields = atlas::FieldSet();
@@ -346,13 +349,13 @@ void SPTOUV::multiply(atlas::FieldSet & fset) const {
 
   fset = newFields;
 
-  oops::Log::trace() << classname() << "::multiply done" << std::endl;
+  oops::Log::trace() << classname() << "::multiply done" << fset.field_names() << std::endl;
 }
 
 
 // -----------------------------------------------------------------------------
 void SPTOUV::multiplyAD(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
+  oops::Log::trace() << classname() << "::multiplyAD starting" << fset.field_names() << std::endl;
 
   // Create empty Model fieldset
   atlas::FieldSet newFields = atlas::FieldSet();
@@ -385,7 +388,7 @@ void SPTOUV::multiplyAD(atlas::FieldSet & fset) const {
 
   fset = newFields;
 
-  oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
+  oops::Log::trace() << classname() << "::multiplyAD done" << fset.field_names() <<std::endl;
 }
 
 // -----------------------------------------------------------------------------
