@@ -16,7 +16,7 @@
 !  adjustozvar=.true.,
    adjustozvar=.false.,
 !  bkgv_write=.true.,
-!  bkgv_write_cv=.true.,
+!  bkgv_write_cv='geos_cvbundle',
    simcv=.true,
  /
 

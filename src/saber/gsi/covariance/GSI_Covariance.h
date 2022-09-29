@@ -38,6 +38,7 @@ class CovarianceParameters : public SaberCentralBlockParametersBase {
   // File containing grid and coefficients
   oops::RequiredParameter<std::string> GSIFile{"gsi error covariance file", this};
   oops::RequiredParameter<std::string> GSINML{"gsi berror namelist file", this};
+  oops::RequiredParameter<std::string> GSIVGRD{"gsi akbk", this};
 
   // Handle vertical top-2-bottom and vice-verse wrt to GSI
   oops::Parameter<bool> vflip{"flip vertical grid", true, this};
