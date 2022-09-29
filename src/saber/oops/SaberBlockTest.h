@@ -340,7 +340,6 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
   atlas::FieldSet createSpectralRandomFieldSet(const atlas::FunctionSpace & functionSpace,
                                                const std::vector<size_t> & variableSizes,
                                                const oops::Variables & vars) const {
-
     // Create FieldSet
     atlas::FieldSet fset;
 
@@ -379,7 +378,6 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
             }
           }
         }
-
       }
       // Add field
       fset.add(field);
@@ -519,8 +517,6 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
           }
         }
       }
-
-
     } else {
       for (const auto & field1 : fset1) {
         if (field1.rank() == 2) {

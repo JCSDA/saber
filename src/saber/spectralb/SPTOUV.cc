@@ -19,7 +19,6 @@
 
 #include "saber/oops/SaberOuterBlockBase.h"
 #include "saber/oops/SaberOuterBlockParametersBase.h"
-#include "saber/spectralb/gaussutils.h"
 #include "saber/spectralb/SPTOUV.h"
 
 namespace saber {
@@ -32,17 +31,8 @@ atlas::Field allocateGaussUVField(
     const oops::Variables & activeVariables,
     const std::vector<std::size_t> & activeVariableSizes) {
 
-  std::cout << "start " << activeVariableSizes.size() << std::endl;
-  for (std::size_t i : activeVariableSizes) {
-    std::cout << i << std::endl;
-  }
-
-  for (auto s : activeVariables.variables()) {
-    std::cout << s << std::endl;
-  }
-
-  std::array<size_t, 2> indx{{0,0}};
-  std::array<size_t, 2> levels{{0,0}};
+  std::array<size_t, 2> indx{{0, 0}};
+  std::array<size_t, 2> levels{{0, 0}};
   if (activeVariables.has("vorticity") && activeVariables.has("divergence")) {
     indx[0] = activeVariables.find("vorticity");
     indx[1] = activeVariables.find("divergence");
@@ -73,10 +63,7 @@ atlas::Field allocateGaussUVField(
     throw std::runtime_error("vertical levels are inconsistent");
   }
 
-  std::cout << "before model levels" << std::endl;
-
   atlas::idx_t modellevels = static_cast<atlas::idx_t>(levels[0]);
-
   auto sc = atlas::functionspace::StructuredColumns(gaussFS);
   atlas::Field uvgp = sc.createField<double>(atlas::option::name("uv_gp") |
                                              atlas::option::variables(2) |
@@ -196,8 +183,8 @@ oops::Variables createInputVars(const SPTOUVParameters & params) {
   }
   inputVars.push_back("streamfunction");
   inputVars.push_back("velocity_potential");
-  //inputVars.push_back("vorticity");
-  //inputVars.push_back("divergence");
+  //  inputVars.push_back("vorticity");
+  //  inputVars.push_back("divergence");
 
   return inputVars;
 }
@@ -222,7 +209,6 @@ void applyNtimesNplus1SpectralScaling(const oops::Variables & inputNames,
                                       const atlas::functionspace::Spectral & specFS,
                                       const atlas::idx_t & totalWavenumber,
                                       atlas::FieldSet & fSet) {
-
   const auto zonal_wavenumbers = specFS.zonal_wavenumbers();
   const int nb_zonal_wavenumbers = zonal_wavenumbers.size();
 
@@ -233,8 +219,6 @@ void applyNtimesNplus1SpectralScaling(const oops::Variables & inputNames,
       fsetTemp.add(f);
     }
   }
-
-  std::cout << "scaling fsetTemp size" << fsetTemp.size() << std::endl;
 
   atlas::FieldSet fsetScaled;
   for (std::size_t var = 0; var < inputNames.variables().size(); ++var) {
@@ -247,7 +231,6 @@ void applyNtimesNplus1SpectralScaling(const oops::Variables & inputNames,
       const int m1 = zonal_wavenumbers(jm);
       for (std::size_t n1 = m1; n1 <= static_cast<std::size_t>(2 * totalWavenumber - 1); ++n1) {
         for (std::size_t img = 0; img < 2; ++img, ++i) {
-          std::cout << "scaling i n1 m1" << i << " " << n1 << " " << m1 << std::endl;
           for (atlas::idx_t jl = 0; jl < fSet[inputNames[var]].levels(); ++jl) {
             fldView(i, jl) = n1 * (n1 + 1) *  fldView(i, jl) / a;
           }
@@ -263,34 +246,9 @@ void applyNtimesNplus1SpectralScaling(const oops::Variables & inputNames,
   for (auto & f : fsetScaled) {
     fSet.add(f);
   }
-
-  for (auto & f : fSet) {
-    std::cout<< "scaling names " << f.name()  << std::endl;
-    auto fldView = atlas::array::make_view<double, 2>(f);
-    for (atlas::idx_t jnode = 0; jnode < f.shape(0); ++jnode) {
-      for (atlas::idx_t jlevel = 0; jlevel < f.shape(1); ++jlevel) {
-        std::cout << f.name() << " " << jnode << " " << jlevel << fldView(jnode, jlevel)
-                  <<  " " << fldView(jnode, jlevel) * atlas::util::Earth::radius() << std::endl;
-      }
-    }
-  }
 }
 
-double norm(const atlas::FieldSet & fset) {
-  double x(0.0);
-  for (auto & f : fset) {
-     auto fldView = atlas::array::make_view<double, 2>(f);
-     for (atlas::idx_t i = 0; i < f.shape(0)   ; ++i) {
-       for (atlas::idx_t j = 0; j < f.shape(1)   ; ++j) {
-         x += fldView(i, j) *  fldView(i, j);
-       }
-
-     }
-  }
-  return x;
-}
-
-}
+}  //  namespace
 // -----------------------------------------------------------------------------
 
 static SaberOuterBlockMaker<SPTOUV> makerSPTOUV_("SPTOUV");
@@ -351,24 +309,11 @@ SPTOUV::~SPTOUV() {
 void SPTOUV::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
 
-  std::cout << "inputVars multiply start " <<
-               inputVars_.variables() << " " <<  norm(fset) << std::endl;
-
-  for (atlas::idx_t jvar = 0; jvar < fset.size(); ++jvar) {
-    auto view = atlas::array::make_view<double, 2>(fset[jvar]);
-    for (atlas::idx_t jnode = 0; jnode < fset[jvar].shape(0); ++jnode) {
-      std::cout << "spec start mult = " << fset[jvar].name()
-                << " " << jnode << " " << view(jnode, 0) << std::endl;
-    }
-  }
-
   // Create empty Model fieldset
   atlas::FieldSet newFields = atlas::FieldSet();
 
   // copy "passive variables"
   std::vector<std::string> fsetNames = fset.field_names();
-
-  std::cout << "fset fieldnames" << fsetNames << std::endl;
 
   for (auto & s : fset.field_names()) {
      if (outputVars_.has(s)) {
@@ -388,19 +333,8 @@ void SPTOUV::multiply(atlas::FieldSet & fset) const {
       specFS_, N, fset);
   }
 
-  std::cout << activeVariableSizes_.size() << std::endl;
-  std::cout << outputFunctionSpace_.type() << std::endl;
-  std::cout << fset.field_names() << std::endl;
-
   atlas::Field uvgp = allocateGaussUVField(outputFunctionSpace_,
                                            inputVars_, activeVariableSizes_);
-
-  std::cout << "after allocate UV  " << fset.field_names() << std::endl;
-  for (atlas::Field & f  : fset) {
-    std::cout << f.name() << std::endl;
-  }
-
-  std::cout << fset["divergence"].name() << std::endl;
 
   // transform to gaussian grid
   transFS_.invtrans_vordiv2wind(fset["vorticity"], fset["divergence"], uvgp);
@@ -410,18 +344,7 @@ void SPTOUV::multiply(atlas::FieldSet & fset) const {
   newFields.add(uvfset["eastward_wind"]);
   newFields.add(uvfset["northward_wind"]);
 
-  std::cout << "after nf" << std::endl;
-
   fset = newFields;
-
-  for (atlas::idx_t jvar = 0; jvar < fset.size(); ++jvar) {
-    auto view = atlas::array::make_view<double, 2>(fset[jvar]);
-    for (atlas::idx_t jnode = 0; jnode < fset[jvar].shape(0); ++jnode) {
-      std::cout << "multiply end  = " << fset[jvar].name()
-                << " " << jnode << " " << view(jnode, 0) << std::endl;
-    }
-  }
-
 
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
@@ -429,15 +352,7 @@ void SPTOUV::multiply(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 void SPTOUV::multiplyAD(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::multiplyAD starting" << " "  << norm(fset) << std::endl;
-
-  for (atlas::idx_t jvar = 0; jvar < fset.size(); ++jvar) {
-    auto view = atlas::array::make_view<double, 2>(fset[jvar]);
-    for (atlas::idx_t jnode = 0; jnode < fset[jvar].shape(0); ++jnode) {
-      std::cout << "multiplyAD start  = " << fset[jvar].name()
-                << " " << jnode << " " << view(jnode, 0) << std::endl;
-    }
-  }
+  oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
 
   // Create empty Model fieldset
   atlas::FieldSet newFields = atlas::FieldSet();
@@ -451,11 +366,7 @@ void SPTOUV::multiplyAD(atlas::FieldSet & fset) const {
      }
   }
 
-  std::cout << "adj fn space type newFields.size" << fset[0].functionspace().type() << " " <<
-               newFields.size()  << std::endl;
-
   atlas::Field uvgp = convertUVToFieldSetAD(fset);
-
   atlas::FieldSet specfset = allocateSpectralVortDiv(specFS_, inputVars_, activeVariableSizes_);
 
   transFS_.invtrans_vordiv2wind_adj(uvgp, specfset["vorticity"], specfset["divergence"]);
@@ -474,15 +385,7 @@ void SPTOUV::multiplyAD(atlas::FieldSet & fset) const {
 
   fset = newFields;
 
-  for (atlas::idx_t jvar = 0; jvar < fset.size(); ++jvar) {
-    auto view = atlas::array::make_view<double, 2>(fset[jvar]);
-    for (atlas::idx_t jnode = 0; jnode < fset[jvar].shape(0); ++jnode) {
-      std::cout << "multiplyAD done = " << fset[jvar].name()
-                << " " << jnode << " " << view(jnode, 0) << std::endl;
-    }
-  }
-
-  oops::Log::trace() << classname() << "::multiplyAD done" << " "  << norm(fset) << std::endl;
+  oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
