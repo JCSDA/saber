@@ -10,11 +10,13 @@ background:
   date: 2010-01-01T12:00:00Z
   state variables: *vars
 saber central block:
-  saber block name: SPNOINTERP_COV
+  saber block name: spectral covariance
   spectralb:
     covariance_file: testdata/CovStats.nc
     gauss_grid_uid: F15
     umatrix_netcdf_names: [PSI_inc_Uv_matrix]
+saber outer blocks:
+- saber block name: spectral to gauss
 
 test:
   reference filename: testref/quench_saber_block_test_spectralb/test.log.out

@@ -311,7 +311,16 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
                                        const std::vector<size_t> & variableSizes,
                                        const oops::Variables & vars) const {
     // Get ghost points
-    atlas::Field ghost = functionSpace.ghost();
+    atlas::Field ghost;
+    if (functionSpace.type() == "Spectral") {
+      ghost = functionSpace.createField<int>(atlas::option::name("ghost"));
+      auto ghostView = atlas::array::make_view<int, 1>(ghost);
+      for (atlas::idx_t jnode = 0; jnode < ghost.shape(0); ++jnode) {
+        ghostView(jnode) = 0;
+      }
+    } else {
+      ghost = functionSpace.ghost();
+    }
     auto ghostView = atlas::array::make_view<int, 1>(ghost);
 
     // Create FieldSet
@@ -325,8 +334,25 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       // Get field owned size
       size_t n = 0;
       if (field.rank() == 2) {
-        for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-          if (ghostView(jnode) == 0) n += field.shape(1);
+        if (functionSpace.type() == "Spectral") {
+          atlas::functionspace::Spectral fs(functionSpace);
+          const atlas::idx_t N = fs.truncation();
+          const auto zonal_wavenumbers = fs.zonal_wavenumbers();
+          const atlas::idx_t nb_zonal_wavenumbers = zonal_wavenumbers.size();
+          for (int jm=0; jm < nb_zonal_wavenumbers; ++jm) {
+            const atlas::idx_t m1 = zonal_wavenumbers(jm);
+            for (std::size_t n1 = m1; n1 <= static_cast<std::size_t>(N); ++n1) {
+              if (m1 == 0) {
+                n += field.shape(1);
+              } else {
+                n += 2*field.shape(1);
+              }
+            }
+          }
+        } else {
+          for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+            if (ghostView(jnode) == 0) n += field.shape(1);
+          }
         }
       }
 
@@ -337,13 +363,54 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       n = 0;
       if (field.rank() == 2) {
         auto view = atlas::array::make_view<double, 2>(field);
-        for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-          for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-            if (ghostView(jnode) == 0) {
-              view(jnode, jlevel) = rand_vec[n];
-              ++n;
-            } else {
-              view(jnode, jlevel) = 0.0;
+        if (functionSpace.type() == "Spectral") {
+          atlas::functionspace::Spectral fs(functionSpace);
+          const atlas::idx_t N = fs.truncation();
+          const auto zonal_wavenumbers = fs.zonal_wavenumbers();
+          const atlas::idx_t nb_zonal_wavenumbers = zonal_wavenumbers.size();
+          int jnode = 0;
+          for (int jm=0; jm < nb_zonal_wavenumbers; ++jm) {
+            const atlas::idx_t m1 = zonal_wavenumbers(jm);
+            for (std::size_t n1 = m1; n1 <= static_cast<std::size_t>(N); ++n1) {
+              if (m1 == 0) {
+                // Real part only
+                for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+                  view(jnode, jlevel) = rand_vec[n];
+                  ++n;
+                }
+                ++jnode;
+
+                // No imaginary part
+                for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+                  view(jnode, jlevel) = 0.0;
+                }
+                ++jnode;
+              } else {
+                // Real part
+                for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+                  view(jnode, jlevel) = rand_vec[n];
+                  ++n;
+                }
+                ++jnode;
+
+                // Imaginary part
+                for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+                  view(jnode, jlevel) = rand_vec[n];
+                  ++n;
+                }
+                ++jnode;
+              }
+            }
+          }
+        } else {
+          for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+            for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+              if (ghostView(jnode) == 0) {
+                view(jnode, jlevel) = rand_vec[n];
+                ++n;
+              } else {
+                view(jnode, jlevel) = 0.0;
+              }
             }
           }
         }
@@ -353,8 +420,10 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       fset.add(field);
     }
 
-    // Halo exchange
-    fset.haloExchange();
+    if (functionSpace.type() != "Spectral") {
+      // Halo exchange
+      fset.haloExchange();
+    }
 
     // Return FieldSet
     return fset;
@@ -412,9 +481,44 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         // Add contributions
         auto view1 = atlas::array::make_view<double, 2>(field1);
         auto view2 = atlas::array::make_view<double, 2>(field2);
-        for (atlas::idx_t jnode = 0; jnode < field1.shape(0); ++jnode) {
-          for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
+        if (field1.functionspace().type() == "Spectral") {
+          atlas::functionspace::Spectral fs(field1.functionspace());
+          const atlas::idx_t N = fs.truncation();
+          const auto zonal_wavenumbers = fs.zonal_wavenumbers();
+          const atlas::idx_t nb_zonal_wavenumbers = zonal_wavenumbers.size();
+          int jnode = 0;
+          for (int jm=0; jm < nb_zonal_wavenumbers; ++jm) {
+            const atlas::idx_t m1 = zonal_wavenumbers(jm);
+            for (std::size_t n1 = m1; n1 <= static_cast<std::size_t>(N); ++n1) {
+              if (m1 == 0) {
+                // Real part only
+                for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
+                  dp += view1(jnode, jlevel)*view2(jnode, jlevel);
+                }
+                ++jnode;
+
+                // No imaginary part
+                ++jnode;
+              } else {
+                // Real part
+                for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
+                  dp += 2.0*view1(jnode, jlevel)*view2(jnode, jlevel);
+                }
+                ++jnode;
+
+                // Imaginary part
+                for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
+                  dp += 2.0*view1(jnode, jlevel)*view2(jnode, jlevel);
+                }
+                ++jnode;
+              }
+            }
+          }
+        } else {
+          for (atlas::idx_t jnode = 0; jnode < field1.shape(0); ++jnode) {
+            for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
               dp += view1(jnode, jlevel)*view2(jnode, jlevel);
+            }
           }
         }
       }

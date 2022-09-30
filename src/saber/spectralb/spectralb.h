@@ -89,14 +89,6 @@ atlas::FunctionSpace createOutputFunctionSpace(const atlas::FieldSet & fset) {
   return fset[0].functionspace();
 }
 
-// -----------------------------------------------------------------------------
-
-bool createVarianceOpt(const spectralbParameters & params) {
-  return (params.varianceOpt.value() != boost::none ?
-          params.varianceOpt.value().get() :
-          false);
-}
-
 }  // namespace detail
 }  // namespace spectralb
 }  // namespace saber
@@ -155,7 +147,7 @@ SpectralB::SpectralB(const atlas::FunctionSpace & functionSpace,
   gaussFieldSet_(detail::allocateGaussFieldset(gaussFunctionSpace_, gaussNames_, modelFieldSet_)),
   interp_(atlas::grid::Partitioner(new TransPartitioner()), gaussFunctionSpace_,
     detail::createOutputGrid(params), detail::createOutputFunctionSpace(*modelFieldSet_)),
-  variance_opt_(detail::createVarianceOpt(params)),
+  variance_opt_(params.varianceOpt),
   cs_(std::make_unique<const CovStat_ErrorCov>(variableSizes, vars, params))
 {
   oops::Log::trace() << "SpectralB::SpectralB done" << std::endl;

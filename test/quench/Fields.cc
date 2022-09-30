@@ -562,8 +562,6 @@ void Fields::read(const eckit::Configuration & config) {
     // NodeColumns
     atlas::idx_t nb_nodes;
     if (geom_->grid().name().compare(0, 2, std::string{"CS"}) == 0) {
-// TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
-#if atlas_TRANS_FOUND
       // CubedSphere
       atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
 
@@ -576,9 +574,6 @@ void Fields::read(const eckit::Configuration & config) {
 
       // Get global number of nodes
       nb_nodes = fs.nb_nodes_global();
-#else
-      ABORT("TRANS required");
-#endif
     } else {
       // Other NodeColumns
       atlas::functionspace::NodeColumns fs(geom_->functionSpace());
@@ -643,14 +638,9 @@ void Fields::read(const eckit::Configuration & config) {
   } else if (geom_->functionSpace().type() == "NodeColumns") {
     // NodeColumns
     if (geom_->grid().name().compare(0, 2, std::string{"CS"}) == 0) {
-// TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
-#if atlas_TRANS_FOUND
       // CubedSphere
       atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
       fs.scatter(globalData, fset_);
-#else
-      ABORT("TRANS required");
-#endif
     } else {
       // Other NodeColumns
       atlas::functionspace::NodeColumns fs(geom_->functionSpace());
@@ -820,8 +810,6 @@ void Fields::write(const eckit::Configuration & config) const {
     // NodeColumns
     atlas::idx_t nb_nodes;
     if (geom_->grid().name().compare(0, 2, std::string{"CS"}) == 0) {
-// TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
-#if atlas_TRANS_FOUND
       // CubedSphere
       atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
 
@@ -861,9 +849,6 @@ void Fields::write(const eckit::Configuration & config) const {
 
       // Get global number of nodes
       nb_nodes = fs.nb_nodes_global();
-#else
-      ABORT("TRANS required");
-#endif
     } else {
       // Other NodeColumns
       atlas::functionspace::NodeColumns fs(geom_->functionSpace());

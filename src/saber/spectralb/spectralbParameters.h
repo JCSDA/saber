@@ -41,8 +41,8 @@ class spectralbParameters : public oops::Parameters {
   //         blocks so that initialisation/setup steps are not duplicated.
   oops::OptionalParameter<std::string> outputGridUid{"output_grid_uid",
   "Output Grid UID", this};
-  oops::OptionalParameter<bool> varianceOpt{"variance_opt",
-  "variance option", this};
+  oops::Parameter<bool> varianceOpt{"variance_opt",
+  "variance option", false, this};
 };
 // -----------------------------------------------------------------------------
 }  // namespace saber
