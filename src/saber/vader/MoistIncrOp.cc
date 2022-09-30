@@ -5,7 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "saber/vader/MoistIncrOpSaberBlock.h"
+#include "saber/vader/MoistIncrOp.h"
 
 #include <memory>
 #include <string>
@@ -33,30 +33,24 @@ namespace oops {
 }
 
 namespace saber {
-
-// -----------------------------------------------------------------------------
-static SaberOuterBlockMaker<MoistIncrOpSaberBlock>
-  makerMoistIncrOpSaberBlock_("mo_moistincrop");
+namespace vader {
 
 // -----------------------------------------------------------------------------
 
-MoistIncrOpSaberBlock::MoistIncrOpSaberBlock(const eckit::mpi::Comm & comm,
-               const oops::GeometryData & outputGeometryData,
-               const std::vector<size_t> & activeVariableSizes,
-               const eckit::Configuration & conf,
-               const atlas::FieldSet & xb,
-               const atlas::FieldSet & fg,
-               const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberOuterBlockBase(conf), inputGeometryData_(outputGeometryData), augmentedStateFieldSet_()
+static SaberOuterBlockMaker<MoistIncrOp> makerMoistIncrOp_("mo_moistincrop");
+
+// -----------------------------------------------------------------------------
+
+MoistIncrOp::MoistIncrOp(const oops::GeometryData & outputGeometryData,
+                         const std::vector<size_t> & activeVariableSizes,
+                         const oops::Variables & outputVars,
+                         const Parameters_ & params,
+                         const atlas::FieldSet & xb,
+                         const atlas::FieldSet & fg,
+                         const std::vector<atlas::FieldSet> & fsetVec)
+  : inputGeometryData_(outputGeometryData), inputVars_(outputVars), augmentedStateFieldSet_()
 {
-  oops::Log::trace() << classname() << "::MoistIncrOpSaberBlock starting" << std::endl;
-
-  // Deserialize configuration
-  MoistIncrOpSaberBlockParameters params;
-  params.deserialize(conf);
-
-  // Input variables
-  inputVars_ = params.outputVars.value();
+  oops::Log::trace() << classname() << "::MoistIncrOp starting" << std::endl;
 
   // Need to setup derived state fields that we need.
   std::vector<std::string> requiredStateVariables{
@@ -83,7 +77,7 @@ MoistIncrOpSaberBlock::MoistIncrOpSaberBlock(const eckit::mpi::Comm & comm,
   // Use meta data to see if they are populated with actual data.
   for (auto & s : requiredStateVariables) {
     if (!xb.has_field(s)) {
-      oops::Log::info() << "MoistIncrOpSaberBlock variable " << s <<
+      oops::Log::info() << "MoistIncrOp variable " << s <<
                            " is not part of state object." << std::endl;
     }
   }
@@ -104,20 +98,20 @@ MoistIncrOpSaberBlock::MoistIncrOpSaberBlock(const eckit::mpi::Comm & comm,
   mo::evalTotalRelativeHumidity(augmentedStateFieldSet_);
   mo::functions::getMIOFields(augmentedStateFieldSet_);
 
-  oops::Log::trace() << classname() << "::MoistIncrOpSaberBlock done" << std::endl;
+  oops::Log::trace() << classname() << "::MoistIncrOp done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-MoistIncrOpSaberBlock::~MoistIncrOpSaberBlock() {
-  oops::Log::trace() << classname() << "::~MoistIncrOpSaberBlock starting" << std::endl;
-  util::Timer timer(classname(), "~MoistIncrOpSaberBlock");
-  oops::Log::trace() << classname() << "::~MoistIncrOpSaberBlock done" << std::endl;
+MoistIncrOp::~MoistIncrOp() {
+  oops::Log::trace() << classname() << "::~MoistIncrOp starting" << std::endl;
+  util::Timer timer(classname(), "~MoistIncrOp");
+  oops::Log::trace() << classname() << "::~MoistIncrOp done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void MoistIncrOpSaberBlock::multiply(atlas::FieldSet & fset) const {
+void MoistIncrOp::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   mo::qtTemperature2qqclqcfTL(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
@@ -125,7 +119,7 @@ void MoistIncrOpSaberBlock::multiply(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void MoistIncrOpSaberBlock::multiplyAD(atlas::FieldSet & fset) const {
+void MoistIncrOp::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
   mo::qtTemperature2qqclqcfAD(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
@@ -133,7 +127,7 @@ void MoistIncrOpSaberBlock::multiplyAD(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void MoistIncrOpSaberBlock::calibrationInverseMultiply(atlas::FieldSet & fset) const {
+void MoistIncrOp::calibrationInverseMultiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::calibrationInverseMultiply starting" << std::endl;
   mo::qqclqcf2qtAD(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::calibrationInverseMultiply done" << std::endl;
@@ -141,10 +135,11 @@ void MoistIncrOpSaberBlock::calibrationInverseMultiply(atlas::FieldSet & fset) c
 
 // -----------------------------------------------------------------------------
 
-void MoistIncrOpSaberBlock::print(std::ostream & os) const {
+void MoistIncrOp::print(std::ostream & os) const {
   os << classname();
 }
 
 // -----------------------------------------------------------------------------
 
+}  // namespace vader
 }  // namespace saber

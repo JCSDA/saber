@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2022 Met Office
+ * (C) Copyright 2021 UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -12,13 +12,13 @@
 #include <vector>
 
 #include "atlas/field.h"
-#include "atlas/functionspace.h"
 
-#include "eckit/exception/Exceptions.h"
-
+#include "oops/base/Geometry.h"
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
+#include "oops/util/abor1_cpp.h"
 
+#include "saber/bump/BUMP.h"
 #include "saber/oops/SaberOuterBlockBase.h"
 #include "saber/oops/SaberOuterBlockParametersBase.h"
 
@@ -27,28 +27,33 @@ namespace oops {
 }
 
 namespace saber {
+namespace bump {
 
 // -----------------------------------------------------------------------------
-class HydroBalSaberBlockParameters : public SaberOuterBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(HydroBalSaberBlockParameters, SaberOuterBlockParametersBase)
+
+class PsiChiToUVParameters : public SaberOuterBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(PsiChiToUVParameters, SaberOuterBlockParametersBase)
+
  public:
+  oops::RequiredParameter<BUMPParameters> bumpParams{"bump", this};
 };
 
 // -----------------------------------------------------------------------------
-class HydroBalSaberBlock : public SaberOuterBlockBase {
+
+class PsiChiToUV : public SaberOuterBlockBase {
  public:
-  static const std::string classname() {return "saber::HydroBalSaberBlock";}
+  static const std::string classname() {return "saber::bump::PsiChiToUV";}
 
-  typedef HydroBalSaberBlockParameters Parameters_;
+  typedef PsiChiToUVParameters Parameters_;
 
-  HydroBalSaberBlock(const eckit::mpi::Comm &,
-         const oops::GeometryData &,
-         const std::vector<size_t> &,
-         const eckit::Configuration &,
-         const atlas::FieldSet &,
-         const atlas::FieldSet &,
-         const std::vector<atlas::FieldSet> &);
-  virtual ~HydroBalSaberBlock();
+  PsiChiToUV(const oops::GeometryData &,
+             const std::vector<size_t> &,
+             const oops::Variables &,
+             const Parameters_ &,
+             const atlas::FieldSet &,
+             const atlas::FieldSet &,
+             const std::vector<atlas::FieldSet> &);
+  virtual ~PsiChiToUV();
 
   const oops::GeometryData & inputGeometryData() const override {return inputGeometryData_;}
   const oops::Variables & inputVars() const override {return inputVars_;}
@@ -61,9 +66,10 @@ class HydroBalSaberBlock : public SaberOuterBlockBase {
   void print(std::ostream &) const override;
   const oops::GeometryData & inputGeometryData_;
   oops::Variables inputVars_;
-  atlas::FieldSet augmentedStateFieldSet_;
+  std::unique_ptr<BUMP> bump_;
 };
 
 // -----------------------------------------------------------------------------
 
+}  // namespace bump
 }  // namespace saber

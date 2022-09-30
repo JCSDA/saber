@@ -17,14 +17,9 @@
 #include <boost/noncopyable.hpp>
 
 #include "oops/base/GeometryData.h"
-#include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/AssociativeContainers.h"
-#include "oops/util/Logger.h"
-#include "oops/util/parameters/OptionalParameter.h"
-#include "oops/util/parameters/Parameter.h"
 #include "oops/util/parameters/Parameters.h"
-#include "oops/util/parameters/RequiredParameter.h"
 #include "oops/util/parameters/RequiredPolymorphicParameter.h"
 #include "oops/util/Printable.h"
 
@@ -36,16 +31,14 @@ namespace saber {
 
 class SaberCentralBlockBase : public util::Printable, private boost::noncopyable {
  public:
-  explicit SaberCentralBlockBase(const eckit::Configuration & conf);
+  SaberCentralBlockBase() {}
   virtual ~SaberCentralBlockBase() {}
 
   virtual void randomize(atlas::FieldSet &) const = 0;
   virtual void multiply(atlas::FieldSet &) const = 0;
 
-  const std::string name() const {return name_;}
  private:
   virtual void print(std::ostream &) const = 0;
-  std::string name_;
 };
 
 // =============================================================================
@@ -65,10 +58,10 @@ class SaberCentralBlockParametersWrapper : public oops::Parameters {
 
 class SaberCentralBlockFactory {
  public:
-  static SaberCentralBlockBase * create(const eckit::mpi::Comm &,
-                                 const oops::GeometryData &,
+  static SaberCentralBlockBase * create(const oops::GeometryData &,
                                  const std::vector<size_t> &,
-                                 const eckit::Configuration &,
+                                 const oops::Variables &,
+                                 const SaberCentralBlockParametersBase &,
                                  const atlas::FieldSet &,
                                  const atlas::FieldSet &,
                                  const std::vector<atlas::FieldSet> &);
@@ -85,10 +78,10 @@ class SaberCentralBlockFactory {
   explicit SaberCentralBlockFactory(const std::string &name);
 
  private:
-  virtual SaberCentralBlockBase * make(const eckit::mpi::Comm &,
-                                       const oops::GeometryData &,
+  virtual SaberCentralBlockBase * make(const oops::GeometryData &,
                                        const std::vector<size_t> &,
-                                       const eckit::Configuration &,
+                                       const oops::Variables &,
+                                       const SaberCentralBlockParametersBase &,
                                        const atlas::FieldSet &,
                                        const atlas::FieldSet &,
                                        const std::vector<atlas::FieldSet> &) = 0;
@@ -107,15 +100,16 @@ template<class T>
 class SaberCentralBlockMaker : public SaberCentralBlockFactory {
   typedef typename T::Parameters_ Parameters_;
 
-  SaberCentralBlockBase * make(const eckit::mpi::Comm & comm,
-                               const oops::GeometryData & geometryData,
+  SaberCentralBlockBase * make(const oops::GeometryData & geometryData,
                                const std::vector<size_t> & activeVariableSizes,
-                               const eckit::Configuration & conf,
+                               const oops::Variables & outputVars,
+                               const SaberCentralBlockParametersBase & params,
                                const atlas::FieldSet & xb,
                                const atlas::FieldSet & fg,
                                const std::vector<atlas::FieldSet> & fsetVec) override {
-    return new T(comm, geometryData, activeVariableSizes,
-                 conf, xb, fg, fsetVec);
+    const auto &stronglyTypedParams = dynamic_cast<const Parameters_&>(params);
+    return new T(geometryData, activeVariableSizes,
+                 outputVars, stronglyTypedParams, xb, fg, fsetVec);
   }
 
   std::unique_ptr<SaberCentralBlockParametersBase> makeParameters() const override {

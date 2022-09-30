@@ -24,6 +24,7 @@ namespace oops {
 }
 
 namespace saber {
+namespace generic {
 
 // -----------------------------------------------------------------------------
 
@@ -35,14 +36,14 @@ class StdDevParameters : public SaberOuterBlockParametersBase {
 
 class StdDev : public SaberOuterBlockBase {
  public:
-  static const std::string classname() {return "saber::StdDev";}
+  static const std::string classname() {return "saber::generic::StdDev";}
 
   typedef StdDevParameters Parameters_;
 
-  StdDev(const eckit::mpi::Comm &,
-         const oops::GeometryData &,
+  StdDev(const oops::GeometryData &,
          const std::vector<size_t> &,
-         const eckit::Configuration &,
+         const oops::Variables &,
+         const Parameters_ &,
          const atlas::FieldSet &,
          const atlas::FieldSet &,
          const std::vector<atlas::FieldSet> &);
@@ -64,4 +65,5 @@ class StdDev : public SaberOuterBlockBase {
 
 // -----------------------------------------------------------------------------
 
+}  // namespace generic
 }  // namespace saber

@@ -36,7 +36,7 @@ namespace saber {
 
 class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
  public:
-  explicit SaberOuterBlockBase(const eckit::Configuration & conf);
+  SaberOuterBlockBase() {}
   virtual ~SaberOuterBlockBase() {}
 
   virtual const oops::GeometryData & inputGeometryData() const = 0;
@@ -46,11 +46,8 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
   virtual void multiplyAD(atlas::FieldSet &) const = 0;
   virtual void calibrationInverseMultiply(atlas::FieldSet &) const = 0;
 
-  const std::string name() const {return name_;}
-
  private:
   virtual void print(std::ostream &) const = 0;
-  std::string name_;
 };
 
 // =============================================================================
@@ -70,10 +67,10 @@ class SaberOuterBlockParametersWrapper : public oops::Parameters {
 
 class SaberOuterBlockFactory {
  public:
-  static SaberOuterBlockBase * create(const eckit::mpi::Comm &,
-                                      const oops::GeometryData &,
+  static SaberOuterBlockBase * create(const oops::GeometryData &,
                                       const std::vector<size_t> &,
-                                      const eckit::Configuration &,
+                                      const oops::Variables &,
+                                      const SaberOuterBlockParametersBase &,
                                       const atlas::FieldSet &,
                                       const atlas::FieldSet &,
                                       const std::vector<atlas::FieldSet> &);
@@ -90,10 +87,10 @@ class SaberOuterBlockFactory {
   explicit SaberOuterBlockFactory(const std::string &name);
 
  private:
-  virtual SaberOuterBlockBase * make(const eckit::mpi::Comm &,
-                                     const oops::GeometryData &,
+  virtual SaberOuterBlockBase * make(const oops::GeometryData &,
                                      const std::vector<size_t> &,
-                                     const eckit::Configuration &,
+                                     const oops::Variables &,
+                                     const SaberOuterBlockParametersBase &,
                                      const atlas::FieldSet &,
                                      const atlas::FieldSet &,
                                      const std::vector<atlas::FieldSet> &) = 0;
@@ -112,15 +109,16 @@ template<class T>
 class SaberOuterBlockMaker : public SaberOuterBlockFactory {
   typedef typename T::Parameters_ Parameters_;
 
-  SaberOuterBlockBase * make(const eckit::mpi::Comm & comm,
-                             const oops::GeometryData & outputGeometryData,
+  SaberOuterBlockBase * make(const oops::GeometryData & outputGeometryData,
                              const std::vector<size_t> & activeVariableSizes,
-                             const eckit::Configuration & conf,
+                             const oops::Variables & outputVars,
+                             const SaberOuterBlockParametersBase & params,
                              const atlas::FieldSet & xb,
                              const atlas::FieldSet & fg,
                              const std::vector<atlas::FieldSet> & fsetVec) override {
-    return new T(comm, outputGeometryData, activeVariableSizes,
-                 conf, xb, fg, fsetVec);
+    const auto &stronglyTypedParams = dynamic_cast<const Parameters_&>(params);
+    return new T(outputGeometryData, activeVariableSizes,
+                 outputVars, stronglyTypedParams, xb, fg, fsetVec);
   }
 
   std::unique_ptr<SaberOuterBlockParametersBase> makeParameters() const override {

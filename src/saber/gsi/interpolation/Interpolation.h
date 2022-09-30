@@ -21,8 +21,12 @@
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
+#include "oops/util/parameters/OptionalParameter.h"
+#include "oops/util/parameters/Parameter.h"
+#include "oops/util/parameters/Parameters.h"
+#include "oops/util/parameters/RequiredParameter.h"
 
-#include "saber/gsi/grid/GSI_Grid.h"
+#include "saber/gsi/grid/Grid.h"
 #include "saber/gsi/interpolation/unstructured_interp/UnstructuredInterpolation.h"
 #include "saber/oops/SaberOuterBlockBase.h"
 #include "saber/oops/SaberOuterBlockParametersBase.h"
@@ -65,13 +69,13 @@ class Interpolation : public SaberOuterBlockBase {
 
   typedef InterpolationParameters Parameters_;
 
-  Interpolation(const eckit::mpi::Comm &,
-         const oops::GeometryData &,
-         const std::vector<size_t> &,
-         const eckit::Configuration &,
-         const atlas::FieldSet &,
-         const atlas::FieldSet &,
-         const std::vector<atlas::FieldSet> &);
+  Interpolation(const oops::GeometryData &,
+                const std::vector<size_t> &,
+                const oops::Variables &,
+                const Parameters_ &,
+                const atlas::FieldSet &,
+                const atlas::FieldSet &,
+                const std::vector<atlas::FieldSet> &);
   virtual ~Interpolation();
 
   const oops::GeometryData & inputGeometryData() const override {return *inputGeometryData_;}

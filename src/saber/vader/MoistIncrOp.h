@@ -26,30 +26,31 @@ namespace oops {
 }
 
 namespace saber {
+namespace vader {
 
 // -----------------------------------------------------------------------------
 
-class MoistIncrOpSaberBlockParameters : public SaberOuterBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(MoistIncrOpSaberBlockParameters, SaberOuterBlockParametersBase)
+class MoistIncrOpParameters : public SaberOuterBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(MoistIncrOpParameters, SaberOuterBlockParametersBase)
  public:
 };
 
 // -----------------------------------------------------------------------------
 
-class MoistIncrOpSaberBlock : public SaberOuterBlockBase {
+class MoistIncrOp : public SaberOuterBlockBase {
  public:
-  static const std::string classname() {return "saber::AirTemperatureSaberBlock";}
+  static const std::string classname() {return "saber::vader::AirTemperature";}
 
-  typedef MoistIncrOpSaberBlockParameters Parameters_;
+  typedef MoistIncrOpParameters Parameters_;
 
-  MoistIncrOpSaberBlock(const eckit::mpi::Comm &,
-         const oops::GeometryData &,
-         const std::vector<size_t> &,
-         const eckit::Configuration &,
-         const atlas::FieldSet &,
-         const atlas::FieldSet &,
-         const std::vector<atlas::FieldSet> &);
-  virtual ~MoistIncrOpSaberBlock();
+  MoistIncrOp(const oops::GeometryData &,
+              const std::vector<size_t> &,
+              const oops::Variables &,
+              const Parameters_ &,
+              const atlas::FieldSet &,
+              const atlas::FieldSet &,
+              const std::vector<atlas::FieldSet> &);
+  virtual ~MoistIncrOp();
 
   const oops::GeometryData & inputGeometryData() const override {return inputGeometryData_;}
   const oops::Variables & inputVars() const override {return inputVars_;}
@@ -67,4 +68,5 @@ class MoistIncrOpSaberBlock : public SaberOuterBlockBase {
 
 // -----------------------------------------------------------------------------
 
+}  // namespace vader
 }  // namespace saber

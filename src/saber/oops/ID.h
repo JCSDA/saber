@@ -23,6 +23,7 @@ namespace oops {
 }
 
 namespace saber {
+namespace generic {
 
 // -----------------------------------------------------------------------------
 
@@ -34,18 +35,17 @@ class IDParameters : public SaberCentralBlockParametersBase {
 
 class ID : public SaberCentralBlockBase {
  public:
-  static const std::string classname() {return "saber::ID";}
+  static const std::string classname() {return "saber::generic::ID";}
 
   typedef IDParameters Parameters_;
 
-  ID(const eckit::mpi::Comm &,
-     const oops::GeometryData &,
+  ID(const oops::GeometryData &,
      const std::vector<size_t> &,
-     const eckit::Configuration &,
+     const oops::Variables &,
+     const Parameters_ &,
      const atlas::FieldSet &,
      const atlas::FieldSet &,
      const std::vector<atlas::FieldSet> &);
-  virtual ~ID();
 
   void randomize(atlas::FieldSet &) const override;
   void multiply(atlas::FieldSet &) const override;
@@ -56,4 +56,5 @@ class ID : public SaberCentralBlockBase {
 
 // -----------------------------------------------------------------------------
 
+}  // namespace generic
 }  // namespace saber

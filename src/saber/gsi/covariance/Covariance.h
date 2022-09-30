@@ -18,8 +18,12 @@
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
+#include "oops/util/parameters/OptionalParameter.h"
+#include "oops/util/parameters/Parameter.h"
+#include "oops/util/parameters/Parameters.h"
+#include "oops/util/parameters/RequiredParameter.h"
 
-#include "saber/gsi/covariance/GSI_Covariance.interface.h"
+#include "saber/gsi/covariance/Covariance.interface.h"
 #include "saber/oops/SaberCentralBlockBase.h"
 #include "saber/oops/SaberCentralBlockParametersBase.h"
 
@@ -62,13 +66,13 @@ class Covariance : public SaberCentralBlockBase {
 
   typedef CovarianceParameters Parameters_;
 
-  Covariance(const eckit::mpi::Comm &,
-     const oops::GeometryData &,
-     const std::vector<size_t> &,
-     const eckit::Configuration &,
-     const atlas::FieldSet &,
-     const atlas::FieldSet &,
-     const std::vector<atlas::FieldSet> &);
+  Covariance(const oops::GeometryData &,
+             const std::vector<size_t> &,
+             const oops::Variables &,
+             const Parameters_ &,
+             const atlas::FieldSet &,
+             const atlas::FieldSet &,
+             const std::vector<atlas::FieldSet> &);
   virtual ~Covariance();
 
   void randomize(atlas::FieldSet &) const override;

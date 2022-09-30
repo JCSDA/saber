@@ -124,7 +124,7 @@ template <typename MODEL> class ErrorCovarianceTrainingParameters
     inputFields2{"lowres input fields", this};
 
   /// BUMP training parameters
-  oops::OptionalParameter<BUMP_Parameters> bumpParams{"bump", this};
+  oops::OptionalParameter<bump::BUMPParameters> bumpParams{"bump", this};
 
   /// Output parameters
   oops::OptionalParameter<std::vector<OutputParameters<MODEL>>> output{"output", this};
@@ -288,7 +288,7 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
       params.inputFields2.value());
 
     // Select SABER library training
-    std::unique_ptr<BUMP> bump;
+    std::unique_ptr<bump::BUMP> bump;
 
     // Ensemble sizes
     size_t ens1_ne = 0;
@@ -297,21 +297,21 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
     if (ens2) ens2_ne = ens2->size();
 
     // BUMP
-    const boost::optional<BUMP_Parameters> &bumpParams = params.bumpParams.value();
+    const boost::optional<bump::BUMPParameters> &bumpParams = params.bumpParams.value();
     if (bumpParams != boost::none) {
       // Constructor
-      bump.reset(new BUMP(geom1.getComm(),
-                          geom1.functionSpace(),
-                          geom1.extraFields(),
-                          geom1.variableSizes(inputVars),
-                          inputVars,
-                          *bumpParams,
-                          fsetVec1,
-                          geom2->functionSpace(),
-                          geom2->extraFields(),
-                          fsetVec2,
-                          ens1_ne,
-                          ens2_ne));
+      bump.reset(new bump::BUMP(geom1.getComm(),
+                                geom1.functionSpace(),
+                                geom1.extraFields(),
+                                geom1.variableSizes(inputVars),
+                                inputVars,
+                                *bumpParams,
+                                fsetVec1,
+                                geom2->functionSpace(),
+                                geom2->extraFields(),
+                                fsetVec2,
+                                ens1_ne,
+                                ens2_ne));
 
       // Add members of ensemble 1
       if (ens1) {

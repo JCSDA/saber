@@ -7,18 +7,12 @@
 
 #include "saber/oops/ID.h"
 
-#include <memory>
-#include <string>
 #include <vector>
 
-#include "oops/util/Timer.h"
-
-#include "oops/base/GeometryData.h"
-
-#include "saber/oops/SaberCentralBlockBase.h"
-#include "saber/oops/SaberCentralBlockParametersBase.h"
+#include "oops/util/Logger.h"
 
 namespace saber {
+namespace generic {
 
 // -----------------------------------------------------------------------------
 
@@ -26,30 +20,16 @@ static SaberCentralBlockMaker<ID> makerID_("ID");
 
 // -----------------------------------------------------------------------------
 
-ID::ID(const eckit::mpi::Comm & comm,
-       const oops::GeometryData & geometryData,
+ID::ID(const oops::GeometryData & geometryData,
        const std::vector<size_t> & activeVariableSizes,
-       const eckit::Configuration & conf,
+       const oops::Variables & activeVars,
+       const Parameters_ & params,
        const atlas::FieldSet & xb,
        const atlas::FieldSet & fg,
        const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberCentralBlockBase(conf)
 {
   oops::Log::trace() << classname() << "::ID starting" << std::endl;
-
-  // Deserialize configuration
-  IDParameters params;
-  params.validateAndDeserialize(conf);
-
   oops::Log::trace() << classname() << "::ID done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-ID::~ID() {
-  oops::Log::trace() << classname() << "::~ID starting" << std::endl;
-  util::Timer timer(classname(), "~ID");
-  oops::Log::trace() << classname() << "::~ID done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
@@ -74,4 +54,5 @@ void ID::print(std::ostream & os) const {
 
 // -----------------------------------------------------------------------------
 
+}  // namespace generic
 }  // namespace saber

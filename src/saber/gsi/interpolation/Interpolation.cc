@@ -6,7 +6,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "saber/gsi/interpolation/GSI_Interpolation.h"
+#include "saber/gsi/interpolation/Interpolation.h"
 
 #include <memory>
 #include <string>
@@ -31,34 +31,29 @@ namespace gsi {
 
 // -------------------------------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<gsi::Interpolation>
-  makerGSI_Interpolation_("gsi interpolation to model grid");
+static SaberOuterBlockMaker<Interpolation> makerInterpolation_("gsi interpolation to model grid");
 
 // -------------------------------------------------------------------------------------------------
 
-Interpolation::Interpolation(const eckit::mpi::Comm & comm,
-               const oops::GeometryData & outputGeometryData,
-               const std::vector<size_t> & activeVariableSizes,
-               const eckit::Configuration & conf,
-               const atlas::FieldSet & xb,
-               const atlas::FieldSet & fg,
-               const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberOuterBlockBase(conf), grid_(comm, conf),
+Interpolation::Interpolation(const oops::GeometryData & outputGeometryData,
+                             const std::vector<size_t> & activeVariableSizes,
+                             const oops::Variables & outputVars,
+                             const Parameters_ & params,
+                             const atlas::FieldSet & xb,
+                             const atlas::FieldSet & fg,
+                             const std::vector<atlas::FieldSet> & fsetVec)
+  : inputVars_(outputVars),
+    grid_(outputGeometryData.comm(), params.toConfiguration()),
     outputFunctionSpace_(outputGeometryData.functionSpace())
 {
   oops::Log::trace() << classname() << "::Interpolation starting" << std::endl;
   util::Timer timer(classname(), "Interpolation");
 
-  // Deserialize configuration
-  InterpolationParameters params;
-  params.deserialize(conf);
-
-  // Input geometry and variables (TODO(Benjamin): interpolate extraFields?)
+  // Input geometry and variables
   inputGeometryData_.reset(new oops::GeometryData(grid_.functionSpace(),
                                                   outputGeometryData.fieldSet(),
                                                   outputGeometryData.levelsAreTopDown(),
                                                   outputGeometryData.comm()));
-  inputVars_ = params.outputVars.value();
 
   // Object wide copy of the variables
   variables_ = inputVars_.variables();
@@ -67,10 +62,11 @@ Interpolation::Interpolation(const eckit::mpi::Comm & comm,
   gsiLevels_ = grid_.levels();
 
   // Create the interpolator
-  interpolator_.reset(new UnstructuredInterpolation(conf,
+  interpolator_.reset(new UnstructuredInterpolation(params.toConfiguration(),
                                                     inputGeometryData_->functionSpace(),
                                                     outputFunctionSpace_,
-                                                    nullptr, comm));
+                                                    nullptr,
+                                                    outputGeometryData.comm()));
 
   oops::Log::trace() << classname() << "::Interpolation done" << std::endl;
 }

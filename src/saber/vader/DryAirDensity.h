@@ -21,40 +21,37 @@
 
 #include "saber/oops/SaberOuterBlockBase.h"
 #include "saber/oops/SaberOuterBlockParametersBase.h"
-#include "saber/vader/MoistureControlParameters.h"
 
 namespace oops {
   class Variables;
 }
 
 namespace saber {
+namespace vader {
 
 // -----------------------------------------------------------------------------
-class MoistureControlSaberBlockParameters : public SaberOuterBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(MoistureControlSaberBlockParameters, SaberOuterBlockParametersBase)
+
+class DryAirDensityParameters : public SaberOuterBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(DryAirDensityParameters, SaberOuterBlockParametersBase)
  public:
-  oops::RequiredParameter<moisturecontrolParameters>
-    moisturecontrolParams{"covariance data", this};
 };
 
 // -----------------------------------------------------------------------------
-// This saber block is here
-//
-// -----------------------------------------------------------------------------
-class MoistureControlSaberBlock : public SaberOuterBlockBase {
+
+class DryAirDensity : public SaberOuterBlockBase {
  public:
-  static const std::string classname() {return "saber::MoistureControlSaberBlock";}
+  static const std::string classname() {return "saber::vader::DryAirDensity";}
 
-  typedef MoistureControlSaberBlockParameters Parameters_;
+  typedef DryAirDensityParameters Parameters_;
 
-  MoistureControlSaberBlock(const eckit::mpi::Comm &,
-         const oops::GeometryData &,
-         const std::vector<size_t> &,
-         const eckit::Configuration &,
-         const atlas::FieldSet &,
-         const atlas::FieldSet &,
-         const std::vector<atlas::FieldSet> &);
-  virtual ~MoistureControlSaberBlock();
+  DryAirDensity(const oops::GeometryData &,
+                const std::vector<size_t> &,
+                const oops::Variables &,
+                const Parameters_ &,
+                const atlas::FieldSet &,
+                const atlas::FieldSet &,
+                const std::vector<atlas::FieldSet> &);
+  virtual ~DryAirDensity();
 
   const oops::GeometryData & inputGeometryData() const override {return inputGeometryData_;}
   const oops::Variables & inputVars() const override {return inputVars_;}
@@ -67,10 +64,10 @@ class MoistureControlSaberBlock : public SaberOuterBlockBase {
   void print(std::ostream &) const override;
   const oops::GeometryData & inputGeometryData_;
   oops::Variables inputVars_;
-  atlas::FieldSet covFieldSet_;
   atlas::FieldSet augmentedStateFieldSet_;
 };
 
 // -----------------------------------------------------------------------------
 
+}  // namespace vader
 }  // namespace saber

@@ -6,7 +6,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "saber/gsi/covariance/GSI_Covariance.h"
+#include "saber/gsi/covariance/Covariance.h"
 
 #include <memory>
 #include <string>
@@ -20,10 +20,11 @@
 
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
+#include "oops/util/Logger.h"
 #include "oops/util/Timer.h"
 
-#include "saber/gsi/covariance/GSI_Covariance.interface.h"
-#include "saber/gsi/grid/GSI_Grid.h"
+#include "saber/gsi/covariance/Covariance.interface.h"
+#include "saber/gsi/grid/Grid.h"
 #include "saber/oops/SaberCentralBlockBase.h"
 
 namespace oops {
@@ -35,31 +36,26 @@ namespace gsi {
 
 // -------------------------------------------------------------------------------------------------
 
-static SaberCentralBlockMaker<gsi::Covariance> makerGSI_Covariance_("gsi covariance");
+static SaberCentralBlockMaker<Covariance> makerCovariance_("gsi covariance");
 
 // -------------------------------------------------------------------------------------------------
 
-Covariance::Covariance(const eckit::mpi::Comm & comm,
-       const oops::GeometryData & geometryData,
-       const std::vector<size_t> & activeVariableSizes,
-       const eckit::Configuration & conf,
-       const atlas::FieldSet & xb,
-       const atlas::FieldSet & fg,
-       const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberCentralBlockBase(conf), gsiGridFuncSpace_(geometryData.functionSpace())
+Covariance::Covariance(const oops::GeometryData & geometryData,
+                       const std::vector<size_t> & activeVariableSizes,
+                       const oops::Variables & inoutVars,
+                       const Parameters_ & params,
+                       const atlas::FieldSet & xb,
+                       const atlas::FieldSet & fg,
+                       const std::vector<atlas::FieldSet> & fsetVec)
+  : variables_(params.activeVars.value().get_value_or(inoutVars).variables()),
+    gsiGridFuncSpace_(geometryData.functionSpace())
 {
   oops::Log::trace() << classname() << "::Covariance starting" << std::endl;
   util::Timer timer(classname(), "Covariance");
 
-  // Deserialize configuration
-  CovarianceParameters params;
-  params.validateAndDeserialize(conf);
-
-  // Object wide copy of the variables
-  variables_ = params.inoutVars.value().variables();
-
   // Create covariance module
-  gsi_covariance_create_f90(keySelf_, comm, params.toConfiguration(), xb.get(), fg.get());
+  gsi_covariance_create_f90(keySelf_, geometryData.comm(), params.toConfiguration(), xb.get(),
+    fg.get());
 
   oops::Log::trace() << classname() << "::Covariance done" << std::endl;
 }

@@ -34,11 +34,6 @@
 #include "saber/oops/SaberOuterBlockBase.h"
 #include "saber/oops/SaberOuterBlockParametersBase.h"
 
-namespace eckit {
-  class LocalConfiguration;
-  class Configuration;
-}
-
 namespace oops {
   class Variables;
 }
@@ -132,23 +127,9 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
       const SaberOuterBlockParametersBase & saberOuterBlockParams =
         saberOuterBlockParamWrapper.saberOuterBlockParameters;
 
-      // Local configuration to add parameters
-      eckit::LocalConfiguration outerConf;
-      saberOuterBlockParams.serialize(outerConf);
-      outerConf.set("output variables", outputVars.variables());
-
-      // Define active variables
-      oops::Variables activeVars;
-      const boost::optional<oops::Variables> &optionalActiveVars =
-        saberOuterBlockParams.activeVars.value();
-      if (optionalActiveVars != boost::none) {
-         // Active variables specified
-         activeVars = *optionalActiveVars;
-      } else {
-         // No active variables specified, assuming they are the same as output variables
-         activeVars = outputVars;
-         outerConf.set("active variables", activeVars.variables());
-      }
+      // Get active variables
+      oops::Variables activeVars =
+        saberOuterBlockParams.activeVars.value().get_value_or(outputVars);
 
       // Read input fields (on model increment geometry)
       std::vector<atlas::FieldSet> fsetVec = readInputFields(
@@ -160,10 +141,11 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
       // Create outer block
       oops::Log::info() << "Creating outer block: " << saberOuterBlockParams.saberBlockName.value()
                         << std::endl;
-      saberOuterBlocks_.push_back(SaberOuterBlockFactory::create(geom.getComm(),
+      saberOuterBlocks_.push_back(SaberOuterBlockFactory::create(
                                   outputGeometryData_.back().get(),
                                   geom.variableSizes(activeVars),
-                                  outerConf,
+                                  outputVars,
+                                  saberOuterBlockParams,
                                   xbLocal.fieldSet(),
                                   fgLocal.fieldSet(),
                                   fsetVec));
@@ -196,23 +178,8 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
   // Define input/output variables
   oops::Variables inoutVars = outputVars;
 
-  // Local configuration to add parameters
-  eckit::LocalConfiguration centralConf;
-  saberCentralBlockParams.serialize(centralConf);
-  centralConf.set("inout variables", inoutVars.variables());
-
-  // Define active variables
-  oops::Variables activeVars;
-  const boost::optional<oops::Variables> &optionalActiveVars =
-    saberCentralBlockParams.activeVars.value();
-  if (optionalActiveVars != boost::none) {
-     // Active variables specified
-     activeVars = *optionalActiveVars;
-  } else {
-     // No active variables specified, assuming they are the same as output variables
-     activeVars = inoutVars;
-     centralConf.set("active variables", activeVars.variables());
-  }
+  // Get active variables
+  oops::Variables activeVars = saberCentralBlockParams.activeVars.value().get_value_or(outputVars);
 
   // Read input fields (on model increment geometry)
   std::vector<atlas::FieldSet> fsetVec = readInputFields(
@@ -222,10 +189,11 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
     saberCentralBlockParams.inputFields.value());
 
   // Create central block
-  saberCentralBlock_.reset(SaberCentralBlockFactory::create(geom.getComm(),
+  saberCentralBlock_.reset(SaberCentralBlockFactory::create(
                            outputGeometryData_.back().get(),
                            geom.variableSizes(activeVars),
-                           centralConf,
+                           inoutVars,
+                           saberCentralBlockParams,
                            xbLocal.fieldSet(),
                            fgLocal.fieldSet(),
                            fsetVec));

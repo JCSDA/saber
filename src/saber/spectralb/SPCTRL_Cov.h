@@ -46,13 +46,13 @@ class SPCTRL_COV : public SaberCentralBlockBase {
 
   typedef SPCTRL_COVParameters Parameters_;
 
-  SPCTRL_COV(const eckit::mpi::Comm &,
-     const oops::GeometryData &,
-     const std::vector<size_t> &,
-     const eckit::Configuration &,
-     const atlas::FieldSet &,
-     const atlas::FieldSet &,
-     const std::vector<atlas::FieldSet> &);
+  SPCTRL_COV(const oops::GeometryData &,
+             const std::vector<size_t> &,
+             const oops::Variables &,
+             const Parameters_ &,
+             const atlas::FieldSet &,
+             const atlas::FieldSet &,
+             const std::vector<atlas::FieldSet> &);
   virtual ~SPCTRL_COV();
 
   void randomize(atlas::FieldSet &) const override;

@@ -6,7 +6,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "saber/gsi/grid/GSI_Grid.h"
+#include "saber/gsi/grid/Grid.h"
 
 #include <memory>
 #include <string>
@@ -18,7 +18,7 @@
 #include "oops/util/Logger.h"
 #include "oops/util/Timer.h"
 
-#include "saber/gsi/grid/GSI_Grid.interface.h"
+#include "saber/gsi/grid/Grid.interface.h"
 
 namespace saber {
 namespace gsi {

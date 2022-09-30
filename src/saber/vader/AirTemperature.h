@@ -21,42 +21,37 @@
 
 #include "saber/oops/SaberOuterBlockBase.h"
 #include "saber/oops/SaberOuterBlockParametersBase.h"
-#include "saber/vader/HydrostaticExnerParameters.h"
 
 namespace oops {
   class Variables;
 }
 
 namespace saber {
+namespace vader {
 
 // -----------------------------------------------------------------------------
-class HydrostaticExnerSaberBlockParameters : public SaberOuterBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(HydrostaticExnerSaberBlockParameters, SaberOuterBlockParametersBase)
+
+class AirTemperatureParameters : public SaberOuterBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(AirTemperatureParameters, SaberOuterBlockParametersBase)
  public:
-  oops::RequiredParameter<hydrostaticexnerParameters>
-    hydrostaticexnerParams{"covariance data", this};
 };
 
 // -----------------------------------------------------------------------------
-// This saber block is here to do 3 jobs
-// 1) the vertical regression on geostrophic pressure
-// 2) summing the result with unbalanced pressure to create hydrostatic_pressure
-// 3) converting hydrostatic pressure to exner pressure.
-// -----------------------------------------------------------------------------
-class HydrostaticExnerSaberBlock : public SaberOuterBlockBase {
+
+class AirTemperature : public SaberOuterBlockBase {
  public:
-  static const std::string classname() {return "saber::HydrostaticExnerSaberBlock";}
+  static const std::string classname() {return "saber::vader::AirTemperature";}
 
-  typedef HydrostaticExnerSaberBlockParameters Parameters_;
+  typedef AirTemperatureParameters Parameters_;
 
-  HydrostaticExnerSaberBlock(const eckit::mpi::Comm &,
-         const oops::GeometryData &,
-         const std::vector<size_t> &,
-         const eckit::Configuration &,
-         const atlas::FieldSet &,
-         const atlas::FieldSet &,
-         const std::vector<atlas::FieldSet> &);
-  virtual ~HydrostaticExnerSaberBlock();
+  AirTemperature(const oops::GeometryData &,
+                 const std::vector<size_t> &,
+                 const oops::Variables &,
+                 const Parameters_ &,
+                 const atlas::FieldSet &,
+                 const atlas::FieldSet &,
+                 const std::vector<atlas::FieldSet> &);
+  virtual ~AirTemperature();
 
   const oops::GeometryData & inputGeometryData() const override {return inputGeometryData_;}
   const oops::Variables & inputVars() const override {return inputVars_;}
@@ -69,10 +64,10 @@ class HydrostaticExnerSaberBlock : public SaberOuterBlockBase {
   void print(std::ostream &) const override;
   const oops::GeometryData & inputGeometryData_;
   oops::Variables inputVars_;
-  atlas::FieldSet covFieldSet_;
   atlas::FieldSet augmentedStateFieldSet_;
 };
 
 // -----------------------------------------------------------------------------
 
+}  // namespace vader
 }  // namespace saber

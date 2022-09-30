@@ -128,23 +128,9 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         const SaberOuterBlockParametersBase & saberOuterBlockParams =
           saberOuterBlockParamWrapper.saberOuterBlockParameters;
 
-        // Local configuration to add parameters
-        eckit::LocalConfiguration outerConf;
-        saberOuterBlockParams.serialize(outerConf);
-        outerConf.set("output variables", outputVars.variables());
-
-        // Define active variables
-        oops::Variables activeVars;
-        const boost::optional<oops::Variables> &optionalActiveVars =
-          saberOuterBlockParams.activeVars.value();
-        if (optionalActiveVars != boost::none) {
-           // Active variables specified
-           activeVars = *optionalActiveVars;
-        } else {
-           // No active variables specified, assuming they are the same as output variables
-           activeVars = outputVars;
-           outerConf.set("active variables", activeVars.variables());
-        }
+        // Get active variables
+        oops::Variables activeVars =
+          saberOuterBlockParams.activeVars.value().get_value_or(outputVars);
 
         // Read input fields (on model increment geometry)
         std::vector<atlas::FieldSet> fsetVec = readInputFields(
@@ -156,10 +142,11 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         // Create outer block
         oops::Log::info() << "Creating outer block: "
                           << saberOuterBlockParams.saberBlockName.value() << std::endl;
-        saberOuterBlocks_.push_back(SaberOuterBlockFactory::create(geom.getComm(),
+        saberOuterBlocks_.push_back(SaberOuterBlockFactory::create(
                                     outputGeometryData_.back().get(),
                                     geom.variableSizes(activeVars),
-                                    outerConf,
+                                    outputVars,
+                                    saberOuterBlockParams,
                                     xbLocal.fieldSet(),
                                     fgLocal.fieldSet(),
                                     fsetVec));
@@ -209,11 +196,13 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         // Compute adjoint test
         const double dp1 = dot_product(inputFset, outputFsetSave, geom.getComm());
         const double dp2 = dot_product(outputFset, inputFsetSave, geom.getComm());
-        oops::Log::info() << "Adjoint test for outer block " << saberOuterBlocks_.back().name()
+        oops::Log::info() << "Adjoint test for outer block "
+                          << saberOuterBlockParams.saberBlockName.value()
                           << ": y^t (Ax) = " << dp1 << ": x^t (Ay) = " << dp2 << std::endl;
         ASSERT(abs(dp1) > 0.0);
         ASSERT(abs(dp2) > 0.0);
-        oops::Log::test() << "Adjoint test for outer block " << saberOuterBlocks_.back().name();
+        oops::Log::test() << "Adjoint test for outer block "
+                          << saberOuterBlockParams.saberBlockName.value();
         if (0.5*abs(dp1-dp2)/(dp1+dp2) < params.adjointTolerance.value()) {
           oops::Log::test() << " passed" << std::endl;
         } else {
@@ -237,23 +226,9 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       // Define input/output variables
       oops::Variables inoutVars = outputVars;
 
-      // Local configuration to add parameters
-      eckit::LocalConfiguration centralConf;
-      saberCentralBlockParams.serialize(centralConf);
-      centralConf.set("inout variables", inoutVars.variables());
-
-      // Define active variables
-      oops::Variables activeVars;
-      const boost::optional<oops::Variables> &optionalActiveVars =
-        saberCentralBlockParams.activeVars.value();
-      if (optionalActiveVars != boost::none) {
-         // Active variables specified
-         activeVars = *optionalActiveVars;
-      } else {
-         // No active variables specified, assuming they are the same as output variables
-         activeVars = inoutVars;
-         centralConf.set("active variables", activeVars.variables());
-      }
+      // Get active variables
+      oops::Variables activeVars =
+        saberCentralBlockParams.activeVars.value().get_value_or(outputVars);
 
       // Read input fields (on model increment geometry)
       std::vector<atlas::FieldSet> fsetVec = readInputFields(
@@ -263,10 +238,11 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         saberCentralBlockParams.inputFields.value());
 
       // Create central block
-      saberCentralBlock_.reset(SaberCentralBlockFactory::create(geom.getComm(),
+      saberCentralBlock_.reset(SaberCentralBlockFactory::create(
                                outputGeometryData_.back().get(),
                                geom.variableSizes(activeVars),
-                               centralConf,
+                               inoutVars,
+                               saberCentralBlockParams,
                                xbLocal.fieldSet(),
                                fgLocal.fieldSet(),
                                fsetVec));
@@ -306,11 +282,13 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       // Compute adjoint test
       const double dp1 = dot_product(inputFset, outputFsetSave, geom.getComm());
       const double dp2 = dot_product(outputFset, inputFsetSave, geom.getComm());
-      oops::Log::info() << "Adjoint test for central block " << saberCentralBlock_->name()
+      oops::Log::info() << "Adjoint test for central block "
+                        << saberCentralBlockParams.saberBlockName.value()
                         << ": y^t (Ax) = " << dp1 << ": x^t (Ay) = " << dp2 << std::endl;
       ASSERT(abs(dp1) > 0.0);
       ASSERT(abs(dp2) > 0.0);
-      oops::Log::test() << "Adjoint test for central block " << saberCentralBlock_->name();
+      oops::Log::test() << "Adjoint test for central block "
+                        << saberCentralBlockParams.saberBlockName.value();
       if (0.5*abs(dp1-dp2)/(dp1+dp2) < params.adjointTolerance.value()) {
         oops::Log::test() << " passed" << std::endl;
       } else {

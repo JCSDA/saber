@@ -15,12 +15,10 @@
 #include "atlas/field.h"
 #include "atlas/functionspace.h"
 
-#include "saber/vader/HydrostaticExnerParameters.h"
-#include "saber/vader/MoistureControlParameters.h"
-
 #include "oops/base/Variables.h"
 
 namespace saber {
+namespace vader {
 
 atlas::Field createGpRegressionMatrices(const std::string &,
                                         const std::size_t,
@@ -36,17 +34,8 @@ atlas::Field createGpRegressionWeights(const atlas::FunctionSpace &,
                                        const std::size_t,
                                        const std::size_t);
 
-atlas::FieldSet createGpRegressionStats(const atlas::FunctionSpace &,
-                                        const atlas::FieldSet &,
-                                        const std::vector<size_t> &,
-                                        const oops::Variables &,
-                                        const hydrostaticexnerParameters &);
-
-atlas::FieldSet createMuStats(const atlas::FieldSet &,
-                              const moisturecontrolParameters &);
-
-
 void populateInterpMuStats(atlas::FieldSet &,
                            const atlas::Field &);
 
+}  // namespace vader
 }  // namespace saber

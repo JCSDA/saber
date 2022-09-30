@@ -33,24 +33,23 @@ static SaberCentralBlockMaker<SPNOINTERP_COV>  makerSPNOINTERP_COV_("SPNOINTERP_
 
 // -----------------------------------------------------------------------------
 
-SPNOINTERP_COV::SPNOINTERP_COV(const eckit::mpi::Comm & comm,
-       const oops::GeometryData & geometryData,
-       const std::vector<size_t> & activeVariableSizes,
-       const eckit::Configuration & conf,
-       const atlas::FieldSet & xb,
-       const atlas::FieldSet & fg,
-       const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberCentralBlockBase(conf), spectralb_()
+SPNOINTERP_COV::SPNOINTERP_COV(const oops::GeometryData & geometryData,
+                               const std::vector<size_t> & activeVariableSizes,
+                               const oops::Variables & inoutVars,
+                               const Parameters_ & params,
+                               const atlas::FieldSet & xb,
+                               const atlas::FieldSet & fg,
+                               const std::vector<atlas::FieldSet> & fsetVec)
+  : spectralb_()
 {
   oops::Log::trace() << classname() << "::SPNOINTERP_COV starting" << std::endl;
 
-  // Deserialize configuration
-  SPNOINTERP_COVParameters params;
-  params.validateAndDeserialize(conf);
+  // Get active variables
+  oops::Variables activeVars = params.activeVars.value().get_value_or(inoutVars);
 
   // Initialize SpectralBNoInterp
   spectralb_.reset(new SpectralBNoInterp(activeVariableSizes,
-                                         *params.activeVars.value(),
+                                         activeVars,
                                          params.spectralbParams.value()));
 
   oops::Log::trace() << classname() << "::SPNOINTERP_COV done" << std::endl;

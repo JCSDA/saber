@@ -27,9 +27,6 @@
 #include "oops/util/Logger.h"
 #include "oops/util/missingValues.h"
 
-#include "saber/bump/BUMP_Parameters.h"
-#include "saber/bump/type_bump.h"
-
 namespace eckit {
   class Configuration;
 }
@@ -39,6 +36,7 @@ namespace oops {
 }
 
 namespace saber {
+namespace bump {
 
 // -----------------------------------------------------------------------------
 
@@ -47,7 +45,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
            const atlas::FieldSet & extraFields1,
            const std::vector<size_t> & variableSizes1,
            const oops::Variables & activeVars,
-           const BUMP_Parameters & params,
+           const BUMPParameters & params,
            const std::vector<atlas::FieldSet> & fsetVec1,
            const atlas::FunctionSpace & functionSpace2,
            const atlas::FieldSet & extraFields2,
@@ -472,4 +470,5 @@ void BUMP::partialDealloc() const {
 
 // -----------------------------------------------------------------------------
 
+}  // namespace bump
 }  // namespace saber

@@ -34,11 +34,6 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-SaberCentralBlockBase::SaberCentralBlockBase(const eckit::Configuration & conf)
-  : name_(conf.getString("saber block name")) {}
-
-// -----------------------------------------------------------------------------
-
 SaberCentralBlockFactory::SaberCentralBlockFactory(const std::string & name) {
   if (getMakers().find(name) != getMakers().end()) {
     oops::Log::error() << name << " already registered in saber::SaberCentralBlockFactory."
@@ -51,22 +46,22 @@ SaberCentralBlockFactory::SaberCentralBlockFactory(const std::string & name) {
 // -----------------------------------------------------------------------------
 
 SaberCentralBlockBase * SaberCentralBlockFactory::create(
-  const eckit::mpi::Comm & comm,
   const oops::GeometryData & geometryData,
   const std::vector<size_t> & activeVariableSizes,
-  const eckit::Configuration & conf,
+  const oops::Variables & vars,
+  const SaberCentralBlockParametersBase & params,
   const atlas::FieldSet & xb,
   const atlas::FieldSet & fg,
   const std::vector<atlas::FieldSet> & fsetVec) {
   oops::Log::trace() << "SaberCentralBlockBase::create starting" << std::endl;
-  const std::string id = conf.getString("saber block name");
+  const std::string id = params.saberBlockName;
   typename std::map<std::string, SaberCentralBlockFactory*>::iterator jsb = getMakers().find(id);
   if (jsb == getMakers().end()) {
     oops::Log::error() << id << " does not exist in saber::SaberCentralBlockFactory." << std::endl;
     ABORT("Element does not exist in saber::SaberCentralBlockFactory.");
   }
-  SaberCentralBlockBase * ptr = jsb->second->make(comm, geometryData, activeVariableSizes, conf,
-                                                  xb, fg, fsetVec);
+  SaberCentralBlockBase * ptr = jsb->second->make(geometryData, activeVariableSizes, vars,
+                                                  params, xb, fg, fsetVec);
   oops::Log::trace() << "SaberCentralBlockBase::create done" << std::endl;
   return ptr;
 }

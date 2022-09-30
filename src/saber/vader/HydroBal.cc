@@ -5,7 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "saber/vader/HydroBalSaberBlock.h"
+#include "saber/vader/HydroBal.h"
 
 #include <memory>
 #include <string>
@@ -33,31 +33,24 @@ namespace oops {
 }
 
 namespace saber {
+namespace vader {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<HydroBalSaberBlock>
-       makerHydroBalSaberBlock_("mo_hydro_bal");
+static SaberOuterBlockMaker<HydroBal> makerHydroBal_("mo_hydro_bal");
 
 // -----------------------------------------------------------------------------
 
-HydroBalSaberBlock::HydroBalSaberBlock(const eckit::mpi::Comm & comm,
-               const oops::GeometryData & outputGeometryData,
-               const std::vector<size_t> & activeVariableSizes,
-               const eckit::Configuration & conf,
-               const atlas::FieldSet & xb,
-               const atlas::FieldSet & fg,
-               const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberOuterBlockBase(conf), inputGeometryData_(outputGeometryData), augmentedStateFieldSet_()
+HydroBal::HydroBal(const oops::GeometryData & outputGeometryData,
+                   const std::vector<size_t> & activeVariableSizes,
+                   const oops::Variables & outputVars,
+                   const Parameters_ & params,
+                   const atlas::FieldSet & xb,
+                   const atlas::FieldSet & fg,
+                   const std::vector<atlas::FieldSet> & fsetVec)
+  : inputGeometryData_(outputGeometryData), inputVars_(outputVars), augmentedStateFieldSet_()
 {
-  oops::Log::trace() << classname() << "::HydroBalSaberBlock starting" << std::endl;
-
-  // Deserialize configuration
-  HydroBalSaberBlockParameters params;
-  params.deserialize(conf);
-
-  // Input variables
-  inputVars_ = params.outputVars.value();
+  oops::Log::trace() << classname() << "::HydroBal starting" << std::endl;
 
   std::vector<std::string> requiredStateVariables{
     "air_temperature",
@@ -78,7 +71,7 @@ HydroBalSaberBlock::HydroBalSaberBlock(const eckit::mpi::Comm & comm,
   // Use meta data to see if they are populated with actual data.
   for (auto & s : requiredStateVariables) {
     if (!xb.has_field(s)) {
-      oops::Log::info() << "HydroBalSaberBlock variable " << s <<
+      oops::Log::info() << "HydroBal variable " << s <<
                            " is not part of state object." << std::endl;
     }
   }
@@ -111,20 +104,20 @@ HydroBalSaberBlock::HydroBalSaberBlock(const eckit::mpi::Comm & comm,
     std::cout << "norm state fld :: " << fld.name() << " " << zz << std::endl;
   }
 
-  oops::Log::trace() << classname() << "::HydroBalSaberBlock done" << std::endl;
+  oops::Log::trace() << classname() << "::HydroBal done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-HydroBalSaberBlock::~HydroBalSaberBlock() {
-  oops::Log::trace() << classname() << "::~HydroBalSaberBlock starting" << std::endl;
-  util::Timer timer(classname(), "~HydroBalSaberBlock");
-  oops::Log::trace() << classname() << "::~HydroBalSaberBlock done" << std::endl;
+HydroBal::~HydroBal() {
+  oops::Log::trace() << classname() << "::~HydroBal starting" << std::endl;
+  util::Timer timer(classname(), "~HydroBal");
+  oops::Log::trace() << classname() << "::~HydroBal done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void HydroBalSaberBlock::multiply(atlas::FieldSet & fset) const {
+void HydroBal::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
 
   for (auto & fld : fset) {
@@ -157,7 +150,7 @@ void HydroBalSaberBlock::multiply(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void HydroBalSaberBlock::multiplyAD(atlas::FieldSet & fset) const {
+void HydroBal::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
   mo::hexner2ThetavAD(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
@@ -165,7 +158,7 @@ void HydroBalSaberBlock::multiplyAD(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void HydroBalSaberBlock::calibrationInverseMultiply(atlas::FieldSet & fset) const {
+void HydroBal::calibrationInverseMultiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::calibrationInverseMultiply starting" << std::endl;
   mo::thetavP2HexnerAD(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::calibrationInverseMultiply done" << std::endl;
@@ -173,10 +166,11 @@ void HydroBalSaberBlock::calibrationInverseMultiply(atlas::FieldSet & fset) cons
 
 // -----------------------------------------------------------------------------
 
-void HydroBalSaberBlock::print(std::ostream & os) const {
+void HydroBal::print(std::ostream & os) const {
   os << classname();
 }
 
 // -----------------------------------------------------------------------------
 
+}  // namespace vader
 }  // namespace saber

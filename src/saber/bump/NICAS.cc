@@ -5,7 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "saber/bump/BUMP_NICAS.h"
+#include "saber/bump/NICAS.h"
 
 #include <memory>
 #include <string>
@@ -26,34 +26,34 @@ namespace oops {
 }
 
 namespace saber {
+namespace bump {
 
 // -----------------------------------------------------------------------------
 
-static SaberCentralBlockMaker<BUMP_NICAS> makerBUMP_NICAS_("BUMP_NICAS");
+static SaberCentralBlockMaker<NICAS> makerNICAS_("BUMP_NICAS");
 
 // -----------------------------------------------------------------------------
 
-BUMP_NICAS::BUMP_NICAS(const eckit::mpi::Comm & comm,
-       const oops::GeometryData & geometryData,
-       const std::vector<size_t> & activeVariableSizes,
-       const eckit::Configuration & conf,
-       const atlas::FieldSet & xb,
-       const atlas::FieldSet & fg,
-       const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberCentralBlockBase(conf), bump_()
+NICAS::NICAS(const oops::GeometryData & geometryData,
+                       const std::vector<size_t> & activeVariableSizes,
+                       const oops::Variables & inoutVars,
+                       const Parameters_ & params,
+                       const atlas::FieldSet & xb,
+                       const atlas::FieldSet & fg,
+                       const std::vector<atlas::FieldSet> & fsetVec)
+  : bump_()
 {
-  oops::Log::trace() << classname() << "::BUMP_NICAS starting" << std::endl;
+  oops::Log::trace() << classname() << "::NICAS starting" << std::endl;
 
-  // Deserialize configuration
-  BUMP_NICASParameters params;
-  params.validateAndDeserialize(conf);
+  // Get active variables
+  oops::Variables activeVars = params.activeVars.value().get_value_or(inoutVars);
 
   // Initialize BUMP
-  bump_.reset(new BUMP(comm,
+  bump_.reset(new BUMP(geometryData.comm(),
                        geometryData.functionSpace(),
                        geometryData.fieldSet(),
                        activeVariableSizes,
-                       *params.activeVars.value(),
+                       activeVars,
                        params.bumpParams.value(),
                        fsetVec));
 
@@ -63,20 +63,20 @@ BUMP_NICAS::BUMP_NICAS(const eckit::mpi::Comm & comm,
   // Partial deallocation
   bump_->partialDealloc();
 
-  oops::Log::trace() << classname() << "::BUMP_NICAS done" << std::endl;
+  oops::Log::trace() << classname() << "::NICAS done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-BUMP_NICAS::~BUMP_NICAS() {
-  oops::Log::trace() << classname() << "::~BUMP_NICAS starting" << std::endl;
-  util::Timer timer(classname(), "~BUMP_NICAS");
-  oops::Log::trace() << classname() << "::~BUMP_NICAS done" << std::endl;
+NICAS::~NICAS() {
+  oops::Log::trace() << classname() << "::~NICAS starting" << std::endl;
+  util::Timer timer(classname(), "~NICAS");
+  oops::Log::trace() << classname() << "::~NICAS done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void BUMP_NICAS::randomize(atlas::FieldSet & fset) const {
+void NICAS::randomize(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::randomize starting" << std::endl;
   bump_->randomizeNicas(fset);
   oops::Log::trace() << classname() << "::randomize done" << std::endl;
@@ -84,7 +84,7 @@ void BUMP_NICAS::randomize(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void BUMP_NICAS::multiply(atlas::FieldSet & fset) const {
+void NICAS::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   bump_->multiplyNicas(fset);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
@@ -92,10 +92,11 @@ void BUMP_NICAS::multiply(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void BUMP_NICAS::print(std::ostream & os) const {
+void NICAS::print(std::ostream & os) const {
   os << classname();
 }
 
 // -----------------------------------------------------------------------------
 
+}  // namespace bump
 }  // namespace saber

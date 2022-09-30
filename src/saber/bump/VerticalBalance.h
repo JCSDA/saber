@@ -26,32 +26,33 @@ namespace oops {
 }
 
 namespace saber {
+namespace bump {
 
 // -----------------------------------------------------------------------------
 
-class BUMP_VerticalBalanceParameters : public SaberOuterBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(BUMP_VerticalBalanceParameters, SaberOuterBlockParametersBase)
+class VerticalBalanceParameters : public SaberOuterBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(VerticalBalanceParameters, SaberOuterBlockParametersBase)
 
  public:
-  oops::RequiredParameter<BUMP_Parameters> bumpParams{"bump", this};
+  oops::RequiredParameter<BUMPParameters> bumpParams{"bump", this};
 };
 
 // -----------------------------------------------------------------------------
 
-class BUMP_VerticalBalance : public SaberOuterBlockBase {
+class VerticalBalance : public SaberOuterBlockBase {
  public:
-  static const std::string classname() {return "saber::BUMP_VerticalBalance";}
+  static const std::string classname() {return "saber::bump::VerticalBalance";}
 
-  typedef BUMP_VerticalBalanceParameters Parameters_;
+  typedef VerticalBalanceParameters Parameters_;
 
-  BUMP_VerticalBalance(const eckit::mpi::Comm &,
-         const oops::GeometryData &,
-         const std::vector<size_t> &,
-         const eckit::Configuration &,
-         const atlas::FieldSet &,
-         const atlas::FieldSet &,
-         const std::vector<atlas::FieldSet> &);
-  virtual ~BUMP_VerticalBalance();
+  VerticalBalance(const oops::GeometryData &,
+                  const std::vector<size_t> &,
+                  const oops::Variables &,
+                  const Parameters_ &,
+                  const atlas::FieldSet &,
+                  const atlas::FieldSet &,
+                  const std::vector<atlas::FieldSet> &);
+  virtual ~VerticalBalance();
 
   const oops::GeometryData & inputGeometryData() const override {return inputGeometryData_;}
   const oops::Variables & inputVars() const override {return inputVars_;}
@@ -69,4 +70,5 @@ class BUMP_VerticalBalance : public SaberOuterBlockBase {
 
 // -----------------------------------------------------------------------------
 
+}  // namespace bump
 }  // namespace saber

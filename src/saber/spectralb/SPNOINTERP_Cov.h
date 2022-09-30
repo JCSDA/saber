@@ -42,17 +42,17 @@ class SPNOINTERP_COVParameters : public SaberCentralBlockParametersBase {
 
 class SPNOINTERP_COV : public SaberCentralBlockBase {
  public:
-  static const std::string classname() {return "saber::lfricspectralb::SPNOINTERP_COV";}
+  static const std::string classname() {return "saber::spectralb::SPNOINTERP_COV";}
 
   typedef SPNOINTERP_COVParameters Parameters_;
 
-  SPNOINTERP_COV(const eckit::mpi::Comm &,
-     const oops::GeometryData &,
-     const std::vector<size_t> &,
-     const eckit::Configuration &,
-     const atlas::FieldSet &,
-     const atlas::FieldSet &,
-     const std::vector<atlas::FieldSet> &);
+  SPNOINTERP_COV(const oops::GeometryData &,
+                 const std::vector<size_t> &,
+                 const oops::Variables &,
+                 const Parameters_ &,
+                 const atlas::FieldSet &,
+                 const atlas::FieldSet &,
+                 const std::vector<atlas::FieldSet> &);
   virtual ~SPNOINTERP_COV();
 
   void randomize(atlas::FieldSet &) const override;

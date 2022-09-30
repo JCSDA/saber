@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2021 UCAR
+ * (C) Crown Copyright 2022 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -12,13 +12,13 @@
 #include <vector>
 
 #include "atlas/field.h"
+#include "atlas/functionspace.h"
 
-#include "oops/base/Geometry.h"
+#include "eckit/exception/Exceptions.h"
+
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
-#include "saber/bump/BUMP.h"
-#include "saber/bump/BUMP_Parameters.h"
 #include "saber/oops/SaberOuterBlockBase.h"
 #include "saber/oops/SaberOuterBlockParametersBase.h"
 
@@ -27,33 +27,30 @@ namespace oops {
 }
 
 namespace saber {
+namespace vader {
 
 // -----------------------------------------------------------------------------
 
-class BUMP_StdDevParameters : public SaberOuterBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(BUMP_StdDevParameters, SaberOuterBlockParametersBase)
-
- public:
-  oops::RequiredParameter<BUMP_Parameters> bumpParams{"bump", this};
+class HydroBalParameters : public SaberOuterBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(HydroBalParameters, SaberOuterBlockParametersBase)
 };
 
 // -----------------------------------------------------------------------------
 
-
-class BUMP_StdDev : public SaberOuterBlockBase {
+class HydroBal : public SaberOuterBlockBase {
  public:
-  static const std::string classname() {return "saber::BUMP_StdDev";}
+  static const std::string classname() {return "saber::vader::HydroBal";}
 
-  typedef BUMP_StdDevParameters Parameters_;
+  typedef HydroBalParameters Parameters_;
 
-  BUMP_StdDev(const eckit::mpi::Comm &,
-         const oops::GeometryData &,
-         const std::vector<size_t> &,
-         const eckit::Configuration &,
-         const atlas::FieldSet &,
-         const atlas::FieldSet &,
-         const std::vector<atlas::FieldSet> &);
-  virtual ~BUMP_StdDev();
+  HydroBal(const oops::GeometryData &,
+           const std::vector<size_t> &,
+           const oops::Variables &,
+           const Parameters_ &,
+           const atlas::FieldSet &,
+           const atlas::FieldSet &,
+           const std::vector<atlas::FieldSet> &);
+  virtual ~HydroBal();
 
   const oops::GeometryData & inputGeometryData() const override {return inputGeometryData_;}
   const oops::Variables & inputVars() const override {return inputVars_;}
@@ -66,9 +63,10 @@ class BUMP_StdDev : public SaberOuterBlockBase {
   void print(std::ostream &) const override;
   const oops::GeometryData & inputGeometryData_;
   oops::Variables inputVars_;
-  std::unique_ptr<BUMP> bump_;
+  atlas::FieldSet augmentedStateFieldSet_;
 };
 
 // -----------------------------------------------------------------------------
 
+}  // namespace vader
 }  // namespace saber
