@@ -76,7 +76,7 @@ MoistIncrOp::MoistIncrOp(const oops::GeometryData & outputGeometryData,
   // Check that they are allocated (i.e. exist in the state fieldset)
   // Use meta data to see if they are populated with actual data.
   for (auto & s : requiredStateVariables) {
-    if (!xb.has_field(s)) {
+    if (!xb.has(s)) {
       oops::Log::info() << "MoistIncrOp variable " << s <<
                            " is not part of state object." << std::endl;
     }

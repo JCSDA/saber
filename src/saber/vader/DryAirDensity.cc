@@ -63,7 +63,7 @@ DryAirDensity::DryAirDensity(const oops::GeometryData & outputGeometryData,
 
   // Check that they are allocated (i.e. exist in the state fieldset)
   for (auto & s : requiredStateVariables) {
-    if (!xb.has_field(s)) {
+    if (!xb.has(s)) {
       oops::Log::error() << "::DryAirDensity variable " << s <<
                             "is not part of state object." << std::endl;
     }

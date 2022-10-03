@@ -428,7 +428,7 @@ void Fields::diff(const Fields & x1, const Fields & x2) {
 void Fields::toFieldSet(atlas::FieldSet & fset) const {
   oops::Log::trace() << "Fields::toFieldSet starting" << std::endl;
   for (auto var : vars_.variables()) {
-    if (fset_.has_field(var)) {
+    if (fset_.has(var)) {
       fset->add(fset_[var]);
       atlas::Field field_input = fset_[var];
       atlas::Field field_local = fset[var];
@@ -451,8 +451,8 @@ void Fields::fromFieldSet(const atlas::FieldSet & fset) {
   atlas::Field ghost = geom_->functionSpace().ghost();
   auto ghostView = atlas::array::make_view<int, 1>(ghost);
   for (auto var : vars_.variables()) {
-    if (fset_.has_field(var)) {
-      if (fset.has_field(var)) {
+    if (fset_.has(var)) {
+      if (fset.has(var)) {
         atlas::Field field_input = fset_[var];
         atlas::Field field_local = fset[var];
         auto view_input = atlas::array::make_view<double, 2>(field_input);

@@ -24,10 +24,10 @@ if( atlas_TRANS_FOUND )
     SpectralCovariance.h
     SpectralToGauss.cc
     SpectralToGauss.h
+    SpectralToGaussUV.cc
+    SpectralToGaussUV.h
     SPCTRL_Cov.cc
     SPCTRL_Cov.h
-    SPTOUV.cc
-    SPTOUV.h
     )
 endif()
 

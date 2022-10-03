@@ -244,7 +244,7 @@ void applyNtimesNplus1SpectralScaling(const oops::Variables & inputNames,
 }  //  namespace
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<SpectralToGaussUV> makerSpectralToGaussUV_("SpectralToGaussUV");
+static SaberOuterBlockMaker<SpectralToGaussUV> makerSpectralToGaussUV_("spectral to gauss winds");
 
 // Build input functionspace from output functionspace
 // It is the output functionspace that is in the argument.
@@ -279,9 +279,6 @@ SpectralToGaussUV::SpectralToGaussUV(const oops::GeometryData & outputGeometryDa
                        outputGeometryData.levelsAreTopDown(), outputGeometryData.comm())
 {
   oops::Log::trace() << classname() << "::SpectralToGaussUV starting" << std::endl;
-
-  std::cout << "SpectralToGaussUV inputVars " << inputVars_.variables() << std::endl;
-
   oops::Log::trace() << classname() << "::SpectralToGaussUV done" << std::endl;
 }
 
@@ -305,8 +302,6 @@ void SpectralToGaussUV::multiply(atlas::FieldSet & fset) const {
   // by n(n+1) / a   and rename fields to vorticity_spectral_2D
   // divergence_spectral_2D
   const int N = specFunctionSpace_.truncation();
-
-  std::cout << "multiply spectral truncation = " << N << std::endl;
 
   if (inputVars_.has("streamfunction") && inputVars_.has("velocity_potential")) {
     applyNtimesNplus1SpectralScaling(
