@@ -49,33 +49,38 @@ class SPTOUV : public SaberOuterBlockBase {
 
   typedef SPTOUVParameters Parameters_;
 
-  SPTOUV(const eckit::mpi::Comm & comm,
-         const atlas::FunctionSpace &,
-         const atlas::FieldSet &,
+  SPTOUV(const oops::GeometryData &,
          const std::vector<std::size_t> &,
-         const eckit::Configuration & conf,
+         const oops::Variables &,
+         const Parameters_ &,
          const atlas::FieldSet &,
          const atlas::FieldSet &,
          const std::vector<atlas::FieldSet> &);
 
-  virtual ~SPTOUV();
+  virtual ~SPTOUV() = default;
+
+  const oops::GeometryData & inputGeometryData() const override {return inputGeometryData_;}
+  const oops::Variables & inputVars() const override {return inputVars_;}
 
   void multiply(atlas::FieldSet &) const override;
   void multiplyAD(atlas::FieldSet &) const override;
   void calibrationInverseMultiply(atlas::FieldSet &) const override;
 
  private:
-  Parameters_ params_;
-  atlas::FunctionSpace outputFunctionSpace_;
-  oops::Variables outputVars_;
-  oops::Variables innerVars_;
-  std::vector<std::size_t> activeVariableSizes_;
-  atlas::StructuredGrid gaussGrid_;
-  atlas::functionspace::Spectral specFS_;
-  atlas::FunctionSpace innerFunctionSpace_;
-  atlas::trans::Trans transFS_;
-
   void print(std::ostream &) const override;
+
+  Parameters_ params_;
+  oops::Variables inputVars_;
+  oops::Variables outputVars_;
+  std::vector<std::size_t> activeVariableSizes_;
+
+  /// Gaussian (output) functionspace
+  const atlas::functionspace::StructuredColumns gaussFunctionSpace_;
+  /// Spectral (input) functionspace
+  const atlas::functionspace::Spectral specFunctionSpace_;
+  /// Trans object for gaussian-spectral transforms
+  const atlas::trans::Trans trans_;
+  const oops::GeometryData inputGeometryData_;
 };
 
 }  // namespace spectralb

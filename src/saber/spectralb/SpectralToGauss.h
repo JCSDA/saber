@@ -68,7 +68,9 @@ class SpectralToGauss : public SaberOuterBlockBase {
   /// Trans object for gaussian-spectral transforms
   const atlas::trans::Trans trans_;
   const oops::GeometryData inputGeometryData_;
+
   oops::Variables inputVars_;
+
 };
 
 }  // namespace spectralb

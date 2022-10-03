@@ -3,7 +3,7 @@ geometry:
   grid:
     type : regular_gaussian
     N : 2
-  levels: 1
+  levels: 3
   partitioner: ectrans
   halo: 1
 variables: &vars [eastward_wind,northward_wind]

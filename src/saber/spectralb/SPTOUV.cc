@@ -31,17 +31,20 @@ namespace {
 
 atlas::Field allocateGaussUVField(
     const atlas::FunctionSpace & gaussFS,
-    const oops::Variables & activeVariables,
+    const oops::Variables & inputVariables,
     const std::vector<std::size_t> & activeVariableSizes) {
+
+  std::cout << "allocateGaussUVField::activeVariableSizes"
+            << activeVariableSizes.size() << std::endl;
 
   std::array<size_t, 2> indx{{0, 0}};
   std::array<size_t, 2> levels{{0, 0}};
-  if (activeVariables.has("vorticity") && activeVariables.has("divergence")) {
-    indx[0] = activeVariables.find("vorticity");
-    indx[1] = activeVariables.find("divergence");
-  } else if (activeVariables.has("streamfunction") && activeVariables.has("velocity_potential")) {
-    indx[0] = activeVariables.find("streamfunction");
-    indx[1] = activeVariables.find("velocity_potential");
+  if (inputVariables.has("vorticity") && inputVariables.has("divergence")) {
+    indx[0] = inputVariables.find("vorticity");
+    indx[1] = inputVariables.find("divergence");
+  } else if (inputVariables.has("streamfunction") && inputVariables.has("velocity_potential")) {
+    indx[0] = inputVariables.find("streamfunction");
+    indx[1] = inputVariables.find("velocity_potential");
   } else {
     // error trap
     oops::Log::error() << "ERROR - either vorticity and divergence "
@@ -81,6 +84,8 @@ atlas::FieldSet allocateSpectralVortDiv(
     const std::vector<std::size_t> & activeVariableSizes) {
   std::array<size_t, 2> indx;
   std::array<size_t, 2> levels;
+
+
   if (activeVariables.has("vorticity") && activeVariables.has("divergence")) {
     indx[0] = activeVariables.find("vorticity");
     indx[1] = activeVariables.find("divergence");
@@ -174,9 +179,9 @@ atlas::Field convertUVToFieldSetAD(const atlas::FieldSet & fset) {
 }
 
 
-oops::Variables createInputVars(const SPTOUVParameters & params) {
+oops::Variables createInputVars(const SPTOUVParameters & params,
+                                const oops::Variables & outputVars) {
   oops::Variables inputVars;
-  oops::Variables outputVars = params.outputVars.value();
 
   for (auto & var : outputVars.variables()) {
     if (var.compare("eastward_wind") == 0 || var.compare("northward_wind") == 0) {
@@ -193,20 +198,6 @@ oops::Variables createInputVars(const SPTOUVParameters & params) {
     inputVars.push_back("divergence");
   }
   return inputVars;
-}
-
-atlas::functionspace::Spectral
-    createSpectralFunctionSpace(const atlas::StructuredGrid & gaussGrid,
-                                const std::vector<std::size_t> & variableSizes) {
-  auto N = atlas::GaussianGrid(gaussGrid).N();
-  return  atlas::functionspace::Spectral(2*N-1,
-       atlas::option::levels(static_cast<atlas::idx_t>(variableSizes[0])));
-}
-
-SPTOUVParameters createSPTOUVParams(const eckit::Configuration & conf) {
-  SPTOUVParameters params;
-  params.deserialize(conf);
-  return params;
 }
 
 
@@ -235,7 +226,7 @@ void applyNtimesNplus1SpectralScaling(const oops::Variables & inputNames,
     int i(0);
     for (int jm = 0; jm < nb_zonal_wavenumbers; ++jm) {
       const int m1 = zonal_wavenumbers(jm);
-      for (std::size_t n1 = m1; n1 <= static_cast<std::size_t>(2 * totalWavenumber - 1); ++n1) {
+      for (std::size_t n1 = m1; n1 <= static_cast<std::size_t>(totalWavenumber); ++n1) {
         for (std::size_t img = 0; img < 2; ++img, ++i) {
           for (atlas::idx_t jl = 0; jl < fSet[inputNames[var]].levels(); ++jl) {
             fldView(i, jl) = n1 * (n1 + 1) *  fldView(i, jl) / a;
@@ -274,41 +265,28 @@ static SaberOuterBlockMaker<SPTOUV> makerSPTOUV_("SPTOUV");
 // "active variables" - now required in yaml
 // "input variables" - optional in yaml - input for the multiply
 //                   - sum active and passive variables
-SPTOUV::SPTOUV(const eckit::mpi::Comm & comm,
-               const atlas::FunctionSpace & outputFunctionSpace,
-               const atlas::FieldSet & outputExtraFields,
+SPTOUV::SPTOUV(const oops::GeometryData & outputGeometryData,
                const std::vector<size_t> & activeVariableSizes,
-               const eckit::Configuration & conf,
+               const oops::Variables & outputVars,
+               const Parameters_ & params,
                const atlas::FieldSet & xb,
                const atlas::FieldSet & fg,
                const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberOuterBlockBase(conf),
-    params_(createSPTOUVParams(conf)),
-    outputFunctionSpace_(atlas::FunctionSpace(outputFunctionSpace)),
-    outputVars_(params_.outputVars.value()),
-    innerVars_(createInputVars(params_)),
+  : params_(params),
+    inputVars_(createInputVars(params_, outputVars)),
+    outputVars_(outputVars),
     activeVariableSizes_(activeVariableSizes),
-    gaussGrid_(atlas::StructuredGrid(params_.gaussGridUid)),
-    specFS_(createSpectralFunctionSpace(gaussGrid_, activeVariableSizes)),
-    innerFunctionSpace_(atlas::FunctionSpace(specFS_)),
-    transFS_(atlas::trans::Trans(outputFunctionSpace_, innerFunctionSpace_))
-
+    gaussFunctionSpace_(outputGeometryData.functionSpace()),
+    specFunctionSpace_(2 * atlas::GaussianGrid(gaussFunctionSpace_.grid()).N() - 1),
+    trans_(gaussFunctionSpace_, specFunctionSpace_),
+    inputGeometryData_(specFunctionSpace_, outputGeometryData.fieldSet(),
+                       outputGeometryData.levelsAreTopDown(), outputGeometryData.comm())
 {
   oops::Log::trace() << classname() << "::SPTOUV starting" << std::endl;
-  inputFunctionSpace_ = innerFunctionSpace_;
-  inputVars_ = innerVars_;
-  inputExtraFields_ = outputExtraFields;
 
   std::cout << "SPTOUV inputVars " << inputVars_.variables() << std::endl;
 
   oops::Log::trace() << classname() << "::SPTOUV done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-SPTOUV::~SPTOUV() {
-  oops::Log::trace() << classname() << "::~SPTOUV starting" << std::endl;
-  util::Timer timer(classname(), "~SPTOUV");
-  oops::Log::trace() << classname() << "::~SPTOUV done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
@@ -330,20 +308,22 @@ void SPTOUV::multiply(atlas::FieldSet & fset) const {
   // check variables and if streamfunction, velocity potential scale
   // by n(n+1) / a   and rename fields to vorticity_spectral_2D
   // divergence_spectral_2D
-  const int N = atlas::GaussianGrid(gaussGrid_).N();
+  const int N = specFunctionSpace_.truncation();
+
+  std::cout << "multiply spectral truncation = " << N << std::endl;
 
   if (inputVars_.has("streamfunction") && inputVars_.has("velocity_potential")) {
     applyNtimesNplus1SpectralScaling(
       oops::Variables(std::vector<std::string>({"streamfunction", "velocity_potential"})),
       oops::Variables(std::vector<std::string>({"vorticity", "divergence"})),
-      specFS_, N, fset);
+      specFunctionSpace_, N, fset);
   }
 
-  atlas::Field uvgp = allocateGaussUVField(outputFunctionSpace_,
+  atlas::Field uvgp = allocateGaussUVField(gaussFunctionSpace_,
                                            inputVars_, activeVariableSizes_);
 
   // transform to gaussian grid
-  transFS_.invtrans_vordiv2wind(fset["vorticity"], fset["divergence"], uvgp);
+  trans_.invtrans_vordiv2wind(fset["vorticity"], fset["divergence"], uvgp);
 
   atlas::FieldSet uvfset = convertUVToFieldSet(uvgp);
 
@@ -373,17 +353,18 @@ void SPTOUV::multiplyAD(atlas::FieldSet & fset) const {
   }
 
   atlas::Field uvgp = convertUVToFieldSetAD(fset);
-  atlas::FieldSet specfset = allocateSpectralVortDiv(specFS_, inputVars_, activeVariableSizes_);
+  atlas::FieldSet specfset = allocateSpectralVortDiv(specFunctionSpace_,
+                                                     inputVars_, activeVariableSizes_);
 
-  transFS_.invtrans_vordiv2wind_adj(uvgp, specfset["vorticity"], specfset["divergence"]);
+  trans_.invtrans_vordiv2wind_adj(uvgp, specfset["vorticity"], specfset["divergence"]);
 
-  const int N = atlas::GaussianGrid(gaussGrid_).N();
+  const int N = specFunctionSpace_.truncation();
 
   if (inputVars_.has("streamfunction") && inputVars_.has("velocity_potential")) {
     applyNtimesNplus1SpectralScaling(
       oops::Variables(std::vector<std::string>({"vorticity", "divergence"})),
       oops::Variables(std::vector<std::string>({"streamfunction", "velocity_potential"})),
-      specFS_, N, specfset);
+      specFunctionSpace_, N, specfset);
   }
 
   newFields.add(specfset[0]);

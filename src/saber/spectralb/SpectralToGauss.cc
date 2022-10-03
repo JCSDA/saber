@@ -26,11 +26,12 @@ SpectralToGauss::SpectralToGauss(const oops::GeometryData & outputGeometryData,
                                  const atlas::FieldSet & xb,
                                  const atlas::FieldSet & fg,
                                  const std::vector<atlas::FieldSet> & fsetVec)
-  : inputVars_(outputVars), gaussFunctionSpace_(outputGeometryData.functionSpace()),
+  : gaussFunctionSpace_(outputGeometryData.functionSpace()),
     specFunctionSpace_(2 * atlas::GaussianGrid(gaussFunctionSpace_.grid()).N() - 1),
     trans_(gaussFunctionSpace_, specFunctionSpace_),
     inputGeometryData_(specFunctionSpace_, outputGeometryData.fieldSet(),
-                       outputGeometryData.levelsAreTopDown(), outputGeometryData.comm())
+                       outputGeometryData.levelsAreTopDown(), outputGeometryData.comm()),
+    inputVars_(outputVars)
 {
   oops::Log::trace() << classname() << "::SpectralToGauss starting" << std::endl;
   oops::Log::trace() << classname() << "::SpectralToGauss done" << std::endl;
