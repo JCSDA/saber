@@ -70,7 +70,6 @@ class SpectralToGauss : public SaberOuterBlockBase {
   const oops::GeometryData inputGeometryData_;
 
   oops::Variables inputVars_;
-
 };
 
 }  // namespace spectralb
