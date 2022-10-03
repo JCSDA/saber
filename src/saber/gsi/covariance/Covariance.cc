@@ -27,10 +27,6 @@
 #include "saber/gsi/grid/Grid.h"
 #include "saber/oops/SaberCentralBlockBase.h"
 
-namespace oops {
-  class Variables;
-}
-
 namespace saber {
 namespace gsi {
 

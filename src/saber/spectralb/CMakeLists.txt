@@ -14,6 +14,7 @@ if( atlas_TRANS_FOUND )
 
     CovarianceStatistics.cc
     CovarianceStatistics.h
+    CovarianceStatisticsUtils.cc
     CovarianceStatisticsUtils.h
     spectralb.h
     spectralbnointerp.h

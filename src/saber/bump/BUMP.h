@@ -31,14 +31,6 @@
 
 #include "saber/bump/type_bump.h"
 
-namespace eckit {
-  class Configuration;
-}
-
-namespace oops {
-  class Variables;
-}
-
 namespace saber {
 namespace bump {
 

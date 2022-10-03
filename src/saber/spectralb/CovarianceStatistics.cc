@@ -26,11 +26,6 @@
 #include "saber/spectralb/CovarianceStatisticsUtils.h"
 #include "saber/spectralb/spectralbParameters.h"
 
-// Forward declarations
-namespace oops {
-  class Variables;
-}
-
 namespace saber {
 namespace spectralb {
 

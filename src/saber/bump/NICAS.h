@@ -13,18 +13,12 @@
 
 #include "atlas/field.h"
 
-#include "oops/base/Geometry.h"
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
-#include "oops/util/abor1_cpp.h"
 
 #include "saber/bump/BUMP.h"
 #include "saber/oops/SaberCentralBlockBase.h"
 #include "saber/oops/SaberCentralBlockParametersBase.h"
-
-namespace oops {
-  class Variables;
-}
 
 namespace saber {
 namespace bump {

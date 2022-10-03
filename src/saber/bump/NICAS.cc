@@ -21,10 +21,6 @@
 #include "saber/oops/SaberCentralBlockBase.h"
 #include "saber/oops/SaberCentralBlockParametersBase.h"
 
-namespace oops {
-  class Variables;
-}
-
 namespace saber {
 namespace bump {
 
