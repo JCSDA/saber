@@ -152,8 +152,8 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
 
       // Apply calibration inverse on xb and fg
       // TODO(Benjamin): uncomment these lines when all blocks are compliant
-      //saberOuterBlocks_.back().calibrationInverseMultiply(xbLocal.fieldSet());
-      //saberOuterBlocks_.back().calibrationInverseMultiply(fgLocal.fieldSet());
+//      saberOuterBlocks_.back().calibrationInverseMultiply(xbLocal.fieldSet());
+//      saberOuterBlocks_.back().calibrationInverseMultiply(fgLocal.fieldSet());
 
       // Access input geometry and variables
       const oops::GeometryData & inputGeometryData = saberOuterBlocks_.back().inputGeometryData();
