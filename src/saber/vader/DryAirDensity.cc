@@ -26,10 +26,6 @@
 #include "saber/oops/SaberOuterBlockBase.h"
 #include "saber/oops/SaberOuterBlockParametersBase.h"
 
-namespace oops {
-  class Variables;
-}
-
 namespace saber {
 namespace vader {
 

@@ -81,7 +81,7 @@ for dir1 in ${lev1}; do
    cd ..
 done
 
-if type "cloc" > /dev/null ; then
+if [ -x "$(command -v cloc)" ]; then
    # Code size and characteristics
    echo -e " *" >> ${docdir}/mainpage.h
    echo -e " * \section CLOC Code size and characteristics" >> ${docdir}/mainpage.h

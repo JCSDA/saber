@@ -28,10 +28,6 @@
 #include "saber/oops/SaberOuterBlockParametersBase.h"
 #include "saber/vader/CovarianceStatisticsUtils.h"
 
-namespace oops {
-  class Variables;
-}
-
 namespace saber {
 namespace vader {
 

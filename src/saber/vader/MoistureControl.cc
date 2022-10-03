@@ -30,10 +30,6 @@
 #include "saber/vader/CovarianceStatisticsUtils.h"
 #include "saber/vader/movader_covstats_interface.h"
 
-namespace oops {
-  class Variables;
-}
-
 namespace saber {
 namespace vader {
 

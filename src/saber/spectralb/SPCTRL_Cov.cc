@@ -20,10 +20,6 @@
 #include "saber/oops/SaberCentralBlockParametersBase.h"
 #include "saber/spectralb/spectralb.h"
 
-namespace oops {
-  class Variables;
-}
-
 namespace saber {
 namespace spectralb {
 

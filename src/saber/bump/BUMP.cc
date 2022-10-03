@@ -27,14 +27,6 @@
 #include "oops/util/Logger.h"
 #include "oops/util/missingValues.h"
 
-namespace eckit {
-  class Configuration;
-}
-
-namespace oops {
-  class Variables;
-}
-
 namespace saber {
 namespace bump {
 
