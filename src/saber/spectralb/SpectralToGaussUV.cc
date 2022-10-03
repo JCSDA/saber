@@ -22,7 +22,7 @@
 
 #include "saber/oops/SaberOuterBlockBase.h"
 #include "saber/oops/SaberOuterBlockParametersBase.h"
-#include "saber/spectralb/SPTOUV.h"
+#include "saber/spectralb/SpectralToGaussUV.h"
 
 namespace saber {
 namespace spectralb {
@@ -33,10 +33,6 @@ atlas::Field allocateGaussUVField(
     const atlas::FunctionSpace & gaussFS,
     const oops::Variables & inputVariables,
     const std::vector<std::size_t> & activeVariableSizes) {
-
-  std::cout << "allocateGaussUVField::activeVariableSizes"
-            << activeVariableSizes.size() << std::endl;
-
   std::array<size_t, 2> indx{{0, 0}};
   std::array<size_t, 2> levels{{0, 0}};
   if (inputVariables.has("vorticity") && inputVariables.has("divergence")) {
@@ -179,7 +175,7 @@ atlas::Field convertUVToFieldSetAD(const atlas::FieldSet & fset) {
 }
 
 
-oops::Variables createInputVars(const SPTOUVParameters & params,
+oops::Variables createInputVars(const SpectralToGaussUVParameters & params,
                                 const oops::Variables & outputVars) {
   oops::Variables inputVars;
 
@@ -248,7 +244,7 @@ void applyNtimesNplus1SpectralScaling(const oops::Variables & inputNames,
 }  //  namespace
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<SPTOUV> makerSPTOUV_("SPTOUV");
+static SaberOuterBlockMaker<SpectralToGaussUV> makerSpectralToGaussUV_("SpectralToGaussUV");
 
 // Build input functionspace from output functionspace
 // It is the output functionspace that is in the argument.
@@ -265,7 +261,7 @@ static SaberOuterBlockMaker<SPTOUV> makerSPTOUV_("SPTOUV");
 // "active variables" - now required in yaml
 // "input variables" - optional in yaml - input for the multiply
 //                   - sum active and passive variables
-SPTOUV::SPTOUV(const oops::GeometryData & outputGeometryData,
+SpectralToGaussUV::SpectralToGaussUV(const oops::GeometryData & outputGeometryData,
                const std::vector<size_t> & activeVariableSizes,
                const oops::Variables & outputVars,
                const Parameters_ & params,
@@ -282,15 +278,15 @@ SPTOUV::SPTOUV(const oops::GeometryData & outputGeometryData,
     inputGeometryData_(specFunctionSpace_, outputGeometryData.fieldSet(),
                        outputGeometryData.levelsAreTopDown(), outputGeometryData.comm())
 {
-  oops::Log::trace() << classname() << "::SPTOUV starting" << std::endl;
+  oops::Log::trace() << classname() << "::SpectralToGaussUV starting" << std::endl;
 
-  std::cout << "SPTOUV inputVars " << inputVars_.variables() << std::endl;
+  std::cout << "SpectralToGaussUV inputVars " << inputVars_.variables() << std::endl;
 
-  oops::Log::trace() << classname() << "::SPTOUV done" << std::endl;
+  oops::Log::trace() << classname() << "::SpectralToGaussUV done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
-void SPTOUV::multiply(atlas::FieldSet & fset) const {
+void SpectralToGaussUV::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting " << fset.field_names() << std::endl;
 
   // Create empty Model fieldset
@@ -337,7 +333,7 @@ void SPTOUV::multiply(atlas::FieldSet & fset) const {
 
 
 // -----------------------------------------------------------------------------
-void SPTOUV::multiplyAD(atlas::FieldSet & fset) const {
+void SpectralToGaussUV::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << fset.field_names() << std::endl;
 
   // Create empty Model fieldset
@@ -376,13 +372,13 @@ void SPTOUV::multiplyAD(atlas::FieldSet & fset) const {
 }
 
 // -----------------------------------------------------------------------------
-void SPTOUV::calibrationInverseMultiply(atlas::FieldSet & fset) const {
+void SpectralToGaussUV::calibrationInverseMultiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::calibrationInverseMultiply starting" << std::endl;
   oops::Log::trace() << classname() << "::calibrationInverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
-void SPTOUV::print(std::ostream & os) const {
+void SpectralToGaussUV::print(std::ostream & os) const {
   os << classname();
 }
 

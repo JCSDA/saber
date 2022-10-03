@@ -31,8 +31,8 @@ namespace spectralb {
 
 // -----------------------------------------------------------------------------
 
-class SPTOUVParameters : public SaberOuterBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(SPTOUVParameters, SaberOuterBlockParametersBase)
+class SpectralToGaussUVParameters : public SaberOuterBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(SpectralToGaussUVParameters, SaberOuterBlockParametersBase)
  public:
   oops::RequiredParameter<std::string> gaussGridUid{"gauss grid uid",
     "Gauss Grid UID", this};
@@ -43,13 +43,13 @@ class SPTOUVParameters : public SaberOuterBlockParametersBase {
 // -----------------------------------------------------------------------------
 
 
-class SPTOUV : public SaberOuterBlockBase {
+class SpectralToGaussUV : public SaberOuterBlockBase {
  public:
-  static const std::string classname() {return "saber::spectralb::SPTOUV";}
+  static const std::string classname() {return "saber::spectralb::SpectralToGaussUV";}
 
-  typedef SPTOUVParameters Parameters_;
+  typedef SpectralToGaussUVParameters Parameters_;
 
-  SPTOUV(const oops::GeometryData &,
+  SpectralToGaussUV(const oops::GeometryData &,
          const std::vector<std::size_t> &,
          const oops::Variables &,
          const Parameters_ &,
@@ -57,7 +57,7 @@ class SPTOUV : public SaberOuterBlockBase {
          const atlas::FieldSet &,
          const std::vector<atlas::FieldSet> &);
 
-  virtual ~SPTOUV() = default;
+  virtual ~SpectralToGaussUV() = default;
 
   const oops::GeometryData & inputGeometryData() const override {return inputGeometryData_;}
   const oops::Variables & inputVars() const override {return inputVars_;}
