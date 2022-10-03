@@ -15,19 +15,16 @@
 #include "atlas/field.h"
 #include "atlas/functionspace.h"
 
-#include "saber/spectralb/spectralb_covstats_interface.h"
-
-#include "saber/vader/HydrostaticExnerParameters.h"
-#include "saber/vader/MoistureControlParameters.h"
-
-#include "saber/vader/movader_covstats_interface.h"
+#include "mo/constants.h"
 
 #include "oops/base/Variables.h"
 #include "oops/util/Logger.h"
 
-#include "mo/constants.h"
+#include "saber/spectralb/spectralb_covstats_interface.h"
+#include "saber/vader/movader_covstats_interface.h"
 
 namespace saber {
+namespace vader {
 
 // -----------------------------------------------------------------------------
 
@@ -191,105 +188,6 @@ atlas::Field createGpRegressionWeights(const atlas::FunctionSpace & functionSpac
 
 // -----------------------------------------------------------------------------
 
-/// \details This extracts the hp_gp regression matrix for a number of
-///          of overlapping latitude bands from the operational covariance
-///          statistics file. The matrices are stored as a single field.
-///
-/// B = (vertical regression matrix bin_0)
-///     (vertical regression matrix bin_1)
-///     (          ...                   )
-///     (vertical regression matrix bin_m)
-/// Since each matrix is square we can easily infer the bin index from the row index
-/// First index of vertRegView is bin_index * number of levels + level index,
-///     the second is number of levels associated with matrix column.
-///
-/// The interpolation weights are calculated for each grid point location
-/// The second index relates to the bin index.
-/// We ensure that across all bins for a grid point we sum to 1.
-///
-atlas::FieldSet createGpRegressionStats(const atlas::FunctionSpace & functionSpace,
-                                        const atlas::FieldSet & extraFields,
-                                        const std::vector<size_t> & variableSizes,
-                                        const oops::Variables & inputVars,
-                                        const hydrostaticexnerParameters & params) {
-  // Get necessary parameters
-  // path to covariance file with gp covariance parameters.
-  std::string covFileName(params.covariance_file_path);
-  // number of latitudes that existed in the generation of the covariance file
-  std::size_t covGlobalNLats(static_cast<std::size_t>(params.covariance_nlat));
-  // number of model levels
-  std::size_t modelLevels(variableSizes[0]);
-  // geostrophic pressure vertical regression statistics are grouped
-  // into overlapping bins based on latitude;
-  // number of bins associated with the gP vertical regression
-  std::size_t gPBins(static_cast<std::size_t>(params.gp_regression_bins));
-
-  atlas::FieldSet gpStatistics;
-
-  gpStatistics.add(createGpRegressionMatrices(covFileName, gPBins, modelLevels));
-
-  gpStatistics.add(createGpRegressionWeights(functionSpace, extraFields,
-                                             covFileName, covGlobalNLats, gPBins));
-
-  return gpStatistics;
-}
-
-// -----------------------------------------------------------------------------
-
-atlas::FieldSet createMuStats(const atlas::FieldSet & extraFields,
-                              const moisturecontrolParameters & params) {
-  // Get necessary parameters
-  // path to covariance file with gp covariance parameters.
-  std::string covFileName(params.covariance_file_path);
-  // number of model levels
-  std::size_t modelLevels(extraFields["height"].levels());
-  // geostrophic pressure vertical regression statistics are grouped
-  // into overlapping bins based on latitude;
-  // number of bins associated with the gP vertical regression
-  std::size_t muBins(static_cast<std::size_t>(params.mu_bins));
-
-  // Need to setup derived state fields that we need.
-  std::vector<std::string> shortnamesInFieldSet{
-    "muAStats", "muH1Stats"};
-  std::vector<std::string> shortnamesInFile{
-    "M_inc_StdDev_binned", "H1_binned"};
-
-  atlas::FieldSet statsFldSet;
-
-  int sizeVec = static_cast<int>(modelLevels * muBins);
-  std::vector<float> muStats1D(modelLevels * muBins, 0.0);
-
-  // allocate and populate "muAStats", "muH1Stats"
-  for (std::size_t i = 0; i < shortnamesInFile.size(); ++i) {
-    covMuStats_f90(covFileName.size(),
-                   covFileName.c_str(),
-                   shortnamesInFile[i].size(),
-                   shortnamesInFile[i].c_str(),
-                   static_cast<int>(modelLevels),
-                   muBins,
-                   sizeVec,
-                   muStats1D[0]);
-
-    auto statsFld = atlas::Field(shortnamesInFieldSet[i],
-      atlas::array::make_datatype<double>(),
-      atlas::array::make_shape(modelLevels, muBins));
-
-    auto statsFldView = atlas::array::make_view<double, 2>(statsFld);
-    std::size_t jn(0);
-    for (std::size_t j = 0; j < modelLevels; ++j) {
-      for (std::size_t b = 0; b < muBins; ++b, ++jn) {
-        statsFldView(j, b) = static_cast<double>(muStats1D.at(jn));
-      }
-    }
-
-    statsFldSet.add(statsFld);
-  }
-
-  return statsFldSet;
-}
-
-// -----------------------------------------------------------------------------
-
 void populateInterpMuStats(atlas::FieldSet & augmentedStateFieldSet,
                            const atlas::Field & covFld) {
   // variable name of field to be populated
@@ -350,4 +248,5 @@ void populateInterpMuStats(atlas::FieldSet & augmentedStateFieldSet,
 
 // -----------------------------------------------------------------------------
 
+}  // namespace vader
 }  // namespace saber

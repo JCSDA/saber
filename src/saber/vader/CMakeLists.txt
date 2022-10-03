@@ -13,22 +13,20 @@
 if ( ENABLE_VADER_MO )
     list(APPEND vader_src_files_list
 
-    AirTemperatureSaberBlock.cc
-    AirTemperatureSaberBlock.h
+    AirTemperature.cc
+    AirTemperature.h
     CovarianceStatisticsUtils.cc
     CovarianceStatisticsUtils.h
-    DryAirDensitySaberBlock.cc
-    DryAirDensitySaberBlock.h
-    HydroBalSaberBlock.cc
-    HydroBalSaberBlock.h
-    HydrostaticExnerParameters.h
-    HydrostaticExnerSaberBlock.cc
-    HydrostaticExnerSaberBlock.h
-    MoistIncrOpSaberBlock.cc
-    MoistIncrOpSaberBlock.h
-    MoistureControlParameters.h
-    MoistureControlSaberBlock.cc
-    MoistureControlSaberBlock.h
+    DryAirDensity.cc
+    DryAirDensity.h
+    HydroBal.cc
+    HydroBal.h
+    HydrostaticExner.cc
+    HydrostaticExner.h
+    MoistIncrOp.cc
+    MoistIncrOp.h
+    MoistureControl.cc
+    MoistureControl.h
     movader_covstats_interface.F90
     movader_covstats_interface.h
     )

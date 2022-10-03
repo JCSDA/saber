@@ -5,7 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "saber/bump/BUMP_PsiChiToUV.h"
+#include "saber/bump/PsiChiToUV.h"
 
 #include <memory>
 #include <string>
@@ -18,7 +18,6 @@
 #include "oops/util/abor1_cpp.h"
 
 #include "saber/bump/BUMP.h"
-#include "saber/bump/BUMP_Parameters.h"
 #include "saber/oops/SaberOuterBlockBase.h"
 #include "saber/oops/SaberOuterBlockParametersBase.h"
 
@@ -27,58 +26,56 @@ namespace oops {
 }
 
 namespace saber {
+namespace bump {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<BUMP_PsiChiToUV> makerBUMP_PsiChiToUV_("BUMP_PsiChiToUV");
+static SaberOuterBlockMaker<PsiChiToUV> makerPsiChiToUV_("BUMP_PsiChiToUV");
 
 // -----------------------------------------------------------------------------
 
-BUMP_PsiChiToUV::BUMP_PsiChiToUV(const eckit::mpi::Comm & comm,
-               const atlas::FunctionSpace & outputFunctionSpace,
-               const atlas::FieldSet & outputExtraFields,
-               const std::vector<size_t> & activeVariableSizes,
-               const eckit::Configuration & conf,
-               const atlas::FieldSet & xb,
-               const atlas::FieldSet & fg,
-               const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberOuterBlockBase(conf), bump_()
+PsiChiToUV::PsiChiToUV(const oops::GeometryData & outputGeometryData,
+                       const std::vector<size_t> & activeVariableSizes,
+                       const oops::Variables & outputVars,
+                       const Parameters_ & params,
+                       const atlas::FieldSet & xb,
+                       const atlas::FieldSet & fg,
+                       const std::vector<atlas::FieldSet> & fsetVec)
+  : inputGeometryData_(outputGeometryData), bump_()
 {
-  oops::Log::trace() << classname() << "::BUMP_PsiChiToUV starting" << std::endl;
+  oops::Log::trace() << classname() << "::PsiChiToUV starting" << std::endl;
 
-  // Deserialize configuration
-  BUMP_PsiChiToUVParameters params;
-  params.deserialize(conf);
+  // Check that active variables are present in parameters
+  ASSERT(params.activeVars.value() != boost::none);
 
-  // Input geometry and variables
-  inputFunctionSpace_ = outputFunctionSpace;
-  inputExtraFields_ = outputExtraFields;
+  // Get active variables
+  oops::Variables activeVars = *params.activeVars.value();
 
   // Check active variables size
-  ASSERT(params.activeVars.value()->size() == 4);
+  ASSERT(activeVars.size() == 4);
 
   // Only two active variables should be part of output variables, other two are input variables
   size_t activeVarsInOutput = 0;
-  for (const auto var : params.outputVars.value().variables()) {
-    if (params.activeVars.value()->has(var)) {
+  for (const auto var : outputVars.variables()) {
+    if (activeVars.has(var)) {
       activeVarsInOutput += 1;
     } else {
       inputVars_.push_back(var);
     }
   }
   ASSERT(activeVarsInOutput == 2);
-  for (const auto var : params.activeVars.value()->variables()) {
-    if (!params.outputVars.value().has(var)) {
+  for (const auto var : activeVars.variables()) {
+    if (!outputVars.has(var)) {
       inputVars_.push_back(var);
     }
   }
 
   // Initialize BUMP
-  bump_.reset(new BUMP(comm,
-                       outputFunctionSpace,
-                       outputExtraFields,
+  bump_.reset(new BUMP(outputGeometryData.comm(),
+                       outputGeometryData.functionSpace(),
+                       outputGeometryData.fieldSet(),
                        activeVariableSizes,
-                       *params.activeVars.value(),
+                       activeVars,
                        params.bumpParams.value(),
                        fsetVec));
 
@@ -88,20 +85,20 @@ BUMP_PsiChiToUV::BUMP_PsiChiToUV(const eckit::mpi::Comm & comm,
   // Partial deallocation
   bump_->partialDealloc();
 
-  oops::Log::trace() << classname() << "::BUMP_PsiChiToUV done" << std::endl;
+  oops::Log::trace() << classname() << "::PsiChiToUV done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-BUMP_PsiChiToUV::~BUMP_PsiChiToUV() {
-  oops::Log::trace() << classname() << "::~BUMP_PsiChiToUV starting" << std::endl;
-  util::Timer timer(classname(), "~BUMP_PsiChiToUV");
-  oops::Log::trace() << classname() << "::~BUMP_PsiChiToUV done" << std::endl;
+PsiChiToUV::~PsiChiToUV() {
+  oops::Log::trace() << classname() << "::~PsiChiToUV starting" << std::endl;
+  util::Timer timer(classname(), "~PsiChiToUV");
+  oops::Log::trace() << classname() << "::~PsiChiToUV done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void BUMP_PsiChiToUV::multiply(atlas::FieldSet & fset) const {
+void PsiChiToUV::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   bump_->multiplyPsiChiToUV(fset);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
@@ -109,7 +106,7 @@ void BUMP_PsiChiToUV::multiply(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void BUMP_PsiChiToUV::multiplyAD(atlas::FieldSet & fset) const {
+void PsiChiToUV::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
   bump_->multiplyPsiChiToUVAd(fset);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
@@ -117,7 +114,7 @@ void BUMP_PsiChiToUV::multiplyAD(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void BUMP_PsiChiToUV::calibrationInverseMultiply(atlas::FieldSet & fset)
+void PsiChiToUV::calibrationInverseMultiply(atlas::FieldSet & fset)
   const {
   oops::Log::trace() << classname() << "::calibrationInverseMultiply starting" << std::endl;
   oops::Log::info() << classname()
@@ -128,10 +125,11 @@ void BUMP_PsiChiToUV::calibrationInverseMultiply(atlas::FieldSet & fset)
 
 // -----------------------------------------------------------------------------
 
-void BUMP_PsiChiToUV::print(std::ostream & os) const {
+void PsiChiToUV::print(std::ostream & os) const {
   os << classname();
 }
 
 // -----------------------------------------------------------------------------
 
+}  // namespace bump
 }  // namespace saber

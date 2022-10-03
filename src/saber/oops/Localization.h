@@ -54,6 +54,7 @@ class Localization : public oops::LocalizationBase<MODEL> {
 
  private:
   void print(std::ostream &) const override;
+  std::vector<std::reference_wrapper<const oops::GeometryData>> geometryData_;
   std::unique_ptr<SaberCentralBlockBase> saberCentralBlock_;
 };
 
@@ -85,23 +86,8 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
     // Define input/output variables
     oops::Variables inoutVars = incVars;
 
-    // Local configuration to add parameters
-    eckit::LocalConfiguration centralConf;
-    saberCentralBlockParams.serialize(centralConf);
-    centralConf.set("inout variables", inoutVars.variables());
-
-    // Define active variables
-    oops::Variables activeVars;
-    const boost::optional<oops::Variables> &optionalActiveVars =
-      saberCentralBlockParams.activeVars.value();
-    if (optionalActiveVars != boost::none) {
-       // Active variables specified
-       activeVars = *optionalActiveVars;
-    } else {
-       // No active variables specified, assuming they are the same as output variables
-       activeVars = inoutVars;
-       centralConf.set("active variables", activeVars.variables());
-    }
+    // Get active variables
+    oops::Variables activeVars = saberCentralBlockParams.activeVars.value().get_value_or(inoutVars);
 
     // Read input fields (on model increment geometry)
     std::vector<atlas::FieldSet> fsetVec = readInputFields(
@@ -110,12 +96,15 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
       dummyTime,
       saberCentralBlockParams.inputFields.value());
 
+    // Input Geometry
+    geometryData_.push_back(geom.generic());
+
     // Create central block
-    saberCentralBlock_.reset(SaberCentralBlockFactory::create(geom.getComm(),
-                             geom.functionSpace(),
-                             geom.extraFields(),
+    saberCentralBlock_.reset(SaberCentralBlockFactory::create(
+                             geometryData_.back().get(),
                              geom.variableSizes(activeVars),
-                             centralConf,
+                             inoutVars,
+                             saberCentralBlockParams,
                              dummyFs,
                              dummyFs,
                              fsetVec));

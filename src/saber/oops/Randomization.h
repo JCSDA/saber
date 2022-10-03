@@ -18,6 +18,7 @@
 #include "oops/mpi/mpi.h"
 #include "oops/runs/Application.h"
 #include "oops/util/Logger.h"
+#include "oops/util/parameters/OptionalParameter.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
 #include "saber/oops/instantiateCovarFactory.h"
@@ -44,6 +45,7 @@ template <typename MODEL> class RandomizationParameters
   typedef typename oops::State<MODEL>::Parameters_           StateParameters_;
   typedef oops::State<MODEL>                                 State_;
   typedef oops::StateWriterParameters<State_>                StateWriterParameters_;
+  typedef typename oops::Increment<MODEL>::WriteParameters_  WriteParameters_;
 
   /// Geometry parameters
   oops::RequiredParameter<GeometryParameters_> geometry{"geometry", this};
@@ -59,6 +61,9 @@ template <typename MODEL> class RandomizationParameters
 
   /// Where to write the output
   oops::RequiredParameter<StateWriterParameters_> output{"output", this};
+
+  /// Where to write the output
+  oops::OptionalParameter<WriteParameters_> outputIncrement{"output increment", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -72,6 +77,7 @@ template <typename MODEL> class Randomization : public oops::Application {
   typedef oops::State<MODEL>                                 State_;
   typedef oops::StateWriterParameters<State_>                StateWriterParameters_;
   typedef RandomizationParameters<MODEL>                     RandomizationParameters_;
+  typedef typename oops::Increment<MODEL>::WriteParameters_  WriteParameters_;
 
  public:
   static const std::string classname() {return "saber::Randomization";}
@@ -107,21 +113,28 @@ template <typename MODEL> class Randomization : public oops::Application {
 
     // Generate and write perturbations
     Increment_ dx(geom, vars, xx.validTime());
+    const boost::optional<WriteParameters_> &inputIncrOutParams = params.outputIncrement.value();
     for (size_t jm = 0; jm < covarParams.randomizationSize.value(); ++jm) {
       // Generate pertubation
       Bmat->randomize(dx);
       oops::Log::test() << "Member " << jm << ": " << dx << std::endl;
 
+      // Write perturbation
+      if (inputIncrOutParams != boost::none) {
+        WriteParameters_ incrOutParams = *inputIncrOutParams;
+        incrOutParams.setMember(jm+1);
+        dx.write(incrOutParams);
+      }
+
       // Add mean state
       State_ xp(xx);
       xp += dx;
 
-      // Write perturbation
+      // Write perturbed state
       StateWriterParameters_ outParams = params.output;
       outParams.write.setMember(jm+1);
       xp.write(outParams.write);
     }
-
     return 0;
   }
 

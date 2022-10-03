@@ -33,26 +33,24 @@ static SaberCentralBlockMaker<SPCTRL_COV> makerSPCTRL_COV_("SPCTRL_COV");
 
 // -----------------------------------------------------------------------------
 
-SPCTRL_COV::SPCTRL_COV(const eckit::mpi::Comm & comm,
-       const atlas::FunctionSpace & functionSpace,
-       const atlas::FieldSet & extraFields,
-       const std::vector<size_t> & activeVariableSizes,
-       const eckit::Configuration & conf,
-       const atlas::FieldSet & xb,
-       const atlas::FieldSet & fg,
-       const std::vector<atlas::FieldSet> & fsetVec) :
-  SaberCentralBlockBase(conf), spectralb_()
+SPCTRL_COV::SPCTRL_COV(const oops::GeometryData & geometryData,
+                       const std::vector<size_t> & activeVariableSizes,
+                       const oops::Variables & inoutVars,
+                       const Parameters_ & params,
+                       const atlas::FieldSet & xb,
+                       const atlas::FieldSet & fg,
+                       const std::vector<atlas::FieldSet> & fsetVec)
+  : spectralb_()
 {
   oops::Log::trace() << classname() << "::SPCTRL_COV starting" << std::endl;
 
-  // Deserialize configuration
-  SPCTRL_COVParameters params;
-  params.validateAndDeserialize(conf);
+  // Get active variables
+  oops::Variables activeVars = params.activeVars.value().get_value_or(inoutVars);
 
   // Initialize SpectralB
-  spectralb_.reset(new SpectralB(functionSpace,
+  spectralb_.reset(new SpectralB(geometryData.functionSpace(),
                                  activeVariableSizes,
-                                 *params.activeVars.value(),
+                                 activeVars,
                                  params.spectralbParams.value()));
 
   oops::Log::trace() << classname() << "::SPCTRL_COV done" << std::endl;

@@ -46,14 +46,6 @@ atlas::functionspace::StructuredColumns
     atlas::option::halo(1));
 }
 
-// -----------------------------------------------------------------------------
-
-bool createVarianceOpt(const spectralbParameters & params) {
-  return (params.varianceOpt.value() != boost::none ?
-          params.varianceOpt.value().get() :
-          false);
-}
-
 }  // namespace detailnointerp
 }  // namespace spectralb
 }  // namespace saber
@@ -105,7 +97,7 @@ SpectralBNoInterp::SpectralBNoInterp(const std::vector<size_t> & variableSizes,
   varSizes_(variableSizes),
   gaussGrid_(params.gaussGridUid),
   gaussFunctionSpace_(detailnointerp::createGaussFunctionSpace(gaussGrid_)),
-  variance_opt_(detailnointerp::createVarianceOpt(params)),
+  variance_opt_(params.varianceOpt),
   cs_(std::make_unique<const CovStat_ErrorCov>(variableSizes, vars, params))
 {
   oops::Log::trace() << "SpectralBNoInterp::SpectralBNoInterp done" << std::endl;

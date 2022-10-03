@@ -14,6 +14,7 @@
 #include "atlas/field.h"
 
 #include "oops/base/Geometry.h"
+#include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
 #include "saber/bump/BUMP.h"
@@ -25,33 +26,37 @@ namespace oops {
 }
 
 namespace saber {
+namespace bump {
 
 // -----------------------------------------------------------------------------
 
-class BUMP_VerticalBalanceParameters : public SaberOuterBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(BUMP_VerticalBalanceParameters, SaberOuterBlockParametersBase)
+class StdDevParameters : public SaberOuterBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(StdDevParameters, SaberOuterBlockParametersBase)
 
  public:
-  oops::RequiredParameter<BUMP_Parameters> bumpParams{"bump", this};
+  oops::RequiredParameter<BUMPParameters> bumpParams{"bump", this};
 };
 
 // -----------------------------------------------------------------------------
 
-class BUMP_VerticalBalance : public SaberOuterBlockBase {
+
+class StdDev : public SaberOuterBlockBase {
  public:
-  static const std::string classname() {return "saber::BUMP_VerticalBalance";}
+  static const std::string classname() {return "saber::bump::StdDev";}
 
-  typedef BUMP_VerticalBalanceParameters Parameters_;
+  typedef StdDevParameters Parameters_;
 
-  BUMP_VerticalBalance(const eckit::mpi::Comm &,
-         const atlas::FunctionSpace &,
-         const atlas::FieldSet &,
+  StdDev(const oops::GeometryData &,
          const std::vector<size_t> &,
-         const eckit::Configuration &,
+         const oops::Variables &,
+         const Parameters_ &,
          const atlas::FieldSet &,
          const atlas::FieldSet &,
          const std::vector<atlas::FieldSet> &);
-  virtual ~BUMP_VerticalBalance();
+  virtual ~StdDev();
+
+  const oops::GeometryData & inputGeometryData() const override {return inputGeometryData_;}
+  const oops::Variables & inputVars() const override {return inputVars_;}
 
   void multiply(atlas::FieldSet &) const override;
   void multiplyAD(atlas::FieldSet &) const override;
@@ -59,9 +64,12 @@ class BUMP_VerticalBalance : public SaberOuterBlockBase {
 
  private:
   void print(std::ostream &) const override;
+  const oops::GeometryData & inputGeometryData_;
+  oops::Variables inputVars_;
   std::unique_ptr<BUMP> bump_;
 };
 
 // -----------------------------------------------------------------------------
 
+}  // namespace bump
 }  // namespace saber

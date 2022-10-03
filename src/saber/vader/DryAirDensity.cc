@@ -5,7 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "saber/vader/DryAirDensitySaberBlock.h"
+#include "saber/vader/DryAirDensity.h"
 
 #include <memory>
 #include <string>
@@ -31,34 +31,24 @@ namespace oops {
 }
 
 namespace saber {
+namespace vader {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<DryAirDensitySaberBlock>
-       makerDryAirDensitySaberBlock_("mo_dry_air_density");
+static SaberOuterBlockMaker<DryAirDensity> makerDryAirDensity_("mo_dry_air_density");
 
 // -----------------------------------------------------------------------------
 
-DryAirDensitySaberBlock::DryAirDensitySaberBlock(const eckit::mpi::Comm & comm,
-               const atlas::FunctionSpace & outputFunctionSpace,
-               const atlas::FieldSet & outputExtraFields,
-               const std::vector<size_t> & activeVariableSizes,
-               const eckit::Configuration & conf,
-               const atlas::FieldSet & xb,
-               const atlas::FieldSet & fg,
-               const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberOuterBlockBase(conf), augmentedStateFieldSet_()
+DryAirDensity::DryAirDensity(const oops::GeometryData & outputGeometryData,
+                             const std::vector<size_t> & activeVariableSizes,
+                             const oops::Variables & outputVars,
+                             const Parameters_ & params,
+                             const atlas::FieldSet & xb,
+                             const atlas::FieldSet & fg,
+                             const std::vector<atlas::FieldSet> & fsetVec)
+  : inputGeometryData_(outputGeometryData), inputVars_(outputVars), augmentedStateFieldSet_()
 {
-  oops::Log::trace() << classname() << "::DryAirDensitySaberBlock starting" << std::endl;
-
-  // Deserialize configuration
-  DryAirDensitySaberBlockParameters params;
-  params.deserialize(conf);
-
-  // Input geometry and variables
-  inputFunctionSpace_ = outputFunctionSpace;
-  inputExtraFields_ = outputExtraFields;
-  inputVars_ = params.outputVars.value();
+  oops::Log::trace() << classname() << "::DryAirDensity starting" << std::endl;
 
   // Need to setup derived state fields that we need.
   std::vector<std::string> requiredStateVariables{ "exner_levels_minus_one",
@@ -74,7 +64,7 @@ DryAirDensitySaberBlock::DryAirDensitySaberBlock(const eckit::mpi::Comm & comm,
   // Check that they are allocated (i.e. exist in the state fieldset)
   for (auto & s : requiredStateVariables) {
     if (!xb.has_field(s)) {
-      oops::Log::error() << "::DryAirDensitySaberBlock variable " << s <<
+      oops::Log::error() << "::DryAirDensity variable " << s <<
                             "is not part of state object." << std::endl;
     }
   }
@@ -85,26 +75,26 @@ DryAirDensitySaberBlock::DryAirDensitySaberBlock(const eckit::mpi::Comm & comm,
   }
 
   for (const auto & s : requiredGeometryVariables) {
-    augmentedStateFieldSet_.add(outputExtraFields[s]);
+    augmentedStateFieldSet_.add(outputGeometryData.fieldSet()[s]);
   }
 
   mo::evalAirTemperature(augmentedStateFieldSet_);
   mo::evalDryAirDensity(augmentedStateFieldSet_);
 
-  oops::Log::trace() << classname() << "::DryAirDensitySaberBlock done" << std::endl;
+  oops::Log::trace() << classname() << "::DryAirDensity done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-DryAirDensitySaberBlock::~DryAirDensitySaberBlock() {
-  oops::Log::trace() << classname() << "::~DryAirDensitySaberBlock starting" << std::endl;
-  util::Timer timer(classname(), "~DryAirDensitySaberBlock");
-  oops::Log::trace() << classname() << "::~DryAirDensitySaberBlock done" << std::endl;
+DryAirDensity::~DryAirDensity() {
+  oops::Log::trace() << classname() << "::~DryAirDensity starting" << std::endl;
+  util::Timer timer(classname(), "~DryAirDensity");
+  oops::Log::trace() << classname() << "::~DryAirDensity done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void DryAirDensitySaberBlock::multiply(atlas::FieldSet & fset) const {
+void DryAirDensity::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   mo::evalDryAirDensityTL(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
@@ -113,7 +103,7 @@ void DryAirDensitySaberBlock::multiply(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void DryAirDensitySaberBlock::multiplyAD(atlas::FieldSet & fset) const {
+void DryAirDensity::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
   mo::evalDryAirDensityAD(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
@@ -121,7 +111,7 @@ void DryAirDensitySaberBlock::multiplyAD(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void DryAirDensitySaberBlock::calibrationInverseMultiply(atlas::FieldSet & fset) const {
+void DryAirDensity::calibrationInverseMultiply(atlas::FieldSet & fset) const {
   oops::Log::info() << classname()
                     << "::calibrationInverseMultiply not meaningful so fieldset unchanged"
                     << std::endl;
@@ -129,11 +119,11 @@ void DryAirDensitySaberBlock::calibrationInverseMultiply(atlas::FieldSet & fset)
 
 // -----------------------------------------------------------------------------
 
-void DryAirDensitySaberBlock::print(std::ostream & os) const {
+void DryAirDensity::print(std::ostream & os) const {
   os << classname();
 }
 
 // -----------------------------------------------------------------------------
 
-
+}  // namespace vader
 }  // namespace saber

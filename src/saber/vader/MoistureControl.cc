@@ -5,7 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "saber/vader/MoistureControlSaberBlock.h"
+#include "saber/vader/MoistureControl.h"
 
 #include <memory>
 #include <string>
@@ -28,44 +28,35 @@
 #include "saber/oops/SaberOuterBlockBase.h"
 #include "saber/oops/SaberOuterBlockParametersBase.h"
 #include "saber/vader/CovarianceStatisticsUtils.h"
-#include "saber/vader/MoistureControlParameters.h"
+#include "saber/vader/movader_covstats_interface.h"
 
 namespace oops {
   class Variables;
 }
 
 namespace saber {
+namespace vader {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<MoistureControlSaberBlock>
-       makerMoistureControlBlock_("mo_moisture_control");
+static SaberOuterBlockMaker<MoistureControl> makerMoistureControlBlock_("mo_moisture_control");
 
 // -----------------------------------------------------------------------------
 
-MoistureControlSaberBlock::MoistureControlSaberBlock(const eckit::mpi::Comm & comm,
-               const atlas::FunctionSpace & outputFunctionSpace,
-               const atlas::FieldSet & outputExtraFields,
-               const std::vector<size_t> & activeVariableSizes,
-               const eckit::Configuration & conf,
-               const atlas::FieldSet & xb,
-               const atlas::FieldSet & fg,
-               const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberOuterBlockBase(conf), augmentedStateFieldSet_()
+MoistureControl::MoistureControl(const oops::GeometryData & outputGeometryData,
+                                 const std::vector<size_t> & activeVariableSizes,
+                                 const oops::Variables & outputVars,
+                                 const Parameters_ & params,
+                                 const atlas::FieldSet & xb,
+                                 const atlas::FieldSet & fg,
+                                 const std::vector<atlas::FieldSet> & fsetVec)
+  : inputGeometryData_(outputGeometryData), inputVars_(outputVars), augmentedStateFieldSet_()
 {
-  oops::Log::trace() << classname() << "::MoistureControlSaberBlock starting" << std::endl;
-
-  // Deserialize configuration
-  MoistureControlSaberBlockParameters params;
-  params.deserialize(conf);
-
-  // Input geometry and variables
-  inputFunctionSpace_ = outputFunctionSpace;
-  inputExtraFields_ = outputExtraFields;
-  inputVars_ = params.outputVars.value();
+  oops::Log::trace() << classname() << "::MoistureControl starting" << std::endl;
 
   // Covariance FieldSet
-  covFieldSet_ = createMuStats(outputExtraFields, params.moisturecontrolParams.value());
+  covFieldSet_ = createMuStats(outputGeometryData.fieldSet(),
+                               params.moistureControlParams.value());
 
   std::vector<std::string> requiredStateVariables{
     "air_temperature",
@@ -93,7 +84,7 @@ MoistureControlSaberBlock::MoistureControlSaberBlock(const eckit::mpi::Comm & co
   // Use meta data to see if they are populated with actual data.
   for (auto & s : requiredStateVariables) {
     if (!xb.has_field(s)) {
-      oops::Log::info() << "MoistureControlSaberBlock variable " << s <<
+      oops::Log::info() << "MoistureControl variable " << s <<
                            " is not part of state object." << std::endl;
     }
   }
@@ -123,20 +114,20 @@ MoistureControlSaberBlock::MoistureControlSaberBlock(const eckit::mpi::Comm & co
   // populate "specific moisture control dependencies"
   mo::evalMoistureControlDependencies(augmentedStateFieldSet_);
 
-  oops::Log::trace() << classname() << "::MoistureControlSaberBlock done" << std::endl;
+  oops::Log::trace() << classname() << "::MoistureControl done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-MoistureControlSaberBlock::~MoistureControlSaberBlock() {
-  oops::Log::trace() << classname() << "::~MoistureControlSaberBlock starting" << std::endl;
-  util::Timer timer(classname(), "~MoistureControlSaberBlock");
-  oops::Log::trace() << classname() << "::~MoistureControlSaberBlock done" << std::endl;
+MoistureControl::~MoistureControl() {
+  oops::Log::trace() << classname() << "::~MoistureControl starting" << std::endl;
+  util::Timer timer(classname(), "~MoistureControl");
+  oops::Log::trace() << classname() << "::~MoistureControl done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void MoistureControlSaberBlock::multiply(atlas::FieldSet & fset) const {
+void MoistureControl::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   mo::evalQtThetaTL(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
@@ -144,7 +135,7 @@ void MoistureControlSaberBlock::multiply(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void MoistureControlSaberBlock::multiplyAD(atlas::FieldSet & fset) const {
+void MoistureControl::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
   mo::evalQtThetaAD(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
@@ -152,17 +143,72 @@ void MoistureControlSaberBlock::multiplyAD(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void MoistureControlSaberBlock::calibrationInverseMultiply(atlas::FieldSet & fset) const {
+void MoistureControl::calibrationInverseMultiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::calibrationInverseMultiply starting" << std::endl;
   oops::Log::trace() << classname() << "::calibrationInverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void MoistureControlSaberBlock::print(std::ostream & os) const {
+void MoistureControl::print(std::ostream & os) const {
   os << classname();
 }
 
 // -----------------------------------------------------------------------------
 
+atlas::FieldSet createMuStats(const atlas::FieldSet & extraFields,
+                              const MoistureControlCovarianceParameters & params) {
+  // Get necessary parameters
+  // path to covariance file with gp covariance parameters.
+  std::string covFileName(params.covariance_file_path);
+  // number of model levels
+  std::size_t modelLevels(extraFields["height"].levels());
+  // geostrophic pressure vertical regression statistics are grouped
+  // into overlapping bins based on latitude;
+  // number of bins associated with the gP vertical regression
+  std::size_t muBins(static_cast<std::size_t>(params.mu_bins));
+
+  // Need to setup derived state fields that we need.
+  std::vector<std::string> shortnamesInFieldSet{
+    "muAStats", "muH1Stats"};
+  std::vector<std::string> shortnamesInFile{
+    "M_inc_StdDev_binned", "H1_binned"};
+
+  atlas::FieldSet statsFldSet;
+
+  int sizeVec = static_cast<int>(modelLevels * muBins);
+  std::vector<float> muStats1D(modelLevels * muBins, 0.0);
+
+  // allocate and populate "muAStats", "muH1Stats"
+  for (std::size_t i = 0; i < shortnamesInFile.size(); ++i) {
+    covMuStats_f90(covFileName.size(),
+                   covFileName.c_str(),
+                   shortnamesInFile[i].size(),
+                   shortnamesInFile[i].c_str(),
+                   static_cast<int>(modelLevels),
+                   muBins,
+                   sizeVec,
+                   muStats1D[0]);
+
+    auto statsFld = atlas::Field(shortnamesInFieldSet[i],
+      atlas::array::make_datatype<double>(),
+      atlas::array::make_shape(modelLevels, muBins));
+
+    auto statsFldView = atlas::array::make_view<double, 2>(statsFld);
+    std::size_t jn(0);
+    for (std::size_t j = 0; j < modelLevels; ++j) {
+      for (std::size_t b = 0; b < muBins; ++b, ++jn) {
+        statsFldView(j, b) = static_cast<double>(muStats1D.at(jn));
+      }
+    }
+
+    statsFldSet.add(statsFld);
+  }
+
+  return statsFldSet;
+}
+
+// -----------------------------------------------------------------------------
+
+}  // namespace vader
 }  // namespace saber

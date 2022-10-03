@@ -13,7 +13,6 @@
 #include "oops/base/ParameterTraitsVariables.h"
 #include "oops/base/Variables.h"
 #include "oops/util/parameters/OptionalParameter.h"
-#include "oops/util/parameters/Parameter.h"
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
@@ -28,9 +27,6 @@ class SaberCentralBlockParametersBase : public oops::Parameters {
   oops::RequiredParameter<std::string> saberBlockName{"saber block name", this};
   oops::OptionalParameter<oops::Variables> activeVars{"active variables", this};
   oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> inputFields{"input fields", this};
-
-  // Parameters for the recursive construction
-  oops::Parameter<oops::Variables> inoutVars{"inout variables", oops::Variables(), this};
 };
 
 // -----------------------------------------------------------------------------

@@ -50,15 +50,14 @@ if( oops_FOUND )
 
     BUMP.cc
     BUMP.h
-    BUMP_NICAS.cc
-    BUMP_NICAS.h
-    BUMP_Parameters.h
-    BUMP_PsiChiToUV.cc
-    BUMP_PsiChiToUV.h
-    BUMP_StdDev.cc
-    BUMP_StdDev.h
-    BUMP_VerticalBalance.cc
-    BUMP_VerticalBalance.h
+    NICAS.cc
+    NICAS.h
+    PsiChiToUV.cc
+    PsiChiToUV.h
+    StdDev.cc
+    StdDev.h
+    VerticalBalance.cc
+    VerticalBalance.h
 
     )
 endif()

@@ -15,16 +15,17 @@
 #include "atlas/field.h"
 #include "atlas/functionspace.h"
 
-#include "atlas/library.h"
-#include "atlas/runtime/Log.h"
-
+#include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
+#include "oops/util/parameters/OptionalParameter.h"
+#include "oops/util/parameters/Parameter.h"
+#include "oops/util/parameters/Parameters.h"
+#include "oops/util/parameters/RequiredParameter.h"
 
-#include "saber/gsi/grid/GSI_Grid.h"
-#include "saber/gsi/interpolation/unstructured_interp/UnstructuredInterpolation.h"
-#include "saber/oops/SaberOuterBlockBase.h"
-#include "saber/oops/SaberOuterBlockParametersBase.h"
+#include "saber/gsi/covariance/Covariance.interface.h"
+#include "saber/oops/SaberCentralBlockBase.h"
+#include "saber/oops/SaberCentralBlockParametersBase.h"
 
 namespace oops {
   class Variables;
@@ -35,13 +36,14 @@ namespace gsi {
 
 // -------------------------------------------------------------------------------------------------
 
-class InterpolationParameters : public SaberOuterBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(InterpolationParameters, SaberOuterBlockParametersBase)
+class CovarianceParameters : public SaberCentralBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(CovarianceParameters, SaberCentralBlockParametersBase)
 
  public:
   // File containing grid and coefficients
   oops::RequiredParameter<std::string> GSIFile{"gsi error covariance file", this};
   oops::RequiredParameter<std::string> GSINML{"gsi berror namelist file", this};
+  oops::RequiredParameter<std::string> GSIVGRD{"gsi akbk", this};
 
   // Handle vertical top-2-bottom and vice-verse wrt to GSI
   oops::Parameter<bool> vflip{"flip vertical grid", true, this};
@@ -53,45 +55,37 @@ class InterpolationParameters : public SaberOuterBlockParametersBase {
   // Debugging mode
   oops::Parameter<bool> debugMode{"debugging mode", false, this};
   oops::Parameter<bool> bypassGSI{"debugging bypass gsi", false, this};
+  oops::Parameter<bool> bypassGSIbe{"debugging deep bypass gsi B error", false, this};
 };
 
 // -------------------------------------------------------------------------------------------------
 
-class Interpolation : public SaberOuterBlockBase {
+class Covariance : public SaberCentralBlockBase {
  public:
-  static const std::string classname() {return "saber::gsi::Interpolation";}
+  static const std::string classname() {return "saber::gsi::Covariance";}
 
-  typedef InterpolationParameters Parameters_;
+  typedef CovarianceParameters Parameters_;
 
-  Interpolation(const eckit::mpi::Comm &,
-         const atlas::FunctionSpace &,
-         const atlas::FieldSet &,
-         const std::vector<size_t> &,
-         const eckit::Configuration &,
-         const atlas::FieldSet &,
-         const atlas::FieldSet &,
-         const std::vector<atlas::FieldSet> &);
-  virtual ~Interpolation();
+  Covariance(const oops::GeometryData &,
+             const std::vector<size_t> &,
+             const oops::Variables &,
+             const Parameters_ &,
+             const atlas::FieldSet &,
+             const atlas::FieldSet &,
+             const std::vector<atlas::FieldSet> &);
+  virtual ~Covariance();
 
+  void randomize(atlas::FieldSet &) const override;
   void multiply(atlas::FieldSet &) const override;
-  void multiplyAD(atlas::FieldSet &) const override;
-  void calibrationInverseMultiply(atlas::FieldSet &) const override;
 
  private:
   void print(std::ostream &) const override;
-
-  // Parameters
-  InterpolationParameters params_;
-  // Interpolation object
-  std::unique_ptr<UnstructuredInterpolation> interpolator_;
+  // Fortran LinkedList key
+  CovarianceKey keySelf_;
   // Variables
   std::vector<std::string> variables_;
-  // Expected number of levels in GSI grid
-  int gsiLevels_;
-  // Grid
-  Grid grid_;
-  // Output FunctionSpace
-  atlas::FunctionSpace outputFunctionSpace_;
+  // GSI grid FunctionSpace
+  atlas::FunctionSpace gsiGridFuncSpace_;
 };
 
 // -------------------------------------------------------------------------------------------------

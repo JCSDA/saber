@@ -13,6 +13,7 @@
 
 #include "atlas/field.h"
 
+#include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/Timer.h"
@@ -21,6 +22,7 @@
 #include "saber/oops/SaberOuterBlockParametersBase.h"
 
 namespace saber {
+namespace generic {
 
 // -----------------------------------------------------------------------------
 
@@ -28,32 +30,25 @@ static SaberOuterBlockMaker<StdDev> makerStdDev_("StdDev");
 
 // -----------------------------------------------------------------------------
 
-StdDev::StdDev(const eckit::mpi::Comm & comm,
-               const atlas::FunctionSpace & outputFunctionSpace,
-               const atlas::FieldSet & outputExtraFields,
+StdDev::StdDev(const oops::GeometryData & outputGeometryData,
                const std::vector<size_t> & activeVariableSizes,
-               const eckit::Configuration & conf,
+               const oops::Variables & outputVars,
+               const Parameters_ & params,
                const atlas::FieldSet & xb,
                const atlas::FieldSet & fg,
                const std::vector<atlas::FieldSet> & fsetVec)
-  : SaberOuterBlockBase(conf), stdDevFset_()
+  : inputGeometryData_(outputGeometryData), inputVars_(outputVars), stdDevFset_()
 {
   oops::Log::trace() << classname() << "::StdDev starting" << std::endl;
 
-  // Deserialize configuration
-  StdDevParameters params;
-  params.deserialize(conf);
-
-  // Input geometry and variables
-  inputFunctionSpace_ = outputFunctionSpace;
-  inputExtraFields_ = outputExtraFields;
-  inputVars_ = params.outputVars.value();
+  // Get active variables
+  oops::Variables activeVars = params.activeVars.value().get_value_or(outputVars);
 
   // Copy stddev field
   stdDevFset_.clear();
   for (const auto & fset : fsetVec) {
     if (fset.name() == "StdDev") {
-      for (const auto & var : params.activeVars.value()->variables()) {
+      for (const auto & var : activeVars.variables()) {
         stdDevFset_.add(fset.field(var));
       }
     }
@@ -102,4 +97,5 @@ void StdDev::print(std::ostream & os) const {
 
 // -----------------------------------------------------------------------------
 
+}  // namespace generic
 }  // namespace saber

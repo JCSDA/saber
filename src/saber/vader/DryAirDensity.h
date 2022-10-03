@@ -16,6 +16,7 @@
 
 #include "eckit/exception/Exceptions.h"
 
+#include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
 #include "saber/oops/SaberOuterBlockBase.h"
@@ -26,31 +27,34 @@ namespace oops {
 }
 
 namespace saber {
+namespace vader {
 
 // -----------------------------------------------------------------------------
 
-class AirTemperatureSaberBlockParameters : public SaberOuterBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(AirTemperatureSaberBlockParameters, SaberOuterBlockParametersBase)
+class DryAirDensityParameters : public SaberOuterBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(DryAirDensityParameters, SaberOuterBlockParametersBase)
  public:
 };
 
 // -----------------------------------------------------------------------------
 
-class AirTemperatureSaberBlock : public SaberOuterBlockBase {
+class DryAirDensity : public SaberOuterBlockBase {
  public:
-  static const std::string classname() {return "saber::AirTemperatureSaberBlock";}
+  static const std::string classname() {return "saber::vader::DryAirDensity";}
 
-  typedef AirTemperatureSaberBlockParameters Parameters_;
+  typedef DryAirDensityParameters Parameters_;
 
-  AirTemperatureSaberBlock(const eckit::mpi::Comm &,
-         const atlas::FunctionSpace &,
-         const atlas::FieldSet &,
-         const std::vector<size_t> &,
-         const eckit::Configuration &,
-         const atlas::FieldSet &,
-         const atlas::FieldSet &,
-         const std::vector<atlas::FieldSet> &);
-  virtual ~AirTemperatureSaberBlock();
+  DryAirDensity(const oops::GeometryData &,
+                const std::vector<size_t> &,
+                const oops::Variables &,
+                const Parameters_ &,
+                const atlas::FieldSet &,
+                const atlas::FieldSet &,
+                const std::vector<atlas::FieldSet> &);
+  virtual ~DryAirDensity();
+
+  const oops::GeometryData & inputGeometryData() const override {return inputGeometryData_;}
+  const oops::Variables & inputVars() const override {return inputVars_;}
 
   void multiply(atlas::FieldSet &) const override;
   void multiplyAD(atlas::FieldSet &) const override;
@@ -58,9 +62,12 @@ class AirTemperatureSaberBlock : public SaberOuterBlockBase {
 
  private:
   void print(std::ostream &) const override;
+  const oops::GeometryData & inputGeometryData_;
+  oops::Variables inputVars_;
   atlas::FieldSet augmentedStateFieldSet_;
 };
 
 // -----------------------------------------------------------------------------
 
+}  // namespace vader
 }  // namespace saber

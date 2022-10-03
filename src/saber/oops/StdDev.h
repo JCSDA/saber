@@ -13,6 +13,7 @@
 
 #include "atlas/field.h"
 
+#include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
 #include "saber/oops/SaberOuterBlockBase.h"
@@ -23,6 +24,7 @@ namespace oops {
 }
 
 namespace saber {
+namespace generic {
 
 // -----------------------------------------------------------------------------
 
@@ -34,19 +36,21 @@ class StdDevParameters : public SaberOuterBlockParametersBase {
 
 class StdDev : public SaberOuterBlockBase {
  public:
-  static const std::string classname() {return "saber::StdDev";}
+  static const std::string classname() {return "saber::generic::StdDev";}
 
   typedef StdDevParameters Parameters_;
 
-  StdDev(const eckit::mpi::Comm &,
-         const atlas::FunctionSpace &,
-         const atlas::FieldSet &,
+  StdDev(const oops::GeometryData &,
          const std::vector<size_t> &,
-         const eckit::Configuration &,
+         const oops::Variables &,
+         const Parameters_ &,
          const atlas::FieldSet &,
          const atlas::FieldSet &,
          const std::vector<atlas::FieldSet> &);
   virtual ~StdDev();
+
+  const oops::GeometryData & inputGeometryData() const override {return inputGeometryData_;}
+  const oops::Variables & inputVars() const override {return inputVars_;}
 
   void multiply(atlas::FieldSet &) const override;
   void multiplyAD(atlas::FieldSet &) const override;
@@ -54,9 +58,12 @@ class StdDev : public SaberOuterBlockBase {
 
  private:
   void print(std::ostream &) const override;
+  const oops::GeometryData & inputGeometryData_;
+  oops::Variables inputVars_;
   atlas::FieldSet stdDevFset_;
 };
 
 // -----------------------------------------------------------------------------
 
+}  // namespace generic
 }  // namespace saber

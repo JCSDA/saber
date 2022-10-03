@@ -14,10 +14,6 @@
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/range/adaptors.hpp>
 
-#include "atlas/functionspace.h"
-#include "atlas/util/Constants.h"
-#include "atlas/util/CoordinateEnums.h"
-
 #include "oops/base/Increment.h"
 #include "oops/base/State.h"
 #include "oops/base/Variables.h"
@@ -33,7 +29,6 @@
 #include "saber/oops/SaberCentralBlockParametersBase.h"
 #include "saber/oops/SaberOuterBlockBase.h"
 #include "saber/oops/SaberOuterBlockParametersBase.h"
-
 
 namespace eckit {
   class Configuration;
@@ -82,6 +77,7 @@ template <typename MODEL> class SaberBlockTestParameters
 template <typename MODEL> class SaberBlockTest : public oops::Application {
   typedef oops::Geometry<MODEL>                                Geometry_;
   typedef oops::Increment<MODEL>                               Increment_;
+  typedef typename boost::ptr_vector<SaberOuterBlockBase>      SaberOuterBlockVec_;
   typedef oops::State<MODEL>                                   State_;
 
  public:
@@ -109,17 +105,17 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
     const State_ xx(geom, params.background);
 
     // SABER blocks
-    std::unique_ptr<SaberOuterBlockBase> saberOuterBlock_;
     std::unique_ptr<SaberCentralBlockBase> saberCentralBlock_;
+    SaberOuterBlockVec_ saberOuterBlocks_;
 
     // Local copy of background and first guess
     State_ xbLocal(xx);
     State_ fgLocal(xx);
 
-    // Initial and output variables and geometry
+    // Initial output geometry and variables
+    std::vector<std::reference_wrapper<const oops::GeometryData>> outputGeometryData_;
+    outputGeometryData_.push_back(geom.generic());
     oops::Variables outputVars(incVars);
-    atlas::FunctionSpace outputFunctionSpace = geom.functionSpace();
-    atlas::FieldSet outputExtraFields = geom.extraFields();
 
     // Build outer blocks successively
     const boost::optional<std::vector<SaberOuterBlockParametersWrapper>> &saberOuterBlocks =
@@ -132,23 +128,9 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         const SaberOuterBlockParametersBase & saberOuterBlockParams =
           saberOuterBlockParamWrapper.saberOuterBlockParameters;
 
-        // Local configuration to add parameters
-        eckit::LocalConfiguration outerConf;
-        saberOuterBlockParams.serialize(outerConf);
-        outerConf.set("output variables", outputVars.variables());
-
-        // Define active variables
-        oops::Variables activeVars;
-        const boost::optional<oops::Variables> &optionalActiveVars =
-          saberOuterBlockParams.activeVars.value();
-        if (optionalActiveVars != boost::none) {
-           // Active variables specified
-           activeVars = *optionalActiveVars;
-        } else {
-           // No active variables specified, assuming they are the same as output variables
-           activeVars = outputVars;
-           outerConf.set("active variables", activeVars.variables());
-        }
+        // Get active variables
+        oops::Variables activeVars =
+          saberOuterBlockParams.activeVars.value().get_value_or(outputVars);
 
         // Read input fields (on model increment geometry)
         std::vector<atlas::FieldSet> fsetVec = readInputFields(
@@ -160,23 +142,22 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         // Create outer block
         oops::Log::info() << "Creating outer block: "
                           << saberOuterBlockParams.saberBlockName.value() << std::endl;
-        saberOuterBlock_.reset(SaberOuterBlockFactory::create(geom.getComm(),
-                               outputFunctionSpace,
-                               outputExtraFields,
-                               geom.variableSizes(activeVars),
-                               outerConf,
-                               xbLocal.fieldSet(),
-                               fgLocal.fieldSet(),
-                               fsetVec));
+        saberOuterBlocks_.push_back(SaberOuterBlockFactory::create(
+                                    outputGeometryData_.back().get(),
+                                    geom.variableSizes(activeVars),
+                                    outputVars,
+                                    saberOuterBlockParams,
+                                    xbLocal.fieldSet(),
+                                    fgLocal.fieldSet(),
+                                    fsetVec));
 
         // Apply calibration inverse on xb and fg
-        saberOuterBlock_->calibrationInverseMultiply(xbLocal.fieldSet());
-        saberOuterBlock_->calibrationInverseMultiply(fgLocal.fieldSet());
+        saberOuterBlocks_.back().calibrationInverseMultiply(xbLocal.fieldSet());
+        saberOuterBlocks_.back().calibrationInverseMultiply(fgLocal.fieldSet());
 
-        // Access input geometry and variables of the current block
-        const oops::Variables inputVars = saberOuterBlock_->inputVars();
-        const atlas::FunctionSpace inputFunctionSpace = saberOuterBlock_->inputFunctionSpace();
-        const atlas::FieldSet inputExtraFields = saberOuterBlock_->inputExtraFields();
+        // Access input geometry and variables
+        const oops::GeometryData & inputGeometryData = saberOuterBlocks_.back().inputGeometryData();
+        const oops::Variables inputVars = saberOuterBlocks_.back().inputVars();
 
         // Check that active variables are present in either input or output variables, or both
         for (const auto & var : activeVars.variables()) {
@@ -189,9 +170,9 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         std::vector<size_t> inputVariableSizes = geom.variableSizes(inputVars);
 
         // Create random input FieldSet
-        atlas::FieldSet inputFset = (inputFunctionSpace.type() == "Spectral" ?
-          createSpectralRandomFieldSet(inputFunctionSpace, inputVariableSizes, inputVars) :
-          createRandomFieldSet(inputFunctionSpace, inputVariableSizes, inputVars));
+        atlas::FieldSet inputFset = createRandomFieldSet(inputGeometryData.functionSpace(),
+                                                         inputVariableSizes,
+                                                         inputVars);
 
         // Copy input FieldSet
         atlas::FieldSet inputFsetSave = copyFieldSet(inputFset);
@@ -200,25 +181,28 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         std::vector<size_t> outputVariableSizes = geom.variableSizes(outputVars);
 
         // Create random output FieldSet
-        atlas::FieldSet outputFset = (outputFunctionSpace.type() == "Spectral" ?
-          createSpectralRandomFieldSet(outputFunctionSpace, outputVariableSizes, outputVars) :
-          createRandomFieldSet(outputFunctionSpace, outputVariableSizes, outputVars));
+        atlas::FieldSet outputFset =
+          createRandomFieldSet(outputGeometryData_.back().get().functionSpace(),
+                               outputVariableSizes,
+                               outputVars);
 
         // Copy output FieldSet
         atlas::FieldSet outputFsetSave = copyFieldSet(outputFset);
 
         // Apply forward and adjoint multiplication
-        saberOuterBlock_->multiply(inputFset);
-        saberOuterBlock_->multiplyAD(outputFset);
+        saberOuterBlocks_.back().multiply(inputFset);
+        saberOuterBlocks_.back().multiplyAD(outputFset);
 
         // Compute adjoint test
         const double dp1 = dot_product(inputFset, outputFsetSave, geom.getComm());
         const double dp2 = dot_product(outputFset, inputFsetSave, geom.getComm());
-        oops::Log::info() << "Adjoint test for outer block " << saberOuterBlock_->name()
+        oops::Log::info() << "Adjoint test for outer block "
+                          << saberOuterBlockParams.saberBlockName.value()
                           << ": y^t (Ax) = " << dp1 << ": x^t (A^t y) = " << dp2 << std::endl;
         ASSERT(abs(dp1) > 0.0);
         ASSERT(abs(dp2) > 0.0);
-        oops::Log::test() << "Adjoint test for outer block " << saberOuterBlock_->name();
+        oops::Log::test() << "Adjoint test for outer block "
+                          << saberOuterBlockParams.saberBlockName.value();
         if (0.5*abs(dp1-dp2)/(dp1+dp2) < params.adjointTolerance.value()) {
           oops::Log::test() << " passed" << std::endl;
         } else {
@@ -227,8 +211,7 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         }
 
         // Update output geometry and variables for the next block
-        outputFunctionSpace = inputFunctionSpace;
-        outputExtraFields = inputExtraFields;
+        outputGeometryData_.push_back(inputGeometryData);
         outputVars = inputVars;
       }
     }
@@ -243,23 +226,9 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       // Define input/output variables
       oops::Variables inoutVars = outputVars;
 
-      // Local configuration to add parameters
-      eckit::LocalConfiguration centralConf;
-      saberCentralBlockParams.serialize(centralConf);
-      centralConf.set("inout variables", inoutVars.variables());
-
-      // Define active variables
-      oops::Variables activeVars;
-      const boost::optional<oops::Variables> &optionalActiveVars =
-        saberCentralBlockParams.activeVars.value();
-      if (optionalActiveVars != boost::none) {
-         // Active variables specified
-         activeVars = *optionalActiveVars;
-      } else {
-         // No active variables specified, assuming they are the same as output variables
-         activeVars = inoutVars;
-         centralConf.set("active variables", activeVars.variables());
-      }
+      // Get active variables
+      oops::Variables activeVars =
+        saberCentralBlockParams.activeVars.value().get_value_or(outputVars);
 
       // Read input fields (on model increment geometry)
       std::vector<atlas::FieldSet> fsetVec = readInputFields(
@@ -269,11 +238,11 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         saberCentralBlockParams.inputFields.value());
 
       // Create central block
-      saberCentralBlock_.reset(SaberCentralBlockFactory::create(geom.getComm(),
-                               outputFunctionSpace,
-                               outputExtraFields,
+      saberCentralBlock_.reset(SaberCentralBlockFactory::create(
+                               outputGeometryData_.back().get(),
                                geom.variableSizes(activeVars),
-                               centralConf,
+                               inoutVars,
+                               saberCentralBlockParams,
                                xbLocal.fieldSet(),
                                fgLocal.fieldSet(),
                                fsetVec));
@@ -289,17 +258,19 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       std::vector<size_t> inoutVariableSizes = geom.variableSizes(inoutVars);
 
       // Create random input FieldSet
-      atlas::FieldSet inputFset = createRandomFieldSet(outputFunctionSpace,
-                                                       inoutVariableSizes,
-                                                       inoutVars);
+      atlas::FieldSet inputFset =
+        createRandomFieldSet(outputGeometryData_.back().get().functionSpace(),
+                             inoutVariableSizes,
+                             inoutVars);
 
       // Copy input FieldSet
       atlas::FieldSet inputFsetSave = copyFieldSet(inputFset);
 
       // Create random output FieldSet
-      atlas::FieldSet outputFset = createRandomFieldSet(outputFunctionSpace,
-                                                       inoutVariableSizes,
-                                                       inoutVars);
+      atlas::FieldSet outputFset =
+        createRandomFieldSet(outputGeometryData_.back().get().functionSpace(),
+                             inoutVariableSizes,
+                             inoutVars);
 
       // Copy output FieldSet
       atlas::FieldSet outputFsetSave = copyFieldSet(outputFset);
@@ -309,15 +280,15 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       saberCentralBlock_->multiply(outputFset);
 
       // Compute adjoint test
-
-
       const double dp1 = dot_product(inputFset, outputFsetSave, geom.getComm());
       const double dp2 = dot_product(outputFset, inputFsetSave, geom.getComm());
-      oops::Log::info() << "Adjoint test for central block " << saberCentralBlock_->name()
+      oops::Log::info() << "Adjoint test for central block "
+                        << saberCentralBlockParams.saberBlockName.value()
                         << ": y^t (Ax) = " << dp1 << ": x^t (Ay) = " << dp2 << std::endl;
       ASSERT(abs(dp1) > 0.0);
       ASSERT(abs(dp2) > 0.0);
-      oops::Log::test() << "Adjoint test for central block " << saberCentralBlock_->name();
+      oops::Log::test() << "Adjoint test for central block "
+                        << saberCentralBlockParams.saberBlockName.value();
       if (0.5*abs(dp1-dp2)/(dp1+dp2) < params.adjointTolerance.value()) {
         oops::Log::test() << " passed" << std::endl;
       } else {
@@ -336,62 +307,20 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
 
   // -----------------------------------------------------------------------------
   // TODO(Benjamin): should be moved in OOPS?
-
-  atlas::FieldSet createSpectralRandomFieldSet(const atlas::FunctionSpace & functionSpace,
-                                               const std::vector<size_t> & variableSizes,
-                                               const oops::Variables & vars) const {
-    // Create FieldSet
-    atlas::FieldSet fset;
-
-    for (size_t jvar = 0; jvar < vars.size(); ++jvar) {
-      // Create field
-      atlas::Field field = functionSpace.createField<double>(
-        atlas::option::name(vars.variables()[jvar]) | atlas::option::levels(variableSizes[jvar]));
-
-      // Generate random vector
-      util::NormalDistribution<double> rand_vec(size_t(field.shape(0) * field.shape(1)),
-                                                0.0, 1.0, 1);
-      std::vector<double> rand_vec2(rand_vec.data());
-      if (field.rank() == 2) {
-        auto specFS = atlas::functionspace::Spectral(field.functionspace());
-        const int totalWavenumber = specFS.truncation();
-        const auto zonal_wavenumbers = specFS.zonal_wavenumbers();
-        const int nb_zonal_wavenumbers = zonal_wavenumbers.size();
-        auto view = atlas::array::make_view<double, 2>(field);
-
-        int i(0);
-        std::size_t r{0};
-
-        for (int jm = 0; jm < nb_zonal_wavenumbers; ++jm) {
-          const int m = zonal_wavenumbers(jm);
-          for (std::size_t n1 = m; n1 <= static_cast<std::size_t>(totalWavenumber); ++n1) {
-            for (std::size_t img = 0; img < 2; ++img) {
-              for (atlas::idx_t jl = 0; jl < field.levels(); ++jl) {
-                if ((m == 0) && (img == 1)) {
-                  view(i, jl) = 0.0;
-                } else {
-                  view(i, jl) = rand_vec[r];
-                }
-                 ++i;
-                 ++r;
-              }
-            }
-          }
-        }
-      }
-      // Add field
-      fset.add(field);
-    }
-
-    // Return FieldSet
-    return fset;
-  }
-
   atlas::FieldSet createRandomFieldSet(const atlas::FunctionSpace & functionSpace,
                                        const std::vector<size_t> & variableSizes,
                                        const oops::Variables & vars) const {
     // Get ghost points
-    atlas::Field ghost = functionSpace.ghost();
+    atlas::Field ghost;
+    if (functionSpace.type() == "Spectral") {
+      ghost = functionSpace.createField<int>(atlas::option::name("ghost"));
+      auto ghostView = atlas::array::make_view<int, 1>(ghost);
+      for (atlas::idx_t jnode = 0; jnode < ghost.shape(0); ++jnode) {
+        ghostView(jnode) = 0;
+      }
+    } else {
+      ghost = functionSpace.ghost();
+    }
     auto ghostView = atlas::array::make_view<int, 1>(ghost);
 
     // Create FieldSet
@@ -405,8 +334,25 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       // Get field owned size
       size_t n = 0;
       if (field.rank() == 2) {
-        for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-          if (ghostView(jnode) == 0) n += field.shape(1);
+        if (functionSpace.type() == "Spectral") {
+          atlas::functionspace::Spectral fs(functionSpace);
+          const atlas::idx_t N = fs.truncation();
+          const auto zonal_wavenumbers = fs.zonal_wavenumbers();
+          const atlas::idx_t nb_zonal_wavenumbers = zonal_wavenumbers.size();
+          for (int jm=0; jm < nb_zonal_wavenumbers; ++jm) {
+            const atlas::idx_t m1 = zonal_wavenumbers(jm);
+            for (std::size_t n1 = m1; n1 <= static_cast<std::size_t>(N); ++n1) {
+              if (m1 == 0) {
+                n += field.shape(1);
+              } else {
+                n += 2*field.shape(1);
+              }
+            }
+          }
+        } else {
+          for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+            if (ghostView(jnode) == 0) n += field.shape(1);
+          }
         }
       }
 
@@ -418,14 +364,54 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       n = 0;
       if (field.rank() == 2) {
         auto view = atlas::array::make_view<double, 2>(field);
+        if (functionSpace.type() == "Spectral") {
+          atlas::functionspace::Spectral fs(functionSpace);
+          const atlas::idx_t N = fs.truncation();
+          const auto zonal_wavenumbers = fs.zonal_wavenumbers();
+          const atlas::idx_t nb_zonal_wavenumbers = zonal_wavenumbers.size();
+          int jnode = 0;
+          for (int jm=0; jm < nb_zonal_wavenumbers; ++jm) {
+            const atlas::idx_t m1 = zonal_wavenumbers(jm);
+            for (std::size_t n1 = m1; n1 <= static_cast<std::size_t>(N); ++n1) {
+              if (m1 == 0) {
+                // Real part only
+                for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+                  view(jnode, jlevel) = rand_vec[n];
+                  ++n;
+                }
+                ++jnode;
 
-        for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-          for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-            if (ghostView(jnode) == 0) {
-              view(jnode, jlevel) = rand_vec2[n];
-              ++n;
-            } else {
-              view(jnode, jlevel) = 0.0;
+                // No imaginary part
+                for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+                  view(jnode, jlevel) = 0.0;
+                }
+                ++jnode;
+              } else {
+                // Real part
+                for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+                  view(jnode, jlevel) = rand_vec2[n];
+                  ++n;
+                }
+                ++jnode;
+
+                // Imaginary part
+                for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+                  view(jnode, jlevel) = rand_vec2[n];
+                  ++n;
+                }
+                ++jnode;
+              }
+            }
+          }
+        } else {
+          for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+            for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+              if (ghostView(jnode) == 0) {
+                view(jnode, jlevel) = rand_vec2[n];
+                ++n;
+              } else {
+                view(jnode, jlevel) = 0.0;
+              }
             }
           }
         }
@@ -435,8 +421,10 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       fset.add(field);
     }
 
-    // Halo exchange
-    fset.haloExchange();
+    if (functionSpace.type() != "Spectral") {
+      // Halo exchange
+      fset.haloExchange();
+    }
 
     // Return FieldSet
     return fset;
@@ -480,57 +468,54 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
     // Check FieldSets size
     ASSERT(fset1.size() == fset2.size());
 
-    double dp = 0.0;
     // Compute dot product
-
+    double dp = 0.0;
     for (const auto & field1 : fset1) {
-      if (field1.functionspace().type().compare("Spectral") == 0) {
-      // Need to cast to spectral functionspace here for additional methods.
+      if (field1.rank() == 2) {
+        atlas::Field field2 = fset2.field(field1.name());
 
-        if (field1.rank() == 2) {
-          auto specFS = atlas::functionspace::Spectral(fset1[0].functionspace());
-          const int totalWavenumber = specFS.truncation();
-          const auto zonal_wavenumbers = specFS.zonal_wavenumbers();
-          const int nb_zonal_wavenumbers = zonal_wavenumbers.size();
-          atlas::Field field2 = fset2.field(field1.name());
+        // Check fields consistency
+        ASSERT(field2.rank() == 2);
+        ASSERT(field1.shape(0) == field2.shape(0));
+        ASSERT(field1.shape(1) == field2.shape(1));
 
-          // Check fields consistency
-          ASSERT(field2.functionspace().type().compare("Spectral") == 0);
-          ASSERT(field2.rank() == 2);
-          ASSERT(field1.shape(0) == field2.shape(0));
-          ASSERT(field1.shape(1) == field2.shape(1));
-          auto view1 = atlas::array::make_view<double, 2>(field1);
-          auto view2 = atlas::array::make_view<double, 2>(field2);
-          int i(0);
-          for (int jm = 0; jm < nb_zonal_wavenumbers; ++jm) {
-            const int m1 = zonal_wavenumbers(jm);
-            for (std::size_t n1 = m1; n1 <= static_cast<std::size_t>(totalWavenumber); ++n1) {
-              for (std::size_t img = 0; img < 2; ++img, ++i) {
-                for (atlas::idx_t jl = 0; jl < field1.levels(); ++jl) {
-                  if (m1 == 0) {
-                    dp += view1(i, jl) * view2(i, jl);
-                  } else {
-                    // to account for the contribution from the implicit
-                    // complex conjugate coefficients.
-                    dp += 2.0 * view1(i, jl) * view2(i, jl);
-                  }
+        // Add contributions
+        auto view1 = atlas::array::make_view<double, 2>(field1);
+        auto view2 = atlas::array::make_view<double, 2>(field2);
+        if (field1.functionspace().type() == "Spectral") {
+          atlas::functionspace::Spectral fs(field1.functionspace());
+          const atlas::idx_t N = fs.truncation();
+          const auto zonal_wavenumbers = fs.zonal_wavenumbers();
+          const atlas::idx_t nb_zonal_wavenumbers = zonal_wavenumbers.size();
+          int jnode = 0;
+          for (int jm=0; jm < nb_zonal_wavenumbers; ++jm) {
+            const atlas::idx_t m1 = zonal_wavenumbers(jm);
+            for (std::size_t n1 = m1; n1 <= static_cast<std::size_t>(N); ++n1) {
+              if (m1 == 0) {
+                // Real part only
+                for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
+                  dp += view1(jnode, jlevel)*view2(jnode, jlevel);
                 }
+                ++jnode;
+
+                // No imaginary part
+                ++jnode;
+              } else {
+                // Real part
+                for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
+                  dp += 2.0*view1(jnode, jlevel)*view2(jnode, jlevel);
+                }
+                ++jnode;
+
+                // Imaginary part
+                for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
+                  dp += 2.0*view1(jnode, jlevel)*view2(jnode, jlevel);
+                }
+                ++jnode;
               }
             }
           }
-        }
-      } else {
-        if (field1.rank() == 2) {
-          atlas::Field field2 = fset2.field(field1.name());
-
-          // Check fields consistency
-          ASSERT(field2.rank() == 2);
-          ASSERT(field1.shape(0) == field2.shape(0));
-          ASSERT(field1.shape(1) == field2.shape(1));
-
-          // Add contributions
-          auto view1 = atlas::array::make_view<double, 2>(field1);
-          auto view2 = atlas::array::make_view<double, 2>(field2);
+        } else {
           for (atlas::idx_t jnode = 0; jnode < field1.shape(0); ++jnode) {
             for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
               dp += view1(jnode, jlevel)*view2(jnode, jlevel);

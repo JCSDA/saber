@@ -20,41 +20,40 @@
 
 #include "saber/oops/SaberOuterBlockBase.h"
 #include "saber/oops/SaberOuterBlockParametersBase.h"
-#include "saber/vader/MoistureControlParameters.h"
 
 namespace oops {
   class Variables;
 }
 
 namespace saber {
+namespace vader {
 
 // -----------------------------------------------------------------------------
-class MoistureControlSaberBlockParameters : public SaberOuterBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(MoistureControlSaberBlockParameters, SaberOuterBlockParametersBase)
+
+class MoistIncrOpParameters : public SaberOuterBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(MoistIncrOpParameters, SaberOuterBlockParametersBase)
  public:
-  oops::RequiredParameter<moisturecontrolParameters>
-    moisturecontrolParams{"covariance data", this};
 };
 
 // -----------------------------------------------------------------------------
-// This saber block is here
-//
-// -----------------------------------------------------------------------------
-class MoistureControlSaberBlock : public SaberOuterBlockBase {
+
+class MoistIncrOp : public SaberOuterBlockBase {
  public:
-  static const std::string classname() {return "saber::MoistureControlSaberBlock";}
+  static const std::string classname() {return "saber::vader::AirTemperature";}
 
-  typedef MoistureControlSaberBlockParameters Parameters_;
+  typedef MoistIncrOpParameters Parameters_;
 
-  MoistureControlSaberBlock(const eckit::mpi::Comm &,
-         const atlas::FunctionSpace &,
-         const atlas::FieldSet &,
-         const std::vector<size_t> &,
-         const eckit::Configuration &,
-         const atlas::FieldSet &,
-         const atlas::FieldSet &,
-         const std::vector<atlas::FieldSet> &);
-  virtual ~MoistureControlSaberBlock();
+  MoistIncrOp(const oops::GeometryData &,
+              const std::vector<size_t> &,
+              const oops::Variables &,
+              const Parameters_ &,
+              const atlas::FieldSet &,
+              const atlas::FieldSet &,
+              const std::vector<atlas::FieldSet> &);
+  virtual ~MoistIncrOp();
+
+  const oops::GeometryData & inputGeometryData() const override {return inputGeometryData_;}
+  const oops::Variables & inputVars() const override {return inputVars_;}
 
   void multiply(atlas::FieldSet &) const override;
   void multiplyAD(atlas::FieldSet &) const override;
@@ -62,10 +61,12 @@ class MoistureControlSaberBlock : public SaberOuterBlockBase {
 
  private:
   void print(std::ostream &) const override;
-  atlas::FieldSet covFieldSet_;
+  const oops::GeometryData & inputGeometryData_;
+  oops::Variables inputVars_;
   atlas::FieldSet augmentedStateFieldSet_;
 };
 
 // -----------------------------------------------------------------------------
 
+}  // namespace vader
 }  // namespace saber

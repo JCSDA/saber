@@ -14,11 +14,11 @@
 #include "atlas/field.h"
 
 #include "oops/base/Geometry.h"
+#include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 
 #include "saber/bump/BUMP.h"
-#include "saber/bump/BUMP_Parameters.h"
 #include "saber/oops/SaberCentralBlockBase.h"
 #include "saber/oops/SaberCentralBlockParametersBase.h"
 
@@ -27,33 +27,33 @@ namespace oops {
 }
 
 namespace saber {
+namespace bump {
 
 // -----------------------------------------------------------------------------
 
-class BUMP_NICASParameters : public SaberCentralBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(BUMP_NICASParameters, SaberCentralBlockParametersBase)
+class NICASParameters : public SaberCentralBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(NICASParameters, SaberCentralBlockParametersBase)
 
  public:
-  oops::RequiredParameter<BUMP_Parameters> bumpParams{"bump", this};
+  oops::RequiredParameter<BUMPParameters> bumpParams{"bump", this};
 };
 
 // -----------------------------------------------------------------------------
 
-class BUMP_NICAS : public SaberCentralBlockBase {
+class NICAS : public SaberCentralBlockBase {
  public:
-  static const std::string classname() {return "saber::BUMP_NICAS";}
+  static const std::string classname() {return "saber::bump::NICAS";}
 
-  typedef BUMP_NICASParameters Parameters_;
+  typedef NICASParameters Parameters_;
 
-  BUMP_NICAS(const eckit::mpi::Comm &,
-     const atlas::FunctionSpace &,
-     const atlas::FieldSet &,
-     const std::vector<size_t> &,
-     const eckit::Configuration &,
-     const atlas::FieldSet &,
-     const atlas::FieldSet &,
-     const std::vector<atlas::FieldSet> &);
-  virtual ~BUMP_NICAS();
+  NICAS(const oops::GeometryData &,
+        const std::vector<size_t> &,
+        const oops::Variables &,
+        const Parameters_ &,
+        const atlas::FieldSet &,
+        const atlas::FieldSet &,
+        const std::vector<atlas::FieldSet> &);
+  virtual ~NICAS();
 
   void randomize(atlas::FieldSet &) const override;
   void multiply(atlas::FieldSet &) const override;
@@ -65,4 +65,5 @@ class BUMP_NICAS : public SaberCentralBlockBase {
 
 // -----------------------------------------------------------------------------
 
+}  // namespace bump
 }  // namespace saber

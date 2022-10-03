@@ -14,6 +14,7 @@
 #include "atlas/field.h"
 
 #include "oops/base/Geometry.h"
+#include "oops/base/GeometryData.h"
 #include "oops/base/Increment.h"
 #include "oops/base/ModelSpaceCovarianceBase.h"
 #include "oops/base/ModelSpaceCovarianceParametersBase.h"
@@ -32,11 +33,6 @@
 #include "saber/oops/SaberCentralBlockParametersBase.h"
 #include "saber/oops/SaberOuterBlockBase.h"
 #include "saber/oops/SaberOuterBlockParametersBase.h"
-
-namespace eckit {
-  class LocalConfiguration;
-  class Configuration;
-}
 
 namespace oops {
   class Variables;
@@ -94,6 +90,7 @@ class ErrorCovariance : public oops::ModelSpaceCovarianceBase<MODEL>,
 
   void print(std::ostream &) const override;
 
+  std::vector<std::reference_wrapper<const oops::GeometryData>> outputGeometryData_;
   std::unique_ptr<SaberCentralBlockBase> saberCentralBlock_;
   SaberOuterBlockVec_ saberOuterBlocks_;
 };
@@ -115,9 +112,8 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
   State_ xbLocal(xb);
   State_ fgLocal(fg);
 
-  // Initial and output geometry and variables
-  atlas::FunctionSpace outputFunctionSpace = geom.functionSpace();
-  atlas::FieldSet outputExtraFields = geom.extraFields();
+  // Initial output geometry and variables
+  outputGeometryData_.push_back(geom.generic());
   oops::Variables outputVars(incVars);
 
   // Build outer blocks successively
@@ -131,23 +127,9 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
       const SaberOuterBlockParametersBase & saberOuterBlockParams =
         saberOuterBlockParamWrapper.saberOuterBlockParameters;
 
-      // Local configuration to add parameters
-      eckit::LocalConfiguration outerConf;
-      saberOuterBlockParams.serialize(outerConf);
-      outerConf.set("output variables", outputVars.variables());
-
-      // Define active variables
-      oops::Variables activeVars;
-      const boost::optional<oops::Variables> &optionalActiveVars =
-        saberOuterBlockParams.activeVars.value();
-      if (optionalActiveVars != boost::none) {
-         // Active variables specified
-         activeVars = *optionalActiveVars;
-      } else {
-         // No active variables specified, assuming they are the same as output variables
-         activeVars = outputVars;
-         outerConf.set("active variables", activeVars.variables());
-      }
+      // Get active variables
+      oops::Variables activeVars =
+        saberOuterBlockParams.activeVars.value().get_value_or(outputVars);
 
       // Read input fields (on model increment geometry)
       std::vector<atlas::FieldSet> fsetVec = readInputFields(
@@ -159,11 +141,11 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
       // Create outer block
       oops::Log::info() << "Creating outer block: " << saberOuterBlockParams.saberBlockName.value()
                         << std::endl;
-      saberOuterBlocks_.push_back(SaberOuterBlockFactory::create(geom.getComm(),
-                                  outputFunctionSpace,
-                                  outputExtraFields,
+      saberOuterBlocks_.push_back(SaberOuterBlockFactory::create(
+                                  outputGeometryData_.back().get(),
                                   geom.variableSizes(activeVars),
-                                  outerConf,
+                                  outputVars,
+                                  saberOuterBlockParams,
                                   xbLocal.fieldSet(),
                                   fgLocal.fieldSet(),
                                   fsetVec));
@@ -172,10 +154,9 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
       saberOuterBlocks_.back().calibrationInverseMultiply(xbLocal.fieldSet());
       saberOuterBlocks_.back().calibrationInverseMultiply(fgLocal.fieldSet());
 
-      // Access input geometry and variables of the current block
+      // Access input geometry and variables
+      const oops::GeometryData & inputGeometryData = saberOuterBlocks_.back().inputGeometryData();
       const oops::Variables inputVars = saberOuterBlocks_.back().inputVars();
-      const atlas::FunctionSpace inputFunctionSpace = saberOuterBlocks_.back().inputFunctionSpace();
-      const atlas::FieldSet inputExtraFields = saberOuterBlocks_.back().inputExtraFields();
 
       // Check that active variables are present in either input or output variables, or both
       for (const auto & var : activeVars.variables()) {
@@ -183,12 +164,11 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
       }
 
       // Update output geometry and variables for the next block
-      outputFunctionSpace = inputFunctionSpace;
-      outputExtraFields = inputExtraFields;
+      outputGeometryData_.push_back(inputGeometryData);
       outputVars = inputVars;
     }
   }
-  std::cout << "Params:"  << params.toConfiguration() << std::endl;
+
   // Get central block parameters
   const SaberCentralBlockParametersWrapper & saberCentralBlockParamWrapper =
     params.saberCentralBlock.value();
@@ -198,23 +178,8 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
   // Define input/output variables
   oops::Variables inoutVars = outputVars;
 
-  // Local configuration to add parameters
-  eckit::LocalConfiguration centralConf;
-  saberCentralBlockParams.serialize(centralConf);
-  centralConf.set("inout variables", inoutVars.variables());
-
-  // Define active variables
-  oops::Variables activeVars;
-  const boost::optional<oops::Variables> &optionalActiveVars =
-    saberCentralBlockParams.activeVars.value();
-  if (optionalActiveVars != boost::none) {
-     // Active variables specified
-     activeVars = *optionalActiveVars;
-  } else {
-     // No active variables specified, assuming they are the same as output variables
-     activeVars = inoutVars;
-     centralConf.set("active variables", activeVars.variables());
-  }
+  // Get active variables
+  oops::Variables activeVars = saberCentralBlockParams.activeVars.value().get_value_or(outputVars);
 
   // Read input fields (on model increment geometry)
   std::vector<atlas::FieldSet> fsetVec = readInputFields(
@@ -224,11 +189,11 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
     saberCentralBlockParams.inputFields.value());
 
   // Create central block
-  saberCentralBlock_.reset(SaberCentralBlockFactory::create(geom.getComm(),
-                           outputFunctionSpace,
-                           outputExtraFields,
+  saberCentralBlock_.reset(SaberCentralBlockFactory::create(
+                           outputGeometryData_.back().get(),
                            geom.variableSizes(activeVars),
-                           centralConf,
+                           inoutVars,
+                           saberCentralBlockParams,
                            xbLocal.fieldSet(),
                            fgLocal.fieldSet(),
                            fsetVec));

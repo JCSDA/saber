@@ -19,7 +19,7 @@
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
-#include "saber/gsi/grid/GSI_Grid.interface.h"
+#include "saber/gsi/grid/Grid.interface.h"
 
 namespace saber {
 namespace gsi {

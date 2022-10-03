@@ -127,13 +127,8 @@ Geometry::Geometry(const Parameters_ & params,
       // NodeColumns
       if (grid_.name().compare(0, 2, std::string{"CS"}) == 0) {
         // CubedSphere
-// TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
-#if atlas_TRANS_FOUND
         mesh_ = atlas::MeshGenerator("cubedsphere_dual").generate(grid_);
         functionSpace_ = atlas::functionspace::CubedSphereNodeColumns(mesh_);
-#else
-        ABORT("TRANS required");
-#endif
       } else {
         // NodeColumns
         mesh_ = atlas::MeshGenerator("delaunay").generate(grid_);
@@ -222,10 +217,7 @@ Geometry::Geometry(const Geometry & other) : comm_(other.comm_), levels_(other.l
     // NodeColumns
     if (grid_.name().compare(0, 2, std::string{"CS"}) == 0) {
       // CubedSphere
-// TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
-#if atlas_TRANS_FOUND
       functionSpace_ = atlas::functionspace::CubedSphereNodeColumns(other.functionSpace_);
-#endif
     } else {
       // Other NodeColumns
       functionSpace_ = atlas::functionspace::NodeColumns(other.functionSpace_);
