@@ -49,11 +49,17 @@ std::vector<atlas::FieldSet> readInputFields(
         // TODO(Benjamin): here we assume that all input fields have the background geometry
         // and block input variables
         oops::Increment<MODEL> dx(resol, vars, date);
-        dx.read(inputField);
+        eckit::LocalConfiguration file = inputField.getSubConfiguration("file");
+        dx.read(file);
+
+        // Define FieldSet name
+        std::string name = inputField.getString("parameter");
+        if (inputField.has("component")) {
+          name += "::" + std::to_string(inputField.getInt("component"));
+        }
 
         // Transform Increment into FieldSet
-        std::string name = inputField.getString("parameter");
-        oops::Log::test() << "Norm of " << name << ":" << dx.norm() << std::endl;
+        oops::Log::test() << "Norm of input parameter " << name << ": " << dx.norm() << std::endl;
         atlas::FieldSet fset;
         fset.name() = name;
         for (const atlas::Field field : dx.fieldSet()) {

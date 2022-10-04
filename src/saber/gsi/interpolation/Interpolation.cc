@@ -21,11 +21,6 @@
 
 #include "saber/oops/SaberOuterBlockBase.h"
 
-
-namespace oops {
-  class Variables;
-}
-
 namespace saber {
 namespace gsi {
 

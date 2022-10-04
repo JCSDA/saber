@@ -25,7 +25,6 @@
 
 #include "saber/gsi/covariance/Covariance.interface.h"
 #include "saber/gsi/grid/Grid.h"
-#include "saber/oops/SaberCentralBlockBase.h"
 
 namespace saber {
 namespace gsi {

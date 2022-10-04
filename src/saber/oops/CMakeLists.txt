@@ -6,15 +6,16 @@
 if( oops_FOUND )
     list(APPEND oops_src_files_list
 
+    # SABER block parameters base
+    SaberBlockParametersBase.h
+
     # SABER central block base
     SaberCentralBlockBase.cc
     SaberCentralBlockBase.h
-    SaberCentralBlockParametersBase.h
 
     # SABER outer blocks base
     SaberOuterBlockBase.cc
     SaberOuterBlockBase.h
-    SaberOuterBlockParametersBase.h
 
     # ID block
     ID.h

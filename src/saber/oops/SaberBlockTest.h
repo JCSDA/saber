@@ -25,10 +25,9 @@
 #include "oops/util/Random.h"
 
 #include "saber/oops/ReadInputFields.h"
+#include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberCentralBlockBase.h"
-#include "saber/oops/SaberCentralBlockParametersBase.h"
 #include "saber/oops/SaberOuterBlockBase.h"
-#include "saber/oops/SaberOuterBlockParametersBase.h"
 
 namespace eckit {
   class Configuration;
@@ -125,7 +124,7 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       for (const SaberOuterBlockParametersWrapper & saberOuterBlockParamWrapper :
         boost::adaptors::reverse(*saberOuterBlocks)) {
         // Get outer block parameters
-        const SaberOuterBlockParametersBase & saberOuterBlockParams =
+        const SaberBlockParametersBase & saberOuterBlockParams =
           saberOuterBlockParamWrapper.saberOuterBlockParameters;
 
         // Get active variables
@@ -221,7 +220,7 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       params.saberCentralBlock.value();
     if (saberCentralBlock != boost::none) {
       // Get central block parameters
-      const SaberCentralBlockParametersBase & saberCentralBlockParams =
+      const SaberBlockParametersBase & saberCentralBlockParams =
         saberCentralBlock->saberCentralBlockParameters;
 
       // Define input/output variables

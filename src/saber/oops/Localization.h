@@ -22,8 +22,8 @@
 #include "oops/util/Logger.h"
 
 #include "saber/oops/ReadInputFields.h"
+#include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberCentralBlockBase.h"
-#include "saber/oops/SaberCentralBlockParametersBase.h"
 
 namespace eckit {
   class Configuration;
@@ -74,7 +74,7 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
     const eckit::LocalConfiguration saberCentralBlock(conf, "saber central block");
     SaberCentralBlockParametersWrapper saberCentralBlockParamWrapper;
     saberCentralBlockParamWrapper.validateAndDeserialize(saberCentralBlock);
-    const SaberCentralBlockParametersBase & saberCentralBlockParams =
+    const SaberBlockParametersBase & saberCentralBlockParams =
       saberCentralBlockParamWrapper.saberCentralBlockParameters;
 
     // Create dummy FieldSet (for xb and fg)

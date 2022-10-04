@@ -23,7 +23,7 @@
 #include "oops/util/parameters/RequiredPolymorphicParameter.h"
 #include "oops/util/Printable.h"
 
-#include "saber/oops/SaberCentralBlockParametersBase.h"
+#include "saber/oops/SaberBlockParametersBase.h"
 
 namespace saber {
 
@@ -50,7 +50,7 @@ class SaberCentralBlockFactory;
 class SaberCentralBlockParametersWrapper : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(SaberCentralBlockParametersWrapper, Parameters)
  public:
-  oops::RequiredPolymorphicParameter<SaberCentralBlockParametersBase, SaberCentralBlockFactory>
+  oops::RequiredPolymorphicParameter<SaberBlockParametersBase, SaberCentralBlockFactory>
     saberCentralBlockParameters{"saber block name", this};
 };
 
@@ -61,12 +61,12 @@ class SaberCentralBlockFactory {
   static SaberCentralBlockBase * create(const oops::GeometryData &,
                                  const std::vector<size_t> &,
                                  const oops::Variables &,
-                                 const SaberCentralBlockParametersBase &,
+                                 const SaberBlockParametersBase &,
                                  const atlas::FieldSet &,
                                  const atlas::FieldSet &,
                                  const std::vector<atlas::FieldSet> &);
 
-  static std::unique_ptr<SaberCentralBlockParametersBase> createParameters(const std::string &name);
+  static std::unique_ptr<SaberBlockParametersBase> createParameters(const std::string &name);
 
   static std::vector<std::string> getMakerNames() {
     return oops::keys(getMakers());
@@ -81,12 +81,12 @@ class SaberCentralBlockFactory {
   virtual SaberCentralBlockBase * make(const oops::GeometryData &,
                                        const std::vector<size_t> &,
                                        const oops::Variables &,
-                                       const SaberCentralBlockParametersBase &,
+                                       const SaberBlockParametersBase &,
                                        const atlas::FieldSet &,
                                        const atlas::FieldSet &,
                                        const std::vector<atlas::FieldSet> &) = 0;
 
-  virtual std::unique_ptr<SaberCentralBlockParametersBase> makeParameters() const = 0;
+  virtual std::unique_ptr<SaberBlockParametersBase> makeParameters() const = 0;
 
   static std::map < std::string, SaberCentralBlockFactory * > & getMakers() {
     static std::map < std::string, SaberCentralBlockFactory * > makers_;
@@ -103,7 +103,7 @@ class SaberCentralBlockMaker : public SaberCentralBlockFactory {
   SaberCentralBlockBase * make(const oops::GeometryData & geometryData,
                                const std::vector<size_t> & activeVariableSizes,
                                const oops::Variables & outputVars,
-                               const SaberCentralBlockParametersBase & params,
+                               const SaberBlockParametersBase & params,
                                const atlas::FieldSet & xb,
                                const atlas::FieldSet & fg,
                                const std::vector<atlas::FieldSet> & fsetVec) override {
@@ -112,7 +112,7 @@ class SaberCentralBlockMaker : public SaberCentralBlockFactory {
                  outputVars, stronglyTypedParams, xb, fg, fsetVec);
   }
 
-  std::unique_ptr<SaberCentralBlockParametersBase> makeParameters() const override {
+  std::unique_ptr<SaberBlockParametersBase> makeParameters() const override {
     return std::make_unique<Parameters_>();
   }
 

@@ -19,7 +19,6 @@
 
 #include "saber/bump/BUMP.h"
 #include "saber/oops/SaberOuterBlockBase.h"
-#include "saber/oops/SaberOuterBlockParametersBase.h"
 
 namespace saber {
 namespace bump {

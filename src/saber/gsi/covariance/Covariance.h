@@ -24,8 +24,8 @@
 #include "oops/util/parameters/RequiredParameter.h"
 
 #include "saber/gsi/covariance/Covariance.interface.h"
+#include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberCentralBlockBase.h"
-#include "saber/oops/SaberCentralBlockParametersBase.h"
 
 namespace oops {
   class Variables;
@@ -36,8 +36,8 @@ namespace gsi {
 
 // -------------------------------------------------------------------------------------------------
 
-class CovarianceParameters : public SaberCentralBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(CovarianceParameters, SaberCentralBlockParametersBase)
+class CovarianceParameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(CovarianceParameters, SaberBlockParametersBase)
 
  public:
   // File containing grid and coefficients

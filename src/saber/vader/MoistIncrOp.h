@@ -18,8 +18,8 @@
 
 #include "oops/base/Variables.h"
 
+#include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberOuterBlockBase.h"
-#include "saber/oops/SaberOuterBlockParametersBase.h"
 
 namespace oops {
   class Variables;
@@ -30,8 +30,8 @@ namespace vader {
 
 // -----------------------------------------------------------------------------
 
-class MoistIncrOpParameters : public SaberOuterBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(MoistIncrOpParameters, SaberOuterBlockParametersBase)
+class MoistIncrOpParameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(MoistIncrOpParameters, SaberBlockParametersBase)
  public:
 };
 
