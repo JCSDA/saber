@@ -65,7 +65,7 @@ HydroBal::HydroBal(const oops::GeometryData & outputGeometryData,
   // Check that they are allocated (i.e. exist in the state fieldset)
   // Use meta data to see if they are populated with actual data.
   for (auto & s : requiredStateVariables) {
-    if (!xb.has_field(s)) {
+    if (!xb.has(s)) {
       oops::Log::info() << "HydroBal variable " << s <<
                            " is not part of state object." << std::endl;
     }
@@ -155,7 +155,6 @@ void HydroBal::multiplyAD(atlas::FieldSet & fset) const {
 
 void HydroBal::calibrationInverseMultiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::calibrationInverseMultiply starting" << std::endl;
-  mo::thetavP2HexnerAD(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::calibrationInverseMultiply done" << std::endl;
 }
 

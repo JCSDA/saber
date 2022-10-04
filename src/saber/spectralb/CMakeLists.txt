@@ -25,8 +25,18 @@ if( atlas_TRANS_FOUND )
     SpectralCovariance.h
     SpectralToGauss.cc
     SpectralToGauss.h
+    SpectralToGaussUV.cc
+    SpectralToGaussUV.h
     SPCTRL_Cov.cc
     SPCTRL_Cov.h
+    )
+endif()
+
+if( atlas_VERSION GREATER_EQUAL 0.31.0 )
+    list(APPEND spectralb_src_files_list
+
+    SpectralToGaussUV.cc
+    SpectralToGaussUV.h
     )
 endif()
 

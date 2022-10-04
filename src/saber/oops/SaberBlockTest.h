@@ -198,7 +198,7 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         const double dp2 = dot_product(outputFset, inputFsetSave, geom.getComm());
         oops::Log::info() << "Adjoint test for outer block "
                           << saberOuterBlockParams.saberBlockName.value()
-                          << ": y^t (Ax) = " << dp1 << ": x^t (Ay) = " << dp2 << std::endl;
+                          << ": y^t (Ax) = " << dp1 << ": x^t (A^t y) = " << dp2 << std::endl;
         ASSERT(abs(dp1) > 0.0);
         ASSERT(abs(dp2) > 0.0);
         oops::Log::test() << "Adjoint test for outer block "
@@ -357,7 +357,7 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       }
 
       // Generate random vector
-      util::NormalDistribution<double> rand_vec(n, 0.0, 1.0, 1);
+      util::NormalDistribution<double>rand_vec(n, 0.0, 1.0, 1);
 
       // Populate with random numbers
       n = 0;

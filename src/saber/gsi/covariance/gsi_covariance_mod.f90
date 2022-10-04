@@ -264,44 +264,44 @@ real(kind=kind_real), pointer :: ps(:,:)
 integer, parameter :: rseed = 3
 
 ! Get Atlas field
-if (fields%has_field('stream_function').and.fields%has_field('velocity_potential')) then 
+if (fields%has('stream_function').and.fields%has('velocity_potential')) then
   afield = fields%field('stream_function')
   call afield%data(psi)
   afield = fields%field('velocity_potential')
   call afield%data(chi)
-elseif (fields%has_field('eastward_wind').and.fields%has_field('northward_wind')) then 
+elseif (fields%has('eastward_wind').and.fields%has('northward_wind')) then
   afield = fields%field('eastward_wind')
   call afield%data(u)
   afield = fields%field('northward_wind')
   call afield%data(v)
 endif
 
-if (fields%has_field('air_temperature')) then
+if (fields%has('air_temperature')) then
   afield = fields%field('air_temperature')
   call afield%data(t)
 endif
 
-if (fields%has_field('surface_pressure')) then
+if (fields%has('surface_pressure')) then
   afield = fields%field('surface_pressure')
   call afield%data(ps)
 endif
 
-if (fields%has_field('specific_humidity')) then
+if (fields%has('specific_humidity')) then
   afield = fields%field('specific_humidity')
   call afield%data(q)
 endif
 
-if (fields%has_field('cloud_liquid_ice')) then
+if (fields%has('cloud_liquid_ice')) then
   afield = fields%field('cloud_liquid_ice')
   call afield%data(qi)
 endif
 
-if (fields%has_field('cloud_liquid_water')) then
+if (fields%has('cloud_liquid_water')) then
   afield = fields%field('cloud_liquid_water')
   call afield%data(ql)
 endif
 
-if (fields%has_field('ozone_mass_mixing_ratio')) then
+if (fields%has('ozone_mass_mixing_ratio')) then
   afield = fields%field('ozone_mass_mixing_ratio')
   call afield%data(o3)
 endif
@@ -566,109 +566,109 @@ end subroutine multiply_ad
    integer,intent(out):: ier
    ier=-1
    if (trim(vname) == 'ps') then
-      if (.not.fields%has_field('surface_pressure')) return
+      if (.not.fields%has('surface_pressure')) return
       afield = fields%field('surface_pressure')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 'air_pressure_thickness') then
-      if (.not.fields%has_field('air_pressure_thickness')) return
+      if (.not.fields%has('air_pressure_thickness')) return
       afield = fields%field('air_pressure_thickness')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 'sst') then
-      if (.not.fields%has_field('skin_surface_temperature')) return
+      if (.not.fields%has('skin_surface_temperature')) return
       afield = fields%field('skin_surface_temperature')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 'u' .or. trim(vname) == 'ua' ) then
-      if (.not.fields%has_field('eastward_wind')) return
+      if (.not.fields%has('eastward_wind')) return
       afield = fields%field('eastward_wind')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 'v' .or. trim(vname) == 'va' ) then
-      if (.not.fields%has_field('northward_wind')) return
+      if (.not.fields%has('northward_wind')) return
       afield = fields%field('northward_wind')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 'sf') then
-      if (.not.fields%has_field('stream_function')) return
+      if (.not.fields%has('stream_function')) return
       afield = fields%field('stream_function')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 'vp') then
-      if (.not.fields%has_field('velocity_potential')) return
+      if (.not.fields%has('velocity_potential')) return
       afield = fields%field('velocity_potential')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 't' .or. trim(vname) == 'tsen' ) then
-      if (.not.fields%has_field('air_temperature')) return
+      if (.not.fields%has('air_temperature')) return
       afield = fields%field('air_temperature')
       call afield%data(rank2)
       ier=0
    endif
 !  if (trim(vname) == 'tv' ) then
-!     if (.not.fields%has_field('virtual_temperature')) return
+!     if (.not.fields%has('virtual_temperature')) return
 !     afield = fields%field('virtual_temperature')
 !     call afield%data(rank2)
 !     ier=0
 !  endif
    if (trim(vname) == 'q' .or. trim(vname) == 'sphum' ) then
-      if (.not.fields%has_field('specific_humidity')) return
+      if (.not.fields%has('specific_humidity')) return
       afield = fields%field('specific_humidity')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 'qi') then
-      if (.not.fields%has_field('cloud_liquid_ice')) return
+      if (.not.fields%has('cloud_liquid_ice')) return
       afield = fields%field('cloud_liquid_ice')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 'ql') then
-      if (.not.fields%has_field('cloud_liquid_water')) return
+      if (.not.fields%has('cloud_liquid_water')) return
       afield = fields%field('cloud_liquid_water')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 'qr') then
-      if (.not.fields%has_field('cloud_liquid_rain')) return
+      if (.not.fields%has('cloud_liquid_rain')) return
       afield = fields%field('cloud_liquid_rain')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 'qs') then
-      if (.not.fields%has_field('cloud_liquid_snow')) return
+      if (.not.fields%has('cloud_liquid_snow')) return
       afield = fields%field('cloud_liquid_snow')
       call afield%data(rank2)
       ier=0
    endif
 !  if (trim(vname) == 'cw') then
-!     if (.not.fields%has_field('cloud_water')) return
+!     if (.not.fields%has('cloud_water')) return
 !     afield = fields%field('cloud_water')
 !     call afield%data(rank2)
 !     ier=0
 !  endif
    if (trim(vname) == 'oz' .or. trim(vname) == 'o3ppmv' ) then
-      if (.not.fields%has_field('mole_fraction_of_ozone_in_air')) return
+      if (.not.fields%has('mole_fraction_of_ozone_in_air')) return
       afield = fields%field('mole_fraction_of_ozone_in_air')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 'o3mr') then
-      if (.not.fields%has_field('ozone_mass_mixing_ratio')) return
+      if (.not.fields%has('ozone_mass_mixing_ratio')) return
       afield = fields%field('ozone_mass_mixing_ratio')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 'phis' ) then
-      if (.not.fields%has_field('sfc_geopotential_height_times_grav')) return
+      if (.not.fields%has('sfc_geopotential_height_times_grav')) return
       afield = fields%field('sfc_geopotential_height_times_grav')
       call afield%data(rank2)
       ier=0
