@@ -47,7 +47,7 @@ else()
 endif()
 
 # Optionals
-find_package( oops QUIET OPTIONAL_COMPONENTS qg )
+find_package( oops QUIET )
 find_package( gsibec 1.0.6 QUIET )
 find_package( vader QUIET )
 
