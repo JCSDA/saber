@@ -19,8 +19,8 @@
 #include "oops/util/abor1_cpp.h"
 
 #include "saber/bump/BUMP.h"
+#include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberOuterBlockBase.h"
-#include "saber/oops/SaberOuterBlockParametersBase.h"
 
 namespace oops {
   class Variables;
@@ -31,8 +31,8 @@ namespace bump {
 
 // -----------------------------------------------------------------------------
 
-class PsiChiToUVParameters : public SaberOuterBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(PsiChiToUVParameters, SaberOuterBlockParametersBase)
+class PsiChiToUVParameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(PsiChiToUVParameters, SaberBlockParametersBase)
 
  public:
   oops::RequiredParameter<BUMPParameters> bumpParams{"bump", this};

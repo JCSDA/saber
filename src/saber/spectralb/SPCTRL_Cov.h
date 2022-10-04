@@ -16,9 +16,8 @@
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 
+#include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberCentralBlockBase.h"
-#include "saber/oops/SaberCentralBlockParametersBase.h"
-
 #include "saber/spectralb/spectralb.h"
 #include "saber/spectralb/spectralbParameters.h"
 
@@ -31,8 +30,8 @@ namespace spectralb {
 
 // -----------------------------------------------------------------------------
 
-class SPCTRL_COVParameters : public SaberCentralBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(SPCTRL_COVParameters, SaberCentralBlockParametersBase)
+class SPCTRL_COVParameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(SPCTRL_COVParameters, SaberBlockParametersBase)
 
  public:
   oops::RequiredParameter<spectralbParameters> spectralbParams{"spectralb", this};

@@ -16,8 +16,8 @@
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
+#include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberOuterBlockBase.h"
-#include "saber/oops/SaberOuterBlockParametersBase.h"
 
 namespace oops {
   class Variables;
@@ -28,8 +28,8 @@ namespace generic {
 
 // -----------------------------------------------------------------------------
 
-class StdDevParameters : public SaberOuterBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(StdDevParameters, SaberOuterBlockParametersBase)
+class StdDevParameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(StdDevParameters, SaberBlockParametersBase)
 };
 
 // -----------------------------------------------------------------------------

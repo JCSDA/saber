@@ -18,8 +18,8 @@
 #include "oops/base/Variables.h"
 
 #include "saber/bump/BUMP.h"
+#include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberOuterBlockBase.h"
-#include "saber/oops/SaberOuterBlockParametersBase.h"
 
 namespace oops {
   class Variables;
@@ -30,8 +30,8 @@ namespace bump {
 
 // -----------------------------------------------------------------------------
 
-class VerticalBalanceParameters : public SaberOuterBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(VerticalBalanceParameters, SaberOuterBlockParametersBase)
+class VerticalBalanceParameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(VerticalBalanceParameters, SaberBlockParametersBase)
 
  public:
   oops::RequiredParameter<BUMPParameters> bumpParams{"bump", this};

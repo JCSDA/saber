@@ -49,10 +49,12 @@ bump:
       nmembers: 50
       zero padding: 6
 output:
-- filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-ens_update/cor_rh
-  parameter: cor_rh
-- filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-ens_update/cor_rv
-  parameter: cor_rv
+- parameter: cor_rh
+  file:
+    filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-ens_update/cor_rh
+- parameter: cor_rv
+  file:
+    filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-ens_update/cor_rv
 
 test:
   reference filename: testref/quench_error_covariance_training_bump_hdiag_hyb-ens_update/test.log.out

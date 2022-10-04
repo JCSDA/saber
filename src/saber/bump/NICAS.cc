@@ -19,7 +19,6 @@
 
 #include "saber/bump/BUMP.h"
 #include "saber/oops/SaberCentralBlockBase.h"
-#include "saber/oops/SaberCentralBlockParametersBase.h"
 
 namespace saber {
 namespace bump {
@@ -31,12 +30,12 @@ static SaberCentralBlockMaker<NICAS> makerNICAS_("BUMP_NICAS");
 // -----------------------------------------------------------------------------
 
 NICAS::NICAS(const oops::GeometryData & geometryData,
-                       const std::vector<size_t> & activeVariableSizes,
-                       const oops::Variables & inoutVars,
-                       const Parameters_ & params,
-                       const atlas::FieldSet & xb,
-                       const atlas::FieldSet & fg,
-                       const std::vector<atlas::FieldSet> & fsetVec)
+             const std::vector<size_t> & activeVariableSizes,
+             const oops::Variables & inoutVars,
+             const Parameters_ & params,
+             const atlas::FieldSet & xb,
+             const atlas::FieldSet & fg,
+             const std::vector<atlas::FieldSet> & fsetVec)
   : bump_()
 {
   oops::Log::trace() << classname() << "::NICAS starting" << std::endl;

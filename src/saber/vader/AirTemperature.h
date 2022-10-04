@@ -19,8 +19,8 @@
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
+#include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberOuterBlockBase.h"
-#include "saber/oops/SaberOuterBlockParametersBase.h"
 
 namespace oops {
   class Variables;
@@ -31,8 +31,8 @@ namespace vader {
 
 // -----------------------------------------------------------------------------
 
-class AirTemperatureParameters : public SaberOuterBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(AirTemperatureParameters, SaberOuterBlockParametersBase)
+class AirTemperatureParameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(AirTemperatureParameters, SaberBlockParametersBase)
  public:
 };
 

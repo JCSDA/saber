@@ -17,7 +17,6 @@
 #include "oops/util/abor1_cpp.h"
 
 #include "saber/oops/SaberCentralBlockBase.h"
-#include "saber/oops/SaberCentralBlockParametersBase.h"
 #include "saber/spectralb/spectralb.h"
 
 namespace saber {

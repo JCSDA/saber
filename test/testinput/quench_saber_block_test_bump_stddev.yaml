@@ -13,7 +13,8 @@ saber outer blocks:
 - saber block name: StdDev
   input fields:
   - parameter: StdDev
-    filepath: testdata/quench_error_covariance_training_bump_stddev/stddev
+    file:
+      filepath: testdata/quench_error_covariance_training_bump_stddev/stddev
 
 test:
   reference filename: testref/quench_saber_block_test_bump_stddev/test.log.out

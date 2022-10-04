@@ -26,7 +26,6 @@
 #include "oops/util/Timer.h"
 
 #include "saber/oops/SaberOuterBlockBase.h"
-#include "saber/oops/SaberOuterBlockParametersBase.h"
 #include "saber/vader/CovarianceStatisticsUtils.h"
 #include "saber/vader/movader_covstats_interface.h"
 

@@ -29,10 +29,9 @@
 #include "oops/util/Timer.h"
 
 #include "saber/oops/ReadInputFields.h"
+#include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberCentralBlockBase.h"
-#include "saber/oops/SaberCentralBlockParametersBase.h"
 #include "saber/oops/SaberOuterBlockBase.h"
-#include "saber/oops/SaberOuterBlockParametersBase.h"
 
 namespace oops {
   class Variables;
@@ -124,7 +123,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
     for (const SaberOuterBlockParametersWrapper & saberOuterBlockParamWrapper :
       boost::adaptors::reverse(*saberOuterBlocks)) {
       // Get outer block parameters
-      const SaberOuterBlockParametersBase & saberOuterBlockParams =
+      const SaberBlockParametersBase & saberOuterBlockParams =
         saberOuterBlockParamWrapper.saberOuterBlockParameters;
 
       // Get active variables
@@ -173,7 +172,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
   // Get central block parameters
   const SaberCentralBlockParametersWrapper & saberCentralBlockParamWrapper =
     params.saberCentralBlock.value();
-  const SaberCentralBlockParametersBase & saberCentralBlockParams =
+  const SaberBlockParametersBase & saberCentralBlockParams =
     saberCentralBlockParamWrapper.saberCentralBlockParameters;
 
   // Define input/output variables

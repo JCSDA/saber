@@ -20,10 +20,9 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-class SaberOuterBlockParametersBase : public oops::Parameters {
-  OOPS_ABSTRACT_PARAMETERS(SaberOuterBlockParametersBase, Parameters)
+class SaberBlockParametersBase : public oops::Parameters {
+  OOPS_ABSTRACT_PARAMETERS(SaberBlockParametersBase, Parameters)
  public:
-  // Parameters from the yaml
   oops::RequiredParameter<std::string> saberBlockName{"saber block name", this};
   oops::OptionalParameter<oops::Variables> activeVars{"active variables", this};
   oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> inputFields{"input fields", this};

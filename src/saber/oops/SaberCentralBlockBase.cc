@@ -28,7 +28,7 @@
 #include "oops/util/parameters/RequiredPolymorphicParameter.h"
 #include "oops/util/Printable.h"
 
-#include "saber/oops/SaberCentralBlockParametersBase.h"
+#include "saber/oops/SaberBlockParametersBase.h"
 
 namespace saber {
 
@@ -49,7 +49,7 @@ SaberCentralBlockBase * SaberCentralBlockFactory::create(
   const oops::GeometryData & geometryData,
   const std::vector<size_t> & activeVariableSizes,
   const oops::Variables & vars,
-  const SaberCentralBlockParametersBase & params,
+  const SaberBlockParametersBase & params,
   const atlas::FieldSet & xb,
   const atlas::FieldSet & fg,
   const std::vector<atlas::FieldSet> & fsetVec) {
@@ -68,7 +68,7 @@ SaberCentralBlockBase * SaberCentralBlockFactory::create(
 
 // -----------------------------------------------------------------------------
 
-std::unique_ptr<SaberCentralBlockParametersBase>
+std::unique_ptr<SaberBlockParametersBase>
 SaberCentralBlockFactory::createParameters(const std::string &name) {
   typename std::map<std::string, SaberCentralBlockFactory*>::iterator it =
       getMakers().find(name);

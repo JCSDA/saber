@@ -51,7 +51,7 @@ template <typename MODEL> class OutputParameters : public oops::Parameters {
   oops::Parameter<int> component{"component", 1, this};
 
   /// Parameters used for writing Increment.
-  WriteParameters_ incwrite{this};
+  oops::RequiredParameter<WriteParameters_> file{"file", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -474,7 +474,7 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
             dx2.synchronizeFields();
 
             // Write parameter
-            dx2.write(outputParam.incwrite);
+            dx2.write(outputParam.file);
             oops::Log::test() << "Norm of BUMP output parameter " << param << " - " << component
                               << ": " << dx2.norm() << std::endl;
           } else {
@@ -485,7 +485,7 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
             dx1.synchronizeFields();
 
             // Write parameter
-            dx1.write(outputParam.incwrite);
+            dx1.write(outputParam.file);
             oops::Log::test() << "Norm of BUMP output parameter " << param << " - " << component
                               << ": " << dx1.norm() << std::endl;
           }

@@ -17,16 +17,16 @@
 #include "oops/base/Variables.h"
 
 #include "saber/bump/BUMP.h"
+#include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberCentralBlockBase.h"
-#include "saber/oops/SaberCentralBlockParametersBase.h"
 
 namespace saber {
 namespace bump {
 
 // -----------------------------------------------------------------------------
 
-class NICASParameters : public SaberCentralBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(NICASParameters, SaberCentralBlockParametersBase)
+class NICASParameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(NICASParameters, SaberBlockParametersBase)
 
  public:
   oops::RequiredParameter<BUMPParameters> bumpParams{"bump", this};

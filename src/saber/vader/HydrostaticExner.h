@@ -22,8 +22,8 @@
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
+#include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberOuterBlockBase.h"
-#include "saber/oops/SaberOuterBlockParametersBase.h"
 
 namespace oops {
   class Variables;
@@ -45,8 +45,8 @@ class HydrostaticExnerCovarianceParameters : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
-class HydrostaticExnerParameters : public SaberOuterBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(HydrostaticExnerParameters, SaberOuterBlockParametersBase)
+class HydrostaticExnerParameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(HydrostaticExnerParameters, SaberBlockParametersBase)
  public:
   oops::RequiredParameter<HydrostaticExnerCovarianceParameters>
     hydrostaticexnerParams{"covariance data", this};

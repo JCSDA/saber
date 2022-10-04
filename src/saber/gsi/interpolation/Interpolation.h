@@ -28,8 +28,8 @@
 
 #include "saber/gsi/grid/Grid.h"
 #include "saber/gsi/interpolation/unstructured_interp/UnstructuredInterpolation.h"
+#include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberOuterBlockBase.h"
-#include "saber/oops/SaberOuterBlockParametersBase.h"
 
 namespace oops {
   class Variables;
@@ -40,8 +40,8 @@ namespace gsi {
 
 // -------------------------------------------------------------------------------------------------
 
-class InterpolationParameters : public SaberOuterBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(InterpolationParameters, SaberOuterBlockParametersBase)
+class InterpolationParameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(InterpolationParameters, SaberBlockParametersBase)
 
  public:
   // File containing grid and coefficients
