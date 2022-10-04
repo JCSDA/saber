@@ -358,7 +358,6 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
 
       // Generate random vector
       util::NormalDistribution<double>rand_vec(n, 0.0, 1.0, 1);
-      std::vector<double> rand_vec2(rand_vec.data());
 
       // Populate with random numbers
       n = 0;
@@ -389,14 +388,14 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
               } else {
                 // Real part
                 for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-                  view(jnode, jlevel) = rand_vec2[n];
+                  view(jnode, jlevel) = rand_vec[n];
                   ++n;
                 }
                 ++jnode;
 
                 // Imaginary part
                 for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-                  view(jnode, jlevel) = rand_vec2[n];
+                  view(jnode, jlevel) = rand_vec[n];
                   ++n;
                 }
                 ++jnode;
@@ -407,7 +406,7 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
           for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
             for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
               if (ghostView(jnode) == 0) {
-                view(jnode, jlevel) = rand_vec2[n];
+                view(jnode, jlevel) = rand_vec[n];
                 ++n;
               } else {
                 view(jnode, jlevel) = 0.0;

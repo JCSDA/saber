@@ -5,6 +5,8 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
+#include "saber/spectralb/SpectralToGaussUV.h"
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -21,18 +23,17 @@
 #include "oops/util/Timer.h"
 
 #include "saber/oops/SaberOuterBlockBase.h"
-#include "saber/oops/SaberOuterBlockParametersBase.h"
-#include "saber/spectralb/SpectralToGaussUV.h"
 
 namespace saber {
 namespace spectralb {
 
 namespace {
 
-atlas::Field allocateGaussUVField(
-    const atlas::FunctionSpace & gaussFS,
-    const oops::Variables & inputVariables,
-    const std::vector<std::size_t> & activeVariableSizes) {
+// -----------------------------------------------------------------------------
+
+atlas::Field allocateGaussUVField(const atlas::FunctionSpace & gaussFS,
+                                  const oops::Variables & inputVariables,
+                                  const std::vector<std::size_t> & activeVariableSizes) {
   std::array<size_t, 2> indx{{0, 0}};
   std::array<size_t, 2> levels{{0, 0}};
   if (inputVariables.has("vorticity") && inputVariables.has("divergence")) {
@@ -73,6 +74,7 @@ atlas::Field allocateGaussUVField(
   return uvgp;
 }
 
+// -----------------------------------------------------------------------------
 
 atlas::FieldSet allocateSpectralVortDiv(
     const atlas::functionspace::Spectral & specfs,
@@ -112,6 +114,7 @@ atlas::FieldSet allocateSpectralVortDiv(
   return specfset;
 }
 
+// -----------------------------------------------------------------------------
 
 atlas::FieldSet convertUVToFieldSet(const atlas::Field & uvField) {
   atlas::FieldSet uvfset;
@@ -147,6 +150,7 @@ atlas::FieldSet convertUVToFieldSet(const atlas::Field & uvField) {
   return uvfset;
 }
 
+// -----------------------------------------------------------------------------
 
 atlas::Field convertUVToFieldSetAD(const atlas::FieldSet & fset) {
   atlas::idx_t modellevels = static_cast<atlas::idx_t>(fset["eastward_wind"].levels());
@@ -174,6 +178,7 @@ atlas::Field convertUVToFieldSetAD(const atlas::FieldSet & fset) {
   return uvgp;
 }
 
+// -----------------------------------------------------------------------------
 
 oops::Variables createInputVars(const SpectralToGaussUVParameters & params,
                                 const oops::Variables & outputVars) {
@@ -196,6 +201,7 @@ oops::Variables createInputVars(const SpectralToGaussUVParameters & params,
   return inputVars;
 }
 
+// -----------------------------------------------------------------------------
 
 void applyNtimesNplus1SpectralScaling(const oops::Variables & inputNames,
                                       const oops::Variables & outputNames,
@@ -242,6 +248,7 @@ void applyNtimesNplus1SpectralScaling(const oops::Variables & inputNames,
 }
 
 }  //  namespace
+
 // -----------------------------------------------------------------------------
 
 static SaberOuterBlockMaker<SpectralToGaussUV> makerSpectralToGaussUV_("spectral to gauss winds");
@@ -283,6 +290,7 @@ SpectralToGaussUV::SpectralToGaussUV(const oops::GeometryData & outputGeometryDa
 }
 
 // -----------------------------------------------------------------------------
+
 void SpectralToGaussUV::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting " << fset.field_names() << std::endl;
 
@@ -326,8 +334,8 @@ void SpectralToGaussUV::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply done" << fset.field_names() << std::endl;
 }
 
-
 // -----------------------------------------------------------------------------
+
 void SpectralToGaussUV::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << fset.field_names() << std::endl;
 
@@ -367,12 +375,14 @@ void SpectralToGaussUV::multiplyAD(atlas::FieldSet & fset) const {
 }
 
 // -----------------------------------------------------------------------------
+
 void SpectralToGaussUV::calibrationInverseMultiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::calibrationInverseMultiply starting" << std::endl;
   oops::Log::trace() << classname() << "::calibrationInverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
+
 void SpectralToGaussUV::print(std::ostream & os) const {
   os << classname();
 }

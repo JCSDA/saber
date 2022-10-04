@@ -19,20 +19,16 @@
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
+#include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberOuterBlockBase.h"
-#include "saber/oops/SaberOuterBlockParametersBase.h"
-
-namespace oops {
-  class Variables;
-}
 
 namespace saber {
 namespace spectralb {
 
 // -----------------------------------------------------------------------------
 
-class SpectralToGaussUVParameters : public SaberOuterBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(SpectralToGaussUVParameters, SaberOuterBlockParametersBase)
+class SpectralToGaussUVParameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(SpectralToGaussUVParameters, SaberBlockParametersBase)
  public:
   oops::RequiredParameter<std::string> gaussGridUid{"gauss grid uid",
     "Gauss Grid UID", this};
