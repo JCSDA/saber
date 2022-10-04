@@ -11,11 +11,13 @@ variables: &id001
 background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
-saber blocks:
+saber central block:
+  saber block name: ID
+saber outer blocks:
 - saber block name: StdDev
-  input variables: *id001
-  output variables: *id001
-  file:
-    filepath: testdata/error_covariance_training_bump_stddev/stddev
+  input fields:
+  - parameter: StdDev
+    file:
+      filepath: testdata/error_covariance_training_bump_stddev/stddev
 test:
   reference filename: testref/saber_block_test_stddev.ref

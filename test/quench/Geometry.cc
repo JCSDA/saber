@@ -47,10 +47,10 @@ Geometry::Geometry(const Parameters_ & params,
   const boost::optional<eckit::LocalConfiguration> &gridParams = params.grid.value();
   const boost::optional<std::string> &iodaFile = params.iodaFile.value();
   if (gridParams != boost::none) {
-    oops::Log::info() << "Grid config: " << *gridParams << std::endl;
+    oops::Log::info() << "Info     : Grid config: " << *gridParams << std::endl;
     grid_ = atlas::Grid(*gridParams);
   } else if (iodaFile != boost::none) {
-    oops::Log::info() << "Grid input file: " << *iodaFile << std::endl;
+    oops::Log::info() << "Info     : Grid input file: " << *iodaFile << std::endl;
 
     // Grid size
     size_t nlocs = 0;
@@ -127,13 +127,8 @@ Geometry::Geometry(const Parameters_ & params,
       // NodeColumns
       if (grid_.name().compare(0, 2, std::string{"CS"}) == 0) {
         // CubedSphere
-// TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
-#if atlas_TRANS_FOUND
         mesh_ = atlas::MeshGenerator("cubedsphere_dual").generate(grid_);
         functionSpace_ = atlas::functionspace::CubedSphereNodeColumns(mesh_);
-#else
-        ABORT("TRANS required");
-#endif
       } else {
         // NodeColumns
         mesh_ = atlas::MeshGenerator("delaunay").generate(grid_);
@@ -178,7 +173,7 @@ Geometry::Geometry(const Parameters_ & params,
   // Land-sea mask
   const boost::optional<std::string> &mask_type = params.mask_type.value();
   if (mask_type != boost::none) {
-    if (*mask_type == "sea" or *mask_type == "land") {
+    if (*mask_type == "sea" || *mask_type == "land") {
       // Lon/lat sizes
       size_t nlon = 0;
       size_t nlat = 0;
@@ -187,8 +182,9 @@ Geometry::Geometry(const Parameters_ & params,
       int ncid, retval, nlon_id, nlat_id, lon_id, lat_id, lsm_id;
 
       if (comm_.rank() == 0) {
-        // Open NetCDF file
-        if ((retval = nc_open("/home/benjamin/code/bundle/saber/test/testdata/landsea.nc", NC_NOWRITE, &ncid))) ERR(retval);
+        // Open NetCDF file TODO(Benjamin): not hard-coded!!!
+        if ((retval = nc_open("/home/benjamin/code/bundle/saber/test/testdata/landsea.nc",
+          NC_NOWRITE, &ncid))) ERR(retval);
 
         // Get lon/lat sizes
         if ((retval = nc_inq_dimid(ncid, "lon", &nlon_id))) ERR(retval);
@@ -257,7 +253,7 @@ Geometry::Geometry(const Parameters_ & params,
         for (atlas::idx_t jnode = 0; jnode < fs.xy().shape(0); ++jnode) {
           // Longitude
           zlon = lonlatView(jnode, 0);
-          if (zlon < lon[0]) { 
+          if (zlon < lon[0]) {
             ilonm = nlon-1;
             ilonp = 0;
             dzlon = zlon-lon[ilonm]+360.0;
@@ -278,7 +274,7 @@ Geometry::Geometry(const Parameters_ & params,
 
           // Latitude
           zlat = lonlatView(jnode, 1);
-          if (zlat < lat[0]) { 
+          if (zlat < lat[0]) {
             ilatm = 0;
             ilatp = 0;
             dzlat = 0.0;
@@ -403,10 +399,7 @@ Geometry::Geometry(const Geometry & other) : comm_(other.comm_), levels_(other.l
     // NodeColumns
     if (grid_.name().compare(0, 2, std::string{"CS"}) == 0) {
       // CubedSphere
-// TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
-#if atlas_TRANS_FOUND
       functionSpace_ = atlas::functionspace::CubedSphereNodeColumns(other.functionSpace_);
-#endif
     } else {
       // Other NodeColumns
       functionSpace_ = atlas::functionspace::NodeColumns(other.functionSpace_);
@@ -432,18 +425,22 @@ std::vector<size_t> Geometry::variableSizes(const oops::Variables & vars) const 
 }
 // -----------------------------------------------------------------------------
 void Geometry::print(std::ostream & os) const {
-  os << "Quench geometry grid:" << std::endl;
-  os << "- name: " << grid_.name() << std::endl;
-  os << "- size: " << grid_.size() << std::endl;
-  os << "Partitioner:" << std::endl;
-  os << "- type: " << partitioner_.type() << std::endl;
-  os << "Function space:" << std::endl;
-  os << "- type: " << functionSpace_.type() << std::endl;
-  os << "- halo: " << halo_ << std::endl;
-  os << "Vertical levels: " << std::endl;
-  os << "- number: " << levels_ << std::endl;
-  os << "- vunit: " << vunit_ << std::endl;
-  os << "Mask size: " << static_cast<int>(gmaskSize_*100.0) << "%" << std::endl;
+  std::string prefix;
+  if (os.rdbuf() == oops::Log::info().rdbuf()) {
+    prefix = "Info     : ";
+  }
+  os << prefix <<  "Quench geometry grid:" << std::endl;
+  os << prefix << "- name: " << grid_.name() << std::endl;
+  os << prefix << "- size: " << grid_.size() << std::endl;
+  os << prefix << "Partitioner:" << std::endl;
+  os << prefix << "- type: " << partitioner_.type() << std::endl;
+  os << prefix << "Function space:" << std::endl;
+  os << prefix << "- type: " << functionSpace_.type() << std::endl;
+  os << prefix << "- halo: " << halo_ << std::endl;
+  os << prefix << "Vertical levels: " << std::endl;
+  os << prefix << "- number: " << levels_ << std::endl;
+  os << prefix << "- vunit: " << vunit_ << std::endl;
+  os << prefix << "Mask size: " << static_cast<int>(gmaskSize_*100.0) << "%" << std::endl;
 }
 // -----------------------------------------------------------------------------
 }  // namespace quench

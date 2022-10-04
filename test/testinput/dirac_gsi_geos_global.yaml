@@ -1,22 +1,18 @@
 background error:
   covariance model: SABER
-  saber blocks:
-  # Covariance model
-  - saber block name: gsi covariance
-    saber central block: true
-    input variables: [stream_function,velocity_potential,air_temperature]
-    output variables: [stream_function,velocity_potential,air_temperature]
+  saber central block:
+    saber block name: gsi covariance
     gsi error covariance file: testdata/gsi-coeffs-gmao-global-l72x72y46.nc4
     gsi berror namelist file: testinput/dirac_gsi_geos_global.nml
+    gsi akbk: /dev/null
     processor layout x direction: 1
     processor layout y direction: 1
     debugging mode: false
-  # Interpolation to model grid
+  saber outer blocks:
   - saber block name: gsi interpolation to model grid
-    input variables: [stream_function,velocity_potential,air_temperature]
-    output variables: [stream_function,velocity_potential,air_temperature]
     gsi error covariance file: testdata/gsi-coeffs-gmao-global-l72x72y46.nc4
     gsi berror namelist file: testinput/dirac_gsi_geos_global.nml
+    gsi akbk: /dev/null
     processor layout x direction: 1
     processor layout y direction: 1
     debugging mode: false
@@ -39,4 +35,5 @@ output dirac:
   filepath: testdata/dirac_gsi_geos_global/dirac_%id%
 
 test:
+  float relative tolerance: 1.5e-6
   reference filename: testref/dirac_gsi_geos_global.ref

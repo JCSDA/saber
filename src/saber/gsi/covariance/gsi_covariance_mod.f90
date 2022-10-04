@@ -21,19 +21,19 @@ use random_mod
 use gsi_grid_mod,                   only: gsi_grid
 
 ! gsibec
-use m_gsibec,                     only: gsibec_init
-use m_gsibec,                     only: gsibec_cv_space
-use m_gsibec,                     only: gsibec_sv_space
-use m_gsibec,                     only: gsibec_befname
-use m_gsibec,                     only: gsibec_init_guess
-use m_gsibec,                     only: gsibec_set_guess
-!use m_gsibec,                    only: gsibec_final
+use m_gsibec,                       only: gsibec_init
+use m_gsibec,                       only: gsibec_cv_space
+use m_gsibec,                       only: gsibec_sv_space
+use m_gsibec,                       only: gsibec_befname
+use m_gsibec,                       only: gsibec_init_guess
+use m_gsibec,                       only: gsibec_set_guess
+use m_gsibec,                       only: gsibec_final
 
 use guess_grids,                    only: gsiguess_bkgcov_init  ! temporary
 use gsi_metguess_mod,               only: gsi_metguess_get
-
 use gsi_bundlemod,                  only: gsi_bundle
 use gsi_bundlemod,                  only: gsi_bundlegetpointer
+
 use control_vectors,                only: control_vector
 use control_vectors,                only: cvars2d,cvars3d
 use control_vectors,                only: allocate_cv
@@ -52,12 +52,10 @@ public gsi_covariance
 ! Fortran class header
 type :: gsi_covariance
   type(gsi_grid) :: grid
-  logical :: noGSI
   logical :: bypassGSIbe
   logical :: cv   ! cv=.true.; sv=.false.
   integer :: mp_comm_world
   integer :: rank
-  integer :: lat2,lon2 ! these belog to gsi_grid
   contains
     procedure, public :: create
     procedure, public :: delete
@@ -88,8 +86,10 @@ character(len=*), parameter :: myname_=myname//'*create'
 character(len=:), allocatable :: nml,bef
 real(kind=kind_real), pointer :: rank2(:,:)=>NULL()
 real(kind=kind_real), allocatable :: tmp(:)
-logical :: central,bkgmock
-integer :: layout(2),ier,n,k,npz,itbd
+logical :: central
+logical :: bkgmock
+!integer :: layout(2)
+integer :: ier,n,k,npz,itbd
 integer :: ngsivars2d,ngsivars3d
 character(len=20),allocatable :: gsivars(:)
 character(len=20),allocatable :: usrvars(:)
@@ -107,12 +107,7 @@ real(kind=kind_real), pointer :: oz(:,:)
 call self%grid%create(config, comm)
 self%rank = comm%rank()
 
-call config%get_or_die("debugging bypass gsi", self%noGSI)
-if (.not. self%noGSI) then
-  call config%get_or_die("saber central block", central)
-  if (.not. central) then
-     call abor1_ftn(myname_//": not ready to handle sqrt(B) case")
-  endif
+if (.not. self%grid%noGSI) then
   call config%get_or_die("debugging deep bypass gsi B error", self%bypassGSIbe)
 
 ! Get required name of resources for GSI B error
@@ -122,8 +117,8 @@ if (.not. self%noGSI) then
 
 ! Initialize GSI-Berror components
 ! --------------------------------
-  layout=self%grid%layout
-  call gsibec_init(self%cv,self%lat2,self%lon2,bkgmock=bkgmock,nmlfile=nml,befile=bef,layout=layout,comm=comm%communicator())
+  call gsibec_init(self%cv,bkgmock=bkgmock,nmlfile=nml,befile=bef,&
+                   layout=self%grid%layout,comm=comm%communicator())
   call gsibec_init_guess()
 
 ! Initialize and set background fields needed by GSI Berror formulation/operators
@@ -200,7 +195,8 @@ contains
   character(len=*), intent(in) :: varname
   real(kind=kind_real), allocatable :: aux(:,:)
 
-  allocate(aux(self%lat2,self%lon2))
+  print *, 'Atlas 2-dim: ', size(rank2,2), ' gsi-vec: ', self%grid%lat2,' ', self%grid%lon2
+  allocate(aux(self%grid%lat2,self%grid%lon2))
   call addhalo_(rank2(1,:),aux)
   call gsibec_set_guess(varname,aux)
   deallocate(aux)
@@ -213,8 +209,9 @@ contains
 
   integer k,npz
 
+! print *, 'Atlas 3-dim: ', size(rank2,2), ' gsi-vec: ', self%grid%lat2,' ', self%grid%lon2
   npz=size(rank2,1)
-  allocate(aux(self%lat2,self%lon2,npz))
+  allocate(aux(self%grid%lat2,self%grid%lon2,npz))
   if (self%grid%vflip) then
      do k=1,npz
         call addhalo_(rank2(k,:),aux(:,:,npz-k+1))
@@ -240,7 +237,7 @@ class(gsi_covariance) :: self
 
 ! Locals
 
-if (.not. self%noGSI) then
+if (.not. self%grid%noGSI) then
 !! call gsibec_final(.false.)
 endif
 
@@ -267,44 +264,44 @@ real(kind=kind_real), pointer :: ps(:,:)
 integer, parameter :: rseed = 3
 
 ! Get Atlas field
-if (fields%has_field('stream_function').and.fields%has_field('velocity_potential')) then 
+if (fields%has('stream_function').and.fields%has('velocity_potential')) then
   afield = fields%field('stream_function')
   call afield%data(psi)
   afield = fields%field('velocity_potential')
   call afield%data(chi)
-elseif (fields%has_field('eastward_wind').and.fields%has_field('northward_wind')) then 
+elseif (fields%has('eastward_wind').and.fields%has('northward_wind')) then
   afield = fields%field('eastward_wind')
   call afield%data(u)
   afield = fields%field('northward_wind')
   call afield%data(v)
 endif
 
-if (fields%has_field('air_temperature')) then
+if (fields%has('air_temperature')) then
   afield = fields%field('air_temperature')
   call afield%data(t)
 endif
 
-if (fields%has_field('surface_pressure')) then
+if (fields%has('surface_pressure')) then
   afield = fields%field('surface_pressure')
   call afield%data(ps)
 endif
 
-if (fields%has_field('specific_humidity')) then
+if (fields%has('specific_humidity')) then
   afield = fields%field('specific_humidity')
   call afield%data(q)
 endif
 
-if (fields%has_field('cloud_liquid_ice')) then
+if (fields%has('cloud_liquid_ice')) then
   afield = fields%field('cloud_liquid_ice')
   call afield%data(qi)
 endif
 
-if (fields%has_field('cloud_liquid_water')) then
+if (fields%has('cloud_liquid_water')) then
   afield = fields%field('cloud_liquid_water')
   call afield%data(ql)
 endif
 
-if (fields%has_field('ozone_mass_mixing_ratio')) then
+if (fields%has('ozone_mass_mixing_ratio')) then
   afield = fields%field('ozone_mass_mixing_ratio')
   call afield%data(o3)
 endif
@@ -339,7 +336,7 @@ real(kind=kind_real), allocatable :: aux(:,:)
 real(kind=kind_real), allocatable :: aux1(:)
 
 type(control_vector) :: gsicv
-type(gsi_bundle) :: gsisv(1)
+type(gsi_bundle),allocatable :: gsisv(:)
 integer :: isc,iec,jsc,jec,npz
 integer :: iv,k,ier,itbd
 integer,parameter :: hw=1
@@ -354,7 +351,7 @@ character(len=30),allocatable :: tbdvars(:),needvrs(:)
 ! rank2 = 0.0_kind_real
 ! rank2(1,int(size(rank1)/2)) = 1.0_kind_real
 ! return
-if (self%noGSI) return
+if (self%grid%noGSI) return
 
 !   gsi-surface: k=1
 !   quench-surface: k=1
@@ -374,6 +371,7 @@ if (self%cv) then
 else
    allocate(gvars2d(size(svars2d)),gvars3d(size(svars3d)))
    gvars2d=svars2d; gvars3d=svars3d
+   allocate(gsisv(1))
    call allocate_state(gsisv(1))
 endif
 allocate(tbdvars(size(gvars2d)+size(gvars3d)))
@@ -527,6 +525,7 @@ if (self%cv) then
    call deallocate_cv(gsicv)
 else
    call deallocate_state(gsisv(1))
+   deallocate(gsisv)
 endif
 deallocate(needvrs)
 deallocate(tbdvars)
@@ -567,109 +566,109 @@ end subroutine multiply_ad
    integer,intent(out):: ier
    ier=-1
    if (trim(vname) == 'ps') then
-      if (.not.fields%has_field('surface_pressure')) return
+      if (.not.fields%has('surface_pressure')) return
       afield = fields%field('surface_pressure')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 'air_pressure_thickness') then
-      if (.not.fields%has_field('air_pressure_thickness')) return
+      if (.not.fields%has('air_pressure_thickness')) return
       afield = fields%field('air_pressure_thickness')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 'sst') then
-      if (.not.fields%has_field('skin_surface_temperature')) return
+      if (.not.fields%has('skin_surface_temperature')) return
       afield = fields%field('skin_surface_temperature')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 'u' .or. trim(vname) == 'ua' ) then
-      if (.not.fields%has_field('eastward_wind')) return
+      if (.not.fields%has('eastward_wind')) return
       afield = fields%field('eastward_wind')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 'v' .or. trim(vname) == 'va' ) then
-      if (.not.fields%has_field('northward_wind')) return
+      if (.not.fields%has('northward_wind')) return
       afield = fields%field('northward_wind')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 'sf') then
-      if (.not.fields%has_field('stream_function')) return
+      if (.not.fields%has('stream_function')) return
       afield = fields%field('stream_function')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 'vp') then
-      if (.not.fields%has_field('velocity_potential')) return
+      if (.not.fields%has('velocity_potential')) return
       afield = fields%field('velocity_potential')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 't' .or. trim(vname) == 'tsen' ) then
-      if (.not.fields%has_field('air_temperature')) return
+      if (.not.fields%has('air_temperature')) return
       afield = fields%field('air_temperature')
       call afield%data(rank2)
       ier=0
    endif
 !  if (trim(vname) == 'tv' ) then
-!     if (.not.fields%has_field('virtual_temperature')) return
+!     if (.not.fields%has('virtual_temperature')) return
 !     afield = fields%field('virtual_temperature')
 !     call afield%data(rank2)
 !     ier=0
 !  endif
    if (trim(vname) == 'q' .or. trim(vname) == 'sphum' ) then
-      if (.not.fields%has_field('specific_humidity')) return
+      if (.not.fields%has('specific_humidity')) return
       afield = fields%field('specific_humidity')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 'qi') then
-      if (.not.fields%has_field('cloud_liquid_ice')) return
+      if (.not.fields%has('cloud_liquid_ice')) return
       afield = fields%field('cloud_liquid_ice')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 'ql') then
-      if (.not.fields%has_field('cloud_liquid_water')) return
+      if (.not.fields%has('cloud_liquid_water')) return
       afield = fields%field('cloud_liquid_water')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 'qr') then
-      if (.not.fields%has_field('cloud_liquid_rain')) return
+      if (.not.fields%has('cloud_liquid_rain')) return
       afield = fields%field('cloud_liquid_rain')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 'qs') then
-      if (.not.fields%has_field('cloud_liquid_snow')) return
+      if (.not.fields%has('cloud_liquid_snow')) return
       afield = fields%field('cloud_liquid_snow')
       call afield%data(rank2)
       ier=0
    endif
 !  if (trim(vname) == 'cw') then
-!     if (.not.fields%has_field('cloud_water')) return
+!     if (.not.fields%has('cloud_water')) return
 !     afield = fields%field('cloud_water')
 !     call afield%data(rank2)
 !     ier=0
 !  endif
    if (trim(vname) == 'oz' .or. trim(vname) == 'o3ppmv' ) then
-      if (.not.fields%has_field('mole_fraction_of_ozone_in_air')) return
+      if (.not.fields%has('mole_fraction_of_ozone_in_air')) return
       afield = fields%field('mole_fraction_of_ozone_in_air')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 'o3mr') then
-      if (.not.fields%has_field('ozone_mass_mixing_ratio')) return
+      if (.not.fields%has('ozone_mass_mixing_ratio')) return
       afield = fields%field('ozone_mass_mixing_ratio')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 'phis' ) then
-      if (.not.fields%has_field('sfc_geopotential_height_times_grav')) return
+      if (.not.fields%has('sfc_geopotential_height_times_grav')) return
       afield = fields%field('sfc_geopotential_height_times_grav')
       call afield%data(rank2)
       ier=0

@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_INTERPOLATION_INTERPOLATORBUMP_H_
-#define SABER_INTERPOLATION_INTERPOLATORBUMP_H_
+#pragma once
 
 #include <ostream>
 #include <string>
@@ -53,5 +52,3 @@ class InterpolatorBump : public util::Printable,
 // -----------------------------------------------------------------------------
 
 }  // namespace saber
-
-#endif  // SABER_INTERPOLATION_INTERPOLATORBUMP_H_

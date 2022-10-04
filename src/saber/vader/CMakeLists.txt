@@ -3,30 +3,33 @@
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
-if ( oops_FOUND )
-#    list(vader_src_files_list
+#list(vader_src_files_list
 
-#     Add future non-MO VADER blocks here
+# Add future non-MO VADER blocks here
 
-#    )
+#)
 
-    # MO-specific VADER blocks
-    if ( ENABLE_VADER_MO )
-        list(APPEND vader_src_files_list
+# MO-specific VADER blocks
+if ( ENABLE_VADER_MO )
+    list(APPEND vader_src_files_list
 
-        AirTemperatureSaberBlock.h
-        CovarianceStatisticsUtils.h
-        DryAirDensitySaberBlock.h
-        HydroBalSaberBlock.h
-        HydrostaticExnerParameters.h
-        HydrostaticExnerSaberBlock.h
-        MoistIncrOpSaberBlock.h
-        MoistureControlParameters.h
-        MoistureControlSaberBlock.h
-        movader_covstats_interface.F90
-        movader_covstats_interface.h
-        )
-    endif()
+    AirTemperature.cc
+    AirTemperature.h
+    CovarianceStatisticsUtils.cc
+    CovarianceStatisticsUtils.h
+    DryAirDensity.cc
+    DryAirDensity.h
+    HydroBal.cc
+    HydroBal.h
+    HydrostaticExner.cc
+    HydrostaticExner.h
+    MoistIncrOp.cc
+    MoistIncrOp.h
+    MoistureControl.cc
+    MoistureControl.h
+    movader_covstats_interface.F90
+    movader_covstats_interface.h
+    )
 endif()
 
 set( vader_src_files

@@ -10,11 +10,8 @@ initial condition:
   - psi_inc
 background error:
   covariance model: SABER
-  saber blocks:
-  - saber block name: SPCTRL_COV
-    saber central block: true
-    input variables: *id001
-    output variables: *id001
+  saber central block:
+    saber block name: SPCTRL_COV
     spectralb:
       covariance_file: testdata/CovStats.nc
       gauss_grid_uid: F15

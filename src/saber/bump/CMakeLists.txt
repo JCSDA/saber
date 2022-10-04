@@ -42,16 +42,23 @@ type_var.fypp
 type_vbal.fypp
 type_vbal_blk.fypp
 type_wind.fypp
+
 )
 
 if( oops_FOUND )
     list(APPEND bump_src_files_list
 
+    BUMP.cc
     BUMP.h
-    BUMP_NICAS.h
-    BUMP_PsiChiToUV.h
-    BUMP_StdDev.h
-    BUMP_VerticalBalance.h
+    NICAS.cc
+    NICAS.h
+    PsiChiToUV.cc
+    PsiChiToUV.h
+    StdDev.cc
+    StdDev.h
+    VerticalBalance.cc
+    VerticalBalance.h
+
     )
 endif()
 

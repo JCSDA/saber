@@ -152,24 +152,28 @@ if( oops_FOUND )
                             SOURCES mains/quenchRandomization.cc
                             LIBS    quench
                                     ${vader_LIBRARIES}
+                                    ${gsibec_LIBRARIES}
                                     saber )
 
     ecbuild_add_executable( TARGET  saber_quench_error_covariance_training.x
                             SOURCES mains/quenchErrorCovarianceTraining.cc
                             LIBS    quench
                                     ${vader_LIBRARIES}
+                                    ${gsibec_LIBRARIES}
                                     saber )
 
     ecbuild_add_executable( TARGET  saber_quench_saber_block_test.x
                             SOURCES mains/quenchSaberBlockTest.cc
                             LIBS    quench
                                     ${vader_LIBRARIES}
+                                    ${gsibec_LIBRARIES}
                                     saber )
 
     ecbuild_add_executable( TARGET  saber_quench_dirac.x
                             SOURCES mains/quenchDirac.cc
                             LIBS    quench
                                     ${vader_LIBRARIES}
+                                    ${gsibec_LIBRARIES}
                                     saber )
 
     ecbuild_add_executable( TARGET  saber_quench_convertstate.x

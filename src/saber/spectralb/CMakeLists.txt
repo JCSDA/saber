@@ -12,14 +12,31 @@ list(APPEND spectralb_src_files_list
 if( oops_FOUND AND atlas_TRANS_FOUND )
     list(APPEND spectralb_src_files_list
 
+    CovarianceStatistics.cc
     CovarianceStatistics.h
+    CovarianceStatisticsUtils.cc
     CovarianceStatisticsUtils.h
     spectralb.h
+    spectralbnointerp.h
     spectralb_covstats_interface.h
     spectralb_covstats_interface.F90
     spectralbParameters.h
+    SpectralCovariance.cc
+    SpectralCovariance.h
+    SpectralToGauss.cc
+    SpectralToGauss.h
+    SpectralToGaussUV.cc
+    SpectralToGaussUV.h
+    SPCTRL_Cov.cc
     SPCTRL_Cov.h
+    )
+endif()
 
+if( atlas_VERSION GREATER_EQUAL 0.31.0 )
+    list(APPEND spectralb_src_files_list
+
+    SpectralToGaussUV.cc
+    SpectralToGaussUV.h
     )
 endif()
 

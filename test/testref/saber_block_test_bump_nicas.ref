@@ -35,5 +35,4 @@
              Level   8 ~>  0.800E+01 vert. unit
              Level   9 ~>  0.900E+01 vert. unit
              Level  10 ~>  0.100E+02 vert. unit
-Adjoint test for central block BUMP_NICAS: y^t (Ax) = -2.4654365146651116e+03; x^t (Ay) = -2.4654365146650821e+03
-Inverse test for central block BUMP_NICAS: not implemented for iterative inverse
+Adjoint test for central block BUMP_NICAS passed

@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef QUENCH_COVARIANCEPARAMETERS_H_
-#define QUENCH_COVARIANCEPARAMETERS_H_
+#pragma once
 
 #include "oops/base/ModelSpaceCovarianceParametersBase.h"
 
@@ -26,4 +25,3 @@ class CovarianceParameters : public oops::ModelSpaceCovarianceParametersBase<que
 // -----------------------------------------------------------------------------
 
 }  // namespace quench
-#endif  // QUENCH_COVARIANCEPARAMETERS_H_

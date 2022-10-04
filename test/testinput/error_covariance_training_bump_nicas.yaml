@@ -27,10 +27,12 @@ bump:
   rv:
     var1:
     - 10
-  output:
-  - filepath: testdata/error_covariance_training_bump_nicas/_MPI_-_OMP__cor_rh
-    parameter: cor_rh
-  - filepath: testdata/error_covariance_training_bump_nicas/_MPI_-_OMP__cor_rv
-    parameter: cor_rv
+output:
+- parameter: cor_rh
+  file:
+    filepath: testdata/error_covariance_training_bump_nicas/_MPI_-_OMP__cor_rh
+- parameter: cor_rv
+  file:
+    filepath: testdata/error_covariance_training_bump_nicas/_MPI_-_OMP__cor_rv
 test:
   reference filename: testref/error_covariance_training_bump_nicas.ref

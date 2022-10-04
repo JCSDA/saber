@@ -127,6 +127,7 @@ Fields::Fields(const Fields & other, const bool copy):
 Fields::Fields(const Fields & other):
   geom_(other.geom_), vars_(other.vars_), time_(other.time_)
 {
+  oops::Log::trace() << "Fields::Fields(const Fields & other) starting" << std::endl;
   // Reset ATLAS fieldset
   fset_ = atlas::FieldSet();
 
@@ -146,9 +147,11 @@ Fields::Fields(const Fields & other):
     }
     fset_.add(field);
   }
+  oops::Log::trace() << "Fields::Fields(const Fields & other) done" << std::endl;
 }
 // -----------------------------------------------------------------------------
 void Fields::zero() {
+  oops::Log::trace() << "Fields::zero starting" << std::endl;
   auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   for (const auto var : vars_.variables()) {
     atlas::Field field = fset_[var];
@@ -161,9 +164,11 @@ void Fields::zero() {
       }
     }
   }
+  oops::Log::trace() << "Fields::zero end" << std::endl;
 }
 // -----------------------------------------------------------------------------
 Fields & Fields::operator=(const Fields & rhs) {
+  oops::Log::trace() << "Fields::operator=(const Fields & rhs) starting" << std::endl;
   for (const auto var : vars_.variables()) {
     atlas::Field field = fset_[var];
     atlas::Field fieldRhs = rhs.fset_[var];
@@ -178,10 +183,12 @@ Fields & Fields::operator=(const Fields & rhs) {
     }
   }
   time_ = rhs.time_;
+  oops::Log::trace() << "Fields::operator=(const Fields & rhs) end" << std::endl;
   return *this;
 }
 // -----------------------------------------------------------------------------
 Fields & Fields::operator+=(const Fields & rhs) {
+  oops::Log::trace() << "Fields::operator+=(const Fields & rhs) starting" << std::endl;
   auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   for (const auto var : vars_.variables()) {
     atlas::Field field = fset_[var];
@@ -196,10 +203,12 @@ Fields & Fields::operator+=(const Fields & rhs) {
       }
     }
   }
+  oops::Log::trace() << "Fields::operator+=(const Fields & rhs) done" << std::endl;
   return *this;
 }
 // -----------------------------------------------------------------------------
 Fields & Fields::operator-=(const Fields & rhs) {
+  oops::Log::trace() << "Fields::operator-=(const Fields & rhs) starting" << std::endl;
   auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   for (const auto var : vars_.variables()) {
     atlas::Field field = fset_[var];
@@ -214,10 +223,12 @@ Fields & Fields::operator-=(const Fields & rhs) {
       }
     }
   }
+  oops::Log::trace() << "Fields::operator-=(const Fields & rhs) done" << std::endl;
   return *this;
 }
 // -----------------------------------------------------------------------------
 Fields & Fields::operator*=(const double & zz) {
+  oops::Log::trace() << "Fields::operator*=(const Fields & rhs) starting" << std::endl;
   auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   for (const auto var : vars_.variables()) {
     atlas::Field field = fset_[var];
@@ -230,10 +241,12 @@ Fields & Fields::operator*=(const double & zz) {
       }
     }
   }
+  oops::Log::trace() << "Fields::operator*=(const Fields & rhs) done" << std::endl;
   return *this;
 }
 // -----------------------------------------------------------------------------
 void Fields::axpy(const double & zz, const Fields & rhs) {
+  oops::Log::trace() << "Fields::axpy starting" << std::endl;
   auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   for (const auto var : vars_.variables()) {
     atlas::Field field = fset_[var];
@@ -251,9 +264,11 @@ void Fields::axpy(const double & zz, const Fields & rhs) {
       }
     }
   }
+  oops::Log::trace() << "Fields::axpy done" << std::endl;
 }
 // -----------------------------------------------------------------------------
 double Fields::dot_product_with(const Fields & fld2) const {
+  oops::Log::trace() << "Fields::dot_product_with starting" << std::endl;
   double zz = 0;
   auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
@@ -265,7 +280,7 @@ double Fields::dot_product_with(const Fields & fld2) const {
       auto view2 = atlas::array::make_view<double, 2>(field2);
       for (atlas::idx_t jnode = 0; jnode < field1.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
-          if (gmaskView(jnode, jlevel) == 1 and ghostView(jnode) == 0) {
+          if (gmaskView(jnode, jlevel) == 1 && ghostView(jnode) == 0) {
             zz += view1(jnode, jlevel)*view2(jnode, jlevel);
           }
         }
@@ -273,10 +288,12 @@ double Fields::dot_product_with(const Fields & fld2) const {
     }
   }
   geom_->getComm().allReduceInPlace(zz, eckit::mpi::sum());
+  oops::Log::trace() << "Fields::dot_product_with done" << std::endl;
   return zz;
 }
 // -----------------------------------------------------------------------------
 void Fields::schur_product_with(const Fields & dx) {
+  oops::Log::trace() << "Fields::schur_product_with starting" << std::endl;
   auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   for (const auto var : vars_.variables()) {
     atlas::Field field = fset_[var];
@@ -291,9 +308,11 @@ void Fields::schur_product_with(const Fields & dx) {
       }
     }
   }
+  oops::Log::trace() << "Fields::schur_product_with done" << std::endl;
 }
 // -----------------------------------------------------------------------------
 void Fields::random() {
+  oops::Log::trace() << "Fields::random starting" << std::endl;
   // Total size
   size_t n = 0;
   auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
@@ -303,7 +322,7 @@ void Fields::random() {
     if (field.rank() == 2) {
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          if (gmaskView(jnode, jlevel) == 1 and ghostView(jnode) == 0) ++n;
+          if (gmaskView(jnode, jlevel) == 1 && ghostView(jnode) == 0) ++n;
         }
       }
     }
@@ -320,7 +339,8 @@ void Fields::random() {
   atlas::Field gmaskGlobal = geom_->functionSpace().createField<int>(atlas::option::name("gmask")
     | atlas::option::levels(geom_->levels()) | atlas::option::global());
   globalMasks.add(gmaskGlobal);
-  atlas::Field ghostGlobal = geom_->functionSpace().createField<int>(atlas::option::name("ghost") | atlas::option::global());
+  atlas::Field ghostGlobal = geom_->functionSpace().createField<int>(atlas::option::name("ghost")
+    | atlas::option::global());
   globalMasks.add(ghostGlobal);
 
   // Global data
@@ -339,14 +359,9 @@ void Fields::random() {
   } else if (geom_->functionSpace().type() == "NodeColumns") {
     // NodeColumns
     if (geom_->grid().name().compare(0, 2, std::string{"CS"}) == 0) {
-// TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
-#if atlas_TRANS_FOUND
       // CubedSphere
       atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
       fs.gather(localMasks, globalMasks);
-#else
-      ABORT("TRANS required");
-#endif
     } else {
       // Other NodeColumns
       atlas::functionspace::NodeColumns fs(geom_->functionSpace());
@@ -370,7 +385,7 @@ void Fields::random() {
         auto view = atlas::array::make_view<double, 2>(field);
         for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
           for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-            if (gmaskView(jnode, jlevel) == 1 and ghostView(jnode) == 0) {
+            if (gmaskView(jnode, jlevel) == 1 && ghostView(jnode) == 0) {
               view(jnode, jlevel) = rand_vec[n];
               ++n;
             }
@@ -388,14 +403,9 @@ void Fields::random() {
   } else if (geom_->functionSpace().type() == "NodeColumns") {
     // NodeColumns
     if (geom_->grid().name().compare(0, 2, std::string{"CS"}) == 0) {
-// TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
-#if atlas_TRANS_FOUND
       // CubedSphere
       atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
       fs.scatter(globalData, fset_);
-#else
-      ABORT("TRANS required");
-#endif
     } else {
       // Other NodeColumns
       atlas::functionspace::NodeColumns fs(geom_->functionSpace());
@@ -404,9 +414,11 @@ void Fields::random() {
   } else {
     ABORT(geom_->functionSpace().type() + " function space not supported yet");
   }
+  oops::Log::trace() << "Fields::random done" << std::endl;
 }
 // -----------------------------------------------------------------------------
 void Fields::dirac(const eckit::Configuration & config) {
+  oops::Log::trace() << "Fields::dirac starting" << std::endl;
   // Get dirac specifications
   std::vector<double> lon = config.getDoubleVector("lon");
   std::vector<double> lat = config.getDoubleVector("lat");
@@ -469,9 +481,11 @@ void Fields::dirac(const eckit::Configuration & config) {
       }
     }
   }
+  oops::Log::trace() << "Fields::dirac done" << std::endl;
 }
 // -----------------------------------------------------------------------------
 void Fields::diff(const Fields & x1, const Fields & x2) {
+  oops::Log::trace() << "Fields::diff starting" << std::endl;
   auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   for (const auto var : vars_.variables()) {
     atlas::Field field = fset_[var];
@@ -489,11 +503,13 @@ void Fields::diff(const Fields & x1, const Fields & x2) {
       }
     }
   }
+  oops::Log::trace() << "Fields::diff done" << std::endl;
 }
 // -----------------------------------------------------------------------------
 void Fields::toFieldSet(atlas::FieldSet & fset) const {
+  oops::Log::trace() << "Fields::toFieldSet starting" << std::endl;
   for (auto var : vars_.variables()) {
-    if (fset_.has_field(var)) {
+    if (fset_.has(var)) {
       fset->add(fset_[var]);
       atlas::Field field_input = fset_[var];
       atlas::Field field_local = fset[var];
@@ -508,40 +524,18 @@ void Fields::toFieldSet(atlas::FieldSet & fset) const {
       ABORT("Variable " + var + " not in source fieldset");
     }
   }
-}
-// -----------------------------------------------------------------------------
-void Fields::toFieldSetAD(const atlas::FieldSet & fset) {
-  // Copy values (including halo points)
-  for (auto var : vars_.variables()) {
-    if (fset_.has_field(var)) {
-      if (fset.has_field(var)) {
-        atlas::Field field_input = fset_[var];
-        atlas::Field field_local = fset[var];
-        auto view_input = atlas::array::make_view<double, 2>(field_input);
-        auto view_local = atlas::array::make_view<double, 2>(field_local);
-        for (atlas::idx_t jnode = 0; jnode < field_input.shape(0); ++jnode) {
-          for (atlas::idx_t jlevel = 0; jlevel < field_input.shape(1); ++jlevel) {
-            view_input(jnode, jlevel) = view_local(jnode, jlevel);
-          }
-        }
-      }
-    } else {
-      ABORT("Variable " + var + " not in source fieldset");
-    }
-  }
-
-  // Halo exchange adjoint
-  geom_->functionSpace().adjointHaloExchange(fset_);
+  oops::Log::trace() << "Fields::toFieldSet done" << std::endl;
 }
 // -----------------------------------------------------------------------------
 void Fields::fromFieldSet(const atlas::FieldSet & fset) {
+  oops::Log::trace() << "Fields::fromFieldSet starting" << std::endl;
   // Get ghost points mask
   auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
 
   // Copy values (excluding halo points)
   for (auto var : vars_.variables()) {
-    if (fset_.has_field(var)) {
-      if (fset.has_field(var)) {
+    if (fset_.has(var)) {
+      if (fset.has(var)) {
         atlas::Field field_input = fset_[var];
         atlas::Field field_local = fset[var];
         auto view_input = atlas::array::make_view<double, 2>(field_input);
@@ -601,6 +595,7 @@ void Fields::fromFieldSet(const atlas::FieldSet & fset) {
       ABORT("Variable " + var + " not in source fieldset");
     }
   }
+  oops::Log::trace() << "Fields::fromFieldSet done" << std::endl;
 }
 // -----------------------------------------------------------------------------
 void Fields::read(const eckit::Configuration & config) {
@@ -642,7 +637,7 @@ void Fields::read(const eckit::Configuration & config) {
       std::string ncfilepath = filepath;
       ncfilepath.append(".");
       ncfilepath.append(config.getString("netcdf extension", "nc"));
-      oops::Log::info() << "Reading file: " << ncfilepath << std::endl;
+      oops::Log::info() << "Info     : Reading file: " << ncfilepath << std::endl;
 
       // Open NetCDF file
       if ((retval = nc_open(ncfilepath.c_str(), NC_NOWRITE, &ncid))) ERR(retval);
@@ -676,16 +671,11 @@ void Fields::read(const eckit::Configuration & config) {
     // NodeColumns
     atlas::idx_t nb_nodes;
     if (geom_->grid().name().compare(0, 2, std::string{"CS"}) == 0) {
-// TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
-#if atlas_TRANS_FOUND
       // CubedSphere
       atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
 
       // Get global number of nodes
       nb_nodes = fs.nb_nodes_global();
-#else
-      ABORT("TRANS required");
-#endif
     } else {
       // Other NodeColumns
       atlas::functionspace::NodeColumns fs(geom_->functionSpace());
@@ -704,7 +694,7 @@ void Fields::read(const eckit::Configuration & config) {
       // NetCDF file path
       std::string ncfilepath = filepath;
       ncfilepath.append(".nc");
-      oops::Log::info() << "Reading file: " << ncfilepath << std::endl;
+      oops::Log::info() << "Info     : Reading file: " << ncfilepath << std::endl;
 
       // Open NetCDF file
       if ((retval = nc_open(ncfilepath.c_str(), NC_NOWRITE, &ncid))) ERR(retval);
@@ -743,14 +733,9 @@ void Fields::read(const eckit::Configuration & config) {
   } else if (geom_->functionSpace().type() == "NodeColumns") {
     // NodeColumns
     if (geom_->grid().name().compare(0, 2, std::string{"CS"}) == 0) {
-// TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
-#if atlas_TRANS_FOUND
       // CubedSphere
       atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
       fs.scatter(globalData, fset_);
-#else
-      ABORT("TRANS required");
-#endif
     } else {
       // Other NodeColumns
       atlas::functionspace::NodeColumns fs(geom_->functionSpace());
@@ -842,7 +827,7 @@ void Fields::write(const eckit::Configuration & config) const {
       // NetCDF file path
       std::string ncfilepath = filepath;
       ncfilepath.append(".nc");
-      oops::Log::info() << "Writing file: " << ncfilepath << std::endl;
+      oops::Log::info() << "Info     : Writing file: " << ncfilepath << std::endl;
 
       // Create NetCDF file
       if ((retval = nc_create(ncfilepath.c_str(), NC_CLOBBER, &ncid))) ERR(retval);
@@ -935,8 +920,6 @@ void Fields::write(const eckit::Configuration & config) const {
     // NodeColumns
     atlas::idx_t nb_nodes;
     if (geom_->grid().name().compare(0, 2, std::string{"CS"}) == 0) {
-// TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
-#if atlas_TRANS_FOUND
       // CubedSphere
       atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
 
@@ -955,9 +938,6 @@ void Fields::write(const eckit::Configuration & config) const {
 
       // Get global number of nodes
       nb_nodes = fs.nb_nodes_global();
-#else
-      ABORT("TRANS required");
-#endif
     } else {
       // Other NodeColumns
       atlas::functionspace::NodeColumns fs(geom_->functionSpace());
@@ -990,7 +970,7 @@ void Fields::write(const eckit::Configuration & config) const {
       // NetCDF file path
       std::string ncfilepath = filepath;
       ncfilepath.append(".nc");
-      oops::Log::info() << "Writing file: " << ncfilepath << std::endl;
+      oops::Log::info() << "Info     : Writing file: " << ncfilepath << std::endl;
 
       // Create NetCDF file
       if ((retval = nc_create(ncfilepath.c_str(), NC_CLOBBER, &ncid))) ERR(retval);
@@ -1060,7 +1040,7 @@ void Fields::write(const eckit::Configuration & config) const {
       // NetCDF file path
       std::string ncfilepath = filepath;
       ncfilepath.append(".nc");
-      oops::Log::info() << "Writing file: " << ncfilepath << std::endl;
+      oops::Log::info() << "Info     : Writing file: " << ncfilepath << std::endl;
 
       // Create NetCDF file
       if ((retval = nc_create(ncfilepath.c_str(), NC_CLOBBER, &ncid))) ERR(retval);
@@ -1125,7 +1105,7 @@ void Fields::write(const eckit::Configuration & config) const {
     // GMSH file path
     std::string gmshfilepath = filepath;
     gmshfilepath.append(".msh");
-    oops::Log::info() << "Writing file: " << gmshfilepath << std::endl;
+    oops::Log::info() << "Info     : Writing file: " << gmshfilepath << std::endl;
 
     // GMSH configuration
     const auto gmshConfig =
@@ -1159,7 +1139,7 @@ void Fields::print(std::ostream & os) const {
       auto view = atlas::array::make_view<double, 2>(field);
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          if (gmaskView(jnode, jlevel) == 1 and ghostView(jnode) == 0) {
+          if (gmaskView(jnode, jlevel) == 1 && ghostView(jnode) == 0) {
             zz += view(jnode, jlevel)*view(jnode, jlevel);
           }
         }

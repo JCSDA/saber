@@ -37,7 +37,7 @@ if( gsibec_FOUND )
     endif()
 endif()
 if( vader_FOUND )
-    target_link_libraries( ${PROJECT_NAME} PUBLIC ${vader_LIBRARIES} )
+    target_link_libraries( ${PROJECT_NAME} PUBLIC vader )
 endif()
 
 # Enable including of local header Fortran file templates

@@ -163,10 +163,10 @@ do ildwv=0,nam%nldwv
    if (ildwv==0) then
       ic2a = mpl%msv%vali
       if (mpl%main) ic2a = 0
-      filename = trim(nam%prefix)//'_diag'
+      filename = trim(nam%prefix)//'diag'
    else
       ic2a = samp(1)%ldwv_to_c2a(ildwv)
-      filename = trim(nam%prefix)//'_diag_'//trim(nam%name_ldwv(ildwv))
+      filename = trim(nam%prefix)//'diag_'//trim(nam%name_ldwv(ildwv))
    end if
 
    if (mpl%msv%isnot(ic2a)) then
@@ -238,7 +238,7 @@ end do
 ! Write dirac test
 if (nam%check_dirac.and.nam%write_c0) then
    ! Open file
-   filename = trim(nam%prefix)//'_dirac'
+   filename = trim(nam%prefix)//'dirac'
    ncid = create_file(mpl,filename)
 
    ! Define dimensions
@@ -273,7 +273,7 @@ if (nam%check_dirac.and.nam%write_c0) then
    select case (trim(nam%method))
    case ('hyb-rnd','hyb-ens')
       ! Open file
-      filename = trim(nam%prefix)//'_dirac_2'
+      filename = trim(nam%prefix)//'dirac_2'
       ncid = create_file(mpl,filename)
 
       ! Define dimensions

@@ -29,11 +29,8 @@ ensemble:
     zero padding: 6
 background error:
   covariance model: SABER
-  saber blocks:
-  - saber block name: BUMP_NICAS
-    saber central block: true
-    input variables: *id001
-    output variables: *id001
+  saber central block:
+    saber block name: BUMP_NICAS
     bump:
       datadir: testdata
       prefix: error_covariance_training_bump_hdiag_hyb-rnd/_MPI_-_OMP_
@@ -64,14 +61,18 @@ bump:
   nl0r: 10
   ne: 50
   ne_lr: 30
-  output:
-  - filepath: testdata/error_covariance_training_bump_hdiag_hyb-rnd/loc_rh
-    parameter: loc_rh
-  - filepath: testdata/error_covariance_training_bump_hdiag_hyb-rnd/loc_rv
-    parameter: loc_rv
-  - filepath: testdata/error_covariance_training_bump_hdiag_hyb-rnd/hyb_coef_ens
-    parameter: hyb_coef_ens
-  - filepath: testdata/error_covariance_training_bump_hdiag_hyb-rnd/hyb_coef_sta
-    parameter: hyb_coef_sta
+output:
+- parameter: loc_rh
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag_hyb-rnd/loc_rh
+- parameter: loc_rv
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag_hyb-rnd/loc_rv
+- parameter: hyb_coef_ens
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag_hyb-rnd/hyb_coef_ens
+- parameter: hyb_coef_sta
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag_hyb-rnd/hyb_coef_sta
 test:
   reference filename: testref/error_covariance_training_bump_hdiag_hyb-rnd.ref

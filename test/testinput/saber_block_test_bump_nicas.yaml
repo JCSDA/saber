@@ -11,12 +11,8 @@ variables: &id001
 background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
-saber blocks:
-- saber block name: BUMP_NICAS
-  saber central block: true
-  iterative inverse: true
-  input variables: *id001
-  output variables: *id001
+saber central block:
+  saber block name: BUMP_NICAS
   bump:
     testing: true
     datadir: testdata

@@ -22,7 +22,7 @@ namespace saber {
   namespace gsi {
     typedef int GridKey;
     extern "C" {
-      void gsi_grid_create_f90(GridKey &, const eckit::LocalConfiguration &,
+      void gsi_grid_create_f90(GridKey &, const eckit::Configuration &,
                               const eckit::mpi::Comm &);
       void gsi_grid_delete_f90(GridKey &);
       void gsi_grid_print_f90(const GridKey &);

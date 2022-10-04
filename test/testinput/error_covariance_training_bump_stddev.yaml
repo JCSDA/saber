@@ -26,8 +26,9 @@ bump:
   testing: true
   new_var: true
   ne: 10
-  output:
-  - filepath: testdata/error_covariance_training_bump_stddev/stddev
-    parameter: stddev
+output:
+- parameter: stddev
+  file:
+    filepath: testdata/error_covariance_training_bump_stddev/stddev
 test:
   reference filename: testref/error_covariance_training_bump_stddev.ref

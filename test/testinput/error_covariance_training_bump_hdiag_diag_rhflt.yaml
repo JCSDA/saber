@@ -38,10 +38,12 @@ bump:
   local_diag: true
   local_rad: 1000.0e3
   diag_rhflt: 3000.0e3
-  output:
-  - filepath: testdata/error_covariance_training_bump_hdiag_diag_rhflt/_MPI_-_OMP__cor_rh
-    parameter: cor_rh
-  - filepath: testdata/error_covariance_training_bump_hdiag_diag_rhflt/_MPI_-_OMP__cor_rv
-    parameter: cor_rv
+output:
+- parameter: cor_rh
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag_diag_rhflt/_MPI_-_OMP__cor_rh
+- parameter: cor_rv
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag_diag_rhflt/_MPI_-_OMP__cor_rv
 test:
   reference filename: testref/error_covariance_training_bump_hdiag_diag_rhflt.ref

@@ -113,10 +113,6 @@ void Increment::toFieldSet(atlas::FieldSet & fset) const {
   fields_->toFieldSet(fset);
 }
 // -----------------------------------------------------------------------------
-void Increment::toFieldSetAD(const atlas::FieldSet & fset) {
-  fields_->toFieldSetAD(fset);
-}
-// -----------------------------------------------------------------------------
 void Increment::fromFieldSet(const atlas::FieldSet & fset) {
   fields_->fromFieldSet(fset);
 }

@@ -1,2 +1,1 @@
-Adjoint test for central block SPCTRL_COV: y^t (Ax) = 1.3050028415625216e+03; x^t (Ay) = 1.3050028415625004e+03
-Inverse test for central block SPCTRL_COV: not implemented for iterative inverse
+Adjoint test for central block SPCTRL_COV passed

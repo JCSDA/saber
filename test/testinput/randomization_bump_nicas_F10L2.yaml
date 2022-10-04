@@ -14,11 +14,8 @@ background:
   state variables: *id001
 background error:
   covariance model: SABER
-  saber blocks:
-  - saber block name: BUMP_NICAS
-    saber central block: true
-    input variables: *id001
-    output variables: *id001
+  saber central block:
+    saber block name: BUMP_NICAS
     bump:
       datadir: testdata
       prefix: randomization_bump_nicas_F10L2/_MPI_-_OMP_

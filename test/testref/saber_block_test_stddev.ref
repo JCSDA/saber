@@ -1,3 +1,3 @@
-Norm of stddev: 3.4784034279496385e+40
-Adjoint test for block StdDev: y^t (Ax) = -6.6374465884753140e+39; x^t (A^t y) = -6.6374465884753019e+39
-Inverse test for block StdDev
+Norm of input parameter StdDev: 3.4784034279496385e+40
+Adjoint test for outer block StdDev passed
+Adjoint test for central block ID passed
