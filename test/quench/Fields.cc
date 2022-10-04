@@ -1128,7 +1128,11 @@ double Fields::norm() const {
 void Fields::print(std::ostream & os) const {
   os << std::endl;
   os << *geom_;
-  os << "Fields:";
+  std::string prefix;
+  if (os.rdbuf() == oops::Log::info().rdbuf()) {
+    prefix = "Info     : ";
+  }
+  os << prefix << "Fields:";
   auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
   for (const auto var : vars_.variables()) {
@@ -1149,7 +1153,7 @@ void Fields::print(std::ostream & os) const {
       geom_->getComm().allReduceInPlace(zz, eckit::mpi::sum());
     }
     zz = sqrt(zz);
-    os << "  " << var << ": " << zz;
+    os << prefix << "  " << var << ": " << zz;
   }
 }
 // -----------------------------------------------------------------------------

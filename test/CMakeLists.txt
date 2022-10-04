@@ -90,8 +90,14 @@ if( oops_FOUND )
     endif()
     if( SABER_TEST_SPECTRALB )
         message( STATUS "  - TIER 1 SPECTRALB-specific" )
-        file( STRINGS testlist/saber_test_tier1-spectralb.txt saber_test )
-        list( APPEND saber_test_full ${saber_test} )
+        # TODO(Benjamin): remove that once ATLAS 0.31.0 is available everywhere
+        if( atlas_VERSION GREATER_EQUAL 0.31.0 )
+            file( STRINGS testlist/saber_test_tier1-spectralb.txt saber_test )
+            list( APPEND saber_test_full ${saber_test} )
+        else()
+            file( STRINGS testlist/saber_test_tier1-spectralb_old.txt saber_test )
+            list( APPEND saber_test_full ${saber_test} )
+        endif()
     endif()
 
     # TIER > 1
