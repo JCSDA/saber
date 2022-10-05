@@ -18,11 +18,11 @@ status=0
 
 # BUMP tests
 if test "${test%%_*}" = "bump" ; then
-   # NCCMP Parameters
+   # NCCMP Parameters
    nthreads=4
    tolerance=1.e-4
 
-   # Get comparison type
+   # Get comparison type
    compare_type=''
    if test "$#" = 3 ; then
       # Arguments 2 and 3 are integer => normal
@@ -36,7 +36,7 @@ if test "${test%%_*}" = "bump" ; then
 
    # Check comparison type
    if test "${compare_type}" = '' ; then
-      echo -e "\e[31mWrong number/type of arguments\e[0m"
+      echo -e "\e[31mWrong number/type of arguments\e[0m" > /dev/stderr
       exit
    fi
 
@@ -48,12 +48,12 @@ if test "${test%%_*}" = "bump" ; then
       # Check number of files
       nfiles=`ls testdata/${test}/test_${mpi}-${omp}_*.nc 2>/dev/null | wc -l`
       if test "${nfiles}" = "0"; then
-         echo -e "\e[31mNo NetCDF file to check\e[0m"
+         echo -e "\e[31mNo NetCDF file to check\e[0m" > /dev/stderr
          status=1
       fi
 
       for file in `ls testdata/${test}/test_${mpi}-${omp}_*.nc 2>/dev/null` ; do
-         if test ! -h ${file}; then
+         if test ! -e ${file}; then
             # Get suffix
             tmp=${file#testdata/${test}/test_${mpi}-${omp}_}
             suffix=${tmp%.nc}
@@ -62,7 +62,7 @@ if test "${test%%_*}" = "bump" ; then
                # Remove distribution
                rm -f ${file}
             else
-               # Check if this file should be compared
+               # Check if this file should be compared
                compare=true
                for special in ${not_compared} ; do
                   if printf %s\\n "${suffix}" | grep -qF "${special}" ; then
@@ -85,11 +85,11 @@ if test "${test%%_*}" = "bump" ; then
                      nccmp -dfFmqS --threads=${nthreads} -T ${tolerance} ${file} ${fileref}
                      exit_code=$?
                      if test "${exit_code}" != "0" ; then
-                        echo -e "\e[31mTest failed (nccmp) checking: "${file#testdata/}"\e[0m"
+                        echo -e "\e[31mTest failed (nccmp) checking: "${file#testdata/}"\e[0m" > /dev/stderr
                         status=2
                      fi
                   else
-                     echo -e "\e[31mCannot find command: nccmp\e[0m"
+                     echo -e "\e[31mCannot find command: nccmp\e[0m" > /dev/stderr
                      status=3
                   fi
                fi
@@ -100,7 +100,7 @@ if test "${test%%_*}" = "bump" ; then
       # Check number of files
       nfiles=`ls testoutput/${test}/test_${mpi}-${omp}.000000.out 2>/dev/null | wc -l`
       if test "${nfiles}" = "0"; then
-         echo -e "\e[31mNo log file to check\e[0m"
+         echo -e "\e[31mNo log file to check\e[0m" > /dev/stderr
          status=4
       fi
 
@@ -109,7 +109,7 @@ if test "${test%%_*}" = "bump" ; then
          grep -q "*" ${file}
          exit_code=$?
          if test "${exit_code}" = "0" ; then
-            echo -e "\e[31mTest failed (stars in output) checking: "${file#testoutput/}"\e[0m"
+            echo -e "\e[31mTest failed (stars in output) checking: "${file#testoutput/}"\e[0m" > /dev/stderr
             status=5
          fi
 
@@ -117,7 +117,7 @@ if test "${test%%_*}" = "bump" ; then
          grep -q "\-\-\- Close listings" ${file}
          exit_code=$?
          if test "${exit_code}" != "0" ; then
-            echo -e "\e[31mTest failed (no listing closure) checking: "${file#testoutput/}"\e[0m"
+            echo -e "\e[31mTest failed (no listing closure) checking: "${file#testoutput/}"\e[0m" > /dev/stderr
             status=6
          fi
       done
@@ -131,7 +131,7 @@ if test "${test%%_*}" = "bump" ; then
       # Check number of files
       nfiles=`ls testdata/${test}/test_${mpiomp}_*.nc 2>/dev/null | wc -l`
       if test "${nfiles}" = "0"; then
-         echo -e "\e[31mNo NetCDF file to check\e[0m"
+         echo -e "\e[31mNo NetCDF file to check\e[0m" > /dev/stderr
          status=7
       fi
 
@@ -145,7 +145,7 @@ if test "${test%%_*}" = "bump" ; then
                # Remove distribution
                rm -f ${file}
             else
-               # Check if this file should be compared
+               # Check if this file should be compared
                compare=true
                for special in ${not_compared} ; do
                   if printf %s\\n "${suffix}" | grep -qF "${special}" ; then
@@ -161,11 +161,11 @@ if test "${test%%_*}" = "bump" ; then
                      nccmp -dfFmqS --threads=${nthreads} -T ${tolerance} ${file} ${fileref}
                      exit_code=$?
                      if test "${exit_code}" != "0" ; then
-                        echo -e "\e[31mTest failed (nccmp) checking: "${file#testdata/}"\e[0m"
+                        echo -e "\e[31mTest failed (nccmp) checking: "${file#testdata/}"\e[0m"  > /dev/stderr
                         status=8
                      fi
                   else
-                     echo -e "\e[31mCannot find command: nccmp\e[0m"
+                     echo -e "\e[31mCannot find command: nccmp\e[0m" > /dev/stderr
                      status=9
                   fi
                fi

@@ -9,7 +9,7 @@
 
 cmake_minimum_required( VERSION 3.12 )
 
-project( saber VERSION 1.3.0 LANGUAGES CXX Fortran )
+project( saber VERSION 1.4.0 LANGUAGES CXX Fortran )
 
 option(OPENMP "Build saber with OpenMP support" ON)
 
@@ -48,30 +48,47 @@ endif()
 
 # Optionals
 find_package( oops QUIET OPTIONAL_COMPONENTS qg )
-find_package( gsibclim QUIET )
+find_package( gsibec 1.0.5 QUIET )
+find_package( vader QUIET )
 
 # Optional SABER blocks
-if( gsibclim_FOUND )
+if( gsibec_FOUND )
+    find_package( sp QUIET )
     message( STATUS "SABER block GSI is enabled" )
-    add_definitions(-Dgsibclim_FOUND=1)
+    add_definitions(-DENABLE_GSIBEC=1)
 else()
     message( STATUS "SABER block GSI is not enabled" )
-    add_definitions(-Dgsibclim_FOUND=0)
+    add_definitions(-DENABLE_GSIBEC=0)
 endif()
-# TODO(Benjamin): remove this line once ATLAS is upgraded to 0.29.0 everywhere
-if( atlas_VERSION GREATER_EQUAL 0.29.0 )
-    message( STATUS "ATLAS version higher or equal to 0.29.0" )
+# TODO(Benjamin): remove this line once ATLAS is upgraded to 0.30.0 everywhere
+set( ENABLE_SPECTRALB 0 )
+if( atlas_VERSION GREATER_EQUAL 0.30.0 )
+    message( STATUS "ATLAS version higher or equal to 0.30.0" )
     if( atlas_TRANS_FOUND )
         message( STATUS "SABER block SPECTRALB is enabled" )
         add_definitions(-Datlas_TRANS_FOUND=1)
+        set( ENABLE_SPECTRALB 1 )
     else()
         message( STATUS "SABER block SPECTRALB is not enabled" )
         add_definitions(-Datlas_TRANS_FOUND=0)
     endif()
 else()
-    message( STATUS "ATLAS version lower than 0.29.0" )
+    message( STATUS "ATLAS version lower than 0.30.0" )
     message( STATUS "SABER block SPECTRALB is not enabled" )
     add_definitions(-Datlas_TRANS_FOUND=0)
+endif()
+if( vader_FOUND )
+    if ( ENABLE_VADER_MO )
+      message( STATUS "SABER blocks VADER are enabled (with MO-specific blocks)" )
+      add_definitions(-DENABLE_VADER_MO=1)
+    else()
+      message( STATUS "SABER blocks VADER are enabled (without MO-specific blocks)" )
+      add_definitions(-DENABLE_VADER_MO=0)
+    endif()
+    add_definitions(-DENABLE_VADER=1)
+else()
+    message( STATUS "SABER blocks VADER are not enabled" )
+    add_definitions(-DENABLE_VADER=0)
 endif()
 
 ## SABER instrumentation

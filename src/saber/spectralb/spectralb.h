@@ -8,9 +8,6 @@
 #ifndef SABER_SPECTRALB_SPECTRALB_H_
 #define SABER_SPECTRALB_SPECTRALB_H_
 
-#include <Eigen/Core>
-#include <Eigen/StdVector>
-
 #include <cmath>
 #include <iostream>
 #include <map>
@@ -32,9 +29,11 @@
 #include "atlas/trans/ifs/TransIFS.h"
 #include "atlas/trans/Trans.h"
 
-#include "saber/spectralb/AtlasInterpWrapper.h"
+#include "saber/interpolation/AtlasInterpWrapper.h"
 #include "saber/spectralb/CovarianceStatistics.h"
 #include "saber/spectralb/spectralbParameters.h"
+
+using atlas::grid::detail::partitioner::TransPartitioner;
 
 namespace saber {
 namespace spectralb {
@@ -76,6 +75,24 @@ std::shared_ptr<atlas::FieldSet> allocateGaussFieldset(
   return gaussFieldSet;
 }
 
+// -----------------------------------------------------------------------------
+
+template<typename MODEL>
+atlas::Grid createOutputGrid(const spectralbParameters<MODEL> & params) {
+  std::string gridName((params.outputGridUid.value() != boost::none ?
+                        params.outputGridUid.value().get() :
+                        params.gaussGridUid));
+  return atlas::Grid(gridName);
+}
+
+// -----------------------------------------------------------------------------
+
+atlas::FunctionSpace createOutputFunctionSpace(const atlas::FieldSet & fset) {
+  return fset[0].functionspace();
+}
+
+// -----------------------------------------------------------------------------
+
 template<typename MODEL>
 bool createVarianceOpt(const spectralbParameters<MODEL> & params) {
   return (params.varianceOpt.value() != boost::none ?
@@ -99,7 +116,6 @@ class SpectralB {
   typedef oops::Geometry<MODEL>        Geometry_;
   typedef oops::Increment<MODEL>       Increment_;
   typedef oops::State<MODEL>           State_;
-  typedef AtlasInterpWrapper<MODEL>    AtlasInterp_;
 
   SpectralB(const Geometry_ &,
                  const oops::Variables &,
@@ -117,30 +133,34 @@ class SpectralB {
   std::shared_ptr<const atlas::FieldSet> modelFieldSet_;
   std::vector<std::string> gaussNames_;
   atlas::StructuredGrid gaussGrid_;
-  atlas::functionspace::StructuredColumns gaussFS_;
+  atlas::functionspace::StructuredColumns gaussFunctionSpace_;
   std::shared_ptr<atlas::FieldSet> gaussFieldSet_;
-  AtlasInterp_ interp_;
+  saber::interpolation::AtlasInterpWrapper interp_;
   bool variance_opt_;
   std::unique_ptr<const CovStat_ErrorCov<MODEL>> cs_;
 
   // this method applies the adjoint of the inverse transform
   // then does a convolution with the spectral vertical covariances
-  void applySpectralB(const std::map<std::string, std::vector<Eigen::MatrixXf>> &,
+  void applySpectralB(const atlas::FieldSet &,
                       const atlas::functionspace::Spectral &,
                       const atlas::trans::Trans &,
                       atlas::FieldSet &) const;
 };
 
+using atlas::array::make_view;
+using atlas::idx_t;
+
 template<typename MODEL>
 SpectralB<MODEL>::SpectralB(const Geometry_ & resol,
-                                      const oops::Variables & vars,
-                                      const Parameters_ & params) :
+                            const oops::Variables & vars,
+                            const Parameters_ & params) :
   modelFieldSet_(std::make_shared<const atlas::FieldSet>(createFieldsSpace(resol, vars))),
   gaussNames_(vars.variables()),
   gaussGrid_(params.gaussGridUid),
-  gaussFS_(detail::createGaussFunctionSpace(gaussGrid_)),
-  gaussFieldSet_(detail::allocateGaussFieldset(gaussFS_, gaussNames_, modelFieldSet_)),
-  interp_(params, modelFieldSet_),
+  gaussFunctionSpace_(detail::createGaussFunctionSpace(gaussGrid_)),
+  gaussFieldSet_(detail::allocateGaussFieldset(gaussFunctionSpace_, gaussNames_, modelFieldSet_)),
+  interp_(atlas::grid::Partitioner(new TransPartitioner()), gaussFunctionSpace_,
+    detail::createOutputGrid(params), detail::createOutputFunctionSpace(*modelFieldSet_)),
   variance_opt_(detail::createVarianceOpt(params)),
   cs_(std::make_unique<const CovStat_ErrorCov<MODEL>>(resol, vars, params))
 {
@@ -173,7 +193,7 @@ void SpectralB<MODEL>::multiply_InterpAndCov(atlas::FieldSet & modelGridFieldSet
   // assuming that all fields in modelGridFieldSet have the same number of levels
   atlas::functionspace::Spectral specFS(2*N-1,
                                         atlas::option::levels(modelGridFieldSet[0].levels()));
-  atlas::trans::Trans transIFS(gaussFS_, specFS);
+  atlas::trans::Trans transIFS(gaussFunctionSpace_, specFS);
 
   interp_.executeAdjoint(*gaussFieldSet_, modelGridFieldSet);
 
@@ -252,11 +272,10 @@ atlas::FieldSet SpectralB<MODEL>::createFieldsSpace(const Geometry_ & geom,
 
 template<typename MODEL>
 void SpectralB<MODEL>::applySpectralB(
-    const std::map<std::string, std::vector<Eigen::MatrixXf>> & spectralVerticalCovariances,
+    const atlas::FieldSet & spectralVerticalCovariances,
     const atlas::functionspace::Spectral & specFS,
     const atlas::trans::Trans & transIFS,
     atlas::FieldSet & gaussFields) const {
-
   // the spectral B for each active variable is defined in 3 main steps
   // 1) the adjoint of the inverse spectral transform
   // 2) a spectral convolution with vertical covariances for each total wavenumber
@@ -267,11 +286,9 @@ void SpectralB<MODEL>::applySpectralB(
 
   std::vector<std::string> fieldNames = gaussFields.field_names();
 
-  atlas::idx_t N = specFS.truncation();
+  idx_t N = specFS.truncation();
 
-  std::vector<std::string> vertCovNames;
-  for (auto const & imap : spectralVerticalCovariances)
-    vertCovNames.push_back(imap.first);
+  std::vector<std::string> vertCovNames = spectralVerticalCovariances.field_names();
 
   atlas::FieldSet specFields;
 
@@ -288,30 +305,31 @@ void SpectralB<MODEL>::applySpectralB(
   const int nb_zonal_wavenumbers = zonal_wavenumbers.size();
 
   int i;
-  for (atlas::idx_t f = 0; f < gaussFields.size(); f++) {
+  for (idx_t f = 0; f < gaussFields.size(); f++) {
     int levels(gaussFields[fieldNames[f]].levels());
-    int columnSize(levels);
-    Eigen::VectorXd col(columnSize);
-    Eigen::VectorXd col2(columnSize);
-
-    std::vector<Eigen::MatrixXf> verticalCovariances =
-      spectralVerticalCovariances.at(fieldNames[f]);
-    auto spfView = atlas::array::make_view<double, 2>(specFields[fieldNames[f]]);
+    auto vertCovView = make_view<const double, 3>(spectralVerticalCovariances[fieldNames[f]]);
+    auto spfView = make_view<double, 2>(specFields[fieldNames[f]]);
 
     i = 0;
+    std::vector<double> col(levels), col2(levels);
+    double norm;
     for (int jm = 0; jm < nb_zonal_wavenumbers; ++jm) {
       const int m1 = zonal_wavenumbers(jm);
       for (std::size_t n1 = m1; n1 <= static_cast<std::size_t>(N); ++n1) {
         for (std::size_t img = 0; img < 2; ++img) {
-          for (atlas::idx_t jl = 0; jl < levels; ++jl) {
-            col(jl) = spfView(i, jl);
+          for (idx_t jl = 0; jl < levels; ++jl) {
+            col[static_cast<std::size_t>(jl)] = spfView(i, jl);
           }
-
-          col2 = verticalCovariances[n1].cast<double>() * col /
-            static_cast<double>((2 * n1 + 1) * verticalCovariances.size());
-
-          for  (atlas::idx_t jl = 0; jl < levels; ++jl) {
-            spfView(i, jl) = col2(jl);
+          norm = static_cast<double>((2 * n1 + 1) *
+                                     spectralVerticalCovariances[fieldNames[f]].shape(0));
+          for (idx_t r = 0; r < levels; ++r) {
+            col2[static_cast<std::size_t>(r)] = 0;
+            for (idx_t c = 0; c < levels; ++c) {
+              col2[static_cast<std::size_t>(r)] += vertCovView(n1, r, c) * col[c] / norm;
+            }
+          }
+          for  (idx_t jl = 0; jl < levels; ++jl) {
+            spfView(i, jl) = col2[static_cast<std::size_t>(jl)];
           }
           ++i;
         }

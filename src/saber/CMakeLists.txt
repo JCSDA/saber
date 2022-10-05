@@ -4,7 +4,7 @@
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
 # Build list of subdirs with files to add
-set(_subdirs bump external gsi interpolation model oops spectralb util)
+set(_subdirs bump external gsi interpolation model oops spectralb util vader)
 foreach( _subdir IN LISTS _subdirs )
     add_subdirectory( ${_subdir} )
     list( TRANSFORM ${_subdir}_src_files PREPEND ${_subdir}/ )
@@ -30,8 +30,12 @@ target_link_libraries( ${PROJECT_NAME} PUBLIC atlas_f )
 if( oops_FOUND )
     target_link_libraries( ${PROJECT_NAME} PUBLIC ${oops_LIBRARIES} )
 endif()
-if( gsibclim_FOUND )
-    target_link_libraries( ${PROJECT_NAME} PUBLIC gsibclim)
+if( gsibec_FOUND )
+    message( STATUS "SABER linking GSI-based lib named: ${gsibec_LIBRARIES}" )
+    target_link_libraries( ${PROJECT_NAME} PUBLIC gsibec )
+endif()
+if( vader_FOUND )
+    target_link_libraries( ${PROJECT_NAME} PUBLIC ${vader_LIBRARIES} )
 endif()
 
 # Enable including of local header Fortran file templates

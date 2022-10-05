@@ -42,10 +42,13 @@ class GeometryParameters : public oops::Parameters {
   oops::RequiredParameter<std::string> functionSpace{"function space", this};
 
   /// Grid
-  oops::RequiredParameter<eckit::LocalConfiguration> grid{"grid", this};
+  oops::OptionalParameter<eckit::LocalConfiguration> grid{"grid", this};
+
+  /// IODA input file (NetCDF format) to get longitude/latitude
+  oops::OptionalParameter<std::string> iodaFile{"ioda file", this};
 
   /// Partitioner
-  oops::Parameter<std::string> partitioner{"partitioner", "checkerboard", this};
+  oops::Parameter<std::string> partitioner{"partitioner", "equal_regions", this};
 
   /// Number of levels
   oops::Parameter<size_t> levels{"levels", 1, this};
@@ -72,7 +75,10 @@ class Geometry : public util::Printable,
   Geometry(const Geometry &);
 
   const eckit::mpi::Comm & getComm() const {return comm_;}
-  atlas::Grid grid() const {return grid_;}
+  const atlas::Grid grid() const {return grid_;}
+  const std::string gridType() const {return gridType_;}
+  const atlas::grid::Partitioner partitioner() const {return partitioner_;}
+  const atlas::Mesh mesh() const {return mesh_;}
   const atlas::FunctionSpace & functionSpace() const {return functionSpace_;}
   atlas::FunctionSpace & functionSpace() {return functionSpace_;}
   const atlas::FieldSet & extraFields() const {return extraFields_;}
@@ -83,12 +89,14 @@ class Geometry : public util::Printable,
 
   std::vector<size_t> variableSizes(const oops::Variables & vars) const;
   void latlon(std::vector<double> &, std::vector<double> &, const bool) const {}
+  bool levelsAreTopDown() const {return true;}
 
  private:
   void print(std::ostream &) const;
   const eckit::mpi::Comm & comm_;
-  eckit::LocalConfiguration gridConfig_;
   atlas::Grid grid_;
+  std::string gridType_;
+  atlas::grid::Partitioner partitioner_;
   atlas::Mesh mesh_;
   atlas::FunctionSpace functionSpace_;
   atlas::FieldSet extraFields_;
