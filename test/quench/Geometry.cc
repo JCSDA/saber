@@ -182,9 +182,8 @@ Geometry::Geometry(const Parameters_ & params,
       int ncid, retval, nlon_id, nlat_id, lon_id, lat_id, lsm_id;
 
       if (comm_.rank() == 0) {
-        // Open NetCDF file TODO(Benjamin): not hard-coded!!!
-        if ((retval = nc_open("/home/benjamin/code/bundle/saber/test/testdata/landsea.nc",
-          NC_NOWRITE, &ncid))) ERR(retval);
+        // Open NetCDF file
+        if ((retval = nc_open(params.mask_path.value().c_str(), NC_NOWRITE, &ncid))) ERR(retval);
 
         // Get lon/lat sizes
         if ((retval = nc_inq_dimid(ncid, "lon", &nlon_id))) ERR(retval);

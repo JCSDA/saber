@@ -56,7 +56,10 @@ class GeometryParameters : public oops::Parameters {
   oops::OptionalParameter<std::vector<double>> vunit{"vunit", this};
 
   /// Mask type
-  oops::OptionalParameter<std::string> mask_type{"mask type", this};
+  oops::OptionalParameter<std::string> mask_type{"mask type",  this};
+
+  /// Mask path
+  oops::Parameter<std::string> mask_path{"mask path", "testdata/landsea.nc", this};
 
   /// Halo size
   oops::OptionalParameter<size_t> halo{"halo", this};
