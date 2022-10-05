@@ -19,7 +19,7 @@ set( CMAKE_CXX_FLAGS_RELEASE     "-O3" )
 # DEBUG FLAGS
 ####################################################################
 
-set( CMAKE_CXX_FLAGS_DEBUG       "-O0 -g" )
+set( CMAKE_CXX_FLAGS_DEBUG       "-O0 -g -fprofile-arcs -ftest-coverage" )
 
 ####################################################################
 # BIT REPRODUCIBLE FLAGS
