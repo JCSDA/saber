@@ -4,12 +4,13 @@ geometry:
     type : regular_gaussian
     N : 15
   levels: 70
+  partitioner: ectrans
 variables: &vars [psi_inc]
 background:
   date: 2010-01-01T12:00:00Z
   state variables: *vars
 saber blocks:
-- saber block name: SPCTRL_COV
+- saber block name: SPNOINTERP_COV
   saber central block: true
   iterative inverse: true
   input variables: *vars

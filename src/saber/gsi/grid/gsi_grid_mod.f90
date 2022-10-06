@@ -22,6 +22,11 @@ use kinds,                          only: kind_real
 ! saber
 use gsi_utils_mod,                  only: nccheck
 
+! gsibec
+use gsimod,                         only: gsimain_gridopts
+use m_gsibec,                       only: gsibec_get_grid
+!use m_gsibec,                       only: gsibec_set_grid
+
 implicit none
 private
 public gsi_grid
@@ -32,8 +37,10 @@ type :: gsi_grid
   character(len=2055) :: filename
   integer :: npx, npy, npz          ! Grid points in global grid
   integer :: layout(2)              ! Number of processors in x (index 1) and y (index 2) directions
+  integer :: lat2,lon2
   integer :: isc, iec, jsc, jec     ! Start and ending grid points for each processor
   logical :: vflip                  ! Flip vertical grid (gsi k=1=top)
+  logical :: noGSI
   real(kind=kind_real), allocatable :: lats(:), lons(:)
   real(kind=kind_real), allocatable :: grid_lats(:,:), grid_lons(:,:)
   integer :: ngrid ! Number of grid points for each processor
@@ -62,18 +69,32 @@ type(fckit_mpi_comm),      intent(in)    :: comm
 ! Locals
 integer :: ncid, dimid(3), varid(2)
 character(len=:), allocatable :: str
-integer :: posx, posy, i, j, jj, npx_per_proc, npy_per_proc
+character(len=:), allocatable :: nml
+integer :: posx, posy, i, j, jj
+logical :: bkgmock,cv
+logical :: verbose
 
 ! Create copy of comm
 ! -------------------
 self%comm = comm
+verbose = comm%rank()==0
 
 ! Debug mode
 ! ----------
 call conf%get_or_die("debugging mode", self%debug)
+call conf%get_or_die("debugging bypass gsi", self%noGSI)
 
-! Read the GSI grid info from file
-! --------------------------------
+! Domain decomposition
+! --------------------
+call conf%get_or_die("processor layout x direction", self%layout(1))
+call conf%get_or_die("processor layout y direction", self%layout(2))
+
+! Handle vertical grid opt
+! ------------------------
+call conf%get_or_die("flip vertical grid", self%vflip)
+
+! Open file with GSI grid info (for now here)
+! ----------------------------
 if (comm%rank() == 0) then
 
   ! Get filename
@@ -82,86 +103,20 @@ if (comm%rank() == 0) then
 
   ! Open NetCDF
   call nccheck(nf90_open(trim(self%filename), NF90_NOWRITE, ncid), "nf90_open "//trim(self%filename))
-
-  ! Get grid dimension from file
-  call nccheck(nf90_inq_dimid(ncid, "lon", dimid(1)), "nf90_inq_dimid lon")
-  call nccheck(nf90_inq_dimid(ncid, "lat", dimid(2)), "nf90_inq_dimid lat")
-  call nccheck(nf90_inq_dimid(ncid, "lev", dimid(3)), "nf90_inq_dimid lev")
-
-  call nccheck(nf90_inquire_dimension(ncid, dimid(1), len=self%npx), "nf90_inquire_dimension lon" )
-  call nccheck(nf90_inquire_dimension(ncid, dimid(2), len=self%npy), "nf90_inquire_dimension lat" )
-  call nccheck(nf90_inquire_dimension(ncid, dimid(3), len=self%npz), "nf90_inquire_dimension lev" )
-
 endif
 
-! Broadcast the dimensions
-! ------------------------
-call comm%broadcast(self%npx, 0)
-call comm%broadcast(self%npy, 0)
-call comm%broadcast(self%npz, 0)
+if (self%noGSI) then
+  call woGSI()
+else
+  call wGSI()
+endif
 
-
-! Allocate the lat/lon arrays
-! ---------------------------
-allocate(self%lons(self%npx))
-allocate(self%lats(self%npy))
-
-
-! Read the latitude and longitude
-! -------------------------------
+! Close NetCDF with GSI grid info
 if (comm%rank() == 0) then
 
-  call nccheck(nf90_inq_varid(ncid, "lon", varid(1)), "nf90_inq_varid lon")
-  call nccheck(nf90_inq_varid(ncid, "lat", varid(2)), "nf90_inq_varid lat")
-
-  call nccheck(nf90_get_var(ncid, varid(1), self%lons), "nf90_get_var lon" )
-  call nccheck(nf90_get_var(ncid, varid(2), self%lats), "nf90_get_var lat" )
-
-  ! Close NetCDF
   call nccheck(nf90_close(ncid), "nf90_close")
 
 end if
-
-
-! Broadcast the grid
-! ------------------
-call comm%broadcast(self%lons, 0)
-call comm%broadcast(self%lats, 0)
-
-! Handle vertical grid opt
-! ------------------------
-call conf%get_or_die("flip vertical grid", self%vflip)
-
-! Domain decomposition
-! --------------------
-call conf%get_or_die("processor layout x direction", self%layout(1))
-call conf%get_or_die("processor layout y direction", self%layout(2))
-
-! Check that user choices match comm size
-if (.not. self%layout(1)*self%layout(2) == comm%size()) &
-  call abor1_ftn("GSI grid: number of processor in layout does not match number in communicator")
-
-! Grid point per processor in each direction
-npx_per_proc = floor(real(self%npx, kind_real)/real(self%layout(1), kind_real))
-npy_per_proc = floor(real(self%npy, kind_real)/real(self%layout(2), kind_real))
-
-! Start and end points in the x direction
-posx = mod(comm%rank(), self%layout(1))
-self%isc = posx * npx_per_proc + 1
-self%iec = self%isc + npx_per_proc - 1
-if (posx == self%layout(1) -1) self%iec = self%npx
-
-! Start and end points in the y direction
-do j = 0, self%layout(2)-1
-  if ( comm%rank() >= j*self%layout(1) .and. comm%rank() < (j+1)*self%layout(1) ) then
-    posy = j
-  end if
-end do
-self%jsc = posy * npy_per_proc + 1
-self%jec = self%jsc + npy_per_proc - 1
-if (posy == self%layout(2) -1) self%jec = self%npy
-
-self%ngrid = (self%iec-self%isc+1)*(self%jec-self%jsc+1)
 
 ! Create arrays of lon/lat to be compatible with interpolation
 allocate(self%grid_lons(self%isc:self%iec, self%jsc:self%jec))
@@ -175,12 +130,169 @@ do j = self%jsc, self%jec
 enddo
 
 if ( self%debug ) then
-  do j=1,self%layout(1)*self%layout(2)
-     if(self%comm%rank() == 0) &
-     write(6,'(a,4(i5,1x))') 'grid dist indexes: task, is,ie, js,je ', self%isc, self%iec, self%jsc,self%jec
-  enddo
+ if(self%comm%rank() == 0) then
+    do j=1,self%layout(1)*self%layout(2)
+       write(6,'(a,6(i5,1x))') 'grid dist indexes: task, is,ie, js,je ', j, &
+                                self%isc, self%iec, &
+                                self%jsc, self%jec, &
+                                self%ngrid
+    enddo
+ endif
 endif
 
+
+
+contains
+! ------------------
+! Actual hook to GSI (lat/lon to come from GSI)
+! ------------------
+  subroutine wGSI
+
+  integer :: npe,igdim
+  logical :: eqspace
+  real(kind=kind_real), allocatable :: mylats(:), mylons(:)
+
+  npe = self%layout(1)*self%layout(2)
+
+  ! Check that user choices match comm size
+  if (.not. self%layout(1)*self%layout(2) == comm%size()) &
+    call abor1_ftn("GSI grid: number of processor in layout does not match number in communicator")
+
+  ! Get required name of resources for GSI B error
+  ! ----------------------------------------------
+   call conf%get_or_die("gsi berror namelist file",  nml)
+
+  ! Initialize GSIbec grid
+  ! ----------------------
+  call gsimain_gridopts (nml,comm%rank(),self%layout(1),self%layout(2),&
+                         self%npy,self%npx,self%npz,eqspace,&
+                         self%lon2,self%lat2,&
+                         self%isc,self%iec,self%jsc,self%jec,igdim)
+
+  ! Allocate the lat/lon arrays
+  ! ---------------------------
+  allocate(self%lons(self%npx))
+  allocate(self%lats(self%npy))
+
+  ! Read the latitudes and longitudes per GSIbec
+  ! --------------------------------------------
+  call gsibec_get_grid (eqspace,'degree',self%lats,self%lons)
+! call gsibec_set_grid (geom%ak,geos%bk) ! when geom available in saber
+
+  ! Read the latitude and longitude
+  ! -------------------------------
+  if (self%debug .and. comm%rank() == 0) then
+
+    allocate(mylons(self%npx))
+    allocate(mylats(self%npy))
+    call nccheck(nf90_inq_varid(ncid, "lon", varid(1)), "nf90_inq_varid lon")
+    call nccheck(nf90_inq_varid(ncid, "lat", varid(2)), "nf90_inq_varid lat")
+
+    call nccheck(nf90_get_var(ncid, varid(1), mylons), "nf90_get_var lon" )
+    call nccheck(nf90_get_var(ncid, varid(2), mylats), "nf90_get_var lat" )
+
+    do i=1,self%npx
+       print *, 'lons: gsi, file: ',self%lons(i),mylons(i) 
+    enddo
+    do j=1,self%npy
+       print *, 'lats: gsi, file: ',self%lats(j),mylats(j) 
+    enddo
+    deallocate(mylons)
+    deallocate(mylats)
+
+  end if
+
+  self%ngrid = (self%iec-self%isc+1)*(self%jec-self%jsc+1)
+  if (self%ngrid /= igdim) then
+    call abor1_ftn("gsi_grid_mod: inconsistent distribution")
+  endif
+
+  end subroutine wGSI
+
+! ---------------------------------------
+! Provides a stub for testing without GSI
+! ---------------------------------------
+  subroutine woGSI
+
+  integer :: npx_per_proc, npy_per_proc
+
+! Read the GSI grid info from file
+! --------------------------------
+  if (comm%rank() == 0) then
+
+    ! Get grid dimension from file
+    call nccheck(nf90_inq_dimid(ncid, "lon", dimid(1)), "nf90_inq_dimid lon")
+    call nccheck(nf90_inq_dimid(ncid, "lat", dimid(2)), "nf90_inq_dimid lat")
+    call nccheck(nf90_inq_dimid(ncid, "lev", dimid(3)), "nf90_inq_dimid lev")
+
+    call nccheck(nf90_inquire_dimension(ncid, dimid(1), len=self%npx), "nf90_inquire_dimension lon" )
+    call nccheck(nf90_inquire_dimension(ncid, dimid(2), len=self%npy), "nf90_inquire_dimension lat" )
+    call nccheck(nf90_inquire_dimension(ncid, dimid(3), len=self%npz), "nf90_inquire_dimension lev" )
+
+  endif
+
+  ! Broadcast the dimensions
+  ! ------------------------
+  call comm%broadcast(self%npx, 0)
+  call comm%broadcast(self%npy, 0)
+  call comm%broadcast(self%npz, 0)
+
+
+  ! Allocate the lat/lon arrays
+  ! ---------------------------
+  allocate(self%lons(self%npx))
+  allocate(self%lats(self%npy))
+
+  ! Read the latitude and longitude
+  ! -------------------------------
+  if (comm%rank() == 0) then
+
+    call nccheck(nf90_inq_varid(ncid, "lon", varid(1)), "nf90_inq_varid lon")
+    call nccheck(nf90_inq_varid(ncid, "lat", varid(2)), "nf90_inq_varid lat")
+
+    call nccheck(nf90_get_var(ncid, varid(1), self%lons), "nf90_get_var lon" )
+    call nccheck(nf90_get_var(ncid, varid(2), self%lats), "nf90_get_var lat" )
+
+  end if
+
+
+  ! Broadcast the grid
+  ! ------------------
+  call comm%broadcast(self%lons, 0)
+  call comm%broadcast(self%lats, 0)
+
+  ! Check that user choices match comm size
+  if (.not. self%layout(1)*self%layout(2) == comm%size()) &
+    call abor1_ftn("GSI grid: number of processor in layout does not match number in communicator")
+
+
+  ! Doing gsi stuff ...
+  ! -------------------
+  call conf%get_or_die("debugging bypass gsi", self%noGSI)
+
+  ! Grid point per processor in each direction
+  npx_per_proc = floor(real(self%npx, kind_real)/real(self%layout(1), kind_real))
+  npy_per_proc = floor(real(self%npy, kind_real)/real(self%layout(2), kind_real))
+
+  ! Start and end points in the x direction
+  posx = mod(comm%rank(), self%layout(1))
+  self%isc = posx * npx_per_proc + 1
+  self%iec = self%isc + npx_per_proc - 1
+  if (posx == self%layout(1) -1) self%iec = self%npx
+
+  ! Start and end points in the y direction
+  do j = 0, self%layout(2)-1
+    if ( comm%rank() >= j*self%layout(1) .and. comm%rank() < (j+1)*self%layout(1) ) then
+      posy = j
+    end if
+  end do
+  self%jsc = posy * npy_per_proc + 1
+  self%jec = self%jsc + npy_per_proc - 1
+  if (posy == self%layout(2) -1) self%jec = self%npy
+
+  self%ngrid = (self%iec-self%isc+1)*(self%jec-self%jsc+1)
+
+  end subroutine woGSI
 end subroutine create
 
 ! --------------------------------------------------------------------------------------------------
@@ -278,9 +390,9 @@ call lonlat_field%data(real_ptr)
 
 ! Fill lon/lat
 real_ptr(1,:) = reshape(self%grid_lons(self%isc:self%iec, &
-                                            self%jsc:self%jec), (/self%ngrid/))
+                                       self%jsc:self%jec), (/self%ngrid/))
 real_ptr(2,:) = reshape(self%grid_lats(self%isc:self%iec, &
-                                            self%jsc:self%jec), (/self%ngrid/))
+                                       self%jsc:self%jec), (/self%ngrid/))
 
 ! Add field to fieldset
 call grid_fieldset%add(lonlat_field)

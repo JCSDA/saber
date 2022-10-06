@@ -887,7 +887,7 @@ do iv=1,fieldset%nv
    ! Check sizes
    afield = fieldset%field(fieldset%variables(iv))
    if (get_atlas_field_size(mpl,afield)/=fieldset%nmga) call mpl%abort('${subr}$','wrong horizontal size')
-   if ((afield%levels()/=0).and.(afield%levels()/=fieldset%nl0)) call mpl%abort('${subr}$','wrong number of levels')
+   if ((afield%levels()/=1).and.(afield%levels()/=fieldset%nl0)) call mpl%abort('${subr}$','wrong number of levels')
 end do
 
 ! Probe out

@@ -31,9 +31,11 @@ cost function:
         obs type: Stream
       obs space:
         obsdatain:
-          obsfile: testdata/qg_make_obs_4d_24h/truth.obs4d_24h.nc
+          engine:
+            obsfile: testdata/qg_make_obs_4d_24h/truth.obs4d_24h.nc
         obsdataout:
-          obsfile: testdata/qg_4dvar_drplanczos_bump/qg_4dvar_drplanczos_bump.obs4d_24h.nc
+          engine:
+            obsfile: testdata/qg_4dvar_drplanczos_bump/qg_4dvar_drplanczos_bump.obs4d_24h.nc
         obs type: Stream
       obs error:
         covariance model: diagonal
@@ -41,9 +43,11 @@ cost function:
         obs type: Wind
       obs space:
         obsdatain:
-          obsfile: testdata/qg_make_obs_4d_24h/truth.obs4d_24h.nc
+          engine:
+            obsfile: testdata/qg_make_obs_4d_24h/truth.obs4d_24h.nc
         obsdataout:
-          obsfile: testdata/qg_4dvar_drplanczos_bump/qg_4dvar_drplanczos_bump.obs4d_24h.nc
+          engine:
+            obsfile: testdata/qg_4dvar_drplanczos_bump/qg_4dvar_drplanczos_bump.obs4d_24h.nc
         obs type: Wind
       obs error:
         covariance model: diagonal
@@ -51,9 +55,11 @@ cost function:
         obs type: WSpeed
       obs space:
         obsdatain:
-          obsfile: testdata/qg_make_obs_4d_24h/truth.obs4d_24h.nc
+          engine:
+            obsfile: testdata/qg_make_obs_4d_24h/truth.obs4d_24h.nc
         obsdataout:
-          obsfile: testdata/qg_4dvar_drplanczos_bump/qg_4dvar_drplanczos_bump.obs4d_24h.nc
+          engine:
+            obsfile: testdata/qg_4dvar_drplanczos_bump/qg_4dvar_drplanczos_bump.obs4d_24h.nc
         obs type: WSpeed
       obs error:
         covariance model: diagonal

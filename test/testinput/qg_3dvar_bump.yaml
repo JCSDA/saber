@@ -37,9 +37,11 @@ cost function:
         obs type: Stream
       obs space:
         obsdatain:
-          obsfile: testdata/qg_make_obs_3d/truth.obs3d.nc
+          engine:
+            obsfile: testdata/qg_make_obs_3d/truth.obs3d.nc
         obsdataout:
-          obsfile: testdata/qg_3dvar_bump/3dvar_bump.obs3d.nc
+          engine:
+            obsfile: testdata/qg_3dvar_bump/3dvar_bump.obs3d.nc
         obs type: Stream
     - obs error:
         covariance model: diagonal
@@ -47,9 +49,11 @@ cost function:
         obs type: Wind
       obs space:
         obsdatain:
-          obsfile: testdata/qg_make_obs_3d/truth.obs3d.nc
+          engine:
+            obsfile: testdata/qg_make_obs_3d/truth.obs3d.nc
         obsdataout:
-          obsfile: testdata/qg_3dvar_bump/3dvar_bump.obs3d.nc
+          engine:
+            obsfile: testdata/qg_3dvar_bump/3dvar_bump.obs3d.nc
         obs type: Wind
     - obs error:
         covariance model: diagonal
@@ -57,9 +61,11 @@ cost function:
         obs type: WSpeed
       obs space:
         obsdatain:
-          obsfile: testdata/qg_make_obs_3d/truth.obs3d.nc
+          engine:
+            obsfile: testdata/qg_make_obs_3d/truth.obs3d.nc
         obsdataout:
-          obsfile: testdata/qg_3dvar_bump/3dvar_bump.obs3d.nc
+          engine:
+            obsfile: testdata/qg_3dvar_bump/3dvar_bump.obs3d.nc
         obs type: WSpeed
 variational:
   minimizer:
