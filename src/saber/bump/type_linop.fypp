@@ -12,6 +12,7 @@ use ieee_arithmetic
 !$ use omp_lib
 use tools_const, only: zero,one,rad2deg
 use tools_func, only: sphere_dist,zss_maxval,zss_minval
+use tools_gc99, only: fit_func
 use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim_size,define_var,inquire_var,put_var,get_var
 use tools_qsort, only: qsort
@@ -1094,7 +1095,7 @@ end subroutine linop_interp_lat
 ! Subroutine: linop_interp_nn
 !> Compute horizontal interpolation (nearest valid neighbor)
 !----------------------------------------------------------------------
-subroutine linop_interp_nn(linop,mpl,n_src,mask_src,tree_src,n_dst,lon_dst,lat_dst,mask_dst,ifmt)
+subroutine linop_interp_nn(linop,mpl,n_src,mask_src,tree_src,n_dst,lon_dst,lat_dst,mask_dst,ifmt,irad)
 
 implicit none
 
@@ -1109,12 +1110,15 @@ real(kind_real),intent(in) :: lon_dst(n_dst) !< Destination longitudes
 real(kind_real),intent(in) :: lat_dst(n_dst) !< Destination latitudes
 logical,intent(in) :: mask_dst(n_dst)        !< Destination mask
 integer,intent(in) :: ifmt                   !< Format indentation
+real(kind_real),intent(in),optional :: irad  !< Interpolation radius
 
 ! Local variables
-integer :: i_dst,n_s,i_s,next
-integer :: row(n_dst),col(n_dst)
+integer,parameter :: nmax = 20
+integer :: imax,i_dst,n_s,i_s,iext,next
+integer :: row(nmax*n_dst),col(nmax*n_dst)
 integer,allocatable :: nn_index_ext(:)
-real(kind_real) :: S(n_dst)
+real(kind_real) :: lirad,nd,S(nmax*n_dst)
+real(kind_real),allocatable :: nn_dist_ext(:),wgt(:)
 logical :: found,missing(n_dst)
 character(len=7) :: cfmt
 
@@ -1123,6 +1127,10 @@ character(len=7) :: cfmt
 
 ! Probe in
 @:probe_in()
+
+! Local interpolation radius
+lirad = zero
+if (present(irad)) lirad = irad
 
 ! Compute interpolation
 if (ifmt>0) then
@@ -1134,32 +1142,73 @@ end if
 n_s = 0
 do i_dst=1,n_dst
    if (mask_dst(i_dst)) then
-      ! Find nearest valid neighbor
+      ! Find nearest valid neighbors
       found = .false.
       next = 1
       do while (.not.found)
          ! Allocation
-         allocate(nn_index_ext(next))
+         allocate(nn_index_ext(next+1))
+         allocate(nn_dist_ext(next+1))
 
          ! Find nearest neighors
-         call tree_src%find_nearest_neighbors(lon_dst(i_dst),lat_dst(i_dst),next,nn_index_ext)
+         call tree_src%find_nearest_neighbors(lon_dst(i_dst),lat_dst(i_dst),next+1,nn_index_ext,nn_dist_ext)
 
          ! Check mask
-         if (mask_src(nn_index_ext(next))) then
-            found = .true.
+         if (lirad>zero) then
+            if ((next==nmax).or.(any(mask_src(nn_index_ext(1:next))).and.(nn_dist_ext(next+1)>lirad))) then
+               found = .true.
+            else
+               next = next+1
+               deallocate(nn_index_ext)
+               deallocate(nn_dist_ext)
+            end if
          else
-            next = next+1
-            deallocate(nn_index_ext)
+            if (mask_src(nn_index_ext(next))) then
+               found = .true.
+            else
+               next = next+1
+               deallocate(nn_index_ext)
+               deallocate(nn_dist_ext)
+            end if
          end if
 
          ! Check next
          if (next>n_src) call mpl%abort('${subr}$','cannot find valid nearest neighbor')
       end do
-      n_s = n_s+1
-      row(n_s) = i_dst
-      col(n_s) = nn_index_ext(next)
-      S(n_s) = one
+
+      ! Allocation
+      allocate(wgt(next))
+
+      ! Initialization
+      wgt = zero
+
+      if (lirad>zero) then
+         ! Compute weights
+         do iext=1,next
+            if (mask_src(nn_index_ext(iext))) then
+               nd = nn_dist_ext(iext)/lirad
+               wgt(iext) = fit_func(mpl,'hor',nd)
+            end if
+         end do
+         wgt = wgt/sum(wgt)
+      else
+         wgt(next) = one
+      end if
+
+      ! Copy indices and weights
+      do iext=1,next
+         if (mask_src(nn_index_ext(iext)).and.(wgt(iext)>zero)) then
+            n_s = n_s+1
+            row(n_s) = i_dst
+            col(n_s) = nn_index_ext(iext)
+            S(n_s) = wgt(iext)
+         end if
+      end do
+
+      ! Release memory
       deallocate(nn_index_ext)
+      deallocate(nn_dist_ext)
+      deallocate(wgt)
    end if
 
    ! Update
@@ -1176,6 +1225,9 @@ do i_s=1,n_s
    missing(row(i_s)) = .false.
 end do
 if (n_s>0) then
+   do i_dst=1,n_dst
+     if (missing(i_dst)) print*, "missing: ",i_dst
+   end do
    if (any(missing)) call mpl%abort('${subr}$','missing destination points')
 end if
 
