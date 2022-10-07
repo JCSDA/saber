@@ -222,7 +222,7 @@ else( DEFINED GIT_TAG_FUNC )
     list( APPEND SABER_DATA_DOWNLOADER_ARGS
           ${ECBUILD_DOWNLOAD_BASE_URL}
           ${CMAKE_SOURCE_DIR}/test-data-release
-          "saber_testinput_tier_1_1.3.0.tar.gz"
+          "saber_testinput_tier_1_1.4.0.tar.gz"
           ${checksum} )
 
     # Create test-data-release in source directory
