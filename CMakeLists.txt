@@ -9,7 +9,7 @@
 
 cmake_minimum_required( VERSION 3.12 )
 
-project( saber VERSION 1.3.0 LANGUAGES CXX Fortran )
+project( saber VERSION 1.4.0 LANGUAGES CXX Fortran )
 
 option(OPENMP "Build saber with OpenMP support" ON)
 
