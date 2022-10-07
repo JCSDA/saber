@@ -3,7 +3,7 @@ geometry:
   grid:
     type: regular_gaussian
     N: 10
-  levels: 2
+  levels: 10
   mask type: sea
   halo: 1
 input variables: &id001
@@ -16,14 +16,14 @@ ensemble:
   members from template:
     template:
       date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_F10L2/member_%mem%
+      filepath: testdata/randomization_bump_nicas_F10L10/member_%mem%
       state variables: *id001
     pattern: '%mem%'
     nmembers: 25
     zero padding: 6
 bump:
   datadir: testdata
-  prefix: error_covariance_training_bump_hdiag_ldwv/_MPI_-_OMP_
+  prefix: error_covariance_training_bump_hdiag_1/_MPI_-_OMP_
   testing: true
   method: cor
   strategy: specific_univariate
@@ -32,12 +32,19 @@ bump:
   nc1: 500
   nc2: 250
   nc3: 10
+  nc4: 4
   dc: 800.0e3
   nl0r: 2
   ne: 25
+  mask_type: lat-30030
+  gen_kurt_th: 10.0
   local_diag: true
   local_rad: 1000.0e3
-  diag_rhflt: 2000.0e3
+  diag_rhflt: 3000.0e3
+  diag_rvflt: 3.0
+  fit_dl0: 3
+  write_samp_local: true
+  write_samp_grids: true
   nldwv: 3
   lon_ldwv:
   - 0.0
@@ -54,9 +61,9 @@ bump:
 output:
 - parameter: cor_rh
   file:
-    filepath: testdata/error_covariance_training_bump_hdiag_ldwv/_MPI_-_OMP__cor_rh
+    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh
 - parameter: cor_rv
   file:
-    filepath: testdata/error_covariance_training_bump_hdiag_ldwv/_MPI_-_OMP__cor_rv
+    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rv
 test:
-  reference filename: testref/error_covariance_training_bump_hdiag_ldwv.ref
+  reference filename: testref/error_covariance_training_bump_hdiag_1.ref

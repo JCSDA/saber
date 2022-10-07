@@ -31,13 +31,11 @@ integer,parameter :: nldwvmax = 20                !< Maximum number of local dia
 integer,parameter :: nprociomax = 20              !< Maximum number of I/O tasks
 integer,parameter :: niokvmax = 99                !< Maximum number of I/O key-values
 integer,parameter :: nvbalmax = nvmax*(nvmax-1)/2 !< Maximum number of vertical balance blocks
-integer,parameter :: ncompmax = 10                !< Maximum number of model components (for the cartg model)
 
 type nam_type
    ! general_param
    character(len=1024) :: datadir                             !< Data directory
    character(len=1024) :: prefix                              !< Files prefix
-   character(len=1024) :: model                               !< Model name ('aro', 'arp', 'cartg', 'fv3', 'gem', 'geos', 'gfs', 'ifs', 'mpas', 'nemo', 'norcpm', 'online', 'qg, 'res' or 'wrf')
    character(len=1024) :: verbosity                           !< Verbosity level ('all', 'main' or 'none')
    logical :: colorlog                                        !< Add colors to the log (for display on terminal)
    logical :: testing                                         !< Stream test messages into a dedicated channel
@@ -47,7 +45,6 @@ type nam_type
    logical :: parallel_io                                     !< Parallel NetCDF I/O
    integer :: nprocio                                         !< Number of I/O processors
    real(kind_real) :: universe_rad                            !< Universe radius [in meters]
-   logical :: write_c0                                        !< Write subset Sc0 fields (full grid) using BUMP I/O
 
    ! driver_param
    character(len=1024) :: method                              !< Localization/hybridization to compute ('cor', 'loc', 'hyb-rnd' or 'hyb-ens')
@@ -62,8 +59,6 @@ type nam_type
    logical :: write_vbal                                      !< Write vertical balance operator
    logical :: new_var                                         !< Compute new variance
    logical :: update_var                                      !< Update variance sequentially
-   logical :: load_var                                        !< Load variance
-   logical :: write_var                                       !< Write variance
    logical :: new_mom                                         !< Compute new sampling moments
    logical :: update_mom                                      !< Update sampling moments sequentially
    logical :: load_mom                                        !< Load sampling moments
@@ -106,16 +101,10 @@ type nam_type
    integer :: nl0                                             !< Number of levels
    integer :: levs(nl0max)                                    !< Levels
    character(len=1024) :: lev2d                               !< Level for 2D variables ('first' or 'last')
-   logical :: logpres                                         !< Use pressure logarithm as vertical coordinate (model level if .false.)
    integer :: nv                                              !< Number of variables
    character(len=1024),dimension(nvmax) :: variables          !< Variables names
-   character(len=1024) :: variable_change                     !< Variable change
-   logical :: nomask                                          !< Do not use geometry mask
    character(len=1024),dimension(niokvmax) :: io_keys         !< I/O keys
    character(len=1024),dimension(niokvmax) :: io_values       !< I/O values
-   logical :: qg_regional                                     !< Regional domain configuration for the QG model
-   logical :: qg_urban                                        !< Urban domain configuration for the QG model
-   character(len=1024),dimension(ncompmax) :: model_comp      !< Model components (for 'cartg': 'atm' or 'ocn')
 
    ! ens1_param
    integer :: ens1_ne                                         !< Ensemble 1 size
@@ -236,7 +225,7 @@ contains
 end type nam_type
 
 private
-public :: nvmax,nl0max,nc3max,nscalesmax,ndirmax,nldwvmax,niokvmax,nvbalmax,ncompmax
+public :: nvmax,nl0max,nc3max,nscalesmax,ndirmax,nldwvmax,niokvmax,nvbalmax
 public :: nam_type
 
 contains
@@ -265,7 +254,6 @@ integer :: isub,il0,iv,i,ildwv,icomp
 ! general_param default
 nam%datadir = '.'
 nam%prefix = ''
-nam%model = 'online'
 nam%verbosity = 'all'
 nam%colorlog = .false.
 nam%testing = .false.
@@ -275,7 +263,6 @@ nam%rth = 1.0e-12_kind_real
 nam%parallel_io = .true.
 nam%nprocio = min(nproc,nprociomax)
 nam%universe_rad = pi*req
-nam%write_c0 = .false.
 
 ! driver_param default
 nam%method = ''
@@ -290,8 +277,6 @@ nam%load_vbal = .false.
 nam%write_vbal = .false.
 nam%new_var = .false.
 nam%update_var = .false.
-nam%load_var = .false.
-nam%write_var = .false.
 nam%new_mom = .false.
 nam%update_mom = .false.
 nam%load_mom = .false.
@@ -342,21 +327,13 @@ do il0=1,nl0max
    nam%levs(il0) = il0
 end do
 nam%lev2d = 'first'
-nam%logpres = .false.
 nam%nv = 0
 do iv=1,nvmax
    nam%variables(iv) = ''
 end do
-nam%variable_change = ''
-nam%nomask = .false.
 do i=1,niokvmax
    nam%io_keys(i) = ''
    nam%io_values(i) = ''
-end do
-nam%qg_regional = .false.
-nam%qg_urban = .false.
-do icomp=1,ncompmax
-   nam%model_comp(icomp) = ''
 end do
 
 ! ens1_param default
@@ -501,7 +478,6 @@ integer :: isub,il0,iv,i,ildwv,icomp,lunit
 ! Namelist variables
 character(len=1024) :: datadir
 character(len=1024) :: prefix
-character(len=1024) :: model
 character(len=1024) :: verbosity
 logical :: colorlog
 logical :: testing
@@ -511,7 +487,6 @@ real(kind_real) :: rth
 logical :: parallel_io
 integer :: nprocio
 real(kind_real) :: universe_rad
-logical :: write_c0
 character(len=1024) :: method
 character(len=1024) :: strategy
 logical :: new_normality
@@ -524,8 +499,6 @@ logical :: load_vbal
 logical :: write_vbal
 logical :: new_var
 logical :: update_var
-logical :: load_var
-logical :: write_var
 logical :: new_mom
 logical :: update_mom
 logical :: load_mom
@@ -564,16 +537,10 @@ character(len=1024) :: fname_wind
 integer :: nl0
 integer :: levs(nl0max)
 character(len=1024) :: lev2d
-logical :: logpres
 integer :: nv
 character(len=1024),dimension(nvmax) :: variables
-character(len=1024) :: variable_change
-logical :: nomask
 character(len=1024),dimension(niokvmax) :: io_keys
 character(len=1024),dimension(niokvmax) :: io_values
-logical :: qg_regional
-logical :: qg_urban
-character(len=1024),dimension(ncompmax) :: model_comp
 integer :: ens1_ne
 integer :: ens1_nsub
 integer :: ens2_ne
@@ -662,7 +629,6 @@ real(kind_real) :: wind_inflation
 namelist/general_param/ &
  & datadir, &
  & prefix, &
- & model, &
  & verbosity, &
  & colorlog, &
  & testing, &
@@ -671,8 +637,7 @@ namelist/general_param/ &
  & rth, &
  & parallel_io, &
  & nprocio, &
- & universe_rad, &
- & write_c0
+ & universe_rad
 namelist/driver_param/ &
  & method, &
  & strategy, &
@@ -686,8 +651,6 @@ namelist/driver_param/ &
  & write_vbal, &
  & new_var, &
  & update_var, &
- & load_var, &
- & write_var, &
  & new_mom, &
  & update_mom, &
  & load_mom, &
@@ -728,15 +691,10 @@ namelist/model_param/ &
  & nl0, &
  & levs, &
  & lev2d, &
- & logpres, &
  & nv, &
  & variables, &
- & variable_change, &
- & nomask, &
  & io_keys, &
- & io_values, &
- & qg_regional, &
- & qg_urban
+ & io_values
 namelist/ens1_param/ &
  & ens1_ne, &
  & ens1_nsub
@@ -833,7 +791,6 @@ if (mpl%main) then
    ! general_param default
    datadir = '.'
    prefix = ''
-   model = 'online'
    verbosity = 'all'
    colorlog = .false.
    testing = .false.
@@ -843,7 +800,6 @@ if (mpl%main) then
    parallel_io = .true.
    nprocio = min(mpl%nproc,nprociomax)
    universe_rad = pi*req
-   write_c0 = .false.
 
    ! driver_param default
    method = ''
@@ -858,8 +814,6 @@ if (mpl%main) then
    write_vbal = .false.
    new_var = .false.
    update_var = .false.
-   load_var = .false.
-   write_var = .false.
    new_mom = .false.
    update_mom = .false.
    load_mom = .false.
@@ -910,21 +864,13 @@ if (mpl%main) then
       levs(il0) = il0
    end do
    lev2d = 'first'
-   logpres = .false.
    nv = 0
    do iv=1,nvmax
       variables(iv) = ''
    end do
-   variable_change = ''
-   nomask = .false.
    do i=1,niokvmax
       io_keys(i) = ''
       io_values(i) = ''
-   end do
-   qg_regional = .false.
-   qg_urban = .false.
-   do icomp=1,ncompmax
-      model_comp(icomp) = ''
    end do
 
    ! ens1_param default
@@ -1054,7 +1000,6 @@ if (mpl%main) then
    read(lunit,nml=general_param)
    nam%datadir = datadir
    nam%prefix = prefix
-   nam%model = model
    nam%verbosity = verbosity
    nam%colorlog = colorlog
    nam%testing = testing
@@ -1064,7 +1009,6 @@ if (mpl%main) then
    nam%parallel_io = parallel_io
    nam%nprocio = nprocio
    nam%universe_rad = universe_rad
-   nam%write_c0 = write_c0
 
    ! driver_param
    read(lunit,nml=driver_param)
@@ -1080,8 +1024,6 @@ if (mpl%main) then
    nam%write_vbal = write_vbal
    nam%new_var = new_var
    nam%update_var = update_var
-   nam%load_var = load_var
-   nam%write_var = write_var
    nam%new_mom = new_mom
    nam%update_mom = update_mom
    nam%load_mom = load_mom
@@ -1125,15 +1067,10 @@ if (mpl%main) then
    nam%nl0 = nl0
    nam%levs = levs
    nam%lev2d = lev2d
-   nam%logpres = logpres
    nam%nv = nv
    nam%variables = variables
-   nam%variable_change = variable_change
-   nam%nomask = nomask
    nam%io_keys = io_keys
    nam%io_values = io_values
-   nam%qg_regional = qg_regional
-   nam%qg_urban = qg_urban
 
    ! ens1_param
    read(lunit,nml=ens1_param)
@@ -1270,7 +1207,6 @@ type(mpl_type),intent(inout) :: mpl  !< MPI data
 ! general_param
 call mpl%f_comm%broadcast(nam%datadir,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%prefix,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%model,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%verbosity,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%colorlog,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%testing,mpl%rootproc-1)
@@ -1280,7 +1216,6 @@ call mpl%f_comm%broadcast(nam%rth,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%parallel_io,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nprocio,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%universe_rad,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%write_c0,mpl%rootproc-1)
 
 ! driver_param
 call mpl%f_comm%broadcast(nam%method,mpl%rootproc-1)
@@ -1295,8 +1230,6 @@ call mpl%f_comm%broadcast(nam%load_vbal,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%write_vbal,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%new_var,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%update_var,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%load_var,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%write_var,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%new_mom,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%update_mom,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%load_mom,mpl%rootproc-1)
@@ -1339,15 +1272,10 @@ call mpl%f_comm%broadcast(nam%fname_wind,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nl0,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%levs,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%lev2d,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%logpres,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%nv,mpl%rootproc-1)
 call mpl%broadcast(nam%variables,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%variable_change,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%nomask,mpl%rootproc-1)
 call mpl%broadcast(nam%io_keys,mpl%rootproc-1)
 call mpl%broadcast(nam%io_values,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%qg_regional,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%qg_urban,mpl%rootproc-1)
 
 ! ens1_param
 call mpl%f_comm%broadcast(nam%ens1_ne,mpl%rootproc-1)
@@ -1494,10 +1422,6 @@ if (conf%has('prefix')) then
    call conf%get_or_die('prefix',str)
    nam%prefix = str
 end if
-if (conf%has('model')) then
-   call conf%get_or_die('model',str)
-   nam%model = str
-end if
 if (conf%has('verbosity')) then
    call conf%get_or_die('verbosity',str)
    nam%verbosity = str
@@ -1510,7 +1434,6 @@ if (conf%has('rth')) call conf%get_or_die('rth',nam%rth)
 if (conf%has('parallel_io')) call conf%get_or_die('parallel_io',nam%parallel_io)
 if (conf%has('nprocio')) call conf%get_or_die('nprocio',nam%nprocio)
 if (conf%has('universe_rad')) call conf%get_or_die('universe_rad',nam%universe_rad)
-if (conf%has('write_c0')) call conf%get_or_die('write_c0',nam%write_c0)
 
 ! driver_param
 if (conf%has('method')) then
@@ -1531,8 +1454,6 @@ if (conf%has('load_vbal')) call conf%get_or_die('load_vbal',nam%load_vbal)
 if (conf%has('write_vbal')) call conf%get_or_die('write_vbal',nam%write_vbal)
 if (conf%has('new_var')) call conf%get_or_die('new_var',nam%new_var)
 if (conf%has('update_var')) call conf%get_or_die('update_var',nam%update_var)
-if (conf%has('load_var')) call conf%get_or_die('load_var',nam%load_var)
-if (conf%has('write_var')) call conf%get_or_die('write_var',nam%write_var)
 if (conf%has('new_mom')) call conf%get_or_die('new_mom',nam%new_mom)
 if (conf%has('update_mom')) call conf%get_or_die('update_mom',nam%update_mom)
 if (conf%has('load_mom')) call conf%get_or_die('load_mom',nam%load_mom)
@@ -1622,7 +1543,6 @@ if (conf%has('lev2d')) then
    call conf%get_or_die('lev2d',str)
    nam%lev2d = str
 end if
-if (conf%has('logpres')) call conf%get_or_die('logpres',nam%logpres)
 if (conf%has('nv')) call conf%get_or_die('nv',nam%nv)
 if (conf%has('variables')) then
    call conf%get_or_die('variables',str_array)
@@ -1633,11 +1553,6 @@ if (conf%has('variables')) then
    end if
    nam%variables(1:size(str_array)) = str_array
 end if
-if (conf%has('variable_change')) then
-   call conf%get_or_die('variable_change',str)
-   nam%variable_change = str
-end if
-if (conf%has('nomask')) call conf%get_or_die('nomask',nam%nomask)
 if (conf%has('io_keys')) then
    call conf%get_or_die('io_keys',str_array)
    if (size(str_array)>niokvmax) then
@@ -1655,17 +1570,6 @@ if (conf%has('io_values')) then
       call comm%abort(1)
    end if
    nam%io_values(1:size(str_array)) = str_array
-end if
-if (conf%has('qg_regional')) call conf%get_or_die('qg_regional',nam%qg_regional)
-if (conf%has('qg_urban')) call conf%get_or_die('qg_urban',nam%qg_urban)
-if (conf%has('model_comp')) then
-   call conf%get_or_die('model_comp',str_array)
-   if (size(str_array)>ncompmax) then
-      write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: model_comp size should be smaller than ',ncompmax
-      call flush(output_unit)
-      call comm%abort(1)
-   end if
-   nam%model_comp(1:size(str_array)) = str_array
 end if
 
 ! ens1_param
@@ -2099,11 +2003,6 @@ if (nam%prefix/='') nam%prefix = trim(nam%prefix)//'_'
 
 ! Check general_param
 if (nam%datadir=='') call mpl%abort('${subr}$','datadir not specified')
-select case (nam%model)
-case ('aro','arp','fv3','gem','geos','gfs','ifs','mpas','nemo','norcpm','online','qg','res','wrf')
-case default
-   call mpl%abort('${subr}$','wrong model')
-end select
 select case (nam%verbosity)
 case ('all','main','none')
 case default
@@ -2141,9 +2040,6 @@ if (nam%load_vbal.and.(nam%new_vbal_cov.or.nam%load_vbal_cov.or.nam%update_vbal_
  & 'load_vbal is inconsistent with new_vbal_cov, load_vbal_cov or update_vbal_cov')
 if (nam%new_vbal.and.nam%load_vbal) call mpl%abort('${subr}$','new_vbal and load_vbal are exclusive')
 if (nam%new_var.and.nam%update_var) call mpl%abort('${subr}$','new_var and update_var are exclusive')
-if (nam%new_var.and.nam%load_var) call mpl%abort('${subr}$','new_var and load_var are exclusive')
-if (nam%load_var.and.nam%update_var) call mpl%abort('${subr}$','load_var and update_var are exclusive')
-if (nam%write_var.and.(.not.nam%write_c0)) call mpl%abort('${subr}$','write_var requires write_c0')
 if (nam%new_mom.and.nam%update_mom) call mpl%abort('${subr}$','new_mom and update_mom are exclusive')
 if (nam%new_mom.and.nam%load_mom) call mpl%abort('${subr}$','new_mom and load_mom are exclusive')
 if (nam%load_mom.and.nam%update_mom) call mpl%abort('${subr}$','load_mom and update_mom are exclusive')
@@ -2176,8 +2072,8 @@ if (nam%check_get_param.and.(.not.(nam%new_hdiag.and.(nam%method=='hyb-rnd')))) 
  & call mpl%abort('${subr}$','new_var or update_var, and new_hdiag, and hyb-rnd method required for check_get_param')
 if (nam%check_apply_vbal.and..not.(nam%new_vbal.or.nam%load_vbal)) &
  & call mpl%abort('${subr}$','new_vbal or load_vbal required for check_apply_vbal')
-if (nam%check_apply_stddev.and..not.(nam%new_var.or.nam%update_var.or.nam%load_var)) &
- & call mpl%abort('${subr}$','new_var, update_var or load_var required for check_apply_stddev')
+if (nam%check_apply_stddev.and..not.(nam%new_var.or.nam%update_var)) &
+ & call mpl%abort('${subr}$','new_var, update_var required for check_apply_stddev')
 if (nam%check_apply_nicas.and..not.(nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global)) &
  & call mpl%abort('${subr}$','new_nicas or load_nicas_local/load_nicas_global required for check_apply_nicas')
 
@@ -2209,7 +2105,7 @@ do il0=1,nam%nl0
    if (count(nam%levs(1:nam%nl0)==nam%levs(il0))>1) call mpl%abort('${subr}$','duplicated levels')
 end do
 if ((nam%lev2d/='first').and.(nam%lev2d/='last')) call mpl%abort('${subr}$','wrong lev2d value')
-if (nam%new_vbal_cov.or.nam%load_vbal_cov.or.nam%new_vbal.or.nam%load_vbal.or.nam%new_var.or.nam%update_var.or.nam%load_var.or. &
+if (nam%new_vbal_cov.or.nam%load_vbal_cov.or.nam%new_vbal.or.nam%load_vbal.or.nam%new_var.or.nam%update_var.or. &
  & nam%new_hdiag.or.nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
    if (nam%nv<=0) call mpl%abort('${subr}$','nv should be positive')
    do iv=1,nam%nv
@@ -2222,7 +2118,6 @@ if (nam%new_vbal_cov.or.nam%load_vbal_cov.or.nam%new_vbal.or.nam%load_vbal.or.na
  & call mpl%abort('${subr}$','io_keys and io_values are not consistent')
    end do
 end if
-if (nam%qg_regional.and.nam%qg_urban) call mpl%abort('${subr}$','qg_regional and qg_urban are exclusive')
 
 ! Check ens1_param
 if (nam%new_normality.or.nam%new_vbal_cov.or.nam%update_vbal_cov.or.(nam%new_vbal.and.(.not.nam%load_vbal_cov)) &
@@ -2526,7 +2421,6 @@ write(mpl%info,'(a7,a)') '','General parameters'
 call mpl%flush
 call mpl%write('datadir',nam%datadir)
 call mpl%write('prefix',nam%prefix)
-call mpl%write('model',nam%model)
 call mpl%write('verbosity',nam%verbosity)
 call mpl%write('colorlog',nam%colorlog)
 call mpl%write('testing',nam%testing)
@@ -2536,7 +2430,6 @@ call mpl%write('rth',nam%rth)
 call mpl%write('parallel_io',nam%parallel_io)
 call mpl%write('nprocio',nam%nprocio)
 call mpl%write('universe_rad',nam%universe_rad*req)
-call mpl%write('write_c0',nam%write_c0)
 
 ! driver_param
 write(mpl%info,'(a7,a)') '','Driver parameters'
@@ -2553,8 +2446,6 @@ call mpl%write('load_vbal',nam%load_vbal)
 call mpl%write('write_vbal',nam%write_vbal)
 call mpl%write('new_var',nam%new_var)
 call mpl%write('update_var',nam%update_var)
-call mpl%write('load_var',nam%load_var)
-call mpl%write('write_var',nam%write_var)
 call mpl%write('new_mom',nam%new_mom)
 call mpl%write('update_mom',nam%update_mom)
 call mpl%write('load_mom',nam%load_mom)
@@ -2599,15 +2490,10 @@ call mpl%flush
 call mpl%write('nl0',nam%nl0)
 call mpl%write('levs',nam%nl0,nam%levs(1:nam%nl0))
 call mpl%write('lev2d',nam%lev2d)
-call mpl%write('logpres',nam%logpres)
 call mpl%write('nv',nam%nv)
 call mpl%write('variables',nam%nv,nam%variables(1:nam%nv))
-call mpl%write('variable_change',nam%variable_change)
-call mpl%write('nomask',nam%nomask)
 call mpl%write('io_keys',count(nam%io_keys/=''),nam%io_keys(1:count(nam%io_keys/='')))
 call mpl%write('io_values',count(nam%io_values/=''),nam%io_values(1:count(nam%io_values/='')))
-call mpl%write('qg_regional',nam%qg_regional)
-call mpl%write('qg_urban',nam%qg_urban)
 
 ! ens1_param
 write(mpl%info,'(a7,a)') '','Ensemble 1 parameters'

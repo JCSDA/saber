@@ -64,9 +64,6 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<std::string> datadir{"datadir", this};
   // Files prefix
   oops::OptionalParameter<std::string> prefix{"prefix", this};
-  // Model name ('aro', 'arp', 'fv3', 'gem', 'geos', 'gfs', 'ifs', 'mpas', 'nemo', 'norcpm',
-  // 'online', 'qg, 'res' or 'wrf')
-  oops::OptionalParameter<std::string> model{"model", this};
   // Verbosity level ('all', 'main' or 'none')
   oops::OptionalParameter<std::string> verbosity{"verbosity", this};
   // Add colors to the log (for display on terminal)
@@ -79,14 +76,10 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<bool> repro{"repro", this};
   // Reproducibility threshold
   oops::OptionalParameter<double> rth{"rth", this};
-  // Parallel NetCDF I/O
-  oops::OptionalParameter<bool> parallel_io{"parallel_io", this};
   // Number of I/O processors
   oops::OptionalParameter<int> nprocio{"nprocio", this};
   // Universe radius [in meters]
   oops::OptionalParameter<double> universe_rad{"universe_rad", this};
-  // Write subset Sc0 fields (full grid) using BUMP I/O
-  oops::OptionalParameter<bool> write_c0{"write_c0", this};
 
   // driver_param
 
@@ -115,10 +108,6 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<bool> new_var{"new_var", this};
   // Update variance sequentially
   oops::OptionalParameter<bool> update_var{"update_var", this};
-  // Load variance
-  oops::OptionalParameter<bool> load_var{"load_var", this};
-  // Write variance
-  oops::OptionalParameter<bool> write_var{"write_var", this};
   // Compute new sampling moments
   oops::OptionalParameter<bool> new_mom{"new_mom", this};
   // Update sampling moments sequentially
@@ -201,24 +190,14 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<std::vector<int>> levs{"levs", this};
   // Level for 2D variables ('first' or 'last')
   oops::OptionalParameter<std::string> lev2d{"lev2d", this};
-  // Use pressure logarithm as vertical coordinate (model level if .false.)
-  oops::OptionalParameter<bool> logpres{"logpres", this};
   // Number of variables
   oops::OptionalParameter<int> nv{"nv", this};
   // Variables names
   oops::OptionalParameter<std::vector<std::string>> variables{"variables", this};
-  // Variable change
-  oops::OptionalParameter<std::string> variable_change{"variable_change", this};
-  // Do not use geometry mask
-  oops::OptionalParameter<bool> nomask{"nomask", this};
   // I/O keys
   oops::OptionalParameter<std::vector<std::string>> io_keys{"io_keys", this};
   // I/O values
   oops::OptionalParameter<std::vector<std::string>> io_values{"io_values", this};
-  // Regional domain configuration for the QG model
-  oops::OptionalParameter<bool> qg_regional{"qg_regional", this};
-  // Urban domain configuration for the QG model
-  oops::OptionalParameter<bool> qg_urban{"qg_urban", this};
 
   // ens1_param
 

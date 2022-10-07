@@ -52,8 +52,6 @@ contains
    procedure :: partial_bump_dealloc => var_partial_bump_dealloc
    procedure :: partial_dealloc => var_partial_dealloc
    procedure :: dealloc => var_dealloc
-   procedure :: read => var_read
-   procedure :: write => var_write
    procedure :: update => var_update
    procedure :: run_var => var_run_var
    procedure :: filter => var_filter
@@ -186,178 +184,6 @@ if (allocated(var%m2sqrt)) deallocate(var%m2sqrt)
 @:probe_out()
 
 end subroutine var_dealloc
-
-!----------------------------------------------------------------------
-! Subroutine: var_read
-!> Read
-!----------------------------------------------------------------------
-subroutine var_read(var,mpl,nam,geom)
-
-implicit none
-
-! Passed variables
-class(var_type),intent(inout) :: var !< Variance
-type(mpl_type),intent(inout) :: mpl  !< MPI data
-type(nam_type),intent(in) :: nam     !< Namelist
-type(geom_type),intent(in) :: geom   !< Geometry
-
-! Local variables
-integer :: ncid,grpid,m2sqrt_id
-integer :: isub,iv,ic0a,il0
-real(kind_real) :: m2sqrt(geom%nc0a,geom%nl0,nam%nv),fac_norm
-character(len=1024) :: fname_var,grpname
-
-! Set name
-@:set_name(var_read)
-
-! Probe in
-@:probe_in()
-
-! Read variance
-write(mpl%info,'(a7,a)') '','Read variance'
-call mpl%flush
-
-! Initialization
-var%m2 = zero
-
-do isub=1,nam%ens1_nsub
-   ! Set file name
-   if ((nam%ens1_nsub==1).and.(.not.nam%fname_var_used))  then
-      fname_var = nam%fname_var(0)
-   else
-      fname_var = nam%fname_var(isub)
-   end if
-
-   ! Open file
-   ncid = open_file(mpl,fname_var)
-
-   do iv=1,nam%nv
-      ! Get group name
-      call nam%io_key_value(nam%variables(iv),grpname)
-
-      ! Inquire group
-      grpid = inquire_grp(mpl,ncid,grpname)
-
-      ! Inquire variable
-      m2sqrt_id = inquire_var(mpl,grpid,'m2sqrt')
-
-      ! Read variable
-      call geom%io%fld_read(mpl,grpid,m2sqrt_id,m2sqrt(:,:,iv))
-   end do
-
-   ! Average variance
-   var%m2 = var%m2+m2sqrt**2
-
-   if (mpl%main) then
-      ! Get ensemble size
-      call get_att(mpl,ncid,0,'ne',var%ne)
-      var%ne = var%ne*nam%ens1_nsub
-   end if
-   call mpl%f_comm%broadcast(var%ne,mpl%rootproc-1)
-
-   ! Close file
-   call close_file(mpl,ncid)
-end do
-
-! Normalization
-fac_norm = one/real(nam%ens1_nsub,kind_real)
-do iv=1,nam%nv
-   do il0=1,geom%nl0
-      do ic0a=1,geom%nc0a
-         if (geom%gmask_c0a(ic0a,il0)) then
-            var%m2(ic0a,il0,iv) = var%m2(ic0a,il0,iv)*fac_norm
-         else
-            var%m2(ic0a,il0,iv) = mpl%msv%valr
-         end if
-      end do
-   end do
-end do
-
-! Probe out
-@:probe_out()
-
-end subroutine var_read
-
-!----------------------------------------------------------------------
-! Subroutine: var_write
-!> Write
-!----------------------------------------------------------------------
-subroutine var_write(var,mpl,nam,geom)
-
-implicit none
-
-! Passed variables
-class(var_type),intent(inout) :: var !< Variance
-type(mpl_type),intent(inout) :: mpl  !< MPI data
-type(nam_type),intent(in) :: nam     !< Namelist
-type(geom_type),intent(in) :: geom   !< Geometry
-
-! Local variables
-integer :: ncid,nc0_id,nl0_id,lon_id,lat_id,vunit_id
-integer :: grpid(nam%nv),m2_id(nam%nv),m4_id(nam%nv),m2flt_id(nam%nv),m2sqrt_id(nam%nv)
-integer :: iv
-character(len=1024) :: grpname
-
-! Set name
-@:set_name(var_write)
-
-! Probe in
-@:probe_in()
-
-! Write variance
-write(mpl%info,'(a7,a)') '','Write variance'
-call mpl%flush
-
-! Create file
-ncid = create_file(mpl,nam%fname_var(0))
-
-! Define dimensions
-nc0_id = define_dim(mpl,ncid,'nc0',geom%nc0)
-nl0_id = define_dim(mpl,ncid,'nl0',geom%nl0)
-
-! Define variables
-lon_id = define_var(mpl,ncid,'lon','real',(/nc0_id/),unitname='degrees_east')
-lat_id = define_var(mpl,ncid,'lat','real',(/nc0_id/),unitname='degrees_north')
-vunit_id = define_var(mpl,ncid,'vunit','real',(/nc0_id,nl0_id/))
-do iv=1,nam%nv
-   ! Get group name
-   call nam%io_key_value(nam%variables(iv),grpname)
-
-   ! Define group
-   grpid(iv) = define_grp(mpl,ncid,grpname)
-
-   ! Define variables
-   if (.not.nam%forced_var) then
-      m2_id(iv) = define_var(mpl,grpid(iv),'m2','real',(/nc0_id,nl0_id/))
-      m4_id(iv) = define_var(mpl,grpid(iv),'m4','real',(/nc0_id,nl0_id/))
-      if (nam%var_filter) m2flt_id(iv) = define_var(mpl,grpid(iv),'m2flt','real',(/nc0_id,nl0_id/))
-   end if
-   m2sqrt_id(iv) = define_var(mpl,grpid(iv),'m2sqrt','real',(/nc0_id,nl0_id/))
-end do
-
-! Put attribute
-call put_att(mpl,ncid,0,'ne',var%ne)
-
-! Write variables
-call geom%io%fld_write(mpl,ncid,lon_id,geom%lon_c0a*rad2deg)
-call geom%io%fld_write(mpl,ncid,lat_id,geom%lat_c0a*rad2deg)
-call geom%io%fld_write(mpl,ncid,vunit_id,geom%vunit_c0a,geom%gmask_c0a)
-do iv=1,nam%nv
-   if (.not.nam%forced_var) then
-      call geom%io%fld_write(mpl,grpid(iv),m2_id(iv),var%m2(:,:,iv),geom%gmask_c0a)
-      call geom%io%fld_write(mpl,grpid(iv),m4_id(iv),var%m4(:,:,iv),geom%gmask_c0a)
-      if (nam%var_filter) call geom%io%fld_write(mpl,grpid(iv),m2flt_id(iv),var%m2flt(:,:,iv),geom%gmask_c0a)
-   end if
-   call geom%io%fld_write(mpl,grpid(iv),m2sqrt_id(iv),var%m2sqrt(:,:,iv),geom%gmask_c0a)
-end do
-
-! Close file
-call close_file(mpl,ncid)
-
-! Probe out
-@:probe_out()
-
-end subroutine var_write
 
 !----------------------------------------------------------------------
 ! Subroutine: var_update
@@ -493,9 +319,6 @@ if (ie==nam%ens1_ne) then
          end do
       end do
    end if
-
-   ! Write variance
-   if (nam%write_var.and.nam%write_c0) call var%write(mpl,nam,geom)
 end if
 
 ! Probe out
@@ -556,9 +379,6 @@ elseif (nam%new_var) then
    call ens%compute_moments(mpl,nam,geom)
    call ens%get_c0(mpl,nam,geom,'m2',0,var%m2)
    call ens%get_c0(mpl,nam,geom,'m4',0,var%m4)
-elseif (nam%load_var) then
-   ! Read variance
-   call var%read(mpl,nam,geom)
 elseif (var%bump_m2_counter>0) then
    ! Initialization
    var%ne = nam%ne
@@ -601,9 +421,6 @@ else
       end do
    end do
 end if
-
-! Write variance
-if (nam%write_var) call var%write(mpl,nam,geom)
 
 ! Probe out
 @:probe_out()

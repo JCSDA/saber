@@ -8,7 +8,6 @@ geometry:
   halo: 1
 input variables: &id001
 - var1
-- var2
 background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
@@ -19,20 +18,22 @@ ensemble:
       filepath: testdata/randomization_bump_nicas_F10L2/member_%mem%
       state variables: *id001
     pattern: '%mem%'
-    nmembers: 25
+    nmembers: 10
     zero padding: 6
 bump:
   datadir: testdata
-  prefix: error_covariance_training_bump_hdiag_cor_diag_all/_MPI_-_OMP_
+  prefix: error_covariance_training_bump_stddev_2/_MPI_-_OMP_
   testing: true
-  method: cor
-  strategy: diag_all
-  new_hdiag: true
-  write_hdiag: true
-  nc1: 500
-  nc3: 10
-  dc: 800.0e3
-  nl0r: 2
-  ne: 25
+  new_var: true
+  var_filter: true
+  var_npass: 2
+  var_rhflt:
+    var1: [5000.0e3]
+    var2: [5000.0e3]
+  ne: 10
+output:
+- parameter: stddev
+  file:
+    filepath: testdata/error_covariance_training_bump_stddev_2/stddev
 test:
-  reference filename: testref/error_covariance_training_bump_hdiag_cor_diag_all.ref
+  reference filename: testref/error_covariance_training_bump_stddev_2.ref

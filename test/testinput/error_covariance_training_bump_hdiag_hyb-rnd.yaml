@@ -12,7 +12,7 @@ lowres geometry:
     type: regular_gaussian
     N: 10
   levels: 10
-  halo: 3
+  halo: 1
 input variables: &id001
 - var1
 background:
@@ -38,7 +38,7 @@ background error:
       method: cor
       strategy: specific_univariate
       new_nicas: true
-      resol: 8.0
+      resol: 4.0
       forced_radii: true
       rh:
         var1:

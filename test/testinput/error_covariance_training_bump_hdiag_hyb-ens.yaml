@@ -12,7 +12,7 @@ lowres geometry:
     type: regular_gaussian
     N: 10
   levels: 10
-  halo: 3
+  halo: 1
 input variables: &id001
 - var1
 background:

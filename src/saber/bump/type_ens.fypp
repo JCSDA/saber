@@ -856,45 +856,6 @@ do iv=1,nam%nv
    end do
 end do
 
-if (nam%write_c0) then
-   ! Create file
-   ncid = create_file(mpl,trim(nam%prefix)//'umf')
-
-   ! Define dimensions
-   nc0_id = define_dim(mpl,ncid,'nc0',geom%nc0)
-   nl0_id = define_dim(mpl,ncid,'nl0',geom%nl0)
-
-   ! Define variables
-   lon_id = define_var(mpl,ncid,'lon','real',(/nc0_id/),unitname='degrees_east')
-   lat_id = define_var(mpl,ncid,'lat','real',(/nc0_id/),unitname='degrees_north')
-   vunit_id = define_var(mpl,ncid,'vunit','real',(/nc0_id,nl0_id/))
-   do iv=1,nam%nv
-      ! Get group name
-      call nam%io_key_value(nam%variables(iv),grpname)
-
-      ! Define group
-      grpid(iv) = define_grp(mpl,ncid,grpname)
-
-      ! Define variables
-      m2_id(iv) = define_var(mpl,grpid(iv),'m2','real',(/nc0_id,nl0_id/))
-      m4_id(iv) = define_var(mpl,grpid(iv),'m4','real',(/nc0_id,nl0_id/))
-      kurt_id(iv) = define_var(mpl,grpid(iv),'kurt','real',(/nc0_id,nl0_id/))
-   end do
-
-   ! Write variables
-   call geom%io%fld_write(mpl,ncid,lon_id,geom%lon_c0a*rad2deg)
-   call geom%io%fld_write(mpl,ncid,lat_id,geom%lat_c0a*rad2deg)
-   call geom%io%fld_write(mpl,ncid,vunit_id,geom%vunit_c0a,geom%gmask_c0a)
-   do iv=1,nam%nv
-      call geom%io%fld_write(mpl,grpid(iv),m2_id(iv),ens%norm_m2(:,:,iv),geom%gmask_c0a)
-      call geom%io%fld_write(mpl,grpid(iv),m4_id(iv),ens%norm_m4(:,:,iv),geom%gmask_c0a)
-      call geom%io%fld_write(mpl,grpid(iv),kurt_id(iv),ens%norm_kurt(:,:,iv),geom%gmask_c0a)
-   end do
-
-   ! Close file
-   call close_file(mpl,ncid)
-end if
-
 ! Allocation
 nloc = zss_count(mpl%msv%isnot(ens%norm_kurt).and.(ens%norm_kurt>nam%gen_kurt_th))
 allocate(ic0a_loc(nloc))

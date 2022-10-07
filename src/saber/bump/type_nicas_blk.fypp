@@ -1245,9 +1245,6 @@ do idir=1,geom%ndir
    end do
 end do
 
-! Write field
-if (nam%write_c0) call geom%io%fld_write(mpl,nicas_blk%blkid,nicas_blk%dirac_id,fld_tot,geom%gmask_c0a)
-
 ! Print results
 write(mpl%info,'(a7,a)') '','Values at dirac points:'
 if (nicas_blk%verbosity) call mpl%flush
