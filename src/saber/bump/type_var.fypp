@@ -19,7 +19,7 @@ use type_ens, only: ens_type
 use type_geom, only: geom_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
-use type_nicas_cmp, only: nicas_cmp_type
+use type_nicas_blk, only: nicas_blk_type
 @:use_probe()
 use type_rng, only: rng_type
 
@@ -371,8 +371,8 @@ implicit none
 class(var_type),intent(inout) :: var                             !< Variance
 type(mpl_type),intent(inout) :: mpl                              !< MPI data
 type(rng_type),intent(inout) :: rng                              !< Random number generator
-type(nam_type),intent(in) :: nam                                 !< Namelist
-type(geom_type),intent(in) :: geom                               !< Geometry
+type(nam_type),intent(inout) :: nam                              !< Namelist
+type(geom_type),intent(inout) :: geom                            !< Geometry
 type(bpar_type),intent(in) :: bpar                               !< Block parameters
 real(kind_real),intent(in) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) !< Field
 integer,intent(in) :: ie                                         !< Member index
@@ -512,13 +512,13 @@ subroutine var_run_var(var,mpl,rng,nam,geom,bpar,ens)
 implicit none
 
 ! Passed variables
-class(var_type),intent(inout) :: var !< Variance
-type(mpl_type),intent(inout) :: mpl  !< MPI data
-type(rng_type),intent(inout) :: rng  !< Random number generator
-type(nam_type),intent(inout) :: nam  !< Namelist
-type(geom_type),intent(in) :: geom   !< Geometry
-type(bpar_type),intent(in) :: bpar   !< Block parameters
-type(ens_type), intent(inout) :: ens !< Ensemble
+class(var_type),intent(inout) :: var  !< Variance
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+type(rng_type),intent(inout) :: rng   !< Random number generator
+type(nam_type),intent(inout) :: nam   !< Namelist
+type(geom_type),intent(inout) :: geom !< Geometry
+type(bpar_type),intent(in) :: bpar    !< Block parameters
+type(ens_type), intent(inout) :: ens  !< Ensemble
 
 ! Local variables
 integer :: ic0a,il0,iv
@@ -619,20 +619,20 @@ subroutine var_filter(var,mpl,rng,nam,geom,bpar)
 implicit none
 
 ! Passed variables
-class(var_type),intent(inout) :: var !< Variance
-type(mpl_type),intent(inout) :: mpl  !< MPI data
-type(rng_type),intent(inout) :: rng  !< Random number generator
-type(nam_type),intent(in) :: nam     !< Namelist
-type(geom_type),intent(in) :: geom   !< Geometry
-type(bpar_type),intent(in) :: bpar   !< Block parameters
+class(var_type),intent(inout) :: var  !< Variance
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+type(rng_type),intent(inout) :: rng   !< Random number generator
+type(nam_type),intent(inout) :: nam   !< Namelist
+type(geom_type),intent(inout) :: geom !< Geometry
+type(bpar_type),intent(in) :: bpar    !< Block parameters
 
 ! Local variables
-integer :: ib,iv,il0,iter,ipass,ipass_min(geom%nl0)
+integer :: ib,iv,il0,il0i,iter,ipass,ipass_min(geom%nl0)
 real(kind_real) :: P9,P20,P21,diff,diff_abs_min(geom%nl0),m2avg
 real(kind_real) :: m2avg_init(geom%nl0,nam%nv),m2sq(geom%nl0),m4(geom%nl0),m2sqasy(geom%nl0)
 real(kind_real) :: rhflt(geom%nl0),drhflt(geom%nl0),m2prod(geom%nl0),m2_ini(geom%nc0a,geom%nl0),m2(geom%nc0a,geom%nl0)
 logical :: dichotomy(geom%nl0),convergence(geom%nl0)
-type(nicas_cmp_type) :: nicas_cmp
+type(nicas_blk_type) :: nicas_blk
 
 ! Set name
 @:set_name(var_filter)
@@ -699,7 +699,7 @@ else
          dichotomy = .false.
          rhflt = nam%var_rhflt(1:geom%nl0,iv)
          drhflt = rhflt
-         nicas_cmp%ib = ib
+         nicas_blk%ib = ib
 
          ! Global product
          do il0=1,geom%nl0
@@ -719,10 +719,13 @@ else
             m2 = m2_ini
 
             ! Set smoother parameters
-            call nicas_cmp%compute_parameters(mpl,rng,nam,geom,rhflt)
+            call nicas_blk%compute_parameters(mpl,rng,nam,geom,rhflt)
 
             ! Apply smoother
-            call nicas_cmp%apply_smoother(mpl,geom,m2)
+            do il0=1,geom%nl0
+               il0i = nicas_blk%l0_to_l0i(il0)
+               call nicas_blk%cmp(il0i)%apply_horizontal_smoother(mpl,geom,il0,m2(:,il0))
+            end do
 
             ! Global product
             do il0=1,geom%nl0
@@ -764,7 +767,7 @@ else
             end do
 
             ! Release memory
-            call nicas_cmp%dealloc
+            call nicas_blk%dealloc
          end do
 
          ! Global product
@@ -786,7 +789,7 @@ else
       elseif (nam%var_npass>0) then
          ! Initialization
          m2 = var%m2(:,:,iv)
-         nicas_cmp%ib = ib
+         nicas_blk%ib = ib
 
          ! Global product
          do il0=1,geom%nl0
@@ -804,12 +807,15 @@ else
 
          ! Set unique smoother parameters
          rhflt = nam%var_rhflt(1:geom%nl0,iv)
-         call nicas_cmp%compute_parameters(mpl,rng,nam,geom,rhflt)
+         call nicas_blk%compute_parameters(mpl,rng,nam,geom,rhflt)
 
          ! Apply smoother
          do ipass=1,nam%var_npass
             ! Apply smoother
-            call nicas_cmp%apply_smoother(mpl,geom,m2)
+            do il0=1,geom%nl0
+               il0i = nicas_blk%l0_to_l0i(il0)
+               call nicas_blk%cmp(il0i)%apply_horizontal_smoother(mpl,geom,il0,m2(:,il0))
+            end do
 
             ! Global product
             do il0=1,geom%nl0
@@ -829,7 +835,7 @@ else
          end do
 
          ! Release memory
-         call nicas_cmp%dealloc
+         call nicas_blk%dealloc
 
          ! Global product
          do il0=1,geom%nl0
