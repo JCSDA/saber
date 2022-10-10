@@ -46,9 +46,9 @@ SaberOuterBlockFactory::SaberOuterBlockFactory(const std::string & name) {
 // -----------------------------------------------------------------------------
 
 SaberOuterBlockBase * SaberOuterBlockFactory::create(
-                             const oops::GeometryData & outputGeometryData,
+                             const oops::GeometryData & outerGeometryData,
                              const std::vector<size_t> & activeVariableSizes,
-                             const oops::Variables & outputVars,
+                             const oops::Variables & outerVars,
                              const SaberBlockParametersBase & params,
                              const atlas::FieldSet & xb,
                              const atlas::FieldSet & fg,
@@ -60,8 +60,8 @@ SaberOuterBlockBase * SaberOuterBlockFactory::create(
     oops::Log::error() << id << " does not exist in saber::SaberOuterBlockFactory." << std::endl;
     ABORT("Element does not exist in saber::SaberOuterBlockFactory.");
   }
-  SaberOuterBlockBase * ptr = jsb->second->make(outputGeometryData, activeVariableSizes,
-                                                outputVars, params, xb, fg, fsetVec);
+  SaberOuterBlockBase * ptr = jsb->second->make(outerGeometryData, activeVariableSizes,
+                                                outerVars, params, xb, fg, fsetVec);
   oops::Log::trace() << "SaberOuterBlockBase::create done" << std::endl;
   return ptr;
 }

@@ -78,8 +78,8 @@ class Interpolation : public SaberOuterBlockBase {
                 const std::vector<atlas::FieldSet> &);
   virtual ~Interpolation();
 
-  const oops::GeometryData & inputGeometryData() const override {return *inputGeometryData_;}
-  const oops::Variables & inputVars() const override {return inputVars_;}
+  const oops::GeometryData & innerGeometryData() const override {return *innerGeometryData_;}
+  const oops::Variables & innerVars() const override {return innerVars_;}
 
   void multiply(atlas::FieldSet &) const override;
   void multiplyAD(atlas::FieldSet &) const override;
@@ -87,8 +87,8 @@ class Interpolation : public SaberOuterBlockBase {
 
  private:
   void print(std::ostream &) const override;
-  std::unique_ptr<const oops::GeometryData> inputGeometryData_;
-  oops::Variables inputVars_;
+  std::unique_ptr<const oops::GeometryData> innerGeometryData_;
+  oops::Variables innerVars_;
 
   // Parameters
   InterpolationParameters params_;
@@ -100,8 +100,8 @@ class Interpolation : public SaberOuterBlockBase {
   int gsiLevels_;
   // Grid
   Grid grid_;
-  // Output FunctionSpace
-  atlas::FunctionSpace outputFunctionSpace_;
+  // Outer FunctionSpace
+  atlas::FunctionSpace outerFunctionSpace_;
 };
 
 // -------------------------------------------------------------------------------------------------

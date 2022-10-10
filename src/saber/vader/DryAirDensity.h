@@ -53,8 +53,8 @@ class DryAirDensity : public SaberOuterBlockBase {
                 const std::vector<atlas::FieldSet> &);
   virtual ~DryAirDensity();
 
-  const oops::GeometryData & inputGeometryData() const override {return inputGeometryData_;}
-  const oops::Variables & inputVars() const override {return inputVars_;}
+  const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}
+  const oops::Variables & innerVars() const override {return innerVars_;}
 
   void multiply(atlas::FieldSet &) const override;
   void multiplyAD(atlas::FieldSet &) const override;
@@ -62,8 +62,8 @@ class DryAirDensity : public SaberOuterBlockBase {
 
  private:
   void print(std::ostream &) const override;
-  const oops::GeometryData & inputGeometryData_;
-  oops::Variables inputVars_;
+  const oops::GeometryData & innerGeometryData_;
+  oops::Variables innerVars_;
   atlas::FieldSet augmentedStateFieldSet_;
 };
 

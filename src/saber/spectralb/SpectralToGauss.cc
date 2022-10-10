@@ -19,19 +19,19 @@ static SaberOuterBlockMaker<SpectralToGauss> makerSpectralToGauss_("spectral to 
 
 // -----------------------------------------------------------------------------
 
-SpectralToGauss::SpectralToGauss(const oops::GeometryData & outputGeometryData,
+SpectralToGauss::SpectralToGauss(const oops::GeometryData & outerGeometryData,
                                  const std::vector<size_t> & activeVariableSizes,
-                                 const oops::Variables & outputVars,
+                                 const oops::Variables & outerVars,
                                  const Parameters_ & params,
                                  const atlas::FieldSet & xb,
                                  const atlas::FieldSet & fg,
                                  const std::vector<atlas::FieldSet> & fsetVec)
-  : gaussFunctionSpace_(outputGeometryData.functionSpace()),
+  : gaussFunctionSpace_(outerGeometryData.functionSpace()),
     specFunctionSpace_(2 * atlas::GaussianGrid(gaussFunctionSpace_.grid()).N() - 1),
     trans_(gaussFunctionSpace_, specFunctionSpace_),
-    inputGeometryData_(specFunctionSpace_, outputGeometryData.fieldSet(),
-                       outputGeometryData.levelsAreTopDown(), outputGeometryData.comm()),
-    inputVars_(outputVars)
+    innerGeometryData_(specFunctionSpace_, outerGeometryData.fieldSet(),
+                       outerGeometryData.levelsAreTopDown(), outerGeometryData.comm()),
+    innerVars_(outerVars)
 {
   oops::Log::trace() << classname() << "::SpectralToGauss starting" << std::endl;
   oops::Log::trace() << classname() << "::SpectralToGauss done" << std::endl;
