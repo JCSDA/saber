@@ -87,7 +87,8 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
     oops::Variables centralVars = incVars;
 
     // Get active variables
-    oops::Variables activeVars = saberCentralBlockParams.activeVars.value().get_value_or(centralVars);
+    oops::Variables activeVars =
+      saberCentralBlockParams.activeVars.value().get_value_or(centralVars);
 
     // Read input fields (on model increment geometry)
     std::vector<atlas::FieldSet> fsetVec = readInputFields(
