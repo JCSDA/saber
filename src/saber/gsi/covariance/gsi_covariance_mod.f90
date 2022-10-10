@@ -85,18 +85,12 @@ type(atlas_fieldset),      intent(in)    :: firstguess
 character(len=*), parameter :: myname_=myname//'*create'
 character(len=:), allocatable :: nml,bef
 real(kind=kind_real), pointer :: rank2(:,:)=>NULL()
-real(kind=kind_real), allocatable :: tmp(:)
-logical :: central
 logical :: bkgmock
-!integer :: layout(2)
-integer :: ier,n,k,npz,itbd
+integer :: ier,n,itbd
 integer :: ngsivars2d,ngsivars3d
 character(len=20),allocatable :: gsivars(:)
 character(len=20),allocatable :: usrvars(:)
 character(len=30),allocatable :: tbdvars(:)
-
-real(kind=kind_real), pointer :: tv(:,:)
-real(kind=kind_real), pointer :: oz(:,:)
 
 ! Hold communicator
 ! -----------------
@@ -339,11 +333,8 @@ type(control_vector) :: gsicv
 type(gsi_bundle),allocatable :: gsisv(:)
 integer :: isc,iec,jsc,jec,npz
 integer :: iv,k,ier,itbd
-integer,parameter :: hw=1
-logical nosgi
-integer, parameter :: rseed = 3
 
-character(len=20),allocatable :: gvars2d(:),gvars3d(:)
+character(len=32),allocatable :: gvars2d(:),gvars3d(:)
 character(len=30),allocatable :: tbdvars(:),needvrs(:)
 
 ! afield = fields%field('surface_pressure')
@@ -678,7 +669,7 @@ end subroutine multiply_ad
    subroutine addhalo_(rank,var)
    real(kind=kind_real),intent(in) :: rank(:)
    real(kind=kind_real),intent(inout):: var(:,:)
-   integer ii,jj,iii,jjj,jnode
+   integer ii,jj,jnode
    integer mylat2,mylon2,ndim
    mylat2 = size(var,1)
    mylon2 = size(var,2)
@@ -696,7 +687,7 @@ end subroutine multiply_ad
    subroutine remhalo_(var,rank)
    real(kind=kind_real),intent(in) :: var(:,:)
    real(kind=kind_real),intent(out):: rank(:)
-   integer ii,jj,iii,jjj,jnode
+   integer ii,jj,jnode
    integer mylat2,mylon2
    mylat2 = size(var,1)
    mylon2 = size(var,2)
