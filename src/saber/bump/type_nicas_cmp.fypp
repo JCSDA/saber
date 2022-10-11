@@ -2592,9 +2592,15 @@ do il1=1,nicas_cmp%nl1
    ! Compute interpolation
    il0 = nicas_cmp%l1_to_l0(il1)
    write(nicas_cmp%interp_c1b_to_c0a(il1)%prefix,'(a,i3.3)') 'interp_c1b_to_c0a_',il1
-   call nicas_cmp%interp_c1b_to_c0a(il1)%interp(mpl,nam,il0,nicas_cmp%hor(il1)%nc1,lon_c1,lat_c1,gmask_c1, &
+   ! TODO(Benjamin): choice here + factor for the interpolation
+   if (.false.) then
+      call nicas_cmp%interp_c1b_to_c0a(il1)%interp(mpl,nam,il0,nicas_cmp%hor(il1)%nc1,lon_c1,lat_c1,gmask_c1, &
  & nicas_cmp%hor(il1)%mesh_c1,nicas_cmp%hor(il1)%tree_c1, &
  & geom%nc0a,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a(:,il0),geom%mesh_c0u,ifmt,nam%c1_interp_sig)
+   else
+      call nicas_cmp%interp_c1b_to_c0a(il1)%interp(mpl,nicas_cmp%hor(il1)%nc1,gmask_c1,tree_c1, &
+ & geom%nc0a,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a(:,il0),ifmt,rhs_avg(il0)/2.0_kind_real)
+   end if
 
    ! Release memory
    deallocate(lon_c1)
