@@ -557,30 +557,6 @@ call bump%psichi_to_uv_ad(f_fieldset)
 end subroutine bump_psichi_to_uv_ad_c
 
 !----------------------------------------------------------------------
-! Subroutine: bump_get_ncmp_c
-!> Get number of components
-!----------------------------------------------------------------------
-subroutine bump_get_ncmp_c(key_bump,iv,c_ncmp) bind(c,name='bump_get_ncmp_f90')
-
-implicit none
-
-! Passed variables
-integer(c_int),intent(in) :: key_bump  !< BUMP
-integer(c_int),intent(in) :: iv        !< Variable index
-integer(c_int),intent(inout) :: c_ncmp !< Number of components
-
-! Local variables
-type(bump_type),pointer :: bump
-
-! Interface
-call bump_registry%get(key_bump,bump)
-
-! Call Fortran
-call bump%get_ncmp(iv+1,c_ncmp)
-
-end subroutine bump_get_ncmp_c
-
-!----------------------------------------------------------------------
 ! Subroutine: bump_get_parameter_c
 !> Get a parameter as field
 !----------------------------------------------------------------------
@@ -619,13 +595,13 @@ end subroutine bump_get_parameter_c
 ! Subroutine: bump_set_ncmp_c
 !> Set number of components
 !----------------------------------------------------------------------
-subroutine bump_set_ncmp_c(key_bump,iv,c_ncmp) bind(c,name='bump_set_ncmp_f90')
+subroutine bump_set_ncmp_c(key_bump,igeom,c_ncmp) bind(c,name='bump_set_ncmp_f90')
 
 implicit none
 
 ! Passed variables
 integer(c_int),intent(in) :: key_bump !< BUMP
-integer(c_int),intent(in) :: iv       !< Variable index
+integer(c_int),intent(in) :: igeom    !< Geometry index
 integer(c_int),intent(in) :: c_ncmp   !< Number of components
 
 ! Local variables
@@ -635,7 +611,7 @@ type(bump_type),pointer :: bump
 call bump_registry%get(key_bump,bump)
 
 ! Call Fortran
-call bump%set_ncmp(iv+1,c_ncmp)
+call bump%set_ncmp(igeom,c_ncmp)
 
 end subroutine bump_set_ncmp_c
 

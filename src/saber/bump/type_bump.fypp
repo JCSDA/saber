@@ -88,7 +88,6 @@ contains
    procedure :: randomize => bump_randomize
    procedure :: psichi_to_uv => bump_psichi_to_uv
    procedure :: psichi_to_uv_ad => bump_psichi_to_uv_ad
-   procedure :: get_ncmp => bump_get_ncmp
    procedure :: get_parameter => bump_get_parameter
    procedure :: test_get_parameter => bump_test_get_parameter
    procedure :: set_ncmp => bump_set_ncmp
@@ -319,10 +318,10 @@ if (bump%mpl%main) call system_clock(sc)
 call bump%mpl%f_comm%broadcast(sc,bump%mpl%rootproc-1)
 if (bump%mpl%pioproc(bump%mpl%myproc)) then
    color = 1
-   write(cname,'(a,i12.12)') trim(bump%mpl%f_comm%name())//'_'//trim(bump%nam%prefix)//'_io_',sc
+   write(cname,'(a,i12.12)') trim(bump%mpl%f_comm%name())//'_'//trim(bump%nam%prefix)//'io_',sc
 else
    color = 0
-   write(cname,'(a,i12.12)') trim(bump%mpl%f_comm%name())//'_'//trim(bump%nam%prefix)//'_no_io_',sc
+   write(cname,'(a,i12.12)') trim(bump%mpl%f_comm%name())//'_'//trim(bump%nam%prefix)//'no_io_',sc
 endif
 bump%mpl%f_comm_io = bump%mpl%f_comm%split(color,cname)
 
@@ -1787,15 +1786,9 @@ do iv=1,bump%nam%nv
    if (bump%nam%variables(iv)==bump%nam%wind_velocity_potential) iv_chi = iv
 end do
 
-if (.false.) then
-   ! Copy fields
-   fld_c0a(:,:,iv_psi) = fld_c0a(:,:,iv_ua)
-   fld_c0a(:,:,iv_chi) = fld_c0a(:,:,iv_va)
-else
-   ! Transform psi/chi to u/v adjoint
-   call bump%wind%psichi_to_uv_ad(bump%mpl,bump%geom(1),fld_c0a(:,:,iv_ua),fld_c0a(:,:,iv_va), &
-    & fld_c0a(:,:,iv_psi),fld_c0a(:,:,iv_chi))
-end if
+! Transform psi/chi to u/v adjoint
+call bump%wind%psichi_to_uv_ad(bump%mpl,bump%geom(1),fld_c0a(:,:,iv_ua),fld_c0a(:,:,iv_va), &
+ & fld_c0a(:,:,iv_psi),fld_c0a(:,:,iv_chi))
 
 ! Fortran array on subset Sc0 to fieldset
 call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
@@ -1804,46 +1797,6 @@ call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
 @:probe_out()
 
 end subroutine bump_psichi_to_uv_ad
-
-!----------------------------------------------------------------------
-! Subroutine: bump_get_ncmp
-!> Get number of components
-!----------------------------------------------------------------------
-subroutine bump_get_ncmp(bump,iv,ncmp)
-
-implicit none
-
-! Passed variables
-class(bump_type),intent(inout) :: bump !< BUMP
-integer,intent(in) :: iv               !< Variable index
-integer,intent(inout) :: ncmp          !< Number of components
-
-! Set name
-@:set_name(bump_get_ncmp)
-
-! Get instance
-@:get_instance(bump)
-
-! Probe in
-@:probe_in()
-
-write(bump%mpl%info,'(a7,a)') '','Get number of components'
-call bump%mpl%flush
-
-! Check variable index
-if ((iv<1).or.(iv>bump%nam%nv)) call bump%mpl%abort('${subr}$','variable index out of bounds')
-
-! Copy
-if (bump%nam%forced_radii) then
-   ncmp = one
-else
-   ncmp = bump%nam%fit_ncmp(iv)
-end if
-
-! Probe out
-@:probe_out()
-
-end subroutine bump_get_ncmp
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_get_parameter
@@ -2135,34 +2088,6 @@ do iv=1,bump%nam%nv
       if (.not.allocated(bump%nicas(igeom)%dirac_bens)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
       fld_c0a = bump%nicas(igeom)%dirac_bens(:,:,iv)
       found = .true.
-   case ('nicas_interp_ref')
-      if (.not.allocated(bump%nicas(igeom)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' block is not allocated')
-      if (.not.allocated(bump%nicas(igeom)%blk(ib)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is not allocated')
-      if (icmp>size(bump%nicas(igeom)%blk(ib)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-      if (.not.allocated(bump%nicas(igeom)%blk(ib)%cmp(icmp)%fld_ref)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      fld_c0a = bump%nicas(igeom)%blk(ib)%cmp(icmp)%fld_ref
-      found = .true.
-   case ('nicas_interp_ssrf')
-      if (.not.allocated(bump%nicas(igeom)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' block is not allocated')
-      if (.not.allocated(bump%nicas(igeom)%blk(ib)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is not allocated')
-      if (icmp>size(bump%nicas(igeom)%blk(ib)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-      if (.not.allocated(bump%nicas(igeom)%blk(ib)%cmp(icmp)%fld_ssrf)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      fld_c0a = bump%nicas(igeom)%blk(ib)%cmp(icmp)%fld_ssrf
-      found = .true.
-   case ('nicas_interp_op')
-      if (.not.allocated(bump%nicas(igeom)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' block is not allocated')
-      if (.not.allocated(bump%nicas(igeom)%blk(ib)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is not allocated')
-      if (icmp>size(bump%nicas(igeom)%blk(ib)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-      if (.not.allocated(bump%nicas(igeom)%blk(ib)%cmp(icmp)%fld_op)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      fld_c0a = bump%nicas(igeom)%blk(ib)%cmp(icmp)%fld_op
-      found = .true.
-   case ('nicas_interp_ssrf_from_op')
-      if (.not.allocated(bump%nicas(igeom)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' block is not allocated')
-      if (.not.allocated(bump%nicas(igeom)%blk(ib)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is not allocated')
-      if (icmp>size(bump%nicas(igeom)%blk(ib)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-      if (.not.allocated(bump%nicas(igeom)%blk(ib)%cmp(icmp)%fld_ssrf_from_op)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      fld_c0a = bump%nicas(igeom)%blk(ib)%cmp(icmp)%fld_ssrf_from_op
-      found = .true.
    end select
 
    ! Copy to model grid
@@ -2272,17 +2197,17 @@ end subroutine bump_test_get_parameter
 ! Subroutine: bump_set_ncmp
 !> Set number of components
 !----------------------------------------------------------------------
-subroutine bump_set_ncmp(bump,iv,ncmp)
+subroutine bump_set_ncmp(bump,igeom,ncmp)
 
 implicit none
 
 ! Passed variables
 class(bump_type),intent(inout) :: bump !< BUMP
-integer,intent(in) :: iv               !< Variable index
+integer,intent(in) :: igeom            !< Geometry index
 integer,intent(in) :: ncmp             !< Number of components
 
 ! Local variables
-integer :: ib
+integer :: iv,ib
 
 ! Set name
 @:set_name(bump_set_ncmp)
@@ -2296,24 +2221,28 @@ integer :: ib
 write(bump%mpl%info,'(a7,a)') '','Set number of components'
 call bump%mpl%flush
 
-! Check variable index
-if ((iv<1).or.(iv>bump%nam%nv)) call bump%mpl%abort('${subr}$','variable index out of bounds')
-
 ! Check allocation
-if (.not.allocated(bump%cmat(1)%blk)) allocate(bump%cmat(1)%blk(bump%bpar%nbe))
-if (.not.allocated(bump%nicas(1)%blk)) allocate(bump%nicas(1)%blk(bump%bpar%nbe))
+if (.not.allocated(bump%cmat(igeom)%blk)) allocate(bump%cmat(igeom)%blk(bump%bpar%nbe))
+if (.not.allocated(bump%nicas(igeom)%blk)) allocate(bump%nicas(igeom)%blk(bump%bpar%nbe))
 
-! Set block index
 select case (trim(bump%nam%strategy))
 case ('specific_univariate','specific_multivariate')
-   ib = bump%bpar%v_to_b(iv)
-case ('common','common_weighted')
-   ib = bump%bpar%nbe
-end select
+   do iv=1,bump%nam%nv
+      ! Set block index
+      ib = bump%bpar%v_to_b(iv)
 
-! Copy
-bump%cmat(1)%blk(ib)%ncmp = ncmp
-bump%nicas(1)%blk(ib)%ncmp = ncmp
+      ! Copy
+      bump%cmat(igeom)%blk(ib)%ncmp = ncmp
+      bump%nicas(igeom)%blk(ib)%ncmp = ncmp
+   end do
+case ('common','common_weighted')
+   ! Set block index
+   ib = bump%bpar%nbe
+
+   ! Copy
+   bump%cmat(igeom)%blk(ib)%ncmp = ncmp
+   bump%nicas(igeom)%blk(ib)%ncmp = ncmp
+end select
 
 ! Probe out
 @:probe_out()
@@ -2362,8 +2291,10 @@ call fieldset%to_array(bump%mpl,fld_mga)
 select case (trim(param))
 case ('var')
    bump%var%bump_m2_counter = bump%var%bump_m2_counter+1
+   if (icmp/=bump%var%bump_m2_counter) call bump%mpl%abort('${subr}$','wrong component index for var')
 case ('m4')
    bump%var%bump_m4_counter = bump%var%bump_m4_counter+1
+   if (icmp/=bump%var%bump_m4_counter) call bump%mpl%abort('${subr}$','wrong component index for m4')
 end select
 
 do iv=1,bump%nam%nv

@@ -9,11 +9,8 @@ initial condition:
   state variables: &vars [psi_inc]
 background error:
   covariance model: SABER
-  saber blocks:
-  - saber block name: SPCTRL_COV
-    saber central block: true
-    input variables: *vars
-    output variables: *vars
+  saber central block:
+    saber block name: SPCTRL_COV
     spectralb:
       covariance_file: testdata/CovStats.nc
       gauss_grid_uid: F15

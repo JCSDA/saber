@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef QUENCH_GEOMETRY_H_
-#define QUENCH_GEOMETRY_H_
+#pragma once
 
 #include <memory>
 #include <ostream>
@@ -89,6 +88,7 @@ class Geometry : public util::Printable,
 
   std::vector<size_t> variableSizes(const oops::Variables & vars) const;
   void latlon(std::vector<double> &, std::vector<double> &, const bool) const {}
+  bool levelsAreTopDown() const {return true;}
 
  private:
   void print(std::ostream &) const;
@@ -106,5 +106,3 @@ class Geometry : public util::Printable,
 // -----------------------------------------------------------------------------
 
 }  // namespace quench
-
-#endif  // QUENCH_GEOMETRY_H_

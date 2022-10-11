@@ -4,17 +4,13 @@ geometry:
     type : regular_gaussian
     N : 20
   levels: 10
-  halo: 3
+  halo: 0
 variables: &vars [var]
 background:
   date: 2010-01-01T12:00:00Z
   state variables: *vars
-saber blocks:
-- saber block name: BUMP_NICAS
-  saber central block: true
-  iterative inverse: true
-  input variables: *vars
-  output variables: *vars
+saber central block:
+  saber block name: BUMP_NICAS
   bump:
     datadir: testdata
     fname_nicas: quench_error_covariance_training_bump_nicas/test_nicas

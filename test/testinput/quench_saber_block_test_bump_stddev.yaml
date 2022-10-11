@@ -9,12 +9,12 @@ variables: &vars [var]
 background:
   date: 2010-01-01T12:00:00Z
   state variables: *vars
-saber blocks:
+saber outer blocks:
 - saber block name: StdDev
-  input variables: *vars
-  output variables: *vars
-  file:
-    filepath: testdata/quench_error_covariance_training_bump_stddev/stddev
+  input fields:
+  - parameter: StdDev
+    file:
+      filepath: testdata/quench_error_covariance_training_bump_stddev/stddev
 
 test:
   reference filename: testref/quench_saber_block_test_bump_stddev/test.log.out

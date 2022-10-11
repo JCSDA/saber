@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0. 
  */
 
-#ifndef SABER_SPECTRALB_SPECTRALB_COVSTATS_INTERFACE_H_
-#define SABER_SPECTRALB_SPECTRALB_COVSTATS_INTERFACE_H_
+#pragma once
 
 // Forward declarations
 namespace eckit {
@@ -37,4 +36,3 @@ void covSpectralUMatrix_f90(
 
 }  // namespace spectralb
 }  // namespace saber
-#endif  // SABER_SPECTRALB_SPECTRALB_COVSTATS_INTERFACE_H_

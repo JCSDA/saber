@@ -858,7 +858,7 @@ end do
 
 if (nam%write_c0) then
    ! Create file
-   ncid = create_file(mpl,trim(nam%prefix)//'_umf')
+   ncid = create_file(mpl,trim(nam%prefix)//'umf')
 
    ! Define dimensions
    nc0_id = define_dim(mpl,ncid,'nc0',geom%nc0)
@@ -951,7 +951,7 @@ write(mpl%info,'(a7,a)') '','Write normality diagnostics'
 call mpl%flush
 
 ! Create file
-ncid = create_file(mpl,trim(nam%prefix)//'_normality',mpl%myproc)
+ncid = create_file(mpl,trim(nam%prefix)//'normality',mpl%myproc)
 
 ! Define dimensions
 nloc_id = define_dim(mpl,ncid,'nloc',nloc)

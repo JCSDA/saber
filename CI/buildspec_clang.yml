@@ -47,9 +47,9 @@ phases:
 
       - echo "check for same branch names, except for develop"
       - if ! [ "$CODEBUILD_GIT_BRANCH" = "develop" ]; then
-        pip install boto3;
-        pip install pygithub;
-        python CI/update_webhook_branchname.py $CODEBUILD_GIT_BRANCH $CODEBUILD_RESOLVED_SOURCE_VERSION;
+        pip3 install boto3;
+        pip3 install pygithub;
+        python3 CI/update_webhook_branchname.py $CODEBUILD_GIT_BRANCH $CODEBUILD_RESOLVED_SOURCE_VERSION;
         fi
 
   pre_build:
@@ -75,9 +75,6 @@ phases:
       - chmod 0700 ~/.git-credentials
       - echo "https://${GIT_USER}:${GIT_PASS}@github.com" >~/.git-credentials
 
-      # jedi-cmake
-      - ./clone.sh jcsda-internal/jedi-cmake $CODEBUILD_GIT_BRANCH /jcsda/saber-bundle jedicmake ${GIT_BASE_BRANCH} develop
-
       # oops
       - ./clone.sh jcsda-internal/oops $CODEBUILD_GIT_BRANCH /jcsda/saber-bundle oops ${GIT_BASE_BRANCH} develop
 
@@ -89,6 +86,9 @@ phases:
 
       # saber-data
       - ./clone.sh jcsda-internal/saber-data $CODEBUILD_GIT_BRANCH /jcsda/saber-bundle saber-data ${GIT_BASE_BRANCH} develop
+
+      # gsibec
+      - git clone --depth 1 -b 1.0.6 https://github.com/geos-esm/GSIbec /jcsda/saber-bundle/gsibec
 
       # move CMakeLists.txt
       - cp CMakeLists.txt /jcsda/saber-bundle
@@ -110,8 +110,9 @@ phases:
 
       # configure and build
       - cd /build_container
-      - ls
-      - ecbuild /jcsda/saber-bundle/ -Wno-dev -DCDASH_OVERRIDE_SITE=CodeBuild -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCDASH_OVERRIDE_GIT_BRANCH=$CODEBUILD_GIT_BRANCH -DCTEST_UPDATE_VERSION_ONLY=FALSE
+      - source /etc/profile.d/z10_spack_environment.sh
+      - ecbuild /jcsda/saber-bundle/ -Wno-dev -DCDASH_OVERRIDE_SITE=CodeBuild -DCDASH_OVERRIDE_SYSTEM_NAME=ClangContainer -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCDASH_OVERRIDE_GIT_BRANCH=$CODEBUILD_GIT_BRANCH -DCTEST_UPDATE_VERSION_ONLY=FALSE
+      - ls /build_container
       - cd saber
       - cp ../DartConfiguration.tcl .
       - sed -i 's/saber-bundle/saber-bundle\/saber/' DartConfiguration.tcl

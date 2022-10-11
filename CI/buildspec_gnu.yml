@@ -47,15 +47,15 @@ phases:
   pre_build:
     commands:
       - echo Executing pre_build phase
-      - git lfs install # creates .gitconfig
       - mkdir -p /jcsda/saber-bundle
 
       # Upload branch name and commit sha as CodeBuild artifact to S3
-      - mkdir -p /jcsda/artifacts
+      - mkdir /jcsda/artifacts
       - echo ${CODEBUILD_GIT_BRANCH} > /jcsda/artifacts/branch_name.txt
       - echo ${CODEBUILD_RESOLVED_SOURCE_VERSION} > /jcsda/artifacts/commit_sha.txt
 
       # initialization
+      - git lfs install
       - cd CI
 
       #  Setting git credentials
@@ -65,9 +65,6 @@ phases:
       - touch ~/.git-credentials
       - chmod 0700 ~/.git-credentials
       - echo "https://${GIT_USER}:${GIT_PASS}@github.com" >~/.git-credentials
-
-      # jedi-cmake
-      - ./clone.sh jcsda-internal/jedi-cmake $CODEBUILD_GIT_BRANCH /jcsda/saber-bundle jedicmake ${GIT_BASE_BRANCH} develop
 
       # oops
       - ./clone.sh jcsda-internal/oops $CODEBUILD_GIT_BRANCH /jcsda/saber-bundle oops ${GIT_BASE_BRANCH} develop
@@ -81,38 +78,47 @@ phases:
       # saber-data
       - ./clone.sh jcsda-internal/saber-data $CODEBUILD_GIT_BRANCH /jcsda/saber-bundle saber-data ${GIT_BASE_BRANCH} develop
 
-      # move CMakeLists.txt
-      - cp CMakeLists.txt /jcsda/saber-bundle
-      - cp -r cmake /jcsda/saber-bundle/
+      # gsibec
+      - git clone --depth 1 -b 1.0.6 https://github.com/geos-esm/GSIbec /jcsda/saber-bundle/gsibec
+
+      # move CMakeLists.txt from saber/CI to bundle directory
+      - cp CMakeLists.txt /jcsda/saber-bundle/CMakeLists.txt
 
       # cdash upload setup
-      - cp /jcsda/saber-bundle/cmake/CTestConfig.cmake /jcsda/saber-bundle/
+      - mkdir /jcsda/saber-bundle/cmake
+      - cp cmake/CTestCustom.ctest.in /jcsda/saber-bundle/cmake/
+      - cp cmake/cdash-integration.cmake /jcsda/saber-bundle/cmake/
+      - cp cmake/CTestConfig.cmake /jcsda/saber-bundle/
       - sed -i "s@CDASH_URL@$CDASH_URL@g" /jcsda/saber-bundle/CTestConfig.cmake
       - chmod -R 777 /jcsda/saber-bundle
+      - chown -R nonroot /jcsda/saber-bundle
+      - cat /jcsda/saber-bundle/CTestConfig.cmake
 
   build:
     on-failure: CONTINUE
     commands:
       - echo Executing build phase
-      - echo $CODEBUILD_BUILD_SUCCEEDING
       - export BUILD_STATUS="0"
       - echo $BUILD_STATUS
+      - echo $CODEBUILD_BUILD_SUCCEEDING
 
-      - su - jedi -c "cd /home/jedi
+      # configure and build
+      - su - nonroot -c "cd /home/nonroot
+        && ls
         && export FC=mpifort
         && export CC=mpicc
         && export CXX=mpicxx
-        &&  ecbuild -Wno-dev -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCDASH_OVERRIDE_SITE=CodeBuild -DCDASH_OVERRIDE_GIT_BRANCH=$CODEBUILD_GIT_BRANCH -DCTEST_UPDATE_VERSION_ONLY=FALSE -DENABLE_GPROF=ON -DCMAKE_CXX_COMPILER=$(which g++) -DCMAKE_C_COMPILER=$(which gcc) -DCMAKE_Fortran_COMPILER=$(which gfortran) /jcsda/saber-bundle/"
+        && ecbuild -Wno-dev -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCDASH_OVERRIDE_SITE=CodeBuild -DCDASH_OVERRIDE_SYSTEM_NAME=GNUContainer -DCDASH_OVERRIDE_GIT_BRANCH=$CODEBUILD_GIT_BRANCH -DCTEST_UPDATE_VERSION_ONLY=FALSE /jcsda/saber-bundle/"
 
-      - su - jedi -c "cd /home/jedi/saber
+      - su - nonroot -c "cd /home/nonroot/saber
         && export FC=mpifort
         && export CC=mpicc
         && export CXX=mpicxx
         && cp ../DartConfiguration.tcl .
         && sed -i 's/saber-bundle/saber-bundle\/saber/' DartConfiguration.tcl
-        && sed -i 's/jedi/jedi\/saber/' DartConfiguration.tcl
+        && sed -i 's/nonroot/nonroot\/saber/' DartConfiguration.tcl
         && cat DartConfiguration.tcl
-        && ctest -C RelWithDebInfo -V -D ExperimentalBuild -j4"
+        && make"
 
       - if [ "$CODEBUILD_BUILD_SUCCEEDING" = "1" ];
         then export BUILD_STATUS="1";
@@ -120,15 +126,15 @@ phases:
         fi
       - echo $BUILD_STATUS
 
-      - su - jedi -c "cd /home/jedi/saber
+      # run ctest and upload to cdash
+      - su - nonroot -c "cd /home/nonroot/saber
         && export FC=mpifort
         && export CC=mpicc
         && export CXX=mpicxx
         && ctest -C RelWithDebInfo -D ExperimentalTest"
 
     finally:
-      # upload ctest report to CDASH
-      - su - jedi -c "cd /home/jedi/saber
+       - su - nonroot -c "cd /home/nonroot/saber
         && export FC=mpifort
         && export CC=mpicc
         && export CXX=mpicxx
@@ -143,7 +149,7 @@ phases:
       # upload find cdash url and upload it as CodeBuild artifact to S3
       - if [ "$BUILD_STATUS" = "1" ];
         then echo "Build & tests passed, find cdash url";
-        url=$(bash /jcsda/saber-bundle/saber/CI/cdash-url.sh /home/jedi/saber/Testing $CDASH_URL);
+        url=$(bash /jcsda/saber-bundle/saber/CI/cdash-url.sh /home/nonroot/saber/Testing $CDASH_URL);
         echo $url;
         echo ${url} > /jcsda/artifacts/cdash-url.txt;
         cat /jcsda/artifacts/cdash-url.txt;
@@ -151,7 +157,7 @@ phases:
         fi
 
       - echo 'Connect to CodeCov'
-      - cd /home/jedi/saber
+      - cd /home/nonroot/saber
       - pwd
       - ls
       - bash /jcsda/saber-bundle/saber/CI/codecov_script_$org_name.sh

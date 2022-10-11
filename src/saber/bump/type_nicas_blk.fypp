@@ -48,7 +48,11 @@ type nicas_blk_type
 
    ! NICAS components
    integer :: ncmp                            !< Number of components
-   type(nicas_cmp_type),allocatable :: cmp(:) ! Components
+   type(nicas_cmp_type),allocatable :: cmp(:) !< Components
+
+   ! Min/max levels
+   integer :: min_lev                         !< Minimum level
+   integer :: max_lev                         !< Maximum level
 contains
    procedure :: partial_dealloc => nicas_blk_partial_dealloc
    procedure :: dealloc => nicas_blk_dealloc
@@ -556,8 +560,14 @@ nicas_blk%blkid = inquire_grp(mpl,nicas_blk%ncid,blkname)
 ! Get number of components
 if (mpl%main) call get_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp,1)
 
-! Broadcast number of components
+! Get min and max levels
+if (mpl%main) call get_att(mpl,nicas_blk%blkid,0,'min_lev',nicas_blk%min_lev,1)
+if (mpl%main) call get_att(mpl,nicas_blk%blkid,0,'max_lev',nicas_blk%max_lev,geom%nl0)
+
+! Broadcast attributes
 call mpl%f_comm%broadcast(nicas_blk%ncmp,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nicas_blk%min_lev,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nicas_blk%max_lev,mpl%rootproc-1)
 
 ! Allocation
 if (.not.allocated(nicas_blk%cmp)) allocate(nicas_blk%cmp(nicas_blk%ncmp))
@@ -566,6 +576,8 @@ do icmp=1,nicas_blk%ncmp
    ! Set attributes
    nicas_blk%cmp(icmp)%ib = ib
    nicas_blk%cmp(icmp)%ncmp = nicas_blk%ncmp
+   nicas_blk%cmp(icmp)%min_lev = nicas_blk%min_lev
+   nicas_blk%cmp(icmp)%max_lev = nicas_blk%max_lev
    nicas_blk%cmp(icmp)%verbosity = nicas_blk%verbosity
    nicas_blk%cmp(icmp)%smoother = .false.
    nicas_blk%cmp(icmp)%horizontal = .false.
@@ -635,6 +647,10 @@ nicas_blk%blkid = define_grp(mpl,nicas_blk%ncid,blkname)
 
 ! Write number of components
 call put_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp)
+
+! Write min and max levels
+call put_att(mpl,nicas_blk%blkid,0,'min_lev',nicas_blk%min_lev)
+call put_att(mpl,nicas_blk%blkid,0,'max_lev',nicas_blk%max_lev)
 
 ! Define number of levels
 nl0_id = define_dim(mpl,nicas_blk%blkid,'nl0',geom%nl0)
@@ -929,6 +945,11 @@ associate(ib=>nicas_blk%ib)
 ! Copy number of components
 nicas_blk%ncmp = cmat_blk%ncmp
 
+! Copy min/max levels
+iv = bpar%b_to_v1(ib)
+nicas_blk%min_lev = nam%min_lev(iv)
+nicas_blk%max_lev = nam%max_lev(iv)
+
 ! Allocation
 if (.not.allocated(nicas_blk%cmp)) allocate(nicas_blk%cmp(nicas_blk%ncmp))
 
@@ -961,9 +982,8 @@ do icmp=1,nicas_blk%ncmp
    nicas_blk%cmp(icmp)%rvs = mpl%msv%valr
 
    ! Copy C matrix fields from min_lev to max_lev
-   iv = bpar%b_to_v1(ib)
    do il0=1,geom%nl0
-      if ((nam%min_lev(iv)<=il0).and.(il0<=nam%max_lev(iv))) then
+      if ((nicas_blk%min_lev<=il0).and.(il0<=nicas_blk%max_lev)) then
          do ic0a=1,geom%nc0a
             if (geom%gmask_c0a(ic0a,il0)) then
                nicas_blk%cmp(icmp)%a(ic0a,il0) = cmat_blk%a(ic0a,il0,icmp)
@@ -974,6 +994,12 @@ do icmp=1,nicas_blk%ncmp
                nicas_blk%cmp(icmp)%rv(ic0a,il0) = cmat_blk%rv(ic0a,il0,icmp)
                nicas_blk%cmp(icmp)%rhs(ic0a,il0) = cmat_blk%rhs(ic0a,il0,icmp)
                nicas_blk%cmp(icmp)%rvs(ic0a,il0) = cmat_blk%rvs(ic0a,il0,icmp)
+               if (mpl%msv%is(nicas_blk%cmp(icmp)%a(ic0a,il0)).or.mpl%msv%is(nicas_blk%cmp(icmp)%rh(ic0a,il0)) &
+ & .or.mpl%msv%is(nicas_blk%cmp(icmp)%rv(ic0a,il0)).or.mpl%msv%is(nicas_blk%cmp(icmp)%rhs(ic0a,il0)) &
+ & .or.mpl%msv%is(nicas_blk%cmp(icmp)%rvs(ic0a,il0))) then
+                  write(message,'(a,i3)') 'missing value for NICAS at level ',il0
+                  call mpl%abort('${subr}$',message)
+               end if
             end if
          end do
       end if

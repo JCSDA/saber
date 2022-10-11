@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_INTERPOLATION_INTERPOLATORBUMP_F_H_
-#define SABER_INTERPOLATION_INTERPOLATORBUMP_F_H_
+#pragma once
 
 #include "atlas/field/FieldSet.h"
 #include "atlas/functionspace/detail/FunctionSpaceImpl.h"
@@ -33,5 +32,3 @@ extern "C" {
                          atlas::field::FieldSetImpl *);
 }
 }  // namespace saber
-
-#endif  // SABER_INTERPOLATION_INTERPOLATORBUMP_F_H_

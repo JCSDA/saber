@@ -32,19 +32,21 @@ endif()
 
 # Default test selection variables (TIER-independent)
 set( SABER_TEST_VALGRIND 0 )
-set( SABER_TEST_OOPS 0 )
-set( SABER_TEST_INTERPOLATION 0 )
-if( oops_qg_FOUND )
-    set( SABER_TEST_OOPS 1 )
-    set( SABER_TEST_INTERPOLATION 1 )
-endif()
-set( SABER_TEST_GSI 0 )
-if( gsibclim_FOUND AND oops_qg_FOUND)
-    set( SABER_TEST_GSI 1 )
-endif()
+set( SABER_TEST_BUMP_QUENCH 0 )
+set( SABER_TEST_GSI_GFS 0 )
+set( SABER_TEST_GSI_GEOS 0 )
 set( SABER_TEST_SPECTRALB 0 )
-if( atlas_TRANS_FOUND AND oops_qg_FOUND)
-    set( SABER_TEST_SPECTRALB 1 )
+if( oops_FOUND )
+    set( SABER_TEST_BUMP_QUENCH 1 )
+    if( gsibec_FOUND )
+        set( SABER_TEST_GSI_GEOS 1 )
+    endif()
+    if( gsibec_FOUND AND sp_FOUND )
+        set( SABER_TEST_GSI_GFS 1 )
+    endif()
+    if( atlas_TRANS_FOUND )
+        set( SABER_TEST_SPECTRALB 1 )
+    endif()
 endif()
 
 # Override test selection variables using environment variables
@@ -60,34 +62,24 @@ endif()
 if( DEFINED ENV{SABER_TEST_VALGRIND} )
     set( SABER_TEST_VALGRIND $ENV{SABER_TEST_VALGRIND} )
 endif()
-if( oops_qg_FOUND )
-    if( DEFINED ENV{SABER_TEST_OOPS} )
-        set( SABER_TEST_OOPS $ENV{SABER_TEST_OOPS} )
+if( oops_FOUND )
+    if( DEFINED ENV{SABER_TEST_BUMP_QUENCH} )
+        set( SABER_TEST_BUMP_QUENCH $ENV{SABER_TEST_BUMP_QUENCH} )
     endif()
-endif()
-if( SABER_TEST_OOPS )
-    if( DEFINED ENV{SABER_TEST_OOPS} )
-        set( SABER_TEST_OOPS $ENV{SABER_TEST_OOPS} )
+    if( gsibec_FOUND )
+        if( DEFINED ENV{SABER_TEST_GSI_GEOS} )
+            set( SABER_TEST_GSI_GEOS $ENV{SABER_TEST_GSI_GEOS} )
+        endif()
     endif()
-endif()
-if( gsibclim_FOUND AND oops_qg_FOUND )
-    if( DEFINED ENV{SABER_TEST_GSI} )
-        set( SABER_TEST_GSI $ENV{SABER_TEST_GSI} )
+    if( gsibec_FOUND AND sp_FOUND )
+        if( DEFINED ENV{SABER_TEST_GSI_GFS} )
+            set( SABER_TEST_GSI_GFS $ENV{SABER_TEST_GSI_GFS} )
+        endif()
     endif()
-endif()
-if( SABER_TEST_GSI )
-    if( DEFINED ENV{SABER_TEST_GSI} )
-        set( SABER_TEST_GSI $ENV{SABER_TEST_GSI} )
-    endif()
-endif()
-if( atlas_TRANS_FOUND AND oops_qg_FOUND)
-    if( DEFINED ENV{SABER_TEST_SPECTRALB} )
-        set( SABER_TEST_SPECTRALB $ENV{SABER_TEST_SPECTRALB} )
-    endif()
-endif()
-if( SABER_TEST_SPECTRALB )
-    if( DEFINED ENV{SABER_TEST_SPECTRALB} )
-        set( SABER_TEST_SPECTRALB $ENV{SABER_TEST_SPECTRALB} )
+    if( atlas_TRANS_FOUND )
+        if( DEFINED ENV{SABER_TEST_SPECTRALB} )
+            set( SABER_TEST_SPECTRALB $ENV{SABER_TEST_SPECTRALB} )
+        endif()
     endif()
 endif()
 
@@ -98,8 +90,9 @@ message( STATUS "  - SABER_TEST_MPI:           ${SABER_TEST_MPI}" )
 message( STATUS "  - SABER_TEST_OMP:           ${SABER_TEST_OMP}" )
 message( STATUS "  - SABER_TEST_MULTI:         ${SABER_TEST_MULTI}" )
 message( STATUS "  - SABER_TEST_VALGRIND:      ${SABER_TEST_VALGRIND}" )
-message( STATUS "  - SABER_TEST_OOPS:          ${SABER_TEST_OOPS}" )
-message( STATUS "  - SABER_TEST_GSI:           ${SABER_TEST_GSI}" )
+message( STATUS "  - SABER_TEST_BUMP_QUENCH:   ${SABER_TEST_BUMP_QUENCH}" )
+message( STATUS "  - SABER_TEST_GSI_GEOS:      ${SABER_TEST_GSI_GEOS}" )
+message( STATUS "  - SABER_TEST_GSI_GFS:       ${SABER_TEST_GSI_GFS}" )
 message( STATUS "  - SABER_TEST_SPECTRALB:     ${SABER_TEST_SPECTRALB}" )
 
 # Tests
@@ -127,23 +120,36 @@ if( SABER_TEST_MULTI )
     message( STATUS "  - TIER 1 multicores" )
     list( APPEND saber_test_multi ${saber_test_multi_tmp} )
 endif()
-file( STRINGS testlist/saber_test_tier1-oops.txt saber_test_oops_tmp )
-list( APPEND saber_test_full ${saber_test_oops_tmp} )
-if( SABER_TEST_OOPS )
-    message( STATUS "  - TIER 1 OOPS-specific" )
-    list( APPEND saber_test_oops ${saber_test_oops_tmp} )
+file( STRINGS testlist/saber_test_tier1-bump-quench.txt saber_test_bump_quench_tmp )
+list( APPEND saber_test_full ${saber_test_bump_quench_tmp} )
+if( SABER_TEST_BUMP_QUENCH )
+    message( STATUS "  - TIER 1 BUMP-QUENCH-specific" )
+    list( APPEND saber_test_bump_quench ${saber_test_bump_quench_tmp} )
 endif()
-file( STRINGS testlist/saber_test_tier1-gsi.txt saber_test_gsi_tmp )
-list( APPEND saber_test_full ${saber_test_gsi_tmp} )
-if( SABER_TEST_GSI )
-    message( STATUS "  - TIER 1 GSI-specific" )
-    list( APPEND saber_test_gsi ${saber_test_gsi_tmp} )
+file( STRINGS testlist/saber_test_tier1-gsi-geos.txt saber_test_gsi_geos_tmp )
+list( APPEND saber_test_full ${saber_test_gsi_geos_tmp} )
+if( SABER_TEST_GSI_GEOS )
+    message( STATUS "  - TIER 1 GSI-GEOS-specific" )
+    list( APPEND saber_test_gsi_geos ${saber_test_gsi_geos_tmp} )
 endif()
+file( STRINGS testlist/saber_test_tier1-gsi-gfs.txt saber_test_gsi_gfs_tmp )
+list( APPEND saber_test_full ${saber_test_gsi_gfs_tmp} )
+if( SABER_TEST_GSI_GFS )
+    message( STATUS "  - TIER 1 GSI-GFS-specific" )
+    list( APPEND saber_test_gsi_gfs ${saber_test_gsi_gfs_tmp} )
+endif()
+
 file( STRINGS testlist/saber_test_tier1-spectralb.txt saber_test_spectralb_tmp )
 list( APPEND saber_test_full ${saber_test_spectralb_tmp} )
 if( SABER_TEST_SPECTRALB )
     message( STATUS "  - TIER 1 SPECTRALB-specific" )
-    list( APPEND saber_test_spectralb ${saber_test_spectralb_tmp} )
+    # TODO(Benjamin): remove that once ATLAS 0.31.0 is available everywhere
+    if( atlas_VERSION GREATER_EQUAL 0.31.0 )
+        list( APPEND saber_test_spectralb ${saber_test_spectralb_tmp} )
+    else()
+        file( STRINGS testlist/saber_test_tier1-spectralb_old.txt saber_test_spectralb_tmp )
+        list( APPEND saber_test_spectralb ${saber_test_spectralb_tmp} )
+    endif()
 endif()
 file( STRINGS testlist/saber_ref_tier1.txt saber_ref_tmp )
 list( APPEND saber_ref ${saber_ref_tmp} )
@@ -158,19 +164,13 @@ if( SABER_TEST_TIER GREATER 1 )
     file( STRINGS testlist/saber_ref_tier2.txt saber_ref_tmp )
     list( APPEND saber_ref ${saber_ref_tmp} )
     list( APPEND saber_ref_tar saber_ref_tier2.tar.gz )
-    file( STRINGS testlist/saber_test_tier2-oops.txt saber_test_oops_tmp )
-    list( APPEND saber_test_full ${saber_test_oops_tmp} )
-    if( SABER_TEST_OOPS )
-        message( STATUS "  - TIER 2 OOPS-specific" )
-        list( APPEND saber_test_oops ${saber_test_oops_tmp} )
-    endif()
 endif()
 
 # Set download URL
 
 # Define branch name
 if( DEFINED ENV{SABER_TESTFILES_BRANCH} )
-    # Branch specified by environment
+    # Branch specified by environment
     set( GIT_BRANCH_SABER $ENV{SABER_TESTFILES_BRANCH} )
     message( STATUS "Branch name provided by user: ${GIT_BRANCH_SABER}" )
 else()
@@ -222,7 +222,7 @@ else( DEFINED GIT_TAG_FUNC )
     list( APPEND SABER_DATA_DOWNLOADER_ARGS
           ${ECBUILD_DOWNLOAD_BASE_URL}
           ${CMAKE_SOURCE_DIR}/test-data-release
-          "saber_testinput_tier_1_1.3.0.tar.gz"
+          "saber_testinput_tier_1_1.4.0.tar.gz"
           ${checksum} )
 
     # Create test-data-release in source directory
@@ -233,14 +233,14 @@ else( DEFINED GIT_TAG_FUNC )
     set ( SOURCE_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME} )
     set ( DEST_FILE ${CMAKE_BINARY_DIR}/bin/${FILENAME} )
 
-    # Set configure file
+    # Set configure file
     if( EXISTS "${SOURCE_FILE}.in" )
       configure_file( ${SOURCE_FILE}.in ${DEST_FILE} @ONLY )
     else()
       configure_file( ${SOURCE_FILE}    ${DEST_FILE} @ONLY )
     endif()
 
-    # Add download script
+    # Add download script
     add_custom_target( bin_saber_test_download_script ALL
                        COMMAND chmod +x ${DEST_FILE}
                        DEPENDS ${DEST_FILE} )
@@ -280,79 +280,46 @@ ecbuild_add_executable( TARGET  saber_bump.x
 # Process fypp files
 fckit_target_preprocess_fypp( saber_bump.x )
 
-if( SABER_TEST_OOPS )
-    if( vader_FOUND )
-        set( vader_LIBRARIES "vader" )
-    else()
-        set( vader_LIBRARIES "" )
-    endif()
+if( vader_FOUND )
+    set( vader_LIBRARIES "vader" )
+else()
+    set( vader_LIBRARIES "" )
+endif()
+if( gsibec_FOUND )
+    message( STATUS "SABER TEST LIB gsibec was found" )
+    set( gsibec_LIBRARIES "gsibec" )
+else()
+    message( STATUS "SABER TEST LIB gsibec was NOT found" )
+    set( gsibec_LIBRARIES "" )
+endif()
 
-    ecbuild_add_executable( TARGET  saber_qg_4dvar.x
-                            SOURCES mains/qg4DVar.cc
-                            LIBS    ${oops_qg_LIBRARIES}
-                                    ${vader_LIBRARIES}
-                                    saber )
-
-    ecbuild_add_executable( TARGET  saber_qg_convertstate.x
-                            SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../oops/qg/mains/qgConvertState.cc
-                            LIBS    ${oops_qg_LIBRARIES} )
-
-    ecbuild_add_executable( TARGET  saber_qg_dirac.x
-                            SOURCES mains/qgDirac.cc
-                            LIBS    ${oops_qg_LIBRARIES}
-                                    ${vader_LIBRARIES}
-                                    saber )
-
-    ecbuild_add_executable( TARGET  saber_qg_ens_recenter.x
-                            SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../oops/qg/mains/qgEnsRecenter.cc
-                            LIBS    ${oops_qg_LIBRARIES} )
-
-    ecbuild_add_executable( TARGET  saber_qg_error_covariance_training.x
-                            SOURCES mains/qgErrorCovarianceTraining.cc
-                            LIBS    ${oops_qg_LIBRARIES}
-                                    ${vader_LIBRARIES}
-                                    saber )
-
-    ecbuild_add_executable( TARGET  saber_qg_forecast.x
-                            SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../oops/qg/mains/qgForecast.cc
-                            LIBS    ${oops_qg_LIBRARIES} )
-
-    ecbuild_add_executable( TARGET  saber_qg_gen_ens_pert_B.x
-                            SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../oops/qg/mains/qgGenEnsPertB.cc
-                            LIBS    ${oops_qg_LIBRARIES} )
-
-    ecbuild_add_executable( TARGET  saber_qg_hofx.x
-                            SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../oops/qg/mains/qgHofX.cc
-                            LIBS    ${oops_qg_LIBRARIES} )
-
-#    ecbuild_add_executable( TARGET  saber_interpolation_bump.x
-#                            SOURCES mains/InterpolationBump.cc
-#                            LIBS    ${oops_qg_LIBRARIES}
-#                                    ${vader_LIBRARIES}
-#                                    saber )
-
+if ( SABER_TEST_BUMP_QUENCH OR SABER_TEST_GSI_GEOS OR SABER_TEST_GSI_GFS OR SABER_TEST_SPECTRALB )
     ecbuild_add_executable( TARGET  saber_quench_randomization.x
                             SOURCES mains/quenchRandomization.cc
                             LIBS    quench
                                     ${vader_LIBRARIES}
+                                    ${gsibec_LIBRARIES}
                                     saber )
 
     ecbuild_add_executable( TARGET  saber_quench_error_covariance_training.x
                             SOURCES mains/quenchErrorCovarianceTraining.cc
                             LIBS    quench
                                     ${vader_LIBRARIES}
+                                    ${gsibec_LIBRARIES}
                                     saber )
 
     ecbuild_add_executable( TARGET  saber_quench_saber_block_test.x
                             SOURCES mains/quenchSaberBlockTest.cc
                             LIBS    quench
                                     ${vader_LIBRARIES}
+                                    ${gsibec_LIBRARIES}
                                     saber )
 
     ecbuild_add_executable( TARGET  saber_quench_dirac.x
                             SOURCES mains/quenchDirac.cc
                             LIBS    quench
                                     ${vader_LIBRARIES}
+                                    ${gsibec_LIBRARIES}
                                     saber )
 
     ecbuild_add_executable( TARGET  saber_quench_convertstate.x
@@ -477,7 +444,7 @@ endif()
 
 # Post-comparisons (between tests)
 
-# Compare read and write tests
+# Compare read and write tests
 list( APPEND read-write_test mom )
 list( APPEND read-write_test nicas_global )
 list( APPEND read-write_test nicas_local )
@@ -538,7 +505,7 @@ foreach( test ${read-write_test} )
 endforeach()
 
 if( SABER_TEST_TIER GREATER 1 )
-    # Compare ensemble-based and covariance-based vertical balance
+    # Compare ensemble-based and covariance-based vertical balance
     ecbuild_add_test( TARGET       saber_test_bump_vbal_ens-cov_post
                       TYPE SCRIPT
                       COMMAND      ${CMAKE_BINARY_DIR}/bin/saber_compare.sh
@@ -547,208 +514,25 @@ if( SABER_TEST_TIER GREATER 1 )
                                    saber_test_bump_vbal_no_mask_cov_1-1_run )
 endif()
 
-# OOPS tests
-if( SABER_TEST_OOPS )
+# OOPS-based tests
+
+# BUMP-QUENCH tests
+if( SABER_TEST_BUMP_QUENCH )
+    # 2 MPI tasks and 2 OpenMP threads
+    set( mpi 2 )
+    set( omp 2 )
+
     # Link to yaml files
-    foreach( test ${saber_test_oops} )
+    foreach( test ${saber_test_bump_quench} )
         execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
                          ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
                          ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}.yaml )
     endforeach()
 
-    # Most OOPS tests: 1 MPI task and 2 OpenMP threads
-    set( mpi 1 )
-    set( omp 2 )
-
-    # Truth
-    ecbuild_add_test( TARGET saber_test_qg_truth
-                      MPI ${mpi}
-                      OMP ${omp}
-                      COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_forecast.x
-                      ARGS testinput/qg_truth.yaml
-                      DEPENDS saber_qg_forecast.x )
-
-
-    # Forecast
-    ecbuild_add_test( TARGET saber_test_qg_forecast
-                      MPI ${mpi}
-                      OMP ${omp}
-                      COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_forecast.x
-                      ARGS testinput/qg_forecast.yaml
-                      DEPENDS saber_qg_forecast.x )
-
-    # Ensemble generation
-    ecbuild_add_test( TARGET saber_test_qg_gen_ens_pert_B
-                      MPI ${mpi}
-                      OMP ${omp}
-                      COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_gen_ens_pert_B.x
-                      ARGS testinput/qg_gen_ens_pert_B.yaml
-                      DEPENDS saber_qg_gen_ens_pert_B.x )
-
-    # Make observations
-    ecbuild_add_test( TARGET saber_test_qg_make_obs_3d
-                      MPI ${mpi}
-                      OMP ${omp}
-                      COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_hofx.x
-                      ARGS testinput/qg_make_obs_3d.yaml
-                      DEPENDS saber_qg_hofx.x )
-
-    ecbuild_add_test( TARGET saber_test_qg_make_obs_4d_12h
-                      MPI ${mpi}
-                      OMP ${omp}
-                      COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_hofx.x
-                      ARGS testinput/qg_make_obs_4d_12h.yaml
-                      DEPENDS saber_qg_hofx.x )
-
-    ecbuild_add_test( TARGET saber_test_qg_make_obs_4d_24h
-                      MPI ${mpi}
-                      OMP ${omp}
-                      COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_hofx.x
-                      ARGS testinput/qg_make_obs_4d_24h.yaml
-                      DEPENDS saber_qg_hofx.x )
-
-    # Ens recenter test
-    foreach( test ${saber_test_oops} )
-        string( FIND ${test} "qg_ens_recenter" qg_ens_recenter )
-        if( qg_ens_recenter MATCHES 0 )
-            ecbuild_add_test( TARGET saber_test_qg_ens_recenter
-                              MPI ${mpi}
-                              OMP ${omp}
-                              COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_ens_recenter.x
-                              ARGS testinput/${test}.yaml
-                              DEPENDS saber_qg_ens_recenter.x )
-        endif()
-    endforeach()
-
-    # Error covariance training tests
-    foreach( test ${saber_test_oops} )
-        string( FIND ${test} "qg_error_covariance_training" qg_error_covariance_training )
-        if( qg_error_covariance_training MATCHES 0 )
-            ecbuild_add_test( TARGET saber_test_${test}
-                              MPI ${mpi}
-                              OMP ${omp}
-                              COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_error_covariance_training.x
-                              ARGS testinput/${test}.yaml
-                              DEPENDS saber_qg_error_covariance_training.x )
-        endif()
-    endforeach()
-
-    foreach( test ${saber_test_oops} )
-        # Number of tasks
-        string( FIND ${test} "4d" 4dpos REVERSE )
-        string( LENGTH ${test} length )
-        math( EXPR 4d ${length}-${4dpos}-2 )
-        if( (4d MATCHES 0) OR (test MATCHES qg_4densvar_bump) )
-            set( mpi 7 )
-            set( omp 1 )
-        else()
-            set( mpi 1 )
-            set( omp 2 )
-        endif()
-
-        # Dirac tests
-        string( FIND ${test} "qg_dirac" qg_dirac )
-        if( qg_dirac MATCHES 0 )
-            ecbuild_add_test( TARGET saber_test_${test}
-                              MPI ${mpi}
-                              OMP ${omp}
-                              COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_dirac.x
-                              ARGS testinput/${test}.yaml
-                              DEPENDS saber_qg_dirac.x )
-        endif()
-
-        # Variational tests
-        string( FIND ${test} "qg_3d" qg_3d )
-        string( FIND ${test} "qg_4d" qg_4d )
-        if( (qg_3d MATCHES 0) OR (qg_4d MATCHES 0) )
-            ecbuild_add_test( TARGET saber_test_${test}
-                              MPI ${mpi}
-                              OMP ${omp}
-                              COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_4dvar.x
-                              ARGS testinput/${test}.yaml
-                              DEPENDS saber_qg_4dvar.x )
-        endif()
-    endforeach()
-
-    if( SABER_TEST_TIER GREATER 1 )
-        # High-resolution OOPS tests: 1 MPI task and 4 OpenMP threads
-        set( mpi 1 )
-        set( omp 4 )
-
-        # Truth
-        ecbuild_add_test( TARGET saber_test_qg_hr_truth
-                          MPI ${mpi}
-                          OMP ${omp}
-                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_forecast.x
-                          ARGS testinput/qg_hr_truth.yaml
-                          DEPENDS saber_qg_forecast.x )
-
-        # Forecast
-        ecbuild_add_test( TARGET saber_test_qg_hr_forecast
-                          MPI ${mpi}
-                          OMP ${omp}
-                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_forecast.x
-                          ARGS testinput/qg_hr_forecast.yaml
-                          DEPENDS saber_qg_forecast.x )
-
-        # Ensemble generation
-        ecbuild_add_test( TARGET saber_test_qg_hr_gen_ens_pert_B
-                          MPI ${mpi}
-                          OMP ${omp}
-                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_gen_ens_pert_B.x
-                          ARGS testinput/qg_hr_gen_ens_pert_B.yaml
-                          DEPENDS saber_qg_gen_ens_pert_B.x )
-
-
-        # Low-resolution truth
-        ecbuild_add_test( TARGET saber_test_qg_lr_truth
-                          MPI ${mpi}
-                          OMP ${omp}
-                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_convertstate.x
-                          ARGS testinput/qg_lr_truth.yaml
-                          DEPENDS saber_qg_convertstate.x )
-
-
-        # Low-resolution ensemble generation
-        ecbuild_add_test( TARGET saber_test_qg_lr_gen_ens_pert_B
-                          MPI ${mpi}
-                          OMP ${omp}
-                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_gen_ens_pert_B.x
-                          ARGS testinput/qg_lr_gen_ens_pert_B.yaml
-                          DEPENDS saber_qg_gen_ens_pert_B.x )
-
-        # Error covariance training tests
-        foreach( test ${saber_test_oops} )
-            string( FIND ${test} "qg_hr_error_covariance_training" qg_hr_error_covariance_training )
-            if( qg_hr_error_covariance_training MATCHES 0 )
-                ecbuild_add_test( TARGET saber_test_${test}
-                                  MPI ${mpi}
-                                  OMP ${omp}
-                                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_qg_error_covariance_training.x
-                                  ARGS testinput/${test}.yaml
-                                  DEPENDS saber_qg_error_covariance_training.x )
-            endif()
-        endforeach()
-    endif()
-
-#    # Interpolation tests
-#    set( mpi 4 )
-#    set( omp 1 )
-#    ecbuild_add_test( TARGET saber_test_interpolation_bump
-#                      MPI ${mpi}
-#                      OMP ${omp}
-#                      COMMAND ${CMAKE_BINARY_DIR}/bin/saber_interpolation_bump.x
-#                      ARGS    testinput/interpolation_bump.yaml
-#                      DEPENDS saber_interpolation_bump.x )
-
-    # QUENCH tests
-    set( mpi 2 )
-    set( omp 2 )
-
     # Randomization tests
-    foreach( test ${saber_test_oops} )
-        string( FIND ${test} "quench_randomization" quench )
-        if( quench MATCHES 0 )
+    foreach( test ${saber_test_bump_quench} )
+        string( FIND ${test} "quench_randomization" start_index )
+        if( start_index MATCHES 0 )
             ecbuild_add_test( TARGET saber_test_${test}
                               MPI ${mpi}
                               OMP ${omp}
@@ -759,9 +543,9 @@ if( SABER_TEST_OOPS )
     endforeach()
 
     # Error covariance training tests
-    foreach( test ${saber_test_oops} )
-        string( FIND ${test} "quench_error_covariance_training" quench )
-        if( quench MATCHES 0 )
+    foreach( test ${saber_test_bump_quench} )
+        string( FIND ${test} "quench_error_covariance_training" start_index )
+        if( start_index MATCHES 0 )
             ecbuild_add_test( TARGET saber_test_${test}
                               MPI ${mpi}
                               OMP ${omp}
@@ -772,9 +556,9 @@ if( SABER_TEST_OOPS )
     endforeach()
 
     # Adjoint/inverse tests
-    foreach( test ${saber_test_oops} )
-        string( FIND ${test} "quench_saber_block_test" quench )
-        if( quench MATCHES 0 )
+    foreach( test ${saber_test_bump_quench} )
+        string( FIND ${test} "quench_saber_block_test" start_index )
+        if( start_index MATCHES 0 )
             ecbuild_add_test( TARGET saber_test_${test}
                               MPI ${mpi}
                               OMP ${omp}
@@ -785,9 +569,9 @@ if( SABER_TEST_OOPS )
     endforeach()
 
     # Dirac tests
-    foreach( test ${saber_test_oops} )
-        string( FIND ${test} "quench_dirac" quench )
-        if( quench MATCHES 0 )
+    foreach( test ${saber_test_bump_quench} )
+        string( FIND ${test} "quench_dirac" start_index )
+        if( start_index MATCHES 0 )
             ecbuild_add_test( TARGET saber_test_${test}
                               MPI ${mpi}
                               OMP ${omp}
@@ -798,76 +582,114 @@ if( SABER_TEST_OOPS )
     endforeach()
 endif()
 
-# Tests depending on GSI B Climatology
-if( SABER_TEST_GSI )
-  # Link to yaml files
-  foreach( test ${saber_test_gsi} )
-      execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
-                       ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
-                       ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}.yaml )
-  endforeach()
+if( SABER_TEST_GSI_GEOS )
+    # 1 MPI task and 2 OpenMP threads
+    set( mpi 1 )
+    set( omp 2 )
 
-  # Link to nml files
-  foreach( test ${saber_test_gsi} )
-      execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
-                       ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.nml
-                       ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}.nml )
-  endforeach()
+    # Link to yaml files
+    foreach( test ${saber_test_gsi_geos} )
+        execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
+                         ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
+                         ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}.yaml )
+    endforeach()
 
-  # QUENCH tests
-  set( mpi 1 )
-  set( omp 2 )
+    # Link to nml files
+    foreach( test ${saber_test_gsi_geos} )
+        execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
+                         ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.nml
+                         ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}.nml )
+    endforeach()
 
-  # Dirac tests
-  foreach( test ${saber_test_gsi} )
-      string( FIND ${test} "quench_dirac" quench )
-      if( quench MATCHES 0 )
-          ecbuild_add_test( TARGET saber_test_${test}
-                            MPI ${mpi}
-                            OMP ${omp}
-                            COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_dirac.x
-                            ARGS testinput/${test}.yaml
-                            DEPENDS saber_quench_dirac.x )
-      endif()
-  endforeach()
+    # Dirac tests
+    foreach( test ${saber_test_gsi_geos} )
+        string( FIND ${test} "quench_dirac" start_index )
+        if( start_index MATCHES 0 )
+            ecbuild_add_test( TARGET saber_test_${test}
+                              MPI ${mpi}
+                              OMP ${omp}
+                              COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_dirac.x
+                              ARGS testinput/${test}.yaml
+                              DEPENDS saber_quench_dirac.x )
+        endif()
+    endforeach()
 endif()
 
-# Tests depending on spectral transforms
+if ( SABER_TEST_GSI_GFS )
+    # 1 MPI task and 2 OpenMP threads
+    set( mpi 1 )
+    set( omp 2 )
+
+    # Link to yaml files
+    foreach( test ${saber_test_gsi_gfs} )
+        execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
+                         ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
+                         ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}.yaml )
+     endforeach()
+
+    # Link to nml files
+    foreach( test ${saber_test_gsi_gfs} )
+        execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
+                         ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.nml
+                         ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}.nml )
+    endforeach()
+
+    # Dirac tests
+    foreach( test ${saber_test_gsi_gfs} )
+        string( FIND ${test} "quench_dirac" start_index )
+        if( start_index MATCHES 0 )
+            ecbuild_add_test( TARGET saber_test_${test}
+                              MPI ${mpi}
+                              OMP ${omp}
+                              COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_dirac.x
+                              ARGS testinput/${test}.yaml
+                              DEPENDS saber_quench_dirac.x )
+        endif()
+    endforeach()
+endif()
+
 if( SABER_TEST_SPECTRALB )
-  # Link to yaml files
-  foreach( test ${saber_test_spectralb} )
-      execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
-                       ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
-                       ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}.yaml )
-  endforeach()
+    # 1 OpenMP thread
+    set( omp 1 )
 
-  # QUENCH tests
-  set( mpi 1 )
-  set( omp 1 )
+    # Link to yaml files
+    foreach( test ${saber_test_spectralb} )
+        execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
+                         ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.yaml
+                         ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}.yaml )
+    endforeach()
 
-  # Adjoint/inverse tests
-  foreach( test ${saber_test_spectralb} )
-      string( FIND ${test} "quench_saber_block_test" quench )
-      if( quench MATCHES 0 )
-          ecbuild_add_test( TARGET saber_test_${test}
-                            MPI ${mpi}
-                            OMP ${omp}
-                            COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_saber_block_test.x
-                            ARGS testinput/${test}.yaml
-                            DEPENDS saber_quench_saber_block_test.x )
-      endif()
-  endforeach()
+    # Adjoint/inverse tests
+    foreach( test ${saber_test_spectralb} )
+        string( FIND ${test} "quench_saber_block_test" start_index )
+        if( start_index MATCHES 0 )
+            if ( test MATCHES quench_saber_block_test_spectralb_from_CS )
+                set( mpi 1 )
+            elseif(  test MATCHES quench_saber_block_test_spectralb_from_L15  )
+                set( mpi 1 )
+            else()
+                set( mpi 4 )
+            endif ()
+            ecbuild_add_test( TARGET saber_test_${test}
+                              MPI ${mpi}
+                              OMP ${omp}
+                              COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_saber_block_test.x
+                              ARGS testinput/${test}.yaml
+                              DEPENDS saber_quench_saber_block_test.x )
+        endif()
+    endforeach()
 
-  # Dirac tests
-  foreach( test ${saber_test_spectralb} )
-      string( FIND ${test} "quench_dirac" quench )
-      if( quench MATCHES 0 )
-          ecbuild_add_test( TARGET saber_test_${test}
-                            MPI ${mpi}
-                            OMP ${omp}
-                            COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_dirac.x
-                            ARGS testinput/${test}.yaml
-                            DEPENDS saber_quench_dirac.x )
-      endif()
-  endforeach()
+    # Dirac tests
+    foreach( test ${saber_test_spectralb} )
+        string( FIND ${test} "quench_dirac" start_index )
+        if( start_index MATCHES 0 )
+            set( mpi 1 )
+            ecbuild_add_test( TARGET saber_test_${test}
+                              MPI ${mpi}
+                              OMP ${omp}
+                              COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_dirac.x
+                              ARGS testinput/${test}.yaml
+                              DEPENDS saber_quench_dirac.x )
+        endif()
+    endforeach()
 endif()

@@ -929,7 +929,7 @@ real(kind_real),allocatable :: lon_vbal(:,:,:),lat_vbal(:,:,:)
 @:probe_in()
 
 ! Open file
-ncid = create_file(mpl,trim(nam%prefix)//'_sampling_grids',mpl%myproc)
+ncid = create_file(mpl,trim(nam%prefix)//'sampling_grids',mpl%myproc)
 
 ! Define dimensions
 nc0a_id = define_dim(mpl,ncid,'nc0a',geom%nc0a)

@@ -4,23 +4,26 @@
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
-if( gsibclim_FOUND )
+if( gsibec_FOUND )
     list(APPEND gsi_src_files_list
 
     # Covariance block
-    covariance/GSI_Covariance.h
-    covariance/GSI_Covariance.interface.F90
-    covariance/GSI_Covariance.interface.h
+    covariance/Covariance.cc
+    covariance/Covariance.h
+    covariance/Covariance.interface.F90
+    covariance/Covariance.interface.h
     covariance/gsi_covariance_mod.f90
 
     # Grid
-    grid/GSI_Grid.h
-    grid/GSI_Grid.interface.F90
-    grid/GSI_Grid.interface.h
+    grid/Grid.cc
+    grid/Grid.h
+    grid/Grid.interface.F90
+    grid/Grid.interface.h
     grid/gsi_grid_mod.f90
 
     # Interpolation block
-    interpolation/GSI_Interpolation.h
+    interpolation/Interpolation.cc
+    interpolation/Interpolation.h
 
     # Unstructured interpolation code ported from oops (until new interp code can be used)
     interpolation/unstructured_interp/saber_unstructured_interpolation_mod.F90
