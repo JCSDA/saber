@@ -5,12 +5,10 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_OOPS_INSTANTIATELOCALIZATIONFACTORY_H_
-#define SABER_OOPS_INSTANTIATELOCALIZATIONFACTORY_H_
+#pragma once
 
 #include "oops/generic/LocalizationBase.h"
 
-#include "saber/oops/instantiateSaberBlockFactory.h"
 #include "saber/oops/Localization.h"
 
 namespace saber {
@@ -19,12 +17,8 @@ namespace saber {
 
 template <typename MODEL> void instantiateLocalizationFactory() {
   static oops::LocalizationMaker<MODEL, Localization<MODEL> >  makerSABER_("SABER");
-
-  instantiateSaberBlockFactory<MODEL>();
 }
 
 // -----------------------------------------------------------------------------
 
 }  // namespace saber
-
-#endif  // SABER_OOPS_INSTANTIATELOCALIZATIONFACTORY_H_

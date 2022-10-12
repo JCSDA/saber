@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_BUMP_BUMP_H_
-#define SABER_BUMP_BUMP_H_
+#pragma once
 
 #include <algorithm>
 #include <fstream>
@@ -21,8 +20,6 @@
 
 #include "eckit/config/Configuration.h"
 
-#include "oops/base/Increment.h"
-#include "oops/base/IncrementEnsemble.h"
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/ConfigFunctions.h"
@@ -34,78 +31,17 @@
 
 #include "saber/bump/type_bump.h"
 
-namespace eckit {
-  class Configuration;
-}
-
-namespace oops {
-  class Variables;
-}
-
 namespace saber {
+namespace bump {
 
 // -----------------------------------------------------------------------------
-/// Parameters describing BUMP components input (from generic text files).
-class BUMPInputNcmpParameters : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(BUMPInputNcmpParameters, oops::Parameters)
 
- public:
-  /// File path
-  oops::RequiredParameter<std::string> filepath{"filepath", this};
-};
-
-// -----------------------------------------------------------------------------
-/// Parameters describing BUMP parameters input (from model Increment files).
-template <typename MODEL> class BUMPInputParameters : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(BUMPInputParameters, oops::Parameters)
-  typedef typename oops::Increment<MODEL>::ReadParameters_ ReadParameters_;
-
- public:
-  /// Parameter name.
-  oops::RequiredParameter<std::string> param{"parameter", this};
-  /// Component index
-  oops::Parameter<int> component{"component", 1, this};
-  /// Parameters used for reading Increment.
-  ReadParameters_ incread{this};
-};
-
-// -----------------------------------------------------------------------------
-/// Parameters describing BUMP components output (to generic text files)
-class BUMPOutputNcmpParameters : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(BUMPOutputNcmpParameters, oops::Parameters)
-
- public:
-  /// File path
-  oops::RequiredParameter<std::string> filepath{"filepath", this};
-};
-
-// -----------------------------------------------------------------------------
-/// Parameters describing BUMP parameters output (to model Increment files)
-template <typename MODEL> class BUMPOutputParameters : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(BUMPOutputParameters, oops::Parameters)
-  typedef typename oops::Increment<MODEL>::WriteParameters_ WriteParameters_;
-
- public:
-  /// Parameter name.
-  oops::RequiredParameter<std::string> param{"parameter", this};
-  /// Component index
-  oops::Parameter<int> component{"component", 1, this};
-  /// Parameters used for writing Increment.
-  WriteParameters_ incwrite{this};
-};
-
-template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(BUMP_Parameters, oops::Parameters)
+class BUMPParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(BUMPParameters, oops::Parameters)
 
  public:
   // External parameters
 
-  // Universe radius (increment)
-  oops::OptionalParameter<eckit::LocalConfiguration> universeRadius{"universe radius", this};
-  // Components input parameters
-  oops::OptionalParameter<BUMPInputNcmpParameters> inputNcmp{"input number of components", this};
-  // Input parameters
-  oops::OptionalParameter<std::vector<BUMPInputParameters<MODEL>>> input{"input", this};
   // Ensemble 1 parameters
   oops::OptionalParameter<eckit::LocalConfiguration> ensemble1{"ensemble", this};
   // Ensemble 2 parameters
@@ -114,10 +50,6 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
   oops::OptionalParameter<double> msvalr{"msvalr", this};
   // Grids
   oops::OptionalParameter<eckit::LocalConfiguration> grids{"grids", this};
-  // Output number of components
-  oops::OptionalParameter<BUMPOutputNcmpParameters> outputNcmp{"output number of components", this};
-  // Output parameters
-  oops::OptionalParameter<std::vector<BUMPOutputParameters<MODEL>>> output{"output", this};
   // Operators application
   oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> appConfs{"operators application",
     this};
@@ -483,29 +415,31 @@ template <typename MODEL> class BUMP_Parameters : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
-template<typename MODEL> class BUMP {
-  typedef oops::Geometry<MODEL>                           Geometry_;
-  typedef oops::Increment<MODEL>                          Increment_;
-  typedef BUMP_Parameters<MODEL>                          BUMP_Parameters_;
-  typedef oops::State<MODEL>                              State_;
-  typedef std::shared_ptr<oops::IncrementEnsemble<MODEL>> EnsemblePtr_;
-
+class BUMP {
  public:
-  // Constructors
-  BUMP(const Geometry_ &,
-       const Geometry_ &,
+  // Constructor
+  BUMP(const eckit::mpi::Comm &,
+       const atlas::FunctionSpace &,
+       const atlas::FieldSet &,
+       const std::vector<size_t> &,
        const oops::Variables &,
-       const BUMP_Parameters_ &,
-       const State_ &,
-       const State_ &,
-       const EnsemblePtr_ ens1 = NULL,
-       const EnsemblePtr_ ens2 = NULL);
+       const BUMPParameters &,
+       const std::vector<atlas::FieldSet> &,
+       const atlas::FunctionSpace & functionSpace2 = NULL,
+       const atlas::FieldSet & extraFields2 = NULL,
+       const std::vector<atlas::FieldSet> & fsetVec2 = {},
+       const size_t & ens1_ne_in = 0,
+       const size_t & ens2_ne_in = 0);
 
-  // Copy
+  // Copy-constructor
   explicit BUMP(BUMP &);
 
   // Destructor
   ~BUMP();
+
+  // Accessors
+  const std::vector<eckit::LocalConfiguration> memberConfig1() const {return membersConfig1_;}
+  const std::vector<eckit::LocalConfiguration> memberConfig2() const {return membersConfig2_;}
 
   // Fortran interfaces
   void addMember(const atlas::FieldSet &, const int &, const int &) const;
@@ -523,726 +457,21 @@ template<typename MODEL> class BUMP {
   void multiplyNicas(atlas::FieldSet &) const;
   void multiplyPsiChiToUV(atlas::FieldSet &) const;
   void multiplyPsiChiToUVAd(atlas::FieldSet &) const;
-  void getNcmp(const int &, const int &, int &) const;
   void getParameter(const std::string &, const int &, const int &, atlas::FieldSet &) const;
-  void setNcmp(const int &, const int &, const int &) const;
+  void setNcmp(const int &, const int &) const;
   void setParameter(const std::string &, const int &, const atlas::FieldSet &) const;
   void partialDealloc() const;
 
  private:
+  BUMPParameters params_;
   const oops::Variables activeVars_;
-  BUMP_Parameters_ params_;
   std::vector<int> keyBUMP_;
+  std::vector<eckit::LocalConfiguration> membersConfig1_;
+  std::vector<eckit::LocalConfiguration> membersConfig2_;
   std::vector<oops::Variables> activeVarsPerGrid_;
 };
 
 // -----------------------------------------------------------------------------
 
-template<typename MODEL>
-BUMP<MODEL>::BUMP(const Geometry_ & geom1,
-                  const Geometry_ & geom2,
-                  const oops::Variables & activeVars,
-                  const BUMP_Parameters_ & params,
-                  const State_ & xb,
-                  const State_ & fg,
-                  const EnsemblePtr_ ens1,
-                  const EnsemblePtr_ ens2)
-  : activeVars_(activeVars), params_(params), keyBUMP_(), activeVarsPerGrid_() {
-  oops::Log::trace() << "BUMP<MODEL>::BUMP construction starting" << std::endl;
-
-  // Define base increments
-  Increment_ dx1(geom1, activeVars_, xb.validTime());
-  Increment_ dx2(geom2, activeVars_, xb.validTime());
-
-  // Get ensemble 1 size if ensemble 1 is available
-  int ens1_ne = 0;
-  if (ens1) ens1_ne = ens1->size();
-  const boost::optional<eckit::LocalConfiguration> &ensembleConfig1 = params.ensemble1.value();
-  std::vector<eckit::LocalConfiguration> membersConfig1;
-  if (ensembleConfig1 != boost::none) {
-    // Abort if both "members" and "members from template" are specified
-    if (ensembleConfig1->has("members") && ensembleConfig1->has("members from template"))
-      ABORT("BUMP: both members and members from template are specified");
-
-    if (ensembleConfig1->has("members")) {
-      // Explicit members
-      ensembleConfig1->get("members", membersConfig1);
-      ens1_ne = membersConfig1.size();
-    } else if (ensembleConfig1->has("members from template")) {
-      // Templated members
-      eckit::LocalConfiguration templateConfig;
-      ensembleConfig1->get("members from template", templateConfig);
-      eckit::LocalConfiguration membersTemplate;
-      templateConfig.get("template", membersTemplate);
-      std::string pattern;
-      templateConfig.get("pattern", pattern);
-      templateConfig.get("nmembers", ens1_ne);
-      int start = 1;
-      if (templateConfig.has("start")) {
-        templateConfig.get("start", start);
-      }
-      std::vector<int> except;
-      if (templateConfig.has("except")) {
-        templateConfig.get("except", except);
-      }
-      int zpad = 0;
-      if (templateConfig.has("zero padding")) {
-        templateConfig.get("zero padding", zpad);
-      }
-      int count = start;
-      for (int ie=0; ie < ens1_ne; ++ie) {
-        while (std::count(except.begin(), except.end(), count)) {
-          count += 1;
-        }
-        eckit::LocalConfiguration memberConfig(membersTemplate);
-        util::seekAndReplace(memberConfig, pattern, count, zpad);
-        membersConfig1.push_back(memberConfig);
-        count += 1;
-      }
-    } else {
-      ABORT("BUMP: ensemble 1 not specified");
-    }
-  }
-
-  // Get ensemble 2 size if ensemble 2 is available
-  int ens2_ne = 0;
-  if (ens2) ens2_ne = ens2->size();
-  const boost::optional<eckit::LocalConfiguration> &ensembleConfig2 = params.ensemble2.value();
-  std::vector<eckit::LocalConfiguration> membersConfig2;
-  if (ensembleConfig2 != boost::none) {
-    // Abort if both "members" and "members from template" are specified
-    if (ensembleConfig2->has("members") && ensembleConfig2->has("members from template"))
-      ABORT("BUMP: both members and members from template are specified");
-
-    if (ensembleConfig2->has("members")) {
-      // Explicit members
-      ensembleConfig2->get("members", membersConfig2);
-      ens2_ne = membersConfig2.size();
-    } else if (ensembleConfig2->has("members from template")) {
-      // Templated members
-      eckit::LocalConfiguration templateConfig;
-      ensembleConfig2->get("members from template", templateConfig);
-      eckit::LocalConfiguration membersTemplate;
-      templateConfig.get("template", membersTemplate);
-      std::string pattern;
-      templateConfig.get("pattern", pattern);
-      templateConfig.get("nmembers", ens2_ne);
-      int start = 1;
-      if (templateConfig.has("start")) {
-        templateConfig.get("start", start);
-      }
-      std::vector<int> except;
-      if (templateConfig.has("except")) {
-        templateConfig.get("except", except);
-      }
-      int zpad = 0;
-      if (templateConfig.has("zero padding")) {
-        templateConfig.get("zero padding", zpad);
-      }
-      int count = start;
-      for (int ie=0; ie < ens2_ne; ++ie) {
-        while (std::count(except.begin(), except.end(), count)) {
-          count += 1;
-        }
-        eckit::LocalConfiguration memberConfig(membersTemplate);
-        util::seekAndReplace(memberConfig, pattern, count, zpad);
-        membersConfig2.push_back(memberConfig);
-        count += 1;
-      }
-    } else {
-      ABORT("BUMP: ensemble 2 not specified");
-    }
-  }
-
-  // Read universe size
-  oops::Log::info() << "Read universe radius" << std::endl;
-  atlas::FieldSet universe_rad = atlas::FieldSet();
-  const boost::optional<eckit::LocalConfiguration> &universeRadius = params.universeRadius.value();
-  if (universeRadius != boost::none) {
-    // Read universe radius
-    dx1.read(*universeRadius);
-
-    // Get ATLAS fieldset
-    for (const auto & field : dx1.fieldSet()) {
-      universe_rad.add(field);
-    }
-  }
-
-  // Add ensemble sizes
-  eckit::LocalConfiguration conf(params.toConfiguration());
-  if (!conf.has("ens1_ne")) conf.set("ens1_ne", ens1_ne);
-  if (!conf.has("ens2_ne")) conf.set("ens2_ne", ens2_ne);
-
-  // Add missing value
-  const double msvalr = util::missingValue(double());
-  conf.set("msvalr", msvalr);
-
-  // Grids
-  std::vector<eckit::LocalConfiguration> grids;
-
-  // Get global prefix
-  std::string prefix;
-  if (conf.has("prefix")) {
-    conf.get("prefix", prefix);
-  } else {
-    prefix = "bump";
-  }
-
-  // Get the grids configuration from input configuration and complete it
-  if (conf.has("grids")) {
-    // Get grids from input configuration
-    conf.get("grids", grids);
-    ASSERT(grids.size() > 0);
-  } else {
-    // Create one empty configuration
-    eckit::LocalConfiguration emptyConf;
-    grids.push_back(emptyConf);
-  }
-
-  // Check grids number
-  ASSERT(grids.size() > 0);
-
-  // Loop over grids
-  for (unsigned int jgrid = 0; jgrid < grids.size(); ++jgrid) {
-    // Add prefix
-    if (!grids[jgrid].has("prefix")) {
-      std::ostringstream ss;
-      ss << std::setw(2) << std::setfill('0') << jgrid;
-      grids[jgrid].set("prefix", prefix + "_" + ss.str());
-    }
-
-    // Get ATLAS variable names
-    std::vector<std::string> vars_atlas;
-    for (const auto & field : dx1.fieldSet()) {
-      vars_atlas.push_back(field.name());
-    }
-
-    // Add input variables to the grid configuration
-    std::vector<std::string> vars_str;
-    if (grids[jgrid].has("variables")) {
-      grids[jgrid].get("variables", vars_str);
-    } else {
-      vars_str = vars_atlas;
-      grids[jgrid].set("variables", vars_str);
-    }
-    grids[jgrid].set("nv", vars_str.size());
-
-    // Save variables for each grid
-    const oops::Variables gridVars(vars_str);
-    activeVarsPerGrid_.push_back(gridVars);
-
-    // Get the required number of levels add it to the grid configuration
-    int nl0 = 0;
-    for (const auto & field : dx1.fieldSet()) {
-      if (gridVars.has(field.name())) {
-        nl0 = std::max(nl0, std::max(field.levels(), 1));
-      }
-    }
-    grids[jgrid].set("nl0", nl0);
-
-    // Add level index for 2D fields (first or last, first by default)
-    if (!grids[jgrid].has("lev2d")) {
-      grids[jgrid].set("lev2d", "first");
-    }
-
-    // Print configuration for this grid
-    oops::Log::info() << "Grid " << jgrid << ": " << grids[jgrid] << std::endl;
-
-    // Create BUMP instance
-    int keyBUMP = 0;
-    bump_create_f90(keyBUMP, &geom1.getComm(),
-                    geom1.functionSpace().get(),
-                    geom1.extraFields().get(),
-                    conf, grids[jgrid], universe_rad.get());
-    keyBUMP_.push_back(keyBUMP);
-
-    // Second geometry
-    if (ens2 || (ensembleConfig2 != boost::none)) {
-      bump_second_geometry_f90(keyBUMP,
-                               geom2.functionSpace().get(),
-                               geom2.extraFields().get());
-    }
-  }
-
-  // Add members of ensemble 1
-  if (ens1) {
-    oops::Log::info() << "--- Add members of ensemble 1" << std::endl;
-    for (int ie = 0; ie < ens1_ne; ++ie) {
-      oops::Log::info() << "      Member " << ie+1 << " / " << ens1_ne << std::endl;
-      this->addMember((*ens1)[ie].fieldSet(), ie, 1);
-    }
-  }
-
-  // Add members of ensemble 2
-  if (ens2) {
-    oops::Log::info() << "--- Add members of ensemble 2" << std::endl;
-    for (int ie = 0; ie < ens2_ne; ++ie) {
-      oops::Log::info() << "      Member " << ie+1 << " / " << ens2_ne << std::endl;
-      this->addMember((*ens2)[ie].fieldSet(), ie, 2);
-    }
-  }
-
-  // Reset parameters
-  params_.validateAndDeserialize(conf);
-
-  // Read number of components
-  oops::Log::info() << "    Read number of components" << std::endl;
-  const boost::optional<BUMPInputNcmpParameters> &inputNcmp = params_.inputNcmp.value();
-  if (inputNcmp != boost::none) {
-    // Open file
-    std::ifstream infile;
-    infile.open(inputNcmp->filepath.value().c_str());
-
-    if (infile.is_open()) {
-      // Read file
-      std::string line;
-      while (std::getline(infile, line)) {
-        // Split string
-        std::istringstream iss(line);
-        std::vector<std::string> split(std::istream_iterator<std::string>{iss},
-                                       std::istream_iterator<std::string>());
-        const std::string variable(split[0]);
-        const int ncmp = std::stoi(split[1]);
-
-        // Get grid and variable index
-        int igrid = -1;
-        int ivar = -1;
-        for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-          for (size_t jvar=0; jvar < activeVarsPerGrid_[jgrid].size(); ++jvar) {
-            if (activeVarsPerGrid_[jgrid][jvar] == variable) {
-              igrid = jgrid;
-              ivar = jvar;
-              break;
-            }
-          }
-        }
-        if (igrid == -1 || ivar == -1) {
-           ABORT("BUMP::BUMP: cannot find indices for variable " + variable);
-        }
-
-        // Set parameter
-        this->setNcmp(igrid, ivar, ncmp);
-        oops::Log::test() << "Number of input BUMP components for " << variable << ": "
-                          << ncmp << std::endl;
-      }
-
-      // Close file
-      infile.close();
-    } else {
-      ABORT("BUMP::BUMP: cannot open file");
-    }
-  }
-
-  // Read parameters from files
-  oops::Log::info() << "    Read parameters from files" << std::endl;
-  const boost::optional<std::vector<BUMPInputParameters<MODEL>>> &input = params_.input.value();
-  if (input != boost::none) {
-    // Set input parameters
-    for (const auto & inputParam : *input) {
-      // Read increment
-      dx1.read(inputParam.incread);
-
-      // Set parameter to BUMP
-      const std::string & param = inputParam.param;
-      const int & component = inputParam.component;
-      this->setParameter(param, component, dx1.fieldSet());
-      oops::Log::test() << "Norm of input BUMP parameter " << param << " - " << component << ": "
-                        << dx1.norm() << std::endl;
-    }
-  }
-
-  // Check what needs to be updated
-  const boost::optional<bool> &update_vbal_cov = params_.update_vbal_cov.value();
-  const boost::optional<bool> &update_var = params_.update_var.value();
-  const boost::optional<bool> &update_mom = params_.update_mom.value();
-
-  // Load ensemble members sequentially
-  if (ensembleConfig1 != boost::none) {
-    for (int ie = 0; ie < ens1_ne; ++ie) {
-      // Read member
-      oops::Log::info() <<
-      "-------------------------------------------------------------------" << std::endl;
-      oops::Log::info() << "--- Load member " << ie+1 << " / " << ens1_ne << std::endl;
-      dx1.read(membersConfig1[ie]);
-
-      if (update_vbal_cov != boost::none) {
-        if (*update_vbal_cov) {
-          // Update vertical covariance
-          this->updateVbalCov(dx1.fieldSet(), ie);
-        }
-      }
-      if (update_var != boost::none) {
-        if (*update_var) {
-          // Update variance
-          this->updateVar(dx1.fieldSet(), ie);
-        }
-      }
-      if (update_mom != boost::none) {
-        if (*update_mom) {
-          // Update moments
-          this->updateMom(dx1.fieldSet(), ie, 1);
-        }
-      }
-    }
-  }
-  if (ensembleConfig2 != boost::none) {
-    for (int ie = 0; ie < ens2_ne; ++ie) {
-      // Read member
-      oops::Log::info() <<
-      "-------------------------------------------------------------------" << std::endl;
-      oops::Log::info() << "--- Load member " << ie+1 << " / " << ens2_ne << std::endl;
-      dx2.read(membersConfig2[ie]);
-      if (update_mom != boost::none) {
-        if (*update_mom) {
-          // Update moments
-          this->updateMom(dx2.fieldSet(), ie, 2);
-        }
-      }
-    }
-  }
-
-  // Run drivers
-  this->runDrivers();
-
-  // Partial deallocation
-  this->partialDealloc();
-
-  const boost::optional<BUMPOutputNcmpParameters> &outputNcmp = params_.outputNcmp.value();
-  const boost::optional<std::vector<BUMPOutputParameters<MODEL>>> &output = params_.output.value();
-  if (outputNcmp != boost::none || output != boost::none) {
-    // Write parameters
-    oops::Log::info() <<
-    "-------------------------------------------------------------------" << std::endl;
-    oops::Log::info() << "--- Write parameters" << std::endl;
-  }
-  if (outputNcmp != boost::none) {
-    // Open file
-    std::ofstream outfile;
-    outfile.open(outputNcmp->filepath.value().c_str());
-
-    if (outfile.is_open()) {
-      oops::Log::info() << "Write number of components in file "
-                        << outputNcmp->filepath.value() << std::endl;
-
-      // Write parameter
-      for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-        for (size_t jvar=0; jvar < activeVarsPerGrid_[jgrid].size(); ++jvar) {
-          int ncmp;
-          this->getNcmp(jgrid, jvar, ncmp);
-          outfile << activeVarsPerGrid_[jgrid][jvar] << ' ' << std::scientific
-                  << std::setprecision(3) << ncmp << std::endl;
-          oops::Log::test() << "Number of BUMP output components for "
-                            << activeVarsPerGrid_[jgrid][jvar] << ": " << ncmp << std::endl;
-        }
-      }
-
-      // Close file
-      outfile.close();
-    } else {
-      ABORT("BUMP::write: cannot open file");
-    }
-  }
-  if (output != boost::none) {
-    for (const auto & outputParam : *output) {
-      // Get parameter
-      const std::string & param = outputParam.param;
-
-      // Get component
-      const int & component = outputParam.component;
-
-      // Select geometry
-      if (param == "loc_a_lr"
-       || param == "loc_rh_lr"
-       || param == "loc_rh1_lr"
-       || param == "loc_rh2_lr"
-       || param == "loc_rhc_lr"
-       || param == "loc_rv_lr"
-       || param == "dirac_diag_loc_lr"
-       || param == "nicas_norm_lr"
-       || param == "dirac_nicas_lr"
-       || param == "dirac_nicas_bens_lr") {
-        // Get parameter
-        dx2.zero(xb.validTime());
-        this->getParameter(param, component, 2, dx2.fieldSet());
-        dx2.synchronizeFields();
-
-        // Write parameter
-        dx2.write(outputParam.incwrite);
-        oops::Log::test() << "Norm of BUMP output parameter " << param << " - " << component << ": "
-                          << dx2.norm() << std::endl;
-      } else {
-        // Get parameter
-        dx1.zero(xb.validTime());
-        this->getParameter(param, component, 1, dx1.fieldSet());
-        dx1.synchronizeFields();
-
-        // Write parameter
-        dx1.write(outputParam.incwrite);
-        oops::Log::test() << "Norm of BUMP output parameter " << param << " - " << component << ": "
-                          << dx1.norm() << std::endl;
-      }
-    }
-  }
-
-  // Apply operators
-  const boost::optional<std::vector<eckit::LocalConfiguration>>
-    &appConfs = params_.appConfs.value();
-  if (appConfs != boost::none) {
-    oops::Log::info() <<
-    "-------------------------------------------------------------------" << std::endl;
-    oops::Log::info() << "--- Apply operators" << std::endl;
-    if (appConfs->size() > 0) {
-      for (const auto & appConf : *appConfs) {
-        // Read input file
-        eckit::LocalConfiguration inputConf(appConf, "input");
-        oops::Log::info() << "       - Input file: " << inputConf << std::endl;
-        dx1.read(inputConf);
-
-        // Apply BUMP operator
-        std::vector<std::string> bumpOperators;
-        appConf.get("bump operators", bumpOperators);
-        for (const auto & bumpOperator : bumpOperators) {
-          oops::Log::info() << "         Apply operator " << bumpOperator << std::endl;
-          if (bumpOperator == "multiplyVbal") {
-            this->multiplyVbal(dx1.fieldSet());
-          } else if (bumpOperator == "inverseMultiplyVbal") {
-            this->inverseMultiplyVbal(dx1.fieldSet());
-          } else if (bumpOperator == "multiplyVbalAd") {
-            this->multiplyVbalAd(dx1.fieldSet());
-          } else if (bumpOperator == "inverseMultiplyAd") {
-            this->inverseMultiplyVbalAd(dx1.fieldSet());
-          } else if (bumpOperator == "multiplyStdDev") {
-            this->multiplyStdDev(dx1.fieldSet());
-          } else if (bumpOperator == "inverseMultiplyStdDev") {
-            this->inverseMultiplyStdDev(dx1.fieldSet());
-          } else if (bumpOperator == "multiplyNicas") {
-            this->multiplyNicas(dx1.fieldSet());
-          } else {
-              ABORT("Wrong bump operator: " + bumpOperator);
-          }
-        }
-
-        // ATLAS fieldset to Increment_
-        dx1.synchronizeFields();
-
-        // Write file
-        eckit::LocalConfiguration outputConf(appConf, "output");
-        oops::Log::info() << "         Output file: " << outputConf << std::endl;
-        dx1.write(outputConf);
-      }
-    }
-  }
-
-  oops::Log::trace() << "BUMP:BUMP constructed" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-BUMP<MODEL>::BUMP(BUMP & other) : keyBUMP_(), activeVarsPerGrid_() {
-  for (unsigned int jgrid = 0; jgrid < other.keyBump_.size(); ++jgrid) {
-    keyBUMP_.push_back(other.keyBUMP_[jgrid]);
-    activeVarsPerGrid_.push_back(other.activeVarsPerGrid_[jgrid]);
-  }
-  other.keyBUMP_.clear();
-  other.activeVarsPerGrid_.clear();
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-BUMP<MODEL>::~BUMP() {
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    if (keyBUMP_[jgrid] > 0) bump_dealloc_f90(keyBUMP_[jgrid]);
-  }
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void BUMP<MODEL>::addMember(const atlas::FieldSet & fset, const int & ie,
-                            const int & iens) const {
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_add_member_f90(keyBUMP_[jgrid], fset.get(), ie+1, iens);
-  }
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void BUMP<MODEL>::updateVbalCov(const atlas::FieldSet & fset, const int & ie) const {
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_update_vbal_cov_f90(keyBUMP_[jgrid], fset.get(), ie+1);
-  }
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void BUMP<MODEL>::updateVar(const atlas::FieldSet & fset, const int & ie) const {
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_update_var_f90(keyBUMP_[jgrid], fset.get(), ie+1);
-  }
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void BUMP<MODEL>::updateMom(const atlas::FieldSet & fset, const int & ie,
-                            const int & iens) const {
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_update_mom_f90(keyBUMP_[jgrid], fset.get(), ie+1, iens);
-  }
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void BUMP<MODEL>::runDrivers() const {
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_run_drivers_f90(keyBUMP_[jgrid]);
-  }
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void BUMP<MODEL>::multiplyVbal(atlas::FieldSet & fset) const {
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_apply_vbal_f90(keyBUMP_[jgrid], fset.get());
-  }
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void BUMP<MODEL>::inverseMultiplyVbal(atlas::FieldSet & fset) const {
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_apply_vbal_inv_f90(keyBUMP_[jgrid], fset.get());
-  }
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void BUMP<MODEL>::multiplyVbalAd(atlas::FieldSet & fset) const {
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_apply_vbal_ad_f90(keyBUMP_[jgrid], fset.get());
-  }
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void BUMP<MODEL>::inverseMultiplyVbalAd(atlas::FieldSet & fset) const {
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_apply_vbal_inv_ad_f90(keyBUMP_[jgrid], fset.get());
-  }
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void BUMP<MODEL>::multiplyStdDev(atlas::FieldSet & fset) const {
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_apply_stddev_f90(keyBUMP_[jgrid], fset.get());
-  }
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void BUMP<MODEL>::inverseMultiplyStdDev(atlas::FieldSet & fset) const {
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_apply_stddev_inv_f90(keyBUMP_[jgrid], fset.get());
-  }
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void BUMP<MODEL>::randomizeNicas(atlas::FieldSet & fset) const {
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_randomize_f90(keyBUMP_[jgrid], fset.get());
-  }
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void BUMP<MODEL>::multiplyNicas(atlas::FieldSet & fset) const {
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_apply_nicas_f90(keyBUMP_[jgrid], fset.get());
-  }
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void BUMP<MODEL>::multiplyPsiChiToUV(atlas::FieldSet & fset) const {
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_psichi_to_uv_f90(keyBUMP_[jgrid], fset.get());
-  }
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void BUMP<MODEL>::multiplyPsiChiToUVAd(atlas::FieldSet & fset) const {
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_psichi_to_uv_ad_f90(keyBUMP_[jgrid], fset.get());
-  }
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void BUMP<MODEL>::getNcmp(const int & jgrid, const int & jvar, int & ncmp) const {
-  bump_get_ncmp_f90(keyBUMP_[jgrid], jvar, ncmp);
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void BUMP<MODEL>::getParameter(const std::string & param, const int & icmp,
-  const int & igeom, atlas::FieldSet & fset) const {
-  const int npar = param.size();
-  const char *cpar = param.c_str();
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_get_parameter_f90(keyBUMP_[jgrid], npar, cpar, icmp, igeom, fset.get());
-  }
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void BUMP<MODEL>::setNcmp(const int & jgrid, const int & jvar, const int & ncmp) const {
-  bump_set_ncmp_f90(keyBUMP_[jgrid], jvar, ncmp);
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void BUMP<MODEL>::setParameter(const std::string & param, const int & icmp,
-  const atlas::FieldSet & fset) const {
-  const int npar = param.size();
-  const char *cpar = param.c_str();
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_set_parameter_f90(keyBUMP_[jgrid], npar, cpar, icmp, fset.get());
-  }
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void BUMP<MODEL>::partialDealloc() const {
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_partial_dealloc_f90(keyBUMP_[jgrid]);
-  }
-}
-
-// -----------------------------------------------------------------------------
-
+}  // namespace bump
 }  // namespace saber
-
-#endif  // SABER_BUMP_BUMP_H_

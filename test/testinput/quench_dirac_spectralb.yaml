@@ -4,20 +4,20 @@ geometry:
     type : regular_gaussian
     N : 15
   levels: 70
+  partitioner: ectrans
 initial condition:
   date: 2010-01-01T12:00:00Z
   state variables: &vars [psi_inc]
 background error:
   covariance model: SABER
-  saber blocks:
-  - saber block name: SPCTRL_COV
-    saber central block: true
-    input variables: *vars
-    output variables: *vars
+  saber central block:
+    saber block name: spectral covariance
     spectralb:
       covariance_file: testdata/CovStats.nc
       gauss_grid_uid: F15
       umatrix_netcdf_names: [PSI_inc_Uv_matrix]
+  saber outer blocks:
+  - saber block name: spectral to gauss
 dirac:
   lon: [1.980931]
   lat: [44.220188]

@@ -4,8 +4,8 @@
  * This software is licensed under the terms of the Apache Licence Version 2.0 
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0. 
  */
-#ifndef SABER_SPECTRALB_COVARIANCESTATISTICS_H_
-#define SABER_SPECTRALB_COVARIANCESTATISTICS_H_
+
+#pragma once
 
 #include <map>
 #include <memory>
@@ -13,17 +13,11 @@
 #include <string>
 #include <vector>
 
-#include "eckit/exception/Exceptions.h"
-#include "eckit/memory/NonCopyable.h"
-
-#include "oops/util/Logger.h"
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"
 
-#include "atlas/array.h"
 #include "atlas/field.h"
 
-#include "saber/spectralb/CovarianceStatisticsUtils.h"
 #include "saber/spectralb/spectralbParameters.h"
 
 // Forward declarations
@@ -35,16 +29,14 @@ namespace saber {
 namespace spectralb {
 
 // 'CovStat_ErrorCov': class for covariance statistics associated with the error covariance;
-template<typename MODEL>
 class CovStat_ErrorCov {
-  typedef oops::Geometry<MODEL>      Geometry_;
-  typedef spectralbParameters<MODEL> Parameters_;
+  typedef spectralbParameters Parameters_;
 
  public:
   static const std::string classname() {return "saber::CovStat_ErrorCov";}
 
-  CovStat_ErrorCov(const Geometry_ & geom_,
-                   const oops::Variables & vars,
+  CovStat_ErrorCov(const std::vector<size_t> &,
+                   const oops::Variables &,
                    const Parameters_ &);
 
   /// \details getSpectralUMatrix() gets the square root of the spectral vertical covariances for
@@ -90,49 +82,3 @@ class CovStat_ErrorCov {
 
 }  // namespace spectralb
 }  // namespace saber
-// end of Header definition
-
-// start of Header implementation
-namespace saber {
-namespace spectralb {
-
-template<typename MODEL>
-CovStat_ErrorCov<MODEL>::CovStat_ErrorCov(const Geometry_ & geom_,
-                                          const oops::Variables & vars,
-                                          const Parameters_ & params) :
-  covarianceFileName_(params.covarianceFile),
-  modelLevels_(geom_.variableSizes(vars)[0]),
-  netCDFSpectralBins_(getNetCDFSpectralBins(params)),
-  spectralUMatrices_(createUMatrices(vars, modelLevels_,
-                                     netCDFSpectralBins_, params)),
-  spectralVerticalCovariances_(createSpectralCovariances(
-                               vars, modelLevels_, netCDFSpectralBins_,
-                               spectralUMatrices_, params)),
-  spectralSD_(createSpectralSD(vars, modelLevels_,
-                               spectralVerticalCovariances_)),
-  spectralVerticalCorrelations_(createSpectralCorrelations(
-                                vars, modelLevels_, spectralVerticalCovariances_,
-                                spectralSD_))
-{
-  for (std::size_t lvl : geom_.variableSizes(vars)) {
-    if (static_cast<int>(lvl) != modelLevels_) {
-      throw eckit::UnexpectedState("spectral covariance block assumes all fields have "
-                                   "same number of model levels");
-    }
-  }
-}
-
-template<typename MODEL>
-void CovStat_ErrorCov<MODEL>::print(std::ostream & os) const {
-  oops::Log::trace() <<
-    "Covariance Statistics (SABER spectral B, error covariance) print starting" << std::endl;
-
-  os << std::endl << "  covstats print";
-  oops::Log::trace() <<
-    "Covariance Statistics (SABER spectral B, error covariance) print done" << std::endl;
-}
-
-}  // namespace spectralb
-}  // namespace saber
-
-#endif  // SABER_SPECTRALB_COVARIANCESTATISTICS_H_

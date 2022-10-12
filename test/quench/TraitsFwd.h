@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef QUENCH_TRAITSFWD_H_
-#define QUENCH_TRAITSFWD_H_
+#pragma once
 
 #include <string>
 
@@ -32,5 +31,3 @@ struct Traits {
 };
 
 }  // namespace quench
-
-#endif  // QUENCH_TRAITSFWD_H_

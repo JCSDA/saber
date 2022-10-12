@@ -13,12 +13,14 @@ bump:
   rv:
     var: [10]
   strategy: specific_univariate
-  output:
-  - filepath: testdata/quench_error_covariance_training_bump_nicas/cor_rh
-    parameter: cor_rh
-  - filepath: testdata/quench_error_covariance_training_bump_nicas/cor_rv
-    parameter: cor_rv
   write_nicas_local: true
+output:
+- parameter: cor_rh
+  file:
+    filepath: testdata/quench_error_covariance_training_bump_nicas/cor_rh
+- parameter: cor_rv
+  file:
+    filepath: testdata/quench_error_covariance_training_bump_nicas/cor_rv
 geometry:
   function space: StructuredColumns
   grid:

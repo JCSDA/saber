@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_OOPS_LOCALIZATION_H_
-#define SABER_OOPS_LOCALIZATION_H_
+#pragma once
 
 #include <memory>
 #include <sstream>
@@ -22,8 +21,9 @@
 #include "oops/util/Duration.h"
 #include "oops/util/Logger.h"
 
-#include "saber/oops/SaberBlockBase.h"
+#include "saber/oops/ReadInputFields.h"
 #include "saber/oops/SaberBlockParametersBase.h"
+#include "saber/oops/SaberCentralBlockBase.h"
 
 namespace eckit {
   class Configuration;
@@ -41,8 +41,6 @@ template<typename MODEL>
 class Localization : public oops::LocalizationBase<MODEL> {
   typedef oops::Geometry<MODEL>               Geometry_;
   typedef oops::Increment<MODEL>              Increment_;
-  typedef SaberBlockBase<MODEL>               SaberBlockBase_;
-  typedef SaberBlockParametersWrapper<MODEL>  SaberBlockParametersWrapper_;
   typedef oops::State<MODEL>                  State_;
 
  public:
@@ -56,34 +54,66 @@ class Localization : public oops::LocalizationBase<MODEL> {
 
  private:
   void print(std::ostream &) const override;
-  std::unique_ptr<SaberBlockBase_> saberBlock_;
+  std::vector<std::reference_wrapper<const oops::GeometryData>> geometryData_;
+  std::unique_ptr<SaberCentralBlockBase> saberCentralBlock_;
 };
 
 // =============================================================================
 
 template<typename MODEL>
-Localization<MODEL>::Localization(const Geometry_ & resol,
-                                  const oops::Variables & vars,
+Localization<MODEL>::Localization(const Geometry_ & geom,
+                                  const oops::Variables & incVars,
                                   const eckit::Configuration & conf)
-  : saberBlock_()
+  : saberCentralBlock_()
 {
   oops::Log::trace() << "Localization::Localization starting" << std::endl;
 
-  size_t myslot = resol.timeComm().rank();
+  size_t myslot = geom.timeComm().rank();
   if (myslot == 0) {
     // Get parameters from configuration
-    const eckit::LocalConfiguration saberBlock(conf, "saber block");
-    SaberBlockParametersWrapper_ parameters;
-    parameters.validateAndDeserialize(saberBlock);
+    const eckit::LocalConfiguration saberCentralBlock(conf, "saber central block");
+    SaberCentralBlockParametersWrapper saberCentralBlockParamWrapper;
+    saberCentralBlockParamWrapper.validateAndDeserialize(saberCentralBlock);
+    const SaberBlockParametersBase & saberCentralBlockParams =
+      saberCentralBlockParamWrapper.saberCentralBlockParameters;
 
-    // Create dummy state
-    const oops::Variables inputVars(saberBlock, "input variables");
+    // Create dummy FieldSet (for xb and fg)
+    atlas::FieldSet dummyFs;
+
+    // Create dummy time
     util::DateTime dummyTime(1977, 5, 25, 0, 0, 0);
-    State_ dummyState(resol, inputVars, dummyTime);
 
-    // Create SABER block
-    saberBlock_.reset(SaberBlockFactory<MODEL>::create(resol, parameters.saberBlockParameters,
-      dummyState, dummyState));
+    // Define central variables
+    oops::Variables centralVars = incVars;
+
+    // Get active variables
+    oops::Variables activeVars =
+      saberCentralBlockParams.activeVars.value().get_value_or(centralVars);
+
+    // Read input fields (on model increment geometry)
+    std::vector<atlas::FieldSet> fsetVec = readInputFields(
+      geom,
+      activeVars,
+      dummyTime,
+      saberCentralBlockParams.inputFields.value());
+
+    // Central Geometry
+    geometryData_.push_back(geom.generic());
+
+    // Create central block
+    saberCentralBlock_.reset(SaberCentralBlockFactory::create(
+                             geometryData_.back().get(),
+                             geom.variableSizes(activeVars),
+                             centralVars,
+                             saberCentralBlockParams,
+                             dummyFs,
+                             dummyFs,
+                             fsetVec));
+
+    // Check that active variables are present in central variables
+    for (const auto & var : activeVars.variables()) {
+      ASSERT(centralVars.has(var));
+    }
   }
 
   oops::Log::trace() << "Localization:Localization done" << std::endl;
@@ -102,11 +132,11 @@ template<typename MODEL>
 void Localization<MODEL>::randomize(Increment_ & dx) const {
   oops::Log::trace() << "Localization:randomize starting" << std::endl;
 
-  // Random output vector (necessary for some SABER blocks)
+  // Random vector (necessary for some SABER blocks)
   dx.random();
 
   // Central block randomization
-  saberBlock_->randomize(dx.fieldSet());
+  saberCentralBlock_->randomize(dx.fieldSet());
 
   // ATLAS fieldset to Increment_
   dx.synchronizeFields();
@@ -121,7 +151,7 @@ void Localization<MODEL>::multiply(Increment_ & dx) const {
   oops::Log::trace() << "Localization:multiply starting" << std::endl;
 
   // Central block multiplication
-  saberBlock_->multiply(dx.fieldSet());
+  saberCentralBlock_->multiply(dx.fieldSet());
 
   // ATLAS fieldset to Increment_
   dx.synchronizeFields();
@@ -139,5 +169,3 @@ void Localization<MODEL>::print(std::ostream & os) const {
 // -----------------------------------------------------------------------------
 
 }  // namespace saber
-
-#endif  // SABER_OOPS_LOCALIZATION_H_

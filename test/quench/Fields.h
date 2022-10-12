@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef QUENCH_FIELDS_H_
-#define QUENCH_FIELDS_H_
+#pragma once
 
 #include <memory>
 #include <ostream>
@@ -89,4 +88,3 @@ class Fields : public util::Printable,
 // -----------------------------------------------------------------------------
 
 }  // namespace quench
-#endif  // QUENCH_FIELDS_H_

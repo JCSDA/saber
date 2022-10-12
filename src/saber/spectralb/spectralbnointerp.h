@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0. 
  */
 
-#ifndef SABER_SPECTRALB_SPECTRALBNOINTERP_H_
-#define SABER_SPECTRALB_SPECTRALBNOINTERP_H_
+#pragma once
 
 #include <algorithm>
 #include <cmath>
@@ -47,15 +46,6 @@ atlas::functionspace::StructuredColumns
     atlas::option::halo(1));
 }
 
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-bool createVarianceOpt(const spectralbParameters<MODEL> & params) {
-  return (params.varianceOpt.value() != boost::none ?
-          params.varianceOpt.value().get() :
-          false);
-}
-
 }  // namespace detailnointerp
 }  // namespace spectralb
 }  // namespace saber
@@ -65,33 +55,25 @@ namespace saber {
 namespace spectralb {
 // -----------------------------------------------------------------------------
 
-template<typename MODEL>
 class SpectralBNoInterp {
  public:
-  typedef spectralbParameters<MODEL> Parameters_;
-  typedef oops::Geometry<MODEL>        Geometry_;
-  typedef oops::Increment<MODEL>       Increment_;
-  typedef oops::State<MODEL>           State_;
+  typedef spectralbParameters Parameters_;
 
-  SpectralBNoInterp(const Geometry_ &,
-            const oops::Variables &,
-            const Parameters_ &);
+  SpectralBNoInterp(const std::vector<size_t> & variableSizes,
+                    const oops::Variables & vars,
+                    const Parameters_ & params);
   ~SpectralBNoInterp();
 
-  void linearize(const State_ &, const Geometry_ &);
   void multiply(atlas::FieldSet &) const;
-  void inverseMultiply(const Increment_ &, Increment_ &) const;
-  void randomize(Increment_ &) const;
 
  private:
-  void print(std::ostream &) const;
   std::vector<std::string> vars_;
   std::vector<size_t> varSizes_;
   atlas::StructuredGrid gaussGrid_;
   atlas::functionspace::StructuredColumns gaussFunctionSpace_;
 //  atlas::FieldSet  gaussFieldSet_;
   bool variance_opt_;
-  std::unique_ptr<const CovStat_ErrorCov<MODEL>> cs_;
+  std::unique_ptr<const CovStat_ErrorCov> cs_;
 
   // this method applies the adjoint of the inverse transform
   // then does a convolution with the spectral vertical covariances
@@ -108,40 +90,29 @@ using atlas::idx_t;
 // geometry object "resol" comes from the model interface.
 // However we need to create a Gaussian functionspace here.
 // We use the number of vertical levels from "resol"
-template<typename MODEL>
-SpectralBNoInterp<MODEL>::SpectralBNoInterp(const Geometry_ & resol,
-                                            const oops::Variables & vars,
-                                            const Parameters_ & params) :
+SpectralBNoInterp::SpectralBNoInterp(const std::vector<size_t> & variableSizes,
+                                     const oops::Variables & vars,
+                                     const Parameters_ & params) :
   vars_(vars.variables()),
-  varSizes_(resol.variableSizes(vars)),
+  varSizes_(variableSizes),
   gaussGrid_(params.gaussGridUid),
   gaussFunctionSpace_(detailnointerp::createGaussFunctionSpace(gaussGrid_)),
-  variance_opt_(detailnointerp::createVarianceOpt(params)),
-  cs_(std::make_unique<const CovStat_ErrorCov<MODEL>>(resol, vars, params))
+  variance_opt_(params.varianceOpt),
+  cs_(std::make_unique<const CovStat_ErrorCov>(variableSizes, vars, params))
 {
-  oops::Log::trace() << "SpectralBNoInterp<MODEL>::SpectralBNoInterp done" << std::endl;
+  oops::Log::trace() << "SpectralBNoInterp::SpectralBNoInterp done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-template<typename MODEL>
-SpectralBNoInterp<MODEL>::~SpectralBNoInterp() {
-  oops::Log::trace() << "SpectralBNoInterp<MODEL> destructed" << std::endl;
+SpectralBNoInterp::~SpectralBNoInterp() {
+  oops::Log::trace() << "SpectralBNoInterp destructed" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-template<typename MODEL>
-void SpectralBNoInterp<MODEL>::linearize(const State_ &,
-                                 const Geometry_ & resol) {
-  oops::Log::trace() << "SpectralBNoInterp<MODEL> linearize" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void SpectralBNoInterp<MODEL>::multiply(atlas::FieldSet & gaussFieldSet) const {
-  oops::Log::trace() << "SpectralBNoInterp<MODEL> multiply start" << std::endl;
+void SpectralBNoInterp::multiply(atlas::FieldSet & gaussFieldSet) const {
+  oops::Log::trace() << "SpectralBNoInterp multiply start" << std::endl;
 
   auto N = atlas::GaussianGrid(gaussGrid_).N();
 
@@ -163,42 +134,13 @@ void SpectralBNoInterp<MODEL>::multiply(atlas::FieldSet & gaussFieldSet) const {
 
   gaussFieldSet->haloExchange();
 
-  oops::Log::trace() << "SpectralBNoInterp<MODEL> multiply end"
+  oops::Log::trace() << "SpectralBNoInterp multiply end"
                      << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-template<typename MODEL>
-void SpectralBNoInterp<MODEL>::inverseMultiply(const Increment_ & dxin,
-                                       Increment_ & dxout) const {
-  std::string err_message =
-    "saber::SpectralBNoInterp<MODEL>::inverseMultiply not implemented ";
-  throw eckit::NotImplemented(err_message, Here());
-  oops::Log::trace() << "SpectralBNoInterp<MODEL> inverseMultiply" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void SpectralBNoInterp<MODEL>::randomize(Increment_ & dx) const {
-  oops::Log::trace() << "SpectralBNoInterp<MODEL> randomize" << std::endl;
-  std::string err_message =
-    "saber::SpectralBNoInterp<MODEL>::randomise not implemented ";
-  throw eckit::NotImplemented(err_message, Here());
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void SpectralBNoInterp<MODEL>::print(std::ostream & os) const {
-  os << "SpectralBNoInterp<MODEL>::print not implemented";
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void SpectralBNoInterp<MODEL>::applySpectralBNoInterp(
+void SpectralBNoInterp::applySpectralBNoInterp(
     const atlas::FieldSet & spectralVerticalCovariances,
     const atlas::functionspace::Spectral & specFS,
     const atlas::trans::Trans & transIFS,
@@ -209,7 +151,7 @@ void SpectralBNoInterp<MODEL>::applySpectralBNoInterp(
   //   (total wavenumber is n1)
   // 3) the application of the inverse spectral transform
 
-  oops::Log::trace() << "SpectralBNoInterp<MODEL>::applySpectralBNoInterp start" << std::endl;
+  oops::Log::trace() << "SpectralBNoInterp::applySpectralBNoInterp start" << std::endl;
 
   std::vector<std::string> fieldNames = gaussFields.field_names();
 
@@ -268,12 +210,10 @@ void SpectralBNoInterp<MODEL>::applySpectralBNoInterp(
 
   transIFS.invtrans(specFields, gaussFields);
 
-  oops::Log::trace() << "SpectralBNoInterp<MODEL>::applySpectralBNoInterp end" << std::endl;
+  oops::Log::trace() << "SpectralBNoInterp::applySpectralBNoInterp end" << std::endl;
 
   return;
 }
 
 }  // namespace spectralb
 }  // namespace saber
-
-#endif  // SABER_SPECTRALB_SPECTRALBNOINTERP_H_

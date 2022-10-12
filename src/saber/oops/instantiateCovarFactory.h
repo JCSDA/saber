@@ -5,14 +5,12 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_OOPS_INSTANTIATECOVARFACTORY_H_
-#define SABER_OOPS_INSTANTIATECOVARFACTORY_H_
+#pragma once
 
 #include "oops/base/instantiateCovarFactory.h"
 
 #include "saber/oops/ErrorCovariance.h"
 #include "saber/oops/instantiateLocalizationFactory.h"
-#include "saber/oops/instantiateSaberBlockFactory.h"
 
 namespace saber {
 
@@ -23,11 +21,8 @@ template <typename MODEL> void instantiateCovarFactory() {
   static oops::CovarMaker<MODEL, ErrorCovariance<MODEL> > makerSABER_("SABER");
 
   instantiateLocalizationFactory<MODEL>();
-  instantiateSaberBlockFactory<MODEL>();
 }
 
 // -----------------------------------------------------------------------------
 
 }  // namespace saber
-
-#endif  // SABER_OOPS_INSTANTIATECOVARFACTORY_H_

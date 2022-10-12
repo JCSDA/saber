@@ -6,20 +6,31 @@
 if( oops_FOUND )
     list(APPEND oops_src_files_list
 
-    # SABER blocks base
-    SaberBlockBase.h
+    # SABER block parameters base
     SaberBlockParametersBase.h
+
+    # SABER central block base
+    SaberCentralBlockBase.cc
+    SaberCentralBlockBase.h
+
+    # SABER outer blocks base
+    SaberOuterBlockBase.cc
+    SaberOuterBlockBase.h
 
     # ID block
     ID.h
+    ID.cc
 
     # StdDev block
     StdDev.h
+    StdDev.cc
 
     # Factories
     instantiateCovarFactory.h
     instantiateLocalizationFactory.h
-    instantiateSaberBlockFactory.h
+
+    # Utilities
+    ReadInputFields.h
 
     # Drivers
     ErrorCovariance.h

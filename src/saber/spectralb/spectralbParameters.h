@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_SPECTRALB_SPECTRALBPARAMETERS_H_
-#define SABER_SPECTRALB_SPECTRALBPARAMETERS_H_
+#pragma once
 
 #include <string>
 #include <vector>
@@ -23,7 +22,7 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 /// \brief Parameters passed to the Error Covariance class.
-template <typename MODEL> class spectralbParameters : public oops::Parameters {
+class spectralbParameters : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(spectralbParameters, oops::Parameters)
 
  public:
@@ -42,10 +41,8 @@ template <typename MODEL> class spectralbParameters : public oops::Parameters {
   //         blocks so that initialisation/setup steps are not duplicated.
   oops::OptionalParameter<std::string> outputGridUid{"output_grid_uid",
   "Output Grid UID", this};
-  oops::OptionalParameter<bool> varianceOpt{"variance_opt",
-  "variance option", this};
+  oops::Parameter<bool> varianceOpt{"variance_opt",
+  "variance option", false, this};
 };
 // -----------------------------------------------------------------------------
 }  // namespace saber
-
-#endif  // SABER_SPECTRALB_SPECTRALBPARAMETERS_H_

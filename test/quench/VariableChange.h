@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef QUENCH_VARIABLECHANGE_H_
-#define QUENCH_VARIABLECHANGE_H_
+#pragma once
 
 #include <ostream>
 #include <string>
@@ -45,4 +44,3 @@ class VariableChange : public util::Printable {
 // -----------------------------------------------------------------------------
 
 }  // namespace quench
-#endif  // QUENCH_VARIABLECHANGE_H_

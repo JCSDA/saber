@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef QUENCH_VARIABLECHANGEPARAMETERS_H_
-#define QUENCH_VARIABLECHANGEPARAMETERS_H_
+#pragma once
 
 #include "oops/base/VariableChangeParametersBase.h"
 #include "oops/util/Printable.h"
@@ -24,4 +23,3 @@ class VariableChangeParameters : public oops::VariableChangeParametersBase {
 // -------------------------------------------------------------------------------------------------
 
 }  // namespace quench
-#endif  // QUENCH_VARIABLECHANGEPARAMETERS_H_

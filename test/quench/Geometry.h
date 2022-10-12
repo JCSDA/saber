@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef QUENCH_GEOMETRY_H_
-#define QUENCH_GEOMETRY_H_
+#pragma once
 
 #include <memory>
 #include <ostream>
@@ -107,5 +106,3 @@ class Geometry : public util::Printable,
 // -----------------------------------------------------------------------------
 
 }  // namespace quench
-
-#endif  // QUENCH_GEOMETRY_H_
