@@ -85,8 +85,6 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<bool> use_cgal{"use_cgal", this};
   // Write subset Sc0 fields (full grid) using BUMP I/O
   oops::OptionalParameter<bool> write_c0{"write_c0", this};
-  // C1 interpolation tension factor (<0 for C0 interpolation), when the destination is the model grid
-  oops::OptionalParameter<double> c1_interp_sig{"c1_interp_sig", this};
 
   // driver_param
 
@@ -370,6 +368,8 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<bool> pos_def_test{"pos_def_test", this};
   // Write NICAS grids
   oops::OptionalParameter<bool> write_nicas_grids{"write_nicas_grids", this};
+  // C1B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based or 'si': smooth interpolation)
+  oops::OptionalParameter<std::string> nicas_interp_type{"nicas_interp_type", this};
   // Horizontal NICAS interpolation test
   oops::OptionalParameter<bool> interp_test{"interp_test", this};
 
