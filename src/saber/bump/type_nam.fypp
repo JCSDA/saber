@@ -48,7 +48,6 @@ type nam_type
    real(kind_real) :: universe_rad                            !< Universe radius [in meters]
    logical :: use_cgal                                        !< Use CGAL for mesh generation (or STRIPACK instead)
    logical :: write_c0                                        !< Write subset Sc0 fields (full grid) using BUMP I/O
-   real(kind_real) :: c1_interp_sig                           !< C1 interpolation tension factor (<0 for C0 interpolation)
 
    ! driver_param
    character(len=1024) :: method                              !< Localization/hybridization to compute ('cor', 'loc', 'hyb-rnd' or 'hyb-ens')
@@ -195,6 +194,7 @@ type nam_type
    integer :: max_lev(0:nvmax)                                !< Maximum level
    logical :: pos_def_test                                    !< Positive-definiteness test
    logical :: write_nicas_grids                               !< Write NICAS grids
+   character(len=2) :: nicas_interp_type                      !< C1B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based or 'si': smooth interpolation)
    logical :: interp_test                                     !< Horizontal NICAS interpolation test
 
    ! dirac_param
@@ -280,7 +280,6 @@ nam%nprocio = min(nproc,nprociomax)
 nam%universe_rad = pi*req
 nam%use_cgal = .false.
 nam%write_c0 = .false.
-nam%c1_interp_sig = -one
 
 ! driver_param default
 nam%method = ''
@@ -449,6 +448,7 @@ nam%min_lev = 1
 nam%max_lev = nl0max
 nam%pos_def_test = .false.
 nam%write_nicas_grids = .false.
+nam%nicas_interp_type = 'c0'
 nam%interp_test = .false.
 
 ! dirac_param default
@@ -520,7 +520,6 @@ integer :: nprocio
 real(kind_real) :: universe_rad
 logical :: use_cgal
 logical :: write_c0
-real(kind_real) :: c1_interp_sig
 character(len=1024) :: method
 character(len=1024) :: strategy
 logical :: new_normality
@@ -649,6 +648,7 @@ integer :: min_lev(0:nvmax)
 integer :: max_lev(0:nvmax)
 logical :: pos_def_test
 logical :: write_nicas_grids
+character(len=2) :: nicas_interp_type
 logical :: interp_test
 integer :: ndir
 real(kind_real) :: londir(ndirmax)
@@ -684,8 +684,7 @@ namelist/general_param/ &
  & nprocio, &
  & universe_rad, &
  & use_cgal, &
- & write_c0, &
- & c1_interp_sig
+ & write_c0
 namelist/driver_param/ &
  & method, &
  & strategy, &
@@ -822,6 +821,7 @@ namelist/nicas_param/ &
  & max_lev, &
  & pos_def_test, &
  & write_nicas_grids, &
+ & nicas_interp_type, &
  & interp_test, &
  & ndir, &
  & londir, &
@@ -860,7 +860,6 @@ if (mpl%main) then
    universe_rad = pi*req
    use_cgal = .false.
    write_c0 = .false.
-   c1_interp_sig = -one
 
    ! driver_param default
    method = ''
@@ -1029,6 +1028,7 @@ if (mpl%main) then
    max_lev = nl0max
    pos_def_test = .false.
    write_nicas_grids = .false.
+   nicas_interp_type = 'c0'
    interp_test = .false.
 
    ! dirac_param default
@@ -1085,7 +1085,6 @@ if (mpl%main) then
    nam%universe_rad = universe_rad
    nam%use_cgal = use_cgal
    nam%write_c0 = write_c0
-   nam%c1_interp_sig = c1_interp_sig
 
    ! driver_param
    read(lunit,nml=driver_param)
@@ -1239,6 +1238,7 @@ if (mpl%main) then
    nam%max_lev = max_lev
    nam%pos_def_test = pos_def_test
    nam%write_nicas_grids = write_nicas_grids
+   nam%nicas_interp_type = nicas_interp_type
    nam%interp_test = interp_test
 
    ! dirac_param
@@ -1305,7 +1305,6 @@ call mpl%f_comm%broadcast(nam%nprocio,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%universe_rad,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%use_cgal,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%write_c0,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nam%c1_interp_sig,mpl%rootproc-1)
 
 ! driver_param
 call mpl%f_comm%broadcast(nam%method,mpl%rootproc-1)
@@ -1451,6 +1450,7 @@ call mpl%f_comm%broadcast(nam%min_lev,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%max_lev,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%pos_def_test,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%write_nicas_grids,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%nicas_interp_type,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%interp_test,mpl%rootproc-1)
 
 ! dirac_param
@@ -1539,7 +1539,6 @@ if (conf%has('nprocio')) call conf%get_or_die('nprocio',nam%nprocio)
 if (conf%has('universe_rad')) call conf%get_or_die('universe_rad',nam%universe_rad)
 if (conf%has('use_cgal')) call conf%get_or_die('use_cgal',nam%use_cgal)
 if (conf%has('write_c0')) call conf%get_or_die('write_c0',nam%write_c0)
-if (conf%has('c1_interp_sig')) call conf%get_or_die('c1_interp_sig',nam%c1_interp_sig)
 
 ! driver_param
 if (conf%has('method')) then
@@ -1965,6 +1964,10 @@ if (conf%has('max_lev')) then
 end if
 if (conf%has('pos_def_test')) call conf%get_or_die('pos_def_test',nam%pos_def_test)
 if (conf%has('write_nicas_grids')) call conf%get_or_die('write_nicas_grids',nam%write_nicas_grids)
+if (conf%has('nicas_interp_type')) then
+   call conf%get_or_die('nicas_interp_type',str)
+   nam%nicas_interp_type = str
+end if
 if (conf%has('interp_test')) call conf%get_or_die('interp_test',nam%interp_test)
 
 ! dirac_param
@@ -2491,6 +2494,11 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
 end if
 if (nam%write_nicas_grids.and.(.not.(nam%new_nicas.or.nam%load_nicas_global))) &
  & call mpl%abort('${subr}$','new_nicas or load_nicas_global required for write_nicas_grids')
+select case (nam%nicas_interp_type)
+case ('c0','c1','si')
+case default
+   call mpl%abort('${subr}$','wrong nicas_nicas_interp_type')
+end select
 if (nam%interp_test.and.(.not.(nam%new_nicas.or.nam%load_nicas_global))) &
  & call mpl%abort('${subr}$','new_nicas or load_nicas_global required for interp_test')
 if (nam%load_nicas_local.and.nam%write_nicas_global) &
@@ -2579,7 +2587,6 @@ call mpl%write('nprocio',nam%nprocio)
 call mpl%write('universe_rad',nam%universe_rad*req)
 call mpl%write('use_cgal',nam%use_cgal)
 call mpl%write('write_c0',nam%write_c0)
-call mpl%write('c1_interp_sig',nam%c1_interp_sig)
 
 ! driver_param
 write(mpl%info,'(a7,a)') '','Driver parameters'
@@ -2746,6 +2753,7 @@ call mpl%write('min_lev',nam%nv+1,nam%min_lev(0:nam%nv))
 call mpl%write('max_lev',nam%nv+1,nam%max_lev(0:nam%nv))
 call mpl%write('pos_def_test',nam%pos_def_test)
 call mpl%write('write_nicas_grids',nam%write_nicas_grids)
+call mpl%write('nicas_interp_type',nam%nicas_interp_type)
 call mpl%write('interp_test',nam%interp_test)
 
 ! dirac_param
