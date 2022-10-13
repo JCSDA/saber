@@ -36,23 +36,23 @@ static SaberOuterBlockMaker<HydrostaticExner> makerHydrostaticExner_("mo_hydrost
 
 // -----------------------------------------------------------------------------
 
-HydrostaticExner::HydrostaticExner(const oops::GeometryData & outputGeometryData,
+HydrostaticExner::HydrostaticExner(const oops::GeometryData & outerGeometryData,
                                    const std::vector<size_t> & activeVariableSizes,
-                                   const oops::Variables & outputVars,
+                                   const oops::Variables & outerVars,
                                    const Parameters_ & params,
                                    const atlas::FieldSet & xb,
                                    const atlas::FieldSet & fg,
                                    const std::vector<atlas::FieldSet> & fsetVec)
-  : inputGeometryData_(outputGeometryData), inputVars_(outputVars), augmentedStateFieldSet_()
+  : innerGeometryData_(outerGeometryData), innerVars_(outerVars), augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::HydrostaticExner starting" << std::endl;
 
   // Get active variables
-  oops::Variables activeVars = params.activeVars.value().get_value_or(outputVars);
+  oops::Variables activeVars = params.activeVars.value().get_value_or(outerVars);
 
   // Covariance FieldSet
-  covFieldSet_ = createGpRegressionStats(outputGeometryData.functionSpace(),
-                                         outputGeometryData.fieldSet(),
+  covFieldSet_ = createGpRegressionStats(outerGeometryData.functionSpace(),
+                                         outerGeometryData.fieldSet(),
                                          activeVariableSizes,
                                          activeVars,
                                          params.hydrostaticexnerParams.value());
@@ -91,7 +91,7 @@ HydrostaticExner::HydrostaticExner(const oops::GeometryData & outputGeometryData
   }
 
   for (const auto & s : requiredGeometryVariables) {
-    augmentedStateFieldSet_.add(outputGeometryData.fieldSet()[s]);
+    augmentedStateFieldSet_.add(outerGeometryData.fieldSet()[s]);
   }
 
   // we will need geometry here for height variables.
@@ -194,7 +194,7 @@ void HydrostaticExner::print(std::ostream & os) const {
 atlas::FieldSet createGpRegressionStats(const atlas::FunctionSpace & functionSpace,
                                         const atlas::FieldSet & extraFields,
                                         const std::vector<size_t> & variableSizes,
-                                        const oops::Variables & inputVars,
+                                        const oops::Variables & innerVars,
                                         const HydrostaticExnerCovarianceParameters & params) {
   // Get necessary parameters
   // path to covariance file with gp covariance parameters.

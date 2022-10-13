@@ -31,7 +31,7 @@ static SaberCentralBlockMaker<NICAS> makerNICAS_("BUMP_NICAS");
 
 NICAS::NICAS(const oops::GeometryData & geometryData,
              const std::vector<size_t> & activeVariableSizes,
-             const oops::Variables & inoutVars,
+             const oops::Variables & centralVars,
              const Parameters_ & params,
              const atlas::FieldSet & xb,
              const atlas::FieldSet & fg,
@@ -41,7 +41,7 @@ NICAS::NICAS(const oops::GeometryData & geometryData,
   oops::Log::trace() << classname() << "::NICAS starting" << std::endl;
 
   // Get active variables
-  oops::Variables activeVars = params.activeVars.value().get_value_or(inoutVars);
+  oops::Variables activeVars = params.activeVars.value().get_value_or(centralVars);
 
   // Initialize BUMP
   bump_.reset(new BUMP(geometryData.comm(),

@@ -28,12 +28,12 @@ static SaberCentralBlockMaker<SpectralCovariance> makerSpectralCovariance_("spec
 // -----------------------------------------------------------------------------
 SpectralCovariance::SpectralCovariance(const oops::GeometryData & geometryData,
                                        const std::vector<size_t> & variableSizes,
-                                       const oops::Variables & inoutVars,
+                                       const oops::Variables & centralVars,
                                        const Parameters_ & params,
                                        const atlas::FieldSet & xb,
                                        const atlas::FieldSet & fg,
                                        const std::vector<atlas::FieldSet> & fsetVec)
-  : activeVars_(params.activeVars.value().get_value_or(inoutVars)),
+  : activeVars_(params.activeVars.value().get_value_or(centralVars)),
     variance_opt_(params.spectralbParams.value().varianceOpt),
     cs_(), specFunctionSpace_(geometryData.functionSpace())
 {

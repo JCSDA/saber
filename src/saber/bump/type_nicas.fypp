@@ -509,7 +509,7 @@ type(geom_type),intent(in) :: geom       !< Geometry
 type(bpar_type),intent(in) :: bpar       !< Block parameters
 
 ! Local variable
-integer :: ncid,nc0_id,nl0_id
+integer :: ncid,nc0_id
 integer :: ib,icmp
 
 ! Set name

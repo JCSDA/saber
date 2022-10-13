@@ -29,14 +29,14 @@ static SaberOuterBlockMaker<PsiChiToUV> makerPsiChiToUV_("BUMP_PsiChiToUV");
 
 // -----------------------------------------------------------------------------
 
-PsiChiToUV::PsiChiToUV(const oops::GeometryData & outputGeometryData,
+PsiChiToUV::PsiChiToUV(const oops::GeometryData & outerGeometryData,
                        const std::vector<size_t> & activeVariableSizes,
-                       const oops::Variables & outputVars,
+                       const oops::Variables & outerVars,
                        const Parameters_ & params,
                        const atlas::FieldSet & xb,
                        const atlas::FieldSet & fg,
                        const std::vector<atlas::FieldSet> & fsetVec)
-  : inputGeometryData_(outputGeometryData), bump_()
+  : innerGeometryData_(outerGeometryData), bump_()
 {
   oops::Log::trace() << classname() << "::PsiChiToUV starting" << std::endl;
 
@@ -49,26 +49,26 @@ PsiChiToUV::PsiChiToUV(const oops::GeometryData & outputGeometryData,
   // Check active variables size
   ASSERT(activeVars.size() == 4);
 
-  // Only two active variables should be part of output variables, other two are input variables
-  size_t activeVarsInOutput = 0;
-  for (const auto var : outputVars.variables()) {
+  // Only two active variables should be part of outer variables, other two are inner variables
+  size_t activeVarsInOuter = 0;
+  for (const auto var : outerVars.variables()) {
     if (activeVars.has(var)) {
-      activeVarsInOutput += 1;
+      activeVarsInOuter += 1;
     } else {
-      inputVars_.push_back(var);
+      innerVars_.push_back(var);
     }
   }
-  ASSERT(activeVarsInOutput == 2);
+  ASSERT(activeVarsInOuter == 2);
   for (const auto var : activeVars.variables()) {
-    if (!outputVars.has(var)) {
-      inputVars_.push_back(var);
+    if (!outerVars.has(var)) {
+      innerVars_.push_back(var);
     }
   }
 
   // Initialize BUMP
-  bump_.reset(new BUMP(outputGeometryData.comm(),
-                       outputGeometryData.functionSpace(),
-                       outputGeometryData.fieldSet(),
+  bump_.reset(new BUMP(outerGeometryData.comm(),
+                       outerGeometryData.functionSpace(),
+                       outerGeometryData.fieldSet(),
                        activeVariableSizes,
                        activeVars,
                        params.bumpParams.value(),

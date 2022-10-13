@@ -36,14 +36,14 @@ static SaberOuterBlockMaker<MoistIncrOp> makerMoistIncrOp_("mo_moistincrop");
 
 // -----------------------------------------------------------------------------
 
-MoistIncrOp::MoistIncrOp(const oops::GeometryData & outputGeometryData,
+MoistIncrOp::MoistIncrOp(const oops::GeometryData & outerGeometryData,
                          const std::vector<size_t> & activeVariableSizes,
-                         const oops::Variables & outputVars,
+                         const oops::Variables & outerVars,
                          const Parameters_ & params,
                          const atlas::FieldSet & xb,
                          const atlas::FieldSet & fg,
                          const std::vector<atlas::FieldSet> & fsetVec)
-  : inputGeometryData_(outputGeometryData), inputVars_(outputVars), augmentedStateFieldSet_()
+  : innerGeometryData_(outerGeometryData), innerVars_(outerVars), augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::MoistIncrOp starting" << std::endl;
 

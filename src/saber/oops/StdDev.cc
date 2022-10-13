@@ -29,19 +29,19 @@ static SaberOuterBlockMaker<StdDev> makerStdDev_("StdDev");
 
 // -----------------------------------------------------------------------------
 
-StdDev::StdDev(const oops::GeometryData & outputGeometryData,
+StdDev::StdDev(const oops::GeometryData & outerGeometryData,
                const std::vector<size_t> & activeVariableSizes,
-               const oops::Variables & outputVars,
+               const oops::Variables & outerVars,
                const Parameters_ & params,
                const atlas::FieldSet & xb,
                const atlas::FieldSet & fg,
                const std::vector<atlas::FieldSet> & fsetVec)
-  : inputGeometryData_(outputGeometryData), inputVars_(outputVars), stdDevFset_()
+  : innerGeometryData_(outerGeometryData), innerVars_(outerVars), stdDevFset_()
 {
   oops::Log::trace() << classname() << "::StdDev starting" << std::endl;
 
   // Get active variables
-  oops::Variables activeVars = params.activeVars.value().get_value_or(outputVars);
+  oops::Variables activeVars = params.activeVars.value().get_value_or(outerVars);
 
   // Copy stddev field
   stdDevFset_.clear();

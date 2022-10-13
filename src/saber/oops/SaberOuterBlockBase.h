@@ -39,8 +39,8 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
   SaberOuterBlockBase() {}
   virtual ~SaberOuterBlockBase() {}
 
-  virtual const oops::GeometryData & inputGeometryData() const = 0;
-  virtual const oops::Variables & inputVars() const = 0;
+  virtual const oops::GeometryData & innerGeometryData() const = 0;
+  virtual const oops::Variables & innerVars() const = 0;
 
   virtual void multiply(atlas::FieldSet &) const = 0;
   virtual void multiplyAD(atlas::FieldSet &) const = 0;
@@ -109,16 +109,16 @@ template<class T>
 class SaberOuterBlockMaker : public SaberOuterBlockFactory {
   typedef typename T::Parameters_ Parameters_;
 
-  SaberOuterBlockBase * make(const oops::GeometryData & outputGeometryData,
+  SaberOuterBlockBase * make(const oops::GeometryData & outerGeometryData,
                              const std::vector<size_t> & activeVariableSizes,
-                             const oops::Variables & outputVars,
+                             const oops::Variables & outerVars,
                              const SaberBlockParametersBase & params,
                              const atlas::FieldSet & xb,
                              const atlas::FieldSet & fg,
                              const std::vector<atlas::FieldSet> & fsetVec) override {
     const auto &stronglyTypedParams = dynamic_cast<const Parameters_&>(params);
-    return new T(outputGeometryData, activeVariableSizes,
-                 outputVars, stronglyTypedParams, xb, fg, fsetVec);
+    return new T(outerGeometryData, activeVariableSizes,
+                 outerVars, stronglyTypedParams, xb, fg, fsetVec);
   }
 
   std::unique_ptr<SaberBlockParametersBase> makeParameters() const override {

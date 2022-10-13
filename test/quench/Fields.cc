@@ -48,7 +48,7 @@ Fields::Fields(const Geometry & geom, const oops::Variables & vars,
   fset_ = atlas::FieldSet();
 
   // Create fields
-  for (const auto var : vars_.variables()) {
+  for (const auto & var : vars_.variables()) {
     atlas::Field field = geom_->functionSpace().createField<double>(
       atlas::option::name(var) | atlas::option::levels(geom_->levels()));
     fset_.add(field);
@@ -72,7 +72,7 @@ Fields::Fields(const Fields & other, const Geometry & geom):
   if (geom_->levels() != geom.levels()) ABORT("different number of levels, cannot interpolate");
 
   // Create fields
-  for (const auto var : vars_.variables()) {
+  for (const auto & var : vars_.variables()) {
     atlas::Field field = geom_->functionSpace().createField<double>(
       atlas::option::name(var) | atlas::option::levels(geom_->levels()));
     fset_.add(field);
@@ -95,7 +95,7 @@ Fields::Fields(const Fields & other, const bool copy):
   fset_ = atlas::FieldSet();
 
   // Create fields
-  for (const auto var : vars_.variables()) {
+  for (const auto & var : vars_.variables()) {
     atlas::Field field = geom_->functionSpace().createField<double>(
       atlas::option::name(var) | atlas::option::levels(geom_->levels()));
     fset_.add(field);
@@ -106,7 +106,7 @@ Fields::Fields(const Fields & other, const bool copy):
 
   // Copy if necessary
   if (copy) {
-    for (const auto var : vars_.variables()) {
+    for (const auto & var : vars_.variables()) {
       atlas::Field field = fset_[var];
       atlas::Field fieldOther = other.fset_[var];
       if (field.rank() == 2) {
@@ -132,7 +132,7 @@ Fields::Fields(const Fields & other):
   fset_ = atlas::FieldSet();
 
   // Create fields and copy data
-  for (const auto var : vars_.variables()) {
+  for (const auto & var : vars_.variables()) {
     atlas::Field field = geom_->functionSpace().createField<double>(
       atlas::option::name(var) | atlas::option::levels(geom_->levels()));
     atlas::Field fieldOther = other.fset_[var];
@@ -152,7 +152,7 @@ Fields::Fields(const Fields & other):
 // -----------------------------------------------------------------------------
 void Fields::zero() {
   oops::Log::trace() << "Fields::zero starting" << std::endl;
-  for (const auto var : vars_.variables()) {
+  for (const auto & var : vars_.variables()) {
     atlas::Field field = fset_[var];
     if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
@@ -168,7 +168,7 @@ void Fields::zero() {
 // -----------------------------------------------------------------------------
 Fields & Fields::operator=(const Fields & rhs) {
   oops::Log::trace() << "Fields::operator=(const Fields & rhs) starting" << std::endl;
-  for (const auto var : vars_.variables()) {
+  for (const auto & var : vars_.variables()) {
     atlas::Field field = fset_[var];
     atlas::Field fieldRhs = rhs.fset_[var];
     if (field.rank() == 2) {
@@ -188,7 +188,7 @@ Fields & Fields::operator=(const Fields & rhs) {
 // -----------------------------------------------------------------------------
 Fields & Fields::operator+=(const Fields & rhs) {
   oops::Log::trace() << "Fields::operator+=(const Fields & rhs) starting" << std::endl;
-  for (const auto var : vars_.variables()) {
+  for (const auto & var : vars_.variables()) {
     atlas::Field field = fset_[var];
     atlas::Field fieldRhs = rhs.fset_[var];
     if (field.rank() == 2) {
@@ -207,7 +207,7 @@ Fields & Fields::operator+=(const Fields & rhs) {
 // -----------------------------------------------------------------------------
 Fields & Fields::operator-=(const Fields & rhs) {
   oops::Log::trace() << "Fields::operator-=(const Fields & rhs) starting" << std::endl;
-  for (const auto var : vars_.variables()) {
+  for (const auto & var : vars_.variables()) {
     atlas::Field field = fset_[var];
     atlas::Field fieldRhs = rhs.fset_[var];
     if (field.rank() == 2) {
@@ -226,7 +226,7 @@ Fields & Fields::operator-=(const Fields & rhs) {
 // -----------------------------------------------------------------------------
 Fields & Fields::operator*=(const double & zz) {
   oops::Log::trace() << "Fields::operator*=(const Fields & rhs) starting" << std::endl;
-  for (const auto var : vars_.variables()) {
+  for (const auto & var : vars_.variables()) {
     atlas::Field field = fset_[var];
     if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
@@ -243,7 +243,7 @@ Fields & Fields::operator*=(const double & zz) {
 // -----------------------------------------------------------------------------
 void Fields::axpy(const double & zz, const Fields & rhs) {
   oops::Log::trace() << "Fields::axpy starting" << std::endl;
-  for (const auto var : vars_.variables()) {
+  for (const auto & var : vars_.variables()) {
     atlas::Field field = fset_[var];
     atlas::Field fieldRhs = rhs.fset_[var];
     if (field.rank() == 2) {
@@ -265,7 +265,7 @@ double Fields::dot_product_with(const Fields & fld2) const {
   double zz = 0;
   atlas::Field ghost = geom_->functionSpace().ghost();
   auto ghostView = atlas::array::make_view<int, 1>(ghost);
-  for (const auto var : vars_.variables()) {
+  for (const auto & var : vars_.variables()) {
     atlas::Field field1 = fset_[var];
     atlas::Field field2 = fld2.fset_[var];
     if (field1.rank() == 2) {
@@ -285,7 +285,7 @@ double Fields::dot_product_with(const Fields & fld2) const {
 // -----------------------------------------------------------------------------
 void Fields::schur_product_with(const Fields & dx) {
   oops::Log::trace() << "Fields::schur_product_with starting" << std::endl;
-  for (const auto var : vars_.variables()) {
+  for (const auto & var : vars_.variables()) {
     atlas::Field field = fset_[var];
     atlas::Field fieldDx = dx.fset_[var];
     if (field.rank() == 2) {
@@ -307,7 +307,7 @@ void Fields::random() {
   size_t n = 0;
   atlas::Field ghost = geom_->functionSpace().ghost();
   auto ghostView = atlas::array::make_view<int, 1>(ghost);
-  for (const auto var : vars_.variables()) {
+  for (const auto & var : vars_.variables()) {
     atlas::Field field = fset_[var];
     if (field.rank() == 2) {
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
@@ -321,7 +321,7 @@ void Fields::random() {
 
   // Copy random values
   n = 0;
-  for (const auto var : vars_.variables()) {
+  for (const auto & var : vars_.variables()) {
     atlas::Field field = fset_[var];
     if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
@@ -407,7 +407,7 @@ void Fields::dirac(const eckit::Configuration & config) {
 // -----------------------------------------------------------------------------
 void Fields::diff(const Fields & x1, const Fields & x2) {
   oops::Log::trace() << "Fields::diff starting" << std::endl;
-  for (const auto var : vars_.variables()) {
+  for (const auto & var : vars_.variables()) {
     atlas::Field field = fset_[var];
     atlas::Field fieldx1 = x1.fset_[var];
     atlas::Field fieldx2 = x2.fset_[var];
@@ -534,7 +534,7 @@ void Fields::read(const eckit::Configuration & config) {
     atlas::functionspace::StructuredColumns fs(geom_->functionSpace());
 
     // Create global data fieldset
-    for (const auto var : vars_.variables()) {
+    for (const auto & var : vars_.variables()) {
       atlas::Field field = fs.createField<double>(atlas::option::name(var)
         | atlas::option::levels(geom_->levels()) | atlas::option::global());
       globalData.add(field);
@@ -594,7 +594,7 @@ void Fields::read(const eckit::Configuration & config) {
       atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
 
       // Create global data fieldset
-      for (const auto var : vars_.variables()) {
+      for (const auto & var : vars_.variables()) {
         atlas::Field field = fs.createField<double>(atlas::option::name(var)
           | atlas::option::levels(geom_->levels()) | atlas::option::global());
         globalData.add(field);
@@ -607,7 +607,7 @@ void Fields::read(const eckit::Configuration & config) {
       atlas::functionspace::NodeColumns fs(geom_->functionSpace());
 
       // Create global data fieldset
-      for (const auto var : vars_.variables()) {
+      for (const auto & var : vars_.variables()) {
         atlas::Field field = fs.createField<double>(atlas::option::name(var)
           | atlas::option::levels(geom_->levels()) | atlas::option::global());
         globalData.add(field);
@@ -731,7 +731,7 @@ void Fields::write(const eckit::Configuration & config) const {
     fs.gather(localCoordinates, globalCoordinates);
 
     // Create global data fieldset
-    for (const auto var : vars_.variables()) {
+    for (const auto & var : vars_.variables()) {
       atlas::Field field = fs.createField<double>(atlas::option::name(var)
         | atlas::option::levels(geom_->levels()) | atlas::option::global());
       globalData.add(field);
@@ -866,7 +866,7 @@ void Fields::write(const eckit::Configuration & config) const {
       fs.gather(localCoordinates, globalCoordinates);
 
       // Create global data fieldset
-      for (const auto var : vars_.variables()) {
+      for (const auto & var : vars_.variables()) {
         atlas::Field field = fs.createField<double>(atlas::option::name(var)
           | atlas::option::levels(geom_->levels()) | atlas::option::global());
         globalData.add(field);
@@ -906,7 +906,7 @@ void Fields::write(const eckit::Configuration & config) const {
       fs.gather(localCoordinates, globalCoordinates);
 
       // Create global data fieldset
-      for (const auto var : vars_.variables()) {
+      for (const auto & var : vars_.variables()) {
         atlas::Field field = fs.createField<double>(atlas::option::name(var)
           | atlas::option::levels(geom_->levels()) | atlas::option::global());
         globalData.add(field);
@@ -1094,7 +1094,7 @@ void Fields::print(std::ostream & os) const {
 
   atlas::Field ghost = geom_->functionSpace().ghost();
   auto ghostView = atlas::array::make_view<int, 1>(ghost);
-  for (const auto var : vars_.variables()) {
+  for (const auto & var : vars_.variables()) {
     double zz = 0.0;
     atlas::Field field = fset_[var];
     if (field.rank() == 2) {

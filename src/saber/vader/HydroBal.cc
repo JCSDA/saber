@@ -36,14 +36,14 @@ static SaberOuterBlockMaker<HydroBal> makerHydroBal_("mo_hydro_bal");
 
 // -----------------------------------------------------------------------------
 
-HydroBal::HydroBal(const oops::GeometryData & outputGeometryData,
+HydroBal::HydroBal(const oops::GeometryData & outerGeometryData,
                    const std::vector<size_t> & activeVariableSizes,
-                   const oops::Variables & outputVars,
+                   const oops::Variables & outerVars,
                    const Parameters_ & params,
                    const atlas::FieldSet & xb,
                    const atlas::FieldSet & fg,
                    const std::vector<atlas::FieldSet> & fsetVec)
-  : inputGeometryData_(outputGeometryData), inputVars_(outputVars), augmentedStateFieldSet_()
+  : innerGeometryData_(outerGeometryData), innerVars_(outerVars), augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::HydroBal starting" << std::endl;
 
@@ -85,7 +85,7 @@ HydroBal::HydroBal(const oops::GeometryData & outputGeometryData,
   mo::evalVirtualPotentialTemperature(augmentedStateFieldSet_);
 
   for (const auto & s : requiredGeometryVariables) {
-    augmentedStateFieldSet_.add(outputGeometryData.fieldSet()[s]);
+    augmentedStateFieldSet_.add(outerGeometryData.fieldSet()[s]);
   }
 
   for (auto & fld : augmentedStateFieldSet_) {

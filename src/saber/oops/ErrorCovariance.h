@@ -89,7 +89,7 @@ class ErrorCovariance : public oops::ModelSpaceCovarianceBase<MODEL>,
 
   void print(std::ostream &) const override;
 
-  std::vector<std::reference_wrapper<const oops::GeometryData>> outputGeometryData_;
+  std::vector<std::reference_wrapper<const oops::GeometryData>> outerGeometryData_;
   std::unique_ptr<SaberCentralBlockBase> saberCentralBlock_;
   SaberOuterBlockVec_ saberOuterBlocks_;
 };
@@ -111,9 +111,9 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
   State_ xbLocal(xb);
   State_ fgLocal(fg);
 
-  // Initial output geometry and variables
-  outputGeometryData_.push_back(geom.generic());
-  oops::Variables outputVars(incVars);
+  // Initial outer geometry and variables
+  outerGeometryData_.push_back(geom.generic());
+  oops::Variables outerVars(incVars);
 
   // Build outer blocks successively
   const boost::optional<std::vector<SaberOuterBlockParametersWrapper>> &saberOuterBlocks =
@@ -128,7 +128,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
 
       // Get active variables
       oops::Variables activeVars =
-        saberOuterBlockParams.activeVars.value().get_value_or(outputVars);
+        saberOuterBlockParams.activeVars.value().get_value_or(outerVars);
 
       // Read input fields (on model increment geometry)
       std::vector<atlas::FieldSet> fsetVec = readInputFields(
@@ -141,9 +141,9 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
       oops::Log::info() << "Creating outer block: " << saberOuterBlockParams.saberBlockName.value()
                         << std::endl;
       saberOuterBlocks_.push_back(SaberOuterBlockFactory::create(
-                                  outputGeometryData_.back().get(),
+                                  outerGeometryData_.back().get(),
                                   geom.variableSizes(activeVars),
-                                  outputVars,
+                                  outerVars,
                                   saberOuterBlockParams,
                                   xbLocal.fieldSet(),
                                   fgLocal.fieldSet(),
@@ -154,18 +154,18 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
 //      saberOuterBlocks_.back().calibrationInverseMultiply(xbLocal.fieldSet());
 //      saberOuterBlocks_.back().calibrationInverseMultiply(fgLocal.fieldSet());
 
-      // Access input geometry and variables
-      const oops::GeometryData & inputGeometryData = saberOuterBlocks_.back().inputGeometryData();
-      const oops::Variables inputVars = saberOuterBlocks_.back().inputVars();
+      // Access inner geometry and variables
+      const oops::GeometryData & innerGeometryData = saberOuterBlocks_.back().innerGeometryData();
+      const oops::Variables innerVars = saberOuterBlocks_.back().innerVars();
 
-      // Check that active variables are present in either input or output variables, or both
+      // Check that active variables are present in either inner or outer variables, or both
       for (const auto & var : activeVars.variables()) {
-        ASSERT(inputVars.has(var) || outputVars.has(var));
+        ASSERT(innerVars.has(var) || outerVars.has(var));
       }
 
-      // Update output geometry and variables for the next block
-      outputGeometryData_.push_back(inputGeometryData);
-      outputVars = inputVars;
+      // Update outer geometry and variables for the next block
+      outerGeometryData_.push_back(innerGeometryData);
+      outerVars = innerVars;
     }
   }
 
@@ -175,11 +175,11 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
   const SaberBlockParametersBase & saberCentralBlockParams =
     saberCentralBlockParamWrapper.saberCentralBlockParameters;
 
-  // Define input/output variables
-  oops::Variables inoutVars = outputVars;
+  // Define centra variables
+  oops::Variables centralVars = outerVars;
 
   // Get active variables
-  oops::Variables activeVars = saberCentralBlockParams.activeVars.value().get_value_or(outputVars);
+  oops::Variables activeVars = saberCentralBlockParams.activeVars.value().get_value_or(outerVars);
 
   // Read input fields (on model increment geometry)
   std::vector<atlas::FieldSet> fsetVec = readInputFields(
@@ -190,17 +190,17 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
 
   // Create central block
   saberCentralBlock_.reset(SaberCentralBlockFactory::create(
-                           outputGeometryData_.back().get(),
+                           outerGeometryData_.back().get(),
                            geom.variableSizes(activeVars),
-                           inoutVars,
+                           centralVars,
                            saberCentralBlockParams,
                            xbLocal.fieldSet(),
                            fgLocal.fieldSet(),
                            fsetVec));
 
-  // Check that active variables are present in input/output variables
+  // Check that active variables are present in central variables
   for (const auto & var : activeVars.variables()) {
-    ASSERT(inoutVars.has(var));
+    ASSERT(centralVars.has(var));
   }
 
   oops::Log::trace() << "ErrorCovariance::ErrorCovariance done" << std::endl;
@@ -222,7 +222,7 @@ void ErrorCovariance<MODEL>::doRandomize(Increment_ & dx) const {
   oops::Log::trace() << "ErrorCovariance<MODEL>::doRandomize starting" << std::endl;
   util::Timer timer(classname(), "doRandomize");
 
-  // Random output vector (necessary for some SABER blocks)
+  // Random vector (necessary for some SABER blocks)
   dx.random();
 
   // Central block randomization

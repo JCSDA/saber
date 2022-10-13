@@ -37,12 +37,12 @@ static SaberCentralBlockMaker<Covariance> makerCovariance_("gsi covariance");
 
 Covariance::Covariance(const oops::GeometryData & geometryData,
                        const std::vector<size_t> & activeVariableSizes,
-                       const oops::Variables & inoutVars,
+                       const oops::Variables & centralVars,
                        const Parameters_ & params,
                        const atlas::FieldSet & xb,
                        const atlas::FieldSet & fg,
                        const std::vector<atlas::FieldSet> & fsetVec)
-  : variables_(params.activeVars.value().get_value_or(inoutVars).variables()),
+  : variables_(params.activeVars.value().get_value_or(centralVars).variables()),
     gsiGridFuncSpace_(geometryData.functionSpace())
 {
   oops::Log::trace() << classname() << "::Covariance starting" << std::endl;
@@ -76,7 +76,7 @@ void Covariance::randomize(atlas::FieldSet & fset) const {
 
   // Loop over saber (model) fields and create corresponding fields on gsi grid
   for (const auto & sabField : fset) {
-      // Ensure that the field name is in the input/output list
+      // Ensure that the field name is in the variables list
       if (std::find(variables_.begin(), variables_.end(), sabField.name()) == variables_.end()) {
         ABORT("Field " + sabField.name() + " not found in the " + classname() + " variables.");
       }
