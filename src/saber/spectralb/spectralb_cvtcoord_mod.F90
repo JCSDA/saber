@@ -35,9 +35,6 @@ type(cvt_coordinate_type),             intent(in)  :: SecCoord1D
 type(cvt_coordinate_type),             intent(in)  :: ThiCoord1D
 type(cvt_coordinate_type),             intent(out) :: CoordOut3D(3)
 
-! Local declarations:
-character(len=*), parameter :: RoutineName = "cvt_create3dcoordinate"
-
 !------------------------------------------------------------------------------
 
 allocate( CoordOut3D(1) % CoValues(size(FirCoord1D % CoValues) ) )
@@ -76,9 +73,6 @@ real(kind=c_float)          , intent(in), optional :: CoValues(CoSize)
 logical                     , intent(in), optional :: undo
 
 ! Local declarations:
-character(len=*), parameter :: RoutineName = &
-  "cvt_initialiseadjustordealloccoord"
-
 logical :: undo_set ! true if undo was present and .TRUE.
 
 !------------------------------------------------------------------------------

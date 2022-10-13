@@ -32,22 +32,22 @@ namespace {
 // -----------------------------------------------------------------------------
 
 atlas::Field allocateGaussUVField(const atlas::FunctionSpace & gaussFS,
-                                  const oops::Variables & inputVariables,
+                                  const oops::Variables & innerVariables,
                                   const std::vector<std::size_t> & activeVariableSizes) {
   std::array<size_t, 2> indx{{0, 0}};
   std::array<size_t, 2> levels{{0, 0}};
-  if (inputVariables.has("vorticity") && inputVariables.has("divergence")) {
-    indx[0] = inputVariables.find("vorticity");
-    indx[1] = inputVariables.find("divergence");
-  } else if (inputVariables.has("streamfunction") && inputVariables.has("velocity_potential")) {
-    indx[0] = inputVariables.find("streamfunction");
-    indx[1] = inputVariables.find("velocity_potential");
+  if (innerVariables.has("vorticity") && innerVariables.has("divergence")) {
+    indx[0] = innerVariables.find("vorticity");
+    indx[1] = innerVariables.find("divergence");
+  } else if (innerVariables.has("streamfunction") && innerVariables.has("velocity_potential")) {
+    indx[0] = innerVariables.find("streamfunction");
+    indx[1] = innerVariables.find("velocity_potential");
   } else {
     // error trap
     oops::Log::error() << "ERROR - either vorticity and divergence "
                        << "or streamfunction and velocity_potential "
                        << "not present " << std::endl;
-    throw std::runtime_error("input fields mis-specified");
+    throw std::runtime_error("inner fields mis-specified");
   }
   // check that levels in indx[0] and indx[1] the same.
 
@@ -95,7 +95,7 @@ atlas::FieldSet allocateSpectralVortDiv(
     oops::Log::error() << "ERROR - either vorticity and divergence "
                        << "or streamfunction and velocity potential "
                        << "not present " << std::endl;
-    throw std::runtime_error("input fields mis-specified");
+    throw std::runtime_error("inner fields mis-specified");
   }
   // check that levels in indx[0] and indx[1] the same.
   levels[0] = activeVariableSizes[indx[0]];
@@ -180,48 +180,48 @@ atlas::Field convertUVToFieldSetAD(const atlas::FieldSet & fset) {
 
 // -----------------------------------------------------------------------------
 
-oops::Variables createInputVars(const SpectralToGaussUVParameters & params,
-                                const oops::Variables & outputVars) {
-  oops::Variables inputVars;
+oops::Variables createInnerVars(const SpectralToGaussUVParameters & params,
+                                const oops::Variables & outerVars) {
+  oops::Variables innerVars;
 
-  for (auto & var : outputVars.variables()) {
+  for (auto & var : outerVars.variables()) {
     if (var.compare("eastward_wind") == 0 || var.compare("northward_wind") == 0) {
     } else {
-      inputVars.push_back(var);
+      innerVars.push_back(var);
     }
   }
 
   if (params.useStreamFunctionVelocityPotential.value()) {
-    inputVars.push_back("streamfunction");
-    inputVars.push_back("velocity_potential");
+    innerVars.push_back("streamfunction");
+    innerVars.push_back("velocity_potential");
   } else {
-    inputVars.push_back("vorticity");
-    inputVars.push_back("divergence");
+    innerVars.push_back("vorticity");
+    innerVars.push_back("divergence");
   }
-  return inputVars;
+  return innerVars;
 }
 
 // -----------------------------------------------------------------------------
 
-void applyNtimesNplus1SpectralScaling(const oops::Variables & inputNames,
-                                      const oops::Variables & outputNames,
+void applyNtimesNplus1SpectralScaling(const oops::Variables & innerNames,
+                                      const oops::Variables & outerNames,
                                       const atlas::functionspace::Spectral & specFS,
                                       const atlas::idx_t & totalWavenumber,
                                       atlas::FieldSet & fSet) {
   const auto zonal_wavenumbers = specFS.zonal_wavenumbers();
   const int nb_zonal_wavenumbers = zonal_wavenumbers.size();
 
-  // copy fields that are not associated with inputNames
+  // copy fields that are not associated with innerNames
   atlas::FieldSet fsetTemp;
   for (atlas::Field & f : fSet) {
-    if (!(inputNames.has(f.name()))) {
+    if (!(innerNames.has(f.name()))) {
       fsetTemp.add(f);
     }
   }
 
   atlas::FieldSet fsetScaled;
-  for (std::size_t var = 0; var < inputNames.variables().size(); ++var) {
-    atlas::Field scaledFld = fSet[inputNames[var]];
+  for (std::size_t var = 0; var < innerNames.variables().size(); ++var) {
+    atlas::Field scaledFld = fSet[innerNames[var]];
     auto fldView = atlas::array::make_view<double, 2>(scaledFld);
 
     double a = atlas::util::Earth::radius();  // radius of earth;
@@ -230,13 +230,13 @@ void applyNtimesNplus1SpectralScaling(const oops::Variables & inputNames,
       const int m1 = zonal_wavenumbers(jm);
       for (std::size_t n1 = m1; n1 <= static_cast<std::size_t>(totalWavenumber); ++n1) {
         for (std::size_t img = 0; img < 2; ++img, ++i) {
-          for (atlas::idx_t jl = 0; jl < fSet[inputNames[var]].levels(); ++jl) {
+          for (atlas::idx_t jl = 0; jl < fSet[innerNames[var]].levels(); ++jl) {
             fldView(i, jl) = n1 * (n1 + 1) *  fldView(i, jl) / a;
           }
         }
       }
     }
-    scaledFld.rename(outputNames[var]);
+    scaledFld.rename(outerNames[var]);
     fsetScaled.add(scaledFld);
   }
 
@@ -253,8 +253,8 @@ void applyNtimesNplus1SpectralScaling(const oops::Variables & inputNames,
 
 static SaberOuterBlockMaker<SpectralToGaussUV> makerSpectralToGaussUV_("spectral to gauss winds");
 
-// Build input functionspace from output functionspace
-// It is the output functionspace that is in the argument.
+// Build inner functionspace from outer functionspace
+// It is the outer functionspace that is in the argument.
 // So we need to create spectral functionspace !!!
 
 // We need to write separate functions that allow
@@ -266,24 +266,24 @@ static SaberOuterBlockMaker<SpectralToGaussUV> makerSpectralToGaussUV_("spectral
 // halo exchange.
 
 // "active variables" - now required in yaml
-// "input variables" - optional in yaml - input for the multiply
+// "inner variables" - optional in yaml - inner for the multiply
 //                   - sum active and passive variables
-SpectralToGaussUV::SpectralToGaussUV(const oops::GeometryData & outputGeometryData,
+SpectralToGaussUV::SpectralToGaussUV(const oops::GeometryData & outerGeometryData,
                const std::vector<size_t> & activeVariableSizes,
-               const oops::Variables & outputVars,
+               const oops::Variables & outerVars,
                const Parameters_ & params,
                const atlas::FieldSet & xb,
                const atlas::FieldSet & fg,
                const std::vector<atlas::FieldSet> & fsetVec)
   : params_(params),
-    inputVars_(createInputVars(params_, outputVars)),
-    outputVars_(outputVars),
+    innerVars_(createInnerVars(params_, outerVars)),
+    outerVars_(outerVars),
     activeVariableSizes_(activeVariableSizes),
-    gaussFunctionSpace_(outputGeometryData.functionSpace()),
+    gaussFunctionSpace_(outerGeometryData.functionSpace()),
     specFunctionSpace_(2 * atlas::GaussianGrid(gaussFunctionSpace_.grid()).N() - 1),
     trans_(gaussFunctionSpace_, specFunctionSpace_),
-    inputGeometryData_(specFunctionSpace_, outputGeometryData.fieldSet(),
-                       outputGeometryData.levelsAreTopDown(), outputGeometryData.comm())
+    innerGeometryData_(specFunctionSpace_, outerGeometryData.fieldSet(),
+                       outerGeometryData.levelsAreTopDown(), outerGeometryData.comm())
 {
   oops::Log::trace() << classname() << "::SpectralToGaussUV starting" << std::endl;
   oops::Log::trace() << classname() << "::SpectralToGaussUV done" << std::endl;
@@ -301,7 +301,7 @@ void SpectralToGaussUV::multiply(atlas::FieldSet & fset) const {
   std::vector<std::string> fsetNames = fset.field_names();
 
   for (auto & s : fset.field_names()) {
-     if (outputVars_.has(s)) {
+     if (outerVars_.has(s)) {
        newFields.add(fset[s]);
      }
   }
@@ -311,7 +311,7 @@ void SpectralToGaussUV::multiply(atlas::FieldSet & fset) const {
   // divergence_spectral_2D
   const int N = specFunctionSpace_.truncation();
 
-  if (inputVars_.has("streamfunction") && inputVars_.has("velocity_potential")) {
+  if (innerVars_.has("streamfunction") && innerVars_.has("velocity_potential")) {
     applyNtimesNplus1SpectralScaling(
       oops::Variables(std::vector<std::string>({"streamfunction", "velocity_potential"})),
       oops::Variables(std::vector<std::string>({"vorticity", "divergence"})),
@@ -319,7 +319,7 @@ void SpectralToGaussUV::multiply(atlas::FieldSet & fset) const {
   }
 
   atlas::Field uvgp = allocateGaussUVField(gaussFunctionSpace_,
-                                           inputVars_, activeVariableSizes_);
+                                           innerVars_, activeVariableSizes_);
 
   // transform to gaussian grid
   trans_.invtrans_vordiv2wind(fset["vorticity"], fset["divergence"], uvgp);
@@ -346,20 +346,20 @@ void SpectralToGaussUV::multiplyAD(atlas::FieldSet & fset) const {
   std::vector<std::string> fsetNames = fset.field_names();
 
   for (auto & s : fset.field_names()) {
-     if (inputVars_.has(s)) {
+     if (innerVars_.has(s)) {
        newFields.add(fset[s]);
      }
   }
 
   atlas::Field uvgp = convertUVToFieldSetAD(fset);
   atlas::FieldSet specfset = allocateSpectralVortDiv(specFunctionSpace_,
-                                                     inputVars_, activeVariableSizes_);
+                                                     innerVars_, activeVariableSizes_);
 
   trans_.invtrans_vordiv2wind_adj(uvgp, specfset["vorticity"], specfset["divergence"]);
 
   const int N = specFunctionSpace_.truncation();
 
-  if (inputVars_.has("streamfunction") && inputVars_.has("velocity_potential")) {
+  if (innerVars_.has("streamfunction") && innerVars_.has("velocity_potential")) {
     applyNtimesNplus1SpectralScaling(
       oops::Variables(std::vector<std::string>({"vorticity", "divergence"})),
       oops::Variables(std::vector<std::string>({"streamfunction", "velocity_potential"})),

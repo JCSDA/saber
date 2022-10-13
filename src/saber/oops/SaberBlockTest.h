@@ -111,10 +111,10 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
     State_ xbLocal(xx);
     State_ fgLocal(xx);
 
-    // Initial output geometry and variables
-    std::vector<std::reference_wrapper<const oops::GeometryData>> outputGeometryData_;
-    outputGeometryData_.push_back(geom.generic());
-    oops::Variables outputVars(incVars);
+    // Initial outer geometry and variables
+    std::vector<std::reference_wrapper<const oops::GeometryData>> outerGeometryData_;
+    outerGeometryData_.push_back(geom.generic());
+    oops::Variables outerVars(incVars);
 
     // Build outer blocks successively
     const boost::optional<std::vector<SaberOuterBlockParametersWrapper>> &saberOuterBlocks =
@@ -129,7 +129,7 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
 
         // Get active variables
         oops::Variables activeVars =
-          saberOuterBlockParams.activeVars.value().get_value_or(outputVars);
+          saberOuterBlockParams.activeVars.value().get_value_or(outerVars);
 
         // Read input fields (on model increment geometry)
         std::vector<atlas::FieldSet> fsetVec = readInputFields(
@@ -142,9 +142,9 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         oops::Log::info() << "Info     : Creating outer block: "
                           << saberOuterBlockParams.saberBlockName.value() << std::endl;
         saberOuterBlocks_.push_back(SaberOuterBlockFactory::create(
-                                    outputGeometryData_.back().get(),
+                                    outerGeometryData_.back().get(),
                                     geom.variableSizes(activeVars),
-                                    outputVars,
+                                    outerVars,
                                     saberOuterBlockParams,
                                     xbLocal.fieldSet(),
                                     fgLocal.fieldSet(),
@@ -155,47 +155,47 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
 //        saberOuterBlocks_.back().calibrationInverseMultiply(xbLocal.fieldSet());
 //        saberOuterBlocks_.back().calibrationInverseMultiply(fgLocal.fieldSet());
 
-        // Access input geometry and variables
-        const oops::GeometryData & inputGeometryData = saberOuterBlocks_.back().inputGeometryData();
-        const oops::Variables inputVars = saberOuterBlocks_.back().inputVars();
+        // Access inner geometry and variables
+        const oops::GeometryData & innerGeometryData = saberOuterBlocks_.back().innerGeometryData();
+        const oops::Variables innerVars = saberOuterBlocks_.back().innerVars();
 
-        // Check that active variables are present in either input or output variables, or both
+        // Check that active variables are present in either inner or outer variables, or both
         for (const auto & var : activeVars.variables()) {
-          ASSERT(inputVars.has(var) || outputVars.has(var));
+          ASSERT(innerVars.has(var) || outerVars.has(var));
         }
 
         // Adjoint test
 
         // Variables sizes
-        std::vector<size_t> inputVariableSizes = geom.variableSizes(inputVars);
+        std::vector<size_t> innerVariableSizes = geom.variableSizes(innerVars);
 
-        // Create random input FieldSet
-        atlas::FieldSet inputFset = createRandomFieldSet(inputGeometryData.functionSpace(),
-                                                         inputVariableSizes,
-                                                         inputVars);
+        // Create random inner FieldSet
+        atlas::FieldSet innerFset = createRandomFieldSet(innerGeometryData.functionSpace(),
+                                                         innerVariableSizes,
+                                                         innerVars);
 
-        // Copy input FieldSet
-        atlas::FieldSet inputFsetSave = copyFieldSet(inputFset);
+        // Copy inner FieldSet
+        atlas::FieldSet innerFsetSave = copyFieldSet(innerFset);
 
         // Variables sizes
-        std::vector<size_t> outputVariableSizes = geom.variableSizes(outputVars);
+        std::vector<size_t> outerVariableSizes = geom.variableSizes(outerVars);
 
-        // Create random output FieldSet
-        atlas::FieldSet outputFset =
-          createRandomFieldSet(outputGeometryData_.back().get().functionSpace(),
-                               outputVariableSizes,
-                               outputVars);
+        // Create random outer FieldSet
+        atlas::FieldSet outerFset =
+          createRandomFieldSet(outerGeometryData_.back().get().functionSpace(),
+                               outerVariableSizes,
+                               outerVars);
 
-        // Copy output FieldSet
-        atlas::FieldSet outputFsetSave = copyFieldSet(outputFset);
+        // Copy outer FieldSet
+        atlas::FieldSet outerFsetSave = copyFieldSet(outerFset);
 
         // Apply forward and adjoint multiplication
-        saberOuterBlocks_.back().multiply(inputFset);
-        saberOuterBlocks_.back().multiplyAD(outputFset);
+        saberOuterBlocks_.back().multiply(innerFset);
+        saberOuterBlocks_.back().multiplyAD(outerFset);
 
         // Compute adjoint test
-        const double dp1 = dot_product(inputFset, outputFsetSave, geom.getComm());
-        const double dp2 = dot_product(outputFset, inputFsetSave, geom.getComm());
+        const double dp1 = dot_product(innerFset, outerFsetSave, geom.getComm());
+        const double dp2 = dot_product(outerFset, innerFsetSave, geom.getComm());
         oops::Log::info() << "Info     : Adjoint test for outer block "
                           << saberOuterBlockParams.saberBlockName.value()
                           << ": y^t (Ax) = " << dp1 << ": x^t (A^t y) = " << dp2 << std::endl;
@@ -210,9 +210,9 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
           ABORT("Adjoint test failure");
         }
 
-        // Update output geometry and variables for the next block
-        outputGeometryData_.push_back(inputGeometryData);
-        outputVars = inputVars;
+        // Update outer geometry and variables for the next block
+        outerGeometryData_.push_back(innerGeometryData);
+        outerVars = innerVars;
       }
     }
 
@@ -223,12 +223,12 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       const SaberBlockParametersBase & saberCentralBlockParams =
         saberCentralBlock->saberCentralBlockParameters;
 
-      // Define input/output variables
-      oops::Variables inoutVars = outputVars;
+      // Define inner/outer variables
+      oops::Variables centralVars = outerVars;
 
       // Get active variables
       oops::Variables activeVars =
-        saberCentralBlockParams.activeVars.value().get_value_or(outputVars);
+        saberCentralBlockParams.activeVars.value().get_value_or(outerVars);
 
       // Read input fields (on model increment geometry)
       std::vector<atlas::FieldSet> fsetVec = readInputFields(
@@ -239,49 +239,49 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
 
       // Create central block
       saberCentralBlock_.reset(SaberCentralBlockFactory::create(
-                               outputGeometryData_.back().get(),
+                               outerGeometryData_.back().get(),
                                geom.variableSizes(activeVars),
-                               inoutVars,
+                               centralVars,
                                saberCentralBlockParams,
                                xbLocal.fieldSet(),
                                fgLocal.fieldSet(),
                                fsetVec));
 
-      // Check that active variables are present in input/output variables
+      // Check that active variables are present in inner/outer variables
       for (const auto & var : activeVars.variables()) {
-        ASSERT(inoutVars.has(var));
+        ASSERT(centralVars.has(var));
       }
 
       // Adjoint test
 
       // Variables sizes
-      std::vector<size_t> inoutVariableSizes = geom.variableSizes(inoutVars);
+      std::vector<size_t> centralVariableSizes = geom.variableSizes(centralVars);
 
-      // Create random input FieldSet
-      atlas::FieldSet inputFset =
-        createRandomFieldSet(outputGeometryData_.back().get().functionSpace(),
-                             inoutVariableSizes,
-                             inoutVars);
+      // Create random inner FieldSet
+      atlas::FieldSet innerFset =
+        createRandomFieldSet(outerGeometryData_.back().get().functionSpace(),
+                             centralVariableSizes,
+                             centralVars);
 
-      // Copy input FieldSet
-      atlas::FieldSet inputFsetSave = copyFieldSet(inputFset);
+      // Copy inner FieldSet
+      atlas::FieldSet innerFsetSave = copyFieldSet(innerFset);
 
-      // Create random output FieldSet
-      atlas::FieldSet outputFset =
-        createRandomFieldSet(outputGeometryData_.back().get().functionSpace(),
-                             inoutVariableSizes,
-                             inoutVars);
+      // Create random outer FieldSet
+      atlas::FieldSet outerFset =
+        createRandomFieldSet(outerGeometryData_.back().get().functionSpace(),
+                             centralVariableSizes,
+                             centralVars);
 
-      // Copy output FieldSet
-      atlas::FieldSet outputFsetSave = copyFieldSet(outputFset);
+      // Copy outer FieldSet
+      atlas::FieldSet outerFsetSave = copyFieldSet(outerFset);
 
       // Apply forward multiplication only (self-adjointness test)
-      saberCentralBlock_->multiply(inputFset);
-      saberCentralBlock_->multiply(outputFset);
+      saberCentralBlock_->multiply(innerFset);
+      saberCentralBlock_->multiply(outerFset);
 
       // Compute adjoint test
-      const double dp1 = dot_product(inputFset, outputFsetSave, geom.getComm());
-      const double dp2 = dot_product(outputFset, inputFsetSave, geom.getComm());
+      const double dp1 = dot_product(innerFset, outerFsetSave, geom.getComm());
+      const double dp2 = dot_product(outerFset, innerFsetSave, geom.getComm());
       oops::Log::info() << "Info     : Adjoint test for central block "
                         << saberCentralBlockParams.saberBlockName.value()
                         << ": y^t (Ax) = " << dp1 << ": x^t (Ay) = " << dp2 << std::endl;

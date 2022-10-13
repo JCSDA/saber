@@ -83,11 +83,12 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
     // Create dummy time
     util::DateTime dummyTime(1977, 5, 25, 0, 0, 0);
 
-    // Define input/output variables
-    oops::Variables inoutVars = incVars;
+    // Define central variables
+    oops::Variables centralVars = incVars;
 
     // Get active variables
-    oops::Variables activeVars = saberCentralBlockParams.activeVars.value().get_value_or(inoutVars);
+    oops::Variables activeVars =
+      saberCentralBlockParams.activeVars.value().get_value_or(centralVars);
 
     // Read input fields (on model increment geometry)
     std::vector<atlas::FieldSet> fsetVec = readInputFields(
@@ -96,22 +97,22 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
       dummyTime,
       saberCentralBlockParams.inputFields.value());
 
-    // Input Geometry
+    // Central Geometry
     geometryData_.push_back(geom.generic());
 
     // Create central block
     saberCentralBlock_.reset(SaberCentralBlockFactory::create(
                              geometryData_.back().get(),
                              geom.variableSizes(activeVars),
-                             inoutVars,
+                             centralVars,
                              saberCentralBlockParams,
                              dummyFs,
                              dummyFs,
                              fsetVec));
 
-    // Check that active variables are present in input/output variables
+    // Check that active variables are present in central variables
     for (const auto & var : activeVars.variables()) {
-      ASSERT(inoutVars.has(var));
+      ASSERT(centralVars.has(var));
     }
   }
 
@@ -131,7 +132,7 @@ template<typename MODEL>
 void Localization<MODEL>::randomize(Increment_ & dx) const {
   oops::Log::trace() << "Localization:randomize starting" << std::endl;
 
-  // Random output vector (necessary for some SABER blocks)
+  // Random vector (necessary for some SABER blocks)
   dx.random();
 
   // Central block randomization

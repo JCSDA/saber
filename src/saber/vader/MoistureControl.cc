@@ -38,19 +38,19 @@ static SaberOuterBlockMaker<MoistureControl> makerMoistureControlBlock_("mo_mois
 
 // -----------------------------------------------------------------------------
 
-MoistureControl::MoistureControl(const oops::GeometryData & outputGeometryData,
+MoistureControl::MoistureControl(const oops::GeometryData & outerGeometryData,
                                  const std::vector<size_t> & activeVariableSizes,
-                                 const oops::Variables & outputVars,
+                                 const oops::Variables & outerVars,
                                  const Parameters_ & params,
                                  const atlas::FieldSet & xb,
                                  const atlas::FieldSet & fg,
                                  const std::vector<atlas::FieldSet> & fsetVec)
-  : inputGeometryData_(outputGeometryData), inputVars_(outputVars), augmentedStateFieldSet_()
+  : innerGeometryData_(outerGeometryData), innerVars_(outerVars), augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::MoistureControl starting" << std::endl;
 
   // Covariance FieldSet
-  covFieldSet_ = createMuStats(outputGeometryData.fieldSet(),
+  covFieldSet_ = createMuStats(outerGeometryData.fieldSet(),
                                params.moistureControlParams.value());
 
   std::vector<std::string> requiredStateVariables{

@@ -102,14 +102,14 @@ class SaberCentralBlockMaker : public SaberCentralBlockFactory {
 
   SaberCentralBlockBase * make(const oops::GeometryData & geometryData,
                                const std::vector<size_t> & activeVariableSizes,
-                               const oops::Variables & outputVars,
+                               const oops::Variables & outerVars,
                                const SaberBlockParametersBase & params,
                                const atlas::FieldSet & xb,
                                const atlas::FieldSet & fg,
                                const std::vector<atlas::FieldSet> & fsetVec) override {
     const auto &stronglyTypedParams = dynamic_cast<const Parameters_&>(params);
     return new T(geometryData, activeVariableSizes,
-                 outputVars, stronglyTypedParams, xb, fg, fsetVec);
+                 outerVars, stronglyTypedParams, xb, fg, fsetVec);
   }
 
   std::unique_ptr<SaberBlockParametersBase> makeParameters() const override {

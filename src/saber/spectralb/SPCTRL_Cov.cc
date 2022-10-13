@@ -30,7 +30,7 @@ static SaberCentralBlockMaker<SPCTRL_COV> makerSPCTRL_COV_("SPCTRL_COV");
 
 SPCTRL_COV::SPCTRL_COV(const oops::GeometryData & geometryData,
                        const std::vector<size_t> & activeVariableSizes,
-                       const oops::Variables & inoutVars,
+                       const oops::Variables & centralVars,
                        const Parameters_ & params,
                        const atlas::FieldSet & xb,
                        const atlas::FieldSet & fg,
@@ -40,7 +40,7 @@ SPCTRL_COV::SPCTRL_COV(const oops::GeometryData & geometryData,
   oops::Log::trace() << classname() << "::SPCTRL_COV starting" << std::endl;
 
   // Get active variables
-  oops::Variables activeVars = params.activeVars.value().get_value_or(inoutVars);
+  oops::Variables activeVars = params.activeVars.value().get_value_or(centralVars);
 
   // Initialize SpectralB
   spectralb_.reset(new SpectralB(geometryData.functionSpace(),

@@ -69,8 +69,7 @@ type(fckit_mpi_comm),      intent(in)    :: comm
 ! Locals
 integer :: ncid, dimid(3), varid(2)
 character(len=:), allocatable :: str
-integer :: posx, posy, i, j, jj
-logical :: bkgmock,cv
+integer :: posx, posy, i, j
 logical :: verbose
 
 ! Create copy of comm

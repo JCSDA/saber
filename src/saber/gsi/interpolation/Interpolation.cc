@@ -30,38 +30,38 @@ static SaberOuterBlockMaker<Interpolation> makerInterpolation_("gsi interpolatio
 
 // -------------------------------------------------------------------------------------------------
 
-Interpolation::Interpolation(const oops::GeometryData & outputGeometryData,
+Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
                              const std::vector<size_t> & activeVariableSizes,
-                             const oops::Variables & outputVars,
+                             const oops::Variables & outerVars,
                              const Parameters_ & params,
                              const atlas::FieldSet & xb,
                              const atlas::FieldSet & fg,
                              const std::vector<atlas::FieldSet> & fsetVec)
-  : inputVars_(outputVars),
-    grid_(outputGeometryData.comm(), params.toConfiguration()),
-    outputFunctionSpace_(outputGeometryData.functionSpace())
+  : innerVars_(outerVars),
+    grid_(outerGeometryData.comm(), params.toConfiguration()),
+    outerFunctionSpace_(outerGeometryData.functionSpace())
 {
   oops::Log::trace() << classname() << "::Interpolation starting" << std::endl;
   util::Timer timer(classname(), "Interpolation");
 
-  // Input geometry and variables
-  inputGeometryData_.reset(new oops::GeometryData(grid_.functionSpace(),
-                                                  outputGeometryData.fieldSet(),
-                                                  outputGeometryData.levelsAreTopDown(),
-                                                  outputGeometryData.comm()));
+  // Inner geometry and variables
+  innerGeometryData_.reset(new oops::GeometryData(grid_.functionSpace(),
+                                                  outerGeometryData.fieldSet(),
+                                                  outerGeometryData.levelsAreTopDown(),
+                                                  outerGeometryData.comm()));
 
   // Object wide copy of the variables
-  variables_ = inputVars_.variables();
+  variables_ = innerVars_.variables();
 
   // Get number of levels
   gsiLevels_ = grid_.levels();
 
   // Create the interpolator
   interpolator_.reset(new UnstructuredInterpolation(params.toConfiguration(),
-                                                    inputGeometryData_->functionSpace(),
-                                                    outputFunctionSpace_,
+                                                    innerGeometryData_->functionSpace(),
+                                                    outerFunctionSpace_,
                                                     nullptr,
-                                                    outputGeometryData.comm()));
+                                                    outerGeometryData.comm()));
 
   oops::Log::trace() << classname() << "::Interpolation done" << std::endl;
 }
@@ -85,13 +85,13 @@ void Interpolation::multiply(atlas::FieldSet & fset) const {
 
   // Loop over saber (gsi) fields and create corresponding model fields
   for (auto sabField : fset) {
-      // Ensure that the field name is in the input/output list
+      // Ensure that the field name is in the variables list
       if (std::find(variables_.begin(), variables_.end(), sabField.name()) == variables_.end()) {
         ABORT("Field " + sabField.name() + " not found in the " + classname() + " variables.");
       }
 
       // Create the model field and add to Fieldset
-      modFields.add(outputFunctionSpace_.createField<double>(atlas::option::name(sabField.name())
+      modFields.add(outerFunctionSpace_.createField<double>(atlas::option::name(sabField.name())
       | atlas::option::levels(sabField.levels())));
   }
 
@@ -118,14 +118,14 @@ void Interpolation::multiplyAD(atlas::FieldSet & fset) const {
       // Get the name
       const auto fieldName = atlas::option::name(sabField.name());
 
-      // Ensure that the field name is in the input/output list
+      // Ensure that the field name is in the variables list
       const std::string fieldNameStr = fieldName.getString("name");
       if (std::find(variables_.begin(), variables_.end(), fieldNameStr) == variables_.end()) {
         ABORT("Field " + fieldNameStr + " not found in the " + classname() + " variables.");
       }
 
       // Create the field and add to Fieldset
-      gsiFields.add(inputGeometryData_->functionSpace().createField<double>(
+      gsiFields.add(innerGeometryData_->functionSpace().createField<double>(
         atlas::option::name(fieldName) | atlas::option::levels(sabField.levels())));
   }
 
