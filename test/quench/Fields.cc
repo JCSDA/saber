@@ -703,7 +703,6 @@ void Fields::write(const eckit::Configuration & config) const {
 
   // NetCDF output
   if (geom_->functionSpace().type() == "StructuredColumns") {
-    /*
     // StructuredColumns
     atlas::functionspace::StructuredColumns fs(geom_->functionSpace());
 
@@ -835,7 +834,6 @@ void Fields::write(const eckit::Configuration & config) const {
       // Close file
       if ((retval = nc_close(ncid))) ERR(retval);
     }
-    */
   } else if (geom_->functionSpace().type() == "NodeColumns") {
     // NodeColumns
     atlas::idx_t nb_nodes;

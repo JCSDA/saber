@@ -285,7 +285,8 @@ SpectralToGaussUV::SpectralToGaussUV(const oops::GeometryData & outerGeometryDat
     innerGeometryData_(specFunctionSpace_, outerGeometryData.fieldSet(),
                        outerGeometryData.levelsAreTopDown(), outerGeometryData.comm())
 {
-  oops::Log::trace() << classname() << "::SpectralToGaussUV starting" << outerVars.variables() << std::endl;
+  oops::Log::trace() << classname() << "::SpectralToGaussUV starting" <<
+                       outerVars.variables() << std::endl;
   oops::Log::trace() << classname() << "::SpectralToGaussUV done" << std::endl;
 }
 
