@@ -683,7 +683,13 @@ if( SABER_TEST_SPECTRALB )
     foreach( test ${saber_test_spectralb} )
         string( FIND ${test} "quench_dirac" start_index )
         if( start_index MATCHES 0 )
-            set( mpi 1 )
+            if ( test MATCHES quench_dirac_spectralb_from_CS )
+                set( mpi 1 )
+            elseif(  test MATCHES quench_dirac_spectralb_from_L15  )
+                set( mpi 1 )
+            else()
+                set( mpi 4 )
+            endif ()
             ecbuild_add_test( TARGET saber_test_${test}
                               MPI ${mpi}
                               OMP ${omp}
