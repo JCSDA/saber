@@ -17,6 +17,7 @@ background error:
       covariance_file: testdata/spectralcov.nc
       gauss_grid_uid: F160
       umatrix_netcdf_names: [PSI_inc_Uv_matrix, CHI_inc_Uv_matrix]
+      variance_opt: true
   saber outer blocks:
   - saber block name: spectral to gauss winds
     gauss grid uid: F160
