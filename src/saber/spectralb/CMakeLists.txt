@@ -32,13 +32,13 @@ if( atlas_TRANS_FOUND )
     )
 endif()
 
-if( atlas_VERSION GREATER_EQUAL 0.31.0 )
+#if( atlas_VERSION GREATER_EQUAL 0.31.0 )
     list(APPEND spectralb_src_files_list
 
     SpectralToGaussUV.cc
     SpectralToGaussUV.h
     )
-endif()
+#endif()
 
 set( spectralb_src_files
 
