@@ -231,7 +231,7 @@ void applyNtimesNplus1SpectralScaling(const oops::Variables & innerNames,
       for (std::size_t n1 = m1; n1 <= static_cast<std::size_t>(totalWavenumber); ++n1) {
         for (std::size_t img = 0; img < 2; ++img, ++i) {
           for (atlas::idx_t jl = 0; jl < fSet[innerNames[var]].levels(); ++jl) {
-            fldView(i, jl) = - n1 * (n1 + 1) *  fldView(i, jl) / (a * a);
+            fldView(i, jl) =  n1 * (n1 + 1) *  fldView(i, jl) / (a * a);
           }
         }
       }
