@@ -282,8 +282,10 @@ SpectralToGaussUV::SpectralToGaussUV(const oops::GeometryData & outerGeometryDat
     gaussFunctionSpace_(outerGeometryData.functionSpace()),
     specFunctionSpace_(2 * atlas::GaussianGrid(gaussFunctionSpace_.grid()).N() - 1),
     trans_(gaussFunctionSpace_, specFunctionSpace_),
-    innerGeometryData_(specFunctionSpace_, outerGeometryData.fieldSet(),
-                       outerGeometryData.levelsAreTopDown(), outerGeometryData.comm())
+    innerGeometryData_((params.useInnerGaussianFunctionSpace.value() ?
+                        atlas::FunctionSpace(gaussFunctionSpace_) : atlas::FunctionSpace(specFunctionSpace_)),
+                        outerGeometryData.fieldSet(),
+                        outerGeometryData.levelsAreTopDown(), outerGeometryData.comm())
 {
   oops::Log::trace() << classname() << "::SpectralToGaussUV starting" <<
                        outerVars.variables() << std::endl;
