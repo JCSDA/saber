@@ -52,7 +52,7 @@ void SpectralToGauss::multiply(atlas::FieldSet & fieldSet) const {
   std::vector<std::string> fsetNames = fieldSet.field_names();
 
   for (auto & fieldname : fieldSet.field_names()) {
-     if (activeVars_.has(fieldname) ) {
+     if (activeVars_.has(fieldname)) {
        specFieldSet.add(fieldSet[fieldname]);
      } else {
        newFields.add(fieldSet[fieldname]);
@@ -95,7 +95,7 @@ void SpectralToGauss::multiplyAD(atlas::FieldSet & fieldSet) const {
   std::vector<std::string> fsetNames = fieldSet.field_names();
 
   for (auto & fieldname : fieldSet.field_names()) {
-     if (activeVars_.has(fieldname) ) {
+     if (activeVars_.has(fieldname)) {
        gaussFieldSet.add(fieldSet[fieldname]);
      } else {
        newFields.add(fieldSet[fieldname]);

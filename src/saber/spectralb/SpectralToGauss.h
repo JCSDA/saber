@@ -30,7 +30,7 @@ class SpectralToGaussParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(SpectralToGaussParameters, SaberBlockParametersBase)
 
  public:
-   oops::OptionalParameter<oops::Variables> activeVariables{"active variables", this};
+  oops::OptionalParameter<oops::Variables> activeVariables{"active variables", this};
   // No parameters for now (in the future may add N as a parameter if it is possible
   // to use the one different from the one inferred from the gaussian grid
 };
@@ -73,7 +73,6 @@ class SpectralToGauss : public SaberOuterBlockBase {
   const atlas::trans::Trans trans_;
 
   const oops::GeometryData innerGeometryData_;
-
 };
 
 }  // namespace spectralb
