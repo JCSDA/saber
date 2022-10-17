@@ -815,7 +815,7 @@ end subroutine nicas_blk_write_grids_data
 ! Subroutine: nicas_blk_compute_parameters
 !> Compute NICAS parameters
 !----------------------------------------------------------------------
-subroutine nicas_blk_compute_parameters(nicas_blk,mpl,rng,nam,geom)
+subroutine nicas_blk_compute_parameters(nicas_blk,mpl,rng,nam,geom,bpar)
 
 implicit none
 
@@ -825,9 +825,10 @@ type(mpl_type),intent(inout) :: mpl              !< MPI data
 type(rng_type),intent(inout) :: rng              !< Random number generator
 type(nam_type),intent(in) :: nam                 !< Namelist
 type(geom_type),intent(in) :: geom               !< Geometry
+type(bpar_type),intent(in) :: bpar               !< Block parameters
 
 ! Local variables
-integer :: icmp
+integer :: icmp,iv
 
 ! Set name
 @:set_name(nicas_blk_compute_parameters)
@@ -852,6 +853,8 @@ do icmp=1,nicas_blk%ncmp
    nicas_blk%cmp(icmp)%smoother = .false.
    nicas_blk%cmp(icmp)%horizontal = .false.
    nicas_blk%cmp(icmp)%compute_norm = (.not.allocated(nicas_blk%cmp(icmp)%norm))
+   iv = bpar%b_to_v1(ib)
+   nicas_blk%cmp(icmp)%interp_type = nam%nicas_interp_type(iv)
 
    ! Component work
    call nicas_blk%cmp(icmp)%compute_parameters(mpl,rng,nam,geom)
@@ -900,6 +903,7 @@ allocate(nicas_blk%cmp(nicas_blk%ncmp))
 ! Set attributes
 nicas_blk%cmp(icmp)%ib = ib
 nicas_blk%cmp(icmp)%ncmp = nicas_blk%ncmp
+nicas_blk%cmp(icmp)%interp_type = 'c0'
 
 ! Component work
 call nicas_blk%cmp(icmp)%compute_parameters(mpl,rng,nam,geom,rhflt)

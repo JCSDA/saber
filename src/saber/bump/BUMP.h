@@ -308,6 +308,8 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<bool> vbal_id{"vbal_id", this};
   // Scalar coefficients for identity vertical balance
   oops::OptionalParameter<std::vector<double>> vbal_id_coef{"vbal_id_coef", this};
+  // Vertical balance C2B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based or 'si': smooth interpolation)
+  oops::OptionalParameter<std::string> vbal_interp_type{"vbal_interp_type", this};
   // Force specific variance
   oops::OptionalParameter<bool> forced_var{"forced_var", this};
   // Forced standard-deviation
@@ -364,12 +366,12 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<eckit::LocalConfiguration> min_lev{"min_lev", this};
   // Maximum level
   oops::OptionalParameter<eckit::LocalConfiguration> max_lev{"max_lev", this};
+  // NICAS C1B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based or 'si': smooth interpolation)
+  oops::OptionalParameter<eckit::LocalConfiguration> nicas_interp_type{"nicas_interp_type", this};
   // Positive-definiteness test
   oops::OptionalParameter<bool> pos_def_test{"pos_def_test", this};
   // Write NICAS grids
   oops::OptionalParameter<bool> write_nicas_grids{"write_nicas_grids", this};
-  // C1B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based or 'si': smooth interpolation)
-  oops::OptionalParameter<std::string> nicas_interp_type{"nicas_interp_type", this};
   // Horizontal NICAS interpolation test
   oops::OptionalParameter<bool> interp_test{"interp_test", this};
 

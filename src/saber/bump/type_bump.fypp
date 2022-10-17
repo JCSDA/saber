@@ -1131,7 +1131,7 @@ do ifac=-nfac_opt,nfac_opt
          call nicas_test%blk(ib)%copy_cmat(bump%mpl,bump%nam,bump%geom(1),bump%bpar,bump%cmat(1)%blk(ib))
 
          ! Compute NICAS parameters
-         call nicas_test%blk(ib)%compute_parameters(bump%mpl,bump%rng,bump%nam,bump%geom(1))
+         call nicas_test%blk(ib)%compute_parameters(bump%mpl,bump%rng,bump%nam,bump%geom(1),bump%bpar)
 
          ! Length-scales inverse scaling
          bump%cmat(1)%blk(ib)%rhs = bump%cmat(1)%blk(ib)%rhs/fac(ifac)
