@@ -35,5 +35,5 @@ output dirac:
   filepath: testdata/quench_dirac_spectralb/dirac_%id%
 
 test:
-  reference filename: testref/quench_dirac_spectralb/test.log.out
-  test output filename: testoutput/quench_dirac_spectralb/test.log.out
+  reference filename: testref/quench_dirac_spectralb_and_touv/test.log.out
+  test output filename: testoutput/quench_dirac_spectralb_and_touv/test.log.out

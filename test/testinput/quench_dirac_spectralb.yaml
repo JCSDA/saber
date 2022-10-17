@@ -7,7 +7,7 @@ geometry:
   partitioner: ectrans
 initial condition:
   date: 2010-01-01T12:00:00Z
-  state variables: &vars [eastward_wind, northward_wind, unbalanced_pressure, moisture_control_variable]
+  state variables: &vars [streamfunction, velocity_potential, unbalanced_pressure, moisture_control_variable]
 background error:
   covariance model: SABER
   saber central block:
@@ -18,19 +18,13 @@ background error:
       umatrix_netcdf_names: [PSI_inc_Uv_matrix, CHI_inc_Uv_matrix,
                              aP_inc_Uv_matrix, MU_inc_Uv_matrix]
       variance_opt: true
-      active variables: [streamfunction, velocity_potential, unbalanced_pressure, moisture_control_variable]
   saber outer blocks:
   - saber block name: spectral to gauss
-    active variables: [unbalanced_pressure, moisture_control_variable]
-  - saber block name: spectral to gauss winds
-    gauss grid uid: F15
-    use streamfunction and velocity potential: true
-
 dirac:
-  lon: [180.0, 180.0, 180.0]
-  lat: [0.0, 0.0, 0.0]
-  level: [1,1,1]
-  variable: [eastward_wind, unbalanced_pressure, moisture_control_variable]
+  lon: [180.0, 180.0, 180.0, 180.0]
+  lat: [0.0, 0.0, 0.0, 0.0]
+  level: [1,1,1,1]
+  variable: *vars
 output dirac:
   filepath: testdata/quench_dirac_spectralb/dirac_%id%
 
