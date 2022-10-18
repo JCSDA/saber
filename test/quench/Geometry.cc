@@ -131,7 +131,7 @@ Geometry::Geometry(const Parameters_ & params,
       } else {
             // NodeColumns
         mesh_ = atlas::MeshGenerator("delaunay").generate(grid_);
-        functionSpace_ = atlas::functionspace::NodeColumns(mesh_);  
+        functionSpace_ = atlas::functionspace::NodeColumns(mesh_);
       }
     } else {
       ABORT("NodeColumns function space on multiple PEs not supported yet");
