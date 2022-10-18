@@ -112,8 +112,8 @@ type nicas_cmp_type
    logical :: anisotropic                               !< Anisotropic tensor flag
    logical :: verbosity                                 !< Verbosity flag
    logical :: smoother                                  !< Smoother flag
-   logical :: horizontal                                !< Horizontal application flag
    logical :: compute_norm                              !< Compute normalization
+   character(len=1024) :: draw_type                     !< Draw type
    integer :: nc0a                                      !< Number of points in subset Sc0, halo A
 
    ! Number of processors
@@ -2028,11 +2028,6 @@ nicas_cmp%rv = zero
 nicas_cmp%rhs(:,1) = rhflt
 nicas_cmp%rvs = zero
 
-! NICAS block initialization
-nicas_cmp%verbosity = .false.
-nicas_cmp%smoother = .true.
-nicas_cmp%compute_norm = .false.
-
 ! Compute parameters
 call nicas_cmp%compute_parameters(mpl,rng,nam,geom)
 
@@ -2313,12 +2308,8 @@ do il1=1,nicas_cmp%nl1
       end if
       if (nicas_cmp%hor(il1)%nc1<3) call mpl%abort('${subr}$','nicas_cmp%nc1 lower than 3')
       nicas_cmp%hor(il1)%nc1 = min(nicas_cmp%hor(il1)%nc1,geom%nc0_gmask(il0))
-      write(mpl%info,'(a19,a,i8)') '','Final nc1: ',nicas_cmp%hor(il1)%nc1
-      if (nicas_cmp%verbosity) call mpl%flush
-      write(mpl%info,'(a13,a,f5.2)') '','Effective horizontal resolution: ', &
- & sqrt(real(nicas_cmp%hor(il1)%nc1,kind_real)*sqrt(three)*rhs_avg(il0)**2/(two*geom%area_ver_c0(il0)))
 
-      select case (trim(nam%nicas_draw_type))
+      select case (trim(nicas_cmp%draw_type))
       case ('random_uniform','random_coast')
          ! Allocation
          allocate(c1_to_c0(nicas_cmp%hor(il1)%nc1))
@@ -2361,10 +2352,17 @@ do il1=1,nicas_cmp%nl1
 
          ! Release memory
          deallocate(c1_to_c0)
+   
+         ! Print subset Sc1 size  
+         write(mpl%info,'(a19,a,i8)') '','Final nc1: ',nicas_cmp%hor(il1)%nc1
+         if (nicas_cmp%verbosity) call mpl%flush
+         write(mpl%info,'(a19,a,f5.2)') '','Effective horizontal resolution: ', &
+ & sqrt(real(nicas_cmp%hor(il1)%nc1,kind_real)*sqrt(three)*rhs_avg(il0)**2/(two*geom%area_ver_c0(il0)))
+         if (nicas_cmp%verbosity) call mpl%flush
       case ('octahedral')
          ! Use an octahedral grid
          write(mpl%info,'(a19,a)') '','Use an octahedral grid for subset Sc1 '
-         call mpl%flush
+         if (nicas_cmp%verbosity) call mpl%flush
 
          ! Global grid
          n = int(real(nicas_cmp%hor(il1)%nc1,kind_real)*four*pi/geom%area_max_c0)+1
@@ -2442,6 +2440,13 @@ do il1=1,nicas_cmp%nl1
 
         ! Global size
          call mpl%f_comm%allreduce(nicas_cmp%hor(il1)%nc1a,nicas_cmp%hor(il1)%nc1,fckit_mpi_sum())
+
+         ! Print subset Sc1 size  
+         write(mpl%info,'(a19,a,i8)') '','Final nc1: ',nicas_cmp%hor(il1)%nc1
+         if (nicas_cmp%verbosity) call mpl%flush
+         write(mpl%info,'(a19,a,f5.2)') '','Effective horizontal resolution: ', &
+ & sqrt(real(nicas_cmp%hor(il1)%nc1,kind_real)*sqrt(three)*rhs_avg(il0)**2/(two*geom%area_ver_c0(il0)))
+         if (nicas_cmp%verbosity) call mpl%flush
       end select
 
       ! Allocation
@@ -2565,7 +2570,7 @@ do il1=1,nicas_cmp%nl1
    call mesh_c1%init(mpl,rng,lon_c1,lat_c1)
    call tree_c1%init(lon_c1,lat_c1)
    ifmt = 0
-   if (nicas_cmp%verbosity) ifmt = 16
+   if (nicas_cmp%verbosity) ifmt = 19
 
    ! Compute interpolation
    il0 = nicas_cmp%l1_to_l0(il1)
@@ -2590,7 +2595,7 @@ do il1=1,nicas_cmp%nl1
    ! Initialization
    gmask_c1a = .true.
    ifmt = 0
-   if (nicas_cmp%verbosity) ifmt = 16
+   if (nicas_cmp%verbosity) ifmt = 19
 
    ! Compute interpolation
    write(nicas_cmp%interp_c0b_to_c1a(il1)%prefix,'(a,i3.3)') 'interp_c0b_to_c1a_',il1

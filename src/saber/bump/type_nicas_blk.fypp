@@ -851,6 +851,7 @@ do icmp=1,nicas_blk%ncmp
    nicas_blk%cmp(icmp)%ib = ib
    nicas_blk%cmp(icmp)%ncmp = nicas_blk%ncmp
    nicas_blk%cmp(icmp)%verbosity = nicas_blk%verbosity
+   nicas_blk%cmp(icmp)%draw_type = nam%nicas_draw_type
    nicas_blk%cmp(icmp)%smoother = .false.
    nicas_blk%cmp(icmp)%compute_norm = (.not.allocated(nicas_blk%cmp(icmp)%norm))
 
@@ -984,6 +985,15 @@ do il0i=1,nl0i
    geom%grid_hash(1) = grid_hash(il0)
    geom%vunit_c0u(:,1) = vunit_c0u(:,il0)
    geom%gmask_c0u(:,1) = gmask_c0u(:,il0)
+
+
+   ! NICAS block initialization
+   nicas_blk%cmp(il0i)%ib = ib
+   nicas_blk%cmp(il0i)%ncmp = 1
+   nicas_blk%cmp(il0i)%verbosity = .false.
+   nicas_blk%cmp(il0i)%draw_type = 'octahedral'
+   nicas_blk%cmp(il0i)%smoother = .true.
+   nicas_blk%cmp(il0i)%compute_norm = .false.
 
    ! Compute parameters
    call nicas_blk%cmp(il0i)%compute_parameters(mpl,rng,nam,geom,rhflt(il0))
