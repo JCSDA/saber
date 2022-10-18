@@ -288,8 +288,7 @@ SpectralToGaussUV::SpectralToGaussUV(const oops::GeometryData & outerGeometryDat
                         outerGeometryData.fieldSet(),
                         outerGeometryData.levelsAreTopDown(), outerGeometryData.comm())
 {
-  oops::Log::trace() << classname() << "::SpectralToGaussUV starting" <<
-                       outerVars.variables() << std::endl;
+  oops::Log::trace() << classname() << "::SpectralToGaussUV starting" << std::endl;
   oops::Log::trace() << classname() << "::SpectralToGaussUV done" << std::endl;
 }
 
@@ -335,15 +334,13 @@ void SpectralToGaussUV::multiply(atlas::FieldSet & fset) const {
 
   fset = newFields;
 
-  oops::Log::trace() << classname() << "::multiply done"
-                     << fset.field_names() << std::endl;
+  oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 void SpectralToGaussUV::multiplyAD(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::multiplyAD starting"
-                     << fset.field_names() << std::endl;
+  oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
 
   // Create empty Model fieldset
   atlas::FieldSet newFields = atlas::FieldSet();
@@ -377,7 +374,7 @@ void SpectralToGaussUV::multiplyAD(atlas::FieldSet & fset) const {
 
   fset = newFields;
 
-  oops::Log::trace() << classname() << "::multiplyAD done" << fset.field_names() <<std::endl;
+  oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

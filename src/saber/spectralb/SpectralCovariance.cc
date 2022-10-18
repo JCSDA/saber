@@ -37,8 +37,7 @@ SpectralCovariance::SpectralCovariance(const oops::GeometryData & geometryData,
     variance_opt_(params.spectralbParams.value().varianceOpt),
     cs_(), specFunctionSpace_(geometryData.functionSpace())
 {
-  oops::Log::trace() << classname() << "::SpectralCovariance starting " <<
-                     activeVars_.variables() << std::endl;
+  oops::Log::trace() << classname() << "::SpectralCovariance starting " << std::endl;
 
   // Initialize CovStat_ErrorCov
   cs_.reset(new CovStat_ErrorCov(variableSizes,
