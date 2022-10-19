@@ -25,6 +25,8 @@ ecbuild_add_library( TARGET   quench
                      INSTALL_HEADERS LISTED
                      LINKER_LANGUAGE CXX )
 
+ target_link_libraries( quench PUBLIC NetCDF::NetCDF_Fortran NetCDF::NetCDF_C )
+
 #Configure include directory layout for build-tree to match install-tree
 set(QUENCH_BUILD_DIR_INCLUDE_PATH ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/include)
 add_custom_target(quench_headers ALL COMMAND ${CMAKE_COMMAND} -E make_directory "${QUENCH_BUILD_DIR_INCLUDE_PATH}/saber"
