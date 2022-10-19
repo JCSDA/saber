@@ -1232,7 +1232,7 @@ end subroutine linop_interp_lat
 ! Subroutine: linop_interp_nn
 !> Compute horizontal interpolation (nearest valid neighbor)
 !----------------------------------------------------------------------
-subroutine linop_interp_nn(linop,mpl,n_src,mask_src,tree_src,n_dst,lon_dst,lat_dst,mask_dst,ifmt,rh)
+subroutine linop_interp_nn(linop,mpl,n_src,mask_src,tree_src,n_dst,lon_dst,lat_dst,mask_dst,ifmt,rh,fac)
 
 implicit none
 
@@ -1248,16 +1248,17 @@ real(kind_real),intent(in) :: lat_dst(n_dst)     !< Destination latitudes
 logical,intent(in) :: mask_dst(n_dst)            !< Destination mask
 integer,intent(in) :: ifmt                       !< Format indentation
 real(kind_real),intent(in),optional :: rh(n_dst) !< Interpolation radius
+real(kind_real),intent(in),optional :: fac       !< Interpolation radius factor
 
 ! Local variables
-integer,parameter :: nmax = 50 ! TODO(Benjamin): flexible with add_op
-integer :: imax,i_dst,n_s,i_s,iext,next
-integer :: row(nmax*n_dst),col(nmax*n_dst)
+integer :: n_s_max,ithread,i_dst,i_s,iext,next
+integer :: c_n_s(mpl%nthread)
 integer,allocatable :: nn_index_ext(:)
-real(kind_real) :: lrh(n_dst),nd,S(nmax*n_dst)
+real(kind_real) :: lrh(n_dst),nd
 real(kind_real),allocatable :: nn_dist_ext(:),wgt(:)
 logical :: found,missing(n_dst)
 character(len=7) :: cfmt
+type(linop_type) :: c(mpl%nthread)
 
 ! Set name
 @:set_name(linop_interp_nn)
@@ -1267,7 +1268,27 @@ character(len=7) :: cfmt
 
 ! Local interpolation radius
 lrh = zero
-if (present(rh)) lrh = rh
+if (present(rh)) then
+   if (present(fac)) then
+      if (fac>zero) then
+         lrh = rh/fac
+      else
+         call mpl%abort('${subr}$','interpolation radius factor should be positive')
+      end if
+   else
+      lrh = rh
+   end if
+end if
+
+! Allocation
+n_s_max = int(real(30*n_dst,kind_real)/real(mpl%nthread,kind_real))
+do ithread=1,mpl%nthread
+   c(ithread)%n_s = n_s_max
+   call c(ithread)%alloc
+end do
+
+! Initialization
+c_n_s = 0
 
 ! Compute interpolation
 if (ifmt>0) then
@@ -1276,10 +1297,12 @@ if (ifmt>0) then
    call mpl%flush(.false.)
    call mpl%prog_init(n_dst)
 end if
-n_s = 0
+!$omp parallel do schedule(static) private(i_dst,ithread,found,next) firstprivate(nn_index_ext,nn_dist_ext,wgt,iext,nd)
 do i_dst=1,n_dst
    if (mask_dst(i_dst)) then
       ! Find nearest valid neighbors
+      ithread = 1
+!$    ithread = omp_get_thread_num()+1
       found = .false.
       next = 1
       do while (.not.found)
@@ -1291,8 +1314,8 @@ do i_dst=1,n_dst
          call tree_src%find_nearest_neighbors(lon_dst(i_dst),lat_dst(i_dst),next+1,nn_index_ext,nn_dist_ext)
 
          ! Check mask
-         if (lrh(n_dst)>zero) then
-            if ((next==nmax).or.(any(mask_src(nn_index_ext(1:next))).and.(nn_dist_ext(next+1)>lrh(n_dst)))) then
+         if (lrh(i_dst)>zero) then
+            if (any(mask_src(nn_index_ext(1:next))).and.(nn_dist_ext(next+1)>lrh(i_dst))) then
                found = .true.
             else
                next = next+1
@@ -1313,71 +1336,60 @@ do i_dst=1,n_dst
          if (next>n_src) call mpl%abort('${subr}$','cannot find valid nearest neighbor')
       end do
 
-      ! Allocation
-      allocate(wgt(next))
+      if (lrh(i_dst)>zero) then
+         ! Allocation
+         allocate(wgt(next))
 
-      ! Initialization
-      wgt = zero
-
-      if (lrh(n_dst)>zero) then
          ! Compute weights
+         wgt = zero
          do iext=1,next
             if (mask_src(nn_index_ext(iext))) then
-               nd = nn_dist_ext(iext)/(lrh(n_dst)/two)
+               nd = nn_dist_ext(iext)/(lrh(i_dst))
                wgt(iext) = fit_func(mpl,'hor',nd)
             end if
          end do
          wgt = wgt/sum(wgt)
+
+         ! Copy indices and weights
+         do iext=1,next
+            if (mask_src(nn_index_ext(iext))) call c(ithread)%add_op(c_n_s(ithread),i_dst,nn_index_ext(iext),wgt(iext))
+         end do
+
+         ! Release memory
+         deallocate(wgt)
       else
-         wgt(next) = one
+         ! Copy indices and weights
+         call c(ithread)%add_op(c_n_s(ithread),i_dst,nn_index_ext(next),one)
       end if
 
-      ! Copy indices and weights
-      do iext=1,next
-         if (mask_src(nn_index_ext(iext)).and.(wgt(iext)>zero)) then
-            n_s = n_s+1
-            row(n_s) = i_dst
-            col(n_s) = nn_index_ext(iext)
-            S(n_s) = wgt(iext)
-         end if
-      end do
 
       ! Release memory
       deallocate(nn_index_ext)
       deallocate(nn_dist_ext)
-      deallocate(wgt)
    end if
 
    ! Update
    if (ifmt>0) call mpl%prog_print(i_dst)
 end do
+!$omp end parallel do
 if (ifmt>0) call mpl%prog_final
+
+! Gather data from threads
+linop%n_src = n_src
+linop%n_dst = n_dst
+call linop%gather(mpl,c_n_s,c)
 
 ! Check interpolation
 missing = .false.
 do i_dst=1,n_dst
    if (mask_dst(i_dst)) missing(i_dst) = .true.
 end do
-do i_s=1,n_s
-   missing(row(i_s)) = .false.
+do i_s=1,linop%n_s
+   missing(linop%row(i_s)) = .false.
 end do
-if (n_s>0) then
-   do i_dst=1,n_dst
-     if (missing(i_dst)) print*, "missing: ",i_dst
-   end do
+if (linop%n_s>0) then
    if (any(missing)) call mpl%abort('${subr}$','missing destination points')
 end if
-
-! Allocation
-linop%n_s = n_s
-linop%n_src = n_src
-linop%n_dst = n_dst
-call linop%alloc
-
-! Copy data
-linop%row = row(1:linop%n_s)
-linop%col = col(1:linop%n_s)
-linop%S = S(1:linop%n_s)
 
 ! Probe out
 @:probe_out()
