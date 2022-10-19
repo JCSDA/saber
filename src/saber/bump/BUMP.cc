@@ -65,30 +65,28 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   }
 
   // If testing is activated, replace _MPI_ and _OMP_ patterns
-  const boost::optional<bool> &testing = params_.testing.value();
-  if (testing != boost::none) {
-    if (testing) {
-      // Convert to eckit configuration
-      eckit::LocalConfiguration fullConfig;
-      params_.serialize(fullConfig);
+  const boost::optional<bool> &testing = params_.testing.value().get_value_or(false);
+  if (testing) {
+    // Convert to eckit configuration
+    eckit::LocalConfiguration fullConfig;
+    params_.serialize(fullConfig);
 
-      // Get number of MPI tasks and OpenMP threads
-      std::string mpi(std::to_string(comm.size()));
-      std::string omp("1");
-      # pragma omp parallel
-      {
-          omp = std::to_string(omp_get_num_threads());
-      }
-      if (verbosity_) oops::Log::info() << "Info     : MPI tasks:      " << mpi << std::endl;
-      if (verbosity_) oops::Log::info() << "Info     : OpenMP threads: " << omp << std::endl;
-
-      // Replace patterns
-      util::seekAndReplace(fullConfig, "_MPI_", mpi);
-      util::seekAndReplace(fullConfig, "_OMP_", omp);
-
-      // Convert back to parameters
-      params_.deserialize(fullConfig);
+    // Get number of MPI tasks and OpenMP threads
+    std::string mpi(std::to_string(comm.size()));
+    std::string omp("1");
+    # pragma omp parallel
+    {
+        omp = std::to_string(omp_get_num_threads());
     }
+    if (verbosity_) oops::Log::info() << "Info     : MPI tasks:      " << mpi << std::endl;
+    if (verbosity_) oops::Log::info() << "Info     : OpenMP threads: " << omp << std::endl;
+
+    // Replace patterns
+    util::seekAndReplace(fullConfig, "_MPI_", mpi);
+    util::seekAndReplace(fullConfig, "_OMP_", omp);
+
+    // Convert back to parameters
+    params_.deserialize(fullConfig);
   }
 
   // Get ensemble 1 size

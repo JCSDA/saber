@@ -1,0 +1,50 @@
+Input Dirac increment:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F10
+- size: 800
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 67%
+Fields:
+  var1: 0.0000000000000000e+00
+  var2: 0.0000000000000000e+00
+       Compute independent levels:  1[2] 
+          Level   1:    764360948
+          Level   2:    764360948
+          Model grid size:              800
+          Subset Sc0 size:              800
+          Number of duplicated points (halo):         0 (  0.00%)
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -83.3 /    83.3
+          Domain area (% of Earth area): 0.675E+02%
+             Level   1 ~>  67.5%
+             Level   2 ~>  67.5%
+             Level   1 ~>  0.100E+01 vert. unit
+             Level   2 ~>  0.200E+01 vert. unit
+          nc1 =      500
+          nc2 =      250
+          Compute independent levels:  1[2] 
+Covariance(SABER) * Increment:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: F10
+- size: 800
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 67%
+Fields:
+  var1: 0.0000000000000000e+00
+  var2: 0.0000000000000000e+00

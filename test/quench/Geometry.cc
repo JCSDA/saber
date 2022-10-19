@@ -46,9 +46,38 @@ Geometry::Geometry(const Parameters_ & params,
   // Setup grid
   const boost::optional<eckit::LocalConfiguration> &gridParams = params.grid.value();
   const boost::optional<std::string> &iodaFile = params.iodaFile.value();
+  unstructuredGrid_ = false;
   if (gridParams != boost::none) {
     oops::Log::info() << "Info     : Grid config: " << *gridParams << std::endl;
-    grid_ = atlas::Grid(*gridParams);
+    eckit::LocalConfiguration gridParams_(*gridParams);
+    if (gridParams_.has("type")) {
+      std::string type = gridParams_.getString("type");
+      if (type == "unstructured") {
+        // Split unstructured grid among processors
+        std::vector<double> xyFull = gridParams_.getDoubleVector("xy");
+        size_t gridSize = xyFull.size()/2;
+        size_t rank = 0;
+        std::vector<double> xy;
+        for (size_t jnode = 0; jnode < gridSize; ++jnode) {
+          // Copy coordinates on a given task
+          if (comm_.rank() == rank) {
+            xy.push_back(xyFull[2*jnode]);
+            xy.push_back(xyFull[2*jnode+1]);
+          }
+
+          // Update task index
+          ++rank;
+          if (rank == comm_.size()) rank = 0;
+        }
+
+        // Reset coordinates
+        gridParams_.set("xy", xy);
+
+        // Set flag
+        unstructuredGrid_ = true;
+      }
+    }
+    grid_ = atlas::Grid(gridParams_);
   } else if (iodaFile != boost::none) {
     oops::Log::info() << "Info     : Grid input file: " << *iodaFile << std::endl;
 
@@ -107,17 +136,19 @@ Geometry::Geometry(const Parameters_ & params,
     ABORT("Grid or grid input file required");
   }
 
-  // Setup partitioner
-  partitioner_ = atlas::grid::Partitioner(params.partitioner.value());
+  if (!unstructuredGrid_) {
+    // Setup partitioner
+    partitioner_ = atlas::grid::Partitioner(params.partitioner.value());
 
-  // Setup distribution
-  const atlas::grid::Distribution distribution(grid_, partitioner_);
+    // Setup distribution
+    distribution_ = atlas::grid::Distribution(grid_, partitioner_);
+  }
 
   if (params.functionSpace.value() == "StructuredColumns") {
     // StructuredColumns
 
     // Setup function space
-    functionSpace_ = atlas::functionspace::StructuredColumns(grid_, distribution,
+    functionSpace_ = atlas::functionspace::StructuredColumns(grid_, distribution_,
                      atlas::option::halo(halo_));
 
     // Setup mesh
@@ -142,7 +173,7 @@ Geometry::Geometry(const Parameters_ & params,
     functionSpace_ = atlas::functionspace::PointCloud(grid_);
 
     // Setup mesh
-//    mesh_ = atlas::MeshGenerator("delaunay").generate(grid_);
+//    mesh_ = atlas::MeshGenerator("delaunay").generate(grid_); TODO(Benjamin): only if CGAL present
   } else {
     ABORT(params.functionSpace.value() + " function space not supported yet");
   }
@@ -360,17 +391,17 @@ Geometry::Geometry(const Parameters_ & params,
     atlas::functionspace::StructuredColumns fs(functionSpace_);
     atlas::StructuredGrid grid = fs.grid();
     atlas::Field hmask = fs.createField<int>(atlas::option::name("hmask")
-      | atlas::option::levels(0));
-    auto view = atlas::array::make_view<int, 1>(hmask);
+      | atlas::option::levels(1));
+    auto view = atlas::array::make_view<int, 2>(hmask);
     auto view_i = atlas::array::make_view<int, 1>(fs.index_i());
     auto view_j = atlas::array::make_view<int, 1>(fs.index_j());
     for (atlas::idx_t j = fs.j_begin_halo(); j < fs.j_end_halo(); ++j) {
       for (atlas::idx_t i = fs.i_begin_halo(j); i < fs.i_end_halo(j); ++i) {
         atlas::idx_t jnode = fs.index(i, j);
         if (((view_j(jnode) == 1) || (view_j(jnode) == grid.ny())) && (view_i(jnode) != 1)) {
-          view(jnode) = 0;
+          view(jnode, 0) = 0;
         } else {
-          view(jnode) = 1;
+          view(jnode, 0) = 1;
         }
       }
     }
@@ -431,8 +462,10 @@ void Geometry::print(std::ostream & os) const {
   os << prefix <<  "Quench geometry grid:" << std::endl;
   os << prefix << "- name: " << grid_.name() << std::endl;
   os << prefix << "- size: " << grid_.size() << std::endl;
-  os << prefix << "Partitioner:" << std::endl;
-  os << prefix << "- type: " << partitioner_.type() << std::endl;
+  if (!unstructuredGrid_) {
+    os << prefix << "Partitioner:" << std::endl;
+    os << prefix << "- type: " << partitioner_.type() << std::endl;
+  }
   os << prefix << "Function space:" << std::endl;
   os << prefix << "- type: " << functionSpace_.type() << std::endl;
   os << prefix << "- halo: " << halo_ << std::endl;

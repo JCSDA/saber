@@ -374,5 +374,5 @@
                 Level:  10 ~> hybrid coefficients: 0.70 / 0.33
 Norm of BUMP output parameter loc_rh - 1: 1.4532721699667959e+09
 Norm of BUMP output parameter loc_rv - 1: 1.4532721699667959e+03
-Norm of BUMP output parameter hyb_coef_ens - 1: 9.7185371504715022e+01
-Norm of BUMP output parameter hyb_coef_sta - 1: 5.3057504644789901e+01
+Norm of BUMP output parameter hyb_coef_ens - 1: 9.7185371504713260e+01
+Norm of BUMP output parameter hyb_coef_sta - 1: 5.3057504644788715e+01

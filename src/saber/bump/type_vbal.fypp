@@ -14,7 +14,7 @@ use tools_const, only: zero,one,two,rad2deg
 use tools_func, only: zss_maxval,zss_sum
 use tools_kinds, only: kind_real
 use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,define_dim,define_var,inquire_var,put_var,get_var,close_file
-use tools_repro, only: infeq
+use tools_repro, only: infeq,rth
 use type_bpar, only: bpar_type
 use type_ens, only: ens_type
 use type_geom, only: geom_type
@@ -1628,8 +1628,11 @@ do iv=1,nam%nv
          call vbal%blk(iv,jv)%apply_ad(geom,vbal%h_n_s_max,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld2(:,:,iv))
          call mpl%dot_prod(fld1(:,:,iv),fld2_save(:,:,iv),sum1)
          call mpl%dot_prod(fld2(:,:,iv),fld1_save(:,:,iv),sum2)
-         write(mpl%test,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance block '//trim(vbal%blk(iv,jv)%name)// &
- & ' adjoint test:  ',sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
+         write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance block '//trim(vbal%blk(iv,jv)%name)// &
+ & ' adjoint test values:  ',sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
+         call mpl%flush
+         write(mpl%test,'(a7,a,l1)') '','Vertical balance block '//trim(vbal%blk(iv,jv)%name)// &
+ & ' adjoint test result:  ',two*abs(sum1-sum2)/abs(sum1+sum2)<rth
          call mpl%flush
       end if
    end do
@@ -1642,8 +1645,11 @@ call vbal%apply(nam,geom,bpar,fld1)
 call vbal%apply_ad(nam,geom,bpar,fld2)
 call mpl%dot_prod(fld1,fld2_save,sum1)
 call mpl%dot_prod(fld2,fld1_save,sum2)
-write(mpl%test,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance direct adjoint test:  ', &
+write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance direct adjoint test values:  ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
+call mpl%flush
+write(mpl%test,'(a7,a,l1)') '','Vertical balance direct adjoint test results:  ', &
+ & two*abs(sum1-sum2)/abs(sum1+sum2)<rth
 call mpl%flush
 
 ! Inverse adjoint test
@@ -1653,8 +1659,11 @@ call vbal%apply_inv(nam,geom,bpar,fld1)
 call vbal%apply_inv_ad(nam,geom,bpar,fld2)
 call mpl%dot_prod(fld1,fld2_save,sum1)
 call mpl%dot_prod(fld2,fld1_save,sum2)
-write(mpl%test,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance inverse adjoint test: ', &
+write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance inverse adjoint test values: ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
+call mpl%flush
+write(mpl%test,'(a7,a,l1)') '','Vertical balance inverse adjoint test results: ', &
+ & two*abs(sum1-sum2)/abs(sum1+sum2)<rth
 call mpl%flush
 
 ! Probe out

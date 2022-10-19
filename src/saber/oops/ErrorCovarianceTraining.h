@@ -452,11 +452,33 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
     const boost::optional<std::vector<OutputParameters<MODEL>>> &output = params.output.value();
     if (output != boost::none) {
       for (const auto & outputParam : *output) {
+        // Convert to eckit configuration
+        eckit::LocalConfiguration outputConfig;
+        outputParam.serialize(outputConfig);
+
+        // Get number of MPI tasks and OpenMP threads
+        std::string mpi(std::to_string(geom1.getComm().size()));
+        std::string omp("1");
+        # pragma omp parallel
+        {
+            omp = std::to_string(omp_get_num_threads());
+        }
+        oops::Log::info() << "Info     : MPI tasks:      " << mpi << std::endl;
+        oops::Log::info() << "Info     : OpenMP threads: " << omp << std::endl;
+
+        // Replace patterns
+        util::seekAndReplace(outputConfig, "_MPI_", mpi);
+        util::seekAndReplace(outputConfig, "_OMP_", omp);
+
+        // Convert back to parameters
+        OutputParameters<MODEL> outputParam_;
+        outputParam_.deserialize(outputConfig);
+
         // Get parameter
-        const std::string & param = outputParam.param;
+        const std::string & param = outputParam_.param;
 
         // Get component
-        const int & component = outputParam.component;
+        const int & component = outputParam_.component;
 
         // BUMP output
         if (bumpParams != boost::none) {
@@ -478,7 +500,7 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
             dx2.synchronizeFields();
 
             // Write parameter
-            dx2.write(outputParam.file);
+            dx2.write(outputParam_.file);
             oops::Log::test() << "Norm of BUMP output parameter " << param << " - " << component
                               << ": " << dx2.norm() << std::endl;
           } else {
@@ -489,7 +511,7 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
             dx1.synchronizeFields();
 
             // Write parameter
-            dx1.write(outputParam.file);
+            dx1.write(outputParam_.file);
             oops::Log::test() << "Norm of BUMP output parameter " << param << " - " << component
                               << ": " << dx1.norm() << std::endl;
           }

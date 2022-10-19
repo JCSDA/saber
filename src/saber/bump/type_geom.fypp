@@ -140,11 +140,6 @@ type geom_type
    type(io_type) :: io                             !< Subset Sc0 I/O
    logical :: io_initialized                       !< Flag to check if subset Sc0 I/O is initialized
 
-   ! Full grid smoothing (very small length-scale)
-   integer :: nc0s                                 !< Halo S size
-   type(linop_type),allocatable :: smoother(:)     !< Full grid smoother
-   type(com_type) :: com_c0_AS                     !< Communication between halos A and S on subset Sc0
-
    ! Allocation flag
    logical :: allocated                            !< Allocation flag
 contains
@@ -181,9 +176,6 @@ contains
    procedure :: fieldset_to_c0 => geom_fieldset_to_c0
    procedure :: c0_to_fieldset => geom_c0_to_fieldset
    procedure :: rand_point => geom_rand_point
-   procedure :: compute_smoother => geom_compute_smoother
-   procedure :: apply_smoother => geom_apply_smoother
-   procedure :: apply_smoother_ad => geom_apply_smoother_ad
    procedure :: initialize_sampling => geom_initialize_sampling
    procedure :: define_test_vectors => geom_define_test_vectors
    procedure :: c0_to_c0a => geom_c0_to_c0a
@@ -256,13 +248,6 @@ if (allocated(geom%ic0adir)) deallocate(geom%ic0adir)
 if (allocated(geom%il0dir)) deallocate(geom%il0dir)
 if (allocated(geom%ivdir)) deallocate(geom%ivdir)
 if (allocated(geom%dirac_index)) deallocate(geom%dirac_index)
-if (allocated(geom%smoother)) then
-   do il0=1,size(geom%smoother)
-      call geom%smoother(il0)%dealloc
-   end do
-   deallocate(geom%smoother)
-end if
-call geom%com_c0_AS%dealloc
 
 ! Probe out
 @:probe_out()
@@ -387,13 +372,6 @@ end do
 
 ! Setup dirac points
 call geom%setup_dirac(mpl,nam)
-
-if (nam%full_grid_smoother_nn>0) then
-   ! Compute full grid smoother
-   write(mpl%info,'(a7,a)') '','Compute full grid smoother'
-   call mpl%flush
-   call geom%compute_smoother(mpl,nam)
-end if
 
 ! Set allocation flag
 geom%allocated = .true.
@@ -1736,203 +1714,6 @@ if (present(nr)) nr = lnr
 @:probe_out()
 
 end subroutine geom_rand_point
-
-!----------------------------------------------------------------------
-! Subroutine: geom_compute_smoother
-!> Compute full grid smoother
-!----------------------------------------------------------------------
-subroutine geom_compute_smoother(geom,mpl,nam)
-
-implicit none
-
-! Passed variables
-class(geom_type),intent(inout) :: geom !< Geometry
-type(mpl_type),intent(inout) :: mpl    !< MPI data
-type(nam_type),intent(in) :: nam       !< Namelist
-
-! Local variables
-integer :: ic0a,il0,i,jc0u,i_s,ic0s,ic0u,ic0,jc0s
-integer,allocatable :: nn_index(:,:),c0u_to_c0s(:),c0s_to_c0(:)
-real(kind_real) :: S
-logical :: lcheck_c0s(geom%nc0u)
-
-! Set name
-@:set_name(geom_compute_smoother)
-
-! Probe in
-@:probe_in()
-
-! Allocation
-allocate(nn_index(nam%full_grid_smoother_nn,geom%nc0a))
-allocate(geom%smoother(geom%nl0))
-
-! Initialization
-lcheck_c0s = .false.
-do il0=1,geom%nl0
-   geom%smoother(il0)%n_s = 0
-end do
-
-do ic0a=1,geom%nc0a
-   ! Find averaging points
-   call geom%tree_c0u%find_nearest_neighbors(geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),nam%full_grid_smoother_nn,nn_index(:,ic0a))
-
-   ! Count operations
-   do il0=1,geom%nl0
-      if (geom%gmask_c0a(ic0a,il0)) then
-         geom%smoother(il0)%n_s = geom%smoother(il0)%n_s+zss_count(geom%gmask_c0u(nn_index(:,ic0a),il0))
-      end if
-   end do
-
-   ! Add points to halo P
-   do i=1,nam%full_grid_smoother_nn
-      jc0u = nn_index(i,ic0a)
-      lcheck_c0s(jc0u) = .true.
-   end do
-end do
-
-! Allocation
-do il0=1,geom%nl0
-   call geom%smoother(il0)%alloc
-   geom%smoother(il0)%n_dst = geom%nc0a
-   write(geom%smoother(il0)%prefix,'(a,i3.3)') 'smoother_',il0
-end do
-
-! Define smoother
-do il0=1,geom%nl0
-   i_s = 0
-   do ic0a=1,geom%nc0a
-      if (geom%gmask_c0a(ic0a,il0)) then
-         do i=1,nam%full_grid_smoother_nn
-            jc0u = nn_index(i,ic0a)
-            S = one/real(zss_count(geom%gmask_c0u(nn_index(:,ic0a),il0)),kind_real)
-            if (geom%gmask_c0u(jc0u,il0)) then
-               i_s = i_s+1
-               geom%smoother(il0)%row(i_s) = ic0a
-               geom%smoother(il0)%col(i_s) = jc0u
-               geom%smoother(il0)%S(i_s) = S
-            end if
-         end do
-      end if
-   end do
-end do
-
-! Release memory
-deallocate(nn_index)
-
-! Allocation
-geom%nc0s = zss_count(lcheck_c0s)
-allocate(c0u_to_c0s(geom%nc0u))
-allocate(c0s_to_c0(geom%nc0s))
-
-! Conversions
-c0u_to_c0s = mpl%msv%vali
-ic0s = 0
-do ic0u=1,geom%nc0u
-   if (lcheck_c0s(ic0u)) then
-      ic0s = ic0s+1
-      c0u_to_c0s(ic0u) = ic0s
-      ic0 = geom%c0u_to_c0(ic0u)
-      c0s_to_c0(ic0s) = ic0
-   end if
-end do
-
-! Local interpolation source
-do il0=1,geom%nl0
-   geom%smoother(il0)%n_src = geom%nc0s
-   do i_s=1,geom%smoother(il0)%n_s
-      jc0u = geom%smoother(il0)%col(i_s)
-      jc0s = c0u_to_c0s(jc0u)
-      if (mpl%msv%isnot(jc0s)) then
-         geom%smoother(il0)%col(i_s) = jc0s
-      else
-         call mpl%abort('${subr}$','wrong local source for smoother')
-      end if
-   end do
-end do
-
-! Setup communications
-call geom%com_c0_AS%setup(mpl,'com_c0_AS',geom%nc0a,geom%nc0s,geom%nc0,geom%c0a_to_c0,c0s_to_c0)
-
-! Release memory
-deallocate(c0u_to_c0s)
-deallocate(c0s_to_c0)
-
-! Probe out
-@:probe_out()
-
-end subroutine geom_compute_smoother
-
-!----------------------------------------------------------------------
-! Subroutine: geom_apply_smoother
-!> Apply full grid smoother
-!----------------------------------------------------------------------
-subroutine geom_apply_smoother(geom,mpl,fld)
-
-implicit none
-
-! Passed variables
-class(geom_type),intent(in) :: geom                      !< Geometry
-type(mpl_type),intent(inout) :: mpl                      !< MPI data
-real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0) !< Field
-
-! Local variable
-integer :: il0
-real(kind_real) :: fld_c0s(geom%nc0s,geom%nl0)
-
-! Set name
-@:set_name(geom_apply_smoother)
-
-! Probe in
-@:probe_in()
-
-! Halo extension from zone A to zone P
-call geom%com_c0_AS%ext(mpl,fld,fld_c0s)
-
-! Post smoothing
-do il0=1,geom%nl0
-   call geom%smoother(il0)%apply(mpl,fld_c0s(:,il0),fld(:,il0))
-end do
-
-! Probe out
-@:probe_out()
-
-end subroutine geom_apply_smoother
-
-!----------------------------------------------------------------------
-! Subroutine: geom_apply_smoother_ad
-!> Apply full grid smoother, adjoint
-!----------------------------------------------------------------------
-subroutine geom_apply_smoother_ad(geom,mpl,fld)
-
-implicit none
-
-! Passed variables
-class(geom_type),intent(in) :: geom                      !< Geometry
-type(mpl_type),intent(inout) :: mpl                      !< MPI data
-real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0) !< Field
-
-! Local variable
-integer :: il0
-real(kind_real) :: fld_c0s(geom%nc0s,geom%nl0)
-
-! Set name
-@:set_name(geom_apply_smoother_ad)
-
-! Probe in
-@:probe_in()
-
-! Post-smoothing
-do il0=1,geom%nl0
-   call geom%smoother(il0)%apply_ad(mpl,fld(:,il0),fld_c0s(:,il0))
-end do
-
-! Halo reduction from zone P to zone A
-call geom%com_c0_AS%red(mpl,fld_c0s,fld)
-
-! Probe out
-@:probe_out()
-
-end subroutine geom_apply_smoother_ad
 
 !----------------------------------------------------------------------
 ! Subroutine: geom_initialize_sampling

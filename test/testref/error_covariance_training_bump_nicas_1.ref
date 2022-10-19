@@ -1,0 +1,46 @@
+       Compute independent levels:  1[2] 
+          Level   1:    764360948
+          Level   2:    764360948
+          Model grid size:              800
+          Subset Sc0 size:              800
+          Number of duplicated points (halo):         0 (  0.00%)
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -83.3 /    83.3
+          Domain area (% of Earth area): 0.675E+02%
+             Level   1 ~>  67.5%
+             Level   2 ~>  67.5%
+             Level   1 ~>  0.100E+01 vert. unit
+             Level   2 ~>  0.200E+01 vert. unit
+             Effective levels:   1   2 
+                   Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
+                   Estimated nc1 from horizontal support radius:    25445
+                   Final nc1:      540
+             Effective horizontal resolution:  1.17
+                   Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
+                   Estimated nc1 from horizontal support radius:    25445
+                   Final nc1:      540
+             Effective horizontal resolution:  1.17
+             nc1(  1) =        540
+             nc1(  2) =        540
+             ns =             1080
+             Effective levels:   1   2 
+                   Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
+                   Estimated nc1 from horizontal support radius:    25445
+                   Final nc1:      540
+             Effective horizontal resolution:  1.17
+                   Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
+                   Estimated nc1 from horizontal support radius:    25445
+                   Final nc1:      540
+             Effective horizontal resolution:  1.17
+             nc1(  1) =        540
+             nc1(  2) =        540
+             ns =             1080
+          MSE (exp. / th. / ratio):  0.53961581E+03 /  0.80036297E+03 / 0.674
+          MSE (exp. / th. / ratio):  0.21554291E+03 /  0.32014519E+03 / 0.673
+          MSE (exp. / th. / ratio):  0.14320388E+03 /  0.21343012E+03 / 0.671
+          MSE (exp. / th. / ratio):  0.10348843E+03 /  0.15245009E+03 / 0.679
+          MSE (exp. / th. / ratio):  0.82995472E+02 /  0.12313276E+03 / 0.674
+          MSE (exp. / th. / ratio):  0.67441305E+02 /  0.10004537E+03 / 0.674
+          MSE (exp. / th. / ratio):  0.57859848E+02 /  0.86525726E+02 / 0.669
+          MSE (exp. / th. / ratio):  0.50501697E+02 /  0.74452369E+02 / 0.678
+          MSE (exp. / th. / ratio):  0.44151934E+02 /  0.65335753E+02 / 0.676

@@ -33,7 +33,6 @@ initial condition:
   state variables: [stream_function,velocity_potential,air_temperature]
 output dirac:
   filepath: testdata/dirac_gsi_geos_global/dirac_%id%
-
 test:
   float relative tolerance: 1.5e-6
   reference filename: testref/dirac_gsi_geos_global.ref

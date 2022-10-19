@@ -562,7 +562,7 @@ else
                         drhflt(il0) = half*drhflt(il0)
                         rhflt(il0) = rhflt(il0)+drhflt(il0)
                      else
-                       convergence(il0) = .false.
+                        convergence(il0) = .false.
                         rhflt(il0) = rhflt(il0)+drhflt(il0)
                         drhflt(il0) = two*drhflt(il0)
                     end if

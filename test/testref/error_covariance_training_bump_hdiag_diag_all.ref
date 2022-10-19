@@ -14,9 +14,7 @@
        Save ensemble for      0 points (     0 total)
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
-          Decimate full grid, at least      500 points required
-               540 valid points found
-          nc1 =      500
+          nc1 =      536
           Compute independent levels:  1[2] 
           Compute independent levels:  1[2] 
           Compute independent levels:  1[2] 
@@ -30,33 +28,33 @@
           Compute independent levels:  1[2] 
              -90.00 deg.  ~>100-99-100-99-100-100-100-100-100-100 
              -90.00 deg.  ~>100-99-100-99-100-100-100-100-100-100 
-                Level:   1 ~> cov. at class zero:  0.10E+01
+                Level:   1 ~> cov. at class zero:  0.99E+00
+                Level:   2 ~> cov. at class zero:  0.10E+01
+                Level:   1 ~> cov. at class zero: -0.24E-01
+                Level:   2 ~> cov. at class zero:  0.21E-01
+                Level:   1 ~> cov. at class zero: -0.24E-01
+                Level:   2 ~> cov. at class zero:  0.21E-01
+                Level:   1 ~> cov. at class zero:  0.99E+00
                 Level:   2 ~> cov. at class zero:  0.99E+00
-                Level:   1 ~> cov. at class zero: -0.31E-01
-                Level:   2 ~> cov. at class zero:  0.15E-01
-                Level:   1 ~> cov. at class zero: -0.31E-01
-                Level:   2 ~> cov. at class zero:  0.15E-01
-                Level:   1 ~> cov. at class zero:  0.98E+00
-                Level:   2 ~> cov. at class zero:  0.97E+00
-             Block var1-var1:  0.15208008E+00 for       40 diagnostic points
-             Block var2-var2:  0.18489337E+00 for       40 diagnostic points
+             Block var1-var1:  0.15088027E+00 for       40 diagnostic points
+             Block var2-var2:  0.18488925E+00 for       40 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      7265.16 km
-                                 cor. ver. support:         1.40 vertical units
+                                 cor. hor. support:      7218.75 km
+                                 cor. ver. support:         1.38 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      7431.25 km
-                                 cor. ver. support:         1.40 vertical units
-                Level:   1 ~> cor. at class zero:       -0.03
-                Level:   2 ~> cor. at class zero:        0.01
-                Level:   1 ~> cor. at class zero:       -0.03
-                Level:   2 ~> cor. at class zero:        0.01
+                                 cor. hor. support:      7379.23 km
+                                 cor. ver. support:         1.38 vertical units
+                Level:   1 ~> cor. at class zero:       -0.02
+                Level:   2 ~> cor. at class zero:        0.02
+                Level:   1 ~> cor. at class zero:       -0.02
+                Level:   2 ~> cor. at class zero:        0.02
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      8838.26 km
-                                 cor. ver. support:         4.81 vertical units
+                                 cor. hor. support:      8901.41 km
+                                 cor. ver. support:         4.88 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      8352.99 km
-                                 cor. ver. support:         4.81 vertical units
+                                 cor. hor. support:      8415.44 km
+                                 cor. ver. support:         4.88 vertical units

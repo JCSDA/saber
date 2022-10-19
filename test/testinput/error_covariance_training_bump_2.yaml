@@ -1,0 +1,24 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regional
+    nx: 35
+    ny: 25
+    north: -10
+    south: -50
+    east: 170
+    west: 100
+    y_numbering: +1
+  levels: 2
+  halo: 1
+input variables: &id001
+- var1
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables: *id001
+bump:
+  datadir: testdata
+  prefix: error_covariance_training_bump_2/_MPI_-_OMP_
+  testing: true
+test:
+  reference filename: testref/error_covariance_training_bump_2.ref

@@ -18,7 +18,7 @@ ensemble:
       filepath: testdata/randomization_bump_nicas_F10L2/member_%mem%
       state variables: *id001
     pattern: '%mem%'
-    nmembers: 10
+    nmembers: 25
     zero padding: 6
 bump:
   datadir: testdata
@@ -26,11 +26,10 @@ bump:
   testing: true
   new_var: true
   var_filter: true
-  var_niter: 1
+  var_niter: 10
   var_rhflt:
     var1: [5000.0e3]
-    var2: [5000.0e3]
-  ne: 10
+  ne: 25
 output:
 - parameter: stddev
   file:
