@@ -66,6 +66,7 @@ class AtlasInterpWrapper {
   atlas::FunctionSpace targetFunctionSpace_;
   atlas::Interpolation interp_;
   atlas::Redistribution redistr_;
+  atlas::Redistribution inverseRedistr_;
 };
 
 }  // namespace interpolation
@@ -111,7 +112,7 @@ atlas::FunctionSpace createTargetFunctionSpace(
     // NodeColumns
     if (dstGrid.name().compare(0, 2, std::string{"CS"}) == 0) {
       // CubedSphere
-      const atlas::Mesh targetMesh = atlas::MeshGenerator("cubedsphere").generate(dstGrid,
+      const atlas::Mesh targetMesh = atlas::MeshGenerator("cubedsphere_dual").generate(dstGrid,
         targetPartitioner);
       targetFunctionSpace = atlas::functionspace::CubedSphereNodeColumns(targetMesh);
     } else {
@@ -165,6 +166,15 @@ atlas::Redistribution createAtlasRedistribution(
 
 // -----------------------------------------------------------------------------
 
+atlas::Redistribution createInverseAtlasRedistribution(
+    const atlas::FunctionSpace & matchingFS,
+    const atlas::FunctionSpace & outputFS) {
+
+  return atlas::Redistribution(outputFS, matchingFS);
+}
+
+// -----------------------------------------------------------------------------
+
 }  // namespace detail
 }  // namespace interpolation
 }  // namespace saber
@@ -178,7 +188,7 @@ AtlasInterpWrapper::AtlasInterpWrapper(const atlas::grid::Partitioner & srcParti
                                        const atlas::FunctionSpace & srcFunctionSpace,
                                        const atlas::Grid & dstGrid,
                                        const atlas::FunctionSpace & dstFunctionSpace) :
-  localDstFunctionSpace_(), targetFunctionSpace_(), interp_(), redistr_() {
+  localDstFunctionSpace_(), targetFunctionSpace_(), interp_(), redistr_(), inverseRedistr_() {
   oops::Log::trace() << "AtlasInterpWrapper::AtlasInterpWrapper starting" << std::endl;
 
   if (dstFunctionSpace.type() == "PointCloud") {
@@ -234,6 +244,10 @@ AtlasInterpWrapper::AtlasInterpWrapper(const atlas::grid::Partitioner & srcParti
 
     // Redistribution
     redistr_ = detail::createAtlasRedistribution(targetFunctionSpace_, dstFunctionSpace);
+
+    // Inverse Redistribution
+    inverseRedistr_ = detail::createInverseAtlasRedistribution(targetFunctionSpace_,
+                                                               dstFunctionSpace);
   }
 
   oops::Log::trace() << "AtlasInterpWrapper::AtlasInterpWrapper done" << std::endl;
@@ -358,7 +372,7 @@ void AtlasInterpWrapper::executeAdjoint(atlas::Field & srcField,
     targetView.assign(0.0);
 
     // Redistribution from destination field to target field
-    redistr_.execute(dstTmp, targetField);
+    inverseRedistr_.execute(dstTmp, targetField);
 
     // Source field initialization
     auto srcView = atlas::array::make_view<double, 2>(srcField);
