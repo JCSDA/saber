@@ -24,6 +24,7 @@ if( gsibec_FOUND )
     # Interpolation block
     interpolation/Interpolation.cc
     interpolation/Interpolation.h
+    interpolation/InterpolationImpl.h
 
     # Unstructured interpolation code ported from oops (until new interp code can be used)
     interpolation/unstructured_interp/saber_unstructured_interpolation_mod.F90
