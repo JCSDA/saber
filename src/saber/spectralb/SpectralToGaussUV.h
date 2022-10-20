@@ -34,6 +34,8 @@ class SpectralToGaussUVParameters : public SaberBlockParametersBase {
     "Gauss Grid UID", this};
   oops::Parameter<bool> useStreamFunctionVelocityPotential{
     "use streamfunction and velocity potential", false, this};
+  oops::Parameter<bool> useInnerGaussianFunctionSpace{
+    "use inner gaussian functionspace", false, this};
 };
 
 // -----------------------------------------------------------------------------
