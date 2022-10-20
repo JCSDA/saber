@@ -112,7 +112,7 @@ atlas::FunctionSpace createTargetFunctionSpace(
     // NodeColumns
     if (dstGrid.name().compare(0, 2, std::string{"CS"}) == 0) {
       // CubedSphere
-      const atlas::Mesh targetMesh = atlas::MeshGenerator("cubedsphere").generate(dstGrid,
+      const atlas::Mesh targetMesh = atlas::MeshGenerator("cubedsphere_dual").generate(dstGrid,
         targetPartitioner);
       targetFunctionSpace = atlas::functionspace::CubedSphereNodeColumns(targetMesh);
     } else {
@@ -248,7 +248,6 @@ AtlasInterpWrapper::AtlasInterpWrapper(const atlas::grid::Partitioner & srcParti
     // Inverse Redistribution
     inverseRedistr_ = detail::createInverseAtlasRedistribution(targetFunctionSpace_,
                                                                dstFunctionSpace);
-
   }
 
   oops::Log::trace() << "AtlasInterpWrapper::AtlasInterpWrapper done" << std::endl;
