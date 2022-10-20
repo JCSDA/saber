@@ -10,6 +10,7 @@
 #include <memory>
 #include <ostream>
 #include <string>
+#include <vector>
 
 #include "atlas/field.h"
 #include "atlas/functionspace.h"
@@ -34,10 +35,11 @@ class UnstructuredInterpolation : private util::ObjectCounter<UnstructuredInterp
  public:
   static const std::string classname() {return "oops::UnstructuredInterpolation";}
 
-  UnstructuredInterpolation(const eckit::Configuration &, const atlas::FunctionSpace &,
-                           const atlas::FunctionSpace &,
-                           const atlas::field::FieldSetImpl * = nullptr,
-                           const eckit::mpi::Comm & = oops::mpi::world());
+  UnstructuredInterpolation(const eckit::Configuration &,
+                            const atlas::FunctionSpace &,
+                            const atlas::FunctionSpace &,
+                            const std::vector<std::string> &,
+                            const eckit::mpi::Comm & = oops::mpi::world());
   ~UnstructuredInterpolation();
 
   void apply(const atlas::Field &, atlas::Field &);
@@ -52,6 +54,7 @@ class UnstructuredInterpolation : private util::ObjectCounter<UnstructuredInterp
   int keyUnstructuredInterpolator_;
   const atlas::FunctionSpace *in_fspace_;
   const atlas::FunctionSpace *out_fspace_;
+  std::vector<std::string> activeVars_;
   void print(std::ostream &) const;
 };
 
