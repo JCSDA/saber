@@ -51,7 +51,7 @@ PsiChiToUV::PsiChiToUV(const oops::GeometryData & outerGeometryData,
 
   // Only two active variables should be part of outer variables, other two are inner variables
   size_t activeVarsInOuter = 0;
-  for (const auto var : outerVars.variables()) {
+  for (const auto & var : outerVars.variables()) {
     if (activeVars.has(var)) {
       activeVarsInOuter += 1;
     } else {
@@ -59,7 +59,7 @@ PsiChiToUV::PsiChiToUV(const oops::GeometryData & outerGeometryData,
     }
   }
   ASSERT(activeVarsInOuter == 2);
-  for (const auto var : activeVars.variables()) {
+  for (const auto & var : activeVars.variables()) {
     if (!outerVars.has(var)) {
       innerVars_.push_back(var);
     }
