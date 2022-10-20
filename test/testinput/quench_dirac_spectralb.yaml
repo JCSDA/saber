@@ -7,21 +7,23 @@ geometry:
   partitioner: ectrans
 initial condition:
   date: 2010-01-01T12:00:00Z
-  state variables: &vars [psi_inc]
+  state variables: &vars [streamfunction, velocity_potential, unbalanced_pressure, moisture_control_variable]
 background error:
   covariance model: SABER
   saber central block:
     saber block name: spectral covariance
     spectralb:
-      covariance_file: testdata/CovStats.nc
+      covariance_file: testdata/spectralcov.nc
       gauss_grid_uid: F15
-      umatrix_netcdf_names: [PSI_inc_Uv_matrix]
+      umatrix_netcdf_names: [PSI_inc_Uv_matrix, CHI_inc_Uv_matrix,
+                             aP_inc_Uv_matrix, MU_inc_Uv_matrix]
+      variance_opt: true
   saber outer blocks:
   - saber block name: spectral to gauss
 dirac:
-  lon: [1.980931]
-  lat: [44.220188]
-  level: [1]
+  lon: [180.0, 180.0, 180.0, 180.0]
+  lat: [0.0, 0.0, 0.0, 0.0]
+  level: [1,1,1,1]
   variable: *vars
 output dirac:
   filepath: testdata/quench_dirac_spectralb/dirac_%id%

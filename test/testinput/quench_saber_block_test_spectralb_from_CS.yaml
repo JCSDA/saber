@@ -4,6 +4,7 @@ geometry:
     name : CS-LFR-15
   partitioner: checkerboard
   levels: 70
+  halo: 1
 variables: &vars [psi_inc]
 background:
   date: 2010-01-01T12:00:00Z
