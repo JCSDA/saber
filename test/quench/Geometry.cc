@@ -123,7 +123,7 @@ Geometry::Geometry(const Parameters_ & params,
     // Setup mesh
     mesh_ = atlas::MeshGenerator("structured").generate(grid_, partitioner_);
   } else if (params.functionSpace.value() == "NodeColumns") {
-       // NodeColumns
+    // NodeColumns
     if (grid_.name().compare(0, 2, std::string{"CS"}) == 0) {
       // CubedSphere
       mesh_ = atlas::MeshGenerator("cubedsphere_dual").generate(grid_);
