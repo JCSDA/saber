@@ -1,6 +1,6 @@
 /*
- * (C) Crown Copyright 2022 Met Office
  * (C) Copyright 2022- UCAR
+ * (C) Crown Copyright 2022- Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -26,12 +26,14 @@ SpectralToGauss::SpectralToGauss(const oops::GeometryData & outerGeometryData,
                                  const atlas::FieldSet & xb,
                                  const atlas::FieldSet & fg,
                                  const std::vector<atlas::FieldSet> & fsetVec)
-  : gaussFunctionSpace_(outerGeometryData.functionSpace()),
+  : innerVars_(outerVars),
+    activeVars_(params.activeVariables.value().get_value_or(innerVars_)),
+    gaussFunctionSpace_(outerGeometryData.functionSpace()),
     specFunctionSpace_(2 * atlas::GaussianGrid(gaussFunctionSpace_.grid()).N() - 1),
     trans_(gaussFunctionSpace_, specFunctionSpace_),
     innerGeometryData_(specFunctionSpace_, outerGeometryData.fieldSet(),
-                       outerGeometryData.levelsAreTopDown(), outerGeometryData.comm()),
-    innerVars_(outerVars)
+                       outerGeometryData.levelsAreTopDown(), outerGeometryData.comm())
+
 {
   oops::Log::trace() << classname() << "::SpectralToGauss starting" << std::endl;
   oops::Log::trace() << classname() << "::SpectralToGauss done" << std::endl;
@@ -42,12 +44,26 @@ SpectralToGauss::SpectralToGauss(const oops::GeometryData & outerGeometryData,
 void SpectralToGauss::multiply(atlas::FieldSet & fieldSet) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
 
+  // Create empty Model fieldset
+  atlas::FieldSet newFields = atlas::FieldSet();
+  atlas::FieldSet specFieldSet = atlas::FieldSet();
+
+  // copy "passive variables"
+  std::vector<std::string> fsetNames = fieldSet.field_names();
+
+  for (auto & fieldname : fieldSet.field_names()) {
+     if (activeVars_.has(fieldname)) {
+       specFieldSet.add(fieldSet[fieldname]);
+     } else {
+       newFields.add(fieldSet[fieldname]);
+     }
+  }
+
   // On input: fieldset in spectral space
-  const atlas::FieldSet & specFieldSet = fieldSet;
 
   // Create fieldset on gaussian grid
   atlas::FieldSet gaussFieldSet;
-  for (const auto & fieldname : specFieldSet.field_names()) {
+  for (const auto & fieldname : activeVars_.variables()) {
     atlas::Field gaussField =
       gaussFunctionSpace_.createField<double>(atlas::option::name(fieldname) |
                                  atlas::option::levels(specFieldSet[fieldname].levels()));
@@ -56,7 +72,12 @@ void SpectralToGauss::multiply(atlas::FieldSet & fieldSet) const {
 
   // Transform to gaussian grid
   trans_.invtrans(specFieldSet, gaussFieldSet);
-  fieldSet = gaussFieldSet;
+
+  for (const auto & fieldname : activeVars_.variables()) {
+    newFields.add(gaussFieldSet[fieldname]);
+  }
+
+  fieldSet = newFields;
 
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
@@ -67,11 +88,23 @@ void SpectralToGauss::multiplyAD(atlas::FieldSet & fieldSet) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
 
   // On input: fieldset on gaussian grid
-  const auto & gaussFieldSet = fieldSet;
+  atlas::FieldSet newFields = atlas::FieldSet();
+  atlas::FieldSet gaussFieldSet = atlas::FieldSet();
+
+  // copy "passive variables"
+  std::vector<std::string> fsetNames = fieldSet.field_names();
+
+  for (auto & fieldname : fieldSet.field_names()) {
+     if (activeVars_.has(fieldname)) {
+       gaussFieldSet.add(fieldSet[fieldname]);
+     } else {
+       newFields.add(fieldSet[fieldname]);
+     }
+  }
 
   // Create spectral fieldset
   atlas::FieldSet specFieldSet;
-  for (const auto & fieldname : gaussFieldSet.field_names()) {
+  for (const auto & fieldname : activeVars_.variables()) {
     atlas::Field specField =
       specFunctionSpace_.createField<double>(atlas::option::name(fieldname) |
                                  atlas::option::levels(gaussFieldSet[fieldname].levels()));
@@ -80,7 +113,12 @@ void SpectralToGauss::multiplyAD(atlas::FieldSet & fieldSet) const {
 
   // Transform to spectral space
   trans_.invtrans_adj(gaussFieldSet, specFieldSet);
-  fieldSet = specFieldSet;
+
+  for (const auto & fieldname : activeVars_.variables()) {
+    newFields.add(specFieldSet[fieldname]);
+  }
+
+  fieldSet = newFields;
 
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }

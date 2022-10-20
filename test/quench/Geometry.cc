@@ -124,13 +124,12 @@ Geometry::Geometry(const Parameters_ & params,
     mesh_ = atlas::MeshGenerator("structured").generate(grid_, partitioner_);
   } else if (params.functionSpace.value() == "NodeColumns") {
     if (comm_.size() == 1) {
-      // NodeColumns
       if (grid_.name().compare(0, 2, std::string{"CS"}) == 0) {
         // CubedSphere
         mesh_ = atlas::MeshGenerator("cubedsphere_dual").generate(grid_);
         functionSpace_ = atlas::functionspace::CubedSphereNodeColumns(mesh_);
       } else {
-        // NodeColumns
+            // NodeColumns
         mesh_ = atlas::MeshGenerator("delaunay").generate(grid_);
         functionSpace_ = atlas::functionspace::NodeColumns(mesh_);
       }
