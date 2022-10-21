@@ -26,8 +26,7 @@
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
-#include "saber/gsi/grid/Grid.h"
-#include "saber/gsi/interpolation/InterpolationImpl.h"
+#include "saber/gsi/interpolation/unstructured_interp/UnstructuredInterpolation.h"
 #include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberOuterBlockBase.h"
 
@@ -86,8 +85,8 @@ class Interpolation : public SaberOuterBlockBase {
   std::unique_ptr<const oops::GeometryData> innerGeometryData_;
   oops::Variables innerVars_;
 
-  // Interpolation implementation
-  std::unique_ptr<InterpolationImpl> interpolationImpl_;
+  // Interpolation object
+  std::unique_ptr<UnstructuredInterpolation> interpolator_;
 };
 
 // -------------------------------------------------------------------------------------------------
