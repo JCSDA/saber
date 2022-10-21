@@ -313,7 +313,7 @@ class BUMPParameters : public oops::Parameters {
   // Number of levels between interpolation levels
   oops::OptionalParameter<int> fit_dl0{"fit_dl0", this};
   // Number of components in the fit function
-  oops::OptionalParameter<eckit::LocalConfiguration> fit_ncmp{"fit_ncmp", this};
+  oops::OptionalParameter<int> fit_ncmp{"fit_ncmp", this};
   // Write HDIAG components detail
   oops::OptionalParameter<bool> write_hdiag_detail{"write_hdiag_detail", this};
   // Update localization for hybridization

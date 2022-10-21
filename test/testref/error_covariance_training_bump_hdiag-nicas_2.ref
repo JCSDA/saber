@@ -29,80 +29,74 @@
           Compute independent levels:  1[2] 
              -90.00 deg.  ~>100-99-100-99-100-100-100-100-100-100 
              -90.00 deg.  ~>100-99-100-99-100-100-100-100-100-100 
-                Level:   1 ~> cov. at class zero:  0.10E+01
+                Level:   1 ~> cov. at class zero:  0.93E+00
+                Level:   2 ~> cov. at class zero:  0.10E+01
+                Level:   1 ~> cov. at class zero:  0.94E+00
                 Level:   2 ~> cov. at class zero:  0.99E+00
-                Level:   1 ~> cov. at class zero:  0.98E+00
-                Level:   2 ~> cov. at class zero:  0.97E+00
-             Block var1-var1:  0.15185055E+00 for       40 diagnostic points
-             Block var2-var2:  0.18489337E+00 for       40 diagnostic points
-             Block common:  0.16771961E+00 for       40 diagnostic points
+             Block var1-var1:  0.15138125E+00 for       40 diagnostic points
+             Block var2-var2:  0.15094704E+00 for       40 diagnostic points
+             Block common:  0.12657915E+00 for       40 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      7273.36 km
-                                 cor. ver. support:         1.40 vertical units
+                                 cor. hor. support:      7328.30 km
+                                 cor. ver. support:         1.50 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      7431.25 km
-                                 cor. ver. support:         1.40 vertical units
+                                 cor. hor. support:      7504.81 km
+                                 cor. ver. support:         1.50 vertical units
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      8838.26 km
-                                 cor. ver. support:         4.81 vertical units
+                                 cor. hor. support:      8272.71 km
+                                 cor. ver. support:         4.82 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      8352.99 km
-                                 cor. ver. support:         4.81 vertical units
+                                 cor. hor. support:      8493.84 km
+                                 cor. ver. support:         4.82 vertical units
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      7981.57 km
-                                 cor. ver. support:         2.49 vertical units
+                                 cor. hor. support:      7793.64 km
+                                 cor. ver. support:         2.54 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      7879.58 km
-                                 cor. ver. support:         2.49 vertical units
-             Block var1-var1:  0.34107090E+00 for       33 diagnostic points
-             Block var2-var2:  0.28890475E+00 for       32 diagnostic points
-             Block common:  0.28202907E+00 for       36 diagnostic points
-                Level:   1 ~> loc. at class zero:       0.91
-                Level:   2 ~> loc. at class zero:       0.92
-                   Level:   1 ~> amplitude:        1.00
-                                 loc. hor. support:      9920.54 km
-                                 loc. ver. support:         1.86 vertical units
-                   Level:   2 ~> amplitude:        1.00
-                                 loc. hor. support:      9989.14 km
-                                 loc. ver. support:         1.86 vertical units
-                Level:   1 ~> loc. at class zero:       0.91
+                                 cor. hor. support:      7991.60 km
+                                 cor. ver. support:         2.54 vertical units
+             Block var1-var1:  0.18261345E+20 for       26 diagnostic points
+             Block var2-var2:  0.28971567E+00 for       34 diagnostic points
+             Block common:  0.28956892E+00 for       39 diagnostic points
+                Level:   1 ~> loc. at class zero:       0.92
+                Level:   2 ~> loc. at class zero:       0.93
+                Level:   1 ~> loc. at class zero:       0.92
                 Level:   2 ~> loc. at class zero:       0.91
                    Level:   1 ~> amplitude:        1.00
-                                 loc. hor. support:     11191.91 km
-                                 loc. ver. support:         6.69 vertical units
+                                 loc. hor. support:     11655.89 km
+                                 loc. ver. support:         6.90 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 loc. hor. support:     11495.88 km
-                                 loc. ver. support:         6.69 vertical units
-                Level:   1 ~> loc. at class zero:       0.91
+                                 loc. hor. support:     12346.87 km
+                                 loc. ver. support:         6.90 vertical units
+                Level:   1 ~> loc. at class zero:       0.92
                 Level:   2 ~> loc. at class zero:       0.92
                    Level:   1 ~> amplitude:        1.00
-                                 loc. hor. support:     10784.12 km
-                                 loc. ver. support:         5.55 vertical units
+                                 loc. hor. support:     10671.92 km
+                                 loc. ver. support:         6.90 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 loc. hor. support:     10732.03 km
-                                 loc. ver. support:         5.55 vertical units
+                                 loc. hor. support:     12045.37 km
+                                 loc. ver. support:         6.90 vertical units
              Effective levels:   1   2 
-                   Horizontal support radius:   10784.12 km (  10784.12 km -   10784.12 km)
-                   Estimated nc1 from horizontal support radius:       54
-                   Final nc1:       54
-             Effective horizontal resolution:  3.97
-                   Decimate full grid, at least       54 points required
-                        418 valid points found
-                   Horizontal support radius:   10732.03 km (  10732.03 km -   10732.03 km)
+                   Horizontal support radius:   10671.92 km (  10671.92 km -   10671.92 km)
                    Estimated nc1 from horizontal support radius:       55
                    Final nc1:       55
-             Effective horizontal resolution:  3.99
+             Effective horizontal resolution:  3.97
                    Decimate full grid, at least       55 points required
                         475 valid points found
-             nc1(  1) =         54
-             nc1(  2) =         55
-             ns =              109
+                   Horizontal support radius:   12045.37 km (  12045.37 km -   12045.37 km)
+                   Estimated nc1 from horizontal support radius:       43
+                   Final nc1:       43
+             Effective horizontal resolution:  3.96
+                   Decimate full grid, at least       43 points required
+                        363 valid points found
+             nc1(  1) =         55
+             nc1(  2) =         43
+             ns =               98
     Full NICAS adjoint test result:                        T
        Block NICAS adjoint test result:                    T
           Interpolation adjoint test (horizontal) result:  T
@@ -116,7 +110,7 @@
                 Min / max: 1.0000000 /  1.0000000 over     10 tests
            -81.0 /   65.8:  1.0000000
           Level   1:  0.0000000 -  1.0000000
-          Level   2:  0.0000000 -  0.9080433
-Norm of BUMP output parameter cor_rh - 1: 3.6858745614933109e+08
-Norm of BUMP output parameter cor_rv - 1: 1.1566422549692189e+02
-Norm of BUMP output parameter nicas_norm - 1: 5.2769122340314823e+01
+          Level   2:  0.0000000 -  0.9357092
+Norm of BUMP output parameter cor_rh - 1: 3.6684477216520000e+08
+Norm of BUMP output parameter cor_rv - 1: 1.1783978663649000e+02
+Norm of BUMP output parameter nicas_norm - 1: 5.2586516628634492e+01

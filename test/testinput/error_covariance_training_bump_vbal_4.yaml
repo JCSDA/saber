@@ -1,7 +1,7 @@
 geometry:
   function space: StructuredColumns
   grid:
-    type: regular_gaussian
+    type: regular_lonlat
     N: 10
   levels: 2
   mask type: sea
@@ -39,7 +39,7 @@ bump:
     members from template:
       template:
         date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_F10L2/member_%mem%
+        filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
         state variables: *id001
       pattern: '%mem%'
       nmembers: 10

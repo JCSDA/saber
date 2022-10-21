@@ -1,14 +1,14 @@
 geometry:
   function space: StructuredColumns
   grid:
-    type: regular_gaussian
+    type: regular_lonlat
     N: 10
   levels: 10
   mask type: sea
   halo: 1
 input variables: &id001
 - var1
-- var2
+- var_2d
 background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
@@ -22,7 +22,6 @@ bump:
   write_hdiag: true
   load_samp_local: true
   load_mom: true
-  write_samp_global: true
   nc1: 500
   nc2: 250
   nc3: 10
@@ -36,9 +35,7 @@ bump:
   diag_rhflt: 3000.0e3
   diag_rvflt: 3.0
   fit_dl0: 3
-  fit_ncmp:
-    var1: 2
-    var2: 2
+  fit_ncmp: 2
   fname_samp: error_covariance_training_bump_hdiag_1/_MPI_-_OMP__sampling
   fname_mom: [error_covariance_training_bump_hdiag_1/_MPI_-_OMP__mom]
 output:

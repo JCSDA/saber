@@ -112,23 +112,41 @@ template <typename MODEL> class Randomization : public oops::Application {
                                           geom, vars, covarParams, xx, xx));
 
     // Generate and write perturbations
-    Increment_ dx(geom, vars, xx.validTime());
+    std::vector<Increment_> ens;
+    Increment_ mean(geom, vars, xx.validTime());
+    mean.zero();
     const boost::optional<WriteParameters_> &inputIncrOutParams = params.outputIncrement.value();
     for (size_t jm = 0; jm < covarParams.randomizationSize.value(); ++jm) {
       // Generate pertubation
+      Increment_ dx(geom, vars, xx.validTime());
       Bmat->randomize(dx);
       oops::Log::test() << "Member " << jm << ": " << dx << std::endl;
+
+      // Update mean
+      mean += dx;
+
+      // Save perturbation
+      ens.push_back(dx);
+    }
+
+    // Normalize mean
+    const double norm = 1.0/static_cast<double>(covarParams.randomizationSize.value());
+    mean *= norm;
+
+    for (size_t jm = 0; jm < covarParams.randomizationSize.value(); ++jm) {
+      // Remove mean
+      ens[jm] -= mean;
 
       // Write perturbation
       if (inputIncrOutParams != boost::none) {
         WriteParameters_ incrOutParams = *inputIncrOutParams;
         incrOutParams.setMember(jm+1);
-        dx.write(incrOutParams);
+        ens[jm].write(incrOutParams);
       }
 
       // Add mean state
       State_ xp(xx);
-      xp += dx;
+      xp += ens[jm];
 
       // Write perturbed state
       StateWriterParameters_ outParams = params.output;

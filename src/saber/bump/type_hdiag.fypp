@@ -188,8 +188,8 @@ do ildwv=0,nam%nldwv
             nl0_1_id = define_dim(mpl,grpid,'nl0_1',geom(1)%nl0)
             nl0_2_id = define_dim(mpl,grpid,'nl0_2',geom(1)%nl0)
             iv = bpar%b_to_v1(ib)
-            if (nam%fit_ncmp(iv)>1) then
-               ncmp_id = define_dim(mpl,grpid,'ncmp',nam%fit_ncmp(iv))
+            if (nam%fit_ncmp>1) then
+               ncmp_id = define_dim(mpl,grpid,'ncmp',nam%fit_ncmp)
             else
                ncmp_id = mpl%msv%vali
             end if

@@ -1,30 +1,30 @@
        Compute independent levels:  1[10] 
-          Level   1:   1027596219
-          Level   2:   1027596219
-          Level   3:   1027596219
-          Level   4:   1027596219
-          Level   5:   1027596219
-          Level   6:   1027596219
-          Level   7:   1027596219
-          Level   8:   1027596219
-          Level   9:   1027596219
-          Level  10:   1027596219
-          Model grid size:             3200
-          Subset Sc0 size:             3200
+          Level   1:    764360948
+          Level   2:    764360948
+          Level   3:    764360948
+          Level   4:    764360948
+          Level   5:    764360948
+          Level   6:    764360948
+          Level   7:    764360948
+          Level   8:    764360948
+          Level   9:    764360948
+          Level  10:    764360948
+          Model grid size:              800
+          Subset Sc0 size:              800
           Number of duplicated points (halo):         0 (  0.00%)
-          Min. / max. longitudes: -175.5 /   180.0
-          Min. / max. latitudes:   -86.6 /    86.6
-          Domain area (% of Earth area): 0.660E+02%
-             Level   1 ~>  66.0%
-             Level   2 ~>  66.0%
-             Level   3 ~>  66.0%
-             Level   4 ~>  66.0%
-             Level   5 ~>  66.0%
-             Level   6 ~>  66.0%
-             Level   7 ~>  66.0%
-             Level   8 ~>  66.0%
-             Level   9 ~>  66.0%
-             Level  10 ~>  66.0%
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -83.3 /    83.3
+          Domain area (% of Earth area): 0.675E+02%
+             Level   1 ~>  67.5%
+             Level   2 ~>  67.5%
+             Level   3 ~>  67.5%
+             Level   4 ~>  67.5%
+             Level   5 ~>  67.5%
+             Level   6 ~>  67.5%
+             Level   7 ~>  67.5%
+             Level   8 ~>  67.5%
+             Level   9 ~>  67.5%
+             Level  10 ~>  67.5%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
              Level   3 ~>  0.300E+01 vert. unit
@@ -35,71 +35,199 @@
              Level   8 ~>  0.800E+01 vert. unit
              Level   9 ~>  0.900E+01 vert. unit
              Level  10 ~>  0.100E+02 vert. unit
-             Effective levels:   1   4   7  10 
-                   Horizontal support radius:    5000.00 km (   5000.00 km -    5000.00 km)
-                   Estimated nc1 from horizontal support radius:      248
-                   Final nc1:      248
+             Effective levels:   1   2   3   4   5   6   7   8   9  10 
+                   Horizontal support radius:    7000.00 km (   7000.00 km -    7000.00 km)
+                   Estimated nc1 from horizontal support radius:      129
+                   Final nc1:      129
              Effective horizontal resolution:  3.99
-                   Decimate full grid, at least      248 points required
-                       1720 valid points found
-                   Horizontal support radius:    5000.00 km (   5000.00 km -    5000.00 km)
-                   Estimated nc1 from horizontal support radius:      248
-                   Final nc1:      248
+                   Decimate full grid, at least      129 points required
+                        518 valid points found
+                   Horizontal support radius:    7000.00 km (   7000.00 km -    7000.00 km)
+                   Estimated nc1 from horizontal support radius:      129
+                   Final nc1:      129
              Effective horizontal resolution:  3.99
-                   Decimate full grid, at least      248 points required
-                       1720 valid points found
-                   Horizontal support radius:    5000.00 km (   5000.00 km -    5000.00 km)
-                   Estimated nc1 from horizontal support radius:      248
-                   Final nc1:      248
+                   Decimate full grid, at least      129 points required
+                        518 valid points found
+                   Horizontal support radius:    7000.00 km (   7000.00 km -    7000.00 km)
+                   Estimated nc1 from horizontal support radius:      129
+                   Final nc1:      129
              Effective horizontal resolution:  3.99
-                   Decimate full grid, at least      248 points required
-                       1720 valid points found
-                   Horizontal support radius:    5000.00 km (   5000.00 km -    5000.00 km)
-                   Estimated nc1 from horizontal support radius:      248
-                   Final nc1:      248
+                   Decimate full grid, at least      129 points required
+                        518 valid points found
+                   Horizontal support radius:    7000.00 km (   7000.00 km -    7000.00 km)
+                   Estimated nc1 from horizontal support radius:      129
+                   Final nc1:      129
              Effective horizontal resolution:  3.99
-                   Decimate full grid, at least      248 points required
-                       1720 valid points found
-             nc1(  1) =        248
-             nc1(  2) =        248
-             nc1(  3) =        248
-             nc1(  4) =        248
-             ns =              992
-             Effective levels:   1   4   7  10 
-                   Horizontal support radius:    6000.00 km (   6000.00 km -    6000.00 km)
-                   Estimated nc1 from horizontal support radius:      172
-                   Final nc1:      172
+                   Decimate full grid, at least      129 points required
+                        518 valid points found
+                   Horizontal support radius:    7000.00 km (   7000.00 km -    7000.00 km)
+                   Estimated nc1 from horizontal support radius:      129
+                   Final nc1:      129
              Effective horizontal resolution:  3.99
-                   Decimate full grid, at least      172 points required
-                       1447 valid points found
-                   Horizontal support radius:    6000.00 km (   6000.00 km -    6000.00 km)
-                   Estimated nc1 from horizontal support radius:      172
-                   Final nc1:      172
+                   Decimate full grid, at least      129 points required
+                        518 valid points found
+                   Horizontal support radius:    7000.00 km (   7000.00 km -    7000.00 km)
+                   Estimated nc1 from horizontal support radius:      129
+                   Final nc1:      129
              Effective horizontal resolution:  3.99
-                   Decimate full grid, at least      172 points required
-                       1447 valid points found
-                   Horizontal support radius:    6000.00 km (   6000.00 km -    6000.00 km)
-                   Estimated nc1 from horizontal support radius:      172
-                   Final nc1:      172
+                   Decimate full grid, at least      129 points required
+                        518 valid points found
+                   Horizontal support radius:    7000.00 km (   7000.00 km -    7000.00 km)
+                   Estimated nc1 from horizontal support radius:      129
+                   Final nc1:      129
              Effective horizontal resolution:  3.99
-                   Decimate full grid, at least      172 points required
-                       1447 valid points found
-                   Horizontal support radius:    6000.00 km (   6000.00 km -    6000.00 km)
-                   Estimated nc1 from horizontal support radius:      172
-                   Final nc1:      172
+                   Decimate full grid, at least      129 points required
+                        518 valid points found
+                   Horizontal support radius:    7000.00 km (   7000.00 km -    7000.00 km)
+                   Estimated nc1 from horizontal support radius:      129
+                   Final nc1:      129
              Effective horizontal resolution:  3.99
-                   Decimate full grid, at least      172 points required
-                       1447 valid points found
-             nc1(  1) =        172
-             nc1(  2) =        172
-             nc1(  3) =        172
-             nc1(  4) =        172
-             ns =              688
+                   Decimate full grid, at least      129 points required
+                        518 valid points found
+                   Horizontal support radius:    7000.00 km (   7000.00 km -    7000.00 km)
+                   Estimated nc1 from horizontal support radius:      129
+                   Final nc1:      129
+             Effective horizontal resolution:  3.99
+                   Decimate full grid, at least      129 points required
+                        518 valid points found
+                   Horizontal support radius:    7000.00 km (   7000.00 km -    7000.00 km)
+                   Estimated nc1 from horizontal support radius:      129
+                   Final nc1:      129
+             Effective horizontal resolution:  3.99
+                   Decimate full grid, at least      129 points required
+                        518 valid points found
+             nc1(  1) =        129
+             nc1(  2) =        129
+             nc1(  3) =        129
+             nc1(  4) =        129
+             nc1(  5) =        129
+             nc1(  6) =        129
+             nc1(  7) =        129
+             nc1(  8) =        129
+             nc1(  9) =        129
+             nc1( 10) =        129
+             ns =             1290
+             Effective levels:   1   3   5   7   9  10 
+                   Horizontal support radius:    8000.00 km (   8000.00 km -    8000.00 km)
+                   Estimated nc1 from horizontal support radius:       99
+                   Final nc1:       99
+             Effective horizontal resolution:  3.99
+                   Decimate full grid, at least       99 points required
+                        513 valid points found
+                   Horizontal support radius:    8000.00 km (   8000.00 km -    8000.00 km)
+                   Estimated nc1 from horizontal support radius:       99
+                   Final nc1:       99
+             Effective horizontal resolution:  3.99
+                   Decimate full grid, at least       99 points required
+                        513 valid points found
+                   Horizontal support radius:    8000.00 km (   8000.00 km -    8000.00 km)
+                   Estimated nc1 from horizontal support radius:       99
+                   Final nc1:       99
+             Effective horizontal resolution:  3.99
+                   Decimate full grid, at least       99 points required
+                        513 valid points found
+                   Horizontal support radius:    8000.00 km (   8000.00 km -    8000.00 km)
+                   Estimated nc1 from horizontal support radius:       99
+                   Final nc1:       99
+             Effective horizontal resolution:  3.99
+                   Decimate full grid, at least       99 points required
+                        513 valid points found
+                   Horizontal support radius:    8000.00 km (   8000.00 km -    8000.00 km)
+                   Estimated nc1 from horizontal support radius:       99
+                   Final nc1:       99
+             Effective horizontal resolution:  3.99
+                   Decimate full grid, at least       99 points required
+                        513 valid points found
+                   Horizontal support radius:    8000.00 km (   8000.00 km -    8000.00 km)
+                   Estimated nc1 from horizontal support radius:       99
+                   Final nc1:       99
+             Effective horizontal resolution:  3.99
+                   Decimate full grid, at least       99 points required
+                        513 valid points found
+             nc1(  1) =         99
+             nc1(  2) =         99
+             nc1(  3) =         99
+             nc1(  4) =         99
+             nc1(  5) =         99
+             nc1(  6) =         99
+             ns =              594
+             Effective levels:   1   2   3   4   5   6   7   8   9  10 
+                   Horizontal support radius:    7000.00 km (   7000.00 km -    7000.00 km)
+                   Estimated nc1 from horizontal support radius:      129
+                   Final nc1:      129
+             Effective horizontal resolution:  3.99
+                   Decimate full grid, at least      129 points required
+                        518 valid points found
+                   Horizontal support radius:    7000.00 km (   7000.00 km -    7000.00 km)
+                   Estimated nc1 from horizontal support radius:      129
+                   Final nc1:      129
+             Effective horizontal resolution:  3.99
+                   Decimate full grid, at least      129 points required
+                        518 valid points found
+                   Horizontal support radius:    7000.00 km (   7000.00 km -    7000.00 km)
+                   Estimated nc1 from horizontal support radius:      129
+                   Final nc1:      129
+             Effective horizontal resolution:  3.99
+                   Decimate full grid, at least      129 points required
+                        518 valid points found
+                   Horizontal support radius:    7000.00 km (   7000.00 km -    7000.00 km)
+                   Estimated nc1 from horizontal support radius:      129
+                   Final nc1:      129
+             Effective horizontal resolution:  3.99
+                   Decimate full grid, at least      129 points required
+                        518 valid points found
+                   Horizontal support radius:    7000.00 km (   7000.00 km -    7000.00 km)
+                   Estimated nc1 from horizontal support radius:      129
+                   Final nc1:      129
+             Effective horizontal resolution:  3.99
+                   Decimate full grid, at least      129 points required
+                        518 valid points found
+                   Horizontal support radius:    7000.00 km (   7000.00 km -    7000.00 km)
+                   Estimated nc1 from horizontal support radius:      129
+                   Final nc1:      129
+             Effective horizontal resolution:  3.99
+                   Decimate full grid, at least      129 points required
+                        518 valid points found
+                   Horizontal support radius:    7000.00 km (   7000.00 km -    7000.00 km)
+                   Estimated nc1 from horizontal support radius:      129
+                   Final nc1:      129
+             Effective horizontal resolution:  3.99
+                   Decimate full grid, at least      129 points required
+                        518 valid points found
+                   Horizontal support radius:    7000.00 km (   7000.00 km -    7000.00 km)
+                   Estimated nc1 from horizontal support radius:      129
+                   Final nc1:      129
+             Effective horizontal resolution:  3.99
+                   Decimate full grid, at least      129 points required
+                        518 valid points found
+                   Horizontal support radius:    7000.00 km (   7000.00 km -    7000.00 km)
+                   Estimated nc1 from horizontal support radius:      129
+                   Final nc1:      129
+             Effective horizontal resolution:  3.99
+                   Decimate full grid, at least      129 points required
+                        518 valid points found
+                   Horizontal support radius:    7000.00 km (   7000.00 km -    7000.00 km)
+                   Estimated nc1 from horizontal support radius:      129
+                   Final nc1:      129
+             Effective horizontal resolution:  3.99
+                   Decimate full grid, at least      129 points required
+                        518 valid points found
+             nc1(  1) =        129
+             nc1(  2) =        129
+             nc1(  3) =        129
+             nc1(  4) =        129
+             nc1(  5) =        129
+             nc1(  6) =        129
+             nc1(  7) =        129
+             nc1(  8) =        129
+             nc1(  9) =        129
+             nc1( 10) =        129
+             ns =             1290
 Member 0: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -108,15 +236,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.3624671390744223e+02
-  var2: 1.5296213683338794e+02
+  var1: 6.9676126727314184e+01
+  var2: 7.6817256289658005e+01
+  var_2d: 2.3923386005337580e+01
 Member 1: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -125,32 +254,32 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.4528222053010543e+02
-  var2: 1.4973499951044488e+02
+  var1: 7.2860358256734045e+01
+  var2: 7.2901904474426246e+01
+  var_2d: 2.0741598169580996e+01
 Member 2: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
-Partitioner:
-- type: equal_regions
+- name: F10
+- size: 800
 Function space:
 - type: StructuredColumns
 - halo: 1
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.5401899864302192e+02
-  var2: 1.3790400806675117e+02
+  var1: 7.4437117395292589e+01
+  var2: 7.0062450724128723e+01
+  var_2d: 1.7898936244372727e+01
 Member 3: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -159,15 +288,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.4170562474301263e+02
-  var2: 1.2884295513693928e+02
+  var1: 7.4120084449523674e+01
+  var2: 7.3075159798796577e+01
+  var_2d: 2.1881538647503081e+01
 Member 4: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -176,15 +306,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.3605268444504787e+02
-  var2: 1.4036426683491476e+02
+  var1: 6.9708432098987629e+01
+  var2: 8.5171129374010548e+01
+  var_2d: 2.3849999549945636e+01
 Member 5: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -193,15 +324,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.5371318602539537e+02
-  var2: 1.2964892624238897e+02
+  var1: 7.3592960163392391e+01
+  var2: 7.3856436973852738e+01
+  var_2d: 2.1334703290618677e+01
 Member 6: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -210,15 +342,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.5666745051001388e+02
-  var2: 1.2908578156182691e+02
+  var1: 7.2249426112640961e+01
+  var2: 7.5144166014374989e+01
+  var_2d: 2.2743948030635845e+01
 Member 7: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -227,15 +360,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.4305450664120019e+02
-  var2: 1.4525267906957626e+02
+  var1: 7.2596268529945789e+01
+  var2: 7.3599226872165772e+01
+  var_2d: 2.6129881125340358e+01
 Member 8: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -244,32 +378,32 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.5069433769182766e+02
-  var2: 1.4380137722714383e+02
+  var1: 7.6010835738461893e+01
+  var2: 7.4291273332433335e+01
+  var_2d: 2.5716080253727775e+01
 Member 9: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
-Partitioner:
-- type: equal_regions
+- name: F10
+- size: 800
 Function space:
 - type: StructuredColumns
 - halo: 1
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.4494268338083617e+02
-  var2: 1.4194940356976741e+02
+  var1: 6.9093978243195437e+01
+  var2: 7.2646831632378237e+01
+  var_2d: 2.3370474892166868e+01
 Member 10: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -278,15 +412,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.4689378216698142e+02
-  var2: 1.4923283771765733e+02
+  var1: 6.6381900730664654e+01
+  var2: 7.4655075443287387e+01
+  var_2d: 1.9237100405028393e+01
 Member 11: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -295,15 +430,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.5604276504136351e+02
-  var2: 1.2662716182158128e+02
+  var1: 7.5292907604515591e+01
+  var2: 7.8671620671282810e+01
+  var_2d: 2.2846429811184951e+01
 Member 12: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -312,15 +448,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.6544879649305548e+02
-  var2: 1.5003632843881351e+02
+  var1: 7.6292897208348307e+01
+  var2: 7.4560065068771735e+01
+  var_2d: 2.7689869844529678e+01
 Member 13: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -329,15 +466,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.3531331597120194e+02
-  var2: 1.2563725070919995e+02
+  var1: 7.1571038301753248e+01
+  var2: 7.3164275725580268e+01
+  var_2d: 2.4937589923383584e+01
 Member 14: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -346,15 +484,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.3095121693546611e+02
-  var2: 1.4477286672367617e+02
+  var1: 6.8456123443805268e+01
+  var2: 7.9065161059560268e+01
+  var_2d: 1.6738578505027743e+01
 Member 15: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -363,15 +502,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.3588656092970007e+02
-  var2: 1.2355937712878793e+02
+  var1: 7.4791517343531581e+01
+  var2: 7.3339983970074883e+01
+  var_2d: 2.2041726186761192e+01
 Member 16: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -380,15 +520,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.3076332751856077e+02
-  var2: 1.3925818093941339e+02
+  var1: 6.6715950174607684e+01
+  var2: 6.3282513790980488e+01
+  var_2d: 2.0395468678975579e+01
 Member 17: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -397,15 +538,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.3181186555397898e+02
-  var2: 1.3427399238270692e+02
+  var1: 7.1459543829724481e+01
+  var2: 7.6350814061185019e+01
+  var_2d: 2.3298967356045612e+01
 Member 18: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -414,32 +556,32 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.5044882229990546e+02
-  var2: 1.5153422136481319e+02
+  var1: 7.3717277606161545e+01
+  var2: 7.4093993940896311e+01
+  var_2d: 2.8194270669262256e+01
 Member 19: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
-Partitioner:
-- type: equal_regions
+- name: F10
+- size: 800
 Function space:
 - type: StructuredColumns
 - halo: 1
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.4116120063984593e+02
-  var2: 1.6922637469520748e+02
+  var1: 7.4820379511706932e+01
+  var2: 6.7965668743881992e+01
+  var_2d: 2.3113189049318127e+01
 Member 20: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -448,15 +590,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.6597182183399997e+02
-  var2: 1.5333543671934211e+02
+  var1: 7.3252992522124046e+01
+  var2: 7.4195782799850406e+01
+  var_2d: 2.6433490060262141e+01
 Member 21: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -465,15 +608,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.4387351491314357e+02
-  var2: 1.4811346741359057e+02
+  var1: 7.2861021843287546e+01
+  var2: 7.3273534111898414e+01
+  var_2d: 2.1695136650440226e+01
 Member 22: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -482,15 +626,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.3174920191999172e+02
-  var2: 1.4435550266820121e+02
+  var1: 7.5326986540169585e+01
+  var2: 7.2832399024440818e+01
+  var_2d: 2.3341600411317224e+01
 Member 23: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -499,15 +644,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.4741658379990520e+02
-  var2: 1.6385305933313387e+02
+  var1: 7.0004295746927440e+01
+  var2: 6.5358073510125621e+01
+  var_2d: 2.3998510618273460e+01
 Member 24: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -516,15 +662,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.5004760572349755e+02
-  var2: 1.5347760514596698e+02
+  var1: 7.1885228765404605e+01
+  var2: 7.8917039181935124e+01
+  var_2d: 2.6857644813442985e+01
 Member 25: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -533,15 +680,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.3751514795216997e+02
-  var2: 1.4056737936504405e+02
+  var1: 7.3963560007860437e+01
+  var2: 7.7152339452266020e+01
+  var_2d: 2.6740465695677706e+01
 Member 26: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -550,15 +698,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.4857815761615834e+02
-  var2: 1.3583679845511583e+02
+  var1: 7.8605598822412148e+01
+  var2: 7.8134822313592224e+01
+  var_2d: 2.2437334663401355e+01
 Member 27: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -567,15 +716,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.2765902127926735e+02
-  var2: 1.3827176918169096e+02
+  var1: 7.1664748704139669e+01
+  var2: 6.9378970558273735e+01
+  var_2d: 1.9750965114598273e+01
 Member 28: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -584,15 +734,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.3242119066159066e+02
-  var2: 1.3773909488117818e+02
+  var1: 7.7550244271076650e+01
+  var2: 6.9610263763712098e+01
+  var_2d: 1.8193466252310177e+01
 Member 29: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -601,15 +752,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.5208770908412572e+02
-  var2: 1.6795907399342198e+02
+  var1: 7.3180301897916962e+01
+  var2: 7.0861130667549133e+01
+  var_2d: 2.3260755645962259e+01
 Member 30: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -618,15 +770,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.4635239958472005e+02
-  var2: 1.2542584991138885e+02
+  var1: 6.7726376391768397e+01
+  var2: 7.5884858785608515e+01
+  var_2d: 2.3932367677024427e+01
 Member 31: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -635,15 +788,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.3186123023851954e+02
-  var2: 1.1847581378509126e+02
+  var1: 7.7999758852728363e+01
+  var2: 7.4566891343713223e+01
+  var_2d: 2.4426691616678806e+01
 Member 32: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -652,15 +806,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.4407238116711054e+02
-  var2: 1.5914352189808363e+02
+  var1: 7.4355279843666239e+01
+  var2: 6.1037155965022173e+01
+  var_2d: 1.9841756515347665e+01
 Member 33: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -669,15 +824,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.4521688707413099e+02
-  var2: 1.6562595858559217e+02
+  var1: 7.8531481118707859e+01
+  var2: 7.5144797408217570e+01
+  var_2d: 2.3944785787018780e+01
 Member 34: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -686,15 +842,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.6467491256556838e+02
-  var2: 1.5653435562064161e+02
+  var1: 7.2030211732766233e+01
+  var2: 7.1467009469032703e+01
+  var_2d: 2.6149031911738732e+01
 Member 35: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -703,15 +860,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.5564740157492531e+02
-  var2: 1.4182378101134498e+02
+  var1: 7.2048657438665742e+01
+  var2: 6.9344655689128800e+01
+  var_2d: 2.3444456532646935e+01
 Member 36: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -720,15 +878,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.5881477211669554e+02
-  var2: 1.5309624123792526e+02
+  var1: 7.0609232165407704e+01
+  var2: 7.2458141417519741e+01
+  var_2d: 2.6249780830461287e+01
 Member 37: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -737,15 +896,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.4047318603926982e+02
-  var2: 1.5287445093171175e+02
+  var1: 6.8292652292726871e+01
+  var2: 8.1753604286625531e+01
+  var_2d: 2.5892538815333658e+01
 Member 38: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -754,15 +914,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.5277274201233990e+02
-  var2: 1.5276521169734633e+02
+  var1: 7.0224920308275244e+01
+  var2: 7.1119666329873169e+01
+  var_2d: 2.4817078401707615e+01
 Member 39: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -771,15 +932,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.2772325546400118e+02
-  var2: 1.2424721250039660e+02
+  var1: 6.9281777043338636e+01
+  var2: 7.7111199377218441e+01
+  var_2d: 1.6672748975159021e+01
 Member 40: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -788,15 +950,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.4671548486949143e+02
-  var2: 1.4261161969262577e+02
+  var1: 7.4257103225156882e+01
+  var2: 6.5987663117527035e+01
+  var_2d: 2.5780259791784236e+01
 Member 41: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -805,15 +968,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.3248190429862748e+02
-  var2: 1.5227664016235929e+02
+  var1: 7.0695252513053944e+01
+  var2: 7.5110727995047370e+01
+  var_2d: 2.5641946993191738e+01
 Member 42: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -822,15 +986,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.4316132344088243e+02
-  var2: 1.3805692909551874e+02
+  var1: 7.4801388393205642e+01
+  var2: 7.2505223069205542e+01
+  var_2d: 2.2286375326599117e+01
 Member 43: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -839,15 +1004,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.4067936537392609e+02
-  var2: 1.3486713454042683e+02
+  var1: 7.9260380765146863e+01
+  var2: 6.9306667382234266e+01
+  var_2d: 1.9760484711236685e+01
 Member 44: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -856,15 +1022,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.3067815303707366e+02
-  var2: 1.5467370465966104e+02
+  var1: 7.3014273016805419e+01
+  var2: 7.7773630273316826e+01
+  var_2d: 2.7045282664155689e+01
 Member 45: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -873,15 +1040,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.5132666171088221e+02
-  var2: 1.4215829792454923e+02
+  var1: 7.9538560085197801e+01
+  var2: 6.7270362955086782e+01
+  var_2d: 2.2511306585377781e+01
 Member 46: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -890,15 +1058,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.3171283568648019e+02
-  var2: 1.3845622670418655e+02
+  var1: 7.2277508970239467e+01
+  var2: 7.5747069608678004e+01
+  var_2d: 2.2475410252412743e+01
 Member 47: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -907,15 +1076,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.3596077309901918e+02
-  var2: 1.4808857605993131e+02
+  var1: 7.3828812812274762e+01
+  var2: 8.2606992373279070e+01
+  var_2d: 2.1575891613601822e+01
 Member 48: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -924,15 +1094,16 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.3916902763008073e+02
-  var2: 1.2100091546935042e+02
+  var1: 7.4040428246982884e+01
+  var2: 6.9256732347157410e+01
+  var_2d: 2.5135217016577467e+01
 Member 49: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F20
-- size: 3200
+- name: F10
+- size: 800
 Partitioner:
 - type: equal_regions
 Function space:
@@ -941,7 +1112,8 @@ Function space:
 Vertical levels: 
 - number: 10
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-Mask size: 66%
+Mask size: 67%
 Fields:
-  var1: 1.2447173531631014e+02
-  var2: 1.4128427626213511e+02
+  var1: 7.0306081844176020e+01
+  var2: 7.1295965985918343e+01
+  var_2d: 1.7662231669910586e+01

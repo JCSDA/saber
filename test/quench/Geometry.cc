@@ -30,6 +30,7 @@
 // -----------------------------------------------------------------------------
 namespace quench {
 // -----------------------------------------------------------------------------
+
 Geometry::Geometry(const Parameters_ & params,
                    const eckit::mpi::Comm & comm) : comm_(comm), levels_(1) {
   // Initialize eckit communicator for ATLAS
@@ -449,8 +450,19 @@ Geometry::Geometry(const Geometry & other) : comm_(other.comm_), levels_(other.l
   gmaskSize_ = other.gmaskSize_;
 }
 // -------------------------------------------------------------------------------------------------
+size_t Geometry::variableSize(const std::string & var) const {
+  size_t levels = levels_;
+  if (var.size() > 3) {
+    if (var.substr(var.size()-3) == "_2d" || var.substr(var.size()-3) == "_2D") levels = 1;
+  }
+  return levels;
+}
+// -----------------------------------------------------------------------------
 std::vector<size_t> Geometry::variableSizes(const oops::Variables & vars) const {
-  std::vector<size_t> sizes(vars.size(), levels_);
+  std::vector<size_t> sizes;
+  for (const auto & var : vars.variables()) {
+    sizes.push_back(this->variableSize(var));
+  }
   return sizes;
 }
 // -----------------------------------------------------------------------------

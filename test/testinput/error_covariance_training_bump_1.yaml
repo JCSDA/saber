@@ -1,7 +1,8 @@
 geometry:
   function space: StructuredColumns
   grid:
-    name: L15
+    type: regular_gaussian
+    N: 10
   levels: 2
   halo: 1
 input variables: &id001

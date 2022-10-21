@@ -3,12 +3,12 @@ geometry:
   grid:
     type: regular_gaussian
     N: 10
-  levels: 2
-  mask type: sea
+  levels: 10
   halo: 1
 variables: &id001
 - var1
 - var2
+- var_2d
 background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
@@ -18,7 +18,7 @@ background error:
     saber block name: BUMP_NICAS
     bump:
       datadir: testdata
-      prefix: randomization_bump_nicas_F10L2/_MPI_-_OMP_
+      prefix: randomization_bump_nicas_L10L10/_MPI_-_OMP_
       testing: true
       method: cor
       strategy: specific_univariate
@@ -30,13 +30,19 @@ background error:
         - 7.0e6
         var2:
         - 8.0e6
+        var_2d:
+        - 7.0e6
       rv:
         var1:
-        - 2.0
+        - 3.0
         var2:
         - 4.0
-  randomization size: 25
+        var_2d:
+        - 0.0
+  randomization size: 50
 output:
-  filepath: testdata/randomization_bump_nicas_F10L2/member
+  filepath: testdata/randomization_bump_nicas_L10L10/member
+output increment:
+  filepath: testdata/randomization_bump_nicas_L10L10/member_pert
 test:
-  reference filename: testref/randomization_bump_nicas_F10L2.ref
+  reference filename: testref/randomization_bump_nicas_L10L10.ref

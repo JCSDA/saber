@@ -1,7 +1,7 @@
 geometry:
   function space: StructuredColumns
   grid:
-    type: regular_gaussian
+    type: regular_lonlat
     N: 10
   levels: 10
   mask type: sea
@@ -14,80 +14,40 @@ background:
   state variables: *id001
 bump:
   datadir: testdata
-  prefix: error_covariance_training_bump_hdiag_2/_MPI_-_OMP_
+  prefix: error_covariance_training_bump_hdiag_3/_MPI_-_OMP_
   testing: true
-  method: cor
-  strategy: specific_univariate
+  method: loc
+  strategy: common
   new_hdiag: true
   write_hdiag: true
-  load_samp_global: true
-  load_mom: true
+  update_mom: true
   nc1: 500
   nc2: 250
   nc3: 10
-  nc4: 4
   dc: 800.0e3
   nl0r: 2
-  ens1_ne: 25
+  diag_draw_type: random_coast
+  Lcoast: 500.0e3
+  rcoast: 0.1
   ne: 25
   local_diag: true
-  local_rad: 1000.0e3
-  diag_rhflt: 3000.0e3
-  diag_rvflt: 3.0
-  fit_dl0: 3
-  fit_ncmp:
-    var1: 2
-    var2: 2
-  fname_samp: error_covariance_training_bump_hdiag_1/_MPI_-_OMP__sampling
-  fname_mom: [error_covariance_training_bump_hdiag_1/_MPI_-_OMP__mom]
+  local_dlat: 15.0
+  gau_approx: true
+  ensemble:
+    members from template:
+      template:
+        date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L10/member_%mem%
+        state variables: *id001
+      pattern: '%mem%'
+      nmembers: 25
+      zero padding: 6
 output:
-- parameter: cor_a
-  component: 1
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_2/_MPI_-_OMP__cor_a_2
-- parameter: cor_a
-  component: 2
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_2/_MPI_-_OMP__cor_a_2
-- parameter: cor_rh1
-  component: 1
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_2/_MPI_-_OMP__cor_rh1_2
-- parameter: cor_rh1
-  component: 2
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_2/_MPI_-_OMP__cor_rh1_2
-- parameter: cor_rh2
-  component: 1
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_2/_MPI_-_OMP__cor_rh2_2
-- parameter: cor_rh2
-  component: 2
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_2/_MPI_-_OMP__cor_rh2_2
-- parameter: cor_rhc
-  component: 1
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_2/_MPI_-_OMP__cor_rhc_2
-- parameter: cor_rhc
-  component: 2
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_2/_MPI_-_OMP__cor_rhc_2
 - parameter: cor_rh
-  component: 1
   file:
-    filepath: testdata/error_covariance_training_bump_hdiag_2/_MPI_-_OMP__cor_rh_2
-- parameter: cor_rh
-  component: 2
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_2/_MPI_-_OMP__cor_rh_2
+    filepath: testdata/error_covariance_training_bump_hdiag_3/_MPI_-_OMP__cor_rh
 - parameter: cor_rv
-  component: 1
   file:
-    filepath: testdata/error_covariance_training_bump_hdiag_2/_MPI_-_OMP__cor_rv_2
-- parameter: cor_rv
-  component: 2
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_2/_MPI_-_OMP__cor_rv_2
+    filepath: testdata/error_covariance_training_bump_hdiag_3/_MPI_-_OMP__cor_rv
 test:
-  reference filename: testref/error_covariance_training_bump_hdiag_2.ref
+  reference filename: testref/error_covariance_training_bump_hdiag_3.ref

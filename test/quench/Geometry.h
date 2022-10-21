@@ -90,6 +90,7 @@ class Geometry : public util::Printable,
   atlas::FieldSet & extraFields() {return extraFields_;}
   size_t levels() const {return levels_;}
 
+  size_t variableSize(const std::string &) const;
   std::vector<size_t> variableSizes(const oops::Variables & vars) const;
   void latlon(std::vector<double> &, std::vector<double> &, const bool) const {}
   bool levelsAreTopDown() const {return true;}

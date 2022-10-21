@@ -435,6 +435,13 @@ do il0=1,geom%nl0
             ! Average
             if (nc1a>0) then
                avg_blk%m11(jc3,jc4,jl0r,il0) = zss_sum(list_m11,mask=mpl%msv%isnot(list_m11))
+if (jc3==1.and.jc4==2.and.jl0r==2.and.il0==9) then
+   print*, avg_blk%m11(jc3,jc4,jl0r,il0)
+   do ic1a=1,nc1a
+      if (mpl%msv%isnot(list_m11(ic1a))) print*, ic1a,list_m11(ic1a),mpl%msv%valr
+   end do
+   stop
+end if
                do isub=1,avg_blk%nsub
                   do jsub=1,avg_blk%nsub
                      avg_blk%m11m11(jc3,jc4,jl0r,il0,jsub,isub) = zss_sum(list_m11m11(:,jsub,isub), &
@@ -531,6 +538,7 @@ do il0=1,geom%nl0
    end do
 end do
 
+stop
 ! Release memory
 deallocate(list_m11)
 deallocate(list_m11m11)

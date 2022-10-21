@@ -65,60 +65,60 @@
              -45.00 deg.  ~>100-35-98-99-99-98-99-98-99-100 
                0.00 deg.  ~>100-98-99-74-98-97-98-99-99-100 
               45.00 deg.  ~>100-35-98-99-98-98-97-98-98-98 
-                Level:   1 ~> cov. at class zero:  0.10E+01
+                Level:   1 ~> cov. at class zero:  0.93E+00
+                Level:   2 ~> cov. at class zero:  0.10E+01
+                Level:   1 ~> cov. at class zero:  0.94E+00
                 Level:   2 ~> cov. at class zero:  0.99E+00
-                Level:   1 ~> cov. at class zero:  0.98E+00
-                Level:   2 ~> cov. at class zero:  0.97E+00
-             Block var1-var1:  0.17048687E+00 for      160 diagnostic points
-             Block var2-var2:  0.20030504E+00 for      160 diagnostic points
+             Block var1-var1:  0.17463661E+00 for      160 diagnostic points
+             Block var2-var2:  0.16699624E+00 for      160 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      7412.80 km
-                                 cor. ver. support:         1.40 vertical units
+                                 cor. hor. support:      7464.13 km
+                                 cor. ver. support:         1.50 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      7371.78 km
-                                 cor. ver. support:         1.40 vertical units
+                                 cor. hor. support:      7744.33 km
+                                 cor. ver. support:         1.50 vertical units
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      8843.10 km
-                                 cor. ver. support:         4.81 vertical units
+                                 cor. hor. support:      8309.50 km
+                                 cor. ver. support:         4.82 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      8413.66 km
-                                 cor. ver. support:         4.81 vertical units
+                                 cor. hor. support:      8510.00 km
+                                 cor. ver. support:         4.82 vertical units
              Effective levels:   1   2 
-                   Horizontal support radius:    7412.80 km (   7412.80 km -    7412.80 km)
-                   Estimated nc1 from horizontal support radius:      115
-                   Final nc1:      115
-             Effective horizontal resolution:  3.99
-                   Decimate full grid, at least      115 points required
-                        518 valid points found
-                   Horizontal support radius:    7371.78 km (   7371.78 km -    7371.78 km)
-                   Estimated nc1 from horizontal support radius:      117
-                   Final nc1:      117
+                   Horizontal support radius:    7464.13 km (   7464.13 km -    7464.13 km)
+                   Estimated nc1 from horizontal support radius:      114
+                   Final nc1:      114
              Effective horizontal resolution:  4.00
-                   Decimate full grid, at least      117 points required
+                   Decimate full grid, at least      114 points required
                         518 valid points found
-             nc1(  1) =        115
-             nc1(  2) =        117
-             ns =              232
+                   Horizontal support radius:    7744.33 km (   7744.33 km -    7744.33 km)
+                   Estimated nc1 from horizontal support radius:      106
+                   Final nc1:      106
+             Effective horizontal resolution:  4.00
+                   Decimate full grid, at least      106 points required
+                        513 valid points found
+             nc1(  1) =        114
+             nc1(  2) =        106
+             ns =              220
              Effective levels:   1   2 
-                   Horizontal support radius:    8843.10 km (   8843.10 km -    8843.10 km)
-                   Estimated nc1 from horizontal support radius:       81
-                   Final nc1:       81
-             Effective horizontal resolution:  3.99
-                   Decimate full grid, at least       81 points required
-                        493 valid points found
-                   Horizontal support radius:    8413.66 km (   8413.66 km -    8413.66 km)
-                   Estimated nc1 from horizontal support radius:       89
-                   Final nc1:       89
-             Effective horizontal resolution:  3.98
-                   Decimate full grid, at least       89 points required
+                   Horizontal support radius:    8309.50 km (   8309.50 km -    8309.50 km)
+                   Estimated nc1 from horizontal support radius:       92
+                   Final nc1:       92
+             Effective horizontal resolution:  4.00
+                   Decimate full grid, at least       92 points required
                         507 valid points found
-             nc1(  1) =         81
-             nc1(  2) =         89
-             ns =              170
+                   Horizontal support radius:    8510.00 km (   8510.00 km -    8510.00 km)
+                   Estimated nc1 from horizontal support radius:       87
+                   Final nc1:       87
+             Effective horizontal resolution:  3.98
+                   Decimate full grid, at least       87 points required
+                        507 valid points found
+             nc1(  1) =         92
+             nc1(  2) =         87
+             ns =              179
     Full NICAS adjoint test result:                        T
        Block NICAS adjoint test result:                    T
           Interpolation adjoint test (horizontal) result:  T
@@ -146,6 +146,6 @@
            -81.0 /   65.8:  0.0000000
           Level   1:  0.0000000 -  0.0000000
           Level   2:  0.0000000 -  0.0000000
-Norm of BUMP output parameter cor_rh - 1: 3.7346048469989735e+08
-Norm of BUMP output parameter cor_rv - 1: 1.6456574162327888e+02
-Norm of BUMP output parameter nicas_norm - 1: 5.2466404844365421e+01
+Norm of BUMP output parameter cor_rh - 1: 3.7264473051643240e+08
+Norm of BUMP output parameter cor_rv - 1: 1.6598420922947204e+02
+Norm of BUMP output parameter nicas_norm - 1: 5.2519411501929362e+01

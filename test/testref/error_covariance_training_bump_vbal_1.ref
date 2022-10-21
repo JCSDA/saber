@@ -23,4 +23,4 @@
        Vertical balance block var1-var2 adjoint test result:  T
        Vertical balance direct adjoint test results:  T
        Vertical balance inverse adjoint test results: T
-Norm of BUMP output parameter dirac_vbal - 1: 3.7189576392326202e+00
+Norm of BUMP output parameter dirac_vbal - 1: 3.3547793962316144e+00

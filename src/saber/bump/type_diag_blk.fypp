@@ -91,9 +91,6 @@ integer,intent(in) :: ic2a                     !< Local index
 integer,intent(in) :: ib                       !< Block index
 character(len=*),intent(in) :: prefix          !< Block prefix
 
-! Local variable
-integer :: iv
-
 ! Set name
 @:set_name(diag_blk_alloc)
 
@@ -106,8 +103,7 @@ diag_blk%ib = ib
 diag_blk%prefix = prefix
 
 ! Number of components
-iv = bpar%b_to_v1(ib)
-diag_blk%ncmp = nam%fit_ncmp(iv)
+diag_blk%ncmp = nam%fit_ncmp
 
 ! Allocation
 if ((ic2a==0).or.nam%local_diag) then
@@ -382,7 +378,7 @@ integer,allocatable :: il0_interp(:),il1inf(:),il1sup(:)
 real(kind_real) :: a,m2(geom%nl0),a_hor,a_ver
 real(kind_real),allocatable :: raw_hor(:,:),raw_ver(:),distv(:),rinf(:),rsup(:),rh_c4l1(:,:,:),fit_hor(:),fit_ver(:)
 real(kind_real),allocatable :: rh_l1(:,:),D11_l1(:,:),D22_l1(:,:),D12_l1(:,:),rv_l1(:,:),a_l1(:,:)
-logical :: var2d,valid
+logical :: valid
 type(minim_type) :: minim
 
 ! Set name
@@ -403,24 +399,22 @@ do il0=1,geom%nl0
    m2(il0) = diag_blk%raw(1,1,jl0rz,il0)
 end do
 if ((count(m2>zero)==1).and.(trim(nam%lev2d)=='first').and.(m2(1)>zero)) then
-   var2d = .true.
    ilev2d = 1
 elseif ((count(m2>zero)==1).and.(trim(nam%lev2d)=='last').and.(m2(geom%nl0)>zero)) then
-   var2d = .true.
    ilev2d = geom%nl0
 else
-   var2d = .false.
+   ilev2d = mpl%msv%vali
 end if
 
 ! Number of effective levels
-if (var2d) then
+if (mpl%msv%isnot(ilev2d)) then
    nl0r = 1
 else
    nl0r = bpar%nl0r(ib)
 end if
 
 ! Count interpolation levels
-if (var2d) then
+if (mpl%msv%isnot(ilev2d)) then
    nl1 = 1
 else
    call vert_interp_size(geom%nl0,nam%fit_dl0,nl1)
@@ -434,13 +428,8 @@ allocate(rinf(geom%nl0))
 allocate(rsup(geom%nl0))
 
 ! Get interpolation levels and weights
-if (var2d) then
+if (mpl%msv%isnot(ilev2d)) then
    il0_interp(1) = ilev2d
-   il1inf = 1
-   il1sup = 1
-   rinf = zero
-   rsup = zero
-   rsup(ilev2d) = one
 else
    call vert_interp_setup(geom%nl0,nam%fit_dl0,nl1,il0_interp,il1inf,il1sup,rinf,rsup)
 end if
@@ -812,22 +801,39 @@ if (bpar%nc4(ib)>1) then
    diag_blk%D12_l0 = mpl%msv%valr
 end if
 diag_blk%rv_l0 = mpl%msv%valr
-if (var2d) diag_blk%rv_l0(ilev2d,:) = zero
+if (mpl%msv%isnot(ilev2d)) diag_blk%rv_l0(ilev2d,:) = zero
 
 ! Interpolate parameters
 do icmp=1,diag_blk%ncmp
-   call vert_interp(mpl,nl1,a_l1(:,icmp),geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%a_l0(:,icmp))
-   if (bpar%nc4(ib)==1) then
-      call vert_interp(mpl,nl1,rh_l1(:,icmp),geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%rh_l0(:,icmp))
+   if (mpl%msv%isnot(ilev2d)) then
+      ! No vertical interpolation for 2D variables
+      diag_blk%a_l0(ilev2d,icmp) = a_l1(1,icmp)
+      if (bpar%nc4(ib)==1) then
+         diag_blk%rh_l0(ilev2d,icmp) = rh_l1(1,icmp)
+      else
+         diag_blk%D11_l0(ilev2d,icmp) = D11_l1(1,icmp)
+         diag_blk%D22_l0(ilev2d,icmp) = D22_l1(1,icmp)
+         diag_blk%D12_l0(ilev2d,icmp) = D12_l1(1,icmp)
+         call tensor_d2r(mpl,diag_blk%D11_l0(ilev2d,icmp),diag_blk%D22_l0(ilev2d,icmp),diag_blk%D12_l0(ilev2d,icmp), &
+ & diag_blk%rh_l0(ilev2d,icmp))
+      end if
+      diag_blk%rv_l0(ilev2d,icmp) = rv_l1(1,icmp)
    else
-      call vert_interp(mpl,nl1,D11_l1(:,icmp),geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%D11_l0(:,icmp))
-      call vert_interp(mpl,nl1,D22_l1(:,icmp),geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%D22_l0(:,icmp))
-      call vert_interp(mpl,nl1,D12_l1(:,icmp),geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%D12_l0(:,icmp))
-      do il0=1,geom%nl0
-         call tensor_d2r(mpl,diag_blk%D11_l0(il0,icmp),diag_blk%D22_l0(il0,icmp),diag_blk%D12_l0(il0,icmp),diag_blk%rh_l0(il0,icmp))
-      end do
+      ! Vertical interpolation
+      call vert_interp(mpl,nl1,a_l1(:,icmp),geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%a_l0(:,icmp))
+      if (bpar%nc4(ib)==1) then
+         call vert_interp(mpl,nl1,rh_l1(:,icmp),geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%rh_l0(:,icmp))
+      else
+         call vert_interp(mpl,nl1,D11_l1(:,icmp),geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%D11_l0(:,icmp))
+         call vert_interp(mpl,nl1,D22_l1(:,icmp),geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%D22_l0(:,icmp))
+         call vert_interp(mpl,nl1,D12_l1(:,icmp),geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%D12_l0(:,icmp))
+         do il0=1,geom%nl0
+            call tensor_d2r(mpl,diag_blk%D11_l0(il0,icmp),diag_blk%D22_l0(il0,icmp),diag_blk%D12_l0(il0,icmp), &
+ & diag_blk%rh_l0(il0,icmp))
+         end do
+      end if
+      call vert_interp(mpl,nl1,rv_l1(:,icmp),geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%rv_l0(:,icmp))
    end if
-   call vert_interp(mpl,nl1,rv_l1(:,icmp),geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%rv_l0(:,icmp))
 end do
 
 ! Release memory

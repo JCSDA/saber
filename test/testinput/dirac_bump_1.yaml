@@ -1,7 +1,7 @@
 geometry:
   function space: StructuredColumns
   grid:
-    type: regular_gaussian
+    type: regular_lonlat
     N: 10
   levels: 2
   mask type: sea
