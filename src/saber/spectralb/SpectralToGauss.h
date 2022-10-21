@@ -1,6 +1,6 @@
 /*
- * (C) Crown Copyright 2022 Met Office
  * (C) Copyright 2022- UCAR
+ * (C) Crown Copyright 2022- Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -30,6 +30,7 @@ class SpectralToGaussParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(SpectralToGaussParameters, SaberBlockParametersBase)
 
  public:
+  oops::OptionalParameter<oops::Variables> activeVariables{"active variables", this};
   // No parameters for now (in the future may add N as a parameter if it is possible
   // to use the one different from the one inferred from the gaussian grid
 };
@@ -61,14 +62,17 @@ class SpectralToGauss : public SaberOuterBlockBase {
  private:
   void print(std::ostream &) const override;
 
+  oops::Variables innerVars_;
+  oops::Variables activeVars_;
+
   /// Gaussian (outer) functionspace
   const atlas::functionspace::StructuredColumns gaussFunctionSpace_;
   /// Spectral (inner) functionspace
   const atlas::functionspace::Spectral specFunctionSpace_;
   /// Trans object for gaussian-spectral transforms
   const atlas::trans::Trans trans_;
+
   const oops::GeometryData innerGeometryData_;
-  oops::Variables innerVars_;
 };
 
 }  // namespace spectralb
