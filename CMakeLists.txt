@@ -70,6 +70,7 @@ if( vader_FOUND )
       message( STATUS "SABER blocks VADER are enabled (without MO-specific blocks)" )
     endif()
 else()
+    set( ENABLE_VADER_MO OFF )
     message( STATUS "SABER blocks VADER are NOT enabled" )
 endif()
 
