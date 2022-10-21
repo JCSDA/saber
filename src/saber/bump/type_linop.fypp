@@ -1298,7 +1298,7 @@ if (ifmt>0) then
    call mpl%flush(.false.)
    call mpl%prog_init(n_dst)
 end if
-!$omp parallel do schedule(static) private(i_dst,ithread,found,next) firstprivate(nn_index_ext,nn_dist_ext,wgt,iext,nd)
+!$omp parallel do schedule(static) private(i_dst,ithread,found,next,iext,nd) firstprivate(nn_index_ext,nn_dist_ext,wgt)
 do i_dst=1,n_dst
    if (mask_dst(i_dst)) then
       if (lrh(i_dst)>zero) then
@@ -1336,7 +1336,7 @@ do i_dst=1,n_dst
 
          ! Check mask
          if (lrh(i_dst)>zero) then
-            if ((count(mask_src(nn_index_ext(1:next)))>nmin).and.(nn_dist_ext(next+1)>lrh(i_dst))) then
+            if ((count(mask_src(nn_index_ext(1:next)))>=nmin).and.(nn_dist_ext(next+1)>lrh(i_dst))) then
                found = .true.
             else
                next = next+1
@@ -1365,15 +1365,19 @@ do i_dst=1,n_dst
          wgt = zero
          do iext=1,next
             if (mask_src(nn_index_ext(iext))) then
-               nd = nn_dist_ext(iext)/(lrh(i_dst))
+               nd = nn_dist_ext(iext)/lrh(i_dst)
                wgt(iext) = fit_func(mpl,'hor',nd)
             end if
          end do
-         wgt = wgt/sum(wgt)
+         if (sum(wgt)>zero) then
+            wgt = wgt/sum(wgt)
+         else
+            call mpl%abort('${subr}$','zero weight sum')
+         end if
 
          ! Copy indices and weights
          do iext=1,next
-            if (mask_src(nn_index_ext(iext))) call c(ithread)%add_op(c_n_s(ithread),i_dst,nn_index_ext(iext),wgt(iext))
+            if (wgt(iext)>zero) call c(ithread)%add_op(c_n_s(ithread),i_dst,nn_index_ext(iext),wgt(iext))
          end do
 
          ! Release memory
