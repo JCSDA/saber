@@ -255,7 +255,7 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<int> ncontig_th{"ncontig_th", this};
   // Check that sampling couples and interpolations do not cross mask boundaries
   oops::OptionalParameter<bool> mask_check{"mask_check", this};
-  // Sampling draw type ('random_uniform','random_coast' or 'octahedral')
+  // Diagnostic draw type ('random_uniform','random_coast' or 'octahedral')
   oops::OptionalParameter<std::string> diag_draw_type{"diag_draw_type", this};
   // Length-scale to increase sampling density along coasts [in meters]
   oops::OptionalParameter<double> Lcoast{"Lcoast", this};
@@ -344,7 +344,7 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<double> resol{"resol", this};
   // Maximum size of the Sc1 subset
   oops::OptionalParameter<int> nc1max{"nc1max", this};
-  // Subsampling draw type ('random_uniform','random_coast' or 'octahedral')
+  // NICAS draw type ('random_uniform','random_coast' or 'octahedral')
   oops::OptionalParameter<std::string> nicas_draw_type{"nicas_draw_type", this};
   // Network-base convolution calculation (distance-based if false)
   oops::OptionalParameter<bool> network{"network", this};

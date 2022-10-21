@@ -136,7 +136,7 @@ type nam_type
    real(kind_real),dimension(nvmax) :: mask_th                !< Mask threshold
    integer :: ncontig_th                                      !< Threshold on vertically contiguous points for sampling mask (0 to skip the test)
    logical :: mask_check                                      !< Check that sampling couples and interpolations do not cross mask boundaries
-   character(len=1024) :: diag_draw_type                      !< Sampling draw type ('random_uniform','random_coast' or 'octahedral')
+   character(len=1024) :: diag_draw_type                      !< Diagnostic draw type ('random_uniform','random_coast' or 'octahedral')
    real(kind_real) :: Lcoast                                  !< Length-scale to increase sampling density along coasts [in meters]
    real(kind_real) :: rcoast                                  !< Minimum value to increase sampling density along coasts
    integer :: nc1                                             !< Number of sampling points
@@ -181,7 +181,7 @@ type nam_type
    ! nicas_param
    real(kind_real) :: resol                                   !< Resolution
    integer :: nc1max                                          !< Maximum size of the Sc1 subset
-   character(len=1024) :: nicas_draw_type                     !< Subsampling draw type ('random_uniform','random_coast' or 'octahedral')
+   character(len=1024) :: nicas_draw_type                     !< NICAS draw type ('random_uniform','random_coast' or 'octahedral')
    logical :: network                                         !< Network-base convolution calculation (distance-based if false)
    logical :: forced_radii                                    !< Force specific support radii
    integer :: ncmp(0:nvmax)                                   !< Forced number of components
