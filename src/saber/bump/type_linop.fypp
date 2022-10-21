@@ -1037,7 +1037,7 @@ do i_dst=1,n_dst
             end if
          end if
 
-         if (valid.and.(.not.found)) then
+         if ((.not.valid).or.(.not.found)) then
             ! Find nearest valid neighbor
             next = 1
             do while (.not.found)
