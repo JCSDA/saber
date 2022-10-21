@@ -27,7 +27,7 @@ bump:
   nc3: 10
   nc4: 4
   dc: 800.0e3
-  nl0r: 2
+  nl0r: 5
   ens1_ne: 25
   ne: 25
   local_diag: true
@@ -36,6 +36,7 @@ bump:
   diag_rvflt: 3.0
   fit_dl0: 3
   fit_ncmp: 2
+  samp_interp_type: c1
   fname_samp: error_covariance_training_bump_hdiag_1/_MPI_-_OMP__sampling
   fname_mom: [error_covariance_training_bump_hdiag_1/_MPI_-_OMP__mom]
 output:

@@ -27,13 +27,9 @@
 #include "oops/util/parameters/RequiredParameter.h"
 
 #include "saber/gsi/grid/Grid.h"
-#include "saber/gsi/interpolation/unstructured_interp/UnstructuredInterpolation.h"
+#include "saber/gsi/interpolation/InterpolationImpl.h"
 #include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberOuterBlockBase.h"
-
-namespace oops {
-  class Variables;
-}
 
 namespace saber {
 namespace gsi {
@@ -90,18 +86,8 @@ class Interpolation : public SaberOuterBlockBase {
   std::unique_ptr<const oops::GeometryData> innerGeometryData_;
   oops::Variables innerVars_;
 
-  // Parameters
-  InterpolationParameters params_;
-  // Interpolation object
-  std::unique_ptr<UnstructuredInterpolation> interpolator_;
-  // Variables
-  std::vector<std::string> variables_;
-  // Expected number of levels in GSI grid
-  int gsiLevels_;
-  // Grid
-  Grid grid_;
-  // Outer FunctionSpace
-  atlas::FunctionSpace outerFunctionSpace_;
+  // Interpolation implementation
+  std::unique_ptr<InterpolationImpl> interpolationImpl_;
 };
 
 // -------------------------------------------------------------------------------------------------

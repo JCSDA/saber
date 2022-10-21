@@ -1359,7 +1359,11 @@ do iv=1,nam%nv
    do jv=1,iv
       if (bpar%vbal_block(iv,jv)) then
          fld_tmp = fld(:,:,jv)
-         call vbal%blk(iv,jv)%apply(geom,vbal%h_n_s_max,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld_tmp)
+         if (nam%vbal_id) then
+            fld_tmp = nam%vbal_id_coef((iv-1)*(iv-2)/2+jv)*fld_tmp
+         else
+            call vbal%blk(iv,jv)%apply(geom,vbal%h_n_s_max,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld_tmp)
+         end if
          fld_out(:,:,iv) = fld_out(:,:,iv)+fld_tmp
       end if
    end do
@@ -1406,7 +1410,11 @@ do iv=1,nam%nv
    do jv=1,iv
       if (bpar%vbal_block(iv,jv)) then
          fld_tmp = fld_out(:,:,jv)
-         call vbal%blk(iv,jv)%apply(geom,vbal%h_n_s_max,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld_tmp)
+         if (nam%vbal_id) then
+            fld_tmp = nam%vbal_id_coef((iv-1)*(iv-2)/2+jv)*fld_tmp
+         else
+            call vbal%blk(iv,jv)%apply(geom,vbal%h_n_s_max,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld_tmp)
+         end if
          fld_out(:,:,iv) = fld_out(:,:,iv)-fld_tmp
       end if
    end do
@@ -1453,7 +1461,11 @@ do iv=1,nam%nv
    do jv=1,iv
       if (bpar%vbal_block(iv,jv)) then
          fld_tmp = fld(:,:,iv)
-         call vbal%blk(iv,jv)%apply_ad(geom,vbal%h_n_s_max,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld_tmp)
+         if (nam%vbal_id) then
+            fld_tmp = nam%vbal_id_coef((iv-1)*(iv-2)/2+jv)*fld_tmp
+         else
+            call vbal%blk(iv,jv)%apply_ad(geom,vbal%h_n_s_max,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld_tmp)
+         end if
          fld_out(:,:,jv) = fld_out(:,:,jv)+fld_tmp
       end if
    end do
@@ -1500,7 +1512,11 @@ do iv=nam%nv,1,-1
    do jv=iv+1,nam%nv
       if (bpar%vbal_block(jv,iv)) then
          fld_tmp = fld_out(:,:,jv)
-         call vbal%blk(jv,iv)%apply_ad(geom,vbal%h_n_s_max,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld_tmp)
+         if (nam%vbal_id) then
+            fld_tmp = nam%vbal_id_coef((jv-1)*(jv-2)/2+iv)*fld_tmp
+         else
+            call vbal%blk(jv,iv)%apply_ad(geom,vbal%h_n_s_max,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld_tmp)
+         end if
          fld_out(:,:,iv) = fld_out(:,:,iv)-fld_tmp
       end if
    end do
@@ -1551,7 +1567,9 @@ call vbal%apply(nam,geom,bpar,fld)
 call vbal%apply_inv(nam,geom,bpar,fld)
 mse = zss_sum((fld-fld_save)**2)
 call mpl%f_comm%allreduce(mse,fckit_mpi_sum())
-write(mpl%test,'(a7,a,e15.8)') '','Vertical balance direct/inverse test:  ',mse/norm
+write(mpl%info,'(a7,a,e15.8)') '','Vertical balance direct/inverse test value:  ',mse/norm
+call mpl%flush
+write(mpl%test,'(a7,a,l1)') '','Vertical balance direct/inverse test result:  ',mse/norm<rth
 call mpl%flush
 
 ! Inverse / direct
@@ -1560,7 +1578,9 @@ call vbal%apply_inv(nam,geom,bpar,fld)
 call vbal%apply(nam,geom,bpar,fld)
 mse = zss_sum((fld-fld_save)**2)
 call mpl%f_comm%allreduce(mse,fckit_mpi_sum())
-write(mpl%test,'(a7,a,e15.8)') '','Vertical balance inverse/direct test:  ',mse/norm
+write(mpl%info,'(a7,a,e15.8)') '','Vertical balance inverse/direct test value:  ',mse/norm
+call mpl%flush
+write(mpl%test,'(a7,a,l1)') '','Vertical balance inverse/direct test result:  ',mse/norm<rth
 call mpl%flush
 
 ! Direct / inverse, adjoint
@@ -1569,7 +1589,9 @@ call vbal%apply_ad(nam,geom,bpar,fld)
 call vbal%apply_inv_ad(nam,geom,bpar,fld)
 mse = zss_sum((fld-fld_save)**2)
 call mpl%f_comm%allreduce(mse,fckit_mpi_sum())
-write(mpl%test,'(a7,a,e15.8)') '','Vertical balance direct/inverse (adjoint) test:  ',mse/norm
+write(mpl%info,'(a7,a,e15.8)') '','Vertical balance direct/inverse (adjoint) test value:  ',mse/norm
+call mpl%flush
+write(mpl%test,'(a7,a,l1)') '','Vertical balance direct/inverse (adjoint) test result:  ',mse/norm<rth
 call mpl%flush
 
 ! Inverse / direct
@@ -1578,7 +1600,9 @@ call vbal%apply_inv_ad(nam,geom,bpar,fld)
 call vbal%apply_ad(nam,geom,bpar,fld)
 mse = zss_sum((fld-fld_save)**2)
 call mpl%f_comm%allreduce(mse,fckit_mpi_sum())
-write(mpl%test,'(a7,a,e15.8)') '','Vertical balance inverse/direct (adjoint) test:  ',mse/norm
+write(mpl%info,'(a7,a,e15.8)') '','Vertical balance inverse/direct (adjoint) test value:  ',mse/norm
+call mpl%flush
+write(mpl%test,'(a7,a,l1)') '','Vertical balance inverse/direct (adjoint) test result:  ',mse/norm<rth
 call mpl%flush
 
 ! Probe out

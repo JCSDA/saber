@@ -767,13 +767,13 @@ subroutine nicas_run_nicas(nicas,mpl,rng,nam,geom,bpar,cmat)
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(inout) :: nicas  !< NICAS data
-type(mpl_type),intent(inout) :: mpl       !< MPI data
-type(rng_type),intent(inout) :: rng       !< Random number generator
-type(nam_type),intent(inout) :: nam       !< Namelist
-type(geom_type),intent(inout) :: geom     !< Geometry
-type(bpar_type),intent(in) :: bpar        !< Block parameters
-type(cmat_type),intent(in) :: cmat        !< C matrix data
+class(nicas_type),intent(inout) :: nicas !< NICAS data
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+type(rng_type),intent(inout) :: rng      !< Random number generator
+type(nam_type),intent(inout) :: nam      !< Namelist
+type(geom_type),intent(inout) :: geom    !< Geometry
+type(bpar_type),intent(in) :: bpar       !< Block parameters
+type(cmat_type),intent(in) :: cmat       !< C matrix data
 
 ! Local variables
 integer :: ib
@@ -818,7 +818,7 @@ do ib=1,bpar%nbe
    end if
 
    ! NICAS parameters
-   if (bpar%nicas_block(ib)) call nicas%blk(ib)%compute_parameters(mpl,rng,nam,geom)
+   if (bpar%nicas_block(ib)) call nicas%blk(ib)%compute_parameters(mpl,rng,nam,geom,bpar)
 end do
 
 if (nam%write_nicas_local.or.nam%write_nicas_global.or.nam%write_nicas_grids) then
@@ -911,7 +911,11 @@ if (nam%check_normalization>0) then
          do icmp=1,nicas%blk(ib)%ncmp
             write(mpl%info,'(a7,a,i1)') '','Component: ',icmp
             call mpl%flush
-            call nicas%blk(ib)%cmp(icmp)%test_normalization(mpl,rng,nam,geom)
+            if (nicas%blk(ib)%cmp(icmp)%smoother) then
+               call nicas%blk(ib)%cmp(icmp)%test_normalization(mpl,rng,nam,geom,icmp)
+            else
+               call nicas%blk(ib)%cmp(icmp)%test_normalization(mpl,rng,nam,geom)
+            end if
          end do
       end if
    end do

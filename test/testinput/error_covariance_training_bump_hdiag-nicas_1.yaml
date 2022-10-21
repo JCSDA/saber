@@ -13,6 +13,7 @@ background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
 ensemble pert:
+  date: '2010-01-01T12:00:00Z'
   members from template:
     template:
       date: '2010-01-01T12:00:00Z'

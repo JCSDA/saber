@@ -1038,7 +1038,6 @@ void Fields::write(const eckit::Configuration & config) const {
     if (geom_->getComm().rank() == 0) {
       // Get sizes
       atlas::idx_t nlocs = fs.size();
-      atlas::idx_t nz = geom_->levels();
 
       // NetCDF IDs
       int ncid, retval, nlocs_id, nz_id[vars_.size()], d1D_id[1], d2D_id[2],

@@ -51,7 +51,7 @@ class BUMPParameters : public oops::Parameters {
   // Missing value (real)
   oops::OptionalParameter<double> msvalr{"msvalr", this};
   // Grids
-  oops::OptionalParameter<eckit::LocalConfiguration> grids{"grids", this};
+  oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> grids{"grids", this};
   // Operators application
   oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> appConfs{"operators application",
     this};
@@ -236,7 +236,7 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<int> ncontig_th{"ncontig_th", this};
   // Check that sampling couples and interpolations do not cross mask boundaries
   oops::OptionalParameter<bool> mask_check{"mask_check", this};
-  // Sampling draw type ('random_uniform','random_coast' or 'octahedral')
+  // Diagnostic draw type ('random_uniform','random_coast' or 'octahedral')
   oops::OptionalParameter<std::string> diag_draw_type{"diag_draw_type", this};
   // Length-scale to increase sampling density along coasts [in meters]
   oops::OptionalParameter<double> Lcoast{"Lcoast", this};
@@ -256,6 +256,8 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<int> nl0r{"nl0r", this};
   // Maximum number of random number draws
   oops::OptionalParameter<int> irmax{"irmax", this};
+  // Sampling balance C2B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based or 'si': smooth interpolation)
+  oops::OptionalParameter<std::string> samp_interp_type{"samp_interp_type", this};
 
   // diag_param
 
@@ -285,6 +287,10 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<int> vbal_pseudo_inv_mmax{"vbal_pseudo_inv_mmax", this};
   // Variance threshold to compute the dominant mode for pseudo-inverse
   oops::OptionalParameter<double> vbal_pseudo_inv_var_th{"vbal_pseudo_inv_var_th", this};
+  // Identity vertical balance for tests
+  oops::OptionalParameter<bool> vbal_id{"vbal_id", this};
+  // Scalar coefficients for identity vertical balance
+  oops::OptionalParameter<std::vector<double>> vbal_id_coef{"vbal_id_coef", this};
   // Force specific variance
   oops::OptionalParameter<bool> forced_var{"forced_var", this};
   // Forced standard-deviation
@@ -325,7 +331,7 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<double> resol{"resol", this};
   // Maximum size of the Sc1 subset
   oops::OptionalParameter<int> nc1max{"nc1max", this};
-  // Subsampling draw type ('random_uniform','random_coast' or 'octahedral')
+  // NICAS draw type ('random_uniform','random_coast' or 'octahedral')
   oops::OptionalParameter<std::string> nicas_draw_type{"nicas_draw_type", this};
   // Network-base convolution calculation (distance-based if false)
   oops::OptionalParameter<bool> network{"network", this};
@@ -341,10 +347,14 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<eckit::LocalConfiguration> min_lev{"min_lev", this};
   // Maximum level
   oops::OptionalParameter<eckit::LocalConfiguration> max_lev{"max_lev", this};
+  // NICAS C1B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based or 'si': smooth interpolation)
+  oops::OptionalParameter<eckit::LocalConfiguration> nicas_interp_type{"nicas_interp_type", this};
   // Positive-definiteness test
   oops::OptionalParameter<bool> pos_def_test{"pos_def_test", this};
   // Write NICAS grids
   oops::OptionalParameter<bool> write_nicas_grids{"write_nicas_grids", this};
+  // Horizontal NICAS interpolation test
+  oops::OptionalParameter<bool> interp_test{"interp_test", this};
 
   // dirac_param
 

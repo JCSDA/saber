@@ -1,0 +1,27 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 10
+  levels: 2
+  mask type: sea
+  halo: 1
+input variables: &id001
+- var1
+- var2
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables: *id001
+bump:
+  datadir: testdata
+  prefix: error_covariance_training_bump_wind/_MPI_-_OMP_
+  testing: true
+  nprocio: 1
+  new_wind: true
+  write_wind_local: true
+  wind_nlon: 10
+  wind_nlat: 5
+  wind_nsg: 3
+  wind_inflation: 1.1
+test:
+  reference filename: testref/error_covariance_training_bump_wind.ref

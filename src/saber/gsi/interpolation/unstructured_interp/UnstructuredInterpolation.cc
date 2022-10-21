@@ -24,15 +24,14 @@ namespace gsi {
 
 // -----------------------------------------------------------------------------
 UnstructuredInterpolation::UnstructuredInterpolation(const eckit::Configuration & config,
-                                                   const atlas::FunctionSpace & fspace1,
-                                                   const atlas::FunctionSpace & fspace2,
-                                                   const atlas::field::FieldSetImpl * masks,
-                                                   const eckit::mpi::Comm & comm)
-  : in_fspace_(&fspace1), out_fspace_(&fspace2)
+                                                     const atlas::FunctionSpace & fspace1,
+                                                     const atlas::FunctionSpace & fspace2,
+                                                     const std::vector<std::string> & activeVars,
+                                                     const eckit::mpi::Comm & comm)
+  : in_fspace_(&fspace1), out_fspace_(&fspace2), activeVars_(activeVars)
 {
-  // mask have not yet been implemented for unstructured interpolation
   saber_unstrc_create_f90(keyUnstructuredInterpolator_, &comm,
-                    fspace1.lonlat().get(), fspace2.lonlat().get(), config);
+                          fspace1.lonlat().get(), fspace2.lonlat().get(), config);
 }
 
 // -----------------------------------------------------------------------------
@@ -52,37 +51,27 @@ void UnstructuredInterpolation::apply(const atlas::Field & infield, atlas::Field
 
 // -----------------------------------------------------------------------------
 void UnstructuredInterpolation::apply_ad(const atlas::Field & field_grid2,
-                                        atlas::Field & field_grid1) {
+                                         atlas::Field & field_grid1) {
   saber_unstrc_apply_ad_f90(keyUnstructuredInterpolator_, field_grid2.get(), field_grid1.get());
 }
 
 // -----------------------------------------------------------------------------
-void UnstructuredInterpolation::apply(const atlas::FieldSet & infields,
-                                     atlas::FieldSet & outfields) {
-  // Allocate space for the output fields if the caller has not already done so
-  for (int ifield = 0; ifield < infields.size(); ++ifield) {
-    std::string fname = infields[ifield].name();
-    if (!outfields.has(fname)) {
-      atlas::Field outfield = out_fspace_->createField<double>(atlas::option::name(fname) |
-                              atlas::option::levels(infields[ifield].levels()));
-      outfields.add(outfield);
-    }
-    this->apply(infields[fname], outfields[fname]);
+void UnstructuredInterpolation::apply(const atlas::FieldSet & innerFields,
+                                      atlas::FieldSet & outerFields) {
+  for (const auto & var : activeVars_) {
+    ASSERT(innerFields.has(var));
+    ASSERT(outerFields.has(var));
+    this->apply(innerFields[var], outerFields[var]);
   }
 }
 
 // -----------------------------------------------------------------------------
-void UnstructuredInterpolation::apply_ad(const atlas::FieldSet & fields_grid2,
-                                        atlas::FieldSet & fields_grid1) {
-  // Allocate space for the output fields if the caller has not already done so
-  for (int ifield = 0; ifield < fields_grid2.size(); ++ifield) {
-    std::string fname = fields_grid2[ifield].name();
-    if (!fields_grid1.has(fname)) {
-      atlas::Field field1 = in_fspace_->createField<double>(atlas::option::name(fname) |
-                            atlas::option::levels(fields_grid2[ifield].levels()));
-      fields_grid1.add(field1);
-    }
-    this->apply_ad(fields_grid2[fname], fields_grid1[fname]);
+void UnstructuredInterpolation::apply_ad(const atlas::FieldSet & outerFields,
+                                         atlas::FieldSet & innerFields) {
+  for (const auto & var : activeVars_) {
+    ASSERT(outerFields.has(var));
+    ASSERT(innerFields.has(var));
+    this->apply_ad(outerFields[var], innerFields[var]);
   }
 }
 

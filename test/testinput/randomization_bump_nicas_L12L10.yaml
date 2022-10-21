@@ -1,8 +1,8 @@
 geometry:
   function space: StructuredColumns
   grid:
-    type: regular_gaussian
-    N: 20
+    type: regular_lonlat
+    N: 12
   levels: 10
   halo: 1
 variables: &id001
@@ -39,10 +39,13 @@ background error:
         - 4.0
         var_2d:
         - 0.0
-  randomization size: 50
+      grids:
+      - variables: [var1,var2]
+      - variables: [var_2d]
+  randomization size: 10
 output:
-  filepath: testdata/randomization_bump_nicas_L20L10/member
+  filepath: testdata/randomization_bump_nicas_L12L10/member
 output increment:
-  filepath: testdata/randomization_bump_nicas_L20L10/member_pert
+  filepath: testdata/randomization_bump_nicas_L12L10/member_pert
 test:
-  reference filename: testref/randomization_bump_nicas_L20L10.ref
+  reference filename: testref/randomization_bump_nicas_L12L10.ref

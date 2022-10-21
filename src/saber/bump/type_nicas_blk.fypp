@@ -28,7 +28,7 @@ use type_io, only: io_type
 use type_linop, only: linop_type
 use type_mesh, only: mesh_type
 use type_mpl, only: mpl_type
-use type_nam, only: nam_type
+use type_nam, only: nam_type,nl0max
 use type_nicas_cmp, only: nicas_cmp_type
 @:use_probe()
 use type_rng, only: rng_type
@@ -54,6 +54,9 @@ type nicas_blk_type
    ! Min/max levels
    integer :: min_lev                         !< Minimum level
    integer :: max_lev                         !< Maximum level
+
+   ! Horizontal smoother
+   integer,allocatable :: l0_to_l0i(:)        !< Base level to independent level
 contains
    procedure :: partial_dealloc => nicas_blk_partial_dealloc
    procedure :: dealloc => nicas_blk_dealloc
@@ -143,6 +146,7 @@ if (allocated(nicas_blk%cmp)) then
    end do
    deallocate(nicas_blk%cmp)
 end if
+if (allocated(nicas_blk%l0_to_l0i)) deallocate(nicas_blk%l0_to_l0i)
 
 ! Probe out
 @:probe_out()
@@ -202,7 +206,6 @@ do icmp=1,nicas_blk%ncmp
    nicas_blk%cmp(icmp)%ncmp = nicas_blk%ncmp
    nicas_blk%cmp(icmp)%verbosity = nicas_blk%verbosity
    nicas_blk%cmp(icmp)%smoother = .false.
-   nicas_blk%cmp(icmp)%horizontal = .false.
    nicas_blk%cmp(icmp)%compute_norm = (.not.allocated(nicas_blk%cmp(icmp)%norm))
 
    ! Copy file ID
@@ -507,7 +510,6 @@ do icmp=1,nicas_blk%ncmp
    nicas_blk%cmp(icmp)%ncmp = nicas_blk%ncmp
    nicas_blk%cmp(icmp)%verbosity = nicas_blk%verbosity
    nicas_blk%cmp(icmp)%smoother = .false.
-   nicas_blk%cmp(icmp)%horizontal = .false.
    nicas_blk%cmp(icmp)%compute_norm = (.not.allocated(nicas_blk%cmp(icmp)%norm))
 
    ! Component work
@@ -581,7 +583,6 @@ do icmp=1,nicas_blk%ncmp
    nicas_blk%cmp(icmp)%max_lev = nicas_blk%max_lev
    nicas_blk%cmp(icmp)%verbosity = nicas_blk%verbosity
    nicas_blk%cmp(icmp)%smoother = .false.
-   nicas_blk%cmp(icmp)%horizontal = .false.
    nicas_blk%cmp(icmp)%compute_norm = (.not.allocated(nicas_blk%cmp(icmp)%norm))
 
    ! Copy file ID
@@ -816,7 +817,7 @@ end subroutine nicas_blk_write_grids_data
 ! Subroutine: nicas_blk_compute_parameters
 !> Compute NICAS parameters
 !----------------------------------------------------------------------
-subroutine nicas_blk_compute_parameters(nicas_blk,mpl,rng,nam,geom)
+subroutine nicas_blk_compute_parameters(nicas_blk,mpl,rng,nam,geom,bpar)
 
 implicit none
 
@@ -826,9 +827,10 @@ type(mpl_type),intent(inout) :: mpl              !< MPI data
 type(rng_type),intent(inout) :: rng              !< Random number generator
 type(nam_type),intent(in) :: nam                 !< Namelist
 type(geom_type),intent(in) :: geom               !< Geometry
+type(bpar_type),intent(in) :: bpar               !< Block parameters
 
 ! Local variables
-integer :: icmp
+integer :: icmp,iv
 
 ! Set name
 @:set_name(nicas_blk_compute_parameters)
@@ -847,11 +849,13 @@ do icmp=1,nicas_blk%ncmp
    call mpl%flush
  
    ! Set attributes
+   iv = bpar%b_to_v1(ib)
    nicas_blk%cmp(icmp)%ib = ib
    nicas_blk%cmp(icmp)%ncmp = nicas_blk%ncmp
    nicas_blk%cmp(icmp)%verbosity = nicas_blk%verbosity
+   nicas_blk%cmp(icmp)%draw_type = nam%nicas_draw_type
+   nicas_blk%cmp(icmp)%interp_type = nam%nicas_interp_type(iv)
    nicas_blk%cmp(icmp)%smoother = .false.
-   nicas_blk%cmp(icmp)%horizontal = .false.
    nicas_blk%cmp(icmp)%compute_norm = (.not.allocated(nicas_blk%cmp(icmp)%norm))
 
    ! Component work
@@ -878,12 +882,17 @@ implicit none
 class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
 type(mpl_type),intent(inout) :: mpl              !< MPI data
 type(rng_type),intent(inout) :: rng              !< Random number generator
-type(nam_type),intent(in) :: nam                 !< Namelist
-type(geom_type),intent(in) :: geom               !< Geometry
+type(nam_type),intent(inout) :: nam              !< Namelist
+type(geom_type),intent(inout) :: geom            !< Geometry
 real(kind_real),intent(in) :: rhflt(geom%nl0)    !< Horizontal support radius profile
 
 ! Local variables
-integer,parameter :: icmp = 1
+integer :: il0,il0i,jl0,jl0i,jl0is,jl0is_tmp,nl0,nl0i
+integer :: l0i_to_l0(geom%nl0),proc_to_jl0is(mpl%nproc)
+integer :: levs(nl0max),nc0_gmask(0:geom%nl0)
+real(kind_real) :: resol
+real(kind_real) :: vunit_c0a(geom%nc0a,geom%nl0),area_ver_c0(geom%nl0),vunitavg(geom%nl0),vunit_c0u(geom%nc0u,geom%nl0)
+logical :: gmask_c0a(geom%nc0a,geom%nl0),gmask_hor_c0a(geom%nc0a),gmask_c0u(geom%nc0u,geom%nl0)
 
 ! Set name
 @:set_name(nicas_blk_compute_parameters_horizontal_smoother)
@@ -895,15 +904,117 @@ integer,parameter :: icmp = 1
 associate(ib=>nicas_blk%ib)
 
 ! Allocation
-nicas_blk%ncmp = 1
+allocate(nicas_blk%l0_to_l0i(geom%nl0))
+
+! Initialization
+l0i_to_l0 = mpl%msv%vali
+il0 = 1
+nl0i = 1
+nicas_blk%l0_to_l0i(il0) = nl0i
+l0i_to_l0(nl0i) = il0
+
+do il0=2,geom%nl0
+   ! Look for similar levels (same mask, same horizontal radius)
+   jl0is = mpl%msv%vali
+   do jl0i=1,nl0i
+      ! Index
+      jl0 = l0i_to_l0(jl0i)
+
+      ! Check mask
+      jl0is_tmp = mpl%msv%vali
+      if (all(geom%gmask_c0a(:,il0).eqv.geom%gmask_c0a(:,jl0))) then
+         ! Check horizontal radius
+         if (abs(rhflt(il0)-rhflt(jl0))<1.0e-8*rhflt(il0)) jl0is_tmp = jl0i
+      end if
+
+      ! Gather results
+      call mpl%f_comm%allgather(jl0is_tmp,proc_to_jl0is)
+
+      ! Check if the result is the same for all tasks
+      if (all(proc_to_jl0is==jl0is_tmp)) then
+         jl0is = jl0is_tmp  
+         exit
+      end if
+   end do
+
+   if (mpl%msv%isnot(jl0is)) then
+      ! Similar level found
+      nicas_blk%l0_to_l0i(il0) = jl0is
+   else
+      ! No similar level found, new independent level
+      nl0i = nl0i+1
+      nicas_blk%l0_to_l0i(il0) = nl0i
+      l0i_to_l0(nl0i) = il0
+   end if
+end do
+
+! Save namelist parameters
+levs = nam%levs
+resol = nam%resol
+
+! Save geometry parameters
+nl0 = geom%nl0
+vunit_c0a = geom%vunit_c0a
+gmask_c0a = geom%gmask_c0a
+gmask_hor_c0a = geom%gmask_hor_c0a
+nc0_gmask = geom%nc0_gmask
+area_ver_c0 = geom%area_ver_c0
+vunitavg = geom%vunitavg
+vunit_c0u = geom%vunit_c0u
+gmask_c0u = geom%gmask_c0u
+
+! Allocation
+nicas_blk%ncmp = nl0i
 allocate(nicas_blk%cmp(nicas_blk%ncmp))
 
-! Set attributes
-nicas_blk%cmp(icmp)%ib = ib
-nicas_blk%cmp(icmp)%ncmp = nicas_blk%ncmp
+! Setup independent levels
+do il0i=1,nl0i
+   ! Level index
+   il0 = l0i_to_l0(il0i)
 
-! Component work
-call nicas_blk%cmp(icmp)%compute_parameters(mpl,rng,nam,geom,rhflt)
+   ! Set local namelist parameters
+   nam%levs(1) = levs(il0)
+   nam%resol = five
+
+   ! Set local geometry parameters
+   geom%nl0 = 1
+   geom%vunit_c0a(:,1) = vunit_c0a(:,il0)
+   geom%gmask_c0a(:,1) = gmask_c0a(:,il0)
+   geom%gmask_hor_c0a(1) = any(gmask_c0a(:,il0))
+   geom%nc0_gmask(1) = nc0_gmask(il0)
+   geom%area_ver_c0(1) = area_ver_c0(il0)
+   geom%vunitavg(1) = vunitavg(il0)
+   geom%vunit_c0u(:,1) = vunit_c0u(:,il0)
+   geom%gmask_c0u(:,1) = gmask_c0u(:,il0)
+
+
+   ! NICAS block initialization
+   nicas_blk%cmp(il0i)%ib = ib
+   nicas_blk%cmp(il0i)%ncmp = 1
+   nicas_blk%cmp(il0i)%verbosity = .false.
+   nicas_blk%cmp(il0i)%draw_type = 'octahedral'
+   nicas_blk%cmp(il0i)%interp_type = 'c0'
+   nicas_blk%cmp(il0i)%smoother = .true.
+   nicas_blk%cmp(il0i)%compute_norm = .false.
+
+   ! Compute parameters
+   call nicas_blk%cmp(il0i)%compute_parameters(mpl,rng,nam,geom,rhflt(il0))
+end do
+
+! Reset namelist parameters
+nam%levs = levs
+nam%resol = resol
+
+! Reset geometry parameters
+geom%nl0 = nl0
+geom%vunit_c0a = vunit_c0a
+geom%gmask_c0a = gmask_c0a
+geom%gmask_hor_c0a = gmask_hor_c0a
+geom%nc0_gmask = nc0_gmask
+geom%area_ver_c0 = area_ver_c0
+geom%vunitavg = vunitavg
+geom%vunit_c0u = vunit_c0u
+geom%gmask_c0u = gmask_c0u
 
 ! End associate
 end associate

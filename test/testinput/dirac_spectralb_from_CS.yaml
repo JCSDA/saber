@@ -2,8 +2,9 @@ geometry:
   function space: NodeColumns
   grid:
     name : CS-LFR-15
-  partitioner: checkerboard
+  partitioner: cubedsphere
   levels: 70
+  halo: 0
 initial condition:
   date: 2010-01-01T12:00:00Z
   state variables: &vars [psi_inc]

@@ -2441,7 +2441,7 @@ type(geom_type),intent(in) :: geom     !< Geometry
 ! Local variables
 integer :: ic2,ic2a,ic2b,ic2u,jc2,jc2u,i_s,il0i,il0,iproc,jproc
 integer,allocatable :: c2b_to_c2(:),c2u_to_c2b(:)
-real(kind_real),allocatable :: lon_c2(:),lat_c2(:)
+real(kind_real),allocatable :: lon_c2(:),lat_c2(:),rh(:)
 logical :: lcheck_c2b(samp%nc2u)
 logical,allocatable :: smask_c2a(:,:),smask_c2(:,:),smask_hor_c2(:),smask_hor_c1a(:)
 type(mesh_type) :: mesh_c2
@@ -2465,6 +2465,7 @@ if (.not.samp%lat_bands) then
 end if
 allocate(samp%interp_c2b_to_c0a(geom%nl0i))
 if (samp%compute_c2b_to_c1a) allocate(smask_hor_c1a(samp%nc1a))
+if (nam%samp_interp_type=='si') allocate(rh(geom%nc0a))
 
 ! Initialization
 do il0i=1,geom%nl0i
@@ -2487,6 +2488,8 @@ if (.not.samp%lat_bands) then
 end if
 if (samp%compute_c2b_to_c1a) smask_hor_c1a = .true.
 
+! Allocation
+
 ! Compute interpolation
 do il0i=1,geom%nl0i
    il0 = geom%l0i_to_l0(il0i)
@@ -2494,8 +2497,18 @@ do il0i=1,geom%nl0i
    if (samp%lat_bands) then
       call samp%interp_c2b_to_c0a(il0i)%interp(mpl,samp%nc2,lat_c2,geom%nc0a,geom%lat_c0a,geom%gmask_c0a(:,il0),7)
    else
-      call samp%interp_c2b_to_c0a(il0i)%interp(mpl,nam,il0,samp%nc2,lon_c2,lat_c2,smask_c2(:,il0i), &
- & mesh_c2,tree_c2,geom%nc0a,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a(:,il0),geom%mesh_c0u,7)
+      select case (nam%samp_interp_type)
+      case ('c0')
+         call samp%interp_c2b_to_c0a(il0i)%interp(mpl,nam,il0,samp%nc2,lon_c2,lat_c2,smask_c2(:,il0i), &
+ & mesh_c2,tree_c2,geom%nc0a,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a(:,il0),geom%mesh_c0u,7,.false.)
+      case ('c1')
+         call samp%interp_c2b_to_c0a(il0i)%interp(mpl,nam,il0,samp%nc2,lon_c2,lat_c2,smask_c2(:,il0i), &
+ & mesh_c2,tree_c2,geom%nc0a,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a(:,il0),geom%mesh_c0u,7,.true.)
+      case ('si')
+         rh = nam%local_rad
+         call samp%interp_c2b_to_c0a(il0i)%interp(mpl,samp%nc2,smask_c2(:,il0i), &
+ & tree_c2,geom%nc0a,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a(:,il0),7,rh)
+      end select
    end if
 end do
 
@@ -2519,6 +2532,7 @@ if (.not.samp%lat_bands) then
    call mesh_c2%dealloc
    call tree_c2%dealloc
 end if
+if (nam%samp_interp_type=='si') deallocate(rh)
 
 ! Define halo B
 lcheck_c2b = .false.

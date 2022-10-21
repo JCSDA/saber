@@ -25,10 +25,11 @@ bump:
   nc2: 250
   nc3: 10
   dc: 800.0e3
-  nl0r: 2
+  nl0r: 5
   diag_draw_type: random_coast
   Lcoast: 500.0e3
   rcoast: 0.1
+  samp_interp_type: si
   ne: 25
   local_diag: true
   local_dlat: 15.0

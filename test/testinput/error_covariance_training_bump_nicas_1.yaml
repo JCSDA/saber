@@ -18,12 +18,13 @@ bump:
   testing: true
   universe_rad: 10000.0e3
   method: cor
-  strategy: specific_univariate
+  strategy: specific_multivariate
   new_nicas: true
   check_randomization: true
+  check_dirac: true
   mask_check: true
   ens1_ne: 50
-  resol: 8.0
+  resol: 4.0
   forced_radii: true
   rh:
     var1: [1000.0e3]
@@ -31,5 +32,16 @@ bump:
   rv:
     var1: [3.0]
     var2: [3.0]
+  nicas_interp_type:
+    var1: si
+  ndir: 1
+  londir:
+  - -85.0
+  latdir:
+  - 65.0
+  levdir:
+  - 1
+  ivdir:
+  - 1
 test:
   reference filename: testref/error_covariance_training_bump_nicas_1.ref

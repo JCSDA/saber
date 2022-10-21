@@ -416,13 +416,14 @@ class(ens_type),intent(in) :: ens                          !< Ensemble
 type(mpl_type),intent(inout) :: mpl                        !< MPI data
 integer,intent(in) :: iv                                   !< Variable index
 type(geom_type),intent(in) :: geom                         !< Geometry
-character(len=*),intent(in) :: fieldtype                   !< Field type ('member', 'pert', 'mean', 'm2' or 'm4')
+character(len=*),intent(in) :: fieldtype                   !< Field type ('member', 'pert', 'm2' or 'm4')
 integer,intent(in) :: i                                    !< Index (member or subset)
 real(kind_real),intent(out) :: fld_c0a(geom%nc0a,geom%nl0) !< Field on Sc0 subset, halo A
 
 ! Local variables
 integer :: isub
-real(kind_real),allocatable :: fld_mga(:,:),mean(:,:)
+real(kind_real) :: fld_mga(geom%nmga,geom%nl0)
+real(kind_real),allocatable :: mean(:,:)
 
 ! Set name
 @:set_name(ens_get_c0_single)
@@ -430,18 +431,13 @@ real(kind_real),allocatable :: fld_mga(:,:),mean(:,:)
 ! Probe in
 @:probe_in()
 
-! Allocation
-if (.not.geom%same_grid) allocate(fld_mga(geom%nmga,geom%nl0))
-
 select case (trim(fieldtype))
 case ('member')
-   ! Fieldset to Fortran array
-   if (geom%same_grid) then
-      call ens%mem(i)%to_array(mpl,iv,fld_c0a)
-   else
-      call ens%mem(i)%to_array(mpl,iv,fld_mga)
-   end if
+   ! Ensemble member
+   call ens%mem(i)%to_array(mpl,iv,fld_mga)
 case ('pert')
+   ! Ensemble perturbation
+
    ! Allocation
    allocate(mean(geom%nmga,geom%nl0))
 
@@ -449,54 +445,26 @@ case ('pert')
    isub = (i-1)/(ens%ne/ens%nsub)+1
 
    ! Fieldset to Fortran array
-   if (geom%same_grid) then
-      call ens%mem(i)%to_array(mpl,iv,fld_c0a)
-   else
-      call ens%mem(i)%to_array(mpl,iv,fld_mga)
-   end if
+   call ens%mem(i)%to_array(mpl,iv,fld_mga)
    call ens%mean(isub)%to_array(mpl,iv,mean)
 
    ! Member to perturbation
-   if (geom%same_grid) then
-      fld_c0a = fld_c0a-mean
-   else
-      fld_mga = fld_mga-mean
-   end if
+   fld_mga = fld_mga-mean
 
    ! Release memory
    deallocate(mean)
-case ('mean')
-   ! Fieldset to Fortran array
-   if (geom%same_grid) then
-      call ens%mean(i)%to_array(mpl,iv,fld_c0a)
-   else
-      call ens%mean(i)%to_array(mpl,iv,fld_mga)
-   end if
 case ('m2')
-   ! Fieldset to Fortran array
-   if (geom%same_grid) then
-      call ens%m2%to_array(mpl,iv,fld_c0a)
-   else
-      call ens%m2%to_array(mpl,iv,fld_mga)
-   end if
+   ! Second-order centered moment
+   call ens%m2%to_array(mpl,iv,fld_mga)
 case ('m4')
-   ! Fieldset to Fortran array
-   if (geom%same_grid) then
-      call ens%m4%to_array(mpl,iv,fld_c0a)
-   else
-      call ens%m4%to_array(mpl,iv,fld_mga)
-   end if
+   ! Fourth-order centered moment
+   call ens%m4%to_array(mpl,iv,fld_mga)
 case default
    call mpl%abort('${subr}$','wrong field type')
 end select
 
-if (.not.geom%same_grid) then
-   ! Model grid to subset Sc0
-   call geom%copy_mga_to_c0a(mpl,fld_mga,fld_c0a)
-
-   ! Release memory
-   deallocate(fld_mga)
-end if
+! Model grid to subset Sc0
+call geom%copy_mga_to_c0a(mpl,fld_mga,fld_c0a)
 
 ! Probe out
 @:probe_out()
@@ -516,7 +484,7 @@ class(ens_type),intent(in) :: ens                                 !< Ensemble
 type(mpl_type),intent(inout) :: mpl                               !< MPI data
 type(nam_type),intent(in) :: nam                                  !< Namelist
 type(geom_type),intent(in) :: geom                                !< Geometry
-character(len=*),intent(in) :: fieldtype                          !< Field type ('member', 'pert', 'mean', 'm2' or 'm4')
+character(len=*),intent(in) :: fieldtype                          !< Field type ('member', 'pert', 'm2' or 'm4')
 integer,intent(in) :: i                                           !< Index (member or subset)
 real(kind_real),intent(out) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) !< Field on Sc0 subset, halo A
 
@@ -552,13 +520,14 @@ class(ens_type),intent(inout) :: ens                      !< Ensemble
 type(mpl_type),intent(inout) :: mpl                       !< MPI data
 integer,intent(in) :: iv                                  !< Variable index
 type(geom_type),intent(in) :: geom                        !< Geometry
-character(len=*),intent(in) :: fieldtype                  !< Field type ('member', 'pert', 'mean', 'm2' or 'm4')
+character(len=*),intent(in) :: fieldtype                  !< Field type ('member')
 integer,intent(in) :: i                                   !< Index (member or subset)
 real(kind_real),intent(in) :: fld_c0a(geom%nc0a,geom%nl0) !< Field on Sc0 subset, halo A
 
 ! Local variables
 integer :: isub
-real(kind_real),allocatable :: fld_mga(:,:),mean(:,:),fld_c0a_tmp(:,:)
+real(kind_real) :: fld_mga(geom%nmga,geom%nl0)
+real(kind_real),allocatable :: mean(:,:),fld_c0a_tmp(:,:)
 
 ! Set name
 @:set_name(ens_set_c0_single)
@@ -566,71 +535,13 @@ real(kind_real),allocatable :: fld_mga(:,:),mean(:,:),fld_c0a_tmp(:,:)
 ! Probe in
 @:probe_in()
 
-if (.not.geom%same_grid) then
-   ! Allocation
-   allocate(fld_mga(geom%nmga,geom%nl0))
-
-   ! Subset Sc0 to model grid
-   call geom%copy_c0a_to_mga(mpl,fld_c0a,fld_mga)
-end if
+! Subset Sc0 to model grid
+call geom%copy_c0a_to_mga(mpl,fld_c0a,fld_mga)
 
 select case (trim(fieldtype))
 case ('member')
-   ! Fortran array to fieldset
-   if (geom%same_grid) then
-      call ens%mem(i)%from_array(mpl,iv,fld_c0a)
-   else
-      call ens%mem(i)%from_array(mpl,iv,fld_mga)
-   end if
-case ('pert')
-   ! Allocation
-   allocate(mean(geom%nmga,geom%nl0))
-   if (geom%same_grid) allocate(fld_c0a_tmp(geom%nc0a,geom%nl0))
-
-   ! Get sub-ensemble
-   isub = (i-1)/(ens%ne/ens%nsub)+1
-
-   ! Fieldset to Fortran array
-   call ens%mean(isub)%to_array(mpl,iv,mean)
-
-   ! Perturbation to member
-   if (geom%same_grid) then
-      fld_c0a_tmp = fld_c0a+mean
-   else
-      fld_mga = fld_mga+mean
-   end if
-
-   ! Fortran array to fieldset
-   if (geom%same_grid) then
-      call ens%mem(i)%from_array(mpl,iv,fld_c0a_tmp)
-   else
-      call ens%mem(i)%from_array(mpl,iv,fld_mga)
-   end if
-
-   ! Release memory
-   deallocate(mean)
-   if (geom%same_grid) deallocate(fld_c0a_tmp)
-case ('mean')
-   ! Fortran array to fieldset
-   if (geom%same_grid) then
-      call ens%mean(i)%from_array(mpl,iv,fld_c0a)
-   else
-      call ens%mean(i)%from_array(mpl,iv,fld_mga)
-   end if
-case ('m2')
-   ! Fortran array to fieldset
-   if (geom%same_grid) then
-      call ens%m2%from_array(mpl,iv,fld_c0a)
-   else
-      call ens%m2%from_array(mpl,iv,fld_mga)
-   end if
-case ('m4')
-   ! Fortran array to fieldset
-   if (geom%same_grid) then
-      call ens%m4%from_array(mpl,iv,fld_c0a)
-   else
-      call ens%m4%from_array(mpl,iv,fld_mga)
-   end if
+   ! Ensemble member
+   call ens%mem(i)%from_array(mpl,iv,fld_mga)
 case default
    call mpl%abort('${subr}$','wrong field type')
 end select
@@ -653,7 +564,7 @@ class(ens_type),intent(inout) :: ens                             !< Ensemble
 type(mpl_type),intent(inout) :: mpl                              !< MPI data
 type(nam_type),intent(in) :: nam                                 !< Namelist
 type(geom_type),intent(in) :: geom                               !< Geometry
-character(len=*),intent(in) :: fieldtype                         !< Field type ('member', 'pert', 'mean', 'm2' or 'm4')
+character(len=*),intent(in) :: fieldtype                         !< Field type ('member')
 integer,intent(in) :: i                                          !< Index (member or subset)
 real(kind_real),intent(in) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) !< Field on Sc0 subset, halo A
 

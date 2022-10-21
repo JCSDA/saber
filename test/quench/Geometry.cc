@@ -155,19 +155,19 @@ Geometry::Geometry(const Parameters_ & params,
     // Setup mesh
     mesh_ = atlas::MeshGenerator("structured").generate(grid_, partitioner_);
   } else if (params.functionSpace.value() == "NodeColumns") {
-    if (comm_.size() == 1) {
-      // NodeColumns
-      if (grid_.name().compare(0, 2, std::string{"CS"}) == 0) {
-        // CubedSphere
-        mesh_ = atlas::MeshGenerator("cubedsphere_dual").generate(grid_);
-        functionSpace_ = atlas::functionspace::CubedSphereNodeColumns(mesh_);
-      } else {
+    // NodeColumns
+    if (grid_.name().compare(0, 2, std::string{"CS"}) == 0) {
+      // CubedSphere
+      mesh_ = atlas::MeshGenerator("cubedsphere_dual").generate(grid_);
+      functionSpace_ = atlas::functionspace::CubedSphereNodeColumns(mesh_);
+    } else {
+      if (comm_.size() == 1) {
         // NodeColumns
         mesh_ = atlas::MeshGenerator("delaunay").generate(grid_);
         functionSpace_ = atlas::functionspace::NodeColumns(mesh_);
+      } else {
+        ABORT("NodeColumns function space on multiple PEs not supported yet");
       }
-    } else {
-      ABORT("NodeColumns function space on multiple PEs not supported yet");
     }
   } else if (params.functionSpace.value() == "PointCloud") {
     // Setup function space
@@ -415,13 +415,9 @@ Geometry::Geometry(const Parameters_ & params,
   this->print(oops::Log::info());
 }
 // -----------------------------------------------------------------------------
-Geometry::Geometry(const Geometry & other) : comm_(other.comm_), levels_(other.levels_),
-  vunit_(other.vunit_), halo_(other.halo_) {
-  // Copy grid TODO (in header ?)
-  grid_ = other.grid_;
-  partitioner_ = other.partitioner_;
-  mesh_ = other.mesh_;
-
+Geometry::Geometry(const Geometry & other) : comm_(other.comm_), halo_(other.halo_),
+  grid_(other.grid_), unstructuredGrid_(other.unstructuredGrid_), partitioner_(other.partitioner_),
+  mesh_(other.mesh_), levels_(other.levels_), vunit_(other.vunit_)  {
   // Copy function space
   if (other.functionSpace_.type() == "StructuredColumns") {
     // StructuredColumns

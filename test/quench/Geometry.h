@@ -98,6 +98,7 @@ class Geometry : public util::Printable,
  private:
   void print(std::ostream &) const;
   const eckit::mpi::Comm & comm_;
+  size_t halo_;
   atlas::Grid grid_;
   std::string gridType_;
   bool unstructuredGrid_;
@@ -110,7 +111,6 @@ class Geometry : public util::Printable,
   atlas::FieldSet extraFields_;
   size_t levels_;
   std::vector<double> vunit_;
-  size_t halo_;
 };
 // -----------------------------------------------------------------------------
 

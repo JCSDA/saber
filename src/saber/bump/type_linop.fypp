@@ -10,12 +10,14 @@ module type_linop
 
 use ieee_arithmetic
 !$ use omp_lib
-use tools_const, only: zero,one,rad2deg
+use tools_const, only: zero,one,two,rad2deg
 use tools_func, only: sphere_dist,zss_maxval,zss_minval
+use tools_gc99, only: fit_func
 use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim_size,define_var,inquire_var,put_var,get_var
 use tools_qsort, only: qsort
 use tools_repro, only: rth,inf,eq,infeq,sup
+use tools_ssrfpack, only: constr,aplyr
 use type_mesh, only: mesh_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
@@ -26,6 +28,7 @@ implicit none
 
 logical,parameter :: check_data = .false.             !< Activate data check for all linear operations
 real(kind_real),parameter :: S_inf = 1.0e-2_kind_real !< Minimum interpolation coefficient
+integer,parameter :: nmin = 3                         !< Minimum number of neighbors for the smooth interpolation
 
 ! Linear operator derived type
 type linop_type
@@ -66,6 +69,7 @@ contains
    procedure :: linop_interp_lat
    procedure :: linop_interp_nn
    generic :: interp => linop_interp,linop_interp_lat,linop_interp_nn
+   procedure :: compute_grad => linop_compute_grad
 end type linop_type
 
 private
@@ -817,7 +821,7 @@ end subroutine linop_gather
 !> Compute horizontal interpolation
 !----------------------------------------------------------------------
 subroutine linop_interp(linop,mpl,nam,il0,n_src,lon_src,lat_src,mask_src,mesh_src,tree_src, &
- & n_dst,lon_dst,lat_dst,mask_dst,mesh_mask,ifmt)
+ & n_dst,lon_dst,lat_dst,mask_dst,mesh_mask,ifmt,c1_interp)
 
 implicit none
 
@@ -838,20 +842,27 @@ real(kind_real),intent(in) :: lat_dst(n_dst) !< Destination latitudes
 logical,intent(in) :: mask_dst(n_dst)        !< Destination mask
 type(mesh_type),intent(in) :: mesh_mask      !< Mask checking mesh
 integer,intent(in) :: ifmt                   !< Format indentation
+logical,intent(in),optional :: c1_interp     !< C1 interpolation flag
 
 ! Local variables
-integer :: i_dst,i,n_s,i_s,next
-integer :: nn_index(1),ib(3),row(3*n_dst),col(3*n_dst)
-integer,allocatable :: nn_index_ext(:)
-real(kind_real) :: nn_dist(1),b(3),S(3*n_dst)
-logical :: valid,found,missing(n_dst)
+integer :: i_dst,i,j,n_s,i_s,next,i_s_grad,i_src
+integer :: nn_index(1),ib(3),n_s_tmp,n_s_max
+integer,allocatable :: row(:),col(:),nn_index_ext(:),col_ind(:),col_tmp(:)
+real(kind_real) :: nn_dist(1),b(3),af(3),ag(3,3)
+real(kind_real),allocatable :: S(:),S_tmp(:)
+logical :: lc1_interp,valid,found,missing(n_dst)
 character(len=7) :: cfmt
+type(linop_type) :: grad(n_src)
 
 ! Set name
 @:set_name(linop_interp)
 
 ! Probe in
 @:probe_in()
+
+! Local flag
+lc1_interp = .false.
+if (present(c1_interp)) lc1_interp = c1_interp
 
 ! Compute interpolation
 if (ifmt>0) then
@@ -860,6 +871,36 @@ if (ifmt>0) then
    call mpl%flush(.false.)
    call mpl%prog_init(n_dst)
 end if
+
+if (lc1_interp) then
+   ! Compute gradient operator
+   do i_src=1,n_src
+      if (mask_src(i_src)) then
+         call grad(i_src)%compute_grad(mpl,i_src,mesh_src,tree_src)
+      else
+         call mpl%abort('${subr}$','source mask not implemented for C1 interpolation')
+      end if
+   end do
+end if
+
+! Allocation
+if (lc1_interp) then
+   ! C1 function
+   n_s_max = 0
+   do i_src=1,n_src
+      n_s_max = max(n_s_max,grad(i_src)%n_s)
+   end do
+   n_s_max = n_s_max+1
+   allocate(row(3*n_dst*n_s_max))
+   allocate(col(3*n_dst*n_s_max))
+   allocate(S(3*n_dst*n_s_max))
+else
+   ! C0 function
+   allocate(row(3*n_dst))
+   allocate(col(3*n_dst))
+   allocate(S(3*n_dst))
+end if
+
 n_s = 0
 do i_dst=1,n_dst
    if (mask_dst(i_dst)) then
@@ -870,6 +911,7 @@ do i_dst=1,n_dst
          ! Compute barycentric coordinates
          call mesh_src%barycentric(mpl,lon_dst(i_dst),lat_dst(i_dst),tree_src,b,ib)
          valid = mpl%msv%isallnot(ib)
+         found = .false.
 
          ! Check mask
          if (valid) then
@@ -885,31 +927,118 @@ do i_dst=1,n_dst
             end do
          end if
 
-         ! Compute barycentric weight
          if (valid) then
-            ! Bilinear interpolation
-            if (sum(b)>zero) b = b/sum(b)
-            do i=1,3
-               if (inf(b(i),S_inf)) b(i) = zero
-            end do
-         else
-            b = zero
+            if (lc1_interp) then
+               ! C1 function
+ 
+               ! Allocation
+               allocate(col_ind(3*n_s_max))
+
+               ! Normalize coordinates
+               if (sum(b)>zero) then
+                  b = b/sum(b)
+               else
+                  b = zero
+               end if
+
+               ! Compute C1 interpolation coefficients
+               call mesh_src%compute_c1_interp_op(mpl,b,ib,af,ag)
+
+               ! Count number of different column indices
+               n_s_tmp = 0
+               do i=1,3
+                  n_s_tmp = n_s_tmp+1
+                  col_ind(n_s_tmp) = ib(i)
+               end do
+               do i=1,3
+                  do i_s_grad=1,grad(ib(i))%n_s
+                     if (all(col_ind(1:n_s_tmp)/=grad(ib(i))%col(i_s_grad))) then
+                        n_s_tmp = n_s_tmp+1
+                        col_ind(n_s_tmp) = grad(ib(i))%col(i_s_grad)
+                     end if
+                  end do
+               end do
+
+               ! Allocation
+               allocate(col_tmp(n_s_tmp))
+               allocate(S_tmp(n_s_tmp))
+
+               ! Initialization
+               S_tmp = zero
+
+               ! Copy
+               do i_s=1,n_s_tmp
+                  col_tmp(i_s) = col_ind(i_s)
+                  do i=1,3
+                     if (col_tmp(i_s)==ib(i)) S_tmp(i_s) = S_tmp(i_s)+af(i)
+                     do j=1,3
+                        do i_s_grad=1,grad(ib(j))%n_s
+                           if (col_tmp(i_s)==grad(ib(j))%col(i_s_grad)) S_tmp(i_s) = S_tmp(i_s) &
+ & +grad(ib(j))%Svec(i_s_grad,i)*ag(i,j)
+                        end do
+                     end do
+                  end do
+               end do
+
+               ! Normalize weights
+               if (sum(S_tmp)>zero) then
+                  S_tmp = S_tmp/sum(S_tmp)
+               else
+                  S_tmp = zero
+               end if
+
+               ! Copy into row/col/S
+               do i_s=1,n_s_tmp
+                  if (abs(S_tmp(i_s))>zero) then
+                     found = .true.
+                     n_s = n_s+1
+                     row(n_s) = i_dst
+                     col(n_s) = col_tmp(i_s)
+                     S(n_s) = S_tmp(i_s)
+                  end if
+               end do
+
+               ! Release memory
+               deallocate(col_ind)
+               deallocate(col_tmp)
+               deallocate(S_tmp)
+            else
+               ! C0 interpolation
+
+               ! Normalize weights
+               if (sum(b)>zero) then
+                  b = b/sum(b)
+               else
+                  b = zero
+               end if
+
+               ! Apply threshold
+               do i=1,3
+                  if (inf(b(i),S_inf)) b(i) = zero
+               end do
+
+               ! Normalize weights
+               if (sum(b)>zero) then
+                  b = b/sum(b)
+               else
+                  b = zero
+               end if
+
+               ! Copy into row/col/S
+               do i=1,3
+                  if (b(i)>zero) then
+                     found = .true.
+                     n_s = n_s+1
+                     row(n_s) = i_dst
+                     col(n_s) = ib(i)
+                     S(n_s) = b(i)
+                  end if
+               end do
+            end if
          end if
 
-         ! Copy into row/col/S
-         if (sum(b)>zero) then
-            b = b/sum(b)
-            do i=1,3
-               if (b(i)>zero) then
-                  n_s = n_s+1
-                  row(n_s) = i_dst
-                  col(n_s) = ib(i)
-                  S(n_s) = b(i)
-               end if
-            end do
-         else
+         if (valid.and.(.not.found)) then
             ! Find nearest valid neighbor
-            found = .false.
             next = 1
             do while (.not.found)
                ! Allocation
@@ -972,6 +1101,16 @@ call linop%alloc
 linop%row = row(1:linop%n_s)
 linop%col = col(1:linop%n_s)
 linop%S = S(1:linop%n_s)
+
+! Release memory
+if (lc1_interp) then
+   do i_src=1,n_src
+      call grad(i_src)%dealloc
+   end do
+end if
+deallocate(row)
+deallocate(col)
+deallocate(S)
 
 ! Probe out
 @:probe_out()
@@ -1094,35 +1233,63 @@ end subroutine linop_interp_lat
 ! Subroutine: linop_interp_nn
 !> Compute horizontal interpolation (nearest valid neighbor)
 !----------------------------------------------------------------------
-subroutine linop_interp_nn(linop,mpl,n_src,mask_src,tree_src,n_dst,lon_dst,lat_dst,mask_dst,ifmt)
+subroutine linop_interp_nn(linop,mpl,n_src,mask_src,tree_src,n_dst,lon_dst,lat_dst,mask_dst,ifmt,rh,fac)
 
 implicit none
 
 ! Passed variables
-class(linop_type),intent(inout) :: linop     !< Linear operator
-type(mpl_type),intent(inout) :: mpl          !< MPI data
-integer,intent(in) :: n_src                  !< Source size
-logical,intent(in) :: mask_src(n_src)        !< Source mask
-type(tree_type),intent(in) :: tree_src       !< Source tree
-integer,intent(in) :: n_dst                  !< Destination size
-real(kind_real),intent(in) :: lon_dst(n_dst) !< Destination longitudes
-real(kind_real),intent(in) :: lat_dst(n_dst) !< Destination latitudes
-logical,intent(in) :: mask_dst(n_dst)        !< Destination mask
-integer,intent(in) :: ifmt                   !< Format indentation
+class(linop_type),intent(inout) :: linop         !< Linear operator
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+integer,intent(in) :: n_src                      !< Source size
+logical,intent(in) :: mask_src(n_src)            !< Source mask
+type(tree_type),intent(in) :: tree_src           !< Source tree
+integer,intent(in) :: n_dst                      !< Destination size
+real(kind_real),intent(in) :: lon_dst(n_dst)     !< Destination longitudes
+real(kind_real),intent(in) :: lat_dst(n_dst)     !< Destination latitudes
+logical,intent(in) :: mask_dst(n_dst)            !< Destination mask
+integer,intent(in) :: ifmt                       !< Format indentation
+real(kind_real),intent(in),optional :: rh(n_dst) !< Interpolation radius
+real(kind_real),intent(in),optional :: fac       !< Interpolation radius factor
 
 ! Local variables
-integer :: i_dst,n_s,i_s,next
-integer :: row(n_dst),col(n_dst)
+integer :: n_s_max,ithread,i_dst,i_s,iext,next
+integer :: c_n_s(mpl%nthread)
 integer,allocatable :: nn_index_ext(:)
-real(kind_real) :: S(n_dst)
+real(kind_real) :: lrh(n_dst),nd
+real(kind_real),allocatable :: nn_dist_ext(:),wgt(:)
 logical :: found,missing(n_dst)
 character(len=7) :: cfmt
+type(linop_type) :: c(mpl%nthread)
 
 ! Set name
 @:set_name(linop_interp_nn)
 
 ! Probe in
 @:probe_in()
+
+! Local interpolation radius
+lrh = zero
+if (present(rh)) then
+   if (present(fac)) then
+      if (fac>zero) then
+         lrh = rh/fac
+      else
+         call mpl%abort('${subr}$','interpolation radius factor should be positive')
+      end if
+   else
+      lrh = rh
+   end if
+end if
+
+! Allocation
+n_s_max = int(real(30*n_dst,kind_real)/real(mpl%nthread,kind_real))
+do ithread=1,mpl%nthread
+   c(ithread)%n_s = n_s_max
+   call c(ithread)%alloc
+end do
+
+! Initialization
+c_n_s = 0
 
 ! Compute interpolation
 if (ifmt>0) then
@@ -1131,68 +1298,328 @@ if (ifmt>0) then
    call mpl%flush(.false.)
    call mpl%prog_init(n_dst)
 end if
-n_s = 0
+!$omp parallel do schedule(static) private(i_dst,ithread,found,next,iext,nd) firstprivate(nn_index_ext,nn_dist_ext,wgt)
 do i_dst=1,n_dst
    if (mask_dst(i_dst)) then
-      ! Find nearest valid neighbor
+      if (lrh(i_dst)>zero) then
+         ! Allocation
+         allocate(nn_index_ext(nmin))
+         allocate(nn_dist_ext(nmin))
+
+         ! Get minimum distance for nmin neighbors
+         call tree_src%find_nearest_neighbors(lon_dst(i_dst),lat_dst(i_dst),nmin,nn_index_ext,nn_dist_ext)
+
+         ! Adjust distance
+         lrh(i_dst) = max(lrh(i_dst),nn_dist_ext(nmin))
+
+         ! Release memory
+         deallocate(nn_index_ext)
+         deallocate(nn_dist_ext)
+      end if
+
+      ! Find nearest valid neighbors
+      ithread = 1
+!$    ithread = omp_get_thread_num()+1
       found = .false.
-      next = 1
+      if (lrh(i_dst)>zero) then
+         next = nmin
+      else
+         next = 1
+      end if
       do while (.not.found)
          ! Allocation
-         allocate(nn_index_ext(next))
+         allocate(nn_index_ext(next+1))
+         allocate(nn_dist_ext(next+1))
 
          ! Find nearest neighors
-         call tree_src%find_nearest_neighbors(lon_dst(i_dst),lat_dst(i_dst),next,nn_index_ext)
+         call tree_src%find_nearest_neighbors(lon_dst(i_dst),lat_dst(i_dst),next+1,nn_index_ext,nn_dist_ext)
 
          ! Check mask
-         if (mask_src(nn_index_ext(next))) then
-            found = .true.
+         if (lrh(i_dst)>zero) then
+            if ((count(mask_src(nn_index_ext(1:next)))>=nmin).and.(nn_dist_ext(next+1)>lrh(i_dst))) then
+               found = .true.
+            else
+               next = next+1
+               deallocate(nn_index_ext)
+               deallocate(nn_dist_ext)
+            end if
          else
-            next = next+1
-            deallocate(nn_index_ext)
+            if (mask_src(nn_index_ext(next))) then
+               found = .true.
+            else
+               next = next+1
+               deallocate(nn_index_ext)
+               deallocate(nn_dist_ext)
+            end if
          end if
 
          ! Check next
          if (next>n_src) call mpl%abort('${subr}$','cannot find valid nearest neighbor')
       end do
-      n_s = n_s+1
-      row(n_s) = i_dst
-      col(n_s) = nn_index_ext(next)
-      S(n_s) = one
+
+      if (lrh(i_dst)>zero) then
+         ! Allocation
+         allocate(wgt(next))
+
+         ! Compute weights
+         wgt = zero
+         do iext=1,next
+            if (mask_src(nn_index_ext(iext))) then
+               nd = nn_dist_ext(iext)/lrh(i_dst)
+               wgt(iext) = fit_func(mpl,'hor',nd)
+            end if
+         end do
+         if (sum(wgt)>zero) then
+            wgt = wgt/sum(wgt)
+         else
+            call mpl%abort('${subr}$','zero weight sum')
+         end if
+
+         ! Copy indices and weights
+         do iext=1,next
+            if (wgt(iext)>zero) call c(ithread)%add_op(c_n_s(ithread),i_dst,nn_index_ext(iext),wgt(iext))
+         end do
+
+         ! Release memory
+         deallocate(wgt)
+      else
+         ! Copy indices and weights
+         call c(ithread)%add_op(c_n_s(ithread),i_dst,nn_index_ext(next),one)
+      end if
+
+
+      ! Release memory
       deallocate(nn_index_ext)
+      deallocate(nn_dist_ext)
    end if
 
    ! Update
    if (ifmt>0) call mpl%prog_print(i_dst)
 end do
+!$omp end parallel do
 if (ifmt>0) call mpl%prog_final
+
+! Gather data from threads
+call linop%gather(mpl,c_n_s,c)
+linop%n_src = n_src
+linop%n_dst = n_dst
 
 ! Check interpolation
 missing = .false.
 do i_dst=1,n_dst
    if (mask_dst(i_dst)) missing(i_dst) = .true.
 end do
-do i_s=1,n_s
-   missing(row(i_s)) = .false.
+do i_s=1,linop%n_s
+   missing(linop%row(i_s)) = .false.
 end do
-if (n_s>0) then
+if (linop%n_s>0) then
    if (any(missing)) call mpl%abort('${subr}$','missing destination points')
 end if
-
-! Allocation
-linop%n_s = n_s
-linop%n_src = n_src
-linop%n_dst = n_dst
-call linop%alloc
-
-! Copy data
-linop%row = row(1:linop%n_s)
-linop%col = col(1:linop%n_s)
-linop%S = S(1:linop%n_s)
 
 ! Probe out
 @:probe_out()
 
 end subroutine linop_interp_nn
+
+!----------------------------------------------------------------------
+! Subroutine: linop_compute_grad
+!> Compute gradient
+!----------------------------------------------------------------------
+subroutine linop_compute_grad(linop,mpl,i,mesh,tree)
+
+implicit none
+
+! Passed variables
+class(linop_type),intent(inout) :: linop !< Linear operator
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+integer,intent(in) :: i                  !< Index
+type(mesh_type),intent(in) :: mesh       !< Mesh
+type(tree_type),intent(in) :: tree       !< Tree
+
+! Local variables
+integer,parameter :: nn_grad = 8
+integer :: j,j_next,km_next,i_s,im
+integer,allocatable :: km(:),nn_index(:)
+real(kind_real) :: cx,sx,cy,sy,gamma,wgt,wgt_sum
+real(kind_real),allocatable :: xp(:),yp(:),zp(:)
+real(kind_real),allocatable :: Svec_tmp(:,:)
+
+! Set name
+@:set_name(linop_compute_grad)
+
+! Probe in
+@:probe_in()
+
+! Inverse order
+im = mesh%order_inv(i)
+
+! Construct the rotation
+call constr(mesh%x(im),mesh%y(im),mesh%z(im),cx,sx,cy,sy)
+
+if (.false.) then
+   ! Allocation
+   linop%n_s = nn_grad+1
+   call linop%alloc(3)
+   allocate(Svec_tmp(linop%n_s,2))
+   allocate(nn_index(nn_grad+1))
+   allocate(km(nn_grad+1))
+   allocate(xp(nn_grad+1))
+   allocate(yp(nn_grad+1))
+   allocate(zp(nn_grad+1))
+
+   ! Get nearest neighbors
+   call tree%find_nearest_neighbors(mesh%lon(im),mesh%lat(im),nn_grad+1,nn_index)
+   
+   ! Loop over neigbors
+   do j=1,nn_grad+1
+      ! Inverse order
+      km(j) = mesh%order_inv(nn_index(j))
+
+      ! Get rotated coordinates
+      call aplyr(mpl,mesh%x(km(j)),mesh%y(km(j)),mesh%z(km(j)),cx,sx,cy,sy,xp(j),yp(j),zp(j))
+   end do
+
+   ! Initialization
+   wgt_sum = zero
+   linop%col = nn_index
+   Svec_tmp = zero
+
+   ! Loop over neigbors
+   do j=2,nn_grad+1
+      if ((xp(j)>zero).and.(yp(j)>zero)) then
+         ! Weight
+         wgt = one/(xp(j)**2+yp(j)**2)
+         wgt_sum = wgt_sum+wgt
+
+         ! Add contribution
+         do i_s=1,linop%n_s
+            if (linop%col(i_s)==nn_index(1)) then
+               Svec_tmp(i_s,1) = Svec_tmp(i_s,1)-wgt/xp(j)
+               Svec_tmp(i_s,2) = Svec_tmp(i_s,2)-wgt/yp(j)
+            end if
+            if (linop%col(i_s)==nn_index(j)) then
+               Svec_tmp(i_s,1) = Svec_tmp(i_s,1)+wgt/xp(j)
+               Svec_tmp(i_s,2) = Svec_tmp(i_s,2)+wgt/yp(j)
+            end if
+         end do
+      end if
+   end do
+
+   ! Averaged gradient
+   if (wgt_sum>zero) then
+      Svec_tmp = Svec_tmp/wgt_sum
+   else
+      call mpl%abort('${subr}$','zero weight sum')
+   end if
+
+   ! Apply inverse rotation
+   linop%Svec(1:linop%n_s,1) = cy*Svec_tmp(:,1)
+   linop%Svec(1:linop%n_s,2) = cx*Svec_tmp(:,2)-sx*sy*Svec_tmp(:,1)
+   linop%Svec(1:linop%n_s,3) = -sx*Svec_tmp(:,2)-cx*sy*Svec_tmp(:,1)
+
+   ! Release memory
+   deallocate(Svec_tmp)
+   deallocate(nn_index)
+   deallocate(km)
+   deallocate(xp)
+   deallocate(yp)
+   deallocate(zp)
+else
+   ! Allocation
+   linop%n_s = mesh%rows(im)%cols+1
+   call linop%alloc(3)
+   allocate(Svec_tmp(linop%n_s,2))
+   allocate(km(mesh%rows(im)%cols))
+   allocate(xp(mesh%rows(im)%cols))
+   allocate(yp(mesh%rows(im)%cols))
+   allocate(zp(mesh%rows(im)%cols))
+   
+   ! Loop over neigbors
+   do j=1,mesh%rows(im)%cols
+      ! Get index
+      km(j) = mesh%rows(im)%nodes(j)
+   
+      ! Get rotated coordinates
+      call aplyr(mpl,mesh%x(km(j)),mesh%y(km(j)),mesh%z(km(j)),cx,sx,cy,sy,xp(j),yp(j),zp(j))
+   end do
+   
+   ! Initialization
+   wgt_sum = zero
+   i_s = 1
+   linop%col(i_s) = im
+   do j=1,mesh%rows(im)%cols
+      i_s = i_s+1
+      linop%col(i_s) = km(j)
+   end do
+   Svec_tmp = zero
+   
+   ! Loop over triangles
+   do j=1,mesh%rows(im)%cols
+      ! Get next neighbor
+      if (j<mesh%rows(im)%cols) then
+         j_next = j+1
+      else
+         j_next = 1
+      end if
+      km_next = km(j_next)
+   
+      ! Compute plane's normal vector components
+      ! See Goodman et al., 1995: Local Derivative Estimation for Scattered Data Interpolation, section 3
+      ! Warning: in second equation of (8) for beta, "y"s should be "x"s
+      gamma = xp(j)*yp(j_next)-xp(j_next)*yp(j)
+      if (abs(gamma)>zero) then
+         ! Weight
+         wgt = two/abs(gamma)
+         wgt_sum = wgt_sum+wgt
+
+         ! Add contribution
+         do i_s=1,linop%n_s
+            if (linop%col(i_s)==im) then
+               Svec_tmp(i_s,1) = Svec_tmp(i_s,1)+wgt*(yp(j)-yp(j_next))/gamma
+               Svec_tmp(i_s,2) = Svec_tmp(i_s,2)+wgt*(xp(j_next)-xp(j))/gamma
+            end if
+            if (linop%col(i_s)==km(j)) then
+               Svec_tmp(i_s,1) = Svec_tmp(i_s,1)+wgt*yp(j_next)/gamma
+               Svec_tmp(i_s,2) = Svec_tmp(i_s,2)-wgt*xp(j_next)/gamma
+            end if
+            if (linop%col(i_s)==km_next) then
+               Svec_tmp(i_s,1) = Svec_tmp(i_s,1)-wgt*yp(j)/gamma
+               Svec_tmp(i_s,2) = Svec_tmp(i_s,2)+wgt*xp(j)/gamma
+            end if
+         end do
+      else
+         call mpl%abort('${subr}$','gamma should not be zero')
+      end if
+   end do
+   
+   ! Averaged gradient
+   if (wgt_sum>zero) then
+      Svec_tmp = Svec_tmp/wgt_sum
+   else
+      call mpl%abort('${subr}$','zero weight sum')
+   end if
+   
+   ! Grid indices
+   do i_s=1,linop%n_s
+      linop%col(i_s) = mesh%order(linop%col(i_s))
+   end do
+   
+   ! Apply inverse rotation
+   linop%Svec(1:linop%n_s,1) = cy*Svec_tmp(:,1)
+   linop%Svec(1:linop%n_s,2) = cx*Svec_tmp(:,2)-sx*sy*Svec_tmp(:,1)
+   linop%Svec(1:linop%n_s,3) = -sx*Svec_tmp(:,2)-cx*sy*Svec_tmp(:,1)
+   
+   ! Release memory
+   deallocate(Svec_tmp)
+   deallocate(km)
+   deallocate(xp)
+   deallocate(yp)
+   deallocate(zp)
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine linop_compute_grad
 
 end module type_linop

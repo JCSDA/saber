@@ -895,7 +895,6 @@ do ib=1,bpar%nb
             call mpl%flush
          end if
       end do
-print*, "BENJ ",diag%blk(0,ib)%raw(:,:,:,:)
    end if
 end do
 

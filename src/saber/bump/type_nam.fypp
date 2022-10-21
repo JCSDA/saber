@@ -125,7 +125,7 @@ type nam_type
    real(kind_real),dimension(nvmax) :: mask_th                !< Mask threshold
    integer :: ncontig_th                                      !< Threshold on vertically contiguous points for sampling mask (0 to skip the test)
    logical :: mask_check                                      !< Check that sampling couples and interpolations do not cross mask boundaries
-   character(len=1024) :: diag_draw_type                      !< Sampling draw type ('random_uniform','random_coast' or 'octahedral')
+   character(len=1024) :: diag_draw_type                      !< Diagnostic draw type ('random_uniform','random_coast' or 'octahedral')
    real(kind_real) :: Lcoast                                  !< Length-scale to increase sampling density along coasts [in meters]
    real(kind_real) :: rcoast                                  !< Minimum value to increase sampling density along coasts
    integer :: nc1                                             !< Number of sampling points
@@ -135,6 +135,7 @@ type nam_type
    real(kind_real) :: dc                                      !< Class size, should be larger than the typical grid cell size [in meters]
    integer :: nl0r                                            !< Reduced number of levels for diagnostics
    integer :: irmax                                           !< Maximum number of random number draws
+   character(len=2) :: samp_interp_type                       !< Sampling C2B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based or 'si': smooth interpolation)
 
    ! diag_param
    integer :: ne                                              !< Ensemble size
@@ -150,6 +151,8 @@ type nam_type
    logical :: vbal_pseudo_inv                                 !< Pseudo-inverse for auto-covariance
    integer :: vbal_pseudo_inv_mmax                            !< Dominant mode for pseudo-inverse
    real(kind_real) :: vbal_pseudo_inv_var_th                  !< Variance threshold to compute the dominant mode for pseudo-inverse
+   logical :: vbal_id                                         !< Identity vertical balance for tests
+   real(kind_real) :: vbal_id_coef(nvbalmax)                  !< Scalar coefficients for identity vertical balance
    logical :: forced_var                                      !< Force specific variance
    real(kind_real) :: stddev(nl0max,nvmax)                    !< Forced standard-deviation
    logical :: var_filter                                      !< Filter variance
@@ -170,7 +173,7 @@ type nam_type
    ! nicas_param
    real(kind_real) :: resol                                   !< Resolution
    integer :: nc1max                                          !< Maximum size of the Sc1 subset
-   character(len=1024) :: nicas_draw_type                     !< Subsampling draw type ('random_uniform','random_coast' or 'octahedral')
+   character(len=1024) :: nicas_draw_type                     !< NICAS draw type ('random_uniform','random_coast' or 'octahedral')
    logical :: network                                         !< Network-base convolution calculation (distance-based if false)
    logical :: forced_radii                                    !< Force specific support radii
    integer :: ncmp(0:nvmax)                                   !< Forced number of components
@@ -179,8 +182,10 @@ type nam_type
    real(kind_real) :: loc_wgt(nvmax,nvmax)                    !< Forced localization weights
    integer :: min_lev(0:nvmax)                                !< Minimum level
    integer :: max_lev(0:nvmax)                                !< Maximum level
+   character(len=2),dimension(0:nvmax) :: nicas_interp_type   !< NICAS C1B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based or 'si': smooth interpolation)
    logical :: pos_def_test                                    !< Positive-definiteness test
    logical :: write_nicas_grids                               !< Write NICAS grids
+   logical :: interp_test                                     !< Horizontal NICAS interpolation test
 
    ! dirac_param
    integer :: ndir                                            !< Number of Diracs
@@ -365,6 +370,7 @@ nam%nc4 = 1
 nam%dc = zero
 nam%nl0r = 0
 nam%irmax = 10000
+nam%samp_interp_type = 'c0'
 
 ! diag_param default
 nam%ne = 0
@@ -386,6 +392,8 @@ end do
 nam%vbal_pseudo_inv = .false.
 nam%vbal_pseudo_inv_mmax = 0
 nam%vbal_pseudo_inv_var_th = zero
+nam%vbal_id = .false.
+nam%vbal_id_coef = one
 nam%forced_var = .false.
 nam%stddev = zero
 nam%var_filter = .false.
@@ -415,8 +423,10 @@ nam%rv = -one
 nam%loc_wgt = -one
 nam%min_lev = 1
 nam%max_lev = nl0max
+nam%nicas_interp_type = 'c0'
 nam%pos_def_test = .false.
 nam%write_nicas_grids = .false.
+nam%interp_test = .false.
 
 ! dirac_param default
 nam%ndir = 0
@@ -697,6 +707,10 @@ if (conf%has('nc4')) call conf%get_or_die('nc4',nam%nc4)
 if (conf%has('dc')) call conf%get_or_die('dc',nam%dc)
 if (conf%has('nl0r')) call conf%get_or_die('nl0r',nam%nl0r)
 if (conf%has('irmax')) call conf%get_or_die('irmax',nam%irmax)
+if (conf%has('samp_interp_type')) then
+   call conf%get_or_die('samp_interp_type',str)
+   nam%samp_interp_type = str
+end if
 
 ! diag_param
 if (conf%has('ne')) call conf%get_or_die('ne',nam%ne)
@@ -736,6 +750,16 @@ end if
 if (conf%has('vbal_pseudo_inv')) call conf%get_or_die('vbal_pseudo_inv',nam%vbal_pseudo_inv)
 if (conf%has('vbal_pseudo_inv_mmax')) call conf%get_or_die('vbal_pseudo_inv_mmax',nam%vbal_pseudo_inv_mmax)
 if (conf%has('vbal_pseudo_inv_var_th')) call conf%get_or_die('vbal_pseudo_inv_var_th',nam%vbal_pseudo_inv_var_th)
+if (conf%has('vbal_id')) call conf%get_or_die('vbal_id',nam%vbal_id)
+if (conf%has('vbal_id_coef')) then
+   call conf%get_or_die('vbal_id_coef',real_array)
+   if (size(real_array)>nvbalmax) then
+      write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: vbal_id_coef size should be smaller than ',nvbalmax
+      call flush(output_unit)
+      call comm%abort(1)
+   end if
+   nam%vbal_id_coef(1:size(real_array)) = real_array
+end if
 if (conf%has('forced_var')) call conf%get_or_die('forced_var',nam%forced_var)
 if (conf%has('stddev')) then
    call conf%get_or_die('stddev',subconf)
@@ -896,8 +920,22 @@ if (conf%has('max_lev')) then
       if (subconf%has(nam%variables(iv))) call subconf%get_or_die(nam%variables(iv),nam%max_lev(iv))
    end do
 end if
+if (conf%has('nicas_interp_type')) then
+   call conf%get_or_die('nicas_interp_type',subconf)
+   if (subconf%has('common')) then
+      call subconf%get_or_die('common',str)
+      nam%nicas_interp_type(0) = str
+   end if
+   do iv=1,nam%nv
+      if (subconf%has(nam%variables(iv))) then
+        call subconf%get_or_die(nam%variables(iv),str)
+        nam%nicas_interp_type(iv) = str
+      end if
+   end do
+end if
 if (conf%has('pos_def_test')) call conf%get_or_die('pos_def_test',nam%pos_def_test)
 if (conf%has('write_nicas_grids')) call conf%get_or_die('write_nicas_grids',nam%write_nicas_grids)
+if (conf%has('interp_test')) call conf%get_or_die('interp_test',nam%interp_test)
 
 ! dirac_param
 if (conf%has('ndir')) call conf%get_or_die('ndir',nam%ndir)
@@ -1267,6 +1305,11 @@ if (nam%new_hdiag.or.nam%check_optimality) then
       if (nam%irmax<1) call mpl%abort ('${subr}$','irmax should be positive')
    end if
 end if
+select case (nam%samp_interp_type)
+case ('c0','c1','si')
+case default
+   call mpl%abort('${subr}$','wrong sampling interpolation type')
+end select
 
 ! Check diag_param
 if (nam%new_vbal) then
@@ -1343,6 +1386,13 @@ end if
 
 ! Check nicas_param
 if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
+   if ((nam%strategy=='common').or.(nam%strategy=='common_weighted')) then
+      ivmin = 0
+      ivmax = 0
+   else
+      ivmin = 1
+      ivmax = nam%nv
+   end if
    if (nam%check_randomization) then
       if (.not.nam%forced_radii) call mpl%abort('${subr}$','forced_radii required for check_randomization')
    end if
@@ -1363,13 +1413,6 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
          case default
            call mpl%abort('${subr}$','new_hdiag forbidden for forced_radii in this case')
          end select
-      end if
-      if ((nam%strategy=='common').or.(nam%strategy=='common_weighted')) then
-         ivmin = 0
-         ivmax = 0
-      else
-         ivmin = 1
-         ivmax = nam%nv
       end if
       do iv=ivmin,ivmax
          if (nam%ncmp(iv)<1) call mpl%abort('${subr}$','ncmp should be positive')
@@ -1412,9 +1455,18 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
    case default
       call mpl%abort('${subr}$','wrong nicas_draw_type')
    end select
+   do iv=ivmin,ivmax
+      select case (nam%nicas_interp_type(iv))
+      case ('c0','c1','si')
+      case default
+         call mpl%abort('${subr}$','wrong nicas_interp_type')
+      end select
+   end do
 end if
 if (nam%write_nicas_grids.and.(.not.(nam%new_nicas.or.nam%load_nicas_global))) &
  & call mpl%abort('${subr}$','new_nicas or load_nicas_global required for write_nicas_grids')
+if (nam%interp_test.and.(.not.(nam%new_nicas.or.nam%load_nicas_global))) &
+ & call mpl%abort('${subr}$','new_nicas or load_nicas_global required for interp_test')
 if (nam%load_nicas_local.and.nam%write_nicas_global) &
  & call mpl%abort('${subr}$','load_nicas_local and write_nicas_global are exclusive')
 if (nam%new_nicas) then
@@ -1599,6 +1651,7 @@ call mpl%write('nc4',nam%nc4)
 call mpl%write('dc',nam%dc*req)
 call mpl%write('nl0r',nam%nl0r)
 call mpl%write('irmax',nam%irmax)
+call mpl%write('samp_interp_type',nam%samp_interp_type)
 
 ! diag_param
 write(mpl%info,'(a7,a)') '','Diagnostics parameters'
@@ -1616,6 +1669,8 @@ call mpl%write('vbal_diag_reg',nam%nv*(nam%nv-1)/2,nam%vbal_diag_reg(1:nam%nv*(n
 call mpl%write('vbal_pseudo_inv',nam%vbal_pseudo_inv)
 call mpl%write('vbal_pseudo_inv_mmax',nam%vbal_pseudo_inv_mmax)
 call mpl%write('vbal_pseudo_inv_var_th',nam%vbal_pseudo_inv_var_th)
+call mpl%write('vbal_id',nam%vbal_id)
+call mpl%write('vbal_id_coef',nam%nv*(nam%nv-1)/2,nam%vbal_id_coef(1:nam%nv*(nam%nv-1)/2))
 call mpl%write('forced_var',nam%forced_var)
 profiles(1:nam%nl0*nam%nv) = reshape(nam%stddev(1:nam%nl0,1:nam%nv),(/nam%nl0*nam%nv/))
 call mpl%write('stddev',nam%nl0*nam%nv,profiles(1:nam%nl0*nam%nv))
@@ -1654,8 +1709,10 @@ loc_wgt(1:nam%nv**2) = reshape(nam%loc_wgt(1:nam%nv,1:nam%nv),(/nam%nv**2/))
 call mpl%write('loc_wgt',nam%nv**2,loc_wgt(1:nam%nv**2))
 call mpl%write('min_lev',nam%nv+1,nam%min_lev(0:nam%nv))
 call mpl%write('max_lev',nam%nv+1,nam%max_lev(0:nam%nv))
+call mpl%write('nicas_interp_type',nam%nv+1,nam%nicas_interp_type)
 call mpl%write('pos_def_test',nam%pos_def_test)
 call mpl%write('write_nicas_grids',nam%write_nicas_grids)
+call mpl%write('interp_test',nam%interp_test)
 
 ! dirac_param
 write(mpl%info,'(a7,a)') '','Dirac parameters'

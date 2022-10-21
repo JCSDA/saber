@@ -28,6 +28,7 @@ bump:
   new_vbal: true
   check_adjoints: true
   check_dirac: true
+  check_vbal: true
   nc1: 500
   nc2: 250
   vbal_block: [true]

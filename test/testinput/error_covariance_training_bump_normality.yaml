@@ -23,8 +23,8 @@ bump:
   datadir: testdata
   prefix: error_covariance_training_bump_normality/_MPI_-_OMP_
   testing: true
-  check_normalization: true
+  new_normality: true
   ne: 25
-  gen_kurt_th: 10.0
+  gen_kurt_th: 4.0
 test:
   reference filename: testref/error_covariance_training_bump_normality.ref

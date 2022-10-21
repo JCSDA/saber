@@ -1,8 +1,8 @@
 Input Dirac increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F10
-- size: 800
+- name: L40x21
+- size: 840
 Partitioner:
 - type: equal_regions
 Function space:
@@ -11,58 +11,58 @@ Function space:
 Vertical levels: 
 - number: 2
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 67%
+Mask size: 64%
 Fields:
-  var1: 0.0000000000000000e+00
-  var2: 0.0000000000000000e+00
+  var3: 0.0000000000000000e+00
+  var4: 0.0000000000000000e+00
        Compute independent levels:  1[2] 
-          Level   1:    764360948
-          Level   2:    764360948
-          Model grid size:              800
-          Subset Sc0 size:              800
-          Number of duplicated points (halo):         0 (  0.00%)
+          Level   1:  -1378492017
+          Level   2:  -1378492017
+          Model grid size:              840
+          Subset Sc0 size:              762
+          Number of duplicated points (halo):        78 (  9.29%)
           Min. / max. longitudes: -171.0 /   180.0
-          Min. / max. latitudes:   -83.3 /    83.3
-          Domain area (% of Earth area): 0.675E+02%
-             Level   1 ~>  67.5%
-             Level   2 ~>  67.5%
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.657E+02%
+             Level   1 ~>  65.7%
+             Level   2 ~>  65.7%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
           nc1 =      500
           nc2 =      250
           Compute independent levels:  1[2] 
-Norm of input parameter StdDev: 4.6602010765864584e+01
+Norm of input parameter StdDev: 4.5511757064025346e+01
        Compute independent levels:  1[2] 
-          Level   1:    764360948
-          Level   2:    764360948
-          Model grid size:              800
-          Subset Sc0 size:              800
-          Number of duplicated points (halo):         0 (  0.00%)
+          Level   1:  -1378492017
+          Level   2:  -1378492017
+          Model grid size:              840
+          Subset Sc0 size:              762
+          Number of duplicated points (halo):        78 (  9.29%)
           Min. / max. longitudes: -171.0 /   180.0
-          Min. / max. latitudes:   -83.3 /    83.3
-          Domain area (% of Earth area): 0.675E+02%
-             Level   1 ~>  67.5%
-             Level   2 ~>  67.5%
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.657E+02%
+             Level   1 ~>  65.7%
+             Level   2 ~>  65.7%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
        Compute independent levels:  1[2] 
-          Level   1:    764360948
-          Level   2:    764360948
-          Model grid size:              800
-          Subset Sc0 size:              800
-          Number of duplicated points (halo):         0 (  0.00%)
+          Level   1:  -1378492017
+          Level   2:  -1378492017
+          Model grid size:              840
+          Subset Sc0 size:              762
+          Number of duplicated points (halo):        78 (  9.29%)
           Min. / max. longitudes: -171.0 /   180.0
-          Min. / max. latitudes:   -83.3 /    83.3
-          Domain area (% of Earth area): 0.675E+02%
-             Level   1 ~>  67.5%
-             Level   2 ~>  67.5%
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.657E+02%
+             Level   1 ~>  65.7%
+             Level   2 ~>  65.7%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
 Covariance(SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: F10
-- size: 800
+- name: L40x21
+- size: 840
 Partitioner:
 - type: equal_regions
 Function space:
@@ -71,7 +71,7 @@ Function space:
 Vertical levels: 
 - number: 2
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 67%
+Mask size: 64%
 Fields:
-  var1: 0.0000000000000000e+00
-  var2: 0.0000000000000000e+00
+  var3: 1.8630175376039968e+28
+  var4: 4.0282370409186886e+28

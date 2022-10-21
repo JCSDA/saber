@@ -45,11 +45,12 @@ bump:
   - 1
   ivdir:
   - 1
-  ensemble pert:
+  ensemble:
     members from template:
       template:
         date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L10L2/member_pert_%mem%
+        filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
+        state variables: *id001
       pattern: '%mem%'
       nmembers: 25
       zero padding: 6

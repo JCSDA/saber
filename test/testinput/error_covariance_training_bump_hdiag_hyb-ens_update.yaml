@@ -2,7 +2,7 @@ geometry:
   function space: StructuredColumns
   grid:
     type: regular_lonlat
-    N: 20
+    N: 12
   levels: 10
   mask type: sea
   halo: 1
@@ -27,17 +27,19 @@ bump:
   update_mom: true
   new_hdiag: true
   write_hdiag: true
+  check_adjoints: true
+  check_normalization: 10
   nc1: 500
   nc3: 15
   dc: 500.0e3
-  nl0r: 10
+  nl0r: 5
   ne: 10
-  ne_lr: 50
+  ne_lr: 25
   ensemble:
     members from template:
       template:
         date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L20L10/member_%mem%
+        filepath: testdata/randomization_bump_nicas_L12L10/member_%mem%
         state variables: *id001
       pattern: '%mem%'
       nmembers: 10
@@ -49,7 +51,7 @@ bump:
         filepath: testdata/randomization_bump_nicas_L10L10/member_%mem%
         state variables: *id001
       pattern: '%mem%'
-      nmembers: 50
+      nmembers: 25
       zero padding: 6
 output:
 - parameter: loc_rh
