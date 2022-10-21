@@ -1400,9 +1400,9 @@ end do
 if (ifmt>0) call mpl%prog_final
 
 ! Gather data from threads
+call linop%gather(mpl,c_n_s,c)
 linop%n_src = n_src
 linop%n_dst = n_dst
-call linop%gather(mpl,c_n_s,c)
 
 ! Check interpolation
 missing = .false.
