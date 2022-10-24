@@ -7,9 +7,9 @@ bump:
   method: cor
   new_nicas: true
   prefix: quench_error_covariance_training_bump_nicas/test
-  resol: 5.0
+  resol: 8.0
   rh:
-    var: [4.0e6]
+    var: [10.0e6]
   rv:
     var: [10]
   strategy: specific_univariate
