@@ -1,0 +1,74 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 10
+  levels: 2
+  halo: 1
+input variables: &id001
+- var1
+- var_2d
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables: *id001
+bump:
+  datadir: testdata
+  prefix: error_covariance_training_bump_nicas_6/_MPI_-_OMP_
+  testing: true
+  universe_rad: 10000.0e3
+  method: cor
+  strategy: specific_multivariate
+  new_nicas: true
+  check_dirac: true
+  resol: 4.0
+  ndir: 1
+  londir: [0.0]
+  latdir: [0.0]
+  levdir: [1]
+  ivdir: [1]
+  grids:
+  - variables: [var1]
+  - variables: [var_2d]
+input fields:
+- parameter: a
+  component: 1
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_a_1
+- parameter: a
+  component: 2
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_a_2
+- parameter: rh1
+  component: 1
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh1_1
+- parameter: rh1
+  component: 2
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh1_2
+- parameter: rh2
+  component: 1
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh2_1
+- parameter: rh2
+  component: 2
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh2_2
+- parameter: rhc
+  component: 1
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rhc_1
+- parameter: rhc
+  component: 2
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rhc_2
+- parameter: rv
+  component: 1
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rv_1
+- parameter: rv
+  component: 2
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rv_2
+test:
+  reference filename: testref/error_covariance_training_bump_nicas_6.ref

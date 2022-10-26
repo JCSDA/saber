@@ -11,3 +11,7 @@
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
+Norm of BUMP output parameter lon - 1: 4.1595192029848831e+03
+Norm of BUMP output parameter lat - 1: 2.0235095930003772e+03
+Norm of BUMP output parameter area - 1: 2.5505057010389211e+13
+Norm of BUMP output parameter vunit - 1: 6.3245553203367585e+01

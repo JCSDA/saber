@@ -23,15 +23,18 @@ namespace saber {
 namespace gsi {
 
 // -----------------------------------------------------------------------------
-UnstructuredInterpolation::UnstructuredInterpolation(const eckit::Configuration & config,
-                                                     const atlas::FunctionSpace & fspace1,
-                                                     const atlas::FunctionSpace & fspace2,
-                                                     const std::vector<std::string> & activeVars,
-                                                     const eckit::mpi::Comm & comm)
-  : in_fspace_(&fspace1), out_fspace_(&fspace2), activeVars_(activeVars)
+UnstructuredInterpolation::UnstructuredInterpolation(
+  const eckit::mpi::Comm & comm,
+  const eckit::Configuration & config,
+  const atlas::FunctionSpace & innerFuncSpace,
+  const atlas::FunctionSpace & outerFuncSpace,
+  const std::vector<size_t> & activeVariableSizes,
+  const std::vector<std::string> & activeVars)
+  : innerFuncSpace_(innerFuncSpace), outerFuncSpace_(outerFuncSpace),
+    activeVariableSizes_(activeVariableSizes), activeVars_(activeVars)
 {
   saber_unstrc_create_f90(keyUnstructuredInterpolator_, &comm,
-                          fspace1.lonlat().get(), fspace2.lonlat().get(), config);
+                          innerFuncSpace_.lonlat().get(), outerFuncSpace_.lonlat().get(), config);
 }
 
 // -----------------------------------------------------------------------------
@@ -45,33 +48,34 @@ UnstructuredInterpolation::~UnstructuredInterpolation() {
   saber_unstrc_delete_f90(keyUnstructuredInterpolator_);
 }
 // -----------------------------------------------------------------------------
-void UnstructuredInterpolation::apply(const atlas::Field & infield, atlas::Field & outfield) {
-  saber_unstrc_apply_f90(keyUnstructuredInterpolator_, infield.get(), outfield.get());
+void UnstructuredInterpolation::apply(const atlas::Field & innerField,
+                                      atlas::Field & outerField) {
+  saber_unstrc_apply_f90(keyUnstructuredInterpolator_, innerField.get(), outerField.get());
 }
 
 // -----------------------------------------------------------------------------
-void UnstructuredInterpolation::apply_ad(const atlas::Field & field_grid2,
-                                         atlas::Field & field_grid1) {
-  saber_unstrc_apply_ad_f90(keyUnstructuredInterpolator_, field_grid2.get(), field_grid1.get());
+void UnstructuredInterpolation::applyAD(const atlas::Field & outerField,
+                                        atlas::Field & innerField) {
+  saber_unstrc_apply_ad_f90(keyUnstructuredInterpolator_, outerField.get(), innerField.get());
 }
 
 // -----------------------------------------------------------------------------
-void UnstructuredInterpolation::apply(const atlas::FieldSet & innerFields,
-                                      atlas::FieldSet & outerFields) {
-  for (const auto & var : activeVars_) {
-    ASSERT(innerFields.has(var));
-    ASSERT(outerFields.has(var));
-    this->apply(innerFields[var], outerFields[var]);
+void UnstructuredInterpolation::apply(atlas::FieldSet & fset) {
+  for (size_t i = 0; i < activeVars_.size(); ++i) {
+    atlas::Field outerField = outerFuncSpace_.createField<double>(
+      atlas::option::name(activeVars_[i]) | atlas::option::levels(activeVariableSizes_[i]));
+    this->apply(fset[activeVars_[i]], outerField);
+    fset.add(outerField);
   }
 }
 
 // -----------------------------------------------------------------------------
-void UnstructuredInterpolation::apply_ad(const atlas::FieldSet & outerFields,
-                                         atlas::FieldSet & innerFields) {
-  for (const auto & var : activeVars_) {
-    ASSERT(outerFields.has(var));
-    ASSERT(innerFields.has(var));
-    this->apply_ad(outerFields[var], innerFields[var]);
+void UnstructuredInterpolation::applyAD(atlas::FieldSet & fset) {
+  for (size_t i = 0; i < activeVars_.size(); ++i) {
+    atlas::Field innerField = innerFuncSpace_.createField<double>(
+      atlas::option::name(activeVars_[i]) | atlas::option::levels(activeVariableSizes_[i]));
+    this->applyAD(fset[activeVars_[i]], innerField);
+    fset.add(innerField);
   }
 }
 

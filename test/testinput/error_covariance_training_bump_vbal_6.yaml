@@ -4,7 +4,6 @@ geometry:
     type: regular_lonlat
     N: 10
   levels: 2
-  mask type: sea
   halo: 1
 input variables: &id001
 - var1
@@ -28,11 +27,11 @@ bump:
   write_vbal: true
   fname_samp: error_covariance_training_bump_vbal_3/_MPI_-_OMP__sampling
   fname_vbal: error_covariance_training_bump_vbal_3/_MPI_-_OMP__vbal
-  ndir: 14
-  londir: [-120.0,-60.0,0.0,60.0,120.0,-150.0,-90.0,-30.0,30.0,90.0,150.0,-120.0,0.0,120.0]
-  latdir: [15.0,15.0,15.0,15.0,15.0,45.0,45.0,45.0,45.0,45.0,45.0,75.0,75.0,75.0]
-  levdir: [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-  ivdir: [1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+  ndir: 1
+  londir: [0.0]
+  latdir: [0.0]
+  levdir: [1]
+  ivdir: [1]
   ensemble:
     members from template:
       template:

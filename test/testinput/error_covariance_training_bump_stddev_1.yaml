@@ -4,7 +4,6 @@ geometry:
     type: regular_lonlat
     N: 10
   levels: 2
-  mask type: sea
   halo: 1
 input variables: &id001
 - var1
@@ -18,8 +17,10 @@ ensemble:
       filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
       state variables: *id001
     pattern: '%mem%'
-    nmembers: 25
+    nmembers: 20
     zero padding: 6
+    start: 3
+    except: [5,12,18]
 bump:
   datadir: testdata
   prefix: error_covariance_training_bump_stddev_1/_MPI_-_OMP_
@@ -29,10 +30,16 @@ bump:
   var_niter: 4
   var_rhflt:
     var1: [5000.0e3]
-  ne: 25
+  ne: 20
 output:
 - parameter: stddev
   file:
-    filepath: testdata/error_covariance_training_bump_stddev_1/stddev
+    filepath: testdata/error_covariance_training_bump_stddev_1/_MPI_-_OMP__stddev
+- parameter: var
+  file:
+    filepath: testdata/error_covariance_training_bump_stddev_1/_MPI_-_OMP__var
+- parameter: m4
+  file:
+    filepath: testdata/error_covariance_training_bump_stddev_1/_MPI_-_OMP__m4
 test:
   reference filename: testref/error_covariance_training_bump_stddev_1.ref

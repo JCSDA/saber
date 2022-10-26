@@ -1,30 +1,50 @@
-       Compute independent levels:  1[2] 
-          Level   1:  -1378492017
-          Level   2:  -1378492017
+       Independent levels:  1[2] 
+          Level   1:   1550418632
+          Level   2:   1550418632
           Model grid size:              840
           Subset Sc0 size:              762
           Number of duplicated points (halo):        78 (  9.29%)
           Min. / max. longitudes: -171.0 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
-          Domain area (% of Earth area): 0.657E+02%
-             Level   1 ~>  65.7%
-             Level   2 ~>  65.7%
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
+   Norm of var1:  0.33550421E+04
+   Norm of var2:  0.33697492E+04
+   Norm of var1:  0.33008179E+04
+   Norm of var2:  0.34355507E+04
+   Norm of var1:  0.30319650E+04
+   Norm of var2:  0.35314995E+04
+   Norm of var1:  0.33859567E+04
+   Norm of var2:  0.33685526E+04
+   Norm of var1:  0.33620820E+04
+   Norm of var2:  0.33658245E+04
+   Norm of var1:  0.28441640E+04
+   Norm of var2:  0.33607334E+04
+   Norm of var1:  0.30347486E+04
+   Norm of var2:  0.34960334E+04
+   Norm of var1:  0.30059285E+04
+   Norm of var2:  0.34213454E+04
+   Norm of var1:  0.28829485E+04
+   Norm of var2:  0.31832034E+04
+   Norm of var1:  0.13849229E+02
+   Norm of var2:  0.16849553E+02
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
           Decimate full grid, at least      500 points required
-               501 valid points found
-          nc1 =      500
+               762 valid points found
           Decimate full grid, at least      250 points required
-               500 valid points found
+               762 valid points found
+          nc1 =      500
           nc2 =      250
-          Compute independent levels:  1[2] 
-       Vertical balance direct/inverse test:   0.52478843E-33
-       Vertical balance inverse/direct test:   0.28708152E-33
-       Vertical balance direct/inverse (adjoint) test:   0.67008932E-33
-       Vertical balance inverse/direct (adjoint) test:   0.39275118E-33
+          Independent levels:  1[2] 
+       Vertical balance direct/inverse test result:  T
+       Vertical balance inverse/direct test result:  T
+       Vertical balance direct/inverse (adjoint) test result:  T
+       Vertical balance inverse/direct (adjoint) test result:  T
        Vertical balance block var1-var2 adjoint test result:  T
        Vertical balance direct adjoint test results:  T
        Vertical balance inverse adjoint test results: T
-Norm of BUMP output parameter dirac_vbal - 1: 3.2237504082598210e+00
+Norm of BUMP output parameter dirac_vbal - 1: 1.0000000000000000e+00

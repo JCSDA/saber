@@ -89,7 +89,7 @@ void VerticalBalance::multiplyAD(atlas::FieldSet & fset) const {
 
 void VerticalBalance::calibrationInverseMultiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::calibrationInverseMultiply starting" << std::endl;
-  bump_->inverseMultiplyVbalAd(fset);
+  bump_->inverseMultiplyVbal(fset);
   oops::Log::trace() << classname() << "::calibrationInverseMultiply done" << std::endl;
 }
 

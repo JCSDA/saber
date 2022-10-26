@@ -22,8 +22,6 @@ use type_probe, only: iinst,cinst,probe
 
 implicit none
 
-integer,parameter :: lunit_min = 10       !< Minimum unit number
-integer,parameter :: lunit_max = 1000     !< Maximum unit number
 integer,parameter :: ddis = 5             !< Progression display step
 real(kind_real) :: min_total_timing = one !< Minimum total timing to print
 integer :: max_calls = 10                 !< Number of timing to print with maximum calls
@@ -51,13 +49,9 @@ type mpl_type
    type(msv_type) :: msv             !< Missing values
 
    ! Display parameters
-   character(len=1024) :: verbosity  !< Verbosity level
-   character(len=1024) :: debug      !< Debug buffer
    character(len=1024) :: info       !< Info buffer
    character(len=1024) :: test       !< Test buffer
    character(len=1024) :: wng        !< Warning buffer
-   character(len=1024) :: err        !< Error buffer
-   integer :: lunit                  !< Listing unit
    logical :: previous_advance_flag  !< Previous advance flag
    logical :: testing                !< Stream test messages into a dedicated channel
 
@@ -67,7 +61,6 @@ type mpl_type
    character(len=1024) :: peach      !< Peach color code
    character(len=1024) :: aqua       !< Aqua color code
    character(len=1024) :: purple     !< Purple color code
-   character(len=1024) :: err_color  !< Error color code
    character(len=1024) :: wng_color  !< Warning color code
 
    ! Progression print
@@ -75,14 +68,11 @@ type mpl_type
    integer :: progint                !< Progression integer
    logical,allocatable :: done(:)    !< Progression array
 contains
-   procedure :: newunit => mpl_newunit
    procedure :: init => mpl_init
    procedure :: final => mpl_final
    procedure :: flush => mpl_flush
    procedure :: abort => mpl_abort
    procedure :: warning => mpl_warning
-   procedure :: print_instance => mpl_print_instance
-   procedure :: timings => mpl_timings
    procedure :: update_tag => mpl_update_tag
    #:for dtype in dtypes_irl
       procedure :: mpl_allgather_${dtype}$_r1
@@ -92,7 +82,6 @@ contains
    #:for dtype in dtypes_irl
 @:add_procedure(mpl_allgather_${dtype}$_r1)
    #:endfor
-   procedure :: broadcast => mpl_broadcast_string_r1
    #:for rank in ranks_1234
       procedure :: mpl_dot_prod_r${rank}$
    #:endfor
@@ -135,51 +124,16 @@ contains
 @:add_procedure(mpl_write_${dtype}$_r0)
 @:add_procedure(mpl_write_${dtype}$_r1)
    #:endfor
+   #:if getvar('ENABLE_SABER_INSTRUMENTATION', 0)
+     procedure :: print_instance => mpl_print_instance
+     procedure :: timings => mpl_timings
+   #:endif
 end type mpl_type
 
 private
 public :: mpl_type
 
 contains
-
-!----------------------------------------------------------------------
-! Subroutine: mpl_newunit
-!> Find a free unit
-!----------------------------------------------------------------------
-subroutine mpl_newunit(mpl,lunit)
-
-implicit none
-
-! Passed variables
-class(mpl_type),intent(inout) :: mpl !< MPI data
-integer,intent(out) :: lunit         !< New unit
-
-! Local variables
-integer :: lun
-logical :: lopened
-
-! Set name
-@:set_name(mpl_newunit)
-
-! Probe in
-@:probe_in()
-
-! Loop over possible units
-do lun=lunit_min,lunit_max
-   inquire(unit=lun,opened=lopened)
-   if (.not.lopened) then
-      lunit=lun
-      exit
-   end if
-end do
-
-! Check
-if (lopened) call mpl%abort('${subr}$','cannot find a free unit')
-
-! Probe out
-@:probe_out()
-
-end subroutine mpl_newunit
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_init
@@ -225,11 +179,9 @@ mpl%nthread = 1
 !$ call omp_set_num_threads(mpl%nthread)
 
 ! Set log at 'no message'
-mpl%debug = 'no_message'
 mpl%info = 'no_message'
 mpl%test = 'no_message'
 mpl%wng = 'no_message'
-mpl%err = 'no_message'
 mpl%previous_advance_flag = .true.
 
 ! Set default listing
@@ -238,9 +190,7 @@ mpl%green = ' '
 mpl%peach = ' '
 mpl%aqua = ' '
 mpl%purple = ' '
-mpl%err_color = ' '
 mpl%wng_color = ' '
-mpl%verbosity = 'all'
 
 ! Probe out
 @:probe_out()
@@ -295,146 +245,64 @@ logical :: ladvance_flag
 ! Probe in
 @:probe_in()
 
-if ((trim(mpl%verbosity)=='all').or.((trim(mpl%verbosity)=='main').and.mpl%main)) then
-   ! Set advance flag
-   ladvance_flag = .true.
-   if (present(advance_flag)) ladvance_flag = advance_flag
+! Set advance flag
+ladvance_flag = .true.
+if (present(advance_flag)) ladvance_flag = advance_flag
 
-   ! Check debug message
-   if (trim(mpl%debug)/='no_message') then
-      ! Write message
-      if (ladvance_flag) then
-         if (mpl%msv%is(mpl%lunit)) then
-            call oops_log%debug(mpl%debug,flush=.true.)
-         else
-            write(mpl%lunit,'(a)') trim(mpl%debug)
-            call flush(mpl%lunit)
-         end if
-      else
-         if (mpl%msv%is(mpl%lunit)) then
-            call oops_log%debug(mpl%debug,newl=.false.,flush=.true.)
-         else
-            write(mpl%lunit,'(a)',advance='no') trim(mpl%debug)
-            call flush(mpl%lunit)
-         end if
-      end if
+! Check info message
+if (trim(mpl%info)/='no_message') then
+   ! Add prefix
+   if (mpl%previous_advance_flag) mpl%info = 'Info     : '//trim(mpl%info)
 
-      ! Set at 'no message'
-      mpl%debug = 'no_message'
+   ! Write message
+   if (ladvance_flag) then
+      call oops_log%info(mpl%info,flush=.true.)
+   else
+      call oops_log%info(mpl%info,newl=.false.,flush=.true.)
    end if
 
-   ! Check info message
-   if (trim(mpl%info)/='no_message') then
-      ! Add prefix
-      if (mpl%previous_advance_flag) mpl%info = 'Info     : '//trim(mpl%info)
-
-      ! Write message
-      if (ladvance_flag) then
-         if (mpl%msv%is(mpl%lunit)) then
-            call oops_log%info(mpl%info,flush=.true.)
-         else
-            write(mpl%lunit,'(a)') trim(mpl%info)
-            call flush(mpl%lunit)
-         end if
-      else
-         if (mpl%msv%is(mpl%lunit)) then
-            call oops_log%info(mpl%info,newl=.false.,flush=.true.)
-         else
-            write(mpl%lunit,'(a)',advance='no') trim(mpl%info)
-            call flush(mpl%lunit)
-         end if
-      end if
-
-      ! Set at 'no message'
-      mpl%info = 'no_message'
-   end if
-
-   ! Check test message
-   if (trim(mpl%test)/='no_message') then
-      ! Add prefix
-      if ((.not.mpl%testing).and.mpl%previous_advance_flag) mpl%test = 'Info     : '//trim(mpl%test)
-
-      ! Write message
-      if (ladvance_flag) then
-         if (mpl%msv%is(mpl%lunit)) then
-            if (mpl%testing) then
-               call oops_log%test(mpl%test,flush=.true.)
-            else
-               call oops_log%info(mpl%test,flush=.true.)
-            end if
-         else
-            write(mpl%lunit,'(a)') trim(mpl%test)
-            call flush(mpl%lunit)
-         end if
-      else
-         if (mpl%msv%is(mpl%lunit)) then
-            if (mpl%testing) then
-               call oops_log%test(mpl%test,newl=.false.,flush=.true.)
-            else
-               call oops_log%info(mpl%test,newl=.false.,flush=.true.)
-            end if
-         else
-            write(mpl%lunit,'(a)',advance='no') trim(mpl%test)
-            call flush(mpl%lunit)
-         end if
-      end if
-
-      ! Set at 'no message'
-      mpl%test = 'no_message'
-   end if
-
-   ! Check warning message
-   if (trim(mpl%wng)/='no_message') then
-      ! Add prefix
-      if (mpl%previous_advance_flag) mpl%wng = 'Warning  : '//trim(mpl%wng)
-
-      ! Write message
-      if (ladvance_flag) then
-         if (mpl%msv%is(mpl%lunit)) then
-            call oops_log%warning(mpl%wng,flush=.true.)
-         else
-            write(mpl%lunit,'(a)') trim(mpl%wng_color)//trim(mpl%wng)//trim(mpl%black)
-            call flush(mpl%lunit)
-         end if
-      else
-         if (mpl%msv%is(mpl%lunit)) then
-            call oops_log%warning(mpl%wng,newl=.false.,flush=.true.)
-         else
-            write(mpl%lunit,'(a)',advance='no') trim(mpl%wng_color)//trim(mpl%wng)//trim(mpl%black)
-            call flush(mpl%lunit)
-         end if
-      end if
-
-      ! Set at 'no message'
-      mpl%wng = 'no_message'
-   end if
-
-   ! Check error message
-   if (trim(mpl%err)/='no_message') then
-      ! Write message
-      if (ladvance_flag) then
-         if (mpl%msv%is(mpl%lunit)) then
-            call oops_log%error(mpl%err,flush=.true.)
-         else
-            write(mpl%lunit,'(a)') trim(mpl%err_color)//trim(mpl%err)//trim(mpl%black)
-            call flush(mpl%lunit)
-         end if
-      else
-         if (mpl%msv%is(mpl%lunit)) then
-            call oops_log%error(mpl%err,newl=.false.,flush=.true.)
-         else
-            write(mpl%lunit,'(a)',advance='no') trim(mpl%err_color)//trim(mpl%err)//trim(mpl%black)
-            call flush(mpl%lunit)
-         end if
-      end if
-
-      ! Set at 'no message'
-      mpl%err = 'no_message'
-   end if
-
-   ! Set previous advance flag
-   mpl%previous_advance_flag = ladvance_flag
+   ! Set at 'no message'
+   mpl%info = 'no_message'
 end if
+
+! Check test message
+if (trim(mpl%test)/='no_message') then
+   ! Add prefix
+   if ((.not.mpl%testing).and.mpl%previous_advance_flag) mpl%test = 'Info     : '//trim(mpl%test)
+
+   ! Write message
+   if (ladvance_flag) then
+      if (mpl%testing) then
+         call oops_log%test(mpl%test,flush=.true.)
+      else
+         call oops_log%info(mpl%test,flush=.true.)
+      end if
+   else
+      if (mpl%testing) then
+         call oops_log%test(mpl%test,newl=.false.,flush=.true.)
+      else
+         call oops_log%info(mpl%test,newl=.false.,flush=.true.)
+      end if
+   end if
+
+   ! Set at 'no message'
+   mpl%test = 'no_message'
+end if
+
+! Check warning message
+if (trim(mpl%wng)/='no_message') then
+   ! Add prefix
+   if (mpl%previous_advance_flag) mpl%wng = 'Warning  : '//trim(mpl%wng)
+
+   ! Write message
+   call oops_log%warning(mpl%wng,flush=.true.)
+
+   ! Set at 'no message'
+   mpl%wng = 'no_message'
+end if
+
+! Set previous advance flag
+mpl%previous_advance_flag = ladvance_flag
 
 ! Probe out
 @:probe_out()
@@ -484,134 +352,6 @@ write(mpl%wng,'(a)') 'in '//trim(subr)//': '//trim(message)//trim(mpl%black)
 call mpl%flush
 
 end subroutine mpl_warning
-
-!----------------------------------------------------------------------
-! Subroutine: mpl_print_instance
-!> Print instance
-!----------------------------------------------------------------------
-subroutine mpl_print_instance(mpl)
-
-implicit none
-
-! Passed variable
-class(mpl_type),intent(inout) :: mpl !< MPI data
-
-! Set name
-@:set_name(mpl_print_instance)
-
-! Probe in
-@:probe_in()
-
-write(mpl%info,'(a,i6,a,a,a)') '--- This is instance #',iinst,' (',trim(cinst),')'
-call mpl%flush
-
-! Probe out
-@:probe_out()
-
-end subroutine mpl_print_instance
-
-!----------------------------------------------------------------------
-! Subroutine: mpl_timings
-!> Print execution timings
-!----------------------------------------------------------------------
-subroutine mpl_timings(mpl)
-
-implicit none
-
-! Passed variables
-class(mpl_type),intent(inout) :: mpl !< MPI data
-
-! Local variable
-integer :: probe_size,i,i_eff
-integer,allocatable :: n(:),order(:)
-real(kind_real) :: elapsed_total
-real(kind_real),allocatable :: stats(:,:)
-character(len=1024),allocatable :: subfunc(:)
-
-! Number of instrumented functions/subroutines called
-probe_size = count(probe%instance(iinst)%timing_associated)
-
-! Print number of instrumented functions/subroutines called
-write(mpl%info,'(a7,a,i3,a,i3)') '','Instrumented function/subroutines called: ',probe_size,'/',${subr_list_size}$
-call mpl%flush
-
-if (probe_size>0) then
-   ! Allocation
-   allocate(n(probe_size))
-   allocate(stats(probe_size,3))
-   allocate(subfunc(probe_size))
-   allocate(order(probe_size))
-
-   ! Get timings
-   i_eff = 0
-   do i=0,${subr_list_size}$-1
-      if (probe%instance(iinst)%timing_associated(i)) then
-         ! Update effective index
-         i_eff = i_eff+1
-
-         ! Save number of calls
-         n(i_eff) = probe%instance(iinst)%timing(i)%n
-
-         ! Compute stats
-         stats(i_eff,1) = probe%instance(iinst)%timing(i)%total_own
-         stats(i_eff,2) = probe%instance(iinst)%timing(i)%min_own
-         stats(i_eff,3) = probe%instance(iinst)%timing(i)%max_own
-
-         ! Save subroutine/function name
-         subfunc(i_eff) = trim(probe%instance(iinst)%timing(i)%subr)
-      end if
-   end do
-
-   ! Get total timing
-   elapsed_total = sum(stats(:,1))
-
-   ! Print elapsed time
-   write(mpl%info,'(a7,a,e10.3,a)') '','Elapsed time: ',elapsed_total,' s'
-   call mpl%flush
-
-   if (elapsed_total>zero) then
-      ! Order timings with total time
-      call qsort(probe_size,stats(:,1),order)
-      n = n(order)
-      stats(:,2:3) = stats(order,2:3)
-      subfunc = subfunc(order)
-
-      ! Print timing in decreasing total time
-      write(mpl%info,'(a7,a,f6.2,a)') '','Decreasing total time:'
-      call mpl%flush
-      do i=probe_size,1,-1
-         if (stats(i,1)/elapsed_total*hundred>min_total_timing) then
-            write(mpl%info,'(a10,a30,a,e10.3,a,e10.3,a,f6.2,a,e10.3,a,e10.3,a,e10.3)') '',subfunc(i),': ',stats(i,1),' s in ', &
- & real(n(i),kind_real),' call(s)  - ',stats(i,1)/elapsed_total*hundred,'% - min/mean/max: ',stats(i,2),' /', &
- & stats(i,1)/real(n(i),kind_real),' /',stats(i,3)
-            call mpl%flush
-         end if
-      end do
-
-      ! Order timings with number of calls
-      call qsort(probe_size,n,order)
-      stats(:,:) = stats(order,:)
-      subfunc = subfunc(order)
-
-      ! Print timing in decreasing number of calls
-      write(mpl%info,'(a7,a,f6.2,a)') '','Decreasing number of calls:'
-      call mpl%flush
-      do i=probe_size,max(probe_size-max_calls+1,1),-1
-         write(mpl%info,'(a10,a30,a,e10.3,a,e10.3,a,f6.2,a,e10.3,a,e10.3,a,e10.3)') '',subfunc(i),': ',stats(i,1),' s in ', &
- & real(n(i),kind_real),' call(s)  - ',stats(i,1)/elapsed_total*hundred,'% - min/mean/max: ',stats(i,2),' /', &
- & stats(i,1)/real(n(i),kind_real),' /',stats(i,3)
-         call mpl%flush
-      end do
-   end if
-
-   ! Release memory
-   deallocate(n)
-   deallocate(stats)
-   deallocate(subfunc)
-   deallocate(order)
-end if
-
-end subroutine mpl_timings
 
 !----------------------------------------------------------------------
 ! Subroutine: mpl_update_tag
@@ -692,60 +432,6 @@ proc_to_var = reshape(rbuf,(/n,mpl%nproc/))
 
 end subroutine mpl_allgather_${dtype}$_r1
 #:endfor
-
-!----------------------------------------------------------------------
-! Subroutine: mpl_broadcast_string_r1
-!> Broadcast string array, 1d
-!----------------------------------------------------------------------
-subroutine mpl_broadcast_string_r1(mpl,var,root)
-
-implicit none
-
-! Passed variables
-class(mpl_type),intent(inout) :: mpl               !< MPI data
-character(len=*),dimension(:),intent(inout) :: var !< Logical array, 1d
-integer,intent(in) :: root                         !< Root task
-
-! Local variable
-integer :: n,i
-character(len=:),allocatable :: buffer
-
-! Set name
-@:set_name(mpl_broadcast_string_r1)
-
-! Probe in
-@:probe_in()
-
-! Get string size
-if (mpl%myproc==root+1) n = len(var(1))
-
-! Broadcast string size
-call mpl%f_comm%broadcast(n,root)
-
-! Allocation
-allocate(character(len=n*size(var)) :: buffer)
-
-! Fill buffer
-if (mpl%myproc==root+1) then
-   do i=1,size(var)
-      buffer((i-1)*n+1:i*n) = var(i)
-   end do
-end if
-
-! Broadcast
-call mpl%f_comm%broadcast(buffer,root)
-
-! Split buffer
-if (mpl%myproc/=root+1) then
-   do i=1,size(var)
-      var(i) = buffer((i-1)*n+1:i*n)
-   end do
-end if
-
-! Probe out
-@:probe_out()
-
-end subroutine mpl_broadcast_string_r1
 
 #:for rank in ranks_1234
 !----------------------------------------------------------------------
@@ -1446,5 +1132,137 @@ call mpl%flush
 
 end subroutine mpl_write_${dtype}$_r1
 #:endfor
+
+#:if getvar('ENABLE_SABER_INSTRUMENTATION', 0)
+!----------------------------------------------------------------------
+! Subroutine: mpl_print_instance
+!> Print instance
+!----------------------------------------------------------------------
+subroutine mpl_print_instance(mpl)
+
+implicit none
+
+! Passed variable
+class(mpl_type),intent(inout) :: mpl !< MPI data
+
+! Set name
+@:set_name(mpl_print_instance)
+
+! Probe in
+@:probe_in()
+
+write(mpl%info,'(a,i6,a,a,a)') '--- This is instance #',iinst,' (',trim(cinst),')'
+call mpl%flush
+
+! Probe out
+@:probe_out()
+
+end subroutine mpl_print_instance
+#:endif
+
+#:if getvar('ENABLE_SABER_INSTRUMENTATION', 0)
+!----------------------------------------------------------------------
+! Subroutine: mpl_timings
+!> Print execution timings
+!----------------------------------------------------------------------
+subroutine mpl_timings(mpl)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl !< MPI data
+
+! Local variable
+integer :: probe_size,i,i_eff
+integer,allocatable :: n(:),order(:)
+real(kind_real) :: elapsed_total
+real(kind_real),allocatable :: stats(:,:)
+character(len=1024),allocatable :: subfunc(:)
+
+! Number of instrumented functions/subroutines called
+probe_size = count(probe%instance(iinst)%timing_associated)
+
+! Print number of instrumented functions/subroutines called
+write(mpl%info,'(a7,a,i3,a,i3)') '','Instrumented function/subroutines called: ',probe_size,'/',${subr_list_size}$
+call mpl%flush
+
+if (probe_size>0) then
+   ! Allocation
+   allocate(n(probe_size))
+   allocate(stats(probe_size,3))
+   allocate(subfunc(probe_size))
+   allocate(order(probe_size))
+
+   ! Get timings
+   i_eff = 0
+   do i=0,${subr_list_size}$-1
+      if (probe%instance(iinst)%timing_associated(i)) then
+         ! Update effective index
+         i_eff = i_eff+1
+
+         ! Save number of calls
+         n(i_eff) = probe%instance(iinst)%timing(i)%n
+
+         ! Compute stats
+         stats(i_eff,1) = probe%instance(iinst)%timing(i)%total_own
+         stats(i_eff,2) = probe%instance(iinst)%timing(i)%min_own
+         stats(i_eff,3) = probe%instance(iinst)%timing(i)%max_own
+
+         ! Save subroutine/function name
+         subfunc(i_eff) = trim(probe%instance(iinst)%timing(i)%subr)
+      end if
+   end do
+
+   ! Get total timing
+   elapsed_total = sum(stats(:,1))
+
+   ! Print elapsed time
+   write(mpl%info,'(a7,a,e10.3,a)') '','Elapsed time: ',elapsed_total,' s'
+   call mpl%flush
+
+   if (elapsed_total>zero) then
+      ! Order timings with total time
+      call qsort(probe_size,stats(:,1),order)
+      n = n(order)
+      stats(:,2:3) = stats(order,2:3)
+      subfunc = subfunc(order)
+
+      ! Print timing in decreasing total time
+      write(mpl%info,'(a7,a,f6.2,a)') '','Decreasing total time:'
+      call mpl%flush
+      do i=probe_size,1,-1
+         if (stats(i,1)/elapsed_total*hundred>min_total_timing) then
+            write(mpl%info,'(a10,a30,a,e10.3,a,e10.3,a,f6.2,a,e10.3,a,e10.3,a,e10.3)') '',subfunc(i),': ',stats(i,1),' s in ', &
+ & real(n(i),kind_real),' call(s)  - ',stats(i,1)/elapsed_total*hundred,'% - min/mean/max: ',stats(i,2),' /', &
+ & stats(i,1)/real(n(i),kind_real),' /',stats(i,3)
+            call mpl%flush
+         end if
+      end do
+
+      ! Order timings with number of calls
+      call qsort(probe_size,n,order)
+      stats(:,:) = stats(order,:)
+      subfunc = subfunc(order)
+
+      ! Print timing in decreasing number of calls
+      write(mpl%info,'(a7,a,f6.2,a)') '','Decreasing number of calls:'
+      call mpl%flush
+      do i=probe_size,max(probe_size-max_calls+1,1),-1
+         write(mpl%info,'(a10,a30,a,e10.3,a,e10.3,a,f6.2,a,e10.3,a,e10.3,a,e10.3)') '',subfunc(i),': ',stats(i,1),' s in ', &
+ & real(n(i),kind_real),' call(s)  - ',stats(i,1)/elapsed_total*hundred,'% - min/mean/max: ',stats(i,2),' /', &
+ & stats(i,1)/real(n(i),kind_real),' /',stats(i,3)
+         call mpl%flush
+      end do
+   end if
+
+   ! Release memory
+   deallocate(n)
+   deallocate(stats)
+   deallocate(subfunc)
+   deallocate(order)
+end if
+
+end subroutine mpl_timings
+#:endif
 
 end module type_mpl

@@ -4,11 +4,9 @@ geometry:
     type: regular_lonlat
     N: 10
   levels: 2
-  mask type: sea
   halo: 1
 input variables: &id001
 - var1
-- var2
 background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
@@ -32,19 +30,17 @@ bump:
   rcoast: 0.1
   nc1: 500
   nc3: 10
+  nc4: 4
   dc: 800.0e3
   nl0r: 2
+  lev2d: last
   ne: 25
   resol: 4.0
   ndir: 1
-  londir:
-  - -85.0
-  latdir:
-  - 65.0
-  levdir:
-  - 1
-  ivdir:
-  - 1
+  londir: [0.0]
+  latdir: [0.0]
+  levdir: [1]
+  ivdir: [1]
   ensemble:
     members from template:
       template:
@@ -55,6 +51,12 @@ bump:
       nmembers: 25
       zero padding: 6
 output:
+- parameter: dirac_mom
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__dirac_mom
+- parameter: dirac_diag_loc
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag-nicas_2/_MPI_-_OMP__dirac_diag_loc
 - parameter: cor_rh
   file:
     filepath: testdata/error_covariance_training_bump_hdiag-nicas_2/_MPI_-_OMP__cor_rh

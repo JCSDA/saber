@@ -1,18 +1,18 @@
-       Compute independent levels:  1[2] 
-          Level   1:  -1378492017
-          Level   2:  -1378492017
+       Independent levels:  1[2] 
+          Level   1:   1550418632
+          Level   2:   1550418632
           Model grid size:              840
           Subset Sc0 size:              762
           Number of duplicated points (halo):        78 (  9.29%)
           Min. / max. longitudes: -171.0 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
-          Domain area (% of Earth area): 0.657E+02%
-             Level   1 ~>  65.7%
-             Level   2 ~>  65.7%
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-             Level   1 ~>  0.97111E+00 /  0.97111E+00
-             Level   2 ~>  0.10218E+01 /  0.10218E+01
-             Level   1 ~>  0.11059E+01 /  0.11059E+01
-             Level   2 ~>  0.10355E+01 /  0.10355E+01
-Norm of BUMP output parameter stddev - 1: 4.5511757064025346e+01
+             Level   1 ~>  0.10217E+01 /  0.10217E+01
+             Level   2 ~>  0.89147E+00 /  0.89147E+00
+             Level   1 ~>  0.10015E+01 /  0.10015E+01
+             Level   2 ~>  0.10250E+01 /  0.10250E+01
+Norm of BUMP output parameter stddev - 1: 5.4790416800501646e+01

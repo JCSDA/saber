@@ -420,8 +420,8 @@ type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Local variables
-integer :: ib,ic2a,icmp
-real(kind_real) :: rmse,norm
+integer :: ib,ic2a,icmp,norm
+real(kind_real) :: rmse
 real(kind_real),allocatable :: fit_iso(:,:,:)
 
 ! Set name
@@ -453,17 +453,23 @@ do ib=1,bpar%nbe
       end do
 
       ! Compute RMSE
-      rmse = sum(abs(diag%blk(0,ib)%fit-diag%blk(0,ib)%raw),mask=mpl%msv%isnot(diag%blk(0,ib)%raw))/real(mpl%nproc,kind_real)
-      norm = real(count(mpl%msv%isnot(diag%blk(0,ib)%raw)),kind_real)/real(mpl%nproc,kind_real)
+      if (mpl%main) then
+         ic2a = 0
+         rmse = sum(abs(diag%blk(ic2a,ib)%fit-diag%blk(ic2a,ib)%raw),mask=mpl%msv%isnot(diag%blk(ic2a,ib)%raw))
+         norm = count(mpl%msv%isnot(diag%blk(ic2a,ib)%raw))
+      else
+         rmse = zero
+         norm = 0
+      end if
       do ic2a=1,diag%nc2a
          rmse = rmse+sum(abs(diag%blk(ic2a,ib)%fit-diag%blk(ic2a,ib)%raw),mask=mpl%msv%isnot(diag%blk(ic2a,ib)%raw))
-         norm = norm+real(count(mpl%msv%isnot(diag%blk(ic2a,ib)%raw)),kind_real)
+         norm = norm+count(mpl%msv%isnot(diag%blk(ic2a,ib)%raw))
       end do
       call mpl%f_comm%allreduce(rmse,fckit_mpi_sum())
       call mpl%f_comm%allreduce(norm,fckit_mpi_sum())
-      if (norm>zero) rmse = sqrt(rmse/norm)
+      if (norm>zero) rmse = sqrt(rmse/real(norm,kind_real))
       write(mpl%test,'(a13,a,a,a,e15.8,a,i8,a)') '','Block ',trim(bpar%blockname(ib)),': ',rmse, &
- & ' for ',int(norm),' diagnostic points'
+ & ' for ',norm,' diagnostic points'
       call mpl%flush
 
       ! Detail for multi-component case

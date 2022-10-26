@@ -3,8 +3,7 @@ geometry:
   grid:
     type: regular_lonlat
     N: 10
-  levels: 10
-  mask type: sea
+  levels: 2
   halo: 1
 input variables: &id001
 - var1
@@ -16,7 +15,7 @@ ensemble:
   members from template:
     template:
       date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L10/member_%mem%
+      filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
       state variables: *id001
     pattern: '%mem%'
     nmembers: 25
@@ -39,14 +38,11 @@ bump:
   nc3: 10
   nc4: 4
   dc: 800.0e3
-  nl0r: 5
-  avg_nbins: 10
+  nl0r: 2
   ne: 25
   local_diag: true
   local_rad: 1000.0e3
   diag_rhflt: 3000.0e3
-  diag_rvflt: 3.0
-  fit_dl0: 3
   fit_ncmp: 2
   samp_interp_type: c1
   nldwv: 3
@@ -68,7 +64,7 @@ output:
   file:
     filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_a_1
 - parameter: cor_a
-  component: 1
+  component: 2
   file:
     filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_a_2
 - parameter: cor_rh1
@@ -76,7 +72,7 @@ output:
   file:
     filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh1_1
 - parameter: cor_rh1
-  component: 1
+  component: 2
   file:
     filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh1_2
 - parameter: cor_rh2
@@ -84,7 +80,7 @@ output:
   file:
     filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh2_1
 - parameter: cor_rh2
-  component: 1
+  component: 2
   file:
     filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh2_2
 - parameter: cor_rhc
@@ -92,7 +88,7 @@ output:
   file:
     filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rhc_1
 - parameter: cor_rhc
-  component: 1
+  component: 2
   file:
     filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rhc_2
 - parameter: cor_rh
@@ -100,7 +96,7 @@ output:
   file:
     filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh_1
 - parameter: cor_rh
-  component: 1
+  component: 2
   file:
     filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh_2
 - parameter: cor_rv
@@ -108,7 +104,7 @@ output:
   file:
     filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rv_1
 - parameter: cor_rv
-  component: 1
+  component: 2
   file:
     filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rv_2
 test:

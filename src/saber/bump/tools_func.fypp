@@ -70,9 +70,6 @@ end interface
 interface inside
    module procedure func_inside
 end interface
-interface order_cc
-   module procedure func_order_cc
-end interface
 interface add
    module procedure func_add
 end interface
@@ -152,7 +149,7 @@ end interface
 
 private
 public :: fletcher32,lonlatmod,rad2short,grid_hash,independent_levels,sphere_bearing,sphere_dist,cart_dist,lonlat2xyz,xyz2lonlat, &
- & vector_product,det,inside,order_cc,add,divide,vert_interp_size,vert_interp_setup,vert_interp,cholesky,syminv,histogram, &
+ & vector_product,det,inside,add,divide,vert_interp_size,vert_interp_setup,vert_interp,cholesky,syminv,histogram, &
  & cx_to_cxa,cx_to_proc,cx_to_cxu,convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count,global_average
 
 contains
@@ -307,7 +304,7 @@ if (mpl%main) then
 
       ! Loop over points
       do icx=1,ncx
-         if (mask_cx(icx,ilx)) then
+         if (mask_cx(order_cx(icx),ilx)) then
             call rad2short(lon_cx(order_cx(icx)),lonlat(2*(icx-1)+1))
             call rad2short(lat_cx(order_cx(icx)),lonlat(2*icx))
          end if
@@ -330,7 +327,7 @@ end subroutine func_grid_hash
 ! Subroutine: func_independent_levels
 !> Compute independent levels
 !----------------------------------------------------------------------
-subroutine func_independent_levels(mpl,nlx,grid_hash,nlxi,lx_to_lxi,lxi_to_lx,ifmt)
+subroutine func_independent_levels(mpl,nlx,grid_hash,nlxi,lx_to_lxi,lxi_to_lx)
 
 implicit none
 
@@ -341,7 +338,6 @@ integer,intent(in) :: grid_hash(nlx)  !< Global grid hash profile
 integer,intent(out) :: nlxi           !< Number of independent levels
 integer,intent(out) :: lx_to_lxi(nlx) !< Levels to independent levels
 integer,intent(out) :: lxi_to_lx(nlx) !< Independent levels to levels
-integer,intent(in) :: ifmt            !< Indentation
 
 ! Local variables
 integer :: ilx,ilxi,jlx,jlxi,n
@@ -386,9 +382,6 @@ do ilx=2,nlx
 end do
 
 ! Print levels
-write(cfmt,'(a,i2.2,a)') '(a',ifmt,',a)'
-write(mpl%test,trim(cfmt)) '','Compute independent levels: '
-call mpl%flush(.false.)
 do ilxi=1,nlxi
    ilx = lxi_to_lx(ilxi)
    n = count(lx_to_lxi==ilxi)
@@ -655,7 +648,7 @@ end subroutine func_vector_product
 ! Subroutine: func_det
 !> Compute determinant (vector triple product)
 !----------------------------------------------------------------------
-subroutine func_det(v1,v2,v3,p,cflag)
+subroutine func_det(v1,v2,v3,p)
 
 implicit none
 
@@ -664,7 +657,6 @@ real(kind_real),intent(in) :: v1(3)   !< First vector
 real(kind_real),intent(in) :: v2(3)   !< Second vector
 real(kind_real),intent(in) :: v3(3)   !< Third vector
 real(kind_real),intent(out) :: p      !< Determinant
-logical,intent(out),optional :: cflag !< Confidence flag
 
 ! Local variable
 integer :: i
@@ -686,14 +678,6 @@ terms(6) = -v1(2)*v2(1)*v3(3)
 
 ! Sum
 p = sum(terms)
-
-if (present(cflag)) then
-   ! Confidence flag
-   cflag = .true.
-   do i=1,6
-      if ((abs(terms(i))>zero).and.small(p,terms(i))) cflag = .false.
-   end do
-end if
 
 ! Probe out
 @:probe_out()
@@ -758,81 +742,6 @@ end do
 @:probe_out()
 
 end subroutine func_inside
-
-!----------------------------------------------------------------------
-! Subroutine: func_order_cc
-!> Order points in counter-clockwise order with respect to a central point
-!----------------------------------------------------------------------
-subroutine func_order_cc(mpl,lon,lat,n,x,y,z,order,diff)
-
-implicit none
-
-! Passed variables
-type(mpl_type),intent(inout) :: mpl             !< MPI data
-real(kind_real),intent(in) :: lon               !< Longitude of the central point
-real(kind_real),intent(in) :: lat               !< Latitude of the central point
-integer :: n                                    !< Number of points
-real(kind_real),intent(in) :: x(n)              !< List of X-coordinates
-real(kind_real),intent(in) :: y(n)              !< List of Y-coordinates
-real(kind_real),intent(in) :: z(n)              !< List of Z-coordinates
-integer,intent(out) :: order(n)                 !< Counter-clockwise order
-real(kind_real),intent(out),optional :: diff(n) !< Angles differences
-
-! Local variable
-integer :: i
-real(kind_real) :: rvec(3),costheta,sintheta,p(3),rvecxv(3),v(3),list(n)
-real(kind_real),allocatable :: list_save(:)
-
-! Set name
-@:set_name(func_order_cc)
-
-! Probe in
-@:probe_in()
-
-! Rotation vector in cartesian coordinates
-call lonlat2xyz(mpl,lon-half*pi,zero,rvec(1),rvec(2),rvec(3))
-
-! Rotation angle
-costheta = cos(half*pi-lat)
-sintheta = sin(half*pi-lat)
-
-! Compute angle
-do i=1,n
-   ! Rodrigues' rotation
-   p = (/x(i),y(i),z(i)/)
-   call vector_product(rvec,p,rvecxv)
-   v = p*costheta+rvecxv*sintheta+rvec*sum(rvec*p)*(one-costheta)
-
-   ! Angle
-   list(i) = atan2(v(2),v(1))
-end do
-
-if (present(diff)) then
-   ! Allocation
-   allocate(list_save(n))
-
-   ! Copy
-   list_save = list
-end if
-
-! Sort angles in counter-clockwise order
-call qsort(n,list,order)
-
-if (present(diff)) then
-   ! Get angles differences
-   diff(order(1)) = list_save(order(1))-list_save(order(n))+two*pi
-   do i=2,n
-      diff(order(i)) = list_save(order(i))-list_save(order(i-1))
-   end do
-
-   ! Release memory
-   deallocate(list_save)
-end if
-
-! Probe out
-@:probe_out()
-
-end subroutine func_order_cc
 
 !----------------------------------------------------------------------
 ! Subroutine: func_add

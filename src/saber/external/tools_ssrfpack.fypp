@@ -62,9 +62,6 @@ end interface
 interface setup
    module procedure ssrfpack_setup
 end interface
-interface snhcsh
-   module procedure ssrfpack_snhcsh
-end interface
 
 private
 public :: aplyr,constr,fval,fval_op,gradl
@@ -156,13 +153,12 @@ end subroutine ssrfpack_aplyrt
 ! Subroutine: ssrfpack_arcint
 !> Compute interpolatation value f and gradient vector g at p, between p1 and p2
 !----------------------------------------------------------------------
-subroutine ssrfpack_arcint(mpl,sig,p,p1,p2,f1,f2,g1,g2,f,g)
+subroutine ssrfpack_arcint(mpl,p,p1,p2,f1,f2,g1,g2,f,g)
 
 implicit none
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl !< MPI data
-real(kind_real),intent(in) :: sig   !< Tension factor
 real(kind_real),intent(in) :: p(3)  !< Interpolation point
 real(kind_real),intent(in) :: p1(3) !< First vertex
 real(kind_real),intent(in) :: p2(3) !< Second vertex
@@ -213,37 +209,9 @@ s = (f2-f1)/a
 d1 = s-tau1
 d2 = tau2-s
 
-if (sig<1.0e-9_kind_real) then
-   ! Hermite cubic interpolation
-   f = f1+al*(tau1+b2*(d1+b1*(d1-d2)))
-   gt = tau1+b2*(d1+d2+three*b1*(d1-d2))
-elseif (infeq(sig,half)) then
-   ! Approximations designed to avoid cancellation error in the hyperbolic functions
-   sb2 = sig*b2
-   call snhcsh(sig,sm,cm,cmm)
-   call snhcsh(sb2,sm2,cm2,dum)
-   sinh = sm+sig
-   sinh2 = sm2+sb2
-   e = sig*sm-two*cmm
-   f = f1+al*tau1+a*((cm*sm2-sm*cm2)*(d1+d2)+sig*(cm*cm2-sinh*sm2)*d1)/(sig*e)
-   gt = tau1+((cm*cm2-sm*sinh2)*(d1+d2)+sig*(cm*sinh2-sinh*cm2)*d1)/e
-else
-   ! Negative exponentials in order to avoid overflow
-   sb1 = sig*b1
-   sb2 = sig-sb1
-   e1 = exp(-sb1)
-   e2 = exp(-sb2)
-   ems = e1*e2
-   tm = one-ems
-   ts = tm**2
-   tm1 = one-e1
-   tm2 = one-e2
-   e = tm*(sig*(one+ems)-two*tm)
-   f = f1+al*s+a*(tm*tm1*tm2*(d1+d2)+sig*((e2*tm1**2-b1*ts)*d1+(e1*tm2**2-b2*ts)*d2))/(sig*e)
-   tp1 = one+e1
-   tp2 = one+e2
-   gt = s+(tm1*(tm*tp2-sig*e2*tp1)*d1-tm2*(tm*tp1-sig*e1*tp2)*d2)/e
-end if
+! Hermite cubic interpolation
+f = f1+al*(tau1+b2*(d1+b1*(d1-d2)))
+gt = tau1+b2*(d1+d2+three*b1*(d1-d2))
 
 ! Compute gn
 gn = b1*(un(1)*g1(1)+un(2)*g1(2)+un(3)*g1(3))+b2*(un(1)*g2(1)+un(2)*g2(2)+un(3)*g2(3))
@@ -262,13 +230,12 @@ end subroutine ssrfpack_arcint
 ! Subroutine: ssrfpack_arcint_op
 !> Compute interpolatation value f and gradient vector g at p, between p1 and p2 (linear operator)
 !----------------------------------------------------------------------
-subroutine ssrfpack_arcint_op(mpl,sig,p,p1,p2,f_mat,g_mat)
+subroutine ssrfpack_arcint_op(mpl,p,p1,p2,f_mat,g_mat)
 
 implicit none
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl       !< MPI data
-real(kind_real),intent(in) :: sig         !< Tension factor
 real(kind_real),intent(in) :: p(3)        !< Interpolation point
 real(kind_real),intent(in) :: p1(3)       !< First vertex
 real(kind_real),intent(in) :: p2(3)       !< Second vertex
@@ -307,32 +274,6 @@ al = arclen(p1,p)
 ! Factors
 b2 = al/a
 b1 = one-b2
-if (sig<1.0e-9_kind_real) then
-   ! Hermite cubic interpolation
-   ! No other factor
-elseif (infeq(sig,half)) then
-   ! Approximations designed to avoid cancellation error in the hyperbolic functions
-   sb2 = sig*b2
-   call snhcsh(sig,sm,cm,cmm)
-   call snhcsh(sb2,sm2,cm2,dum)
-   sinh = sm+sig
-   sinh2 = sm2+sb2
-   e = sig*sm-two*cmm
-else
-   ! Negative exponentials in order to avoid overflow
-   sb1 = sig*b1
-   sb2 = sig-sb1
-   e1 = exp(-sb1)
-   e2 = exp(-sb2)
-   ems = e1*e2
-   tm = one-ems
-   ts = tm**2
-   tm1 = one-e1
-   tm2 = one-e2
-   e = tm*(sig*(one+ems)-two*tm)
-   tp1 = one+e1
-   tp2 = one+e2
-end if
 
 ! Matrices
 f1_mat = (/one,zero,zero,zero,zero,zero,zero,zero/)
@@ -341,19 +282,10 @@ tau2_mat = (/zero,zero,zero,zero,zero,-p1(1)/unorm,-p1(2)/unorm,-p1(3)/unorm/)
 s_mat = (/-one/a,one/a,zero,zero,zero,zero,zero,zero/)
 d1_mat = s_mat-tau1_mat
 d2_mat = tau2_mat-s_mat
-if (sig<1.0e-9_kind_real) then
-   ! Hermite cubic interpolation
-   f_mat = f1_mat+al*(tau1_mat+b2*(d1_mat+b1*(d1_mat-d2_mat)))
-   gt_mat = tau1_mat+b2*(d1_mat+d2_mat+three*b1*(d1_mat-d2_mat))
-elseif (infeq(sig,half)) then
-   ! Approximations designed to avoid cancellation error in the hyperbolic functions
-   f_mat = f1_mat+al*tau1_mat+a*((cm*sm2-sm*cm2)*(d1_mat+d2_mat)+sig*(cm*cm2-sinh*sm2)*d1_mat)/(sig*e)
-   gt_mat = tau1_mat+((cm*cm2-sm*sinh2)*(d1_mat+d2_mat)+sig*(cm*sinh2-sinh*cm2)*d1_mat)/e
-else
-   ! Negative exponentials in order to avoid overflow
-   f_mat = f1_mat+al*s_mat+a*(tm*tm1*tm2*(d1_mat+d2_mat)+sig*((e2*tm1**2-b1*ts)*d1_mat+(e1*tm2**2-b2*ts)*d2_mat))/(sig*e)
-   gt_mat = s_mat+(tm1*(tm*tp2-sig*e2*tp1)*d1_mat-tm2*(tm*tp1-sig*e1*tp2)*d2_mat)/e
-end if
+
+! Hermite cubic interpolation
+f_mat = f1_mat+al*(tau1_mat+b2*(d1_mat+b1*(d1_mat-d2_mat)))
+gt_mat = tau1_mat+b2*(d1_mat+d2_mat+three*b1*(d1_mat-d2_mat))
 gn_mat = (/zero,zero,b1*un(1),b1*un(2),b1*un(3),b2*un(1),b2*un(2),b2*un(3)/)
 g_mat(:,1) = gt_mat*(un(2)*p(3)-un(3)*p(2))+gn_mat*un(1)
 g_mat(:,2) = gt_mat*(un(3)*p(1)-un(1)*p(3))+gn_mat*un(2)
@@ -454,13 +386,12 @@ end subroutine ssrfpack_constr
 ! Subroutine: ssrfpack_fval
 !> Compute the c1 interpolation
 !----------------------------------------------------------------------
-function ssrfpack_fval(mpl,sig,b1,b2,b3,v1,v2,v3,f1,f2,f3,g1,g2,g3) result(v)
+function ssrfpack_fval(mpl,b1,b2,b3,v1,v2,v3,f1,f2,f3,g1,g2,g3) result(v)
 
 implicit none
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl !< MPI data
-real(kind_real),intent(in) :: sig   !< Tension factor
 real(kind_real),intent(in) :: b1    !< First vertex barycentric weight
 real(kind_real),intent(in) :: b2    !< Second vertex barycentric weight
 real(kind_real),intent(in) :: b3    !< Third vertex barycentric weight
@@ -532,22 +463,22 @@ else
    v = zero
 
    ! Contribution from side opposite v1
-   call arcint(mpl,sig,q1,v2,v3,f2,f3,g2,g3,f,g)
+   call arcint(mpl,q1,v2,v3,f2,f3,g2,g3,f,g)
    dv = g1(1)*u1(1)+g1(2)*u1(2)+g1(3)*u1(3)
    ds = -(g(1)*v1(1)+g(2)*v1(2)+g(3)*v1(3))/u1n
-   v = v+c1n*hval(sig,b1,f1,f,dv,ds)
+   v = v+c1n*hval(b1,f1,f,dv,ds)
 
    ! Contribution from side opposite v2
-   call arcint(mpl,sig,q2,v3,v1,f3,f1,g3,g1,f,g)
+   call arcint(mpl,q2,v3,v1,f3,f1,g3,g1,f,g)
    dv = g2(1)*u2(1)+g2(2)*u2(2)+g2(3)*u2(3)
    ds = -(g(1)*v2(1)+g(2)*v2(2)+g(3)*v2(3))/u2n
-   v = v+c2n*hval(sig,b2,f2,f,dv,ds)
+   v = v+c2n*hval(b2,f2,f,dv,ds)
 
    ! Contribution from side opposite v3
-   call arcint(mpl,sig,q3,v1,v2,f1,f2,g1,g2,f,g)
+   call arcint(mpl,q3,v1,v2,f1,f2,g1,g2,f,g)
    dv = g3(1)*u3(1)+g3(2)*u3(2)+g3(3)*u3(3)
    ds = -(g(1)*v3(1)+g(2)*v3(2)+g(3)*v3(3))/u3n
-   v = v+c3n*hval(sig,b3,f3,f,dv,ds)
+   v = v+c3n*hval(b3,f3,f,dv,ds)
 end if
 
 ! Probe out
@@ -559,13 +490,12 @@ end function ssrfpack_fval
 ! Subroutine: ssrfpack_fval_op
 !> Compute the c1 interpolation (linear operator)
 !----------------------------------------------------------------------
-subroutine ssrfpack_fval_op(mpl,sig,b1,b2,b3,v1,v2,v3,v_mat)
+subroutine ssrfpack_fval_op(mpl,b1,b2,b3,v1,v2,v3,v_mat)
 
 implicit none
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl      !< MPI data
-real(kind_real),intent(in) :: sig        !< Tension factor
 real(kind_real),intent(in) :: b1         !< First vertex barycentric weight
 real(kind_real),intent(in) :: b2         !< Second vertex barycentric weight
 real(kind_real),intent(in) :: b3         !< Third vertex barycentric weight
@@ -634,40 +564,40 @@ else
    ! Contribution from side opposite v1
    f1_mat = (/one,zero,zero,zero,zero,zero,zero,zero,zero,zero,zero,zero/)
    subset = (/2,3,7,8,9,10,11,12/)
-   call arcint_op(mpl,sig,q1,v2,v3,f_mat_sub,g_mat_sub)
+   call arcint_op(mpl,q1,v2,v3,f_mat_sub,g_mat_sub)
    f_mat = zero
    f_mat(subset) = f_mat_sub
    g_mat = zero
    g_mat(subset,:) = g_mat_sub
    dv_mat = (/zero,zero,zero,u1(1),u1(2),u1(3),zero,zero,zero,zero,zero,zero/)
    ds_mat = -(g_mat(:,1)*v1(1)+g_mat(:,2)*v1(2)+g_mat(:,3)*v1(3))/u1n
-   call hval_op(sig,b1,f1_mat,f_mat,dv_mat,ds_mat,v1_mat)
+   call hval_op(b1,f1_mat,f_mat,dv_mat,ds_mat,v1_mat)
    v_mat = v_mat+c1n*v1_mat
 
    ! Contribution from side opposite v2
    f2_mat = (/zero,one,zero,zero,zero,zero,zero,zero,zero,zero,zero,zero/)
    subset = (/3,1,10,11,12,4,5,6/)
-   call arcint_op(mpl,sig,q2,v3,v1,f_mat_sub,g_mat_sub)
+   call arcint_op(mpl,q2,v3,v1,f_mat_sub,g_mat_sub)
    f_mat = zero
    f_mat(subset) = f_mat_sub
    g_mat = zero
    g_mat(subset,:) = g_mat_sub
    dv_mat = (/zero,zero,zero,zero,zero,zero,u2(1),u2(2),u2(3),zero,zero,zero/)
    ds_mat = -(g_mat(:,1)*v2(1)+g_mat(:,2)*v2(2)+g_mat(:,3)*v2(3))/u2n
-   call hval_op(sig,b2,f2_mat,f_mat,dv_mat,ds_mat,v2_mat)
+   call hval_op(b2,f2_mat,f_mat,dv_mat,ds_mat,v2_mat)
    v_mat = v_mat+c2n*v2_mat
 
    ! Contribution from side opposite v3
    f3_mat = (/zero,zero,one,zero,zero,zero,zero,zero,zero,zero,zero,zero/)
    subset = (/1,2,4,5,6,7,8,9/)
-   call arcint_op(mpl,sig,q3,v1,v2,f_mat_sub,g_mat_sub)
+   call arcint_op(mpl,q3,v1,v2,f_mat_sub,g_mat_sub)
    f_mat = zero
    f_mat(subset) = f_mat_sub
    g_mat = zero
    g_mat(subset,:) = g_mat_sub
    dv_mat = (/zero,zero,zero,zero,zero,zero,zero,zero,zero,u3(1),u3(2),u3(3)/)
    ds_mat = -(g_mat(:,1)*v3(1)+g_mat(:,2)*v3(2)+g_mat(:,3)*v3(3))/u3n
-   call hval_op(sig,b3,f3_mat,f_mat,dv_mat,ds_mat,v3_mat)
+   call hval_op(b3,f3_mat,f_mat,dv_mat,ds_mat,v3_mat)
    v_mat = v_mat+c3n*v3_mat
 end if
 
@@ -884,12 +814,11 @@ end subroutine ssrfpack_gradl
 ! Subroutine: ssrfpack_hval
 !> Compute the Hermite interpolatory tension spline defined by the endpoint data
 !----------------------------------------------------------------------
-function ssrfpack_hval(sig,b,h1,h2,hp1,hp2) result(v)
+function ssrfpack_hval(b,h1,h2,hp1,hp2) result(v)
 
 implicit none
 
 ! Passed variables
-real(kind_real),intent(in) :: sig !< Tension factor
 real(kind_real),intent(in) :: b   !< Local coordinate of p with respect to p1-p2
 real(kind_real),intent(in) :: h1  !< Value interpolated at p1
 real(kind_real),intent(in) :: h2  !< Value interpolated at p2
@@ -917,31 +846,8 @@ s = h2-h1
 d1 = s-hp1
 d2 = hp2-s
 
-if (sig<1.0e-9_kind_real) then
-   ! Hermite cubic interpolation
-   v = h1+b2*(hp1+b2*(d1+b1*(d1-d2)))
-elseif (infeq(sig,half)) then
-   ! Approximations designed to avoid cancellation error in the hyperbolic functions
-   sb2 = sig*b2
-   call snhcsh(sig,sm,cm,cmm)
-   call snhcsh(sb2,sm2,cm2,dum)
-   sinh = sm+sig
-   e = sig*sm-two*cmm
-   v = h1+b2*hp1+((cm*sm2-sm*cm2)*(d1+d2)+sig*(cm*cm2-sinh*sm2)*d1)/(sig*e)
-else
-   ! Negative exponentials in order to avoid overflow
-   sb1 = sig*b1
-   sb2 = sig-sb1
-   e1 = exp(-sb1)
-   e2 = exp(-sb2)
-   ems = e1*e2
-   tm = one-ems
-   ts = tm**2
-   tm1 = one-e1
-   tm2 = one-e2
-   e = tm*(sig*(one+ems)-two*tm)
-   v = h1+b2*s+(tm*tm1*tm2*(d1+d2)+sig*((e2*tm1**2-b1*ts)*d1+(e1*tm2**2-b2*ts)*d2))/(sig*e)
-end if
+! Hermite cubic interpolation
+v = h1+b2*(hp1+b2*(d1+b1*(d1-d2)))
 
 ! Probe out
 @:probe_out()
@@ -952,12 +858,11 @@ end function ssrfpack_hval
 ! Subroutine: ssrfpack_hval_op
 !> Compute the Hermite interpolatory tension spline defined by the endpoint data (linear operator)
 !----------------------------------------------------------------------
-subroutine ssrfpack_hval_op(sig,b,h1_mat,h2_mat,hp1_mat,hp2_mat,v_mat)
+subroutine ssrfpack_hval_op(b,h1_mat,h2_mat,hp1_mat,hp2_mat,v_mat)
 
 implicit none
 
 ! Passed variables
-real(kind_real),intent(in) :: sig         !< Tension factor
 real(kind_real),intent(in) :: b           !< Local coordinate of p with respect to p1-p2
 real(kind_real),intent(in) :: h1_mat(12)  !< Value interpolated at p1
 real(kind_real),intent(in) :: h2_mat(12)  !< Value interpolated at p2
@@ -983,31 +888,8 @@ s_mat = h2_mat-h1_mat
 d1_mat = s_mat-hp1_mat
 d2_mat = hp2_mat-s_mat
 
-if (sig<1.0e-9_kind_real) then
-   ! Hermite cubic interpolation
-   v_mat = h1_mat+b2*(hp1_mat+b2*(d1_mat+b1*(d1_mat-d2_mat)))
-elseif (infeq(sig,half)) then
-   ! Approximations designed to avoid cancellation error in the hyperbolic functions
-   sb2 = sig*b2
-   call snhcsh(sig,sm,cm,cmm)
-   call snhcsh(sb2,sm2,cm2,dum)
-   sinh = sm+sig
-   e = sig*sm-two*cmm
-   v_mat = h1_mat+b2*hp1_mat+((cm*sm2-sm*cm2)*(d1_mat+d2_mat)+sig*(cm*cm2-sinh*sm2)*d1_mat)/(sig*e)
-else
-   ! Negative exponentials in order to avoid overflow
-   sb1 = sig*b1
-   sb2 = sig-sb1
-   e1 = exp(-sb1)
-   e2 = exp(-sb2)
-   ems = e1*e2
-   tm = one-ems
-   ts = tm**2
-   tm1 = one-e1
-   tm2 = one-e2
-   e = tm*(sig*(one+ems)-two*tm)
-   v_mat = h1_mat+b2*s_mat+(tm*tm1*tm2*(d1_mat+d2_mat)+sig*((e2*tm1**2-b1*ts)*d1_mat+(e1*tm2**2-b2*ts)*d2_mat))/(sig*e)
-end if
+! Hermite cubic interpolation
+v_mat = h1_mat+b2*(hp1_mat+b2*(d1_mat+b1*(d1_mat-d2_mat)))
 
 ! Probe out
 @:probe_out()
@@ -1092,57 +974,5 @@ row(6) = (wi-wk)*wt
 @:probe_out()
 
 end subroutine ssrfpack_setup
-
-!----------------------------------------------------------------------
-! Subroutine: ssrfpack_snhcsh
-!> Approximations to the modified hyperbolic functions
-!----------------------------------------------------------------------
-subroutine ssrfpack_snhcsh(x,sinhm,coshm,coshmm)
-
-implicit none
-
-! Passed variables
-real(kind_real),intent(in) :: x       !< Point at which the functions are to be evaluated
-real(kind_real),intent(out) :: sinhm  !< sinh(x)-x
-real(kind_real),intent(out) :: coshm  !< cosh(x)-1
-real(kind_real),intent(out) :: coshmm !< cosh(x)-1-x**2/2
-
-! Local variables
-real(kind_real),parameter :: c1 = 0.1666666666659E0_kind_real
-real(kind_real),parameter :: c2 = 0.8333333431546E-2_kind_real
-real(kind_real),parameter :: c3 = 0.1984107350948E-3_kind_real
-real(kind_real),parameter :: c4 = 0.2768286868175E-5_kind_real
-real(kind_real) :: ax,expx,f,xc,xs,xsd2,xsd4
-
-! Set name
-@:set_name(ssrfpack_snhcsh)
-
-! Probe in
-@:probe_in()
-
-ax = abs(x)
-xs = ax**2
-if (infeq(ax,half)) then
-   ! Approximations for small x
-   xc = x*xs
-   sinhm = xc*(((c4*xs+c3)*xs+c2)*xs+c1)
-   xsd4 = quarter*xs
-   xsd2 = two*xsd4
-   f = (((c4*xsd4+c3)*xsd4+c2)*xsd4+c1)*xsd4
-   coshmm = xsd2*f*(f+two)
-   coshm = coshmm+xsd2
-else
-   ! Approximations for large x
-   expx = exp(ax)
-   sinhm = -half*(((one/expx+ax)+ax)-expx)
-   if (x<zero) sinhm = -sinhm
-   coshm = half*((one/expx-two)+expx)
-   coshmm = coshm-half*xs
-end if
-
-! Probe out
-@:probe_out()
-
-end subroutine ssrfpack_snhcsh
 
 end module tools_ssrfpack

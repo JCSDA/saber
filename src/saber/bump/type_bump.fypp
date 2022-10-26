@@ -11,6 +11,7 @@ module type_bump
 use atlas_module, only: atlas_field,atlas_fieldset,atlas_integer,atlas_real,atlas_functionspace
 use fckit_configuration_module, only: fckit_configuration
 use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
+use missing_values_mod, only: missing_value
 use tools_const, only: zero,half,one,thousand,req,reqkm,deg2rad,rad2deg
 use tools_func, only: fletcher32,rad2short,sphere_dist,zss_maxval,zss_minval,zss_sum
 use tools_kinds,only: kind_short,kind_real
@@ -36,13 +37,7 @@ use type_wind, only: wind_type
 
 implicit none
 
-integer,parameter :: dmsvali = -999                             !< Default missing value for integers
-real(kind_real),parameter :: dmsvalr = -999.0_kind_real         !< Default missing value for reals
-logical :: copy_ensemble = .false.                              !< Deep copy of ensemble members
-real(kind_real),parameter :: loc_scaling_factor = one           !< Scaling factor to get optimal localization
-!real(kind_real),parameter :: loc_scaling_factor = 1.4_kind_real !< scaling factor to get optimal localization (TODO: check this and reset it)
-integer,parameter :: nfac_opt = 4                               !< Number of length-scale factors for optimization
-integer,parameter :: ntest = 50                                 !< Number of test vectors
+real(kind_real),parameter :: loc_scaling_factor = one !< Scaling factor to get optimal localization
 
 ! BUMP derived type
 type bump_type
@@ -76,9 +71,8 @@ contains
    procedure :: check_consistency => bump_check_consistency
    procedure :: check_optimality => bump_check_optimality
    procedure :: apply_vbal => bump_apply_vbal
-   procedure :: apply_vbal_inv => bump_apply_vbal_inv
    procedure :: apply_vbal_ad => bump_apply_vbal_ad
-   procedure :: apply_vbal_inv_ad => bump_apply_vbal_inv_ad
+   procedure :: apply_vbal_inv => bump_apply_vbal_inv
    procedure :: apply_stddev => bump_apply_stddev
    procedure :: apply_stddev_inv => bump_apply_stddev_inv
    procedure :: apply_nicas => bump_apply_nicas
@@ -89,11 +83,8 @@ contains
    procedure :: psichi_to_uv => bump_psichi_to_uv
    procedure :: psichi_to_uv_ad => bump_psichi_to_uv_ad
    procedure :: get_parameter => bump_get_parameter
-   procedure :: test_get_parameter => bump_test_get_parameter
    procedure :: set_ncmp => bump_set_ncmp
    procedure :: set_parameter => bump_set_parameter
-   procedure :: test_set_parameter => bump_test_set_parameter
-   procedure :: test_apply_interfaces => bump_test_apply_interfaces
    procedure :: partial_dealloc => bump_partial_dealloc
    procedure :: dealloc => bump_dealloc
    final :: bump_dummy_final
@@ -119,11 +110,7 @@ type(atlas_functionspace),intent(in) :: afunctionspace  !< Function space
 type(fieldset_type),intent(in) :: fieldset              !< SABER geometry fields
 type(fckit_configuration),intent(in) :: conf            !< FCKIT configuration
 type(fckit_configuration),intent(in) :: grid            !< FCKIT grid configuration
-type(fieldset_type),intent(in),optional :: universe_rad !< Fieldset optionally containing universe radius
-
-! Local variables
-integer :: lmsvali, llunit
-real(kind_real) :: lmsvalr
+type(fieldset_type),intent(in) :: universe_rad          !< Fieldset optionally containing universe radius
 
 ! Set name
 @:set_name(bump_create)
@@ -143,22 +130,8 @@ call bump%nam%from_conf(comm,grid)
 ! Read configuration
 call bump%nam%from_conf(comm,conf)
 
-! Set missing values
-lmsvali = dmsvali
-lmsvalr = dmsvalr
-if (conf%has('msvali')) call conf%get_or_die('msvali',lmsvali)
-if (conf%has('msvalr')) call conf%get_or_die('msvalr',lmsvalr)
-
-! Set log unit
-llunit = lmsvali
-if (conf%has('lunit')) call conf%get_or_die('lunit',llunit)
-
 ! Setup BUMP
-if (present(universe_rad)) then
-   call bump%setup(comm,afunctionspace,fieldset,lunit=llunit,msvali=lmsvali,msvalr=lmsvalr,universe_rad=universe_rad)
-else
-   call bump%setup(comm,afunctionspace,fieldset,lunit=llunit,msvali=lmsvali,msvalr=lmsvalr)
-end if
+call bump%setup(comm,afunctionspace,fieldset,universe_rad=universe_rad)
 
 ! Probe out
 @:probe_out()
@@ -169,7 +142,7 @@ end subroutine bump_create
 ! Subroutine: bump_setup
 !> Setup
 !----------------------------------------------------------------------
-subroutine bump_setup(bump,f_comm,afunctionspace,fieldset,lunit,msvali,msvalr,universe_rad)
+subroutine bump_setup(bump,f_comm,afunctionspace,fieldset,universe_rad)
 
 implicit none
 
@@ -178,9 +151,6 @@ class(bump_type),intent(inout) :: bump                  !< BUMP
 type(fckit_mpi_comm),intent(in) :: f_comm               !< FCKIT MPI communicator wrapper
 type(atlas_functionspace),intent(in) :: afunctionspace  !< Functionspace
 type(fieldset_type),intent(in),optional :: fieldset     !< SABER geometry fields
-integer,intent(in),optional :: lunit                    !< Listing unit
-integer,intent(in),optional :: msvali                   !< Missing value for integers
-real(kind_real),intent(in),optional :: msvalr           !< Missing value for reals
 type(fieldset_type),intent(in),optional :: universe_rad !< Fieldset optionally containing universe radius
 
 ! Local variables
@@ -202,23 +172,16 @@ type(atlas_field) :: afield
 call bump%mpl%init(f_comm)
 
 ! Set missing values
-bump%mpl%msv%vali = dmsvali
-bump%mpl%msv%valr = dmsvalr
-if (present(msvali)) bump%mpl%msv%vali = msvali
-if (present(msvalr)) bump%mpl%msv%valr = msvalr
+bump%mpl%msv%vali = -999 ! TODO(Benjamin: understand why missing_value(0_kind_int) is not working)
+bump%mpl%msv%valr = missing_value(0.0_kind_real)
 
 ! Initialize listing
-bump%mpl%lunit = bump%mpl%msv%vali
-if (present(lunit)) bump%mpl%lunit = lunit
-if ((.not.bump%mpl%main).and.bump%mpl%msv%is(bump%mpl%lunit)) bump%mpl%lunit = 10+bump%mpl%myproc
-bump%mpl%verbosity = bump%nam%verbosity
 if (bump%nam%colorlog) then
    bump%mpl%black = char(27)//'[0;0m'
    bump%mpl%green = char(27)//'[0;32m'
    bump%mpl%peach = char(27)//'[1;91m'
    bump%mpl%aqua = char(27)//'[1;36m'
    bump%mpl%purple = char(27)//'[1;35m'
-   bump%mpl%err_color = char(27)//'[0;37;41;1m'
    bump%mpl%wng_color = char(27)//'[0;37;42;1m'
 else
    bump%mpl%black = ' '
@@ -226,7 +189,6 @@ else
    bump%mpl%peach = ' '
    bump%mpl%aqua = ' '
    bump%mpl%purple = ' '
-   bump%mpl%err_color = ' '
    bump%mpl%wng_color = ' '
 end if
 bump%mpl%testing = bump%nam%testing
@@ -245,6 +207,16 @@ write(bump%mpl%info,'(a,i3,a,i2,a)') '--- Parallelization with ',bump%mpl%nproc,
  & bump%mpl%nthread,' OpenMP threads'
 call bump%mpl%flush
 
+! Set universe radius
+write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+call bump%mpl%flush
+write(bump%mpl%info,'(a)') '--- Missing values'
+call bump%mpl%flush
+write(bump%mpl%info,'(a4,a,e15.8)') '','Real:    ',bump%mpl%msv%valr 
+call bump%mpl%flush
+write(bump%mpl%info,'(a4,a,i6)') '','Integer: ',bump%mpl%msv%vali
+call bump%mpl%flush
+
 if (present(universe_rad)) then
    if (universe_rad%size()>0) then
       ! Set universe radius
@@ -261,10 +233,7 @@ if (present(universe_rad)) then
          afield = universe_rad%field(bump%nam%variables(iv))
 
          ! Get data maximum
-         if (afield%rank()==1) then
-            call afield%data(ptr_1)
-            bump%nam%universe_rad = max(bump%nam%universe_rad,zss_maxval(ptr_1,mask=bump%mpl%msv%isnot(ptr_1)))
-         elseif (afield%rank()==2) then
+         if (afield%rank()==2) then
             call afield%data(ptr_2)
             do il0=1,size(ptr_2,1)
                if ((bump%nam%min_lev(iv)<=il0).and.(il0<=bump%nam%max_lev(iv))) &
@@ -401,9 +370,9 @@ subroutine bump_second_geometry(bump,afunctionspace,fieldset)
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump                  !< BUMP
-type(atlas_functionspace),intent(in) :: afunctionspace  !< ATLAS functionspace
-type(fieldset_type),intent(in),optional :: fieldset     !< Fieldset containing geometry elements
+class(bump_type),intent(inout) :: bump                 !< BUMP
+type(atlas_functionspace),intent(in) :: afunctionspace !< ATLAS functionspace
+type(fieldset_type),intent(in) :: fieldset             !< Fieldset containing geometry elements
 
 ! Set name
 @:set_name(bump_second_geometry)
@@ -419,11 +388,7 @@ write(bump%mpl%info,'(a)') '----------------------------------------------------
 call bump%mpl%flush
 write(bump%mpl%info,'(a)') '--- Initialize second geometry'
 call bump%mpl%flush
-if (present(fieldset)) then
-   call bump%geom(2)%setup(bump%mpl,bump%rng,bump%nam,afunctionspace,fieldset)
-else
-   call bump%geom(2)%setup(bump%mpl,bump%rng,bump%nam,afunctionspace)
-end if
+call bump%geom(2)%setup(bump%mpl,bump%rng,bump%nam,afunctionspace,fieldset)
 if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 
 ! Check consistency between geometries
@@ -475,20 +440,14 @@ end if
 if (.not.bump%ens(iens)%loaded) call bump%ens(iens)%alloc(ne,nsub)
 bump%ens(iens)%loaded = .true.
 
-if (copy_ensemble) then
-   ! Copy fields
-   call bump%ens(iens)%mem(ie)%init(bump%mpl,fieldset,bump%geom(iens)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d, &
- & copy=.true.)
-else
-   ! Pass fields
-   call bump%ens(iens)%mem(ie)%init(bump%mpl,fieldset,bump%geom(iens)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d, &
+! Pass fields
+call bump%ens(iens)%mem(ie)%init(bump%mpl,fieldset,bump%geom(iens)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d, &
  & pass=.true.)
-end if
 
 ! Print norm
-!write(bump%mpl%info,'(a,i6,a)') 'Ensemble 1 member ',ie,': '
-!call bump%mpl%flush
-!call bump%ens(iens)%mem(ie)%print(bump%mpl)
+write(bump%mpl%info,'(a,i1,a,i6,a)') 'Ensemble ',iens,' member ',ie,': '
+call bump%mpl%flush
+call bump%ens(iens)%mem(ie)%print(bump%mpl)
 
 ! Probe out
 @:probe_out()
@@ -528,6 +487,9 @@ if (ie==1) then
    call bump%mpl%flush
    call bump%samp(1)%setup(bump%mpl,bump%rng,bump%nam,bump%geom(1))
    if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
+   call bump%samp(1)%setup_mpi(bump%mpl,bump%rng,bump%nam,bump%geom(1))
+   if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
+   call bump%samp(1)%setup_write(bump%mpl,bump%nam,bump%geom(1))
 end if
 
 ! Set fieldset metadata
@@ -621,9 +583,15 @@ if (ie==1) then
    write(bump%mpl%info,'(a,i1)') '--- Setup sampling for ensemble ',iens
    call bump%mpl%flush
    if (iens==1) then
-      call bump%samp(iens)%setup(bump%mpl,bump%rng,bump%nam,bump%geom(iens))
+      call bump%samp(1)%setup(bump%mpl,bump%rng,bump%nam,bump%geom(1),bump%ens(1))
+      if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
+      call bump%samp(1)%setup_mpi(bump%mpl,bump%rng,bump%nam,bump%geom(1))
+      if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
+      call bump%samp(1)%setup_write(bump%mpl,bump%nam,bump%geom(1))
    elseif (iens==2) then
-      call bump%samp(iens)%setup(bump%mpl,bump%rng,bump%nam,bump%geom(iens),other=bump%samp(1))
+      call bump%samp(iens)%copy(bump%mpl,bump%nam,bump%geom(iens),bump%samp(1))
+      call bump%samp(2)%setup_mpi(bump%mpl,bump%rng,bump%nam,bump%geom(2))
+      if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
    end if
    if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 end if
@@ -635,8 +603,7 @@ call fieldset%set_metadata(bump%mpl,bump%geom(iens)%gmask_mga,bump%nam%variables
 call bump%geom(iens)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
 
 ! Update moments
-write(momname,'(a,i1)') 'mom',iens
-call bump%mom(iens)%update(bump%mpl,bump%nam,bump%geom(iens),bump%bpar,bump%samp(iens),momname,fld_c0a,ie,iens)
+call bump%mom(iens)%update(bump%mpl,bump%nam,bump%geom(iens),bump%bpar,bump%samp(iens),fld_c0a,ie,iens)
 
 ! Probe out
 @:probe_out()
@@ -734,6 +701,9 @@ if (bump%nam%new_vbal_cov.or.bump%nam%load_vbal_cov.or.(bump%nam%new_vbal.and.(.
    call bump%mpl%flush
    call bump%samp(1)%setup(bump%mpl,bump%rng,bump%nam,bump%geom(1),bump%ens(1))
    if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
+   call bump%samp(1)%setup_mpi(bump%mpl,bump%rng,bump%nam,bump%geom(1))
+   if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
+   call bump%samp(1)%setup_write(bump%mpl,bump%nam,bump%geom(1))
 
    if (bump%geom(2)%allocated) then
       ! Setup sampling for ensemble 2
@@ -741,7 +711,8 @@ if (bump%nam%new_vbal_cov.or.bump%nam%load_vbal_cov.or.(bump%nam%new_vbal.and.(.
       call bump%mpl%flush
       write(bump%mpl%info,'(a)') '--- Setup sampling for ensemble 2'
       call bump%mpl%flush
-      call bump%samp(2)%setup(bump%mpl,bump%rng,bump%nam,bump%geom(2),bump%ens(2),bump%samp(1))
+      call bump%samp(2)%copy(bump%mpl,bump%nam,bump%geom(2),bump%samp(1))
+      call bump%samp(2)%setup_mpi(bump%mpl,bump%rng,bump%nam,bump%geom(2))
       if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
    end if
 end if
@@ -816,14 +787,14 @@ if (bump%nam%new_mom) then
    ! Compute ensemble 1 sample moments
    write(bump%mpl%info,'(a7,a)') '','Ensemble 1:'
    call bump%mpl%flush
-   call bump%mom(1)%compute(bump%mpl,bump%nam,bump%geom(1),bump%bpar,bump%samp(1),bump%ens(1),'mom1')
+   call bump%mom(1)%compute(bump%mpl,bump%nam,bump%geom(1),bump%bpar,bump%samp(1),bump%ens(1),1)
 
    select case(trim(bump%nam%method))
    case ('hyb-rnd','hyb-ens')
       ! Compute ensemble 2 sample moments
       write(bump%mpl%info,'(a7,a)') '','Ensemble 2:'
       call bump%mpl%flush
-      call bump%mom(2)%compute(bump%mpl,bump%nam,bump%geom(2),bump%bpar,bump%samp(2),bump%ens(2),'mom2')
+      call bump%mom(2)%compute(bump%mpl,bump%nam,bump%geom(2),bump%bpar,bump%samp(2),bump%ens(2),2)
    end select
 elseif (bump%nam%load_mom) then
    ! Load sample moments
@@ -835,14 +806,14 @@ elseif (bump%nam%load_mom) then
    ! Load ensemble 1 sample moments
    write(bump%mpl%info,'(a7,a)') '','Ensemble 1'
    call bump%mpl%flush
-   call bump%mom(1)%read(bump%mpl,bump%nam,bump%geom(1),bump%bpar,bump%samp(1),bump%ens(1),'mom1')
+   call bump%mom(1)%read(bump%mpl,bump%nam,bump%geom(1),bump%bpar,bump%samp(1),bump%ens(1),1)
 
    select case(trim(bump%nam%method))
    case ('hyb-rnd','hyb-ens')
       ! Load ensemble 2 sample moments
       write(bump%mpl%info,'(a7,a)') '','Ensemble 2'
       call bump%mpl%flush
-      call bump%mom(2)%read(bump%mpl,bump%nam,bump%geom(2),bump%bpar,bump%samp(2),bump%ens(2),'mom2')
+      call bump%mom(2)%read(bump%mpl,bump%nam,bump%geom(2),bump%bpar,bump%samp(2),bump%ens(2),2)
    end select
 end if
 
@@ -862,16 +833,6 @@ if (bump%nam%check_consistency) then
    write(bump%mpl%info,'(a)') '--- Check HDIAG/NICAS consistency'
    call bump%mpl%flush
    call bump%check_consistency
-end if
-
-if (bump%nam%check_set_param) then
-   ! Test set_parameter interfaces
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
-   call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Test set_parameter interfaces'
-   call bump%mpl%flush()
-   call bump%test_set_parameter
-   if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 end if
 
 if (allocated(bump%cmat(1)%blk)) then
@@ -901,7 +862,7 @@ if (bump%nam%new_hdiag) then
    select case(trim(bump%nam%method))
    case ('cor')
       call bump%cmat(1)%from_hdiag(bump%mpl,bump%geom(1),bump%bpar,bump%hdiag%cor(1))
-   case ('loc','hyb-avg','hyb-rnd','hyb-ens')
+   case ('loc','hyb-rnd','hyb-ens')
       call bump%cmat(1)%from_hdiag(bump%mpl,bump%geom(1),bump%bpar,bump%hdiag%loc(1),loc_scaling_factor)
    end select
 
@@ -1066,9 +1027,11 @@ class(bump_type),intent(inout) :: bump !< BUMP
 
 ! Local variables
 integer :: ib,ifac,ifac_best,itest
-real(kind_real) :: fac(-nfac_opt:nfac_opt),mse(ntest,-nfac_opt:nfac_opt),mse_avg(-nfac_opt:nfac_opt)
-real(kind_real) :: fld_ref(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv,ntest)
-real(kind_real) :: fld_save(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv,ntest)
+real(kind_real) :: fac(-bump%nam%optimality_nfac:bump%nam%optimality_nfac)
+real(kind_real) :: mse(bump%nam%optimality_ntest,-bump%nam%optimality_nfac:bump%nam%optimality_nfac)
+real(kind_real) :: mse_avg(-bump%nam%optimality_nfac:bump%nam%optimality_nfac)
+real(kind_real) :: fld_ref(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv,bump%nam%optimality_ntest)
+real(kind_real) :: fld_save(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv,bump%nam%optimality_ntest)
 real(kind_real) :: fld(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
 type(nicas_type) :: nicas_test
 
@@ -1084,14 +1047,14 @@ type(nicas_type) :: nicas_test
 ! Define test vectors
 write(bump%mpl%info,'(a4,a)') '','Define test vectors'
 call bump%mpl%flush
-call bump%geom(1)%define_test_vectors(bump%mpl,bump%rng,bump%nam,ntest,fld_save)
+call bump%geom(1)%define_test_vectors(bump%mpl,bump%rng,bump%nam,bump%nam%optimality_ntest,fld_save)
 if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 
 ! Apply correlation operator to test vectors
 write(bump%mpl%info,'(a4,a)') '','Apply correlation operator to test vectors'
 call bump%mpl%flush
 fld_ref = fld_save
-do itest=1,ntest
+do itest=1,bump%nam%optimality_ntest
    call bump%nicas(1)%apply(bump%mpl,bump%nam,bump%geom(1),bump%bpar,fld_ref(:,:,:,itest))
 end do
 
@@ -1105,9 +1068,9 @@ write(bump%mpl%info,'(a)') '--- Compute mean for ensemble 1'
 call bump%mpl%flush
 call bump%ens(1)%compute_mean(bump%mpl,bump%nam,bump%geom(1))
 
-do ifac=-nfac_opt,nfac_opt
+do ifac=-bump%nam%optimality_nfac,bump%nam%optimality_nfac
    ! Multiplication factor
-   fac(ifac) = one+0.05_kind_real*real(ifac,kind_real)
+   fac(ifac) = one+bump%nam%optimality_delta*real(ifac,kind_real)
 
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
@@ -1147,7 +1110,7 @@ do ifac=-nfac_opt,nfac_opt
    write(bump%mpl%info,'(a)') '--- Apply small ensemble with localization to test vectors'
    call bump%mpl%flush
 
-   do itest=1,ntest
+   do itest=1,bump%nam%optimality_ntest
       ! Apply localized ensemble
       fld = fld_save(:,:,:,itest)
       call nicas_test%apply_bens(bump%mpl,bump%nam,bump%geom(1),bump%bpar,bump%ens(1),fld)
@@ -1156,7 +1119,7 @@ do ifac=-nfac_opt,nfac_opt
       mse(itest,ifac) = zss_sum((fld-fld_ref(:,:,:,itest))**2,mask=bump%mpl%msv%isnot(fld_ref(:,:,:,itest)))
       call bump%mpl%f_comm%allreduce(mse(itest,ifac),fckit_mpi_sum())
    end do
-   mse_avg(ifac) = sum(mse(:,ifac))/real(ntest,kind_real)
+   mse_avg(ifac) = sum(mse(:,ifac))/real(bump%nam%optimality_ntest,kind_real)
 
    ! Print scores
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -1173,8 +1136,8 @@ write(bump%mpl%info,'(a)') '----------------------------------------------------
 call bump%mpl%flush
 write(bump%mpl%info,'(a)') '--- Optimality results summary'
 call bump%mpl%flush
-ifac_best = minloc(mse_avg,dim=1)-(nfac_opt+1)
-do ifac=-nfac_opt,nfac_opt
+ifac_best = minloc(mse_avg,dim=1)-(bump%nam%optimality_nfac+1)
+do ifac=-bump%nam%optimality_nfac,bump%nam%optimality_nfac
    write(bump%mpl%test,'(a7,a,f4.2,a,e15.8)') '','Factor ',fac(ifac),', MSE: ',mse_avg(ifac)
    call bump%mpl%flush(.false.)
    if (ifac==ifac_best) then
@@ -1232,47 +1195,6 @@ call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
 end subroutine bump_apply_vbal
 
 !----------------------------------------------------------------------
-! Subroutine: bump_apply_vbal_inv
-!> Vertical balance application, inverse
-!----------------------------------------------------------------------
-subroutine bump_apply_vbal_inv(bump,fieldset)
-
-implicit none
-
-! Passed variables
-class(bump_type),intent(inout) :: bump        !< BUMP
-type(fieldset_type),intent(inout) :: fieldset !< Fieldset
-
-! Local variable
-real(kind_real) :: fld_c0a(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
-
-! Set name
-@:set_name(bump_apply_vbal_inv)
-
-! Get instance
-@:get_instance(bump)
-
-! Probe in
-@:probe_in()
-
-! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d)
-
-! Fieldset to Fortran on subset Sc0
-call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
-
-! Apply vertical balance, inverse
-call bump%vbal%apply_inv(bump%nam,bump%geom(1),bump%bpar,fld_c0a)
-
-! Fortran array on subset Sc0 to fieldset
-call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
-
-! Probe out
-@:probe_out()
-
-end subroutine bump_apply_vbal_inv
-
-!----------------------------------------------------------------------
 ! Subroutine: bump_apply_vbal_ad
 !> Vertical balance application, adjoint
 !----------------------------------------------------------------------
@@ -1314,10 +1236,10 @@ call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
 end subroutine bump_apply_vbal_ad
 
 !----------------------------------------------------------------------
-! Subroutine: bump_apply_vbal_inv_ad
-!> Vertical balance application, inverse adjoint
+! Subroutine: bump_apply_vbal_inv
+!> Vertical balance application, inverse
 !----------------------------------------------------------------------
-subroutine bump_apply_vbal_inv_ad(bump,fieldset)
+subroutine bump_apply_vbal_inv(bump,fieldset)
 
 implicit none
 
@@ -1329,7 +1251,7 @@ type(fieldset_type),intent(inout) :: fieldset !< Fieldset
 real(kind_real) :: fld_c0a(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
 
 ! Set name
-@:set_name(bump_apply_vbal_inv_ad)
+@:set_name(bump_apply_vbal_inv)
 
 ! Get instance
 @:get_instance(bump)
@@ -1343,8 +1265,8 @@ call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:
 ! Fieldset to Fortran on subset Sc0
 call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
 
-! Apply vertical balance, inverse adjoint
-call bump%vbal%apply_inv_ad(bump%nam,bump%geom(1),bump%bpar,fld_c0a)
+! Apply vertical balance, inverse
+call bump%vbal%apply_inv(bump%nam,bump%geom(1),bump%bpar,fld_c0a)
 
 ! Fortran array on subset Sc0 to fieldset
 call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
@@ -1352,7 +1274,7 @@ call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
 ! Probe out
 @:probe_out()
 
-end subroutine bump_apply_vbal_inv_ad
+end subroutine bump_apply_vbal_inv
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_apply_stddev
@@ -2110,91 +2032,6 @@ call fieldset%from_array(bump%mpl,fld_mga)
 end subroutine bump_get_parameter
 
 !----------------------------------------------------------------------
-! Subroutine: bump_test_get_parameter
-!> Test get_parameter
-!----------------------------------------------------------------------
-subroutine bump_test_get_parameter(bump)
-
-implicit none
-
-! Passed variables
-class(bump_type),intent(inout) :: bump !< BUMP
-
-! Local variables
-type(fieldset_type) :: fieldset
-
-! Set name
-@:set_name(bump_test_get_parameter)
-
-! Get instance
-@:get_instance(bump)
-
-! Probe in
-@:probe_in()
-
-! Create fieldset
-call fieldset%init(bump%mpl,bump%geom(1)%afunctionspace_mg,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d)
-
-! Get parameter
-call bump%get_parameter('norm_m2',1,1,fieldset)
-call bump%get_parameter('norm_m4',1,1,fieldset)
-call bump%get_parameter('norm_kurt',1,1,fieldset)
-if ((bump%nam%new_var.or.bump%nam%update_var).and.(trim(bump%nam%strategy)=='specific_multivariate')) then
-   call bump%get_parameter('stddev',1,1,fieldset)
-   call bump%get_parameter('var',1,1,fieldset)
-   call bump%get_parameter('m4',1,1,fieldset)
-end if
-call bump%get_parameter('cor_a',1,1,fieldset)
-if (bump%nam%nc4==1) then
-   call bump%get_parameter('cor_rh',1,1,fieldset)
-else
-   call bump%get_parameter('cor_rh1',1,1,fieldset)
-   call bump%get_parameter('cor_rh2',1,1,fieldset)
-   call bump%get_parameter('cor_rhc',1,1,fieldset)
-end if
-call bump%get_parameter('cor_rv',1,1,fieldset)
-call bump%get_parameter('dirac_diag_cor',1,1,fieldset)
-call bump%get_parameter('loc_a',1,1,fieldset)
-if (bump%nam%nc4==1) then
-   call bump%get_parameter('loc_rh',1,1,fieldset)
-else
-   call bump%get_parameter('loc_rh1',1,1,fieldset)
-   call bump%get_parameter('loc_rh2',1,1,fieldset)
-   call bump%get_parameter('loc_rhc',1,1,fieldset)
-end if
-call bump%get_parameter('loc_rv',1,1,fieldset)
-call bump%get_parameter('dirac_diag_loc',1,1,fieldset)
-call bump%get_parameter('hyb_coef_ens',1,1,fieldset)
-call bump%get_parameter('hyb_coef_sta',1,1,fieldset)
-call bump%get_parameter('hyb_coef_ens_lr',1,1,fieldset)
-call bump%get_parameter('loc_a_lr',1,1,fieldset)
-if (bump%nam%nc4==1) then
-   call bump%get_parameter('loc_rh_lr',1,1,fieldset)
-else
-   call bump%get_parameter('loc_rh1_lr',1,1,fieldset)
-   call bump%get_parameter('loc_rh2_lr',1,1,fieldset)
-   call bump%get_parameter('loc_rhc_lr',1,1,fieldset)
-end if
-call bump%get_parameter('loc_rv_lr',1,1,fieldset)
-call bump%get_parameter('dirac_diag_loc_lr',1,1,fieldset)
-call bump%get_parameter('dirac_vbal',1,1,fieldset)
-call bump%get_parameter('dirac_mom',1,1,fieldset)
-call bump%get_parameter('nicas_norm',1,1,fieldset)
-call bump%get_parameter('dirac_nicas',1,1,fieldset)
-call bump%get_parameter('dirac_nicas_bens',1,1,fieldset)
-call bump%get_parameter('nicas_norm_lr',1,1,fieldset)
-call bump%get_parameter('dirac_nicas_lr',1,1,fieldset)
-call bump%get_parameter('dirac_nicas_bens_lr',1,1,fieldset)
-
-! Release memory
-call fieldset%final()
-
-! Probe out
-@:probe_out()
-
-end subroutine bump_test_get_parameter
-
-!----------------------------------------------------------------------
 ! Subroutine: bump_set_ncmp
 !> Set number of components
 !----------------------------------------------------------------------
@@ -2442,220 +2279,6 @@ end do
 end subroutine bump_set_parameter
 
 !----------------------------------------------------------------------
-! Subroutine: bump_test_set_parameter
-!> Test set_parameter
-!----------------------------------------------------------------------
-subroutine bump_test_set_parameter(bump)
-
-implicit none
-
-! Passed variables
-class(bump_type),intent(inout) :: bump !< BUMP
-
-! Local variables
-integer :: ic0a,il0,iv
-integer(kind_short) :: lon_short,lat_short,il0_short,iv_short
-real(kind_real) :: fld_max
-real(kind_real) :: fld_c0a(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
-real(kind_real) :: fld_c0a_sym(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
-real(kind_real) :: fld_c0a_req(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
-real(kind_real) :: fld_c0a_vert(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
-type(fieldset_type) :: fieldset,fieldset_sym,fieldset_req,fieldset_vert
-
-! Set name
-@:set_name(bump_test_set_parameter)
-
-! Get instance
-@:get_instance(bump)
-
-! Probe in
-@:probe_in()
-
-! Initialization
-do iv=1,bump%nam%nv
-   iv_short = int(iv,kind_short)
-   do il0=1,bump%geom(1)%nl0
-      il0_short = int(il0,kind_short)
-      do ic0a=1,bump%geom(1)%nc0a
-         call rad2short(bump%geom(1)%lon_c0a(ic0a),lon_short)
-         call rad2short(bump%geom(1)%lat_c0a(ic0a),lat_short)
-         fld_c0a(ic0a,il0,iv) = abs(real(fletcher32((/lon_short,lat_short,il0_short,iv_short/))))
-      end do
-   end do
-end do
-fld_max = zss_maxval(fld_c0a)
-call bump%mpl%f_comm%allreduce(fld_max,fckit_mpi_max())
-fld_c0a = fld_c0a/fld_max
-fld_c0a_sym = fld_c0a-half
-fld_c0a_req = fld_c0a*req
-fld_c0a_vert = (one+fld_c0a)*(maxval(bump%geom(1)%vunitavg)-minval(bump%geom(1)%vunitavg))
-
-! Create fieldset
-call fieldset%init(bump%mpl,bump%geom(1)%afunctionspace_mg,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d)
-call fieldset_sym%init(bump%mpl,bump%geom(1)%afunctionspace_mg,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv), &
- & bump%nam%lev2d)
-call fieldset_req%init(bump%mpl,bump%geom(1)%afunctionspace_mg,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv), &
- & bump%nam%lev2d)
-call fieldset_vert%init(bump%mpl,bump%geom(1)%afunctionspace_mg,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv), &
- & bump%nam%lev2d)
-
-! Fortran array on subset Sc0 to fieldset
-call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
-call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a_sym,fieldset_sym)
-call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a_req,fieldset_req)
-call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a_vert,fieldset_vert)
-
-! Set parameters
-do iv=1,bump%nam%nv
-   call bump%set_ncmp(iv,1)
-end do
-if (trim(bump%nam%strategy)=='specific_univariate') then
-   call bump%set_parameter('stddev',1,fieldset)
-   call bump%set_parameter('var',1,fieldset)
-   call bump%set_parameter('m4',1,fieldset)
-end if
-if (bump%nam%nc4==1) then
-  call bump%set_parameter('rh',1,fieldset_req)
-else
-  call bump%set_parameter('rh1',1,fieldset_req)
-  call bump%set_parameter('rh2',1,fieldset_req)
-  call bump%set_parameter('rhc',1,fieldset_sym)
-end if
-call bump%set_parameter('rv',1,fieldset_vert)
-call bump%set_parameter('nicas_norm',1,fieldset)
-
-! Release memory
-call fieldset%final()
-call fieldset_sym%final()
-call fieldset_req%final()
-call fieldset_vert%final()
-
-! Probe out
-@:probe_out()
-
-end subroutine bump_test_set_parameter
-
-!----------------------------------------------------------------------
-! Subroutine: bump_test_apply_interfaces
-!> Test BUMP apply interfaces
-!----------------------------------------------------------------------
-subroutine bump_test_apply_interfaces(bump)
-
-implicit none
-
-! Passed variables
-class(bump_type),intent(inout) :: bump !< BUMP
-
-! Local variables
-integer :: n
-real(kind_real),allocatable :: fld_c0a(:,:,:),pcv(:)
-type(fieldset_type) :: fieldset
-
-! Set name
-@:set_name(bump_test_apply_interfaces)
-
-! Get instance
-@:get_instance(bump)
-
-! Probe in
-@:probe_in()
-
-! Test apply_vbal
-if (bump%nam%check_apply_vbal) then
-   write(bump%mpl%info,'(a7,a)') '','Test apply_vbal'
-   call bump%mpl%flush
-
-   ! Allocation
-   allocate(fld_c0a(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv))
-
-   ! Initialization
-   call bump%rng%rand(zero,one,fld_c0a)
-
-   ! Create fieldset
-   call fieldset%init(bump%mpl,bump%geom(1)%afunctionspace_mg,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv), &
- & bump%nam%lev2d)
-
-   ! Fortran array on subset Sc0 to fieldset
-   call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
-
-   ! Calls
-   call bump%apply_vbal(fieldset)
-   call bump%apply_vbal_inv(fieldset)
-   call bump%apply_vbal_ad(fieldset)
-   call bump%apply_vbal_inv_ad(fieldset)
-
-   ! Release memory
-   deallocate(fld_c0a)
-   call fieldset%final()
-end if
-
-! Test apply_stddev
-if (bump%nam%check_apply_stddev) then
-   write(bump%mpl%info,'(a7,a)') '','Test apply_stddev'
-   call bump%mpl%flush
-
-   ! Allocation
-   allocate(fld_c0a(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv))
-
-   ! Initialization
-   call bump%rng%rand(zero,one,fld_c0a)
-
-   ! Create fieldset
-   call fieldset%init(bump%mpl,bump%geom(1)%afunctionspace_mg,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv), &
- & bump%nam%lev2d)
-
-   ! Fortran array on subset Sc0 to fieldset
-   call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
-
-   ! Calls
-   call bump%apply_stddev(fieldset)
-   call bump%apply_stddev_inv(fieldset)
-
-   ! Release memory
-   deallocate(fld_c0a)
-   call fieldset%final()
-end if
-
-! Test apply_nicas
-if (bump%nam%check_apply_nicas) then
-   write(bump%mpl%info,'(a7,a)') '','Test apply_nicas'
-   call bump%mpl%flush
-
-   ! Get control variable size
-   call bump%get_cv_size(n)
-
-   ! Allocation
-   allocate(fld_c0a(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv))
-   allocate(pcv(n))
-
-   ! Initialization
-   call bump%rng%rand(zero,one,fld_c0a)
-
-   ! Create fieldset
-   call fieldset%init(bump%mpl,bump%geom(1)%afunctionspace_mg,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv), &
- & bump%nam%lev2d)
-
-   ! Fortran array on subset Sc0 to fieldset
-   call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
-
-   ! Calls
-   call bump%apply_nicas(fieldset)
-   call bump%apply_nicas_sqrt(pcv,fieldset)
-   call bump%apply_nicas_sqrt_ad(fieldset,pcv)
-   call bump%randomize(fieldset)
-
-   ! Release memory
-   deallocate(fld_c0a)
-   deallocate(pcv)
-   call fieldset%final()
-end if
-
-! Probe out
-@:probe_out()
-
-end subroutine bump_test_apply_interfaces
-
-!----------------------------------------------------------------------
 ! Subroutine: bump_partial_dealloc
 !> Release memory (partial)
 !----------------------------------------------------------------------
@@ -2774,6 +2397,9 @@ call bump%vbal%dealloc
 
 ! Execution stats
 @:execution_stats()
+
+! Finalize MPL object
+call bump%mpl%final()
 
 ! Release probe instance
 @:probe_dealloc()

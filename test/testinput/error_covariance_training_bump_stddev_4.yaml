@@ -4,11 +4,9 @@ geometry:
     type: regular_lonlat
     N: 10
   levels: 2
-  mask type: sea
   halo: 1
 input variables: &id001
 - var1
-- var2
 background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
@@ -29,6 +27,6 @@ bump:
 output:
 - parameter: stddev
   file:
-    filepath: testdata/error_covariance_training_bump_stddev_4/stddev
+    filepath: testdata/error_covariance_training_bump_stddev_4/_MPI_-_OMP__stddev
 test:
   reference filename: testref/error_covariance_training_bump_stddev_4.ref

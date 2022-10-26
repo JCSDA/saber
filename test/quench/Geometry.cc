@@ -268,12 +268,24 @@ Geometry::Geometry(const Parameters_ & params,
       comm_.broadcast(lon.begin(), lon.end(), 0);
       comm_.broadcast(lat.begin(), lat.end(), 0);
       comm_.broadcast(lsm.begin(), lsm.end(), 0);
-      double dlon = lon[1]-lon[0];
-      double dlat = lat[1]-lat[0];
 
-      // Lon/lat variables
-      double zlon, zlat, dzlon, dzlat;
-      int ilonm, ilonp, ilon, ilatm, ilatp, ilat;
+      // Build KD-tree
+      atlas::Geometry geometry(atlas::util::Earth::radius());
+      atlas::util::IndexKDTree2D search(geometry);
+      search.reserve(nlat*nlon);
+      std::vector<double> lon2d;
+      std::vector<double> lat2d;
+      std::vector<size_t> payload2d;
+      int jnode = 0;
+      for (size_t ilat = 0; ilat < nlat; ++ilat) {
+        for (size_t ilon = 0; ilon < nlon; ++ilon) {
+          lon2d.push_back(lon[ilon]);
+          lat2d.push_back(lat[ilat]);
+          payload2d.push_back(jnode);
+          ++jnode;
+        }
+      }
+      search.build(lon2d, lat2d, payload2d);
 
       if (functionSpace_.type() == "StructuredColumns") {
         // StructuredColumns
@@ -282,65 +294,22 @@ Geometry::Geometry(const Parameters_ & params,
         // Create local coordinates fieldset
         auto lonlatView = atlas::array::make_view<double, 2>(fs.xy());
         for (atlas::idx_t jnode = 0; jnode < fs.xy().shape(0); ++jnode) {
-          // Longitude
-          zlon = lonlatView(jnode, 0);
-          if (zlon < lon[0]) {
-            ilonm = nlon-1;
-            ilonp = 0;
-            dzlon = zlon-lon[ilonm]+360.0;
-          } else if (zlon < lon[nlon-1]) {
-            ilonm = (zlon-lon[0])/dlon;
-            ilonp = ilonm+1;
-            dzlon = zlon-lon[ilonm];
-          } else {
-            ilonm = nlon-1;
-            ilonp = 0;
-            dzlon = zlon-lon[ilonm];
-          }
-          if (dzlon < 0.5*dlon) {
-            ilon = ilonm;
-          } else {
-            ilon = ilonp;
-          }
+          // Find nearest neighbor
+          size_t nn = search.closestPoint(atlas::PointLonLat{lonlatView(jnode, 0),
+            lonlatView(jnode, 1)}).payload();
 
-          // Latitude
-          zlat = lonlatView(jnode, 1);
-          if (zlat < lat[0]) {
-            ilatm = 0;
-            ilatp = 0;
-            dzlat = 0.0;
-          } else if (zlat < lat[nlat-1]) {
-            ilatm = (zlat-lat[0])/dlat;
-            ilatp = ilatm+1;
-            dzlat = zlat-lat[ilatm];
-          } else {
-            ilatm = nlat-1;
-            ilatp = nlat-1;
-            dzlat = 0.0;
-          }
-          if (dzlat < 0.5*dlat) {
-            ilat = ilatm;
-          } else {
-            ilat = ilatp;
-          }
-
-          // Get nearest neighbor value
+          // Ocean points for all levels
           for (size_t jlevel = 0; jlevel < levels_; ++jlevel) {
-            if (*mask_type == "sea") {
-              // Keep ocean points only
-              if (lsm[ilat*nlon+ilon] == 0) {
-                maskView(jnode, jlevel) = 1;
-              } else {
-                maskView(jnode, jlevel) = 0;
-              }
-            } else if (*mask_type == "land") {
-              // Keep land points only
-              if (lsm[ilat*nlon+ilon] == 1) {
-                maskView(jnode, jlevel) = 1;
-              } else {
-                maskView(jnode, jlevel) = 0;
-              }
-            }
+            if (lsm[nn] == 0) {
+               maskView(jnode, jlevel) = 1;
+             } else {
+               maskView(jnode, jlevel) = 0;
+             }
+           }
+
+          // Ocean + small islands for the first level
+          if (lsm[nn] == 3) {
+            maskView(jnode, 0) = 1;
           }
         }
       } else {

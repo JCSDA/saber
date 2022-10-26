@@ -18,6 +18,7 @@
 #include "oops/base/Variables.h"
 #include "oops/mpi/mpi.h"
 #include "oops/runs/Application.h"
+#include "oops/util/ConfigFunctions.h"
 #include "oops/util/Logger.h"
 #include "oops/util/parameters/OptionalParameter.h"
 #include "oops/util/parameters/Parameters.h"
@@ -417,20 +418,8 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
             for (const auto & bumpOperator : bumpOperators) {
               oops::Log::info() << "Info     :          Apply operator " << bumpOperator
                                 << std::endl;
-              if (bumpOperator == "multiplyVbal") {
-                bump->multiplyVbal(dx1.fieldSet());
-              } else if (bumpOperator == "inverseMultiplyVbal") {
+              if (bumpOperator == "inverseMultiplyVbal") {
                 bump->inverseMultiplyVbal(dx1.fieldSet());
-              } else if (bumpOperator == "multiplyVbalAd") {
-                bump->multiplyVbalAd(dx1.fieldSet());
-              } else if (bumpOperator == "inverseMultiplyAd") {
-                bump->inverseMultiplyVbalAd(dx1.fieldSet());
-              } else if (bumpOperator == "multiplyStdDev") {
-                bump->multiplyStdDev(dx1.fieldSet());
-              } else if (bumpOperator == "inverseMultiplyStdDev") {
-                bump->inverseMultiplyStdDev(dx1.fieldSet());
-              } else if (bumpOperator == "multiplyNicas") {
-                bump->multiplyNicas(dx1.fieldSet());
               } else {
                   ABORT("Wrong bump operator: " + bumpOperator);
               }

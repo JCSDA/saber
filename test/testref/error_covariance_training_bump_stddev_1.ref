@@ -1,19 +1,41 @@
-       Compute independent levels:  1[2] 
-          Level   1:  -1378492017
-          Level   2:  -1378492017
+       Independent levels:  1[2] 
+          Level   1:   1550418632
+          Level   2:   1550418632
           Model grid size:              840
           Subset Sc0 size:              762
           Number of duplicated points (halo):        78 (  9.29%)
           Min. / max. longitudes: -171.0 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
-          Domain area (% of Earth area): 0.657E+02%
-             Level   1 ~>  65.7%
-             Level   2 ~>  65.7%
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-             ns =               30
-                Level   1: rhflt =   40000.00 km, rel. diff. =  0.17054E-01
-                Level   2: rhflt =   40000.00 km, rel. diff. = -0.54177E-02
-             Level   1 ~>  0.97160E+00 /  0.97160E+00
-             Level   2 ~>  0.98800E+00 /  0.98800E+00
-Norm of BUMP output parameter stddev - 1: 3.1333114414994359e+01
+   Norm of var1:  0.31599187E+04
+   Norm of var1:  0.23796848E+04
+   Norm of var1:  0.23511865E+04
+   Norm of var1:  0.25055068E+04
+   Norm of var1:  0.31332806E+04
+   Norm of var1:  0.29371951E+04
+   Norm of var1:  0.32667101E+04
+   Norm of var1:  0.29922341E+04
+   Norm of var1:  0.32549423E+04
+   Norm of var1:  0.22965869E+04
+   Norm of var1:  0.25774242E+04
+   Norm of var1:  0.27050680E+04
+   Norm of var1:  0.28400528E+04
+   Norm of var1:  0.29081400E+04
+   Norm of var1:  0.35689502E+04
+   Norm of var1:  0.31646249E+04
+   Norm of var1:  0.41317620E+04
+   Norm of var1:  0.28535321E+04
+   Norm of var1:  0.32252436E+04
+   Norm of var1:  0.35761567E+01
+             ns =               40
+                Level   1: rhflt =   10000.00 km, rel. diff. =  0.96286E-02
+                Level   2: rhflt =   40000.00 km, rel. diff. =  0.93774E-02
+             Level   1 ~>  0.96684E+00 /  0.96684E+00
+             Level   2 ~>  0.95571E+00 /  0.95571E+00
+Norm of BUMP output parameter stddev - 1: 3.8275114762593667e+01
+Norm of BUMP output parameter var - 1: 3.9544569241070420e+01
+Norm of BUMP output parameter m4 - 1: 1.2714122214452507e+02

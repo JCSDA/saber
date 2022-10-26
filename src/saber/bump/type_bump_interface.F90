@@ -307,31 +307,6 @@ call bump%apply_vbal_ad(f_fieldset)
 end subroutine bump_apply_vbal_ad_c
 
 !----------------------------------------------------------------------
-! Subroutine: bump_apply_vbal_inv_ad_c
-!> Vertical balance application, inverse adjoint
-!----------------------------------------------------------------------
-subroutine bump_apply_vbal_inv_ad_c(key_bump,c_afieldset) bind(c,name='bump_apply_vbal_inv_ad_f90')
-
-implicit none
-
-! Passed variables
-integer(c_int),intent(in) :: key_bump       !< BUMP
-type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
-
-! Local variables
-type(bump_type),pointer :: bump
-type(fieldset_type) :: f_fieldset
-
-! Interface
-call bump_registry%get(key_bump,bump)
-f_fieldset = atlas_fieldset(c_afieldset)
-
-! Call Fortran
-call bump%apply_vbal_inv_ad(f_fieldset)
-
-end subroutine bump_apply_vbal_inv_ad_c
-
-!----------------------------------------------------------------------
 ! Subroutine: bump_apply_stddev_c
 !> Standard-deviation application
 !----------------------------------------------------------------------
@@ -672,28 +647,16 @@ call bump%partial_dealloc
 end subroutine bump_partial_dealloc_c
 
 !----------------------------------------------------------------------
-! Subroutine: bump_dealloc_c
-!> Deallocation
+! Subroutine: bump_finalize_c
+!> Finalize registry
 !----------------------------------------------------------------------
-subroutine bump_dealloc_c(key_bump) bind(c,name='bump_dealloc_f90')
+subroutine bump_finalize_c() bind(c,name='bump_finalize_f90')
 
 implicit none
 
-! Passed variables
-integer(c_int),intent(inout) :: key_bump !< BUMP
+! Clean registry
+call bump_registry%finalize()
 
-! Local variables
-type(bump_type),pointer :: bump
-
-! Interface
-call bump_registry%get(key_bump,bump)
-
-! Call Fortran
-call bump%dealloc
-
-! Clean interface
-call bump_registry%remove(key_bump)
-
-end subroutine bump_dealloc_c
+end subroutine bump_finalize_c
 
 end module type_bump_interface

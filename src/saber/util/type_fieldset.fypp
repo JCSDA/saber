@@ -36,9 +36,7 @@ contains
    procedure :: zero_fields => fieldset_zero_fields
    procedure :: add_fields => fieldset_add_fields
    procedure :: sub_fields => fieldset_sub_fields
-   procedure :: fieldset_mult_fields_scalar
-   procedure :: fieldset_mult_fields_fieldset
-   generic :: mult_fields => fieldset_mult_fields_scalar,fieldset_mult_fields_fieldset
+   procedure :: mult_fields => fieldset_mult_fields_scalar
    procedure :: div_fields => fieldset_div_fields
    procedure :: square_fields => fieldset_square_fields
    procedure :: sqrt_fields => fieldset_sqrt_fields
@@ -244,10 +242,6 @@ do iv=1,fieldset_out%nv
       ! Copy fields data
       if (lcopy) then
          select case (afield_in%rank())
-         case (1)
-            call afield_in%data(ptr_1_in)
-            call afield_out%data(ptr_1_out)
-            if (fieldset_out%nmga>0) ptr_1_out = ptr_1_in
          case (2)
             call afield_in%data(ptr_2_in)
             call afield_out%data(ptr_2_out)
@@ -359,9 +353,6 @@ do iv=1,fieldset%nv
 
    ! Comute global norm
    select case (afield%rank())
-   case (1)
-      call afield%data(ptr_1)
-      if (fieldset%nmga>0) norm = zss_sum(ptr_1**2,mask=mpl%msv%isnot(ptr_1))
    case (2)
       call afield%data(ptr_2)
       if (fieldset%nmga>0) norm = zss_sum(ptr_2**2,mask=mpl%msv%isnot(ptr_2))
@@ -416,9 +407,6 @@ do iv=1,fieldset%nv
 
    ! Set data to zero
    select case (afield%rank())
-   case (1)
-      call afield%data(ptr_1)
-      if (fieldset%nmga>0) ptr_1 = zero
    case (2)
       call afield%data(ptr_2)
       if (fieldset%nmga>0) ptr_2 = zero
@@ -473,10 +461,6 @@ do iv=1,fieldset_out%nv
 
    ! Set data to zero
    select case (afield_in%rank())
-   case (1)
-      call afield_in%data(ptr_1_in)
-      call afield_out%data(ptr_1_out)
-      if (fieldset_out%nmga>0) ptr_1_out = ptr_1_out+ptr_1_in
    case (2)
       call afield_in%data(ptr_2_in)
       call afield_out%data(ptr_2_out)
@@ -533,10 +517,6 @@ do iv=1,fieldset_out%nv
 
    ! Set data to zero
    select case (afield_in%rank())
-   case (1)
-      call afield_in%data(ptr_1_in)
-      call afield_out%data(ptr_1_out)
-      if (fieldset_out%nmga>0) ptr_1_out = ptr_1_out-ptr_1_in
    case (2)
       call afield_in%data(ptr_2_in)
       call afield_out%data(ptr_2_out)
@@ -592,9 +572,6 @@ do iv=1,fieldset%nv
 
    ! Set data to zero
    select case (afield%rank())
-   case (1)
-      call afield%data(ptr_1)
-      if (fieldset%nmga>0) ptr_1 = ptr_1*factor
    case (2)
       call afield%data(ptr_2)
       if (fieldset%nmga>0) ptr_2 = ptr_2*factor
@@ -613,66 +590,6 @@ call fieldset%apply_mask(mpl)
 @:probe_out()
 
 end subroutine fieldset_mult_fields_scalar
-
-!----------------------------------------------------------------------
-! Subroutine: fieldset_mult_fields_fieldset
-!> Multiply fieldset with another fieldset
-!----------------------------------------------------------------------
-subroutine fieldset_mult_fields_fieldset(fieldset_out,mpl,fieldset_in)
-
-implicit none
-
-! Passed variables
-class(fieldset_type),intent(inout) :: fieldset_out !< Output fieldset
-type(mpl_type),intent(inout) :: mpl                !< MPI data
-type(fieldset_type),intent(in) :: fieldset_in      !< Input fieldset
-
-! Local variables
-integer :: iv
-real(kind_real),pointer :: ptr_1_in(:),ptr_1_out(:),ptr_2_in(:,:),ptr_2_out(:,:)
-type(atlas_field) :: afield_in,afield_out
-
-! Set name
-@:set_name(fieldset_mult_fields_fieldset)
-
-! Probe in
-@:probe_in()
-
-! Check fieldsets
-call fieldset_out%check(mpl,fieldset_in)
-
-! Loop over fields
-do iv=1,fieldset_out%nv
-   ! Fields
-   afield_in = fieldset_in%field(fieldset_out%variables(iv))
-   afield_out = fieldset_out%field(fieldset_out%variables(iv))
-
-   ! Set data to zero
-   select case (afield_in%rank())
-   case (1)
-      call afield_in%data(ptr_1_in)
-      call afield_out%data(ptr_1_out)
-      if (fieldset_out%nmga>0) ptr_1_out = ptr_1_out*ptr_1_in
-   case (2)
-      call afield_in%data(ptr_2_in)
-      call afield_out%data(ptr_2_out)
-      if (fieldset_out%nmga>0) ptr_2_out = ptr_2_out*ptr_2_in
-   case default
-      call mpl%abort('${subr}$','wrong field rank')
-   end select
-
-   ! Release pointers
-   call afield_in%final()
-   call afield_out%final()
-end do
-
-! Apply mask
-call fieldset_out%apply_mask(mpl)
-
-! Probe out
-@:probe_out()
-
-end subroutine fieldset_mult_fields_fieldset
 
 !----------------------------------------------------------------------
 ! Subroutine: fieldset_div_fields
@@ -712,10 +629,6 @@ do iv=1,fieldset_out%nv
 
    ! Set data to zero
    select case (afield_in%rank())
-   case (1)
-      call afield_in%data(ptr_1_in)
-      call afield_out%data(ptr_1_out)
-      if (fieldset_out%nmga>0) ptr_1_out = ptr_1_out/ptr_1_in
    case (2)
       call afield_in%data(ptr_2_in)
       call afield_out%data(ptr_2_out)
@@ -770,9 +683,6 @@ do iv=1,fieldset%nv
 
    ! Set data to zero
    select case (afield%rank())
-   case (1)
-      call afield%data(ptr_1)
-      if (fieldset%nmga>0) ptr_1 = ptr_1**2
    case (2)
       call afield%data(ptr_2)
       if (fieldset%nmga>0) ptr_2 = ptr_2**2
@@ -828,9 +738,6 @@ do iv=1,fieldset%nv
 
    ! Set data to zero
    select case (afield%rank())
-   case (1)
-      call afield%data(ptr_1)
-      if (fieldset%nmga>0) ptr_1 = sqrt(ptr_1)
    case (2)
       call afield%data(ptr_2)
       if (fieldset%nmga>0) ptr_2 = sqrt(ptr_2)

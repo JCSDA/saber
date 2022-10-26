@@ -4,7 +4,6 @@ geometry:
     type: regular_lonlat
     N: 10
   levels: 2
-  mask type: sea
   halo: 1
 input variables: &id001
 - var1
@@ -17,30 +16,22 @@ bump:
   prefix: error_covariance_training_bump_nicas_3/_MPI_-_OMP_
   testing: true
   universe_rad: 10000.0e3
-  method: loc
-  strategy: common_weighted
-  new_nicas: true
-  check_dirac: true
-  resol: 4.0
-  forced_radii: true
-  rh:
-    common: [1000.0e3]
-  rv:
-    common: [3.0]
-  loc_wgt:
-    var1-var2: 0.5
-  nicas_interp_type:
-    common: c1
-  pos_def_test: true
-  interp_test: true
-  ndir: 1
-  londir:
-  - -85.0
-  latdir:
-  - 65.0
-  levdir:
-  - 1
-  ivdir:
-  - 1
+  method: cor
+  strategy: specific_univariate
+  load_nicas_global: true
+  write_nicas_local: true
+  fname_nicas: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas
+input fields:
+- parameter: nicas_a
+  component: 1
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_a_1
+- parameter: nicas_a
+  component: 2
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_a_2
+- parameter: nicas_norm
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas_norm
 test:
   reference filename: testref/error_covariance_training_bump_nicas_3.ref

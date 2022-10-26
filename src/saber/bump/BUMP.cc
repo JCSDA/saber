@@ -48,22 +48,6 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   activeVarsPerGrid_() {
   oops::Log::trace() << "BUMP::BUMP construction starting" << std::endl;
 
-  // BUMP verbosity level ('all', 'main' or 'none')
-  const boost::optional<std::string> &verbosity = params_.verbosity.value();
-  if (verbosity == boost::none) {
-    verbosity_ = true;
-  } else {
-    if (*verbosity  == "all") {
-      verbosity_ = true;
-    } else if (*verbosity  == "main") {
-      verbosity_ = (comm.rank() == 0);
-    } else if (*verbosity  == "none") {
-      verbosity_ = false;
-    } else {
-      ABORT("BUMP::BUMP: wrong verbosity string");
-    }
-  }
-
   // If testing is activated, replace _MPI_ and _OMP_ patterns
   const boost::optional<bool> &testing = params_.testing.value().get_value_or(false);
   if (testing) {
@@ -78,8 +62,8 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
     {
         omp = std::to_string(omp_get_num_threads());
     }
-    if (verbosity_) oops::Log::info() << "Info     : MPI tasks:      " << mpi << std::endl;
-    if (verbosity_) oops::Log::info() << "Info     : OpenMP threads: " << omp << std::endl;
+    oops::Log::info() << "Info     : MPI tasks:      " << mpi << std::endl;
+    oops::Log::info() << "Info     : OpenMP threads: " << omp << std::endl;
 
     // Replace patterns
     util::seekAndReplace(fullConfig, "_MPI_", mpi);
@@ -222,7 +206,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   ASSERT(grids.size() > 0);
 
   // Print configuration for this grid
-  if (verbosity_) oops::Log::info() << "Info     : General configuration: " << conf << std::endl;
+  oops::Log::info() << "Info     : General configuration: " << conf << std::endl;
 
   // Loop over grids
   for (unsigned int jgrid = 0; jgrid < grids.size(); ++jgrid) {
@@ -257,19 +241,21 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
     }
 
     // Print configuration for this grid
-    if (verbosity_) oops::Log::info() << "Info     : Grid " << jgrid << ": " << grids[jgrid]
-                                      << std::endl;
+    oops::Log::info() << "Info     : Grid " << jgrid << ": " << grids[jgrid] << std::endl;
 
     // Create BUMP instance
-    if (verbosity_) oops::Log::info() << "Info     : Create BUMP instance " << jgrid << std::endl;
+    oops::Log::info() << "Info     : Create BUMP instance " << jgrid << std::endl;
     int keyBUMP = 0;
     bump_create_f90(keyBUMP, &comm, functionSpace1.get(), extraFields1.get(),
                     conf, grids[jgrid], universe_rad.get());
     keyBUMP_.push_back(keyBUMP);
 
     // Second geometry
-    if (ens2_ne > 0 || (ensembleConfig2 != boost::none)) {
-      bump_second_geometry_f90(keyBUMP, functionSpace2.get(), extraFields2.get());
+    if (conf.has("method")) {
+      std::string method = conf.getString("method");
+      if (method == "hyb-ens" || method == "hyb-rnd") {
+        bump_second_geometry_f90(keyBUMP, functionSpace2.get(), extraFields2.get());
+      }
     }
   }
 
@@ -330,21 +316,11 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
 
 // -----------------------------------------------------------------------------
 
-BUMP::BUMP(BUMP & other) : keyBUMP_(), activeVarsPerGrid_() {
-  for (unsigned int jgrid = 0; jgrid < other.keyBUMP_.size(); ++jgrid) {
-    keyBUMP_.push_back(other.keyBUMP_[jgrid]);
-    activeVarsPerGrid_.push_back(other.activeVarsPerGrid_[jgrid]);
-  }
-  other.keyBUMP_.clear();
-  other.activeVarsPerGrid_.clear();
-}
-
-// -----------------------------------------------------------------------------
-
 BUMP::~BUMP() {
   for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     if (keyBUMP_[jgrid] > 0) bump_dealloc_f90(keyBUMP_[jgrid]);
   }
+  bump_finalize_f90();
 }
 
 // -----------------------------------------------------------------------------
@@ -410,14 +386,6 @@ void BUMP::inverseMultiplyVbal(atlas::FieldSet & fset) const {
 void BUMP::multiplyVbalAd(atlas::FieldSet & fset) const {
   for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_apply_vbal_ad_f90(keyBUMP_[jgrid], fset.get());
-  }
-}
-
-// -----------------------------------------------------------------------------
-
-void BUMP::inverseMultiplyVbalAd(atlas::FieldSet & fset) const {
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_apply_vbal_inv_ad_f90(keyBUMP_[jgrid], fset.get());
   }
 }
 

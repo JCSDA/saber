@@ -19,6 +19,7 @@
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 
+#include "saber/gsi/grid/Grid.h"
 #include "saber/oops/SaberOuterBlockBase.h"
 
 namespace saber {
@@ -55,13 +56,13 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
   std::vector<std::string> activeVars =
     params.activeVars.value().get_value_or(outerVars).variables();
 
-  // Create the interpolation implementation
-  interpolationImpl_.reset(new InterpolationImpl(outerGeometryData.comm(),
-                                                 params.toConfiguration(),
-                                                 innerGeometryData_->functionSpace(),
-                                                 outerGeometryData.functionSpace(),
-                                                 activeVariableSizes,
-                                                 activeVars));
+  // Create the interpolator
+  interpolator_.reset(new UnstructuredInterpolation(outerGeometryData.comm(),
+                                                    params.toConfiguration(),
+                                                    innerGeometryData_->functionSpace(),
+                                                    outerGeometryData.functionSpace(),
+                                                    activeVariableSizes,
+                                                    activeVars));
   oops::Log::trace() << classname() << "::Interpolation done" << std::endl;
 }
 
@@ -78,7 +79,7 @@ Interpolation::~Interpolation() {
 void Interpolation::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   util::Timer timer(classname(), "multiply");
-  interpolationImpl_->multiply(fset);
+  interpolator_->apply(fset);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
@@ -87,7 +88,7 @@ void Interpolation::multiply(atlas::FieldSet & fset) const {
 void Interpolation::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
   util::Timer timer(classname(), "multiplyAD");
-  interpolationImpl_->multiplyAD(fset);
+  interpolator_->applyAD(fset);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 

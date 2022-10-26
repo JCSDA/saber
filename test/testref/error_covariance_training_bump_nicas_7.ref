@@ -1,0 +1,184 @@
+       Independent levels:  1[10] 
+          Level   1:   1550418632
+          Level   2:   1550418632
+          Level   3:   1550418632
+          Level   4:   1550418632
+          Level   5:   1550418632
+          Level   6:   1550418632
+          Level   7:   1550418632
+          Level   8:   1550418632
+          Level   9:   1550418632
+          Level  10:   1550418632
+          Model grid size:              840
+          Subset Sc0 size:              762
+          Number of duplicated points (halo):        78 (  9.29%)
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   3 ~> 100.0%
+             Level   4 ~> 100.0%
+             Level   5 ~> 100.0%
+             Level   6 ~> 100.0%
+             Level   7 ~> 100.0%
+             Level   8 ~> 100.0%
+             Level   9 ~> 100.0%
+             Level  10 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. unit
+             Level   2 ~>  0.200E+01 vert. unit
+             Level   3 ~>  0.300E+01 vert. unit
+             Level   4 ~>  0.400E+01 vert. unit
+             Level   5 ~>  0.500E+01 vert. unit
+             Level   6 ~>  0.600E+01 vert. unit
+             Level   7 ~>  0.700E+01 vert. unit
+             Level   8 ~>  0.800E+01 vert. unit
+             Level   9 ~>  0.900E+01 vert. unit
+             Level  10 ~>  0.100E+02 vert. unit
+             Effective levels:   1   2   3   4   5   6   7   8   9  10 
+                   Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
+                   Estimated nc1 from horizontal support radius:     9424
+                   Final nc1:      762
+                   Effective horizontal resolution:  1.14
+                   Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
+                   Estimated nc1 from horizontal support radius:     9424
+                   Final nc1:      762
+                   Effective horizontal resolution:  1.14
+                   Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
+                   Estimated nc1 from horizontal support radius:     9424
+                   Final nc1:      762
+                   Effective horizontal resolution:  1.14
+                   Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
+                   Estimated nc1 from horizontal support radius:     9424
+                   Final nc1:      762
+                   Effective horizontal resolution:  1.14
+                   Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
+                   Estimated nc1 from horizontal support radius:     9424
+                   Final nc1:      762
+                   Effective horizontal resolution:  1.14
+                   Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
+                   Estimated nc1 from horizontal support radius:     9424
+                   Final nc1:      762
+                   Effective horizontal resolution:  1.14
+                   Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
+                   Estimated nc1 from horizontal support radius:     9424
+                   Final nc1:      762
+                   Effective horizontal resolution:  1.14
+                   Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
+                   Estimated nc1 from horizontal support radius:     9424
+                   Final nc1:      762
+                   Effective horizontal resolution:  1.14
+                   Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
+                   Estimated nc1 from horizontal support radius:     9424
+                   Final nc1:      762
+                   Effective horizontal resolution:  1.14
+                   Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
+                   Estimated nc1 from horizontal support radius:     9424
+                   Final nc1:      762
+                   Effective horizontal resolution:  1.14
+             nc1(  1) =        762
+             nc1(  2) =        762
+             nc1(  3) =        762
+             nc1(  4) =        762
+             nc1(  5) =        762
+             nc1(  6) =        762
+             nc1(  7) =        762
+             nc1(  8) =        762
+             nc1(  9) =        762
+             nc1( 10) =        762
+             ns =             7620
+          Level   1 ~> 100.0%
+          Level   2 ~> 100.0%
+          Level   3 ~> 100.0%
+          Level   4 ~> 100.0%
+          Level   5 ~> 100.0%
+          Level   6 ~> 100.0%
+          Level   7 ~> 100.0%
+          Level   8 ~> 100.0%
+          Level   9 ~> 100.0%
+          Level  10 ~> 100.0%
+          Decimate full grid, at least      500 points required
+               762 valid points found
+             -90.00 deg.  ~>100-100-99-100-100-100-100-99-100-100 
+             -90.00 deg.  ~>100-100-99-100-100-100-100-99-100-100 
+             -90.00 deg.  ~>100-100-99-100-100-100-100-99-100-100 
+             -90.00 deg.  ~>100-100-99-100-100-100-100-99-100-100 
+             -90.00 deg.  ~>100-100-99-100-100-100-100-99-100-100 
+             -90.00 deg.  ~>100-100-99-100-100-100-100-99-100-100 
+             -90.00 deg.  ~>100-100-99-100-100-100-100-99-100-100 
+             -90.00 deg.  ~>100-100-99-100-100-100-100-99-100-100 
+             -90.00 deg.  ~>100-100-99-100-100-100-100-99-100-100 
+             -90.00 deg.  ~>100-100-99-100-100-100-100-99-100-100 
+          nc1 =      500
+          Independent levels:  1[10] 
+          Independent levels for angular sector   1 / class   1:  1[10] 
+          Independent levels for angular sector   1 / class   2:  1[10] 
+          Independent levels for angular sector   1 / class   3:  1[10] 
+          Independent levels for angular sector   1 / class   4:  1[10] 
+          Independent levels for angular sector   1 / class   5:  1[10] 
+          Independent levels for angular sector   1 / class   6:  1[10] 
+          Independent levels for angular sector   1 / class   7:  1[10] 
+          Independent levels for angular sector   1 / class   8:  1[10] 
+          Independent levels for angular sector   1 / class   9:  1[10] 
+          Independent levels for angular sector   1 / class  10:  1[10] 
+                Level:   1 ~> cov. at class zero:  0.10E+01
+                Level:   2 ~> cov. at class zero:  0.10E+01
+                Level:   3 ~> cov. at class zero:  0.10E+01
+                Level:   4 ~> cov. at class zero:  0.10E+01
+                Level:   5 ~> cov. at class zero:  0.10E+01
+                Level:   6 ~> cov. at class zero:  0.10E+01
+                Level:   7 ~> cov. at class zero:  0.10E+01
+                Level:   8 ~> cov. at class zero:  0.10E+01
+                Level:   9 ~> cov. at class zero:  0.10E+01
+                Level:  10 ~> cov. at class zero:  0.10E+01
+             Block var1-var1:  0.72802261E-01 for      700 diagnostic points
+                Level:   1 ~> cor. at class zero:        1.00
+                Level:   2 ~> cor. at class zero:        1.00
+                Level:   3 ~> cor. at class zero:        1.00
+                Level:   4 ~> cor. at class zero:        1.00
+                Level:   5 ~> cor. at class zero:        1.00
+                Level:   6 ~> cor. at class zero:        1.00
+                Level:   7 ~> cor. at class zero:        1.00
+                Level:   8 ~> cor. at class zero:        1.00
+                Level:   9 ~> cor. at class zero:        1.00
+                Level:  10 ~> cor. at class zero:        1.00
+                   Level:   1 ~> amplitude:        1.00
+                                 cor. hor. support:       995.69 km
+                                 cor. ver. support:         3.11 vertical units
+                   Level:   2 ~> amplitude:        1.00
+                                 cor. hor. support:       798.42 km
+                                 cor. ver. support:         3.07 vertical units
+                   Level:   3 ~> amplitude:        1.00
+                                 cor. hor. support:       901.38 km
+                                 cor. ver. support:         3.05 vertical units
+                   Level:   4 ~> amplitude:        1.00
+                                 cor. hor. support:       927.41 km
+                                 cor. ver. support:         3.04 vertical units
+                   Level:   5 ~> amplitude:        1.00
+                                 cor. hor. support:       794.23 km
+                                 cor. ver. support:         2.98 vertical units
+                   Level:   6 ~> amplitude:        1.00
+                                 cor. hor. support:       914.02 km
+                                 cor. ver. support:         2.97 vertical units
+                   Level:   7 ~> amplitude:        1.00
+                                 cor. hor. support:       919.79 km
+                                 cor. ver. support:         2.97 vertical units
+                   Level:   8 ~> amplitude:        1.00
+                                 cor. hor. support:       797.38 km
+                                 cor. ver. support:         3.00 vertical units
+                   Level:   9 ~> amplitude:        1.00
+                                 cor. hor. support:       989.26 km
+                                 cor. ver. support:         3.03 vertical units
+                   Level:  10 ~> amplitude:        1.00
+                                 cor. hor. support:       798.82 km
+                                 cor. ver. support:         3.11 vertical units
+          Level   1 ~>  0.996 /  1.037
+          Level   2 ~>  0.798 /  1.022
+          Level   3 ~>  0.901 /  1.016
+          Level   4 ~>  0.927 /  1.012
+          Level   5 ~>  0.794 /  0.994
+          Level   6 ~>  0.914 /  0.989
+          Level   7 ~>  0.920 /  0.988
+          Level   8 ~>  0.797 /  0.999
+          Level   9 ~>  0.989 /  1.011
+          Level  10 ~>  0.799 /  1.037

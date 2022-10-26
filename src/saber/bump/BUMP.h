@@ -64,8 +64,6 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<std::string> datadir{"datadir", this};
   // Files prefix
   oops::OptionalParameter<std::string> prefix{"prefix", this};
-  // Verbosity level ('all', 'main' or 'none')
-  oops::OptionalParameter<std::string> verbosity{"verbosity", this};
   // Add colors to the log (for display on terminal)
   oops::OptionalParameter<bool> colorlog{"colorlog", this};
   // Stream test messages into a dedicated channel
@@ -76,6 +74,8 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<bool> repro{"repro", this};
   // Reproducibility threshold
   oops::OptionalParameter<double> rth{"rth", this};
+  // Parallel NetCDF I/O
+  oops::OptionalParameter<bool> parallel_io{"parallel_io", this};
   // Number of I/O processors
   oops::OptionalParameter<int> nprocio{"nprocio", this};
   // Universe radius [in meters]
@@ -256,7 +256,8 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<int> nl0r{"nl0r", this};
   // Maximum number of random number draws
   oops::OptionalParameter<int> irmax{"irmax", this};
-  // Sampling balance C2B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based or 'si': smooth interpolation)
+  // Vertical balance C2B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based
+  // or 'si': smooth interpolation)
   oops::OptionalParameter<std::string> samp_interp_type{"samp_interp_type", this};
 
   // diag_param
@@ -347,7 +348,8 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<eckit::LocalConfiguration> min_lev{"min_lev", this};
   // Maximum level
   oops::OptionalParameter<eckit::LocalConfiguration> max_lev{"max_lev", this};
-  // NICAS C1B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based or 'si': smooth interpolation)
+  // NICAS C1B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based
+  // or 'si': smooth interpolation)
   oops::OptionalParameter<eckit::LocalConfiguration> nicas_interp_type{"nicas_interp_type", this};
   // Positive-definiteness test
   oops::OptionalParameter<bool> pos_def_test{"pos_def_test", this};
@@ -422,9 +424,6 @@ class BUMP {
        const size_t & ens1_ne_in = 0,
        const size_t & ens2_ne_in = 0);
 
-  // Copy-constructor
-  explicit BUMP(BUMP &);
-
   // Destructor
   ~BUMP();
 
@@ -441,7 +440,6 @@ class BUMP {
   void multiplyVbal(atlas::FieldSet &) const;
   void inverseMultiplyVbal(atlas::FieldSet &) const;
   void multiplyVbalAd(atlas::FieldSet &) const;
-  void inverseMultiplyVbalAd(atlas::FieldSet &) const;
   void multiplyStdDev(atlas::FieldSet &) const;
   void inverseMultiplyStdDev(atlas::FieldSet &) const;
   void randomizeNicas(atlas::FieldSet &) const;
@@ -452,9 +450,9 @@ class BUMP {
   void setNcmp(const int &, const int &) const;
   void setParameter(const std::string &, const int &, const atlas::FieldSet &) const;
   void partialDealloc() const;
+  void finalize() const;
 
  private:
-  bool verbosity_;
   BUMPParameters params_;
   const oops::Variables activeVars_;
   std::vector<int> keyBUMP_;

@@ -36,7 +36,6 @@ type nam_type
    ! general_param
    character(len=1024) :: datadir                             !< Data directory
    character(len=1024) :: prefix                              !< Files prefix
-   character(len=1024) :: verbosity                           !< Verbosity level ('all', 'main' or 'none')
    logical :: colorlog                                        !< Add colors to the log (for display on terminal)
    logical :: testing                                         !< Stream test messages into a dedicated channel
    logical :: default_seed                                    !< Default seed for random numbers
@@ -82,11 +81,6 @@ type nam_type
    logical :: check_optimality                                !< Test HDIAG optimality
    logical :: check_no_point_mpi                              !< Test BUMP with no grid point on the last MPI task
    logical :: check_no_point_mask                             !< Test BUMP with all grid points masked on half of the domain
-   logical :: check_set_param                                 !< Test set_parameter interface
-   logical :: check_get_param                                 !< Test get_parameter interface
-   logical :: check_apply_vbal                                !< Test apply_vbal interfaces
-   logical :: check_apply_stddev                              !< Test apply_stddev interfaces
-   logical :: check_apply_nicas                               !< Test apply_nicas interfaces
 
    ! files_param
    character(len=1024),dimension(0:nsubmax) :: fname_var      !< Variance files
@@ -162,6 +156,9 @@ type nam_type
    logical :: local_diag                                      !< Activate local diagnostics
    real(kind_real) :: local_rad                               !< Local diagnostics calculation radius [in meters]
    real(kind_real) :: local_dlat                              !< Local diagnostics calculation latitude band half-width [in degrees]
+   integer :: optimality_nfac                                 !< Number of length-scale factors for optimization
+   real(kind_real) :: optimality_delta                        !< Increments of length-scale factors for optimization
+   integer :: optimality_ntest                                !< Number of test vectors for optimization
 
    ! fit_param
    real(kind_real) :: diag_rhflt                              !< Horizontal filtering suport radius [in meters]
@@ -257,7 +254,6 @@ integer :: isub,il0,iv,i,ildwv,icomp
 ! general_param default
 nam%datadir = '.'
 nam%prefix = ''
-nam%verbosity = 'all'
 nam%colorlog = .false.
 nam%testing = .false.
 nam%default_seed = .true.
@@ -303,11 +299,6 @@ nam%check_consistency = .false.
 nam%check_optimality = .false.
 nam%check_no_point_mpi = .false.
 nam%check_no_point_mask = .false.
-nam%check_set_param = .false.
-nam%check_get_param = .false.
-nam%check_apply_vbal = .false.
-nam%check_apply_stddev = .false.
-nam%check_apply_nicas = .false.
 
 ! files_param default
 do isub=0,nsubmax
@@ -403,6 +394,9 @@ nam%var_rhflt = zero
 nam%local_diag = .false.
 nam%local_rad = zero
 nam%local_dlat = zero
+nam%optimality_nfac = 1
+nam%optimality_delta = 0.05_kind_real
+nam%optimality_ntest = 10
 
 ! fit_param default
 nam%diag_rhflt = zero
@@ -506,10 +500,6 @@ if (conf%has('prefix')) then
    call conf%get_or_die('prefix',str)
    nam%prefix = str
 end if
-if (conf%has('verbosity')) then
-   call conf%get_or_die('verbosity',str)
-   nam%verbosity = str
-end if
 if (conf%has('colorlog')) call conf%get_or_die('colorlog',nam%colorlog)
 if (conf%has('testing')) call conf%get_or_die('testing',nam%testing)
 if (conf%has('default_seed')) call conf%get_or_die('default_seed',nam%default_seed)
@@ -561,11 +551,6 @@ if (conf%has('check_consistency')) call conf%get_or_die('check_consistency',nam%
 if (conf%has('check_optimality')) call conf%get_or_die('check_optimality',nam%check_optimality)
 if (conf%has('check_no_point_mpi')) call conf%get_or_die('check_no_point_mpi',nam%check_no_point_mpi)
 if (conf%has('check_no_point_mask')) call conf%get_or_die('check_no_point_mask',nam%check_no_point_mask)
-if (conf%has('check_set_param')) call conf%get_or_die('check_set_param',nam%check_set_param)
-if (conf%has('check_get_param')) call conf%get_or_die('check_get_param',nam%check_get_param)
-if (conf%has('check_apply_vbal')) call conf%get_or_die('check_apply_vbal',nam%check_apply_vbal)
-if (conf%has('check_apply_stddev')) call conf%get_or_die('check_apply_stddev',nam%check_apply_stddev)
-if (conf%has('check_apply_nicas')) call conf%get_or_die('check_apply_nicas',nam%check_apply_nicas)
 
 ! files_param
 if (conf%has('fname_var')) then
@@ -805,6 +790,9 @@ end if
 if (conf%has('local_diag')) call conf%get_or_die('local_diag',nam%local_diag)
 if (conf%has('local_rad')) call conf%get_or_die('local_rad',nam%local_rad)
 if (conf%has('local_dlat')) call conf%get_or_die('local_dlat',nam%local_dlat)
+if (conf%has('optimality_nfac')) call conf%get_or_die('optimality_nfac',nam%optimality_nfac)
+if (conf%has('optimality_delta')) call conf%get_or_die('optimality_delta',nam%optimality_delta)
+if (conf%has('optimality_ntest')) call conf%get_or_die('optimality_ntest',nam%optimality_ntest)
 
 ! fit_param
 if (conf%has('diag_rhflt')) call conf%get_or_die('diag_rhflt',nam%diag_rhflt)
@@ -1109,11 +1097,6 @@ if (nam%prefix/='') nam%prefix = trim(nam%prefix)//'_'
 
 ! Check general_param
 if (nam%datadir=='') call mpl%abort('${subr}$','datadir not specified')
-select case (nam%verbosity)
-case ('all','main','none')
-case default
-   call mpl%abort('${subr}$','wrong verbosity level')
-end select
 if (nam%repro) then
   if (nam%rth<zero) call mpl%abort('${subr}$','rth should be non-negative')
 end if
@@ -1174,15 +1157,6 @@ if (nam%check_optimality) then
 end if
 if (nam%check_no_point_mpi.and.nam%check_no_point_mask) &
  & call mpl%abort('${subr}$','check_no_point_mpi and check_no_point_mask are exclusive')
-if (nam%check_set_param.and.(.not.nam%new_nicas)) call mpl%abort('${subr}$','new_nicas required for check_set_param')
-if (nam%check_get_param.and.(.not.(nam%new_hdiag.and.(nam%method=='hyb-rnd')))) &
- & call mpl%abort('${subr}$','new_var or update_var, and new_hdiag, and hyb-rnd method required for check_get_param')
-if (nam%check_apply_vbal.and..not.(nam%new_vbal.or.nam%load_vbal)) &
- & call mpl%abort('${subr}$','new_vbal or load_vbal required for check_apply_vbal')
-if (nam%check_apply_stddev.and..not.(nam%new_var.or.nam%update_var)) &
- & call mpl%abort('${subr}$','new_var, update_var required for check_apply_stddev')
-if (nam%check_apply_nicas.and..not.(nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global)) &
- & call mpl%abort('${subr}$','new_nicas or load_nicas_local/load_nicas_global required for check_apply_nicas')
 
 ! Check and set files_param
 nam%fname_var_used = any(nam%fname_var/='')
@@ -1360,6 +1334,11 @@ if (nam%new_hdiag.or.nam%check_optimality) then
       if ((nam%local_rad>zero).and.(nam%local_dlat>zero)) call mpl%abort('${subr}$', &
  & 'local_rad and local_dlat cannot be positive at the same time')
    end if
+end if
+if (nam%check_optimality) then
+   if (nam%optimality_nfac<1) call mpl%abort('${subr}$','optimality_nfac should be positive')
+   if (.not.(nam%optimality_delta>zero)) call mpl%abort('${subr}$','optimality_delta should be positive')
+   if (nam%optimality_ntest<1) call mpl%abort('${subr}$','optimality_ntest should be positive')
 end if
 
 ! Check fit_param
@@ -1542,7 +1521,6 @@ write(mpl%info,'(a7,a)') '','General parameters'
 call mpl%flush
 call mpl%write('datadir',nam%datadir)
 call mpl%write('prefix',nam%prefix)
-call mpl%write('verbosity',nam%verbosity)
 call mpl%write('colorlog',nam%colorlog)
 call mpl%write('testing',nam%testing)
 call mpl%write('default_seed',nam%default_seed)
@@ -1590,11 +1568,6 @@ call mpl%write('check_consistency',nam%check_consistency)
 call mpl%write('check_optimality',nam%check_optimality)
 call mpl%write('check_no_point_mpi',nam%check_no_point_mpi)
 call mpl%write('check_no_point_mask',nam%check_no_point_mask)
-call mpl%write('check_set_param',nam%check_set_param)
-call mpl%write('check_get_param',nam%check_get_param)
-call mpl%write('check_apply_vbal',nam%check_apply_vbal)
-call mpl%write('check_apply_stddev',nam%check_apply_stddev)
-call mpl%write('check_apply_nicas',nam%check_apply_nicas)
 
 ! files_param
 call mpl%write('fname_var',count(nam%fname_var/=''),nam%fname_var(0:count(nam%fname_var/='')-1))
@@ -1682,6 +1655,9 @@ call mpl%write('var_rhflt',nam%nl0*nam%nv,profiles)
 call mpl%write('local_diag',nam%local_diag)
 call mpl%write('local_rad',nam%local_rad*req)
 call mpl%write('local_dlat',nam%local_dlat*rad2deg)
+call mpl%write('optimality_nfac',nam%optimality_nfac)
+call mpl%write('optimality_delta',nam%optimality_delta)
+call mpl%write('optimality_ntest',nam%optimality_ntest)
 
 ! fit_param
 write(mpl%info,'(a7,a)') '','Fit parameters'

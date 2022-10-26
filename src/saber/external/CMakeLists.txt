@@ -7,7 +7,6 @@ set( external_src_files
 
 tools_asa007.fypp
 tools_qsort.fypp
-tools_sp.fypp
 tools_ssrfpack.fypp
 tools_stripack.fypp
 tools_wrfda.fypp

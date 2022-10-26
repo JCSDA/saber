@@ -1,0 +1,467 @@
+       Independent levels:  1[2] 
+          Level   1:   -104429949
+          Level   2:   -104429949
+          Model grid size:             1860
+          Subset Sc0 size:             1742
+          Number of duplicated points (halo):       118 (  6.34%)
+          Min. / max. longitudes: -174.0 /   180.0
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. unit
+             Level   2 ~>  0.200E+01 vert. unit
+       Independent levels:  1[1] 
+          Level   1:   -104429949
+          Model grid size:             1860
+          Subset Sc0 size:             1742
+          Number of duplicated points (halo):       118 (  6.34%)
+          Min. / max. longitudes: -174.0 /   180.0
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. unit
+             Effective levels:   1   2 
+                   Horizontal support radius:    3000.00 km (   3000.00 km -    3000.00 km)
+                   Estimated nc1 from horizontal support radius:     2356
+                   Final nc1:     1742
+                   Effective horizontal resolution:  5.16
+                   Horizontal support radius:    3000.00 km (   3000.00 km -    3000.00 km)
+                   Estimated nc1 from horizontal support radius:     2356
+                   Final nc1:     1742
+                   Effective horizontal resolution:  5.16
+             nc1(  1) =       1742
+             nc1(  2) =       1742
+             ns =             3484
+             Effective levels:   1 
+                   Horizontal support radius:    3000.00 km (   3000.00 km -    3000.00 km)
+                   Estimated nc1 from horizontal support radius:     2356
+                   Final nc1:     1742
+                   Effective horizontal resolution:  5.16
+             nc1(  1) =       1742
+             ns =             1742
+Member 0: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L60x31
+- size: 1860
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var1: 5.7710452366719487e+01
+  var_2d: 4.0983877746299250e+01
+Member 1: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L60x31
+- size: 1860
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var1: 6.0700388135087444e+01
+  var_2d: 4.0662357070379528e+01
+Member 2: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L60x31
+- size: 1860
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var1: 5.5424497306885655e+01
+  var_2d: 4.2510198993923808e+01
+Member 3: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L60x31
+- size: 1860
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var1: 5.7651880288796072e+01
+  var_2d: 3.8040602847131318e+01
+Member 4: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L60x31
+- size: 1860
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var1: 5.9242986381231248e+01
+  var_2d: 3.8619271486892103e+01
+Member 5: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L60x31
+- size: 1860
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var1: 5.8597683957483987e+01
+  var_2d: 4.2636507513132486e+01
+Member 6: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L60x31
+- size: 1860
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var1: 5.9703876015717171e+01
+  var_2d: 4.0636120129439583e+01
+Member 7: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L60x31
+- size: 1860
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var1: 5.5981012212395704e+01
+  var_2d: 4.2137484533544530e+01
+Member 8: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L60x31
+- size: 1860
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var1: 6.1526859994830609e+01
+  var_2d: 4.3288337078365913e+01
+Member 9: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L60x31
+- size: 1860
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var1: 6.0945829627966802e+01
+  var_2d: 4.0811051209378711e+01
+Member 10: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L60x31
+- size: 1860
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var1: 5.6150098643160568e+01
+  var_2d: 4.4715197261728811e+01
+Member 11: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L60x31
+- size: 1860
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var1: 6.0178860074375244e+01
+  var_2d: 4.0088515391636726e+01
+Member 12: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L60x31
+- size: 1860
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var1: 5.9306009923329775e+01
+  var_2d: 4.0350651274630735e+01
+Member 13: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L60x31
+- size: 1860
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var1: 5.8109260841403447e+01
+  var_2d: 4.1657330045009893e+01
+Member 14: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L60x31
+- size: 1860
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var1: 6.0466576115663472e+01
+  var_2d: 3.9467157756593458e+01
+Member 15: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L60x31
+- size: 1860
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var1: 5.9055407218827014e+01
+  var_2d: 4.1571957113647855e+01
+Member 16: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L60x31
+- size: 1860
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var1: 6.2684031879209329e+01
+  var_2d: 4.5079368382236829e+01
+Member 17: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L60x31
+- size: 1860
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var1: 6.3094841163624714e+01
+  var_2d: 4.1856785168081302e+01
+Member 18: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L60x31
+- size: 1860
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var1: 5.5799351577966036e+01
+  var_2d: 4.2261863810088521e+01
+Member 19: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L60x31
+- size: 1860
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var1: 6.4420398052035210e+01
+  var_2d: 4.1136754344284654e+01
+Member 20: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L60x31
+- size: 1860
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var1: 6.4045857357780179e+01
+  var_2d: 4.3244169923373747e+01
+Member 21: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L60x31
+- size: 1860
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var1: 5.9922342109045054e+01
+  var_2d: 3.9981553896206137e+01
+Member 22: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L60x31
+- size: 1860
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var1: 5.2900457109172130e+01
+  var_2d: 4.2830505272577057e+01
+Member 23: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L60x31
+- size: 1860
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var1: 6.3507195588442386e+01
+  var_2d: 3.9220105767142634e+01
+Member 24: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L60x31
+- size: 1860
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var1: 6.1513225657224716e+01
+  var_2d: 4.3979767821440298e+01

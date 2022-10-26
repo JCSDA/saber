@@ -759,7 +759,9 @@ end do
 call grid_hash(mpl,geom%nc0a,geom%nc0,geom%nl0,geom%c0a_to_c0,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a,hash)
 
 ! Compute independent levels
-call independent_levels(mpl,geom%nl0,hash,geom%nl0i,geom%l0_to_l0i,geom%l0i_to_l0,7)
+write(mpl%test,'(a7,a)') '','Independent levels: '
+call mpl%flush(.false.)
+call independent_levels(mpl,geom%nl0,hash,geom%nl0i,geom%l0_to_l0i,geom%l0i_to_l0)
 
 ! Test grid hash
 write(mpl%info,'(a7,a)') '','Geometry grid hash: '

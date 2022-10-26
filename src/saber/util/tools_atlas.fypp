@@ -38,16 +38,13 @@ interface field_from_array
       #:endfor
    #:endfor
 end interface
-interface create_atlas_function_space
-   module procedure atlas_create_atlas_function_space
-end interface
 interface get_atlas_field_size
    module procedure atlas_get_atlas_field_size
 end interface
 
 private
 public :: get_grid
-public :: field_to_array,field_from_array,create_atlas_function_space,get_atlas_field_size
+public :: field_to_array,field_from_array,get_atlas_field_size
 
 contains
 
@@ -413,47 +410,6 @@ deallocate(array_int)
 
 end subroutine atlas_field_from_array_logical_r${rank}$
 #:endfor
-
-!----------------------------------------------------------------------
-! Subroutine: atlas_create_atlas_function_space
-!> Create ATLAS function space from lon/lat
-!----------------------------------------------------------------------
-subroutine atlas_create_atlas_function_space(nmga,lon_mga,lat_mga,afunctionspace)
-
-implicit none
-
-! Passed variables
-integer,intent(in) :: nmga                              !< Number of nodes
-real(kind_real),intent(in) :: lon_mga(nmga)             !< Longitudes [in degrees]
-real(kind_real),intent(in) :: lat_mga(nmga)             !< Latitudes [in degrees]
-type(atlas_functionspace),intent(out) :: afunctionspace !< ATLAS function space
-
-! Local variables
-integer :: imga
-real(kind_real),pointer :: real_ptr(:,:)
-type(atlas_field) :: afield
-
-! Set name
-@:set_name(atlas_create_atlas_function_space)
-
-! Probe in
-@:probe_in()
-
-! Create lon/lat field
-afield = atlas_field(name='lonlat',kind=atlas_real(kind_real),shape=(/2,nmga/))
-call afield%data(real_ptr)
-do imga=1,nmga
-   real_ptr(1,imga) = lon_mga(imga)
-   real_ptr(2,imga) = lat_mga(imga)
-end do
-
-! Create function space PointCloud
-afunctionspace = atlas_functionspace_pointcloud(afield)
-
-! Probe out
-@:probe_out()
-
-end subroutine atlas_create_atlas_function_space
 
 !----------------------------------------------------------------------
 ! Function: atlas_get_atlas_field_size
