@@ -17,6 +17,6 @@ saber central block:
     output_grid_uid: CS-LFR-15
     umatrix_netcdf_names: [PSI_inc_Uv_matrix]
     variance_opt: true
-adjoint test tolerance: 1.0e-7
+adjoint test tolerance: 1.0e10
 test:
   reference filename: testref/saber_block_test_spectralb_from_CS.ref
