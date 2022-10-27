@@ -150,16 +150,18 @@
                    Level:   2 ~> amplitude:        1.00
                                  cor. hor. support:      6993.06 km
                                  cor. ver. support:         1.28 vertical units
-             Block var1-var1:  0.00000000E+00 for        0 diagnostic points
+             Block var1-var1:  0.23347467E+00 for       39 diagnostic points
+                Level:   1 ~> loc. at class zero:       0.83
+                Level:   2 ~> loc. at class zero:       0.82
                    Level:   1 ~> amplitude:        1.00
-                                 loc. hor. support:     10000.00 km
-                                 loc. ver. support:         2.00 vertical units
+                                 loc. hor. support:      4510.33 km
+                                 loc. ver. support:         4.10 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 loc. hor. support:     10000.00 km
-                                 loc. ver. support:         2.00 vertical units
-                Level:   1 ~> hybrid coefficients: 0.43 / 0.54
-                Level:   2 ~> hybrid coefficients: 0.25 / 0.69
-Norm of BUMP output parameter loc_rh - 1: 4.7031904065219390e+08
-Norm of BUMP output parameter loc_rv - 1: 9.4063808130438773e+01
-Norm of BUMP output parameter hyb_coef_ens - 1: 1.6633715700164284e+01
-Norm of BUMP output parameter hyb_coef_sta - 1: 2.9302210605623575e+01
+                                 loc. hor. support:      4370.72 km
+                                 loc. ver. support:         4.10 vertical units
+                Level:   1 ~> hybrid coefficients: 0.49 / 0.49
+                Level:   2 ~> hybrid coefficients: 0.36 / 0.59
+Norm of BUMP output parameter loc_rh - 1: 2.0887209781575826e+08
+Norm of BUMP output parameter loc_rv - 1: 1.9300550966718299e+02
+Norm of BUMP output parameter hyb_coef_ens - 1: 2.0390192306984840e+01
+Norm of BUMP output parameter hyb_coef_sta - 1: 2.5351322011959255e+01

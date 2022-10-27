@@ -17,41 +17,13 @@ input variables: &id001
 background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
-ensemble:
-  members from template:
-    template:
-      date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L12L2/member_%mem%
-      state variables: *id001
-    pattern: '%mem%'
-    nmembers: 10
-    zero padding: 6
-background error:
-  covariance model: SABER
-  saber central block:
-    saber block name: BUMP_NICAS
-    bump:
-      datadir: testdata
-      prefix: error_covariance_training_bump_hdiag_7/_MPI_-_OMP_
-      testing: true
-      method: cor
-      strategy: specific_univariate
-      new_nicas: true
-      resol: 4.0
-      forced_radii: true
-      rh:
-        var1:
-        - 7.0e6
-      rv:
-        var1:
-        - 1.5
-  randomization size: 25
 bump:
   datadir: testdata
   prefix: error_covariance_training_bump_hdiag_7/_MPI_-_OMP_
   testing: true
-  method: hyb-rnd
+  method: hyb-ens
   strategy: specific_univariate
+  update_mom: true
   new_hdiag: true
   write_hdiag: true
   check_adjoints: true
@@ -62,18 +34,42 @@ bump:
   nl0r: 2
   ne: 10
   ne_lr: 25
+  ensemble:
+    members from template:
+      template:
+        date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L12L2/member_%mem%
+        state variables: *id001
+      pattern: '%mem%'
+      nmembers: 10
+      zero padding: 6
+  lowres ensemble:
+    members from template:
+      template:
+        date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
+        state variables: *id001
+      pattern: '%mem%'
+      nmembers: 25
+      zero padding: 6
 output:
 - parameter: loc_rh
   file:
-    filepath: testdata/error_covariance_training_bump_hdiag_7/loc_rh
+    filepath: testdata/error_covariance_training_bump_hdiag_7/_MPI_-_OMP__loc_rh
 - parameter: loc_rv
   file:
-    filepath: testdata/error_covariance_training_bump_hdiag_7/loc_rv
+    filepath: testdata/error_covariance_training_bump_hdiag_7/_MPI_-_OMP__loc_rv
 - parameter: hyb_coef_ens
   file:
-    filepath: testdata/error_covariance_training_bump_hdiag_7/hyb_coef_ens
-- parameter: hyb_coef_sta
+    filepath: testdata/error_covariance_training_bump_hdiag_7/_MPI_-_OMP__hyb_coef_ens
+- parameter: loc_rh_lr
   file:
-    filepath: testdata/error_covariance_training_bump_hdiag_7/hyb_coef_sta
+    filepath: testdata/error_covariance_training_bump_hdiag_7/_MPI_-_OMP__loc_rh_lr
+- parameter: loc_rv_lr
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag_7/_MPI_-_OMP__loc_rv_lr
+- parameter: hyb_coef_ens_lr
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag_7/_MPI_-_OMP__hyb_coef_ens_lr
 test:
   reference filename: testref/error_covariance_training_bump_hdiag_7.ref

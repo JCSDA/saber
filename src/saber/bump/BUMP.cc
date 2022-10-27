@@ -39,10 +39,10 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
            const oops::Variables & activeVars,
            const BUMPParameters & params,
            const std::vector<atlas::FieldSet> & fsetVec1,
+           const size_t & ens1_ne_in,
            const atlas::FunctionSpace & functionSpace2,
            const atlas::FieldSet & extraFields2,
            const std::vector<atlas::FieldSet> & fsetVec2,
-           const size_t & ens1_ne_in,
            const size_t & ens2_ne_in) :
   params_(params), activeVars_(activeVars), keyBUMP_(), membersConfig1_(), membersConfig2_(),
   activeVarsPerGrid_() {

@@ -418,10 +418,10 @@ class BUMP {
        const oops::Variables &,
        const BUMPParameters &,
        const std::vector<atlas::FieldSet> &,
+       const size_t & ens1_ne_in = 0,
        const atlas::FunctionSpace & functionSpace2 = NULL,
        const atlas::FieldSet & extraFields2 = NULL,
        const std::vector<atlas::FieldSet> & fsetVec2 = {},
-       const size_t & ens1_ne_in = 0,
        const size_t & ens2_ne_in = 0);
 
   // Destructor

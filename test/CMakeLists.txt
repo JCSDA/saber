@@ -209,6 +209,20 @@ if( oops_FOUND )
             endif()
         endforeach()
 
+        # Error covariance training tests, failure expected
+        foreach( test ${saber_test_full} )
+            string( FIND ${test} "fail_error_covariance_training" result )
+            if( result MATCHES 0 )
+                ecbuild_add_test( TARGET saber_test_${test}_${mpi}-${omp}
+                                  MPI ${mpi}
+                                  OMP ${omp}
+                                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_training.x
+                                  ARGS testinput/${test}.yaml
+                                  DEPENDS saber_quench_error_covariance_training.x )
+                set_tests_properties(saber_test_${test}_${mpi}-${omp} PROPERTIES WILL_FAIL TRUE)
+            endif()
+        endforeach()
+
         # Adjoint/inverse tests
         foreach( test ${saber_test_full} )
             string( FIND ${test} "saber_block_test" result )

@@ -11,7 +11,7 @@ lowres geometry:
     type: regular_lonlat
     N: 10
   levels: 2
-  halo: 3
+  halo: 1
 input variables: &id001
 - var1
 background:
@@ -62,13 +62,6 @@ bump:
   nl0r: 2
   ne: 10
   ne_lr: 25
-  forced_radii: true
-  rh:
-    var1:
-    - 10.0e6
-  rv:
-    var1:
-    - 2.0
 output:
 - parameter: loc_rh
   file:

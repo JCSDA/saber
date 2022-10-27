@@ -412,7 +412,7 @@ end function netcdf_create_file
 ! Function: netcdf_open_file
 !> Open file
 !----------------------------------------------------------------------
-function netcdf_open_file(mpl,filename,iproc,fullpath) result(ncid)
+function netcdf_open_file(mpl,filename,iproc) result(ncid)
 
 implicit none
 
@@ -420,13 +420,11 @@ implicit none
 type(mpl_type),intent(inout) :: mpl     !< MPI data
 character(len=*),intent(in) :: filename !< File name
 integer,intent(in),optional :: iproc    !< Processor index
-logical,intent(in),optional :: fullpath !< Flag to indicate a full path
 
 ! Returned variable
 integer :: ncid
 
 ! Local variables
-logical :: lfullpath
 character(len=1024) :: fullname
 
 ! Set name
@@ -434,10 +432,6 @@ character(len=1024) :: fullname
 
 ! Probe in
 @:probe_in()
-
-! Full path flag
-lfullpath = .false.
-if (present(fullpath)) lfullpath = fullpath
 
 ! Initialization
 ncid = mpl%msv%vali
@@ -447,17 +441,9 @@ if (present(iproc)) then
 
    ! Full file name
    if (iproc==0) then
-      if (lfullpath) then
-         fullname = trim(filename)
-      else
-         fullname = trim(mpl%datadir)//'/'//trim(filename)//'.nc'
-      end if
+      fullname = trim(mpl%datadir)//'/'//trim(filename)//'.nc'
    else
-      if (lfullpath) then
-         call mpl%abort('${subr}','cannot use full path for local I/O with iproc>0')
-      else
-         write(fullname,'(a,i6.6,a,i6.6,a)') trim(mpl%datadir)//'/'//trim(filename)//'_local_',mpl%nproc,'-',iproc,'.nc'
-      end if
+      write(fullname,'(a,i6.6,a,i6.6,a)') trim(mpl%datadir)//'/'//trim(filename)//'_local_',mpl%nproc,'-',iproc,'.nc'
    end if
 
    ! Open file
@@ -466,11 +452,7 @@ else
    ! Global I/O
    if (mpl%pioproc(mpl%myproc)) then
       ! Full file name
-      if (lfullpath) then
-         fullname = trim(filename)
-      else
-         fullname = trim(mpl%datadir)//'/'//trim(filename)//'.nc'
-      end if
+      fullname = trim(mpl%datadir)//'/'//trim(filename)//'.nc'
 
       ! Open file
       if (mpl%parallel_io) then

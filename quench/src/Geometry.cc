@@ -358,6 +358,7 @@ Geometry::Geometry(const Parameters_ & params,
 
   // Halo mask
   if (grid_.name().compare(0, 1, std::string{"L"}) == 0) {
+    // Regular lonlat grid
     atlas::functionspace::StructuredColumns fs(functionSpace_);
     atlas::StructuredGrid grid = fs.grid();
     atlas::Field hmask = fs.createField<int>(atlas::option::name("hmask")
@@ -378,29 +379,20 @@ Geometry::Geometry(const Parameters_ & params,
 
     // Add field
     extraFields_->add(hmask);
-  }
-
-  // Height
-  atlas::Field height = functionSpace_.createField<double>(
-    atlas::option::name("height") | atlas::option::levels(levels_));
-  auto heightView = atlas::array::make_view<double, 2>(height);
-  for (atlas::idx_t jnode = 0; jnode < height.shape(0); ++jnode) {
-    for (size_t jlevel = 0; jlevel < levels_; ++jlevel) {
-       heightView(jnode, jlevel) = vunit_[jlevel];
+  } else if (grid_.name().compare(0, 2, std::string{"CS"}) == 0) {
+    // Cubed-sphere grid
+    atlas::functionspace::NodeColumns fs(functionSpace_);
+    atlas::Field hmask = fs.createField<int>(atlas::option::name("hmask")
+      | atlas::option::levels(1));
+    auto hmaskView = atlas::array::make_view<int, 2>(hmask);
+    auto ghostView = atlas::array::make_view<int, 1>(fs.ghost());
+    for (atlas::idx_t jnode = 0; jnode < hmask.shape(0); ++jnode) {
+      hmaskView(jnode, 0) = ghostView(jnode) > 0 ? 0 : 1;
     }
-  }
-  extraFields_->add(height);
 
-  // Height_levels
-  atlas::Field height_levels = functionSpace_.createField<double>(
-    atlas::option::name("height_levels") | atlas::option::levels(levels_));
-  auto heightLevelsView = atlas::array::make_view<double, 2>(height);
-  for (atlas::idx_t jnode = 0; jnode < height.shape(0); ++jnode) {
-    for (size_t jlevel = 0; jlevel < levels_; ++jlevel) {
-       heightLevelsView(jnode, jlevel) = vunit_[jlevel];
-    }
+    // Add field
+    extraFields_->add(hmask);
   }
-  extraFields_->add(height_levels);
 
   // Print summary
   this->print(oops::Log::info());

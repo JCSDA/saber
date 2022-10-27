@@ -25,18 +25,14 @@ interface get_grid
    module procedure atlas_get_regional_grid
 end interface
 interface field_to_array
-   #:for rank in ranks_23
-      #:for dtype in dtypes_irl
-         module procedure atlas_field_to_array_${dtype}$_r${rank}$
-      #:endfor
+   #:for dtype in dtypes_irl
+      module procedure atlas_field_to_array_${dtype}$
    #:endfor
 end interface
 interface field_from_array
-   #:for rank in ranks_23
-      #:for dtype in dtypes_irl
-         module procedure atlas_field_from_array_${dtype}$_r${rank}$
-      #:endfor
-   #:endfor
+    #:for dtype in dtypes_ir
+      module procedure atlas_field_from_array_${dtype}$
+    #:endfor
 end interface
 interface get_atlas_field_size
    module procedure atlas_get_atlas_field_size
@@ -142,30 +138,28 @@ if (present(n)) n = nx*ny
 
 end subroutine atlas_get_regional_grid
 
-#:for rank in ranks_23
-   #:for dtype in dtypes_ir
+ #:for dtype in dtypes_ir
 !----------------------------------------------------------------------
-! Subroutine: atlas_field_to_array_${dtype}$_r${rank}$
+! Subroutine: atlas_field_to_array_${dtype}$
 !> Convert ATLAS field to field
 !----------------------------------------------------------------------
-subroutine atlas_field_to_array_${dtype}$_r${rank}$(afield,mpl,array,lev2d)
+subroutine atlas_field_to_array_${dtype}$(afield,mpl,array,lev2d)
 
 implicit none
 
 ! Passed variables
-type(atlas_field),intent(in) :: afield               !< ATLAS field
-type(mpl_type),intent(inout) :: mpl                  !< MPI data
-${ftype[dtype]}$,intent(out) :: array(${dim[rank]}$) !< Array, the rightmost dimension being the vertical
-character(len=*),intent(in),optional :: lev2d        !< Level for 2D variables
+type(atlas_field),intent(in) :: afield        !< ATLAS field
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+${ftype[dtype]}$,intent(out) :: array(:,:)    !< Array
+character(len=*),intent(in),optional :: lev2d !< Level for 2D variables
 
 ! Local variables
 integer :: nmga,nnodes,nl0,nl2d,il0
-integer :: shp(${rank}$)
 ${ftype[dtype]}$,pointer :: ptr(:,:)
 character(len=1024) :: llev2d
 
 ! Set name
-@:set_name(atlas_field_to_array_${dtype}$_r${rank}$)
+@:set_name(atlas_field_to_array_${dtype}$)
 
 ! Probe in
 @:probe_in()
@@ -182,11 +176,8 @@ if (afield%kind()/=${atlas_kind[dtype]}$) call mpl%abort('${subr}$','wrong kind 
 nmga = get_atlas_field_size(mpl,afield)
 
 ! Get number of nodes and number of levels
-! - the size of the rightmost dimension of arr2d/arr3d is the number of levels (nl0)
-! - the product of the other dimenstions give the number of nodes (nnodes)
-shp = shape(array)
-nl0 = shp(${rank}$)
-nnodes = product(shp(1:${rank}$-1))
+nnodes = size(array,1)
+nl0 = size(array,2)
 
 ! Check number of nodes
 if (nmga/=nnodes) call mpl%abort('${subr}$','wrong number of nodes for field '//afield%name())
@@ -205,16 +196,12 @@ if (afield%levels()==1) then
    elseif (trim(llev2d)=='last') then
       nl2d = nl0
    end if
-   if (nmga>0) then
-      #{if rank == 2}# array(:,nl2d) = ptr(1,1:nmga) #{endif}#
-      #{if rank == 3}# array(:,:,nl2d) = reshape(ptr(1,1:nmga),shp(1:2)) #{endif}#
-   end if
+   if (nmga>0) array(:,nl2d) = ptr(1,1:nmga)
 else
    if (nl0>afield%levels()) call mpl%abort('${subr}$','not enough levels in ATLAS field')
    if (nmga>0) then
       do il0=1,nl0
-         #{if rank == 2}# array(:,il0) = ptr(il0,1:nmga) #{endif}#
-         #{if rank == 3}# array(:,:,il0) = reshape(ptr(il0,1:nmga),shp(1:2)) #{endif}#
+         array(:,il0) = ptr(il0,1:nmga)
       end do
    end if
 end if
@@ -222,32 +209,29 @@ end if
 ! Probe out
 @:probe_out()
 
-end subroutine atlas_field_to_array_${dtype}$_r${rank}$
-   #:endfor
+end subroutine atlas_field_to_array_${dtype}$
 #:endfor
 
-#:for rank in ranks_23
 !----------------------------------------------------------------------
-! Subroutine: atlas_field_to_array_logical_r${rank}$
+! Subroutine: atlas_field_to_array_logical
 !> Convert ATLAS field to field
 !----------------------------------------------------------------------
-subroutine atlas_field_to_array_logical_r${rank}$(afield,mpl,array,lev2d)
+subroutine atlas_field_to_array_logical(afield,mpl,array,lev2d)
 
 implicit none
 
 ! Passed variables
 type(atlas_field),intent(in) :: afield        !< ATLAS field
 type(mpl_type),intent(inout) :: mpl           !< MPI data
-logical,intent(out) :: array(${dim[rank]}$)   !< Array, the rightmost dimension being the vertical
+logical,intent(out) :: array(:,:)             !< Array
 character(len=*),intent(in),optional :: lev2d !< Level for 2D variables
 
 ! Local variables
-integer :: shp(${rank}$)
-integer,allocatable :: array_int(${dim[rank]}$)
+integer,allocatable :: array_int(:,:)
 character(len=1024) :: llev2d
 
 ! Set name
-@:set_name(atlas_field_to_array_logical_r${rank}$)
+@:set_name(atlas_field_to_array_logical)
 
 ! Probe in
 @:probe_in()
@@ -258,9 +242,7 @@ if (present(lev2d)) llev2d = lev2d
 if (.not.((trim(llev2d)=='first').or.(trim(llev2d)=='last'))) call mpl%abort('${subr}$','wrong lev2d')
 
 ! Allocation
-shp = shape(array)
-#{if rank == 2}# allocate(array_int(shp(1),shp(2))) #{endif}#
-#{if rank == 3}# allocate(array_int(shp(1),shp(2),shp(3))) #{endif}#
+allocate(array_int(size(array,1),size(array,2)))
 
 ! Get integer array
 call field_to_array(afield,mpl,array_int,lev2d)
@@ -274,33 +256,30 @@ deallocate(array_int)
 ! Probe out
 @:probe_out()
 
-end subroutine atlas_field_to_array_logical_r${rank}$
-#:endfor
+end subroutine atlas_field_to_array_logical
 
-#:for rank in ranks_23
-   #:for dtype in dtypes_ir
+#:for dtype in dtypes_ir
 !----------------------------------------------------------------------
-! Subroutine: atlas_field_from_array_${dtype}$_r${rank}$
-!> Convert field to ATLAS field, real
+! Subroutine: atlas_field_from_array_${dtype}$
+!> Convert field to ATLAS field
 !----------------------------------------------------------------------
-subroutine atlas_field_from_array_${dtype}$_r${rank}$(afield,mpl,array,lev2d)
+subroutine atlas_field_from_array_${dtype}$(afield,mpl,array,lev2d)
 
 implicit none
 
 ! Passed variables
-type(atlas_field),intent(inout) :: afield            !< ATLAS field
-type(mpl_type),intent(inout) :: mpl                  !< MPI data
-${ftype[dtype]}$,intent(in) :: array(${dim[rank]}$)  !< Array, the rightmost dimension being the vertical
-character(len=*),intent(in),optional :: lev2d        !< Level for 2D variables
+type(atlas_field),intent(inout) :: afield     !< ATLAS field
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+${ftype[dtype]}$,intent(in) :: array(:,:)     !< Array
+character(len=*),intent(in),optional :: lev2d !< Level for 2D variables
 
 ! Local variables
 integer :: nmga,nnodes,nl0,nl2d,il0
-integer :: shp(${rank}$)
 ${ftype[dtype]}$,pointer :: ptr(:,:)
 character(len=1024) :: llev2d
 
 ! Set name
-@:set_name(atlas_field_from_array_${dtype}$_r${rank}$)
+@:set_name(atlas_field_from_array_${dtype}$)
 
 ! Probe in
 @:probe_in()
@@ -317,11 +296,8 @@ if (afield%kind()/=${atlas_kind[dtype]}$) call mpl%abort('${subr}$','wrong kind 
 nmga = get_atlas_field_size(mpl,afield)
 
 ! Get number of nodes and number of levels
-! - the size of the rightmost dimension of arr2d/arr3d is the number of levels (nl0)
-! - the product of the other dimenstions give the number of nodes (nnodes)
-shp = shape(array)
-nl0 = shp(${rank}$)
-nnodes = product(shp(1:${rank}$-1))
+nnodes = size(array,1)
+nl0 = size(array,2)
 
 ! Check number of nodes
 if (nmga/=nnodes) call mpl%abort('${subr}$','wrong number of nodes for field '//afield%name())
@@ -338,16 +314,12 @@ if (afield%levels()==1) then
    elseif (trim(llev2d)=='last') then
       nl2d = nl0
    end if
-   if (nmga>0) then
-      #{if rank == 2}# ptr(1,1:nmga) = array(:,nl2d) #{endif}#
-      #{if rank == 3}# ptr(1,1:nmga) = reshape(array(:,:,nl2d),(/product(shp(1:2))/)) #{endif}#
-   end if
+   if (nmga>0) ptr(1,1:nmga) = array(:,nl2d)
 else
    if (nl0>afield%levels()) call mpl%abort('${subr}$','not enough levels in ATLAS field')
    if (nmga>0) then
       do il0=1,nl0
-         #{if rank == 2}# ptr(il0,1:nmga) = array(:,il0) #{endif}#
-         #{if rank == 3}# ptr(il0,1:nmga) = reshape(array(:,:,il0),(/product(shp(1:2))/)) #{endif}#
+         ptr(il0,1:nmga) = array(:,il0)
       end do
    end if
 end if
@@ -355,59 +327,7 @@ end if
 ! Probe out
 @:probe_out()
 
-end subroutine atlas_field_from_array_${dtype}$_r${rank}$
-   #:endfor
-#:endfor
-
-#:for rank in ranks_23
-!----------------------------------------------------------------------
-! Subroutine: atlas_field_from_array_logical_r${rank}$
-!> Convert ATLAS field from field
-!----------------------------------------------------------------------
-subroutine atlas_field_from_array_logical_r${rank}$(afield,mpl,array,lev2d)
-
-implicit none
-
-! Passed variables
-type(atlas_field),intent(inout) :: afield     !< ATLAS field
-type(mpl_type),intent(inout) :: mpl           !< MPI data
-logical,intent(in) :: array(${dim[rank]}$)    !< Array, the rightmost dimension being the vertical
-character(len=*),intent(in),optional :: lev2d !< Level for 2D variables
-
-! Local variables
-integer :: shp(${rank}$)
-integer,allocatable :: array_int(${dim[rank]}$)
-character(len=1024) :: llev2d
-
-! Set name
-@:set_name(atlas_field_from_array_logical_r${rank}$)
-
-! Probe in
-@:probe_in()
-
-! Local lev2d
-llev2d = 'first'
-if (present(lev2d)) llev2d = lev2d
-if (.not.((trim(llev2d)=='first').or.(trim(llev2d)=='last'))) call mpl%abort('${subr}$','wrong lev2d')
-
-! Allocation
-shp = shape(array)
-#{if rank == 2}# allocate(array_int(shp(1),shp(2))) #{endif}#
-#{if rank == 3}# allocate(array_int(shp(1),shp(2),shp(3))) #{endif}#
-
-! Convert logical to integer
-call convert_l2i(array,array_int)
-
-! Set integer array
-call field_from_array(afield,mpl,array_int,lev2d)
-
-! Release memory
-deallocate(array_int)
-
-! Probe out
-@:probe_out()
-
-end subroutine atlas_field_from_array_logical_r${rank}$
+end subroutine atlas_field_from_array_${dtype}$
 #:endfor
 
 !----------------------------------------------------------------------

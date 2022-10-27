@@ -301,10 +301,10 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
                                 inputVars,
                                 *bumpParams,
                                 fsetVec1,
+                                ens1_ne,
                                 geom2->functionSpace(),
                                 geom2->extraFields(),
                                 fsetVec2,
-                                ens1_ne,
                                 ens2_ne));
 
       // Add members of ensemble 1
