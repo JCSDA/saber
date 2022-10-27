@@ -1,0 +1,16 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 10
+  levels: 2
+  halo: 1
+variables: &id001
+- var1
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables: *id001
+saber central block:
+  saber block name: ID
+test:
+  reference filename: testref/saber_block_test_bump.ref

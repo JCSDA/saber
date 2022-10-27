@@ -23,23 +23,29 @@
              Level   1 ~>  0.100E+01 vert. unit
              Effective levels:   1   2 
                    Horizontal support radius:    4000.00 km (   4000.00 km -    4000.00 km)
-                   Estimated nc1 from horizontal support radius:     1325
-                   Final nc1:     1106
-                   Effective horizontal resolution:  5.48
+                   Estimated nc1 from horizontal support radius:      589
+                   Decimate full grid, at least      589 points required
+                       1098 valid points found
+                   Final nc1:      589
+                   Effective horizontal resolution:  4.00
                    Horizontal support radius:    4000.00 km (   4000.00 km -    4000.00 km)
-                   Estimated nc1 from horizontal support radius:     1325
-                   Final nc1:     1106
-                   Effective horizontal resolution:  5.48
-             nc1(  1) =       1106
-             nc1(  2) =       1106
-             ns =             2212
+                   Estimated nc1 from horizontal support radius:      589
+                   Decimate full grid, at least      589 points required
+                       1098 valid points found
+                   Final nc1:      589
+                   Effective horizontal resolution:  4.00
+             nc1(  1) =        589
+             nc1(  2) =        589
+             ns =             1178
              Effective levels:   1 
                    Horizontal support radius:    4000.00 km (   4000.00 km -    4000.00 km)
-                   Estimated nc1 from horizontal support radius:     1325
-                   Final nc1:     1106
-                   Effective horizontal resolution:  5.48
-             nc1(  1) =       1106
-             ns =             1106
+                   Estimated nc1 from horizontal support radius:      589
+                   Decimate full grid, at least      589 points required
+                       1098 valid points found
+                   Final nc1:      589
+                   Effective horizontal resolution:  4.00
+             nc1(  1) =        589
+             ns =              589
 Member 0: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -55,8 +61,8 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var1: 4.9766264769223937e+01
-  var_2d: 3.2635755511471963e+01
+  var1: 5.0775429072231546e+01
+  var_2d: 3.4827365090401898e+01
 Member 1: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -72,8 +78,8 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var1: 4.4233114978549935e+01
-  var_2d: 3.5205834944140520e+01
+  var1: 5.5528614917203001e+01
+  var_2d: 3.0210934427924823e+01
 Member 2: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -89,8 +95,8 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var1: 4.4265837128272182e+01
-  var_2d: 3.6056786128457908e+01
+  var1: 4.9487171082609279e+01
+  var_2d: 3.5552506193902147e+01
 Member 3: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -106,8 +112,8 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var1: 4.5682359363713331e+01
-  var_2d: 3.0222938709212475e+01
+  var1: 4.4681636679641279e+01
+  var_2d: 3.3762356579819674e+01
 Member 4: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -123,8 +129,8 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var1: 4.3737799280629709e+01
-  var_2d: 3.2714514263314996e+01
+  var1: 4.4453527568651459e+01
+  var_2d: 3.4007946038973763e+01
 Member 5: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -140,8 +146,8 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var1: 4.9115173642943617e+01
-  var_2d: 2.6907562355540897e+01
+  var1: 4.3243008449575328e+01
+  var_2d: 3.1088565229828944e+01
 Member 6: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -157,8 +163,8 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var1: 4.6395998556383326e+01
-  var_2d: 3.5933584989223021e+01
+  var1: 4.5496043691266912e+01
+  var_2d: 3.6680151003255048e+01
 Member 7: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -174,8 +180,8 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var1: 4.6588717313569710e+01
-  var_2d: 3.2553164456487444e+01
+  var1: 4.3075815025987943e+01
+  var_2d: 2.9140633376210481e+01
 Member 8: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -191,8 +197,8 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var1: 4.8113953453696510e+01
-  var_2d: 2.9454869835837584e+01
+  var1: 4.7219888845084405e+01
+  var_2d: 3.2099249647469783e+01
 Member 9: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -208,8 +214,8 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var1: 4.8050026570262290e+01
-  var_2d: 3.1998834615749164e+01
+  var1: 4.0178998063700774e+01
+  var_2d: 3.0873965311975510e+01
 Member 10: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -225,8 +231,8 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var1: 4.6783874304345218e+01
-  var_2d: 3.5415148941663880e+01
+  var1: 4.3630366927721049e+01
+  var_2d: 2.8153566462271403e+01
 Member 11: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -242,8 +248,8 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var1: 4.6118100310675871e+01
-  var_2d: 4.0757129028837646e+01
+  var1: 4.8211705773890174e+01
+  var_2d: 3.1475401750413628e+01
 Member 12: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -259,8 +265,8 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var1: 4.8371986257134125e+01
-  var_2d: 3.5887707068768634e+01
+  var1: 4.4455111748048900e+01
+  var_2d: 3.5111525612057669e+01
 Member 13: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -276,8 +282,8 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var1: 4.6120347199521014e+01
-  var_2d: 3.2485924973146602e+01
+  var1: 4.4146197708670627e+01
+  var_2d: 2.8287714692528727e+01
 Member 14: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -293,8 +299,8 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var1: 4.5797076066110009e+01
-  var_2d: 3.0274326427492564e+01
+  var1: 4.6053752239552708e+01
+  var_2d: 3.1978886536794551e+01
 Member 15: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -310,8 +316,8 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var1: 4.7158754359498808e+01
-  var_2d: 3.2379783924157195e+01
+  var1: 4.9418072871105899e+01
+  var_2d: 3.3519312335422761e+01
 Member 16: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -327,8 +333,8 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var1: 4.4718735142033303e+01
-  var_2d: 3.6612936928970022e+01
+  var1: 4.1911400185365451e+01
+  var_2d: 3.1823196248448046e+01
 Member 17: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -344,8 +350,8 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var1: 4.8055471501287620e+01
-  var_2d: 3.0696748010458922e+01
+  var1: 4.3154106058762629e+01
+  var_2d: 3.4483973532091824e+01
 Member 18: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -361,8 +367,8 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var1: 5.1101584389375553e+01
-  var_2d: 2.8947436674665013e+01
+  var1: 3.9222124536370387e+01
+  var_2d: 3.1137344488674689e+01
 Member 19: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -378,8 +384,8 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var1: 4.4059881869269113e+01
-  var_2d: 3.1712867961737640e+01
+  var1: 4.1274811606237989e+01
+  var_2d: 3.0507782109239319e+01
 Member 20: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -395,8 +401,8 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var1: 4.6607100624288158e+01
-  var_2d: 3.0096543809179373e+01
+  var1: 4.4180219933449045e+01
+  var_2d: 2.8719951822957189e+01
 Member 21: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -412,8 +418,8 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var1: 4.5973230975483062e+01
-  var_2d: 3.3459604905281303e+01
+  var1: 3.8648329323287925e+01
+  var_2d: 3.3509251070172240e+01
 Member 22: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -429,8 +435,8 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var1: 4.1473006317846583e+01
-  var_2d: 3.1303954964956386e+01
+  var1: 4.2317210130021728e+01
+  var_2d: 3.4909316954818351e+01
 Member 23: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -446,8 +452,8 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var1: 4.2164255048854720e+01
-  var_2d: 3.0624500123164577e+01
+  var1: 4.4710858757532741e+01
+  var_2d: 3.5111751062789466e+01
 Member 24: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -463,5 +469,5 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var1: 5.1722442454593413e+01
-  var_2d: 3.6522121235478423e+01
+  var1: 4.3741451725257896e+01
+  var_2d: 3.2818968761116523e+01

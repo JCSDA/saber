@@ -53,16 +53,16 @@
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-   Norm of var1:  0.55455503E+04
-   Norm of var1:  0.40775792E+04
-   Norm of var1:  0.43839286E+04
-   Norm of var1:  0.34193851E+04
-   Norm of var1:  0.43918870E+04
-   Norm of var1:  0.59788227E+04
-   Norm of var1:  0.52088188E+04
-   Norm of var1:  0.42799482E+04
-   Norm of var1:  0.40710885E+04
-   Norm of var1:  0.23060425E+02
+   Norm of var1:  0.43301608E+04
+   Norm of var1:  0.44012749E+04
+   Norm of var1:  0.37952006E+04
+   Norm of var1:  0.39551274E+04
+   Norm of var1:  0.35525847E+04
+   Norm of var1:  0.29371321E+04
+   Norm of var1:  0.34480956E+04
+   Norm of var1:  0.38404335E+04
+   Norm of var1:  0.32260827E+04
+   Norm of var1:  0.21968764E+02
    Norm of var1:  0.14469769E+04
    Norm of var1:  0.18566296E+04
    Norm of var1:  0.14839797E+04
@@ -128,19 +128,19 @@
           Independent levels for angular sector   1 / class  13:  1[2] 
           Independent levels for angular sector   1 / class  14:  1[2] 
           Independent levels for angular sector   1 / class  15:  1[2] 
-                Level:   1 ~> cov. at class zero:  0.99E+00
-                Level:   2 ~> cov. at class zero:  0.10E+01
+                Level:   1 ~> cov. at class zero:  0.96E+00
+                Level:   2 ~> cov. at class zero:  0.91E+00
                 Level:   1 ~> cov. at class zero:  0.10E+01
                 Level:   2 ~> cov. at class zero:  0.99E+00
-             Block var1-var1:  0.17580006E+00 for       60 diagnostic points
+             Block var1-var1:  0.13770789E+00 for       60 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      4198.98 km
-                                 cor. ver. support:         3.17 vertical units
+                                 cor. hor. support:      3687.33 km
+                                 cor. ver. support:         3.10 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      3977.24 km
-                                 cor. ver. support:         3.17 vertical units
+                                 cor. hor. support:      3811.08 km
+                                 cor. ver. support:         3.10 vertical units
              Block var1-var1:  0.11335877E+00 for       60 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
@@ -157,9 +157,9 @@
                    Level:   2 ~> amplitude:        1.00
                                  loc. hor. support:     10000.00 km
                                  loc. ver. support:         2.00 vertical units
-                Level:   1 ~> hybrid coefficients: 0.30 / 0.70
-                Level:   2 ~> hybrid coefficients: 0.39 / 0.64
+                Level:   1 ~> hybrid coefficients: 0.43 / 0.54
+                Level:   2 ~> hybrid coefficients: 0.25 / 0.69
 Norm of BUMP output parameter loc_rh - 1: 4.7031904065219390e+08
 Norm of BUMP output parameter loc_rv - 1: 9.4063808130438773e+01
-Norm of BUMP output parameter hyb_coef_ens - 1: 1.6357983292575938e+01
-Norm of BUMP output parameter hyb_coef_sta - 1: 3.1459327854772535e+01
+Norm of BUMP output parameter hyb_coef_ens - 1: 1.6633715700164284e+01
+Norm of BUMP output parameter hyb_coef_sta - 1: 2.9302210605623575e+01

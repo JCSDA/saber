@@ -54,41 +54,41 @@
           Independent levels for angular sector   4 / class   8:  1[2] 
           Independent levels for angular sector   4 / class   9:  1[2] 
           Independent levels for angular sector   4 / class  10:  1[2] 
-                Level:   1 ~> cov. at class zero:  0.95E+00
-                Level:   2 ~> cov. at class zero:  0.94E+00
-                Level:   1 ~> cov. at class zero:  0.96E+00
-             Block var1-var1:  0.34552872E+00 for    37356 diagnostic points
-             Block var_2d-var_2d:  0.36905018E+00 for     9339 diagnostic points
+                Level:   1 ~> cov. at class zero:  0.99E+00
+                Level:   2 ~> cov. at class zero:  0.98E+00
+                Level:   1 ~> cov. at class zero:  0.97E+00
+             Block var1-var1:  0.34937175E+00 for    37356 diagnostic points
+             Block var_2d-var_2d:  0.36421464E+00 for     9339 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        0.75
-                                 cor. hor. support:      3600.20 km
-                                 cor. ver. support:         4.64 vertical units
-                   Level:   2 ~> amplitude:        0.75
-                                 cor. hor. support:      3583.07 km
-                                 cor. ver. support:         4.53 vertical units
+                                 cor. hor. support:      3582.36 km
+                                 cor. ver. support:         4.73 vertical units
+                   Level:   2 ~> amplitude:        0.77
+                                 cor. hor. support:      3674.03 km
+                                 cor. ver. support:         4.48 vertical units
                    Level:   1 ~> amplitude:        0.25
-                                 cor. hor. support:      3601.42 km
-                                 cor. ver. support:         0.55 vertical units
-                   Level:   2 ~> amplitude:        0.25
-                                 cor. hor. support:      3582.93 km
-                                 cor. ver. support:         0.54 vertical units
+                                 cor. hor. support:      3581.51 km
+                                 cor. ver. support:         0.56 vertical units
+                   Level:   2 ~> amplitude:        0.23
+                                 cor. hor. support:      3676.50 km
+                                 cor. ver. support:         0.53 vertical units
                 Level:   1 ~> cor. at class zero:        1.00
-                   Level:   1 ~> amplitude:        0.78
-                                 cor. hor. support:      3459.85 km
+                   Level:   1 ~> amplitude:        0.77
+                                 cor. hor. support:      3519.71 km
                                  cor. ver. support:         0.00 vertical units
-                   Level:   1 ~> amplitude:        0.22
-                                 cor. hor. support:      3461.39 km
+                   Level:   1 ~> amplitude:        0.23
+                                 cor. hor. support:      3519.36 km
                                  cor. ver. support:         0.00 vertical units
-Norm of BUMP output parameter cor_a - 1: 3.6363779657680531e+01
-Norm of BUMP output parameter cor_a - 2: 1.4947084722012432e+01
-Norm of BUMP output parameter cor_rh1 - 1: 1.9596839964208391e+08
-Norm of BUMP output parameter cor_rh1 - 2: 1.9470884631857979e+08
-Norm of BUMP output parameter cor_rh2 - 1: 1.9215283836263254e+08
-Norm of BUMP output parameter cor_rh2 - 2: 1.9104673920030373e+08
-Norm of BUMP output parameter cor_rhc - 1: 3.0598560331708904e+00
-Norm of BUMP output parameter cor_rhc - 2: 2.4701168497502790e+00
-Norm of BUMP output parameter cor_rh - 1: 1.9286481974001408e+08
-Norm of BUMP output parameter cor_rh - 2: 1.9171691406826580e+08
-Norm of BUMP output parameter cor_rv - 1: 2.1300788768406386e+02
-Norm of BUMP output parameter cor_rv - 2: 2.8052357057959931e+01
+Norm of BUMP output parameter cor_a - 1: 3.6748920461639891e+01
+Norm of BUMP output parameter cor_a - 2: 1.4148721210374314e+01
+Norm of BUMP output parameter cor_rh1 - 1: 1.8994182411217222e+08
+Norm of BUMP output parameter cor_rh1 - 2: 1.8896437407126102e+08
+Norm of BUMP output parameter cor_rh2 - 1: 1.9482291490887466e+08
+Norm of BUMP output parameter cor_rh2 - 2: 1.9149306403077379e+08
+Norm of BUMP output parameter cor_rhc - 1: 4.4232244668918108e+00
+Norm of BUMP output parameter cor_rhc - 2: 3.4011155804661852e+00
+Norm of BUMP output parameter cor_rh - 1: 1.9112175409562990e+08
+Norm of BUMP output parameter cor_rh - 2: 1.8909627957131958e+08
+Norm of BUMP output parameter cor_rv - 1: 1.9932388603034357e+02
+Norm of BUMP output parameter cor_rv - 2: 2.7273089933198584e+01

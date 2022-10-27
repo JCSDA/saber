@@ -26,7 +26,7 @@ bump:
   nl0r: 1
   ne: 25
   ens1_ne: 1000
-  resol: 6.0
+  resol: 4.0
   forced_radii: true
   rh:
     var1:

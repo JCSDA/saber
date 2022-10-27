@@ -143,9 +143,8 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
                                     fsetVec));
 
         // Apply calibration inverse on xb and fg
-        // TODO(Benjamin): uncomment these lines when all blocks are compliant
-//        saberOuterBlocks_.back().calibrationInverseMultiply(xbLocal.fieldSet());
-//        saberOuterBlocks_.back().calibrationInverseMultiply(fgLocal.fieldSet());
+        saberOuterBlocks_.back().calibrationInverseMultiply(xbLocal.fieldSet());
+        saberOuterBlocks_.back().calibrationInverseMultiply(fgLocal.fieldSet());
 
         // Access inner geometry and variables
         const oops::GeometryData & innerGeometryData = saberOuterBlocks_.back().innerGeometryData();
@@ -186,8 +185,8 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         saberOuterBlocks_.back().multiplyAD(outerFset);
 
         // Compute adjoint test
-        const double dp1 = dot_product(innerFset, outerFsetSave, geom.getComm());
-        const double dp2 = dot_product(outerFset, innerFsetSave, geom.getComm());
+        const double dp1 = dot_product(innerFset, outerFsetSave, activeVars, geom.getComm());
+        const double dp2 = dot_product(outerFset, innerFsetSave, activeVars, geom.getComm());
         oops::Log::info() << "Info     : Adjoint test for outer block "
                           << saberOuterBlockParams.saberBlockName.value()
                           << ": y^t (Ax) = " << dp1 << ": x^t (A^t y) = " << dp2 << std::endl;
@@ -272,8 +271,8 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       saberCentralBlock_->multiply(outerFset);
 
       // Compute adjoint test
-      const double dp1 = dot_product(innerFset, outerFsetSave, geom.getComm());
-      const double dp2 = dot_product(outerFset, innerFsetSave, geom.getComm());
+      const double dp1 = dot_product(innerFset, outerFsetSave, activeVars, geom.getComm());
+      const double dp2 = dot_product(outerFset, innerFsetSave, activeVars, geom.getComm());
       oops::Log::info() << "Info     : Adjoint test for central block "
                         << saberCentralBlockParams.saberBlockName.value()
                         << ": y^t (Ax) = " << dp1 << ": x^t (Ay) = " << dp2 << std::endl;
@@ -422,7 +421,6 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
   }
 
   // -----------------------------------------------------------------------------
-  // TODO(Benjamin): should be moved in OOPS?
   atlas::FieldSet copyFieldSet(const atlas::FieldSet & otherFset) const {
     // Create FieldSet
     atlas::FieldSet fset;
@@ -452,21 +450,23 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
   }
 
   // -----------------------------------------------------------------------------
-  // TODO(Benjamin): should be moved in OOPS?
   double dot_product(const atlas::FieldSet & fset1,
                      const atlas::FieldSet & fset2,
+                     const oops::Variables & activeVars,
                      const eckit::mpi::Comm & comm) const {
-    // Check FieldSets size
-    ASSERT(fset1.size() == fset2.size());
-
     // Compute dot product
     double dp = 0.0;
-    for (const auto & field1 : fset1) {
-      if (field1.rank() == 2) {
-        atlas::Field field2 = fset2.field(field1.name());
+    for (const auto & var : activeVars.variables()) {
+      // Check fields presence
+      ASSERT(fset1.has(var));
+      ASSERT(fset2.has(var));
 
+      // Get fields
+      const auto field1 = fset1.field(var);
+      const auto field2 = fset2.field(var);
+
+      if (field1.rank() == 2 && field2.rank() == 2) {
         // Check fields consistency
-        ASSERT(field2.rank() == 2);
         ASSERT(field1.shape(0) == field2.shape(0));
         ASSERT(field1.shape(1) == field2.shape(1));
 
@@ -513,6 +513,8 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
             }
           }
         }
+      } else {
+        ABORT("wrong rank");
       }
     }
 

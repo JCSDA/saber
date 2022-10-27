@@ -9,6 +9,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "oops/base/Increment.h"
 #include "oops/base/ModelSpaceCovarianceBase.h"

@@ -7,6 +7,7 @@
 
 #include "saber/bump/PsiChiToUV.h"
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -124,7 +125,7 @@ void PsiChiToUV::calibrationInverseMultiply(atlas::FieldSet & fset)
                     << "::calibrationInverseMultiply not meaningful: psi/chi fields are empty"
                     << std::endl;
   atlas::FieldSet fset_;
-  for (const auto var : innerVars_.variables()) {
+  for (const auto & var : innerVars_.variables()) {
      if (outerVars_.has(var)) {
        // Add field
        fset_.add(fset.field(var));

@@ -17,10 +17,9 @@ background error:
     processor layout y direction: 1
     debugging mode: false
 dirac:
-  index: [1000]
+  lon: [0.0]
+  lat: [0.0]
   level: [1]
-  lon: [1.980931]
-  lat: [44.220188]
   variable: [stream_function]
 geometry:
   function space: StructuredColumns

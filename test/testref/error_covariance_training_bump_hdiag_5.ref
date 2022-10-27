@@ -24,41 +24,41 @@
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-   Norm of var1:  0.55455503E+04
-   Norm of var1:  0.40775792E+04
-   Norm of var1:  0.43839286E+04
-   Norm of var1:  0.34193851E+04
-   Norm of var1:  0.43918870E+04
-   Norm of var1:  0.59788227E+04
-   Norm of var1:  0.52088188E+04
-   Norm of var1:  0.42799482E+04
-   Norm of var1:  0.40710885E+04
-   Norm of var1:  0.23060425E+02
-   Norm of var1:  0.23692898E+04
-   Norm of var1:  0.36694797E+04
-   Norm of var1:  0.31631849E+04
-   Norm of var1:  0.23801213E+04
-   Norm of var1:  0.31634450E+04
-   Norm of var1:  0.23507013E+04
-   Norm of var1:  0.25073367E+04
-   Norm of var1:  0.31396078E+04
-   Norm of var1:  0.29373432E+04
-   Norm of var1:  0.32692831E+04
-   Norm of var1:  0.29945556E+04
-   Norm of var1:  0.35144541E+04
-   Norm of var1:  0.32530460E+04
-   Norm of var1:  0.22993810E+04
-   Norm of var1:  0.25802778E+04
-   Norm of var1:  0.27022987E+04
-   Norm of var1:  0.28431294E+04
-   Norm of var1:  0.28436136E+04
-   Norm of var1:  0.29075741E+04
-   Norm of var1:  0.35774628E+04
-   Norm of var1:  0.31662750E+04
-   Norm of var1:  0.41372201E+04
-   Norm of var1:  0.28570501E+04
-   Norm of var1:  0.32573710E+04
-   Norm of var1:  0.22902172E+01
+   Norm of var1:  0.43301608E+04
+   Norm of var1:  0.44012749E+04
+   Norm of var1:  0.37952006E+04
+   Norm of var1:  0.39551274E+04
+   Norm of var1:  0.35525847E+04
+   Norm of var1:  0.29371321E+04
+   Norm of var1:  0.34480956E+04
+   Norm of var1:  0.38404335E+04
+   Norm of var1:  0.32260827E+04
+   Norm of var1:  0.21968764E+02
+   Norm of var1:  0.27228850E+04
+   Norm of var1:  0.26850857E+04
+   Norm of var1:  0.24403267E+04
+   Norm of var1:  0.34095768E+04
+   Norm of var1:  0.27148771E+04
+   Norm of var1:  0.27733908E+04
+   Norm of var1:  0.27974612E+04
+   Norm of var1:  0.23437127E+04
+   Norm of var1:  0.26912817E+04
+   Norm of var1:  0.26636631E+04
+   Norm of var1:  0.29167476E+04
+   Norm of var1:  0.31362207E+04
+   Norm of var1:  0.27404465E+04
+   Norm of var1:  0.30654599E+04
+   Norm of var1:  0.28405211E+04
+   Norm of var1:  0.32340467E+04
+   Norm of var1:  0.30463766E+04
+   Norm of var1:  0.24527711E+04
+   Norm of var1:  0.34033916E+04
+   Norm of var1:  0.26262288E+04
+   Norm of var1:  0.34538978E+04
+   Norm of var1:  0.27352074E+04
+   Norm of var1:  0.29063824E+04
+   Norm of var1:  0.26908937E+04
+   Norm of var1:  0.21768600E+01
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
           Decimate full grid, at least      500 points required
@@ -99,51 +99,51 @@
           Independent levels for angular sector   1 / class  13:  1[2] 
           Independent levels for angular sector   1 / class  14:  1[2] 
           Independent levels for angular sector   1 / class  15:  1[2] 
-                Level:   1 ~> cov. at class zero:  0.99E+00
-                Level:   2 ~> cov. at class zero:  0.10E+01
                 Level:   1 ~> cov. at class zero:  0.96E+00
-                Level:   2 ~> cov. at class zero:  0.95E+00
-             Block var1-var1:  0.17580006E+00 for       60 diagnostic points
+                Level:   2 ~> cov. at class zero:  0.91E+00
+                Level:   1 ~> cov. at class zero:  0.99E+00
+                Level:   2 ~> cov. at class zero:  0.98E+00
+             Block var1-var1:  0.13770789E+00 for       60 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      4198.98 km
-                                 cor. ver. support:         3.17 vertical units
+                                 cor. hor. support:      3687.33 km
+                                 cor. ver. support:         3.10 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      3977.24 km
-                                 cor. ver. support:         3.17 vertical units
-             Block var1-var1:  0.15522799E+00 for       60 diagnostic points
+                                 cor. hor. support:      3811.08 km
+                                 cor. ver. support:         3.10 vertical units
+             Block var1-var1:  0.15895320E+00 for       60 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      3800.13 km
-                                 cor. ver. support:         3.13 vertical units
+                                 cor. hor. support:      3693.29 km
+                                 cor. ver. support:         3.19 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      3741.94 km
-                                 cor. ver. support:         3.13 vertical units
-             Block var1-var1:  0.24355689E+00 for       47 diagnostic points
-                Level:   1 ~> loc. at class zero:       0.82
-                Level:   2 ~> loc. at class zero:       0.84
+                                 cor. hor. support:      3731.62 km
+                                 cor. ver. support:         3.19 vertical units
+             Block var1-var1:  0.23347467E+00 for       39 diagnostic points
+                Level:   1 ~> loc. at class zero:       0.83
+                Level:   2 ~> loc. at class zero:       0.82
                    Level:   1 ~> amplitude:        1.00
-                                 loc. hor. support:      5151.62 km
-                                 loc. ver. support:         3.94 vertical units
+                                 loc. hor. support:      4510.33 km
+                                 loc. ver. support:         4.10 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 loc. hor. support:      5009.36 km
-                                 loc. ver. support:         3.94 vertical units
-             Block var1-var1:  0.25823723E+00 for       39 diagnostic points
+                                 loc. hor. support:      4370.72 km
+                                 loc. ver. support:         4.10 vertical units
+             Block var1-var1:  0.27629570E+00 for       57 diagnostic points
                 Level:   1 ~> loc. at class zero:       0.92
                 Level:   2 ~> loc. at class zero:       0.92
                    Level:   1 ~> amplitude:        1.00
-                                 loc. hor. support:      5994.03 km
-                                 loc. ver. support:         6.02 vertical units
+                                 loc. hor. support:      5555.25 km
+                                 loc. ver. support:         5.98 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 loc. hor. support:      5669.83 km
-                                 loc. ver. support:         6.02 vertical units
-                Level:   1 ~> hybrid coefficients: 0.47 / 0.55
-                Level:   2 ~> hybrid coefficients: 0.50 / 0.55
-Norm of BUMP output parameter loc_rh - 1: 2.3896846382378161e+08
-Norm of BUMP output parameter loc_rv - 1: 1.8542136107186391e+02
-Norm of BUMP output parameter hyb_coef_ens - 1: 2.2841396872971259e+01
-Norm of BUMP output parameter loc_rh_lr - 1: 2.2775740986394602e+08
-Norm of BUMP output parameter loc_rv_lr - 1: 2.3498918739881037e+02
-Norm of BUMP output parameter hyb_coef_ens_lr - 1: 2.5798152768132304e+01
+                                 loc. hor. support:      5548.72 km
+                                 loc. ver. support:         5.98 vertical units
+                Level:   1 ~> hybrid coefficients: 0.54 / 0.45
+                Level:   2 ~> hybrid coefficients: 0.52 / 0.45
+Norm of BUMP output parameter loc_rh - 1: 2.0887209781576023e+08
+Norm of BUMP output parameter loc_rv - 1: 1.9300550966718316e+02
+Norm of BUMP output parameter hyb_coef_ens - 1: 2.4907015745880596e+01
+Norm of BUMP output parameter loc_rh_lr - 1: 2.1674086702899694e+08
+Norm of BUMP output parameter loc_rv_lr - 1: 2.3342836418919367e+02
+Norm of BUMP output parameter hyb_coef_ens_lr - 1: 2.1049236924477995e+01

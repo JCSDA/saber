@@ -23,8 +23,8 @@ background error:
     gauss grid uid: F160
     use streamfunction and velocity potential: true
 dirac:
-  lon: [180.0]
-  lat: [0]
+  lon: [0.0]
+  lat: [0.0]
   level: [1]
   variable: [eastward_wind]
 output dirac:

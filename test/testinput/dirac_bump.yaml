@@ -74,12 +74,9 @@ background error:
       wind_zonal: var3
       wind_meridional: var4
 dirac:
-  lon:
-  - 1.980931
-  lat:
-  - 44.220188
-  level:
-  - 1
+  lon: [0.0]
+  lat: [0.0]
+  level: [1]
   variable: [var3]
 output dirac:
   filepath: testdata/dirac_bump/dirac_%id%

@@ -23,7 +23,7 @@ background error:
       method: cor
       strategy: specific_univariate
       new_nicas: true
-      resol: 6.0
+      resol: 4.0
       forced_radii: true
       rh:
         var1:

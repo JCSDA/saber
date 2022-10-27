@@ -7,6 +7,7 @@
 
 #include "saber/bump/VerticalBalance.h"
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>

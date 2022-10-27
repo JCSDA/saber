@@ -6,8 +6,8 @@
  */
 
 #include "oops/runs/Run.h"
-#include "src/Traits.h"
 #include "saber/oops/ErrorCovarianceTraining.h"
+#include "src/Traits.h"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);

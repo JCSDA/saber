@@ -6,7 +6,8 @@ geometry:
   levels: 2
   halo: 1
 variables: &id001
-- var1
+- var3
+- var4
 background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001

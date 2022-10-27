@@ -1,9 +1,9 @@
-Norm of input parameter a::1: 3.4491987560285452e+01
-Norm of input parameter a::2: 1.1767277472061309e+01
-Norm of input parameter rh::1: 1.1558180652344990e+08
-Norm of input parameter rh::2: 1.1631114798622771e+08
-Norm of input parameter rv::1: 1.5034803230055735e+02
-Norm of input parameter rv::2: 2.5972450093380374e+01
+Norm of input parameter a::1: 3.4759175064840939e+01
+Norm of input parameter a::2: 1.1515133858533368e+01
+Norm of input parameter rh::1: 1.1673078589173481e+08
+Norm of input parameter rh::2: 1.1746214174080329e+08
+Norm of input parameter rv::1: 1.5110379013201609e+02
+Norm of input parameter rv::2: 2.6034696079232273e+01
        Independent levels:  1[1]  2[1] 
           Level   1:   2014814817
           Level   2:   1295662076
@@ -20,6 +20,8 @@ Norm of input parameter rv::2: 2.5972450093380374e+01
              Effective levels:   1   2 
                    Horizontal support radius:     614.76 km (    614.76 km -     614.76 km)
                    Estimated nc1 from horizontal support radius:    16460
+                   Decimate full grid, at least      503 points required
+                        503 valid points found
                    Final nc1:      503
                    Effective horizontal resolution:  0.70
                    Horizontal support radius:     638.39 km (    638.39 km -     638.39 km)
@@ -34,6 +36,8 @@ Norm of input parameter rv::2: 2.5972450093380374e+01
              Effective levels:   1   2 
                    Horizontal support radius:     657.51 km (    657.51 km -     657.51 km)
                    Estimated nc1 from horizontal support radius:    14389
+                   Decimate full grid, at least      503 points required
+                        503 valid points found
                    Final nc1:      503
                    Effective horizontal resolution:  0.75
                    Horizontal support radius:     825.91 km (    825.91 km -     825.91 km)

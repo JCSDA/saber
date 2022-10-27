@@ -7,8 +7,8 @@
 
 #include "oops/runs/Dirac.h"
 #include "oops/runs/Run.h"
-#include "src/Traits.h"
 #include "saber/oops/instantiateCovarFactory.h"
+#include "src/Traits.h"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);

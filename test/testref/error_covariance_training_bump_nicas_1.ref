@@ -14,6 +14,8 @@
              Effective levels:   1   2 
                    Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
                    Estimated nc1 from horizontal support radius:     6220
+                   Decimate full grid, at least      503 points required
+                        503 valid points found
                    Final nc1:      503
                    Effective horizontal resolution:  1.14
                    Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)

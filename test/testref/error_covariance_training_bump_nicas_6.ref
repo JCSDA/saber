@@ -1,13 +1,13 @@
-Norm of input parameter a::1: 3.6363779657680531e+01
-Norm of input parameter a::2: 1.4947084722012432e+01
-Norm of input parameter rh1::1: 1.9596839964208391e+08
-Norm of input parameter rh1::2: 1.9470884631857979e+08
-Norm of input parameter rh2::1: 1.9215283836263254e+08
-Norm of input parameter rh2::2: 1.9104673920030373e+08
-Norm of input parameter rhc::1: 3.0598560331708904e+00
-Norm of input parameter rhc::2: 2.4701168497502790e+00
-Norm of input parameter rv::1: 2.1300788768406386e+02
-Norm of input parameter rv::2: 2.8052357057959931e+01
+Norm of input parameter a::1: 3.6748920461639891e+01
+Norm of input parameter a::2: 1.4148721210374314e+01
+Norm of input parameter rh1::1: 1.8994182411217222e+08
+Norm of input parameter rh1::2: 1.8896437407126102e+08
+Norm of input parameter rh2::1: 1.9482291490887466e+08
+Norm of input parameter rh2::2: 1.9149306403077379e+08
+Norm of input parameter rhc::1: 4.4232244668918108e+00
+Norm of input parameter rhc::2: 3.4011155804661852e+00
+Norm of input parameter rv::1: 1.9932388603034357e+02
+Norm of input parameter rv::2: 2.7273089933198584e+01
        Independent levels:  1[2] 
           Level   1:   1550418632
           Level   2:   1550418632
@@ -32,57 +32,57 @@ Norm of input parameter rv::2: 2.8052357057959931e+01
              Level   1 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Effective levels:   1   2 
-                   Horizontal support radius:    4046.77 km (   3542.19 km -    4934.78 km)
-                   Estimated nc1 from horizontal support radius:      575
-                   Decimate full grid, at least      575 points required
+                   Horizontal support radius:    3924.85 km (   3554.18 km -    4352.74 km)
+                   Estimated nc1 from horizontal support radius:      611
+                   Decimate full grid, at least      611 points required
                         762 valid points found
-                   Final nc1:      575
+                   Final nc1:      611
                    Effective horizontal resolution:  4.00
-                   Horizontal support radius:    4033.49 km (   3427.74 km -    4859.24 km)
-                   Estimated nc1 from horizontal support radius:      579
-                   Decimate full grid, at least      579 points required
+                   Horizontal support radius:    4084.25 km (   3650.84 km -    4579.82 km)
+                   Estimated nc1 from horizontal support radius:      564
+                   Decimate full grid, at least      564 points required
                         762 valid points found
-                   Final nc1:      579
+                   Final nc1:      564
                    Effective horizontal resolution:  4.00
-             nc1(  1) =        575
-             nc1(  2) =        579
-             ns =             1154
+             nc1(  1) =        611
+             nc1(  2) =        564
+             ns =             1175
              Effective levels:   1   2 
-                   Horizontal support radius:    4023.85 km (   3504.03 km -    4932.85 km)
-                   Estimated nc1 from horizontal support radius:      582
-                   Decimate full grid, at least      582 points required
+                   Horizontal support radius:    3879.52 km (   3519.64 km -    4317.69 km)
+                   Estimated nc1 from horizontal support radius:      626
+                   Decimate full grid, at least      626 points required
                         762 valid points found
-                   Final nc1:      582
+                   Final nc1:      626
                    Effective horizontal resolution:  4.00
-                   Horizontal support radius:    3996.00 km (   3413.00 km -    4763.11 km)
-                   Estimated nc1 from horizontal support radius:      590
-                   Decimate full grid, at least      590 points required
+                   Horizontal support radius:    4028.07 km (   3631.42 km -    4511.59 km)
+                   Estimated nc1 from horizontal support radius:      580
+                   Decimate full grid, at least      580 points required
                         762 valid points found
-                   Final nc1:      590
+                   Final nc1:      580
                    Effective horizontal resolution:  4.00
-             nc1(  1) =        582
-             nc1(  2) =        590
-             ns =             1172
-             0.0 /    0.0:  1.0358750
-          Level   1:  0.0000000 -  1.0358750
-          Level   2:  0.0000000 -  0.5155877
+             nc1(  1) =        626
+             nc1(  2) =        580
+             ns =             1206
+             0.0 /    0.0:  1.0717765
+          Level   1:  0.0000000 -  1.0717765
+          Level   2:  0.0000000 -  0.5803820
              Effective levels:   1 
-                   Horizontal support radius:    3990.18 km (   3525.35 km -    4654.43 km)
-                   Estimated nc1 from horizontal support radius:      591
-                   Decimate full grid, at least      591 points required
+                   Horizontal support radius:    3966.40 km (   3394.17 km -    4499.23 km)
+                   Estimated nc1 from horizontal support radius:      599
+                   Decimate full grid, at least      599 points required
                         762 valid points found
-                   Final nc1:      591
+                   Final nc1:      599
                    Effective horizontal resolution:  4.00
-             nc1(  1) =        591
-             ns =              591
+             nc1(  1) =        599
+             ns =              599
              Effective levels:   1 
-                   Horizontal support radius:    3977.80 km (   3445.35 km -    4657.20 km)
-                   Estimated nc1 from horizontal support radius:      595
-                   Decimate full grid, at least      595 points required
+                   Horizontal support radius:    3942.96 km (   3404.27 km -    4419.71 km)
+                   Estimated nc1 from horizontal support radius:      606
+                   Decimate full grid, at least      606 points required
                         762 valid points found
-                   Final nc1:      595
+                   Final nc1:      606
                    Effective horizontal resolution:  4.00
-             nc1(  1) =        595
-             ns =              595
-             0.0 /    0.0:  1.3330174
-          Level   1:  0.0000000 -  1.3330174
+             nc1(  1) =        606
+             ns =              606
+             0.0 /    0.0:  1.1419259
+          Level   1:  0.0000000 -  1.1419259

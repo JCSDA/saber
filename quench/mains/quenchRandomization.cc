@@ -6,9 +6,9 @@
  */
 
 #include "oops/runs/Run.h"
-#include "src/Traits.h"
 #include "saber/oops/instantiateCovarFactory.h"
 #include "saber/oops/Randomization.h"
+#include "src/Traits.h"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
