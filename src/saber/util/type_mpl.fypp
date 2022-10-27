@@ -18,7 +18,9 @@ use tools_const, only: zero,one,ten,hundred
 use tools_kinds, only: kind_int,kind_float,kind_double,kind_real
 use tools_qsort, only: qsort
 use type_msv, only: msv_type
+#:if getvar('ENABLE_SABER_INSTRUMENTATION', 0)
 use type_probe, only: iinst,cinst,probe
+#:endif
 
 implicit none
 
@@ -1160,9 +1162,7 @@ call mpl%flush
 @:probe_out()
 
 end subroutine mpl_print_instance
-#:endif
 
-#:if getvar('ENABLE_SABER_INSTRUMENTATION', 0)
 !----------------------------------------------------------------------
 ! Subroutine: mpl_timings
 !> Print execution timings
