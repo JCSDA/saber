@@ -864,9 +864,7 @@ type(bpar_type),intent(in) :: bpar        !< Block parameters
 type(ens_type),intent(in) :: ens          !< Ensemble
 
 ! Local variables
-integer :: ncid,nc0_id,nl0_id,lon_id,lat_id,vunit_id
-integer :: ib,iv,icmp
-character(len=1024) :: grpname
+integer :: ib,icmp
 
 ! Set name
 @:set_name(nicas_run_nicas_tests)
@@ -1578,7 +1576,7 @@ type(bpar_type),intent(in) :: bpar       !< Block parameters
 type(ens_type),intent(in) :: ens         !< Ensemble
 
 ! Local variables
-integer :: ic0a,idir,iv
+integer :: ic0a,idir
 real(kind_real),allocatable :: fld_c0a(:,:,:),fld_ens_c0a(:,:,:)
 logical :: lbens
 

@@ -320,7 +320,6 @@ BUMP::~BUMP() {
   for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     if (keyBUMP_[jgrid] > 0) bump_dealloc_f90(keyBUMP_[jgrid]);
   }
-  bump_finalize_f90();
 }
 
 // -----------------------------------------------------------------------------

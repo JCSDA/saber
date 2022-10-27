@@ -6,11 +6,11 @@
  */
 
 #include "oops/runs/Run.h"
-#include "quench/Traits.h"
-#include "saber/oops/ErrorCovarianceTraining.h"
+#include "src/Traits.h"
+#include "saber/oops/SaberBlockTest.h"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
-  saber::ErrorCovarianceTraining<quench::Traits> dir;
+  saber::SaberBlockTest<quench::Traits> dir;
   return run.execute(dir);
 }

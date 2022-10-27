@@ -15,8 +15,8 @@
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"
 
-#include "quench/Fields.h"
-#include "quench/Increment.h"
+#include "src/Fields.h"
+#include "src/Increment.h"
 
 namespace eckit {
   class Configuration;

@@ -149,8 +149,7 @@ logical,intent(in),optional :: pass                  !< Pass fields pointers
 
 ! Local variables
 integer :: iv,nl0in
-real(kind_real),pointer :: ptr_1_in(:),ptr_2_in(:,:)
-real(kind_real),pointer :: ptr_1_out(:),ptr_2_out(:,:)
+real(kind_real),pointer :: ptr_2_in(:,:),ptr_2_out(:,:)
 logical :: lcopy,lpass
 type(atlas_field) :: afield_in,afield_out
 type(atlas_functionspace) :: afunctionspace
@@ -334,7 +333,7 @@ type(mpl_type),intent(inout) :: mpl            !< MPI data
 ! Local variables
 integer :: iv
 real(kind_real) :: norm
-real(kind_real),pointer :: ptr_1(:),ptr_2(:,:)
+real(kind_real),pointer :: ptr_2(:,:)
 type(atlas_field) :: afield
 
 ! Set name
@@ -388,7 +387,7 @@ type(mpl_type),intent(inout) :: mpl            !< MPI data
 
 ! Local variables
 integer :: iv
-real(kind_real),pointer :: ptr_1(:),ptr_2(:,:)
+real(kind_real),pointer :: ptr_2(:,:)
 type(atlas_field) :: afield
 
 ! Set name
@@ -441,7 +440,7 @@ type(fieldset_type),intent(in) :: fieldset_in      !< Input fieldset
 
 ! Local variables
 integer :: iv
-real(kind_real),pointer :: ptr_1_in(:),ptr_1_out(:),ptr_2_in(:,:),ptr_2_out(:,:)
+real(kind_real),pointer :: ptr_2_in(:,:),ptr_2_out(:,:)
 type(atlas_field) :: afield_in,afield_out
 
 ! Set name
@@ -497,7 +496,7 @@ type(fieldset_type),intent(in) :: fieldset_in      !< Input fieldset
 
 ! Local variables
 integer :: iv
-real(kind_real),pointer :: ptr_1_in(:),ptr_1_out(:),ptr_2_in(:,:),ptr_2_out(:,:)
+real(kind_real),pointer :: ptr_2_in(:,:),ptr_2_out(:,:)
 type(atlas_field) :: afield_in,afield_out
 
 ! Set name
@@ -553,7 +552,7 @@ real(kind_real),intent(in) :: factor           !< Scalar factor
 
 ! Local variables
 integer :: iv
-real(kind_real),pointer :: ptr_1(:),ptr_2(:,:)
+real(kind_real),pointer :: ptr_2(:,:)
 type(atlas_field) :: afield
 
 ! Set name
@@ -606,7 +605,7 @@ type(fieldset_type),intent(inout) :: fieldset_in   !< Input fieldset
 
 ! Local variables
 integer :: iv
-real(kind_real),pointer :: ptr_1_in(:),ptr_1_out(:),ptr_2_in(:,:),ptr_2_out(:,:)
+real(kind_real),pointer :: ptr_2_in(:,:),ptr_2_out(:,:)
 type(atlas_field) :: afield_in,afield_out
 
 ! Set name
@@ -664,7 +663,7 @@ type(mpl_type),intent(inout) :: mpl            !< MPI data
 
 ! Local variables
 integer :: iv
-real(kind_real),pointer :: ptr_1(:),ptr_2(:,:)
+real(kind_real),pointer :: ptr_2(:,:)
 type(atlas_field) :: afield
 
 ! Set name
@@ -716,7 +715,7 @@ type(mpl_type),intent(inout) :: mpl            !< MPI data
 
 ! Local variables
 integer :: iv
-real(kind_real),pointer :: ptr_1(:),ptr_2(:,:)
+real(kind_real),pointer :: ptr_2(:,:)
 type(atlas_field) :: afield
 
 ! Set name

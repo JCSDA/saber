@@ -1,0 +1,17 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type : regular_gaussian
+    N : 10
+  levels: 10
+  partitioner: ectrans
+variables: &vars [exner_levels_minus_one, potential_temperature, air_temperature, height_levels, height]
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables: [exner_levels_minus_one, potential_temperature, air_temperature, height_levels, height]
+saber central block:
+  saber block name: ID
+saber outer blocks:
+- saber block name: mo_air_temperature
+test:
+  reference filename: testref/saber_block_test_vader_mo_air_temperature.ref

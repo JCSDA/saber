@@ -525,9 +525,7 @@ integer,intent(in) :: i                                   !< Index (member or su
 real(kind_real),intent(in) :: fld_c0a(geom%nc0a,geom%nl0) !< Field on Sc0 subset, halo A
 
 ! Local variables
-integer :: isub
 real(kind_real) :: fld_mga(geom%nmga,geom%nl0)
-real(kind_real),allocatable :: mean(:,:),fld_c0a_tmp(:,:)
 
 ! Set name
 @:set_name(ens_set_c0_single)
@@ -666,15 +664,12 @@ type(nam_type),intent(in) :: nam     !< Namelist
 type(geom_type),intent(in) :: geom   !< Geometry
 
 ! Local variables
-integer :: ncid,nc0_id,nl0_id,lon_id,lat_id,vunit_id
-integer :: grpid(nam%nv),m2_id(nam%nv),m4_id(nam%nv),kurt_id(nam%nv)
-integer :: nloc_id,ne_id,nem1_id,ic0a_id,il0_id,iv_id,order_id,ens_norm_id,ens_step_id
+integer :: ncid,nloc_id,ne_id,nem1_id,ic0a_id,il0_id,iv_id,order_id,ens_norm_id,ens_step_id
 integer :: iv,il0,ic0a,ie,nloc,iloc,nglb
 integer,allocatable :: ic0a_loc(:),il0_loc(:),iv_loc(:),order(:,:)
 real(kind_real) :: norm
 real(kind_real) :: fld_c0a(geom%nc0a,geom%nl0,ens%ne)
 real(kind_real),allocatable :: ens_loc(:),ens_norm(:,:),ens_step(:,:)
-character(len=1024) :: grpname
 
 ! Set name
 @:set_name(ens_normality)

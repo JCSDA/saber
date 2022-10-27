@@ -29,14 +29,6 @@
 #include "saber/oops/SaberCentralBlockBase.h"
 #include "saber/oops/SaberOuterBlockBase.h"
 
-namespace eckit {
-  class Configuration;
-}
-
-namespace oops {
-  class Variables;
-}
-
 namespace saber {
 
 // -----------------------------------------------------------------------------

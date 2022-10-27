@@ -243,7 +243,7 @@ class(nam_type),intent(out) :: nam !< Namelist
 integer,intent(in) :: nproc        !< Number of MPI task
 
 ! Local variable
-integer :: isub,il0,iv,i,ildwv,icomp
+integer :: isub,il0,iv,i,ildwv
 
 ! Set name
 @:set_name(nam_init)

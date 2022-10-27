@@ -18,7 +18,7 @@ use tools_func, only: lonlatmod,sphere_dist,inside,convert_i2l,convert_l2i,zss_m
 use tools_gc99, only: fit_func_sqrt
 use tools_kinds, only: kind_int,kind_real,kind_long,huge_int,huge_real
 use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim_size,check_dim,define_var,inquire_var, &
- & inquire_var_presence,put_var,get_var
+ & put_var,get_var
 use tools_qsort, only: qsort
 use tools_repro, only: supeq,sup,inf,infeq,eq,indist,rth
 use type_bpar, only: bpar_type
@@ -4823,9 +4823,9 @@ type(geom_type),intent(in) :: geom            !< Geometry
 integer,intent(in) :: il0                     !< Level index
 
 ! Local variables
-integer :: itest,isa
+integer :: itest
 integer :: iproc(nam%check_normalization),ic0a(nam%check_normalization)
-real(kind_real) :: alpha(nicas_cmp%nsa),fld(geom%nc0a),norm,val(nam%check_normalization)
+real(kind_real) :: fld(geom%nc0a),norm,val(nam%check_normalization)
 
 ! Set name
 @:set_name(nicas_cmp_test_normalization)

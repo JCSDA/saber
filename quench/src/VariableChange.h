@@ -12,9 +12,9 @@
 
 #include "oops/util/Printable.h"
 
-#include "quench/Geometry.h"
-#include "quench/State.h"
-#include "quench/VariableChangeParameters.h"
+#include "src/Geometry.h"
+#include "src/State.h"
+#include "src/VariableChangeParameters.h"
 
 // Forward declarations
 namespace oops {

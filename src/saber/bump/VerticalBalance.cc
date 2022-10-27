@@ -43,6 +43,12 @@ VerticalBalance::VerticalBalance(const oops::GeometryData & outerGeometryData,
   // Get active variables
   oops::Variables activeVars = params.activeVars.value().get_value_or(outerVars);
 
+  // Check active variables sizes vector consistency
+  if (std::adjacent_find(activeVariableSizes.begin(), activeVariableSizes.end(),
+    std::not_equal_to<>()) != activeVariableSizes.end()) {
+    ABORT("inconsistent elements in activeVariableSizes");
+  }
+
   // Initialize BUMP
   bump_.reset(new BUMP(outerGeometryData.comm(),
                        outerGeometryData.functionSpace(),

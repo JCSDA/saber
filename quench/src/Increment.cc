@@ -5,7 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "quench/Increment.h"
+#include "src/Increment.h"
 
 #include <vector>
 
@@ -14,7 +14,7 @@
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/Logger.h"
 
-#include "quench/Fields.h"
+#include "src/Fields.h"
 
 namespace quench {
 

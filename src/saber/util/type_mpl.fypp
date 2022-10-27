@@ -22,9 +22,11 @@ use type_probe, only: iinst,cinst,probe
 
 implicit none
 
-integer,parameter :: ddis = 5             !< Progression display step
-real(kind_real) :: min_total_timing = one !< Minimum total timing to print
-integer :: max_calls = 10                 !< Number of timing to print with maximum calls
+integer,parameter :: ddis = 5                !< Progression display step
+#:if getvar('ENABLE_SABER_INSTRUMENTATION', 0)
+   real(kind_real) :: min_total_timing = one !< Minimum total timing to print
+   integer :: max_calls = 10                 !< Number of timing to print with maximum calls
+#:endif
 
 type mpl_type
    ! MPI communicator

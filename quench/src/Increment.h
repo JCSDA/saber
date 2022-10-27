@@ -19,8 +19,8 @@
 #include "oops/util/Printable.h"
 #include "oops/util/Serializable.h"
 
-#include "quench/Fields.h"
-#include "quench/State.h"
+#include "src/Fields.h"
+#include "src/State.h"
 
 namespace eckit {
   class Configuration;

@@ -7,7 +7,7 @@
 
 #include "oops/runs/ConvertState.h"
 #include "oops/runs/Run.h"
-#include "quench/Traits.h"
+#include "src/Traits.h"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);

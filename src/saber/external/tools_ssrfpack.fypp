@@ -170,8 +170,7 @@ real(kind_real),intent(out) :: f    !< Interpolated values
 real(kind_real),intent(out) :: g(3) !< Interpolated gradient
 
 ! Local variables
-real(kind_real) :: a,al,b1,b2,d1,d2,gn,gt,s,tau1,tau2,un(3),unorm,sb1,sb2,sm,cm,cmm,sm2,cm2,dum,sinh,sinh2
-real(kind_real) :: e,e1,e2,ems,tm,ts,tm1,tm2,tp1,tp2
+real(kind_real) :: a,al,b1,b2,d1,d2,gn,gt,s,tau1,tau2,un(3),unorm
 
 ! Set name
 @:set_name(ssrfpack_arcint)
@@ -243,7 +242,7 @@ real(kind_real),intent(out) :: f_mat(8)   !< Interpolant for the value
 real(kind_real),intent(out) :: g_mat(8,3) !< Interpolant for the gradient
 
 ! Local variables
-real(kind_real) :: a,al,b1,b2,un(3),unorm,sb1,sb2,sm,cm,cmm,sm2,cm2,dum,sinh,sinh2,e,e1,e2,ems,tm,ts,tm1,tm2,tp1,tp2
+real(kind_real) :: a,al,b1,b2,un(3),unorm
 real(kind_real) :: f1_mat(8),d1_mat(8),d2_mat(8),gn_mat(8),gt_mat(8),s_mat(8),tau1_mat(8),tau2_mat(8)
 
 ! Set name
@@ -829,7 +828,7 @@ real(kind_real),intent(in) :: hp2 !< Product of d(p1,p2) with first order deriva
 real(kind_real) :: v
 
 ! Local variables
-real(kind_real) :: b1,b2,d1,d2,s,sb1,sb2,sm,cm,cmm,sm2,cm2,dum,sinh,e,e1,e2,ems,tm,ts,tm1,tm2
+real(kind_real) :: b1,b2,d1,d2,s
 
 ! Set name
 @:set_name(ssrfpack_hval)
@@ -871,7 +870,7 @@ real(kind_real),intent(in) :: hp2_mat(12) !< Product of d(p1,p2) with first orde
 real(kind_real),intent(out) :: v_mat(12)  !< Interpolant
 
 ! Local variables
-real(kind_real) ::  b1,b2,d1_mat(12),d2_mat(12),s_mat(12),sb1,sb2,sm,cm,cmm,sm2,cm2,dum,sinh,e,e1,e2,ems,tm,ts,tm1,tm2
+real(kind_real) ::  b1,b2,d1_mat(12),d2_mat(12),s_mat(12)
 
 ! Set name
 @:set_name(ssrfpack_hval_op)

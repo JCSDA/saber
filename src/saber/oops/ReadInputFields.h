@@ -20,14 +20,6 @@
 #include "oops/util/DateTime.h"
 #include "oops/util/Logger.h"
 
-namespace eckit {
-  class LocalConfiguration;
-}
-
-namespace oops {
-  class Variables;
-}
-
 namespace saber {
 
 // -------------------------------------------------------------------------------------------------

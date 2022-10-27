@@ -13,10 +13,17 @@ tools_repro.fypp
 type_fieldset.fypp
 type_mpl.fypp
 type_msv.fypp
-type_probe.fypp
 type_rng.fypp
 
 )
+
+if( ENABLE_SABER_INSTRUMENTATION )
+    list(APPEND util_src_files_list
+
+    type_probe.fypp
+
+    )
+endif()
 
 if ( NOT oops_FOUND )
 

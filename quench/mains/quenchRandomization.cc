@@ -6,7 +6,7 @@
  */
 
 #include "oops/runs/Run.h"
-#include "quench/Traits.h"
+#include "src/Traits.h"
 #include "saber/oops/instantiateCovarFactory.h"
 #include "saber/oops/Randomization.h"
 

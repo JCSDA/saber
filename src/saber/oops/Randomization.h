@@ -23,14 +23,6 @@
 
 #include "saber/oops/instantiateCovarFactory.h"
 
-namespace eckit {
-  class Configuration;
-}
-
-namespace oops {
-  class Variables;
-}
-
 namespace saber {
 
 // -----------------------------------------------------------------------------

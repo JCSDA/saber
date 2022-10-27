@@ -5,7 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "quench/Geometry.h"
+#include "src/Geometry.h"
 
 #include <math.h>
 #include <netcdf.h>
@@ -345,10 +345,10 @@ Geometry::Geometry(const Parameters_ & params,
   // Vertical unit
   atlas::Field vunit = functionSpace_.createField<double>(
     atlas::option::name("vunit") | atlas::option::levels(levels_));
-  auto view = atlas::array::make_view<double, 2>(vunit);
+  auto vunitView = atlas::array::make_view<double, 2>(vunit);
   for (atlas::idx_t jnode = 0; jnode < vunit.shape(0); ++jnode) {
     for (size_t jlevel = 0; jlevel < levels_; ++jlevel) {
-       view(jnode, jlevel) = vunit_[jlevel];
+       vunitView(jnode, jlevel) = vunit_[jlevel];
     }
   }
   extraFields_->add(vunit);
@@ -362,16 +362,16 @@ Geometry::Geometry(const Parameters_ & params,
     atlas::StructuredGrid grid = fs.grid();
     atlas::Field hmask = fs.createField<int>(atlas::option::name("hmask")
       | atlas::option::levels(1));
-    auto view = atlas::array::make_view<int, 2>(hmask);
+    auto hmaskView = atlas::array::make_view<int, 2>(hmask);
     auto view_i = atlas::array::make_view<int, 1>(fs.index_i());
     auto view_j = atlas::array::make_view<int, 1>(fs.index_j());
     for (atlas::idx_t j = fs.j_begin_halo(); j < fs.j_end_halo(); ++j) {
       for (atlas::idx_t i = fs.i_begin_halo(j); i < fs.i_end_halo(j); ++i) {
         atlas::idx_t jnode = fs.index(i, j);
         if (((view_j(jnode) == 1) || (view_j(jnode) == grid.ny())) && (view_i(jnode) != 1)) {
-          view(jnode, 0) = 0;
+          hmaskView(jnode, 0) = 0;
         } else {
-          view(jnode, 0) = 1;
+          hmaskView(jnode, 0) = 1;
         }
       }
     }
@@ -379,6 +379,28 @@ Geometry::Geometry(const Parameters_ & params,
     // Add field
     extraFields_->add(hmask);
   }
+
+  // Height
+  atlas::Field height = functionSpace_.createField<double>(
+    atlas::option::name("height") | atlas::option::levels(levels_));
+  auto heightView = atlas::array::make_view<double, 2>(height);
+  for (atlas::idx_t jnode = 0; jnode < height.shape(0); ++jnode) {
+    for (size_t jlevel = 0; jlevel < levels_; ++jlevel) {
+       heightView(jnode, jlevel) = vunit_[jlevel];
+    }
+  }
+  extraFields_->add(height);
+
+  // Height_levels
+  atlas::Field height_levels = functionSpace_.createField<double>(
+    atlas::option::name("height_levels") | atlas::option::levels(levels_));
+  auto heightLevelsView = atlas::array::make_view<double, 2>(height);
+  for (atlas::idx_t jnode = 0; jnode < height.shape(0); ++jnode) {
+    for (size_t jlevel = 0; jlevel < levels_; ++jlevel) {
+       heightLevelsView(jnode, jlevel) = vunit_[jlevel];
+    }
+  }
+  extraFields_->add(height_levels);
 
   // Print summary
   this->print(oops::Log::info());

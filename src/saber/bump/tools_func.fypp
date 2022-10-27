@@ -659,7 +659,6 @@ real(kind_real),intent(in) :: v3(3)   !< Third vector
 real(kind_real),intent(out) :: p      !< Determinant
 
 ! Local variable
-integer :: i
 real(kind_real) :: terms(6)
 
 ! Set name

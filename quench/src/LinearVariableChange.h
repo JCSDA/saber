@@ -12,7 +12,7 @@
 
 #include "oops/util/Printable.h"
 
-#include "quench/LinearVariableChangeParameters.h"
+#include "src/LinearVariableChangeParameters.h"
 
 // Forward declarations
 namespace eckit {

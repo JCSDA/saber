@@ -298,7 +298,6 @@ integer :: nmga,nnodes,nl0,nl2d,il0
 integer :: shp(${rank}$)
 ${ftype[dtype]}$,pointer :: ptr(:,:)
 character(len=1024) :: llev2d
-type(atlas_functionspace) :: afunctionspace
 
 ! Set name
 @:set_name(atlas_field_from_array_${dtype}$_r${rank}$)

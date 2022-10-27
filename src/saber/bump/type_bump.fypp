@@ -155,7 +155,7 @@ type(fieldset_type),intent(in),optional :: universe_rad !< Fieldset optionally c
 
 ! Local variables
 integer :: iv,il0,color,sc
-real(kind_real),pointer :: ptr_1(:),ptr_2(:,:)
+real(kind_real),pointer :: ptr_2(:,:)
 character(len=1024) :: cname
 type(atlas_field) :: afield
 
@@ -562,7 +562,6 @@ integer,intent(in) :: iens                    !< Ensemble number
 
 ! Local variable
 real(kind_real) :: fld_c0a(bump%geom(iens)%nc0a,bump%geom(iens)%nl0,bump%nam%nv)
-character(len=4) :: momname
 
 ! Set name
 @:set_name(bump_update_mom)

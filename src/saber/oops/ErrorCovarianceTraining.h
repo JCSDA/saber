@@ -28,14 +28,6 @@
 #include "saber/oops/instantiateCovarFactory.h"
 #include "saber/oops/ReadInputFields.h"
 
-namespace eckit {
-  class Configuration;
-}
-
-namespace oops {
-  class Variables;
-}
-
 namespace saber {
 
 // -----------------------------------------------------------------------------

@@ -9,8 +9,8 @@
 
 #include "oops/base/ModelSpaceCovarianceParametersBase.h"
 
-#include "quench/LinearVariableChange.h"
-#include "quench/TraitsFwd.h"
+#include "src/LinearVariableChange.h"
+#include "src/TraitsFwd.h"
 
 namespace quench {
 // -----------------------------------------------------------------------------

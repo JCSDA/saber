@@ -13,6 +13,56 @@ Norm of input parameter nicas_a::2: 1.4494112751352240e+01
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
+   Norm of var1:  0.23692898E+04
+   Norm of var2:  0.32534603E+04
+   Norm of var1:  0.36694797E+04
+   Norm of var2:  0.34037437E+04
+   Norm of var1:  0.31631849E+04
+   Norm of var2:  0.34702930E+04
+   Norm of var1:  0.23801213E+04
+   Norm of var2:  0.33421166E+04
+   Norm of var1:  0.31634450E+04
+   Norm of var2:  0.33148322E+04
+   Norm of var1:  0.23507013E+04
+   Norm of var2:  0.31995633E+04
+   Norm of var1:  0.25073367E+04
+   Norm of var2:  0.32520275E+04
+   Norm of var1:  0.31396078E+04
+   Norm of var2:  0.32306882E+04
+   Norm of var1:  0.29373432E+04
+   Norm of var2:  0.33440198E+04
+   Norm of var1:  0.32692831E+04
+   Norm of var2:  0.32902457E+04
+   Norm of var1:  0.29945556E+04
+   Norm of var2:  0.33018774E+04
+   Norm of var1:  0.35144541E+04
+   Norm of var2:  0.33357271E+04
+   Norm of var1:  0.32530460E+04
+   Norm of var2:  0.32832534E+04
+   Norm of var1:  0.22993810E+04
+   Norm of var2:  0.32088656E+04
+   Norm of var1:  0.25802778E+04
+   Norm of var2:  0.32766273E+04
+   Norm of var1:  0.27022987E+04
+   Norm of var2:  0.33427108E+04
+   Norm of var1:  0.28431294E+04
+   Norm of var2:  0.31382014E+04
+   Norm of var1:  0.28436136E+04
+   Norm of var2:  0.33074111E+04
+   Norm of var1:  0.29075741E+04
+   Norm of var2:  0.32270864E+04
+   Norm of var1:  0.35774628E+04
+   Norm of var2:  0.32414995E+04
+   Norm of var1:  0.31662750E+04
+   Norm of var2:  0.33686650E+04
+   Norm of var1:  0.41372201E+04
+   Norm of var2:  0.32262998E+04
+   Norm of var1:  0.28570501E+04
+   Norm of var2:  0.33725243E+04
+   Norm of var1:  0.32573710E+04
+   Norm of var2:  0.31177056E+04
+   Norm of var1:  0.22902172E+01
+   Norm of var2:  0.24445613E+01
              nc1(  1) =        727
              nc1(  2) =        734
              ns =             1461
@@ -25,3 +75,11 @@ Norm of input parameter nicas_a::2: 1.4494112751352240e+01
              nc1(  1) =        762
              nc1(  2) =        762
              ns =             1524
+             0.0 /    0.0:  1.0000000
+          Level   1:  0.0000000 -  1.0000000
+          Level   2:  0.0000000 -  0.6411524
+             0.0 /    0.0:  0.0000000
+          Level   1:  0.0000000 -  0.0000000
+          Level   2:  0.0000000 -  0.0000000
+Norm of BUMP output parameter dirac_nicas - 1: 2.2189741016524831e+00
+Norm of BUMP output parameter dirac_nicas_bens - 1: 2.2464777700975588e-02

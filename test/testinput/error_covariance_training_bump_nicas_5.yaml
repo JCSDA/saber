@@ -17,15 +17,6 @@ input variables: &id001
 background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
-ensemble:
-  members from template:
-    template:
-      date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
-      state variables: *id001
-    pattern: '%mem%'
-    nmembers: 25
-    zero padding: 6
 bump:
   datadir: testdata
   prefix: error_covariance_training_bump_nicas_5/_MPI_-_OMP_
@@ -50,12 +41,5 @@ bump:
   latdir: [-30.0]
   levdir: [1]
   ivdir: [1]
-output:
-- parameter: dirac_nicas
-  file:
-    filepath: testdata/error_covariance_training_bump_nicas_5/_MPI_-_OMP__dirac_nicas
-- parameter: dirac_nicas_bens
-  file:
-    filepath: testdata/error_covariance_training_bump_nicas_5/_MPI_-_OMP__dirac_nicas_bens
 test:
   reference filename: testref/error_covariance_training_bump_nicas_5.ref

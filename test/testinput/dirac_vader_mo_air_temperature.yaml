@@ -1,0 +1,26 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type : regular_gaussian
+    N : 15
+  levels: 70
+  partitioner: ectrans
+initial condition:
+  date: 2010-01-01T12:00:00Z
+  state variables: &vars [streamfunction, velocity_potential, unbalanced_pressure, moisture_control_variable]
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: ID
+  saber outer blocks:
+  - saber block name
+
+dirac:
+  lon: [180.0, 180.0, 180.0, 180.0]
+  lat: [0.0, 0.0, 0.0, 0.0]
+  level: [1,1,1,1]
+  variable: *vars
+output dirac:
+  filepath: testdata/dirac_spectralb/dirac_%id%
+test:
+  reference filename: testref/dirac_spectralb.ref

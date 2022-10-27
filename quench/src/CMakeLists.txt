@@ -3,7 +3,7 @@
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
-list( APPEND saber_quench_src_files
+list( APPEND quench_src_files
 
 Covariance.h
 Fields.h
@@ -20,7 +20,7 @@ VariableChange.h
 )
 
 ecbuild_add_library( TARGET   quench
-                     SOURCES  ${saber_quench_src_files}
+                     SOURCES  ${quench_src_files}
                      PUBLIC_LIBS  oops
                      HEADER_DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/quench
                      INSTALL_HEADERS LISTED

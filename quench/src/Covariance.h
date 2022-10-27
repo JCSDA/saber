@@ -14,8 +14,8 @@
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"
 
-#include "quench/CovarianceParameters.h"
-#include "quench/Geometry.h"
+#include "src/CovarianceParameters.h"
+#include "src/Geometry.h"
 
 // Forward declarations
 namespace oops {

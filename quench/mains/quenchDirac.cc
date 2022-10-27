@@ -5,12 +5,14 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
+#include "oops/runs/Dirac.h"
 #include "oops/runs/Run.h"
-#include "quench/Traits.h"
-#include "saber/oops/SaberBlockTest.h"
+#include "src/Traits.h"
+#include "saber/oops/instantiateCovarFactory.h"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
-  saber::SaberBlockTest<quench::Traits> dir;
+  saber::instantiateCovarFactory<quench::Traits>();
+  oops::Dirac<quench::Traits> dir;
   return run.execute(dir);
 }

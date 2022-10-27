@@ -133,7 +133,7 @@ end subroutine hdiag_dealloc
 ! Subroutine: hdiag_write
 !> Write diagnostics
 !----------------------------------------------------------------------
-subroutine hdiag_write(hdiag,mpl,nam,geom,bpar,samp,mom)
+subroutine hdiag_write(hdiag,mpl,nam,geom,bpar,samp)
 
 implicit none
 
@@ -144,13 +144,13 @@ type(nam_type),intent(inout) :: nam      !< Namelist
 type(geom_type),intent(in) :: geom(2)    !< Geometry
 type(bpar_type),intent(in) :: bpar       !< Block parameters
 type(samp_type),intent(in) :: samp(2)    !< Sampling
-type(mom_type),intent(in) :: mom(2)      !< Moments
 
 ! Local variables
-integer :: ncid,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id,disth_id,as_id,vunit_id,nc0_id,nl0_id,ncmp_id,lon_id,lat_id
-integer :: fld_id(nam%nv),ens_id(nam%nv),cor_id(nam%nv)
-integer :: ildwv,ic2a,ib,iv
-character(len=1024) :: filename,grpname
+integer :: ncid,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id,disth_id,as_id,vunit_id,ncmp_id
+integer :: ildwv,ib,iv
+integer :: ic2a(0:nam%nldwv)
+character(len=1024),dimension(0:nam%nldwv) :: filename
+character(len=1024) :: grpname
 
 ! Set name
 @:set_name(hdiag_write)
@@ -158,20 +158,19 @@ character(len=1024) :: filename,grpname
 ! Probe in
 @:probe_in()
 
-do ildwv=0,nam%nldwv
-   ! Initialization
-   if (ildwv==0) then
-      ic2a = mpl%msv%vali
-      if (mpl%main) ic2a = 0
-      filename = trim(nam%prefix)//'diag'
-   else
-      ic2a = samp(1)%ldwv_to_c2a(ildwv)
-      filename = trim(nam%prefix)//'diag_'//trim(nam%name_ldwv(ildwv))
-   end if
+! Initialization
+ic2a(0) = mpl%msv%vali
+if (mpl%main) ic2a(0) = 0
+filename(0) = trim(nam%prefix)//'diag'
+do ildwv=1,nam%nldwv
+   ic2a(ildwv) = samp(1)%ldwv_to_c2a(ildwv)
+   filename(ildwv) = trim(nam%prefix)//'diag_'//trim(nam%name_ldwv(ildwv))
+end do
 
-   if (mpl%msv%isnot(ic2a)) then
+do ildwv=0,nam%nldwv
+   if (mpl%msv%isnot(ic2a(ildwv))) then
       ! Open file
-      ncid = create_file(mpl,filename,0)
+      ncid = create_file(mpl,filename(ildwv),0)
 
       do ib=1,bpar%nbe
          if (bpar%diag_block(ib)) then
@@ -205,24 +204,28 @@ do ildwv=0,nam%nldwv
             call put_var(mpl,grpid,vunit_id,geom(1)%vunitavg)
 
             ! Write ensemble 1 correlation
-            call hdiag%cor(1)%blk(ic2a,ib)%write(mpl,nam,geom(1),bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id,ncmp_id)
+            call hdiag%cor(1)%blk(ic2a(ildwv),ib)%write(mpl,nam,geom(1),bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id, &
+ & ncmp_id)
 
             select case (trim(nam%method))
             case ('hyb-rnd','hyb-ens')
                ! Write ensemble 2 correlation
-               call hdiag%cor(2)%blk(ic2a,ib)%write(mpl,nam,geom(2),bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id,ncmp_id)
+               call hdiag%cor(2)%blk(ic2a(ildwv),ib)%write(mpl,nam,geom(2),bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id, &
+ & ncmp_id)
             end select
 
             select case (trim(nam%method))
             case ('loc','hyb-rnd','hyb-ens')
                ! Write ensemble 1 localization (and hybrid coefficient)
-               call hdiag%loc(1)%blk(ic2a,ib)%write(mpl,nam,geom(1),bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id,ncmp_id)
+               call hdiag%loc(1)%blk(ic2a(ildwv),ib)%write(mpl,nam,geom(1),bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id, &
+ & ncmp_id)
             end select
 
             select case (trim(nam%method))
             case ('hyb-rnd','hyb-ens')
                ! Write ensemble 2 localization (and hybrid coefficient)
-               call hdiag%loc(2)%blk(ic2a,ib)%write(mpl,nam,geom(2),bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id,ncmp_id)
+               call hdiag%loc(2)%blk(ic2a(ildwv),ib)%write(mpl,nam,geom(2),bpar,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id, &
+ & ncmp_id)
             end select
          end if
       end do
@@ -386,7 +389,7 @@ if (nam%write_hdiag) then
    call mpl%flush
    write(mpl%info,'(a)') '--- Write diagnostics'
    call mpl%flush
-   call hdiag%write(mpl,nam,geom,bpar,samp,mom)
+   call hdiag%write(mpl,nam,geom,bpar,samp)
 end if
 
 ! Probe out

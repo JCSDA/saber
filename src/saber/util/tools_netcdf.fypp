@@ -81,15 +81,6 @@ end interface
 interface inquire_var
    module procedure netcdf_inquire_var
 end interface
-interface inquire_var_presence
-   module procedure netcdf_inquire_var_presence
-end interface
-interface inquire_var_rank
-   module procedure netcdf_inquire_var_rank
-end interface
-interface inquire_var_dim_size
-   module procedure netcdf_inquire_var_dim_size
-end interface
 interface put_var
    #:for dtype in dtypes_irl
       module procedure netcdf_put_var_${dtype}$_r0
@@ -120,7 +111,7 @@ end interface
 private
 public :: registry
 public :: create_file,open_file,define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim,inquire_dim_size,check_dim, &
- & define_var,inquire_var,inquire_var_presence,inquire_var_rank,inquire_var_dim_size,put_var,get_var,close_file,strerror
+ & define_var,inquire_var,put_var,get_var,close_file,strerror
 
 contains
 
@@ -984,155 +975,6 @@ if (mpl%msv%isnot(rid)) call strerror(mpl,'${subr}$',ncid,nf90_inq_varid(ncid,va
 @:probe_out()
 
 end function netcdf_inquire_var
-
-!----------------------------------------------------------------------
-! Function: netcdf_inquire_var_presence
-!> Inquire variable presence
-!----------------------------------------------------------------------
-function netcdf_inquire_var_presence(mpl,ncid,varname) result(ispresent)
-
-implicit none
-
-! Passed variables
-type(mpl_type),intent(inout) :: mpl    !< MPI data
-integer,intent(in) :: ncid             !< File ID
-character(len=*),intent(in) :: varname !< Variable name
-
-! Returned variable
-logical :: ispresent
-
-! Local variable
-integer  :: rid,varid,info
-
-! Set name
-@:set_name(netcdf_inquire_var_presence)
-
-! Probe in
-@:probe_in()
-
-! Get root ID in registry
-rid = registry%get_root_id(mpl,ncid)
-
-! Initialization
-ispresent = .false.
-
-if (mpl%msv%isnot(rid)) then
-   ! Inquire variable ID
-   info = nf90_inq_varid(ncid,varname,varid)
-
-   ! Set presence flag
-   ispresent = (info==nf90_noerr)
-end if
-
-! Probe out
-@:probe_out()
-
-end function netcdf_inquire_var_presence
-
-!----------------------------------------------------------------------
-! Function: netcdf_inquire_var_rank
-!> Inquire variable rank
-!----------------------------------------------------------------------
-function netcdf_inquire_var_rank(mpl,ncid,varname) result(rank)
-
-implicit none
-
-! Passed variables
-type(mpl_type),intent(inout) :: mpl    !< MPI data
-integer,intent(in) :: ncid             !< File ID
-character(len=*),intent(in) :: varname !< Variable name
-
-! Returned variable
-integer :: rank
-
-! Local variables
-integer :: rid,varid
-
-! Set name
-@:set_name(netcdf_inquire_var_rank)
-
-! Probe in
-@:probe_in()
-
-! Get root ID in registry
-rid = registry%get_root_id(mpl,ncid)
-
-! Initialization
-rank = mpl%msv%vali
-
-if (mpl%msv%isnot(rid)) then
-   ! Inquire variable ID
-   varid = inquire_var(mpl,ncid,varname)
-
-   ! Inquire variable rank
-   if (mpl%msv%isnot(varid)) call strerror(mpl,'${subr}$',ncid,nf90_inquire_variable(ncid,varid,ndims=rank), &
- & 'variable '//trim(varname))
-end if
-
-! Probe out
-@:probe_out()
-
-end function netcdf_inquire_var_rank
-
-!----------------------------------------------------------------------
-! Function: netcdf_inquire_var_dim_size
-!> Inquire variable dimension size
-!----------------------------------------------------------------------
-function netcdf_inquire_var_dim_size(mpl,ncid,varname,dimindex) result(dimsize)
-
-implicit none
-
-! Passed variables
-type(mpl_type),intent(inout) :: mpl    !< MPI data
-integer,intent(in) :: ncid             !< File ID
-character(len=*),intent(in) :: varname !< Variable name
-integer,intent(in) :: dimindex         !< Dimension index
-
-! Returned variable
-integer :: dimsize
-
-! Local variables
-integer :: rid,rank,varid
-integer,allocatable :: dimids(:)
-
-! Set name
-@:set_name(netcdf_inquire_var_dim_size)
-
-! Probe in
-@:probe_in()
-
-! Get root ID in registry
-rid = registry%get_root_id(mpl,ncid)
-
-! Initialization
-dimsize = mpl%msv%vali
-
-if (mpl%msv%isnot(rid)) then
-   ! Inquire variable rank
-   rank = inquire_var_rank(mpl,ncid,varname)
-
-   if (mpl%msv%isnot(rank)) then
-      ! Check required dimension index
-      if ((dimindex<1).or.(dimindex>rank)) call mpl%abort('${subr}$','wrong dimension index')
-
-      ! Allocation
-      allocate(dimids(rank))
-
-      ! Inquire variable ID
-      varid = inquire_var(mpl,ncid,varname)
-
-      ! Inquire variable dimensions IDs
-      call strerror(mpl,'${subr}$',ncid,nf90_inquire_variable(ncid,varid,dimids=dimids),'variable '//trim(varname))
-
-      ! Inquire required dimension size
-      call strerror(mpl,'${subr}$',ncid,nf90_inquire_dimension(ncid,dimids(dimindex),len=dimsize),'variable '//trim(varname))
-   end if
-end if
-
-! Probe out
-@:probe_out()
-
-end function netcdf_inquire_var_dim_size
 
 #:for dtype in dtypes_irl
 !----------------------------------------------------------------------

@@ -5,7 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "quench/Fields.h"
+#include "src/Fields.h"
 
 #include <netcdf.h>
 
@@ -30,7 +30,7 @@
 #include "oops/util/missingValues.h"
 #include "oops/util/Random.h"
 
-#include "quench/Geometry.h"
+#include "src/Geometry.h"
 
 #include "saber/src/saber/interpolation/AtlasInterpWrapper.h"
 

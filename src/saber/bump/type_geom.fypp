@@ -42,6 +42,7 @@ type geom_type
    ! Input metadata
    logical,allocatable :: hmask_mga(:,:)          !< Halo mask
    logical :: area_provided                       !< Activated if areas are provided
+   logical :: global                              !< Global grid (regional if false)
 
    ! Geometry data on model grid, halo A
    integer :: nmga                                !< Halo A size for model grid
@@ -183,8 +184,8 @@ contains
    procedure :: c0_to_c0u => geom_c0_to_c0u
 end type geom_type
 
-integer,parameter :: nfacmin = 4      !< Minimum size factor for the first subsampling
-integer,parameter :: nssmax = 1000000 !< Maximum global grid size
+integer,parameter :: nfacmin = 4     !< Minimum size factor for the first subsampling
+integer,parameter :: nsmax = 1000000 !< Maximum sampling size
 
 private
 public :: geom_type
@@ -201,9 +202,6 @@ implicit none
 
 ! Passed variables
 class(geom_type),intent(inout) :: geom !< Geometry
-
-! Local variable
-integer :: il0
 
 ! Set name
 @:set_name(geom_partial_dealloc)
@@ -605,7 +603,7 @@ type(mpl_type),intent(inout) :: mpl    !< MPI data
 ! Local variables
 integer :: iproc,imga,ic0a,ic0,diff_grid,il0
 integer :: hash(geom%nl0)
-real(kind_real) :: xyz_ne(3),xyz_nw(3),xyz_se(3),xyz_sw(3),area_nw,area_se
+real(kind_real) :: xyz_ne(3),xyz_nw(3),xyz_se(3),xyz_sw(3),area_nw,area_se,area_total
 real(kind_real) :: norm_c0(geom%nl0),vunit_hor_c0(geom%nl0)
 
 ! Set name
@@ -754,6 +752,9 @@ do il0=1,geom%nl0
       geom%vunitavg(il0) = mpl%msv%valr
    end if
 end do
+area_total = zss_sum(geom%area_c0a)
+call mpl%f_comm%allreduce(area_total,fckit_mpi_sum())
+geom%global = (area_total>0.99_kind_real*four*pi)
 
 ! Grid hash
 call grid_hash(mpl,geom%nc0a,geom%nc0,geom%nl0,geom%c0a_to_c0,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a,hash)
@@ -1745,16 +1746,16 @@ integer,intent(in) :: ns                    !< Number of samplings points (globa
 integer,intent(out) :: s_to_cx(ns)          !< Horizontal sampling index (global)
 
 ! Local variables
-integer :: ncxa_eff,ncx_eff,offset,isa,icxa,is,icx,nfac,nssa,nss,nx,ny,issa,n,ix,iy,issamin,icxmin,iprocmin,nsa,nodemin,inode
+integer :: ncxa_eff,ncx_eff,isa,icxa,is,icx,nfac,nssa,nss,issa,ix,iy,issamin,icxmin,iprocmin,nsa,nodemin,inode
 integer :: s_to_cxa(ns),nn_index(1)
-integer,allocatable :: proc_to_ncxa_eff(:),proc_to_icxmin(:),ssa_to_cxa(:),ssa_to_cx(:),ssa_to_node(:),s_to_ssa(:)
+integer,allocatable :: proc_to_icxmin(:),ssa_to_cxa(:),ssa_to_cx(:),ssa_to_node(:),s_to_ssa(:)
 integer,allocatable :: proc_to_nodemin(:),sa_to_s(:),order_s(:),cxa_to_node(:)
-real(kind_real) :: nss_real,lat_mid,dx,dy,alpha,lonlat(2),valmin,xmin,ymin,zmin,chmin,dist
+real(kind_real) :: nss_real,lonlat(2),valmin,xmin,ymin,zmin,chmin,dist
 real(kind_real),allocatable :: proc_to_xmin(:),proc_to_ymin(:),proc_to_zmin(:),proc_to_chmin(:)
 real(kind_real),allocatable :: x_ssa(:),y_ssa(:),z_ssa(:),ch_ssa(:),potential(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:)
 logical :: retry,valid
 logical,allocatable :: lmask_cxa(:),lmask_ssa(:),indist_ssa(:)
-character(len=1024) :: gridid,cfmt
+character(len=1024) :: cfmt
 type(atlas_structuredgrid) :: agrid
 
 ! Set name
@@ -1771,47 +1772,11 @@ call mpl%f_comm%allreduce(ncxa_eff,ncx_eff,fckit_mpi_sum())
 if (ncx_eff==0) then
    ! Empty mask
    call mpl%abort('${subr}$','empty mask in initialize sampling')
-elseif (ncx_eff<ns) then
-   ! Not enough valid points
-   call mpl%abort('${subr}$','ns greater than ncx_eff in initialize_sampling')
-elseif (ncx_eff==ns) then
-   ! Just enough valid points
-   write(cfmt,'(a,i2.2,a)') '(a',ifmt+3,',a,i8,a)'
-   write(cfmt,'(a,i2.2,a)') 'All points are used'
-   if (verbosity) call mpl%flush
-
-   ! Allocation
-   allocate(proc_to_ncxa_eff(mpl%nproc))
-
-   ! Communication
-   call mpl%f_comm%allgather(ncxa_eff,proc_to_ncxa_eff)
-
-   ! Initialization
-   if (mpl%myproc==1) then
-      offset = 0
-   else
-      offset = sum(proc_to_ncxa_eff(1:mpl%myproc-1))
-   end if
-   s_to_cxa = mpl%msv%vali
-   s_to_cx = 0
-
-   ! Use all valid points
-   isa = 0
-   do icxa=1,ncxa
-      if (mask_cxa(icxa)) then
-         isa = isa+1
-         is = offset+isa
-         icx = cxa_to_cx(icxa)
-         s_to_cxa(is) = icxa
-         s_to_cx(is) = icx
-      end if
-   end do
-   call mpl%f_comm%allreduce(s_to_cx,fckit_mpi_sum())
-
-   ! Release memory
-   deallocate(proc_to_ncxa_eff)
+elseif (ns>nsmax) then
+   ! Sampling is too large
+   call mpl%abort('${subr}$','sampling size is too large')
 else
-   ! Too many valid points: subsampling
+   ! Sampling
 
    ! Allocation
    allocate(lmask_cxa(ncxa))
@@ -1837,7 +1802,7 @@ else
       ! Number of required points at global scale
       nss_real = real(nfac*ns,kind_real)*four*pi/geom%area_max_c0*(one+rth)
 
-      if (nss_real<real(nssmax,kind_real)) then
+      if (geom%global) then
          ! Global grid
          call get_grid(mpl,floor(nss_real),agrid,nss)
 

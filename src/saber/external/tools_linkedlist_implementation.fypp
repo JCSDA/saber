@@ -154,28 +154,3 @@ key = 0
 self%count = self%count-1
 
 end subroutine tools_linkedlist_implementation_remove
-
-!----------------------------------------------------------------------
-! Subroutine: tools_linkedlist_implementation_finalize
-!> Finalize the linked list, deallocate all nodes
-!----------------------------------------------------------------------
-subroutine tools_linkedlist_implementation_finalize(self)
-
-implicit none
-
-! Passed variables
-class(registry_type),intent(inout) :: self !< Registry
-
-! Local variable
-type(node_type),pointer :: current
-type(node_type),pointer :: next
-
-! Sweep the linked list and deallocate all nodes
-next => self%head
-do while(associated(next))
-   current => next
-   next => next%next
-   deallocate(current)
-end do
-
-end subroutine tools_linkedlist_implementation_finalize

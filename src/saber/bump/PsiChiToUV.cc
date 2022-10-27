@@ -36,7 +36,8 @@ PsiChiToUV::PsiChiToUV(const oops::GeometryData & outerGeometryData,
                        const atlas::FieldSet & xb,
                        const atlas::FieldSet & fg,
                        const std::vector<atlas::FieldSet> & fsetVec)
-  : innerGeometryData_(outerGeometryData), bump_()
+  : innerGeometryData_(outerGeometryData), outerVars_(outerVars), levels_(activeVariableSizes[0]),
+    bump_()
 {
   oops::Log::trace() << classname() << "::PsiChiToUV starting" << std::endl;
 
@@ -45,6 +46,13 @@ PsiChiToUV::PsiChiToUV(const oops::GeometryData & outerGeometryData,
 
   // Get active variables
   oops::Variables activeVars = *params.activeVars.value();
+
+  // Check active variables sizes vector size and consistency
+  ASSERT(activeVariableSizes.size() == 4);
+  if (std::adjacent_find(activeVariableSizes.begin(), activeVariableSizes.end(),
+    std::not_equal_to<>()) != activeVariableSizes.end()) {
+    ABORT("inconsistent elements in activeVariableSizes");
+  }
 
   // Check active variables size
   ASSERT(activeVars.size() == 4);
@@ -113,8 +121,20 @@ void PsiChiToUV::calibrationInverseMultiply(atlas::FieldSet & fset)
   const {
   oops::Log::trace() << classname() << "::calibrationInverseMultiply starting" << std::endl;
   oops::Log::info() << classname()
-                    << "::calibrationInverseMultiply not meaningful so fieldset unchanged"
+                    << "::calibrationInverseMultiply not meaningful: psi/chi fields are empty"
                     << std::endl;
+  atlas::FieldSet fset_;
+  for (const auto var : innerVars_.variables()) {
+     if (outerVars_.has(var)) {
+       // Add field
+       fset_.add(fset.field(var));
+     } else {
+       // Create empty field
+       fset_.add(innerGeometryData_.functionSpace().createField<double>(
+         atlas::option::name(var) | atlas::option::levels(levels_)));
+     }
+  }
+  fset = fset_;
   oops::Log::trace() << classname() << "::calibrationInverseMultiply done" << std::endl;
 }
 

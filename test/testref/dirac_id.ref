@@ -1,0 +1,34 @@
+Input Dirac increment:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L40x21
+- size: 840
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var3: 1.0000000000000000e+00
+  var4: 0.0000000000000000e+00
+Covariance(SABER) * Increment:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L40x21
+- size: 840
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var3: 1.0000000000000000e+00
+  var4: 0.0000000000000000e+00

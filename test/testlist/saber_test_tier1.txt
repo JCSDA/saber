@@ -2,6 +2,7 @@ dirac_bump
 dirac_id
 error_covariance_training_bump_1
 error_covariance_training_bump_2
+error_covariance_training_bump_3
 error_covariance_training_bump_hdiag_1
 error_covariance_training_bump_hdiag_2
 error_covariance_training_bump_hdiag_3

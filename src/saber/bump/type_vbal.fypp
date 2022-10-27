@@ -1711,11 +1711,8 @@ type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Local variables
-integer :: ncid,nc0_id,nl0_id,lon_id,lat_id,vunit_id
-integer :: grpid(nam%nv),vbal_id(nam%nv)
-integer :: idir,iv,ic0a
+integer :: idir,ic0a
 real(kind_real) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv)
-character(len=1024) :: grpname
 
 ! Set name
 @:set_name(vbal_test_dirac)

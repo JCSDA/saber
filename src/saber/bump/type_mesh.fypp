@@ -136,19 +136,13 @@ real(kind_real),intent(in) :: lat(mesh%n) !< Latitudes
 logical,intent(in),optional :: hull_bnd   !< Flag to compute hull boundary vertices
 
 ! Local variables
-integer :: i,j,k,cols,maxedge,jtab(mesh%n),nb,ib,hash
-integer,allocatable :: nodes(:,:),order(:),near(:),next(:),bnd(:)
-integer,pointer :: row(:)
+integer :: i,j,k,jtab(mesh%n),nb,ib,hash
+integer,allocatable :: near(:),next(:),bnd(:)
 integer(kind_short) :: lon_short,lat_short
 integer(kind_long) :: hash_long
 real(kind_real) :: lon_pert(mesh%n),lat_pert(mesh%n)
-real(kind_real),allocatable :: lonlat(:,:),dist(:),x(:),y(:),z(:)
+real(kind_real),allocatable :: dist(:)
 logical :: lhull_bnd,init
-type(atlas_unstructuredgrid) :: agrid
-type(atlas_mesh) :: amesh
-type(atlas_meshgenerator) :: ameshgenerator
-type(atlas_mesh_nodes) :: anodes
-type(atlas_connectivity) :: aconnectivity
 
 ! Set name
 @:set_name(mesh_init)
@@ -362,11 +356,9 @@ real(kind_real),intent(out) :: b(3) !< Barycentric weights
 integer,intent(out) :: ib(3)        !< Barycentric indices
 
 ! Local variables
-integer :: i,j,k,knext,nn,l,order(3)
+integer :: order(3)
 integer,allocatable :: nn_index(:)
-real(kind_real) :: xyz(3),pi(3),pk(3),pknext(3)
-real(kind_real),allocatable :: nn_dist(:)
-logical :: found,cflag(3),valid
+real(kind_real) :: xyz(3)
 
 ! Set name
 @:set_name(mesh_barycentric)
