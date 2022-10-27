@@ -458,63 +458,62 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
     double dp = 0.0;
     for (const auto & var : activeVars.variables()) {
       // Check fields presence
-      ASSERT(fset1.has(var));
-      ASSERT(fset2.has(var));
+      if (fset1.has(var) && fset2.has(var)) {
+        // Get fields
+        const auto field1 = fset1.field(var);
+        const auto field2 = fset2.field(var);
 
-      // Get fields
-      const auto field1 = fset1.field(var);
-      const auto field2 = fset2.field(var);
-
-      if (field1.rank() == 2 && field2.rank() == 2) {
+        if (field1.rank() == 2 && field2.rank() == 2) {
         // Check fields consistency
-        ASSERT(field1.shape(0) == field2.shape(0));
-        ASSERT(field1.shape(1) == field2.shape(1));
+          ASSERT(field1.shape(0) == field2.shape(0));
+          ASSERT(field1.shape(1) == field2.shape(1));
 
-        // Add contributions
-        auto view1 = atlas::array::make_view<double, 2>(field1);
-        auto view2 = atlas::array::make_view<double, 2>(field2);
-        if (field1.functionspace().type() == "Spectral") {
-          atlas::functionspace::Spectral fs(field1.functionspace());
-          const atlas::idx_t N = fs.truncation();
-          const auto zonal_wavenumbers = fs.zonal_wavenumbers();
-          const atlas::idx_t nb_zonal_wavenumbers = zonal_wavenumbers.size();
-          int jnode = 0;
-          for (int jm=0; jm < nb_zonal_wavenumbers; ++jm) {
-            const atlas::idx_t m1 = zonal_wavenumbers(jm);
-            for (std::size_t n1 = m1; n1 <= static_cast<std::size_t>(N); ++n1) {
-              if (m1 == 0) {
-                // Real part only
-                for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
-                  dp += view1(jnode, jlevel)*view2(jnode, jlevel);
-                }
-                ++jnode;
+          // Add contributions
+          auto view1 = atlas::array::make_view<double, 2>(field1);
+          auto view2 = atlas::array::make_view<double, 2>(field2);
+          if (field1.functionspace().type() == "Spectral") {
+            atlas::functionspace::Spectral fs(field1.functionspace());
+            const atlas::idx_t N = fs.truncation();
+            const auto zonal_wavenumbers = fs.zonal_wavenumbers();
+            const atlas::idx_t nb_zonal_wavenumbers = zonal_wavenumbers.size();
+            int jnode = 0;
+            for (int jm=0; jm < nb_zonal_wavenumbers; ++jm) {
+              const atlas::idx_t m1 = zonal_wavenumbers(jm);
+              for (std::size_t n1 = m1; n1 <= static_cast<std::size_t>(N); ++n1) {
+                if (m1 == 0) {
+                  // Real part only
+                  for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
+                    dp += view1(jnode, jlevel)*view2(jnode, jlevel);
+                  }
+                  ++jnode;
 
-                // No imaginary part
-                ++jnode;
-              } else {
-                // Real part
-                for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
-                  dp += 2.0*view1(jnode, jlevel)*view2(jnode, jlevel);
-                }
-                ++jnode;
+                  // No imaginary part
+                  ++jnode;
+                } else {
+                  // Real part
+                  for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
+                    dp += 2.0*view1(jnode, jlevel)*view2(jnode, jlevel);
+                  }
+                  ++jnode;
 
-                // Imaginary part
-                for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
-                  dp += 2.0*view1(jnode, jlevel)*view2(jnode, jlevel);
+                  // Imaginary part
+                  for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
+                    dp += 2.0*view1(jnode, jlevel)*view2(jnode, jlevel);
+                  }
+                  ++jnode;
                 }
-                ++jnode;
+              }
+            }
+          } else {
+            for (atlas::idx_t jnode = 0; jnode < field1.shape(0); ++jnode) {
+              for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
+                dp += view1(jnode, jlevel)*view2(jnode, jlevel);
               }
             }
           }
         } else {
-          for (atlas::idx_t jnode = 0; jnode < field1.shape(0); ++jnode) {
-            for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
-              dp += view1(jnode, jlevel)*view2(jnode, jlevel);
-            }
-          }
+          ABORT("wrong rank");
         }
-      } else {
-        ABORT("wrong rank");
       }
     }
 

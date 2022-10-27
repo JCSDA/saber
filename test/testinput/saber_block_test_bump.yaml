@@ -24,7 +24,7 @@ saber central block:
   input fields:
   - parameter: universe radius
     file:
-      filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_rh
+      filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_rh_2
 saber outer blocks:
 - saber block name: BUMP_StdDev
   bump:

@@ -13,4 +13,4 @@ background:
 saber central block:
   saber block name: ID
 test:
-  reference filename: testref/saber_block_test_bump.ref
+  reference filename: testref/saber_block_test_id.ref
