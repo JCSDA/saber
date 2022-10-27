@@ -262,7 +262,6 @@
 #:set subr_list = subr_list + ["geom_from_atlas"]
 #:set subr_list = subr_list + ["geom_setup_universe"]
 #:set subr_list = subr_list + ["geom_setup_c0"]
-#:set subr_list = subr_list + ["geom_setup_mask_distance"]
 #:set subr_list = subr_list + ["geom_setup_mask_check"]
 #:set subr_list = subr_list + ["geom_index_from_lonlat_r0"]
 #:set subr_list = subr_list + ["geom_index_from_lonlat_r1"]

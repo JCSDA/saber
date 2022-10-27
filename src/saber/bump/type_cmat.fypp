@@ -451,8 +451,8 @@ type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Local variables
-integer :: ib,il0,ic0a,il0i,ncmpmax,icmp
-real(kind_real),allocatable :: rhs(:),rvs(:),rh_c0a(:)
+integer :: ib,il0,ic0a,ncmpmax,icmp
+real(kind_real),allocatable :: rhs(:),rvs(:)
 
 ! Set name
 @:set_name(cmat_setup_sampling)
@@ -510,46 +510,6 @@ else
       end if
    end do
 end if
-
-select case (trim(nam%diag_draw_type))
-case ('random_coast')
-   ! More points around coasts
-   if (geom%nc0a>0) then
-      if (all(geom%gmask_c0a)) call mpl%abort('${subr}$','random_coast is not relevant if there is no coast')
-   end if
-
-   ! Allocation
-   allocate(rh_c0a(geom%nc0a))
-
-   do il0=1,geom%nl0
-      ! Define modulation factor
-      il0i = geom%l0_to_l0i(il0)
-      do ic0a=1,geom%nc0a
-         if (geom%gmask_c0a(ic0a,il0)) then
-            rh_c0a(ic0a) = exp(-geom%mdist_c0a(ic0a,il0i)/nam%Lcoast)
-         else
-            rh_c0a(ic0a) = one
-         end if
-      end do
-      rh_c0a = nam%rcoast+(one-nam%rcoast)*(one-rh_c0a)
-
-      ! Apply modulation factor
-      do ic0a=1,geom%nc0a
-         if (geom%gmask_c0a(ic0a,il0)) then
-            do ib=1,bpar%nb
-               if (bpar%nicas_block(ib)) then
-                  do icmp=1,cmat%blk(ib)%ncmp
-                     cmat%blk(ib)%rhs(ic0a,il0,icmp) = cmat%blk(ib)%rhs(ic0a,il0,icmp)*rh_c0a(ic0a)
-                  end do
-               end if
-            end do
-         end if
-      end do
-   end do
-
-   ! Release memory
-   deallocate(rh_c0a)
-end select
 
 ! Probe out
 @:probe_out()

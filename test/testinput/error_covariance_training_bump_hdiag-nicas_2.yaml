@@ -7,6 +7,7 @@ geometry:
   halo: 1
 input variables: &id001
 - var1
+- var_2d
 background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
@@ -25,9 +26,6 @@ bump:
   check_adjoints: true
   check_normalization: 10
   check_dirac: true
-  nicas_draw_type: random_coast
-  Lcoast: 500.0e3
-  rcoast: 0.1
   nc1: 500
   nc3: 10
   nc4: 4

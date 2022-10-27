@@ -119,9 +119,7 @@ type nam_type
    real(kind_real),dimension(nvmax) :: mask_th                !< Mask threshold
    integer :: ncontig_th                                      !< Threshold on vertically contiguous points for sampling mask (0 to skip the test)
    logical :: mask_check                                      !< Check that sampling couples and interpolations do not cross mask boundaries
-   character(len=1024) :: diag_draw_type                      !< Diagnostic draw type ('random_uniform','random_coast' or 'octahedral')
-   real(kind_real) :: Lcoast                                  !< Length-scale to increase sampling density along coasts [in meters]
-   real(kind_real) :: rcoast                                  !< Minimum value to increase sampling density along coasts
+   character(len=1024) :: diag_draw_type                      !< Diagnostic draw type ('random' or 'octahedral')
    integer :: nc1                                             !< Number of sampling points
    integer :: nc2                                             !< Number of diagnostic points
    integer :: nc3                                             !< Number of horizontal classes
@@ -170,7 +168,7 @@ type nam_type
    ! nicas_param
    real(kind_real) :: resol                                   !< Resolution
    integer :: nc1max                                          !< Maximum size of the Sc1 subset
-   character(len=1024) :: nicas_draw_type                     !< NICAS draw type ('random_uniform','random_coast' or 'octahedral')
+   character(len=1024) :: nicas_draw_type                     !< NICAS draw type ('random' or 'octahedral')
    logical :: network                                         !< Network-base convolution calculation (distance-based if false)
    logical :: forced_radii                                    !< Force specific support radii
    integer :: ncmp(0:nvmax)                                   !< Forced number of components
@@ -351,9 +349,7 @@ do iv=1,nvmax
 end do
 nam%ncontig_th = 0
 nam%mask_check = .false.
-nam%diag_draw_type = 'random_uniform'
-nam%Lcoast = zero
-nam%rcoast = zero
+nam%diag_draw_type = 'random'
 nam%nc1 = 0
 nam%nc2 = 0
 nam%nc3 = 0
@@ -408,7 +404,7 @@ nam%write_hdiag_detail = .false.
 ! nicas_param default
 nam%resol = zero
 nam%nc1max = 15000
-nam%nicas_draw_type = 'random_uniform'
+nam%nicas_draw_type = 'random'
 nam%network = .false.
 nam%forced_radii = .false.
 nam%ncmp = 1
@@ -683,8 +679,6 @@ if (conf%has('diag_draw_type')) then
    call conf%get_or_die('diag_draw_type',str)
    nam%diag_draw_type = str
 end if
-if (conf%has('Lcoast')) call conf%get_or_die('Lcoast',nam%Lcoast)
-if (conf%has('rcoast')) call conf%get_or_die('rcoast',nam%rcoast)
 if (conf%has('nc1')) call conf%get_or_die('nc1',nam%nc1)
 if (conf%has('nc2')) call conf%get_or_die('nc2',nam%nc2)
 if (conf%has('nc3')) call conf%get_or_die('nc3',nam%nc3)
@@ -1077,7 +1071,6 @@ if (nam%nldwv>nldwvmax) call mpl%abort('${subr}$','nldwv is too large')
 
 ! Namelist parameters normalization (meters to radians and degrees to radians)
 nam%universe_rad = nam%universe_rad/req
-nam%Lcoast = nam%Lcoast/req
 nam%dc = nam%dc/req
 nam%vbal_rad = nam%vbal_rad/req
 nam%vbal_dlat = nam%vbal_dlat*deg2rad
@@ -1224,10 +1217,7 @@ if (nam%new_vbal_cov.or.nam%new_vbal.or.nam%new_hdiag.or.nam%check_optimality) t
    if (nam%load_samp_global.and.nam%write_samp_global) &
  & call mpl%abort('${subr}$','load_samp_global and write_samp_global are exclusive')
    select case (nam%diag_draw_type)
-   case ('random_uniform')
-   case ('random_coast')
-      if (.not.(nam%Lcoast>zero)) call mpl%abort ('${subr}$','Lcoast should be positive')
-      if (.not.(nam%rcoast>zero)) call mpl%abort ('${subr}$','rcoast should be positive')
+   case ('random')
    case ('octahedral')
       if (nam%nldwv>0) call mpl%abort('${subr}$','no local diagnostics with an octahedral draw')
    case default
@@ -1425,10 +1415,7 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
       end if
    end if
    select case (nam%nicas_draw_type)
-   case ('random_uniform')
-   case ('random_coast')
-      if (.not.(nam%Lcoast>zero)) call mpl%abort ('${subr}$','Lcoast should be positive')
-      if (.not.(nam%rcoast>zero)) call mpl%abort ('${subr}$','rcoast should be positive')
+   case ('random')
    case ('octahedral')
       if (nam%nldwv>0) call mpl%abort('${subr}$','no local diagnostics with an octahedral draw')
    case default
@@ -1615,8 +1602,6 @@ call mpl%write('mask_th',nam%nv,nam%mask_th(1:nam%nv))
 call mpl%write('ncontig_th',nam%ncontig_th)
 call mpl%write('mask_check',nam%mask_check)
 call mpl%write('diag_draw_type',nam%diag_draw_type)
-call mpl%write('Lcoast',nam%Lcoast*req)
-call mpl%write('rcoast',nam%rcoast)
 call mpl%write('nc1',nam%nc1)
 call mpl%write('nc2',nam%nc2)
 call mpl%write('nc3',nam%nc3)

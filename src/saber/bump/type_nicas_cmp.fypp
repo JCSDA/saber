@@ -2328,7 +2328,7 @@ do il1=1,nicas_cmp%nl1
       nicas_cmp%hor(il1)%nc1 = min(nicas_cmp%hor(il1)%nc1,geom%nc0_gmask(il0))
 
       select case (trim(nicas_cmp%draw_type))
-      case ('random_uniform','random_coast')
+      case ('random')
          ! Allocation
          allocate(c1_to_c0(nicas_cmp%hor(il1)%nc1))
 

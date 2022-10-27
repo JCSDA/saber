@@ -1703,8 +1703,8 @@ integer,intent(in) :: subset           !< Subset index (1 or 2)
 integer :: ic0,ic0a,ic0u,icx,icxa,il0,il0i,ildwv,iproc,nn_index(1),n,ix,iy,ncx,ncx_eff,ncxa
 integer :: proc_to_ncxa(mpl%nproc),proc_to_cx_offset(mpl%nproc)
 integer,allocatable :: cx_to_c0(:),cxa_to_cx(:)
-real(kind_real) :: rh_c0a(geom%nc0a),lonlat(2),latmin,latmax
-real(kind_real),allocatable :: lon_cxa(:),lat_cxa(:),vunit_cxa(:,:)
+real(kind_real) :: lonlat(2),latmin,latmax
+real(kind_real),allocatable :: rh_c0a(:),lon_cxa(:),lat_cxa(:),vunit_cxa(:,:)
 logical :: smask_hor_c0a(geom%nc0a),valid
 logical,allocatable :: smask_cxa(:,:)
 type(atlas_structuredgrid) :: agrid
@@ -1714,30 +1714,6 @@ type(atlas_structuredgrid) :: agrid
 
 ! Probe in
 @:probe_in()
-
-! Select draw type
-select case (trim(nam%diag_draw_type))
-case ('random_uniform')
-   ! Random draw
-    rh_c0a = one
-case ('random_coast')
-   ! More points around coasts
-   if (geom%nc0a>0) then
-      if (all(geom%gmask_c0a)) call mpl%abort('${subr}$','random_coast is not relevant if there is no coast')
-   end if
-   rh_c0a = zero
-   do il0=1,geom%nl0
-      il0i = geom%l0_to_l0i(il0)
-      do ic0a=1,geom%nc0a
-         if (geom%gmask_c0a(ic0a,il0)) then
-            rh_c0a(ic0a) = rh_c0a(ic0a)+exp(-geom%mdist_c0a(ic0a,il0i)/nam%Lcoast)
-         else
-            rh_c0a(ic0a) = rh_c0a(ic0a)+one
-         end if
-      end do
-   end do
-   rh_c0a = nam%rcoast+(one-nam%rcoast)*(one-rh_c0a/real(geom%nl0,kind_real))
-end select
 
 ! Initialize sampling mask
 smask_hor_c0a = samp%smask_hor_c0a
@@ -1789,7 +1765,7 @@ if (samp%lat_bands.and.(subset==2)) then
 else
    ! Initialize subsampling
    select case (trim(nam%diag_draw_type))
-   case ('random_uniform','random_coast')
+   case ('random')
       ! Check subsampling size
       if (ncx>samp%nc0_smask(0)) then
          ! Not enough points remaining in the sampling mask
@@ -1814,11 +1790,13 @@ else
       end if
    
       ! Allocation
+      allocate(rh_c0a(geom%nc0a))
       allocate(cx_to_c0(ncx_eff))
    
       ! Initialization
+      rh_c0a = one
       cx_to_c0 = mpl%msv%vali
-   
+
       ! Compte subsampling
       write(mpl%info,'(a7,a,i1,a)') '','Compute horizontal subset Sc',subset,':'
       call mpl%flush
@@ -1872,6 +1850,7 @@ else
       end if
    
       ! Release memory
+      deallocate(rh_c0a)
       deallocate(cx_to_c0)
    case ('octahedral')
       ! Use an octahedral grid

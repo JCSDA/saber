@@ -150,7 +150,6 @@ contains
    procedure :: from_atlas => geom_from_atlas
    procedure :: setup_universe => geom_setup_universe
    procedure :: setup_c0 => geom_setup_c0
-   procedure :: setup_mask_distance => geom_setup_mask_distance
    procedure :: setup_mask_check => geom_setup_mask_check
    procedure :: geom_index_from_lonlat_r0
    procedure :: geom_index_from_lonlat_r1
@@ -343,9 +342,6 @@ write(mpl%info,'(a7,a)') '','Setup mesh'
 call mpl%flush
 call geom%mesh_c0u%alloc(geom%nc0u)
 call geom%mesh_c0u%init(mpl,rng,geom%lon_c0u,geom%lat_c0u,hull_bnd=.true.)
-
-! Setup minimum distance to mask
-call geom%setup_mask_distance(mpl,nam)
 
 ! Setup mask boudaries checking fields
 call geom%setup_mask_check(mpl,nam)
@@ -982,76 +978,6 @@ deallocate(order)
 @:probe_out()
 
 end subroutine geom_setup_universe
-
-!----------------------------------------------------------------------
-! Subroutine: geom_setup_mask_distance
-!> Setup minimum distance to mask
-!----------------------------------------------------------------------
-subroutine geom_setup_mask_distance(geom,mpl,nam)
-
-implicit none
-
-! Passed variables
-class(geom_type),intent(inout) :: geom !< Geometry
-type(mpl_type),intent(inout) :: mpl    !< MPI data
-type(nam_type),intent(in) :: nam       !< Namelist
-
-! Local variables
-integer :: il0i,ic0u,ic0a,nn_index(1)
-logical :: not_mask_c0u(geom%nc0u)
-type(tree_type) :: tree
-
-! Set name
-@:set_name(geom_setup_mask_distance)
-
-! Probe in
-@:probe_in()
-
-if ((trim(nam%diag_draw_type)=='random_coast').or.(trim(nam%nicas_draw_type)=='random_coast')) then
-   write(mpl%info,'(a7,a)') '','Define minimum distance to mask'
-   call mpl%flush
-
-   ! Allocation
-   allocate(geom%mdist_c0u(geom%nc0u,geom%nl0i))
-   allocate(geom%mdist_c0a(geom%nc0a,geom%nl0i))
-
-   ! Initialization
-   geom%mdist_c0u = pi
-
-   do il0i=1,geom%nl0i
-      ! Check mask
-      if (geom%nc0u>0) then
-         if (any(.not.geom%gmask_c0u(:,il0i))) then
-            ! Allocation
-            not_mask_c0u = .not.geom%gmask_c0u(:,il0i)
-            call tree%alloc(mpl,geom%nc0u,mask=not_mask_c0u)
-
-            ! Initialization
-            call tree%init(geom%lon_c0u,geom%lat_c0u)
-
-            ! Find nearest neighbors
-            do ic0u=1,geom%nc0u
-               if (geom%gmask_c0u(ic0u,il0i)) call tree%find_nearest_neighbors(geom%lon_c0u(ic0u),geom%lat_c0u(ic0u),1,nn_index, &
- & geom%mdist_c0u(ic0u,il0i))
-            end do
-
-            ! Release memory
-            call tree%dealloc
-         end if
-      end if
-   end do
-
-   ! Local field
-   do ic0a=1,geom%nc0a
-      ic0u = geom%c0a_to_c0u(ic0a)
-      geom%mdist_c0a(ic0a,:) = geom%mdist_c0u(ic0u,:)
-   end do
-end if
-
-! Probe out
-@:probe_out()
-
-end subroutine geom_setup_mask_distance
 
 !----------------------------------------------------------------------
 ! Subroutine: geom_setup_mask_check
