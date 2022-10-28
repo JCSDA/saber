@@ -161,6 +161,9 @@ type nam_type
    logical :: vbal_pseudo_inv                                 !< Pseudo-inverse for auto-covariance
    integer :: vbal_pseudo_inv_mmax                            !< Dominant mode for pseudo-inverse
    real(kind_real) :: vbal_pseudo_inv_var_th                  !< Variance threshold to compute the dominant mode for pseudo-inverse
+   logical :: vbal_id                                         !< Identity vertical balance for tests
+   real(kind_real) :: vbal_id_coef(nvbalmax)                  !< Scalar coefficients for identity vertical balance
+   character(len=2) :: vbal_interp_type                       !< Vertical balance C2B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based or 'si': smooth interpolation)
    logical :: forced_var                                      !< Force specific variance
    real(kind_real) :: stddev(nl0max,nvmax)                    !< Forced standard-deviation
    logical :: var_filter                                      !< Filter variance
@@ -190,8 +193,10 @@ type nam_type
    real(kind_real) :: loc_wgt(nvmax,nvmax)                    !< Forced localization weights
    integer :: min_lev(0:nvmax)                                !< Minimum level
    integer :: max_lev(0:nvmax)                                !< Maximum level
+   character(len=2),dimension(0:nvmax) :: nicas_interp_type   !< NICAS C1B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based or 'si': smooth interpolation)
    logical :: pos_def_test                                    !< Positive-definiteness test
    logical :: write_nicas_grids                               !< Write NICAS grids
+   logical :: interp_test                                     !< Horizontal NICAS interpolation test
 
    ! dirac_param
    integer :: ndir                                            !< Number of Diracs
@@ -411,6 +416,9 @@ end do
 nam%vbal_pseudo_inv = .false.
 nam%vbal_pseudo_inv_mmax = 0
 nam%vbal_pseudo_inv_var_th = zero
+nam%vbal_id = .false.
+nam%vbal_id_coef = one
+nam%vbal_interp_type = 'c0'
 nam%forced_var = .false.
 nam%stddev = zero
 nam%var_filter = .false.
@@ -440,8 +448,10 @@ nam%rv = -one
 nam%loc_wgt = -one
 nam%min_lev = 1
 nam%max_lev = nl0max
+nam%nicas_interp_type = 'c0'
 nam%pos_def_test = .false.
 nam%write_nicas_grids = .false.
+nam%interp_test = .false.
 
 ! dirac_param default
 nam%ndir = 0
@@ -611,6 +621,9 @@ logical :: vbal_diag_reg(nvbalmax)
 logical :: vbal_pseudo_inv
 integer :: vbal_pseudo_inv_mmax
 real(kind_real) :: vbal_pseudo_inv_var_th
+logical :: vbal_id
+real(kind_real) :: vbal_id_coef(nvbalmax)
+character(len=2) :: vbal_interp_type
 logical :: forced_var
 real(kind_real) :: stddev(nl0max,nvmax)
 logical :: var_filter
@@ -636,8 +649,10 @@ real(kind_real) :: rv(nl0max,0:nvmax)
 real(kind_real) :: loc_wgt(nvmax,nvmax)
 integer :: min_lev(0:nvmax)
 integer :: max_lev(0:nvmax)
+character(len=2),dimension(0:nvmax) :: nicas_interp_type
 logical :: pos_def_test
 logical :: write_nicas_grids
+logical :: interp_test
 integer :: ndir
 real(kind_real) :: londir(ndirmax)
 real(kind_real) :: latdir(ndirmax)
@@ -778,6 +793,9 @@ namelist/diag_param/ &
  & vbal_pseudo_inv, &
  & vbal_pseudo_inv_mmax, &
  & vbal_pseudo_inv_var_th, &
+ & vbal_id, &
+ & vbal_id_coef, &
+ & vbal_interp_type, &
  & forced_var, &
  & stddev, &
  & var_filter, &
@@ -805,8 +823,10 @@ namelist/nicas_param/ &
  & loc_wgt, &
  & min_lev, &
  & max_lev, &
+ & nicas_interp_type, &
  & pos_def_test, &
  & write_nicas_grids, &
+ & interp_test, &
  & ndir, &
  & londir, &
  & latdir, &
@@ -979,6 +999,9 @@ if (mpl%main) then
    vbal_pseudo_inv = .false.
    vbal_pseudo_inv_mmax = 0
    vbal_pseudo_inv_var_th = zero
+   vbal_id = .false.
+   vbal_id_coef = one
+   vbal_interp_type = 'c0'
    forced_var = .false.
    stddev = zero
    var_filter = .false.
@@ -1008,8 +1031,10 @@ if (mpl%main) then
    loc_wgt = -one
    min_lev = 1
    max_lev = nl0max
+   nicas_interp_type = 'c0'
    pos_def_test = .false.
    write_nicas_grids = .false.
+   interp_test = .false.
 
    ! dirac_param default
    ndir = 0
@@ -1183,6 +1208,9 @@ if (mpl%main) then
    nam%vbal_pseudo_inv = vbal_pseudo_inv
    nam%vbal_pseudo_inv_mmax = vbal_pseudo_inv_mmax
    nam%vbal_pseudo_inv_var_th = vbal_pseudo_inv_var_th
+   nam%vbal_id = vbal_id
+   nam%vbal_id_coef = vbal_id_coef
+   nam%vbal_interp_type = vbal_interp_type
    nam%forced_var = forced_var
    nam%stddev = stddev
    nam%var_filter = var_filter
@@ -1214,8 +1242,10 @@ if (mpl%main) then
    nam%loc_wgt = loc_wgt
    nam%min_lev = min_lev
    nam%max_lev = max_lev
+   nam%nicas_interp_type = nicas_interp_type
    nam%pos_def_test = pos_def_test
    nam%write_nicas_grids = write_nicas_grids
+   nam%interp_test = interp_test
 
    ! dirac_param
    nam%ndir = ndir
@@ -1393,6 +1423,9 @@ call mpl%f_comm%broadcast(nam%vbal_diag_reg,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%vbal_pseudo_inv,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%vbal_pseudo_inv_mmax,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%vbal_pseudo_inv_var_th,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%vbal_id,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%vbal_id_coef,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%vbal_interp_type,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%forced_var,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%stddev,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%var_filter,mpl%rootproc-1)
@@ -1422,8 +1455,10 @@ call mpl%f_comm%broadcast(nam%rv,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%loc_wgt,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%min_lev,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%max_lev,mpl%rootproc-1)
+call mpl%broadcast(nam%nicas_interp_type,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%pos_def_test,mpl%rootproc-1)
 call mpl%f_comm%broadcast(nam%write_nicas_grids,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nam%interp_test,mpl%rootproc-1)
 
 ! dirac_param
 call mpl%f_comm%broadcast(nam%ndir,mpl%rootproc-1)
@@ -1758,6 +1793,20 @@ end if
 if (conf%has('vbal_pseudo_inv')) call conf%get_or_die('vbal_pseudo_inv',nam%vbal_pseudo_inv)
 if (conf%has('vbal_pseudo_inv_mmax')) call conf%get_or_die('vbal_pseudo_inv_mmax',nam%vbal_pseudo_inv_mmax)
 if (conf%has('vbal_pseudo_inv_var_th')) call conf%get_or_die('vbal_pseudo_inv_var_th',nam%vbal_pseudo_inv_var_th)
+if (conf%has('vbal_id')) call conf%get_or_die('vbal_id',nam%vbal_id)
+if (conf%has('vbal_id_coef')) then
+   call conf%get_or_die('vbal_id_coef',real_array)
+   if (size(real_array)>nvbalmax) then
+      write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: vbal_id_coef size should be smaller than ',nvbalmax
+      call flush(output_unit)
+      call comm%abort(1)
+   end if
+   nam%vbal_id_coef(1:size(real_array)) = real_array
+end if
+if (conf%has('vbal_interp_type')) then
+   call conf%get_or_die('vbal_interp_type',str)
+   nam%vbal_interp_type = str
+end if
 if (conf%has('forced_var')) call conf%get_or_die('forced_var',nam%forced_var)
 if (conf%has('stddev')) then
    call conf%get_or_die('stddev',subconf)
@@ -1924,8 +1973,22 @@ if (conf%has('max_lev')) then
       if (subconf%has(nam%variables(iv))) call subconf%get_or_die(nam%variables(iv),nam%max_lev(iv))
    end do
 end if
+if (conf%has('nicas_interp_type')) then
+   call conf%get_or_die('nicas_interp_type',subconf)
+   if (subconf%has('common')) then
+      call subconf%get_or_die('common',str)
+      nam%nicas_interp_type(0) = str
+   end if
+   do iv=1,nam%nv
+      if (subconf%has(nam%variables(iv))) then
+        call subconf%get_or_die(nam%variables(iv),str)
+        nam%nicas_interp_type(iv) = str
+      end if
+   end do
+end if
 if (conf%has('pos_def_test')) call conf%get_or_die('pos_def_test',nam%pos_def_test)
 if (conf%has('write_nicas_grids')) call conf%get_or_die('write_nicas_grids',nam%write_nicas_grids)
+if (conf%has('interp_test')) call conf%get_or_die('interp_test',nam%interp_test)
 
 ! dirac_param
 if (conf%has('ndir')) call conf%get_or_die('ndir',nam%ndir)
@@ -2379,6 +2442,13 @@ end if
 
 ! Check nicas_param
 if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
+   if ((nam%strategy=='common').or.(nam%strategy=='common_weighted')) then
+      ivmin = 0
+      ivmax = 0
+   else
+      ivmin = 1
+      ivmax = nam%nv
+   end if
    if (nam%check_randomization) then
       if (.not.nam%forced_radii) call mpl%abort('${subr}$','forced_radii required for check_randomization')
    end if
@@ -2399,13 +2469,6 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
          case default
            call mpl%abort('${subr}$','new_hdiag forbidden for forced_radii in this case')
          end select
-      end if
-      if ((nam%strategy=='common').or.(nam%strategy=='common_weighted')) then
-         ivmin = 0
-         ivmax = 0
-      else
-         ivmin = 1
-         ivmax = nam%nv
       end if
       do iv=ivmin,ivmax
          if (nam%ncmp(iv)<1) call mpl%abort('${subr}$','ncmp should be positive')
@@ -2448,9 +2511,18 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
    case default
       call mpl%abort('${subr}$','wrong nicas_draw_type')
    end select
+   do iv=ivmin,ivmax
+      select case (nam%nicas_interp_type(iv))
+      case ('c0','c1','si')
+      case default
+         call mpl%abort('${subr}$','wrong nicas_interp_type')
+      end select
+   end do
 end if
 if (nam%write_nicas_grids.and.(.not.(nam%new_nicas.or.nam%load_nicas_global))) &
  & call mpl%abort('${subr}$','new_nicas or load_nicas_global required for write_nicas_grids')
+if (nam%interp_test.and.(.not.(nam%new_nicas.or.nam%load_nicas_global))) &
+ & call mpl%abort('${subr}$','new_nicas or load_nicas_global required for interp_test')
 if (nam%load_nicas_local.and.nam%write_nicas_global) &
  & call mpl%abort('${subr}$','load_nicas_local and write_nicas_global are exclusive')
 if (nam%new_nicas) then
@@ -2661,6 +2733,9 @@ call mpl%write('vbal_diag_reg',nam%nv*(nam%nv-1)/2,nam%vbal_diag_reg(1:nam%nv*(n
 call mpl%write('vbal_pseudo_inv',nam%vbal_pseudo_inv)
 call mpl%write('vbal_pseudo_inv_mmax',nam%vbal_pseudo_inv_mmax)
 call mpl%write('vbal_pseudo_inv_var_th',nam%vbal_pseudo_inv_var_th)
+call mpl%write('vbal_id',nam%vbal_id)
+call mpl%write('vbal_id_coef',nam%nv*(nam%nv-1)/2,nam%vbal_id_coef(1:nam%nv*(nam%nv-1)/2))
+call mpl%write('vbal_interp_type',nam%vbal_interp_type)
 call mpl%write('forced_var',nam%forced_var)
 profiles(1:nam%nl0*nam%nv) = reshape(nam%stddev(1:nam%nl0,1:nam%nv),(/nam%nl0*nam%nv/))
 call mpl%write('stddev',nam%nl0*nam%nv,profiles(1:nam%nl0*nam%nv))
@@ -2699,8 +2774,10 @@ loc_wgt(1:nam%nv**2) = reshape(nam%loc_wgt(1:nam%nv,1:nam%nv),(/nam%nv**2/))
 call mpl%write('loc_wgt',nam%nv**2,loc_wgt(1:nam%nv**2))
 call mpl%write('min_lev',nam%nv+1,nam%min_lev(0:nam%nv))
 call mpl%write('max_lev',nam%nv+1,nam%max_lev(0:nam%nv))
+call mpl%write('nicas_interp_type',nam%nv+1,nam%nicas_interp_type)
 call mpl%write('pos_def_test',nam%pos_def_test)
 call mpl%write('write_nicas_grids',nam%write_nicas_grids)
+call mpl%write('interp_test',nam%interp_test)
 
 ! dirac_param
 write(mpl%info,'(a7,a)') '','Dirac parameters'
