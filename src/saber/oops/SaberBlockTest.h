@@ -142,9 +142,10 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
                                     fgLocal.fieldSet(),
                                     fsetVec));
 
-        // Apply calibration inverse on xb and fg
-        saberOuterBlocks_.back().calibrationInverseMultiply(xbLocal.fieldSet());
-        saberOuterBlocks_.back().calibrationInverseMultiply(fgLocal.fieldSet());
+        // Apply calibration inverse on xb and fg 
+        // Not sure it is correct since xb and fg are states instad of increment
+//        saberOuterBlocks_.back().calibrationInverseMultiply(xbLocal.fieldSet());
+//        saberOuterBlocks_.back().calibrationInverseMultiply(fgLocal.fieldSet());
 
         // Access inner geometry and variables
         const oops::GeometryData & innerGeometryData = saberOuterBlocks_.back().innerGeometryData();
