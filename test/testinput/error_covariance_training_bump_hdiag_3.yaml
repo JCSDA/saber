@@ -16,21 +16,21 @@ bump:
   testing: true
   method: loc
   strategy: common
+  update_mom: true
   new_hdiag: true
   write_hdiag: true
-  update_mom: true
   nc1: 500
   nc2: 250
   nc3: 10
   nc4: 4
   dc: 800.0e3
   nl0r: 2
-  fit_ncmp: 2
   samp_interp_type: si
   ne: 25
+  gau_approx: true
   local_diag: true
   local_dlat: 15.0
-  gau_approx: true
+  fit_ncmp: 2
   ensemble:
     members from template:
       template:

@@ -15,11 +15,12 @@ bump:
   prefix: error_covariance_training_bump_stddev_2/_MPI_-_OMP_
   testing: true
   update_var: true
+  ne: 20
   var_filter: true
   var_npass: 3
   var_rhflt:
-    var1: [1000.0e3]
-  ne: 20
+    var1:
+    - 1000.0e3
   ensemble:
     members from template:
       template:
@@ -30,7 +31,10 @@ bump:
       nmembers: 20
       zero padding: 6
       start: 3
-      except: [5,12,18]
+      except:
+      - 5
+      - 12
+      - 18
 output:
 - parameter: stddev
   file:

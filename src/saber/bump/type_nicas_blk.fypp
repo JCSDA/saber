@@ -78,6 +78,7 @@ contains
    procedure :: apply_sqrt => nicas_blk_apply_sqrt
    procedure :: apply_sqrt_ad => nicas_blk_apply_sqrt_ad
    procedure :: test_adjoint => nicas_blk_test_adjoint
+   procedure :: test_normalization => nicas_blk_test_normalization
    procedure :: test_dirac => nicas_blk_test_dirac
 end type nicas_blk_type
 
@@ -1290,6 +1291,93 @@ end associate
 @:probe_out()
 
 end subroutine nicas_blk_test_adjoint
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_blk_test_normalization
+!> Test NICAS normalization
+!----------------------------------------------------------------------
+subroutine nicas_blk_test_normalization(nicas_blk,mpl,rng,nam,geom)
+
+implicit none
+
+! Passed variables
+class(nicas_blk_type),intent(in) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+type(rng_type),intent(inout) :: rng           !< Random number generator
+type(nam_type),intent(in) :: nam              !< Namelist
+type(geom_type),intent(in) :: geom            !< Geometry
+
+! Local variables
+integer :: icmp,itest
+integer :: il0(nam%check_normalization),iproc(nam%check_normalization),ic0a(nam%check_normalization)
+real(kind_real) :: fld(geom%nc0a,geom%nl0),norm,val(nam%check_normalization)
+type(cv_blk_type) :: cv_blk
+
+! Set name
+@:set_name(nicas_blk_test_normalization)
+
+! Probe in
+@:probe_in()
+
+! Associate
+associate(ib=>nicas_blk%ib)
+
+! Copy number of components
+cv_blk%ncmp = nicas_blk%ncmp
+
+! Allocation
+allocate(cv_blk%cmp(cv_blk%ncmp))
+
+do icmp=1,cv_blk%ncmp
+   ! Allocation and initialization
+   call cv_blk%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%nsa)
+end do
+
+! Get random levels
+if (mpl%main) call rng%rand(1,geom%nl0,il0)
+call mpl%f_comm%broadcast(il0,mpl%rootproc-1)
+
+! Resynchronize random number generator
+call rng%resync(mpl)
+
+! Get random points
+do itest=1,nam%check_normalization
+   call geom%rand_point(mpl,rng,il0(itest),iproc(itest),ic0a(itest))
+end do
+
+! Desynchronize random number generator
+call rng%desync(mpl)
+
+! Check normalization
+write(mpl%info,'(a10,a)') '','Check normalization'
+if (nicas_blk%verbosity) call mpl%flush
+do itest=1,nam%check_normalization
+   ! Initialization
+   fld = zero
+   if (mpl%myproc==iproc(itest)) fld(ic0a(itest),il0(itest)) = one
+
+   ! Apply NICAS square-root adjoint
+   call nicas_blk%apply_sqrt_ad(mpl,geom,fld,cv_blk)
+
+   ! Apply NICAS square-root
+   call nicas_blk%apply_sqrt(mpl,geom,cv_blk,fld)
+
+   ! Broadcast normalization value
+   if (mpl%myproc==iproc(itest)) norm = fld(ic0a(itest),il0(itest))
+   call mpl%f_comm%broadcast(norm,iproc(itest)-1)
+   val(itest) = norm
+end do
+write(mpl%test,'(a13,a,f10.7,a,f10.7,a,i6,a)') '','Min / max:',minval(val),' / ',maxval(val),' over ', &
+ & nam%check_normalization,' tests'
+if (nicas_blk%verbosity) call mpl%flush
+
+! End associate
+end associate
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_blk_test_normalization
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_test_dirac

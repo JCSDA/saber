@@ -66,8 +66,8 @@
           Independent levels for angular sector   1 / class  15:  1[1]  2[1] 
                 Level:   1 ~> cov. at class zero:  0.96E+00
                 Level:   2 ~> cov. at class zero:  0.91E+00
-                Level:   1 ~> cov. at class zero:  0.99E+00
-                Level:   2 ~> cov. at class zero:  0.98E+00
+                Level:   1 ~> cov. at class zero:  0.10E+01
+                Level:   2 ~> cov. at class zero:  0.10E+01
              Block var1-var1:  0.13770789E+00 for       60 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
@@ -77,15 +77,15 @@
                    Level:   2 ~> amplitude:        1.00
                                  cor. hor. support:      3811.08 km
                                  cor. ver. support:         3.10 vertical units
-             Block var1-var1:  0.15895320E+00 for       60 diagnostic points
+             Block var1-var1:  0.14848026E+00 for       60 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      3693.29 km
-                                 cor. ver. support:         3.19 vertical units
+                                 cor. hor. support:      3691.18 km
+                                 cor. ver. support:         3.24 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      3731.62 km
-                                 cor. ver. support:         3.19 vertical units
+                                 cor. hor. support:      3749.15 km
+                                 cor. ver. support:         3.24 vertical units
              Block var1-var1:  0.23347467E+00 for       39 diagnostic points
                 Level:   1 ~> loc. at class zero:       0.83
                 Level:   2 ~> loc. at class zero:       0.82
@@ -95,20 +95,20 @@
                    Level:   2 ~> amplitude:        1.00
                                  loc. hor. support:      4370.72 km
                                  loc. ver. support:         4.10 vertical units
-             Block var1-var1:  0.27629570E+00 for       57 diagnostic points
+             Block var1-var1:  0.26617892E+00 for       43 diagnostic points
                 Level:   1 ~> loc. at class zero:       0.92
                 Level:   2 ~> loc. at class zero:       0.92
                    Level:   1 ~> amplitude:        1.00
-                                 loc. hor. support:      5555.25 km
-                                 loc. ver. support:         5.98 vertical units
+                                 loc. hor. support:      5773.27 km
+                                 loc. ver. support:         6.11 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 loc. hor. support:      5548.72 km
-                                 loc. ver. support:         5.98 vertical units
-                Level:   1 ~> hybrid coefficients: 0.54 / 0.45
-                Level:   2 ~> hybrid coefficients: 0.52 / 0.45
+                                 loc. hor. support:      5933.73 km
+                                 loc. ver. support:         6.12 vertical units
+                Level:   1 ~> hybrid coefficients: 0.52 / 0.46
+                Level:   2 ~> hybrid coefficients: 0.46 / 0.49
 Norm of BUMP output parameter loc_rh - 1: 2.0887209781576023e+08
 Norm of BUMP output parameter loc_rv - 1: 1.9300550966718342e+02
-Norm of BUMP output parameter hyb_coef_ens - 1: 2.4907015745880599e+01
-Norm of BUMP output parameter loc_rh_lr - 1: 2.1674086702899694e+08
-Norm of BUMP output parameter loc_rv_lr - 1: 2.3342836418919012e+02
-Norm of BUMP output parameter hyb_coef_ens_lr - 1: 2.1049236924477999e+01
+Norm of BUMP output parameter hyb_coef_ens - 1: 2.3126094593824309e+01
+Norm of BUMP output parameter loc_rh_lr - 1: 2.2853306023117220e+08
+Norm of BUMP output parameter loc_rv_lr - 1: 2.3866447005505117e+02
+Norm of BUMP output parameter hyb_coef_ens_lr - 1: 2.2149054039727556e+01

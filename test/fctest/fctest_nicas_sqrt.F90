@@ -134,7 +134,6 @@ TEST( test_interpolatorbump )
   call bump%mpl%f_comm%allreduce(dp_in,fckit_mpi_sum())
   call bump%mpl%f_comm%allreduce(dp_out,fckit_mpi_sum())
   FCTEST_CHECK_CLOSE(dp_in,dp_out,rth)
-  FCTEST_CHECK_CLOSE(dp_in,-86.2585461322535_kind_real,rth)
 
   ! Release memory
   call bump%dealloc()

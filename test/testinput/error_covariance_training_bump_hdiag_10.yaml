@@ -18,19 +18,19 @@ bump:
   strategy: specific_univariate
   new_hdiag: true
   write_hdiag: true
-  nicas_draw_type: octahedral
   check_optimality: true
+  ens1_ne: 1000
   nc1: 500
   nc3: 10
   dc: 800.0e3
   nl0r: 1
   ne: 25
-  ens1_ne: 1000
   resol: 4.0
+  nicas_draw_type: octahedral
   forced_radii: true
   rh:
     var1:
-     - 7.0e6
+    - 7.0e6
   rv:
     var1:
     - 0.0

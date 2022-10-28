@@ -28,8 +28,10 @@ bump:
   resol: 4.0
   forced_radii: true
   rh:
-    var1: [1000.0e3]
+    var1:
+    - 1000.0e3
   rv:
-    var1: [3.0]
+    var1:
+    - 3.0
 test:
   reference filename: testref/error_covariance_training_bump_nicas_7.ref

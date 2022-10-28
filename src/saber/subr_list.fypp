@@ -420,6 +420,7 @@
 #:set subr_list = subr_list + ["nicas_blk_apply_sqrt"]
 #:set subr_list = subr_list + ["nicas_blk_apply_sqrt_ad"]
 #:set subr_list = subr_list + ["nicas_blk_test_adjoint"]
+#:set subr_list = subr_list + ["nicas_blk_test_normalization"]
 #:set subr_list = subr_list + ["nicas_blk_test_dirac"]
 #:set subr_list = subr_list + ["nicas_cmp_partial_dealloc"]
 #:set subr_list = subr_list + ["nicas_cmp_dealloc"]

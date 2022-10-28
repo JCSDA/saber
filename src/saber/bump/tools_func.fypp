@@ -261,12 +261,11 @@ end subroutine func_rad2short
 ! Subroutine: func_grid_hash_global
 !> Compute grid hash value from global coordinates
 !----------------------------------------------------------------------
-subroutine func_grid_hash_global(mpl,ncx,lon_cx,lat_cx,mask_cx,hash)
+subroutine func_grid_hash_global(ncx,lon_cx,lat_cx,mask_cx,hash)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl       !< MPI data
 integer,intent(in) :: ncx                 !< Number of points (global)
 real(kind_real),intent(in) :: lon_cx(ncx) !< Longitude [radians]
 real(kind_real),intent(in) :: lat_cx(ncx) !< Latitude [radians]
@@ -345,7 +344,7 @@ if (mpl%main) then
       mask_cx(:,ilx) = mask_cx(order_cx,ilx)
 
       ! Global hash
-      call grid_hash(mpl,ncx,lon_cx,lat_cx,mask_cx(:,ilx),hash(ilx))
+      call grid_hash(ncx,lon_cx,lat_cx,mask_cx(:,ilx),hash(ilx))
    end do
 end if
 

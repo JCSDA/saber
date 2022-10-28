@@ -11,8 +11,8 @@
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-             Level   1 ~>  0.95858E+00 /  0.95858E+00
-             Level   2 ~>  0.87851E+00 /  0.87851E+00
-             Level   1 ~>  0.10015E+01 /  0.10015E+01
-             Level   2 ~>  0.10250E+01 /  0.10250E+01
-Norm of BUMP output parameter stddev - 1: 5.4259097816665630e+01
+             Level   1 ~>  0.99460E+00 /  0.99460E+00
+             Level   2 ~>  0.95153E+00 /  0.95153E+00
+             Level   1 ~>  0.95614E+00 /  0.95614E+00
+             Level   2 ~>  0.99238E+00 /  0.99238E+00
+Norm of BUMP output parameter stddev - 1: 5.4476873479641306e+01

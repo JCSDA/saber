@@ -23,30 +23,35 @@ bump:
   testing: true
   method: hyb-ens
   strategy: specific_univariate
+  load_mom: true
   new_hdiag: true
   write_hdiag: true
   new_nicas: true
-  load_samp_local: true
-  load_mom: true
-  check_dirac: true
   check_adjoints: true
   check_normalization: 10
+  check_dirac: true
+  fname_samp: error_covariance_training_bump_hdiag_5/_MPI_-_OMP__sampling
+  fname_mom:
+  - error_covariance_training_bump_hdiag_5/_MPI_-_OMP__mom
+  ens1_ne: 10
+  ens2_ne: 25
+  load_samp_local: true
   nc1: 500
   nc3: 15
   dc: 500.0e3
   nl0r: 2
   ne: 10
   ne_lr: 25
-  ens1_ne: 10
-  ens2_ne: 25
-  fname_samp: error_covariance_training_bump_hdiag_5/_MPI_-_OMP__sampling
-  fname_mom: [error_covariance_training_bump_hdiag_5/_MPI_-_OMP__mom]
   resol: 4.0
   ndir: 1
-  londir: [0.0]
-  latdir: [0.0]
-  levdir: [1]
-  ivdir: [1]
+  londir:
+  - 0.0
+  latdir:
+  - 0.0
+  levdir:
+  - 1
+  ivdir:
+  - 1
 output:
 - parameter: loc_rh
   file:

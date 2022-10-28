@@ -52,14 +52,17 @@ class GeometryParameters : public oops::Parameters {
   /// Number of levels
   oops::Parameter<size_t> levels{"levels", 1, this};
 
+  /// Corresponding level for 2D variables (first or last)
+  oops::Parameter<std::string> lev2d{"lev2d", "first", this};
+
   /// Vertical unit
   oops::OptionalParameter<std::vector<double>> vunit{"vunit", this};
 
   /// Mask type
-  oops::OptionalParameter<std::string> mask_type{"mask type",  this};
+  oops::Parameter<std::string> mask_type{"mask type", "none", this};
 
   /// Mask path
-  oops::Parameter<std::string> mask_path{"mask path", "testdata/landsea.nc", this};
+  oops::Parameter<std::string> mask_path{"mask path", "../quench/data/landsea.nc", this};
 
   /// Halo size
   oops::OptionalParameter<size_t> halo{"halo", this};
@@ -91,6 +94,7 @@ class Geometry : public util::Printable,
   size_t levels() const {return levels_;}
 
   size_t variableSize(const std::string &) const;
+  size_t maskLevel(const std::string &, const size_t &) const;
   std::vector<size_t> variableSizes(const oops::Variables & vars) const;
   void latlon(std::vector<double> &, std::vector<double> &, const bool) const {}
   bool levelsAreTopDown() const {return true;}
@@ -110,6 +114,7 @@ class Geometry : public util::Printable,
   atlas::FunctionSpace functionSpace_;
   atlas::FieldSet extraFields_;
   size_t levels_;
+  std::string lev2d_;
   std::vector<double> vunit_;
 };
 // -----------------------------------------------------------------------------

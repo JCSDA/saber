@@ -1,13 +1,19 @@
 geometry:
   function space: StructuredColumns
   grid:
-    type : regular_gaussian
-    N : 15
+    type: regular_gaussian
+    N: 15
   levels: 127
-variables: [stream_function,velocity_potential,air_temperature]
+variables:
+- stream_function
+- velocity_potential
+- air_temperature
 background:
-  date: 2010-01-01T12:00:00Z
-  state variables: [stream_function,velocity_potential,air_temperature]
+  date: '2010-01-01T12:00:00Z'
+  state variables:
+  - stream_function
+  - velocity_potential
+  - air_temperature
 saber central block:
   saber block name: gsi covariance
   gsi error covariance file: testdata/gsi-coeffs-global-l127x64y32.nc4
@@ -25,5 +31,5 @@ saber outer blocks:
   processor layout y direction: 1
   debugging mode: false
 test:
-  float relative tolerance: 1.5e-6
+  float relative tolerance: 1.5e-06
   reference filename: testref/saber_block_test_gsi_gfs_global.ref

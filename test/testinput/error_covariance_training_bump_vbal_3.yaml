@@ -15,26 +15,32 @@ bump:
   datadir: testdata
   prefix: error_covariance_training_bump_vbal_3/_MPI_-_OMP_
   testing: true
-  new_vbal: true
   update_vbal_cov: true
+  write_vbal_cov: true
+  new_vbal: true
+  write_vbal: true
   check_adjoints: true
   check_dirac: true
-  nc1: 500
-  nc2: 250
-  vbal_block: [true]
-  vbal_rad: 2000.0e3
-  vbal_diag_reg: [true]
-  vbal_pseudo_inv: true
-  vbal_pseudo_inv_var_th: 0.1
   write_samp_local: true
   write_samp_global: true
-  write_vbal: true
-  write_vbal_cov: true
+  nc1: 500
+  nc2: 250
+  vbal_block:
+  - true
+  vbal_rad: 2000.0e3
+  vbal_diag_reg:
+  - true
+  vbal_pseudo_inv: true
+  vbal_pseudo_inv_var_th: 0.1
   ndir: 1
-  londir: [0.0]
-  latdir: [0.0]
-  levdir: [1]
-  ivdir: [1]
+  londir:
+  - 0.0
+  latdir:
+  - 0.0
+  levdir:
+  - 1
+  ivdir:
+  - 1
   ensemble:
     members from template:
       template:

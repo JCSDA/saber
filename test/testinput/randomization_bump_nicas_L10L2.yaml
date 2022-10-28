@@ -40,8 +40,11 @@ background error:
         var_2d:
         - 0.0
       grids:
-      - variables: [var1]
-      - variables: [var_2d]
+      - variables:
+        - var1
+        - var2
+      - variables:
+        - var_2d
   randomization size: 25
 output:
   filepath: testdata/randomization_bump_nicas_L10L2/member

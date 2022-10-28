@@ -28,10 +28,14 @@ bump:
   pos_def_test: true
   interp_test: true
   ndir: 1
-  londir: [0.0]
-  latdir: [0.0]
-  levdir: [1]
-  ivdir: [1]
+  londir:
+  - 0.0
+  latdir:
+  - 0.0
+  levdir:
+  - 1
+  ivdir:
+  - 1
 input fields:
 - parameter: a
   component: 1

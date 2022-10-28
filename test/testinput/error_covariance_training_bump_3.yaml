@@ -1,7 +1,7 @@
 geometry:
   function space: NodeColumns
   grid:
-    name : CS-LFR-15
+    name: CS-LFR-15
   partitioner: cubedsphere
   levels: 2
   halo: 0

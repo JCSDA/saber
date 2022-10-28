@@ -160,7 +160,7 @@ void Fields::zero() {
       auto view = atlas::array::make_view<double, 2>(field);
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          if (gmaskView(jnode, jlevel) == 1) view(jnode, jlevel) = 0.0;
+          if (gmaskView(jnode, geom_->maskLevel(var, jlevel)) == 1) view(jnode, jlevel) = 0.0;
         }
       }
     }
@@ -199,7 +199,9 @@ Fields & Fields::operator+=(const Fields & rhs) {
       auto viewRhs = atlas::array::make_view<double, 2>(fieldRhs);
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          if (gmaskView(jnode, jlevel) == 1) view(jnode, jlevel) += viewRhs(jnode, jlevel);
+          if (gmaskView(jnode, geom_->maskLevel(var, jlevel)) == 1) {
+            view(jnode, jlevel) += viewRhs(jnode, jlevel);
+          }
         }
       }
     }
@@ -219,7 +221,9 @@ Fields & Fields::operator-=(const Fields & rhs) {
       auto viewRhs = atlas::array::make_view<double, 2>(fieldRhs);
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          if (gmaskView(jnode, jlevel) == 1) view(jnode, jlevel) -= viewRhs(jnode, jlevel);
+          if (gmaskView(jnode, geom_->maskLevel(var, jlevel)) == 1) {
+            view(jnode, jlevel) -= viewRhs(jnode, jlevel);
+          }
         }
       }
     }
@@ -237,7 +241,9 @@ Fields & Fields::operator*=(const double & zz) {
       auto view = atlas::array::make_view<double, 2>(field);
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          if (gmaskView(jnode, jlevel) == 1) view(jnode, jlevel) *= zz;
+          if (gmaskView(jnode, geom_->maskLevel(var, jlevel)) == 1) {
+            view(jnode, jlevel) *= zz;
+          }
         }
       }
     }
@@ -257,7 +263,7 @@ void Fields::axpy(const double & zz, const Fields & rhs) {
       auto viewRhs = atlas::array::make_view<double, 2>(fieldRhs);
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          if (gmaskView(jnode, jlevel) == 1) {
+          if (gmaskView(jnode, geom_->maskLevel(var, jlevel)) == 1) {
             view(jnode, jlevel) *= zz;
             view(jnode, jlevel) += viewRhs(jnode, jlevel);
           }
@@ -281,7 +287,7 @@ double Fields::dot_product_with(const Fields & fld2) const {
       auto view2 = atlas::array::make_view<double, 2>(field2);
       for (atlas::idx_t jnode = 0; jnode < field1.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
-          if (gmaskView(jnode, jlevel) == 1 && ghostView(jnode) == 0) {
+          if (gmaskView(jnode, geom_->maskLevel(var, jlevel)) == 1 && ghostView(jnode) == 0) {
             zz += view1(jnode, jlevel)*view2(jnode, jlevel);
           }
         }
@@ -304,7 +310,9 @@ void Fields::schur_product_with(const Fields & dx) {
       auto viewDx = atlas::array::make_view<double, 2>(fieldDx);
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          if (gmaskView(jnode, jlevel) == 1) view(jnode, jlevel) *= viewDx(jnode, jlevel);
+          if (gmaskView(jnode, geom_->maskLevel(var, jlevel)) == 1) {
+            view(jnode, jlevel) *= viewDx(jnode, jlevel);
+          }
         }
       }
     }
@@ -323,7 +331,7 @@ void Fields::random() {
     if (field.rank() == 2) {
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          if (gmaskView(jnode, jlevel) == 1 && ghostView(jnode) == 0) ++n;
+          if (gmaskView(jnode, geom_->maskLevel(var, jlevel)) == 1 && ghostView(jnode) == 0) ++n;
         }
       }
     }
@@ -386,7 +394,7 @@ void Fields::random() {
         auto view = atlas::array::make_view<double, 2>(field);
         for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
           for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-            if (gmaskView(jnode, jlevel) == 1 && ghostView(jnode) == 0) {
+            if (gmaskView(jnode, geom_->maskLevel(var, jlevel)) == 1 && ghostView(jnode) == 0) {
               view(jnode, jlevel) = rand_vec[n];
               ++n;
             }
@@ -498,8 +506,9 @@ void Fields::diff(const Fields & x1, const Fields & x2) {
       auto viewx2 = atlas::array::make_view<double, 2>(fieldx2);
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          if (gmaskView(jnode, jlevel) == 1) view(jnode, jlevel)
-            = viewx1(jnode, jlevel)-viewx2(jnode, jlevel);
+          if (gmaskView(jnode, geom_->maskLevel(var, jlevel)) == 1) {
+            view(jnode, jlevel) = viewx1(jnode, jlevel)-viewx2(jnode, jlevel);
+          }
         }
       }
     }
@@ -1150,7 +1159,7 @@ void Fields::print(std::ostream & os) const {
       auto view = atlas::array::make_view<double, 2>(field);
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          if (gmaskView(jnode, jlevel) == 1 && ghostView(jnode) == 0) {
+          if (gmaskView(jnode, geom_->maskLevel(var, jlevel)) == 1 && ghostView(jnode) == 0) {
             zz += view(jnode, jlevel)*view(jnode, jlevel);
           }
         }

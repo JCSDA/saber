@@ -42,20 +42,6 @@ class BUMPParameters : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(BUMPParameters, oops::Parameters)
 
  public:
-  // External parameters
-
-  // Ensemble 1 parameters
-  oops::OptionalParameter<eckit::LocalConfiguration> ensemble1{"ensemble", this};
-  // Ensemble 2 parameters
-  oops::OptionalParameter<eckit::LocalConfiguration> ensemble2{"lowres ensemble", this};
-  // Missing value (real)
-  oops::OptionalParameter<double> msvalr{"msvalr", this};
-  // Grids
-  oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> grids{"grids", this};
-  // Operators application
-  oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> appConfs{"operators application",
-    this};
-
   // Internal parameters
 
   // general_param
@@ -150,10 +136,6 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<bool> check_consistency{"check_consistency", this};
   // Test HDIAG optimality
   oops::OptionalParameter<bool> check_optimality{"check_optimality", this};
-  // Test BUMP with no grid point on the last MPI task
-  oops::OptionalParameter<bool> check_no_point_mpi{"check_no_point_mpi", this};
-  // Test BUMP with all grid points masked on half of the domain
-  oops::OptionalParameter<bool> check_no_point_mask{"check_no_point_mask", this};
   // Test set_parameter interface
   oops::OptionalParameter<bool> check_set_param{"check_set_param", this};
   // Test get_parameter interface
@@ -330,8 +312,6 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<int> nc1max{"nc1max", this};
   // NICAS draw type ('random' or 'octahedral')
   oops::OptionalParameter<std::string> nicas_draw_type{"nicas_draw_type", this};
-  // Network-base convolution calculation (distance-based if false)
-  oops::OptionalParameter<bool> network{"network", this};
   // Force specific support radii
   oops::OptionalParameter<bool> forced_radii{"forced_radii", this};
   // Forced horizontal support radius [in meters]
@@ -369,12 +349,8 @@ class BUMPParameters : public oops::Parameters {
 
   // output_param
 
-  // Number of neighbors for the full grid smoother
-  oops::OptionalParameter<int> full_grid_smoother_nn{"full_grid_smoother_nn", this};
   // Number of local diagnostics profiles to write (for local_diag = .true.)
   oops::OptionalParameter<int> nldwv{"nldwv", this};
-  // Index on model grid of the local diagnostics profiles to write
-  oops::OptionalParameter<std::vector<int>> img_ldwv{"img_ldwv", this};
   // Longitudes of the local diagnostics profiles to write [in degrees]
   oops::OptionalParameter<std::vector<double>> lon_ldwv{"lon_ldwv", this};
   // Latitudes of the local diagnostics profiles to write [in degrees]
@@ -400,6 +376,18 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<int> wind_nsg{"wind_nsg", this};
   // Wind inflation to compensate the Savitzky-Golay smoothing
   oops::OptionalParameter<double> wind_inflation{"wind_inflation", this};
+
+  // External parameters
+
+  // Ensemble 1 parameters
+  oops::OptionalParameter<eckit::LocalConfiguration> ensemble1{"ensemble", this};
+  // Ensemble 2 parameters
+  oops::OptionalParameter<eckit::LocalConfiguration> ensemble2{"lowres ensemble", this};
+  // Grids
+  oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> grids{"grids", this};
+  // Operators application
+  oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> appConfs{"operators application",
+    this};
 };
 
 // -----------------------------------------------------------------------------

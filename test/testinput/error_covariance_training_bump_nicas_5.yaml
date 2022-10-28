@@ -8,7 +8,7 @@ geometry:
     south: -50
     east: 170
     west: 100
-    y_numbering: +1
+    y_numbering: 1
   levels: 2
   halo: 1
 input variables: &id001
@@ -29,17 +29,23 @@ bump:
   resol: 4.0
   forced_radii: true
   rh:
-    common: [1000.0e3]
+    common:
+    - 1000.0e3
   rv:
-    common: [3.0]
+    common:
+    - 3.0
   loc_wgt:
     var1-var2: 0.5
   pos_def_test: true
   interp_test: true
   ndir: 1
-  londir: [150.0]
-  latdir: [-30.0]
-  levdir: [1]
-  ivdir: [1]
+  londir:
+  - 150.0
+  latdir:
+  - -30.0
+  levdir:
+  - 1
+  ivdir:
+  - 1
 test:
   reference filename: testref/error_covariance_training_bump_nicas_5.ref

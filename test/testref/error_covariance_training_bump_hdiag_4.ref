@@ -11,32 +11,32 @@
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-   Norm of var1:  0.27228850E+04
-   Norm of var1:  0.26850857E+04
-   Norm of var1:  0.24403267E+04
-   Norm of var1:  0.34095768E+04
-   Norm of var1:  0.27148771E+04
-   Norm of var1:  0.27733908E+04
-   Norm of var1:  0.27974612E+04
-   Norm of var1:  0.23437127E+04
-   Norm of var1:  0.26912817E+04
-   Norm of var1:  0.26636631E+04
-   Norm of var1:  0.29167476E+04
-   Norm of var1:  0.31362207E+04
-   Norm of var1:  0.27404465E+04
-   Norm of var1:  0.30654599E+04
-   Norm of var1:  0.28405211E+04
-   Norm of var1:  0.32340467E+04
-   Norm of var1:  0.30463766E+04
-   Norm of var1:  0.24527711E+04
-   Norm of var1:  0.34033916E+04
-   Norm of var1:  0.26262288E+04
-   Norm of var1:  0.34538978E+04
-   Norm of var1:  0.27352074E+04
-   Norm of var1:  0.29063824E+04
-   Norm of var1:  0.26908937E+04
-   Norm of var1:  0.21768600E+01
-       Save ensemble for     73 points total
+   Norm of var1:  0.36903538E+04
+   Norm of var1:  0.28981127E+04
+   Norm of var1:  0.30751981E+04
+   Norm of var1:  0.25979854E+04
+   Norm of var1:  0.28652678E+04
+   Norm of var1:  0.30336988E+04
+   Norm of var1:  0.36131282E+04
+   Norm of var1:  0.34522874E+04
+   Norm of var1:  0.33753894E+04
+   Norm of var1:  0.33481507E+04
+   Norm of var1:  0.35341185E+04
+   Norm of var1:  0.29567068E+04
+   Norm of var1:  0.29498175E+04
+   Norm of var1:  0.28381796E+04
+   Norm of var1:  0.31740765E+04
+   Norm of var1:  0.32296502E+04
+   Norm of var1:  0.32743750E+04
+   Norm of var1:  0.32647027E+04
+   Norm of var1:  0.31536460E+04
+   Norm of var1:  0.27848201E+04
+   Norm of var1:  0.26527988E+04
+   Norm of var1:  0.36091276E+04
+   Norm of var1:  0.28688881E+04
+   Norm of var1:  0.30889359E+04
+   Norm of var1:  0.26764056E+01
+       Save ensemble for     41 points total
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
              -90.00 deg.  ~>100-100-100-100-100-100-100-100-100-100 
@@ -53,17 +53,17 @@
           Independent levels for angular sector   1 / class   8:  1[2] 
           Independent levels for angular sector   1 / class   9:  1[2] 
           Independent levels for angular sector   1 / class  10:  1[2] 
-                Level:   1 ~> cov. at class zero:  0.99E+00
-                Level:   2 ~> cov. at class zero:  0.99E+00
-             Block var1-var1:  0.16114484E+00 for       40 diagnostic points
+                Level:   1 ~> cov. at class zero:  0.10E+01
+                Level:   2 ~> cov. at class zero:  0.10E+01
+             Block var1-var1:  0.14027083E+00 for       40 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      3602.24 km
-                                 cor. ver. support:         3.23 vertical units
+                                 cor. hor. support:      3651.67 km
+                                 cor. ver. support:         3.27 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      3645.98 km
-                                 cor. ver. support:         3.23 vertical units
-Norm of BUMP output parameter norm_m2 - 1: 4.0129902411258442e+01
-Norm of BUMP output parameter norm_m4 - 1: 1.2813655699327660e+02
-Norm of BUMP output parameter norm_kurt - 1: 1.0436762370885077e+02
+                                 cor. hor. support:      3664.85 km
+                                 cor. ver. support:         3.27 vertical units
+Norm of BUMP output parameter norm_m2 - 1: 4.1509008724597543e+01
+Norm of BUMP output parameter norm_m4 - 1: 1.3425640007237823e+02
+Norm of BUMP output parameter norm_kurt - 1: 1.0141761227466800e+02

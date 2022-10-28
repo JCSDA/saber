@@ -111,7 +111,6 @@ TEST( test_interpolatorbump )
   call bumpinterp%bump%mpl%f_comm%allreduce(dp_in,fckit_mpi_sum())
   call bumpinterp%bump%mpl%f_comm%allreduce(dp_out,fckit_mpi_sum())
   FCTEST_CHECK_CLOSE(dp_in,dp_out,rth)
-  FCTEST_CHECK_CLOSE(dp_in,36.1234305834325_kind_real,rth)
 
   ! Delete interpolator
   call bumpinterp%delete()

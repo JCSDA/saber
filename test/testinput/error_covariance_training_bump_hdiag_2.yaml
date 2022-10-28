@@ -18,25 +18,26 @@ bump:
   parallel_io: false
   method: cor
   strategy: specific_univariate
+  load_mom: true
   new_hdiag: true
   write_hdiag: true
+  fname_samp: error_covariance_training_bump_hdiag_1/_MPI_-_OMP__sampling
+  fname_mom:
+  - error_covariance_training_bump_hdiag_1/_MPI_-_OMP__mom
+  ens1_ne: 25
   load_samp_local: true
-  load_mom: true
   nc1: 500
   nc2: 250
   nc3: 10
   nc4: 4
   dc: 800.0e3
   nl0r: 2
-  ens1_ne: 25
+  samp_interp_type: c1
   ne: 25
   local_diag: true
   local_rad: 1000.0e3
   diag_rhflt: 3000.0e3
   fit_ncmp: 2
-  samp_interp_type: c1
-  fname_samp: error_covariance_training_bump_hdiag_1/_MPI_-_OMP__sampling
-  fname_mom: [error_covariance_training_bump_hdiag_1/_MPI_-_OMP__mom]
 output:
 - parameter: cor_a
   component: 1

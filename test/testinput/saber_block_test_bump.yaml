@@ -34,8 +34,10 @@ saber outer blocks:
     new_var: true
     forced_var: true
     stddev:
-      var1: [1.0]
-      var2: [2.0]
+      var1:
+      - 1.0
+      var2:
+      - 2.0
 - saber block name: StdDev
   input fields:
   - parameter: StdDev
@@ -46,13 +48,18 @@ saber outer blocks:
     datadir: testdata
     prefix: saber_block_test_bump/_MPI_-_OMP_
     testing: true
-    vbal_block: [true]      
+    vbal_block:
+    - true
     load_vbal: true
     load_samp_local: true
     fname_samp: error_covariance_training_bump_vbal_1/_MPI_-_OMP__sampling
     fname_vbal: error_covariance_training_bump_vbal_1/_MPI_-_OMP__vbal
 - saber block name: BUMP_PsiChiToUV
-  active variables: [var1,var2,var3,var4]
+  active variables:
+  - var1
+  - var2
+  - var3
+  - var4
   bump:
     datadir: testdata
     prefix: saber_block_test_bump/_MPI_-_OMP_

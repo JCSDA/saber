@@ -1,15 +1,19 @@
 geometry:
   function space: StructuredColumns
   grid:
-    type : regular_gaussian
-    N : 2
+    type: regular_gaussian
+    N: 2
   levels: 3
   partitioner: ectrans
   halo: 1
-variables: &vars [eastward_wind,northward_wind]
+variables:
+- eastward_wind
+- northward_wind
 background:
-  date: 2010-01-01T12:00:00Z
-  state variables: [eastward_wind,northward_wind]
+  date: '2010-01-01T12:00:00Z'
+  state variables:
+  - eastward_wind
+  - northward_wind
 saber central block:
   saber block name: ID
 saber outer blocks:

@@ -1,7 +1,7 @@
 #:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: type_nicas_cmp
-!> NICAS data block derived type
+!> NICAS data component derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
 ! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
@@ -471,7 +471,7 @@ subroutine nicas_cmp_partial_dealloc(nicas_cmp)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data block
+class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data component
 
 ! Local variables
 integer :: il1,isb
@@ -564,7 +564,7 @@ subroutine nicas_cmp_dealloc(nicas_cmp)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data block
+class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data component
 
 ! Local variables
 integer :: il1
@@ -731,7 +731,7 @@ subroutine nicas_cmp_write_local_def(nicas_cmp,mpl)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data block
+class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data component
 type(mpl_type),intent(inout) :: mpl              !< MPI data
 
 ! Local variables
@@ -794,7 +794,7 @@ subroutine nicas_cmp_write_local_data(nicas_cmp,mpl,geom)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data block
+class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data component
 type(mpl_type),intent(inout) :: mpl           !< MPI data
 type(geom_type),intent(in) :: geom            !< Geometry
 
@@ -848,7 +848,7 @@ subroutine nicas_cmp_buffer_size(nicas_cmp,mpl,geom,nbufi,nbufr,nbufl)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data block
+class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data component
 type(mpl_type),intent(inout) :: mpl           !< MPI data
 type(geom_type),intent(in) :: geom            !< Geometry
 integer,intent(inout) :: nbufi                !< Buffer size (integer)
@@ -927,7 +927,7 @@ subroutine nicas_cmp_serialize(nicas_cmp,mpl,geom,nbufi,nbufr,nbufl,ibufi,ibufr,
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data block
+class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data component
 type(mpl_type),intent(inout) :: mpl           !< MPI data
 type(geom_type),intent(in) :: geom            !< Geometry
 integer,intent(in) :: nbufi                   !< Buffer size (integer)
@@ -1054,7 +1054,7 @@ subroutine nicas_cmp_deserialize(nicas_cmp,mpl,geom,nbufi,nbufr,nbufl,ibufi,ibuf
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data block
+class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data component
 type(mpl_type),intent(inout) :: mpl              !< MPI data
 type(geom_type),intent(in) :: geom               !< Geometry
 integer,intent(in) :: nbufi                      !< Buffer size (integer)
@@ -1782,7 +1782,7 @@ subroutine nicas_cmp_write_grids_def(nicas_cmp,mpl)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data block
+class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data component
 type(mpl_type),intent(inout) :: mpl              !< MPI data
 
 ! Local variables
@@ -1830,7 +1830,7 @@ subroutine nicas_cmp_write_grids_data(nicas_cmp,mpl,nam)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data block
+class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data component
 type(mpl_type),intent(inout) :: mpl           !< MPI data
 type(nam_type),intent(in) :: nam              !< Namelist
 
@@ -1911,7 +1911,7 @@ subroutine nicas_cmp_compute_parameters(nicas_cmp,mpl,rng,nam,geom)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data block
+class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data component
 type(mpl_type),intent(inout) :: mpl              !< MPI data
 type(rng_type),intent(inout) :: rng              !< Random number generator
 type(nam_type),intent(in) :: nam                 !< Namelist
@@ -2019,7 +2019,7 @@ subroutine nicas_cmp_compute_parameters_horizontal_smoother(nicas_cmp,mpl,rng,na
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data block
+class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data component
 type(mpl_type),intent(inout) :: mpl              !< MPI data
 type(rng_type),intent(inout) :: rng              !< Random number generator
 type(nam_type),intent(in) :: nam                 !< Namelist
@@ -2062,7 +2062,7 @@ subroutine nicas_cmp_compute_vertical(nicas_cmp,mpl,nam,geom)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data block
+class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data component
 type(mpl_type),intent(inout) :: mpl              !< MPI data
 type(nam_type),intent(in) :: nam                 !< Namelist
 type(geom_type),intent(in) :: geom               !< Geometry
@@ -2247,7 +2247,7 @@ subroutine nicas_cmp_compute_horizontal(nicas_cmp,mpl,rng,nam,geom)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data block
+class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data component
 type(mpl_type),intent(inout) :: mpl              !< MPI data
 type(rng_type),intent(inout) :: rng              !< Random number generator
 type(nam_type),intent(in) :: nam                 !< Namelist
@@ -3102,7 +3102,7 @@ subroutine nicas_cmp_compute_convol(nicas_cmp,mpl,nam,geom)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data block
+class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data component
 type(mpl_type),intent(inout) :: mpl              !< MPI data
 type(nam_type),intent(in) :: nam                 !< Namelist
 type(geom_type),intent(in) :: geom               !< Geometry
@@ -3347,7 +3347,7 @@ subroutine nicas_cmp_compute_convol_distance(nicas_cmp,mpl,nam,geom)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data block
+class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data component
 type(mpl_type),intent(inout) :: mpl              !< MPI data
 type(nam_type),intent(in) :: nam                 !< Namelist
 type(geom_type),intent(in) :: geom               !< Geometry
@@ -3508,7 +3508,7 @@ subroutine nicas_cmp_compute_convol_weights(nicas_cmp,mpl,geom)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data block
+class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data component
 type(mpl_type),intent(inout) :: mpl              !< MPI data
 type(geom_type),intent(in) :: geom               !< Geometry
 
@@ -3602,7 +3602,7 @@ subroutine nicas_cmp_compute_internal_normalization(nicas_cmp,mpl,nam)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data block
+class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data component
 type(mpl_type),intent(inout) :: mpl              !< MPI data
 type(nam_type),intent(in) :: nam                 !< Namelist
 
@@ -3676,7 +3676,7 @@ subroutine nicas_cmp_compute_normalization(nicas_cmp,mpl,nam,geom)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data block
+class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data component
 type(mpl_type),intent(inout) :: mpl              !< MPI data
 type(nam_type),intent(in) :: nam                 !< Namelist
 type(geom_type),intent(in) :: geom               !< Geometry
@@ -3939,7 +3939,7 @@ subroutine nicas_cmp_apply_horizontal_smoother(nicas_cmp,mpl,geom,il0,fld)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp   !< NICAS data block
+class(nicas_cmp_type),intent(in) :: nicas_cmp   !< NICAS data component
 type(mpl_type),intent(inout) :: mpl             !< MPI data
 type(geom_type),intent(in) :: geom              !< Geometry
 integer,intent(in) :: il0                       !< Level index
@@ -4010,7 +4010,7 @@ subroutine nicas_cmp_apply_sqrt(nicas_cmp,mpl,geom,cv_cmp,fld)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp          !< NICAS data block
+class(nicas_cmp_type),intent(in) :: nicas_cmp          !< NICAS data component
 type(mpl_type),intent(inout) :: mpl                    !< MPI data
 type(geom_type),intent(in) :: geom                     !< Geometry
 type(cv_cmp_type),intent(in) :: cv_cmp                 !< Control vector component
@@ -4069,7 +4069,7 @@ subroutine nicas_cmp_apply_sqrt_ad(nicas_cmp,mpl,geom,fld,cv_cmp)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp         !< NICAS data block
+class(nicas_cmp_type),intent(in) :: nicas_cmp         !< NICAS data component
 type(mpl_type),intent(inout) :: mpl                   !< MPI data
 type(geom_type),intent(in) :: geom                    !< Geometry
 real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0) !< Field
@@ -4128,7 +4128,7 @@ subroutine nicas_cmp_apply_convol_sqrt(nicas_cmp,mpl,alpha)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp         !< NICAS data block
+class(nicas_cmp_type),intent(in) :: nicas_cmp         !< NICAS data component
 type(mpl_type),intent(inout) :: mpl                   !< MPI data
 real(kind_real),intent(inout) :: alpha(nicas_cmp%nsa) !< Subgrid field
 
@@ -4164,7 +4164,7 @@ subroutine nicas_cmp_apply_convol_sqrt_ad(nicas_cmp,mpl,alpha)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp         !< NICAS data block
+class(nicas_cmp_type),intent(in) :: nicas_cmp         !< NICAS data component
 type(mpl_type),intent(inout) :: mpl                   !< MPI data
 real(kind_real),intent(inout) :: alpha(nicas_cmp%nsa) !< Subgrid field
 
@@ -4200,7 +4200,7 @@ subroutine nicas_cmp_apply_interp(nicas_cmp,mpl,geom,alpha,fld)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp          !< NICAS data block
+class(nicas_cmp_type),intent(in) :: nicas_cmp          !< NICAS data component
 type(mpl_type),intent(inout) :: mpl                    !< MPI data
 type(geom_type),intent(in) :: geom                     !< Geometry
 real(kind_real),intent(in) :: alpha(nicas_cmp%nsb)     !< Subgrid field
@@ -4235,7 +4235,7 @@ subroutine nicas_cmp_apply_interp_ad(nicas_cmp,mpl,geom,fld,alpha)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp         !< NICAS data block
+class(nicas_cmp_type),intent(in) :: nicas_cmp         !< NICAS data component
 type(mpl_type),intent(inout) :: mpl                   !< MPI data
 type(geom_type),intent(in) :: geom                    !< Geometry
 real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0) !< Field
@@ -4270,7 +4270,7 @@ subroutine nicas_cmp_apply_interp_horizontal(nicas_cmp,mpl,geom,alpha,gamma)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp                 !< NICAS data block
+class(nicas_cmp_type),intent(in) :: nicas_cmp                 !< NICAS data component
 type(mpl_type),intent(inout) :: mpl                           !< MPI data
 type(geom_type),intent(in) :: geom                            !< Geometry
 real(kind_real),intent(in) :: alpha(nicas_cmp%nsb)            !< Subgrid field
@@ -4319,7 +4319,7 @@ subroutine nicas_cmp_apply_interp_horizontal_ad(nicas_cmp,mpl,geom,gamma,alpha)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp                !< NICAS data block
+class(nicas_cmp_type),intent(in) :: nicas_cmp                !< NICAS data component
 type(mpl_type),intent(inout) :: mpl                          !< MPI data
 type(geom_type),intent(in) :: geom                           !< Geometry
 real(kind_real),intent(in) :: gamma(geom%nc0a,nicas_cmp%nl1) !< Subset Sc0 field, subset of levels
@@ -4368,7 +4368,7 @@ subroutine nicas_cmp_apply_interp_vertical(nicas_cmp,mpl,geom,gamma,fld)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp                !< NICAS data block
+class(nicas_cmp_type),intent(in) :: nicas_cmp                !< NICAS data component
 type(mpl_type),intent(inout) :: mpl                          !< MPI data
 type(geom_type),intent(in) :: geom                           !< Geometry
 real(kind_real),intent(in) :: gamma(geom%nc0a,nicas_cmp%nl1) !< Subset Sc0 field, subset of levels
@@ -4425,7 +4425,7 @@ subroutine nicas_cmp_apply_interp_vertical_ad(nicas_cmp,mpl,geom,fld,gamma)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp                 !< NICAS data block
+class(nicas_cmp_type),intent(in) :: nicas_cmp                 !< NICAS data component
 type(mpl_type),intent(inout) :: mpl                           !< MPI data
 type(geom_type),intent(in) :: geom                            !< Geometry
 real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0)         !< Field
@@ -4477,7 +4477,7 @@ subroutine nicas_cmp_test_adjoint(nicas_cmp,mpl,rng,nam,geom,bpar)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data block
+class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data component
 type(mpl_type),intent(inout) :: mpl           !< MPI data
 type(rng_type),intent(inout) :: rng           !< Random number generator
 type(nam_type),intent(in) :: nam              !< Namelist
@@ -4709,7 +4709,7 @@ subroutine nicas_cmp_test_normalization(nicas_cmp,mpl,rng,nam,geom)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data block
+class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data component
 type(mpl_type),intent(inout) :: mpl           !< MPI data
 type(rng_type),intent(inout) :: rng           !< Random number generator
 type(nam_type),intent(in) :: nam              !< Namelist
@@ -4768,33 +4768,7 @@ do itest=1,nam%check_normalization
    call mpl%f_comm%broadcast(norm,iproc(itest)-1)
    val(itest) = norm
 end do
-write(mpl%test,'(a16,a,f10.7,a,f10.7,a,i6,a)') '','Min / max:',minval(val),' / ',maxval(val),' over ', &
- & nam%check_normalization,' tests'
-if (nicas_cmp%verbosity) call mpl%flush
-
-! Check normalization
-write(mpl%info,'(a10,a)') '','Check normalization'
-if (nicas_cmp%verbosity) call mpl%flush
-do itest=1,nam%check_normalization
-   ! Allocation
-   call cv_cmp%alloc(mpl,nicas_cmp%nsa)
-
-   ! Initialization
-   fld = zero
-   if (mpl%myproc==iproc(itest)) fld(ic0a(itest),il0(itest)) = one
-
-   ! Apply NICAS square-root adjoint
-   call nicas_cmp%apply_sqrt_ad(mpl,geom,fld,cv_cmp)
-
-   ! Apply NICAS square-root
-   call nicas_cmp%apply_sqrt(mpl,geom,cv_cmp,fld)
-
-   ! Broadcast normalization value
-   if (mpl%myproc==iproc(itest)) norm = fld(ic0a(itest),il0(itest))
-   call mpl%f_comm%broadcast(norm,iproc(itest)-1)
-   val(itest) = norm
-end do
-write(mpl%test,'(a16,a,f10.7,a,f10.7,a,i6,a)') '','Min / max:',minval(val),' / ',maxval(val),' over ', &
+write(mpl%test,'(a13,a,f10.7,a,f10.7,a,i6,a)') '','Min / max:',minval(val),' / ',maxval(val),' over ', &
  & nam%check_normalization,' tests'
 if (nicas_cmp%verbosity) call mpl%flush
 
@@ -4815,7 +4789,7 @@ subroutine nicas_cmp_test_normalization_horizontal_smoother(nicas_cmp,mpl,rng,na
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data block
+class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data component
 type(mpl_type),intent(inout) :: mpl           !< MPI data
 type(rng_type),intent(inout) :: rng           !< Random number generator
 type(nam_type),intent(in) :: nam              !< Namelist
@@ -4863,7 +4837,7 @@ do itest=1,nam%check_normalization
    call mpl%f_comm%allreduce(norm,fckit_mpi_sum())
    val(itest) = norm
 end do
-write(mpl%test,'(a16,a,f10.7,a,f10.7,a,i6,a)') '','Min / max:',minval(val),' / ',maxval(val),' over ', &
+write(mpl%test,'(a13,a,f10.7,a,f10.7,a,i6,a)') '','Min / max:',minval(val),' / ',maxval(val),' over ', &
  & nam%check_normalization,' tests'
 if (nicas_cmp%verbosity) call mpl%flush
 
@@ -4884,7 +4858,7 @@ function nicas_cmp_c1_to_c1a(nicas_cmp,ic1,il1) result(ic1a)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data block
+class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data component
 integer,intent(in) :: ic1                     !< Global index
 integer,intent(in) :: il1                     !< Level index
 
@@ -4920,7 +4894,7 @@ function nicas_cmp_c1_to_proc(nicas_cmp,ic1,il1) result(iproc)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data block
+class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data component
 integer,intent(in) :: ic1                     !< Global index
 integer,intent(in) :: il1                     !< Level index
 
@@ -4955,7 +4929,7 @@ function nicas_cmp_c1_to_c1u(nicas_cmp,ic1,il1) result(ic1u)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data block
+class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data component
 integer,intent(in) :: ic1                     !< Global index
 integer,intent(in) :: il1                     !< Level index
 
@@ -5005,7 +4979,7 @@ function nicas_cmp_s_to_sa(nicas_cmp,is) result(isa)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data block
+class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data component
 integer,intent(in) :: is                      !< Global index
 
 ! Returned variable
@@ -5040,7 +5014,7 @@ function nicas_cmp_s_to_proc(nicas_cmp,is) result(iproc)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data block
+class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data component
 integer,intent(in) :: is                      !< Global index
 
 ! Returned variable
@@ -5074,7 +5048,7 @@ function nicas_cmp_s_to_su(nicas_cmp,is) result(isu)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data block
+class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data component
 integer,intent(in) :: is                      !< Global index
 
 ! Returned variable

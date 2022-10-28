@@ -139,9 +139,9 @@ if( oops_FOUND )
 
     # Setup SABER directories and links
     message( STATUS "Setup SABER directories and links" )
-#    file( REMOVE_RECURSE ${CMAKE_CURRENT_BINARY_DIR}/testdata )
-#    file( REMOVE_RECURSE ${CMAKE_CURRENT_BINARY_DIR}/testinput )
-#    file( REMOVE_RECURSE ${CMAKE_CURRENT_BINARY_DIR}/testref )
+    file( REMOVE_RECURSE ${CMAKE_CURRENT_BINARY_DIR}/testdata )
+    file( REMOVE_RECURSE ${CMAKE_CURRENT_BINARY_DIR}/testinput )
+    file( REMOVE_RECURSE ${CMAKE_CURRENT_BINARY_DIR}/testref )
     file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testdata )
     file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testinput )
     file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref )
@@ -176,8 +176,14 @@ if( oops_FOUND )
     # List of MPI/OpenMP configurations to test
     list( APPEND mpi_list 1)
     list( APPEND omp_list 1)
-    list( APPEND mpi_list 3)
-    list( APPEND omp_list 2)
+    if( SABER_TEST_MPI )
+        list( APPEND mpi_list 2)
+        list( APPEND omp_list 1)
+    endif()
+    if( SABER_TEST_OMP )
+        list( APPEND mpi_list 1)
+        list( APPEND omp_list 2)
+    endif()  
 
     # Loop over MPI/OpenMP configurations
     foreach( mpi omp IN ZIP_LISTS mpi_list omp_list )
@@ -271,19 +277,21 @@ if( oops_FOUND )
                                   DEPENDS saber_quench_convertstate.x )
             endif()
         endforeach()
+
+        # BUMP interpolator test
+        add_fctest( TARGET          saber_test_interpolatorbump_${mpi}-${omp}
+                    MPI             ${mpi}
+                    OMP             ${omp}
+                    LINKER_LANGUAGE Fortran
+                    SOURCES         fctest/fctest_interpolatorbump.F90
+                    LIBS            saber )
+
+        # NICAS square-root test
+        add_fctest( TARGET          saber_test_nicas_sqrt_${mpi}-${omp}
+                    MPI             ${mpi}
+                    OMP             ${omp}
+                    LINKER_LANGUAGE Fortran
+                    SOURCES         fctest/fctest_nicas_sqrt.F90
+                    LIBS            saber )
     endforeach()
 endif()
-
-# Add BUMP interpolator test
-add_fctest( TARGET          saber_test_interpolatorbump
-            MPI             2
-            LINKER_LANGUAGE Fortran
-            SOURCES         fctest/fctest_interpolatorbump.F90
-            LIBS            saber )
-
-# Add NICAS square-root test
-add_fctest( TARGET          saber_test_nicas_sqrt
-            MPI             2
-            LINKER_LANGUAGE Fortran
-            SOURCES         fctest/fctest_nicas_sqrt.F90
-            LIBS            saber )

@@ -915,6 +915,9 @@ if (nam%check_normalization>0) then
                call nicas%blk(ib)%cmp(icmp)%test_normalization(mpl,rng,nam,geom)
             end if
          end do
+         write(mpl%info,'(a7,a)') '','All components:'
+         call mpl%flush
+         call nicas%blk(ib)%test_normalization(mpl,rng,nam,geom)
       end if
    end do
 end if

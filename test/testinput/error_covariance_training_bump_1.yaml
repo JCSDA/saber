@@ -13,8 +13,8 @@ background:
 bump:
   datadir: testdata
   prefix: error_covariance_training_bump_1/_MPI_-_OMP_
-  testing: true
   colorlog: true
+  testing: true
 output:
 - parameter: lon
   file:

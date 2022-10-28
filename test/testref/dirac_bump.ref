@@ -31,7 +31,7 @@ Fields:
           nc1 =      500
           nc2 =      250
           Independent levels:  1[2] 
-Norm of input parameter StdDev: 5.4259097816665630e+01
+Norm of input parameter StdDev: 5.4476873479641306e+01
        Independent levels:  1[2] 
           Level   1:   1550418632
           Level   2:   1550418632
@@ -45,7 +45,7 @@ Norm of input parameter StdDev: 5.4259097816665630e+01
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-Norm of input parameter stddev: 5.4259097816665630e+01
+Norm of input parameter stddev: 5.4476873479641306e+01
        Independent levels:  1[2] 
           Level   1:   1550418632
           Level   2:   1550418632
@@ -59,7 +59,7 @@ Norm of input parameter stddev: 5.4259097816665630e+01
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-Norm of input parameter universe radius: 1.4464877466206735e+08
+Norm of input parameter universe radius: 2.0111448170280799e+08
        Independent levels:  1[2] 
           Level   1:   1550418632
           Level   2:   1550418632
@@ -88,5 +88,5 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var3: 8.6569718253692244e-14
-  var4: 4.1111081318988386e-14
+  var3: 9.5585030041134374e-14
+  var4: 3.9628973565419997e-14

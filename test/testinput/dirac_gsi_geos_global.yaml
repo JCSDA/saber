@@ -17,21 +17,28 @@ background error:
     processor layout y direction: 1
     debugging mode: false
 dirac:
-  lon: [0.0]
-  lat: [0.0]
-  level: [1]
-  variable: [stream_function]
+  lon:
+  - 0.0
+  lat:
+  - 0.0
+  level:
+  - 1
+  variable:
+  - stream_function
 geometry:
   function space: StructuredColumns
   grid:
-    type : regular_gaussian
-    N : 15
+    type: regular_gaussian
+    N: 15
   levels: 72
 initial condition:
-  date: 2010-01-01T12:00:00Z
-  state variables: [stream_function,velocity_potential,air_temperature]
+  date: '2010-01-01T12:00:00Z'
+  state variables:
+  - stream_function
+  - velocity_potential
+  - air_temperature
 output dirac:
   filepath: testdata/dirac_gsi_geos_global/dirac_%id%
 test:
-  float relative tolerance: 1.5e-6
+  float relative tolerance: 1.5e-06
   reference filename: testref/dirac_gsi_geos_global.ref

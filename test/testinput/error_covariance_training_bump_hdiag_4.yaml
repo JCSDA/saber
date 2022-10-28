@@ -25,17 +25,17 @@ bump:
   testing: true
   method: cor
   strategy: diag_all
+  new_normality: true
   new_hdiag: true
   write_hdiag: true
-  new_normality: true
   diag_draw_type: octahedral
-  avg_nbins: 10
   nc1: 500
   nc3: 10
   dc: 800.0e3
   nl0r: 2
   ne: 25
   gen_kurt_th: 4.0
+  avg_nbins: 10
 output:
 - parameter: norm_m2
   file:

@@ -807,8 +807,8 @@ call mpl%flush
 ! Allocation
 allocate(geom%myuniverse(mpl%nproc))
 
-if (mpl%nproc<=2) then
-   ! Single- or dual-processors case
+if (mpl%nproc==1) then
+   ! Single-processors case
    geom%myuniverse = .true.
 else
    ! Allocation
@@ -2064,7 +2064,7 @@ s_to_cx = s_to_cx(order_s)
 
 ! Grid hash
 gmask_s = .true.
-call grid_hash(mpl,ns,lon_s,lat_s,gmask_s,hash)
+call grid_hash(ns,lon_s,lat_s,gmask_s,hash)
 
 ! Test grid hash
 write(cfmt,'(a,i2.2,a)') '(a',ifmt+3,',a,i12)'

@@ -79,8 +79,6 @@ type nam_type
    logical :: check_randomization                             !< Test NICAS randomization
    logical :: check_consistency                               !< Test HDIAG-NICAS consistency
    logical :: check_optimality                                !< Test HDIAG optimality
-   logical :: check_no_point_mpi                              !< Test BUMP with no grid point on the last MPI task
-   logical :: check_no_point_mask                             !< Test BUMP with all grid points masked on half of the domain
 
    ! files_param
    character(len=1024),dimension(0:nsubmax) :: fname_var      !< Variance files
@@ -169,7 +167,6 @@ type nam_type
    real(kind_real) :: resol                                   !< Resolution
    integer :: nc1max                                          !< Maximum size of the Sc1 subset
    character(len=1024) :: nicas_draw_type                     !< NICAS draw type ('random' or 'octahedral')
-   logical :: network                                         !< Network-base convolution calculation (distance-based if false)
    logical :: forced_radii                                    !< Force specific support radii
    integer :: ncmp(0:nvmax)                                   !< Forced number of components
    real(kind_real) :: rh(nl0max,0:nvmax)                      !< Forced horizontal support radius [in meters]
@@ -190,9 +187,7 @@ type nam_type
    integer :: ivdir(ndirmax)                                  !< Diracs variable indices
 
    ! output_param
-   integer :: full_grid_smoother_nn                           !< Number of neighbors for the full grid smoother
    integer :: nldwv                                           !< Number of local diagnostics profiles to write (for local_diag = .true.)
-   integer :: img_ldwv(nldwvmax)                              !< Index on model grid of the local diagnostics profiles to write
    real(kind_real) :: lon_ldwv(nldwvmax)                      !< Longitudes of the local diagnostics profiles to write [in degrees]
    real(kind_real) :: lat_ldwv(nldwvmax)                      !< Latitudes of the local diagnostics profiles to write [in degrees]
    character(len=1024),dimension(nldwvmax) :: name_ldwv       !< Name of the local diagnostics profiles to write
@@ -295,8 +290,6 @@ nam%check_dirac = .false.
 nam%check_randomization = .false.
 nam%check_consistency = .false.
 nam%check_optimality = .false.
-nam%check_no_point_mpi = .false.
-nam%check_no_point_mask = .false.
 
 ! files_param default
 do isub=0,nsubmax
@@ -405,7 +398,6 @@ nam%write_hdiag_detail = .false.
 nam%resol = zero
 nam%nc1max = 15000
 nam%nicas_draw_type = 'random'
-nam%network = .false.
 nam%forced_radii = .false.
 nam%ncmp = 1
 nam%rh = -one
@@ -426,9 +418,7 @@ nam%levdir = 0
 nam%ivdir = 0
 
 ! output_param default
-nam%full_grid_smoother_nn = 0
 nam%nldwv = 0
-nam%img_ldwv = 0
 nam%lon_ldwv = zero
 nam%lat_ldwv = zero
 do ildwv=1,nldwvmax
@@ -545,8 +535,6 @@ if (conf%has('check_dirac')) call conf%get_or_die('check_dirac',nam%check_dirac)
 if (conf%has('check_randomization')) call conf%get_or_die('check_randomization',nam%check_randomization)
 if (conf%has('check_consistency')) call conf%get_or_die('check_consistency',nam%check_consistency)
 if (conf%has('check_optimality')) call conf%get_or_die('check_optimality',nam%check_optimality)
-if (conf%has('check_no_point_mpi')) call conf%get_or_die('check_no_point_mpi',nam%check_no_point_mpi)
-if (conf%has('check_no_point_mask')) call conf%get_or_die('check_no_point_mask',nam%check_no_point_mask)
 
 ! files_param
 if (conf%has('fname_var')) then
@@ -802,7 +790,6 @@ if (conf%has('nicas_draw_type')) then
    call conf%get_or_die('nicas_draw_type',str)
    nam%nicas_draw_type = str
 end if
-if (conf%has('network')) call conf%get_or_die('network',nam%network)
 if (conf%has('forced_radii')) call conf%get_or_die('forced_radii',nam%forced_radii)
 if (conf%has('ncmp')) then
    call conf%get_or_die('ncmp',subconf)
@@ -959,17 +946,7 @@ if (conf%has('ivdir')) then
 end if
 
 ! output_param
-if (conf%has('full_grid_smoother_nn')) call conf%get_or_die('full_grid_smoother_nn',nam%full_grid_smoother_nn)
 if (conf%has('nldwv')) call conf%get_or_die('nldwv',nam%nldwv)
-if (conf%has('img_ldwv')) then
-   call conf%get_or_die('img_ldwv',integer_array)
-   if (size(integer_array)>nldwvmax) then
-      write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: img_ldwv size should be smaller than ',nldwvmax
-      call flush(output_unit)
-      call comm%abort(1)
-   end if
-   nam%img_ldwv(1:size(integer_array)) = integer_array
-end if
 if (conf%has('lon_ldwv')) then
    call conf%get_or_die('lon_ldwv',real_array)
    if (size(real_array)>nldwvmax) then
@@ -1148,8 +1125,6 @@ if (nam%check_optimality) then
    if (.not.nam%new_hdiag) call mpl%abort('${subr}$','new_hdiag required for check_optimality')
    if (nam%new_nicas) call mpl%abort('${subr}$','new_nicas forbidden for check_optimality')
 end if
-if (nam%check_no_point_mpi.and.nam%check_no_point_mask) &
- & call mpl%abort('${subr}$','check_no_point_mpi and check_no_point_mask are exclusive')
 
 ! Check and set files_param
 nam%fname_var_used = any(nam%fname_var/='')
@@ -1435,9 +1410,6 @@ if (nam%interp_test.and.(.not.(nam%new_nicas.or.nam%load_nicas_global))) &
  & call mpl%abort('${subr}$','new_nicas or load_nicas_global required for interp_test')
 if (nam%load_nicas_local.and.nam%write_nicas_global) &
  & call mpl%abort('${subr}$','load_nicas_local and write_nicas_global are exclusive')
-if (nam%new_nicas) then
-   if (nam%network) call mpl%abort('${subr}$','network method not re-implemented yet')
-end if
 
 ! Check dirac_param
 if (nam%check_dirac) then
@@ -1455,16 +1427,14 @@ if (nam%new_hdiag) then
    if (nam%nldwv<0) call mpl%abort('${subr}$','nldwv should be non-negative')
    if (nam%nldwv>0) then
       if (.not.nam%local_diag) call mpl%abort('${subr}$','local_diag required for nldwv>0')
-         if (.not.all(nam%img_ldwv(1:nam%nldwv)>0)) then
-         if (any(nam%lon_ldwv(1:nam%nldwv)<-pi).or.any(nam%lon_ldwv(1:nam%nldwv)>pi)) &
+      if (any(nam%lon_ldwv(1:nam%nldwv)<-pi).or.any(nam%lon_ldwv(1:nam%nldwv)>pi)) &
  & call mpl%abort('${subr}$','lon_ldwv should lie between -180 and 180')
-         if (any(nam%lat_ldwv(1:nam%nldwv)<-half*pi).or.any(nam%lat_ldwv(1:nam%nldwv)>half*pi)) &
+      if (any(nam%lat_ldwv(1:nam%nldwv)<-half*pi).or.any(nam%lat_ldwv(1:nam%nldwv)>half*pi)) &
  & call mpl%abort('${subr}$','lat_ldwv should lie between -90 and 90')
-         do ildwv=1,nam%nldwv
-            write(ildwvchar,'(i2.2)') ildwv
-            if (nam%name_ldwv(ildwv)=='') call mpl%abort('${subr}$','name_ldwv not specified for profile '//ildwvchar)
-         end do
-      end if
+      do ildwv=1,nam%nldwv
+         write(ildwvchar,'(i2.2)') ildwv
+         if (nam%name_ldwv(ildwv)=='') call mpl%abort('${subr}$','name_ldwv not specified for profile '//ildwvchar)
+      end do
    end if
 end if
 
@@ -1553,8 +1523,6 @@ call mpl%write('check_dirac',nam%check_dirac)
 call mpl%write('check_randomization',nam%check_randomization)
 call mpl%write('check_consistency',nam%check_consistency)
 call mpl%write('check_optimality',nam%check_optimality)
-call mpl%write('check_no_point_mpi',nam%check_no_point_mpi)
-call mpl%write('check_no_point_mask',nam%check_no_point_mask)
 
 ! files_param
 call mpl%write('fname_var',count(nam%fname_var/=''),nam%fname_var(0:count(nam%fname_var/='')-1))
@@ -1659,7 +1627,6 @@ call mpl%flush
 call mpl%write('resol',nam%resol)
 call mpl%write('nc1max',nam%nc1max)
 call mpl%write('nicas_draw_type',nam%nicas_draw_type)
-call mpl%write('network',nam%network)
 call mpl%write('ncmp',nam%nv+1,nam%ncmp(0:nam%nv))
 call mpl%write('forced_radii',nam%forced_radii)
 profiles(1:nam%nl0*(nam%nv+1)) = reshape(nam%rh(1:nam%nl0,0:nam%nv),(/nam%nl0*(nam%nv+1)/))
@@ -1693,9 +1660,7 @@ call mpl%write('ivdir',nam%ndir,nam%ivdir(1:nam%ndir))
 ! output_param
 write(mpl%info,'(a7,a)') '','Output parameters'
 call mpl%flush
-call mpl%write('full_grid_smoother_nn',nam%full_grid_smoother_nn)
 call mpl%write('nldwv',nam%nldwv)
-call mpl%write('img_ldwv',nam%nldwv,nam%img_ldwv(1:nam%nldwv))
 allocate(lon_ldwv(nam%nldwv))
 allocate(lat_ldwv(nam%nldwv))
 if (nam%nldwv>0) then

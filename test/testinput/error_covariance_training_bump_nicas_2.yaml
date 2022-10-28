@@ -32,10 +32,14 @@ bump:
   check_dirac: true
   fname_nicas: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas
   ndir: 1
-  londir: [0.0]
-  latdir: [0.0]
-  levdir: [1]
-  ivdir: [1]
+  londir:
+  - 0.0
+  latdir:
+  - 0.0
+  levdir:
+  - 1
+  ivdir:
+  - 1
 input fields:
 - parameter: nicas_a
   component: 1
