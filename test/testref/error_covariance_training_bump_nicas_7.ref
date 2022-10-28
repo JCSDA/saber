@@ -38,62 +38,62 @@
              Effective levels:   1   2   3   4   5   6   7   8   9  10 
                    Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
                    Estimated nc1 from horizontal support radius:     9424
-                   Decimate full grid, at least      762 points required
-                        762 valid points found
+                      Decimate full grid, at least      762 points required,     762 valid points found
+                      Subgrid hash:   1550418632
                    Final nc1:      762
                    Effective horizontal resolution:  1.14
                    Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
                    Estimated nc1 from horizontal support radius:     9424
-                   Decimate full grid, at least      762 points required
-                        762 valid points found
+                      Decimate full grid, at least      762 points required,     762 valid points found
+                      Subgrid hash:   1550418632
                    Final nc1:      762
                    Effective horizontal resolution:  1.14
                    Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
                    Estimated nc1 from horizontal support radius:     9424
-                   Decimate full grid, at least      762 points required
-                        762 valid points found
+                      Decimate full grid, at least      762 points required,     762 valid points found
+                      Subgrid hash:   1550418632
                    Final nc1:      762
                    Effective horizontal resolution:  1.14
                    Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
                    Estimated nc1 from horizontal support radius:     9424
-                   Decimate full grid, at least      762 points required
-                        762 valid points found
+                      Decimate full grid, at least      762 points required,     762 valid points found
+                      Subgrid hash:   1550418632
                    Final nc1:      762
                    Effective horizontal resolution:  1.14
                    Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
                    Estimated nc1 from horizontal support radius:     9424
-                   Decimate full grid, at least      762 points required
-                        762 valid points found
+                      Decimate full grid, at least      762 points required,     762 valid points found
+                      Subgrid hash:   1550418632
                    Final nc1:      762
                    Effective horizontal resolution:  1.14
                    Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
                    Estimated nc1 from horizontal support radius:     9424
-                   Decimate full grid, at least      762 points required
-                        762 valid points found
+                      Decimate full grid, at least      762 points required,     762 valid points found
+                      Subgrid hash:   1550418632
                    Final nc1:      762
                    Effective horizontal resolution:  1.14
                    Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
                    Estimated nc1 from horizontal support radius:     9424
-                   Decimate full grid, at least      762 points required
-                        762 valid points found
+                      Decimate full grid, at least      762 points required,     762 valid points found
+                      Subgrid hash:   1550418632
                    Final nc1:      762
                    Effective horizontal resolution:  1.14
                    Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
                    Estimated nc1 from horizontal support radius:     9424
-                   Decimate full grid, at least      762 points required
-                        762 valid points found
+                      Decimate full grid, at least      762 points required,     762 valid points found
+                      Subgrid hash:   1550418632
                    Final nc1:      762
                    Effective horizontal resolution:  1.14
                    Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
                    Estimated nc1 from horizontal support radius:     9424
-                   Decimate full grid, at least      762 points required
-                        762 valid points found
+                      Decimate full grid, at least      762 points required,     762 valid points found
+                      Subgrid hash:   1550418632
                    Final nc1:      762
                    Effective horizontal resolution:  1.14
                    Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
                    Estimated nc1 from horizontal support radius:     9424
-                   Decimate full grid, at least      762 points required
-                        762 valid points found
+                      Decimate full grid, at least      762 points required,     762 valid points found
+                      Subgrid hash:   1550418632
                    Final nc1:      762
                    Effective horizontal resolution:  1.14
              nc1(  1) =        762
@@ -117,8 +117,8 @@
           Level   8 ~> 100.0%
           Level   9 ~> 100.0%
           Level  10 ~> 100.0%
-          Decimate full grid, at least      500 points required
-               762 valid points found
+          Decimate full grid, at least      500 points required,     762 valid points found
+          Subgrid hash:   -130003308
              -90.00 deg.  ~>100-100-99-100-100-100-100-99-100-100 
              -90.00 deg.  ~>100-100-99-100-100-100-100-99-100-100 
              -90.00 deg.  ~>100-100-99-100-100-100-100-99-100-100 
@@ -133,12 +133,12 @@
           Independent levels:  1[10] 
           Independent levels for angular sector   1 / class   1:  1[10] 
           Independent levels for angular sector   1 / class   2:  1[10] 
-          Independent levels for angular sector   1 / class   3:  1[10] 
+          Independent levels for angular sector   1 / class   3:  1[1]  2[9] 
           Independent levels for angular sector   1 / class   4:  1[10] 
           Independent levels for angular sector   1 / class   5:  1[10] 
           Independent levels for angular sector   1 / class   6:  1[10] 
           Independent levels for angular sector   1 / class   7:  1[10] 
-          Independent levels for angular sector   1 / class   8:  1[10] 
+          Independent levels for angular sector   1 / class   8:  1[1]  2[9] 
           Independent levels for angular sector   1 / class   9:  1[10] 
           Independent levels for angular sector   1 / class  10:  1[10] 
                 Level:   1 ~> cov. at class zero:  0.10E+01

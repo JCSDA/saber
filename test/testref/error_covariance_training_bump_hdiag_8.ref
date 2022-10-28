@@ -14,14 +14,14 @@
              Effective levels:   1   2 
                    Horizontal support radius:    7000.00 km (   7000.00 km -    7000.00 km)
                    Estimated nc1 from horizontal support radius:      192
-                   Decimate full grid, at least      192 points required
-                        714 valid points found
+                      Decimate full grid, at least      192 points required,     714 valid points found
+                      Subgrid hash:    762717970
                    Final nc1:      192
                    Effective horizontal resolution:  4.00
                    Horizontal support radius:    7000.00 km (   7000.00 km -    7000.00 km)
                    Estimated nc1 from horizontal support radius:      192
-                   Decimate full grid, at least      192 points required
-                        714 valid points found
+                      Decimate full grid, at least      192 points required,     714 valid points found
+                      Subgrid hash:    762717970
                    Final nc1:      192
                    Effective horizontal resolution:  4.00
              nc1(  1) =        192
@@ -90,44 +90,44 @@
    Norm of var1:  0.15924176E+04
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
-          Decimate full grid, at least      500 points required
-              1090 valid points found
+          Decimate full grid, at least      500 points required,    1090 valid points found
+          Subgrid hash:   1120638748
              -90.00 deg.  ~>100-54-100-100-99-100-99-100-100-99-100-99-100-100-99 
              -90.00 deg.  ~>100-54-100-100-99-100-99-100-100-99-100-99-100-100-99 
           nc1 =      500
           Independent levels:  1[2] 
           Independent levels for angular sector   1 / class   1:  1[2] 
-          Independent levels for angular sector   1 / class   2:  1[2] 
+          Independent levels for angular sector   1 / class   2:  1[1]  2[1] 
           Independent levels for angular sector   1 / class   3:  1[2] 
           Independent levels for angular sector   1 / class   4:  1[2] 
-          Independent levels for angular sector   1 / class   5:  1[2] 
+          Independent levels for angular sector   1 / class   5:  1[1]  2[1] 
           Independent levels for angular sector   1 / class   6:  1[2] 
-          Independent levels for angular sector   1 / class   7:  1[2] 
+          Independent levels for angular sector   1 / class   7:  1[1]  2[1] 
           Independent levels for angular sector   1 / class   8:  1[2] 
           Independent levels for angular sector   1 / class   9:  1[2] 
-          Independent levels for angular sector   1 / class  10:  1[2] 
+          Independent levels for angular sector   1 / class  10:  1[1]  2[1] 
           Independent levels for angular sector   1 / class  11:  1[2] 
-          Independent levels for angular sector   1 / class  12:  1[2] 
+          Independent levels for angular sector   1 / class  12:  1[1]  2[1] 
           Independent levels for angular sector   1 / class  13:  1[2] 
           Independent levels for angular sector   1 / class  14:  1[2] 
-          Independent levels for angular sector   1 / class  15:  1[2] 
+          Independent levels for angular sector   1 / class  15:  1[1]  2[1] 
           nc1 =      500
           Independent levels:  1[2] 
           Independent levels for angular sector   1 / class   1:  1[2] 
-          Independent levels for angular sector   1 / class   2:  1[2] 
+          Independent levels for angular sector   1 / class   2:  1[1]  2[1] 
           Independent levels for angular sector   1 / class   3:  1[2] 
           Independent levels for angular sector   1 / class   4:  1[2] 
-          Independent levels for angular sector   1 / class   5:  1[2] 
+          Independent levels for angular sector   1 / class   5:  1[1]  2[1] 
           Independent levels for angular sector   1 / class   6:  1[2] 
-          Independent levels for angular sector   1 / class   7:  1[2] 
+          Independent levels for angular sector   1 / class   7:  1[1]  2[1] 
           Independent levels for angular sector   1 / class   8:  1[2] 
           Independent levels for angular sector   1 / class   9:  1[2] 
-          Independent levels for angular sector   1 / class  10:  1[2] 
+          Independent levels for angular sector   1 / class  10:  1[1]  2[1] 
           Independent levels for angular sector   1 / class  11:  1[2] 
-          Independent levels for angular sector   1 / class  12:  1[2] 
+          Independent levels for angular sector   1 / class  12:  1[1]  2[1] 
           Independent levels for angular sector   1 / class  13:  1[2] 
           Independent levels for angular sector   1 / class  14:  1[2] 
-          Independent levels for angular sector   1 / class  15:  1[2] 
+          Independent levels for angular sector   1 / class  15:  1[1]  2[1] 
                 Level:   1 ~> cov. at class zero:  0.96E+00
                 Level:   2 ~> cov. at class zero:  0.91E+00
                 Level:   1 ~> cov. at class zero:  0.10E+01
@@ -161,7 +161,7 @@
                                  loc. ver. support:         4.10 vertical units
                 Level:   1 ~> hybrid coefficients: 0.49 / 0.49
                 Level:   2 ~> hybrid coefficients: 0.36 / 0.59
-Norm of BUMP output parameter loc_rh - 1: 2.0887209781575826e+08
-Norm of BUMP output parameter loc_rv - 1: 1.9300550966718299e+02
-Norm of BUMP output parameter hyb_coef_ens - 1: 2.0390192306984840e+01
-Norm of BUMP output parameter hyb_coef_sta - 1: 2.5351322011959255e+01
+Norm of BUMP output parameter loc_rh - 1: 2.0887209781576023e+08
+Norm of BUMP output parameter loc_rv - 1: 1.9300550966718316e+02
+Norm of BUMP output parameter hyb_coef_ens - 1: 2.0390192306984709e+01
+Norm of BUMP output parameter hyb_coef_sta - 1: 2.5351322011958800e+01

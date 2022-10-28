@@ -25,20 +25,20 @@
              ns =              416
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
-          Decimate full grid, at least      500 points required
-               762 valid points found
+          Decimate full grid, at least      500 points required,     762 valid points found
+          Subgrid hash:   -130003308
              -90.00 deg.  ~>100-100-99-100-100-100-100-99-100-100 
              -90.00 deg.  ~>100-100-99-100-100-100-100-99-100-100 
           nc1 =      500
           Independent levels:  1[2] 
           Independent levels for angular sector   1 / class   1:  1[2] 
           Independent levels for angular sector   1 / class   2:  1[2] 
-          Independent levels for angular sector   1 / class   3:  1[2] 
+          Independent levels for angular sector   1 / class   3:  1[1]  2[1] 
           Independent levels for angular sector   1 / class   4:  1[2] 
           Independent levels for angular sector   1 / class   5:  1[2] 
           Independent levels for angular sector   1 / class   6:  1[2] 
           Independent levels for angular sector   1 / class   7:  1[2] 
-          Independent levels for angular sector   1 / class   8:  1[2] 
+          Independent levels for angular sector   1 / class   8:  1[1]  2[1] 
           Independent levels for angular sector   1 / class   9:  1[2] 
           Independent levels for angular sector   1 / class  10:  1[2] 
                 Level:   1 ~> cov. at class zero:  0.10E+01

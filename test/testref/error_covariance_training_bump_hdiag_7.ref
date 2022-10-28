@@ -26,44 +26,44 @@
              Level   2 ~>  0.200E+01 vert. unit
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
-          Decimate full grid, at least      500 points required
-              1090 valid points found
+          Decimate full grid, at least      500 points required,    1090 valid points found
+          Subgrid hash:   1120638748
              -90.00 deg.  ~>100-54-100-100-99-100-99-100-100-99-100-99-100-100-99 
              -90.00 deg.  ~>100-54-100-100-99-100-99-100-100-99-100-99-100-100-99 
           nc1 =      500
           Independent levels:  1[2] 
           Independent levels for angular sector   1 / class   1:  1[2] 
-          Independent levels for angular sector   1 / class   2:  1[2] 
+          Independent levels for angular sector   1 / class   2:  1[1]  2[1] 
           Independent levels for angular sector   1 / class   3:  1[2] 
           Independent levels for angular sector   1 / class   4:  1[2] 
-          Independent levels for angular sector   1 / class   5:  1[2] 
+          Independent levels for angular sector   1 / class   5:  1[1]  2[1] 
           Independent levels for angular sector   1 / class   6:  1[2] 
-          Independent levels for angular sector   1 / class   7:  1[2] 
+          Independent levels for angular sector   1 / class   7:  1[1]  2[1] 
           Independent levels for angular sector   1 / class   8:  1[2] 
           Independent levels for angular sector   1 / class   9:  1[2] 
-          Independent levels for angular sector   1 / class  10:  1[2] 
+          Independent levels for angular sector   1 / class  10:  1[1]  2[1] 
           Independent levels for angular sector   1 / class  11:  1[2] 
-          Independent levels for angular sector   1 / class  12:  1[2] 
+          Independent levels for angular sector   1 / class  12:  1[1]  2[1] 
           Independent levels for angular sector   1 / class  13:  1[2] 
           Independent levels for angular sector   1 / class  14:  1[2] 
-          Independent levels for angular sector   1 / class  15:  1[2] 
+          Independent levels for angular sector   1 / class  15:  1[1]  2[1] 
           nc1 =      500
           Independent levels:  1[2] 
           Independent levels for angular sector   1 / class   1:  1[2] 
-          Independent levels for angular sector   1 / class   2:  1[2] 
+          Independent levels for angular sector   1 / class   2:  1[1]  2[1] 
           Independent levels for angular sector   1 / class   3:  1[2] 
           Independent levels for angular sector   1 / class   4:  1[2] 
-          Independent levels for angular sector   1 / class   5:  1[2] 
+          Independent levels for angular sector   1 / class   5:  1[1]  2[1] 
           Independent levels for angular sector   1 / class   6:  1[2] 
-          Independent levels for angular sector   1 / class   7:  1[2] 
+          Independent levels for angular sector   1 / class   7:  1[1]  2[1] 
           Independent levels for angular sector   1 / class   8:  1[2] 
           Independent levels for angular sector   1 / class   9:  1[2] 
-          Independent levels for angular sector   1 / class  10:  1[2] 
+          Independent levels for angular sector   1 / class  10:  1[1]  2[1] 
           Independent levels for angular sector   1 / class  11:  1[2] 
-          Independent levels for angular sector   1 / class  12:  1[2] 
+          Independent levels for angular sector   1 / class  12:  1[1]  2[1] 
           Independent levels for angular sector   1 / class  13:  1[2] 
           Independent levels for angular sector   1 / class  14:  1[2] 
-          Independent levels for angular sector   1 / class  15:  1[2] 
+          Independent levels for angular sector   1 / class  15:  1[1]  2[1] 
                 Level:   1 ~> cov. at class zero:  0.96E+00
                 Level:   2 ~> cov. at class zero:  0.91E+00
                 Level:   1 ~> cov. at class zero:  0.99E+00
@@ -106,9 +106,9 @@
                                  loc. ver. support:         5.98 vertical units
                 Level:   1 ~> hybrid coefficients: 0.54 / 0.45
                 Level:   2 ~> hybrid coefficients: 0.52 / 0.45
-Norm of BUMP output parameter loc_rh - 1: 2.0887209781575826e+08
-Norm of BUMP output parameter loc_rv - 1: 1.9300550966718302e+02
-Norm of BUMP output parameter hyb_coef_ens - 1: 2.4907015745880187e+01
-Norm of BUMP output parameter loc_rh_lr - 1: 2.1674086702899912e+08
-Norm of BUMP output parameter loc_rv_lr - 1: 2.3342836418919009e+02
-Norm of BUMP output parameter hyb_coef_ens_lr - 1: 2.1049236924478240e+01
+Norm of BUMP output parameter loc_rh - 1: 2.0887209781576023e+08
+Norm of BUMP output parameter loc_rv - 1: 1.9300550966718342e+02
+Norm of BUMP output parameter hyb_coef_ens - 1: 2.4907015745880599e+01
+Norm of BUMP output parameter loc_rh_lr - 1: 2.1674086702899694e+08
+Norm of BUMP output parameter loc_rv_lr - 1: 2.3342836418919012e+02
+Norm of BUMP output parameter hyb_coef_ens_lr - 1: 2.1049236924477999e+01

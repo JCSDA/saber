@@ -1,142 +1,142 @@
-       Independent levels:  1[1]  2[1] 
-          Level   1:   2014814817
-          Level   2:   1295662076
+       Independent levels:  1[2] 
+          Level   1:   1550418632
+          Level   2:   1550418632
           Model grid size:              840
           Subset Sc0 size:              762
           Number of duplicated points (halo):        78 (  9.29%)
           Min. / max. longitudes: -171.0 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
-          Domain area (% of Earth area): 0.660E+02%
-             Level   1 ~>  66.0%
-             Level   2 ~>  65.9%
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
-          Decimate full grid, at least      500 points required
-               503 valid points found
-             -90.00 deg.  ~>100-99- 6-97-99-97-98-91-96-99 
-             -45.00 deg.  ~>100-42-97-99-99-96-98-97-99-100 
-               0.00 deg.  ~>100-99-92-74-98-97-97-91-99-100 
-              45.00 deg.  ~>100-41-99-99-98-96-98-99-98-99 
-             -90.00 deg.  ~>99-98- 5-97-98-97-98-90-96-99 
-             -45.00 deg.  ~>99-42-96-99-99-96-97-97-98-99 
-               0.00 deg.  ~>99-98-92-73-98-97-96-91-99-99 
-              45.00 deg.  ~>99-41-98-99-98-95-98-99-98-99 
+          Decimate full grid, at least      500 points required,     762 valid points found
+          Subgrid hash:   -130003308
+             -90.00 deg.  ~>100-100- 2-100-100-100-100-99-100-100 
+             -45.00 deg.  ~>100-33-99-100-100-100-100-99-100-100 
+               0.00 deg.  ~>100-100-91-68-100-100-100-91-100-100 
+              45.00 deg.  ~>100-33-99-100-100-100-100-99-100-100 
+             -90.00 deg.  ~>100-100- 2-100-100-100-100-99-100-100 
+             -45.00 deg.  ~>100-33-99-100-100-100-100-99-100-100 
+               0.00 deg.  ~>100-100-91-68-100-100-100-91-100-100 
+              45.00 deg.  ~>100-33-99-100-100-100-100-99-100-100 
           nc1 =      500
           nc2 =      250
-          Independent levels:  1[1]  2[1] 
-          Independent levels for angular sector   1 / class   1:  1[1]  2[1] 
-          Independent levels for angular sector   1 / class   2:  1[1]  2[1] 
+          Independent levels:  1[2] 
+          Independent levels for angular sector   1 / class   1:  1[2] 
+          Independent levels for angular sector   1 / class   2:  1[2] 
           Independent levels for angular sector   1 / class   3:  1[1]  2[1] 
-          Independent levels for angular sector   1 / class   4:  1[1]  2[1] 
-          Independent levels for angular sector   1 / class   5:  1[1]  2[1] 
-          Independent levels for angular sector   1 / class   6:  1[1]  2[1] 
-          Independent levels for angular sector   1 / class   7:  1[1]  2[1] 
+          Independent levels for angular sector   1 / class   4:  1[2] 
+          Independent levels for angular sector   1 / class   5:  1[2] 
+          Independent levels for angular sector   1 / class   6:  1[2] 
+          Independent levels for angular sector   1 / class   7:  1[2] 
           Independent levels for angular sector   1 / class   8:  1[1]  2[1] 
           Independent levels for angular sector   1 / class   9:  1[2] 
-          Independent levels for angular sector   1 / class  10:  1[1]  2[1] 
-          Independent levels for angular sector   2 / class   1:  1[1]  2[1] 
+          Independent levels for angular sector   1 / class  10:  1[2] 
+          Independent levels for angular sector   2 / class   1:  1[2] 
           Independent levels for angular sector   2 / class   2:  1[1]  2[1] 
           Independent levels for angular sector   2 / class   3:  1[1]  2[1] 
-          Independent levels for angular sector   2 / class   4:  1[1]  2[1] 
-          Independent levels for angular sector   2 / class   5:  1[1]  2[1] 
-          Independent levels for angular sector   2 / class   6:  1[1]  2[1] 
-          Independent levels for angular sector   2 / class   7:  1[1]  2[1] 
+          Independent levels for angular sector   2 / class   4:  1[2] 
+          Independent levels for angular sector   2 / class   5:  1[2] 
+          Independent levels for angular sector   2 / class   6:  1[2] 
+          Independent levels for angular sector   2 / class   7:  1[2] 
           Independent levels for angular sector   2 / class   8:  1[1]  2[1] 
-          Independent levels for angular sector   2 / class   9:  1[1]  2[1] 
-          Independent levels for angular sector   2 / class  10:  1[1]  2[1] 
-          Independent levels for angular sector   3 / class   1:  1[1]  2[1] 
-          Independent levels for angular sector   3 / class   2:  1[1]  2[1] 
+          Independent levels for angular sector   2 / class   9:  1[2] 
+          Independent levels for angular sector   2 / class  10:  1[2] 
+          Independent levels for angular sector   3 / class   1:  1[2] 
+          Independent levels for angular sector   3 / class   2:  1[2] 
           Independent levels for angular sector   3 / class   3:  1[1]  2[1] 
           Independent levels for angular sector   3 / class   4:  1[1]  2[1] 
-          Independent levels for angular sector   3 / class   5:  1[1]  2[1] 
-          Independent levels for angular sector   3 / class   6:  1[1]  2[1] 
-          Independent levels for angular sector   3 / class   7:  1[1]  2[1] 
+          Independent levels for angular sector   3 / class   5:  1[2] 
+          Independent levels for angular sector   3 / class   6:  1[2] 
+          Independent levels for angular sector   3 / class   7:  1[2] 
           Independent levels for angular sector   3 / class   8:  1[1]  2[1] 
-          Independent levels for angular sector   3 / class   9:  1[1]  2[1] 
-          Independent levels for angular sector   3 / class  10:  1[1]  2[1] 
-          Independent levels for angular sector   4 / class   1:  1[1]  2[1] 
+          Independent levels for angular sector   3 / class   9:  1[2] 
+          Independent levels for angular sector   3 / class  10:  1[2] 
+          Independent levels for angular sector   4 / class   1:  1[2] 
           Independent levels for angular sector   4 / class   2:  1[1]  2[1] 
           Independent levels for angular sector   4 / class   3:  1[1]  2[1] 
-          Independent levels for angular sector   4 / class   4:  1[1]  2[1] 
-          Independent levels for angular sector   4 / class   5:  1[1]  2[1] 
-          Independent levels for angular sector   4 / class   6:  1[1]  2[1] 
-          Independent levels for angular sector   4 / class   7:  1[1]  2[1] 
+          Independent levels for angular sector   4 / class   4:  1[2] 
+          Independent levels for angular sector   4 / class   5:  1[2] 
+          Independent levels for angular sector   4 / class   6:  1[2] 
+          Independent levels for angular sector   4 / class   7:  1[2] 
           Independent levels for angular sector   4 / class   8:  1[1]  2[1] 
-          Independent levels for angular sector   4 / class   9:  1[1]  2[1] 
-          Independent levels for angular sector   4 / class  10:  1[1]  2[1] 
-                Level:   1 ~> cov. at class zero:  0.10E+01
-                Level:   2 ~> cov. at class zero:  0.10E+01
-             Block var1-var1:  0.20756517E+00 for    37852 diagnostic points
-             Block common:  0.20756517E+00 for    37852 diagnostic points
+          Independent levels for angular sector   4 / class   9:  1[2] 
+          Independent levels for angular sector   4 / class  10:  1[2] 
+                Level:   1 ~> cov. at class zero:  0.99E+00
+                Level:   2 ~> cov. at class zero:  0.98E+00
+             Block var1-var1:  0.19474880E+00 for    38768 diagnostic points
+             Block common:  0.19474880E+00 for    38768 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
-                   Level:   1 ~> amplitude:        0.79
-                                 cor. hor. support:      3563.53 km
-                                 cor. ver. support:         4.18 vertical units
-                   Level:   2 ~> amplitude:        0.76
-                                 cor. hor. support:      3806.98 km
-                                 cor. ver. support:         4.59 vertical units
-                   Level:   1 ~> amplitude:        0.21
-                                 cor. hor. support:      3563.98 km
-                                 cor. ver. support:         0.50 vertical units
-                   Level:   2 ~> amplitude:        0.24
-                                 cor. hor. support:      3807.49 km
-                                 cor. ver. support:         0.55 vertical units
+                   Level:   1 ~> amplitude:        0.75
+                                 cor. hor. support:      3582.36 km
+                                 cor. ver. support:         4.73 vertical units
+                   Level:   2 ~> amplitude:        0.77
+                                 cor. hor. support:      3674.03 km
+                                 cor. ver. support:         4.48 vertical units
+                   Level:   1 ~> amplitude:        0.25
+                                 cor. hor. support:      3581.51 km
+                                 cor. ver. support:         0.56 vertical units
+                   Level:   2 ~> amplitude:        0.23
+                                 cor. hor. support:      3676.50 km
+                                 cor. ver. support:         0.53 vertical units
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
-                   Level:   1 ~> amplitude:        0.79
-                                 cor. hor. support:      3563.53 km
-                                 cor. ver. support:         4.18 vertical units
-                   Level:   2 ~> amplitude:        0.76
-                                 cor. hor. support:      3806.98 km
-                                 cor. ver. support:         4.59 vertical units
-                   Level:   1 ~> amplitude:        0.21
-                                 cor. hor. support:      3563.98 km
-                                 cor. ver. support:         0.50 vertical units
-                   Level:   2 ~> amplitude:        0.24
-                                 cor. hor. support:      3807.49 km
-                                 cor. ver. support:         0.55 vertical units
-             Block var1-var1:  0.35651813E+00 for    25181 diagnostic points
-             Block common:  0.35651813E+00 for    25181 diagnostic points
+                   Level:   1 ~> amplitude:        0.75
+                                 cor. hor. support:      3582.36 km
+                                 cor. ver. support:         4.73 vertical units
+                   Level:   2 ~> amplitude:        0.77
+                                 cor. hor. support:      3674.03 km
+                                 cor. ver. support:         4.48 vertical units
+                   Level:   1 ~> amplitude:        0.25
+                                 cor. hor. support:      3581.51 km
+                                 cor. ver. support:         0.56 vertical units
+                   Level:   2 ~> amplitude:        0.23
+                                 cor. hor. support:      3676.50 km
+                                 cor. ver. support:         0.53 vertical units
+             Block var1-var1:  0.36547836E+00 for    26177 diagnostic points
+             Block common:  0.36547836E+00 for    26177 diagnostic points
                 Level:   1 ~> loc. at class zero:       0.92
                 Level:   2 ~> loc. at class zero:       0.92
                    Level:   1 ~> amplitude:        0.86
-                                 loc. hor. support:      5547.05 km
-                                 loc. ver. support:        87.36 vertical units
-                   Level:   2 ~> amplitude:        0.63
-                                 loc. hor. support:      5818.61 km
-                                 loc. ver. support:        87.36 vertical units
+                                 loc. hor. support:      5216.23 km
+                                 loc. ver. support:        86.54 vertical units
+                   Level:   2 ~> amplitude:        0.86
+                                 loc. hor. support:      5433.23 km
+                                 loc. ver. support:        86.54 vertical units
                    Level:   1 ~> amplitude:        0.14
-                                 loc. hor. support:      5548.62 km
-                                 loc. ver. support:         0.85 vertical units
-                   Level:   2 ~> amplitude:        0.37
-                                 loc. hor. support:      5806.05 km
-                                 loc. ver. support:         3.41 vertical units
+                                 loc. hor. support:      5214.71 km
+                                 loc. ver. support:         0.08 vertical units
+                   Level:   2 ~> amplitude:        0.14
+                                 loc. hor. support:      5430.63 km
+                                 loc. ver. support:         0.58 vertical units
                 Level:   1 ~> loc. at class zero:       0.92
                 Level:   2 ~> loc. at class zero:       0.92
                    Level:   1 ~> amplitude:        0.86
-                                 loc. hor. support:      5547.05 km
-                                 loc. ver. support:        87.36 vertical units
-                   Level:   2 ~> amplitude:        0.63
-                                 loc. hor. support:      5818.61 km
-                                 loc. ver. support:        87.36 vertical units
+                                 loc. hor. support:      5216.23 km
+                                 loc. ver. support:        86.54 vertical units
+                   Level:   2 ~> amplitude:        0.86
+                                 loc. hor. support:      5433.23 km
+                                 loc. ver. support:        86.54 vertical units
                    Level:   1 ~> amplitude:        0.14
-                                 loc. hor. support:      5548.62 km
-                                 loc. ver. support:         0.85 vertical units
-                   Level:   2 ~> amplitude:        0.37
-                                 loc. hor. support:      5806.05 km
-                                 loc. ver. support:         3.41 vertical units
-Norm of BUMP output parameter loc_a - 1: 2.0938012768616385e+01
-Norm of BUMP output parameter loc_a - 2: 1.3157988768764397e+01
-Norm of BUMP output parameter loc_rh1 - 1: 2.0455099984619612e+08
-Norm of BUMP output parameter loc_rh1 - 2: 1.9340729654290795e+08
-Norm of BUMP output parameter loc_rh2 - 1: 2.0972396148283282e+08
-Norm of BUMP output parameter loc_rh2 - 2: 2.0017763140720803e+08
-Norm of BUMP output parameter loc_rhc - 1: 8.0145038287530941e+00
-Norm of BUMP output parameter loc_rhc - 2: 2.4869178826193963e+00
-Norm of BUMP output parameter loc_rh - 1: 1.9415960809361079e+08
-Norm of BUMP output parameter loc_rh - 2: 1.9281124807108527e+08
-Norm of BUMP output parameter loc_rv - 1: 2.3179754707933421e+03
-Norm of BUMP output parameter loc_rv - 2: 9.6704109916275897e+01
+                                 loc. hor. support:      5214.71 km
+                                 loc. ver. support:         0.08 vertical units
+                   Level:   2 ~> amplitude:        0.14
+                                 loc. hor. support:      5430.63 km
+                                 loc. ver. support:         0.58 vertical units
+Norm of BUMP output parameter loc_a - 1: 2.7259084237251866e+01
+Norm of BUMP output parameter loc_a - 2: 1.3608351437481060e+01
+Norm of BUMP output parameter loc_rh1 - 1: 2.4704054578694296e+08
+Norm of BUMP output parameter loc_rh1 - 2: 2.3267154952902743e+08
+Norm of BUMP output parameter loc_rh2 - 1: 2.4757881984875906e+08
+Norm of BUMP output parameter loc_rh2 - 2: 2.3956316373531821e+08
+Norm of BUMP output parameter loc_rhc - 1: 1.0923088609745495e+01
+Norm of BUMP output parameter loc_rhc - 2: 6.0560754721256576e+00
+Norm of BUMP output parameter loc_rh - 1: 2.3156922245758867e+08
+Norm of BUMP output parameter loc_rh - 2: 2.3028562141040716e+08
+Norm of BUMP output parameter loc_rv - 1: 2.9212458993183432e+03
+Norm of BUMP output parameter loc_rv - 2: 4.6035446148651488e+01

@@ -1672,7 +1672,7 @@ integer,intent(in) :: ns                    !< Number of samplings points (globa
 integer,intent(out) :: s_to_cx(ns)          !< Horizontal sampling index (global)
 
 ! Local variables
-integer :: ncxa_eff,ncx_eff,isa,icxa,is,icx,nfac,nssa,nss,issa,ix,iy,issamin,icxmin,iprocmin,nsa,nodemin,inode
+integer :: ncxa_eff,ncx_eff,isa,icxa,is,icx,nfac,nssa,nss,issa,ix,iy,issamin,icxmin,iprocmin,nsa,nodemin,inode,hash
 integer :: s_to_cxa(ns),nn_index(1)
 integer,allocatable :: proc_to_icxmin(:),ssa_to_cxa(:),ssa_to_cx(:),ssa_to_node(:),s_to_ssa(:)
 integer,allocatable :: proc_to_nodemin(:),sa_to_s(:),order_s(:),cxa_to_node(:)
@@ -1680,7 +1680,7 @@ real(kind_real) :: nss_real,lonlat(2),valmin,xmin,ymin,zmin,chmin,dist
 real(kind_real),allocatable :: proc_to_xmin(:),proc_to_ymin(:),proc_to_zmin(:),proc_to_chmin(:)
 real(kind_real),allocatable :: x_ssa(:),y_ssa(:),z_ssa(:),ch_ssa(:),potential(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:)
 logical :: retry,valid
-logical,allocatable :: lmask_cxa(:),lmask_ssa(:),indist_ssa(:)
+logical,allocatable :: lmask_cxa(:),lmask_ssa(:),indist_ssa(:),gmask_s(:)
 character(len=1024) :: cfmt
 type(atlas_structuredgrid) :: agrid
 
@@ -1714,8 +1714,8 @@ else
    nfac = nfacmin
    retry = .true.
    write(cfmt,'(a,i2.2,a)') '(a',ifmt+3,',a,i8,a)'
-   write(mpl%test,trim(cfmt)) '','Decimate full grid, at least ',ns,' points required'
-   if (verbosity) call mpl%flush
+   write(mpl%test,trim(cfmt)) '','Decimate full grid, at least ',ns,' points required, '
+   if (verbosity) call mpl%flush(.false.)
 
    do while (retry)
       ! Initialization
@@ -1804,8 +1804,7 @@ else
       call mpl%f_comm%allreduce(nssa,nss,fckit_mpi_sum())
 
       ! Print result
-      write(cfmt,'(a,i2.2,a)') '(a',ifmt+3,',i8,a)'
-      write(mpl%test,trim(cfmt)) '',nss,' valid points found'
+      write(mpl%test,'(i8,a)') nss,' valid points found'
       if (verbosity) call mpl%flush
       retry = (nss<ns)
    end do
@@ -2039,6 +2038,7 @@ allocate(lat_sa(nsa))
 allocate(lon_s(ns))
 allocate(lat_s(ns))
 allocate(order_s(ns))
+allocate(gmask_s(ns))
 
 ! Initialization
 isa = 0
@@ -2062,6 +2062,15 @@ call qsort(ns,lon_s,lat_s,order_s)
 ! Reorder sampling
 s_to_cx = s_to_cx(order_s)
 
+! Grid hash
+gmask_s = .true.
+call grid_hash(mpl,ns,lon_s,lat_s,gmask_s,hash)
+
+! Test grid hash
+write(cfmt,'(a,i2.2,a)') '(a',ifmt+3,',a,i12)'
+write(mpl%test,trim(cfmt)) '','Subgrid hash: ',hash
+if (verbosity) call mpl%flush
+
 ! Release memory
 deallocate(sa_to_s)
 deallocate(lon_sa)
@@ -2069,6 +2078,7 @@ deallocate(lat_sa)
 deallocate(lon_s)
 deallocate(lat_s)
 deallocate(order_s)
+deallocate(gmask_s)
 
 ! Probe out
 @:probe_out()

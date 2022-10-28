@@ -4,6 +4,7 @@ geometry:
     type: regular_lonlat
     N: 10
   levels: 2
+  mask type: sea
   halo: 1
 input variables: &id001
 - var1
@@ -32,6 +33,7 @@ bump:
   dc: 800.0e3
   nl0r: 2
   lev2d: last
+  mask_check: true
   ne: 25
   resol: 4.0
   ndir: 1

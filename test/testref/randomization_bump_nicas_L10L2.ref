@@ -24,14 +24,14 @@
              Effective levels:   1   2 
                    Horizontal support radius:    4000.00 km (   4000.00 km -    4000.00 km)
                    Estimated nc1 from horizontal support radius:      589
-                   Decimate full grid, at least      589 points required
-                        762 valid points found
+                      Decimate full grid, at least      589 points required,     762 valid points found
+                      Subgrid hash:   1676590011
                    Final nc1:      589
                    Effective horizontal resolution:  4.00
                    Horizontal support radius:    4000.00 km (   4000.00 km -    4000.00 km)
                    Estimated nc1 from horizontal support radius:      589
-                   Decimate full grid, at least      589 points required
-                        762 valid points found
+                      Decimate full grid, at least      589 points required,     762 valid points found
+                      Subgrid hash:   1676590011
                    Final nc1:      589
                    Effective horizontal resolution:  4.00
              nc1(  1) =        589
@@ -40,8 +40,8 @@
              Effective levels:   1 
                    Horizontal support radius:    4000.00 km (   4000.00 km -    4000.00 km)
                    Estimated nc1 from horizontal support radius:      589
-                   Decimate full grid, at least      589 points required
-                        762 valid points found
+                      Decimate full grid, at least      589 points required,     762 valid points found
+                      Subgrid hash:   1676590011
                    Final nc1:      589
                    Effective horizontal resolution:  4.00
              nc1(  1) =        589

@@ -2,7 +2,7 @@ Norm of input parameter a::1: 3.6748920461639891e+01
 Norm of input parameter a::2: 1.4148721210374314e+01
 Norm of input parameter rh1::1: 1.8994182411217222e+08
 Norm of input parameter rh1::2: 1.8896437407126102e+08
-Norm of input parameter rh2::1: 1.9482291490887466e+08
+Norm of input parameter rh2::1: 1.9482291490887463e+08
 Norm of input parameter rh2::2: 1.9149306403077379e+08
 Norm of input parameter rhc::1: 4.4232244668918108e+00
 Norm of input parameter rhc::2: 3.4011155804661852e+00
@@ -34,14 +34,14 @@ Norm of input parameter rv::2: 2.7273089933198584e+01
              Effective levels:   1   2 
                    Horizontal support radius:    3924.85 km (   3554.18 km -    4352.74 km)
                    Estimated nc1 from horizontal support radius:      611
-                   Decimate full grid, at least      611 points required
-                        762 valid points found
+                      Decimate full grid, at least      611 points required,     762 valid points found
+                      Subgrid hash:   1211746458
                    Final nc1:      611
                    Effective horizontal resolution:  4.00
                    Horizontal support radius:    4084.25 km (   3650.84 km -    4579.82 km)
                    Estimated nc1 from horizontal support radius:      564
-                   Decimate full grid, at least      564 points required
-                        762 valid points found
+                      Decimate full grid, at least      564 points required,     762 valid points found
+                      Subgrid hash:    189209506
                    Final nc1:      564
                    Effective horizontal resolution:  4.00
              nc1(  1) =        611
@@ -50,14 +50,14 @@ Norm of input parameter rv::2: 2.7273089933198584e+01
              Effective levels:   1   2 
                    Horizontal support radius:    3879.52 km (   3519.64 km -    4317.69 km)
                    Estimated nc1 from horizontal support radius:      626
-                   Decimate full grid, at least      626 points required
-                        762 valid points found
+                      Decimate full grid, at least      626 points required,     762 valid points found
+                      Subgrid hash:   -161961811
                    Final nc1:      626
                    Effective horizontal resolution:  4.00
                    Horizontal support radius:    4028.07 km (   3631.42 km -    4511.59 km)
                    Estimated nc1 from horizontal support radius:      580
-                   Decimate full grid, at least      580 points required
-                        762 valid points found
+                      Decimate full grid, at least      580 points required,     762 valid points found
+                      Subgrid hash:  -1141235181
                    Final nc1:      580
                    Effective horizontal resolution:  4.00
              nc1(  1) =        626
@@ -69,8 +69,8 @@ Norm of input parameter rv::2: 2.7273089933198584e+01
              Effective levels:   1 
                    Horizontal support radius:    3966.40 km (   3394.17 km -    4499.23 km)
                    Estimated nc1 from horizontal support radius:      599
-                   Decimate full grid, at least      599 points required
-                        762 valid points found
+                      Decimate full grid, at least      599 points required,     762 valid points found
+                      Subgrid hash:  -1185214736
                    Final nc1:      599
                    Effective horizontal resolution:  4.00
              nc1(  1) =        599
@@ -78,8 +78,8 @@ Norm of input parameter rv::2: 2.7273089933198584e+01
              Effective levels:   1 
                    Horizontal support radius:    3942.96 km (   3404.27 km -    4419.71 km)
                    Estimated nc1 from horizontal support radius:      606
-                   Decimate full grid, at least      606 points required
-                        762 valid points found
+                      Decimate full grid, at least      606 points required,     762 valid points found
+                      Subgrid hash:  -2125682535
                    Final nc1:      606
                    Effective horizontal resolution:  4.00
              nc1(  1) =        606

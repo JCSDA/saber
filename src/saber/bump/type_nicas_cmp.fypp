@@ -2339,7 +2339,7 @@ do il1=1,nicas_cmp%nl1
          write(mpl%info,'(a19,a)') '','Compute horizontal subset Sc1:'
          if (nicas_cmp%verbosity) call mpl%flush
          call geom%initialize_sampling(mpl,geom%nc0a,geom%lon_c0a,geom%lat_c0a,mask_hor_c0a,nicas_cmp%rhs(:,il0),geom%c0a_to_c0, &
- & geom%nc0u,geom%c0u_to_c0a,geom%tree_c0u,geom%mesh_c0u,nicas_cmp%verbosity,16,nicas_cmp%hor(il1)%nc1,c1_to_c0)
+ & geom%nc0u,geom%c0u_to_c0a,geom%tree_c0u,geom%mesh_c0u,nicas_cmp%verbosity,19,nicas_cmp%hor(il1)%nc1,c1_to_c0)
 
          ! Count Sc1 point in halo A
          nicas_cmp%hor(il1)%nc1a = 0

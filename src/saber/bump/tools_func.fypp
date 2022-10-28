@@ -41,7 +41,8 @@ interface rad2short
    module procedure func_rad2short
 end interface
 interface grid_hash
-   module procedure func_grid_hash
+   module procedure func_grid_hash_global
+   module procedure func_grid_hash_local
 end interface
 interface independent_levels
    module procedure func_independent_levels
@@ -257,10 +258,55 @@ rad_short = int(rad_real/pi*real(huge_short),kind_short)
 end subroutine func_rad2short
 
 !----------------------------------------------------------------------
-! Subroutine: func_grid_hash
-!> Compute grid hash profile
+! Subroutine: func_grid_hash_global
+!> Compute grid hash value from global coordinates
 !----------------------------------------------------------------------
-subroutine func_grid_hash(mpl,ncxa,ncx,nlx,cxa_to_cx,lon_cxa,lat_cxa,mask_cxa,grid_hash)
+subroutine func_grid_hash_global(mpl,ncx,lon_cx,lat_cx,mask_cx,hash)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl       !< MPI data
+integer,intent(in) :: ncx                 !< Number of points (global)
+real(kind_real),intent(in) :: lon_cx(ncx) !< Longitude [radians]
+real(kind_real),intent(in) :: lat_cx(ncx) !< Latitude [radians]
+logical,intent(in) :: mask_cx(ncx)        !< Mask
+integer,intent(out) :: hash               !< Grid hash
+
+! Local variables
+integer :: icx
+integer(kind_short) :: lonlat(2*ncx)
+
+! Set name
+@:set_name(func_grid_hash_global)
+
+! Probe in
+@:probe_in()
+
+! Intialization
+lonlat = 0_kind_short
+
+! Loop over points
+do icx=1,ncx
+   if (mask_cx(icx)) then
+      call rad2short(lon_cx(icx),lonlat(2*(icx-1)+1))
+      call rad2short(lat_cx(icx),lonlat(2*icx))
+   end if
+end do
+
+! Compute hash
+hash = fletcher32(lonlat)
+
+! Probe out
+@:probe_out()
+
+end subroutine func_grid_hash_global
+
+!----------------------------------------------------------------------
+! Subroutine: func_grid_hash_local
+!> Compute grid hash profile from local coordinates
+!----------------------------------------------------------------------
+subroutine func_grid_hash_local(mpl,ncxa,ncx,nlx,cxa_to_cx,lon_cxa,lat_cxa,mask_cxa,hash)
 
 implicit none
 
@@ -273,17 +319,16 @@ integer,intent(in) :: cxa_to_cx(ncxa)       !< Halo A to global
 real(kind_real),intent(in) :: lon_cxa(ncxa) !< Longitude [radians]
 real(kind_real),intent(in) :: lat_cxa(ncxa) !< Latitude [radians]
 logical,intent(in) :: mask_cxa(ncxa,nlx)    !< Mask
-integer,intent(out) :: grid_hash(nlx)       !< Grid hash profile
+integer,intent(out) :: hash(nlx)            !< Grid hash profile
 
 ! Local variables
-integer :: ilx,icx
+integer :: ilx
 integer :: order_cx(ncx)
-integer(kind_short) :: lonlat(2*ncx)
 real(kind_real) :: lon_cx(ncx),lat_cx(ncx)
 logical :: mask_cx(ncx,nlx)
 
 ! Set name
-@:set_name(func_grid_hash)
+@:set_name(func_grid_hash_local)
 
 ! Probe in
 @:probe_in()
@@ -294,34 +339,23 @@ call mpl%loc_to_glb(ncxa,ncx,cxa_to_cx,lat_cxa,lat_cx,.false.)
 call mpl%loc_to_glb(ncxa,ncx,cxa_to_cx,mask_cxa,mask_cx,.false.)
 
 if (mpl%main) then
-   ! Loop over levels
    do ilx=1,nlx
-      ! Intialization
-      lonlat = 0_kind_short
-
       ! Reorder lon/lat
-      call qsort(ncx,lon_cx,lat_cx,order_cx,.false.)
+      call qsort(ncx,lon_cx,lat_cx,order_cx)
+      mask_cx(:,ilx) = mask_cx(order_cx,ilx)
 
-      ! Loop over points
-      do icx=1,ncx
-         if (mask_cx(order_cx(icx),ilx)) then
-            call rad2short(lon_cx(order_cx(icx)),lonlat(2*(icx-1)+1))
-            call rad2short(lat_cx(order_cx(icx)),lonlat(2*icx))
-         end if
-      end do
-
-      ! Compute hash
-      grid_hash(ilx) = fletcher32(lonlat)
+      ! Global hash
+      call grid_hash(mpl,ncx,lon_cx,lat_cx,mask_cx(:,ilx),hash(ilx))
    end do
 end if
 
 ! Broadcast grid hash profile
-call mpl%f_comm%broadcast(grid_hash,mpl%rootproc-1)
+call mpl%f_comm%broadcast(hash,mpl%rootproc-1)
 
 ! Probe out
 @:probe_out()
 
-end subroutine func_grid_hash
+end subroutine func_grid_hash_local
 
 !----------------------------------------------------------------------
 ! Subroutine: func_independent_levels

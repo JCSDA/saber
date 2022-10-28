@@ -4,7 +4,6 @@ geometry:
     type: regular_lonlat
     N: 10
   levels: 2
-  mask type: sea
   halo: 1
 input variables: &id001
 - var1
@@ -27,9 +26,6 @@ bump:
   dc: 800.0e3
   nl0r: 2
   fit_ncmp: 2
-  diag_draw_type: random_coast
-  Lcoast: 500.0e3
-  rcoast: 0.1
   samp_interp_type: si
   ne: 25
   local_diag: true

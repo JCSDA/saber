@@ -4,7 +4,6 @@ geometry:
     type: regular_lonlat
     N: 10
   levels: 2
-  mask type: sea
   halo: 1
 input variables: &id001
 - var1
@@ -21,7 +20,6 @@ bump:
   new_nicas: true
   check_randomization: true
   check_dirac: true
-  mask_check: true
   ens1_ne: 50
   resol: 4.0
   forced_radii: true

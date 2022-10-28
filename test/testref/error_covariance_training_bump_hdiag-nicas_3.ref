@@ -27,37 +27,37 @@
           nc1 =      500
           Independent levels:  1[2] 
           Independent levels for angular sector   1 / class   1:  1[2] 
-          Independent levels for angular sector   1 / class   2:  1[2] 
+          Independent levels for angular sector   1 / class   2:  1[1]  2[1] 
           Independent levels for angular sector   1 / class   3:  1[2] 
           Independent levels for angular sector   1 / class   4:  1[2] 
-          Independent levels for angular sector   1 / class   5:  1[2] 
+          Independent levels for angular sector   1 / class   5:  1[1]  2[1] 
           Independent levels for angular sector   1 / class   6:  1[2] 
-          Independent levels for angular sector   1 / class   7:  1[2] 
+          Independent levels for angular sector   1 / class   7:  1[1]  2[1] 
           Independent levels for angular sector   1 / class   8:  1[2] 
           Independent levels for angular sector   1 / class   9:  1[2] 
-          Independent levels for angular sector   1 / class  10:  1[2] 
+          Independent levels for angular sector   1 / class  10:  1[1]  2[1] 
           Independent levels for angular sector   1 / class  11:  1[2] 
-          Independent levels for angular sector   1 / class  12:  1[2] 
+          Independent levels for angular sector   1 / class  12:  1[1]  2[1] 
           Independent levels for angular sector   1 / class  13:  1[2] 
           Independent levels for angular sector   1 / class  14:  1[2] 
-          Independent levels for angular sector   1 / class  15:  1[2] 
+          Independent levels for angular sector   1 / class  15:  1[1]  2[1] 
           nc1 =      500
           Independent levels:  1[2] 
           Independent levels for angular sector   1 / class   1:  1[2] 
-          Independent levels for angular sector   1 / class   2:  1[2] 
+          Independent levels for angular sector   1 / class   2:  1[1]  2[1] 
           Independent levels for angular sector   1 / class   3:  1[2] 
           Independent levels for angular sector   1 / class   4:  1[2] 
-          Independent levels for angular sector   1 / class   5:  1[2] 
+          Independent levels for angular sector   1 / class   5:  1[1]  2[1] 
           Independent levels for angular sector   1 / class   6:  1[2] 
-          Independent levels for angular sector   1 / class   7:  1[2] 
+          Independent levels for angular sector   1 / class   7:  1[1]  2[1] 
           Independent levels for angular sector   1 / class   8:  1[2] 
           Independent levels for angular sector   1 / class   9:  1[2] 
-          Independent levels for angular sector   1 / class  10:  1[2] 
+          Independent levels for angular sector   1 / class  10:  1[1]  2[1] 
           Independent levels for angular sector   1 / class  11:  1[2] 
-          Independent levels for angular sector   1 / class  12:  1[2] 
+          Independent levels for angular sector   1 / class  12:  1[1]  2[1] 
           Independent levels for angular sector   1 / class  13:  1[2] 
           Independent levels for angular sector   1 / class  14:  1[2] 
-          Independent levels for angular sector   1 / class  15:  1[2] 
+          Independent levels for angular sector   1 / class  15:  1[1]  2[1] 
                 Level:   1 ~> cov. at class zero:  0.96E+00
                 Level:   2 ~> cov. at class zero:  0.91E+00
                 Level:   1 ~> cov. at class zero:  0.99E+00
@@ -103,14 +103,14 @@
              Effective levels:   1   2 
                    Horizontal support radius:    4510.33 km (   4510.33 km -    4510.33 km)
                    Estimated nc1 from horizontal support radius:      463
-                   Decimate full grid, at least      463 points required
-                       1590 valid points found
+                      Decimate full grid, at least      463 points required,    1590 valid points found
+                      Subgrid hash:    926845509
                    Final nc1:      463
                    Effective horizontal resolution:  4.00
                    Horizontal support radius:    4370.72 km (   4370.72 km -    4370.72 km)
                    Estimated nc1 from horizontal support radius:      493
-                   Decimate full grid, at least      493 points required
-                       1630 valid points found
+                      Decimate full grid, at least      493 points required,    1630 valid points found
+                      Subgrid hash:   -259405218
                    Final nc1:      493
                    Effective horizontal resolution:  4.00
              nc1(  1) =        463
@@ -119,14 +119,14 @@
              Effective levels:   1   2 
                    Horizontal support radius:    5555.25 km (   5555.25 km -    5555.25 km)
                    Estimated nc1 from horizontal support radius:      305
-                   Decimate full grid, at least      305 points required
-                        762 valid points found
+                      Decimate full grid, at least      305 points required,     762 valid points found
+                      Subgrid hash:    618298028
                    Final nc1:      305
                    Effective horizontal resolution:  4.00
                    Horizontal support radius:    5548.72 km (   5548.72 km -    5548.72 km)
                    Estimated nc1 from horizontal support radius:      306
-                   Decimate full grid, at least      306 points required
-                        762 valid points found
+                      Decimate full grid, at least      306 points required,     762 valid points found
+                      Subgrid hash:  -1927665795
                    Final nc1:      306
                    Effective horizontal resolution:  4.00
              nc1(  1) =        305

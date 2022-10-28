@@ -1,135 +1,135 @@
-       Independent levels:  1[2] 
-          Level   1:   1550418632
-          Level   2:   1550418632
+       Independent levels:  1[1]  2[1] 
+          Level   1:   2014814817
+          Level   2:    -85397934
           Model grid size:              840
           Subset Sc0 size:              762
           Number of duplicated points (halo):        78 (  9.29%)
           Min. / max. longitudes: -171.0 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
-          Domain area (% of Earth area): 0.100E+03%
-             Level   1 ~> 100.0%
-             Level   2 ~> 100.0%
+          Domain area (% of Earth area): 0.660E+02%
+             Level   1 ~>  66.0%
+             Level   2 ~>  65.9%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
-          Decimate full grid, at least      500 points required
-               762 valid points found
-             -90.00 deg.  ~>100-100- 2-100-100-100-100-99-100-100 
-             -45.00 deg.  ~>100-33-99-100-100-100-100-99-100-100 
-               0.00 deg.  ~>100-100-91-68-100-100-100-91-100-100 
-              45.00 deg.  ~>100-33-99-100-100-100-100-99-100-100 
-             -90.00 deg.  ~>100-100- 2-100-100-100-100-99-100-100 
-             -45.00 deg.  ~>100-33-99-100-100-100-100-99-100-100 
-               0.00 deg.  ~>100-100-91-68-100-100-100-91-100-100 
-              45.00 deg.  ~>100-33-99-100-100-100-100-99-100-100 
+          Decimate full grid, at least      500 points required,     503 valid points found
+          Subgrid hash:   -547664083
+             -90.00 deg.  ~>100-98- 6-95-92-87-80-45-70-59 
+             -45.00 deg.  ~>100-42-95-88-85-78-74-71-69-65 
+               0.00 deg.  ~>100-97-89-66-87-80-72-61-64-61 
+              45.00 deg.  ~>100-41-98-95-90-80-78-69-66-61 
+             -90.00 deg.  ~>99-98- 5-94-92-87-80-45-70-59 
+             -45.00 deg.  ~>99-42-94-88-85-78-74-71-69-65 
+               0.00 deg.  ~>99-97-89-66-87-80-72-61-64-61 
+              45.00 deg.  ~>99-41-97-95-90-80-78-69-66-61 
           nc1 =      500
-          Independent levels:  1[2] 
-          Independent levels for angular sector   1 / class   1:  1[2] 
-          Independent levels for angular sector   1 / class   2:  1[2] 
-          Independent levels for angular sector   1 / class   3:  1[2] 
-          Independent levels for angular sector   1 / class   4:  1[2] 
-          Independent levels for angular sector   1 / class   5:  1[2] 
-          Independent levels for angular sector   1 / class   6:  1[2] 
-          Independent levels for angular sector   1 / class   7:  1[2] 
-          Independent levels for angular sector   1 / class   8:  1[2] 
-          Independent levels for angular sector   1 / class   9:  1[2] 
-          Independent levels for angular sector   1 / class  10:  1[2] 
-          Independent levels for angular sector   2 / class   1:  1[2] 
-          Independent levels for angular sector   2 / class   2:  1[2] 
-          Independent levels for angular sector   2 / class   3:  1[2] 
-          Independent levels for angular sector   2 / class   4:  1[2] 
-          Independent levels for angular sector   2 / class   5:  1[2] 
-          Independent levels for angular sector   2 / class   6:  1[2] 
-          Independent levels for angular sector   2 / class   7:  1[2] 
-          Independent levels for angular sector   2 / class   8:  1[2] 
-          Independent levels for angular sector   2 / class   9:  1[2] 
-          Independent levels for angular sector   2 / class  10:  1[2] 
-          Independent levels for angular sector   3 / class   1:  1[2] 
-          Independent levels for angular sector   3 / class   2:  1[2] 
-          Independent levels for angular sector   3 / class   3:  1[2] 
-          Independent levels for angular sector   3 / class   4:  1[2] 
-          Independent levels for angular sector   3 / class   5:  1[2] 
-          Independent levels for angular sector   3 / class   6:  1[2] 
-          Independent levels for angular sector   3 / class   7:  1[2] 
-          Independent levels for angular sector   3 / class   8:  1[2] 
-          Independent levels for angular sector   3 / class   9:  1[2] 
-          Independent levels for angular sector   3 / class  10:  1[2] 
-          Independent levels for angular sector   4 / class   1:  1[2] 
-          Independent levels for angular sector   4 / class   2:  1[2] 
-          Independent levels for angular sector   4 / class   3:  1[2] 
-          Independent levels for angular sector   4 / class   4:  1[2] 
-          Independent levels for angular sector   4 / class   5:  1[2] 
-          Independent levels for angular sector   4 / class   6:  1[2] 
-          Independent levels for angular sector   4 / class   7:  1[2] 
-          Independent levels for angular sector   4 / class   8:  1[2] 
-          Independent levels for angular sector   4 / class   9:  1[2] 
-          Independent levels for angular sector   4 / class  10:  1[2] 
-                Level:   1 ~> cov. at class zero:  0.99E+00
-                Level:   2 ~> cov. at class zero:  0.98E+00
-                Level:   2 ~> cov. at class zero:  0.97E+00
-             Block var1-var1:  0.17825715E+00 for      160 diagnostic points
-             Block var_2d-var_2d:  0.18928747E+00 for       40 diagnostic points
-             Block common:  0.17989822E+00 for      160 diagnostic points
+          Independent levels:  1[1]  2[1] 
+          Independent levels for angular sector   1 / class   1:  1[1]  2[1] 
+          Independent levels for angular sector   1 / class   2:  1[1]  2[1] 
+          Independent levels for angular sector   1 / class   3:  1[1]  2[1] 
+          Independent levels for angular sector   1 / class   4:  1[1]  2[1] 
+          Independent levels for angular sector   1 / class   5:  1[1]  2[1] 
+          Independent levels for angular sector   1 / class   6:  1[1]  2[1] 
+          Independent levels for angular sector   1 / class   7:  1[1]  2[1] 
+          Independent levels for angular sector   1 / class   8:  1[1]  2[1] 
+          Independent levels for angular sector   1 / class   9:  1[1]  2[1] 
+          Independent levels for angular sector   1 / class  10:  1[1]  2[1] 
+          Independent levels for angular sector   2 / class   1:  1[1]  2[1] 
+          Independent levels for angular sector   2 / class   2:  1[1]  2[1] 
+          Independent levels for angular sector   2 / class   3:  1[1]  2[1] 
+          Independent levels for angular sector   2 / class   4:  1[1]  2[1] 
+          Independent levels for angular sector   2 / class   5:  1[1]  2[1] 
+          Independent levels for angular sector   2 / class   6:  1[1]  2[1] 
+          Independent levels for angular sector   2 / class   7:  1[1]  2[1] 
+          Independent levels for angular sector   2 / class   8:  1[1]  2[1] 
+          Independent levels for angular sector   2 / class   9:  1[1]  2[1] 
+          Independent levels for angular sector   2 / class  10:  1[1]  2[1] 
+          Independent levels for angular sector   3 / class   1:  1[1]  2[1] 
+          Independent levels for angular sector   3 / class   2:  1[1]  2[1] 
+          Independent levels for angular sector   3 / class   3:  1[1]  2[1] 
+          Independent levels for angular sector   3 / class   4:  1[1]  2[1] 
+          Independent levels for angular sector   3 / class   5:  1[1]  2[1] 
+          Independent levels for angular sector   3 / class   6:  1[1]  2[1] 
+          Independent levels for angular sector   3 / class   7:  1[1]  2[1] 
+          Independent levels for angular sector   3 / class   8:  1[1]  2[1] 
+          Independent levels for angular sector   3 / class   9:  1[1]  2[1] 
+          Independent levels for angular sector   3 / class  10:  1[1]  2[1] 
+          Independent levels for angular sector   4 / class   1:  1[1]  2[1] 
+          Independent levels for angular sector   4 / class   2:  1[1]  2[1] 
+          Independent levels for angular sector   4 / class   3:  1[1]  2[1] 
+          Independent levels for angular sector   4 / class   4:  1[1]  2[1] 
+          Independent levels for angular sector   4 / class   5:  1[1]  2[1] 
+          Independent levels for angular sector   4 / class   6:  1[1]  2[1] 
+          Independent levels for angular sector   4 / class   7:  1[1]  2[1] 
+          Independent levels for angular sector   4 / class   8:  1[1]  2[1] 
+          Independent levels for angular sector   4 / class   9:  1[1]  2[1] 
+          Independent levels for angular sector   4 / class  10:  1[1]  2[1] 
+                Level:   1 ~> cov. at class zero:  0.10E+01
+                Level:   2 ~> cov. at class zero:  0.10E+01
+                Level:   2 ~> cov. at class zero:  0.95E+00
+             Block var1-var1:  0.18676328E+00 for      160 diagnostic points
+             Block var_2d-var_2d:  0.19287941E+00 for       40 diagnostic points
+             Block common:  0.18580644E+00 for      160 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      3579.74 km
-                                 cor. ver. support:         3.17 vertical units
+                                 cor. hor. support:      3590.37 km
+                                 cor. ver. support:         3.15 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      3675.30 km
-                                 cor. ver. support:         3.17 vertical units
+                                 cor. hor. support:      3795.48 km
+                                 cor. ver. support:         3.15 vertical units
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      3516.91 km
+                                 cor. hor. support:      3465.48 km
                                  cor. ver. support:         0.00 vertical units
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      3579.74 km
-                                 cor. ver. support:         3.17 vertical units
+                                 cor. hor. support:      3590.37 km
+                                 cor. ver. support:         3.15 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      3587.22 km
-                                 cor. ver. support:         3.17 vertical units
-             Block var1-var1:  0.27213138E+00 for      120 diagnostic points
-             Block var_2d-var_2d:  0.27329578E+00 for       23 diagnostic points
-             Block common:  0.27281679E+00 for      122 diagnostic points
+                                 cor. hor. support:      3614.11 km
+                                 cor. ver. support:         3.15 vertical units
+             Block var1-var1:  0.29508537E+00 for      126 diagnostic points
+             Block var_2d-var_2d:  0.29530729E+00 for       27 diagnostic points
+             Block common:  0.29566022E+00 for      126 diagnostic points
                 Level:   1 ~> loc. at class zero:       0.92
                 Level:   2 ~> loc. at class zero:       0.92
                    Level:   1 ~> amplitude:        1.00
-                                 loc. hor. support:      5312.61 km
-                                 loc. ver. support:         6.06 vertical units
+                                 loc. hor. support:      5362.03 km
+                                 loc. ver. support:         5.99 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 loc. hor. support:      5291.47 km
-                                 loc. ver. support:         6.06 vertical units
+                                 loc. hor. support:      5452.19 km
+                                 loc. ver. support:         5.99 vertical units
                 Level:   2 ~> loc. at class zero:       0.92
                    Level:   2 ~> amplitude:        1.00
-                                 loc. hor. support:      5661.44 km
+                                 loc. hor. support:      5716.49 km
                                  loc. ver. support:         0.00 vertical units
                 Level:   1 ~> loc. at class zero:       0.92
                 Level:   2 ~> loc. at class zero:       0.92
                    Level:   1 ~> amplitude:        1.00
-                                 loc. hor. support:      5312.61 km
-                                 loc. ver. support:         6.06 vertical units
+                                 loc. hor. support:      5362.03 km
+                                 loc. ver. support:         5.99 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 loc. hor. support:      5312.00 km
-                                 loc. ver. support:         6.06 vertical units
+                                 loc. hor. support:      5510.42 km
+                                 loc. ver. support:         5.99 vertical units
              Effective levels:   1   2 
-                   Horizontal support radius:    5312.61 km (   5312.61 km -    5312.61 km)
-                   Estimated nc1 from horizontal support radius:      333
-                   Decimate full grid, at least      333 points required
-                        762 valid points found
-                   Final nc1:      333
-                   Effective horizontal resolution:  3.99
-                   Horizontal support radius:    5312.00 km (   5312.00 km -    5312.00 km)
-                   Estimated nc1 from horizontal support radius:      333
-                   Decimate full grid, at least      333 points required
-                        762 valid points found
-                   Final nc1:      333
-                   Effective horizontal resolution:  3.99
-             nc1(  1) =        333
-             nc1(  2) =        333
-             ns =              666
+                   Horizontal support radius:    5362.03 km (   5362.03 km -    5362.03 km)
+                   Estimated nc1 from horizontal support radius:      216
+                      Decimate full grid, at least      216 points required,     503 valid points found
+                      Subgrid hash:  -1969027262
+                   Final nc1:      216
+                   Effective horizontal resolution:  4.00
+                   Horizontal support radius:    5510.42 km (   5510.42 km -    5510.42 km)
+                   Estimated nc1 from horizontal support radius:      204
+                      Decimate full grid, at least      204 points required,     503 valid points found
+                      Subgrid hash:   2018341896
+                   Final nc1:      204
+                   Effective horizontal resolution:  4.00
+             nc1(  1) =        216
+             nc1(  2) =        204
+             ns =              420
     Full NICAS adjoint test result:                        T
        Block NICAS adjoint test result:                    T
           Interpolation adjoint test (horizontal) result:  T
@@ -143,9 +143,9 @@
                 Min / max: 1.0000000 /  1.0000000 over     10 tests
              0.0 /    0.0:  1.0000000
           Level   1:  0.0000000 -  1.0000000
-          Level   2:  0.0000000 -  0.9239517
-Norm of BUMP output parameter dirac_mom - 1: 1.0398115140564293e+01
-Norm of BUMP output parameter dirac_diag_loc - 1: 3.6906298874562671e+00
-Norm of BUMP output parameter cor_rh - 1: 1.7139347851564193e+08
-Norm of BUMP output parameter cor_rv - 1: 1.5174398075557292e+02
-Norm of BUMP output parameter nicas_norm - 1: 5.1782219521392598e+01
+          Level   2:  0.0000000 -  0.9182179
+Norm of BUMP output parameter dirac_mom - 1: 3.3347670579048116e+38
+Norm of BUMP output parameter dirac_diag_loc - 1: 3.3347670579048116e+38
+Norm of BUMP output parameter cor_rh - 1: 1.3999310183256009e+08
+Norm of BUMP output parameter cor_rv - 1: 1.2243829315345023e+02
+Norm of BUMP output parameter nicas_norm - 1: 3.3347670579048116e+38

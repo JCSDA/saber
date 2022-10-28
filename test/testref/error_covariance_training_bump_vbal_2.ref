@@ -33,8 +33,8 @@
    Norm of var2:  0.16849553E+02
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
-          Decimate full grid, at least      500 points required
-               762 valid points found
+          Decimate full grid, at least      500 points required,     762 valid points found
+          Subgrid hash:   -130003308
           nc1 =      500
           nc2 =      250
           Independent levels:  1[2] 
