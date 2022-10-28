@@ -220,7 +220,6 @@ class(mpl_type),intent(inout) :: mpl !< MPI data
 
 ! Release memory
 if (allocated(mpl%pioproc)) deallocate(mpl%pioproc)
-call mpl%f_comm_io%delete()
 if (allocated(mpl%done)) deallocate(mpl%done)
 
 ! Probe out
