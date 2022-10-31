@@ -11,7 +11,6 @@ module type_bump
 use atlas_module, only: atlas_field,atlas_fieldset,atlas_integer,atlas_real,atlas_functionspace
 use fckit_configuration_module, only: fckit_configuration
 use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
-use missing_values_mod, only: missing_value
 use tools_const, only: zero,half,one,thousand,req,reqkm,deg2rad,rad2deg
 use tools_func, only: fletcher32,rad2short,sphere_dist,zss_maxval,zss_minval,zss_sum
 use tools_kinds,only: kind_short,kind_real
@@ -172,8 +171,8 @@ type(atlas_field) :: afield
 call bump%mpl%init(f_comm)
 
 ! Set missing values
-bump%mpl%msv%vali = -999 ! TODO(Benjamin: understand why missing_value(0_kind_int) is not working)
-bump%mpl%msv%valr = missing_value(0.0_kind_real)
+bump%mpl%msv%vali = -999
+bump%mpl%msv%valr = bump%nam%msvalr
 
 ! Initialize listing
 if (bump%nam%colorlog) then

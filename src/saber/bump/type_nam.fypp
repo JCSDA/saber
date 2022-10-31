@@ -203,6 +203,7 @@ type nam_type
    real(kind_real) :: wind_inflation                          !< Wind inflation to compensate the Savitzky-Golay smoothing
 
    ! helpers
+   real(kind_real) :: msvalr                                  !< Missing value (real)
    logical :: fname_var_used                                  !< Flag activated if a variance file is specified
    logical :: fname_vbal_cov_used                             !< Flag activated if a vertical covariance file is specified
    logical :: fname_mom_used                                  !< Flag activated if a moments file is specified
@@ -436,6 +437,7 @@ nam%wind_nsg = 0
 nam%wind_inflation = one
 
 ! helpers
+nam%msvalr = -999.0_kind_real
 nam%fname_var_used = .false.
 nam%fname_vbal_cov_used = .false.
 nam%fname_mom_used = .false.
@@ -998,6 +1000,7 @@ if (conf%has('wind_nsg')) call conf%get_or_die('wind_nsg',nam%wind_nsg)
 if (conf%has('wind_inflation')) call conf%get_or_die('wind_inflation',nam%wind_inflation)
 
 ! helpers
+if (conf%has('msvalr')) call conf%get_or_die('msvalr',nam%msvalr)
 if (conf%has('output')) then
    call conf%get_or_die('output',confs)
    do iconf=1,size(confs)

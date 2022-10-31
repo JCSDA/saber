@@ -264,34 +264,25 @@ if( oops_FOUND )
                 endif()
             endif()
         endforeach()
-
-        # ConvertState tests
-        foreach( test ${saber_test_full} )
-            string( FIND ${test} "convertstate" result )
-            if( result MATCHES 0 )
-                ecbuild_add_test( TARGET saber_test_${test}_${mpi}-${omp}
-                                  MPI ${mpi}
-                                  OMP ${omp}
-                                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_convertstate.x
-                                  ARGS testinput/${test}.yaml
-                                  DEPENDS saber_quench_convertstate.x )
-            endif()
-        endforeach()
-
-        # BUMP interpolator test
-        add_fctest( TARGET          saber_test_interpolatorbump_${mpi}-${omp}
-                    MPI             ${mpi}
-                    OMP             ${omp}
-                    LINKER_LANGUAGE Fortran
-                    SOURCES         fctest/fctest_interpolatorbump.F90
-                    LIBS            saber )
-
-        # NICAS square-root test
-        add_fctest( TARGET          saber_test_nicas_sqrt_${mpi}-${omp}
-                    MPI             ${mpi}
-                    OMP             ${omp}
-                    LINKER_LANGUAGE Fortran
-                    SOURCES         fctest/fctest_nicas_sqrt.F90
-                    LIBS            saber )
     endforeach()
 endif()
+
+# BUMP interpolator test
+set( mpi 2 )
+set( omp 1 )
+add_fctest( TARGET          saber_test_interpolatorbump
+            MPI             ${mpi}
+            OMP             ${omp}
+            LINKER_LANGUAGE Fortran
+            SOURCES         fctest/fctest_interpolatorbump.F90
+            LIBS            saber )
+
+# NICAS square-root test
+set( mpi 2 )
+set( omp 1 )
+add_fctest( TARGET          saber_test_nicas_sqrt
+            MPI             ${mpi}
+            OMP             ${omp}
+            LINKER_LANGUAGE Fortran
+            SOURCES         fctest/fctest_nicas_sqrt.F90
+            LIBS            saber )
