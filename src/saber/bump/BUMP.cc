@@ -183,7 +183,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   eckit::LocalConfiguration conf(params_.toConfiguration());
 
   // Add missing value (real)
-  conf.set("msvalr", util::missingValue(double()))
+  conf.set("msvalr", util::missingValue(double()));
 
   // Add ensemble sizes
   if (!conf.has("ens1_ne")) conf.set("ens1_ne", ens1_ne);
