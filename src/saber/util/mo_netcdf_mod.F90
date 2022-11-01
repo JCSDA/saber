@@ -7,12 +7,12 @@
 ! Purpose : in the training data
 !-------------------------------------------------------------------------------
 
-module spectralb_netcdf_mod
+module mo_netcdf_mod
 
 use iso_c_binding, only: c_int, c_float
-use spectralb_cvtcoord_mod, only: cvt_create3dcoordinate, &
-                                  cvt_initialiseadjustordealloccoord
-use fckit_log_module,  only : fckit_log
+use fckit_log_module, only : fckit_log
+use mo_cvtcoord_mod, only: cvt_coordinate_type
+
 ! -----------------------------------------------------------------------------
 
 implicit none
@@ -106,9 +106,6 @@ subroutine cvt_nc_read_field_from_file( &
 !
 !
 !
-
-use cvt_derivedtypes_mod, only:   &
-  cvt_coordinate_type                   ! Coordinate type
 
 use netcdf, only:         &
   nf90_close,             &
@@ -519,5 +516,5 @@ end subroutine cvt_nc_read_field_from_file
 
 ! ------------------------------------------------------------------------------
 
-end module spectralb_netcdf_mod
+end module mo_netcdf_mod
 

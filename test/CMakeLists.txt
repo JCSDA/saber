@@ -265,24 +265,24 @@ if( oops_FOUND )
             endif()
         endforeach()
     endforeach()
-
-    # BUMP interpolator test
-    set( mpi 2 )
-    set( omp 1 )
-    add_fctest( TARGET          saber_test_interpolatorbump
-                MPI             ${mpi}
-                OMP             ${omp}
-                LINKER_LANGUAGE Fortran
-                SOURCES         fctest/fctest_interpolatorbump.F90
-                LIBS            saber )
-
-    # NICAS square-root test
-    set( mpi 2 )
-    set( omp 1 )
-    add_fctest( TARGET          saber_test_nicas_sqrt
-                MPI             ${mpi}
-                OMP             ${omp}
-                LINKER_LANGUAGE Fortran
-                SOURCES         fctest/fctest_nicas_sqrt.F90
-                LIBS            saber )
 endif()
+
+# BUMP interpolator test
+set( mpi 2 )
+set( omp 1 )
+add_fctest( TARGET          saber_test_interpolatorbump
+            MPI             ${mpi}
+            OMP             ${omp}
+            LINKER_LANGUAGE Fortran
+            SOURCES         fctest/fctest_interpolatorbump.F90
+            LIBS            saber )
+
+# NICAS square-root test
+set( mpi 2 )
+set( omp 1 )
+add_fctest( TARGET          saber_test_nicas_sqrt
+            MPI             ${mpi}
+            OMP             ${omp}
+            LINKER_LANGUAGE Fortran
+            SOURCES         fctest/fctest_nicas_sqrt.F90
+            LIBS            saber )

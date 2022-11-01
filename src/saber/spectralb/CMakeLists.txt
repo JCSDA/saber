@@ -5,7 +5,6 @@
 
 if( oops_FOUND AND atlas_TRANS_FOUND )
     list(APPEND spectralb_src_files_list
-
     CovarianceStatistics.cc
     CovarianceStatistics.h
     CovarianceStatisticsUtils.cc
@@ -23,24 +22,14 @@ if( oops_FOUND AND atlas_TRANS_FOUND )
     SpectralToGaussUV.h
     SPCTRL_Cov.cc
     SPCTRL_Cov.h
-
-    spectralb_cvtcoord_mod.F90
-    spectralb_cvtderivtypes_mod.F90
-    spectralb_netcdf_mod.F90
     )
 
     if( atlas_VERSION GREATER_EQUAL 0.31.0 )
         list(APPEND spectralb_src_files_list
-
         SpectralToGaussUV.cc
         SpectralToGaussUV.h
         )
     endif()
 endif()
 
-set( spectralb_src_files
-
-${spectralb_src_files_list}
-
-PARENT_SCOPE
-)
+set( spectralb_src_files ${spectralb_src_files_list} PARENT_SCOPE )

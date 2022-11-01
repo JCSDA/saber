@@ -6,7 +6,6 @@
 
 if( oops_FOUND AND gsibec_FOUND )
     list(APPEND gsi_src_files_list
-
     # Covariance block
     covariance/Covariance.cc
     covariance/Covariance.h
@@ -35,13 +34,7 @@ if( oops_FOUND AND gsibec_FOUND )
 
     # Utilities
     utils/gsi_utils_mod.f90
-
     )
 endif()
 
-set( gsi_src_files
-
-${gsi_src_files_list}
-
-PARENT_SCOPE
-)
+set( gsi_src_files ${gsi_src_files_list} PARENT_SCOPE )

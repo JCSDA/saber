@@ -14,8 +14,7 @@ use fckit_configuration_module, only: fckit_configuration
 use netcdf, only: nf90_max_name
 use kinds
 use string_f_c_mod
-use spectralb_netcdf_mod, only : cvt_nc_read_field_from_file, &
-                                 cvt_nc_err_rpt
+use mo_netcdf_mod, only : cvt_nc_read_field_from_file, cvt_nc_err_rpt
 
 implicit none
 
@@ -34,11 +33,7 @@ type(fckit_configuration) :: f_conf
 integer(kind=c_int)  :: start_index(3)
 integer(kind=c_int)  :: final_index(3)
 
-
-
-!------------------------------------------------------------------------------
 ! read filename for config
-!------------------------------------------------------------------------------
 covariance_file  = ""
 short_name = ""
 
@@ -59,6 +54,7 @@ bins = final_index(1) - start_index(1)
 
 end subroutine c_covSpectralBins
 
+!------------------------------------------------------------------------------
 
 subroutine c_covSpectralUMatrix(c_conf, &
  & varname_length, c_netcdfvarname, &
@@ -70,8 +66,7 @@ use fckit_configuration_module, only: fckit_configuration
 use netcdf, only: nf90_max_name
 use kinds
 use string_f_c_mod
-use spectralb_netcdf_mod, only : cvt_nc_read_field_from_file, &
-                                 cvt_nc_err_rpt
+use mo_netcdf_mod, only : cvt_nc_read_field_from_file, cvt_nc_err_rpt
 
 implicit none
 
@@ -96,9 +91,7 @@ real(kind=c_float), allocatable :: Field3D(:,:,:)
 
 integer :: i,j,k,n,b ! loop variables
 
-!------------------------------------------------------------------------------
 ! read filename for config
-!------------------------------------------------------------------------------
 covariance_file  = ""
 short_name = ""
 
@@ -128,5 +121,3 @@ do b = 0, bins -1
 end do
 
 end subroutine c_covSpectralUMatrix
-
-

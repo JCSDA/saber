@@ -5,7 +5,6 @@
 
 if( oops_FOUND )
     list(APPEND oops_src_files_list
-
     # SABER block parameters base
     SaberBlockParametersBase.h
 
@@ -41,19 +40,6 @@ if( oops_FOUND )
     Randomization.h
     SaberBlockTest.h
     )
-else()
-    list(APPEND oops_src_files_list
-
-    # Logger from FCKIT
-    # TODO
-
-    )
 endif()
 
-set( oops_src_files
-
-${oops_src_files_list}
- 
-PARENT_SCOPE
-)
-
+set( oops_src_files ${oops_src_files_list} PARENT_SCOPE )

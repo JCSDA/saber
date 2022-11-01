@@ -3,16 +3,17 @@
 ! * This software is licensed under the terms of the Apache Licence Version 2.0
 ! * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
+!------------------------------------------------------------------------------
+
 subroutine c_covRegressionMatrices(filename_length, &
  & c_filename, &
  & model_level, bins, values_size, values) &
  & bind(c,name='covRegressionMatrices_f90')
 
 use iso_c_binding, only : c_ptr, c_int, c_float, c_char
-use string_f_c_mod
+use mo_netcdf_mod, only : cvt_nc_read_field_from_file, cvt_nc_err_rpt
 use netcdf, only: nf90_max_name
-use spectralb_netcdf_mod, only : cvt_nc_read_field_from_file, &
-                                 cvt_nc_err_rpt
+use string_f_c_mod
 
 implicit none
 
@@ -34,7 +35,6 @@ real(kind=c_float), allocatable :: Field3D(:,:,:)
 
 integer :: i,j,k,n ! loop variables
 
-!------------------------------------------------------------------------------
 ! read filename for config
 call c_f_string(c_filename, covariance_file)
 short_name = "RegressionFilter_hP_inc_gP_inc"
@@ -44,7 +44,6 @@ call cvt_nc_read_field_from_file(covariance_file, &
                                  Field3D = Field3D, &
                                  start_index = start_index(:), &
                                  final_index = final_index(:))
-
 
 ! maybe apply checks on sizes here.
 
@@ -68,21 +67,11 @@ subroutine c_covRegressionWeights(filename_length, c_filename, &
  & startVec, lenVec, covLatitudesVec, regressionWeights1D) &
  & bind(c,name='covRegressionWeights_f90')
 
-
 use iso_c_binding, only: c_ptr, c_int, c_float, c_char
-use string_f_c_mod
-
-use spectralb_cvtcoord_mod, only: &
-  cvt_initialiseadjustordealloccoord, &
-  cvt_create3dcoordinate
-
-use cvt_derivedtypes_mod, only: &
-  cvt_coordinate_type
-
+use mo_cvtcoord_mod, only: cvt_coordinate_type, cvt_initialiseadjustordealloccoord, cvt_create3dcoordinate
+use mo_netcdf_mod, only: cvt_nc_read_field_from_file, cvt_nc_err_rpt
 use netcdf, only: nf90_max_name
-use spectralb_netcdf_mod, only: &
-  cvt_nc_read_field_from_file, &
-  cvt_nc_err_rpt
+use string_f_c_mod
 
 implicit none
 
@@ -115,7 +104,6 @@ integer :: tally
 
 integer :: sh(3)
 
-!------------------------------------------------------------------------------
 ! read filename for config
 covariance_file  = ""
 short_name = ""
@@ -169,9 +157,9 @@ do i = 1, nBins
   startVec(i) = startVec(i) - tally
 end do
 
-!------------------------------------------------------------------------------
-
 end subroutine c_covRegressionWeights
+
+!------------------------------------------------------------------------------
 
 subroutine c_covMuStats(filename_length, &
  & c_filename, &
@@ -181,9 +169,9 @@ subroutine c_covMuStats(filename_length, &
  & bind(c,name='covMuStats_f90')
 
 use iso_c_binding, only: c_ptr, c_int, c_float, c_char
-use string_f_c_mod
+use mo_netcdf_mod, only : cvt_nc_read_field_from_file
 use netcdf, only: nf90_max_name
-use spectralb_netcdf_mod, only : cvt_nc_read_field_from_file
+use string_f_c_mod
 
 implicit none
 
@@ -205,7 +193,6 @@ real(kind=c_float), allocatable :: Field3D(:,:,:)
 
 integer :: i,j,n ! loop variables
 
-!------------------------------------------------------------------------------
 ! read filename for config
 call c_f_string(c_filename, covariance_file)
 call c_f_string(c_shortname, short_name)
@@ -217,7 +204,6 @@ call cvt_nc_read_field_from_file(covariance_file, &
                                  Field3D = Field3D, &
                                  start_index = start_index(:), &
                                  final_index = final_index(:))
-
 
 n = 1
 do i = 1, modelLevels
