@@ -311,8 +311,7 @@ void GaussUVToGP::multiplyAD(atlas::FieldSet & fset) const {
 
   populateRHSVec(augmentedState_["dry_air_density_levels_minus_one"], fset, rhsvec);
 
-  // to do
-  //trans_->dirtrans_wind2vordiv_adj(specfset["vorticity"], specfset["divergence"], rhsvec);
+  trans_->dirtrans_wind2vordiv_adj(specfset["vorticity"], specfset["divergence"], rhsvec);
 
   populateRHSVecAdj(augmentedState_["dry_air_density_levels_minus_one"], fset, rhsvec);
 
