@@ -148,4 +148,6 @@ Norm of BUMP output parameter dirac_mom - 1: 7.9082215275620706e+00
 Norm of BUMP output parameter dirac_diag_loc - 1: 2.8674825600601963e+00
 Norm of BUMP output parameter cor_rh - 1: 1.4497689137427598e+08
 Norm of BUMP output parameter cor_rv - 1: 1.2344430205006758e+02
+Norm of BUMP output parameter loc_rh - 1: 2.2324266072963181e+08
+Norm of BUMP output parameter loc_rv - 1: 2.3476680576146603e+02
 Norm of BUMP output parameter nicas_norm - 1: 4.2694632641368834e+01

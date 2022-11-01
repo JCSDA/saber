@@ -68,6 +68,12 @@ output:
 - parameter: cor_rv
   file:
     filepath: testdata/error_covariance_training_bump_hdiag-nicas_2/_MPI_-_OMP__cor_rv
+- parameter: loc_rh
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag-nicas_2/_MPI_-_OMP__loc_rh
+- parameter: loc_rv
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag-nicas_2/_MPI_-_OMP__loc_rv
 - parameter: nicas_norm
   file:
     filepath: testdata/error_covariance_training_bump_hdiag-nicas_2/_MPI_-_OMP__nicas_norm

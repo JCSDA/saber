@@ -11,75 +11,107 @@ initial condition:
   - var3
   - var4
 background error:
-  covariance model: SABER
-  saber central block:
-    saber block name: BUMP_NICAS
-    bump:
-      datadir: testdata
-      prefix: dirac_bump/_MPI_-_OMP_
-      testing: true
-      nprocio: 1
-      strategy: specific_univariate
-      load_nicas_local: true
-      fname_nicas: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas
-    input fields:
-    - parameter: universe radius
-      file:
-        filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_rh_2
-  saber outer blocks:
-  - saber block name: BUMP_StdDev
-    bump:
-      datadir: testdata
-      prefix: dirac_bump/_MPI_-_OMP_
-      testing: true
-    input fields:
-    - parameter: stddev
-      file:
-        filepath: testdata/error_covariance_training_bump_stddev_3/_MPI_-_OMP__stddev
-  - saber block name: BUMP_StdDev
-    bump:
-      datadir: testdata
-      prefix: dirac_bump/_MPI_-_OMP_
-      testing: true
-      new_var: true
-      forced_var: true
-      stddev:
-        var1:
-        - 1.0
-        var2:
-        - 2.0
-  - saber block name: StdDev
-    input fields:
-    - parameter: StdDev
-      file:
-        filepath: testdata/error_covariance_training_bump_stddev_3/_MPI_-_OMP__stddev
-  - saber block name: BUMP_VerticalBalance
-    bump:
-      datadir: testdata
-      prefix: dirac_bump/_MPI_-_OMP_
-      testing: true
-      vbal_block:
-      - true
-      load_vbal: true
-      load_samp_local: true
-      fname_samp: error_covariance_training_bump_vbal_1/_MPI_-_OMP__sampling
-      fname_vbal: error_covariance_training_bump_vbal_1/_MPI_-_OMP__vbal
-  - saber block name: BUMP_PsiChiToUV
-    active variables:
-    - var1
-    - var2
-    - var3
-    - var4
-    bump:
-      datadir: testdata
-      prefix: dirac_bump/_MPI_-_OMP_
-      nprocio: 1
-      load_wind_local: true
-      fname_wind: error_covariance_training_bump_wind/_MPI_-_OMP__wind
-      wind_streamfunction: var1
-      wind_velocity_potential: var2
-      wind_zonal: var3
-      wind_meridional: var4
+  covariance model: hybrid
+  components:
+  - covariance:
+      covariance model: SABER
+      saber central block:
+        saber block name: BUMP_NICAS
+        bump:
+          datadir: testdata
+          prefix: dirac_bump/_MPI_-_OMP_
+          testing: true
+          nprocio: 1
+          strategy: specific_univariate
+          load_nicas_local: true
+          fname_nicas: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas
+        input fields:
+        - parameter: universe radius
+          file:
+            filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_rh_2
+      saber outer blocks:
+      - saber block name: BUMP_StdDev
+        bump:
+          datadir: testdata
+          prefix: dirac_bump/_MPI_-_OMP_
+          testing: true
+        input fields:
+        - parameter: stddev
+          file:
+            filepath: testdata/error_covariance_training_bump_stddev_3/_MPI_-_OMP__stddev
+      - saber block name: BUMP_StdDev
+        bump:
+          datadir: testdata
+          prefix: dirac_bump/_MPI_-_OMP_
+          testing: true
+          new_var: true
+          forced_var: true
+          stddev:
+            var1:
+            - 1.0
+            var2:
+            - 2.0
+      - saber block name: StdDev
+        input fields:
+        - parameter: StdDev
+          file:
+            filepath: testdata/error_covariance_training_bump_stddev_3/_MPI_-_OMP__stddev
+      - saber block name: BUMP_VerticalBalance
+        bump:
+          datadir: testdata
+          prefix: dirac_bump/_MPI_-_OMP_
+          testing: true
+          vbal_block:
+          - true
+          load_vbal: true
+          load_samp_local: true
+          fname_samp: error_covariance_training_bump_vbal_1/_MPI_-_OMP__sampling
+          fname_vbal: error_covariance_training_bump_vbal_1/_MPI_-_OMP__vbal
+      - saber block name: BUMP_PsiChiToUV
+        active variables:
+        - var1
+        - var2
+        - var3
+        - var4
+        bump:
+          datadir: testdata
+          prefix: dirac_bump/_MPI_-_OMP_
+          nprocio: 1
+          load_wind_local: true
+          fname_wind: error_covariance_training_bump_wind/_MPI_-_OMP__wind
+          wind_streamfunction: var1
+          wind_velocity_potential: var2
+          wind_zonal: var3
+          wind_meridional: var4
+    weight:
+      value: 0.5
+  - covariance:
+      covariance model: ensemble
+      members from template:
+        template:
+          date: '2010-01-01T12:00:00Z'
+          filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
+          state variables: [var3, var4]
+        pattern: '%mem%'
+        nmembers: 25
+        zero padding: 6
+      localization:
+        localization method: SABER
+        saber central block:
+          saber block name: BUMP_NICAS
+          bump:
+            datadir: testdata
+            prefix: dirac_bump/_MPI_-_OMP_
+            testing: true
+            strategy: common
+            load_nicas_local: true
+            fname_nicas: error_covariance_training_bump_hdiag-nicas_2/_MPI_-_OMP__nicas
+        input fields:
+        - parameter: universe radius
+          file:
+            filepath: testdata/error_covariance_training_bump_hdiag-nicas_2/_MPI_-_OMP__loc_rh_2
+    weight:
+      value: 0.5
 dirac:
   lon:
   - 0.0
