@@ -14,6 +14,10 @@
 #include "atlas/array.h"
 #include "atlas/field.h"
 #include "atlas/grid.h"
+#include "atlas/grid/Partitioner.h"
+#include "atlas/interpolation/Interpolation.h"
+#include "atlas/mesh/Mesh.h"
+#include "atlas/meshgenerator.h"
 #include "atlas/trans/Trans.h"
 #include "atlas/util/Earth.h"
 
@@ -85,50 +89,75 @@ atlas::FieldSet createAugmentedState(const oops::GeometryData & outerGeometryDat
   // maybe error trap to check functionspace?
   // maybe alternative is to read in GaussField from file.
 
-  atlas::FieldSet augmentedState;
+  atlas::FieldSet tempfields;
+  atlas::FieldSet gfields;
 
-  std::cout << "xb functionspace type" << xb[0].functionspace().type() << std::endl;
+  // We might want to check grid type to ensure that we are on a gaussian grid.
 
-  if (xb[0].functionspace().type() == "StructuredColumns") {
-    // We might want to check grid type to ensure that we are on a gaussian grid.
+  // Need to setup derived state fields that we need (done on model grid).
+  std::vector<std::string> requiredStateVariables{ "exner_levels_minus_one",
+                                                   "potential_temperature",
+                                                   "exner",
+                                                   "air_pressure_levels_minus_one",
+                                                   "air_temperature",
+                                                   "dry_air_density_levels_minus_one"};
 
-    // Need to setup derived state fields that we need.
-    std::vector<std::string> requiredStateVariables{ "exner_levels_minus_one",
-                                                     "potential_temperature",
-                                                     "exner",
-                                                     "air_pressure_levels_minus_one",
-                                                     "air_temperature",
-                                                     "dry_air_density_levels_minus_one"};
+  std::vector<std::string> requiredGeometryVariables{"height_levels",
+                                                     "height"};
 
-    std::vector<std::string> requiredGeometryVariables{"height_levels",
-                                                       "height"};
-
-    // Check that they are allocated (i.e. exist in the state fieldset)
-    for (auto & s : requiredStateVariables) {
-      if (!xb.has(s)) {
-        oops::Log::error() << "::DryAirDensity variable " << s <<
-                              "is not part of state object." << std::endl;
-      }
+  // Check that they are allocated (i.e. exist in the state fieldset)
+  for (auto & s : requiredStateVariables) {
+    if (!xb.has(s)) {
+      oops::Log::error() << "::DryAirDensity variable " << s <<
+                            "is not part of state object." << std::endl;
     }
-
-    augmentedState.clear();
-    for (const auto & s : requiredStateVariables) {
-      augmentedState.add(xb[s]);
-    }
-
-    for (const auto & s : requiredGeometryVariables) {
-      augmentedState.add(outerGeometryData.fieldSet()[s]);
-    }
-
-    mo::evalAirTemperature(augmentedState);
-    mo::evalDryAirDensity(augmentedState);
-  } else {
-    oops::Log::error() << "ERROR - need to read in gauss rho field from file "
-                       << "OR reconfigure from xb fieldset"
-                       << "not present " << std::endl;
-    throw std::runtime_error("gauss rho unspecified");
   }
-  return augmentedState;
+
+  tempfields.clear();
+  for (const auto & s : requiredStateVariables) {
+    tempfields.add(xb[s]);
+  }
+
+  for (const auto & s : requiredGeometryVariables) {
+    tempfields.add(outerGeometryData.fieldSet()[s]);
+  }
+
+  mo::evalAirTemperature(tempfields);
+  mo::evalDryAirDensity(tempfields);
+
+  if (xb[0].functionspace().type() == "NodeColumns") {
+    const auto srcFunctionspace = atlas::functionspace::NodeColumns(xb[0].functionspace());
+    if (srcFunctionspace.mesh().grid().name().compare(0, 2, std::string{"CS"}) == 0) {
+
+      const auto partitioner =
+        atlas::grid::MatchingPartitioner(srcFunctionspace,
+                                         atlas::util::Config("type", "cubedsphere"));
+
+      const auto targetGrid = atlas::functionspace::StructuredColumns(outerGeometryData.functionSpace()).grid();
+      const auto targetMesh = atlas::MeshGenerator("structured").generate(targetGrid, partitioner);
+      const auto targetFunctionspace = atlas::functionspace::NodeColumns(targetMesh);
+
+      // Set up interpolation object.
+      const auto scheme = atlas::util::Config("type", "cubedsphere-bilinear") |
+                          atlas::util::Config("adjoint", true);
+      const auto interp = atlas::Interpolation(scheme, xb[0].functionspace(),
+                                               targetFunctionspace);
+
+      std::string s("dry_air_density_levels_minus_one");
+      auto targetField = targetFunctionspace.createField<double>
+        (atlas::option::name(s) |
+         atlas::option::levels(tempfields[s].levels()) |
+                               atlas::option::halo(1));
+      gfields.add(targetField);
+    }  else  {
+      std::cout << "Node Columns " << std::endl;
+    }
+  } else {
+    // error trap
+    std::cout << "createAugmentedState: Model state not Node Columns " << std::endl;
+  }
+
+  return gfields;
 }
 
 
