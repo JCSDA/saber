@@ -817,7 +817,7 @@ end subroutine nicas_blk_write_grids_data
 ! Subroutine: nicas_blk_compute_parameters
 !> Compute NICAS parameters
 !----------------------------------------------------------------------
-subroutine nicas_blk_compute_parameters(nicas_blk,mpl,rng,nam,geom)
+subroutine nicas_blk_compute_parameters(nicas_blk,mpl,rng,nam,geom,bpar)
 
 implicit none
 
@@ -827,9 +827,10 @@ type(mpl_type),intent(inout) :: mpl              !< MPI data
 type(rng_type),intent(inout) :: rng              !< Random number generator
 type(nam_type),intent(in) :: nam                 !< Namelist
 type(geom_type),intent(in) :: geom               !< Geometry
+type(bpar_type),intent(in) :: bpar               !< Block parameters
 
 ! Local variables
-integer :: icmp
+integer :: icmp,iv
 
 ! Set name
 @:set_name(nicas_blk_compute_parameters)
@@ -848,10 +849,12 @@ do icmp=1,nicas_blk%ncmp
    call mpl%flush
  
    ! Set attributes
+   iv = bpar%b_to_v1(ib)
    nicas_blk%cmp(icmp)%ib = ib
    nicas_blk%cmp(icmp)%ncmp = nicas_blk%ncmp
    nicas_blk%cmp(icmp)%verbosity = nicas_blk%verbosity
    nicas_blk%cmp(icmp)%draw_type = nam%nicas_draw_type
+   nicas_blk%cmp(icmp)%interp_type = nam%nicas_interp_type(iv)
    nicas_blk%cmp(icmp)%smoother = .false.
    nicas_blk%cmp(icmp)%compute_norm = (.not.allocated(nicas_blk%cmp(icmp)%norm))
 
@@ -992,6 +995,7 @@ do il0i=1,nl0i
    nicas_blk%cmp(il0i)%ncmp = 1
    nicas_blk%cmp(il0i)%verbosity = .false.
    nicas_blk%cmp(il0i)%draw_type = 'octahedral'
+   nicas_blk%cmp(il0i)%interp_type = 'c0'
    nicas_blk%cmp(il0i)%smoother = .true.
    nicas_blk%cmp(il0i)%compute_norm = .false.
 

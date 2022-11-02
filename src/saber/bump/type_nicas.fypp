@@ -817,7 +817,7 @@ do ib=1,bpar%nbe
    end if
 
    ! NICAS parameters
-   if (bpar%nicas_block(ib)) call nicas%blk(ib)%compute_parameters(mpl,rng,nam,geom)
+   if (bpar%nicas_block(ib)) call nicas%blk(ib)%compute_parameters(mpl,rng,nam,geom,bpar)
 end do
 
 if (nam%write_nicas_local.or.nam%write_nicas_global.or.nam%write_nicas_grids) then

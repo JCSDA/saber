@@ -11,7 +11,7 @@
 !----------------------------------------------------------------------
 module tools_stripack
 
-use tools_const, only: zero,one,four,hundred,pi
+use tools_const, only: zero,one,two,four,hundred,pi
 use tools_kinds, only: kind_real
 use tools_repro, only: eq,inf,sup,supeq,small
 use type_mpl, only: mpl_type
@@ -36,6 +36,9 @@ interface covsph
 end interface
 interface det
    module procedure stripack_det
+end interface
+interface getnp
+   module procedure stripack_getnp
 end interface
 interface insert
    module procedure stripack_insert
@@ -66,7 +69,7 @@ interface trmesh
 end interface
 
 private
-public :: area,bnodes,trfind,trmesh
+public :: area,bnodes,getnp,trfind,trmesh
 
 contains
 
@@ -511,6 +514,75 @@ if (small(output,t1).or.small(output,t2).or.small(output,t3)) output = zero
 @:probe_out()
 
 end subroutine stripack_det
+
+!----------------------------------------------------------------------
+! Subroutine: stripack_getnp
+!> Get index of the next node in the sequence
+!----------------------------------------------------------------------
+subroutine stripack_getnp(mpl,n,x,y,z,list,lptr,lend,l,npts,df)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl !< MPI data
+integer,intent(in) :: n             !< Number of nodes
+real(kind_real),intent(in) :: x(n)  !< X-coordinates of the nodes
+real(kind_real),intent(in) :: y(n)  !< Y-coordinates of the nodes
+real(kind_real),intent(in) :: z(n)  !< Z-coordinates of the nodes
+integer,intent(in) :: list(*)       !< On input, the data structure associated with the triangulation of nodes 1 to K-1. On output, the data has been updated to include node K. The array lengths are assumed to be large enough to add node K. Refer to TRMESH.
+integer,intent(in) :: lptr(*)       !< cf. list
+integer,intent(in) :: lend(n)       !< cf. list
+integer,intent(in) :: l             !< Number of nodes in the sequence on output
+integer,intent(inout) :: npts(l)    !< Indexes of the l-1 closest nodes to npts(1) in the first l-1 locations
+real(kind_real),intent(out) :: df   !< Value of an increasing function (negative cosine) of the angular distance between npts(1) and npts(l)
+
+! Local variables
+integer :: i,lp,lpl,n1,nb,ni,np,lend_tmp(n)
+real(kind_real) :: dnb,dnp,x1,y1,z1
+
+! Check l
+if (l<2) call mpl%abort('${subr}$','l < 2')
+
+! Store n1 = npts(1) and mark the elements of npts
+lend_tmp = lend
+n1 = npts(1)
+x1 = x(n1)
+y1 = y(n1)
+z1 = z(n1)
+do i=1,l-1
+   ni = npts(i)
+   lend_tmp(ni) = -lend_tmp(ni)
+end do
+
+! Candidates for NP = NPTS(L) are the unmarked neighbors of nodes in NPTS.  DNP is initially greater than -cos(PI) (the maximum distance)
+dnp = two
+
+! Loop on nodes NI in NPTS
+do i=1,l-1
+   ni = npts(i)
+   lpl = -lend_tmp(ni)
+   lp = lpl
+
+   ! Loop on neighbors NB of NI
+   do
+      nb = abs(list(lp))
+
+      ! NB is an unmarked neighbor of NI, replace NP if NB is closer to n1
+      if (0<=lend_tmp(nb)) then
+         dnb = -(x(nb)*x1+y(nb)*y1+z(nb)*z1)
+         if (dnb<dnp) then
+            np = nb
+            dnp = dnb
+         end if
+      end if
+      lp = lptr(lp)
+      if (lp==lpl) exit
+   end do
+end do
+npts(l) = np
+df = dnp
+
+end subroutine stripack_getnp
 
 !----------------------------------------------------------------------
 ! Subroutine: stripack_insert

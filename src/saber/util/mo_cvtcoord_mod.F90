@@ -7,15 +7,33 @@
 ! Purpose : in the training data
 !-------------------------------------------------------------------------------
 
-module spectralb_cvtcoord_mod
+module mo_cvtcoord_mod
 
-use iso_c_binding, only : c_int, c_float
+use iso_c_binding, only : c_int, c_int32_t, c_float
+use netcdf, only: nf90_max_name
 
 ! -----------------------------------------------------------------------------
 
 implicit none
-private
 
+! ---------------------------------------------------------------------------
+! Derived type: NetCDF coordinate attributes
+! ---------------------------------------------------------------------------
+type cvt_coordinate_type
+  character(len=nf90_max_name)  :: CoName
+  character(len=nf90_max_name)  :: long_name
+  character(len=nf90_max_name)  :: units
+  character(len=nf90_max_name)  :: positive
+  integer                       :: CoSize
+  integer(kind=c_int32_t)       :: dimid
+  integer(kind=c_int)           :: varid
+  real                          :: origin
+  real                          :: delta
+  real, allocatable             :: CoValues(:)
+end type cvt_coordinate_type
+
+private
+public :: cvt_coordinate_type
 public :: cvt_create3dcoordinate
 public :: cvt_initialiseadjustordealloccoord
 ! ------------------------------------------------------------------------------
@@ -23,11 +41,9 @@ public :: cvt_initialiseadjustordealloccoord
 contains
 
 !-------------------------------------------------------------------------------
+
 subroutine cvt_create3dcoordinate( FirCoord1D, SecCoord1D, ThiCoord1D,  &
   CoordOut3D )
-
-use cvt_derivedtypes_mod, ONLY: &
-  cvt_coordinate_type
 
 ! Subroutine arguments:
 type(cvt_coordinate_type),             intent(in)  :: FirCoord1D
@@ -49,18 +65,11 @@ CoordOut3D(3) = ThiCoord1D
 
 end subroutine cvt_create3dcoordinate
 
-
 !------------------------------------------------------------------------------
 
 subroutine cvt_initialiseadjustordealloccoord( CoordOut, &  ! OUT
   CoSize,                                                      &  ! in
   CoordTemplate, CoNa, LongName, CoValues, undo )                 ! in optional
-
-use cvt_derivedtypes_mod, ONLY: &
-    cvt_coordinate_type
-
-use netcdf, ONLY: &
-    nf90_max_name
 
 ! Subroutine arguments:
 type(cvt_coordinate_type),           intent(inout) :: CoordOut
@@ -161,6 +170,4 @@ end if
 
 end subroutine cvt_initialiseadjustordealloccoord
 
-end module spectralb_cvtcoord_mod
-
-
+end module mo_cvtcoord_mod
