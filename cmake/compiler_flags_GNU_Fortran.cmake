@@ -17,7 +17,7 @@ set( CMAKE_Fortran_FLAGS_RELEASE "-O3 -funroll-all-loops -finline-functions ")
 # DEBUG FLAGS
 ####################################################################
 
-set( CMAKE_Fortran_FLAGS_DEBUG   "-O0 -g -Wextra -Wall -ftrapv -fall-intrinsics -fcheck=all -fimplicit-none -ffpe-trap=invalid,zero,overflow,denormal -fcheck-array-temporaries -finit-derived -finit-integer=-999 -finit-real=snan -fbacktrace -fprofile-arcs -ftest-coverage" )
+set( CMAKE_Fortran_FLAGS_DEBUG   "-O0 -g -Wextra -Wall -ftrapv -fall-intrinsics -fcheck=all -fimplicit-none -ffpe-trap=invalid,zero,overflow,denormal -fcheck-array-temporaries -finit-derived -finit-integer=-999 -finit-real=snan -fbacktrace" )
 
 ####################################################################
 # BIT REPRODUCIBLE FLAGS
