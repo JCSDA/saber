@@ -1,4 +1,4 @@
-/*
+﻿/*
  * (C) Crown Copyright 2022 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
@@ -81,18 +81,28 @@ void populateRHSVecAdj(const atlas::Field & rhoState,
   rhsvecView.assign(0.0);
 }
 
+double normfield(const eckit::mpi::Comm & comm, const atlas::Field& fld) {
+  // to do - maybe not include halos?
+  auto view = atlas::array::make_view<double, 2>(fld);
+
+  std::size_t i(0);
+  double zz(0.0);
+  for (atlas::idx_t jn = 0; jn < fld.shape(0); ++jn) {
+    for (atlas::idx_t jl = 0; jl < fld.shape(1); ++jl, ++i) {
+      zz += view(jn, jl) * view(jn, jl);
+    }
+  }
+  comm.allReduceInPlace(i, eckit::mpi::sum());
+  comm.allReduceInPlace(zz, eckit::mpi::sum());
+
+  return std::sqrt(zz)/static_cast<double>(i);
+}
 
 
-atlas::FieldSet createAugmentedState(const oops::GeometryData & outerGeometryData,
-                                     const atlas::FieldSet & xb) {
-  // below will work if xb is on the gauss mesh.
-  // maybe error trap to check functionspace?
-  // maybe alternative is to read in GaussField from file.
-
+void populateFields(const atlas::FieldSet & geomfields,
+                    const atlas::FieldSet & statefields,
+                    atlas::FieldSet & outputfields) {
   atlas::FieldSet tempfields;
-  atlas::FieldSet gfields;
-
-  // We might want to check grid type to ensure that we are on a gaussian grid.
 
   // Need to setup derived state fields that we need (done on model grid).
   std::vector<std::string> requiredStateVariables{ "exner_levels_minus_one",
@@ -105,56 +115,109 @@ atlas::FieldSet createAugmentedState(const oops::GeometryData & outerGeometryDat
   std::vector<std::string> requiredGeometryVariables{"height_levels",
                                                      "height"};
 
+  std::vector<std::string> outputVariables{"dry_air_density_levels_minus_one"};
+
   // Check that they are allocated (i.e. exist in the state fieldset)
   for (auto & s : requiredStateVariables) {
-    if (!xb.has(s)) {
-      oops::Log::error() << "::DryAirDensity variable " << s <<
+    if (!statefields.has(s)) {
+      oops::Log::error() << "::gaussuvtogp::populateFields variable " << s <<
                             "is not part of state object." << std::endl;
     }
   }
 
   tempfields.clear();
   for (const auto & s : requiredStateVariables) {
-    tempfields.add(xb[s]);
+    tempfields.add(statefields[s]);
   }
 
   for (const auto & s : requiredGeometryVariables) {
-    tempfields.add(outerGeometryData.fieldSet()[s]);
+    tempfields.add(geomfields[s]);
   }
 
   mo::evalAirTemperature(tempfields);
   mo::evalDryAirDensity(tempfields);
 
-  if (xb[0].functionspace().type() == "NodeColumns") {
+  std::string s("dry_air_density_levels_minus_one");
+  outputfields.add(tempfields[s]);
+
+}
+
+void interpolateCSToGauss(const oops::GeometryData & outerGeometryData,
+                          const atlas::FieldSet &  csfields,
+                          atlas::FieldSet & gfields) {
+  const auto srcFunctionspace = atlas::functionspace::NodeColumns(csfields[0].functionspace());
+
+  const auto partitioner = atlas::grid::MatchingPartitioner(srcFunctionspace,
+                           atlas::util::Config("type", "cubedsphere"));
+
+  const auto targetGrid =
+      atlas::functionspace::StructuredColumns(outerGeometryData.functionSpace()).grid();
+  const auto targetMesh = atlas::MeshGenerator("structured").generate(targetGrid, partitioner);
+  const auto targetFunctionspace = atlas::functionspace::NodeColumns(targetMesh);
+
+  // Set up interpolation object.
+  const auto scheme = atlas::util::Config("type", "cubedsphere-bilinear") |
+                      atlas::util::Config("adjoint", true);
+  const auto interp = atlas::Interpolation(scheme, csfields[0].functionspace(),
+                                           targetFunctionspace);
+  std::string s("dry_air_density_levels_minus_one");
+  auto targetField = targetFunctionspace.createField<double>
+      (atlas::option::name(s) |
+       atlas::option::levels(csfields[s].levels()) |
+                             atlas::option::halo(1));
+  gfields.add(targetField);
+}
+
+
+atlas::FieldSet createAugmentedState(const oops::GeometryData & outerGeometryData,
+                                     const atlas::FieldSet & xb) {
+  // below will work if xb is on the gauss mesh.
+  // maybe error trap to check functionspace?
+  // maybe alternative is to read in GaussField from file.
+
+  atlas::FieldSet tempfields;
+  atlas::FieldSet gfields;
+  std::string s("dry_air_density_levels_minus_one");
+  double tolerance(1.0e-6);
+
+  // error trap that xb has field "s" even if it is not populated.
+  if (!xb.has(s)) {
+    oops::Log::error() <<  "expect " << s
+                       << "to be allocated in xb fieldset"
+                       << std::endl;
+    throw std::runtime_error("ERROR - gaussuvtogp saber block: failed");
+  }
+
+  if (xb[0].functionspace().type() == "StructuredColumns") {
+    const auto srcFunctionspace =
+      atlas::functionspace::StructuredColumns(xb[0].functionspace());
+    if (srcFunctionspace.grid().name().compare(0, 1, std::string{"F"}) == 0) {
+      if (normfield(outerGeometryData.comm(), xb[s]) > tolerance) {
+        // just link to existing data.
+        gfields.add(xb[s]);
+      } else {
+        // gauss field exists but is not populated.
+        populateFields(outerGeometryData.fieldSet(), xb, gfields);
+      }
+    }
+  } else if (xb[0].functionspace().type() == "NodeColumns") {
     const auto srcFunctionspace = atlas::functionspace::NodeColumns(xb[0].functionspace());
     if (srcFunctionspace.mesh().grid().name().compare(0, 2, std::string{"CS"}) == 0) {
-
-      const auto partitioner =
-        atlas::grid::MatchingPartitioner(srcFunctionspace,
-                                         atlas::util::Config("type", "cubedsphere"));
-
-      const auto targetGrid = atlas::functionspace::StructuredColumns(outerGeometryData.functionSpace()).grid();
-      const auto targetMesh = atlas::MeshGenerator("structured").generate(targetGrid, partitioner);
-      const auto targetFunctionspace = atlas::functionspace::NodeColumns(targetMesh);
-
-      // Set up interpolation object.
-      const auto scheme = atlas::util::Config("type", "cubedsphere-bilinear") |
-                          atlas::util::Config("adjoint", true);
-      const auto interp = atlas::Interpolation(scheme, xb[0].functionspace(),
-                                               targetFunctionspace);
-
-      std::string s("dry_air_density_levels_minus_one");
-      auto targetField = targetFunctionspace.createField<double>
-        (atlas::option::name(s) |
-         atlas::option::levels(tempfields[s].levels()) |
-                               atlas::option::halo(1));
-      gfields.add(targetField);
-    }  else  {
-      std::cout << "Node Columns " << std::endl;
+      if (normfield(outerGeometryData.comm(), xb[s]) <= tolerance) {
+          populateFields(outerGeometryData.fieldSet(), xb, tempfields);
+      }
+      interpolateCSToGauss(outerGeometryData, tempfields, gfields);
+    } else {
+      oops::Log::error() <<  "non cubed-sphere NodeColumns not supported "
+                         << std::endl;
+      throw std::runtime_error("ERROR - gaussuvtogp saber block: failed");
     }
   } else {
-    // error trap
-    std::cout << "createAugmentedState: Model state not Node Columns " << std::endl;
+    oops::Log::error() <<  "functionspace type "
+                       << xb[0].functionspace().type()
+                       << "not currently supported"
+                       << std::endl;
+    throw std::runtime_error("ERROR - gaussuvtogp saber block: failed");
   }
 
   return gfields;
