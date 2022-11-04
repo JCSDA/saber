@@ -164,11 +164,6 @@ bint%afunctionspace_in = afunctionspace_in
 ! Output ATLAS functionspace
 bint%afunctionspace_out = afunctionspace_out
 
-! Initialize BUMP
-
-! Clear any pre-existing data
-call bint%delete
-
 ! BUMP setup
 call bint%bump%setup(comm,bint%afunctionspace_in)
 
