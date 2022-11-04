@@ -374,7 +374,7 @@ integer,intent(out) :: lxi_to_lx(nlx) !< Independent levels to levels
 
 ! Local variables
 integer :: ilx,ilxi,jlx,jlxi,n
-character(len=1024) :: cfmt
+character(len=11) :: cfmt
 
 ! Set name
 @:set_name(func_independent_levels)
@@ -425,7 +425,7 @@ do ilxi=1,nlxi
    else
       cfmt = '(i3,a,i3,a)'
    end if
-   write(mpl%test,trim(cfmt)) ilx,'[',n,'] '
+   write(mpl%test,cfmt) ilx,'[',n,'] '
    call mpl%flush(.false.)
 end do
 write(mpl%test,'(a)') ''
