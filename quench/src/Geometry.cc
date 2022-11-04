@@ -7,9 +7,9 @@
 
 #include "src/Geometry.h"
 
-#include <math.h>
 #include <netcdf.h>
 
+#include <cmath>
 #include <sstream>
 
 #include "atlas/field.h"
@@ -172,9 +172,6 @@ Geometry::Geometry(const Parameters_ & params,
   } else if (params.functionSpace.value() == "PointCloud") {
     // Setup function space
     functionSpace_ = atlas::functionspace::PointCloud(grid_);
-
-    // Setup mesh
-//    mesh_ = atlas::MeshGenerator("delaunay").generate(grid_); TODO(Benjamin): only if CGAL present
   } else {
     ABORT(params.functionSpace.value() + " function space not supported yet");
   }

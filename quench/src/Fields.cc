@@ -153,7 +153,7 @@ Fields::Fields(const Fields & other):
 // -----------------------------------------------------------------------------
 void Fields::zero() {
   oops::Log::trace() << "Fields::zero starting" << std::endl;
-  auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
+  const auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   for (const auto & var : vars_.variables()) {
     atlas::Field field = fset_[var];
     if (field.rank() == 2) {
@@ -190,7 +190,7 @@ Fields & Fields::operator=(const Fields & rhs) {
 // -----------------------------------------------------------------------------
 Fields & Fields::operator+=(const Fields & rhs) {
   oops::Log::trace() << "Fields::operator+=(const Fields & rhs) starting" << std::endl;
-  auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
+  const auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   for (const auto & var : vars_.variables()) {
     atlas::Field field = fset_[var];
     atlas::Field fieldRhs = rhs.fset_[var];
@@ -212,7 +212,7 @@ Fields & Fields::operator+=(const Fields & rhs) {
 // -----------------------------------------------------------------------------
 Fields & Fields::operator-=(const Fields & rhs) {
   oops::Log::trace() << "Fields::operator-=(const Fields & rhs) starting" << std::endl;
-  auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
+  const auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   for (const auto & var : vars_.variables()) {
     atlas::Field field = fset_[var];
     atlas::Field fieldRhs = rhs.fset_[var];
@@ -234,7 +234,7 @@ Fields & Fields::operator-=(const Fields & rhs) {
 // -----------------------------------------------------------------------------
 Fields & Fields::operator*=(const double & zz) {
   oops::Log::trace() << "Fields::operator*=(const Fields & rhs) starting" << std::endl;
-  auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
+  const auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   for (const auto & var : vars_.variables()) {
     atlas::Field field = fset_[var];
     if (field.rank() == 2) {
@@ -254,7 +254,7 @@ Fields & Fields::operator*=(const double & zz) {
 // -----------------------------------------------------------------------------
 void Fields::axpy(const double & zz, const Fields & rhs) {
   oops::Log::trace() << "Fields::axpy starting" << std::endl;
-  auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
+  const auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   for (const auto & var : vars_.variables()) {
     atlas::Field field = fset_[var];
     atlas::Field fieldRhs = rhs.fset_[var];
@@ -277,8 +277,8 @@ void Fields::axpy(const double & zz, const Fields & rhs) {
 double Fields::dot_product_with(const Fields & fld2) const {
   oops::Log::trace() << "Fields::dot_product_with starting" << std::endl;
   double zz = 0;
-  auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
-  auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
+  const auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
+  const auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
   for (const auto & var : vars_.variables()) {
     atlas::Field field1 = fset_[var];
     atlas::Field field2 = fld2.fset_[var];
@@ -301,7 +301,7 @@ double Fields::dot_product_with(const Fields & fld2) const {
 // -----------------------------------------------------------------------------
 void Fields::schur_product_with(const Fields & dx) {
   oops::Log::trace() << "Fields::schur_product_with starting" << std::endl;
-  auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
+  const auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   for (const auto & var : vars_.variables()) {
     atlas::Field field = fset_[var];
     atlas::Field fieldDx = dx.fset_[var];
@@ -324,8 +324,8 @@ void Fields::random() {
   oops::Log::trace() << "Fields::random starting" << std::endl;
   // Total size
   size_t n = 0;
-  auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
-  auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
+  const auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
+  const auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
   for (const auto & var : vars_.variables()) {
     atlas::Field field = fset_[var];
     if (field.rank() == 2) {
@@ -382,12 +382,12 @@ void Fields::random() {
 
   if (geom_->getComm().rank() == 0) {
     // Random vector
-    util::NormalDistribution<double>rand_vec(n, 0.0, 1.0, 1);
+    util::NormalDistribution<double> rand_vec(n, 0.0, 1.0, 1);
 
     // Copy random values
     n = 0;
-    auto gmaskView = atlas::array::make_view<int, 2>(globalMasks.field("gmask"));
-    auto ghostView = atlas::array::make_view<int, 1>(globalMasks.field("ghost"));
+    const auto gmaskView = atlas::array::make_view<int, 2>(globalMasks.field("gmask"));
+    const auto ghostView = atlas::array::make_view<int, 1>(globalMasks.field("ghost"));
     for (const auto & var : vars_.variables()) {
       atlas::Field field = globalData[var];
       if (field.rank() == 2) {
@@ -442,8 +442,8 @@ void Fields::dirac(const eckit::Configuration & config) {
   // Build KDTree for each MPI task
   atlas::util::IndexKDTree search;
   search.reserve(geom_->functionSpace().size());
-  auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
-  auto lonlatView = atlas::array::make_view<double, 2>(geom_->functionSpace().lonlat());
+  const auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
+  const auto lonlatView = atlas::array::make_view<double, 2>(geom_->functionSpace().lonlat());
   atlas::idx_t n = 0;
   for (atlas::idx_t jnode = 0; jnode < geom_->functionSpace().size(); ++jnode) {
     if (ghostView(jnode) == 0) {
@@ -495,7 +495,7 @@ void Fields::dirac(const eckit::Configuration & config) {
 // -----------------------------------------------------------------------------
 void Fields::diff(const Fields & x1, const Fields & x2) {
   oops::Log::trace() << "Fields::diff starting" << std::endl;
-  auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
+  const auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   for (const auto & var : vars_.variables()) {
     atlas::Field field = fset_[var];
     atlas::Field fieldx1 = x1.fset_[var];
@@ -540,7 +540,7 @@ void Fields::toFieldSet(atlas::FieldSet & fset) const {
 void Fields::fromFieldSet(const atlas::FieldSet & fset) {
   oops::Log::trace() << "Fields::fromFieldSet starting" << std::endl;
   // Get ghost points mask
-  auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
+  const auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
 
   // Copy values (excluding halo points)
   for (auto var : vars_.variables()) {
@@ -789,7 +789,7 @@ void Fields::write(const eckit::Configuration & config) const {
   globalCoordinates.add(gmaskGlobal);
   auto lonViewGlobal = atlas::array::make_view<double, 1>(lonGlobal);
   auto latViewGlobal = atlas::array::make_view<double, 1>(latGlobal);
-  auto gmaskViewGlobal = atlas::array::make_view<int, 2>(gmaskGlobal);
+  const auto gmaskViewGlobal = atlas::array::make_view<int, 2>(gmaskGlobal);
 
   // Global data
   atlas::FieldSet globalData;
@@ -805,7 +805,7 @@ void Fields::write(const eckit::Configuration & config) const {
     atlas::functionspace::StructuredColumns fs(geom_->functionSpace());
 
     // Local coordinates
-    auto lonlatView = atlas::array::make_view<double, 2>(fs.xy());
+    const auto lonlatView = atlas::array::make_view<double, 2>(fs.xy());
     for (atlas::idx_t jnode = 0; jnode < fs.xy().shape(0); ++jnode) {
        lonViewLocal(jnode) = lonlatView(jnode, 0);
        latViewLocal(jnode) = lonlatView(jnode, 1);
@@ -935,7 +935,7 @@ void Fields::write(const eckit::Configuration & config) const {
       atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
 
       // Local coordinates
-      auto lonlatView = atlas::array::make_view<double, 2>(fs.lonlat());
+      const auto lonlatView = atlas::array::make_view<double, 2>(fs.lonlat());
       for (atlas::idx_t jnode = 0; jnode < fs.lonlat().shape(0); ++jnode) {
          lonViewLocal(jnode) = lonlatView(jnode, 0);
          latViewLocal(jnode) = lonlatView(jnode, 1);
@@ -954,7 +954,7 @@ void Fields::write(const eckit::Configuration & config) const {
       atlas::functionspace::NodeColumns fs(geom_->functionSpace());
 
       // Local coordinates
-      auto lonlatView = atlas::array::make_view<double, 2>(fs.lonlat());
+      const auto lonlatView = atlas::array::make_view<double, 2>(fs.lonlat());
       for (atlas::idx_t jnode = 0; jnode < fs.lonlat().shape(0); ++jnode) {
          lonViewLocal(jnode) = lonlatView(jnode, 0);
          latViewLocal(jnode) = lonlatView(jnode, 1);
@@ -1086,7 +1086,7 @@ void Fields::write(const eckit::Configuration & config) const {
       // Copy coordinates
       double zlon[nlocs][1];
       double zlat[nlocs][1];
-      auto lonlatView = atlas::array::make_view<double, 2>(fs.lonlat());
+      const auto lonlatView = atlas::array::make_view<double, 2>(fs.lonlat());
       for (atlas::idx_t i = 0; i < nlocs; ++i) {
         zlon[i][0] = lonlatView(i, 0);
         zlat[i][0] = lonlatView(i, 1);
@@ -1149,8 +1149,8 @@ void Fields::print(std::ostream & os) const {
     prefix = "Info     : ";
   }
   os << prefix << "Fields:";
-  auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
-  auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
+  const auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
+  const auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
   for (const auto & var : vars_.variables()) {
     os << std::endl;
     double zz = 0.0;

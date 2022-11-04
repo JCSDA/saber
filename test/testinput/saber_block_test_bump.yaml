@@ -63,6 +63,7 @@ saber outer blocks:
   bump:
     datadir: testdata
     prefix: saber_block_test_bump/_MPI_-_OMP_
+    testing: true
     nprocio: 1
     load_wind_local: true
     fname_wind: error_covariance_training_bump_wind/_MPI_-_OMP__wind

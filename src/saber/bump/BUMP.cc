@@ -49,7 +49,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   oops::Log::trace() << "BUMP::BUMP construction starting" << std::endl;
 
   // If testing is activated, replace _MPI_ and _OMP_ patterns
-  const boost::optional<bool> &testing = params_.testing.value().get_value_or(false);
+  const bool testing = params_.testing.value().get_value_or(false);
   if (testing) {
     // Convert to eckit configuration
     eckit::LocalConfiguration fullConfig;

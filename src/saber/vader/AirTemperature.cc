@@ -61,15 +61,11 @@ AirTemperature::AirTemperature(const oops::GeometryData & outerGeometryData,
 
   augmentedStateFieldSet_.clear();
   for (const auto & s : requiredStateVariables) {
-std::cout << "Test " << s << std::endl;
     augmentedStateFieldSet_.add(xb[s]);
-std::cout << "OK test " << s << std::endl;
   }
 
   for (const auto & s : requiredGeometryVariables) {
-std::cout << "Test 2 " << s << std::endl;
     augmentedStateFieldSet_.add(outerGeometryData.fieldSet()[s]);
-std::cout << "OK test 2 " << s << std::endl;
   }
 
   oops::Log::trace() << classname() << "::AirTemperature done" << std::endl;
