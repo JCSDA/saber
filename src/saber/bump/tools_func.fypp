@@ -374,7 +374,7 @@ integer,intent(out) :: lxi_to_lx(nlx) !< Independent levels to levels
 
 ! Local variables
 integer :: ilx,ilxi,jlx,jlxi,n
-character(len=11) :: cfmt
+character(len=13) :: cfmt
 
 ! Set name
 @:set_name(func_independent_levels)
@@ -415,20 +415,21 @@ do ilx=2,nlx
 end do
 
 ! Print levels
+write(mpl%test,'(a)') ''
 do ilxi=1,nlxi
    ilx = lxi_to_lx(ilxi)
    n = count(lx_to_lxi==ilxi)
    if (n<10) then
-      cfmt = '(i3,a,i1,a)'
+      cfmt = '(a,i3,a,i1,a)'
    elseif (n<100) then
-      cfmt = '(i3,a,i2,a)'
+      cfmt = '(a,i3,a,i2,a)'
+   elseif (n<1000) then
+      cfmt = '(a,i3,a,i3,a)'
    else
-      cfmt = '(i3,a,i3,a)'
+      call mpl%abort('${subr}$','level larger than 1000')
    end if
-   write(mpl%test,cfmt) ilx,'[',n,'] '
-   call mpl%flush(.false.)
+   write(mpl%test,cfmt) trim(mpl%test),ilx,'[',n,'] '
 end do
-write(mpl%test,'(a)') ''
 call mpl%flush
 
 ! Probe out
