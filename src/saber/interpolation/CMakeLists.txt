@@ -20,6 +20,7 @@ if( oops_FOUND )
 
     # ATLAS interpolation wrapper
     AtlasInterpWrapper.h
+    AtlasInterpWrapper.cc
 
     )
 endif()
