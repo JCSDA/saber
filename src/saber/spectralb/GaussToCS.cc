@@ -11,25 +11,22 @@
 
 #include "saber/spectralb/GaussToCS.h"
 
-
 using atlas::grid::detail::partitioner::TransPartitioner;
 
-
 namespace saber {
-namespace spectralb {
+namespace interpolation {
 
 namespace {
 
 atlas::functionspace::StructuredColumns
     createGaussFunctionSpace(const atlas::StructuredGrid & gaussGrid) {
-  oops::Log::trace() << "inside createGaussFunctionSpace" << std::endl;
   return atlas::functionspace::StructuredColumns(
     gaussGrid,
     atlas::grid::Partitioner(new TransPartitioner()),
     atlas::option::halo(1));
 }
 
-}
+}  // namespace
 
 // -----------------------------------------------------------------------------
 
@@ -56,7 +53,8 @@ GaussToCS::GaussToCS(const oops::GeometryData & outerGeometryData,
     csgrid_(CSFunctionSpace_.mesh().grid()),
     interp_(gaussPartitioner_, gaussFunctionSpace_, csgrid_, CSFunctionSpace_),
     innerGeometryData_(gaussFunctionSpace_, outerGeometryData.fieldSet(),
-                       outerGeometryData.levelsAreTopDown(), outerGeometryData.comm())
+                       outerGeometryData.levelsAreTopDown(),
+                       outerGeometryData.comm())
 
 {
   oops::Log::trace() << classname() << "::GaussToCS starting" << std::endl;
@@ -66,7 +64,7 @@ GaussToCS::GaussToCS(const oops::GeometryData & outerGeometryData,
 // -----------------------------------------------------------------------------
 
 void GaussToCS::multiply(atlas::FieldSet & fieldSet) const {
-  oops::Log::trace() << classname() << "::multiply starting " << fieldSet.field_names() << std::endl;
+  oops::Log::trace() << classname() << "::multiply starting " << std::endl;
 
   // Create empty Model fieldset
   atlas::FieldSet newFields = atlas::FieldSet();
@@ -90,9 +88,10 @@ void GaussToCS::multiply(atlas::FieldSet & fieldSet) const {
   atlas::FieldSet csFieldSet;
   for (const auto & fieldname : activeVars_.variables()) {
     atlas::Field csField =
-      CSFunctionSpace_.createField<double>(atlas::option::name(fieldname) |
-                                           atlas::option::levels(gaussFieldSet[fieldname].levels()) |
-                                           atlas::option::halo(1));
+      CSFunctionSpace_.createField<double>(
+          atlas::option::name(fieldname) |
+          atlas::option::levels(gaussFieldSet[fieldname].levels()) |
+          atlas::option::halo(1));
     csFieldSet.add(csField);
   }
 
@@ -113,10 +112,7 @@ void GaussToCS::multiply(atlas::FieldSet & fieldSet) const {
 
 void GaussToCS::multiplyAD(atlas::FieldSet & fieldSet) const {
   oops::Log::trace() << classname()
-                     << "::multiplyAD starting" << fieldSet.field_names() << std::endl;
-
-  oops::Log::trace() << classname()
-                     << "::multiplyAD activevars " << activeVars_ << std::endl;
+                     << "::multiplyAD starting" << std::endl;
 
   // On input: fieldset on gaussian grid
   atlas::FieldSet newFields = atlas::FieldSet();
@@ -133,15 +129,6 @@ void GaussToCS::multiplyAD(atlas::FieldSet & fieldSet) const {
      }
   }
 
-  oops::Log::trace() << classname()
-                     << "::multiplyAD newFields 1 "
-                     << newFields.field_names() << std::endl;
-
-  oops::Log::trace() << classname()
-                     << "::multiplyAD csFieldSet 1 "
-                     << csFieldSet.field_names() << std::endl;
-
-
   // Create gauss fieldset
   atlas::FieldSet gaussFieldSet;
   for (const auto & fieldname : activeVars_.variables()) {
@@ -152,15 +139,6 @@ void GaussToCS::multiplyAD(atlas::FieldSet & fieldSet) const {
     gaussFieldSet.add(gaussField);
   }
 
-  oops::Log::trace() << classname()
-                     << "::multiplyAD gaussFieldSet 2 "
-                     << gaussFieldSet.field_names() << std::endl;
-
-  oops::Log::trace() << classname()
-                     << "::multiplyAD csFieldSet 2 "
-                     << csFieldSet.field_names() << std::endl;
-
-
   // Adjoint of interpolation from gauss to dual cubed sphere
   interp_.executeAdjoint(gaussFieldSet, csFieldSet);
 
@@ -170,7 +148,7 @@ void GaussToCS::multiplyAD(atlas::FieldSet & fieldSet) const {
 
   fieldSet = newFields;
 
-  oops::Log::trace() << classname() << "::multiplyAD done" << fieldSet.field_names() << std::endl;
+  oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
@@ -187,5 +165,5 @@ void GaussToCS::print(std::ostream & os) const {
   os << classname();
 }
 
-}  // namespace spectralb
+}  // namespace interpolation
 }  // namespace saber

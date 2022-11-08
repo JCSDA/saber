@@ -12,8 +12,8 @@
 #include <vector>
 
 #include "atlas/field.h"
-#include "atlas/grid.h"
 #include "atlas/functionspace.h"
+#include "atlas/grid.h"
 
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
@@ -30,7 +30,7 @@ class AtlasInterpWrapper;
 
 
 namespace saber {
-namespace spectralb {
+namespace interpolation {
 
 // -----------------------------------------------------------------------------
 class GaussToCSParameters : public SaberBlockParametersBase {
@@ -95,5 +95,5 @@ class GaussToCS : public SaberOuterBlockBase {
   const oops::GeometryData innerGeometryData_;
 };
 
-}  // namespace spectralb;
+}  // namespace interpolation
 }  // namespace saber
