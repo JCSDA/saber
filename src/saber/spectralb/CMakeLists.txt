@@ -10,8 +10,6 @@ if( oops_FOUND AND atlas_TRANS_FOUND )
     CovarianceStatistics.h
     CovarianceStatisticsUtils.cc
     CovarianceStatisticsUtils.h
-    GaussToCS.cc
-    GaussToCS.h
     spectralb.h
     spectralbnointerp.h
     spectralb_covstats_interface.h
