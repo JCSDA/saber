@@ -126,3 +126,4 @@ output dirac:
   filepath: testdata/dirac_bump/dirac_%id%
 test:
   reference filename: testref/dirac_bump.ref
+  float relative tolerance: 1.e-2

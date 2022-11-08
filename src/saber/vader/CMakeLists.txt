@@ -29,4 +29,12 @@ if ( oops_FOUND AND ENABLE_VADER_MO )
     )
 endif()
 
+if ( oops_FOUND )
+    list(APPEND vader_src_files_list
+
+    VaderBlock.cc
+    VaderBlock.h
+    )
+endif()
+
 set( vader_src_files ${vader_src_files_list} PARENT_SCOPE )

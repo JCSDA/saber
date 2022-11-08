@@ -1,0 +1,26 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 10
+  levels: 2
+initial condition:
+  date: 2010-01-01T12:00:00Z
+  state variables: &vars [streamfunction, velocity_potential, air_temperature, specific_humidity ]
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: ID
+  saber outer blocks:
+  - saber block name: vader variable change
+    inner variables: [virtual_temperature]
+dirac:
+  lon: [180.0, 180.0, 180.0, 180.0]
+  lat: [0.0, 0.0, 0.0, 0.0]
+  level: [1, 1, 1, 1]
+  variable: [streamfunction, velocity_potential, air_temperature, specific_humidity]
+output dirac:
+  filepath: testdata/dirac_vader/dirac_%id%
+
+test:
+  reference filename: testref/dirac_vader.ref
