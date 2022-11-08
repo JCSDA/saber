@@ -133,7 +133,7 @@ type nam_type
    real(kind_real) :: gen_kurt_th                             !< Threshold on generalized kurtosis (3.0 = Gaussian distribution)
    logical :: gau_approx                                      !< Gaussian approximation for asymptotic quantities
    integer :: avg_nbins                                       !< Number of bins for averaged statistics histograms
-   logical :: vbal_block(nvbalmax)                            !< Activation of vertical balance (ordered line by line in the lower triangular formulation)
+   logical :: vbal_block(nvbalmax)                            !< Activation of vertical balance
    real(kind_real) :: vbal_rad                                !< Vertical balance diagnostic radius [in meters]
    real(kind_real) :: vbal_dlat                               !< Vertical balance diagnostic latitude band half-width [in degrees]
    logical :: vbal_diag_auto(nvbalmax)                        !< Diagonal auto-covariance for the inversion

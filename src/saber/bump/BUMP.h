@@ -250,7 +250,7 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<bool> gau_approx{"gau_approx", this};
   // Number of bins for averaged statistics histograms
   oops::OptionalParameter<int> avg_nbins{"avg_nbins", this};
-  // Activation of vertical balance (ordered line by line in the lower triangular formulation)
+  // Activation of vertical balance
   oops::OptionalParameter<eckit::LocalConfiguration> vbal_block{"vbal_block", this};
   // Vertical balance diagnostic radius [in meters]
   oops::OptionalParameter<double> vbal_rad{"vbal_rad", this};
