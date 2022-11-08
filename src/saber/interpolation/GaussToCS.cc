@@ -9,7 +9,7 @@
 
 #include "oops/util/Logger.h"
 
-#include "saber/spectralb/GaussToCS.h"
+#include "saber/interpolation/GaussToCS.h"
 
 using atlas::grid::detail::partitioner::TransPartitioner;
 
