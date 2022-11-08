@@ -36,7 +36,7 @@ bump:
   nc1: 500
   nc2: 250
   vbal_block:
-  - true
+    var1-var2: true
   vbal_rad: 2000.0e3
   diag_rhflt: 10000.0e3
   ndir: 1

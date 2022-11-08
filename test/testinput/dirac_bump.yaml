@@ -62,7 +62,7 @@ background error:
           prefix: dirac_bump/_MPI_-_OMP_
           testing: true
           vbal_block:
-          - true
+            var1-var2: true
           load_vbal: true
           load_samp_local: true
           fname_samp: error_covariance_training_bump_vbal_1/_MPI_-_OMP__sampling

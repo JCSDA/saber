@@ -26,10 +26,10 @@ bump:
   nc1: 500
   nc2: 250
   vbal_block:
-  - true
+    var1-var2: true
   vbal_rad: 2000.0e3
   vbal_diag_reg:
-  - true
+    var1-var2: true
   vbal_pseudo_inv: true
   vbal_pseudo_inv_var_th: 0.1
   ndir: 1

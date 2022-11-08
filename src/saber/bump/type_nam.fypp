@@ -171,7 +171,7 @@ type nam_type
    integer :: ncmp(0:nvmax)                                   !< Forced number of components
    real(kind_real) :: rh(nl0max,0:nvmax)                      !< Forced horizontal support radius [in meters]
    real(kind_real) :: rv(nl0max,0:nvmax)                      !< Forced vertical support radius
-   real(kind_real) :: loc_wgt(nvmax,nvmax)                    !< Forced localization weights
+   real(kind_real) :: loc_wgt(nvbalmax)                       !< Forced localization weights
    integer :: min_lev(0:nvmax)                                !< Minimum level
    integer :: max_lev(0:nvmax)                                !< Maximum level
    character(len=2),dimension(0:nvmax) :: nicas_interp_type   !< NICAS C1B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based or 'si': smooth interpolation)
@@ -688,46 +688,70 @@ if (conf%has('gen_kurt_th')) call conf%get_or_die('gen_kurt_th',nam%gen_kurt_th)
 if (conf%has('gau_approx')) call conf%get_or_die('gau_approx',nam%gau_approx)
 if (conf%has('avg_nbins')) call conf%get_or_die('avg_nbins',nam%avg_nbins)
 if (conf%has('vbal_block')) then
-   call conf%get_or_die('vbal_block',logical_array)
-   if (size(logical_array)>nvbalmax) then
-      write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: vbal_block size should be smaller than ',nvbalmax
-      call flush(output_unit)
-      call comm%abort(1)
-   end if
-   nam%vbal_block(1:size(logical_array)) = logical_array
+   call conf%get_or_die('vbal_block',subconf)
+   do iv=2,nam%nv
+      do jv=1,iv-1
+         blockname = trim(nam%variables(jv))//'-'//trim(nam%variables(iv))
+         if (subconf%has(blockname)) call subconf%get_or_die(blockname,nam%vbal_block((iv-1)*(iv-2)/2+jv))
+         blockname = trim(nam%variables(iv))//'-'//trim(nam%variables(jv))
+         if (subconf%has(blockname)) then
+            write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: block name in loc_wgt incompatible with variables order'
+            call flush(output_unit)
+            call comm%abort(1)
+         end if
+      end do
+   end do
 end if
 if (conf%has('vbal_rad')) call conf%get_or_die('vbal_rad',nam%vbal_rad)
 if (conf%has('vbal_dlat')) call conf%get_or_die('vbal_dlat',nam%vbal_dlat)
 if (conf%has('vbal_diag_auto')) then
-   call conf%get_or_die('vbal_diag_auto',logical_array)
-   if (size(logical_array)>nvbalmax) then
-      write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: vbal_diag_auto size should be smaller than ',nvbalmax
-      call flush(output_unit)
-      call comm%abort(1)
-   end if
-   nam%vbal_diag_auto(1:size(logical_array)) = logical_array
+   call conf%get_or_die('vbal_diag_auto',subconf)
+   do iv=2,nam%nv
+      do jv=1,iv-1
+         blockname = trim(nam%variables(jv))//'-'//trim(nam%variables(iv))
+         if (subconf%has(blockname)) call subconf%get_or_die(blockname,nam%vbal_diag_auto((iv-1)*(iv-2)/2+jv))
+         blockname = trim(nam%variables(iv))//'-'//trim(nam%variables(jv))
+         if (subconf%has(blockname)) then
+            write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: block name in vbal_diag_auto incompatible with variables order'
+            call flush(output_unit)
+            call comm%abort(1)
+         end if
+      end do
+   end do
 end if
 if (conf%has('vbal_diag_reg')) then
-   call conf%get_or_die('vbal_diag_reg',logical_array)
-   if (size(logical_array)>nvbalmax) then
-      write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: vbal_diag_reg size should be smaller than ',nvbalmax
-      call flush(output_unit)
-      call comm%abort(1)
-   end if
-   nam%vbal_diag_reg(1:size(logical_array)) = logical_array
+   call conf%get_or_die('vbal_diag_reg',subconf)
+   do iv=2,nam%nv
+      do jv=1,iv-1
+         blockname = trim(nam%variables(jv))//'-'//trim(nam%variables(iv))
+         if (subconf%has(blockname)) call subconf%get_or_die(blockname,nam%vbal_diag_reg((iv-1)*(iv-2)/2+jv))
+         blockname = trim(nam%variables(iv))//'-'//trim(nam%variables(jv))
+         if (subconf%has(blockname)) then
+            write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: block name in vbal_diag_reg incompatible with variables order'
+            call flush(output_unit)
+            call comm%abort(1)
+         end if
+      end do
+   end do
 end if
 if (conf%has('vbal_pseudo_inv')) call conf%get_or_die('vbal_pseudo_inv',nam%vbal_pseudo_inv)
 if (conf%has('vbal_pseudo_inv_mmax')) call conf%get_or_die('vbal_pseudo_inv_mmax',nam%vbal_pseudo_inv_mmax)
 if (conf%has('vbal_pseudo_inv_var_th')) call conf%get_or_die('vbal_pseudo_inv_var_th',nam%vbal_pseudo_inv_var_th)
 if (conf%has('vbal_id')) call conf%get_or_die('vbal_id',nam%vbal_id)
 if (conf%has('vbal_id_coef')) then
-   call conf%get_or_die('vbal_id_coef',real_array)
-   if (size(real_array)>nvbalmax) then
-      write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: vbal_id_coef size should be smaller than ',nvbalmax
-      call flush(output_unit)
-      call comm%abort(1)
-   end if
-   nam%vbal_id_coef(1:size(real_array)) = real_array
+   call conf%get_or_die('vbal_id_coef',subconf)
+   do iv=2,nam%nv
+      do jv=1,iv-1
+         blockname = trim(nam%variables(jv))//'-'//trim(nam%variables(iv))
+         if (subconf%has(blockname)) call subconf%get_or_die(blockname,nam%vbal_id_coef((iv-1)*(iv-2)/2+jv))
+         blockname = trim(nam%variables(iv))//'-'//trim(nam%variables(jv))
+         if (subconf%has(blockname)) then
+            write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: block name in vbal_id_coef incompatible with variables order'
+            call flush(output_unit)
+            call comm%abort(1)
+         end if
+      end do
+   end do
 end if
 if (conf%has('forced_var')) call conf%get_or_die('forced_var',nam%forced_var)
 if (conf%has('stddev')) then
@@ -866,17 +890,19 @@ if (conf%has('rv')) then
 end if
 if (conf%has('loc_wgt')) then
    call conf%get_or_die('loc_wgt',subconf)
-   do jv=1,nam%nv
-      do iv=1,nam%nv
+   do iv=2,nam%nv
+      do jv=1,iv-1
+         blockname = trim(nam%variables(jv))//'-'//trim(nam%variables(iv))
+         if (subconf%has(blockname)) call subconf%get_or_die(blockname,nam%loc_wgt((iv-1)*(iv-2)/2+jv))
          blockname = trim(nam%variables(iv))//'-'//trim(nam%variables(jv))
          if (subconf%has(blockname)) then
-            call subconf%get_or_die(blockname,nam%loc_wgt(iv,jv))
-            nam%loc_wgt(jv,iv) = nam%loc_wgt(iv,jv)
+            write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: block name in loc_wgt incompatible with variables order'
+            call flush(output_unit)
+            call comm%abort(1)
          end if
       end do
    end do
 end if
-
 if (conf%has('min_lev')) then
    call conf%get_or_die('min_lev',subconf)
    if (subconf%has('common')) call subconf%get_or_die('common',nam%min_lev(0))
@@ -1378,10 +1404,15 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
          allocate(nam%loc_wgt_sqrt(nam%nv,nam%nv))
 
          ! Copy positive weights and set non-specified values to one
-         loc_wgt = nam%loc_wgt(1:nam%nv,1:nam%nv)
          do iv=1,nam%nv
-            do jv=1,nam%nv
-               if (eq(nam%loc_wgt(iv,jv),-one)) loc_wgt(iv,jv) = one
+            loc_wgt(iv,iv) = one
+            do jv=1,iv-1
+               if (eq(nam%loc_wgt((iv-1)*(iv-2)/2+jv),-one)) then
+                  loc_wgt(iv,jv) = one
+               else
+                  loc_wgt(iv,jv) = nam%loc_wgt((iv-1)*(iv-2)/2+jv)
+               end if
+               loc_wgt(jv,iv) = loc_wgt(iv,jv)
             end do
          end do
 
@@ -1467,7 +1498,7 @@ class(nam_type),intent(in) :: nam   !< Namelist
 type(mpl_type),intent(inout) :: mpl !< MPI data
 
 ! Local variables
-real(kind_real) :: profiles(nam%nl0*(nam%nv+1)),loc_wgt(nam%nv**2)
+real(kind_real) :: profiles(nam%nl0*(nam%nv+1))
 real(kind_real),allocatable :: londir(:),latdir(:),lon_ldwv(:),lat_ldwv(:)
 
 ! Set name
@@ -1636,8 +1667,7 @@ profiles(1:nam%nl0*(nam%nv+1)) = reshape(nam%rh(1:nam%nl0,0:nam%nv),(/nam%nl0*(n
 call mpl%write('rh',nam%nl0*(nam%nv+1),profiles(1:nam%nl0*(nam%nv+1)))
 profiles(1:nam%nl0*(nam%nv+1)) = reshape(nam%rv(1:nam%nl0,0:nam%nv),(/nam%nl0*(nam%nv+1)/))
 call mpl%write('rv',nam%nl0*(nam%nv+1),profiles(1:nam%nl0*(nam%nv+1)))
-loc_wgt(1:nam%nv**2) = reshape(nam%loc_wgt(1:nam%nv,1:nam%nv),(/nam%nv**2/))
-call mpl%write('loc_wgt',nam%nv**2,loc_wgt(1:nam%nv**2))
+call mpl%write('loc_wgt',nam%nv*(nam%nv-1)/2,nam%loc_wgt(1:nam%nv*(nam%nv-1)/2))
 call mpl%write('min_lev',nam%nv+1,nam%min_lev(0:nam%nv))
 call mpl%write('max_lev',nam%nv+1,nam%max_lev(0:nam%nv))
 call mpl%write('nicas_interp_type',nam%nv+1,nam%nicas_interp_type)

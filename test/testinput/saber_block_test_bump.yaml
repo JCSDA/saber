@@ -42,14 +42,14 @@ saber outer blocks:
   input fields:
   - parameter: StdDev
     file:
-      filepath: testdata/error_covariance_training_bump_stddev_3//_MPI_-_OMP__stddev
+      filepath: testdata/error_covariance_training_bump_stddev_3/_MPI_-_OMP__stddev
 - saber block name: BUMP_VerticalBalance
   bump:
     datadir: testdata
     prefix: saber_block_test_bump/_MPI_-_OMP_
     testing: true
     vbal_block:
-    - true
+      var1-var2: true
     load_vbal: true
     load_samp_local: true
     fname_samp: error_covariance_training_bump_vbal_1/_MPI_-_OMP__sampling
