@@ -695,7 +695,7 @@ if (conf%has('vbal_block')) then
          if (subconf%has(blockname)) call subconf%get_or_die(blockname,nam%vbal_block((iv-1)*(iv-2)/2+jv))
          blockname = trim(nam%variables(iv))//'-'//trim(nam%variables(jv))
          if (subconf%has(blockname)) then
-            write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: block name in loc_wgt incompatible with variables order'
+            write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: block name in vbal_block incompatible with variables order'
             call flush(output_unit)
             call comm%abort(1)
          end if
