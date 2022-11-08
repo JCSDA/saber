@@ -689,15 +689,18 @@ if (conf%has('gau_approx')) call conf%get_or_die('gau_approx',nam%gau_approx)
 if (conf%has('avg_nbins')) call conf%get_or_die('avg_nbins',nam%avg_nbins)
 if (conf%has('vbal_block')) then
    call conf%get_or_die('vbal_block',subconf)
-   do iv=2,nam%nv
-      do jv=1,iv-1
+   do iv=1,nam%nv
+      do jv=1,nam%nv
          blockname = trim(nam%variables(jv))//'-'//trim(nam%variables(iv))
-         if (subconf%has(blockname)) call subconf%get_or_die(blockname,nam%vbal_block((iv-1)*(iv-2)/2+jv))
-         blockname = trim(nam%variables(iv))//'-'//trim(nam%variables(jv))
          if (subconf%has(blockname)) then
-            write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: block name in vbal_block incompatible with variables order'
-            call flush(output_unit)
-            call comm%abort(1)
+            if (jv<iv) then
+               call subconf%get_or_die(blockname,nam%vbal_block((iv-1)*(iv-2)/2+jv))
+            else
+               write(output_unit,'(a,a,a)') '!!! ABORT in nam_from_conf: block name ',trim(blockname), &
+ & 'is incompatible with variables order in vbal_block'
+               call flush(output_unit)
+               call comm%abort(1)
+            end if
          end if
       end do
    end do
@@ -706,30 +709,36 @@ if (conf%has('vbal_rad')) call conf%get_or_die('vbal_rad',nam%vbal_rad)
 if (conf%has('vbal_dlat')) call conf%get_or_die('vbal_dlat',nam%vbal_dlat)
 if (conf%has('vbal_diag_auto')) then
    call conf%get_or_die('vbal_diag_auto',subconf)
-   do iv=2,nam%nv
-      do jv=1,iv-1
+   do iv=1,nam%nv
+      do jv=1,nam%nv
          blockname = trim(nam%variables(jv))//'-'//trim(nam%variables(iv))
-         if (subconf%has(blockname)) call subconf%get_or_die(blockname,nam%vbal_diag_auto((iv-1)*(iv-2)/2+jv))
-         blockname = trim(nam%variables(iv))//'-'//trim(nam%variables(jv))
          if (subconf%has(blockname)) then
-            write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: block name in vbal_diag_auto incompatible with variables order'
-            call flush(output_unit)
-            call comm%abort(1)
+            if (jv<iv) then
+               call subconf%get_or_die(blockname,nam%vbal_diag_auto((iv-1)*(iv-2)/2+jv))
+            else
+               write(output_unit,'(a,a,a)') '!!! ABORT in nam_from_conf: block name ',trim(blockname), &
+ & 'is incompatible with variables order in vbal_diag_auto'
+               call flush(output_unit)
+               call comm%abort(1)
+            end if
          end if
       end do
    end do
 end if
 if (conf%has('vbal_diag_reg')) then
    call conf%get_or_die('vbal_diag_reg',subconf)
-   do iv=2,nam%nv
-      do jv=1,iv-1
+   do iv=1,nam%nv
+      do jv=1,nam%nv
          blockname = trim(nam%variables(jv))//'-'//trim(nam%variables(iv))
-         if (subconf%has(blockname)) call subconf%get_or_die(blockname,nam%vbal_diag_reg((iv-1)*(iv-2)/2+jv))
-         blockname = trim(nam%variables(iv))//'-'//trim(nam%variables(jv))
          if (subconf%has(blockname)) then
-            write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: block name in vbal_diag_reg incompatible with variables order'
-            call flush(output_unit)
-            call comm%abort(1)
+            if (jv<iv) then
+               call subconf%get_or_die(blockname,nam%vbal_diag_reg((iv-1)*(iv-2)/2+jv))
+            else
+               write(output_unit,'(a,a,a)') '!!! ABORT in nam_from_conf: block name ',trim(blockname), &
+ & 'is incompatible with variables order in vbal_diag_reg'
+               call flush(output_unit)
+               call comm%abort(1)
+            end if
          end if
       end do
    end do
@@ -740,15 +749,18 @@ if (conf%has('vbal_pseudo_inv_var_th')) call conf%get_or_die('vbal_pseudo_inv_va
 if (conf%has('vbal_id')) call conf%get_or_die('vbal_id',nam%vbal_id)
 if (conf%has('vbal_id_coef')) then
    call conf%get_or_die('vbal_id_coef',subconf)
-   do iv=2,nam%nv
-      do jv=1,iv-1
+   do iv=1,nam%nv
+      do jv=1,nam%nv
          blockname = trim(nam%variables(jv))//'-'//trim(nam%variables(iv))
-         if (subconf%has(blockname)) call subconf%get_or_die(blockname,nam%vbal_id_coef((iv-1)*(iv-2)/2+jv))
-         blockname = trim(nam%variables(iv))//'-'//trim(nam%variables(jv))
          if (subconf%has(blockname)) then
-            write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: block name in vbal_id_coef incompatible with variables order'
-            call flush(output_unit)
-            call comm%abort(1)
+            if (jv<iv) then
+               call subconf%get_or_die(blockname,nam%vbal_id_coef((iv-1)*(iv-2)/2+jv))
+            else
+               write(output_unit,'(a,a,a)') '!!! ABORT in nam_from_conf: block name ',trim(blockname), &
+ & 'is incompatible with variables order in vbal_id_coef'
+               call flush(output_unit)
+               call comm%abort(1)
+            end if
          end if
       end do
    end do
@@ -890,15 +902,18 @@ if (conf%has('rv')) then
 end if
 if (conf%has('loc_wgt')) then
    call conf%get_or_die('loc_wgt',subconf)
-   do iv=2,nam%nv
-      do jv=1,iv-1
+   do iv=1,nam%nv
+      do jv=1,nam%nv
          blockname = trim(nam%variables(jv))//'-'//trim(nam%variables(iv))
-         if (subconf%has(blockname)) call subconf%get_or_die(blockname,nam%loc_wgt((iv-1)*(iv-2)/2+jv))
-         blockname = trim(nam%variables(iv))//'-'//trim(nam%variables(jv))
          if (subconf%has(blockname)) then
-            write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: block name in loc_wgt incompatible with variables order'
-            call flush(output_unit)
-            call comm%abort(1)
+            if (jv<iv) then
+               call subconf%get_or_die(blockname,nam%loc_wgt((iv-1)*(iv-2)/2+jv))
+            else
+               write(output_unit,'(a,a,a)') '!!! ABORT in nam_from_conf: block name ',trim(blockname), &
+ & 'is incompatible with variables order in loc_wgt'
+               call flush(output_unit)
+               call comm%abort(1)
+            end if
          end if
       end do
    end do
