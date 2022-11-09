@@ -32,6 +32,10 @@ background error:
         - 4.0e6
         var2:
         - 4.0e6
+        var3:
+        - 4.0e6
+        var4:
+        - 4.0e6
         var_2d:
         - 4.0e6
       rv:
@@ -39,12 +43,18 @@ background error:
         - 3.0
         var2:
         - 3.0
+        var3:
+        - 3.0
+        var4:
+        - 3.0
         var_2d:
         - 0.0
       grids:
       - variables:
         - var1
         - var2
+        - var3
+        - var4
       - variables:
         - var_2d
   randomization size: 25
