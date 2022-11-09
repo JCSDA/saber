@@ -29,7 +29,7 @@ if ( oops_FOUND AND ENABLE_VADER_MO )
     )
 endif()
 
-if ( oops_FOUND )
+if ( vader_FOUND )
     list(APPEND vader_src_files_list
 
     VaderBlock.cc

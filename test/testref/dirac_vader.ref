@@ -13,7 +13,7 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  air_temperature: 1.0000000000000000e+00
+  virtual_temperature: 1.0000000000000000e+00
   specific_humidity: 1.0000000000000000e+00
 Covariance(SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z
@@ -30,5 +30,5 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  air_temperature: 1.0000000000000000e+00
+  virtual_temperature: 1.0000000000000000e+00
   specific_humidity: 1.0000000000000000e+00

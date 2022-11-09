@@ -36,7 +36,7 @@ VaderBlock::VaderBlock(const oops::GeometryData & outerGeometryData,
   oops::Log::trace() << classname() << "::VaderBlock starting" << std::endl;
 
   // Change variables in the background to inner variables
-  // TODO(AS): this code should also be in calibrationInverseMultiply
+  // TODO(someone): perhaps this code will happen in the ErrorCovariance ctor?
   oops::Variables neededVars = innerVars_;
   atlas::FieldSet xb_inner = xb;
   oops::Variables varsVaderPopulates = vader_.changeVar(xb_inner, neededVars);
