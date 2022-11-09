@@ -20,6 +20,11 @@ if( oops_FOUND )
 
     # ATLAS interpolation wrapper
     AtlasInterpWrapper.h
+    AtlasInterpWrapper.cc
+
+    # ATLAS gauss to cubed-sphere-dual saber block
+    GaussToCS.h
+    GaussToCS.cc
 
     )
 endif()
