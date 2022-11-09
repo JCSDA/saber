@@ -15,7 +15,7 @@ Mask size: 100%
 Fields:
   var3: 1.0000000000000000e+00
   var4: 0.0000000000000000e+00
-       Independent levels:  1[2] 
+       Independent levels:  1[2]
           Level   1:   1550418632
           Level   2:   1550418632
           Model grid size:              840
@@ -28,7 +28,7 @@ Fields:
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-       Independent levels:  1[2] 
+       Independent levels:  1[2]
           Level   1:   1550418632
           Level   2:   1550418632
           Model grid size:              840
@@ -43,9 +43,9 @@ Fields:
              Level   2 ~>  0.200E+01 vert. unit
           nc1 =      500
           nc2 =      250
-          Independent levels:  1[2] 
-Norm of input parameter StdDev: 5.4476873479641306e+01
-       Independent levels:  1[2] 
+          Independent levels:  1[2]
+Norm of input parameter StdDev: 5.4916088699553633e+01
+       Independent levels:  1[2]
           Level   1:   1550418632
           Level   2:   1550418632
           Model grid size:              840
@@ -58,8 +58,8 @@ Norm of input parameter StdDev: 5.4476873479641306e+01
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-Norm of input parameter stddev: 5.4476873479641306e+01
-       Independent levels:  1[2] 
+Norm of input parameter stddev: 5.4916088699553633e+01
+       Independent levels:  1[2]
           Level   1:   1550418632
           Level   2:   1550418632
           Model grid size:              840
@@ -72,8 +72,8 @@ Norm of input parameter stddev: 5.4476873479641306e+01
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-Norm of input parameter universe radius: 2.0111448170280799e+08
-       Independent levels:  1[2] 
+Norm of input parameter universe radius: 2.0253293992704690e+08
+       Independent levels:  1[2]
           Level   1:   1550418632
           Level   2:   1550418632
           Model grid size:              840
@@ -86,7 +86,7 @@ Norm of input parameter universe radius: 2.0111448170280799e+08
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-       Independent levels:  1[2] 
+       Independent levels:  1[2]
           Level   1:   1550418632
           Level   2:   1550418632
           Model grid size:              840
@@ -114,9 +114,9 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var3: 5.7220645275843829e-01
-  var4: 4.5315414816249650e-01
-       Independent levels:  1[2] 
+  var3: 8.7367049017730680e-01
+  var4: 7.6045685796392415e-01
+       Independent levels:  1[2]
           Level   1:   1550418632
           Level   2:   1550418632
           Model grid size:              840
@@ -129,7 +129,7 @@ Fields:
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-       Independent levels:  1[2] 
+       Independent levels:  1[2]
           Level   1:   1550418632
           Level   2:   1550418632
           Model grid size:              840
@@ -144,9 +144,9 @@ Fields:
              Level   2 ~>  0.200E+01 vert. unit
           nc1 =      500
           nc2 =      250
-          Independent levels:  1[2] 
-Norm of input parameter StdDev: 5.4476873479641306e+01
-       Independent levels:  1[2] 
+          Independent levels:  1[2]
+Norm of input parameter StdDev: 5.4916088699553633e+01
+       Independent levels:  1[2]
           Level   1:   1550418632
           Level   2:   1550418632
           Model grid size:              840
@@ -159,8 +159,8 @@ Norm of input parameter StdDev: 5.4476873479641306e+01
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-Norm of input parameter stddev: 5.4476873479641306e+01
-       Independent levels:  1[2] 
+Norm of input parameter stddev: 5.4916088699553633e+01
+       Independent levels:  1[2]
           Level   1:   1550418632
           Level   2:   1550418632
           Model grid size:              840
@@ -173,8 +173,8 @@ Norm of input parameter stddev: 5.4476873479641306e+01
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-Norm of input parameter universe radius: 2.0111448170280799e+08
-       Independent levels:  1[2] 
+Norm of input parameter universe radius: 2.0253293992704690e+08
+       Independent levels:  1[2]
           Level   1:   1550418632
           Level   2:   1550418632
           Model grid size:              840
@@ -202,9 +202,9 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var3: 9.5585030041134374e-14
-  var4: 3.9628973565419997e-14
-       Independent levels:  1[2] 
+  var3: 9.6825438805381713e-14
+  var4: 4.0904433449715275e-14
+       Independent levels:  1[2]
           Level   1:   1550418632
           Level   2:   1550418632
           Model grid size:              840
@@ -232,9 +232,9 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var3: 1.1444129055168597e+00
-  var4: 9.0630829632499299e-01
-       Independent levels:  1[2] 
+  var3: 1.7473409803545852e+00
+  var4: 1.5209137159278481e+00
+       Independent levels:  1[2]
           Level   1:   1550418632
           Level   2:   1550418632
           Model grid size:              840
@@ -262,5 +262,5 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var3: 3.2334133026363436e+00
-  var4: 3.2334133026363436e+00
+  var3: 3.0513842483867104e+00
+  var4: 3.0513842483867104e+00
