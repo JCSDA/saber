@@ -92,7 +92,9 @@ background error:
         template:
           date: '2010-01-01T12:00:00Z'
           filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
-          state variables: [var3, var4]
+          state variables:
+          - var3
+          - var4
         pattern: '%mem%'
         nmembers: 25
         zero padding: 6

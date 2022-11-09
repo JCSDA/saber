@@ -1,1 +1,3 @@
-Adjoint test for central block SPCTRL_COV passed
+Adjoint test for outer block gauss to cubed-sphere-dual passed
+Adjoint test for outer block spectral to gauss passed
+Adjoint test for central block spectral covariance passed
