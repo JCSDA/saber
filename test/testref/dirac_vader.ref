@@ -13,8 +13,6 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  streamfunction: 1.0000000000000000e+00
-  velocity_potential: 1.0000000000000000e+00
   air_temperature: 1.0000000000000000e+00
   specific_humidity: 1.0000000000000000e+00
 Covariance(SABER) * Increment:
@@ -32,7 +30,5 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  streamfunction: 1.0000000000000000e+00
-  velocity_potential: 1.0000000000000000e+00
   air_temperature: 1.0000000000000000e+00
   specific_humidity: 1.0000000000000000e+00
