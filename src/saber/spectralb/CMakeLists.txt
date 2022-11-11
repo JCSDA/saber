@@ -10,8 +10,6 @@ if( oops_FOUND AND atlas_TRANS_FOUND )
     CovarianceStatistics.h
     CovarianceStatisticsUtils.cc
     CovarianceStatisticsUtils.h
-    GaussUVToGP.cc
-    GaussUVToGP.h
     spectralb.h
     spectralbnointerp.h
     spectralb_covstats_interface.h
@@ -29,7 +27,8 @@ if( oops_FOUND AND atlas_TRANS_FOUND )
 
     if( atlas_VERSION GREATER_EQUAL 0.31.0 )
         list(APPEND spectralb_src_files_list
-
+        GaussUVToGP.cc
+        GaussUVToGP.h
         SpectralToGaussUV.cc
         SpectralToGaussUV.h
         )

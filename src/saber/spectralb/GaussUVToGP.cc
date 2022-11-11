@@ -1,9 +1,7 @@
-﻿/*
- * (C) Crown Copyright 2022 Met Office
- *
- * This software is licensed under the terms of the Apache Licence Version 2.0
- * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
- */
+﻿  // (C) Crown Copyright 2022 Met Office
+  //
+  // This software is licensed under the terms of the Apache Licence Version 2.0
+  // which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
 #include "saber/spectralb/GaussUVToGP.h"
 
@@ -139,7 +137,6 @@ void populateFields(const atlas::FieldSet & geomfields,
 
   std::string s("dry_air_density_levels_minus_one");
   outputfields.add(tempfields[s]);
-
 }
 
 void interpolateCSToGauss(const oops::GeometryData & outerGeometryData,
@@ -344,10 +341,11 @@ void GaussUVToGP::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting " << fset.field_names() << std::endl;
 
   atlas::Field gp = gaussFunctionSpace_.createField<double>(
-    atlas::option::name("geostrophic_pressure") | atlas::option::levels(fset["eastward_wind"].levels()) |
+    atlas::option::name("geostrophic_pressure") |
+    atlas::option::levels(fset["eastward_wind"].levels()) |
     atlas::option::halo(1));
 
- //calculate 2D vector vec
+  // calculate 2D vector vec
   atlas::Field rhsvec = allocateRHSVec(gaussFunctionSpace_, gp.levels());
 
   populateRHSVec(augmentedState_["dry_air_density_levels_minus_one"], fset, rhsvec);
@@ -356,9 +354,6 @@ void GaussUVToGP::multiply(atlas::FieldSet & fset) const {
   // calculate dir vorticity and divergence spectrally
   trans_.dirtrans_wind2vordiv(rhsvec, specfset["vorticity"], specfset["divergence"]);
 
-  std::cout << "vorticity norm" << normfield(innerGeometryData_.comm(), specfset["vorticity"]) << std::endl;
-  std::cout << "divergence norm" << normfield(innerGeometryData_.comm(), specfset["divergence"]) << std::endl;
-
   // apply inverse laplacian spectral scaling to spectral divergence
   const int N = specFunctionSpace_.truncation();
   applyRecipNtimesNplus1SpectralScaling(
@@ -366,19 +361,15 @@ void GaussUVToGP::multiply(atlas::FieldSet & fset) const {
       oops::Variables(std::vector<std::string>({"divergence"})),
       specFunctionSpace_, N, specfset);
 
-  std::cout << "divergence norm after scaling"
-            << normfield(innerGeometryData_.comm(), specfset["divergence"]) << std::endl;
-
   // apply inverse spectral transform to
   trans_.invtrans(specfset["divergence"], gp);
 
   gp.haloExchange();
 
-  std::cout << "gp norm"  << normfield(innerGeometryData_.comm(), gp) << std::endl;
-
   fset.add(gp);
 
-  oops::Log::trace() << classname() << "::multiply done" << fset.field_names() << std::endl;
+  oops::Log::trace() << classname() << "::multiply done"
+                     << fset.field_names() << std::endl;
 }
 
 // -----------------------------------------------------------------------------
@@ -405,17 +396,12 @@ void GaussUVToGP::multiplyAD(atlas::FieldSet & fset) const {
   // apply inverse spectral transform to
   trans_.invtrans_adj(fset["geostrophic_pressure"], specfset["divergence"]);
 
-
-  std::cout << "adjoint divergence norm" << normfield(innerGeometryData_.comm(), specfset["divergence"]) << std::endl;
-
   // apply inverse laplacian spectral scaling to spectral divergence
   const int N = specFunctionSpace_.truncation();
   applyRecipNtimesNplus1SpectralScaling(
       oops::Variables(std::vector<std::string>({"divergence"})),
       oops::Variables(std::vector<std::string>({"divergence"})),
       specFunctionSpace_, N, specfset);
-
-  std::cout << "adjoint divergence norm after scaling"  << normfield(innerGeometryData_.comm(), specfset["divergence"]) << std::endl;
 
   auto vortView = atlas::array::make_view<double, 2>(specfset["vorticity"]);
   vortView.assign(0.0);
