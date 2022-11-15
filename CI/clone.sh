@@ -28,7 +28,7 @@ if [ "${branch_name}" = "develop" ] || [ "${branch_name}" = "master" ]; then
 else
 
   # check org_name/repo_name for branch
-  git ls-remote --heads --exit-code https://github.com/$org_name/$repo_name $branch_name
+  git ls-remote --heads --tags --exit-code https://github.com/$org_name/$repo_name $branch_name
   exit_code=$?
 
   # if branch exists in org_name/repo_name clone it
@@ -39,7 +39,7 @@ else
     echo "${branch_name} branch found in ${org_repo_name}"
     branch_name_clone=${branch_name}
   else
-    git ls-remote --heads --exit-code https://github.com/$org_name/$repo_name $fallback_branch
+    git ls-remote --heads --tags --exit-code https://github.com/$org_name/$repo_name $fallback_branch
     exit_code_fallback=$?
     if test "${exit_code_fallback}" == "0"; then
       echo "${branch_name} does not exist in ${org_repo_name}"

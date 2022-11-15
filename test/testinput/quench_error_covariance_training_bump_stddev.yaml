@@ -23,9 +23,10 @@ bump:
   ne: 10
   new_var: true
   prefix: quench_error_covariance_training_bump_stddev/test
-  output:
-  - filepath: testdata/quench_error_covariance_training_bump_stddev/stddev
-    parameter: stddev
+output:
+- parameter: stddev
+  file:
+    filepath: testdata/quench_error_covariance_training_bump_stddev/stddev
 
 test:
   reference filename: testref/quench_error_covariance_training_bump_stddev/test.log.out

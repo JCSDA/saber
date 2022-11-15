@@ -14,11 +14,24 @@ interpolatorbump_mod.fypp
 if( oops_FOUND )
     list(APPEND interpolation_src_files_list
 
+    # BUMP interpolator
     InterpolatorBump.h
     InterpolatorBump.cc
 
+    # ATLAS interpolation wrapper
+    AtlasInterpWrapper.h
+    AtlasInterpWrapper.cc
     )
+
+    if( atlas_TRANS_FOUND )
+        list(APPEND interpolation_src_files_list
+            # ATLAS gauss to cubed-sphere-dual saber block
+            GaussToCS.h
+            GaussToCS.cc
+        )
+    endif()
 endif()
+
 
 set( interpolation_src_files
 

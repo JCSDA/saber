@@ -1,10 +1,7 @@
 background error:
   covariance model: SABER
-  saber blocks:
-  - saber block name: BUMP_NICAS
-    saber central block: true
-    input variables: &vars [var]
-    output variables: *vars
+  saber central block:
+    saber block name: BUMP_NICAS
     bump:
       datadir: testdata
       fname_nicas: quench_error_covariance_training_bump_nicas/test_nicas
@@ -12,9 +9,10 @@ background error:
       prefix: quench_dirac_bump_nicas/test
       strategy: specific_univariate
 dirac:
-  index: [1000]
+  lon: [1.980931]
+  lat: [44.220188]
   level: [1]
-  variable: *vars
+  variable: &vars [var]
 geometry:
   function space: StructuredColumns
   grid:

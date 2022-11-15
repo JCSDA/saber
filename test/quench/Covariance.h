@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef QUENCH_COVARIANCE_H_
-#define QUENCH_COVARIANCE_H_
+#pragma once
 
 #include <ostream>
 #include <string>
@@ -15,7 +14,7 @@
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"
 
-#include "quench/CovarianceParams.h"
+#include "quench/CovarianceParameters.h"
 #include "quench/Geometry.h"
 
 // Forward declarations
@@ -34,7 +33,7 @@ class Covariance : public util::Printable,
                    private boost::noncopyable,
                    private util::ObjectCounter<Covariance> {
  public:
-  typedef CovarianceParams Parameters_;
+  typedef CovarianceParameters Parameters_;
   static const std::string classname() {return "quench::Covariance";}
 
   Covariance(const Geometry &, const oops::Variables &,
@@ -45,9 +44,8 @@ class Covariance : public util::Printable,
   void randomize(Increment &) const {}
 
  private:
-  void print(std::ostream &) const {}
+  void print(std::ostream & os) const {os << "Covariance";}
 };
 // -----------------------------------------------------------------------------
 
 }  // namespace quench
-#endif  // QUENCH_COVARIANCE_H_

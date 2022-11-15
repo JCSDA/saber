@@ -95,8 +95,6 @@ list_compare=`ctest -N | grep ": saber_test_bump" | grep _compare | awk '{print 
 list_post=`ctest -N | grep ": saber_test_bump" | grep _post | awk '{print $(NF)}'`
 list_plot=`ctest -N | grep ": saber_test_bump" | grep _plot | awk '{print $(NF)}'`
 list_valgrind=`ctest -N | grep ": saber_test_bump" | grep _valgrind | awk '{print $(NF)}'`
-list_qg=`ctest -N | grep ": saber_test_qg" | awk '{print $(NF)}'`
-list_interpolation=`ctest -N | grep ": saber_test_interpolation" | awk '{print $(NF)}'`
 list_quench=`ctest -N | grep ": saber_test_quench" | awk '{print $(NF)}'`
 
 # Tests variables
@@ -124,19 +122,11 @@ list_valgrind_array=(${list_valgrind})
 ntest_valgrind=${#list_valgrind_array[@]}
 stest_valgrind=0
 ftest_valgrind=0
-list_qg_array=(${list_qg})
-ntest_qg=${#list_qg_array[@]}
-stest_qg=0
-ftest_qg=0
-list_interpolation_array=(${list_interpolation})
-ntest_interpolation=${#list_interpolation_array[@]}
-stest_interpolation=0
-ftest_interpolation=0
 list_quench_array=(${list_quench})
 ntest_quench=${#list_quench_array[@]}
 stest_quench=0
 ftest_quench=0
-ntest=$((ntest_run+ntest_compare+ntest_post+ntest_plot+ntest_valgrind+ntest_qg+ntest_interpolation+ntest_quench))
+ntest=$((ntest_run+ntest_compare+ntest_post+ntest_plot+ntest_valgrind+ntest_quench))
 itest=0
 if test ${ntest} = 0; then
    echo "No test detected, this script should be run from \${build_directory}/saber/test"
@@ -839,52 +829,6 @@ for i in $(seq 1 ${nproc}); do
 done
 navail=${nproc}
 
-# QG tests
-for qg in ${list_qg}; do
-   echo "Handling process ${qg}" >> saber_ctest_log/execution.log
-
-   # Get command and arguments
-   ctest -VV -R ${qg}\$ > saber_ctest_log/${qg}.log 2> saber_ctest_log/${qg}.err
-
-   # Check if this process passed
-   err=`wc -l saber_ctest_log/${qg}.err | awk '{print $1}'`
-   itest=$((itest+1))
-   if test "${err}" = "0"; then
-      # QG passed
-      echo "${qg} passed" >> saber_ctest_log/execution.log
-      stest_qg=$((stest_qg+1))
-   else
-      # QG failed
-      echo "${qg} failed" >> saber_ctest_log/execution.log
-      ftest_qg=$((ftest_qg+1))
-      PrintFailed ${qg}
-   fi
-   ProgressBar ${itest} ${ntest} ${qg}
-done
-
-# Interpolation tests
-for interpolation in ${list_interpolation}; do
-   echo "Handling process ${interpolation}" >> saber_ctest_log/execution.log
-
-   # Get command and arguments
-   ctest -VV -R ${interpolation}\$ > saber_ctest_log/${interpolation}.log 2> saber_ctest_log/${interpolation}.err
-
-   # Check if this process passed
-   err=`wc -l saber_ctest_log/${interpolation}.err | awk '{print $1}'`
-   itest=$((itest+1))
-   if test "${err}" = "0"; then
-      # Interpolation passed
-      echo "${interpolation} passed" >> saber_ctest_log/execution.log
-      stest_interpolation=$((stest_interpolation+1))
-   else
-      # Interpolation failed
-      echo "${interpolation} failed" >> saber_ctest_log/execution.log
-      ftest_interpolation=$((ftest_interpolation+1))
-      PrintFailed ${interpolation}
-   fi
-   ProgressBar ${itest} ${ntest} ${interpolation}
-done
-
 # QUENCH tests
 for quench in ${list_quench}; do
    echo "Handling process ${quench}" >> saber_ctest_log/execution.log
@@ -963,20 +907,6 @@ if test "${ntest_valgrind}" -gt "0"; then
    stest=`printf "%03d" $((stest_valgrind))`
    ftest=`printf "%03d" $((ftest_valgrind))`
    echo -e "  Valgrind:      \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
-fi
-
-if test "${ntest_qg}" -gt "0"; then
-   # QG tests
-   stest=`printf "%03d" $((stest_qg))`
-   ftest=`printf "%03d" $((ftest_qg))`
-   echo -e "  QG:            \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
-fi
-
-if test "${ntest_interpolation}" -gt "0"; then
-   # Interpolation tests
-   stest=`printf "%03d" $((stest_interpolation))`
-   ftest=`printf "%03d" $((ftest_interpolation))`
-   echo -e "  Interpolation: \033[32m${stest}\033[0m tests passed and \033[31m${ftest}\033[0m failed"
 fi
 
 if test "${ntest_quench}" -gt "0"; then

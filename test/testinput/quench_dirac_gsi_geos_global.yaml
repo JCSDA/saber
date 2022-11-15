@@ -1,0 +1,39 @@
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: gsi covariance
+    gsi error covariance file: testdata/gsi-coeffs-gmao-global-l72x72y46.nc4
+    gsi berror namelist file: testinput/quench_dirac_gsi_geos_global.nml
+    gsi akbk: /dev/null
+    processor layout x direction: 1
+    processor layout y direction: 1
+    debugging mode: false
+  saber outer blocks:
+  - saber block name: gsi interpolation to model grid
+    gsi error covariance file: testdata/gsi-coeffs-gmao-global-l72x72y46.nc4
+    gsi berror namelist file: testinput/quench_dirac_gsi_geos_global.nml
+    gsi akbk: /dev/null
+    processor layout x direction: 1
+    processor layout y direction: 1
+    debugging mode: false
+dirac:
+  index: [1000]
+  level: [1]
+  lon: [1.980931]
+  lat: [44.220188]
+  variable: [stream_function]
+geometry:
+  function space: StructuredColumns
+  grid:
+    type : regular_gaussian
+    N : 15
+  levels: 72
+initial condition:
+  date: 2010-01-01T12:00:00Z
+  state variables: [stream_function,velocity_potential,air_temperature]
+output dirac:
+  filepath: testdata/quench_dirac_gsi_geos_global/dirac_%id%
+
+test:
+  float relative tolerance: 1.5e-6
+  reference filename: testref/quench_dirac_gsi_geos_global/test.log.out

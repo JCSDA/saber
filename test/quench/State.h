@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef QUENCH_STATE_H_
-#define QUENCH_STATE_H_
+#pragma once
 
 #include <memory>
 #include <ostream>
@@ -79,5 +78,3 @@ class State : public util::Printable,
 // -----------------------------------------------------------------------------
 
 }  // namespace quench
-
-#endif  // QUENCH_STATE_H_

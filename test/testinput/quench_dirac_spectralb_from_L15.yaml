@@ -2,24 +2,23 @@ geometry:
   function space: StructuredColumns
   grid:
     name : L15
+  partitioner: checkerboard
   levels: 70
 initial condition:
   date: 2010-01-01T12:00:00Z
   state variables: &vars [psi_inc]
 background error:
   covariance model: SABER
-  saber blocks:
-  - saber block name: SPCTRL_COV
-    saber central block: true
-    input variables: *vars
-    output variables: *vars
+  saber central block:
+    saber block name: SPCTRL_COV
     spectralb:
       covariance_file: testdata/CovStats.nc
       gauss_grid_uid: F15
       output_grid_uid: L15
       umatrix_netcdf_names: [PSI_inc_Uv_matrix]
 dirac:
-  index: [1000]
+  lon: [1.980931]
+  lat: [44.220188]
   level: [1]
   variable: *vars
 output dirac:

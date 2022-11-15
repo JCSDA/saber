@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef SABER_OOPS_ERRORCOVARIANCE_H_
-#define SABER_OOPS_ERRORCOVARIANCE_H_
+#pragma once
 
 #include <memory>
 #include <string>
@@ -15,6 +14,7 @@
 #include "atlas/field.h"
 
 #include "oops/base/Geometry.h"
+#include "oops/base/GeometryData.h"
 #include "oops/base/Increment.h"
 #include "oops/base/ModelSpaceCovarianceBase.h"
 #include "oops/base/ModelSpaceCovarianceParametersBase.h"
@@ -28,13 +28,10 @@
 #include "oops/util/Printable.h"
 #include "oops/util/Timer.h"
 
-#include "saber/oops/SaberBlockBase.h"
+#include "saber/oops/ReadInputFields.h"
 #include "saber/oops/SaberBlockParametersBase.h"
-
-namespace eckit {
-  class LocalConfiguration;
-  class Configuration;
-}
+#include "saber/oops/SaberCentralBlockBase.h"
+#include "saber/oops/SaberOuterBlockBase.h"
 
 namespace oops {
   class Variables;
@@ -49,8 +46,10 @@ class ErrorCovarianceParameters : public oops::ModelSpaceCovarianceParametersBas
   OOPS_CONCRETE_PARAMETERS(ErrorCovarianceParameters,
                            oops::ModelSpaceCovarianceParametersBase<MODEL>)
  public:
-  oops::RequiredParameter<std::vector<SaberBlockParametersWrapper<MODEL>>>
-      saberBlocks{"saber blocks", this};
+  oops::RequiredParameter<SaberCentralBlockParametersWrapper>
+    saberCentralBlock{"saber central block", this};
+  oops::OptionalParameter<std::vector<SaberOuterBlockParametersWrapper>>
+    saberOuterBlocks{"saber outer blocks", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -59,15 +58,13 @@ template <typename MODEL>
 class ErrorCovariance : public oops::ModelSpaceCovarianceBase<MODEL>,
                         public util::Printable,
                         private util::ObjectCounter<ErrorCovariance<MODEL>> {
-  typedef oops::Geometry<MODEL>                           Geometry_;
-  typedef oops::Increment<MODEL>                          Increment_;
-  typedef SaberBlockBase<MODEL>                           SaberBlockBase_;
-  typedef SaberBlockParametersWrapper<MODEL>              SaberBlockParametersWrapper_;
-  typedef typename boost::ptr_vector<SaberBlockBase_>     SaberBlockVec_;
-  typedef typename SaberBlockVec_::iterator               iter_;
-  typedef typename SaberBlockVec_::const_iterator         icst_;
-  typedef typename SaberBlockVec_::const_reverse_iterator ircst_;
-  typedef oops::State<MODEL>                              State_;
+  typedef oops::Geometry<MODEL>                                Geometry_;
+  typedef oops::Increment<MODEL>                               Increment_;
+  typedef typename boost::ptr_vector<SaberOuterBlockBase>      SaberOuterBlockVec_;
+  typedef typename SaberOuterBlockVec_::iterator               iter_;
+  typedef typename SaberOuterBlockVec_::const_iterator         icst_;
+  typedef typename SaberOuterBlockVec_::const_reverse_iterator ircst_;
+  typedef oops::State<MODEL>                                   State_;
 
  public:
   typedef ErrorCovarianceParameters<MODEL> Parameters_;
@@ -79,8 +76,8 @@ class ErrorCovariance : public oops::ModelSpaceCovarianceBase<MODEL>,
                   const State_ &, const State_ &);
   virtual ~ErrorCovariance();
 
-  // Required by iterative inverses for central blocks
-  void multiply(const Increment_ &, Increment_ &) const;
+  // Required by iterative inverse
+  void multiply(const Increment_ & dxi, Increment_ & dxo) const {this->doMultiply(dxi, dxo);}
 
  private:
   ErrorCovariance(const ErrorCovariance&);
@@ -92,58 +89,118 @@ class ErrorCovariance : public oops::ModelSpaceCovarianceBase<MODEL>,
 
   void print(std::ostream &) const override;
 
-  std::unique_ptr<SaberBlockBase_> saberCentralBlock_;
-  SaberBlockVec_ saberBlocks_;
+  std::vector<std::reference_wrapper<const oops::GeometryData>> outerGeometryData_;
+  std::unique_ptr<SaberCentralBlockBase> saberCentralBlock_;
+  SaberOuterBlockVec_ saberOuterBlocks_;
 };
 
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & resol,
-                                        const oops::Variables & inputVars,
+ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
+                                        const oops::Variables & incVars,
                                         const Parameters_ & params,
-                                        const State_ & xb, const State_ & fg)
-  : oops::ModelSpaceCovarianceBase<MODEL>(resol, params, xb, fg), saberCentralBlock_(),
-    saberBlocks_()
+                                        const State_ & xb,
+                                        const State_ & fg)
+  : oops::ModelSpaceCovarianceBase<MODEL>(geom, params, xb, fg), saberCentralBlock_(),
+    saberOuterBlocks_()
 {
   oops::Log::trace() << "ErrorCovariance::ErrorCovariance starting" << std::endl;
 
-  // Check input/output variables consistency
-  oops::Variables vars_in(inputVars);
-  oops::Variables vars_out;
+  // Local copy of background and first guess
+  State_ xbLocal(xb);
+  State_ fgLocal(fg);
 
-  for (const SaberBlockParametersWrapper_ & saberBlockParamWrapper :
-       boost::adaptors::reverse(params.saberBlocks.value())) {
-    const SaberBlockParametersBase & saberBlockParams = saberBlockParamWrapper.saberBlockParameters;
-    vars_out = saberBlockParams.outputVars.value();
-    if (!(vars_in == vars_out)) {
-      const boost::optional<std::string> &saberBlockName = saberBlockParams.saberBlockName.value();
-      if (saberBlockName != boost::none) {
-        oops::Log::error() << "In SABER block \'" << *saberBlockName << "\'" << std::endl;
-      } else {
-        oops::Log::error() << "In SABER block with no name" << std::endl;
+  // Initial outer geometry and variables
+  outerGeometryData_.push_back(geom.generic());
+  oops::Variables outerVars(incVars);
+
+  // Build outer blocks successively
+  const boost::optional<std::vector<SaberOuterBlockParametersWrapper>> &saberOuterBlocks =
+    params.saberOuterBlocks.value();
+  if (saberOuterBlocks != boost::none) {
+    // Loop in reverse order
+    for (const SaberOuterBlockParametersWrapper & saberOuterBlockParamWrapper :
+      boost::adaptors::reverse(*saberOuterBlocks)) {
+      // Get outer block parameters
+      const SaberBlockParametersBase & saberOuterBlockParams =
+        saberOuterBlockParamWrapper.saberOuterBlockParameters;
+
+      // Get active variables
+      oops::Variables activeVars =
+        saberOuterBlockParams.activeVars.value().get_value_or(outerVars);
+
+      // Read input fields (on model increment geometry)
+      std::vector<atlas::FieldSet> fsetVec = readInputFields(
+        geom,
+        activeVars,
+        xb.validTime(),
+        saberOuterBlockParams.inputFields.value());
+
+      // Create outer block
+      oops::Log::info() << "Creating outer block: " << saberOuterBlockParams.saberBlockName.value()
+                        << std::endl;
+      saberOuterBlocks_.push_back(SaberOuterBlockFactory::create(
+                                  outerGeometryData_.back().get(),
+                                  geom.variableSizes(activeVars),
+                                  outerVars,
+                                  saberOuterBlockParams,
+                                  xbLocal.fieldSet(),
+                                  fgLocal.fieldSet(),
+                                  fsetVec));
+
+      // Apply calibration inverse on xb and fg
+      // TODO(Benjamin): uncomment these lines when all blocks are compliant
+//      saberOuterBlocks_.back().calibrationInverseMultiply(xbLocal.fieldSet());
+//      saberOuterBlocks_.back().calibrationInverseMultiply(fgLocal.fieldSet());
+
+      // Access inner geometry and variables
+      const oops::GeometryData & innerGeometryData = saberOuterBlocks_.back().innerGeometryData();
+      const oops::Variables innerVars = saberOuterBlocks_.back().innerVars();
+
+      // Check that active variables are present in either inner or outer variables, or both
+      for (const auto & var : activeVars.variables()) {
+        ASSERT(innerVars.has(var) || outerVars.has(var));
       }
-      oops::Log::error() << "  Input variables:  " << vars_in << std::endl;
-      oops::Log::error() << "  Output variables: " << vars_out << std::endl;
-      ABORT("  Sequence of blocks is not consistent (wrong variables)");
+
+      // Update outer geometry and variables for the next block
+      outerGeometryData_.push_back(innerGeometryData);
+      outerVars = innerVars;
     }
-    vars_in = saberBlockParams.inputVars.value();
   }
 
-  // Create SABER blocks
-  for (const SaberBlockParametersWrapper_ & saberBlockParamWrapper :
-       params.saberBlocks.value()) {
-    const SaberBlockParametersBase & saberBlockParams = saberBlockParamWrapper.saberBlockParameters;
-    if (saberBlockParams.saberCentralBlock.value()) {
-      if (saberCentralBlock_ || (saberBlocks_.size() != 0)) {
-        ABORT("Central block should be the first block, only one allowed!");
-      } else {
-        saberCentralBlock_.reset(SaberBlockFactory<MODEL>::create(resol, saberBlockParams, xb,
-          fg));
-      }
-    } else {
-      saberBlocks_.push_back(SaberBlockFactory<MODEL>::create(resol, saberBlockParams, xb, fg));
-    }
+  // Get central block parameters
+  const SaberCentralBlockParametersWrapper & saberCentralBlockParamWrapper =
+    params.saberCentralBlock.value();
+  const SaberBlockParametersBase & saberCentralBlockParams =
+    saberCentralBlockParamWrapper.saberCentralBlockParameters;
+
+  // Define centra variables
+  oops::Variables centralVars = outerVars;
+
+  // Get active variables
+  oops::Variables activeVars = saberCentralBlockParams.activeVars.value().get_value_or(outerVars);
+
+  // Read input fields (on model increment geometry)
+  std::vector<atlas::FieldSet> fsetVec = readInputFields(
+    geom,
+    activeVars,
+    xb.validTime(),
+    saberCentralBlockParams.inputFields.value());
+
+  // Create central block
+  saberCentralBlock_.reset(SaberCentralBlockFactory::create(
+                           outerGeometryData_.back().get(),
+                           geom.variableSizes(activeVars),
+                           centralVars,
+                           saberCentralBlockParams,
+                           xbLocal.fieldSet(),
+                           fgLocal.fieldSet(),
+                           fsetVec));
+
+  // Check that active variables are present in central variables
+  for (const auto & var : activeVars.variables()) {
+    ASSERT(centralVars.has(var));
   }
 
   oops::Log::trace() << "ErrorCovariance::ErrorCovariance done" << std::endl;
@@ -165,26 +222,15 @@ void ErrorCovariance<MODEL>::doRandomize(Increment_ & dx) const {
   oops::Log::trace() << "ErrorCovariance<MODEL>::doRandomize starting" << std::endl;
   util::Timer timer(classname(), "doRandomize");
 
-  // Random output vector (necessary for some SABER blocks)
+  // Random vector (necessary for some SABER blocks)
   dx.random();
 
-  // Randomization done flag
-  bool randDone(false);
-
   // Central block randomization
-  if (saberCentralBlock_) {
-    saberCentralBlock_->randomize(dx.fieldSet());
-    randDone = true;
-  }
+  saberCentralBlock_->randomize(dx.fieldSet());
 
-  // K_N K_N-1 ... K_1
-  for (icst_ it = saberBlocks_.begin(); it != saberBlocks_.end(); ++it) {
-    if (!randDone) {
-      it->randomize(dx.fieldSet());
-      randDone = true;
-    } else {
-      it->multiply(dx.fieldSet());
-    }
+  // Outer blocks forward multiplication
+  for (ircst_ it = saberOuterBlocks_.rbegin(); it != saberOuterBlocks_.rend(); ++it) {
+    it->multiply(dx.fieldSet());
   }
 
   // ATLAS fieldset to Increment_
@@ -204,8 +250,8 @@ void ErrorCovariance<MODEL>::doMultiply(const Increment_ & dxi,
   // Copy input
   dxo = dxi;
 
-  // K_1^T K_2^T .. K_N^T
-  for (ircst_ it = saberBlocks_.rbegin(); it != saberBlocks_.rend(); ++it) {
+  // Outer blocks adjoint multiplication
+  for (icst_ it = saberOuterBlocks_.begin(); it != saberOuterBlocks_.end(); ++it) {
     it->multiplyAD(dxo.fieldSet());
   }
 
@@ -214,8 +260,8 @@ void ErrorCovariance<MODEL>::doMultiply(const Increment_ & dxi,
     saberCentralBlock_->multiply(dxo.fieldSet());
   }
 
-  // K_N K_N-1 ... K_1
-  for (icst_ it = saberBlocks_.begin(); it != saberBlocks_.end(); ++it) {
+  // Outer blocks forward multiplication
+  for (ircst_ it = saberOuterBlocks_.rbegin(); it != saberOuterBlocks_.rend(); ++it) {
     it->multiply(dxo.fieldSet());
   }
 
@@ -233,75 +279,12 @@ void ErrorCovariance<MODEL>::doInverseMultiply(const Increment_ & dxi,
   oops::Log::trace() << "ErrorCovariance<MODEL>::doInverseMultiply starting" << std::endl;
   util::Timer timer(classname(), "doInverseMultiply");
 
-  // Copy input
-  dxo = dxi;
-
-  // K_1^{-1} K_2^{-1} .. K_N^{-1}
-  for (ircst_ it = saberBlocks_.rbegin(); it != saberBlocks_.rend(); ++it) {
-    it->inverseMultiply(dxo.fieldSet());
-  }
-
-  // Synchronization flag
-  bool syncNeeded(true);
-
-  // Central block inverse multiplication
-  if (saberCentralBlock_) {
-    if (saberCentralBlock_->iterativeInverse()) {
-      if (saberBlocks_.size() > 0) {
-        // ATLAS fieldset to Increment_
-        dxo.synchronizeFields();
-      } else {
-        syncNeeded = false;
-      }
-
-      // Temporary increment
-      Increment_ dxtmp(dxo);
-
-      // Iterative inverse
-      oops::IdentityMatrix<Increment_> Id;
-      dxo.zero();
-      GMRESR(dxo, dxtmp, *this, Id, 10, 1.0e-3);
-    } else {
-      // Block-specific inverse
-      saberCentralBlock_->inverseMultiply(dxo.fieldSet());
-    }
-  }
-
-  // K_N^T^{-1} K_N-1^T^{-1} ... K_1^T^{-1}
-  for (icst_ it = saberBlocks_.begin(); it != saberBlocks_.end(); ++it) {
-    it->inverseMultiplyAD(dxo.fieldSet());
-  }
-
-  // ATLAS fieldset to Increment_
-  if (syncNeeded) {
-    dxo.synchronizeFields();
-  }
+  // Iterative inverse
+  oops::IdentityMatrix<Increment_> Id;
+  dxo.zero();
+  GMRESR(dxo, dxi, *this, Id, 10, 1.0e-3);
 
   oops::Log::trace() << "ErrorCovariance<MODEL>::doInverseMultiply done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-template<typename MODEL>
-void ErrorCovariance<MODEL>::multiply(const Increment_ & dxi,
-                                      Increment_ & dxo) const {
-  oops::Log::trace() << "ErrorCovariance<MODEL>::multiply starting" << std::endl;
-  util::Timer timer(classname(), "multiply");
-
-  // Copy input
-  dxo = dxi;
-
-  // Central block multiplication
-  if (saberCentralBlock_) {
-    saberCentralBlock_->multiply(dxo.fieldSet());
-  } else {
-    ABORT("iterative inverse for central blocks only");
-  }
-
-  // ATLAS fieldset to Increment_
-  dxo.synchronizeFields();
-
-  oops::Log::trace() << "ErrorCovariance<MODEL>::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
@@ -317,5 +300,3 @@ void ErrorCovariance<MODEL>::print(std::ostream & os) const {
 // -----------------------------------------------------------------------------
 
 }  // namespace saber
-
-#endif  // SABER_OOPS_ERRORCOVARIANCE_H_

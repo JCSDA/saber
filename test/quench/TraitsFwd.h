@@ -5,8 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#ifndef QUENCH_TRAITSFWD_H_
-#define QUENCH_TRAITSFWD_H_
+#pragma once
 
 #include <string>
 
@@ -17,18 +16,18 @@ class Geometry;
 class Increment;
 class LinearVariableChange;
 class State;
+class VariableChange;
 
 struct Traits {
   static std::string name() {return "quench";}
   static std::string nameCovar() {return "quenchCovariance";}
 
-  typedef quench::Covariance      Covariance;
-  typedef quench::Geometry        Geometry;
-  typedef quench::Increment       Increment;
-  typedef quench::LinearVarChange LinearVariableChange;
-  typedef quench::State           State;
+  typedef quench::Covariance           Covariance;
+  typedef quench::Geometry             Geometry;
+  typedef quench::Increment            Increment;
+  typedef quench::LinearVariableChange LinearVariableChange;
+  typedef quench::State                State;
+  typedef quench::VariableChange       VariableChange;
 };
 
 }  // namespace quench
-
-#endif  // QUENCH_TRAITSFWD_H_

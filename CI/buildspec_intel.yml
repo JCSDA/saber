@@ -52,7 +52,6 @@ phases:
 
       # initialization
       - cd CI
-      - . /etc/profile.d/intel.sh
 
       # read cdash url from s3
       - wget https://ci-test-cdash-url.s3.amazonaws.com/cdash_url.txt
@@ -66,17 +65,20 @@ phases:
       - chmod 0700 ~/.git-credentials
       - echo "https://${GIT_USER}:${GIT_PASS}@github.com" >~/.git-credentials
 
-      # jedi-cmake
-      - ./clone.sh jcsda-internal/jedi-cmake $CODEBUILD_GIT_BRANCH /jcsda/saber-bundle jedicmake ${GIT_BASE_BRANCH} develop
-
       # oops
       - ./clone.sh jcsda-internal/oops $CODEBUILD_GIT_BRANCH /jcsda/saber-bundle oops ${GIT_BASE_BRANCH} develop
+
+      # vader
+      - ./clone.sh jcsda-internal/vader $CODEBUILD_GIT_BRANCH /jcsda/saber-bundle vader ${GIT_BASE_BRANCH} develop
 
       # saber
       - ./clone.sh jcsda-internal/saber $CODEBUILD_GIT_BRANCH /jcsda/saber-bundle saber ${GIT_BASE_BRANCH} develop
 
       # saber-data
       - ./clone.sh jcsda-internal/saber-data $CODEBUILD_GIT_BRANCH /jcsda/saber-bundle saber-data ${GIT_BASE_BRANCH} develop
+
+      # gsibec
+      - git clone --depth 1 -b 1.0.6 https://github.com/geos-esm/GSIbec /jcsda/saber-bundle/gsibec
 
       # move CMakeLists.txt from saber/CI to bundle directory
       - cp CMakeLists.txt /jcsda/saber-bundle
@@ -89,7 +91,6 @@ phases:
 
       # print list
       - cd /jcsda/saber-bundle
-      - ls
 
   build:
     on-failure: CONTINUE
@@ -99,27 +100,30 @@ phases:
       - export BUILD_STATUS="0"
       - echo $BUILD_STATUS
 
-      - su - jedi -c "export SABER_TEST_TIER=2
-        && export CC=mpiicc
-        && export FC=mpiifort
-        && export CXX=mpiicpc
-        && export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-        && export PATH=/usr/local/lib:$PATH
-        && cd /home/jedi
-        && ecbuild /jcsda/saber-bundle/ -Wno-dev -DCDASH_OVERRIDE_SITE=CodeBuild -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCDASH_OVERRIDE_GIT_BRANCH=$CODEBUILD_GIT_BRANCH -DCTEST_UPDATE_VERSION_ONLY=FALSE"
+      - mkdir /build_container
+      - chmod 777 /build_container
 
-      - su - jedi -c "export SABER_TEST_TIER=2
-        && export CC=mpiicc
-        && export FC=mpiifort
-        && export CXX=mpiicpc
-        && export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-        && export PATH=/usr/local/lib:$PATH
-        && cd /home/jedi/saber
-        && cp ../DartConfiguration.tcl .
-        && sed -i 's/saber-bundle/saber-bundle\/saber/' DartConfiguration.tcl
-        && sed -i 's/jedi/jedi\/saber/' DartConfiguration.tcl
-        && cat DartConfiguration.tcl
-        && ctest -C RelWithDebInfo -V -D ExperimentalBuild -j4"
+      # These are not permitted
+      #- ulimit -S -s unlimited
+      #- ulimit -S -v unlimited
+      - source /etc/profile.d/z10_spack_environment.sh
+      - cat /etc/profile.d/z10_spack_environment.sh
+      - source /opt/intel/oneapi/compiler/latest/env/vars.sh
+      - source /opt/intel/oneapi/mpi/latest/env/vars.sh
+
+      # for debugging
+      #- which icc || true
+      #- which mpiicc || true
+      #- export | grep CC
+
+      - cd /build_container
+      - ecbuild -Wno-dev -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCDASH_OVERRIDE_SITE=CodeBuild -DCDASH_OVERRIDE_SYSTEM_NAME=IntelContainer -DCDASH_OVERRIDE_GIT_BRANCH=$CODEBUILD_GIT_BRANCH -DCTEST_UPDATE_VERSION_ONLY=FALSE /jcsda/saber-bundle/
+
+      - cd /build_container/saber
+      - cp ../DartConfiguration.tcl .
+      - sed -i 's/saber-bundle/saber-bundle\/saber/' DartConfiguration.tcl
+      - sed -i 's/build_container/build_container\/saber/' DartConfiguration.tcl
+      - make
 
       - if [ "$CODEBUILD_BUILD_SUCCEEDING" = "1" ];
         then export BUILD_STATUS="1";
@@ -127,23 +131,13 @@ phases:
         fi
       - echo $BUILD_STATUS
 
-      - su - jedi -c "export CC=mpiicc
-        && export FC=mpiifort
-        && export CXX=mpiicpc
-        && export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-        && export PATH=/usr/local/lib:$PATH
-        && cd /home/jedi/saber
-        && ctest -C RelWithDebInfo -D ExperimentalTest"
+      # run ctest and upload to cdash
+      - cd /build_container/saber
+      - ctest -C RelWithDebInfo -D ExperimentalTest
 
     finally:
-      # upload ctest report to CDASH
-      - su - jedi -c "export CC=mpiicc
-        && export FC=mpiifort
-        && export CXX=mpiicpc
-        && export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-        && export PATH=/usr/local/lib:$PATH
-        && cd /home/jedi/saber
-        && ctest -C RelWithDebInfo -D ExperimentalSubmit -M Continuous -- --track Continuous --group Continuous"
+      - cd /build_container/saber
+      - ctest -C RelWithDebInfo -D ExperimentalSubmit -M Continuous -- --track Continuous --group Continuous
 
   post_build:
     commands:
@@ -154,7 +148,7 @@ phases:
       # upload find cdash url and upload it as CodeBuild artifact to S3
       - if [ "$BUILD_STATUS" = "1" ];
         then echo "Build & tests passed, find cdash url";
-        url=$(bash /jcsda/saber-bundle/saber/CI/cdash-url.sh /home/jedi/saber/Testing  $CDASH_URL);
+        url=$(bash /jcsda/saber-bundle/saber/CI/cdash-url.sh /build_container/saber/Testing  $CDASH_URL);
         echo $url;
         echo ${url} > /jcsda/artifacts/cdash-url.txt;
         cat /jcsda/artifacts/cdash-url.txt;

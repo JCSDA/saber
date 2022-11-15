@@ -27,11 +27,8 @@ ensemble:
     zero padding: 6
 background error:
   covariance model: SABER
-  saber blocks:
-  - saber block name: BUMP_NICAS
-    saber central block: true
-    input variables: *vars
-    output variables: *vars
+  saber central block:
+    saber block name: BUMP_NICAS
     bump:
       datadir: testdata
       forced_radii: true
@@ -58,15 +55,19 @@ bump:
   prefix: quench_error_covariance_training_bump_hdiag_hyb-rnd/test
   strategy: specific_univariate
   write_hdiag: true
-  output:
-  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-rnd/loc_rh
-    parameter: loc_rh
-  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-rnd/loc_rv
-    parameter: loc_rv
-  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-rnd/hyb_coef_ens
-    parameter: hyb_coef_ens
-  - filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-rnd/hyb_coef_sta
-    parameter: hyb_coef_sta
+output:
+- parameter: loc_rh
+  file:
+    filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-rnd/loc_rh
+- parameter: loc_rv
+  file:
+    filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-rnd/loc_rv
+- parameter: hyb_coef_ens
+  file:
+    filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-rnd/hyb_coef_ens
+- parameter: hyb_coef_sta
+  file:
+    filepath: testdata/quench_error_covariance_training_bump_hdiag_hyb-rnd/hyb_coef_sta
 
 test:
   reference filename: testref/quench_error_covariance_training_bump_hdiag_hyb-rnd/test.log.out
