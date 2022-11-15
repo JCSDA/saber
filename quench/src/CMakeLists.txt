@@ -6,21 +6,21 @@
 list( APPEND quench_src_files
 
 Covariance.h
-Fields.h
 Fields.cc
-Geometry.h
+Fields.h
 Geometry.cc
-Increment.h
+Geometry.h
 Increment.cc
+Increment.h
 LinearVariableChange.h
-State.h
 State.cc
+State.h
 VariableChange.h
 
 )
 
 ecbuild_add_library( TARGET   quench
-                     SOURCES  ${saber_quench_src_files}
+                     SOURCES  ${quench_src_files}
                      PUBLIC_LIBS  oops saber
                      HEADER_DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/quench
                      INSTALL_HEADERS LISTED
