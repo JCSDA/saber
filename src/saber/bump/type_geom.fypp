@@ -757,7 +757,7 @@ call grid_hash(mpl,geom%nc0a,geom%nc0,geom%nl0,geom%c0a_to_c0,geom%lon_c0a,geom%
 
 ! Compute independent levels
 write(mpl%test,'(a7,a)') '','Independent levels: '
-call mpl%flush(.false.)
+call mpl%flush(adv=.false.)
 call independent_levels(mpl,geom%nl0,hash,geom%nl0i,geom%l0_to_l0i,geom%l0i_to_l0)
 
 ! Test grid hash
@@ -1715,7 +1715,7 @@ else
    retry = .true.
    write(cfmt,'(a,i2.2,a)') '(a',ifmt+3,',a,i8,a)'
    write(mpl%test,trim(cfmt)) '','Decimate full grid, at least ',ns,' points required, '
-   if (verbosity) call mpl%flush(.false.)
+   if (verbosity) call mpl%flush(adv=.false.)
 
    do while (retry)
       ! Initialization
@@ -1855,7 +1855,7 @@ else
    write(cfmt,'(a,i2.2,a)') '(a',ifmt+3,',a)'
    write(mpl%info,trim(cfmt)) '','Potential method: '
    if (verbosity) then
-      call mpl%flush(.false.)
+      call mpl%flush(adv=.false.)
       call mpl%prog_init(ns)
    end if
 

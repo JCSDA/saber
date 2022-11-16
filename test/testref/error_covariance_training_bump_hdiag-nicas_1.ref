@@ -162,9 +162,11 @@
                       Subgrid hash:   -712519880
                    Final nc1:      671
                    Effective horizontal resolution:  4.00
-             nc1(  1) =        762
-             nc1(  2) =        671
-             ns =             1433
+             nc1(  1) =                        762
+             nc1(  2) =                        671
+             ns =                             1433
+             v%n_s =                             2
+             c%n_s[global] =                 42963
              Effective levels:   1   2 
                    Horizontal support radius:    3514.59 km (   3514.59 km -    3514.59 km)
                    Estimated nc1 from horizontal support radius:      762
@@ -178,9 +180,11 @@
                       Subgrid hash:  -1873781752
                    Final nc1:      672
                    Effective horizontal resolution:  4.00
-             nc1(  1) =        762
-             nc1(  2) =        672
-             ns =             1434
+             nc1(  1) =                        762
+             nc1(  2) =                        672
+             ns =                             1434
+             v%n_s =                             2
+             c%n_s[global] =                 22440
              Effective levels:   1   2 
                    Horizontal support radius:    3862.91 km (   3862.91 km -    3862.91 km)
                    Estimated nc1 from horizontal support radius:      631
@@ -194,9 +198,11 @@
                       Subgrid hash:  -1050398839
                    Final nc1:      751
                    Effective horizontal resolution:  4.00
-             nc1(  1) =        631
-             nc1(  2) =        751
-             ns =             1382
+             nc1(  1) =                        631
+             nc1(  2) =                        751
+             ns =                             1382
+             v%n_s =                             2
+             c%n_s[global] =                 39720
              Effective levels:   1   2 
                    Horizontal support radius:    3863.08 km (   3863.08 km -    3863.08 km)
                    Estimated nc1 from horizontal support radius:      631
@@ -210,9 +216,11 @@
                       Subgrid hash:  -1050398839
                    Final nc1:      751
                    Effective horizontal resolution:  4.00
-             nc1(  1) =        631
-             nc1(  2) =        751
-             ns =             1382
+             nc1(  1) =                        631
+             nc1(  2) =                        751
+             ns =                             1382
+             v%n_s =                             2
+             c%n_s[global] =                 21067
     Full NICAS adjoint test result:                        T
        Block NICAS adjoint test result:                    T
           Interpolation adjoint test (horizontal) result:  T

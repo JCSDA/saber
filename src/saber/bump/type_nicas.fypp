@@ -1671,7 +1671,7 @@ if (nam%default_seed) call rng%reseed(mpl)
 
 ! Apply NICAS to test vectors
 write(mpl%info,'(a4,a)') '','Apply NICAS to test vectors: '
-call mpl%flush(.false.)
+call mpl%flush(adv=.false.)
 call mpl%prog_init(ntest)
 fld_ref = fld_save
 do itest=1,ntest
@@ -1702,7 +1702,7 @@ do ifac=1,nfac_rnd
 
    ! Test randomized ensemble
    write(mpl%info,'(a10,a)') '','Apply NICAS to test vectors: '
-   call mpl%flush(.false.)
+   call mpl%flush(adv=.false.)
    call mpl%prog_init(ntest)
    do itest=1,ntest
       ! Test NICAS
