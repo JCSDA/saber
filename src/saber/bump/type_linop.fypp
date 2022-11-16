@@ -167,9 +167,6 @@ integer,intent(in),optional :: n_s           !< Number of operations to copy
 call linop_out%dealloc
 
 ! Copy attributes
-linop_out%prefix = linop_in%prefix
-linop_out%n_src = linop_in%n_src
-linop_out%n_dst = linop_in%n_dst
 if (present(n_s)) then
    linop_out%n_s = n_s
 else
