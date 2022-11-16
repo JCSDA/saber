@@ -6,15 +6,15 @@
 list( APPEND quench_src_files
 
 Covariance.h
-Fields.h
 Fields.cc
-Geometry.h
+Fields.h
 Geometry.cc
-Increment.h
+Geometry.h
 Increment.cc
+Increment.h
 LinearVariableChange.h
-State.h
 State.cc
+State.h
 VariableChange.h
 
 )

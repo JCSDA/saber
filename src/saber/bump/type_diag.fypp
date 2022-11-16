@@ -944,7 +944,7 @@ call mpl%flush
 do ib=1,bpar%nbe
    if (bpar%diag_block(ib)) then
       write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
-      call mpl%flush(.false.)
+      call mpl%flush(adv=.false.)
 
       ! Initialization
       call mpl%prog_init(diag%nc2a+1)
@@ -1105,7 +1105,7 @@ else
    do ib=1,bpar%nbe
       if (bpar%diag_block(ib)) then
          write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
-         call mpl%flush(.false.)
+         call mpl%flush(adv=.false.)
 
          ! Initialization
          call mpl%prog_init(diag%nc2a+1)
@@ -1224,7 +1224,7 @@ call mpl%flush
 do ib=1,bpar%nbe
    if (bpar%diag_block(ib)) then
       write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
-      call mpl%flush(.false.)
+      call mpl%flush(adv=.false.)
 
       ! Initialization
       call mpl%prog_init(diag%nc2a+1)

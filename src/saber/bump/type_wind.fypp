@@ -657,7 +657,7 @@ logical,allocatable :: lcheck_lonlat(:,:),gmask_llw(:),lcheck_c0b(:),lcheck_llb(
 if (nam%new_wind) then
    ! Define regular grid
    write(mpl%info,'(a7,a)') '','Define regular grid: '
-   call mpl%flush(.false.)
+   call mpl%flush(adv=.false.)
 
    ! Allocation
    nll = nam%wind_nlon*nam%wind_nlat

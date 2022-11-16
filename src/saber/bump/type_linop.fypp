@@ -167,9 +167,6 @@ integer,intent(in),optional :: n_s           !< Number of operations to copy
 call linop_out%dealloc
 
 ! Copy attributes
-linop_out%prefix = linop_in%prefix
-linop_out%n_src = linop_in%n_src
-linop_out%n_dst = linop_in%n_dst
 if (present(n_s)) then
    linop_out%n_s = n_s
 else
@@ -868,7 +865,7 @@ if (present(c1_interp)) lc1_interp = c1_interp
 if (ifmt>0) then
    write(cfmt,'(a,i2.2,a)') '(a',ifmt,',a)'
    write(mpl%info,cfmt) '','Compute interpolation: '
-   call mpl%flush(.false.)
+   call mpl%flush(adv=.false.)
    call mpl%prog_init(n_dst)
 end if
 
@@ -1156,7 +1153,7 @@ call qsort(n_src,lat_src_tmp,order)
 if (ifmt>0) then
    write(cfmt,'(a,i2.2,a)') '(a',ifmt,',a)'
    write(mpl%info,cfmt) '','Compute interpolation: '
-   call mpl%flush(.false.)
+   call mpl%flush(adv=.false.)
    call mpl%prog_init(n_dst)
 end if
 n_s = 0
@@ -1295,7 +1292,7 @@ c_n_s = 0
 if (ifmt>0) then
    write(cfmt,'(a,i2.2,a)') '(a',ifmt,',a)'
    write(mpl%info,cfmt) '','Compute interpolation: '
-   call mpl%flush(.false.)
+   call mpl%flush(adv=.false.)
    call mpl%prog_init(n_dst)
 end if
 !$omp parallel do schedule(static) private(i_dst,ithread,found,next,iext,nd) firstprivate(nn_index_ext,nn_dist_ext,wgt)

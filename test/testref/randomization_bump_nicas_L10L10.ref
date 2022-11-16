@@ -1,4 +1,4 @@
-       Independent levels:  1[10] 
+       Independent levels:  1[10]
           Level   1:   1550418632
           Level   2:   1550418632
           Level   3:   1550418632
@@ -72,13 +72,15 @@
                       Subgrid hash:   1676590011
                    Final nc1:      589
                    Effective horizontal resolution:  4.00
-             nc1(  1) =        589
-             nc1(  2) =        589
-             nc1(  3) =        589
-             nc1(  4) =        589
-             nc1(  5) =        589
-             nc1(  6) =        589
-             ns =             3534
+             nc1(  1) =                        589
+             nc1(  2) =                        589
+             nc1(  3) =                        589
+             nc1(  4) =                        589
+             nc1(  5) =                        589
+             nc1(  6) =                        589
+             ns =                             3534
+             v%n_s =                            14
+             c%n_s[global] =                112784
 Member 0: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:

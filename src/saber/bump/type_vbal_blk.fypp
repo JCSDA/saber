@@ -314,16 +314,16 @@ cov = zero
 do isub=1,vbal_blk%nsub
    if (vbal_blk%nsub==1) then
       write(mpl%info,'(a10,a)') '','Full ensemble, member:'
-      call mpl%flush(.false.)
+      call mpl%flush(adv=.false.)
    else
       write(mpl%info,'(a10,a,i6,a)') '','Sub-ensemble ',isub,', member:'
-      call mpl%flush(.false.)
+      call mpl%flush(adv=.false.)
    end if
 
    ! Compute centered moments
    do ie_sub=1,ens1%ne/vbal_blk%nsub
       write(mpl%info,'(i6)') ie_sub
-      call mpl%flush(.false.)
+      call mpl%flush(adv=.false.)
 
       ! Full ensemble index
       ie = ie_sub+(isub-1)*ens1%ne/vbal_blk%nsub

@@ -1,4 +1,4 @@
-       Independent levels:  1[10] 
+       Independent levels:  1[10]
           Level   1:   1550418632
           Level   2:   1550418632
           Level   3:   1550418632
@@ -96,17 +96,19 @@
                       Subgrid hash:   1550418632
                    Final nc1:      762
                    Effective horizontal resolution:  1.14
-             nc1(  1) =        762
-             nc1(  2) =        762
-             nc1(  3) =        762
-             nc1(  4) =        762
-             nc1(  5) =        762
-             nc1(  6) =        762
-             nc1(  7) =        762
-             nc1(  8) =        762
-             nc1(  9) =        762
-             nc1( 10) =        762
-             ns =             7620
+             nc1(  1) =                        762
+             nc1(  2) =                        762
+             nc1(  3) =                        762
+             nc1(  4) =                        762
+             nc1(  5) =                        762
+             nc1(  6) =                        762
+             nc1(  7) =                        762
+             nc1(  8) =                        762
+             nc1(  9) =                        762
+             nc1( 10) =                        762
+             ns =                             7620
+             v%n_s =                            10
+             c%n_s[global] =                 43736
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
           Level   3 ~> 100.0%
@@ -130,17 +132,17 @@
              -90.00 deg.  ~>100-100-99-100-100-100-100-99-100-100 
              -90.00 deg.  ~>100-100-99-100-100-100-100-99-100-100 
           nc1 =      500
-          Independent levels:  1[10] 
-          Independent levels for angular sector   1 / class   1:  1[10] 
-          Independent levels for angular sector   1 / class   2:  1[10] 
-          Independent levels for angular sector   1 / class   3:  1[1]  2[9] 
-          Independent levels for angular sector   1 / class   4:  1[10] 
-          Independent levels for angular sector   1 / class   5:  1[10] 
-          Independent levels for angular sector   1 / class   6:  1[10] 
-          Independent levels for angular sector   1 / class   7:  1[10] 
-          Independent levels for angular sector   1 / class   8:  1[1]  2[9] 
-          Independent levels for angular sector   1 / class   9:  1[10] 
-          Independent levels for angular sector   1 / class  10:  1[10] 
+          Independent levels:  1[10]
+          Independent levels for angular sector   1 / class   1:  1[10]
+          Independent levels for angular sector   1 / class   2:  1[10]
+          Independent levels for angular sector   1 / class   3:  1[1]  2[9]
+          Independent levels for angular sector   1 / class   4:  1[10]
+          Independent levels for angular sector   1 / class   5:  1[10]
+          Independent levels for angular sector   1 / class   6:  1[10]
+          Independent levels for angular sector   1 / class   7:  1[10]
+          Independent levels for angular sector   1 / class   8:  1[1]  2[9]
+          Independent levels for angular sector   1 / class   9:  1[10]
+          Independent levels for angular sector   1 / class  10:  1[10]
                 Level:   1 ~> cov. at class zero:  0.10E+01
                 Level:   2 ~> cov. at class zero:  0.10E+01
                 Level:   3 ~> cov. at class zero:  0.10E+01

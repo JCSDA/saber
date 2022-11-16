@@ -1,4 +1,4 @@
-       Independent levels:  1[2] 
+       Independent levels:  1[2]
           Level   1:   -449870826
           Level   2:   -449870826
           Model grid size:             1200
@@ -11,7 +11,7 @@
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-       Independent levels:  1[1] 
+       Independent levels:  1[1]
           Level   1:   -449870826
           Model grid size:             1200
           Subset Sc0 size:             1106
@@ -34,9 +34,11 @@
                       Subgrid hash:   -791070867
                    Final nc1:      589
                    Effective horizontal resolution:  4.00
-             nc1(  1) =        589
-             nc1(  2) =        589
-             ns =             1178
+             nc1(  1) =                        589
+             nc1(  2) =                        589
+             ns =                             1178
+             v%n_s =                             2
+             c%n_s[global] =                 35196
              Effective levels:   1 
                    Horizontal support radius:    4000.00 km (   4000.00 km -    4000.00 km)
                    Estimated nc1 from horizontal support radius:      589
@@ -44,8 +46,10 @@
                       Subgrid hash:   -791070867
                    Final nc1:      589
                    Effective horizontal resolution:  4.00
-             nc1(  1) =        589
-             ns =              589
+             nc1(  1) =                        589
+             ns =                              589
+             v%n_s =                             1
+             c%n_s[global] =                  8851
 Member 0: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
