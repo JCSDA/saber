@@ -127,9 +127,11 @@
                       Subgrid hash:    550233911
                    Final nc1:      200
                    Effective horizontal resolution:  3.99
-             nc1(  1) =        231
-             nc1(  2) =        200
-             ns =              431
+             nc1(  1) =                        231
+             nc1(  2) =                        200
+             ns =                              431
+             v%n_s =                             2
+             c%n_s[global] =                   7977
     Full NICAS adjoint test result:                        T
        Block NICAS adjoint test result:                    T
           Interpolation adjoint test (horizontal) result:  T

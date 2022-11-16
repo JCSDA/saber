@@ -13,7 +13,6 @@ Norm of input parameter m4: 1.4083543300798411e+02
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-             ns =               40
                 Level   1: rhflt =   40000.00 km, rel. diff. =  0.38729E-02
                 Level   2: rhflt =   40000.00 km, rel. diff. =  0.13978E-01
              Level   1 ~>  0.10267E+01 /  0.10267E+01
