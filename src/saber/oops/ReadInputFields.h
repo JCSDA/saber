@@ -16,16 +16,9 @@
 #include "oops/base/Geometry.h"
 #include "oops/base/Increment.h"
 #include "oops/base/Variables.h"
+#include "oops/util/ConfigFunctions.h"
 #include "oops/util/DateTime.h"
 #include "oops/util/Logger.h"
-
-namespace eckit {
-  class LocalConfiguration;
-}
-
-namespace oops {
-  class Variables;
-}
 
 namespace saber {
 
@@ -40,16 +33,28 @@ std::vector<atlas::FieldSet> readInputFields(
   // Vector of FieldSets
   std::vector<atlas::FieldSet> fsetVec;
 
+  // Get number of MPI tasks and OpenMP threads
+  std::string mpi(std::to_string(resol.getComm().size()));
+  std::string omp("1");
+  # pragma omp parallel
+  {
+    omp = std::to_string(omp_get_num_threads());
+  }
+
   // Read block input fields function
   if (inputFields != boost::none) {
     if (inputFields->size() > 0) {
       // Loop over block input fields
       for (const auto & inputField : *inputFields) {
-        // Read block input field as Increment
-        // TODO(Benjamin): here we assume that all input fields have the background geometry
-        // and block input variables
-        oops::Increment<MODEL> dx(resol, vars, date);
+        // Get input field file configuration
         eckit::LocalConfiguration file = inputField.getSubConfiguration("file");
+
+        // Replace patterns
+        util::seekAndReplace(file, "_MPI_", mpi);
+        util::seekAndReplace(file, "_OMP_", omp);
+
+        // Read block input field as Increment
+        oops::Increment<MODEL> dx(resol, vars, date);
         dx.read(file);
 
         // Define FieldSet name

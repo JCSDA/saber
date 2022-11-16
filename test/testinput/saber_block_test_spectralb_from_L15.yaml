@@ -1,0 +1,22 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    name: L15
+  partitioner: checkerboard
+  levels: 70
+variables: &id001
+- psi_inc
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables: *id001
+saber central block:
+  saber block name: SPCTRL_COV
+  spectralb:
+    covariance_file: testdata/CovStats.nc
+    gauss_grid_uid: F15
+    output_grid_uid: L15
+    umatrix_netcdf_names:
+    - PSI_inc_Uv_matrix
+adjoint test tolerance: 1.0e-07
+test:
+  reference filename: testref/saber_block_test_spectralb_from_L15.ref

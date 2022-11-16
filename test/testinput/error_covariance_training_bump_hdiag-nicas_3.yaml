@@ -1,0 +1,75 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 15
+  levels: 2
+  halo: 1
+lowres geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 10
+  levels: 2
+  halo: 1
+input variables: &id001
+- var1
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables: *id001
+bump:
+  datadir: testdata
+  prefix: error_covariance_training_bump_hdiag-nicas_3/_MPI_-_OMP_
+  testing: true
+  method: hyb-ens
+  strategy: specific_univariate
+  load_mom: true
+  new_hdiag: true
+  write_hdiag: true
+  new_nicas: true
+  check_adjoints: true
+  check_normalization: 10
+  check_dirac: true
+  fname_samp: error_covariance_training_bump_hdiag_5/_MPI_-_OMP__sampling
+  fname_mom:
+  - error_covariance_training_bump_hdiag_5/_MPI_-_OMP__mom
+  ens1_ne: 10
+  ens2_ne: 25
+  load_samp_local: true
+  nc1: 500
+  nc3: 15
+  dc: 500.0e3
+  nl0r: 2
+  ne: 10
+  ne_lr: 25
+  resol: 4.0
+  ndir: 1
+  londir:
+  - 0.0
+  latdir:
+  - 0.0
+  levdir:
+  - 1
+  ivdir:
+  - 1
+output:
+- parameter: loc_rh
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag-nicas_3/_MPI_-_OMP__loc_rh
+- parameter: loc_rv
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag-nicas_3/_MPI_-_OMP__loc_rv
+- parameter: hyb_coef_ens
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag-nicas_3/_MPI_-_OMP__hyb_coef_ens
+- parameter: loc_rh_lr
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag-nicas_3/_MPI_-_OMP__loc_rh_lr
+- parameter: loc_rv_lr
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag-nicas_3/_MPI_-_OMP__loc_rv_lr
+- parameter: hyb_coef_ens_lr
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag-nicas_3/_MPI_-_OMP__hyb_coef_ens_lr
+test:
+  reference filename: testref/error_covariance_training_bump_hdiag-nicas_3.ref

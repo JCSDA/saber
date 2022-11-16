@@ -1,0 +1,60 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 10
+  levels: 2
+  halo: 1
+input variables: &id001
+- var1
+- var2
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables: *id001
+ensemble:
+  members from template:
+    template:
+      date: '2010-01-01T12:00:00Z'
+      filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
+      state variables: *id001
+    pattern: '%mem%'
+    nmembers: 25
+    zero padding: 6
+bump:
+  datadir: testdata
+  prefix: error_covariance_training_bump_nicas_2/_MPI_-_OMP_
+  testing: true
+  universe_rad: 10000.0e3
+  method: loc
+  strategy: specific_univariate
+  load_nicas_global: true
+  write_nicas_local: true
+  check_dirac: true
+  fname_nicas: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas
+  ndir: 1
+  londir:
+  - 0.0
+  latdir:
+  - 0.0
+  levdir:
+  - 1
+  ivdir:
+  - 1
+input fields:
+- parameter: nicas_a
+  component: 1
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_a_1
+- parameter: nicas_a
+  component: 2
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_a_2
+output:
+- parameter: dirac_nicas
+  file:
+    filepath: testdata/error_covariance_training_bump_nicas_2/_MPI_-_OMP__dirac_nicas
+- parameter: dirac_nicas_bens
+  file:
+    filepath: testdata/error_covariance_training_bump_nicas_2/_MPI_-_OMP__dirac_nicas_bens
+test:
+  reference filename: testref/error_covariance_training_bump_nicas_2.ref

@@ -1,0 +1,51 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 10
+  levels: 2
+  halo: 1
+input variables: &id001
+- var1
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables: *id001
+bump:
+  datadir: testdata
+  prefix: error_covariance_training_bump_nicas_1/_MPI_-_OMP_
+  testing: true
+  universe_rad: 10000.0e3
+  method: cor
+  strategy: specific_multivariate
+  new_nicas: true
+  check_dirac: true
+  check_randomization: true
+  ens1_ne: 50
+  resol: 4.0
+  forced_radii: true
+  rh:
+    var1:
+    - 1000.0e3
+  rv:
+    var1:
+    - 3.0
+  nicas_interp_type:
+    var1: si
+  ndir: 1
+  londir:
+  - 0.0
+  latdir:
+  - 0.0
+  levdir:
+  - 1
+  ivdir:
+  - 1
+output:
+- parameter: cor_rh
+  file:
+    filepath: testdata/error_covariance_training_bump_nicas_1/_MPI_-_OMP__cor_rh
+- parameter: cor_rv
+  file:
+    filepath: testdata/error_covariance_training_bump_nicas_1/_MPI_-_OMP__cor_rv
+test:
+  reference filename: testref/error_covariance_training_bump_nicas_1.ref

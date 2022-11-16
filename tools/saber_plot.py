@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # Examples:
 # * bump test: python saber_plot.py ${build}/bin bump ${build}/saber/test/testdata bump_hdiag-nicas_cor_specific_univariate 1 1
-# * QG test: python saber_plot.py ${build}/bin qg fields ${build}/saber/test/testdata/qg_parameters_bump_cov/stddev.an.2010-01-01T12\:00\:00Z.nc
 # * QUENCH test: python saber_plot.py ${build}/bin quench ${build}/test/testdata/quench_bump_nicas/dirac.nc
 """! Plot management script"""
 
@@ -21,30 +20,6 @@ parser_bump.add_argument("test", help="Test name")
 parser_bump.add_argument("mpi", help="Number of MPI tasks")
 parser_bump.add_argument("omp", help="Number of OpenMP threads")
 parser_bump.add_argument("--output", help="Output file path")
-
-# QG sub-parser (from oops/tools/plot.py)
-parser_qg = subparser.add_parser("qg", help="QG parser")
-
-# QG diagnostics sub-parsers
-subparser_diagnostic_qg = parser_qg.add_subparsers(help="QG diagnostic help", required=True, dest="diagnostic")
-parser_qg_cost = subparser_diagnostic_qg.add_parser("cost", help="QG cost parser")
-parser_qg_fields = subparser_diagnostic_qg.add_parser("fields", help="QG fields parser")
-parser_qg_obs = subparser_diagnostic_qg.add_parser("obs", help="QG obs parser")
-
-# QG cost arguments
-parser_qg_cost.add_argument("filepath", type=str, help="File path")
-parser_qg_cost.add_argument("--output", help="Output file path")
-
-# QG fields arguments
-parser_qg_fields.add_argument("filepath", help="File path")
-parser_qg_fields.add_argument("basefilepath", nargs="?", help="Base file path", default=None)
-parser_qg_fields.add_argument("--plotwind", dest="plotwind", action="store_true", help="Plot wind")
-parser_qg_fields.add_argument("--gif", help="Gif pattern values, separated with commas, replacing %id% in the file path")
-parser_qg_fields.add_argument("--output", help="Output file path")
-
-# QG obs arguments
-parser_qg_obs.add_argument("filepath", type=str, help="File path")
-parser_qg_obs.add_argument("--output", help="Output file path")
 
 # QUENCH sub-parser
 parser_quench = subparser.add_parser("quench", help="QUENCH parser")
@@ -122,16 +97,6 @@ if (args.case == "bump"):
          f = open(os.path.join(args.testdata, args.test, "fig", "index_" + args.mpi + "-" + args.omp + ".html"), "w")
          f.write(message)
          f.close()
-
-if (args.case == "qg"):
-   # Insert path
-   sys.path.insert(1, os.path.join(args.bindir, "oops_plot"))
-
-   # Run plot function
-   module = __import__("qg_" + args.diagnostic)
-   func = getattr(module, "func")
-   print("Run script")
-   func(args)
 
 if (args.case == "quench"):
    # Insert path

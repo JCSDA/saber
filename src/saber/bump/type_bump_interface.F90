@@ -307,31 +307,6 @@ call bump%apply_vbal_ad(f_fieldset)
 end subroutine bump_apply_vbal_ad_c
 
 !----------------------------------------------------------------------
-! Subroutine: bump_apply_vbal_inv_ad_c
-!> Vertical balance application, inverse adjoint
-!----------------------------------------------------------------------
-subroutine bump_apply_vbal_inv_ad_c(key_bump,c_afieldset) bind(c,name='bump_apply_vbal_inv_ad_f90')
-
-implicit none
-
-! Passed variables
-integer(c_int),intent(in) :: key_bump       !< BUMP
-type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
-
-! Local variables
-type(bump_type),pointer :: bump
-type(fieldset_type) :: f_fieldset
-
-! Interface
-call bump_registry%get(key_bump,bump)
-f_fieldset = atlas_fieldset(c_afieldset)
-
-! Call Fortran
-call bump%apply_vbal_inv_ad(f_fieldset)
-
-end subroutine bump_apply_vbal_inv_ad_c
-
-!----------------------------------------------------------------------
 ! Subroutine: bump_apply_stddev_c
 !> Standard-deviation application
 !----------------------------------------------------------------------
@@ -405,81 +380,6 @@ f_fieldset = atlas_fieldset(c_afieldset)
 call bump%apply_nicas(f_fieldset)
 
 end subroutine bump_apply_nicas_c
-
-!----------------------------------------------------------------------
-! Subroutine: bump_get_cv_size_c
-!> Get control variable size
-!----------------------------------------------------------------------
-subroutine bump_get_cv_size_c(key_bump,n) bind(c,name='bump_get_cv_size_f90')
-
-implicit none
-
-! Passed variables
-integer(c_int),intent(in) :: key_bump !< BUMP
-integer(c_int),intent(out) :: n       !< Control variable size
-
-! Local variables
-type(bump_type),pointer :: bump
-
-! Interface
-call bump_registry%get(key_bump,bump)
-
-! Call Fortran
-call bump%get_cv_size(n)
-
-end subroutine bump_get_cv_size_c
-
-!----------------------------------------------------------------------
-! Subroutine: bump_apply_nicas_sqrt
-!> NICAS square-root application
-!----------------------------------------------------------------------
-subroutine bump_apply_nicas_sqrt_c(key_bump,cv,c_afieldset) bind(c,name='bump_apply_nicas_sqrt_f90')
-
-implicit none
-
-! Passed variables
-integer(c_int),intent(in) :: key_bump       !< BUMP
-real(c_double),intent(in) :: cv(:)          !< Control variable
-type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
-
-! Local variables
-type(bump_type),pointer :: bump
-type(fieldset_type) :: f_fieldset
-
-! Interface
-call bump_registry%get(key_bump,bump)
-f_fieldset = atlas_fieldset(c_afieldset)
-
-! Call Fortran
-call bump%apply_nicas_sqrt(cv,f_fieldset)
-
-end subroutine bump_apply_nicas_sqrt_c
-
-!----------------------------------------------------------------------
-! Subroutine: bump_apply_nicas_sqrt_ad_c
-!> NICAS square-root adjoint application
-!----------------------------------------------------------------------
-subroutine bump_apply_nicas_sqrt_ad_c(key_bump,c_afieldset,cv) bind(c,name='bump_apply_nicas_sqrt_ad_f90')
-
-implicit none
-
-! Passed variables
-integer(c_int),intent(in) :: key_bump       !< BUMP
-type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
-real(c_double),intent(inout) :: cv(:)       !< Control variable
-
-! Local variables
-type(bump_type),pointer :: bump
-type(fieldset_type) :: f_fieldset
-
-! Interface
-call bump_registry%get(key_bump,bump)
-f_fieldset = atlas_fieldset(c_afieldset)
-
-! Call Fortran
-call bump%apply_nicas_sqrt_ad(f_fieldset,cv)
-
-end subroutine bump_apply_nicas_sqrt_ad_c
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_randomize_c

@@ -63,6 +63,15 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
                                                     outerGeometryData.functionSpace(),
                                                     activeVariableSizes,
                                                     activeVars));
+
+  // Create the interpolator
+  inverseInterpolator_.reset(new UnstructuredInterpolation(outerGeometryData.comm(),
+                                                           params.toConfiguration(),
+                                                           outerGeometryData.functionSpace(),
+                                                           innerGeometryData_->functionSpace(),
+                                                           activeVariableSizes,
+                                                           activeVars));
+
   oops::Log::trace() << classname() << "::Interpolation done" << std::endl;
 }
 
@@ -95,9 +104,10 @@ void Interpolation::multiplyAD(atlas::FieldSet & fset) const {
 // -------------------------------------------------------------------------------------------------
 
 void Interpolation::calibrationInverseMultiply(atlas::FieldSet & fset) const {
-  oops::Log::info() << classname()
-                    << "::calibrationInverseMultiply not meaningful so fieldset unchanged"
-                    << std::endl;
+  oops::Log::trace() << classname() << "::calibrationInverseMultiply starting" << std::endl;
+  util::Timer timer(classname(), "calibrationInverseMultiply");
+  inverseInterpolator_->apply(fset);
+  oops::Log::trace() << classname() << "::calibrationInverseMultiply done" << std::endl;
 }
 
 // -------------------------------------------------------------------------------------------------

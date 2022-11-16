@@ -19,10 +19,6 @@
 #include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberOuterBlockBase.h"
 
-namespace oops {
-  class Variables;
-}
-
 namespace saber {
 namespace generic {
 

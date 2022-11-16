@@ -14,6 +14,7 @@ use tools_func, only: fletcher32,sphere_dist,zss_sum
 use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: create_file,open_file,define_grp,define_dim,inquire_dim,check_dim,define_var,put_var,close_file
 use tools_qsort, only: qsort
+use tools_repro, only: rth
 use type_bpar, only: bpar_type
 use type_cmat, only: cmat_type
 use type_com, only: com_type
@@ -863,9 +864,7 @@ type(bpar_type),intent(in) :: bpar        !< Block parameters
 type(ens_type),intent(in) :: ens          !< Ensemble
 
 ! Local variables
-integer :: ncid,nc0_id,nl0_id,lon_id,lat_id,vunit_id
-integer :: ib,iv,icmp
-character(len=1024) :: grpname
+integer :: ib,icmp
 
 ! Set name
 @:set_name(nicas_run_nicas_tests)
@@ -916,65 +915,14 @@ if (nam%check_normalization>0) then
                call nicas%blk(ib)%cmp(icmp)%test_normalization(mpl,rng,nam,geom)
             end if
          end do
+         write(mpl%info,'(a7,a)') '','All components:'
+         call mpl%flush
+         call nicas%blk(ib)%test_normalization(mpl,rng,nam,geom)
       end if
    end do
 end if
 
 if (nam%check_dirac) then
-   ! Apply NICAS to diracs
-   write(mpl%info,'(a)') '-------------------------------------------------------------------'
-   call mpl%flush
-   write(mpl%info,'(a)') '--- Apply NICAS blocks to diracs'
-   call mpl%flush
-
-   if (nam%write_c0) then
-      ! Allocation
-      allocate(nicas%blkid(nam%nv))
-      allocate(nicas%dirac_id(nam%nv))
-      if (allocated(ens%mem).and.(trim(nam%method)/='cor')) allocate(nicas%bens_id(nam%nv))
-
-      ! Create file
-      ncid = create_file(mpl,trim(nam%prefix)//'dirac')
-
-      ! Define dimensions
-      nc0_id = define_dim(mpl,ncid,'nc0',geom%nc0)
-      nl0_id = define_dim(mpl,ncid,'nl0',geom%nl0)
-
-      ! Define variables
-      lon_id = define_var(mpl,ncid,'lon','real',(/nc0_id/),unitname='degrees_east')
-      lat_id = define_var(mpl,ncid,'lat','real',(/nc0_id/),unitname='degrees_north')
-      vunit_id = define_var(mpl,ncid,'vunit','real',(/nc0_id,nl0_id/))
-      do ib=1,bpar%nbe
-         if (bpar%nicas_block(ib)) then
-            ! Get group name
-            call nam%io_key_value(bpar%blockname(ib),grpname)
-
-            ! Define group
-            nicas%blk(ib)%blkid = define_grp(mpl,ncid,grpname)
-
-            ! Define variable
-            nicas%blk(ib)%dirac_id = define_var(mpl,nicas%blk(ib)%blkid,'nicas_blk','real',(/nc0_id,nl0_id/))
-         end if
-      end do
-      do iv=1,nam%nv
-         ! Get group name
-         call nam%io_key_value(nam%variables(iv),grpname)
-
-         ! Define group
-         nicas%blkid(iv) = define_grp(mpl,ncid,grpname)
-
-         ! Define variables
-         nicas%dirac_id(iv) = define_var(mpl,nicas%blkid(iv),'nicas','real',(/nc0_id,nl0_id/))
-         if (allocated(ens%mem).and.(trim(nam%method)/='cor')) nicas%bens_id(iv) = define_var(mpl,nicas%blkid(iv),'Bens','real', &
- & (/nc0_id,nl0_id/))
-      end do
-
-      ! Write variables
-      call geom%io%fld_write(mpl,ncid,lon_id,geom%lon_c0a*rad2deg)
-      call geom%io%fld_write(mpl,ncid,lat_id,geom%lat_c0a*rad2deg)
-      call geom%io%fld_write(mpl,ncid,vunit_id,geom%vunit_c0a,geom%gmask_c0a)
-   end if
-
    ! Apply NICAS to diracs
    write(mpl%info,'(a)') '-------------------------------------------------------------------'
    call mpl%flush
@@ -992,16 +940,6 @@ if (nam%check_dirac) then
          call nicas%blk(ib)%test_dirac(mpl,nam,geom,bpar)
       end if
    end do
-
-   if (nam%write_c0) then
-      ! Close file
-      call close_file(mpl,ncid)
-
-      ! Release memory
-      deallocate(nicas%blkid)
-      deallocate(nicas%dirac_id)
-      if (allocated(ens%mem).and.(trim(nam%method)/='cor')) deallocate(nicas%bens_id)
-   end if
 end if
 
 if (nam%check_randomization) then
@@ -1596,14 +1534,20 @@ end if
 ! Print result
 call mpl%dot_prod(fld1,fld2_save,sum1)
 call mpl%dot_prod(fld2,fld1_save,sum2)
-write(mpl%info,'(a,e15.8,a,e15.8,a,e15.8)') '--- Full NICAS adjoint test:                        ', &
+write(mpl%info,'(a,e15.8,a,e15.8,a,e15.8)') '--- Full NICAS adjoint test values:                        ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
+call mpl%flush
+write(mpl%test,'(a,l1)') '    Full NICAS adjoint test result:                        ', &
+ & two*abs(sum1-sum2)/abs(sum1+sum2)<rth
 call mpl%flush
 if (lbens) then
    call mpl%dot_prod(fld1_bens,fld2_save,sum1)
    call mpl%dot_prod(fld2_bens,fld1_save,sum2)
-   write(mpl%info,'(a,e15.8,a,e15.8,a,e15.8)') '--- Ensemble B adjoint test:                        ', &
+   write(mpl%info,'(a,e15.8,a,e15.8,a,e15.8)') '--- Ensemble B adjoint test values:                        ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
+   call mpl%flush
+   write(mpl%test,'(a,l1)') '    Ensemble B adjoint test result:                        ', &
+ & two*abs(sum1-sum2)/abs(sum1+sum2)<rth
    call mpl%flush
 end if
 
@@ -1635,7 +1579,7 @@ type(bpar_type),intent(in) :: bpar       !< Block parameters
 type(ens_type),intent(in) :: ens         !< Ensemble
 
 ! Local variables
-integer :: ic0a,idir,iv
+integer :: ic0a,idir
 real(kind_real),allocatable :: fld_c0a(:,:,:),fld_ens_c0a(:,:,:)
 logical :: lbens
 
@@ -1680,14 +1624,6 @@ do idir=1,geom%ndir
       end if
    end do
 end do
-
-if (nam%write_c0) then
-   ! Write fields
-   do iv=1,nam%nv
-      call geom%io%fld_write(mpl,nicas%blkid(iv),nicas%dirac_id(iv),nicas%dirac(:,:,iv),geom%gmask_c0a)
-      if (lbens) call geom%io%fld_write(mpl,nicas%blkid(iv),nicas%bens_id(iv),nicas%dirac_bens(:,:,iv),geom%gmask_c0a)
-   end do
-end if
 
 ! Probe out
 @:probe_out()
@@ -1735,7 +1671,7 @@ if (nam%default_seed) call rng%reseed(mpl)
 
 ! Apply NICAS to test vectors
 write(mpl%info,'(a4,a)') '','Apply NICAS to test vectors: '
-call mpl%flush(.false.)
+call mpl%flush(adv=.false.)
 call mpl%prog_init(ntest)
 fld_ref = fld_save
 do itest=1,ntest
@@ -1766,7 +1702,7 @@ do ifac=1,nfac_rnd
 
    ! Test randomized ensemble
    write(mpl%info,'(a10,a)') '','Apply NICAS to test vectors: '
-   call mpl%flush(.false.)
+   call mpl%flush(adv=.false.)
    call mpl%prog_init(ntest)
    do itest=1,ntest
       ! Test NICAS
@@ -1787,7 +1723,7 @@ do ifac=1,nfac_rnd
    ! Print scores
    mse_avg = sum(mse(:,ifac))/real(ntest,kind_real)
    mse_th_avg = sum(mse_th(:,ifac))/real(ntest,kind_real)
-   write(mpl%info,'(a10,a,e15.8,a,e15.8,a,f5.3)') '','MSE (exp. / th. / ratio): ',mse_avg,' / ',mse_th_avg,' / ',mse_avg/mse_th_avg
+   write(mpl%test,'(a10,a,e15.8,a,e15.8,a,f5.3)') '','MSE (exp. / th. / ratio): ',mse_avg,' / ',mse_th_avg,' / ',mse_avg/mse_th_avg
    call mpl%flush
 
    ! Release memory

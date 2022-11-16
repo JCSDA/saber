@@ -14,7 +14,7 @@ use fckit_mpi_module, only: fckit_mpi_sum
 use iso_c_binding
 use tools_asa007, only: cholesky,syminv
 use tools_const, only: zero,hundredth,tenth,half,one,two,three,four,five,eight,ten,pi,deg2rad,rad2deg
-use tools_kinds, only: kind_short,kind_int,kind_real,huge_int,huge_real
+use tools_kinds, only: kind_int,kind_short,kind_real,huge_int,huge_short,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: rth,inf,sup,infeq,small,eq
 use tools_wrfda, only: da_eof_decomposition
@@ -37,8 +37,12 @@ end interface
 interface lonlatmod
    module procedure func_lonlatmod
 end interface
-interface gridhash
-   module procedure func_gridhash
+interface rad2short
+   module procedure func_rad2short
+end interface
+interface grid_hash
+   module procedure func_grid_hash_global
+   module procedure func_grid_hash_local
 end interface
 interface independent_levels
    module procedure func_independent_levels
@@ -66,9 +70,6 @@ interface det
 end interface
 interface inside
    module procedure func_inside
-end interface
-interface order_cc
-   module procedure func_order_cc
 end interface
 interface add
    module procedure func_add
@@ -148,8 +149,8 @@ interface global_average
 end interface
 
 private
-public :: fletcher32,lonlatmod,gridhash,independent_levels,sphere_bearing,sphere_dist,cart_dist,lonlat2xyz,xyz2lonlat, &
- & vector_product,det,inside,order_cc,add,divide,vert_interp_size,vert_interp_setup,vert_interp,cholesky,syminv,histogram, &
+public :: fletcher32,lonlatmod,rad2short,grid_hash,independent_levels,sphere_bearing,sphere_dist,cart_dist,lonlat2xyz,xyz2lonlat, &
+ & vector_product,det,inside,add,divide,vert_interp_size,vert_interp_setup,vert_interp,cholesky,syminv,histogram, &
  & cx_to_cxa,cx_to_proc,cx_to_cxu,convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count,global_average
 
 contains
@@ -163,14 +164,13 @@ function func_fletcher32(var) result(value)
 implicit none
 
 ! Passed variables
-real(kind_real),intent(in) :: var(:) !< Variable
+integer(kind_short),intent(in) :: var(:) !< Variable
 
 ! Returned variable
 integer :: value
 
 ! Local values
-integer(c_int32_t) :: array_size
-integer(c_int16_t),allocatable :: array(:)
+integer :: var_size
 
 ! Set name
 @:set_name(func_fletcher32)
@@ -178,18 +178,11 @@ integer(c_int16_t),allocatable :: array(:)
 ! Probe in
 @:probe_in()
 
-! Allocation
-allocate(array(size(var)))
-
 ! Initialization
-array = transfer(var,(/0_kind_short/))
-array_size  = size(array)
+var_size  = size(var)
 
 ! Call C function
-value = c_fletcher32(array_size,array)
-
-! Release memory
-deallocate(array)
+value = c_fletcher32(var_size,var)
 
 ! Probe out
 @:probe_out()
@@ -239,89 +232,149 @@ if (abs(lat)>(half-1.0e-6_kind_real)*pi) lon = zero
 end subroutine func_lonlatmod
 
 !----------------------------------------------------------------------
-! Subroutine: func_gridhash
-!> Compute grid hash profile
+! Subroutine: func_rad2short
+!> Convert lontitude/latitude in radian into short integer for hash computation 
 !----------------------------------------------------------------------
-subroutine func_gridhash(ncx,nlx,lon_cx,lat_cx,mask_cx,grid_hash)
+subroutine func_rad2short(rad_real,rad_short)
 
 implicit none
 
 ! Passed variables
-integer,intent(in) :: ncx                 !< Number of points
-integer,intent(in) :: nlx                 !< Number of levels
-real(kind_real),intent(in) :: lon_cx(ncx) !< Longitude [radians]
-real(kind_real),intent(in) :: lat_cx(ncx) !< Latitude [radians]
-logical,intent(in) :: mask_cx(ncx,nlx)    !< Mask
-integer,intent(out) :: grid_hash(0:nlx)   !< Grid hash profile
-
-! Local variables
-integer :: ilx,ncx_eff,icx_eff,icx
-real(kind_real),allocatable :: lonlat(:)
+real(kind_real),intent(in) :: rad_real       !< Angle (longitude or latitude) [radians]
+integer(kind_short),intent(out) :: rad_short !< Short integer value
 
 ! Set name
-@:set_name(func_grid_hash)
+@:set_name(func_rad2short)
 
 ! Probe in
 @:probe_in()
 
-do ilx=1,nlx
-   ! Count points in the mask
-   ncx_eff = count(mask_cx(:,ilx))
-
-   if (ncx_eff>0) then
-      ! Allocation
-      allocate(lonlat(2*ncx_eff))
-
-      ! Copy lonlat
-      icx_eff = 0
-      do icx=1,ncx
-         if (mask_cx(icx,ilx)) then
-            icx_eff = icx_eff+1
-            lonlat(icx_eff) = lon_cx(icx)
-            icx_eff = icx_eff+1
-            lonlat(icx_eff) = lat_cx(icx)
-         end if
-      end do
-
-      ! Compute hash
-      grid_hash(ilx) = fletcher32(lonlat)
-
-      ! Release memory
-      deallocate(lonlat)
-   else
-      grid_hash(ilx) = 0
-   end if
-end do
-
-! Final grid hash
-grid_hash(0) = fletcher32(real(grid_hash(1:nlx),kind_real))
+! Convert to integer
+rad_short = int(rad_real/pi*real(huge_short),kind_short)
 
 ! Probe out
 @:probe_out()
 
-end subroutine func_gridhash
+end subroutine func_rad2short
+
+!----------------------------------------------------------------------
+! Subroutine: func_grid_hash_global
+!> Compute grid hash value from global coordinates
+!----------------------------------------------------------------------
+subroutine func_grid_hash_global(ncx,lon_cx,lat_cx,mask_cx,hash)
+
+implicit none
+
+! Passed variables
+integer,intent(in) :: ncx                 !< Number of points (global)
+real(kind_real),intent(in) :: lon_cx(ncx) !< Longitude [radians]
+real(kind_real),intent(in) :: lat_cx(ncx) !< Latitude [radians]
+logical,intent(in) :: mask_cx(ncx)        !< Mask
+integer,intent(out) :: hash               !< Grid hash
+
+! Local variables
+integer :: icx
+integer(kind_short) :: lonlat(2*ncx)
+
+! Set name
+@:set_name(func_grid_hash_global)
+
+! Probe in
+@:probe_in()
+
+! Intialization
+lonlat = 0_kind_short
+
+! Loop over points
+do icx=1,ncx
+   if (mask_cx(icx)) then
+      call rad2short(lon_cx(icx),lonlat(2*(icx-1)+1))
+      call rad2short(lat_cx(icx),lonlat(2*icx))
+   end if
+end do
+
+! Compute hash
+hash = fletcher32(lonlat)
+
+! Probe out
+@:probe_out()
+
+end subroutine func_grid_hash_global
+
+!----------------------------------------------------------------------
+! Subroutine: func_grid_hash_local
+!> Compute grid hash profile from local coordinates
+!----------------------------------------------------------------------
+subroutine func_grid_hash_local(mpl,ncxa,ncx,nlx,cxa_to_cx,lon_cxa,lat_cxa,mask_cxa,hash)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl         !< MPI data
+integer,intent(in) :: ncxa                  !< Number of points (local)
+integer,intent(in) :: ncx                   !< Number of points (global)
+integer,intent(in) :: nlx                   !< Number of levels
+integer,intent(in) :: cxa_to_cx(ncxa)       !< Halo A to global
+real(kind_real),intent(in) :: lon_cxa(ncxa) !< Longitude [radians]
+real(kind_real),intent(in) :: lat_cxa(ncxa) !< Latitude [radians]
+logical,intent(in) :: mask_cxa(ncxa,nlx)    !< Mask
+integer,intent(out) :: hash(nlx)            !< Grid hash profile
+
+! Local variables
+integer :: ilx
+integer :: order_cx(ncx)
+real(kind_real) :: lon_cx(ncx),lat_cx(ncx)
+logical :: mask_cx(ncx,nlx)
+
+! Set name
+@:set_name(func_grid_hash_local)
+
+! Probe in
+@:probe_in()
+
+! Gather lon/lat/mask points on root processor
+call mpl%loc_to_glb(ncxa,ncx,cxa_to_cx,lon_cxa,lon_cx,.false.)
+call mpl%loc_to_glb(ncxa,ncx,cxa_to_cx,lat_cxa,lat_cx,.false.)
+call mpl%loc_to_glb(ncxa,ncx,cxa_to_cx,mask_cxa,mask_cx,.false.)
+
+if (mpl%main) then
+   do ilx=1,nlx
+      ! Reorder lon/lat
+      call qsort(ncx,lon_cx,lat_cx,order_cx)
+      mask_cx(:,ilx) = mask_cx(order_cx,ilx)
+
+      ! Global hash
+      call grid_hash(ncx,lon_cx,lat_cx,mask_cx(:,ilx),hash(ilx))
+   end do
+end if
+
+! Broadcast grid hash profile
+call mpl%f_comm%broadcast(hash,mpl%rootproc-1)
+
+! Probe out
+@:probe_out()
+
+end subroutine func_grid_hash_local
 
 !----------------------------------------------------------------------
 ! Subroutine: func_independent_levels
 !> Compute independent levels
 !----------------------------------------------------------------------
-subroutine func_independent_levels(mpl,nlx,grid_hash,nlxi,lx_to_lxi,lxi_to_lx,ifmt)
+subroutine func_independent_levels(mpl,nlx,grid_hash,nlxi,lx_to_lxi,lxi_to_lx)
 
 implicit none
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl   !< MPI data
 integer,intent(in) :: nlx             !< Number of levels
-integer,intent(in) :: grid_hash(nlx)  !< Grid hash profile
+integer,intent(in) :: grid_hash(nlx)  !< Global grid hash profile
 integer,intent(out) :: nlxi           !< Number of independent levels
 integer,intent(out) :: lx_to_lxi(nlx) !< Levels to independent levels
 integer,intent(out) :: lxi_to_lx(nlx) !< Independent levels to levels
-integer,intent(in) :: ifmt            !< Indentation
 
 ! Local variables
 integer :: ilx,ilxi,jlx,jlxi,n
-integer :: proc_to_grid_hash(mpl%nproc),grid_hash_glb(nlx)
-character(len=1024) :: cfmt
+character(len=13) :: cfmt
 
 ! Set name
 @:set_name(func_independent_levels)
@@ -329,16 +382,10 @@ character(len=1024) :: cfmt
 ! Probe in
 @:probe_in()
 
-! Compute global hash value
-do ilx=1,nlx
-   call mpl%f_comm%allgather(grid_hash(ilx),proc_to_grid_hash)
-   grid_hash_glb(ilx) = fletcher32(real(proc_to_grid_hash,kind_real))
-end do
-
 ! Count independent levels
 nlxi = 1
 do ilx=2,nlx
-   if (all(grid_hash_glb(1:ilx-1)/=grid_hash_glb(ilx))) nlxi = nlxi+1
+   if (all(grid_hash(1:ilx-1)/=grid_hash(ilx))) nlxi = nlxi+1
 end do
 
 ! Initialization
@@ -350,7 +397,7 @@ ilxi = 1
 lx_to_lxi(ilx) = ilxi
 lxi_to_lx(ilxi) = ilx
 do ilx=2,nlx
-   if (all(grid_hash_glb(1:ilx-1)/=grid_hash_glb(ilx))) then
+   if (all(grid_hash(1:ilx-1)/=grid_hash(ilx))) then
       ! New independent level
       ilxi = ilxi+1
       lx_to_lxi(ilx) = ilxi
@@ -358,7 +405,7 @@ do ilx=2,nlx
    else
       ! Similar level
       do jlx=1,ilx-1
-         if (grid_hash_glb(jlx)==grid_hash_glb(ilx)) then
+         if (grid_hash(jlx)==grid_hash(ilx)) then
             jlxi = lx_to_lxi(jlx)
             lx_to_lxi(ilx) = jlxi
             exit
@@ -368,23 +415,21 @@ do ilx=2,nlx
 end do
 
 ! Print levels
-write(cfmt,'(a,i2.2,a)') '(a',ifmt,',a)'
-write(mpl%info,trim(cfmt)) '','Compute independent levels: '
-call mpl%flush(.false.)
+write(mpl%test,'(a)') ''
 do ilxi=1,nlxi
    ilx = lxi_to_lx(ilxi)
    n = count(lx_to_lxi==ilxi)
    if (n<10) then
-      cfmt = '(i3,a,i1,a)'
+      cfmt = '(a,i3,a,i1,a)'
    elseif (n<100) then
-      cfmt = '(i3,a,i2,a)'
+      cfmt = '(a,i3,a,i2,a)'
+   elseif (n<1000) then
+      cfmt = '(a,i3,a,i3,a)'
    else
-      cfmt = '(i3,a,i3,a)'
+      call mpl%abort('${subr}$','level larger than 1000')
    end if
-   write(mpl%info,trim(cfmt)) ilx,'[',n,'] '
-   call mpl%flush(.false.)
+   write(mpl%test,cfmt) trim(mpl%test),ilx,'[',n,'] '
 end do
-write(mpl%info,'(a)') ''
 call mpl%flush
 
 ! Probe out
@@ -637,7 +682,7 @@ end subroutine func_vector_product
 ! Subroutine: func_det
 !> Compute determinant (vector triple product)
 !----------------------------------------------------------------------
-subroutine func_det(v1,v2,v3,p,cflag)
+subroutine func_det(v1,v2,v3,p)
 
 implicit none
 
@@ -646,10 +691,8 @@ real(kind_real),intent(in) :: v1(3)   !< First vector
 real(kind_real),intent(in) :: v2(3)   !< Second vector
 real(kind_real),intent(in) :: v3(3)   !< Third vector
 real(kind_real),intent(out) :: p      !< Determinant
-logical,intent(out),optional :: cflag !< Confidence flag
 
 ! Local variable
-integer :: i
 real(kind_real) :: terms(6)
 
 ! Set name
@@ -668,14 +711,6 @@ terms(6) = -v1(2)*v2(1)*v3(3)
 
 ! Sum
 p = sum(terms)
-
-if (present(cflag)) then
-   ! Confidence flag
-   cflag = .true.
-   do i=1,6
-      if ((abs(terms(i))>zero).and.small(p,terms(i))) cflag = .false.
-   end do
-end if
 
 ! Probe out
 @:probe_out()
@@ -740,81 +775,6 @@ end do
 @:probe_out()
 
 end subroutine func_inside
-
-!----------------------------------------------------------------------
-! Subroutine: func_order_cc
-!> Order points in counter-clockwise order with respect to a central point
-!----------------------------------------------------------------------
-subroutine func_order_cc(mpl,lon,lat,n,x,y,z,order,diff)
-
-implicit none
-
-! Passed variables
-type(mpl_type),intent(inout) :: mpl             !< MPI data
-real(kind_real),intent(in) :: lon               !< Longitude of the central point
-real(kind_real),intent(in) :: lat               !< Latitude of the central point
-integer :: n                                    !< Number of points
-real(kind_real),intent(in) :: x(n)              !< List of X-coordinates
-real(kind_real),intent(in) :: y(n)              !< List of Y-coordinates
-real(kind_real),intent(in) :: z(n)              !< List of Z-coordinates
-integer,intent(out) :: order(n)                 !< Counter-clockwise order
-real(kind_real),intent(out),optional :: diff(n) !< Angles differences
-
-! Local variable
-integer :: i
-real(kind_real) :: rvec(3),costheta,sintheta,p(3),rvecxv(3),v(3),list(n)
-real(kind_real),allocatable :: list_save(:)
-
-! Set name
-@:set_name(func_order_cc)
-
-! Probe in
-@:probe_in()
-
-! Rotation vector in cartesian coordinates
-call lonlat2xyz(mpl,lon-half*pi,zero,rvec(1),rvec(2),rvec(3))
-
-! Rotation angle
-costheta = cos(half*pi-lat)
-sintheta = sin(half*pi-lat)
-
-! Compute angle
-do i=1,n
-   ! Rodrigues' rotation
-   p = (/x(i),y(i),z(i)/)
-   call vector_product(rvec,p,rvecxv)
-   v = p*costheta+rvecxv*sintheta+rvec*sum(rvec*p)*(one-costheta)
-
-   ! Angle
-   list(i) = atan2(v(2),v(1))
-end do
-
-if (present(diff)) then
-   ! Allocation
-   allocate(list_save(n))
-
-   ! Copy
-   list_save = list
-end if
-
-! Sort angles in counter-clockwise order
-call qsort(n,list,order)
-
-if (present(diff)) then
-   ! Get angles differences
-   diff(order(1)) = list_save(order(1))-list_save(order(n))+two*pi
-   do i=2,n
-      diff(order(i)) = list_save(order(i))-list_save(order(i-1))
-   end do
-
-   ! Release memory
-   deallocate(list_save)
-end if
-
-! Probe out
-@:probe_out()
-
-end subroutine func_order_cc
 
 !----------------------------------------------------------------------
 ! Subroutine: func_add

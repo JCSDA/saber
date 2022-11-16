@@ -1,0 +1,32 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_gaussian
+    N: 10
+  levels: 2
+  halo: 1
+input variables: &id001
+- var1
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables: *id001
+bump:
+  datadir: testdata
+  prefix: error_covariance_training_bump_1/_MPI_-_OMP_
+  colorlog: true
+  testing: true
+output:
+- parameter: lon
+  file:
+    filepath: testdata/error_covariance_training_bump_1/_MPI_-_OMP__lon
+- parameter: lat
+  file:
+    filepath: testdata/error_covariance_training_bump_1/_MPI_-_OMP__lat
+- parameter: area
+  file:
+    filepath: testdata/error_covariance_training_bump_1/_MPI_-_OMP__area
+- parameter: vunit
+  file:
+    filepath: testdata/error_covariance_training_bump_1/_MPI_-_OMP__vunit
+test:
+  reference filename: testref/error_covariance_training_bump_1.ref

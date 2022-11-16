@@ -1,0 +1,58 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 10
+  levels: 2
+  halo: 1
+input variables: &id001
+- var1
+- var2
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables: *id001
+ensemble:
+  members from template:
+    template:
+      date: '2010-01-01T12:00:00Z'
+      filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
+      state variables: *id001
+    pattern: '%mem%'
+    nmembers: 10
+    zero padding: 6
+bump:
+  datadir: testdata
+  prefix: error_covariance_training_bump_vbal_2/_MPI_-_OMP_
+  testing: true
+  new_vbal_cov: true
+  write_vbal_cov: true
+  new_vbal: true
+  write_vbal: true
+  check_adjoints: true
+  check_dirac: true
+  write_samp_local: true
+  write_samp_global: true
+  nc1: 500
+  nc2: 250
+  vbal_block:
+  - true
+  vbal_dlat: 10.0
+  vbal_diag_auto:
+  - true
+  vbal_pseudo_inv: true
+  vbal_pseudo_inv_mmax: 3
+  ndir: 1
+  londir:
+  - 0.0
+  latdir:
+  - 0.0
+  levdir:
+  - 1
+  ivdir:
+  - 1
+output:
+- parameter: dirac_vbal
+  file:
+    filepath: testdata/error_covariance_training_bump_vbal_2/dirac
+test:
+  reference filename: testref/error_covariance_training_bump_vbal_2.ref

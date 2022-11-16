@@ -4,7 +4,6 @@
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
 list(APPEND util_src_files_list
-
 tools_atlas.fypp
 tools_const.fypp
 tools_kinds.fypp
@@ -13,22 +12,24 @@ tools_repro.fypp
 type_fieldset.fypp
 type_mpl.fypp
 type_msv.fypp
-type_probe.fypp
 type_rng.fypp
-
 )
 
-if( oops_FOUND )
+if( ENABLE_SABER_INSTRUMENTATION )
     list(APPEND util_src_files_list
-
-    mo_cvtcoord_mod.F90
-    mo_netcdf_mod.F90
+    type_probe.fypp
     )
 endif()
 
-set( util_src_files
+if( oops_FOUND )
+    list(APPEND util_src_files_list
+    mo_cvtcoord_mod.F90
+    mo_netcdf_mod.F90
+    )
+else()
+    list(APPEND util_src_files_list
+    logger_mod.fypp
+    )
+endif()
 
-${util_src_files_list}
-
-PARENT_SCOPE
-)
+set( util_src_files ${util_src_files_list} PARENT_SCOPE )

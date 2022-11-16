@@ -1,0 +1,93 @@
+Norm of input parameter nicas_a::1: 4.2727231385893987e+01
+Norm of input parameter nicas_a::2: 1.2508898244244907e+01
+       Independent levels:  1[2]
+          Level   1:   1550418632
+          Level   2:   1550418632
+          Model grid size:              840
+          Subset Sc0 size:              762
+          Number of duplicated points (halo):        78 (  9.29%)
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. unit
+             Level   2 ~>  0.200E+01 vert. unit
+   Norm of var1:  0.27414646E+04
+   Norm of var2:  0.31193216E+04
+   Norm of var1:  0.29210471E+04
+   Norm of var2:  0.22534698E+04
+   Norm of var1:  0.28857362E+04
+   Norm of var2:  0.24174934E+04
+   Norm of var1:  0.32066996E+04
+   Norm of var2:  0.25479313E+04
+   Norm of var1:  0.27016710E+04
+   Norm of var2:  0.27408106E+04
+   Norm of var1:  0.26185217E+04
+   Norm of var2:  0.33513453E+04
+   Norm of var1:  0.31706317E+04
+   Norm of var2:  0.24585268E+04
+   Norm of var1:  0.34644901E+04
+   Norm of var2:  0.30306780E+04
+   Norm of var1:  0.32999350E+04
+   Norm of var2:  0.35053520E+04
+   Norm of var1:  0.31745354E+04
+   Norm of var2:  0.30673910E+04
+   Norm of var1:  0.33268505E+04
+   Norm of var2:  0.28558058E+04
+   Norm of var1:  0.32542403E+04
+   Norm of var2:  0.33468731E+04
+   Norm of var1:  0.31078559E+04
+   Norm of var2:  0.28493732E+04
+   Norm of var1:  0.36145252E+04
+   Norm of var2:  0.26330697E+04
+   Norm of var1:  0.32695453E+04
+   Norm of var2:  0.28005825E+04
+   Norm of var1:  0.26162691E+04
+   Norm of var2:  0.25806199E+04
+   Norm of var1:  0.36383322E+04
+   Norm of var2:  0.35434370E+04
+   Norm of var1:  0.36937518E+04
+   Norm of var2:  0.27443471E+04
+   Norm of var1:  0.31516279E+04
+   Norm of var2:  0.27491583E+04
+   Norm of var1:  0.31758377E+04
+   Norm of var2:  0.24108208E+04
+   Norm of var1:  0.28619461E+04
+   Norm of var2:  0.30851808E+04
+   Norm of var1:  0.30484285E+04
+   Norm of var2:  0.28353053E+04
+   Norm of var1:  0.28756366E+04
+   Norm of var2:  0.27050449E+04
+   Norm of var1:  0.29807248E+04
+   Norm of var2:  0.24910062E+04
+   Norm of var1:  0.25632880E+01
+   Norm of var2:  0.20288289E+01
+             nc1(  1) =                        762
+             nc1(  2) =                        671
+             ns =                             1433
+             v%n_s =                             2
+             c%n_s[global] =                 42963
+             nc1(  1) =                        762
+             nc1(  2) =                        672
+             ns =                             1434
+             v%n_s =                             2
+             c%n_s[global] =                 22440
+             nc1(  1) =                        631
+             nc1(  2) =                        751
+             ns =                             1382
+             v%n_s =                             2
+             c%n_s[global] =                 39720
+             nc1(  1) =                        631
+             nc1(  2) =                        751
+             ns =                             1382
+             v%n_s =                             2
+             c%n_s[global] =                 21067
+             0.0 /    0.0:  1.0000000
+          Level   1:  0.0000000 -  1.0000000
+          Level   2:  0.0000000 -  0.6577737
+             0.0 /    0.0:  0.0000000
+          Level   1:  0.0000000 -  0.0000000
+          Level   2:  0.0000000 -  0.0000000
+Norm of BUMP output parameter dirac_nicas - 1: 2.2164145384133902e+00
+Norm of BUMP output parameter dirac_nicas_bens - 1: 7.3061198890932858e-03

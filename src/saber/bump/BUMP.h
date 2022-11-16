@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <omp.h>
+
 #include <algorithm>
 #include <fstream>
 #include <memory>
@@ -40,20 +42,6 @@ class BUMPParameters : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(BUMPParameters, oops::Parameters)
 
  public:
-  // External parameters
-
-  // Ensemble 1 parameters
-  oops::OptionalParameter<eckit::LocalConfiguration> ensemble1{"ensemble", this};
-  // Ensemble 2 parameters
-  oops::OptionalParameter<eckit::LocalConfiguration> ensemble2{"lowres ensemble", this};
-  // Missing value (real)
-  oops::OptionalParameter<double> msvalr{"msvalr", this};
-  // Grids
-  oops::OptionalParameter<eckit::LocalConfiguration> grids{"grids", this};
-  // Operators application
-  oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> appConfs{"operators application",
-    this};
-
   // Internal parameters
 
   // general_param
@@ -62,13 +50,10 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<std::string> datadir{"datadir", this};
   // Files prefix
   oops::OptionalParameter<std::string> prefix{"prefix", this};
-  // Model name ('aro', 'arp', 'fv3', 'gem', 'geos', 'gfs', 'ifs', 'mpas', 'nemo', 'norcpm',
-  // 'online', 'qg, 'res' or 'wrf')
-  oops::OptionalParameter<std::string> model{"model", this};
-  // Verbosity level ('all', 'main' or 'none')
-  oops::OptionalParameter<std::string> verbosity{"verbosity", this};
   // Add colors to the log (for display on terminal)
   oops::OptionalParameter<bool> colorlog{"colorlog", this};
+  // Stream test messages into a dedicated channel
+  oops::OptionalParameter<bool> testing{"testing", this};
   // Default seed for random numbers
   oops::OptionalParameter<bool> default_seed{"default_seed", this};
   // Inter-compilers reproducibility
@@ -81,10 +66,6 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<int> nprocio{"nprocio", this};
   // Universe radius [in meters]
   oops::OptionalParameter<double> universe_rad{"universe_rad", this};
-  // Use CGAL for mesh generation (or STRIPACK instead)
-  oops::OptionalParameter<bool> use_cgal{"use_cgal", this};
-  // Write subset Sc0 fields (full grid) using BUMP I/O
-  oops::OptionalParameter<bool> write_c0{"write_c0", this};
 
   // driver_param
 
@@ -113,10 +94,6 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<bool> new_var{"new_var", this};
   // Update variance sequentially
   oops::OptionalParameter<bool> update_var{"update_var", this};
-  // Load variance
-  oops::OptionalParameter<bool> load_var{"load_var", this};
-  // Write variance
-  oops::OptionalParameter<bool> write_var{"write_var", this};
   // Compute new sampling moments
   oops::OptionalParameter<bool> new_mom{"new_mom", this};
   // Update sampling moments sequentially
@@ -159,10 +136,6 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<bool> check_consistency{"check_consistency", this};
   // Test HDIAG optimality
   oops::OptionalParameter<bool> check_optimality{"check_optimality", this};
-  // Test BUMP with no grid point on the last MPI task
-  oops::OptionalParameter<bool> check_no_point_mpi{"check_no_point_mpi", this};
-  // Test BUMP with all grid points masked on half of the domain
-  oops::OptionalParameter<bool> check_no_point_mask{"check_no_point_mask", this};
   // Test set_parameter interface
   oops::OptionalParameter<bool> check_set_param{"check_set_param", this};
   // Test get_parameter interface
@@ -199,24 +172,14 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<std::vector<int>> levs{"levs", this};
   // Level for 2D variables ('first' or 'last')
   oops::OptionalParameter<std::string> lev2d{"lev2d", this};
-  // Use pressure logarithm as vertical coordinate (model level if .false.)
-  oops::OptionalParameter<bool> logpres{"logpres", this};
   // Number of variables
   oops::OptionalParameter<int> nv{"nv", this};
   // Variables names
   oops::OptionalParameter<std::vector<std::string>> variables{"variables", this};
-  // Variable change
-  oops::OptionalParameter<std::string> variable_change{"variable_change", this};
-  // Do not use geometry mask
-  oops::OptionalParameter<bool> nomask{"nomask", this};
   // I/O keys
   oops::OptionalParameter<std::vector<std::string>> io_keys{"io_keys", this};
   // I/O values
   oops::OptionalParameter<std::vector<std::string>> io_values{"io_values", this};
-  // Regional domain configuration for the QG model
-  oops::OptionalParameter<bool> qg_regional{"qg_regional", this};
-  // Urban domain configuration for the QG model
-  oops::OptionalParameter<bool> qg_urban{"qg_urban", this};
 
   // ens1_param
 
@@ -255,12 +218,8 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<int> ncontig_th{"ncontig_th", this};
   // Check that sampling couples and interpolations do not cross mask boundaries
   oops::OptionalParameter<bool> mask_check{"mask_check", this};
-  // Diagnostic draw type ('random_uniform','random_coast' or 'octahedral')
+  // Diagnostic draw type ('random' or 'octahedral')
   oops::OptionalParameter<std::string> diag_draw_type{"diag_draw_type", this};
-  // Length-scale to increase sampling density along coasts [in meters]
-  oops::OptionalParameter<double> Lcoast{"Lcoast", this};
-  // Minimum value to increase sampling density along coasts
-  oops::OptionalParameter<double> rcoast{"rcoast", this};
   // Number of sampling points
   oops::OptionalParameter<int> nc1{"nc1", this};
   // Number of diagnostic points
@@ -275,6 +234,9 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<int> nl0r{"nl0r", this};
   // Maximum number of random number draws
   oops::OptionalParameter<int> irmax{"irmax", this};
+  // Vertical balance C2B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based
+  // or 'si': smooth interpolation)
+  oops::OptionalParameter<std::string> samp_interp_type{"samp_interp_type", this};
 
   // diag_param
 
@@ -308,9 +270,6 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<bool> vbal_id{"vbal_id", this};
   // Scalar coefficients for identity vertical balance
   oops::OptionalParameter<std::vector<double>> vbal_id_coef{"vbal_id_coef", this};
-  // Vertical balance C2B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based
-  // or 'si': smooth interpolation)
-  oops::OptionalParameter<std::string> vbal_interp_type{"vbal_interp_type", this};
   // Force specific variance
   oops::OptionalParameter<bool> forced_var{"forced_var", this};
   // Forced standard-deviation
@@ -339,7 +298,7 @@ class BUMPParameters : public oops::Parameters {
   // Number of levels between interpolation levels
   oops::OptionalParameter<int> fit_dl0{"fit_dl0", this};
   // Number of components in the fit function
-  oops::OptionalParameter<eckit::LocalConfiguration> fit_ncmp{"fit_ncmp", this};
+  oops::OptionalParameter<int> fit_ncmp{"fit_ncmp", this};
   // Write HDIAG components detail
   oops::OptionalParameter<bool> write_hdiag_detail{"write_hdiag_detail", this};
   // Update localization for hybridization
@@ -351,10 +310,8 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<double> resol{"resol", this};
   // Maximum size of the Sc1 subset
   oops::OptionalParameter<int> nc1max{"nc1max", this};
-  // NICAS draw type ('random_uniform','random_coast' or 'octahedral')
+  // NICAS draw type ('random' or 'octahedral')
   oops::OptionalParameter<std::string> nicas_draw_type{"nicas_draw_type", this};
-  // Network-base convolution calculation (distance-based if false)
-  oops::OptionalParameter<bool> network{"network", this};
   // Force specific support radii
   oops::OptionalParameter<bool> forced_radii{"forced_radii", this};
   // Forced horizontal support radius [in meters]
@@ -392,12 +349,8 @@ class BUMPParameters : public oops::Parameters {
 
   // output_param
 
-  // Number of neighbors for the full grid smoother
-  oops::OptionalParameter<int> full_grid_smoother_nn{"full_grid_smoother_nn", this};
   // Number of local diagnostics profiles to write (for local_diag = .true.)
   oops::OptionalParameter<int> nldwv{"nldwv", this};
-  // Index on model grid of the local diagnostics profiles to write
-  oops::OptionalParameter<std::vector<int>> img_ldwv{"img_ldwv", this};
   // Longitudes of the local diagnostics profiles to write [in degrees]
   oops::OptionalParameter<std::vector<double>> lon_ldwv{"lon_ldwv", this};
   // Latitudes of the local diagnostics profiles to write [in degrees]
@@ -423,6 +376,18 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<int> wind_nsg{"wind_nsg", this};
   // Wind inflation to compensate the Savitzky-Golay smoothing
   oops::OptionalParameter<double> wind_inflation{"wind_inflation", this};
+
+  // External parameters
+
+  // Ensemble 1 parameters
+  oops::OptionalParameter<eckit::LocalConfiguration> ensemble1{"ensemble", this};
+  // Ensemble 2 parameters
+  oops::OptionalParameter<eckit::LocalConfiguration> ensemble2{"lowres ensemble", this};
+  // Grids
+  oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> grids{"grids", this};
+  // Operators application
+  oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> appConfs{"operators application",
+    this};
 };
 
 // -----------------------------------------------------------------------------
@@ -437,14 +402,11 @@ class BUMP {
        const oops::Variables &,
        const BUMPParameters &,
        const std::vector<atlas::FieldSet> &,
+       const size_t & ens1_ne_in = 0,
        const atlas::FunctionSpace & functionSpace2 = NULL,
        const atlas::FieldSet & extraFields2 = NULL,
        const std::vector<atlas::FieldSet> & fsetVec2 = {},
-       const size_t & ens1_ne_in = 0,
        const size_t & ens2_ne_in = 0);
-
-  // Copy-constructor
-  explicit BUMP(BUMP &);
 
   // Destructor
   ~BUMP();
@@ -462,7 +424,6 @@ class BUMP {
   void multiplyVbal(atlas::FieldSet &) const;
   void inverseMultiplyVbal(atlas::FieldSet &) const;
   void multiplyVbalAd(atlas::FieldSet &) const;
-  void inverseMultiplyVbalAd(atlas::FieldSet &) const;
   void multiplyStdDev(atlas::FieldSet &) const;
   void inverseMultiplyStdDev(atlas::FieldSet &) const;
   void randomizeNicas(atlas::FieldSet &) const;
@@ -473,6 +434,7 @@ class BUMP {
   void setNcmp(const int &, const int &) const;
   void setParameter(const std::string &, const int &, const atlas::FieldSet &) const;
   void partialDealloc() const;
+  void finalize() const;
 
  private:
   BUMPParameters params_;

@@ -88,6 +88,9 @@ else()
 endif()
 
 ## Sources
+if( oops_FOUND )
+    add_subdirectory( quench )
+endif()
 add_subdirectory( src/saber )
 add_subdirectory( tools )
 add_subdirectory( test )

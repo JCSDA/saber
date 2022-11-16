@@ -896,7 +896,7 @@ end subroutine com_ext_${dtype}$_r${rank}$
 ! Subroutine: com_red_${dtype}$_r${rank}$
 !> Communicate vector from halo (reduction)
 !----------------------------------------------------------------------
-subroutine com_red_${dtype}$_r${rank}$(com,mpl,vec_ext,vec_red,nosum,op)
+subroutine com_red_${dtype}$_r${rank}$(com,mpl,vec_ext,vec_red,op)
 
 implicit none
 
@@ -905,7 +905,6 @@ class(com_type),intent(in) :: com                      !< Communication data
 type(mpl_type),intent(inout) :: mpl                    !< MPI data
 ${ftype[dtype]}$,intent(in) :: vec_ext(${dim[rank]}$)  !< Extended vector
 ${ftype[dtype]}$,intent(out) :: vec_red(${dim[rank]}$) !< Reduced vector
-logical,intent(in),optional :: nosum                   !< No-sum flag
 character(len=*),intent(in),optional :: op             !< Logical operation for the sum
 
 ! Local variables
@@ -914,8 +913,7 @@ integer :: jexclcounts(mpl%nproc),jexcldispls(mpl%nproc),jhalocounts(mpl%nproc),
 #{if rank > 1}# integer :: il,shp_red(${rank}$),shp_ext(${rank}$) #{endif}#
 #{if rank > 1}# integer :: #{for arg_dim in range(2,rank+1)}# i${arg_dim}$${delim[arg_dim == rank]}$ #{endfor}# #{endif}#
 ${ftype[dtype]}$,allocatable :: sbuf(:),rbuf(:)
-logical :: lnosum
-logical,allocatable :: done(:),valid(:)
+logical,allocatable :: valid(:)
 character(len=3) :: lop
 
 ! Set name
@@ -936,13 +934,6 @@ if (size(vec_red,1)/=com%nred) call mpl%abort('${subr}$','wrong dimension for ve
    nl = product(shp_ext(2:${rank}$))
 #:endif
 
-! Set no-sum flag
-lnosum = .false.
-if (present(nosum)) lnosum = nosum
-
-! Check operation argument
-if (lnosum.and.present(op)) call mpl%abort('${subr}$','logical operation inconsistent with the nosum flag')
-
 ! Set logical operation
 lop = 'and'
 if (present(op)) lop = op
@@ -953,7 +944,6 @@ if ((trim(lop)/='and').and.(trim(lop)/='or')) call mpl%abort('${subr}$','wrong l
 ! Allocation
 allocate(sbuf(com%nhalo*nl))
 allocate(rbuf(com%nexcl*nl))
-if (lnosum) allocate(done(com%nred))
 allocate(valid(nl))
 
 ! Prepare buffers to send
@@ -987,10 +977,8 @@ call mpl%f_comm%alltoall(sbuf,jhalocounts,jhalodispls,rbuf,jexclcounts,jexcldisp
 ! Initialization
 vec_red = ${zero[dtype]}$
 #:if dtype == 'logical'
-   if (.not.lnosum) then
-      if (trim(lop)=='and') vec_red = .true.
-      if (trim(lop)=='or') vec_red = .false.
-   end if
+   if (trim(lop)=='and') vec_red = .true.
+   if (trim(lop)=='or') vec_red = .false.
 #:endif
 
 ! Copy interior
@@ -1002,125 +990,61 @@ do iown=1,com%nown
    #:endif
 end do
 
-if (lnosum) then
-   ! Initialization
-   done = .false.
-   do iown=1,com%nown
-      done(com%own_to_red(iown)) = .true.
-   end do
-
-   do iexcl=1,com%nexcl
-      if (done(com%excl(iexcl))) then
-         #:if rank == 1
-            #:if dtype == 'logical'
-               valid(1) = (vec_red(com%excl(iexcl)).eqv.rbuf(iexcl))
-            #:else
-               valid(1) = mpl%msv%is(rbuf(iexcl)).or.eq(vec_red(com%excl(iexcl)),rbuf(iexcl))
-            #:endif
-         #:else
-            il = 0
-            #:for arg_dim in range(2,rank+1)
-            do i${arg_dim}$=shp_red(${arg_dim}$),1,-1
-            #:endfor
-               il = il+1
-               #:if dtype == 'logical'
-                  valid(il) = vec_red(com%excl(iexcl), &
-                  #:for arg_dim in range(2,rank)
- & i${arg_dim}$, &
-                  #:endfor
- & i${rank}$).eqv.rbuf((iexcl-1)*nl+il)
-               #:else
-                  valid(il) = mpl%msv%is(rbuf((iexcl-1)*nl+il)).or.eq(vec_red(com%excl(iexcl), &
-                  #:for arg_dim in range(2,rank)
- & i${arg_dim}$, &
-                  #:endfor
- & i${rank}$),rbuf((iexcl-1)*nl+il))
-               #:endif
-            #:for arg_dim in range(2,rank+1)
-            end do
-            #:endfor
-         #:endif
-         if (.not.all(valid)) call mpl%abort('${subr}$','colocated values are different')
-      else
-         ! Copy value
-         #:if rank == 1
-            vec_red(com%excl(iexcl)) = rbuf(iexcl)
-         #:else
-            il = 0
-            #:for arg_dim in range(2,rank+1)
-            do i${arg_dim}$=shp_red(${arg_dim}$),1,-1
-            #:endfor
-               il = il+1
-               vec_red(com%excl(iexcl), &
-               #:for arg_dim in range(2,rank)
- & i${arg_dim}$, &
-               #:endfor
- & i${rank}$) = rbuf((iexcl-1)*nl+il)
-            #:for arg_dim in range(2,rank+1)
-            end do
-            #:endfor
-         #:endif
-      end if
-      done(com%excl(iexcl)) = .true.
-   end do
-else
-   ! Copy halo
-   do iexcl=1,com%nexcl
-      #:if rank == 1
-         #:if dtype == 'logical'
-            if (trim(lop)=='and') vec_red(com%excl(iexcl)) = vec_red(com%excl(iexcl)).and.rbuf(iexcl)
-            if (trim(lop)=='or') vec_red(com%excl(iexcl)) = vec_red(com%excl(iexcl)).or.rbuf(iexcl)
-         #:else
-            vec_red(com%excl(iexcl)) = vec_red(com%excl(iexcl))+rbuf(iexcl)
-         #:endif
+! Copy halo
+do iexcl=1,com%nexcl
+   #:if rank == 1
+      #:if dtype == 'logical'
+         if (trim(lop)=='and') vec_red(com%excl(iexcl)) = vec_red(com%excl(iexcl)).and.rbuf(iexcl)
+         if (trim(lop)=='or') vec_red(com%excl(iexcl)) = vec_red(com%excl(iexcl)).or.rbuf(iexcl)
       #:else
-
-         il = 0
-         #:for arg_dim in range(2,rank+1)
-         do i${arg_dim}$=shp_red(${arg_dim}$),1,-1
-         #:endfor
-            il = il+1
-            #:if dtype == 'logical'
-               if (trim(lop)=='and') vec_red(com%excl(iexcl), &
-               #:for arg_dim in range(2,rank)
- & i${arg_dim}$, &
-               #:endfor
- & i${rank}$) = vec_red(com%excl(iexcl), &
-               #:for arg_dim in range(2,rank)
- & i${arg_dim}$, &
-               #:endfor
- & i${rank}$).and.rbuf((iexcl-1)*nl+il)
-               if (trim(lop)=='or') vec_red(com%excl(iexcl), &
-               #:for arg_dim in range(2,rank)
- & i${arg_dim}$, &
-               #:endfor
- & i${rank}$) = vec_red(com%excl(iexcl), &
-               #:for arg_dim in range(2,rank)
- & i${arg_dim}$, &
-               #:endfor
- & i${rank}$).or.rbuf((iexcl-1)*nl+il)
-            #:else
-               vec_red(com%excl(iexcl), &
-               #:for arg_dim in range(2,rank)
- & i${arg_dim}$, &
-               #:endfor
- & i${rank}$) = vec_red(com%excl(iexcl), &
-               #:for arg_dim in range(2,rank)
- & i${arg_dim}$, &
-               #:endfor
- & i${rank}$)+rbuf((iexcl-1)*nl+il)
-            #:endif
-         #:for arg_dim in range(2,rank+1)
-         end do
-         #:endfor
+         vec_red(com%excl(iexcl)) = vec_red(com%excl(iexcl))+rbuf(iexcl)
       #:endif
-   end do
-end if
+   #:else
+
+      il = 0
+      #:for arg_dim in range(2,rank+1)
+      do i${arg_dim}$=shp_red(${arg_dim}$),1,-1
+      #:endfor
+         il = il+1
+         #:if dtype == 'logical'
+            if (trim(lop)=='and') vec_red(com%excl(iexcl), &
+            #:for arg_dim in range(2,rank)
+ & i${arg_dim}$, &
+            #:endfor
+ & i${rank}$) = vec_red(com%excl(iexcl), &
+            #:for arg_dim in range(2,rank)
+ & i${arg_dim}$, &
+            #:endfor
+ & i${rank}$).and.rbuf((iexcl-1)*nl+il)
+            if (trim(lop)=='or') vec_red(com%excl(iexcl), &
+            #:for arg_dim in range(2,rank)
+ & i${arg_dim}$, &
+            #:endfor
+ & i${rank}$) = vec_red(com%excl(iexcl), &
+            #:for arg_dim in range(2,rank)
+ & i${arg_dim}$, &
+            #:endfor
+ & i${rank}$).or.rbuf((iexcl-1)*nl+il)
+         #:else
+            vec_red(com%excl(iexcl), &
+            #:for arg_dim in range(2,rank)
+ & i${arg_dim}$, &
+            #:endfor
+ & i${rank}$) = vec_red(com%excl(iexcl), &
+            #:for arg_dim in range(2,rank)
+ & i${arg_dim}$, &
+            #:endfor
+ & i${rank}$)+rbuf((iexcl-1)*nl+il)
+         #:endif
+      #:for arg_dim in range(2,rank+1)
+      end do
+      #:endfor
+   #:endif
+end do
 
 ! Release memory
 deallocate(sbuf)
 deallocate(rbuf)
-if (lnosum) deallocate(done)
 #{if rank > 1}# deallocate(valid) #{endif}#
 
 ! Probe out
