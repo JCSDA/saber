@@ -36,7 +36,6 @@ type avg_type
 contains
    procedure :: alloc => avg_alloc
    procedure :: dealloc => avg_dealloc
-   procedure :: copy => avg_copy
    procedure :: write => avg_write
    procedure :: compute => avg_compute
    procedure :: copy_wgt => avg_copy_wgt
@@ -132,39 +131,6 @@ end if
 end subroutine avg_dealloc
 
 !----------------------------------------------------------------------
-! Subroutine: avg_copy
-!> Copy
-!----------------------------------------------------------------------
-subroutine avg_copy(avg_out,avg_in)
-
-implicit none
-
-! Passed variables
-class(avg_type),intent(inout) :: avg_out !< Output averaged statistics
-class(avg_type),intent(in) :: avg_in     !< Input averaged statistics
-
-! Local variables
-integer :: ib,ic2a
-
-! Set name
-@:set_name(avg_copy)
-
-! Probe in
-@:probe_in()
-
-! Copy
-do ib=1,size(avg_in%blk,2)
-   do ic2a=0,size(avg_in%blk,1)-1
-      call avg_out%blk(ic2a,ib)%copy(avg_in%blk(ic2a,ib))
-   end do
-end do
-
-! Probe out
-@:probe_out()
-
-end subroutine avg_copy
-
-!----------------------------------------------------------------------
 ! Subroutine: avg_write
 !> Write
 !----------------------------------------------------------------------
@@ -190,7 +156,7 @@ character(len=1024) :: filename
 @:probe_in()
 
 if (mpl%main) then
-   filename = trim(nam%prefix)//'_'//trim(avg%prefix)
+   filename = trim(nam%prefix)//trim(avg%prefix)
    do ib=1,bpar%nb
       if (bpar%diag_block(ib)) call avg%blk(0,ib)%write(mpl,nam,geom,bpar,filename)
    end do
@@ -239,7 +205,7 @@ call mpl%flush
 do ib=1,bpar%nb
    if (bpar%diag_block(ib)) then
       write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
-      call mpl%flush(.false.)
+      call mpl%flush(adv=.false.)
 
       ! Global average
       call avg%blk(0,ib)%compute_global(mpl,nam,geom,bpar,samp,mom%blk(ib))
@@ -278,7 +244,7 @@ call mpl%flush
 do ib=1,bpar%nb
    if (bpar%diag_block(ib)) then
       write(mpl%info,'(a13,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
-      call mpl%flush(.false.)
+      call mpl%flush(adv=.false.)
       call mpl%prog_init(samp%nc2a+1)
       do ic2a=0,samp%nc2a
          if ((ic2a==0).or.nam%local_diag) call avg%blk(ic2a,ib)%compute_asy(mpl,nam,geom,bpar,ne)
@@ -368,7 +334,7 @@ real(kind_real) :: m11sq(nam%nc3,nam%nc4,bpar%nl0rmax,geom%nl0),nc1a(nam%nc3,nam
 
 ! Initialization
 write(mpl%info,'(a10,a,a,a)') '','Block ',trim(bpar%blockname(bpar%nbe)),':'
-call mpl%flush(.false.)
+call mpl%flush(adv=.false.)
 call mpl%prog_init(samp%nc2a+1)
 
 do ic2a=0,samp%nc2a

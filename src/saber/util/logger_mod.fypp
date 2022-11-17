@@ -1,0 +1,288 @@
+#:include '../instrumentation.fypp'
+!----------------------------------------------------------------------
+! Module: tools_atlas
+!> ATLAS tools
+! Author: Benjamin Menetrier
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+module logger_mod
+
+use, intrinsic :: iso_c_binding
+use fckit_log_module, only: fckit_log
+
+implicit none
+
+type :: oops_log_type
+contains
+  procedure,nopass :: info => logger_info       !< Log to info channel
+  procedure,nopass :: error => logger_error     !< Log to error channel
+  procedure,nopass :: warning => logger_warning !< Log to warning channel
+  procedure,nopass :: debug => logger_debug     !< Log to debug channel
+  procedure,nopass :: trace => logger_trace     !< Log to trace channel
+  procedure,nopass :: stats => logger_stats     !< Log to stats channel
+  procedure,nopass :: test => logger_test       !< Log to test channel
+end type oops_log_type
+
+type(oops_log_type) :: oops_log
+
+private
+public :: oops_log
+
+contains
+
+!----------------------------------------------------------------------
+! Subroutine: logger_info
+!> Log to info channel
+!----------------------------------------------------------------------
+subroutine logger_info(msg,newl,flush)
+
+! Passed variables
+character(len=*),intent(in) :: msg    !< Message to be logged
+logical,intent(in), optional :: newl  !< Add newline character (```\n```) after message. Default ```.true.```
+logical,intent(in), optional :: flush !< Flush channel after message. Default ```.true.```
+
+! Local variables
+logical :: lnewl,lflush
+
+! Set name
+@:set_name(logger_info)
+
+! Probe in
+@:probe_in()
+
+! Local options
+lnewl = .true.
+if (present(newl)) lnewl = newl
+lflush = .true.
+if (present(flush)) lflush = flush
+
+! Call FCKIT
+call fckit_log%info(msg,newl=lnewl,flush=lflush)
+
+! Probe out
+@:probe_out()
+
+end subroutine logger_info
+
+!----------------------------------------------------------------------
+! Subroutine: logger_error
+!> Log to error channel
+!----------------------------------------------------------------------
+subroutine logger_error(msg,newl,flush)
+
+! Passed variables
+character(len=*),intent(in) :: msg    !< Message to be logged
+logical,intent(in), optional :: newl  !< Add newline character (```\n```) after message. Default ```.true.```
+logical,intent(in), optional :: flush !< Flush channel after message. Default ```.true.```
+
+! Local variables
+logical :: lnewl,lflush
+
+! Set name
+@:set_name(logger_error)
+
+! Probe in
+@:probe_in()
+
+! Local options
+lnewl = .true.
+if (present(newl)) lnewl = newl
+lflush = .true.
+if (present(flush)) lflush = flush
+
+! Call FCKIT
+call fckit_log%error(msg,newl=lnewl,flush=lflush)
+
+! Probe out
+@:probe_out()
+
+end subroutine logger_error
+
+!----------------------------------------------------------------------
+! Subroutine: logger_warning
+!> Log to warning channel
+!----------------------------------------------------------------------
+subroutine logger_warning(msg,newl,flush)
+
+! Passed variables
+character(len=*),intent(in) :: msg    !< Message to be logged
+logical,intent(in), optional :: newl  !< Add newline character (```\n```) after message. Default ```.true.```
+logical,intent(in), optional :: flush !< Flush channel after message. Default ```.true.```
+
+! Local variables
+logical :: lnewl,lflush
+
+! Set name
+@:set_name(logger_warning)
+
+! Probe in
+@:probe_in()
+
+! Local options
+lnewl = .true.
+if (present(newl)) lnewl = newl
+lflush = .true.
+if (present(flush)) lflush = flush
+
+! Call FCKIT
+call fckit_log%warning(msg,newl=lnewl,flush=lflush)
+
+! Probe out
+@:probe_out()
+
+end subroutine logger_warning
+
+!----------------------------------------------------------------------
+! Subroutine: logger_debug
+!> Log to debug channel
+!----------------------------------------------------------------------
+subroutine logger_debug(msg,newl,flush)
+
+! Passed variables
+character(len=*),intent(in) :: msg    !< Message to be logged
+logical,intent(in), optional :: newl  !< Add newline character (```\n```) after message. Default ```.true.```
+logical,intent(in), optional :: flush !< Flush channel after message. Default ```.true.```
+
+! Local variables
+logical :: lnewl,lflush
+character(len=1024) :: lmsg
+
+! Set name
+@:set_name(logger_debug)
+
+! Probe in
+@:probe_in()
+
+! Local options
+lnewl = .true.
+if (present(newl)) lnewl = newl
+lflush = .true.
+if (present(flush)) lflush = flush
+
+! Local message
+lmsg = "OOPS_DEBUG "//trim(msg)
+
+! Call FCKIT
+call fckit_log%debug(lmsg,newl=lnewl,flush=lflush)
+
+! Probe out
+@:probe_out()
+
+end subroutine logger_debug
+
+!----------------------------------------------------------------------
+! Subroutine: logger_trace
+!> Log to trace channel
+!----------------------------------------------------------------------
+subroutine logger_trace(msg,newl,flush)
+
+! Passed variables
+character(len=*),intent(in) :: msg    !< Message to be logged
+logical,intent(in), optional :: newl  !< Add newline character (```\n```) after message. Default ```.true.```
+logical,intent(in), optional :: flush !< Flush channel after message. Default ```.true.```
+
+! Local variables
+logical :: lnewl,lflush
+character(len=1024) :: lmsg
+
+! Set name
+@:set_name(logger_trace)
+
+! Probe in
+@:probe_in()
+
+! Local options
+lnewl = .true.
+if (present(newl)) lnewl = newl
+lflush = .true.
+if (present(flush)) lflush = flush
+
+! Local message
+lmsg = "OOPS_TRACE "//trim(msg)
+
+! Call FCKIT
+call fckit_log%info(lmsg,newl=lnewl,flush=lflush)
+
+! Probe out
+@:probe_out()
+
+end subroutine logger_trace
+
+!----------------------------------------------------------------------
+! Subroutine: logger_stats
+!> Log to stats channel
+!----------------------------------------------------------------------
+subroutine logger_stats(msg,newl,flush)
+
+! Passed variables
+character(len=*),intent(in) :: msg    !< Message to be logged
+logical,intent(in), optional :: newl  !< Add newline character (```\n```) after message. Default ```.true.```
+logical,intent(in), optional :: flush !< Flush channel after message. Default ```.true.```
+
+! Local variables
+logical :: lnewl,lflush
+character(len=1024) :: lmsg
+
+! Set name
+@:set_name(logger_stats)
+
+! Probe in
+@:probe_in()
+
+! Local options
+lnewl = .true.
+if (present(newl)) lnewl = newl
+lflush = .true.
+if (present(flush)) lflush = flush
+
+! Local message
+lmsg = "OOPS_STATS "//trim(msg)
+
+! Call FCKIT
+call fckit_log%info(lmsg,newl=lnewl,flush=lflush)
+
+! Probe out
+@:probe_out()
+
+end subroutine logger_stats
+
+!----------------------------------------------------------------------
+! Subroutine: logger_test
+!> Log to test channel
+!----------------------------------------------------------------------
+subroutine logger_test(msg,newl,flush)
+
+! Passed variables
+character(len=*),intent(in) :: msg    !< Message to be logged
+logical,intent(in), optional :: newl  !< Add newline character (```\n```) after message. Default ```.true.```
+logical,intent(in), optional :: flush !< Flush channel after message. Default ```.true.```
+
+! Local variables
+logical :: lnewl,lflush
+character(len=1024) :: lmsg
+
+! Set name
+@:set_name(logger_test)
+
+! Probe in
+@:probe_in()
+
+! Local options
+lnewl = .true.
+if (present(newl)) lnewl = newl
+lflush = .true.
+if (present(flush)) lflush = flush
+
+! Local message
+lmsg = "Test     : "//trim(msg)
+
+! Call FCKIT
+call fckit_log%info(lmsg,newl=lnewl,flush=lflush)
+
+! Probe out
+@:probe_out()
+
+end subroutine logger_test
+
+end module Logger_mod

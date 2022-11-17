@@ -39,17 +39,43 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
            const oops::Variables & activeVars,
            const BUMPParameters & params,
            const std::vector<atlas::FieldSet> & fsetVec1,
+           const size_t & ens1_ne_in,
            const atlas::FunctionSpace & functionSpace2,
            const atlas::FieldSet & extraFields2,
            const std::vector<atlas::FieldSet> & fsetVec2,
-           const size_t & ens1_ne_in,
            const size_t & ens2_ne_in) :
-  activeVars_(activeVars), keyBUMP_(), membersConfig1_(), membersConfig2_(), activeVarsPerGrid_() {
+  params_(params), activeVars_(activeVars), keyBUMP_(), membersConfig1_(), membersConfig2_(),
+  activeVarsPerGrid_() {
   oops::Log::trace() << "BUMP::BUMP construction starting" << std::endl;
+
+  // If testing is activated, replace _MPI_ and _OMP_ patterns
+  const bool testing = params_.testing.value().get_value_or(false);
+  if (testing) {
+    // Convert to eckit configuration
+    eckit::LocalConfiguration fullConfig;
+    params_.serialize(fullConfig);
+
+    // Get number of MPI tasks and OpenMP threads
+    std::string mpi(std::to_string(comm.size()));
+    std::string omp("1");
+    # pragma omp parallel
+    {
+        omp = std::to_string(omp_get_num_threads());
+    }
+    oops::Log::info() << "Info     : MPI tasks:      " << mpi << std::endl;
+    oops::Log::info() << "Info     : OpenMP threads: " << omp << std::endl;
+
+    // Replace patterns
+    util::seekAndReplace(fullConfig, "_MPI_", mpi);
+    util::seekAndReplace(fullConfig, "_OMP_", omp);
+
+    // Convert back to parameters
+    params_.deserialize(fullConfig);
+  }
 
   // Get ensemble 1 size
   int ens1_ne = ens1_ne_in;
-  const boost::optional<eckit::LocalConfiguration> &ensembleConfig1 = params.ensemble1.value();
+  const boost::optional<eckit::LocalConfiguration> &ensembleConfig1 = params_.ensemble1.value();
   if (ensembleConfig1 != boost::none) {
     // Abort if both "members" and "members from template" are specified
     if (ensembleConfig1->has("members") && ensembleConfig1->has("members from template"))
@@ -97,7 +123,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
 
   // Get ensemble 2 size
   int ens2_ne = ens2_ne_in;
-  const boost::optional<eckit::LocalConfiguration> &ensembleConfig2 = params.ensemble2.value();
+  const boost::optional<eckit::LocalConfiguration> &ensembleConfig2 = params_.ensemble2.value();
   if (ensembleConfig2 != boost::none) {
     // Abort if both "members" and "members from template" are specified
     if (ensembleConfig2->has("members") && ensembleConfig2->has("members from template"))
@@ -153,14 +179,15 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
     }
   }
 
+  // Initialize configuration
+  eckit::LocalConfiguration conf(params_.toConfiguration());
+
+  // Add missing value (real)
+  conf.set("msvalr", util::missingValue(double()));
+
   // Add ensemble sizes
-  eckit::LocalConfiguration conf(params.toConfiguration());
   if (!conf.has("ens1_ne")) conf.set("ens1_ne", ens1_ne);
   if (!conf.has("ens2_ne")) conf.set("ens2_ne", ens2_ne);
-
-  // Add missing value
-  const double msvalr = util::missingValue(double());
-  conf.set("msvalr", msvalr);
 
   // Grids
   std::vector<eckit::LocalConfiguration> grids;
@@ -178,6 +205,9 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
 
   // Check grids number
   ASSERT(grids.size() > 0);
+
+  // Print configuration for this grid
+  oops::Log::info() << "Info     : General configuration: " << conf << std::endl;
 
   // Loop over grids
   for (unsigned int jgrid = 0; jgrid < grids.size(); ++jgrid) {
@@ -212,17 +242,21 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
     }
 
     // Print configuration for this grid
-    oops::Log::info() << "Grid " << jgrid << ": " << grids[jgrid] << std::endl;
+    oops::Log::info() << "Info     : Grid " << jgrid << ": " << grids[jgrid] << std::endl;
 
     // Create BUMP instance
+    oops::Log::info() << "Info     : Create BUMP instance " << jgrid << std::endl;
     int keyBUMP = 0;
     bump_create_f90(keyBUMP, &comm, functionSpace1.get(), extraFields1.get(),
                     conf, grids[jgrid], universe_rad.get());
     keyBUMP_.push_back(keyBUMP);
 
     // Second geometry
-    if (ens2_ne > 0 || (ensembleConfig2 != boost::none)) {
-      bump_second_geometry_f90(keyBUMP, functionSpace2.get(), extraFields2.get());
+    if (conf.has("method")) {
+      std::string method = conf.getString("method");
+      if (method == "hyb-ens" || method == "hyb-rnd") {
+        bump_second_geometry_f90(keyBUMP, functionSpace2.get(), extraFields2.get());
+      }
     }
   }
 
@@ -279,17 +313,6 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   }
 
   oops::Log::trace() << "BUMP:BUMP constructed" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-BUMP::BUMP(BUMP & other) : keyBUMP_(), activeVarsPerGrid_() {
-  for (unsigned int jgrid = 0; jgrid < other.keyBUMP_.size(); ++jgrid) {
-    keyBUMP_.push_back(other.keyBUMP_[jgrid]);
-    activeVarsPerGrid_.push_back(other.activeVarsPerGrid_[jgrid]);
-  }
-  other.keyBUMP_.clear();
-  other.activeVarsPerGrid_.clear();
 }
 
 // -----------------------------------------------------------------------------
@@ -363,14 +386,6 @@ void BUMP::inverseMultiplyVbal(atlas::FieldSet & fset) const {
 void BUMP::multiplyVbalAd(atlas::FieldSet & fset) const {
   for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_apply_vbal_ad_f90(keyBUMP_[jgrid], fset.get());
-  }
-}
-
-// -----------------------------------------------------------------------------
-
-void BUMP::inverseMultiplyVbalAd(atlas::FieldSet & fset) const {
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_apply_vbal_inv_ad_f90(keyBUMP_[jgrid], fset.get());
   }
 }
 

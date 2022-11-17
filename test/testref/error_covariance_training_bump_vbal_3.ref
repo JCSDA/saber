@@ -1,0 +1,26 @@
+       Independent levels:  1[2] 
+          Level   1:   1550418632
+          Level   2:   1550418632
+          Model grid size:              840
+          Subset Sc0 size:              762
+          Number of duplicated points (halo):        78 (  9.29%)
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. unit
+             Level   2 ~>  0.200E+01 vert. unit
+          Level   1 ~> 100.0%
+          Level   2 ~> 100.0%
+          Decimate full grid, at least      500 points required,     762 valid points found
+          Subgrid hash:   -130003308
+          Decimate full grid, at least      250 points required,     762 valid points found
+          Subgrid hash:   1599275237
+          nc1 =      500
+          nc2 =      250
+          Independent levels:  1[2] 
+       Vertical balance block var1-var2 adjoint test result:  T
+       Vertical balance direct adjoint test results:  T
+       Vertical balance inverse adjoint test results: T
+Norm of BUMP output parameter dirac_vbal - 1: 1.0000000000000000e+00

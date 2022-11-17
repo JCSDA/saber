@@ -1,0 +1,36 @@
+Norm of input parameter nicas_a::1: 4.2727231385893987e+01
+Norm of input parameter nicas_a::2: 1.2508898244244907e+01
+Norm of input parameter nicas_norm: 5.5455106363678404e+01
+       Independent levels:  1[2]
+          Level   1:   1550418632
+          Level   2:   1550418632
+          Model grid size:              840
+          Subset Sc0 size:              762
+          Number of duplicated points (halo):        78 (  9.29%)
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. unit
+             Level   2 ~>  0.200E+01 vert. unit
+             nc1(  1) =                        762
+             nc1(  2) =                        671
+             ns =                             1433
+             v%n_s =                             2
+             c%n_s[global] =                 42963
+             nc1(  1) =                        762
+             nc1(  2) =                        672
+             ns =                             1434
+             v%n_s =                             2
+             c%n_s[global] =                 22440
+             nc1(  1) =                        631
+             nc1(  2) =                        751
+             ns =                             1382
+             v%n_s =                             2
+             c%n_s[global] =                 39720
+             nc1(  1) =                        631
+             nc1(  2) =                        751
+             ns =                             1382
+             v%n_s =                             2
+             c%n_s[global] =                 21067

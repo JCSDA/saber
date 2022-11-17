@@ -209,7 +209,6 @@ n = 1
 do i = 1, modelLevels
   do j = 1, muBins
     mustats(n) = Field3D(j,i,1)
-    print*, "mu stats ", j , i, mustats(n)
     n = n + 1
   end do
 end do

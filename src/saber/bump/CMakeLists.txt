@@ -4,7 +4,6 @@
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
 list(APPEND bump_src_files_list
-
 tools_fit.fypp
 tools_func.c
 tools_func.fypp
@@ -42,12 +41,10 @@ type_var.fypp
 type_vbal.fypp
 type_vbal_blk.fypp
 type_wind.fypp
-
 )
 
 if( oops_FOUND )
     list(APPEND bump_src_files_list
-
     BUMP.cc
     BUMP.h
     NICAS.cc
@@ -58,13 +55,7 @@ if( oops_FOUND )
     StdDev.h
     VerticalBalance.cc
     VerticalBalance.h
-
     )
 endif()
 
-set( bump_src_files
-
-${bump_src_files_list}
-
-PARENT_SCOPE
-)
+set( bump_src_files ${bump_src_files_list} PARENT_SCOPE )

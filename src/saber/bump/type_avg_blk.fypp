@@ -54,7 +54,6 @@ type avg_blk_type
 contains
    procedure :: alloc => avg_blk_alloc
    procedure :: dealloc => avg_blk_dealloc
-   procedure :: copy => avg_blk_copy
    procedure :: write => avg_blk_write
    procedure :: compute_global => avg_blk_compute_global
    procedure :: compute_local => avg_blk_compute_local
@@ -172,52 +171,6 @@ if (allocated(avg_blk%cor_hist)) deallocate(avg_blk%cor_hist)
 @:probe_out()
 
 end subroutine avg_blk_dealloc
-
-!----------------------------------------------------------------------
-! Subroutine: avg_blk_copy
-!> Copy
-!----------------------------------------------------------------------
-subroutine avg_blk_copy(avg_blk_out,avg_blk_in)
-
-implicit none
-
-! Passed variables
-class(avg_blk_type),intent(inout) :: avg_blk_out !< Output averaged statistics block
-type(avg_blk_type),intent(in) :: avg_blk_in      !< Input averaged statistics block
-
-! Set name
-@:set_name(avg_blk_copy)
-
-! Probe in
-@:probe_in()
-
-! Copy data
-if (allocated(avg_blk_in%nc1a)) avg_blk_out%nc1a = avg_blk_in%nc1a
-if (allocated(avg_blk_in%m11)) avg_blk_out%m11 = avg_blk_in%m11
-if (allocated(avg_blk_in%m11m11)) avg_blk_out%m11m11 = avg_blk_in%m11m11
-if (allocated(avg_blk_in%m2m2)) avg_blk_out%m2m2 = avg_blk_in%m2m2
-if (allocated(avg_blk_in%m22)) avg_blk_out%m22 = avg_blk_in%m22
-if (allocated(avg_blk_in%nc1a_cor)) avg_blk_out%nc1a_cor = avg_blk_in%nc1a_cor
-if (allocated(avg_blk_in%cor)) avg_blk_out%cor = avg_blk_in%cor
-if (allocated(avg_blk_in%m11asysq)) avg_blk_out%m11asysq = avg_blk_in%m11asysq
-if (allocated(avg_blk_in%m2m2asy)) avg_blk_out%m2m2asy = avg_blk_in%m2m2asy
-if (allocated(avg_blk_in%m22asy)) avg_blk_out%m22asy = avg_blk_in%m22asy
-if (allocated(avg_blk_in%m11sq)) avg_blk_out%m11sq = avg_blk_in%m11sq
-if (allocated(avg_blk_in%m11_bins)) avg_blk_out%m11_bins = avg_blk_in%m11_bins
-if (allocated(avg_blk_in%m11_hist)) avg_blk_out%m11_hist = avg_blk_in%m11_hist
-if (allocated(avg_blk_in%m11m11_bins)) avg_blk_out%m11m11_bins = avg_blk_in%m11m11_bins
-if (allocated(avg_blk_in%m11m11_hist)) avg_blk_out%m11m11_hist = avg_blk_in%m11m11_hist
-if (allocated(avg_blk_in%m2m2_bins)) avg_blk_out%m2m2_bins = avg_blk_in%m2m2_bins
-if (allocated(avg_blk_in%m2m2_hist)) avg_blk_out%m2m2_hist = avg_blk_in%m2m2_hist
-if (allocated(avg_blk_in%m22_bins)) avg_blk_out%m22_bins = avg_blk_in%m22_bins
-if (allocated(avg_blk_in%m22_hist)) avg_blk_out%m22_hist = avg_blk_in%m22_hist
-if (allocated(avg_blk_in%cor_bins)) avg_blk_out%cor_bins = avg_blk_in%cor_bins
-if (allocated(avg_blk_in%cor_hist)) avg_blk_out%cor_hist = avg_blk_in%cor_hist
-
-! Probe out
-@:probe_out()
-
-end subroutine avg_blk_copy
 
 !----------------------------------------------------------------------
 ! Subroutine: avg_blk_write

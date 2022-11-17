@@ -14,7 +14,7 @@ use tools_const, only: zero,one,two,rad2deg
 use tools_func, only: zss_maxval,zss_sum
 use tools_kinds, only: kind_real
 use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,define_dim,define_var,inquire_var,put_var,get_var,close_file
-use tools_repro, only: infeq
+use tools_repro, only: infeq,rth
 use type_bpar, only: bpar_type
 use type_ens, only: ens_type
 use type_geom, only: geom_type
@@ -1184,12 +1184,12 @@ do iv=1,nam%nv
 
          ! Spatial average
          write(mpl%info,'(a7,a)') '','Spatial average for cross-covariance:'
-         call mpl%flush(.false.)
+         call mpl%flush(adv=.false.)
          call vbal%blk(iv,jv)%compute_spatial_average(mpl,nam,geom,samp)
 
          ! Compute regression
          write(mpl%info,'(a7,a)') '','Compute regression:'
-         call mpl%flush(.false.)
+         call mpl%flush(adv=.false.)
          call vbal%blk(iv,jv)%compute_regression(mpl,nam,geom,samp,vbal%blk(jv,jv)%cov_c2b,vbal%blk(iv,jv)%cov_c2b)
       end if
    end do
@@ -1233,10 +1233,10 @@ do iv=1,nam%nv
       ! Unbalance ensemble
       if (any(bpar%vbal_block(iv,:))) then
          write(mpl%info,'(a7,a)') '','Unbalance ensemble members: '
-         call mpl%flush(.false.)
+         call mpl%flush(adv=.false.)
          do ie=1,ensu%ne
             write(mpl%info,'(i6)') ie
-            call mpl%flush(.false.)
+            call mpl%flush(adv=.false.)
 
             ! Get member on subset Sc0
             call ensu%get_c0(mpl,iv,geom,'member',ie,fld_c0a_1)
@@ -1272,7 +1272,7 @@ do iv=1,nam%nv
 
    ! Spatial average
    write(mpl%info,'(a7,a)') '','Spatial average for auto-covariance:'
-   call mpl%flush(.false.)
+   call mpl%flush(adv=.false.)
    call vbal%blk(iv,iv)%compute_spatial_average(mpl,nam,geom,samp)
 end do
 
@@ -1567,7 +1567,9 @@ call vbal%apply(nam,geom,bpar,fld)
 call vbal%apply_inv(nam,geom,bpar,fld)
 mse = zss_sum((fld-fld_save)**2)
 call mpl%f_comm%allreduce(mse,fckit_mpi_sum())
-write(mpl%info,'(a7,a,e15.8)') '','Vertical balance direct/inverse test:  ',mse/norm
+write(mpl%info,'(a7,a,e15.8)') '','Vertical balance direct/inverse test value:  ',mse/norm
+call mpl%flush
+write(mpl%test,'(a7,a,l1)') '','Vertical balance direct/inverse test result:  ',mse/norm<rth
 call mpl%flush
 
 ! Inverse / direct
@@ -1576,7 +1578,9 @@ call vbal%apply_inv(nam,geom,bpar,fld)
 call vbal%apply(nam,geom,bpar,fld)
 mse = zss_sum((fld-fld_save)**2)
 call mpl%f_comm%allreduce(mse,fckit_mpi_sum())
-write(mpl%info,'(a7,a,e15.8)') '','Vertical balance inverse/direct test:  ',mse/norm
+write(mpl%info,'(a7,a,e15.8)') '','Vertical balance inverse/direct test value:  ',mse/norm
+call mpl%flush
+write(mpl%test,'(a7,a,l1)') '','Vertical balance inverse/direct test result:  ',mse/norm<rth
 call mpl%flush
 
 ! Direct / inverse, adjoint
@@ -1585,7 +1589,9 @@ call vbal%apply_ad(nam,geom,bpar,fld)
 call vbal%apply_inv_ad(nam,geom,bpar,fld)
 mse = zss_sum((fld-fld_save)**2)
 call mpl%f_comm%allreduce(mse,fckit_mpi_sum())
-write(mpl%info,'(a7,a,e15.8)') '','Vertical balance direct/inverse (adjoint) test:  ',mse/norm
+write(mpl%info,'(a7,a,e15.8)') '','Vertical balance direct/inverse (adjoint) test value:  ',mse/norm
+call mpl%flush
+write(mpl%test,'(a7,a,l1)') '','Vertical balance direct/inverse (adjoint) test result:  ',mse/norm<rth
 call mpl%flush
 
 ! Inverse / direct
@@ -1594,7 +1600,9 @@ call vbal%apply_inv_ad(nam,geom,bpar,fld)
 call vbal%apply_ad(nam,geom,bpar,fld)
 mse = zss_sum((fld-fld_save)**2)
 call mpl%f_comm%allreduce(mse,fckit_mpi_sum())
-write(mpl%info,'(a7,a,e15.8)') '','Vertical balance inverse/direct (adjoint) test:  ',mse/norm
+write(mpl%info,'(a7,a,e15.8)') '','Vertical balance inverse/direct (adjoint) test value:  ',mse/norm
+call mpl%flush
+write(mpl%test,'(a7,a,l1)') '','Vertical balance inverse/direct (adjoint) test result:  ',mse/norm<rth
 call mpl%flush
 
 ! Probe out
@@ -1645,7 +1653,10 @@ do iv=1,nam%nv
          call mpl%dot_prod(fld1(:,:,iv),fld2_save(:,:,iv),sum1)
          call mpl%dot_prod(fld2(:,:,iv),fld1_save(:,:,iv),sum2)
          write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance block '//trim(vbal%blk(iv,jv)%name)// &
- & ' adjoint test:  ',sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
+ & ' adjoint test values:  ',sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
+         call mpl%flush
+         write(mpl%test,'(a7,a,l1)') '','Vertical balance block '//trim(vbal%blk(iv,jv)%name)// &
+ & ' adjoint test result:  ',two*abs(sum1-sum2)/abs(sum1+sum2)<rth
          call mpl%flush
       end if
    end do
@@ -1658,8 +1669,11 @@ call vbal%apply(nam,geom,bpar,fld1)
 call vbal%apply_ad(nam,geom,bpar,fld2)
 call mpl%dot_prod(fld1,fld2_save,sum1)
 call mpl%dot_prod(fld2,fld1_save,sum2)
-write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance direct adjoint test:  ', &
+write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance direct adjoint test values:  ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
+call mpl%flush
+write(mpl%test,'(a7,a,l1)') '','Vertical balance direct adjoint test results:  ', &
+ & two*abs(sum1-sum2)/abs(sum1+sum2)<rth
 call mpl%flush
 
 ! Inverse adjoint test
@@ -1669,8 +1683,11 @@ call vbal%apply_inv(nam,geom,bpar,fld1)
 call vbal%apply_inv_ad(nam,geom,bpar,fld2)
 call mpl%dot_prod(fld1,fld2_save,sum1)
 call mpl%dot_prod(fld2,fld1_save,sum2)
-write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance inverse adjoint test: ', &
+write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance inverse adjoint test values: ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
+call mpl%flush
+write(mpl%test,'(a7,a,l1)') '','Vertical balance inverse adjoint test results: ', &
+ & two*abs(sum1-sum2)/abs(sum1+sum2)<rth
 call mpl%flush
 
 ! Probe out
@@ -1694,11 +1711,8 @@ type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Local variables
-integer :: ncid,nc0_id,nl0_id,lon_id,lat_id,vunit_id
-integer :: grpid(nam%nv),vbal_id(nam%nv)
-integer :: idir,iv,ic0a
+integer :: idir,ic0a
 real(kind_real) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv)
-character(len=1024) :: grpname
 
 ! Set name
 @:set_name(vbal_test_dirac)
@@ -1724,41 +1738,6 @@ do idir=1,geom%ndir
       end if
    end do
 end do
-
-if (nam%write_c0) then
-   ! Create file
-   ncid = create_file(mpl,trim(nam%prefix)//'dirac')
-
-   ! Define dimensions
-   nc0_id = define_dim(mpl,ncid,'nc0',geom%nc0)
-   nl0_id = define_dim(mpl,ncid,'nl0',geom%nl0)
-
-   ! Define variables
-   lon_id = define_var(mpl,ncid,'lon','real',(/nc0_id/),unitname='degrees_east')
-   lat_id = define_var(mpl,ncid,'lat','real',(/nc0_id/),unitname='degrees_north')
-   vunit_id = define_var(mpl,ncid,'vunit','real',(/nc0_id,nl0_id/))
-   do iv=1,nam%nv
-      ! Get group name
-      call nam%io_key_value(nam%variables(iv),grpname)
-
-      ! Define group
-      grpid(iv) = define_grp(mpl,ncid,grpname)
-
-      ! Write variable
-      vbal_id(iv) = define_var(mpl,grpid(iv),'vbal','real',(/nc0_id,nl0_id/))
-   end do
-
-   ! Write variables
-   call geom%io%fld_write(mpl,ncid,lon_id,geom%lon_c0a*rad2deg)
-   call geom%io%fld_write(mpl,ncid,lat_id,geom%lat_c0a*rad2deg)
-   call geom%io%fld_write(mpl,ncid,vunit_id,geom%vunit_c0a,geom%gmask_c0a)
-   do iv=1,nam%nv
-      call geom%io%fld_write(mpl,grpid(iv),vbal_id(iv),vbal%dirac(:,:,iv),geom%gmask_c0a)
-   end do
-
-   ! Close file
-   call close_file(mpl,ncid)
-end if
 
 ! Probe out
 @:probe_out()
