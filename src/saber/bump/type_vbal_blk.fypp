@@ -89,13 +89,13 @@ vbal_blk%iv = iv
 vbal_blk%jv = jv
 
 ! Allocation
-if (bpar%vbal_block(iv,jv)) allocate(vbal_blk%reg_c2b(geom%nl0,geom%nl0,samp%nc2b))
+if (nam%vbal_block(iv,jv)) allocate(vbal_blk%reg_c2b(geom%nl0,geom%nl0,samp%nc2b))
 if (nam%new_vbal) then
-   if (bpar%vbal_block(iv,jv).or.(iv==jv)) then
+   if (nam%vbal_block(iv,jv).or.(iv==jv)) then
       allocate(vbal_blk%cov_c1a(samp%nc1a,geom%nl0,geom%nl0))
       allocate(vbal_blk%cov_c2b(geom%nl0,geom%nl0,samp%nc2b))
    end if
-   if (bpar%vbal_block(iv,jv)) allocate(vbal_blk%explained_var_c2b(geom%nl0,samp%nc2b))
+   if (nam%vbal_block(iv,jv)) allocate(vbal_blk%explained_var_c2b(geom%nl0,samp%nc2b))
    if (nam%new_vbal_cov.or.nam%load_vbal_cov.or.nam%update_vbal_cov) then
       allocate(vbal_blk%a_c1a(geom%nl0,geom%nl0,samp%nc1a))
       allocate(vbal_blk%reg_c1a(geom%nl0,geom%nl0,samp%nc1a))
@@ -565,7 +565,7 @@ do ic2b=1,samp%nc2b
 
    if (valid) then
       ! Compute effective cross-covariance
-      if (nam%vbal_diag_reg((vbal_blk%iv-1)*(vbal_blk%iv-2)/2+vbal_blk%jv)) then
+      if (nam%vbal_diag_reg(vbal_blk%iv,vbal_blk%jv)) then
          ! Keep diagonal coefficients only
          cross_eff = zero
          do il0=1,geom%nl0
@@ -577,8 +577,7 @@ do ic2b=1,samp%nc2b
       end if
 
       ! Compute effective auto-coariance inverse
-      if (nam%vbal_diag_auto((vbal_blk%iv-1)*(vbal_blk%iv-2)/2+vbal_blk%jv) &
- & .or.nam%vbal_diag_reg((vbal_blk%iv-1)*(vbal_blk%iv-2)/2+vbal_blk%jv)) then
+      if (nam%vbal_diag_auto(vbal_blk%iv,vbal_blk%jv).or.nam%vbal_diag_reg(vbal_blk%iv,vbal_blk%jv)) then
          ! Diagonal auto-covariance inversion
          auto_inv = zero
          do il0=1,geom%nl0

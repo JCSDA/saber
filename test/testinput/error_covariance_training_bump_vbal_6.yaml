@@ -25,8 +25,9 @@ bump:
   write_samp_local: true
   nc1: 500
   nc2: 250
-  vbal_block:
-    var1-var2: true
+  vbal:
+  - balanced: var2
+    unbalanced: var1
   vbal_rad: 2000.0e3
   ndir: 1
   londir:

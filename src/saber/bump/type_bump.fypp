@@ -120,17 +120,20 @@ type(fieldset_type),intent(in) :: universe_rad          !< Fieldset optionally c
 ! Probe in
 @:probe_in()
 
+! Initialize MPL
+call bump%mpl%init(comm)
+
 ! Initialize namelist
-call bump%nam%init(comm%size())
+call bump%nam%init(bump%mpl)
 
 ! Read grid configuration
-call bump%nam%from_conf(comm,grid)
+call bump%nam%from_conf(bump%mpl,grid)
 
 ! Read configuration
-call bump%nam%from_conf(comm,conf)
+call bump%nam%from_conf(bump%mpl,conf)
 
 ! Setup BUMP
-call bump%setup(comm,afunctionspace,fieldset,universe_rad=universe_rad)
+call bump%setup(afunctionspace,fieldset,universe_rad=universe_rad)
 
 ! Probe out
 @:probe_out()
@@ -141,13 +144,12 @@ end subroutine bump_create
 ! Subroutine: bump_setup
 !> Setup
 !----------------------------------------------------------------------
-subroutine bump_setup(bump,f_comm,afunctionspace,fieldset,universe_rad)
+subroutine bump_setup(bump,afunctionspace,fieldset,universe_rad)
 
 implicit none
 
 ! Passed variables
 class(bump_type),intent(inout) :: bump                  !< BUMP
-type(fckit_mpi_comm),intent(in) :: f_comm               !< FCKIT MPI communicator wrapper
 type(atlas_functionspace),intent(in) :: afunctionspace  !< Functionspace
 type(fieldset_type),intent(in),optional :: fieldset     !< SABER geometry fields
 type(fieldset_type),intent(in),optional :: universe_rad !< Fieldset optionally containing universe radius
@@ -166,31 +168,6 @@ type(atlas_field) :: afield
 
 ! Probe in
 @:probe_in()
-
-! Initialize MPL
-call bump%mpl%init(f_comm)
-
-! Set missing values
-bump%mpl%msv%vali = -999
-bump%mpl%msv%valr = bump%nam%msvalr
-
-! Initialize listing
-if (bump%nam%colorlog) then
-   bump%mpl%black = char(27)//'[0;0m'
-   bump%mpl%green = char(27)//'[0;32m'
-   bump%mpl%peach = char(27)//'[1;91m'
-   bump%mpl%aqua = char(27)//'[1;36m'
-   bump%mpl%purple = char(27)//'[1;35m'
-   bump%mpl%wng_color = char(27)//'[0;37;42;1m'
-else
-   bump%mpl%black = ' '
-   bump%mpl%green = ' '
-   bump%mpl%peach = ' '
-   bump%mpl%aqua = ' '
-   bump%mpl%purple = ' '
-   bump%mpl%wng_color = ' '
-end if
-bump%mpl%testing = bump%nam%testing
 
 ! Header
 write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -256,7 +233,6 @@ call bump%mpl%flush
 write(bump%mpl%info,'(a)') '--- Check namelist parameters'
 call bump%mpl%flush
 call bump%nam%check(bump%mpl)
-call bump%nam%write(bump%mpl)
 
 ! Set I/O parameters
 write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'

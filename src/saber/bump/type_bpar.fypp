@@ -26,7 +26,6 @@ type bpar_type
    integer,allocatable :: il0rz(:,:)               !< Effective zero separation level
    integer,allocatable :: nc3(:)                   !< Maximum horizontal class
    integer,allocatable :: nc4(:)                   !< Maximum angular sector
-   logical,allocatable :: vbal_block(:,:)          !< Vertical balance block
    logical,allocatable :: diag_block(:)            !< HDIAG block
    logical,allocatable :: avg_block(:)             !< Averaging block
    logical,allocatable :: fit_block(:)             !< Fit block
@@ -81,7 +80,6 @@ allocate(bpar%il0rz(geom%nl0,bpar%nbe))
 allocate(bpar%nl0r(bpar%nbe))
 allocate(bpar%nc3(bpar%nbe))
 allocate(bpar%nc4(bpar%nbe))
-allocate(bpar%vbal_block(0:nam%nv,0:nam%nv))
 allocate(bpar%diag_block(bpar%nbe))
 allocate(bpar%avg_block(bpar%nbe))
 allocate(bpar%fit_block(bpar%nbe))
@@ -113,15 +111,13 @@ type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
 integer :: ib,iv,jv,il0,jl0r,jl0off
+logical :: printblock
 
 ! Set name
 @:set_name(bpar_init)
 
 ! Probe in
 @:probe_in()
-
-! Initialization
-bpar%vbal_block = .false.
 
 ! Loop over variables
 ib = 1
@@ -153,7 +149,6 @@ do iv=1,nam%nv
 
       ! Select blocks
       bpar%cv_block(ib) = mpl%msv%vali
-      bpar%vbal_block(iv,jv) = (iv>1).and.(jv<iv).and.nam%vbal_block((iv-1)*(iv-2)/2+jv)
       select case (nam%strategy)
       case ('diag_all')
          bpar%diag_block(ib) = .true.
@@ -237,8 +232,10 @@ end select
 do ib=1,bpar%nbe
    iv = bpar%b_to_v1(ib)
    jv = bpar%b_to_v2(ib)
-   if (bpar%vbal_block(iv,jv).or.bpar%diag_block(ib).or.bpar%avg_block(ib).or.bpar%fit_block(ib) &
- & .or.bpar%nicas_block(ib).or.mpl%msv%isnot(bpar%cv_block(ib))) then
+   printblock = (bpar%diag_block(ib).or.bpar%avg_block(ib).or.bpar%fit_block(ib) &
+ & .or.bpar%nicas_block(ib).or.mpl%msv%isnot(bpar%cv_block(ib)))
+   if ((iv>0).and.(jv>0).and.allocated(nam%vbal_block)) printblock = printblock.or.nam%vbal_block(iv,jv)
+   if (printblock) then
       write(mpl%info,'(a7,a,a,a)') '','Block ',trim(bpar%blockname(ib)),':'
       call mpl%flush
       write(mpl%info,'(a10,a,i3)') '','Effective number of levels:    ',bpar%nl0r(ib)
@@ -247,8 +244,8 @@ do ib=1,bpar%nbe
       call mpl%flush
       write(mpl%info,'(a10,a,i3)') '','Maximum angular sector:        ',bpar%nc4(ib)
       call mpl%flush
-      if ((iv>0).and.(jv>0)) then
-         write(mpl%info,'(a10,a,l1)') '','Vertical balance block:          ',bpar%vbal_block(iv,jv)
+      if ((iv>0).and.(jv>0).and.allocated(nam%vbal_block)) then
+         write(mpl%info,'(a10,a,l1)') '','Vertical balance block:          ',nam%vbal_block(iv,jv)
          call mpl%flush
       end if
       write(mpl%info,'(a10,a,l1)') '','HDIAG block:                     ',bpar%diag_block(ib)
@@ -294,7 +291,6 @@ if (allocated(bpar%l0rl0b_to_l0)) deallocate(bpar%l0rl0b_to_l0)
 if (allocated(bpar%il0rz)) deallocate(bpar%il0rz)
 if (allocated(bpar%nc3)) deallocate(bpar%nc3)
 if (allocated(bpar%nc4)) deallocate(bpar%nc4)
-if (allocated(bpar%vbal_block)) deallocate(bpar%vbal_block)
 if (allocated(bpar%diag_block)) deallocate(bpar%diag_block)
 if (allocated(bpar%avg_block)) deallocate(bpar%avg_block)
 if (allocated(bpar%fit_block)) deallocate(bpar%fit_block)

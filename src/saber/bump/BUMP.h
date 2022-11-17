@@ -29,12 +29,32 @@
 #include "oops/util/Logger.h"
 #include "oops/util/missingValues.h"
 #include "oops/util/parameters/OptionalParameter.h"
+#include "oops/util/parameters/Parameter.h"
 #include "oops/util/parameters/Parameters.h"
+#include "oops/util/parameters/RequiredParameter.h"
 
 #include "saber/bump/type_bump.h"
 
 namespace saber {
 namespace bump {
+
+// -----------------------------------------------------------------------------
+
+class VerticalBlockParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(VerticalBlockParameters, oops::Parameters)
+
+ public:
+  // Balanced variable
+  oops::RequiredParameter<std::string> balanced{"balanced", this};
+  // Unbalanced variable
+  oops::RequiredParameter<std::string> unbalanced{"unbalanced", this};
+  // Diagonal auto-covariance for the inversion
+  oops::Parameter<bool> diag_auto{"diag_auto", false, this};
+  // Diagonal regression
+  oops::Parameter<bool> diag_reg{"diag_reg", false, this};
+  // Scalar coefficients for identity vertical balance
+  oops::Parameter<double> id_coef{"id_coef", 1.0, this};
+};
 
 // -----------------------------------------------------------------------------
 
@@ -172,8 +192,6 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<std::vector<int>> levs{"levs", this};
   // Level for 2D variables ('first' or 'last')
   oops::OptionalParameter<std::string> lev2d{"lev2d", this};
-  // Number of variables
-  oops::OptionalParameter<int> nv{"nv", this};
   // Variables names
   oops::OptionalParameter<std::vector<std::string>> variables{"variables", this};
   // I/O keys
@@ -250,16 +268,12 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<bool> gau_approx{"gau_approx", this};
   // Number of bins for averaged statistics histograms
   oops::OptionalParameter<int> avg_nbins{"avg_nbins", this};
-  // Activation of vertical balance
-  oops::OptionalParameter<eckit::LocalConfiguration> vbal_block{"vbal_block", this};
+  // Vertical balance parameters
+  oops::OptionalParameter<std::vector<VerticalBlockParameters>> vbal{"vbal", this};
   // Vertical balance diagnostic radius [in meters]
   oops::OptionalParameter<double> vbal_rad{"vbal_rad", this};
   // Vertical balance diagnostic latitude band half-width [in degrees]
   oops::OptionalParameter<double> vbal_dlat{"vbal_dlat", this};
-  // Diagonal auto-covariance for the inversion
-  oops::OptionalParameter<eckit::LocalConfiguration> vbal_diag_auto{"vbal_diag_auto", this};
-  // Diagonal regression
-  oops::OptionalParameter<eckit::LocalConfiguration> vbal_diag_reg{"vbal_diag_reg", this};
   // Pseudo-inverse for auto-covariance
   oops::OptionalParameter<bool> vbal_pseudo_inv{"vbal_pseudo_inv", this};
   // Dominant mode for pseudo-inverse
@@ -268,8 +282,6 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<double> vbal_pseudo_inv_var_th{"vbal_pseudo_inv_var_th", this};
   // Identity vertical balance for tests
   oops::OptionalParameter<bool> vbal_id{"vbal_id", this};
-  // Scalar coefficients for identity vertical balance
-  oops::OptionalParameter<eckit::LocalConfiguration> vbal_id_coef{"vbal_id_coef", this};
   // Force specific variance
   oops::OptionalParameter<bool> forced_var{"forced_var", this};
   // Forced standard-deviation

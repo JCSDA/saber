@@ -219,7 +219,6 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
       vars_str = activeVars_.variables();
       grids[jgrid].set("variables", vars_str);
     }
-    grids[jgrid].set("nv", vars_str.size());
 
     // Save variables for each grid
     const oops::Variables gridVars(vars_str);

@@ -661,7 +661,7 @@ ncid = open_file(mpl,nam%fname_vbal,mpl%myproc)
 ! Setup fields output
 do iv=1,nam%nv
    do jv=1,iv
-      if (bpar%vbal_block(iv,jv)) then
+      if (nam%vbal_block(iv,jv)) then
          ! Define group name
          call nam%io_key_value(vbal%blk(iv,jv)%name,grpname)
 
@@ -753,10 +753,10 @@ do iv=1,nam%nv
       grpid(iv,jv) = define_grp(mpl,ncid,grpname)
 
       ! Define variables
-      if (bpar%vbal_block(iv,jv)) reg_c2a_id(iv,jv) = define_var(mpl,grpid(iv,jv),'reg_c2a','real',(/nc2a_id,nl0_1_id,nl0_2_id/))
-      if (nam%new_vbal.and.(bpar%vbal_block(iv,jv).or.(iv==jv))) cov_c2a_id(iv,jv) = define_var(mpl,grpid(iv,jv),'cov_c2a', &
+      if (nam%vbal_block(iv,jv)) reg_c2a_id(iv,jv) = define_var(mpl,grpid(iv,jv),'reg_c2a','real',(/nc2a_id,nl0_1_id,nl0_2_id/))
+      if (nam%new_vbal.and.(nam%vbal_block(iv,jv).or.(iv==jv))) cov_c2a_id(iv,jv) = define_var(mpl,grpid(iv,jv),'cov_c2a', &
  & 'real',(/nc2a_id,nl0_1_id,nl0_2_id/))
-      if (nam%new_vbal.and.bpar%vbal_block(iv,jv)) explained_var_c2a_id(iv,jv) = define_var(mpl,grpid(iv,jv),'explained_var_c2a', &
+      if (nam%new_vbal.and.nam%vbal_block(iv,jv)) explained_var_c2a_id(iv,jv) = define_var(mpl,grpid(iv,jv),'explained_var_c2a', &
  & 'real',(/nc2a_id,nl0_1_id/))
    end do
 end do
@@ -773,7 +773,7 @@ do iv=1,nam%nv
       ! Compute explained variance normalization
       explained_var_norm = 0.0
       do jv=1,iv
-         if (bpar%vbal_block(iv,jv)) explained_var_norm = explained_var_norm+vbal%blk(iv,jv)%explained_var_c2b
+         if (nam%vbal_block(iv,jv)) explained_var_norm = explained_var_norm+vbal%blk(iv,jv)%explained_var_c2b
       end do
       do il0=1,geom%nl0
          explained_var_norm(il0,:) = explained_var_norm(il0,:)+vbal%blk(iv,iv)%cov_c2b(il0,il0,:)
@@ -781,7 +781,7 @@ do iv=1,nam%nv
    end if
 
    do jv=1,iv
-      if (bpar%vbal_block(iv,jv)) then
+      if (nam%vbal_block(iv,jv)) then
          ! Horizontal index as first dimension
          do ic2a=1,samp%nc2a
             ic2b = samp%c2a_to_c2b(ic2a)
@@ -792,7 +792,7 @@ do iv=1,nam%nv
          call put_var(mpl,grpid(iv,jv),reg_c2a_id(iv,jv),reg_c2a)
       end if
 
-      if (nam%new_vbal.and.(bpar%vbal_block(iv,jv).or.(iv==jv))) then
+      if (nam%new_vbal.and.(nam%vbal_block(iv,jv).or.(iv==jv))) then
          ! Horizontal index as first dimension
          do ic2a=1,samp%nc2a
             ic2b = samp%c2a_to_c2b(ic2a)
@@ -803,7 +803,7 @@ do iv=1,nam%nv
          call put_var(mpl,grpid(iv,jv),cov_c2a_id(iv,jv),cov_c2a)
       end if
 
-      if (nam%new_vbal.and.bpar%vbal_block(iv,jv)) then
+      if (nam%new_vbal.and.nam%vbal_block(iv,jv)) then
          ! Horizontal index as first dimension
          do ic2a=1,samp%nc2a
             ic2b = samp%c2a_to_c2b(ic2a)
@@ -904,7 +904,7 @@ ncid = open_file(mpl,nam%fname_vbal)
 ! Setup fields output
 do iv=1,nam%nv
    do jv=1,iv
-      if (bpar%vbal_block(iv,jv)) then
+      if (nam%vbal_block(iv,jv)) then
          ! Define group name
          call nam%io_key_value(vbal%blk(iv,jv)%name,grpname)
 
@@ -996,10 +996,10 @@ do iv=1,nam%nv
       grpid(iv,jv) = define_grp(mpl,ncid,grpname)
 
       ! Define variables
-      if (bpar%vbal_block(iv,jv)) reg_c2_id(iv,jv) = define_var(mpl,grpid(iv,jv),'reg_c2','real',(/nc2_id,nl0_1_id,nl0_2_id/))
-      if (nam%new_vbal.and.(bpar%vbal_block(iv,jv).or.(iv==jv))) cov_c2_id(iv,jv) = define_var(mpl,grpid(iv,jv),'cov_c2', &
+      if (nam%vbal_block(iv,jv)) reg_c2_id(iv,jv) = define_var(mpl,grpid(iv,jv),'reg_c2','real',(/nc2_id,nl0_1_id,nl0_2_id/))
+      if (nam%new_vbal.and.(nam%vbal_block(iv,jv).or.(iv==jv))) cov_c2_id(iv,jv) = define_var(mpl,grpid(iv,jv),'cov_c2', &
  & 'real',(/nc2_id,nl0_1_id,nl0_2_id/))
-      if (nam%new_vbal.and.bpar%vbal_block(iv,jv)) explained_var_c2_id(iv,jv) = define_var(mpl,grpid(iv,jv),'explained_var_c2', &
+      if (nam%new_vbal.and.nam%vbal_block(iv,jv)) explained_var_c2_id(iv,jv) = define_var(mpl,grpid(iv,jv),'explained_var_c2', &
  & 'real',(/nc2_id,nl0_1_id/))
    end do
 end do
@@ -1016,7 +1016,7 @@ do iv=1,nam%nv
       ! Compute explained variance normalization
       explained_var_norm = 0.0
       do jv=1,iv
-         if (bpar%vbal_block(iv,jv)) explained_var_norm = explained_var_norm+vbal%blk(iv,jv)%explained_var_c2b
+         if (nam%vbal_block(iv,jv)) explained_var_norm = explained_var_norm+vbal%blk(iv,jv)%explained_var_c2b
       end do
       do il0=1,geom%nl0
          explained_var_norm(il0,:) = explained_var_norm(il0,:)+vbal%blk(iv,iv)%cov_c2b(il0,il0,:)
@@ -1024,7 +1024,7 @@ do iv=1,nam%nv
    end if
 
    do jv=1,iv
-      if (bpar%vbal_block(iv,jv)) then
+      if (nam%vbal_block(iv,jv)) then
          ! Horizontal index as first dimension
          do ic2a=1,samp%nc2a
             ic2b = samp%c2a_to_c2b(ic2a)
@@ -1035,7 +1035,7 @@ do iv=1,nam%nv
          call samp%io_c2%fld_write(mpl,grpid(iv,jv),reg_c2_id(iv,jv),reg_c2a)
       end if
 
-      if (nam%new_vbal.and.(bpar%vbal_block(iv,jv).or.(iv==jv))) then
+      if (nam%new_vbal.and.(nam%vbal_block(iv,jv).or.(iv==jv))) then
          ! Horizontal index as first dimension
          do ic2a=1,samp%nc2a
             ic2b = samp%c2a_to_c2b(ic2a)
@@ -1046,7 +1046,7 @@ do iv=1,nam%nv
          call samp%io_c2%fld_write(mpl,grpid(iv,jv),cov_c2_id(iv,jv),cov_c2a)
       end if
 
-      if (nam%new_vbal.and.bpar%vbal_block(iv,jv)) then
+      if (nam%new_vbal.and.nam%vbal_block(iv,jv)) then
          ! Horizontal index as first dimension
          do ic2a=1,samp%nc2a
             ic2b = samp%c2a_to_c2b(ic2a)
@@ -1165,7 +1165,7 @@ end if
 
 do iv=1,nam%nv
    do jv=1,iv
-      if (bpar%vbal_block(iv,jv)) then
+      if (nam%vbal_block(iv,jv)) then
          ! Compute cross-covariance
          write(mpl%info,'(a7,a)') '','Compute cross-covariance between '//trim(nam%variables(iv))//' and unbalanced ' &
  & //trim(nam%variables(jv))
@@ -1202,7 +1202,7 @@ do iv=1,nam%nv
          vbal%blk(iv,jv)%a_c1a = 0.0
          do ic1a=1,samp%nc1a
             do kv=jv,iv-1
-               if (bpar%vbal_block(iv,kv)) then
+               if (nam%vbal_block(iv,kv)) then
                   vbal%blk(iv,jv)%a_c1a(:,:,ic1a) = vbal%blk(iv,jv)%a_c1a(:,:,ic1a) &
  & -matmul(vbal%blk(iv,kv)%reg_c1a(:,:,ic1a),vbal%blk(kv,jv)%a_c1a(:,:,ic1a))
                end if
@@ -1231,7 +1231,7 @@ do iv=1,nam%nv
       end do
    else
       ! Unbalance ensemble
-      if (any(bpar%vbal_block(iv,:))) then
+      if (any(nam%vbal_block(iv,:))) then
          write(mpl%info,'(a7,a)') '','Unbalance ensemble members: '
          call mpl%flush(adv=.false.)
          do ie=1,ensu%ne
@@ -1242,7 +1242,7 @@ do iv=1,nam%nv
             call ensu%get_c0(mpl,iv,geom,'member',ie,fld_c0a_1)
 
             do jv=1,iv
-               if (bpar%vbal_block(iv,jv)) then
+               if (nam%vbal_block(iv,jv)) then
                   ! Get member on subset Sc0
                   call ensu%get_c0(mpl,jv,geom,'member',ie,fld_c0a_2)
 
@@ -1357,10 +1357,10 @@ fld_out = fld
 ! Add balance component
 do iv=1,nam%nv
    do jv=1,iv
-      if (bpar%vbal_block(iv,jv)) then
+      if (nam%vbal_block(iv,jv)) then
          fld_tmp = fld(:,:,jv)
          if (nam%vbal_id) then
-            fld_tmp = nam%vbal_id_coef((iv-1)*(iv-2)/2+jv)*fld_tmp
+            fld_tmp = nam%vbal_id_coef(iv,jv)*fld_tmp
          else
             call vbal%blk(iv,jv)%apply(geom,vbal%h_n_s_max,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld_tmp)
          end if
@@ -1408,10 +1408,10 @@ fld_out = fld
 ! Remove balance component
 do iv=1,nam%nv
    do jv=1,iv
-      if (bpar%vbal_block(iv,jv)) then
+      if (nam%vbal_block(iv,jv)) then
          fld_tmp = fld_out(:,:,jv)
          if (nam%vbal_id) then
-            fld_tmp = nam%vbal_id_coef((iv-1)*(iv-2)/2+jv)*fld_tmp
+            fld_tmp = nam%vbal_id_coef(iv,jv)*fld_tmp
          else
             call vbal%blk(iv,jv)%apply(geom,vbal%h_n_s_max,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld_tmp)
          end if
@@ -1459,10 +1459,10 @@ fld_out = fld
 ! Add balance component
 do iv=1,nam%nv
    do jv=1,iv
-      if (bpar%vbal_block(iv,jv)) then
+      if (nam%vbal_block(iv,jv)) then
          fld_tmp = fld(:,:,iv)
          if (nam%vbal_id) then
-            fld_tmp = nam%vbal_id_coef((iv-1)*(iv-2)/2+jv)*fld_tmp
+            fld_tmp = nam%vbal_id_coef(iv,jv)*fld_tmp
          else
             call vbal%blk(iv,jv)%apply_ad(geom,vbal%h_n_s_max,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld_tmp)
          end if
@@ -1510,10 +1510,10 @@ fld_out = fld
 ! Remove balance component
 do iv=nam%nv,1,-1
    do jv=iv+1,nam%nv
-      if (bpar%vbal_block(jv,iv)) then
+      if (nam%vbal_block(jv,iv)) then
          fld_tmp = fld_out(:,:,jv)
          if (nam%vbal_id) then
-            fld_tmp = nam%vbal_id_coef((jv-1)*(jv-2)/2+iv)*fld_tmp
+            fld_tmp = nam%vbal_id_coef(iv,jv)*fld_tmp
          else
             call vbal%blk(jv,iv)%apply_ad(geom,vbal%h_n_s_max,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld_tmp)
          end if
@@ -1645,7 +1645,7 @@ call rng%rand(zero,one,fld2_save)
 ! Block adjoint test
 do iv=1,nam%nv
    do jv=1,iv
-      if (bpar%vbal_block(iv,jv)) then
+      if (nam%vbal_block(iv,jv)) then
          fld1(:,:,iv) = fld1_save(:,:,iv)
          fld2(:,:,iv) = fld2_save(:,:,iv)
          call vbal%blk(iv,jv)%apply(geom,vbal%h_n_s_max,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld1(:,:,iv))

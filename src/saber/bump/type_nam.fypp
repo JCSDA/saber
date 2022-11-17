@@ -9,8 +9,6 @@
 module type_nam
 
 use fckit_configuration_module, only: fckit_configuration
-use fckit_mpi_module, only: fckit_mpi_comm
-use iso_fortran_env, only: output_unit
 use tools_const, only: zero,hundredth,half,one,ten,hundred,pi,req,deg2rad,rad2deg
 use tools_kinds, only: kind_real,huge_real
 use tools_func, only: cholesky
@@ -37,7 +35,6 @@ type nam_type
    character(len=1024) :: datadir                             !< Data directory
    character(len=1024) :: prefix                              !< Files prefix
    logical :: colorlog                                        !< Add colors to the log (for display on terminal)
-   logical :: testing                                         !< Stream test messages into a dedicated channel
    logical :: default_seed                                    !< Default seed for random numbers
    logical :: repro                                           !< Inter-compilers reproducibility
    real(kind_real) :: rth                                     !< Reproducibility threshold
@@ -133,16 +130,12 @@ type nam_type
    real(kind_real) :: gen_kurt_th                             !< Threshold on generalized kurtosis (3.0 = Gaussian distribution)
    logical :: gau_approx                                      !< Gaussian approximation for asymptotic quantities
    integer :: avg_nbins                                       !< Number of bins for averaged statistics histograms
-   logical :: vbal_block(nvbalmax)                            !< Activation of vertical balance
    real(kind_real) :: vbal_rad                                !< Vertical balance diagnostic radius [in meters]
    real(kind_real) :: vbal_dlat                               !< Vertical balance diagnostic latitude band half-width [in degrees]
-   logical :: vbal_diag_auto(nvbalmax)                        !< Diagonal auto-covariance for the inversion
-   logical :: vbal_diag_reg(nvbalmax)                         !< Diagonal regression
    logical :: vbal_pseudo_inv                                 !< Pseudo-inverse for auto-covariance
    integer :: vbal_pseudo_inv_mmax                            !< Dominant mode for pseudo-inverse
    real(kind_real) :: vbal_pseudo_inv_var_th                  !< Variance threshold to compute the dominant mode for pseudo-inverse
    logical :: vbal_id                                         !< Identity vertical balance for tests
-   real(kind_real) :: vbal_id_coef(nvbalmax)                  !< Scalar coefficients for identity vertical balance
    logical :: forced_var                                      !< Force specific variance
    real(kind_real) :: stddev(nl0max,nvmax)                    !< Forced standard-deviation
    logical :: var_filter                                      !< Filter variance
@@ -171,7 +164,6 @@ type nam_type
    integer :: ncmp(0:nvmax)                                   !< Forced number of components
    real(kind_real) :: rh(nl0max,0:nvmax)                      !< Forced horizontal support radius [in meters]
    real(kind_real) :: rv(nl0max,0:nvmax)                      !< Forced vertical support radius
-   real(kind_real) :: loc_wgt(nvbalmax)                       !< Forced localization weights
    integer :: min_lev(0:nvmax)                                !< Minimum level
    integer :: max_lev(0:nvmax)                                !< Maximum level
    character(len=2),dimension(0:nvmax) :: nicas_interp_type   !< NICAS C1B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based or 'si': smooth interpolation)
@@ -203,10 +195,13 @@ type nam_type
    real(kind_real) :: wind_inflation                          !< Wind inflation to compensate the Savitzky-Golay smoothing
 
    ! helpers
-   real(kind_real) :: msvalr                                  !< Missing value (real)
    logical :: fname_var_used                                  !< Flag activated if a variance file is specified
    logical :: fname_vbal_cov_used                             !< Flag activated if a vertical covariance file is specified
    logical :: fname_mom_used                                  !< Flag activated if a moments file is specified
+   logical,allocatable :: vbal_block(:,:)                     !< Activation of vertical balance
+   logical,allocatable :: vbal_diag_auto(:,:)                 !< Diagonal auto-covariance for the inversion
+   logical,allocatable :: vbal_diag_reg(:,:)                  !< Diagonal regression
+   real(kind_real),allocatable :: vbal_id_coef(:,:)           !< Scalar coefficients for identity vertical balance
    logical :: output_nicas_norm                               !< Output section includes the nicas_norm parameter
    logical :: output_nicas_a                                  !< Output section includes the a parameter
    real(kind_real),allocatable :: loc_wgt_sqrt(:,:)           !< Weights square-root for the 'common_weighted' strategy
@@ -214,7 +209,6 @@ contains
    procedure :: init => nam_init
    procedure :: from_conf => nam_from_conf
    procedure :: check => nam_check
-   procedure :: write => nam_write
    procedure :: io_key_value => nam_io_key_value
 end type nam_type
 
@@ -228,13 +222,13 @@ contains
 ! Subroutine: nam_init
 !> Intialize
 !----------------------------------------------------------------------
-subroutine nam_init(nam,nproc)
+subroutine nam_init(nam,mpl)
 
 implicit none
 
 ! Passed variable
 class(nam_type),intent(out) :: nam !< Namelist
-integer,intent(in) :: nproc        !< Number of MPI task
+type(mpl_type),intent(in) :: mpl   !< MPI data
 
 ! Local variable
 integer :: isub,il0,iv,i,ildwv
@@ -249,12 +243,11 @@ integer :: isub,il0,iv,i,ildwv
 nam%datadir = '.'
 nam%prefix = ''
 nam%colorlog = .false.
-nam%testing = .false.
 nam%default_seed = .true.
 nam%repro = .true.
 nam%rth = 1.0e-12_kind_real
 nam%parallel_io = .true.
-nam%nprocio = min(nproc,nprociomax)
+nam%nprocio = min(mpl%nproc,nprociomax)
 nam%universe_rad = pi*req
 
 ! driver_param default
@@ -359,22 +352,12 @@ nam%ne_lr = 0
 nam%gen_kurt_th = huge_real
 nam%gau_approx = .false.
 nam%avg_nbins = 0
-do iv=1,nvbalmax
-   nam%vbal_block(iv) = .false.
-end do
 nam%vbal_rad = zero
 nam%vbal_dlat = zero
-do iv=1,nvbalmax
-   nam%vbal_diag_auto(iv) = .false.
-end do
-do iv=1,nvbalmax
-   nam%vbal_diag_reg(iv) = .false.
-end do
 nam%vbal_pseudo_inv = .false.
 nam%vbal_pseudo_inv_mmax = 0
 nam%vbal_pseudo_inv_var_th = zero
 nam%vbal_id = .false.
-nam%vbal_id_coef = one
 nam%forced_var = .false.
 nam%stddev = zero
 nam%var_filter = .false.
@@ -403,7 +386,6 @@ nam%forced_radii = .false.
 nam%ncmp = 1
 nam%rh = -one
 nam%rv = -one
-nam%loc_wgt = -one
 nam%min_lev = 1
 nam%max_lev = nl0max
 nam%nicas_interp_type = 'c0'
@@ -437,7 +419,6 @@ nam%wind_nsg = 0
 nam%wind_inflation = one
 
 ! helpers
-nam%msvalr = -999.0_kind_real
 nam%fname_var_used = .false.
 nam%fname_vbal_cov_used = .false.
 nam%fname_mom_used = .false.
@@ -453,22 +434,23 @@ end subroutine nam_init
 ! Subroutine: nam_from_conf
 !> Intialize from configuration
 !----------------------------------------------------------------------
-subroutine nam_from_conf(nam,comm,conf)
+subroutine nam_from_conf(nam,mpl,conf)
 
 implicit none
 
 ! Passed variable
 class(nam_type),intent(inout) :: nam         !< Namelist
-type(fckit_mpi_comm),intent(in) :: comm      !< FCKIT MPI communicator wrapper
+type(mpl_type),intent(inout) :: mpl          !< MPI data
 type(fckit_configuration),intent(in) :: conf !< Configuration
 
 ! Local variables
-integer :: iv,jv,iconf
-integer,allocatable :: integer_array(:)
-real(kind_real),allocatable :: real_array(:)
+integer :: iv,jv,iconf,rank,itest
+integer,allocatable :: integer_array(:),vbal_order(:)
+real(kind_real),allocatable :: real_array(:),loc_wgt(:,:)
+logical :: colorlog,found,valid
 logical,allocatable :: logical_array(:)
-character(len=1024) :: parameter,blockname
-character(len=:),allocatable :: str
+character(len=1024) :: message,param,blockname
+character(len=:),allocatable :: str,str_bal,str_unbal
 character(len=:),allocatable :: str_array(:)
 type(fckit_configuration) :: subconf
 type(fckit_configuration),allocatable :: confs(:)
@@ -488,8 +470,18 @@ if (conf%has('prefix')) then
    call conf%get_or_die('prefix',str)
    nam%prefix = str
 end if
-if (conf%has('colorlog')) call conf%get_or_die('colorlog',nam%colorlog)
-if (conf%has('testing')) call conf%get_or_die('testing',nam%testing)
+if (conf%has('colorlog')) then
+   call conf%get_or_die('colorlog',colorlog)
+   if (colorlog) then
+      mpl%black = char(27)//'[0;0m'
+      mpl%green = char(27)//'[0;32m'
+      mpl%peach = char(27)//'[1;91m'
+      mpl%aqua = char(27)//'[1;36m'
+      mpl%purple = char(27)//'[1;35m'
+      mpl%wng_color = char(27)//'[0;37;42;1m'
+   end if
+end if
+if (conf%has('testing')) call conf%get_or_die('testing',mpl%testing)
 if (conf%has('default_seed')) call conf%get_or_die('default_seed',nam%default_seed)
 if (conf%has('repro')) call conf%get_or_die('repro',nam%repro)
 if (conf%has('rth')) call conf%get_or_die('rth',nam%rth)
@@ -542,9 +534,8 @@ if (conf%has('check_optimality')) call conf%get_or_die('check_optimality',nam%ch
 if (conf%has('fname_var')) then
    call conf%get_or_die('fname_var',str_array)
    if (size(str_array)>nsubmax) then
-      write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: fname_var size should be smaller than ',nsubmax
-      call flush(output_unit)
-      call comm%abort(1)
+      write(message,'(a,i4)') 'fname_var size should be smaller than ',nsubmax
+      call mpl%abort('${subr}$',message)
    end if
    nam%fname_var(1:size(str_array)) = str_array
 end if
@@ -555,9 +546,8 @@ end if
 if (conf%has('fname_vbal_cov')) then
    call conf%get_or_die('fname_vbal_cov',str_array)
    if (size(str_array)>nsubmax) then
-      write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: fname_vbal_cov size should be smaller than ',nsubmax
-      call flush(output_unit)
-      call comm%abort(1)
+      write(message,'(a,i4)') 'fname_vbal_cov size should be smaller than ',nsubmax
+      call mpl%abort('${subr}$',message)
    end if
    nam%fname_vbal_cov(1:size(str_array)) = str_array
 end if
@@ -568,9 +558,8 @@ end if
 if (conf%has('fname_mom')) then
    call conf%get_or_die('fname_mom',str_array)
    if (size(str_array)>nsubmax) then
-      write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: fname_mom size should be smaller than ',nsubmax
-      call flush(output_unit)
-      call comm%abort(1)
+      write(message,'(a,i4)') 'fname_mom size should be smaller than ',nsubmax
+      call mpl%abort('${subr}$',message)
    end if
    nam%fname_mom(1:size(str_array)) = str_array
 end if
@@ -588,9 +577,8 @@ if (conf%has('nl0')) call conf%get_or_die('nl0',nam%nl0)
 if (conf%has('levs')) then
    call conf%get_or_die('levs',integer_array)
    if (size(integer_array)>nl0max) then
-      write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: levs size should be smaller than ',nl0max
-      call flush(output_unit)
-      call comm%abort(1)
+      write(message,'(a,i4)') 'levs size should be smaller than ',nl0max
+      call mpl%abort('${subr}$',message)
    end if
    nam%levs(1:size(integer_array)) = integer_array
 end if
@@ -598,31 +586,28 @@ if (conf%has('lev2d')) then
    call conf%get_or_die('lev2d',str)
    nam%lev2d = str
 end if
-if (conf%has('nv')) call conf%get_or_die('nv',nam%nv)
 if (conf%has('variables')) then
    call conf%get_or_die('variables',str_array)
    if (size(str_array)>nvmax) then
-      write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: variables size should be smaller than ',nvmax
-      call flush(output_unit)
-      call comm%abort(1)
+      write(message,'(a,i4)') 'variables size should be smaller than ',nvmax
+      call mpl%abort('${subr}$',message)
    end if
    nam%variables(1:size(str_array)) = str_array
+   nam%nv = size(str_array)
 end if
 if (conf%has('io_keys')) then
    call conf%get_or_die('io_keys',str_array)
    if (size(str_array)>niokvmax) then
-      write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: io_keys size should be smaller than ',niokvmax
-      call flush(output_unit)
-      call comm%abort(1)
+      write(message,'(a,i4)') 'io_keys size should be smaller than ',niokvmax
+      call mpl%abort('${subr}$',message)
    end if
    nam%io_keys(1:size(str_array)) = str_array
 end if
 if (conf%has('io_values')) then
    call conf%get_or_die('io_values',str_array)
    if (size(str_array)>niokvmax) then
-      write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: io_values size should be smaller than ',niokvmax
-      call flush(output_unit)
-      call comm%abort(1)
+      write(message,'(a,i4)') 'io_values size should be smaller than ',niokvmax
+      call mpl%abort('${subr}$',message)
    end if
    nam%io_values(1:size(str_array)) = str_array
 end if
@@ -648,18 +633,16 @@ end if
 if (conf%has('mask_lu')) then
    call conf%get_or_die('mask_lu',str_array)
    if (size(str_array)>nvmax) then
-      write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: mask_lu size should be smaller than ',nvmax
-      call flush(output_unit)
-      call comm%abort(1)
+      write(message,'(a,i4)') 'mask_lu size should be smaller than ',nvmax
+      call mpl%abort('${subr}$',message)
    end if
    nam%mask_lu(1:size(str_array)) = str_array
 end if
 if (conf%has('mask_th')) then
    call conf%get_or_die('mask_th',real_array)
    if (size(real_array)>nvmax) then
-      write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: mask_th size should be smaller than ',nvmax
-      call flush(output_unit)
-      call comm%abort(1)
+      write(message,'(a,i4)') 'mask_th size should be smaller than ',nvmax
+      call mpl%abort('${subr}$',message)
    end if
    nam%mask_th(1:size(real_array)) = real_array
 end if
@@ -687,84 +670,110 @@ if (conf%has('ne_lr')) call conf%get_or_die('ne_lr',nam%ne_lr)
 if (conf%has('gen_kurt_th')) call conf%get_or_die('gen_kurt_th',nam%gen_kurt_th)
 if (conf%has('gau_approx')) call conf%get_or_die('gau_approx',nam%gau_approx)
 if (conf%has('avg_nbins')) call conf%get_or_die('avg_nbins',nam%avg_nbins)
-if (conf%has('vbal_block')) then
-   call conf%get_or_die('vbal_block',subconf)
-   do iv=1,nam%nv
+if (conf%has('vbal')) then
+   call conf%get_or_die('vbal',confs)
+
+   ! Allocation
+   allocate(nam%vbal_block(nam%nv,nam%nv))
+   allocate(nam%vbal_diag_auto(nam%nv,nam%nv))
+   allocate(nam%vbal_diag_reg(nam%nv,nam%nv))
+   allocate(nam%vbal_id_coef(nam%nv,nam%nv))
+   allocate(vbal_order(nam%nv))
+
+   ! Get initial matrix
+   nam%vbal_block = .false.
+   do iconf=1,size(confs)
+      call confs(iconf)%get_or_die('balanced',str_bal)
+      call confs(iconf)%get_or_die('unbalanced',str_unbal)
+      found = .false.
       do jv=1,nam%nv
-         blockname = trim(nam%variables(jv))//'-'//trim(nam%variables(iv))
-         if (subconf%has(blockname)) then
-            if (jv<iv) then
-               call subconf%get_or_die(blockname,nam%vbal_block((iv-1)*(iv-2)/2+jv))
-            else
-               write(output_unit,'(a,a,a)') '!!! ABORT in nam_from_conf: block name ',trim(blockname), &
- & 'is incompatible with variables order in vbal_block'
-               call flush(output_unit)
-               call comm%abort(1)
+         do iv=1,nam%nv
+            if ((str_bal==nam%variables(iv)).and.(str_unbal==nam%variables(jv))) then
+               if (iv==jv) then
+                  call mpl%abort('${subr}$','vbal item should be off-diagonal')
+               else
+                  if (nam%vbal_block(iv,jv)) then
+                     call mpl%abort('${subr}$','redundant vbal item')
+                  else
+                     nam%vbal_block(iv,jv) = .true.
+                     found = .true.
+                  end if
+               end if
             end if
+         end do
+      end do
+      if (.not.found) call mpl%abort('${subr}$','wrong vbal item')
+   end do
+
+   ! Get vbal variables order
+   vbal_order = 0
+   rank = 0
+
+   ! Independent variables first
+   do iv=1,nam%nv
+      if (count(nam%vbal_block(iv,:))==0) then
+         rank = rank+1
+         vbal_order(rank) = iv
+      end if
+   end do
+
+   ! Find least-dependent variables progressively
+   iv = 0
+   itest = 0
+   do while (any(vbal_order==0))
+      ! Check number of iterations
+      itest = itest+1
+      if (itest>nam%nv**2) call mpl%abort('${subr}$','inconsistent vbal items')
+
+      ! Increment variable index
+      iv = iv+1
+      if (iv>nam%nv) iv = 1
+
+      if (.not.any(vbal_order(1:rank)==iv)) then
+         ! Check variable dependencies
+         valid = .true.
+         do jv=1,nam%nv
+            if (nam%vbal_block(iv,jv)) then
+               if (.not.any(vbal_order(1:rank)==jv)) valid = .false.
+            end if
+         end do
+
+         ! Check if variable can be added now
+         if (valid) then
+            rank = rank+1
+            vbal_order(rank) = iv
          end if
+      end if
+   end do
+
+   ! Reorder variables
+   nam%variables(1:nam%nv) = nam%variables(vbal_order)
+   nam%vbal_block = nam%vbal_block(vbal_order,vbal_order)
+
+   ! Set parameters
+   do iconf=1,size(confs)
+      call confs(iconf)%get_or_die('balanced',str_bal)
+      call confs(iconf)%get_or_die('unbalanced',str_unbal)
+      do jv=1,nam%nv
+         do iv=1,nam%nv
+            if ((str_bal==nam%variables(iv)).and.(str_unbal==nam%variables(jv))) then
+               call confs(iconf)%get_or_die('diag_auto',nam%vbal_diag_auto(iv,jv))
+               call confs(iconf)%get_or_die('diag_reg',nam%vbal_diag_reg(iv,jv))
+               call confs(iconf)%get_or_die('id_coef',nam%vbal_id_coef(iv,jv))
+            end if
+         end do
       end do
    end do
+
+   ! Release memory
+   deallocate(vbal_order)
 end if
 if (conf%has('vbal_rad')) call conf%get_or_die('vbal_rad',nam%vbal_rad)
 if (conf%has('vbal_dlat')) call conf%get_or_die('vbal_dlat',nam%vbal_dlat)
-if (conf%has('vbal_diag_auto')) then
-   call conf%get_or_die('vbal_diag_auto',subconf)
-   do iv=1,nam%nv
-      do jv=1,nam%nv
-         blockname = trim(nam%variables(jv))//'-'//trim(nam%variables(iv))
-         if (subconf%has(blockname)) then
-            if (jv<iv) then
-               call subconf%get_or_die(blockname,nam%vbal_diag_auto((iv-1)*(iv-2)/2+jv))
-            else
-               write(output_unit,'(a,a,a)') '!!! ABORT in nam_from_conf: block name ',trim(blockname), &
- & 'is incompatible with variables order in vbal_diag_auto'
-               call flush(output_unit)
-               call comm%abort(1)
-            end if
-         end if
-      end do
-   end do
-end if
-if (conf%has('vbal_diag_reg')) then
-   call conf%get_or_die('vbal_diag_reg',subconf)
-   do iv=1,nam%nv
-      do jv=1,nam%nv
-         blockname = trim(nam%variables(jv))//'-'//trim(nam%variables(iv))
-         if (subconf%has(blockname)) then
-            if (jv<iv) then
-               call subconf%get_or_die(blockname,nam%vbal_diag_reg((iv-1)*(iv-2)/2+jv))
-            else
-               write(output_unit,'(a,a,a)') '!!! ABORT in nam_from_conf: block name ',trim(blockname), &
- & 'is incompatible with variables order in vbal_diag_reg'
-               call flush(output_unit)
-               call comm%abort(1)
-            end if
-         end if
-      end do
-   end do
-end if
 if (conf%has('vbal_pseudo_inv')) call conf%get_or_die('vbal_pseudo_inv',nam%vbal_pseudo_inv)
 if (conf%has('vbal_pseudo_inv_mmax')) call conf%get_or_die('vbal_pseudo_inv_mmax',nam%vbal_pseudo_inv_mmax)
 if (conf%has('vbal_pseudo_inv_var_th')) call conf%get_or_die('vbal_pseudo_inv_var_th',nam%vbal_pseudo_inv_var_th)
 if (conf%has('vbal_id')) call conf%get_or_die('vbal_id',nam%vbal_id)
-if (conf%has('vbal_id_coef')) then
-   call conf%get_or_die('vbal_id_coef',subconf)
-   do iv=1,nam%nv
-      do jv=1,nam%nv
-         blockname = trim(nam%variables(jv))//'-'//trim(nam%variables(iv))
-         if (subconf%has(blockname)) then
-            if (jv<iv) then
-               call subconf%get_or_die(blockname,nam%vbal_id_coef((iv-1)*(iv-2)/2+jv))
-            else
-               write(output_unit,'(a,a,a)') '!!! ABORT in nam_from_conf: block name ',trim(blockname), &
- & 'is incompatible with variables order in vbal_id_coef'
-               call flush(output_unit)
-               call comm%abort(1)
-            end if
-         end if
-      end do
-   end do
-end if
 if (conf%has('forced_var')) call conf%get_or_die('forced_var',nam%forced_var)
 if (conf%has('stddev')) then
    call conf%get_or_die('stddev',subconf)
@@ -772,10 +781,8 @@ if (conf%has('stddev')) then
       if (subconf%has(nam%variables(iv))) then
          call subconf%get_or_die(nam%variables(iv),real_array)
          if (size(real_array)>nl0max) then
-            write(output_unit,'(a,a,a,i4)') '!!! ABORT in nam_from_conf: stddev-',trim(nam%variables(iv)), &
- & ' size should be smaller than ',nl0max
-            call flush(output_unit)
-            call comm%abort(1)
+            write(message,'(a,a,a,i4)') 'stddev-',trim(nam%variables(iv)),' size should be smaller than ',nl0max
+            call mpl%abort('${subr}$',message)
          end if
          if (size(real_array)==1) then
             nam%stddev(:,iv) = real_array(1)
@@ -794,10 +801,9 @@ if (conf%has('var_rhflt')) then
       if (subconf%has(nam%variables(iv))) then
          call subconf%get_or_die(nam%variables(iv),real_array)
          if (size(real_array)>nl0max) then
-            write(output_unit,'(a,a,a,i4)') '!!! ABORT in nam_from_conf: var_rhflt-',trim(nam%variables(iv)), &
+            write(message,'(a,a,a,i4)') 'var_rhflt-',trim(nam%variables(iv)), &
  & ' size should be smaller than ',nl0max
-            call flush(output_unit)
-            call comm%abort(1)
+            call mpl%abort('${subr}$',message)
          end if
          if (size(real_array)==1) then
             nam%var_rhflt(:,iv) = real_array(1)
@@ -841,9 +847,8 @@ if (conf%has('rh')) then
    if (subconf%has('common')) then
       call subconf%get_or_die('common',real_array)
       if (size(real_array)>nl0max) then
-         write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: rh-common size should be smaller than ',nl0max
-         call flush(output_unit)
-         call comm%abort(1)
+         write(message,'(a,i4)') 'rh-common size should be smaller than ',nl0max
+         call mpl%abort('${subr}$',message)
       end if
       if (size(real_array)==1) then
          nam%rh(:,0) = real_array(1)
@@ -855,10 +860,9 @@ if (conf%has('rh')) then
       if (subconf%has(nam%variables(iv))) then
          call subconf%get_or_die(nam%variables(iv),real_array)
          if (size(real_array)>nl0max) then
-            write(output_unit,'(a,a,a,i4)') '!!! ABORT in nam_from_conf: rh-',trim(nam%variables(iv)), &
+            write(message,'(a,a,a,i4)') 'rh-',trim(nam%variables(iv)), &
  & ' size should be smaller than ',nl0max
-            call flush(output_unit)
-            call comm%abort(1)
+            call mpl%abort('${subr}$',message)
          end if
          if (size(real_array)==1) then
             nam%rh(:,iv) = real_array(1)
@@ -873,9 +877,8 @@ if (conf%has('rv')) then
    if (subconf%has('common')) then
       call subconf%get_or_die('common',real_array)
       if (size(real_array)>nl0max) then
-         write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: rv-common size should be smaller than ',nl0max
-         call flush(output_unit)
-         call comm%abort(1)
+         write(message,'(a,i4)') 'rv-common size should be smaller than ',nl0max
+         call mpl%abort('${subr}$',message)
       end if
       if (size(real_array)==1) then
          nam%rv(:,0) = real_array(1)
@@ -887,10 +890,9 @@ if (conf%has('rv')) then
       if (subconf%has(nam%variables(iv))) then
          call subconf%get_or_die(nam%variables(iv),real_array)
          if (size(real_array)>nl0max) then
-            write(output_unit,'(a,a,a,i4)') '!!! ABORT in nam_from_conf: rv-',trim(nam%variables(iv)), &
+            write(message,'(a,a,a,i4)') 'rv-',trim(nam%variables(iv)), &
  & ' size should be smaller than ',nl0max
-            call flush(output_unit)
-            call comm%abort(1)
+            call mpl%abort('${subr}$',message)
          end if
          if (size(real_array)==1) then
             nam%rv(:,iv) = real_array(1)
@@ -902,21 +904,44 @@ if (conf%has('rv')) then
 end if
 if (conf%has('loc_wgt')) then
    call conf%get_or_die('loc_wgt',subconf)
-   do iv=1,nam%nv
-      do jv=1,nam%nv
+
+   ! Allocation
+   allocate(loc_wgt(nam%nv,nam%nv))
+   allocate(nam%loc_wgt_sqrt(nam%nv,nam%nv))
+
+   ! Copy positive weights and set non-specified values to one
+   loc_wgt = -one
+   do jv=1,nam%nv
+      do iv=1,jv
+         blockname = trim(nam%variables(iv))//'-'//trim(nam%variables(jv))
+         if (subconf%has(blockname)) then
+            if (iv==jv) call mpl%abort('${subr}$','loc_wgt item should be off-diagonal')
+            if (.not.eq(loc_wgt(iv,jv),-one)) call mpl%abort('${subr}$','redundant loc_wgt item')
+            call subconf%get_or_die(blockname,loc_wgt(iv,jv))
+            loc_wgt(jv,iv) = loc_wgt(iv,jv)
+         end if
          blockname = trim(nam%variables(jv))//'-'//trim(nam%variables(iv))
          if (subconf%has(blockname)) then
-            if (jv<iv) then
-               call subconf%get_or_die(blockname,nam%loc_wgt((iv-1)*(iv-2)/2+jv))
-            else
-               write(output_unit,'(a,a,a)') '!!! ABORT in nam_from_conf: block name ',trim(blockname), &
- & 'is incompatible with variables order in loc_wgt'
-               call flush(output_unit)
-               call comm%abort(1)
-            end if
+            if (iv==jv) call mpl%abort('${subr}$','loc_wgt item should be off-diagonal')
+            if (.not.eq(loc_wgt(iv,jv),-one)) call mpl%abort('${subr}$','redundant loc_wgt item')
+            call subconf%get_or_die(blockname,loc_wgt(iv,jv))
+            loc_wgt(jv,iv) = loc_wgt(iv,jv)
          end if
       end do
    end do
+
+   ! Set missing values to one
+   do jv=1,nam%nv
+      do iv=1,nam%nv
+         if (eq(loc_wgt(iv,jv),-one)) loc_wgt = one
+      end do
+   end do
+   
+   ! Cholesky decomposition
+   call cholesky(mpl,nam%nv,loc_wgt,nam%loc_wgt_sqrt)
+
+   ! Release memory
+   deallocate(loc_wgt)
 end if
 if (conf%has('min_lev')) then
    call conf%get_or_die('min_lev',subconf)
@@ -954,36 +979,32 @@ if (conf%has('ndir')) call conf%get_or_die('ndir',nam%ndir)
 if (conf%has('londir')) then
    call conf%get_or_die('londir',real_array)
    if (size(real_array)>ndirmax) then
-      write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: londir size should be smaller than ',ndirmax
-      call flush(output_unit)
-      call comm%abort(1)
+      write(message,'(a,i4)') 'londir size should be smaller than ',ndirmax
+      call mpl%abort('${subr}$',message)
    end if
    nam%londir(1:size(real_array)) = real_array
 end if
 if (conf%has('latdir')) then
    call conf%get_or_die('latdir',real_array)
    if (size(real_array)>ndirmax) then
-      write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: latdir size should be smaller than ',ndirmax
-      call flush(output_unit)
-      call comm%abort(1)
+      write(message,'(a,i4)') 'latdir size should be smaller than ',ndirmax
+      call mpl%abort('${subr}$',message)
    end if
    nam%latdir(1:size(real_array)) = real_array
 end if
 if (conf%has('levdir')) then
    call conf%get_or_die('levdir',integer_array)
    if (size(real_array)>ndirmax) then
-      write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: levdir size should be smaller than ',ndirmax
-      call flush(output_unit)
-      call comm%abort(1)
+      write(message,'(a,i4)') 'levdir size should be smaller than ',ndirmax
+      call mpl%abort('${subr}$',message)
    end if
    nam%levdir(1:size(integer_array)) = integer_array
 end if
 if (conf%has('ivdir')) then
    call conf%get_or_die('ivdir',integer_array)
    if (size(real_array)>ndirmax) then
-      write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: ivdir size should be smaller than ',ndirmax
-      call flush(output_unit)
-      call comm%abort(1)
+      write(message,'(a,i4)') 'ivdir size should be smaller than ',ndirmax
+      call mpl%abort('${subr}$',message)
    end if
    nam%ivdir(1:size(integer_array)) = integer_array
 end if
@@ -993,27 +1014,24 @@ if (conf%has('nldwv')) call conf%get_or_die('nldwv',nam%nldwv)
 if (conf%has('lon_ldwv')) then
    call conf%get_or_die('lon_ldwv',real_array)
    if (size(real_array)>nldwvmax) then
-      write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: lon_ldwv size should be smaller than ',nldwvmax
-      call flush(output_unit)
-      call comm%abort(1)
+      write(message,'(a,i4)') 'lon_ldwv size should be smaller than ',nldwvmax
+      call mpl%abort('${subr}$',message)
    end if
    nam%lon_ldwv(1:size(real_array)) = real_array
 end if
 if (conf%has('lat_ldwv')) then
    call conf%get_or_die('lat_ldwv',real_array)
    if (size(real_array)>nldwvmax) then
-      write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: lat_ldwv size should be smaller than ',nldwvmax
-      call flush(output_unit)
-      call comm%abort(1)
+      write(message,'(a,i4)') 'lat_ldwv size should be smaller than ',nldwvmax
+      call mpl%abort('${subr}$',message)
    end if
    nam%lat_ldwv(1:size(real_array)) = real_array
 end if
 if (conf%has('name_ldwv')) then
    call conf%get_or_die('name_ldwv',str_array)
    if (size(real_array)>nldwvmax) then
-      write(output_unit,'(a,i4)') '!!! ABORT in nam_from_conf: name_ldwv size should be smaller than ',nldwvmax
-      call flush(output_unit)
-      call comm%abort(1)
+      write(message,'(a,i4)') 'name_ldwv size should be smaller than ',nldwvmax
+      call mpl%abort('${subr}$',message)
    end if
    nam%name_ldwv(1:size(str_array)) = str_array
 end if
@@ -1041,14 +1059,14 @@ if (conf%has('wind_nsg')) call conf%get_or_die('wind_nsg',nam%wind_nsg)
 if (conf%has('wind_inflation')) call conf%get_or_die('wind_inflation',nam%wind_inflation)
 
 ! helpers
-if (conf%has('msvalr')) call conf%get_or_die('msvalr',nam%msvalr)
+if (conf%has('msvalr')) call conf%get_or_die('msvalr',mpl%msv%valr)
 if (conf%has('output')) then
    call conf%get_or_die('output',confs)
    do iconf=1,size(confs)
       call confs(iconf)%get_or_die('parameter',str)
-      parameter = str
-      if (parameter=='nicas_norm') nam%output_nicas_norm = .true.
-      if (parameter=='nicas_a') nam%output_nicas_a = .true.
+      param = str
+      if (param=='nicas_norm') nam%output_nicas_norm = .true.
+      if (param=='nicas_a') nam%output_nicas_a = .true.
    end do
 end if
 
@@ -1071,7 +1089,6 @@ type(mpl_type),intent(inout) :: mpl  !< MPI data
 
 ! Local variables
 integer :: isub,iv,ivmin,ivmax,i,il0,idir,ildwv,jv
-real(kind_real),allocatable :: loc_wgt(:,:)
 character(len=2) :: ivchar,ildwvchar
 
 ! Set name
@@ -1200,11 +1217,6 @@ end do
 if ((nam%lev2d/='first').and.(nam%lev2d/='last')) call mpl%abort('${subr}$','wrong lev2d value')
 if (nam%new_vbal_cov.or.nam%load_vbal_cov.or.nam%new_vbal.or.nam%load_vbal.or.nam%new_var.or.nam%update_var.or. &
  & nam%new_hdiag.or.nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
-   if (nam%nv<=0) call mpl%abort('${subr}$','nv should be positive')
-   do iv=1,nam%nv
-      write(ivchar,'(i2.2)') iv
-      if (nam%variables(iv)=='') call mpl%abort('${subr}$','variables not specified for variable '//ivchar)
-   end do
    do i=1,niokvmax
       if (((nam%io_keys(i)/='').and.(nam%io_values(i)=='')).or. &
  & ((nam%io_keys(i)=='').and.(nam%io_values(i)/=''))) &
@@ -1411,32 +1423,7 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
       end do
    end if
    if (nam%strategy=='common_weighted') then
-      if (all(nam%loc_wgt<zero)) then
-         call mpl%abort('${subr}$','loc_wgt should be specified and non-negative for the common_weighted strategy')
-      else
-         ! Allocation
-         allocate(loc_wgt(nam%nv,nam%nv))
-         allocate(nam%loc_wgt_sqrt(nam%nv,nam%nv))
-
-         ! Copy positive weights and set non-specified values to one
-         do iv=1,nam%nv
-            loc_wgt(iv,iv) = one
-            do jv=1,iv-1
-               if (eq(nam%loc_wgt((iv-1)*(iv-2)/2+jv),-one)) then
-                  loc_wgt(iv,jv) = one
-               else
-                  loc_wgt(iv,jv) = nam%loc_wgt((iv-1)*(iv-2)/2+jv)
-               end if
-               loc_wgt(jv,iv) = loc_wgt(iv,jv)
-            end do
-         end do
-
-         ! Cholesky decomposition
-         call cholesky(mpl,nam%nv,loc_wgt,nam%loc_wgt_sqrt)
-
-         ! Release memory
-         deallocate(loc_wgt)
-      end if
+      if (.not.allocated(nam%loc_wgt_sqrt)) call mpl%abort('${subr}$','loc_wgt should be specified for common_weighted')
    end if
    select case (nam%nicas_draw_type)
    case ('random')
@@ -1499,248 +1486,6 @@ end if
 @:probe_out()
 
 end subroutine nam_check
-
-!----------------------------------------------------------------------
-! Subroutine: nam_write
-!> Write namelist parameters into a log file or into a NetCDF file
-!----------------------------------------------------------------------
-subroutine nam_write(nam,mpl)
-
-implicit none
-
-! Passed variable
-class(nam_type),intent(in) :: nam   !< Namelist
-type(mpl_type),intent(inout) :: mpl !< MPI data
-
-! Local variables
-real(kind_real) :: profiles(nam%nl0*(nam%nv+1))
-real(kind_real),allocatable :: londir(:),latdir(:),lon_ldwv(:),lat_ldwv(:)
-
-! Set name
-@:set_name(nam_write)
-
-! Probe in
-@:probe_in()
-
-! general_param
-write(mpl%info,'(a7,a)') '','General parameters'
-call mpl%flush
-call mpl%write('datadir',nam%datadir)
-call mpl%write('prefix',nam%prefix)
-call mpl%write('colorlog',nam%colorlog)
-call mpl%write('testing',nam%testing)
-call mpl%write('default_seed',nam%default_seed)
-call mpl%write('repro',nam%repro)
-call mpl%write('rth',nam%rth)
-call mpl%write('parallel_io',nam%parallel_io)
-call mpl%write('nprocio',nam%nprocio)
-call mpl%write('universe_rad',nam%universe_rad*req)
-
-! driver_param
-write(mpl%info,'(a7,a)') '','Driver parameters'
-call mpl%flush
-call mpl%write('method',nam%method)
-call mpl%write('strategy',nam%strategy)
-call mpl%write('new_normality',nam%new_normality)
-call mpl%write('new_vbal_cov',nam%new_vbal_cov)
-call mpl%write('update_vbal_cov',nam%update_vbal_cov)
-call mpl%write('load_vbal_cov',nam%load_vbal_cov)
-call mpl%write('write_vbal_cov',nam%write_vbal_cov)
-call mpl%write('new_vbal',nam%new_vbal)
-call mpl%write('load_vbal',nam%load_vbal)
-call mpl%write('write_vbal',nam%write_vbal)
-call mpl%write('new_var',nam%new_var)
-call mpl%write('update_var',nam%update_var)
-call mpl%write('new_mom',nam%new_mom)
-call mpl%write('update_mom',nam%update_mom)
-call mpl%write('load_mom',nam%load_mom)
-call mpl%write('write_mom',nam%write_mom)
-call mpl%write('new_hdiag',nam%new_hdiag)
-call mpl%write('write_hdiag',nam%write_hdiag)
-call mpl%write('new_nicas',nam%new_nicas)
-call mpl%write('load_nicas_local',nam%load_nicas_local)
-call mpl%write('load_nicas_global',nam%load_nicas_global)
-call mpl%write('write_nicas_local',nam%write_nicas_local)
-call mpl%write('write_nicas_global',nam%write_nicas_global)
-call mpl%write('new_wind',nam%new_wind)
-call mpl%write('load_wind_local',nam%load_wind_local)
-call mpl%write('write_wind_local',nam%write_wind_local)
-call mpl%write('check_vbal',nam%check_vbal)
-call mpl%write('check_adjoints',nam%check_adjoints)
-call mpl%write('check_normalization',nam%check_normalization)
-call mpl%write('check_dirac',nam%check_dirac)
-call mpl%write('check_randomization',nam%check_randomization)
-call mpl%write('check_consistency',nam%check_consistency)
-call mpl%write('check_optimality',nam%check_optimality)
-
-! files_param
-call mpl%write('fname_var',count(nam%fname_var/=''),nam%fname_var(0:count(nam%fname_var/='')-1))
-call mpl%write('fname_samp',nam%fname_samp)
-call mpl%write('fname_vbal_cov',count(nam%fname_vbal_cov/=''),nam%fname_vbal_cov(0:count(nam%fname_vbal_cov/='')-1))
-call mpl%write('fname_vbal',nam%fname_vbal)
-call mpl%write('fname_mom',count(nam%fname_mom/=''),nam%fname_mom(0:count(nam%fname_mom/='')-1))
-call mpl%write('fname_nicas',nam%fname_nicas)
-call mpl%write('fname_wind',nam%fname_wind)
-
-! model_param
-write(mpl%info,'(a7,a)') '','Model parameters'
-call mpl%flush
-call mpl%write('nl0',nam%nl0)
-call mpl%write('levs',nam%nl0,nam%levs(1:nam%nl0))
-call mpl%write('lev2d',nam%lev2d)
-call mpl%write('nv',nam%nv)
-call mpl%write('variables',nam%nv,nam%variables(1:nam%nv))
-call mpl%write('io_keys',count(nam%io_keys/=''),nam%io_keys(1:count(nam%io_keys/='')))
-call mpl%write('io_values',count(nam%io_values/=''),nam%io_values(1:count(nam%io_values/='')))
-
-! ens1_param
-write(mpl%info,'(a7,a)') '','Ensemble 1 parameters'
-call mpl%flush
-call mpl%write('ens1_ne',nam%ens1_ne)
-call mpl%write('ens1_nsub',nam%ens1_nsub)
-
-! ens2_param
-write(mpl%info,'(a7,a)') '','Ensemble 2 parameters'
-call mpl%flush
-call mpl%write('ens2_ne',nam%ens2_ne)
-call mpl%write('ens2_nsub',nam%ens2_nsub)
-
-! sampling_param
-write(mpl%info,'(a7,a)') '','Sampling parameters'
-call mpl%flush
-call mpl%write('load_samp_local',nam%load_samp_local)
-call mpl%write('load_samp_global',nam%load_samp_global)
-call mpl%write('write_samp_local',nam%write_samp_local)
-call mpl%write('write_samp_global',nam%write_samp_global)
-call mpl%write('write_samp_grids',nam%write_samp_grids)
-call mpl%write('mask_type',nam%mask_type)
-call mpl%write('mask_lu',nam%nv,nam%mask_lu(1:nam%nv))
-call mpl%write('mask_th',nam%nv,nam%mask_th(1:nam%nv))
-call mpl%write('ncontig_th',nam%ncontig_th)
-call mpl%write('mask_check',nam%mask_check)
-call mpl%write('diag_draw_type',nam%diag_draw_type)
-call mpl%write('nc1',nam%nc1)
-call mpl%write('nc2',nam%nc2)
-call mpl%write('nc3',nam%nc3)
-call mpl%write('nc4',nam%nc4)
-call mpl%write('dc',nam%dc*req)
-call mpl%write('nl0r',nam%nl0r)
-call mpl%write('irmax',nam%irmax)
-call mpl%write('samp_interp_type',nam%samp_interp_type)
-
-! diag_param
-write(mpl%info,'(a7,a)') '','Diagnostics parameters'
-call mpl%flush
-call mpl%write('ne',nam%ne)
-call mpl%write('ne_lr',nam%ne_lr)
-call mpl%write('gen_kurt_th',nam%gen_kurt_th)
-call mpl%write('gau_approx',nam%gau_approx)
-call mpl%write('avg_nbins',nam%avg_nbins)
-call mpl%write('vbal_block',nam%nv*(nam%nv-1)/2,nam%vbal_block(1:nam%nv*(nam%nv-1)/2))
-call mpl%write('vbal_rad',nam%vbal_rad*req)
-call mpl%write('vbal_dlat',nam%vbal_dlat*rad2deg)
-call mpl%write('vbal_diag_auto',nam%nv*(nam%nv-1)/2,nam%vbal_diag_auto(1:nam%nv*(nam%nv-1)/2))
-call mpl%write('vbal_diag_reg',nam%nv*(nam%nv-1)/2,nam%vbal_diag_reg(1:nam%nv*(nam%nv-1)/2))
-call mpl%write('vbal_pseudo_inv',nam%vbal_pseudo_inv)
-call mpl%write('vbal_pseudo_inv_mmax',nam%vbal_pseudo_inv_mmax)
-call mpl%write('vbal_pseudo_inv_var_th',nam%vbal_pseudo_inv_var_th)
-call mpl%write('vbal_id',nam%vbal_id)
-call mpl%write('vbal_id_coef',nam%nv*(nam%nv-1)/2,nam%vbal_id_coef(1:nam%nv*(nam%nv-1)/2))
-call mpl%write('forced_var',nam%forced_var)
-profiles(1:nam%nl0*nam%nv) = reshape(nam%stddev(1:nam%nl0,1:nam%nv),(/nam%nl0*nam%nv/))
-call mpl%write('stddev',nam%nl0*nam%nv,profiles(1:nam%nl0*nam%nv))
-call mpl%write('var_filter',nam%var_filter)
-call mpl%write('var_niter',nam%var_niter)
-call mpl%write('var_npass',nam%var_npass)
-profiles(1:nam%nl0*nam%nv) = reshape(nam%var_rhflt(1:nam%nl0,1:nam%nv),(/nam%nl0*nam%nv/))
-call mpl%write('var_rhflt',nam%nl0*nam%nv,profiles)
-call mpl%write('local_diag',nam%local_diag)
-call mpl%write('local_rad',nam%local_rad*req)
-call mpl%write('local_dlat',nam%local_dlat*rad2deg)
-call mpl%write('optimality_nfac',nam%optimality_nfac)
-call mpl%write('optimality_delta',nam%optimality_delta)
-call mpl%write('optimality_ntest',nam%optimality_ntest)
-
-! fit_param
-write(mpl%info,'(a7,a)') '','Fit parameters'
-call mpl%flush
-call mpl%write('diag_rhflt',nam%diag_rhflt*req)
-call mpl%write('diag_rvflt',nam%diag_rvflt)
-call mpl%write('fit_dl0',nam%fit_dl0)
-call mpl%write('fit_ncmp',nam%fit_ncmp)
-call mpl%write('write_hdiag_detail',nam%write_hdiag_detail)
-
-! nicas_param
-write(mpl%info,'(a7,a)') '','NICAS parameters'
-call mpl%flush
-call mpl%write('resol',nam%resol)
-call mpl%write('nc1max',nam%nc1max)
-call mpl%write('nicas_draw_type',nam%nicas_draw_type)
-call mpl%write('ncmp',nam%nv+1,nam%ncmp(0:nam%nv))
-call mpl%write('forced_radii',nam%forced_radii)
-profiles(1:nam%nl0*(nam%nv+1)) = reshape(nam%rh(1:nam%nl0,0:nam%nv),(/nam%nl0*(nam%nv+1)/))
-call mpl%write('rh',nam%nl0*(nam%nv+1),profiles(1:nam%nl0*(nam%nv+1)))
-profiles(1:nam%nl0*(nam%nv+1)) = reshape(nam%rv(1:nam%nl0,0:nam%nv),(/nam%nl0*(nam%nv+1)/))
-call mpl%write('rv',nam%nl0*(nam%nv+1),profiles(1:nam%nl0*(nam%nv+1)))
-call mpl%write('loc_wgt',nam%nv*(nam%nv-1)/2,nam%loc_wgt(1:nam%nv*(nam%nv-1)/2))
-call mpl%write('min_lev',nam%nv+1,nam%min_lev(0:nam%nv))
-call mpl%write('max_lev',nam%nv+1,nam%max_lev(0:nam%nv))
-call mpl%write('nicas_interp_type',nam%nv+1,nam%nicas_interp_type)
-call mpl%write('pos_def_test',nam%pos_def_test)
-call mpl%write('write_nicas_grids',nam%write_nicas_grids)
-call mpl%write('interp_test',nam%interp_test)
-
-! dirac_param
-write(mpl%info,'(a7,a)') '','Dirac parameters'
-call mpl%flush
-call mpl%write('ndir',nam%ndir)
-allocate(londir(nam%ndir))
-allocate(latdir(nam%ndir))
-if (nam%ndir>0) then
-   londir = nam%londir(1:nam%ndir)*rad2deg
-   latdir = nam%latdir(1:nam%ndir)*rad2deg
-end if
-call mpl%write('londir',nam%ndir,londir)
-call mpl%write('latdir',nam%ndir,latdir)
-call mpl%write('levdir',nam%ndir,nam%levdir(1:nam%ndir))
-call mpl%write('ivdir',nam%ndir,nam%ivdir(1:nam%ndir))
-
-! output_param
-write(mpl%info,'(a7,a)') '','Output parameters'
-call mpl%flush
-call mpl%write('nldwv',nam%nldwv)
-allocate(lon_ldwv(nam%nldwv))
-allocate(lat_ldwv(nam%nldwv))
-if (nam%nldwv>0) then
-   lon_ldwv = nam%lon_ldwv(1:nam%nldwv)*rad2deg
-   lat_ldwv = nam%lat_ldwv(1:nam%nldwv)*rad2deg
-end if
-call mpl%write('lon_ldwv',nam%nldwv,lon_ldwv)
-call mpl%write('lat_ldwv',nam%nldwv,lat_ldwv)
-call mpl%write('name_ldwv',nam%nldwv,nam%name_ldwv(1:nam%nldwv))
-
-! wind_param
-write(mpl%info,'(a7,a)') '','Wind parameters'
-call mpl%flush
-call mpl%write('wind_streamfunction',nam%wind_streamfunction)
-call mpl%write('wind_velocity_potential',nam%wind_velocity_potential)
-call mpl%write('wind_zonal',nam%wind_zonal)
-call mpl%write('wind_meridional',nam%wind_meridional)
-call mpl%write('wind_nlon',nam%wind_nlon)
-call mpl%write('wind_nlat',nam%wind_nlat)
-call mpl%write('wind_nsg',nam%wind_nsg)
-call mpl%write('wind_inflation',nam%wind_inflation)
-
-! Release memory
-deallocate(londir)
-deallocate(latdir)
-deallocate(lon_ldwv)
-deallocate(lat_ldwv)
-
-! Probe out
-@:probe_out()
-
-end subroutine nam_write
 
 !----------------------------------------------------------------------
 ! Subroutine: nam_io_key_value

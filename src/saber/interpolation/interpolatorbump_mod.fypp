@@ -148,8 +148,11 @@ integer,intent(in) :: nl0                                  !< Number of levels
 ! Probe in
 @:probe_in()
 
-! BUMP defaults
-call bint%bump%nam%init(comm%size())
+! Initialize MPL
+call bint%bump%mpl%init(comm)
+
+! Initialize namelist
+call bint%bump%nam%init(bint%bump%mpl)
 
 ! Modified defaults for BUMP interpolator
 bint%bump%nam%prefix = 'bump_interpolator'
@@ -165,7 +168,7 @@ bint%afunctionspace_in = afunctionspace_in
 bint%afunctionspace_out = afunctionspace_out
 
 ! BUMP setup
-call bint%bump%setup(comm,bint%afunctionspace_in)
+call bint%bump%setup(bint%afunctionspace_in)
 
 ! Initialize output grid
 if (bint%bump%mpl%main) then
