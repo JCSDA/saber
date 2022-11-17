@@ -284,7 +284,7 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
 
     // Get input fields for geometry 2
     std::vector<atlas::FieldSet> fsetVec2 = readInputFields(
-      geom1,
+      *geom2,
       params.inputVars.value(),
       xx.validTime(),
       params.inputFields2.value());
@@ -315,6 +315,9 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
                                 fsetVec2,
                                 ens2_ne));
 
+      // Drivers parameters
+      const bump::DriversParameters drivers = bumpParams->drivers.value().get_value_or(bump::DriversParameters());
+
       // Add members of ensemble 1
       if (ens1) {
         oops::Log::info() << "Info     : --- Add members of ensemble 1" << std::endl;
@@ -326,7 +329,7 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
 
       // Add members of ensemble 2
       if (ens2) {
-        const std::string method = bumpParams->method.value().value();
+        const std::string method = drivers.method.value().get_value_or("");
         if (method == "hyb-rnd" || method == "hyb-ens") {
           oops::Log::info() << "Info     : --- Add members of ensemble 2" << std::endl;
           for (size_t ie = 0; ie < ens2_ne; ++ie) {
@@ -340,9 +343,9 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
       }
 
       // Check what needs to be updated
-      const boost::optional<bool> &update_vbal_cov = bumpParams->update_vbal_cov.value();
-      const boost::optional<bool> &update_var = bumpParams->update_var.value();
-      const boost::optional<bool> &update_mom = bumpParams->update_mom.value();
+      const boost::optional<bool> &update_vbal_cov = drivers.update_vbal_cov.value();
+      const boost::optional<bool> &update_var = drivers.update_var.value();
+      const boost::optional<bool> &update_mom = drivers.update_mom.value();
 
       // Load ensemble members sequentially
       if (bump->memberConfig1().size() > 0) {

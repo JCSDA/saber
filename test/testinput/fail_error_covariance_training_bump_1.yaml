@@ -11,11 +11,13 @@ background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
 bump:
-  datadir: testdata
-  prefix: fail_error_covariance_training_bump_1/_MPI_-_OMP_
-  colorlog: true
-  testing: true
-  strategy: specific_univariate
-  load_nicas_local: true
+  general:
+    datadir: testdata
+    prefix: fail_error_covariance_training_bump_1/_MPI_-_OMP_
+    colorlog: true
+    testing: true
+  drivers:
+    strategy: specific_univariate
+    load_nicas_local: true
 test:
   reference filename: testref/fail_error_covariance_training_bump_1.ref

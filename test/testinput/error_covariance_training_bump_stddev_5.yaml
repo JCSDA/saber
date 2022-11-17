@@ -11,9 +11,10 @@ background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
 bump:
-  datadir: testdata
-  prefix: error_covariance_training_bump_stddev_5/_MPI_-_OMP_
-  testing: true
+  general:
+    datadir: testdata
+    prefix: error_covariance_training_bump_stddev_5/_MPI_-_OMP_
+    testing: true
   ne: 20
   var_filter: true
   var_niter: 4

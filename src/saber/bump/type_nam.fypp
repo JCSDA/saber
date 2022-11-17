@@ -452,7 +452,7 @@ logical,allocatable :: logical_array(:)
 character(len=1024) :: message,param,blockname
 character(len=:),allocatable :: str,str_bal,str_unbal
 character(len=:),allocatable :: str_array(:)
-type(fckit_configuration) :: subconf
+type(fckit_configuration) :: general,drivers,subconf
 type(fckit_configuration),allocatable :: confs(:)
 
 ! Set name
@@ -461,74 +461,85 @@ type(fckit_configuration),allocatable :: confs(:)
 ! Probe in
 @:probe_in()
 
-! general_param
-if (conf%has('datadir')) then
-   call conf%get_or_die('datadir',str)
-   nam%datadir = str
-end if
-if (conf%has('prefix')) then
-   call conf%get_or_die('prefix',str)
-   nam%prefix = str
-end if
-if (conf%has('colorlog')) then
-   call conf%get_or_die('colorlog',colorlog)
-   if (colorlog) then
-      mpl%black = char(27)//'[0;0m'
-      mpl%green = char(27)//'[0;32m'
-      mpl%peach = char(27)//'[1;91m'
-      mpl%aqua = char(27)//'[1;36m'
-      mpl%purple = char(27)//'[1;35m'
-      mpl%wng_color = char(27)//'[0;37;42;1m'
+! General parameters
+if (conf%has('general')) then
+   call conf%get_or_die('general',general)
+   if (general%has('datadir')) then
+      call general%get_or_die('datadir',str)
+      nam%datadir = str
    end if
+   if (general%has('prefix')) then
+      call general%get_or_die('prefix',str)
+      nam%prefix = str
+   end if
+   if (general%has('colorlog')) then
+      call general%get_or_die('colorlog',colorlog)
+      if (colorlog) then
+         mpl%black = char(27)//'[0;0m'
+         mpl%green = char(27)//'[0;32m'
+         mpl%peach = char(27)//'[1;91m'
+         mpl%aqua = char(27)//'[1;36m'
+         mpl%purple = char(27)//'[1;35m'
+         mpl%wng_color = char(27)//'[0;37;42;1m'
+      end if
+   end if
+   if (general%has('testing')) call general%get_or_die('testing',mpl%testing)
+   if (general%has('default_seed')) call general%get_or_die('default_seed',nam%default_seed)
+   if (general%has('repro')) call general%get_or_die('repro',nam%repro)
+   if (general%has('rth')) call general%get_or_die('rth',nam%rth)
+   if (general%has('parallel_io')) call general%get_or_die('parallel_io',nam%parallel_io)
+   if (general%has('nprocio')) call general%get_or_die('nprocio',nam%nprocio)
+   if (general%has('universe_rad')) call general%get_or_die('universe_rad',nam%universe_rad)
 end if
-if (conf%has('testing')) call conf%get_or_die('testing',mpl%testing)
-if (conf%has('default_seed')) call conf%get_or_die('default_seed',nam%default_seed)
-if (conf%has('repro')) call conf%get_or_die('repro',nam%repro)
-if (conf%has('rth')) call conf%get_or_die('rth',nam%rth)
-if (conf%has('parallel_io')) call conf%get_or_die('parallel_io',nam%parallel_io)
-if (conf%has('nprocio')) call conf%get_or_die('nprocio',nam%nprocio)
-if (conf%has('universe_rad')) call conf%get_or_die('universe_rad',nam%universe_rad)
-
-! driver_param
-if (conf%has('method')) then
-   call conf%get_or_die('method',str)
-   nam%method = str
+   
+! Drivers parameters
+if (conf%has('drivers')) then
+   call conf%get_or_die('drivers',drivers)
+   if (drivers%has('method')) then
+      call drivers%get_or_die('method',str)
+      nam%method = str
+   end if
+   if (drivers%has('strategy')) then
+      call drivers%get_or_die('strategy',str)
+      nam%strategy = str
+   end if
+   if (drivers%has('new_normality')) call drivers%get_or_die('new_normality',nam%new_normality)
+   if (drivers%has('load_samp_local')) call drivers%get_or_die('load_samp_local',nam%load_samp_local)
+   if (drivers%has('load_samp_global')) call drivers%get_or_die('load_samp_global',nam%load_samp_global)
+   if (drivers%has('write_samp_local')) call drivers%get_or_die('write_samp_local',nam%write_samp_local)
+   if (drivers%has('write_samp_global')) call drivers%get_or_die('write_samp_global',nam%write_samp_global)
+   if (drivers%has('write_samp_grids')) call drivers%get_or_die('write_samp_grids',nam%write_samp_grids)
+   if (drivers%has('new_vbal_cov')) call drivers%get_or_die('new_vbal_cov',nam%new_vbal_cov)
+   if (drivers%has('update_vbal_cov')) call drivers%get_or_die('update_vbal_cov',nam%update_vbal_cov)
+   if (drivers%has('load_vbal_cov')) call drivers%get_or_die('load_vbal_cov',nam%load_vbal_cov)
+   if (drivers%has('write_vbal_cov')) call drivers%get_or_die('write_vbal_cov',nam%write_vbal_cov)
+   if (drivers%has('new_vbal')) call drivers%get_or_die('new_vbal',nam%new_vbal)
+   if (drivers%has('load_vbal')) call drivers%get_or_die('load_vbal',nam%load_vbal)
+   if (drivers%has('write_vbal')) call drivers%get_or_die('write_vbal',nam%write_vbal)
+   if (drivers%has('new_var')) call drivers%get_or_die('new_var',nam%new_var)
+   if (drivers%has('update_var')) call drivers%get_or_die('update_var',nam%update_var)
+   if (drivers%has('new_mom')) call drivers%get_or_die('new_mom',nam%new_mom)
+   if (drivers%has('update_mom')) call drivers%get_or_die('update_mom',nam%update_mom)
+   if (drivers%has('load_mom')) call drivers%get_or_die('load_mom',nam%load_mom)
+   if (drivers%has('write_mom')) call drivers%get_or_die('write_mom',nam%write_mom)
+   if (drivers%has('new_hdiag')) call drivers%get_or_die('new_hdiag',nam%new_hdiag)
+   if (drivers%has('write_hdiag')) call drivers%get_or_die('write_hdiag',nam%write_hdiag)
+   if (drivers%has('new_nicas')) call drivers%get_or_die('new_nicas',nam%new_nicas)
+   if (drivers%has('load_nicas_local')) call drivers%get_or_die('load_nicas_local',nam%load_nicas_local)
+   if (drivers%has('load_nicas_global')) call drivers%get_or_die('load_nicas_global',nam%load_nicas_global)
+   if (drivers%has('write_nicas_local')) call drivers%get_or_die('write_nicas_local',nam%write_nicas_local)
+   if (drivers%has('write_nicas_global')) call drivers%get_or_die('write_nicas_global',nam%write_nicas_global)
+   if (drivers%has('new_wind')) call drivers%get_or_die('new_wind',nam%new_wind)
+   if (drivers%has('load_wind_local')) call drivers%get_or_die('load_wind_local',nam%load_wind_local)
+   if (drivers%has('write_wind_local')) call drivers%get_or_die('write_wind_local',nam%write_wind_local)
+   if (drivers%has('check_vbal')) call drivers%get_or_die('check_vbal',nam%check_vbal)
+   if (drivers%has('check_adjoints')) call drivers%get_or_die('check_adjoints',nam%check_adjoints)
+   if (drivers%has('check_normalization')) call drivers%get_or_die('check_normalization',nam%check_normalization)
+   if (drivers%has('check_dirac')) call drivers%get_or_die('check_dirac',nam%check_dirac)
+   if (drivers%has('check_randomization')) call drivers%get_or_die('check_randomization',nam%check_randomization)
+   if (drivers%has('check_consistency')) call drivers%get_or_die('check_consistency',nam%check_consistency)
+   if (drivers%has('check_optimality')) call drivers%get_or_die('check_optimality',nam%check_optimality)
 end if
-if (conf%has('strategy')) then
-   call conf%get_or_die('strategy',str)
-   nam%strategy = str
-end if
-if (conf%has('new_normality')) call conf%get_or_die('new_normality',nam%new_normality)
-if (conf%has('new_vbal_cov')) call conf%get_or_die('new_vbal_cov',nam%new_vbal_cov)
-if (conf%has('update_vbal_cov')) call conf%get_or_die('update_vbal_cov',nam%update_vbal_cov)
-if (conf%has('load_vbal_cov')) call conf%get_or_die('load_vbal_cov',nam%load_vbal_cov)
-if (conf%has('write_vbal_cov')) call conf%get_or_die('write_vbal_cov',nam%write_vbal_cov)
-if (conf%has('new_vbal')) call conf%get_or_die('new_vbal',nam%new_vbal)
-if (conf%has('load_vbal')) call conf%get_or_die('load_vbal',nam%load_vbal)
-if (conf%has('write_vbal')) call conf%get_or_die('write_vbal',nam%write_vbal)
-if (conf%has('new_var')) call conf%get_or_die('new_var',nam%new_var)
-if (conf%has('update_var')) call conf%get_or_die('update_var',nam%update_var)
-if (conf%has('new_mom')) call conf%get_or_die('new_mom',nam%new_mom)
-if (conf%has('update_mom')) call conf%get_or_die('update_mom',nam%update_mom)
-if (conf%has('load_mom')) call conf%get_or_die('load_mom',nam%load_mom)
-if (conf%has('write_mom')) call conf%get_or_die('write_mom',nam%write_mom)
-if (conf%has('new_hdiag')) call conf%get_or_die('new_hdiag',nam%new_hdiag)
-if (conf%has('write_hdiag')) call conf%get_or_die('write_hdiag',nam%write_hdiag)
-if (conf%has('new_nicas')) call conf%get_or_die('new_nicas',nam%new_nicas)
-if (conf%has('load_nicas_local')) call conf%get_or_die('load_nicas_local',nam%load_nicas_local)
-if (conf%has('load_nicas_global')) call conf%get_or_die('load_nicas_global',nam%load_nicas_global)
-if (conf%has('write_nicas_local')) call conf%get_or_die('write_nicas_local',nam%write_nicas_local)
-if (conf%has('write_nicas_global')) call conf%get_or_die('write_nicas_global',nam%write_nicas_global)
-if (conf%has('new_wind')) call conf%get_or_die('new_wind',nam%new_wind)
-if (conf%has('load_wind_local')) call conf%get_or_die('load_wind_local',nam%load_wind_local)
-if (conf%has('write_wind_local')) call conf%get_or_die('write_wind_local',nam%write_wind_local)
-if (conf%has('check_vbal')) call conf%get_or_die('check_vbal',nam%check_vbal)
-if (conf%has('check_adjoints')) call conf%get_or_die('check_adjoints',nam%check_adjoints)
-if (conf%has('check_normalization')) call conf%get_or_die('check_normalization',nam%check_normalization)
-if (conf%has('check_dirac')) call conf%get_or_die('check_dirac',nam%check_dirac)
-if (conf%has('check_randomization')) call conf%get_or_die('check_randomization',nam%check_randomization)
-if (conf%has('check_consistency')) call conf%get_or_die('check_consistency',nam%check_consistency)
-if (conf%has('check_optimality')) call conf%get_or_die('check_optimality',nam%check_optimality)
 
 ! files_param
 if (conf%has('fname_var')) then
@@ -621,11 +632,6 @@ if (conf%has('ens2_ne')) call conf%get_or_die('ens2_ne',nam%ens2_ne)
 if (conf%has('ens2_nsub')) call conf%get_or_die('ens2_nsub',nam%ens2_nsub)
 
 ! sampling_param
-if (conf%has('load_samp_local')) call conf%get_or_die('load_samp_local',nam%load_samp_local)
-if (conf%has('load_samp_global')) call conf%get_or_die('load_samp_global',nam%load_samp_global)
-if (conf%has('write_samp_local')) call conf%get_or_die('write_samp_local',nam%write_samp_local)
-if (conf%has('write_samp_global')) call conf%get_or_die('write_samp_global',nam%write_samp_global)
-if (conf%has('write_samp_grids')) call conf%get_or_die('write_samp_grids',nam%write_samp_grids)
 if (conf%has('mask_type')) then
    call conf%get_or_die('mask_type',str)
    nam%mask_type = str

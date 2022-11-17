@@ -12,10 +12,12 @@ background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
 bump:
-  datadir: testdata
-  prefix: error_covariance_training_bump_stddev_3/_MPI_-_OMP_
-  testing: true
-  update_var: true
+  general:
+    datadir: testdata
+    prefix: error_covariance_training_bump_stddev_3/_MPI_-_OMP_
+    testing: true
+  drivers:
+    update_var: true
   var_filter: true
   ensemble:
     members from template:

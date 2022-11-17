@@ -11,14 +11,16 @@ background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
 bump:
-  datadir: testdata
-  prefix: error_covariance_training_bump_hdiag_3/_MPI_-_OMP_
-  testing: true
-  method: loc
-  strategy: common
-  update_mom: true
-  new_hdiag: true
-  write_hdiag: true
+  general:
+    datadir: testdata
+    prefix: error_covariance_training_bump_hdiag_3/_MPI_-_OMP_
+    testing: true
+  drivers:
+    method: loc
+    strategy: common
+    update_mom: true
+    new_hdiag: true
+    write_hdiag: true
   nc1: 500
   nc2: 250
   nc3: 10

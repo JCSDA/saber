@@ -40,32 +40,10 @@ namespace bump {
 
 // -----------------------------------------------------------------------------
 
-class VerticalBlockParameters : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(VerticalBlockParameters, oops::Parameters)
+class GeneralParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(GeneralParameters, oops::Parameters)
 
  public:
-  // Balanced variable
-  oops::RequiredParameter<std::string> balanced{"balanced", this};
-  // Unbalanced variable
-  oops::RequiredParameter<std::string> unbalanced{"unbalanced", this};
-  // Diagonal auto-covariance for the inversion
-  oops::Parameter<bool> diag_auto{"diag_auto", false, this};
-  // Diagonal regression
-  oops::Parameter<bool> diag_reg{"diag_reg", false, this};
-  // Scalar coefficients for identity vertical balance
-  oops::Parameter<double> id_coef{"id_coef", 1.0, this};
-};
-
-// -----------------------------------------------------------------------------
-
-class BUMPParameters : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(BUMPParameters, oops::Parameters)
-
- public:
-  // Internal parameters
-
-  // general_param
-
   // Data directory
   oops::OptionalParameter<std::string> datadir{"datadir", this};
   // Files prefix
@@ -86,9 +64,14 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<int> nprocio{"nprocio", this};
   // Universe radius [in meters]
   oops::OptionalParameter<double> universe_rad{"universe_rad", this};
+};
 
-  // driver_param
+// -----------------------------------------------------------------------------
 
+class DriversParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(DriversParameters, oops::Parameters)
+
+ public:
   // Localization/hybridization to compute ('cor', 'loc', 'hyb-rnd' or 'hyb-ens')
   oops::OptionalParameter<std::string> method{"method", this};
   // Localization strategy ('diag_all', 'common', 'common_weighted', 'specific_univariate' or
@@ -96,6 +79,16 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<std::string> strategy{"strategy", this};
   // New normality test
   oops::OptionalParameter<bool> new_normality{"new_normality", this};
+  // Load local sampling
+  oops::OptionalParameter<bool> load_samp_local{"load_samp_local", this};
+  // Load global sampling
+  oops::OptionalParameter<bool> load_samp_global{"load_samp_global", this};
+  // Write local sampling
+  oops::OptionalParameter<bool> write_samp_local{"write_samp_local", this};
+  // Write global sampling
+  oops::OptionalParameter<bool> write_samp_global{"write_samp_global", this};
+  // Write sampling grids
+  oops::OptionalParameter<bool> write_samp_grids{"write_samp_grids", this};
   // New vertical covariance
   oops::OptionalParameter<bool> new_vbal_cov{"new_vbal_cov", this};
   // Update vertical covariance sequentially
@@ -166,6 +159,39 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<bool> check_apply_stddev{"check_apply_stddev", this};
   // Test apply_nicas interfaces
   oops::OptionalParameter<bool> check_apply_nicas{"check_apply_nicas", this};
+};
+
+// -----------------------------------------------------------------------------
+
+class VerticalBlockParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(VerticalBlockParameters, oops::Parameters)
+
+ public:
+  // Balanced variable
+  oops::RequiredParameter<std::string> balanced{"balanced", this};
+  // Unbalanced variable
+  oops::RequiredParameter<std::string> unbalanced{"unbalanced", this};
+  // Diagonal auto-covariance for the inversion
+  oops::Parameter<bool> diag_auto{"diag_auto", false, this};
+  // Diagonal regression
+  oops::Parameter<bool> diag_reg{"diag_reg", false, this};
+  // Scalar coefficients for identity vertical balance
+  oops::Parameter<double> id_coef{"id_coef", 1.0, this};
+};
+
+// -----------------------------------------------------------------------------
+
+class BUMPParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(BUMPParameters, oops::Parameters)
+
+ public:
+  // Internal parameters
+
+  // General parameters
+  oops::OptionalParameter<GeneralParameters> general{"general", this};
+
+  // Drivers parameters
+  oops::OptionalParameter<DriversParameters> drivers{"drivers", this};
 
   // files_param
 
@@ -215,16 +241,6 @@ class BUMPParameters : public oops::Parameters {
 
   // sampling_param
 
-  // Load local sampling
-  oops::OptionalParameter<bool> load_samp_local{"load_samp_local", this};
-  // Load global sampling
-  oops::OptionalParameter<bool> load_samp_global{"load_samp_global", this};
-  // Write local sampling
-  oops::OptionalParameter<bool> write_samp_local{"write_samp_local", this};
-  // Write global sampling
-  oops::OptionalParameter<bool> write_samp_global{"write_samp_global", this};
-  // Write sampling grids
-  oops::OptionalParameter<bool> write_samp_grids{"write_samp_grids", this};
   // Mask restriction type
   oops::OptionalParameter<std::string> mask_type{"mask_type", this};
   // Mask threshold side ('lower' if mask_th is the lower bound, 'upper' if mask_th is the

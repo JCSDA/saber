@@ -21,17 +21,19 @@ ensemble:
     nmembers: 25
     zero padding: 6
 bump:
-  datadir: testdata
-  prefix: error_covariance_training_bump_hdiag_1/_MPI_-_OMP_
-  testing: true
-  method: cor
-  strategy: specific_univariate
-  write_mom: true
-  new_hdiag: true
-  write_hdiag: true
-  write_samp_local: true
-  write_samp_global: true
-  write_samp_grids: true
+  general:
+    datadir: testdata
+    prefix: error_covariance_training_bump_hdiag_1/_MPI_-_OMP_
+    testing: true
+  drivers:
+    method: cor
+    strategy: specific_univariate
+    write_mom: true
+    new_hdiag: true
+    write_hdiag: true
+    write_samp_local: true
+    write_samp_global: true
+    write_samp_grids: true
   nc1: 500
   nc2: 250
   nc3: 10

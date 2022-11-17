@@ -21,18 +21,20 @@ ensemble:
     nmembers: 10
     zero padding: 6
 bump:
-  datadir: testdata
-  prefix: error_covariance_training_bump_vbal_1/_MPI_-_OMP_
-  testing: true
-  write_vbal_cov: true
-  new_vbal: true
-  write_vbal: true
-  check_vbal: true
-  check_adjoints: true
-  check_dirac: true
-  write_samp_local: true
-  write_samp_global: true
-  write_samp_grids: true
+  general:
+    datadir: testdata
+    prefix: error_covariance_training_bump_vbal_1/_MPI_-_OMP_
+    testing: true
+  drivers:
+    write_vbal_cov: true
+    new_vbal: true
+    write_vbal: true
+    check_vbal: true
+    check_adjoints: true
+    check_dirac: true
+    write_samp_local: true
+    write_samp_global: true
+    write_samp_grids: true
   nc1: 500
   nc2: 250
   vbal:

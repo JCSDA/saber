@@ -31,12 +31,14 @@ background error:
   saber central block:
     saber block name: BUMP_NICAS
     bump:
-      datadir: testdata
-      prefix: error_covariance_training_bump_hdiag_9/_MPI_-_OMP_
-      testing: true
-      method: cor
-      strategy: specific_univariate
-      new_nicas: true
+      general:
+        datadir: testdata
+        prefix: error_covariance_training_bump_hdiag_9/_MPI_-_OMP_
+        testing: true
+      drivers:
+        method: cor
+        strategy: specific_univariate
+        new_nicas: true
       resol: 4.0
       forced_radii: true
       rh:
@@ -47,15 +49,17 @@ background error:
         - 1.5
   randomization size: 25
 bump:
-  datadir: testdata
-  prefix: error_covariance_training_bump_hdiag_9/_MPI_-_OMP_
-  testing: true
-  method: hyb-rnd
-  strategy: specific_univariate
-  new_hdiag: true
-  write_hdiag: true
-  check_adjoints: true
-  check_normalization: 10
+  general:
+    datadir: testdata
+    prefix: error_covariance_training_bump_hdiag_9/_MPI_-_OMP_
+    testing: true
+  drivers:
+    method: hyb-rnd
+    strategy: specific_univariate
+    new_hdiag: true
+    write_hdiag: true
+    check_adjoints: true
+    check_normalization: 10
   nc1: 500
   nc3: 15
   dc: 500.0e3

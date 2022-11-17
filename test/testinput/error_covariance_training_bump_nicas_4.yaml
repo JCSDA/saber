@@ -12,14 +12,16 @@ background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
 bump:
-  datadir: testdata
-  prefix: error_covariance_training_bump_nicas_4/_MPI_-_OMP_
-  testing: true
-  universe_rad: 10000.0e3
-  method: loc
-  strategy: common_weighted
-  new_nicas: true
-  check_dirac: true
+  general:
+    datadir: testdata
+    prefix: error_covariance_training_bump_nicas_4/_MPI_-_OMP_
+    testing: true
+    universe_rad: 10000.0e3
+  drivers:
+    method: loc
+    strategy: common_weighted
+    new_nicas: true
+    check_dirac: true
   resol: 4.0
   loc_wgt:
     var1-var2: 0.5

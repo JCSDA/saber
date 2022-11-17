@@ -18,12 +18,14 @@ background error:
       saber central block:
         saber block name: BUMP_NICAS
         bump:
-          datadir: testdata
-          prefix: dirac_bump/_MPI_-_OMP_
-          testing: true
-          nprocio: 1
-          strategy: specific_univariate
-          load_nicas_local: true
+          general:
+            datadir: testdata
+            prefix: dirac_bump/_MPI_-_OMP_
+            testing: true
+            nprocio: 1
+          drivers:
+            strategy: specific_univariate
+            load_nicas_local: true
           fname_nicas: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas
         input fields:
         - parameter: universe radius
@@ -32,19 +34,22 @@ background error:
       saber outer blocks:
       - saber block name: BUMP_StdDev
         bump:
-          datadir: testdata
-          prefix: dirac_bump/_MPI_-_OMP_
-          testing: true
+          general:
+            datadir: testdata
+            prefix: dirac_bump/_MPI_-_OMP_
+            testing: true
         input fields:
         - parameter: stddev
           file:
             filepath: testdata/error_covariance_training_bump_stddev_3/_MPI_-_OMP__stddev
       - saber block name: BUMP_StdDev
         bump:
-          datadir: testdata
-          prefix: dirac_bump/_MPI_-_OMP_
-          testing: true
-          new_var: true
+          general:
+            datadir: testdata
+            prefix: dirac_bump/_MPI_-_OMP_
+            testing: true
+          drivers:
+            new_var: true
           forced_var: true
           stddev:
             var1:
@@ -58,14 +63,16 @@ background error:
             filepath: testdata/error_covariance_training_bump_stddev_3/_MPI_-_OMP__stddev
       - saber block name: BUMP_VerticalBalance
         bump:
-          datadir: testdata
-          prefix: dirac_bump/_MPI_-_OMP_
-          testing: true
+          general:
+            datadir: testdata
+            prefix: dirac_bump/_MPI_-_OMP_
+            testing: true
+          drivers:
+            load_vbal: true
+            load_samp_local: true
           vbal:
           - balanced: var2
             unbalanced: var1
-          load_vbal: true
-          load_samp_local: true
           fname_samp: error_covariance_training_bump_vbal_1/_MPI_-_OMP__sampling
           fname_vbal: error_covariance_training_bump_vbal_1/_MPI_-_OMP__vbal
       - saber block name: BUMP_PsiChiToUV
@@ -75,11 +82,13 @@ background error:
         - var3
         - var4
         bump:
-          datadir: testdata
-          prefix: dirac_bump/_MPI_-_OMP_
-          testing: true
-          nprocio: 1
-          load_wind_local: true
+          general:
+            datadir: testdata
+            prefix: dirac_bump/_MPI_-_OMP_
+            testing: true
+            nprocio: 1
+          drivers:
+            load_wind_local: true
           fname_wind: error_covariance_training_bump_wind/_MPI_-_OMP__wind
           wind_streamfunction: var1
           wind_velocity_potential: var2

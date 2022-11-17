@@ -48,8 +48,13 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   activeVarsPerGrid_() {
   oops::Log::trace() << "BUMP::BUMP construction starting" << std::endl;
 
+  // Parameters
+  const GeneralParameters general = params_.general.value().get_value_or(GeneralParameters());
+  const DriversParameters drivers = params_.drivers.value().get_value_or(DriversParameters());
+
+
   // If testing is activated, replace _MPI_ and _OMP_ patterns
-  const bool testing = params_.testing.value().get_value_or(false);
+  const bool testing = general.testing.value().get_value_or(false);
   if (testing) {
     // Convert to eckit configuration
     eckit::LocalConfiguration fullConfig;
@@ -60,7 +65,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
     std::string omp("1");
     # pragma omp parallel
     {
-        omp = std::to_string(omp_get_num_threads());
+      omp = std::to_string(omp_get_num_threads());
     }
     oops::Log::info() << "Info     : MPI tasks:      " << mpi << std::endl;
     oops::Log::info() << "Info     : OpenMP threads: " << omp << std::endl;
@@ -251,11 +256,9 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
     keyBUMP_.push_back(keyBUMP);
 
     // Second geometry
-    if (conf.has("method")) {
-      std::string method = conf.getString("method");
-      if (method == "hyb-ens" || method == "hyb-rnd") {
-        bump_second_geometry_f90(keyBUMP, functionSpace2.get(), extraFields2.get());
-      }
+    std::string method = drivers.method.value().get_value_or("");
+    if (method == "hyb-ens" || method == "hyb-rnd") {
+      bump_second_geometry_f90(keyBUMP, functionSpace2.get(), extraFields2.get());
     }
   }
 

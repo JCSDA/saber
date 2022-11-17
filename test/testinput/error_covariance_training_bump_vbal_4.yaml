@@ -12,18 +12,20 @@ background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
 bump:
-  datadir: testdata
-  prefix: error_covariance_training_bump_vbal_4/_MPI_-_OMP_
-  testing: true
-  load_vbal_cov: true
-  new_vbal: true
-  write_vbal: true
-  check_adjoints: true
-  check_dirac: true
+  general:
+    datadir: testdata
+    prefix: error_covariance_training_bump_vbal_4/_MPI_-_OMP_
+    testing: true
+  drivers:
+    load_samp_local: true
+    load_vbal_cov: true
+    new_vbal: true
+    write_vbal: true
+    check_adjoints: true
+    check_dirac: true
   fname_samp: error_covariance_training_bump_vbal_3/_MPI_-_OMP__sampling
   fname_vbal_cov:
   - error_covariance_training_bump_vbal_3/_MPI_-_OMP__vbal_cov
-  load_samp_local: true
   nc1: 500
   nc2: 250
   vbal:

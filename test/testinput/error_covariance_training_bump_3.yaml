@@ -11,8 +11,9 @@ background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
 bump:
-  datadir: testdata
-  prefix: error_covariance_training_bump_3/_MPI_-_OMP_
-  testing: true
+  general:
+    datadir: testdata
+    prefix: error_covariance_training_bump_3/_MPI_-_OMP_
+    testing: true
 test:
   reference filename: testref/error_covariance_training_bump_3.ref

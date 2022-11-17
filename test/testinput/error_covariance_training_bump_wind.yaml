@@ -12,12 +12,14 @@ background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
 bump:
-  datadir: testdata
-  prefix: error_covariance_training_bump_wind/_MPI_-_OMP_
-  testing: true
-  nprocio: 1
-  new_wind: true
-  write_wind_local: true
+  general:
+    datadir: testdata
+    prefix: error_covariance_training_bump_wind/_MPI_-_OMP_
+    testing: true
+    nprocio: 1
+  drivers:
+    new_wind: true
+    write_wind_local: true
   wind_nlon: 10
   wind_nlat: 5
   wind_nsg: 3

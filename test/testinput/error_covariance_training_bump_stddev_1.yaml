@@ -25,10 +25,12 @@ ensemble:
     - 12
     - 18
 bump:
-  datadir: testdata
-  prefix: error_covariance_training_bump_stddev_1/_MPI_-_OMP_
-  testing: true
-  new_var: true
+  general:
+    datadir: testdata
+    prefix: error_covariance_training_bump_stddev_1/_MPI_-_OMP_
+    testing: true
+  drivers:
+    new_var: true
   ne: 20
   var_filter: true
   var_niter: 4

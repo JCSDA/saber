@@ -20,14 +20,16 @@ ensemble:
     nmembers: 25
     zero padding: 6
 bump:
-  datadir: testdata
-  prefix: error_covariance_training_bump_hdiag_4/_MPI_-_OMP_
-  testing: true
-  method: cor
-  strategy: diag_all
-  new_normality: true
-  new_hdiag: true
-  write_hdiag: true
+  general:
+    datadir: testdata
+    prefix: error_covariance_training_bump_hdiag_4/_MPI_-_OMP_
+    testing: true
+  drivers:
+    method: cor
+    strategy: diag_all
+    new_normality: true
+    new_hdiag: true
+    write_hdiag: true
   diag_draw_type: octahedral
   nc1: 500
   nc3: 10
