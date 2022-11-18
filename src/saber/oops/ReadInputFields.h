@@ -44,6 +44,9 @@ std::vector<atlas::FieldSet> readInputFields(
   // Read block input fields function
   if (inputFields != boost::none) {
     if (inputFields->size() > 0) {
+      // Create Increment
+      oops::Increment<MODEL> dx(resol, vars, date);
+
       // Loop over block input fields
       for (const auto & inputField : *inputFields) {
         // Get input field file configuration
@@ -54,7 +57,6 @@ std::vector<atlas::FieldSet> readInputFields(
         util::seekAndReplace(file, "_OMP_", omp);
 
         // Read block input field as Increment
-        oops::Increment<MODEL> dx(resol, vars, date);
         dx.read(file);
 
         // Define FieldSet name

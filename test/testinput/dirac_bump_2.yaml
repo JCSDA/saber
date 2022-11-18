@@ -1,0 +1,52 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 10
+  levels: 2
+  halo: 1
+initial condition:
+  date: '2010-01-01T12:00:00Z'
+  state variables:
+  - var3
+  - var4
+background error:
+  covariance model: hybrid
+  components:
+  - covariance:
+      covariance model: SABER
+      saber central block:
+        saber block name: BUMP_NICAS
+        bump:
+          datadir: testdata
+          prefix: dirac_bump_1/_MPI_-_OMP_
+          testing: true
+          strategy: common
+          load_nicas_local: true
+          fname_nicas: error_covariance_training_bump_hdiag-nicas_2/_MPI_-_OMP__nicas
+        ensemble:
+          members from template:
+            template:
+              date: '2010-01-01T12:00:00Z'
+              filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
+              state variables:
+              - var3
+              - var4
+            pattern: '%mem%'
+            nmembers: 25
+            zero padding: 6
+    weight:
+      value: 0.5
+dirac:
+  lon:
+  - 0.0
+  lat:
+  - 0.0
+  level:
+  - 1
+  variable:
+  - var3
+output dirac:
+  filepath: testdata/dirac_bump_2/dirac_%id%
+test:
+  reference filename: testref/dirac_bump_2.ref

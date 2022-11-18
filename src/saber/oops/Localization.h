@@ -21,9 +21,7 @@
 #include "oops/util/Duration.h"
 #include "oops/util/Logger.h"
 
-#include "saber/oops/ReadInputFields.h"
-#include "saber/oops/SaberBlockParametersBase.h"
-#include "saber/oops/SaberCentralBlockBase.h"
+#include "saber/oops/SaberCentralBlockWrapper.h"
 
 namespace saber {
 
@@ -47,7 +45,7 @@ class Localization : public oops::LocalizationBase<MODEL> {
  private:
   void print(std::ostream &) const override;
   std::vector<std::reference_wrapper<const oops::GeometryData>> geometryData_;
-  std::unique_ptr<SaberCentralBlockBase> saberCentralBlock_;
+  std::unique_ptr<SaberCentralBlockWrapper<MODEL>> saberCentralBlock_;
 };
 
 // =============================================================================
@@ -62,50 +60,24 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
 
   size_t myslot = geom.timeComm().rank();
   if (myslot == 0) {
-    // Get parameters from configuration
-    const eckit::LocalConfiguration saberCentralBlock(conf, "saber central block");
-    SaberCentralBlockParametersWrapper saberCentralBlockParamWrapper;
-    saberCentralBlockParamWrapper.validateAndDeserialize(saberCentralBlock);
-    const SaberBlockParametersBase & saberCentralBlockParams =
-      saberCentralBlockParamWrapper.saberCentralBlockParameters;
-
-    // Create dummy FieldSet (for xb and fg)
-    atlas::FieldSet dummyFs;
-
     // Create dummy time
     util::DateTime dummyTime(1977, 5, 25, 0, 0, 0);
 
-    // Define central variables
-    oops::Variables centralVars = incVars;
+    // Dummy state
+    State_ xx(geom, incVars, dummyTime);
 
-    // Get active variables
-    oops::Variables activeVars =
-      saberCentralBlockParams.activeVars.value().get_value_or(centralVars);
+    // Get parameters from configuration
+    const eckit::LocalConfiguration saberCentralBlockConf(conf, "saber central block");
+    SaberCentralBlockWrapperParameters<MODEL> saberCentralBlockParams;
+    saberCentralBlockParams.validateAndDeserialize(saberCentralBlockConf);
 
-    // Read input fields (on model increment geometry)
-    std::vector<atlas::FieldSet> fsetVec = readInputFields(
-      geom,
-      activeVars,
-      dummyTime,
-      saberCentralBlockParams.inputFields.value());
-
-    // Central Geometry
-    geometryData_.push_back(geom.generic());
-
-    // Create central block
-    saberCentralBlock_.reset(SaberCentralBlockFactory::create(
-                             geometryData_.back().get(),
-                             geom.variableSizes(activeVars),
-                             centralVars,
+    // Create central block wrapper
+    saberCentralBlock_.reset(new SaberCentralBlockWrapper<MODEL>(geom,
+                             geom.generic(),
+                             incVars,
                              saberCentralBlockParams,
-                             dummyFs,
-                             dummyFs,
-                             fsetVec));
-
-    // Check that active variables are present in central variables
-    for (const auto & var : activeVars.variables()) {
-      ASSERT(centralVars.has(var));
-    }
+                             xx,
+                             xx));
   }
 
   oops::Log::trace() << "Localization:Localization done" << std::endl;

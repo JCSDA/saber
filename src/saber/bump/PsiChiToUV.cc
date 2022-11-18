@@ -13,10 +13,14 @@
 #include <vector>
 
 #include "atlas/field.h"
+#include "atlas/functionspace.h"
+
+#include "eckit/mpi/Comm.h"
 
 #include "oops/base/Geometry.h"
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
+#include "oops/util/FieldSetOperations.h"
 
 #include "saber/bump/BUMP.h"
 #include "saber/oops/SaberOuterBlockBase.h"
@@ -105,6 +109,7 @@ PsiChiToUV::~PsiChiToUV() {
 void PsiChiToUV::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   bump_->multiplyPsiChiToUV(fset);
+  util::removeFieldsFromFieldSet(fset, innerVars_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
@@ -112,7 +117,11 @@ void PsiChiToUV::multiply(atlas::FieldSet & fset) const {
 
 void PsiChiToUV::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
+  std::cout << "before  :" << fset.field_names() << std::endl;
   bump_->multiplyPsiChiToUVAd(fset);
+  std::cout << "after   :" << fset.field_names() << std::endl;
+  util::removeFieldsFromFieldSet(fset, outerVars_);
+  std::cout << "after 2 :" << fset.field_names() << std::endl;
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 

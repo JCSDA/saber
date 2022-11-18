@@ -19,7 +19,7 @@ background error:
         saber block name: BUMP_NICAS
         bump:
           datadir: testdata
-          prefix: dirac_bump/_MPI_-_OMP_
+          prefix: dirac_bump_1/_MPI_-_OMP_
           testing: true
           nprocio: 1
           strategy: specific_univariate
@@ -33,7 +33,7 @@ background error:
       - saber block name: BUMP_StdDev
         bump:
           datadir: testdata
-          prefix: dirac_bump/_MPI_-_OMP_
+          prefix: dirac_bump_1/_MPI_-_OMP_
           testing: true
         input fields:
         - parameter: stddev
@@ -42,7 +42,7 @@ background error:
       - saber block name: BUMP_StdDev
         bump:
           datadir: testdata
-          prefix: dirac_bump/_MPI_-_OMP_
+          prefix: dirac_bump_1/_MPI_-_OMP_
           testing: true
           new_var: true
           forced_var: true
@@ -59,7 +59,7 @@ background error:
       - saber block name: BUMP_VerticalBalance
         bump:
           datadir: testdata
-          prefix: dirac_bump/_MPI_-_OMP_
+          prefix: dirac_bump_1/_MPI_-_OMP_
           testing: true
           vbal_block:
           - true
@@ -75,7 +75,7 @@ background error:
         - var4
         bump:
           datadir: testdata
-          prefix: dirac_bump/_MPI_-_OMP_
+          prefix: dirac_bump_1/_MPI_-_OMP_
           testing: true
           nprocio: 1
           load_wind_local: true
@@ -104,15 +104,11 @@ background error:
           saber block name: BUMP_NICAS
           bump:
             datadir: testdata
-            prefix: dirac_bump/_MPI_-_OMP_
+            prefix: dirac_bump_1/_MPI_-_OMP_
             testing: true
             strategy: common
             load_nicas_local: true
             fname_nicas: error_covariance_training_bump_hdiag-nicas_2/_MPI_-_OMP__nicas
-        input fields:
-        - parameter: universe radius
-          file:
-            filepath: testdata/error_covariance_training_bump_hdiag-nicas_2/_MPI_-_OMP__loc_rh_2
     weight:
       value: 0.5
 dirac:
@@ -125,6 +121,6 @@ dirac:
   variable:
   - var3
 output dirac:
-  filepath: testdata/dirac_bump/dirac_%id%
+  filepath: testdata/dirac_bump_1/dirac_%id%
 test:
-  reference filename: testref/dirac_bump.ref
+  reference filename: testref/dirac_bump_1.ref

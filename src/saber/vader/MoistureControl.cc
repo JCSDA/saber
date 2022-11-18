@@ -22,7 +22,6 @@
 #include "mo/model2geovals_varchange.h"
 
 #include "oops/base/Variables.h"
-#include "oops/util/FieldSetOperations.h"
 #include "oops/util/Timer.h"
 
 #include "saber/oops/SaberOuterBlockBase.h"
