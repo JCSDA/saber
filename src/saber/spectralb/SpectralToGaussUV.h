@@ -57,7 +57,7 @@ class SpectralToGaussUV : public SaberOuterBlockBase {
 
   virtual ~SpectralToGaussUV() = default;
 
-  const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}
+  const oops::GeometryData & innerGeometryData() const override {return *innerGeometryData_;}
   const oops::Variables & innerVars() const override {return innerVars_;}
 
   void multiply(atlas::FieldSet &) const override;
@@ -78,7 +78,7 @@ class SpectralToGaussUV : public SaberOuterBlockBase {
   const atlas::functionspace::Spectral specFunctionSpace_;
   /// Trans object for gaussian-spectral transforms
   const atlas::trans::Trans trans_;
-  const oops::GeometryData innerGeometryData_;
+  std::unique_ptr<oops::GeometryData> innerGeometryData_;
 };
 
 }  // namespace spectralb

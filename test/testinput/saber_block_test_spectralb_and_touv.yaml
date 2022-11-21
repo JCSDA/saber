@@ -2,7 +2,7 @@ geometry:
   function space: StructuredColumns
   grid:
     type: regular_gaussian
-    N: 2
+    N: 15
   levels: 70
   partitioner: ectrans
 variables: &id001
@@ -22,7 +22,7 @@ saber central block:
   - moisture_control_variable
   spectralb:
     covariance_file: testdata/spectralcov.nc
-    gauss_grid_uid: F2
+    gauss_grid_uid: F15
     umatrix_netcdf_names:
     - PSI_inc_Uv_matrix
     - CHI_inc_Uv_matrix
@@ -40,7 +40,7 @@ saber outer blocks:
   - velocity_potential  # Note that this is an active inner field
   - eastward_wind  # Note that this is an active outer field
   - northward_wind  # Note that this is an active outer field
-  gauss grid uid: F2
+  gauss grid uid: F15
   use streamfunction and velocity potential: true
   use inner gaussian functionspace: true
 

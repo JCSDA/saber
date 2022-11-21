@@ -282,13 +282,27 @@ SpectralToGaussUV::SpectralToGaussUV(const oops::GeometryData & outerGeometryDat
     gaussFunctionSpace_(outerGeometryData.functionSpace()),
     specFunctionSpace_(2 * atlas::GaussianGrid(gaussFunctionSpace_.grid()).N() - 1),
     trans_(gaussFunctionSpace_, specFunctionSpace_),
-    innerGeometryData_((params.useInnerGaussianFunctionSpace.value() ?
-                        atlas::FunctionSpace(gaussFunctionSpace_) :
-                        atlas::FunctionSpace(specFunctionSpace_)),
-                        outerGeometryData.fieldSet(),
-                        outerGeometryData.levelsAreTopDown(), outerGeometryData.comm())
+    innerGeometryData_()
 {
   oops::Log::trace() << classname() << "::SpectralToGaussUV starting" << std::endl;
+  if (innerVars_.size() == 2) {
+    // Winds only: spectral function space is the default in innerGeometryData_
+    innerGeometryData_.reset(new oops::GeometryData(specFunctionSpace_,
+                                                    outerGeometryData.fieldSet(),
+                                                    outerGeometryData.levelsAreTopDown(),
+                                                    outerGeometryData.comm()));
+  } else {
+    // Other passive fields present: gaussian function space is the default in innerGeometryData_,
+    // while wind variables have their specific spectral function space.
+    innerGeometryData_.reset(new oops::GeometryData(gaussFunctionSpace_,
+                                                    outerGeometryData.fieldSet(),
+                                                    outerGeometryData.levelsAreTopDown(),
+                                                    outerGeometryData.comm()));
+    innerGeometryData_->setFunctionSpace("vorticity", specFunctionSpace_);
+    innerGeometryData_->setFunctionSpace("divergence", specFunctionSpace_);
+    innerGeometryData_->setFunctionSpace("streamfunction", specFunctionSpace_);
+    innerGeometryData_->setFunctionSpace("velocity_potential", specFunctionSpace_);
+  }
   oops::Log::trace() << classname() << "::SpectralToGaussUV done" << std::endl;
 }
 
