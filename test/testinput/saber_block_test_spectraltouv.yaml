@@ -2,7 +2,7 @@ geometry:
   function space: StructuredColumns
   grid:
     type: regular_gaussian
-    N: 2
+    N: 15
   levels: 3
   partitioner: ectrans
   halo: 1
@@ -18,7 +18,12 @@ saber central block:
   saber block name: ID
 saber outer blocks:
 - saber block name: spectral to gauss winds
-  gauss grid uid: F2
+  active variables:
+  - streamfunction
+  - velocity_potential
+  - eastward_wind
+  - northward_wind
+  gauss grid uid: F15
   use streamfunction and velocity potential: true
 test:
   reference filename: testref/saber_block_test_spectraltouv.ref
