@@ -229,7 +229,6 @@ if( oops_FOUND )
             endif()
         endforeach()
 
-if (OFF)
         # Adjoint/inverse tests
         foreach( test ${saber_test_full} )
             string( FIND ${test} "saber_block_test" result )
@@ -247,7 +246,6 @@ if (OFF)
                 endif()
             endif()
         endforeach()
-endif()
 
         # Dirac tests
         foreach( test ${saber_test_full} )

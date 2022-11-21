@@ -117,11 +117,8 @@ void PsiChiToUV::multiply(atlas::FieldSet & fset) const {
 
 void PsiChiToUV::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  std::cout << "before  :" << fset.field_names() << std::endl;
   bump_->multiplyPsiChiToUVAd(fset);
-  std::cout << "after   :" << fset.field_names() << std::endl;
   util::removeFieldsFromFieldSet(fset, outerVars_);
-  std::cout << "after 2 :" << fset.field_names() << std::endl;
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 

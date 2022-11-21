@@ -12,12 +12,15 @@ if( oops_FOUND )
     SaberCentralBlockBase.cc
     SaberCentralBlockBase.h
 
-    # SABER templated central block
+    # SABER central templated  block
     SaberCentralTBlock.h
 
     # SABER outer blocks base
     SaberOuterBlockBase.cc
     SaberOuterBlockBase.h
+
+    # SABER outer templated block
+    SaberOuterTBlock.h
 
     # ID block
     ID.h

@@ -117,7 +117,8 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
                                      outerVars,
                                      saberOuterTBlockParams,
                                      xbLocal,
-                                     fgLocal));
+                                     fgLocal,
+                                     params.adjointTolerance.value()));
 
         // Update outer geometry and variables for the next block
         outerGeometryData_.push_back(saberOuterTBlocks_.back().innerGeometryData());
