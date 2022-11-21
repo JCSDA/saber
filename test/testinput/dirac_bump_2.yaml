@@ -19,7 +19,7 @@ background error:
         saber block name: BUMP_NICAS
         bump:
           datadir: testdata
-          prefix: dirac_bump_1/_MPI_-_OMP_
+          prefix: dirac_bump_2/_MPI_-_OMP_
           testing: true
           nprocio: 1
           strategy: specific_univariate
@@ -33,7 +33,7 @@ background error:
       - saber block name: BUMP_StdDev
         bump:
           datadir: testdata
-          prefix: dirac_bump_1/_MPI_-_OMP_
+          prefix: dirac_bump_2/_MPI_-_OMP_
           testing: true
         input fields:
         - parameter: stddev
@@ -42,7 +42,7 @@ background error:
       - saber block name: BUMP_StdDev
         bump:
           datadir: testdata
-          prefix: dirac_bump_1/_MPI_-_OMP_
+          prefix: dirac_bump_2/_MPI_-_OMP_
           testing: true
           new_var: true
           forced_var: true
@@ -59,7 +59,7 @@ background error:
       - saber block name: BUMP_VerticalBalance
         bump:
           datadir: testdata
-          prefix: dirac_bump_1/_MPI_-_OMP_
+          prefix: dirac_bump_2/_MPI_-_OMP_
           testing: true
           vbal_block:
           - true
@@ -75,7 +75,7 @@ background error:
         - var4
         bump:
           datadir: testdata
-          prefix: dirac_bump_1/_MPI_-_OMP_
+          prefix: dirac_bump_2/_MPI_-_OMP_
           testing: true
           nprocio: 1
           load_wind_local: true
@@ -92,7 +92,7 @@ background error:
         saber block name: BUMP_NICAS
         bump:
           datadir: testdata
-          prefix: dirac_bump_1/_MPI_-_OMP_
+          prefix: dirac_bump_2/_MPI_-_OMP_
           testing: true
           strategy: common
           load_nicas_local: true

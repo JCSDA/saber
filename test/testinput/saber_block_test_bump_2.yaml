@@ -1,0 +1,35 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 10
+  levels: 2
+  halo: 1
+variables: &id001
+- var3
+- var4
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables: *id001
+saber central block:
+  saber block name: BUMP_NICAS
+  bump:
+    datadir: testdata
+    prefix: saber_block_test_bump_2/_MPI_-_OMP_
+    testing: true
+    strategy: common
+    load_nicas_local: true
+    fname_nicas: error_covariance_training_bump_hdiag-nicas_2/_MPI_-_OMP__nicas
+  ensemble:
+    members from template:
+      template:
+        date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
+        state variables:
+        - var3
+        - var4
+      pattern: '%mem%'
+      nmembers: 25
+      zero padding: 6
+test:
+  reference filename: testref/saber_block_test_bump_2.ref
