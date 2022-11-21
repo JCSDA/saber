@@ -166,19 +166,17 @@ SaberCentralTBlock<MODEL>::SaberCentralTBlock(const Geometry_ & geom,
     std::vector<size_t> outerVariableSizes = geom.variableSizes(outerVars);
 
     // Create random inner FieldSet
-    atlas::FieldSet innerFset =
-      util::createRandomFieldSet(geometryData.functionSpace(),
-                           outerVariableSizes,
-                           outerVars);
+    atlas::FieldSet innerFset =  util::createRandomFieldSet(geometryData,
+                                                            outerVariableSizes,
+                                                            outerVars);
 
     // Copy inner FieldSet
     atlas::FieldSet innerFsetSave = util::copyFieldSet(innerFset);
 
     // Create random outer FieldSet
-    atlas::FieldSet outerFset =
-      util::createRandomFieldSet(geometryData.functionSpace(),
-                           outerVariableSizes,
-                           outerVars);
+    atlas::FieldSet outerFset = util::createRandomFieldSet(geometryData,
+                                                           outerVariableSizes,
+                                                           outerVars);
 
     // Copy outer FieldSet
     atlas::FieldSet outerFsetSave = util::copyFieldSet(outerFset);
