@@ -30,8 +30,8 @@
 
 #include "saber/oops/ReadInputFields.h"
 #include "saber/oops/SaberBlockParametersBase.h"
-#include "saber/oops/SaberCentralBlockWrapper.h"
-#include "saber/oops/SaberOuterBlockBase.h"
+#include "saber/oops/SaberCentralTBlock.h"
+#include "saber/oops/SaberOuterTBlock.h"
 
 namespace saber {
 
@@ -42,10 +42,10 @@ class ErrorCovarianceParameters : public oops::ModelSpaceCovarianceParametersBas
   OOPS_CONCRETE_PARAMETERS(ErrorCovarianceParameters,
                            oops::ModelSpaceCovarianceParametersBase<MODEL>)
  public:
-  oops::RequiredParameter<SaberCentralBlockWrapperParameters<MODEL>>
-    saberCentralBlock{"saber central block", this};
-  oops::OptionalParameter<std::vector<SaberOuterBlockParametersWrapper>>
-    saberOuterBlocks{"saber outer blocks", this};
+  oops::RequiredParameter<SaberCentralTBlockParameters<MODEL>>
+    saberCentralTBlockParams{"saber central block", this};
+  oops::OptionalParameter<std::vector<SaberOuterTBlockParameters<MODEL>>>
+    saberOuterTBlocksParams{"saber outer blocks", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -54,13 +54,13 @@ template <typename MODEL>
 class ErrorCovariance : public oops::ModelSpaceCovarianceBase<MODEL>,
                         public util::Printable,
                         private util::ObjectCounter<ErrorCovariance<MODEL>> {
-  typedef oops::Geometry<MODEL>                                Geometry_;
-  typedef oops::Increment<MODEL>                               Increment_;
-  typedef typename boost::ptr_vector<SaberOuterBlockBase>      SaberOuterBlockVec_;
-  typedef typename SaberOuterBlockVec_::iterator               iter_;
-  typedef typename SaberOuterBlockVec_::const_iterator         icst_;
-  typedef typename SaberOuterBlockVec_::const_reverse_iterator ircst_;
-  typedef oops::State<MODEL>                                   State_;
+  typedef oops::Geometry<MODEL>                                 Geometry_;
+  typedef oops::Increment<MODEL>                                Increment_;
+  typedef typename boost::ptr_vector<SaberOuterTBlock<MODEL>>   SaberOuterTBlockVec_;
+  typedef typename SaberOuterTBlockVec_::iterator               iter_;
+  typedef typename SaberOuterTBlockVec_::const_iterator         icst_;
+  typedef typename SaberOuterTBlockVec_::const_reverse_iterator ircst_;
+  typedef oops::State<MODEL>                                    State_;
 
  public:
   typedef ErrorCovarianceParameters<MODEL> Parameters_;
@@ -86,8 +86,8 @@ class ErrorCovariance : public oops::ModelSpaceCovarianceBase<MODEL>,
   void print(std::ostream &) const override;
 
   std::vector<std::reference_wrapper<const oops::GeometryData>> outerGeometryData_;
-  std::unique_ptr<SaberCentralBlockWrapper<MODEL>> saberCentralBlock_;
-  SaberOuterBlockVec_ saberOuterBlocks_;
+  std::unique_ptr<SaberCentralTBlock<MODEL>> saberCentralTBlock_;
+  SaberOuterTBlockVec_ saberOuterTBlocks_;
 };
 
 // -----------------------------------------------------------------------------
@@ -98,8 +98,8 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
                                         const Parameters_ & params,
                                         const State_ & xb,
                                         const State_ & fg)
-  : oops::ModelSpaceCovarianceBase<MODEL>(geom, params, xb, fg), saberCentralBlock_(),
-    saberOuterBlocks_()
+  : oops::ModelSpaceCovarianceBase<MODEL>(geom, params, xb, fg), saberCentralTBlock_(),
+    saberOuterTBlocks_()
 {
   oops::Log::trace() << "ErrorCovariance::ErrorCovariance starting" << std::endl;
 
@@ -112,66 +112,38 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
   oops::Variables outerVars(incVars);
 
   // Build outer blocks successively
-  const boost::optional<std::vector<SaberOuterBlockParametersWrapper>> &saberOuterBlocks =
-    params.saberOuterBlocks.value();
-  if (saberOuterBlocks != boost::none) {
+  const boost::optional<std::vector<SaberOuterTBlockParameters<MODEL>>> &saberOuterTBlocksParams =
+    params.saberOuterTBlocksParams.value();
+  if (saberOuterTBlocksParams != boost::none) {
     // Loop in reverse order
-    for (const SaberOuterBlockParametersWrapper & saberOuterBlockParamWrapper :
-      boost::adaptors::reverse(*saberOuterBlocks)) {
-      // Get outer block parameters
-      const SaberBlockParametersBase & saberOuterBlockParams =
-        saberOuterBlockParamWrapper.saberOuterBlockParameters;
+    for (const SaberOuterTBlockParameters<MODEL> & saberOuterTBlockParams :
+      boost::adaptors::reverse(*saberOuterTBlocksParams)) {
 
-      // Get active variables
-      oops::Variables activeVars =
-        saberOuterBlockParams.activeVars.value().get_value_or(outerVars);
-
-      // Read input fields (on model increment geometry)
-      std::vector<eckit::LocalConfiguration> inputFields;
-      inputFields = saberOuterBlockParams.inputFields.value().get_value_or(inputFields);
-      std::vector<atlas::FieldSet> fsetVec = readInputFields(geom,
-                                                             activeVars,
-                                                             xb.validTime(),
-                                                             inputFields);
-
-      // Create outer block
-      oops::Log::info() << "Info     : Creating outer block: "
-                        << saberOuterBlockParams.saberBlockName.value() << std::endl;
-      saberOuterBlocks_.push_back(SaberOuterBlockFactory::create(
-                                  outerGeometryData_.back().get(),
-                                  geom.variableSizes(activeVars),
-                                  outerVars,
-                                  saberOuterBlockParams,
-                                  xbLocal.fieldSet(),
-                                  fgLocal.fieldSet(),
-                                  fsetVec));
-
-      // Access inner geometry and variables
-      const oops::GeometryData & innerGeometryData = saberOuterBlocks_.back().innerGeometryData();
-      const oops::Variables innerVars = saberOuterBlocks_.back().innerVars();
-
-      // Check that active variables are present in either inner or outer variables, or both
-      for (const auto & var : activeVars.variables()) {
-        ASSERT(innerVars.has(var) || outerVars.has(var));
-      }
+      // Create outer templated block
+      saberOuterTBlocks_.push_back(new SaberOuterTBlock<MODEL>(geom,
+                                   outerGeometryData_.back().get(),
+                                   outerVars,
+                                   saberOuterTBlockParams,
+                                   xbLocal,
+                                   fgLocal));
 
       // Update outer geometry and variables for the next block
-      outerGeometryData_.push_back(innerGeometryData);
-      outerVars = innerVars;
+      outerGeometryData_.push_back(saberOuterTBlocks_.back().innerGeometryData());
+      outerVars = saberOuterTBlocks_.back().innerVars();
     }
   }
 
-  // Get central block wrapper parameters
-  const SaberCentralBlockWrapperParameters<MODEL> saberCentralBlockParams =
-    params.saberCentralBlock.value();
+  // Get central templated block parameters
+  const SaberCentralTBlockParameters<MODEL> saberCentralTBlockParams =
+    params.saberCentralTBlockParams.value();
 
-  // Create central block wrapper
-  saberCentralBlock_.reset(new SaberCentralBlockWrapper<MODEL>(geom,
-                           outerGeometryData_.back().get(),
-                           outerVars,
-                           saberCentralBlockParams,
-                           xbLocal,
-                           fgLocal));
+  // Create central templated block
+  saberCentralTBlock_.reset(new SaberCentralTBlock<MODEL>(geom,
+                            outerGeometryData_.back().get(),
+                            outerVars,
+                            saberCentralTBlockParams,
+                            xbLocal,
+                            fgLocal));
 
   oops::Log::trace() << "ErrorCovariance::ErrorCovariance done" << std::endl;
 }
@@ -196,10 +168,10 @@ void ErrorCovariance<MODEL>::doRandomize(Increment_ & dx) const {
   dx.random();
 
   // Central block randomization
-  saberCentralBlock_->randomize(dx.fieldSet());
+  saberCentralTBlock_->randomize(dx.fieldSet());
 
   // Outer blocks forward multiplication
-  for (ircst_ it = saberOuterBlocks_.rbegin(); it != saberOuterBlocks_.rend(); ++it) {
+  for (ircst_ it = saberOuterTBlocks_.rbegin(); it != saberOuterTBlocks_.rend(); ++it) {
     it->multiply(dx.fieldSet());
   }
 
@@ -221,17 +193,17 @@ void ErrorCovariance<MODEL>::doMultiply(const Increment_ & dxi,
   dxo = dxi;
 
   // Outer blocks adjoint multiplication
-  for (icst_ it = saberOuterBlocks_.begin(); it != saberOuterBlocks_.end(); ++it) {
+  for (icst_ it = saberOuterTBlocks_.begin(); it != saberOuterTBlocks_.end(); ++it) {
     it->multiplyAD(dxo.fieldSet());
   }
 
   // Central block multiplication
-  if (saberCentralBlock_) {
-    saberCentralBlock_->multiply(dxo.fieldSet());
+  if (saberCentralTBlock_) {
+    saberCentralTBlock_->multiply(dxo.fieldSet());
   }
 
   // Outer blocks forward multiplication
-  for (ircst_ it = saberOuterBlocks_.rbegin(); it != saberOuterBlocks_.rend(); ++it) {
+  for (ircst_ it = saberOuterTBlocks_.rbegin(); it != saberOuterTBlocks_.rend(); ++it) {
     it->multiply(dxo.fieldSet());
   }
 

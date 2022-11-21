@@ -21,7 +21,7 @@
 #include "oops/util/Duration.h"
 #include "oops/util/Logger.h"
 
-#include "saber/oops/SaberCentralBlockWrapper.h"
+#include "saber/oops/SaberCentralTBlock.h"
 
 namespace saber {
 
@@ -45,7 +45,7 @@ class Localization : public oops::LocalizationBase<MODEL> {
  private:
   void print(std::ostream &) const override;
   std::vector<std::reference_wrapper<const oops::GeometryData>> geometryData_;
-  std::unique_ptr<SaberCentralBlockWrapper<MODEL>> saberCentralBlock_;
+  std::unique_ptr<SaberCentralTBlock<MODEL>> saberCentralTBlock_;
 };
 
 // =============================================================================
@@ -54,7 +54,7 @@ template<typename MODEL>
 Localization<MODEL>::Localization(const Geometry_ & geom,
                                   const oops::Variables & incVars,
                                   const eckit::Configuration & conf)
-  : saberCentralBlock_()
+  : saberCentralTBlock_()
 {
   oops::Log::trace() << "Localization::Localization starting" << std::endl;
 
@@ -67,17 +67,17 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
     State_ xx(geom, incVars, dummyTime);
 
     // Get parameters from configuration
-    const eckit::LocalConfiguration saberCentralBlockConf(conf, "saber central block");
-    SaberCentralBlockWrapperParameters<MODEL> saberCentralBlockParams;
-    saberCentralBlockParams.validateAndDeserialize(saberCentralBlockConf);
+    const eckit::LocalConfiguration saberCentralTBlockConf(conf, "saber central block");
+    SaberCentralTBlockParameters<MODEL> saberCentralTBlockParams;
+    saberCentralTBlockParams.validateAndDeserialize(saberCentralTBlockConf);
 
     // Create central block wrapper
-    saberCentralBlock_.reset(new SaberCentralBlockWrapper<MODEL>(geom,
-                             geom.generic(),
-                             incVars,
-                             saberCentralBlockParams,
-                             xx,
-                             xx));
+    saberCentralTBlock_.reset(new SaberCentralTBlock<MODEL>(geom,
+                              geom.generic(),
+                              incVars,
+                              saberCentralTBlockParams,
+                              xx,
+                              xx));
   }
 
   oops::Log::trace() << "Localization:Localization done" << std::endl;
@@ -100,7 +100,7 @@ void Localization<MODEL>::randomize(Increment_ & dx) const {
   dx.random();
 
   // Central block randomization
-  saberCentralBlock_->randomize(dx.fieldSet());
+  saberCentralTBlock_->randomize(dx.fieldSet());
 
   // ATLAS fieldset to Increment_
   dx.synchronizeFields();
@@ -115,7 +115,7 @@ void Localization<MODEL>::multiply(Increment_ & dx) const {
   oops::Log::trace() << "Localization:multiply starting" << std::endl;
 
   // Central block multiplication
-  saberCentralBlock_->multiply(dx.fieldSet());
+  saberCentralTBlock_->multiply(dx.fieldSet());
 
   // ATLAS fieldset to Increment_
   dx.synchronizeFields();

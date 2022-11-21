@@ -28,8 +28,8 @@ namespace saber {
 // -----------------------------------------------------------------------------
 
 template <typename MODEL>
-class SaberCentralBlockWrapperParameters : public SaberCentralBlockParametersWrapper {
-  OOPS_CONCRETE_PARAMETERS(SaberCentralBlockWrapperParameters, SaberCentralBlockParametersWrapper)
+class SaberCentralTBlockParameters : public SaberCentralBlockParametersWrapper {
+  OOPS_CONCRETE_PARAMETERS(SaberCentralTBlockParameters, SaberCentralBlockParametersWrapper)
 
  public:
   typedef oops::StateEnsembleParameters<MODEL>               StateEnsembleParameters_;
@@ -52,7 +52,7 @@ class SaberCentralBlockWrapperParameters : public SaberCentralBlockParametersWra
 // -----------------------------------------------------------------------------
 
 template <typename MODEL>
-class SaberCentralBlockWrapper {
+class SaberCentralTBlock {
   typedef oops::Geometry<MODEL>                              Geometry_;
   typedef oops::Increment<MODEL>                             Increment_;
   typedef oops::State<MODEL>                                 State_;
@@ -62,22 +62,21 @@ class SaberCentralBlockWrapper {
   typedef oops::IncrementEnsemble<MODEL>                     Ensemble_;
 
  public:
-  typedef SaberCentralBlockWrapperParameters<MODEL> Parameters_;
+  typedef SaberCentralTBlockParameters<MODEL> Parameters_;
 
-  static const std::string classname() {return "saber::SaberCentralBlockWrapper<MODEL>";}
+  static const std::string classname() {return "saber::SaberCentralTBlock<MODEL>";}
 
-  SaberCentralBlockWrapper(
-       const Geometry_ & geom,
-       const oops::GeometryData & geometryData,
-       const oops::Variables & outerVars,
-       const Parameters_ & params,
-       const State_ & xb,
-       const State_ & fg,
-       const double & adjointTolerance = -1.0);
-  ~SaberCentralBlockWrapper() {}
+  SaberCentralTBlock(const Geometry_ &,
+                     const oops::GeometryData &,
+                     const oops::Variables &,
+                     const Parameters_ &,
+                     const State_ &,
+                     const State_ &,
+                     const double & adjointTolerance = -1.0);
+  ~SaberCentralTBlock() {}
 
-  void randomize(atlas::FieldSet &);
-  void multiply(atlas::FieldSet &);
+  void randomize(atlas::FieldSet &) const;
+  void multiply(atlas::FieldSet &) const;
 
  private:
   void print(std::ostream &);
@@ -88,24 +87,25 @@ class SaberCentralBlockWrapper {
 // ----------------------------------------------------------------------------
 
 template <typename MODEL>
-SaberCentralBlockWrapper<MODEL>::SaberCentralBlockWrapper(
-       const Geometry_ & geom,
-       const oops::GeometryData & geometryData,
-       const oops::Variables & outerVars,
-       const Parameters_ & params,
-       const State_ & xb,
-       const State_ & fg,
-       const double & adjointTolerance)
+SaberCentralTBlock<MODEL>::SaberCentralTBlock(const Geometry_ & geom,
+                                              const oops::GeometryData & geometryData,
+                                              const oops::Variables & outerVars,
+                                              const Parameters_ & params,
+                                              const State_ & xb,
+                                              const State_ & fg,
+                                              const double & adjointTolerance)
 {
-  oops::Log::trace() << classname() << "::SaberCentralBlockWrapper starting" << std::endl;
-
+  oops::Log::trace() << classname() << "::SaberCentralTBlock starting" << std::endl;
   // Check for 4D matrices (not ready yet)
   if (geom.timeComm().size() > 1) {
-    ABORT("SaberCentralBlockWrapper not ready for 4D matrices yet");
+    ABORT("SaberCentralTBlock not ready for 4D matrices yet");
   }
 
+  // Create central block
   const SaberBlockParametersBase & saberCentralBlockParams =
     params.saberCentralBlockParameters;
+  oops::Log::info() << "Info     : Creating central block: "
+                    << saberCentralBlockParams.saberBlockName.value() << std::endl;
 
   // Get active variables
   oops::Variables activeVars = saberCentralBlockParams.activeVars.value().get_value_or(outerVars);
@@ -134,7 +134,7 @@ SaberCentralBlockWrapper<MODEL>::SaberCentralBlockWrapper(
                            fsetVec));
 
   // Load ensemble
-  // TODO(Benjamin): assumption here: geom is the correct geometry
+  // TODO(Benjamin): assumption here: ensemble geometry is the increment geometry
   const boost::optional<IncrementEnsembleFromStatesParameters_>
     &ensemble = params.ensemble.value();
   const boost::optional<IncrementEnsembleParameters_> &ensemblePert = params.ensemblePert.value();
@@ -208,18 +208,42 @@ SaberCentralBlockWrapper<MODEL>::SaberCentralBlockWrapper(
     }
   }
 
-  oops::Log::trace() << classname() << "::SaberCentralBlockWrapper done" << std::endl;
+  oops::Log::trace() << classname() << "::SaberCentralTBlock done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 template <typename MODEL>
-void SaberCentralBlockWrapper<MODEL>::randomize(atlas::FieldSet & fset)
+void SaberCentralTBlock<MODEL>::randomize(atlas::FieldSet & fset) const
 {
   oops::Log::trace() << classname() << "::randomize starting" << std::endl;
 
-  // Randomize
-  saberCentralBlock_->randomize(fset);
+  if (ensemble_) {
+    // Initialization
+    util::zeroFieldSet(fset);
+
+    // Loop over ensemble members
+    for (unsigned int ie = 0; ie < ensemble_->size(); ++ie) {
+      // Temporary copy for this ensemble member
+      atlas::FieldSet fsetMem = util::copyFieldSet(fset);
+
+      // Randomize SABER central block
+      saberCentralBlock_->randomize(fsetMem);
+
+      // Schur product
+      util::multiplyFieldSets(fsetMem, (*ensemble_)[ie].fieldSet());
+
+      // Add up member contribution
+      util::addFieldSets(fset, fsetMem);
+    }
+
+    // Normalize result
+    const double rk = 1.0/sqrt(static_cast<double>(ensemble_->size()-1));
+    util::multiplyFieldSet(fset, rk);
+  } else {
+    // Randomize SABER central block
+    saberCentralBlock_->randomize(fset);
+  }
 
   oops::Log::trace() << classname() << "::randomize done" << std::endl;
 }
@@ -227,7 +251,7 @@ void SaberCentralBlockWrapper<MODEL>::randomize(atlas::FieldSet & fset)
 // -----------------------------------------------------------------------------
 
 template <typename MODEL>
-void SaberCentralBlockWrapper<MODEL>::multiply(atlas::FieldSet & fset)
+void SaberCentralTBlock<MODEL>::multiply(atlas::FieldSet & fset) const
 {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
 
@@ -265,5 +289,6 @@ void SaberCentralBlockWrapper<MODEL>::multiply(atlas::FieldSet & fset)
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
+// -----------------------------------------------------------------------------
 
 }  // namespace saber

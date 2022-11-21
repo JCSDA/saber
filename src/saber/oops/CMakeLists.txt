@@ -12,8 +12,8 @@ if( oops_FOUND )
     SaberCentralBlockBase.cc
     SaberCentralBlockBase.h
 
-    # SABER central block wrapper
-    SaberCentralBlockWrapper.h
+    # SABER templated central block
+    SaberCentralTBlock.h
 
     # SABER outer blocks base
     SaberOuterBlockBase.cc
