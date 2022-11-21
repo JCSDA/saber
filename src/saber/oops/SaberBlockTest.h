@@ -111,7 +111,6 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       // Loop in reverse order
       for (const SaberOuterTBlockParameters<MODEL> & saberOuterTBlockParams :
         boost::adaptors::reverse(*saberOuterTBlocksParams)) {
-
         // Create outer templated block
         saberOuterTBlocks_.push_back(new SaberOuterTBlock<MODEL>(geom,
                                      outerGeometryData_.back().get(),
