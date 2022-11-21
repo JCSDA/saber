@@ -7,6 +7,10 @@
 
 #pragma once
 
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "atlas/field.h"
 
 #include "oops/base/Geometry.h"
@@ -92,11 +96,11 @@ SaberCentralBlockWrapper<MODEL>::SaberCentralBlockWrapper(
        const State_ & xb,
        const State_ & fg,
        const double & adjointTolerance)
-{    
+{
   oops::Log::trace() << classname() << "::SaberCentralBlockWrapper starting" << std::endl;
 
   // Check for 4D matrices (not ready yet)
-  if (geom.timeComm().size()>1) {
+  if (geom.timeComm().size() > 1) {
     ABORT("SaberCentralBlockWrapper not ready for 4D matrices yet");
   }
 
@@ -155,7 +159,7 @@ SaberCentralBlockWrapper<MODEL>::SaberCentralBlockWrapper(
      ensemble_.reset(new Ensemble_(geom, activeVars, *ensembleBase, *ensemblePairs));
   }
 
-  if (adjointTolerance>=0.0) {
+  if (adjointTolerance >= 0.0) {
     // Adjoint test
 
     // Variables sizes
@@ -184,8 +188,10 @@ SaberCentralBlockWrapper<MODEL>::SaberCentralBlockWrapper(
     saberCentralBlock_->multiply(outerFset);
 
     // Compute adjoint test
-    const double dp1 = util::dotProductFieldSets(innerFset, outerFsetSave, outerVars, geom.getComm());
-    const double dp2 = util::dotProductFieldSets(outerFset, innerFsetSave, outerVars, geom.getComm());
+    const double dp1 = util::dotProductFieldSets(innerFset, outerFsetSave, activeVars,
+                                                 geom.getComm());
+    const double dp2 = util::dotProductFieldSets(outerFset, innerFsetSave, activeVars,
+                                                 geom.getComm());
 
     oops::Log::info() << "Info     : Adjoint test for central block "
                       << saberCentralBlockParams.saberBlockName.value()

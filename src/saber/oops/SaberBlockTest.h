@@ -178,8 +178,10 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         saberOuterBlocks_.back().multiplyAD(outerFset);
 
         // Compute adjoint test
-        const double dp1 = util::dotProductFieldSets(innerFset, outerFsetSave, activeVars, geom.getComm());
-        const double dp2 = util::dotProductFieldSets(outerFset, innerFsetSave, activeVars, geom.getComm());
+        const double dp1 = util::dotProductFieldSets(innerFset, outerFsetSave, activeVars,
+                                                     geom.getComm());
+        const double dp2 = util::dotProductFieldSets(outerFset, innerFsetSave, activeVars,
+                                                     geom.getComm());
         oops::Log::info() << "Info     : Adjoint test for outer block "
                           << saberOuterBlockParams.saberBlockName.value()
                           << ": y^t (Ax) = " << dp1 << ": x^t (A^t y) = " << dp2 << std::endl;

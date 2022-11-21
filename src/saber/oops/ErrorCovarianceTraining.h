@@ -285,8 +285,8 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
 
     // Get input fields for geometry 2
     std::vector<eckit::LocalConfiguration> inputFields2;
-    inputFields2 = params.inputFields.value().get_value_or(inputFields2);
-    std::vector<atlas::FieldSet> fsetVec2 = readInputFields(*geom2,
+    inputFields2 = params.inputFields2.value().get_value_or(inputFields2);
+    std::vector<atlas::FieldSet> fsetVec2 = readInputFields(geom1,
                                                             params.inputVars.value(),
                                                             xx.validTime(),
                                                             inputFields2);
