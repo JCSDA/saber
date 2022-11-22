@@ -216,7 +216,6 @@ do iproc=1,mpl%nproc
 
       ! Open file
       ncid = create_file(mpl,nam%fname_wind,iproc)
-
       if (iproc==iprocio) then
          ! Write attributes
          call put_att(mpl,ncid,0,'nlla',wind%nlla)
@@ -642,10 +641,10 @@ integer :: ilonp,ilonm,ilatp,ilatm
 integer :: illw_lonp(nam%wind_nsg),illw_lonm(nam%wind_nsg),illw_latp(nam%wind_nsg),illw_latm(nam%wind_nsg)
 integer,allocatable :: lonlat_to_proc(:,:),lonlat_to_llw(:,:),c0u_to_c0b(:),c0b_to_c0(:),lla_to_ll(:),ll_to_llb(:),llb_to_ll(:)
 integer,allocatable :: lonlat_to_ll(:,:)
-real(kind_real) :: sgnorm,dlat,dlon,ff,ldlat,ldlon,dist,rlonm,rlonp,rlatm,rlatp,sum_psi,sum_chi,sum_u,sum_v,sum1,sum2
+real(kind_real) :: sgnorm,dlat,dlon,ff,ldlat,ldlon,rlonm,rlonp,rlatm,rlatp,sum_psi,sum_chi,sum_u,sum_v,sum1,sum2
 real(kind_real) :: psi(geom%nc0a,geom%nl0),psi_save(geom%nc0a,geom%nl0),chi(geom%nc0a,geom%nl0),chi_save(geom%nc0a,geom%nl0)
 real(kind_real) :: u(geom%nc0a,geom%nl0),u_save(geom%nc0a,geom%nl0),v(geom%nc0a,geom%nl0),v_save(geom%nc0a,geom%nl0)
-real(kind_real),allocatable :: lon1d(:),lat1d(:),lon_llw(:),lat_llw(:),wgt(:)
+real(kind_real),allocatable :: lon1d(:),lat1d(:),lon_llw(:),lat_llw(:),dist(:),wgt(:)
 logical :: gmask
 logical,allocatable :: lcheck_lonlat(:,:),gmask_llw(:),lcheck_c0b(:),lcheck_llb(:)
 
@@ -747,7 +746,7 @@ if (nam%new_wind) then
    call mpl%flush
    call wind%interp_c0b_to_llw%interp(mpl,geom%nc0u,geom%gmask_hor_c0u,geom%tree_c0u,wind%nllw,lon_llw,lat_llw,gmask_llw,7)
    wind%interp_c0b_to_llw%prefix = 'interp_c0b_to_llw'
-   
+
    ! Define halo B, compute conversions and communications for subset Sc0
    write(mpl%info,'(a7,a)') '','Define halo B, compute conversions and communications for subset Sc0'
    call mpl%flush
@@ -925,6 +924,7 @@ if (nam%new_wind) then
    ! Allocation
    allocate(lla_to_ll(wind%nlla))
    allocate(lonlat_to_ll(nam%wind_nlon,nam%wind_nlat))
+   allocate(dist(nam%wind_nlon))
    allocate(wgt(nam%wind_nlon))
 
    ! Conversion
@@ -996,13 +996,31 @@ if (nam%new_wind) then
          wind%interp_llb_to_c0a%S(i_s) = rlonp*rlatp
       else
          ! Poles
+         
+         ! Latitude indices
          if (ilatm==0) ilat = 1
          if (ilatm==nam%wind_nlat) ilat = nam%wind_nlat
+
+         ! Get distances
          do ilon=1,nam%wind_nlon
-            call sphere_dist(geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),lon1d(ilon),lat1d(ilat),dist)
-            wgt(ilon) = one/dist
+            call sphere_dist(geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),lon1d(ilon),lat1d(ilat),dist(ilon))
          end do
-         wgt = wgt/sum(wgt)
+     
+         ! Check for colocated point
+         wgt = zero
+         do ilon=1,nam%wind_nlon
+            if (.not.(dist(ilon)>zero)) wgt(ilon) = one
+         end do
+
+         ! Get averaged weight if not colocated
+         if (.not.any(wgt>zero)) then
+            do ilon=1,nam%wind_nlon
+               wgt(ilon) = one/dist(ilon)
+            end do
+            wgt = wgt/sum(wgt)
+         end if
+
+         ! Fill interpolation 
          do ilon=1,nam%wind_nlon
             i_s = i_s+1
             wind%interp_llb_to_c0a%row(i_s) = ic0a
@@ -1096,7 +1114,7 @@ if (nam%check_adjoints) then
    call mpl%dot_prod(v,v_save,sum_v)
    sum1 = sum_psi+sum_chi
    sum2 = sum_u+sum_v
-   write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Adjoint test: ',sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
+   write(mpl%test,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Adjoint test: ',sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
    call mpl%flush
 end if
 

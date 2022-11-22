@@ -420,8 +420,8 @@ type(geom_type),intent(in) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Local variables
-integer :: ib,ic2a,icmp
-real(kind_real) :: rmse,norm
+integer :: ib,ic2a,icmp,norm
+real(kind_real) :: rmse
 real(kind_real),allocatable :: fit_iso(:,:,:)
 
 ! Set name
@@ -453,17 +453,23 @@ do ib=1,bpar%nbe
       end do
 
       ! Compute RMSE
-      rmse = sum(abs(diag%blk(0,ib)%fit-diag%blk(0,ib)%raw),mask=mpl%msv%isnot(diag%blk(0,ib)%raw))/real(mpl%nproc,kind_real)
-      norm = real(count(mpl%msv%isnot(diag%blk(0,ib)%raw)),kind_real)/real(mpl%nproc,kind_real)
+      if (mpl%main) then
+         ic2a = 0
+         rmse = sum(abs(diag%blk(ic2a,ib)%fit-diag%blk(ic2a,ib)%raw),mask=mpl%msv%isnot(diag%blk(ic2a,ib)%raw))
+         norm = count(mpl%msv%isnot(diag%blk(ic2a,ib)%raw))
+      else
+         rmse = zero
+         norm = 0
+      end if
       do ic2a=1,diag%nc2a
          rmse = rmse+sum(abs(diag%blk(ic2a,ib)%fit-diag%blk(ic2a,ib)%raw),mask=mpl%msv%isnot(diag%blk(ic2a,ib)%raw))
-         norm = norm+real(count(mpl%msv%isnot(diag%blk(ic2a,ib)%raw)),kind_real)
+         norm = norm+count(mpl%msv%isnot(diag%blk(ic2a,ib)%raw))
       end do
       call mpl%f_comm%allreduce(rmse,fckit_mpi_sum())
       call mpl%f_comm%allreduce(norm,fckit_mpi_sum())
-      if (norm>zero) rmse = sqrt(rmse/norm)
-      write(mpl%info,'(a13,a,a,a,e15.8,a,i8,a)') '','Block ',trim(bpar%blockname(ib)),': ',rmse, &
- & ' for ',int(norm),' diagnostic points'
+      if (norm>zero) rmse = sqrt(rmse/real(norm,kind_real))
+      write(mpl%test,'(a13,a,a,a,e15.8,a,i8,a)') '','Block ',trim(bpar%blockname(ib)),': ',rmse, &
+ & ' for ',norm,' diagnostic points'
       call mpl%flush
 
       ! Detail for multi-component case
@@ -890,7 +896,7 @@ do ib=1,bpar%nb
       call mpl%flush
       do il0=1,geom%nl0
          if (mpl%msv%isnot(diag%blk(0,ib)%raw(1,1,bpar%il0rz(il0,ib),il0))) then
-            write(mpl%info,'(a16,a,i3,a,a,e9.2,a)') '','Level: ',nam%levs(il0),' ~> cov. at class zero: ',trim(mpl%peach), &
+            write(mpl%test,'(a16,a,i3,a,a,e9.2,a)') '','Level: ',nam%levs(il0),' ~> cov. at class zero: ',trim(mpl%peach), &
  & diag%blk(0,ib)%raw(1,1,bpar%il0rz(il0,ib),il0),trim(mpl%black)
             call mpl%flush
          end if
@@ -981,7 +987,7 @@ do ib=1,bpar%nbe
 
       do il0=1,geom%nl0
           if (mpl%msv%isnot(diag%blk(0,ib)%raw(1,1,bpar%il0rz(il0,ib),il0))) then
-              write(mpl%info,'(a16,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> cor. at class zero:  ', &
+              write(mpl%test,'(a16,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> cor. at class zero:  ', &
  & trim(mpl%peach),diag%blk(0,ib)%raw(1,1,bpar%il0rz(il0,ib),il0),trim(mpl%black)
               call mpl%flush
           end if
@@ -995,16 +1001,16 @@ do ib=1,bpar%nbe
                call mpl%flush
                do il0=1,geom%nl0
                   if (mpl%msv%isnot(diag%blk(0,ib)%a_l0(il0,icmp))) then
-                     write(mpl%info,'(a19,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> amplitude:  ', &
+                     write(mpl%test,'(a19,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> amplitude:  ', &
  & trim(mpl%peach),diag%blk(0,ib)%a_l0(il0,icmp),trim(mpl%black)
                      call mpl%flush
                      if (mpl%msv%isnot(diag%blk(0,ib)%rh_l0(il0,icmp))) then
-                        write(mpl%info,'(a33,a,a,f10.2,a)') '','cor. hor. support:   ',trim(mpl%aqua), &
+                        write(mpl%test,'(a33,a,a,f10.2,a)') '','cor. hor. support:   ',trim(mpl%aqua), &
  & diag%blk(0,ib)%rh_l0(il0,icmp)*reqkm,trim(mpl%black)//' km'
                         call mpl%flush
                      end if
                      if (mpl%msv%isnot(diag%blk(0,ib)%rv_l0(il0,icmp))) then
-                        write(mpl%info,'(a33,a,a,f10.2,a)') '','cor. ver. support:   ',trim(mpl%aqua), &
+                        write(mpl%test,'(a33,a,a,f10.2,a)') '','cor. ver. support:   ',trim(mpl%aqua), &
  & diag%blk(0,ib)%rv_l0(il0,icmp),trim(mpl%black)//' vertical units'
                         call mpl%flush
                      end if
@@ -1142,7 +1148,7 @@ do ib=1,bpar%nbe
 
       do il0=1,geom%nl0
          if (mpl%msv%isnot(diag%blk(0,ib)%raw(1,1,bpar%il0rz(il0,ib),il0))) then
-            write(mpl%info,'(a16,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> loc. at class zero: ', &
+            write(mpl%test,'(a16,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> loc. at class zero: ', &
  & trim(mpl%peach),diag%blk(0,ib)%raw(1,1,bpar%il0rz(il0,ib),il0),trim(mpl%black)
             call mpl%flush
          end if
@@ -1156,16 +1162,16 @@ do ib=1,bpar%nbe
                call mpl%flush
                do il0=1,geom%nl0
                   if (mpl%msv%isnot(diag%blk(0,ib)%a_l0(il0,icmp))) then
-                     write(mpl%info,'(a19,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> amplitude:  ', &
+                     write(mpl%test,'(a19,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> amplitude:  ', &
  & trim(mpl%peach),diag%blk(0,ib)%a_l0(il0,icmp),trim(mpl%black)
                      call mpl%flush
                      if (mpl%msv%isnot(diag%blk(0,ib)%rh_l0(il0,icmp))) then
-                        write(mpl%info,'(a33,a,a,f10.2,a)') '','loc. hor. support:   ',trim(mpl%aqua), &
+                        write(mpl%test,'(a33,a,a,f10.2,a)') '','loc. hor. support:   ',trim(mpl%aqua), &
  & diag%blk(0,ib)%rh_l0(il0,icmp)*reqkm,trim(mpl%black)//' km'
                         call mpl%flush
                      end if
                      if (mpl%msv%isnot(diag%blk(0,ib)%rv_l0(il0,icmp))) then
-                        write(mpl%info,'(a33,a,a,f10.2,a)') '','loc. ver. support:   ',trim(mpl%aqua), &
+                        write(mpl%test,'(a33,a,a,f10.2,a)') '','loc. ver. support:   ',trim(mpl%aqua), &
  & diag%blk(0,ib)%rv_l0(il0,icmp),trim(mpl%black)//' vertical units'
                         call mpl%flush
                      end if
@@ -1253,7 +1259,7 @@ do ib=1,bpar%nbe
 
       do il0=1,geom(2)%nl0
          if (mpl%msv%isnot(loc1%blk(0,ib)%hyb_coef(il0)).and.mpl%msv%isnot(diag%blk(0,ib)%hyb_coef(il0))) then
-            write(mpl%info,'(a16,a,i3,a,a,f4.2,a,f4.2,a)') '','Level: ',nam%levs(il0),' ~> hybrid coefficients: ', &
+            write(mpl%test,'(a16,a,i3,a,a,f4.2,a,f4.2,a)') '','Level: ',nam%levs(il0),' ~> hybrid coefficients: ', &
  & trim(mpl%peach),loc1%blk(0,ib)%hyb_coef(il0),trim(mpl%black)//' / '//trim(mpl%peach),diag%blk(0,ib)%hyb_coef(il0),trim(mpl%black)
             call mpl%flush
          end if

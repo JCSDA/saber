@@ -87,6 +87,9 @@ class Interpolation : public SaberOuterBlockBase {
 
   // Interpolation object
   std::unique_ptr<UnstructuredInterpolation> interpolator_;
+
+  // Inverse interpolation object
+  std::unique_ptr<UnstructuredInterpolation> inverseInterpolator_;
 };
 
 // -------------------------------------------------------------------------------------------------

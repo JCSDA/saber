@@ -29,14 +29,6 @@
 #include "saber/oops/SaberCentralBlockBase.h"
 #include "saber/oops/SaberOuterBlockBase.h"
 
-namespace eckit {
-  class Configuration;
-}
-
-namespace oops {
-  class Variables;
-}
-
 namespace saber {
 
 // -----------------------------------------------------------------------------
@@ -139,7 +131,7 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
           saberOuterBlockParams.inputFields.value());
 
         // Create outer block
-        oops::Log::info() << "Creating outer block: "
+        oops::Log::info() << "Info     : Creating outer block: "
                           << saberOuterBlockParams.saberBlockName.value() << std::endl;
         saberOuterBlocks_.push_back(SaberOuterBlockFactory::create(
                                     outerGeometryData_.back().get(),
@@ -149,11 +141,6 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
                                     xbLocal.fieldSet(),
                                     fgLocal.fieldSet(),
                                     fsetVec));
-
-        // Apply calibration inverse on xb and fg
-        // TODO(Benjamin): uncomment these lines when all blocks are compliant
-//        saberOuterBlocks_.back().calibrationInverseMultiply(xbLocal.fieldSet());
-//        saberOuterBlocks_.back().calibrationInverseMultiply(fgLocal.fieldSet());
 
         // Access inner geometry and variables
         const oops::GeometryData & innerGeometryData = saberOuterBlocks_.back().innerGeometryData();
@@ -194,9 +181,9 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         saberOuterBlocks_.back().multiplyAD(outerFset);
 
         // Compute adjoint test
-        const double dp1 = dot_product(innerFset, outerFsetSave, geom.getComm());
-        const double dp2 = dot_product(outerFset, innerFsetSave, geom.getComm());
-        oops::Log::info() << "Adjoint test for outer block "
+        const double dp1 = dot_product(innerFset, outerFsetSave, activeVars, geom.getComm());
+        const double dp2 = dot_product(outerFset, innerFsetSave, activeVars, geom.getComm());
+        oops::Log::info() << "Info     : Adjoint test for outer block "
                           << saberOuterBlockParams.saberBlockName.value()
                           << ": y^t (Ax) = " << dp1 << ": x^t (A^t y) = " << dp2 << std::endl;
         ASSERT(abs(dp1) > 0.0);
@@ -280,9 +267,9 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
       saberCentralBlock_->multiply(outerFset);
 
       // Compute adjoint test
-      const double dp1 = dot_product(innerFset, outerFsetSave, geom.getComm());
-      const double dp2 = dot_product(outerFset, innerFsetSave, geom.getComm());
-      oops::Log::info() << "Adjoint test for central block "
+      const double dp1 = dot_product(innerFset, outerFsetSave, activeVars, geom.getComm());
+      const double dp2 = dot_product(outerFset, innerFsetSave, activeVars, geom.getComm());
+      oops::Log::info() << "Info     : Adjoint test for central block "
                         << saberCentralBlockParams.saberBlockName.value()
                         << ": y^t (Ax) = " << dp1 << ": x^t (Ay) = " << dp2 << std::endl;
       ASSERT(abs(dp1) > 0.0);
@@ -430,7 +417,6 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
   }
 
   // -----------------------------------------------------------------------------
-  // TODO(Benjamin): should be moved in OOPS?
   atlas::FieldSet copyFieldSet(const atlas::FieldSet & otherFset) const {
     // Create FieldSet
     atlas::FieldSet fset;
@@ -460,66 +446,69 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
   }
 
   // -----------------------------------------------------------------------------
-  // TODO(Benjamin): should be moved in OOPS?
   double dot_product(const atlas::FieldSet & fset1,
                      const atlas::FieldSet & fset2,
+                     const oops::Variables & activeVars,
                      const eckit::mpi::Comm & comm) const {
-    // Check FieldSets size
-    ASSERT(fset1.size() == fset2.size());
-
     // Compute dot product
     double dp = 0.0;
-    for (const auto & field1 : fset1) {
-      if (field1.rank() == 2) {
-        atlas::Field field2 = fset2.field(field1.name());
+    for (const auto & var : activeVars.variables()) {
+      // Check fields presence
+      if (fset1.has(var) && fset2.has(var)) {
+        // Get fields
+        const auto field1 = fset1.field(var);
+        const auto field2 = fset2.field(var);
 
+        if (field1.rank() == 2 && field2.rank() == 2) {
         // Check fields consistency
-        ASSERT(field2.rank() == 2);
-        ASSERT(field1.shape(0) == field2.shape(0));
-        ASSERT(field1.shape(1) == field2.shape(1));
+          ASSERT(field1.shape(0) == field2.shape(0));
+          ASSERT(field1.shape(1) == field2.shape(1));
 
-        // Add contributions
-        auto view1 = atlas::array::make_view<double, 2>(field1);
-        auto view2 = atlas::array::make_view<double, 2>(field2);
-        if (field1.functionspace().type() == "Spectral") {
-          atlas::functionspace::Spectral fs(field1.functionspace());
-          const atlas::idx_t N = fs.truncation();
-          const auto zonal_wavenumbers = fs.zonal_wavenumbers();
-          const atlas::idx_t nb_zonal_wavenumbers = zonal_wavenumbers.size();
-          int jnode = 0;
-          for (int jm=0; jm < nb_zonal_wavenumbers; ++jm) {
-            const atlas::idx_t m1 = zonal_wavenumbers(jm);
-            for (std::size_t n1 = m1; n1 <= static_cast<std::size_t>(N); ++n1) {
-              if (m1 == 0) {
-                // Real part only
-                for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
-                  dp += view1(jnode, jlevel)*view2(jnode, jlevel);
-                }
-                ++jnode;
+          // Add contributions
+          auto view1 = atlas::array::make_view<double, 2>(field1);
+          auto view2 = atlas::array::make_view<double, 2>(field2);
+          if (field1.functionspace().type() == "Spectral") {
+            atlas::functionspace::Spectral fs(field1.functionspace());
+            const atlas::idx_t N = fs.truncation();
+            const auto zonal_wavenumbers = fs.zonal_wavenumbers();
+            const atlas::idx_t nb_zonal_wavenumbers = zonal_wavenumbers.size();
+            int jnode = 0;
+            for (int jm=0; jm < nb_zonal_wavenumbers; ++jm) {
+              const atlas::idx_t m1 = zonal_wavenumbers(jm);
+              for (std::size_t n1 = m1; n1 <= static_cast<std::size_t>(N); ++n1) {
+                if (m1 == 0) {
+                  // Real part only
+                  for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
+                    dp += view1(jnode, jlevel)*view2(jnode, jlevel);
+                  }
+                  ++jnode;
 
-                // No imaginary part
-                ++jnode;
-              } else {
-                // Real part
-                for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
-                  dp += 2.0*view1(jnode, jlevel)*view2(jnode, jlevel);
-                }
-                ++jnode;
+                  // No imaginary part
+                  ++jnode;
+                } else {
+                  // Real part
+                  for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
+                    dp += 2.0*view1(jnode, jlevel)*view2(jnode, jlevel);
+                  }
+                  ++jnode;
 
-                // Imaginary part
-                for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
-                  dp += 2.0*view1(jnode, jlevel)*view2(jnode, jlevel);
+                  // Imaginary part
+                  for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
+                    dp += 2.0*view1(jnode, jlevel)*view2(jnode, jlevel);
+                  }
+                  ++jnode;
                 }
-                ++jnode;
+              }
+            }
+          } else {
+            for (atlas::idx_t jnode = 0; jnode < field1.shape(0); ++jnode) {
+              for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
+                dp += view1(jnode, jlevel)*view2(jnode, jlevel);
               }
             }
           }
         } else {
-          for (atlas::idx_t jnode = 0; jnode < field1.shape(0); ++jnode) {
-            for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
-              dp += view1(jnode, jlevel)*view2(jnode, jlevel);
-            }
-          }
+          ABORT("wrong rank");
         }
       }
     }

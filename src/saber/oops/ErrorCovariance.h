@@ -33,10 +33,6 @@
 #include "saber/oops/SaberCentralBlockBase.h"
 #include "saber/oops/SaberOuterBlockBase.h"
 
-namespace oops {
-  class Variables;
-}
-
 namespace saber {
 
 // -------------------------------------------------------------------------------------------------
@@ -138,8 +134,8 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
         saberOuterBlockParams.inputFields.value());
 
       // Create outer block
-      oops::Log::info() << "Creating outer block: " << saberOuterBlockParams.saberBlockName.value()
-                        << std::endl;
+      oops::Log::info() << "Info     : Creating outer block: "
+                        << saberOuterBlockParams.saberBlockName.value() << std::endl;
       saberOuterBlocks_.push_back(SaberOuterBlockFactory::create(
                                   outerGeometryData_.back().get(),
                                   geom.variableSizes(activeVars),
@@ -148,11 +144,6 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
                                   xbLocal.fieldSet(),
                                   fgLocal.fieldSet(),
                                   fsetVec));
-
-      // Apply calibration inverse on xb and fg
-      // TODO(Benjamin): uncomment these lines when all blocks are compliant
-//      saberOuterBlocks_.back().calibrationInverseMultiply(xbLocal.fieldSet());
-//      saberOuterBlocks_.back().calibrationInverseMultiply(fgLocal.fieldSet());
 
       // Access inner geometry and variables
       const oops::GeometryData & innerGeometryData = saberOuterBlocks_.back().innerGeometryData();

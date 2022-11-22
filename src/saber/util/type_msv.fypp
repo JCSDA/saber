@@ -30,7 +30,6 @@ contains
          procedure msv_isanynot_${dtype}$_r${rank}$
          procedure msv_isany_${dtype}$_r${rank}$
          procedure msv_isallnot_${dtype}$_r${rank}$
-         procedure msv_isall_${dtype}$_r${rank}$
       #:endfor
    #:endfor
 @:init_procedure(14)
@@ -68,13 +67,6 @@ contains
    #:for dtype in dtypes_ir
       #:for rank in ranks_123456
 @:add_procedure(msv_isallnot_${dtype}$_r${rank}$)
-      #:endfor
-   #:endfor
-@:init_procedure(12)
-   generic :: isall => &
-   #:for dtype in dtypes_ir
-      #:for rank in ranks_123456
-@:add_procedure(msv_isall_${dtype}$_r${rank}$)
       #:endfor
    #:endfor
 end type msv_type
@@ -337,46 +329,6 @@ test = all(msv%isnot(array))
 @:probe_out()
 
 end function msv_isallnot_${dtype}$_r${rank}$
-   #:endfor
-#:endfor
-
-#:for dtype in dtypes_ir
-   #:for rank in ranks_123456
-!----------------------------------------------------------------------
-! Function: msv_isall_${dtype}$_r${rank}$
-!> Check if all values in an array are set to missing value
-!----------------------------------------------------------------------
-function msv_isall_${dtype}$_r${rank}$(msv,array) result(test)
-
-implicit none
-
-! Passed variables
-class(msv_type),intent(in) :: msv                   !< Missing values
-${ftype[dtype]}$,intent(in) :: array(${dim[rank]}$) !< Array
-
-! Returned variable
-logical :: test
-
-! Set name
-@:set_name(msv_isall_${dtype}$_r${rank}$)
-
-! Probe in
-@:probe_in()
-
-! Check array size
-if (size(array)==0) then
-   write(output_unit,'(a)') 'Error: empty array in ${subr}$'
-   call flush(output_unit)
-   error stop 9
-end if
-
-! Inverse of msv%isanynot
-test = .not.msv%isanynot(array)
-
-! Probe out
-@:probe_out()
-
-end function msv_isall_${dtype}$_r${rank}$
    #:endfor
 #:endfor
 

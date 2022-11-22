@@ -15,11 +15,11 @@ use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 !$ use omp_lib
 use tools_atlas, only: get_grid,field_to_array
 use tools_const, only: zero,quarter,half,one,two,four,hundred,pi,req,deg2rad,rad2deg,reqkm
-use tools_func, only: fletcher32,lonlatmod,gridhash,independent_levels,sphere_dist,lonlat2xyz,xyz2lonlat,cart_dist,inside, &
+use tools_func, only: fletcher32,lonlatmod,grid_hash,independent_levels,sphere_dist,lonlat2xyz,xyz2lonlat,cart_dist,inside, &
  & vector_product,cx_to_cxa,cx_to_proc,cx_to_cxu,convert_l2i,convert_i2l,zss_maxval,zss_minval,zss_sum,zss_count
 use tools_kinds, only: kind_int,kind_real,huge_real,huge_int
 use tools_qsort, only: qsort
-use tools_repro, only: inf,sup,eq,infeq,indist
+use tools_repro, only: inf,sup,eq,infeq,indist,rth
 use tools_stripack, only: area
 use type_com, only: com_type
 use type_fieldset, only: fieldset_type
@@ -42,6 +42,7 @@ type geom_type
    ! Input metadata
    logical,allocatable :: hmask_mga(:,:)          !< Halo mask
    logical :: area_provided                       !< Activated if areas are provided
+   logical :: global                              !< Global grid (regional if false)
 
    ! Geometry data on model grid, halo A
    integer :: nmga                                !< Halo A size for model grid
@@ -72,8 +73,6 @@ type geom_type
    logical,allocatable :: gmask_c0a(:,:)          !< Geometry mask
    logical,allocatable :: gmask_hor_c0a(:)        !< Union of horizontal geometry masks
    real(kind_real),allocatable :: mdist_c0a(:,:)  !< Minimum distance to mask
-   integer,allocatable :: grid_hash(:)            !< Local grid hash
-   integer,allocatable :: proc_to_grid_hash(:)    !< Processor to local grid hash
 
    ! Geometry data on subset Sc0, universe
    integer,allocatable :: proc_to_nc0u(:)         !< Processor to universe size for subset Sc0
@@ -142,11 +141,6 @@ type geom_type
    type(io_type) :: io                             !< Subset Sc0 I/O
    logical :: io_initialized                       !< Flag to check if subset Sc0 I/O is initialized
 
-   ! Full grid smoothing (very small length-scale)
-   integer :: nc0s                                 !< Halo S size
-   type(linop_type),allocatable :: smoother(:)     !< Full grid smoother
-   type(com_type) :: com_c0_AS                     !< Communication between halos A and S on subset Sc0
-
    ! Allocation flag
    logical :: allocated                            !< Allocation flag
 contains
@@ -156,14 +150,11 @@ contains
    procedure :: from_atlas => geom_from_atlas
    procedure :: setup_universe => geom_setup_universe
    procedure :: setup_c0 => geom_setup_c0
-   procedure :: setup_independent_levels => geom_setup_independent_levels
-   procedure :: setup_mask_distance => geom_setup_mask_distance
    procedure :: setup_mask_check => geom_setup_mask_check
    procedure :: geom_index_from_lonlat_r0
    procedure :: geom_index_from_lonlat_r1
    generic :: index_from_lonlat => geom_index_from_lonlat_r0,geom_index_from_lonlat_r1
    procedure :: setup_dirac => geom_setup_dirac
-   procedure :: setup_io => geom_setup_io
    #:for dtype in dtypes_irl
       procedure :: geom_copy_c0a_to_mga_${dtype}$_single
       procedure :: geom_copy_c0a_to_mga_${dtype}$_all
@@ -185,9 +176,6 @@ contains
    procedure :: fieldset_to_c0 => geom_fieldset_to_c0
    procedure :: c0_to_fieldset => geom_c0_to_fieldset
    procedure :: rand_point => geom_rand_point
-   procedure :: compute_smoother => geom_compute_smoother
-   procedure :: apply_smoother => geom_apply_smoother
-   procedure :: apply_smoother_ad => geom_apply_smoother_ad
    procedure :: initialize_sampling => geom_initialize_sampling
    procedure :: define_test_vectors => geom_define_test_vectors
    procedure :: c0_to_c0a => geom_c0_to_c0a
@@ -195,8 +183,8 @@ contains
    procedure :: c0_to_c0u => geom_c0_to_c0u
 end type geom_type
 
-integer,parameter :: nfacmin = 4      !< Minimum size factor for the first subsampling
-integer,parameter :: nssmax = 1000000 !< Maximum global grid size
+integer,parameter :: nfacmin = 4     !< Minimum size factor for the first subsampling
+integer,parameter :: nsmax = 1000000 !< Maximum sampling size
 
 private
 public :: geom_type
@@ -214,9 +202,6 @@ implicit none
 ! Passed variables
 class(geom_type),intent(inout) :: geom !< Geometry
 
-! Local variable
-integer :: il0
-
 ! Set name
 @:set_name(geom_partial_dealloc)
 
@@ -232,8 +217,6 @@ if (allocated(geom%myuniverse)) deallocate(geom%myuniverse)
 if (allocated(geom%proc_to_nc0a)) deallocate(geom%proc_to_nc0a)
 if (allocated(geom%gmask_hor_c0a)) deallocate(geom%gmask_hor_c0a)
 if (allocated(geom%mdist_c0a)) deallocate(geom%mdist_c0a)
-if (allocated(geom%grid_hash)) deallocate(geom%grid_hash)
-if (allocated(geom%proc_to_grid_hash)) deallocate(geom%proc_to_grid_hash)
 if (allocated(geom%proc_to_nc0u)) deallocate(geom%proc_to_nc0u)
 if (allocated(geom%lon_c0u)) deallocate(geom%lon_c0u)
 if (allocated(geom%lat_c0u)) deallocate(geom%lat_c0u)
@@ -262,13 +245,6 @@ if (allocated(geom%ic0adir)) deallocate(geom%ic0adir)
 if (allocated(geom%il0dir)) deallocate(geom%il0dir)
 if (allocated(geom%ivdir)) deallocate(geom%ivdir)
 if (allocated(geom%dirac_index)) deallocate(geom%dirac_index)
-if (allocated(geom%smoother)) then
-   do il0=1,size(geom%smoother)
-      call geom%smoother(il0)%dealloc
-   end do
-   deallocate(geom%smoother)
-end if
-call geom%com_c0_AS%dealloc
 
 ! Probe out
 @:probe_out()
@@ -349,9 +325,6 @@ else
    call geom%from_atlas(mpl,afunctionspace)
 end if
 
-! No mask option
-if (nam%nomask) geom%gmask_mga = .true.
-
 ! Setup subset Sc0
 call geom%setup_c0(mpl)
 
@@ -364,17 +337,11 @@ call mpl%flush
 call geom%tree_c0u%alloc(mpl,geom%nc0u)
 call geom%tree_c0u%init(geom%lon_c0u,geom%lat_c0u)
 
-! Setup mesh (using stripack, since CGAL cannot compute boundary nodes)
+! Setup mesh
 write(mpl%info,'(a7,a)') '','Setup mesh'
 call mpl%flush
-call geom%mesh_c0u%alloc(geom%nc0u,.false.)
+call geom%mesh_c0u%alloc(geom%nc0u)
 call geom%mesh_c0u%init(mpl,rng,geom%lon_c0u,geom%lat_c0u,hull_bnd=.true.)
-
-! Setup number of independent levels
-call geom%setup_independent_levels(mpl)
-
-! Setup minimum distance to mask
-call geom%setup_mask_distance(mpl,nam)
 
 ! Setup mask boudaries checking fields
 call geom%setup_mask_check(mpl,nam)
@@ -400,46 +367,36 @@ end do
 ! Setup dirac points
 call geom%setup_dirac(mpl,nam)
 
-! Setup subset Sc0 I/O flag
-call geom%setup_io(mpl,nam)
-
-if (nam%full_grid_smoother_nn>0) then
-   ! Compute full grid smoother
-   write(mpl%info,'(a7,a)') '','Compute full grid smoother'
-   call mpl%flush
-   call geom%compute_smoother(mpl,nam)
-end if
-
 ! Set allocation flag
 geom%allocated = .true.
 
 ! Print summary
 write(mpl%info,'(a7,a)') '','Geometry summary:'
 call mpl%flush
-write(mpl%info,'(a10,a,i8)') '','Model grid size:         ',geom%nmg
+write(mpl%test,'(a10,a,i8)') '','Model grid size:         ',geom%nmg
 call mpl%flush
-write(mpl%info,'(a10,a,i8)') '','Subset Sc0 size:         ',geom%nc0
+write(mpl%test,'(a10,a,i8)') '','Subset Sc0 size:         ',geom%nc0
 call mpl%flush
-write(mpl%info,'(a10,a,i6,a,f6.2,a)') '','Number of duplicated points (halo):    ',(geom%nmg-geom%nc0), &
+write(mpl%test,'(a10,a,i6,a,f6.2,a)') '','Number of duplicated points (halo):    ',(geom%nmg-geom%nc0), &
  & ' (',real(geom%nmg-geom%nc0,kind_real)/real(geom%nmg,kind_real)*hundred,'%)'
 call mpl%flush
-write(mpl%info,'(a10,a,f7.1,a,f7.1)') '','Min. / max. longitudes:',geom%lon_min*rad2deg,' / ',geom%lon_max*rad2deg
+write(mpl%test,'(a10,a,f7.1,a,f7.1)') '','Min. / max. longitudes:',geom%lon_min*rad2deg,' / ',geom%lon_max*rad2deg
 call mpl%flush
-write(mpl%info,'(a10,a,f7.1,a,f7.1)') '','Min. / max. latitudes: ',geom%lat_min*rad2deg,' / ',geom%lat_max*rad2deg
+write(mpl%test,'(a10,a,f7.1,a,f7.1)') '','Min. / max. latitudes: ',geom%lat_min*rad2deg,' / ',geom%lat_max*rad2deg
 call mpl%flush
-write(mpl%info,'(a10,a,e10.3,a)') '','Domain area (% of Earth area):',hundred*geom%area_max_c0/(four*pi),'%'
+write(mpl%test,'(a10,a,e10.3,a)') '','Domain area (% of Earth area):',hundred*geom%area_max_c0/(four*pi),'%'
 call mpl%flush
 write(mpl%info,'(a10,a)') '','Valid points (% of total domain):'
 call mpl%flush
 do il0=1,geom%nl0
-   write(mpl%info,'(a13,a,i3,a,f5.1,a)') '','Level ',nam%levs(il0),' ~> ', &
+   write(mpl%test,'(a13,a,i3,a,f5.1,a)') '','Level ',nam%levs(il0),' ~> ', &
  & hundred*real(geom%nc0_gmask(il0),kind_real)/real(geom%nc0,kind_real),'%'
    call mpl%flush
 end do
 write(mpl%info,'(a10,a)') '','Vertical unit:'
 call mpl%flush
 do il0=1,geom%nl0
-   write(mpl%info,'(a13,a,i3,a,e10.3,a)') '','Level ',nam%levs(il0),' ~> ',geom%vunitavg(il0),' vert. unit'
+   write(mpl%test,'(a13,a,i3,a,e10.3,a)') '','Level ',nam%levs(il0),' ~> ',geom%vunitavg(il0),' vert. unit'
    call mpl%flush
 end do
 write(mpl%info,'(a10,a)') '','Distribution (local / universe):'
@@ -641,7 +598,8 @@ type(mpl_type),intent(inout) :: mpl    !< MPI data
 
 ! Local variables
 integer :: iproc,imga,ic0a,ic0,diff_grid,il0
-real(kind_real) :: xyz_ne(3),xyz_nw(3),xyz_se(3),xyz_sw(3),area_nw,area_se
+integer :: hash(geom%nl0)
+real(kind_real) :: xyz_ne(3),xyz_nw(3),xyz_se(3),xyz_sw(3),area_nw,area_se,area_total
 real(kind_real) :: norm_c0(geom%nl0),vunit_hor_c0(geom%nl0)
 
 ! Set name
@@ -692,8 +650,8 @@ allocate(geom%gmask_hor_c0a(geom%nc0a))
 allocate(geom%nc0_gmask(0:geom%nl0))
 allocate(geom%area_ver_c0(geom%nl0))
 allocate(geom%vunitavg(geom%nl0))
-allocate(geom%grid_hash(0:geom%nl0))
-allocate(geom%proc_to_grid_hash(mpl%nproc))
+allocate(geom%l0_to_l0i(geom%nl0))
+allocate(geom%l0i_to_l0(geom%nl0))
 
 ! Default area
 if (.not.geom%area_provided) then
@@ -790,10 +748,25 @@ do il0=1,geom%nl0
       geom%vunitavg(il0) = mpl%msv%valr
    end if
 end do
+area_total = zss_sum(geom%area_c0a)
+call mpl%f_comm%allreduce(area_total,fckit_mpi_sum())
+geom%global = (area_total>0.99_kind_real*four*pi)
 
 ! Grid hash
-call gridhash(geom%nc0a,geom%nl0,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a,geom%grid_hash)
-call mpl%f_comm%allgather(geom%grid_hash(0),geom%proc_to_grid_hash)
+call grid_hash(mpl,geom%nc0a,geom%nc0,geom%nl0,geom%c0a_to_c0,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a,hash)
+
+! Compute independent levels
+write(mpl%test,'(a7,a)') '','Independent levels: '
+call mpl%flush(.false.)
+call independent_levels(mpl,geom%nl0,hash,geom%nl0i,geom%l0_to_l0i,geom%l0i_to_l0)
+
+! Test grid hash
+write(mpl%info,'(a7,a)') '','Geometry grid hash: '
+call mpl%flush
+do il0=1,geom%nl0
+   write(mpl%test,'(a10,a,i3,a,i12)') '','Level ',il0,': ',hash(il0)
+   call mpl%flush
+end do
 
 ! Probe out
 @:probe_out()
@@ -834,8 +807,8 @@ call mpl%flush
 ! Allocation
 allocate(geom%myuniverse(mpl%nproc))
 
-if (mpl%nproc<=2) then
-   ! Single- or dual-processors case
+if (mpl%nproc==1) then
+   ! Single-processors case
    geom%myuniverse = .true.
 else
    ! Allocation
@@ -1005,106 +978,6 @@ deallocate(order)
 @:probe_out()
 
 end subroutine geom_setup_universe
-
-!----------------------------------------------------------------------
-! Subroutine: geom_setup_independent_levels
-!> Setup independent levels
-!----------------------------------------------------------------------
-subroutine geom_setup_independent_levels(geom,mpl)
-
-implicit none
-
-! Passed variables
-class(geom_type),intent(inout) :: geom !< Geometry
-type(mpl_type),intent(inout) :: mpl    !< MPI data
-
-! Set name
-@:set_name(geom_setup_independent_levels)
-
-! Probe in
-@:probe_in()
-
-! Allocation
-allocate(geom%l0_to_l0i(geom%nl0))
-allocate(geom%l0i_to_l0(geom%nl0))
-
-! Compute independent levels
-call independent_levels(mpl,geom%nl0,geom%grid_hash(1:geom%nl0),geom%nl0i,geom%l0_to_l0i,geom%l0i_to_l0,7)
-
-! Probe out
-@:probe_out()
-
-end subroutine geom_setup_independent_levels
-
-!----------------------------------------------------------------------
-! Subroutine: geom_setup_mask_distance
-!> Setup minimum distance to mask
-!----------------------------------------------------------------------
-subroutine geom_setup_mask_distance(geom,mpl,nam)
-
-implicit none
-
-! Passed variables
-class(geom_type),intent(inout) :: geom !< Geometry
-type(mpl_type),intent(inout) :: mpl    !< MPI data
-type(nam_type),intent(in) :: nam       !< Namelist
-
-! Local variables
-integer :: il0i,ic0u,ic0a,nn_index(1)
-logical :: not_mask_c0u(geom%nc0u)
-type(tree_type) :: tree
-
-! Set name
-@:set_name(geom_setup_mask_distance)
-
-! Probe in
-@:probe_in()
-
-if ((trim(nam%diag_draw_type)=='random_coast').or.(trim(nam%nicas_draw_type)=='random_coast')) then
-   write(mpl%info,'(a7,a)') '','Define minimum distance to mask'
-   call mpl%flush
-
-   ! Allocation
-   allocate(geom%mdist_c0u(geom%nc0u,geom%nl0i))
-   allocate(geom%mdist_c0a(geom%nc0a,geom%nl0i))
-
-   ! Initialization
-   geom%mdist_c0u = pi
-
-   do il0i=1,geom%nl0i
-      ! Check mask
-      if (geom%nc0u>0) then
-         if (any(.not.geom%gmask_c0u(:,il0i))) then
-            ! Allocation
-            not_mask_c0u = .not.geom%gmask_c0u(:,il0i)
-            call tree%alloc(mpl,geom%nc0u,mask=not_mask_c0u)
-
-            ! Initialization
-            call tree%init(geom%lon_c0u,geom%lat_c0u)
-
-            ! Find nearest neighbors
-            do ic0u=1,geom%nc0u
-               if (geom%gmask_c0u(ic0u,il0i)) call tree%find_nearest_neighbors(geom%lon_c0u(ic0u),geom%lat_c0u(ic0u),1,nn_index, &
- & geom%mdist_c0u(ic0u,il0i))
-            end do
-
-            ! Release memory
-            call tree%dealloc
-         end if
-      end if
-   end do
-
-   ! Local field
-   do ic0a=1,geom%nc0a
-      ic0u = geom%c0a_to_c0u(ic0a)
-      geom%mdist_c0a(ic0a,:) = geom%mdist_c0u(ic0u,:)
-   end do
-end if
-
-! Probe out
-@:probe_out()
-
-end subroutine geom_setup_mask_distance
 
 !----------------------------------------------------------------------
 ! Subroutine: geom_setup_mask_check
@@ -1458,93 +1331,6 @@ end if
 
 end subroutine geom_setup_dirac
 
-!----------------------------------------------------------------------
-! Subroutine: geom_setup_io
-!> Setup subset Sc0 I/O
-!----------------------------------------------------------------------
-subroutine geom_setup_io(geom,mpl,nam)
-
-implicit none
-
-! Passed variables
-class(geom_type),intent(inout) :: geom !< Geometry
-type(mpl_type),intent(inout) :: mpl    !< MPI data
-type(nam_type),intent(in) :: nam       !< Namelist
-
-! Local variables
-integer,allocatable :: order_c0(:),order_c0a(:)
-real(kind_real),allocatable :: lon_c0(:),lat_c0(:)
-logical :: ioc0
-
-! Set name
-@:set_name(geom_setup_io)
-
-! Probe in
-@:probe_in()
-
-! Check if Sc0 fields I/O is required
-
-! By default, not required
-ioc0 = .false.
-
-! Loading variance
-ioc0 = ioc0.or.nam%load_var
-
-if (nam%write_c0) then
-   ! Writing normality diagnostics
-   ioc0 = ioc0.or.nam%new_normality
-
-   ! Writing vertical balance dirac
-   ioc0 = ioc0.or.(nam%new_vbal.and.nam%check_dirac)
-   ioc0 = ioc0.or.(nam%load_vbal.and.nam%check_dirac)
-
-   ! Writing variance
-   ioc0 = ioc0.or.nam%write_var
-
-   ! Writing diagnostic dirac
-   ioc0 = ioc0.or.(nam%write_hdiag.and.nam%check_dirac)
-
-   ! Writing NICAS dirac
-   ioc0 = ioc0.or.(nam%new_nicas.and.nam%check_dirac)
-   ioc0 = ioc0.or.(nam%load_nicas_local.and.nam%check_dirac)
-   ioc0 = ioc0.or.(nam%load_nicas_global.and.nam%check_dirac)
-end if
-
-if (ioc0) then
-   ! Allocation
-   if (mpl%main) then
-      allocate(lon_c0(geom%nc0))
-      allocate(lat_c0(geom%nc0))
-      allocate(order_c0(geom%nc0))
-   else
-      allocate(lon_c0(0))
-      allocate(lat_c0(0))
-      allocate(order_c0(0))
-   end if
-   allocate(order_c0a(geom%nc0a))
-
-   ! Communication
-   call mpl%loc_to_glb(geom%nc0a,geom%nc0,geom%c0a_to_c0,geom%lon_c0a,lon_c0)
-   call mpl%loc_to_glb(geom%nc0a,geom%nc0,geom%c0a_to_c0,geom%lat_c0a,lat_c0)
-
-   ! Compute global order
-   if (mpl%main) call qsort(geom%nc0,lon_c0,lat_c0,order_c0)
-   call mpl%glb_to_loc(geom%nc0a,geom%nc0,geom%c0a_to_c0,order_c0,order_c0a)
-
-   ! Setup fields output
-   call geom%io%init(mpl,'0',geom%nc0,geom%nc0a,geom%c0a_to_c0,geom%proc_to_c0_offset,order_c0a)
-
-   ! Release memory
-   deallocate(lon_c0)
-   deallocate(lat_c0)
-   deallocate(order_c0a)
-end if
-
-! Probe out
-@:probe_out()
-
-end subroutine geom_setup_io
-
 #:for dtype in dtypes_irl
 !----------------------------------------------------------------------
 ! Subroutine: geom_copy_c0a_to_mga_${dtype}$_single
@@ -1859,203 +1645,6 @@ if (present(nr)) nr = lnr
 end subroutine geom_rand_point
 
 !----------------------------------------------------------------------
-! Subroutine: geom_compute_smoother
-!> Compute full grid smoother
-!----------------------------------------------------------------------
-subroutine geom_compute_smoother(geom,mpl,nam)
-
-implicit none
-
-! Passed variables
-class(geom_type),intent(inout) :: geom !< Geometry
-type(mpl_type),intent(inout) :: mpl    !< MPI data
-type(nam_type),intent(in) :: nam       !< Namelist
-
-! Local variables
-integer :: ic0a,il0,i,jc0u,i_s,ic0s,ic0u,ic0,jc0s
-integer,allocatable :: nn_index(:,:),c0u_to_c0s(:),c0s_to_c0(:)
-real(kind_real) :: S
-logical :: lcheck_c0s(geom%nc0u)
-
-! Set name
-@:set_name(geom_compute_smoother)
-
-! Probe in
-@:probe_in()
-
-! Allocation
-allocate(nn_index(nam%full_grid_smoother_nn,geom%nc0a))
-allocate(geom%smoother(geom%nl0))
-
-! Initialization
-lcheck_c0s = .false.
-do il0=1,geom%nl0
-   geom%smoother(il0)%n_s = 0
-end do
-
-do ic0a=1,geom%nc0a
-   ! Find averaging points
-   call geom%tree_c0u%find_nearest_neighbors(geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),nam%full_grid_smoother_nn,nn_index(:,ic0a))
-
-   ! Count operations
-   do il0=1,geom%nl0
-      if (geom%gmask_c0a(ic0a,il0)) then
-         geom%smoother(il0)%n_s = geom%smoother(il0)%n_s+zss_count(geom%gmask_c0u(nn_index(:,ic0a),il0))
-      end if
-   end do
-
-   ! Add points to halo P
-   do i=1,nam%full_grid_smoother_nn
-      jc0u = nn_index(i,ic0a)
-      lcheck_c0s(jc0u) = .true.
-   end do
-end do
-
-! Allocation
-do il0=1,geom%nl0
-   call geom%smoother(il0)%alloc
-   geom%smoother(il0)%n_dst = geom%nc0a
-   write(geom%smoother(il0)%prefix,'(a,i3.3)') 'smoother_',il0
-end do
-
-! Define smoother
-do il0=1,geom%nl0
-   i_s = 0
-   do ic0a=1,geom%nc0a
-      if (geom%gmask_c0a(ic0a,il0)) then
-         do i=1,nam%full_grid_smoother_nn
-            jc0u = nn_index(i,ic0a)
-            S = one/real(zss_count(geom%gmask_c0u(nn_index(:,ic0a),il0)),kind_real)
-            if (geom%gmask_c0u(jc0u,il0)) then
-               i_s = i_s+1
-               geom%smoother(il0)%row(i_s) = ic0a
-               geom%smoother(il0)%col(i_s) = jc0u
-               geom%smoother(il0)%S(i_s) = S
-            end if
-         end do
-      end if
-   end do
-end do
-
-! Release memory
-deallocate(nn_index)
-
-! Allocation
-geom%nc0s = zss_count(lcheck_c0s)
-allocate(c0u_to_c0s(geom%nc0u))
-allocate(c0s_to_c0(geom%nc0s))
-
-! Conversions
-c0u_to_c0s = mpl%msv%vali
-ic0s = 0
-do ic0u=1,geom%nc0u
-   if (lcheck_c0s(ic0u)) then
-      ic0s = ic0s+1
-      c0u_to_c0s(ic0u) = ic0s
-      ic0 = geom%c0u_to_c0(ic0u)
-      c0s_to_c0(ic0s) = ic0
-   end if
-end do
-
-! Local interpolation source
-do il0=1,geom%nl0
-   geom%smoother(il0)%n_src = geom%nc0s
-   do i_s=1,geom%smoother(il0)%n_s
-      jc0u = geom%smoother(il0)%col(i_s)
-      jc0s = c0u_to_c0s(jc0u)
-      if (mpl%msv%isnot(jc0s)) then
-         geom%smoother(il0)%col(i_s) = jc0s
-      else
-         call mpl%abort('${subr}$','wrong local source for smoother')
-      end if
-   end do
-end do
-
-! Setup communications
-call geom%com_c0_AS%setup(mpl,'com_c0_AS',geom%nc0a,geom%nc0s,geom%nc0,geom%c0a_to_c0,c0s_to_c0)
-
-! Release memory
-deallocate(c0u_to_c0s)
-deallocate(c0s_to_c0)
-
-! Probe out
-@:probe_out()
-
-end subroutine geom_compute_smoother
-
-!----------------------------------------------------------------------
-! Subroutine: geom_apply_smoother
-!> Apply full grid smoother
-!----------------------------------------------------------------------
-subroutine geom_apply_smoother(geom,mpl,fld)
-
-implicit none
-
-! Passed variables
-class(geom_type),intent(in) :: geom                      !< Geometry
-type(mpl_type),intent(inout) :: mpl                      !< MPI data
-real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0) !< Field
-
-! Local variable
-integer :: il0
-real(kind_real) :: fld_c0s(geom%nc0s,geom%nl0)
-
-! Set name
-@:set_name(geom_apply_smoother)
-
-! Probe in
-@:probe_in()
-
-! Halo extension from zone A to zone P
-call geom%com_c0_AS%ext(mpl,fld,fld_c0s)
-
-! Post smoothing
-do il0=1,geom%nl0
-   call geom%smoother(il0)%apply(mpl,fld_c0s(:,il0),fld(:,il0))
-end do
-
-! Probe out
-@:probe_out()
-
-end subroutine geom_apply_smoother
-
-!----------------------------------------------------------------------
-! Subroutine: geom_apply_smoother_ad
-!> Apply full grid smoother, adjoint
-!----------------------------------------------------------------------
-subroutine geom_apply_smoother_ad(geom,mpl,fld)
-
-implicit none
-
-! Passed variables
-class(geom_type),intent(in) :: geom                      !< Geometry
-type(mpl_type),intent(inout) :: mpl                      !< MPI data
-real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0) !< Field
-
-! Local variable
-integer :: il0
-real(kind_real) :: fld_c0s(geom%nc0s,geom%nl0)
-
-! Set name
-@:set_name(geom_apply_smoother_ad)
-
-! Probe in
-@:probe_in()
-
-! Post-smoothing
-do il0=1,geom%nl0
-   call geom%smoother(il0)%apply_ad(mpl,fld(:,il0),fld_c0s(:,il0))
-end do
-
-! Halo reduction from zone P to zone A
-call geom%com_c0_AS%red(mpl,fld_c0s,fld)
-
-! Probe out
-@:probe_out()
-
-end subroutine geom_apply_smoother_ad
-
-!----------------------------------------------------------------------
 ! Subroutine: geom_initialize_sampling
 !> Intialize sampling
 !----------------------------------------------------------------------
@@ -2083,15 +1672,15 @@ integer,intent(in) :: ns                    !< Number of samplings points (globa
 integer,intent(out) :: s_to_cx(ns)          !< Horizontal sampling index (global)
 
 ! Local variables
-integer :: ncxa_eff,ncx_eff,offset,isa,icxa,is,icx,nfac,nssa,nss,issa,ix,iy,issamin,icxmin,iprocmin,nsa,nodemin,inode
+integer :: ncxa_eff,ncx_eff,isa,icxa,is,icx,nfac,nssa,nss,issa,ix,iy,issamin,icxmin,iprocmin,nsa,nodemin,inode,hash
 integer :: s_to_cxa(ns),nn_index(1)
-integer,allocatable :: proc_to_ncxa_eff(:),proc_to_icxmin(:),ssa_to_cxa(:),ssa_to_cx(:),ssa_to_node(:),s_to_ssa(:)
+integer,allocatable :: proc_to_icxmin(:),ssa_to_cxa(:),ssa_to_cx(:),ssa_to_node(:),s_to_ssa(:)
 integer,allocatable :: proc_to_nodemin(:),sa_to_s(:),order_s(:),cxa_to_node(:)
 real(kind_real) :: nss_real,lonlat(2),valmin,xmin,ymin,zmin,chmin,dist
 real(kind_real),allocatable :: proc_to_xmin(:),proc_to_ymin(:),proc_to_zmin(:),proc_to_chmin(:)
 real(kind_real),allocatable :: x_ssa(:),y_ssa(:),z_ssa(:),ch_ssa(:),potential(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:)
 logical :: retry,valid
-logical,allocatable :: lmask_cxa(:),lmask_ssa(:),indist_ssa(:)
+logical,allocatable :: lmask_cxa(:),lmask_ssa(:),indist_ssa(:),gmask_s(:)
 character(len=1024) :: cfmt
 type(atlas_structuredgrid) :: agrid
 
@@ -2109,47 +1698,11 @@ call mpl%f_comm%allreduce(ncxa_eff,ncx_eff,fckit_mpi_sum())
 if (ncx_eff==0) then
    ! Empty mask
    call mpl%abort('${subr}$','empty mask in initialize sampling')
-elseif (ncx_eff<ns) then
-   ! Not enough valid points
-   call mpl%abort('${subr}$','ns greater than ncx_eff in initialize_sampling')
-elseif (ncx_eff==ns) then
-   ! Just enough valid points
-   write(cfmt,'(a,i2.2,a)') '(a',ifmt+3,',a,i8,a)'
-   write(cfmt,'(a,i2.2,a)') 'All points are used'
-   if (verbosity) call mpl%flush
-
-   ! Allocation
-   allocate(proc_to_ncxa_eff(mpl%nproc))
-
-   ! Communication
-   call mpl%f_comm%allgather(ncxa_eff,proc_to_ncxa_eff)
-
-   ! Initialization
-   if (mpl%myproc==1) then
-      offset = 0
-   else
-      offset = sum(proc_to_ncxa_eff(1:mpl%myproc-1))
-   end if
-   s_to_cxa = mpl%msv%vali
-   s_to_cx = 0
-
-   ! Use all valid points
-   isa = 0
-   do icxa=1,ncxa
-      if (mask_cxa(icxa)) then
-         isa = isa+1
-         is = offset+isa
-         icx = cxa_to_cx(icxa)
-         s_to_cxa(is) = icxa
-         s_to_cx(is) = icx
-      end if
-   end do
-   call mpl%f_comm%allreduce(s_to_cx,fckit_mpi_sum())
-
-   ! Release memory
-   deallocate(proc_to_ncxa_eff)
+elseif (ns>nsmax) then
+   ! Sampling is too large
+   call mpl%abort('${subr}$','sampling size is too large')
 else
-   ! Too many valid points: subsampling
+   ! Sampling
 
    ! Allocation
    allocate(lmask_cxa(ncxa))
@@ -2161,8 +1714,8 @@ else
    nfac = nfacmin
    retry = .true.
    write(cfmt,'(a,i2.2,a)') '(a',ifmt+3,',a,i8,a)'
-   write(mpl%info,trim(cfmt)) '','Decimate full grid, at least ',ns,' points required'
-   if (verbosity) call mpl%flush
+   write(mpl%test,trim(cfmt)) '','Decimate full grid, at least ',ns,' points required, '
+   if (verbosity) call mpl%flush(.false.)
 
    do while (retry)
       ! Initialization
@@ -2173,9 +1726,9 @@ else
       nfac = 2*nfac
 
       ! Number of required points at global scale
-      nss_real = real(nfac*ns,kind_real)*four*pi/geom%area_max_c0
+      nss_real = real(nfac*ns,kind_real)*four*pi/geom%area_max_c0*(one+rth)
 
-      if (nss_real<real(nssmax,kind_real)) then
+      if (geom%global) then
          ! Global grid
          call get_grid(mpl,floor(nss_real),agrid,nss)
 
@@ -2251,8 +1804,7 @@ else
       call mpl%f_comm%allreduce(nssa,nss,fckit_mpi_sum())
 
       ! Print result
-      write(cfmt,'(a,i2.2,a)') '(a',ifmt+3,',i8,a)'
-      write(mpl%info,trim(cfmt)) '',nss,' valid points found'
+      write(mpl%test,'(i8,a)') nss,' valid points found'
       if (verbosity) call mpl%flush
       retry = (nss<ns)
    end do
@@ -2486,6 +2038,7 @@ allocate(lat_sa(nsa))
 allocate(lon_s(ns))
 allocate(lat_s(ns))
 allocate(order_s(ns))
+allocate(gmask_s(ns))
 
 ! Initialization
 isa = 0
@@ -2509,6 +2062,15 @@ call qsort(ns,lon_s,lat_s,order_s)
 ! Reorder sampling
 s_to_cx = s_to_cx(order_s)
 
+! Grid hash
+gmask_s = .true.
+call grid_hash(ns,lon_s,lat_s,gmask_s,hash)
+
+! Test grid hash
+write(cfmt,'(a,i2.2,a)') '(a',ifmt+3,',a,i12)'
+write(mpl%test,trim(cfmt)) '','Subgrid hash: ',hash
+if (verbosity) call mpl%flush
+
 ! Release memory
 deallocate(sa_to_s)
 deallocate(lon_sa)
@@ -2516,6 +2078,7 @@ deallocate(lat_sa)
 deallocate(lon_s)
 deallocate(lat_s)
 deallocate(order_s)
+deallocate(gmask_s)
 
 ! Probe out
 @:probe_out()

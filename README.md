@@ -15,13 +15,3 @@ which can be obtained at [http://www.apache.org/licenses/LICENSE-2.0](http://www
 The compilation of SABER is made easier by using the [saber-bundle](CI/README.md).
 
 Documentation can be found on the [JEDI Documentation website](https://jointcenterforsatellitedataassimilation-jedi-docs.readthedocs-hosted.com/en/latest/index.html).
-
-## BUMP
-
-The BUMP (Background error on an Unstructured Mesh Package) library estimates and applies background error covariance-related operators, defined on an unstructured mesh.
-
-Most of the BUMP code is distributed under the [CeCILL-C license](http://www.cecill.info/licences/Licence_CeCILL-C_V1-en.html) (Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT).
-
-The fact that you are downloading this code means that you have had knowledge of the [CeCILL-C license](http://www.cecill.info/licences/Licence_CeCILL-C_V1-en.html) and that you accept its terms.
-
-## Other libraries coming soon ...

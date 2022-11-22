@@ -24,9 +24,6 @@ type :: registry_type
 contains
    procedure :: init => tools_linkedlist_implementation_init
    procedure :: add => tools_linkedlist_implementation_add
-   procedure :: has => tools_linkedlist_implementation_has
-   procedure :: get_key => tools_linkedlist_implementation_get_key
    procedure :: get => tools_linkedlist_implementation_get
    procedure :: remove => tools_linkedlist_implementation_remove
-   procedure :: finalize => tools_linkedlist_implementation_finalize
 end type registry_type

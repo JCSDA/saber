@@ -197,7 +197,8 @@ do iv=1,nam%nv
    end do
 end do
 
-if (bpar%nbe>bpar%nb) then
+select case (nam%strategy)
+case ('common','common_weighted')
    ! Common block
    ib = bpar%nbe
 
@@ -217,33 +218,10 @@ if (bpar%nbe>bpar%nb) then
 
    ! Select blocks
    bpar%cv_block(ib) = mpl%msv%vali
-   select case (nam%strategy)
-   case ('diag_all')
-      bpar%diag_block(ib) = .true.
-      bpar%avg_block(ib) = .false.
-      bpar%nicas_block(ib) = .false.
-   case ('common')
-      bpar%diag_block(ib) = .true.
-      bpar%avg_block(ib) = .false.
-      bpar%nicas_block(ib) = .true.
-      bpar%cv_block(ib) = ib
-   case ('common_weighted')
-      bpar%diag_block(ib) = .true.
-      bpar%avg_block(ib) = .false.
-      bpar%nicas_block(ib) = .true.
-   case ('specific_univariate')
-      bpar%diag_block(ib) = .false.
-      bpar%avg_block(ib) = .false.
-      bpar%nicas_block(ib) = .false.
-   case ('specific_multivariate')
-      bpar%diag_block(ib) = .false.
-      bpar%avg_block(ib) = .false.
-      bpar%nicas_block(ib) = .false.
-   case default
-      bpar%diag_block(ib) = .false.
-      bpar%avg_block(ib) = .false.
-      bpar%nicas_block(ib) = .false.
-   end select
+   bpar%diag_block(ib) = .true.
+   bpar%avg_block(ib) = .false.
+   bpar%nicas_block(ib) = .true.
+   if (nam%strategy=='common') bpar%cv_block(ib) = ib
    bpar%fit_block(ib) = bpar%diag_block(ib)
 
    ! Blocks information
@@ -251,9 +229,9 @@ if (bpar%nbe>bpar%nb) then
    bpar%b_to_v1(ib) = 0
    bpar%b_to_v2(ib) = 0
    bpar%v_to_b(0) = ib
-else
+case default
    bpar%v_to_b(0) = 0
-end if
+end select
 
 ! Print summary
 do ib=1,bpar%nbe

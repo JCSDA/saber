@@ -18,7 +18,7 @@ use tools_gc99, only: fit_func_sqrt
 use tools_kinds, only: kind_int,kind_real,kind_long,huge_int,huge_real
 use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim,check_dim
 use tools_qsort, only: qsort
-use tools_repro, only: supeq,sup,inf,infeq,eq,indist
+use tools_repro, only: supeq,sup,inf,infeq,eq,indist,rth
 use type_bpar, only: bpar_type
 use type_cmat_blk, only: cmat_blk_type
 use type_com, only: com_type
@@ -78,6 +78,7 @@ contains
    procedure :: apply_sqrt => nicas_blk_apply_sqrt
    procedure :: apply_sqrt_ad => nicas_blk_apply_sqrt_ad
    procedure :: test_adjoint => nicas_blk_test_adjoint
+   procedure :: test_normalization => nicas_blk_test_normalization
    procedure :: test_dirac => nicas_blk_test_dirac
 end type nicas_blk_type
 
@@ -889,7 +890,7 @@ real(kind_real),intent(in) :: rhflt(geom%nl0)    !< Horizontal support radius pr
 ! Local variables
 integer :: il0,il0i,jl0,jl0i,jl0is,jl0is_tmp,nl0,nl0i
 integer :: l0i_to_l0(geom%nl0),proc_to_jl0is(mpl%nproc)
-integer :: levs(nl0max),nc0_gmask(0:geom%nl0),grid_hash(0:geom%nl0)
+integer :: levs(nl0max),nc0_gmask(0:geom%nl0)
 real(kind_real) :: resol
 real(kind_real) :: vunit_c0a(geom%nc0a,geom%nl0),area_ver_c0(geom%nl0),vunitavg(geom%nl0),vunit_c0u(geom%nc0u,geom%nl0)
 logical :: gmask_c0a(geom%nc0a,geom%nl0),gmask_hor_c0a(geom%nc0a),gmask_c0u(geom%nc0u,geom%nl0)
@@ -960,7 +961,6 @@ gmask_hor_c0a = geom%gmask_hor_c0a
 nc0_gmask = geom%nc0_gmask
 area_ver_c0 = geom%area_ver_c0
 vunitavg = geom%vunitavg
-grid_hash = geom%grid_hash
 vunit_c0u = geom%vunit_c0u
 gmask_c0u = geom%gmask_c0u
 
@@ -985,7 +985,6 @@ do il0i=1,nl0i
    geom%nc0_gmask(1) = nc0_gmask(il0)
    geom%area_ver_c0(1) = area_ver_c0(il0)
    geom%vunitavg(1) = vunitavg(il0)
-   geom%grid_hash(1) = grid_hash(il0)
    geom%vunit_c0u(:,1) = vunit_c0u(:,il0)
    geom%gmask_c0u(:,1) = gmask_c0u(:,il0)
 
@@ -1015,7 +1014,6 @@ geom%gmask_hor_c0a = gmask_hor_c0a
 geom%nc0_gmask = nc0_gmask
 geom%area_ver_c0 = area_ver_c0
 geom%vunitavg = vunitavg
-geom%grid_hash = grid_hash
 geom%vunit_c0u = vunit_c0u
 geom%gmask_c0u = gmask_c0u
 
@@ -1271,8 +1269,11 @@ do icmp=1,nicas_blk%ncmp
    sum1 = sum1+sum1_tmp
 end do
 call mpl%dot_prod(fld1,fld2,sum2)
-write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Block NICAS adjoint test:                    ', &
+write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Block NICAS adjoint test values:                    ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
+if (nicas_blk%verbosity) call mpl%flush
+write(mpl%test,'(a7,a,l1)') '','Block NICAS adjoint test result:                    ', &
+ & two*abs(sum1-sum2)/abs(sum1+sum2)<rth
 if (nicas_blk%verbosity) call mpl%flush
 
 ! Release memory
@@ -1290,6 +1291,93 @@ end associate
 @:probe_out()
 
 end subroutine nicas_blk_test_adjoint
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_blk_test_normalization
+!> Test NICAS normalization
+!----------------------------------------------------------------------
+subroutine nicas_blk_test_normalization(nicas_blk,mpl,rng,nam,geom)
+
+implicit none
+
+! Passed variables
+class(nicas_blk_type),intent(in) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+type(rng_type),intent(inout) :: rng           !< Random number generator
+type(nam_type),intent(in) :: nam              !< Namelist
+type(geom_type),intent(in) :: geom            !< Geometry
+
+! Local variables
+integer :: icmp,itest
+integer :: il0(nam%check_normalization),iproc(nam%check_normalization),ic0a(nam%check_normalization)
+real(kind_real) :: fld(geom%nc0a,geom%nl0),norm,val(nam%check_normalization)
+type(cv_blk_type) :: cv_blk
+
+! Set name
+@:set_name(nicas_blk_test_normalization)
+
+! Probe in
+@:probe_in()
+
+! Associate
+associate(ib=>nicas_blk%ib)
+
+! Copy number of components
+cv_blk%ncmp = nicas_blk%ncmp
+
+! Allocation
+allocate(cv_blk%cmp(cv_blk%ncmp))
+
+do icmp=1,cv_blk%ncmp
+   ! Allocation and initialization
+   call cv_blk%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%nsa)
+end do
+
+! Get random levels
+if (mpl%main) call rng%rand(1,geom%nl0,il0)
+call mpl%f_comm%broadcast(il0,mpl%rootproc-1)
+
+! Resynchronize random number generator
+call rng%resync(mpl)
+
+! Get random points
+do itest=1,nam%check_normalization
+   call geom%rand_point(mpl,rng,il0(itest),iproc(itest),ic0a(itest))
+end do
+
+! Desynchronize random number generator
+call rng%desync(mpl)
+
+! Check normalization
+write(mpl%info,'(a10,a)') '','Check normalization'
+if (nicas_blk%verbosity) call mpl%flush
+do itest=1,nam%check_normalization
+   ! Initialization
+   fld = zero
+   if (mpl%myproc==iproc(itest)) fld(ic0a(itest),il0(itest)) = one
+
+   ! Apply NICAS square-root adjoint
+   call nicas_blk%apply_sqrt_ad(mpl,geom,fld,cv_blk)
+
+   ! Apply NICAS square-root
+   call nicas_blk%apply_sqrt(mpl,geom,cv_blk,fld)
+
+   ! Broadcast normalization value
+   if (mpl%myproc==iproc(itest)) norm = fld(ic0a(itest),il0(itest))
+   call mpl%f_comm%broadcast(norm,iproc(itest)-1)
+   val(itest) = norm
+end do
+write(mpl%test,'(a13,a,f10.7,a,f10.7,a,i6,a)') '','Min / max:',minval(val),' / ',maxval(val),' over ', &
+ & nam%check_normalization,' tests'
+if (nicas_blk%verbosity) call mpl%flush
+
+! End associate
+end associate
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_blk_test_normalization
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_blk_test_dirac
@@ -1356,9 +1444,6 @@ do idir=1,geom%ndir
    end do
 end do
 
-! Write field
-if (nam%write_c0) call geom%io%fld_write(mpl,nicas_blk%blkid,nicas_blk%dirac_id,fld_tot,geom%gmask_c0a)
-
 ! Print results
 write(mpl%info,'(a7,a)') '','Values at dirac points:'
 if (nicas_blk%verbosity) call mpl%flush
@@ -1366,10 +1451,10 @@ do idir=1,geom%ndir
    if (geom%iprocdir(idir)==mpl%myproc) val = fld_tot(geom%ic0adir(idir),geom%il0dir(idir))
    call mpl%f_comm%broadcast(val,geom%iprocdir(idir)-1)
    if (mpl%msv%isnot(val)) then
-      write(mpl%info,'(a10,f6.1,a,f6.1,a,f10.7)') '',geom%londir(idir)*rad2deg,' / ',geom%latdir(idir)*rad2deg,': ',val
+      write(mpl%test,'(a10,f6.1,a,f6.1,a,f10.7)') '',geom%londir(idir)*rad2deg,' / ',geom%latdir(idir)*rad2deg,': ',val
       if (nicas_blk%verbosity) call mpl%flush
    else
-      write(mpl%info,'(a10,f6.1,a,f6.1,a)') '',geom%londir(idir)*rad2deg,' / ',geom%latdir(idir)*rad2deg,': missing value'
+      write(mpl%test,'(a10,f6.1,a,f6.1,a)') '',geom%londir(idir)*rad2deg,' / ',geom%latdir(idir)*rad2deg,': missing value'
       if (nicas_blk%verbosity) call mpl%flush
    end if
 end do
@@ -1381,10 +1466,10 @@ do il0=1,geom%nl0
    call mpl%f_comm%allreduce(valmin,fckit_mpi_min())
    call mpl%f_comm%allreduce(valmax,fckit_mpi_max())
    if (mpl%msv%isnot(valmin).or.mpl%msv%isnot(valmax)) then
-      write(mpl%info,'(a10,a,i3,a,f10.7,a,f10.7)') '','Level ',nam%levs(il0),': ',valmin,' - ',valmax
+      write(mpl%test,'(a10,a,i3,a,f10.7,a,f10.7)') '','Level ',nam%levs(il0),': ',valmin,' - ',valmax
       if (nicas_blk%verbosity) call mpl%flush
    else
-      write(mpl%info,'(a10,a,i3,a)') '','Level ',nam%levs(il0),': missing values'
+      write(mpl%test,'(a10,a,i3,a)') '','Level ',nam%levs(il0),': missing values'
       if (nicas_blk%verbosity) call mpl%flush
    end if
 end do

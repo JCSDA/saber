@@ -1,5 +1,5 @@
 # saber-import.cmake
-# find_dependency calls for OOPS target dependencies
+# find_dependency calls for SABER target dependencies
 
 include(CMakeFindDependencyMacro)
 

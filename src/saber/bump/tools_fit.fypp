@@ -49,14 +49,11 @@ end interface
 interface ver_smooth
    module procedure fit_ver_smooth
 end interface
-interface ver_fill
-   module procedure fit_ver_fill
-end interface
 
 private
 public :: condmax
 public :: diag_iso,diag_tensor,diag_ver,diag_iso_full,diag_tensor_full,tensor_d2h,tensor_d2r,tensor_check_cond
-public :: fast_fit,ver_smooth,ver_fill
+public :: fast_fit,ver_smooth
 
 contains
 
@@ -786,68 +783,5 @@ end if
 @:probe_out()
 
 end subroutine fit_ver_smooth
-
-!----------------------------------------------------------------------
-! Subroutine: fit_ver_fill
-!> Missing values filling of a vertical profile
-!----------------------------------------------------------------------
-subroutine fit_ver_fill(mpl,n,x,profile)
-
-implicit none
-
-! Passed variables
-type(mpl_type),intent(inout) :: mpl         !< MPI data
-integer,intent(in) :: n                     !< Vector size
-real(kind_real),intent(in) :: x(n)          !< Coordinate
-real(kind_real),intent(inout) :: profile(n) !< Vertical profile
-
-! Local variables
-integer :: i,j,iinf,isup
-real(kind_real) :: profile_init(n)
-
-! Set name
-@:set_name(fit_ver_fill)
-
-! Probe in
-@:probe_in()
-
-if (mpl%msv%isanynot(profile)) then
-   ! Initialization
-   profile_init = profile
-   iinf = mpl%msv%vali
-
-   do i=1,n
-      if (mpl%msv%isnot(profile_init(i))) then
-         ! Valid inferior point
-         iinf = i
-      else
-         ! Look for a superior point
-         isup = mpl%msv%vali
-         j = i+1
-         do while ((j<=n).and.(mpl%msv%is(isup)))
-            if (mpl%msv%isnot(profile_init(j))) isup = j
-            j = j+1
-         end do
-
-         if (mpl%msv%isnot(iinf).and.mpl%msv%isnot(isup)) then
-            ! Interpolation
-            profile(i) = profile_init(iinf)+(x(i)-x(iinf))*(profile_init(isup)-profile_init(iinf))/(x(isup)-x(iinf))
-         elseif (mpl%msv%isnot(isup)) then
-            ! Extrapolation with nearest superior point
-            profile(i) = profile(isup)
-         elseif (mpl%msv%isnot(iinf)) then
-            ! Extrapolation with nearest inferior point
-            profile(i) = profile(iinf)
-         else
-            call mpl%abort('${subr}$','too many missing values')
-         end if
-      end if
-   end do
-end if
-
-! Probe out
-@:probe_out()
-
-end subroutine fit_ver_fill
 
 end module tools_fit

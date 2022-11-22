@@ -41,7 +41,6 @@ extern "C" {
   void bump_apply_vbal_f90(const int &, const atlas::field::FieldSetImpl *);
   void bump_apply_vbal_inv_f90(const int &, const atlas::field::FieldSetImpl *);
   void bump_apply_vbal_ad_f90(const int &, const atlas::field::FieldSetImpl *);
-  void bump_apply_vbal_inv_ad_f90(const int &, const atlas::field::FieldSetImpl *);
   void bump_apply_stddev_f90(const int &, const atlas::field::FieldSetImpl *);
   void bump_apply_stddev_inv_f90(const int &, const atlas::field::FieldSetImpl *);
   void bump_apply_nicas_f90(const int &, const atlas::field::FieldSetImpl *);
