@@ -40,8 +40,8 @@ namespace bump {
 
 // -----------------------------------------------------------------------------
 
-class GeneralParameters : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(GeneralParameters, oops::Parameters)
+class GeneralSection : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(GeneralSection, oops::Parameters)
 
  public:
   // Data directory
@@ -68,8 +68,8 @@ class GeneralParameters : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
-class DriversParameters : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(DriversParameters, oops::Parameters)
+class DriversSection : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(DriversSection, oops::Parameters)
 
  public:
   // Localization/hybridization to compute ('cor', 'loc', 'hyb-rnd' or 'hyb-ens')
@@ -119,6 +119,8 @@ class DriversParameters : public oops::Parameters {
   oops::OptionalParameter<bool> new_hdiag{"new_hdiag", this};
   // Write HDIAG diagnostics
   oops::OptionalParameter<bool> write_hdiag{"write_hdiag", this};
+  // Write HDIAG components detail
+  oops::OptionalParameter<bool> write_hdiag_detail{"write_hdiag_detail", this};
   // Compute new NICAS parameters
   oops::OptionalParameter<bool> new_nicas{"new_nicas", this};
   // Load local NICAS parameters
@@ -163,6 +165,134 @@ class DriversParameters : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
+class FilesSection : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(FilesSection, oops::Parameters)
+
+ public:
+  // Variance files
+  oops::OptionalParameter<std::vector<std::string>> fname_var{"fname_var", this};
+  // Sampling file
+  oops::OptionalParameter<std::string> fname_samp{"fname_samp", this};
+  // Vertical covariance files
+  oops::OptionalParameter<std::vector<std::string>> fname_vbal_cov{"fname_vbal_cov", this};
+  // Vertical balance file
+  oops::OptionalParameter<std::string> fname_vbal{"fname_vbal", this};
+  // Moments files
+  oops::OptionalParameter<std::vector<std::string>> fname_mom{"fname_mom", this};
+  // NICAS file
+  oops::OptionalParameter<std::string> fname_nicas{"fname_nicas", this};
+  // Wind transform file
+  oops::OptionalParameter<std::string> fname_wind{"fname_wind", this};
+};
+
+// -----------------------------------------------------------------------------
+
+class ModelSection : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(ModelSection, oops::Parameters)
+
+ public:
+  // Number of levels
+  oops::OptionalParameter<int> nl0{"nl0", this};
+  // Levels
+  oops::OptionalParameter<std::vector<int>> levs{"levs", this};
+  // Level for 2D variables ('first' or 'last')
+  oops::OptionalParameter<std::string> lev2d{"lev2d", this};
+  // Variables names
+  oops::OptionalParameter<std::vector<std::string>> variables{"variables", this};
+  // I/O keys
+  oops::OptionalParameter<std::vector<std::string>> io_keys{"io_keys", this};
+  // I/O values
+  oops::OptionalParameter<std::vector<std::string>> io_values{"io_values", this};
+};
+
+// -----------------------------------------------------------------------------
+
+class EnsembleSizesSection : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(EnsembleSizesSection, oops::Parameters)
+
+ public:
+  // Ensemble 1 size
+  oops::OptionalParameter<int> ens1_ne{"ens1_ne", this};
+  // Ensemble 1 sub-ensembles number
+  oops::OptionalParameter<int> ens1_nsub{"ens1_nsub", this};
+  // Ensemble 2 size
+  oops::OptionalParameter<int> ens2_ne{"ens2_ne", this};
+  // Ensemble 2 sub-ensembles number
+  oops::OptionalParameter<int> ens2_nsub{"ens2_nsub", this};
+};
+
+// -----------------------------------------------------------------------------
+
+class MaskSection : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(MaskSection, oops::Parameters)
+
+ public:
+  // Mask restriction type
+  oops::OptionalParameter<std::string> mask_type{"mask_type", this};
+  // Mask threshold side ('lower' if mask_th is the lower bound, 'upper' if mask_th is the
+  // upper bound)
+  oops::OptionalParameter<std::vector<std::string>> mask_lu{"mask_lu", this};
+  // Mask threshold
+  oops::OptionalParameter<std::vector<double>> mask_th{"mask_th", this};
+  // Threshold on vertically contiguous points for sampling mask (0 to skip the test)
+  oops::OptionalParameter<int> ncontig_th{"ncontig_th", this};
+  // Check that sampling couples and interpolations do not cross mask boundaries
+  oops::OptionalParameter<bool> mask_check{"mask_check", this};
+};
+
+// -----------------------------------------------------------------------------
+
+class SamplingSection : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(SamplingSection, oops::Parameters)
+
+ public:
+  // Number of sampling points
+  oops::OptionalParameter<int> nc1{"nc1", this};
+  // Number of diagnostic points
+  oops::OptionalParameter<int> nc2{"nc2", this};
+  // Number of horizontal classes
+  oops::OptionalParameter<int> nc3{"nc3", this};
+  // Number of angular sectors
+  oops::OptionalParameter<int> nc4{"nc4", this};
+  // Class size (for sam_type='hor'), should be larger than the typical grid cell size [in meters]
+  oops::OptionalParameter<double> dc{"dc", this};
+  // Reduced number of levels for diagnostics
+  oops::OptionalParameter<int> nl0r{"nl0r", this};
+  // Activate local diagnostics
+  oops::OptionalParameter<bool> local_diag{"local_diag", this};
+  // Local diagnostics calculation radius [in meters]
+  oops::OptionalParameter<double> local_rad{"local_rad", this};
+  // Local diagnostics calculation latitude band half-width [in degrees]
+  oops::OptionalParameter<double> local_dlat{"local_dlat", this};
+  // Diagnostic draw type ('random' or 'octahedral')
+  oops::OptionalParameter<std::string> samp_draw_type{"samp_draw_type", this};
+  // Maximum number of random number draws
+  oops::OptionalParameter<int> irmax{"irmax", this};
+  // Vertical balance C2B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based
+  // or 'si': smooth interpolation)
+  oops::OptionalParameter<std::string> samp_interp_type{"samp_interp_type", this};
+};
+
+// -----------------------------------------------------------------------------
+
+class LocalizationSection : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(LocalizationSection, oops::Parameters)
+
+ public:
+  // Ensemble size
+  oops::OptionalParameter<int> ne{"ne", this};
+  // Ensemble size of the hybrid term
+  oops::OptionalParameter<int> ne_lr{"ne_lr", this};
+  // Gaussian approximation for asymptotic quantities
+  oops::OptionalParameter<bool> gau_approx{"gau_approx", this};
+  // Threshold on generalized kurtosis (3.0 = Gaussian distribution)
+  oops::OptionalParameter<double> gen_kurt_th{"gen_kurt_th", this};
+  // Number of bins for averaged statistics histograms
+  oops::OptionalParameter<int> avg_nbins{"avg_nbins", this};
+};
+
+// -----------------------------------------------------------------------------
+
 class VerticalBlockParameters : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(VerticalBlockParameters, oops::Parameters)
 
@@ -179,111 +309,10 @@ class VerticalBlockParameters : public oops::Parameters {
   oops::Parameter<double> id_coef{"id_coef", 1.0, this};
 };
 
-// -----------------------------------------------------------------------------
-
-class BUMPParameters : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(BUMPParameters, oops::Parameters)
+class VerticalBalanceSection : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(VerticalBalanceSection, oops::Parameters)
 
  public:
-  // Internal parameters
-
-  // General parameters
-  oops::OptionalParameter<GeneralParameters> general{"general", this};
-
-  // Drivers parameters
-  oops::OptionalParameter<DriversParameters> drivers{"drivers", this};
-
-  // files_param
-
-  // Variance files
-  oops::OptionalParameter<std::vector<std::string>> fname_var{"fname_var", this};
-  // Sampling file
-  oops::OptionalParameter<std::string> fname_samp{"fname_samp", this};
-  // Vertical covariance files
-  oops::OptionalParameter<std::vector<std::string>> fname_vbal_cov{"fname_vbal_cov", this};
-  // Vertical balance file
-  oops::OptionalParameter<std::string> fname_vbal{"fname_vbal", this};
-  // Moments files
-  oops::OptionalParameter<std::vector<std::string>> fname_mom{"fname_mom", this};
-  // NICAS file
-  oops::OptionalParameter<std::string> fname_nicas{"fname_nicas", this};
-  // Wind transform file
-  oops::OptionalParameter<std::string> fname_wind{"fname_wind", this};
-
-  // model_param
-
-  // Number of levels
-  oops::OptionalParameter<int> nl0{"nl0", this};
-  // Levels
-  oops::OptionalParameter<std::vector<int>> levs{"levs", this};
-  // Level for 2D variables ('first' or 'last')
-  oops::OptionalParameter<std::string> lev2d{"lev2d", this};
-  // Variables names
-  oops::OptionalParameter<std::vector<std::string>> variables{"variables", this};
-  // I/O keys
-  oops::OptionalParameter<std::vector<std::string>> io_keys{"io_keys", this};
-  // I/O values
-  oops::OptionalParameter<std::vector<std::string>> io_values{"io_values", this};
-
-  // ens1_param
-
-  // Ensemble 1 size
-  oops::OptionalParameter<int> ens1_ne{"ens1_ne", this};
-  // Ensemble 1 sub-ensembles number
-  oops::OptionalParameter<int> ens1_nsub{"ens1_nsub", this};
-
-  // ens2_param
-
-  // Ensemble 2 size
-  oops::OptionalParameter<int> ens2_ne{"ens2_ne", this};
-  // Ensemble 2 sub-ensembles number
-  oops::OptionalParameter<int> ens2_nsub{"ens2_nsub", this};
-
-  // sampling_param
-
-  // Mask restriction type
-  oops::OptionalParameter<std::string> mask_type{"mask_type", this};
-  // Mask threshold side ('lower' if mask_th is the lower bound, 'upper' if mask_th is the
-  // upper bound)
-  oops::OptionalParameter<std::vector<std::string>> mask_lu{"mask_lu", this};
-  // Mask threshold
-  oops::OptionalParameter<std::vector<double>> mask_th{"mask_th", this};
-  // Threshold on vertically contiguous points for sampling mask (0 to skip the test)
-  oops::OptionalParameter<int> ncontig_th{"ncontig_th", this};
-  // Check that sampling couples and interpolations do not cross mask boundaries
-  oops::OptionalParameter<bool> mask_check{"mask_check", this};
-  // Diagnostic draw type ('random' or 'octahedral')
-  oops::OptionalParameter<std::string> samp_draw_type{"samp_draw_type", this};
-  // Number of sampling points
-  oops::OptionalParameter<int> nc1{"nc1", this};
-  // Number of diagnostic points
-  oops::OptionalParameter<int> nc2{"nc2", this};
-  // Number of horizontal classes
-  oops::OptionalParameter<int> nc3{"nc3", this};
-  // Number of angular sectors
-  oops::OptionalParameter<int> nc4{"nc4", this};
-  // Class size (for sam_type='hor'), should be larger than the typical grid cell size [in meters]
-  oops::OptionalParameter<double> dc{"dc", this};
-  // Reduced number of levels for diagnostics
-  oops::OptionalParameter<int> nl0r{"nl0r", this};
-  // Maximum number of random number draws
-  oops::OptionalParameter<int> irmax{"irmax", this};
-  // Vertical balance C2B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based
-  // or 'si': smooth interpolation)
-  oops::OptionalParameter<std::string> samp_interp_type{"samp_interp_type", this};
-
-  // diag_param
-
-  // Ensemble size
-  oops::OptionalParameter<int> ne{"ne", this};
-  // Ensemble size of the hybrid term
-  oops::OptionalParameter<int> ne_lr{"ne_lr", this};
-  // Threshold on generalized kurtosis (3.0 = Gaussian distribution)
-  oops::OptionalParameter<double> gen_kurt_th{"gen_kurt_th", this};
-  // Gaussian approximation for asymptotic quantities
-  oops::OptionalParameter<bool> gau_approx{"gau_approx", this};
-  // Number of bins for averaged statistics histograms
-  oops::OptionalParameter<int> avg_nbins{"avg_nbins", this};
   // Vertical balance parameters
   oops::OptionalParameter<std::vector<VerticalBlockParameters>> vbal{"vbal", this};
   // Vertical balance diagnostic radius [in meters]
@@ -298,6 +327,14 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<double> vbal_pseudo_inv_var_th{"vbal_pseudo_inv_var_th", this};
   // Identity vertical balance for tests
   oops::OptionalParameter<bool> vbal_id{"vbal_id", this};
+};
+
+// -----------------------------------------------------------------------------
+
+class VarianceSection : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(VarianceSection, oops::Parameters)
+
+ public:
   // Force specific variance
   oops::OptionalParameter<bool> forced_var{"forced_var", this};
   // Forced standard-deviation
@@ -310,15 +347,28 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<int> var_npass{"var_npass", this};
   // Variance initial filtering support radius [in meters]
   oops::OptionalParameter<eckit::LocalConfiguration> var_rhflt{"var_rhflt", this};
-  // Activate local diagnostics
-  oops::OptionalParameter<bool> local_diag{"local_diag", this};
-  // Local diagnostics calculation radius [in meters]
-  oops::OptionalParameter<double> local_rad{"local_rad", this};
-  // Local diagnostics calculation latitude band half-width [in degrees]
-  oops::OptionalParameter<double> local_dlat{"local_dlat", this};
+};
 
-  // fit_param
+// -----------------------------------------------------------------------------
 
+class OptimalityTestSection : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(OptimalityTestSection, oops::Parameters)
+
+ public:
+  // Number of length-scale factors for optimization
+  oops::OptionalParameter<int> optimality_nfac{"optimality_nfac", this};
+  // Increments of length-scale factors for optimization
+  oops::OptionalParameter<double> optimality_delta{"optimality_delta", this};
+  // Number of test vectors for optimization
+  oops::OptionalParameter<int> optimality_ntest{"optimality_ntest", this};
+};
+
+// -----------------------------------------------------------------------------
+
+class FitSection : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(FitSection, oops::Parameters)
+
+ public:
   // Horizontal filtering suport radius [in meters]
   oops::OptionalParameter<double> diag_rhflt{"diag_rhflt", this};
   // Vertical filtering support radius
@@ -327,13 +377,30 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<int> fit_dl0{"fit_dl0", this};
   // Number of components in the fit function
   oops::OptionalParameter<int> fit_ncmp{"fit_ncmp", this};
-  // Write HDIAG components detail
-  oops::OptionalParameter<bool> write_hdiag_detail{"write_hdiag_detail", this};
-  // Update localization for hybridization
-  oops::OptionalParameter<bool> hybrid_loc_update{"hybrid_loc_update", this};
+};
 
-  // nicas_param
+// -----------------------------------------------------------------------------
 
+class LocalProfilesSection : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(LocalProfilesSection, oops::Parameters)
+
+ public:
+  // Number of local diagnostics profiles to write (for local_diag = .true.)
+  oops::OptionalParameter<int> nldwv{"nldwv", this};
+  // Longitudes of the local diagnostics profiles to write [in degrees]
+  oops::OptionalParameter<std::vector<double>> lon_ldwv{"lon_ldwv", this};
+  // Latitudes of the local diagnostics profiles to write [in degrees]
+  oops::OptionalParameter<std::vector<double>> lat_ldwv{"lat_ldwv", this};
+  // Name of the local diagnostics profiles to write
+  oops::OptionalParameter<std::vector<std::string>> name_ldwv{"name_ldwv", this};
+};
+
+// -----------------------------------------------------------------------------
+
+class NicasSection : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(NicasSection, oops::Parameters)
+
+ public:
   // Resolution
   oops::OptionalParameter<double> resol{"resol", this};
   // Maximum size of the Sc1 subset
@@ -361,9 +428,14 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<bool> write_nicas_grids{"write_nicas_grids", this};
   // Horizontal NICAS interpolation test
   oops::OptionalParameter<bool> interp_test{"interp_test", this};
+};
 
-  // dirac_param
+// -----------------------------------------------------------------------------
 
+class DiracSection : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(DiracSection, oops::Parameters)
+
+ public:
   // Number of Diracs
   oops::OptionalParameter<int> ndir{"ndir", this};
   // Diracs longitudes [in degrees]
@@ -374,20 +446,14 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<std::vector<int>> levdir{"levdir", this};
   // Diracs variable indices
   oops::OptionalParameter<std::vector<int>> ivdir{"ivdir", this};
+};
 
-  // output_param
+// -----------------------------------------------------------------------------
 
-  // Number of local diagnostics profiles to write (for local_diag = .true.)
-  oops::OptionalParameter<int> nldwv{"nldwv", this};
-  // Longitudes of the local diagnostics profiles to write [in degrees]
-  oops::OptionalParameter<std::vector<double>> lon_ldwv{"lon_ldwv", this};
-  // Latitudes of the local diagnostics profiles to write [in degrees]
-  oops::OptionalParameter<std::vector<double>> lat_ldwv{"lat_ldwv", this};
-  // Name of the local diagnostics profiles to write
-  oops::OptionalParameter<std::vector<std::string>> name_ldwv{"name_ldwv", this};
+class WindSection : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(WindSection, oops::Parameters)
 
-  // wind_param
-
+ public:
   // Streamfunction variable name
   oops::OptionalParameter<std::string> wind_streamfunction{"wind_streamfunction", this};
   // Velocity potential variable name
@@ -404,6 +470,48 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<int> wind_nsg{"wind_nsg", this};
   // Wind inflation to compensate the Savitzky-Golay smoothing
   oops::OptionalParameter<double> wind_inflation{"wind_inflation", this};
+};
+
+// -----------------------------------------------------------------------------
+
+class BUMPParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(BUMPParameters, oops::Parameters)
+
+ public:
+  // Internal parameters
+
+  // General parameters
+  oops::OptionalParameter<GeneralSection> general{"general", this};
+  // Drivers parameters
+  oops::OptionalParameter<DriversSection> drivers{"drivers", this};
+  // Files parameters
+  oops::OptionalParameter<FilesSection> files{"files", this};
+  // Model parameters
+  oops::OptionalParameter<ModelSection> model{"model", this};
+  // Ensemble sizes parameters
+  oops::OptionalParameter<EnsembleSizesSection> ensembleSizes{"ensemble sizes", this};
+  // Mask parameters
+  oops::OptionalParameter<MaskSection> mask{"mask", this};
+  // Sampling parameters
+  oops::OptionalParameter<SamplingSection> sampling{"sampling", this};
+  // Localization parameters
+  oops::OptionalParameter<LocalizationSection> localization{"localization", this};
+  // Vertical balance parameters
+  oops::OptionalParameter<VerticalBalanceSection> verticalBalance{"vertical balance", this};
+  // Variance parameters
+  oops::OptionalParameter<VarianceSection> variance{"variance", this};
+  // Optimality test parameters
+  oops::OptionalParameter<OptimalityTestSection> optimalityTest{"optimality test", this};
+  // Fit parameters
+  oops::OptionalParameter<FitSection> fit{"fit", this};
+  // Local profiles parameters
+  oops::OptionalParameter<LocalProfilesSection> localProfiles{"local profiles", this};
+  // NICAS parameters
+  oops::OptionalParameter<NicasSection> nicas{"nicas", this};
+  // Dirac parameters
+  oops::OptionalParameter<DiracSection> dirac{"dirac", this};
+  // Wind parameters
+  oops::OptionalParameter<WindSection> wind{"wind", this};
 
   // External parameters
 

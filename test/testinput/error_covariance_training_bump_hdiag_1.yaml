@@ -28,38 +28,42 @@ bump:
   drivers:
     method: cor
     strategy: specific_univariate
-    write_mom: true
-    new_hdiag: true
-    write_hdiag: true
     write_samp_local: true
     write_samp_global: true
     write_samp_grids: true
-  nc1: 500
-  nc2: 250
-  nc3: 10
-  nc4: 4
-  dc: 800.0e3
-  nl0r: 2
-  samp_interp_type: c1
-  ne: 25
-  local_diag: true
-  local_rad: 1000.0e3
-  diag_rhflt: 3000.0e3
-  fit_ncmp: 2
-  write_hdiag_detail: true
-  nldwv: 3
-  lon_ldwv:
-  - 0.0
-  - -22.0
-  - -127.0
-  lat_ldwv:
-  - 0.0
-  - 55.0
-  - -63.0
-  name_ldwv:
-  - A
-  - B
-  - C
+    write_mom: true
+    new_hdiag: true
+    write_hdiag: true
+    write_hdiag_detail: true
+  sampling:
+    nc1: 500
+    nc2: 250
+    nc3: 10
+    nc4: 4
+    dc: 800.0e3
+    nl0r: 2
+    local_diag: true
+    local_rad: 1000.0e3
+    samp_interp_type: c1
+  localization:
+    ne: 25
+  fit:
+    diag_rhflt: 3000.0e3
+    fit_ncmp: 2
+  local profiles:
+    nldwv: 3
+    lon_ldwv:
+    - 0.0
+    - -22.0
+    - -127.0
+    lat_ldwv:
+    - 0.0
+    - 55.0
+    - -63.0
+    name_ldwv:
+    - A
+    - B
+    - C
 output:
 - parameter: cor_a
   component: 1

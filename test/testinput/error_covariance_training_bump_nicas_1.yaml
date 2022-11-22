@@ -22,26 +22,29 @@ bump:
     new_nicas: true
     check_dirac: true
     check_randomization: true
-  ens1_ne: 50
-  resol: 4.0
-  forced_radii: true
-  rh:
-    var1:
-    - 1000.0e3
-  rv:
-    var1:
-    - 3.0
-  nicas_interp_type:
-    var1: si
-  ndir: 1
-  londir:
-  - 0.0
-  latdir:
-  - 0.0
-  levdir:
-  - 1
-  ivdir:
-  - 1
+  ensemble sizes:
+    ens1_ne: 50
+  nicas:
+    resol: 4.0
+    forced_radii: true
+    rh:
+      var1:
+      - 1000.0e3
+    rv:
+      var1:
+      - 3.0
+    nicas_interp_type:
+      var1: si
+  dirac:
+    ndir: 1
+    londir:
+    - 0.0
+    latdir:
+    - 0.0
+    levdir:
+    - 1
+    ivdir:
+    - 1
 output:
 - parameter: cor_rh
   file:

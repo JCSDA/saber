@@ -20,9 +20,10 @@ bump:
   drivers:
     new_wind: true
     write_wind_local: true
-  wind_nlon: 10
-  wind_nlat: 5
-  wind_nsg: 3
-  wind_inflation: 1.1
+  wind:
+    wind_nlon: 10
+    wind_nlat: 5
+    wind_nsg: 3
+    wind_inflation: 1.1
 test:
   reference filename: testref/error_covariance_training_bump_wind.ref

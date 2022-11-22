@@ -22,21 +22,25 @@ bump:
     strategy: specific_multivariate
     new_nicas: true
     check_dirac: true
-  resol: 4.0
-  ndir: 1
-  londir:
-  - 0.0
-  latdir:
-  - 0.0
-  levdir:
-  - 1
-  ivdir:
-  - 1
+  nicas:
+    resol: 4.0
+  dirac:
+    ndir: 1
+    londir:
+    - 0.0
+    latdir:
+    - 0.0
+    levdir:
+    - 1
+    ivdir:
+    - 1
   grids:
-  - variables:
-    - var1
-  - variables:
-    - var_2d
+  - model:
+      variables:
+      - var1
+  - model:
+      variables:
+      - var_2d
 input fields:
 - parameter: a
   component: 1

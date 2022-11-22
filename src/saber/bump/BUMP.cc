@@ -49,9 +49,8 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   oops::Log::trace() << "BUMP::BUMP construction starting" << std::endl;
 
   // Parameters
-  const GeneralParameters general = params_.general.value().get_value_or(GeneralParameters());
-  const DriversParameters drivers = params_.drivers.value().get_value_or(DriversParameters());
-
+  const GeneralSection general = params_.general.value().get_value_or(GeneralSection());
+  const DriversSection drivers = params_.drivers.value().get_value_or(DriversSection());
 
   // If testing is activated, replace _MPI_ and _OMP_ patterns
   const bool testing = general.testing.value().get_value_or(false);
@@ -191,8 +190,8 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   conf.set("msvalr", util::missingValue(double()));
 
   // Add ensemble sizes
-  if (!conf.has("ens1_ne")) conf.set("ens1_ne", ens1_ne);
-  if (!conf.has("ens2_ne")) conf.set("ens2_ne", ens2_ne);
+  if (!conf.has("ensemble sizes.ens1_ne")) conf.set("ensemble sizes.ens1_ne", ens1_ne);
+  if (!conf.has("ensemble sizes.ens2_ne")) conf.set("ensemble sizes.ens2_ne", ens2_ne);
 
   // Grids
   std::vector<eckit::LocalConfiguration> grids;
@@ -218,11 +217,11 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   for (unsigned int jgrid = 0; jgrid < grids.size(); ++jgrid) {
     // Add input variables to the grid configuration
     std::vector<std::string> vars_str;
-    if (grids[jgrid].has("variables")) {
-      grids[jgrid].get("variables", vars_str);
+    if (grids[jgrid].has("model.variables")) {
+      grids[jgrid].get("model.variables", vars_str);
     } else {
       vars_str = activeVars_.variables();
-      grids[jgrid].set("variables", vars_str);
+      grids[jgrid].set("model.variables", vars_str);
     }
 
     // Save variables for each grid
@@ -238,11 +237,11 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
         nl0 = std::max(nl0, std::max(nl0_tmp, 1));
       }
     }
-    grids[jgrid].set("nl0", nl0);
+    grids[jgrid].set("model.nl0", nl0);
 
     // Add level index for 2D fields (first or last, first by default)
-    if (!grids[jgrid].has("lev2d")) {
-      grids[jgrid].set("lev2d", "first");
+    if (!grids[jgrid].has("model.lev2d")) {
+      grids[jgrid].set("model.lev2d", "first");
     }
 
     // Print configuration for this grid

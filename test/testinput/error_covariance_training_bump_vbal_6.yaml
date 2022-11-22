@@ -23,29 +23,35 @@ bump:
     write_vbal: true
     check_adjoints: true
     check_dirac: true
-  fname_samp: error_covariance_training_bump_vbal_3/_MPI_-_OMP__sampling
-  fname_vbal: error_covariance_training_bump_vbal_3/_MPI_-_OMP__vbal
-  nc1: 500
-  nc2: 250
-  vbal:
-  - balanced: var2
-    unbalanced: var1
-  vbal_rad: 2000.0e3
-  ndir: 1
-  londir:
-  - 0.0
-  latdir:
-  - 0.0
-  levdir:
-  - 1
-  ivdir:
-  - 1
+  files:
+    fname_samp: error_covariance_training_bump_vbal_3/_MPI_-_OMP__sampling
+    fname_vbal: error_covariance_training_bump_vbal_3/_MPI_-_OMP__vbal
+  sampling:
+    nc1: 500
+    nc2: 250
+  vertical balance:
+    vbal_rad: 2000.0e3
+    vbal:
+    - balanced: var2
+      unbalanced: var1
+  dirac:
+    ndir: 1
+    londir:
+    - 0.0
+    latdir:
+    - 0.0
+    levdir:
+    - 1
+    ivdir:
+    - 1
   ensemble:
     members from template:
       template:
         date: '2010-01-01T12:00:00Z'
         filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
-        state variables: *id001
+        state variables:
+        - var1
+        - var2
       pattern: '%mem%'
       nmembers: 10
       zero padding: 6

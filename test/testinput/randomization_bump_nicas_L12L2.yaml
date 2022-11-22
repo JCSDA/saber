@@ -24,23 +24,26 @@ background error:
         method: cor
         strategy: specific_univariate
         new_nicas: true
-      resol: 4.0
-      forced_radii: true
-      rh:
-        var1:
-        - 4.0e6
-        var_2d:
-        - 4.0e6
-      rv:
-        var1:
-        - 3.0
-        var_2d:
-        - 0.0
+      nicas:
+        resol: 4.0
+        forced_radii: true
+        rh:
+          var1:
+          - 4.0e6
+          var_2d:
+          - 4.0e6
+        rv:
+          var1:
+          - 3.0
+          var_2d:
+          - 0.0
       grids:
-      - variables:
-        - var1
-      - variables:
-        - var_2d
+      - model:
+          variables:
+          - var1
+      - model:
+          variables:
+          - var_2d
   randomization size: 25
 output:
   filepath: testdata/randomization_bump_nicas_L12L2/member

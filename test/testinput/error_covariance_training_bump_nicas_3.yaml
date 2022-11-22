@@ -22,7 +22,8 @@ bump:
     strategy: specific_univariate
     load_nicas_global: true
     write_nicas_local: true
-  fname_nicas: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas
+  files:
+    fname_nicas: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas
 input fields:
 - parameter: nicas_a
   component: 1

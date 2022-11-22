@@ -22,18 +22,21 @@ bump:
     new_hdiag: true
     write_hdiag: true
     check_consistency: true
-  ens1_ne: 50
-  nc1: 500
-  nc3: 10
-  dc: 800.0e3
-  nl0r: 7
-  resol: 4.0
-  forced_radii: true
-  rh:
-    var1:
-    - 1000.0e3
-  rv:
-    var1:
-    - 3.0
+  ensemble sizes:
+    ens1_ne: 50
+  sampling:
+    nc1: 500
+    nc3: 10
+    dc: 800.0e3
+    nl0r: 7
+  nicas:
+    resol: 4.0
+    forced_radii: true
+    rh:
+      var1:
+      - 1000.0e3
+    rv:
+      var1:
+      - 3.0
 test:
   reference filename: testref/error_covariance_training_bump_nicas_7.ref

@@ -18,13 +18,16 @@ bump:
     testing: true
   drivers:
     update_var: true
-  var_filter: true
+  variance:
+    var_filter: true
   ensemble:
     members from template:
       template:
         date: '2010-01-01T12:00:00Z'
         filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
-        state variables: *id001
+        state variables:
+        - var1
+        - var2
       pattern: '%mem%'
       nmembers: 10
       zero padding: 6

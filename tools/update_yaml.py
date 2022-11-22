@@ -141,12 +141,13 @@ wind["name"] = "wind"
 wind["keys"] = ["wind_streamfunction", "wind_velocity_potential", "wind_zonal", "wind_meridional", "wind_nlon", "wind_nlat", "wind_nsg", "wind_inflation"]
 kv.append(wind)
 
+other_sections = ["ensemble", "lowres ensemble", "operators application"]
+
 # Upgrade bump sections
 for i in range(len(bumps)):
+    # Copy existing keys
     old_bump = bumps[i]
     new_bump = {}
-
-    # Copy existing keys
     for j in range(len(kv)):
         section = {}
         for item in kv[j]["keys"]:
@@ -154,6 +155,31 @@ for i in range(len(bumps)):
                 section[item] = old_bump[item]
         if section:
             new_bump[kv[j]["name"]] = section
+
+    # Copy existing keys in grids
+    if "grids" in old_bump:
+        old_grids = old_bump["grids"]
+        new_grids = []
+        for old_grid in old_grids:
+            new_grid = {}
+            for j in range(len(kv)):
+                section = {}
+                for item in kv[j]["keys"]:
+                    if item in old_grid:
+                        section[item] = old_grid[item]
+                if section:
+                    new_grid[kv[j]["name"]] = section
+
+            # Append grid
+            new_grids.append(new_grid)
+
+        # Reset grid
+        new_bump["grids"] = new_grids
+
+    # Copy other sections
+    for other_section in other_sections:
+        if other_section in old_bump:
+            new_bump[other_section] = old_bump[other_section]
 
     # Changes in the keys
     if "diag_draw_type" in old_bump:
@@ -171,7 +197,7 @@ for i in range(len(bumps)):
         if "vbal_id_coef" in old_bump:
             vbal_id_coef = old_bump["vbal_id_coef"]
         else:
-            vbal_id_coef = np.full((len(vbal_block)), 1.0)
+            vbal_id_coef = np.ones((len(vbal_block)))
         ib = 0
         vbal = []
         for ii in range(2, 10):
@@ -179,17 +205,18 @@ for i in range(len(bumps)):
                 if ib < len(vbal_block):
                     if vbal_block[ib]:
                         block = {}
-                        block["balanced"] = "# TODO: insert here the variable #" + str(ii)
-                        block["unbalanced"] = "# TODO: insert here the variable #" + str(jj)
+                        block["balanced"] = "var" + str(ii)
+                        block["unbalanced"] = "var" + str(jj)
                         if vbal_diag_auto[ib]:
-                            block["vbal_diag_auto"] = True
+                            block["diag_auto"] = True
                         if vbal_diag_reg[ib]:
-                            block["vbal_diag_reg"] = True
-                        if vbal_id_coef[ib]:
-                            block["vbal_id_coef"] = True
+                            block["diag_reg"] = True
+                        if "vbal_id_coef" in old_bump:
+                            block["id_coef"] = vbal_id_coef[ib]
                         vbal.append(block)
                 ib += 1
-        new_bump["vertical balance"] = {}
+        if not "vertical balance" in new_bump:
+            new_bump["vertical balance"] = {}
         new_bump["vertical balance"]["vbal"] = vbal
 
     # Reset bump
@@ -209,9 +236,12 @@ for i in range(len(bumps)):
     os.remove('tmpfile')
     bumps_text.append(text)
 
+# Rename file
+os.rename(args.filename, args.filename + ".bak")
+
 # Read and rewrite file, updating the bump sections only
-file_in = open(args.filename, 'r')
-file_out = open(args.filename + '_new', 'w')
+file_in = open(args.filename + ".bak", 'r')
+file_out = open(args.filename, 'w')
 i = 0
 blank = ' '
 ind_target = -1

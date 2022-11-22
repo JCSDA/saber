@@ -316,8 +316,8 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
                                 ens2_ne));
 
       // Drivers parameters
-      const bump::DriversParameters drivers =
-        bumpParams->drivers.value().get_value_or(bump::DriversParameters());
+      const bump::DriversSection drivers =
+        bumpParams->drivers.value().get_value_or(bump::DriversSection());
 
       // Add members of ensemble 1
       if (ens1) {

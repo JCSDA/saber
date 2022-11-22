@@ -173,7 +173,6 @@ type nam_type
    integer :: nc1max                                          !< Maximum size of the Sc1 subset
    character(len=1024) :: nicas_draw_type                     !< NICAS draw type ('random' or 'octahedral')
    logical :: forced_radii                                    !< Force specific support radii
-   integer :: ncmp(0:nvmax)                                   !< Forced number of components
    real(kind_real) :: rh(nl0max,0:nvmax)                      !< Forced horizontal support radius [in meters]
    real(kind_real) :: rv(nl0max,0:nvmax)                      !< Forced vertical support radius
    integer :: min_lev(0:nvmax)                                !< Minimum level
@@ -387,7 +386,6 @@ nam%resol = zero
 nam%nc1max = 15000
 nam%nicas_draw_type = 'random'
 nam%forced_radii = .false.
-nam%ncmp = 1
 nam%rh = -one
 nam%rv = -one
 nam%min_lev = 1
@@ -882,13 +880,6 @@ if (conf%has('nicas')) then
       nam%nicas_draw_type = str
    end if
    if (section%has('forced_radii')) call section%get_or_die('forced_radii',nam%forced_radii)
-   if (section%has('ncmp')) then
-      call section%get_or_die('ncmp',subconf)
-      if (subconf%has('common')) call subconf%get_or_die('common',nam%ncmp(0))
-      do iv=1,nam%nv
-         if (subconf%has(nam%variables(iv))) call subconf%get_or_die(nam%variables(iv),nam%ncmp(iv))
-      end do
-   end if
    if (section%has('rh')) then
       call section%get_or_die('rh',subconf)
       if (subconf%has('common')) then
@@ -1463,7 +1454,6 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
          end select
       end if
       do iv=ivmin,ivmax
-         if (nam%ncmp(iv)<1) call mpl%abort('${subr}$','ncmp should be positive')
          do il0=1,nam%nl0
             if (nam%rh(il0,iv)<zero) call mpl%abort('${subr}$','rh should be non-negative')
             if (nam%rv(il0,iv)<zero) call mpl%abort('${subr}$','rv should be non-negative')
