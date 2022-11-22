@@ -253,7 +253,7 @@ class BUMPParameters : public oops::Parameters {
   // Check that sampling couples and interpolations do not cross mask boundaries
   oops::OptionalParameter<bool> mask_check{"mask_check", this};
   // Diagnostic draw type ('random' or 'octahedral')
-  oops::OptionalParameter<std::string> diag_draw_type{"diag_draw_type", this};
+  oops::OptionalParameter<std::string> samp_draw_type{"samp_draw_type", this};
   // Number of sampling points
   oops::OptionalParameter<int> nc1{"nc1", this};
   // Number of diagnostic points

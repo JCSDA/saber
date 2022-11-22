@@ -46,6 +46,11 @@ type nam_type
    character(len=1024) :: method                              !< Localization/hybridization to compute ('cor', 'loc', 'hyb-rnd' or 'hyb-ens')
    character(len=1024) :: strategy                            !< Localization strategy ('diag_all', 'common', 'common_weighted', 'specific_univariate' or 'specific_multivariate')
    logical :: new_normality                                   !< New normality test
+   logical :: load_samp_local                                 !< Load local sampling
+   logical :: load_samp_global                                !< Load global sampling
+   logical :: write_samp_local                                !< Write local sampling
+   logical :: write_samp_global                               !< Write global sampling
+   logical :: write_samp_grids                                !< Write sampling grids
    logical :: new_vbal_cov                                    !< New vertical covariance
    logical :: update_vbal_cov                                 !< Update vertical covariance sequentially
    logical :: load_vbal_cov                                   !< Load local vertical covariance
@@ -61,6 +66,7 @@ type nam_type
    logical :: write_mom                                       !< Write sampling moments
    logical :: new_hdiag                                       !< Compute new HDIAG diagnostics
    logical :: write_hdiag                                     !< Write HDIAG diagnostics
+   logical :: write_hdiag_detail                              !< Write HDIAG components detail
    logical :: new_nicas                                       !< Compute new NICAS parameters
    logical :: load_nicas_local                                !< Load local NICAS parameters
    logical :: load_nicas_global                               !< Load global NICAS parameters
@@ -77,7 +83,7 @@ type nam_type
    logical :: check_consistency                               !< Test HDIAG-NICAS consistency
    logical :: check_optimality                                !< Test HDIAG optimality
 
-   ! files_param
+   ! Files parameters
    character(len=1024),dimension(0:nsubmax) :: fname_var      !< Variance files
    character(len=1024) :: fname_samp                          !< Sampling file
    character(len=1024),dimension(0:nsubmax) :: fname_vbal_cov !< Vertical covariance files
@@ -86,7 +92,7 @@ type nam_type
    character(len=1024) :: fname_nicas                         !< NICAS file
    character(len=1024) :: fname_wind                          !< Wind transform file
 
-   ! model_param
+   ! Model parameters
    integer :: nl0                                             !< Number of levels
    integer :: levs(nl0max)                                    !< Levels
    character(len=1024) :: lev2d                               !< Level for 2D variables ('first' or 'last')
@@ -95,68 +101,74 @@ type nam_type
    character(len=1024),dimension(niokvmax) :: io_keys         !< I/O keys
    character(len=1024),dimension(niokvmax) :: io_values       !< I/O values
 
-   ! ens1_param
+   ! Ensemble sizes
    integer :: ens1_ne                                         !< Ensemble 1 size
    integer :: ens1_nsub                                       !< Ensemble 1 sub-ensembles number
-
-   ! ens2_param
    integer :: ens2_ne                                         !< Ensemble 2 size
    integer :: ens2_nsub                                       !< Ensemble 2 sub-ensembles number
 
-   ! sampling_param
-   logical :: load_samp_local                                 !< Load local sampling
-   logical :: load_samp_global                                !< Load global sampling
-   logical :: write_samp_local                                !< Write local sampling
-   logical :: write_samp_global                               !< Write global sampling
-   logical :: write_samp_grids                                !< Write sampling grids
+   ! Mask parameters
    character(len=1024) :: mask_type                           !< Mask restriction type
    character(len=1024),dimension(nvmax) :: mask_lu            !< Mask threshold side ('lower' if mask_th is the lower bound, 'upper' if mask_th is the upper bound)
    real(kind_real),dimension(nvmax) :: mask_th                !< Mask threshold
    integer :: ncontig_th                                      !< Threshold on vertically contiguous points for sampling mask (0 to skip the test)
    logical :: mask_check                                      !< Check that sampling couples and interpolations do not cross mask boundaries
-   character(len=1024) :: diag_draw_type                      !< Diagnostic draw type ('random' or 'octahedral')
+
+   ! Sampling parameters
    integer :: nc1                                             !< Number of sampling points
    integer :: nc2                                             !< Number of diagnostic points
    integer :: nc3                                             !< Number of horizontal classes
    integer :: nc4                                             !< Number of angular sectors
    real(kind_real) :: dc                                      !< Class size, should be larger than the typical grid cell size [in meters]
    integer :: nl0r                                            !< Reduced number of levels for diagnostics
+   logical :: local_diag                                      !< Activate local diagnostics
+   real(kind_real) :: local_rad                               !< Local diagnostics calculation radius [in meters]
+   real(kind_real) :: local_dlat                              !< Local diagnostics calculation latitude band half-width [in degrees]
+   character(len=1024) :: samp_draw_type                      !< Diagnostic draw type ('random' or 'octahedral')
    integer :: irmax                                           !< Maximum number of random number draws
    character(len=2) :: samp_interp_type                       !< Sampling C2B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based or 'si': smooth interpolation)
 
-   ! diag_param
+   ! Localization parameters
    integer :: ne                                              !< Ensemble size
    integer :: ne_lr                                           !< Ensemble size of the low-resolution term (ensemble 2)
-   real(kind_real) :: gen_kurt_th                             !< Threshold on generalized kurtosis (3.0 = Gaussian distribution)
    logical :: gau_approx                                      !< Gaussian approximation for asymptotic quantities
+   real(kind_real) :: gen_kurt_th                             !< Threshold on generalized kurtosis (3.0 = Gaussian distribution)
    integer :: avg_nbins                                       !< Number of bins for averaged statistics histograms
+
+   ! Vertical balance parameters
    real(kind_real) :: vbal_rad                                !< Vertical balance diagnostic radius [in meters]
    real(kind_real) :: vbal_dlat                               !< Vertical balance diagnostic latitude band half-width [in degrees]
    logical :: vbal_pseudo_inv                                 !< Pseudo-inverse for auto-covariance
    integer :: vbal_pseudo_inv_mmax                            !< Dominant mode for pseudo-inverse
    real(kind_real) :: vbal_pseudo_inv_var_th                  !< Variance threshold to compute the dominant mode for pseudo-inverse
    logical :: vbal_id                                         !< Identity vertical balance for tests
+
+   ! Variance parameters
    logical :: forced_var                                      !< Force specific variance
    real(kind_real) :: stddev(nl0max,nvmax)                    !< Forced standard-deviation
    logical :: var_filter                                      !< Filter variance
    integer :: var_niter                                       !< Number of iterations for the variance filtering (0 for uniform variance)
    integer :: var_npass                                       !< Number of passes for the variance filtering (0 for uniform variance)
    real(kind_real) :: var_rhflt(nl0max,nvmax)                 !< Variance initial filtering support radius [in meters]
-   logical :: local_diag                                      !< Activate local diagnostics
-   real(kind_real) :: local_rad                               !< Local diagnostics calculation radius [in meters]
-   real(kind_real) :: local_dlat                              !< Local diagnostics calculation latitude band half-width [in degrees]
+
+   ! Optimality test parameters
    integer :: optimality_nfac                                 !< Number of length-scale factors for optimization
    real(kind_real) :: optimality_delta                        !< Increments of length-scale factors for optimization
    integer :: optimality_ntest                                !< Number of test vectors for optimization
 
-   ! fit_param
+   ! Fit parameters
    real(kind_real) :: diag_rhflt                              !< Horizontal filtering suport radius [in meters]
    real(kind_real) :: diag_rvflt                              !< Vertical filtering support radius
    integer :: fit_dl0                                         !< Number of levels between interpolation levels
    integer :: fit_ncmp                                        !< Number of components in the fit function
-   logical :: write_hdiag_detail                              !< Write HDIAG components detail
 
-   ! nicas_param
+   ! Local profiles parameters
+   integer :: nldwv                                           !< Number of local diagnostics profiles to write (for local_diag = .true.)
+   real(kind_real) :: lon_ldwv(nldwvmax)                      !< Longitudes of the local diagnostics profiles to write [in degrees]
+   real(kind_real) :: lat_ldwv(nldwvmax)                      !< Latitudes of the local diagnostics profiles to write [in degrees]
+   character(len=1024),dimension(nldwvmax) :: name_ldwv       !< Name of the local diagnostics profiles to write
+
+   ! NICAS parameters
    real(kind_real) :: resol                                   !< Resolution
    integer :: nc1max                                          !< Maximum size of the Sc1 subset
    character(len=1024) :: nicas_draw_type                     !< NICAS draw type ('random' or 'octahedral')
@@ -171,20 +183,14 @@ type nam_type
    logical :: write_nicas_grids                               !< Write NICAS grids
    logical :: interp_test                                     !< Horizontal NICAS interpolation test
 
-   ! dirac_param
+   ! Dirac parameters
    integer :: ndir                                            !< Number of Diracs
    real(kind_real) :: londir(ndirmax)                         !< Diracs longitudes [in degrees]
    real(kind_real) :: latdir(ndirmax)                         !< Diracs latitudes [in degrees]
    integer :: levdir(ndirmax)                                 !< Diracs level
    integer :: ivdir(ndirmax)                                  !< Diracs variable indices
 
-   ! output_param
-   integer :: nldwv                                           !< Number of local diagnostics profiles to write (for local_diag = .true.)
-   real(kind_real) :: lon_ldwv(nldwvmax)                      !< Longitudes of the local diagnostics profiles to write [in degrees]
-   real(kind_real) :: lat_ldwv(nldwvmax)                      !< Latitudes of the local diagnostics profiles to write [in degrees]
-   character(len=1024),dimension(nldwvmax) :: name_ldwv       !< Name of the local diagnostics profiles to write
-
-   ! wind_param
+   ! Wind parameters
    character(len=1024) :: wind_streamfunction                 !< Streamfunction variable name
    character(len=1024) :: wind_velocity_potential             !< Velocity potential variable name
    character(len=1024) :: wind_zonal                          !< Zonal wind variable name
@@ -194,7 +200,7 @@ type nam_type
    integer :: wind_nsg                                        !< Half-width of the Savitzky-Golay to compute derivatives
    real(kind_real) :: wind_inflation                          !< Wind inflation to compensate the Savitzky-Golay smoothing
 
-   ! helpers
+   ! Helpers
    logical :: fname_var_used                                  !< Flag activated if a variance file is specified
    logical :: fname_vbal_cov_used                             !< Flag activated if a vertical covariance file is specified
    logical :: fname_mom_used                                  !< Flag activated if a moments file is specified
@@ -202,8 +208,6 @@ type nam_type
    logical,allocatable :: vbal_diag_auto(:,:)                 !< Diagonal auto-covariance for the inversion
    logical,allocatable :: vbal_diag_reg(:,:)                  !< Diagonal regression
    real(kind_real),allocatable :: vbal_id_coef(:,:)           !< Scalar coefficients for identity vertical balance
-   logical :: output_nicas_norm                               !< Output section includes the nicas_norm parameter
-   logical :: output_nicas_a                                  !< Output section includes the a parameter
    real(kind_real),allocatable :: loc_wgt_sqrt(:,:)           !< Weights square-root for the 'common_weighted' strategy
 contains
    procedure :: init => nam_init
@@ -336,7 +340,7 @@ do iv=1,nvmax
 end do
 nam%ncontig_th = 0
 nam%mask_check = .false.
-nam%diag_draw_type = 'random'
+nam%samp_draw_type = 'random'
 nam%nc1 = 0
 nam%nc2 = 0
 nam%nc3 = 0
@@ -422,8 +426,6 @@ nam%wind_inflation = one
 nam%fname_var_used = .false.
 nam%fname_vbal_cov_used = .false.
 nam%fname_mom_used = .false.
-nam%output_nicas_norm = .false.
-nam%output_nicas_a = .false.
 
 ! Probe out
 @:probe_out()
@@ -452,7 +454,7 @@ logical,allocatable :: logical_array(:)
 character(len=1024) :: message,param,blockname
 character(len=:),allocatable :: str,str_bal,str_unbal
 character(len=:),allocatable :: str_array(:)
-type(fckit_configuration) :: general,drivers,subconf
+type(fckit_configuration) :: section,subconf
 type(fckit_configuration),allocatable :: confs(:)
 
 ! Set name
@@ -463,17 +465,17 @@ type(fckit_configuration),allocatable :: confs(:)
 
 ! General parameters
 if (conf%has('general')) then
-   call conf%get_or_die('general',general)
-   if (general%has('datadir')) then
-      call general%get_or_die('datadir',str)
+   call conf%get_or_die('general',section)
+   if (section%has('datadir')) then
+      call section%get_or_die('datadir',str)
       nam%datadir = str
    end if
-   if (general%has('prefix')) then
-      call general%get_or_die('prefix',str)
+   if (section%has('prefix')) then
+      call section%get_or_die('prefix',str)
       nam%prefix = str
    end if
-   if (general%has('colorlog')) then
-      call general%get_or_die('colorlog',colorlog)
+   if (section%has('colorlog')) then
+      call section%get_or_die('colorlog',colorlog)
       if (colorlog) then
          mpl%black = char(27)//'[0;0m'
          mpl%green = char(27)//'[0;32m'
@@ -483,598 +485,638 @@ if (conf%has('general')) then
          mpl%wng_color = char(27)//'[0;37;42;1m'
       end if
    end if
-   if (general%has('testing')) call general%get_or_die('testing',mpl%testing)
-   if (general%has('default_seed')) call general%get_or_die('default_seed',nam%default_seed)
-   if (general%has('repro')) call general%get_or_die('repro',nam%repro)
-   if (general%has('rth')) call general%get_or_die('rth',nam%rth)
-   if (general%has('parallel_io')) call general%get_or_die('parallel_io',nam%parallel_io)
-   if (general%has('nprocio')) call general%get_or_die('nprocio',nam%nprocio)
-   if (general%has('universe_rad')) call general%get_or_die('universe_rad',nam%universe_rad)
+   if (section%has('testing')) call section%get_or_die('testing',mpl%testing)
+   if (section%has('default_seed')) call section%get_or_die('default_seed',nam%default_seed)
+   if (section%has('repro')) call section%get_or_die('repro',nam%repro)
+   if (section%has('rth')) call section%get_or_die('rth',nam%rth)
+   if (section%has('parallel_io')) call section%get_or_die('parallel_io',nam%parallel_io)
+   if (section%has('nprocio')) call section%get_or_die('nprocio',nam%nprocio)
+   if (section%has('universe_rad')) call section%get_or_die('universe_rad',nam%universe_rad)
 end if
    
 ! Drivers parameters
 if (conf%has('drivers')) then
-   call conf%get_or_die('drivers',drivers)
-   if (drivers%has('method')) then
-      call drivers%get_or_die('method',str)
+   call conf%get_or_die('drivers',section)
+   if (section%has('method')) then
+      call section%get_or_die('method',str)
       nam%method = str
    end if
-   if (drivers%has('strategy')) then
-      call drivers%get_or_die('strategy',str)
+   if (section%has('strategy')) then
+      call section%get_or_die('strategy',str)
       nam%strategy = str
    end if
-   if (drivers%has('new_normality')) call drivers%get_or_die('new_normality',nam%new_normality)
-   if (drivers%has('load_samp_local')) call drivers%get_or_die('load_samp_local',nam%load_samp_local)
-   if (drivers%has('load_samp_global')) call drivers%get_or_die('load_samp_global',nam%load_samp_global)
-   if (drivers%has('write_samp_local')) call drivers%get_or_die('write_samp_local',nam%write_samp_local)
-   if (drivers%has('write_samp_global')) call drivers%get_or_die('write_samp_global',nam%write_samp_global)
-   if (drivers%has('write_samp_grids')) call drivers%get_or_die('write_samp_grids',nam%write_samp_grids)
-   if (drivers%has('new_vbal_cov')) call drivers%get_or_die('new_vbal_cov',nam%new_vbal_cov)
-   if (drivers%has('update_vbal_cov')) call drivers%get_or_die('update_vbal_cov',nam%update_vbal_cov)
-   if (drivers%has('load_vbal_cov')) call drivers%get_or_die('load_vbal_cov',nam%load_vbal_cov)
-   if (drivers%has('write_vbal_cov')) call drivers%get_or_die('write_vbal_cov',nam%write_vbal_cov)
-   if (drivers%has('new_vbal')) call drivers%get_or_die('new_vbal',nam%new_vbal)
-   if (drivers%has('load_vbal')) call drivers%get_or_die('load_vbal',nam%load_vbal)
-   if (drivers%has('write_vbal')) call drivers%get_or_die('write_vbal',nam%write_vbal)
-   if (drivers%has('new_var')) call drivers%get_or_die('new_var',nam%new_var)
-   if (drivers%has('update_var')) call drivers%get_or_die('update_var',nam%update_var)
-   if (drivers%has('new_mom')) call drivers%get_or_die('new_mom',nam%new_mom)
-   if (drivers%has('update_mom')) call drivers%get_or_die('update_mom',nam%update_mom)
-   if (drivers%has('load_mom')) call drivers%get_or_die('load_mom',nam%load_mom)
-   if (drivers%has('write_mom')) call drivers%get_or_die('write_mom',nam%write_mom)
-   if (drivers%has('new_hdiag')) call drivers%get_or_die('new_hdiag',nam%new_hdiag)
-   if (drivers%has('write_hdiag')) call drivers%get_or_die('write_hdiag',nam%write_hdiag)
-   if (drivers%has('new_nicas')) call drivers%get_or_die('new_nicas',nam%new_nicas)
-   if (drivers%has('load_nicas_local')) call drivers%get_or_die('load_nicas_local',nam%load_nicas_local)
-   if (drivers%has('load_nicas_global')) call drivers%get_or_die('load_nicas_global',nam%load_nicas_global)
-   if (drivers%has('write_nicas_local')) call drivers%get_or_die('write_nicas_local',nam%write_nicas_local)
-   if (drivers%has('write_nicas_global')) call drivers%get_or_die('write_nicas_global',nam%write_nicas_global)
-   if (drivers%has('new_wind')) call drivers%get_or_die('new_wind',nam%new_wind)
-   if (drivers%has('load_wind_local')) call drivers%get_or_die('load_wind_local',nam%load_wind_local)
-   if (drivers%has('write_wind_local')) call drivers%get_or_die('write_wind_local',nam%write_wind_local)
-   if (drivers%has('check_vbal')) call drivers%get_or_die('check_vbal',nam%check_vbal)
-   if (drivers%has('check_adjoints')) call drivers%get_or_die('check_adjoints',nam%check_adjoints)
-   if (drivers%has('check_normalization')) call drivers%get_or_die('check_normalization',nam%check_normalization)
-   if (drivers%has('check_dirac')) call drivers%get_or_die('check_dirac',nam%check_dirac)
-   if (drivers%has('check_randomization')) call drivers%get_or_die('check_randomization',nam%check_randomization)
-   if (drivers%has('check_consistency')) call drivers%get_or_die('check_consistency',nam%check_consistency)
-   if (drivers%has('check_optimality')) call drivers%get_or_die('check_optimality',nam%check_optimality)
+   if (section%has('new_normality')) call section%get_or_die('new_normality',nam%new_normality)
+   if (section%has('load_samp_local')) call section%get_or_die('load_samp_local',nam%load_samp_local)
+   if (section%has('load_samp_global')) call section%get_or_die('load_samp_global',nam%load_samp_global)
+   if (section%has('write_samp_local')) call section%get_or_die('write_samp_local',nam%write_samp_local)
+   if (section%has('write_samp_global')) call section%get_or_die('write_samp_global',nam%write_samp_global)
+   if (section%has('write_samp_grids')) call section%get_or_die('write_samp_grids',nam%write_samp_grids)
+   if (section%has('new_vbal_cov')) call section%get_or_die('new_vbal_cov',nam%new_vbal_cov)
+   if (section%has('update_vbal_cov')) call section%get_or_die('update_vbal_cov',nam%update_vbal_cov)
+   if (section%has('load_vbal_cov')) call section%get_or_die('load_vbal_cov',nam%load_vbal_cov)
+   if (section%has('write_vbal_cov')) call section%get_or_die('write_vbal_cov',nam%write_vbal_cov)
+   if (section%has('new_vbal')) call section%get_or_die('new_vbal',nam%new_vbal)
+   if (section%has('load_vbal')) call section%get_or_die('load_vbal',nam%load_vbal)
+   if (section%has('write_vbal')) call section%get_or_die('write_vbal',nam%write_vbal)
+   if (section%has('new_var')) call section%get_or_die('new_var',nam%new_var)
+   if (section%has('update_var')) call section%get_or_die('update_var',nam%update_var)
+   if (section%has('new_mom')) call section%get_or_die('new_mom',nam%new_mom)
+   if (section%has('update_mom')) call section%get_or_die('update_mom',nam%update_mom)
+   if (section%has('load_mom')) call section%get_or_die('load_mom',nam%load_mom)
+   if (section%has('write_mom')) call section%get_or_die('write_mom',nam%write_mom)
+   if (section%has('new_hdiag')) call section%get_or_die('new_hdiag',nam%new_hdiag)
+   if (section%has('write_hdiag')) call section%get_or_die('write_hdiag',nam%write_hdiag)
+   if (section%has('write_hdiag_detail')) call section%get_or_die('write_hdiag_detail',nam%write_hdiag_detail)
+
+   if (section%has('new_nicas')) call section%get_or_die('new_nicas',nam%new_nicas)
+   if (section%has('load_nicas_local')) call section%get_or_die('load_nicas_local',nam%load_nicas_local)
+   if (section%has('load_nicas_global')) call section%get_or_die('load_nicas_global',nam%load_nicas_global)
+   if (section%has('write_nicas_local')) call section%get_or_die('write_nicas_local',nam%write_nicas_local)
+   if (section%has('write_nicas_global')) call section%get_or_die('write_nicas_global',nam%write_nicas_global)
+   if (section%has('new_wind')) call section%get_or_die('new_wind',nam%new_wind)
+   if (section%has('load_wind_local')) call section%get_or_die('load_wind_local',nam%load_wind_local)
+   if (section%has('write_wind_local')) call section%get_or_die('write_wind_local',nam%write_wind_local)
+   if (section%has('check_vbal')) call section%get_or_die('check_vbal',nam%check_vbal)
+   if (section%has('check_adjoints')) call section%get_or_die('check_adjoints',nam%check_adjoints)
+   if (section%has('check_normalization')) call section%get_or_die('check_normalization',nam%check_normalization)
+   if (section%has('check_dirac')) call section%get_or_die('check_dirac',nam%check_dirac)
+   if (section%has('check_randomization')) call section%get_or_die('check_randomization',nam%check_randomization)
+   if (section%has('check_consistency')) call section%get_or_die('check_consistency',nam%check_consistency)
+   if (section%has('check_optimality')) call section%get_or_die('check_optimality',nam%check_optimality)
 end if
 
-! files_param
-if (conf%has('fname_var')) then
-   call conf%get_or_die('fname_var',str_array)
-   if (size(str_array)>nsubmax) then
-      write(message,'(a,i4)') 'fname_var size should be smaller than ',nsubmax
-      call mpl%abort('${subr}$',message)
+! Files param
+if (conf%has('files')) then
+   call conf%get_or_die('files',section)
+   if (section%has('fname_var')) then
+      call section%get_or_die('fname_var',str_array)
+      if (size(str_array)>nsubmax) then
+         write(message,'(a,i4)') 'fname_var size should be smaller than ',nsubmax
+         call mpl%abort('${subr}$',message)
+      end if
+      nam%fname_var(1:size(str_array)) = str_array
    end if
-   nam%fname_var(1:size(str_array)) = str_array
-end if
-if (conf%has('fname_samp')) then
-   call conf%get_or_die('fname_samp',str)
-   nam%fname_samp = str
-end if
-if (conf%has('fname_vbal_cov')) then
-   call conf%get_or_die('fname_vbal_cov',str_array)
-   if (size(str_array)>nsubmax) then
-      write(message,'(a,i4)') 'fname_vbal_cov size should be smaller than ',nsubmax
-      call mpl%abort('${subr}$',message)
+   if (section%has('fname_samp')) then
+      call section%get_or_die('fname_samp',str)
+      nam%fname_samp = str
    end if
-   nam%fname_vbal_cov(1:size(str_array)) = str_array
-end if
-if (conf%has('fname_vbal')) then
-   call conf%get_or_die('fname_vbal',str)
-   nam%fname_vbal = str
-end if
-if (conf%has('fname_mom')) then
-   call conf%get_or_die('fname_mom',str_array)
-   if (size(str_array)>nsubmax) then
-      write(message,'(a,i4)') 'fname_mom size should be smaller than ',nsubmax
-      call mpl%abort('${subr}$',message)
+   if (section%has('fname_vbal_cov')) then
+      call section%get_or_die('fname_vbal_cov',str_array)
+      if (size(str_array)>nsubmax) then
+         write(message,'(a,i4)') 'fname_vbal_cov size should be smaller than ',nsubmax
+         call mpl%abort('${subr}$',message)
+      end if
+      nam%fname_vbal_cov(1:size(str_array)) = str_array
    end if
-   nam%fname_mom(1:size(str_array)) = str_array
-end if
-if (conf%has('fname_nicas')) then
-   call conf%get_or_die('fname_nicas',str)
-   nam%fname_nicas = str
-end if
-if (conf%has('fname_wind')) then
-   call conf%get_or_die('fname_wind',str)
-   nam%fname_wind = str
+   if (section%has('fname_vbal')) then
+      call section%get_or_die('fname_vbal',str)
+      nam%fname_vbal = str
+   end if
+   if (section%has('fname_mom')) then
+      call section%get_or_die('fname_mom',str_array)
+      if (size(str_array)>nsubmax) then
+         write(message,'(a,i4)') 'fname_mom size should be smaller than ',nsubmax
+         call mpl%abort('${subr}$',message)
+      end if
+      nam%fname_mom(1:size(str_array)) = str_array
+   end if
+   if (section%has('fname_nicas')) then
+      call section%get_or_die('fname_nicas',str)
+      nam%fname_nicas = str
+   end if
+   if (section%has('fname_wind')) then
+      call section%get_or_die('fname_wind',str)
+      nam%fname_wind = str
+   end if
 end if
 
-! model_param
-if (conf%has('nl0')) call conf%get_or_die('nl0',nam%nl0)
-if (conf%has('levs')) then
-   call conf%get_or_die('levs',integer_array)
-   if (size(integer_array)>nl0max) then
-      write(message,'(a,i4)') 'levs size should be smaller than ',nl0max
-      call mpl%abort('${subr}$',message)
+! Model parameters
+if (conf%has('model')) then
+   call conf%get_or_die('model',section)
+   if (section%has('nl0')) call section%get_or_die('nl0',nam%nl0)
+   if (section%has('levs')) then
+      call section%get_or_die('levs',integer_array)
+      if (size(integer_array)>nl0max) then
+         write(message,'(a,i4)') 'levs size should be smaller than ',nl0max
+         call mpl%abort('${subr}$',message)
+      end if
+      nam%levs(1:size(integer_array)) = integer_array
    end if
-   nam%levs(1:size(integer_array)) = integer_array
-end if
-if (conf%has('lev2d')) then
-   call conf%get_or_die('lev2d',str)
-   nam%lev2d = str
-end if
-if (conf%has('variables')) then
-   call conf%get_or_die('variables',str_array)
-   if (size(str_array)>nvmax) then
-      write(message,'(a,i4)') 'variables size should be smaller than ',nvmax
-      call mpl%abort('${subr}$',message)
+   if (section%has('lev2d')) then
+      call section%get_or_die('lev2d',str)
+      nam%lev2d = str
    end if
-   nam%variables(1:size(str_array)) = str_array
-   nam%nv = size(str_array)
-end if
-if (conf%has('io_keys')) then
-   call conf%get_or_die('io_keys',str_array)
-   if (size(str_array)>niokvmax) then
-      write(message,'(a,i4)') 'io_keys size should be smaller than ',niokvmax
-      call mpl%abort('${subr}$',message)
+   if (section%has('variables')) then
+      call section%get_or_die('variables',str_array)
+      if (size(str_array)>nvmax) then
+         write(message,'(a,i4)') 'variables size should be smaller than ',nvmax
+         call mpl%abort('${subr}$',message)
+      end if
+      nam%variables(1:size(str_array)) = str_array
+      nam%nv = size(str_array)
    end if
-   nam%io_keys(1:size(str_array)) = str_array
-end if
-if (conf%has('io_values')) then
-   call conf%get_or_die('io_values',str_array)
-   if (size(str_array)>niokvmax) then
-      write(message,'(a,i4)') 'io_values size should be smaller than ',niokvmax
-      call mpl%abort('${subr}$',message)
+   if (section%has('io_keys')) then
+      call section%get_or_die('io_keys',str_array)
+      if (size(str_array)>niokvmax) then
+         write(message,'(a,i4)') 'io_keys size should be smaller than ',niokvmax
+         call mpl%abort('${subr}$',message)
+      end if
+      nam%io_keys(1:size(str_array)) = str_array
    end if
-   nam%io_values(1:size(str_array)) = str_array
+   if (section%has('io_values')) then
+      call section%get_or_die('io_values',str_array)
+      if (size(str_array)>niokvmax) then
+         write(message,'(a,i4)') 'io_values size should be smaller than ',niokvmax
+         call mpl%abort('${subr}$',message)
+      end if
+      nam%io_values(1:size(str_array)) = str_array
+   end if
 end if
 
-! ens1_param
-if (conf%has('ens1_ne')) call conf%get_or_die('ens1_ne',nam%ens1_ne)
-if (conf%has('ens1_nsub')) call conf%get_or_die('ens1_nsub',nam%ens1_nsub)
-
-! ens2_param
-if (conf%has('ens2_ne')) call conf%get_or_die('ens2_ne',nam%ens2_ne)
-if (conf%has('ens2_nsub')) call conf%get_or_die('ens2_nsub',nam%ens2_nsub)
-
-! sampling_param
-if (conf%has('mask_type')) then
-   call conf%get_or_die('mask_type',str)
-   nam%mask_type = str
+! Ensemble sizes
+if (conf%has('ensemble sizes')) then
+   call conf%get_or_die('ensemble sizes',section)
+   if (section%has('ens1_ne')) call section%get_or_die('ens1_ne',nam%ens1_ne)
+   if (section%has('ens1_nsub')) call section%get_or_die('ens1_nsub',nam%ens1_nsub)
+   if (section%has('ens2_ne')) call section%get_or_die('ens2_ne',nam%ens2_ne)
+   if (section%has('ens2_nsub')) call section%get_or_die('ens2_nsub',nam%ens2_nsub)
 end if
-if (conf%has('mask_lu')) then
-   call conf%get_or_die('mask_lu',str_array)
-   if (size(str_array)>nvmax) then
-      write(message,'(a,i4)') 'mask_lu size should be smaller than ',nvmax
-      call mpl%abort('${subr}$',message)
+
+! Mask parameters
+if (conf%has('mask')) then
+   call conf%get_or_die('mask',section)
+   if (section%has('mask_type')) then
+      call section%get_or_die('mask_type',str)
+      nam%mask_type = str
    end if
-   nam%mask_lu(1:size(str_array)) = str_array
-end if
-if (conf%has('mask_th')) then
-   call conf%get_or_die('mask_th',real_array)
-   if (size(real_array)>nvmax) then
-      write(message,'(a,i4)') 'mask_th size should be smaller than ',nvmax
-      call mpl%abort('${subr}$',message)
+   if (section%has('mask_lu')) then
+      call section%get_or_die('mask_lu',str_array)
+      if (size(str_array)>nvmax) then
+         write(message,'(a,i4)') 'mask_lu size should be smaller than ',nvmax
+         call mpl%abort('${subr}$',message)
+      end if
+      nam%mask_lu(1:size(str_array)) = str_array
    end if
-   nam%mask_th(1:size(real_array)) = real_array
-end if
-if (conf%has('ncontig_th')) call conf%get_or_die('ncontig_th',nam%ncontig_th)
-if (conf%has('mask_check')) call conf%get_or_die('mask_check',nam%mask_check)
-if (conf%has('diag_draw_type')) then
-   call conf%get_or_die('diag_draw_type',str)
-   nam%diag_draw_type = str
-end if
-if (conf%has('nc1')) call conf%get_or_die('nc1',nam%nc1)
-if (conf%has('nc2')) call conf%get_or_die('nc2',nam%nc2)
-if (conf%has('nc3')) call conf%get_or_die('nc3',nam%nc3)
-if (conf%has('nc4')) call conf%get_or_die('nc4',nam%nc4)
-if (conf%has('dc')) call conf%get_or_die('dc',nam%dc)
-if (conf%has('nl0r')) call conf%get_or_die('nl0r',nam%nl0r)
-if (conf%has('irmax')) call conf%get_or_die('irmax',nam%irmax)
-if (conf%has('samp_interp_type')) then
-   call conf%get_or_die('samp_interp_type',str)
-   nam%samp_interp_type = str
+   if (section%has('mask_th')) then
+      call section%get_or_die('mask_th',real_array)
+      if (size(real_array)>nvmax) then
+         write(message,'(a,i4)') 'mask_th size should be smaller than ',nvmax
+         call mpl%abort('${subr}$',message)
+      end if
+      nam%mask_th(1:size(real_array)) = real_array
+   end if
+   if (section%has('ncontig_th')) call section%get_or_die('ncontig_th',nam%ncontig_th)
+   if (section%has('mask_check')) call section%get_or_die('mask_check',nam%mask_check)
 end if
 
-! diag_param
-if (conf%has('ne')) call conf%get_or_die('ne',nam%ne)
-if (conf%has('ne_lr')) call conf%get_or_die('ne_lr',nam%ne_lr)
-if (conf%has('gen_kurt_th')) call conf%get_or_die('gen_kurt_th',nam%gen_kurt_th)
-if (conf%has('gau_approx')) call conf%get_or_die('gau_approx',nam%gau_approx)
-if (conf%has('avg_nbins')) call conf%get_or_die('avg_nbins',nam%avg_nbins)
-if (conf%has('vbal')) then
-   call conf%get_or_die('vbal',confs)
+! Sampling parameters
+if (conf%has('sampling')) then
+   call conf%get_or_die('sampling',section)
+   if (section%has('nc1')) call section%get_or_die('nc1',nam%nc1)
+   if (section%has('nc2')) call section%get_or_die('nc2',nam%nc2)
+   if (section%has('nc3')) call section%get_or_die('nc3',nam%nc3)
+   if (section%has('nc4')) call section%get_or_die('nc4',nam%nc4)
+   if (section%has('dc')) call section%get_or_die('dc',nam%dc)
+   if (section%has('nl0r')) call section%get_or_die('nl0r',nam%nl0r)
+   if (section%has('local_diag')) call section%get_or_die('local_diag',nam%local_diag)
+   if (section%has('local_rad')) call section%get_or_die('local_rad',nam%local_rad)
+   if (section%has('local_dlat')) call section%get_or_die('local_dlat',nam%local_dlat)
+   if (section%has('samp_draw_type')) then
+      call section%get_or_die('samp_draw_type',str)
+      nam%samp_draw_type = str
+   end if
+   if (section%has('irmax')) call section%get_or_die('irmax',nam%irmax)
+   if (section%has('samp_interp_type')) then
+      call section%get_or_die('samp_interp_type',str)
+      nam%samp_interp_type = str
+   end if
+end if
 
-   ! Allocation
-   allocate(nam%vbal_block(nam%nv,nam%nv))
-   allocate(nam%vbal_diag_auto(nam%nv,nam%nv))
-   allocate(nam%vbal_diag_reg(nam%nv,nam%nv))
-   allocate(nam%vbal_id_coef(nam%nv,nam%nv))
-   allocate(vbal_order(nam%nv))
+! Localization parameters
+if (conf%has('localization')) then
+   call conf%get_or_die('localization',section)
+   if (section%has('ne')) call section%get_or_die('ne',nam%ne)
+   if (section%has('ne_lr')) call section%get_or_die('ne_lr',nam%ne_lr)
+   if (section%has('gau_approx')) call section%get_or_die('gau_approx',nam%gau_approx)
+   if (section%has('gen_kurt_th')) call section%get_or_die('gen_kurt_th',nam%gen_kurt_th)
+   if (section%has('avg_nbins')) call section%get_or_die('avg_nbins',nam%avg_nbins)
+end if
 
-   ! Get initial matrix
-   nam%vbal_block = .false.
-   do iconf=1,size(confs)
-      call confs(iconf)%get_or_die('balanced',str_bal)
-      call confs(iconf)%get_or_die('unbalanced',str_unbal)
-      found = .false.
-      do jv=1,nam%nv
-         do iv=1,nam%nv
-            if ((str_bal==nam%variables(iv)).and.(str_unbal==nam%variables(jv))) then
-               if (iv==jv) then
-                  call mpl%abort('${subr}$','vbal item should be off-diagonal')
-               else
-                  if (nam%vbal_block(iv,jv)) then
-                     call mpl%abort('${subr}$','redundant vbal item')
+! Vertical balance parameters
+if (conf%has('vertical balance')) then
+   call conf%get_or_die('vertical balance',section)
+   if (section%has('vbal')) then
+      call section%get_or_die('vbal',confs)
+
+      ! Allocation
+      allocate(nam%vbal_block(nam%nv,nam%nv))
+      allocate(nam%vbal_diag_auto(nam%nv,nam%nv))
+      allocate(nam%vbal_diag_reg(nam%nv,nam%nv))
+      allocate(nam%vbal_id_coef(nam%nv,nam%nv))
+      allocate(vbal_order(nam%nv))
+   
+      ! Get initial matrix
+      nam%vbal_block = .false.
+      do iconf=1,size(confs)
+         call confs(iconf)%get_or_die('balanced',str_bal)
+         call confs(iconf)%get_or_die('unbalanced',str_unbal)
+         found = .false.
+         do jv=1,nam%nv
+            do iv=1,nam%nv
+               if ((str_bal==nam%variables(iv)).and.(str_unbal==nam%variables(jv))) then
+                  if (iv==jv) then
+                     call mpl%abort('${subr}$','vbal item should be off-diagonal')
                   else
-                     nam%vbal_block(iv,jv) = .true.
-                     found = .true.
+                     if (nam%vbal_block(iv,jv)) then
+                        call mpl%abort('${subr}$','redundant vbal item')
+                     else
+                        nam%vbal_block(iv,jv) = .true.
+                        found = .true.
+                     end if
                   end if
                end if
-            end if
+            end do
          end do
+         if (.not.found) call mpl%abort('${subr}$','wrong vbal item')
       end do
-      if (.not.found) call mpl%abort('${subr}$','wrong vbal item')
-   end do
-
-   ! Get vbal variables order
-   vbal_order = 0
-   rank = 0
-
-   ! Independent variables first
-   do iv=1,nam%nv
-      if (count(nam%vbal_block(iv,:))==0) then
-         rank = rank+1
-         vbal_order(rank) = iv
-      end if
-   end do
-
-   ! Find least-dependent variables progressively
-   iv = 0
-   itest = 0
-   do while (any(vbal_order==0))
-      ! Check number of iterations
-      itest = itest+1
-      if (itest>nam%nv**2) call mpl%abort('${subr}$','inconsistent vbal items')
-
-      ! Increment variable index
-      iv = iv+1
-      if (iv>nam%nv) iv = 1
-
-      if (.not.any(vbal_order(1:rank)==iv)) then
-         ! Check variable dependencies
-         valid = .true.
-         do jv=1,nam%nv
-            if (nam%vbal_block(iv,jv)) then
-               if (.not.any(vbal_order(1:rank)==jv)) valid = .false.
-            end if
-         end do
-
-         ! Check if variable can be added now
-         if (valid) then
+   
+      ! Get vbal variables order
+      vbal_order = 0
+      rank = 0
+   
+      ! Independent variables first
+      do iv=1,nam%nv
+         if (count(nam%vbal_block(iv,:))==0) then
             rank = rank+1
             vbal_order(rank) = iv
          end if
+      end do
+   
+      ! Find least-dependent variables progressively
+      iv = 0
+      itest = 0
+      do while (any(vbal_order==0))
+         ! Check number of iterations
+         itest = itest+1
+         if (itest>nam%nv**2) call mpl%abort('${subr}$','inconsistent vbal items')
+   
+         ! Increment variable index
+         iv = iv+1
+         if (iv>nam%nv) iv = 1
+   
+         if (.not.any(vbal_order(1:rank)==iv)) then
+            ! Check variable dependencies
+            valid = .true.
+            do jv=1,nam%nv
+               if (nam%vbal_block(iv,jv)) then
+                  if (.not.any(vbal_order(1:rank)==jv)) valid = .false.
+               end if
+            end do
+   
+            ! Check if variable can be added now
+            if (valid) then
+               rank = rank+1
+               vbal_order(rank) = iv
+            end if
+         end if
+      end do
+   
+      ! Reorder variables
+      nam%variables(1:nam%nv) = nam%variables(vbal_order)
+      nam%vbal_block = nam%vbal_block(vbal_order,vbal_order)
+   
+      ! Set parameters
+      do iconf=1,size(confs)
+         call confs(iconf)%get_or_die('balanced',str_bal)
+         call confs(iconf)%get_or_die('unbalanced',str_unbal)
+         do jv=1,nam%nv
+            do iv=1,nam%nv
+               if ((str_bal==nam%variables(iv)).and.(str_unbal==nam%variables(jv))) then
+                  call confs(iconf)%get_or_die('diag_auto',nam%vbal_diag_auto(iv,jv))
+                  call confs(iconf)%get_or_die('diag_reg',nam%vbal_diag_reg(iv,jv))
+                  call confs(iconf)%get_or_die('id_coef',nam%vbal_id_coef(iv,jv))
+               end if
+            end do
+         end do
+      end do
+   
+      ! Release memory
+      deallocate(vbal_order)
+   end if
+   if (section%has('vbal_rad')) call section%get_or_die('vbal_rad',nam%vbal_rad)
+   if (section%has('vbal_dlat')) call section%get_or_die('vbal_dlat',nam%vbal_dlat)
+   if (section%has('vbal_pseudo_inv')) call section%get_or_die('vbal_pseudo_inv',nam%vbal_pseudo_inv)
+   if (section%has('vbal_pseudo_inv_mmax')) call section%get_or_die('vbal_pseudo_inv_mmax',nam%vbal_pseudo_inv_mmax)
+   if (section%has('vbal_pseudo_inv_var_th')) call section%get_or_die('vbal_pseudo_inv_var_th',nam%vbal_pseudo_inv_var_th)
+   if (section%has('vbal_id')) call section%get_or_die('vbal_id',nam%vbal_id)
+end if
+
+! Variance parameters
+if (conf%has('variance')) then
+   call conf%get_or_die('variance',section)
+   if (section%has('forced_var')) call section%get_or_die('forced_var',nam%forced_var)
+   if (section%has('stddev')) then
+      call section%get_or_die('stddev',subconf)
+      do iv=1,nam%nv
+         if (subconf%has(nam%variables(iv))) then
+            call subconf%get_or_die(nam%variables(iv),real_array)
+            if (size(real_array)>nl0max) then
+               write(message,'(a,a,a,i4)') 'stddev-',trim(nam%variables(iv)),' size should be smaller than ',nl0max
+               call mpl%abort('${subr}$',message)
+            end if
+            if (size(real_array)==1) then
+               nam%stddev(:,iv) = real_array(1)
+            else
+               nam%stddev(1:size(real_array),iv) = real_array
+            end if
+         end if
+      end do
+   end if
+   if (section%has('var_filter')) call section%get_or_die('var_filter',nam%var_filter)
+   if (section%has('var_niter')) call section%get_or_die('var_niter',nam%var_niter)
+   if (section%has('var_npass')) call section%get_or_die('var_npass',nam%var_npass)
+   if (section%has('var_rhflt')) then
+      call section%get_or_die('var_rhflt',subconf)
+      do iv=1,nam%nv
+         if (subconf%has(nam%variables(iv))) then
+            call subconf%get_or_die(nam%variables(iv),real_array)
+            if (size(real_array)>nl0max) then
+               write(message,'(a,a,a,i4)') 'var_rhflt-',trim(nam%variables(iv)), &
+    & ' size should be smaller than ',nl0max
+               call mpl%abort('${subr}$',message)
+            end if
+            if (size(real_array)==1) then
+               nam%var_rhflt(:,iv) = real_array(1)
+            else
+               nam%var_rhflt(1:size(real_array),iv) = real_array
+            end if
+         end if
+      end do
+   end if
+end if
+
+! Optimality test parameters
+if (conf%has('optimality test')) then
+   call conf%get_or_die('optimality test',section)
+   if (section%has('optimality_nfac')) call section%get_or_die('optimality_nfac',nam%optimality_nfac)
+   if (section%has('optimality_delta')) call section%get_or_die('optimality_delta',nam%optimality_delta)
+   if (section%has('optimality_ntest')) call section%get_or_die('optimality_ntest',nam%optimality_ntest)
+end if
+
+! Fit parameters
+if (conf%has('fit')) then
+   call conf%get_or_die('fit',section)
+   if (section%has('diag_rhflt')) call section%get_or_die('diag_rhflt',nam%diag_rhflt)
+   if (section%has('diag_rvflt')) call section%get_or_die('diag_rvflt',nam%diag_rvflt)
+   if (section%has('fit_dl0')) call section%get_or_die('fit_dl0',nam%fit_dl0)
+   if (section%has('fit_ncmp')) call section%get_or_die('fit_ncmp',nam%fit_ncmp)
+end if
+
+! NICAS parameters
+if (conf%has('nicas')) then
+   call conf%get_or_die('nicas',section)
+   if (section%has('resol')) call section%get_or_die('resol',nam%resol)
+   if (section%has('nc1max')) call section%get_or_die('nc1max',nam%nc1max)
+   if (section%has('nicas_draw_type')) then
+      call section%get_or_die('nicas_draw_type',str)
+      nam%nicas_draw_type = str
+   end if
+   if (section%has('forced_radii')) call section%get_or_die('forced_radii',nam%forced_radii)
+   if (section%has('ncmp')) then
+      call section%get_or_die('ncmp',subconf)
+      if (subconf%has('common')) call subconf%get_or_die('common',nam%ncmp(0))
+      do iv=1,nam%nv
+         if (subconf%has(nam%variables(iv))) call subconf%get_or_die(nam%variables(iv),nam%ncmp(iv))
+      end do
+   end if
+   if (section%has('rh')) then
+      call section%get_or_die('rh',subconf)
+      if (subconf%has('common')) then
+         call subconf%get_or_die('common',real_array)
+         if (size(real_array)>nl0max) then
+            write(message,'(a,i4)') 'rh-common size should be smaller than ',nl0max
+            call mpl%abort('${subr}$',message)
+         end if
+         if (size(real_array)==1) then
+            nam%rh(:,0) = real_array(1)
+         else
+            nam%rh(1:size(real_array),0) = real_array
+         end if
       end if
-   end do
-
-   ! Reorder variables
-   nam%variables(1:nam%nv) = nam%variables(vbal_order)
-   nam%vbal_block = nam%vbal_block(vbal_order,vbal_order)
-
-   ! Set parameters
-   do iconf=1,size(confs)
-      call confs(iconf)%get_or_die('balanced',str_bal)
-      call confs(iconf)%get_or_die('unbalanced',str_unbal)
+      do iv=1,nam%nv
+         if (subconf%has(nam%variables(iv))) then
+            call subconf%get_or_die(nam%variables(iv),real_array)
+            if (size(real_array)>nl0max) then
+               write(message,'(a,a,a,i4)') 'rh-',trim(nam%variables(iv)), &
+    & ' size should be smaller than ',nl0max
+               call mpl%abort('${subr}$',message)
+            end if
+            if (size(real_array)==1) then
+               nam%rh(:,iv) = real_array(1)
+            else
+               nam%rh(1:size(real_array),iv) = real_array
+            end if
+         end if
+      end do
+   end if
+   if (section%has('rv')) then
+      call section%get_or_die('rv',subconf)
+      if (subconf%has('common')) then
+         call subconf%get_or_die('common',real_array)
+         if (size(real_array)>nl0max) then
+            write(message,'(a,i4)') 'rv-common size should be smaller than ',nl0max
+            call mpl%abort('${subr}$',message)
+         end if
+         if (size(real_array)==1) then
+            nam%rv(:,0) = real_array(1)
+         else
+            nam%rv(1:size(real_array),0) = real_array
+         end if
+      end if
+      do iv=1,nam%nv
+         if (subconf%has(nam%variables(iv))) then
+            call subconf%get_or_die(nam%variables(iv),real_array)
+            if (size(real_array)>nl0max) then
+               write(message,'(a,a,a,i4)') 'rv-',trim(nam%variables(iv)), &
+    & ' size should be smaller than ',nl0max
+               call mpl%abort('${subr}$',message)
+            end if
+            if (size(real_array)==1) then
+               nam%rv(:,iv) = real_array(1)
+            else
+               nam%rv(1:size(real_array),iv) = real_array
+            end if
+         end if
+      end do
+   end if
+   if (section%has('loc_wgt')) then
+      call section%get_or_die('loc_wgt',subconf)
+   
+      ! Allocation
+      allocate(loc_wgt(nam%nv,nam%nv))
+      allocate(nam%loc_wgt_sqrt(nam%nv,nam%nv))
+   
+      ! Copy positive weights and set non-specified values to one
+      loc_wgt = -one
       do jv=1,nam%nv
-         do iv=1,nam%nv
-            if ((str_bal==nam%variables(iv)).and.(str_unbal==nam%variables(jv))) then
-               call confs(iconf)%get_or_die('diag_auto',nam%vbal_diag_auto(iv,jv))
-               call confs(iconf)%get_or_die('diag_reg',nam%vbal_diag_reg(iv,jv))
-               call confs(iconf)%get_or_die('id_coef',nam%vbal_id_coef(iv,jv))
+         do iv=1,jv
+            blockname = trim(nam%variables(iv))//'-'//trim(nam%variables(jv))
+            if (subconf%has(blockname)) then
+               if (iv==jv) call mpl%abort('${subr}$','loc_wgt item should be off-diagonal')
+               if (.not.eq(loc_wgt(iv,jv),-one)) call mpl%abort('${subr}$','redundant loc_wgt item')
+               call subconf%get_or_die(blockname,loc_wgt(iv,jv))
+               loc_wgt(jv,iv) = loc_wgt(iv,jv)
+            end if
+            blockname = trim(nam%variables(jv))//'-'//trim(nam%variables(iv))
+            if (subconf%has(blockname)) then
+               if (iv==jv) call mpl%abort('${subr}$','loc_wgt item should be off-diagonal')
+               if (.not.eq(loc_wgt(iv,jv),-one)) call mpl%abort('${subr}$','redundant loc_wgt item')
+               call subconf%get_or_die(blockname,loc_wgt(iv,jv))
+               loc_wgt(jv,iv) = loc_wgt(iv,jv)
             end if
          end do
       end do
-   end do
-
-   ! Release memory
-   deallocate(vbal_order)
-end if
-if (conf%has('vbal_rad')) call conf%get_or_die('vbal_rad',nam%vbal_rad)
-if (conf%has('vbal_dlat')) call conf%get_or_die('vbal_dlat',nam%vbal_dlat)
-if (conf%has('vbal_pseudo_inv')) call conf%get_or_die('vbal_pseudo_inv',nam%vbal_pseudo_inv)
-if (conf%has('vbal_pseudo_inv_mmax')) call conf%get_or_die('vbal_pseudo_inv_mmax',nam%vbal_pseudo_inv_mmax)
-if (conf%has('vbal_pseudo_inv_var_th')) call conf%get_or_die('vbal_pseudo_inv_var_th',nam%vbal_pseudo_inv_var_th)
-if (conf%has('vbal_id')) call conf%get_or_die('vbal_id',nam%vbal_id)
-if (conf%has('forced_var')) call conf%get_or_die('forced_var',nam%forced_var)
-if (conf%has('stddev')) then
-   call conf%get_or_die('stddev',subconf)
-   do iv=1,nam%nv
-      if (subconf%has(nam%variables(iv))) then
-         call subconf%get_or_die(nam%variables(iv),real_array)
-         if (size(real_array)>nl0max) then
-            write(message,'(a,a,a,i4)') 'stddev-',trim(nam%variables(iv)),' size should be smaller than ',nl0max
-            call mpl%abort('${subr}$',message)
-         end if
-         if (size(real_array)==1) then
-            nam%stddev(:,iv) = real_array(1)
-         else
-            nam%stddev(1:size(real_array),iv) = real_array
-         end if
-      end if
-   end do
-end if
-if (conf%has('var_filter')) call conf%get_or_die('var_filter',nam%var_filter)
-if (conf%has('var_niter')) call conf%get_or_die('var_niter',nam%var_niter)
-if (conf%has('var_npass')) call conf%get_or_die('var_npass',nam%var_npass)
-if (conf%has('var_rhflt')) then
-   call conf%get_or_die('var_rhflt',subconf)
-   do iv=1,nam%nv
-      if (subconf%has(nam%variables(iv))) then
-         call subconf%get_or_die(nam%variables(iv),real_array)
-         if (size(real_array)>nl0max) then
-            write(message,'(a,a,a,i4)') 'var_rhflt-',trim(nam%variables(iv)), &
- & ' size should be smaller than ',nl0max
-            call mpl%abort('${subr}$',message)
-         end if
-         if (size(real_array)==1) then
-            nam%var_rhflt(:,iv) = real_array(1)
-         else
-            nam%var_rhflt(1:size(real_array),iv) = real_array
-         end if
-      end if
-   end do
-end if
-if (conf%has('local_diag')) call conf%get_or_die('local_diag',nam%local_diag)
-if (conf%has('local_rad')) call conf%get_or_die('local_rad',nam%local_rad)
-if (conf%has('local_dlat')) call conf%get_or_die('local_dlat',nam%local_dlat)
-if (conf%has('optimality_nfac')) call conf%get_or_die('optimality_nfac',nam%optimality_nfac)
-if (conf%has('optimality_delta')) call conf%get_or_die('optimality_delta',nam%optimality_delta)
-if (conf%has('optimality_ntest')) call conf%get_or_die('optimality_ntest',nam%optimality_ntest)
-
-! fit_param
-if (conf%has('diag_rhflt')) call conf%get_or_die('diag_rhflt',nam%diag_rhflt)
-if (conf%has('diag_rvflt')) call conf%get_or_die('diag_rvflt',nam%diag_rvflt)
-if (conf%has('fit_dl0')) call conf%get_or_die('fit_dl0',nam%fit_dl0)
-if (conf%has('fit_ncmp')) call conf%get_or_die('fit_ncmp',nam%fit_ncmp)
-if (conf%has('write_hdiag_detail')) call conf%get_or_die('write_hdiag_detail',nam%write_hdiag_detail)
-
-! nicas_param
-if (conf%has('resol')) call conf%get_or_die('resol',nam%resol)
-if (conf%has('nc1max')) call conf%get_or_die('nc1max',nam%nc1max)
-if (conf%has('nicas_draw_type')) then
-   call conf%get_or_die('nicas_draw_type',str)
-   nam%nicas_draw_type = str
-end if
-if (conf%has('forced_radii')) call conf%get_or_die('forced_radii',nam%forced_radii)
-if (conf%has('ncmp')) then
-   call conf%get_or_die('ncmp',subconf)
-   if (subconf%has('common')) call subconf%get_or_die('common',nam%ncmp(0))
-   do iv=1,nam%nv
-      if (subconf%has(nam%variables(iv))) call subconf%get_or_die(nam%variables(iv),nam%ncmp(iv))
-   end do
-end if
-if (conf%has('rh')) then
-   call conf%get_or_die('rh',subconf)
-   if (subconf%has('common')) then
-      call subconf%get_or_die('common',real_array)
-      if (size(real_array)>nl0max) then
-         write(message,'(a,i4)') 'rh-common size should be smaller than ',nl0max
-         call mpl%abort('${subr}$',message)
-      end if
-      if (size(real_array)==1) then
-         nam%rh(:,0) = real_array(1)
-      else
-         nam%rh(1:size(real_array),0) = real_array
-      end if
-   end if
-   do iv=1,nam%nv
-      if (subconf%has(nam%variables(iv))) then
-         call subconf%get_or_die(nam%variables(iv),real_array)
-         if (size(real_array)>nl0max) then
-            write(message,'(a,a,a,i4)') 'rh-',trim(nam%variables(iv)), &
- & ' size should be smaller than ',nl0max
-            call mpl%abort('${subr}$',message)
-         end if
-         if (size(real_array)==1) then
-            nam%rh(:,iv) = real_array(1)
-         else
-            nam%rh(1:size(real_array),iv) = real_array
-         end if
-      end if
-   end do
-end if
-if (conf%has('rv')) then
-   call conf%get_or_die('rv',subconf)
-   if (subconf%has('common')) then
-      call subconf%get_or_die('common',real_array)
-      if (size(real_array)>nl0max) then
-         write(message,'(a,i4)') 'rv-common size should be smaller than ',nl0max
-         call mpl%abort('${subr}$',message)
-      end if
-      if (size(real_array)==1) then
-         nam%rv(:,0) = real_array(1)
-      else
-         nam%rv(1:size(real_array),0) = real_array
-      end if
-   end if
-   do iv=1,nam%nv
-      if (subconf%has(nam%variables(iv))) then
-         call subconf%get_or_die(nam%variables(iv),real_array)
-         if (size(real_array)>nl0max) then
-            write(message,'(a,a,a,i4)') 'rv-',trim(nam%variables(iv)), &
- & ' size should be smaller than ',nl0max
-            call mpl%abort('${subr}$',message)
-         end if
-         if (size(real_array)==1) then
-            nam%rv(:,iv) = real_array(1)
-         else
-            nam%rv(1:size(real_array),iv) = real_array
-         end if
-      end if
-   end do
-end if
-if (conf%has('loc_wgt')) then
-   call conf%get_or_die('loc_wgt',subconf)
-
-   ! Allocation
-   allocate(loc_wgt(nam%nv,nam%nv))
-   allocate(nam%loc_wgt_sqrt(nam%nv,nam%nv))
-
-   ! Copy positive weights and set non-specified values to one
-   loc_wgt = -one
-   do jv=1,nam%nv
-      do iv=1,jv
-         blockname = trim(nam%variables(iv))//'-'//trim(nam%variables(jv))
-         if (subconf%has(blockname)) then
-            if (iv==jv) call mpl%abort('${subr}$','loc_wgt item should be off-diagonal')
-            if (.not.eq(loc_wgt(iv,jv),-one)) call mpl%abort('${subr}$','redundant loc_wgt item')
-            call subconf%get_or_die(blockname,loc_wgt(iv,jv))
-            loc_wgt(jv,iv) = loc_wgt(iv,jv)
-         end if
-         blockname = trim(nam%variables(jv))//'-'//trim(nam%variables(iv))
-         if (subconf%has(blockname)) then
-            if (iv==jv) call mpl%abort('${subr}$','loc_wgt item should be off-diagonal')
-            if (.not.eq(loc_wgt(iv,jv),-one)) call mpl%abort('${subr}$','redundant loc_wgt item')
-            call subconf%get_or_die(blockname,loc_wgt(iv,jv))
-            loc_wgt(jv,iv) = loc_wgt(iv,jv)
-         end if
-      end do
-   end do
-
-   ! Set missing values to one
-   do jv=1,nam%nv
-      do iv=1,nam%nv
-         if (eq(loc_wgt(iv,jv),-one)) loc_wgt = one
-      end do
-   end do
    
-   ! Cholesky decomposition
-   call cholesky(mpl,nam%nv,loc_wgt,nam%loc_wgt_sqrt)
-
-   ! Release memory
-   deallocate(loc_wgt)
-end if
-if (conf%has('min_lev')) then
-   call conf%get_or_die('min_lev',subconf)
-   if (subconf%has('common')) call subconf%get_or_die('common',nam%min_lev(0))
-   do iv=1,nam%nv
-      if (subconf%has(nam%variables(iv))) call subconf%get_or_die(nam%variables(iv),nam%min_lev(iv))
-   end do
-end if
-if (conf%has('max_lev')) then
-   call conf%get_or_die('max_lev',subconf)
-   if (subconf%has('common')) call subconf%get_or_die('common',nam%max_lev(0))
-   do iv=1,nam%nv
-      if (subconf%has(nam%variables(iv))) call subconf%get_or_die(nam%variables(iv),nam%max_lev(iv))
-   end do
-end if
-if (conf%has('nicas_interp_type')) then
-   call conf%get_or_die('nicas_interp_type',subconf)
-   if (subconf%has('common')) then
-      call subconf%get_or_die('common',str)
-      nam%nicas_interp_type(0) = str
+      ! Set missing values to one
+      do jv=1,nam%nv
+         do iv=1,nam%nv
+            if (eq(loc_wgt(iv,jv),-one)) loc_wgt = one
+         end do
+      end do
+      
+      ! Cholesky decomposition
+      call cholesky(mpl,nam%nv,loc_wgt,nam%loc_wgt_sqrt)
+   
+      ! Release memory
+      deallocate(loc_wgt)
    end if
-   do iv=1,nam%nv
-      if (subconf%has(nam%variables(iv))) then
-        call subconf%get_or_die(nam%variables(iv),str)
-        nam%nicas_interp_type(iv) = str
+   if (section%has('min_lev')) then
+      call section%get_or_die('min_lev',subconf)
+      if (subconf%has('common')) call subconf%get_or_die('common',nam%min_lev(0))
+      do iv=1,nam%nv
+         if (subconf%has(nam%variables(iv))) call subconf%get_or_die(nam%variables(iv),nam%min_lev(iv))
+      end do
+   end if
+   if (section%has('max_lev')) then
+      call section%get_or_die('max_lev',subconf)
+      if (subconf%has('common')) call subconf%get_or_die('common',nam%max_lev(0))
+      do iv=1,nam%nv
+         if (subconf%has(nam%variables(iv))) call subconf%get_or_die(nam%variables(iv),nam%max_lev(iv))
+      end do
+   end if
+   if (section%has('nicas_interp_type')) then
+      call section%get_or_die('nicas_interp_type',subconf)
+      if (subconf%has('common')) then
+         call subconf%get_or_die('common',str)
+         nam%nicas_interp_type(0) = str
       end if
-   end do
-end if
-if (conf%has('pos_def_test')) call conf%get_or_die('pos_def_test',nam%pos_def_test)
-if (conf%has('write_nicas_grids')) call conf%get_or_die('write_nicas_grids',nam%write_nicas_grids)
-if (conf%has('interp_test')) call conf%get_or_die('interp_test',nam%interp_test)
-
-! dirac_param
-if (conf%has('ndir')) call conf%get_or_die('ndir',nam%ndir)
-if (conf%has('londir')) then
-   call conf%get_or_die('londir',real_array)
-   if (size(real_array)>ndirmax) then
-      write(message,'(a,i4)') 'londir size should be smaller than ',ndirmax
-      call mpl%abort('${subr}$',message)
+      do iv=1,nam%nv
+         if (subconf%has(nam%variables(iv))) then
+           call subconf%get_or_die(nam%variables(iv),str)
+           nam%nicas_interp_type(iv) = str
+         end if
+      end do
    end if
-   nam%londir(1:size(real_array)) = real_array
-end if
-if (conf%has('latdir')) then
-   call conf%get_or_die('latdir',real_array)
-   if (size(real_array)>ndirmax) then
-      write(message,'(a,i4)') 'latdir size should be smaller than ',ndirmax
-      call mpl%abort('${subr}$',message)
-   end if
-   nam%latdir(1:size(real_array)) = real_array
-end if
-if (conf%has('levdir')) then
-   call conf%get_or_die('levdir',integer_array)
-   if (size(real_array)>ndirmax) then
-      write(message,'(a,i4)') 'levdir size should be smaller than ',ndirmax
-      call mpl%abort('${subr}$',message)
-   end if
-   nam%levdir(1:size(integer_array)) = integer_array
-end if
-if (conf%has('ivdir')) then
-   call conf%get_or_die('ivdir',integer_array)
-   if (size(real_array)>ndirmax) then
-      write(message,'(a,i4)') 'ivdir size should be smaller than ',ndirmax
-      call mpl%abort('${subr}$',message)
-   end if
-   nam%ivdir(1:size(integer_array)) = integer_array
+   if (section%has('pos_def_test')) call section%get_or_die('pos_def_test',nam%pos_def_test)
+   if (section%has('write_nicas_grids')) call section%get_or_die('write_nicas_grids',nam%write_nicas_grids)
+   if (section%has('interp_test')) call section%get_or_die('interp_test',nam%interp_test)
 end if
 
-! output_param
-if (conf%has('nldwv')) call conf%get_or_die('nldwv',nam%nldwv)
-if (conf%has('lon_ldwv')) then
-   call conf%get_or_die('lon_ldwv',real_array)
-   if (size(real_array)>nldwvmax) then
-      write(message,'(a,i4)') 'lon_ldwv size should be smaller than ',nldwvmax
-      call mpl%abort('${subr}$',message)
+! Dirac parameters
+if (conf%has('dirac')) then
+   call conf%get_or_die('dirac',section)
+   if (section%has('ndir')) call section%get_or_die('ndir',nam%ndir)
+   if (section%has('londir')) then
+      call section%get_or_die('londir',real_array)
+      if (size(real_array)>ndirmax) then
+         write(message,'(a,i4)') 'londir size should be smaller than ',ndirmax
+         call mpl%abort('${subr}$',message)
+      end if
+      nam%londir(1:size(real_array)) = real_array
    end if
-   nam%lon_ldwv(1:size(real_array)) = real_array
-end if
-if (conf%has('lat_ldwv')) then
-   call conf%get_or_die('lat_ldwv',real_array)
-   if (size(real_array)>nldwvmax) then
-      write(message,'(a,i4)') 'lat_ldwv size should be smaller than ',nldwvmax
-      call mpl%abort('${subr}$',message)
+   if (section%has('latdir')) then
+      call section%get_or_die('latdir',real_array)
+      if (size(real_array)>ndirmax) then
+         write(message,'(a,i4)') 'latdir size should be smaller than ',ndirmax
+         call mpl%abort('${subr}$',message)
+      end if
+      nam%latdir(1:size(real_array)) = real_array
    end if
-   nam%lat_ldwv(1:size(real_array)) = real_array
-end if
-if (conf%has('name_ldwv')) then
-   call conf%get_or_die('name_ldwv',str_array)
-   if (size(real_array)>nldwvmax) then
-      write(message,'(a,i4)') 'name_ldwv size should be smaller than ',nldwvmax
-      call mpl%abort('${subr}$',message)
+   if (section%has('levdir')) then
+      call section%get_or_die('levdir',integer_array)
+      if (size(real_array)>ndirmax) then
+         write(message,'(a,i4)') 'levdir size should be smaller than ',ndirmax
+         call mpl%abort('${subr}$',message)
+      end if
+      nam%levdir(1:size(integer_array)) = integer_array
    end if
-   nam%name_ldwv(1:size(str_array)) = str_array
+   if (section%has('ivdir')) then
+      call section%get_or_die('ivdir',integer_array)
+      if (size(real_array)>ndirmax) then
+         write(message,'(a,i4)') 'ivdir size should be smaller than ',ndirmax
+         call mpl%abort('${subr}$',message)
+      end if
+      nam%ivdir(1:size(integer_array)) = integer_array
+   end if
 end if
 
-! wind_param
-if (conf%has('wind_streamfunction')) then
-   call conf%get_or_die('wind_streamfunction',str)
-   nam%wind_streamfunction = str
+! Local profiles parameters
+if (conf%has('local profiles')) then
+   call conf%get_or_die('local profiles',section)
+   if (section%has('nldwv')) call section%get_or_die('nldwv',nam%nldwv)
+   if (section%has('lon_ldwv')) then
+      call section%get_or_die('lon_ldwv',real_array)
+      if (size(real_array)>nldwvmax) then
+         write(message,'(a,i4)') 'lon_ldwv size should be smaller than ',nldwvmax
+         call mpl%abort('${subr}$',message)
+      end if
+      nam%lon_ldwv(1:size(real_array)) = real_array
+   end if
+   if (section%has('lat_ldwv')) then
+      call section%get_or_die('lat_ldwv',real_array)
+      if (size(real_array)>nldwvmax) then
+         write(message,'(a,i4)') 'lat_ldwv size should be smaller than ',nldwvmax
+         call mpl%abort('${subr}$',message)
+      end if
+      nam%lat_ldwv(1:size(real_array)) = real_array
+   end if
+   if (section%has('name_ldwv')) then
+      call section%get_or_die('name_ldwv',str_array)
+      if (size(real_array)>nldwvmax) then
+         write(message,'(a,i4)') 'name_ldwv size should be smaller than ',nldwvmax
+         call mpl%abort('${subr}$',message)
+      end if
+      nam%name_ldwv(1:size(str_array)) = str_array
+   end if
 end if
-if (conf%has('wind_velocity_potential')) then
-   call conf%get_or_die('wind_velocity_potential',str)
-   nam%wind_velocity_potential = str
-end if
-if (conf%has('wind_zonal')) then
-   call conf%get_or_die('wind_zonal',str)
-   nam%wind_zonal = str
-end if
-if (conf%has('wind_meridional')) then
-   call conf%get_or_die('wind_meridional',str)
-   nam%wind_meridional = str
-end if
-if (conf%has('wind_nlon')) call conf%get_or_die('wind_nlon',nam%wind_nlon)
-if (conf%has('wind_nlat')) call conf%get_or_die('wind_nlat',nam%wind_nlat)
-if (conf%has('wind_nsg')) call conf%get_or_die('wind_nsg',nam%wind_nsg)
-if (conf%has('wind_inflation')) call conf%get_or_die('wind_inflation',nam%wind_inflation)
 
-! helpers
+! Wind parameters
+if (conf%has('wind')) then
+   call conf%get_or_die('wind',section)
+   if (section%has('wind_streamfunction')) then
+      call section%get_or_die('wind_streamfunction',str)
+      nam%wind_streamfunction = str
+   end if
+   if (section%has('wind_velocity_potential')) then
+      call section%get_or_die('wind_velocity_potential',str)
+      nam%wind_velocity_potential = str
+   end if
+   if (section%has('wind_zonal')) then
+      call section%get_or_die('wind_zonal',str)
+      nam%wind_zonal = str
+   end if
+   if (section%has('wind_meridional')) then
+      call section%get_or_die('wind_meridional',str)
+      nam%wind_meridional = str
+   end if
+   if (section%has('wind_nlon')) call section%get_or_die('wind_nlon',nam%wind_nlon)
+   if (section%has('wind_nlat')) call section%get_or_die('wind_nlat',nam%wind_nlat)
+   if (section%has('wind_nsg')) call section%get_or_die('wind_nsg',nam%wind_nsg)
+   if (section%has('wind_inflation')) call section%get_or_die('wind_inflation',nam%wind_inflation)
+end if
+
+! Helpers
 if (conf%has('msvalr')) call conf%get_or_die('msvalr',mpl%msv%valr)
-if (conf%has('output')) then
-   call conf%get_or_die('output',confs)
-   do iconf=1,size(confs)
-      call confs(iconf)%get_or_die('parameter',str)
-      param = str
-      if (param=='nicas_norm') nam%output_nicas_norm = .true.
-      if (param=='nicas_a') nam%output_nicas_a = .true.
-   end do
-end if
 
 ! Probe out
 @:probe_out()
@@ -1253,12 +1295,12 @@ if (nam%new_vbal_cov.or.nam%new_vbal.or.nam%new_hdiag.or.nam%check_optimality) t
  & call mpl%abort('${subr}$','load_samp_local and write_samp_local are exclusive')
    if (nam%load_samp_global.and.nam%write_samp_global) &
  & call mpl%abort('${subr}$','load_samp_global and write_samp_global are exclusive')
-   select case (nam%diag_draw_type)
+   select case (nam%samp_draw_type)
    case ('random')
    case ('octahedral')
       if (nam%nldwv>0) call mpl%abort('${subr}$','no local diagnostics with an octahedral draw')
    case default
-      call mpl%abort('${subr}$','wrong diag_draw_type')
+      call mpl%abort('${subr}$','wrong samp_draw_type')
    end select
    select case (nam%mask_type)
    case ('ldwv')

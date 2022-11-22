@@ -1764,7 +1764,7 @@ if (samp%lat_bands.and.(subset==2)) then
    end if
 else
    ! Initialize subsampling
-   select case (trim(nam%diag_draw_type))
+   select case (trim(nam%samp_draw_type))
    case ('random')
       ! Check subsampling size
       if (ncx>samp%nc0_smask(0)) then

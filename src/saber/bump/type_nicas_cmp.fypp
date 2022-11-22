@@ -1588,10 +1588,6 @@ character(len=1024) :: levname
 ! Probe in
 @:probe_in()
 
-! Check that norm and amplitude are written
-if (.not.nam%output_nicas_norm) call mpl%warning('${subr}$','norm is not written, make sure it is relevant')
-if (.not.nam%output_nicas_a) call mpl%warning('${subr}$','amplitude is not written, make sure it is relevant')
-
 ! Define vertical sampling
 write(mpl%info,'(a16,a)') '','Define vertical sampling'
 call mpl%flush
