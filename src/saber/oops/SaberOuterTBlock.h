@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -34,9 +35,10 @@ class SaberOuterTBlockParameters : public SaberOuterBlockParametersWrapper {
 
 template <typename MODEL>
 class SaberOuterTBlock {
-  typedef oops::Geometry<MODEL>                              Geometry_;
-  typedef oops::Increment<MODEL>                             Increment_;
-  typedef oops::State<MODEL>                                 State_;
+  typedef oops::Geometry<MODEL>  Geometry_;
+  typedef oops::Increment<MODEL> Increment_;
+  typedef oops::State<MODEL>     State_;
+  typedef typename std::map<std::string, const oops::GeometryData*> GeometryDataMap_;
 
  public:
   typedef SaberOuterTBlockParameters<MODEL> Parameters_;
@@ -44,7 +46,7 @@ class SaberOuterTBlock {
   static const std::string classname() {return "saber::SaberOuterTBlock<MODEL>";}
 
   SaberOuterTBlock(const Geometry_ &,
-                   const oops::GeometryData &,
+                   const GeometryDataMap_ &,
                    const oops::Variables &,
                    const Parameters_ &,
                    const State_ &,
@@ -52,7 +54,7 @@ class SaberOuterTBlock {
                    const double & adjointTolerance = -1.0);
   ~SaberOuterTBlock() {}
 
-  const oops::GeometryData & innerGeometryData() {return saberOuterBlock_->innerGeometryData();}
+  const GeometryDataMap_ & innerGeometryDataMap() {return innerGeometryDataMap_;}
   const oops::Variables & innerVars() {return saberOuterBlock_->innerVars();}
 
   void multiply(atlas::FieldSet &) const;
@@ -61,6 +63,7 @@ class SaberOuterTBlock {
 
  private:
   void print(std::ostream &);
+  GeometryDataMap_ innerGeometryDataMap_;
   std::unique_ptr<SaberOuterBlockBase> saberOuterBlock_;
 };
 
@@ -68,7 +71,7 @@ class SaberOuterTBlock {
 
 template <typename MODEL>
 SaberOuterTBlock<MODEL>::SaberOuterTBlock(const Geometry_ & geom,
-                                          const oops::GeometryData & geometryData,
+                                          const GeometryDataMap_ & outerGeometryDataMap,
                                           const oops::Variables & outerVars,
                                           const Parameters_ & params,
                                           const State_ & xb,
@@ -93,9 +96,22 @@ SaberOuterTBlock<MODEL>::SaberOuterTBlock(const Geometry_ & geom,
                                                          xb.validTime(),
                                                          inputFields);
 
+  // Get active outer variables
+  oops::Variables activeOuterVars(outerVars);
+  activeOuterVars.intersection(activeVars);
+
+  // Get outer geometryData
+  const oops::GeometryData * outerGeometryData = outerGeometryDataMap.at(activeOuterVars[0]);
+
+  // Check that function space type is the same for all active outer variables
+  for (const auto var : activeOuterVars.variables()) {
+    ASSERT(outerGeometryData->functionSpace().type() ==
+      outerGeometryDataMap.at(var)->functionSpace().type());
+  }
+
   // Create outer block
   saberOuterBlock_.reset(SaberOuterBlockFactory::create(
-                         geometryData,
+                         *outerGeometryData,
                          geom.variableSizes(activeVars),
                          outerVars,
                          saberOuterBlockParams,
@@ -111,26 +127,44 @@ SaberOuterTBlock<MODEL>::SaberOuterTBlock(const Geometry_ & geom,
     ASSERT(innerVars.has(var) || outerVars.has(var));
   }
 
+  // Initialize innerGeometryDataMap
+  for (const auto & geometryDataPair : outerGeometryDataMap) {
+    innerGeometryDataMap_[geometryDataPair.first] = geometryDataPair.second;
+  }
+
+  // Update innerGeometryDataMap with active variables
+  for (const auto var : activeVars.variables()) {
+    if (innerVars.has(var)) {
+      innerGeometryDataMap_[var] = &(saberOuterBlock_->innerGeometryData());
+    }
+  }
+
   if (adjointTolerance >= 0.0) {
     // Adjoint test
 
-    // Variables sizes
-    std::vector<size_t> innerVariableSizes = geom.variableSizes(innerVars);
+    // Variables sizes map
+    std::map<std::string, size_t> innerVariableSizeMap;
+    for (const auto & var : innerVars.variables()) {
+      innerVariableSizeMap[var] = geom.variableSizes(oops::Variables({var}))[0];
+    }
 
     // Create random inner FieldSet
-    atlas::FieldSet innerFset = util::createRandomFieldSet(saberOuterBlock_->innerGeometryData(),
-                                                           innerVariableSizes,
+    atlas::FieldSet innerFset = util::createRandomFieldSet(innerGeometryDataMap_,
+                                                           innerVariableSizeMap,
                                                            innerVars);
 
     // Copy inner FieldSet
     atlas::FieldSet innerFsetSave = util::copyFieldSet(innerFset);
 
-    // Variables sizes
-    std::vector<size_t> outerVariableSizes = geom.variableSizes(outerVars);
+    // Variables sizes map
+    std::map<std::string, size_t> outerVariableSizeMap;
+    for (const auto & var : outerVars.variables()) {
+      outerVariableSizeMap[var] = geom.variableSizes(oops::Variables({var}))[0];
+    }
 
     // Create random outer FieldSet
-    atlas::FieldSet outerFset = util::createRandomFieldSet(geometryData,
-                                                           outerVariableSizes,
+    atlas::FieldSet outerFset = util::createRandomFieldSet(outerGeometryDataMap,
+                                                           outerVariableSizeMap,
                                                            outerVars);
 
     // Copy outer FieldSet

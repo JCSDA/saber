@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -60,6 +61,7 @@ class SaberCentralTBlock {
   typedef oops::IncrementEnsembleFromStatesParameters<MODEL> IncrementEnsembleFromStatesParameters_;
   typedef oops::IncrementEnsembleParameters<MODEL>           IncrementEnsembleParameters_;
   typedef oops::IncrementEnsemble<MODEL>                     Ensemble_;
+  typedef typename std::map<std::string, const oops::GeometryData*> GeometryDataMap_;
 
  public:
   typedef SaberCentralTBlockParameters<MODEL> Parameters_;
@@ -67,7 +69,7 @@ class SaberCentralTBlock {
   static const std::string classname() {return "saber::SaberCentralTBlock<MODEL>";}
 
   SaberCentralTBlock(const Geometry_ &,
-                     const oops::GeometryData &,
+                     const GeometryDataMap_ &,
                      const oops::Variables &,
                      const Parameters_ &,
                      const State_ &,
@@ -88,8 +90,8 @@ class SaberCentralTBlock {
 
 template <typename MODEL>
 SaberCentralTBlock<MODEL>::SaberCentralTBlock(const Geometry_ & geom,
-                                              const oops::GeometryData & geometryData,
-                                              const oops::Variables & outerVars,
+                                              const GeometryDataMap_ & geometryDataMap,
+                                              const oops::Variables & vars,
                                               const Parameters_ & params,
                                               const State_ & xb,
                                               const State_ & fg,
@@ -108,11 +110,11 @@ SaberCentralTBlock<MODEL>::SaberCentralTBlock(const Geometry_ & geom,
                     << saberCentralBlockParams.saberBlockName.value() << std::endl;
 
   // Get active variables
-  oops::Variables activeVars = saberCentralBlockParams.activeVars.value().get_value_or(outerVars);
+  oops::Variables activeVars = saberCentralBlockParams.activeVars.value().get_value_or(vars);
 
-  // Check that active variables are present in outer variables
+  // Check that active variables are present in variables
   for (const auto & var : activeVars.variables()) {
-    ASSERT(outerVars.has(var));
+    ASSERT(vars.has(var));
   }
 
   // Read input fields (on model increment geometry)
@@ -123,9 +125,17 @@ SaberCentralTBlock<MODEL>::SaberCentralTBlock(const Geometry_ & geom,
                                                          xb.validTime(),
                                                          inputFields);
 
+  // Get geometryData
+  const oops::GeometryData * geometryData = geometryDataMap.at(activeVars[0]);
+
+  // Check that function space type is the same for all active variables
+  for (const auto var : activeVars.variables()) {
+    ASSERT(geometryData->functionSpace().type() == geometryDataMap.at(var)->functionSpace().type());
+  }
+
   // Create central block
   saberCentralBlock_.reset(SaberCentralBlockFactory::create(
-                           geometryData,
+                           *geometryData,
                            geom.variableSizes(activeVars),
                            activeVars,
                            saberCentralBlockParams,
@@ -162,35 +172,31 @@ SaberCentralTBlock<MODEL>::SaberCentralTBlock(const Geometry_ & geom,
   if (adjointTolerance >= 0.0) {
     // Adjoint test
 
-    // Variables sizes
-    std::vector<size_t> outerVariableSizes = geom.variableSizes(outerVars);
+    // Variables sizes map
+    std::map<std::string, size_t> variableSizeMap;
+    for (const auto & var : vars.variables()) {
+      variableSizeMap[var] = geom.variableSizes(oops::Variables({var}))[0];
+    }
 
-    // Create random inner FieldSet
-    atlas::FieldSet innerFset =  util::createRandomFieldSet(geometryData,
-                                                            outerVariableSizes,
-                                                            outerVars);
+    // Create random FieldSets
+    atlas::FieldSet fset1 =  util::createRandomFieldSet(geometryDataMap,
+                                                        variableSizeMap,
+                                                        vars);
+    atlas::FieldSet fset2 =  util::createRandomFieldSet(geometryDataMap,
+                                                        variableSizeMap,
+                                                        vars);
 
-    // Copy inner FieldSet
-    atlas::FieldSet innerFsetSave = util::copyFieldSet(innerFset);
-
-    // Create random outer FieldSet
-    atlas::FieldSet outerFset = util::createRandomFieldSet(geometryData,
-                                                           outerVariableSizes,
-                                                           outerVars);
-
-    // Copy outer FieldSet
-    atlas::FieldSet outerFsetSave = util::copyFieldSet(outerFset);
+    // Copy FieldSets
+    atlas::FieldSet fset1Save = util::copyFieldSet(fset1);
+    atlas::FieldSet fset2Save = util::copyFieldSet(fset2);
 
     // Apply forward multiplication only (self-adjointness test)
-    saberCentralBlock_->multiply(innerFset);
-    saberCentralBlock_->multiply(outerFset);
+    saberCentralBlock_->multiply(fset1);
+    saberCentralBlock_->multiply(fset2);
 
     // Compute adjoint test
-    const double dp1 = util::dotProductFieldSets(innerFset, outerFsetSave, activeVars,
-                                                 geom.getComm());
-    const double dp2 = util::dotProductFieldSets(outerFset, innerFsetSave, activeVars,
-                                                 geom.getComm());
-
+    const double dp1 = util::dotProductFieldSets(fset1, fset2Save, activeVars, geom.getComm());
+    const double dp2 = util::dotProductFieldSets(fset2, fset1Save, activeVars, geom.getComm());
     oops::Log::info() << "Info     : Adjoint test for central block "
                       << saberCentralBlockParams.saberBlockName.value()
                       << ": y^t (Ax) = " << dp1 << ": x^t (Ay) = " << dp2 << std::endl;

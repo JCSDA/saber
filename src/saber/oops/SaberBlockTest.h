@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -62,10 +63,11 @@ template <typename MODEL> class SaberBlockTestParameters
 // -----------------------------------------------------------------------------
 
 template <typename MODEL> class SaberBlockTest : public oops::Application {
-  typedef oops::Geometry<MODEL>                                Geometry_;
-  typedef oops::Increment<MODEL>                               Increment_;
-  typedef typename boost::ptr_vector<SaberOuterTBlock<MODEL>>  SaberOuterTBlockVec_;
-  typedef oops::State<MODEL>                                   State_;
+  typedef oops::Geometry<MODEL>                                     Geometry_;
+  typedef oops::Increment<MODEL     >                               Increment_;
+  typedef typename boost::ptr_vector<SaberOuterTBlock<MODEL>>       SaberOuterTBlockVec_;
+  typedef oops::State<MODEL>                                        State_;
+  typedef typename std::map<std::string, const oops::GeometryData*> GeometryDataMap_;
 
  public:
   static const std::string classname() {return "saber::SaberBlockTest";}
@@ -99,9 +101,13 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
     State_ xbLocal(xx);
     State_ fgLocal(xx);
 
-    // Initial outer geometry and variables
-    std::vector<std::reference_wrapper<const oops::GeometryData>> outerGeometryData_;
-    outerGeometryData_.push_back(geom.generic());
+    // Initialize geometryData map
+    GeometryDataMap_ outerGeometryDataMap_;
+    for (const auto var : incVars.variables()) {
+      outerGeometryDataMap_[var] = &(geom.generic());
+    }
+
+    // Intialize outer variables
     oops::Variables outerVars(incVars);
 
     // Build outer blocks successively
@@ -113,16 +119,16 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         boost::adaptors::reverse(*saberOuterTBlocksParams)) {
         // Create outer templated block
         saberOuterTBlocks_.push_back(new SaberOuterTBlock<MODEL>(geom,
-                                     outerGeometryData_.back().get(),
+                                     outerGeometryDataMap_,
                                      outerVars,
                                      saberOuterTBlockParams,
                                      xbLocal,
                                      fgLocal,
                                      params.adjointTolerance.value()));
 
-        // Update outer geometry and variables for the next block
-        outerGeometryData_.push_back(saberOuterTBlocks_.back().innerGeometryData());
+        // Update outer variables for the next block
         outerVars = saberOuterTBlocks_.back().innerVars();
+        outerGeometryDataMap_ = saberOuterTBlocks_.back().innerGeometryDataMap();
       }
     }
 
@@ -133,7 +139,7 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
     if (saberCentralTBlockParams != boost::none) {
       // Create central templated block
       saberCentralTBlock_.reset(new SaberCentralTBlock<MODEL>(geom,
-                                outerGeometryData_.back().get(),
+                                outerGeometryDataMap_,
                                 outerVars,
                                 *saberCentralTBlockParams,
                                 xbLocal,

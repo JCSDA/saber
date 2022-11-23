@@ -42,6 +42,5 @@ saber outer blocks:
   - northward_wind
   gauss grid uid: F15
   use streamfunction and velocity potential: true
-  use inner gaussian functionspace: true
 test:
   reference filename: testref/saber_block_test_spectralb_and_touv.ref

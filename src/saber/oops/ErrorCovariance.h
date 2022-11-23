@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -54,13 +55,14 @@ template <typename MODEL>
 class ErrorCovariance : public oops::ModelSpaceCovarianceBase<MODEL>,
                         public util::Printable,
                         private util::ObjectCounter<ErrorCovariance<MODEL>> {
-  typedef oops::Geometry<MODEL>                                 Geometry_;
-  typedef oops::Increment<MODEL>                                Increment_;
-  typedef typename boost::ptr_vector<SaberOuterTBlock<MODEL>>   SaberOuterTBlockVec_;
-  typedef typename SaberOuterTBlockVec_::iterator               iter_;
-  typedef typename SaberOuterTBlockVec_::const_iterator         icst_;
-  typedef typename SaberOuterTBlockVec_::const_reverse_iterator ircst_;
-  typedef oops::State<MODEL>                                    State_;
+  typedef oops::Geometry<MODEL>                                     Geometry_;
+  typedef oops::Increment<MODEL>                                    Increment_;
+  typedef typename boost::ptr_vector<SaberOuterTBlock<MODEL>>       SaberOuterTBlockVec_;
+  typedef typename SaberOuterTBlockVec_::iterator                   iter_;
+  typedef typename SaberOuterTBlockVec_::const_iterator             icst_;
+  typedef typename SaberOuterTBlockVec_::const_reverse_iterator     ircst_;
+  typedef oops::State<MODEL>                                        State_;
+  typedef typename std::map<std::string, const oops::GeometryData*> GeometryDataMap_;
 
  public:
   typedef ErrorCovarianceParameters<MODEL> Parameters_;
@@ -85,7 +87,7 @@ class ErrorCovariance : public oops::ModelSpaceCovarianceBase<MODEL>,
 
   void print(std::ostream &) const override;
 
-  std::vector<std::reference_wrapper<const oops::GeometryData>> outerGeometryData_;
+  GeometryDataMap_ outerGeometryDataMap_;
   std::unique_ptr<SaberCentralTBlock<MODEL>> saberCentralTBlock_;
   SaberOuterTBlockVec_ saberOuterTBlocks_;
 };
@@ -107,8 +109,12 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
   State_ xbLocal(xb);
   State_ fgLocal(fg);
 
-  // Initial outer geometry and variables
-  outerGeometryData_.push_back(geom.generic());
+  // Initialize geometryData map
+  for (const auto var : incVars.variables()) {
+    outerGeometryDataMap_[var] = &(geom.generic());
+  }
+
+  // Intialize outer variables
   oops::Variables outerVars(incVars);
 
   // Build outer blocks successively
@@ -120,15 +126,15 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
       boost::adaptors::reverse(*saberOuterTBlocksParams)) {
       // Create outer templated block
       saberOuterTBlocks_.push_back(new SaberOuterTBlock<MODEL>(geom,
-                                   outerGeometryData_.back().get(),
+                                   outerGeometryDataMap_,
                                    outerVars,
                                    saberOuterTBlockParams,
                                    xbLocal,
                                    fgLocal));
 
       // Update outer geometry and variables for the next block
-      outerGeometryData_.push_back(saberOuterTBlocks_.back().innerGeometryData());
       outerVars = saberOuterTBlocks_.back().innerVars();
+      outerGeometryDataMap_ = saberOuterTBlocks_.back().innerGeometryDataMap();
     }
   }
 
@@ -138,7 +144,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
 
   // Create central templated block
   saberCentralTBlock_.reset(new SaberCentralTBlock<MODEL>(geom,
-                            outerGeometryData_.back().get(),
+                            outerGeometryDataMap_,
                             outerVars,
                             saberCentralTBlockParams,
                             xbLocal,

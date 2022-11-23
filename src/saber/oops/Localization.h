@@ -7,10 +7,10 @@
 
 #pragma once
 
+#include <map>
 #include <memory>
 #include <sstream>
 #include <string>
-#include <vector>
 
 #include "atlas/field.h"
 
@@ -29,9 +29,10 @@ namespace saber {
 
 template<typename MODEL>
 class Localization : public oops::LocalizationBase<MODEL> {
-  typedef oops::Geometry<MODEL>               Geometry_;
-  typedef oops::Increment<MODEL>              Increment_;
-  typedef oops::State<MODEL>                  State_;
+  typedef oops::Geometry<MODEL>                                     Geometry_;
+  typedef oops::Increment<MODEL>                                    Increment_;
+  typedef oops::State<MODEL>                                        State_;
+  typedef typename std::map<std::string, const oops::GeometryData*> GeometryDataMap_;
 
  public:
   Localization(const Geometry_ &,
@@ -44,7 +45,7 @@ class Localization : public oops::LocalizationBase<MODEL> {
 
  private:
   void print(std::ostream &) const override;
-  std::vector<std::reference_wrapper<const oops::GeometryData>> geometryData_;
+  GeometryDataMap_ geometryDataMap_;
   std::unique_ptr<SaberCentralTBlock<MODEL>> saberCentralTBlock_;
 };
 
@@ -71,9 +72,14 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
     SaberCentralTBlockParameters<MODEL> saberCentralTBlockParams;
     saberCentralTBlockParams.validateAndDeserialize(saberCentralTBlockConf);
 
+    // Initialize geometryData map
+    for (const auto var : incVars.variables()) {
+      geometryDataMap_[var] = &(geom.generic());
+    }
+
     // Create central block wrapper
     saberCentralTBlock_.reset(new SaberCentralTBlock<MODEL>(geom,
-                              geom.generic(),
+                              geometryDataMap_,
                               incVars,
                               saberCentralTBlockParams,
                               xx,
