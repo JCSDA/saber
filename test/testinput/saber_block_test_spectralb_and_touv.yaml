@@ -36,12 +36,13 @@ saber outer blocks:
   - moisture_control_variable
 - saber block name: spectral to gauss winds
   active variables:
-  - streamfunction
-  - velocity_potential
-  - eastward_wind
-  - northward_wind
+  - streamfunction  # Note that this is an active inner field
+  - velocity_potential  # Note that this is an active inner field
+  - eastward_wind  # Note that this is an active outer field
+  - northward_wind  # Note that this is an active outer field
   gauss grid uid: F15
   use streamfunction and velocity potential: true
   use inner gaussian functionspace: true
+
 test:
   reference filename: testref/saber_block_test_spectralb_and_touv.ref
