@@ -141,7 +141,8 @@ void populateFields(const atlas::FieldSet & geomfields,
   outputfields.add(tempfields[s]);
 }
 
-void interpolateCSToGauss(const oops::GeometryData & outerGeometryData,
+void interpolateCSToGauss(const atlas::Grid & modelGrid,
+                          const oops::GeometryData & outerGeometryData,
                           const atlas::FieldSet &  csfields,
                           atlas::FieldSet & gfields) {
   const auto srcFunctionspace = atlas::functionspace::NodeColumns(csfields[0].functionspace());
@@ -324,13 +325,14 @@ GaussUVToGP::GaussUVToGP(const oops::GeometryData & outerGeometryData,
     innerVars_(createInnerVars(outerVars)),
     outerVars_(outerVars),
     activeVariableSizes_(activeVariableSizes),
+    modelgrid_(params_.modelGridName),
     gaussFunctionSpace_(outerGeometryData.functionSpace()),
     specFunctionSpace_(2 * atlas::GaussianGrid(gaussFunctionSpace_.grid()).N() - 1),
     trans_(gaussFunctionSpace_, specFunctionSpace_),
     innerGeometryData_(atlas::FunctionSpace(gaussFunctionSpace_),
                        outerGeometryData.fieldSet(),
                        outerGeometryData.levelsAreTopDown(), outerGeometryData.comm()),
-    augmentedState_(createAugmentedState(outerGeometryData, xb))
+    augmentedState_(createAugmentedState(modelgrid_, outerGeometryData, xb))
 {
   oops::Log::trace() << classname() << "::GaussUVToGP starting" << std::endl;
   // read in "gaussian air density" state.

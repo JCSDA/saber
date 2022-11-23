@@ -30,6 +30,7 @@ namespace spectralb {
 class GaussUVToGPParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(GaussUVToGPParameters, SaberBlockParametersBase)
  public:
+  oops::RequiredParameter<std::string> modelGridName{"model grid name", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -65,6 +66,7 @@ class GaussUVToGP : public SaberOuterBlockBase {
   oops::Variables innerVars_;
   oops::Variables outerVars_;
   std::vector<std::size_t> activeVariableSizes_;
+  atlas::Grid modelgrid_;
 
   /// Gaussian (outer) functionspace
   const atlas::functionspace::StructuredColumns gaussFunctionSpace_;
