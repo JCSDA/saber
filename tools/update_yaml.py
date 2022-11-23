@@ -43,6 +43,7 @@ def find_bump(d, bumps):
 parser = argparse.ArgumentParser()
 parser.add_argument("filename", help="Yaml file name")
 args = parser.parse_args()
+print("File: " + args.filename)
 
 # Read yaml file
 with open(args.filename, "r") as stream:
@@ -176,11 +177,6 @@ for i in range(len(bumps)):
         # Reset grid
         new_bump["grids"] = new_grids
 
-    # Copy other sections
-    for other_section in other_sections:
-        if other_section in old_bump:
-            new_bump[other_section] = old_bump[other_section]
-
     # Changes in the keys
     if "diag_draw_type" in old_bump:
         new_bump["sampling"]["samp_draw_type"] = old_bump["diag_draw_type"]
@@ -219,6 +215,11 @@ for i in range(len(bumps)):
             new_bump["vertical balance"] = {}
         new_bump["vertical balance"]["vbal"] = vbal
 
+    # Copy other sections
+    for other_section in other_sections:
+        if other_section in old_bump:
+            new_bump[other_section] = old_bump[other_section]
+
     # Reset bump
     bumps[i] = new_bump
 
@@ -247,7 +248,7 @@ blank = ' '
 ind_target = -1
 for line in file_in:
     ind_current = len(line)-len(line.lstrip(' '))
-    if "bump:" in line:
+    if "bump:" in line and not line.startswith("#"):
         ind_target = ind_current
         text = bumps_text[i]
         file_out.writelines(line)
