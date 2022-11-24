@@ -253,21 +253,6 @@ void applyNtimesNplus1SpectralScaling(const oops::Variables & innerNames,
 
 static SaberOuterBlockMaker<SpectralToGaussUV> makerSpectralToGaussUV_("spectral to gauss winds");
 
-// Build inner functionspace from outer functionspace
-// It is the outer functionspace that is in the argument.
-// So we need to create spectral functionspace !!!
-
-// We need to write separate functions that allow
-
-// Rule:
-// Expect each saber block in its multiply method as a final step to apply a
-// halo exchange at the end of the method if it needs it.
-// and at the beginning of the adjoint of the saber block to apply the adjoint
-// halo exchange.
-
-// "active variables" - now required in yaml
-// "inner variables" - optional in yaml - inner for the multiply
-//                   - sum active and passive variables
 SpectralToGaussUV::SpectralToGaussUV(const oops::GeometryData & outerGeometryData,
                const std::vector<size_t> & activeVariableSizes,
                const oops::Variables & outerVars,
@@ -295,7 +280,8 @@ SpectralToGaussUV::SpectralToGaussUV(const oops::GeometryData & outerGeometryDat
 // -----------------------------------------------------------------------------
 
 void SpectralToGaussUV::multiply(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::multiply starting " << fset.field_names() << std::endl;
+  oops::Log::trace() << classname()
+                     << "::multiply starting " << fset.field_names() << std::endl;
 
   // Create empty Model fieldset
   atlas::FieldSet newFields = atlas::FieldSet();
@@ -340,7 +326,10 @@ void SpectralToGaussUV::multiply(atlas::FieldSet & fset) const {
 // -----------------------------------------------------------------------------
 
 void SpectralToGaussUV::multiplyAD(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
+  oops::Log::trace() << classname() << "::multiplyAD starting" << fset.field_names()<< std::endl;
+
+
+   oops::Log::trace() << classname() << "::multiplyAD inner vars" << innerVars_.variables()<< std::endl;
 
   // Create empty Model fieldset
   atlas::FieldSet newFields = atlas::FieldSet();

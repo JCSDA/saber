@@ -16,8 +16,8 @@
 #include "atlas/trans/Trans.h"
 
 #include "oops/base/Variables.h"
+#include "oops/util/parameters/OptionalParameter.h"
 #include "oops/util/parameters/Parameters.h"
-#include "oops/util/parameters/RequiredParameter.h"
 
 #include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberOuterBlockBase.h"
@@ -30,7 +30,7 @@ namespace spectralb {
 class GaussUVToGPParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(GaussUVToGPParameters, SaberBlockParametersBase)
  public:
-  oops::RequiredParameter<std::string> modelGridName{"model grid name", this};
+  oops::OptionalParameter<std::string> modelGridName{"model grid name", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -66,7 +66,7 @@ class GaussUVToGP : public SaberOuterBlockBase {
   oops::Variables innerVars_;
   oops::Variables outerVars_;
   std::vector<std::size_t> activeVariableSizes_;
-  atlas::Grid modelgrid_;
+  std::string modelGridName_;
 
   /// Gaussian (outer) functionspace
   const atlas::functionspace::StructuredColumns gaussFunctionSpace_;

@@ -14,6 +14,7 @@
 #include "atlas/array.h"
 #include "atlas/field.h"
 #include "atlas/grid.h"
+#include "atlas/grid/detail/partitioner/CubedSpherePartitioner.h"
 #include "atlas/grid/Partitioner.h"
 #include "atlas/interpolation/Interpolation.h"
 #include "atlas/mesh/Mesh.h"
@@ -126,6 +127,7 @@ void populateFields(const atlas::FieldSet & geomfields,
   }
 
   tempfields.clear();
+  outputfields.clear();
   for (const auto & s : requiredStateVariables) {
     tempfields.add(statefields[s]);
   }
@@ -141,18 +143,28 @@ void populateFields(const atlas::FieldSet & geomfields,
   outputfields.add(tempfields[s]);
 }
 
-void interpolateCSToGauss(const atlas::Grid & modelGrid,
+void interpolateCSToGauss(const std::string & modelGridName,
                           const oops::GeometryData & outerGeometryData,
                           const atlas::FieldSet &  csfields,
                           atlas::FieldSet & gfields) {
-  const auto srcFunctionspace = atlas::functionspace::NodeColumns(csfields[0].functionspace());
+  std::string s("dry_air_density_levels_minus_one");
 
-  const auto partitioner = atlas::grid::MatchingPartitioner(srcFunctionspace,
+  const auto srcFunctionspace =
+      atlas::functionspace::NodeColumns(csfields[s].functionspace());
+
+  atlas::CubedSphereGrid grid(modelGridName);
+  const auto meshConfig = atlas::util::Config("partitioner", "cubedsphere")
+    | atlas::util::Config("halo", 0);
+  const auto meshGen = atlas::MeshGenerator("cubedsphere_dual", meshConfig);
+  auto csmesh = atlas::Mesh(meshGen.generate(grid));
+
+  const auto partitioner = atlas::grid::MatchingPartitioner(srcFunctionspace.mesh(),
                            atlas::util::Config("type", "cubedsphere"));
 
   const auto targetGrid =
-      atlas::functionspace::StructuredColumns(outerGeometryData.functionSpace()).grid();
-  const auto targetMesh = atlas::MeshGenerator("structured").generate(targetGrid, partitioner);
+    atlas::functionspace::StructuredColumns(outerGeometryData.functionSpace()).grid();
+  const auto targetMesh = atlas::MeshGenerator("structured").generate(targetGrid,
+                                                                      partitioner);
   const auto targetFunctionspace = atlas::functionspace::NodeColumns(targetMesh);
 
   // Set up interpolation object.
@@ -160,23 +172,26 @@ void interpolateCSToGauss(const atlas::Grid & modelGrid,
                       atlas::util::Config("adjoint", true);
   const auto interp = atlas::Interpolation(scheme, csfields[0].functionspace(),
                                            targetFunctionspace);
-  std::string s("dry_air_density_levels_minus_one");
+
   auto targetField = targetFunctionspace.createField<double>
-      (atlas::option::name(s) |
-       atlas::option::levels(csfields[s].levels()) |
-                             atlas::option::halo(1));
+    (atlas::option::name(s) |
+     atlas::option::levels(csfields[s].levels()) |
+                           atlas::option::halo(1));
+
+  interp.execute(csfields[s], targetField);
+
+  targetField.haloExchange();
+
   gfields.add(targetField);
 }
 
 
-atlas::FieldSet createAugmentedState(const oops::GeometryData & outerGeometryData,
+atlas::FieldSet createAugmentedState(const std::string & modelGridName,
+                                     const oops::GeometryData & outerGeometryData,
                                      const atlas::FieldSet & xb) {
-  // below will work if xb is on the gauss mesh.
-  // maybe error trap to check functionspace?
-  // maybe alternative is to read in GaussField from file.
-
   atlas::FieldSet tempfields;
   atlas::FieldSet gfields;
+
   std::string s("dry_air_density_levels_minus_one");
   double tolerance(1.0e-6);
 
@@ -188,36 +203,19 @@ atlas::FieldSet createAugmentedState(const oops::GeometryData & outerGeometryDat
     throw std::runtime_error("ERROR - gaussuvtogp saber block: failed");
   }
 
-  if (xb[0].functionspace().type() == "StructuredColumns") {
-    const auto srcFunctionspace =
-      atlas::functionspace::StructuredColumns(xb[0].functionspace());
-    if (srcFunctionspace.grid().name().compare(0, 1, std::string{"F"}) == 0) {
-      if (normfield(outerGeometryData.comm(), xb[s]) > tolerance) {
-        // just link to existing data.
-        gfields.add(xb[s]);
-      } else {
-        // gauss field exists but is not populated.
-        populateFields(outerGeometryData.fieldSet(), xb, gfields);
-      }
-    }
-  } else if (xb[0].functionspace().type() == "NodeColumns") {
-    const auto srcFunctionspace = atlas::functionspace::NodeColumns(xb[0].functionspace());
-    if (srcFunctionspace.mesh().grid().name().compare(0, 2, std::string{"CS"}) == 0) {
-      if (normfield(outerGeometryData.comm(), xb[s]) <= tolerance) {
-          populateFields(outerGeometryData.fieldSet(), xb, tempfields);
-      }
-      interpolateCSToGauss(outerGeometryData, tempfields, gfields);
-    } else {
-      oops::Log::error() <<  "non cubed-sphere NodeColumns not supported "
-                         << std::endl;
-      throw std::runtime_error("ERROR - gaussuvtogp saber block: failed");
-    }
+  if (normfield(outerGeometryData.comm(), xb[s]) > tolerance) {
+    // just link to existing data.
+    tempfields.add(xb[s]);
   } else {
-    oops::Log::error() <<  "functionspace type "
-                       << xb[0].functionspace().type()
-                       << "not currently supported"
-                       << std::endl;
-    throw std::runtime_error("ERROR - gaussuvtogp saber block: failed");
+    // gauss field exists but is not populated.
+    populateFields(outerGeometryData.fieldSet(), xb, tempfields);
+  }
+
+  if ((xb[s].functionspace().type() == "NodeColumns") &&
+      (modelGridName.compare(0, 2, std::string{"CS"}) == 0)) {
+    interpolateCSToGauss(modelGridName, outerGeometryData, tempfields, gfields);
+  } else {
+    gfields.add(tempfields[s]);
   }
 
   return gfields;
@@ -248,7 +246,7 @@ oops::Variables createInnerVars(const oops::Variables & outerVars) {
   oops::Variables innerVars;
 
   for (auto & var : outerVars.variables()) {
-    if (var.compare("geostrophic_pressure") == 0) {
+    if (var.compare("geostrophic_pressure_levels_minus_one") == 0) {
     } else {
       innerVars.push_back(var);
     }
@@ -325,14 +323,14 @@ GaussUVToGP::GaussUVToGP(const oops::GeometryData & outerGeometryData,
     innerVars_(createInnerVars(outerVars)),
     outerVars_(outerVars),
     activeVariableSizes_(activeVariableSizes),
-    modelgrid_(params_.modelGridName),
+    modelGridName_(params_.modelGridName.value().get_value_or("")),
     gaussFunctionSpace_(outerGeometryData.functionSpace()),
     specFunctionSpace_(2 * atlas::GaussianGrid(gaussFunctionSpace_.grid()).N() - 1),
     trans_(gaussFunctionSpace_, specFunctionSpace_),
     innerGeometryData_(atlas::FunctionSpace(gaussFunctionSpace_),
                        outerGeometryData.fieldSet(),
                        outerGeometryData.levelsAreTopDown(), outerGeometryData.comm()),
-    augmentedState_(createAugmentedState(modelgrid_, outerGeometryData, xb))
+    augmentedState_(createAugmentedState(modelGridName_, outerGeometryData, xb))
 {
   oops::Log::trace() << classname() << "::GaussUVToGP starting" << std::endl;
   // read in "gaussian air density" state.
@@ -345,11 +343,11 @@ void GaussUVToGP::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting " << fset.field_names() << std::endl;
 
   atlas::Field gp = gaussFunctionSpace_.createField<double>(
-    atlas::option::name("geostrophic_pressure") |
-    atlas::option::levels(fset["eastward_wind"].levels()) |
-    atlas::option::halo(1));
+    atlas::option::name("geostrophic_pressure_levels_minus_one") |
+    atlas::option::levels(fset["eastward_wind"].levels()));
+  gp.haloExchange();
+  atlas::array::make_view<double, 2>(gp).assign(0.0);
 
-  // calculate 2D vector vec
   atlas::Field rhsvec = allocateRHSVec(gaussFunctionSpace_, gp.levels());
 
   populateRHSVec(augmentedState_["dry_air_density_levels_minus_one"], fset, rhsvec);
@@ -381,8 +379,9 @@ void GaussUVToGP::multiply(atlas::FieldSet & fset) const {
 void GaussUVToGP::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << fset.field_names() <<std::endl;
 
-  atlas::FieldSet specfset = allocateSpectralVortDiv(specFunctionSpace_,
-                                                     fset["geostrophic_pressure"].levels());
+  atlas::FieldSet specfset =
+      allocateSpectralVortDiv(specFunctionSpace_,
+                              fset["geostrophic_pressure_levels_minus_one"].levels());
 
   // Create empty Model fieldset
   atlas::FieldSet newFields = atlas::FieldSet();
@@ -390,15 +389,19 @@ void GaussUVToGP::multiplyAD(atlas::FieldSet & fset) const {
   // copy "passive variables"
   std::vector<std::string> fsetNames = fset.field_names();
 
+  oops::Variables
+    activeVars(std::vector<std::string>({"eastward_wind", "northward_wind",
+                                         "geostrophic_pressure_levels_minus_one"}));
+
   for (auto & s : fset.field_names()) {
-     if (!innerVars_.has(s) && (s.compare("geostrophic_pressure") != 0)) {
-       newFields.add(fset[s]);
-     }
+    if (!activeVars.has(s)) {
+      newFields.add(fset[s]);
+    }
   }
-  fset["geostrophic_pressure"].adjointHaloExchange();
+  fset["geostrophic_pressure_levels_minus_one"].adjointHaloExchange();
 
   // apply inverse spectral transform to
-  trans_.invtrans_adj(fset["geostrophic_pressure"], specfset["divergence"]);
+  trans_.invtrans_adj(fset["geostrophic_pressure_levels_minus_one"], specfset["divergence"]);
 
   // apply inverse laplacian spectral scaling to spectral divergence
   const int N = specFunctionSpace_.truncation();
@@ -411,7 +414,7 @@ void GaussUVToGP::multiplyAD(atlas::FieldSet & fset) const {
   vortView.assign(0.0);
 
   atlas::Field rhsvec = allocateRHSVec(gaussFunctionSpace_,
-                                       fset["geostrophic_pressure"].levels());
+                                       fset["geostrophic_pressure_levels_minus_one"].levels());
 
   populateRHSVec(augmentedState_["dry_air_density_levels_minus_one"], fset, rhsvec);
 
