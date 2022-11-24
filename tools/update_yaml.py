@@ -70,7 +70,7 @@ kv.append(general)
 
 drivers = {}
 drivers["name"] = "drivers"
-drivers["keys"] = ["method", "strategy", "new_normality", "load_samp_local", "load_samp_global", "write_samp_local", "write_samp_global", "write_samp_grids", "new_vbal_cov", "update_vbal_cov", "load_vbal_cov", "write_vbal_cov", "new_vbal", "load_vbal", "write_vbal", "new_var", "update_var", "new_mom", "update_mom", "load_mom", "write_mom", "new_hdiag", "write_hdiag", "write_hdiag_detail", "new_nicas", "load_nicas_local", "load_nicas_global", "write_nicas_local", "write_nicas_global", "new_wind", "load_wind_local", "write_wind_local", "check_vbal", "check_adjoints", "check_normalization", "check_dirac", "check_randomization", "check_consistency", "check_optimality", "check_set_param", "check_get_param", "check_apply_vbal", "check_apply_stddev", "check_apply_nicas"]
+drivers["keys"] = ["method", "strategy", "new_normality", "load_samp_local", "load_samp_global", "write_samp_local", "write_samp_global", "write_samp_grids", "new_vbal_cov", "update_vbal_cov", "load_vbal_cov", "write_vbal_cov", "new_vbal", "load_vbal", "write_vbal", "new_var", "update_var", "new_mom", "update_mom", "load_mom", "write_mom", "new_hdiag", "write_hdiag", "write_hdiag_detail", "new_nicas", "load_nicas_local", "load_nicas_global", "write_nicas_local", "write_nicas_global", "write_nicas_grids", "new_wind", "load_wind_local", "write_wind_local", "check_vbal", "check_adjoints", "check_normalization", "check_dirac", "check_randomization", "check_consistency", "check_optimality", "check_set_param", "check_get_param", "check_apply_vbal", "check_apply_stddev", "check_apply_nicas"]
 kv.append(drivers)
 
 files = {}
@@ -95,7 +95,7 @@ kv.append(mask)
 
 sampling = {}
 sampling["name"] = "sampling"
-sampling["keys"] = ["nc1", "nc2", "nc3", "nc4", "dc", "nl0r", "local_diag", "local_rad", "local_dlat", "irmax", "samp_interp_type"]
+sampling["keys"] = ["nc1", "nc2", "nc3", "nc4", "dc", "nl0r", "local_diag", "local_rad", "local_dlat", "irmax"]
 kv.append(sampling)
 
 localization = {}
@@ -110,7 +110,7 @@ kv.append(verticalBalance)
 
 variance = {}
 variance["name"] = "variance"
-variance["keys"] = ["forced_var", "stddev", "var_filter", "var_niter", "var_npass", "var_rhflt"]
+variance["keys"] = ["forced_var", "var_filter", "var_niter", "var_npass"]
 kv.append(variance)
 
 optimalityTest = {}
@@ -130,7 +130,7 @@ kv.append(localProfiles)
 
 nicas = {}
 nicas["name"] = "nicas"
-nicas["keys"] = ["resol", "nc1max", "nicas_draw_type", "forced_radii", "rh", "rv", "loc_wgt", "min_lev", "max_lev", "nicas_interp_type", "pos_def_test", "write_nicas_grids", "interp_test"]
+nicas["keys"] = ["resol", "nc1max", "nicas_draw_type", "forced_radii", "pos_def_test", "interp_test"]
 kv.append(nicas)
 
 dirac = {}
@@ -178,9 +178,15 @@ for i in range(len(bumps)):
         # Reset grid
         new_bump["grids"] = new_grids
 
-    # Changes in the keys
+    # Udpate diag_draw_type
     if "diag_draw_type" in old_bump:
-        new_bump["sampling"]["samp_draw_type"] = old_bump["diag_draw_type"]
+        new_bump["sampling"]["draw_type"] = old_bump["diag_draw_type"]
+
+    # Udpate samp_interp_type
+    if "samp_interp_type" in old_bump:
+        new_bump["sampling"]["interp_type"] = old_bump["samp_interp_type"]
+
+    # Udpate vbal
     if "vbal_block" in old_bump:
         vbal_block = old_bump["vbal_block"]
         if "vbal_diag_auto" in old_bump:
@@ -215,6 +221,64 @@ for i in range(len(bumps)):
         if not "vertical balance" in new_bump:
             new_bump["vertical balance"] = {}
         new_bump["vertical balance"]["vbal"] = vbal
+
+    # Update stddev and var_rhflt
+    for key in ["stddev", "var_rhflt"]:
+        if key in old_bump:
+            vec = []
+            for item in old_bump[key]:
+                block = {}
+                block["variables"] = [item]
+                if len(old_bump[key][item]) == 1:
+                    block["value"] = old_bump[key][item][0]
+                else:
+                    block["profile"] = old_bump[key][item]
+                vec.append(block)
+            if not "variance" in new_bump:
+                new_bump["variance"] = {}
+            new_bump["variance"][key] = vec
+
+    # Update rh, rv, min_lev and max_lev
+    for key in ["rh", "rv", "min_lev", "max_lev"]:
+        if key in old_bump:
+            vec = []
+            for item in old_bump[key]:
+                block = {}
+                block["variables"] = [item]
+                if len(old_bump[key][item]) == 1:
+                    block["value"] = old_bump[key][item][0]
+                else:
+                    block["profile"] = old_bump[key][item]
+                vec.append(block)
+            if not "nicas" in new_bump:
+                new_bump["nicas"] = {}
+            new_bump["nicas"][key] = vec
+
+    # Update nicas_interp_type
+    if "nicas_interp_type" in old_bump:
+        vec = []
+        for item in old_bump["nicas_interp_type"]:
+            block = {}
+            block["variables"] = [item]
+            block["type"] = old_bump["nicas_interp_type"][item]
+            vec.append(block)
+        if not "nicas" in new_bump:
+            new_bump["nicas"] = {}
+        new_bump["nicas"]["interp_type"] = vec
+
+    # Update loc_wgt
+    key = "loc_wgt"
+    if key in old_bump:
+        vec = []
+        for item in old_bump[key]:
+            block = {}
+            block["row variables"] = [item.split('-')[0]]
+            block["column variables"] = [item.split('-')[1]]
+            block["value"] = old_bump[key][item]
+            vec.append(block)
+        if not "nicas" in new_bump:
+            new_bump["nicas"] = {}
+        new_bump["nicas"][key] = vec
 
     # Copy other sections
     for other_section in other_sections:
@@ -263,3 +327,6 @@ for line in file_in:
             file_out.writelines(line)
 file_in.close()
 file_out.close()
+
+# Remove backup file
+os.remove(args.filename + ".bak")

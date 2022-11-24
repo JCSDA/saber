@@ -40,6 +40,20 @@ namespace bump {
 
 // -----------------------------------------------------------------------------
 
+class ValueOrProfileParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(ValueOrProfileParameters, oops::Parameters)
+
+ public:
+  // Variables
+  oops::RequiredParameter<std::vector<std::string>> variables{"variables", this};
+  // Value
+  oops::OptionalParameter<double> value{"value", this};
+  // Profile
+  oops::OptionalParameter<std::vector<double>> profile{"profile", this};
+};
+
+// -----------------------------------------------------------------------------
+
 class GeneralSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(GeneralSection, oops::Parameters)
 
@@ -131,6 +145,8 @@ class DriversSection : public oops::Parameters {
   oops::OptionalParameter<bool> write_nicas_local{"write_nicas_local", this};
   // Write global NICAS parameters
   oops::OptionalParameter<bool> write_nicas_global{"write_nicas_global", this};
+  // Write NICAS grids
+  oops::OptionalParameter<bool> write_nicas_grids{"write_nicas_grids", this};
   // Compute wind transform
   oops::OptionalParameter<bool> new_wind{"new_wind", this};
   // Load local wind transform
@@ -265,12 +281,12 @@ class SamplingSection : public oops::Parameters {
   // Local diagnostics calculation latitude band half-width [in degrees]
   oops::OptionalParameter<double> local_dlat{"local_dlat", this};
   // Diagnostic draw type ('random' or 'octahedral')
-  oops::OptionalParameter<std::string> samp_draw_type{"samp_draw_type", this};
+  oops::OptionalParameter<std::string> draw_type{"draw_type", this};
   // Maximum number of random number draws
   oops::OptionalParameter<int> irmax{"irmax", this};
   // Vertical balance C2B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based
   // or 'si': smooth interpolation)
-  oops::OptionalParameter<std::string> samp_interp_type{"samp_interp_type", this};
+  oops::OptionalParameter<std::string> interp_type{"interp_type", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -293,8 +309,8 @@ class LocalizationSection : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
-class VerticalBlockParameters : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(VerticalBlockParameters, oops::Parameters)
+class VerticalBalanceBlockParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(VerticalBalanceBlockParameters, oops::Parameters)
 
  public:
   // Balanced variable
@@ -314,7 +330,7 @@ class VerticalBalanceSection : public oops::Parameters {
 
  public:
   // Vertical balance parameters
-  oops::OptionalParameter<std::vector<VerticalBlockParameters>> vbal{"vbal", this};
+  oops::OptionalParameter<std::vector<VerticalBalanceBlockParameters>> vbal{"vbal", this};
   // Vertical balance diagnostic radius [in meters]
   oops::OptionalParameter<double> vbal_rad{"vbal_rad", this};
   // Vertical balance diagnostic latitude band half-width [in degrees]
@@ -338,7 +354,7 @@ class VarianceSection : public oops::Parameters {
   // Force specific variance
   oops::OptionalParameter<bool> forced_var{"forced_var", this};
   // Forced standard-deviation
-  oops::OptionalParameter<eckit::LocalConfiguration> stddev{"stddev", this};
+  oops::OptionalParameter<std::vector<ValueOrProfileParameters>> stddev{"stddev", this};
   // Filter variance
   oops::OptionalParameter<bool> var_filter{"var_filter", this};
   // Number of iterations for the variance filtering (0 for uniform variance)
@@ -346,7 +362,7 @@ class VarianceSection : public oops::Parameters {
   // Number of passes for the variance filtering (0 for uniform variance)
   oops::OptionalParameter<int> var_npass{"var_npass", this};
   // Variance initial filtering support radius [in meters]
-  oops::OptionalParameter<eckit::LocalConfiguration> var_rhflt{"var_rhflt", this};
+  oops::OptionalParameter<std::vector<ValueOrProfileParameters>> var_rhflt{"var_rhflt", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -397,6 +413,28 @@ class LocalProfilesSection : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
+class SpecificTypeParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(SpecificTypeParameters, oops::Parameters)
+
+ public:
+  // Resolution
+  oops::RequiredParameter<std::vector<std::string>> variables{"variables", this};
+  // Type
+  oops::RequiredParameter<std::string> type{"type", this};
+};
+
+class LocWgtParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(LocWgtParameters, oops::Parameters)
+
+ public:
+  // Row variables
+  oops::RequiredParameter<std::vector<std::string>> row_variables{"row variables", this};
+  // Column variables
+  oops::RequiredParameter<std::vector<std::string>> column_variables{"column variables", this};
+  // Value
+  oops::RequiredParameter<double> value{"value", this};
+};
+
 class NicasSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(NicasSection, oops::Parameters)
 
@@ -410,22 +448,20 @@ class NicasSection : public oops::Parameters {
   // Force specific support radii
   oops::OptionalParameter<bool> forced_radii{"forced_radii", this};
   // Forced horizontal support radius [in meters]
-  oops::OptionalParameter<eckit::LocalConfiguration> rh{"rh", this};
+  oops::OptionalParameter<std::vector<ValueOrProfileParameters>> rh{"rh", this};
   // Forced vertical support radius
-  oops::OptionalParameter<eckit::LocalConfiguration> rv{"rv", this};
+  oops::OptionalParameter<std::vector<ValueOrProfileParameters>> rv{"rv", this};
   // Forced localization weights
-  oops::OptionalParameter<eckit::LocalConfiguration> loc_wgt{"loc_wgt", this};
+  oops::OptionalParameter<std::vector<LocWgtParameters>> loc_wgt{"loc_wgt", this};
   // Minimum level
-  oops::OptionalParameter<eckit::LocalConfiguration> min_lev{"min_lev", this};
+  oops::OptionalParameter<std::vector<ValueOrProfileParameters>> min_lev{"min_lev", this};
   // Maximum level
-  oops::OptionalParameter<eckit::LocalConfiguration> max_lev{"max_lev", this};
+  oops::OptionalParameter<std::vector<ValueOrProfileParameters>> max_lev{"max_lev", this};
   // NICAS C1B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based
   // or 'si': smooth interpolation)
-  oops::OptionalParameter<eckit::LocalConfiguration> nicas_interp_type{"nicas_interp_type", this};
+  oops::OptionalParameter<std::vector<SpecificTypeParameters>> interp_type{"interp_type", this};
   // Positive-definiteness test
   oops::OptionalParameter<bool> pos_def_test{"pos_def_test", this};
-  // Write NICAS grids
-  oops::OptionalParameter<bool> write_nicas_grids{"write_nicas_grids", this};
   // Horizontal NICAS interpolation test
   oops::OptionalParameter<bool> interp_test{"interp_test", this};
 };

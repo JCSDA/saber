@@ -51,13 +51,14 @@ TEST( test_interpolatorbump )
   type(atlas_functionspace_structuredcolumns) :: fspace_out_sc
   type(bump_type) :: bump
   type(fieldset_type) :: fset,universe_rad,fset_out_1,fset_out_2
-  type(fckit_configuration) :: conf,rh,rv,grid
+  type(fckit_configuration) :: conf,grid
+  type(fckit_configuration) :: rh(1),rv(1)
 
   ! Initialize communicator
-  f_comm = fckit_mpi_comm("world")
+  f_comm = fckit_mpi_comm('world')
 
   ! Create output grid
-  grid_out = atlas_structuredgrid("F10")
+  grid_out = atlas_structuredgrid('F10')
 
   ! Create output function space
   fspace_out = atlas_functionspace_structuredcolumns(grid_out)
@@ -68,24 +69,24 @@ TEST( test_interpolatorbump )
 
   ! Create configurations
   conf = fckit_configuration()
-  call conf%set("drivers.method","cor")
-  call conf%set("drivers.strategy","specific_multivariate")
-  call conf%set("drivers.new_nicas",.true.)
-  call conf%set("nicas.resol",4.0_kind_real)
-  call conf%set("nicas.forced_radii",.true.)
-  rh = fckit_configuration()
-  call rh%set("var1",(/1000.0e3_kind_real/))
-  call rh%set("var2",(/1000.0e3_kind_real/))
-  call conf%set("nicas.rh",rh)
-  rv = fckit_configuration()
-  call rv%set("var1",(/3.0_kind_real/))
-  call rv%set("var2",(/3.0_kind_real/))
-  call conf%set("nicas.rv",rv)
+  call conf%set('drivers.method','cor')
+  call conf%set('drivers.strategy','specific_multivariate')
+  call conf%set('drivers.new_nicas',.true.)
+  call conf%set('nicas.resol',4.0_kind_real)
+  call conf%set('nicas.forced_radii',.true.)
+  rh(1) = fckit_configuration()
+  call rh(1)%set('variables',(/'var1','var2'/))
+  call rh(1)%set('value',1000.0e3_kind_real)
+  call conf%set('nicas.rh',rh)
+  rv(1) = fckit_configuration()
+  call rv(1)%set('variables',(/'var1','var2'/))
+  call rv(1)%set('value',3.0_kind_real)
+  call conf%set('nicas.rv',rv)
   grid = fckit_configuration()
-  call grid%set("model.variables",variables)
-  call grid%set("model.nv",2)
-  call grid%set("model.nl0",nl0)
-  call grid%set("model.lev2d",lev2d)
+  call grid%set('model.variables',variables)
+  call grid%set('model.nv',2)
+  call grid%set('model.nl0',nl0)
+  call grid%set('model.lev2d',lev2d)
 
   ! Create BUMP
   call bump%create(f_comm,fspace_out,fset,conf,grid,universe_rad)

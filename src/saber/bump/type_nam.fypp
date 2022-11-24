@@ -1,3 +1,4 @@
+#:include '../generics.fypp'
 #:include '../instrumentation.fypp'
 !----------------------------------------------------------------------
 ! Module: type_nam
@@ -10,7 +11,7 @@ module type_nam
 
 use fckit_configuration_module, only: fckit_configuration
 use tools_const, only: zero,hundredth,half,one,ten,hundred,pi,req,deg2rad,rad2deg
-use tools_kinds, only: kind_real,huge_real
+use tools_kinds, only: kind_real,kind_int,huge_real
 use tools_func, only: cholesky
 use tools_repro, only: eq
 use type_mpl, only: mpl_type
@@ -72,6 +73,7 @@ type nam_type
    logical :: load_nicas_global                               !< Load global NICAS parameters
    logical :: write_nicas_local                               !< Write local NICAS parameters
    logical :: write_nicas_global                              !< Write global NICAS parameters
+   logical :: write_nicas_grids                               !< Write NICAS grids
    logical :: new_wind                                        !< Compute wind transform
    logical :: load_wind_local                                 !< Load local wind transform
    logical :: write_wind_local                                !< Write local wind transform
@@ -145,11 +147,11 @@ type nam_type
 
    ! Variance parameters
    logical :: forced_var                                      !< Force specific variance
-   real(kind_real) :: stddev(nl0max,nvmax)                    !< Forced standard-deviation
+   real(kind_real) :: stddev(nl0max,0:nvmax)                  !< Forced standard-deviation
    logical :: var_filter                                      !< Filter variance
    integer :: var_niter                                       !< Number of iterations for the variance filtering (0 for uniform variance)
    integer :: var_npass                                       !< Number of passes for the variance filtering (0 for uniform variance)
-   real(kind_real) :: var_rhflt(nl0max,nvmax)                 !< Variance initial filtering support radius [in meters]
+   real(kind_real) :: var_rhflt(nl0max,0:nvmax)               !< Variance initial filtering support radius [in meters]
 
    ! Optimality test parameters
    integer :: optimality_nfac                                 !< Number of length-scale factors for optimization
@@ -179,7 +181,6 @@ type nam_type
    integer :: max_lev(0:nvmax)                                !< Maximum level
    character(len=2),dimension(0:nvmax) :: nicas_interp_type   !< NICAS C1B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based or 'si': smooth interpolation)
    logical :: pos_def_test                                    !< Positive-definiteness test
-   logical :: write_nicas_grids                               !< Write NICAS grids
    logical :: interp_test                                     !< Horizontal NICAS interpolation test
 
    ! Dirac parameters
@@ -213,6 +214,22 @@ contains
    procedure :: from_conf => nam_from_conf
    procedure :: check => nam_check
    procedure :: io_key_value => nam_io_key_value
+   #:for dtype in dtypes_ir
+      procedure :: nam_get_value_${dtype}$
+   #:endfor
+@:init_procedure(2)
+   generic :: get_value => &
+   #:for dtype in dtypes_ir
+@:add_procedure(nam_get_value_${dtype}$)
+   #:endfor
+   #:for dtype in dtypes_ir
+      procedure :: nam_get_value_or_profile_${dtype}$
+   #:endfor
+@:init_procedure(2)
+   generic :: get_value_or_profile => &
+   #:for dtype in dtypes_ir
+@:add_procedure(nam_get_value_or_profile_${dtype}$)
+   #:endfor
 end type nam_type
 
 private
@@ -277,6 +294,7 @@ nam%load_nicas_local = .false.
 nam%load_nicas_global = .false.
 nam%write_nicas_local = .false.
 nam%write_nicas_global = .false.
+nam%write_nicas_grids = .false.
 nam%new_wind = .false.
 nam%load_wind_local = .false.
 nam%write_wind_local = .false.
@@ -392,7 +410,6 @@ nam%min_lev = 1
 nam%max_lev = nl0max
 nam%nicas_interp_type = 'c0'
 nam%pos_def_test = .false.
-nam%write_nicas_grids = .false.
 nam%interp_test = .false.
 
 ! dirac_param default
@@ -444,14 +461,15 @@ type(mpl_type),intent(inout) :: mpl          !< MPI data
 type(fckit_configuration),intent(in) :: conf !< Configuration
 
 ! Local variables
-integer :: iv,jv,iconf,rank,itest
+integer :: iv,jv,iconf,rank,itest,it,ivv,jvv
 integer,allocatable :: integer_array(:),vbal_order(:)
+real(kind_real) :: real_scalar
 real(kind_real),allocatable :: real_array(:),loc_wgt(:,:)
 logical :: colorlog,found,valid
 logical,allocatable :: logical_array(:)
 character(len=1024) :: message,param,blockname
 character(len=:),allocatable :: str,str_bal,str_unbal
-character(len=:),allocatable :: str_array(:)
+character(len=:),allocatable :: str_array(:),str_array_row(:),str_array_col(:)
 type(fckit_configuration) :: section,subconf
 type(fckit_configuration),allocatable :: confs(:)
 
@@ -525,12 +543,12 @@ if (conf%has('drivers')) then
    if (section%has('new_hdiag')) call section%get_or_die('new_hdiag',nam%new_hdiag)
    if (section%has('write_hdiag')) call section%get_or_die('write_hdiag',nam%write_hdiag)
    if (section%has('write_hdiag_detail')) call section%get_or_die('write_hdiag_detail',nam%write_hdiag_detail)
-
    if (section%has('new_nicas')) call section%get_or_die('new_nicas',nam%new_nicas)
    if (section%has('load_nicas_local')) call section%get_or_die('load_nicas_local',nam%load_nicas_local)
    if (section%has('load_nicas_global')) call section%get_or_die('load_nicas_global',nam%load_nicas_global)
    if (section%has('write_nicas_local')) call section%get_or_die('write_nicas_local',nam%write_nicas_local)
    if (section%has('write_nicas_global')) call section%get_or_die('write_nicas_global',nam%write_nicas_global)
+   if (section%has('write_nicas_grids')) call section%get_or_die('write_nicas_grids',nam%write_nicas_grids)
    if (section%has('new_wind')) call section%get_or_die('new_wind',nam%new_wind)
    if (section%has('load_wind_local')) call section%get_or_die('load_wind_local',nam%load_wind_local)
    if (section%has('write_wind_local')) call section%get_or_die('write_wind_local',nam%write_wind_local)
@@ -679,13 +697,13 @@ if (conf%has('sampling')) then
    if (section%has('local_diag')) call section%get_or_die('local_diag',nam%local_diag)
    if (section%has('local_rad')) call section%get_or_die('local_rad',nam%local_rad)
    if (section%has('local_dlat')) call section%get_or_die('local_dlat',nam%local_dlat)
-   if (section%has('samp_draw_type')) then
-      call section%get_or_die('samp_draw_type',str)
+   if (section%has('draw_type')) then
+      call section%get_or_die('draw_type',str)
       nam%samp_draw_type = str
    end if
    if (section%has('irmax')) call section%get_or_die('irmax',nam%irmax)
-   if (section%has('samp_interp_type')) then
-      call section%get_or_die('samp_interp_type',str)
+   if (section%has('interp_type')) then
+      call section%get_or_die('interp_type',str)
       nam%samp_interp_type = str
    end if
 end if
@@ -813,44 +831,11 @@ end if
 if (conf%has('variance')) then
    call conf%get_or_die('variance',section)
    if (section%has('forced_var')) call section%get_or_die('forced_var',nam%forced_var)
-   if (section%has('stddev')) then
-      call section%get_or_die('stddev',subconf)
-      do iv=1,nam%nv
-         if (subconf%has(nam%variables(iv))) then
-            call subconf%get_or_die(nam%variables(iv),real_array)
-            if (size(real_array)>nl0max) then
-               write(message,'(a,a,a,i4)') 'stddev-',trim(nam%variables(iv)),' size should be smaller than ',nl0max
-               call mpl%abort('${subr}$',message)
-            end if
-            if (size(real_array)==1) then
-               nam%stddev(:,iv) = real_array(1)
-            else
-               nam%stddev(1:size(real_array),iv) = real_array
-            end if
-         end if
-      end do
-   end if
+   if (section%has('stddev')) call nam%get_value_or_profile(mpl,section,'stddev',nam%stddev)
    if (section%has('var_filter')) call section%get_or_die('var_filter',nam%var_filter)
    if (section%has('var_niter')) call section%get_or_die('var_niter',nam%var_niter)
    if (section%has('var_npass')) call section%get_or_die('var_npass',nam%var_npass)
-   if (section%has('var_rhflt')) then
-      call section%get_or_die('var_rhflt',subconf)
-      do iv=1,nam%nv
-         if (subconf%has(nam%variables(iv))) then
-            call subconf%get_or_die(nam%variables(iv),real_array)
-            if (size(real_array)>nl0max) then
-               write(message,'(a,a,a,i4)') 'var_rhflt-',trim(nam%variables(iv)), &
-    & ' size should be smaller than ',nl0max
-               call mpl%abort('${subr}$',message)
-            end if
-            if (size(real_array)==1) then
-               nam%var_rhflt(:,iv) = real_array(1)
-            else
-               nam%var_rhflt(1:size(real_array),iv) = real_array
-            end if
-         end if
-      end do
-   end if
+   if (section%has('var_rhflt')) call nam%get_value_or_profile(mpl,section,'var_rhflt',nam%var_rhflt)
 end if
 
 ! Optimality test parameters
@@ -870,6 +855,36 @@ if (conf%has('fit')) then
    if (section%has('fit_ncmp')) call section%get_or_die('fit_ncmp',nam%fit_ncmp)
 end if
 
+! Local profiles parameters
+if (conf%has('local profiles')) then
+   call conf%get_or_die('local profiles',section)
+   if (section%has('nldwv')) call section%get_or_die('nldwv',nam%nldwv)
+   if (section%has('lon_ldwv')) then
+      call section%get_or_die('lon_ldwv',real_array)
+      if (size(real_array)>nldwvmax) then
+         write(message,'(a,i4)') 'lon_ldwv size should be smaller than ',nldwvmax
+         call mpl%abort('${subr}$',message)
+      end if
+      nam%lon_ldwv(1:size(real_array)) = real_array
+   end if
+   if (section%has('lat_ldwv')) then
+      call section%get_or_die('lat_ldwv',real_array)
+      if (size(real_array)>nldwvmax) then
+         write(message,'(a,i4)') 'lat_ldwv size should be smaller than ',nldwvmax
+         call mpl%abort('${subr}$',message)
+      end if
+      nam%lat_ldwv(1:size(real_array)) = real_array
+   end if
+   if (section%has('name_ldwv')) then
+      call section%get_or_die('name_ldwv',str_array)
+      if (size(real_array)>nldwvmax) then
+         write(message,'(a,i4)') 'name_ldwv size should be smaller than ',nldwvmax
+         call mpl%abort('${subr}$',message)
+      end if
+      nam%name_ldwv(1:size(str_array)) = str_array
+   end if
+end if
+
 ! NICAS parameters
 if (conf%has('nicas')) then
    call conf%get_or_die('nicas',section)
@@ -880,91 +895,35 @@ if (conf%has('nicas')) then
       nam%nicas_draw_type = str
    end if
    if (section%has('forced_radii')) call section%get_or_die('forced_radii',nam%forced_radii)
-   if (section%has('rh')) then
-      call section%get_or_die('rh',subconf)
-      if (subconf%has('common')) then
-         call subconf%get_or_die('common',real_array)
-         if (size(real_array)>nl0max) then
-            write(message,'(a,i4)') 'rh-common size should be smaller than ',nl0max
-            call mpl%abort('${subr}$',message)
-         end if
-         if (size(real_array)==1) then
-            nam%rh(:,0) = real_array(1)
-         else
-            nam%rh(1:size(real_array),0) = real_array
-         end if
-      end if
-      do iv=1,nam%nv
-         if (subconf%has(nam%variables(iv))) then
-            call subconf%get_or_die(nam%variables(iv),real_array)
-            if (size(real_array)>nl0max) then
-               write(message,'(a,a,a,i4)') 'rh-',trim(nam%variables(iv)), &
-    & ' size should be smaller than ',nl0max
-               call mpl%abort('${subr}$',message)
-            end if
-            if (size(real_array)==1) then
-               nam%rh(:,iv) = real_array(1)
-            else
-               nam%rh(1:size(real_array),iv) = real_array
-            end if
-         end if
-      end do
-   end if
-   if (section%has('rv')) then
-      call section%get_or_die('rv',subconf)
-      if (subconf%has('common')) then
-         call subconf%get_or_die('common',real_array)
-         if (size(real_array)>nl0max) then
-            write(message,'(a,i4)') 'rv-common size should be smaller than ',nl0max
-            call mpl%abort('${subr}$',message)
-         end if
-         if (size(real_array)==1) then
-            nam%rv(:,0) = real_array(1)
-         else
-            nam%rv(1:size(real_array),0) = real_array
-         end if
-      end if
-      do iv=1,nam%nv
-         if (subconf%has(nam%variables(iv))) then
-            call subconf%get_or_die(nam%variables(iv),real_array)
-            if (size(real_array)>nl0max) then
-               write(message,'(a,a,a,i4)') 'rv-',trim(nam%variables(iv)), &
-    & ' size should be smaller than ',nl0max
-               call mpl%abort('${subr}$',message)
-            end if
-            if (size(real_array)==1) then
-               nam%rv(:,iv) = real_array(1)
-            else
-               nam%rv(1:size(real_array),iv) = real_array
-            end if
-         end if
-      end do
-   end if
+   if (section%has('rh')) call nam%get_value_or_profile(mpl,section,'rh',nam%rh)
+   if (section%has('rv')) call nam%get_value_or_profile(mpl,section,'rv',nam%rv)
    if (section%has('loc_wgt')) then
-      call section%get_or_die('loc_wgt',subconf)
-   
+      call section%get_or_die('loc_wgt',confs)
+
       ! Allocation
       allocate(loc_wgt(nam%nv,nam%nv))
       allocate(nam%loc_wgt_sqrt(nam%nv,nam%nv))
    
       ! Copy positive weights and set non-specified values to one
       loc_wgt = -one
-      do jv=1,nam%nv
-         do iv=1,jv
-            blockname = trim(nam%variables(iv))//'-'//trim(nam%variables(jv))
-            if (subconf%has(blockname)) then
-               if (iv==jv) call mpl%abort('${subr}$','loc_wgt item should be off-diagonal')
-               if (.not.eq(loc_wgt(iv,jv),-one)) call mpl%abort('${subr}$','redundant loc_wgt item')
-               call subconf%get_or_die(blockname,loc_wgt(iv,jv))
-               loc_wgt(jv,iv) = loc_wgt(iv,jv)
-            end if
-            blockname = trim(nam%variables(jv))//'-'//trim(nam%variables(iv))
-            if (subconf%has(blockname)) then
-               if (iv==jv) call mpl%abort('${subr}$','loc_wgt item should be off-diagonal')
-               if (.not.eq(loc_wgt(iv,jv),-one)) call mpl%abort('${subr}$','redundant loc_wgt item')
-               call subconf%get_or_die(blockname,loc_wgt(iv,jv))
-               loc_wgt(jv,iv) = loc_wgt(iv,jv)
-            end if
+      do iconf=1,size(confs)
+         ! Get row and column variables, and the value
+         call confs(iconf)%get_or_die('row variables',str_array_row)
+         call confs(iconf)%get_or_die('column variables',str_array_col)
+         call confs(iconf)%get_or_die('value',real_scalar)
+
+         ! Loop over row and column values
+         do ivv=1,size(str_array_row)
+            do jvv=1,size(str_array_col)
+               do iv=2,nam%nv
+                  do jv=1,iv-1
+                     if ((str_array_row(ivv)==nam%variables(iv)).and.(str_array_row(ivv)==nam%variables(iv))) then
+                        loc_wgt(iv,jv) = real_scalar
+                        loc_wgt(jv,iv) = real_scalar
+                     end if
+                  end do
+               end do
+            end do
          end do
       end do
    
@@ -981,35 +940,22 @@ if (conf%has('nicas')) then
       ! Release memory
       deallocate(loc_wgt)
    end if
-   if (section%has('min_lev')) then
-      call section%get_or_die('min_lev',subconf)
-      if (subconf%has('common')) call subconf%get_or_die('common',nam%min_lev(0))
-      do iv=1,nam%nv
-         if (subconf%has(nam%variables(iv))) call subconf%get_or_die(nam%variables(iv),nam%min_lev(iv))
-      end do
-   end if
-   if (section%has('max_lev')) then
-      call section%get_or_die('max_lev',subconf)
-      if (subconf%has('common')) call subconf%get_or_die('common',nam%max_lev(0))
-      do iv=1,nam%nv
-         if (subconf%has(nam%variables(iv))) call subconf%get_or_die(nam%variables(iv),nam%max_lev(iv))
-      end do
-   end if
-   if (section%has('nicas_interp_type')) then
-      call section%get_or_die('nicas_interp_type',subconf)
-      if (subconf%has('common')) then
-         call subconf%get_or_die('common',str)
-         nam%nicas_interp_type(0) = str
-      end if
-      do iv=1,nam%nv
-         if (subconf%has(nam%variables(iv))) then
-           call subconf%get_or_die(nam%variables(iv),str)
-           nam%nicas_interp_type(iv) = str
-         end if
+   if (section%has('min_lev')) call nam%get_value(section,'min_lev',nam%min_lev)
+   if (section%has('max_lev')) call nam%get_value(section,'max_lev',nam%max_lev)
+   if (section%has('interp_type')) then
+      call section%get_or_die('interp_type',confs)
+      do iconf=1,size(confs)
+         call confs(iconf)%get_or_die('variables',str_array)
+         call confs(iconf)%get_or_die('type',str)
+         do it=1,size(str_array)
+            if (str_array(it)=='common') nam%nicas_interp_type(0) = str
+            do iv=1,nam%nv
+               if (str_array(it)==nam%variables(iv)) nam%nicas_interp_type(iv) = str
+            end do
+         end do
       end do
    end if
    if (section%has('pos_def_test')) call section%get_or_die('pos_def_test',nam%pos_def_test)
-   if (section%has('write_nicas_grids')) call section%get_or_die('write_nicas_grids',nam%write_nicas_grids)
    if (section%has('interp_test')) call section%get_or_die('interp_test',nam%interp_test)
 end if
 
@@ -1048,36 +994,6 @@ if (conf%has('dirac')) then
          call mpl%abort('${subr}$',message)
       end if
       nam%ivdir(1:size(integer_array)) = integer_array
-   end if
-end if
-
-! Local profiles parameters
-if (conf%has('local profiles')) then
-   call conf%get_or_die('local profiles',section)
-   if (section%has('nldwv')) call section%get_or_die('nldwv',nam%nldwv)
-   if (section%has('lon_ldwv')) then
-      call section%get_or_die('lon_ldwv',real_array)
-      if (size(real_array)>nldwvmax) then
-         write(message,'(a,i4)') 'lon_ldwv size should be smaller than ',nldwvmax
-         call mpl%abort('${subr}$',message)
-      end if
-      nam%lon_ldwv(1:size(real_array)) = real_array
-   end if
-   if (section%has('lat_ldwv')) then
-      call section%get_or_die('lat_ldwv',real_array)
-      if (size(real_array)>nldwvmax) then
-         write(message,'(a,i4)') 'lat_ldwv size should be smaller than ',nldwvmax
-         call mpl%abort('${subr}$',message)
-      end if
-      nam%lat_ldwv(1:size(real_array)) = real_array
-   end if
-   if (section%has('name_ldwv')) then
-      call section%get_or_die('name_ldwv',str_array)
-      if (size(real_array)>nldwvmax) then
-         write(message,'(a,i4)') 'name_ldwv size should be smaller than ',nldwvmax
-         call mpl%abort('${subr}$',message)
-      end if
-      nam%name_ldwv(1:size(str_array)) = str_array
    end if
 end if
 
@@ -1209,6 +1125,8 @@ if (nam%check_vbal.and..not.(nam%new_vbal.or.nam%load_vbal)) &
  & call mpl%abort('${subr}$','new_vbal or load_vbal required for check_vbal')
 if (nam%new_hdiag.and.(.not.(nam%new_mom.or.nam%update_mom.or.nam%load_mom))) &
  & call mpl%abort('${subr}$','new_mom, update_mom or load_mom required for new_hdiag')
+if (nam%write_nicas_grids.and.(.not.(nam%new_nicas.or.nam%load_nicas_global))) &
+ & call mpl%abort('${subr}$','new_nicas or load_nicas_global required for write_nicas_grids')
 if (nam%check_dirac.and..not.(nam%new_vbal.or.nam%load_vbal.or.(nam%new_hdiag.and.nam%write_hdiag).or.nam%new_nicas &
  & .or.nam%load_nicas_local.or.nam%load_nicas_global)) call mpl%abort('${subr}$','check_dirac not available')
 if (nam%check_randomization) then
@@ -1478,8 +1396,6 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
       end select
    end do
 end if
-if (nam%write_nicas_grids.and.(.not.(nam%new_nicas.or.nam%load_nicas_global))) &
- & call mpl%abort('${subr}$','new_nicas or load_nicas_global required for write_nicas_grids')
 if (nam%interp_test.and.(.not.(nam%new_nicas.or.nam%load_nicas_global))) &
  & call mpl%abort('${subr}$','new_nicas or load_nicas_global required for interp_test')
 if (nam%load_nicas_local.and.nam%write_nicas_global) &
@@ -1560,5 +1476,120 @@ end do
 @:probe_out()
 
 end subroutine nam_io_key_value
+
+#:for dtype in dtypes_ir
+!----------------------------------------------------------------------
+! Subroutine: nam_get_value_${dtype}$
+!> Get value for all variables
+!----------------------------------------------------------------------
+subroutine nam_get_value_${dtype}$(nam,section,key,val)
+
+implicit none
+
+! Passed variable
+class(nam_type),intent(inout) :: nam            !< Namelist
+type(fckit_configuration),intent(in) :: section !< Configuration section
+character(len=*),intent(in) :: key              !< Key
+${ftype[dtype]}$,intent(out) :: val(0:nvmax)    !< Values
+
+! Local variables
+integer :: iconf,iv,it
+${ftype[dtype]}$ :: scalar
+character(len=:),allocatable :: str_array(:)
+type(fckit_configuration),allocatable :: confs(:)
+
+! Set name
+@:set_name(nam_get_value_${dtype}$)
+
+! Probe in
+@:probe_in()
+
+! Get subconfigurations vector
+call section%get_or_die(key,confs)
+
+! Loop over subconfigurations
+do iconf=1,size(confs)
+   call confs(iconf)%get_or_die('variables',str_array)
+   call confs(iconf)%get_or_die('value',scalar)
+   do it=1,size(str_array)
+      if (str_array(it)=='common') val(0) = scalar
+      do iv=1,nam%nv
+         if (str_array(it)==nam%variables(iv)) val(iv) = scalar
+      end do
+   end do
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine nam_get_value_${dtype}$
+#:endfor
+
+#:for dtype in dtypes_ir
+!----------------------------------------------------------------------
+! Subroutine: nam_get_value_or_profile_${dtype}$
+!> Get value or profile for all variables
+!----------------------------------------------------------------------
+subroutine nam_get_value_or_profile_${dtype}$(nam,mpl,section,key,val)
+
+implicit none
+
+! Passed variable
+class(nam_type),intent(inout) :: nam                !< Namelist
+type(mpl_type),intent(inout) :: mpl                 !< MPI data
+type(fckit_configuration),intent(in) :: section     !< Configuration section
+character(len=*),intent(in) :: key                  !< Key
+${ftype[dtype]}$,intent(out) :: val(nl0max,0:nvmax) !< Values
+
+! Local variables
+integer :: iconf,iv,it
+${ftype[dtype]}$ :: scalar
+${ftype[dtype]}$,allocatable :: array(:)
+character(len=:),allocatable :: str_array(:)
+character(len=1024) :: message
+type(fckit_configuration),allocatable :: confs(:)
+
+! Set name
+@:set_name(nam_get_value_or_profile_${dtype}$)
+
+! Probe in
+@:probe_in()
+
+! Get subconfigurations vector
+call section%get_or_die(key,confs)
+
+! Loop over subconfigurations
+do iconf=1,size(confs)
+   call confs(iconf)%get_or_die('variables',str_array)
+   if (confs(iconf)%has('value')) then
+      call confs(iconf)%get_or_die('value',scalar)
+      do it=1,size(str_array)
+         if (str_array(it)=='common') val(:,0) = scalar
+         do iv=1,nam%nv
+            if (str_array(it)==nam%variables(iv)) val(:,iv) = scalar
+         end do
+      end do
+   elseif (confs(iconf)%has('profile')) then
+      call confs(iconf)%get_or_die('profile',array)
+      if (size(array)>nl0max) then
+         write(message,'(a,a,i4)') key,' profile size should be smaller than ',nl0max
+         call mpl%abort('${subr}$',message)
+      end if
+      do it=1,size(str_array)
+         if (str_array(it)=='common') val(1:size(array),0) = array
+         do iv=1,nam%nv
+            if (str_array(it)==nam%variables(iv)) val(1:size(array),iv) = array
+         end do
+      end do
+   else
+      call mpl%abort('${subr}$','missing value/profile in '//key)
+   end if
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine nam_get_value_or_profile_${dtype}$
+#:endfor
 
 end module type_nam
