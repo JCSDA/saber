@@ -15,31 +15,28 @@ background error:
   saber central block:
     saber block name: BUMP_NICAS
     bump:
-      general:
-        datadir: testdata
-        prefix: randomization_bump_nicas_L10L10/_MPI_-_OMP_
-        testing: true
-      drivers:
-        method: cor
-        strategy: specific_univariate
-        new_nicas: true
-      nicas:
-        resol: 4.0
-        forced_radii: true
-        rh:
-          var1:
-          - 4.0e6
-          var2:
-          - 4.0e6
-          var_2d:
-          - 4.0e6
-        rv:
-          var1:
-          - 5.0
-          var2:
-          - 5.0
-          var_2d:
-          - 0.0
+      datadir: testdata
+      prefix: randomization_bump_nicas_L10L10/_MPI_-_OMP_
+      testing: true
+      method: cor
+      strategy: specific_univariate
+      new_nicas: true
+      resol: 4.0
+      forced_radii: true
+      rh:
+        var1:
+        - 4.0e6
+        var2:
+        - 4.0e6
+        var_2d:
+        - 4.0e6
+      rv:
+        var1:
+        - 5.0
+        var2:
+        - 5.0
+        var_2d:
+        - 0.0
   randomization size: 25
 output:
   filepath: testdata/randomization_bump_nicas_L10L10/member

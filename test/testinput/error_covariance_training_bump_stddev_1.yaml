@@ -25,20 +25,16 @@ ensemble:
     - 12
     - 18
 bump:
-  general:
-    datadir: testdata
-    prefix: error_covariance_training_bump_stddev_1/_MPI_-_OMP_
-    testing: true
-  drivers:
-    new_var: true
-  localization:
-    ne: 20
-  variance:
-    var_filter: true
-    var_niter: 4
-    var_rhflt:
-      var1:
-      - 5000.0e3
+  datadir: testdata
+  prefix: error_covariance_training_bump_stddev_1/_MPI_-_OMP_
+  testing: true
+  new_var: true
+  ne: 20
+  var_filter: true
+  var_niter: 4
+  var_rhflt:
+    var1:
+    - 5000.0e3
 output:
 - parameter: stddev
   file:

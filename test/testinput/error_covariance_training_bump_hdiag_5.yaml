@@ -127,27 +127,23 @@ lowres ensemble:
     filepath: testdata/randomization_bump_nicas_L10L2/member_000025
     state variables: *id001
 bump:
-  general:
-    datadir: testdata
-    prefix: error_covariance_training_bump_hdiag_5/_MPI_-_OMP_
-    testing: true
-  drivers:
-    method: hyb-ens
-    strategy: specific_univariate
-    write_samp_local: true
-    write_mom: true
-    new_hdiag: true
-    write_hdiag: true
-    check_adjoints: true
-    check_normalization: 10
-  sampling:
-    nc1: 500
-    nc3: 15
-    dc: 500.0e3
-    nl0r: 2
-  localization:
-    ne: 10
-    ne_lr: 25
+  datadir: testdata
+  prefix: error_covariance_training_bump_hdiag_5/_MPI_-_OMP_
+  testing: true
+  method: hyb-ens
+  strategy: specific_univariate
+  write_mom: true
+  new_hdiag: true
+  write_hdiag: true
+  check_adjoints: true
+  check_normalization: 10
+  write_samp_local: true
+  nc1: 500
+  nc3: 15
+  dc: 500.0e3
+  nl0r: 2
+  ne: 10
+  ne_lr: 25
 output:
 - parameter: loc_rh
   file:

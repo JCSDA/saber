@@ -18,32 +18,27 @@ background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
 bump:
-  general:
-    datadir: testdata
-    prefix: error_covariance_training_bump_hdiag_6/_MPI_-_OMP_
-    testing: true
-  drivers:
-    method: hyb-ens
-    strategy: specific_univariate
-    update_mom: true
-    new_hdiag: true
-    write_hdiag: true
-    check_adjoints: true
-    check_normalization: 10
-  sampling:
-    nc1: 500
-    nc3: 15
-    dc: 500.0e3
-    nl0r: 2
-  localization:
-    ne: 10
-    ne_lr: 25
+  datadir: testdata
+  prefix: error_covariance_training_bump_hdiag_6/_MPI_-_OMP_
+  testing: true
+  method: hyb-ens
+  strategy: specific_univariate
+  update_mom: true
+  new_hdiag: true
+  write_hdiag: true
+  check_adjoints: true
+  check_normalization: 10
+  nc1: 500
+  nc3: 15
+  dc: 500.0e3
+  nl0r: 2
+  ne: 10
+  ne_lr: 25
   ensemble:
     members:
     - date: '2010-01-01T12:00:00Z'
       filepath: testdata/randomization_bump_nicas_L12L2/member_000001
-      state variables: &id001
-      - var1
+      state variables: *id001
     - date: '2010-01-01T12:00:00Z'
       filepath: testdata/randomization_bump_nicas_L12L2/member_000002
       state variables: *id001

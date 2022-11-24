@@ -42,6 +42,7 @@ def find_bump(d, bumps):
 # Parse arguments
 parser = argparse.ArgumentParser()
 parser.add_argument("filename", help="Yaml file name")
+parser.add_argument('--variables', nargs='+', help='Variables', default=['var1','var2','var3','var4'])
 args = parser.parse_args()
 print("File: " + args.filename)
 
@@ -196,13 +197,13 @@ for i in range(len(bumps)):
             vbal_id_coef = np.ones((len(vbal_block)))
         ib = 0
         vbal = []
-        for ii in range(2, 10):
-            for jj in range(1, ii):
+        for ii in range(1, 10):
+            for jj in range(0, ii):
                 if ib < len(vbal_block):
                     if vbal_block[ib]:
                         block = {}
-                        block["balanced"] = "var" + str(ii)
-                        block["unbalanced"] = "var" + str(jj)
+                        block["balanced"] = args.variables[ii]
+                        block["unbalanced"] = args.variables[jj]
                         if vbal_diag_auto[ib]:
                             block["diag_auto"] = True
                         if vbal_diag_reg[ib]:

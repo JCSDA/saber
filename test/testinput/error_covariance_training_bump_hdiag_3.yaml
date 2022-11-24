@@ -11,38 +11,32 @@ background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
 bump:
-  general:
-    datadir: testdata
-    prefix: error_covariance_training_bump_hdiag_3/_MPI_-_OMP_
-    testing: true
-  drivers:
-    method: loc
-    strategy: common
-    update_mom: true
-    new_hdiag: true
-    write_hdiag: true
-  sampling:
-    nc1: 500
-    nc2: 250
-    nc3: 10
-    nc4: 4
-    dc: 800.0e3
-    nl0r: 2
-    local_diag: true
-    local_dlat: 15.0
-    samp_interp_type: si
-  localization:
-    ne: 25
-    gau_approx: true
-  fit:
-    fit_ncmp: 2
+  datadir: testdata
+  prefix: error_covariance_training_bump_hdiag_3/_MPI_-_OMP_
+  testing: true
+  method: loc
+  strategy: common
+  update_mom: true
+  new_hdiag: true
+  write_hdiag: true
+  nc1: 500
+  nc2: 250
+  nc3: 10
+  nc4: 4
+  dc: 800.0e3
+  nl0r: 2
+  samp_interp_type: si
+  ne: 25
+  gau_approx: true
+  local_diag: true
+  local_dlat: 15.0
+  fit_ncmp: 2
   ensemble:
     members from template:
       template:
         date: '2010-01-01T12:00:00Z'
         filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
-        state variables:
-        - var1
+        state variables: *id001
       pattern: '%mem%'
       nmembers: 25
       zero padding: 6

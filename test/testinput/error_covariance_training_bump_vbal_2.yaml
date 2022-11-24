@@ -21,40 +21,35 @@ ensemble:
     nmembers: 10
     zero padding: 6
 bump:
-  general:
-    datadir: testdata
-    prefix: error_covariance_training_bump_vbal_2/_MPI_-_OMP_
-    testing: true
-  drivers:
-    write_samp_local: true
-    write_samp_global: true
-    new_vbal_cov: true
-    write_vbal_cov: true
-    new_vbal: true
-    write_vbal: true
-    check_adjoints: true
-    check_dirac: true
-  sampling:
-    nc1: 500
-    nc2: 250
-  vertical balance:
-    vbal_dlat: 10.0
-    vbal_pseudo_inv: true
-    vbal_pseudo_inv_mmax: 3
-    vbal:
-    - balanced: var2
-      unbalanced: var1
-      diag_auto: true
-  dirac:
-    ndir: 1
-    londir:
-    - 0.0
-    latdir:
-    - 0.0
-    levdir:
-    - 1
-    ivdir:
-    - 1
+  datadir: testdata
+  prefix: error_covariance_training_bump_vbal_2/_MPI_-_OMP_
+  testing: true
+  new_vbal_cov: true
+  write_vbal_cov: true
+  new_vbal: true
+  write_vbal: true
+  check_adjoints: true
+  check_dirac: true
+  write_samp_local: true
+  write_samp_global: true
+  nc1: 500
+  nc2: 250
+  vbal_block:
+  - true
+  vbal_dlat: 10.0
+  vbal_diag_auto:
+  - true
+  vbal_pseudo_inv: true
+  vbal_pseudo_inv_mmax: 3
+  ndir: 1
+  londir:
+  - 0.0
+  latdir:
+  - 0.0
+  levdir:
+  - 1
+  ivdir:
+  - 1
 output:
 - parameter: dirac_vbal
   file:

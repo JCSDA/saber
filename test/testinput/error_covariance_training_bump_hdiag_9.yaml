@@ -31,52 +31,44 @@ background error:
   saber central block:
     saber block name: BUMP_NICAS
     bump:
-      general:
-        datadir: testdata
-        prefix: error_covariance_training_bump_hdiag_9/_MPI_-_OMP_
-        testing: true
-      drivers:
-        method: cor
-        strategy: specific_univariate
-        new_nicas: true
-      nicas:
-        resol: 4.0
-        forced_radii: true
-        rh:
-          var1:
-          - 7.0e6
-        rv:
-          var1:
-          - 1.5
+      datadir: testdata
+      prefix: error_covariance_training_bump_hdiag_9/_MPI_-_OMP_
+      testing: true
+      method: cor
+      strategy: specific_univariate
+      new_nicas: true
+      resol: 4.0
+      forced_radii: true
+      rh:
+        var1:
+        - 7.0e6
+      rv:
+        var1:
+        - 1.5
   randomization size: 25
 bump:
-  general:
-    datadir: testdata
-    prefix: error_covariance_training_bump_hdiag_9/_MPI_-_OMP_
-    testing: true
-  drivers:
-    method: hyb-rnd
-    strategy: specific_univariate
-    new_hdiag: true
-    write_hdiag: true
-    check_adjoints: true
-    check_normalization: 10
-  sampling:
-    nc1: 500
-    nc3: 15
-    dc: 500.0e3
-    nl0r: 2
-  localization:
-    ne: 10
-    ne_lr: 25
-  nicas:
-    forced_radii: true
-    rh:
-      var1:
-      - 10.0e6
-    rv:
-      var1:
-      - 2.0
+  datadir: testdata
+  prefix: error_covariance_training_bump_hdiag_9/_MPI_-_OMP_
+  testing: true
+  method: hyb-rnd
+  strategy: specific_univariate
+  new_hdiag: true
+  write_hdiag: true
+  check_adjoints: true
+  check_normalization: 10
+  nc1: 500
+  nc3: 15
+  dc: 500.0e3
+  nl0r: 2
+  ne: 10
+  ne_lr: 25
+  forced_radii: true
+  rh:
+    var1:
+    - 10.0e6
+  rv:
+    var1:
+    - 2.0
 output:
 - parameter: loc_rh
   file:

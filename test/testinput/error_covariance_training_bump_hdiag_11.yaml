@@ -20,25 +20,20 @@ ensemble:
     nmembers: 25
     zero padding: 6
 bump:
-  general:
-    datadir: testdata
-    prefix: error_covariance_training_bump_hdiag_11/_MPI_-_OMP_
-    testing: true
-  drivers:
-    method: cor
-    strategy: specific_univariate
-    new_hdiag: true
-    write_hdiag: true
-  sampling:
-    nc1: 500
-    nc3: 10
-    dc: 800.0e3
-    nl0r: 7
-  localization:
-    ne: 25
-  fit:
-    diag_rvflt: 3.0
-    fit_dl0: 3
+  datadir: testdata
+  prefix: error_covariance_training_bump_hdiag_11/_MPI_-_OMP_
+  testing: true
+  method: cor
+  strategy: specific_univariate
+  new_hdiag: true
+  write_hdiag: true
+  nc1: 500
+  nc3: 10
+  dc: 800.0e3
+  nl0r: 7
+  ne: 25
+  diag_rvflt: 3.0
+  fit_dl0: 3
 output:
 - parameter: cor_rh
   file:
