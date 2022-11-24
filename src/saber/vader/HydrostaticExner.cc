@@ -142,7 +142,7 @@ void HydrostaticExner::multiply(atlas::FieldSet & fset) const {
 // -----------------------------------------------------------------------------
 
 void HydrostaticExner::multiplyAD(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::multiplyAD starting" << fset.field_names() << std::endl;
+  oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
   auto airPressureView =
       atlas::array::make_view<double, 2>(fset["air_pressure_levels"]);
   auto hydrostaticPressureView =

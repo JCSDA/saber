@@ -326,10 +326,7 @@ void SpectralToGaussUV::multiply(atlas::FieldSet & fset) const {
 // -----------------------------------------------------------------------------
 
 void SpectralToGaussUV::multiplyAD(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::multiplyAD starting" << fset.field_names()<< std::endl;
-
-
-   oops::Log::trace() << classname() << "::multiplyAD inner vars" << innerVars_.variables()<< std::endl;
+  oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
 
   // Create empty Model fieldset
   atlas::FieldSet newFields = atlas::FieldSet();

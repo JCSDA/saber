@@ -340,7 +340,7 @@ GaussUVToGP::GaussUVToGP(const oops::GeometryData & outerGeometryData,
 // -----------------------------------------------------------------------------
 
 void GaussUVToGP::multiply(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::multiply starting " << fset.field_names() << std::endl;
+  oops::Log::trace() << classname() << "::multiply starting " << std::endl;
 
   atlas::Field gp = gaussFunctionSpace_.createField<double>(
     atlas::option::name("geostrophic_pressure_levels_minus_one") |
@@ -377,7 +377,7 @@ void GaussUVToGP::multiply(atlas::FieldSet & fset) const {
 // -----------------------------------------------------------------------------
 
 void GaussUVToGP::multiplyAD(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::multiplyAD starting" << fset.field_names() <<std::endl;
+  oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
 
   atlas::FieldSet specfset =
       allocateSpectralVortDiv(specFunctionSpace_,

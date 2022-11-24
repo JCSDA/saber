@@ -88,7 +88,7 @@ void SpectralToGauss::multiply(atlas::FieldSet & fieldSet) const {
 // -----------------------------------------------------------------------------
 
 void SpectralToGauss::multiplyAD(atlas::FieldSet & fieldSet) const {
-  oops::Log::trace() << classname() << "::multiplyAD starting" << fieldSet.field_names() << std::endl;
+  oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
 
   // On input: fieldset on gaussian grid
   atlas::FieldSet newFields = atlas::FieldSet();
