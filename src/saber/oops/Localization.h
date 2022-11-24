@@ -87,7 +87,7 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
       geom,
       activeVars,
       dummyTime,
-      saberCentralBlockParams.inputFields.value());
+      saberCentralBlockParams.inputFields.value().get_value_or({}));
 
     // Central Geometry
     geometryData_.push_back(geom.generic());

@@ -280,14 +280,14 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
       geom1,
       params.inputVars.value(),
       xx.validTime(),
-      params.inputFields.value());
+      params.inputFields.value().get_value_or({}));
 
     // Get input fields for geometry 2
     std::vector<atlas::FieldSet> fsetVec2 = readInputFields(
       *geom2,
       params.inputVars.value(),
       xx.validTime(),
-      params.inputFields2.value());
+      params.inputFields2.value().get_value_or({}));
 
     // Select SABER library training
     std::unique_ptr<bump::BUMP> bump;
@@ -344,9 +344,9 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
       }
 
       // Check what needs to be updated
-      const boost::optional<bool> &update_vbal_cov = drivers.update_vbal_cov.value();
-      const boost::optional<bool> &update_var = drivers.update_var.value();
-      const boost::optional<bool> &update_mom = drivers.update_mom.value();
+      const bool update_vbal_cov = drivers.update_vbal_cov.value().get_value_or(false);
+      const bool update_var = drivers.update_var.value().get_value_or(false);
+      const bool update_mom = drivers.update_mom.value().get_value_or(false);
 
       // Load ensemble members sequentially
       if (bump->memberConfig1().size() > 0) {
@@ -356,28 +356,22 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
         for (size_t ie = 0; ie < ens1_ne; ++ie) {
           // Read member
           oops::Log::info() << "Info     : "
-          << "-------------------------------------------------------------------" << std::endl;
+            << "-------------------------------------------------------------------" << std::endl;
           oops::Log::info() << "Info     : --- Load member " << ie+1 << " / " << ens1_ne
                             << std::endl;
           dx1.read(bump->memberConfig1()[ie]);
 
-          if (update_vbal_cov != boost::none) {
-            if (*update_vbal_cov) {
-              // Update vertical covariance
-              bump->updateVbalCov(dx1.fieldSet(), ie);
-            }
+          if (update_vbal_cov) {
+            // Update vertical covariance
+            bump->updateVbalCov(dx1.fieldSet(), ie);
           }
-          if (update_var != boost::none) {
-            if (*update_var) {
-              // Update variance
-              bump->updateVar(dx1.fieldSet(), ie);
-            }
+          if (update_var) {
+            // Update variance
+            bump->updateVar(dx1.fieldSet(), ie);
           }
-          if (update_mom != boost::none) {
-            if (*update_mom) {
-              // Update moments
-              bump->updateMom(dx1.fieldSet(), ie, 1);
-            }
+          if (update_mom) {
+            // Update moments
+            bump->updateMom(dx1.fieldSet(), ie, 1);
           }
         }
       }
@@ -388,15 +382,13 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
         for (size_t ie = 0; ie < ens2_ne; ++ie) {
           // Read member
           oops::Log::info() << "Info     : "
-          << "-------------------------------------------------------------------" << std::endl;
+            << "-------------------------------------------------------------------" << std::endl;
           oops::Log::info() << "Info     : --- Load member " << ie+1 << " / " << ens2_ne
                             << std::endl;
           dx2.read(bump->memberConfig2()[ie]);
-          if (update_mom != boost::none) {
-            if (*update_mom) {
-              // Update moments
-              bump->updateMom(dx2.fieldSet(), ie, 2);
-            }
+          if (update_mom) {
+            // Update moments
+            bump->updateMom(dx2.fieldSet(), ie, 2);
           }
         }
       }
@@ -408,105 +400,99 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
       bump->partialDealloc();
 
       // Apply operators
-      const boost::optional<std::vector<eckit::LocalConfiguration>>
-        &appConfs = bumpParams->appConfs.value();
-      if (appConfs != boost::none) {
-        oops::Log::info() << "Info     : "
+      std::vector<eckit::LocalConfiguration> appConfs;
+      appConfs = bumpParams->appConfs.value().get_value_or(appConfs);
+      oops::Log::info() << "Info     : "
         << "-------------------------------------------------------------------" << std::endl;
-        oops::Log::info() << "Info     : --- Apply operators" << std::endl;
-        if (appConfs->size() > 0) {
-          for (const auto & appConf : *appConfs) {
-            // Read input file
-            eckit::LocalConfiguration inputConf(appConf, "input");
-            oops::Log::info() << "Info     :        - Input file: " << inputConf << std::endl;
-            Increment_ dx1(geom1, inputVars, xx.validTime());
-            dx1.read(inputConf);
+      oops::Log::info() << "Info     : --- Apply operators" << std::endl;
+      for (const auto & appConf : appConfs) {
+        // Read input file
+        eckit::LocalConfiguration inputConf(appConf, "input");
+        oops::Log::info() << "Info     :        - Input file: " << inputConf << std::endl;
+        Increment_ dx1(geom1, inputVars, xx.validTime());
+        dx1.read(inputConf);
 
-            // Apply BUMP operator
-            std::vector<std::string> bumpOperators;
-            appConf.get("bump operators", bumpOperators);
-            for (const auto & bumpOperator : bumpOperators) {
-              oops::Log::info() << "Info     :          Apply operator " << bumpOperator
-                                << std::endl;
-              if (bumpOperator == "inverseMultiplyVbal") {
-                bump->inverseMultiplyVbal(dx1.fieldSet());
-              } else {
-                  ABORT("Wrong bump operator: " + bumpOperator);
-              }
-            }
-
-            // ATLAS fieldset to Increment_
-            dx1.synchronizeFields();
-
-            // Write file
-            eckit::LocalConfiguration outputConf(appConf, "output");
-            oops::Log::info() << "Info     :          Output file: " << outputConf << std::endl;
-            dx1.write(outputConf);
+        // Apply BUMP operator
+        std::vector<std::string> bumpOperators;
+        appConf.get("bump operators", bumpOperators);
+        for (const auto & bumpOperator : bumpOperators) {
+          oops::Log::info() << "Info     :          Apply operator " << bumpOperator << std::endl;
+          if (bumpOperator == "inverseMultiplyVbal") {
+            bump->inverseMultiplyVbal(dx1.fieldSet());
+          } else {
+            ABORT("Wrong bump operator: " + bumpOperator);
           }
         }
+
+        // ATLAS fieldset to Increment_
+        dx1.synchronizeFields();
+
+        // Write file
+        eckit::LocalConfiguration outputConf(appConf, "output");
+        oops::Log::info() << "Info     :          Output file: " << outputConf << std::endl;
+        dx1.write(outputConf);
       }
     }
 
     // Write output parameters to file
-    const boost::optional<std::vector<OutputParameters<MODEL>>> &output = params.output.value();
-    if (output != boost::none) {
-      oops::Log::info() << "Info     : "
+    std::vector<OutputParameters<MODEL>> output;
+    output = params.output.value().get_value_or(output);
+    oops::Log::info() << "Info     : "
       << "-------------------------------------------------------------------" << std::endl;
-      oops::Log::info() << "Info     : --- Write output fields" << std::endl;
-      for (const auto & outputParam : *output) {
-        // Convert to eckit configuration
-        eckit::LocalConfiguration outputConfig;
-        outputParam.serialize(outputConfig);
+    oops::Log::info() << "Info     : --- Write output fields" << std::endl;
+    for (const auto & outputParam : output) {
+      // Convert to eckit configuration
+      eckit::LocalConfiguration outputConfig;
+      outputParam.serialize(outputConfig);
 
-        // Replace patterns
-        util::seekAndReplace(outputConfig, "_MPI_", mpi);
-        util::seekAndReplace(outputConfig, "_OMP_", omp);
+      // Replace patterns
+      util::seekAndReplace(outputConfig, "_MPI_", mpi);
+      util::seekAndReplace(outputConfig, "_OMP_", omp);
 
-        // Convert back to parameters
-        OutputParameters<MODEL> outputParam_;
-        outputParam_.deserialize(outputConfig);
+      // Convert back to parameters
+      OutputParameters<MODEL> outputParam_;
+      outputParam_.deserialize(outputConfig);
 
-        // Get parameter
-        const std::string & param = outputParam_.param;
+      // Get parameter
+      const std::string & param = outputParam_.param;
 
-        // Get component
-        const int & component = outputParam_.component;
+      // Get component
+      const int & component = outputParam_.component;
 
-        // BUMP output
-        if (bumpParams != boost::none) {
-          // Select geometry
-          if (param == "loc_a_lr"
-           || param == "loc_rh_lr"
-           || param == "loc_rh1_lr"
-           || param == "loc_rh2_lr"
-           || param == "loc_rhc_lr"
-           ||param == "loc_rv_lr"
-           || param == "dirac_diag_loc_lr"
-           || param == "nicas_norm_lr"
-           || param == "dirac_nicas_lr"
-           || param == "dirac_nicas_bens_lr") {
-            // Get parameter
-            Increment_ dx2(*geom2, inputVars, xx.validTime());
-            dx2.zero(xx.validTime());
-            bump->getParameter(param, component, 2, dx2.fieldSet());
-            dx2.synchronizeFields();
+      // BUMP output
+      if (bumpParams != boost::none) {
+        // Select geometry
+        if (param == "loc_a_lr"
+         || param == "loc_rh_lr"
+         || param == "loc_rh1_lr"
+         || param == "loc_rh2_lr"
+         || param == "loc_rhc_lr"
+         ||param == "loc_rv_lr"
+         || param == "dirac_diag_loc_lr"
+         || param == "nicas_norm_lr"
+         || param == "dirac_nicas_lr"
+         || param == "dirac_nicas_bens_lr") {
+          // Get parameter
+          Increment_ dx2(*geom2, inputVars, xx.validTime());
+          dx2.zero(xx.validTime());
+          bump->getParameter(param, component, 2, dx2.fieldSet());
+          dx2.synchronizeFields();
 
-            // Write parameter
-            dx2.write(outputParam_.file);
-            oops::Log::test() << "Norm of BUMP output parameter " << param << " - " << component
-                              << ": " << dx2.norm() << std::endl;
-          } else {
-            // Get parameter
-            Increment_ dx1(geom1, inputVars, xx.validTime());
-            dx1.zero(xx.validTime());
-            bump->getParameter(param, component, 1, dx1.fieldSet());
-            dx1.synchronizeFields();
+          // Write parameter
+          dx2.write(outputParam_.file);
+          oops::Log::test() << "Norm of BUMP output parameter " << param << " - " << component
+                            << ": " << dx2.norm() << std::endl;
+        } else {
+          // Get parameter
+          Increment_ dx1(geom1, inputVars, xx.validTime());
+          dx1.zero(xx.validTime());
+          bump->getParameter(param, component, 1, dx1.fieldSet());
+          dx1.synchronizeFields();
 
-            // Write parameter
-            dx1.write(outputParam_.file);
-            oops::Log::test() << "Norm of BUMP output parameter " << param << " - " << component
-                              << ": " << dx1.norm() << std::endl;
-          }
+          // Write parameter
+          dx1.write(outputParam_.file);
+          oops::Log::test() << "Norm of BUMP output parameter " << param << " - " << component
+                            << ": " << dx1.norm() << std::endl;
         }
       }
     }

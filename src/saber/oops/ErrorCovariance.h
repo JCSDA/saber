@@ -131,7 +131,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
         geom,
         activeVars,
         xb.validTime(),
-        saberOuterBlockParams.inputFields.value());
+        saberOuterBlockParams.inputFields.value().get_value_or({}));
 
       // Create outer block
       oops::Log::info() << "Info     : Creating outer block: "
@@ -177,7 +177,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
     geom,
     activeVars,
     xb.validTime(),
-    saberCentralBlockParams.inputFields.value());
+    saberCentralBlockParams.inputFields.value().get_value_or({}));
 
   // Create central block
   saberCentralBlock_.reset(SaberCentralBlockFactory::create(

@@ -128,7 +128,7 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
           geom,
           activeVars,
           xx.validTime(),
-          saberOuterBlockParams.inputFields.value());
+          saberOuterBlockParams.inputFields.value().get_value_or({}));
 
         // Create outer block
         oops::Log::info() << "Info     : Creating outer block: "
@@ -231,7 +231,7 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         geom,
         activeVars,
         xx.validTime(),
-        saberCentralBlockParams.inputFields.value());
+        saberCentralBlockParams.inputFields.value().get_value_or({}));
 
       // Create central block
       saberCentralBlock_.reset(SaberCentralBlockFactory::create(
