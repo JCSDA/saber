@@ -308,7 +308,6 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
                                        const oops::Variables & vars) const {
     // Get ghost points
     atlas::Field ghost;
-
     if (functionSpace.type() == "Spectral") {
       ghost = functionSpace.createField<int>(atlas::option::name("ghost"));
       auto ghostView = atlas::array::make_view<int, 1>(ghost);

@@ -5,7 +5,6 @@
 
 if( oops_FOUND AND atlas_TRANS_FOUND )
     list(APPEND spectralb_src_files_list
-
     CovarianceStatistics.cc
     CovarianceStatistics.h
     CovarianceStatisticsUtils.cc
@@ -33,12 +32,6 @@ if( oops_FOUND AND atlas_TRANS_FOUND )
         SpectralToGaussUV.h
         )
     endif()
-
 endif()
 
-set( spectralb_src_files
-
-${spectralb_src_files_list}
-
-PARENT_SCOPE
-)
+set( spectralb_src_files ${spectralb_src_files_list} PARENT_SCOPE )
