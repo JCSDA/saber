@@ -345,8 +345,6 @@ void GaussUVToGP::multiply(atlas::FieldSet & fset) const {
   atlas::Field gp = gaussFunctionSpace_.createField<double>(
     atlas::option::name("geostrophic_pressure_levels_minus_one") |
     atlas::option::levels(fset["eastward_wind"].levels()));
-  gp.haloExchange();
-  atlas::array::make_view<double, 2>(gp).assign(0.0);
 
   atlas::Field rhsvec = allocateRHSVec(gaussFunctionSpace_, gp.levels());
 
@@ -370,8 +368,7 @@ void GaussUVToGP::multiply(atlas::FieldSet & fset) const {
 
   fset.add(gp);
 
-  oops::Log::trace() << classname() << "::multiply done"
-                     << fset.field_names() << std::endl;
+  oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
@@ -427,7 +424,7 @@ void GaussUVToGP::multiplyAD(atlas::FieldSet & fset) const {
 
   fset = newFields;
 
-  oops::Log::trace() << classname() << "::multiplyAD done" << fset.field_names() << std::endl;
+  oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

@@ -9,7 +9,7 @@ geometry:
 variables:
 - eastward_wind
 - northward_wind
-- geostrophic_pressure
+- geostrophic_pressure_levels_minus_one
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
