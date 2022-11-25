@@ -58,10 +58,6 @@ class GeneralSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(GeneralSection, oops::Parameters)
 
  public:
-  // Data directory
-  oops::OptionalParameter<std::string> datadir{"datadir", this};
-  // Files prefix
-  oops::OptionalParameter<std::string> prefix{"prefix", this};
   // Add colors to the log (for display on terminal)
   oops::OptionalParameter<bool> colorlog{"colorlog", this};
   // Stream test messages into a dedicated channel
@@ -72,10 +68,6 @@ class GeneralSection : public oops::Parameters {
   oops::OptionalParameter<bool> repro{"repro", this};
   // Reproducibility threshold
   oops::OptionalParameter<double> rth{"rth", this};
-  // Parallel NetCDF I/O
-  oops::OptionalParameter<bool> parallel_io{"parallel_io", this};
-  // Number of I/O processors
-  oops::OptionalParameter<int> nprocio{"nprocio", this};
   // Universe radius [in meters]
   oops::OptionalParameter<double> universe_rad{"universe_rad", this};
 };
@@ -181,10 +173,30 @@ class DriversSection : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
-class FilesSection : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(FilesSection, oops::Parameters)
+class AliasParameter : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(AliasParameter, oops::Parameters)
 
  public:
+  // In code
+  oops::RequiredParameter<std::string> in_code{"in code", this};
+  // In file
+  oops::RequiredParameter<std::string> in_file{"in file", this};
+};
+
+class IoSection : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(IoSection, oops::Parameters)
+
+ public:
+  // Data directory
+  oops::OptionalParameter<std::string> datadir{"datadir", this};
+  // Files prefix
+  oops::OptionalParameter<std::string> prefix{"prefix", this};
+  // Parallel NetCDF I/O
+  oops::OptionalParameter<bool> parallel_io{"parallel_io", this};
+  // Number of I/O processors
+  oops::OptionalParameter<int> nprocio{"nprocio", this};
+  // Alias
+  oops::OptionalParameter<std::vector<AliasParameter>> alias{"alias", this};
   // Variance files
   oops::OptionalParameter<std::vector<std::string>> fname_var{"fname_var", this};
   // Sampling file
@@ -215,10 +227,6 @@ class ModelSection : public oops::Parameters {
   oops::OptionalParameter<std::string> lev2d{"lev2d", this};
   // Variables names
   oops::OptionalParameter<std::vector<std::string>> variables{"variables", this};
-  // I/O keys
-  oops::OptionalParameter<std::vector<std::string>> io_keys{"io_keys", this};
-  // I/O values
-  oops::OptionalParameter<std::vector<std::string>> io_values{"io_values", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -520,8 +528,8 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<GeneralSection> general{"general", this};
   // Drivers parameters
   oops::OptionalParameter<DriversSection> drivers{"drivers", this};
-  // Files parameters
-  oops::OptionalParameter<FilesSection> files{"files", this};
+  // IO parameters
+  oops::OptionalParameter<IoSection> io{"io", this};
   // Model parameters
   oops::OptionalParameter<ModelSection> model{"model", this};
   // Ensemble sizes parameters

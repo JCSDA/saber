@@ -183,7 +183,7 @@ character(len=1024) :: blkname,cmpname
 associate(ib=>nicas_blk%ib)
 
 ! Get group name
-call nam%io_key_value(bpar%blockname(ib),blkname)
+call nam%alias(bpar%blockname(ib),blkname)
 write(mpl%info,'(a13,a)') '','Block: '//trim(blkname)
 call mpl%flush
 
@@ -264,7 +264,7 @@ character(len=1024) :: blkname,cmpname
 associate(ib=>nicas_blk%ib)
 
 ! Get group name
-call nam%io_key_value(bpar%blockname(ib),blkname)
+call nam%alias(bpar%blockname(ib),blkname)
 write(mpl%info,'(a13,a)') '','Block: '//trim(blkname)
 call mpl%flush
 
@@ -554,7 +554,7 @@ character(len=1024) :: blkname,cmpname
 associate(ib=>nicas_blk%ib)
 
 ! Get group name
-call nam%io_key_value(bpar%blockname(ib),blkname)
+call nam%alias(bpar%blockname(ib),blkname)
 write(mpl%info,'(a13,a)') '','Block: '//trim(blkname)
 call mpl%flush
 
@@ -641,7 +641,7 @@ character(len=1024) :: blkname,cmpname
 associate(ib=>nicas_blk%ib)
 
 ! Get group name
-call nam%io_key_value(bpar%blockname(ib),blkname)
+call nam%alias(bpar%blockname(ib),blkname)
 write(mpl%info,'(a10,a)') '','Block: '//trim(blkname)
 call mpl%flush
 
@@ -751,7 +751,7 @@ character(len=1024) :: blkname,cmpname
 associate(ib=>nicas_blk%ib)
 
 ! Get group name
-call nam%io_key_value(bpar%blockname(ib),blkname)
+call nam%alias(bpar%blockname(ib),blkname)
 write(mpl%info,'(a10,a)') '','Block: '//trim(blkname)
 call mpl%flush
 

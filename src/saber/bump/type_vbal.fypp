@@ -240,7 +240,7 @@ do isub=1,nsub
    do iv=1,nam%nv
       do jv=1,iv
          ! Get group name
-         call nam%io_key_value(vbal%blk(iv,jv)%name,grpname)
+         call nam%alias(vbal%blk(iv,jv)%name,grpname)
 
          ! Inquire group
          grpid = inquire_grp(mpl,ncid,grpname)
@@ -310,7 +310,7 @@ nl0_2_id = define_dim(mpl,ncid,'nl0_2',geom%nl0)
 do iv=1,nam%nv
    do jv=1,iv
       ! Get group name
-      call nam%io_key_value(vbal%blk(iv,jv)%name,grpname)
+      call nam%alias(vbal%blk(iv,jv)%name,grpname)
 
       ! Define group
       grpid(iv,jv) = define_grp(mpl,ncid,grpname)
@@ -388,7 +388,7 @@ do isub=1,nsub
    do iv=1,nam%nv
       do jv=1,iv
          ! Get group name
-         call nam%io_key_value(vbal%blk(iv,jv)%name,grpname)
+         call nam%alias(vbal%blk(iv,jv)%name,grpname)
 
          ! Define group
          grpid = inquire_grp(mpl,ncid,grpname)
@@ -458,7 +458,7 @@ nl0_2_id = define_dim(mpl,ncid,'nl0_2',geom%nl0)
 do iv=1,nam%nv
    do jv=1,iv
       ! Get group name
-      call nam%io_key_value(vbal%blk(iv,jv)%name,grpname)
+      call nam%alias(vbal%blk(iv,jv)%name,grpname)
 
       ! Define group
       grpid(iv,jv) = define_grp(mpl,ncid,grpname)
@@ -663,7 +663,7 @@ do iv=1,nam%nv
    do jv=1,iv
       if (nam%vbal_block(iv,jv)) then
          ! Define group name
-         call nam%io_key_value(vbal%blk(iv,jv)%name,grpname)
+         call nam%alias(vbal%blk(iv,jv)%name,grpname)
 
          ! Get group
          grpid = inquire_grp(mpl,ncid,grpname)
@@ -747,7 +747,7 @@ nl0_2_id = define_dim(mpl,ncid,'nl0_2',geom%nl0)
 do iv=1,nam%nv
    do jv=1,iv
       ! Get group name
-      call nam%io_key_value(vbal%blk(iv,jv)%name,grpname)
+      call nam%alias(vbal%blk(iv,jv)%name,grpname)
 
       ! Define group
       grpid(iv,jv) = define_grp(mpl,ncid,grpname)
@@ -906,7 +906,7 @@ do iv=1,nam%nv
    do jv=1,iv
       if (nam%vbal_block(iv,jv)) then
          ! Define group name
-         call nam%io_key_value(vbal%blk(iv,jv)%name,grpname)
+         call nam%alias(vbal%blk(iv,jv)%name,grpname)
 
          ! Get group
          grpid = inquire_grp(mpl,ncid,grpname)
@@ -990,7 +990,7 @@ nl0_2_id = define_dim(mpl,ncid,'nl0_2',geom%nl0)
 do iv=1,nam%nv
    do jv=1,iv
       ! Get group name
-      call nam%io_key_value(vbal%blk(iv,jv)%name,grpname)
+      call nam%alias(vbal%blk(iv,jv)%name,grpname)
 
       ! Define group
       grpid(iv,jv) = define_grp(mpl,ncid,grpname)

@@ -207,7 +207,7 @@ associate(ib=>avg_blk%ib)
 ncid = create_file(mpl,filename,0)
 
 ! Get group name
-call nam%io_key_value(bpar%blockname(ib),grpname)
+call nam%alias(bpar%blockname(ib),grpname)
 
 ! Define group
 grpid = define_grp(mpl,ncid,grpname)

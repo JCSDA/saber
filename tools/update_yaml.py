@@ -65,22 +65,22 @@ kv = []
 
 general = {}
 general["name"] = "general"
-general["keys"] = ["datadir", "prefix", "colorlog", "testing", "default_seed", "repro", "rth", "parallel_io", "nprocio", "universe_rad"]
+general["keys"] = ["colorlog", "testing", "default_seed", "repro", "rth", "universe_rad"]
 kv.append(general)
+
+io = {}
+io["name"] = "io"
+io["keys"] = ["datadir", "prefix", "parallel_io", "nprocio","fname_var", "fname_samp", "fname_vbal_cov", "fname_vbal", "fname_mom", "fname_nicas", "fname_wind"]
+kv.append(io)
 
 drivers = {}
 drivers["name"] = "drivers"
 drivers["keys"] = ["method", "strategy", "new_normality", "load_samp_local", "load_samp_global", "write_samp_local", "write_samp_global", "write_samp_grids", "new_vbal_cov", "update_vbal_cov", "load_vbal_cov", "write_vbal_cov", "new_vbal", "load_vbal", "write_vbal", "new_var", "update_var", "new_mom", "update_mom", "load_mom", "write_mom", "new_hdiag", "write_hdiag", "write_hdiag_detail", "new_nicas", "load_nicas_local", "load_nicas_global", "write_nicas_local", "write_nicas_global", "write_nicas_grids", "new_wind", "load_wind_local", "write_wind_local", "check_vbal", "check_adjoints", "check_normalization", "check_dirac", "check_randomization", "check_consistency", "check_optimality", "check_set_param", "check_get_param", "check_apply_vbal", "check_apply_stddev", "check_apply_nicas"]
 kv.append(drivers)
 
-files = {}
-files["name"] = "files"
-files["keys"] = ["fname_var", "fname_samp", "fname_vbal_cov", "fname_vbal", "fname_mom", "fname_nicas", "fname_wind"]
-kv.append(files)
-
 model = {}
 model["name"] = "model"
-model["keys"] = ["nl0", "levs", "lev2d", "variables", "io_keys", "io_values"]
+model["keys"] = ["nl0", "levs", "lev2d", "variables"]
 kv.append(model)
 
 ensembleSizes = {}
@@ -178,12 +178,28 @@ for i in range(len(bumps)):
         # Reset grid
         new_bump["grids"] = new_grids
 
+    # Update io_keys/io_values
+    if "io_keys" in old_bump:
+        if not "io" in new_bump:
+            new_bump["io"] = {}
+        alias = []
+        for i in range(len(old_bump["io_keys"])):
+            item = {}
+            item["in code"] = old_bump["io_keys"][i]
+            item["in file"] = old_bump["io_values"][i]
+            alias.append(item)
+        new_bump["io"]["alias"] = alias
+
     # Udpate diag_draw_type
     if "diag_draw_type" in old_bump:
+        if not "sampling" in new_bump:
+            new_bump["sampling"] = {}
         new_bump["sampling"]["draw_type"] = old_bump["diag_draw_type"]
 
     # Udpate samp_interp_type
     if "samp_interp_type" in old_bump:
+        if not "sampling" in new_bump:
+            new_bump["sampling"] = {}
         new_bump["sampling"]["interp_type"] = old_bump["samp_interp_type"]
 
     # Udpate vbal

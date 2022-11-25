@@ -257,7 +257,7 @@ do isub=1,mom%nsub
    do ib=1,bpar%nb
       if (bpar%diag_block(ib)) then
          ! Get group name
-         call nam%io_key_value(bpar%blockname(ib),grpname)
+         call nam%alias(bpar%blockname(ib),grpname)
 
          ! Get group
          grpid = inquire_grp(mpl,ncid,grpname)
@@ -334,7 +334,7 @@ do isub=1,mom%nsub
    do ib=1,bpar%nb
       if (bpar%diag_block(ib)) then
          ! Get group name
-         call nam%io_key_value(bpar%blockname(ib),grpname)
+         call nam%alias(bpar%blockname(ib),grpname)
 
          ! Define group
          grpid = define_grp(mpl,ncid,grpname)
