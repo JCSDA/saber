@@ -183,13 +183,6 @@ type nam_type
    logical :: pos_def_test                                    !< Positive-definiteness test
    logical :: interp_test                                     !< Horizontal NICAS interpolation test
 
-   ! Dirac section
-   integer :: ndir                                            !< Number of Diracs
-   real(kind_real) :: londir(ndirmax)                         !< Diracs longitudes [in degrees]
-   real(kind_real) :: latdir(ndirmax)                         !< Diracs latitudes [in degrees]
-   integer :: levdir(ndirmax)                                 !< Diracs level
-   integer :: ivdir(ndirmax)                                  !< Diracs variable indices
-
    ! Wind section
    character(len=1024) :: wind_streamfunction                 !< Streamfunction variable name
    character(len=1024) :: wind_velocity_potential             !< Velocity potential variable name
@@ -199,6 +192,13 @@ type nam_type
    integer :: wind_nlat                                       !< Number of latitudes for the regular grid
    integer :: wind_nsg                                        !< Half-width of the Savitzky-Golay to compute derivatives
    real(kind_real) :: wind_inflation                          !< Wind inflation to compensate the Savitzky-Golay smoothing
+
+   ! Dirac section
+   integer :: ndir                                            !< Number of Diracs
+   real(kind_real) :: londir(ndirmax)                         !< Diracs longitudes [in degrees]
+   real(kind_real) :: latdir(ndirmax)                         !< Diracs latitudes [in degrees]
+   integer :: levdir(ndirmax)                                 !< Diracs level
+   integer :: ivdir(ndirmax)                                  !< Diracs variable indices
 
    ! Helpers
    logical :: fname_var_used                                  !< Flag activated if a variance file is specified
@@ -426,13 +426,6 @@ nam%nicas_interp_type = 'c0'
 nam%pos_def_test = .false.
 nam%interp_test = .false.
 
-! Dirac section
-nam%ndir = 0
-nam%londir = zero
-nam%latdir = zero
-nam%levdir = 0
-nam%ivdir = 0
-
 ! Wind section
 nam%wind_streamfunction = 'stream_function'
 nam%wind_velocity_potential = 'velocity_potential'
@@ -442,6 +435,13 @@ nam%wind_nlon = 0
 nam%wind_nlat = 0
 nam%wind_nsg = 0
 nam%wind_inflation = one
+
+! Dirac section
+nam%ndir = 0
+nam%londir = zero
+nam%latdir = zero
+nam%levdir = 0
+nam%ivdir = 0
 
 ! Helpers
 nam%fname_var_used = .false.
@@ -962,44 +962,6 @@ if (conf%has('nicas')) then
    if (section%has('interp_test')) call section%get_or_die('interp_test',nam%interp_test)
 end if
 
-! Dirac section
-if (conf%has('dirac')) then
-   call conf%get_or_die('dirac',section)
-   if (section%has('ndir')) call section%get_or_die('ndir',nam%ndir)
-   if (section%has('londir')) then
-      call section%get_or_die('londir',real_array)
-      if (size(real_array)>ndirmax) then
-         write(message,'(a,i4)') 'londir size should be smaller than ',ndirmax
-         call mpl%abort('${subr}$',message)
-      end if
-      nam%londir(1:size(real_array)) = real_array
-   end if
-   if (section%has('latdir')) then
-      call section%get_or_die('latdir',real_array)
-      if (size(real_array)>ndirmax) then
-         write(message,'(a,i4)') 'latdir size should be smaller than ',ndirmax
-         call mpl%abort('${subr}$',message)
-      end if
-      nam%latdir(1:size(real_array)) = real_array
-   end if
-   if (section%has('levdir')) then
-      call section%get_or_die('levdir',integer_array)
-      if (size(real_array)>ndirmax) then
-         write(message,'(a,i4)') 'levdir size should be smaller than ',ndirmax
-         call mpl%abort('${subr}$',message)
-      end if
-      nam%levdir(1:size(integer_array)) = integer_array
-   end if
-   if (section%has('ivdir')) then
-      call section%get_or_die('ivdir',integer_array)
-      if (size(real_array)>ndirmax) then
-         write(message,'(a,i4)') 'ivdir size should be smaller than ',ndirmax
-         call mpl%abort('${subr}$',message)
-      end if
-      nam%ivdir(1:size(integer_array)) = integer_array
-   end if
-end if
-
 ! Wind section
 if (conf%has('wind')) then
    call conf%get_or_die('wind',section)
@@ -1023,6 +985,24 @@ if (conf%has('wind')) then
    if (section%has('wind_nlat')) call section%get_or_die('wind_nlat',nam%wind_nlat)
    if (section%has('wind_nsg')) call section%get_or_die('wind_nsg',nam%wind_nsg)
    if (section%has('wind_inflation')) call section%get_or_die('wind_inflation',nam%wind_inflation)
+end if
+
+! Dirac section
+if (conf%has('dirac')) then
+   call conf%get_or_die('dirac',confs)
+   nam%ndir = 0
+   do iconf=1,size(confs)
+      call confs(iconf)%get_or_die('variable',str)
+      do iv=1,nam%nv
+         if (str==nam%variables(iv)) then
+            nam%ndir = nam%ndir+1
+            nam%ivdir(nam%ndir) = iv
+            call confs(iconf)%get_or_die('longitude',nam%londir(nam%ndir))
+            call confs(iconf)%get_or_die('latitude',nam%latdir(nam%ndir))
+            call confs(iconf)%get_or_die('level',nam%levdir(nam%ndir))
+         end if
+      end do
+   end do
 end if
 
 ! Helpers
@@ -1417,7 +1397,6 @@ end if
 
 ! Dirac section
 if (nam%check_dirac) then
-   if (nam%ndir<1) call mpl%abort('${subr}$','ndir should be positive')
    do idir=1,nam%ndir
       if ((nam%londir(idir)<-pi).or.(nam%londir(idir)>pi)) call mpl%abort('${subr}$','londir should lie between -180 and 180')
       if ((nam%latdir(idir)<-half*pi).or.(nam%latdir(idir)>half*pi)) call mpl%abort('${subr}$','latdir should lie between -90 and 90')

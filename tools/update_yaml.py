@@ -133,11 +133,6 @@ nicas["name"] = "nicas"
 nicas["keys"] = ["resol", "nc1max", "nicas_draw_type", "forced_radii", "pos_def_test", "interp_test"]
 kv.append(nicas)
 
-dirac = {}
-dirac["name"] = "dirac"
-dirac["keys"] = ["ndir", "londir", "latdir", "levdir", "ivdir"]
-kv.append(dirac)
-
 wind = {}
 wind["name"] = "wind"
 wind["keys"] = ["wind_streamfunction", "wind_velocity_potential", "wind_zonal", "wind_meridional", "wind_nlon", "wind_nlat", "wind_nsg", "wind_inflation"]
@@ -182,13 +177,13 @@ for i in range(len(bumps)):
     if "io_keys" in old_bump:
         if not "io" in new_bump:
             new_bump["io"] = {}
-        alias = []
+        vec = []
         for i in range(len(old_bump["io_keys"])):
             item = {}
             item["in code"] = old_bump["io_keys"][i]
             item["in file"] = old_bump["io_values"][i]
-            alias.append(item)
-        new_bump["io"]["alias"] = alias
+            vec.append(item)
+        new_bump["io"]["alias"] = vec
 
     # Udpate diag_draw_type
     if "diag_draw_type" in old_bump:
@@ -283,18 +278,42 @@ for i in range(len(bumps)):
         new_bump["nicas"]["interp_type"] = vec
 
     # Update loc_wgt
-    key = "loc_wgt"
-    if key in old_bump:
+    if "loc_wgt" in old_bump:
         vec = []
-        for item in old_bump[key]:
+        for item in old_bump["loc_wgt"]:
             block = {}
             block["row variables"] = [item.split('-')[0]]
             block["column variables"] = [item.split('-')[1]]
-            block["value"] = old_bump[key][item]
+            block["value"] = old_bump["loc_wgt"][item]
             vec.append(block)
         if not "nicas" in new_bump:
             new_bump["nicas"] = {}
-        new_bump["nicas"][key] = vec
+        new_bump["nicas"]["loc_wgt"] = vec
+
+    # Update dirac section
+    if "ndir" in old_bump:
+        vec = []
+        done = False
+        if "grids" in old_bump:
+            for grid in old_bump["grids"]:
+                if "variables" in grid:
+                    for i in range(old_bump["ndir"]):
+                        dirac_point = {}
+                        dirac_point["longitude"] = old_bump["londir"][i]
+                        dirac_point["latitude"] = old_bump["latdir"][i]
+                        dirac_point["level"] = old_bump["levdir"][i]
+                        dirac_point["variable"] = grid["variables"][old_bump["ivdir"][i]-1]
+                        vec.append(dirac_point)
+                    done = True
+        if not done:
+            for i in range(old_bump["ndir"]):
+                dirac_point = {}
+                dirac_point["longitude"] = old_bump["londir"][i]
+                dirac_point["latitude"] = old_bump["latdir"][i]
+                dirac_point["level"] = old_bump["levdir"][i]
+                dirac_point["variable"] = args.variables[old_bump["ivdir"][i]-1]
+                vec.append(dirac_point)
+        new_bump["dirac"] = vec
 
     # Copy other sections
     for other_section in other_sections:

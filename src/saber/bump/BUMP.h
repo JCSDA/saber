@@ -476,24 +476,6 @@ class NicasSection : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
-class DiracSection : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(DiracSection, oops::Parameters)
-
- public:
-  // Number of Diracs
-  oops::OptionalParameter<int> ndir{"ndir", this};
-  // Diracs longitudes [in degrees]
-  oops::OptionalParameter<std::vector<double>> londir{"londir", this};
-  // Diracs latitudes [in degrees]
-  oops::OptionalParameter<std::vector<double>> latdir{"latdir", this};
-  // Diracs level
-  oops::OptionalParameter<std::vector<int>> levdir{"levdir", this};
-  // Diracs variable indices
-  oops::OptionalParameter<std::vector<int>> ivdir{"ivdir", this};
-};
-
-// -----------------------------------------------------------------------------
-
 class WindSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(WindSection, oops::Parameters)
 
@@ -514,6 +496,22 @@ class WindSection : public oops::Parameters {
   oops::OptionalParameter<int> wind_nsg{"wind_nsg", this};
   // Wind inflation to compensate the Savitzky-Golay smoothing
   oops::OptionalParameter<double> wind_inflation{"wind_inflation", this};
+};
+
+// -----------------------------------------------------------------------------
+
+class DiracPointParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(DiracPointParameters, oops::Parameters)
+
+ public:
+  // Diracs longitudes [in degrees]
+  oops::RequiredParameter<double> longitude{"longitude", this};
+  // Diracs latitudes [in degrees]
+  oops::RequiredParameter<double> latitude{"latitude", this};
+  // Diracs level
+  oops::RequiredParameter<int> level{"level", this};
+  // Diracs variable indices
+  oops::RequiredParameter<std::string> variable{"variable", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -552,10 +550,10 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<LocalProfilesSection> localProfiles{"local profiles", this};
   // NICAS parameters
   oops::OptionalParameter<NicasSection> nicas{"nicas", this};
-  // Dirac parameters
-  oops::OptionalParameter<DiracSection> dirac{"dirac", this};
   // Wind parameters
   oops::OptionalParameter<WindSection> wind{"wind", this};
+  // Dirac parameters
+  oops::OptionalParameter<std::vector<DiracPointParameters>> dirac{"dirac", this};
 
   // External parameters
 

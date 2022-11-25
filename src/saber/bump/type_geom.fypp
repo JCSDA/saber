@@ -1324,6 +1324,9 @@ if (nam%check_dirac.and.(nam%ndir>0)) then
 
    ! Release memory
    call tree_dirac%dealloc
+else
+   ! No dirac
+   geom%ndir = 0
 end if
 
 ! Probe out
