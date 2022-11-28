@@ -3,6 +3,7 @@ dirac_spectralb_and_touv
 dirac_spectralb_from_CS
 dirac_spectralb_from_L15
 dirac_spectraltouv
+saber_block_test_gaussuvtogp
 saber_block_test_spectralb
 saber_block_test_spectralb_and_touv
 saber_block_test_spectralb_from_CS
