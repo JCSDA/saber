@@ -26,6 +26,8 @@ if( oops_FOUND AND atlas_TRANS_FOUND )
 
     if( atlas_VERSION GREATER_EQUAL 0.31.0 )
         list(APPEND spectralb_src_files_list
+        GaussUVToGP.cc
+        GaussUVToGP.h
         SpectralToGaussUV.cc
         SpectralToGaussUV.h
         )
