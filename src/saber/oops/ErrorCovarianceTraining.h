@@ -330,16 +330,16 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
 
       // Add members of ensemble 2
       if (ens2) {
-        const std::string method = drivers.method.value().get_value_or("");
-        if (method == "hyb-rnd" || method == "hyb-ens") {
+        bool compute_cov2 = drivers.compute_cov2.value().get_value_or(false);
+        bool compute_cor2 = drivers.compute_cor2.value().get_value_or(false);
+        bool compute_loc2 = drivers.compute_loc2.value().get_value_or(false);
+        if (compute_cov2 || compute_cor2 || compute_loc2) {
           oops::Log::info() << "Info     : --- Add members of ensemble 2" << std::endl;
           for (size_t ie = 0; ie < ens2_ne; ++ie) {
             oops::Log::info() << "Info     :       Member " << ie+1 << " / " << ens2_ne
                               << std::endl;
             bump->addMember((*ens2)[ie].fieldSet(), ie, 2);
           }
-        } else {
-          ABORT("a second ensemble is incompatible with this method");
         }
       }
 

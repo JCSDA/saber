@@ -970,10 +970,10 @@ do il0=1,geom(2)%nl0
                wgt = one ! TODO: test different kinds of weights
                a = a+wgt*loc1_blk%fit(jc3,jc4,jl0r,il0)**2*avg1_blk%m11sq(jc3,jc4,jl0r,il0)
                bc = bc+wgt*loc1_blk%fit(jc3,jc4,jl0r,il0)*avg1_blk%m11(jc3,jc4,jl0r,il0)*avg2_blk%m11(jc3,jc4,jl0r,il0)
-               select case (trim(nam%method))
-               case ('hyb-rnd')
+               select case (nam%hybrid_source)
+               case ('randomized static')
                   d = d+wgt*avg2_blk%m11(jc3,jc4,jl0r,il0)**2
-               case ('hyb-ens')
+               case ('lowres ensemble')
                   d = d+wgt*avg2_blk%m11sq(jc3,jc4,jl0r,il0)
                end select
                e = e+wgt*loc1_blk%fit(jc3,jc4,jl0r,il0)*avg1_blk%m11asysq(jc3,jc4,jl0r,il0)

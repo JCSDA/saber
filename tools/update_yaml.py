@@ -75,7 +75,7 @@ kv.append(io)
 
 drivers = {}
 drivers["name"] = "drivers"
-drivers["keys"] = ["method", "strategy", "new_normality", "load_samp_local", "load_samp_global", "write_samp_local", "write_samp_global", "write_samp_grids", "new_vbal_cov", "update_vbal_cov", "load_vbal_cov", "write_vbal_cov", "new_vbal", "load_vbal", "write_vbal", "new_var", "update_var", "new_mom", "update_mom", "load_mom", "write_mom", "new_hdiag", "write_hdiag", "write_hdiag_detail", "new_nicas", "load_nicas_local", "load_nicas_global", "write_nicas_local", "write_nicas_global", "write_nicas_grids", "new_wind", "load_wind_local", "write_wind_local", "check_vbal", "check_adjoints", "check_normalization", "check_dirac", "check_randomization", "check_consistency", "check_optimality", "check_set_param", "check_get_param", "check_apply_vbal", "check_apply_stddev", "check_apply_nicas"]
+drivers["keys"] = ["strategy", "new_normality", "load_samp_local", "load_samp_global", "write_samp_local", "write_samp_global", "write_samp_grids", "new_vbal_cov", "update_vbal_cov", "load_vbal_cov", "write_vbal_cov", "new_vbal", "load_vbal", "write_vbal", "new_var", "update_var", "new_mom", "update_mom", "load_mom", "write_mom", "new_hdiag", "write_hdiag", "write_hdiag_detail", "new_nicas", "load_nicas_local", "load_nicas_global", "write_nicas_local", "write_nicas_global", "write_nicas_grids", "new_wind", "load_wind_local", "write_wind_local", "check_vbal", "check_adjoints", "check_normalization", "check_dirac", "check_randomization", "check_consistency", "check_optimality", "check_set_param", "check_get_param", "check_apply_vbal", "check_apply_stddev", "check_apply_nicas"]
 kv.append(drivers)
 
 model = {}
@@ -211,7 +211,6 @@ for i in range(len(bumps)):
         new_bump["io"]["nicas file"] = old_bump["fname_nicas"]
     if "fname_wind" in old_bump:
         new_bump["io"]["psichitouv file"] = old_bump["fname_wind"]
-
     if "io_keys" in old_bump:
         vec = []
         for i in range(len(old_bump["io_keys"])):
@@ -220,6 +219,33 @@ for i in range(len(bumps)):
             item["in file"] = old_bump["io_values"][i]
             vec.append(item)
         new_bump["io"]["alias"] = vec
+
+    # Update drivers section
+    if "method" in old_bump:
+        if old_bump["method"] == "cor":
+            new_bump["drivers"]["compute covariance"] = True
+            new_bump["drivers"]["compute correlation"] = True
+        if old_bump["method"] == "loc":
+            new_bump["drivers"]["compute covariance"] = True
+            new_bump["drivers"]["compute correlation"] = True
+            new_bump["drivers"]["compute localization"] = True
+        if old_bump["method"] == "hyb-rnd":
+            new_bump["drivers"]["compute covariance"] = True
+            new_bump["drivers"]["compute lowres covariance"] = True
+            new_bump["drivers"]["compute correlation"] = True
+            new_bump["drivers"]["compute lowres correlation"] = True
+            new_bump["drivers"]["compute localization"] = True
+            new_bump["drivers"]["compute hybrid weights"] = True
+            new_bump["drivers"]["hybrid source"] = "randomized static"
+        if old_bump["method"] == "hyb-ens":
+            new_bump["drivers"]["compute covariance"] = True
+            new_bump["drivers"]["compute lowres covariance"] = True
+            new_bump["drivers"]["compute correlation"] = True
+            new_bump["drivers"]["compute lowres correlation"] = True
+            new_bump["drivers"]["compute localization"] = True
+            new_bump["drivers"]["compute lowres localization"] = True
+            new_bump["drivers"]["compute hybrid weights"] = True
+            new_bump["drivers"]["hybrid source"] = "lowres ensemble"
 
     # Udpate diag_draw_type
     if "diag_draw_type" in old_bump:

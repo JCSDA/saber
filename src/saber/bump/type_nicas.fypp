@@ -861,7 +861,7 @@ type(rng_type),intent(inout) :: rng       !< Random number generator
 type(nam_type),intent(inout) :: nam       !< Namelist
 type(geom_type),intent(inout) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar        !< Block parameters
-type(ens_type),intent(in) :: ens          !< Ensemble
+type(ens_type),intent(in),optional :: ens !< Ensemble
 
 ! Local variables
 integer :: ib,icmp
@@ -878,7 +878,11 @@ if (nam%check_adjoints) then
    call mpl%flush
    write(mpl%info,'(a)') '--- Test NICAS adjoint'
    call mpl%flush
-   call nicas%test_adjoint(mpl,rng,nam,geom,bpar,ens)
+   if (present(ens)) then
+      call nicas%test_adjoint(mpl,rng,nam,geom,bpar,ens)
+   else
+      call nicas%test_adjoint(mpl,rng,nam,geom,bpar)
+   end if
 
    do ib=1,bpar%nbe
       if (bpar%nicas_block(ib)) then
@@ -928,7 +932,11 @@ if (nam%check_dirac) then
    call mpl%flush
    write(mpl%info,'(a)') '--- Apply NICAS to diracs'
    call mpl%flush
-   call nicas%test_dirac(mpl,nam,geom,bpar,ens)
+   if (present(ens)) then
+      call nicas%test_dirac(mpl,nam,geom,bpar,ens)
+   else
+      call nicas%test_dirac(mpl,nam,geom,bpar)
+   end if
 
    ! Apply NICAS block to diracs
    do ib=1,bpar%nbe
@@ -1491,7 +1499,7 @@ type(rng_type),intent(inout) :: rng       !< Random number generator
 type(nam_type),intent(in) :: nam          !< Namelist
 type(geom_type),intent(in) :: geom        !< Geometry
 type(bpar_type),intent(in) :: bpar        !< Block parameters
-type(ens_type),intent(in) :: ens          !< Ensemble
+type(ens_type),intent(in),optional :: ens !< Ensemble
 
 ! Local variables
 real(kind_real) :: sum1,sum2
@@ -1507,7 +1515,8 @@ logical :: lbens
 @:probe_in()
 
 ! Initialization
-lbens = (allocated(ens%mem).and.(trim(nam%method)/='cor'))
+lbens = present(ens)
+if (lbens) lbens = allocated(ens%mem)
 
 ! Allocation
 if (lbens) then
@@ -1571,12 +1580,12 @@ subroutine nicas_test_dirac(nicas,mpl,nam,geom,bpar,ens)
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(inout) :: nicas !< NICAS data
-type(mpl_type),intent(inout) :: mpl      !< MPI data
-type(nam_type),intent(in) :: nam         !< Namelist
-type(geom_type),intent(in) :: geom       !< Geometry
-type(bpar_type),intent(in) :: bpar       !< Block parameters
-type(ens_type),intent(in) :: ens         !< Ensemble
+class(nicas_type),intent(inout) :: nicas  !< NICAS data
+type(mpl_type),intent(inout) :: mpl       !< MPI data
+type(nam_type),intent(in) :: nam          !< Namelist
+type(geom_type),intent(in) :: geom        !< Geometry
+type(bpar_type),intent(in) :: bpar        !< Block parameters
+type(ens_type),intent(in),optional :: ens !< Ensemble
 
 ! Local variables
 integer :: ic0a,idir
@@ -1590,7 +1599,8 @@ logical :: lbens
 @:probe_in()
 
 ! Initialization
-lbens = (allocated(ens%mem).and.(trim(nam%method)/='cor'))
+lbens = present(ens)
+if (lbens) lbens = allocated(ens%mem)
 
 ! Allocation
 allocate(fld_c0a(geom%nc0a,geom%nl0,nam%nv))

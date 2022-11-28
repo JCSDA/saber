@@ -255,8 +255,10 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
     keyBUMP_.push_back(keyBUMP);
 
     // Second geometry
-    std::string method = drivers.method.value().get_value_or("");
-    if (method == "hyb-ens" || method == "hyb-rnd") {
+    bool compute_cov2 = drivers.compute_cov2.value().get_value_or(false);
+    bool compute_cor2 = drivers.compute_cor2.value().get_value_or(false);
+    bool compute_loc2 = drivers.compute_loc2.value().get_value_or(false);
+    if (compute_cov2 || compute_cor2 || compute_loc2) {
       bump_second_geometry_f90(keyBUMP, functionSpace2.get(), extraFields2.get());
     }
   }

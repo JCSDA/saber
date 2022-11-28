@@ -118,8 +118,22 @@ class DriversSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(DriversSection, oops::Parameters)
 
  public:
-  // Localization/hybridization to compute ('cor', 'loc', 'hyb-rnd' or 'hyb-ens')
-  oops::OptionalParameter<std::string> method{"method", this};
+  // Compute covariance, ensemble 1
+  oops::OptionalParameter<bool> compute_cov1{"compute covariance", this};
+  // Compute covariance, ensemble 2
+  oops::OptionalParameter<bool> compute_cov2{"compute lowres covariance", this};
+  // Compute correlation, ensemble 1
+  oops::OptionalParameter<bool> compute_cor1{"compute correlation", this};
+  // Compute correlation, ensemble 2
+  oops::OptionalParameter<bool> compute_cor2{"compute lowres correlation", this};
+  // Compute localization, ensemble 1
+  oops::OptionalParameter<bool> compute_loc1{"compute localization", this};
+  // Compute localization, ensemble 2
+  oops::OptionalParameter<bool> compute_loc2{"compute lowres localization", this};
+  // Compute hybrid weights
+  oops::OptionalParameter<bool> compute_hyb{"compute hybrid weights", this};
+  // Hybrid term source ('randomized static' or 'lowres ensemble')
+  oops::OptionalParameter<std::string> hybrid_source{"hybrid source", this};
   // Localization strategy ('diag_all', 'common', 'common_weighted', 'specific_univariate' or
   // 'specific_multivariate')
   oops::OptionalParameter<std::string> strategy{"strategy", this};
