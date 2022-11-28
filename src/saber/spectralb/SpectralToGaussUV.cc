@@ -180,6 +180,9 @@ atlas::Field convertUVToFieldSetAD(const atlas::FieldSet & fset) {
 
 // -----------------------------------------------------------------------------
 
+// Create inner variables from outer variables, excluding winds, and adding either
+// (vorticity and divergence) or (stream function and velocity potential), depending on
+// the value of params.useStreamFunctionVelocityPotential.
 oops::Variables createInnerVars(const SpectralToGaussUVParameters & params,
                                 const oops::Variables & outerVars) {
   oops::Variables innerVars;
