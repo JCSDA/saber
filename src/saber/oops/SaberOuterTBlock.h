@@ -7,9 +7,9 @@
 
 #pragma once
 
-#include <map>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "atlas/field.h"
@@ -38,7 +38,7 @@ class SaberOuterTBlock {
   typedef oops::Geometry<MODEL>  Geometry_;
   typedef oops::Increment<MODEL> Increment_;
   typedef oops::State<MODEL>     State_;
-  typedef typename std::map<std::string, const oops::GeometryData*> GeometryDataMap_;
+  typedef typename std::unordered_map<std::string, const oops::GeometryData*> GeometryDataMap_;
 
  public:
   typedef SaberOuterTBlockParameters<MODEL> Parameters_;
@@ -143,7 +143,7 @@ SaberOuterTBlock<MODEL>::SaberOuterTBlock(const Geometry_ & geom,
     // Adjoint test
 
     // Variables sizes map
-    std::map<std::string, size_t> innerVariableSizeMap;
+    std::unordered_map<std::string, size_t> innerVariableSizeMap;
     for (const auto & var : innerVars.variables()) {
       innerVariableSizeMap[var] = geom.variableSizes(oops::Variables({var}))[0];
     }
@@ -157,7 +157,7 @@ SaberOuterTBlock<MODEL>::SaberOuterTBlock(const Geometry_ & geom,
     atlas::FieldSet innerFsetSave = util::copyFieldSet(innerFset);
 
     // Variables sizes map
-    std::map<std::string, size_t> outerVariableSizeMap;
+    std::unordered_map<std::string, size_t> outerVariableSizeMap;
     for (const auto & var : outerVars.variables()) {
       outerVariableSizeMap[var] = geom.variableSizes(oops::Variables({var}))[0];
     }

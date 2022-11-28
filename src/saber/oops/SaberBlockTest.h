@@ -7,9 +7,9 @@
 
 #pragma once
 
-#include <map>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <boost/ptr_container/ptr_vector.hpp>
@@ -63,11 +63,11 @@ template <typename MODEL> class SaberBlockTestParameters
 // -----------------------------------------------------------------------------
 
 template <typename MODEL> class SaberBlockTest : public oops::Application {
-  typedef oops::Geometry<MODEL>                                     Geometry_;
-  typedef oops::Increment<MODEL>                                    Increment_;
-  typedef typename boost::ptr_vector<SaberOuterTBlock<MODEL>>       SaberOuterTBlockVec_;
-  typedef oops::State<MODEL>                                        State_;
-  typedef typename std::map<std::string, const oops::GeometryData*> GeometryDataMap_;
+  typedef oops::Geometry<MODEL>                               Geometry_;
+  typedef oops::Increment<MODEL>                              Increment_;
+  typedef typename boost::ptr_vector<SaberOuterTBlock<MODEL>> SaberOuterTBlockVec_;
+  typedef oops::State<MODEL>                                  State_;
+  typedef typename std::unordered_map<std::string, const oops::GeometryData*> GeometryDataMap_;
 
  public:
   static const std::string classname() {return "saber::SaberBlockTest";}

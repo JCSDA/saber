@@ -7,9 +7,9 @@
 
 #pragma once
 
-#include <map>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "atlas/field.h"
@@ -55,14 +55,14 @@ template <typename MODEL>
 class ErrorCovariance : public oops::ModelSpaceCovarianceBase<MODEL>,
                         public util::Printable,
                         private util::ObjectCounter<ErrorCovariance<MODEL>> {
-  typedef oops::Geometry<MODEL>                                     Geometry_;
-  typedef oops::Increment<MODEL>                                    Increment_;
-  typedef typename boost::ptr_vector<SaberOuterTBlock<MODEL>>       SaberOuterTBlockVec_;
-  typedef typename SaberOuterTBlockVec_::iterator                   iter_;
-  typedef typename SaberOuterTBlockVec_::const_iterator             icst_;
-  typedef typename SaberOuterTBlockVec_::const_reverse_iterator     ircst_;
-  typedef oops::State<MODEL>                                        State_;
-  typedef typename std::map<std::string, const oops::GeometryData*> GeometryDataMap_;
+  typedef oops::Geometry<MODEL>                                 Geometry_;
+  typedef oops::Increment<MODEL>                                Increment_;
+  typedef typename boost::ptr_vector<SaberOuterTBlock<MODEL>>   SaberOuterTBlockVec_;
+  typedef typename SaberOuterTBlockVec_::iterator               iter_;
+  typedef typename SaberOuterTBlockVec_::const_iterator         icst_;
+  typedef typename SaberOuterTBlockVec_::const_reverse_iterator ircst_;
+  typedef oops::State<MODEL>                                    State_;
+  typedef typename std::unordered_map<std::string, const oops::GeometryData*> GeometryDataMap_;
 
  public:
   typedef ErrorCovarianceParameters<MODEL> Parameters_;

@@ -7,9 +7,9 @@
 
 #pragma once
 
-#include <map>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "atlas/field.h"
@@ -61,7 +61,7 @@ class SaberCentralTBlock {
   typedef oops::IncrementEnsembleFromStatesParameters<MODEL> IncrementEnsembleFromStatesParameters_;
   typedef oops::IncrementEnsembleParameters<MODEL>           IncrementEnsembleParameters_;
   typedef oops::IncrementEnsemble<MODEL>                     Ensemble_;
-  typedef typename std::map<std::string, const oops::GeometryData*> GeometryDataMap_;
+  typedef typename std::unordered_map<std::string, const oops::GeometryData*> GeometryDataMap_;
 
  public:
   typedef SaberCentralTBlockParameters<MODEL> Parameters_;
@@ -173,7 +173,7 @@ SaberCentralTBlock<MODEL>::SaberCentralTBlock(const Geometry_ & geom,
     // Adjoint test
 
     // Variables sizes map
-    std::map<std::string, size_t> variableSizeMap;
+    std::unordered_map<std::string, size_t> variableSizeMap;
     for (const auto & var : vars.variables()) {
       variableSizeMap[var] = geom.variableSizes(oops::Variables({var}))[0];
     }

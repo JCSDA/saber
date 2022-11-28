@@ -7,10 +7,10 @@
 
 #pragma once
 
-#include <map>
 #include <memory>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 
 #include "atlas/field.h"
 
@@ -29,10 +29,10 @@ namespace saber {
 
 template<typename MODEL>
 class Localization : public oops::LocalizationBase<MODEL> {
-  typedef oops::Geometry<MODEL>                                     Geometry_;
-  typedef oops::Increment<MODEL>                                    Increment_;
-  typedef oops::State<MODEL>                                        State_;
-  typedef typename std::map<std::string, const oops::GeometryData*> GeometryDataMap_;
+  typedef oops::Geometry<MODEL>  Geometry_;
+  typedef oops::Increment<MODEL> Increment_;
+  typedef oops::State<MODEL>     State_;
+  typedef typename std::unordered_map<std::string, const oops::GeometryData*> GeometryDataMap_;
 
  public:
   Localization(const Geometry_ &,
