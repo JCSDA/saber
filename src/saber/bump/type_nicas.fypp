@@ -14,7 +14,7 @@ use tools_func, only: fletcher32,sphere_dist,zss_sum
 use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: create_file,open_file,define_grp,define_dim,inquire_dim,check_dim,define_var,put_var,close_file
 use tools_qsort, only: qsort
-use tools_repro, only: rth
+use tools_repro, only: repro_th
 use type_bpar, only: bpar_type
 use type_cmat, only: cmat_type
 use type_com, only: com_type
@@ -1538,7 +1538,7 @@ write(mpl%info,'(a,e15.8,a,e15.8,a,e15.8)') '--- Full NICAS adjoint test values:
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
 call mpl%flush
 write(mpl%test,'(a,l1)') '    Full NICAS adjoint test result:                        ', &
- & two*abs(sum1-sum2)/abs(sum1+sum2)<rth
+ & two*abs(sum1-sum2)/abs(sum1+sum2)<repro_th
 call mpl%flush
 if (lbens) then
    call mpl%dot_prod(fld1_bens,fld2_save,sum1)
@@ -1547,7 +1547,7 @@ if (lbens) then
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
    call mpl%flush
    write(mpl%test,'(a,l1)') '    Ensemble B adjoint test result:                        ', &
- & two*abs(sum1-sum2)/abs(sum1+sum2)<rth
+ & two*abs(sum1-sum2)/abs(sum1+sum2)<repro_th
    call mpl%flush
 end if
 
@@ -1735,7 +1735,7 @@ nam%ens1_ne = ens1_ne
 
 if (mpl%main) then
    ! Create file
-   ncid = create_file(mpl,trim(nam%prefix)//'randomization',0)
+   ncid = create_file(mpl,trim(nam%data_prefix)//'randomization',0)
 
    ! Define dimensions
    ntest_id = define_dim(mpl,ncid,'ntest',ntest)

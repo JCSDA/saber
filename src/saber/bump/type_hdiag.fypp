@@ -161,10 +161,10 @@ character(len=1024) :: grpname
 ! Initialization
 ic2a(0) = mpl%msv%vali
 if (mpl%main) ic2a(0) = 0
-filename(0) = trim(nam%prefix)//'diag'
+filename(0) = trim(nam%data_prefix)//'diag'
 do ildwv=1,nam%nldwv
    ic2a(ildwv) = samp(1)%ldwv_to_c2a(ildwv)
-   filename(ildwv) = trim(nam%prefix)//'diag_'//trim(nam%name_ldwv(ildwv))
+   filename(ildwv) = trim(nam%data_prefix)//'diag_'//trim(nam%name_ldwv(ildwv))
 end do
 
 do ildwv=0,nam%nldwv

@@ -174,11 +174,11 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   }
 
   // Copy universe radius
-  atlas::FieldSet universe_rad = atlas::FieldSet();
+  atlas::FieldSet universe_radius = atlas::FieldSet();
   for (const auto & fset : fsetVec1) {
     if (fset.name() == "universe radius") {
       for (const auto & field : fset) {
-        universe_rad.add(field);
+        universe_radius.add(field);
       }
     }
   }
@@ -251,7 +251,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
     oops::Log::info() << "Info     : Create BUMP instance " << jgrid << std::endl;
     int keyBUMP = 0;
     bump_create_f90(keyBUMP, &comm, functionSpace1.get(), extraFields1.get(),
-                    conf, grids[jgrid], universe_rad.get());
+                    conf, grids[jgrid], universe_radius.get());
     keyBUMP_.push_back(keyBUMP);
 
     // Second geometry

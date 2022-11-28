@@ -65,12 +65,12 @@ kv = []
 
 general = {}
 general["name"] = "general"
-general["keys"] = ["colorlog", "testing", "default_seed", "repro", "rth", "universe_rad"]
+general["keys"] = ["testing"]
 kv.append(general)
 
 io = {}
 io["name"] = "io"
-io["keys"] = ["datadir", "prefix", "parallel_io", "nprocio","fname_var", "fname_samp", "fname_vbal_cov", "fname_vbal", "fname_mom", "fname_nicas", "fname_wind"]
+io["keys"] = []
 kv.append(io)
 
 drivers = {}
@@ -138,13 +138,18 @@ wind["name"] = "wind"
 wind["keys"] = ["wind_streamfunction", "wind_velocity_potential", "wind_zonal", "wind_meridional", "wind_nlon", "wind_nlat", "wind_nsg", "wind_inflation"]
 kv.append(wind)
 
+sections = ["general", "io", "drivers", "model", "sampling", "localization", "vertical balance", "variance", "optimality test", "fit", "local profiles", "nicas", "wind"]
 other_sections = ["ensemble", "lowres ensemble", "operators application"]
 
 # Upgrade bump sections
 for i in range(len(bumps)):
+    # Prepare new_bump
+    new_bump = {}
+    for section in sections:
+        new_bump[section] = {}
+
     # Copy existing keys
     old_bump = bumps[i]
-    new_bump = {}
     for j in range(len(kv)):
         section = {}
         for item in kv[j]["keys"]:
@@ -173,10 +178,41 @@ for i in range(len(bumps)):
         # Reset grid
         new_bump["grids"] = new_grids
 
-    # Update io_keys/io_values
+    # Update general section
+    if "colorlog" in old_bump:
+        new_bump["general"]["color log"] = old_bump["colorlog"]
+    if "default_seed" in old_bump:
+        new_bump["general"]["default seed"] = old_bump["default_seed"]
+    if "repro" in old_bump:
+        new_bump["general"]["reproducibility operators"] = old_bump["repro"]
+    if "rth" in old_bump:
+        new_bump["general"]["reproducibility threshold"] = old_bump["rth"]
+    if "universe_rad" in old_bump:
+        new_bump["general"]["universe radius"] = old_bump["universe_rad"]
+
+    # Update io section
+    if "datadir" in old_bump:
+        new_bump["io"]["data directory"] = old_bump["datadir"]
+    if "prefix" in old_bump:
+        new_bump["io"]["data prefix"] = old_bump["prefix"]
+    if "parallel_io" in old_bump:
+        new_bump["io"]["parallel netcdf"] = old_bump["parallel_io"]
+    if "nprocio" in old_bump:
+        new_bump["io"]["io task number"] = old_bump["nprocio"]
+    if "fname_samp" in old_bump:
+        new_bump["io"]["sampling file"] = old_bump["fname_samp"]
+    if "fname_vbal_cov" in old_bump:
+        new_bump["io"]["vertical covariance file"] = old_bump["fname_vbal_cov"]
+    if "fname_vbal" in old_bump:
+        new_bump["io"]["vertical balance file"] = old_bump["fname_vbal"]
+    if "fname_mom" in old_bump:
+        new_bump["io"]["moments file"] = old_bump["fname_mom"]
+    if "fname_nicas" in old_bump:
+        new_bump["io"]["nicas file"] = old_bump["fname_nicas"]
+    if "fname_wind" in old_bump:
+        new_bump["io"]["psichitouv file"] = old_bump["fname_wind"]
+
     if "io_keys" in old_bump:
-        if not "io" in new_bump:
-            new_bump["io"] = {}
         vec = []
         for i in range(len(old_bump["io_keys"])):
             item = {}
@@ -187,14 +223,10 @@ for i in range(len(bumps)):
 
     # Udpate diag_draw_type
     if "diag_draw_type" in old_bump:
-        if not "sampling" in new_bump:
-            new_bump["sampling"] = {}
         new_bump["sampling"]["draw_type"] = old_bump["diag_draw_type"]
 
     # Udpate samp_interp_type
     if "samp_interp_type" in old_bump:
-        if not "sampling" in new_bump:
-            new_bump["sampling"] = {}
         new_bump["sampling"]["interp_type"] = old_bump["samp_interp_type"]
 
     # Udpate vbal
@@ -229,8 +261,6 @@ for i in range(len(bumps)):
                             block["id_coef"] = vbal_id_coef[ib]
                         vbal.append(block)
                 ib += 1
-        if not "vertical balance" in new_bump:
-            new_bump["vertical balance"] = {}
         new_bump["vertical balance"]["vbal"] = vbal
 
     # Update stddev and var_rhflt
@@ -245,8 +275,6 @@ for i in range(len(bumps)):
                 else:
                     block["profile"] = old_bump[key][item]
                 vec.append(block)
-            if not "variance" in new_bump:
-                new_bump["variance"] = {}
             new_bump["variance"][key] = vec
 
     # Update rh, rv, min_lev and max_lev
@@ -261,8 +289,6 @@ for i in range(len(bumps)):
                 else:
                     block["profile"] = old_bump[key][item]
                 vec.append(block)
-            if not "nicas" in new_bump:
-                new_bump["nicas"] = {}
             new_bump["nicas"][key] = vec
 
     # Update nicas_interp_type
@@ -273,8 +299,6 @@ for i in range(len(bumps)):
             block["variables"] = [item]
             block["type"] = old_bump["nicas_interp_type"][item]
             vec.append(block)
-        if not "nicas" in new_bump:
-            new_bump["nicas"] = {}
         new_bump["nicas"]["interp_type"] = vec
 
     # Update loc_wgt
@@ -286,8 +310,6 @@ for i in range(len(bumps)):
             block["column variables"] = [item.split('-')[1]]
             block["value"] = old_bump["loc_wgt"][item]
             vec.append(block)
-        if not "nicas" in new_bump:
-            new_bump["nicas"] = {}
         new_bump["nicas"]["loc_wgt"] = vec
 
     # Update dirac section
@@ -314,6 +336,11 @@ for i in range(len(bumps)):
                 dirac_point["variable"] = args.variables[old_bump["ivdir"][i]-1]
                 vec.append(dirac_point)
         new_bump["dirac"] = vec
+
+    # Remove empty sections
+    for section in sections:
+        if not new_bump[section]:
+            del new_bump[section]
 
     # Copy other sections
     for other_section in other_sections:

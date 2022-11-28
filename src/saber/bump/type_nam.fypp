@@ -32,12 +32,24 @@ integer,parameter :: niokvmax = 99                !< Maximum number of I/O key-v
 integer,parameter :: nvbalmax = nvmax*(nvmax-1)/2 !< Maximum number of vertical balance blocks
 
 type nam_type
-   ! General section
-   logical :: colorlog                                        !< Add colors to the log (for display on terminal)
    logical :: default_seed                                    !< Default seed for random numbers
-   logical :: repro                                           !< Inter-compilers reproducibility
-   real(kind_real) :: rth                                     !< Reproducibility threshold
-   real(kind_real) :: universe_rad                            !< Universe radius [in meters]
+   logical :: repro_ops                                       !< Reproducibility operators
+   real(kind_real) :: repro_th                                !< Reproducibility threshold
+   real(kind_real) :: universe_radius                         !< Universe radius [in meters]
+
+   ! I/O section
+   character(len=1024) :: data_directory                      !< Data directory
+   character(len=1024) :: data_prefix                         !< Data prefix
+   logical :: parallel_netcdf                                 !< Parallel NetCDF I/O
+   integer :: nprocio                                         !< Number of I/O tasks
+   character(len=1024),dimension(niokvmax) :: alias_code      !< Alias keys in code
+   character(len=1024),dimension(niokvmax) :: alias_file      !< Alias values in file
+   character(len=1024) :: fname_samp                          !< Sampling file
+   character(len=1024),dimension(0:nsubmax) :: fname_vbal_cov !< Vertical covariance files
+   character(len=1024) :: fname_vbal                          !< Vertical balance file
+   character(len=1024),dimension(0:nsubmax) :: fname_mom      !< Moments files
+   character(len=1024) :: fname_nicas                         !< NICAS file
+   character(len=1024) :: fname_wind                          !< Wind transform file
 
    ! Drivers section
    character(len=1024) :: method                              !< Localization/hybridization to compute ('cor', 'loc', 'hyb-rnd' or 'hyb-ens')
@@ -81,24 +93,8 @@ type nam_type
    logical :: check_consistency                               !< Test HDIAG-NICAS consistency
    logical :: check_optimality                                !< Test HDIAG optimality
 
-   ! IO section
-   character(len=1024) :: datadir                             !< Data directory
-   character(len=1024) :: prefix                              !< Files prefix
-   logical :: parallel_io                                     !< Parallel NetCDF I/O
-   integer :: nprocio                                         !< Number of I/O processors
-   character(len=1024),dimension(niokvmax) :: alias_code      !< Alias keys in code
-   character(len=1024),dimension(niokvmax) :: alias_file      !< Alias values in file
-   character(len=1024),dimension(0:nsubmax) :: fname_var      !< Variance files
-   character(len=1024) :: fname_samp                          !< Sampling file
-   character(len=1024),dimension(0:nsubmax) :: fname_vbal_cov !< Vertical covariance files
-   character(len=1024) :: fname_vbal                          !< Vertical balance file
-   character(len=1024),dimension(0:nsubmax) :: fname_mom      !< Moments files
-   character(len=1024) :: fname_nicas                         !< NICAS file
-   character(len=1024) :: fname_wind                          !< Wind transform file
-
    ! Model section
    integer :: nl0                                             !< Number of levels
-   integer :: levs(nl0max)                                    !< Levels
    character(len=1024) :: lev2d                               !< Level for 2D variables ('first' or 'last')
    integer :: nv                                              !< Number of variables
    character(len=1024),dimension(nvmax) :: variables          !< Variables names
@@ -201,7 +197,6 @@ type nam_type
    integer :: ivdir(ndirmax)                                  !< Diracs variable indices
 
    ! Helpers
-   logical :: fname_var_used                                  !< Flag activated if a variance file is specified
    logical :: fname_vbal_cov_used                             !< Flag activated if a vertical covariance file is specified
    logical :: fname_mom_used                                  !< Flag activated if a moments file is specified
    logical,allocatable :: vbal_block(:,:)                     !< Activation of vertical balance
@@ -260,11 +255,10 @@ integer :: isub,il0,iv,i,ildwv
 @:probe_in()
 
 ! General section default
-nam%colorlog = .false.
 nam%default_seed = .true.
-nam%repro = .true.
-nam%rth = 1.0e-12_kind_real
-nam%universe_rad = pi*req
+nam%repro_ops = .true.
+nam%repro_th = 1.0e-12_kind_real
+nam%universe_radius = pi*req
 
 ! Drivers section default
 nam%method = ''
@@ -308,17 +302,14 @@ nam%check_randomization = .false.
 nam%check_consistency = .false.
 nam%check_optimality = .false.
 
-! IO section default
-nam%datadir = '.'
-nam%prefix = ''
-nam%parallel_io = .true.
+! I/O section default
+nam%data_directory = '.'
+nam%data_prefix = ''
+nam%parallel_netcdf = .true.
 nam%nprocio = min(mpl%nproc,nprociomax)
 do i=1,niokvmax
    nam%alias_code(i) = ''
    nam%alias_file(i) = ''
-end do
-do isub=0,nsubmax
-   nam%fname_var(isub) = ''
 end do
 nam%fname_samp = ''
 do isub=0,nsubmax
@@ -333,9 +324,6 @@ nam%fname_wind = ''
 
 ! Model section default
 nam%nl0 = 0
-do il0=1,nl0max
-   nam%levs(il0) = il0
-end do
 nam%lev2d = 'first'
 nam%nv = 0
 do iv=1,nvmax
@@ -444,7 +432,6 @@ nam%levdir = 0
 nam%ivdir = 0
 
 ! Helpers
-nam%fname_var_used = .false.
 nam%fname_vbal_cov_used = .false.
 nam%fname_mom_used = .false.
 
@@ -471,7 +458,7 @@ integer :: iv,jv,iconf,rank,itest,it,ivv,jvv
 integer,allocatable :: integer_array(:),vbal_order(:)
 real(kind_real) :: real_scalar
 real(kind_real),allocatable :: real_array(:),loc_wgt(:,:)
-logical :: colorlog,found,valid
+logical :: color_log,found,valid
 logical,allocatable :: logical_array(:)
 character(len=1024) :: message,param,blockname
 character(len=:),allocatable :: str,str_bal,str_unbal
@@ -488,9 +475,9 @@ type(fckit_configuration),allocatable :: confs(:)
 ! General section
 if (conf%has('general')) then
    call conf%get_or_die('general',section)
-   if (section%has('colorlog')) then
-      call section%get_or_die('colorlog',colorlog)
-      if (colorlog) then
+   if (section%has('color log')) then
+      call section%get_or_die('color log',color_log)
+      if (color_log) then
          mpl%black = char(27)//'[0;0m'
          mpl%green = char(27)//'[0;32m'
          mpl%peach = char(27)//'[1;91m'
@@ -500,10 +487,70 @@ if (conf%has('general')) then
       end if
    end if
    if (section%has('testing')) call section%get_or_die('testing',mpl%testing)
-   if (section%has('default_seed')) call section%get_or_die('default_seed',nam%default_seed)
-   if (section%has('repro')) call section%get_or_die('repro',nam%repro)
-   if (section%has('rth')) call section%get_or_die('rth',nam%rth)
-   if (section%has('universe_rad')) call section%get_or_die('universe_rad',nam%universe_rad)
+   if (section%has('default seed')) call section%get_or_die('default seed',nam%default_seed)
+   if (section%has('reproducibility operators')) call section%get_or_die('reproducibility operators',nam%repro_ops)
+   if (section%has('reproducibility threshold')) call section%get_or_die('reproducibility threshold',nam%repro_th)
+   if (section%has('universe radius')) call section%get_or_die('universe radius',nam%universe_radius)
+end if
+
+! I/O param
+if (conf%has('io')) then
+   call conf%get_or_die('io',section)
+   if (section%has('data directory')) then
+      call section%get_or_die('data directory',str)
+      nam%data_directory = str
+   end if
+   if (section%has('data prefix')) then
+      call section%get_or_die('data prefix',str)
+      nam%data_prefix = str
+   end if
+   if (section%has('parallel netcdf')) call section%get_or_die('parallel netcdf',nam%parallel_netcdf)
+   if (section%has('io task number')) call section%get_or_die('io task number',nam%nprocio)
+   if (section%has('alias')) then
+      call section%get_or_die('alias',confs)
+      if (size(confs)>niokvmax) then
+         write(message,'(a,i4)') 'alias size should be smaller than ',niokvmax
+         call mpl%abort('${subr}$',message)
+      end if
+      do iconf=1,size(confs)
+         call confs(iconf)%get_or_die('in code',str)
+         nam%alias_code(iconf) = str
+         call confs(iconf)%get_or_die('in file',str)
+         nam%alias_file(iconf) = str
+      end do
+   end if
+   if (section%has('sampling file')) then
+      call section%get_or_die('sampling file',str)
+      nam%fname_samp = str
+   end if
+   if (section%has('vertical covariance file')) then
+      call section%get_or_die('vertical covariance file',str_array)
+      if (size(str_array)>nsubmax) then
+         write(message,'(a,i4)') 'fname_vbal_cov size should be smaller than ',nsubmax
+         call mpl%abort('${subr}$',message)
+      end if
+      nam%fname_vbal_cov(1:size(str_array)) = str_array
+   end if
+   if (section%has('vertical balance file')) then
+      call section%get_or_die('vertical balance file',str)
+      nam%fname_vbal = str
+   end if
+   if (section%has('moments file')) then
+      call section%get_or_die('moments file',str_array)
+      if (size(str_array)>nsubmax) then
+         write(message,'(a,i4)') 'fname_mom size should be smaller than ',nsubmax
+         call mpl%abort('${subr}$',message)
+      end if
+      nam%fname_mom(1:size(str_array)) = str_array
+   end if
+   if (section%has('nicas file')) then
+      call section%get_or_die('nicas file',str)
+      nam%fname_nicas = str
+   end if
+   if (section%has('psichitouv file')) then
+      call section%get_or_die('psichitouv file',str)
+      nam%fname_wind = str
+   end if
 end if
    
 ! Drivers section
@@ -557,86 +604,10 @@ if (conf%has('drivers')) then
    if (section%has('check_optimality')) call section%get_or_die('check_optimality',nam%check_optimality)
 end if
 
-! IO param
-if (conf%has('io')) then
-   call conf%get_or_die('io',section)
-   if (section%has('datadir')) then
-      call section%get_or_die('datadir',str)
-      nam%datadir = str
-   end if
-   if (section%has('prefix')) then
-      call section%get_or_die('prefix',str)
-      nam%prefix = str
-   end if
-   if (section%has('parallel_io')) call section%get_or_die('parallel_io',nam%parallel_io)
-   if (section%has('nprocio')) call section%get_or_die('nprocio',nam%nprocio)
-   if (section%has('alias')) then
-      call section%get_or_die('alias',confs)
-      if (size(confs)>niokvmax) then
-         write(message,'(a,i4)') 'alias size should be smaller than ',niokvmax
-         call mpl%abort('${subr}$',message)
-      end if
-      do iconf=1,size(confs)
-         call confs(iconf)%get_or_die('in code',str)
-         nam%alias_code(iconf) = str
-         call confs(iconf)%get_or_die('in file',str)
-         nam%alias_file(iconf) = str
-      end do
-   end if
-   if (section%has('fname_var')) then
-      call section%get_or_die('fname_var',str_array)
-      if (size(str_array)>nsubmax) then
-         write(message,'(a,i4)') 'fname_var size should be smaller than ',nsubmax
-         call mpl%abort('${subr}$',message)
-      end if
-      nam%fname_var(1:size(str_array)) = str_array
-   end if
-   if (section%has('fname_samp')) then
-      call section%get_or_die('fname_samp',str)
-      nam%fname_samp = str
-   end if
-   if (section%has('fname_vbal_cov')) then
-      call section%get_or_die('fname_vbal_cov',str_array)
-      if (size(str_array)>nsubmax) then
-         write(message,'(a,i4)') 'fname_vbal_cov size should be smaller than ',nsubmax
-         call mpl%abort('${subr}$',message)
-      end if
-      nam%fname_vbal_cov(1:size(str_array)) = str_array
-   end if
-   if (section%has('fname_vbal')) then
-      call section%get_or_die('fname_vbal',str)
-      nam%fname_vbal = str
-   end if
-   if (section%has('fname_mom')) then
-      call section%get_or_die('fname_mom',str_array)
-      if (size(str_array)>nsubmax) then
-         write(message,'(a,i4)') 'fname_mom size should be smaller than ',nsubmax
-         call mpl%abort('${subr}$',message)
-      end if
-      nam%fname_mom(1:size(str_array)) = str_array
-   end if
-   if (section%has('fname_nicas')) then
-      call section%get_or_die('fname_nicas',str)
-      nam%fname_nicas = str
-   end if
-   if (section%has('fname_wind')) then
-      call section%get_or_die('fname_wind',str)
-      nam%fname_wind = str
-   end if
-end if
-
 ! Model section
 if (conf%has('model')) then
    call conf%get_or_die('model',section)
    if (section%has('nl0')) call section%get_or_die('nl0',nam%nl0)
-   if (section%has('levs')) then
-      call section%get_or_die('levs',integer_array)
-      if (size(integer_array)>nl0max) then
-         write(message,'(a,i4)') 'levs size should be smaller than ',nl0max
-         call mpl%abort('${subr}$',message)
-      end if
-      nam%levs(1:size(integer_array)) = integer_array
-   end if
    if (section%has('lev2d')) then
       call section%get_or_die('lev2d',str)
       nam%lev2d = str
@@ -1046,7 +1017,7 @@ if (nam%ndir>ndirmax) call mpl%abort('${subr}$','ndir is too large')
 if (nam%nldwv>nldwvmax) call mpl%abort('${subr}$','nldwv is too large')
 
 ! Namelist parameters normalization (meters to radians and degrees to radians)
-nam%universe_rad = nam%universe_rad/req
+nam%universe_radius = nam%universe_radius/req
 nam%dc = nam%dc/req
 nam%vbal_rad = nam%vbal_rad/req
 nam%vbal_dlat = nam%vbal_dlat*deg2rad
@@ -1062,11 +1033,11 @@ if (nam%nldwv>0) nam%lat_ldwv(1:nam%nldwv) = nam%lat_ldwv(1:nam%nldwv)*deg2rad
 
 ! Forced parameters for backward compatibility
 if (nam%new_hdiag.and.(.not.(nam%update_mom.or.nam%load_mom))) nam%new_mom = .true.
-if (nam%prefix/='') nam%prefix = trim(nam%prefix)//'_'
+if (nam%data_prefix/='') nam%data_prefix = trim(nam%data_prefix)//'_'
 
 ! General section
-if (nam%repro) then
-  if (nam%rth<zero) call mpl%abort('${subr}$','rth should be non-negative')
+if (nam%repro_ops) then
+  if (nam%repro_th<zero) call mpl%abort('${subr}$','repro_th should be non-negative')
 end if
 
 ! Drivers section
@@ -1142,39 +1113,30 @@ if (nam%check_optimality) then
    if (nam%new_nicas) call mpl%abort('${subr}$','new_nicas forbidden for check_optimality')
 end if
 
-! IO section
-if (nam%datadir=='') call mpl%abort('${subr}$','datadir not specified')
+! I/O section
+if (nam%data_directory=='') call mpl%abort('${subr}$','data_directory not specified')
 if (nam%nprocio<1) call mpl%abort('${subr}$','number of I/O tasks should be positive')
 if (nam%nprocio>mpl%nproc) then
    call mpl%warning('${subr}$','number of I/O tasks should be smaller than the total number of tasks, resetting nprocio')
    nam%nprocio = mpl%nproc
 end if
-nam%fname_var_used = any(nam%fname_var/='')
-nam%fname_var(0) = trim(nam%prefix)//'var'
-do isub=1,nsubmax
-   if (nam%fname_var(isub)=='') write(nam%fname_var(isub),'(a,a,i6.6)') trim(nam%fname_var(0)),'_',isub
-end do
-if (nam%fname_samp=='') nam%fname_samp = trim(nam%prefix)//'sampling'
+if (nam%fname_samp=='') nam%fname_samp = trim(nam%data_prefix)//'sampling'
 nam%fname_vbal_cov_used = any(nam%fname_vbal_cov/='')
-nam%fname_vbal_cov(0) = trim(nam%prefix)//'vbal_cov'
+nam%fname_vbal_cov(0) = trim(nam%data_prefix)//'vbal_cov'
 do isub=1,nsubmax
    if (nam%fname_vbal_cov(isub)=='') write(nam%fname_vbal_cov(isub),'(a,a,i6.6)') trim(nam%fname_vbal_cov(0)),'_',isub
 end do
-if (nam%fname_vbal=='') nam%fname_vbal = trim(nam%prefix)//'vbal'
+if (nam%fname_vbal=='') nam%fname_vbal = trim(nam%data_prefix)//'vbal'
 nam%fname_mom_used = any(nam%fname_mom/='')
-nam%fname_mom(0) = trim(nam%prefix)//'mom'
+nam%fname_mom(0) = trim(nam%data_prefix)//'mom'
 do isub=1,nsubmax
    if (nam%fname_mom(isub)=='') write(nam%fname_mom(isub),'(a,a,i6.6)') trim(nam%fname_mom(0)),'_',isub
 end do
-if (nam%fname_nicas=='') nam%fname_nicas = trim(nam%prefix)//'nicas'
-if (nam%fname_wind=='') nam%fname_wind = trim(nam%prefix)//'wind'
+if (nam%fname_nicas=='') nam%fname_nicas = trim(nam%data_prefix)//'nicas'
+if (nam%fname_wind=='') nam%fname_wind = trim(nam%data_prefix)//'wind'
 
 ! Model section
 if (nam%nl0<=0) call mpl%abort('${subr}$','nl0 should be positive')
-do il0=1,nam%nl0
-   if (nam%levs(il0)<=0) call mpl%abort('${subr}$','levs should be positive')
-   if (count(nam%levs(1:nam%nl0)==nam%levs(il0))>1) call mpl%abort('${subr}$','duplicated levels')
-end do
 if ((nam%lev2d/='first').and.(nam%lev2d/='last')) call mpl%abort('${subr}$','wrong lev2d value')
 
 ! Ensemble sizes section
@@ -1400,7 +1362,6 @@ if (nam%check_dirac) then
    do idir=1,nam%ndir
       if ((nam%londir(idir)<-pi).or.(nam%londir(idir)>pi)) call mpl%abort('${subr}$','londir should lie between -180 and 180')
       if ((nam%latdir(idir)<-half*pi).or.(nam%latdir(idir)>half*pi)) call mpl%abort('${subr}$','latdir should lie between -90 and 90')
-      if (.not.any(nam%levs(1:nam%nl0)==nam%levdir(idir))) call mpl%abort('${subr}$','wrong level for a Dirac')
       if ((nam%ivdir(idir)<1).or.(nam%ivdir(idir)>nam%nv)) call mpl%abort('${subr}$','wrong variable for a Dirac')
    end do
 end if

@@ -11,7 +11,7 @@ module type_minim
 use tools_const, only: zero,hundredth,tenth,half,one,two,ten,hundred
 use tools_fit, only: diag_tensor,diag_iso
 use tools_kinds, only: kind_real
-use tools_repro, only: rth,eq,inf,infeq,sup
+use tools_repro, only: repro_th,eq,inf,infeq,sup
 use type_mpl, only: mpl_type
 @:use_probe()
 
@@ -522,7 +522,7 @@ newx = guess
 minim%x = guess
 do i=1,minim%nx
    if (minim%bsup(i)>minim%binf(i)) then
-      if (sup(abs(guess(i)),rth)) then
+      if (sup(abs(guess(i)),repro_th)) then
          delta(i) = minim%hooke_rho*abs(guess(i))
       else
          delta(i) = minim%hooke_rho

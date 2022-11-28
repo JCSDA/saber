@@ -15,8 +15,8 @@ use tools_kinds, only: kind_int,kind_real
 
 implicit none
 
-logical :: repro = .true.        !< Reproducibility flag
-real(kind_real) :: rth = 1.0e-12 !< Reproducibility threshold
+logical :: repro_ops = .true.         !< Reproducibility operators
+real(kind_real) :: repro_th = 1.0e-12 !< Reproducibility threshold
 
 interface eq
   #:for dtype in dtypes_irl
@@ -51,7 +51,7 @@ interface small
 end interface
 
 private
-public :: repro,rth
+public :: repro_ops,repro_th
 public :: eq,inf,infeq,sup,supeq,indist,small
 
 contains
@@ -80,7 +80,7 @@ logical :: test
 
 #{if dtype == 'int'}# test = (x==y) #{endif}#
 #:if dtype == 'real'
-   if (repro) then
+   if (repro_ops) then
       test = indist(x,y)
    else
       test = .not.(abs(x-y)>zero)
@@ -117,7 +117,7 @@ logical :: test
 @:probe_in()
 
 test = (x<y)
-#{if dtype == 'real'}# if (repro) test = test.and.(.not.indist(x,y)) #{endif}#
+#{if dtype == 'real'}# if (repro_ops) test = test.and.(.not.indist(x,y)) #{endif}#
 
 ! Probe out
 @:probe_out()
@@ -178,7 +178,7 @@ logical :: test
 @:probe_in()
 
 test = (x>y)
-#{if dtype == 'real'}# if (repro) test = test.and.(.not.indist(x,y)) #{endif}#
+#{if dtype == 'real'}# if (repro_ops) test = test.and.(.not.indist(x,y)) #{endif}#
 
 ! Probe out
 @:probe_out()
@@ -238,9 +238,9 @@ logical :: test
 @:probe_in()
 
 test = .false.
-if (repro) then
+if (repro_ops) then
    if ((abs(x)>zero).or.(abs(y)>zero)) then
-      test = abs(x-y)<rth*(abs(x+y))
+      test = abs(x-y)<repro_th*(abs(x+y))
    else
       test = .true.
    end if
@@ -273,7 +273,7 @@ logical :: test
 @:probe_in()
 
 test = .false.
-if (repro) test = abs(x)<rth*abs(y)
+if (repro_ops) test = abs(x)<repro_th*abs(y)
 
 ! Probe out
 @:probe_out()

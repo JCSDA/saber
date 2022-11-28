@@ -20,7 +20,7 @@ use tools_kinds, only: kind_int,kind_real,kind_long,huge_int,huge_real
 use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim_size,check_dim,define_var,inquire_var, &
  & put_var,get_var
 use tools_qsort, only: qsort
-use tools_repro, only: supeq,sup,inf,infeq,eq,indist,rth
+use tools_repro, only: supeq,sup,inf,infeq,eq,indist,repro_th
 use type_bpar, only: bpar_type
 use type_com, only: com_type
 use type_cv_cmp, only: cv_cmp_type
@@ -1850,7 +1850,7 @@ if (nicas_cmp%nsa>0) then
       il0 = nicas_cmp%l1_to_l0(il1)
       lon_sa(isa) = nicas_cmp%hor(il1)%lon_c1a(ic1a)*rad2deg
       lat_sa(isa) = nicas_cmp%hor(il1)%lat_c1a(ic1a)*rad2deg
-      lev_sa(isa) = nam%levs(il0)
+      lev_sa(isa) = il0
    end do
 end if
 if (nicas_cmp%nsb>0) then
@@ -1861,7 +1861,7 @@ if (nicas_cmp%nsb>0) then
       il0 = nicas_cmp%l1_to_l0(il1)
       lon_sb(isb) = nicas_cmp%hor(il1)%lon_c1u(ic1u)*rad2deg
       lat_sb(isb) = nicas_cmp%hor(il1)%lat_c1u(ic1u)*rad2deg
-      lev_sb(isb) = nam%levs(il0)
+      lev_sb(isb) = il0
    end do
 end if
 if (nicas_cmp%nsc>0) then
@@ -1872,7 +1872,7 @@ if (nicas_cmp%nsc>0) then
       il0 = nicas_cmp%l1_to_l0(il1)
       lon_sc(isc) = nicas_cmp%hor(il1)%lon_c1u(ic1u)*rad2deg
       lat_sc(isc) = nicas_cmp%hor(il1)%lat_c1u(ic1u)*rad2deg
-      lev_sc(isc) = nam%levs(il0)
+      lev_sc(isc) = il0
    end do
 end if
 
@@ -2153,7 +2153,7 @@ else
    il1 = 0
    do il0=1,geom%nl0
       if (slev(il0)) then
-         write(mpl%test,'(i4,a)') nam%levs(il0),' '
+         write(mpl%test,'(i4,a)') il0,' '
          call mpl%flush(adv=.false.,doit=nicas_cmp%verbosity)
          il1 = il1+1
          nicas_cmp%l1_to_l0(il1) = il0
@@ -2648,7 +2648,7 @@ do il1=1,nicas_cmp%nl1
          jc1u = nicas_cmp%c1_to_c1u(jc1,il1)
          nicas_cmp%hor(il1)%lcheck_c1b(jc1u) = .true.
       else
-         call mpl%abort('${subr}$','point of halo B out of universe (increase universe_rad)')
+         call mpl%abort('${subr}$','point of halo B out of universe (increase universe_radius)')
       end if
    end do
    nicas_cmp%hor(il1)%nc1b = zss_count(nicas_cmp%hor(il1)%lcheck_c1b)
@@ -3842,7 +3842,7 @@ nicas_cmp%norm = mpl%msv%valr
 do il0=1,geom%nl0
    if (nicas_cmp%vlev(il0)) then
       il0i = geom%l0_to_l0i(il0)
-      write(mpl%info,'(a13,a,i3,a)') '','Level ',nam%levs(il0),': '
+      write(mpl%info,'(a13,a,i3,a)') '','Level ',il0,': '
       call mpl%flush(adv=.false.,doit=nicas_cmp%verbosity)
       if (nicas_cmp%verbosity) call mpl%prog_init(geom%nc0a)
 
@@ -4525,7 +4525,7 @@ write(mpl%info,'(a10,a,e15.8,a,e15.8,a,e15.8)') '','Interpolation adjoint test (
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
 call mpl%flush(doit=nicas_cmp%verbosity)
 write(mpl%test,'(a10,a,l1)') '','Interpolation adjoint test (horizontal) result:  ', &
- & two*abs(sum1-sum2)/abs(sum1+sum2)<rth
+ & two*abs(sum1-sum2)/abs(sum1+sum2)<repro_th
 call mpl%flush(doit=nicas_cmp%verbosity)
 
 ! Interpolation (vertical)
@@ -4548,7 +4548,7 @@ write(mpl%info,'(a10,a,e15.8,a,e15.8,a,e15.8)') '','Interpolation adjoint test (
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
 call mpl%flush(doit=nicas_cmp%verbosity)
 write(mpl%test,'(a10,a,l1)') '','Interpolation adjoint test (vertical) result:    ', &
- & two*abs(sum1-sum2)/abs(sum1+sum2)<rth
+ & two*abs(sum1-sum2)/abs(sum1+sum2)<repro_th
 call mpl%flush(doit=nicas_cmp%verbosity)
 
 ! Interpolation (total)
@@ -4571,7 +4571,7 @@ write(mpl%info,'(a10,a,e15.8,a,e15.8,a,e15.8)') '','Interpolation adjoint test (
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
 call mpl%flush(doit=nicas_cmp%verbosity)
 write(mpl%test,'(a10,a,l1)') '','Interpolation adjoint test (total) result:       ', &
- & two*abs(sum1-sum2)/abs(sum1+sum2)<rth
+ & two*abs(sum1-sum2)/abs(sum1+sum2)<repro_th
 call mpl%flush(doit=nicas_cmp%verbosity)
 
 ! Allocation
@@ -4595,7 +4595,7 @@ write(mpl%info,'(a10,a,e15.8,a,e15.8,a,e15.8)') '','Communication AB adjoint tes
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
 call mpl%flush(doit=nicas_cmp%verbosity)
 write(mpl%test,'(a10,a,l1)') '','Communication AB adjoint test result:            ', &
- & two*abs(sum1-sum2)/abs(sum1+sum2)<rth
+ & two*abs(sum1-sum2)/abs(sum1+sum2)<repro_th
 call mpl%flush(doit=nicas_cmp%verbosity)
 
 ! Release memory
@@ -4625,7 +4625,7 @@ write(mpl%info,'(a10,a,e15.8,a,e15.8,a,e15.8)') '','Communication AC adjoint tes
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
 call mpl%flush(doit=nicas_cmp%verbosity)
 write(mpl%test,'(a10,a,l1)') '','Communication AC adjoint test result:            ', &
- & two*abs(sum1-sum2)/abs(sum1+sum2)<rth
+ & two*abs(sum1-sum2)/abs(sum1+sum2)<repro_th
 call mpl%flush(doit=nicas_cmp%verbosity)
 
 ! Allocation
@@ -4659,7 +4659,7 @@ write(mpl%info,'(a10,a,e15.8,a,e15.8,a,e15.8)') '','Convolution / communication 
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
 call mpl%flush(doit=nicas_cmp%verbosity)
 write(mpl%test,'(a10,a,l1)') '','Convolution / communication adjoint test result: ', &
- & two*abs(sum1-sum2)/abs(sum1+sum2)<rth
+ & two*abs(sum1-sum2)/abs(sum1+sum2)<repro_th
 call mpl%flush(doit=nicas_cmp%verbosity)
 
 ! Release memory
@@ -4687,7 +4687,7 @@ write(mpl%info,'(a10,a,e15.8,a,e15.8,a,e15.8)') '','Component NICAS adjoint test
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
 call mpl%flush(doit=nicas_cmp%verbosity)
 write(mpl%test,'(a10,a,l1)') '','Component NICAS adjoint test result:             ', &
- & two*abs(sum1-sum2)/abs(sum1+sum2)<rth
+ & two*abs(sum1-sum2)/abs(sum1+sum2)<repro_th
 call mpl%flush(doit=nicas_cmp%verbosity)
 
 ! Release memory

@@ -1026,7 +1026,7 @@ real(kind_real),allocatable :: lon_vbal(:,:,:),lat_vbal(:,:,:)
 @:probe_in()
 
 ! Open file
-ncid = create_file(mpl,trim(nam%prefix)//'sampling_grids',mpl%myproc)
+ncid = create_file(mpl,trim(nam%data_prefix)//'sampling_grids',mpl%myproc)
 
 ! Define dimensions
 nc0a_id = define_dim(mpl,ncid,'nc0a',geom%nc0a)
@@ -1337,7 +1337,7 @@ else
       write(mpl%info,'(a10,a,a,f10.2,a)') '','Class size: ',trim(mpl%aqua),nam%dc*reqkm,trim(mpl%black)//' km'
       call mpl%flush
       do il0=1,geom%nl0
-         write(mpl%info,'(a10,a,i3,a)') '','Level ',nam%levs(il0),':'
+         write(mpl%info,'(a10,a,i3,a)') '','Level ',il0,':'
          call mpl%flush
          do jc4=1,nam%nc4
             write(mpl%test,'(a13,f6.2,a10)') '',geom%as(jc4)*rad2deg,' deg.  ~> '
@@ -1674,7 +1674,7 @@ if (samp%nc0_smask(0)==0) call mpl%abort('${subr}$','no more points in the sampl
 write(mpl%info,'(a7,a)') '','Sampling valid points (% of domain mask):'
 call mpl%flush
 do il0=1,geom%nl0
-   write(mpl%test,'(a10,a,i3,a,f5.1,a)') '','Level ',nam%levs(il0),' ~> ',hundred*real(samp%nc0_smask(il0),kind_real) &
+   write(mpl%test,'(a10,a,i3,a,f5.1,a)') '','Level ',il0,' ~> ',hundred*real(samp%nc0_smask(il0),kind_real) &
  & /real(geom%nc0_gmask(il0),kind_real),'%'
    call mpl%flush
 end do
@@ -2522,7 +2522,7 @@ do il0i=1,geom%nl0i
          jc2u = samp%c2_to_c2u(jc2)
          lcheck_c2b(jc2u) = .true.
       else
-         call mpl%abort('${subr}$','point of halo B out of universe (increase universe_rad)')
+         call mpl%abort('${subr}$','point of halo B out of universe (increase universe_radius)')
       end if
    end do
 end do
@@ -2534,7 +2534,7 @@ if (samp%compute_c2b_to_c1a) then
          jc2u = samp%c2_to_c2u(jc2)
          lcheck_c2b(jc2u) = .true.
       else
-         call mpl%abort('${subr}$','point of halo B out of universe (increase universe_rad)')
+         call mpl%abort('${subr}$','point of halo B out of universe (increase universe_radius)')
       end if
    end do
 end if

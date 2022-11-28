@@ -16,7 +16,7 @@ use tools_asa007, only: cholesky,syminv
 use tools_const, only: zero,hundredth,tenth,half,one,two,three,four,five,eight,ten,pi,deg2rad,rad2deg
 use tools_kinds, only: kind_int,kind_short,kind_real,huge_int,huge_short,huge_real
 use tools_qsort, only: qsort
-use tools_repro, only: rth,inf,sup,infeq,small,eq
+use tools_repro, only: repro_th,inf,sup,infeq,small,eq
 use tools_wrfda, only: da_eof_decomposition
 use type_mpl, only: mpl_type
 @:use_probe()
@@ -667,7 +667,7 @@ vp(3) = v1(1)*v2(2)-v1(2)*v2(1)
 
 ! Normalization
 r = sqrt(sum(vp**2))
-if (r>rth) then
+if (r>repro_th) then
    vp = vp/r
 else
    vp = zero

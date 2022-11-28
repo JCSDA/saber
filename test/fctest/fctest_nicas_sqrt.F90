@@ -31,7 +31,7 @@ TEST( test_interpolatorbump )
   use fckit_configuration_module, only: fckit_configuration
   use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum
   use tools_kinds, only: kind_real
-  use tools_repro, only: rth
+  use tools_repro, only: repro_th
   use type_bump, only: bump_type
   use type_fieldset, only: fieldset_type
 
@@ -134,7 +134,7 @@ TEST( test_interpolatorbump )
   dp_out = sum(array_out_1*array_out_2)
   call bump%mpl%f_comm%allreduce(dp_in,fckit_mpi_sum())
   call bump%mpl%f_comm%allreduce(dp_out,fckit_mpi_sum())
-  FCTEST_CHECK_CLOSE(dp_in,dp_out,rth)
+  FCTEST_CHECK_CLOSE(dp_in,dp_out,repro_th)
 
   ! Release memory
   call bump%dealloc()

@@ -24,7 +24,7 @@ use tools_atlas, only: field_from_array,field_to_array
 use tools_const, only: zero,three,hundred,pi,deg2rad,rad2deg
 use tools_func, only: lonlatmod,sphere_dist,inside,zss_count
 use tools_kinds, only: kind_int,kind_real
-use tools_repro, only: rth
+use tools_repro, only: repro_th
 use type_bump, only: bump_type
 use type_com, only: com_type
 use type_fieldset, only: fieldset_type
@@ -155,8 +155,8 @@ call bint%bump%mpl%init(comm)
 call bint%bump%nam%init(bint%bump%mpl)
 
 ! Modified defaults for BUMP interpolator
-bint%bump%nam%prefix = 'bump_interpolator'
-bint%bump%nam%datadir = 'testdata'
+bint%bump%nam%data_directory = 'testdata'
+bint%bump%nam%data_prefix = 'bump_interpolator'
 bint%bump%nam%nl0 = nl0
 bint%bump%nam%nv = 1
 bint%bump%nam%variables(1) = 'var'
@@ -247,7 +247,7 @@ if (bint%nouta > 0) then
          ! Check for very close points
          call geom%tree_c0u%find_nearest_neighbors(bint%geom_out%lon_mga(iouta),bint%geom_out%lat_mga(iouta), &
  & 1,nn_index,nn_dist)
-         if (nn_dist(1)<rth) maskouta(iouta) = .true.
+         if (nn_dist(1)<repro_th) maskouta(iouta) = .true.
       end if
    end do
    nouta_eff = zss_count(maskouta)

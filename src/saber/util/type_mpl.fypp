@@ -32,45 +32,45 @@ integer,parameter :: ddis = 5                !< Progression display step
 
 type mpl_type
    ! MPI communicator
-   type(fckit_mpi_comm) :: f_comm    !< MPI communicator (fckit wrapper)
-   integer :: nproc                  !< Number of MPI tasks
-   integer :: myproc                 !< MPI task index
-   integer :: rootproc               !< Main task index
-   logical :: main                   !< Main task logical
-   integer :: tag                    !< MPI tag
+   type(fckit_mpi_comm) :: f_comm        !< MPI communicator (fckit wrapper)
+   integer :: nproc                      !< Number of MPI tasks
+   integer :: myproc                     !< MPI task index
+   integer :: rootproc                   !< Main task index
+   logical :: main                       !< Main task logical
+   integer :: tag                        !< MPI tag
 
    ! I/O
-   character(len=1024) :: datadir    !< Data directory
-   logical :: parallel_io            !< Parallel NetCDF I/O
-   integer :: nprocio                !< Number of I/O processors
-   logical,allocatable :: pioproc(:) !< Parallel I/O MPI tasks
-   type(fckit_mpi_comm) :: f_comm_io !< MPI communicator for I/O (fckit wrapper)
+   character(len=1024) :: data_directory !< Data directory
+   logical :: parallel_netcdf            !< Parallel NetCDF I/O
+   integer :: nprocio                    !< Number of I/O tasks
+   logical,allocatable :: pioproc(:)     !< Flag for I/O MPI tasks
+   type(fckit_mpi_comm) :: f_comm_io     !< MPI communicator for I/O (fckit wrapper)
 
    ! Number of OpenMP threads
-   integer :: nthread                !< Number of OpenMP threads
+   integer :: nthread                    !< Number of OpenMP threads
 
    ! Missing values
-   type(msv_type) :: msv             !< Missing values
+   type(msv_type) :: msv                 !< Missing values
 
    ! Display parameters
-   character(len=1024) :: info       !< Info buffer
-   character(len=1024) :: test       !< Test buffer
-   character(len=1024) :: wng        !< Warning buffer
-   logical :: previous_adv           !< Previous advance flag
-   logical :: testing                !< Stream test messages into a dedicated channel
+   character(len=1024) :: info           !< Info buffer
+   character(len=1024) :: test           !< Test buffer
+   character(len=1024) :: wng            !< Warning buffer
+   logical :: previous_adv               !< Previous advance flag
+   logical :: testing                    !< Stream test messages into a dedicated channel
 
    ! Display colors
-   character(len=1024) :: black      !< Black color code
-   character(len=1024) :: green      !< Green color code
-   character(len=1024) :: peach      !< Peach color code
-   character(len=1024) :: aqua       !< Aqua color code
-   character(len=1024) :: purple     !< Purple color code
-   character(len=1024) :: wng_color  !< Warning color code
+   character(len=1024) :: black          !< Black color code
+   character(len=1024) :: green          !< Green color code
+   character(len=1024) :: peach          !< Peach color code
+   character(len=1024) :: aqua           !< Aqua color code
+   character(len=1024) :: purple         !< Purple color code
+   character(len=1024) :: wng_color      !< Warning color code
 
    ! Progression print
-   integer :: nprog                  !< Progression array size
-   integer :: progint                !< Progression integer
-   logical,allocatable :: done(:)    !< Progression array
+   integer :: nprog                      !< Progression array size
+   integer :: progint                    !< Progression integer
+   logical,allocatable :: done(:)        !< Progression array
 contains
    procedure :: init => mpl_init
    procedure :: final => mpl_final

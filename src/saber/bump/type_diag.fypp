@@ -896,7 +896,7 @@ do ib=1,bpar%nb
       call mpl%flush
       do il0=1,geom%nl0
          if (mpl%msv%isnot(diag%blk(0,ib)%raw(1,1,bpar%il0rz(il0,ib),il0))) then
-            write(mpl%test,'(a16,a,i3,a,a,e9.2,a)') '','Level: ',nam%levs(il0),' ~> cov. at class zero: ',trim(mpl%peach), &
+            write(mpl%test,'(a16,a,i3,a,a,e9.2,a)') '','Level: ',il0,' ~> cov. at class zero: ',trim(mpl%peach), &
  & diag%blk(0,ib)%raw(1,1,bpar%il0rz(il0,ib),il0),trim(mpl%black)
             call mpl%flush
          end if
@@ -987,7 +987,7 @@ do ib=1,bpar%nbe
 
       do il0=1,geom%nl0
           if (mpl%msv%isnot(diag%blk(0,ib)%raw(1,1,bpar%il0rz(il0,ib),il0))) then
-              write(mpl%test,'(a16,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> cor. at class zero:  ', &
+              write(mpl%test,'(a16,a,i3,a,a,f10.2,a)') '','Level: ',il0,' ~> cor. at class zero:  ', &
  & trim(mpl%peach),diag%blk(0,ib)%raw(1,1,bpar%il0rz(il0,ib),il0),trim(mpl%black)
               call mpl%flush
           end if
@@ -1001,7 +1001,7 @@ do ib=1,bpar%nbe
                call mpl%flush
                do il0=1,geom%nl0
                   if (mpl%msv%isnot(diag%blk(0,ib)%a_l0(il0,icmp))) then
-                     write(mpl%test,'(a19,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> amplitude:  ', &
+                     write(mpl%test,'(a19,a,i3,a,a,f10.2,a)') '','Level: ',il0,' ~> amplitude:  ', &
  & trim(mpl%peach),diag%blk(0,ib)%a_l0(il0,icmp),trim(mpl%black)
                      call mpl%flush
                      if (mpl%msv%isnot(diag%blk(0,ib)%rh_l0(il0,icmp))) then
@@ -1148,7 +1148,7 @@ do ib=1,bpar%nbe
 
       do il0=1,geom%nl0
          if (mpl%msv%isnot(diag%blk(0,ib)%raw(1,1,bpar%il0rz(il0,ib),il0))) then
-            write(mpl%test,'(a16,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> loc. at class zero: ', &
+            write(mpl%test,'(a16,a,i3,a,a,f10.2,a)') '','Level: ',il0,' ~> loc. at class zero: ', &
  & trim(mpl%peach),diag%blk(0,ib)%raw(1,1,bpar%il0rz(il0,ib),il0),trim(mpl%black)
             call mpl%flush
          end if
@@ -1162,7 +1162,7 @@ do ib=1,bpar%nbe
                call mpl%flush
                do il0=1,geom%nl0
                   if (mpl%msv%isnot(diag%blk(0,ib)%a_l0(il0,icmp))) then
-                     write(mpl%test,'(a19,a,i3,a,a,f10.2,a)') '','Level: ',nam%levs(il0),' ~> amplitude:  ', &
+                     write(mpl%test,'(a19,a,i3,a,a,f10.2,a)') '','Level: ',il0,' ~> amplitude:  ', &
  & trim(mpl%peach),diag%blk(0,ib)%a_l0(il0,icmp),trim(mpl%black)
                      call mpl%flush
                      if (mpl%msv%isnot(diag%blk(0,ib)%rh_l0(il0,icmp))) then
@@ -1259,7 +1259,7 @@ do ib=1,bpar%nbe
 
       do il0=1,geom(2)%nl0
          if (mpl%msv%isnot(loc1%blk(0,ib)%hyb_coef(il0)).and.mpl%msv%isnot(diag%blk(0,ib)%hyb_coef(il0))) then
-            write(mpl%test,'(a16,a,i3,a,a,f4.2,a,f4.2,a)') '','Level: ',nam%levs(il0),' ~> hybrid coefficients: ', &
+            write(mpl%test,'(a16,a,i3,a,a,f4.2,a,f4.2,a)') '','Level: ',il0,' ~> hybrid coefficients: ', &
  & trim(mpl%peach),loc1%blk(0,ib)%hyb_coef(il0),trim(mpl%black)//' / '//trim(mpl%peach),diag%blk(0,ib)%hyb_coef(il0),trim(mpl%black)
             call mpl%flush
          end if

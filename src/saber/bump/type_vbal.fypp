@@ -14,7 +14,7 @@ use tools_const, only: zero,one,two,rad2deg
 use tools_func, only: zss_maxval,zss_sum
 use tools_kinds, only: kind_real
 use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,define_dim,define_var,inquire_var,put_var,get_var,close_file
-use tools_repro, only: infeq,rth
+use tools_repro, only: infeq,repro_th
 use type_bpar, only: bpar_type
 use type_ens, only: ens_type
 use type_geom, only: geom_type
@@ -1569,7 +1569,7 @@ mse = zss_sum((fld-fld_save)**2)
 call mpl%f_comm%allreduce(mse,fckit_mpi_sum())
 write(mpl%info,'(a7,a,e15.8)') '','Vertical balance direct/inverse test value:  ',mse/norm
 call mpl%flush
-write(mpl%test,'(a7,a,l1)') '','Vertical balance direct/inverse test result:  ',mse/norm<rth
+write(mpl%test,'(a7,a,l1)') '','Vertical balance direct/inverse test result:  ',mse/norm<repro_th
 call mpl%flush
 
 ! Inverse / direct
@@ -1580,7 +1580,7 @@ mse = zss_sum((fld-fld_save)**2)
 call mpl%f_comm%allreduce(mse,fckit_mpi_sum())
 write(mpl%info,'(a7,a,e15.8)') '','Vertical balance inverse/direct test value:  ',mse/norm
 call mpl%flush
-write(mpl%test,'(a7,a,l1)') '','Vertical balance inverse/direct test result:  ',mse/norm<rth
+write(mpl%test,'(a7,a,l1)') '','Vertical balance inverse/direct test result:  ',mse/norm<repro_th
 call mpl%flush
 
 ! Direct / inverse, adjoint
@@ -1591,7 +1591,7 @@ mse = zss_sum((fld-fld_save)**2)
 call mpl%f_comm%allreduce(mse,fckit_mpi_sum())
 write(mpl%info,'(a7,a,e15.8)') '','Vertical balance direct/inverse (adjoint) test value:  ',mse/norm
 call mpl%flush
-write(mpl%test,'(a7,a,l1)') '','Vertical balance direct/inverse (adjoint) test result:  ',mse/norm<rth
+write(mpl%test,'(a7,a,l1)') '','Vertical balance direct/inverse (adjoint) test result:  ',mse/norm<repro_th
 call mpl%flush
 
 ! Inverse / direct
@@ -1602,7 +1602,7 @@ mse = zss_sum((fld-fld_save)**2)
 call mpl%f_comm%allreduce(mse,fckit_mpi_sum())
 write(mpl%info,'(a7,a,e15.8)') '','Vertical balance inverse/direct (adjoint) test value:  ',mse/norm
 call mpl%flush
-write(mpl%test,'(a7,a,l1)') '','Vertical balance inverse/direct (adjoint) test result:  ',mse/norm<rth
+write(mpl%test,'(a7,a,l1)') '','Vertical balance inverse/direct (adjoint) test result:  ',mse/norm<repro_th
 call mpl%flush
 
 ! Probe out
@@ -1656,7 +1656,7 @@ do iv=1,nam%nv
  & ' adjoint test values:  ',sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
          call mpl%flush
          write(mpl%test,'(a7,a,l1)') '','Vertical balance block '//trim(vbal%blk(iv,jv)%name)// &
- & ' adjoint test result:  ',two*abs(sum1-sum2)/abs(sum1+sum2)<rth
+ & ' adjoint test result:  ',two*abs(sum1-sum2)/abs(sum1+sum2)<repro_th
          call mpl%flush
       end if
    end do
@@ -1673,7 +1673,7 @@ write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance direct adjoi
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
 call mpl%flush
 write(mpl%test,'(a7,a,l1)') '','Vertical balance direct adjoint test results:  ', &
- & two*abs(sum1-sum2)/abs(sum1+sum2)<rth
+ & two*abs(sum1-sum2)/abs(sum1+sum2)<repro_th
 call mpl%flush
 
 ! Inverse adjoint test
@@ -1687,7 +1687,7 @@ write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance inverse adjo
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
 call mpl%flush
 write(mpl%test,'(a7,a,l1)') '','Vertical balance inverse adjoint test results: ', &
- & two*abs(sum1-sum2)/abs(sum1+sum2)<rth
+ & two*abs(sum1-sum2)/abs(sum1+sum2)<repro_th
 call mpl%flush
 
 ! Probe out

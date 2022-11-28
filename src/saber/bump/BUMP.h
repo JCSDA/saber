@@ -59,17 +59,57 @@ class GeneralSection : public oops::Parameters {
 
  public:
   // Add colors to the log (for display on terminal)
-  oops::OptionalParameter<bool> colorlog{"colorlog", this};
+  oops::OptionalParameter<bool> color_log{"color log", this};
   // Stream test messages into a dedicated channel
   oops::OptionalParameter<bool> testing{"testing", this};
   // Default seed for random numbers
-  oops::OptionalParameter<bool> default_seed{"default_seed", this};
+  oops::OptionalParameter<bool> default_seed{"default seed", this};
   // Inter-compilers reproducibility
-  oops::OptionalParameter<bool> repro{"repro", this};
+  oops::OptionalParameter<bool> repro_ops{"reproducibility operators", this};
   // Reproducibility threshold
-  oops::OptionalParameter<double> rth{"rth", this};
+  oops::OptionalParameter<double> repro_th{"reproducibility threshold", this};
   // Universe radius [in meters]
-  oops::OptionalParameter<double> universe_rad{"universe_rad", this};
+  oops::OptionalParameter<double> universe_radius{"universe radius", this};
+};
+
+// -----------------------------------------------------------------------------
+
+class AliasParameter : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(AliasParameter, oops::Parameters)
+
+ public:
+  // In code
+  oops::RequiredParameter<std::string> in_code{"in code", this};
+  // In file
+  oops::RequiredParameter<std::string> in_file{"in file", this};
+};
+
+class IoSection : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(IoSection, oops::Parameters)
+
+ public:
+  // Data directory
+  oops::OptionalParameter<std::string> data_directory{"data directory", this};
+  // Data data_prefix
+  oops::OptionalParameter<std::string> data_prefix{"data prefix", this};
+  // Parallel NetCDF I/O
+  oops::OptionalParameter<bool> parallel_netcdf{"parallel netcdf", this};
+  // Number of I/O processors
+  oops::OptionalParameter<int> nprocio{"io task number", this};
+  // Alias
+  oops::OptionalParameter<std::vector<AliasParameter>> alias{"alias", this};
+  // Sampling file
+  oops::OptionalParameter<std::string> fname_samp{"sampling file", this};
+  // Vertical covariance files
+  oops::OptionalParameter<std::vector<std::string>> fname_vbal_cov{"vertical covariance file", this};
+  // Vertical balance file
+  oops::OptionalParameter<std::string> fname_vbal{"vertical balance file", this};
+  // Moments files
+  oops::OptionalParameter<std::vector<std::string>> fname_mom{"moments file", this};
+  // NICAS file
+  oops::OptionalParameter<std::string> fname_nicas{"nicas file", this};
+  // Wind transform file
+  oops::OptionalParameter<std::string> fname_wind{"psichitouv file", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -173,56 +213,10 @@ class DriversSection : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
-class AliasParameter : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(AliasParameter, oops::Parameters)
-
- public:
-  // In code
-  oops::RequiredParameter<std::string> in_code{"in code", this};
-  // In file
-  oops::RequiredParameter<std::string> in_file{"in file", this};
-};
-
-class IoSection : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(IoSection, oops::Parameters)
-
- public:
-  // Data directory
-  oops::OptionalParameter<std::string> datadir{"datadir", this};
-  // Files prefix
-  oops::OptionalParameter<std::string> prefix{"prefix", this};
-  // Parallel NetCDF I/O
-  oops::OptionalParameter<bool> parallel_io{"parallel_io", this};
-  // Number of I/O processors
-  oops::OptionalParameter<int> nprocio{"nprocio", this};
-  // Alias
-  oops::OptionalParameter<std::vector<AliasParameter>> alias{"alias", this};
-  // Variance files
-  oops::OptionalParameter<std::vector<std::string>> fname_var{"fname_var", this};
-  // Sampling file
-  oops::OptionalParameter<std::string> fname_samp{"fname_samp", this};
-  // Vertical covariance files
-  oops::OptionalParameter<std::vector<std::string>> fname_vbal_cov{"fname_vbal_cov", this};
-  // Vertical balance file
-  oops::OptionalParameter<std::string> fname_vbal{"fname_vbal", this};
-  // Moments files
-  oops::OptionalParameter<std::vector<std::string>> fname_mom{"fname_mom", this};
-  // NICAS file
-  oops::OptionalParameter<std::string> fname_nicas{"fname_nicas", this};
-  // Wind transform file
-  oops::OptionalParameter<std::string> fname_wind{"fname_wind", this};
-};
-
-// -----------------------------------------------------------------------------
-
 class ModelSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(ModelSection, oops::Parameters)
 
  public:
-  // Number of levels
-  oops::OptionalParameter<int> nl0{"nl0", this};
-  // Levels
-  oops::OptionalParameter<std::vector<int>> levs{"levs", this};
   // Level for 2D variables ('first' or 'last')
   oops::OptionalParameter<std::string> lev2d{"lev2d", this};
   // Variables names
