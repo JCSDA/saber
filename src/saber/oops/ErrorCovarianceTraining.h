@@ -276,20 +276,20 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
     }
 
     // Get input fields for geometry 1
-    std::vector<eckit::LocalConfiguration> inputFields1;
-    inputFields1 = params.inputFields.value().get_value_or(inputFields1);
+    std::vector<eckit::LocalConfiguration> inputFieldsConfigs1;
+    inputFieldsConfigs1 = params.inputFields.value().get_value_or(inputFieldsConfigs1);
     std::vector<atlas::FieldSet> fsetVec1 = readInputFields(geom1,
                                                             params.inputVars.value(),
                                                             xx.validTime(),
-                                                            inputFields1);
+                                                            inputFieldsConfigs1);
 
     // Get input fields for geometry 2
-    std::vector<eckit::LocalConfiguration> inputFields2;
-    inputFields2 = params.inputFields2.value().get_value_or(inputFields2);
+    std::vector<eckit::LocalConfiguration> inputFieldsConfigs2;
+    inputFieldsConfigs2 = params.inputFields2.value().get_value_or(inputFieldsConfigs2);
     std::vector<atlas::FieldSet> fsetVec2 = readInputFields(geom1,
                                                             params.inputVars.value(),
                                                             xx.validTime(),
-                                                            inputFields2);
+                                                            inputFieldsConfigs2);
 
     // Select SABER library training
     std::unique_ptr<bump::BUMP> bump;

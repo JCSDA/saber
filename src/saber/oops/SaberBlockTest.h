@@ -64,7 +64,7 @@ template <typename MODEL> class SaberBlockTestParameters
 
 template <typename MODEL> class SaberBlockTest : public oops::Application {
   typedef oops::Geometry<MODEL>                                     Geometry_;
-  typedef oops::Increment<MODEL     >                               Increment_;
+  typedef oops::Increment<MODEL>                                    Increment_;
   typedef typename boost::ptr_vector<SaberOuterTBlock<MODEL>>       SaberOuterTBlockVec_;
   typedef oops::State<MODEL>                                        State_;
   typedef typename std::map<std::string, const oops::GeometryData*> GeometryDataMap_;
