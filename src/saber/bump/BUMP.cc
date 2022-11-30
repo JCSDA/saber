@@ -58,10 +58,12 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
     // Get number of MPI tasks and OpenMP threads
     std::string mpi(std::to_string(comm.size()));
     std::string omp("1");
+#ifdef _OPENMP
     # pragma omp parallel
     {
         omp = std::to_string(omp_get_num_threads());
     }
+#endif
     oops::Log::info() << "Info     : MPI tasks:      " << mpi << std::endl;
     oops::Log::info() << "Info     : OpenMP threads: " << omp << std::endl;
 
