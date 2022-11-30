@@ -39,7 +39,6 @@ std::vector<atlas::FieldSet> readInputFields(
 #ifdef _OPENMP
   # pragma omp parallel
   {
-
     omp = std::to_string(omp_get_num_threads());
   }
 #endif
