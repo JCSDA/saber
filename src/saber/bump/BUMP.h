@@ -262,35 +262,35 @@ class SamplingSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(SamplingSection, oops::Parameters)
 
  public:
-  // Number of sampling points
-  oops::OptionalParameter<int> nc1{"nc1", this};
-  // Number of diagnostic points
-  oops::OptionalParameter<int> nc2{"nc2", this};
-  // Number of horizontal classes
-  oops::OptionalParameter<int> nc3{"nc3", this};
+  // Computation grid size
+  oops::OptionalParameter<int> nc1{"computation grid size", this};
+  // Diagnostic grid size
+  oops::OptionalParameter<int> nc2{"diagnostic grid size", this};
+  // Number of distance classes
+  oops::OptionalParameter<int> nc3{"number of distance classes", this};
   // Number of angular sectors
-  oops::OptionalParameter<int> nc4{"nc4", this};
+  oops::OptionalParameter<int> nc4{"number of angular sectors", this};
   // Class size (for sam_type='hor'), should be larger than the typical grid cell size [in meters]
-  oops::OptionalParameter<double> dc{"dc", this};
+  oops::OptionalParameter<double> dc{"distance class width", this};
   // Reduced number of levels for diagnostics
-  oops::OptionalParameter<int> nl0r{"nl0r", this};
+  oops::OptionalParameter<int> nl0r{"reduced number of levels", this};
   // Activate local diagnostics
-  oops::OptionalParameter<bool> local_diag{"local_diag", this};
+  oops::OptionalParameter<bool> local_diag{"local diagnostic", this};
   // Local diagnostics calculation radius [in meters]
-  oops::OptionalParameter<double> local_rad{"local_rad", this};
+  oops::OptionalParameter<double> local_rad{"averaging radius", this};
   // Local diagnostics calculation latitude band half-width [in degrees]
-  oops::OptionalParameter<double> local_dlat{"local_dlat", this};
+  oops::OptionalParameter<double> local_dlat{"averaging latitude width", this};
   // Diagnostic draw type ('random' or 'octahedral')
-  oops::OptionalParameter<std::string> draw_type{"draw_type", this};
+  oops::OptionalParameter<std::string> draw_type{"grid type", this};
   // Maximum number of random number draws
-  oops::OptionalParameter<int> irmax{"irmax", this};
+  oops::OptionalParameter<int> irmax{"max number of draws", this};
   // Vertical balance C2B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based
   // or 'si': smooth interpolation)
-  oops::OptionalParameter<std::string> interp_type{"interp_type", this};
+  oops::OptionalParameter<std::string> interp_type{"interpolation type", this};
   // Sampling masks
   oops::OptionalParameter<std::vector<MaskParameters>> masks{"masks", this};
   // Threshold on vertically contiguous points for the mask (0 to skip the test)
-  oops::OptionalParameter<int> ncontig_th{"ncontig_th", this};
+  oops::OptionalParameter<int> ncontig_th{"contiguous levels threshold", this};
 };
 
 // -----------------------------------------------------------------------------

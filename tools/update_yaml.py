@@ -90,7 +90,7 @@ kv.append(ensembleSizes)
 
 sampling = {}
 sampling["name"] = "sampling"
-sampling["keys"] = ["nc1", "nc2", "nc3", "nc4", "dc", "nl0r", "local_diag", "local_rad", "local_dlat", "irmax", "masks", "ncontig_th"]
+sampling["keys"] = ["masks"]
 kv.append(sampling)
 
 localization = {}
@@ -342,13 +342,33 @@ for i in range(len(bumps)):
     if "ens2_nsub" in old_bump:
         new_bump["ensemble sizes"]["number of lowres sub-ensembles"] = old_bump["ens2_nsub"]
 
-    # Udpate diag_draw_type
+    # Udpate sampling section
+    if "nc1" in old_bump:
+        new_bump["sampling"]["computation grid size"] = old_bump["nc1"]
+    if "nc2" in old_bump:
+        new_bump["sampling"]["diagnostic grid size"] = old_bump["nc2"]
+    if "nc3" in old_bump:
+        new_bump["sampling"]["number of distance classes"] = old_bump["nc3"]
+    if "nc4" in old_bump:
+        new_bump["sampling"]["number of angular sectors"] = old_bump["nc4"]
+    if "dc" in old_bump:
+        new_bump["sampling"]["distance class width"] = old_bump["dc"]
+    if "nl0r" in old_bump:
+        new_bump["sampling"]["reduced number of levels"] = old_bump["nl0r"]
+    if "local_diag" in old_bump:
+        new_bump["sampling"]["local diagnostic"] = old_bump["local_diag"]
+    if "local_rad" in old_bump:
+        new_bump["sampling"]["averaging radius"] = old_bump["local_rad"]
+    if "local_dlat" in old_bump:
+        new_bump["sampling"]["averaging latitude width"] = old_bump["local_dlat"]
     if "diag_draw_type" in old_bump:
-        new_bump["sampling"]["draw_type"] = old_bump["diag_draw_type"]
-
-    # Udpate samp_interp_type
+        new_bump["sampling"]["grid type"] = old_bump["diag_draw_type"]
+    if "irmax" in old_bump:
+        new_bump["sampling"]["max number of draws"] = old_bump["irmax"]
     if "samp_interp_type" in old_bump:
-        new_bump["sampling"]["interp_type"] = old_bump["samp_interp_type"]
+        new_bump["sampling"]["interpolation type"] = old_bump["samp_interp_type"]
+    if "ncontig_th" in old_bump:
+        new_bump["sampling"]["contiguous levels threshold"] = old_bump["ncontig_th"]
 
     # Udpate vbal
     if "vbal_block" in old_bump:

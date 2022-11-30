@@ -114,9 +114,9 @@ type nam_type
    integer :: ens2_nsub                                       !< Ensemble 2 sub-ensembles number
 
    ! Sampling section
-   integer :: nc1                                             !< Number of sampling points
-   integer :: nc2                                             !< Number of diagnostic points
-   integer :: nc3                                             !< Number of horizontal classes
+   integer :: nc1                                             !< Computation grid size
+   integer :: nc2                                             !< Diagnostic grid size
+   integer :: nc3                                             !< Number of distance classes
    integer :: nc4                                             !< Number of angular sectors
    real(kind_real) :: dc                                      !< Class size, should be larger than the typical grid cell size [in meters]
    integer :: nl0r                                            !< Reduced number of levels for diagnostics
@@ -621,18 +621,18 @@ end if
 ! Sampling section
 if (conf%has('sampling')) then
    call conf%get_or_die('sampling',section)
-   call get(section,'nc1',nam%nc1)
-   call get(section,'nc2',nam%nc2)
-   call get(section,'nc3',nam%nc3)
-   call get(section,'nc4',nam%nc4)
-   call get(section,'dc',nam%dc)
-   call get(section,'nl0r',nam%nl0r)
-   call get(section,'local_diag',nam%local_diag)
-   call get(section,'local_rad',nam%local_rad)
-   call get(section,'local_dlat',nam%local_dlat)
-   call get(section,'draw_type',nam%samp_draw_type)
-   call get(section,'irmax',nam%irmax)
-   call get(section,'interp_type',nam%samp_interp_type)
+   call get(section,'computation grid size',nam%nc1)
+   call get(section,'diagnostic grid size',nam%nc2)
+   call get(section,'number of distance classes',nam%nc3)
+   call get(section,'number of angular sectors',nam%nc4)
+   call get(section,'distance class width',nam%dc)
+   call get(section,'reduced number of levels',nam%nl0r)
+   call get(section,'local diagnostic',nam%local_diag)
+   call get(section,'averaging radius',nam%local_rad)
+   call get(section,'averaging latitude width',nam%local_dlat)
+   call get(section,'grid type',nam%samp_draw_type)
+   call get(section,'max number of draws',nam%irmax)
+   call get(section,'interpolation type',nam%samp_interp_type)
    if (section%has('masks')) then
       call section%get_or_die('masks',confs)
 
@@ -661,7 +661,7 @@ if (conf%has('sampling')) then
          call get(confs(iconf),'variable',nam%mask_variable(iconf))
       end do
    end if
-   call get(section,'ncontig_th',nam%ncontig_th)
+   call get(section,'contiguous levels threshold',nam%ncontig_th)
 end if
 
 ! Localization section
