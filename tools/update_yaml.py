@@ -75,7 +75,7 @@ kv.append(io)
 
 drivers = {}
 drivers["name"] = "drivers"
-drivers["keys"] = ["strategy", "new_normality", "load_samp_local", "load_samp_global", "write_samp_local", "write_samp_global", "write_samp_grids", "new_vbal_cov", "update_vbal_cov", "load_vbal_cov", "write_vbal_cov", "new_vbal", "load_vbal", "write_vbal", "new_var", "update_var", "new_mom", "update_mom", "load_mom", "write_mom", "new_hdiag", "write_hdiag", "write_hdiag_detail", "new_nicas", "load_nicas_local", "load_nicas_global", "write_nicas_local", "write_nicas_global", "write_nicas_grids", "new_wind", "load_wind_local", "write_wind_local", "check_vbal", "check_adjoints", "check_normalization", "check_dirac", "check_randomization", "check_consistency", "check_optimality", "check_set_param", "check_get_param", "check_apply_vbal", "check_apply_stddev", "check_apply_nicas"]
+drivers["keys"] = []
 kv.append(drivers)
 
 model = {}
@@ -194,23 +194,23 @@ for i in range(len(bumps)):
     if "datadir" in old_bump:
         new_bump["io"]["data directory"] = old_bump["datadir"]
     if "prefix" in old_bump:
-        new_bump["io"]["data prefix"] = old_bump["prefix"]
+        new_bump["io"]["files prefix"] = old_bump["prefix"]
     if "parallel_io" in old_bump:
         new_bump["io"]["parallel netcdf"] = old_bump["parallel_io"]
     if "nprocio" in old_bump:
         new_bump["io"]["io task number"] = old_bump["nprocio"]
     if "fname_samp" in old_bump:
-        new_bump["io"]["sampling file"] = old_bump["fname_samp"]
+        new_bump["io"]["overriding sampling file"] = old_bump["fname_samp"]
     if "fname_vbal_cov" in old_bump:
-        new_bump["io"]["vertical covariance file"] = old_bump["fname_vbal_cov"]
+        new_bump["io"]["overriding vertical covariance file"] = old_bump["fname_vbal_cov"]
     if "fname_vbal" in old_bump:
-        new_bump["io"]["vertical balance file"] = old_bump["fname_vbal"]
+        new_bump["io"]["overriding vertical balance file"] = old_bump["fname_vbal"]
     if "fname_mom" in old_bump:
-        new_bump["io"]["moments file"] = old_bump["fname_mom"]
+        new_bump["io"]["overriding moments file"] = old_bump["fname_mom"]
     if "fname_nicas" in old_bump:
-        new_bump["io"]["nicas file"] = old_bump["fname_nicas"]
+        new_bump["io"]["overriding nicas file"] = old_bump["fname_nicas"]
     if "fname_wind" in old_bump:
-        new_bump["io"]["psichitouv file"] = old_bump["fname_wind"]
+        new_bump["io"]["overriding psichitouv file"] = old_bump["fname_wind"]
     if "io_keys" in old_bump:
         vec = []
         for i in range(len(old_bump["io_keys"])):
@@ -221,7 +221,7 @@ for i in range(len(bumps)):
         new_bump["io"]["alias"] = vec
 
     # Update drivers section
-    if "method" in old_bump:
+    if "method" in old_bump and "new_hdiag" in old_bump:
         if old_bump["method"] == "cor":
             new_bump["drivers"]["compute covariance"] = True
             new_bump["drivers"]["compute correlation"] = True
@@ -246,6 +246,90 @@ for i in range(len(bumps)):
             new_bump["drivers"]["compute lowres localization"] = True
             new_bump["drivers"]["compute hybrid weights"] = True
             new_bump["drivers"]["hybrid source"] = "lowres ensemble"
+    if "strategy" in old_bump:
+        new_bump["drivers"]["multivariate strategy"] = old_bump["strategy"]
+    if "new_normality" in old_bump:
+        new_bump["drivers"]["compute normality"] = old_bump["new_normality"]
+    if "load_samp_local" in old_bump:
+        new_bump["drivers"]["load local sampling"] = old_bump["load_samp_local"]
+    if "load_samp_global" in old_bump:
+        new_bump["drivers"]["load global sampling"] = old_bump["load_samp_global"]
+    if "write_samp_local" in old_bump:
+        new_bump["drivers"]["write local sampling"] = old_bump["write_samp_local"]
+    if "write_samp_global" in old_bump:
+        new_bump["drivers"]["write global sampling"] = old_bump["write_samp_global"]
+    if "" in old_bump:
+        new_bump["drivers"]["write sampling grids"] = old_bump["write_samp_grids"]
+    if "new_vbal_cov" in old_bump:
+        new_bump["drivers"]["compute vertical covariance"] = old_bump["new_vbal_cov"]
+    if "update_vbal_cov" in old_bump:
+        new_bump["drivers"]["compute vertical covariance"] = old_bump["update_vbal_cov"]
+        new_bump["drivers"]["iterative algorithm"] = old_bump["update_vbal_cov"]
+    if "load_vbal_cov" in old_bump:
+        new_bump["drivers"]["load vertical covariance"] = old_bump["load_vbal_cov"]
+    if "write_vbal_cov" in old_bump:
+        new_bump["drivers"]["write vertical covariance"] = old_bump["write_vbal_cov"]
+    if "new_vbal" in old_bump:
+        new_bump["drivers"]["compute vertical balance"] = old_bump["new_vbal"]
+    if "load_vbal" in old_bump:
+        new_bump["drivers"]["load vertical balance"] = old_bump["load_vbal"]
+    if "write_vbal" in old_bump:
+        new_bump["drivers"]["write vertical balance"] = old_bump["write_vbal"]
+    if "new_var" in old_bump:
+        new_bump["drivers"]["compute variance"] = old_bump["new_var"]
+    if "update_var" in old_bump:
+        new_bump["drivers"]["compute variance"] = old_bump["update_var"]
+        new_bump["drivers"]["iterative algorithm"] = old_bump["update_var"]
+    if "new_mom" in old_bump:
+        new_bump["drivers"]["compute moments"] = old_bump["new_mom"]
+    if "update_mom" in old_bump:
+        new_bump["drivers"]["compute moments"] = old_bump["update_mom"]
+        new_bump["drivers"]["iterative algorithm"] = old_bump["update_mom"]
+    if "load_mom" in old_bump:
+        new_bump["drivers"]["load moments"] = old_bump["load_mom"]
+    if "write_mom" in old_bump:
+        new_bump["drivers"]["write moments"] = old_bump["write_mom"]
+    if "new_hdiag" in old_bump and not ("update_mom" in old_bump or "load_mom" in old_bump):
+        new_bump["drivers"]["compute moments"] = True
+    if "write_hdiag" in old_bump:
+        new_bump["drivers"]["write diagnostics"] = old_bump["write_hdiag"]
+    if "write_hdiag_detail" in old_bump:
+        new_bump["drivers"]["write diagnostics detail"] = old_bump["write_hdiag_detail"]
+    if "new_nicas" in old_bump:
+        new_bump["drivers"]["compute nicas"] = old_bump["new_nicas"]
+    if "load_nicas_local" in old_bump:
+        new_bump["drivers"]["load local nicas"] = old_bump["load_nicas_local"]
+    if "load_nicas_global" in old_bump:
+        new_bump["drivers"]["load global nicas"] = old_bump["load_nicas_global"]
+    if "write_nicas_local" in old_bump:
+        new_bump["drivers"]["write local nicas"] = old_bump["write_nicas_local"]
+    if "write_nicas_global" in old_bump:
+        new_bump["drivers"]["write global nicas"] = old_bump["write_nicas_global"]
+    if "write_nicas_grids" in old_bump:
+        new_bump["drivers"]["write nicas grids"] = old_bump["write_nicas_grids"]
+    if "new_wind" in old_bump:
+        new_bump["drivers"]["compute psichitouv"] = old_bump["new_wind"]
+    if "load_wind_local" in old_bump:
+        new_bump["drivers"]["load local psichitouv"] = old_bump["load_wind_local"]
+    if "write_wind_local" in old_bump:
+        new_bump["drivers"]["write local psichitouv"] = old_bump["write_wind_local"]
+    if "check_vbal" in old_bump:
+        new_bump["drivers"]["vertical balance inverse test"] = old_bump["check_vbal"]
+    if "check_adjoints" in old_bump:
+        new_bump["drivers"]["adjoints test"] = old_bump["check_adjoints"]
+    if "check_normalization" in old_bump:
+        new_bump["drivers"]["normalization test"] = old_bump["check_normalization"]
+    if "check_dirac" in old_bump:
+        new_bump["drivers"]["internal dirac test"] = old_bump["check_dirac"]
+    if "check_randomization" in old_bump:
+        new_bump["drivers"]["randomization test"] = old_bump["check_randomization"]
+    if "check_consistency" in old_bump:
+        new_bump["drivers"]["internal consistency test"] = old_bump["check_consistency"]
+    if "check_optimality" in old_bump:
+        new_bump["drivers"]["localization optimality test"] = old_bump["check_optimality"]
+        new_bump["drivers"]["compute covariance"] = True
+        new_bump["drivers"]["compute correlation"] = True
+        new_bump["drivers"]["compute localization"] = True
 
     # Udpate diag_draw_type
     if "diag_draw_type" in old_bump:

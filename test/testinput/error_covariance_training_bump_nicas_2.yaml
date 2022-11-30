@@ -53,8 +53,5 @@ output:
 - parameter: dirac_nicas
   file:
     filepath: testdata/error_covariance_training_bump_nicas_2/_MPI_-_OMP__dirac_nicas
-- parameter: dirac_nicas_bens
-  file:
-    filepath: testdata/error_covariance_training_bump_nicas_2/_MPI_-_OMP__dirac_nicas_bens
 test:
   reference filename: testref/error_covariance_training_bump_nicas_2.ref

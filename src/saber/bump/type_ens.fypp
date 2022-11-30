@@ -755,7 +755,7 @@ write(mpl%info,'(a7,a)') '','Write normality diagnostics'
 call mpl%flush
 
 ! Create file
-ncid = create_file(mpl,trim(nam%data_prefix)//'normality',mpl%myproc)
+ncid = create_file(mpl,trim(nam%prefix)//'normality',mpl%myproc)
 
 ! Define dimensions
 nloc_id = define_dim(mpl,ncid,'nloc',nloc)

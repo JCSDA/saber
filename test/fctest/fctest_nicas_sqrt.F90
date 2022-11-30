@@ -69,9 +69,8 @@ TEST( test_interpolatorbump )
 
   ! Create configurations
   conf = fckit_configuration()
-  call conf%set('drivers.method','cor')
-  call conf%set('drivers.strategy','specific_multivariate')
-  call conf%set('drivers.new_nicas',.true.)
+  call conf%set('drivers.multivariate strategy','specific_multivariate')
+  call conf%set('drivers.compute nicas',.true.)
   call conf%set('nicas.resol',4.0_kind_real)
   call conf%set('nicas.forced_radii',.true.)
   rh(1) = fckit_configuration()

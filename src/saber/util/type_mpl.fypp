@@ -40,7 +40,7 @@ type mpl_type
    integer :: tag                        !< MPI tag
 
    ! I/O
-   character(len=1024) :: data_directory !< Data directory
+   character(len=1024) :: datadir        !< Data directory
    logical :: parallel_netcdf            !< Parallel NetCDF I/O
    integer :: nprocio                    !< Number of I/O tasks
    logical,allocatable :: pioproc(:)     !< Flag for I/O MPI tasks

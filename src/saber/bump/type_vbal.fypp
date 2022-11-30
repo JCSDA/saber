@@ -1143,12 +1143,12 @@ write(mpl%info,'(a)') '--- Compute vertical balance operators'
 call mpl%flush
 
 ! Allocation
-if (.not.(nam%new_vbal_cov.or.nam%load_vbal_cov.or.nam%update_vbal_cov)) then
+if (.not.(nam%new_vbal_cov.or.nam%load_vbal_cov)) then
    call vbal%alloc(mpl,nam,geom,bpar,samp,ens%nsub)
    call ensu%alloc(ens%ne,ens%nsub)
 end if
 
-if (nam%new_vbal_cov.or.nam%load_vbal_cov.or.nam%update_vbal_cov) then
+if (nam%new_vbal_cov.or.nam%load_vbal_cov) then
    ! Initialize diagonal block of A
    do iv=1,nam%nv
       vbal%blk(iv,iv)%a_c1a = 0.0
@@ -1170,7 +1170,7 @@ do iv=1,nam%nv
          write(mpl%info,'(a7,a)') '','Compute cross-covariance between '//trim(nam%variables(iv))//' and unbalanced ' &
  & //trim(nam%variables(jv))
          call mpl%flush
-         if (nam%new_vbal_cov.or.nam%load_vbal_cov.or.nam%update_vbal_cov) then
+         if (nam%new_vbal_cov.or.nam%load_vbal_cov) then
             do ic1a=1,samp%nc1a
                vbal%blk(iv,jv)%cov_c1a(ic1a,:,:) = 0.0
                do kv=1,jv
@@ -1194,7 +1194,7 @@ do iv=1,nam%nv
       end if
    end do
 
-   if (nam%new_vbal_cov.or.nam%load_vbal_cov.or.nam%update_vbal_cov) then
+   if (nam%new_vbal_cov.or.nam%load_vbal_cov) then
       do jv=1,iv-1
          ! Compute A matrix
          write(mpl%info,'(a7,a)') '','Compute A matrix between '//trim(nam%variables(iv))//' and '//trim(nam%variables(jv))

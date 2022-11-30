@@ -374,9 +374,9 @@ if (present(iproc)) then
 
    ! Full file name
    if (iproc==0) then
-      fullname = trim(mpl%data_directory)//'/'//trim(filename)//'.nc'
+      fullname = trim(mpl%datadir)//'/'//trim(filename)//'.nc'
    else
-      write(fullname,'(a,i6.6,a,i6.6,a)') trim(mpl%data_directory)//'/'//trim(filename)//'_local_',mpl%nproc,'-',iproc,'.nc'
+      write(fullname,'(a,i6.6,a,i6.6,a)') trim(mpl%datadir)//'/'//trim(filename)//'_local_',mpl%nproc,'-',iproc,'.nc'
    end if
 
    ! Create file
@@ -385,7 +385,7 @@ else
    ! Global I/O
    if (mpl%pioproc(mpl%myproc)) then
       ! Full file name
-      fullname = trim(mpl%data_directory)//'/'//trim(filename)//'.nc'
+      fullname = trim(mpl%datadir)//'/'//trim(filename)//'.nc'
 
       ! Create file
       if (mpl%parallel_netcdf) then
@@ -441,9 +441,9 @@ if (present(iproc)) then
 
    ! Full file name
    if (iproc==0) then
-      fullname = trim(mpl%data_directory)//'/'//trim(filename)//'.nc'
+      fullname = trim(mpl%datadir)//'/'//trim(filename)//'.nc'
    else
-      write(fullname,'(a,i6.6,a,i6.6,a)') trim(mpl%data_directory)//'/'//trim(filename)//'_local_',mpl%nproc,'-',iproc,'.nc'
+      write(fullname,'(a,i6.6,a,i6.6,a)') trim(mpl%datadir)//'/'//trim(filename)//'_local_',mpl%nproc,'-',iproc,'.nc'
    end if
 
    ! Open file
@@ -452,7 +452,7 @@ else
    ! Global I/O
    if (mpl%pioproc(mpl%myproc)) then
       ! Full file name
-      fullname = trim(mpl%data_directory)//'/'//trim(filename)//'.nc'
+      fullname = trim(mpl%datadir)//'/'//trim(filename)//'.nc'
 
       ! Open file
       if (mpl%parallel_netcdf) then

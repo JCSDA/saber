@@ -205,9 +205,9 @@ type(geom_type),intent(in) :: geom     !< Geometry
 ! Initialization
 samp%nproc = mpl%nproc
 samp%sc2 = nam%new_vbal.or.nam%load_vbal.or.(nam%new_hdiag.and.nam%local_diag)
-samp%sc3 = nam%new_mom.or.nam%update_mom.or.nam%load_mom
+samp%sc3 = nam%new_mom.or.nam%load_mom
 samp%lat_bands = (nam%new_vbal.and.(nam%vbal_dlat>zero)).or.(nam%new_hdiag.and.(nam%local_dlat>zero))
-samp%compute_c2b_to_c1a = nam%new_vbal.and.(nam%new_vbal_cov.or.nam%load_vbal_cov.or.nam%update_vbal_cov)
+samp%compute_c2b_to_c1a = nam%new_vbal.and.(nam%new_vbal_cov.or.nam%load_vbal_cov)
 
 ! Allocation
 allocate(samp%myuniverse(samp%nproc))
@@ -1026,7 +1026,7 @@ real(kind_real),allocatable :: lon_vbal(:,:,:),lat_vbal(:,:,:)
 @:probe_in()
 
 ! Open file
-ncid = create_file(mpl,trim(nam%data_prefix)//'sampling_grids',mpl%myproc)
+ncid = create_file(mpl,trim(nam%prefix)//'sampling_grids',mpl%myproc)
 
 ! Define dimensions
 nc0a_id = define_dim(mpl,ncid,'nc0a',geom%nc0a)

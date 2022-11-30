@@ -250,7 +250,7 @@ allocate(bump%nicas(2))
 allocate(bump%samp(2))
 
 ! Set I/O parameters
-bump%mpl%data_directory = bump%nam%data_directory
+bump%mpl%datadir = bump%nam%datadir
 bump%mpl%parallel_netcdf = bump%nam%parallel_netcdf
 bump%mpl%nprocio = bump%nam%nprocio
 bump%mpl%pioproc = .false.
@@ -263,10 +263,10 @@ if (bump%mpl%main) call system_clock(sc)
 call bump%mpl%f_comm%broadcast(sc,bump%mpl%rootproc-1)
 if (bump%mpl%pioproc(bump%mpl%myproc)) then
    color = 1
-   write(cname,'(a,i12.12)') trim(bump%mpl%f_comm%name())//'_'//trim(bump%nam%data_prefix)//'io_',sc
+   write(cname,'(a,i12.12)') trim(bump%mpl%f_comm%name())//'_'//trim(bump%nam%prefix)//'io_',sc
 else
    color = 0
-   write(cname,'(a,i12.12)') trim(bump%mpl%f_comm%name())//'_'//trim(bump%nam%data_prefix)//'no_io_',sc
+   write(cname,'(a,i12.12)') trim(bump%mpl%f_comm%name())//'_'//trim(bump%nam%prefix)//'no_io_',sc
 endif
 bump%mpl%f_comm_io = bump%mpl%f_comm%split(color,cname)
 
@@ -666,8 +666,9 @@ if (bump%nam%new_normality) then
    call bump%ens(1)%normality(bump%mpl,bump%nam,bump%geom(1))
 end if
 
-if (bump%nam%new_vbal_cov.or.bump%nam%load_vbal_cov.or.(bump%nam%new_vbal.and.(.not.bump%nam%update_vbal_cov)) &
- & .or.bump%nam%load_vbal.or.bump%nam%new_mom.or.bump%nam%load_mom) then
+if ((bump%nam%new_vbal_cov.and.(.not.bump%nam%iterative_algo)).or.bump%nam%load_vbal_cov.or.(bump%nam%new_vbal.and. &
+ & (.not.(bump%nam%new_vbal_cov.and.bump%nam%iterative_algo))) &
+ & .or.bump%nam%load_vbal.or.(bump%nam%new_mom.and.(.not.bump%nam%iterative_algo)).or.bump%nam%load_mom) then
    ! Setup sampling for ensemble 1
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
@@ -691,7 +692,7 @@ if (bump%nam%new_vbal_cov.or.bump%nam%load_vbal_cov.or.(bump%nam%new_vbal.and.(.
    end if
 end if
 
-if (bump%nam%new_vbal_cov) then
+if (bump%nam%new_vbal_cov.and.(.not.bump%nam%iterative_algo)) then
    ! Run vertical covariance driver
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
@@ -741,7 +742,7 @@ if (bump%nam%new_vbal.or.bump%nam%load_vbal) then
    if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 end if
 
-if (bump%nam%new_var.or.(bump%var%bump_m2_counter>0)) then
+if ((bump%nam%new_var.and.(.not.bump%nam%iterative_algo)).or.(bump%var%bump_m2_counter>0)) then
    ! Run variance driver
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
@@ -751,7 +752,7 @@ if (bump%nam%new_var.or.(bump%var%bump_m2_counter>0)) then
    if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 end if
 
-if (bump%nam%new_mom) then
+if (bump%nam%new_mom.and.(.not.bump%nam%iterative_algo)) then
    ! Compute sample moments
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
@@ -829,7 +830,7 @@ if (.not.bump%nam%check_optimality) then
    call bump%cmat(1)%from_nam(bump%mpl,bump%nam,bump%geom(1),bump%bpar)
 end if
 
-if (bump%nam%new_hdiag) then
+if (bump%nam%compute_cor1.or.bump%nam%compute_cor2.or.bump%nam%compute_loc1.or.bump%nam%compute_loc2) then
    ! Copy HDIAG into C matrix
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
@@ -888,13 +889,11 @@ if (bump%nam%new_nicas.or.bump%nam%load_nicas_global) then
    write(bump%mpl%info,'(a)') '--- Run NICAS driver'
    call bump%mpl%flush
 
-   if (bump%nam%compute_cor1.or.bump%nam%compute_loc1) then
-      ! Ensemble 1
-      write(bump%mpl%info,'(a7,a)') '','Ensemble 1'
-      call bump%mpl%flush
-      call bump%nicas(1)%run_nicas(bump%mpl,bump%rng,bump%nam,bump%geom(1),bump%bpar,bump%cmat(1))
-      if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
-   end if
+   ! Ensemble 1
+   write(bump%mpl%info,'(a7,a)') '','Ensemble 1'
+   call bump%mpl%flush
+   call bump%nicas(1)%run_nicas(bump%mpl,bump%rng,bump%nam,bump%geom(1),bump%bpar,bump%cmat(1))
+   if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
 
    if (bump%nam%compute_cor2.or.bump%nam%compute_loc2) then
       ! Ensemble 2
@@ -909,20 +908,7 @@ elseif (bump%nam%load_nicas_local) then
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Read local NICAS parameters'
    call bump%mpl%flush
-
-   if (bump%nam%compute_cor1.or.bump%nam%compute_loc1) then
-      ! Ensemble 1
-      write(bump%mpl%info,'(a7,a)') '','Ensemble 1'
-      call bump%mpl%flush
-      call bump%nicas(1)%read_local(bump%mpl,bump%nam,bump%geom(1),bump%bpar)
-   end if
-
-   if (bump%nam%compute_cor2.or.bump%nam%compute_loc2) then
-      ! Ensemble 2
-      write(bump%mpl%info,'(a7,a)') '','Ensemble 2'
-      call bump%mpl%flush
-      call bump%nicas(2)%read_local(bump%mpl,bump%nam,bump%geom(2),bump%bpar)
-   end if
+   call bump%nicas(1)%read_local(bump%mpl,bump%nam,bump%geom(1),bump%bpar)
 end if
 
 if (bump%nam%check_optimality) then
@@ -945,25 +931,18 @@ if (bump%nam%new_nicas.or.bump%nam%load_nicas_local.or.bump%nam%load_nicas_globa
    write(bump%mpl%info,'(a)') '--- Run NICAS tests driver'
    call bump%mpl%flush
 
-   if (bump%nam%compute_cor1.or.bump%nam%compute_loc1) then
-      ! Ensemble 1
-      write(bump%mpl%info,'(a7,a)') '','Ensemble 1'
-      if (bump%nam%compute_loc1) then
-         call bump%nicas(1)%run_nicas_tests(bump%mpl,bump%rng,bump%nam,bump%geom(1),bump%bpar,bump%ens(1))
-      elseif (bump%nam%compute_cor1) then
-         call bump%nicas(1)%run_nicas_tests(bump%mpl,bump%rng,bump%nam,bump%geom(1),bump%bpar)
-      end if
-      if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
-   end if
+   ! Ensemble 1
+   write(bump%mpl%info,'(a7,a)') '','Ensemble 1'
+   call bump%mpl%flush
+   call bump%nicas(1)%run_nicas_tests(bump%mpl,bump%rng,bump%nam,bump%geom(1),bump%bpar)
+   if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
+
 
    if (bump%nam%compute_cor2.or.bump%nam%compute_loc2) then
       ! Ensemble 2
       write(bump%mpl%info,'(a7,a)') '','Ensemble 2'
-      if (bump%nam%compute_loc2) then
-         call bump%nicas(2)%run_nicas_tests(bump%mpl,bump%rng,bump%nam,bump%geom(2),bump%bpar,bump%ens(2))
-      elseif (bump%nam%compute_cor2) then
-         call bump%nicas(2)%run_nicas_tests(bump%mpl,bump%rng,bump%nam,bump%geom(2),bump%bpar)
-      end if
+      call bump%mpl%flush
+      call bump%nicas(2)%run_nicas_tests(bump%mpl,bump%rng,bump%nam,bump%geom(2),bump%bpar)
       if (bump%nam%default_seed) call bump%rng%reseed(bump%mpl)
    end if
 end if
@@ -2019,10 +1998,6 @@ do iv=1,bump%nam%nv
    case ('dirac_nicas','dirac_nicas_lr')
       if (.not.allocated(bump%nicas(igeom)%dirac)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
       fld_c0a = bump%nicas(igeom)%dirac(:,:,iv)
-      found = .true.
-   case ('dirac_nicas_bens','dirac_nicas_bens_lr')
-      if (.not.allocated(bump%nicas(igeom)%dirac_bens)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      fld_c0a = bump%nicas(igeom)%dirac_bens(:,:,iv)
       found = .true.
    end select
 

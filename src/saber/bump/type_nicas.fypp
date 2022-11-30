@@ -821,6 +821,7 @@ do ib=1,bpar%nbe
    if (bpar%nicas_block(ib)) call nicas%blk(ib)%compute_parameters(mpl,rng,nam,geom,bpar)
 end do
 
+
 if (nam%write_nicas_local.or.nam%write_nicas_global.or.nam%write_nicas_grids) then
    ! Write NICAS parameters
    write(mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -850,7 +851,7 @@ end subroutine nicas_run_nicas
 ! Subroutine: nicas_run_nicas_tests
 !> NICAS tests driver
 !----------------------------------------------------------------------
-subroutine nicas_run_nicas_tests(nicas,mpl,rng,nam,geom,bpar,ens)
+subroutine nicas_run_nicas_tests(nicas,mpl,rng,nam,geom,bpar)
 
 implicit none
 
@@ -861,7 +862,6 @@ type(rng_type),intent(inout) :: rng       !< Random number generator
 type(nam_type),intent(inout) :: nam       !< Namelist
 type(geom_type),intent(inout) :: geom     !< Geometry
 type(bpar_type),intent(in) :: bpar        !< Block parameters
-type(ens_type),intent(in),optional :: ens !< Ensemble
 
 ! Local variables
 integer :: ib,icmp
@@ -878,11 +878,7 @@ if (nam%check_adjoints) then
    call mpl%flush
    write(mpl%info,'(a)') '--- Test NICAS adjoint'
    call mpl%flush
-   if (present(ens)) then
-      call nicas%test_adjoint(mpl,rng,nam,geom,bpar,ens)
-   else
-      call nicas%test_adjoint(mpl,rng,nam,geom,bpar)
-   end if
+   call nicas%test_adjoint(mpl,rng,nam,geom,bpar)
 
    do ib=1,bpar%nbe
       if (bpar%nicas_block(ib)) then
@@ -932,11 +928,7 @@ if (nam%check_dirac) then
    call mpl%flush
    write(mpl%info,'(a)') '--- Apply NICAS to diracs'
    call mpl%flush
-   if (present(ens)) then
-      call nicas%test_dirac(mpl,nam,geom,bpar,ens)
-   else
-      call nicas%test_dirac(mpl,nam,geom,bpar)
-   end if
+   call nicas%test_dirac(mpl,nam,geom,bpar)
 
    ! Apply NICAS block to diracs
    do ib=1,bpar%nbe
@@ -1488,41 +1480,28 @@ end subroutine nicas_apply_bens
 ! Subroutine: nicas_test_adjoint
 !> Test NICAS adjoint
 !----------------------------------------------------------------------
-subroutine nicas_test_adjoint(nicas,mpl,rng,nam,geom,bpar,ens)
+subroutine nicas_test_adjoint(nicas,mpl,rng,nam,geom,bpar)
 
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(in) :: nicas     !< NICAS data
-type(mpl_type),intent(inout) :: mpl       !< MPI data
-type(rng_type),intent(inout) :: rng       !< Random number generator
-type(nam_type),intent(in) :: nam          !< Namelist
-type(geom_type),intent(in) :: geom        !< Geometry
-type(bpar_type),intent(in) :: bpar        !< Block parameters
-type(ens_type),intent(in),optional :: ens !< Ensemble
+class(nicas_type),intent(in) :: nicas !< NICAS data
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+type(rng_type),intent(inout) :: rng   !< Random number generator
+type(nam_type),intent(in) :: nam      !< Namelist
+type(geom_type),intent(in) :: geom    !< Geometry
+type(bpar_type),intent(in) :: bpar    !< Block parameters
 
 ! Local variables
 real(kind_real) :: sum1,sum2
 real(kind_real) :: fld1(geom%nc0a,geom%nl0,nam%nv),fld1_save(geom%nc0a,geom%nl0,nam%nv)
 real(kind_real) :: fld2(geom%nc0a,geom%nl0,nam%nv),fld2_save(geom%nc0a,geom%nl0,nam%nv)
-real(kind_real),allocatable :: fld1_bens(:,:,:),fld2_bens(:,:,:)
-logical :: lbens
 
 ! Set name
 @:set_name(nicas_test_adjoint)
 
 ! Probe in
 @:probe_in()
-
-! Initialization
-lbens = present(ens)
-if (lbens) lbens = allocated(ens%mem)
-
-! Allocation
-if (lbens) then
-   allocate(fld1_bens(geom%nc0a,geom%nl0,nam%nv))
-   allocate(fld2_bens(geom%nc0a,geom%nl0,nam%nv))
-end if
 
 ! Generate random field
 call rng%rand(zero,one,fld1_save)
@@ -1533,12 +1512,6 @@ fld1 = fld1_save
 fld2 = fld2_save
 call nicas%apply(mpl,nam,geom,bpar,fld1)
 call nicas%apply(mpl,nam,geom,bpar,fld2)
-if (lbens) then
-   fld1_bens = fld1_save
-   fld2_bens = fld2_save
-   call nicas%apply_bens(mpl,nam,geom,bpar,ens,fld1_bens)
-   call nicas%apply_bens(mpl,nam,geom,bpar,ens,fld2_bens)
-end if
 
 ! Print result
 call mpl%dot_prod(fld1,fld2_save,sum1)
@@ -1549,22 +1522,6 @@ call mpl%flush
 write(mpl%test,'(a,l1)') '    Full NICAS adjoint test result:                        ', &
  & two*abs(sum1-sum2)/abs(sum1+sum2)<repro_th
 call mpl%flush
-if (lbens) then
-   call mpl%dot_prod(fld1_bens,fld2_save,sum1)
-   call mpl%dot_prod(fld2_bens,fld1_save,sum2)
-   write(mpl%info,'(a,e15.8,a,e15.8,a,e15.8)') '--- Ensemble B adjoint test values:                        ', &
- & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
-   call mpl%flush
-   write(mpl%test,'(a,l1)') '    Ensemble B adjoint test result:                        ', &
- & two*abs(sum1-sum2)/abs(sum1+sum2)<repro_th
-   call mpl%flush
-end if
-
-! Release memory
-if (lbens) then
-   deallocate(fld1_bens)
-   deallocate(fld2_bens)
-end if
 
 ! Probe out
 @:probe_out()
@@ -1575,22 +1532,20 @@ end subroutine nicas_test_adjoint
 ! Subroutine: nicas_test_dirac
 !> Apply NICAS to diracs
 !----------------------------------------------------------------------
-subroutine nicas_test_dirac(nicas,mpl,nam,geom,bpar,ens)
+subroutine nicas_test_dirac(nicas,mpl,nam,geom,bpar)
 
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(inout) :: nicas  !< NICAS data
-type(mpl_type),intent(inout) :: mpl       !< MPI data
-type(nam_type),intent(in) :: nam          !< Namelist
-type(geom_type),intent(in) :: geom        !< Geometry
-type(bpar_type),intent(in) :: bpar        !< Block parameters
-type(ens_type),intent(in),optional :: ens !< Ensemble
+class(nicas_type),intent(inout) :: nicas !< NICAS data
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+type(nam_type),intent(in) :: nam         !< Namelist
+type(geom_type),intent(in) :: geom       !< Geometry
+type(bpar_type),intent(in) :: bpar       !< Block parameters
 
 ! Local variables
 integer :: ic0a,idir
-real(kind_real),allocatable :: fld_c0a(:,:,:),fld_ens_c0a(:,:,:)
-logical :: lbens
+real(kind_real),allocatable :: fld_c0a(:,:,:)
 
 ! Set name
 @:set_name(nicas_test_dirac)
@@ -1598,39 +1553,25 @@ logical :: lbens
 ! Probe in
 @:probe_in()
 
-! Initialization
-lbens = present(ens)
-if (lbens) lbens = allocated(ens%mem)
-
 ! Allocation
 allocate(fld_c0a(geom%nc0a,geom%nl0,nam%nv))
 allocate(nicas%dirac(geom%nc0a,geom%nl0,nam%nv))
-if (lbens) then
-   allocate(fld_ens_c0a(geom%nc0a,geom%nl0,nam%nv))
-   allocate(nicas%dirac_bens(geom%nc0a,geom%nl0,nam%nv))
-end if
 
 ! Initialization
 nicas%dirac = zero
-if (lbens) nicas%dirac_bens = zero
 
 do idir=1,geom%ndir
    ! Generate dirac field
    fld_c0a = zero
    if (geom%iprocdir(idir)==mpl%myproc) fld_c0a(geom%ic0adir(idir),geom%il0dir(idir),geom%ivdir(idir)) = one
-   if (lbens) fld_ens_c0a = fld_c0a
 
    ! Apply NICAS to dirac
    call nicas%apply(mpl,nam,geom,bpar,fld_c0a)
-
-   ! Apply localized ensemble covariance
-   if (lbens) call nicas%apply_bens(mpl,nam,geom,bpar,ens,fld_ens_c0a)
 
    ! Copy points
    do ic0a=1,geom%nc0a
       if (idir==geom%dirac_index(ic0a)) then
          nicas%dirac(ic0a,:,:) = fld_c0a(ic0a,:,:)
-         if (lbens) nicas%dirac_bens(ic0a,:,:) = fld_ens_c0a(ic0a,:,:)
       end if
    end do
 end do
@@ -1745,7 +1686,7 @@ nam%ens1_ne = ens1_ne
 
 if (mpl%main) then
    ! Create file
-   ncid = create_file(mpl,trim(nam%data_prefix)//'randomization',0)
+   ncid = create_file(mpl,trim(nam%prefix)//'randomization',0)
 
    ! Define dimensions
    ntest_id = define_dim(mpl,ncid,'ntest',ntest)

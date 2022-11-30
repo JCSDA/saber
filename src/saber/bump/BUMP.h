@@ -90,8 +90,8 @@ class IoSection : public oops::Parameters {
  public:
   // Data directory
   oops::OptionalParameter<std::string> data_directory{"data directory", this};
-  // Data data_prefix
-  oops::OptionalParameter<std::string> data_prefix{"data prefix", this};
+  // Data prefix
+  oops::OptionalParameter<std::string> files_prefix{"files prefix", this};
   // Parallel NetCDF I/O
   oops::OptionalParameter<bool> parallel_netcdf{"parallel netcdf", this};
   // Number of I/O processors
@@ -99,17 +99,18 @@ class IoSection : public oops::Parameters {
   // Alias
   oops::OptionalParameter<std::vector<AliasParameter>> alias{"alias", this};
   // Sampling file
-  oops::OptionalParameter<std::string> fname_samp{"sampling file", this};
+  oops::OptionalParameter<std::string> fname_samp{"overriding sampling file", this};
   // Vertical covariance files
-  oops::OptionalParameter<std::vector<std::string>> fname_vbal_cov{"vertical covariance file", this};
+  oops::OptionalParameter<std::vector<std::string>>
+    fname_vbal_cov{"overriding vertical covariance file", this};
   // Vertical balance file
-  oops::OptionalParameter<std::string> fname_vbal{"vertical balance file", this};
+  oops::OptionalParameter<std::string> fname_vbal{"overriding vertical balance file", this};
   // Moments files
-  oops::OptionalParameter<std::vector<std::string>> fname_mom{"moments file", this};
+  oops::OptionalParameter<std::vector<std::string>> fname_mom{"overriding moments file", this};
   // NICAS file
-  oops::OptionalParameter<std::string> fname_nicas{"nicas file", this};
+  oops::OptionalParameter<std::string> fname_nicas{"overriding nicas file", this};
   // Wind transform file
-  oops::OptionalParameter<std::string> fname_wind{"psichitouv file", this};
+  oops::OptionalParameter<std::string> fname_wind{"overriding psichitouv file", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -134,95 +135,81 @@ class DriversSection : public oops::Parameters {
   oops::OptionalParameter<bool> compute_hyb{"compute hybrid weights", this};
   // Hybrid term source ('randomized static' or 'lowres ensemble')
   oops::OptionalParameter<std::string> hybrid_source{"hybrid source", this};
-  // Localization strategy ('diag_all', 'common', 'common_weighted', 'specific_univariate' or
+  // Multivariate strategy ('diag_all', 'common', 'common_weighted', 'specific_univariate' or
   // 'specific_multivariate')
-  oops::OptionalParameter<std::string> strategy{"strategy", this};
+  oops::OptionalParameter<std::string> strategy{"multivariate strategy", this};
+  // Iterative algorithm (ensemble members loaded sequentially)
+  oops::OptionalParameter<bool> iterative_algo{"iterative algorithm", this};
   // New normality test
-  oops::OptionalParameter<bool> new_normality{"new_normality", this};
+  oops::OptionalParameter<bool> new_normality{"compute normality", this};
   // Load local sampling
-  oops::OptionalParameter<bool> load_samp_local{"load_samp_local", this};
+  oops::OptionalParameter<bool> load_samp_local{"load local sampling", this};
   // Load global sampling
-  oops::OptionalParameter<bool> load_samp_global{"load_samp_global", this};
+  oops::OptionalParameter<bool> load_samp_global{"load global sampling", this};
   // Write local sampling
-  oops::OptionalParameter<bool> write_samp_local{"write_samp_local", this};
+  oops::OptionalParameter<bool> write_samp_local{"write local sampling", this};
   // Write global sampling
-  oops::OptionalParameter<bool> write_samp_global{"write_samp_global", this};
+  oops::OptionalParameter<bool> write_samp_global{"write global sampling", this};
   // Write sampling grids
-  oops::OptionalParameter<bool> write_samp_grids{"write_samp_grids", this};
+  oops::OptionalParameter<bool> write_samp_grids{"write sampling grids", this};
   // New vertical covariance
-  oops::OptionalParameter<bool> new_vbal_cov{"new_vbal_cov", this};
-  // Update vertical covariance sequentially
-  oops::OptionalParameter<bool> update_vbal_cov{"update_vbal_cov", this};
+  oops::OptionalParameter<bool> new_vbal_cov{"compute vertical covariance", this};
   // Load local vertical covariance
-  oops::OptionalParameter<bool> load_vbal_cov{"load_vbal_cov", this};
+  oops::OptionalParameter<bool> load_vbal_cov{"load vertical covariance", this};
   // Write local vertical covariancee
-  oops::OptionalParameter<bool> write_vbal_cov{"write_vbal_cov", this};
-  // Compute new vertical balance operator
-  oops::OptionalParameter<bool> new_vbal{"new_vbal", this};
+  oops::OptionalParameter<bool> write_vbal_cov{"write vertical covariance", this};
+  // Compute vertical balance operator
+  oops::OptionalParameter<bool> new_vbal{"compute vertical balance", this};
   // Load local vertical balance operator
-  oops::OptionalParameter<bool> load_vbal{"load_vbal", this};
+  oops::OptionalParameter<bool> load_vbal{"load vertical balance", this};
   // Write vertical balance operator
-  oops::OptionalParameter<bool> write_vbal{"write_vbal", this};
-  // Compute new variance
-  oops::OptionalParameter<bool> new_var{"new_var", this};
-  // Update variance sequentially
-  oops::OptionalParameter<bool> update_var{"update_var", this};
-  // Compute new sampling moments
-  oops::OptionalParameter<bool> new_mom{"new_mom", this};
-  // Update sampling moments sequentially
-  oops::OptionalParameter<bool> update_mom{"update_mom", this};
+  oops::OptionalParameter<bool> write_vbal{"write vertical balance", this};
+  // Compute variance
+  oops::OptionalParameter<bool> new_var{"compute variance", this};
+  // Compute moments
+  oops::OptionalParameter<bool> new_mom{"compute moments", this};
   // Load sampling moments
-  oops::OptionalParameter<bool> load_mom{"load_mom", this};
+  oops::OptionalParameter<bool> load_mom{"load moments", this};
   // Write sampling moments
-  oops::OptionalParameter<bool> write_mom{"write_mom", this};
-  // Compute new HDIAG diagnostics
-  oops::OptionalParameter<bool> new_hdiag{"new_hdiag", this};
+  oops::OptionalParameter<bool> write_mom{"write moments", this};
+  // Compute HDIAG
+  oops::OptionalParameter<bool> new_hdiag{"compute diagnostics", this};
   // Write HDIAG diagnostics
-  oops::OptionalParameter<bool> write_hdiag{"write_hdiag", this};
+  oops::OptionalParameter<bool> write_hdiag{"write diagnostics", this};
   // Write HDIAG components detail
-  oops::OptionalParameter<bool> write_hdiag_detail{"write_hdiag_detail", this};
-  // Compute new NICAS parameters
-  oops::OptionalParameter<bool> new_nicas{"new_nicas", this};
+  oops::OptionalParameter<bool> write_hdiag_detail{"write diagnostics detail", this};
+  // Compute NICAS
+  oops::OptionalParameter<bool> new_nicas{"compute nicas", this};
   // Load local NICAS parameters
-  oops::OptionalParameter<bool> load_nicas_local{"load_nicas_local", this};
+  oops::OptionalParameter<bool> load_nicas_local{"load local nicas", this};
   // Load global NICAS parameters
-  oops::OptionalParameter<bool> load_nicas_global{"load_nicas_global", this};
+  oops::OptionalParameter<bool> load_nicas_global{"load global nicas", this};
   // Write local NICAS parameters
-  oops::OptionalParameter<bool> write_nicas_local{"write_nicas_local", this};
+  oops::OptionalParameter<bool> write_nicas_local{"write local nicas", this};
   // Write global NICAS parameters
-  oops::OptionalParameter<bool> write_nicas_global{"write_nicas_global", this};
+  oops::OptionalParameter<bool> write_nicas_global{"write global nicas", this};
   // Write NICAS grids
-  oops::OptionalParameter<bool> write_nicas_grids{"write_nicas_grids", this};
+  oops::OptionalParameter<bool> write_nicas_grids{"write nicas grids", this};
   // Compute wind transform
-  oops::OptionalParameter<bool> new_wind{"new_wind", this};
+  oops::OptionalParameter<bool> new_wind{"compute psichitouv", this};
   // Load local wind transform
-  oops::OptionalParameter<bool> load_wind_local{"load_wind_local", this};
+  oops::OptionalParameter<bool> load_wind_local{"load local psichitouv", this};
   // Write local wind transform
-  oops::OptionalParameter<bool> write_wind_local{"write_wind_local", this};
-  // Test vertical balance inverse and adjoint
-  oops::OptionalParameter<bool> check_vbal{"check_vbal", this};
-  // Test NICAS adjoints
-  oops::OptionalParameter<bool> check_adjoints{"check_adjoints", this};
+  oops::OptionalParameter<bool> write_wind_local{"write local psichitouv", this};
+  // Test vertical balance inverse
+  oops::OptionalParameter<bool> check_vbal{"vertical balance inverse test", this};
+  // Test adjoints
+  oops::OptionalParameter<bool> check_adjoints{"adjoints test", this};
   // Test NICAS normalization (number of tests)
-  oops::OptionalParameter<int> check_normalization{"check_normalization", this};
+  oops::OptionalParameter<int> check_normalization{"normalization test", this};
   // Test NICAS application on diracs
-  oops::OptionalParameter<bool> check_dirac{"check_dirac", this};
+  oops::OptionalParameter<bool> check_dirac{"internal dirac test", this};
   // Test NICAS randomization
-  oops::OptionalParameter<bool> check_randomization{"check_randomization", this};
+  oops::OptionalParameter<bool> check_randomization{"randomization test", this};
   // Test HDIAG-NICAS consistency
-  oops::OptionalParameter<bool> check_consistency{"check_consistency", this};
+  oops::OptionalParameter<bool> check_consistency{"internal consistency test", this};
   // Test HDIAG optimality
-  oops::OptionalParameter<bool> check_optimality{"check_optimality", this};
-  // Test set_parameter interface
-  oops::OptionalParameter<bool> check_set_param{"check_set_param", this};
-  // Test get_parameter interface
-  oops::OptionalParameter<bool> check_get_param{"check_get_param", this};
-  // Test apply_vbal interfaces
-  oops::OptionalParameter<bool> check_apply_vbal{"check_apply_vbal", this};
-  // Test apply_stddev interfaces
-  oops::OptionalParameter<bool> check_apply_stddev{"check_apply_stddev", this};
-  // Test apply_nicas interfaces
-  oops::OptionalParameter<bool> check_apply_nicas{"check_apply_nicas", this};
+  oops::OptionalParameter<bool> check_optimality{"localization optimality test", this};
 };
 
 // -----------------------------------------------------------------------------

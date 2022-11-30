@@ -91,10 +91,10 @@ do ib=1,bpar%nb
    mom%blk(ib)%ib = ib
 
    ! Allocation
-   call mom%blk(ib)%alloc(samp%nc1a,geom,bpar,ne,nsub,nam%update_mom)
+   call mom%blk(ib)%alloc(samp%nc1a,geom,bpar,ne,nsub,nam%iterative_algo)
 end do
 if (nam%check_dirac) then
-   if (nam%update_mom) then
+   if (nam%iterative_algo) then
       allocate(mom%m1(geom%nc0a,geom%nl0,nam%nv))
       allocate(mom%m2(geom%nc0a,geom%nl0,nam%nv))
    end if
@@ -130,10 +130,10 @@ integer :: ib
 
 ! Initialization
 do ib=1,bpar%nb
-   call mom%blk(ib)%init(bpar,nam%update_mom)
+   call mom%blk(ib)%init(bpar,nam%iterative_algo)
 end do
 if (nam%check_dirac) then
-   if (nam%update_mom) then
+   if (nam%iterative_algo) then
       mom%m1 = zero
       mom%m2 = zero
    end if

@@ -343,52 +343,57 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
         }
       }
 
-      // Check what needs to be updated
-      const bool update_vbal_cov = drivers.update_vbal_cov.value().get_value_or(false);
-      const bool update_var = drivers.update_var.value().get_value_or(false);
-      const bool update_mom = drivers.update_mom.value().get_value_or(false);
+      // Iterative algorithm
+      const bool iterative_algo = drivers.iterative_algo.value().get_value_or(false);
+      if (iterative_algo) {
+        // Check what needs to be computed
+        const bool new_vbal_cov = drivers.new_vbal_cov.value().get_value_or(false);
+        const bool new_var = drivers.new_var.value().get_value_or(false);
+        const bool new_mom = drivers.new_mom.value().get_value_or(false);
 
-      // Load ensemble members sequentially
-      if (bump->memberConfig1().size() > 0) {
-        ens1_ne = bump->memberConfig1().size();
-        Increment_ dx1(geom1, inputVars, xx.validTime());
+        // Load ensemble members sequentially
+        if (bump->memberConfig1().size() > 0) {
+          ens1_ne = bump->memberConfig1().size();
+          Increment_ dx1(geom1, inputVars, xx.validTime());
 
-        for (size_t ie = 0; ie < ens1_ne; ++ie) {
-          // Read member
-          oops::Log::info() << "Info     : "
-            << "-------------------------------------------------------------------" << std::endl;
-          oops::Log::info() << "Info     : --- Load member " << ie+1 << " / " << ens1_ne
-                            << std::endl;
-          dx1.read(bump->memberConfig1()[ie]);
+          for (size_t ie = 0; ie < ens1_ne; ++ie) {
+            // Read member
+            oops::Log::info() << "Info     : "
+              << "-------------------------------------------------------------------" << std::endl;
+            oops::Log::info() << "Info     : --- Load member " << ie+1 << " / " << ens1_ne
+                              << std::endl;
+            dx1.read(bump->memberConfig1()[ie]);
 
-          if (update_vbal_cov) {
-            // Update vertical covariance
-            bump->updateVbalCov(dx1.fieldSet(), ie);
-          }
-          if (update_var) {
-            // Update variance
-            bump->updateVar(dx1.fieldSet(), ie);
-          }
-          if (update_mom) {
-            // Update moments
-            bump->updateMom(dx1.fieldSet(), ie, 1);
+            if (new_vbal_cov) {
+              // Update vertical covariance
+              bump->updateVbalCov(dx1.fieldSet(), ie);
+            }
+            if (new_var) {
+              // Update variance
+              bump->updateVar(dx1.fieldSet(), ie);
+            }
+            if (new_mom) {
+               // Update moments
+              bump->updateMom(dx1.fieldSet(), ie, 1);
+            }
           }
         }
-      }
-      if (bump->memberConfig2().size() > 0) {
-        ens2_ne = bump->memberConfig2().size();
-        Increment_ dx2(*geom2, inputVars, xx.validTime());
 
-        for (size_t ie = 0; ie < ens2_ne; ++ie) {
-          // Read member
-          oops::Log::info() << "Info     : "
-            << "-------------------------------------------------------------------" << std::endl;
-          oops::Log::info() << "Info     : --- Load member " << ie+1 << " / " << ens2_ne
-                            << std::endl;
-          dx2.read(bump->memberConfig2()[ie]);
-          if (update_mom) {
-            // Update moments
-            bump->updateMom(dx2.fieldSet(), ie, 2);
+        if (bump->memberConfig2().size() > 0) {
+          ens2_ne = bump->memberConfig2().size();
+          Increment_ dx2(*geom2, inputVars, xx.validTime());
+
+          for (size_t ie = 0; ie < ens2_ne; ++ie) {
+            // Read member
+            oops::Log::info() << "Info     : "
+              << "-------------------------------------------------------------------" << std::endl;
+            oops::Log::info() << "Info     : --- Load member " << ie+1 << " / " << ens2_ne
+                              << std::endl;
+            dx2.read(bump->memberConfig2()[ie]);
+            if (new_mom) {
+              // Update moments
+              bump->updateMom(dx2.fieldSet(), ie, 2);
+            }
           }
         }
       }
