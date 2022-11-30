@@ -46,8 +46,10 @@ type nam_type
    character(len=1024),dimension(niokvmax) :: alias_file      !< Alias values in file
    character(len=1024) :: fname_samp                          !< Sampling file
    character(len=1024),dimension(0:nsubmax) :: fname_vbal_cov !< Vertical covariance files
+   logical :: fname_vbal_cov_used                             !< Flag activated if a vertical covariance file is specified
    character(len=1024) :: fname_vbal                          !< Vertical balance file
    character(len=1024),dimension(0:nsubmax) :: fname_mom      !< Moments files
+   logical :: fname_mom_used                                  !< Flag activated if a moments file is specified
    character(len=1024) :: fname_nicas                         !< NICAS file
    character(len=1024) :: fname_wind                          !< Wind transform file
 
@@ -59,6 +61,7 @@ type nam_type
    logical :: compute_loc1                                    !< Compute localization, ensemble 1
    logical :: compute_loc2                                    !< Compute localization, ensemble 2
    logical :: compute_hyb                                     !< Compute hybrid weights
+   logical :: new_hdiag                                       !< Compute diagnostics
    character(len=1024) :: hybrid_source                       !< Hybrid term source ('randomized static' or 'lowres ensemble')
    character(len=1024) :: strategy                            !< Multivariate strategy ('diag_all', 'common', 'common_weighted', 'specific_univariate' or 'specific_multivariate')
    logical :: iterative_algo                                  !< Iterative algorithm (ensemble members loaded sequentially)
@@ -102,19 +105,13 @@ type nam_type
    character(len=1024) :: lev2d                               !< Level for 2D variables ('first' or 'last')
    integer :: nv                                              !< Number of variables
    character(len=1024),dimension(nvmax) :: variables          !< Variables names
+   logical :: mask_check                                      !< Check that sampling couples and interpolations do not cross mask boundaries
 
    ! Ensemble sizes
    integer :: ens1_ne                                         !< Ensemble 1 size
    integer :: ens1_nsub                                       !< Ensemble 1 sub-ensembles number
    integer :: ens2_ne                                         !< Ensemble 2 size
    integer :: ens2_nsub                                       !< Ensemble 2 sub-ensembles number
-
-   ! Mask section
-   character(len=1024) :: mask_type                           !< Mask restriction type
-   character(len=1024),dimension(nvmax) :: mask_lu            !< Mask threshold side ('lower' if mask_th is the lower bound, 'upper' if mask_th is the upper bound)
-   real(kind_real),dimension(nvmax) :: mask_th                !< Mask threshold
-   integer :: ncontig_th                                      !< Threshold on vertically contiguous points for sampling mask (0 to skip the test)
-   logical :: mask_check                                      !< Check that sampling couples and interpolations do not cross mask boundaries
 
    ! Sampling section
    integer :: nc1                                             !< Number of sampling points
@@ -129,6 +126,12 @@ type nam_type
    character(len=1024) :: samp_draw_type                      !< Diagnostic draw type ('random' or 'octahedral')
    integer :: irmax                                           !< Maximum number of random number draws
    character(len=2) :: samp_interp_type                       !< Sampling C2B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based or 'si': smooth interpolation)
+   integer :: nmask                                           !< Number of masks
+   character(len=1024),allocatable :: mask_type(:)            !< Mask restriction type
+   real(kind_real),allocatable :: mask_th(:)                  !< Mask threshold
+   character(len=1024),allocatable :: mask_lu(:)              !< Mask threshold side ('lower' if mask_th is the lower bound, resp. 'upper')
+   character(len=1024),allocatable :: mask_variable(:)        !< Mask variable
+   integer :: ncontig_th                                      !< Threshold on vertically contiguous points for sampling mask (0 to skip the test)
 
    ! Localization section
    integer :: ne                                              !< Ensemble size
@@ -144,6 +147,10 @@ type nam_type
    integer :: vbal_pseudo_inv_mmax                            !< Dominant mode for pseudo-inverse
    real(kind_real) :: vbal_pseudo_inv_var_th                  !< Variance threshold to compute the dominant mode for pseudo-inverse
    logical :: vbal_id                                         !< Identity vertical balance for tests
+   logical,allocatable :: vbal_block(:,:)                     !< Activation of vertical balance
+   logical,allocatable :: vbal_diag_auto(:,:)                 !< Diagonal auto-covariance for the inversion
+   logical,allocatable :: vbal_diag_reg(:,:)                  !< Diagonal regression
+   real(kind_real),allocatable :: vbal_id_coef(:,:)           !< Scalar coefficients for identity vertical balance
 
    ! Variance section
    logical :: forced_var                                      !< Force specific variance
@@ -179,6 +186,7 @@ type nam_type
    real(kind_real) :: rv(nl0max,0:nvmax)                      !< Forced vertical support radius
    integer :: min_lev(0:nvmax)                                !< Minimum level
    integer :: max_lev(0:nvmax)                                !< Maximum level
+   real(kind_real),allocatable :: loc_wgt_sqrt(:,:)           !< Weights square-root for the 'common_weighted' strategy
    character(len=2),dimension(0:nvmax) :: nicas_interp_type   !< NICAS C1B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based or 'si': smooth interpolation)
    logical :: pos_def_test                                    !< Positive-definiteness test
    logical :: interp_test                                     !< Horizontal NICAS interpolation test
@@ -199,16 +207,6 @@ type nam_type
    real(kind_real) :: latdir(ndirmax)                         !< Diracs latitudes [in degrees]
    integer :: levdir(ndirmax)                                 !< Diracs level
    integer :: ivdir(ndirmax)                                  !< Diracs variable indices
-
-   ! Helpers
-   logical :: new_hdiag                                       !< Compute diagnostics
-   logical :: fname_vbal_cov_used                             !< Flag activated if a vertical covariance file is specified
-   logical :: fname_mom_used                                  !< Flag activated if a moments file is specified
-   logical,allocatable :: vbal_block(:,:)                     !< Activation of vertical balance
-   logical,allocatable :: vbal_diag_auto(:,:)                 !< Diagonal auto-covariance for the inversion
-   logical,allocatable :: vbal_diag_reg(:,:)                  !< Diagonal regression
-   real(kind_real),allocatable :: vbal_id_coef(:,:)           !< Scalar coefficients for identity vertical balance
-   real(kind_real),allocatable :: loc_wgt_sqrt(:,:)           !< Weights square-root for the 'common_weighted' strategy
 contains
    procedure :: init => nam_init
    procedure :: from_conf => nam_from_conf
@@ -299,6 +297,7 @@ nam%compute_cor2 = .false.
 nam%compute_loc1 = .false.
 nam%compute_loc2 = .false.
 nam%compute_hyb = .false.
+nam%new_hdiag = .false.
 nam%hybrid_source = ''
 nam%strategy = ''
 nam%iterative_algo = .false.
@@ -344,21 +343,13 @@ nam%nv = 0
 do iv=1,nvmax
    nam%variables(iv) = ''
 end do
+nam%mask_check = .false.
 
 ! Ensemble sizes section default
 nam%ens1_ne = 0
 nam%ens1_nsub = 1
 nam%ens2_ne = 0
 nam%ens2_nsub = 1
-
-! Mask section default
-nam%mask_type = 'none'
-do iv=1,nvmax
-   nam%mask_lu(iv) = 'lower'
-   nam%mask_th(iv) = zero
-end do
-nam%ncontig_th = 0
-nam%mask_check = .false.
 
 ! Sampling section default
 nam%nc1 = 0
@@ -373,6 +364,8 @@ nam%local_dlat = zero
 nam%samp_draw_type = 'random'
 nam%irmax = 10000
 nam%samp_interp_type = 'c0'
+nam%nmask = 0
+nam%ncontig_th = 0
 
 ! Localization section default
 nam%ne = 0
@@ -447,9 +440,9 @@ nam%levdir = 0
 nam%ivdir = 0
 
 ! Helpers
-nam%new_hdiag = .false.
 nam%fname_vbal_cov_used = .false.
 nam%fname_mom_used = .false.
+
 
 ! Probe out
 @:probe_out()
@@ -603,11 +596,7 @@ end if
 ! Model section
 if (conf%has('model')) then
    call conf%get_or_die('model',section)
-   if (section%has('nl0')) call section%get_or_die('nl0',nam%nl0)
-   if (section%has('lev2d')) then
-      call section%get_or_die('lev2d',str)
-      nam%lev2d = str
-   end if
+   call get(section,'level for 2d variables',nam%lev2d)
    if (section%has('variables')) then
       call section%get_or_die('variables',str_array)
       if (size(str_array)>nvmax) then
@@ -617,65 +606,62 @@ if (conf%has('model')) then
       nam%variables(1:size(str_array)) = str_array
       nam%nv = size(str_array)
    end if
+   call get(section,'do not cross mask boundaries',nam%mask_check)
 end if
 
 ! Ensemble sizes
 if (conf%has('ensemble sizes')) then
    call conf%get_or_die('ensemble sizes',section)
-   if (section%has('ens1_ne')) call section%get_or_die('ens1_ne',nam%ens1_ne)
-   if (section%has('ens1_nsub')) call section%get_or_die('ens1_nsub',nam%ens1_nsub)
-   if (section%has('ens2_ne')) call section%get_or_die('ens2_ne',nam%ens2_ne)
-   if (section%has('ens2_nsub')) call section%get_or_die('ens2_nsub',nam%ens2_nsub)
-end if
-
-! Mask section
-if (conf%has('mask')) then
-   call conf%get_or_die('mask',section)
-   if (section%has('mask_type')) then
-      call section%get_or_die('mask_type',str)
-      nam%mask_type = str
-   end if
-   if (section%has('mask_lu')) then
-      call section%get_or_die('mask_lu',str_array)
-      if (size(str_array)>nvmax) then
-         write(message,'(a,i4)') 'mask_lu size should be smaller than ',nvmax
-         call mpl%abort('${subr}$',message)
-      end if
-      nam%mask_lu(1:size(str_array)) = str_array
-   end if
-   if (section%has('mask_th')) then
-      call section%get_or_die('mask_th',real_array)
-      if (size(real_array)>nvmax) then
-         write(message,'(a,i4)') 'mask_th size should be smaller than ',nvmax
-         call mpl%abort('${subr}$',message)
-      end if
-      nam%mask_th(1:size(real_array)) = real_array
-   end if
-   if (section%has('ncontig_th')) call section%get_or_die('ncontig_th',nam%ncontig_th)
-   if (section%has('mask_check')) call section%get_or_die('mask_check',nam%mask_check)
+   call get(section,'total ensemble size',nam%ens1_ne)
+   call get(section,'number of sub-ensembles',nam%ens1_nsub)
+   call get(section,'total lowres ensemble size',nam%ens2_ne)
+   call get(section,'number of lowres sub-ensembles',nam%ens2_nsub)
 end if
 
 ! Sampling section
 if (conf%has('sampling')) then
    call conf%get_or_die('sampling',section)
-   if (section%has('nc1')) call section%get_or_die('nc1',nam%nc1)
-   if (section%has('nc2')) call section%get_or_die('nc2',nam%nc2)
-   if (section%has('nc3')) call section%get_or_die('nc3',nam%nc3)
-   if (section%has('nc4')) call section%get_or_die('nc4',nam%nc4)
-   if (section%has('dc')) call section%get_or_die('dc',nam%dc)
-   if (section%has('nl0r')) call section%get_or_die('nl0r',nam%nl0r)
-   if (section%has('local_diag')) call section%get_or_die('local_diag',nam%local_diag)
-   if (section%has('local_rad')) call section%get_or_die('local_rad',nam%local_rad)
-   if (section%has('local_dlat')) call section%get_or_die('local_dlat',nam%local_dlat)
-   if (section%has('draw_type')) then
-      call section%get_or_die('draw_type',str)
-      nam%samp_draw_type = str
+   call get(section,'nc1',nam%nc1)
+   call get(section,'nc2',nam%nc2)
+   call get(section,'nc3',nam%nc3)
+   call get(section,'nc4',nam%nc4)
+   call get(section,'dc',nam%dc)
+   call get(section,'nl0r',nam%nl0r)
+   call get(section,'local_diag',nam%local_diag)
+   call get(section,'local_rad',nam%local_rad)
+   call get(section,'local_dlat',nam%local_dlat)
+   call get(section,'draw_type',nam%samp_draw_type)
+   call get(section,'irmax',nam%irmax)
+   call get(section,'interp_type',nam%samp_interp_type)
+   if (section%has('masks')) then
+      call section%get_or_die('masks',confs)
+
+      ! Count masks
+      nam%nmask = size(confs)
+
+      ! Allocation
+      allocate(nam%mask_type(nam%nmask))
+      allocate(nam%mask_th(nam%nmask))
+      allocate(nam%mask_lu(nam%nmask))
+      allocate(nam%mask_variable(nam%nmask))
+
+      ! Initialization
+      do iconf=1,size(confs)
+         nam%mask_type(iconf) = ''
+         nam%mask_th(iconf) = mpl%msv%valr
+         nam%mask_lu(iconf) = ''
+         nam%mask_variable(iconf) = ''
+      end do
+
+      ! Get values
+      do iconf=1,size(confs)
+         call get(confs(iconf),'type',nam%mask_type(iconf))
+         call get(confs(iconf),'threshold',nam%mask_th(iconf))
+         call get(confs(iconf),'side',nam%mask_lu(iconf))
+         call get(confs(iconf),'variable',nam%mask_variable(iconf))
+      end do
    end if
-   if (section%has('irmax')) call section%get_or_die('irmax',nam%irmax)
-   if (section%has('interp_type')) then
-      call section%get_or_die('interp_type',str)
-      nam%samp_interp_type = str
-   end if
+   call get(section,'ncontig_th',nam%ncontig_th)
 end if
 
 ! Localization section
@@ -972,9 +958,13 @@ if (conf%has('dirac')) then
    end do
 end if
 
-! Helpers
+! Helpers / internal parameters
 nam%new_hdiag = nam%compute_cov1.or.nam%compute_cor1.or.nam%compute_loc1.or. &
  & nam%compute_cov2.or.nam%compute_cor2.or.nam%compute_loc2.or.nam%compute_hyb
+if (conf%has('model')) then
+   call conf%get_or_die('model',section)
+   if (section%has('nl0')) call section%get_or_die('nl0',nam%nl0)
+end if
 if (conf%has('msvalr')) call conf%get_or_die('msvalr',mpl%msv%valr)
 
 ! Probe out
@@ -995,7 +985,7 @@ class(nam_type),intent(inout) :: nam !< Namelist
 type(mpl_type),intent(inout) :: mpl  !< MPI data
 
 ! Local variables
-integer :: isub,iv,ivmin,ivmax,i,il0,idir,ildwv,jv
+integer :: isub,iv,ivmin,ivmax,i,il0,idir,ildwv,jv,imask
 character(len=2) :: ivchar,ildwvchar
 
 ! Set name
@@ -1146,21 +1136,6 @@ if (nam%compute_loc1.and.(nam%ne>nam%ens1_ne)) call mpl%warning('${subr}$', &
 if (nam%compute_loc2.and.(nam%ne_lr>nam%ens2_ne)) call mpl%warning('${subr}$', &
  & 'ensemble size larger than ens2_ne (might enhance sampling noise)')
 
-! Mask section
-select case (nam%mask_type)
-case ('none')
-case ('ldwv')
-   if (nam%nldwv<=0) call mpl%abort('${subr}$','nldwv should not be negative for mask_type = ldwv')
-case ('stddev')
-   do iv=1,nam%nv
-      select case (nam%mask_lu(iv))
-      case ('lower','upper')
-      case default
-         call mpl%abort('${subr}$','wrong mask_lu')
-      end select
-   end do
-end select
-
 ! Sampling section
 if (nam%new_vbal_cov.or.nam%new_vbal.or.nam%new_hdiag.or.nam%check_optimality) then
    if ((.not.(nam%load_samp_local.or.nam%load_samp_global)).and.(nam%nc1<3)) &
@@ -1203,6 +1178,21 @@ case ('c0','c1','si')
 case default
    call mpl%abort('${subr}$','wrong sampling interpolation type')
 end select
+do imask=1,nam%nmask
+   select case (nam%mask_type(imask))
+   case ('none')
+   case ('ldwv')
+      if (nam%nldwv<=0) call mpl%abort('${subr}$','nldwv should not be negative for mask_type = ldwv')
+   case ('stddev','input')
+      if (mpl%msv%is(nam%mask_th(imask))) call mpl%abort('${subr}$','missing mask threshold')
+      select case (nam%mask_lu(imask))
+      case ('lower','upper')
+      case default
+         call mpl%abort('${subr}$','wrong mask_lu')
+      end select
+      if (nam%mask_variable(imask)=='') call mpl%abort('${subr}$','missing mask variable')
+    end select
+end do
 
 ! Localization section
 if (nam%new_hdiag.or.nam%check_optimality) then

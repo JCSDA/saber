@@ -3,36 +3,73 @@ geometry:
   grid:
     type: regular_lonlat
     N: 10
-  levels: 2
+  levels: 10
   halo: 1
 input variables: &id001
 - var1
 background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
+ensemble:
+  members from template:
+    template:
+      date: '2010-01-01T12:00:00Z'
+      filepath: testdata/randomization_bump_nicas_L10L10/member_%mem%
+      state variables: *id001
+    pattern: '%mem%'
+    nmembers: 25
+    zero padding: 6
 bump:
   datadir: testdata
-  prefix: error_covariance_training_bump_hdiag_10/_MPI_-_OMP_
+  prefix: error_covariance_training_bump_hdiag_10
   testing: true
-  method: loc
+  method: cor
   strategy: specific_univariate
   new_hdiag: true
   write_hdiag: true
-  check_optimality: true
-  ens1_ne: 1000
   nc1: 500
+  nc2: 250
   nc3: 10
   dc: 800.0e3
-  nl0r: 1
-  ne: 25
-  resol: 4.0
-  nicas_draw_type: octahedral
-  forced_radii: true
-  rh:
-    var1:
-    - 7.0e6
-  rv:
-    var1:
-    - 0.0
+  nl0r: 7
+  local_diag: true
+  local_rad: 4000.0e3
+  masks:
+  - type: lat-20060
+  - type: ldwv
+  - type: stddev
+    threshold: 1.005
+    side: lower
+    variable: var1
+  - type: input
+    threshold: 0.5
+    side: upper
+    variable: var1
+  ncontig_th: 3
+  nldwv: 3
+  lon_ldwv:
+  - 0.0
+  - -22.0
+  - -127.0
+  lat_ldwv:
+  - 0.0
+  - 55.0
+  - -10.0
+  name_ldwv:
+  - A
+  - B
+  - C
+input fields:
+- parameter: sampling_mask_field
+  file:
+    filepath: testdata/randomization_bump_nicas_L10L10/member_000001
+output:
+- parameter: cor_rh
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag_10/_MPI_-_OMP__cor_rh
+- parameter: cor_rv
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag_10/_MPI_-_OMP__cor_rv
 test:
   reference filename: testref/error_covariance_training_bump_hdiag_10.ref
+

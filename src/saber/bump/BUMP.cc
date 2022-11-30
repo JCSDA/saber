@@ -190,8 +190,12 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   conf.set("msvalr", util::missingValue(double()));
 
   // Add ensemble sizes
-  if (!conf.has("ensemble sizes.ens1_ne")) conf.set("ensemble sizes.ens1_ne", ens1_ne);
-  if (!conf.has("ensemble sizes.ens2_ne")) conf.set("ensemble sizes.ens2_ne", ens2_ne);
+  if (!conf.has("ensemble sizes.total ensemble size")) {
+    conf.set("ensemble sizes.total ensemble size", ens1_ne);
+  }
+  if (!conf.has("ensemble sizes.total lowres ensemble size")) {
+    conf.set("ensemble sizes.total lowres ensemble size", ens2_ne);
+  }
 
   // Grids
   std::vector<eckit::LocalConfiguration> grids;

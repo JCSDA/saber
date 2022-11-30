@@ -219,9 +219,11 @@ class ModelSection : public oops::Parameters {
 
  public:
   // Level for 2D variables ('first' or 'last')
-  oops::OptionalParameter<std::string> lev2d{"lev2d", this};
+  oops::OptionalParameter<std::string> lev2d{"level for 2d variables", this};
   // Variables names
   oops::OptionalParameter<std::vector<std::string>> variables{"variables", this};
+  // Check that sampling couples and interpolations do not cross mask boundaries
+  oops::OptionalParameter<bool> mask_check{"do not cross mask boundaries", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -231,35 +233,30 @@ class EnsembleSizesSection : public oops::Parameters {
 
  public:
   // Ensemble 1 size
-  oops::OptionalParameter<int> ens1_ne{"ens1_ne", this};
+  oops::OptionalParameter<int> ens1_ne{"total ensemble size", this};
   // Ensemble 1 sub-ensembles number
-  oops::OptionalParameter<int> ens1_nsub{"ens1_nsub", this};
+  oops::OptionalParameter<int> ens1_nsub{"number of sub-ensembles", this};
   // Ensemble 2 size
-  oops::OptionalParameter<int> ens2_ne{"ens2_ne", this};
+  oops::OptionalParameter<int> ens2_ne{"total lowres ensemble size", this};
   // Ensemble 2 sub-ensembles number
-  oops::OptionalParameter<int> ens2_nsub{"ens2_nsub", this};
+  oops::OptionalParameter<int> ens2_nsub{"number of lowres sub-ensembles", this};
 };
 
 // -----------------------------------------------------------------------------
 
-class MaskSection : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(MaskSection, oops::Parameters)
+class MaskParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(MaskParameters, oops::Parameters)
 
  public:
   // Mask restriction type
-  oops::OptionalParameter<std::string> mask_type{"mask_type", this};
-  // Mask threshold side ('lower' if mask_th is the lower bound, 'upper' if mask_th is the
-  // upper bound)
-  oops::OptionalParameter<std::vector<std::string>> mask_lu{"mask_lu", this};
+  oops::RequiredParameter<std::string> mask_type{"type", this};
   // Mask threshold
-  oops::OptionalParameter<std::vector<double>> mask_th{"mask_th", this};
-  // Threshold on vertically contiguous points for sampling mask (0 to skip the test)
-  oops::OptionalParameter<int> ncontig_th{"ncontig_th", this};
-  // Check that sampling couples and interpolations do not cross mask boundaries
-  oops::OptionalParameter<bool> mask_check{"mask_check", this};
+  oops::OptionalParameter<double> mask_th{"threshold", this};
+  // Mask threshold side ('lower' if mask_th is the lower bound, resp. 'upper')
+  oops::OptionalParameter<std::string> mask_lu{"side", this};
+  // Mask variable
+  oops::OptionalParameter<std::string> mask_variable{"variable", this};
 };
-
-// -----------------------------------------------------------------------------
 
 class SamplingSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(SamplingSection, oops::Parameters)
@@ -290,6 +287,10 @@ class SamplingSection : public oops::Parameters {
   // Vertical balance C2B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based
   // or 'si': smooth interpolation)
   oops::OptionalParameter<std::string> interp_type{"interp_type", this};
+  // Sampling masks
+  oops::OptionalParameter<std::vector<MaskParameters>> masks{"masks", this};
+  // Threshold on vertically contiguous points for the mask (0 to skip the test)
+  oops::OptionalParameter<int> ncontig_th{"ncontig_th", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -527,8 +528,6 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<ModelSection> model{"model", this};
   // Ensemble sizes parameters
   oops::OptionalParameter<EnsembleSizesSection> ensembleSizes{"ensemble sizes", this};
-  // Mask parameters
-  oops::OptionalParameter<MaskSection> mask{"mask", this};
   // Sampling parameters
   oops::OptionalParameter<SamplingSection> sampling{"sampling", this};
   // Localization parameters

@@ -80,22 +80,17 @@ kv.append(drivers)
 
 model = {}
 model["name"] = "model"
-model["keys"] = ["nl0", "levs", "lev2d", "variables"]
+model["keys"] = ["variables"]
 kv.append(model)
 
 ensembleSizes = {}
 ensembleSizes["name"] = "ensemble sizes"
-ensembleSizes["keys"] = ["ens1_ne", "ens1_nsub", "ens2_ne", "ens2_nsub"]
+ensembleSizes["keys"] = []
 kv.append(ensembleSizes)
-
-mask = {}
-mask["name"] = "mask"
-mask["keys"] = ["mask_type", "mask_lu", "mask_th", "ncontig_th", "mask_check"]
-kv.append(mask)
 
 sampling = {}
 sampling["name"] = "sampling"
-sampling["keys"] = ["nc1", "nc2", "nc3", "nc4", "dc", "nl0r", "local_diag", "local_rad", "local_dlat", "irmax"]
+sampling["keys"] = ["nc1", "nc2", "nc3", "nc4", "dc", "nl0r", "local_diag", "local_rad", "local_dlat", "irmax", "masks", "ncontig_th"]
 kv.append(sampling)
 
 localization = {}
@@ -138,7 +133,7 @@ wind["name"] = "wind"
 wind["keys"] = ["wind_streamfunction", "wind_velocity_potential", "wind_zonal", "wind_meridional", "wind_nlon", "wind_nlat", "wind_nsg", "wind_inflation"]
 kv.append(wind)
 
-sections = ["general", "io", "drivers", "model", "sampling", "localization", "vertical balance", "variance", "optimality test", "fit", "local profiles", "nicas", "wind"]
+sections = ["general", "io", "drivers", "model", "ensemble sizes", "sampling", "localization", "vertical balance", "variance", "optimality test", "fit", "local profiles", "nicas", "wind"]
 other_sections = ["ensemble", "lowres ensemble", "operators application"]
 
 # Upgrade bump sections
@@ -330,6 +325,22 @@ for i in range(len(bumps)):
         new_bump["drivers"]["compute covariance"] = True
         new_bump["drivers"]["compute correlation"] = True
         new_bump["drivers"]["compute localization"] = True
+
+    # Update model section
+    if "lev2d" in old_bump:
+        new_bump["model"]["level for 2d variables"] = old_bump["lev2d"]
+    if "mask_check" in old_bump:
+        new_bump["model"]["do not cross mask boundaries"] = old_bump["mask_check"]
+
+    # Update ensemble sizes section
+    if "ens1_ne" in old_bump:
+        new_bump["ensemble sizes"]["total ensemble size"] = old_bump["ens1_ne"]
+    if "ens1_nsub" in old_bump:
+        new_bump["ensemble sizes"]["number of sub-ensembles"] = old_bump["ens1_nsub"]
+    if "ens2_ne" in old_bump:
+        new_bump["ensemble sizes"]["total lowres ensemble size"] = old_bump["ens2_ne"]
+    if "ens2_nsub" in old_bump:
+        new_bump["ensemble sizes"]["number of lowres sub-ensembles"] = old_bump["ens2_nsub"]
 
     # Udpate diag_draw_type
     if "diag_draw_type" in old_bump:
