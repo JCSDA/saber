@@ -13,6 +13,224 @@
 namespace saber {
 namespace spectralb {
 
+namespace {
+
+// -----------------------------------------------------------------------------
+
+atlas::Field allocateGaussUVField(const atlas::FunctionSpace & gaussFS,
+                                  const oops::Variables & innerVariables,
+                                  const std::vector<std::size_t> & activeVariableSizes) {
+  std::array<size_t, 2> indx{{0, 0}};
+  std::array<size_t, 2> levels{{0, 0}};
+  if (innerVariables.has("vorticity") && innerVariables.has("divergence")) {
+    indx[0] = innerVariables.find("vorticity");
+    indx[1] = innerVariables.find("divergence");
+  } else if (innerVariables.has("streamfunction") && innerVariables.has("velocity_potential")) {
+    indx[0] = innerVariables.find("streamfunction");
+    indx[1] = innerVariables.find("velocity_potential");
+  } else {
+    // error trap
+    oops::Log::error() << "ERROR - either vorticity and divergence "
+                       << "or streamfunction and velocity_potential "
+                       << "not present " << std::endl;
+    throw std::runtime_error("inner fields mis-specified");
+  }
+  // check that levels in indx[0] and indx[1] the same.
+
+  levels[0] = activeVariableSizes[indx[0]];
+  levels[1] = activeVariableSizes[indx[1]];
+
+  if (levels[0] != levels[1]) {
+    oops::Log::error() << "ERROR - the number of model levels in "
+                       << "vorticity and divergence or "
+                       << "streamfunction and velocity potential "
+                       << indx[0] << " "
+                       << indx[1] << " "
+                       << levels[0] << " "
+                       << levels[1]
+                       << std::endl;
+    throw std::runtime_error("vertical levels are inconsistent");
+  }
+
+  atlas::idx_t modellevels = static_cast<atlas::idx_t>(levels[0]);
+  auto sc = atlas::functionspace::StructuredColumns(gaussFS);
+  atlas::Field uvgp = sc.createField<double>(atlas::option::name("uv_gp") |
+                                             atlas::option::variables(2) |
+                                             atlas::option::levels(modellevels));
+  return uvgp;
+}
+
+// -----------------------------------------------------------------------------
+
+atlas::FieldSet allocateSpectralVortDiv(
+    const atlas::functionspace::Spectral & specfs,
+    const oops::Variables & activeVariables,
+    const std::vector<std::size_t> & activeVariableSizes) {
+  std::array<size_t, 2> indx;
+  std::array<size_t, 2> levels;
+
+
+  if (activeVariables.has("vorticity") && activeVariables.has("divergence")) {
+    indx[0] = activeVariables.find("vorticity");
+    indx[1] = activeVariables.find("divergence");
+  } else if (activeVariables.has("streamfunction") && activeVariables.has("velocity_potential")) {
+    indx[0] = activeVariables.find("streamfunction");
+    indx[1] = activeVariables.find("velocity_potential");
+  } else {
+    // error trap
+    oops::Log::error() << "ERROR - either vorticity and divergence "
+                       << "or streamfunction and velocity potential "
+                       << "not present " << std::endl;
+    throw std::runtime_error("inner fields mis-specified");
+  }
+  // check that levels in indx[0] and indx[1] the same.
+  levels[0] = activeVariableSizes[indx[0]];
+  levels[1] = activeVariableSizes[indx[1]];
+
+
+  atlas::FieldSet specfset;
+  atlas::Field specvort = specfs.createField<double>(
+    atlas::option::name("vorticity") | atlas::option::levels(levels[0]));
+  atlas::Field specdiv = specfs.createField<double>(
+    atlas::option::name("divergence") | atlas::option::levels(levels[1]));
+
+  specfset.add(specvort);
+  specfset.add(specdiv);
+
+  return specfset;
+}
+
+// -----------------------------------------------------------------------------
+
+atlas::FieldSet convertUVToFieldSet(const atlas::Field & uvField) {
+  atlas::FieldSet uvfset;
+  // It might make sense to either have
+  //     both uvField and uvFieldSet having a halo.
+  //     have uvField without halo and uvFieldSet with
+  // I am going with the latter.
+
+  atlas::Field u = uvField.functionspace().createField<double>
+      (atlas::option::name("eastward_wind") |
+       atlas::option::levels(uvField.levels()));
+
+  atlas::Field v = uvField.functionspace().createField<double>
+      (atlas::option::name("northward_wind") |
+       atlas::option::levels(uvField.levels()));
+
+  auto uView = atlas::array::make_view<double, 2>(u);
+  auto vView = atlas::array::make_view<double, 2>(v);
+  auto uvView = atlas::array::make_view<double, 3>(uvField);
+
+  for (atlas::idx_t jn = 0; jn < uvView.shape()[0]; ++jn) {
+    for (atlas::idx_t jl = 0; jl < uvView.shape()[1]; ++jl) {
+      uView(jn, jl) = uvView(jn, jl, 0);
+      vView(jn, jl) = uvView(jn, jl, 1);
+    }
+  }
+  u.haloExchange();
+  v.haloExchange();
+
+  uvfset.add(u);
+  uvfset.add(v);
+
+  return uvfset;
+}
+
+// -----------------------------------------------------------------------------
+
+atlas::Field convertUVToFieldSetAD(const atlas::FieldSet & fset) {
+  atlas::idx_t modellevels = static_cast<atlas::idx_t>(fset["eastward_wind"].levels());
+  auto sc = atlas::functionspace::StructuredColumns(fset["eastward_wind"].functionspace());
+
+  atlas::Field uvgp = sc.createField<double>(atlas::option::name("uv_gp") |
+                                             atlas::option::variables(2) |
+                                             atlas::option::levels(modellevels));
+
+
+  fset["eastward_wind"].adjointHaloExchange();
+  fset["northward_wind"].adjointHaloExchange();
+
+  auto uView = atlas::array::make_view<double, 2>(fset["eastward_wind"]);
+  auto vView = atlas::array::make_view<double, 2>(fset["northward_wind"]);
+  auto uvView = atlas::array::make_view<double, 3>(uvgp);
+
+  for (atlas::idx_t jn = 0; jn < uvView.shape()[0]; ++jn) {
+    for (atlas::idx_t jl = 0; jl < uvView.shape()[1]; ++jl) {
+      uvView(jn, jl, 0) = uView(jn, jl);
+      uvView(jn, jl, 1) = vView(jn, jl);
+    }
+  }
+
+  return uvgp;
+}
+
+
+// -----------------------------------------------------------------------------
+
+// Create inner variables from outer variables.
+// Excludes meridional and zonal winds.
+oops::Variables createInnerVars(const SpectralToGaussParameters & params,
+                                const oops::Variables & outerVars) {
+  oops::Variables innerVars;
+
+  for (auto & var : outerVars.variables()) {
+    if (var.compare("eastward_wind") == 0 || var.compare("northward_wind") == 0) {
+    } else {
+      innerVars.push_back(var);
+    }
+  }
+
+  return innerVars;
+}
+
+// -----------------------------------------------------------------------------
+
+void applyNtimesNplus1SpectralScaling(const oops::Variables & innerNames,
+                                      const oops::Variables & outerNames,
+                                      const atlas::functionspace::Spectral & specFS,
+                                      const atlas::idx_t & totalWavenumber,
+                                      atlas::FieldSet & fSet) {
+  const auto zonal_wavenumbers = specFS.zonal_wavenumbers();
+  const int nb_zonal_wavenumbers = zonal_wavenumbers.size();
+
+  // copy fields that are not associated with innerNames
+  atlas::FieldSet fsetTemp;
+  for (atlas::Field & f : fSet) {
+    if (!(innerNames.has(f.name()))) {
+      fsetTemp.add(f);
+    }
+  }
+
+  atlas::FieldSet fsetScaled;
+  for (std::size_t var = 0; var < innerNames.variables().size(); ++var) {
+    atlas::Field scaledFld = fSet[innerNames[var]];
+    auto fldView = atlas::array::make_view<double, 2>(scaledFld);
+
+    double a = atlas::util::Earth::radius();  // radius of earth;
+    int i(0);
+    for (int jm = 0; jm < nb_zonal_wavenumbers; ++jm) {
+      const int m1 = zonal_wavenumbers(jm);
+      for (std::size_t n1 = m1; n1 <= static_cast<std::size_t>(totalWavenumber); ++n1) {
+        for (std::size_t img = 0; img < 2; ++img, ++i) {
+          for (atlas::idx_t jl = 0; jl < fSet[innerNames[var]].levels(); ++jl) {
+            fldView(i, jl) =  n1 * (n1 + 1) *  fldView(i, jl) / (a * a);
+          }
+        }
+      }
+    }
+    scaledFld.rename(outerNames[var]);
+    fsetScaled.add(scaledFld);
+  }
+
+  fSet = fsetTemp;
+
+  for (auto & f : fsetScaled) {
+    fSet.add(f);
+  }
+}
+
+}  //  namespace
+
 // -----------------------------------------------------------------------------
 
 static SaberOuterBlockMaker<SpectralToGauss> makerSpectralToGauss_("spectral to gauss");
@@ -26,12 +244,16 @@ SpectralToGauss::SpectralToGauss(const oops::GeometryData & outerGeometryData,
                                  const atlas::FieldSet & xb,
                                  const atlas::FieldSet & fg,
                                  const std::vector<atlas::FieldSet> & fsetVec)
-  : innerVars_(outerVars),
-    activeVars_(params.activeVariables.value().get_value_or(innerVars_)),
+  : params_(params),
+    innerVars_(createInnerVars(params_, outerVars)),
+    outerVars_(outerVars),  // Shouldn't we modify outerVars_ as well?
+    activeVars_(params.activeVariables.value().get_value_or(outerVars_)),
+    activeVariableSizes_(activeVariableSizes),  // required?
     gaussFunctionSpace_(outerGeometryData.functionSpace()),
     specFunctionSpace_(2 * atlas::GaussianGrid(gaussFunctionSpace_.grid()).N() - 1),
     trans_(gaussFunctionSpace_, specFunctionSpace_),
-    innerGeometryData_(specFunctionSpace_, outerGeometryData.fieldSet(),
+    innerGeometryData_(atlas::FunctionSpace(specFunctionSpace_),
+                       outerGeometryData.fieldSet(),
                        outerGeometryData.levelsAreTopDown(), outerGeometryData.comm())
 
 {
@@ -47,35 +269,69 @@ void SpectralToGauss::multiply(atlas::FieldSet & fieldSet) const {
   // Create empty Model fieldset
   atlas::FieldSet newFields = atlas::FieldSet();
   atlas::FieldSet specFieldSet = atlas::FieldSet();
+  atlas::FieldSet windFieldSet = atlas::FieldSet();
 
-  // copy "passive variables"
-  std::vector<std::string> fsetNames = fieldSet.field_names();
-
+  // copy "passive variables" and sort out wind variables.
   for (auto & fieldname : fieldSet.field_names()) {
-     if (activeVars_.has(fieldname)) {
-       specFieldSet.add(fieldSet[fieldname]);
-     } else {
+     if (!activeVars_.has(fieldname)) {
+       // Passive variable
        newFields.add(fieldSet[fieldname]);
-     }
+     } else {
+     if (fieldname.compare("vorticity") == 0 ||
+         fieldname.compare("divergence") == 0 ||
+         fieldname.compare("streamfunction") == 0 ||
+         fieldname.compare("velocity_potential") == 0) {
+       // Active wind variable
+       windFieldSet.add(fieldSet[fieldname]);
+     } else {
+       // Active non-wind variable
+       specFieldSet.add(fieldSet[fieldname]);
+     }}
   }
 
-  // On input: fieldset in spectral space
 
-  // Create fieldset on gaussian grid
+  // Converting stream function and potential vorticity to divergence and vorticity.
+  // Scale by n(n+1) / a and rename fields to vorticity and divergence
+  const int N = specFunctionSpace_.truncation();
+
+  if (innerVars_.has("streamfunction") && innerVars_.has("velocity_potential")) {
+    ASSERT(windFieldSet.has("streamfunction") && windFieldSet.has("velocity_potential"));
+    applyNtimesNplus1SpectralScaling(
+      oops::Variables(std::vector<std::string>({"streamfunction", "velocity_potential"})),
+      oops::Variables(std::vector<std::string>({"vorticity", "divergence"})),
+      specFunctionSpace_, N, windFieldSet);
+  }
+
+  // Convert divergence and vorticity to eastward and northward wind.
+  if (windFieldSet.has("divergence") && windFieldSet.has("vorticity")) {
+    atlas::Field uvgp = allocateGaussUVField(gaussFunctionSpace_,
+                                             innerVars_, activeVariableSizes_);
+
+    // transform to gaussian grid
+    trans_.invtrans_vordiv2wind(windFieldSet["vorticity"], windFieldSet["divergence"], uvgp);
+
+    atlas::FieldSet uvfset = convertUVToFieldSet(uvgp);
+
+    newFields.add(uvfset["eastward_wind"]);
+    newFields.add(uvfset["northward_wind"]);
+  }
+
+  // Convert remaining active variables to Gaussian grid.
+  // Create fieldset on Gaussian grid
   atlas::FieldSet gaussFieldSet;
-  for (const auto & fieldname : activeVars_.variables()) {
-    atlas::Field gaussField =
-      gaussFunctionSpace_.createField<double>(atlas::option::name(fieldname) |
-                                 atlas::option::levels(specFieldSet[fieldname].levels()));
-    gaussField.haloExchange();
-    atlas::array::make_view<double, 2>(gaussField).assign(0.0);
-    gaussFieldSet.add(gaussField);
+  for (const auto & fieldname : specFieldSet.field_names()) {
+      atlas::Field gaussField =
+        gaussFunctionSpace_.createField<double>(atlas::option::name(fieldname) |
+                                   atlas::option::levels(specFieldSet[fieldname].levels()));
+      gaussField.haloExchange();
+      atlas::array::make_view<double, 2>(gaussField).assign(0.0);
+      gaussFieldSet.add(gaussField);
   }
 
   // Transform to gaussian grid
   trans_.invtrans(specFieldSet, gaussFieldSet);
 
-  for (const auto & fieldname : activeVars_.variables()) {
+  for (const auto & fieldname : specFieldSet.field_names()) {
     gaussFieldSet[fieldname].haloExchange();
     newFields.add(gaussFieldSet[fieldname]);
   }
@@ -93,21 +349,29 @@ void SpectralToGauss::multiplyAD(atlas::FieldSet & fieldSet) const {
   // On input: fieldset on gaussian grid
   atlas::FieldSet newFields = atlas::FieldSet();
   atlas::FieldSet gaussFieldSet = atlas::FieldSet();
+  atlas::FieldSet windFieldSet = atlas::FieldSet();
 
-  // copy "passive variables"
-  std::vector<std::string> fsetNames = fieldSet.field_names();
-
+  // copy "passive variables" and sort out wind variables.
   for (auto & fieldname : fieldSet.field_names()) {
-     if (activeVars_.has(fieldname)) {
-       gaussFieldSet.add(fieldSet[fieldname]);
-     } else {
+     if (!activeVars_.has(fieldname)) {
+       // Passive variable
        newFields.add(fieldSet[fieldname]);
-     }
+     } else {
+     if (fieldname.compare("vorticity") == 0 ||
+         fieldname.compare("divergence") == 0 ||
+         fieldname.compare("streamfunction") == 0 ||
+         fieldname.compare("velocity_potential") == 0) {
+       // Active wind variable
+       windFieldSet.add(fieldSet[fieldname]);
+     } else {
+       // Active non-wind variable
+       gaussFieldSet.add(fieldSet[fieldname]);
+     }}
   }
 
   // Create spectral fieldset
   atlas::FieldSet specFieldSet;
-  for (const auto & fieldname : activeVars_.variables()) {
+  for (const auto & fieldname : gaussFieldSet.field_names()) {
     atlas::Field specField =
       specFunctionSpace_.createField<double>(atlas::option::name(fieldname) |
                                  atlas::option::levels(gaussFieldSet[fieldname].levels()));
@@ -120,6 +384,26 @@ void SpectralToGauss::multiplyAD(atlas::FieldSet & fieldSet) const {
   for (const auto & fieldname : activeVars_.variables()) {
     newFields.add(specFieldSet[fieldname]);
   }
+
+  atlas::Field uvgp = convertUVToFieldSetAD(windFieldSet);
+  // Do we need this specfset? Should it be the specFieldSet from before?
+  atlas::FieldSet specfset = allocateSpectralVortDiv(specFunctionSpace_,
+                                                     innerVars_, activeVariableSizes_);
+
+  trans_.invtrans_vordiv2wind_adj(uvgp, specfset["vorticity"], specfset["divergence"]);
+
+  const int N = specFunctionSpace_.truncation();
+
+  if (innerVars_.has("streamfunction") && innerVars_.has("velocity_potential")) {
+      // Insert ASSERT here
+    applyNtimesNplus1SpectralScaling(
+      oops::Variables(std::vector<std::string>({"vorticity", "divergence"})),
+      oops::Variables(std::vector<std::string>({"streamfunction", "velocity_potential"})),
+      specFunctionSpace_, N, specfset);
+  }
+
+  newFields.add(specfset[0]);
+  newFields.add(specfset[1]);
 
   fieldSet = newFields;
 
