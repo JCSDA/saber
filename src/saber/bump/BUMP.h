@@ -300,15 +300,15 @@ class LocalizationSection : public oops::Parameters {
 
  public:
   // Ensemble size
-  oops::OptionalParameter<int> ne{"ne", this};
+  oops::OptionalParameter<int> ne{"target ensemble size", this};
   // Ensemble size of the hybrid term
-  oops::OptionalParameter<int> ne_lr{"ne_lr", this};
+  oops::OptionalParameter<int> ne_lr{"target lowres ensemble size", this};
   // Gaussian approximation for asymptotic quantities
-  oops::OptionalParameter<bool> gau_approx{"gau_approx", this};
+  oops::OptionalParameter<bool> gau_approx{"gaussian approximation", this};
   // Threshold on generalized kurtosis (3.0 = Gaussian distribution)
-  oops::OptionalParameter<double> gen_kurt_th{"gen_kurt_th", this};
+  oops::OptionalParameter<double> gen_kurt_th{"generalized kurtosis threshold", this};
   // Number of bins for averaged statistics histograms
-  oops::OptionalParameter<int> avg_nbins{"avg_nbins", this};
+  oops::OptionalParameter<int> avg_nbins{"number of histogram bins", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -335,18 +335,14 @@ class VerticalBalanceSection : public oops::Parameters {
  public:
   // Vertical balance parameters
   oops::OptionalParameter<std::vector<VerticalBalanceBlockParameters>> vbal{"vbal", this};
-  // Vertical balance diagnostic radius [in meters]
-  oops::OptionalParameter<double> vbal_rad{"vbal_rad", this};
-  // Vertical balance diagnostic latitude band half-width [in degrees]
-  oops::OptionalParameter<double> vbal_dlat{"vbal_dlat", this};
   // Pseudo-inverse for auto-covariance
-  oops::OptionalParameter<bool> vbal_pseudo_inv{"vbal_pseudo_inv", this};
+  oops::OptionalParameter<bool> vbal_pseudo_inv{"pseudo inverse", this};
   // Dominant mode for pseudo-inverse
-  oops::OptionalParameter<int> vbal_pseudo_inv_mmax{"vbal_pseudo_inv_mmax", this};
+  oops::OptionalParameter<int> vbal_pseudo_inv_mmax{"dominant mode", this};
   // Variance threshold to compute the dominant mode for pseudo-inverse
-  oops::OptionalParameter<double> vbal_pseudo_inv_var_th{"vbal_pseudo_inv_var_th", this};
+  oops::OptionalParameter<double> vbal_pseudo_inv_var_th{"variance threshold", this};
   // Identity vertical balance for tests
-  oops::OptionalParameter<bool> vbal_id{"vbal_id", this};
+  oops::OptionalParameter<bool> vbal_id{"identity blocks", this};
 };
 
 // -----------------------------------------------------------------------------

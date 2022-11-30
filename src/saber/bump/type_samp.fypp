@@ -206,7 +206,7 @@ type(geom_type),intent(in) :: geom     !< Geometry
 samp%nproc = mpl%nproc
 samp%sc2 = nam%new_vbal.or.nam%load_vbal.or.(nam%new_hdiag.and.nam%local_diag)
 samp%sc3 = nam%new_mom.or.nam%load_mom
-samp%lat_bands = (nam%new_vbal.and.(nam%vbal_dlat>zero)).or.(nam%new_hdiag.and.(nam%local_dlat>zero))
+samp%lat_bands = (nam%new_vbal.or.nam%new_hdiag).and.(nam%local_dlat>zero)
 samp%compute_c2b_to_c1a = nam%new_vbal.and.(nam%new_vbal_cov.or.nam%load_vbal_cov)
 
 ! Allocation
@@ -3083,9 +3083,9 @@ do ic2b=1,samp%nc2b
    ! Indices
    ic2u = samp%c2b_to_c2u(ic2b)
 
-   if (nam%vbal_rad>zero) then
+   if (nam%local_rad>zero) then
       ! Count nearest neighbors
-      call tree%count_nearest_neighbors(samp%lon_c2u(ic2u),samp%lat_c2u(ic2u),nam%vbal_rad,nn)
+      call tree%count_nearest_neighbors(samp%lon_c2u(ic2u),samp%lat_c2u(ic2u),nam%local_rad,nn)
 
       ! Allocation
       allocate(nn_index(nn))
@@ -3102,16 +3102,16 @@ do ic2b=1,samp%nc2b
 
       ! Release memory
       deallocate(nn_index)
-   elseif (nam%vbal_dlat>zero) then
+   elseif (nam%local_dlat>zero) then
       ! Update masks
       do jc1u=1,samp%nc1u
-         if (abs(samp%lat_c2u(ic2u)-samp%lat_c1u(jc1u))<nam%vbal_dlat) then
+         if (abs(samp%lat_c2u(ic2u)-samp%lat_c1u(jc1u))<nam%local_dlat) then
             samp%vbal_mask(jc1u,ic2b) = .true.
             lcheck_c1e(jc1u) = .true.
          end if
       end do
    else
-      call mpl%abort('${subr}$','vbal_rad or vbal_dlat should be positive')
+      call mpl%abort('${subr}$','local_rad or local_dlat should be positive')
    end if
 end do
 samp%nc1e = zss_count(lcheck_c1e)

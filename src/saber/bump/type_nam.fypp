@@ -141,16 +141,14 @@ type nam_type
    integer :: avg_nbins                                       !< Number of bins for averaged statistics histograms
 
    ! Vertical balance section
-   real(kind_real) :: vbal_rad                                !< Vertical balance diagnostic radius [in meters]
-   real(kind_real) :: vbal_dlat                               !< Vertical balance diagnostic latitude band half-width [in degrees]
-   logical :: vbal_pseudo_inv                                 !< Pseudo-inverse for auto-covariance
-   integer :: vbal_pseudo_inv_mmax                            !< Dominant mode for pseudo-inverse
-   real(kind_real) :: vbal_pseudo_inv_var_th                  !< Variance threshold to compute the dominant mode for pseudo-inverse
-   logical :: vbal_id                                         !< Identity vertical balance for tests
    logical,allocatable :: vbal_block(:,:)                     !< Activation of vertical balance
    logical,allocatable :: vbal_diag_auto(:,:)                 !< Diagonal auto-covariance for the inversion
    logical,allocatable :: vbal_diag_reg(:,:)                  !< Diagonal regression
    real(kind_real),allocatable :: vbal_id_coef(:,:)           !< Scalar coefficients for identity vertical balance
+   logical :: vbal_pseudo_inv                                 !< Pseudo-inverse for auto-covariance
+   integer :: vbal_pseudo_inv_mmax                            !< Dominant mode for pseudo-inverse
+   real(kind_real) :: vbal_pseudo_inv_var_th                  !< Variance threshold to compute the dominant mode for pseudo-inverse
+   logical :: vbal_id                                         !< Identity vertical balance for tests
 
    ! Variance section
    logical :: forced_var                                      !< Force specific variance
@@ -375,8 +373,6 @@ nam%gen_kurt_th = huge_real
 nam%avg_nbins = 0
 
 ! Vertical balance section
-nam%vbal_rad = zero
-nam%vbal_dlat = zero
 nam%vbal_pseudo_inv = .false.
 nam%vbal_pseudo_inv_mmax = 0
 nam%vbal_pseudo_inv_var_th = zero
@@ -667,11 +663,11 @@ end if
 ! Localization section
 if (conf%has('localization')) then
    call conf%get_or_die('localization',section)
-   if (section%has('ne')) call section%get_or_die('ne',nam%ne)
-   if (section%has('ne_lr')) call section%get_or_die('ne_lr',nam%ne_lr)
-   if (section%has('gau_approx')) call section%get_or_die('gau_approx',nam%gau_approx)
-   if (section%has('gen_kurt_th')) call section%get_or_die('gen_kurt_th',nam%gen_kurt_th)
-   if (section%has('avg_nbins')) call section%get_or_die('avg_nbins',nam%avg_nbins)
+   call get(section,'target ensemble size',nam%ne)
+   call get(section,'target lowres ensemble size',nam%ne_lr)
+   call get(section,'gaussian approximation',nam%gau_approx)
+   call get(section,'generalized kurtosis threshold',nam%gen_kurt_th)
+   call get(section,'number of histogram bins',nam%avg_nbins)
 end if
 
 ! Vertical balance section
@@ -775,12 +771,10 @@ if (conf%has('vertical balance')) then
       ! Release memory
       deallocate(vbal_order)
    end if
-   if (section%has('vbal_rad')) call section%get_or_die('vbal_rad',nam%vbal_rad)
-   if (section%has('vbal_dlat')) call section%get_or_die('vbal_dlat',nam%vbal_dlat)
-   if (section%has('vbal_pseudo_inv')) call section%get_or_die('vbal_pseudo_inv',nam%vbal_pseudo_inv)
-   if (section%has('vbal_pseudo_inv_mmax')) call section%get_or_die('vbal_pseudo_inv_mmax',nam%vbal_pseudo_inv_mmax)
-   if (section%has('vbal_pseudo_inv_var_th')) call section%get_or_die('vbal_pseudo_inv_var_th',nam%vbal_pseudo_inv_var_th)
-   if (section%has('vbal_id')) call section%get_or_die('vbal_id',nam%vbal_id)
+   call get(section,'pseudo inverse',nam%vbal_pseudo_inv)
+   call get(section,'dominant mode',nam%vbal_pseudo_inv_mmax)
+   call get(section,'variance threshold',nam%vbal_pseudo_inv_var_th)
+   call get(section,'identity blocks',nam%vbal_id)
 end if
 
 ! Variance section
@@ -1007,8 +1001,6 @@ if (nam%nldwv>nldwvmax) call mpl%abort('${subr}$','nldwv is too large')
 ! Namelist parameters normalization (meters to radians and degrees to radians)
 nam%universe_radius = nam%universe_radius/req
 nam%dc = nam%dc/req
-nam%vbal_rad = nam%vbal_rad/req
-nam%vbal_dlat = nam%vbal_dlat*deg2rad
 nam%var_rhflt = nam%var_rhflt/req
 nam%local_rad = nam%local_rad/req
 nam%local_dlat = nam%local_dlat*deg2rad
@@ -1203,10 +1195,10 @@ end if
 
 ! Vertical balance section
 if (nam%new_vbal) then
-   if (.not.((nam%vbal_rad>zero).or.(nam%vbal_dlat>zero))) call mpl%abort('${subr}$', &
- & 'vbal_rad or vbal_dlat should be positive')
-   if ((nam%vbal_rad>zero).and.(nam%vbal_dlat>zero)) call mpl%abort('${subr}$', &
- & 'vbal_rad and vbal_dlat cannot be positive at the same time')
+   if (.not.((nam%local_rad>zero).or.(nam%local_dlat>zero))) call mpl%abort('${subr}$', &
+ & 'local_rad or local_dlat should be positive')
+   if ((nam%local_rad>zero).and.(nam%local_dlat>zero)) call mpl%abort('${subr}$', &
+ & 'local_rad and local_dlat cannot be positive at the same time')
    if (nam%vbal_pseudo_inv) then
       if ((nam%vbal_pseudo_inv_mmax<=0).and.(.not.nam%vbal_pseudo_inv_var_th>zero)) call mpl%abort('${subr}$', &
  & 'dominant mode or variance threshold should be positive for pseudo-inverse')

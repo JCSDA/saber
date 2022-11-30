@@ -95,12 +95,12 @@ kv.append(sampling)
 
 localization = {}
 localization["name"] = "localization"
-localization["keys"] = ["ne", "ne_lr", "gau_approx", "gen_kurt_th", "avg_nbins"]
+localization["keys"] = []
 kv.append(localization)
 
 verticalBalance = {}
 verticalBalance["name"] = "vertical balance"
-verticalBalance["keys"] = ["vbal_rad", "vbal_dlat", "vbal_pseudo_inv", "vbal_pseudo_inv_mmax", "vbal_pseudo_inv_var_th", "vbal_id"]
+verticalBalance["keys"] = []
 kv.append(verticalBalance)
 
 variance = {}
@@ -370,6 +370,18 @@ for i in range(len(bumps)):
     if "ncontig_th" in old_bump:
         new_bump["sampling"]["contiguous levels threshold"] = old_bump["ncontig_th"]
 
+    # Udpate localization
+    if "ne" in old_bump:
+        new_bump["localization"]["target ensemble size"] = old_bump["ne"]
+    if "ne_lr" in old_bump:
+        new_bump["localization"]["target lowres ensemble size"] = old_bump["ne_lr"]
+    if "gau_approx" in old_bump:
+        new_bump["localization"]["gaussian approximation"] = old_bump["gau_approx"]
+    if "gen_kurt_th" in old_bump:
+        new_bump["localization"]["generalized kurtosis threshold"] = old_bump["gen_kurt_th"]
+    if "avg_nbins" in old_bump:
+        new_bump["localization"]["number of histogram bins"] = old_bump["avg_nbins"]
+
     # Udpate vbal
     if "vbal_block" in old_bump:
         vbal_block = old_bump["vbal_block"]
@@ -403,6 +415,18 @@ for i in range(len(bumps)):
                         vbal.append(block)
                 ib += 1
         new_bump["vertical balance"]["vbal"] = vbal
+    if "vbal_rad" in old_bump:
+        new_bump["sampling"]["averaging radius"] = old_bump["vbal_rad"]
+    if "vbal_dlat" in old_bump:
+        new_bump["sampling"]["averaging latitude width"] = old_bump["vbal_dlat"]
+    if "vbal_pseudo_inv" in old_bump:
+        new_bump["vertical balance"]["pseudo inverse"] = old_bump["vbal_pseudo_inv"]
+    if "vbal_pseudo_inv_mmax" in old_bump:
+        new_bump["vertical balance"]["dominant mode"] = old_bump["vbal_pseudo_inv_mmax"]
+    if "vbal_pseudo_inv_var_th" in old_bump:
+        new_bump["vertical balance"]["variance threshold"] = old_bump["vbal_pseudo_inv_var_th"]
+    if "vbal_id" in old_bump:
+        new_bump["vertical balance"]["identity blocks"] = old_bump["vbal_id"]
 
     # Update stddev and var_rhflt
     for key in ["stddev", "var_rhflt"]:
