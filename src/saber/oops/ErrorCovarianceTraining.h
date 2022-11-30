@@ -156,10 +156,12 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
     // Get number of MPI tasks and OpenMP threads
     std::string mpi(std::to_string(this->getComm().size()));
     std::string omp("1");
+#ifdef _OPENMP
     # pragma omp parallel
     {
       omp = std::to_string(omp_get_num_threads());
     }
+#endif
 
     // Deserialize parameters
     ErrorCovarianceTrainingParameters_ params;
