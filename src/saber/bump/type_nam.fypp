@@ -191,8 +191,8 @@ type nam_type
    ! Wind section
    character(len=1024) :: wind_streamfunction                 !< Streamfunction variable name
    character(len=1024) :: wind_velocity_potential             !< Velocity potential variable name
-   character(len=1024) :: wind_zonal                          !< Zonal wind variable name
-   character(len=1024) :: wind_meridional                     !< Meridional variable name
+   character(len=1024) :: wind_eastward                       !< Eastward wind variable name
+   character(len=1024) :: wind_northward                      !< Northward wind variable name
    integer :: wind_nlon                                       !< Number of longitudes for the regular grid
    integer :: wind_nlat                                       !< Number of latitudes for the regular grid
    integer :: wind_nsg                                        !< Half-width of the Savitzky-Golay to compute derivatives
@@ -415,8 +415,8 @@ nam%interp_test = .false.
 ! Wind section
 nam%wind_streamfunction = 'stream_function'
 nam%wind_velocity_potential = 'velocity_potential'
-nam%wind_zonal = 'eastward_wind'
-nam%wind_meridional = 'northward_wind'
+nam%wind_eastward = 'eastward_wind'
+nam%wind_northward = 'northward_wind'
 nam%wind_nlon = 0
 nam%wind_nlat = 0
 nam%wind_nsg = 0
@@ -897,28 +897,16 @@ if (conf%has('nicas')) then
 end if
 
 ! Wind section
-if (conf%has('wind')) then
-   call conf%get_or_die('wind',section)
-   if (section%has('wind_streamfunction')) then
-      call section%get_or_die('wind_streamfunction',str)
-      nam%wind_streamfunction = str
-   end if
-   if (section%has('wind_velocity_potential')) then
-      call section%get_or_die('wind_velocity_potential',str)
-      nam%wind_velocity_potential = str
-   end if
-   if (section%has('wind_zonal')) then
-      call section%get_or_die('wind_zonal',str)
-      nam%wind_zonal = str
-   end if
-   if (section%has('wind_meridional')) then
-      call section%get_or_die('wind_meridional',str)
-      nam%wind_meridional = str
-   end if
-   if (section%has('wind_nlon')) call section%get_or_die('wind_nlon',nam%wind_nlon)
-   if (section%has('wind_nlat')) call section%get_or_die('wind_nlat',nam%wind_nlat)
-   if (section%has('wind_nsg')) call section%get_or_die('wind_nsg',nam%wind_nsg)
-   if (section%has('wind_inflation')) call section%get_or_die('wind_inflation',nam%wind_inflation)
+if (conf%has('psichitouv')) then
+   call conf%get_or_die('psichitouv',section)
+   call get(section,'stream function',nam%wind_streamfunction)
+   call get(section,'velocity potential',nam%wind_velocity_potential)
+   call get(section,'eastward wind',nam%wind_eastward)
+   call get(section,'northward wind',nam%wind_northward)
+   call get(section,'longitudes',nam%wind_nlon)
+   call get(section,'latitudes',nam%wind_nlat)
+   call get(section,'savitzky-golay half width',nam%wind_nsg)
+   call get(section,'wind inflation',nam%wind_inflation)
 end if
 
 ! Dirac section

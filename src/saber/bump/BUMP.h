@@ -121,7 +121,7 @@ class IoSection : public oops::Parameters {
   oops::OptionalParameter<std::vector<std::string>> fname_mom{"overriding moments file", this};
   // NICAS file
   oops::OptionalParameter<std::string> fname_nicas{"overriding nicas file", this};
-  // Wind transform file
+  // Psichitouv transform file
   oops::OptionalParameter<std::string> fname_wind{"overriding psichitouv file", this};
 };
 
@@ -483,26 +483,26 @@ class NicasSection : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
-class WindSection : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(WindSection, oops::Parameters)
+class PsichitouvSection : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(PsichitouvSection, oops::Parameters)
 
  public:
   // Streamfunction variable name
-  oops::OptionalParameter<std::string> wind_streamfunction{"wind_streamfunction", this};
+  oops::OptionalParameter<std::string> wind_streamfunction{"stream function", this};
   // Velocity potential variable name
-  oops::OptionalParameter<std::string> wind_velocity_potential{"wind_velocity_potential", this};
-  // Zonal wind variable name
-  oops::OptionalParameter<std::string> wind_zonal{"wind_zonal", this};
-  // Meridional variable name
-  oops::OptionalParameter<std::string> wind_meridional{"wind_meridional", this};
+  oops::OptionalParameter<std::string> wind_velocity_potential{"velocity potential", this};
+  // Eastward wind variable name
+  oops::OptionalParameter<std::string> wind_eastward{"eastward wind", this};
+  // Northward wind variable name
+  oops::OptionalParameter<std::string> wind_northward{"northward wind", this};
   // Number of longitudes for the regular grid
-  oops::OptionalParameter<int> wind_nlon{"wind_nlon", this};
+  oops::OptionalParameter<int> wind_nlon{"longitudes", this};
   // Number of latitudes for the regular grid
-  oops::OptionalParameter<int> wind_nlat{"wind_nlat", this};
+  oops::OptionalParameter<int> wind_nlat{"latitudes", this};
   // Half-width of the Savitzky-Golay to compute derivatives
-  oops::OptionalParameter<int> wind_nsg{"wind_nsg", this};
+  oops::OptionalParameter<int> wind_nsg{"savitzky-golay half width", this};
   // Wind inflation to compensate the Savitzky-Golay smoothing
-  oops::OptionalParameter<double> wind_inflation{"wind_inflation", this};
+  oops::OptionalParameter<double> wind_inflation{"wind inflation", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -556,8 +556,8 @@ class BUMPParameters : public oops::Parameters {
     this};
   // NICAS parameters
   oops::OptionalParameter<NicasSection> nicas{"nicas", this};
-  // Wind parameters
-  oops::OptionalParameter<WindSection> wind{"wind", this};
+  // Psichitouv parameters
+  oops::OptionalParameter<PsichitouvSection> psichitouv{"psichitouv", this};
   // Dirac parameters
   oops::OptionalParameter<std::vector<DiracPointParameters>> dirac{"dirac", this};
 

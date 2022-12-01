@@ -1604,17 +1604,17 @@ type(atlas_field) :: afield
 @:probe_in()
 
 ! Get u/v variables in fieldset or create and add them
-if (fieldset%has_field(bump%nam%wind_zonal)) then
-   afield = fieldset%field(bump%nam%wind_zonal)
+if (fieldset%has_field(bump%nam%wind_eastward)) then
+   afield = fieldset%field(bump%nam%wind_eastward)
 else
-   afield = bump%geom(1)%afunctionspace_mg%create_field(name=bump%nam%wind_zonal,kind=atlas_real(kind_real), &
+   afield = bump%geom(1)%afunctionspace_mg%create_field(name=bump%nam%wind_eastward,kind=atlas_real(kind_real), &
     & levels=bump%geom(1)%nl0)
    call fieldset%add(afield)
 end if
-if (fieldset%has_field(bump%nam%wind_meridional)) then
-   afield = fieldset%field(bump%nam%wind_meridional)
+if (fieldset%has_field(bump%nam%wind_northward)) then
+   afield = fieldset%field(bump%nam%wind_northward)
 else
-   afield = bump%geom(1)%afunctionspace_mg%create_field(name=bump%nam%wind_meridional,kind=atlas_real(kind_real), &
+   afield = bump%geom(1)%afunctionspace_mg%create_field(name=bump%nam%wind_northward,kind=atlas_real(kind_real), &
     & levels=bump%geom(1)%nl0)
    call fieldset%add(afield)
 end if
@@ -1629,8 +1629,8 @@ call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
 do iv=1,bump%nam%nv
    if (bump%nam%variables(iv)==bump%nam%wind_streamfunction) iv_psi = iv
    if (bump%nam%variables(iv)==bump%nam%wind_velocity_potential) iv_chi = iv
-   if (bump%nam%variables(iv)==bump%nam%wind_zonal) iv_ua = iv
-   if (bump%nam%variables(iv)==bump%nam%wind_meridional) iv_va = iv
+   if (bump%nam%variables(iv)==bump%nam%wind_eastward) iv_ua = iv
+   if (bump%nam%variables(iv)==bump%nam%wind_northward) iv_va = iv
 end do
 
 ! Transform psi/chi to u/v
@@ -1695,8 +1695,8 @@ call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
 
 ! Get psi/chi/ua/va indices
 do iv=1,bump%nam%nv
-   if (bump%nam%variables(iv)==bump%nam%wind_zonal) iv_ua = iv
-   if (bump%nam%variables(iv)==bump%nam%wind_meridional) iv_va = iv
+   if (bump%nam%variables(iv)==bump%nam%wind_eastward) iv_ua = iv
+   if (bump%nam%variables(iv)==bump%nam%wind_northward) iv_va = iv
    if (bump%nam%variables(iv)==bump%nam%wind_streamfunction) iv_psi = iv
    if (bump%nam%variables(iv)==bump%nam%wind_velocity_potential) iv_chi = iv
 end do

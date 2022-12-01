@@ -128,12 +128,12 @@ nicas["name"] = "nicas"
 nicas["keys"] = []
 kv.append(nicas)
 
-wind = {}
-wind["name"] = "wind"
-wind["keys"] = ["wind_streamfunction", "wind_velocity_potential", "wind_zonal", "wind_meridional", "wind_nlon", "wind_nlat", "wind_nsg", "wind_inflation"]
-kv.append(wind)
+psichitouv = {}
+psichitouv["name"] = "psichitouv"
+psichitouv["keys"] = []
+kv.append(psichitouv)
 
-sections = ["general", "io", "drivers", "model", "ensemble sizes", "sampling", "localization", "vertical balance", "variance", "optimality test", "fit", "local profiles", "nicas", "wind"]
+sections = ["general", "io", "drivers", "model", "ensemble sizes", "sampling", "localization", "vertical balance", "variance", "optimality test", "fit", "local profiles", "nicas", "psichitouv"]
 other_sections = ["ensemble", "lowres ensemble", "operators application"]
 
 # Upgrade bump sections
@@ -557,6 +557,24 @@ for i in range(len(bumps)):
         new_bump["nicas"]["positive-definiteness test"] = old_bump["pos_def_test"]
     if "interp_test" in old_bump:
         new_bump["nicas"]["horizontal interpolation test"] = old_bump["interp_test"]
+
+    # Update wind section
+    if "wind_streamfunction" in old_bump:
+        new_bump["psichitouv"]["stream function"] = old_bump["wind_streamfunction"]
+    if "wind_velocity_potential" in old_bump:
+        new_bump["psichitouv"]["velocity potential"] = old_bump["wind_velocity_potential"]
+    if "wind_zonal" in old_bump:
+        new_bump["psichitouv"]["eastward wind"] = old_bump["wind_zonal"]
+    if "wind_meridional" in old_bump:
+        new_bump["psichitouv"]["northward wind"] = old_bump["wind_meridional"]
+    if "wind_nlon" in old_bump:
+        new_bump["psichitouv"]["longitudes"] = old_bump["wind_nlon"]
+    if "wind_nlat" in old_bump:
+        new_bump["psichitouv"]["latitudes"] = old_bump["wind_nlat"]
+    if "wind_nsg" in old_bump:
+        new_bump["psichitouv"]["savitzky-golay half width"] = old_bump["wind_nsg"]
+    if "wind_inflation" in old_bump:
+        new_bump["psichitouv"]["wind inflation"] = old_bump["wind_inflation"]
 
     # Update dirac section
     if "ndir" in old_bump:
