@@ -373,11 +373,11 @@ class OptimalityTestSection : public oops::Parameters {
 
  public:
   // Number of length-scale factors for optimization
-  oops::OptionalParameter<int> optimality_nfac{"optimality_nfac", this};
+  oops::OptionalParameter<int> optimality_nfac{"half number of factors", this};
   // Increments of length-scale factors for optimization
-  oops::OptionalParameter<double> optimality_delta{"optimality_delta", this};
+  oops::OptionalParameter<double> optimality_delta{"factors increment", this};
   // Number of test vectors for optimization
-  oops::OptionalParameter<int> optimality_ntest{"optimality_ntest", this};
+  oops::OptionalParameter<int> optimality_ntest{"test vectors", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -387,13 +387,13 @@ class FitSection : public oops::Parameters {
 
  public:
   // Horizontal filtering suport radius [in meters]
-  oops::OptionalParameter<double> diag_rhflt{"diag_rhflt", this};
+  oops::OptionalParameter<double> diag_rhflt{"horizontal filtering length-scale", this};
   // Vertical filtering support radius
-  oops::OptionalParameter<double> diag_rvflt{"diag_rvflt", this};
+  oops::OptionalParameter<double> diag_rvflt{"vertical filtering length-scale", this};
   // Number of levels between interpolation levels
-  oops::OptionalParameter<int> fit_dl0{"fit_dl0", this};
+  oops::OptionalParameter<int> fit_dl0{"vertical stride", this};
   // Number of components in the fit function
-  oops::OptionalParameter<int> fit_ncmp{"fit_ncmp", this};
+  oops::OptionalParameter<int> fit_ncmp{"number of components", this};
 };
 
 // -----------------------------------------------------------------------------

@@ -791,18 +791,18 @@ end if
 ! Optimality test section
 if (conf%has('optimality test')) then
    call conf%get_or_die('optimality test',section)
-   if (section%has('optimality_nfac')) call section%get_or_die('optimality_nfac',nam%optimality_nfac)
-   if (section%has('optimality_delta')) call section%get_or_die('optimality_delta',nam%optimality_delta)
-   if (section%has('optimality_ntest')) call section%get_or_die('optimality_ntest',nam%optimality_ntest)
+   call get(section,'half number of factors',nam%optimality_nfac)
+   call get(section,'optimality_delta',nam%optimality_delta)
+   call get(section,'optimality_ntest',nam%optimality_ntest)
 end if
 
 ! Fit section
 if (conf%has('fit')) then
    call conf%get_or_die('fit',section)
-   if (section%has('diag_rhflt')) call section%get_or_die('diag_rhflt',nam%diag_rhflt)
-   if (section%has('diag_rvflt')) call section%get_or_die('diag_rvflt',nam%diag_rvflt)
-   if (section%has('fit_dl0')) call section%get_or_die('fit_dl0',nam%fit_dl0)
-   if (section%has('fit_ncmp')) call section%get_or_die('fit_ncmp',nam%fit_ncmp)
+   call get(section,'horizontal filtering length-scale',nam%diag_rhflt)
+   call get(section,'vertical filtering length-scale',nam%diag_rvflt)
+   call get(section,'vertical stride',nam%fit_dl0)
+   call get(section,'number of components',nam%fit_ncmp)
 end if
 
 ! Local profiles section

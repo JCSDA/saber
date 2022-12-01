@@ -115,7 +115,7 @@ kv.append(optimalityTest)
 
 fit = {}
 fit["name"] = "fit"
-fit["keys"] = ["diag_rhflt", "diag_rvflt", "fit_dl0", "fit_ncmp"]
+fit["keys"] = []
 kv.append(fit)
 
 localProfiles = {}
@@ -459,6 +459,24 @@ for i in range(len(bumps)):
                 block["profile"] = old_bump["var_rhflt"][item]
             vec.append(block)
         new_bump["variance"]["initial length-scale"] = vec
+
+    # Update optimality test section
+    if "optimality_nfac" in old_bump:
+        new_bump["optimality test"]["half number of factors"] = old_bump["optimality_nfac"]
+    if "optimality_delta" in old_bump:
+        new_bump["optimality test"]["factors increment"] = old_bump["optimality_delta"]
+    if "optimality_ntest" in old_bump:
+        new_bump["optimality test"]["test vectors"] = old_bump["optimality_ntest"]
+
+    # Update fit section
+    if "diag_rhflt" in old_bump:
+        new_bump["fit"]["horizontal filtering length-scale"] = old_bump["diag_rhflt"]
+    if "diag_rvflt" in old_bump:
+        new_bump["fit"]["vertical filtering length-scale"] = old_bump["diag_rvflt"]
+    if "fit_dl0" in old_bump:
+        new_bump["fit"]["vertical stride"] = old_bump["fit_dl0"]
+    if "fit_ncmp" in old_bump:
+        new_bump["fit"]["number of components"] = old_bump["fit_ncmp"]
 
     # Update rh, rv, min_lev and max_lev
     for key in ["rh", "rv", "min_lev", "max_lev"]:
