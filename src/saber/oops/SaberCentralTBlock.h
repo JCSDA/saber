@@ -110,7 +110,7 @@ SaberCentralTBlock<MODEL>::SaberCentralTBlock(const Geometry_ & geom,
                     << saberCentralBlockParams.saberBlockName.value() << std::endl;
 
   // Get active variables
-  oops::Variables activeVars = saberCentralBlockParams.activeVars.value().get_value_or(vars);
+  const oops::Variables activeVars = saberCentralBlockParams.activeVars.value().get_value_or(vars);
 
   // Check that active variables are present in variables
   for (const auto & var : activeVars.variables()) {
@@ -126,16 +126,16 @@ SaberCentralTBlock<MODEL>::SaberCentralTBlock(const Geometry_ & geom,
                                                          inputFields);
 
   // Get geometryData
-  const oops::GeometryData * geometryData = geometryDataMap.at(activeVars[0]);
+  const oops::GeometryData & geometryData = *geometryDataMap.at(activeVars[0]);
 
   // Check that function space type is the same for all active variables
   for (const auto var : activeVars.variables()) {
-    ASSERT(geometryData->functionSpace().type() == geometryDataMap.at(var)->functionSpace().type());
+    ASSERT(geometryData.functionSpace().type() == geometryDataMap.at(var)->functionSpace().type());
   }
 
   // Create central block
   saberCentralBlock_.reset(SaberCentralBlockFactory::create(
-                           *geometryData,
+                           geometryData,
                            geom.variableSizes(activeVars),
                            activeVars,
                            saberCentralBlockParams,

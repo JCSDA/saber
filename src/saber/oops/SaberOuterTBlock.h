@@ -86,7 +86,8 @@ SaberOuterTBlock<MODEL>::SaberOuterTBlock(const Geometry_ & geom,
                     << saberOuterBlockParams.saberBlockName.value() << std::endl;
 
   // Get active variables
-  oops::Variables activeVars = saberOuterBlockParams.activeVars.value().get_value_or(outerVars);
+  const oops::Variables activeVars =
+    saberOuterBlockParams.activeVars.value().get_value_or(outerVars);
 
   // Read input fields (on model increment geometry)
   std::vector<eckit::LocalConfiguration> inputFields;
@@ -101,17 +102,17 @@ SaberOuterTBlock<MODEL>::SaberOuterTBlock(const Geometry_ & geom,
   activeOuterVars.intersection(activeVars);
 
   // Get outer geometryData
-  const oops::GeometryData * outerGeometryData = outerGeometryDataMap.at(activeOuterVars[0]);
+  const oops::GeometryData & outerGeometryData = *outerGeometryDataMap.at(activeOuterVars[0]);
 
   // Check that function space type is the same for all active outer variables
   for (const auto var : activeOuterVars.variables()) {
-    ASSERT(outerGeometryData->functionSpace().type() ==
+    ASSERT(outerGeometryData.functionSpace().type() ==
       outerGeometryDataMap.at(var)->functionSpace().type());
   }
 
   // Create outer block
   saberOuterBlock_.reset(SaberOuterBlockFactory::create(
-                         *outerGeometryData,
+                         outerGeometryData,
                          geom.variableSizes(activeVars),
                          outerVars,
                          saberOuterBlockParams,

@@ -76,7 +76,6 @@ void StdDev::multiply(atlas::FieldSet & fset) const {
 
 void StdDev::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  std::cout << fset.field_names() << std::endl;
   util::multiplyFieldSets(fset, stdDevFset_);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
