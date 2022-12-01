@@ -110,7 +110,7 @@ kv.append(variance)
 
 optimalityTest = {}
 optimalityTest["name"] = "optimality test"
-optimalityTest["keys"] = ["optimality_nfac", "optimality_delta", "optimality_ntest"]
+optimalityTest["keys"] = []
 kv.append(optimalityTest)
 
 fit = {}
@@ -120,7 +120,7 @@ kv.append(fit)
 
 localProfiles = {}
 localProfiles["name"] = "local profiles"
-localProfiles["keys"] = ["nldwv", "lon_ldwv", "lat_ldwv", "name_ldwv"]
+localProfiles["keys"] = []
 kv.append(localProfiles)
 
 nicas = {}
@@ -478,6 +478,17 @@ for i in range(len(bumps)):
     if "fit_ncmp" in old_bump:
         new_bump["fit"]["number of components"] = old_bump["fit_ncmp"]
 
+    # Update local profile section
+    if "nldwv" in old_bump:
+        vec = []
+        for ildwv in range(old_bump["nldwv"]):
+            ldwv_point = {}
+            ldwv_point["longitude"] = old_bump["lon_ldwv"][ildwv]
+            ldwv_point["latitude"] = old_bump["lat_ldwv"][ildwv]
+            ldwv_point["name"] = old_bump["name_ldwv"][ildwv]
+            vec.append(ldwv_point)
+        new_bump["local profiles"] = vec
+
     # Update rh, rv, min_lev and max_lev
     for key in ["rh", "rv", "min_lev", "max_lev"]:
         if key in old_bump:
@@ -520,21 +531,21 @@ for i in range(len(bumps)):
         if "grids" in old_bump:
             for grid in old_bump["grids"]:
                 if "variables" in grid:
-                    for i in range(old_bump["ndir"]):
+                    for idir in range(old_bump["ndir"]):
                         dirac_point = {}
-                        dirac_point["longitude"] = old_bump["londir"][i]
-                        dirac_point["latitude"] = old_bump["latdir"][i]
-                        dirac_point["level"] = old_bump["levdir"][i]
-                        dirac_point["variable"] = grid["variables"][old_bump["ivdir"][i]-1]
+                        dirac_point["longitude"] = old_bump["londir"][idir]
+                        dirac_point["latitude"] = old_bump["latdir"][idir]
+                        dirac_point["level"] = old_bump["levdir"][idir]
+                        dirac_point["variable"] = grid["variables"][old_bump["ivdir"][idir]-1]
                         vec.append(dirac_point)
                     done = True
         if not done:
-            for i in range(old_bump["ndir"]):
+            for idir in range(old_bump["ndir"]):
                 dirac_point = {}
-                dirac_point["longitude"] = old_bump["londir"][i]
-                dirac_point["latitude"] = old_bump["latdir"][i]
-                dirac_point["level"] = old_bump["levdir"][i]
-                dirac_point["variable"] = args.variables[old_bump["ivdir"][i]-1]
+                dirac_point["longitude"] = old_bump["londir"][idir]
+                dirac_point["latitude"] = old_bump["latdir"][idir]
+                dirac_point["level"] = old_bump["levdir"][idir]
+                dirac_point["variable"] = args.variables[old_bump["ivdir"][idir]-1]
                 vec.append(dirac_point)
         new_bump["dirac"] = vec
 

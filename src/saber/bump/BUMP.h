@@ -398,18 +398,16 @@ class FitSection : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
-class LocalProfilesSection : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(LocalProfilesSection, oops::Parameters)
+class LocalProfileParameter : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(LocalProfileParameter, oops::Parameters)
 
  public:
-  // Number of local diagnostics profiles to write (for local_diag = .true.)
-  oops::OptionalParameter<int> nldwv{"nldwv", this};
   // Longitudes of the local diagnostics profiles to write [in degrees]
-  oops::OptionalParameter<std::vector<double>> lon_ldwv{"lon_ldwv", this};
+  oops::RequiredParameter<double> lon_ldwv{"longitude", this};
   // Latitudes of the local diagnostics profiles to write [in degrees]
-  oops::OptionalParameter<std::vector<double>> lat_ldwv{"lat_ldwv", this};
+  oops::RequiredParameter<double> lat_ldwv{"latitude", this};
   // Name of the local diagnostics profiles to write
-  oops::OptionalParameter<std::vector<std::string>> name_ldwv{"name_ldwv", this};
+  oops::RequiredParameter<std::string> name_ldwv{"name", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -538,7 +536,8 @@ class BUMPParameters : public oops::Parameters {
   // Fit parameters
   oops::OptionalParameter<FitSection> fit{"fit", this};
   // Local profiles parameters
-  oops::OptionalParameter<LocalProfilesSection> localProfiles{"local profiles", this};
+  oops::OptionalParameter<std::vector<LocalProfileParameter>> localProfiles{"local profiles",
+    this};
   // NICAS parameters
   oops::OptionalParameter<NicasSection> nicas{"nicas", this};
   // Wind parameters

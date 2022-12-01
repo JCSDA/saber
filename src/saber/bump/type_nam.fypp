@@ -26,7 +26,6 @@ integer,parameter :: nc3max = 100                 !< Maximum number of distance 
 integer,parameter :: nc4max = 24                  !< Maximum number of angular sectors
 integer,parameter :: nscalesmax = 5               !< Maximum number of scales
 integer,parameter :: ndirmax = 99                 !< Maximum number of diracs
-integer,parameter :: nldwvmax = 20                !< Maximum number of local diagnostic profiles
 integer,parameter :: nprociomax = 20              !< Maximum number of I/O tasks
 integer,parameter :: niokvmax = 99                !< Maximum number of I/O key-values
 integer,parameter :: nvbalmax = nvmax*(nvmax-1)/2 !< Maximum number of vertical balance blocks
@@ -171,9 +170,9 @@ type nam_type
 
    ! Local profiles section
    integer :: nldwv                                           !< Number of local diagnostics profiles to write (for local_diag = .true.)
-   real(kind_real) :: lon_ldwv(nldwvmax)                      !< Longitudes of the local diagnostics profiles to write [in degrees]
-   real(kind_real) :: lat_ldwv(nldwvmax)                      !< Latitudes of the local diagnostics profiles to write [in degrees]
-   character(len=1024),dimension(nldwvmax) :: name_ldwv       !< Name of the local diagnostics profiles to write
+   real(kind_real),allocatable :: lon_ldwv(:)                 !< Longitudes of the local diagnostics profiles to write [in degrees]
+   real(kind_real),allocatable :: lat_ldwv(:)                 !< Latitudes of the local diagnostics profiles to write [in degrees]
+   character(len=1024),allocatable :: name_ldwv(:)            !< Name of the local diagnostics profiles to write
 
    ! NICAS section
    real(kind_real) :: resol                                   !< Resolution
@@ -235,7 +234,7 @@ interface get
 end interface
 
 private
-public :: nvmax,nl0max,nc3max,nscalesmax,ndirmax,nldwvmax,niokvmax,nvbalmax
+public :: nvmax,nl0max,nc3max,nscalesmax,ndirmax,niokvmax,nvbalmax
 public :: nam_type
 
 contains
@@ -399,11 +398,6 @@ nam%fit_ncmp = 1
 
 ! Local profiles section
 nam%nldwv = 0
-nam%lon_ldwv = zero
-nam%lat_ldwv = zero
-do ildwv=1,nldwvmax
-   nam%name_ldwv(ildwv) = ''
-end do
 
 ! NICAS section
 nam%resol = zero
@@ -807,31 +801,27 @@ end if
 
 ! Local profiles section
 if (conf%has('local profiles')) then
-   call conf%get_or_die('local profiles',section)
-   if (section%has('nldwv')) call section%get_or_die('nldwv',nam%nldwv)
-   if (section%has('lon_ldwv')) then
-      call section%get_or_die('lon_ldwv',real_array)
-      if (size(real_array)>nldwvmax) then
-         write(message,'(a,i4)') 'lon_ldwv size should be smaller than ',nldwvmax
-         call mpl%abort('${subr}$',message)
-      end if
-      nam%lon_ldwv(1:size(real_array)) = real_array
-   end if
-   if (section%has('lat_ldwv')) then
-      call section%get_or_die('lat_ldwv',real_array)
-      if (size(real_array)>nldwvmax) then
-         write(message,'(a,i4)') 'lat_ldwv size should be smaller than ',nldwvmax
-         call mpl%abort('${subr}$',message)
-      end if
-      nam%lat_ldwv(1:size(real_array)) = real_array
-   end if
-   if (section%has('name_ldwv')) then
-      call section%get_or_die('name_ldwv',str_array)
-      if (size(real_array)>nldwvmax) then
-         write(message,'(a,i4)') 'name_ldwv size should be smaller than ',nldwvmax
-         call mpl%abort('${subr}$',message)
-      end if
-      nam%name_ldwv(1:size(str_array)) = str_array
+   call conf%get_or_die('local profiles',confs)
+
+   ! Number of profiles
+   nam%nldwv = size(confs)
+
+   if (nam%nldwv>0) then
+      ! Allocation
+      allocate(nam%lon_ldwv(nam%nldwv))
+      allocate(nam%lat_ldwv(nam%nldwv))
+      allocate(nam%name_ldwv(nam%nldwv))
+
+      ! Initialization
+      nam%lon_ldwv = mpl%msv%valr
+      nam%lat_ldwv = mpl%msv%valr
+      nam%name_ldwv = ''
+
+      do iconf=1,size(confs)
+         call get(confs(iconf),'longitude',nam%lon_ldwv(iconf))
+         call get(confs(iconf),'latitude',nam%lat_ldwv(iconf))
+         call get(confs(iconf),'name',nam%name_ldwv(iconf))
+      end do
    end if
 end if
 
@@ -996,7 +986,6 @@ if (nam%ens2_nsub>nsubmax) call mpl%abort('${subr}$','ens2_nsub is too large')
 if (nam%nc3>nc3max) call mpl%abort('${subr}$','nc3 is too large')
 if (nam%nc4>nc4max) call mpl%abort('${subr}$','nc4 is too large')
 if (nam%ndir>ndirmax) call mpl%abort('${subr}$','ndir is too large')
-if (nam%nldwv>nldwvmax) call mpl%abort('${subr}$','nldwv is too large')
 
 ! Namelist parameters normalization (meters to radians and degrees to radians)
 nam%universe_radius = nam%universe_radius/req
@@ -1008,8 +997,8 @@ nam%diag_rhflt = nam%diag_rhflt/req
 nam%rh = nam%rh/req
 if (nam%ndir>0) nam%londir(1:nam%ndir) = nam%londir(1:nam%ndir)*deg2rad
 if (nam%ndir>0) nam%latdir(1:nam%ndir) = nam%latdir(1:nam%ndir)*deg2rad
-if (nam%nldwv>0) nam%lon_ldwv(1:nam%nldwv) = nam%lon_ldwv(1:nam%nldwv)*deg2rad
-if (nam%nldwv>0) nam%lat_ldwv(1:nam%nldwv) = nam%lat_ldwv(1:nam%nldwv)*deg2rad
+if (nam%nldwv>0) nam%lon_ldwv = nam%lon_ldwv*deg2rad
+if (nam%nldwv>0) nam%lat_ldwv = nam%lat_ldwv*deg2rad
 
 ! Forced parameters for backward compatibility
 if (nam%prefix/='') nam%prefix = trim(nam%prefix)//'_'
