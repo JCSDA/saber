@@ -31,8 +31,6 @@ class SpectralToGaussParameters : public SaberBlockParametersBase {
 
  public:
   oops::OptionalParameter<oops::Variables> activeVariables{"active variables", this};
-  oops::OptionalParameter<std::string> gaussGridUid{"gauss grid uid",
-                                            "Gauss Grid UID", this};
   // In the future may add N as a parameter if it is possible
   // to use the one different from the one inferred from the gaussian grid
 };

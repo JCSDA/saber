@@ -8,6 +8,11 @@
 
 #include "saber/spectralb/SpectralToGauss.h"
 
+#include <vector>
+
+#include "atlas/field.h"
+
+#include "oops/base/Variables.h"
 #include "oops/util/Logger.h"
 
 namespace saber {
@@ -172,8 +177,9 @@ atlas::Field convertUVToFieldSetAD(const atlas::FieldSet & fset) {
 oops::Variables createInnerVars(const SpectralToGaussParameters & params,
                                 const oops::Variables & outerVars) {
   oops::Variables innerVars;
+  oops::Variables activeVars = params.activeVariables.value().get_value_or(outerVars);
 
-  for (auto & var : outerVars.variables()) {
+  for (auto & var : activeVars.variables()) {
     if (var.compare("eastward_wind") == 0 || var.compare("northward_wind") == 0) {
     } else {
       innerVars.push_back(var);
@@ -274,17 +280,17 @@ void SpectralToGauss::multiply(atlas::FieldSet & fieldSet) const {
   // copy "passive variables" and sort out wind variables.
   for (auto & fieldname : fieldSet.field_names()) {
      if (!activeVars_.has(fieldname)) {
-       // Passive variable
+       // Passive variables
        newFields.add(fieldSet[fieldname]);
      } else {
      if (fieldname.compare("vorticity") == 0 ||
          fieldname.compare("divergence") == 0 ||
          fieldname.compare("streamfunction") == 0 ||
          fieldname.compare("velocity_potential") == 0) {
-       // Active wind variable
+       // Active wind variables
        windFieldSet.add(fieldSet[fieldname]);
      } else {
-       // Active non-wind variable
+       // Active non-wind variables
        specFieldSet.add(fieldSet[fieldname]);
      }}
   }
@@ -317,24 +323,26 @@ void SpectralToGauss::multiply(atlas::FieldSet & fieldSet) const {
   }
 
   // Convert remaining active variables to Gaussian grid.
-  // Create fieldset on Gaussian grid
-  atlas::FieldSet gaussFieldSet;
-  for (const auto & fieldname : specFieldSet.field_names()) {
-      atlas::Field gaussField =
-        gaussFunctionSpace_.createField<double>(atlas::option::name(fieldname) |
-                                   atlas::option::levels(specFieldSet[fieldname].levels()));
-      gaussField.haloExchange();
-      atlas::array::make_view<double, 2>(gaussField).assign(0.0);
-      gaussFieldSet.add(gaussField);
-  }
+  if (!specFieldSet.empty()) {  // if there are non-wind active variables
+    // Create fieldset on Gaussian grid
+    atlas::FieldSet gaussFieldSet;
+    for (const auto & fieldname : specFieldSet.field_names()) {
+        atlas::Field gaussField =
+          gaussFunctionSpace_.createField<double>(atlas::option::name(fieldname) |
+                                     atlas::option::levels(specFieldSet[fieldname].levels()));
+        gaussField.haloExchange();
+        atlas::array::make_view<double, 2>(gaussField).assign(0.0);
+        gaussFieldSet.add(gaussField);
+    }
 
-  // Transform to gaussian grid
-  trans_.invtrans(specFieldSet, gaussFieldSet);
+    // Transform to gaussian grid
+    trans_.invtrans(specFieldSet, gaussFieldSet);
 
-  for (const auto & fieldname : specFieldSet.field_names()) {
-    gaussFieldSet[fieldname].haloExchange();
-    newFields.add(gaussFieldSet[fieldname]);
-  }
+    for (const auto & fieldname : specFieldSet.field_names()) {
+      gaussFieldSet[fieldname].haloExchange();
+      newFields.add(gaussFieldSet[fieldname]);
+    }
+  }  // if non-wind active variables
 
   fieldSet = newFields;
 
@@ -354,56 +362,57 @@ void SpectralToGauss::multiplyAD(atlas::FieldSet & fieldSet) const {
   // copy "passive variables" and sort out wind variables.
   for (auto & fieldname : fieldSet.field_names()) {
      if (!activeVars_.has(fieldname)) {
-       // Passive variable
+       // Passive variables
        newFields.add(fieldSet[fieldname]);
      } else {
-     if (fieldname.compare("vorticity") == 0 ||
-         fieldname.compare("divergence") == 0 ||
-         fieldname.compare("streamfunction") == 0 ||
-         fieldname.compare("velocity_potential") == 0) {
-       // Active wind variable
+     if (fieldname.compare("eastward_wind") == 0 ||
+         fieldname.compare("northward_wind") == 0) {
+       // Active wind variables
        windFieldSet.add(fieldSet[fieldname]);
      } else {
-       // Active non-wind variable
+       // Active non-wind variables
        gaussFieldSet.add(fieldSet[fieldname]);
      }}
   }
 
-  // Create spectral fieldset
-  atlas::FieldSet specFieldSet;
-  for (const auto & fieldname : gaussFieldSet.field_names()) {
-    atlas::Field specField =
-      specFunctionSpace_.createField<double>(atlas::option::name(fieldname) |
-                                 atlas::option::levels(gaussFieldSet[fieldname].levels()));
-    specFieldSet.add(specField);
+  if (!gaussFieldSet.empty()) {  // If there are active non-wind variables
+    // Create spectral fieldset
+    atlas::FieldSet specFieldSet;
+    for (const auto & fieldname : gaussFieldSet.field_names()) {
+      atlas::Field specField =
+        specFunctionSpace_.createField<double>(atlas::option::name(fieldname) |
+                                   atlas::option::levels(gaussFieldSet[fieldname].levels()));
+      specFieldSet.add(specField);
+    }
+
+    // Transform to spectral space
+    trans_.invtrans_adj(gaussFieldSet, specFieldSet);
+
+    for (const auto & fieldname : gaussFieldSet.field_names()) {
+      newFields.add(specFieldSet[fieldname]);
+    }
+  }  // if active non-wind variables
+
+  if (windFieldSet.has("eastward_wind") && windFieldSet.has("northward_wind")) {
+    atlas::Field uvgp = convertUVToFieldSetAD(windFieldSet);
+    // Do we need this specfset? Should it be the specFieldSet from before?
+    atlas::FieldSet specfset = allocateSpectralVortDiv(specFunctionSpace_,
+                                                       innerVars_, activeVariableSizes_);
+
+    trans_.invtrans_vordiv2wind_adj(uvgp, specfset["vorticity"], specfset["divergence"]);
+
+    const int N = specFunctionSpace_.truncation();
+
+    if (innerVars_.has("streamfunction") && innerVars_.has("velocity_potential")) {
+      applyNtimesNplus1SpectralScaling(
+        oops::Variables(std::vector<std::string>({"vorticity", "divergence"})),
+        oops::Variables(std::vector<std::string>({"streamfunction", "velocity_potential"})),
+        specFunctionSpace_, N, specfset);
+    }
+
+    newFields.add(specfset[0]);
+    newFields.add(specfset[1]);
   }
-
-  // Transform to spectral space
-  trans_.invtrans_adj(gaussFieldSet, specFieldSet);
-
-  for (const auto & fieldname : activeVars_.variables()) {
-    newFields.add(specFieldSet[fieldname]);
-  }
-
-  atlas::Field uvgp = convertUVToFieldSetAD(windFieldSet);
-  // Do we need this specfset? Should it be the specFieldSet from before?
-  atlas::FieldSet specfset = allocateSpectralVortDiv(specFunctionSpace_,
-                                                     innerVars_, activeVariableSizes_);
-
-  trans_.invtrans_vordiv2wind_adj(uvgp, specfset["vorticity"], specfset["divergence"]);
-
-  const int N = specFunctionSpace_.truncation();
-
-  if (innerVars_.has("streamfunction") && innerVars_.has("velocity_potential")) {
-      // Insert ASSERT here
-    applyNtimesNplus1SpectralScaling(
-      oops::Variables(std::vector<std::string>({"vorticity", "divergence"})),
-      oops::Variables(std::vector<std::string>({"streamfunction", "velocity_potential"})),
-      specFunctionSpace_, N, specfset);
-  }
-
-  newFields.add(specfset[0]);
-  newFields.add(specfset[1]);
 
   fieldSet = newFields;
 
