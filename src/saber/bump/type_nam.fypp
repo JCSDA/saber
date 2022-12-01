@@ -828,17 +828,14 @@ end if
 ! NICAS section
 if (conf%has('nicas')) then
    call conf%get_or_die('nicas',section)
-   if (section%has('resol')) call section%get_or_die('resol',nam%resol)
-   if (section%has('nc1max')) call section%get_or_die('nc1max',nam%nc1max)
-   if (section%has('nicas_draw_type')) then
-      call section%get_or_die('nicas_draw_type',str)
-      nam%nicas_draw_type = str
-   end if
-   if (section%has('forced_radii')) call section%get_or_die('forced_radii',nam%forced_radii)
-   call nam%get_value_or_profile(mpl,section,'rh',nam%rh)
-   call nam%get_value_or_profile(mpl,section,'rv',nam%rv)
-   if (section%has('loc_wgt')) then
-      call section%get_or_die('loc_wgt',confs)
+   call get(section,'resolution',nam%resol)
+   call get(section,'max horizontal grid size',nam%nc1max)
+   call get(section,'grid type',nam%nicas_draw_type)
+   call get(section,'explicit length-scales',nam%forced_radii)
+   call nam%get_value_or_profile(mpl,section,'horizontal length-scale',nam%rh)
+   call nam%get_value_or_profile(mpl,section,'vertical length-scale',nam%rv)
+   if (section%has('common localization weights')) then
+      call section%get_or_die('common localization weights',confs)
 
       ! Allocation
       allocate(loc_wgt(nam%nv,nam%nv))
@@ -880,10 +877,10 @@ if (conf%has('nicas')) then
       ! Release memory
       deallocate(loc_wgt)
    end if
-   call nam%get_value(section,'min_lev',nam%min_lev)
-   call nam%get_value(section,'max_lev',nam%max_lev)
-   if (section%has('interp_type')) then
-      call section%get_or_die('interp_type',confs)
+   call nam%get_value(section,'minimum level',nam%min_lev)
+   call nam%get_value(section,'maximum level',nam%max_lev)
+   if (section%has('interpolation type')) then
+      call section%get_or_die('interpolation type',confs)
       do iconf=1,size(confs)
          call confs(iconf)%get_or_die('variables',str_array)
          call confs(iconf)%get_or_die('type',str)
@@ -895,8 +892,8 @@ if (conf%has('nicas')) then
          end do
       end do
    end if
-   if (section%has('pos_def_test')) call section%get_or_die('pos_def_test',nam%pos_def_test)
-   if (section%has('interp_test')) call section%get_or_die('interp_test',nam%interp_test)
+   call get(section,'positive-definiteness test',nam%pos_def_test)
+   call get(section,'horizontal interpolation test',nam%interp_test)
 end if
 
 ! Wind section

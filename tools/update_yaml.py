@@ -125,7 +125,7 @@ kv.append(localProfiles)
 
 nicas = {}
 nicas["name"] = "nicas"
-nicas["keys"] = ["resol", "nc1max", "nicas_draw_type", "forced_radii", "pos_def_test", "interp_test"]
+nicas["keys"] = []
 kv.append(nicas)
 
 wind = {}
@@ -489,31 +489,37 @@ for i in range(len(bumps)):
             vec.append(ldwv_point)
         new_bump["local profiles"] = vec
 
-    # Update rh, rv, min_lev and max_lev
-    for key in ["rh", "rv", "min_lev", "max_lev"]:
-        if key in old_bump:
-            vec = []
-            for item in old_bump[key]:
-                block = {}
-                block["variables"] = [item]
-                if len(old_bump[key][item]) == 1:
-                    block["value"] = old_bump[key][item][0]
-                else:
-                    block["profile"] = old_bump[key][item]
-                vec.append(block)
-            new_bump["nicas"][key] = vec
-
-    # Update nicas_interp_type
-    if "nicas_interp_type" in old_bump:
+    # Update nicas section
+    if "resol" in old_bump:
+        new_bump["nicas"]["resolution"] = old_bump["resol"]
+    if "nc1max" in old_bump:
+        new_bump["nicas"]["max horizontal grid size"] = old_bump["nc1max"]
+    if "nicas_draw_type" in old_bump:
+        new_bump["nicas"]["grid type"] = old_bump["nicas_draw_type"]
+    if "forced_radii" in old_bump:
+        new_bump["nicas"]["explicit length-scales"] = old_bump["forced_radii"]
+    if "rh" in old_bump:
         vec = []
-        for item in old_bump["nicas_interp_type"]:
+        for item in old_bump["rh"]:
             block = {}
             block["variables"] = [item]
-            block["type"] = old_bump["nicas_interp_type"][item]
+            if len(old_bump["rh"][item]) == 1:
+                block["value"] = old_bump["rh"][item][0]
+            else:
+                block["profile"] = old_bump["rh"][item]
             vec.append(block)
-        new_bump["nicas"]["interp_type"] = vec
-
-    # Update loc_wgt
+        new_bump["nicas"]["horizontal length-scale"] = vec
+    if "rv" in old_bump:
+        vec = []
+        for item in old_bump["rv"]:
+            block = {}
+            block["variables"] = [item]
+            if len(old_bump["rv"][item]) == 1:
+                block["value"] = old_bump["rv"][item][0]
+            else:
+                block["profile"] = old_bump["rv"][item]
+            vec.append(block)
+        new_bump["nicas"]["vertical length-scale"] = vec
     if "loc_wgt" in old_bump:
         vec = []
         for item in old_bump["loc_wgt"]:
@@ -522,7 +528,35 @@ for i in range(len(bumps)):
             block["column variables"] = [item.split('-')[1]]
             block["value"] = old_bump["loc_wgt"][item]
             vec.append(block)
-        new_bump["nicas"]["loc_wgt"] = vec
+        new_bump["nicas"]["common localization weights"] = vec
+    if "min_lev" in old_bump:
+        vec = []
+        for item in old_bump["min_lev"]:
+            block = {}
+            block["variables"] = [item]
+            block["value"] = old_bump["min_lev"][item]
+            vec.append(block)
+        new_bump["nicas"]["minimum level"] = vec
+    if "max_lev" in old_bump:
+        vec = []
+        for item in old_bump["max_lev"]:
+            block = {}
+            block["variables"] = [item]
+            block["value"] = old_bump["max_lev"][item]
+            vec.append(block)
+        new_bump["nicas"]["maximum level"] = vec
+    if "nicas_interp_type" in old_bump:
+        vec = []
+        for item in old_bump["nicas_interp_type"]:
+            block = {}
+            block["variables"] = [item]
+            block["type"] = old_bump["nicas_interp_type"][item]
+            vec.append(block)
+        new_bump["nicas"]["interpolation type"] = vec
+    if "pos_def_test" in old_bump:
+        new_bump["nicas"]["positive-definiteness test"] = old_bump["pos_def_test"]
+    if "interp_test" in old_bump:
+        new_bump["nicas"]["horizontal interpolation test"] = old_bump["interp_test"]
 
     # Update dirac section
     if "ndir" in old_bump:

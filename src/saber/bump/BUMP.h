@@ -54,6 +54,18 @@ class ValueOrProfileParameters : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
+class ValueParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(ValueParameters, oops::Parameters)
+
+ public:
+  // Variables
+  oops::RequiredParameter<std::vector<std::string>> variables{"variables", this};
+  // Value
+  oops::OptionalParameter<int> value{"value", this};
+};
+
+// -----------------------------------------------------------------------------
+
 class GeneralSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(GeneralSection, oops::Parameters)
 
@@ -439,30 +451,34 @@ class NicasSection : public oops::Parameters {
 
  public:
   // Resolution
-  oops::OptionalParameter<double> resol{"resol", this};
+  oops::OptionalParameter<double> resol{"resolution", this};
   // Maximum size of the Sc1 subset
-  oops::OptionalParameter<int> nc1max{"nc1max", this};
+  oops::OptionalParameter<int> nc1max{"max horizontal grid size", this};
   // NICAS draw type ('random' or 'octahedral')
-  oops::OptionalParameter<std::string> nicas_draw_type{"nicas_draw_type", this};
+  oops::OptionalParameter<std::string> nicas_draw_type{"grid type", this};
   // Force specific support radii
-  oops::OptionalParameter<bool> forced_radii{"forced_radii", this};
+  oops::OptionalParameter<bool> forced_radii{"explicit length-scales", this};
   // Forced horizontal support radius [in meters]
-  oops::OptionalParameter<std::vector<ValueOrProfileParameters>> rh{"rh", this};
+  oops::OptionalParameter<std::vector<ValueOrProfileParameters>> rh{"horizontal length-scale",
+    this};
   // Forced vertical support radius
-  oops::OptionalParameter<std::vector<ValueOrProfileParameters>> rv{"rv", this};
+  oops::OptionalParameter<std::vector<ValueOrProfileParameters>> rv{"vertical length-scale",
+    this};
   // Forced localization weights
-  oops::OptionalParameter<std::vector<LocWgtParameters>> loc_wgt{"loc_wgt", this};
+  oops::OptionalParameter<std::vector<LocWgtParameters>> loc_wgt{"common localization weights",
+    this};
   // Minimum level
-  oops::OptionalParameter<std::vector<ValueOrProfileParameters>> min_lev{"min_lev", this};
+  oops::OptionalParameter<std::vector<ValueParameters>> min_lev{"minimum level", this};
   // Maximum level
-  oops::OptionalParameter<std::vector<ValueOrProfileParameters>> max_lev{"max_lev", this};
+  oops::OptionalParameter<std::vector<ValueParameters>> max_lev{"maximum level", this};
   // NICAS C1B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based
   // or 'si': smooth interpolation)
-  oops::OptionalParameter<std::vector<SpecificTypeParameters>> interp_type{"interp_type", this};
+  oops::OptionalParameter<std::vector<SpecificTypeParameters>> interp_type{"interpolation type",
+    this};
   // Positive-definiteness test
-  oops::OptionalParameter<bool> pos_def_test{"pos_def_test", this};
+  oops::OptionalParameter<bool> pos_def_test{"positive-definiteness test", this};
   // Horizontal NICAS interpolation test
-  oops::OptionalParameter<bool> interp_test{"interp_test", this};
+  oops::OptionalParameter<bool> interp_test{"horizontal interpolation test", this};
 };
 
 // -----------------------------------------------------------------------------
