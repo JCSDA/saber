@@ -69,7 +69,7 @@ class GeneralSection : public oops::Parameters {
   // Reproducibility threshold
   oops::OptionalParameter<double> repro_th{"reproducibility threshold", this};
   // Universe radius [in meters]
-  oops::OptionalParameter<double> universe_radius{"universe radius", this};
+  oops::OptionalParameter<double> universe_radius{"universe length-scale", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -235,11 +235,11 @@ class EnsembleSizesSection : public oops::Parameters {
   // Ensemble 1 size
   oops::OptionalParameter<int> ens1_ne{"total ensemble size", this};
   // Ensemble 1 sub-ensembles number
-  oops::OptionalParameter<int> ens1_nsub{"number of sub-ensembles", this};
+  oops::OptionalParameter<int> ens1_nsub{"sub-ensembles", this};
   // Ensemble 2 size
   oops::OptionalParameter<int> ens2_ne{"total lowres ensemble size", this};
   // Ensemble 2 sub-ensembles number
-  oops::OptionalParameter<int> ens2_nsub{"number of lowres sub-ensembles", this};
+  oops::OptionalParameter<int> ens2_nsub{"lowres sub-ensembles", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -267,17 +267,17 @@ class SamplingSection : public oops::Parameters {
   // Diagnostic grid size
   oops::OptionalParameter<int> nc2{"diagnostic grid size", this};
   // Number of distance classes
-  oops::OptionalParameter<int> nc3{"number of distance classes", this};
+  oops::OptionalParameter<int> nc3{"distance classes", this};
   // Number of angular sectors
-  oops::OptionalParameter<int> nc4{"number of angular sectors", this};
+  oops::OptionalParameter<int> nc4{"angular sectors", this};
   // Class size (for sam_type='hor'), should be larger than the typical grid cell size [in meters]
   oops::OptionalParameter<double> dc{"distance class width", this};
   // Reduced number of levels for diagnostics
-  oops::OptionalParameter<int> nl0r{"reduced number of levels", this};
+  oops::OptionalParameter<int> nl0r{"reduced levels", this};
   // Activate local diagnostics
   oops::OptionalParameter<bool> local_diag{"local diagnostic", this};
   // Local diagnostics calculation radius [in meters]
-  oops::OptionalParameter<double> local_rad{"averaging radius", this};
+  oops::OptionalParameter<double> local_rad{"averaging length-scale", this};
   // Local diagnostics calculation latitude band half-width [in degrees]
   oops::OptionalParameter<double> local_dlat{"averaging latitude width", this};
   // Diagnostic draw type ('random' or 'octahedral')
@@ -308,7 +308,7 @@ class LocalizationSection : public oops::Parameters {
   // Threshold on generalized kurtosis (3.0 = Gaussian distribution)
   oops::OptionalParameter<double> gen_kurt_th{"generalized kurtosis threshold", this};
   // Number of bins for averaged statistics histograms
-  oops::OptionalParameter<int> avg_nbins{"number of histogram bins", this};
+  oops::OptionalParameter<int> avg_nbins{"histogram bins", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -318,15 +318,15 @@ class VerticalBalanceBlockParameters : public oops::Parameters {
 
  public:
   // Balanced variable
-  oops::RequiredParameter<std::string> balanced{"balanced", this};
+  oops::RequiredParameter<std::string> balanced{"balanced variable", this};
   // Unbalanced variable
-  oops::RequiredParameter<std::string> unbalanced{"unbalanced", this};
+  oops::RequiredParameter<std::string> unbalanced{"unbalanced variable", this};
   // Diagonal auto-covariance for the inversion
-  oops::Parameter<bool> diag_auto{"diag_auto", false, this};
+  oops::Parameter<bool> diag_auto{"diagonal autocovariance", false, this};
   // Diagonal regression
-  oops::Parameter<bool> diag_reg{"diag_reg", false, this};
+  oops::Parameter<bool> diag_reg{"diagonal regression", false, this};
   // Scalar coefficients for identity vertical balance
-  oops::Parameter<double> id_coef{"id_coef", 1.0, this};
+  oops::Parameter<double> id_coef{"identity block weight", 1.0, this};
 };
 
 class VerticalBalanceSection : public oops::Parameters {
@@ -352,17 +352,18 @@ class VarianceSection : public oops::Parameters {
 
  public:
   // Force specific variance
-  oops::OptionalParameter<bool> forced_var{"forced_var", this};
+  oops::OptionalParameter<bool> forced_var{"explicit stddev", this};
   // Forced standard-deviation
   oops::OptionalParameter<std::vector<ValueOrProfileParameters>> stddev{"stddev", this};
   // Filter variance
-  oops::OptionalParameter<bool> var_filter{"var_filter", this};
+  oops::OptionalParameter<bool> var_filter{"objective filtering", this};
   // Number of iterations for the variance filtering (0 for uniform variance)
-  oops::OptionalParameter<int> var_niter{"var_niter", this};
+  oops::OptionalParameter<int> var_niter{"filtering iterations", this};
   // Number of passes for the variance filtering (0 for uniform variance)
-  oops::OptionalParameter<int> var_npass{"var_npass", this};
+  oops::OptionalParameter<int> var_npass{"filtering passes", this};
   // Variance initial filtering support radius [in meters]
-  oops::OptionalParameter<std::vector<ValueOrProfileParameters>> var_rhflt{"var_rhflt", this};
+  oops::OptionalParameter<std::vector<ValueOrProfileParameters>> var_rhflt{"initial length-scale",
+    this};
 };
 
 // -----------------------------------------------------------------------------

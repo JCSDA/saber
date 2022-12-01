@@ -105,7 +105,7 @@ kv.append(verticalBalance)
 
 variance = {}
 variance["name"] = "variance"
-variance["keys"] = ["forced_var", "var_filter", "var_niter", "var_npass"]
+variance["keys"] = []
 kv.append(variance)
 
 optimalityTest = {}
@@ -183,7 +183,7 @@ for i in range(len(bumps)):
     if "rth" in old_bump:
         new_bump["general"]["reproducibility threshold"] = old_bump["rth"]
     if "universe_rad" in old_bump:
-        new_bump["general"]["universe radius"] = old_bump["universe_rad"]
+        new_bump["general"]["universe length-scale"] = old_bump["universe_rad"]
 
     # Update io section
     if "datadir" in old_bump:
@@ -336,11 +336,11 @@ for i in range(len(bumps)):
     if "ens1_ne" in old_bump:
         new_bump["ensemble sizes"]["total ensemble size"] = old_bump["ens1_ne"]
     if "ens1_nsub" in old_bump:
-        new_bump["ensemble sizes"]["number of sub-ensembles"] = old_bump["ens1_nsub"]
+        new_bump["ensemble sizes"]["sub-ensembles"] = old_bump["ens1_nsub"]
     if "ens2_ne" in old_bump:
         new_bump["ensemble sizes"]["total lowres ensemble size"] = old_bump["ens2_ne"]
     if "ens2_nsub" in old_bump:
-        new_bump["ensemble sizes"]["number of lowres sub-ensembles"] = old_bump["ens2_nsub"]
+        new_bump["ensemble sizes"]["lowres sub-ensembles"] = old_bump["ens2_nsub"]
 
     # Udpate sampling section
     if "nc1" in old_bump:
@@ -348,17 +348,17 @@ for i in range(len(bumps)):
     if "nc2" in old_bump:
         new_bump["sampling"]["diagnostic grid size"] = old_bump["nc2"]
     if "nc3" in old_bump:
-        new_bump["sampling"]["number of distance classes"] = old_bump["nc3"]
+        new_bump["sampling"]["distance classes"] = old_bump["nc3"]
     if "nc4" in old_bump:
-        new_bump["sampling"]["number of angular sectors"] = old_bump["nc4"]
+        new_bump["sampling"]["angular sectors"] = old_bump["nc4"]
     if "dc" in old_bump:
         new_bump["sampling"]["distance class width"] = old_bump["dc"]
     if "nl0r" in old_bump:
-        new_bump["sampling"]["reduced number of levels"] = old_bump["nl0r"]
+        new_bump["sampling"]["reduced levels"] = old_bump["nl0r"]
     if "local_diag" in old_bump:
         new_bump["sampling"]["local diagnostic"] = old_bump["local_diag"]
     if "local_rad" in old_bump:
-        new_bump["sampling"]["averaging radius"] = old_bump["local_rad"]
+        new_bump["sampling"]["averaging length-scale"] = old_bump["local_rad"]
     if "local_dlat" in old_bump:
         new_bump["sampling"]["averaging latitude width"] = old_bump["local_dlat"]
     if "diag_draw_type" in old_bump:
@@ -380,7 +380,7 @@ for i in range(len(bumps)):
     if "gen_kurt_th" in old_bump:
         new_bump["localization"]["generalized kurtosis threshold"] = old_bump["gen_kurt_th"]
     if "avg_nbins" in old_bump:
-        new_bump["localization"]["number of histogram bins"] = old_bump["avg_nbins"]
+        new_bump["localization"]["histogram bins"] = old_bump["avg_nbins"]
 
     # Udpate vbal
     if "vbal_block" in old_bump:
@@ -404,19 +404,19 @@ for i in range(len(bumps)):
                 if ib < len(vbal_block):
                     if vbal_block[ib]:
                         block = {}
-                        block["balanced"] = args.variables[ii]
-                        block["unbalanced"] = args.variables[jj]
+                        block["balanced variable"] = args.variables[ii]
+                        block["unbalanced variable"] = args.variables[jj]
                         if vbal_diag_auto[ib]:
-                            block["diag_auto"] = True
+                            block["diagonal autocovariance"] = True
                         if vbal_diag_reg[ib]:
-                            block["diag_reg"] = True
+                            block["diagonal regression"] = True
                         if "vbal_id_coef" in old_bump:
-                            block["id_coef"] = vbal_id_coef[ib]
+                            block["identity block weight"] = vbal_id_coef[ib]
                         vbal.append(block)
                 ib += 1
         new_bump["vertical balance"]["vbal"] = vbal
     if "vbal_rad" in old_bump:
-        new_bump["sampling"]["averaging radius"] = old_bump["vbal_rad"]
+        new_bump["sampling"]["averaging length-scale"] = old_bump["vbal_rad"]
     if "vbal_dlat" in old_bump:
         new_bump["sampling"]["averaging latitude width"] = old_bump["vbal_dlat"]
     if "vbal_pseudo_inv" in old_bump:
@@ -428,19 +428,37 @@ for i in range(len(bumps)):
     if "vbal_id" in old_bump:
         new_bump["vertical balance"]["identity blocks"] = old_bump["vbal_id"]
 
-    # Update stddev and var_rhflt
-    for key in ["stddev", "var_rhflt"]:
-        if key in old_bump:
-            vec = []
-            for item in old_bump[key]:
-                block = {}
-                block["variables"] = [item]
-                if len(old_bump[key][item]) == 1:
-                    block["value"] = old_bump[key][item][0]
-                else:
-                    block["profile"] = old_bump[key][item]
-                vec.append(block)
-            new_bump["variance"][key] = vec
+    # Update variance section
+    if "forced_var" in old_bump:
+        new_bump["variance"]["explicit stddev"] = old_bump["forced_var"]
+    if "stddev" in old_bump:
+        vec = []
+        for item in old_bump["stddev"]:
+            block = {}
+            block["variables"] = [item]
+            if len(old_bump["stddev"][item]) == 1:
+                block["value"] = old_bump["stddev"][item][0]
+            else:
+                block["profile"] = old_bump["stddev"][item]
+            vec.append(block)
+        new_bump["variance"]["stddev"] = vec
+    if "var_filter" in old_bump:
+        new_bump["variance"]["objective filtering"] = old_bump["var_filter"]
+    if "var_niter" in old_bump:
+        new_bump["variance"]["filtering iterations"] = old_bump["var_niter"]
+    if "var_npass" in old_bump:
+        new_bump["variance"]["filtering passes"] = old_bump["var_npass"]
+    if "var_rhflt" in old_bump:
+        vec = []
+        for item in old_bump["var_rhflt"]:
+            block = {}
+            block["variables"] = [item]
+            if len(old_bump["var_rhflt"][item]) == 1:
+                block["value"] = old_bump["var_rhflt"][item][0]
+            else:
+                block["profile"] = old_bump["var_rhflt"][item]
+            vec.append(block)
+        new_bump["variance"]["initial length-scale"] = vec
 
     # Update rh, rv, min_lev and max_lev
     for key in ["rh", "rv", "min_lev", "max_lev"]:

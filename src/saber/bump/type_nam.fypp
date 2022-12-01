@@ -495,7 +495,7 @@ if (conf%has('general')) then
    call get(section,'default seed',nam%default_seed)
    call get(section,'reproducibility operators',nam%repro_ops)
    call get(section,'reproducibility threshold',nam%repro_th)
-   call get(section,'universe radius',nam%universe_radius)
+   call get(section,'universe length-scale',nam%universe_radius)
 end if
 
 ! I/O param
@@ -609,9 +609,9 @@ end if
 if (conf%has('ensemble sizes')) then
    call conf%get_or_die('ensemble sizes',section)
    call get(section,'total ensemble size',nam%ens1_ne)
-   call get(section,'number of sub-ensembles',nam%ens1_nsub)
+   call get(section,'sub-ensembles',nam%ens1_nsub)
    call get(section,'total lowres ensemble size',nam%ens2_ne)
-   call get(section,'number of lowres sub-ensembles',nam%ens2_nsub)
+   call get(section,'lowres sub-ensembles',nam%ens2_nsub)
 end if
 
 ! Sampling section
@@ -619,12 +619,12 @@ if (conf%has('sampling')) then
    call conf%get_or_die('sampling',section)
    call get(section,'computation grid size',nam%nc1)
    call get(section,'diagnostic grid size',nam%nc2)
-   call get(section,'number of distance classes',nam%nc3)
-   call get(section,'number of angular sectors',nam%nc4)
+   call get(section,'distance classes',nam%nc3)
+   call get(section,'angular sectors',nam%nc4)
    call get(section,'distance class width',nam%dc)
-   call get(section,'reduced number of levels',nam%nl0r)
+   call get(section,'reduced levels',nam%nl0r)
    call get(section,'local diagnostic',nam%local_diag)
-   call get(section,'averaging radius',nam%local_rad)
+   call get(section,'averaging length-scale',nam%local_rad)
    call get(section,'averaging latitude width',nam%local_dlat)
    call get(section,'grid type',nam%samp_draw_type)
    call get(section,'max number of draws',nam%irmax)
@@ -667,7 +667,7 @@ if (conf%has('localization')) then
    call get(section,'target lowres ensemble size',nam%ne_lr)
    call get(section,'gaussian approximation',nam%gau_approx)
    call get(section,'generalized kurtosis threshold',nam%gen_kurt_th)
-   call get(section,'number of histogram bins',nam%avg_nbins)
+   call get(section,' histogram bins',nam%avg_nbins)
 end if
 
 ! Vertical balance section
@@ -686,8 +686,8 @@ if (conf%has('vertical balance')) then
       ! Get initial matrix
       nam%vbal_block = .false.
       do iconf=1,size(confs)
-         call confs(iconf)%get_or_die('balanced',str_bal)
-         call confs(iconf)%get_or_die('unbalanced',str_unbal)
+         call confs(iconf)%get_or_die('balanced variable',str_bal)
+         call confs(iconf)%get_or_die('unbalanced variable',str_unbal)
          found = .false.
          do jv=1,nam%nv
             do iv=1,nam%nv
@@ -755,14 +755,14 @@ if (conf%has('vertical balance')) then
    
       ! Set section
       do iconf=1,size(confs)
-         call confs(iconf)%get_or_die('balanced',str_bal)
-         call confs(iconf)%get_or_die('unbalanced',str_unbal)
+         call confs(iconf)%get_or_die('balanced variable',str_bal)
+         call confs(iconf)%get_or_die('unbalanced variable',str_unbal)
          do jv=1,nam%nv
             do iv=1,nam%nv
                if ((str_bal==nam%variables(iv)).and.(str_unbal==nam%variables(jv))) then
-                  call confs(iconf)%get_or_die('diag_auto',nam%vbal_diag_auto(iv,jv))
-                  call confs(iconf)%get_or_die('diag_reg',nam%vbal_diag_reg(iv,jv))
-                  call confs(iconf)%get_or_die('id_coef',nam%vbal_id_coef(iv,jv))
+                  call confs(iconf)%get_or_die('diagonal autocovariance',nam%vbal_diag_auto(iv,jv))
+                  call confs(iconf)%get_or_die('diagonal regression',nam%vbal_diag_reg(iv,jv))
+                  call confs(iconf)%get_or_die('identity block weight',nam%vbal_id_coef(iv,jv))
                end if
             end do
          end do
@@ -780,12 +780,12 @@ end if
 ! Variance section
 if (conf%has('variance')) then
    call conf%get_or_die('variance',section)
-   if (section%has('forced_var')) call section%get_or_die('forced_var',nam%forced_var)
-   if (section%has('stddev')) call nam%get_value_or_profile(mpl,section,'stddev',nam%stddev)
-   if (section%has('var_filter')) call section%get_or_die('var_filter',nam%var_filter)
-   if (section%has('var_niter')) call section%get_or_die('var_niter',nam%var_niter)
-   if (section%has('var_npass')) call section%get_or_die('var_npass',nam%var_npass)
-   if (section%has('var_rhflt')) call nam%get_value_or_profile(mpl,section,'var_rhflt',nam%var_rhflt)
+   call get(section,'explicit stddev',nam%forced_var)
+   call nam%get_value_or_profile(mpl,section,'stddev',nam%stddev)
+   call get(section,'objective filtering',nam%var_filter)
+   call get(section,'filtering iterations',nam%var_niter)
+   call get(section,'filtering passes',nam%var_npass)
+   call nam%get_value_or_profile(mpl,section,'initial length-scale',nam%var_rhflt)
 end if
 
 ! Optimality test section
@@ -845,8 +845,8 @@ if (conf%has('nicas')) then
       nam%nicas_draw_type = str
    end if
    if (section%has('forced_radii')) call section%get_or_die('forced_radii',nam%forced_radii)
-   if (section%has('rh')) call nam%get_value_or_profile(mpl,section,'rh',nam%rh)
-   if (section%has('rv')) call nam%get_value_or_profile(mpl,section,'rv',nam%rv)
+   call nam%get_value_or_profile(mpl,section,'rh',nam%rh)
+   call nam%get_value_or_profile(mpl,section,'rv',nam%rv)
    if (section%has('loc_wgt')) then
       call section%get_or_die('loc_wgt',confs)
 
@@ -890,8 +890,8 @@ if (conf%has('nicas')) then
       ! Release memory
       deallocate(loc_wgt)
    end if
-   if (section%has('min_lev')) call nam%get_value(section,'min_lev',nam%min_lev)
-   if (section%has('max_lev')) call nam%get_value(section,'max_lev',nam%max_lev)
+   call nam%get_value(section,'min_lev',nam%min_lev)
+   call nam%get_value(section,'max_lev',nam%max_lev)
    if (section%has('interp_type')) then
       call section%get_or_die('interp_type',confs)
       do iconf=1,size(confs)
@@ -1432,20 +1432,22 @@ type(fckit_configuration),allocatable :: confs(:)
 ! Probe in
 @:probe_in()
 
-! Get subconfigurations vector
-call section%get_or_die(key,confs)
+if (section%has(key)) then
+   ! Get subconfigurations vector
+   call section%get_or_die(key,confs)
 
-! Loop over subconfigurations
-do iconf=1,size(confs)
-   call confs(iconf)%get_or_die('variables',str_array)
-   call confs(iconf)%get_or_die('value',scalar)
-   do it=1,size(str_array)
-      if (str_array(it)=='common') val(0) = scalar
-      do iv=1,nam%nv
-         if (str_array(it)==nam%variables(iv)) val(iv) = scalar
+   ! Loop over subconfigurations
+   do iconf=1,size(confs)
+      call confs(iconf)%get_or_die('variables',str_array)
+      call confs(iconf)%get_or_die('value',scalar)
+      do it=1,size(str_array)
+         if (str_array(it)=='common') val(0) = scalar
+         do iv=1,nam%nv
+            if (str_array(it)==nam%variables(iv)) val(iv) = scalar
+         end do
       end do
    end do
-end do
+end if
 
 ! Probe out
 @:probe_out()
@@ -1483,36 +1485,38 @@ type(fckit_configuration),allocatable :: confs(:)
 ! Probe in
 @:probe_in()
 
-! Get subconfigurations vector
-call section%get_or_die(key,confs)
+if (section%has(key)) then
+   ! Get subconfigurations vector
+   call section%get_or_die(key,confs)
 
-! Loop over subconfigurations
-do iconf=1,size(confs)
-   call confs(iconf)%get_or_die('variables',str_array)
-   if (confs(iconf)%has('value')) then
-      call confs(iconf)%get_or_die('value',scalar)
-      do it=1,size(str_array)
-         if (str_array(it)=='common') val(:,0) = scalar
-         do iv=1,nam%nv
-            if (str_array(it)==nam%variables(iv)) val(:,iv) = scalar
+   ! Loop over subconfigurations
+   do iconf=1,size(confs)
+      call confs(iconf)%get_or_die('variables',str_array)
+      if (confs(iconf)%has('value')) then
+         call confs(iconf)%get_or_die('value',scalar)
+         do it=1,size(str_array)
+            if (str_array(it)=='common') val(:,0) = scalar
+            do iv=1,nam%nv
+               if (str_array(it)==nam%variables(iv)) val(:,iv) = scalar
+            end do
          end do
-      end do
-   elseif (confs(iconf)%has('profile')) then
-      call confs(iconf)%get_or_die('profile',array)
-      if (size(array)>nl0max) then
-         write(message,'(a,a,i4)') key,' profile size should be smaller than ',nl0max
-         call mpl%abort('${subr}$',message)
+      elseif (confs(iconf)%has('profile')) then
+         call confs(iconf)%get_or_die('profile',array)
+         if (size(array)>nl0max) then
+            write(message,'(a,a,i4)') key,' profile size should be smaller than ',nl0max
+            call mpl%abort('${subr}$',message)
+         end if
+         do it=1,size(str_array)
+            if (str_array(it)=='common') val(1:size(array),0) = array
+            do iv=1,nam%nv
+               if (str_array(it)==nam%variables(iv)) val(1:size(array),iv) = array
+            end do
+         end do
+      else
+         call mpl%abort('${subr}$','missing value/profile in '//key)
       end if
-      do it=1,size(str_array)
-         if (str_array(it)=='common') val(1:size(array),0) = array
-         do iv=1,nam%nv
-            if (str_array(it)==nam%variables(iv)) val(1:size(array),iv) = array
-         end do
-      end do
-   else
-      call mpl%abort('${subr}$','missing value/profile in '//key)
-   end if
-end do
+   end do
+end if
 
 ! Probe out
 @:probe_out()
