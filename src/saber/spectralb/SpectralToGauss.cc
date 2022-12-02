@@ -67,6 +67,8 @@ void SpectralToGauss::multiply(atlas::FieldSet & fieldSet) const {
     atlas::Field gaussField =
       gaussFunctionSpace_.createField<double>(atlas::option::name(fieldname) |
                                  atlas::option::levels(specFieldSet[fieldname].levels()));
+    gaussField.haloExchange();
+    atlas::array::make_view<double, 2>(gaussField).assign(0.0);
     gaussFieldSet.add(gaussField);
   }
 
@@ -74,6 +76,7 @@ void SpectralToGauss::multiply(atlas::FieldSet & fieldSet) const {
   trans_.invtrans(specFieldSet, gaussFieldSet);
 
   for (const auto & fieldname : activeVars_.variables()) {
+    gaussFieldSet[fieldname].haloExchange();
     newFields.add(gaussFieldSet[fieldname]);
   }
 

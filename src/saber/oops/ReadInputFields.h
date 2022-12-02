@@ -36,10 +36,12 @@ std::vector<atlas::FieldSet> readInputFields(
   // Get number of MPI tasks and OpenMP threads
   std::string mpi(std::to_string(resol.getComm().size()));
   std::string omp("1");
+#ifdef _OPENMP
   # pragma omp parallel
   {
     omp = std::to_string(omp_get_num_threads());
   }
+#endif
 
   // Read block input fields function
   if (inputFields != boost::none) {
