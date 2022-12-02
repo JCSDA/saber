@@ -122,9 +122,6 @@ type(fieldset_type),intent(in) :: universe_radius       !< Fieldset optionally c
 ! Initialize MPL
 call bump%mpl%init(comm)
 
-! Initialize namelist
-call bump%nam%init(bump%mpl)
-
 ! Read configuration
 call bump%nam%from_conf(bump%mpl,conf)
 
