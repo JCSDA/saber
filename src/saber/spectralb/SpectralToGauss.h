@@ -66,9 +66,10 @@ class SpectralToGauss : public SaberOuterBlockBase {
   oops::Variables innerVars_;
   oops::Variables outerVars_;
   oops::Variables activeVars_;
-  std::vector<std::size_t> activeVariableSizes_;  // MD needed?
+  std::vector<std::size_t> activeVariableSizes_;
 
-
+  // Whether to convert to and from u/v.
+  const bool useWindTransform;
   /// Gaussian (outer) functionspace
   const atlas::functionspace::StructuredColumns gaussFunctionSpace_;
   /// Spectral (inner) functionspace
