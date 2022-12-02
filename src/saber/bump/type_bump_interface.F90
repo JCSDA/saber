@@ -37,7 +37,7 @@ contains
 ! Subroutine: bump_create_c
 !> Create
 !----------------------------------------------------------------------
-subroutine bump_create_c(key_bump,c_comm,c_afunctionspace,c_afieldset,c_conf,c_grid,c_universe_rad) bind(c,name='bump_create_f90')
+subroutine bump_create_c(key_bump,c_comm,c_afunctionspace,c_afieldset,c_conf,c_universe_rad) bind(c,name='bump_create_f90')
 
 implicit none
 
@@ -47,7 +47,6 @@ type(c_ptr),intent(in),value :: c_comm           !< FCKIT MPI communicator wrapp
 type(c_ptr),intent(in),value :: c_afunctionspace !< Function space
 type(c_ptr),intent(in),value :: c_afieldset      !< SABER geometry fields
 type(c_ptr),intent(in),value :: c_conf           !< FCKIT configuration
-type(c_ptr),intent(in),value :: c_grid           !< FCKIT grid configuration
 type(c_ptr),intent(in),value :: c_universe_rad   !< ATLAS fieldset optionally containing universe radius
 
 ! Local variables
@@ -56,7 +55,6 @@ type(fckit_mpi_comm) :: f_comm
 type(atlas_functionspace) :: f_afunctionspace
 type(fieldset_type) :: f_fieldset
 type(fckit_configuration) :: f_conf
-type(fckit_configuration) :: f_grid
 type(fieldset_type) :: f_universe_rad
 
 ! Interface
@@ -67,11 +65,10 @@ call bump_registry%get(key_bump,bump)
 f_afunctionspace = atlas_functionspace(c_afunctionspace)
 f_fieldset = atlas_fieldset(c_afieldset)
 f_conf = fckit_configuration(c_conf)
-f_grid = fckit_configuration(c_grid)
 f_universe_rad = atlas_fieldset(c_universe_rad)
 
 ! Call Fortran
-call bump%create(f_comm,f_afunctionspace,f_fieldset,f_conf,f_grid,f_universe_rad)
+call bump%create(f_comm,f_afunctionspace,f_fieldset,f_conf,f_universe_rad)
 
 end subroutine bump_create_c
 

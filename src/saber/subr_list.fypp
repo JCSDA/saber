@@ -396,6 +396,7 @@
 #:set subr_list = subr_list + ["nam_check"]
 #:set subr_list = subr_list + ["nam_write"]
 #:set subr_list = subr_list + ["nam_alias"]
+#:set subr_list = subr_list + ["nam_print_section"]
 #:set subr_list = subr_list + ["nam_get_int"]
 #:set subr_list = subr_list + ["nam_get_real"]
 #:set subr_list = subr_list + ["nam_get_logical"]

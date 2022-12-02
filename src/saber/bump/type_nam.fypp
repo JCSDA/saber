@@ -227,6 +227,10 @@ contains
    #:endfor
 end type nam_type
 
+interface print_section
+   module procedure nam_print_section
+end interface
+
 interface get
    #:for dtype in dtypes_irls
       module procedure nam_get_${dtype}$
@@ -453,7 +457,8 @@ logical,allocatable :: logical_array(:)
 character(len=1024) :: message,param,blockname
 character(len=:),allocatable :: str,str_bal,str_unbal
 character(len=:),allocatable :: str_array(:),str_array_row(:),str_array_col(:)
-type(fckit_configuration) :: section,subconf
+
+type(fckit_configuration) :: section
 type(fckit_configuration),allocatable :: confs(:)
 
 ! Set name
@@ -462,14 +467,15 @@ type(fckit_configuration),allocatable :: confs(:)
 ! Probe in
 @:probe_in()
 
-! Print input configuration
-str = conf%json()
-print*, str
-!write(mpl%info,'(a,a)') TODO
+write(mpl%info,'(a)') '-------------------------------------------------------------------'
+call mpl%flush
+write(mpl%info,'(a)') '--- Configuration parameters'
+call mpl%flush
 
 ! General section
 if (conf%has('general')) then
    call conf%get_or_die('general',section)
+   call print_section(mpl,section,'General')
    if (section%has('color log')) then
       call section%get_or_die('color log',color_log)
       if (color_log) then
@@ -491,6 +497,7 @@ end if
 ! I/O param
 if (conf%has('io')) then
    call conf%get_or_die('io',section)
+   call print_section(mpl,section,'I/O')
    call get(section,'data directory',nam%datadir)
    call get(section,'files prefix',nam%prefix)
    call get(section,'parallel netcdf',nam%parallel_netcdf)
@@ -532,6 +539,7 @@ end if
 ! Drivers section
 if (conf%has('drivers')) then
    call conf%get_or_die('drivers',section)
+   call print_section(mpl,section,'Drivers')
    call get(section,'compute covariance',nam%compute_cov1)
    call get(section,'compute lowres covariance',nam%compute_cov2)
    call get(section,'compute correlation',nam%compute_cor1)
@@ -539,6 +547,8 @@ if (conf%has('drivers')) then
    call get(section,'compute localization',nam%compute_loc1)
    call get(section,'compute lowres localization',nam%compute_loc2)
    call get(section,'compute hybrid weights',nam%compute_hyb)
+   nam%new_hdiag = nam%compute_cov1.or.nam%compute_cor1.or.nam%compute_loc1.or. &
+ & nam%compute_cov2.or.nam%compute_cor2.or.nam%compute_loc2.or.nam%compute_hyb
    call get(section,'hybrid source',nam%hybrid_source)
    call get(section,'multivariate strategy',nam%strategy)
    call get(section,'iterative algorithm',nam%iterative_algo)
@@ -581,6 +591,8 @@ end if
 ! Model section
 if (conf%has('model')) then
    call conf%get_or_die('model',section)
+   call print_section(mpl,section,'Model')
+   call get(section,'nl0',nam%nl0)
    call get(section,'level for 2d variables',nam%lev2d)
    if (section%has('variables')) then
       call section%get_or_die('variables',str_array)
@@ -597,6 +609,7 @@ end if
 ! Ensemble sizes
 if (conf%has('ensemble sizes')) then
    call conf%get_or_die('ensemble sizes',section)
+   call print_section(mpl,section,'Ensemble sizes')
    call get(section,'total ensemble size',nam%ens1_ne)
    call get(section,'sub-ensembles',nam%ens1_nsub)
    call get(section,'total lowres ensemble size',nam%ens2_ne)
@@ -606,6 +619,7 @@ end if
 ! Sampling section
 if (conf%has('sampling')) then
    call conf%get_or_die('sampling',section)
+   call print_section(mpl,section,'Sampling')
    call get(section,'computation grid size',nam%nc1)
    call get(section,'diagnostic grid size',nam%nc2)
    call get(section,'distance classes',nam%nc3)
@@ -652,6 +666,7 @@ end if
 ! Localization section
 if (conf%has('localization')) then
    call conf%get_or_die('localization',section)
+   call print_section(mpl,section,'Localization')
    call get(section,'target ensemble size',nam%ne)
    call get(section,'target lowres ensemble size',nam%ne_lr)
    call get(section,'gaussian approximation',nam%gau_approx)
@@ -662,6 +677,7 @@ end if
 ! Vertical balance section
 if (conf%has('vertical balance')) then
    call conf%get_or_die('vertical balance',section)
+   call print_section(mpl,section,'Vertical balance')
    if (section%has('vbal')) then
       call section%get_or_die('vbal',confs)
 
@@ -769,6 +785,7 @@ end if
 ! Variance section
 if (conf%has('variance')) then
    call conf%get_or_die('variance',section)
+   call print_section(mpl,section,'Variance')
    call get(section,'explicit stddev',nam%forced_var)
    call nam%get_value_or_profile(mpl,section,'stddev',nam%stddev)
    call get(section,'objective filtering',nam%var_filter)
@@ -780,6 +797,7 @@ end if
 ! Optimality test section
 if (conf%has('optimality test')) then
    call conf%get_or_die('optimality test',section)
+   call print_section(mpl,section,'Optimality test')
    call get(section,'half number of factors',nam%optimality_nfac)
    call get(section,'optimality_delta',nam%optimality_delta)
    call get(section,'optimality_ntest',nam%optimality_ntest)
@@ -788,6 +806,7 @@ end if
 ! Fit section
 if (conf%has('fit')) then
    call conf%get_or_die('fit',section)
+   call print_section(mpl,section,'Fit')
    call get(section,'horizontal filtering length-scale',nam%diag_rhflt)
    call get(section,'vertical filtering length-scale',nam%diag_rvflt)
    call get(section,'vertical stride',nam%fit_dl0)
@@ -797,6 +816,7 @@ end if
 ! Local profiles section
 if (conf%has('local profiles')) then
    call conf%get_or_die('local profiles',confs)
+   call print_section(mpl,section,'Local profiles')
 
    ! Number of profiles
    nam%nldwv = size(confs)
@@ -823,6 +843,7 @@ end if
 ! NICAS section
 if (conf%has('nicas')) then
    call conf%get_or_die('nicas',section)
+   call print_section(mpl,section,'NICAS')
    call get(section,'resolution',nam%resol)
    call get(section,'max horizontal grid size',nam%nc1max)
    call get(section,'grid type',nam%nicas_draw_type)
@@ -894,6 +915,7 @@ end if
 ! Wind section
 if (conf%has('psichitouv')) then
    call conf%get_or_die('psichitouv',section)
+   call print_section(mpl,section,'Psichitouv')
    call get(section,'stream function',nam%wind_streamfunction)
    call get(section,'velocity potential',nam%wind_velocity_potential)
    call get(section,'eastward wind',nam%wind_eastward)
@@ -907,6 +929,7 @@ end if
 ! Dirac section
 if (conf%has('dirac')) then
    call conf%get_or_die('dirac',confs)
+   call print_section(mpl,section,'Dirac')
    nam%ndir = 0
    do iconf=1,size(confs)
       call confs(iconf)%get_or_die('variable',str)
@@ -923,13 +946,16 @@ if (conf%has('dirac')) then
 end if
 
 ! Helpers / internal parameters
-nam%new_hdiag = nam%compute_cov1.or.nam%compute_cor1.or.nam%compute_loc1.or. &
- & nam%compute_cov2.or.nam%compute_cor2.or.nam%compute_loc2.or.nam%compute_hyb
-if (conf%has('model')) then
-   call conf%get_or_die('model',section)
-   if (section%has('nl0')) call section%get_or_die('nl0',nam%nl0)
-end if
-if (conf%has('msvalr')) call conf%get_or_die('msvalr',mpl%msv%valr)
+if (conf%has('msvalr')) call get(conf,'msvalr',mpl%msv%valr)
+
+write(mpl%info,'(a)') '-------------------------------------------------------------------'
+call mpl%flush
+write(mpl%info,'(a)') '--- Missing values'
+call mpl%flush
+write(mpl%info,'(a4,a,e15.8)') '','Real:    ',mpl%msv%valr 
+call mpl%flush
+write(mpl%info,'(a4,a,i6)') '','Integer: ',mpl%msv%vali
+call mpl%flush
 
 ! Probe out
 @:probe_out()
@@ -1332,6 +1358,50 @@ end do
 @:probe_out()
 
 end subroutine nam_alias
+
+!----------------------------------------------------------------------
+! Subroutine: nam_print_section
+!> Print configuration section
+!----------------------------------------------------------------------
+subroutine nam_print_section(mpl,section,title)
+
+implicit none
+
+! Passed variable
+type(mpl_type),intent(inout) :: mpl             !< MPI data
+type(fckit_configuration),intent(in) :: section !< Configuration section
+character(len=*),intent(in) :: title            !< Section title
+
+! Local variable
+integer :: str_size
+character(len=:),allocatable :: str
+
+! Set name
+@:set_name(nam_print_section)
+
+! Probe in
+@:probe_in()
+
+! Print title
+write(mpl%info,'(a7,a,a)') '',trim(title),':'
+call mpl%flush(.false.)
+
+! Configuration string
+str = section%json()
+str_size = len(str)
+do while (str_size>1024)
+   write(mpl%info,'(a)') str(1:1024)
+   call mpl%flush(.false.)
+   str(1:str_size-1024) = str(1025:str_size)
+   str_size = str_size-1024
+end do
+write(mpl%info,'(a)') str(1:str_size)
+call mpl%flush
+
+! Probe out
+@:probe_out()
+
+end subroutine nam_print_section
 
 #:for dtype in dtypes_irls
 !----------------------------------------------------------------------

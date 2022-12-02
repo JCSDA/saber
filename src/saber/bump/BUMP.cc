@@ -17,6 +17,7 @@
 
 #include "atlas/field.h"
 #include "atlas/functionspace.h"
+#include "atlas/util/Config.h"
 
 #include "eckit/config/Configuration.h"
 
@@ -184,7 +185,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   }
 
   // Initialize configuration
-  eckit::LocalConfiguration conf(params_.toConfiguration());
+  atlas::util::Config conf(params_.toConfiguration());
 
   // Add missing value (real)
   conf.set("msvalr", util::missingValue(double()));
@@ -198,7 +199,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   }
 
   // Grids
-  std::vector<eckit::LocalConfiguration> grids;
+  std::vector<atlas::util::Config> grids;
 
   // Get the grids configuration from input configuration and complete it
   if (conf.has("grids")) {
@@ -207,25 +208,25 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
     ASSERT(grids.size() > 0);
   } else {
     // Create one empty configuration
-    eckit::LocalConfiguration emptyConf;
+    atlas::util::Config emptyConf;
     grids.push_back(emptyConf);
   }
 
   // Check grids number
   ASSERT(grids.size() > 0);
 
-  // Print configuration for this grid
-  oops::Log::info() << "Info     : General configuration: " << conf << std::endl;
-
   // Loop over grids
-  for (unsigned int jgrid = 0; jgrid < grids.size(); ++jgrid) {
+  for (auto & grid : grids) {
+    // Merge conf into grid
+    grid = grid | conf;
+
     // Add input variables to the grid configuration
     std::vector<std::string> vars_str;
-    if (grids[jgrid].has("model.variables")) {
-      grids[jgrid].get("model.variables", vars_str);
+    if (grid.has("model.variables")) {
+      grid.get("model.variables", vars_str);
     } else {
       vars_str = activeVars_.variables();
-      grids[jgrid].set("model.variables", vars_str);
+      grid.set("model.variables", vars_str);
     }
 
     // Save variables for each grid
@@ -241,21 +242,17 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
         nl0 = std::max(nl0, std::max(nl0_tmp, 1));
       }
     }
-    grids[jgrid].set("model.nl0", nl0);
+    grid.set("model.nl0", nl0);
 
     // Add level index for 2D fields (first or last, first by default)
-    if (!grids[jgrid].has("model.lev2d")) {
-      grids[jgrid].set("model.lev2d", "first");
+    if (!grid.has("model.lev2d")) {
+      grid.set("model.lev2d", "first");
     }
 
-    // Print configuration for this grid
-    oops::Log::info() << "Info     : Grid " << jgrid << ": " << grids[jgrid] << std::endl;
-
     // Create BUMP instance
-    oops::Log::info() << "Info     : Create BUMP instance " << jgrid << std::endl;
     int keyBUMP = 0;
     bump_create_f90(keyBUMP, &comm, functionSpace1.get(), extraFields1.get(),
-                    conf, grids[jgrid], universe_radius.get());
+                    grid, universe_radius.get());
     keyBUMP_.push_back(keyBUMP);
 
     // Second geometry

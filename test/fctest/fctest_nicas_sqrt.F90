@@ -51,7 +51,7 @@ TEST( test_interpolatorbump )
   type(atlas_functionspace_structuredcolumns) :: fspace_out_sc
   type(bump_type) :: bump
   type(fieldset_type) :: fset,universe_rad,fset_out_1,fset_out_2
-  type(fckit_configuration) :: conf,grid
+  type(fckit_configuration) :: conf
   type(fckit_configuration) :: rh(1),rv(1)
 
   ! Initialize communicator
@@ -71,6 +71,10 @@ TEST( test_interpolatorbump )
   conf = fckit_configuration()
   call conf%set('drivers.multivariate strategy','specific_multivariate')
   call conf%set('drivers.compute nicas',.true.)
+  call conf%set('model.variables',variables)
+  call conf%set('model.nv',2)
+  call conf%set('model.nl0',nl0)
+  call conf%set('model.lev2d',lev2d)
   call conf%set('nicas.resolution',4.0_kind_real)
   call conf%set('nicas.explicit length-scales',.true.)
   rh(1) = fckit_configuration()
@@ -81,14 +85,9 @@ TEST( test_interpolatorbump )
   call rv(1)%set('variables',(/'var1','var2'/))
   call rv(1)%set('value',3.0_kind_real)
   call conf%set('nicas.vertical length-scale',rv)
-  grid = fckit_configuration()
-  call grid%set('model.variables',variables)
-  call grid%set('model.nv',2)
-  call grid%set('model.nl0',nl0)
-  call grid%set('model.lev2d',lev2d)
 
   ! Create BUMP
-  call bump%create(f_comm,fspace_out,fset,conf,grid,universe_rad)
+  call bump%create(f_comm,fspace_out,fset,conf,universe_rad)
 
   ! Run drivers
   call bump%run_drivers()

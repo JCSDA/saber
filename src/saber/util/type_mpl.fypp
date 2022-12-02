@@ -193,6 +193,13 @@ mpl%testing = .false.
 mpl%msv%vali = -999
 mpl%msv%valr = -999.0_kind_real
 
+! Write parallel setup
+write(mpl%info,'(a)') '-------------------------------------------------------------------'
+call mpl%flush
+write(mpl%info,'(a,i3,a,i2,a)') '--- Parallelization with ',mpl%nproc,' MPI tasks and ', &
+ & mpl%nthread,' OpenMP threads'
+call mpl%flush
+
 ! Probe out
 @:probe_out()
 

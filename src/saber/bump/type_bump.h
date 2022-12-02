@@ -7,24 +7,18 @@
 
 #pragma once
 
-#include "atlas/field/FieldSet.h"
-#include "atlas/functionspace/detail/FunctionSpaceImpl.h"
+#include "atlas/field.h"
+#include "atlas/functionspace.h"
+#include "atlas/util/Config.h"
 
-#include "eckit/config/Configuration.h"
 #include "eckit/mpi/Comm.h"
-
-// Forward declarations
-namespace eckit {
-  class Configuration;
-}
 
 namespace saber {
 extern "C" {
   void bump_create_f90(int &, const eckit::mpi::Comm *,
                        const atlas::functionspace::FunctionSpaceImpl *,
                        const atlas::field::FieldSetImpl *,
-                       const eckit::Configuration &,
-                       const eckit::Configuration &,
+                       const atlas::util::Config &,
                        const atlas::field::FieldSetImpl *);
   void bump_second_geometry_f90(int &,
                                 const atlas::functionspace::FunctionSpaceImpl *,

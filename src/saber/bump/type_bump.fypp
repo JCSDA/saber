@@ -98,7 +98,7 @@ contains
 ! Subroutine: bump_create
 !> Create
 !----------------------------------------------------------------------
-subroutine bump_create(bump,comm,afunctionspace,fieldset,conf,grid,universe_radius)
+subroutine bump_create(bump,comm,afunctionspace,fieldset,conf,universe_radius)
 
 implicit none
 
@@ -108,7 +108,6 @@ type(fckit_mpi_comm),intent(in) :: comm                 !< FCKIT MPI communicato
 type(atlas_functionspace),intent(in) :: afunctionspace  !< Function space
 type(fieldset_type),intent(in) :: fieldset              !< SABER geometry fields
 type(fckit_configuration),intent(in) :: conf            !< FCKIT configuration
-type(fckit_configuration),intent(in) :: grid            !< FCKIT grid configuration
 type(fieldset_type),intent(in) :: universe_radius       !< Fieldset optionally containing universe radius
 
 ! Set name
@@ -125,9 +124,6 @@ call bump%mpl%init(comm)
 
 ! Initialize namelist
 call bump%nam%init(bump%mpl)
-
-! Read grid configuration
-call bump%nam%from_conf(bump%mpl,grid)
 
 ! Read configuration
 call bump%nam%from_conf(bump%mpl,conf)
@@ -170,29 +166,9 @@ type(atlas_field) :: afield
 @:probe_in()
 
 ! Header
-write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
-call bump%mpl%flush
-write(bump%mpl%info,'(a)') '--- You are running the BUMP library ------------------------------'
-call bump%mpl%flush
 @:print_bump_instance()
 
-! Write parallel setup
-write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
-call bump%mpl%flush
-write(bump%mpl%info,'(a,i3,a,i2,a)') '--- Parallelization with ',bump%mpl%nproc,' MPI tasks and ', &
- & bump%mpl%nthread,' OpenMP threads'
-call bump%mpl%flush
-
 ! Set universe radius
-write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
-call bump%mpl%flush
-write(bump%mpl%info,'(a)') '--- Missing values'
-call bump%mpl%flush
-write(bump%mpl%info,'(a4,a,e15.8)') '','Real:    ',bump%mpl%msv%valr 
-call bump%mpl%flush
-write(bump%mpl%info,'(a4,a,i6)') '','Integer: ',bump%mpl%msv%vali
-call bump%mpl%flush
-
 if (present(universe_radius)) then
    if (universe_radius%size()>0) then
       ! Set universe radius
