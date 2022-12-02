@@ -117,8 +117,11 @@ class IoSection : public oops::Parameters {
     fname_vbal_cov{"overriding vertical covariance file", this};
   // Vertical balance file
   oops::OptionalParameter<std::string> fname_vbal{"overriding vertical balance file", this};
-  // Moments files
+  // Ensemble 1 moments files
   oops::OptionalParameter<std::vector<std::string>> fname_mom{"overriding moments file", this};
+  // Ensemble 2 moments files
+  oops::OptionalParameter<std::vector<std::string>> fname_mom2{"overriding lowres moments file",
+    this};
   // NICAS file
   oops::OptionalParameter<std::string> fname_nicas{"overriding nicas file", this};
   // Psichitouv transform file

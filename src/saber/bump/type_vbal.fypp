@@ -228,11 +228,8 @@ end do
 
 do isub=1,nsub
    ! Set file name
-   if ((nsub==1).and.(.not.nam%fname_vbal_cov_used)) then
-      fname_vbal_cov = nam%fname_vbal_cov(0)
-   else
-      fname_vbal_cov = nam%fname_vbal_cov(isub)
-   end if
+   write(fname_vbal_cov,'(a,a,i6.6)') trim(nam%fname_vbal_cov_default),'_',isub
+   if (allocated(nam%fname_vbal_cov)) fname_vbal_cov = nam%fname_vbal_cov(isub)
 
    ! Open file
    ncid = open_file(mpl,fname_vbal_cov,mpl%myproc)
@@ -300,7 +297,7 @@ character(len=1024) :: grpname
 @:probe_in()
 
 ! Open files
-ncid = create_file(mpl,nam%fname_vbal_cov(0),mpl%myproc)
+ncid = create_file(mpl,nam%fname_vbal_cov_default,mpl%myproc)
 
 ! Define dimensions
 nc1a_id = define_dim(mpl,ncid,'nc1a',samp%nc1a)
@@ -376,11 +373,8 @@ end do
 
 do isub=1,nsub
    ! Set file name
-   if ((nsub==1).and.(.not.nam%fname_vbal_cov_used)) then
-      fname_vbal_cov = nam%fname_vbal_cov(0)
-   else
-      fname_vbal_cov = nam%fname_vbal_cov(isub)
-   end if
+   write(fname_vbal_cov,'(a,a,i6.6)') trim(nam%fname_vbal_cov_default),'_',isub
+   if (allocated(nam%fname_vbal_cov)) fname_vbal_cov = nam%fname_vbal_cov(isub)
 
    ! Open file
    ncid = open_file(mpl,fname_vbal_cov)
@@ -448,7 +442,7 @@ character(len=1024) :: grpname
 @:probe_in()
 
 ! Open files
-ncid = create_file(mpl,nam%fname_vbal_cov(0))
+ncid = create_file(mpl,nam%fname_vbal_cov_default)
 
 ! Define dimensions
 nc1_id = define_dim(mpl,ncid,'nc1',samp%nc1)

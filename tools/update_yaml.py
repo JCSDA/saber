@@ -202,6 +202,8 @@ for i in range(len(bumps)):
         new_bump["io"]["overriding vertical balance file"] = old_bump["fname_vbal"]
     if "fname_mom" in old_bump:
         new_bump["io"]["overriding moments file"] = old_bump["fname_mom"]
+    if "fname_mom2" in old_bump:
+        new_bump["io"]["overriding lowres moments file"] = old_bump["fname_mom2"]
     if "fname_nicas" in old_bump:
         new_bump["io"]["overriding nicas file"] = old_bump["fname_nicas"]
     if "fname_wind" in old_bump:
@@ -440,7 +442,20 @@ for i in range(len(bumps)):
                 block["value"] = old_bump["stddev"][item][0]
             else:
                 block["profile"] = old_bump["stddev"][item]
-            vec.append(block)
+            done = False
+            for iblock in range(len(vec)):
+                if "value" in block and "value" in vec[iblock]:
+                    if block["value"] == vec[iblock]["value"]:
+                        for variable in block["variables"]:
+                            vec[iblock]["variables"].append(variable)
+                        done = True
+                if "profile" in block and "profile" in vec[iblock]:
+                    if block["profile"] == vec[iblock]["profile"]:
+                        for variable in block["variables"]:
+                            vec[iblock]["variables"].append(variable)
+                        done = True
+            if not done:
+                vec.append(block)
         new_bump["variance"]["stddev"] = vec
     if "var_filter" in old_bump:
         new_bump["variance"]["objective filtering"] = old_bump["var_filter"]
@@ -457,7 +472,20 @@ for i in range(len(bumps)):
                 block["value"] = old_bump["var_rhflt"][item][0]
             else:
                 block["profile"] = old_bump["var_rhflt"][item]
-            vec.append(block)
+            done = False
+            for iblock in range(len(vec)):
+                if "value" in block and "value" in vec[iblock]:
+                    if block["value"] == vec[iblock]["value"]:
+                        for variable in block["variables"]:
+                            vec[iblock]["variables"].append(variable)
+                        done = True
+                if "profile" in block and "profile" in vec[iblock]:
+                    if block["profile"] == vec[iblock]["profile"]:
+                        for variable in block["variables"]:
+                            vec[iblock]["variables"].append(variable)
+                        done = True
+            if not done:
+                vec.append(block)
         new_bump["variance"]["initial length-scale"] = vec
 
     # Update optimality test section
@@ -507,7 +535,20 @@ for i in range(len(bumps)):
                 block["value"] = old_bump["rh"][item][0]
             else:
                 block["profile"] = old_bump["rh"][item]
-            vec.append(block)
+            done = False
+            for iblock in range(len(vec)):
+                if "value" in block and "value" in vec[iblock]:
+                    if block["value"] == vec[iblock]["value"]:
+                        for variable in block["variables"]:
+                            vec[iblock]["variables"].append(variable)
+                        done = True
+                if "profile" in block and "profile" in vec[iblock]:
+                    if block["profile"] == vec[iblock]["profile"]:
+                        for variable in block["variables"]:
+                            vec[iblock]["variables"].append(variable)
+                        done = True
+            if not done:
+                vec.append(block)
         new_bump["nicas"]["horizontal length-scale"] = vec
     if "rv" in old_bump:
         vec = []
@@ -518,7 +559,20 @@ for i in range(len(bumps)):
                 block["value"] = old_bump["rv"][item][0]
             else:
                 block["profile"] = old_bump["rv"][item]
-            vec.append(block)
+            done = False
+            for iblock in range(len(vec)):
+                if "value" in block and "value" in vec[iblock]:
+                    if block["value"] == vec[iblock]["value"]:
+                        for variable in block["variables"]:
+                            vec[iblock]["variables"].append(variable)
+                        done = True
+                if "profile" in block and "profile" in vec[iblock]:
+                    if block["profile"] == vec[iblock]["profile"]:
+                        for variable in block["variables"]:
+                            vec[iblock]["variables"].append(variable)
+                        done = True
+            if not done:
+                vec.append(block)
         new_bump["nicas"]["vertical length-scale"] = vec
     if "loc_wgt" in old_bump:
         vec = []
@@ -535,7 +589,15 @@ for i in range(len(bumps)):
             block = {}
             block["variables"] = [item]
             block["value"] = old_bump["min_lev"][item]
-            vec.append(block)
+            done = False
+            for iblock in range(len(vec)):
+                if "value" in block and "value" in vec[iblock]:
+                    if block["value"] == vec[iblock]["value"]:
+                        for variable in block["variables"]:
+                            vec[iblock]["variables"].append(variable)
+                        done = True
+            if not done:
+                vec.append(block)
         new_bump["nicas"]["minimum level"] = vec
     if "max_lev" in old_bump:
         vec = []
@@ -543,7 +605,15 @@ for i in range(len(bumps)):
             block = {}
             block["variables"] = [item]
             block["value"] = old_bump["max_lev"][item]
-            vec.append(block)
+            done = False
+            for iblock in range(len(vec)):
+                if "value" in block and "value" in vec[iblock]:
+                    if block["value"] == vec[iblock]["value"]:
+                        for variable in block["variables"]:
+                            vec[iblock]["variables"].append(variable)
+                        done = True
+            if not done:
+                vec.append(block)
         new_bump["nicas"]["maximum level"] = vec
     if "nicas_interp_type" in old_bump:
         vec = []
@@ -551,7 +621,15 @@ for i in range(len(bumps)):
             block = {}
             block["variables"] = [item]
             block["type"] = old_bump["nicas_interp_type"][item]
-            vec.append(block)
+            done = False
+            for iblock in range(len(vec)):
+                if "type" in block and "type" in vec[iblock]:
+                    if block["type"] == vec[iblock]["type"]:
+                        for variable in block["variables"]:
+                            vec[iblock]["variables"].append(variable)
+                        done = True
+            if not done:
+                vec.append(block)
         new_bump["nicas"]["interpolation type"] = vec
     if "pos_def_test" in old_bump:
         new_bump["nicas"]["positive-definiteness test"] = old_bump["pos_def_test"]

@@ -244,12 +244,12 @@ call mom%init(nam,bpar)
 
 do isub=1,mom%nsub
    ! Set file name
-   if ((mom%nsub==1).and.(.not.nam%fname_mom_used)) then
-      fname_mom = nam%fname_mom(0)
-   else
-      fname_mom = nam%fname_mom(isub)
+   write(fname_mom,'(a,a,i6.6,a,i1)') trim(nam%fname_mom_default),'_',isub,'_',mom%iens
+   if (mom%iens==1) then
+      if (allocated(nam%fname_mom1)) fname_mom = nam%fname_mom1(isub)
+   elseif (mom%iens==2) then
+      if (allocated(nam%fname_mom2)) fname_mom = nam%fname_mom2(isub)
    end if
-   write(fname_mom,'(a,i1)') trim(fname_mom)//'_',mom%iens
 
    ! Open file
    ncid = open_file(mpl,fname_mom,mpl%myproc)
@@ -321,12 +321,12 @@ character(len=1024) :: fname_mom,grpname
 
 do isub=1,mom%nsub
    ! Set file name
-   if ((mom%nsub==1).and.(.not.nam%fname_mom_used)) then
-      fname_mom = nam%fname_mom(0)
-   else
-      fname_mom = nam%fname_mom(isub)
+   write(fname_mom,'(a,a,i6.6,a,i1)') trim(nam%fname_mom_default),'_',isub,'_',mom%iens
+   if (mom%iens==1) then
+      if (allocated(nam%fname_mom1)) fname_mom = nam%fname_mom1(isub)
+   elseif (mom%iens==2) then
+      if (allocated(nam%fname_mom2)) fname_mom = nam%fname_mom2(isub)
    end if
-   write(fname_mom,'(a,i1)') trim(fname_mom)//'_',mom%iens
 
    ! Create file
    ncid = create_file(mpl,fname_mom,mpl%myproc)

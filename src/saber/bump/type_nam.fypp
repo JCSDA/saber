@@ -19,7 +19,6 @@ use type_mpl, only: mpl_type
 
 implicit none
 
-integer,parameter :: nsubmax = 99                 !< Maximum number of sub-ensembles
 integer,parameter :: nvmax = 99                   !< Maximum number of variables
 integer,parameter :: nl0max = 300                 !< Maximum number of levels
 integer,parameter :: nc3max = 100                 !< Maximum number of distance classes
@@ -44,11 +43,12 @@ type nam_type
    character(len=1024),dimension(niokvmax) :: alias_code      !< Alias keys in code
    character(len=1024),dimension(niokvmax) :: alias_file      !< Alias values in file
    character(len=1024) :: fname_samp                          !< Sampling file
-   character(len=1024),dimension(0:nsubmax) :: fname_vbal_cov !< Vertical covariance files
-   logical :: fname_vbal_cov_used                             !< Flag activated if a vertical covariance file is specified
+   character(len=1024) :: fname_vbal_cov_default              !< Vertical covariance files default base
+   character(len=1024),allocatable :: fname_vbal_cov(:)       !< Vertical covariance files
    character(len=1024) :: fname_vbal                          !< Vertical balance file
-   character(len=1024),dimension(0:nsubmax) :: fname_mom      !< Moments files
-   logical :: fname_mom_used                                  !< Flag activated if a moments file is specified
+   character(len=1024) :: fname_mom_default                   !< Moments files default base
+   character(len=1024),allocatable :: fname_mom1(:)           !< Moments files, ensemble 1
+   character(len=1024),allocatable :: fname_mom2(:)           !< Moments files, ensemble 2
    character(len=1024) :: fname_nicas                         !< NICAS file
    character(len=1024) :: fname_wind                          !< Wind transform file
 
@@ -276,13 +276,9 @@ do i=1,niokvmax
    nam%alias_file(i) = ''
 end do
 nam%fname_samp = ''
-do isub=0,nsubmax
-   nam%fname_vbal_cov(isub) = ''
-end do
+nam%fname_vbal_cov_default = ''
 nam%fname_vbal = ''
-do isub=0,nsubmax
-   nam%fname_mom(isub) = ''
-end do
+nam%fname_mom_default = ''
 nam%fname_nicas = ''
 nam%fname_wind = ''
 
@@ -429,11 +425,6 @@ nam%latdir = zero
 nam%levdir = 0
 nam%ivdir = 0
 
-! Helpers
-nam%fname_vbal_cov_used = .false.
-nam%fname_mom_used = .false.
-
-
 ! Probe out
 @:probe_out()
 
@@ -470,6 +461,11 @@ type(fckit_configuration),allocatable :: confs(:)
 
 ! Probe in
 @:probe_in()
+
+! Print input configuration
+str = conf%json()
+print*, str
+!write(mpl%info,'(a,a)') TODO
 
 ! General section
 if (conf%has('general')) then
@@ -515,20 +511,19 @@ if (conf%has('io')) then
    call get(section,'overriding sampling file',nam%fname_samp)
    if (section%has('overriding vertical covariance file')) then
       call section%get_or_die('overriding vertical covariance file',str_array)
-      if (size(str_array)>nsubmax) then
-         write(message,'(a,i4)') 'fname_vbal_cov size should be smaller than ',nsubmax
-         call mpl%abort('${subr}$',message)
-      end if
-      nam%fname_vbal_cov(1:size(str_array)) = str_array
+      allocate(nam%fname_vbal_cov(size(str_array)))
+      nam%fname_vbal_cov = str_array
    end if
    call get(section,'overriding vertical balance file',nam%fname_vbal)
    if (section%has('overriding moments file')) then
       call section%get_or_die('overriding moments file',str_array)
-      if (size(str_array)>nsubmax) then
-         write(message,'(a,i4)') 'fname_mom size should be smaller than ',nsubmax
-         call mpl%abort('${subr}$',message)
-      end if
-      nam%fname_mom(1:size(str_array)) = str_array
+      allocate(nam%fname_mom1(size(str_array)))
+      nam%fname_mom1 = str_array
+   end if
+   if (section%has('overriding lowres moments file')) then
+      call section%get_or_die('overriding lowres moments file',str_array)
+      allocate(nam%fname_mom2(size(str_array)))
+      nam%fname_mom2 = str_array
    end if
    call get(section,'overriding nicas file',nam%fname_nicas)
    call get(section,'overriding psichitouv file',nam%fname_wind)
@@ -966,8 +961,6 @@ character(len=2) :: ivchar,ildwvchar
 ! Check maximum sizes
 if (nam%nl0>nl0max) call mpl%abort('${subr}$','nl0 is too large')
 if (nam%nv>nvmax) call mpl%abort('${subr}$','nv is too large')
-if (nam%ens1_nsub>nsubmax) call mpl%abort('${subr}$','ens1_nsub is too large')
-if (nam%ens2_nsub>nsubmax) call mpl%abort('${subr}$','ens2_nsub is too large')
 if (nam%nc3>nc3max) call mpl%abort('${subr}$','nc3 is too large')
 if (nam%nc4>nc4max) call mpl%abort('${subr}$','nc4 is too large')
 if (nam%ndir>ndirmax) call mpl%abort('${subr}$','ndir is too large')
@@ -985,13 +978,34 @@ if (nam%ndir>0) nam%latdir(1:nam%ndir) = nam%latdir(1:nam%ndir)*deg2rad
 if (nam%nldwv>0) nam%lon_ldwv = nam%lon_ldwv*deg2rad
 if (nam%nldwv>0) nam%lat_ldwv = nam%lat_ldwv*deg2rad
 
-! Forced parameters for backward compatibility
-if (nam%prefix/='') nam%prefix = trim(nam%prefix)//'_'
-
 ! General section
 if (nam%repro_ops) then
   if (nam%repro_th<zero) call mpl%abort('${subr}$','repro_th should be non-negative')
 end if
+
+! I/O section
+if (nam%prefix/='') nam%prefix = trim(nam%prefix)//'_'
+if (nam%datadir=='') call mpl%abort('${subr}$','datadir not specified')
+if (nam%nprocio<1) call mpl%abort('${subr}$','number of I/O tasks should be positive')
+if (nam%nprocio>mpl%nproc) then
+   call mpl%warning('${subr}$','number of I/O tasks should be smaller than the total number of tasks, resetting nprocio')
+   nam%nprocio = mpl%nproc
+end if
+if (nam%fname_samp=='') nam%fname_samp = trim(nam%prefix)//'sampling'
+nam%fname_vbal_cov_default = trim(nam%prefix)//'vbal_cov'
+if (allocated(nam%fname_vbal_cov)) then
+   if (size(nam%fname_vbal_cov)<nam%ens1_nsub) call mpl%abort('${subr}$','not enough fname_vbal_cov items')
+end if
+if (nam%fname_vbal=='') nam%fname_vbal = trim(nam%prefix)//'vbal'
+nam%fname_mom_default = trim(nam%prefix)//'mom'
+if (allocated(nam%fname_mom1)) then
+   if (size(nam%fname_mom1)<nam%ens1_nsub) call mpl%abort('${subr}$','not enough fname_mom1 items')
+end if
+if (allocated(nam%fname_mom2)) then
+   if (size(nam%fname_mom2)<nam%ens2_nsub) call mpl%abort('${subr}$','not enough fname_mom2 items')
+end if
+if (nam%fname_nicas=='') nam%fname_nicas = trim(nam%prefix)//'nicas'
+if (nam%fname_wind=='') nam%fname_wind = trim(nam%prefix)//'wind'
 
 ! Drivers section
 if ((nam%new_hdiag.or.nam%check_optimality).and.nam%compute_hyb) then
@@ -1057,28 +1071,6 @@ if (nam%check_optimality) then
    if (.not.nam%compute_loc1) call mpl%abort('${subr}$','loc method required for check_optimality')
    if (nam%new_nicas) call mpl%abort('${subr}$','new_nicas forbidden for check_optimality')
 end if
-
-! I/O section
-if (nam%datadir=='') call mpl%abort('${subr}$','datadir not specified')
-if (nam%nprocio<1) call mpl%abort('${subr}$','number of I/O tasks should be positive')
-if (nam%nprocio>mpl%nproc) then
-   call mpl%warning('${subr}$','number of I/O tasks should be smaller than the total number of tasks, resetting nprocio')
-   nam%nprocio = mpl%nproc
-end if
-if (nam%fname_samp=='') nam%fname_samp = trim(nam%prefix)//'sampling'
-nam%fname_vbal_cov_used = any(nam%fname_vbal_cov/='')
-nam%fname_vbal_cov(0) = trim(nam%prefix)//'vbal_cov'
-do isub=1,nsubmax
-   if (nam%fname_vbal_cov(isub)=='') write(nam%fname_vbal_cov(isub),'(a,a,i6.6)') trim(nam%fname_vbal_cov(0)),'_',isub
-end do
-if (nam%fname_vbal=='') nam%fname_vbal = trim(nam%prefix)//'vbal'
-nam%fname_mom_used = any(nam%fname_mom/='')
-nam%fname_mom(0) = trim(nam%prefix)//'mom'
-do isub=1,nsubmax
-   if (nam%fname_mom(isub)=='') write(nam%fname_mom(isub),'(a,a,i6.6)') trim(nam%fname_mom(0)),'_',isub
-end do
-if (nam%fname_nicas=='') nam%fname_nicas = trim(nam%prefix)//'nicas'
-if (nam%fname_wind=='') nam%fname_wind = trim(nam%prefix)//'wind'
 
 ! Model section
 if (nam%nl0<=0) call mpl%abort('${subr}$','nl0 should be positive')
