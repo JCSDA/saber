@@ -290,7 +290,7 @@ void SpectralToGauss::multiply(atlas::FieldSet & fieldSet) const {
        // Active wind variables
        windFieldSet.add(fieldSet[fieldname]);
      } else {
-       // Active non-wind variables
+       // Active non-wind variables // TODO(Mayeul) rename to scalar/vector variables/fSets.
        specFieldSet.add(fieldSet[fieldname]);
      }}
   }
@@ -301,6 +301,7 @@ void SpectralToGauss::multiply(atlas::FieldSet & fieldSet) const {
   const int N = specFunctionSpace_.truncation();
 
   if (innerVars_.has("streamfunction") && innerVars_.has("velocity_potential")) {
+    // TODO(Mayeul) And if outerVars_.has("eastward_wind") && northward_wind. Put everything in big if
     ASSERT(windFieldSet.has("streamfunction") && windFieldSet.has("velocity_potential"));
     applyNtimesNplus1SpectralScaling(
       oops::Variables(std::vector<std::string>({"streamfunction", "velocity_potential"})),
