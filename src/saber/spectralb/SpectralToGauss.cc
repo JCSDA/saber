@@ -312,7 +312,7 @@ void SpectralToGauss::multiply(atlas::FieldSet & fieldSet) const {
     }
 
     // Convert divergence and vorticity to eastward and northward wind.
-    ASSERT (spectralWindFieldSet.has("divergence") && spectralWindFieldSet.has("vorticity"));
+    ASSERT(spectralWindFieldSet.has("divergence") && spectralWindFieldSet.has("vorticity"));
     atlas::Field uvgp = allocateGaussUVField(gaussFunctionSpace_,
                                              innerVars_, activeVariableSizes_);
     // transform to gaussian grid
