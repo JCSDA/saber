@@ -21,7 +21,7 @@ ecbuild_add_library( TARGET ${PROJECT_NAME}
 if(OPENMP)
   target_link_libraries( ${PROJECT_NAME} PUBLIC OpenMP::OpenMP_Fortran )
 endif()
-target_link_libraries( ${PROJECT_NAME} PUBLIC NetCDF::NetCDF_Fortran )
+target_link_libraries( ${PROJECT_NAME} PUBLIC NetCDF::NetCDF_Fortran NetCDF::NetCDF_C )
 target_link_libraries( ${PROJECT_NAME} PUBLIC MPI::MPI_Fortran )
 target_link_libraries( ${PROJECT_NAME} PUBLIC ${LAPACK_LIBRARIES} )
 target_link_libraries( ${PROJECT_NAME} PUBLIC eckit )
