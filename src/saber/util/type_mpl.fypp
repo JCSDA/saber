@@ -56,7 +56,7 @@ type mpl_type
    character(len=1024) :: info       !< Info buffer
    character(len=1024) :: test       !< Test buffer
    character(len=1024) :: wng        !< Warning buffer
-   logical :: previous_advance_flag  !< Previous advance flag
+   logical :: previous_adv           !< Previous advance flag
    logical :: testing                !< Stream test messages into a dedicated channel
 
    ! Display colors
@@ -186,7 +186,7 @@ mpl%nthread = 1
 mpl%info = 'no_message'
 mpl%test = 'no_message'
 mpl%wng = 'no_message'
-mpl%previous_advance_flag = .true.
+mpl%previous_adv = .true.
 
 ! Set default listing
 mpl%black = ' '
@@ -231,16 +231,17 @@ end subroutine mpl_final
 ! Subroutine: mpl_flush
 !> Flush listings
 !----------------------------------------------------------------------
-subroutine mpl_flush(mpl,advance_flag)
+subroutine mpl_flush(mpl,adv,doit)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl        !< MPI data
-logical,intent(in),optional :: advance_flag !< Advance flag
+class(mpl_type),intent(inout) :: mpl !< MPI data
+logical,intent(in),optional :: adv   !< Advance flag
+logical,intent(in),optional :: doit  !< Effective flush flag
 
 ! Local variables
-logical :: ladvance_flag
+logical :: ladv,ldoit
 
 ! Set name
 @:set_name(mpl_flush)
@@ -248,64 +249,73 @@ logical :: ladvance_flag
 ! Probe in
 @:probe_in()
 
-! Set advance flag
-ladvance_flag = .true.
-if (present(advance_flag)) ladvance_flag = advance_flag
+! Set local flags
+ladv = .true.
+if (present(adv)) ladv = adv
+ldoit = .true.
+if (present(doit)) ldoit = doit
 
-! Check info message
-if (trim(mpl%info)/='no_message') then
-   ! Add prefix
-   if (mpl%previous_advance_flag) mpl%info = 'Info     : '//trim(mpl%info)
+if (ldoit) then
+   ! Check info message
+   if (trim(mpl%info)/='no_message') then
+      ! Add prefix
+      if (mpl%previous_adv) mpl%info = 'Info     : '//trim(mpl%info)
 
-   ! Write message
-   if (ladvance_flag) then
-      call oops_log%info(mpl%info,flush=.true.)
-   else
-      call oops_log%info(mpl%info,newl=.false.,flush=.true.)
+      ! Write message
+      if (ladv) then
+         call oops_log%info(mpl%info,flush=.true.)
+      else
+         call oops_log%info(mpl%info,newl=.false.,flush=.true.)
+      end if
+
+      ! Set at 'no_message'
+      mpl%info = 'no_message'
    end if
 
-   ! Set at 'no message'
+   ! Check test message
+   if (trim(mpl%test)/='no_message') then
+      ! Add prefix
+      if ((.not.mpl%testing).and.mpl%previous_adv) mpl%test = 'Info     : '//trim(mpl%test)
+
+      ! Write message
+      if (ladv) then
+         if (mpl%testing) then
+            call oops_log%test(mpl%test,flush=.true.)
+         else
+            call oops_log%info(mpl%test,flush=.true.)
+         end if
+      else
+         if (mpl%testing) then
+            call oops_log%test(mpl%test,newl=.false.,flush=.true.)
+         else
+            call oops_log%info(mpl%test,newl=.false.,flush=.true.)
+         end if
+      end if
+
+      ! Set at 'no_message'
+      mpl%test = 'no_message'
+   end if
+
+   ! Check warning message
+   if (trim(mpl%wng)/='no_message') then
+      ! Add prefix
+      if (mpl%previous_adv) mpl%wng = 'Warning  : '//trim(mpl%wng)
+
+      ! Write message
+      call oops_log%warning(mpl%wng,flush=.true.)
+
+      ! Set at 'no_message'
+      mpl%wng = 'no_message'
+   end if
+
+   ! Set previous advance flag
+   mpl%previous_adv = ladv
+else
+   ! Reset at 'no_message'
    mpl%info = 'no_message'
-end if
-
-! Check test message
-if (trim(mpl%test)/='no_message') then
-   ! Add prefix
-   if ((.not.mpl%testing).and.mpl%previous_advance_flag) mpl%test = 'Info     : '//trim(mpl%test)
-
-   ! Write message
-   if (ladvance_flag) then
-      if (mpl%testing) then
-         call oops_log%test(mpl%test,flush=.true.)
-      else
-         call oops_log%info(mpl%test,flush=.true.)
-      end if
-   else
-      if (mpl%testing) then
-         call oops_log%test(mpl%test,newl=.false.,flush=.true.)
-      else
-         call oops_log%info(mpl%test,newl=.false.,flush=.true.)
-      end if
-   end if
-
-   ! Set at 'no message'
    mpl%test = 'no_message'
-end if
-
-! Check warning message
-if (trim(mpl%wng)/='no_message') then
-   ! Add prefix
-   if (mpl%previous_advance_flag) mpl%wng = 'Warning  : '//trim(mpl%wng)
-
-   ! Write message
-   call oops_log%warning(mpl%wng,flush=.true.)
-
-   ! Set at 'no message'
    mpl%wng = 'no_message'
 end if
-
-! Set previous advance flag
-mpl%previous_advance_flag = ladvance_flag
 
 ! Probe out
 @:probe_out()
@@ -959,17 +969,17 @@ end subroutine mpl_prog_print
 ! Subroutine: mpl_prog_final
 !> Finalize progression display
 !----------------------------------------------------------------------
-subroutine mpl_prog_final(mpl,advance_flag)
+subroutine mpl_prog_final(mpl,adv)
 
 implicit none
 
 ! Passed variables
-class(mpl_type),intent(inout) :: mpl        !< MPI data
-logical,intent(in),optional :: advance_flag !< Advance flag
+class(mpl_type),intent(inout) :: mpl !< MPI data
+logical,intent(in),optional :: adv   !< Advance flag
 
 ! Local variables
 integer :: ithread
-logical :: ladvance_flag
+logical :: ladv
 
 ! Set name
 @:set_name(mpl_prog_final)
@@ -978,8 +988,8 @@ logical :: ladvance_flag
 @:probe_in()
 
 ! Set advance flag
-ladvance_flag = .true.
-if (present(advance_flag)) ladvance_flag = advance_flag
+ladv = .true.
+if (present(adv)) ladv = adv
 
 ! Print message
 ithread = 0
@@ -994,7 +1004,7 @@ do while ((mpl%progint<=100).and.(ithread==0))
       call mpl%flush(.false.)
    else
       write(mpl%info,'(a)') ' 100%'
-      call mpl%flush(ladvance_flag)
+      call mpl%flush(ladv)
    end if
    mpl%progint = mpl%progint+ddis
 end do

@@ -1184,12 +1184,12 @@ do iv=1,nam%nv
 
          ! Spatial average
          write(mpl%info,'(a7,a)') '','Spatial average for cross-covariance:'
-         call mpl%flush(.false.)
+         call mpl%flush(adv=.false.)
          call vbal%blk(iv,jv)%compute_spatial_average(mpl,nam,geom,samp)
 
          ! Compute regression
          write(mpl%info,'(a7,a)') '','Compute regression:'
-         call mpl%flush(.false.)
+         call mpl%flush(adv=.false.)
          call vbal%blk(iv,jv)%compute_regression(mpl,nam,geom,samp,vbal%blk(jv,jv)%cov_c2b,vbal%blk(iv,jv)%cov_c2b)
       end if
    end do
@@ -1233,10 +1233,10 @@ do iv=1,nam%nv
       ! Unbalance ensemble
       if (any(bpar%vbal_block(iv,:))) then
          write(mpl%info,'(a7,a)') '','Unbalance ensemble members: '
-         call mpl%flush(.false.)
+         call mpl%flush(adv=.false.)
          do ie=1,ensu%ne
             write(mpl%info,'(i6)') ie
-            call mpl%flush(.false.)
+            call mpl%flush(adv=.false.)
 
             ! Get member on subset Sc0
             call ensu%get_c0(mpl,iv,geom,'member',ie,fld_c0a_1)
@@ -1272,7 +1272,7 @@ do iv=1,nam%nv
 
    ! Spatial average
    write(mpl%info,'(a7,a)') '','Spatial average for auto-covariance:'
-   call mpl%flush(.false.)
+   call mpl%flush(adv=.false.)
    call vbal%blk(iv,iv)%compute_spatial_average(mpl,nam,geom,samp)
 end do
 

@@ -1341,7 +1341,7 @@ else
          call mpl%flush
          do jc4=1,nam%nc4
             write(mpl%test,'(a13,f6.2,a10)') '',geom%as(jc4)*rad2deg,' deg.  ~> '
-            call mpl%flush(.false.)
+            call mpl%flush(adv=.false.)
             do jc3=1,nam%nc3
                nc1_valid = zss_count(samp%smask_c3a(:,jc3,jc4,il0))
                call mpl%f_comm%allreduce(nc1_valid,fckit_mpi_sum())
@@ -1360,10 +1360,10 @@ else
                end if
                if (jc3==1) color = ' '//trim(color)
                write(mpl%test,ivalformat) trim(color),ival,trim(mpl%black)
-               call mpl%flush(.false.)
+               call mpl%flush(adv=.false.)
                if (jc3<nam%nc3) then
                   write(mpl%test,'(a)') '-'
-                  call mpl%flush(.false.)
+                  call mpl%flush(adv=.false.)
                end if
             end do
             write(mpl%test,'(a)') ''
@@ -2074,7 +2074,7 @@ if ((nam%nc3>1).and.(nam%dc>0.0)) then
 
    ! Initialization
    write(mpl%info,'(a7,a)') '','Compute HDIAG pairs: '
-   call mpl%flush(.false.)
+   call mpl%flush(adv=.false.)
    call mpl%prog_init(nam%nc3*nam%nc4*samp%nc1a)
    do ic1a=1,samp%nc1a
       mpl%done((ic1a-1)*nam%nc3*nam%nc4+1) = .true.
@@ -2162,7 +2162,7 @@ end if
 
 ! Check sampling mask
 write(mpl%info,'(a7,a)') '','Check sampling mask: '
-call mpl%flush(.false.)
+call mpl%flush(adv=.false.)
 call mpl%prog_init(samp%nc1a)
 do ic1a=1,samp%nc1a
    do il0=1,geom%nl0
@@ -2651,7 +2651,7 @@ call grid_hash(mpl,samp%nc1a,samp%nc1,geom%nl0,samp%c1a_to_c1,samp%lon_c1a,samp%
 
 ! Compute independent levels
 write(mpl%test,'(a10,a)') '','Independent levels: '
-call mpl%flush(.false.)
+call mpl%flush(adv=.false.)
 call independent_levels(mpl,geom%nl0,hash,samp%nl0ic1,samp%l0_to_l0ic1,samp%l0ic1_to_l0)
 
 ! Allocation
@@ -2779,7 +2779,7 @@ do jc4=1,nam%nc4
 
       ! Compute independent levels
       write(mpl%test,'(a10,a,i3,a,i3,a)') '','Independent levels for angular sector ',jc4,' / class ',jc3,': '
-      call mpl%flush(.false.)
+      call mpl%flush(adv=.false.)
       call independent_levels(mpl,geom%nl0,hash,samp%nl0ic3(jc3,jc4),samp%l0_to_l0ic3(:,jc3,jc4),samp%l0ic3_to_l0(:,jc3,jc4))
    end do
 end do

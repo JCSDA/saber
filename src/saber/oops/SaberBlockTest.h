@@ -154,17 +154,6 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         // Adjoint test
 
         // Variables sizes
-        std::vector<size_t> innerVariableSizes = geom.variableSizes(innerVars);
-
-        // Create random inner FieldSet
-        atlas::FieldSet innerFset = createRandomFieldSet(innerGeometryData.functionSpace(),
-                                                         innerVariableSizes,
-                                                         innerVars);
-
-        // Copy inner FieldSet
-        atlas::FieldSet innerFsetSave = copyFieldSet(innerFset);
-
-        // Variables sizes
         std::vector<size_t> outerVariableSizes = geom.variableSizes(outerVars);
 
         // Create random outer FieldSet
@@ -176,13 +165,33 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         // Copy outer FieldSet
         atlas::FieldSet outerFsetSave = copyFieldSet(outerFset);
 
-        // Apply forward and adjoint multiplication
-        saberOuterBlocks_.back().multiply(innerFset);
+        // Apply adjoint multiplication
         saberOuterBlocks_.back().multiplyAD(outerFset);
+
+        // Variables sizes
+        std::vector<size_t> innerVariableSizes = geom.variableSizes(innerVars);
+
+        // Find an active inner variable
+        std::string activeInnerVariable("");
+        for (std::string s : activeVars.variables()) {
+          activeInnerVariable = innerVars.has(s) ? s : activeInnerVariable;
+        }
+
+        // Create random inner FieldSet
+        atlas::FieldSet innerFset =
+          createRandomFieldSet(outerFset[activeInnerVariable].functionspace(),
+                               innerVariableSizes, innerVars);
+
+        // Copy inner FieldSet
+        atlas::FieldSet innerFsetSave = copyFieldSet(innerFset);
+
+        // Apply forward multiplication
+        saberOuterBlocks_.back().multiply(innerFset);
 
         // Compute adjoint test
         const double dp1 = dot_product(innerFset, outerFsetSave, activeVars, geom.getComm());
         const double dp2 = dot_product(outerFset, innerFsetSave, activeVars, geom.getComm());
+
         oops::Log::info() << "Info     : Adjoint test for outer block "
                           << saberOuterBlockParams.saberBlockName.value()
                           << ": y^t (Ax) = " << dp1 << ": x^t (A^t y) = " << dp2 << std::endl;

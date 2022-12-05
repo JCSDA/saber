@@ -44,9 +44,11 @@ Norm of input parameter rv::2: 2.3616105482447743e+01
                       Subgrid hash:   1196687903
                    Final nc1:      582
                    Effective horizontal resolution:  4.00
-             nc1(  1) =        635
-             nc1(  2) =        582
-             ns =             1217
+             nc1(  1) =                        635
+             nc1(  2) =                        582
+             ns =                             1217
+             v%n_s =                             2
+             c%n_s[global] =                 32571
              Effective levels:   1   2 
                    Horizontal support radius:    3842.47 km (   3441.78 km -    4311.45 km)
                    Estimated nc1 from horizontal support radius:      638
@@ -60,9 +62,11 @@ Norm of input parameter rv::2: 2.3616105482447743e+01
                       Subgrid hash:   1362466119
                    Final nc1:      589
                    Effective horizontal resolution:  4.00
-             nc1(  1) =        638
-             nc1(  2) =        589
-             ns =             1227
+             nc1(  1) =                        638
+             nc1(  2) =                        589
+             ns =                             1227
+             v%n_s =                             2
+             c%n_s[global] =                 16649
              0.0 /    0.0:  1.0364373
           Level   1:  0.0000000 -  1.0364373
           Level   2:  0.0000000 -  0.6698311
@@ -73,8 +77,10 @@ Norm of input parameter rv::2: 2.3616105482447743e+01
                       Subgrid hash:  -1185214736
                    Final nc1:      599
                    Effective horizontal resolution:  4.00
-             nc1(  1) =        599
-             ns =              599
+             nc1(  1) =                        599
+             ns =                              599
+             v%n_s =                             1
+             c%n_s[global] =                  7996
              Effective levels:   1 
                    Horizontal support radius:    3942.96 km (   3404.27 km -    4419.71 km)
                    Estimated nc1 from horizontal support radius:      606
@@ -82,7 +88,9 @@ Norm of input parameter rv::2: 2.3616105482447743e+01
                       Subgrid hash:  -2125682535
                    Final nc1:      606
                    Effective horizontal resolution:  4.00
-             nc1(  1) =        606
-             ns =              606
+             nc1(  1) =                        606
+             ns =                              606
+             v%n_s =                             1
+             c%n_s[global] =                  8060
              0.0 /    0.0:  1.1419259
           Level   1:  0.0000000 -  1.1419259

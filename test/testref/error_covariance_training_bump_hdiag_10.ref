@@ -1,4 +1,4 @@
-       Independent levels:  1[2] 
+       Independent levels:  1[2]
           Level   1:   1550418632
           Level   2:   1550418632
           Model grid size:              840
@@ -20,9 +20,11 @@
                    Estimated nc1 from horizontal support radius:      192
                    Final nc1:      208
                    Effective horizontal resolution:  4.16
-             nc1(  1) =        208
-             nc1(  2) =        208
-             ns =              416
+             nc1(  1) =                        208
+             nc1(  2) =                        208
+             ns =                              416
+             v%n_s =                             2
+             c%n_s[global] =                  7040
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
           Decimate full grid, at least      500 points required,     762 valid points found
@@ -30,17 +32,17 @@
              -90.00 deg.  ~>100-100-99-100-100-100-100-99-100-100 
              -90.00 deg.  ~>100-100-99-100-100-100-100-99-100-100 
           nc1 =      500
-          Independent levels:  1[2] 
-          Independent levels for angular sector   1 / class   1:  1[2] 
-          Independent levels for angular sector   1 / class   2:  1[2] 
-          Independent levels for angular sector   1 / class   3:  1[1]  2[1] 
-          Independent levels for angular sector   1 / class   4:  1[2] 
-          Independent levels for angular sector   1 / class   5:  1[2] 
-          Independent levels for angular sector   1 / class   6:  1[2] 
-          Independent levels for angular sector   1 / class   7:  1[2] 
-          Independent levels for angular sector   1 / class   8:  1[1]  2[1] 
-          Independent levels for angular sector   1 / class   9:  1[2] 
-          Independent levels for angular sector   1 / class  10:  1[2] 
+          Independent levels:  1[2]
+          Independent levels for angular sector   1 / class   1:  1[2]
+          Independent levels for angular sector   1 / class   2:  1[2]
+          Independent levels for angular sector   1 / class   3:  1[1]  2[1]
+          Independent levels for angular sector   1 / class   4:  1[2]
+          Independent levels for angular sector   1 / class   5:  1[2]
+          Independent levels for angular sector   1 / class   6:  1[2]
+          Independent levels for angular sector   1 / class   7:  1[2]
+          Independent levels for angular sector   1 / class   8:  1[1]  2[1]
+          Independent levels for angular sector   1 / class   9:  1[2]
+          Independent levels for angular sector   1 / class  10:  1[2]
                 Level:   1 ~> cov. at class zero:  0.10E+01
                 Level:   2 ~> cov. at class zero:  0.10E+01
              Block var1-var1:  0.10233652E+00 for       20 diagnostic points
@@ -70,9 +72,11 @@
                    Estimated nc1 from horizontal support radius:       95
                    Final nc1:      144
                    Effective horizontal resolution:  4.91
-             nc1(  1) =        144
-             nc1(  2) =        144
-             ns =              288
+             nc1(  1) =                        144
+             nc1(  2) =                        144
+             ns =                              288
+             v%n_s =                             2
+             c%n_s[global] =                  6496
              Effective levels:   1   2 
                    Horizontal support radius:   10612.23 km (  10612.23 km -   10612.23 km)
                    Estimated nc1 from horizontal support radius:       83
@@ -82,9 +86,11 @@
                    Estimated nc1 from horizontal support radius:       86
                    Final nc1:       88
                    Effective horizontal resolution:  4.04
-             nc1(  1) =         88
-             nc1(  2) =         88
-             ns =              176
+             nc1(  1) =                         88
+             nc1(  2) =                         88
+             ns =                              176
+             v%n_s =                             2
+             c%n_s[global] =                  2608
              Effective levels:   1   2 
                    Horizontal support radius:   11142.84 km (  11142.84 km -   11142.84 km)
                    Estimated nc1 from horizontal support radius:       75
@@ -94,9 +100,11 @@
                    Estimated nc1 from horizontal support radius:       78
                    Final nc1:       88
                    Effective horizontal resolution:  4.25
-             nc1(  1) =         88
-             nc1(  2) =         88
-             ns =              176
+             nc1(  1) =                         88
+             nc1(  2) =                         88
+             ns =                              176
+             v%n_s =                             2
+             c%n_s[global] =                  2960
        Factor 0.95, MSE:  0.20346726E+02 
        Factor 1.00, MSE:  0.20329890E+02 
        Factor 1.05, MSE:  0.20299575E+02 <~ best localization

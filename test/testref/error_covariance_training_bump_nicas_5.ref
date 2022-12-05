@@ -1,4 +1,4 @@
-       Independent levels:  1[2] 
+       Independent levels:  1[2]
           Level   1:  -1868154891
           Level   2:  -1868154891
           Model grid size:              875
@@ -24,9 +24,11 @@
                       Subgrid hash:    127928386
                    Final nc1:      556
                    Effective horizontal resolution:  4.00
-             nc1(  1) =        556
-             nc1(  2) =        556
-             ns =             1112
+             nc1(  1) =                        556
+             nc1(  2) =                        556
+             ns =                             1112
+             v%n_s =                             2
+             c%n_s[global] =                 30272
            149.4 /  -30.0:  1.0000000
           Level   1:  0.0000000 -  1.0000000
           Level   2:  0.0000000 -  0.6000000
