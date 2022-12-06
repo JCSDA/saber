@@ -6,14 +6,13 @@ geometry:
   levels: 70
   partitioner: ectrans
   halo: 1
-variables:
-- eastward_wind
-- northward_wind
-- geostrophic_pressure_levels_minus_one
-background:
+initial condition:
   date: '2010-01-01T12:00:00Z'
   state variables:
   - dry_air_density_levels_minus_one
+  - eastward_wind
+  - northward_wind
+  - geostrophic_pressure_levels_minus_one
   filepath: testdata/gauss_state
 background error:
   covariance model: SABER
