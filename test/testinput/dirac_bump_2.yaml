@@ -15,6 +15,7 @@ background error:
   components:
   - covariance:
       covariance model: SABER
+      adjoint test: true
       saber central block:
         saber block name: BUMP_NICAS
         bump:
@@ -88,15 +89,18 @@ background error:
       value: 0.5
   - covariance:
       covariance model: SABER
+      adjoint test: true
       saber central block:
-        saber block name: BUMP_NICAS
-        bump:
-          datadir: testdata
-          prefix: dirac_bump_2/_MPI_-_OMP_
-          testing: true
-          strategy: common
-          load_nicas_local: true
-          fname_nicas: error_covariance_training_bump_hdiag-nicas_2/_MPI_-_OMP__nicas
+        saber block name: Ensemble
+        localization:
+          saber block name: BUMP_NICAS
+          bump:
+            datadir: testdata
+            prefix: dirac_bump_2/_MPI_-_OMP_
+            testing: true
+            strategy: common
+            load_nicas_local: true
+            fname_nicas: error_covariance_training_bump_hdiag-nicas_2/_MPI_-_OMP__nicas
         ensemble:
           members from template:
             template:

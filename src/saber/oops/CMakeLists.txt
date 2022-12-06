@@ -12,19 +12,17 @@ if( oops_FOUND )
     SaberCentralBlockBase.cc
     SaberCentralBlockBase.h
 
-    # SABER central templated  block
-    SaberCentralTBlock.h
-
     # SABER outer blocks base
     SaberOuterBlockBase.cc
     SaberOuterBlockBase.h
 
-    # SABER outer templated block
-    SaberOuterTBlock.h
-
     # ID block
     ID.h
     ID.cc
+
+    # Ensemble block
+    Ensemble.h
+    Ensemble.cc
 
     # StdDev block
     StdDev.h
@@ -35,7 +33,7 @@ if( oops_FOUND )
     instantiateLocalizationFactory.h
 
     # Utilities
-    ReadInputFields.h
+    ReadInput.h
 
     # Drivers
     ErrorCovariance.h
@@ -44,7 +42,6 @@ if( oops_FOUND )
     # Applications
     ErrorCovarianceTraining.h
     Randomization.h
-    SaberBlockTest.h
     )
 endif()
 

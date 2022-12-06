@@ -37,6 +37,12 @@ class SaberCentralBlockBase : public util::Printable, private boost::noncopyable
   virtual void randomize(atlas::FieldSet &) const = 0;
   virtual void multiply(atlas::FieldSet &) const = 0;
 
+  void adjointTest(const eckit::mpi::Comm &,
+                   const oops::GeometryData &,
+                   const std::vector<size_t> &,
+                   const oops::Variables &,
+                   const double & adjointTolerance = 1.0e-12) const;
+
  private:
   virtual void print(std::ostream &) const = 0;
 };

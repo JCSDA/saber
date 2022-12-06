@@ -28,6 +28,7 @@ Fields:
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
+Adjoint test passed
        Independent levels:  1[2]
           Level   1:   1550418632
           Level   2:   1550418632
@@ -44,7 +45,9 @@ Fields:
           nc1 =      500
           nc2 =      250
           Independent levels:  1[2]
+Adjoint test passed
 Norm of input parameter StdDev: 5.4916088699553633e+01
+Adjoint test passed
        Independent levels:  1[2]
           Level   1:   1550418632
           Level   2:   1550418632
@@ -58,6 +61,7 @@ Norm of input parameter StdDev: 5.4916088699553633e+01
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
+Adjoint test passed
 Norm of input parameter stddev: 5.4916088699553633e+01
        Independent levels:  1[2]
           Level   1:   1550418632
@@ -72,6 +76,7 @@ Norm of input parameter stddev: 5.4916088699553633e+01
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
+Adjoint test passed
 Norm of input parameter universe radius: 2.0253293992704690e+08
        Independent levels:  1[2]
           Level   1:   1550418632
@@ -86,6 +91,7 @@ Norm of input parameter universe radius: 2.0253293992704690e+08
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
+Adjoint test passed
        Independent levels:  1[2]
           Level   1:   1550418632
           Level   2:   1550418632
@@ -99,6 +105,7 @@ Norm of input parameter universe radius: 2.0253293992704690e+08
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
+Adjoint test passed
 Covariance(hybrid) * Increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -129,6 +136,7 @@ Fields:
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
+Adjoint test passed
        Independent levels:  1[2]
           Level   1:   1550418632
           Level   2:   1550418632
@@ -145,7 +153,9 @@ Fields:
           nc1 =      500
           nc2 =      250
           Independent levels:  1[2]
+Adjoint test passed
 Norm of input parameter StdDev: 5.4916088699553633e+01
+Adjoint test passed
        Independent levels:  1[2]
           Level   1:   1550418632
           Level   2:   1550418632
@@ -159,6 +169,7 @@ Norm of input parameter StdDev: 5.4916088699553633e+01
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
+Adjoint test passed
 Norm of input parameter stddev: 5.4916088699553633e+01
        Independent levels:  1[2]
           Level   1:   1550418632
@@ -173,6 +184,7 @@ Norm of input parameter stddev: 5.4916088699553633e+01
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
+Adjoint test passed
 Norm of input parameter universe radius: 2.0253293992704690e+08
        Independent levels:  1[2]
           Level   1:   1550418632
@@ -187,6 +199,7 @@ Norm of input parameter universe radius: 2.0253293992704690e+08
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
+Adjoint test passed
 Covariance(hybrid1_SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -217,6 +230,7 @@ Fields:
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
+Adjoint test passed
 Covariance(hybrid2_SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:

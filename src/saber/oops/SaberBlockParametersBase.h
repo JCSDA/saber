@@ -25,7 +25,12 @@ class SaberBlockParametersBase : public oops::Parameters {
  public:
   oops::RequiredParameter<std::string> saberBlockName{"saber block name", this};
   oops::OptionalParameter<oops::Variables> activeVars{"active variables", this};
-  oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> inputFields{"input fields", this};
+  oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> inputFieldConfs{"input fields",
+    this};
+  oops::OptionalParameter<eckit::LocalConfiguration> ensemble{"ensemble", this};
+  oops::OptionalParameter<eckit::LocalConfiguration> ensemblePert{"ensemble pert", this};
+  oops::OptionalParameter<eckit::LocalConfiguration> ensembleBase{"ensemble base", this};
+  oops::OptionalParameter<eckit::LocalConfiguration> ensemblePairs{"ensemble pairs", this};
 };
 
 // -----------------------------------------------------------------------------

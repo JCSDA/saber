@@ -13,6 +13,7 @@ initial condition:
   - northward_wind
 background error:
   covariance model: SABER
+  adjoint test: true
   saber central block:
     saber block name: spectral covariance
     spectralb:

@@ -9,7 +9,6 @@
 
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 #include "atlas/field.h"
@@ -29,10 +28,10 @@
 #include "oops/util/Printable.h"
 #include "oops/util/Timer.h"
 
-#include "saber/oops/ReadInputFields.h"
+#include "saber/oops/ReadInput.h"
 #include "saber/oops/SaberBlockParametersBase.h"
-#include "saber/oops/SaberCentralTBlock.h"
-#include "saber/oops/SaberOuterTBlock.h"
+#include "saber/oops/SaberCentralBlockBase.h"
+#include "saber/oops/SaberOuterBlockBase.h"
 
 namespace saber {
 
@@ -43,10 +42,11 @@ class ErrorCovarianceParameters : public oops::ModelSpaceCovarianceParametersBas
   OOPS_CONCRETE_PARAMETERS(ErrorCovarianceParameters,
                            oops::ModelSpaceCovarianceParametersBase<MODEL>)
  public:
-  oops::RequiredParameter<SaberCentralTBlockParameters<MODEL>>
-    saberCentralTBlockParams{"saber central block", this};
-  oops::OptionalParameter<std::vector<SaberOuterTBlockParameters<MODEL>>>
-    saberOuterTBlocksParams{"saber outer blocks", this};
+  oops::OptionalParameter<bool> adjointTest{"adjoint test", this};
+  oops::RequiredParameter<SaberCentralBlockParametersWrapper>
+    saberCentralBlock{"saber central block", this};
+  oops::OptionalParameter<std::vector<SaberOuterBlockParametersWrapper>>
+    saberOuterBlocks{"saber outer blocks", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -55,14 +55,13 @@ template <typename MODEL>
 class ErrorCovariance : public oops::ModelSpaceCovarianceBase<MODEL>,
                         public util::Printable,
                         private util::ObjectCounter<ErrorCovariance<MODEL>> {
-  typedef oops::Geometry<MODEL>                                 Geometry_;
-  typedef oops::Increment<MODEL>                                Increment_;
-  typedef typename boost::ptr_vector<SaberOuterTBlock<MODEL>>   SaberOuterTBlockVec_;
-  typedef typename SaberOuterTBlockVec_::iterator               iter_;
-  typedef typename SaberOuterTBlockVec_::const_iterator         icst_;
-  typedef typename SaberOuterTBlockVec_::const_reverse_iterator ircst_;
-  typedef oops::State<MODEL>                                    State_;
-  typedef typename std::unordered_map<std::string, const oops::GeometryData*> GeometryDataMap_;
+  typedef oops::Geometry<MODEL>                                Geometry_;
+  typedef oops::Increment<MODEL>                               Increment_;
+  typedef typename boost::ptr_vector<SaberOuterBlockBase>      SaberOuterBlockVec_;
+  typedef typename SaberOuterBlockVec_::iterator               iter_;
+  typedef typename SaberOuterBlockVec_::const_iterator         icst_;
+  typedef typename SaberOuterBlockVec_::const_reverse_iterator ircst_;
+  typedef oops::State<MODEL>                                   State_;
 
  public:
   typedef ErrorCovarianceParameters<MODEL> Parameters_;
@@ -87,9 +86,8 @@ class ErrorCovariance : public oops::ModelSpaceCovarianceBase<MODEL>,
 
   void print(std::ostream &) const override;
 
-  GeometryDataMap_ outerGeometryDataMap_;
-  std::unique_ptr<SaberCentralTBlock<MODEL>> saberCentralTBlock_;
-  SaberOuterTBlockVec_ saberOuterTBlocks_;
+  std::unique_ptr<SaberCentralBlockBase> saberCentralBlock_;
+  SaberOuterBlockVec_ saberOuterBlocks_;
 };
 
 // -----------------------------------------------------------------------------
@@ -100,55 +98,146 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
                                         const Parameters_ & params,
                                         const State_ & xb,
                                         const State_ & fg)
-  : oops::ModelSpaceCovarianceBase<MODEL>(geom, params, xb, fg), saberCentralTBlock_(),
-    saberOuterTBlocks_()
+  : oops::ModelSpaceCovarianceBase<MODEL>(geom, params, xb, fg), saberCentralBlock_(),
+    saberOuterBlocks_()
 {
   oops::Log::trace() << "ErrorCovariance::ErrorCovariance starting" << std::endl;
+
+  // Adjoint test
+  const bool adjointTest = params.adjointTest.value().get_value_or(false);
 
   // Local copy of background and first guess
   State_ xbLocal(xb);
   State_ fgLocal(fg);
 
-  // Initialize geometryData map
-  for (const auto var : incVars.variables()) {
-    outerGeometryDataMap_[var] = &(geom.generic());
-  }
+  // Initialize geometry data
+  std::vector<std::reference_wrapper<const oops::GeometryData>> outerGeometryData;
+  outerGeometryData.push_back(geom.generic());
 
   // Intialize outer variables
   oops::Variables outerVars(incVars);
 
   // Build outer blocks successively
-  const boost::optional<std::vector<SaberOuterTBlockParameters<MODEL>>> &saberOuterTBlocksParams =
-    params.saberOuterTBlocksParams.value();
-  if (saberOuterTBlocksParams != boost::none) {
+  const boost::optional<std::vector<SaberOuterBlockParametersWrapper>> &saberOuterBlocks =
+    params.saberOuterBlocks.value();
+  if (saberOuterBlocks != boost::none) {
     // Loop in reverse order
-    for (const SaberOuterTBlockParameters<MODEL> & saberOuterTBlockParams :
-      boost::adaptors::reverse(*saberOuterTBlocksParams)) {
-      // Create outer templated block
-      saberOuterTBlocks_.push_back(new SaberOuterTBlock<MODEL>(geom,
-                                   outerGeometryDataMap_,
-                                   outerVars,
-                                   saberOuterTBlockParams,
-                                   xbLocal,
-                                   fgLocal));
+    for (const SaberOuterBlockParametersWrapper & saberOuterBlockParamWrapper :
+      boost::adaptors::reverse(*saberOuterBlocks)) {
+      // Get outer block parameters
+      const SaberBlockParametersBase & saberOuterBlockParams =
+        saberOuterBlockParamWrapper.saberOuterBlockParameters;
+      oops::Log::info() << "Info     : Creating outer block: "
+                        << saberOuterBlockParams.saberBlockName.value() << std::endl;
+
+      // Get active variables
+      const oops::Variables activeVars =
+        saberOuterBlockParams.activeVars.value().get_value_or(outerVars);
+
+      // Initialize vector of FieldSet
+      std::vector<atlas::FieldSet> fsetVec;
+
+      // Read input fields (on model increment geometry)
+      std::vector<eckit::LocalConfiguration> inputFieldConfs;
+      inputFieldConfs = saberOuterBlockParams.inputFieldConfs.value().get_value_or(inputFieldConfs);
+      readInputFields(geom,
+                      activeVars,
+                      xbLocal.validTime(),
+                      inputFieldConfs,
+                      fsetVec);
+
+      // Get active outer variables
+      oops::Variables activeOuterVars(outerVars);
+      activeOuterVars.intersection(activeVars);
+
+      // Create outer block
+      saberOuterBlocks_.push_back(SaberOuterBlockFactory::create(
+                                  outerGeometryData.back().get(),
+                                  geom.variableSizes(activeVars),
+                                  outerVars,
+                                  saberOuterBlockParams,
+                                  xbLocal.fieldSet(),
+                                  fgLocal.fieldSet(),
+                                  fsetVec));
+
+      // Inner geometry data and variables
+      const oops::GeometryData & innerGeometryData = saberOuterBlocks_.back().innerGeometryData();
+      const oops::Variables innerVars = saberOuterBlocks_.back().innerVars();
+
+      // Check that active variables are present in either inner or outer variables, or both
+      for (const auto & var : activeVars.variables()) {
+        ASSERT(innerVars.has(var) || outerVars.has(var));
+      }
+
+
+      // Adjoint test
+      if (adjointTest) {
+        saberOuterBlocks_.back().adjointTest(geom.getComm(),
+                                             outerGeometryData.back().get(),
+                                             geom.variableSizes(activeVars),
+                                             activeVars);
+      }
 
       // Update outer geometry and variables for the next block
-      outerVars = saberOuterTBlocks_.back().innerVars();
-      outerGeometryDataMap_ = saberOuterTBlocks_.back().innerGeometryDataMap();
+      outerGeometryData.push_back(innerGeometryData);
+      outerVars = innerVars;
     }
   }
 
-  // Get central templated block parameters
-  const SaberCentralTBlockParameters<MODEL> saberCentralTBlockParams =
-    params.saberCentralTBlockParams.value();
+  // Get central block parameters
+  const SaberCentralBlockParametersWrapper & saberCentralBlockParamWrapper =
+    params.saberCentralBlock.value();
+  const SaberBlockParametersBase & saberCentralBlockParams =
+    saberCentralBlockParamWrapper.saberCentralBlockParameters;
+  oops::Log::info() << "Info     : Creating central block: "
+                    << saberCentralBlockParams.saberBlockName.value() << std::endl;
 
-  // Create central templated block
-  saberCentralTBlock_.reset(new SaberCentralTBlock<MODEL>(geom,
-                            outerGeometryDataMap_,
-                            outerVars,
-                            saberCentralTBlockParams,
-                            xbLocal,
-                            fgLocal));
+  // Get active variables
+  const oops::Variables activeVars =
+    saberCentralBlockParams.activeVars.value().get_value_or(outerVars);
+
+  // Check that active variables are present in variables
+  for (const auto & var : activeVars.variables()) {
+    ASSERT(outerVars.has(var));
+  }
+
+  // Initialize vector of FieldSet
+  std::vector<atlas::FieldSet> fsetVec;
+
+  // Read input fields (on model increment geometry)
+  std::vector<eckit::LocalConfiguration> inputFieldConfs;
+  inputFieldConfs = saberCentralBlockParams.inputFieldConfs.value().get_value_or(inputFieldConfs);
+  readInputFields(geom,
+                  activeVars,
+                  xbLocal.validTime(),
+                  inputFieldConfs,
+                  fsetVec);
+
+  // Read ensemble (on model increment geometry)
+  readEnsemble(geom,
+               activeVars,
+               xbLocal,
+               fgLocal,
+               saberCentralBlockParams,
+               fsetVec);
+
+  // Create central block
+  saberCentralBlock_.reset(SaberCentralBlockFactory::create(
+                           outerGeometryData.back().get(),
+                           geom.variableSizes(activeVars),
+                           activeVars,
+                           saberCentralBlockParams,
+                           xbLocal.fieldSet(),
+                           fgLocal.fieldSet(),
+                           fsetVec));
+
+  // Adjoint test
+  if (adjointTest) {
+    saberCentralBlock_->adjointTest(geom.getComm(),
+                                    outerGeometryData.back().get(),
+                                    geom.variableSizes(activeVars),
+                                    activeVars);
+  }
 
   oops::Log::trace() << "ErrorCovariance::ErrorCovariance done" << std::endl;
 }
@@ -173,10 +262,10 @@ void ErrorCovariance<MODEL>::doRandomize(Increment_ & dx) const {
   dx.random();
 
   // Central block randomization
-  saberCentralTBlock_->randomize(dx.fieldSet());
+  saberCentralBlock_->randomize(dx.fieldSet());
 
   // Outer blocks forward multiplication
-  for (ircst_ it = saberOuterTBlocks_.rbegin(); it != saberOuterTBlocks_.rend(); ++it) {
+  for (ircst_ it = saberOuterBlocks_.rbegin(); it != saberOuterBlocks_.rend(); ++it) {
     it->multiply(dx.fieldSet());
   }
 
@@ -198,17 +287,17 @@ void ErrorCovariance<MODEL>::doMultiply(const Increment_ & dxi,
   dxo = dxi;
 
   // Outer blocks adjoint multiplication
-  for (icst_ it = saberOuterTBlocks_.begin(); it != saberOuterTBlocks_.end(); ++it) {
+  for (icst_ it = saberOuterBlocks_.begin(); it != saberOuterBlocks_.end(); ++it) {
     it->multiplyAD(dxo.fieldSet());
   }
 
   // Central block multiplication
-  if (saberCentralTBlock_) {
-    saberCentralTBlock_->multiply(dxo.fieldSet());
+  if (saberCentralBlock_) {
+    saberCentralBlock_->multiply(dxo.fieldSet());
   }
 
   // Outer blocks forward multiplication
-  for (ircst_ it = saberOuterTBlocks_.rbegin(); it != saberOuterTBlocks_.rend(); ++it) {
+  for (ircst_ it = saberOuterBlocks_.rbegin(); it != saberOuterBlocks_.rend(); ++it) {
     it->multiply(dxo.fieldSet());
   }
 

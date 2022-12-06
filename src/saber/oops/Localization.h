@@ -10,7 +10,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
-#include <unordered_map>
+#include <vector>
 
 #include "atlas/field.h"
 
@@ -21,7 +21,9 @@
 #include "oops/util/Duration.h"
 #include "oops/util/Logger.h"
 
-#include "saber/oops/SaberCentralTBlock.h"
+#include "saber/oops/ReadInput.h"
+#include "saber/oops/SaberBlockParametersBase.h"
+#include "saber/oops/SaberCentralBlockBase.h"
 
 namespace saber {
 
@@ -29,10 +31,9 @@ namespace saber {
 
 template<typename MODEL>
 class Localization : public oops::LocalizationBase<MODEL> {
-  typedef oops::Geometry<MODEL>  Geometry_;
-  typedef oops::Increment<MODEL> Increment_;
-  typedef oops::State<MODEL>     State_;
-  typedef typename std::unordered_map<std::string, const oops::GeometryData*> GeometryDataMap_;
+  typedef oops::Geometry<MODEL>               Geometry_;
+  typedef oops::Increment<MODEL>              Increment_;
+  typedef oops::State<MODEL>                  State_;
 
  public:
   Localization(const Geometry_ &,
@@ -45,8 +46,7 @@ class Localization : public oops::LocalizationBase<MODEL> {
 
  private:
   void print(std::ostream &) const override;
-  GeometryDataMap_ geometryDataMap_;
-  std::unique_ptr<SaberCentralTBlock<MODEL>> saberCentralTBlock_;
+  std::unique_ptr<SaberCentralBlockBase> saberCentralBlock_;
 };
 
 // =============================================================================
@@ -55,35 +55,58 @@ template<typename MODEL>
 Localization<MODEL>::Localization(const Geometry_ & geom,
                                   const oops::Variables & incVars,
                                   const eckit::Configuration & conf)
-  : saberCentralTBlock_()
+  : saberCentralBlock_()
 {
   oops::Log::trace() << "Localization::Localization starting" << std::endl;
 
   size_t myslot = geom.timeComm().rank();
   if (myslot == 0) {
+    // Get parameters from configuration
+    const eckit::LocalConfiguration saberCentralBlock(conf, "saber central block");
+    SaberCentralBlockParametersWrapper saberCentralBlockParamWrapper;
+    saberCentralBlockParamWrapper.validateAndDeserialize(saberCentralBlock);
+    const SaberBlockParametersBase & saberCentralBlockParams =
+      saberCentralBlockParamWrapper.saberCentralBlockParameters;
+
+    // Create dummy FieldSet (for xb and fg)
+    atlas::FieldSet dummyFs;
+
     // Create dummy time
     util::DateTime dummyTime(1977, 5, 25, 0, 0, 0);
 
-    // Dummy state
-    State_ xx(geom, incVars, dummyTime);
+    // Define central variables
+    oops::Variables centralVars = incVars;
 
-    // Get parameters from configuration
-    const eckit::LocalConfiguration saberCentralTBlockConf(conf, "saber central block");
-    SaberCentralTBlockParameters<MODEL> saberCentralTBlockParams;
-    saberCentralTBlockParams.validateAndDeserialize(saberCentralTBlockConf);
+    // Get active variables
+    oops::Variables activeVars =
+      saberCentralBlockParams.activeVars.value().get_value_or(centralVars);
 
-    // Initialize geometryData map
-    for (const auto var : incVars.variables()) {
-      geometryDataMap_[var] = &(geom.generic());
+    // Initialize vector of FieldSet
+    std::vector<atlas::FieldSet> fsetVec;
+
+    // Read input fields (on model increment geometry)
+    std::vector<eckit::LocalConfiguration> inputFieldConfs;
+    inputFieldConfs = saberCentralBlockParams.inputFieldConfs.value().get_value_or(inputFieldConfs);
+    readInputFields(geom,
+                    activeVars,
+                    dummyTime,
+                    inputFieldConfs,
+                    fsetVec);
+
+    // Create central block
+    saberCentralBlock_.reset(SaberCentralBlockFactory::create(
+                             geom.generic(),
+                             geom.variableSizes(activeVars),
+                             centralVars,
+                             saberCentralBlockParams,
+                             dummyFs,
+                             dummyFs,
+                             fsetVec));
+
+    // Check that active variables are present in central variables
+    for (const auto & var : activeVars.variables()) {
+      ASSERT(centralVars.has(var));
     }
-
-    // Create central block wrapper
-    saberCentralTBlock_.reset(new SaberCentralTBlock<MODEL>(geom,
-                              geometryDataMap_,
-                              incVars,
-                              saberCentralTBlockParams,
-                              xx,
-                              xx));
   }
 
   oops::Log::trace() << "Localization:Localization done" << std::endl;
@@ -106,7 +129,7 @@ void Localization<MODEL>::randomize(Increment_ & dx) const {
   dx.random();
 
   // Central block randomization
-  saberCentralTBlock_->randomize(dx.fieldSet());
+  saberCentralBlock_->randomize(dx.fieldSet());
 
   // ATLAS fieldset to Increment_
   dx.synchronizeFields();
@@ -121,7 +144,7 @@ void Localization<MODEL>::multiply(Increment_ & dx) const {
   oops::Log::trace() << "Localization:multiply starting" << std::endl;
 
   // Central block multiplication
-  saberCentralTBlock_->multiply(dx.fieldSet());
+  saberCentralBlock_->multiply(dx.fieldSet());
 
   // ATLAS fieldset to Increment_
   dx.synchronizeFields();

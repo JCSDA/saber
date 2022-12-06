@@ -15,6 +15,7 @@ background error:
   components:
   - covariance:
       covariance model: SABER
+      adjoint test: true
       saber central block:
         saber block name: BUMP_NICAS
         bump:

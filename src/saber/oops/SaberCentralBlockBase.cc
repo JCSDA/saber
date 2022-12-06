@@ -20,6 +20,7 @@
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/AssociativeContainers.h"
+#include "oops/util/FieldSetOperations.h"
 #include "oops/util/Logger.h"
 #include "oops/util/parameters/OptionalParameter.h"
 #include "oops/util/parameters/Parameter.h"
@@ -47,7 +48,7 @@ SaberCentralBlockFactory::SaberCentralBlockFactory(const std::string & name) {
 
 SaberCentralBlockBase * SaberCentralBlockFactory::create(
   const oops::GeometryData & geometryData,
-  const std::vector<size_t> & activeVariableSizes,
+  const std::vector<size_t> & variableSizes,
   const oops::Variables & vars,
   const SaberBlockParametersBase & params,
   const atlas::FieldSet & xb,
@@ -60,8 +61,8 @@ SaberCentralBlockBase * SaberCentralBlockFactory::create(
     oops::Log::error() << id << " does not exist in saber::SaberCentralBlockFactory." << std::endl;
     ABORT("Element does not exist in saber::SaberCentralBlockFactory.");
   }
-  SaberCentralBlockBase * ptr = jsb->second->make(geometryData, activeVariableSizes, vars,
-                                                  params, xb, fg, fsetVec);
+  SaberCentralBlockBase * ptr = jsb->second->make(geometryData, variableSizes, vars, params, xb, fg,
+    fsetVec);
   oops::Log::trace() << "SaberCentralBlockBase::create done" << std::endl;
   return ptr;
 }
@@ -76,6 +77,49 @@ SaberCentralBlockFactory::createParameters(const std::string &name) {
     throw std::runtime_error(name + " does not exist in saber::SaberCentralBlockFactory");
   }
   return it->second->makeParameters();
+}
+
+// -----------------------------------------------------------------------------
+
+void SaberCentralBlockBase::adjointTest(const eckit::mpi::Comm & comm,
+                                        const oops::GeometryData & geometryData,
+                                        const std::vector<size_t> & variableSizes,
+                                        const oops::Variables & vars,
+                                        const double & adjointTolerance) const {
+  oops::Log::trace() << "SaberCentralBlockBase::adjointTest starting" << std::endl;
+
+  // Create random FieldSets
+  atlas::FieldSet fset1 =  util::createRandomFieldSet(geometryData,
+                                                      variableSizes,
+                                                      vars);
+  atlas::FieldSet fset2 =  util::createRandomFieldSet(geometryData,
+                                                      variableSizes,
+                                                      vars);
+
+  // Copy FieldSets
+  atlas::FieldSet fset1Save = util::copyFieldSet(fset1);
+  atlas::FieldSet fset2Save = util::copyFieldSet(fset2);
+
+  // Apply forward multiplication only (self-adjointness test)
+  this->multiply(fset1);
+  this->multiply(fset2);
+
+  // Compute adjoint test
+  const double dp1 = util::dotProductFieldSets(fset1, fset2Save, vars, comm);
+  const double dp2 = util::dotProductFieldSets(fset2, fset1Save, vars, comm);
+  oops::Log::info() << "Info     : Adjoint test: y^t (Ax) = " << dp1
+                    << ": x^t (Ay) = " << dp2 << std::endl;
+  ASSERT(abs(dp1) > 0.0);
+  ASSERT(abs(dp2) > 0.0);
+  oops::Log::test() << "Adjoint test";
+  if (0.5*abs(dp1-dp2)/(dp1+dp2) < adjointTolerance) {
+    oops::Log::test() << " passed" << std::endl;
+  } else {
+    oops::Log::test() << " failed" << std::endl;
+    ABORT("Adjoint test failure");
+  }
+
+  oops::Log::trace() << "SaberCentralBlockBase::adjointTest done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
