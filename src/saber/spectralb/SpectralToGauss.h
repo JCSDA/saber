@@ -63,8 +63,8 @@ class SpectralToGauss : public SaberOuterBlockBase {
   void print(std::ostream &) const override;
   void multiplyVectorFields(atlas::FieldSet &, atlas::FieldSet &) const;
   void multiplyVectorFieldsAD(atlas::FieldSet &, atlas::FieldSet &) const;
-  void multiplyScalarFields(atlas::FieldSet &, atlas::FieldSet &) const;
-  void multiplyScalarFieldsAD(atlas::FieldSet &, atlas::FieldSet &) const;
+  void multiplyScalarFields(const atlas::FieldSet &, atlas::FieldSet &) const;
+  void multiplyScalarFieldsAD(const atlas::FieldSet &, atlas::FieldSet &) const;
 
   Parameters_ params_;
   oops::Variables innerVars_;
