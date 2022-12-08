@@ -138,13 +138,21 @@ other_sections = ["ensemble", "lowres ensemble", "operators application"]
 
 # Upgrade bump sections
 for i in range(len(bumps)):
+    # Get old_bump
+    old_bump = bumps[i]
+
+    # Check if the script has already been applied
+    for j in range(len(kv)):
+        if kv[j]["name"] in old_bump:
+            print("It looks like this script has already been applied, exiting...")
+            exit()
+
     # Prepare new_bump
     new_bump = {}
     for section in sections:
         new_bump[section] = {}
 
     # Copy existing keys
-    old_bump = bumps[i]
     for j in range(len(kv)):
         section = {}
         for item in kv[j]["keys"]:
@@ -255,9 +263,9 @@ for i in range(len(bumps)):
     if "new_normality" in old_bump:
         new_bump["drivers"]["compute normality"] = old_bump["new_normality"]
     if "load_samp_local" in old_bump:
-        new_bump["drivers"]["load local sampling"] = old_bump["load_samp_local"]
+        new_bump["drivers"]["read local sampling"] = old_bump["load_samp_local"]
     if "load_samp_global" in old_bump:
-        new_bump["drivers"]["load global sampling"] = old_bump["load_samp_global"]
+        new_bump["drivers"]["read global sampling"] = old_bump["load_samp_global"]
     if "write_samp_local" in old_bump:
         new_bump["drivers"]["write local sampling"] = old_bump["write_samp_local"]
     if "write_samp_global" in old_bump:
@@ -270,13 +278,13 @@ for i in range(len(bumps)):
         new_bump["drivers"]["compute vertical covariance"] = old_bump["update_vbal_cov"]
         new_bump["drivers"]["iterative algorithm"] = old_bump["update_vbal_cov"]
     if "load_vbal_cov" in old_bump:
-        new_bump["drivers"]["load vertical covariance"] = old_bump["load_vbal_cov"]
+        new_bump["drivers"]["read vertical covariance"] = old_bump["load_vbal_cov"]
     if "write_vbal_cov" in old_bump:
         new_bump["drivers"]["write vertical covariance"] = old_bump["write_vbal_cov"]
     if "new_vbal" in old_bump:
         new_bump["drivers"]["compute vertical balance"] = old_bump["new_vbal"]
     if "load_vbal" in old_bump:
-        new_bump["drivers"]["load vertical balance"] = old_bump["load_vbal"]
+        new_bump["drivers"]["read vertical balance"] = old_bump["load_vbal"]
     if "write_vbal" in old_bump:
         new_bump["drivers"]["write vertical balance"] = old_bump["write_vbal"]
     if "new_var" in old_bump:
@@ -290,7 +298,7 @@ for i in range(len(bumps)):
         new_bump["drivers"]["compute moments"] = old_bump["update_mom"]
         new_bump["drivers"]["iterative algorithm"] = old_bump["update_mom"]
     if "load_mom" in old_bump:
-        new_bump["drivers"]["load moments"] = old_bump["load_mom"]
+        new_bump["drivers"]["read moments"] = old_bump["load_mom"]
     if "write_mom" in old_bump:
         new_bump["drivers"]["write moments"] = old_bump["write_mom"]
     if "new_hdiag" in old_bump and not ("update_mom" in old_bump or "load_mom" in old_bump):
@@ -302,9 +310,9 @@ for i in range(len(bumps)):
     if "new_nicas" in old_bump:
         new_bump["drivers"]["compute nicas"] = old_bump["new_nicas"]
     if "load_nicas_local" in old_bump:
-        new_bump["drivers"]["load local nicas"] = old_bump["load_nicas_local"]
+        new_bump["drivers"]["read local nicas"] = old_bump["load_nicas_local"]
     if "load_nicas_global" in old_bump:
-        new_bump["drivers"]["load global nicas"] = old_bump["load_nicas_global"]
+        new_bump["drivers"]["read global nicas"] = old_bump["load_nicas_global"]
     if "write_nicas_local" in old_bump:
         new_bump["drivers"]["write local nicas"] = old_bump["write_nicas_local"]
     if "write_nicas_global" in old_bump:
@@ -314,7 +322,7 @@ for i in range(len(bumps)):
     if "new_wind" in old_bump:
         new_bump["drivers"]["compute psichitouv"] = old_bump["new_wind"]
     if "load_wind_local" in old_bump:
-        new_bump["drivers"]["load local psichitouv"] = old_bump["load_wind_local"]
+        new_bump["drivers"]["read local psichitouv"] = old_bump["load_wind_local"]
     if "write_wind_local" in old_bump:
         new_bump["drivers"]["write local psichitouv"] = old_bump["write_wind_local"]
     if "check_vbal" in old_bump:

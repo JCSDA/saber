@@ -57,31 +57,31 @@ type nam_type
    character(len=1024) :: strategy                            !< Multivariate strategy ('diag_all', 'common', 'common_weighted', 'specific_univariate' or 'specific_multivariate')
    logical :: iterative_algo                                  !< Iterative algorithm (ensemble members loaded sequentially)
    logical :: new_normality                                   !< New normality test
-   logical :: load_samp_local                                 !< Load local sampling
-   logical :: load_samp_global                                !< Load global sampling
+   logical :: load_samp_local                                 !< Read local sampling
+   logical :: load_samp_global                                !< Read global sampling
    logical :: write_samp_local                                !< Write local sampling
    logical :: write_samp_global                               !< Write global sampling
    logical :: write_samp_grids                                !< Write sampling grids
    logical :: new_vbal_cov                                    !< New vertical covariance
-   logical :: load_vbal_cov                                   !< Load local vertical covariance
+   logical :: load_vbal_cov                                   !< Read local vertical covariance
    logical :: write_vbal_cov                                  !< Write local vertical covariancee
    logical :: new_vbal                                        !< Compute vertical balance operator
-   logical :: load_vbal                                       !< Load local vertical balance operator
+   logical :: load_vbal                                       !< Read local vertical balance operator
    logical :: write_vbal                                      !< Write vertical balance operator
    logical :: new_var                                         !< Compute variance
    logical :: new_mom                                         !< Compute moments
-   logical :: load_mom                                        !< Load sampling moments
+   logical :: load_mom                                        !< Read sampling moments
    logical :: write_mom                                       !< Write sampling moments
    logical :: write_hdiag                                     !< Write diagnostics
    logical :: write_hdiag_detail                              !< Write components detail
    logical :: new_nicas                                       !< Compute NICAS parameters
-   logical :: load_nicas_local                                !< Load local NICAS parameters
-   logical :: load_nicas_global                               !< Load global NICAS parameters
+   logical :: load_nicas_local                                !< Read local NICAS parameters
+   logical :: load_nicas_global                               !< Read global NICAS parameters
    logical :: write_nicas_local                               !< Write local NICAS parameters
    logical :: write_nicas_global                              !< Write global NICAS parameters
    logical :: write_nicas_grids                               !< Write NICAS grids
    logical :: new_wind                                        !< Compute wind transform
-   logical :: load_wind_local                                 !< Load local wind transform
+   logical :: load_wind_local                                 !< Read local wind transform
    logical :: write_wind_local                                !< Write local wind transform
    logical :: check_vbal                                      !< Test vertical balance inverse
    logical :: check_adjoints                                  !< Test adjoints
@@ -372,31 +372,31 @@ call get(section,'hybrid source','',nam%hybrid_source)
 call get(section,'multivariate strategy','',nam%strategy)
 call get(section,'iterative algorithm',.false.,nam%iterative_algo)
 call get(section,'compute normality',.false.,nam%new_normality)
-call get(section,'load local sampling',.false.,nam%load_samp_local)
-call get(section,'load global sampling',.false.,nam%load_samp_global)
+call get(section,'read local sampling',.false.,nam%load_samp_local)
+call get(section,'read global sampling',.false.,nam%load_samp_global)
 call get(section,'write local sampling',.false.,nam%write_samp_local)
 call get(section,'write global sampling',.false.,nam%write_samp_global)
 call get(section,'write sampling grids',.false.,nam%write_samp_grids)
 call get(section,'compute vertical covariance',.false.,nam%new_vbal_cov)
-call get(section,'load vertical covariance',.false.,nam%load_vbal_cov)
+call get(section,'read vertical covariance',.false.,nam%load_vbal_cov)
 call get(section,'write vertical covariance',.false.,nam%write_vbal_cov)
 call get(section,'compute vertical balance',.false.,nam%new_vbal)
-call get(section,'load vertical balance',.false.,nam%load_vbal)
+call get(section,'read vertical balance',.false.,nam%load_vbal)
 call get(section,'write vertical balance',.false.,nam%write_vbal)
 call get(section,'compute variance',.false.,nam%new_var)
 call get(section,'compute moments',.false.,nam%new_mom)
-call get(section,'load moments',.false.,nam%load_mom)
+call get(section,'read moments',.false.,nam%load_mom)
 call get(section,'write moments',.false.,nam%write_mom)
 call get(section,'write diagnostics',.false.,nam%write_hdiag)
 call get(section,'write diagnostics detail',.false.,nam%write_hdiag_detail)
 call get(section,'compute nicas',.false.,nam%new_nicas)
-call get(section,'load local nicas',.false.,nam%load_nicas_local)
-call get(section,'load global nicas',.false.,nam%load_nicas_global)
+call get(section,'read local nicas',.false.,nam%load_nicas_local)
+call get(section,'read global nicas',.false.,nam%load_nicas_global)
 call get(section,'write local nicas',.false.,nam%write_nicas_local)
 call get(section,'write global nicas',.false.,nam%write_nicas_global)
 call get(section,'write nicas grids',.false.,nam%write_nicas_grids)
 call get(section,'compute psichitouv',.false.,nam%new_wind)
-call get(section,'load local psichitouv',.false.,nam%load_wind_local)
+call get(section,'read local psichitouv',.false.,nam%load_wind_local)
 call get(section,'write local psichitouv',.false.,nam%write_wind_local)
 call get(section,'vertical balance inverse test',.false.,nam%check_vbal)
 call get(section,'adjoints test',.false.,nam%check_adjoints)
