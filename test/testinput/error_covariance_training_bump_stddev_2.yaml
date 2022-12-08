@@ -19,7 +19,7 @@ bump:
   drivers:
     compute variance: true
     iterative algorithm: true
-  localization:
+  diagnostics:
     target ensemble size: 20
   variance:
     objective filtering: true

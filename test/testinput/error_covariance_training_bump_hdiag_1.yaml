@@ -46,7 +46,7 @@ bump:
     local diagnostic: true
     averaging length-scale: 1000.0e3
     interpolation type: c1
-  localization:
+  diagnostics:
     target ensemble size: 25
   fit:
     horizontal filtering length-scale: 3000.0e3

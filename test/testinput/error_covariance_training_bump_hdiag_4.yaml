@@ -38,7 +38,7 @@ bump:
     distance class width: 800.0e3
     reduced levels: 2
     grid type: octahedral
-  localization:
+  diagnostics:
     target ensemble size: 25
     generalized kurtosis threshold: 4.0
     histogram bins: 10

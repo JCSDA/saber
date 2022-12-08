@@ -43,7 +43,7 @@ bump:
     distance classes: 15
     distance class width: 500.0e3
     reduced levels: 2
-  localization:
+  diagnostics:
     target ensemble size: 10
     target lowres ensemble size: 25
   ensemble:

@@ -42,7 +42,7 @@ bump:
     angular sectors: 4
     distance class width: 800.0e3
     reduced levels: 2
-  localization:
+  diagnostics:
     target ensemble size: 25
   nicas:
     resolution: 4.0

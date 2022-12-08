@@ -124,7 +124,7 @@ type nam_type
    character(len=1024),allocatable :: mask_variable(:)        !< Mask variable
    integer :: ncontig_th                                      !< Threshold on vertically contiguous points for sampling mask (0 to skip the test)
 
-   ! Localization section
+   ! Diagnostics section
    integer :: ne                                              !< Ensemble size
    integer :: ne_lr                                           !< Ensemble size of the low-resolution term (ensemble 2)
    logical :: gau_approx                                      !< Gaussian approximation for asymptotic quantities
@@ -488,10 +488,10 @@ else
 end if
 call get(section,'contiguous levels threshold',0,nam%ncontig_th)
 
-! Localization section
-if (conf%has('localization')) then
-   call conf%get_or_die('localization',section)
-   call print_section(mpl,section,'Localization')
+! Diagnostics section
+if (conf%has('diagnostics')) then
+   call conf%get_or_die('diagnostics',section)
+   call print_section(mpl,section,'diagnostics')
 else
    section = fckit_configuration()
 end if
@@ -1018,7 +1018,7 @@ do imask=1,nam%nmask
     end select
 end do
 
-! Localization section
+! Diagnostics section
 if (nam%new_hdiag.or.nam%check_optimality) then
    if (nam%compute_loc1.and.(nam%ne<=3)) call mpl%abort('${subr}$','ne should be larger than 3')
    if (nam%compute_loc2.and.(nam%ne_lr<=3)) call mpl%abort('${subr}$','ne_lr should be larger than 3')

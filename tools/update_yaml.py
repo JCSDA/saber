@@ -93,10 +93,10 @@ sampling["name"] = "sampling"
 sampling["keys"] = ["masks"]
 kv.append(sampling)
 
-localization = {}
-localization["name"] = "localization"
-localization["keys"] = []
-kv.append(localization)
+diagnostics = {}
+diagnostics["name"] = "diagnostics"
+diagnostics["keys"] = []
+kv.append(diagnostics)
 
 verticalBalance = {}
 verticalBalance["name"] = "vertical balance"
@@ -133,7 +133,7 @@ psichitouv["name"] = "psichitouv"
 psichitouv["keys"] = []
 kv.append(psichitouv)
 
-sections = ["general", "io", "drivers", "model", "ensemble sizes", "sampling", "localization", "vertical balance", "variance", "optimality test", "fit", "local profiles", "nicas", "psichitouv"]
+sections = ["general", "io", "drivers", "model", "ensemble sizes", "sampling", "diagnostics", "vertical balance", "variance", "optimality test", "fit", "local profiles", "nicas", "psichitouv"]
 other_sections = ["ensemble", "lowres ensemble", "operators application"]
 
 # Upgrade bump sections
@@ -359,7 +359,7 @@ for i in range(len(bumps)):
     if "ens2_nsub" in old_bump:
         new_bump["ensemble sizes"]["lowres sub-ensembles"] = old_bump["ens2_nsub"]
 
-    # Udpate sampling section
+    # Update sampling section
     if "nc1" in old_bump:
         new_bump["sampling"]["computation grid size"] = old_bump["nc1"]
     if "nc2" in old_bump:
@@ -387,19 +387,19 @@ for i in range(len(bumps)):
     if "ncontig_th" in old_bump:
         new_bump["sampling"]["contiguous levels threshold"] = old_bump["ncontig_th"]
 
-    # Udpate localization
+    # Update diagnostics
     if "ne" in old_bump:
-        new_bump["localization"]["target ensemble size"] = old_bump["ne"]
+        new_bump["diagnostics"]["target ensemble size"] = old_bump["ne"]
     if "ne_lr" in old_bump:
-        new_bump["localization"]["target lowres ensemble size"] = old_bump["ne_lr"]
+        new_bump["diagnostics"]["target lowres ensemble size"] = old_bump["ne_lr"]
     if "gau_approx" in old_bump:
-        new_bump["localization"]["gaussian approximation"] = old_bump["gau_approx"]
+        new_bump["diagnostics"]["gaussian approximation"] = old_bump["gau_approx"]
     if "gen_kurt_th" in old_bump:
-        new_bump["localization"]["generalized kurtosis threshold"] = old_bump["gen_kurt_th"]
+        new_bump["diagnostics"]["generalized kurtosis threshold"] = old_bump["gen_kurt_th"]
     if "avg_nbins" in old_bump:
-        new_bump["localization"]["histogram bins"] = old_bump["avg_nbins"]
+        new_bump["diagnostics"]["histogram bins"] = old_bump["avg_nbins"]
 
-    # Udpate vbal
+    # Update vbal
     if "vbal_block" in old_bump:
         vbal_block = old_bump["vbal_block"]
         if "vbal_diag_auto" in old_bump:

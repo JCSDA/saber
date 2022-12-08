@@ -34,7 +34,7 @@ bump:
     local diagnostic: true
     averaging latitude width: 15.0
     interpolation type: si
-  localization:
+  diagnostics:
     target ensemble size: 25
     gaussian approximation: true
   fit:

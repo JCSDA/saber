@@ -187,8 +187,6 @@ class DriversSection : public oops::Parameters {
   oops::OptionalParameter<bool> load_mom{"read moments", this};
   // Write sampling moments
   oops::OptionalParameter<bool> write_mom{"write moments", this};
-  // Compute HDIAG
-  oops::OptionalParameter<bool> new_hdiag{"compute diagnostics", this};
   // Write HDIAG diagnostics
   oops::OptionalParameter<bool> write_hdiag{"write diagnostics", this};
   // Write HDIAG components detail
@@ -310,8 +308,8 @@ class SamplingSection : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
-class LocalizationSection : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(LocalizationSection, oops::Parameters)
+class DiagnosticsSection : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(DiagnosticsSection, oops::Parameters)
 
  public:
   // Ensemble size
@@ -544,8 +542,8 @@ class BUMPParameters : public oops::Parameters {
   oops::OptionalParameter<EnsembleSizesSection> ensembleSizes{"ensemble sizes", this};
   // Sampling parameters
   oops::OptionalParameter<SamplingSection> sampling{"sampling", this};
-  // Localization parameters
-  oops::OptionalParameter<LocalizationSection> localization{"localization", this};
+  // Diagnostics parameters
+  oops::OptionalParameter<DiagnosticsSection> diagnostics{"diagnostics", this};
   // Vertical balance parameters
   oops::OptionalParameter<VerticalBalanceSection> verticalBalance{"vertical balance", this};
   // Variance parameters
