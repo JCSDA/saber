@@ -157,10 +157,10 @@ class DriversSection : public oops::Parameters {
   oops::OptionalParameter<bool> iterative_algo{"iterative algorithm", this};
   // New normality test
   oops::OptionalParameter<bool> new_normality{"compute normality", this};
-  // Load local sampling
-  oops::OptionalParameter<bool> load_samp_local{"load local sampling", this};
-  // Load global sampling
-  oops::OptionalParameter<bool> load_samp_global{"load global sampling", this};
+  // Read local sampling
+  oops::OptionalParameter<bool> load_samp_local{"read local sampling", this};
+  // Read global sampling
+  oops::OptionalParameter<bool> load_samp_global{"read global sampling", this};
   // Write local sampling
   oops::OptionalParameter<bool> write_samp_local{"write local sampling", this};
   // Write global sampling
@@ -169,22 +169,22 @@ class DriversSection : public oops::Parameters {
   oops::OptionalParameter<bool> write_samp_grids{"write sampling grids", this};
   // New vertical covariance
   oops::OptionalParameter<bool> new_vbal_cov{"compute vertical covariance", this};
-  // Load local vertical covariance
-  oops::OptionalParameter<bool> load_vbal_cov{"load vertical covariance", this};
+  // Read local vertical covariance
+  oops::OptionalParameter<bool> load_vbal_cov{"read vertical covariance", this};
   // Write local vertical covariancee
   oops::OptionalParameter<bool> write_vbal_cov{"write vertical covariance", this};
   // Compute vertical balance operator
   oops::OptionalParameter<bool> new_vbal{"compute vertical balance", this};
-  // Load local vertical balance operator
-  oops::OptionalParameter<bool> load_vbal{"load vertical balance", this};
+  // Read local vertical balance operator
+  oops::OptionalParameter<bool> load_vbal{"read vertical balance", this};
   // Write vertical balance operator
   oops::OptionalParameter<bool> write_vbal{"write vertical balance", this};
   // Compute variance
   oops::OptionalParameter<bool> new_var{"compute variance", this};
   // Compute moments
   oops::OptionalParameter<bool> new_mom{"compute moments", this};
-  // Load sampling moments
-  oops::OptionalParameter<bool> load_mom{"load moments", this};
+  // Read sampling moments
+  oops::OptionalParameter<bool> load_mom{"read moments", this};
   // Write sampling moments
   oops::OptionalParameter<bool> write_mom{"write moments", this};
   // Compute HDIAG
@@ -195,10 +195,10 @@ class DriversSection : public oops::Parameters {
   oops::OptionalParameter<bool> write_hdiag_detail{"write diagnostics detail", this};
   // Compute NICAS
   oops::OptionalParameter<bool> new_nicas{"compute nicas", this};
-  // Load local NICAS parameters
-  oops::OptionalParameter<bool> load_nicas_local{"load local nicas", this};
-  // Load global NICAS parameters
-  oops::OptionalParameter<bool> load_nicas_global{"load global nicas", this};
+  // Read local NICAS parameters
+  oops::OptionalParameter<bool> load_nicas_local{"read local nicas", this};
+  // Read global NICAS parameters
+  oops::OptionalParameter<bool> load_nicas_global{"read global nicas", this};
   // Write local NICAS parameters
   oops::OptionalParameter<bool> write_nicas_local{"write local nicas", this};
   // Write global NICAS parameters
@@ -207,8 +207,8 @@ class DriversSection : public oops::Parameters {
   oops::OptionalParameter<bool> write_nicas_grids{"write nicas grids", this};
   // Compute wind transform
   oops::OptionalParameter<bool> new_wind{"compute psichitouv", this};
-  // Load local wind transform
-  oops::OptionalParameter<bool> load_wind_local{"load local psichitouv", this};
+  // Read local wind transform
+  oops::OptionalParameter<bool> load_wind_local{"read local psichitouv", this};
   // Write local wind transform
   oops::OptionalParameter<bool> write_wind_local{"write local psichitouv", this};
   // Test vertical balance inverse
