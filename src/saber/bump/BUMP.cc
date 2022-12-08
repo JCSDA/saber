@@ -17,7 +17,6 @@
 
 #include "atlas/field.h"
 #include "atlas/functionspace.h"
-#include "atlas/util/Config.h"
 
 #include "eckit/config/Configuration.h"
 
@@ -187,7 +186,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   }
 
   // Initialize configuration
-  atlas::util::Config conf(params_.toConfiguration());
+  eckit::LocalConfiguration conf(params_.toConfiguration());
 
   // Add missing value (real)
   conf.set("msvalr", util::missingValue(double()));
@@ -201,7 +200,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   }
 
   // Grids
-  std::vector<atlas::util::Config> grids;
+  std::vector<eckit::LocalConfiguration> grids;
 
   // Get the grids configuration from input configuration and complete it
   if (conf.has("grids")) {
@@ -210,7 +209,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
     ASSERT(grids.size() > 0);
   } else {
     // Create one empty configuration
-    atlas::util::Config emptyConf;
+    eckit::LocalConfiguration emptyConf;
     grids.push_back(emptyConf);
   }
 
@@ -220,7 +219,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   // Loop over grids
   for (auto & grid : grids) {
     // Merge conf into grid
-    grid = grid | conf;
+    grid = util::mergeConfigs(grid, conf);
 
     // Add input variables to the grid configuration
     std::vector<std::string> vars_str;

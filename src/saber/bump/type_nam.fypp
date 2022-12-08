@@ -733,6 +733,7 @@ end if
 call nam%get_value(section,'minimum level',1,nam%min_lev)
 call nam%get_value(section,'maximum level',nam%nl0,nam%max_lev)
 allocate(nam%nicas_interp_type(0:nam%nv))
+nam%nicas_interp_type = 'c0'
 if (section%has('interpolation type')) then
    call section%get_or_die('interpolation type',confs)
    do iconf=1,size(confs)
@@ -745,8 +746,6 @@ if (section%has('interpolation type')) then
          end do
       end do
    end do
-else
-   nam%nicas_interp_type = 'c0'
 end if
 call get(section,'positive-definiteness test',.false.,nam%pos_def_test)
 call get(section,'horizontal interpolation test',.false.,nam%interp_test)
@@ -1321,6 +1320,9 @@ type(fckit_configuration),allocatable :: confs(:)
 ! Allocation
 allocate(val(0:nam%nv))
 
+! Initialization
+val = def
+
 if (section%has(key)) then 
    ! Get subconfigurations vector
    call section%get_or_die(key,confs)
@@ -1336,9 +1338,6 @@ if (section%has(key)) then
          end do
       end do
    end do
-else
-   ! Initialization
-   val = def
 end if
 
 ! Probe out
@@ -1381,6 +1380,9 @@ type(fckit_configuration),allocatable :: confs(:)
 ! Allocation
 allocate(val(nam%nl0,0:nam%nv))
 
+! Initialization
+val = def
+
 if (section%has(key)) then
    ! Get subconfigurations vector
    call section%get_or_die(key,confs)
@@ -1408,9 +1410,6 @@ if (section%has(key)) then
          call mpl%abort('${subr}$','missing value/profile in '//key)
       end if
    end do
-else
-   ! Initialization
-   val = def
 end if
 
 ! Probe out

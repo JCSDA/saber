@@ -155,9 +155,8 @@ for i in range(len(bumps)):
 
     # Copy existing keys in grids
     if "grids" in old_bump:
-        old_grids = old_bump["grids"]
         new_grids = []
-        for old_grid in old_grids:
+        for old_grid in old_bump["grids"]:
             new_grid = {}
             for j in range(len(kv)):
                 section = {}
@@ -201,19 +200,27 @@ for i in range(len(bumps)):
     if "fname_vbal" in old_bump:
         new_bump["io"]["overriding vertical balance file"] = old_bump["fname_vbal"]
     if "fname_mom" in old_bump:
-        new_bump["io"]["overriding moments file"] = old_bump["fname_mom"]
+        old_vec = old_bump["fname_mom"]
+        new_vec = []
+        for item in old_vec:
+            new_vec.append(item + "_000001_1")
+        new_bump["io"]["overriding moments file"] = new_vec
     if "fname_mom2" in old_bump:
-        new_bump["io"]["overriding lowres moments file"] = old_bump["fname_mom2"]
+        old_vec = old_bump["fname_mom2"]
+        new_vec = []
+        for item in old_vec:
+            new_vec.append(item + "_000001_2")
+        new_bump["io"]["overriding lowres moments file"] = new_vec
     if "fname_nicas" in old_bump:
         new_bump["io"]["overriding nicas file"] = old_bump["fname_nicas"]
     if "fname_wind" in old_bump:
         new_bump["io"]["overriding psichitouv file"] = old_bump["fname_wind"]
     if "io_keys" in old_bump:
         vec = []
-        for i in range(len(old_bump["io_keys"])):
+        for j in range(len(old_bump["io_keys"])):
             item = {}
-            item["in code"] = old_bump["io_keys"][i]
-            item["in file"] = old_bump["io_values"][i]
+            item["in code"] = old_bump["io_keys"][j]
+            item["in file"] = old_bump["io_values"][j]
             vec.append(item)
         new_bump["io"]["alias"] = vec
 
@@ -678,6 +685,124 @@ for i in range(len(bumps)):
                 dirac_point["variable"] = args.variables[old_bump["ivdir"][idir]-1]
                 vec.append(dirac_point)
         new_bump["dirac"] = vec
+
+    # Update grids
+    if "grids" in old_bump:
+        for igrid in range(len(old_bump["grids"])):
+            old_grid = old_bump["grids"][igrid]
+
+            # I/O section
+            if "datadir" in old_grid:
+                if not "io" in new_bump["grids"][igrid]:
+                    new_bump["grids"][igrid]["io"] = {}
+                new_bump["grids"][igrid]["io"]["data directory"] = old_grid["datadir"]
+            if "prefix" in old_grid:
+                if not "io" in new_bump["grids"][igrid]:
+                    new_bump["grids"][igrid]["io"] = {}
+                new_bump["grids"][igrid]["io"]["files prefix"] = old_grid["prefix"]
+            if "fname_samp" in old_grid:
+                if not "io" in new_bump["grids"][igrid]:
+                    new_bump["grids"][igrid]["io"] = {}
+                new_bump["grids"][igrid]["io"]["overriding sampling file"] = old_grid["fname_samp"]
+            if "fname_vbal_cov" in old_grid:
+                if not "io" in new_bump["grids"][igrid]:
+                    new_bump["grids"][igrid]["io"] = {}
+                new_bump["grids"][igrid]["io"]["overriding vertical covariance file"] = old_grid["fname_vbal_cov"]
+            if "fname_vbal" in old_grid:
+                if not "io" in new_bump["grids"][igrid]:
+                    new_bump["grids"][igrid]["io"] = {}
+                new_bump["grids"][igrid]["io"]["overriding vertical balance file"] = old_grid["fname_vbal"]
+            if "fname_mom" in old_grid:
+                if not "io" in new_bump["grids"][igrid]:
+                    new_bump["grids"][igrid]["io"] = {}
+                old_vec = old_grid["fname_mom"]
+                new_vec = []
+                for item in old_vec:
+                    new_vec.append(item + "_000001_1")
+                new_bump["grids"][igrid]["io"]["overriding moments file"] = new_vec
+            if "fname_mom2" in old_grid:
+                if not "io" in new_bump["grids"][igrid]:
+                    new_bump["grids"][igrid]["io"] = {}
+                old_vec = old_grid["fname_mom2"]
+                new_vec = []
+                for item in old_vec:
+                    new_vec.append(item + "_000001_2")
+                new_bump["grids"][igrid]["io"]["overriding lowres moments file"] = new_vec
+            if "fname_nicas" in old_grid:
+                if not "io" in new_bump["grids"][igrid]:
+                    new_bump["grids"][igrid]["io"] = {}
+                new_bump["grids"][igrid]["io"]["overriding nicas file"] = old_grid["fname_nicas"]
+            if "fname_wind" in old_grid:
+                if not "io" in new_bump["grids"][igrid]:
+                    new_bump["grids"][igrid]["io"] = {}
+                new_bump["grids"][igrid]["io"]["overriding psichitouv file"] = old_grid["fname_wind"]
+            if "io_keys" in old_grid:
+                vec = []
+                for j in range(len(old_grid["io_keys"])):
+                    item = {}
+                    item["in code"] = old_grid["io_keys"][j]
+                    item["in file"] = old_grid["io_values"][j]
+                    vec.append(item)
+                if not "alias" in new_bump["io"]:
+                    new_bump["io"]["alias"] = []
+                for item in vec:
+                    new_bump["io"]["alias"].append(item)
+
+            # NICAS section
+            if "rh" in old_grid:
+                vec = []
+                for item in old_grid["rh"]:
+                    block = {}
+                    block["variables"] = [item]
+                    if len(old_grid["rh"][item]) == 1:
+                        block["value"] = old_grid["rh"][item][0]
+                    else:
+                        block["profile"] = old_grid["rh"][item]
+                    done = False
+                    for iblock in range(len(vec)):
+                        if "value" in block and "value" in vec[iblock]:
+                            if block["value"] == vec[iblock]["value"]:
+                                for variable in block["variables"]:
+                                    vec[iblock]["variables"].append(variable)
+                                done = True
+                        if "profile" in block and "profile" in vec[iblock]:
+                            if block["profile"] == vec[iblock]["profile"]:
+                                for variable in block["variables"]:
+                                    vec[iblock]["variables"].append(variable)
+                                done = True
+                    if not done:
+                        vec.append(block)
+                if not "horizontal length-scale" in new_bump["nicas"]:
+                     new_bump["nicas"]["horizontal length-scale"] = []
+                for item in vec:
+                    new_bump["nicas"]["horizontal length-scale"].append(item)
+            if "rv" in old_grid:
+                vec = []
+                for item in old_grid["rv"]:
+                    block = {}
+                    block["variables"] = [item]
+                    if len(old_grid["rv"][item]) == 1:
+                        block["value"] = old_grid["rv"][item][0]
+                    else:
+                        block["profile"] = old_grid["rv"][item]
+                    done = False
+                    for iblock in range(len(vec)):
+                        if "value" in block and "value" in vec[iblock]:
+                            if block["value"] == vec[iblock]["value"]:
+                                for variable in block["variables"]:
+                                    vec[iblock]["variables"].append(variable)
+                                done = True
+                        if "profile" in block and "profile" in vec[iblock]:
+                            if block["profile"] == vec[iblock]["profile"]:
+                                for variable in block["variables"]:
+                                    vec[iblock]["variables"].append(variable)
+                                done = True
+                    if not done:
+                        vec.append(block)
+                if not "vertical length-scale" in new_bump["nicas"]:
+                     new_bump["nicas"]["vertical length-scale"] = []
+                for item in vec:
+                    new_bump["nicas"]["vertical length-scale"].append(item)
 
     # Remove empty sections
     for section in sections:

@@ -32,9 +32,9 @@ bump:
   check_dirac: true
   fname_samp: error_covariance_training_bump_hdiag_5/_MPI_-_OMP__sampling
   fname_mom:
-  - error_covariance_training_bump_hdiag_5/_MPI_-_OMP__mom_000001_1
+  - error_covariance_training_bump_hdiag_5/_MPI_-_OMP__mom
   fname_mom2:
-  - error_covariance_training_bump_hdiag_5/_MPI_-_OMP__mom_000001_2
+  - error_covariance_training_bump_hdiag_5/_MPI_-_OMP__mom
   ens1_ne: 10
   ens2_ne: 25
   load_samp_local: true
