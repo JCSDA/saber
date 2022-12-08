@@ -21,25 +21,23 @@ ensemble:
     nmembers: 25
     zero padding: 6
 bump:
-  datadir: testdata
-  prefix: error_covariance_training_bump_nicas_2/_MPI_-_OMP_
-  testing: true
-  universe_rad: 10000.0e3
-  method: loc
-  strategy: specific_univariate
-  load_nicas_global: true
-  write_nicas_local: true
-  check_dirac: true
-  fname_nicas: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas
-  ndir: 1
-  londir:
-  - 0.0
-  latdir:
-  - 0.0
-  levdir:
-  - 1
-  ivdir:
-  - 1
+  general:
+    testing: true
+    universe length-scale: 10000.0e3
+  io:
+    data directory: testdata
+    files prefix: error_covariance_training_bump_nicas_2/_MPI_-_OMP_
+    overriding nicas file: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas
+  drivers:
+    multivariate strategy: specific_univariate
+    read global nicas: true
+    write local nicas: true
+    internal dirac test: true
+  dirac:
+  - longitude: 0.0
+    latitude: 0.0
+    level: 1
+    variable: var1
 input fields:
 - parameter: nicas_a
   component: 1

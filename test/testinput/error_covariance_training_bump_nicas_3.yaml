@@ -12,15 +12,17 @@ background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
 bump:
-  datadir: testdata
-  prefix: error_covariance_training_bump_nicas_3/_MPI_-_OMP_
-  testing: true
-  universe_rad: 10000.0e3
-  method: cor
-  strategy: specific_univariate
-  load_nicas_global: true
-  write_nicas_local: true
-  fname_nicas: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas
+  general:
+    testing: true
+    universe length-scale: 10000.0e3
+  io:
+    data directory: testdata
+    files prefix: error_covariance_training_bump_nicas_3/_MPI_-_OMP_
+    overriding nicas file: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas
+  drivers:
+    multivariate strategy: specific_univariate
+    read global nicas: true
+    write local nicas: true
 input fields:
 - parameter: nicas_a
   component: 1

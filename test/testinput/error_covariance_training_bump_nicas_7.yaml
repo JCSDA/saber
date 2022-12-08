@@ -11,27 +11,36 @@ background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
 bump:
-  datadir: testdata
-  prefix: error_covariance_training_bump_nicas_7/_MPI_-_OMP_
-  testing: true
-  universe_rad: 10000.0e3
-  method: cor
-  strategy: specific_multivariate
-  new_hdiag: true
-  write_hdiag: true
-  check_consistency: true
-  ens1_ne: 50
-  nc1: 500
-  nc3: 10
-  dc: 800.0e3
-  nl0r: 7
-  resol: 4.0
-  forced_radii: true
-  rh:
-    var1:
-    - 1000.0e3
-  rv:
-    var1:
-    - 3.0
+  general:
+    testing: true
+    universe length-scale: 10000.0e3
+  io:
+    data directory: testdata
+    files prefix: error_covariance_training_bump_nicas_7/_MPI_-_OMP_
+  drivers:
+    compute covariance: true
+    compute correlation: true
+    multivariate strategy: specific_multivariate
+    compute moments: true
+    write diagnostics: true
+    internal consistency test: true
+  ensemble sizes:
+    total ensemble size: 50
+  sampling:
+    computation grid size: 500
+    distance classes: 10
+    distance class width: 800.0e3
+    reduced levels: 7
+  nicas:
+    resolution: 4.0
+    explicit length-scales: true
+    horizontal length-scale:
+    - variables:
+      - var1
+      value: 1000.0e3
+    vertical length-scale:
+    - variables:
+      - var1
+      value: 3.0
 test:
   reference filename: testref/error_covariance_training_bump_nicas_7.ref

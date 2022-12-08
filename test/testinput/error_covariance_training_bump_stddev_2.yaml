@@ -11,22 +11,30 @@ background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
 bump:
-  datadir: testdata
-  prefix: error_covariance_training_bump_stddev_2/_MPI_-_OMP_
-  testing: true
-  update_var: true
-  ne: 20
-  var_filter: true
-  var_npass: 3
-  var_rhflt:
-    var1:
-    - 1000.0e3
+  general:
+    testing: true
+  io:
+    data directory: testdata
+    files prefix: error_covariance_training_bump_stddev_2/_MPI_-_OMP_
+  drivers:
+    compute variance: true
+    iterative algorithm: true
+  localization:
+    target ensemble size: 20
+  variance:
+    objective filtering: true
+    filtering passes: 3
+    initial length-scale:
+    - variables:
+      - var1
+      value: 1000.0e3
   ensemble:
     members from template:
       template:
         date: '2010-01-01T12:00:00Z'
         filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
-        state variables: *id001
+        state variables:
+        - var1
       pattern: '%mem%'
       nmembers: 20
       zero padding: 6

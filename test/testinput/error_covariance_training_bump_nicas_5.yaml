@@ -18,34 +18,39 @@ background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
 bump:
-  datadir: testdata
-  prefix: error_covariance_training_bump_nicas_5/_MPI_-_OMP_
-  testing: true
-  universe_rad: 10000.0e3
-  method: loc
-  strategy: common_weighted
-  new_nicas: true
-  check_dirac: true
-  resol: 4.0
-  forced_radii: true
-  rh:
-    common:
-    - 1000.0e3
-  rv:
-    common:
-    - 3.0
-  loc_wgt:
-    var1-var2: 0.5
-  pos_def_test: true
-  interp_test: true
-  ndir: 1
-  londir:
-  - 150.0
-  latdir:
-  - -30.0
-  levdir:
-  - 1
-  ivdir:
-  - 1
+  general:
+    testing: true
+    universe length-scale: 10000.0e3
+  io:
+    data directory: testdata
+    files prefix: error_covariance_training_bump_nicas_5/_MPI_-_OMP_
+  drivers:
+    multivariate strategy: common_weighted
+    compute nicas: true
+    internal dirac test: true
+  nicas:
+    resolution: 4.0
+    explicit length-scales: true
+    horizontal length-scale:
+    - variables:
+      - common
+      value: 1000.0e3
+    vertical length-scale:
+    - variables:
+      - common
+      value: 3.0
+    common localization weights:
+    - row variables:
+      - var1
+      column variables:
+      - var2
+      value: 0.5
+    positive-definiteness test: true
+    horizontal interpolation test: true
+  dirac:
+  - longitude: 150.0
+    latitude: -30.0
+    level: 1
+    variable: var1
 test:
   reference filename: testref/error_covariance_training_bump_nicas_5.ref

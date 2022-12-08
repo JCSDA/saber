@@ -18,42 +18,51 @@ background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
 bump:
-  datadir: testdata
-  prefix: error_covariance_training_bump_hdiag-nicas_3/_MPI_-_OMP_
-  testing: true
-  method: hyb-ens
-  strategy: specific_univariate
-  load_mom: true
-  new_hdiag: true
-  write_hdiag: true
-  new_nicas: true
-  check_adjoints: true
-  check_normalization: 10
-  check_dirac: true
-  fname_samp: error_covariance_training_bump_hdiag_5/_MPI_-_OMP__sampling
-  fname_mom:
-  - error_covariance_training_bump_hdiag_5/_MPI_-_OMP__mom
-  fname_mom2:
-  - error_covariance_training_bump_hdiag_5/_MPI_-_OMP__mom
-  ens1_ne: 10
-  ens2_ne: 25
-  load_samp_local: true
-  nc1: 500
-  nc3: 15
-  dc: 500.0e3
-  nl0r: 2
-  ne: 10
-  ne_lr: 25
-  resol: 4.0
-  ndir: 1
-  londir:
-  - 0.0
-  latdir:
-  - 0.0
-  levdir:
-  - 1
-  ivdir:
-  - 1
+  general:
+    testing: true
+  io:
+    data directory: testdata
+    files prefix: error_covariance_training_bump_hdiag-nicas_3/_MPI_-_OMP_
+    overriding sampling file: error_covariance_training_bump_hdiag_5/_MPI_-_OMP__sampling
+    overriding moments file:
+    - error_covariance_training_bump_hdiag_5/_MPI_-_OMP__mom_000001_1
+    overriding lowres moments file:
+    - error_covariance_training_bump_hdiag_5/_MPI_-_OMP__mom_000001_2
+  drivers:
+    compute covariance: true
+    compute lowres covariance: true
+    compute correlation: true
+    compute lowres correlation: true
+    compute localization: true
+    compute lowres localization: true
+    compute hybrid weights: true
+    hybrid source: lowres ensemble
+    multivariate strategy: specific_univariate
+    read local sampling: true
+    read moments: true
+    write diagnostics: true
+    compute nicas: true
+    adjoints test: true
+    normalization test: 10
+    internal dirac test: true
+  ensemble sizes:
+    total ensemble size: 10
+    total lowres ensemble size: 25
+  sampling:
+    computation grid size: 500
+    distance classes: 15
+    distance class width: 500.0e3
+    reduced levels: 2
+  localization:
+    target ensemble size: 10
+    target lowres ensemble size: 25
+  nicas:
+    resolution: 4.0
+  dirac:
+  - longitude: 0.0
+    latitude: 0.0
+    level: 1
+    variable: var1
 output:
 - parameter: loc_rh
   file:

@@ -20,45 +20,47 @@ ensemble:
     nmembers: 25
     zero padding: 6
 bump:
-  datadir: testdata
-  prefix: error_covariance_training_bump_hdiag_10
-  testing: true
-  method: cor
-  strategy: specific_univariate
-  new_hdiag: true
-  write_hdiag: true
-  nc1: 500
-  nc2: 250
-  nc3: 10
-  dc: 800.0e3
-  nl0r: 7
-  local_diag: true
-  local_rad: 4000.0e3
-  masks:
-  - type: lat-20060
-  - type: ldwv
-  - type: stddev
-    threshold: 1.005
-    side: lower
-    variable: var1
-  - type: input
-    threshold: 0.5
-    side: upper
-    variable: var1
-  ncontig_th: 3
-  nldwv: 3
-  lon_ldwv:
-  - 0.0
-  - -22.0
-  - -127.0
-  lat_ldwv:
-  - 0.0
-  - 55.0
-  - -10.0
-  name_ldwv:
-  - A
-  - B
-  - C
+  general:
+    testing: true
+  io:
+    data directory: testdata
+    files prefix: error_covariance_training_bump_hdiag_10
+  drivers:
+    compute covariance: true
+    compute correlation: true
+    multivariate strategy: specific_univariate
+    compute moments: true
+    write diagnostics: true
+  sampling:
+    masks:
+    - type: lat-20060
+    - type: ldwv
+    - type: stddev
+      threshold: 1.005
+      side: lower
+      variable: var1
+    - type: input
+      threshold: 0.5
+      side: upper
+      variable: var1
+    computation grid size: 500
+    diagnostic grid size: 250
+    distance classes: 10
+    distance class width: 800.0e3
+    reduced levels: 7
+    local diagnostic: true
+    averaging length-scale: 4000.0e3
+    contiguous levels threshold: 3
+  local profiles:
+  - longitude: 0.0
+    latitude: 0.0
+    name: A
+  - longitude: -22.0
+    latitude: 55.0
+    name: B
+  - longitude: -127.0
+    latitude: -10.0
+    name: C
 input fields:
 - parameter: sampling_mask_field
   file:
