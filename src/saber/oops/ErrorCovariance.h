@@ -146,10 +146,6 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
                       inputFieldConfs,
                       fsetVec);
 
-      // Get active outer variables
-      oops::Variables activeOuterVars(outerVars);
-      activeOuterVars.intersection(activeVars);
-
       // Create outer block
       saberOuterBlocks_.push_back(SaberOuterBlockFactory::create(
                                   outerGeometryData.back().get(),
