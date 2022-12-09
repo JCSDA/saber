@@ -794,6 +794,33 @@ if (nam%load_nicas_global) then
    write(mpl%info,'(a)') '--- Read global NICAS parameters'
    call mpl%flush
    call nicas%read_global(mpl,nam,geom,bpar)
+
+   if (any(nam%nicas_interp_type)=='si') then
+      if (cmat%allocated) then
+         do ib=1,bpar%nbe
+            if (bpar%nicas_block(ib)) then
+               do icmp=1,nicas%blk(ib)%ncmp
+                  ! Allocation
+                  allocate(nicas%blk(ib)%cmp(icmp)%rhs(geom%nc0a,geom%nl0))
+
+                  ! Initialization
+                  nicas%blk(ib)%cmp(icmp)%rhs = mpl%msv%valr
+
+                  ! Copy C matrix fields from min_lev to max_lev
+                  do il0=1,geom%nl0
+                     if ((nicas%blk(ib)%min_lev<=il0).and.(il0<=nicas%blk(ib)%max_lev)) then
+                        do ic0a=1,geom%nc0a
+                           if (geom%gmask_c0a(ic0a,il0)) nicas%blk(ib)%cmp(icmp)%rhs(ic0a,il0) = cmat%blk(ib)%rhs(ic0a,il0,icmp)
+                        end do
+                     end if
+                  end do
+               end do
+            end if
+         end do
+      else
+         call mpl%abort('${subr}$','rh should be specified in input fields for NICAS global reading with si interpolation')
+      end if
+   end if
 else
    ! Copy and filter C matrix data
    write(mpl%info,'(a)') '-------------------------------------------------------------------'
