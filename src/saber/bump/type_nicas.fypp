@@ -776,7 +776,7 @@ type(bpar_type),intent(in) :: bpar       !< Block parameters
 type(cmat_type),intent(in) :: cmat       !< C matrix data
 
 ! Local variables
-integer :: ib
+integer :: ib,icmp,ic0a,il0
 
 ! Set name
 @:set_name(nicas_run_nicas)
@@ -795,7 +795,7 @@ if (nam%load_nicas_global) then
    call mpl%flush
    call nicas%read_global(mpl,nam,geom,bpar)
 
-   if (any(nam%nicas_interp_type)=='si') then
+   if (any(nam%nicas_interp_type=='si')) then
       if (cmat%allocated) then
          do ib=1,bpar%nbe
             if (bpar%nicas_block(ib)) then
