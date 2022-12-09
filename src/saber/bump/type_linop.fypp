@@ -46,7 +46,7 @@ type linop_type
    real(kind_real),allocatable :: Svec(:,:) !< Coefficients of the vector of linear operators with similar row and col
 
    ! I/O IDs
-   integer :: grpid                        !< group ID
+   integer :: grpid                         !< group ID
    integer :: row_id                        !< row ID
    integer :: col_id                        !< col ID
    integer :: S_id                          !< S ID
