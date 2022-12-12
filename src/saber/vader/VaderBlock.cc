@@ -40,15 +40,16 @@ VaderBlock::VaderBlock(const oops::GeometryData & outerGeometryData,
   oops::Variables neededVars = innerVars_;
   atlas::FieldSet xb_inner = xb;
   oops::Variables varsVaderPopulates = vader_.changeVar(xb_inner, neededVars);
-  ASSERT(varsVaderPopulates == innerVars_);
-  // Pass everything but outer variables to the vader TL/AD execution plan
-  // (xb_outer should still have all inner variables)
+  ASSERT_MSG(varsVaderPopulates == innerVars_, "VADER can not populate all "
+             "inner variables for SABER block.");
+  // Pass only inner variables to the vader TL/AD execution plan
+  // (xb_inner has both outer and inner variables after calling vader::changeVar)
   atlas::FieldSet xb_outer;
-  for (const auto & fieldname : xb_inner.field_names()) {
-     if (!outerVars_.has(fieldname) || innerVars_.has(fieldname)) {
-       xb_outer.add(xb_inner[fieldname]);
-     }
+  for (const std::string & innerVar : innerVars_.variables()) {
+    xb_outer.add(xb_inner[innerVar]);
   }
+  // Set trajectory and create a vader plan for going from inner to outer
+  // variables.
   neededVars = outerVars_;
   varsVaderPopulates = vader_.changeVarTraj(xb_outer, neededVars);
   ASSERT(varsVaderPopulates == outerVars_);
