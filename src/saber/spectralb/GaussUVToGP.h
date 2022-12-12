@@ -31,6 +31,7 @@ class GaussUVToGPParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(GaussUVToGPParameters, SaberBlockParametersBase)
  public:
   oops::OptionalParameter<std::string> modelGridName{"model grid name", this};
+  oops::OptionalParameter<std::string> gaussState{"gauss state", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -67,6 +68,7 @@ class GaussUVToGP : public SaberOuterBlockBase {
   oops::Variables outerVars_;
   std::vector<std::size_t> activeVariableSizes_;
   std::string modelGridName_;
+  std::string gaussStateName_;
 
   /// Gaussian (outer) functionspace
   const atlas::functionspace::StructuredColumns gaussFunctionSpace_;
