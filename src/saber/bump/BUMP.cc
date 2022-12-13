@@ -265,10 +265,12 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
     }
   }
 
-  // Get max number of components
+  // Get max number of components (geometry 1)
+  bool parametersToPass1 = false;
   size_t ncmp1 = 1;
   for (const auto & fset : fsetVec1) {
     if (fset.name() != "universe radius") {
+      parametersToPass1 = true;
       size_t pos = fset.name().find("::");
       if (pos != std::string::npos) {
         size_t component = std::stoi(fset.name().substr(pos+2));
@@ -276,9 +278,32 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
       }
     }
   }
+  if (parametersToPass1) {
+    // Set number of components (geometry 1)
+    this->setNcmp(1, ncmp1);
+
+    // Set parameters (geometry 1)
+    for (const auto & fset : fsetVec1) {
+      if (fset.name() != "universe radius") {
+        int component = 1;
+        std::string name = fset.name();
+        size_t pos = fset.name().find("::");
+        if (pos != std::string::npos) {
+          // Get component (geometry 1)
+          component = std::stoi(fset.name().substr(pos+2));
+          name = fset.name().substr(0, pos);
+        }
+        this->setParameter(name, component, fset);
+      }
+    }
+  }
+
+  // Get max number of components (geometry 2)
+  bool parametersToPass2 = false;
   size_t ncmp2 = 1;
   for (const auto & fset : fsetVec2) {
     if (fset.name() != "universe radius") {
+      parametersToPass2 = true;
       size_t pos = fset.name().find("::");
       if (pos != std::string::npos) {
         size_t component = std::stoi(fset.name().substr(pos+2));
@@ -286,34 +311,23 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
       }
     }
   }
+  if (parametersToPass2) {
+    // Set number of components (geometry 2)
+    this->setNcmp(2, ncmp2);
 
-  // Set parameters
-  this->setNcmp(1, ncmp1);
-  for (const auto & fset : fsetVec1) {
-    if (fset.name() != "universe radius") {
-      int component = 1;
-      std::string name = fset.name();
-      size_t pos = fset.name().find("::");
-      if (pos != std::string::npos) {
-        // Get component
-        component = std::stoi(fset.name().substr(pos+2));
-        name = fset.name().substr(0, pos);
+    // Set parameters (geometry 2)
+    for (const auto & fset : fsetVec2) {
+      if (fset.name() != "universe radius") {
+        int component = 1;
+        std::string name = fset.name();
+        size_t pos = fset.name().find("::");
+        if (pos != std::string::npos) {
+          // Get component (geometry 2)
+          component = std::stoi(fset.name().substr(pos+2));
+          name = fset.name().substr(0, pos);
+        }
+        this->setParameter(name, component, fset);
       }
-      this->setParameter(name, component, fset);
-    }
-  }
-  this->setNcmp(2, ncmp2);
-  for (const auto & fset : fsetVec2) {
-    if (fset.name() != "universe radius") {
-      int component = 1;
-      std::string name = fset.name();
-      size_t pos = fset.name().find("::");
-      if (pos != std::string::npos) {
-        // Get component
-        component = std::stoi(fset.name().substr(pos+2));
-        name = fset.name().substr(0, pos);
-      }
-      this->setParameter(name, component, fset);
     }
   }
 

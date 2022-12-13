@@ -2017,7 +2017,7 @@ integer :: iv,ib
 ! Probe in
 @:probe_in()
 
-write(bump%mpl%info,'(a7,a)') '','Set number of components'
+write(bump%mpl%info,'(a7,a,i1)') '','Set number of components: ',ncmp
 call bump%mpl%flush
 
 ! Check allocation

@@ -219,7 +219,8 @@ contains
 end type nam_type
 
 interface print_section
-   module procedure nam_print_section
+   module procedure nam_print_conf
+   module procedure nam_print_confs
 end interface
 
 interface get
@@ -651,7 +652,7 @@ call get(section,'number of components',1,nam%fit_ncmp)
 ! Local profiles section
 if (conf%has('local profiles')) then
    call conf%get_or_die('local profiles',confs)
-   call print_section(mpl,section,'Local profiles')
+   call print_section(mpl,confs,'Local profiles')
    nam%nldwv = size(confs)
    if (nam%nldwv>0) then
       ! Allocation
@@ -769,7 +770,7 @@ call get(section,'wind inflation',one,nam%wind_inflation)
 ! Dirac section
 if (conf%has('dirac')) then
    call conf%get_or_die('dirac',confs)
-   call print_section(mpl,section,'Dirac')
+   call print_section(mpl,confs,'Dirac')
 
    ! Count valid Dirac points
    nam%ndir = 0
@@ -1205,24 +1206,24 @@ end if
 end subroutine nam_alias
 
 !----------------------------------------------------------------------
-! Subroutine: nam_print_section
-!> Print configuration section
+! Subroutine: nam_print_conf
+!> Print configuration
 !----------------------------------------------------------------------
-subroutine nam_print_section(mpl,section,title)
+subroutine nam_print_conf(mpl,conf,title)
 
 implicit none
 
 ! Passed variable
-type(mpl_type),intent(inout) :: mpl             !< MPI data
-type(fckit_configuration),intent(in) :: section !< Configuration section
-character(len=*),intent(in) :: title            !< Section title
+type(mpl_type),intent(inout) :: mpl          !< MPI data
+type(fckit_configuration),intent(in) :: conf !< Configuration
+character(len=*),intent(in) :: title         !< Title
 
 ! Local variable
 integer :: str_size
 character(len=:),allocatable :: str
 
 ! Set name
-@:set_name(nam_print_section)
+@:set_name(nam_print_conf)
 
 ! Probe in
 @:probe_in()
@@ -1232,7 +1233,7 @@ write(mpl%info,'(a7,a,a)') '',trim(title),':'
 call mpl%flush(.false.)
 
 ! Configuration string
-str = section%json()
+str = conf%json()
 str_size = len(str)
 do while (str_size>1024)
    write(mpl%info,'(a)') str(1:1024)
@@ -1246,22 +1247,68 @@ call mpl%flush
 ! Probe out
 @:probe_out()
 
-end subroutine nam_print_section
+end subroutine nam_print_conf
+
+!----------------------------------------------------------------------
+! Subroutine: nam_print_confs
+!> Print configurations vector
+!----------------------------------------------------------------------
+subroutine nam_print_confs(mpl,confs,title)
+
+implicit none
+
+! Passed variable
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(fckit_configuration),intent(in) :: confs(:) !< Configurations vector
+character(len=*),intent(in) :: title             !< Title
+
+! Local variable
+integer :: iconf,str_size
+character(len=:),allocatable :: str
+
+! Set name
+@:set_name(nam_print_confs)
+
+! Probe in
+@:probe_in()
+
+! Print title
+write(mpl%info,'(a7,a,a)') '',trim(title),':'
+call mpl%flush()
+
+do iconf=1,size(confs)
+   ! Configuration string
+   str = confs(iconf)%json()
+   str_size = len(str)
+   do while (str_size>1024)
+      write(mpl%info,'(a)') str(1:1024)
+      call mpl%flush(.false.)
+      str(1:str_size-1024) = str(1025:str_size)
+      str_size = str_size-1024
+   end do
+   write(mpl%info,'(a10,a)') '',str(1:str_size)
+   call mpl%flush
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine nam_print_confs
 
 #:for dtype in dtypes_irls
 !----------------------------------------------------------------------
 ! Subroutine: nam_get_${dtype}$
 !> Get value
 !----------------------------------------------------------------------
-subroutine nam_get_${dtype}$(section,key,def,val)
+subroutine nam_get_${dtype}$(conf,key,def,val)
 
 implicit none
 
 ! Passed variable
-type(fckit_configuration),intent(in) :: section !< Configuration section
-character(len=*),intent(in) :: key              !< Key
-${ftype[dtype]}$,intent(in) :: def              !< Default value
-${ftype[dtype]}$,intent(out) :: val             !< Value
+type(fckit_configuration),intent(in) :: conf !< Configuration
+character(len=*),intent(in) :: key           !< Key
+${ftype[dtype]}$,intent(in) :: def           !< Default value
+${ftype[dtype]}$,intent(out) :: val          !< Value
 
 ! Local variables
 character(len=:),allocatable :: str
@@ -1272,12 +1319,12 @@ character(len=:),allocatable :: str
 ! Probe in
 @:probe_in()
 
-if (section%has(key)) then
+if (conf%has(key)) then
    #:if dtype == "string"
-      call section%get_or_die(key, str)
+      call conf%get_or_die(key, str)
       val = str
    #:else
-      call section%get_or_die(key, val)
+      call conf%get_or_die(key, val)
    #:endif
 else
    val = def
@@ -1294,13 +1341,13 @@ end subroutine nam_get_${dtype}$
 ! Subroutine: nam_get_value_${dtype}$
 !> Get value for all variables
 !----------------------------------------------------------------------
-subroutine nam_get_value_${dtype}$(nam,section,key,def,val)
+subroutine nam_get_value_${dtype}$(nam,conf,key,def,val)
 
 implicit none
 
 ! Passed variable
 class(nam_type),intent(inout) :: nam                 !< Namelist
-type(fckit_configuration),intent(in) :: section      !< Configuration section
+type(fckit_configuration),intent(in) :: conf         !< Configuration
 character(len=*),intent(in) :: key                   !< Key
 ${ftype[dtype]}$,intent(in) :: def                   !< Default value
 ${ftype[dtype]}$,allocatable,intent(inout) :: val(:) !< Values
@@ -1323,9 +1370,9 @@ allocate(val(0:nam%nv))
 ! Initialization
 val = def
 
-if (section%has(key)) then 
+if (conf%has(key)) then 
    ! Get subconfigurations vector
-   call section%get_or_die(key,confs)
+   call conf%get_or_die(key,confs)
 
    ! Loop over subconfigurations
    do iconf=1,size(confs)
@@ -1351,14 +1398,14 @@ end subroutine nam_get_value_${dtype}$
 ! Subroutine: nam_get_value_or_profile_${dtype}$
 !> Get value or profile for all variables
 !----------------------------------------------------------------------
-subroutine nam_get_value_or_profile_${dtype}$(nam,mpl,section,key,def,val)
+subroutine nam_get_value_or_profile_${dtype}$(nam,mpl,conf,key,def,val)
 
 implicit none
 
 ! Passed variable
 class(nam_type),intent(inout) :: nam                   !< Namelist
 type(mpl_type),intent(inout) :: mpl                    !< MPI data
-type(fckit_configuration),intent(in) :: section        !< Configuration section
+type(fckit_configuration),intent(in) :: conf           !< Configuration
 character(len=*),intent(in) :: key                     !< Key
 ${ftype[dtype]}$,intent(in) :: def                     !< Default value
 ${ftype[dtype]}$,allocatable,intent(inout) :: val(:,:) !< Values
@@ -1383,9 +1430,9 @@ allocate(val(nam%nl0,0:nam%nv))
 ! Initialization
 val = def
 
-if (section%has(key)) then
+if (conf%has(key)) then
    ! Get subconfigurations vector
-   call section%get_or_die(key,confs)
+   call conf%get_or_die(key,confs)
 
    ! Loop over subconfigurations
    do iconf=1,size(confs)
