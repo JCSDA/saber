@@ -13,7 +13,7 @@ use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max,fckit_mpi_
 !$ use omp_lib
 use tools_atlas, only: get_grid
 use tools_const, only: zero,quarter,half,one,four,hundred,pi,req,reqkm,deg2rad,rad2deg
-use tools_func, only: lonlatmod,grid_hash,independent_levels,sphere_bearing,sphere_dist,inside,cx_to_cxa,cx_to_proc,cx_to_cxu, &
+use tools_func, only: lonlatmod,independent_levels,sphere_bearing,sphere_dist,inside,cx_to_cxa,cx_to_proc,cx_to_cxu, &
  & convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count
 use tools_gc99, only: fit_func
 use tools_kinds, only: kind_int,kind_real
@@ -2649,7 +2649,7 @@ type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
 integer :: ic0u,iproc,ic0,ic0b,jc0u,i_s,il0,il0ic1,nc0own,ic0own
-integer :: hash(geom%nl0),c0u_to_c0b(geom%nc0u)
+integer :: c0u_to_c0b(geom%nc0u)
 integer,allocatable :: c0b_to_c0(:),c0own_to_c0(:)
 logical :: lcheck_c0b(geom%nc0u)
 
@@ -2663,13 +2663,11 @@ logical :: lcheck_c0b(geom%nc0u)
 allocate(samp%l0_to_l0ic1(geom%nl0))
 allocate(samp%l0ic1_to_l0(geom%nl0))
 
-! Compute grid hash
-call grid_hash(mpl,samp%nc1a,samp%nc1,geom%nl0,samp%c1a_to_c1,samp%lon_c1a,samp%lat_c1a,samp%smask_c1a,hash)
-
 ! Compute independent levels
 write(mpl%test,'(a10,a)') '','Independent levels: '
 call mpl%flush(adv=.false.)
-call independent_levels(mpl,geom%nl0,hash,samp%nl0ic1,samp%l0_to_l0ic1,samp%l0ic1_to_l0)
+call independent_levels(mpl,samp%nc1a,geom%nl0,samp%lon_c1a,samp%lat_c1a,samp%smask_c1a, &
+ & samp%nl0ic1,samp%l0_to_l0ic1,samp%l0ic1_to_l0)
 
 ! Allocation
 allocate(samp%interp_c0b_to_c1a(samp%nl0ic1))
@@ -2771,7 +2769,7 @@ type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
 integer :: jc3,jc4,ic0,ic0c,ic0u,jc0u,i_s,il0,il0ic3,nc0own,ic0own,iproc
-integer :: hash(geom%nl0),c0u_to_c0c(geom%nc0u)
+integer :: c0u_to_c0c(geom%nc0u)
 integer,allocatable :: c0c_to_c0(:),c0own_to_c0(:)
 logical :: smask(samp%nc1a,geom%nl0),lcheck_c0c(geom%nc0u)
 
@@ -2791,13 +2789,11 @@ do jc4=1,nam%nc4
       ! Initialization
       smask = samp%smask_c3a(:,jc3,jc4,:)
 
-      ! Compute grid hash
-      call grid_hash(mpl,samp%nc1a,samp%nc1,geom%nl0,samp%c1a_to_c1,samp%lon_c3a(:,jc3,jc4),samp%lat_c3a(:,jc3,jc4),smask,hash)
-
       ! Compute independent levels
       write(mpl%test,'(a10,a,i3,a,i3,a)') '','Independent levels for angular sector ',jc4,' / class ',jc3,': '
       call mpl%flush(adv=.false.)
-      call independent_levels(mpl,geom%nl0,hash,samp%nl0ic3(jc3,jc4),samp%l0_to_l0ic3(:,jc3,jc4),samp%l0ic3_to_l0(:,jc3,jc4))
+      call independent_levels(mpl,samp%nc1a,geom%nl0,samp%lon_c3a(:,jc3,jc4),samp%lat_c3a(:,jc3,jc4),smask, &
+ & samp%nl0ic3(jc3,jc4),samp%l0_to_l0ic3(:,jc3,jc4),samp%l0ic3_to_l0(:,jc3,jc4))
    end do
 end do
 

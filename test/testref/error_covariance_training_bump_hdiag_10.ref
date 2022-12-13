@@ -1,15 +1,5 @@
 Norm of input parameter sampling_mask_field: 8.6177684288955561e+01
        Independent levels:  1[10]
-          Level   1:   1550418632
-          Level   2:   1550418632
-          Level   3:   1550418632
-          Level   4:   1550418632
-          Level   5:   1550418632
-          Level   6:   1550418632
-          Level   7:   1550418632
-          Level   8:   1550418632
-          Level   9:   1550418632
-          Level  10:   1550418632
           Model grid size:              840
           Subset Sc0 size:              762
           Number of duplicated points (halo):        78 (  9.29%)

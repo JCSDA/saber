@@ -598,7 +598,6 @@ type(mpl_type),intent(inout) :: mpl    !< MPI data
 
 ! Local variables
 integer :: iproc,imga,ic0a,ic0,diff_grid,il0
-integer :: hash(geom%nl0)
 real(kind_real) :: xyz_ne(3),xyz_nw(3),xyz_se(3),xyz_sw(3),area_nw,area_se,area_total
 real(kind_real) :: norm_c0(geom%nl0),vunit_hor_c0(geom%nl0)
 
@@ -752,21 +751,10 @@ area_total = zss_sum(geom%area_c0a)
 call mpl%f_comm%allreduce(area_total,fckit_mpi_sum())
 geom%global = (area_total>0.99_kind_real*four*pi)
 
-! Grid hash
-call grid_hash(mpl,geom%nc0a,geom%nc0,geom%nl0,geom%c0a_to_c0,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a,hash)
-
 ! Compute independent levels
 write(mpl%test,'(a7,a)') '','Independent levels: '
 call mpl%flush(adv=.false.)
-call independent_levels(mpl,geom%nl0,hash,geom%nl0i,geom%l0_to_l0i,geom%l0i_to_l0)
-
-! Test grid hash
-write(mpl%info,'(a7,a)') '','Geometry grid hash: '
-call mpl%flush
-do il0=1,geom%nl0
-   write(mpl%test,'(a10,a,i3,a,i12)') '','Level ',il0,': ',hash(il0)
-   call mpl%flush
-end do
+call independent_levels(mpl,geom%nc0a,geom%nl0,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a,geom%nl0i,geom%l0_to_l0i,geom%l0i_to_l0)
 
 ! Probe out
 @:probe_out()
