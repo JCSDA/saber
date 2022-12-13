@@ -2666,8 +2666,7 @@ allocate(samp%l0ic1_to_l0(geom%nl0))
 ! Compute independent levels
 write(mpl%test,'(a10,a)') '','Independent levels: '
 call mpl%flush(adv=.false.)
-call independent_levels(mpl,samp%nc1a,geom%nl0,samp%lon_c1a,samp%lat_c1a,samp%smask_c1a, &
- & samp%nl0ic1,samp%l0_to_l0ic1,samp%l0ic1_to_l0)
+call independent_levels(mpl,samp%nc1a,geom%nl0,samp%smask_c1a,samp%nl0ic1,samp%l0_to_l0ic1,samp%l0ic1_to_l0)
 
 ! Allocation
 allocate(samp%interp_c0b_to_c1a(samp%nl0ic1))
@@ -2792,8 +2791,8 @@ do jc4=1,nam%nc4
       ! Compute independent levels
       write(mpl%test,'(a10,a,i3,a,i3,a)') '','Independent levels for angular sector ',jc4,' / class ',jc3,': '
       call mpl%flush(adv=.false.)
-      call independent_levels(mpl,samp%nc1a,geom%nl0,samp%lon_c3a(:,jc3,jc4),samp%lat_c3a(:,jc3,jc4),smask, &
- & samp%nl0ic3(jc3,jc4),samp%l0_to_l0ic3(:,jc3,jc4),samp%l0ic3_to_l0(:,jc3,jc4))
+      call independent_levels(mpl,samp%nc1a,geom%nl0,smask,samp%nl0ic3(jc3,jc4),samp%l0_to_l0ic3(:,jc3,jc4), &
+ & samp%l0ic3_to_l0(:,jc3,jc4))
    end do
 end do
 

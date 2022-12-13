@@ -232,7 +232,7 @@ end subroutine func_lonlatmod
 
 !----------------------------------------------------------------------
 ! Subroutine: func_rad2short
-!> Convert lontitude/latitude in radian into short integer for hash computation 
+!> Convert lontitude/latitude in radian into short integer for hash computation
 !----------------------------------------------------------------------
 subroutine func_rad2short(rad_real,rad_short)
 
@@ -304,7 +304,7 @@ end subroutine func_grid_hash
 ! Subroutine: func_independent_levels
 !> Compute independent levels
 !----------------------------------------------------------------------
-subroutine func_independent_levels(mpl,ncxa,nlx,lon_cxa,lat_cxa,mask_cxa,nlxi,lx_to_lxi,lxi_to_lx)
+subroutine func_independent_levels(mpl,ncxa,nlx,mask_cxa,nlxi,lx_to_lxi,lxi_to_lx)
 
 implicit none
 
@@ -312,16 +312,16 @@ implicit none
 type(mpl_type),intent(inout) :: mpl         !< MPI data
 integer,intent(in) :: ncxa                  !< Number of points (local)
 integer,intent(in) :: nlx                   !< Number of levels
-real(kind_real),intent(in) :: lon_cxa(ncxa) !< Longitude [radians]
-real(kind_real),intent(in) :: lat_cxa(ncxa) !< Latitude [radians]
 logical,intent(in) :: mask_cxa(ncxa,nlx)    !< Mask
 integer,intent(out) :: nlxi                 !< Number of independent levels
 integer,intent(out) :: lx_to_lxi(nlx)       !< Levels to independent levels
 integer,intent(out) :: lxi_to_lx(nlx)       !< Independent levels to levels
 
 ! Local variables
-integer :: ilx,ilxi,jlx,jlxi,n,iproc
+integer :: icxa,ilx,ilxi,jlx,jlxi,i,n,iproc
 integer :: hash(nlx),proc_to_hash(nlx,mpl%nproc),lx_to_lx(nlx)
+integer(kind_short) :: jcxa
+integer(kind_short),allocatable :: array(:)
 logical :: same_grid(mpl%nproc)
 character(len=13) :: cfmt
 
@@ -331,9 +331,31 @@ character(len=13) :: cfmt
 ! Probe in
 @:probe_in()
 
-! Compute local hash for each level
+! Compute local hash for the mask of each level
 do ilx=1,nlx
-   call grid_hash(ncxa,lon_cxa,lat_cxa,mask_cxa(:,ilx),hash(ilx))
+   n = count(.not.mask_cxa(:,ilx))
+   if (n==0) then
+      hash(ilx) = 0
+   else
+      ! Allocation
+      allocate(array(n))
+
+      ! Fill array
+      i = 0
+      do icxa=1,ncxa
+         if (.not.mask_cxa(icxa,ilx)) then
+            i = i+1
+            jcxa = int(mod(icxa,int(huge_short,kind_int)),kind_short)
+            array(i) = jcxa
+         end if
+      end do
+
+      ! Fletcher hash
+      hash(ilx) = fletcher32(array)
+
+      ! Release memory
+      deallocate(array)
+   end if
 end do
 
 ! Communication

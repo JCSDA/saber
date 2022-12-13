@@ -754,7 +754,7 @@ geom%global = (area_total>0.99_kind_real*four*pi)
 ! Compute independent levels
 write(mpl%test,'(a7,a)') '','Independent levels: '
 call mpl%flush(adv=.false.)
-call independent_levels(mpl,geom%nc0a,geom%nl0,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a,geom%nl0i,geom%l0_to_l0i,geom%l0i_to_l0)
+call independent_levels(mpl,geom%nc0a,geom%nl0,geom%gmask_c0a,geom%nl0i,geom%l0_to_l0i,geom%l0i_to_l0)
 
 ! Probe out
 @:probe_out()
