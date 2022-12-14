@@ -24,6 +24,7 @@ bump:
     compute moments: true
     write diagnostics: true
     internal consistency test: true
+    adjoints test: true
   ensemble sizes:
     total ensemble size: 50
   sampling:

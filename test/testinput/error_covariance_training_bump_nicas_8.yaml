@@ -25,6 +25,7 @@ bump:
     compute nicas: true
     write local nicas: true
     internal dirac test: true
+    adjoints test: true
   nicas:
     resolution: 4.0
     explicit length-scales: true

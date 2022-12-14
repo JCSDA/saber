@@ -29,17 +29,26 @@
              ns =                             1524
              v%n_s =                             2
              c%n_s[global] =                  6248
+    Full NICAS adjoint test result:                        T
+       Block NICAS adjoint test result:                    T
+          Interpolation adjoint test (horizontal) result:  T
+          Interpolation adjoint test (vertical) result:    T
+          Interpolation adjoint test (total) result:       T
+          Communication AB adjoint test result:            T
+          Communication AC adjoint test result:            T
+          Convolution / communication adjoint test result: T
+          Component NICAS adjoint test result:             T
              0.0 /    0.0:  1.0000000
           Level   1:  0.0000000 -  1.0000000
           Level   2:  0.0000000 -  0.6000000
-          MSE (exp. / th. / ratio):  0.38120265E+03 /  0.38137744E+03 / 1.000
-          MSE (exp. / th. / ratio):  0.15326766E+03 /  0.15255098E+03 / 1.005
-          MSE (exp. / th. / ratio):  0.10025539E+03 /  0.10170065E+03 / 0.986
-          MSE (exp. / th. / ratio):  0.72293053E+02 /  0.72643322E+02 / 0.995
-          MSE (exp. / th. / ratio):  0.57990277E+02 /  0.58673452E+02 / 0.988
-          MSE (exp. / th. / ratio):  0.47851113E+02 /  0.47672180E+02 / 1.004
-          MSE (exp. / th. / ratio):  0.41306503E+02 /  0.41229994E+02 / 1.002
-          MSE (exp. / th. / ratio):  0.35551493E+02 /  0.35476971E+02 / 1.002
-          MSE (exp. / th. / ratio):  0.31066588E+02 /  0.31132852E+02 / 0.998
+          MSE (exp. / th. / ratio):  0.38066551E+03 /  0.38137744E+03 / 0.998
+          MSE (exp. / th. / ratio):  0.15233161E+03 /  0.15255098E+03 / 0.999
+          MSE (exp. / th. / ratio):  0.10242482E+03 /  0.10170065E+03 / 1.007
+          MSE (exp. / th. / ratio):  0.72456671E+02 /  0.72643322E+02 / 0.997
+          MSE (exp. / th. / ratio):  0.58115069E+02 /  0.58673452E+02 / 0.990
+          MSE (exp. / th. / ratio):  0.47916672E+02 /  0.47672180E+02 / 1.005
+          MSE (exp. / th. / ratio):  0.41330879E+02 /  0.41229994E+02 / 1.002
+          MSE (exp. / th. / ratio):  0.35155859E+02 /  0.35476971E+02 / 0.991
+          MSE (exp. / th. / ratio):  0.30682191E+02 /  0.31132852E+02 / 0.986
 Norm of BUMP output parameter cor_rh - 1: 3.9038442591886267e+07
 Norm of BUMP output parameter cor_rv - 1: 1.1711532777565881e+02

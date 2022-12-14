@@ -920,6 +920,7 @@ if (nam%check_adjoints) then
          end do
       end if
    end do
+   if (nam%default_seed) call rng%reseed(mpl)
 end if
 
 if (nam%check_normalization>0) then
@@ -947,6 +948,7 @@ if (nam%check_normalization>0) then
          call nicas%blk(ib)%test_normalization(mpl,rng,nam,geom)
       end if
    end do
+   if (nam%default_seed) call rng%reseed(mpl)
 end if
 
 if (nam%check_dirac) then
@@ -976,6 +978,7 @@ if (nam%check_randomization) then
    write(mpl%info,'(a)') '--- Test NICAS randomization'
    call mpl%flush
    call nicas%test_randomization(mpl,rng,nam,geom,bpar)
+   if (nam%default_seed) call rng%reseed(mpl)
 end if
 
 ! Probe out
@@ -1645,7 +1648,6 @@ allocate(fld_save(geom%nc0a,geom%nl0,nam%nv,ntest))
 write(mpl%info,'(a4,a)') '','Define test vectors'
 call mpl%flush
 call geom%define_test_vectors(mpl,rng,nam,ntest,fld_save)
-if (nam%default_seed) call rng%reseed(mpl)
 
 ! Apply NICAS to test vectors
 write(mpl%info,'(a4,a)') '','Apply NICAS to test vectors: '

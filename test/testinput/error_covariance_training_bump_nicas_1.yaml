@@ -21,6 +21,7 @@ bump:
     multivariate strategy: specific_multivariate
     compute nicas: true
     internal dirac test: true
+    adjoints test: true
     randomization test: true
   ensemble sizes:
     total ensemble size: 50

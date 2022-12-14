@@ -23,6 +23,7 @@ bump:
     multivariate strategy: specific_univariate
     read global nicas: true
     write local nicas: true
+    adjoints test: true
 input fields:
 - parameter: nicas_a
   component: 1

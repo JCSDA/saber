@@ -22,6 +22,7 @@ bump:
     multivariate strategy: common_weighted
     compute nicas: true
     internal dirac test: true
+    adjoints test: true
   nicas:
     resolution: 4.0
     common localization weights:
