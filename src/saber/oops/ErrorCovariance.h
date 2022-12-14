@@ -170,8 +170,11 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
       if (adjointTest) {
         saberOuterBlocks_.back().adjointTest(geom.getComm(),
                                              outerGeometryData.back().get(),
-                                             geom.variableSizes(activeVars),
-                                             activeVars);
+                                             geom.variableSizes(outerVars),
+                                             outerVars,
+                                             innerGeometryData,
+                                             geom.variableSizes(innerVars),
+                                             innerVars);
       }
 
       // Update outer geometry and variables for the next block

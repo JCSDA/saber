@@ -83,26 +83,26 @@ SaberOuterBlockFactory::createParameters(const std::string &name) {
 
 void SaberOuterBlockBase::adjointTest(const eckit::mpi::Comm & comm,
                                       const oops::GeometryData & outerGeometryData,
-                                      const std::vector<size_t> & activeVariableSizes,
-                                      const oops::Variables & activeVars,
+                                      const std::vector<size_t> & outerVariableSizes,
+                                      const oops::Variables & outerVars,
+                                      const oops::GeometryData & innerGeometryData,
+                                      const std::vector<size_t> & innerVariableSizes,
+                                      const oops::Variables & innerVars,
                                       const double & adjointTolerance) const {
   oops::Log::trace() << "SaberOuterBlockBase::adjointTest starting" << std::endl;
 
-  // Inner geometry data
-  const oops::GeometryData & innerGeometryData = this->innerGeometryData();
-
   // Create random inner FieldSet
   atlas::FieldSet innerFset = util::createRandomFieldSet(innerGeometryData,
-                                                         activeVariableSizes,
-                                                         activeVars);
+                                                         innerVariableSizes,
+                                                         innerVars);
 
   // Copy inner FieldSet
   atlas::FieldSet innerFsetSave = util::copyFieldSet(innerFset);
 
   // Create random outer FieldSet
   atlas::FieldSet outerFset = util::createRandomFieldSet(outerGeometryData,
-                                                         activeVariableSizes,
-                                                         activeVars);
+                                                         outerVariableSizes,
+                                                         outerVars);
 
   // Copy outer FieldSet
   atlas::FieldSet outerFsetSave = util::copyFieldSet(outerFset);
@@ -112,8 +112,8 @@ void SaberOuterBlockBase::adjointTest(const eckit::mpi::Comm & comm,
   this->multiplyAD(outerFset);
 
   // Compute adjoint test
-  const double dp1 = util::dotProductFieldSets(innerFset, outerFsetSave, activeVars, comm);
-  const double dp2 = util::dotProductFieldSets(outerFset, innerFsetSave, activeVars, comm);
+  const double dp1 = util::dotProductFieldSets(innerFset, outerFsetSave, outerVars, comm);
+  const double dp2 = util::dotProductFieldSets(outerFset, innerFsetSave, innerVars, comm);
   oops::Log::info() << "Info     : Adjoint test: y^t (Ax) = " << dp1
                     << ": x^t (A^t y) = " << dp2 << std::endl;
   oops::Log::test() << "Adjoint test";

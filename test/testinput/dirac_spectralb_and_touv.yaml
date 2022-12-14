@@ -36,14 +36,10 @@ background error:
     active variables:
     - unbalanced_pressure
     - moisture_control_variable
-  - saber block name: spectral to gauss winds
-    active variables:
     - streamfunction
     - velocity_potential
     - eastward_wind
     - northward_wind
-    gauss grid uid: F15
-    use streamfunction and velocity potential: true
 dirac:
   lon:
   - 0.0
