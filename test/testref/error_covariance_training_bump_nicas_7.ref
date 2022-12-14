@@ -1,14 +1,4 @@
        Independent levels:  1[10]
-          Level   1:   1550418632
-          Level   2:   1550418632
-          Level   3:   1550418632
-          Level   4:   1550418632
-          Level   5:   1550418632
-          Level   6:   1550418632
-          Level   7:   1550418632
-          Level   8:   1550418632
-          Level   9:   1550418632
-          Level  10:   1550418632
           Model grid size:              840
           Subset Sc0 size:              762
           Number of duplicated points (halo):        78 (  9.29%)
@@ -135,12 +125,12 @@
           Independent levels:  1[10]
           Independent levels for angular sector   1 / class   1:  1[10]
           Independent levels for angular sector   1 / class   2:  1[10]
-          Independent levels for angular sector   1 / class   3:  1[1]  2[9]
+          Independent levels for angular sector   1 / class   3:  1[10]
           Independent levels for angular sector   1 / class   4:  1[10]
           Independent levels for angular sector   1 / class   5:  1[10]
           Independent levels for angular sector   1 / class   6:  1[10]
           Independent levels for angular sector   1 / class   7:  1[10]
-          Independent levels for angular sector   1 / class   8:  1[1]  2[9]
+          Independent levels for angular sector   1 / class   8:  1[10]
           Independent levels for angular sector   1 / class   9:  1[10]
           Independent levels for angular sector   1 / class  10:  1[10]
                 Level:   1 ~> cov. at class zero:  0.10E+01

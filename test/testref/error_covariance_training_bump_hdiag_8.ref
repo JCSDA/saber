@@ -1,6 +1,4 @@
        Independent levels:  1[2]
-          Level   1:   1550418632
-          Level   2:   1550418632
           Model grid size:              840
           Subset Sc0 size:              762
           Number of duplicated points (halo):        78 (  9.29%)
@@ -30,8 +28,6 @@
              v%n_s =                             2
              c%n_s[global] =                  5256
        Independent levels:  1[2]
-          Level   1:   -449870826
-          Level   2:   -449870826
           Model grid size:             1200
           Subset Sc0 size:             1106
           Number of duplicated points (halo):        94 (  7.83%)
@@ -43,8 +39,6 @@
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
        Independent levels:  1[2]
-          Level   1:   1550418632
-          Level   2:   1550418632
           Model grid size:              840
           Subset Sc0 size:              762
           Number of duplicated points (halo):        78 (  9.29%)
@@ -99,37 +93,37 @@
           nc1 =      500
           Independent levels:  1[2]
           Independent levels for angular sector   1 / class   1:  1[2]
-          Independent levels for angular sector   1 / class   2:  1[1]  2[1]
+          Independent levels for angular sector   1 / class   2:  1[2]
           Independent levels for angular sector   1 / class   3:  1[2]
           Independent levels for angular sector   1 / class   4:  1[2]
-          Independent levels for angular sector   1 / class   5:  1[1]  2[1]
+          Independent levels for angular sector   1 / class   5:  1[2]
           Independent levels for angular sector   1 / class   6:  1[2]
-          Independent levels for angular sector   1 / class   7:  1[1]  2[1]
+          Independent levels for angular sector   1 / class   7:  1[2]
           Independent levels for angular sector   1 / class   8:  1[2]
           Independent levels for angular sector   1 / class   9:  1[2]
-          Independent levels for angular sector   1 / class  10:  1[1]  2[1]
+          Independent levels for angular sector   1 / class  10:  1[2]
           Independent levels for angular sector   1 / class  11:  1[2]
-          Independent levels for angular sector   1 / class  12:  1[1]  2[1]
+          Independent levels for angular sector   1 / class  12:  1[2]
           Independent levels for angular sector   1 / class  13:  1[2]
           Independent levels for angular sector   1 / class  14:  1[2]
-          Independent levels for angular sector   1 / class  15:  1[1]  2[1]
+          Independent levels for angular sector   1 / class  15:  1[2]
           nc1 =      500
           Independent levels:  1[2]
           Independent levels for angular sector   1 / class   1:  1[2]
-          Independent levels for angular sector   1 / class   2:  1[1]  2[1]
+          Independent levels for angular sector   1 / class   2:  1[2]
           Independent levels for angular sector   1 / class   3:  1[2]
           Independent levels for angular sector   1 / class   4:  1[2]
-          Independent levels for angular sector   1 / class   5:  1[1]  2[1]
+          Independent levels for angular sector   1 / class   5:  1[2]
           Independent levels for angular sector   1 / class   6:  1[2]
-          Independent levels for angular sector   1 / class   7:  1[1]  2[1]
+          Independent levels for angular sector   1 / class   7:  1[2]
           Independent levels for angular sector   1 / class   8:  1[2]
           Independent levels for angular sector   1 / class   9:  1[2]
-          Independent levels for angular sector   1 / class  10:  1[1]  2[1]
+          Independent levels for angular sector   1 / class  10:  1[2]
           Independent levels for angular sector   1 / class  11:  1[2]
-          Independent levels for angular sector   1 / class  12:  1[1]  2[1]
+          Independent levels for angular sector   1 / class  12:  1[2]
           Independent levels for angular sector   1 / class  13:  1[2]
           Independent levels for angular sector   1 / class  14:  1[2]
-          Independent levels for angular sector   1 / class  15:  1[1]  2[1]
+          Independent levels for angular sector   1 / class  15:  1[2]
                 Level:   1 ~> cov. at class zero:  0.96E+00
                 Level:   2 ~> cov. at class zero:  0.91E+00
                 Level:   1 ~> cov. at class zero:  0.10E+01
