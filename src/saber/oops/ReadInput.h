@@ -101,7 +101,7 @@ void readEnsemble(
 #endif
 
   // Ensemble pointer
-  std::unique_ptr<oops::IncrementEnsemble<MODEL>> ensemble_;
+  std::unique_ptr<oops::IncrementEnsemble<MODEL>> ensemble;
 
   // Ensemble of states, perturbation using the mean
   eckit::LocalConfiguration ensembleConf = params.ensemble.value()
@@ -113,7 +113,7 @@ void readEnsemble(
     util::seekAndReplace(ensembleConf, "_OMP_", omp);
     oops::IncrementEnsembleFromStatesParameters<MODEL> ensembleParams;
     ensembleParams.validateAndDeserialize(ensembleConf);
-    ensemble_.reset(new oops::IncrementEnsemble<MODEL>(ensembleParams, xb, fg, geom, vars));
+    ensemble.reset(new oops::IncrementEnsemble<MODEL>(ensembleParams, xb, fg, geom, vars));
   }
 
   // Increment ensemble from increments on disk
@@ -125,7 +125,7 @@ void readEnsemble(
     oops::IncrementEnsembleParameters<MODEL> ensemblePertParams;
     ensemblePertParams.validateAndDeserialize(ensemblePertConf);
     oops::Log::info() << "Info     : Increment ensemble from increments on disk" << std::endl;
-    ensemble_.reset(new oops::IncrementEnsemble<MODEL>(geom, vars, ensemblePertParams));
+    ensemble.reset(new oops::IncrementEnsemble<MODEL>(geom, vars, ensemblePertParams));
   }
 
   // Increment ensemble from difference of two states
@@ -144,19 +144,19 @@ void readEnsemble(
     util::seekAndReplace(ensemblePairsConf, "_OMP_", omp);
     oops::StateEnsembleParameters<MODEL> ensemblePairsParams;
     ensemblePairsParams.validateAndDeserialize(ensemblePairsConf);
-    ensemble_.reset(new oops::IncrementEnsemble<MODEL>(geom, vars, ensembleBaseParams,
+    ensemble.reset(new oops::IncrementEnsemble<MODEL>(geom, vars, ensembleBaseParams,
       ensemblePairsParams));
   }
 
-  if (ensemble_) {
-    for (unsigned int ie = 0; ie < ensemble_->size(); ++ie) {
+  if (ensemble) {
+    for (unsigned int ie = 0; ie < ensemble->size(); ++ie) {
        // Potentially apply some transforms on ensemble members
        // TODO(Benjamin)
 
        // Transform Increment into FieldSet
        atlas::FieldSet fset;
        fset.name() = "ensemble member";
-       for (const auto field : (*ensemble_)[ie].fieldSet()) {
+       for (const auto field : (*ensemble)[ie].fieldSet()) {
          fset.add(field);
        }
       fsetVec.push_back(fset);

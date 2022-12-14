@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2021 UCAR
+ * (C) Copyright 2022 UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -53,7 +53,7 @@ class Ensemble : public SaberCentralBlockBase {
   void multiply(atlas::FieldSet &) const override;
 
  private:
-  std::vector<atlas::FieldSet> ensemble;
+  std::vector<atlas::FieldSet> ensemble_;
   std::unique_ptr<SaberCentralBlockBase> loc_;
   void print(std::ostream &) const override;
 };

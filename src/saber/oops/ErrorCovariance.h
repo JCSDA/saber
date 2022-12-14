@@ -42,7 +42,7 @@ class ErrorCovarianceParameters : public oops::ModelSpaceCovarianceParametersBas
   OOPS_CONCRETE_PARAMETERS(ErrorCovarianceParameters,
                            oops::ModelSpaceCovarianceParametersBase<MODEL>)
  public:
-  oops::OptionalParameter<bool> adjointTest{"adjoint test", this};
+  oops::Parameter<bool> adjointTest{"adjoint test", false, this};
   oops::RequiredParameter<SaberCentralBlockParametersWrapper>
     saberCentralBlock{"saber central block", this};
   oops::OptionalParameter<std::vector<SaberOuterBlockParametersWrapper>>
@@ -104,7 +104,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
   oops::Log::trace() << "ErrorCovariance::ErrorCovariance starting" << std::endl;
 
   // Adjoint test
-  const bool adjointTest = params.adjointTest.value().get_value_or(false);
+  const bool adjointTest = params.adjointTest.value();
 
   // Local copy of background and first guess
   State_ xbLocal(xb);

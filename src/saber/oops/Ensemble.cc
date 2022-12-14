@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2021 UCAR
+ * (C) Copyright 2022 UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -33,7 +33,7 @@ Ensemble::Ensemble(const oops::GeometryData & geometryData,
 
   // Initialize ensemble
   for (const auto fset : fsetVec) {
-    ensemble.push_back(fset);
+    ensemble_.push_back(fset);
   }
 
   // Initialize localization
@@ -59,7 +59,7 @@ void Ensemble::randomize(atlas::FieldSet & fset) const {
   util::zeroFieldSet(fset);
 
   // Loop over ensemble members
-  for (unsigned int ie = 0; ie < ensemble.size(); ++ie) {
+  for (unsigned int ie = 0; ie < ensemble_.size(); ++ie) {
     // Temporary copy for this ensemble member
     atlas::FieldSet fsetMem = util::copyFieldSet(fset);
 
@@ -67,14 +67,14 @@ void Ensemble::randomize(atlas::FieldSet & fset) const {
     loc_->randomize(fsetMem);
 
     // Schur product
-    util::multiplyFieldSets(fsetMem, ensemble[ie]);
+    util::multiplyFieldSets(fsetMem, ensemble_[ie]);
 
     // Add up member contribution
     util::addFieldSets(fset, fsetMem);
   }
 
   // Normalize result
-  const double rk = 1.0/sqrt(static_cast<double>(ensemble.size()-1));
+  const double rk = 1.0/sqrt(static_cast<double>(ensemble_.size()-1));
   util::multiplyFieldSet(fset, rk);
 
   oops::Log::trace() << classname() << "::randomize done" << std::endl;
@@ -90,25 +90,25 @@ void Ensemble::multiply(atlas::FieldSet & fset) const {
   util::zeroFieldSet(fset);
 
   // Loop over ensemble members
-  for (unsigned int ie = 0; ie < ensemble.size(); ++ie) {
+  for (unsigned int ie = 0; ie < ensemble_.size(); ++ie) {
     // Temporary copy for this ensemble member
     atlas::FieldSet fsetMem = util::copyFieldSet(fsetInit);
 
     // First schur product
-    util::multiplyFieldSets(fsetMem, ensemble[ie]);
+    util::multiplyFieldSets(fsetMem, ensemble_[ie]);
 
     // Apply localization
     loc_->multiply(fsetMem);
 
     // Second schur product
-    util::multiplyFieldSets(fsetMem, ensemble[ie]);
+    util::multiplyFieldSets(fsetMem, ensemble_[ie]);
 
     // Add up member contribution
     util::addFieldSets(fset, fsetMem);
   }
 
   // Normalize result
-  const double rk = 1.0/static_cast<double>(ensemble.size()-1);
+  const double rk = 1.0/static_cast<double>(ensemble_.size()-1);
   util::multiplyFieldSet(fset, rk);
 
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
