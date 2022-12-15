@@ -31,7 +31,7 @@ class SpectralToGaussParameters : public SaberBlockParametersBase {
 
  public:
   oops::OptionalParameter<oops::Variables> activeVariables{"active variables", this};
-  // No parameters for now (in the future may add N as a parameter if it is possible
+  // In the future may add N as a parameter if it is possible
   // to use the one different from the one inferred from the gaussian grid
 };
 
@@ -61,10 +61,19 @@ class SpectralToGauss : public SaberOuterBlockBase {
 
  private:
   void print(std::ostream &) const override;
+  void multiplyVectorFields(atlas::FieldSet &, atlas::FieldSet &) const;
+  void multiplyVectorFieldsAD(atlas::FieldSet &, atlas::FieldSet &) const;
+  void multiplyScalarFields(const atlas::FieldSet &, atlas::FieldSet &) const;
+  void multiplyScalarFieldsAD(const atlas::FieldSet &, atlas::FieldSet &) const;
 
+  Parameters_ params_;
   oops::Variables innerVars_;
+  oops::Variables outerVars_;
   oops::Variables activeVars_;
+  std::vector<std::size_t> activeVariableSizes_;
 
+  /// Whether to convert to and from u/v.
+  const bool useWindTransform;
   /// Gaussian (outer) functionspace
   const atlas::functionspace::StructuredColumns gaussFunctionSpace_;
   /// Spectral (inner) functionspace
