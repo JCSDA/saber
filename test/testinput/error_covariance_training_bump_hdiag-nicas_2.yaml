@@ -38,6 +38,8 @@ bump:
   ne: 25
   resol: 4.0
   ndir: 1
+  nicas_interp_type:
+    common: si
   londir:
   - 0.0
   latdir:
