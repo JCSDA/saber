@@ -61,33 +61,41 @@ atlas::Field allocateRHSVec(const atlas::FunctionSpace & gaussFS,
 }
 
 void populateRHSVec(const atlas::Field & rhoState,
+                    const atlas::Field & coriolis,
                     const atlas::FieldSet & fset,
                     atlas::Field & rhsvec) {
   auto uView = atlas::array::make_view<const double, 2>(fset["eastward_wind"]);
   auto vView = atlas::array::make_view<const double, 2>(fset["northward_wind"]);
   auto rhoStateView = atlas::array::make_view<const double, 2>(rhoState);
+  auto coriolisView = atlas::array::make_view<const double, 2>(coriolis);
   auto rhsvecView = atlas::array::make_view<double, 3>(rhsvec);
 
   for (atlas::idx_t jn = 0; jn < rhsvecView.shape()[0]; ++jn) {
     for (atlas::idx_t jl = 0; jl < rhsvecView.shape()[1]; ++jl) {
-      rhsvecView(jn, jl, atlas::LON) = - rhoStateView(jn, jl) * vView(jn, jl);
-      rhsvecView(jn, jl, atlas::LAT) = rhoStateView(jn, jl) * uView(jn, jl);
+      rhsvecView(jn, jl, atlas::LON) =
+        - coriolisView(jn, 0) * rhoStateView(jn, jl) * vView(jn, jl);
+      rhsvecView(jn, jl, atlas::LAT) =
+        coriolisView(jn, 0) * rhoStateView(jn, jl) * uView(jn, jl);
     }
   }
 }
 
 void populateRHSVecAdj(const atlas::Field & rhoState,
+                       const atlas::Field & coriolis,
                        atlas::FieldSet & fset,
                        atlas::Field & rhsvec) {
   auto uView = atlas::array::make_view<double, 2>(fset["eastward_wind"]);
   auto vView = atlas::array::make_view<double, 2>(fset["northward_wind"]);
   auto rhoStateView = atlas::array::make_view<const double, 2>(rhoState);
+  auto coriolisView = atlas::array::make_view<const double, 2>(coriolis);
   auto rhsvecView = atlas::array::make_view<double, 3>(rhsvec);
 
   for (atlas::idx_t jn = 0; jn < rhsvecView.shape()[0]; ++jn) {
     for (atlas::idx_t jl = 0; jl < rhsvecView.shape()[1]; ++jl) {
-      vView(jn, jl) += - rhoStateView(jn, jl) * rhsvecView(jn, jl, atlas::LON);
-      uView(jn, jl) += rhoStateView(jn, jl) * rhsvecView(jn, jl, atlas::LAT);
+      vView(jn, jl) += - coriolisView(jn, 0) * rhoStateView(jn, jl)
+                       * rhsvecView(jn, jl, atlas::LON);
+      uView(jn, jl) += coriolisView(jn, 0) * rhoStateView(jn, jl)
+                       * rhsvecView(jn, jl, atlas::LAT);
     }
   }
   rhsvecView.assign(0.0);
@@ -152,6 +160,7 @@ void populateFields(const atlas::FieldSet & geomfields,
 
   std::string s("dry_air_density_levels_minus_one");
   outputfields.add(tempfields[s]);
+
 }
 
 void interpolateCSToGauss(const std::string & modelGridName,
@@ -286,6 +295,9 @@ atlas::FieldSet createAugmentedState(const std::string & modelGridName,
       }
       // Close file
       if ((retval = nc_close(ncid))) ERR(retval);
+      oops::Log::info() << "Info     : file closed: " << ncfilepath << std::endl;
+
+
     }
 
     // redistribute field across PEs.
@@ -297,8 +309,30 @@ atlas::FieldSet createAugmentedState(const std::string & modelGridName,
     gfields.add(fieldLoc);
     fs.scatter(globalData, gfields);
 
+    // create coriolis parameter.
+    // need to get the latitude at each grid point from the mesh.
+    static constexpr double twoOmega = 2.0 * 7.292116E-5;
+    atlas::Field coriolis = gfields[s].functionspace().createField<double>(
+      atlas::option::name("coriolis") | atlas::option::levels(1));
+
+    auto coriolisView = atlas::array::make_view<double, 2>(coriolis);
+    auto sc = atlas::functionspace::StructuredColumns(gfields[s].functionspace());
+    atlas::idx_t jn(0);
+    std::cout << "sc j_i "  << atlas::mpi::rank() << " " << sc.j_begin() << " " << sc.j_end() << " "
+              << sc.i_begin( sc.j_begin()) << " " << sc.i_end( sc.j_begin()) << std::endl;
+    for (atlas::idx_t j = sc.j_begin(); j < sc.j_end(); ++j){
+      for (atlas::idx_t i = sc.i_begin(j); i < sc.i_end(j); ++i){
+        jn = sc.index(i, j);
+        coriolisView(jn, 0) = twoOmega * sin(sc.grid().lonlat(i, j).lat());
+      }
+    }
+    coriolis.haloExchange();
+    gfields.add(coriolis);
+
     // halo exchange
     gfields.haloExchange();
+
+    std::cout << "gfields " << gfields.field_names() << std::endl;
 
     return gfields;
   }
@@ -454,7 +488,8 @@ void GaussUVToGP::multiply(atlas::FieldSet & fset) const {
 
   atlas::Field rhsvec = allocateRHSVec(gaussFunctionSpace_, gp.levels());
 
-  populateRHSVec(augmentedState_["dry_air_density_levels_minus_one"], fset, rhsvec);
+  populateRHSVec(augmentedState_["dry_air_density_levels_minus_one"],
+                 augmentedState_["coriolis"], fset, rhsvec);
 
   atlas::FieldSet specfset = allocateSpectralVortDiv(specFunctionSpace_, rhsvec.levels());
   // calculate dir vorticity and divergence spectrally
@@ -521,7 +556,9 @@ void GaussUVToGP::multiplyAD(atlas::FieldSet & fset) const {
 
   trans_->dirtrans_wind2vordiv_adj(specfset["vorticity"], specfset["divergence"], rhsvec);
 
-  populateRHSVecAdj(augmentedState_["dry_air_density_levels_minus_one"], fset, rhsvec);
+  populateRHSVecAdj(augmentedState_["dry_air_density_levels_minus_one"],
+                    augmentedState_["coriolis"],
+                    fset, rhsvec);
 
   newFields.add(fset["eastward_wind"]);
   newFields.add(fset["northward_wind"]);
