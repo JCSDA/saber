@@ -160,7 +160,6 @@ void populateFields(const atlas::FieldSet & geomfields,
 
   std::string s("dry_air_density_levels_minus_one");
   outputfields.add(tempfields[s]);
-
 }
 
 void interpolateCSToGauss(const std::string & modelGridName,
@@ -216,6 +215,26 @@ void interpolateCSToGauss(const std::string & modelGridName,
   gfields.add(gaussField);
 }
 
+atlas::Field createCoriolis(const atlas::Field & scstate) {
+  // create coriolis parameter.
+  // need to get the latitude at each grid point from the mesh.
+  static constexpr double twoOmega = 2.0 * 7.292116E-5;
+  atlas::Field coriolis = scstate.functionspace().createField<double>(
+    atlas::option::name("coriolis") | atlas::option::levels(1));
+
+  auto coriolisView = atlas::array::make_view<double, 2>(coriolis);
+  auto sc = atlas::functionspace::StructuredColumns(scstate.functionspace());
+  atlas::idx_t jn(0);
+  for (atlas::idx_t j = sc.j_begin(); j < sc.j_end(); ++j) {
+    for (atlas::idx_t i = sc.i_begin(j); i < sc.i_end(j); ++i) {
+      jn = sc.index(i, j);
+      coriolisView(jn, 0) = twoOmega * sin(sc.grid().lonlat(i, j).lat());
+    }
+  }
+  coriolis.haloExchange();
+
+  return coriolis;
+}
 
 atlas::FieldSet createAugmentedState(const std::string & modelGridName,
                                      const std::string & gaussStateName,
@@ -243,6 +262,7 @@ atlas::FieldSet createAugmentedState(const std::string & modelGridName,
     } else {
       gfields.add(xb[s]);
     }
+    gfields.add(createCoriolis(xb[s]));
     return gfields;
   }
 
@@ -285,7 +305,7 @@ atlas::FieldSet createAugmentedState(const std::string & modelGridName,
       // Copy data
 
       auto varView = atlas::array::make_view<double, 2>(globalData[s]);
-      for (size_t k = 0; k < xb[s].levels(); ++k) {
+      for (atlas::idx_t k = 0; k < xb[s].levels(); ++k) {
         for (atlas::idx_t j = 0; j < ny; ++j) {
           for (atlas::idx_t i = 0; i < grid.nx(ny-1-j); ++i) {
             atlas::gidx_t gidx = grid.index(i, ny-1-j);
@@ -296,8 +316,6 @@ atlas::FieldSet createAugmentedState(const std::string & modelGridName,
       // Close file
       if ((retval = nc_close(ncid))) ERR(retval);
       oops::Log::info() << "Info     : file closed: " << ncfilepath << std::endl;
-
-
     }
 
     // redistribute field across PEs.
@@ -309,30 +327,11 @@ atlas::FieldSet createAugmentedState(const std::string & modelGridName,
     gfields.add(fieldLoc);
     fs.scatter(globalData, gfields);
 
-    // create coriolis parameter.
-    // need to get the latitude at each grid point from the mesh.
-    static constexpr double twoOmega = 2.0 * 7.292116E-5;
-    atlas::Field coriolis = gfields[s].functionspace().createField<double>(
-      atlas::option::name("coriolis") | atlas::option::levels(1));
-
-    auto coriolisView = atlas::array::make_view<double, 2>(coriolis);
-    auto sc = atlas::functionspace::StructuredColumns(gfields[s].functionspace());
-    atlas::idx_t jn(0);
-    std::cout << "sc j_i "  << atlas::mpi::rank() << " " << sc.j_begin() << " " << sc.j_end() << " "
-              << sc.i_begin( sc.j_begin()) << " " << sc.i_end( sc.j_begin()) << std::endl;
-    for (atlas::idx_t j = sc.j_begin(); j < sc.j_end(); ++j){
-      for (atlas::idx_t i = sc.i_begin(j); i < sc.i_end(j); ++i){
-        jn = sc.index(i, j);
-        coriolisView(jn, 0) = twoOmega * sin(sc.grid().lonlat(i, j).lat());
-      }
-    }
-    coriolis.haloExchange();
-    gfields.add(coriolis);
+    // create Coriolis
+    gfields.add(createCoriolis(gfields[s]));
 
     // halo exchange
     gfields.haloExchange();
-
-    std::cout << "gfields " << gfields.field_names() << std::endl;
 
     return gfields;
   }
