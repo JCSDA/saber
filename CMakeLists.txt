@@ -9,7 +9,7 @@
 
 cmake_minimum_required( VERSION 3.12 )
 
-project( saber VERSION 1.4.0 LANGUAGES CXX Fortran )
+project( saber VERSION 1.5.0 LANGUAGES CXX Fortran )
 
 option(OPENMP "Build saber with OpenMP support" ON)
 
@@ -64,13 +64,8 @@ else()
     message( STATUS "SABER block SPECTRALB is NOT enabled" )
 endif()
 if( vader_FOUND )
-    if ( ENABLE_VADER_MO )
-      message( STATUS "SABER blocks VADER are enabled (with MO-specific blocks)" )
-    else()
-      message( STATUS "SABER blocks VADER are enabled (without MO-specific blocks)" )
-    endif()
+    message( STATUS "SABER blocks VADER are enabled" )
 else()
-    set( ENABLE_VADER_MO OFF )
     message( STATUS "SABER blocks VADER are NOT enabled" )
 endif()
 

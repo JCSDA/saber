@@ -1,0 +1,19 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 10
+  levels: 2
+  halo: 1
+variables: &vars [virtual_temperature, specific_humidity]
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables: *vars
+saber central block:
+  saber block name: ID
+saber outer blocks:
+- saber block name: vader variable change
+  inner variables: [air_temperature, specific_humidity]
+test:
+  reference filename: testref/saber_block_test_vader.ref
+  test output filename: saber_block_test_vader.out

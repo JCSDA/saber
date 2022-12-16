@@ -8,7 +8,7 @@
 #)
 
 # MO-specific VADER blocks
-if ( oops_FOUND AND ENABLE_VADER_MO )
+if ( oops_FOUND AND vader_FOUND )
     list(APPEND vader_src_files_list
     AirTemperature.cc
     AirTemperature.h
@@ -26,6 +26,14 @@ if ( oops_FOUND AND ENABLE_VADER_MO )
     MoistureControl.h
     movader_covstats_interface.F90
     movader_covstats_interface.h
+    )
+endif()
+
+if ( vader_FOUND )
+    list(APPEND vader_src_files_list
+
+    VaderBlock.cc
+    VaderBlock.h
     )
 endif()
 
