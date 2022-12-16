@@ -102,8 +102,8 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var3: 8.7367049017730680e-01
-  var4: 7.6045685796392415e-01
+  var3: 8.7811847583969738e-01
+  var4: 7.7859011876872541e-01
        Independent levels:  1[2]
           Model grid size:              840
           Subset Sc0 size:              762
@@ -208,8 +208,8 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var3: 1.7473409803545852e+00
-  var4: 1.5209137159278481e+00
+  var3: 1.7562369516793663e+00
+  var4: 1.5571802375374506e+00
        Independent levels:  1[2]
           Model grid size:              840
           Subset Sc0 size:              762
@@ -236,5 +236,5 @@ Vertical levels:
 - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
 Mask size: 100%
 Fields:
-  var3: 3.0513842483867104e+00
-  var4: 3.0513842483867104e+00
+  var3: 3.1050052469904053e+00
+  var4: 3.1050052469904053e+00

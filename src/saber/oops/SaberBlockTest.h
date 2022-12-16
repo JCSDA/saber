@@ -171,15 +171,9 @@ template <typename MODEL> class SaberBlockTest : public oops::Application {
         // Variables sizes
         std::vector<size_t> innerVariableSizes = geom.variableSizes(innerVars);
 
-        // Find an active inner variable
-        std::string activeInnerVariable("");
-        for (std::string s : activeVars.variables()) {
-          activeInnerVariable = innerVars.has(s) ? s : activeInnerVariable;
-        }
-
         // Create random inner FieldSet
         atlas::FieldSet innerFset =
-          createRandomFieldSet(outerFset[activeInnerVariable].functionspace(),
+                createRandomFieldSet(innerGeometryData.functionSpace(),
                                innerVariableSizes, innerVars);
 
         // Copy inner FieldSet
