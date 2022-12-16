@@ -47,8 +47,11 @@ if( oops_FOUND )
         set( SABER_TEST_VADER 1 )
     endif()
     set( SABER_TEST_VADER_MO 0 )
-    if( atlas_TRANS_FOUND AND vader_FOUND )
-      set( SABER_TEST_VADER_MO 1 )
+
+    if( atlas_VERSION GREATER_EQUAL 0.31.0 )
+      if( atlas_TRANS_FOUND AND vader_FOUND)
+        set( SABER_TEST_VADER_MO 1 )
+      endif()
     endif()
 
     # Override test selection variables using environment variables
