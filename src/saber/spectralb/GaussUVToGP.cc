@@ -315,7 +315,6 @@ atlas::FieldSet createAugmentedState(const std::string & modelGridName,
       }
       // Close file
       if ((retval = nc_close(ncid))) ERR(retval);
-      oops::Log::info() << "Info     : file closed: " << ncfilepath << std::endl;
     }
 
     // redistribute field across PEs.
@@ -354,6 +353,8 @@ atlas::FieldSet createAugmentedState(const std::string & modelGridName,
   } else {
     gfields.add(tempfields[s]);
   }
+  // create Coriolis
+  gfields.add(createCoriolis(gfields[s]));
 
   return gfields;
 }
