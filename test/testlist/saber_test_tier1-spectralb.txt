@@ -1,4 +1,3 @@
-dirac_gaussuvtogp
 dirac_spectralb
 dirac_spectralb_and_touv
 dirac_spectralb_from_CS

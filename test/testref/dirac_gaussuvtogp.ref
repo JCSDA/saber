@@ -35,6 +35,6 @@ Vertical levels:
 Mask size: 100%
 Fields:
   dry_air_density_levels_minus_one: 0.0000000000000000e+00
-  eastward_wind: 4.5024509213489259e+05
-  northward_wind: 4.9672799240065669e+05
-  geostrophic_pressure_levels_minus_one: 1.7946200029993921e+12
+  eastward_wind: 2.1493331695868964e+01
+  northward_wind: 1.9637266112125126e+01
+  geostrophic_pressure_levels_minus_one: 9.4554730786116615e+03
