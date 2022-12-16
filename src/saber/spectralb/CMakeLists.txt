@@ -18,8 +18,6 @@ if( oops_FOUND AND atlas_TRANS_FOUND )
     SpectralCovariance.h
     SpectralToGauss.cc
     SpectralToGauss.h
-    SpectralToGaussUV.cc
-    SpectralToGaussUV.h
     SPCTRL_Cov.cc
     SPCTRL_Cov.h
     )
@@ -31,10 +29,6 @@ if( oops_FOUND AND atlas_TRANS_FOUND )
           GaussUVToGP.h
           )
         endif()
-        list(APPEND spectralb_src_files_list
-        SpectralToGaussUV.cc
-        SpectralToGaussUV.h
-        )
     endif()
 endif()
 
