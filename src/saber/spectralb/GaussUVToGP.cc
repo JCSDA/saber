@@ -54,7 +54,7 @@ atlas::Field allocateRHSVec(const atlas::FunctionSpace & gaussFS,
                             const std::size_t & levels) {
   atlas::Field rhsvec = gaussFS.createField<double>(atlas::option::name("rhsvec") |
                                                     atlas::option::variables(2) |
-                                                   atlas::option::levels(levels));
+                                                    atlas::option::levels(levels));
   auto rhsVecView = atlas::array::make_view<double, 3>(rhsvec);
   rhsVecView.assign(0.0);
   return rhsvec;
