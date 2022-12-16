@@ -131,7 +131,7 @@
              nc1(  2) =                        200
              ns =                              431
              v%n_s =                             2
-             c%n_s[global] =                   7977
+             c%n_s[global] =                  7977
     Full NICAS adjoint test result:                        T
        Block NICAS adjoint test result:                    T
           Interpolation adjoint test (horizontal) result:  T
@@ -145,11 +145,11 @@
              Min / max: 1.0000000 /  1.0000000 over     10 tests
              0.0 /    0.0:  1.0000000
           Level   1:  0.0000000 -  1.0000000
-          Level   2:  0.0000000 -  0.9133277
+          Level   2:  0.0000000 -  0.9137282
 Norm of BUMP output parameter dirac_mom - 1: 7.6739691264830761e+00
 Norm of BUMP output parameter dirac_diag_loc - 1: 2.6941480035169638e+00
 Norm of BUMP output parameter cor_rh - 1: 1.3749938899699479e+08
 Norm of BUMP output parameter cor_rv - 1: 1.2281705443638830e+02
 Norm of BUMP output parameter loc_rh - 1: 2.1120952455104092e+08
 Norm of BUMP output parameter loc_rv - 1: 2.2668478997559080e+02
-Norm of BUMP output parameter nicas_norm - 1: 4.2469203188393472e+01
+Norm of BUMP output parameter nicas_norm - 1: 4.0944316944772417e+01
