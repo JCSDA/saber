@@ -23,7 +23,7 @@ if( oops_FOUND AND atlas_TRANS_FOUND )
     )
 
     if( atlas_VERSION GREATER_EQUAL 0.31.0 )
-        if ( ENABLE_VADER_MO )
+        if ( vader_FOUND )
           list(APPEND spectralb_src_files_list
           GaussUVToGP.cc
           GaussUVToGP.h

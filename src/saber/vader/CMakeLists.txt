@@ -8,7 +8,7 @@
 #)
 
 # MO-specific VADER blocks
-if ( oops_FOUND AND ENABLE_VADER_MO )
+if ( oops_FOUND AND vader_FOUND )
     list(APPEND vader_src_files_list
     AirTemperature.cc
     AirTemperature.h
