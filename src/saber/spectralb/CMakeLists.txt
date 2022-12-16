@@ -22,13 +22,11 @@ if( oops_FOUND AND atlas_TRANS_FOUND )
     SPCTRL_Cov.h
     )
 
-    if( atlas_VERSION GREATER_EQUAL 0.31.0 )
-        if ( vader_FOUND )
+    if( vader_FOUND AND atlas_VERSION GREATER_EQUAL 0.31.0 )
           list(APPEND spectralb_src_files_list
           GaussUVToGP.cc
           GaussUVToGP.h
           )
-        endif()
     endif()
 endif()
 

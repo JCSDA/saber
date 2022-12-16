@@ -109,6 +109,10 @@ if( oops_FOUND )
         message( STATUS "  - TIER 1 VADER-specific" )
         file( STRINGS testlist/saber_test_tier1_vader.txt saber_test )
         list( APPEND saber_test_full ${saber_test} )
+        if( atlas_TRANS_FOUND )
+           file( STRINGS testlist/saber_test_tier1_vader_with_trans.txt saber_test )
+           list( APPEND saber_test_full ${saber_test} )
+        endif()
     endif()
 
     # TIER > 1
