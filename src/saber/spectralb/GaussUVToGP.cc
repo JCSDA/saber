@@ -24,8 +24,8 @@
 #include "atlas/meshgenerator.h"
 #include "atlas/redistribution/Redistribution.h"
 #include "atlas/trans/Trans.h"
+#include "atlas/util/Constants.h"
 #include "atlas/util/Earth.h"
-
 
 #include "mo/control2analysis_varchange.h"
 #include "mo/model2geovals_varchange.h"
@@ -228,7 +228,8 @@ atlas::Field createCoriolis(const atlas::Field & scstate) {
   for (atlas::idx_t j = sc.j_begin(); j < sc.j_end(); ++j) {
     for (atlas::idx_t i = sc.i_begin(j); i < sc.i_end(j); ++i) {
       jn = sc.index(i, j);
-      coriolisView(jn, 0) = twoOmega * sin(sc.grid().lonlat(i, j).lat());
+      coriolisView(jn, 0) = twoOmega * sin(atlas::util::Constants::degreesToRadians() *
+                                           sc.grid().lonlat(i, j).lat());
     }
   }
   coriolis.haloExchange();
