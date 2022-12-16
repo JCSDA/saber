@@ -22,7 +22,7 @@ if( oops_FOUND AND atlas_TRANS_FOUND )
     SPCTRL_Cov.h
     )
 
-    if ( atlas_TRANS_FOUND AND VADER_FOUND )
+    if ( atlas_TRANS_FOUND AND vader_FOUND )
       list(APPEND spectralb_src_files_list
                   GaussUVToGP.cc
                   GaussUVToGP.h
