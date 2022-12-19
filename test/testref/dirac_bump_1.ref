@@ -1,0 +1,278 @@
+Input Dirac increment:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L40x21
+- size: 840
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var3: 1.0000000000000000e+00
+  var4: 0.0000000000000000e+00
+       Independent levels:  1[2]
+          Level   1:   1550418632
+          Level   2:   1550418632
+          Model grid size:              840
+          Subset Sc0 size:              762
+          Number of duplicated points (halo):        78 (  9.29%)
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. unit
+             Level   2 ~>  0.200E+01 vert. unit
+Adjoint test passed
+       Independent levels:  1[2]
+          Level   1:   1550418632
+          Level   2:   1550418632
+          Model grid size:              840
+          Subset Sc0 size:              762
+          Number of duplicated points (halo):        78 (  9.29%)
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. unit
+             Level   2 ~>  0.200E+01 vert. unit
+          nc1 =      500
+          nc2 =      250
+          Independent levels:  1[2]
+Adjoint test passed
+Norm of input parameter StdDev: 5.4916088699553633e+01
+Adjoint test passed
+       Independent levels:  1[2]
+          Level   1:   1550418632
+          Level   2:   1550418632
+          Model grid size:              840
+          Subset Sc0 size:              762
+          Number of duplicated points (halo):        78 (  9.29%)
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. unit
+             Level   2 ~>  0.200E+01 vert. unit
+Adjoint test passed
+Norm of input parameter stddev: 5.4916088699553633e+01
+       Independent levels:  1[2]
+          Level   1:   1550418632
+          Level   2:   1550418632
+          Model grid size:              840
+          Subset Sc0 size:              762
+          Number of duplicated points (halo):        78 (  9.29%)
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. unit
+             Level   2 ~>  0.200E+01 vert. unit
+Adjoint test passed
+Norm of input parameter universe radius: 2.0253293992704690e+08
+       Independent levels:  1[2]
+          Level   1:   1550418632
+          Level   2:   1550418632
+          Model grid size:              840
+          Subset Sc0 size:              762
+          Number of duplicated points (halo):        78 (  9.29%)
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. unit
+             Level   2 ~>  0.200E+01 vert. unit
+Adjoint test passed
+       Independent levels:  1[2]
+          Level   1:   1550418632
+          Level   2:   1550418632
+          Model grid size:              840
+          Subset Sc0 size:              762
+          Number of duplicated points (halo):        78 (  9.29%)
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. unit
+             Level   2 ~>  0.200E+01 vert. unit
+Covariance(hybrid) * Increment:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L40x21
+- size: 840
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var3: 8.7811847583969738e-01
+  var4: 7.7859011876872541e-01
+       Independent levels:  1[2]
+          Level   1:   1550418632
+          Level   2:   1550418632
+          Model grid size:              840
+          Subset Sc0 size:              762
+          Number of duplicated points (halo):        78 (  9.29%)
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. unit
+             Level   2 ~>  0.200E+01 vert. unit
+Adjoint test passed
+       Independent levels:  1[2]
+          Level   1:   1550418632
+          Level   2:   1550418632
+          Model grid size:              840
+          Subset Sc0 size:              762
+          Number of duplicated points (halo):        78 (  9.29%)
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. unit
+             Level   2 ~>  0.200E+01 vert. unit
+          nc1 =      500
+          nc2 =      250
+          Independent levels:  1[2]
+Adjoint test passed
+Norm of input parameter StdDev: 5.4916088699553633e+01
+Adjoint test passed
+       Independent levels:  1[2]
+          Level   1:   1550418632
+          Level   2:   1550418632
+          Model grid size:              840
+          Subset Sc0 size:              762
+          Number of duplicated points (halo):        78 (  9.29%)
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. unit
+             Level   2 ~>  0.200E+01 vert. unit
+Adjoint test passed
+Norm of input parameter stddev: 5.4916088699553633e+01
+       Independent levels:  1[2]
+          Level   1:   1550418632
+          Level   2:   1550418632
+          Model grid size:              840
+          Subset Sc0 size:              762
+          Number of duplicated points (halo):        78 (  9.29%)
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. unit
+             Level   2 ~>  0.200E+01 vert. unit
+Adjoint test passed
+Norm of input parameter universe radius: 2.0253293992704690e+08
+       Independent levels:  1[2]
+          Level   1:   1550418632
+          Level   2:   1550418632
+          Model grid size:              840
+          Subset Sc0 size:              762
+          Number of duplicated points (halo):        78 (  9.29%)
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. unit
+             Level   2 ~>  0.200E+01 vert. unit
+Adjoint test passed
+Covariance(hybrid1_SABER) * Increment:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L40x21
+- size: 840
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var3: 9.6825438805381713e-14
+  var4: 4.0904433449715275e-14
+       Independent levels:  1[2]
+          Level   1:   1550418632
+          Level   2:   1550418632
+          Model grid size:              840
+          Subset Sc0 size:              762
+          Number of duplicated points (halo):        78 (  9.29%)
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. unit
+             Level   2 ~>  0.200E+01 vert. unit
+Covariance(hybrid2_ensemble) * Increment:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L40x21
+- size: 840
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var3: 1.7562369516793663e+00
+  var4: 1.5571802375374506e+00
+       Independent levels:  1[2]
+          Level   1:   1550418632
+          Level   2:   1550418632
+          Model grid size:              840
+          Subset Sc0 size:              762
+          Number of duplicated points (halo):        78 (  9.29%)
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. unit
+             Level   2 ~>  0.200E+01 vert. unit
+Localization(hybrid2_ensemble) * Increment:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L40x21
+- size: 840
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Vertical levels: 
+- number: 2
+- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+Mask size: 100%
+Fields:
+  var3: 3.1050052469904053e+00
+  var4: 3.1050052469904053e+00

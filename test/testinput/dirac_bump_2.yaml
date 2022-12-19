@@ -15,11 +15,12 @@ background error:
   components:
   - covariance:
       covariance model: SABER
+      adjoint test: true
       saber central block:
         saber block name: BUMP_NICAS
         bump:
           datadir: testdata
-          prefix: dirac_bump/_MPI_-_OMP_
+          prefix: dirac_bump_2/_MPI_-_OMP_
           testing: true
           nprocio: 1
           strategy: specific_univariate
@@ -33,7 +34,7 @@ background error:
       - saber block name: BUMP_StdDev
         bump:
           datadir: testdata
-          prefix: dirac_bump/_MPI_-_OMP_
+          prefix: dirac_bump_2/_MPI_-_OMP_
           testing: true
         input fields:
         - parameter: stddev
@@ -42,7 +43,7 @@ background error:
       - saber block name: BUMP_StdDev
         bump:
           datadir: testdata
-          prefix: dirac_bump/_MPI_-_OMP_
+          prefix: dirac_bump_2/_MPI_-_OMP_
           testing: true
           new_var: true
           forced_var: true
@@ -59,7 +60,7 @@ background error:
       - saber block name: BUMP_VerticalBalance
         bump:
           datadir: testdata
-          prefix: dirac_bump/_MPI_-_OMP_
+          prefix: dirac_bump_2/_MPI_-_OMP_
           testing: true
           vbal_block:
           - true
@@ -75,7 +76,7 @@ background error:
         - var4
         bump:
           datadir: testdata
-          prefix: dirac_bump/_MPI_-_OMP_
+          prefix: dirac_bump_2/_MPI_-_OMP_
           testing: true
           nprocio: 1
           load_wind_local: true
@@ -87,32 +88,30 @@ background error:
     weight:
       value: 0.5
   - covariance:
-      covariance model: ensemble
-      members from template:
-        template:
-          date: '2010-01-01T12:00:00Z'
-          filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
-          state variables:
-          - var3
-          - var4
-        pattern: '%mem%'
-        nmembers: 25
-        zero padding: 6
-      localization:
-        localization method: SABER
-        saber central block:
+      covariance model: SABER
+      adjoint test: true
+      saber central block:
+        saber block name: Ensemble
+        localization:
           saber block name: BUMP_NICAS
           bump:
             datadir: testdata
-            prefix: dirac_bump/_MPI_-_OMP_
+            prefix: dirac_bump_2/_MPI_-_OMP_
             testing: true
             strategy: common
             load_nicas_local: true
             fname_nicas: error_covariance_training_bump_hdiag-nicas_2/_MPI_-_OMP__nicas
-        input fields:
-        - parameter: universe radius
-          file:
-            filepath: testdata/error_covariance_training_bump_hdiag-nicas_2/_MPI_-_OMP__loc_rh_2
+        ensemble:
+          members from template:
+            template:
+              date: '2010-01-01T12:00:00Z'
+              filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
+              state variables:
+              - var3
+              - var4
+            pattern: '%mem%'
+            nmembers: 25
+            zero padding: 6
     weight:
       value: 0.5
 dirac:
@@ -125,6 +124,6 @@ dirac:
   variable:
   - var3
 output dirac:
-  filepath: testdata/dirac_bump/dirac_%id%
+  filepath: testdata/dirac_bump_2/dirac_%id%
 test:
-  reference filename: testref/dirac_bump.ref
+  reference filename: testref/dirac_bump_2.ref

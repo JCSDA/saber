@@ -9,6 +9,7 @@ initial condition:
   state variables: &vars [virtual_temperature, specific_humidity ]
 background error:
   covariance model: SABER
+  adjoint test: true
   saber central block:
     saber block name: ID
   saber outer blocks:

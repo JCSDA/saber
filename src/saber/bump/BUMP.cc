@@ -287,7 +287,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   // Set parameters
   this->setNcmp(1, ncmp1);
   for (const auto & fset : fsetVec1) {
-    if (fset.name() != "universe radius") {
+    if (fset.name() != "universe radius" && fset.name() != "ensemble member") {
       int component = 1;
       std::string name = fset.name();
       size_t pos = fset.name().find("::");
@@ -301,7 +301,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   }
   this->setNcmp(2, ncmp2);
   for (const auto & fset : fsetVec2) {
-    if (fset.name() != "universe radius") {
+    if (fset.name() != "universe radius" && fset.name() != "ensemble member") {
       int component = 1;
       std::string name = fset.name();
       size_t pos = fset.name().find("::");

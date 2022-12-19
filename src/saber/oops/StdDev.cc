@@ -68,7 +68,7 @@ StdDev::~StdDev() {
 
 void StdDev::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  util::FieldSetMultiply(fset, stdDevFset_);
+  util::multiplyFieldSets(fset, stdDevFset_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
@@ -76,7 +76,7 @@ void StdDev::multiply(atlas::FieldSet & fset) const {
 
 void StdDev::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  util::FieldSetMultiply(fset, stdDevFset_);
+  util::multiplyFieldSets(fset, stdDevFset_);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
@@ -84,7 +84,7 @@ void StdDev::multiplyAD(atlas::FieldSet & fset) const {
 
 void StdDev::calibrationInverseMultiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::calibrationInverseMultiply starting" << std::endl;
-  util::FieldSetDivide(fset, stdDevFset_);
+  util::divideFieldSets(fset, stdDevFset_);
   oops::Log::trace() << classname() << "::calibrationInverseMultiply done" << std::endl;
 }
 
