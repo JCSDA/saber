@@ -21,7 +21,7 @@
 #include "oops/util/Duration.h"
 #include "oops/util/Logger.h"
 
-#include "saber/oops/ReadInputFields.h"
+#include "saber/oops/ReadInput.h"
 #include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberCentralBlockBase.h"
 
@@ -46,7 +46,6 @@ class Localization : public oops::LocalizationBase<MODEL> {
 
  private:
   void print(std::ostream &) const override;
-  std::vector<std::reference_wrapper<const oops::GeometryData>> geometryData_;
   std::unique_ptr<SaberCentralBlockBase> saberCentralBlock_;
 };
 
@@ -82,19 +81,21 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
     oops::Variables activeVars =
       saberCentralBlockParams.activeVars.value().get_value_or(centralVars);
 
-    // Read input fields (on model increment geometry)
-    std::vector<atlas::FieldSet> fsetVec = readInputFields(
-      geom,
-      activeVars,
-      dummyTime,
-      saberCentralBlockParams.inputFields.value().get_value_or({}));
+    // Initialize vector of FieldSet
+    std::vector<atlas::FieldSet> fsetVec;
 
-    // Central Geometry
-    geometryData_.push_back(geom.generic());
+    // Read input fields (on model increment geometry)
+    std::vector<eckit::LocalConfiguration> inputFieldConfs;
+    inputFieldConfs = saberCentralBlockParams.inputFieldConfs.value().get_value_or(inputFieldConfs);
+    readInputFields(geom,
+                    activeVars,
+                    dummyTime,
+                    inputFieldConfs,
+                    fsetVec);
 
     // Create central block
     saberCentralBlock_.reset(SaberCentralBlockFactory::create(
-                             geometryData_.back().get(),
+                             geom.generic(),
                              geom.variableSizes(activeVars),
                              centralVars,
                              saberCentralBlockParams,

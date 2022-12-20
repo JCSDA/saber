@@ -269,7 +269,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   bool parametersToPass1 = false;
   size_t ncmp1 = 1;
   for (const auto & fset : fsetVec1) {
-    if (fset.name() != "universe radius") {
+    if (fset.name() != "universe radius" && fset.name() != "ensemble member") {
       parametersToPass1 = true;
       size_t pos = fset.name().find("::");
       if (pos != std::string::npos) {
@@ -284,7 +284,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
 
     // Set parameters (geometry 1)
     for (const auto & fset : fsetVec1) {
-      if (fset.name() != "universe radius") {
+      if (fset.name() != "universe radius" && fset.name() != "ensemble member") {
         int component = 1;
         std::string name = fset.name();
         size_t pos = fset.name().find("::");
@@ -302,7 +302,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   bool parametersToPass2 = false;
   size_t ncmp2 = 1;
   for (const auto & fset : fsetVec2) {
-    if (fset.name() != "universe radius") {
+    if (fset.name() != "universe radius" && fset.name() != "ensemble member") {
       parametersToPass2 = true;
       size_t pos = fset.name().find("::");
       if (pos != std::string::npos) {
@@ -317,7 +317,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
 
     // Set parameters (geometry 2)
     for (const auto & fset : fsetVec2) {
-      if (fset.name() != "universe radius") {
+      if (fset.name() != "universe radius" && fset.name() != "ensemble member") {
         int component = 1;
         std::string name = fset.name();
         size_t pos = fset.name().find("::");

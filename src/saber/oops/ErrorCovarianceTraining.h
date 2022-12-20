@@ -26,7 +26,7 @@
 
 #include "saber/bump/BUMP.h"
 #include "saber/oops/instantiateCovarFactory.h"
-#include "saber/oops/ReadInputFields.h"
+#include "saber/oops/ReadInput.h"
 
 namespace saber {
 
@@ -199,9 +199,9 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
     } else if ((ensembleBase != boost::none) &&
                (ensemblePairs != boost::none)) {
       // Increment ensemble from difference of two states
-       oops::Log::info() << "Info     : Increment ensemble from difference of two states"
+      oops::Log::info() << "Info     : Increment ensemble from difference of two states"
                          << std::endl;
-       ens1.reset(new Ensemble_(geom1, inputVars, *ensembleBase, *ensemblePairs));
+      ens1.reset(new Ensemble_(geom1, inputVars, *ensembleBase, *ensemblePairs));
     }
 
     // Setup ensemble 2 geometry pointer
@@ -271,25 +271,31 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
         ens2.reset(new Ensemble_(*geom2, inputVars, *ensemble2Pert));
       } else if ((ensemble2Base != boost::none) && (ensemble2Pairs != boost::none)) {
         // Low resolution increment ensemble from difference of two states
-         oops::Log::info() << "Info     : Low resolution increment ensemble from difference of two "
+        oops::Log::info() << "Info     : Low resolution increment ensemble from difference of two "
                            << "states" << std::endl;
-         ens2.reset(new Ensemble_(*geom2, inputVars, *ensemble2Base, *ensemble2Pairs));
+        ens2.reset(new Ensemble_(*geom2, inputVars, *ensemble2Base, *ensemble2Pairs));
       }
     }
 
     // Get input fields for geometry 1
-    std::vector<atlas::FieldSet> fsetVec1 = readInputFields(
-      geom1,
-      params.inputVars.value(),
-      xx.validTime(),
-      params.inputFields.value().get_value_or({}));
+    std::vector<atlas::FieldSet> fsetVec1;
+    std::vector<eckit::LocalConfiguration> inputFieldsConfigs1;
+    inputFieldsConfigs1 = params.inputFields.value().get_value_or(inputFieldsConfigs1);
+    readInputFields(geom1,
+                    params.inputVars.value(),
+                    xx.validTime(),
+                    inputFieldsConfigs1,
+                    fsetVec1);
 
     // Get input fields for geometry 2
-    std::vector<atlas::FieldSet> fsetVec2 = readInputFields(
-      *geom2,
-      params.inputVars.value(),
-      xx.validTime(),
-      params.inputFields2.value().get_value_or({}));
+    std::vector<atlas::FieldSet> fsetVec2;
+    std::vector<eckit::LocalConfiguration> inputFieldsConfigs2;
+    inputFieldsConfigs2 = params.inputFields2.value().get_value_or(inputFieldsConfigs2);
+    readInputFields(*geom2,
+                    params.inputVars.value(),
+                    xx.validTime(),
+                    inputFieldsConfigs2,
+                    fsetVec2);
 
     // Select SABER library training
     std::unique_ptr<bump::BUMP> bump;

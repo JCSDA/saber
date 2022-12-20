@@ -13,7 +13,6 @@
 
 #include "atlas/field.h"
 
-#include "oops/base/Geometry.h"
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
