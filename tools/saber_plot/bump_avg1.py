@@ -8,11 +8,15 @@ import numpy as np
 import numpy.ma as ma
 import os
 
-def bump_avg(args, suffix):
+def bump_avg1(args, suffix):
    """! Plot script for the "average" files produced by BUMP"""
 
+   # Make directory
+   if not os.path.exists(args.test):
+      os.mkdir(args.test)
+
    # Open file
-   f = Dataset(args.testdata + "/" + args.test + "/test_" + args.mpi + "-" + args.omp + "_" + suffix + ".nc", "r", format="NETCDF4")
+   f = Dataset(args.testdata + "/" + args.test + "/" + args.mpi + "-" + args.omp + "_" + suffix + ".nc", "r", format="NETCDF4")
 
    for group in f.groups:
       # Get vertical unit
@@ -89,6 +93,7 @@ def bump_avg(args, suffix):
                   fig.suptitle("Between levels " + '%.2e'%vunit[il0] + " and " + '%.2e'%vunit[l0rl0_to_l0[il0,jl0r]-1] + " for distance class " + '%.2e'%disth[jc3])
 
                   # Save and close figure
-                  plotpath = args.test + "_" + args.mpi + "-" + args.omp + "_" + suffix + "_" + group + "_" + str(il0+1) + "-" + str(l0rl0_to_l0[il0,jl0r]) + "-" + str(jc3+1) + ".jpg"
+                  plotpath = args.test + "/" + args.mpi + "-" + args.omp + "_" + suffix + "_" + group + "_" + str(il0+1) + "-" + str(l0rl0_to_l0[il0,jl0r]) + "-" + str(jc3+1) + ".jpg"
                   plt.savefig(plotpath, format="jpg", dpi=300)
                   plt.close()
+                  print(" -> plot produced: " + plotpath)

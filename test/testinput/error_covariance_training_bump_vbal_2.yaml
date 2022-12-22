@@ -53,6 +53,6 @@ bump:
 output:
 - parameter: dirac_vbal
   file:
-    filepath: testdata/error_covariance_training_bump_vbal_2/dirac
+    filepath: testdata/error_covariance_training_bump_vbal_2/_MPI_-_OMP__dirac
 test:
   reference filename: testref/error_covariance_training_bump_vbal_2.ref
