@@ -14,9 +14,9 @@
 #include <string>
 #include <vector>
 
-#include "atlas/util/CoordinateEnums.h"
 #include "atlas/field.h"
 #include "atlas/functionspace.h"
+#include "atlas/util/CoordinateEnums.h"
 
 #include "mo/constants.h"
 
@@ -169,11 +169,6 @@ atlas::Field createGpRegressionWeights(const atlas::FunctionSpace & functionSpac
     tot += static_cast<std::size_t>(lenVec[b]);
   }
 
-  for (std::size_t b = 0; b < gpBins; ++b) {
-    std::cout << "regresssion weight b :: latValues " << b << " " << latValues[b] << std::endl;
-    std::cout << "regresssion weight b :: regWeights " << b << " " << regWeights[b] << std::endl;
-  }
-
   // need to look over horiz latitude points to calculate gp regression.
   // the horizontal points need to be PE decomposed.
   auto interWgtFld = atlas::Field(std::string("interpolation_weights"),
@@ -192,13 +187,6 @@ atlas::Field createGpRegressionWeights(const atlas::FunctionSpace & functionSpac
 
     for (std::size_t b = 0; b < gpBins; ++b) {
       interWgtFldView(h, b) = tempWgt[b] * invWeightTot;
-    }
-
-    if (h == 0) {
-     for (std::size_t b = 0; b < gpBins; ++b) {
-      std::cout << "starting wghts at "<< lonlatView(h, atlas::LON) << " " << lonlatView(h, atlas::LAT)
-                << " " << b << " " << interWgtFldView(h, b)  << std::endl;
-     }
     }
   }
 

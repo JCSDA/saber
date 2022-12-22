@@ -54,7 +54,6 @@ HydrostaticExner::HydrostaticExner(const oops::GeometryData & outerGeometryData,
   covFieldSet_ = createGpRegressionStats(outerGeometryData.functionSpace(),
                                          outerGeometryData.fieldSet(),
                                          activeVariableSizes,
-                                         activeVars,
                                          params.hydrostaticexnerParams.value());
 
 
@@ -143,6 +142,9 @@ void HydrostaticExner::multiply(atlas::FieldSet & fset) const {
       atlas::array::make_view<const double, 2>(fset["hydrostatic_exner_levels"]);
   auto exnerLevelsMinusOneView =
       atlas::array::make_view<double, 2>(fset["exner_levels_minus_one"]);
+  // Note that the number of levels in hydrostaticExnerView is one more than
+  // in exnerLevelsMinusOneView. This is o.k. however as
+  // the assign method copies the region that is common to both Views.
   exnerLevelsMinusOneView.assign(hydrostaticExnerView);
 
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
@@ -170,7 +172,7 @@ void HydrostaticExner::multiplyAD(atlas::FieldSet & fset) const {
   for (atlas::idx_t jn = 0; jn < fset["hydrostatic_pressure_levels"].shape(0); ++jn) {
     for (atlas::idx_t jl = 0; jl < fset["hydrostatic_pressure_levels"].shape(1); ++jl) {
       hydrostaticPressureView(jn, jl) += airPressureView(jn, jl);
-      airPressureView(jn, jl) = 0.0;    
+      airPressureView(jn, jl) = 0.0;
     }
   }
 
@@ -214,7 +216,6 @@ void HydrostaticExner::print(std::ostream & os) const {
 atlas::FieldSet createGpRegressionStats(const atlas::FunctionSpace & functionSpace,
                                         const atlas::FieldSet & extraFields,
                                         const std::vector<size_t> & variableSizes,
-                                        const oops::Variables & innerVars,
                                         const HydrostaticExnerCovarianceParameters & params) {
   // Get necessary parameters
   // path to covariance file with gp covariance parameters.
