@@ -1011,8 +1011,7 @@ type(geom_type),intent(in) :: geom  !< Geometry
 
 ! Local variables
 integer :: il0,jc3,jc4,ic1a,ic2u,ic2a,ic2b,jc1u,jc1d,jc1e,ic0a,j,nc1max
-integer :: ncid,nc0a_id,nl0_id,nc1a_id,nc3_id,nc4_id,nc2a_id,nc2b_id,nc1max_id
-integer :: lon_c0a_id,lat_c0a_id,gmask_c0a_id
+integer :: ncid,nl0_id,nc1a_id,nc3_id,nc4_id,nc2a_id,nc2b_id,nc1max_id
 integer :: lon_id,lat_id,lon_local_id,lat_local_id,lon_vbal_id,lat_vbal_id
 integer :: igmask_c0a(geom%nc0a,geom%nl0)
 real(kind_real),allocatable :: lon(:,:,:,:),lat(:,:,:,:)
@@ -1029,7 +1028,6 @@ real(kind_real),allocatable :: lon_vbal(:,:,:),lat_vbal(:,:,:)
 ncid = create_file(mpl,trim(nam%prefix)//'sampling_grids',mpl%myproc)
 
 ! Define dimensions
-nc0a_id = define_dim(mpl,ncid,'nc0a',geom%nc0a)
 nl0_id = define_dim(mpl,ncid,'nl0',geom%nl0)
 if (samp%sc3) then
    nc3_id = define_dim(mpl,ncid,'nc3',nam%nc3)
@@ -1058,9 +1056,6 @@ if (nam%new_vbal) then
 end if
 
 ! Define variables
-lon_c0a_id = define_var(mpl,ncid,'lon_c0a','real',(/nc0a_id/),'degrees_east')
-lat_c0a_id = define_var(mpl,ncid,'lat_c0a','real',(/nc0a_id/),'degrees_north')
-gmask_c0a_id = define_var(mpl,ncid,'gmask_c0a','int',(/nc0a_id,nl0_id/))
 if (samp%sc3) then
    lon_id = define_var(mpl,ncid,'lon','real',(/nc1a_id,nc3_id,nc4_id,nl0_id/),'degrees_east')
    lat_id = define_var(mpl,ncid,'lat','real',(/nc1a_id,nc3_id,nc4_id,nl0_id/),'degrees_north')
@@ -1165,9 +1160,6 @@ if (nam%new_vbal) then
 end if
 
 ! Write variables
-call put_var(mpl,ncid,lon_c0a_id,geom%lon_c0a*rad2deg)
-call put_var(mpl,ncid,lat_c0a_id,geom%lat_c0a*rad2deg)
-call put_var(mpl,ncid,gmask_c0a_id,igmask_c0a)
 if (samp%sc3) then
    call put_var(mpl,ncid,lon_id,lon)
    call put_var(mpl,ncid,lat_id,lat)

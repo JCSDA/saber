@@ -12,8 +12,12 @@ import os
 def bump_diag(args, suffix):
    """! Plot script for the "diagnostic" files produced by BUMP"""
 
+   # Make directory
+   if not os.path.exists(args.test):
+      os.mkdir(args.test)
+
    # Open file
-   f = Dataset(args.testdata + "/" + args.test + "/test_" + args.mpi + "-" + args.omp + "_" + suffix + ".nc", "r", format="NETCDF4")
+   f = Dataset(args.testdata + "/" + args.test + "/" + args.mpi + "-" + args.omp + "_" + suffix + ".nc", "r", format="NETCDF4")
 
    # Color levels
    levels = np.linspace(-1.0, 1.0, 101)
@@ -54,9 +58,10 @@ def bump_diag(args, suffix):
          fig.legend(handles, labels, loc='center right')
 
          # Save and close figure
-         plotpath = args.test + "_" + args.mpi + "-" + args.omp + "_" + suffix + "_" + diag + ".jpg"
+         plotpath = args.test + "/" + args.mpi + "-" + args.omp + "_" + suffix + "_" + diag + ".jpg"
          plt.savefig(plotpath, format="jpg", dpi=300)
          plt.close()
+         print(" -> plot produced: " + plotpath)
       else:
          # Just close the figure
          plt.close()
@@ -132,8 +137,10 @@ def bump_diag(args, suffix):
                   fig.colorbar(im, cax=cbar_ax)
 
                # Save and close figure
-               plotpath = args.test + "_" + args.mpi + "-" + args.omp + "_" + suffix + "_" + group + "_" + subgroup + str(il0) + ".jpg"
+               plotpath = args.test + "/" + args.mpi + "-" + args.omp + "_" + suffix + "_" + group + "_" + subgroup + str(il0) + ".jpg"
+               plt.savefig(plotpath, format="jpg", dpi=300)
                plt.close()
+               print(" -> plot produced: " + plotpath)
 
             # Vertical plot
 
@@ -158,6 +165,7 @@ def bump_diag(args, suffix):
             fig.colorbar(im, cax=cbar_ax)
 
             # Save and close figure
-            plotpath = args.test + "_" + args.mpi + "-" + args.omp + "_" + suffix + "_" + group + "_" + subgroup + "_ver.jpg"
+            plotpath = args.test + "/" + args.mpi + "-" + args.omp + "_" + suffix + "_" + group + "_" + subgroup + "_ver.jpg"
             plt.savefig(plotpath, format="jpg", dpi=300)
             plt.close()
+            print(" -> plot produced: " + plotpath)
