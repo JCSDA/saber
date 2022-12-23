@@ -15,6 +15,7 @@ background error:
   saber outer blocks:
   - saber block name: vader variable change
     inner variables: [air_temperature, specific_humidity]
+    active variables: [air_temperature, specific_humidity, virtual_temperature]
 dirac:
   lon: [180.0, 180.0]
   lat: [0.0, 0.0]
