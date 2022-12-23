@@ -1,5 +1,6 @@
 background error:
   covariance model: SABER
+  adjoint test: true
   saber central block:
     saber block name: gsi covariance
     gsi error covariance file: testdata/gsi-coeffs-global-l127x64y32.nc4

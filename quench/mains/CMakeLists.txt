@@ -25,13 +25,6 @@ ecbuild_add_executable( TARGET  saber_quench_error_covariance_training.x
                                 ${gsibec_LIBRARIES}
                                 saber )
 
-ecbuild_add_executable( TARGET  saber_quench_saber_block_test.x
-                        SOURCES quenchSaberBlockTest.cc
-                        LIBS    quench
-                                ${vader_LIBRARIES}
-                                ${gsibec_LIBRARIES}
-                                saber )
-
 ecbuild_add_executable( TARGET  saber_quench_dirac.x
                         SOURCES quenchDirac.cc
                         LIBS    quench

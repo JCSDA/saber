@@ -7,13 +7,16 @@
 
 #include "saber/vader/CovarianceStatisticsUtils.h"
 
+#include <algorithm>
 #include <iostream>
 #include <map>
+#include <numeric>
 #include <string>
 #include <vector>
 
 #include "atlas/field.h"
 #include "atlas/functionspace.h"
+#include "atlas/util/CoordinateEnums.h"
 
 #include "mo/constants.h"
 
@@ -177,9 +180,13 @@ atlas::Field createGpRegressionWeights(const atlas::FunctionSpace & functionSpac
 
   std::vector<double> tempWgt(gpBins);
   for (atlas::idx_t h = 0; h < horizPts; ++h) {
-    tempWgt = interpWeights(regWeights, latValues, lonlatView(h, 1));
+    tempWgt = interpWeights(regWeights, latValues, lonlatView(h, atlas::LAT));
+
+    double invWeightTot = 1.0 /
+          (std::accumulate(begin(tempWgt), end(tempWgt), 0.0));
+
     for (std::size_t b = 0; b < gpBins; ++b) {
-      interWgtFldView(h, b) = tempWgt[b];
+      interWgtFldView(h, b) = tempWgt[b] * invWeightTot;
     }
   }
 

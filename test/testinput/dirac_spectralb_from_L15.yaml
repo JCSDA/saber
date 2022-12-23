@@ -10,6 +10,7 @@ initial condition:
   - psi_inc
 background error:
   covariance model: SABER
+  adjoint test: true
   saber central block:
     saber block name: SPCTRL_COV
     spectralb:

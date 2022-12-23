@@ -20,6 +20,10 @@ if( oops_FOUND )
     ID.h
     ID.cc
 
+    # Ensemble block
+    Ensemble.h
+    Ensemble.cc
+
     # StdDev block
     StdDev.h
     StdDev.cc
@@ -29,7 +33,7 @@ if( oops_FOUND )
     instantiateLocalizationFactory.h
 
     # Utilities
-    ReadInputFields.h
+    ReadInput.h
 
     # Drivers
     ErrorCovariance.h
@@ -38,7 +42,6 @@ if( oops_FOUND )
     # Applications
     ErrorCovarianceTraining.h
     Randomization.h
-    SaberBlockTest.h
     )
 endif()
 

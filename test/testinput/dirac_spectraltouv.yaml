@@ -13,8 +13,12 @@ initial condition:
   - northward_wind
 background error:
   covariance model: SABER
+  adjoint test: true
   saber central block:
     saber block name: spectral covariance
+    active variables:
+    - streamfunction
+    - velocity_potential
     spectralb:
       covariance_file: testdata/spectralcov.nc
       gauss_grid_uid: F15
@@ -23,9 +27,12 @@ background error:
       - CHI_inc_Uv_matrix
       variance_opt: true
   saber outer blocks:
-  - saber block name: spectral to gauss winds
-    gauss grid uid: F15
-    use streamfunction and velocity potential: true
+  - saber block name: spectral to gauss
+    active variables:
+    - streamfunction
+    - velocity_potential
+    - eastward_wind
+    - northward_wind
 dirac:
   lon:
   - 0.0

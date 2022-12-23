@@ -46,6 +46,15 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
   virtual void multiplyAD(atlas::FieldSet &) const = 0;
   virtual void calibrationInverseMultiply(atlas::FieldSet &) const = 0;
 
+  void adjointTest(const eckit::mpi::Comm &,
+                   const oops::GeometryData &,
+                   const std::vector<size_t> &,
+                   const oops::Variables &,
+                   const oops::GeometryData &,
+                   const std::vector<size_t> &,
+                   const oops::Variables &,
+                   const double & adjointTolerance = 1.0e-12) const;
+
  private:
   virtual void print(std::ostream &) const = 0;
 };

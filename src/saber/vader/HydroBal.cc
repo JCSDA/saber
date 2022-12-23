@@ -88,17 +88,6 @@ HydroBal::HydroBal(const oops::GeometryData & outerGeometryData,
     augmentedStateFieldSet_.add(outerGeometryData.fieldSet()[s]);
   }
 
-  for (auto & fld : augmentedStateFieldSet_) {
-    double zz(0.0);
-    auto view1 = atlas::array::make_view<double, 2>(fld);
-    for (atlas::idx_t jnode = 0; jnode < fld.shape(0); ++jnode) {
-      for (atlas::idx_t jlevel = 0; jlevel < fld.shape(1); ++jlevel) {
-        zz += view1(jnode, jlevel) * view1(jnode, jlevel);
-      }
-    }
-    std::cout << "norm state fld :: " << fld.name() << " " << zz << std::endl;
-  }
-
   oops::Log::trace() << classname() << "::HydroBal done" << std::endl;
 }
 
@@ -114,32 +103,7 @@ HydroBal::~HydroBal() {
 
 void HydroBal::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-
-  for (auto & fld : fset) {
-    double zz(0.0);
-    auto view1 = atlas::array::make_view<double, 2>(fld);
-    for (atlas::idx_t jnode = 0; jnode < fld.shape(0); ++jnode) {
-      for (atlas::idx_t jlevel = 0; jlevel < fld.shape(1); ++jlevel) {
-        zz += view1(jnode, jlevel)*view1(jnode, jlevel);
-      }
-    }
-    std::cout << "norm state inc before fld :: " << fld.name() << " " << zz << std::endl;
-  }
-
-
   mo::hexner2ThetavTL(fset, augmentedStateFieldSet_);
-
-  for (auto & fld : fset) {
-    double zz(0.0);
-    auto view1 = atlas::array::make_view<double, 2>(fld);
-    for (atlas::idx_t jnode = 0; jnode < fld.shape(0); ++jnode) {
-      for (atlas::idx_t jlevel = 0; jlevel < fld.shape(1); ++jlevel) {
-        zz += view1(jnode, jlevel)*view1(jnode, jlevel);
-      }
-    }
-    std::cout << "norm state inc after fld :: " << fld.name() << " " << zz << std::endl;
-  }
-
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 

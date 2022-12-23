@@ -14,6 +14,7 @@ initial condition:
   - moisture_control_variable
 background error:
   covariance model: SABER
+  adjoint test: true
   saber central block:
     saber block name: spectral covariance
     active variables:
@@ -35,10 +36,10 @@ background error:
     active variables:
     - unbalanced_pressure
     - moisture_control_variable
-  - saber block name: spectral to gauss winds
-    gauss grid uid: F15
-    use streamfunction and velocity potential: true
-    use inner gaussian functionspace: true
+    - streamfunction
+    - velocity_potential
+    - eastward_wind
+    - northward_wind
 dirac:
   lon:
   - 0.0

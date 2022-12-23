@@ -109,6 +109,10 @@ if( oops_FOUND )
         message( STATUS "  - TIER 1 VADER-specific" )
         file( STRINGS testlist/saber_test_tier1_vader.txt saber_test )
         list( APPEND saber_test_full ${saber_test} )
+        if( atlas_TRANS_FOUND )
+           file( STRINGS testlist/saber_test_tier1_vader_with_trans.txt saber_test )
+           list( APPEND saber_test_full ${saber_test} )
+        endif()
     endif()
 
     # TIER > 1
@@ -213,24 +217,6 @@ if( oops_FOUND )
             endif()
         endforeach()
 
-        # Adjoint/inverse tests
-        foreach( test ${saber_test_full} )
-            string( FIND ${test} "saber_block_test" result )
-            if( result MATCHES 0 )
-                # Special check for gsi and spectralb_from_L15 (TODO: should be removed at some point) 
-                string( FIND ${test} "gsi" gsi_result )
-                string( FIND ${test} "spectralb_from_L15" spectralb_from_L15_result )
-                if( ( gsi_result EQUAL -1 AND spectralb_from_L15_result EQUAL -1 ) OR ( ${mpi} LESS_EQUAL 1 AND ${omp} LESS_EQUAL 1 ) )
-                    ecbuild_add_test( TARGET saber_test_${test}_${mpi}-${omp}
-                                      MPI ${mpi}
-                                      OMP ${omp}
-                                      COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_saber_block_test.x
-                                      ARGS testinput/${test}.yaml
-                                      DEPENDS saber_quench_saber_block_test.x )
-                endif()
-            endif()
-        endforeach()
-    
         # Dirac tests
         foreach( test ${saber_test_full} )
             string( FIND ${test} "dirac" result )

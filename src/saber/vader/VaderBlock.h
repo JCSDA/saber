@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2021 UCAR
+ * (C) Copyright 2022 UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -7,52 +7,47 @@
 
 #pragma once
 
-#include <memory>
 #include <string>
 #include <vector>
 
 #include "atlas/field.h"
+#include "atlas/functionspace.h"
 
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
-#include "oops/util/abor1_cpp.h"
 
-#include "saber/bump/BUMP.h"
 #include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberOuterBlockBase.h"
 
-namespace oops {
-  class Variables;
-}
+#include "vader/vader.h"
 
 namespace saber {
-namespace bump {
 
 // -----------------------------------------------------------------------------
 
-class PsiChiToUVParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(PsiChiToUVParameters, SaberBlockParametersBase)
+class VaderBlockParameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(VaderBlockParameters, SaberBlockParametersBase)
 
  public:
-  oops::RequiredParameter<BUMPParameters> bumpParams{"bump", this};
+  oops::Parameter<vader::VaderParameters> vader{"vader", {}, this};
+  oops::RequiredParameter<oops::Variables> innerVars{"inner variables", this};
 };
 
 // -----------------------------------------------------------------------------
 
-class PsiChiToUV : public SaberOuterBlockBase {
+class VaderBlock : public SaberOuterBlockBase {
  public:
-  static const std::string classname() {return "saber::bump::PsiChiToUV";}
+  static const std::string classname() {return "saber::VaderBlock";}
 
-  typedef PsiChiToUVParameters Parameters_;
+  typedef VaderBlockParameters Parameters_;
 
-  PsiChiToUV(const oops::GeometryData &,
+  VaderBlock(const oops::GeometryData &,
              const std::vector<size_t> &,
              const oops::Variables &,
              const Parameters_ &,
              const atlas::FieldSet &,
              const atlas::FieldSet &,
              const std::vector<atlas::FieldSet> &);
-  virtual ~PsiChiToUV();
 
   const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}
   const oops::Variables & innerVars() const override {return innerVars_;}
@@ -63,14 +58,11 @@ class PsiChiToUV : public SaberOuterBlockBase {
 
  private:
   void print(std::ostream &) const override;
+
+  const oops::Variables outerVars_;
   const oops::GeometryData & innerGeometryData_;
-  oops::Variables innerVars_;
-  oops::Variables outerVars_;
-  size_t levels_;
-  std::unique_ptr<BUMP> bump_;
+  const oops::Variables innerVars_;
+  vader::Vader vader_;
 };
 
-// -----------------------------------------------------------------------------
-
-}  // namespace bump
 }  // namespace saber
