@@ -11,8 +11,12 @@ import os
 def bump_randomization(args, suffix):
    """! Plot script for the "randomization" files produced by BUMP"""
 
+   # Make directory
+   if not os.path.exists(args.test):
+      os.mkdir(args.test)
+
    # Open file
-   f = Dataset(args.testdata + "/" + args.test + "/test_" + args.mpi + "-" + args.omp + "_" + suffix + ".nc", "r", format="NETCDF4")
+   f = Dataset(args.testdata + "/" + args.test + "/" + args.mpi + "-" + args.omp + "_" + suffix + ".nc", "r", format="NETCDF4")
 
    # Get factors
    nefac = f["nefac"][:]
@@ -45,6 +49,7 @@ def bump_randomization(args, suffix):
    ax.plot(x, mse_mean[1,:]+mse_std[1,:], 'r--')
 
    # Save and close figure
-   plotpath = args.test + "_" + args.mpi + "-" + args.omp + "_" + suffix + ".jpg"
+   plotpath = args.test + "/" + args.mpi + "-" + args.omp + "_" + suffix + ".jpg"
    plt.savefig(plotpath, format="jpg", dpi=300)
    plt.close()
+   print(" -> plot produced: " + plotpath)

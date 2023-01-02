@@ -91,15 +91,15 @@ bump:
 output:
 - parameter: loc_rh
   file:
-    filepath: testdata/error_covariance_training_bump_hdiag_9/loc_rh
+    filepath: testdata/error_covariance_training_bump_hdiag_9/_MPI_-_OMP__loc_rh
 - parameter: loc_rv
   file:
-    filepath: testdata/error_covariance_training_bump_hdiag_9/loc_rv
+    filepath: testdata/error_covariance_training_bump_hdiag_9/_MPI_-_OMP__loc_rv
 - parameter: hyb_coef_ens
   file:
-    filepath: testdata/error_covariance_training_bump_hdiag_9/hyb_coef_ens
+    filepath: testdata/error_covariance_training_bump_hdiag_9/_MPI_-_OMP__hyb_coef_ens
 - parameter: hyb_coef_sta
   file:
-    filepath: testdata/error_covariance_training_bump_hdiag_9/hyb_coef_sta
+    filepath: testdata/error_covariance_training_bump_hdiag_9/_MPI_-_OMP__hyb_coef_sta
 test:
   reference filename: testref/error_covariance_training_bump_hdiag_9.ref

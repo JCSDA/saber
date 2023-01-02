@@ -94,7 +94,6 @@ class HydrostaticExner : public SaberOuterBlockBase {
 atlas::FieldSet createGpRegressionStats(const atlas::FunctionSpace &,
                                         const atlas::FieldSet &,
                                         const std::vector<size_t> &,
-                                        const oops::Variables &,
                                         const HydrostaticExnerCovarianceParameters &);
 
 // -----------------------------------------------------------------------------
