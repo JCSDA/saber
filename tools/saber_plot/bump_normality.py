@@ -11,11 +11,15 @@ import os
 def bump_normality(args, suffix):
    """! Plot script for the "normality" files produced by BUMP"""
 
+   # Make directory
+   if not os.path.exists(args.test):
+      os.mkdir(args.test)
+
    # Loop over files
    first = True
    for impi in range(0, int(args.mpi)):
       # Open file
-      f = Dataset(args.testdata + "/" + args.test + "/test_" + args.mpi + "-" + args.omp + "_" + suffix + "_" + args.mpi.zfill(6) + "-" + format(impi+1, '06d') + ".nc", "r", format="NETCDF4")
+      f = Dataset(args.testdata + "/" + args.test + "/" + args.mpi + "-" + args.omp + "_" + suffix + "_local_" + args.mpi.zfill(6) + "-" + format(impi+1, '06d') + ".nc", "r", format="NETCDF4")
 
       # Get data
       if "ens_norm" in f.variables:
@@ -48,6 +52,7 @@ def bump_normality(args, suffix):
    ax[1].plot(x_step, ens_step[0,:])
 
    # Save and close figure
-   plotpath = args.test + "_" + args.mpi + "-" + args.omp + "_" + suffix + ".jpg"
+   plotpath = args.test + "/" + args.mpi + "-" + args.omp + "_" + suffix + ".jpg"
    plt.savefig(plotpath, format="jpg", dpi=300)
    plt.close()
+   print(" -> plot produced: " + plotpath)
