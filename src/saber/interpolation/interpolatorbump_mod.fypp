@@ -25,7 +25,7 @@ use tools_const, only: zero,three,hundred,pi,deg2rad,rad2deg
 use tools_func, only: lonlatmod,sphere_dist,inside,zss_count
 use tools_kinds, only: kind_int,kind_real
 use tools_repro, only: repro_th
-use type_bump, only: bump_type
+use type_bump, only: bump_config_init,bump_type
 use type_com, only: com_type
 use type_fieldset, only: fieldset_type
 use type_geom, only: geom_type
@@ -155,7 +155,7 @@ type(fckit_configuration) :: conf
 call bint%bump%mpl%init(comm)
 
 ! Configuration
-conf = fckit_configuration()
+call bump_config_init(conf)
 call conf%set('io.data directory','testdata')
 call conf%set('io.files prefix','bump_interpolator')
 call conf%set('model.nl0',nl0)

@@ -7,10 +7,12 @@
 
 #pragma once
 
+#include <math.h>
 #include <omp.h>
 
 #include <algorithm>
 #include <fstream>
+#include <limits>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -61,7 +63,7 @@ class ValueParameters : public oops::Parameters {
   // Variables
   oops::RequiredParameter<std::vector<std::string>> variables{"variables", this};
   // Value
-  oops::OptionalParameter<int> value{"value", this};
+  oops::RequiredParameter<int> value{"value", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -71,17 +73,17 @@ class GeneralSection : public oops::Parameters {
 
  public:
   // Add colors to the log (for display on terminal)
-  oops::OptionalParameter<bool> color_log{"color log", this};
+  oops::Parameter<bool> color_log{"color log", false, this};
   // Stream test messages into a dedicated channel
-  oops::OptionalParameter<bool> testing{"testing", this};
+  oops::Parameter<bool> testing{"testing", false, this};
   // Default seed for random numbers
-  oops::OptionalParameter<bool> default_seed{"default seed", this};
+  oops::Parameter<bool> default_seed{"default seed", true, this};
   // Inter-compilers reproducibility
-  oops::OptionalParameter<bool> repro_ops{"reproducibility operators", this};
+  oops::Parameter<bool> repro_ops{"reproducibility operators", true, this};
   // Reproducibility threshold
-  oops::OptionalParameter<double> repro_th{"reproducibility threshold", this};
+  oops::Parameter<double> repro_th{"reproducibility threshold", 1.0e-12, this};
   // Universe radius [in meters]
-  oops::OptionalParameter<double> universe_radius{"universe length-scale", this};
+  oops::Parameter<double> universe_radius{"universe length-scale", 6371229*M_PI, this};
 };
 
 // -----------------------------------------------------------------------------
@@ -101,31 +103,31 @@ class IoSection : public oops::Parameters {
 
  public:
   // Data directory
-  oops::OptionalParameter<std::string> data_directory{"data directory", this};
+  oops::Parameter<std::string> data_directory{"data directory", ".", this};
   // Data prefix
-  oops::OptionalParameter<std::string> files_prefix{"files prefix", this};
+  oops::Parameter<std::string> files_prefix{"files prefix", "", this};
   // Parallel NetCDF I/O
-  oops::OptionalParameter<bool> parallel_netcdf{"parallel netcdf", this};
+  oops::Parameter<bool> parallel_netcdf{"parallel netcdf", true, this};
   // Number of I/O processors
-  oops::OptionalParameter<int> nprocio{"io task number", this};
+  oops::Parameter<int> nprocio{"io task number", 20, this};
   // Alias
-  oops::OptionalParameter<std::vector<AliasParameter>> alias{"alias", this};
+  oops::Parameter<std::vector<AliasParameter>> alias{"alias", {}, this};
   // Sampling file
-  oops::OptionalParameter<std::string> fname_samp{"overriding sampling file", this};
+  oops::Parameter<std::string> fname_samp{"overriding sampling file", "", this};
   // Vertical covariance files
-  oops::OptionalParameter<std::vector<std::string>>
-    fname_vbal_cov{"overriding vertical covariance file", this};
+  oops::Parameter<std::vector<std::string>>
+    fname_vbal_cov{"overriding vertical covariance file", {}, this};
   // Vertical balance file
-  oops::OptionalParameter<std::string> fname_vbal{"overriding vertical balance file", this};
+  oops::Parameter<std::string> fname_vbal{"overriding vertical balance file", "", this};
   // Ensemble 1 moments files
-  oops::OptionalParameter<std::vector<std::string>> fname_mom{"overriding moments file", this};
+  oops::Parameter<std::vector<std::string>> fname_mom{"overriding moments file", {}, this};
   // Ensemble 2 moments files
-  oops::OptionalParameter<std::vector<std::string>> fname_mom2{"overriding lowres moments file",
+  oops::Parameter<std::vector<std::string>> fname_mom2{"overriding lowres moments file", {},
     this};
   // NICAS file
-  oops::OptionalParameter<std::string> fname_nicas{"overriding nicas file", this};
+  oops::Parameter<std::string> fname_nicas{"overriding nicas file", "", this};
   // Psichitouv transform file
-  oops::OptionalParameter<std::string> fname_wind{"overriding psichitouv file", this};
+  oops::Parameter<std::string> fname_wind{"overriding psichitouv file", "", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -135,94 +137,94 @@ class DriversSection : public oops::Parameters {
 
  public:
   // Compute covariance, ensemble 1
-  oops::OptionalParameter<bool> compute_cov1{"compute covariance", this};
+  oops::Parameter<bool> compute_cov1{"compute covariance", false, this};
   // Compute covariance, ensemble 2
-  oops::OptionalParameter<bool> compute_cov2{"compute lowres covariance", this};
+  oops::Parameter<bool> compute_cov2{"compute lowres covariance", false, this};
   // Compute correlation, ensemble 1
-  oops::OptionalParameter<bool> compute_cor1{"compute correlation", this};
+  oops::Parameter<bool> compute_cor1{"compute correlation", false, this};
   // Compute correlation, ensemble 2
-  oops::OptionalParameter<bool> compute_cor2{"compute lowres correlation", this};
+  oops::Parameter<bool> compute_cor2{"compute lowres correlation", false, this};
   // Compute localization, ensemble 1
-  oops::OptionalParameter<bool> compute_loc1{"compute localization", this};
+  oops::Parameter<bool> compute_loc1{"compute localization", false, this};
   // Compute localization, ensemble 2
-  oops::OptionalParameter<bool> compute_loc2{"compute lowres localization", this};
+  oops::Parameter<bool> compute_loc2{"compute lowres localization", false, this};
   // Compute hybrid weights
-  oops::OptionalParameter<bool> compute_hyb{"compute hybrid weights", this};
+  oops::Parameter<bool> compute_hyb{"compute hybrid weights", false, this};
   // Hybrid term source ('randomized static' or 'lowres ensemble')
-  oops::OptionalParameter<std::string> hybrid_source{"hybrid source", this};
+  oops::Parameter<std::string> hybrid_source{"hybrid source", "", this};
   // Multivariate strategy ('diag_all', 'common', 'common_weighted', 'specific_univariate' or
   // 'specific_multivariate')
-  oops::OptionalParameter<std::string> strategy{"multivariate strategy", this};
+  oops::Parameter<std::string> strategy{"multivariate strategy", "", this};
   // Iterative algorithm (ensemble members loaded sequentially)
-  oops::OptionalParameter<bool> iterative_algo{"iterative algorithm", this};
+  oops::Parameter<bool> iterative_algo{"iterative algorithm", false, this};
   // New normality test
-  oops::OptionalParameter<bool> new_normality{"compute normality", this};
+  oops::Parameter<bool> new_normality{"compute normality", false, this};
   // Read local sampling
-  oops::OptionalParameter<bool> load_samp_local{"read local sampling", this};
+  oops::Parameter<bool> load_samp_local{"read local sampling", false, this};
   // Read global sampling
-  oops::OptionalParameter<bool> load_samp_global{"read global sampling", this};
+  oops::Parameter<bool> load_samp_global{"read global sampling", false, this};
   // Write local sampling
-  oops::OptionalParameter<bool> write_samp_local{"write local sampling", this};
+  oops::Parameter<bool> write_samp_local{"write local sampling", false, this};
   // Write global sampling
-  oops::OptionalParameter<bool> write_samp_global{"write global sampling", this};
+  oops::Parameter<bool> write_samp_global{"write global sampling", false, this};
   // Write sampling grids
-  oops::OptionalParameter<bool> write_samp_grids{"write sampling grids", this};
+  oops::Parameter<bool> write_samp_grids{"write sampling grids", false, this};
   // New vertical covariance
-  oops::OptionalParameter<bool> new_vbal_cov{"compute vertical covariance", this};
+  oops::Parameter<bool> new_vbal_cov{"compute vertical covariance", false, this};
   // Read local vertical covariance
-  oops::OptionalParameter<bool> load_vbal_cov{"read vertical covariance", this};
+  oops::Parameter<bool> load_vbal_cov{"read vertical covariance", false, this};
   // Write local vertical covariancee
-  oops::OptionalParameter<bool> write_vbal_cov{"write vertical covariance", this};
+  oops::Parameter<bool> write_vbal_cov{"write vertical covariance", false, this};
   // Compute vertical balance operator
-  oops::OptionalParameter<bool> new_vbal{"compute vertical balance", this};
+  oops::Parameter<bool> new_vbal{"compute vertical balance", false, this};
   // Read local vertical balance operator
-  oops::OptionalParameter<bool> load_vbal{"read vertical balance", this};
+  oops::Parameter<bool> load_vbal{"read vertical balance", false, this};
   // Write vertical balance operator
-  oops::OptionalParameter<bool> write_vbal{"write vertical balance", this};
+  oops::Parameter<bool> write_vbal{"write vertical balance", false, this};
   // Compute variance
-  oops::OptionalParameter<bool> new_var{"compute variance", this};
+  oops::Parameter<bool> new_var{"compute variance", false, this};
   // Compute moments
-  oops::OptionalParameter<bool> new_mom{"compute moments", this};
+  oops::Parameter<bool> new_mom{"compute moments", false, this};
   // Read sampling moments
-  oops::OptionalParameter<bool> load_mom{"read moments", this};
+  oops::Parameter<bool> load_mom{"read moments", false, this};
   // Write sampling moments
-  oops::OptionalParameter<bool> write_mom{"write moments", this};
+  oops::Parameter<bool> write_mom{"write moments", false, this};
   // Write HDIAG diagnostics
-  oops::OptionalParameter<bool> write_hdiag{"write diagnostics", this};
+  oops::Parameter<bool> write_hdiag{"write diagnostics", false, this};
   // Write HDIAG components detail
-  oops::OptionalParameter<bool> write_hdiag_detail{"write diagnostics detail", this};
+  oops::Parameter<bool> write_hdiag_detail{"write diagnostics detail", false, this};
   // Compute NICAS
-  oops::OptionalParameter<bool> new_nicas{"compute nicas", this};
+  oops::Parameter<bool> new_nicas{"compute nicas", false, this};
   // Read local NICAS parameters
-  oops::OptionalParameter<bool> load_nicas_local{"read local nicas", this};
+  oops::Parameter<bool> load_nicas_local{"read local nicas", false, this};
   // Read global NICAS parameters
-  oops::OptionalParameter<bool> load_nicas_global{"read global nicas", this};
+  oops::Parameter<bool> load_nicas_global{"read global nicas", false, this};
   // Write local NICAS parameters
-  oops::OptionalParameter<bool> write_nicas_local{"write local nicas", this};
+  oops::Parameter<bool> write_nicas_local{"write local nicas", false, this};
   // Write global NICAS parameters
-  oops::OptionalParameter<bool> write_nicas_global{"write global nicas", this};
+  oops::Parameter<bool> write_nicas_global{"write global nicas", false, this};
   // Write NICAS grids
-  oops::OptionalParameter<bool> write_nicas_grids{"write nicas grids", this};
+  oops::Parameter<bool> write_nicas_grids{"write nicas grids", false, this};
   // Compute wind transform
-  oops::OptionalParameter<bool> new_wind{"compute psichitouv", this};
+  oops::Parameter<bool> new_wind{"compute psichitouv", false, this};
   // Read local wind transform
-  oops::OptionalParameter<bool> load_wind_local{"read local psichitouv", this};
+  oops::Parameter<bool> load_wind_local{"read local psichitouv", false, this};
   // Write local wind transform
-  oops::OptionalParameter<bool> write_wind_local{"write local psichitouv", this};
+  oops::Parameter<bool> write_wind_local{"write local psichitouv", false, this};
   // Test vertical balance inverse
-  oops::OptionalParameter<bool> check_vbal{"vertical balance inverse test", this};
+  oops::Parameter<bool> check_vbal{"vertical balance inverse test", false, this};
   // Test adjoints
-  oops::OptionalParameter<bool> check_adjoints{"adjoints test", this};
+  oops::Parameter<bool> check_adjoints{"adjoints test", false, this};
   // Test NICAS normalization (number of tests)
-  oops::OptionalParameter<int> check_normalization{"normalization test", this};
+  oops::Parameter<int> check_normalization{"normalization test", 0, this};
   // Test NICAS application on diracs
-  oops::OptionalParameter<bool> check_dirac{"internal dirac test", this};
+  oops::Parameter<bool> check_dirac{"internal dirac test", false, this};
   // Test NICAS randomization
-  oops::OptionalParameter<bool> check_randomization{"randomization test", this};
+  oops::Parameter<bool> check_randomization{"randomization test", false, this};
   // Test HDIAG-NICAS consistency
-  oops::OptionalParameter<bool> check_consistency{"internal consistency test", this};
+  oops::Parameter<bool> check_consistency{"internal consistency test", false, this};
   // Test HDIAG optimality
-  oops::OptionalParameter<bool> check_optimality{"localization optimality test", this};
+  oops::Parameter<bool> check_optimality{"localization optimality test", false, this};
 };
 
 // -----------------------------------------------------------------------------
@@ -232,11 +234,11 @@ class ModelSection : public oops::Parameters {
 
  public:
   // Level for 2D variables ('first' or 'last')
-  oops::OptionalParameter<std::string> lev2d{"level for 2d variables", this};
+  oops::Parameter<std::string> lev2d{"level for 2d variables", "first", this};
   // Variables names
-  oops::OptionalParameter<std::vector<std::string>> variables{"variables", this};
+  oops::Parameter<std::vector<std::string>> variables{"variables", {}, this};
   // Check that sampling couples and interpolations do not cross mask boundaries
-  oops::OptionalParameter<bool> mask_check{"do not cross mask boundaries", this};
+  oops::Parameter<bool> mask_check{"do not cross mask boundaries", false, this};
 };
 
 // -----------------------------------------------------------------------------
@@ -246,13 +248,13 @@ class EnsembleSizesSection : public oops::Parameters {
 
  public:
   // Ensemble 1 size
-  oops::OptionalParameter<int> ens1_ne{"total ensemble size", this};
+  oops::Parameter<int> ens1_ne{"total ensemble size", 0, this};
   // Ensemble 1 sub-ensembles number
-  oops::OptionalParameter<int> ens1_nsub{"sub-ensembles", this};
+  oops::Parameter<int> ens1_nsub{"sub-ensembles", 1, this};
   // Ensemble 2 size
-  oops::OptionalParameter<int> ens2_ne{"total lowres ensemble size", this};
+  oops::Parameter<int> ens2_ne{"total lowres ensemble size", 0, this};
   // Ensemble 2 sub-ensembles number
-  oops::OptionalParameter<int> ens2_nsub{"lowres sub-ensembles", this};
+  oops::Parameter<int> ens2_nsub{"lowres sub-ensembles", 1, this};
 };
 
 // -----------------------------------------------------------------------------
@@ -264,11 +266,11 @@ class MaskParameters : public oops::Parameters {
   // Mask restriction type
   oops::RequiredParameter<std::string> mask_type{"type", this};
   // Mask threshold
-  oops::OptionalParameter<double> mask_th{"threshold", this};
+  oops::Parameter<double> mask_th{"threshold", util::missingValue(double()), this};
   // Mask threshold side ('lower' if mask_th is the lower bound, resp. 'upper')
-  oops::OptionalParameter<std::string> mask_lu{"side", this};
+  oops::Parameter<std::string> mask_lu{"side", "", this};
   // Mask variable
-  oops::OptionalParameter<std::string> mask_variable{"variable", this};
+  oops::Parameter<std::string> mask_variable{"variable", "", this};
 };
 
 class SamplingSection : public oops::Parameters {
@@ -276,34 +278,34 @@ class SamplingSection : public oops::Parameters {
 
  public:
   // Computation grid size
-  oops::OptionalParameter<int> nc1{"computation grid size", this};
+  oops::Parameter<int> nc1{"computation grid size", 0, this};
   // Diagnostic grid size
-  oops::OptionalParameter<int> nc2{"diagnostic grid size", this};
+  oops::Parameter<int> nc2{"diagnostic grid size", 0, this};
   // Number of distance classes
-  oops::OptionalParameter<int> nc3{"distance classes", this};
+  oops::Parameter<int> nc3{"distance classes", 0, this};
   // Number of angular sectors
-  oops::OptionalParameter<int> nc4{"angular sectors", this};
+  oops::Parameter<int> nc4{"angular sectors", 1, this};
   // Class size (for sam_type='hor'), should be larger than the typical grid cell size [in meters]
-  oops::OptionalParameter<double> dc{"distance class width", this};
+  oops::Parameter<double> dc{"distance class width", 0.0, this};
   // Reduced number of levels for diagnostics
-  oops::OptionalParameter<int> nl0r{"reduced levels", this};
+  oops::Parameter<int> nl0r{"reduced levels", 0, this};
   // Activate local diagnostics
-  oops::OptionalParameter<bool> local_diag{"local diagnostic", this};
+  oops::Parameter<bool> local_diag{"local diagnostic", false, this};
   // Local diagnostics calculation radius [in meters]
-  oops::OptionalParameter<double> local_rad{"averaging length-scale", this};
+  oops::Parameter<double> local_rad{"averaging length-scale", 0.0, this};
   // Local diagnostics calculation latitude band half-width [in degrees]
-  oops::OptionalParameter<double> local_dlat{"averaging latitude width", this};
+  oops::Parameter<double> local_dlat{"averaging latitude width", 0.0, this};
   // Diagnostic draw type ('random' or 'octahedral')
-  oops::OptionalParameter<std::string> draw_type{"grid type", this};
+  oops::Parameter<std::string> draw_type{"grid type", "random", this};
   // Maximum number of random number draws
-  oops::OptionalParameter<int> irmax{"max number of draws", this};
+  oops::Parameter<int> irmax{"max number of draws", 10000, this};
   // Vertical balance C2B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based
   // or 'si': smooth interpolation)
-  oops::OptionalParameter<std::string> interp_type{"interpolation type", this};
+  oops::Parameter<std::string> interp_type{"interpolation type", "c0", this};
   // Sampling masks
-  oops::OptionalParameter<std::vector<MaskParameters>> masks{"masks", this};
+  oops::Parameter<std::vector<MaskParameters>> masks{"masks", {}, this};
   // Threshold on vertically contiguous points for the mask (0 to skip the test)
-  oops::OptionalParameter<int> ncontig_th{"contiguous levels threshold", this};
+  oops::Parameter<int> ncontig_th{"contiguous levels threshold", 0, this};
 };
 
 // -----------------------------------------------------------------------------
@@ -313,15 +315,16 @@ class DiagnosticsSection : public oops::Parameters {
 
  public:
   // Ensemble size
-  oops::OptionalParameter<int> ne{"target ensemble size", this};
+  oops::Parameter<int> ne{"target ensemble size", 0, this};
   // Ensemble size of the hybrid term
-  oops::OptionalParameter<int> ne_lr{"target lowres ensemble size", this};
+  oops::Parameter<int> ne_lr{"target lowres ensemble size", 0, this};
   // Gaussian approximation for asymptotic quantities
-  oops::OptionalParameter<bool> gau_approx{"gaussian approximation", this};
+  oops::Parameter<bool> gau_approx{"gaussian approximation", false, this};
   // Threshold on generalized kurtosis (3.0 = Gaussian distribution)
-  oops::OptionalParameter<double> gen_kurt_th{"generalized kurtosis threshold", this};
+  oops::Parameter<double> gen_kurt_th{"generalized kurtosis threshold",
+    std::numeric_limits<double>().max(), this};
   // Number of bins for averaged statistics histograms
-  oops::OptionalParameter<int> avg_nbins{"histogram bins", this};
+  oops::Parameter<int> avg_nbins{"histogram bins", 0, this};
 };
 
 // -----------------------------------------------------------------------------
@@ -347,15 +350,15 @@ class VerticalBalanceSection : public oops::Parameters {
 
  public:
   // Vertical balance parameters
-  oops::OptionalParameter<std::vector<VerticalBalanceBlockParameters>> vbal{"vbal", this};
+  oops::Parameter<std::vector<VerticalBalanceBlockParameters>> vbal{"vbal", {}, this};
   // Pseudo-inverse for auto-covariance
-  oops::OptionalParameter<bool> vbal_pseudo_inv{"pseudo inverse", this};
+  oops::Parameter<bool> vbal_pseudo_inv{"pseudo inverse", false, this};
   // Dominant mode for pseudo-inverse
-  oops::OptionalParameter<int> vbal_pseudo_inv_mmax{"dominant mode", this};
+  oops::Parameter<int> vbal_pseudo_inv_mmax{"dominant mode", 0, this};
   // Variance threshold to compute the dominant mode for pseudo-inverse
-  oops::OptionalParameter<double> vbal_pseudo_inv_var_th{"variance threshold", this};
+  oops::Parameter<double> vbal_pseudo_inv_var_th{"variance threshold", 0.0, this};
   // Identity vertical balance for tests
-  oops::OptionalParameter<bool> vbal_id{"identity blocks", this};
+  oops::Parameter<bool> vbal_id{"identity blocks", false, this};
 };
 
 // -----------------------------------------------------------------------------
@@ -365,18 +368,18 @@ class VarianceSection : public oops::Parameters {
 
  public:
   // Force specific variance
-  oops::OptionalParameter<bool> forced_var{"explicit stddev", this};
+  oops::Parameter<bool> forced_var{"explicit stddev", false, this};
   // Forced standard-deviation
-  oops::OptionalParameter<std::vector<ValueOrProfileParameters>> stddev{"stddev", this};
+  oops::Parameter<std::vector<ValueOrProfileParameters>> stddev{"stddev", {}, this};
   // Filter variance
-  oops::OptionalParameter<bool> var_filter{"objective filtering", this};
+  oops::Parameter<bool> var_filter{"objective filtering", false, this};
   // Number of iterations for the variance filtering (0 for uniform variance)
-  oops::OptionalParameter<int> var_niter{"filtering iterations", this};
+  oops::Parameter<int> var_niter{"filtering iterations", -1, this};
   // Number of passes for the variance filtering (0 for uniform variance)
-  oops::OptionalParameter<int> var_npass{"filtering passes", this};
+  oops::Parameter<int> var_npass{"filtering passes", -1, this};
   // Variance initial filtering support radius [in meters]
-  oops::OptionalParameter<std::vector<ValueOrProfileParameters>> var_rhflt{"initial length-scale",
-    this};
+  oops::Parameter<std::vector<ValueOrProfileParameters>> var_rhflt{"initial length-scale",
+    {}, this};
 };
 
 // -----------------------------------------------------------------------------
@@ -386,11 +389,11 @@ class OptimalityTestSection : public oops::Parameters {
 
  public:
   // Number of length-scale factors for optimization
-  oops::OptionalParameter<int> optimality_nfac{"half number of factors", this};
+  oops::Parameter<int> optimality_nfac{"half number of factors", 1, this};
   // Increments of length-scale factors for optimization
-  oops::OptionalParameter<double> optimality_delta{"factors increment", this};
+  oops::Parameter<double> optimality_delta{"factors increment", 0.05, this};
   // Number of test vectors for optimization
-  oops::OptionalParameter<int> optimality_ntest{"test vectors", this};
+  oops::Parameter<int> optimality_ntest{"test vectors", 10, this};
 };
 
 // -----------------------------------------------------------------------------
@@ -400,13 +403,13 @@ class FitSection : public oops::Parameters {
 
  public:
   // Horizontal filtering suport radius [in meters]
-  oops::OptionalParameter<double> diag_rhflt{"horizontal filtering length-scale", this};
+  oops::Parameter<double> diag_rhflt{"horizontal filtering length-scale", 0.0, this};
   // Vertical filtering support radius
-  oops::OptionalParameter<double> diag_rvflt{"vertical filtering length-scale", this};
+  oops::Parameter<double> diag_rvflt{"vertical filtering length-scale", 0.0, this};
   // Number of levels between interpolation levels
-  oops::OptionalParameter<int> fit_dl0{"vertical stride", this};
+  oops::Parameter<int> fit_dl0{"vertical stride", 1, this};
   // Number of components in the fit function
-  oops::OptionalParameter<int> fit_ncmp{"number of components", this};
+  oops::Parameter<int> fit_ncmp{"number of components", 1, this};
 };
 
 // -----------------------------------------------------------------------------
@@ -452,34 +455,34 @@ class NicasSection : public oops::Parameters {
 
  public:
   // Resolution
-  oops::OptionalParameter<double> resol{"resolution", this};
+  oops::Parameter<double> resol{"resolution", 0.0, this};
   // Maximum size of the Sc1 subset
-  oops::OptionalParameter<int> nc1max{"max horizontal grid size", this};
+  oops::Parameter<int> nc1max{"max horizontal grid size", 15000, this};
   // NICAS draw type ('random' or 'octahedral')
-  oops::OptionalParameter<std::string> nicas_draw_type{"grid type", this};
+  oops::Parameter<std::string> nicas_draw_type{"grid type", "random", this};
   // Force specific support radii
-  oops::OptionalParameter<bool> forced_radii{"explicit length-scales", this};
+  oops::Parameter<bool> forced_radii{"explicit length-scales", false, this};
   // Forced horizontal support radius [in meters]
-  oops::OptionalParameter<std::vector<ValueOrProfileParameters>> rh{"horizontal length-scale",
+  oops::Parameter<std::vector<ValueOrProfileParameters>> rh{"horizontal length-scale", {},
     this};
   // Forced vertical support radius
-  oops::OptionalParameter<std::vector<ValueOrProfileParameters>> rv{"vertical length-scale",
+  oops::Parameter<std::vector<ValueOrProfileParameters>> rv{"vertical length-scale", {},
     this};
   // Forced localization weights
-  oops::OptionalParameter<std::vector<LocWgtParameters>> loc_wgt{"common localization weights",
+  oops::Parameter<std::vector<LocWgtParameters>> loc_wgt{"common localization weights", {},
     this};
   // Minimum level
-  oops::OptionalParameter<std::vector<ValueParameters>> min_lev{"minimum level", this};
+  oops::Parameter<std::vector<ValueParameters>> min_lev{"minimum level", {}, this};
   // Maximum level
-  oops::OptionalParameter<std::vector<ValueParameters>> max_lev{"maximum level", this};
+  oops::Parameter<std::vector<ValueParameters>> max_lev{"maximum level", {}, this};
   // NICAS C1B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based
   // or 'si': smooth interpolation)
-  oops::OptionalParameter<std::vector<SpecificTypeParameters>> interp_type{"interpolation type",
+  oops::Parameter<std::vector<SpecificTypeParameters>> interp_type{"interpolation type", {},
     this};
   // Positive-definiteness test
-  oops::OptionalParameter<bool> pos_def_test{"positive-definiteness test", this};
+  oops::Parameter<bool> pos_def_test{"positive-definiteness test", false, this};
   // Horizontal NICAS interpolation test
-  oops::OptionalParameter<bool> interp_test{"horizontal interpolation test", this};
+  oops::Parameter<bool> interp_test{"horizontal interpolation test", false, this};
 };
 
 // -----------------------------------------------------------------------------
@@ -489,21 +492,22 @@ class PsichitouvSection : public oops::Parameters {
 
  public:
   // Streamfunction variable name
-  oops::OptionalParameter<std::string> wind_streamfunction{"stream function", this};
+  oops::Parameter<std::string> wind_streamfunction{"stream function", "stream_function", this};
   // Velocity potential variable name
-  oops::OptionalParameter<std::string> wind_velocity_potential{"velocity potential", this};
+  oops::Parameter<std::string> wind_velocity_potential{"velocity potential", "velocity_potential",
+    this};
   // Eastward wind variable name
-  oops::OptionalParameter<std::string> wind_eastward{"eastward wind", this};
+  oops::Parameter<std::string> wind_eastward{"eastward wind", "eastward_wind", this};
   // Northward wind variable name
-  oops::OptionalParameter<std::string> wind_northward{"northward wind", this};
+  oops::Parameter<std::string> wind_northward{"northward wind", "northward_wind", this};
   // Number of longitudes for the regular grid
-  oops::OptionalParameter<int> wind_nlon{"longitudes", this};
+  oops::Parameter<int> wind_nlon{"longitudes", 0, this};
   // Number of latitudes for the regular grid
-  oops::OptionalParameter<int> wind_nlat{"latitudes", this};
+  oops::Parameter<int> wind_nlat{"latitudes", 0, this};
   // Half-width of the Savitzky-Golay to compute derivatives
-  oops::OptionalParameter<int> wind_nsg{"savitzky-golay half width", this};
+  oops::Parameter<int> wind_nsg{"savitzky-golay half width", 0, this};
   // Wind inflation to compensate the Savitzky-Golay smoothing
-  oops::OptionalParameter<double> wind_inflation{"wind inflation", this};
+  oops::Parameter<double> wind_inflation{"wind inflation", 1.0, this};
 };
 
 // -----------------------------------------------------------------------------
@@ -531,39 +535,43 @@ class BUMPParameters : public oops::Parameters {
   // Internal parameters
 
   // General parameters
-  oops::OptionalParameter<GeneralSection> general{"general", this};
-  // Drivers parameters
-  oops::OptionalParameter<DriversSection> drivers{"drivers", this};
+  oops::Parameter<GeneralSection> general{"general", GeneralSection(), this};
   // IO parameters
-  oops::OptionalParameter<IoSection> io{"io", this};
+  oops::Parameter<IoSection> io{"io", IoSection(), this};
+  // Drivers parameters
+  oops::Parameter<DriversSection> drivers{"drivers", DriversSection(), this};
   // Model parameters
-  oops::OptionalParameter<ModelSection> model{"model", this};
+  oops::Parameter<ModelSection> model{"model", ModelSection(), this};
   // Ensemble sizes parameters
-  oops::OptionalParameter<EnsembleSizesSection> ensembleSizes{"ensemble sizes", this};
-  // Sampling parameters
-  oops::OptionalParameter<SamplingSection> sampling{"sampling", this};
-  // Diagnostics parameters
-  oops::OptionalParameter<DiagnosticsSection> diagnostics{"diagnostics", this};
-  // Vertical balance parameters
-  oops::OptionalParameter<VerticalBalanceSection> verticalBalance{"vertical balance", this};
-  // Variance parameters
-  oops::OptionalParameter<VarianceSection> variance{"variance", this};
-  // Optimality test parameters
-  oops::OptionalParameter<OptimalityTestSection> optimalityTest{"optimality test", this};
-  // Fit parameters
-  oops::OptionalParameter<FitSection> fit{"fit", this};
-  // Local profiles parameters
-  oops::OptionalParameter<std::vector<LocalProfileParameter>> localProfiles{"local profiles",
+  oops::Parameter<EnsembleSizesSection> ensembleSizes{"ensemble sizes", EnsembleSizesSection(),
     this};
+  // Sampling parameters
+  oops::Parameter<SamplingSection> sampling{"sampling", SamplingSection(), this};
+  // Diagnostics parameters
+  oops::Parameter<DiagnosticsSection> diagnostics{"diagnostics", DiagnosticsSection(), this};
+  // Vertical balance parameters
+  oops::Parameter<VerticalBalanceSection> verticalBalance{"vertical balance",
+    VerticalBalanceSection(), this};
+  // Variance parameters
+  oops::Parameter<VarianceSection> variance{"variance", VarianceSection(), this};
+  // Optimality test parameters
+  oops::Parameter<OptimalityTestSection> optimalityTest{"optimality test", OptimalityTestSection(),
+    this};
+  // Fit parameters
+  oops::Parameter<FitSection> fit{"fit", FitSection(), this};
+  // Local profiles parameters
+  oops::Parameter<std::vector<LocalProfileParameter>> localProfiles{"local profiles", {}, this};
   // NICAS parameters
-  oops::OptionalParameter<NicasSection> nicas{"nicas", this};
+  oops::Parameter<NicasSection> nicas{"nicas", NicasSection(), this};
   // Psichitouv parameters
-  oops::OptionalParameter<PsichitouvSection> psichitouv{"psichitouv", this};
+  oops::Parameter<PsichitouvSection> psichitouv{"psichitouv", PsichitouvSection(), this};
   // Dirac parameters
-  oops::OptionalParameter<std::vector<DiracPointParameters>> dirac{"dirac", this};
+  oops::Parameter<std::vector<DiracPointParameters>> dirac{"dirac", {}, this};
 
   // External parameters
 
+  // Missing real value
+  oops::Parameter<double> msvalr{"msvalr", util::missingValue(double()), this};
   // Ensemble 1 parameters
   oops::OptionalParameter<eckit::LocalConfiguration> ensemble1{"ensemble", this};
   // Ensemble 2 parameters

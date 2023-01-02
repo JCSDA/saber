@@ -89,10 +89,37 @@ contains
    final :: bump_dummy_final
 end type bump_type
 
+interface
+  subroutine bump_config_init_c(c_conf) bind(c,name='bump_config_init_f90')
+  use, intrinsic :: iso_c_binding
+  implicit none
+  type(c_ptr),value :: c_conf
+  end subroutine bump_config_init_c
+end interface
+
 private
-public :: bump_type
+public :: bump_config_init,bump_type
 
 contains
+
+!----------------------------------------------------------------------
+! Subroutine: bump_config_init
+!> Intialize configuration with default values
+!----------------------------------------------------------------------
+subroutine bump_config_init(conf)
+
+implicit none
+
+! Passed variables
+type(fckit_configuration),intent(out) :: conf !< FCKIT configuration
+
+! Initialize empty configuration
+conf = fckit_configuration()
+
+! Get default values from C++
+call bump_config_init_c(conf%c_ptr())
+
+end subroutine bump_config_init
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_create

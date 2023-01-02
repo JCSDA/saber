@@ -48,13 +48,8 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   activeVarsPerGrid_() {
   oops::Log::trace() << "BUMP::BUMP construction starting" << std::endl;
 
-  // Parameters
-  const GeneralSection general = params_.general.value().get_value_or(GeneralSection());
-  const DriversSection drivers = params_.drivers.value().get_value_or(DriversSection());
-
   // If testing is activated, replace _MPI_ and _OMP_ patterns
-  const bool testing = general.testing.value().get_value_or(false);
-  if (testing) {
+  if (params_.general.value().testing.value()) {
     // Convert to eckit configuration
     eckit::LocalConfiguration fullConfig;
     params_.serialize(fullConfig);
@@ -70,6 +65,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
 #endif
     oops::Log::info() << "Info     : MPI tasks:      " << mpi << std::endl;
     oops::Log::info() << "Info     : OpenMP threads: " << omp << std::endl;
+    oops::Log::info() << fullConfig << std::endl;
 
     // Replace patterns
     util::seekAndReplace(fullConfig, "_MPI_", mpi);
@@ -188,16 +184,9 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   // Initialize configuration
   eckit::LocalConfiguration conf(params_.toConfiguration());
 
-  // Add missing value (real)
-  conf.set("msvalr", util::missingValue(double()));
-
-  // Add ensemble sizes
-  if (!conf.has("ensemble sizes.total ensemble size")) {
-    conf.set("ensemble sizes.total ensemble size", ens1_ne);
-  }
-  if (!conf.has("ensemble sizes.total lowres ensemble size")) {
-    conf.set("ensemble sizes.total lowres ensemble size", ens2_ne);
-  }
+  // Update ensemble sizes
+  conf.set("ensemble sizes.total ensemble size", ens1_ne);
+  conf.set("ensemble sizes.total lowres ensemble size", ens2_ne);
 
   // Grids
   std::vector<eckit::LocalConfiguration> grids;
@@ -223,9 +212,8 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
 
     // Add input variables to the grid configuration
     std::vector<std::string> vars_str;
-    if (grid.has("model.variables")) {
-      grid.get("model.variables", vars_str);
-    } else {
+    grid.get("model.variables", vars_str);
+    if (vars_str.size() == 0) {
       vars_str = activeVars_.variables();
       grid.set("model.variables", vars_str);
     }
@@ -257,10 +245,9 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
     keyBUMP_.push_back(keyBUMP);
 
     // Second geometry
-    bool compute_cov2 = drivers.compute_cov2.value().get_value_or(false);
-    bool compute_cor2 = drivers.compute_cor2.value().get_value_or(false);
-    bool compute_loc2 = drivers.compute_loc2.value().get_value_or(false);
-    if (compute_cov2 || compute_cor2 || compute_loc2) {
+    if (params_.drivers.value().compute_cov2.value()
+      || params_.drivers.value().compute_cor2.value()
+      || params_.drivers.value().compute_loc2.value()) {
       bump_second_geometry_f90(keyBUMP, functionSpace2.get(), extraFields2.get());
     }
   }
