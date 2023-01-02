@@ -168,13 +168,19 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
 
       // Adjoint test
       if (adjointTest) {
+        // Get intersection of active variables and outer/inner variables
+        oops::Variables activeOuterVars = activeVars;
+        activeOuterVars.intersection(outerVars);
+        oops::Variables activeInnerVars = activeVars;
+        activeInnerVars.intersection(innerVars);
+
         saberOuterBlocks_.back().adjointTest(geom.getComm(),
                                              outerGeometryData.back().get(),
-                                             geom.variableSizes(outerVars),
-                                             outerVars,
+                                             geom.variableSizes(activeOuterVars),
+                                             activeOuterVars,
                                              innerGeometryData,
-                                             geom.variableSizes(innerVars),
-                                             innerVars);
+                                             geom.variableSizes(activeInnerVars),
+                                             activeInnerVars);
       }
 
       // Update outer geometry and variables for the next block
