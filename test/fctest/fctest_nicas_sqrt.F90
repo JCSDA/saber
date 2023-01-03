@@ -32,7 +32,7 @@ TEST( test_interpolatorbump )
   use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum
   use tools_kinds, only: kind_real
   use tools_repro, only: repro_th
-  use type_bump, only: bump_config_init,bump_type
+  use type_bump, only: bump_type
   use type_fieldset, only: fieldset_type
 
   implicit none
@@ -68,7 +68,7 @@ TEST( test_interpolatorbump )
   universe_rad = atlas_fieldset()
 
   ! Create configuration
-  call bump_config_init(conf)
+  conf = fckit_configuration()
   call conf%set('drivers.multivariate strategy','specific_multivariate')
   call conf%set('drivers.compute nicas',.true.)
   call conf%set('model.variables',variables)
