@@ -356,7 +356,7 @@ if (conf%get('io',section)) then
    call nam%get(section,'data directory',nam%datadir)
    call nam%get(section,'files prefix',nam%prefix)
    call nam%get(section,'parallel netcdf',nam%parallel_netcdf)
-   call nam%get(section,'io task number',nam%nprocio)
+   call nam%get(section,'io tasks',nam%nprocio)
    if (section%get('alias',confs)) then
       if (size(confs)>0) then
          ! Release memory

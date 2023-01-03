@@ -109,7 +109,7 @@ class IoSection : public oops::Parameters {
   // Parallel NetCDF I/O
   oops::Parameter<bool> parallel_netcdf{"parallel netcdf", true, this};
   // Number of I/O processors
-  oops::Parameter<int> nprocio{"io task number", 20, this};
+  oops::Parameter<int> nprocio{"io tasks", 20, this};
   // Alias
   oops::Parameter<std::vector<AliasParameter>> alias{"alias", {}, this};
   // Sampling file

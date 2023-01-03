@@ -17,7 +17,7 @@ bump:
   io:
     data directory: testdata
     files prefix: error_covariance_training_bump_wind/_MPI_-_OMP_
-    io task number: 1
+    io tasks: 1
   drivers:
     compute psichitouv: true
     write local psichitouv: true
