@@ -122,8 +122,14 @@ type(fieldset_type),intent(in) :: universe_radius       !< Fieldset optionally c
 ! Initialize MPL
 call bump%mpl%init(comm)
 
+! Initialize parameters
+call bump%nam%init(bump%mpl)
+
 ! Read configuration
 call bump%nam%from_conf(bump%mpl,conf)
+
+! Finalize parameters
+call bump%nam%final(bump%mpl)
 
 ! Setup BUMP
 call bump%setup(afunctionspace,fieldset,universe_radius=universe_radius)
@@ -183,10 +189,13 @@ if (present(universe_radius)) then
 
          ! Get data maximum
          if (afield%rank()==2) then
+            ! Get data
             call afield%data(ptr_2)
-            do il0=1,size(ptr_2,1)
-               if ((bump%nam%min_lev(iv)<=il0).and.(il0<=bump%nam%max_lev(iv))) &
- & bump%nam%universe_radius = max(bump%nam%universe_radius,zss_maxval(ptr_2(il0,:),mask=bump%mpl%msv%isnot(ptr_2(il0,:))))
+
+            ! Get maximum radius
+            do il0=bump%nam%min_lev(iv),bump%nam%max_lev(iv)
+               bump%nam%universe_radius = max(bump%nam%universe_radius,zss_maxval(ptr_2(il0,:), &
+ & mask=bump%mpl%msv%isnot(ptr_2(il0,:))))
             end do
          else
             call bump%mpl%abort('${subr}$','cannot get universe radius for this field rank')

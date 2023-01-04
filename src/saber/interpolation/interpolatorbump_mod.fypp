@@ -161,8 +161,14 @@ call conf%set('io.files prefix','bump_interpolator')
 call conf%set('model.nl0',nl0)
 call conf%set('model.variables',(/'var'/))
 
-! Initialize namelist
+! Initialize parameters
+call bint%bump%nam%init(bint%bump%mpl)
+
+! Read configuration
 call bint%bump%nam%from_conf(bint%bump%mpl,conf)
+
+! Finalize parameters
+call bint%bump%nam%final(bint%bump%mpl)
 
 ! Input ATLAS functionspace
 bint%afunctionspace_in = afunctionspace_in

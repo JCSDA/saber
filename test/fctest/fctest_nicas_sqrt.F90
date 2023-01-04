@@ -67,7 +67,7 @@ TEST( test_interpolatorbump )
   fset = atlas_fieldset()
   universe_rad = atlas_fieldset()
 
-  ! Create configurations
+  ! Create configuration
   conf = fckit_configuration()
   call conf%set('drivers.multivariate strategy','specific_multivariate')
   call conf%set('drivers.compute nicas',.true.)

@@ -9,16 +9,18 @@
 
 #include "atlas/field.h"
 #include "atlas/functionspace.h"
-#include "atlas/util/Config.h"
 
+#include "eckit/config/Configuration.h"
 #include "eckit/mpi/Comm.h"
 
 namespace saber {
+namespace bump {
 extern "C" {
+  void bump_config_init_f90(eckit::LocalConfiguration *);
   void bump_create_f90(int &, const eckit::mpi::Comm *,
                        const atlas::functionspace::FunctionSpaceImpl *,
                        const atlas::field::FieldSetImpl *,
-                       const atlas::util::Config &,
+                       const eckit::Configuration &,
                        const atlas::field::FieldSetImpl *);
   void bump_second_geometry_f90(int &,
                                 const atlas::functionspace::FunctionSpaceImpl *,
@@ -50,4 +52,5 @@ extern "C" {
   void bump_partial_dealloc_f90(const int &);
   void bump_dealloc_f90(const int &);
 }
+}  // namespace bump
 }  // namespace saber

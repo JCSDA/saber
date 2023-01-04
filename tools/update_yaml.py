@@ -200,7 +200,7 @@ for i in range(len(bumps)):
     if "parallel_io" in old_bump:
         new_bump["io"]["parallel netcdf"] = old_bump["parallel_io"]
     if "nprocio" in old_bump:
-        new_bump["io"]["io task number"] = old_bump["nprocio"]
+        new_bump["io"]["io tasks"] = old_bump["nprocio"]
     if "fname_samp" in old_bump:
         new_bump["io"]["overriding sampling file"] = old_bump["fname_samp"]
     if "fname_vbal_cov" in old_bump:

@@ -300,15 +300,15 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
     // Select SABER library training
     std::unique_ptr<bump::BUMP> bump;
 
-    // Ensemble sizes
-    size_t ens1_ne = 0;
-    size_t ens2_ne = 0;
-    if (ens1) ens1_ne = ens1->size();
-    if (ens2) ens2_ne = ens2->size();
-
     // BUMP
     const boost::optional<bump::BUMPParameters> &bumpParams = params.bumpParams.value();
     if (bumpParams != boost::none) {
+      // Ensemble sizes
+      size_t ens1_ne = bumpParams->ensembleSizes.value().ens1_ne.value();
+      size_t ens2_ne = bumpParams->ensembleSizes.value().ens2_ne.value();
+      if (ens1) ens1_ne = ens1->size();
+      if (ens2) ens2_ne = ens2->size();
+
       // Constructor
       bump.reset(new bump::BUMP(geom1.getComm(),
                                 geom1.functionSpace(),
@@ -323,10 +323,6 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
                                 fsetVec2,
                                 ens2_ne));
 
-      // Drivers parameters
-      const bump::DriversSection drivers =
-        bumpParams->drivers.value().get_value_or(bump::DriversSection());
-
       // Add members of ensemble 1
       if (ens1) {
         oops::Log::info() << "Info     : --- Add members of ensemble 1" << std::endl;
@@ -338,10 +334,9 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
 
       // Add members of ensemble 2
       if (ens2) {
-        bool compute_cov2 = drivers.compute_cov2.value().get_value_or(false);
-        bool compute_cor2 = drivers.compute_cor2.value().get_value_or(false);
-        bool compute_loc2 = drivers.compute_loc2.value().get_value_or(false);
-        if (compute_cov2 || compute_cor2 || compute_loc2) {
+        if (bumpParams->drivers.value().compute_cov2.value()
+          || bumpParams->drivers.value().compute_cor2.value()
+          || bumpParams->drivers.value().compute_loc2.value()) {
           oops::Log::info() << "Info     : --- Add members of ensemble 2" << std::endl;
           for (size_t ie = 0; ie < ens2_ne; ++ie) {
             oops::Log::info() << "Info     :       Member " << ie+1 << " / " << ens2_ne
@@ -352,13 +347,7 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
       }
 
       // Iterative algorithm
-      const bool iterative_algo = drivers.iterative_algo.value().get_value_or(false);
-      if (iterative_algo) {
-        // Check what needs to be computed
-        const bool new_vbal_cov = drivers.new_vbal_cov.value().get_value_or(false);
-        const bool new_var = drivers.new_var.value().get_value_or(false);
-        const bool new_mom = drivers.new_mom.value().get_value_or(false);
-
+      if (bumpParams->drivers.value().iterative_algo.value()) {
         // Load ensemble members sequentially
         if (bump->memberConfig1().size() > 0) {
           ens1_ne = bump->memberConfig1().size();
@@ -372,15 +361,15 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
                               << std::endl;
             dx1.read(bump->memberConfig1()[ie]);
 
-            if (new_vbal_cov) {
+            if (bumpParams->drivers.value().new_vbal_cov.value()) {
               // Update vertical covariance
               bump->updateVbalCov(dx1.fieldSet(), ie);
             }
-            if (new_var) {
+            if (bumpParams->drivers.value().new_var.value()) {
               // Update variance
               bump->updateVar(dx1.fieldSet(), ie);
             }
-            if (new_mom) {
+            if (bumpParams->drivers.value().new_mom.value()) {
                // Update moments
               bump->updateMom(dx1.fieldSet(), ie, 1);
             }
@@ -398,7 +387,7 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
             oops::Log::info() << "Info     : --- Load member " << ie+1 << " / " << ens2_ne
                               << std::endl;
             dx2.read(bump->memberConfig2()[ie]);
-            if (new_mom) {
+            if (bumpParams->drivers.value().new_mom.value()) {
               // Update moments
               bump->updateMom(dx2.fieldSet(), ie, 2);
             }
