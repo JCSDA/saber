@@ -12,32 +12,39 @@ background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
 bump:
-  datadir: testdata
-  prefix: error_covariance_training_bump_hdiag_2/_MPI_-_OMP_
-  testing: true
-  parallel_io: false
-  method: cor
-  strategy: specific_univariate
-  load_mom: true
-  new_hdiag: true
-  write_hdiag: true
-  fname_samp: error_covariance_training_bump_hdiag_1/_MPI_-_OMP__sampling
-  fname_mom:
-  - error_covariance_training_bump_hdiag_1/_MPI_-_OMP__mom
-  ens1_ne: 25
-  load_samp_local: true
-  nc1: 500
-  nc2: 250
-  nc3: 10
-  nc4: 4
-  dc: 800.0e3
-  nl0r: 2
-  samp_interp_type: c1
-  ne: 25
-  local_diag: true
-  local_rad: 1000.0e3
-  diag_rhflt: 3000.0e3
-  fit_ncmp: 2
+  general:
+    testing: true
+  io:
+    data directory: testdata
+    files prefix: error_covariance_training_bump_hdiag_2/_MPI_-_OMP_
+    parallel netcdf: false
+    overriding sampling file: error_covariance_training_bump_hdiag_1/_MPI_-_OMP__sampling
+    overriding moments file:
+    - error_covariance_training_bump_hdiag_1/_MPI_-_OMP__mom_000001_1
+  drivers:
+    compute covariance: true
+    compute correlation: true
+    multivariate strategy: specific_univariate
+    read local sampling: true
+    read moments: true
+    write diagnostics: true
+  ensemble sizes:
+    total ensemble size: 25
+  sampling:
+    computation grid size: 500
+    diagnostic grid size: 250
+    distance classes: 10
+    angular sectors: 4
+    distance class width: 800.0e3
+    reduced levels: 2
+    local diagnostic: true
+    averaging length-scale: 1000.0e3
+    interpolation type: c1
+  diagnostics:
+    target ensemble size: 25
+  fit:
+    horizontal filtering length-scale: 3000.0e3
+    number of components: 2
 output:
 - parameter: cor_a
   component: 1

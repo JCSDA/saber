@@ -12,15 +12,19 @@ background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
 bump:
-  datadir: testdata
-  prefix: error_covariance_training_bump_wind/_MPI_-_OMP_
-  testing: true
-  nprocio: 1
-  new_wind: true
-  write_wind_local: true
-  wind_nlon: 10
-  wind_nlat: 5
-  wind_nsg: 3
-  wind_inflation: 1.1
+  general:
+    testing: true
+  io:
+    data directory: testdata
+    files prefix: error_covariance_training_bump_wind/_MPI_-_OMP_
+    io tasks: 1
+  drivers:
+    compute psichitouv: true
+    write local psichitouv: true
+  psichitouv:
+    longitudes: 10
+    latitudes: 5
+    savitzky-golay half width: 3
+    wind inflation: 1.1
 test:
   reference filename: testref/error_covariance_training_bump_wind.ref

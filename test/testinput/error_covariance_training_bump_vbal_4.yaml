@@ -12,40 +12,44 @@ background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
 bump:
-  datadir: testdata
-  prefix: error_covariance_training_bump_vbal_4/_MPI_-_OMP_
-  testing: true
-  load_vbal_cov: true
-  new_vbal: true
-  write_vbal: true
-  check_adjoints: true
-  check_dirac: true
-  fname_samp: error_covariance_training_bump_vbal_3/_MPI_-_OMP__sampling
-  fname_vbal_cov:
-  - error_covariance_training_bump_vbal_3/_MPI_-_OMP__vbal_cov
-  load_samp_local: true
-  nc1: 500
-  nc2: 250
-  vbal_block:
-  - true
-  vbal_rad: 2000.0e3
-  vbal_pseudo_inv: true
-  vbal_pseudo_inv_var_th: 0.1
-  ndir: 1
-  londir:
-  - 0.0
-  latdir:
-  - 0.0
-  levdir:
-  - 1
-  ivdir:
-  - 1
+  general:
+    testing: true
+  io:
+    data directory: testdata
+    files prefix: error_covariance_training_bump_vbal_4/_MPI_-_OMP_
+    overriding sampling file: error_covariance_training_bump_vbal_3/_MPI_-_OMP__sampling
+    overriding vertical covariance file:
+    - error_covariance_training_bump_vbal_3/_MPI_-_OMP__vbal_cov
+  drivers:
+    read local sampling: true
+    read vertical covariance: true
+    compute vertical balance: true
+    write vertical balance: true
+    adjoints test: true
+    internal dirac test: true
+  sampling:
+    computation grid size: 500
+    diagnostic grid size: 250
+    averaging length-scale: 2000.0e3
+  vertical balance:
+    vbal:
+    - balanced variable: var2
+      unbalanced variable: var1
+    pseudo inverse: true
+    variance threshold: 0.1
+  dirac:
+  - longitude: 0.0
+    latitude: 0.0
+    level: 1
+    variable: var1
   ensemble:
     members from template:
       template:
         date: '2010-01-01T12:00:00Z'
         filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
-        state variables: *id001
+        state variables:
+        - var1
+        - var2
       pattern: '%mem%'
       nmembers: 10
       zero padding: 6

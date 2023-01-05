@@ -19,7 +19,7 @@ use tools_func, only: fletcher32,lonlatmod,grid_hash,independent_levels,sphere_d
  & vector_product,cx_to_cxa,cx_to_proc,cx_to_cxu,convert_l2i,convert_i2l,zss_maxval,zss_minval,zss_sum,zss_count
 use tools_kinds, only: kind_int,kind_real,huge_real,huge_int
 use tools_qsort, only: qsort
-use tools_repro, only: inf,sup,eq,infeq,indist,rth
+use tools_repro, only: inf,sup,eq,infeq,indist,repro_th
 use tools_stripack, only: area
 use type_com, only: com_type
 use type_fieldset, only: fieldset_type
@@ -353,7 +353,7 @@ allocate(geom%disth(nam%nc3))
 do jc3=1,nam%nc3
    geom%disth(jc3) = real(jc3-1,kind_real)*nam%dc
 end do
-if (maxval(geom%disth)>nam%universe_rad) call mpl%abort('${subr}$','horizontal distance larger than universe radius')
+if (maxval(geom%disth)>nam%universe_radius) call mpl%abort('${subr}$','horizontal distance larger than universe radius')
 
 ! Setup angular sector
 write(mpl%info,'(a7,a)') '','Setup angular sector'
@@ -389,14 +389,14 @@ call mpl%flush
 write(mpl%info,'(a10,a)') '','Valid points (% of total domain):'
 call mpl%flush
 do il0=1,geom%nl0
-   write(mpl%test,'(a13,a,i3,a,f5.1,a)') '','Level ',nam%levs(il0),' ~> ', &
+   write(mpl%test,'(a13,a,i3,a,f5.1,a)') '','Level ',il0,' ~> ', &
  & hundred*real(geom%nc0_gmask(il0),kind_real)/real(geom%nc0,kind_real),'%'
    call mpl%flush
 end do
 write(mpl%info,'(a10,a)') '','Vertical unit:'
 call mpl%flush
 do il0=1,geom%nl0
-   write(mpl%test,'(a13,a,i3,a,e10.3,a)') '','Level ',nam%levs(il0),' ~> ',geom%vunitavg(il0),' vert. unit'
+   write(mpl%test,'(a13,a,i3,a,e10.3,a)') '','Level ',il0,' ~> ',geom%vunitavg(il0),' vert. unit'
    call mpl%flush
 end do
 write(mpl%info,'(a10,a)') '','Distribution (local / universe):'
@@ -598,7 +598,6 @@ type(mpl_type),intent(inout) :: mpl    !< MPI data
 
 ! Local variables
 integer :: iproc,imga,ic0a,ic0,diff_grid,il0
-integer :: hash(geom%nl0)
 real(kind_real) :: xyz_ne(3),xyz_nw(3),xyz_se(3),xyz_sw(3),area_nw,area_se,area_total
 real(kind_real) :: norm_c0(geom%nl0),vunit_hor_c0(geom%nl0)
 
@@ -752,21 +751,10 @@ area_total = zss_sum(geom%area_c0a)
 call mpl%f_comm%allreduce(area_total,fckit_mpi_sum())
 geom%global = (area_total>0.99_kind_real*four*pi)
 
-! Grid hash
-call grid_hash(mpl,geom%nc0a,geom%nc0,geom%nl0,geom%c0a_to_c0,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a,hash)
-
 ! Compute independent levels
 write(mpl%test,'(a7,a)') '','Independent levels: '
 call mpl%flush(adv=.false.)
-call independent_levels(mpl,geom%nl0,hash,geom%nl0i,geom%l0_to_l0i,geom%l0i_to_l0)
-
-! Test grid hash
-write(mpl%info,'(a7,a)') '','Geometry grid hash: '
-call mpl%flush
-do il0=1,geom%nl0
-   write(mpl%test,'(a10,a,i3,a,i12)') '','Level ',il0,': ',hash(il0)
-   call mpl%flush
-end do
+call independent_levels(mpl,geom%nc0a,geom%nl0,geom%gmask_c0a,geom%nl0i,geom%l0_to_l0i,geom%l0i_to_l0)
 
 ! Probe out
 @:probe_out()
@@ -867,7 +855,7 @@ else
          call sphere_dist(lon_avg,lat_avg,proc_to_lon(iproc),proc_to_lat(iproc),dist)
 
          ! Check distance
-         if (inf(dist,distmax+proc_to_distmax(iproc)+nam%universe_rad)) geom%myuniverse(iproc) = .true.
+         if (inf(dist,distmax+proc_to_distmax(iproc)+nam%universe_radius)) geom%myuniverse(iproc) = .true.
       end if
    end do
 
@@ -1268,7 +1256,7 @@ if (nam%check_dirac.and.(nam%ndir>0)) then
    do idir=1,nam%ndir
       il0dir(idir) = mpl%msv%vali
       do il0=1,geom%nl0
-         if (nam%levs(il0)==nam%levdir(idir)) il0dir(idir) = il0
+         if (il0==nam%levdir(idir)) il0dir(idir) = il0
       end do
       if (mpl%msv%is(il0dir(idir))) call mpl%abort('${subr}$','impossible to find the Dirac level')
    end do
@@ -1324,6 +1312,9 @@ if (nam%check_dirac.and.(nam%ndir>0)) then
 
    ! Release memory
    call tree_dirac%dealloc
+else
+   ! No dirac
+   geom%ndir = 0
 end if
 
 ! Probe out
@@ -1726,7 +1717,7 @@ else
       nfac = 2*nfac
 
       ! Number of required points at global scale
-      nss_real = real(nfac*ns,kind_real)*four*pi/geom%area_max_c0*(one+rth)
+      nss_real = real(nfac*ns,kind_real)*four*pi/geom%area_max_c0*(one+repro_th)
 
       if (geom%global) then
          ! Global grid

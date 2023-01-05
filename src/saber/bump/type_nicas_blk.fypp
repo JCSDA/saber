@@ -18,7 +18,7 @@ use tools_gc99, only: fit_func_sqrt
 use tools_kinds, only: kind_int,kind_real,kind_long,huge_int,huge_real
 use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim,check_dim
 use tools_qsort, only: qsort
-use tools_repro, only: supeq,sup,inf,infeq,eq,indist,rth
+use tools_repro, only: supeq,sup,inf,infeq,eq,indist,repro_th
 use type_bpar, only: bpar_type
 use type_cmat_blk, only: cmat_blk_type
 use type_com, only: com_type
@@ -28,7 +28,7 @@ use type_io, only: io_type
 use type_linop, only: linop_type
 use type_mesh, only: mesh_type
 use type_mpl, only: mpl_type
-use type_nam, only: nam_type,nl0max
+use type_nam, only: nam_type
 use type_nicas_cmp, only: nicas_cmp_type
 @:use_probe()
 use type_rng, only: rng_type
@@ -183,7 +183,7 @@ character(len=1024) :: blkname,cmpname
 associate(ib=>nicas_blk%ib)
 
 ! Get group name
-call nam%io_key_value(bpar%blockname(ib),blkname)
+call nam%alias(bpar%blockname(ib),blkname)
 write(mpl%info,'(a13,a)') '','Block: '//trim(blkname)
 call mpl%flush
 
@@ -264,7 +264,7 @@ character(len=1024) :: blkname,cmpname
 associate(ib=>nicas_blk%ib)
 
 ! Get group name
-call nam%io_key_value(bpar%blockname(ib),blkname)
+call nam%alias(bpar%blockname(ib),blkname)
 write(mpl%info,'(a13,a)') '','Block: '//trim(blkname)
 call mpl%flush
 
@@ -554,7 +554,7 @@ character(len=1024) :: blkname,cmpname
 associate(ib=>nicas_blk%ib)
 
 ! Get group name
-call nam%io_key_value(bpar%blockname(ib),blkname)
+call nam%alias(bpar%blockname(ib),blkname)
 write(mpl%info,'(a13,a)') '','Block: '//trim(blkname)
 call mpl%flush
 
@@ -641,7 +641,7 @@ character(len=1024) :: blkname,cmpname
 associate(ib=>nicas_blk%ib)
 
 ! Get group name
-call nam%io_key_value(bpar%blockname(ib),blkname)
+call nam%alias(bpar%blockname(ib),blkname)
 write(mpl%info,'(a10,a)') '','Block: '//trim(blkname)
 call mpl%flush
 
@@ -751,7 +751,7 @@ character(len=1024) :: blkname,cmpname
 associate(ib=>nicas_blk%ib)
 
 ! Get group name
-call nam%io_key_value(bpar%blockname(ib),blkname)
+call nam%alias(bpar%blockname(ib),blkname)
 write(mpl%info,'(a10,a)') '','Block: '//trim(blkname)
 call mpl%flush
 
@@ -890,7 +890,7 @@ real(kind_real),intent(in) :: rhflt(geom%nl0)    !< Horizontal support radius pr
 ! Local variables
 integer :: il0,il0i,jl0,jl0i,jl0is,jl0is_tmp,nl0,nl0i
 integer :: l0i_to_l0(geom%nl0),proc_to_jl0is(mpl%nproc)
-integer :: levs(nl0max),nc0_gmask(0:geom%nl0)
+integer :: nc0_gmask(0:geom%nl0)
 real(kind_real) :: resol
 real(kind_real) :: vunit_c0a(geom%nc0a,geom%nl0),area_ver_c0(geom%nl0),vunitavg(geom%nl0),vunit_c0u(geom%nc0u,geom%nl0)
 logical :: gmask_c0a(geom%nc0a,geom%nl0),gmask_hor_c0a(geom%nc0a),gmask_c0u(geom%nc0u,geom%nl0)
@@ -950,7 +950,6 @@ do il0=2,geom%nl0
 end do
 
 ! Save namelist parameters
-levs = nam%levs
 resol = nam%resol
 
 ! Save geometry parameters
@@ -974,7 +973,6 @@ do il0i=1,nl0i
    il0 = l0i_to_l0(il0i)
 
    ! Set local namelist parameters
-   nam%levs(1) = levs(il0)
    nam%resol = five
 
    ! Set local geometry parameters
@@ -1003,7 +1001,6 @@ do il0i=1,nl0i
 end do
 
 ! Reset namelist parameters
-nam%levs = levs
 nam%resol = resol
 
 ! Reset geometry parameters
@@ -1095,27 +1092,25 @@ do icmp=1,nicas_blk%ncmp
    nicas_blk%cmp(icmp)%rvs = mpl%msv%valr
 
    ! Copy C matrix fields from min_lev to max_lev
-   do il0=1,geom%nl0
-      if ((nicas_blk%min_lev<=il0).and.(il0<=nicas_blk%max_lev)) then
-         do ic0a=1,geom%nc0a
-            if (geom%gmask_c0a(ic0a,il0)) then
-               nicas_blk%cmp(icmp)%a(ic0a,il0) = cmat_blk%a(ic0a,il0,icmp)
-               nicas_blk%cmp(icmp)%rh(ic0a,il0) = cmat_blk%rh(ic0a,il0,icmp)
-               if (nicas_blk%cmp(icmp)%anisotropic) call tensor_d2h(mpl,cmat_blk%D11(ic0a,il0,icmp),cmat_blk%D22(ic0a,il0,icmp), &
+   do il0=nicas_blk%min_lev,nicas_blk%max_lev
+      do ic0a=1,geom%nc0a
+         if (geom%gmask_c0a(ic0a,il0)) then
+            nicas_blk%cmp(icmp)%a(ic0a,il0) = cmat_blk%a(ic0a,il0,icmp)
+            nicas_blk%cmp(icmp)%rh(ic0a,il0) = cmat_blk%rh(ic0a,il0,icmp)
+            if (nicas_blk%cmp(icmp)%anisotropic) call tensor_d2h(mpl,cmat_blk%D11(ic0a,il0,icmp),cmat_blk%D22(ic0a,il0,icmp), &
  & cmat_blk%D12(ic0a,il0,icmp),nicas_blk%cmp(icmp)%H11(ic0a,il0),nicas_blk%cmp(icmp)%H22(ic0a,il0), &
  & nicas_blk%cmp(icmp)%H12(ic0a,il0))
-               nicas_blk%cmp(icmp)%rv(ic0a,il0) = cmat_blk%rv(ic0a,il0,icmp)
-               nicas_blk%cmp(icmp)%rhs(ic0a,il0) = cmat_blk%rhs(ic0a,il0,icmp)
-               nicas_blk%cmp(icmp)%rvs(ic0a,il0) = cmat_blk%rvs(ic0a,il0,icmp)
-               if (mpl%msv%is(nicas_blk%cmp(icmp)%a(ic0a,il0)).or.mpl%msv%is(nicas_blk%cmp(icmp)%rh(ic0a,il0)) &
+            nicas_blk%cmp(icmp)%rv(ic0a,il0) = cmat_blk%rv(ic0a,il0,icmp)
+            nicas_blk%cmp(icmp)%rhs(ic0a,il0) = cmat_blk%rhs(ic0a,il0,icmp)
+            nicas_blk%cmp(icmp)%rvs(ic0a,il0) = cmat_blk%rvs(ic0a,il0,icmp)
+            if (mpl%msv%is(nicas_blk%cmp(icmp)%a(ic0a,il0)).or.mpl%msv%is(nicas_blk%cmp(icmp)%rh(ic0a,il0)) &
  & .or.mpl%msv%is(nicas_blk%cmp(icmp)%rv(ic0a,il0)).or.mpl%msv%is(nicas_blk%cmp(icmp)%rhs(ic0a,il0)) &
  & .or.mpl%msv%is(nicas_blk%cmp(icmp)%rvs(ic0a,il0))) then
-                  write(message,'(a,i3)') 'missing value for NICAS at level ',il0
-                  call mpl%abort('${subr}$',message)
-               end if
+               write(message,'(a,i3,a,a)') 'missing value for NICAS at level ',il0,' of block ',trim(bpar%blockname(ib))
+               call mpl%abort('${subr}$',message)
             end if
-         end do
-      end if
+         end if
+      end do
    end do
 
    ! Check horizontal support radius vs. universe radius
@@ -1123,8 +1118,9 @@ do icmp=1,nicas_blk%ncmp
       rhs_max = zero
       if (any(geom%gmask_c0a.and.mpl%msv%isnot(nicas_blk%cmp(icmp)%rhs))) rhs_max = zss_maxval(nicas_blk%cmp(icmp)%rhs, &
  & mask=(geom%gmask_c0a.and.mpl%msv%isnot(nicas_blk%cmp(icmp)%rhs)))
-      if (rhs_max>nam%universe_rad) then
-         write(message,'(a,f10.2,a)') 'horizontal support radius (',rhs_max*reqkm,' km) larger than universe radius'
+      if (rhs_max>nam%universe_radius) then
+         write(message,'(a,f10.2,a,f10.2,a)') 'horizontal support radius (',rhs_max*reqkm,' km) larger than universe radius (', &
+ & nam%universe_radius*reqkm,' km)'
          call mpl%warning('${subr}$',message)
       end if
    end if
@@ -1273,7 +1269,7 @@ write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Block NICAS adjoint test valu
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
 if (nicas_blk%verbosity) call mpl%flush
 write(mpl%test,'(a7,a,l1)') '','Block NICAS adjoint test result:                    ', &
- & two*abs(sum1-sum2)/abs(sum1+sum2)<rth
+ & two*abs(sum1-sum2)/abs(sum1+sum2)<repro_th
 if (nicas_blk%verbosity) call mpl%flush
 
 ! Release memory
@@ -1466,10 +1462,10 @@ do il0=1,geom%nl0
    call mpl%f_comm%allreduce(valmin,fckit_mpi_min())
    call mpl%f_comm%allreduce(valmax,fckit_mpi_max())
    if (mpl%msv%isnot(valmin).or.mpl%msv%isnot(valmax)) then
-      write(mpl%test,'(a10,a,i3,a,f10.7,a,f10.7)') '','Level ',nam%levs(il0),': ',valmin,' - ',valmax
+      write(mpl%test,'(a10,a,i3,a,f10.7,a,f10.7)') '','Level ',il0,': ',valmin,' - ',valmax
       if (nicas_blk%verbosity) call mpl%flush
    else
-      write(mpl%test,'(a10,a,i3,a)') '','Level ',nam%levs(il0),': missing values'
+      write(mpl%test,'(a10,a,i3,a)') '','Level ',il0,': missing values'
       if (nicas_blk%verbosity) call mpl%flush
    end if
 end do

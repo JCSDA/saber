@@ -49,8 +49,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   oops::Log::trace() << "BUMP::BUMP construction starting" << std::endl;
 
   // If testing is activated, replace _MPI_ and _OMP_ patterns
-  const bool testing = params_.testing.value().get_value_or(false);
-  if (testing) {
+  if (params_.general.value().testing.value()) {
     // Convert to eckit configuration
     eckit::LocalConfiguration fullConfig;
     params_.serialize(fullConfig);
@@ -61,11 +60,12 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
 #ifdef _OPENMP
     # pragma omp parallel
     {
-        omp = std::to_string(omp_get_num_threads());
+      omp = std::to_string(omp_get_num_threads());
     }
 #endif
     oops::Log::info() << "Info     : MPI tasks:      " << mpi << std::endl;
     oops::Log::info() << "Info     : OpenMP threads: " << omp << std::endl;
+    oops::Log::info() << fullConfig << std::endl;
 
     // Replace patterns
     util::seekAndReplace(fullConfig, "_MPI_", mpi);
@@ -172,11 +172,11 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   }
 
   // Copy universe radius
-  atlas::FieldSet universe_rad = atlas::FieldSet();
+  atlas::FieldSet universe_radius = atlas::FieldSet();
   for (const auto & fset : fsetVec1) {
     if (fset.name() == "universe radius") {
       for (const auto & field : fset) {
-        universe_rad.add(field);
+        universe_radius.add(field);
       }
     }
   }
@@ -184,12 +184,9 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   // Initialize configuration
   eckit::LocalConfiguration conf(params_.toConfiguration());
 
-  // Add missing value (real)
-  conf.set("msvalr", util::missingValue(double()));
-
-  // Add ensemble sizes
-  if (!conf.has("ens1_ne")) conf.set("ens1_ne", ens1_ne);
-  if (!conf.has("ens2_ne")) conf.set("ens2_ne", ens2_ne);
+  // Update ensemble sizes
+  conf.set("ensemble sizes.total ensemble size", ens1_ne);
+  conf.set("ensemble sizes.total lowres ensemble size", ens2_ne);
 
   // Grids
   std::vector<eckit::LocalConfiguration> grids;
@@ -208,20 +205,18 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   // Check grids number
   ASSERT(grids.size() > 0);
 
-  // Print configuration for this grid
-  oops::Log::info() << "Info     : General configuration: " << conf << std::endl;
-
   // Loop over grids
-  for (unsigned int jgrid = 0; jgrid < grids.size(); ++jgrid) {
+  for (auto & grid : grids) {
+    // Merge conf into grid
+    grid = util::mergeConfigs(grid, conf);
+
     // Add input variables to the grid configuration
     std::vector<std::string> vars_str;
-    if (grids[jgrid].has("variables")) {
-      grids[jgrid].get("variables", vars_str);
-    } else {
+    grid.get("model.variables", vars_str);
+    if (vars_str.size() == 0) {
       vars_str = activeVars_.variables();
-      grids[jgrid].set("variables", vars_str);
+      grid.set("model.variables", vars_str);
     }
-    grids[jgrid].set("nv", vars_str.size());
 
     // Save variables for each grid
     const oops::Variables gridVars(vars_str);
@@ -236,36 +231,33 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
         nl0 = std::max(nl0, std::max(nl0_tmp, 1));
       }
     }
-    grids[jgrid].set("nl0", nl0);
+    grid.set("model.nl0", nl0);
 
     // Add level index for 2D fields (first or last, first by default)
-    if (!grids[jgrid].has("lev2d")) {
-      grids[jgrid].set("lev2d", "first");
+    if (!grid.has("model.lev2d")) {
+      grid.set("model.lev2d", "first");
     }
 
-    // Print configuration for this grid
-    oops::Log::info() << "Info     : Grid " << jgrid << ": " << grids[jgrid] << std::endl;
-
     // Create BUMP instance
-    oops::Log::info() << "Info     : Create BUMP instance " << jgrid << std::endl;
     int keyBUMP = 0;
     bump_create_f90(keyBUMP, &comm, functionSpace1.get(), extraFields1.get(),
-                    conf, grids[jgrid], universe_rad.get());
+                    grid, universe_radius.get());
     keyBUMP_.push_back(keyBUMP);
 
     // Second geometry
-    if (conf.has("method")) {
-      std::string method = conf.getString("method");
-      if (method == "hyb-ens" || method == "hyb-rnd") {
-        bump_second_geometry_f90(keyBUMP, functionSpace2.get(), extraFields2.get());
-      }
+    if (params_.drivers.value().compute_cov2.value()
+      || params_.drivers.value().compute_cor2.value()
+      || params_.drivers.value().compute_loc2.value()) {
+      bump_second_geometry_f90(keyBUMP, functionSpace2.get(), extraFields2.get());
     }
   }
 
-  // Get max number of components
+  // Get max number of components (geometry 1)
+  bool parametersToPass1 = false;
   size_t ncmp1 = 1;
   for (const auto & fset : fsetVec1) {
-    if (fset.name() != "universe radius") {
+    if (fset.name() != "universe radius" && fset.name() != "ensemble member") {
+      parametersToPass1 = true;
       size_t pos = fset.name().find("::");
       if (pos != std::string::npos) {
         size_t component = std::stoi(fset.name().substr(pos+2));
@@ -273,9 +265,32 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
       }
     }
   }
+  if (parametersToPass1) {
+    // Set number of components (geometry 1)
+    this->setNcmp(1, ncmp1);
+
+    // Set parameters (geometry 1)
+    for (const auto & fset : fsetVec1) {
+      if (fset.name() != "universe radius" && fset.name() != "ensemble member") {
+        int component = 1;
+        std::string name = fset.name();
+        size_t pos = fset.name().find("::");
+        if (pos != std::string::npos) {
+          // Get component (geometry 1)
+          component = std::stoi(fset.name().substr(pos+2));
+          name = fset.name().substr(0, pos);
+        }
+        this->setParameter(name, component, fset);
+      }
+    }
+  }
+
+  // Get max number of components (geometry 2)
+  bool parametersToPass2 = false;
   size_t ncmp2 = 1;
   for (const auto & fset : fsetVec2) {
-    if (fset.name() != "universe radius") {
+    if (fset.name() != "universe radius" && fset.name() != "ensemble member") {
+      parametersToPass2 = true;
       size_t pos = fset.name().find("::");
       if (pos != std::string::npos) {
         size_t component = std::stoi(fset.name().substr(pos+2));
@@ -283,34 +298,23 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
       }
     }
   }
+  if (parametersToPass2) {
+    // Set number of components (geometry 2)
+    this->setNcmp(2, ncmp2);
 
-  // Set parameters
-  this->setNcmp(1, ncmp1);
-  for (const auto & fset : fsetVec1) {
-    if (fset.name() != "universe radius" && fset.name() != "ensemble member") {
-      int component = 1;
-      std::string name = fset.name();
-      size_t pos = fset.name().find("::");
-      if (pos != std::string::npos) {
-        // Get component
-        component = std::stoi(fset.name().substr(pos+2));
-        name = fset.name().substr(0, pos);
+    // Set parameters (geometry 2)
+    for (const auto & fset : fsetVec2) {
+      if (fset.name() != "universe radius" && fset.name() != "ensemble member") {
+        int component = 1;
+        std::string name = fset.name();
+        size_t pos = fset.name().find("::");
+        if (pos != std::string::npos) {
+          // Get component (geometry 2)
+          component = std::stoi(fset.name().substr(pos+2));
+          name = fset.name().substr(0, pos);
+        }
+        this->setParameter(name, component, fset);
       }
-      this->setParameter(name, component, fset);
-    }
-  }
-  this->setNcmp(2, ncmp2);
-  for (const auto & fset : fsetVec2) {
-    if (fset.name() != "universe radius" && fset.name() != "ensemble member") {
-      int component = 1;
-      std::string name = fset.name();
-      size_t pos = fset.name().find("::");
-      if (pos != std::string::npos) {
-        // Get component
-        component = std::stoi(fset.name().substr(pos+2));
-        name = fset.name().substr(0, pos);
-      }
-      this->setParameter(name, component, fset);
     }
   }
 

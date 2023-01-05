@@ -20,22 +20,28 @@ ensemble:
     nmembers: 25
     zero padding: 6
 bump:
-  datadir: testdata
-  prefix: error_covariance_training_bump_hdiag_4/_MPI_-_OMP_
-  testing: true
-  method: cor
-  strategy: diag_all
-  new_normality: true
-  new_hdiag: true
-  write_hdiag: true
-  diag_draw_type: octahedral
-  nc1: 500
-  nc3: 10
-  dc: 800.0e3
-  nl0r: 2
-  ne: 25
-  gen_kurt_th: 4.0
-  avg_nbins: 10
+  general:
+    testing: true
+  io:
+    data directory: testdata
+    files prefix: error_covariance_training_bump_hdiag_4/_MPI_-_OMP_
+  drivers:
+    compute covariance: true
+    compute correlation: true
+    multivariate strategy: diag_all
+    compute normality: true
+    compute moments: true
+    write diagnostics: true
+  sampling:
+    computation grid size: 500
+    distance classes: 10
+    distance class width: 800.0e3
+    reduced levels: 2
+    grid type: octahedral
+  diagnostics:
+    target ensemble size: 25
+    generalized kurtosis threshold: 4.0
+    histogram bins: 10
 output:
 - parameter: norm_m2
   file:

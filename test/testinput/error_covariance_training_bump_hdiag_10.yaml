@@ -3,36 +3,75 @@ geometry:
   grid:
     type: regular_lonlat
     N: 10
-  levels: 2
+  levels: 10
   halo: 1
 input variables: &id001
 - var1
 background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
+ensemble:
+  members from template:
+    template:
+      date: '2010-01-01T12:00:00Z'
+      filepath: testdata/randomization_bump_nicas_L10L10/member_%mem%
+      state variables: *id001
+    pattern: '%mem%'
+    nmembers: 25
+    zero padding: 6
 bump:
-  datadir: testdata
-  prefix: error_covariance_training_bump_hdiag_10/_MPI_-_OMP_
-  testing: true
-  method: loc
-  strategy: specific_univariate
-  new_hdiag: true
-  write_hdiag: true
-  check_optimality: true
-  ens1_ne: 1000
-  nc1: 500
-  nc3: 10
-  dc: 800.0e3
-  nl0r: 1
-  ne: 25
-  resol: 4.0
-  nicas_draw_type: octahedral
-  forced_radii: true
-  rh:
-    var1:
-    - 7.0e6
-  rv:
-    var1:
-    - 0.0
+  general:
+    testing: true
+  io:
+    data directory: testdata
+    files prefix: error_covariance_training_bump_hdiag_10
+  drivers:
+    compute covariance: true
+    compute correlation: true
+    multivariate strategy: specific_univariate
+    compute moments: true
+    write diagnostics: true
+  sampling:
+    masks:
+    - type: lat-20060
+    - type: ldwv
+    - type: stddev
+      threshold: 1.005
+      side: lower
+      variable: var1
+    - type: input
+      threshold: 0.5
+      side: upper
+      variable: var1
+    computation grid size: 500
+    diagnostic grid size: 250
+    distance classes: 10
+    distance class width: 800.0e3
+    reduced levels: 7
+    local diagnostic: true
+    averaging length-scale: 4000.0e3
+    contiguous levels threshold: 3
+  local profiles:
+  - longitude: 0.0
+    latitude: 0.0
+    name: A
+  - longitude: -22.0
+    latitude: 55.0
+    name: B
+  - longitude: -127.0
+    latitude: -10.0
+    name: C
+input fields:
+- parameter: sampling_mask_field
+  file:
+    filepath: testdata/randomization_bump_nicas_L10L10/member_000001
+output:
+- parameter: cor_rh
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag_10/_MPI_-_OMP__cor_rh
+- parameter: cor_rv
+  file:
+    filepath: testdata/error_covariance_training_bump_hdiag_10/_MPI_-_OMP__cor_rv
 test:
   reference filename: testref/error_covariance_training_bump_hdiag_10.ref
+

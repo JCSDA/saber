@@ -294,10 +294,7 @@ if (nam%forced_radii) then
       ncmp(ib) = 0
 
       ! Number of components
-      if (bpar%nicas_block(ib)) then
-         iv = bpar%b_to_v1(ib)
-         ncmp(ib) = nam%ncmp(iv)
-      end if
+      if (bpar%nicas_block(ib)) ncmp(ib) = 1
    end do
 
    if (.not.cmat%allocated) then

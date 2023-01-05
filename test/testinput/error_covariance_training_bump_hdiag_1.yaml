@@ -21,43 +21,46 @@ ensemble:
     nmembers: 25
     zero padding: 6
 bump:
-  datadir: testdata
-  prefix: error_covariance_training_bump_hdiag_1/_MPI_-_OMP_
-  testing: true
-  method: cor
-  strategy: specific_univariate
-  write_mom: true
-  new_hdiag: true
-  write_hdiag: true
-  write_samp_local: true
-  write_samp_global: true
-  write_samp_grids: true
-  nc1: 500
-  nc2: 250
-  nc3: 10
-  nc4: 4
-  dc: 800.0e3
-  nl0r: 2
-  samp_interp_type: c1
-  ne: 25
-  local_diag: true
-  local_rad: 1000.0e3
-  diag_rhflt: 3000.0e3
-  fit_ncmp: 2
-  write_hdiag_detail: true
-  nldwv: 3
-  lon_ldwv:
-  - 0.0
-  - -22.0
-  - -127.0
-  lat_ldwv:
-  - 0.0
-  - 55.0
-  - -63.0
-  name_ldwv:
-  - A
-  - B
-  - C
+  general:
+    testing: true
+  io:
+    data directory: testdata
+    files prefix: error_covariance_training_bump_hdiag_1/_MPI_-_OMP_
+  drivers:
+    compute covariance: true
+    compute correlation: true
+    multivariate strategy: specific_univariate
+    write local sampling: true
+    write global sampling: true
+    write moments: true
+    compute moments: true
+    write diagnostics: true
+    write diagnostics detail: true
+  sampling:
+    computation grid size: 500
+    diagnostic grid size: 250
+    distance classes: 10
+    angular sectors: 4
+    distance class width: 800.0e3
+    reduced levels: 2
+    local diagnostic: true
+    averaging length-scale: 1000.0e3
+    interpolation type: c1
+  diagnostics:
+    target ensemble size: 25
+  fit:
+    horizontal filtering length-scale: 3000.0e3
+    number of components: 2
+  local profiles:
+  - longitude: 0.0
+    latitude: 0.0
+    name: A
+  - longitude: -22.0
+    latitude: 55.0
+    name: B
+  - longitude: -127.0
+    latitude: -63.0
+    name: C
 output:
 - parameter: cor_a
   component: 1

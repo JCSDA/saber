@@ -14,40 +14,46 @@ background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
 bump:
-  datadir: testdata
-  prefix: error_covariance_training_bump_hdiag-nicas_2/_MPI_-_OMP_
-  testing: true
-  universe_rad: 10000.0e3
-  method: loc
-  strategy: common
-  update_mom: true
-  new_hdiag: true
-  write_hdiag: true
-  new_nicas: true
-  write_nicas_local: true
-  check_adjoints: true
-  check_normalization: 10
-  check_dirac: true
-  lev2d: last
-  mask_check: true
-  nc1: 500
-  nc3: 10
-  nc4: 4
-  dc: 800.0e3
-  nl0r: 2
-  ne: 25
-  resol: 4.0
-  ndir: 1
-  nicas_interp_type:
-    common: si
-  londir:
-  - 0.0
-  latdir:
-  - 0.0
-  levdir:
-  - 1
-  ivdir:
-  - 1
+  general:
+    testing: true
+    universe length-scale: 10000.0e3
+  io:
+    data directory: testdata
+    files prefix: error_covariance_training_bump_hdiag-nicas_2/_MPI_-_OMP_
+  drivers:
+    compute covariance: true
+    compute correlation: true
+    compute localization: true
+    multivariate strategy: common
+    compute moments: true
+    iterative algorithm: true
+    write diagnostics: true
+    compute nicas: true
+    write local nicas: true
+    adjoints test: true
+    normalization test: 10
+    internal dirac test: true
+  model:
+    level for 2d variables: last
+    do not cross mask boundaries: true
+  sampling:
+    computation grid size: 500
+    distance classes: 10
+    angular sectors: 4
+    distance class width: 800.0e3
+    reduced levels: 2
+  diagnostics:
+    target ensemble size: 25
+  nicas:
+    resolution: 4.0
+    interpolation type:
+    - variables: [common]
+      type: si
+  dirac:
+  - longitude: 0.0
+    latitude: 0.0
+    level: 1
+    variable: var1
   ensemble:
     members from template:
       template:

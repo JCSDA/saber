@@ -15,7 +15,7 @@ use tools_const, only: zero,one,two,three,five,pi,req,rad2deg,reqkm
 use tools_func, only: fletcher32,lonlatmod,rad2short,sphere_dist,lonlat2xyz,xyz2lonlat,inside,vector_product,det,zss_maxval
 use tools_kinds, only: kind_short,kind_long,kind_real,huge_real
 use tools_qsort, only: qsort
-use tools_repro, only: rth,inf
+use tools_repro, only: repro_th,inf
 use tools_ssrfpack, only: aplyr,constr,fval,fval_op,gradl
 use tools_stripack, only: trfind,trmesh,bnodes
 use type_mpl, only: mpl_type
@@ -717,7 +717,7 @@ if (valid) then
          tmin = minval(t)
          tmax = maxval(t)
 
-         if ((abs(tmin)>rth).and.(abs(tmax)>rth)) then
+         if ((abs(tmin)>repro_th).and.(abs(tmax)>repro_th)) then
             valid = (tmin*tmax<zero)
          else
             valid = .true.

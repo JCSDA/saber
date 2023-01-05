@@ -31,44 +31,63 @@ background error:
   saber central block:
     saber block name: BUMP_NICAS
     bump:
-      datadir: testdata
-      prefix: error_covariance_training_bump_hdiag_9/_MPI_-_OMP_
-      testing: true
-      method: cor
-      strategy: specific_univariate
-      new_nicas: true
-      resol: 4.0
-      forced_radii: true
-      rh:
-        var1:
-        - 7.0e6
-      rv:
-        var1:
-        - 1.5
+      general:
+        testing: true
+      io:
+        data directory: testdata
+        files prefix: error_covariance_training_bump_hdiag_9/_MPI_-_OMP_
+      drivers:
+        multivariate strategy: specific_univariate
+        compute nicas: true
+      nicas:
+        resolution: 4.0
+        explicit length-scales: true
+        horizontal length-scale:
+        - variables:
+          - var1
+          value: 7.0e6
+        vertical length-scale:
+        - variables:
+          - var1
+          value: 1.5
   randomization size: 25
 bump:
-  datadir: testdata
-  prefix: error_covariance_training_bump_hdiag_9/_MPI_-_OMP_
-  testing: true
-  method: hyb-rnd
-  strategy: specific_univariate
-  new_hdiag: true
-  write_hdiag: true
-  check_adjoints: true
-  check_normalization: 10
-  nc1: 500
-  nc3: 15
-  dc: 500.0e3
-  nl0r: 2
-  ne: 10
-  ne_lr: 25
-  forced_radii: true
-  rh:
-    var1:
-    - 10.0e6
-  rv:
-    var1:
-    - 2.0
+  general:
+    testing: true
+  io:
+    data directory: testdata
+    files prefix: error_covariance_training_bump_hdiag_9/_MPI_-_OMP_
+  drivers:
+    compute covariance: true
+    compute lowres covariance: true
+    compute correlation: true
+    compute lowres correlation: true
+    compute localization: true
+    compute hybrid weights: true
+    hybrid source: randomized static
+    multivariate strategy: specific_univariate
+    compute moments: true
+    write diagnostics: true
+    adjoints test: true
+    normalization test: 10
+  sampling:
+    computation grid size: 500
+    distance classes: 15
+    distance class width: 500.0e3
+    reduced levels: 2
+  diagnostics:
+    target ensemble size: 10
+    target lowres ensemble size: 25
+  nicas:
+    explicit length-scales: true
+    horizontal length-scale:
+    - variables:
+      - var1
+      value: 10.0e6
+    vertical length-scale:
+    - variables:
+      - var1
+      value: 2.0
 output:
 - parameter: loc_rh
   file:

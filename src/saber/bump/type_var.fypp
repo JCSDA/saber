@@ -88,7 +88,7 @@ allocate(var%m2(geom%nc0a,geom%nl0,nam%nv))
 allocate(var%m4(geom%nc0a,geom%nl0,nam%nv))
 if (nam%var_filter) allocate(var%m2flt(geom%nc0a,geom%nl0,nam%nv))
 if (.not.allocated(var%m2sqrt)) allocate(var%m2sqrt(geom%nc0a,geom%nl0,nam%nv))
-if (nam%update_var) then
+if (nam%iterative_algo) then
    allocate(var%seq_m1(geom%nc0a,geom%nl0,nam%nv))
    allocate(var%seq_m2(geom%nc0a,geom%nl0,nam%nv))
    allocate(var%seq_m3(geom%nc0a,geom%nl0,nam%nv))
@@ -353,7 +353,7 @@ integer :: ic0a,il0,iv
 @:probe_in()
 
 ! Allocation
-if (.not.nam%update_var) call var%alloc(nam,geom)
+if (.not.nam%iterative_algo) call var%alloc(nam,geom)
 
 if (nam%forced_var) then
    ! Initialization

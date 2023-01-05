@@ -32,45 +32,45 @@ integer,parameter :: ddis = 5                !< Progression display step
 
 type mpl_type
    ! MPI communicator
-   type(fckit_mpi_comm) :: f_comm    !< MPI communicator (fckit wrapper)
-   integer :: nproc                  !< Number of MPI tasks
-   integer :: myproc                 !< MPI task index
-   integer :: rootproc               !< Main task index
-   logical :: main                   !< Main task logical
-   integer :: tag                    !< MPI tag
+   type(fckit_mpi_comm) :: f_comm        !< MPI communicator (fckit wrapper)
+   integer :: nproc                      !< Number of MPI tasks
+   integer :: myproc                     !< MPI task index
+   integer :: rootproc                   !< Main task index
+   logical :: main                       !< Main task logical
+   integer :: tag                        !< MPI tag
 
    ! I/O
-   character(len=1024) :: datadir    !< Data directory
-   logical :: parallel_io            !< Parallel NetCDF I/O
-   integer :: nprocio                !< Number of I/O processors
-   logical,allocatable :: pioproc(:) !< Parallel I/O MPI tasks
-   type(fckit_mpi_comm) :: f_comm_io !< MPI communicator for I/O (fckit wrapper)
+   character(len=1024) :: datadir        !< Data directory
+   logical :: parallel_netcdf            !< Parallel NetCDF I/O
+   integer :: nprocio                    !< Number of I/O tasks
+   logical,allocatable :: pioproc(:)     !< Flag for I/O MPI tasks
+   type(fckit_mpi_comm) :: f_comm_io     !< MPI communicator for I/O (fckit wrapper)
 
    ! Number of OpenMP threads
-   integer :: nthread                !< Number of OpenMP threads
+   integer :: nthread                    !< Number of OpenMP threads
 
    ! Missing values
-   type(msv_type) :: msv             !< Missing values
+   type(msv_type) :: msv                 !< Missing values
 
    ! Display parameters
-   character(len=1024) :: info       !< Info buffer
-   character(len=1024) :: test       !< Test buffer
-   character(len=1024) :: wng        !< Warning buffer
-   logical :: previous_adv           !< Previous advance flag
-   logical :: testing                !< Stream test messages into a dedicated channel
+   character(len=1024) :: info           !< Info buffer
+   character(len=1024) :: test           !< Test buffer
+   character(len=1024) :: wng            !< Warning buffer
+   logical :: previous_adv               !< Previous advance flag
+   logical :: testing                    !< Stream test messages into a dedicated channel
 
    ! Display colors
-   character(len=1024) :: black      !< Black color code
-   character(len=1024) :: green      !< Green color code
-   character(len=1024) :: peach      !< Peach color code
-   character(len=1024) :: aqua       !< Aqua color code
-   character(len=1024) :: purple     !< Purple color code
-   character(len=1024) :: wng_color  !< Warning color code
+   character(len=1024) :: black          !< Black color code
+   character(len=1024) :: green          !< Green color code
+   character(len=1024) :: peach          !< Peach color code
+   character(len=1024) :: aqua           !< Aqua color code
+   character(len=1024) :: purple         !< Purple color code
+   character(len=1024) :: wng_color      !< Warning color code
 
    ! Progression print
-   integer :: nprog                  !< Progression array size
-   integer :: progint                !< Progression integer
-   logical,allocatable :: done(:)    !< Progression array
+   integer :: nprog                      !< Progression array size
+   integer :: progint                    !< Progression integer
+   logical,allocatable :: done(:)        !< Progression array
 contains
    procedure :: init => mpl_init
    procedure :: final => mpl_final
@@ -118,19 +118,9 @@ contains
    procedure :: prog_init => mpl_prog_init
    procedure :: prog_print => mpl_prog_print
    procedure :: prog_final => mpl_prog_final
-   #:for dtype in dtypes_irls
-      procedure :: mpl_write_${dtype}$_r0
-      procedure :: mpl_write_${dtype}$_r1
-   #:endfor
-@:init_procedure(8)
-   generic :: write => &
-   #:for dtype in dtypes_irls
-@:add_procedure(mpl_write_${dtype}$_r0)
-@:add_procedure(mpl_write_${dtype}$_r1)
-   #:endfor
    #:if getvar('ENABLE_SABER_INSTRUMENTATION', 0)
-     procedure :: print_instance => mpl_print_instance
-     procedure :: timings => mpl_timings
+      procedure :: print_instance => mpl_print_instance
+      procedure :: timings => mpl_timings
    #:endif
 end type mpl_type
 
@@ -195,6 +185,20 @@ mpl%peach = ' '
 mpl%aqua = ' '
 mpl%purple = ' '
 mpl%wng_color = ' '
+
+! Testing flag
+mpl%testing = .false.
+
+! Missing value
+mpl%msv%vali = -999
+mpl%msv%valr = -999.0_kind_real
+
+! Write parallel setup
+write(mpl%info,'(a)') '-------------------------------------------------------------------'
+call mpl%flush
+write(mpl%info,'(a,i3,a,i2,a)') '--- Parallelization with ',mpl%nproc,' MPI tasks and ', &
+ & mpl%nthread,' OpenMP threads'
+call mpl%flush
 
 ! Probe out
 @:probe_out()
@@ -1016,135 +1020,6 @@ deallocate(mpl%done)
 @:probe_out()
 
 end subroutine mpl_prog_final
-
-#:for dtype in dtypes_irls
-!----------------------------------------------------------------------
-! Subroutine: mpl_write_${dtype}$_r0
-!> Write ${dtype}$ into a log file
-!----------------------------------------------------------------------
-subroutine mpl_write_${dtype}$_r0(mpl,variables,var)
-
-implicit none
-
-! Passed variables
-class(mpl_type),intent(inout) :: mpl     !< MPI data
-character(len=*),intent(in) :: variables !< Variable name
-${ftype[dtype]}$,intent(in) :: var       !< Variable
-
-! Local variables
-#{if dtype == 'int' or dtype == 'real'}# integer :: delta #{endif}#
-character(len=1024) :: cfmt
-
-! Set name
-@:set_name(mpl_write_${dtype}$_r0)
-
-! Probe in
-@:probe_in()
-
-! Define format
-#:if dtype == 'int'
-   delta = 2
-   if (var<0) delta = delta+1
-   if (abs(var)>0) then
-      write(cfmt,'(a,i4.4,a,i4.4,a,i4.4,a)') '(a10,a',len_trim(variables),',a',25-len_trim(variables),',a,i', &
- & floor(log(abs(real(var,kind_real)))/log(ten))+delta,')'
-   else
-      write(cfmt,'(a,i4.4,a,i4.4,a,i4.4,a)') '(a10,a',len_trim(variables),',a',25-len_trim(variables),',a,i',delta,')'
-   end if
-#:endif
-#:if dtype == 'real'
-   delta = 10
-   if (var<zero) delta = delta+1
-   write(cfmt,'(a,i4.4,a,i4.4,a,i2.2,a)') '(a10,a',len_trim(variables),',a',25-len_trim(variables),',a,e',delta,'.3)'
-#:endif
-#:if dtype == 'logical'
-   write(cfmt,'(a,i4.4,a,i4.4,a)') '(a10,a',len_trim(variables),',a',25-len_trim(variables),',a,l2)'
-#:endif
-#:if dtype == 'string'
-   write(cfmt,'(a,i4.4,a,i4.4,a)') '(a10,a',len_trim(variables),',a',25-len_trim(variables),',a,a)'
-#:endif
-
-! Write in log file
-#:if dtype == 'string'
-   write(mpl%info,cfmt) '',trim(variables),'',': ',trim(var)
-#:else
-   write(mpl%info,cfmt) '',trim(variables),'',':',var
-#:endif
-call mpl%flush
-
-! Probe out
-@:probe_out()
-
-end subroutine mpl_write_${dtype}$_r0
-#:endfor
-
-#:for dtype in dtypes_irls
-!----------------------------------------------------------------------
-! Subroutine: mpl_write_${dtype}$_r1
-!> Write ${dtype}$ array into a log file
-!----------------------------------------------------------------------
-subroutine mpl_write_${dtype}$_r1(mpl,variables,n,var)
-
-implicit none
-
-! Passed variables
-class(mpl_type),intent(inout) :: mpl     !< MPI data
-character(len=*),intent(in) :: variables !< Variable name
-integer,intent(in) :: n                  !< Array size
-${ftype[dtype]}$,intent(in) :: var(n)    !< Array
-
-! Local variables
-integer :: i
-#{if dtype == 'int' or dtype == 'real'}# integer :: delta #{endif}#
-character(len=1024) :: cfmt
-
-! Set name
-@:set_name(mpl_write_${dtype}$_r1)
-
-! Probe in
-@:probe_in()
-
-! Define format
-write(cfmt,'(a,i4.4,a,i4.4,a)') '(a10,a',len_trim(variables),',a',25-len_trim(variables),',a)'
-write(mpl%info,cfmt) '',trim(variables),'',':'
-call mpl%flush(.false.)
-do i=1,n
-   #:if dtype == 'int'
-      delta = 2
-      if (var(i)<0) delta = delta+1
-      if (abs(var(i))>0) then
-         write(cfmt,'(a,i4.4,a)') '(i',floor(log(abs(real(var(i),kind_real)))/log(ten))+delta,',a)'
-      else
-         write(cfmt,'(a,i4.4,a)') '(i',delta,',a)'
-      end if
-   #:endif
-   #:if dtype == 'real'
-      delta = 10
-      if (var(i)<zero) delta = delta+1
-      write(cfmt,'(a,i2,a)') '(e',delta,'.3,a)'
-   #:endif
-   #{if dtype == 'logical'}# write(cfmt,'(a)') '(l2,a)' #{endif}#
-   #{if dtype == 'string'}# cfmt = '(a,a)' #{endif}#
-
-   #:if dtype == 'string'
-      if (i==1) then
-         write(mpl%info,cfmt) ' '//trim(var(i)),','
-      else
-         write(mpl%info,cfmt) trim(var(i)),','
-      end if
-   #:else
-      write(mpl%info,cfmt) var(i),','
-   #:endif
-   call mpl%flush(.false.)
-end do
-write(mpl%info,'(a)') ''
-call mpl%flush
-
-! Probe out
-@:probe_out()
-
-end subroutine mpl_write_${dtype}$_r1
-#:endfor
 
 #:if getvar('ENABLE_SABER_INSTRUMENTATION', 0)
 !----------------------------------------------------------------------

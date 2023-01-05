@@ -12,7 +12,6 @@ type_avg.fypp
 type_avg_blk.fypp
 type_bpar.fypp
 type_bump.fypp
-type_bump.h
 type_bump_interface.F90
 type_cmat.fypp
 type_cmat_blk.fypp
@@ -47,6 +46,8 @@ if( oops_FOUND )
     list(APPEND bump_src_files_list
     BUMP.cc
     BUMP.h
+    type_bump.cc
+    type_bump.h
     NICAS.cc
     NICAS.h
     PsiChiToUV.cc

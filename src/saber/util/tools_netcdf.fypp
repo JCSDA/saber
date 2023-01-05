@@ -388,7 +388,7 @@ else
       fullname = trim(mpl%datadir)//'/'//trim(filename)//'.nc'
 
       ! Create file
-      if (mpl%parallel_io) then
+      if (mpl%parallel_netcdf) then
          call strerror(mpl,'${subr}$',ncid,nf90_create(fullname,ior(nf90_clobber,ior(nf90_netcdf4,nf90_mpiio)),ncid, &
  & comm=mpl%f_comm_io%communicator(),info=mpl%f_comm_io%info_null()),'file '//trim(fullname))
       else
@@ -455,7 +455,7 @@ else
       fullname = trim(mpl%datadir)//'/'//trim(filename)//'.nc'
 
       ! Open file
-      if (mpl%parallel_io) then
+      if (mpl%parallel_netcdf) then
          call strerror(mpl,'${subr}$',ncid,nf90_open(fullname,nf90_nowrite,ncid, &
  & comm=mpl%f_comm_io%communicator(),info=mpl%f_comm_io%info_null()),'file '//trim(fullname))
       else

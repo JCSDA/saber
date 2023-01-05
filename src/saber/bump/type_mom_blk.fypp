@@ -48,7 +48,7 @@ contains
 ! Subroutine: mom_blk_alloc
 !> Allocation
 !----------------------------------------------------------------------
-subroutine mom_blk_alloc(mom_blk,nc1x,geom,bpar,ne,nsub,update_mom)
+subroutine mom_blk_alloc(mom_blk,nc1x,geom,bpar,ne,nsub,iterative_algo)
 
 implicit none
 
@@ -59,7 +59,7 @@ type(geom_type),intent(in) :: geom           !< Geometry
 type(bpar_type),intent(in) :: bpar           !< Block parameters
 integer,intent(in) :: ne                     !< Ensemble size
 integer,intent(in) :: nsub                   !< Number of sub-ensembles
-logical,intent(in) :: update_mom             !< Update moments sequentially
+logical,intent(in) :: iterative_algo         !< Iterative algorithm
 
 ! Set name
 @:set_name(mom_blk_alloc)
@@ -76,14 +76,14 @@ mom_blk%nsub = nsub
 
 ! Allocation
 if (bpar%diag_block(ib)) then
-   if (update_mom) then
+   if (iterative_algo) then
       allocate(mom_blk%m1_1(nc1x,geom%nl0,nsub))
       allocate(mom_blk%m1_2(nc1x,bpar%nc3(ib),bpar%nc4(ib),geom%nl0,nsub))
    end if
    allocate(mom_blk%m2_1(nc1x,geom%nl0,nsub))
    allocate(mom_blk%m2_2(nc1x,bpar%nc3(ib),bpar%nc4(ib),geom%nl0,nsub))
    allocate(mom_blk%m11(nc1x,bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0,nsub))
-   if (update_mom) then
+   if (iterative_algo) then
       allocate(mom_blk%m12(nc1x,bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0,nsub))
       allocate(mom_blk%m21(nc1x,bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0,nsub))
    end if
@@ -102,14 +102,14 @@ end subroutine mom_blk_alloc
 ! Subroutine: mom_blk_init
 !> Initialization
 !----------------------------------------------------------------------
-subroutine mom_blk_init(mom_blk,bpar,update_mom)
+subroutine mom_blk_init(mom_blk,bpar,iterative_algo)
 
 implicit none
 
 ! Passed variables
 class(mom_blk_type),intent(inout) :: mom_blk !< Moments block
 type(bpar_type),intent(in) :: bpar           !< Block parameters
-logical,intent(in) :: update_mom             !< Update moments sequentially
+logical,intent(in) :: iterative_algo         !< Iterative algorithm
 
 ! Set name
 @:set_name(mom_blk_init)
@@ -122,14 +122,14 @@ associate(ib=>mom_blk%ib)
 
 ! Initialization
 if (bpar%diag_block(ib)) then
-   if (update_mom) then
+   if (iterative_algo) then
       mom_blk%m1_1 = zero
       mom_blk%m1_2 = zero
    end if
    mom_blk%m2_1 = zero
    mom_blk%m2_2 = zero
    mom_blk%m11 = zero
-   if (update_mom) then
+   if (iterative_algo) then
       mom_blk%m12 = zero
       mom_blk%m21 = zero
    end if

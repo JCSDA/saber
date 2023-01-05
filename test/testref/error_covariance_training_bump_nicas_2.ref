@@ -1,8 +1,6 @@
 Norm of input parameter nicas_a::1: 4.2727231385893987e+01
 Norm of input parameter nicas_a::2: 1.2508898244244907e+01
        Independent levels:  1[2]
-          Level   1:   1550418632
-          Level   2:   1550418632
           Model grid size:              840
           Subset Sc0 size:              762
           Number of duplicated points (halo):        78 (  9.29%)
@@ -83,6 +81,37 @@ Norm of input parameter nicas_a::2: 1.2508898244244907e+01
              ns =                             1382
              v%n_s =                             2
              c%n_s[global] =                 21067
+    Full NICAS adjoint test result:                        T
+       Block NICAS adjoint test result:                    T
+          Interpolation adjoint test (horizontal) result:  T
+          Interpolation adjoint test (vertical) result:    T
+          Interpolation adjoint test (total) result:       T
+          Communication AB adjoint test result:            T
+          Communication AC adjoint test result:            T
+          Convolution / communication adjoint test result: T
+          Component NICAS adjoint test result:             T
+          Interpolation adjoint test (horizontal) result:  T
+          Interpolation adjoint test (vertical) result:    T
+          Interpolation adjoint test (total) result:       T
+          Communication AB adjoint test result:            T
+          Communication AC adjoint test result:            T
+          Convolution / communication adjoint test result: T
+          Component NICAS adjoint test result:             T
+       Block NICAS adjoint test result:                    T
+          Interpolation adjoint test (horizontal) result:  T
+          Interpolation adjoint test (vertical) result:    T
+          Interpolation adjoint test (total) result:       T
+          Communication AB adjoint test result:            T
+          Communication AC adjoint test result:            T
+          Convolution / communication adjoint test result: T
+          Component NICAS adjoint test result:             T
+          Interpolation adjoint test (horizontal) result:  T
+          Interpolation adjoint test (vertical) result:    T
+          Interpolation adjoint test (total) result:       T
+          Communication AB adjoint test result:            T
+          Communication AC adjoint test result:            T
+          Convolution / communication adjoint test result: T
+          Component NICAS adjoint test result:             T
              0.0 /    0.0:  1.0000000
           Level   1:  0.0000000 -  1.0000000
           Level   2:  0.0000000 -  0.6577737
@@ -90,4 +119,3 @@ Norm of input parameter nicas_a::2: 1.2508898244244907e+01
           Level   1:  0.0000000 -  0.0000000
           Level   2:  0.0000000 -  0.0000000
 Norm of BUMP output parameter dirac_nicas - 1: 2.2164145384133902e+00
-Norm of BUMP output parameter dirac_nicas_bens - 1: 7.3061198890932858e-03

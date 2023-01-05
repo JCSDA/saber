@@ -18,28 +18,41 @@ background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
 bump:
-  datadir: testdata
-  prefix: error_covariance_training_bump_hdiag_7/_MPI_-_OMP_
-  testing: true
-  method: hyb-ens
-  strategy: specific_univariate
-  update_mom: true
-  new_hdiag: true
-  write_hdiag: true
-  check_adjoints: true
-  check_normalization: 10
-  nc1: 500
-  nc3: 15
-  dc: 500.0e3
-  nl0r: 2
-  ne: 10
-  ne_lr: 25
+  general:
+    testing: true
+  io:
+    data directory: testdata
+    files prefix: error_covariance_training_bump_hdiag_7/_MPI_-_OMP_
+  drivers:
+    compute covariance: true
+    compute lowres covariance: true
+    compute correlation: true
+    compute lowres correlation: true
+    compute localization: true
+    compute lowres localization: true
+    compute hybrid weights: true
+    hybrid source: lowres ensemble
+    multivariate strategy: specific_univariate
+    compute moments: true
+    iterative algorithm: true
+    write diagnostics: true
+    adjoints test: true
+    normalization test: 10
+  sampling:
+    computation grid size: 500
+    distance classes: 15
+    distance class width: 500.0e3
+    reduced levels: 2
+  diagnostics:
+    target ensemble size: 10
+    target lowres ensemble size: 25
   ensemble:
     members from template:
       template:
         date: '2010-01-01T12:00:00Z'
         filepath: testdata/randomization_bump_nicas_L12L2/member_%mem%
-        state variables: *id001
+        state variables: &id001
+        - var1
       pattern: '%mem%'
       nmembers: 10
       zero padding: 6

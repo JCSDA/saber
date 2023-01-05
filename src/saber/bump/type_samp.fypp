@@ -13,7 +13,7 @@ use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max,fckit_mpi_
 !$ use omp_lib
 use tools_atlas, only: get_grid
 use tools_const, only: zero,quarter,half,one,four,hundred,pi,req,reqkm,deg2rad,rad2deg
-use tools_func, only: lonlatmod,grid_hash,independent_levels,sphere_bearing,sphere_dist,inside,cx_to_cxa,cx_to_proc,cx_to_cxu, &
+use tools_func, only: lonlatmod,independent_levels,sphere_bearing,sphere_dist,inside,cx_to_cxa,cx_to_proc,cx_to_cxu, &
  & convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count
 use tools_gc99, only: fit_func
 use tools_kinds, only: kind_int,kind_real
@@ -205,9 +205,9 @@ type(geom_type),intent(in) :: geom     !< Geometry
 ! Initialization
 samp%nproc = mpl%nproc
 samp%sc2 = nam%new_vbal.or.nam%load_vbal.or.(nam%new_hdiag.and.nam%local_diag)
-samp%sc3 = nam%new_mom.or.nam%update_mom.or.nam%load_mom
-samp%lat_bands = (nam%new_vbal.and.(nam%vbal_dlat>zero)).or.(nam%new_hdiag.and.(nam%local_dlat>zero))
-samp%compute_c2b_to_c1a = nam%new_vbal.and.(nam%new_vbal_cov.or.nam%load_vbal_cov.or.nam%update_vbal_cov)
+samp%sc3 = nam%new_mom.or.nam%load_mom
+samp%lat_bands = (nam%new_vbal.or.nam%new_hdiag).and.(nam%local_dlat>zero)
+samp%compute_c2b_to_c1a = nam%new_vbal.and.(nam%new_vbal_cov.or.nam%load_vbal_cov)
 
 ! Allocation
 allocate(samp%myuniverse(samp%nproc))
@@ -1329,7 +1329,7 @@ else
       write(mpl%info,'(a10,a,a,f10.2,a)') '','Class size: ',trim(mpl%aqua),nam%dc*reqkm,trim(mpl%black)//' km'
       call mpl%flush
       do il0=1,geom%nl0
-         write(mpl%info,'(a10,a,i3,a)') '','Level ',nam%levs(il0),':'
+         write(mpl%info,'(a10,a,i3,a)') '','Level ',il0,':'
          call mpl%flush
          do jc4=1,nam%nc4
             write(mpl%test,'(a13,f6.2,a10)') '',geom%as(jc4)*rad2deg,' deg.  ~> '
@@ -1519,10 +1519,11 @@ type(geom_type),intent(in) :: geom           !< Geometry
 type(ens_type),intent(inout),optional :: ens !< Ensemble
 
 ! Local variables
-integer :: nsmask,ic0a,il0,ildwv,iv,ncontig,ncontigmax,latmin,latmax
+integer :: nsmask,ic0a,il0,ildwv,iv,imask,ncontig,ncontigmax,latmin,latmax
 real(kind_real) :: dist
 real(kind_real),allocatable :: m2(:,:,:)
 logical :: valid
+character(len=1024) :: mask_type
 
 ! Set name
 @:set_name(samp_compute_mask)
@@ -1546,85 +1547,101 @@ samp%smask_c0a = geom%gmask_c0a
 nsmask = zss_count(geom%gmask_c0a.and..not.samp%smask_c0a)
 call mpl%f_comm%allreduce(nsmask,fckit_mpi_sum())
 
-if ((nsmask>0).or.(trim(nam%mask_type)/='none').or.(nam%ncontig_th>0)) then
+if ((nsmask>0).or.(nam%nmask>0).or.(nam%ncontig_th>0)) then
    ! Compute sampling mask
    write(mpl%info,'(a7,a)') '','Compute sampling mask'
    call mpl%flush
 
-   ! Mask restriction
-   if (nam%mask_type(1:3)=='lat') then
-      ! Latitude band
-      read(nam%mask_type(4:6),'(i3)') latmin
-      read(nam%mask_type(7:9),'(i3)') latmax
-      write(mpl%info,'(a10,a,i3,a,i3)') '','Latitude band between ',latmin,' and ',latmax
+   do imask=1,nam%nmask
+      ! Get mask type
+      mask_type = nam%mask_type(imask)
+      write(mpl%info,'(a10,a,a)') '','Mask type:',trim(mask_type)
       call mpl%flush
-      if (latmin>=latmax) call mpl%abort('${subr}$','latmin should be lower than latmax')
-      do ic0a=1,geom%nc0a
-         valid = (geom%lat_c0a(ic0a)>=real(latmin,kind_real)*deg2rad).and.(geom%lat_c0a(ic0a)<=real(latmax,kind_real)*deg2rad)
-         do il0=1,geom%nl0
-            samp%smask_c0a(ic0a,il0) = samp%smask_c0a(ic0a,il0).and.valid
-         end do
-      end do
-   elseif (trim(nam%mask_type)=='ldwv') then
-      ! Disk around vertical diagnostic points
-      write(mpl%info,'(a10,a,e10.3,a)') '','Disk of ',1.1_kind_real*nam%local_rad*reqkm,' km around vertical diagonstic points'
-      call mpl%flush
-      do ic0a=1,geom%nc0a
-         valid = .false.
-         do ildwv=1,nam%nldwv
-            call sphere_dist(nam%lon_ldwv(ildwv),nam%lat_ldwv(ildwv),geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),dist)
-            valid = valid.or.(dist<1.1_kind_real*nam%local_rad)
-         end do
-         do il0=1,geom%nl0
-            samp%smask_c0a(ic0a,il0) = samp%smask_c0a(ic0a,il0).and.valid
-         end do
-      end do
-   elseif (trim(nam%mask_type)=='stddev') then
-      ! Standard-deviation threshold
-      if (.not.present(ens)) call mpl%abort('${subr}$','ensemble required to define standard-devation mask')
 
-      ! Allocation
-      allocate(m2(geom%nc0a,geom%nl0,nam%nv))
-
-      ! Compute variance and fourth-order moment
-      call ens%compute_moments(mpl,nam,geom)
-
-      ! Get variance on subset Sc0
-      call ens%get_c0(mpl,nam,geom,'m2',0,m2)
-
-      ! Check standard-deviation value
-      do iv=1,nam%nv
-         write(mpl%info,'(a10,a,e10.3,a)') '','Variable '//trim(nam%variables(iv))//': threshold ',nam%mask_th(iv), &
- & ' used as a '//trim(nam%mask_lu(iv))//' bound for standard-deviation'
+      if (mask_type(1:3)=='lat') then
+         ! Latitude band
+         read(mask_type(4:6),'(i3)') latmin
+         read(mask_type(7:9),'(i3)') latmax
+         write(mpl%info,'(a13,a,i3,a,i3)') '','Latitude band between ',latmin,' and ',latmax
          call mpl%flush
-         if (trim(nam%mask_lu(iv))=='lower') then
-            samp%smask_c0a = samp%smask_c0a.and.(m2(:,:,iv)>nam%mask_th(iv)**2)
-         elseif (trim(nam%mask_lu(iv))=='upper') then
-            samp%smask_c0a = samp%smask_c0a.and.(m2(:,:,iv)<nam%mask_th(iv)**2)
-         end if
-      end do
+         if (latmin>=latmax) call mpl%abort('${subr}$','latmin should be lower than latmax')
+         do ic0a=1,geom%nc0a
+            valid = (geom%lat_c0a(ic0a)>=real(latmin,kind_real)*deg2rad).and.(geom%lat_c0a(ic0a)<=real(latmax,kind_real)*deg2rad)
+            do il0=1,geom%nl0
+               samp%smask_c0a(ic0a,il0) = samp%smask_c0a(ic0a,il0).and.valid
+            end do
+         end do
+      end if
 
-      ! Release memory
-      deallocate(m2)
-   elseif (trim(nam%mask_type)=='input') then
-      ! Input field threshold
-      if (.not.allocated(samp%smask_input_c0a)) call mpl%abort('${subr}$', &
+      if (mask_type=='ldwv') then
+         ! Disk around vertical diagnostic points
+         write(mpl%info,'(a13,a,e10.3,a)') '','Disk of ',1.1_kind_real*nam%local_rad*reqkm,' km around vertical diagonstic points'
+         call mpl%flush
+         do ic0a=1,geom%nc0a
+            valid = .false.
+            do ildwv=1,nam%nldwv
+               call sphere_dist(nam%lon_ldwv(ildwv),nam%lat_ldwv(ildwv),geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),dist)
+               valid = valid.or.(dist<1.1_kind_real*nam%local_rad)
+            end do
+            do il0=1,geom%nl0
+               samp%smask_c0a(ic0a,il0) = samp%smask_c0a(ic0a,il0).and.valid
+            end do
+         end do
+      end if
+
+      if (mask_type=='stddev') then
+         ! Standard-deviation threshold
+         if (.not.present(ens)) call mpl%abort('${subr}$','ensemble required to define standard-devation mask')
+
+         ! Allocation
+         allocate(m2(geom%nc0a,geom%nl0,nam%nv))
+
+         ! Compute variance and fourth-order moment
+         call ens%compute_moments(mpl,nam,geom)
+
+         ! Get variance on subset Sc0
+         call ens%get_c0(mpl,nam,geom,'m2',0,m2)
+
+         ! Check standard-deviation value
+         write(mpl%info,'(a13,a,e10.3,a)') '','Variable '//trim(nam%mask_variable(imask))//': threshold ',nam%mask_th(imask), &
+ & ' used as a '//trim(nam%mask_lu(imask))//' bound for standard-deviation'
+         call mpl%flush
+         do iv=1,nam%nv
+            if (nam%variables(iv)==nam%mask_variable(imask)) then
+print*, 'stddev',minval(m2(:,:,iv)),maxval(m2(:,:,iv))
+               if (trim(nam%mask_lu(imask))=='lower') then
+                  samp%smask_c0a = samp%smask_c0a.and.(m2(:,:,iv)>nam%mask_th(imask)**2)
+               elseif (trim(nam%mask_lu(imask))=='upper') then
+                  samp%smask_c0a = samp%smask_c0a.and.(m2(:,:,iv)<nam%mask_th(imask)**2)
+               end if
+            end if
+         end do
+
+         ! Release memory
+         deallocate(m2)
+      end if
+
+      if (nam%mask_type(imask)=='input') then
+         ! Input field threshold
+         if (.not.allocated(samp%smask_input_c0a)) call mpl%abort('${subr}$', &
  & 'input parameter sampling_mask_field should be set for this mask_type')
 
-      ! Check input field value
-      do iv=1,nam%nv
-         write(mpl%info,'(a10,a,e10.3,a)') '','Variable '//trim(nam%variables(iv))//': threshold ',nam%mask_th(iv), &
- & ' used as a '//trim(nam%mask_lu(iv))//' bound for standard-deviation'
+         ! Check input field value
+         write(mpl%info,'(a10,a,e10.3,a)') '','Variable '//trim(nam%mask_variable(imask))//': threshold ',nam%mask_th(imask), &
+ & ' used as a '//trim(nam%mask_lu(imask))//' bound for input field'
          call mpl%flush
-         if (trim(nam%mask_lu(iv))=='lower') then
-            samp%smask_c0a = samp%smask_c0a.and.(samp%smask_input_c0a(:,:,iv)>nam%mask_th(iv))
-         elseif (trim(nam%mask_lu(iv))=='upper') then
-            samp%smask_c0a = samp%smask_c0a.and.(samp%smask_input_c0a(:,:,iv)<nam%mask_th(iv))
-         end if
-      end do
-   else
-      call mpl%abort('${subr}$','mask_type not recognized')
-   end if
+         do iv=1,nam%nv
+            if (nam%variables(iv)==nam%mask_variable(imask)) then
+print*, 'input',minval(samp%smask_input_c0a(:,:,iv)),maxval(samp%smask_input_c0a(:,:,iv))
+               if (trim(nam%mask_lu(imask))=='lower') then
+                  samp%smask_c0a = samp%smask_c0a.and.(samp%smask_input_c0a(:,:,iv)>nam%mask_th(imask)**2)
+               elseif (trim(nam%mask_lu(imask))=='upper') then
+                  samp%smask_c0a = samp%smask_c0a.and.(samp%smask_input_c0a(:,:,iv)<nam%mask_th(imask)**2)
+               end if
+            end if
+         end do
+      end if
+   end do
 
    ! Check vertically contiguous points
    if (nam%ncontig_th>0) then
@@ -1666,7 +1683,7 @@ if (samp%nc0_smask(0)==0) call mpl%abort('${subr}$','no more points in the sampl
 write(mpl%info,'(a7,a)') '','Sampling valid points (% of domain mask):'
 call mpl%flush
 do il0=1,geom%nl0
-   write(mpl%test,'(a10,a,i3,a,f5.1,a)') '','Level ',nam%levs(il0),' ~> ',hundred*real(samp%nc0_smask(il0),kind_real) &
+   write(mpl%test,'(a10,a,i3,a,f5.1,a)') '','Level ',il0,' ~> ',hundred*real(samp%nc0_smask(il0),kind_real) &
  & /real(geom%nc0_gmask(il0),kind_real),'%'
    call mpl%flush
 end do
@@ -1756,7 +1773,7 @@ if (samp%lat_bands.and.(subset==2)) then
    end if
 else
    ! Initialize subsampling
-   select case (trim(nam%diag_draw_type))
+   select case (trim(nam%samp_draw_type))
    case ('random')
       ! Check subsampling size
       if (ncx>samp%nc0_smask(0)) then
@@ -2514,7 +2531,7 @@ do il0i=1,geom%nl0i
          jc2u = samp%c2_to_c2u(jc2)
          lcheck_c2b(jc2u) = .true.
       else
-         call mpl%abort('${subr}$','point of halo B out of universe (increase universe_rad)')
+         call mpl%abort('${subr}$','point of halo B out of universe (increase universe_radius)')
       end if
    end do
 end do
@@ -2526,7 +2543,7 @@ if (samp%compute_c2b_to_c1a) then
          jc2u = samp%c2_to_c2u(jc2)
          lcheck_c2b(jc2u) = .true.
       else
-         call mpl%abort('${subr}$','point of halo B out of universe (increase universe_rad)')
+         call mpl%abort('${subr}$','point of halo B out of universe (increase universe_radius)')
       end if
    end do
 end if
@@ -2624,7 +2641,7 @@ type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
 integer :: ic0u,iproc,ic0,ic0b,jc0u,i_s,il0,il0ic1,nc0own,ic0own
-integer :: hash(geom%nl0),c0u_to_c0b(geom%nc0u)
+integer :: c0u_to_c0b(geom%nc0u)
 integer,allocatable :: c0b_to_c0(:),c0own_to_c0(:)
 logical :: lcheck_c0b(geom%nc0u)
 
@@ -2638,13 +2655,10 @@ logical :: lcheck_c0b(geom%nc0u)
 allocate(samp%l0_to_l0ic1(geom%nl0))
 allocate(samp%l0ic1_to_l0(geom%nl0))
 
-! Compute grid hash
-call grid_hash(mpl,samp%nc1a,samp%nc1,geom%nl0,samp%c1a_to_c1,samp%lon_c1a,samp%lat_c1a,samp%smask_c1a,hash)
-
 ! Compute independent levels
 write(mpl%test,'(a10,a)') '','Independent levels: '
 call mpl%flush(adv=.false.)
-call independent_levels(mpl,geom%nl0,hash,samp%nl0ic1,samp%l0_to_l0ic1,samp%l0ic1_to_l0)
+call independent_levels(mpl,samp%nc1a,geom%nl0,samp%smask_c1a,samp%nl0ic1,samp%l0_to_l0ic1,samp%l0ic1_to_l0)
 
 ! Allocation
 allocate(samp%interp_c0b_to_c1a(samp%nl0ic1))
@@ -2746,7 +2760,7 @@ type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
 integer :: jc3,jc4,ic0,ic0c,ic0u,jc0u,i_s,il0,il0ic3,nc0own,ic0own,iproc
-integer :: hash(geom%nl0),c0u_to_c0c(geom%nc0u)
+integer :: c0u_to_c0c(geom%nc0u)
 integer,allocatable :: c0c_to_c0(:),c0own_to_c0(:)
 logical :: smask(samp%nc1a,geom%nl0),lcheck_c0c(geom%nc0u)
 
@@ -2766,13 +2780,11 @@ do jc4=1,nam%nc4
       ! Initialization
       smask = samp%smask_c3a(:,jc3,jc4,:)
 
-      ! Compute grid hash
-      call grid_hash(mpl,samp%nc1a,samp%nc1,geom%nl0,samp%c1a_to_c1,samp%lon_c3a(:,jc3,jc4),samp%lat_c3a(:,jc3,jc4),smask,hash)
-
       ! Compute independent levels
       write(mpl%test,'(a10,a,i3,a,i3,a)') '','Independent levels for angular sector ',jc4,' / class ',jc3,': '
       call mpl%flush(adv=.false.)
-      call independent_levels(mpl,geom%nl0,hash,samp%nl0ic3(jc3,jc4),samp%l0_to_l0ic3(:,jc3,jc4),samp%l0ic3_to_l0(:,jc3,jc4))
+      call independent_levels(mpl,samp%nc1a,geom%nl0,smask,samp%nl0ic3(jc3,jc4),samp%l0_to_l0ic3(:,jc3,jc4), &
+ & samp%l0ic3_to_l0(:,jc3,jc4))
    end do
 end do
 
@@ -3058,9 +3070,9 @@ do ic2b=1,samp%nc2b
    ! Indices
    ic2u = samp%c2b_to_c2u(ic2b)
 
-   if (nam%vbal_rad>zero) then
+   if (nam%local_rad>zero) then
       ! Count nearest neighbors
-      call tree%count_nearest_neighbors(samp%lon_c2u(ic2u),samp%lat_c2u(ic2u),nam%vbal_rad,nn)
+      call tree%count_nearest_neighbors(samp%lon_c2u(ic2u),samp%lat_c2u(ic2u),nam%local_rad,nn)
 
       ! Allocation
       allocate(nn_index(nn))
@@ -3077,16 +3089,16 @@ do ic2b=1,samp%nc2b
 
       ! Release memory
       deallocate(nn_index)
-   elseif (nam%vbal_dlat>zero) then
+   elseif (nam%local_dlat>zero) then
       ! Update masks
       do jc1u=1,samp%nc1u
-         if (abs(samp%lat_c2u(ic2u)-samp%lat_c1u(jc1u))<nam%vbal_dlat) then
+         if (abs(samp%lat_c2u(ic2u)-samp%lat_c1u(jc1u))<nam%local_dlat) then
             samp%vbal_mask(jc1u,ic2b) = .true.
             lcheck_c1e(jc1u) = .true.
          end if
       end do
    else
-      call mpl%abort('${subr}$','vbal_rad or vbal_dlat should be positive')
+      call mpl%abort('${subr}$','local_rad or local_dlat should be positive')
    end if
 end do
 samp%nc1e = zss_count(lcheck_c1e)

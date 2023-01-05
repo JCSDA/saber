@@ -25,16 +25,22 @@ ensemble:
     - 12
     - 18
 bump:
-  datadir: testdata
-  prefix: error_covariance_training_bump_stddev_1/_MPI_-_OMP_
-  testing: true
-  new_var: true
-  ne: 20
-  var_filter: true
-  var_niter: 4
-  var_rhflt:
-    var1:
-    - 5000.0e3
+  general:
+    testing: true
+  io:
+    data directory: testdata
+    files prefix: error_covariance_training_bump_stddev_1/_MPI_-_OMP_
+  drivers:
+    compute variance: true
+  diagnostics:
+    target ensemble size: 20
+  variance:
+    objective filtering: true
+    filtering iterations: 4
+    initial length-scale:
+    - variables:
+      - var1
+      value: 5000.0e3
 output:
 - parameter: stddev
   file:

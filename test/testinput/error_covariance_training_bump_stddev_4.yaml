@@ -11,16 +11,21 @@ background:
   date: '2010-01-01T12:00:00Z'
   state variables: *id001
 bump:
-  datadir: testdata
-  prefix: error_covariance_training_bump_stddev_4/_MPI_-_OMP_
-  testing: true
-  update_var: true
+  general:
+    testing: true
+  io:
+    data directory: testdata
+    files prefix: error_covariance_training_bump_stddev_4/_MPI_-_OMP_
+  drivers:
+    compute variance: true
+    iterative algorithm: true
   ensemble:
     members from template:
       template:
         date: '2010-01-01T12:00:00Z'
         filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
-        state variables: *id001
+        state variables:
+        - var1
       pattern: '%mem%'
       nmembers: 10
       zero padding: 6

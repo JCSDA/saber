@@ -16,15 +16,16 @@ bump:
     universe length-scale: 10000.0e3
   io:
     data directory: testdata
-    files prefix: error_covariance_training_bump_nicas_1/_MPI_-_OMP_
+    files prefix: error_covariance_training_bump_nicas_8/_MPI_-_OMP_
+    alias:
+    - in code: var1-var1
+      in file: fixed_1000-3.0
   drivers:
     multivariate strategy: specific_multivariate
     compute nicas: true
+    write local nicas: true
     internal dirac test: true
     adjoints test: true
-    randomization test: true
-  ensemble sizes:
-    total ensemble size: 50
   nicas:
     resolution: 4.0
     explicit length-scales: true
@@ -48,9 +49,9 @@ bump:
 output:
 - parameter: cor_rh
   file:
-    filepath: testdata/error_covariance_training_bump_nicas_1/_MPI_-_OMP__cor_rh
+    filepath: testdata/error_covariance_training_bump_nicas_8/_MPI_-_OMP__cor_rh
 - parameter: cor_rv
   file:
-    filepath: testdata/error_covariance_training_bump_nicas_1/_MPI_-_OMP__cor_rv
+    filepath: testdata/error_covariance_training_bump_nicas_8/_MPI_-_OMP__cor_rv
 test:
-  reference filename: testref/error_covariance_training_bump_nicas_1.ref
+  reference filename: testref/error_covariance_training_bump_nicas_8.ref
