@@ -180,7 +180,7 @@ type nam_type
    logical :: pos_def_test                                    !< Positive-definiteness test
    logical :: interp_test                                     !< Horizontal NICAS interpolation test
 
-   ! Wind section
+   ! Psichitouv section
    character(len=1024) :: wind_streamfunction                 !< Streamfunction variable name
    character(len=1024) :: wind_velocity_potential             !< Velocity potential variable name
    character(len=1024) :: wind_eastward                       !< Eastward wind variable name
@@ -813,7 +813,7 @@ if (conf%get('nicas',section)) then
    call nam%get(section,'horizontal interpolation test',nam%interp_test)
 end if
 
-! Wind section
+! Psichitouv section
 if (conf%get('psichitouv',section)) then
    if (lverbose) call print_section(mpl,section,'Psichitouv')
    call nam%get(section,'stream function',nam%wind_streamfunction)

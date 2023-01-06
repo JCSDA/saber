@@ -13,6 +13,7 @@ type_avg_blk.fypp
 type_bpar.fypp
 type_bump.fypp
 type_bump_interface.F90
+type_bump_parameters.h
 type_cmat.fypp
 type_cmat_blk.fypp
 type_com.fypp
@@ -46,8 +47,9 @@ if( oops_FOUND )
     list(APPEND bump_src_files_list
     BUMP.cc
     BUMP.h
-    type_bump.cc
+    BUMPParameters.h
     type_bump.h
+    type_bump_parameters_with_oops.cc
     NICAS.cc
     NICAS.h
     PsiChiToUV.cc
@@ -56,6 +58,10 @@ if( oops_FOUND )
     StdDev.h
     VerticalBalance.cc
     VerticalBalance.h
+    )
+else()
+    list(APPEND bump_src_files_list
+    type_bump_parameters_without_oops.cc
     )
 endif()
 

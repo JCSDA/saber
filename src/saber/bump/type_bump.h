@@ -16,7 +16,6 @@
 namespace saber {
 namespace bump {
 extern "C" {
-  void bump_config_init_f90(eckit::LocalConfiguration *);
   void bump_create_f90(int &, const eckit::mpi::Comm *,
                        const atlas::functionspace::FunctionSpaceImpl *,
                        const atlas::field::FieldSetImpl *,
