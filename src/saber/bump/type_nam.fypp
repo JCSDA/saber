@@ -748,8 +748,13 @@ if (conf%get('nicas',section)) then
          allocate(loc_wgt(nam%nv,nam%nv))
          allocate(nam%loc_wgt_sqrt(nam%nv,nam%nv))
 
-         ! Copy positive weights and set non-specified values to one
-         loc_wgt = -one
+         ! Initialize diagonal weights at one, others at zero
+         loc_wgt = zero
+         do iv=1,nam%nv
+            loc_wgt(iv,iv) = one
+         end do
+
+         ! Copy weights
          do iconf=1,size(confs)
             ! Get row and column variables, and the value
             call confs(iconf)%get_or_die('row variables',str_array_row)
@@ -772,13 +777,6 @@ if (conf%get('nicas',section)) then
                      end if
                   end do
                end do
-            end do
-         end do
-
-         ! Set missing values to one
-         do jv=1,nam%nv
-            do iv=1,nam%nv
-               if (eq(loc_wgt(iv,jv),-one)) loc_wgt(iv,jv) = one
             end do
          end do
 
