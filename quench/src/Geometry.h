@@ -10,6 +10,7 @@
 #include <memory>
 #include <ostream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "atlas/field.h"
@@ -33,6 +34,35 @@ namespace oops {
 
 namespace quench {
 
+// -----------------------------------------------------------------------------
+/// Group parameters
+
+class GroupParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(GroupParameters, Parameters)
+
+ public:
+  /// Variables
+  oops::RequiredParameter<oops::Variables> vars{"variables", this};
+
+  /// Number of levels
+  oops::Parameter<size_t> levels{"levels", 1, this};
+
+  /// Corresponding level for 2D variables (first or last)
+  oops::Parameter<std::string> lev2d{"lev2d", "first", this};
+
+  /// Vertical unit
+  oops::OptionalParameter<std::vector<double>> vunit{"vunit", this};
+
+  /// Mask type
+  oops::Parameter<std::string> mask_type{"mask type", "none", this};
+
+  /// Mask path
+  oops::Parameter<std::string> mask_path{"mask path", "../quench/data/landsea.nc", this};
+};
+
+// -----------------------------------------------------------------------------
+/// Geometry parameters
+
 class GeometryParameters : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(GeometryParameters, Parameters)
 
@@ -49,20 +79,8 @@ class GeometryParameters : public oops::Parameters {
   /// Partitioner
   oops::Parameter<std::string> partitioner{"partitioner", "equal_regions", this};
 
-  /// Number of levels
-  oops::Parameter<size_t> levels{"levels", 1, this};
-
-  /// Corresponding level for 2D variables (first or last)
-  oops::Parameter<std::string> lev2d{"lev2d", "first", this};
-
-  /// Vertical unit
-  oops::OptionalParameter<std::vector<double>> vunit{"vunit", this};
-
-  /// Mask type
-  oops::Parameter<std::string> mask_type{"mask type", "none", this};
-
-  /// Mask path
-  oops::Parameter<std::string> mask_path{"mask path", "../quench/data/landsea.nc", this};
+  /// Variables groups
+  oops::RequiredParameter<std::vector<GroupParameters>> groups{"groups", this};
 
   /// Halo size
   oops::OptionalParameter<size_t> halo{"halo", this};
@@ -91,7 +109,9 @@ class Geometry : public util::Printable,
   atlas::FunctionSpace & functionSpace() {return functionSpace_;}
   const atlas::FieldSet & extraFields() const {return extraFields_;}
   atlas::FieldSet & extraFields() {return extraFields_;}
-  size_t levels() const {return levels_;}
+  size_t levels(const size_t groupIndex = 0) const {return groups_[groupIndex].levels_;}
+  size_t groups() const {return groups_.size();}
+  size_t groupIndex(const std::string var) const {return groupIndex_[var]};
 
   size_t variableSize(const std::string &) const;
   size_t maskLevel(const std::string &, const size_t &) const;
@@ -109,13 +129,17 @@ class Geometry : public util::Printable,
   atlas::grid::Partitioner partitioner_;
   atlas::grid::Distribution distribution_;
   atlas::Mesh mesh_;
-  atlas::Field gmask_;
-  double gmaskSize_;
   atlas::FunctionSpace functionSpace_;
   atlas::FieldSet extraFields_;
-  size_t levels_;
-  std::string lev2d_;
-  std::vector<double> vunit_;
+  std::unordered_map<std::string, size_t> groupIndex_;
+  struct groupData {
+    atlas::Field gmask_;
+    double gmaskSize_;
+    size_t levels_;
+    std::string lev2d_;
+    std::vector<double> vunit_;
+  }
+  std::vector<groupData> groups_;
 };
 // -----------------------------------------------------------------------------
 
