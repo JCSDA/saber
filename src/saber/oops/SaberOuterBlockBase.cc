@@ -117,7 +117,7 @@ void SaberOuterBlockBase::adjointTest(const eckit::mpi::Comm & comm,
   oops::Log::info() << "Info     : Adjoint test: y^t (Ax) = " << dp1
                     << ": x^t (A^t y) = " << dp2 << std::endl;
   oops::Log::test() << "Adjoint test";
-  if (abs(dp1-dp2)/abs(0.5*(dp1+dp2)) < adjointTolerance) {
+  if (std::abs(dp1-dp2)/std::abs(0.5*(dp1+dp2)) < adjointTolerance) {
     oops::Log::test() << " passed" << std::endl;
   } else {
     oops::Log::test() << " failed" << std::endl;
