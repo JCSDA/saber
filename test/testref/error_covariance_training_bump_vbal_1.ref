@@ -9,26 +9,26 @@
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-   Norm of var1:  0.27578544E+04
-   Norm of var2:  0.26311368E+04
-   Norm of var1:  0.25225434E+04
-   Norm of var2:  0.32724998E+04
-   Norm of var1:  0.27409099E+04
-   Norm of var2:  0.28717119E+04
-   Norm of var1:  0.24659146E+04
-   Norm of var2:  0.29544381E+04
-   Norm of var1:  0.27822634E+04
-   Norm of var2:  0.28601296E+04
-   Norm of var1:  0.33953022E+04
-   Norm of var2:  0.31173824E+04
-   Norm of var1:  0.26240045E+04
-   Norm of var2:  0.30353011E+04
-   Norm of var1:  0.35150489E+04
-   Norm of var2:  0.31029371E+04
-   Norm of var1:  0.28727958E+04
-   Norm of var2:  0.36418781E+04
-   Norm of var1:  0.16291866E+02
-   Norm of var2:  0.17753959E+02
+   Norm of var1:  0.12987550E+04
+   Norm of var2:  0.10880960E+04
+   Norm of var1:  0.12658453E+04
+   Norm of var2:  0.14223565E+04
+   Norm of var1:  0.11638989E+04
+   Norm of var2:  0.13773073E+04
+   Norm of var1:  0.13244765E+04
+   Norm of var2:  0.12971831E+04
+   Norm of var1:  0.12476096E+04
+   Norm of var2:  0.11582421E+04
+   Norm of var1:  0.15645136E+04
+   Norm of var2:  0.13607842E+04
+   Norm of var1:  0.12760139E+04
+   Norm of var2:  0.12397470E+04
+   Norm of var1:  0.17142726E+04
+   Norm of var2:  0.13783263E+04
+   Norm of var1:  0.15482138E+04
+   Norm of var2:  0.16993962E+04
+   Norm of var1:  0.12424576E+04
+   Norm of var2:  0.14744957E+04
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
           Decimate full grid, at least      500 points required,     762 valid points found
