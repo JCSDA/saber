@@ -3,7 +3,10 @@ geometry:
   grid:
     type: regular_lonlat
     N: 10
-  levels: 2
+  groups:
+  - variables:
+    - var1
+    levels: 2
   halo: 1
 input variables: &id001
 - var1

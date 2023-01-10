@@ -18,14 +18,6 @@
 #include "src/Fields.h"
 #include "src/Increment.h"
 
-namespace eckit {
-  class Configuration;
-}
-
-namespace oops {
-  class Variables;
-}
-
 namespace quench {
   class Geometry;
   class Increment;

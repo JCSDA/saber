@@ -21,16 +21,13 @@
 
 #include "oops/mpi/mpi.h"
 
+#include "oops/base/Variables.h"
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/parameters/OptionalParameter.h"
 #include "oops/util/parameters/Parameter.h"
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 #include "oops/util/Printable.h"
-
-namespace oops {
-  class Variables;
-}
 
 namespace quench {
 
@@ -42,7 +39,7 @@ class GroupParameters : public oops::Parameters {
 
  public:
   /// Variables
-  oops::RequiredParameter<oops::Variables> vars{"variables", this};
+  oops::RequiredParameter<std::vector<std::string>> variables{"variables", this};
 
   /// Number of levels
   oops::Parameter<size_t> levels{"levels", 1, this};
@@ -54,10 +51,10 @@ class GroupParameters : public oops::Parameters {
   oops::OptionalParameter<std::vector<double>> vunit{"vunit", this};
 
   /// Mask type
-  oops::Parameter<std::string> mask_type{"mask type", "none", this};
+  oops::Parameter<std::string> maskType{"mask type", "none", this};
 
   /// Mask path
-  oops::Parameter<std::string> mask_path{"mask path", "../quench/data/landsea.nc", this};
+  oops::Parameter<std::string> maskPath{"mask path", "../quench/data/landsea.nc", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -107,11 +104,13 @@ class Geometry : public util::Printable,
   const atlas::Mesh mesh() const {return mesh_;}
   const atlas::FunctionSpace & functionSpace() const {return functionSpace_;}
   atlas::FunctionSpace & functionSpace() {return functionSpace_;}
-  const atlas::FieldSet & extraFields() const {return extraFields_;}
-  atlas::FieldSet & extraFields() {return extraFields_;}
-  size_t levels(const size_t groupIndex = 0) const {return groups_[groupIndex].levels_;}
+  const atlas::FieldSet & extraFields() const {return groups_[0].extraFields_;}
+  atlas::FieldSet & extraFields() {return groups_[0].extraFields_;}
+  const atlas::FieldSet & extraFields(const size_t & groupIndex) const
+    {return groups_[groupIndex].extraFields_;}
+  size_t levels(const size_t & groupIndex = 0) const {return groups_[groupIndex].levels_;}
   size_t groups() const {return groups_.size();}
-  size_t groupIndex(const std::string var) const {return groupIndex_[var]};
+  size_t groupIndex(const std::string & var) const {return groupIndex_.at(var);}
 
   size_t variableSize(const std::string &) const;
   size_t maskLevel(const std::string &, const size_t &) const;
@@ -121,6 +120,7 @@ class Geometry : public util::Printable,
 
  private:
   void print(std::ostream &) const;
+  void readSeaMask(const std::string &, const size_t &, const std::string &, atlas::Field &) const;
   const eckit::mpi::Comm & comm_;
   size_t halo_;
   atlas::Grid grid_;
@@ -130,15 +130,14 @@ class Geometry : public util::Printable,
   atlas::grid::Distribution distribution_;
   atlas::Mesh mesh_;
   atlas::FunctionSpace functionSpace_;
-  atlas::FieldSet extraFields_;
   std::unordered_map<std::string, size_t> groupIndex_;
   struct groupData {
-    atlas::Field gmask_;
-    double gmaskSize_;
     size_t levels_;
     std::string lev2d_;
     std::vector<double> vunit_;
-  }
+    atlas::FieldSet extraFields_;
+    double gmaskSize_;
+  };
   std::vector<groupData> groups_;
 };
 // -----------------------------------------------------------------------------

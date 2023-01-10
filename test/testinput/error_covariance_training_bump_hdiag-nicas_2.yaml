@@ -3,9 +3,16 @@ geometry:
   grid:
     type: regular_lonlat
     N: 10
-  levels: 2
-  mask type: sea
-  lev2d: last
+  groups:
+  - variables:
+    - var1
+    levels: 2
+    mask type: sea
+  - variables:
+    - var_2d
+    levels: 1
+    lev2d: last
+    mask type: sea
   halo: 1
 input variables: &id001
 - var1

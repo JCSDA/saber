@@ -31,7 +31,12 @@ geometry:
   grid:
     type: regular_gaussian
     N: 15
-  levels: 72
+  groups:
+  - variables:
+    - stream_function
+    - velocity_potential
+    - air_temperature
+    levels: 72
 initial condition:
   date: '2010-01-01T12:00:00Z'
   state variables:

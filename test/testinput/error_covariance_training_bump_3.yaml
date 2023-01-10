@@ -3,7 +3,10 @@ geometry:
   grid:
     name: CS-LFR-15
   partitioner: cubedsphere
-  levels: 2
+  groups:
+  - variables:
+    - var1
+    levels: 2
   halo: 0
 input variables: &id001
 - var1

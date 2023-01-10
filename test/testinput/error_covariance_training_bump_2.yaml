@@ -349,7 +349,10 @@ geometry:
     - -14.4869
     - 60.5478
     - -11.7037
-  levels: 2
+  groups:
+  - variables:
+    - var1
+    levels: 2
   halo: 1
 input variables: &id001
 - var1

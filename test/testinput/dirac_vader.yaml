@@ -3,10 +3,15 @@ geometry:
   grid:
     type: regular_lonlat
     N: 10
-  levels: 2
+  groups:
+  - variables:
+    - air_temperature
+    - virtual_temperature
+    - specific_humidity
+    levels: 2
 initial condition:
   date: 2010-01-01T12:00:00Z
-  state variables: &vars [virtual_temperature, specific_humidity ]
+  state variables: &vars [virtual_temperature, specific_humidity]
 background error:
   covariance model: SABER
   adjoint test: true

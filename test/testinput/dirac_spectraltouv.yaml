@@ -3,7 +3,13 @@ geometry:
   grid:
     type: regular_gaussian
     N: 15
-  levels: 70
+  groups:
+  - variables:
+    - streamfunction
+    - velocity_potential
+    - eastward_wind
+    - northward_wind
+    levels: 70
   partitioner: ectrans
   halo: 1
 initial condition:

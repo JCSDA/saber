@@ -5,22 +5,22 @@
           Min. / max. longitudes: -171.0 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.660E+02%
-             Level   1 ~>  65.9%
-             Level   2 ~>  66.0%
+             Level   1 ~>  66.0%
+             Level   2 ~>  65.9%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
           Decimate full grid, at least      500 points required,     503 valid points found
           Subgrid hash:   -547664083
-             -90.00 deg.  ~>99-98- 5-94-92-87-80-45-70-59 
-             -45.00 deg.  ~>99-42-94-88-85-78-74-71-69-65 
-               0.00 deg.  ~>99-97-89-66-87-80-72-61-64-61 
-              45.00 deg.  ~>99-41-97-95-90-80-78-69-66-61 
              -90.00 deg.  ~>100-98- 6-95-92-87-80-45-70-59 
              -45.00 deg.  ~>100-42-95-88-85-78-74-71-69-65 
                0.00 deg.  ~>100-97-89-66-87-80-72-61-64-61 
               45.00 deg.  ~>100-41-98-95-90-80-78-69-66-61 
+             -90.00 deg.  ~>99-98- 5-94-92-87-80-45-70-59 
+             -45.00 deg.  ~>99-42-94-88-85-78-74-71-69-65 
+               0.00 deg.  ~>99-97-89-66-87-80-72-61-64-61 
+              45.00 deg.  ~>99-41-97-95-90-80-78-69-66-61 
           nc1 =      500
           Independent levels:  1[1]  2[1]
           Independent levels for angular sector   1 / class   1:  1[1]  2[1]
@@ -66,70 +66,70 @@
                 Level:   1 ~> cov. at class zero:  0.10E+01
                 Level:   2 ~> cov. at class zero:  0.10E+01
                 Level:   2 ~> cov. at class zero:  0.95E+00
-             Block var1-var1:  0.18306241E+00 for      160 diagnostic points
-             Block var_2d-var_2d:  0.19247327E+00 for       40 diagnostic points
-             Block common:  0.18287573E+00 for      160 diagnostic points
+             Block var1-var1:  0.18304620E+00 for      160 diagnostic points
+             Block var_2d-var_2d:  0.19287941E+00 for       40 diagnostic points
+             Block common:  0.18288168E+00 for      160 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      3471.72 km
+                                 cor. hor. support:      3470.31 km
                                  cor. ver. support:         3.16 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      3692.42 km
+                                 cor. hor. support:      3690.56 km
                                  cor. ver. support:         3.16 vertical units
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      3458.19 km
+                                 cor. hor. support:      3465.48 km
                                  cor. ver. support:         0.00 vertical units
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      3471.72 km
+                                 cor. hor. support:      3470.31 km
                                  cor. ver. support:         3.16 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      3574.76 km
+                                 cor. hor. support:      3573.55 km
                                  cor. ver. support:         3.16 vertical units
-             Block var1-var1:  0.29556277E+00 for      113 diagnostic points
-             Block var_2d-var_2d:  0.29867254E+00 for       28 diagnostic points
-             Block common:  0.29987890E+00 for      117 diagnostic points
+             Block var1-var1:  0.29553628E+00 for      113 diagnostic points
+             Block var_2d-var_2d:  0.29530729E+00 for       27 diagnostic points
+             Block common:  0.29988506E+00 for      117 diagnostic points
                 Level:   1 ~> loc. at class zero:       0.92
                 Level:   2 ~> loc. at class zero:       0.92
                    Level:   1 ~> amplitude:        1.00
-                                 loc. hor. support:      5173.36 km
+                                 loc. hor. support:      5170.39 km
                                  loc. ver. support:         5.83 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 loc. hor. support:      5347.21 km
+                                 loc. hor. support:      5346.16 km
                                  loc. ver. support:         5.83 vertical units
                 Level:   2 ~> loc. at class zero:       0.92
                    Level:   2 ~> amplitude:        1.00
-                                 loc. hor. support:      5603.50 km
+                                 loc. hor. support:      5716.49 km
                                  loc. ver. support:         0.00 vertical units
                 Level:   1 ~> loc. at class zero:       0.92
                 Level:   2 ~> loc. at class zero:       0.92
                    Level:   1 ~> amplitude:        1.00
-                                 loc. hor. support:      5173.36 km
+                                 loc. hor. support:      5170.39 km
                                  loc. ver. support:         5.83 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 loc. hor. support:      5566.70 km
+                                 loc. hor. support:      5584.13 km
                                  loc. ver. support:         5.84 vertical units
              Effective levels:   1   2 
-                   Horizontal support radius:    5173.36 km (   5173.36 km -    5173.36 km)
-                   Estimated nc1 from horizontal support radius:      231
-                      Decimate full grid, at least      231 points required,     503 valid points found
-                      Subgrid hash:    971895843
-                   Final nc1:      231
+                   Horizontal support radius:    5170.39 km (   5170.39 km -    5170.39 km)
+                   Estimated nc1 from horizontal support radius:      232
+                      Decimate full grid, at least      232 points required,     503 valid points found
+                      Subgrid hash:   -873411136
+                   Final nc1:      232
                    Effective horizontal resolution:  3.99
-                   Horizontal support radius:    5566.70 km (   5566.70 km -    5566.70 km)
-                   Estimated nc1 from horizontal support radius:      200
-                      Decimate full grid, at least      200 points required,     503 valid points found
-                      Subgrid hash:    550233911
-                   Final nc1:      200
-                   Effective horizontal resolution:  3.99
-             nc1(  1) =                        231
-             nc1(  2) =                        200
+                   Horizontal support radius:    5584.13 km (   5584.13 km -    5584.13 km)
+                   Estimated nc1 from horizontal support radius:      199
+                      Decimate full grid, at least      199 points required,     503 valid points found
+                      Subgrid hash:  -1093784163
+                   Final nc1:      199
+                   Effective horizontal resolution:  4.00
+             nc1(  1) =                        232
+             nc1(  2) =                        199
              ns =                              431
              v%n_s =                             2
-             c%n_s[global] =                  7977
+             c%n_s[global] =                  7974
     Full NICAS adjoint test result:                        T
        Block NICAS adjoint test result:                    T
           Interpolation adjoint test (horizontal) result:  T
@@ -143,11 +143,11 @@
              Min / max: 1.0000000 /  1.0000000 over     10 tests
              0.0 /    0.0:  1.0000000
           Level   1:  0.0000000 -  1.0000000
-          Level   2:  0.0000000 -  0.9137282
-Norm of BUMP output parameter dirac_mom - 1: 7.6739691264830761e+00
-Norm of BUMP output parameter dirac_diag_loc - 1: 2.6941480035169638e+00
-Norm of BUMP output parameter cor_rh - 1: 1.3749938899699479e+08
-Norm of BUMP output parameter cor_rv - 1: 1.2281705443638830e+02
-Norm of BUMP output parameter loc_rh - 1: 2.1120952455104092e+08
-Norm of BUMP output parameter loc_rv - 1: 2.2668478997559080e+02
-Norm of BUMP output parameter nicas_norm - 1: 4.0944316944772417e+01
+          Level   2:  0.0000000 -  0.9132940
+Norm of BUMP output parameter dirac_mom - 1: 7.6722033222410460e+00
+Norm of BUMP output parameter dirac_diag_loc - 1: 2.6927491724263728e+00
+Norm of BUMP output parameter cor_rh - 1: 1.3740079730890846e+08
+Norm of BUMP output parameter cor_rv - 1: 1.2277632584815632e+02
+Norm of BUMP output parameter loc_rh - 1: 2.1155124214914161e+08
+Norm of BUMP output parameter loc_rv - 1: 2.2660945472033691e+02
+Norm of BUMP output parameter nicas_norm - 1: 4.0921104349214751e+01

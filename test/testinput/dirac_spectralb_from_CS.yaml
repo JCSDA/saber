@@ -3,7 +3,11 @@ geometry:
   grid:
     name: CS-LFR-15
   partitioner: cubedsphere
-  levels: 70
+  groups:
+  - variables:
+    - unbalanced_pressure
+    - moisture_control_variable
+    levels: 70
   halo: 1
 initial condition:
   date: '2010-01-01T12:00:00Z'
