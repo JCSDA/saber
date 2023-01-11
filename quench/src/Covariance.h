@@ -17,11 +17,6 @@
 #include "src/CovarianceParameters.h"
 #include "src/Geometry.h"
 
-// Forward declarations
-namespace oops {
-  class Variables;
-}
-
 namespace quench {
   class Increment;
   class State;

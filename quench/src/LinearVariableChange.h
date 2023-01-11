@@ -14,15 +14,6 @@
 
 #include "src/LinearVariableChangeParameters.h"
 
-// Forward declarations
-namespace eckit {
-  class Configuration;
-}
-
-namespace oops {
-  class Variables;
-}
-
 namespace quench {
   class Geometry;
   class State;
