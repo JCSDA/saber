@@ -20,41 +20,41 @@
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-   Norm of var1:  0.43301608E+04
-   Norm of var1:  0.44012749E+04
-   Norm of var1:  0.37952006E+04
-   Norm of var1:  0.39551274E+04
-   Norm of var1:  0.35525847E+04
-   Norm of var1:  0.29371321E+04
-   Norm of var1:  0.34480956E+04
-   Norm of var1:  0.38404335E+04
-   Norm of var1:  0.32260827E+04
-   Norm of var1:  0.21968764E+02
-   Norm of var1:  0.27414646E+04
-   Norm of var1:  0.29210471E+04
-   Norm of var1:  0.28857362E+04
-   Norm of var1:  0.32066996E+04
-   Norm of var1:  0.27016710E+04
-   Norm of var1:  0.26185217E+04
-   Norm of var1:  0.31706317E+04
-   Norm of var1:  0.34644901E+04
-   Norm of var1:  0.32999350E+04
-   Norm of var1:  0.31745354E+04
-   Norm of var1:  0.33268505E+04
-   Norm of var1:  0.32542403E+04
-   Norm of var1:  0.31078559E+04
-   Norm of var1:  0.36145252E+04
-   Norm of var1:  0.32695453E+04
-   Norm of var1:  0.26162691E+04
-   Norm of var1:  0.36383322E+04
-   Norm of var1:  0.36937518E+04
-   Norm of var1:  0.31516279E+04
-   Norm of var1:  0.31758377E+04
-   Norm of var1:  0.28619461E+04
-   Norm of var1:  0.30484285E+04
-   Norm of var1:  0.28756366E+04
-   Norm of var1:  0.29807248E+04
-   Norm of var1:  0.25632880E+01
+   Norm of var1:  0.21748928E+04
+   Norm of var1:  0.25083589E+04
+   Norm of var1:  0.22067422E+04
+   Norm of var1:  0.19494091E+04
+   Norm of var1:  0.18652756E+04
+   Norm of var1:  0.14097925E+04
+   Norm of var1:  0.18329924E+04
+   Norm of var1:  0.19011539E+04
+   Norm of var1:  0.20420117E+04
+   Norm of var1:  0.14294964E+04
+   Norm of var1:  0.14126025E+04
+   Norm of var1:  0.13765489E+04
+   Norm of var1:  0.12309160E+04
+   Norm of var1:  0.14717717E+04
+   Norm of var1:  0.13699966E+04
+   Norm of var1:  0.16326230E+04
+   Norm of var1:  0.13049597E+04
+   Norm of var1:  0.17805510E+04
+   Norm of var1:  0.16067731E+04
+   Norm of var1:  0.12788813E+04
+   Norm of var1:  0.14535409E+04
+   Norm of var1:  0.15558979E+04
+   Norm of var1:  0.15917174E+04
+   Norm of var1:  0.18009664E+04
+   Norm of var1:  0.13435218E+04
+   Norm of var1:  0.15219554E+04
+   Norm of var1:  0.16957607E+04
+   Norm of var1:  0.15083721E+04
+   Norm of var1:  0.13625727E+04
+   Norm of var1:  0.15191922E+04
+   Norm of var1:  0.11732024E+04
+   Norm of var1:  0.14656734E+04
+   Norm of var1:  0.15221355E+04
+   Norm of var1:  0.16108719E+04
+   Norm of var1:  0.15050564E+04
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
           Decimate full grid, at least      500 points required,    1090 valid points found
@@ -138,8 +138,8 @@
                 Level:   1 ~> hybrid coefficients: 0.52 / 0.46
                 Level:   2 ~> hybrid coefficients: 0.48 / 0.48
 Norm of BUMP output parameter loc_rh - 1: 2.0887209781576023e+08
-Norm of BUMP output parameter loc_rv - 1: 1.9300550966718316e+02
-Norm of BUMP output parameter hyb_coef_ens - 1: 2.3394546280336119e+01
-Norm of BUMP output parameter loc_rh_lr - 1: 2.2402645166962379e+08
+Norm of BUMP output parameter loc_rv - 1: 1.9300550966718345e+02
+Norm of BUMP output parameter hyb_coef_ens - 1: 2.3394546280336115e+01
+Norm of BUMP output parameter loc_rh_lr - 1: 2.2402645166962382e+08
 Norm of BUMP output parameter loc_rv_lr - 1: 2.3565073016010172e+02
 Norm of BUMP output parameter hyb_coef_ens_lr - 1: 2.2112140269206634e+01

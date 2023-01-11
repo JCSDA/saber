@@ -740,7 +740,7 @@ if (conf%get('nicas',section)) then
    call nam%get(mpl,section,'horizontal length-scale',nam%rh,one/req)
    call nam%get(mpl,section,'vertical length-scale',nam%rv)
    if (section%get('common localization weights',confs)) then
-      if ((size(confs)>0).and.(nam%nv>0)) then
+      if ((nam%strategy=='common_weighted').and.(size(confs)>0).and.(nam%nv>0)) then
          ! Release memory
          if (allocated(nam%loc_wgt_sqrt)) deallocate(nam%loc_wgt_sqrt)
 
@@ -748,8 +748,13 @@ if (conf%get('nicas',section)) then
          allocate(loc_wgt(nam%nv,nam%nv))
          allocate(nam%loc_wgt_sqrt(nam%nv,nam%nv))
 
-         ! Copy positive weights and set non-specified values to one
-         loc_wgt = -one
+         ! Initialize diagonal weights at one, others at zero
+         loc_wgt = zero
+         do iv=1,nam%nv
+            loc_wgt(iv,iv) = one
+         end do
+
+         ! Copy weights
          do iconf=1,size(confs)
             ! Get row and column variables, and the value
             call confs(iconf)%get_or_die('row variables',str_array_row)
@@ -758,23 +763,20 @@ if (conf%get('nicas',section)) then
 
             ! Loop over row and column values
             do ivv=1,size(str_array_row)
+               do iv=1,nam%nv
+                  if (trim(str_array_row(ivv))==trim(nam%variables(iv))) exit
+               end do
                do jvv=1,size(str_array_col)
-                  do iv=2,nam%nv
-                     do jv=1,iv-1
-                        if ((str_array_row(ivv)==nam%variables(iv)).and.(str_array_row(ivv)==nam%variables(iv))) then
+                  do jv=1,nam%nv
+                     if (trim(str_array_col(jvv))==trim(nam%variables(jv))) then
+                        if (iv/=jv) then
                            loc_wgt(iv,jv) = real_scalar
                            loc_wgt(jv,iv) = real_scalar
                         end if
-                     end do
+                        exit
+                     end if
                   end do
                end do
-            end do
-         end do
-
-         ! Set missing values to one
-         do jv=1,nam%nv
-            do iv=1,nam%nv
-               if (eq(loc_wgt(iv,jv),-one)) loc_wgt = one
             end do
          end do
 
@@ -790,7 +792,7 @@ if (conf%get('nicas',section)) then
    if (section%get('interpolation type',confs)) then
       if ((size(confs)>0).and.(nam%nv>0)) then
          ! Release memory
-         if (allocated(nam%nicas_interp_type)) deallocate(nam%loc_wgt_sqrt)
+         if (allocated(nam%nicas_interp_type)) deallocate(nam%nicas_interp_type)
 
          ! Allocation
          allocate(nam%nicas_interp_type(0:nam%nv))

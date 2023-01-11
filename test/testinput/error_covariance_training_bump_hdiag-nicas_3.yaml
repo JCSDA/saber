@@ -2,7 +2,7 @@ geometry:
   function space: StructuredColumns
   grid:
     type: regular_lonlat
-    N: 15
+    N: 12
   groups:
   - variables:
     - var1
@@ -48,6 +48,7 @@ bump:
     read moments: true
     write diagnostics: true
     compute nicas: true
+    write local nicas: true
     adjoints test: true
     normalization test: 10
     internal dirac test: true

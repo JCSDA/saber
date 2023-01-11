@@ -49,16 +49,16 @@
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-   Norm of var1:  0.43301608E+04
-   Norm of var1:  0.44012749E+04
-   Norm of var1:  0.37952006E+04
-   Norm of var1:  0.39551274E+04
-   Norm of var1:  0.35525847E+04
-   Norm of var1:  0.29371321E+04
-   Norm of var1:  0.34480956E+04
-   Norm of var1:  0.38404335E+04
-   Norm of var1:  0.32260827E+04
-   Norm of var1:  0.21968764E+02
+   Norm of var1:  0.21748928E+04
+   Norm of var1:  0.25083589E+04
+   Norm of var1:  0.22067422E+04
+   Norm of var1:  0.19494091E+04
+   Norm of var1:  0.18652756E+04
+   Norm of var1:  0.14097925E+04
+   Norm of var1:  0.18329924E+04
+   Norm of var1:  0.19011539E+04
+   Norm of var1:  0.20420117E+04
+   Norm of var1:  0.14294964E+04
    Norm of var1:  0.14469769E+04
    Norm of var1:  0.18566296E+04
    Norm of var1:  0.14839797E+04
@@ -158,6 +158,6 @@
                 Level:   1 ~> hybrid coefficients: 0.49 / 0.49
                 Level:   2 ~> hybrid coefficients: 0.36 / 0.59
 Norm of BUMP output parameter loc_rh - 1: 2.0887209781576023e+08
-Norm of BUMP output parameter loc_rv - 1: 1.9300550966718316e+02
+Norm of BUMP output parameter loc_rv - 1: 1.9300550966718345e+02
 Norm of BUMP output parameter hyb_coef_ens - 1: 2.0390192306984709e+01
 Norm of BUMP output parameter hyb_coef_sta - 1: 2.5351322011958800e+01

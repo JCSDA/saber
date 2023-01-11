@@ -274,8 +274,7 @@ void Fields::axpy(const double & zz, const Fields & rhs) {
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
           if (gmaskView(jnode, jlevel) == 1) {
-            view(jnode, jlevel) *= zz;
-            view(jnode, jlevel) += viewRhs(jnode, jlevel);
+            view(jnode, jlevel) += zz * viewRhs(jnode, jlevel);
           }
         }
       }
