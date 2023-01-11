@@ -73,7 +73,7 @@ Fields::Fields(const Fields & other, const Geometry & geom):
   // Check number of levels
   for (const auto & var : vars_.variables()) {
     if (geom_->levels(geom_->groupIndex(var)) != geom.levels(geom_->groupIndex(var))) {
-      ABORT("different number of levels, cannot interpolate");
+      ABORT("different number of levels for variable " + var + ", cannot interpolate");
     }
   }
 
