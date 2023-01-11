@@ -108,7 +108,8 @@ class Geometry : public util::Printable,
   atlas::FieldSet & extraFields() {return groups_[0].extraFields_;}
   const atlas::FieldSet & extraFields(const size_t & groupIndex) const
     {return groups_[groupIndex].extraFields_;}
-  size_t levels(const size_t & groupIndex = 0) const {return groups_[groupIndex].levels_;}
+  size_t levels(const size_t & groupIndex) const {return groups_[groupIndex].levels_;}
+  size_t levels(const std::string & var) const {return groups_[groupIndex_.at(var)].levels_;}
   size_t groups() const {return groups_.size();}
   size_t groupIndex(const std::string & var) const {return groupIndex_.at(var);}
 

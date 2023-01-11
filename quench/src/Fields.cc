@@ -52,7 +52,7 @@ Fields::Fields(const Geometry & geom, const oops::Variables & vars,
     // Create field
 
     atlas::Field field = geom_->functionSpace().createField<double>(
-      atlas::option::name(var) | atlas::option::levels(geom_->levels(geom_->groupIndex(var))));
+      atlas::option::name(var) | atlas::option::levels(geom_->levels(var)));
     fset_.add(field);
   }
 
@@ -72,7 +72,7 @@ Fields::Fields(const Fields & other, const Geometry & geom):
 
   // Check number of levels
   for (const auto & var : vars_.variables()) {
-    if (geom_->levels(geom_->groupIndex(var)) != geom.levels(geom_->groupIndex(var))) {
+    if (geom_->levels(var) != geom.levels(geom_->groupIndex(var))) {
       ABORT("different number of levels for variable " + var + ", cannot interpolate");
     }
   }
@@ -80,7 +80,7 @@ Fields::Fields(const Fields & other, const Geometry & geom):
   for (const auto & var : vars_.variables()) {
     // Create field
     atlas::Field field = geom_->functionSpace().createField<double>(
-      atlas::option::name(var) | atlas::option::levels(geom_->levels(geom_->groupIndex(var))));
+      atlas::option::name(var) | atlas::option::levels(geom_->levels(var)));
     fset_.add(field);
   }
 
@@ -103,7 +103,7 @@ Fields::Fields(const Fields & other, const bool copy):
   for (const auto & var : vars_.variables()) {
     // Create field
     atlas::Field field = geom_->functionSpace().createField<double>(
-      atlas::option::name(var) | atlas::option::levels(geom_->levels(geom_->groupIndex(var))));
+      atlas::option::name(var) | atlas::option::levels(geom_->levels(var)));
     fset_.add(field);
   }
 
@@ -140,7 +140,7 @@ Fields::Fields(const Fields & other):
   for (const auto & var : vars_.variables()) {
     // Create field
     atlas::Field field = geom_->functionSpace().createField<double>(
-      atlas::option::name(var) | atlas::option::levels(geom_->levels(geom_->groupIndex(var))));
+      atlas::option::name(var) | atlas::option::levels(geom_->levels(var)));
     atlas::Field fieldOther = other.fset_[var];
     if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
@@ -373,7 +373,7 @@ void Fields::random() {
     for (const auto & var : vars_.variables()) {
       if (geom_->groupIndex(var) == groupIndex) {
         atlas::Field field = geom_->functionSpace().createField<double>(atlas::option::name(var)
-          | atlas::option::levels(geom_->levels(geom_->groupIndex(var))) | atlas::option::global());
+          | atlas::option::levels(geom_->levels(var)) | atlas::option::global());
         globalData.add(field);
       }
     }
@@ -429,7 +429,7 @@ void Fields::random() {
     for (const auto & var : vars_.variables()) {
       if (geom_->groupIndex(var) == groupIndex) {
         atlas::Field field = geom_->functionSpace().createField<double>(atlas::option::name(var)
-          | atlas::option::levels(geom_->levels(geom_->groupIndex(var))));
+          | atlas::option::levels(geom_->levels(var)));
         localData.add(field);
       }
     }
@@ -661,7 +661,7 @@ void Fields::read(const eckit::Configuration & config) {
   atlas::FieldSet globalData;
   for (const auto & var : vars_.variables()) {
     atlas::Field field = geom_->functionSpace().createField<double>(atlas::option::name(var)
-      | atlas::option::levels(geom_->levels(geom_->groupIndex(var))) | atlas::option::global());
+      | atlas::option::levels(geom_->levels(var)) | atlas::option::global());
     globalData.add(field);
   }
 
@@ -697,12 +697,12 @@ void Fields::read(const eckit::Configuration & config) {
 
       for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
         // Read data
-        double zvar[geom_->levels(geom_->groupIndex(vars_[jvar]))][ny][nx];
+        double zvar[geom_->levels(vars_[jvar])][ny][nx];
         if ((retval = nc_get_var_double(ncid, var_id[jvar], &zvar[0][0][0]))) ERR(retval);
 
         // Copy data
         auto varView = atlas::array::make_view<double, 2>(globalData[vars_[jvar]]);
-        for (size_t k = 0; k < geom_->levels(geom_->groupIndex(vars_[jvar])); ++k) {
+        for (size_t k = 0; k < geom_->levels(vars_[jvar]); ++k) {
           for (atlas::idx_t j = 0; j < ny; ++j) {
             for (atlas::idx_t i = 0; i < grid.nx(ny-1-j); ++i) {
               atlas::gidx_t gidx = grid.index(i, ny-1-j);
@@ -751,12 +751,12 @@ void Fields::read(const eckit::Configuration & config) {
 
       for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
         // Read data
-        double zvar[nb_nodes][geom_->levels(geom_->groupIndex(vars_[jvar]))];
+        double zvar[nb_nodes][geom_->levels(vars_[jvar])];
         if ((retval = nc_get_var_double(ncid, var_id[jvar], &zvar[0][0]))) ERR(retval);
 
         // Copy data
         auto varView = atlas::array::make_view<double, 2>(globalData[vars_[jvar]]);
-        for (size_t k = 0; k < geom_->levels(geom_->groupIndex(vars_[jvar])); ++k) {
+        for (size_t k = 0; k < geom_->levels(vars_[jvar]); ++k) {
           for (atlas::idx_t i = 0; i < nb_nodes; ++i) {
             varView(i, k) = zvar[i][k];
           }
@@ -857,7 +857,7 @@ void Fields::write(const eckit::Configuration & config) const {
     for (const auto & var : vars_.variables()) {
       if (geom_->groupIndex(var) == groupIndex) {
         atlas::Field field = geom_->functionSpace().createField<double>(atlas::option::name(var)
-          | atlas::option::levels(geom_->levels(geom_->groupIndex(var))) | atlas::option::global());
+          | atlas::option::levels(geom_->levels(var)) | atlas::option::global());
         globalData.add(field);
       }
     }
@@ -954,8 +954,8 @@ void Fields::write(const eckit::Configuration & config) const {
           if (geom_->groupIndex(vars_[jvar]) == groupIndex) {
             // Copy data
             auto varView = atlas::array::make_view<double, 2>(globalData[vars_[jvar]]);
-            double zvar[geom_->levels(geom_->groupIndex(vars_[jvar]))][ny][nx];
-            for (size_t k = 0; k < geom_->levels(geom_->groupIndex(vars_[jvar])); ++k) {
+            double zvar[geom_->levels(vars_[jvar])][ny][nx];
+            for (size_t k = 0; k < geom_->levels(vars_[jvar]); ++k) {
               for (atlas::idx_t j = 0; j < ny; ++j) {
                 for (atlas::idx_t i = 0; i < nx; ++i) {
                   zvar[k][j][i] = msvalr;
@@ -1071,8 +1071,8 @@ void Fields::write(const eckit::Configuration & config) const {
           if (geom_->groupIndex(vars_[jvar]) == groupIndex) {
             // Copy data
             auto varView = atlas::array::make_view<double, 2>(globalData[vars_[jvar]]);
-            double zvar[nb_nodes][geom_->levels(geom_->groupIndex(vars_[jvar]))];
-            for (size_t k = 0; k < geom_->levels(geom_->groupIndex(vars_[jvar])); ++k) {
+            double zvar[nb_nodes][geom_->levels(vars_[jvar])];
+            for (size_t k = 0; k < geom_->levels(vars_[jvar]); ++k) {
               for (atlas::idx_t i = 0; i < nb_nodes; ++i) {
                 zvar[i][k] = varView(i, k);
               }
@@ -1141,9 +1141,9 @@ void Fields::write(const eckit::Configuration & config) const {
         for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
           if (geom_->groupIndex(vars_[jvar]) == groupIndex) {
             // Copy data
-            double zvar[nlocs][geom_->levels(geom_->groupIndex(vars_[jvar]))];
+            double zvar[nlocs][geom_->levels(vars_[jvar])];
             auto varView = atlas::array::make_view<double, 2>(fset_[vars_[jvar]]);
-            for (size_t k = 0; k < geom_->levels(geom_->groupIndex(vars_[jvar])); ++k) {
+            for (size_t k = 0; k < geom_->levels(vars_[jvar]); ++k) {
               for (atlas::idx_t i = 0; i < nlocs; ++i) {
                 zvar[i][k] = varView(i, k);
               }
