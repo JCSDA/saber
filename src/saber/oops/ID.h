@@ -43,10 +43,15 @@ class ID : public SaberCentralBlockBase {
      const atlas::FieldSet &,
      const std::vector<atlas::FieldSet> &);
 
+  virtual ~ID();
+
   void randomize(atlas::FieldSet &) const override;
   void multiply(atlas::FieldSet &) const override;
 
  private:
+  const oops::GeometryData & geometryData_;
+  const std::vector<size_t> activeVariableSizes_;
+  const oops::Variables activeVars_;
   void print(std::ostream &) const override;
 };
 

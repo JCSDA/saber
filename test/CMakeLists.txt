@@ -82,6 +82,8 @@ if( oops_FOUND )
     message( STATUS "  - TIER 1 base" )
     file( STRINGS testlist/saber_test_tier1.txt saber_test )
     list( APPEND saber_test_full ${saber_test} )
+    file( STRINGS testlist/saber_ref_tier1.txt saber_extra_ref )
+    list( APPEND saber_extra_ref ${saber_test} )
     if( SABER_TEST_GSI_GEOS )
         message( STATUS "  - TIER 1 GSI-GEOS-specific" )
         file( STRINGS testlist/saber_test_tier1-gsi-geos.txt saber_test )
@@ -143,6 +145,14 @@ if( oops_FOUND )
                          ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}.yaml )
 
         # Link to reference file
+        if( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/testref/${test}.ref )
+            execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
+                             ${CMAKE_CURRENT_SOURCE_DIR}/testref/${test}.ref
+                             ${CMAKE_CURRENT_BINARY_DIR}/testref/${test}.ref )
+        endif()
+    endforeach()
+    foreach( test ${saber_extra_ref} )
+        # Extra references
         execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
                          ${CMAKE_CURRENT_SOURCE_DIR}/testref/${test}.ref
                          ${CMAKE_CURRENT_BINARY_DIR}/testref/${test}.ref )
@@ -200,20 +210,6 @@ if( oops_FOUND )
                                   COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_training.x
                                   ARGS testinput/${test}.yaml
                                   DEPENDS saber_quench_error_covariance_training.x )
-            endif()
-        endforeach()
-
-        # Error covariance training tests, failure expected
-        foreach( test ${saber_test_full} )
-            string( FIND ${test} "fail_error_covariance_training" result )
-            if( result MATCHES 0 )
-                ecbuild_add_test( TARGET saber_test_${test}_${mpi}-${omp}
-                                  MPI ${mpi}
-                                  OMP ${omp}
-                                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_training.x
-                                  ARGS testinput/${test}.yaml
-                                  DEPENDS saber_quench_error_covariance_training.x )
-                set_tests_properties(saber_test_${test}_${mpi}-${omp} PROPERTIES WILL_FAIL TRUE)
             endif()
         endforeach()
 

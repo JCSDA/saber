@@ -9,6 +9,7 @@
 
 #include <vector>
 
+#include "oops/util/FieldSetOperations.h"
 #include "oops/util/Logger.h"
 
 namespace saber {
@@ -26,16 +27,37 @@ ID::ID(const oops::GeometryData & geometryData,
        const Parameters_ & params,
        const atlas::FieldSet & xb,
        const atlas::FieldSet & fg,
-       const std::vector<atlas::FieldSet> & fsetVec)
+       const std::vector<atlas::FieldSet> & fsetVec) :
+    geometryData_(geometryData),
+    activeVariableSizes_(activeVariableSizes),
+    activeVars_(activeVars)
 {
   oops::Log::trace() << classname() << "::ID starting" << std::endl;
   oops::Log::trace() << classname() << "::ID done" << std::endl;
 }
 
+ID::~ID() {
+    oops::Log::trace() << classname() << "::~ID starting" << std::endl;
+    oops::Log::trace() << classname() << "::~ID done" << std::endl;
+}
 // -----------------------------------------------------------------------------
 
 void ID::randomize(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::randomize starting" << std::endl;
+
+  for (const auto & var : activeVars_.variables()) {
+      ASSERT(fset.has(var));
+  }
+
+  // Overwrite input fieldSet with random numbers
+  const atlas::FieldSet newFieldSet = util::createRandomFieldSet(geometryData_,
+                                                                 activeVariableSizes_,
+                                                                 activeVars_);
+
+  for (const auto & var : activeVars_.variables()) {
+    fset[var] = newFieldSet[var];
+  }
+
   oops::Log::trace() << classname() << "::randomize done" << std::endl;
 }
 
