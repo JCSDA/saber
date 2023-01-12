@@ -30,7 +30,7 @@ namespace quench {
 // -----------------------------------------------------------------------------
 Geometry::Geometry(const Parameters_ & params,
                    const eckit::mpi::Comm & comm)
-  : comm_(comm), groups_() {
+  : comm_(comm), groups_(), iodaBased_(false) {
   // Initialize eckit communicator for ATLAS
   eckit::mpi::setCommDefault(comm_.name().c_str());
 
@@ -79,6 +79,9 @@ Geometry::Geometry(const Parameters_ & params,
     grid_ = atlas::Grid(gridParams_);
   } else if (iodaFile != boost::none) {
     oops::Log::info() << "Info     : Grid input file: " << *iodaFile << std::endl;
+
+    // IODA-based geometry
+    iodaBased_ = true;
 
     // Grid size
     size_t nlocs = 0;
@@ -181,6 +184,7 @@ Geometry::Geometry(const Parameters_ & params,
   // Groups
   size_t groupIndex = 0;
   for (const auto & groupParams : params.groups.value()) {
+    std::cout << "BENJ: new group: " << groupIndex << std::endl;
     // Use this group index for all the group variables
     for (const auto & var : groupParams.variables.value()) {
       if (groupIndex_.find(var) != groupIndex_.end()) {
@@ -213,11 +217,7 @@ Geometry::Geometry(const Parameters_ & params,
     atlas::Field gmask = functionSpace_.createField<int>(
       atlas::option::name("gmask") | atlas::option::levels(group.levels_));
     auto maskView = atlas::array::make_view<int, 2>(gmask);
-    for (atlas::idx_t jnode = 0; jnode < gmask.shape(0); ++jnode) {
-      for (atlas::idx_t jlevel = 0; jlevel < gmask.shape(1); ++jlevel) {
-         maskView(jnode, jlevel) = 1;
-      }
-    }
+    maskView.assign(1);
 
     // Specific mask
     if (groupParams.maskType.value() == "none") {
@@ -282,26 +282,26 @@ Geometry::Geometry(const Parameters_ & params,
 
     // Mask size
     group.gmaskSize_ = 0.0;
-    double domainSize = 0.0;
+    size_t domainSize = 0.0;
     for (atlas::idx_t jnode = 0; jnode < gmask.shape(0); ++jnode) {
       for (atlas::idx_t jlevel = 0; jlevel < gmask.shape(1); ++jlevel) {
         if (ghostView(jnode) == 0) {
           if (maskView(jnode, jlevel) == 1) {
             group.gmaskSize_ += 1.0;
           }
-          domainSize += 1.0;
+          domainSize++;
         }
       }
     }
     comm_.allReduceInPlace(group.gmaskSize_, eckit::mpi::sum());
     comm_.allReduceInPlace(domainSize, eckit::mpi::sum());
-    if (domainSize > 0.0) {
-      group.gmaskSize_ = group.gmaskSize_/domainSize;
+    if (domainSize > 0) {
+      group.gmaskSize_ = group.gmaskSize_/static_cast<double>(domainSize);
     }
 
     // Save group
     groups_.push_back(group);
-
+    std::cout << "BENJ: new group pushed back" << std::endl;
     // Increment group index
     groupIndex++;
   }
@@ -312,7 +312,7 @@ Geometry::Geometry(const Parameters_ & params,
 // -----------------------------------------------------------------------------
 Geometry::Geometry(const Geometry & other) : comm_(other.comm_), halo_(other.halo_),
   grid_(other.grid_), unstructuredGrid_(other.unstructuredGrid_), partitioner_(other.partitioner_),
-  mesh_(other.mesh_), groupIndex_(other.groupIndex_), groups_(other.groups_)  {
+  mesh_(other.mesh_), groupIndex_(other.groupIndex_), iodaBased_(other.iodaBased_)  {
   // Copy function space
   if (other.functionSpace_.type() == "StructuredColumns") {
     // StructuredColumns
@@ -365,9 +365,7 @@ Geometry::Geometry(const Geometry & other) : comm_(other.comm_), halo_(other.hal
 std::vector<size_t> Geometry::variableSizes(const oops::Variables & vars) const {
   std::vector<size_t> sizes;
   for (const auto & var : vars.variables()) {
-    size_t groupIndex = groupIndex_.at(var);
-    size_t levels = groups_[groupIndex].levels_;
-    sizes.push_back(levels);
+    sizes.push_back(levels(var));
   }
   return sizes;
 }
@@ -388,10 +386,11 @@ void Geometry::print(std::ostream & os) const {
   os << prefix << "- type: " << functionSpace_.type() << std::endl;
   os << prefix << "- halo: " << halo_ << std::endl;
   os << prefix << "Groups: " << std::endl;
+  std::cout << "TOTO: " << groups_.size() << std::endl;
   for (size_t groupIndex = 0; groupIndex < groups_.size(); ++groupIndex) {
     os << prefix << "- Group " << groupIndex << ":" << std::endl;
     os << prefix << "  Vertical levels: " << std::endl;
-    os << prefix << "  - number: " << groups_[groupIndex].levels_ << std::endl;
+    os << prefix << "  - number: " << levels(groupIndex) << std::endl;
     os << prefix << "  - vunit: " << groups_[groupIndex].vunit_ << std::endl;
     os << prefix << "  Mask size: " << static_cast<int>(groups_[groupIndex].gmaskSize_*100.0)
        << "%" << std::endl;

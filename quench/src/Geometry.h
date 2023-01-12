@@ -118,6 +118,7 @@ class Geometry : public util::Printable,
   std::vector<size_t> variableSizes(const oops::Variables & vars) const;
   void latlon(std::vector<double> &, std::vector<double> &, const bool) const {}
   bool levelsAreTopDown() const {return true;}
+  bool iodaBased() const {return iodaBased_;}
 
  private:
   void print(std::ostream &) const;
@@ -140,6 +141,7 @@ class Geometry : public util::Printable,
     double gmaskSize_;
   };
   std::vector<groupData> groups_;
+  bool iodaBased_;
 };
 // -----------------------------------------------------------------------------
 

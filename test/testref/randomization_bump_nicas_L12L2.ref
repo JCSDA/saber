@@ -68,19 +68,9 @@ Groups:
   - number: 1
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
-- Group 2:
-  Vertical levels: 
-  - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-- Group 3:
-  Vertical levels: 
-  - number: 1
-  - vunit: [1.0000000000000000e+00]
-  Mask size: 100%
 Fields:
-  var1: 5.0775429072231596e+01
-  var_2d: 3.4827365090401933e+01
+  var1: 5.0775429072231546e+01
+  var_2d: 3.4827365090401898e+01
 Member 1: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -102,18 +92,8 @@ Groups:
   - number: 1
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
-- Group 2:
-  Vertical levels: 
-  - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-- Group 3:
-  Vertical levels: 
-  - number: 1
-  - vunit: [1.0000000000000000e+00]
-  Mask size: 100%
 Fields:
-  var1: 5.5528614917202979e+01
+  var1: 5.5528614917203001e+01
   var_2d: 3.0210934427924823e+01
 Member 2: 
 Valid time:2010-01-01T12:00:00Z
@@ -136,19 +116,9 @@ Groups:
   - number: 1
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
-- Group 2:
-  Vertical levels: 
-  - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-- Group 3:
-  Vertical levels: 
-  - number: 1
-  - vunit: [1.0000000000000000e+00]
-  Mask size: 100%
 Fields:
   var1: 4.9487171082609279e+01
-  var_2d: 3.5552506193902140e+01
+  var_2d: 3.5552506193902147e+01
 Member 3: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -170,19 +140,9 @@ Groups:
   - number: 1
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
-- Group 2:
-  Vertical levels: 
-  - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-- Group 3:
-  Vertical levels: 
-  - number: 1
-  - vunit: [1.0000000000000000e+00]
-  Mask size: 100%
 Fields:
-  var1: 4.4681636679641258e+01
-  var_2d: 3.3762356579819681e+01
+  var1: 4.4681636679641279e+01
+  var_2d: 3.3762356579819674e+01
 Member 4: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -204,19 +164,9 @@ Groups:
   - number: 1
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
-- Group 2:
-  Vertical levels: 
-  - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-- Group 3:
-  Vertical levels: 
-  - number: 1
-  - vunit: [1.0000000000000000e+00]
-  Mask size: 100%
 Fields:
-  var1: 4.4453527568651452e+01
-  var_2d: 3.4007946038973749e+01
+  var1: 4.4453527568651459e+01
+  var_2d: 3.4007946038973763e+01
 Member 5: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -238,19 +188,9 @@ Groups:
   - number: 1
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
-- Group 2:
-  Vertical levels: 
-  - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-- Group 3:
-  Vertical levels: 
-  - number: 1
-  - vunit: [1.0000000000000000e+00]
-  Mask size: 100%
 Fields:
-  var1: 4.3243008449575321e+01
-  var_2d: 3.1088565229828969e+01
+  var1: 4.3243008449575328e+01
+  var_2d: 3.1088565229828944e+01
 Member 6: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -272,18 +212,8 @@ Groups:
   - number: 1
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
-- Group 2:
-  Vertical levels: 
-  - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-- Group 3:
-  Vertical levels: 
-  - number: 1
-  - vunit: [1.0000000000000000e+00]
-  Mask size: 100%
 Fields:
-  var1: 4.5496043691266898e+01
+  var1: 4.5496043691266912e+01
   var_2d: 3.6680151003255048e+01
 Member 7: 
 Valid time:2010-01-01T12:00:00Z
@@ -306,19 +236,9 @@ Groups:
   - number: 1
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
-- Group 2:
-  Vertical levels: 
-  - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-- Group 3:
-  Vertical levels: 
-  - number: 1
-  - vunit: [1.0000000000000000e+00]
-  Mask size: 100%
 Fields:
-  var1: 4.3075815025987957e+01
-  var_2d: 2.9140633376210484e+01
+  var1: 4.3075815025987943e+01
+  var_2d: 2.9140633376210481e+01
 Member 8: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -340,18 +260,8 @@ Groups:
   - number: 1
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
-- Group 2:
-  Vertical levels: 
-  - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-- Group 3:
-  Vertical levels: 
-  - number: 1
-  - vunit: [1.0000000000000000e+00]
-  Mask size: 100%
 Fields:
-  var1: 4.7219888845084419e+01
+  var1: 4.7219888845084405e+01
   var_2d: 3.2099249647469783e+01
 Member 9: 
 Valid time:2010-01-01T12:00:00Z
@@ -374,18 +284,8 @@ Groups:
   - number: 1
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
-- Group 2:
-  Vertical levels: 
-  - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-- Group 3:
-  Vertical levels: 
-  - number: 1
-  - vunit: [1.0000000000000000e+00]
-  Mask size: 100%
 Fields:
-  var1: 4.0178998063700767e+01
+  var1: 4.0178998063700774e+01
   var_2d: 3.0873965311975510e+01
 Member 10: 
 Valid time:2010-01-01T12:00:00Z
@@ -408,19 +308,9 @@ Groups:
   - number: 1
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
-- Group 2:
-  Vertical levels: 
-  - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-- Group 3:
-  Vertical levels: 
-  - number: 1
-  - vunit: [1.0000000000000000e+00]
-  Mask size: 100%
 Fields:
-  var1: 4.3630366927721113e+01
-  var_2d: 2.8153566462271414e+01
+  var1: 4.3630366927721049e+01
+  var_2d: 2.8153566462271403e+01
 Member 11: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -442,19 +332,9 @@ Groups:
   - number: 1
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
-- Group 2:
-  Vertical levels: 
-  - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-- Group 3:
-  Vertical levels: 
-  - number: 1
-  - vunit: [1.0000000000000000e+00]
-  Mask size: 100%
 Fields:
-  var1: 4.8211705773890138e+01
-  var_2d: 3.1475401750413614e+01
+  var1: 4.8211705773890174e+01
+  var_2d: 3.1475401750413628e+01
 Member 12: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -476,18 +356,8 @@ Groups:
   - number: 1
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
-- Group 2:
-  Vertical levels: 
-  - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-- Group 3:
-  Vertical levels: 
-  - number: 1
-  - vunit: [1.0000000000000000e+00]
-  Mask size: 100%
 Fields:
-  var1: 4.4455111748048921e+01
+  var1: 4.4455111748048900e+01
   var_2d: 3.5111525612057669e+01
 Member 13: 
 Valid time:2010-01-01T12:00:00Z
@@ -510,19 +380,9 @@ Groups:
   - number: 1
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
-- Group 2:
-  Vertical levels: 
-  - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-- Group 3:
-  Vertical levels: 
-  - number: 1
-  - vunit: [1.0000000000000000e+00]
-  Mask size: 100%
 Fields:
-  var1: 4.4146197708670634e+01
-  var_2d: 2.8287714692528741e+01
+  var1: 4.4146197708670627e+01
+  var_2d: 2.8287714692528727e+01
 Member 14: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -544,19 +404,9 @@ Groups:
   - number: 1
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
-- Group 2:
-  Vertical levels: 
-  - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-- Group 3:
-  Vertical levels: 
-  - number: 1
-  - vunit: [1.0000000000000000e+00]
-  Mask size: 100%
 Fields:
-  var1: 4.6053752239552686e+01
-  var_2d: 3.1978886536794537e+01
+  var1: 4.6053752239552708e+01
+  var_2d: 3.1978886536794551e+01
 Member 15: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -578,19 +428,9 @@ Groups:
   - number: 1
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
-- Group 2:
-  Vertical levels: 
-  - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-- Group 3:
-  Vertical levels: 
-  - number: 1
-  - vunit: [1.0000000000000000e+00]
-  Mask size: 100%
 Fields:
-  var1: 4.9418072871105892e+01
-  var_2d: 3.3519312335422796e+01
+  var1: 4.9418072871105899e+01
+  var_2d: 3.3519312335422761e+01
 Member 16: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -612,19 +452,9 @@ Groups:
   - number: 1
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
-- Group 2:
-  Vertical levels: 
-  - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-- Group 3:
-  Vertical levels: 
-  - number: 1
-  - vunit: [1.0000000000000000e+00]
-  Mask size: 100%
 Fields:
-  var1: 4.1911400185365508e+01
-  var_2d: 3.1823196248448060e+01
+  var1: 4.1911400185365451e+01
+  var_2d: 3.1823196248448046e+01
 Member 17: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -646,19 +476,9 @@ Groups:
   - number: 1
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
-- Group 2:
-  Vertical levels: 
-  - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-- Group 3:
-  Vertical levels: 
-  - number: 1
-  - vunit: [1.0000000000000000e+00]
-  Mask size: 100%
 Fields:
-  var1: 4.3154106058762601e+01
-  var_2d: 3.4483973532091795e+01
+  var1: 4.3154106058762629e+01
+  var_2d: 3.4483973532091824e+01
 Member 18: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -680,19 +500,9 @@ Groups:
   - number: 1
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
-- Group 2:
-  Vertical levels: 
-  - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-- Group 3:
-  Vertical levels: 
-  - number: 1
-  - vunit: [1.0000000000000000e+00]
-  Mask size: 100%
 Fields:
-  var1: 3.9222124536370345e+01
-  var_2d: 3.1137344488674682e+01
+  var1: 3.9222124536370387e+01
+  var_2d: 3.1137344488674689e+01
 Member 19: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -714,19 +524,9 @@ Groups:
   - number: 1
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
-- Group 2:
-  Vertical levels: 
-  - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-- Group 3:
-  Vertical levels: 
-  - number: 1
-  - vunit: [1.0000000000000000e+00]
-  Mask size: 100%
 Fields:
-  var1: 4.1274811606237996e+01
-  var_2d: 3.0507782109239308e+01
+  var1: 4.1274811606237989e+01
+  var_2d: 3.0507782109239319e+01
 Member 20: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -748,19 +548,9 @@ Groups:
   - number: 1
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
-- Group 2:
-  Vertical levels: 
-  - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-- Group 3:
-  Vertical levels: 
-  - number: 1
-  - vunit: [1.0000000000000000e+00]
-  Mask size: 100%
 Fields:
-  var1: 4.4180219933449052e+01
-  var_2d: 2.8719951822957192e+01
+  var1: 4.4180219933449045e+01
+  var_2d: 2.8719951822957189e+01
 Member 21: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -782,19 +572,9 @@ Groups:
   - number: 1
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
-- Group 2:
-  Vertical levels: 
-  - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-- Group 3:
-  Vertical levels: 
-  - number: 1
-  - vunit: [1.0000000000000000e+00]
-  Mask size: 100%
 Fields:
-  var1: 3.8648329323287918e+01
-  var_2d: 3.3509251070172226e+01
+  var1: 3.8648329323287925e+01
+  var_2d: 3.3509251070172240e+01
 Member 22: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -816,19 +596,9 @@ Groups:
   - number: 1
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
-- Group 2:
-  Vertical levels: 
-  - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-- Group 3:
-  Vertical levels: 
-  - number: 1
-  - vunit: [1.0000000000000000e+00]
-  Mask size: 100%
 Fields:
-  var1: 4.2317210130021792e+01
-  var_2d: 3.4909316954818337e+01
+  var1: 4.2317210130021728e+01
+  var_2d: 3.4909316954818351e+01
 Member 23: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -850,19 +620,9 @@ Groups:
   - number: 1
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
-- Group 2:
-  Vertical levels: 
-  - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-- Group 3:
-  Vertical levels: 
-  - number: 1
-  - vunit: [1.0000000000000000e+00]
-  Mask size: 100%
 Fields:
-  var1: 4.4710858757532748e+01
-  var_2d: 3.5111751062789502e+01
+  var1: 4.4710858757532741e+01
+  var_2d: 3.5111751062789466e+01
 Member 24: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -884,16 +644,6 @@ Groups:
   - number: 1
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
-- Group 2:
-  Vertical levels: 
-  - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-- Group 3:
-  Vertical levels: 
-  - number: 1
-  - vunit: [1.0000000000000000e+00]
-  Mask size: 100%
 Fields:
-  var1: 4.3741451725257875e+01
-  var_2d: 3.2818968761116501e+01
+  var1: 4.3741451725257896e+01
+  var_2d: 3.2818968761116523e+01

@@ -14,11 +14,6 @@ Groups:
   - number: 2
   - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
-- Group 1:
-  Vertical levels: 
-  - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
 Fields:
   virtual_temperature: 1.0000000000000000e+00
   specific_humidity: 1.0000000000000000e+00
@@ -36,11 +31,6 @@ Function space:
 - halo: 0
 Groups: 
 - Group 0:
-  Vertical levels: 
-  - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-- Group 1:
   Vertical levels: 
   - number: 2
   - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]

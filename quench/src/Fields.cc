@@ -72,7 +72,7 @@ Fields::Fields(const Fields & other, const Geometry & geom):
 
   // Check number of levels
   for (const auto & var : vars_.variables()) {
-    if (geom_->levels(var) != geom.levels(geom_->groupIndex(var))) {
+    if (geom_->levels(var) != geom.levels(var)) {
       ABORT("different number of levels for variable " + var + ", cannot interpolate");
     }
   }
@@ -915,9 +915,8 @@ void Fields::write(const eckit::Configuration & config) const {
         // Define variables
         for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
           if (geom_->groupIndex(vars_[jvar]) == groupIndex) {
-            std::string nz_nval = vars_[jvar];
-            nz_nval.append("_nval");
-            if ((retval = nc_def_dim(ncid, nz_nval.c_str(), nz, &nz_id[jvar]))) ERR(retval);
+            std::string nzName = "nz_" + vars_[jvar];
+            if ((retval = nc_def_dim(ncid, nzName.c_str(), nz, &nz_id[jvar]))) ERR(retval);
             d3D_id[0] = nz_id[jvar];
             if ((retval = nc_def_var(ncid, vars_[jvar].c_str(), NC_DOUBLE, 3, d3D_id,
               &var_id[jvar]))) ERR(retval);
@@ -1039,9 +1038,8 @@ void Fields::write(const eckit::Configuration & config) const {
         d2D_id[0] = nb_nodes_id;
         for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
           if (geom_->groupIndex(vars_[jvar]) == groupIndex) {
-            std::string nz_nval = vars_[jvar];
-            nz_nval.append("_nval");
-            if ((retval = nc_def_dim(ncid, nz_nval.c_str(), nz, &nz_id[jvar]))) ERR(retval);
+            std::string nzName = "nz_" + vars_[jvar];
+            if ((retval = nc_def_dim(ncid, nzName.c_str(), nz, &nz_id[jvar]))) ERR(retval);
             d2D_id[1] = nz_id[jvar];
             if ((retval = nc_def_var(ncid, vars_[jvar].c_str(), NC_DOUBLE, 2, d2D_id,
               &var_id[jvar]))) ERR(retval);
@@ -1109,9 +1107,13 @@ void Fields::write(const eckit::Configuration & config) const {
         d2D_id[0] = nlocs_id;
         for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
           if (geom_->groupIndex(vars_[jvar]) == groupIndex) {
-            std::string nz_nval = vars_[jvar];
-            nz_nval.append("_nval");
-            if ((retval = nc_def_dim(ncid, nz_nval.c_str(), nz, &nz_id[jvar]))) ERR(retval);
+            std::string nzName;
+            if (geom_->iodaBased()) {
+              nzName = vars_[jvar] + "_nval";
+            } else {
+              nzName = "nz_" + vars_[jvar];
+            }
+            if ((retval = nc_def_dim(ncid, nzName.c_str(), nz, &nz_id[jvar]))) ERR(retval);
             d2D_id[1] = nz_id[jvar];
             if ((retval = nc_def_var(ncid, vars_[jvar].c_str(), NC_DOUBLE, 2, d2D_id,
               &var_id[jvar]))) ERR(retval);
