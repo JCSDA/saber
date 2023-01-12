@@ -294,9 +294,7 @@ void ErrorCovariance<MODEL>::doMultiply(const Increment_ & dxi,
   }
 
   // Central block multiplication
-  if (saberCentralBlock_) {
-    saberCentralBlock_->multiply(dxo.fieldSet());
-  }
+  saberCentralBlock_->multiply(dxo.fieldSet());
 
   // Outer blocks forward multiplication
   for (ircst_ it = saberOuterBlocks_.rbegin(); it != saberOuterBlocks_.rend(); ++it) {
