@@ -1,5 +1,6 @@
 dirac_bump_1
 dirac_bump_2
+dirac_id
 error_covariance_training_bump_1
 error_covariance_training_bump_2
 error_covariance_training_bump_3
@@ -36,7 +37,6 @@ error_covariance_training_bump_vbal_4
 error_covariance_training_bump_vbal_5
 error_covariance_training_bump_vbal_6
 error_covariance_training_bump_wind
-fail_error_covariance_training_bump_1
 randomization_bump_nicas_L10L2
 randomization_bump_nicas_L10L10
 randomization_bump_nicas_L12L2

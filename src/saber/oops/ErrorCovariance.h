@@ -263,9 +263,6 @@ void ErrorCovariance<MODEL>::doRandomize(Increment_ & dx) const {
   oops::Log::trace() << "ErrorCovariance<MODEL>::doRandomize starting" << std::endl;
   util::Timer timer(classname(), "doRandomize");
 
-  // Random vector (necessary for some SABER blocks)
-  dx.random();
-
   // Central block randomization
   saberCentralBlock_->randomize(dx.fieldSet());
 
@@ -297,9 +294,7 @@ void ErrorCovariance<MODEL>::doMultiply(const Increment_ & dxi,
   }
 
   // Central block multiplication
-  if (saberCentralBlock_) {
-    saberCentralBlock_->multiply(dxo.fieldSet());
-  }
+  saberCentralBlock_->multiply(dxo.fieldSet());
 
   // Outer blocks forward multiplication
   for (ircst_ it = saberOuterBlocks_.rbegin(); it != saberOuterBlocks_.rend(); ++it) {
