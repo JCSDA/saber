@@ -58,15 +58,15 @@ class SpectralCovariance : public SaberCentralBlockBase {
   void print(std::ostream &) const override;
 
   /// Active variables
-  oops::Variables activeVars_;
+  const oops::Variables activeVars_;
   /// Option to use vertical covariances or correlations
-  bool variance_opt_;
+  const bool variance_opt_;
   /// Covariance statistics
   // Note: only need vertical covariances or correlations from this;
   // probably can be gotten in the ctor and saved here instead of cs_
   std::unique_ptr<CovStat_ErrorCov> cs_;
-  // Spectral FunctionSpace
-  atlas::functionspace::Spectral specFunctionSpace_;
+  /// Spectral FunctionSpace
+  const atlas::functionspace::Spectral specFunctionSpace_;
 };
 
 }  // namespace spectralb

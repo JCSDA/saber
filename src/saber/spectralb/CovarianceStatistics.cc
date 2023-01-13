@@ -34,17 +34,17 @@ CovStat_ErrorCov::CovStat_ErrorCov(const std::vector<size_t> & variableSizes,
                                    const Parameters_ & params) :
   covarianceFileName_(params.covarianceFile),
   modelLevels_(variableSizes[0]),
-  netCDFSpectralBins_(getNetCDFSpectralBins(params)),
+  nSpectralBinsFull_(getNSpectralBinsFull(params)),
   spectralUMatrices_(createUMatrices(vars, modelLevels_,
-                                     netCDFSpectralBins_, params)),
+                                     nSpectralBinsFull_, params)),
   spectralVerticalCovariances_(createSpectralCovariances(
-                               vars, modelLevels_, netCDFSpectralBins_,
+                               vars, modelLevels_, nSpectralBinsFull_,
                                spectralUMatrices_, params)),
-  spectralSD_(createSpectralSD(vars, modelLevels_,
+  verticalSD_(createVerticalSD(vars, modelLevels_,
                                spectralVerticalCovariances_)),
   spectralVerticalCorrelations_(createSpectralCorrelations(
                                 vars, modelLevels_, spectralVerticalCovariances_,
-                                spectralSD_))
+                                verticalSD_))
 {
   for (std::size_t lvl : variableSizes) {
     if (static_cast<int>(lvl) != modelLevels_) {
