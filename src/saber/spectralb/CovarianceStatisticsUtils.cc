@@ -116,7 +116,7 @@ atlas::FieldSet createSpectralCovariances(const oops::Variables & activeVars,
 
   for (std::size_t ivar = 0; ivar < activeVars.size(); ++ivar) {
     std::string var = activeVars[ivar];
-    ASSERT(nSpectralBins <= nSpectralBinsFull[ivar]);
+    ASSERT(static_cast<std::size_t>(nSpectralBins) <= nSpectralBinsFull[ivar]);
 
     auto spectralVertCov = atlas::Field(var, atlas::array::make_datatype<double>(),
       atlas::array::make_shape(nSpectralBins, modelLevels, modelLevels));
