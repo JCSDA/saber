@@ -85,15 +85,16 @@ void SpectralCovariance::multiply(atlas::FieldSet & fieldSet) const {
     for (idx_t jm = 0; jm < nb_zonal_wavenumbers; ++jm) {
       const idx_t m1 = zonal_wavenumbers(jm);
       for (std::size_t n1 = m1; n1 <= static_cast<std::size_t>(N); ++n1) {
-        // note that img stands for imaginary component are the
+        // Note that img stands for imaginary component and are the
         // odd indices in the first index of the spectral fields.
         for (std::size_t img = 0; img < 2; ++img) {
-          // Pre-load values used for convolution, to accelerate computation time.
+          // Pre-fill vertical column to be convolved.
           for (idx_t jl = 0; jl < levels; ++jl) {
             col[static_cast<std::size_t>(jl)] = spfView(i, jl);
           }
-          norm = static_cast<double>((2 * n1 + 1) *
-                                     spectralVerticalCovariances[var].shape(0));
+          // The 2*n1+1 factor is there to equally distribute the covariance across
+          // the spectral coefficients associated to this total wavenumber.
+          norm = static_cast<double>((2 * n1 + 1) * vertCovView.shape(0));
           for (idx_t r = 0; r < levels; ++r) {
             col2[static_cast<std::size_t>(r)] = 0;
             for (idx_t c = 0; c < levels; ++c) {

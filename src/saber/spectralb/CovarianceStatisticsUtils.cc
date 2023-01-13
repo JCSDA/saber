@@ -133,7 +133,9 @@ atlas::FieldSet createSpectralCovariances(const oops::Variables & activeVars,
           for (atlas::idx_t k3 = 0; k3 < uMatrixView.shape(2); ++k3) {
             val += uMatrixView(bin, k1, k3) * uMatrixView(bin, k2, k3);
           }
-          // Crude renormalization assuming the variance is equally distributed across bins.
+          // There is a loss of variance there, as we only keep nSpectralBins out of
+          // nSpectralBinsFull[ivar].A crude renormalization is applied, assuming
+          // the variance is equally distributed across bins:
           spectralVertCovView(bin, k1, k2) = val * nSpectralBins / (nSpectralBinsFull[ivar]);
         }
       }
@@ -203,6 +205,7 @@ atlas::FieldSet createSpectralCorrelations(const oops::Variables & activeVars,
 
     for (int k1 = 0; k1 < modelLevels; ++k1) {
       for (int k2 = 0; k2 < modelLevels; ++k2) {
+        // Assumes the total variance per level is distributed equally across spectral bins.
         correlationScalingView(k1, k2) =
           static_cast<double>(nSpectralBins) /
           (verticalSDView(k1) * verticalSDView(k2));
