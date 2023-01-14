@@ -9,12 +9,14 @@ geometry:
     - var2
     levels: 2
   halo: 1
-input variables: &id001
+input variables:
 - var1
 - var2
 background:
   date: '2010-01-01T12:00:00Z'
-  state variables: *id001
+  state variables:
+  - var1
+  - var2
 bump:
   general:
     testing: true
@@ -22,8 +24,8 @@ bump:
     data directory: testdata
     files prefix: error_covariance_training_bump_stddev_3/_MPI_-_OMP_
   drivers:
-    compute variance: true
     iterative algorithm: true
+    compute variance: true
   variance:
     objective filtering: true
   ensemble:

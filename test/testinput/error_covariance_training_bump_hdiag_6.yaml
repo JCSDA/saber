@@ -18,11 +18,12 @@ lowres geometry:
     - var1
     levels: 2
   halo: 1
-input variables: &id001
+input variables:
 - var1
 background:
   date: '2010-01-01T12:00:00Z'
-  state variables: *id001
+  state variables:
+  - var1
 bump:
   general:
     testing: true
@@ -39,8 +40,8 @@ bump:
     compute hybrid weights: true
     hybrid source: lowres ensemble
     multivariate strategy: specific_univariate
-    compute moments: true
     iterative algorithm: true
+    compute moments: true
     write diagnostics: true
     adjoints test: true
     normalization test: 10

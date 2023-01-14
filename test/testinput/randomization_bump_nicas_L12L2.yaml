@@ -11,12 +11,14 @@ geometry:
     - var_2d
     levels: 1
   halo: 1
-variables: &id001
+variables:
 - var1
 - var_2d
 background:
   date: '2010-01-01T12:00:00Z'
-  state variables: *id001
+  state variables:
+  - var1
+  - var_2d
 background error:
   covariance model: SABER
   saber central block:

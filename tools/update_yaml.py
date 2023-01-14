@@ -24,7 +24,7 @@ def correct_date(d):
         d = d.strftime("%Y-%m-%dT%H:%M:%SZ")
     return d
 
-# Find bump subsections and their indentation
+# Find bump subsections
 def find_bump(d, bumps):
     if isinstance(d, dict):
         # Loop over dictionary items

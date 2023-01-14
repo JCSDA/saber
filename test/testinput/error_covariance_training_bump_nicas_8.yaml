@@ -8,11 +8,12 @@ geometry:
     - var1
     levels: 2
   halo: 1
-input variables: &id001
+input variables:
 - var1
 background:
   date: '2010-01-01T12:00:00Z'
-  state variables: *id001
+  state variables:
+  - var1
 bump:
   general:
     testing: true
@@ -27,8 +28,8 @@ bump:
     multivariate strategy: specific_multivariate
     compute nicas: true
     write local nicas: true
-    internal dirac test: true
     adjoints test: true
+    internal dirac test: true
   nicas:
     resolution: 4.0
     explicit length-scales: true

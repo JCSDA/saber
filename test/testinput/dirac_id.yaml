@@ -9,7 +9,7 @@ geometry:
     - var2
     levels: 2
 initial condition:
-  date: 2010-01-01T12:00:00Z
+  date: '2010-01-01T12:00:00Z'
   state variables:
   - var1
   - var2
@@ -19,10 +19,14 @@ background error:
   saber central block:
     saber block name: ID
 dirac:
-  lon: [0.0]
-  lat: [0.0]
-  level: [1]
-  variable: [var1]
+  lon:
+  - 0.0
+  lat:
+  - 0.0
+  level:
+  - 1
+  variable:
+  - var1
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_id/dirac_%id%_%MPI%

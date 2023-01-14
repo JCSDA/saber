@@ -9,7 +9,7 @@ geometry:
     levels: 70
 initial condition:
   date: '2010-01-01T12:00:00Z'
-  state variables: &id001
+  state variables:
   - psi_inc
 background error:
   covariance model: SABER
@@ -29,7 +29,8 @@ dirac:
   - 0.0
   level:
   - 1
-  variable: *id001
+  variable:
+  - psi_inc
 output dirac:
   filepath: testdata/dirac_spectralb_from_L15/dirac_%id%
 test:

@@ -8,17 +8,19 @@ geometry:
     - var1
     levels: 10
   halo: 1
-input variables: &id001
+input variables:
 - var1
 background:
   date: '2010-01-01T12:00:00Z'
-  state variables: *id001
+  state variables:
+  - var1
 ensemble:
   members from template:
     template:
       date: '2010-01-01T12:00:00Z'
       filepath: testdata/randomization_bump_nicas_L10L10/member_%mem%
-      state variables: *id001
+      state variables:
+      - var1
     pattern: '%mem%'
     nmembers: 25
     zero padding: 6
@@ -35,6 +37,13 @@ bump:
     compute moments: true
     write diagnostics: true
   sampling:
+    computation grid size: 500
+    diagnostic grid size: 250
+    distance classes: 10
+    distance class width: 800.0e3
+    reduced levels: 7
+    local diagnostic: true
+    averaging length-scale: 4000.0e3
     masks:
     - type: lat-20060
     - type: ldwv
@@ -46,13 +55,6 @@ bump:
       threshold: 0.5
       side: upper
       variable: var1
-    computation grid size: 500
-    diagnostic grid size: 250
-    distance classes: 10
-    distance class width: 800.0e3
-    reduced levels: 7
-    local diagnostic: true
-    averaging length-scale: 4000.0e3
     contiguous levels threshold: 3
   local profiles:
   - longitude: 0.0
@@ -77,4 +79,3 @@ output:
     filepath: testdata/error_covariance_training_bump_hdiag_10/_MPI_-_OMP__cor_rv
 test:
   reference filename: testref/error_covariance_training_bump_hdiag_10.ref
-

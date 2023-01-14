@@ -18,17 +18,19 @@ lowres geometry:
     - var1
     levels: 2
   halo: 1
-input variables: &id001
+input variables:
 - var1
 background:
   date: '2010-01-01T12:00:00Z'
-  state variables: *id001
+  state variables:
+  - var1
 ensemble:
   members from template:
     template:
       date: '2010-01-01T12:00:00Z'
       filepath: testdata/randomization_bump_nicas_L12L2/member_%mem%
-      state variables: *id001
+      state variables:
+      - var1
     pattern: '%mem%'
     nmembers: 10
     zero padding: 6

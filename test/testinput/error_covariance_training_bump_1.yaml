@@ -8,15 +8,16 @@ geometry:
     - var1
     levels: 2
   halo: 1
-input variables: &id001
+input variables:
 - var1
 background:
   date: '2010-01-01T12:00:00Z'
-  state variables: *id001
+  state variables:
+  - var1
 bump:
   general:
-    testing: true
     color log: true
+    testing: true
   io:
     data directory: testdata
     files prefix: error_covariance_training_bump_1/_MPI_-_OMP_

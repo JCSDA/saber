@@ -126,10 +126,10 @@ background error:
             io:
               data directory: testdata
               files prefix: dirac_bump_2/_MPI_-_OMP_
-              overriding nicas file: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas
               alias:
               - in code: common
                 in file: var1-var1
+              overriding nicas file: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas
             drivers:
               multivariate strategy: common
               read local nicas: true

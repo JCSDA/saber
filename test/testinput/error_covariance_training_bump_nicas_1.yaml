@@ -8,11 +8,12 @@ geometry:
     - var1
     levels: 2
   halo: 1
-input variables: &id001
+input variables:
 - var1
 background:
   date: '2010-01-01T12:00:00Z'
-  state variables: *id001
+  state variables:
+  - var1
 bump:
   general:
     testing: true
@@ -23,8 +24,8 @@ bump:
   drivers:
     multivariate strategy: specific_multivariate
     compute nicas: true
-    internal dirac test: true
     adjoints test: true
+    internal dirac test: true
     randomization test: true
   ensemble sizes:
     total ensemble size: 50

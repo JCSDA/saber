@@ -11,18 +11,22 @@ geometry:
     - var_2d
     levels: 1
   halo: 1
-input variables: &id001
+input variables:
 - var1
 - var_2d
 background:
   date: '2010-01-01T12:00:00Z'
-  state variables: *id001
+  state variables:
+  - var1
+  - var_2d
 ensemble:
   members from template:
     template:
       date: '2010-01-01T12:00:00Z'
       filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
-      state variables: *id001
+      state variables:
+      - var1
+      - var_2d
     pattern: '%mem%'
     nmembers: 25
     zero padding: 6
@@ -38,8 +42,8 @@ bump:
     multivariate strategy: specific_univariate
     write local sampling: true
     write global sampling: true
-    write moments: true
     compute moments: true
+    write moments: true
     write diagnostics: true
     write diagnostics detail: true
   sampling:
