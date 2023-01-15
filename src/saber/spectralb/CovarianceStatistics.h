@@ -39,21 +39,21 @@ class CovStat_ErrorCov {
                    const oops::Variables &,
                    const Parameters_ &);
 
-  /// \details getSpectralUMatrix() gets the square root of the spectral vertical covariances for
-  ///          each total wavenumber and active variable
+  /// \details getSpectralUMatrix() gets the "square root" of the spectral vertical
+  ///          covariances for each total wavenumber and active variable.
   ///          spectral vertical covariance = UMatrix UMatrix^T
   const atlas::FieldSet & getSpectralUMatrices()  const {
     return spectralUMatrices_;
   }
 
-  /// \details getSpectralVerticalCovariances() gets the spectral vertical covariances for
-  ///          each total wavenumber and active variable
+  /// \details getSpectralVerticalCovariances() gets the spectral vertical
+  ///          covariances for each total wavenumber and active variable.
   const atlas::FieldSet & getSpectralVerticalCovariances()  const {
     return spectralVerticalCovariances_;
   }
 
-  /// \details getSpectralVerticalCovariances() gets the spectral vertical covariances for
-  ///          each total wavenumber and active variable
+  /// \details getSpectralVerticalCorrelations() gets the spectral vertical
+  ///          correlations for each total wavenumber and active variable.
   const atlas::FieldSet & getSpectralVerticalCorrelations()  const {
     return spectralVerticalCorrelations_;
   }
@@ -64,17 +64,18 @@ class CovStat_ErrorCov {
   // number of model levels
   int modelLevels_;
   // number of spectral bins for each field
-  std::vector<std::size_t> netCDFSpectralBins_;
-  // square root of the spectral vertical covariances
-  // with the number of spectral bins will be that of the cov file
+  std::vector<std::size_t> nSpectralBinsFull_;
+  // U factor of the spectral vertical covariances (as in B=UU^t).
+  // The number of spectral bins is given by the covariance file.
   atlas::FieldSet spectralUMatrices_;
-  // spectral vertical covariances
-  // with the number of spectral bins to be that for the gaussian grid resolution
+  // Spectral vertical covariances
+  // The number of spectral bins is truncated to the Gaussian grid resolution.
   atlas::FieldSet spectralVerticalCovariances_;
-  // spectral standard deviations with model level
-  atlas::FieldSet spectralSD_;
-  // spectral vertical correlations
-  // with the number of spectral bins to be that for the gaussian grid resolution
+  // Total standard deviations for each model level,
+  // consistent with truncated spectral vertical covariances.
+  atlas::FieldSet verticalSD_;
+  // Spectral vertical correlations
+  // The number of spectral bins is truncated to the Gaussian grid resolution.
   atlas::FieldSet spectralVerticalCorrelations_;
 
   void print(std::ostream &) const;
