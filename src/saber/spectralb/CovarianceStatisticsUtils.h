@@ -21,7 +21,7 @@
 namespace saber {
 namespace spectralb {
 
-std::vector<std::size_t> getNetCDFSpectralBins(const spectralbParameters &);
+std::vector<std::size_t> getNSpectralBinsFull(const spectralbParameters &);
 
 atlas::FieldSet createUMatrices(const oops::Variables &,
                                 const int,
@@ -29,12 +29,12 @@ atlas::FieldSet createUMatrices(const oops::Variables &,
                                 const spectralbParameters &);
 
 atlas::FieldSet createSpectralCovariances(const oops::Variables &,
-                                          const int modelLevels,
+                                          const int,
                                           const std::vector<std::size_t> &,
                                           const atlas::FieldSet &,
                                           const spectralbParameters &);
 
-atlas::FieldSet createSpectralSD(const oops::Variables &,
+atlas::FieldSet createVerticalSD(const oops::Variables &,
                                  const int,
                                  const atlas::FieldSet &);
 

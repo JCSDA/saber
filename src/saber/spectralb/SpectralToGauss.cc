@@ -277,6 +277,7 @@ SpectralToGauss::SpectralToGauss(const oops::GeometryData & outerGeometryData,
 void SpectralToGauss::multiplyVectorFields(atlas::FieldSet & spectralWindFieldSet,
                                            atlas::FieldSet & outFieldSet) const {
   // Converting stream function and potential vorticity to divergence and vorticity.
+  oops::Log::trace() << classname() << "::multiplyVectorFields starting" << std::endl;
   // Scale by n(n+1) / squaredEarthRadius and rename fields to vorticity and divergence
   if (spectralWindFieldSet.has("streamfunction") &&
       spectralWindFieldSet.has("velocity_potential")) {
@@ -301,12 +302,14 @@ void SpectralToGauss::multiplyVectorFields(atlas::FieldSet & spectralWindFieldSe
 
   outFieldSet.add(uvfset["eastward_wind"]);
   outFieldSet.add(uvfset["northward_wind"]);
+  oops::Log::trace() << classname() << "::multiplyVectorFields done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 void SpectralToGauss::multiplyVectorFieldsAD(atlas::FieldSet & windFieldSet,
                                              atlas::FieldSet & outFieldSet) const {
+  oops::Log::trace() << classname() << "::multiplyVectorFieldsAD starting" << std::endl;
   ASSERT(windFieldSet.has("eastward_wind") && windFieldSet.has("northward_wind"));
 
   atlas::Field uvgp = convertUVToFieldSetAD(windFieldSet);
@@ -330,12 +333,14 @@ void SpectralToGauss::multiplyVectorFieldsAD(atlas::FieldSet & windFieldSet,
 
   outFieldSet.add(spectralWindFieldSet[0]);
   outFieldSet.add(spectralWindFieldSet[1]);
+  oops::Log::trace() << classname() << "::multiplyVectorFieldsAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 void SpectralToGauss::multiplyScalarFields(const atlas::FieldSet & specFieldSet,
                                            atlas::FieldSet & outFieldSet) const {
+  oops::Log::trace() << classname() << "::multiplyScalarFields starting" << std::endl;
   // Create fieldset on Gaussian grid
   atlas::FieldSet gaussFieldSet;
   for (const auto & fieldname : specFieldSet.field_names()) {
@@ -354,12 +359,14 @@ void SpectralToGauss::multiplyScalarFields(const atlas::FieldSet & specFieldSet,
     gaussFieldSet[fieldname].haloExchange();
     outFieldSet.add(gaussFieldSet[fieldname]);
   }
+  oops::Log::trace() << classname() << "::multiplyScalarFields done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 void SpectralToGauss::multiplyScalarFieldsAD(const atlas::FieldSet & gaussFieldSet,
                                              atlas::FieldSet & outFieldSet) const {
+  oops::Log::trace() << classname() << "::multiplyScalarFieldsAD starting" << std::endl;
   // Create spectral fieldset
   atlas::FieldSet specFieldSet;
   for (const auto & fieldname : gaussFieldSet.field_names()) {
@@ -375,6 +382,7 @@ void SpectralToGauss::multiplyScalarFieldsAD(const atlas::FieldSet & gaussFieldS
   for (const auto & fieldname : gaussFieldSet.field_names()) {
     outFieldSet.add(specFieldSet[fieldname]);
   }
+  oops::Log::trace() << classname() << "::multiplyScalarFieldsAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
