@@ -184,7 +184,6 @@ Geometry::Geometry(const Parameters_ & params,
   // Groups
   size_t groupIndex = 0;
   for (const auto & groupParams : params.groups.value()) {
-    std::cout << "BENJ: new group: " << groupIndex << std::endl;
     // Use this group index for all the group variables
     for (const auto & var : groupParams.variables.value()) {
       if (groupIndex_.find(var) != groupIndex_.end()) {
@@ -301,7 +300,7 @@ Geometry::Geometry(const Parameters_ & params,
 
     // Save group
     groups_.push_back(group);
-    std::cout << "BENJ: new group pushed back" << std::endl;
+
     // Increment group index
     groupIndex++;
   }
@@ -386,7 +385,6 @@ void Geometry::print(std::ostream & os) const {
   os << prefix << "- type: " << functionSpace_.type() << std::endl;
   os << prefix << "- halo: " << halo_ << std::endl;
   os << prefix << "Groups: " << std::endl;
-  std::cout << "TOTO: " << groups_.size() << std::endl;
   for (size_t groupIndex = 0; groupIndex < groups_.size(); ++groupIndex) {
     os << prefix << "- Group " << groupIndex << ":" << std::endl;
     os << prefix << "  Vertical levels: " << std::endl;
