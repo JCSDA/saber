@@ -25,13 +25,13 @@ set( CMAKE_CXX_FLAGS_DEBUG       "-O0 -g" )
 # BIT REPRODUCIBLE FLAGS
 ####################################################################
 
-set( CMAKE_CXX_FLAGS_BIT         "-O2" )
+set( CMAKE_CXX_FLAGS_BIT         "-O2 -pg --coverage" )
 
 ####################################################################
 # LINK FLAGS
 ####################################################################
 
-set( CMAKE_CXX_LINK_FLAGS        "" )
+set( CMAKE_CXX_LINK_FLAGS        "-pg --coverage" )
 
 ####################################################################
 
