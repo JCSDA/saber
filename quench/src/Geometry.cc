@@ -20,7 +20,6 @@
 #include "atlas/util/KDTree.h"
 #include "atlas/util/Point.h"
 
-#include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/Logger.h"
 
@@ -29,10 +28,9 @@
 // -----------------------------------------------------------------------------
 namespace quench {
 // -----------------------------------------------------------------------------
-
 Geometry::Geometry(const Parameters_ & params,
                    const eckit::mpi::Comm & comm)
-  : comm_(comm), levels_(params.levels.value()), lev2d_(params.lev2d.value()) {
+  : comm_(comm), groups_(), iodaBased_(false) {
   // Initialize eckit communicator for ATLAS
   eckit::mpi::setCommDefault(comm_.name().c_str());
 
@@ -81,6 +79,9 @@ Geometry::Geometry(const Parameters_ & params,
     grid_ = atlas::Grid(gridParams_);
   } else if (iodaFile != boost::none) {
     oops::Log::info() << "Info     : Grid input file: " << *iodaFile << std::endl;
+
+    // IODA-based geometry
+    iodaBased_ = true;
 
     // Grid size
     size_t nlocs = 0;
@@ -180,221 +181,128 @@ Geometry::Geometry(const Parameters_ & params,
   atlas::Field ghost = functionSpace_.ghost();
   auto ghostView = atlas::array::make_view<int, 1>(ghost);
 
-  // Vertical unit
-  const boost::optional<std::vector<double>> &vunitParams = params.vunit.value();
-  for (size_t jlevel = 0; jlevel < levels_; ++jlevel) {
-    if (vunitParams != boost::none) {
-      vunit_.push_back((*vunitParams)[jlevel]);
+  // Groups
+  size_t groupIndex = 0;
+  for (const auto & groupParams : params.groups.value()) {
+    // Use this group index for all the group variables
+    for (const auto & var : groupParams.variables.value()) {
+      if (groupIndex_.find(var) != groupIndex_.end()) {
+        ABORT("Same variable present in distinct groups");
+      } else {
+        groupIndex_[var] = groupIndex;
+      }
+    }
+
+    // Define group
+    groupData group;
+
+    // Number of levels
+    group.levels_ = groupParams.levels.value();
+
+    // Corresponding level for 2D variables (first or last)
+    group.lev2d_ = groupParams.lev2d.value();
+
+    // Vertical unit
+    const boost::optional<std::vector<double>> &vunitParams = groupParams.vunit.value();
+    for (size_t jlevel = 0; jlevel < group.levels_; ++jlevel) {
+      if (vunitParams != boost::none) {
+        group.vunit_.push_back((*vunitParams)[jlevel]);
+      } else {
+        group.vunit_.push_back(static_cast<double>(jlevel+1));
+      }
+    }
+
+    // Default mask, set to 1 (true)
+    atlas::Field gmask = functionSpace_.createField<int>(
+      atlas::option::name("gmask") | atlas::option::levels(group.levels_));
+    auto maskView = atlas::array::make_view<int, 2>(gmask);
+    maskView.assign(1);
+
+    // Specific mask
+    if (groupParams.maskType.value() == "none") {
+      // No mask
+    } else if (groupParams.maskType.value() == "sea") {
+      // Read sea mask
+      readSeaMask(groupParams.maskPath.value(), group.levels_, group.lev2d_, gmask);
     } else {
-      vunit_.push_back(static_cast<double>(jlevel+1));
-    }
-  }
-
-  // Default mask, set to 1 (true)
-  gmask_ = functionSpace_.createField<int>(
-    atlas::option::name("gmask") | atlas::option::levels(levels_));
-  auto maskView = atlas::array::make_view<int, 2>(gmask_);
-  for (atlas::idx_t jnode = 0; jnode < gmask_.shape(0); ++jnode) {
-    for (atlas::idx_t jlevel = 0; jlevel < gmask_.shape(1); ++jlevel) {
-       maskView(jnode, jlevel) = 1;
-    }
-  }
-
-  // Specific mask
-  if (params.mask_type.value() == "none") {
-    // No mask
-  } else if (params.mask_type.value() == "sea") {
-    // Lon/lat sizes
-    size_t nlon = 0;
-    size_t nlat = 0;
-
-    // NetCDF IDs
-    int ncid, retval, nlon_id, nlat_id, lon_id, lat_id, lsm_id;
-
-    if (comm_.rank() == 0) {
-      // Open NetCDF file
-      if ((retval = nc_open(params.mask_path.value().c_str(), NC_NOWRITE, &ncid))) ERR(retval);
-
-      // Get lon/lat sizes
-      if ((retval = nc_inq_dimid(ncid, "lon", &nlon_id))) ERR(retval);
-      if ((retval = nc_inq_dimid(ncid, "lat", &nlat_id))) ERR(retval);
-      if ((retval = nc_inq_dimlen(ncid, nlon_id, &nlon))) ERR(retval);
-      if ((retval = nc_inq_dimlen(ncid, nlat_id, &nlat))) ERR(retval);
+      ABORT("Wrong mask type");
     }
 
-    // Broadcast lon/lat sizes
-    comm_.broadcast(nlon, 0);
-    comm_.broadcast(nlat, 0);
+    // Fill extra geometry fields
+    group.extraFields_ = atlas::FieldSet();
 
-    // Coordinates and land-sea mask
-    std::vector<double> lon(nlon);
-    std::vector<double> lat(nlat);
-    std::vector<int> lsm(nlat*nlon);
-
-    if (comm_.rank() == 0) {
-      // Get lon/lat
-      if ((retval = nc_inq_varid(ncid, "lon", &lon_id))) ERR(retval);
-      if ((retval = nc_inq_varid(ncid, "lat", &lat_id))) ERR(retval);
-      if ((retval = nc_inq_varid(ncid, "LSMASK", &lsm_id))) ERR(retval);
-
-      // Read data
-      float zlon[nlon][1];
-      float zlat[nlat][1];
-      uint8_t zlsm[nlat][nlon];
-      if ((retval = nc_get_var_float(ncid, lon_id, &zlon[0][0]))) ERR(retval);
-      if ((retval = nc_get_var_float(ncid, lat_id, &zlat[0][0]))) ERR(retval);
-      if ((retval = nc_get_var_ubyte(ncid, lsm_id, &zlsm[0][0]))) ERR(retval);
-
-      // Copy data
-      for (size_t ilon = 0; ilon < nlon; ++ilon) {
-        lon[ilon] = zlon[ilon][0];
-      }
-      for (size_t ilat = 0; ilat < nlat; ++ilat) {
-        lat[ilat] = zlat[ilat][0];
-      }
-      for (size_t ilat = 0; ilat < nlat; ++ilat) {
-       for (size_t ilon = 0; ilon < nlon; ++ilon) {
-          lsm[ilat*nlon+ilon] = static_cast<int>(zlsm[ilat][ilon]);
-        }
-      }
-
-      // Close file
-      if ((retval = nc_close(ncid))) ERR(retval);
-    }
-
-    // Broadcast coordinates and land-sea mask
-    comm_.broadcast(lon.begin(), lon.end(), 0);
-    comm_.broadcast(lat.begin(), lat.end(), 0);
-    comm_.broadcast(lsm.begin(), lsm.end(), 0);
-
-    // Build KD-tree
-    atlas::Geometry geometry(atlas::util::Earth::radius());
-    atlas::util::IndexKDTree2D search(geometry);
-    search.reserve(nlat*nlon);
-    std::vector<double> lon2d;
-    std::vector<double> lat2d;
-    std::vector<size_t> payload2d;
-    int jnode = 0;
-    for (size_t ilat = 0; ilat < nlat; ++ilat) {
-      for (size_t ilon = 0; ilon < nlon; ++ilon) {
-        lon2d.push_back(lon[ilon]);
-        lat2d.push_back(lat[ilat]);
-        payload2d.push_back(jnode);
-        ++jnode;
+    // Vertical unit
+    atlas::Field vunit = functionSpace_.createField<double>(
+      atlas::option::name("vunit") | atlas::option::levels(group.levels_));
+    auto vunitView = atlas::array::make_view<double, 2>(vunit);
+    for (atlas::idx_t jnode = 0; jnode < vunit.shape(0); ++jnode) {
+      for (size_t jlevel = 0; jlevel < group.levels_; ++jlevel) {
+         vunitView(jnode, jlevel) = group.vunit_[jlevel];
       }
     }
-    search.build(lon2d, lat2d, payload2d);
+    group.extraFields_->add(vunit);
 
-    if (functionSpace_.type() == "StructuredColumns") {
-      // StructuredColumns
+    // Geographical mask
+    group.extraFields_->add(gmask);
+
+    // Halo mask
+    if (grid_.name().compare(0, 1, std::string{"L"}) == 0) {
+      // Regular lonlat grid
       atlas::functionspace::StructuredColumns fs(functionSpace_);
-      auto lonlatView = atlas::array::make_view<double, 2>(fs.xy());
-      for (atlas::idx_t jnode = 0; jnode < fs.xy().shape(0); ++jnode) {
-        if (ghostView(jnode) == 0) {
-          // Find nearest neighbor
-          size_t nn = search.closestPoint(atlas::PointLonLat{lonlatView(jnode, 0),
-            lonlatView(jnode, 1)}).payload();
-
-          // Ocean points for all levels
-          for (size_t jlevel = 0; jlevel < levels_; ++jlevel) {
-            if (lsm[nn] == 0) {
-               maskView(jnode, jlevel) = 1;
-             } else {
-               maskView(jnode, jlevel) = 0;
-             }
-           }
-
-          // Ocean + small islands for the 2D level
-          if (lsm[nn] == 3) {
-            if (lev2d_ == "first") {
-              maskView(jnode, 0) = 1;
-            } else if (lev2d_ == "last") {
-              maskView(jnode, levels_-1) = 1;
-            } else {
-              ABORT("wrong lev2d value (first or last)");
-            }
+      atlas::StructuredGrid grid = fs.grid();
+      atlas::Field hmask = fs.createField<int>(atlas::option::name("hmask")
+        | atlas::option::levels(1));
+      auto hmaskView = atlas::array::make_view<int, 2>(hmask);
+      auto view_i = atlas::array::make_view<int, 1>(fs.index_i());
+      auto view_j = atlas::array::make_view<int, 1>(fs.index_j());
+      for (atlas::idx_t j = fs.j_begin_halo(); j < fs.j_end_halo(); ++j) {
+        for (atlas::idx_t i = fs.i_begin_halo(j); i < fs.i_end_halo(j); ++i) {
+          atlas::idx_t jnode = fs.index(i, j);
+          if (((view_j(jnode) == 1) || (view_j(jnode) == grid.ny())) && (view_i(jnode) != 1)) {
+            hmaskView(jnode, 0) = 0;
+          } else {
+            hmaskView(jnode, 0) = 1;
           }
         }
       }
-    } else {
-      ABORT(params.mask_type.value() + " mask not supported for " + functionSpace_.type() + " yet");
-    }
-  } else {
-    ABORT("Wrong mask type");
-  }
-
-  // Mask size
-  gmaskSize_ = 0.0;
-  double domainSize = 0.0;
-  for (atlas::idx_t jnode = 0; jnode < gmask_.shape(0); ++jnode) {
-    for (atlas::idx_t jlevel = 0; jlevel < gmask_.shape(1); ++jlevel) {
-      if (ghostView(jnode) == 0) {
-        if (maskView(jnode, jlevel) == 1) {
-          gmaskSize_ += 1.0;
-        }
-        domainSize += 1.0;
+      group.extraFields_->add(hmask);
+    } else if (grid_.name().compare(0, 2, std::string{"CS"}) == 0) {
+      // Cubed-sphere grid
+      atlas::functionspace::NodeColumns fs(functionSpace_);
+      atlas::Field hmask = fs.createField<int>(atlas::option::name("hmask")
+        | atlas::option::levels(1));
+      auto hmaskView = atlas::array::make_view<int, 2>(hmask);
+      auto ghostView = atlas::array::make_view<int, 1>(fs.ghost());
+      for (atlas::idx_t jnode = 0; jnode < hmask.shape(0); ++jnode) {
+        hmaskView(jnode, 0) = ghostView(jnode) > 0 ? 0 : 1;
       }
+      group.extraFields_->add(hmask);
     }
-  }
-  comm_.allReduceInPlace(gmaskSize_, eckit::mpi::sum());
-  comm_.allReduceInPlace(domainSize, eckit::mpi::sum());
-  if (domainSize > 0.0) {
-    gmaskSize_ = gmaskSize_/domainSize;
-  }
 
-  // Fill extra geometry fields
-  extraFields_ = atlas::FieldSet();
-
-  // Vertical unit
-  atlas::Field vunit = functionSpace_.createField<double>(
-    atlas::option::name("vunit") | atlas::option::levels(levels_));
-  auto vunitView = atlas::array::make_view<double, 2>(vunit);
-  for (atlas::idx_t jnode = 0; jnode < vunit.shape(0); ++jnode) {
-    for (size_t jlevel = 0; jlevel < levels_; ++jlevel) {
-       vunitView(jnode, jlevel) = vunit_[jlevel];
-    }
-  }
-  extraFields_->add(vunit);
-
-  // Geographical mask
-  extraFields_->add(gmask_);
-
-  // Halo mask
-  if (grid_.name().compare(0, 1, std::string{"L"}) == 0) {
-    // Regular lonlat grid
-    atlas::functionspace::StructuredColumns fs(functionSpace_);
-    atlas::StructuredGrid grid = fs.grid();
-    atlas::Field hmask = fs.createField<int>(atlas::option::name("hmask")
-      | atlas::option::levels(1));
-    auto hmaskView = atlas::array::make_view<int, 2>(hmask);
-    auto view_i = atlas::array::make_view<int, 1>(fs.index_i());
-    auto view_j = atlas::array::make_view<int, 1>(fs.index_j());
-    for (atlas::idx_t j = fs.j_begin_halo(); j < fs.j_end_halo(); ++j) {
-      for (atlas::idx_t i = fs.i_begin_halo(j); i < fs.i_end_halo(j); ++i) {
-        atlas::idx_t jnode = fs.index(i, j);
-        if (((view_j(jnode) == 1) || (view_j(jnode) == grid.ny())) && (view_i(jnode) != 1)) {
-          hmaskView(jnode, 0) = 0;
-        } else {
-          hmaskView(jnode, 0) = 1;
+    // Mask size
+    group.gmaskSize_ = 0.0;
+    size_t domainSize = 0.0;
+    for (atlas::idx_t jnode = 0; jnode < gmask.shape(0); ++jnode) {
+      for (atlas::idx_t jlevel = 0; jlevel < gmask.shape(1); ++jlevel) {
+        if (ghostView(jnode) == 0) {
+          if (maskView(jnode, jlevel) == 1) {
+            group.gmaskSize_ += 1.0;
+          }
+          domainSize++;
         }
       }
     }
-
-    // Add field
-    extraFields_->add(hmask);
-  } else if (grid_.name().compare(0, 2, std::string{"CS"}) == 0) {
-    // Cubed-sphere grid
-    atlas::functionspace::NodeColumns fs(functionSpace_);
-    atlas::Field hmask = fs.createField<int>(atlas::option::name("hmask")
-      | atlas::option::levels(1));
-    auto hmaskView = atlas::array::make_view<int, 2>(hmask);
-    auto ghostView = atlas::array::make_view<int, 1>(fs.ghost());
-    for (atlas::idx_t jnode = 0; jnode < hmask.shape(0); ++jnode) {
-      hmaskView(jnode, 0) = ghostView(jnode) > 0 ? 0 : 1;
+    comm_.allReduceInPlace(group.gmaskSize_, eckit::mpi::sum());
+    comm_.allReduceInPlace(domainSize, eckit::mpi::sum());
+    if (domainSize > 0) {
+      group.gmaskSize_ = group.gmaskSize_/static_cast<double>(domainSize);
     }
 
-    // Add field
-    extraFields_->add(hmask);
+    // Save group
+    groups_.push_back(group);
+
+    // Increment group index
+    groupIndex++;
   }
 
   // Print summary
@@ -403,7 +311,7 @@ Geometry::Geometry(const Parameters_ & params,
 // -----------------------------------------------------------------------------
 Geometry::Geometry(const Geometry & other) : comm_(other.comm_), halo_(other.halo_),
   grid_(other.grid_), unstructuredGrid_(other.unstructuredGrid_), partitioner_(other.partitioner_),
-  mesh_(other.mesh_), levels_(other.levels_), lev2d_(other.lev2d_), vunit_(other.vunit_)  {
+  mesh_(other.mesh_), groupIndex_(other.groupIndex_), iodaBased_(other.iodaBased_)  {
   // Copy function space
   if (other.functionSpace_.type() == "StructuredColumns") {
     // StructuredColumns
@@ -423,43 +331,40 @@ Geometry::Geometry(const Geometry & other) : comm_(other.comm_), halo_(other.hal
     ABORT(other.functionSpace_.type() + " function space not supported yet");
   }
 
-  // Copy extra fields
-  extraFields_ = atlas::FieldSet();
-  atlas::Field vunit = (*other.extraFields())["vunit"];
-  extraFields_->add(vunit);
-  atlas::Field gmask = (*other.extraFields())["gmask"];
-  extraFields_->add(gmask);
-  gmaskSize_ = other.gmaskSize_;
-}
-// -------------------------------------------------------------------------------------------------
-size_t Geometry::variableSize(const std::string & var) const {
-  size_t levels = levels_;
-  if (var.size() > 3) {
-    if (var.substr(var.size()-3) == "_2d" || var.substr(var.size()-3) == "_2D") levels = 1;
-  }
-  return levels;
-}
-// -------------------------------------------------------------------------------------------------
-size_t Geometry::maskLevel(const std::string & var, const size_t & level) const {
-  size_t maskLevel = level;
-  if (var.size() > 3) {
-    if (var.substr(var.size()-3) == "_2d" || var.substr(var.size()-3) == "_2D") {
-      if (lev2d_ == "first") {
-        maskLevel = 1;
-      } else if (lev2d_ == "last") {
-        maskLevel = levels_-1;
-      } else {
-        ABORT("wrong lev2d value (first or last)");
-      }
+  // Copy groups
+  for (size_t groupIndex = 0; groupIndex < other.groups_.size(); ++groupIndex) {
+    // Define group
+    groupData group;
+
+    // Copy number of levels
+    group.levels_ = other.groups_[groupIndex].levels_;
+
+    // Copy corresponding level for 2D variables (first or last)
+    group.lev2d_ = other.groups_[groupIndex].lev2d_;
+
+    // Copy vertical unit
+    group.vunit_ = other.groups_[groupIndex].vunit_;
+
+    // Copy extra fields
+    group.extraFields_ = atlas::FieldSet();
+    group.extraFields_->add(other.groups_[groupIndex].extraFields_["vunit"]);
+    group.extraFields_->add(other.groups_[groupIndex].extraFields_["gmask"]);
+    if (other.groups_[groupIndex].extraFields_.has("hmask")) {
+      group.extraFields_->add(other.groups_[groupIndex].extraFields_["hmask"]);
     }
+
+    // Copy mask size
+    group.gmaskSize_ = other.groups_[groupIndex].gmaskSize_;
+
+    // Save group
+    groups_.push_back(group);
   }
-  return maskLevel;
 }
 // -----------------------------------------------------------------------------
 std::vector<size_t> Geometry::variableSizes(const oops::Variables & vars) const {
   std::vector<size_t> sizes;
   for (const auto & var : vars.variables()) {
-    sizes.push_back(this->variableSize(var));
+    sizes.push_back(levels(var));
   }
   return sizes;
 }
@@ -479,10 +384,139 @@ void Geometry::print(std::ostream & os) const {
   os << prefix << "Function space:" << std::endl;
   os << prefix << "- type: " << functionSpace_.type() << std::endl;
   os << prefix << "- halo: " << halo_ << std::endl;
-  os << prefix << "Vertical levels: " << std::endl;
-  os << prefix << "- number: " << levels_ << std::endl;
-  os << prefix << "- vunit: " << vunit_ << std::endl;
-  os << prefix << "Mask size: " << static_cast<int>(gmaskSize_*100.0) << "%" << std::endl;
+  os << prefix << "Groups: " << std::endl;
+  for (size_t groupIndex = 0; groupIndex < groups_.size(); ++groupIndex) {
+    os << prefix << "- Group " << groupIndex << ":" << std::endl;
+    os << prefix << "  Vertical levels: " << std::endl;
+    os << prefix << "  - number: " << levels(groupIndex) << std::endl;
+    os << prefix << "  - vunit: " << groups_[groupIndex].vunit_ << std::endl;
+    os << prefix << "  Mask size: " << static_cast<int>(groups_[groupIndex].gmaskSize_*100.0)
+       << "%" << std::endl;
+  }
+}
+// -----------------------------------------------------------------------------
+void Geometry::readSeaMask(const std::string & maskPath,
+                           const size_t & levels,
+                           const std::string & lev2d,
+                           atlas::Field & gmask) const {
+  // Lon/lat sizes
+  size_t nlon = 0;
+  size_t nlat = 0;
+
+  // NetCDF IDs
+  int ncid, retval, nlon_id, nlat_id, lon_id, lat_id, lsm_id;
+
+  if (comm_.rank() == 0) {
+    // Open NetCDF file
+    if ((retval = nc_open(maskPath.c_str(), NC_NOWRITE, &ncid))) ERR(retval);
+
+    // Get lon/lat sizes
+    if ((retval = nc_inq_dimid(ncid, "lon", &nlon_id))) ERR(retval);
+    if ((retval = nc_inq_dimid(ncid, "lat", &nlat_id))) ERR(retval);
+    if ((retval = nc_inq_dimlen(ncid, nlon_id, &nlon))) ERR(retval);
+    if ((retval = nc_inq_dimlen(ncid, nlat_id, &nlat))) ERR(retval);
+  }
+
+  // Broadcast lon/lat sizes
+  comm_.broadcast(nlon, 0);
+  comm_.broadcast(nlat, 0);
+
+  // Coordinates and land-sea mask
+  std::vector<double> lon(nlon);
+  std::vector<double> lat(nlat);
+  std::vector<int> lsm(nlat*nlon);
+
+  if (comm_.rank() == 0) {
+    // Get lon/lat
+    if ((retval = nc_inq_varid(ncid, "lon", &lon_id))) ERR(retval);
+    if ((retval = nc_inq_varid(ncid, "lat", &lat_id))) ERR(retval);
+    if ((retval = nc_inq_varid(ncid, "LSMASK", &lsm_id))) ERR(retval);
+
+    // Read data
+    float zlon[nlon][1];
+    float zlat[nlat][1];
+    uint8_t zlsm[nlat][nlon];
+    if ((retval = nc_get_var_float(ncid, lon_id, &zlon[0][0]))) ERR(retval);
+    if ((retval = nc_get_var_float(ncid, lat_id, &zlat[0][0]))) ERR(retval);
+    if ((retval = nc_get_var_ubyte(ncid, lsm_id, &zlsm[0][0]))) ERR(retval);
+
+    // Copy data
+    for (size_t ilon = 0; ilon < nlon; ++ilon) {
+      lon[ilon] = zlon[ilon][0];
+    }
+    for (size_t ilat = 0; ilat < nlat; ++ilat) {
+      lat[ilat] = zlat[ilat][0];
+    }
+    for (size_t ilat = 0; ilat < nlat; ++ilat) {
+     for (size_t ilon = 0; ilon < nlon; ++ilon) {
+        lsm[ilat*nlon+ilon] = static_cast<int>(zlsm[ilat][ilon]);
+      }
+    }
+
+    // Close file
+    if ((retval = nc_close(ncid))) ERR(retval);
+  }
+
+  // Broadcast coordinates and land-sea mask
+  comm_.broadcast(lon.begin(), lon.end(), 0);
+  comm_.broadcast(lat.begin(), lat.end(), 0);
+  comm_.broadcast(lsm.begin(), lsm.end(), 0);
+
+  // Build KD-tree
+  atlas::Geometry geometry(atlas::util::Earth::radius());
+  atlas::util::IndexKDTree2D search(geometry);
+  search.reserve(nlat*nlon);
+  std::vector<double> lon2d;
+  std::vector<double> lat2d;
+  std::vector<size_t> payload2d;
+  int jnode = 0;
+  for (size_t ilat = 0; ilat < nlat; ++ilat) {
+    for (size_t ilon = 0; ilon < nlon; ++ilon) {
+      lon2d.push_back(lon[ilon]);
+      lat2d.push_back(lat[ilat]);
+      payload2d.push_back(jnode);
+      ++jnode;
+    }
+  }
+  search.build(lon2d, lat2d, payload2d);
+
+  // Ghost points
+  atlas::Field ghost = functionSpace_.ghost();
+  auto ghostView = atlas::array::make_view<int, 1>(ghost);
+
+  if (functionSpace_.type() == "StructuredColumns") {
+    // StructuredColumns
+    atlas::functionspace::StructuredColumns fs(functionSpace_);
+    auto lonlatView = atlas::array::make_view<double, 2>(fs.xy());
+    auto maskView = atlas::array::make_view<int, 2>(gmask);
+    for (atlas::idx_t jnode = 0; jnode < fs.xy().shape(0); ++jnode) {
+      if (ghostView(jnode) == 0) {
+        // Find nearest neighbor
+        size_t nn = search.closestPoint(atlas::PointLonLat{lonlatView(jnode, 0),
+          lonlatView(jnode, 1)}).payload();
+
+        // Ocean points for all levels
+        for (size_t jlevel = 0; jlevel < levels; ++jlevel) {
+          if (lsm[nn] == 0) {
+             maskView(jnode, jlevel) = 1;
+           } else {
+             maskView(jnode, jlevel) = 0;
+           }
+         }
+
+        // Ocean + small islands for:
+        // - the first level of 3D fields,
+        // - the 2D fields if lev2d = "first"
+        if (lsm[nn] == 3) {
+          if ((levels > 1) || (lev2d == "first")) {
+            maskView(jnode, 0) = 1;
+          }
+        }
+      }
+    }
+  } else {
+    ABORT("Sea mask not supported for " + functionSpace_.type() + " yet");
+  }
 }
 // -----------------------------------------------------------------------------
 }  // namespace quench

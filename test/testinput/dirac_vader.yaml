@@ -3,10 +3,17 @@ geometry:
   grid:
     type: regular_lonlat
     N: 10
-  levels: 2
+  groups:
+  - variables:
+    - air_temperature
+    - virtual_temperature
+    - specific_humidity
+    levels: 2
 initial condition:
-  date: 2010-01-01T12:00:00Z
-  state variables: &vars [virtual_temperature, specific_humidity ]
+  date: '2010-01-01T12:00:00Z'
+  state variables:
+  - virtual_temperature
+  - specific_humidity
 background error:
   covariance model: SABER
   adjoint test: true
@@ -14,15 +21,27 @@ background error:
     saber block name: ID
   saber outer blocks:
   - saber block name: vader variable change
-    inner variables: [air_temperature, specific_humidity]
-    active variables: [air_temperature, specific_humidity, virtual_temperature]
+    inner variables:
+    - air_temperature
+    - specific_humidity
+    active variables:
+    - air_temperature
+    - specific_humidity
+    - virtual_temperature
 dirac:
-  lon: [180.0, 180.0]
-  lat: [0.0, 0.0]
-  level: [1, 1]
-  variable: *vars
+  lon:
+  - 180.0
+  - 180.0
+  lat:
+  - 0.0
+  - 0.0
+  level:
+  - 1
+  - 1
+  variable:
+  - virtual_temperature
+  - specific_humidity
 output dirac:
   filepath: testdata/dirac_vader/dirac_%id%
-
 test:
   reference filename: testref/dirac_vader.ref

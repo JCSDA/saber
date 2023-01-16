@@ -3,7 +3,13 @@ geometry:
   grid:
     type: regular_gaussian
     N: 12
-  levels: 70
+  groups:
+  - variables:
+    - dry_air_density_levels_minus_one
+    - eastward_wind
+    - northward_wind
+    - geostrophic_pressure_levels_minus_one
+    levels: 70
   partitioner: ectrans
   halo: 1
 initial condition:

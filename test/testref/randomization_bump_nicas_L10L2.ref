@@ -111,10 +111,17 @@ Partitioner:
 Function space:
 - type: StructuredColumns
 - halo: 1
-Vertical levels: 
-- number: 2
-- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 100%
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+- Group 1:
+  Vertical levels: 
+  - number: 1
+  - vunit: [1.0000000000000000e+00]
+  Mask size: 100%
 Fields:
   var1: 3.8844202152330972e+01
   var2: 3.5307738503692953e+01
@@ -131,10 +138,17 @@ Partitioner:
 Function space:
 - type: StructuredColumns
 - halo: 1
-Vertical levels: 
-- number: 2
-- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 100%
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+- Group 1:
+  Vertical levels: 
+  - number: 1
+  - vunit: [1.0000000000000000e+00]
+  Mask size: 100%
 Fields:
   var1: 3.7512664170086211e+01
   var2: 3.8701474633488800e+01
@@ -151,10 +165,17 @@ Partitioner:
 Function space:
 - type: StructuredColumns
 - halo: 1
-Vertical levels: 
-- number: 2
-- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 100%
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+- Group 1:
+  Vertical levels: 
+  - number: 1
+  - vunit: [1.0000000000000000e+00]
+  Mask size: 100%
 Fields:
   var1: 3.5336257282887381e+01
   var2: 3.7353398965283105e+01
@@ -171,10 +192,17 @@ Partitioner:
 Function space:
 - type: StructuredColumns
 - halo: 1
-Vertical levels: 
-- number: 2
-- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 100%
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+- Group 1:
+  Vertical levels: 
+  - number: 1
+  - vunit: [1.0000000000000000e+00]
+  Mask size: 100%
 Fields:
   var1: 3.9672605587850903e+01
   var2: 3.8777232964584464e+01
@@ -191,10 +219,17 @@ Partitioner:
 Function space:
 - type: StructuredColumns
 - halo: 1
-Vertical levels: 
-- number: 2
-- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 100%
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+- Group 1:
+  Vertical levels: 
+  - number: 1
+  - vunit: [1.0000000000000000e+00]
+  Mask size: 100%
 Fields:
   var1: 3.7658882824995487e+01
   var2: 3.6631799880867860e+01
@@ -211,10 +246,17 @@ Partitioner:
 Function space:
 - type: StructuredColumns
 - halo: 1
-Vertical levels: 
-- number: 2
-- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 100%
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+- Group 1:
+  Vertical levels: 
+  - number: 1
+  - vunit: [1.0000000000000000e+00]
+  Mask size: 100%
 Fields:
   var1: 4.1055839769144711e+01
   var2: 4.0568364352094733e+01
@@ -231,10 +273,17 @@ Partitioner:
 Function space:
 - type: StructuredColumns
 - halo: 1
-Vertical levels: 
-- number: 2
-- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 100%
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+- Group 1:
+  Vertical levels: 
+  - number: 1
+  - vunit: [1.0000000000000000e+00]
+  Mask size: 100%
 Fields:
   var1: 3.6880197346728906e+01
   var2: 3.8112180107631168e+01
@@ -251,10 +300,17 @@ Partitioner:
 Function space:
 - type: StructuredColumns
 - halo: 1
-Vertical levels: 
-- number: 2
-- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 100%
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+- Group 1:
+  Vertical levels: 
+  - number: 1
+  - vunit: [1.0000000000000000e+00]
+  Mask size: 100%
 Fields:
   var1: 4.1016626759268497e+01
   var2: 3.9188076815286514e+01
@@ -271,10 +327,17 @@ Partitioner:
 Function space:
 - type: StructuredColumns
 - halo: 1
-Vertical levels: 
-- number: 2
-- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 100%
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+- Group 1:
+  Vertical levels: 
+  - number: 1
+  - vunit: [1.0000000000000000e+00]
+  Mask size: 100%
 Fields:
   var1: 4.1234695133008394e+01
   var2: 4.3096114706659264e+01
@@ -291,10 +354,17 @@ Partitioner:
 Function space:
 - type: StructuredColumns
 - halo: 1
-Vertical levels: 
-- number: 2
-- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 100%
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+- Group 1:
+  Vertical levels: 
+  - number: 1
+  - vunit: [1.0000000000000000e+00]
+  Mask size: 100%
 Fields:
   var1: 3.7342173269851322e+01
   var2: 3.9138366262882798e+01
@@ -311,10 +381,17 @@ Partitioner:
 Function space:
 - type: StructuredColumns
 - halo: 1
-Vertical levels: 
-- number: 2
-- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 100%
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+- Group 1:
+  Vertical levels: 
+  - number: 1
+  - vunit: [1.0000000000000000e+00]
+  Mask size: 100%
 Fields:
   var1: 3.9508099298397013e+01
   var2: 3.8354526174430866e+01
@@ -331,10 +408,17 @@ Partitioner:
 Function space:
 - type: StructuredColumns
 - halo: 1
-Vertical levels: 
-- number: 2
-- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 100%
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+- Group 1:
+  Vertical levels: 
+  - number: 1
+  - vunit: [1.0000000000000000e+00]
+  Mask size: 100%
 Fields:
   var1: 3.9646895754471807e+01
   var2: 4.3749304778884131e+01
@@ -351,10 +435,17 @@ Partitioner:
 Function space:
 - type: StructuredColumns
 - halo: 1
-Vertical levels: 
-- number: 2
-- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 100%
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+- Group 1:
+  Vertical levels: 
+  - number: 1
+  - vunit: [1.0000000000000000e+00]
+  Mask size: 100%
 Fields:
   var1: 3.9294557888825445e+01
   var2: 4.2590547612634246e+01
@@ -371,10 +462,17 @@ Partitioner:
 Function space:
 - type: StructuredColumns
 - halo: 1
-Vertical levels: 
-- number: 2
-- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 100%
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+- Group 1:
+  Vertical levels: 
+  - number: 1
+  - vunit: [1.0000000000000000e+00]
+  Mask size: 100%
 Fields:
   var1: 4.3533964005274939e+01
   var2: 3.5539660071514042e+01
@@ -391,10 +489,17 @@ Partitioner:
 Function space:
 - type: StructuredColumns
 - halo: 1
-Vertical levels: 
-- number: 2
-- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 100%
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+- Group 1:
+  Vertical levels: 
+  - number: 1
+  - vunit: [1.0000000000000000e+00]
+  Mask size: 100%
 Fields:
   var1: 3.7788258485158025e+01
   var2: 3.9596163481670004e+01
@@ -411,10 +516,17 @@ Partitioner:
 Function space:
 - type: StructuredColumns
 - halo: 1
-Vertical levels: 
-- number: 2
-- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 100%
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+- Group 1:
+  Vertical levels: 
+  - number: 1
+  - vunit: [1.0000000000000000e+00]
+  Mask size: 100%
 Fields:
   var1: 3.9712792168679734e+01
   var2: 3.8902854831268222e+01
@@ -431,10 +543,17 @@ Partitioner:
 Function space:
 - type: StructuredColumns
 - halo: 1
-Vertical levels: 
-- number: 2
-- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 100%
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+- Group 1:
+  Vertical levels: 
+  - number: 1
+  - vunit: [1.0000000000000000e+00]
+  Mask size: 100%
 Fields:
   var1: 4.2702551783182372e+01
   var2: 4.1019263355207826e+01
@@ -451,10 +570,17 @@ Partitioner:
 Function space:
 - type: StructuredColumns
 - halo: 1
-Vertical levels: 
-- number: 2
-- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 100%
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+- Group 1:
+  Vertical levels: 
+  - number: 1
+  - vunit: [1.0000000000000000e+00]
+  Mask size: 100%
 Fields:
   var1: 4.0185051797727581e+01
   var2: 3.6824456813819069e+01
@@ -471,10 +597,17 @@ Partitioner:
 Function space:
 - type: StructuredColumns
 - halo: 1
-Vertical levels: 
-- number: 2
-- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 100%
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+- Group 1:
+  Vertical levels: 
+  - number: 1
+  - vunit: [1.0000000000000000e+00]
+  Mask size: 100%
 Fields:
   var1: 3.7085928515688579e+01
   var2: 3.4650738956304352e+01
@@ -491,10 +624,17 @@ Partitioner:
 Function space:
 - type: StructuredColumns
 - halo: 1
-Vertical levels: 
-- number: 2
-- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 100%
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+- Group 1:
+  Vertical levels: 
+  - number: 1
+  - vunit: [1.0000000000000000e+00]
+  Mask size: 100%
 Fields:
   var1: 3.9020579800514440e+01
   var2: 3.4320606298743556e+01
@@ -511,10 +651,17 @@ Partitioner:
 Function space:
 - type: StructuredColumns
 - halo: 1
-Vertical levels: 
-- number: 2
-- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 100%
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+- Group 1:
+  Vertical levels: 
+  - number: 1
+  - vunit: [1.0000000000000000e+00]
+  Mask size: 100%
 Fields:
   var1: 3.4064307539102757e+01
   var2: 3.8185628360910520e+01
@@ -531,10 +678,17 @@ Partitioner:
 Function space:
 - type: StructuredColumns
 - halo: 1
-Vertical levels: 
-- number: 2
-- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 100%
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+- Group 1:
+  Vertical levels: 
+  - number: 1
+  - vunit: [1.0000000000000000e+00]
+  Mask size: 100%
 Fields:
   var1: 4.0196813287369146e+01
   var2: 3.9109602340386687e+01
@@ -551,10 +705,17 @@ Partitioner:
 Function space:
 - type: StructuredColumns
 - halo: 1
-Vertical levels: 
-- number: 2
-- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 100%
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+- Group 1:
+  Vertical levels: 
+  - number: 1
+  - vunit: [1.0000000000000000e+00]
+  Mask size: 100%
 Fields:
   var1: 4.0446261338978374e+01
   var2: 4.0248948249187194e+01
@@ -571,10 +732,17 @@ Partitioner:
 Function space:
 - type: StructuredColumns
 - halo: 1
-Vertical levels: 
-- number: 2
-- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 100%
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+- Group 1:
+  Vertical levels: 
+  - number: 1
+  - vunit: [1.0000000000000000e+00]
+  Mask size: 100%
 Fields:
   var1: 4.0660851129325017e+01
   var2: 3.6678727625936737e+01
@@ -591,10 +759,17 @@ Partitioner:
 Function space:
 - type: StructuredColumns
 - halo: 1
-Vertical levels: 
-- number: 2
-- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 100%
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+- Group 1:
+  Vertical levels: 
+  - number: 1
+  - vunit: [1.0000000000000000e+00]
+  Mask size: 100%
 Fields:
   var1: 3.8459039452459137e+01
   var2: 3.7156616265534616e+01

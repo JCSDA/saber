@@ -2,21 +2,28 @@ geometry:
   function space: StructuredColumns
   grid:
     type: regular_lonlat
-    N: 15
-  levels: 2
+    N: 12
+  groups:
+  - variables:
+    - var1
+    levels: 2
   halo: 1
 lowres geometry:
   function space: StructuredColumns
   grid:
     type: regular_lonlat
     N: 10
-  levels: 2
+  groups:
+  - variables:
+    - var1
+    levels: 2
   halo: 1
-input variables: &id001
+input variables:
 - var1
 background:
   date: '2010-01-01T12:00:00Z'
-  state variables: *id001
+  state variables:
+  - var1
 bump:
   general:
     testing: true
@@ -42,6 +49,7 @@ bump:
     read moments: true
     write diagnostics: true
     compute nicas: true
+    write local nicas: true
     adjoints test: true
     normalization test: 10
     internal dirac test: true

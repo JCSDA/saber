@@ -50,8 +50,9 @@ Fields::Fields(const Geometry & geom, const oops::Variables & vars,
 
   for (const auto & var : vars_.variables()) {
     // Create field
+
     atlas::Field field = geom_->functionSpace().createField<double>(
-      atlas::option::name(var) | atlas::option::levels(geom_->variableSize(var)));
+      atlas::option::name(var) | atlas::option::levels(geom_->levels(var)));
     fset_.add(field);
   }
 
@@ -70,12 +71,16 @@ Fields::Fields(const Fields & other, const Geometry & geom):
   fset_ = atlas::FieldSet();
 
   // Check number of levels
-  if (geom_->levels() != geom.levels()) ABORT("different number of levels, cannot interpolate");
+  for (const auto & var : vars_.variables()) {
+    if (geom_->levels(var) != geom.levels(var)) {
+      ABORT("different number of levels for variable " + var + ", cannot interpolate");
+    }
+  }
 
   for (const auto & var : vars_.variables()) {
     // Create field
     atlas::Field field = geom_->functionSpace().createField<double>(
-      atlas::option::name(var) | atlas::option::levels(geom_->variableSize(var)));
+      atlas::option::name(var) | atlas::option::levels(geom_->levels(var)));
     fset_.add(field);
   }
 
@@ -98,7 +103,7 @@ Fields::Fields(const Fields & other, const bool copy):
   for (const auto & var : vars_.variables()) {
     // Create field
     atlas::Field field = geom_->functionSpace().createField<double>(
-      atlas::option::name(var) | atlas::option::levels(geom_->variableSize(var)));
+      atlas::option::name(var) | atlas::option::levels(geom_->levels(var)));
     fset_.add(field);
   }
 
@@ -135,7 +140,7 @@ Fields::Fields(const Fields & other):
   for (const auto & var : vars_.variables()) {
     // Create field
     atlas::Field field = geom_->functionSpace().createField<double>(
-      atlas::option::name(var) | atlas::option::levels(geom_->variableSize(var)));
+      atlas::option::name(var) | atlas::option::levels(geom_->levels(var)));
     atlas::Field fieldOther = other.fset_[var];
     if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
@@ -153,14 +158,15 @@ Fields::Fields(const Fields & other):
 // -----------------------------------------------------------------------------
 void Fields::zero() {
   oops::Log::trace() << "Fields::zero starting" << std::endl;
-  const auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   for (const auto & var : vars_.variables()) {
+    const auto gmaskView = atlas::array::make_view<int, 2>(
+      geom_->extraFields(geom_->groupIndex(var)).field("gmask"));
     atlas::Field field = fset_[var];
     if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          if (gmaskView(jnode, geom_->maskLevel(var, jlevel)) == 1) view(jnode, jlevel) = 0.0;
+          if (gmaskView(jnode, jlevel) == 1) view(jnode, jlevel) = 0.0;
         }
       }
     }
@@ -190,8 +196,9 @@ Fields & Fields::operator=(const Fields & rhs) {
 // -----------------------------------------------------------------------------
 Fields & Fields::operator+=(const Fields & rhs) {
   oops::Log::trace() << "Fields::operator+=(const Fields & rhs) starting" << std::endl;
-  const auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   for (const auto & var : vars_.variables()) {
+    const auto gmaskView = atlas::array::make_view<int, 2>(
+      geom_->extraFields(geom_->groupIndex(var)).field("gmask"));
     atlas::Field field = fset_[var];
     atlas::Field fieldRhs = rhs.fset_[var];
     if (field.rank() == 2) {
@@ -199,7 +206,7 @@ Fields & Fields::operator+=(const Fields & rhs) {
       auto viewRhs = atlas::array::make_view<double, 2>(fieldRhs);
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          if (gmaskView(jnode, geom_->maskLevel(var, jlevel)) == 1) {
+          if (gmaskView(jnode, jlevel) == 1) {
             view(jnode, jlevel) += viewRhs(jnode, jlevel);
           }
         }
@@ -212,8 +219,9 @@ Fields & Fields::operator+=(const Fields & rhs) {
 // -----------------------------------------------------------------------------
 Fields & Fields::operator-=(const Fields & rhs) {
   oops::Log::trace() << "Fields::operator-=(const Fields & rhs) starting" << std::endl;
-  const auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   for (const auto & var : vars_.variables()) {
+    const auto gmaskView = atlas::array::make_view<int, 2>(
+      geom_->extraFields(geom_->groupIndex(var)).field("gmask"));
     atlas::Field field = fset_[var];
     atlas::Field fieldRhs = rhs.fset_[var];
     if (field.rank() == 2) {
@@ -221,7 +229,7 @@ Fields & Fields::operator-=(const Fields & rhs) {
       auto viewRhs = atlas::array::make_view<double, 2>(fieldRhs);
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          if (gmaskView(jnode, geom_->maskLevel(var, jlevel)) == 1) {
+          if (gmaskView(jnode, jlevel) == 1) {
             view(jnode, jlevel) -= viewRhs(jnode, jlevel);
           }
         }
@@ -234,14 +242,15 @@ Fields & Fields::operator-=(const Fields & rhs) {
 // -----------------------------------------------------------------------------
 Fields & Fields::operator*=(const double & zz) {
   oops::Log::trace() << "Fields::operator*=(const Fields & rhs) starting" << std::endl;
-  const auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   for (const auto & var : vars_.variables()) {
+    const auto gmaskView = atlas::array::make_view<int, 2>(
+      geom_->extraFields(geom_->groupIndex(var)).field("gmask"));
     atlas::Field field = fset_[var];
     if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          if (gmaskView(jnode, geom_->maskLevel(var, jlevel)) == 1) {
+          if (gmaskView(jnode, jlevel) == 1) {
             view(jnode, jlevel) *= zz;
           }
         }
@@ -254,8 +263,9 @@ Fields & Fields::operator*=(const double & zz) {
 // -----------------------------------------------------------------------------
 void Fields::axpy(const double & zz, const Fields & rhs) {
   oops::Log::trace() << "Fields::axpy starting" << std::endl;
-  const auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   for (const auto & var : vars_.variables()) {
+    const auto gmaskView = atlas::array::make_view<int, 2>(
+      geom_->extraFields(geom_->groupIndex(var)).field("gmask"));
     atlas::Field field = fset_[var];
     atlas::Field fieldRhs = rhs.fset_[var];
     if (field.rank() == 2) {
@@ -263,7 +273,7 @@ void Fields::axpy(const double & zz, const Fields & rhs) {
       auto viewRhs = atlas::array::make_view<double, 2>(fieldRhs);
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          if (gmaskView(jnode, geom_->maskLevel(var, jlevel)) == 1) {
+          if (gmaskView(jnode, jlevel) == 1) {
             view(jnode, jlevel) += zz * viewRhs(jnode, jlevel);
           }
         }
@@ -276,9 +286,10 @@ void Fields::axpy(const double & zz, const Fields & rhs) {
 double Fields::dot_product_with(const Fields & fld2) const {
   oops::Log::trace() << "Fields::dot_product_with starting" << std::endl;
   double zz = 0;
-  const auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   const auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
   for (const auto & var : vars_.variables()) {
+    const auto gmaskView = atlas::array::make_view<int, 2>(
+      geom_->extraFields(geom_->groupIndex(var)).field("gmask"));
     atlas::Field field1 = fset_[var];
     atlas::Field field2 = fld2.fset_[var];
     if (field1.rank() == 2) {
@@ -286,7 +297,7 @@ double Fields::dot_product_with(const Fields & fld2) const {
       auto view2 = atlas::array::make_view<double, 2>(field2);
       for (atlas::idx_t jnode = 0; jnode < field1.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field1.shape(1); ++jlevel) {
-          if (gmaskView(jnode, geom_->maskLevel(var, jlevel)) == 1 && ghostView(jnode) == 0) {
+          if (gmaskView(jnode, jlevel) == 1 && ghostView(jnode) == 0) {
             zz += view1(jnode, jlevel)*view2(jnode, jlevel);
           }
         }
@@ -300,8 +311,9 @@ double Fields::dot_product_with(const Fields & fld2) const {
 // -----------------------------------------------------------------------------
 void Fields::schur_product_with(const Fields & dx) {
   oops::Log::trace() << "Fields::schur_product_with starting" << std::endl;
-  const auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   for (const auto & var : vars_.variables()) {
+    const auto gmaskView = atlas::array::make_view<int, 2>(
+      geom_->extraFields(geom_->groupIndex(var)).field("gmask"));
     atlas::Field field = fset_[var];
     atlas::Field fieldDx = dx.fset_[var];
     if (field.rank() == 2) {
@@ -309,7 +321,7 @@ void Fields::schur_product_with(const Fields & dx) {
       auto viewDx = atlas::array::make_view<double, 2>(fieldDx);
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          if (gmaskView(jnode, geom_->maskLevel(var, jlevel)) == 1) {
+          if (gmaskView(jnode, jlevel) == 1) {
             view(jnode, jlevel) *= viewDx(jnode, jlevel);
           }
         }
@@ -321,106 +333,133 @@ void Fields::schur_product_with(const Fields & dx) {
 // -----------------------------------------------------------------------------
 void Fields::random() {
   oops::Log::trace() << "Fields::random starting" << std::endl;
-  // Total size
-  size_t n = 0;
-  const auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
-  const auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
-  for (const auto & var : vars_.variables()) {
-    atlas::Field field = fset_[var];
-    if (field.rank() == 2) {
-      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-        for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          if (gmaskView(jnode, geom_->maskLevel(var, jlevel)) == 1 && ghostView(jnode) == 0) ++n;
-        }
-      }
-    }
-  }
-  geom_->getComm().allReduceInPlace(n, eckit::mpi::sum());
-
-  // Local masks
-  atlas::FieldSet localMasks;
-  localMasks.add(geom_->extraFields().field("gmask"));
-  localMasks.add(geom_->functionSpace().ghost());
-
-  // Global masks
-  atlas::FieldSet globalMasks;
-  atlas::Field gmaskGlobal = geom_->functionSpace().createField<int>(atlas::option::name("gmask")
-    | atlas::option::levels(geom_->levels()) | atlas::option::global());
-  globalMasks.add(gmaskGlobal);
-  atlas::Field ghostGlobal = geom_->functionSpace().createField<int>(atlas::option::name("ghost")
-    | atlas::option::global());
-  globalMasks.add(ghostGlobal);
-
-  // Global data
-  atlas::FieldSet globalData;
-  for (const auto & var : vars_.variables()) {
-    atlas::Field field = geom_->functionSpace().createField<double>(atlas::option::name(var)
-      | atlas::option::levels(geom_->variableSize(var)) | atlas::option::global());
-    globalData.add(field);
-  }
-
-  // Gather masks on main processor
-  if (geom_->functionSpace().type() == "StructuredColumns") {
-    // StructuredColumns
-    atlas::functionspace::StructuredColumns fs(geom_->functionSpace());
-    fs.gather(localMasks, globalMasks);
-  } else if (geom_->functionSpace().type() == "NodeColumns") {
-    // NodeColumns
-    if (geom_->grid().name().compare(0, 2, std::string{"CS"}) == 0) {
-      // CubedSphere
-      atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
-      fs.gather(localMasks, globalMasks);
-    } else {
-      // Other NodeColumns
-      atlas::functionspace::NodeColumns fs(geom_->functionSpace());
-      fs.gather(localMasks, globalMasks);
-    }
-  } else {
-    ABORT(geom_->functionSpace().type() + " function space not supported yet");
-  }
-
-  if (geom_->getComm().rank() == 0) {
-    // Random vector
-    util::NormalDistribution<double> rand_vec(n, 0.0, 1.0, 1);
-
-    // Copy random values
-    n = 0;
-    const auto gmaskView = atlas::array::make_view<int, 2>(globalMasks.field("gmask"));
-    const auto ghostView = atlas::array::make_view<int, 1>(globalMasks.field("ghost"));
+  for (size_t groupIndex = 0; groupIndex < geom_->groups(); ++groupIndex) {
+    // Total size
+    size_t n = 0;
+    const auto gmaskView = atlas::array::make_view<int, 2>(
+      geom_->extraFields(groupIndex).field("gmask"));
+    const auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
     for (const auto & var : vars_.variables()) {
-      atlas::Field field = globalData[var];
-      if (field.rank() == 2) {
-        auto view = atlas::array::make_view<double, 2>(field);
-        for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-          for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-            if (gmaskView(jnode, geom_->maskLevel(var, jlevel)) == 1 && ghostView(jnode) == 0) {
-              view(jnode, jlevel) = rand_vec[n];
-              ++n;
+      if (geom_->groupIndex(var) == groupIndex) {
+        atlas::Field field = fset_[var];
+        if (field.rank() == 2) {
+          for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+            for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+              if (gmaskView(jnode, jlevel) == 1 && ghostView(jnode) == 0) ++n;
             }
           }
         }
       }
     }
-  }
+    geom_->getComm().allReduceInPlace(n, eckit::mpi::sum());
 
-  // Scatter data from main processor
-  if (geom_->functionSpace().type() == "StructuredColumns") {
-    // StructuredColumns
-    atlas::functionspace::StructuredColumns fs(geom_->functionSpace());
-    fs.scatter(globalData, fset_);
-  } else if (geom_->functionSpace().type() == "NodeColumns") {
-    // NodeColumns
-    if (geom_->grid().name().compare(0, 2, std::string{"CS"}) == 0) {
-      // CubedSphere
-      atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
-      fs.scatter(globalData, fset_);
-    } else {
-      // Other NodeColumns
-      atlas::functionspace::NodeColumns fs(geom_->functionSpace());
-      fs.scatter(globalData, fset_);
+    // Local masks
+    atlas::FieldSet localMasks;
+    localMasks.add(geom_->extraFields(groupIndex).field("gmask"));
+    localMasks.add(geom_->functionSpace().ghost());
+
+    // Global masks
+    atlas::FieldSet globalMasks;
+    atlas::Field gmaskGlobal = geom_->functionSpace().createField<int>(
+      atlas::option::name("gmask") | atlas::option::levels(geom_->levels(groupIndex))
+      | atlas::option::global());
+    globalMasks.add(gmaskGlobal);
+    atlas::Field ghostGlobal = geom_->functionSpace().createField<int>(atlas::option::name("ghost")
+     | atlas::option::global());
+    globalMasks.add(ghostGlobal);
+
+    // Global data
+    atlas::FieldSet globalData;
+    for (const auto & var : vars_.variables()) {
+      if (geom_->groupIndex(var) == groupIndex) {
+        atlas::Field field = geom_->functionSpace().createField<double>(atlas::option::name(var)
+          | atlas::option::levels(geom_->levels(var)) | atlas::option::global());
+        globalData.add(field);
+      }
     }
-  } else {
-    ABORT(geom_->functionSpace().type() + " function space not supported yet");
+
+    // Gather masks on main processor
+    if (geom_->functionSpace().type() == "StructuredColumns") {
+      // StructuredColumns
+      atlas::functionspace::StructuredColumns fs(geom_->functionSpace());
+      fs.gather(localMasks, globalMasks);
+    } else if (geom_->functionSpace().type() == "NodeColumns") {
+      // NodeColumns
+      if (geom_->grid().name().compare(0, 2, std::string{"CS"}) == 0) {
+        // CubedSphere
+        atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
+        fs.gather(localMasks, globalMasks);
+      } else {
+        // Other NodeColumns
+        atlas::functionspace::NodeColumns fs(geom_->functionSpace());
+        fs.gather(localMasks, globalMasks);
+      }
+    } else {
+      ABORT(geom_->functionSpace().type() + " function space not supported yet");
+    }
+
+    if (geom_->getComm().rank() == 0) {
+      // Random vector
+      util::NormalDistribution<double> rand_vec(n, 0.0, 1.0, 1);
+
+      // Copy random values
+      n = 0;
+      const auto gmaskView = atlas::array::make_view<int, 2>(globalMasks.field("gmask"));
+      const auto ghostView = atlas::array::make_view<int, 1>(globalMasks.field("ghost"));
+      for (const auto & var : vars_.variables()) {
+        if (geom_->groupIndex(var) == groupIndex) {
+          atlas::Field field = globalData[var];
+          if (field.rank() == 2) {
+            auto view = atlas::array::make_view<double, 2>(field);
+            for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+              for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+                if (gmaskView(jnode, jlevel) == 1 && ghostView(jnode) == 0) {
+                  view(jnode, jlevel) = rand_vec[n];
+                  ++n;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Local data
+    atlas::FieldSet localData;
+    for (const auto & var : vars_.variables()) {
+      if (geom_->groupIndex(var) == groupIndex) {
+        atlas::Field field = geom_->functionSpace().createField<double>(atlas::option::name(var)
+          | atlas::option::levels(geom_->levels(var)));
+        localData.add(field);
+      }
+    }
+
+    // Scatter data from main processor
+    if (geom_->functionSpace().type() == "StructuredColumns") {
+      // StructuredColumns
+      atlas::functionspace::StructuredColumns fs(geom_->functionSpace());
+      fs.scatter(globalData, localData);
+    } else if (geom_->functionSpace().type() == "NodeColumns") {
+      // NodeColumns
+      if (geom_->grid().name().compare(0, 2, std::string{"CS"}) == 0) {
+        // CubedSphere
+        atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
+        fs.scatter(globalData, localData);
+      } else {
+        // Other NodeColumns
+        atlas::functionspace::NodeColumns fs(geom_->functionSpace());
+        fs.scatter(globalData, localData);
+      }
+    } else {
+      ABORT(geom_->functionSpace().type() + " function space not supported yet");
+    }
+
+    // Copy data
+    for (const auto & var : vars_.variables()) {
+      if (geom_->groupIndex(var) == groupIndex) {
+        fset_.add(localData.field(var));
+      }
+    }
   }
   oops::Log::trace() << "Fields::random done" << std::endl;
 }
@@ -494,8 +533,9 @@ void Fields::dirac(const eckit::Configuration & config) {
 // -----------------------------------------------------------------------------
 void Fields::diff(const Fields & x1, const Fields & x2) {
   oops::Log::trace() << "Fields::diff starting" << std::endl;
-  const auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   for (const auto & var : vars_.variables()) {
+    const auto gmaskView = atlas::array::make_view<int, 2>(
+      geom_->extraFields(geom_->groupIndex(var)).field("gmask"));
     atlas::Field field = fset_[var];
     atlas::Field fieldx1 = x1.fset_[var];
     atlas::Field fieldx2 = x2.fset_[var];
@@ -505,7 +545,7 @@ void Fields::diff(const Fields & x1, const Fields & x2) {
       auto viewx2 = atlas::array::make_view<double, 2>(fieldx2);
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          if (gmaskView(jnode, geom_->maskLevel(var, jlevel)) == 1) {
+          if (gmaskView(jnode, jlevel) == 1) {
             view(jnode, jlevel) = viewx1(jnode, jlevel)-viewx2(jnode, jlevel);
           }
         }
@@ -621,7 +661,7 @@ void Fields::read(const eckit::Configuration & config) {
   atlas::FieldSet globalData;
   for (const auto & var : vars_.variables()) {
     atlas::Field field = geom_->functionSpace().createField<double>(atlas::option::name(var)
-      | atlas::option::levels(geom_->variableSize(var)) | atlas::option::global());
+      | atlas::option::levels(geom_->levels(var)) | atlas::option::global());
     globalData.add(field);
   }
 
@@ -657,12 +697,12 @@ void Fields::read(const eckit::Configuration & config) {
 
       for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
         // Read data
-        double zvar[geom_->variableSize(vars_[jvar])][ny][nx];
+        double zvar[geom_->levels(vars_[jvar])][ny][nx];
         if ((retval = nc_get_var_double(ncid, var_id[jvar], &zvar[0][0][0]))) ERR(retval);
 
         // Copy data
         auto varView = atlas::array::make_view<double, 2>(globalData[vars_[jvar]]);
-        for (size_t k = 0; k < geom_->variableSize(vars_[jvar]); ++k) {
+        for (size_t k = 0; k < geom_->levels(vars_[jvar]); ++k) {
           for (atlas::idx_t j = 0; j < ny; ++j) {
             for (atlas::idx_t i = 0; i < grid.nx(ny-1-j); ++i) {
               atlas::gidx_t gidx = grid.index(i, ny-1-j);
@@ -711,12 +751,12 @@ void Fields::read(const eckit::Configuration & config) {
 
       for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
         // Read data
-        double zvar[nb_nodes][geom_->variableSize(vars_[jvar])];
+        double zvar[nb_nodes][geom_->levels(vars_[jvar])];
         if ((retval = nc_get_var_double(ncid, var_id[jvar], &zvar[0][0]))) ERR(retval);
 
         // Copy data
         auto varView = atlas::array::make_view<double, 2>(globalData[vars_[jvar]]);
-        for (size_t k = 0; k < geom_->variableSize(vars_[jvar]); ++k) {
+        for (size_t k = 0; k < geom_->levels(vars_[jvar]); ++k) {
           for (atlas::idx_t i = 0; i < nb_nodes; ++i) {
             varView(i, k) = zvar[i][k];
           }
@@ -763,357 +803,367 @@ void Fields::write(const eckit::Configuration & config) const {
 
   // Missing value
   const double msvalr = util::missingValue(double());
-  const int msvali = util::missingValue(int());
 
-  // Local coordinates
-  atlas::FieldSet localCoordinates;
-  atlas::Field lonLocal = geom_->functionSpace().createField<double>(atlas::option::name("lon"));
-  localCoordinates.add(lonLocal);
-  atlas::Field latLocal = geom_->functionSpace().createField<double>(atlas::option::name("lat"));
-  localCoordinates.add(latLocal);
-  localCoordinates.add(geom_->extraFields().field("gmask"));
-  auto lonViewLocal = atlas::array::make_view<double, 1>(lonLocal);
-  auto latViewLocal = atlas::array::make_view<double, 1>(latLocal);
+  // NetCDF IDs
+  int ncid, retval, nx_id, ny_id, nb_nodes_id, nlocs_id, nz_id[vars_.size()],
+    d1D_id[1], d2D_id[2], d3D_id[3], lon_id, lat_id, var_id[vars_.size()];
 
-  // Global coordinates
-  atlas::FieldSet globalCoordinates;
-  atlas::Field lonGlobal = geom_->functionSpace().createField<double>(atlas::option::name("lon")
-    | atlas::option::global());
-  globalCoordinates.add(lonGlobal);
-  atlas::Field latGlobal = geom_->functionSpace().createField<double>(atlas::option::name("lat")
-    | atlas::option::global());
-  globalCoordinates.add(latGlobal);
-  atlas::Field gmaskGlobal = geom_->functionSpace().createField<int>(atlas::option::name("gmask")
-    | atlas::option::levels(geom_->levels()) | atlas::option::global());
-  globalCoordinates.add(gmaskGlobal);
-  auto lonViewGlobal = atlas::array::make_view<double, 1>(lonGlobal);
-  auto latViewGlobal = atlas::array::make_view<double, 1>(latGlobal);
-  const auto gmaskViewGlobal = atlas::array::make_view<int, 2>(gmaskGlobal);
+  if (geom_->getComm().rank() == 0) {
+    // NetCDF file path
+    std::string ncfilepath = filepath;
+    ncfilepath.append(".nc");
+    oops::Log::info() << "Info     : Writing file: " << ncfilepath << std::endl;
 
-  // Global data
-  atlas::FieldSet globalData;
-  for (const auto & var : vars_.variables()) {
-    atlas::Field field = geom_->functionSpace().createField<double>(atlas::option::name(var)
-      | atlas::option::levels(geom_->variableSize(var)) | atlas::option::global());
-    globalData.add(field);
+    // Create NetCDF file
+    if ((retval = nc_create(ncfilepath.c_str(), NC_CLOBBER, &ncid))) ERR(retval);
   }
 
-  // NetCDF output
-  if (geom_->functionSpace().type() == "StructuredColumns") {
-    // StructuredColumns
-    atlas::functionspace::StructuredColumns fs(geom_->functionSpace());
-
+  for (size_t groupIndex = 0; groupIndex < geom_->groups(); ++groupIndex) {
     // Local coordinates
-    const auto lonlatView = atlas::array::make_view<double, 2>(fs.xy());
-    for (atlas::idx_t jnode = 0; jnode < fs.xy().shape(0); ++jnode) {
-       lonViewLocal(jnode) = lonlatView(jnode, 0);
-       latViewLocal(jnode) = lonlatView(jnode, 1);
+    atlas::FieldSet localCoordinates;
+    atlas::Field lonLocal = geom_->functionSpace().createField<double>(atlas::option::name("lon"));
+    localCoordinates.add(lonLocal);
+    atlas::Field latLocal = geom_->functionSpace().createField<double>(atlas::option::name("lat"));
+    localCoordinates.add(latLocal);
+    localCoordinates.add(geom_->extraFields(groupIndex).field("gmask"));
+    auto lonViewLocal = atlas::array::make_view<double, 1>(lonLocal);
+    auto latViewLocal = atlas::array::make_view<double, 1>(latLocal);
+
+    // Global coordinates
+    atlas::FieldSet globalCoordinates;
+    atlas::Field lonGlobal = geom_->functionSpace().createField<double>(atlas::option::name("lon")
+      | atlas::option::global());
+    globalCoordinates.add(lonGlobal);
+    atlas::Field latGlobal = geom_->functionSpace().createField<double>(atlas::option::name("lat")
+      | atlas::option::global());
+    globalCoordinates.add(latGlobal);
+    atlas::Field gmaskGlobal = geom_->functionSpace().createField<int>(atlas::option::name("gmask")
+      | atlas::option::levels(geom_->levels(groupIndex)) | atlas::option::global());
+    globalCoordinates.add(gmaskGlobal);
+    auto lonViewGlobal = atlas::array::make_view<double, 1>(lonGlobal);
+    auto latViewGlobal = atlas::array::make_view<double, 1>(latGlobal);
+    const auto gmaskViewGlobal = atlas::array::make_view<int, 2>(gmaskGlobal);
+
+    // Local data
+    atlas::FieldSet localData;
+    for (const auto & var : vars_.variables()) {
+      if (geom_->groupIndex(var) == groupIndex) {
+        localData.add(fset_.field(var));
+      }
     }
 
-    // Gather coordinates on main processor
-    fs.gather(localCoordinates, globalCoordinates);
+    // Global data
+    atlas::FieldSet globalData;
+    for (const auto & var : vars_.variables()) {
+      if (geom_->groupIndex(var) == groupIndex) {
+        atlas::Field field = geom_->functionSpace().createField<double>(atlas::option::name(var)
+          | atlas::option::levels(geom_->levels(var)) | atlas::option::global());
+        globalData.add(field);
+      }
+    }
 
-    // Gather data on main processor
-    fs.gather(fset_, globalData);
+    // NetCDF output
+    if (geom_->functionSpace().type() == "StructuredColumns") {
+      // StructuredColumns
+      atlas::functionspace::StructuredColumns fs(geom_->functionSpace());
 
-    if (geom_->getComm().rank() == 0) {
-      // Get grid
-      atlas::StructuredGrid grid = fs.grid();
+      // Local coordinates
+      const auto lonlatView = atlas::array::make_view<double, 2>(fs.xy());
+      for (atlas::idx_t jnode = 0; jnode < fs.xy().shape(0); ++jnode) {
+         lonViewLocal(jnode) = lonlatView(jnode, 0);
+         latViewLocal(jnode) = lonlatView(jnode, 1);
+      }
 
-      // Get sizes
-      atlas::idx_t nx = grid.nxmax();
-      atlas::idx_t ny = grid.ny();
-      atlas::idx_t nz = geom_->levels();
+      // Gather coordinates on main processor
+      fs.gather(localCoordinates, globalCoordinates);
 
-      // NetCDF IDs
-      int ncid, retval, nx_id, ny_id, nz_id, d2D_id[2], d3D_id[3],
-        lon_id, lat_id, gmask_id, var_id[vars_.size()];
+      // Gather data on main processor
+      fs.gather(localData, globalData);
 
-      // NetCDF file path
-      std::string ncfilepath = filepath;
-      ncfilepath.append(".nc");
-      oops::Log::info() << "Info     : Writing file: " << ncfilepath << std::endl;
+      if (geom_->getComm().rank() == 0) {
+        // Get grid
+        atlas::StructuredGrid grid = fs.grid();
 
-      // Create NetCDF file
-      if ((retval = nc_create(ncfilepath.c_str(), NC_CLOBBER, &ncid))) ERR(retval);
+        // Get sizes
+        atlas::idx_t nx = grid.nxmax();
+        atlas::idx_t ny = grid.ny();
 
-      // Create dimensions
-      if ((retval = nc_def_dim(ncid, "nx", nx, &nx_id))) ERR(retval);
-      if ((retval = nc_def_dim(ncid, "ny", ny, &ny_id))) ERR(retval);
-      if ((retval = nc_def_dim(ncid, "nz", nz, &nz_id))) ERR(retval);
-      d2D_id[0] = ny_id;
-      d2D_id[1] = nx_id;
-      d3D_id[0] = nz_id;
-      d3D_id[1] = ny_id;
-      d3D_id[2] = nx_id;
+        if (groupIndex == 0) {
+          // Create dimensions
+          if ((retval = nc_def_dim(ncid, "nx", nx, &nx_id))) ERR(retval);
+          if ((retval = nc_def_dim(ncid, "ny", ny, &ny_id))) ERR(retval);
+          d2D_id[0] = ny_id;
+          d2D_id[1] = nx_id;
+          d3D_id[1] = ny_id;
+          d3D_id[2] = nx_id;
 
-      // Define coordinates
-      if ((retval = nc_def_var(ncid, "lon", NC_DOUBLE, 2, d2D_id, &lon_id))) ERR(retval);
-      if ((retval = nc_def_var(ncid, "lat", NC_DOUBLE, 2, d2D_id, &lat_id))) ERR(retval);
-      if ((retval = nc_def_var(ncid, "gmask", NC_INT, 3, d3D_id, &gmask_id))) ERR(retval);
-      if ((retval = nc_put_att_double(ncid, lon_id, "_FillValue", NC_DOUBLE, 1, &msvalr)))
-        ERR(retval);
-      if ((retval = nc_put_att_double(ncid, lat_id, "_FillValue", NC_DOUBLE, 1, &msvalr)))
-        ERR(retval);
-      if ((retval = nc_put_att_int(ncid, gmask_id, "_FillValue", NC_INT, 1, &msvali)))
-        ERR(retval);
-
-      // Define variables
-      for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-        if (geom_->variableSize(vars_[jvar]) == geom_->levels()) {
-           if ((retval = nc_def_var(ncid, vars_[jvar].c_str(), NC_DOUBLE, 3, d3D_id,
-          &var_id[jvar]))) ERR(retval);
+          // Define coordinates
+          if ((retval = nc_def_var(ncid, "lon", NC_DOUBLE, 2, d2D_id, &lon_id))) ERR(retval);
+          if ((retval = nc_def_var(ncid, "lat", NC_DOUBLE, 2, d2D_id, &lat_id))) ERR(retval);
+          if ((retval = nc_put_att_double(ncid, lon_id, "_FillValue", NC_DOUBLE, 1, &msvalr)))
+            ERR(retval);
+          if ((retval = nc_put_att_double(ncid, lat_id, "_FillValue", NC_DOUBLE, 1, &msvalr)))
+            ERR(retval);
         } else {
-           if ((retval = nc_def_var(ncid, vars_[jvar].c_str(), NC_DOUBLE, 2, d2D_id,
-          &var_id[jvar]))) ERR(retval);
+          // Restart definition mode
+          if ((retval = nc_redef(ncid))) ERR(retval);
         }
-        if ((retval = nc_put_att_double(ncid, var_id[jvar], "_FillValue", NC_DOUBLE, 1, &msvalr)))
-          ERR(retval);
-      }
 
-      // End definition mode
-      if ((retval = nc_enddef(ncid))) ERR(retval);
+        // Number of levels
+        atlas::idx_t nz = geom_->levels(groupIndex);
 
-      // Copy coordinates
-      double zlon[ny][nx];
-      double zlat[ny][nx];
-      int zgmask[nz][ny][nx];
-      for (atlas::idx_t j = 0; j < ny; ++j) {
-        for (atlas::idx_t i = 0; i < nx; ++i) {
-          zlon[j][i] = msvalr;
-          zlat[j][i] = msvalr;
-          for (atlas::idx_t k = 0; k < nz; ++k) {
-            zgmask[k][j][i] = msvali;
+        // Define variables
+        for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+          if (geom_->groupIndex(vars_[jvar]) == groupIndex) {
+            std::string nzName = "nz_" + vars_[jvar];
+            if ((retval = nc_def_dim(ncid, nzName.c_str(), nz, &nz_id[jvar]))) ERR(retval);
+            d3D_id[0] = nz_id[jvar];
+            if ((retval = nc_def_var(ncid, vars_[jvar].c_str(), NC_DOUBLE, 3, d3D_id,
+              &var_id[jvar]))) ERR(retval);
+            if ((retval = nc_put_att_double(ncid, var_id[jvar], "_FillValue", NC_DOUBLE, 1,
+              &msvalr))) ERR(retval);
           }
         }
-        for (atlas::idx_t i = 0; i < grid.nx(ny-1-j); ++i) {
-          atlas::gidx_t gidx = grid.index(i, ny-1-j);
-          zlon[j][i] = lonViewGlobal(gidx);
-          zlat[j][i] = latViewGlobal(gidx);
-          for (atlas::idx_t k = 0; k < nz; ++k) {
-            zgmask[k][j][i] = gmaskViewGlobal(gidx, k);
-          }
-        }
-      }
 
-      // Write coordinates
-      if ((retval = nc_put_var_double(ncid, lon_id, &zlon[0][0]))) ERR(retval);
-      if ((retval = nc_put_var_double(ncid, lat_id, &zlat[0][0]))) ERR(retval);
-      if ((retval = nc_put_var_int(ncid, gmask_id, &zgmask[0][0][0]))) ERR(retval);
+        // End definition mode
+        if ((retval = nc_enddef(ncid))) ERR(retval);
 
-      for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-        // Copy data
-        auto varView = atlas::array::make_view<double, 2>(globalData[vars_[jvar]]);
-        double zvar[geom_->variableSize(vars_[jvar])][ny][nx];
-        for (size_t k = 0; k < geom_->variableSize(vars_[jvar]); ++k) {
+        if (groupIndex == 0) {
+          // Copy coordinates
+          double zlon[ny][nx];
+          double zlat[ny][nx];
           for (atlas::idx_t j = 0; j < ny; ++j) {
             for (atlas::idx_t i = 0; i < nx; ++i) {
-              zvar[k][j][i] = msvalr;
+              zlon[j][i] = msvalr;
+              zlat[j][i] = msvalr;
             }
             for (atlas::idx_t i = 0; i < grid.nx(ny-1-j); ++i) {
               atlas::gidx_t gidx = grid.index(i, ny-1-j);
-              if (gmaskViewGlobal(gidx, k) == 1) {
-                zvar[k][j][i] = varView(gidx, k);
-              }
+              zlon[j][i] = lonViewGlobal(gidx);
+              zlat[j][i] = latViewGlobal(gidx);
             }
           }
+
+          // Write coordinates
+          if ((retval = nc_put_var_double(ncid, lon_id, &zlon[0][0]))) ERR(retval);
+          if ((retval = nc_put_var_double(ncid, lat_id, &zlat[0][0]))) ERR(retval);
         }
 
-        // Write data
-        if ((retval = nc_put_var_double(ncid, var_id[jvar], &zvar[0][0][0]))) ERR(retval);
+        for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+          if (geom_->groupIndex(vars_[jvar]) == groupIndex) {
+            // Copy data
+            auto varView = atlas::array::make_view<double, 2>(globalData[vars_[jvar]]);
+            double zvar[geom_->levels(vars_[jvar])][ny][nx];
+            for (size_t k = 0; k < geom_->levels(vars_[jvar]); ++k) {
+              for (atlas::idx_t j = 0; j < ny; ++j) {
+                for (atlas::idx_t i = 0; i < nx; ++i) {
+                  zvar[k][j][i] = msvalr;
+                }
+                for (atlas::idx_t i = 0; i < grid.nx(ny-1-j); ++i) {
+                  atlas::gidx_t gidx = grid.index(i, ny-1-j);
+                  if (gmaskViewGlobal(gidx, k) == 1) {
+                    zvar[k][j][i] = varView(gidx, k);
+                  }
+                }
+              }
+            }
+
+            // Write data
+            if ((retval = nc_put_var_double(ncid, var_id[jvar], &zvar[0][0][0]))) ERR(retval);
+          }
+        }
+      }
+    } else if (geom_->functionSpace().type() == "NodeColumns") {
+      // NodeColumns
+      atlas::idx_t nb_nodes;
+
+      if (geom_->grid().name().compare(0, 2, std::string{"CS"}) == 0) {
+        // CubedSphere
+        atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
+
+        // Local coordinates
+        const auto lonlatView = atlas::array::make_view<double, 2>(fs.lonlat());
+        for (atlas::idx_t jnode = 0; jnode < fs.lonlat().shape(0); ++jnode) {
+           lonViewLocal(jnode) = lonlatView(jnode, 0);
+           latViewLocal(jnode) = lonlatView(jnode, 1);
+        }
+
+        // Gather coordinates on main processor
+        fs.gather(localCoordinates, globalCoordinates);
+
+        // Gather data on main processor
+        fs.gather(localData, globalData);
+
+        // Get global number of nodes
+        nb_nodes = fs.nb_nodes_global();
+      } else {
+        // Other NodeColumns
+        atlas::functionspace::NodeColumns fs(geom_->functionSpace());
+
+        // Local coordinates
+        const auto lonlatView = atlas::array::make_view<double, 2>(fs.lonlat());
+        for (atlas::idx_t jnode = 0; jnode < fs.lonlat().shape(0); ++jnode) {
+           lonViewLocal(jnode) = lonlatView(jnode, 0);
+           latViewLocal(jnode) = lonlatView(jnode, 1);
+        }
+
+        // Gather coordinates on main processor
+        fs.gather(localCoordinates, globalCoordinates);
+
+        // Gather data on main processor
+        fs.gather(localData, globalData);
+
+        // Get global number of nodes
+        nb_nodes = fs.nb_nodes_global();
       }
 
-      // Close file
-      if ((retval = nc_close(ncid))) ERR(retval);
-    }
-  } else if (geom_->functionSpace().type() == "NodeColumns") {
-    // NodeColumns
-    atlas::idx_t nb_nodes;
-    if (geom_->grid().name().compare(0, 2, std::string{"CS"}) == 0) {
-      // CubedSphere
-      atlas::functionspace::CubedSphereNodeColumns fs(geom_->functionSpace());
+      if (geom_->getComm().rank() == 0) {
+        // Get number of levels
+        atlas::idx_t nz = geom_->levels(groupIndex);
 
-      // Local coordinates
-      const auto lonlatView = atlas::array::make_view<double, 2>(fs.lonlat());
-      for (atlas::idx_t jnode = 0; jnode < fs.lonlat().shape(0); ++jnode) {
-         lonViewLocal(jnode) = lonlatView(jnode, 0);
-         latViewLocal(jnode) = lonlatView(jnode, 1);
-      }
+        if (groupIndex == 0) {
+          // Create dimensions
+          if ((retval = nc_def_dim(ncid, "nb_nodes", nb_nodes, &nb_nodes_id))) ERR(retval);
 
-      // Gather coordinates on main processor
-      fs.gather(localCoordinates, globalCoordinates);
-
-      // Gather data on main processor
-      fs.gather(fset_, globalData);
-
-      // Get global number of nodes
-      nb_nodes = fs.nb_nodes_global();
-    } else {
-      // Other NodeColumns
-      atlas::functionspace::NodeColumns fs(geom_->functionSpace());
-
-      // Local coordinates
-      const auto lonlatView = atlas::array::make_view<double, 2>(fs.lonlat());
-      for (atlas::idx_t jnode = 0; jnode < fs.lonlat().shape(0); ++jnode) {
-         lonViewLocal(jnode) = lonlatView(jnode, 0);
-         latViewLocal(jnode) = lonlatView(jnode, 1);
-      }
-
-      // Gather coordinates on main processor
-      fs.gather(localCoordinates, globalCoordinates);
-
-      // Gather data on main processor
-      fs.gather(fset_, globalData);
-
-      // Get global number of nodes
-      nb_nodes = fs.nb_nodes_global();
-    }
-
-    if (geom_->getComm().rank() == 0) {
-      // Get number of levels
-      atlas::idx_t nz = geom_->levels();
-
-      // NetCDF IDs
-      int ncid, retval, nb_nodes_id, nz_id, d1D_id[1], d2D_id[2],
-        lon_id, lat_id, var_id[vars_.size()];
-
-      // NetCDF file path
-      std::string ncfilepath = filepath;
-      ncfilepath.append(".nc");
-      oops::Log::info() << "Info     : Writing file: " << ncfilepath << std::endl;
-
-      // Create NetCDF file
-      if ((retval = nc_create(ncfilepath.c_str(), NC_CLOBBER, &ncid))) ERR(retval);
-
-      // Create dimensions
-      if ((retval = nc_def_dim(ncid, "nb_nodes", nb_nodes, &nb_nodes_id))) ERR(retval);
-      if ((retval = nc_def_dim(ncid, "nz", nz, &nz_id))) ERR(retval);
-
-      // Define coordinates
-      d1D_id[0] = nb_nodes_id;
-      if ((retval = nc_def_var(ncid, "lon", NC_DOUBLE, 1, d1D_id, &lon_id))) ERR(retval);
-      if ((retval = nc_def_var(ncid, "lat", NC_DOUBLE, 1, d1D_id, &lat_id))) ERR(retval);
-
-      // Define variables
-      d2D_id[0] = nb_nodes_id;
-      d2D_id[1] = nz_id;
-      for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-        if (geom_->variableSize(vars_[jvar]) == geom_->levels()) {
-          if ((retval = nc_def_var(ncid, vars_[jvar].c_str(), NC_DOUBLE, 2, d2D_id,
-            &var_id[jvar]))) ERR(retval);
+          // Define coordinates
+          d1D_id[0] = nb_nodes_id;
+          if ((retval = nc_def_var(ncid, "lon", NC_DOUBLE, 1, d1D_id, &lon_id))) ERR(retval);
+          if ((retval = nc_def_var(ncid, "lat", NC_DOUBLE, 1, d1D_id, &lat_id))) ERR(retval);
         } else {
-          if ((retval = nc_def_var(ncid, vars_[jvar].c_str(), NC_DOUBLE, 1, d1D_id,
-            &var_id[jvar]))) ERR(retval);
+          // Restart definition mode
+          if ((retval = nc_redef(ncid))) ERR(retval);
         }
-      }
 
-      // End definition mode
-      if ((retval = nc_enddef(ncid))) ERR(retval);
+        // Define variables
+        d2D_id[0] = nb_nodes_id;
+        for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+          if (geom_->groupIndex(vars_[jvar]) == groupIndex) {
+            std::string nzName = "nz_" + vars_[jvar];
+            if ((retval = nc_def_dim(ncid, nzName.c_str(), nz, &nz_id[jvar]))) ERR(retval);
+            d2D_id[1] = nz_id[jvar];
+            if ((retval = nc_def_var(ncid, vars_[jvar].c_str(), NC_DOUBLE, 2, d2D_id,
+              &var_id[jvar]))) ERR(retval);
+            if ((retval = nc_put_att_double(ncid, var_id[jvar], "_FillValue", NC_DOUBLE, 1,
+              &msvalr))) ERR(retval);
+          }
+        }
 
-      // Copy coordinates
-      double zlon[nb_nodes][1];
-      double zlat[nb_nodes][1];
-      for (atlas::idx_t i = 0; i < nb_nodes; ++i) {
-        zlon[i][0] = lonViewGlobal(i);
-        zlat[i][0] = latViewGlobal(i);
-      }
+        // End definition mode
+        if ((retval = nc_enddef(ncid))) ERR(retval);
 
-      // Write coordinates
-      if ((retval = nc_put_var_double(ncid, lon_id, &zlon[0][0]))) ERR(retval);
-      if ((retval = nc_put_var_double(ncid, lat_id, &zlat[0][0]))) ERR(retval);
-
-      for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-        // Copy data
-        auto varView = atlas::array::make_view<double, 2>(globalData[vars_[jvar]]);
-        double zvar[nb_nodes][geom_->variableSize(vars_[jvar])];
-        for (size_t k = 0; k < geom_->variableSize(vars_[jvar]); ++k) {
+        if (groupIndex == 0) {
+          // Copy coordinates
+          double zlon[nb_nodes][1];
+          double zlat[nb_nodes][1];
           for (atlas::idx_t i = 0; i < nb_nodes; ++i) {
-            zvar[i][k] = varView(i, k);
+            zlon[i][0] = lonViewGlobal(i);
+            zlat[i][0] = latViewGlobal(i);
+          }
+
+          // Write coordinates
+          if ((retval = nc_put_var_double(ncid, lon_id, &zlon[0][0]))) ERR(retval);
+          if ((retval = nc_put_var_double(ncid, lat_id, &zlat[0][0]))) ERR(retval);
+        }
+
+        for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+          if (geom_->groupIndex(vars_[jvar]) == groupIndex) {
+            // Copy data
+            auto varView = atlas::array::make_view<double, 2>(globalData[vars_[jvar]]);
+            double zvar[nb_nodes][geom_->levels(vars_[jvar])];
+            for (size_t k = 0; k < geom_->levels(vars_[jvar]); ++k) {
+              for (atlas::idx_t i = 0; i < nb_nodes; ++i) {
+                zvar[i][k] = varView(i, k);
+              }
+            }
+
+            // Write data
+            if ((retval = nc_put_var_double(ncid, var_id[jvar], &zvar[0][0]))) ERR(retval);
+          }
+        }
+      }
+    } else if (geom_->functionSpace().type() == "PointCloud") {
+      // PointCloud
+      atlas::functionspace::PointCloud fs(geom_->functionSpace());
+
+      if (geom_->getComm().rank() == 0) {
+        // Get sizes
+        atlas::idx_t nlocs = fs.size();
+        atlas::idx_t nz = geom_->levels(groupIndex);
+
+        if (groupIndex == 0) {
+          // Create dimensions
+          if ((retval = nc_def_dim(ncid, "nlocs", nlocs, &nlocs_id))) ERR(retval);
+
+          // Define coordinates
+          d1D_id[0] = nlocs_id;
+          if ((retval = nc_def_var(ncid, "lon", NC_DOUBLE, 1, d1D_id, &lon_id))) ERR(retval);
+          if ((retval = nc_def_var(ncid, "lat", NC_DOUBLE, 1, d1D_id, &lat_id))) ERR(retval);
+        } else {
+          // Restart definition mode
+          if ((retval = nc_redef(ncid))) ERR(retval);
+        }
+
+        // Define variables
+        d2D_id[0] = nlocs_id;
+        for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+          if (geom_->groupIndex(vars_[jvar]) == groupIndex) {
+            std::string nzName;
+            if (geom_->iodaBased()) {
+              nzName = vars_[jvar] + "_nval";
+            } else {
+              nzName = "nz_" + vars_[jvar];
+            }
+            if ((retval = nc_def_dim(ncid, nzName.c_str(), nz, &nz_id[jvar]))) ERR(retval);
+            d2D_id[1] = nz_id[jvar];
+            if ((retval = nc_def_var(ncid, vars_[jvar].c_str(), NC_DOUBLE, 2, d2D_id,
+              &var_id[jvar]))) ERR(retval);
+            if ((retval = nc_put_att_double(ncid, var_id[jvar], "_FillValue", NC_DOUBLE, 1,
+              &msvalr))) ERR(retval);
           }
         }
 
-        // Write data
-        if ((retval = nc_put_var_double(ncid, var_id[jvar], &zvar[0][0]))) ERR(retval);
-      }
+        // End definition mode
+        if ((retval = nc_enddef(ncid))) ERR(retval);
 
-      // Close file
-      if ((retval = nc_close(ncid))) ERR(retval);
-    }
-  } else if (geom_->functionSpace().type() == "PointCloud") {
-    // PointCloud
-    atlas::functionspace::PointCloud fs(geom_->functionSpace());
-
-    if (geom_->getComm().rank() == 0) {
-      // Get sizes
-      atlas::idx_t nlocs = fs.size();
-
-      // NetCDF IDs
-      int ncid, retval, nlocs_id, nz_id[vars_.size()], d1D_id[1], d2D_id[2],
-        lon_id, lat_id, var_id[vars_.size()];
-
-      // NetCDF file path
-      std::string ncfilepath = filepath;
-      ncfilepath.append(".nc");
-      oops::Log::info() << "Info     : Writing file: " << ncfilepath << std::endl;
-
-      // Create NetCDF file
-      if ((retval = nc_create(ncfilepath.c_str(), NC_CLOBBER, &ncid))) ERR(retval);
-
-      // Create dimensions
-      if ((retval = nc_def_dim(ncid, "nlocs", nlocs, &nlocs_id))) ERR(retval);
-
-      // Define coordinates
-      d1D_id[0] = nlocs_id;
-      if ((retval = nc_def_var(ncid, "lon", NC_DOUBLE, 1, d1D_id, &lon_id))) ERR(retval);
-      if ((retval = nc_def_var(ncid, "lat", NC_DOUBLE, 1, d1D_id, &lat_id))) ERR(retval);
-
-      // Define variables
-      d2D_id[0] = nlocs_id;
-      for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-        std::string nz_nval = vars_[jvar];
-        nz_nval.append("_nval");
-        if ((retval = nc_def_dim(ncid, nz_nval.c_str(), geom_->variableSize(vars_[jvar]),
-          &nz_id[jvar]))) ERR(retval);
-        d2D_id[1] = nz_id[jvar];
-        if ((retval = nc_def_var(ncid, vars_[jvar].c_str(), NC_DOUBLE, 2, d2D_id,
-          &var_id[jvar]))) ERR(retval);
-      }
-
-      // End definition mode
-      if ((retval = nc_enddef(ncid))) ERR(retval);
-
-      // Copy coordinates
-      double zlon[nlocs][1];
-      double zlat[nlocs][1];
-      const auto lonlatView = atlas::array::make_view<double, 2>(fs.lonlat());
-      for (atlas::idx_t i = 0; i < nlocs; ++i) {
-        zlon[i][0] = lonlatView(i, 0);
-        zlat[i][0] = lonlatView(i, 1);
-      }
-
-      // Write coordinates
-      if ((retval = nc_put_var_double(ncid, lon_id, &zlon[0][0]))) ERR(retval);
-      if ((retval = nc_put_var_double(ncid, lat_id, &zlat[0][0]))) ERR(retval);
-
-      for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-        // Copy data
-        double zvar[nlocs][geom_->variableSize(vars_[jvar])];
-        auto varView = atlas::array::make_view<double, 2>(fset_[vars_[jvar]]);
-        for (size_t k = 0; k < geom_->variableSize(vars_[jvar]); ++k) {
+        if (groupIndex == 0) {
+          // Copy coordinates
+          double zlon[nlocs][1];
+          double zlat[nlocs][1];
+          const auto lonlatView = atlas::array::make_view<double, 2>(fs.lonlat());
           for (atlas::idx_t i = 0; i < nlocs; ++i) {
-            zvar[i][k] = varView(i, k);
+            zlon[i][0] = lonlatView(i, 0);
+            zlat[i][0] = lonlatView(i, 1);
           }
+
+          // Write coordinates
+          if ((retval = nc_put_var_double(ncid, lon_id, &zlon[0][0]))) ERR(retval);
+          if ((retval = nc_put_var_double(ncid, lat_id, &zlat[0][0]))) ERR(retval);
         }
 
-        // Write data
-        if ((retval = nc_put_var_double(ncid, var_id[jvar], &zvar[0][0]))) ERR(retval);
-      }
+        for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
+          if (geom_->groupIndex(vars_[jvar]) == groupIndex) {
+            // Copy data
+            double zvar[nlocs][geom_->levels(vars_[jvar])];
+            auto varView = atlas::array::make_view<double, 2>(fset_[vars_[jvar]]);
+            for (size_t k = 0; k < geom_->levels(vars_[jvar]); ++k) {
+              for (atlas::idx_t i = 0; i < nlocs; ++i) {
+                zvar[i][k] = varView(i, k);
+              }
+            }
 
-      // Close file
-      if ((retval = nc_close(ncid))) ERR(retval);
+            // Write data
+            if ((retval = nc_put_var_double(ncid, var_id[jvar], &zvar[0][0]))) ERR(retval);
+          }
+        }
+      }
+    } else {
+      ABORT(geom_->functionSpace().type() + " function space not supported yet");
     }
-  } else {
-    ABORT(geom_->functionSpace().type() + " function space not supported yet");
+  }
+
+  if (geom_->getComm().rank() == 0) {
+    // Close file
+    if ((retval = nc_close(ncid))) ERR(retval);
   }
 
   if (geom_->mesh().generated()) {
@@ -1148,9 +1198,10 @@ void Fields::print(std::ostream & os) const {
     prefix = "Info     : ";
   }
   os << prefix << "Fields:";
-  const auto gmaskView = atlas::array::make_view<int, 2>(geom_->extraFields().field("gmask"));
   const auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
   for (const auto & var : vars_.variables()) {
+    const auto gmaskView = atlas::array::make_view<int, 2>(
+      geom_->extraFields(geom_->groupIndex(var)).field("gmask"));
     os << std::endl;
     double zz = 0.0;
     atlas::Field field = fset_[var];
@@ -1158,7 +1209,7 @@ void Fields::print(std::ostream & os) const {
       auto view = atlas::array::make_view<double, 2>(field);
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          if (gmaskView(jnode, geom_->maskLevel(var, jlevel)) == 1 && ghostView(jnode) == 0) {
+          if (gmaskView(jnode, jlevel) == 1 && ghostView(jnode) == 0) {
             zz += view(jnode, jlevel)*view(jnode, jlevel);
           }
         }

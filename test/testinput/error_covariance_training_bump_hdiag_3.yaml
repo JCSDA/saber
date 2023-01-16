@@ -3,13 +3,17 @@ geometry:
   grid:
     type: regular_lonlat
     N: 10
-  levels: 2
+  groups:
+  - variables:
+    - var1
+    levels: 2
   halo: 1
-input variables: &id001
+input variables:
 - var1
 background:
   date: '2010-01-01T12:00:00Z'
-  state variables: *id001
+  state variables:
+  - var1
 bump:
   general:
     testing: true
@@ -21,8 +25,8 @@ bump:
     compute correlation: true
     compute localization: true
     multivariate strategy: common
-    compute moments: true
     iterative algorithm: true
+    compute moments: true
     write diagnostics: true
   sampling:
     computation grid size: 500

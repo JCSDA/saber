@@ -8,10 +8,12 @@ Partitioner:
 Function space:
 - type: StructuredColumns
 - halo: 1
-Vertical levels: 
-- number: 2
-- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 100%
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
 Fields:
   var3: 1.0000000000000000e+00
   var4: 0.0000000000000000e+00
@@ -104,13 +106,15 @@ Partitioner:
 Function space:
 - type: StructuredColumns
 - halo: 1
-Vertical levels: 
-- number: 2
-- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 100%
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
 Fields:
-  var3: 8.1520233704025724e-01
-  var4: 3.1186022102189465e-01
+  var3: 6.7636675043647476e-01
+  var4: 1.6118874945640357e-01
        Independent levels:  1[2]
           Model grid size:              840
           Subset Sc0 size:              762
@@ -188,10 +192,12 @@ Partitioner:
 Function space:
 - type: StructuredColumns
 - halo: 1
-Vertical levels: 
-- number: 2
-- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 100%
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
 Fields:
   var3: 9.6825438805381713e-14
   var4: 4.0904433449715275e-14
@@ -217,10 +223,12 @@ Partitioner:
 Function space:
 - type: StructuredColumns
 - halo: 1
-Vertical levels: 
-- number: 2
-- vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
-Mask size: 100%
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
 Fields:
-  var3: 1.6304046740804856e+00
-  var4: 6.2372044204378907e-01
+  var3: 1.3527335008729178e+00
+  var4: 3.2237749891280709e-01

@@ -1608,7 +1608,6 @@ if ((nsmask>0).or.(nam%nmask>0).or.(nam%ncontig_th>0)) then
          call mpl%flush
          do iv=1,nam%nv
             if (nam%variables(iv)==nam%mask_variable(imask)) then
-print*, 'stddev',minval(m2(:,:,iv)),maxval(m2(:,:,iv))
                if (trim(nam%mask_lu(imask))=='lower') then
                   samp%smask_c0a = samp%smask_c0a.and.(m2(:,:,iv)>nam%mask_th(imask)**2)
                elseif (trim(nam%mask_lu(imask))=='upper') then
@@ -1632,7 +1631,6 @@ print*, 'stddev',minval(m2(:,:,iv)),maxval(m2(:,:,iv))
          call mpl%flush
          do iv=1,nam%nv
             if (nam%variables(iv)==nam%mask_variable(imask)) then
-print*, 'input',minval(samp%smask_input_c0a(:,:,iv)),maxval(samp%smask_input_c0a(:,:,iv))
                if (trim(nam%mask_lu(imask))=='lower') then
                   samp%smask_c0a = samp%smask_c0a.and.(samp%smask_input_c0a(:,:,iv)>nam%mask_th(imask)**2)
                elseif (trim(nam%mask_lu(imask))=='upper') then

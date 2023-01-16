@@ -16,11 +16,6 @@
 #include "src/State.h"
 #include "src/VariableChangeParameters.h"
 
-// Forward declarations
-namespace oops {
-  class Variables;
-}
-
 namespace quench {
   class State;
 

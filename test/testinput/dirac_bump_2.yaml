@@ -3,7 +3,13 @@ geometry:
   grid:
     type: regular_lonlat
     N: 10
-  levels: 2
+  groups:
+  - variables:
+    - var1
+    - var2
+    - var3
+    - var4
+    levels: 2
   halo: 1
 initial condition:
   date: '2010-01-01T12:00:00Z'
@@ -120,7 +126,10 @@ background error:
             io:
               data directory: testdata
               files prefix: dirac_bump_2/_MPI_-_OMP_
-              overriding nicas file: error_covariance_training_bump_hdiag-nicas_2/_MPI_-_OMP__nicas
+              alias:
+              - in code: common
+                in file: var1-var1
+              overriding nicas file: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas
             drivers:
               multivariate strategy: common
               read local nicas: true

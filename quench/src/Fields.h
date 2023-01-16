@@ -21,11 +21,6 @@
 #include "oops/util/Printable.h"
 #include "oops/util/Serializable.h"
 
-// Forward declarations
-namespace eckit {
-  class Configuration;
-}
-
 namespace quench {
   class Geometry;
 

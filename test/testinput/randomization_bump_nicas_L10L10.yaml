@@ -3,13 +3,17 @@ geometry:
   grid:
     type: regular_lonlat
     N: 10
-  levels: 10
+  groups:
+  - variables:
+    - var1
+    levels: 10
   halo: 1
-variables: &id001
+variables:
 - var1
 background:
   date: '2010-01-01T12:00:00Z'
-  state variables: *id001
+  state variables:
+  - var1
 background error:
   covariance model: SABER
   saber central block:

@@ -27,7 +27,7 @@ def func(args, suffix):
    variables = []
    if args.variable is None:
       for var in f.variables:
-         if var != "lon" and var != "lat" and var != "gmask":
+         if var != "lon" and var != "lat":
             variables.append(var)
    else:
       variables.append(args.variable)

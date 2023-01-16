@@ -3,11 +3,17 @@ geometry:
   grid:
     type: regular_gaussian
     N: 15
-  levels: 70
+  groups:
+  - variables:
+    - streamfunction
+    - velocity_potential
+    - unbalanced_pressure
+    - moisture_control_variable
+    levels: 70
   partitioner: ectrans
 initial condition:
   date: '2010-01-01T12:00:00Z'
-  state variables: &id001
+  state variables:
   - streamfunction
   - velocity_potential
   - unbalanced_pressure
@@ -44,7 +50,11 @@ dirac:
   - 1
   - 1
   - 1
-  variable: *id001
+  variable:
+  - streamfunction
+  - velocity_potential
+  - unbalanced_pressure
+  - moisture_control_variable
 output dirac:
   filepath: testdata/dirac_spectralb/dirac_%id%
 test:

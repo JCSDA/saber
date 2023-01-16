@@ -3,129 +3,171 @@ geometry:
   grid:
     type: regular_lonlat
     N: 12
-  levels: 2
+  groups:
+  - variables:
+    - var1
+    levels: 2
   halo: 1
 lowres geometry:
   function space: StructuredColumns
   grid:
     type: regular_lonlat
     N: 10
-  levels: 2
+  groups:
+  - variables:
+    - var1
+    levels: 2
   halo: 1
-input variables: &id001
+input variables:
 - var1
 background:
   date: '2010-01-01T12:00:00Z'
-  state variables: *id001
+  state variables:
+  - var1
 ensemble:
   members:
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L12L2/member_000001
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L12L2/member_000002
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L12L2/member_000003
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L12L2/member_000004
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L12L2/member_000005
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L12L2/member_000006
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L12L2/member_000007
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L12L2/member_000008
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L12L2/member_000009
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L12L2/member_000010
-    state variables: *id001
+    state variables:
+    - var1
 lowres ensemble:
   members:
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000001
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000002
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000003
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000004
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000005
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000006
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000007
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000008
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000009
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000010
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000011
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000012
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000013
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000014
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000015
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000016
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000017
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000018
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000019
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000020
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000021
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000022
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000023
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000024
-    state variables: *id001
+    state variables:
+    - var1
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000025
-    state variables: *id001
+    state variables:
+    - var1
 bump:
   general:
     testing: true
@@ -143,8 +185,8 @@ bump:
     hybrid source: lowres ensemble
     multivariate strategy: specific_univariate
     write local sampling: true
-    write moments: true
     compute moments: true
+    write moments: true
     write diagnostics: true
     adjoints test: true
     normalization test: 10
