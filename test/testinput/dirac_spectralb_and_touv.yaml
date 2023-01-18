@@ -66,6 +66,6 @@ dirac:
   - unbalanced_pressure
   - moisture_control_variable
 output dirac:
-  filepath: testdata/dirac_spectralb/dirac_%id%
+  filepath: testdata/dirac_spectralb_and_touv/dirac_%id%
 test:
   reference filename: testref/dirac_spectralb_and_touv.ref

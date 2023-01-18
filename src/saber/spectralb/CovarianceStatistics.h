@@ -46,6 +46,13 @@ class CovStat_ErrorCov {
     return spectralUMatrices_;
   }
 
+  /// \details getSpectralCorrelUMatrix() gets the "square root" of the spectral
+  ///          vertical correlations for each total wavenumber and active variable.
+  ///          spectral vertical correlation = CorrelUMatrix CorrelUMatrix^T
+  const atlas::FieldSet & getSpectralCorrelUMatrices()  const {
+    return spectralCorrelUMatrices_;
+  }
+
   /// \details getSpectralVerticalCovariances() gets the spectral vertical
   ///          covariances for each total wavenumber and active variable.
   const atlas::FieldSet & getSpectralVerticalCovariances()  const {
@@ -74,6 +81,9 @@ class CovStat_ErrorCov {
   // Total standard deviations for each model level,
   // consistent with truncated spectral vertical covariances.
   atlas::FieldSet verticalSD_;
+  // U factor of the spectral vertical correlations (as in C=UU^t)
+  // The number of spectral bins is given by the covariance file.
+  atlas::FieldSet spectralCorrelUMatrices_;
   // Spectral vertical correlations
   // The number of spectral bins is truncated to the Gaussian grid resolution.
   atlas::FieldSet spectralVerticalCorrelations_;

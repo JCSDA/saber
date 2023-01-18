@@ -38,6 +38,11 @@ atlas::FieldSet createVerticalSD(const oops::Variables &,
                                  const int,
                                  const atlas::FieldSet &);
 
+atlas::FieldSet createCorrelUMatrices(const oops::Variables &,
+                                      const atlas::FieldSet &,
+                                      const atlas::FieldSet &,
+                                      const atlas::FieldSet &);
+
 atlas::FieldSet createSpectralCorrelations(const oops::Variables &,
                                            const int,
                                            const atlas::FieldSet &,

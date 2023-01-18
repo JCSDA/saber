@@ -174,6 +174,42 @@ atlas::FieldSet createVerticalSD(const oops::Variables & activeVars,
   return verticalSDs;
 }
 
+atlas::FieldSet createCorrelUMatrices(const oops::Variables & activeVars,
+                                      const atlas::FieldSet & spectralVerticalCovariances,
+                                      const atlas::FieldSet & spectralUMatrices,
+                                      const atlas::FieldSet & verticalSDs) {
+  atlas::FieldSet spectralCorrelUMatrices;
+
+  for (std::size_t i = 0; i < activeVars.size(); ++i) {
+    std::string var = activeVars[i];
+
+    const auto uMatrixView = atlas::array::make_view<double, 3>(spectralUMatrices[var]);
+    const auto verticalSDView = atlas::array::make_view<const double, 1>(verticalSDs[var]);
+    const atlas::idx_t nSpectralBins = spectralVerticalCovariances[var].shape(0);
+    const double sqrtNSpectralBins = std::sqrt(static_cast<double>(nSpectralBins));
+
+    auto correlUMatrix = atlas::Field(var,
+                                      atlas::array::make_datatype<double>(),
+                                      atlas::array::make_shape(uMatrixView.shape(0),
+                                                               uMatrixView.shape(1),
+                                                               uMatrixView.shape(2)));
+    auto correlUMatrixView = atlas::array::make_view<double, 3>(correlUMatrix);
+
+    for (atlas::idx_t bin = 0; bin < uMatrixView.shape(0); ++bin) {
+      for (atlas::idx_t k1 = 0; k1 < uMatrixView.shape(1); ++k1) {
+        for (atlas::idx_t k2 = 0; k2 < uMatrixView.shape(2); ++k2) {
+            correlUMatrixView(bin, k1, k2) = uMatrixView(bin, k1, k2)
+                    * sqrtNSpectralBins / verticalSDView(k1);
+        }
+      }
+    }
+
+    spectralCorrelUMatrices.add(correlUMatrix);
+  }
+
+  return spectralCorrelUMatrices;
+}
+
 atlas::FieldSet createSpectralCorrelations(const oops::Variables & activeVars,
                                            const int modelLevels,
                                            const atlas::FieldSet & spectralVerticalCovariances,

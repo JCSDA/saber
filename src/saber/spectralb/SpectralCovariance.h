@@ -55,6 +55,11 @@ class SpectralCovariance : public SaberCentralBlockBase {
   void multiply(atlas::FieldSet &) const override;
 
  private:
+  void testUUtConsistency(const std::vector<size_t> &,
+                          const double &,
+                          const double & adjointTolerance = 1.0e-12) const;
+  void multiplyUMatrix(atlas::FieldSet &) const;
+  void multiplyUMatrixAD(atlas::FieldSet &) const;
   void print(std::ostream &) const override;
 
   /// Active variables
@@ -65,6 +70,8 @@ class SpectralCovariance : public SaberCentralBlockBase {
   // Note: only need vertical covariances or correlations from this;
   // probably can be gotten in the ctor and saved here instead of cs_
   std::unique_ptr<CovStat_ErrorCov> cs_;
+  /// Geometry data
+  const oops::GeometryData & geometryData_;
   /// Spectral FunctionSpace
   const atlas::functionspace::Spectral specFunctionSpace_;
 };

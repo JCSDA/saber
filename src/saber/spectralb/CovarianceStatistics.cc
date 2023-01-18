@@ -42,6 +42,10 @@ CovStat_ErrorCov::CovStat_ErrorCov(const std::vector<size_t> & variableSizes,
                                spectralUMatrices_, params)),
   verticalSD_(createVerticalSD(vars, modelLevels_,
                                spectralVerticalCovariances_)),
+  spectralCorrelUMatrices_(createCorrelUMatrices(vars,
+                                                 spectralVerticalCovariances_,
+                                                 spectralUMatrices_,
+                                                 verticalSD_)),
   spectralVerticalCorrelations_(createSpectralCorrelations(
                                 vars, modelLevels_, spectralVerticalCovariances_,
                                 verticalSD_))

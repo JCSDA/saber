@@ -43,6 +43,13 @@ class spectralbParameters : public oops::Parameters {
   "Output Grid UID", this};
   oops::Parameter<bool> varianceOpt{"variance_opt",
   "variance option", false, this};
+
+  /// Boolean parameter to test that B = UU^t at construction of SpectralCovariance
+  oops::Parameter<bool> uutConsistencyTest{"uut consistency test",
+  "Option to test that UU^t = B", false, this};
+  /// Relative tolerance of UU^t consistency test
+  oops::Parameter<double> consistencyTolerance{"consistency tolerance",
+  "Relative tolerance for UU^t consistency test", 1e-10, this};
 };
 // -----------------------------------------------------------------------------
 }  // namespace saber
