@@ -59,54 +59,51 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
 {
   oops::Log::trace() << "Localization::Localization starting" << std::endl;
 
-  size_t myslot = geom.timeComm().rank();
-  if (myslot == 0) {
-    // Get parameters from configuration
-    const eckit::LocalConfiguration saberCentralBlock(conf, "saber central block");
-    SaberCentralBlockParametersWrapper saberCentralBlockParamWrapper;
-    saberCentralBlockParamWrapper.validateAndDeserialize(saberCentralBlock);
-    const SaberBlockParametersBase & saberCentralBlockParams =
-      saberCentralBlockParamWrapper.saberCentralBlockParameters;
+  // Get parameters from configuration
+  const eckit::LocalConfiguration saberCentralBlock(conf, "saber central block");
+  SaberCentralBlockParametersWrapper saberCentralBlockParamWrapper;
+  saberCentralBlockParamWrapper.validateAndDeserialize(saberCentralBlock);
+  const SaberBlockParametersBase & saberCentralBlockParams =
+    saberCentralBlockParamWrapper.saberCentralBlockParameters;
 
-    // Create dummy FieldSet (for xb and fg)
-    atlas::FieldSet dummyFs;
+  // Create dummy FieldSet (for xb and fg)
+  atlas::FieldSet dummyFs;
 
-    // Create dummy time
-    util::DateTime dummyTime(1977, 5, 25, 0, 0, 0);
+  // Create dummy time
+  util::DateTime dummyTime(1977, 5, 25, 0, 0, 0);
 
-    // Define central variables
-    oops::Variables centralVars = incVars;
+  // Define central variables
+  oops::Variables centralVars = incVars;
 
-    // Get active variables
-    oops::Variables activeVars =
-      saberCentralBlockParams.activeVars.value().get_value_or(centralVars);
+  // Get active variables
+  oops::Variables activeVars =
+    saberCentralBlockParams.activeVars.value().get_value_or(centralVars);
 
-    // Initialize vector of FieldSet
-    std::vector<atlas::FieldSet> fsetVec;
+  // Initialize vector of FieldSet
+  std::vector<atlas::FieldSet> fsetVec;
 
-    // Read input fields (on model increment geometry)
-    std::vector<eckit::LocalConfiguration> inputFieldConfs;
-    inputFieldConfs = saberCentralBlockParams.inputFieldConfs.value().get_value_or(inputFieldConfs);
-    readInputFields(geom,
-                    activeVars,
-                    dummyTime,
-                    inputFieldConfs,
-                    fsetVec);
+  // Read input fields (on model increment geometry)
+  std::vector<eckit::LocalConfiguration> inputFieldConfs;
+  inputFieldConfs = saberCentralBlockParams.inputFieldConfs.value().get_value_or(inputFieldConfs);
+  readInputFields(geom,
+                  activeVars,
+                  dummyTime,
+                  inputFieldConfs,
+                  fsetVec);
 
-    // Create central block
-    saberCentralBlock_.reset(SaberCentralBlockFactory::create(
-                             geom.generic(),
-                             geom.variableSizes(activeVars),
-                             centralVars,
-                             saberCentralBlockParams,
-                             dummyFs,
-                             dummyFs,
-                             fsetVec));
+  // Create central block
+  saberCentralBlock_.reset(SaberCentralBlockFactory::create(
+                           geom.generic(),
+                           geom.variableSizes(activeVars),
+                           centralVars,
+                           saberCentralBlockParams,
+                           dummyFs,
+                           dummyFs,
+                           fsetVec));
 
-    // Check that active variables are present in central variables
-    for (const auto & var : activeVars.variables()) {
-      ASSERT(centralVars.has(var));
-    }
+  // Check that active variables are present in central variables
+  for (const auto & var : activeVars.variables()) {
+    ASSERT(centralVars.has(var));
   }
 
   oops::Log::trace() << "Localization:Localization done" << std::endl;
