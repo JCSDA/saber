@@ -23,6 +23,7 @@ initial condition:
 background error:
   covariance model: SABER
   adjoint test: true
+  randomization size: 2
   saber central block:
     saber block name: spectral covariance
     active variables:
@@ -39,6 +40,7 @@ background error:
       - aP_inc_Uv_matrix
       - MU_inc_Uv_matrix
       variance_opt: true
+      uut consistency test: true
   saber outer blocks:
   - saber block name: spectral to gauss
     active variables:
@@ -67,5 +69,9 @@ dirac:
   - moisture_control_variable
 output dirac:
   filepath: testdata/dirac_spectralb_and_touv/dirac_%id%
+output variance:
+  mpi pattern: %MPI%
+  filepath: testdata/dirac_spectralb_and_touv/variance_%id%_%MPI%
 test:
-  reference filename: testref/dirac_spectralb_and_touv.ref
+  mpi pattern: %MPI%
+  reference filename: testref/dirac_spectralb_and_touv_%MPI%.ref

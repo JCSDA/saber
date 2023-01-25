@@ -67,9 +67,9 @@ class SpectralToGauss : public SaberOuterBlockBase {
   void multiplyScalarFieldsAD(const atlas::FieldSet &, atlas::FieldSet &) const;
 
   Parameters_ params_;
+  oops::Variables activeVars_;
   oops::Variables innerVars_;
   oops::Variables outerVars_;
-  oops::Variables activeVars_;
   std::vector<std::size_t> activeVariableSizes_;
 
   /// Whether to convert to and from u/v.

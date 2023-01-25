@@ -21,6 +21,7 @@
 #include "oops/base/State.h"
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
+#include "oops/util/FieldSetOperations.h"
 #include "oops/util/Logger.h"
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/parameters/Parameters.h"
@@ -88,6 +89,7 @@ class ErrorCovariance : public oops::ModelSpaceCovarianceBase<MODEL>,
 
   std::unique_ptr<SaberCentralBlockBase> saberCentralBlock_;
   SaberOuterBlockVec_ saberOuterBlocks_;
+  atlas::FieldSet centralFieldSet_;
 };
 
 // -----------------------------------------------------------------------------
@@ -99,7 +101,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
                                         const State_ & xb,
                                         const State_ & fg)
   : oops::ModelSpaceCovarianceBase<MODEL>(geom, params, xb, fg), saberCentralBlock_(),
-    saberOuterBlocks_()
+    saberOuterBlocks_(), centralFieldSet_()
 {
   oops::Log::trace() << "ErrorCovariance::ErrorCovariance starting" << std::endl;
 
@@ -116,6 +118,11 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
 
   // Intialize outer variables
   oops::Variables outerVars(incVars);
+
+  // Initialize central FieldSet
+  Increment_ dx(geom, incVars, xb.validTime());
+  centralFieldSet_ = util::copyFieldSet(dx.fieldSet());
+  util::zeroFieldSet(centralFieldSet_);
 
   // Build outer blocks successively
   const boost::optional<std::vector<SaberOuterBlockParametersWrapper>> &saberOuterBlocks =
@@ -165,7 +172,6 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
         ASSERT(innerVars.has(var) || outerVars.has(var));
       }
 
-
       // Adjoint test
       if (adjointTest) {
         // Get intersection of active variables and outer/inner variables
@@ -186,6 +192,9 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
       // Update outer geometry and variables for the next block
       outerGeometryData.push_back(innerGeometryData);
       outerVars = innerVars;
+
+      // Apply adjoint to progressively get central fields
+      saberOuterBlocks_.back().multiplyAD(centralFieldSet_);
     }
   }
 
@@ -262,6 +271,9 @@ template<typename MODEL>
 void ErrorCovariance<MODEL>::doRandomize(Increment_ & dx) const {
   oops::Log::trace() << "ErrorCovariance<MODEL>::doRandomize starting" << std::endl;
   util::Timer timer(classname(), "doRandomize");
+
+  // Initialize dx.fieldSet() with all the required fields, set to zero
+  dx.fieldSet() = util::copyFieldSet(centralFieldSet_);
 
   // Central block randomization
   saberCentralBlock_->randomize(dx.fieldSet());

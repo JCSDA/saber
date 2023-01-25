@@ -110,7 +110,7 @@ template <typename MODEL> class Randomization : public oops::Application {
     mean.zero();
     const boost::optional<WriteParameters_> &inputIncrOutParams = params.outputIncrement.value();
     for (size_t jm = 0; jm < covarParams.randomizationSize.value(); ++jm) {
-      // Generate pertubation
+      // Generate perturbation
       Increment_ dx(geom, vars, xx.validTime());
       Bmat->randomize(dx);
       oops::Log::test() << "Member " << jm << ": " << dx << std::endl;
