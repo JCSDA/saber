@@ -21,7 +21,6 @@ use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquir
  & put_var,get_var
 use tools_qsort, only: qsort
 use tools_repro, only: supeq,sup,inf,infeq,eq,indist,repro_th
-use type_bpar, only: bpar_type
 use type_com, only: com_type
 use type_cv_cmp, only: cv_cmp_type
 use type_geom, only: geom_type
@@ -110,7 +109,7 @@ end type hor_type
 ! NICAS component derived type
 type nicas_cmp_type
    ! General parameters
-   integer :: ib                                        !< Block index
+   integer :: ig                                        !< Group index
    integer :: ncmp                                      !< Number of components in the same block
    logical :: anisotropic                               !< Anisotropic tensor flag
    logical :: verbosity                                 !< Verbosity flag
@@ -1567,14 +1566,13 @@ end subroutine nicas_cmp_read_global
 ! Subroutine: nicas_cmp_write_global_def
 !> Write data for global I/O, definition mode
 !----------------------------------------------------------------------
-subroutine nicas_cmp_write_global_def(nicas_cmp,mpl,nam)
+subroutine nicas_cmp_write_global_def(nicas_cmp,mpl)
 
 implicit none
 
 ! Passed variables
 class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data
 type(mpl_type),intent(inout) :: mpl              !< MPI data
-type(nam_type),intent(in) :: nam                 !< Namelist
 
 ! Local variables
 integer :: nl1_id,nc1_id,ns_id,c_nopmax_id
@@ -1821,14 +1819,13 @@ end subroutine nicas_cmp_write_grids_def
 ! Subroutine: nicas_cmp_write_grids_data
 !> Write NICAS grids, data mode
 !----------------------------------------------------------------------
-subroutine nicas_cmp_write_grids_data(nicas_cmp,mpl,nam)
+subroutine nicas_cmp_write_grids_data(nicas_cmp,mpl)
 
 implicit none
 
 ! Passed variables
 class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data component
 type(mpl_type),intent(inout) :: mpl           !< MPI data
-type(nam_type),intent(in) :: nam              !< Namelist
 
 ! Local variables
 integer :: isa,isb,isc,isu,ic1a,ic1u,il1,il0
@@ -1934,9 +1931,6 @@ if (.not.nam%load_nicas_global) then
 
    ! Copy universe
    nicas_cmp%myuniverse = geom%myuniverse
-
-   ! Reset random numbers seed
-   if (trim(nam%strategy)=='specific_multivariate') call rng%reseed(mpl)
 end if
 
 ! Compute adaptive sampling, vertical
@@ -1964,7 +1958,7 @@ if (.not.nicas_cmp%smoother) then
       ! Compute normalization
       write(mpl%info,'(a10,a)') '','Compute normalization'
       call mpl%flush(doit=nicas_cmp%verbosity)
-      call nicas_cmp%compute_normalization(mpl,nam,geom)
+      call nicas_cmp%compute_normalization(mpl,geom)
    end if
 end if
 
@@ -3122,7 +3116,7 @@ logical,allocatable :: lcheck_sc(:)
 @:probe_in()
 
 ! Associate
-associate(ib=>nicas_cmp%ib)
+associate(ig=>nicas_cmp%ig)
 
 if (.not.nam%load_nicas_global) then
    ! Compute horizontal and vertical parameters
@@ -3673,14 +3667,13 @@ end subroutine nicas_cmp_compute_internal_normalization
 ! Subroutine: nicas_cmp_compute_normalization
 !> Compute normalization
 !----------------------------------------------------------------------
-subroutine nicas_cmp_compute_normalization(nicas_cmp,mpl,nam,geom)
+subroutine nicas_cmp_compute_normalization(nicas_cmp,mpl,geom)
 
 implicit none
 
 ! Passed variables
 class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data component
 type(mpl_type),intent(inout) :: mpl              !< MPI data
-type(nam_type),intent(in) :: nam                 !< Namelist
 type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
@@ -4087,9 +4080,6 @@ real(kind_real) :: fld_tmp(geom%nc0a,geom%nl0),alpha_b(nicas_cmp%nsb)
 ! Probe in
 @:probe_in()
 
-! Check dimension
-if (cv_cmp%n/=nicas_cmp%nsa) call mpl%abort('${subr}$','wrong control vector dimension')
-
 ! Initialization
 fld_tmp = fld
 
@@ -4474,7 +4464,7 @@ end subroutine nicas_cmp_apply_interp_vertical_ad
 ! Subroutine: nicas_cmp_test_adjoint
 !> Test NICAS adjoint accuracy
 !----------------------------------------------------------------------
-subroutine nicas_cmp_test_adjoint(nicas_cmp,mpl,rng,nam,geom,bpar)
+subroutine nicas_cmp_test_adjoint(nicas_cmp,mpl,rng,nam,geom)
 
 implicit none
 
@@ -4484,10 +4474,9 @@ type(mpl_type),intent(inout) :: mpl           !< MPI data
 type(rng_type),intent(inout) :: rng           !< Random number generator
 type(nam_type),intent(in) :: nam              !< Namelist
 type(geom_type),intent(in) :: geom            !< Geometry
-type(bpar_type),intent(in) :: bpar            !< Block parameters
 
 ! Local variables
-integer :: iv,il0
+integer :: il0
 real(kind_real) :: sum1,sum2
 real(kind_real) :: alpha(nicas_cmp%nsb),alpha_save(nicas_cmp%nsb),alpha_c(nicas_cmp%nsc)
 real(kind_real) :: gamma(geom%nc0a,nicas_cmp%nl1),gamma_save(geom%nc0a,nicas_cmp%nl1)
@@ -4503,10 +4492,7 @@ type(cv_cmp_type) :: cv_cmp1,cv_cmp2
 @:probe_in()
 
 ! Associate
-associate(ib=>nicas_cmp%ib)
-
-! Variable index
-iv = bpar%b_to_v1(ib)
+associate(ig=>nicas_cmp%ig)
 
 ! Interpolation (horizontal)
 
@@ -4534,7 +4520,7 @@ call mpl%flush(doit=nicas_cmp%verbosity)
 call rng%rand(zero,one,gamma_save)
 call rng%rand(zero,one,fld_save)
 do il0=1,geom%nl0
-   if ((il0<nam%min_lev(iv)).or.(nam%max_lev(iv)<il0)) fld_save(:,il0) = mpl%msv%valr
+   if ((il0<nam%min_lev(ig)).or.(nam%max_lev(ig)<il0)) fld_save(:,il0) = mpl%msv%valr
 end do
 
 ! Adjoint test
@@ -4557,7 +4543,7 @@ call mpl%flush(doit=nicas_cmp%verbosity)
 call rng%rand(zero,one,alpha_save)
 call rng%rand(zero,one,fld_save)
 do il0=1,geom%nl0
-   if ((il0<nam%min_lev(iv)).or.(nam%max_lev(iv)<il0)) fld_save(:,il0) = mpl%msv%valr
+   if ((il0<nam%min_lev(ig)).or.(nam%max_lev(ig)<il0)) fld_save(:,il0) = mpl%msv%valr
 end do
 
 ! Adjoint test
@@ -4694,6 +4680,9 @@ call mpl%flush(doit=nicas_cmp%verbosity)
 call cv_cmp1%dealloc
 call cv_cmp2%dealloc
 
+! Reset random seed if necessary
+if (nam%default_seed) call rng%reseed(mpl)
+
 ! End associate
 end associate
 
@@ -4720,8 +4709,7 @@ type(geom_type),intent(in) :: geom            !< Geometry
 ! Local variables
 integer :: itest,isa
 integer :: il0(nam%check_normalization),iproc(nam%check_normalization),ic0a(nam%check_normalization)
-real(kind_real) :: alpha(nicas_cmp%nsa),fld(geom%nc0a,geom%nl0),norm,val(nam%check_normalization)
-type(cv_cmp_type) :: cv_cmp
+real(kind_real) :: alpha(nicas_cmp%nsa),norm,val(nam%check_normalization)
 
 ! Set name
 @:set_name(nicas_cmp_test_normalization)
@@ -4730,7 +4718,7 @@ type(cv_cmp_type) :: cv_cmp
 @:probe_in()
 
 ! Associate
-associate(ib=>nicas_cmp%ib)
+associate(ig=>nicas_cmp%ig)
 
 ! Get random levels
 if (mpl%main) call rng%rand(1,geom%nl0,il0)
@@ -4774,6 +4762,9 @@ write(mpl%test,'(a13,a,f10.7,a,f10.7,a,i6,a)') '','Min / max:',minval(val),' / '
  & nam%check_normalization,' tests'
 call mpl%flush(doit=nicas_cmp%verbosity)
 
+! Reset random seed if necessary
+if (nam%default_seed) call rng%reseed(mpl)
+
 ! End associate
 end associate
 
@@ -4810,7 +4801,7 @@ real(kind_real) :: fld(geom%nc0a),norm,val(nam%check_normalization)
 @:probe_in()
 
 ! Associate
-associate(ib=>nicas_cmp%ib)
+associate(ig=>nicas_cmp%ig)
 
 ! Resynchronize random number generator
 call rng%resync(mpl)

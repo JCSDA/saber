@@ -32,12 +32,16 @@ contains
 ! Subroutine: cv_cmp_alloc
 !> Allocation
 !----------------------------------------------------------------------
-subroutine cv_cmp_alloc(cv_cmp,mpl,n)
+subroutine cv_cmp_alloc(cv_cmp,mpl,n,getsizeonly)
 
 ! Passed variables
 class(cv_cmp_type),intent(inout) :: cv_cmp !< Control vector component
 type(mpl_type),intent(inout) :: mpl        !< MPI data
-integer,intent(in) :: n                    !< Control vector component size
+integer,intent(in) :: n                    !< Control vector size
+logical,intent(in),optional :: getsizeonly !< Flag to get the control variable size only (no allocation)
+
+! Local variables
+logical :: lgetsizeonly
 
 ! Set name
 @:set_name(cv_cmp_alloc)
@@ -45,14 +49,20 @@ integer,intent(in) :: n                    !< Control vector component size
 ! Probe in
 @:probe_in()
 
-! Copy size
+! Local flag
+lgetsizeonly = .false.
+if (present(getsizeonly)) lgetsizeonly = getsizeonly
+
+! Copy attribute
 cv_cmp%n = n
 
-! Allocation
-if (.not.allocated(cv_cmp%alpha)) allocate(cv_cmp%alpha(cv_cmp%n))
+if (.not.lgetsizeonly) then
+   ! Allocation
+   if (.not.allocated(cv_cmp%alpha)) allocate(cv_cmp%alpha(cv_cmp%n))
 
-! Initialization
-cv_cmp%alpha = mpl%msv%valr
+   ! Initialization
+   cv_cmp%alpha = mpl%msv%valr
+end if
 
 ! Probe out
 @:probe_out()

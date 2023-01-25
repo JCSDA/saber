@@ -10,24 +10,50 @@
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
              Effective levels:   1   2 
-                   Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
-                   Estimated nc1 from horizontal support radius:     9424
-                      Decimate full grid, at least      762 points required,     762 valid points found
-                      Subgrid hash:   1550418632
-                   Final nc1:      762
-                   Effective horizontal resolution:  1.14
-                   Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
-                   Estimated nc1 from horizontal support radius:     9424
-                      Decimate full grid, at least      762 points required,     762 valid points found
-                      Subgrid hash:   1550418632
-                   Final nc1:      762
-                   Effective horizontal resolution:  1.14
-             nc1(  1) =                        762
-             nc1(  2) =                        762
-             ns =                             1524
+                   Horizontal support radius:    4000.00 km (   4000.00 km -    4000.00 km)
+                   Estimated nc1 from horizontal support radius:      589
+                      Decimate full grid, at least      589 points required,     762 valid points found
+                      Subgrid hash:   1676590011
+                   Final nc1:      589
+                   Effective horizontal resolution:  4.00
+                   Horizontal support radius:    4000.00 km (   4000.00 km -    4000.00 km)
+                   Estimated nc1 from horizontal support radius:      589
+                      Decimate full grid, at least      589 points required,     762 valid points found
+                      Subgrid hash:   1676590011
+                   Final nc1:      589
+                   Effective horizontal resolution:  4.00
+             nc1(  1) =                        589
+             nc1(  2) =                        589
+             ns =                             1178
              v%n_s =                             2
-             c%n_s[global] =                  6248
+             c%n_s[global] =                 28804
+             Effective levels:   1   2 
+                   Horizontal support radius:    4000.00 km (   4000.00 km -    4000.00 km)
+                   Estimated nc1 from horizontal support radius:      589
+                      Decimate full grid, at least      589 points required,     762 valid points found
+                      Subgrid hash:   1676590011
+                   Final nc1:      589
+                   Effective horizontal resolution:  4.00
+                   Horizontal support radius:    4000.00 km (   4000.00 km -    4000.00 km)
+                   Estimated nc1 from horizontal support radius:      589
+                      Decimate full grid, at least      589 points required,     762 valid points found
+                      Subgrid hash:   1676590011
+                   Final nc1:      589
+                   Effective horizontal resolution:  4.00
+             nc1(  1) =                        589
+             nc1(  2) =                        589
+             ns =                             1178
+             v%n_s =                             2
+             c%n_s[global] =                 28804
     Full NICAS adjoint test result:                        T
+       Block NICAS adjoint test result:                    T
+          Interpolation adjoint test (horizontal) result:  T
+          Interpolation adjoint test (vertical) result:    T
+          Interpolation adjoint test (total) result:       T
+          Communication AB adjoint test result:            T
+          Communication AC adjoint test result:            T
+          Convolution / communication adjoint test result: T
+          Component NICAS adjoint test result:             T
        Block NICAS adjoint test result:                    T
           Interpolation adjoint test (horizontal) result:  T
           Interpolation adjoint test (vertical) result:    T
@@ -39,14 +65,17 @@
              0.0 /    0.0:  1.0000000
           Level   1:  0.0000000 -  1.0000000
           Level   2:  0.0000000 -  0.6000000
-          MSE (exp. / th. / ratio):  0.38066551E+03 /  0.38137744E+03 / 0.998
-          MSE (exp. / th. / ratio):  0.15233161E+03 /  0.15255098E+03 / 0.999
-          MSE (exp. / th. / ratio):  0.10242482E+03 /  0.10170065E+03 / 1.007
-          MSE (exp. / th. / ratio):  0.72456671E+02 /  0.72643322E+02 / 0.997
-          MSE (exp. / th. / ratio):  0.58115069E+02 /  0.58673452E+02 / 0.990
-          MSE (exp. / th. / ratio):  0.47916672E+02 /  0.47672180E+02 / 1.005
-          MSE (exp. / th. / ratio):  0.41330879E+02 /  0.41229994E+02 / 1.002
-          MSE (exp. / th. / ratio):  0.35155859E+02 /  0.35476971E+02 / 0.991
-          MSE (exp. / th. / ratio):  0.30682191E+02 /  0.31132852E+02 / 0.986
-Norm of BUMP output parameter cor_rh - 1: 3.9038442591886267e+07
-Norm of BUMP output parameter cor_rv - 1: 1.1711532777565881e+02
+             0.0 /    0.0:  0.0000000
+          Level   1:  0.0000000 -  0.0000000
+          Level   2:  0.0000000 -  0.0000000
+          MSE (exp. / th. / ratio):  0.76444866E+03 /  0.76600632E+03 / 0.998
+          MSE (exp. / th. / ratio):  0.31042532E+03 /  0.30640253E+03 / 1.013
+          MSE (exp. / th. / ratio):  0.20595352E+03 /  0.20426835E+03 / 1.008
+          MSE (exp. / th. / ratio):  0.14512242E+03 /  0.14590597E+03 / 0.995
+          MSE (exp. / th. / ratio):  0.11455411E+03 /  0.11784713E+03 / 0.972
+          MSE (exp. / th. / ratio):  0.94193727E+02 /  0.95750791E+02 / 0.984
+          MSE (exp. / th. / ratio):  0.82647003E+02 /  0.82811495E+02 / 0.998
+          MSE (exp. / th. / ratio):  0.71394676E+02 /  0.71256402E+02 / 1.002
+          MSE (exp. / th. / ratio):  0.63495705E+02 /  0.62531129E+02 / 1.015
+Norm of BUMP output parameter cor_rh - 1: 2.2083477986947617e+08
+Norm of BUMP output parameter cor_rv - 1: 1.6562608490210712e+02

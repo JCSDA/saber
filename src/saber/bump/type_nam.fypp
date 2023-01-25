@@ -54,7 +54,7 @@ type nam_type
    logical :: compute_hyb                                     !< Compute hybrid weights
    logical :: new_hdiag                                       !< Compute diagnostics
    character(len=1024) :: hybrid_source                       !< Hybrid term source ('randomized static' or 'lowres ensemble')
-   character(len=1024) :: strategy                            !< Multivariate strategy ('diag_all', 'common', 'common_weighted', 'specific_univariate' or 'specific_multivariate')
+   character(len=1024) :: strategy                            !< Multivariate strategy ('univariate', 'duplicated', 'duplicated and weighted' or 'crossed')
    logical :: iterative_algo                                  !< Iterative algorithm (ensemble members loaded sequentially)
    logical :: new_normality                                   !< New normality test
    logical :: load_samp_local                                 !< Read local sampling
@@ -96,6 +96,9 @@ type nam_type
    character(len=1024) :: lev2d                               !< Level for 2D variables ('first' or 'last')
    integer :: nv                                              !< Number of variables
    character(len=1024),allocatable :: variables(:)            !< Variables names
+   integer :: ng                                              !< Number of groups of variables
+   character(len=1024),allocatable :: group_names(:)          !< Group of variables names
+   integer,allocatable :: group_index(:)                      !< Variables group index
    logical :: mask_check                                      !< Check that sampling couples and interpolations do not cross mask boundaries
 
    ! Ensemble sizes
@@ -175,7 +178,7 @@ type nam_type
    real(kind_real),allocatable :: rv(:,:)                     !< Forced vertical support radius
    integer,allocatable :: min_lev(:)                          !< Minimum level
    integer,allocatable :: max_lev(:)                          !< Maximum level
-   real(kind_real),allocatable :: loc_wgt_sqrt(:,:)           !< Weights square-root for the 'common_weighted' strategy
+   real(kind_real),allocatable :: loc_wgt_sqrt(:,:)           !< Weights square-root for the 'block_weighted' strategy
    character(len=2),allocatable :: nicas_interp_type(:)       !< NICAS C1B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based or 'si': smooth interpolation)
    logical :: pos_def_test                                    !< Positive-definiteness test
    logical :: interp_test                                     !< Horizontal NICAS interpolation test
@@ -263,6 +266,7 @@ call bump_config_init_c(conf%c_ptr())
 
 ! Initialize nam
 nam%nv = 0
+nam%ng = 0
 nam%nmask = 0
 nam%nldwv = 0
 nam%ndir = 0
@@ -487,6 +491,44 @@ if (conf%get('model',section)) then
 
          ! Copy
          nam%variables = str_array
+
+         ! Groups
+         allocate(nam%group_index(nam%nv))
+         if (section%get('groups',confs)) then
+            nam%ng = size(confs)
+            allocate(nam%group_names(nam%ng))
+            nam%group_index = 0
+            do iconf=1,size(confs)
+               call nam%get(confs(iconf),'group name',nam%group_names(iconf))
+               call confs(iconf)%get_or_die('variables',str_array)
+               do it=1,size(str_array)
+                  do iv=1,nam%nv
+                      if (str_array(it)==nam%variables(iv)) then
+                         if (nam%group_index(iv)==0) then
+                            nam%group_index(iv) = iconf
+                         else
+                            call mpl%abort('${subr}$','variable '//trim(nam%variables(iv))//'is present it distinct groups')
+                         end if
+                      end if
+                  end do
+               end do
+            end do
+         else
+            select case (nam%strategy)
+            case ('duplicated','duplicated and weighted')
+               nam%ng = 1
+               allocate(nam%group_names(nam%ng))
+               nam%group_names(1) = 'common'
+               nam%group_index = 1
+            case default
+               nam%ng = nam%nv
+               allocate(nam%group_names(nam%ng))
+               do iv=1,nam%nv
+                  nam%group_names(iv) = nam%variables(iv)
+                  nam%group_index(iv) = iv
+               end do
+            end select
+         end if
       end if
    end if
    call nam%get(section,'do not cross mask boundaries',nam%mask_check)
@@ -740,7 +782,7 @@ if (conf%get('nicas',section)) then
    call nam%get(mpl,section,'horizontal length-scale',nam%rh,one/req)
    call nam%get(mpl,section,'vertical length-scale',nam%rv)
    if (section%get('common localization weights',confs)) then
-      if ((nam%strategy=='common_weighted').and.(size(confs)>0).and.(nam%nv>0)) then
+      if ((nam%strategy=='duplicated and weighted').and.(size(confs)>0).and.(nam%nv>0)) then
          ! Release memory
          if (allocated(nam%loc_wgt_sqrt)) deallocate(nam%loc_wgt_sqrt)
 
@@ -800,7 +842,7 @@ if (conf%get('nicas',section)) then
          ! Copy
          nam%nicas_interp_type = 'c0'
          do iconf=1,size(confs)
-            call confs(iconf)%get_or_die('variables',str_array)
+            call confs(iconf)%get_or_die('groups',str_array)
             call confs(iconf)%get_or_die('type',str)
             do it=1,size(str_array)
                if (str_array(it)=='common') nam%nicas_interp_type(0) = str
@@ -888,7 +930,7 @@ class(nam_type),intent(inout) :: nam !< Namelist
 type(mpl_type),intent(inout) :: mpl  !< MPI data
 
 ! Local variables
-integer :: iv
+integer :: ig
 
 ! Set name
 @:set_name(nam_final)
@@ -909,22 +951,23 @@ if (nam%nldwv>0) nam%lat_ldwv = nam%lat_ldwv*deg2rad
 
 ! Required parameters
 if (.not.allocated(nam%nicas_interp_type)) then
-   allocate(nam%nicas_interp_type(0:nam%nv))
+   allocate(nam%nicas_interp_type(nam%ng))
    nam%nicas_interp_type = 'c0'
 end if
 if (.not.allocated(nam%min_lev)) then
-   allocate(nam%min_lev(0:nam%nv))
+   allocate(nam%min_lev(nam%ng))
    nam%min_lev = 1
 end if
 if (.not.allocated(nam%max_lev)) then
-   allocate(nam%max_lev(0:nam%nv))
+   allocate(nam%max_lev(nam%ng))
    nam%max_lev = nam%nl0
 end if
 
 ! Apply bounds
-do iv=0,nam%nv
-   if (mpl%msv%is(nam%min_lev(iv))) nam%min_lev(iv) = 1
-   if (mpl%msv%is(nam%max_lev(iv))) nam%max_lev(iv) = nam%nl0
+nam%nl0r = min(nam%nl0r,nam%nl0)
+do ig=1,nam%ng
+   if (mpl%msv%is(nam%min_lev(ig))) nam%min_lev(ig) = 1
+   if (mpl%msv%is(nam%max_lev(ig))) nam%max_lev(ig) = nam%nl0
    if (nam%nprocio>mpl%nproc) nam%nprocio = mpl%nproc
 end do
 
@@ -943,7 +986,7 @@ class(nam_type),intent(inout) :: nam !< Namelist
 type(mpl_type),intent(inout) :: mpl  !< MPI data
 
 ! Local variables
-integer :: iv,ivmin,ivmax,il0,idir,ildwv,imask
+integer :: iv,ig,il0,idir,ildwv,imask
 character(len=2) :: ildwvchar
 
 ! Set name
@@ -987,7 +1030,7 @@ if ((nam%new_hdiag.or.nam%check_optimality).and.nam%compute_hyb) then
 end if
 if (nam%new_hdiag.or.nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
    select case (nam%strategy)
-   case ('diag_all','common','common_weighted','specific_univariate','specific_multivariate')
+   case ('univariate','duplicated','duplicated and weighted','crossed')
    case default
       call mpl%abort('${subr}$','wrong strategy')
    end select
@@ -1045,6 +1088,15 @@ end if
 ! Model section
 if (nam%nl0<=0) call mpl%abort('${subr}$','nl0 should be positive')
 if ((nam%lev2d/='first').and.(nam%lev2d/='last')) call mpl%abort('${subr}$','wrong lev2d value')
+if (nam%nv<=0) call mpl%abort('${subr}$','no variables')
+do iv=1,nam%nv
+   if (nam%variables(iv)=='') call mpl%abort('${subr}$','empty variable name')
+end do
+if (nam%ng<=0) call mpl%abort('${subr}$','no group')
+if (any(nam%group_index<1).or.any(nam%group_index>nam%ng)) call mpl%abort('${subr}$','wrong group index')
+do ig=1,nam%ng
+   if (nam%group_names(ig)=='') call mpl%abort('${subr}$','empty group name')
+end do
 
 ! Ensemble sizes section
 if ((nam%new_normality.or.nam%new_vbal_cov.or.(nam%new_vbal.and.(.not.nam%load_vbal_cov)) &
@@ -1200,13 +1252,6 @@ end if
 
 ! NICAS section
 if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
-   if ((nam%strategy=='common').or.(nam%strategy=='common_weighted')) then
-      ivmin = 0
-      ivmax = 0
-   else
-      ivmin = 1
-      ivmax = nam%nv
-   end if
    if (nam%check_randomization) then
       if (.not.nam%forced_radii) call mpl%abort('${subr}$','forced_radii required for check_randomization')
    end if
@@ -1221,25 +1266,25 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
       if (nam%nc1max<=0) call mpl%abort('${subr}$','nc1max should be positive')
    end if
    if (nam%forced_radii) then
-      if (allocated(nam%rh).or.allocated(nam%rv)) then
-         if (.not.(allocated(nam%rh).and.allocated(nam%rv))) call mpl%abort('${subr}$','rh and/or rv are missing')
-         do iv=ivmin,ivmax
+      if (.not.(allocated(nam%rh).and.allocated(nam%rv))) then
+      if (allocated(nam%rh).and.allocated(nam%rv)) call mpl%abort('${subr}$','rh and/or rv are missing')
+         do ig=1,nam%ng
             do il0=1,nam%nl0
-               if (mpl%msv%is(nam%rh(il0,iv))) call mpl%abort('${subr}$','rh is missing')
-               if (mpl%msv%is(nam%rv(il0,iv))) call mpl%abort('${subr}$','rv is missing')
-               if (nam%rh(il0,iv)<zero) call mpl%abort('${subr}$','rh should be non-negative')
-               if (nam%rv(il0,iv)<zero) call mpl%abort('${subr}$','rv should be non-negative')
+               if (mpl%msv%is(nam%rh(il0,ig))) call mpl%abort('${subr}$','rh is missing')
+               if (mpl%msv%is(nam%rv(il0,ig))) call mpl%abort('${subr}$','rv is missing')
+               if (nam%rh(il0,ig)<zero) call mpl%abort('${subr}$','rh should be non-negative')
+               if (nam%rv(il0,ig)<zero) call mpl%abort('${subr}$','rv should be non-negative')
             end do
          end do
       end if
    end if
-   do iv=0,nam%nv
-      if (nam%min_lev(iv)<1) call mpl%abort('${subr}$','min_lev should be positive')
-      if (nam%max_lev(iv)>nam%nl0) call mpl%abort('${subr}$','max_lev is larger than the number of levels')
-      if (nam%min_lev(iv)>nam%max_lev(iv)) call mpl%abort('${subr}$','min_lev should not be larger than max_lev')
+   do ig=1,nam%ng
+      if (nam%min_lev(ig)<1) call mpl%abort('${subr}$','min_lev should be positive')
+      if (nam%max_lev(ig)>nam%nl0) call mpl%abort('${subr}$','max_lev is larger than the number of levels')
+      if (nam%min_lev(ig)>nam%max_lev(ig)) call mpl%abort('${subr}$','min_lev should not be larger than max_lev')
    end do
-   if (nam%strategy=='common_weighted') then
-      if (.not.allocated(nam%loc_wgt_sqrt)) call mpl%abort('${subr}$','loc_wgt should be specified for common_weighted')
+   if (nam%strategy=='block_weighted') then
+      if (.not.allocated(nam%loc_wgt_sqrt)) call mpl%abort('${subr}$','loc_wgt should be specified for block_weighted')
    end if
    select case (nam%nicas_draw_type)
    case ('random')
@@ -1248,8 +1293,8 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
    case default
       call mpl%abort('${subr}$','wrong nicas_draw_type')
    end select
-   do iv=ivmin,ivmax
-      select case (nam%nicas_interp_type(iv))
+   do ig=1,nam%ng
+      select case (nam%nicas_interp_type(ig))
       case ('c0','c1','si')
       case default
          call mpl%abort('${subr}$','wrong nicas_interp_type')
@@ -1462,7 +1507,7 @@ character(len=*),intent(in) :: key           !< Key
 integer,allocatable,intent(inout) :: val(:)  !< Values
 
 ! Local variables
-integer :: iconf,iv,it
+integer :: iconf,ig,it
 integer :: scalar
 character(len=:),allocatable :: str_array(:)
 type(fckit_configuration),allocatable :: confs(:)
@@ -1473,12 +1518,12 @@ type(fckit_configuration),allocatable :: confs(:)
 ! Probe in
 @:probe_in()
 
-if (conf%has(key).and.(nam%nv>0)) then
+if (conf%has(key).and.(nam%ng>0)) then
    ! Release memory
    if (allocated(val)) deallocate(val)
 
    ! Allocation
-   allocate(val(0:nam%nv))
+   allocate(val(nam%ng))
 
    ! Initialization
    val = mpl%msv%vali
@@ -1488,12 +1533,17 @@ if (conf%has(key).and.(nam%nv>0)) then
 
    ! Loop over subconfigurations
    do iconf=1,size(confs)
-      call confs(iconf)%get_or_die('variables',str_array)
+      if (confs(iconf)%has('groups')) then
+         call confs(iconf)%get_or_die('groups',str_array)
+      elseif (confs(iconf)%has('variables')) then
+         call confs(iconf)%get_or_die('variables',str_array)
+      else
+         call mpl%abort('${subr}$','groups or variables missing')
+      end if
       call confs(iconf)%get_or_die('value',scalar)
       do it=1,size(str_array)
-         if (str_array(it)=='common') val(0) = scalar
-         do iv=1,nam%nv
-            if (str_array(it)==nam%variables(iv)) val(iv) = scalar
+         do ig=1,nam%ng
+            if (str_array(it)==nam%group_names(ig)) val(ig) = scalar
          end do
       end do
    end do
@@ -1521,7 +1571,7 @@ real(kind_real),allocatable,intent(inout) :: val(:,:) !< Values
 real(kind_real),intent(in),optional :: norm           !< Normalization factor
 
 ! Local variables
-integer :: iconf,iv,it
+integer :: iconf,ig,it
 real(kind_real) :: scalar,lnorm
 real(kind_real),allocatable :: array(:)
 character(len=:),allocatable :: str_array(:)
@@ -1537,12 +1587,12 @@ type(fckit_configuration),allocatable :: confs(:)
 lnorm = one
 if (present(norm)) lnorm = norm
 
-if (conf%has(key).and.(nam%nl0>0).and.(nam%nv>0)) then
+if (conf%has(key).and.(nam%nl0>0).and.(nam%ng>0)) then
    ! Release memory
    if (allocated(val)) deallocate(val)
 
    ! Allocation
-   allocate(val(nam%nl0,0:nam%nv))
+   allocate(val(nam%nl0,nam%ng))
 
    ! Initialization
    val = mpl%msv%valr
@@ -1552,21 +1602,25 @@ if (conf%has(key).and.(nam%nl0>0).and.(nam%nv>0)) then
 
    ! Loop over subconfigurations
    do iconf=1,size(confs)
-      call confs(iconf)%get_or_die('variables',str_array)
+      if (confs(iconf)%has('groups')) then
+         call confs(iconf)%get_or_die('groups',str_array)
+      elseif (confs(iconf)%has('variables')) then
+         call confs(iconf)%get_or_die('variables',str_array)
+      else
+         call mpl%abort('${subr}$','groups or variables missing')
+      end if
       if (confs(iconf)%has('value')) then
          call confs(iconf)%get_or_die('value',scalar)
          do it=1,size(str_array)
-            if (str_array(it)=='common') val(:,0) = scalar*lnorm
-            do iv=1,nam%nv
-               if (str_array(it)==nam%variables(iv)) val(:,iv) = scalar*lnorm
+            do ig=1,nam%ng
+               if (str_array(it)==nam%group_names(ig)) val(:,ig) = scalar*lnorm
             end do
          end do
       elseif (confs(iconf)%has('profile')) then
          call confs(iconf)%get_or_die('profile',array)
          do it=1,size(str_array)
-            if (str_array(it)=='common') val(1:size(array),0) = array*lnorm
-            do iv=1,nam%nv
-               if (str_array(it)==nam%variables(iv)) val(1:size(array),iv) = array*lnorm
+            do ig=1,nam%ng
+               if (str_array(it)==nam%group_names(ig)) val(1:size(array),ig) = array*lnorm
             end do
          end do
       else

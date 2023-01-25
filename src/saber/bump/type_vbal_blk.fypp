@@ -12,7 +12,6 @@ use tools_const, only: zero,one
 use tools_func, only: syminv,zss_count
 use tools_kinds, only: kind_real
 use tools_wrfda, only: pseudoinv
-use type_bpar, only: bpar_type
 use type_ens, only: ens_type
 use type_geom, only: geom_type
 use type_mpl, only: mpl_type
@@ -64,7 +63,7 @@ contains
 ! Subroutine: vbal_blk_alloc
 !> Allocation
 !----------------------------------------------------------------------
-subroutine vbal_blk_alloc(vbal_blk,nam,geom,bpar,samp,iv,jv)
+subroutine vbal_blk_alloc(vbal_blk,nam,geom,samp,iv,jv)
 
 implicit none
 
@@ -72,7 +71,6 @@ implicit none
 class(vbal_blk_type),intent(inout) :: vbal_blk !< Vertical balance block
 type(nam_type),intent(in) :: nam               !< Namelist
 type(geom_type),intent(in) :: geom             !< Geometry
-type(bpar_type),intent(in) :: bpar             !< Block parameters
 type(samp_type), intent(in) :: samp            !< Sampling
 integer,intent(in) :: iv                       !< First variable index
 integer,intent(in) :: jv                       !< Second variable index

@@ -524,8 +524,8 @@ implicit none
 ! Passed variables
 class(mesh_type),intent(in) :: mesh    !< Mesh
 type(mpl_type),intent(inout) :: mpl    !< MPI data
-real(kind_real),intent(out) :: b(3)    !< Barycentric weights
-integer,intent(out) :: ib(3)           !< Barycentric indices
+real(kind_real),intent(in) :: b(3)     !< Barycentric weights
+integer,intent(in) :: ib(3)            !< Barycentric indices
 real(kind_real),intent(out) :: af(3)   !< Function weights
 real(kind_real),intent(out) :: ag(3,3) !< Gradient weights
 

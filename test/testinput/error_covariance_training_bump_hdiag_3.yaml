@@ -6,14 +6,17 @@ geometry:
   groups:
   - variables:
     - var1
+    - var2
     levels: 2
   halo: 1
 input variables:
 - var1
+- var2
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
   - var1
+  - var2
 bump:
   general:
     testing: true
@@ -24,7 +27,7 @@ bump:
     compute covariance: true
     compute correlation: true
     compute localization: true
-    multivariate strategy: common
+    multivariate strategy: duplicated
     iterative algorithm: true
     compute moments: true
     write diagnostics: true
@@ -50,6 +53,7 @@ bump:
         filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
         state variables:
         - var1
+        - var2
       pattern: '%mem%'
       nmembers: 25
       zero padding: 6

@@ -25,7 +25,7 @@ bump:
     data directory: testdata
     files prefix: error_covariance_training_bump_nicas_4/_MPI_-_OMP_
   drivers:
-    multivariate strategy: common_weighted
+    multivariate strategy: duplicated and weighted
     compute nicas: true
     adjoints test: true
     internal dirac test: true
@@ -38,7 +38,7 @@ bump:
       - var2
       value: 0.5
     interpolation type:
-    - variables:
+    - groups:
       - common
       type: c1
     positive-definiteness test: true

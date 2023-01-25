@@ -25,23 +25,23 @@ background error:
         data directory: testdata
         files prefix: randomization_bump_nicas_L10L10/_MPI_-_OMP_
       drivers:
-        multivariate strategy: specific_univariate
+        multivariate strategy: univariate
         compute nicas: true
       nicas:
         resolution: 4.0
         explicit length-scales: true
         horizontal length-scale:
-        - variables:
+        - groups:
           - var1
           - var2
           - var_2d
           value: 4.0e6
         vertical length-scale:
-        - variables:
+        - groups:
           - var1
           - var2
           value: 5.0
-        - variables:
+        - groups:
           - var_2d
           value: 0.0
   randomization size: 25

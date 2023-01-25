@@ -111,6 +111,8 @@ type geom_type
 
    ! Number of levels
    integer :: nl0                                 !< Number of levels in subset Sl0
+   integer,allocatable :: l0rl0_to_l0(:,:)        !< Reduced level to level
+   integer,allocatable :: il0rz(:)                !< Reduced level at zero separation
    integer :: nl0i                                !< Number of independent levels in subset Sl0
    integer,allocatable :: l0_to_l0i(:)            !< Levels to independent levels in Sl0
    integer,allocatable :: l0i_to_l0(:)            !< Independent levels to level in Sl0
@@ -127,15 +129,15 @@ type geom_type
    ! Mesh
    type(mesh_type) :: mesh_c0u                    !< Mesh on subset Sc0, universe
 
-   ! Dirac fields
+   ! Dirac fields for variables
    integer :: ndir                                !< Number of valid Dirac points
    real(kind_real),allocatable :: londir(:)       !< Dirac longitude
    real(kind_real),allocatable :: latdir(:)       !< Dirac latitude
    integer,allocatable :: iprocdir(:)             !< Dirac processor
    integer,allocatable :: ic0adir(:)              !< Dirac gridpoint
    integer,allocatable :: il0dir(:)               !< Dirac level
-   integer,allocatable :: ivdir(:)                !< Dirac variable
-   integer,allocatable :: dirac_index(:)          !< Local dirac index
+   integer,allocatable :: ivdir(:)                !< Dirac field index
+   integer,allocatable :: inbdir(:)               !< Neighboring dirac index
 
    ! I/O
    type(io_type) :: io                             !< Subset Sc0 I/O
@@ -209,6 +211,8 @@ class(geom_type),intent(inout) :: geom !< Geometry
 @:probe_in()
 
 ! Release memory
+if (allocated(geom%l0rl0_to_l0)) deallocate(geom%l0rl0_to_l0)
+if (allocated(geom%il0rz)) deallocate(geom%il0rz)
 if (allocated(geom%lon_mga)) deallocate(geom%lon_mga)
 if (allocated(geom%lat_mga)) deallocate(geom%lat_mga)
 if (allocated(geom%area_mga)) deallocate(geom%area_mga)
@@ -244,7 +248,7 @@ if (allocated(geom%iprocdir)) deallocate(geom%iprocdir)
 if (allocated(geom%ic0adir)) deallocate(geom%ic0adir)
 if (allocated(geom%il0dir)) deallocate(geom%il0dir)
 if (allocated(geom%ivdir)) deallocate(geom%ivdir)
-if (allocated(geom%dirac_index)) deallocate(geom%dirac_index)
+if (allocated(geom%inbdir)) deallocate(geom%inbdir)
 
 ! Probe out
 @:probe_out()
@@ -304,7 +308,7 @@ type(atlas_functionspace),intent(in) :: afunctionspace !< ATLAS function space
 type(fieldset_type),intent(in),optional :: fieldset    !< Fieldset containing geometry elements
 
 ! Local variables
-integer :: jc3,jc4,il0,iproc
+integer :: il0,jl0off,jl0r,jc3,jc4,iproc
 
 ! Set name
 @:set_name(geom_setup)
@@ -317,6 +321,19 @@ geom%nproc = mpl%nproc
 
 ! Number of levels
 geom%nl0 = nam%nl0
+
+! Reduced number of levels
+allocate(geom%l0rl0_to_l0(nam%nl0r,geom%nl0))
+allocate(geom%il0rz(geom%nl0))
+do il0=1,geom%nl0
+   jl0off = il0-(nam%nl0r-1)/2-1
+   if (jl0off<1) jl0off = 0
+   if (jl0off+nam%nl0r>geom%nl0) jl0off = geom%nl0-nam%nl0r
+   do jl0r=1,nam%nl0r
+      geom%l0rl0_to_l0(jl0r,il0) = jl0off+jl0r
+      if (geom%l0rl0_to_l0(jl0r,il0)==il0) geom%il0rz(il0) = jl0r
+   end do
+end do
 
 ! Copy function space pointer
 if (present(fieldset)) then
@@ -405,6 +422,9 @@ do iproc=1,mpl%nproc
    write(mpl%info,'(a13,a,i6,a,i8,a,i8)') '','Task ',iproc,': ',geom%proc_to_nc0a(iproc),' / ',geom%proc_to_nc0u(iproc)
    call mpl%flush
 end do
+
+! Reset random seed if necessary
+if (nam%default_seed) call rng%reseed(mpl)
 
 ! Probe out
 @:probe_out()
@@ -1273,7 +1293,7 @@ if (nam%check_dirac.and.(nam%ndir>0)) then
    allocate(geom%ic0adir(geom%ndir))
    allocate(geom%il0dir(geom%ndir))
    allocate(geom%ivdir(geom%ndir))
-   allocate(geom%dirac_index(geom%nc0a))
+   allocate(geom%inbdir(geom%nc0a))
 
    ! Add valid dirac points
    geom%ndir = 0
@@ -1307,7 +1327,7 @@ if (nam%check_dirac.and.(nam%ndir>0)) then
    ! Affect each horizontal point to a dirac point
    do ic0a=1,geom%nc0a
       call tree_dirac%find_nearest_neighbors(geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),1,nn_index)
-      geom%dirac_index(ic0a) = nn_index(1)
+      geom%inbdir(ic0a) = nn_index(1)
    end do
 
    ! Release memory
@@ -2115,6 +2135,9 @@ end do
 
 ! Desynchronize random number generator
 call rng%desync(mpl)
+
+! Reset random seed if necessary
+if (nam%default_seed) call rng%reseed(mpl)
 
 ! Probe out
 @:probe_out()

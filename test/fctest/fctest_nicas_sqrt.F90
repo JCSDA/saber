@@ -69,10 +69,9 @@ TEST( test_interpolatorbump )
 
   ! Create configuration
   conf = fckit_configuration()
-  call conf%set('drivers.multivariate strategy','specific_multivariate')
+  call conf%set('drivers.multivariate strategy','crossed')
   call conf%set('drivers.compute nicas',.true.)
   call conf%set('model.variables',variables)
-  call conf%set('model.nv',2)
   call conf%set('model.nl0',nl0)
   call conf%set('model.lev2d',lev2d)
   call conf%set('nicas.resolution',4.0_kind_real)

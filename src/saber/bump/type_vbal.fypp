@@ -15,7 +15,6 @@ use tools_func, only: zss_maxval,zss_sum
 use tools_kinds, only: kind_real
 use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,define_dim,define_var,inquire_var,put_var,get_var,close_file
 use tools_repro, only: infeq,repro_th
-use type_bpar, only: bpar_type
 use type_ens, only: ens_type
 use type_geom, only: geom_type
 use type_mpl, only: mpl_type
@@ -70,7 +69,7 @@ contains
 ! Subroutine: vbal_alloc
 !> Allocation
 !----------------------------------------------------------------------
-subroutine vbal_alloc(vbal,mpl,nam,geom,bpar,samp,nsub)
+subroutine vbal_alloc(vbal,mpl,nam,geom,samp,nsub)
 
 implicit none
 
@@ -79,7 +78,6 @@ class(vbal_type),intent(inout) :: vbal !< Vertical balance
 type(mpl_type),intent(inout) :: mpl    !< MPI data
 type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
-type(bpar_type),intent(in) :: bpar     !< Block parameters
 type(samp_type),intent(in) :: samp     !< Sampling
 integer,intent(in),optional :: nsub    !< Number of sub-ensembles
 
@@ -105,7 +103,7 @@ do iv=1,nam%nv
       else
          vbal%blk(iv,jv)%nsub = 0
       end if
-      call vbal%blk(iv,jv)%alloc(nam,geom,bpar,samp,iv,jv)
+      call vbal%blk(iv,jv)%alloc(nam,geom,samp,iv,jv)
    end do
 end do
 
@@ -191,7 +189,7 @@ end subroutine vbal_dealloc
 ! Subroutine: vbal_cov_read_local
 !> Read local full covariances
 !----------------------------------------------------------------------
-subroutine vbal_cov_read_local(vbal,mpl,nam,geom,bpar,samp,nsub)
+subroutine vbal_cov_read_local(vbal,mpl,nam,geom,samp,nsub)
 
 implicit none
 
@@ -200,7 +198,6 @@ class(vbal_type),intent(inout) :: vbal !< Vertical balance
 type(mpl_type),intent(inout) :: mpl    !< MPI data
 type(nam_type),intent(inout) :: nam    !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
-type(bpar_type),intent(in) :: bpar     !< Block parameters
 type(samp_type),intent(in) :: samp     !< Sampling
 integer,intent(in) :: nsub             !< Number of sub-ensembles
 
@@ -217,7 +214,7 @@ character(len=1024) :: grpname,fname_vbal_cov
 @:probe_in()
 
 ! Allocation
-call vbal%alloc(mpl,nam,geom,bpar,samp,nsub)
+call vbal%alloc(mpl,nam,geom,samp,nsub)
 
 ! Initialization
 do iv=1,nam%nv
@@ -336,7 +333,7 @@ end subroutine vbal_cov_write_local
 ! Subroutine: vbal_cov_read_global
 !> Read local full covariances
 !----------------------------------------------------------------------
-subroutine vbal_cov_read_global(vbal,mpl,nam,geom,bpar,samp,nsub)
+subroutine vbal_cov_read_global(vbal,mpl,nam,geom,samp,nsub)
 
 implicit none
 
@@ -345,7 +342,6 @@ class(vbal_type),intent(inout) :: vbal !< Vertical balance
 type(mpl_type),intent(inout) :: mpl    !< MPI data
 type(nam_type),intent(inout) :: nam    !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
-type(bpar_type),intent(in) :: bpar     !< Block parameters
 type(samp_type),intent(in) :: samp     !< Sampling
 integer,intent(in) :: nsub             !< Number of sub-ensembles
 
@@ -362,7 +358,7 @@ character(len=1024) :: grpname,fname_vbal_cov
 @:probe_in()
 
 ! Allocation
-call vbal%alloc(mpl,nam,geom,bpar,samp,nsub)
+call vbal%alloc(mpl,nam,geom,samp,nsub)
 
 ! Initialization
 do iv=1,nam%nv
@@ -481,7 +477,7 @@ end subroutine vbal_cov_write_global
 ! Subroutine: vbal_cov_run
 !> Compute vertical covariance
 !----------------------------------------------------------------------
-subroutine vbal_cov_run(vbal,mpl,nam,geom,bpar,samp,ens)
+subroutine vbal_cov_run(vbal,mpl,nam,geom,samp,ens)
 
 implicit none
 
@@ -490,7 +486,6 @@ class(vbal_type),intent(inout) :: vbal !< Vertical balance
 type(mpl_type),intent(inout) :: mpl    !< MPI data
 type(nam_type),intent(inout) :: nam    !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
-type(bpar_type),intent(in) :: bpar     !< Block parameters
 type(samp_type),intent(in) :: samp     !< Sampling
 type(ens_type), intent(inout) :: ens   !< Ensemble
 
@@ -504,7 +499,7 @@ integer :: iv,jv
 @:probe_in()
 
 ! Allocation
-call vbal%alloc(mpl,nam,geom,bpar,samp,ens%nsub)
+call vbal%alloc(mpl,nam,geom,samp,ens%nsub)
 
 ! Compute vertical covariances
 write(mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -532,7 +527,7 @@ end subroutine vbal_cov_run
 ! Subroutine: vbal_cov_update
 !> Update vertical covariance
 !----------------------------------------------------------------------
-subroutine vbal_cov_update(vbal,mpl,nam,geom,bpar,samp,fld_c0a,ie)
+subroutine vbal_cov_update(vbal,mpl,nam,geom,samp,fld_c0a,ie)
 
 implicit none
 
@@ -541,7 +536,6 @@ class(vbal_type),intent(inout) :: vbal                           !< Vertical bal
 type(mpl_type),intent(inout) :: mpl                              !< MPI data
 type(nam_type),intent(inout) :: nam                              !< Namelist
 type(geom_type),intent(in) :: geom                               !< Geometry
-type(bpar_type),intent(in) :: bpar                               !< Block parameters
 type(samp_type),intent(inout) :: samp                            !< Sampling
 real(kind_real),intent(in) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) !< Field
 integer,intent(in) :: ie                                         !< Member index
@@ -562,7 +556,7 @@ write(mpl%info,'(a)') '--- Update vertical covariance'
 call mpl%flush
 
 ! Allocation
-if (ie==1) call vbal%alloc(mpl,nam,geom,bpar,samp,nam%ens1_nsub)
+if (ie==1) call vbal%alloc(mpl,nam,geom,samp,nam%ens1_nsub)
 
 ! Update vertical covariance
 do iv=1,nam%nv
@@ -586,7 +580,7 @@ end subroutine vbal_cov_update
 ! Subroutine: vbal_read_local
 !> Read local data
 !----------------------------------------------------------------------
-subroutine vbal_read_local(vbal,mpl,nam,geom,bpar,samp)
+subroutine vbal_read_local(vbal,mpl,nam,geom,samp)
 
 implicit none
 
@@ -595,7 +589,6 @@ class(vbal_type),intent(inout) :: vbal !< Vertical balance
 type(mpl_type),intent(inout) :: mpl    !< MPI data
 type(nam_type),intent(inout) :: nam    !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
-type(bpar_type),intent(in) :: bpar     !< Block parameters
 type(samp_type),intent(in) :: samp     !< Sampling
 
 ! Local variables
@@ -645,7 +638,7 @@ do il0i=1,geom%nl0i
 end do
 
 ! Allocation
-call vbal%alloc(mpl,nam,geom,bpar,samp)
+call vbal%alloc(mpl,nam,geom,samp)
 allocate(reg_c2a(samp%nc2a,geom%nl0,geom%nl0))
 allocate(reg_c2b(samp%nc2b,geom%nl0,geom%nl0))
 
@@ -687,7 +680,7 @@ deallocate(reg_c2a)
 deallocate(reg_c2b)
 
 ! Write balance operator
-if (nam%write_vbal.and.nam%write_samp_global) call vbal%write_global(mpl,nam,geom,bpar,samp)
+if (nam%write_vbal.and.nam%write_samp_global) call vbal%write_global(mpl,nam,geom,samp)
 
 ! Probe out
 @:probe_out()
@@ -698,7 +691,7 @@ end subroutine vbal_read_local
 ! Subroutine: vbal_write_local
 !> Write local data
 !----------------------------------------------------------------------
-subroutine vbal_write_local(vbal,mpl,nam,geom,bpar,samp)
+subroutine vbal_write_local(vbal,mpl,nam,geom,samp)
 
 implicit none
 
@@ -707,7 +700,6 @@ class(vbal_type),intent(inout) :: vbal !< Vertical balance
 type(mpl_type),intent(inout) :: mpl    !< MPI data
 type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
-type(bpar_type),intent(in) :: bpar     !< Block parameters
 type(samp_type),intent(in) :: samp     !< Sampling
 
 ! Local variables
@@ -829,7 +821,7 @@ end subroutine vbal_write_local
 ! Subroutine: vbal_read_global
 !> Read global data
 !----------------------------------------------------------------------
-subroutine vbal_read_global(vbal,mpl,nam,geom,bpar,samp)
+subroutine vbal_read_global(vbal,mpl,nam,geom,samp)
 
 implicit none
 
@@ -838,7 +830,6 @@ class(vbal_type),intent(inout) :: vbal !< Vertical balance
 type(mpl_type),intent(inout) :: mpl    !< MPI data
 type(nam_type),intent(inout) :: nam    !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
-type(bpar_type),intent(in) :: bpar     !< Block parameters
 type(samp_type),intent(in) :: samp     !< Sampling
 
 ! Local variables
@@ -888,7 +879,7 @@ do il0i=1,geom%nl0i
 end do
 
 ! Allocation
-call vbal%alloc(mpl,nam,geom,bpar,samp)
+call vbal%alloc(mpl,nam,geom,samp)
 allocate(reg_c2a(samp%nc2a,geom%nl0,geom%nl0))
 allocate(reg_c2b(samp%nc2b,geom%nl0,geom%nl0))
 
@@ -930,7 +921,7 @@ deallocate(reg_c2a)
 deallocate(reg_c2b)
 
 ! Write balance operator
-if (nam%write_vbal.and.nam%write_samp_local) call vbal%write_local(mpl,nam,geom,bpar,samp)
+if (nam%write_vbal.and.nam%write_samp_local) call vbal%write_local(mpl,nam,geom,samp)
 
 ! Probe out
 @:probe_out()
@@ -941,7 +932,7 @@ end subroutine vbal_read_global
 ! Subroutine: vbal_write_global
 !> Write global data
 !----------------------------------------------------------------------
-subroutine vbal_write_global(vbal,mpl,nam,geom,bpar,samp)
+subroutine vbal_write_global(vbal,mpl,nam,geom,samp)
 
 implicit none
 
@@ -950,7 +941,6 @@ class(vbal_type),intent(inout) :: vbal !< Vertical balance
 type(mpl_type),intent(inout) :: mpl    !< MPI data
 type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
-type(bpar_type),intent(in) :: bpar     !< Block parameters
 type(samp_type),intent(in) :: samp     !< Sampling
 
 ! Local variables
@@ -1072,7 +1062,7 @@ end subroutine vbal_write_global
 ! Subroutine: vbal_run_vbal
 !> Compute vertical balance
 !----------------------------------------------------------------------
-subroutine vbal_run_vbal(vbal,mpl,nam,geom,bpar,samp,ens)
+subroutine vbal_run_vbal(vbal,mpl,nam,geom,samp,ens)
 
 implicit none
 
@@ -1081,7 +1071,6 @@ class(vbal_type),intent(inout) :: vbal !< Vertical balance
 type(mpl_type),intent(inout) :: mpl    !< MPI data
 type(nam_type),intent(inout) :: nam    !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
-type(bpar_type),intent(in) :: bpar     !< Block parameters
 type(samp_type),intent(in) :: samp     !< Sampling
 type(ens_type), intent(inout) :: ens   !< Ensemble
 
@@ -1138,7 +1127,7 @@ call mpl%flush
 
 ! Allocation
 if (.not.(nam%new_vbal_cov.or.nam%load_vbal_cov)) then
-   call vbal%alloc(mpl,nam,geom,bpar,samp,ens%nsub)
+   call vbal%alloc(mpl,nam,geom,samp,ens%nsub)
    call ensu%alloc(ens%ne,ens%nsub)
 end if
 
@@ -1272,8 +1261,8 @@ end do
 
 ! Write balance operator
 if (nam%write_vbal) then
-   if (nam%load_samp_local.or.nam%write_samp_local) call vbal%write_local(mpl,nam,geom,bpar,samp)
-   if (nam%load_samp_global.or.nam%write_samp_global) call vbal%write_global(mpl,nam,geom,bpar,samp)
+   if (nam%load_samp_local.or.nam%write_samp_local) call vbal%write_local(mpl,nam,geom,samp)
+   if (nam%load_samp_global.or.nam%write_samp_global) call vbal%write_global(mpl,nam,geom,samp)
 end if
 
 ! Release memory
@@ -1288,7 +1277,7 @@ end subroutine vbal_run_vbal
 ! Subroutine: vbal_run_vbal_tests
 !> Compute vertical balance tests
 !----------------------------------------------------------------------
-subroutine vbal_run_vbal_tests(vbal,mpl,rng,nam,geom,bpar)
+subroutine vbal_run_vbal_tests(vbal,mpl,rng,nam,geom)
 
 implicit none
 
@@ -1298,7 +1287,6 @@ type(mpl_type),intent(inout) :: mpl    !< MPI data
 type(rng_type),intent(inout) :: rng    !< Random number generator
 type(nam_type),intent(inout) :: nam    !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
-type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Set name
 @:set_name(vbal_run_vbal_tests)
@@ -1307,13 +1295,16 @@ type(bpar_type),intent(in) :: bpar     !< Block parameters
 @:probe_in()
 
 ! Test inverse
-if (nam%check_vbal) call vbal%test_inverse(mpl,rng,nam,geom,bpar)
+if (nam%check_vbal) call vbal%test_inverse(mpl,rng,nam,geom)
 
 ! Test adjoint
-if (nam%check_adjoints) call vbal%test_adjoint(mpl,rng,nam,geom,bpar)
+if (nam%check_adjoints) call vbal%test_adjoint(mpl,rng,nam,geom)
 
 ! Test dirac
-if (nam%check_dirac) call vbal%test_dirac(mpl,nam,geom,bpar)
+if (nam%check_dirac) call vbal%test_dirac(mpl,nam,geom)
+
+! Reset random seed if necessary
+if (nam%default_seed) call rng%reseed(mpl)
 
 ! Probe out
 @:probe_out()
@@ -1324,7 +1315,7 @@ end subroutine vbal_run_vbal_tests
 ! Subroutine: vbal_apply
 !> Apply vertical balance
 !----------------------------------------------------------------------
-subroutine vbal_apply(vbal,nam,geom,bpar,fld)
+subroutine vbal_apply(vbal,nam,geom,fld)
 
 implicit none
 
@@ -1332,7 +1323,6 @@ implicit none
 class(vbal_type),intent(in) :: vbal                             !< Vertical balance
 type(nam_type),intent(in) :: nam                                !< Namelist
 type(geom_type),intent(in) :: geom                              !< Geometry
-type(bpar_type),intent(in) :: bpar                              !< Block parameters
 real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Source/destination vector
 
 ! Local variables
@@ -1375,7 +1365,7 @@ end subroutine vbal_apply
 ! Subroutine: vbal_apply_inv
 !> Apply inverse vertical balance
 !----------------------------------------------------------------------
-subroutine vbal_apply_inv(vbal,nam,geom,bpar,fld)
+subroutine vbal_apply_inv(vbal,nam,geom,fld)
 
 implicit none
 
@@ -1383,7 +1373,6 @@ implicit none
 class(vbal_type),intent(in) :: vbal                             !< Vertical balance
 type(nam_type),intent(in) :: nam                                !< Namelist
 type(geom_type),intent(in) :: geom                              !< Geometry
-type(bpar_type),intent(in) :: bpar                              !< Block parameters
 real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Source/destination vector
 
 ! Local variables
@@ -1426,7 +1415,7 @@ end subroutine vbal_apply_inv
 ! Subroutine: vbal_apply_ad
 !> Apply adjoint vertical balance
 !----------------------------------------------------------------------
-subroutine vbal_apply_ad(vbal,nam,geom,bpar,fld)
+subroutine vbal_apply_ad(vbal,nam,geom,fld)
 
 implicit none
 
@@ -1434,7 +1423,6 @@ implicit none
 class(vbal_type),intent(in) :: vbal                             !< Vertical balance
 type(nam_type),intent(in) :: nam                                !< Namelist
 type(geom_type),intent(in) :: geom                              !< Geometry
-type(bpar_type),intent(in) :: bpar                              !< Block parameters
 real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Source/destination vector
 
 ! Local variables
@@ -1477,7 +1465,7 @@ end subroutine vbal_apply_ad
 ! Subroutine: vbal_apply_inv_ad
 !> Apply inverse adjoint vertical balance
 !----------------------------------------------------------------------
-subroutine vbal_apply_inv_ad(vbal,nam,geom,bpar,fld)
+subroutine vbal_apply_inv_ad(vbal,nam,geom,fld)
 
 implicit none
 
@@ -1485,7 +1473,6 @@ implicit none
 class(vbal_type),intent(in) :: vbal                             !< Vertical balance
 type(nam_type),intent(in) :: nam                                !< Namelist
 type(geom_type),intent(in) :: geom                              !< Geometry
-type(bpar_type),intent(in) :: bpar                              !< Block parameters
 real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Source/destination vector
 
 ! Local variables
@@ -1528,7 +1515,7 @@ end subroutine vbal_apply_inv_ad
 ! Subroutine: vbal_test_inverse
 !> Test vertical balance inverse
 !----------------------------------------------------------------------
-subroutine vbal_test_inverse(vbal,mpl,rng,nam,geom,bpar)
+subroutine vbal_test_inverse(vbal,mpl,rng,nam,geom)
 
 implicit none
 
@@ -1538,7 +1525,6 @@ type(mpl_type),intent(inout) :: mpl !< MPI data
 type(rng_type),intent(inout) :: rng !< Random number generator
 type(nam_type),intent(in) :: nam    !< Namelist
 type(geom_type),intent(in) :: geom  !< Geometry
-type(bpar_type),intent(in) :: bpar  !< Block parameters
 
 ! Local variables
 real(kind_real) :: norm,mse
@@ -1557,8 +1543,8 @@ call mpl%f_comm%allreduce(norm,fckit_mpi_sum())
 
 ! Direct / inverse
 fld = fld_save
-call vbal%apply(nam,geom,bpar,fld)
-call vbal%apply_inv(nam,geom,bpar,fld)
+call vbal%apply(nam,geom,fld)
+call vbal%apply_inv(nam,geom,fld)
 mse = zss_sum((fld-fld_save)**2)
 call mpl%f_comm%allreduce(mse,fckit_mpi_sum())
 write(mpl%info,'(a7,a,e15.8)') '','Vertical balance direct/inverse test value:  ',mse/norm
@@ -1568,8 +1554,8 @@ call mpl%flush
 
 ! Inverse / direct
 fld = fld_save
-call vbal%apply_inv(nam,geom,bpar,fld)
-call vbal%apply(nam,geom,bpar,fld)
+call vbal%apply_inv(nam,geom,fld)
+call vbal%apply(nam,geom,fld)
 mse = zss_sum((fld-fld_save)**2)
 call mpl%f_comm%allreduce(mse,fckit_mpi_sum())
 write(mpl%info,'(a7,a,e15.8)') '','Vertical balance inverse/direct test value:  ',mse/norm
@@ -1579,8 +1565,8 @@ call mpl%flush
 
 ! Direct / inverse, adjoint
 fld = fld_save
-call vbal%apply_ad(nam,geom,bpar,fld)
-call vbal%apply_inv_ad(nam,geom,bpar,fld)
+call vbal%apply_ad(nam,geom,fld)
+call vbal%apply_inv_ad(nam,geom,fld)
 mse = zss_sum((fld-fld_save)**2)
 call mpl%f_comm%allreduce(mse,fckit_mpi_sum())
 write(mpl%info,'(a7,a,e15.8)') '','Vertical balance direct/inverse (adjoint) test value:  ',mse/norm
@@ -1590,8 +1576,8 @@ call mpl%flush
 
 ! Inverse / direct
 fld = fld_save
-call vbal%apply_inv_ad(nam,geom,bpar,fld)
-call vbal%apply_ad(nam,geom,bpar,fld)
+call vbal%apply_inv_ad(nam,geom,fld)
+call vbal%apply_ad(nam,geom,fld)
 mse = zss_sum((fld-fld_save)**2)
 call mpl%f_comm%allreduce(mse,fckit_mpi_sum())
 write(mpl%info,'(a7,a,e15.8)') '','Vertical balance inverse/direct (adjoint) test value:  ',mse/norm
@@ -1608,7 +1594,7 @@ end subroutine vbal_test_inverse
 ! Subroutine: vbal_test_adjoint
 !> Test vertical balance adjoint
 !----------------------------------------------------------------------
-subroutine vbal_test_adjoint(vbal,mpl,rng,nam,geom,bpar)
+subroutine vbal_test_adjoint(vbal,mpl,rng,nam,geom)
 
 implicit none
 
@@ -1618,7 +1604,6 @@ type(mpl_type),intent(inout) :: mpl !< MPI data
 type(rng_type),intent(inout) :: rng !< Random number generator
 type(nam_type),intent(in) :: nam    !< Namelist
 type(geom_type),intent(in) :: geom  !< Geometry
-type(bpar_type),intent(in) :: bpar  !< Block parameters
 
 ! Local variables
 integer :: iv,jv
@@ -1659,8 +1644,8 @@ end do
 ! Direct adjoint test
 fld1 = fld1_save
 fld2 = fld2_save
-call vbal%apply(nam,geom,bpar,fld1)
-call vbal%apply_ad(nam,geom,bpar,fld2)
+call vbal%apply(nam,geom,fld1)
+call vbal%apply_ad(nam,geom,fld2)
 call mpl%dot_prod(fld1,fld2_save,sum1)
 call mpl%dot_prod(fld2,fld1_save,sum2)
 write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance direct adjoint test values:  ', &
@@ -1673,8 +1658,8 @@ call mpl%flush
 ! Inverse adjoint test
 fld1 = fld1_save
 fld2 = fld2_save
-call vbal%apply_inv(nam,geom,bpar,fld1)
-call vbal%apply_inv_ad(nam,geom,bpar,fld2)
+call vbal%apply_inv(nam,geom,fld1)
+call vbal%apply_inv_ad(nam,geom,fld2)
 call mpl%dot_prod(fld1,fld2_save,sum1)
 call mpl%dot_prod(fld2,fld1_save,sum2)
 write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Vertical balance inverse adjoint test values: ', &
@@ -1693,7 +1678,7 @@ end subroutine vbal_test_adjoint
 ! Subroutine: vbal_test_dirac
 !> Apply vertical balance to diracs
 !----------------------------------------------------------------------
-subroutine vbal_test_dirac(vbal,mpl,nam,geom,bpar)
+subroutine vbal_test_dirac(vbal,mpl,nam,geom)
 
 implicit none
 
@@ -1702,7 +1687,6 @@ class(vbal_type),intent(inout) :: vbal !< Vertical balance
 type(mpl_type),intent(inout) :: mpl    !< MPI data
 type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
-type(bpar_type),intent(in) :: bpar     !< Block parameters
 
 ! Local variables
 integer :: idir,ic0a
@@ -1723,11 +1707,11 @@ do idir=1,geom%ndir
    if (geom%iprocdir(idir)==mpl%myproc) fld_c0a(geom%ic0adir(idir),geom%il0dir(idir),geom%ivdir(idir)) = one
 
    ! Apply vertical balance to dirac
-   call vbal%apply(nam,geom,bpar,vbal%dirac)
+   call vbal%apply(nam,geom,vbal%dirac)
 
    ! Copy points
    do ic0a=1,geom%nc0a
-      if (idir==geom%dirac_index(ic0a)) then
+      if (idir==geom%inbdir(ic0a)) then
          vbal%dirac(ic0a,:,:) = fld_c0a(ic0a,:,:)
       end if
    end do

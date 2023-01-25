@@ -29,9 +29,9 @@ namespace bump {
 // Elemental parameters (without default value)
 // -----------------------------------------------------------------------------
 
-// Value or profile elemental parameters
-class ValueOrProfileParameters : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(ValueOrProfileParameters, oops::Parameters)
+// Variables value or profile elemental parameters
+class VarsValueOrProfileParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(VarsValueOrProfileParameters, oops::Parameters)
 
  public:
   // Variables
@@ -44,13 +44,28 @@ class ValueOrProfileParameters : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
-// Value elemental parameters
-class ValueParameters : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(ValueParameters, oops::Parameters)
+// Groups value or profile elemental parameters
+class GroupsValueOrProfileParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(GroupsValueOrProfileParameters, oops::Parameters)
+
+ public:
+  // Groups
+  oops::RequiredParameter<std::vector<std::string>> groups{"groups", this};
+  // Value
+  oops::OptionalParameter<double> value{"value", this};
+  // Profile
+  oops::OptionalParameter<std::vector<double>> profile{"profile", this};
+};
+
+// -----------------------------------------------------------------------------
+
+// Groups value elemental parameters
+class GroupsValueParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(GroupsValueParameters, oops::Parameters)
 
  public:
   // Variables
-  oops::RequiredParameter<std::vector<std::string>> variables{"variables", this};
+  oops::RequiredParameter<std::vector<std::string>> groups{"groups", this};
   // Value
   oops::RequiredParameter<int> value{"value", this};
 };
@@ -58,8 +73,8 @@ class ValueParameters : public oops::Parameters {
 // -----------------------------------------------------------------------------
 
 // Alias elemental paramaters
-class AliasParameter : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(AliasParameter, oops::Parameters)
+class AliasParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(AliasParameters, oops::Parameters)
 
  public:
   // In code
@@ -70,9 +85,21 @@ class AliasParameter : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
+class GroupParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(GroupParameters, oops::Parameters)
+
+ public:
+  // Group name
+  oops::RequiredParameter<std::string> name{"group name", this};
+  // Group variables
+  oops::RequiredParameter<std::vector<std::string>> variables{"variables", this};
+};
+
+// -----------------------------------------------------------------------------
+
 // Local profile elemental parameters
-class LocalProfileParameter : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(LocalProfileParameter, oops::Parameters)
+class LocalProfileParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(LocalProfileParameters, oops::Parameters)
 
  public:
   // Longitudes of the local diagnostics profiles to write [in degrees]
@@ -85,13 +112,13 @@ class LocalProfileParameter : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
-// Specific type elemental parameters
-class SpecificTypeParameters : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(SpecificTypeParameters, oops::Parameters)
+// Groups type elemental parameters
+class GroupsTypeParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(GroupsTypeParameters, oops::Parameters)
 
  public:
   // Resolution
-  oops::RequiredParameter<std::vector<std::string>> variables{"variables", this};
+  oops::RequiredParameter<std::vector<std::string>> groups{"groups", this};
   // Type
   oops::RequiredParameter<std::string> type{"type", this};
 };
@@ -184,7 +211,7 @@ class IOSection : public oops::Parameters {
   // Number of I/O processors
   oops::Parameter<int> nprocio = param(def.nprocio, this);
   // Alias
-  oops::Parameter<std::vector<AliasParameter>> alias{"alias", {}, this};
+  oops::Parameter<std::vector<AliasParameters>> alias{"alias", {}, this};
   // Sampling file
   oops::Parameter<std::string> fname_samp = param(def.fname_samp, this);
   // Vertical covariance files
@@ -228,8 +255,7 @@ class DriversSection : public oops::Parameters {
   oops::Parameter<bool> compute_hyb = param(def.compute_hyb, this);
   // Hybrid term source ('randomized static' or 'lowres ensemble')
   oops::Parameter<std::string> hybrid_source = param(def.hybrid_source, this);
-  // Multivariate strategy ('diag_all', 'common', 'common_weighted', 'specific_univariate' or
-  // 'specific_multivariate')
+  // Multivariate strategy ('univariate', 'duplicated', 'duplicated and weighted' or 'crossed')
   oops::Parameter<std::string> strategy = param(def.strategy, this);
   // Iterative algorithm (ensemble members loaded sequentially)
   oops::Parameter<bool> iterative_algo = param(def.iterative_algo, this);
@@ -317,6 +343,8 @@ class ModelSection : public oops::Parameters {
   oops::Parameter<std::string> lev2d = param(def.lev2d, this);
   // Variables names
   oops::Parameter<std::vector<std::string>> variables{"variables", {}, this};
+  // Groups of variables
+  oops::OptionalParameter<std::vector<GroupParameters>> groups{"groups", this};
   // Check that sampling couples and interpolations do not cross mask boundaries
   oops::Parameter<bool> mask_check = param(def.mask_check, this);
 };
@@ -477,7 +505,7 @@ class VarianceSection : public oops::Parameters {
   // Force specific variance
   oops::Parameter<bool> forced_var = param(def.forced_var, this);
   // Forced standard-deviation
-  oops::Parameter<std::vector<ValueOrProfileParameters>> stddev{"stddev", {}, this};
+  oops::Parameter<std::vector<VarsValueOrProfileParameters>> stddev{"stddev", {}, this};
   // Filter variance
   oops::Parameter<bool> var_filter = param(def.var_filter, this);
   // Number of iterations for the variance filtering (0 for uniform variance)
@@ -485,7 +513,7 @@ class VarianceSection : public oops::Parameters {
   // Number of passes for the variance filtering (0 for uniform variance)
   oops::Parameter<int> var_npass = param(def.var_npass, this);
   // Variance initial filtering support radius [in meters]
-  oops::Parameter<std::vector<ValueOrProfileParameters>> var_rhflt{"initial length-scale", {},
+  oops::Parameter<std::vector<VarsValueOrProfileParameters>> var_rhflt{"initial length-scale", {},
     this};
 };
 
@@ -546,21 +574,21 @@ class NICASSection : public oops::Parameters {
   // Force specific support radii
   oops::Parameter<bool> forced_radii = param(def.forced_radii, this);
   // Forced horizontal support radius [in meters]
-  oops::Parameter<std::vector<ValueOrProfileParameters>> rh{"horizontal length-scale", {},
+  oops::Parameter<std::vector<GroupsValueOrProfileParameters>> rh{"horizontal length-scale", {},
     this};
   // Forced vertical support radius
-  oops::Parameter<std::vector<ValueOrProfileParameters>> rv{"vertical length-scale", {},
+  oops::Parameter<std::vector<GroupsValueOrProfileParameters>> rv{"vertical length-scale", {},
     this};
   // Forced localization weights
   oops::Parameter<std::vector<LocWgtParameters>> loc_wgt{"common localization weights", {},
     this};
   // Minimum level
-  oops::Parameter<std::vector<ValueParameters>> min_lev{"minimum level", {}, this};
+  oops::Parameter<std::vector<GroupsValueParameters>> min_lev{"minimum level", {}, this};
   // Maximum level
-  oops::Parameter<std::vector<ValueParameters>> max_lev{"maximum level", {}, this};
+  oops::Parameter<std::vector<GroupsValueParameters>> max_lev{"maximum level", {}, this};
   // NICAS C1B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based
   // or 'si': smooth interpolation)
-  oops::Parameter<std::vector<SpecificTypeParameters>> interp_type{"interpolation type", {},
+  oops::Parameter<std::vector<GroupsTypeParameters>> interp_type{"interpolation type", {},
     this};
   // Positive-definiteness test
   oops::Parameter<bool> pos_def_test = param(def.pos_def_test, this);
@@ -631,7 +659,7 @@ class BUMPParameters : public oops::Parameters {
   // Fit parameters
   oops::Parameter<FitSection> fit{"fit", FitSection(), this};
   // Local profiles parameters
-  oops::Parameter<std::vector<LocalProfileParameter>> localProfiles{"local profiles", {}, this};
+  oops::Parameter<std::vector<LocalProfileParameters>> localProfiles{"local profiles", {}, this};
   // NICAS parameters
   oops::Parameter<NICASSection> nicas{"nicas", NICASSection(), this};
   // Psichitouv parameters

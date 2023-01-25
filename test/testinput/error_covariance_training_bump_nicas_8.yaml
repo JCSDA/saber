@@ -6,14 +6,17 @@ geometry:
   groups:
   - variables:
     - var1
+    - var2
     levels: 2
   halo: 1
 input variables:
 - var1
+- var2
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
   - var1
+  - var2
 bump:
   general:
     testing: true
@@ -25,7 +28,7 @@ bump:
     - in code: var1-var1
       in file: fixed_1000-3.0
   drivers:
-    multivariate strategy: specific_multivariate
+    multivariate strategy: crossed
     compute nicas: true
     write local nicas: true
     adjoints test: true
@@ -34,15 +37,19 @@ bump:
     resolution: 4.0
     explicit length-scales: true
     horizontal length-scale:
-    - variables:
+    - groups:
       - var1
-      value: 1000.0e3
+      value: 4000.0e3
+    - groups:
+      - var2
+      value: 2000.0e3
     vertical length-scale:
-    - variables:
+    - groups:
       - var1
+      - var2
       value: 3.0
     interpolation type:
-    - variables:
+    - groups:
       - var1
       type: si
   dirac:

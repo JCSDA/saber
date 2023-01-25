@@ -6,6 +6,7 @@ geometry:
   groups:
   - variables:
     - var1
+    - var2
     levels: 2
   - variables:
     - var_2d
@@ -13,11 +14,13 @@ geometry:
   halo: 1
 input variables:
 - var1
+- var2
 - var_2d
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
   - var1
+  - var2
   - var_2d
 ensemble:
   members from template:
@@ -26,6 +29,7 @@ ensemble:
       filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
       state variables:
       - var1
+      - var2
       - var_2d
     pattern: '%mem%'
     nmembers: 25
@@ -39,7 +43,7 @@ bump:
   drivers:
     compute covariance: true
     compute correlation: true
-    multivariate strategy: specific_univariate
+    multivariate strategy: univariate
     write local sampling: true
     write global sampling: true
     compute moments: true

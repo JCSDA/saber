@@ -26,66 +26,66 @@
              Level   9 ~>  0.900E+01 vert. unit
              Level  10 ~>  0.100E+02 vert. unit
              Effective levels:   1   2   3   4   5   6   7   8   9  10 
-                   Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
-                   Estimated nc1 from horizontal support radius:     9424
+                   Horizontal support radius:    2000.00 km (   2000.00 km -    2000.00 km)
+                   Estimated nc1 from horizontal support radius:     2356
                       Decimate full grid, at least      762 points required,     762 valid points found
                       Subgrid hash:   1550418632
                    Final nc1:      762
-                   Effective horizontal resolution:  1.14
-                   Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
-                   Estimated nc1 from horizontal support radius:     9424
+                   Effective horizontal resolution:  2.27
+                   Horizontal support radius:    2000.00 km (   2000.00 km -    2000.00 km)
+                   Estimated nc1 from horizontal support radius:     2356
                       Decimate full grid, at least      762 points required,     762 valid points found
                       Subgrid hash:   1550418632
                    Final nc1:      762
-                   Effective horizontal resolution:  1.14
-                   Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
-                   Estimated nc1 from horizontal support radius:     9424
+                   Effective horizontal resolution:  2.27
+                   Horizontal support radius:    2000.00 km (   2000.00 km -    2000.00 km)
+                   Estimated nc1 from horizontal support radius:     2356
                       Decimate full grid, at least      762 points required,     762 valid points found
                       Subgrid hash:   1550418632
                    Final nc1:      762
-                   Effective horizontal resolution:  1.14
-                   Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
-                   Estimated nc1 from horizontal support radius:     9424
+                   Effective horizontal resolution:  2.27
+                   Horizontal support radius:    2000.00 km (   2000.00 km -    2000.00 km)
+                   Estimated nc1 from horizontal support radius:     2356
                       Decimate full grid, at least      762 points required,     762 valid points found
                       Subgrid hash:   1550418632
                    Final nc1:      762
-                   Effective horizontal resolution:  1.14
-                   Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
-                   Estimated nc1 from horizontal support radius:     9424
+                   Effective horizontal resolution:  2.27
+                   Horizontal support radius:    2000.00 km (   2000.00 km -    2000.00 km)
+                   Estimated nc1 from horizontal support radius:     2356
                       Decimate full grid, at least      762 points required,     762 valid points found
                       Subgrid hash:   1550418632
                    Final nc1:      762
-                   Effective horizontal resolution:  1.14
-                   Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
-                   Estimated nc1 from horizontal support radius:     9424
+                   Effective horizontal resolution:  2.27
+                   Horizontal support radius:    2000.00 km (   2000.00 km -    2000.00 km)
+                   Estimated nc1 from horizontal support radius:     2356
                       Decimate full grid, at least      762 points required,     762 valid points found
                       Subgrid hash:   1550418632
                    Final nc1:      762
-                   Effective horizontal resolution:  1.14
-                   Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
-                   Estimated nc1 from horizontal support radius:     9424
+                   Effective horizontal resolution:  2.27
+                   Horizontal support radius:    2000.00 km (   2000.00 km -    2000.00 km)
+                   Estimated nc1 from horizontal support radius:     2356
                       Decimate full grid, at least      762 points required,     762 valid points found
                       Subgrid hash:   1550418632
                    Final nc1:      762
-                   Effective horizontal resolution:  1.14
-                   Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
-                   Estimated nc1 from horizontal support radius:     9424
+                   Effective horizontal resolution:  2.27
+                   Horizontal support radius:    2000.00 km (   2000.00 km -    2000.00 km)
+                   Estimated nc1 from horizontal support radius:     2356
                       Decimate full grid, at least      762 points required,     762 valid points found
                       Subgrid hash:   1550418632
                    Final nc1:      762
-                   Effective horizontal resolution:  1.14
-                   Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
-                   Estimated nc1 from horizontal support radius:     9424
+                   Effective horizontal resolution:  2.27
+                   Horizontal support radius:    2000.00 km (   2000.00 km -    2000.00 km)
+                   Estimated nc1 from horizontal support radius:     2356
                       Decimate full grid, at least      762 points required,     762 valid points found
                       Subgrid hash:   1550418632
                    Final nc1:      762
-                   Effective horizontal resolution:  1.14
-                   Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
-                   Estimated nc1 from horizontal support radius:     9424
+                   Effective horizontal resolution:  2.27
+                   Horizontal support radius:    2000.00 km (   2000.00 km -    2000.00 km)
+                   Estimated nc1 from horizontal support radius:     2356
                       Decimate full grid, at least      762 points required,     762 valid points found
                       Subgrid hash:   1550418632
                    Final nc1:      762
-                   Effective horizontal resolution:  1.14
+                   Effective horizontal resolution:  2.27
              nc1(  1) =                        762
              nc1(  2) =                        762
              nc1(  3) =                        762
@@ -98,7 +98,81 @@
              nc1( 10) =                        762
              ns =                             7620
              v%n_s =                            10
-             c%n_s[global] =                 43736
+             c%n_s[global] =                452696
+             Effective levels:   1   2   3   4   5   6   7   8   9  10 
+                   Horizontal support radius:    2000.00 km (   2000.00 km -    2000.00 km)
+                   Estimated nc1 from horizontal support radius:     2356
+                      Decimate full grid, at least      762 points required,     762 valid points found
+                      Subgrid hash:   1550418632
+                   Final nc1:      762
+                   Effective horizontal resolution:  2.27
+                   Horizontal support radius:    2000.00 km (   2000.00 km -    2000.00 km)
+                   Estimated nc1 from horizontal support radius:     2356
+                      Decimate full grid, at least      762 points required,     762 valid points found
+                      Subgrid hash:   1550418632
+                   Final nc1:      762
+                   Effective horizontal resolution:  2.27
+                   Horizontal support radius:    2000.00 km (   2000.00 km -    2000.00 km)
+                   Estimated nc1 from horizontal support radius:     2356
+                      Decimate full grid, at least      762 points required,     762 valid points found
+                      Subgrid hash:   1550418632
+                   Final nc1:      762
+                   Effective horizontal resolution:  2.27
+                   Horizontal support radius:    2000.00 km (   2000.00 km -    2000.00 km)
+                   Estimated nc1 from horizontal support radius:     2356
+                      Decimate full grid, at least      762 points required,     762 valid points found
+                      Subgrid hash:   1550418632
+                   Final nc1:      762
+                   Effective horizontal resolution:  2.27
+                   Horizontal support radius:    2000.00 km (   2000.00 km -    2000.00 km)
+                   Estimated nc1 from horizontal support radius:     2356
+                      Decimate full grid, at least      762 points required,     762 valid points found
+                      Subgrid hash:   1550418632
+                   Final nc1:      762
+                   Effective horizontal resolution:  2.27
+                   Horizontal support radius:    2000.00 km (   2000.00 km -    2000.00 km)
+                   Estimated nc1 from horizontal support radius:     2356
+                      Decimate full grid, at least      762 points required,     762 valid points found
+                      Subgrid hash:   1550418632
+                   Final nc1:      762
+                   Effective horizontal resolution:  2.27
+                   Horizontal support radius:    2000.00 km (   2000.00 km -    2000.00 km)
+                   Estimated nc1 from horizontal support radius:     2356
+                      Decimate full grid, at least      762 points required,     762 valid points found
+                      Subgrid hash:   1550418632
+                   Final nc1:      762
+                   Effective horizontal resolution:  2.27
+                   Horizontal support radius:    2000.00 km (   2000.00 km -    2000.00 km)
+                   Estimated nc1 from horizontal support radius:     2356
+                      Decimate full grid, at least      762 points required,     762 valid points found
+                      Subgrid hash:   1550418632
+                   Final nc1:      762
+                   Effective horizontal resolution:  2.27
+                   Horizontal support radius:    2000.00 km (   2000.00 km -    2000.00 km)
+                   Estimated nc1 from horizontal support radius:     2356
+                      Decimate full grid, at least      762 points required,     762 valid points found
+                      Subgrid hash:   1550418632
+                   Final nc1:      762
+                   Effective horizontal resolution:  2.27
+                   Horizontal support radius:    2000.00 km (   2000.00 km -    2000.00 km)
+                   Estimated nc1 from horizontal support radius:     2356
+                      Decimate full grid, at least      762 points required,     762 valid points found
+                      Subgrid hash:   1550418632
+                   Final nc1:      762
+                   Effective horizontal resolution:  2.27
+             nc1(  1) =                        762
+             nc1(  2) =                        762
+             nc1(  3) =                        762
+             nc1(  4) =                        762
+             nc1(  5) =                        762
+             nc1(  6) =                        762
+             nc1(  7) =                        762
+             nc1(  8) =                        762
+             nc1(  9) =                        762
+             nc1( 10) =                        762
+             ns =                             7620
+             v%n_s =                            10
+             c%n_s[global] =                 94616
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
           Level   3 ~> 100.0%
@@ -143,7 +217,18 @@
                 Level:   8 ~> cov. at class zero:  0.10E+01
                 Level:   9 ~> cov. at class zero:  0.10E+01
                 Level:  10 ~> cov. at class zero:  0.10E+01
-             Block var1-var1:  0.72802261E-01 for      700 diagnostic points
+                Level:   1 ~> cov. at class zero:  0.10E+01
+                Level:   2 ~> cov. at class zero:  0.10E+01
+                Level:   3 ~> cov. at class zero:  0.10E+01
+                Level:   4 ~> cov. at class zero:  0.10E+01
+                Level:   5 ~> cov. at class zero:  0.10E+01
+                Level:   6 ~> cov. at class zero:  0.10E+01
+                Level:   7 ~> cov. at class zero:  0.10E+01
+                Level:   8 ~> cov. at class zero:  0.10E+01
+                Level:   9 ~> cov. at class zero:  0.10E+01
+                Level:  10 ~> cov. at class zero:  0.10E+01
+             Block var1:  0.10523319E+00 for      700 diagnostic points
+             Block var2:  0.72887280E-01 for      700 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                 Level:   3 ~> cor. at class zero:        1.00
@@ -155,42 +240,92 @@
                 Level:   9 ~> cor. at class zero:        1.00
                 Level:  10 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:       995.69 km
-                                 cor. ver. support:         3.11 vertical units
-                   Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:       798.42 km
+                                 cor. hor. support:      3879.58 km
                                  cor. ver. support:         3.07 vertical units
-                   Level:   3 ~> amplitude:        1.00
-                                 cor. hor. support:       901.38 km
-                                 cor. ver. support:         3.05 vertical units
-                   Level:   4 ~> amplitude:        1.00
-                                 cor. hor. support:       927.41 km
+                   Level:   2 ~> amplitude:        1.00
+                                 cor. hor. support:      3897.41 km
                                  cor. ver. support:         3.04 vertical units
+                   Level:   3 ~> amplitude:        1.00
+                                 cor. hor. support:      3922.99 km
+                                 cor. ver. support:         3.03 vertical units
+                   Level:   4 ~> amplitude:        1.00
+                                 cor. hor. support:      3933.36 km
+                                 cor. ver. support:         3.03 vertical units
                    Level:   5 ~> amplitude:        1.00
-                                 cor. hor. support:       794.23 km
+                                 cor. hor. support:      3765.70 km
                                  cor. ver. support:         2.98 vertical units
                    Level:   6 ~> amplitude:        1.00
-                                 cor. hor. support:       914.02 km
-                                 cor. ver. support:         2.97 vertical units
+                                 cor. hor. support:      3820.59 km
+                                 cor. ver. support:         2.96 vertical units
                    Level:   7 ~> amplitude:        1.00
-                                 cor. hor. support:       919.79 km
-                                 cor. ver. support:         2.97 vertical units
+                                 cor. hor. support:      3885.82 km
+                                 cor. ver. support:         2.95 vertical units
                    Level:   8 ~> amplitude:        1.00
-                                 cor. hor. support:       797.38 km
+                                 cor. hor. support:      3853.31 km
+                                 cor. ver. support:         2.94 vertical units
+                   Level:   9 ~> amplitude:        1.00
+                                 cor. hor. support:      3773.14 km
+                                 cor. ver. support:         3.01 vertical units
+                   Level:  10 ~> amplitude:        1.00
+                                 cor. hor. support:      3835.73 km
+                                 cor. ver. support:         3.11 vertical units
+                Level:   1 ~> cor. at class zero:        1.00
+                Level:   2 ~> cor. at class zero:        1.00
+                Level:   3 ~> cor. at class zero:        1.00
+                Level:   4 ~> cor. at class zero:        1.00
+                Level:   5 ~> cor. at class zero:        1.00
+                Level:   6 ~> cor. at class zero:        1.00
+                Level:   7 ~> cor. at class zero:        1.00
+                Level:   8 ~> cor. at class zero:        1.00
+                Level:   9 ~> cor. at class zero:        1.00
+                Level:  10 ~> cor. at class zero:        1.00
+                   Level:   1 ~> amplitude:        1.00
+                                 cor. hor. support:      1329.09 km
+                                 cor. ver. support:         3.09 vertical units
+                   Level:   2 ~> amplitude:        1.00
+                                 cor. hor. support:      1307.90 km
+                                 cor. ver. support:         3.06 vertical units
+                   Level:   3 ~> amplitude:        1.00
+                                 cor. hor. support:      1309.48 km
+                                 cor. ver. support:         3.04 vertical units
+                   Level:   4 ~> amplitude:        1.00
+                                 cor. hor. support:      1309.23 km
+                                 cor. ver. support:         3.05 vertical units
+                   Level:   5 ~> amplitude:        1.00
+                                 cor. hor. support:      1273.43 km
+                                 cor. ver. support:         2.99 vertical units
+                   Level:   6 ~> amplitude:        1.00
+                                 cor. hor. support:      1301.40 km
+                                 cor. ver. support:         2.98 vertical units
+                   Level:   7 ~> amplitude:        1.00
+                                 cor. hor. support:      1308.90 km
+                                 cor. ver. support:         2.98 vertical units
+                   Level:   8 ~> amplitude:        1.00
+                                 cor. hor. support:      1295.91 km
                                  cor. ver. support:         3.00 vertical units
                    Level:   9 ~> amplitude:        1.00
-                                 cor. hor. support:       989.26 km
-                                 cor. ver. support:         3.03 vertical units
+                                 cor. hor. support:      1326.72 km
+                                 cor. ver. support:         3.04 vertical units
                    Level:  10 ~> amplitude:        1.00
-                                 cor. hor. support:       798.82 km
-                                 cor. ver. support:         3.11 vertical units
-          Level   1 ~>  0.996 /  1.037
-          Level   2 ~>  0.798 /  1.022
-          Level   3 ~>  0.901 /  1.016
-          Level   4 ~>  0.927 /  1.012
-          Level   5 ~>  0.794 /  0.994
-          Level   6 ~>  0.914 /  0.989
-          Level   7 ~>  0.920 /  0.988
-          Level   8 ~>  0.797 /  0.999
-          Level   9 ~>  0.989 /  1.011
-          Level  10 ~>  0.799 /  1.037
+                                 cor. hor. support:      1300.91 km
+                                 cor. ver. support:         3.12 vertical units
+          Level   1 ~>  0.970 /  1.024
+          Level   2 ~>  0.974 /  1.014
+          Level   3 ~>  0.981 /  1.009
+          Level   4 ~>  0.983 /  1.011
+          Level   5 ~>  0.941 /  0.995
+          Level   6 ~>  0.955 /  0.985
+          Level   7 ~>  0.971 /  0.983
+          Level   8 ~>  0.963 /  0.979
+          Level   9 ~>  0.943 /  1.004
+          Level  10 ~>  0.959 /  1.037
+          Level   1 ~>  0.665 /  1.030
+          Level   2 ~>  0.654 /  1.020
+          Level   3 ~>  0.655 /  1.014
+          Level   4 ~>  0.655 /  1.015
+          Level   5 ~>  0.637 /  0.998
+          Level   6 ~>  0.651 /  0.992
+          Level   7 ~>  0.654 /  0.992
+          Level   8 ~>  0.648 /  0.999
+          Level   9 ~>  0.663 /  1.013
+          Level  10 ~>  0.650 /  1.041

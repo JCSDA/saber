@@ -33,7 +33,7 @@ bump:
     compute covariance: true
     compute correlation: true
     compute localization: true
-    multivariate strategy: common
+    multivariate strategy: duplicated
     iterative algorithm: true
     compute moments: true
     write diagnostics: true
@@ -56,7 +56,7 @@ bump:
   nicas:
     resolution: 4.0
     interpolation type:
-    - variables:
+    - groups:
       - common
       type: si
   dirac:

@@ -45,17 +45,17 @@ background error:
         data directory: testdata
         files prefix: error_covariance_training_bump_hdiag_8/_MPI_-_OMP_
       drivers:
-        multivariate strategy: specific_univariate
+        multivariate strategy: univariate
         compute nicas: true
       nicas:
         resolution: 4.0
         explicit length-scales: true
         horizontal length-scale:
-        - variables:
+        - groups:
           - var1
           value: 7.0e6
         vertical length-scale:
-        - variables:
+        - groups:
           - var1
           value: 1.5
   randomization size: 25
@@ -73,7 +73,7 @@ bump:
     compute localization: true
     compute hybrid weights: true
     hybrid source: randomized static
-    multivariate strategy: specific_univariate
+    multivariate strategy: univariate
     compute moments: true
     write diagnostics: true
     adjoints test: true

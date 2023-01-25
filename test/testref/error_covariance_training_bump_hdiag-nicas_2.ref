@@ -64,23 +64,8 @@
           Independent levels for angular sector   4 / class   9:  1[1]  2[1]
           Independent levels for angular sector   4 / class  10:  1[2]
                 Level:   1 ~> cov. at class zero:  0.10E+01
-                Level:   2 ~> cov. at class zero:  0.10E+01
-                Level:   2 ~> cov. at class zero:  0.95E+00
-             Block var1-var1:  0.18304620E+00 for      160 diagnostic points
-             Block var_2d-var_2d:  0.19287941E+00 for       40 diagnostic points
+                Level:   2 ~> cov. at class zero:  0.97E+00
              Block common:  0.18288168E+00 for      160 diagnostic points
-                Level:   1 ~> cor. at class zero:        1.00
-                Level:   2 ~> cor. at class zero:        1.00
-                   Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      3470.31 km
-                                 cor. ver. support:         3.16 vertical units
-                   Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      3690.56 km
-                                 cor. ver. support:         3.16 vertical units
-                Level:   2 ~> cor. at class zero:        1.00
-                   Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      3465.48 km
-                                 cor. ver. support:         0.00 vertical units
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
@@ -89,21 +74,7 @@
                    Level:   2 ~> amplitude:        1.00
                                  cor. hor. support:      3573.55 km
                                  cor. ver. support:         3.16 vertical units
-             Block var1-var1:  0.29553628E+00 for      113 diagnostic points
-             Block var_2d-var_2d:  0.29530729E+00 for       27 diagnostic points
              Block common:  0.29988506E+00 for      117 diagnostic points
-                Level:   1 ~> loc. at class zero:       0.92
-                Level:   2 ~> loc. at class zero:       0.92
-                   Level:   1 ~> amplitude:        1.00
-                                 loc. hor. support:      5170.39 km
-                                 loc. ver. support:         5.83 vertical units
-                   Level:   2 ~> amplitude:        1.00
-                                 loc. hor. support:      5346.16 km
-                                 loc. ver. support:         5.83 vertical units
-                Level:   2 ~> loc. at class zero:       0.92
-                   Level:   2 ~> amplitude:        1.00
-                                 loc. hor. support:      5716.49 km
-                                 loc. ver. support:         0.00 vertical units
                 Level:   1 ~> loc. at class zero:       0.92
                 Level:   2 ~> loc. at class zero:       0.92
                    Level:   1 ~> amplitude:        1.00
@@ -143,11 +114,11 @@
              Min / max: 1.0000000 /  1.0000000 over     10 tests
              0.0 /    0.0:  1.0000000
           Level   1:  0.0000000 -  1.0000000
-          Level   2:  0.0000000 -  0.9132940
+          Level   2:  0.0000000 -  0.9128577
 Norm of BUMP output parameter dirac_mom - 1: 7.6722033222410460e+00
 Norm of BUMP output parameter dirac_diag_loc - 1: 2.6927491724263728e+00
 Norm of BUMP output parameter cor_rh - 1: 1.3740079730890846e+08
 Norm of BUMP output parameter cor_rv - 1: 1.2277632584815632e+02
 Norm of BUMP output parameter loc_rh - 1: 2.1155124214914161e+08
 Norm of BUMP output parameter loc_rv - 1: 2.2660945472033691e+02
-Norm of BUMP output parameter nicas_norm - 1: 4.0921104349214751e+01
+Norm of BUMP output parameter nicas_norm - 1: 4.2452350609076262e+01

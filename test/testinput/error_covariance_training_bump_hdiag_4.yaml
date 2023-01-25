@@ -6,24 +6,22 @@ geometry:
   groups:
   - variables:
     - var1
+    - var2
     levels: 2
+  - variables:
+    - var_2d
+    levels: 1
   halo: 1
 input variables:
 - var1
+- var2
+- var_2d
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
   - var1
-ensemble:
-  members from template:
-    template:
-      date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
-      state variables:
-      - var1
-    pattern: '%mem%'
-    nmembers: 25
-    zero padding: 6
+  - var2
+  - var_2d
 bump:
   general:
     testing: true
@@ -33,29 +31,46 @@ bump:
   drivers:
     compute covariance: true
     compute correlation: true
-    multivariate strategy: diag_all
-    compute normality: true
+    compute localization: true
+    multivariate strategy: duplicated
     compute moments: true
     write diagnostics: true
+  model:
+    groups:
+    - group name: group 1
+      variables:
+      - var1
+      - var_2d
+    - group name: group 2
+      variables:
+      - var2
   sampling:
     computation grid size: 500
+    diagnostic grid size: 250
     distance classes: 10
+    angular sectors: 4
     distance class width: 800.0e3
     reduced levels: 2
-    grid type: octahedral
   diagnostics:
     target ensemble size: 25
-    generalized kurtosis threshold: 4.0
-    histogram bins: 10
+ensemble:
+  members from template:
+    template:
+      date: '2010-01-01T12:00:00Z'
+      filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
+      state variables:
+      - var1
+      - var2
+      - var_2d
+    pattern: '%mem%'
+    nmembers: 25
+    zero padding: 6
 output:
-- parameter: norm_m2
+- parameter: loc_rh
   file:
-    filepath: testdata/error_covariance_training_bump_hdiag_4/_MPI_-_OMP__norm_m2
-- parameter: norm_m4
+    filepath: testdata/error_covariance_training_bump_hdiag_4/_MPI_-_OMP__loc_rh
+- parameter: loc_rv
   file:
-    filepath: testdata/error_covariance_training_bump_hdiag_4/_MPI_-_OMP__norm_m4
-- parameter: norm_kurt
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_4/_MPI_-_OMP__norm_kurt
+    filepath: testdata/error_covariance_training_bump_hdiag_4/_MPI_-_OMP__loc_rv
 test:
   reference filename: testref/error_covariance_training_bump_hdiag_4.ref

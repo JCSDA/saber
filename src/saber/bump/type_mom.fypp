@@ -15,7 +15,6 @@ use tools_kinds, only: kind_real
 use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,define_dim,check_dim,define_var,inquire_var,put_var,get_var, &
  & close_file
 use tools_repro, only: eq
-use type_bpar, only: bpar_type
 use type_ens, only: ens_type
 use type_geom, only: geom_type
 use type_mom_blk, only: mom_blk_type
@@ -56,7 +55,7 @@ contains
 ! Subroutine: mom_alloc
 !> Allocation
 !----------------------------------------------------------------------
-subroutine mom_alloc(mom,nam,geom,bpar,samp,ne,nsub,iens)
+subroutine mom_alloc(mom,nam,geom,samp,ne,nsub,iens)
 
 implicit none
 
@@ -64,14 +63,13 @@ implicit none
 class(mom_type),intent(inout) :: mom  !< Moments
 type(nam_type),intent(in) :: nam      !< Namelist
 type(geom_type),intent(in) :: geom    !< Geometry
-type(bpar_type),intent(in) :: bpar    !< Block parameters
 type(samp_type),intent(in) :: samp    !< Sampling
 integer,intent(in) :: ne              !< Ensemble size
 integer,intent(in) :: nsub            !< Number of sub-ensembles
 integer,intent(in) :: iens            !< Ensemble index
 
 ! Local variables
-integer :: ib
+integer :: iv
 
 ! Set name
 @:set_name(mom_alloc)
@@ -85,13 +83,10 @@ mom%nsub = nsub
 mom%iens = iens
 
 ! Allocation
-allocate(mom%blk(bpar%nb))
-do ib=1,bpar%nb
-   ! Attribute
-   mom%blk(ib)%ib = ib
-
+allocate(mom%blk(nam%nv))
+do iv=1,nam%nv
    ! Allocation
-   call mom%blk(ib)%alloc(samp%nc1a,geom,bpar,ne,nsub,nam%iterative_algo)
+   call mom%blk(iv)%alloc(nam,geom,samp%nc1a,ne,nsub,nam%iterative_algo)
 end do
 if (nam%check_dirac) then
    if (nam%iterative_algo) then
@@ -110,17 +105,16 @@ end subroutine mom_alloc
 ! Subroutine: mom_init
 !> Initialization
 !----------------------------------------------------------------------
-subroutine mom_init(mom,nam,bpar)
+subroutine mom_init(mom,nam)
 
 implicit none
 
 ! Passed variables
 class(mom_type),intent(inout) :: mom !< Moments
 type(nam_type),intent(in) :: nam     !< Namelist
-type(bpar_type),intent(in) :: bpar   !< Block parameters
 
 ! Local variables
-integer :: ib
+integer :: iv
 
 ! Set name
 @:set_name(mom_init)
@@ -129,8 +123,8 @@ integer :: ib
 @:probe_in()
 
 ! Initialization
-do ib=1,bpar%nb
-   call mom%blk(ib)%init(bpar,nam%iterative_algo)
+do iv=1,nam%nv
+   call mom%blk(iv)%init(nam%iterative_algo)
 end do
 if (nam%check_dirac) then
    if (nam%iterative_algo) then
@@ -157,7 +151,7 @@ implicit none
 class(mom_type),intent(inout) :: mom !< Moments
 
 ! Local variables
-integer :: ib
+integer :: iv
 
 ! Set name
 @:set_name(mom_partial_dealloc)
@@ -167,8 +161,8 @@ integer :: ib
 
 ! Release memory
 if (allocated(mom%blk)) then
-   do ib=1,size(mom%blk)
-      call mom%blk(ib)%dealloc
+   do iv=1,size(mom%blk)
+      call mom%blk(iv)%dealloc
    end do
    deallocate(mom%blk)
 end if
@@ -210,7 +204,7 @@ end subroutine mom_dealloc
 ! Subroutine: mom_read
 !> Read
 !----------------------------------------------------------------------
-subroutine mom_read(mom,mpl,nam,geom,bpar,samp,ens,iens)
+subroutine mom_read(mom,mpl,nam,geom,samp,ens,iens)
 
 implicit none
 
@@ -219,13 +213,12 @@ class(mom_type),intent(inout) :: mom !< Moments
 type(mpl_type),intent(inout) :: mpl  !< MPI data
 type(nam_type),intent(in) :: nam     !< Namelist
 type(geom_type),intent(in) :: geom   !< Geometry
-type(bpar_type),intent(in) :: bpar   !< Block parameters
 type(samp_type),intent(in) :: samp   !< Sampling
 type(ens_type), intent(in) :: ens    !< Ensemble
 integer,intent(in) :: iens           !< Ensemble index
 
 ! Local variables
-integer :: ib,isub
+integer :: iv,isub
 integer :: ncid,grpid,m2_1_id,m2_2_id,m11_id,m22_id
 character(len=1024) :: fname_mom,grpname
 
@@ -237,10 +230,10 @@ character(len=1024) :: fname_mom,grpname
 
 ! Allocation
 if (ens%ne==0) call mpl%abort('${subr}$','ensemble size is zero')
-call mom%alloc(nam,geom,bpar,samp,ens%ne,ens%nsub,iens)
+call mom%alloc(nam,geom,samp,ens%ne,ens%nsub,iens)
 
 ! Initialization
-call mom%init(nam,bpar)
+call mom%init(nam)
 
 do isub=1,mom%nsub
    ! Set file name
@@ -254,33 +247,31 @@ do isub=1,mom%nsub
    ! Open file
    ncid = open_file(mpl,fname_mom,mpl%myproc)
 
-   do ib=1,bpar%nb
-      if (bpar%diag_block(ib)) then
-         ! Get group name
-         call nam%alias(bpar%blockname(ib),grpname)
+   do iv=1,nam%nv
+      ! Get group name
+      call nam%alias(nam%variables(iv),grpname)
 
-         ! Get group
-         grpid = inquire_grp(mpl,ncid,grpname)
+      ! Get group
+      grpid = inquire_grp(mpl,ncid,grpname)
 
-         ! Check dimensions
-         if (.not.check_dim(mpl,grpid,'nc1a',samp%nc1a)) call mpl%abort('${subr}$','wrong size for dimension nc1a')
-         if (.not.check_dim(mpl,grpid,'nl0',geom%nl0)) call mpl%abort('${subr}$','wrong size for dimension nl0')
-         if (.not.check_dim(mpl,grpid,'nc3',bpar%nc3(ib))) call mpl%abort('${subr}$','wrong size for dimension nc3')
-         if (.not.check_dim(mpl,grpid,'nc4',bpar%nc4(ib))) call mpl%abort('${subr}$','wrong size for dimension nc4')
-         if (.not.check_dim(mpl,grpid,'nl0r',bpar%nl0r(ib))) call mpl%abort('${subr}$','wrong size for dimension nl0r')
+      ! Check dimensions
+      if (.not.check_dim(mpl,grpid,'nc1a',samp%nc1a)) call mpl%abort('${subr}$','wrong size for dimension nc1a')
+      if (.not.check_dim(mpl,grpid,'nl0',geom%nl0)) call mpl%abort('${subr}$','wrong size for dimension nl0')
+      if (.not.check_dim(mpl,grpid,'nc3',nam%nc3)) call mpl%abort('${subr}$','wrong size for dimension nc3')
+      if (.not.check_dim(mpl,grpid,'nc4',nam%nc4)) call mpl%abort('${subr}$','wrong size for dimension nc4')
+      if (.not.check_dim(mpl,grpid,'nl0r',nam%nl0r)) call mpl%abort('${subr}$','wrong size for dimension nl0r')
 
-         ! Get variables
-         m2_1_id = inquire_var(mpl,grpid,'m2_1')
-         m2_2_id = inquire_var(mpl,grpid,'m2_2')
-         m11_id = inquire_var(mpl,grpid,'m11')
-         m22_id = inquire_var(mpl,grpid,'m22')
+      ! Get variables
+      m2_1_id = inquire_var(mpl,grpid,'m2_1')
+      m2_2_id = inquire_var(mpl,grpid,'m2_2')
+      m11_id = inquire_var(mpl,grpid,'m11')
+      m22_id = inquire_var(mpl,grpid,'m22')
 
-         ! Read data
-         call get_var(mpl,grpid,m2_1_id,mom%blk(ib)%m2_1(:,:,isub))
-         call get_var(mpl,grpid,m2_2_id,mom%blk(ib)%m2_2(:,:,:,:,isub))
-         call get_var(mpl,grpid,m11_id,mom%blk(ib)%m11(:,:,:,:,:,isub))
-         call get_var(mpl,grpid,m22_id,mom%blk(ib)%m22(:,:,:,:,:,isub))
-      end if
+      ! Read data
+      call get_var(mpl,grpid,m2_1_id,mom%blk(iv)%m2_1(:,:,isub))
+      call get_var(mpl,grpid,m2_2_id,mom%blk(iv)%m2_2(:,:,:,:,isub))
+      call get_var(mpl,grpid,m11_id,mom%blk(iv)%m11(:,:,:,:,:,isub))
+      call get_var(mpl,grpid,m22_id,mom%blk(iv)%m22(:,:,:,:,:,isub))
    end do
 
    ! Close file
@@ -296,7 +287,7 @@ end subroutine mom_read
 ! Subroutine: mom_write
 !> Write
 !----------------------------------------------------------------------
-subroutine mom_write(mom,mpl,nam,geom,bpar,samp)
+subroutine mom_write(mom,mpl,nam,geom,samp)
 
 implicit none
 
@@ -305,11 +296,10 @@ class(mom_type),intent(in) :: mom   !< Moments
 type(mpl_type),intent(inout) :: mpl !< MPI data
 type(nam_type),intent(in) :: nam    !< Namelist
 type(geom_type),intent(in) :: geom  !< Geometry
-type(bpar_type),intent(in) :: bpar  !< Block parameters
 type(samp_type),intent(in) :: samp  !< Sampling
 
 ! Local variables
-integer :: ib,isub
+integer :: iv,isub
 integer :: ncid,grpid,nc1a_id,nc3_id,nc4_id,nl0r_id,nl0_id,m2_1_id,m2_2_id,m11_id,m22_id
 character(len=1024) :: fname_mom,grpname
 
@@ -331,33 +321,31 @@ do isub=1,mom%nsub
    ! Create file
    ncid = create_file(mpl,fname_mom,mpl%myproc)
 
-   do ib=1,bpar%nb
-      if (bpar%diag_block(ib)) then
-         ! Get group name
-         call nam%alias(bpar%blockname(ib),grpname)
+   do iv=1,nam%nv
+      ! Get group name
+      call nam%alias(nam%variables(iv),grpname)
 
-         ! Define group
-         grpid = define_grp(mpl,ncid,grpname)
+      ! Define group
+      grpid = define_grp(mpl,ncid,grpname)
 
-         ! Define or get dimensions
-         nc1a_id = define_dim(mpl,grpid,'nc1a',samp%nc1a)
-         nl0_id = define_dim(mpl,grpid,'nl0',geom%nl0)
-         nc3_id = define_dim(mpl,grpid,'nc3',bpar%nc3(ib))
-         nc4_id = define_dim(mpl,grpid,'nc4',bpar%nc4(ib))
-         nl0r_id = define_dim(mpl,grpid,'nl0r',bpar%nl0r(ib))
+      ! Define or get dimensions
+      nc1a_id = define_dim(mpl,grpid,'nc1a',samp%nc1a)
+      nl0_id = define_dim(mpl,grpid,'nl0',geom%nl0)
+      nc3_id = define_dim(mpl,grpid,'nc3',nam%nc3)
+      nc4_id = define_dim(mpl,grpid,'nc4',nam%nc4)
+      nl0r_id = define_dim(mpl,grpid,'nl0r',nam%nl0r)
 
-         ! Define or get variables
-         m2_1_id = define_var(mpl,grpid,'m2_1','real',(/nc1a_id,nl0_id/))
-         m2_2_id = define_var(mpl,grpid,'m2_2','real',(/nc1a_id,nc3_id,nc4_id,nl0_id/))
-         m11_id = define_var(mpl,grpid,'m11','real',(/nc1a_id,nc3_id,nc4_id,nl0r_id,nl0_id/))
-         m22_id = define_var(mpl,grpid,'m22','real',(/nc1a_id,nc3_id,nc4_id,nl0r_id,nl0_id/))
+      ! Define or get variables
+      m2_1_id = define_var(mpl,grpid,'m2_1','real',(/nc1a_id,nl0_id/))
+      m2_2_id = define_var(mpl,grpid,'m2_2','real',(/nc1a_id,nc3_id,nc4_id,nl0_id/))
+      m11_id = define_var(mpl,grpid,'m11','real',(/nc1a_id,nc3_id,nc4_id,nl0r_id,nl0_id/))
+      m22_id = define_var(mpl,grpid,'m22','real',(/nc1a_id,nc3_id,nc4_id,nl0r_id,nl0_id/))
 
-         ! Write variables
-         call put_var(mpl,grpid,m2_1_id,mom%blk(ib)%m2_1(:,:,isub))
-         call put_var(mpl,grpid,m2_2_id,mom%blk(ib)%m2_2(:,:,:,:,isub))
-         call put_var(mpl,grpid,m11_id,mom%blk(ib)%m11(:,:,:,:,:,isub))
-         call put_var(mpl,grpid,m22_id,mom%blk(ib)%m22(:,:,:,:,:,isub))
-      end if
+      ! Write variables
+      call put_var(mpl,grpid,m2_1_id,mom%blk(iv)%m2_1(:,:,isub))
+      call put_var(mpl,grpid,m2_2_id,mom%blk(iv)%m2_2(:,:,:,:,isub))
+      call put_var(mpl,grpid,m11_id,mom%blk(iv)%m11(:,:,:,:,:,isub))
+      call put_var(mpl,grpid,m22_id,mom%blk(iv)%m22(:,:,:,:,:,isub))
    end do
 
    ! Close file
@@ -373,7 +361,7 @@ end subroutine mom_write
 ! Subroutine: mom_update
 !> Update centered moments
 !----------------------------------------------------------------------
-subroutine mom_update(mom,mpl,nam,geom,bpar,samp,fld_c0a,ie,iens)
+subroutine mom_update(mom,mpl,nam,geom,samp,fld_c0a,ie,iens)
 
 implicit none
 
@@ -382,14 +370,13 @@ class(mom_type),intent(inout) :: mom                             !< Moments
 type(mpl_type),intent(inout) :: mpl                              !< MPI data
 type(nam_type),intent(in) :: nam                                 !< Namelist
 type(geom_type),intent(in) :: geom                               !< Geometry
-type(bpar_type),intent(in) :: bpar                               !< Block parameters
 type(samp_type),intent(in) :: samp                               !< Sampling
 real(kind_real),intent(in) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) !< Field
 integer,intent(in) :: ie                                         !< Member index
 integer,intent(in) :: iens                                       !< Ensemble index
 
 ! Local variables
-integer :: ens_ne,ens_nsub,isub,ie_sub,jl0r,jl0,il0,il0ic1,il0ic3,jc3,jc4,ic1a,ib,iv,jv,jc0a,idir
+integer :: ens_ne,ens_nsub,isub,ie_sub,jl0r,jl0,il0,il0ic1,il0ic3,jc3,jc4,ic1a,iv,jc0a,idir
 real(kind_real) :: fac1,fac2,fac3,fac4,fac5,fac_norm_cov,fac_norm_m22,cor_norm
 real(kind_real) :: fld_c0b(samp%nc0b,geom%nl0,nam%nv),fld_c0c(samp%nc0c,geom%nl0,nam%nv)
 real(kind_real) :: fld_c1a(samp%nc1a,geom%nl0)
@@ -427,10 +414,10 @@ fac5 = real(ie_sub-1,kind_real)/real(ie_sub,kind_real)
 
 if (ie==1) then
    ! Allocation
-   call mom%alloc(nam,geom,bpar,samp,ens_ne,ens_nsub,iens)
+   call mom%alloc(nam,geom,samp,ens_ne,ens_nsub,iens)
 
    ! Initialization
-   call mom%init(nam,bpar)
+   call mom%init(nam)
 end if
 
 ! Halo extension
@@ -439,81 +426,75 @@ do iv=1,nam%nv
    call samp%com_c0_AC%ext(mpl,fld_c0a(:,:,iv),fld_c0c(:,:,iv))
 end do
 
-do ib=1,bpar%nb
-   if (bpar%diag_block(ib)) then
-      ! Allocation
-      allocate(fld_c3a(samp%nc1a,bpar%nc3(ib),bpar%nc4(ib),geom%nl0))
+do iv=1,nam%nv
+   ! Allocation
+   allocate(fld_c3a(samp%nc1a,nam%nc3,nam%nc4,geom%nl0))
 
-      ! Variables indices
-      iv = bpar%b_to_v1(ib)
-      jv = bpar%b_to_v2(ib)
-
-      ! Interpolate fields
-      fld_c1a = mpl%msv%valr
-      fld_c3a = mpl%msv%valr
-      !$omp parallel do schedule(static) private(il0,il0ic1)
-      do il0=1,geom%nl0
-         il0ic1 = samp%l0_to_l0ic1(il0)
-         call samp%interp_c0b_to_c1a(il0ic1)%apply(mpl,fld_c0b(:,il0,iv),fld_c1a(:,il0))
-      end do
-      !$omp end parallel do
-      !$omp parallel do schedule(static) private(il0,jc3,jc4,il0ic3)
-      do il0=1,geom%nl0
-         do jc4=1,bpar%nc4(ib)
-            do jc3=1,bpar%nc3(ib)
-               il0ic3 = samp%l0_to_l0ic3(il0,jc3,jc4)
-               call samp%interp_c0c_to_c3a(jc3,jc4,il0ic3)%apply(mpl,fld_c0c(:,il0,jv),fld_c3a(:,jc3,jc4,il0))
-            end do
+   ! Interpolate fields
+   fld_c1a = mpl%msv%valr
+   fld_c3a = mpl%msv%valr
+   !$omp parallel do schedule(static) private(il0,il0ic1)
+   do il0=1,geom%nl0
+      il0ic1 = samp%l0_to_l0ic1(il0)
+      call samp%interp_c0b_to_c1a(il0ic1)%apply(mpl,fld_c0b(:,il0,iv),fld_c1a(:,il0))
+   end do
+   !$omp end parallel do
+   !$omp parallel do schedule(static) private(il0,jc3,jc4,il0ic3)
+   do il0=1,geom%nl0
+      do jc4=1,nam%nc4
+         do jc3=1,nam%nc3
+            il0ic3 = samp%l0_to_l0ic3(il0,jc3,jc4)
+            call samp%interp_c0c_to_c3a(jc3,jc4,il0ic3)%apply(mpl,fld_c0c(:,il0,iv),fld_c3a(:,jc3,jc4,il0))
          end do
       end do
-      !$omp end parallel do
+   end do
+   !$omp end parallel do
 
-      ! Remove mean
-      fld_c1a = fld_c1a-mom%blk(ib)%m1_1(:,:,isub)
-      fld_c3a = fld_c3a-mom%blk(ib)%m1_2(:,:,:,:,isub)
+   ! Remove mean
+   fld_c1a = fld_c1a-mom%blk(iv)%m1_1(:,:,isub)
+   fld_c3a = fld_c3a-mom%blk(iv)%m1_2(:,:,:,:,isub)
 
-      !$omp parallel do schedule(static) private(il0,jl0r,jl0,jc3,jc4)
-      do il0=1,geom%nl0
-         do jl0r=1,bpar%nl0r(ib)
-            jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
-            do jc4=1,bpar%nc4(ib)
-               do jc3=1,bpar%nc3(ib)
-                  ! Update fourth-order moment
-                  mom%blk(ib)%m22(:,jc3,jc4,jl0r,il0,isub) = mom%blk(ib)%m22(:,jc3,jc4,jl0r,il0,isub) &
- & -two*fac1*(mom%blk(ib)%m21(:,jc3,jc4,jl0r,il0,isub)*fld_c3a(:,jc3,jc4,jl0) &
- & +mom%blk(ib)%m12(:,jc3,jc4,jl0r,il0,isub)*fld_c1a(:,il0)) &
- & +fac2*(four*mom%blk(ib)%m11(:,jc3,jc4,jl0r,il0,isub)*fld_c1a(:,il0)*fld_c3a(:,jc3,jc4,jl0) &
- & +mom%blk(ib)%m2_2(:,jc3,jc4,jl0,isub)*fld_c1a(:,il0)**2+mom%blk(ib)%m2_1(:,il0,isub)*fld_c3a(:,jc3,jc4,jl0)**2) &
+   !$omp parallel do schedule(static) private(il0,jl0r,jl0,jc3,jc4)
+   do il0=1,geom%nl0
+      do jl0r=1,nam%nl0r
+         jl0 = geom%l0rl0_to_l0(jl0r,il0)
+         do jc4=1,nam%nc4
+            do jc3=1,nam%nc3
+               ! Update fourth-order moment
+               mom%blk(iv)%m22(:,jc3,jc4,jl0r,il0,isub) = mom%blk(iv)%m22(:,jc3,jc4,jl0r,il0,isub) &
+ & -two*fac1*(mom%blk(iv)%m21(:,jc3,jc4,jl0r,il0,isub)*fld_c3a(:,jc3,jc4,jl0) &
+ & +mom%blk(iv)%m12(:,jc3,jc4,jl0r,il0,isub)*fld_c1a(:,il0)) &
+ & +fac2*(four*mom%blk(iv)%m11(:,jc3,jc4,jl0r,il0,isub)*fld_c1a(:,il0)*fld_c3a(:,jc3,jc4,jl0) &
+ & +mom%blk(iv)%m2_2(:,jc3,jc4,jl0,isub)*fld_c1a(:,il0)**2+mom%blk(iv)%m2_1(:,il0,isub)*fld_c3a(:,jc3,jc4,jl0)**2) &
  & +fac3*fld_c1a(:,il0)**2*fld_c3a(:,jc3,jc4,jl0)**2
 
-                  ! Update third-order moments
-                  mom%blk(ib)%m21(:,jc3,jc4,jl0r,il0,isub) = mom%blk(ib)%m21(:,jc3,jc4,jl0r,il0,isub) &
- & -fac1*(two*mom%blk(ib)%m11(:,jc3,jc4,jl0r,il0,isub)*fld_c1a(:,il0)+mom%blk(ib)%m2_1(:,il0,isub)*fld_c3a(:,jc3,jc4,jl0)) &
+               ! Update third-order moments
+               mom%blk(iv)%m21(:,jc3,jc4,jl0r,il0,isub) = mom%blk(iv)%m21(:,jc3,jc4,jl0r,il0,isub) &
+ & -fac1*(two*mom%blk(iv)%m11(:,jc3,jc4,jl0r,il0,isub)*fld_c1a(:,il0)+mom%blk(iv)%m2_1(:,il0,isub)*fld_c3a(:,jc3,jc4,jl0)) &
  & +fac4*fld_c1a(:,il0)**2*fld_c3a(:,jc3,jc4,jl0)
-                  mom%blk(ib)%m12(:,jc3,jc4,jl0r,il0,isub) = mom%blk(ib)%m12(:,jc3,jc4,jl0r,il0,isub) &
- & -fac1*(two*mom%blk(ib)%m11(:,jc3,jc4,jl0r,il0,isub)*fld_c3a(:,jc3,jc4,jl0)+mom%blk(ib)%m2_2(:,jc3,jc4,jl0,isub)*fld_c1a(:,il0)) &
+               mom%blk(iv)%m12(:,jc3,jc4,jl0r,il0,isub) = mom%blk(iv)%m12(:,jc3,jc4,jl0r,il0,isub) &
+ & -fac1*(two*mom%blk(iv)%m11(:,jc3,jc4,jl0r,il0,isub)*fld_c3a(:,jc3,jc4,jl0)+mom%blk(iv)%m2_2(:,jc3,jc4,jl0,isub)*fld_c1a(:,il0)) &
  & +fac4*fld_c3a(:,jc3,jc4,jl0)**2*fld_c1a(:,il0)
 
-                  ! Update covariance
-                  mom%blk(ib)%m11(:,jc3,jc4,jl0r,il0,isub) = mom%blk(ib)%m11(:,jc3,jc4,jl0r,il0,isub)+fac5*fld_c1a(:,il0) &
+               ! Update covariance
+               mom%blk(iv)%m11(:,jc3,jc4,jl0r,il0,isub) = mom%blk(iv)%m11(:,jc3,jc4,jl0r,il0,isub)+fac5*fld_c1a(:,il0) &
  & *fld_c3a(:,jc3,jc4,jl0)
-               end do
             end do
          end do
       end do
-      !$omp end parallel do
+   end do
+   !$omp end parallel do
 
-      ! Update variance
-      mom%blk(ib)%m2_1(:,:,isub) = mom%blk(ib)%m2_1(:,:,isub)+fac5*fld_c1a**2
-      mom%blk(ib)%m2_2(:,:,:,:,isub) = mom%blk(ib)%m2_2(:,:,:,:,isub)+fac5*fld_c3a**2
+   ! Update variance
+   mom%blk(iv)%m2_1(:,:,isub) = mom%blk(iv)%m2_1(:,:,isub)+fac5*fld_c1a**2
+   mom%blk(iv)%m2_2(:,:,:,:,isub) = mom%blk(iv)%m2_2(:,:,:,:,isub)+fac5*fld_c3a**2
 
-      ! Update mean
-      mom%blk(ib)%m1_1(:,:,isub) = mom%blk(ib)%m1_1(:,:,isub)+fac1*fld_c1a
-      mom%blk(ib)%m1_2(:,:,:,:,isub) = mom%blk(ib)%m1_2(:,:,:,:,isub)+fac1*fld_c3a
+   ! Update mean
+   mom%blk(iv)%m1_1(:,:,isub) = mom%blk(iv)%m1_1(:,:,isub)+fac1*fld_c1a
+   mom%blk(iv)%m1_2(:,:,:,:,isub) = mom%blk(iv)%m1_2(:,:,:,:,isub)+fac1*fld_c3a
 
-      ! Release memory
-      deallocate(fld_c3a)
-   end if
+   ! Release memory
+   deallocate(fld_c3a)
 end do
 
 if (nam%check_dirac) then
@@ -539,7 +520,7 @@ if (nam%check_dirac) then
 
    do jc0a=1,geom%nc0a
       ! Dirac sector
-      idir = geom%dirac_index(jc0a)
+      idir = geom%inbdir(jc0a)
 
       do jl0=1,geom%nl0
          if (geom%gmask_c0a(jc0a,jl0)) then
@@ -564,41 +545,39 @@ if (ie==mom%ne) then
    ! Normalize moments or set missing values
    fac_norm_cov = real(mom%nsub,kind_real)/real(mom%ne-mom%nsub,kind_real)
    fac_norm_m22 = real(mom%nsub,kind_real)/real(mom%ne,kind_real)
-   do ib=1,bpar%nb
-      if (bpar%diag_block(ib)) then
-         !$omp parallel do schedule(static) private(il0,jc3,jc4,ic1a,jl0r,jl0)
-         do il0=1,geom%nl0
-            do ic1a=1,samp%nc1a
-               if (samp%smask_c1a(ic1a,il0)) then
-                  mom%blk(ib)%m2_1(ic1a,il0,:) = mom%blk(ib)%m2_1(ic1a,il0,:)*fac_norm_cov
-               else
-                  mom%blk(ib)%m2_1(ic1a,il0,:) = mpl%msv%valr
-               end if
-            end do
-            do jc4=1,bpar%nc4(ib)
-               do jc3=1,bpar%nc3(ib)
-                  do ic1a=1,samp%nc1a
-                     if (samp%smask_c3a(ic1a,jc3,jc4,il0)) then
-                        mom%blk(ib)%m2_2(ic1a,jc3,jc4,il0,:) = mom%blk(ib)%m2_2(ic1a,jc3,jc4,il0,:)*fac_norm_cov
+   do iv=1,nam%nv
+      !$omp parallel do schedule(static) private(il0,jc3,jc4,ic1a,jl0r,jl0)
+      do il0=1,geom%nl0
+         do ic1a=1,samp%nc1a
+            if (samp%smask_c1a(ic1a,il0)) then
+               mom%blk(iv)%m2_1(ic1a,il0,:) = mom%blk(iv)%m2_1(ic1a,il0,:)*fac_norm_cov
+            else
+               mom%blk(iv)%m2_1(ic1a,il0,:) = mpl%msv%valr
+            end if
+         end do
+         do jc4=1,nam%nc4
+            do jc3=1,nam%nc3
+               do ic1a=1,samp%nc1a
+                  if (samp%smask_c3a(ic1a,jc3,jc4,il0)) then
+                     mom%blk(iv)%m2_2(ic1a,jc3,jc4,il0,:) = mom%blk(iv)%m2_2(ic1a,jc3,jc4,il0,:)*fac_norm_cov
+                  else
+                     mom%blk(iv)%m2_2(ic1a,jc3,jc4,il0,:) = mpl%msv%valr
+                  end if
+                  do jl0r=1,nam%nl0r
+                     jl0 = geom%l0rl0_to_l0(jl0r,il0)
+                     if (samp%smask_c1a(ic1a,il0).and.samp%smask_c3a(ic1a,jc3,jc4,jl0)) then
+                        mom%blk(iv)%m11(ic1a,jc3,jc4,jl0r,il0,:) = mom%blk(iv)%m11(ic1a,jc3,jc4,jl0r,il0,:)*fac_norm_cov
+                        mom%blk(iv)%m22(ic1a,jc3,jc4,jl0r,il0,:) = mom%blk(iv)%m22(ic1a,jc3,jc4,jl0r,il0,:)*fac_norm_m22
                      else
-                        mom%blk(ib)%m2_2(ic1a,jc3,jc4,il0,:) = mpl%msv%valr
+                        mom%blk(iv)%m11(ic1a,jc3,jc4,jl0r,il0,:) = mpl%msv%valr
+                        mom%blk(iv)%m22(ic1a,jc3,jc4,jl0r,il0,:) = mpl%msv%valr
                      end if
-                     do jl0r=1,bpar%nl0r(ib)
-                        jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
-                        if (samp%smask_c1a(ic1a,il0).and.samp%smask_c3a(ic1a,jc3,jc4,jl0)) then
-                           mom%blk(ib)%m11(ic1a,jc3,jc4,jl0r,il0,:) = mom%blk(ib)%m11(ic1a,jc3,jc4,jl0r,il0,:)*fac_norm_cov
-                           mom%blk(ib)%m22(ic1a,jc3,jc4,jl0r,il0,:) = mom%blk(ib)%m22(ic1a,jc3,jc4,jl0r,il0,:)*fac_norm_m22
-                        else
-                           mom%blk(ib)%m11(ic1a,jc3,jc4,jl0r,il0,:) = mpl%msv%valr
-                           mom%blk(ib)%m22(ic1a,jc3,jc4,jl0r,il0,:) = mpl%msv%valr
-                        end if
-                     end do
                   end do
                end do
             end do
          end do
-         !$omp end parallel do
-      end if
+      end do
+      !$omp end parallel do
    end do
 
    ! Normalize raw ensemble dirac test
@@ -617,7 +596,7 @@ if (ie==mom%ne) then
 
       ! Normalize
       do jc0a=1,geom%nc0a
-         idir = geom%dirac_index(jc0a)
+         idir = geom%inbdir(jc0a)
          do jl0=1,geom%nl0
             if (geom%gmask_c0a(jc0a,jl0)) then
                do iv=1,nam%nv
@@ -642,7 +621,7 @@ if (ie==mom%ne) then
    if (nam%write_mom) then
       write(mpl%info,'(a10,a)') '','Write sample moments'
       call mpl%flush
-      call mom%write(mpl,nam,geom,bpar,samp)
+      call mom%write(mpl,nam,geom,samp)
    end if
 end if
 
@@ -655,7 +634,7 @@ end subroutine mom_update
 ! Subroutine: mom_compute
 !> Compute centered moments
 !----------------------------------------------------------------------
-subroutine mom_compute(mom,mpl,nam,geom,bpar,samp,ens,iens)
+subroutine mom_compute(mom,mpl,nam,geom,samp,ens,iens)
 
 implicit none
 
@@ -664,13 +643,12 @@ class(mom_type),intent(inout) :: mom  !< Moments
 type(mpl_type),intent(inout) :: mpl   !< MPI data
 type(nam_type),intent(in) :: nam      !< Namelist
 type(geom_type),intent(in) :: geom    !< Geometry
-type(bpar_type),intent(in) :: bpar    !< Block parameters
 type(samp_type),intent(in) :: samp    !< Sampling
 type(ens_type), intent(inout) :: ens  !< Ensemble
 integer,intent(in) :: iens            !< Ensemble index
 
 ! Local variables
-integer :: ie,ie_sub,jl0r,jl0,il0,il0ic1,il0ic3,isub,jc3,jc4,ic1a,ib,jv,iv,jc0a,idir
+integer :: ie,ie_sub,jl0r,jl0,il0,il0ic1,il0ic3,isub,jc3,jc4,ic1a,iv,jc0a,idir
 real(kind_real) :: fac_norm_cov,fac_norm_m22,cor_norm
 real(kind_real) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv),fld_c0b(samp%nc0b,geom%nl0,nam%nv),fld_c0c(samp%nc0c,geom%nl0,nam%nv)
 real(kind_real) :: fld_c1a(samp%nc1a,geom%nl0)
@@ -683,14 +661,14 @@ real(kind_real),allocatable :: fld_c3a(:,:,:,:),wgt_dir(:),m2(:,:,:)
 @:probe_in()
 
 ! Allocation
-call mom%alloc(nam,geom,bpar,samp,ens%ne,ens%nsub,iens)
+call mom%alloc(nam,geom,samp,ens%ne,ens%nsub,iens)
 if (nam%check_dirac) then
    allocate(wgt_dir(geom%ndir))
    allocate(m2(geom%nc0a,geom%nl0,nam%nv))
 end if
 
 ! Initialization
-call mom%init(nam,bpar)
+call mom%init(nam)
 
 ! Loop on sub-ensembles
 do isub=1,ens%nsub
@@ -719,62 +697,56 @@ do isub=1,ens%nsub
          call samp%com_c0_AC%ext(mpl,fld_c0a(:,:,iv),fld_c0c(:,:,iv))
       end do
 
-      do ib=1,bpar%nb
-         if (bpar%diag_block(ib)) then
-            ! Allocation
-            allocate(fld_c3a(samp%nc1a,bpar%nc3(ib),bpar%nc4(ib),geom%nl0))
+      do iv=1,nam%nv
+         ! Allocation
+         allocate(fld_c3a(samp%nc1a,nam%nc3,nam%nc4,geom%nl0))
 
-            ! Variables indices
-            iv = bpar%b_to_v1(ib)
-            jv = bpar%b_to_v2(ib)
-
-            ! Interpolate fields
-            fld_c1a = mpl%msv%valr
-            fld_c3a = mpl%msv%valr
-            !$omp parallel do schedule(static) private(il0,il0ic1)
-            do il0=1,geom%nl0
-               il0ic1 = samp%l0_to_l0ic1(il0)
-               call samp%interp_c0b_to_c1a(il0ic1)%apply(mpl,fld_c0b(:,il0,iv),fld_c1a(:,il0))
-            end do
-            !$omp end parallel do
-            !$omp parallel do schedule(static) private(il0,jc3,jc4,il0ic3)
-            do il0=1,geom%nl0
-               do jc4=1,bpar%nc4(ib)
-                  do jc3=1,bpar%nc3(ib)
-                     il0ic3 = samp%l0_to_l0ic3(il0,jc3,jc4)
-                     call samp%interp_c0c_to_c3a(jc3,jc4,il0ic3)%apply(mpl,fld_c0c(:,il0,jv),fld_c3a(:,jc3,jc4,il0))
-                  end do
+         ! Interpolate fields
+         fld_c1a = mpl%msv%valr
+         fld_c3a = mpl%msv%valr
+         !$omp parallel do schedule(static) private(il0,il0ic1)
+         do il0=1,geom%nl0
+            il0ic1 = samp%l0_to_l0ic1(il0)
+            call samp%interp_c0b_to_c1a(il0ic1)%apply(mpl,fld_c0b(:,il0,iv),fld_c1a(:,il0))
+         end do
+         !$omp end parallel do
+         !$omp parallel do schedule(static) private(il0,jc3,jc4,il0ic3)
+         do il0=1,geom%nl0
+            do jc4=1,nam%nc4
+               do jc3=1,nam%nc3
+                  il0ic3 = samp%l0_to_l0ic3(il0,jc3,jc4)
+                  call samp%interp_c0c_to_c3a(jc3,jc4,il0ic3)%apply(mpl,fld_c0c(:,il0,iv),fld_c3a(:,jc3,jc4,il0))
                end do
             end do
-            !$omp end parallel do
+         end do
+         !$omp end parallel do
 
-            !$omp parallel do schedule(static) private(il0,jl0r,jl0,jc3,jc4)
-            do il0=1,geom%nl0
-               do jl0r=1,bpar%nl0r(ib)
-                  jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
+         !$omp parallel do schedule(static) private(il0,jl0r,jl0,jc3,jc4)
+         do il0=1,geom%nl0
+            do jl0r=1,nam%nl0r
+               jl0 = geom%l0rl0_to_l0(jl0r,il0)
 
-                  do jc4=1,bpar%nc4(ib)
-                     do jc3=1,bpar%nc3(ib)
-                        ! Fourth-order moment
-                        mom%blk(ib)%m22(:,jc3,jc4,jl0r,il0,isub) = mom%blk(ib)%m22(:,jc3,jc4,jl0r,il0,isub)+(fld_c1a(:,il0) &
+               do jc4=1,nam%nc4
+                  do jc3=1,nam%nc3
+                     ! Fourth-order moment
+                     mom%blk(iv)%m22(:,jc3,jc4,jl0r,il0,isub) = mom%blk(iv)%m22(:,jc3,jc4,jl0r,il0,isub)+(fld_c1a(:,il0) &
  & *fld_c3a(:,jc3,jc4,jl0))**2
 
-                        ! Covariance
-                        mom%blk(ib)%m11(:,jc3,jc4,jl0r,il0,isub) = mom%blk(ib)%m11(:,jc3,jc4,jl0r,il0,isub)+fld_c1a(:,il0) &
+                     ! Covariance
+                     mom%blk(iv)%m11(:,jc3,jc4,jl0r,il0,isub) = mom%blk(iv)%m11(:,jc3,jc4,jl0r,il0,isub)+fld_c1a(:,il0) &
  & *fld_c3a(:,jc3,jc4,jl0)
-                     end do
                   end do
                end do
             end do
-            !$omp end parallel do
+         end do
+         !$omp end parallel do
 
-            ! Variances
-            mom%blk(ib)%m2_1(:,:,isub) = mom%blk(ib)%m2_1(:,:,isub)+fld_c1a**2
-            mom%blk(ib)%m2_2(:,:,:,:,isub) = mom%blk(ib)%m2_2(:,:,:,:,isub)+fld_c3a**2
+         ! Variances
+         mom%blk(iv)%m2_1(:,:,isub) = mom%blk(iv)%m2_1(:,:,isub)+fld_c1a**2
+         mom%blk(iv)%m2_2(:,:,:,:,isub) = mom%blk(iv)%m2_2(:,:,:,:,isub)+fld_c3a**2
 
-            ! Release memory
-            deallocate(fld_c3a)
-         end if
+         ! Release memory
+         deallocate(fld_c3a)
       end do
 
       if (nam%check_dirac) then
@@ -789,7 +761,7 @@ do isub=1,ens%nsub
 
          ! Covariance
          do jc0a=1,geom%nc0a
-            idir = geom%dirac_index(jc0a)
+            idir = geom%inbdir(jc0a)
             do jl0=1,geom%nl0
               if (geom%gmask_c0a(jc0a,jl0)) mom%dirac(jc0a,jl0,:) = mom%dirac(jc0a,jl0,:)+wgt_dir(idir)*fld_c0a(jc0a,jl0,:)
             end do
@@ -803,41 +775,39 @@ end do
 ! Normalize moments or set missing values
 fac_norm_cov = real(mom%nsub,kind_real)/real(mom%ne-mom%nsub,kind_real)
 fac_norm_m22 = real(mom%nsub,kind_real)/real(mom%ne,kind_real)
-do ib=1,bpar%nb
-   if (bpar%diag_block(ib)) then
-      !$omp parallel do schedule(static) private(il0,jc3,jc4,ic1a,jl0r,jl0)
-      do il0=1,geom%nl0
-         do ic1a=1,samp%nc1a
-            if (samp%smask_c1a(ic1a,il0)) then
-               mom%blk(ib)%m2_1(ic1a,il0,:) = mom%blk(ib)%m2_1(ic1a,il0,:)*fac_norm_cov
-            else
-               mom%blk(ib)%m2_1(ic1a,il0,:) = mpl%msv%valr
-            end if
-         end do
-         do jc4=1,bpar%nc4(ib)
-            do jc3=1,bpar%nc3(ib)
-               do ic1a=1,samp%nc1a
-                  if (samp%smask_c3a(ic1a,jc3,jc4,il0)) then
-                     mom%blk(ib)%m2_2(ic1a,jc3,jc4,il0,:) = mom%blk(ib)%m2_2(ic1a,jc3,jc4,il0,:)*fac_norm_cov
+do iv=1,nam%nv
+   !$omp parallel do schedule(static) private(il0,jc3,jc4,ic1a,jl0r,jl0)
+   do il0=1,geom%nl0
+      do ic1a=1,samp%nc1a
+         if (samp%smask_c1a(ic1a,il0)) then
+            mom%blk(iv)%m2_1(ic1a,il0,:) = mom%blk(iv)%m2_1(ic1a,il0,:)*fac_norm_cov
+         else
+            mom%blk(iv)%m2_1(ic1a,il0,:) = mpl%msv%valr
+         end if
+      end do
+      do jc4=1,nam%nc4
+         do jc3=1,nam%nc3
+            do ic1a=1,samp%nc1a
+               if (samp%smask_c3a(ic1a,jc3,jc4,il0)) then
+                  mom%blk(iv)%m2_2(ic1a,jc3,jc4,il0,:) = mom%blk(iv)%m2_2(ic1a,jc3,jc4,il0,:)*fac_norm_cov
+               else
+                  mom%blk(iv)%m2_2(ic1a,jc3,jc4,il0,:) = mpl%msv%valr
+               end if
+               do jl0r=1,nam%nl0r
+                  jl0 = geom%l0rl0_to_l0(jl0r,il0)
+                  if (samp%smask_c1a(ic1a,il0).and.samp%smask_c3a(ic1a,jc3,jc4,jl0)) then
+                     mom%blk(iv)%m11(ic1a,jc3,jc4,jl0r,il0,:) = mom%blk(iv)%m11(ic1a,jc3,jc4,jl0r,il0,:)*fac_norm_cov
+                     mom%blk(iv)%m22(ic1a,jc3,jc4,jl0r,il0,:) = mom%blk(iv)%m22(ic1a,jc3,jc4,jl0r,il0,:)*fac_norm_m22
                   else
-                     mom%blk(ib)%m2_2(ic1a,jc3,jc4,il0,:) = mpl%msv%valr
+                     mom%blk(iv)%m11(ic1a,jc3,jc4,jl0r,il0,:) = mpl%msv%valr
+                     mom%blk(iv)%m22(ic1a,jc3,jc4,jl0r,il0,:) = mpl%msv%valr
                   end if
-                  do jl0r=1,bpar%nl0r(ib)
-                     jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
-                     if (samp%smask_c1a(ic1a,il0).and.samp%smask_c3a(ic1a,jc3,jc4,jl0)) then
-                        mom%blk(ib)%m11(ic1a,jc3,jc4,jl0r,il0,:) = mom%blk(ib)%m11(ic1a,jc3,jc4,jl0r,il0,:)*fac_norm_cov
-                        mom%blk(ib)%m22(ic1a,jc3,jc4,jl0r,il0,:) = mom%blk(ib)%m22(ic1a,jc3,jc4,jl0r,il0,:)*fac_norm_m22
-                     else
-                        mom%blk(ib)%m11(ic1a,jc3,jc4,jl0r,il0,:) = mpl%msv%valr
-                        mom%blk(ib)%m22(ic1a,jc3,jc4,jl0r,il0,:) = mpl%msv%valr
-                     end if
-                  end do
                end do
             end do
          end do
       end do
-      !$omp end parallel do
-   end if
+   end do
+   !$omp end parallel do
 end do
 
 ! Normalize raw ensemble dirac test
@@ -857,7 +827,7 @@ if (nam%check_dirac) then
 
    ! Normalize
    do jc0a=1,geom%nc0a
-      idir = geom%dirac_index(jc0a)
+      idir = geom%inbdir(jc0a)
       do jl0=1,geom%nl0
          if (geom%gmask_c0a(jc0a,jl0)) then
             do iv=1,nam%nv
@@ -883,7 +853,7 @@ end if
 if (nam%write_mom) then
    write(mpl%info,'(a10,a)') '','Write sample moments'
    call mpl%flush
-   call mom%write(mpl,nam,geom,bpar,samp)
+   call mom%write(mpl,nam,geom,samp)
 end if
 
 ! Probe out

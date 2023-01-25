@@ -10,54 +10,79 @@
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
    Norm of var1:  0.14126025E+04
+   Norm of var2:  0.12323883E+04
    Norm of var_2d:  0.77838823E+03
    Norm of var1:  0.13765489E+04
+   Norm of var2:  0.14074276E+04
    Norm of var_2d:  0.67902307E+03
    Norm of var1:  0.12309160E+04
+   Norm of var2:  0.13792409E+04
    Norm of var_2d:  0.66232699E+03
    Norm of var1:  0.14717717E+04
+   Norm of var2:  0.14061769E+04
    Norm of var_2d:  0.81869445E+03
    Norm of var1:  0.13699966E+04
+   Norm of var2:  0.12513083E+04
    Norm of var_2d:  0.60623368E+03
    Norm of var1:  0.16326230E+04
+   Norm of var2:  0.15844588E+04
    Norm of var_2d:  0.56979672E+03
    Norm of var1:  0.13049597E+04
+   Norm of var2:  0.13412942E+04
    Norm of var_2d:  0.79526649E+03
    Norm of var1:  0.17805510E+04
+   Norm of var2:  0.14354833E+04
    Norm of var_2d:  0.86067676E+03
    Norm of var1:  0.16067731E+04
+   Norm of var2:  0.17769672E+04
    Norm of var_2d:  0.67904353E+03
    Norm of var1:  0.12788813E+04
+   Norm of var2:  0.15624475E+04
    Norm of var_2d:  0.60396380E+03
    Norm of var1:  0.14535409E+04
+   Norm of var2:  0.14532876E+04
    Norm of var_2d:  0.72122428E+03
    Norm of var1:  0.15558979E+04
+   Norm of var2:  0.18522245E+04
    Norm of var_2d:  0.67668277E+03
    Norm of var1:  0.15917174E+04
+   Norm of var2:  0.17978397E+04
    Norm of var_2d:  0.71728996E+03
    Norm of var1:  0.18009664E+04
+   Norm of var2:  0.12379540E+04
    Norm of var_2d:  0.58807894E+03
    Norm of var1:  0.13435218E+04
+   Norm of var2:  0.14736925E+04
    Norm of var_2d:  0.69553119E+03
    Norm of var1:  0.15219554E+04
+   Norm of var2:  0.13720112E+04
    Norm of var_2d:  0.66206515E+03
    Norm of var1:  0.16957607E+04
+   Norm of var2:  0.16161038E+04
    Norm of var_2d:  0.62753100E+03
    Norm of var1:  0.15083721E+04
+   Norm of var2:  0.13880313E+04
    Norm of var_2d:  0.86192206E+03
    Norm of var1:  0.13625727E+04
+   Norm of var2:  0.11703510E+04
    Norm of var_2d:  0.75092883E+03
    Norm of var1:  0.15191922E+04
+   Norm of var2:  0.11447836E+04
    Norm of var_2d:  0.55783807E+03
    Norm of var1:  0.11732024E+04
+   Norm of var2:  0.14369029E+04
    Norm of var_2d:  0.70162424E+03
    Norm of var1:  0.14656734E+04
+   Norm of var2:  0.14555562E+04
    Norm of var_2d:  0.70697203E+03
    Norm of var1:  0.15221355E+04
+   Norm of var2:  0.15331318E+04
    Norm of var_2d:  0.80652068E+03
    Norm of var1:  0.16108719E+04
+   Norm of var2:  0.12715702E+04
    Norm of var_2d:  0.62941790E+03
    Norm of var1:  0.15050564E+04
+   Norm of var2:  0.12892202E+04
    Norm of var_2d:  0.72986159E+03
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
@@ -122,8 +147,11 @@
                 Level:   1 ~> cov. at class zero:  0.99E+00
                 Level:   2 ~> cov. at class zero:  0.10E+01
                 Level:   1 ~> cov. at class zero:  0.97E+00
-             Block var1-var1:  0.34671936E+00 for    37356 diagnostic points
-             Block var_2d-var_2d:  0.36421464E+00 for     9339 diagnostic points
+                Level:   2 ~> cov. at class zero:  0.10E+01
+                Level:   1 ~> cov. at class zero:  0.97E+00
+             Block var1:  0.34671936E+00 for    37356 diagnostic points
+             Block var2:  0.35294103E+00 for    37356 diagnostic points
+             Block var_2d:  0.36421464E+00 for     9339 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        0.78
@@ -139,21 +167,35 @@
                                  cor. hor. support:      3743.60 km
                                  cor. ver. support:         0.53 vertical units
                 Level:   1 ~> cor. at class zero:        1.00
+                Level:   2 ~> cor. at class zero:        1.00
+                   Level:   1 ~> amplitude:        0.75
+                                 cor. hor. support:      3862.91 km
+                                 cor. ver. support:         4.67 vertical units
+                   Level:   2 ~> amplitude:        0.78
+                                 cor. hor. support:      3542.04 km
+                                 cor. ver. support:         4.31 vertical units
+                   Level:   1 ~> amplitude:        0.25
+                                 cor. hor. support:      3863.08 km
+                                 cor. ver. support:         0.56 vertical units
+                   Level:   2 ~> amplitude:        0.22
+                                 cor. hor. support:      3541.36 km
+                                 cor. ver. support:         0.51 vertical units
+                Level:   1 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        0.77
                                  cor. hor. support:      3519.71 km
                                  cor. ver. support:         0.00 vertical units
                    Level:   1 ~> amplitude:        0.23
                                  cor. hor. support:      3519.36 km
                                  cor. ver. support:         0.00 vertical units
-Norm of BUMP output parameter cor_a - 1: 3.6581387131469235e+01
-Norm of BUMP output parameter cor_a - 2: 1.4214977454988292e+01
-Norm of BUMP output parameter cor_rh1 - 1: 1.8779328286253446e+08
-Norm of BUMP output parameter cor_rh1 - 2: 1.8699074845178714e+08
-Norm of BUMP output parameter cor_rh2 - 1: 1.9226938612718627e+08
-Norm of BUMP output parameter cor_rh2 - 2: 1.9114276950201932e+08
-Norm of BUMP output parameter cor_rhc - 1: 3.2665363298965810e+00
-Norm of BUMP output parameter cor_rhc - 2: 2.9655404483754881e+00
-Norm of BUMP output parameter cor_rh - 1: 1.8896968005301443e+08
-Norm of BUMP output parameter cor_rh - 2: 1.8801714814839607e+08
-Norm of BUMP output parameter cor_rv - 1: 2.0767540121876934e+02
-Norm of BUMP output parameter cor_rv - 2: 2.3616105482447743e+01
+Norm of BUMP output parameter cor_a - 1: 4.6206030769773228e+01
+Norm of BUMP output parameter cor_a - 2: 1.8764134198642523e+01
+Norm of BUMP output parameter cor_rh1 - 1: 2.4770911728747132e+08
+Norm of BUMP output parameter cor_rh1 - 2: 2.4531506456800568e+08
+Norm of BUMP output parameter cor_rh2 - 1: 2.4759496374396583e+08
+Norm of BUMP output parameter cor_rh2 - 2: 2.4504010977570057e+08
+Norm of BUMP output parameter cor_rhc - 1: 4.8079995315366935e+00
+Norm of BUMP output parameter cor_rhc - 2: 3.9840022937447945e+00
+Norm of BUMP output parameter cor_rh - 1: 2.4611961305133197e+08
+Norm of BUMP output parameter cor_rh - 2: 2.4379486909095803e+08
+Norm of BUMP output parameter cor_rv - 1: 2.7755959498314081e+02
+Norm of BUMP output parameter cor_rv - 2: 3.5375089272281322e+01

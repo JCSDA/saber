@@ -1365,6 +1365,9 @@ else
    end if
 end if
 
+! Reset random seed if necessary
+if (nam%default_seed) call rng%reseed(mpl)
+
 ! Probe out
 @:probe_out()
 
@@ -1433,6 +1436,9 @@ if (nam%new_vbal) then
    call mpl%flush
    call samp%compute_mpi_e(mpl,nam)
 end if
+
+! Reset random seed if necessary
+if (nam%default_seed) call rng%reseed(mpl)
 
 ! Probe out
 @:probe_out()
@@ -1707,7 +1713,7 @@ type(geom_type),intent(in) :: geom     !< Geometry
 integer,intent(in) :: subset           !< Subset index (1 or 2)
 
 ! Local variables
-integer :: ic0,ic0a,ic0u,icx,icxa,il0,il0i,ildwv,iproc,nn_index(1),n,ix,iy,ncx,ncx_eff,ncxa
+integer :: ic0,ic0a,ic0u,icx,icxa,ildwv,iproc,nn_index(1),n,ix,iy,ncx,ncx_eff,ncxa
 integer :: proc_to_ncxa(mpl%nproc),proc_to_cx_offset(mpl%nproc)
 integer,allocatable :: cx_to_c0(:),cxa_to_cx(:)
 real(kind_real) :: lonlat(2),latmin,latmax

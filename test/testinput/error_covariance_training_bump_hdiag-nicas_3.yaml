@@ -44,7 +44,7 @@ bump:
     compute lowres localization: true
     compute hybrid weights: true
     hybrid source: lowres ensemble
-    multivariate strategy: specific_univariate
+    multivariate strategy: univariate
     read local sampling: true
     read moments: true
     write diagnostics: true

@@ -26,7 +26,7 @@ bump:
     files prefix: error_covariance_training_bump_nicas_3/_MPI_-_OMP_
     overriding nicas file: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas
   drivers:
-    multivariate strategy: specific_univariate
+    multivariate strategy: univariate
     read global nicas: true
     write local nicas: true
     adjoints test: true

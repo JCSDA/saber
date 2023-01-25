@@ -6,14 +6,17 @@ geometry:
   groups:
   - variables:
     - var1
+    - var2
     levels: 2
   halo: 1
 input variables:
 - var1
+- var2
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
   - var1
+  - var2
 bump:
   general:
     testing: true
@@ -22,7 +25,7 @@ bump:
     data directory: testdata
     files prefix: error_covariance_training_bump_nicas_1/_MPI_-_OMP_
   drivers:
-    multivariate strategy: specific_multivariate
+    multivariate strategy: crossed
     compute nicas: true
     adjoints test: true
     internal dirac test: true
@@ -33,15 +36,19 @@ bump:
     resolution: 4.0
     explicit length-scales: true
     horizontal length-scale:
-    - variables:
+    - groups:
       - var1
-      value: 1000.0e3
+      value: 4000.0e3
+    - groups:
+      - var2
+      value: 4000.0e3
     vertical length-scale:
-    - variables:
+    - groups:
       - var1
+      - var2
       value: 3.0
     interpolation type:
-    - variables:
+    - groups:
       - var1
       type: si
   dirac:

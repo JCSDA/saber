@@ -10,7 +10,6 @@ module type_mom_blk
 
 use tools_const, only: zero
 use tools_kinds, only: kind_real
-use type_bpar, only: bpar_type
 use type_geom, only: geom_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
@@ -21,7 +20,6 @@ implicit none
 
 ! Moments block derived type
 type mom_blk_type
-   integer :: ib                                   !< Block index
    integer :: ne                                   !< Ensemble size
    integer :: nsub                                 !< Number of sub-ensembles
    real(kind_real),allocatable :: m1_1(:,:,:)      !< Mean for variable 1
@@ -48,15 +46,15 @@ contains
 ! Subroutine: mom_blk_alloc
 !> Allocation
 !----------------------------------------------------------------------
-subroutine mom_blk_alloc(mom_blk,nc1x,geom,bpar,ne,nsub,iterative_algo)
+subroutine mom_blk_alloc(mom_blk,nam,geom,nc1x,ne,nsub,iterative_algo)
 
 implicit none
 
 ! Passed variables
 class(mom_blk_type),intent(inout) :: mom_blk !< Moments block
-integer,intent(in) :: nc1x                   !< Sampling size on subset Sc1, halo X
+type(nam_type),intent(in) :: nam             !< Namelist
 type(geom_type),intent(in) :: geom           !< Geometry
-type(bpar_type),intent(in) :: bpar           !< Block parameters
+integer,intent(in) :: nc1x                   !< Sampling size on subset Sc1, halo X
 integer,intent(in) :: ne                     !< Ensemble size
 integer,intent(in) :: nsub                   !< Number of sub-ensembles
 logical,intent(in) :: iterative_algo         !< Iterative algorithm
@@ -67,31 +65,23 @@ logical,intent(in) :: iterative_algo         !< Iterative algorithm
 ! Probe in
 @:probe_in()
 
-! Associate
-associate(ib=>mom_blk%ib)
-
 ! Attributes
 mom_blk%ne = ne
 mom_blk%nsub = nsub
 
 ! Allocation
-if (bpar%diag_block(ib)) then
-   if (iterative_algo) then
-      allocate(mom_blk%m1_1(nc1x,geom%nl0,nsub))
-      allocate(mom_blk%m1_2(nc1x,bpar%nc3(ib),bpar%nc4(ib),geom%nl0,nsub))
-   end if
-   allocate(mom_blk%m2_1(nc1x,geom%nl0,nsub))
-   allocate(mom_blk%m2_2(nc1x,bpar%nc3(ib),bpar%nc4(ib),geom%nl0,nsub))
-   allocate(mom_blk%m11(nc1x,bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0,nsub))
-   if (iterative_algo) then
-      allocate(mom_blk%m12(nc1x,bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0,nsub))
-      allocate(mom_blk%m21(nc1x,bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0,nsub))
-   end if
-   allocate(mom_blk%m22(nc1x,bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0,nsub))
+if (iterative_algo) then
+   allocate(mom_blk%m1_1(nc1x,geom%nl0,nsub))
+   allocate(mom_blk%m1_2(nc1x,nam%nc3,nam%nc4,geom%nl0,nsub))
 end if
-
-! End associate
-end associate
+allocate(mom_blk%m2_1(nc1x,geom%nl0,nsub))
+allocate(mom_blk%m2_2(nc1x,nam%nc3,nam%nc4,geom%nl0,nsub))
+allocate(mom_blk%m11(nc1x,nam%nc3,nam%nc4,nam%nl0r,geom%nl0,nsub))
+if (iterative_algo) then
+   allocate(mom_blk%m12(nc1x,nam%nc3,nam%nc4,nam%nl0r,geom%nl0,nsub))
+   allocate(mom_blk%m21(nc1x,nam%nc3,nam%nc4,nam%nl0r,geom%nl0,nsub))
+end if
+allocate(mom_blk%m22(nc1x,nam%nc3,nam%nc4,nam%nl0r,geom%nl0,nsub))
 
 ! Probe out
 @:probe_out()
@@ -102,13 +92,12 @@ end subroutine mom_blk_alloc
 ! Subroutine: mom_blk_init
 !> Initialization
 !----------------------------------------------------------------------
-subroutine mom_blk_init(mom_blk,bpar,iterative_algo)
+subroutine mom_blk_init(mom_blk,iterative_algo)
 
 implicit none
 
 ! Passed variables
 class(mom_blk_type),intent(inout) :: mom_blk !< Moments block
-type(bpar_type),intent(in) :: bpar           !< Block parameters
 logical,intent(in) :: iterative_algo         !< Iterative algorithm
 
 ! Set name
@@ -117,27 +106,19 @@ logical,intent(in) :: iterative_algo         !< Iterative algorithm
 ! Probe in
 @:probe_in()
 
-! Associate
-associate(ib=>mom_blk%ib)
-
 ! Initialization
-if (bpar%diag_block(ib)) then
-   if (iterative_algo) then
-      mom_blk%m1_1 = zero
-      mom_blk%m1_2 = zero
-   end if
-   mom_blk%m2_1 = zero
-   mom_blk%m2_2 = zero
-   mom_blk%m11 = zero
-   if (iterative_algo) then
-      mom_blk%m12 = zero
-      mom_blk%m21 = zero
-   end if
-   mom_blk%m22 = zero
+if (iterative_algo) then
+   mom_blk%m1_1 = zero
+   mom_blk%m1_2 = zero
 end if
-
-! End associate
-end associate
+mom_blk%m2_1 = zero
+mom_blk%m2_2 = zero
+mom_blk%m11 = zero
+if (iterative_algo) then
+   mom_blk%m12 = zero
+   mom_blk%m21 = zero
+end if
+mom_blk%m22 = zero
 
 ! Probe out
 @:probe_out()
@@ -180,15 +161,15 @@ end subroutine mom_blk_dealloc
 ! Subroutine: mom_blk_ext
 !> Halo extension
 !----------------------------------------------------------------------
-subroutine mom_blk_ext(mom_blk_out,mpl,geom,bpar,samp,mom_blk_in)
+subroutine mom_blk_ext(mom_blk_out,mpl,nam,geom,samp,mom_blk_in)
 
 implicit none
 
 ! Passed variables
 class(mom_blk_type),intent(inout) :: mom_blk_out !< Extended moments block
 type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(nam_type),intent(in) :: nam                 !< Namelist
 type(geom_type),intent(in) :: geom               !< Geometry
-type(bpar_type),intent(in) :: bpar               !< Block parameters
 type(samp_type),intent(in) :: samp               !< Sampling
 type(mom_blk_type),intent(in) :: mom_blk_in      !< Reduced moments block
 
@@ -202,13 +183,9 @@ real(kind_real),allocatable :: sbuf(:,:),rbuf(:,:)
 ! Probe in
 @:probe_in()
 
-! Associate
-associate(ib=>mom_blk_in%ib)
-
 ! Allocation
-mom_blk_out%ib = ib
-call mom_blk_out%alloc(samp%nc1d,geom,bpar,mom_blk_in%ne,mom_blk_in%nsub,.false.)
-npack = (1+bpar%nc3(ib)*bpar%nc4(ib)*(1+2*bpar%nl0r(ib)))*geom%nl0*mom_blk_out%nsub
+call mom_blk_out%alloc(nam,geom,samp%nc1d,mom_blk_in%ne,mom_blk_in%nsub,.false.)
+npack = (1+nam%nc3*nam%nc4*(1+2*nam%nl0r))*geom%nl0*mom_blk_out%nsub
 allocate(sbuf(samp%nc1a,npack))
 allocate(rbuf(samp%nc1d,npack))
 
@@ -218,11 +195,11 @@ do isub=1,mom_blk_out%nsub
    do il0=1,geom%nl0
       ipack = ipack+1
       sbuf(:,ipack) = mom_blk_in%m2_1(:,il0,isub)
-      do jc4=1,bpar%nc4(ib)
-         do jc3=1,bpar%nc3(ib)
+      do jc4=1,nam%nc4
+         do jc3=1,nam%nc3
             ipack = ipack+1
             sbuf(:,ipack) = mom_blk_in%m2_2(:,jc3,jc4,il0,isub)
-            do jl0r=1,bpar%nl0r(ib)
+            do jl0r=1,nam%nl0r
                ipack = ipack+1
                sbuf(:,ipack) = mom_blk_in%m11(:,jc3,jc4,jl0r,il0,isub)
                ipack = ipack+1
@@ -242,11 +219,11 @@ do isub=1,mom_blk_out%nsub
    do il0=1,geom%nl0
       ipack = ipack+1
       mom_blk_out%m2_1(:,il0,isub) = rbuf(:,ipack)
-      do jc4=1,bpar%nc4(ib)
-         do jc3=1,bpar%nc3(ib)
+      do jc4=1,nam%nc4
+         do jc3=1,nam%nc3
             ipack = ipack+1
             mom_blk_out%m2_2(:,jc3,jc4,il0,isub) = rbuf(:,ipack)
-            do jl0r=1,bpar%nl0r(ib)
+            do jl0r=1,nam%nl0r
                ipack = ipack+1
                mom_blk_out%m11(:,jc3,jc4,jl0r,il0,isub) = rbuf(:,ipack)
                ipack = ipack+1
@@ -260,9 +237,6 @@ end do
 ! Release memory
 deallocate(sbuf)
 deallocate(rbuf)
-
-! End associate
-end associate
 
 ! Probe out
 @:probe_out()

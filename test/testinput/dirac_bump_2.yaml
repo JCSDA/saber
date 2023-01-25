@@ -33,7 +33,7 @@ background error:
             io tasks: 1
             overriding nicas file: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas
           drivers:
-            multivariate strategy: specific_univariate
+            multivariate strategy: univariate
             read local nicas: true
         input fields:
         - parameter: universe radius
@@ -128,10 +128,10 @@ background error:
               files prefix: dirac_bump_2/_MPI_-_OMP_
               alias:
               - in code: common
-                in file: var1-var1
+                in file: var1
               overriding nicas file: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas
             drivers:
-              multivariate strategy: common
+              multivariate strategy: duplicated
               read local nicas: true
         ensemble:
           members from template:

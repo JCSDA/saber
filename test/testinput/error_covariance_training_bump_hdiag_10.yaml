@@ -33,7 +33,7 @@ bump:
   drivers:
     compute covariance: true
     compute correlation: true
-    multivariate strategy: specific_univariate
+    multivariate strategy: univariate
     compute moments: true
     write diagnostics: true
   sampling:

@@ -6,6 +6,7 @@ geometry:
   groups:
   - variables:
     - var1
+    - var2
     levels: 2
   - variables:
     - var_2d
@@ -13,11 +14,13 @@ geometry:
   halo: 1
 input variables:
 - var1
+- var2
 - var_2d
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
   - var1
+  - var2
   - var_2d
 bump:
   general:
@@ -27,7 +30,7 @@ bump:
     data directory: testdata
     files prefix: error_covariance_training_bump_nicas_6/_MPI_-_OMP_
   drivers:
-    multivariate strategy: specific_multivariate
+    multivariate strategy: crossed
     compute nicas: true
     adjoints test: true
     internal dirac test: true
@@ -46,6 +49,7 @@ bump:
   - model:
       variables:
       - var1
+      - var2
   - model:
       variables:
       - var_2d

@@ -17,8 +17,9 @@ implicit none
 ! Control vector derived type
 type cv_type
    integer :: n                            !< Total control variable size
-   integer :: nbe                          !< Number of control variable blocks
+   integer :: nb                           !< Number of blocks
    type(cv_blk_type),allocatable :: blk(:) !< Control variable blocks
+   integer,allocatable :: b_to_g(:)        !< CV block to NICAS group
 contains
    procedure :: pack => cv_pack
    procedure :: unpack => cv_unpack
@@ -51,7 +52,7 @@ integer :: ib,icmp,offset
 ! Initialization
 offset = 0
 
-do ib=1,cv%nbe
+do ib=1,cv%nb
    do icmp=1,cv%blk(ib)%ncmp
       if (cv%blk(ib)%cmp(icmp)%n>0) then
          ! Pack control variable
@@ -90,7 +91,7 @@ integer :: ib,icmp,offset
 ! Initialization
 offset = 0
 
-do ib=1,cv%nbe
+do ib=1,cv%nb
    do icmp=1,cv%blk(ib)%ncmp
       if (cv%blk(ib)%cmp(icmp)%n>0) then
          ! Unpack control variable

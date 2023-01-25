@@ -14,7 +14,6 @@ use tools_const, only: zero,half,one,two,three,four,six,rad2deg,reqkm
 use tools_func, only: zss_sum,zss_count,global_average
 use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,put_att,get_att,define_dim,inquire_var,define_var,close_file
-use type_bpar, only: bpar_type
 use type_ens, only: ens_type
 use type_geom, only: geom_type
 use type_mpl, only: mpl_type
@@ -189,7 +188,7 @@ end subroutine var_dealloc
 ! Subroutine: var_update
 !> Update variance
 !----------------------------------------------------------------------
-subroutine var_update(var,mpl,rng,nam,geom,bpar,fld_c0a,ie)
+subroutine var_update(var,mpl,rng,nam,geom,fld_c0a,ie)
 
 implicit none
 
@@ -199,7 +198,6 @@ type(mpl_type),intent(inout) :: mpl                              !< MPI data
 type(rng_type),intent(inout) :: rng                              !< Random number generator
 type(nam_type),intent(inout) :: nam                              !< Namelist
 type(geom_type),intent(inout) :: geom                            !< Geometry
-type(bpar_type),intent(in) :: bpar                               !< Block parameters
 real(kind_real),intent(in) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) !< Field
 integer,intent(in) :: ie                                         !< Member index
 
@@ -291,7 +289,7 @@ if (ie==nam%ens1_ne) then
 
    if (nam%var_filter) then
       ! Filter variance
-      call var%filter(mpl,rng,nam,geom,bpar)
+      call var%filter(mpl,rng,nam,geom)
 
       ! Take square-root
       do iv=1,nam%nv
@@ -321,6 +319,9 @@ if (ie==nam%ens1_ne) then
    end if
 end if
 
+! Reset random seed if necessary
+if (nam%default_seed) call rng%reseed(mpl)
+
 ! Probe out
 @:probe_out()
 
@@ -330,7 +331,7 @@ end subroutine var_update
 ! Subroutine: var_run_var
 !> Compute variance
 !----------------------------------------------------------------------
-subroutine var_run_var(var,mpl,rng,nam,geom,bpar,ens)
+subroutine var_run_var(var,mpl,rng,nam,geom,ens)
 
 implicit none
 
@@ -340,7 +341,6 @@ type(mpl_type),intent(inout) :: mpl   !< MPI data
 type(rng_type),intent(inout) :: rng   !< Random number generator
 type(nam_type),intent(inout) :: nam   !< Namelist
 type(geom_type),intent(inout) :: geom !< Geometry
-type(bpar_type),intent(in) :: bpar    !< Block parameters
 type(ens_type), intent(inout) :: ens  !< Ensemble
 
 ! Local variables
@@ -393,7 +393,7 @@ end if
 
 if (nam%var_filter) then
    ! Filter variance
-   call var%filter(mpl,rng,nam,geom,bpar)
+   call var%filter(mpl,rng,nam,geom)
 
    ! Take square-root
    do iv=1,nam%nv
@@ -422,6 +422,9 @@ else
    end do
 end if
 
+! Reset random seed if necessary
+if (nam%default_seed) call rng%reseed(mpl)
+
 ! Probe out
 @:probe_out()
 
@@ -431,7 +434,7 @@ end subroutine var_run_var
 ! Subroutine: var_filter
 !> Filter variance
 !----------------------------------------------------------------------
-subroutine var_filter(var,mpl,rng,nam,geom,bpar)
+subroutine var_filter(var,mpl,rng,nam,geom)
 
 implicit none
 
@@ -441,10 +444,9 @@ type(mpl_type),intent(inout) :: mpl   !< MPI data
 type(rng_type),intent(inout) :: rng   !< Random number generator
 type(nam_type),intent(inout) :: nam   !< Namelist
 type(geom_type),intent(inout) :: geom !< Geometry
-type(bpar_type),intent(in) :: bpar    !< Block parameters
 
 ! Local variables
-integer :: ib,iv,il0,il0i,iter,ipass,ipass_min(geom%nl0)
+integer :: iv,il0,il0i,iter,ipass,ipass_min(geom%nl0)
 real(kind_real) :: P9,P20,P21,diff,diff_abs_min(geom%nl0),m2avg
 real(kind_real) :: m2avg_init(geom%nl0,nam%nv),m2sq(geom%nl0),m4(geom%nl0),m2sqasy(geom%nl0)
 real(kind_real) :: rhflt(geom%nl0),drhflt(geom%nl0),m2prod(geom%nl0),m2_ini(geom%nc0a,geom%nl0),m2(geom%nc0a,geom%nl0)
@@ -483,8 +485,6 @@ else
    P21 = real(var%ne-1,kind_real)/real(var%ne+1,kind_real)
 
    do iv=1,nam%nv
-      ! Block index
-      ib = bpar%v_to_b(iv)
       write(mpl%info,'(a10,a,a)') '','Variable ',trim(nam%variables(iv))
       call mpl%flush
 
@@ -516,7 +516,6 @@ else
          dichotomy = .false.
          rhflt = nam%var_rhflt(1:geom%nl0,iv)
          drhflt = rhflt
-         nicas_blk%ib = ib
 
          ! Global product
          do il0=1,geom%nl0
@@ -606,7 +605,6 @@ else
       elseif (nam%var_npass>0) then
          ! Initialization
          m2 = var%m2(:,:,iv)
-         nicas_blk%ib = ib
 
          ! Global product
          do il0=1,geom%nl0

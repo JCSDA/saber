@@ -128,7 +128,7 @@
                 Level:   2 ~> cov. at class zero:  0.91E+00
                 Level:   1 ~> cov. at class zero:  0.10E+01
                 Level:   2 ~> cov. at class zero:  0.99E+00
-             Block var1-var1:  0.13770789E+00 for       60 diagnostic points
+             Block var1:  0.13770789E+00 for       60 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
@@ -137,7 +137,7 @@
                    Level:   2 ~> amplitude:        1.00
                                  cor. hor. support:      3811.08 km
                                  cor. ver. support:         3.10 vertical units
-             Block var1-var1:  0.11335877E+00 for       60 diagnostic points
+             Block var1:  0.11335877E+00 for       60 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
@@ -146,7 +146,7 @@
                    Level:   2 ~> amplitude:        1.00
                                  cor. hor. support:      6993.06 km
                                  cor. ver. support:         1.28 vertical units
-             Block var1-var1:  0.23347467E+00 for       39 diagnostic points
+             Block var1:  0.23347467E+00 for       39 diagnostic points
                 Level:   1 ~> loc. at class zero:       0.83
                 Level:   2 ~> loc. at class zero:       0.82
                    Level:   1 ~> amplitude:        1.00

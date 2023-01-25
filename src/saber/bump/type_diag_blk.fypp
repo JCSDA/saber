@@ -17,7 +17,6 @@ use tools_netcdf, only: define_grp,put_att,define_var,put_var
 use tools_repro, only: inf,sup
 use tools_wrfda
 use type_avg_blk, only: avg_blk_type
-use type_bpar, only: bpar_type
 use type_geom, only: geom_type
 use type_minim, only: minim_type
 use type_mpl, only: mpl_type
@@ -30,7 +29,6 @@ implicit none
 ! Diagnostic block derived type
 type diag_blk_type
    integer :: ic2a                                      !< Local index
-   integer :: ib                                        !< Block index
    character(len=1024) :: prefix                        !< Prefix
 
    real(kind_real),allocatable :: raw(:,:,:,:)          !< Raw diagnostic
@@ -76,7 +74,7 @@ contains
 ! Subroutine: diag_blk_alloc
 !> Allocation
 !----------------------------------------------------------------------
-subroutine diag_blk_alloc(diag_blk,mpl,nam,geom,bpar,samp,ic2a,ib,prefix)
+subroutine diag_blk_alloc(diag_blk,mpl,nam,geom,samp,ic2a,prefix)
 
 implicit none
 
@@ -85,10 +83,8 @@ class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block
 type(mpl_type),intent(inout) :: mpl            !< MPI data
 type(nam_type),intent(in) :: nam               !< Namelist
 type(geom_type),intent(in) :: geom             !< Geometry
-type(bpar_type),intent(in) :: bpar             !< Block parameters
 type(samp_type),intent(in) :: samp             !< Sampling
 integer,intent(in) :: ic2a                     !< Local index
-integer,intent(in) :: ib                       !< Block index
 character(len=*),intent(in) :: prefix          !< Block prefix
 
 ! Set name
@@ -99,7 +95,6 @@ character(len=*),intent(in) :: prefix          !< Block prefix
 
 ! Set attributes
 diag_blk%ic2a = ic2a
-diag_blk%ib = ib
 diag_blk%prefix = prefix
 
 ! Number of components
@@ -107,10 +102,10 @@ diag_blk%ncmp = nam%fit_ncmp
 
 ! Allocation
 if ((ic2a==0).or.nam%local_diag) then
-   allocate(diag_blk%raw(bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0))
-   allocate(diag_blk%valid(bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0))
+   allocate(diag_blk%raw(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+   allocate(diag_blk%valid(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
    allocate(diag_blk%vunit(geom%nl0))
-   allocate(diag_blk%fit(bpar%nc3(ib),bpar%nc4(ib),bpar%nl0r(ib),geom%nl0))
+   allocate(diag_blk%fit(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
    allocate(diag_blk%hyb_coef_raw(geom%nl0))
    allocate(diag_blk%hyb_coef(geom%nl0))
 end if
@@ -209,7 +204,7 @@ end subroutine diag_blk_dealloc
 ! Subroutine: diag_blk_write
 !> Write
 !----------------------------------------------------------------------
-subroutine diag_blk_write(diag_blk,mpl,nam,geom,bpar,ncid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id,ncmp_id)
+subroutine diag_blk_write(diag_blk,mpl,nam,geom,ncid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id,ncmp_id)
 
 implicit none
 
@@ -218,7 +213,6 @@ class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block
 type(mpl_type),intent(inout) :: mpl            !< MPI data
 type(nam_type),intent(in) :: nam               !< Namelist
 type(geom_type),intent(in) :: geom             !< Geometry
-type(bpar_type),intent(in) :: bpar             !< Block parameters
 integer,intent(in) :: ncid                     !< NetCDF ID
 integer,intent(in) :: nc3_id                   !< NetCDF ID
 integer,intent(in) :: nc4_id                   !< NetCDF ID
@@ -240,7 +234,7 @@ integer :: il0,jl0r,jl0,jl0rz,icmp
 @:probe_in()
 
 ! Associate
-associate(ib=>diag_blk%ib,ic2a=>diag_blk%ic2a)
+associate(ic2a=>diag_blk%ic2a)
 
 ! Define group
 grpid = define_grp(mpl,ncid,diag_blk%prefix)
@@ -264,7 +258,7 @@ if (mpl%msv%isanynot(diag_blk%fit)) then
    end if
    if (diag_blk%ncmp==1) then
       rh_l0_id = define_var(mpl,grpid,'rh_l0','real',(/nl0_1_id/))
-      if (bpar%nc4(ib)>1) then
+      if (nam%nc4>1) then
          D11_l0_id = define_var(mpl,grpid,'D11_l0','real',(/nl0_1_id/))
          D22_l0_id = define_var(mpl,grpid,'D22_l0','real',(/nl0_1_id/))
          D12_l0_id = define_var(mpl,grpid,'D12_l0','real',(/nl0_1_id/))
@@ -273,7 +267,7 @@ if (mpl%msv%isanynot(diag_blk%fit)) then
    else
       a_l0_id = define_var(mpl,grpid,'a_l0','real',(/nl0_1_id,ncmp_id/))
       rh_l0_id = define_var(mpl,grpid,'rh_l0','real',(/nl0_1_id,ncmp_id/))
-      if (bpar%nc4(ib)>1) then
+      if (nam%nc4>1) then
          D11_l0_id = define_var(mpl,grpid,'D11_l0','real',(/nl0_1_id,ncmp_id/))
          D22_l0_id = define_var(mpl,grpid,'D22_l0','real',(/nl0_1_id,ncmp_id/))
          D12_l0_id = define_var(mpl,grpid,'D12_l0','real',(/nl0_1_id,ncmp_id/))
@@ -288,27 +282,27 @@ if (mpl%msv%isanynot(diag_blk%hyb_coef)) hyb_coef_id = define_var(mpl,grpid,'hyb
 if (mpl%msv%isanynot(diag_blk%raw)) then
    call put_var(mpl,grpid,raw_id,diag_blk%raw)
    do il0=1,geom%nl0
-      jl0rz = bpar%il0rz(il0,ib)
+      jl0rz = geom%il0rz(il0)
       call put_var(mpl,grpid,raw_hor_id,diag_blk%raw(:,:,jl0rz,il0),(/1,1,il0/))
    end do
    do il0=1,geom%nl0
-      do jl0r=1,bpar%nl0r(ib)
-         jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
+      do jl0r=1,nam%nl0r
+         jl0 = geom%l0rl0_to_l0(jl0r,il0)
          call put_var(mpl,grpid,raw_zs_id,diag_blk%raw(1,1,jl0r,il0),(/jl0,il0/))
       end do
    end do
    call put_var(mpl,grpid,valid_id,diag_blk%valid)
-   call put_var(mpl,grpid,l0rl0_to_l0_id,bpar%l0rl0b_to_l0(1:bpar%nl0r(ib),:,ib))
+   call put_var(mpl,grpid,l0rl0_to_l0_id,geom%l0rl0_to_l0)
 end if
 if (mpl%msv%isanynot(diag_blk%fit)) then
    call put_var(mpl,grpid,fit_id,diag_blk%fit)
    do il0=1,geom%nl0
-      jl0rz = bpar%il0rz(il0,ib)
+      jl0rz = geom%il0rz(il0)
       call put_var(mpl,grpid,fit_hor_id,diag_blk%fit(:,:,jl0rz,il0),(/1,1,il0/))
    end do
    do il0=1,geom%nl0
-      do jl0r=1,bpar%nl0rmax
-         jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
+      do jl0r=1,nam%nl0r
+         jl0 = geom%l0rl0_to_l0(jl0r,il0)
          call put_var(mpl,grpid,fit_zs_id,diag_blk%fit(1,1,jl0r,il0),(/jl0,il0/))
       end do
    end do
@@ -316,12 +310,12 @@ if (mpl%msv%isanynot(diag_blk%fit)) then
       call put_var(mpl,grpid,fit_detail_id,diag_blk%fit_detail)
       do icmp=1,diag_blk%ncmp
          do il0=1,geom%nl0
-            jl0rz = bpar%il0rz(il0,ib)
+            jl0rz = geom%il0rz(il0)
             call put_var(mpl,grpid,fit_detail_hor_id,diag_blk%fit_detail(:,:,jl0rz,il0,icmp),(/1,1,il0,icmp/))
          end do
          do il0=1,geom%nl0
-            do jl0r=1,bpar%nl0rmax
-               jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
+            do jl0r=1,nam%nl0r
+               jl0 = geom%l0rl0_to_l0(jl0r,il0)
                call put_var(mpl,grpid,fit_detail_zs_id,diag_blk%fit_detail(1,1,jl0r,il0,icmp),(/jl0,il0,icmp/))
             end do
          end do
@@ -329,7 +323,7 @@ if (mpl%msv%isanynot(diag_blk%fit)) then
    end if
    if (diag_blk%ncmp==1) then
       call put_var(mpl,grpid,rh_l0_id,diag_blk%rh_l0(:,1))
-      if (bpar%nc4(ib)>1) then
+      if (nam%nc4>1) then
          call put_var(mpl,grpid,D11_l0_id,diag_blk%D11_l0(:,1))
          call put_var(mpl,grpid,D22_l0_id,diag_blk%D22_l0(:,1))
          call put_var(mpl,grpid,D12_l0_id,diag_blk%D12_l0(:,1))
@@ -338,7 +332,7 @@ if (mpl%msv%isanynot(diag_blk%fit)) then
    else
       call put_var(mpl,grpid,a_l0_id,diag_blk%a_l0)
       call put_var(mpl,grpid,rh_l0_id,diag_blk%rh_l0)
-      if (bpar%nc4(ib)>1) then
+      if (nam%nc4>1) then
          call put_var(mpl,grpid,D11_l0_id,diag_blk%D11_l0)
          call put_var(mpl,grpid,D22_l0_id,diag_blk%D22_l0)
          call put_var(mpl,grpid,D12_l0_id,diag_blk%D12_l0)
@@ -361,7 +355,7 @@ end subroutine diag_blk_write
 ! Subroutine: diag_blk_fitting
 !> Compute a fit of a raw function
 !----------------------------------------------------------------------
-subroutine diag_blk_fitting(diag_blk,mpl,nam,geom,bpar)
+subroutine diag_blk_fitting(diag_blk,mpl,nam,geom)
 
 implicit none
 
@@ -370,7 +364,6 @@ class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block
 type(mpl_type),intent(inout) :: mpl            !< MPI data
 type(nam_type),intent(in) :: nam               !< Namelist
 type(geom_type),intent(in) :: geom             !< Geometry
-type(bpar_type),intent(in) :: bpar             !< Block parameters
 
 ! Local variables
 integer :: il0,jl0rz,jl0r,jl0,nl0r,il1,nl1,ilev2d,jc4,ix,icmp,jcmp
@@ -387,13 +380,10 @@ type(minim_type) :: minim
 ! Probe in
 @:probe_in()
 
-! Associate
-associate(ib=>diag_blk%ib)
-
 ! Check for 2D variable
 do il0=1,geom%nl0
    ! Get zero separation level
-   jl0rz = bpar%il0rz(il0,ib)
+   jl0rz = geom%il0rz(il0)
 
    ! Get value at zero separation
    m2(il0) = diag_blk%raw(1,1,jl0rz,il0)
@@ -410,7 +400,7 @@ end if
 if (mpl%msv%isnot(ilev2d)) then
    nl0r = 1
 else
-   nl0r = bpar%nl0r(ib)
+   nl0r = nam%nl0r
 end if
 
 ! Count interpolation levels
@@ -435,31 +425,31 @@ else
 end if
 
 ! Allocation
-allocate(minim%disth(bpar%nc3(ib)))
-allocate(minim%as(bpar%nc4(ib)))
+allocate(minim%disth(nam%nc3))
+allocate(minim%as(nam%nc4))
 allocate(minim%distv(nl0r))
 
 ! Minimization parameters initialization
-minim%nc3 = bpar%nc3(ib)
-minim%nc4 = bpar%nc4(ib)
+minim%nc3 = nam%nc3
+minim%nc4 = nam%nc4
 minim%nl0r = nl0r
-minim%disth = geom%disth(1:bpar%nc3(ib))
-minim%as = geom%as(1:bpar%nc4(ib))
+minim%disth = geom%disth(1:nam%nc3)
+minim%as = geom%as(1:nam%nc4)
 minim%hooke_rho = half
 minim%hooke_tol = 1.0e-4_kind_real
 minim%hooke_itermax = 10
 
 ! Allocation
-allocate(rh_c4l1(bpar%nc4(ib),nl1,0:diag_blk%ncmp))
+allocate(rh_c4l1(nam%nc4,nl1,0:diag_blk%ncmp))
 allocate(rv_l1(nl1,0:diag_blk%ncmp))
 allocate(a_l1(nl1,0:diag_blk%ncmp))
-allocate(raw_hor(bpar%nc3(ib),bpar%nc4(ib)))
+allocate(raw_hor(nam%nc3,nam%nc4))
 allocate(raw_ver(nl0r))
 allocate(distv(nl0r))
-allocate(fit_hor(bpar%nc3(ib)))
+allocate(fit_hor(nam%nc3))
 allocate(fit_ver(nl0r))
 allocate(rh_l1(nl1,diag_blk%ncmp))
-if (bpar%nc4(ib)>1) then
+if (nam%nc4>1) then
    allocate(D11_l1(nl1,diag_blk%ncmp))
    allocate(D22_l1(nl1,diag_blk%ncmp))
    allocate(D12_l1(nl1,diag_blk%ncmp))
@@ -470,7 +460,7 @@ do il1=1,nl1
    il0 = il0_interp(il1)
 
    ! Get zero separation level and min/max levels
-   jl0rz = bpar%il0rz(il0,ib)
+   jl0rz = geom%il0rz(il0)
 
    ! Fast fit
    icmp = 0
@@ -479,8 +469,8 @@ do il1=1,nl1
    a_l1(il1,icmp) = one
 
    ! Horizontal fast fit for each angular sector
-   do jc4=1,bpar%nc4(ib)
-      call fast_fit(mpl,bpar%nc3(ib),1,geom%disth,'hor',diag_blk%raw(:,jc4,jl0rz,il0),rh_c4l1(jc4,il1,icmp))
+   do jc4=1,nam%nc4
+      call fast_fit(mpl,nam%nc3,1,geom%disth,'hor',diag_blk%raw(:,jc4,jl0rz,il0),rh_c4l1(jc4,il1,icmp))
    end do
 
    if (nl0r==1) then
@@ -489,11 +479,11 @@ do il1=1,nl1
       rv_l1(il1,icmp) = zero
    else
       ! Raw vertical function, averaged over angular sectors
-      raw_ver = sum(diag_blk%raw(1,:,:,il0),dim=1)/real(bpar%nc4(ib),kind_real)
+      raw_ver = sum(diag_blk%raw(1,:,:,il0),dim=1)/real(nam%nc4,kind_real)
 
       ! Vertical distance
       do jl0r=1,nl0r
-         jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
+         jl0 = geom%l0rl0_to_l0(jl0r,il0)
          distv(jl0r) = abs(diag_blk%vunit(il0)-diag_blk%vunit(jl0))
       end do
 
@@ -509,14 +499,14 @@ do il1=1,nl1
       if (mpl%msv%isallnot(rh_c4l1(:,il1,icmp-1)).and.mpl%msv%isnot(rv_l1(il1,icmp-1))) then
          ! Horizontal and vertical raw functions
          raw_hor = diag_blk%raw(:,:,jl0rz,il0)
-         raw_ver = sum(diag_blk%raw(1,:,1:nl0r,il0),dim=1)/real(bpar%nc4(ib),kind_real)
+         raw_ver = sum(diag_blk%raw(1,:,1:nl0r,il0),dim=1)/real(nam%nc4,kind_real)
 
          if (icmp>1) then
             if (mpl%msv%isallnot(rh_c4l1(:,il1,icmp-1)).and.mpl%msv%isnot(rv_l1(il1,icmp-1))) then
                ! Remove previous components from raw functions
                do jcmp=1,icmp-1
-                  do jc4=1,bpar%nc4(ib)
-                     call diag_iso(mpl,bpar%nc3(ib),geom%disth,'hor',rh_c4l1(jc4,il1,jcmp),fit_hor)
+                  do jc4=1,nam%nc4
+                     call diag_iso(mpl,nam%nc3,geom%disth,'hor',rh_c4l1(jc4,il1,jcmp),fit_hor)
                      raw_hor(:,jc4) = raw_hor(:,jc4)-a_l1(il1,jcmp)*fit_hor
                   end do
                   call diag_iso(mpl,nl0r,distv,'ver',rv_l1(il1,jcmp),fit_ver)
@@ -552,8 +542,8 @@ do il1=1,nl1
             ! Horizontal optimization with amplitude
 
             ! Allocation
-            minim%nx = 1+bpar%nc4(ib)
-            minim%ny = bpar%nc3(ib)*bpar%nc4(ib)
+            minim%nx = 1+nam%nc4
+            minim%ny = nam%nc3*nam%nc4
             call minim%alloc
 
             ! Amplitude
@@ -563,7 +553,7 @@ do il1=1,nl1
             minim%bsup(ix) = a
 
             ! Horizontal radii
-            do jc4=1,bpar%nc4(ib)
+            do jc4=1,nam%nc4
                ix = ix+1
                if (icmp==1) then
                   minim%guess(ix) = rh_c4l1(jc4,il1,icmp-1)
@@ -577,7 +567,7 @@ do il1=1,nl1
             end do
 
             ! Observations
-            minim%obs(1:bpar%nc3(ib)*bpar%nc4(ib)) = reshape(raw_hor,(/bpar%nc3(ib)*bpar%nc4(ib)/))
+            minim%obs(1:nam%nc3*nam%nc4) = reshape(raw_hor,(/nam%nc3*nam%nc4/))
             minim%cost_function = 'scale_a_rh'
 
             ! Compute fit
@@ -586,7 +576,7 @@ do il1=1,nl1
             ! Get parameters, apply bounds
             ix = 1
             a_hor = max(minim%binf(ix),min(minim%x(ix),minim%bsup(ix)))
-            do jc4=1,bpar%nc4(ib)
+            do jc4=1,nam%nc4
                ix = ix+1
                rh_c4l1(jc4,il1,icmp) = max(minim%binf(ix),min(minim%x(ix),minim%bsup(ix)))
             end do
@@ -649,9 +639,9 @@ do il1=1,nl1
 
             ! Allocation
             minim%nx = 0
-            if (minim%lrh) minim%nx = minim%nx+bpar%nc4(ib)
+            if (minim%lrh) minim%nx = minim%nx+nam%nc4
             if (minim%lrv) minim%nx = minim%nx+1
-            minim%ny = bpar%nc3(ib)*bpar%nc4(ib)+nl0r
+            minim%ny = nam%nc3*nam%nc4+nl0r
             call minim%alloc
 
             ! Amplitude
@@ -668,7 +658,7 @@ do il1=1,nl1
 
             ! Horizontal
             if (minim%lrh) then
-               do jc4=1,bpar%nc4(ib)
+               do jc4=1,nam%nc4
                   ix = ix+1
                   if (icmp==1) then
                      minim%guess(ix) = rh_c4l1(jc4,il1,icmp-1)
@@ -697,8 +687,8 @@ do il1=1,nl1
             end if
 
             ! Observations
-            minim%obs(1:bpar%nc3(ib)*bpar%nc4(ib)) = reshape(raw_hor,(/bpar%nc3(ib)*bpar%nc4(ib)/))
-            minim%obs(bpar%nc3(ib)*bpar%nc4(ib)+1:minim%ny) = raw_ver
+            minim%obs(1:nam%nc3*nam%nc4) = reshape(raw_hor,(/nam%nc3*nam%nc4/))
+            minim%obs(nam%nc3*nam%nc4+1:minim%ny) = raw_ver
             minim%cost_function = 'scale_rh_rv'
 
             ! Compute fit
@@ -707,7 +697,7 @@ do il1=1,nl1
             ! Get parameters, apply bounds
             ix = 0
             if (minim%lrh) then
-               do jc4=1,bpar%nc4(ib)
+               do jc4=1,nam%nc4
                   ix = ix+1
                   rh_c4l1(jc4,il1,icmp) = max(minim%binf(ix),min(minim%x(ix),minim%bsup(ix)))
                end do
@@ -735,12 +725,12 @@ do il1=1,nl1
    do icmp=1,diag_blk%ncmp
       if (mpl%msv%isnot(a_l1(il1,icmp)).and.mpl%msv%isallnot(rh_c4l1(:,il1,icmp)).and.mpl%msv%isnot(rv_l1(il1,icmp))) then
          ! Average values
-         rh_l1(il1,icmp) = sqrt(sum(rh_c4l1(:,il1,icmp)**2)/real(bpar%nc4(ib),kind_real))
+         rh_l1(il1,icmp) = sqrt(sum(rh_c4l1(:,il1,icmp)**2)/real(nam%nc4,kind_real))
 
-         if (bpar%nc4(ib)>1) then
+         if (nam%nc4>1) then
             ! Allocation
             minim%nx = 3
-            minim%ny = bpar%nc3(ib)*bpar%nc4(ib)
+            minim%ny = nam%nc3*nam%nc4
             call minim%alloc
 
             ! Initialization
@@ -773,7 +763,7 @@ do il1=1,nl1
          ! Missing values
          a_l1(il1,icmp) = mpl%msv%valr
          rh_l1(il1,icmp) = mpl%msv%valr
-         if (bpar%nc4(ib)>1) then
+         if (nam%nc4>1) then
             D11_l1(il1,icmp) = mpl%msv%valr
             D22_l1(il1,icmp) = mpl%msv%valr
             D12_l1(il1,icmp) = mpl%msv%valr
@@ -785,7 +775,7 @@ end do
 ! Allocation
 allocate(diag_blk%a_l0(geom%nl0,diag_blk%ncmp))
 allocate(diag_blk%rh_l0(geom%nl0,diag_blk%ncmp))
-if (bpar%nc4(ib)>1) then
+if (nam%nc4>1) then
    allocate(diag_blk%D11_l0(geom%nl0,diag_blk%ncmp))
    allocate(diag_blk%D22_l0(geom%nl0,diag_blk%ncmp))
    allocate(diag_blk%D12_l0(geom%nl0,diag_blk%ncmp))
@@ -795,7 +785,7 @@ allocate(diag_blk%rv_l0(geom%nl0,diag_blk%ncmp))
 ! Initialization
 diag_blk%a_l0 = mpl%msv%valr
 diag_blk%rh_l0 = mpl%msv%valr
-if (bpar%nc4(ib)>1) then
+if (nam%nc4>1) then
    diag_blk%D11_l0 = mpl%msv%valr
    diag_blk%D22_l0 = mpl%msv%valr
    diag_blk%D12_l0 = mpl%msv%valr
@@ -808,7 +798,7 @@ do icmp=1,diag_blk%ncmp
    if (mpl%msv%isnot(ilev2d)) then
       ! No vertical interpolation for 2D variables
       diag_blk%a_l0(ilev2d,icmp) = a_l1(1,icmp)
-      if (bpar%nc4(ib)==1) then
+      if (nam%nc4==1) then
          diag_blk%rh_l0(ilev2d,icmp) = rh_l1(1,icmp)
       else
          diag_blk%D11_l0(ilev2d,icmp) = D11_l1(1,icmp)
@@ -821,7 +811,7 @@ do icmp=1,diag_blk%ncmp
    else
       ! Vertical interpolation
       call vert_interp(mpl,nl1,a_l1(:,icmp),geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%a_l0(:,icmp))
-      if (bpar%nc4(ib)==1) then
+      if (nam%nc4==1) then
          call vert_interp(mpl,nl1,rh_l1(:,icmp),geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%rh_l0(:,icmp))
       else
          call vert_interp(mpl,nl1,D11_l1(:,icmp),geom%nl0,il1inf,il1sup,rinf,rsup,diag_blk%D11_l0(:,icmp))
@@ -846,7 +836,7 @@ deallocate(a_l1)
 deallocate(rh_c4l1)
 deallocate(rv_l1)
 deallocate(rh_l1)
-if (bpar%nc4(ib)>1) then
+if (nam%nc4>1) then
    deallocate(D11_l1)
    deallocate(D22_l1)
    deallocate(D12_l1)
@@ -855,9 +845,6 @@ deallocate(raw_hor)
 deallocate(raw_ver)
 deallocate(distv)
 call minim%dealloc
-
-! End associate
-end associate
 
 ! Probe out
 @:probe_out()
@@ -868,15 +855,15 @@ end subroutine diag_blk_fitting
 ! Subroutine: diag_blk_localization
 !> Diag_blk localization
 !----------------------------------------------------------------------
-subroutine diag_blk_localization(diag_blk,mpl,geom,bpar,avg_blk)
+subroutine diag_blk_localization(diag_blk,mpl,nam,geom,avg_blk)
 
 implicit none
 
 ! Passed variables
 class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block (localization)
 type(mpl_type),intent(inout) :: mpl            !< MPI data
+type(nam_type),intent(in) :: nam               !< Namelist
 type(geom_type),intent(in) :: geom             !< Geometry
-type(bpar_type),intent(in) :: bpar             !< Block parameters
 type(avg_blk_type),intent(in) :: avg_blk       !< Averaged statistics block
 
 ! Local variables
@@ -888,14 +875,11 @@ integer :: il0,jl0r,jc3,jc4
 ! Probe in
 @:probe_in()
 
-! Associate
-associate(ib=>diag_blk%ib)
-
-!$omp parallel do schedule(static) private(il0,jl0r,jc3,jc4) shared(geom,bpar,diag_blk,avg_blk)
+!$omp parallel do schedule(static) private(il0,jl0r,jc3,jc4) shared(geom,diag_blk,avg_blk)
 do il0=1,geom%nl0
-   do jl0r=1,bpar%nl0r(ib)
-      do jc4=1,bpar%nc4(ib)
-         do jc3=1,bpar%nc3(ib)
+   do jl0r=1,nam%nl0r
+      do jc4=1,nam%nc4
+         do jc3=1,nam%nc3
             if (mpl%msv%isnot(avg_blk%m11asysq(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11sq(jc3,jc4,jl0r,il0))) then
                ! Compute localization
                diag_blk%raw(jc3,jc4,jl0r,il0) = avg_blk%m11asysq(jc3,jc4,jl0r,il0)/avg_blk%m11sq(jc3,jc4,jl0r,il0)
@@ -914,9 +898,6 @@ end do
 ! Hybrid weight
 diag_blk%hyb_coef = mpl%msv%valr
 
-! End associate
-end associate
-
 ! Probe out
 @:probe_out()
 
@@ -926,7 +907,7 @@ end subroutine diag_blk_localization
 ! Subroutine: diag_blk_hybridization
 !> Diag_blk hybridization
 !----------------------------------------------------------------------
-subroutine diag_blk_hybridization(diag_blk,mpl,nam,geom,bpar,avg1_blk,avg2_blk,loc1_blk)
+subroutine diag_blk_hybridization(diag_blk,mpl,nam,geom,avg1_blk,avg2_blk,loc1_blk)
 
 implicit none
 
@@ -935,7 +916,6 @@ class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block (hybridizatio
 type(mpl_type),intent(inout) :: mpl            !< MPI data
 type(nam_type),intent(in) :: nam               !< Namelist
 type(geom_type),intent(in) :: geom(2)          !< Geometry
-type(bpar_type),intent(in) :: bpar             !< Block parameters
 type(avg_blk_type),intent(in) :: avg1_blk      !< Averaged statistics block for ensemble 1
 type(avg_blk_type),intent(in) :: avg2_blk      !< Averaged statistics block for ensemble 2
 type(diag_blk_type),intent(inout) :: loc1_blk  !< Localization block for ensemble 1
@@ -950,9 +930,6 @@ real(kind_real) :: wgt,a,bc,d,e,f,num,num_1,num_2,den
 ! Probe in
 @:probe_in()
 
-! Associate
-associate(ib=>diag_blk%ib)
-
 do il0=1,geom(2)%nl0
    ! Compute hybrid weights terms
    a = zero
@@ -960,10 +937,10 @@ do il0=1,geom(2)%nl0
    d = zero
    e = zero
    f = zero
-   do jl0r=1,bpar%nl0r(ib)
-      jl0 = bpar%l0rl0b_to_l0(jl0r,il0,ib)
-      do jc4=1,bpar%nc4(ib)
-         do jc3=1,bpar%nc3(ib)
+   do jl0r=1,nam%nl0r
+      jl0 = geom(2)%l0rl0_to_l0(jl0r,il0)
+      do jc4=1,nam%nc4
+         do jc3=1,nam%nc3
             if (mpl%msv%isnot(loc1_blk%fit(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg1_blk%m11sq(jc3,jc4,jl0r,il0)) &
  & .and.mpl%msv%isnot(avg1_blk%m11(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg2_blk%m11(jc3,jc4,jl0r,il0)) &
  & .and.mpl%msv%isnot(avg2_blk%m11sq(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg1_blk%m11asysq(jc3,jc4,jl0r,il0))) then
@@ -994,9 +971,9 @@ do il0=1,geom(2)%nl0
       diag_blk%hyb_coef_raw(il0) = num_2/den
 
       ! Normalization (to keep a correct variance)
-      num = avg1_blk%m11(1,1,bpar%il0rz(il0,ib),il0)
-      den = loc1_blk%hyb_coef_raw(il0)*avg1_blk%m11(1,1,bpar%il0rz(il0,ib),il0) &
- & +diag_blk%hyb_coef_raw(il0)*avg2_blk%m11(1,1,bpar%il0rz(il0,ib),il0)
+      num = avg1_blk%m11(1,1,geom(2)%il0rz(il0),il0)
+      den = loc1_blk%hyb_coef_raw(il0)*avg1_blk%m11(1,1,geom(2)%il0rz(il0),il0) &
+ & +diag_blk%hyb_coef_raw(il0)*avg2_blk%m11(1,1,geom(2)%il0rz(il0),il0)
       if (den>zero) then
          ! Hybrid weights
          loc1_blk%hyb_coef(il0) = loc1_blk%hyb_coef_raw(il0)*num/den
@@ -1014,9 +991,6 @@ do il0=1,geom(2)%nl0
       diag_blk%hyb_coef(il0) = mpl%msv%valr
    end if
 end do
-
-! End associate
-end associate
 
 ! Probe out
 @:probe_out()

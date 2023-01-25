@@ -117,8 +117,8 @@
                 Level:   2 ~> cov. at class zero:  0.10E+01
                 Level:   1 ~> cov. at class zero:  0.97E+00
                 Level:   2 ~> cov. at class zero:  0.10E+01
-             Block var1-var1:  0.17035350E+00 for      160 diagnostic points
-             Block var2-var2:  0.18275747E+00 for      160 diagnostic points
+             Block var1:  0.17035350E+00 for      160 diagnostic points
+             Block var2:  0.18275747E+00 for      160 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        0.78

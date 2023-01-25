@@ -104,7 +104,7 @@ Norm of input parameter sampling_mask_field: 8.6177684288955561e+01
                 Level:   8 ~> cov. at class zero:  0.13E+01
                 Level:   9 ~> cov. at class zero:  0.12E+01
                 Level:  10 ~> cov. at class zero:  0.12E+01
-             Block var1-var1:  0.31659737E+00 for    12908 diagnostic points
+             Block var1:  0.31659737E+00 for    12908 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                 Level:   3 ~> cor. at class zero:        1.00
