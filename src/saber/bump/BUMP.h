@@ -35,7 +35,8 @@
 #include "oops/util/parameters/RequiredParameter.h"
 
 #include "saber/bump/BUMPParameters.h"
-#include "saber/bump/type_bump.h"
+
+#include "saber/bump/lib/type_bump.h"
 
 namespace saber {
 namespace bump {

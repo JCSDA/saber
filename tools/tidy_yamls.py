@@ -92,6 +92,13 @@ template = {
   "model": {
     "level for 2d variables": "value",
     "variables": "value",
+    "groups": {
+      "subtemplate": "vector",
+      "items": {
+        "group name": "value",
+        "variables": "value",
+      }
+    },
     "do not cross mask boundaries": "value"
   },
 
@@ -214,7 +221,7 @@ template = {
     "horizontal length-scale": {
       "subtemplate": "vector",
       "items": {
-        "variables": "value",
+        "groups": "value",
         "value": "value",
         "profile": "value",
       }
@@ -222,7 +229,7 @@ template = {
     "vertical length-scale": {
       "subtemplate": "vector",
       "items": {
-        "variables": "value",
+        "groups": "value",
         "value": "value",
         "profile": "value",
       }
@@ -238,21 +245,21 @@ template = {
     "minimum level": {
       "subtemplate": "vector",
       "items": {
-        "variables": "value",
+        "groups": "value",
         "value": "value",
       }
     },
     "maximum level": {
       "subtemplate": "vector",
       "items": {
-        "variables": "value",
+        "groups": "value",
         "value": "value",
       }
     },
     "interpolation type": {
       "subtemplate": "vector",
       "items": {
-        "variables": "value",
+        "groups": "value",
         "type": "value",
       }
     },

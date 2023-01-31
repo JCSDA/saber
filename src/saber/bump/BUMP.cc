@@ -19,11 +19,13 @@
 #include "atlas/functionspace.h"
 
 #include "eckit/config/Configuration.h"
+#include "eckit/log/Channel.h"
 
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/ConfigFunctions.h"
 #include "oops/util/DateTime.h"
+#include "oops/util/LibOOPS.h"
 #include "oops/util/Logger.h"
 #include "oops/util/missingValues.h"
 
@@ -240,8 +242,10 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
 
     // Create BUMP instance
     int keyBUMP = 0;
+    eckit::Channel & infoChannel = oops::LibOOPS::instance().infoChannel();
+    eckit::Channel & testChannel = oops::LibOOPS::instance().testChannel();
     bump_create_f90(keyBUMP, &comm, functionSpace1.get(), extraFields1.get(),
-                    grid, universe_radius.get());
+                    grid, universe_radius.get(), &infoChannel, &testChannel);
     keyBUMP_.push_back(keyBUMP);
 
     // Second geometry

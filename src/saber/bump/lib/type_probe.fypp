@@ -1,0 +1,357 @@
+#:include 'instrumentation.fypp'
+!----------------------------------------------------------------------
+! Module: type_probe
+!> Probe derived type
+! Author: Benjamin Menetrier
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+module type_probe
+
+use iso_fortran_env, only: output_unit
+!$ use omp_lib
+use tools_const, only: zero
+use tools_kinds, only: kind_real,huge_real
+
+implicit none
+
+integer,parameter :: maxlevel = 100 !< Maximum number of calling levels
+integer,parameter :: ninst = 5      !< Number of instances ('main', 'bump', 'interpolation', 'gaugrid' and 'soca')
+
+type timing_type
+   ! Timing info
+   integer :: clock_start       !< Clock start
+   integer :: clock_restart     !< Clock restart
+   integer :: clock_own         !< Own clock
+   character(len=1024) :: subr  !< Subroutine/function name
+   integer :: n                 !< Number of calls
+   real(kind_real) :: total     !< Total timing
+   real(kind_real) :: min       !< Minimum individual timing
+   real(kind_real) :: max       !< Maximum individual timing
+   real(kind_real) :: total_own !< Total timing, own clock
+   real(kind_real) :: min_own   !< Minimum individual timing, own clock
+   real(kind_real) :: max_own   !< Maximum individual timing, own clock
+end type timing_type
+
+type instance_type
+   ! Probing info
+   integer :: level                            !< Calling level
+   character(len=1024),allocatable :: trace(:) !< Trace list
+
+   ! Timing common info
+   integer :: count_rate                       !< Clock count rate
+   integer :: count_max                        !< Clock count maximum
+
+   ! Timing specific info
+   integer,allocatable :: trace_key(:)         !< Trace list keys
+   type(timing_type),allocatable :: timing(:)  !< Timings array
+   logical,allocatable :: timing_associated(:) !< Timings allocation
+end type instance_type
+
+type probe_type
+   type(instance_type) :: instance(ninst) !< Instances
+contains
+   procedure :: dealloc => probe_dealloc
+   procedure :: get_instance => probe_get_instance
+   procedure :: in => probe_in
+   procedure :: out => probe_out
+   procedure :: traceback => probe_traceback
+end type probe_type
+
+! Global instance index and name
+integer :: iinst = 0
+character(len=1024) :: cinst = ''
+
+! Global probe
+type(probe_type) :: probe
+
+private
+public :: iinst,cinst,probe
+
+contains
+
+!----------------------------------------------------------------------
+! Subroutine: probe_dealloc
+!> Probe deallocation
+!----------------------------------------------------------------------
+subroutine probe_dealloc(probe)
+
+implicit none
+
+! Passed variable
+class(probe_type),intent(inout) :: probe !< Probe
+
+! Release memory
+deallocate(probe%instance(iinst)%trace)
+deallocate(probe%instance(iinst)%trace_key)
+deallocate(probe%instance(iinst)%timing)
+deallocate(probe%instance(iinst)%timing_associated)
+
+end subroutine probe_dealloc
+
+!----------------------------------------------------------------------
+! Subroutine: probe_get_instance
+!> Getinstance index
+!----------------------------------------------------------------------
+subroutine probe_get_instance(probe,cinst_in)
+
+implicit none
+
+! Passed variable
+class(probe_type),intent(inout) :: probe !< Probe
+character(len=*),intent(in) :: cinst_in  !< Instance name
+
+! Local variables
+integer :: isubr
+
+! Copy instance name
+cinst = cinst_in
+
+! Select instance index
+select case (trim(cinst))
+case ('main')
+   ! Main instance
+   iinst = 1
+case ('bump')
+   ! BUMP instance
+   iinst = 2
+case ('interpolation')
+   ! Interpolation instance
+   iinst = 3
+case ('gaugrid')
+   ! Gaugrid instance
+   iinst = 4
+case ('soca')
+   ! SOCA instance
+   iinst = 5
+case default
+   write(output_unit,'(a)') 'Error: wrong instance name in probe%get_instance ('//trim(cinst)//')'
+   call flush(output_unit)
+   error stop 1
+end select
+
+if (.not.allocated(probe%instance(iinst)%trace)) then
+   ! Allocation
+   allocate(probe%instance(iinst)%trace(maxlevel))
+   allocate(probe%instance(iinst)%trace_key(maxlevel))
+   allocate(probe%instance(iinst)%timing(0:${subr_list_size}$-1))
+   allocate(probe%instance(iinst)%timing_associated(0:${subr_list_size}$-1))
+
+   ! Initialization
+   probe%instance(iinst)%level = 0
+   call system_clock(count_rate=probe%instance(iinst)%count_rate,count_max=probe%instance(iinst)%count_max)
+   do isubr=0,${subr_list_size}$-1
+      probe%instance(iinst)%timing(isubr)%n = 0
+      probe%instance(iinst)%timing(isubr)%total = zero
+      probe%instance(iinst)%timing(isubr)%min = huge_real
+      probe%instance(iinst)%timing(isubr)%max = zero
+      probe%instance(iinst)%timing(isubr)%total_own = zero
+      probe%instance(iinst)%timing(isubr)%min_own = huge_real
+      probe%instance(iinst)%timing(isubr)%max_own = zero
+   end do
+   probe%instance(iinst)%timing_associated = .false.
+end if
+
+end subroutine probe_get_instance
+
+!----------------------------------------------------------------------
+! Subroutine: probe_in
+!> Update probe when entering a subroutine/function
+!----------------------------------------------------------------------
+subroutine probe_in(probe,subr,key)
+
+implicit none
+
+! Passed variables
+class(probe_type),intent(inout) :: probe !< Probe
+character(len=*),intent(in) :: subr      !< Calling subroutine/function
+integer,intent(in) :: key                !< Calling subroutine/function key
+
+! Local variables
+integer :: key_prev
+
+#ifdef _OPENMP
+if (omp_get_thread_num()==0) then
+#endif
+   ! Check instance
+   if ((iinst<=0).or.(iinst>ninst)) then
+      write(output_unit,'(a,i5,a)') 'Error: wrong instance in probe%in (',iinst,') called by '//trim(subr)
+      call flush(output_unit)
+      error stop 2
+   end if
+
+   ! Update level
+   probe%instance(iinst)%level = probe%instance(iinst)%level+1
+
+   ! Check level
+   if (probe%instance(iinst)%level>maxlevel) then
+      write(output_unit,'(a,i4,a,i4)') 'Error: calling level is too high: ',probe%instance(iinst)%level,' > ',maxlevel
+      call flush(output_unit)
+      call probe%traceback(output_unit)
+      error stop 3
+   end if
+
+   ! Update trace
+   probe%instance(iinst)%trace(probe%instance(iinst)%level) = trim(subr)
+   probe%instance(iinst)%trace_key(probe%instance(iinst)%level) = key
+
+   if (key>=0) then
+      ! Initialize
+      probe%instance(iinst)%timing(key)%subr = trim(subr)
+      probe%instance(iinst)%timing_associated(key) = .true.
+
+      ! Get input time
+      call system_clock(count=probe%instance(iinst)%timing(key)%clock_start)
+      probe%instance(iinst)%timing(key)%clock_restart = probe%instance(iinst)%timing(key)%clock_start
+      probe%instance(iinst)%timing(key)%clock_own = 0
+
+      if (probe%instance(iinst)%level>1) then
+         ! Get key of the previous level
+          key_prev = probe%instance(iinst)%trace_key(probe%instance(iinst)%level-1)
+
+         if (key_prev>=0) then
+            ! Increment own clock
+            if (probe%instance(iinst)%timing(key_prev)%clock_own+probe%instance(iinst)%timing(key)%clock_start &
+ & <probe%instance(iinst)%timing(key_prev)%clock_restart) then
+               probe%instance(iinst)%timing(key_prev)%clock_own = probe%instance(iinst)%timing(key_prev)%clock_own &
+ & +probe%instance(iinst)%timing(key)%clock_start-probe%instance(iinst)%timing(key_prev)%clock_restart &
+ & +probe%instance(iinst)%count_max
+            else
+               probe%instance(iinst)%timing(key_prev)%clock_own = probe%instance(iinst)%timing(key_prev)%clock_own &
+ & +probe%instance(iinst)%timing(key)%clock_start-probe%instance(iinst)%timing(key_prev)%clock_restart
+            end if
+         end if
+      end if
+   end if
+#ifdef _OPENMP
+end if
+#endif
+
+end subroutine probe_in
+
+!----------------------------------------------------------------------
+! Subroutine: probe_out
+!> Update probe when exiting a subroutine/function
+!----------------------------------------------------------------------
+subroutine probe_out(probe,key)
+
+implicit none
+
+! Passed variables
+class(probe_type),intent(inout) :: probe !< Probe
+integer,intent(in) :: key                !< Calling subroutine/function key
+
+! Local variables
+integer :: key_prev,clock_end
+real(kind_real) :: elapsed,elapsed_own
+#ifdef _OPENMP
+if (omp_get_thread_num()==0) then
+#endif
+   ! Check instance
+   if ((iinst<=0).or.(iinst>ninst)) then
+      write(output_unit,'(a,i5,a)') 'Error: wrong instance in probe%out (',iinst,')'
+      call flush(output_unit)
+      error stop 4
+   end if
+
+   if (key>=0) then
+      ! Get output time
+      call system_clock(count=clock_end)
+
+      ! Compute elapsed times
+      if (clock_end<probe%instance(iinst)%timing(key)%clock_start) then
+         elapsed = real(clock_end-probe%instance(iinst)%timing(key)%clock_start+probe%instance(iinst)%count_max,kind_real) &
+ & /real(probe%instance(iinst)%count_rate,kind_real)
+      else
+         elapsed = real(clock_end-probe%instance(iinst)%timing(key)%clock_start,kind_real) &
+ & /real(probe%instance(iinst)%count_rate,kind_real)
+      end if
+      if (probe%instance(iinst)%timing(key)%clock_own+clock_end<probe%instance(iinst)%timing(key)%clock_restart) then
+         elapsed_own = real(probe%instance(iinst)%timing(key)%clock_own+clock_end- &
+ & probe%instance(iinst)%timing(key)%clock_restart+probe%instance(iinst)%count_max,kind_real) &
+ & /real(probe%instance(iinst)%count_rate,kind_real)
+      else
+         elapsed_own = real(probe%instance(iinst)%timing(key)%clock_own+clock_end &
+ & -probe%instance(iinst)%timing(key)%clock_restart,kind_real)/real(probe%instance(iinst)%count_rate,kind_real)
+      end if
+
+      ! Fill timing object
+      probe%instance(iinst)%timing(key)%n = probe%instance(iinst)%timing(key)%n+1
+      probe%instance(iinst)%timing(key)%total = probe%instance(iinst)%timing(key)%total+elapsed
+      probe%instance(iinst)%timing(key)%min = min(probe%instance(iinst)%timing(key)%min,elapsed)
+      probe%instance(iinst)%timing(key)%max = max(probe%instance(iinst)%timing(key)%max,elapsed)
+      probe%instance(iinst)%timing(key)%total_own = probe%instance(iinst)%timing(key)%total_own+elapsed_own
+      probe%instance(iinst)%timing(key)%min_own = min(probe%instance(iinst)%timing(key)%min_own,elapsed_own)
+      probe%instance(iinst)%timing(key)%max_own = max(probe%instance(iinst)%timing(key)%max_own,elapsed_own)
+
+      if (probe%instance(iinst)%level>1) then
+         ! Get key of the previous level
+         key_prev = probe%instance(iinst)%trace_key(probe%instance(iinst)%level-1)
+
+         if (key_prev>=0) then
+            ! Restart own clock
+            probe%instance(iinst)%timing(key_prev)%clock_restart = clock_end
+         end if
+      end if
+   end if
+
+   ! Update level
+   probe%instance(iinst)%level = probe%instance(iinst)%level-1
+#ifdef _OPENMP
+end if
+#endif
+
+end subroutine probe_out
+
+!----------------------------------------------------------------------
+! Subroutine: probe_traceback
+!> Print probe traceback
+!----------------------------------------------------------------------
+subroutine probe_traceback(probe,lunit)
+
+implicit none
+
+! Passed variables
+class(probe_type),intent(in) :: probe !< Probe
+integer,intent(in) :: lunit           !< Logical unit
+
+! Local variables
+integer :: i,indent
+character(len=3) :: cindent
+
+#ifdef _OPENMP
+if (omp_get_thread_num()==0) then
+#endif
+   ! Check instance
+   if ((iinst<=0).or.(iinst>ninst)) then
+      write(output_unit,'(a,i5,a)') 'Error: wrong instance probe%traceback (',iinst,')'
+      call flush(output_unit)
+      error stop 5
+   end if
+
+   ! Print traceback
+   write(lunit,'(a,i3,a)') '    Traceback for instance',iinst,' :'
+   do i=1,min(probe%instance(iinst)%level,maxlevel)
+      ! Define indentation
+      indent = 3*i+4
+
+      ! Define indentation format
+      if (indent<10) then
+         write(cindent,'(a,i1)') 'a',indent
+      elseif (indent<100) then
+         write(cindent,'(a,i2)') 'a',indent
+      end if
+
+      ! Write trace
+      write(lunit,'('//trim(cindent)//',a,a)') '','|-> ',trim(probe%instance(iinst)%trace(i))
+   end do
+
+   ! Flush
+   call flush(lunit)
+#ifdef _OPENMP
+end if
+#endif
+
+end subroutine probe_traceback
+
+end module type_probe

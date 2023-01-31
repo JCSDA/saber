@@ -1,0 +1,77 @@
+#:include 'instrumentation.fypp'
+!----------------------------------------------------------------------
+! Module: tools_log
+!> Log utilities
+! Author: Benjamin Menetrier
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+module tools_log
+
+use fckit_c_interop_module, only : c_str_right_trim
+use fckit_log_module, only: fckit_log,fckit_logchannel
+use iso_c_binding, only: c_char,c_int32_t
+@:use_probe()
+
+implicit none
+
+interface write_log
+   module procedure log_write_log
+end interface
+
+private
+public :: write_log
+
+interface
+  subroutine log__write_log(channel,msg,newl,flush) bind(c)
+  use iso_c_binding, only: c_ptr,c_char,c_int32_t
+  implicit none
+  type(c_ptr),value :: channel
+  character(kind=c_char),dimension(*) :: msg
+  integer(c_int32_t),value :: newl
+  integer(c_int32_t),value :: flush
+  end subroutine log__write_log
+end interface
+
+contains
+
+!----------------------------------------------------------------------
+! Subroutine: log_write_log
+!> Write log into channel
+!----------------------------------------------------------------------
+subroutine log_write_log(channel,msg,newl,flush)
+
+implicit none
+
+! Passed variables
+type(fckit_logchannel),intent(in) :: channel !< Channel
+character(len=*),intent(in) :: msg           !< Message to be logged
+logical,intent(in) :: newl                   !< Add newline character (```\n```) after message. Default ```.true.```
+logical,intent(in) :: flush                  !< Flush channel after message. Default ```.true.```
+
+! Local variables
+integer(c_int32_t) :: inewl,iflush
+
+! Set name
+@:set_name(log_write_log)
+
+! Probe in
+@:probe_in()
+
+! Select channel
+if (channel%is_null()) then
+   call fckit_log%info(msg,newl,flush)
+else
+   inewl = 0
+   if (newl) inewl = 1
+   iflush = 0
+   if (flush) iflush = 1
+   call log__write_log(channel%c_ptr(),c_str_right_trim(msg),inewl,iflush)
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine log_write_log
+
+end module tools_log

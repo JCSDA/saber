@@ -20,7 +20,7 @@
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
-#include "saber/bump/type_bump_parameters.h"
+#include "saber/bump/lib/type_bump_parameters.h"
 
 namespace saber {
 namespace bump {

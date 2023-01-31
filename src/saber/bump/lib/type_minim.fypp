@@ -1,0 +1,726 @@
+#:include 'instrumentation.fypp'
+!----------------------------------------------------------------------
+! Module: type_minim
+!> Minimization data derived type
+! Author: Benjamin Menetrier
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+module type_minim
+
+use tools_const, only: zero,hundredth,tenth,half,one,two,ten,hundred
+use tools_fit, only: diag_tensor,diag_iso
+use tools_kinds, only: kind_real
+use tools_repro, only: repro_th,eq,inf,infeq,sup
+use type_mpl, only: mpl_type
+@:use_probe()
+
+implicit none
+
+! Minimization data derived type
+type minim_type
+   ! Minimizer data
+   real(kind_real) :: hooke_rho                   !< Convergence parameter for the Hooke algorithm
+   real(kind_real) :: hooke_tol                   !< Tolerance for the Hooke algorithm
+   integer :: hooke_itermax                       !< Maximum number of iteration for the Hooke algorithm
+
+   ! Generic data
+   integer :: nx                                  !< Control vector size
+   integer :: ny                                  !< Function output size
+   real(kind_real),allocatable :: x(:)            !< Control vector
+   real(kind_real),allocatable :: guess(:)        !< Control vector guess
+   real(kind_real),allocatable :: binf(:)         !< Control vector lower bound
+   real(kind_real),allocatable :: bsup(:)         !< Control vector upper bound
+   real(kind_real),allocatable :: obs(:)          !< Observation
+   character(len=1024) :: cost_function           !< Cost function
+   real(kind_real) :: f_guess                     !< Guess cost
+   real(kind_real) :: f_min                       !< Minimum cost
+
+   ! Specific data
+   logical :: la                                  !< Activate amplitude optimization 
+   logical :: lrh                                 !< Activate rh optimization
+   logical :: lrv                                 !< Activate rv optimization
+   integer :: nc3                                 !< Number of horizontal distance classes
+   integer :: nc4                                 !< Number of angular sectors
+   integer :: nl0r                                !< Effective number of levels
+   real(kind_real),allocatable :: disth(:)        !< Horizontal distance
+   real(kind_real),allocatable :: as(:)           !< Angular sectors
+   real(kind_real),allocatable :: distv(:)        !< Vertical distance
+   real(kind_real) :: a                           !< Forced amplitude (if la = .false.)
+contains
+   procedure :: alloc => minim_alloc
+   procedure :: partial_dealloc => minim_partial_dealloc
+   procedure :: dealloc => minim_dealloc
+   procedure :: compute => minim_compute
+   procedure :: cost => minim_cost
+   procedure :: cost_tensor => minim_cost_tensor
+   procedure :: cost_scale_a_rh => minim_cost_scale_a_rh
+   procedure :: cost_scale_a_rv => minim_cost_scale_a_rv
+   procedure :: cost_scale_rh_rv => minim_cost_scale_rh_rv
+   procedure :: hooke => minim_hooke
+   procedure :: best_nearby => minim_best_nearby
+   procedure :: vt_dir => minim_vt_dir
+   procedure :: vt_inv => minim_vt_inv
+end type minim_type
+
+private
+public :: minim_type
+
+contains
+
+!----------------------------------------------------------------------
+! subroutine: minim_alloc
+!> Allocation
+!----------------------------------------------------------------------
+subroutine minim_alloc(minim)
+
+implicit none
+
+! Passed variables
+class(minim_type),intent(inout) :: minim !< Minimization data
+
+! Set name
+@:set_name(minim_alloc)
+
+! Probe in
+@:probe_in()
+
+! Allocation
+if (minim%nx>0) then
+   allocate(minim%x(minim%nx))
+   allocate(minim%guess(minim%nx))
+   allocate(minim%binf(minim%nx))
+   allocate(minim%bsup(minim%nx))
+end if
+if (minim%ny>0) allocate(minim%obs(minim%ny))
+
+! Probe out
+@:probe_out()
+
+end subroutine minim_alloc
+
+!----------------------------------------------------------------------
+! subroutine: minim_partial_dealloc
+!> Release memory (partial)
+!----------------------------------------------------------------------
+subroutine minim_partial_dealloc(minim)
+
+implicit none
+
+! Passed variables
+class(minim_type),intent(inout) :: minim !< Minimization data
+
+! Set name
+@:set_name(minim_partial_dealloc)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+if (allocated(minim%x)) deallocate(minim%x)
+if (allocated(minim%guess)) deallocate(minim%guess)
+if (allocated(minim%binf)) deallocate(minim%binf)
+if (allocated(minim%bsup)) deallocate(minim%bsup)
+if (allocated(minim%obs)) deallocate(minim%obs)
+
+! Probe out
+@:probe_out()
+
+end subroutine minim_partial_dealloc
+
+!----------------------------------------------------------------------
+! subroutine: minim_dealloc
+!> Release memory
+!----------------------------------------------------------------------
+subroutine minim_dealloc(minim)
+
+implicit none
+
+! Passed variables
+class(minim_type),intent(inout) :: minim !< Minimization data
+
+! Set name
+@:set_name(minim_dealloc)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+call minim%partial_dealloc
+if (allocated(minim%disth)) deallocate(minim%disth)
+if (allocated(minim%as)) deallocate(minim%as)
+if (allocated(minim%distv)) deallocate(minim%distv)
+
+! Probe out
+@:probe_out()
+
+end subroutine minim_dealloc
+
+!----------------------------------------------------------------------
+! subroutine: minim_compute
+!> Minimize ensuring bounds constraints
+!----------------------------------------------------------------------
+subroutine minim_compute(minim,mpl)
+
+implicit none
+
+! Passed variables
+class(minim_type),intent(inout) :: minim !< Minimization data
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+
+! Set name
+@:set_name(minim_compute)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+call minim%vt_inv(mpl,minim%guess)
+
+! Initial cost
+call minim%cost(mpl,minim%guess,minim%f_guess)
+
+! Hooke algorithm
+call minim%hooke(mpl,minim%guess)
+
+! Final cost
+call minim%cost(mpl,minim%x,minim%f_min)
+
+! Check improvement
+if (minim%f_min>minim%f_guess) minim%x = minim%guess
+
+! Direct transform
+call minim%vt_dir(minim%x)
+
+! Probe out
+@:probe_out()
+
+end subroutine minim_compute
+
+!----------------------------------------------------------------------
+! Subroutine: minim_cost
+!> Compute cost function
+!----------------------------------------------------------------------
+subroutine minim_cost(minim,mpl,x,f)
+
+implicit none
+
+! Passed variables
+class(minim_type),intent(in) :: minim     !< Minimization data
+type(mpl_type),intent(inout) :: mpl       !< MPI data
+real(kind_real),intent(in) :: x(minim%nx) !< Control vector
+real(kind_real),intent(out) :: f          !< Cost function value
+
+! Set name
+@:set_name(minim_cost)
+
+! Probe in
+@:probe_in()
+
+select case (trim(minim%cost_function))
+case ('tensor')
+   call minim%cost_tensor(mpl,x,f)
+case ('scale_a_rh')
+   call minim%cost_scale_a_rh(mpl,x,f)
+case ('scale_a_rv')
+   call minim%cost_scale_a_rv(mpl,x,f)
+case ('scale_rh_rv')
+   call minim%cost_scale_rh_rv(mpl,x,f)
+case default
+   call mpl%abort('${subr}$','wrong cost function')
+end select
+
+! Probe out
+@:probe_out()
+
+end subroutine minim_cost
+
+!----------------------------------------------------------------------
+! Function: minim_cost_tensor
+!> Horizontal tensor optimization cost function
+!----------------------------------------------------------------------
+subroutine minim_cost_tensor(minim,mpl,x,f)
+
+implicit none
+
+! Passed variables
+class(minim_type),intent(in) :: minim     !< Minimization data
+type(mpl_type),intent(inout) :: mpl       !< MPI data
+real(kind_real),intent(in) :: x(minim%nx) !< Control vector
+real(kind_real),intent(out) :: f          !< Cost function value
+
+! Local variables
+real(kind_real) :: D11,D22,D12,fit(minim%nc3,minim%nc4)
+real(kind_real) :: xtmp(minim%nx),fit_pack(minim%ny)
+
+! Set name
+@:set_name(minim_cost_tensor)
+
+! Probe in
+@:probe_in()
+
+! Renormalize
+xtmp = x
+call minim%vt_dir(xtmp)
+
+! Compute function
+D11 = xtmp(1)
+D22 = xtmp(2)
+D12 = xtmp(3)
+call diag_tensor(mpl,minim%nc3,minim%nc4,minim%disth,minim%as,D11,D22,D12,fit)
+
+! Pack
+fit_pack = reshape(fit,(/minim%ny/))
+
+! Observations penalty
+f = sum((fit_pack-minim%obs)**2,mask=mpl%msv%isnot(minim%obs).and.mpl%msv%isnot(fit_pack))
+
+! Probe out
+@:probe_out()
+
+end subroutine minim_cost_tensor
+
+!----------------------------------------------------------------------
+! Function: minim_cost_scale_a_rh
+!> Scale optimization cost function for a and rh
+!----------------------------------------------------------------------
+subroutine minim_cost_scale_a_rh(minim,mpl,x,f)
+
+implicit none
+
+! Passed variables
+class(minim_type),intent(in) :: minim     !< Minimization data
+type(mpl_type),intent(inout) :: mpl       !< MPI data
+real(kind_real),intent(in) :: x(minim%nx) !< Control vector
+real(kind_real),intent(out) :: f          !< Cost function value
+
+! Local variables
+integer :: ix,iy,jc4
+real(kind_real) :: a,rh(minim%nc4),fit_hor(minim%nc3,minim%nc4),wgt_hor(minim%nc3,minim%nc4)
+real(kind_real) :: xtmp(minim%nx),fit_pack(minim%ny),wgt_pack(minim%ny)
+
+! Set name
+@:set_name(minim_cost_scale_a_rh)
+
+! Probe in
+@:probe_in()
+
+! Renormalize
+xtmp = x
+call minim%vt_dir(xtmp)
+
+! Parameters
+ix = 1
+a = xtmp(ix)
+do jc4=1,minim%nc4
+   ix = ix+1
+   rh(jc4) = xtmp(ix)
+end do
+
+! Compute horizontal fit for each angular sector
+do jc4=1,minim%nc4
+   call diag_iso(mpl,minim%nc3,minim%disth,'hor',rh(jc4),fit_hor(:,jc4))
+end do
+fit_hor = a*fit_hor
+
+! Pack
+fit_pack(1:minim%nc3*minim%nc4) = reshape(fit_hor,(/minim%nc3*minim%nc4/))
+
+! Compute weight
+do jc4=1,minim%nc4
+   wgt_hor(:,jc4) = minim%disth
+end do
+wgt_pack = reshape(wgt_hor,(/minim%nc3*minim%nc4/))
+wgt_pack = wgt_pack**2
+
+! Observations penalty
+f = zero
+do iy=1,minim%ny
+   if (mpl%msv%isnot(minim%obs(iy)).and.mpl%msv%isnot(fit_pack(iy))) then
+      if (sup(fit_pack(iy),minim%obs(iy))) then
+         ! Fit value is too large: large penalty
+         f = f+ten*wgt_pack(iy)*(fit_pack(iy)-minim%obs(iy))**2
+      else
+         ! Fit value is too small: normal penalty
+         f = f+wgt_pack(iy)*(fit_pack(iy)-minim%obs(iy))**2
+      end if
+   end if
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine minim_cost_scale_a_rh
+
+!----------------------------------------------------------------------
+! Function: minim_cost_scale_a_rv
+!> Scale optimization cost function for a and rv
+!----------------------------------------------------------------------
+subroutine minim_cost_scale_a_rv(minim,mpl,x,f)
+
+implicit none
+
+! Passed variables
+class(minim_type),intent(in) :: minim     !< Minimization data
+type(mpl_type),intent(inout) :: mpl       !< MPI data
+real(kind_real),intent(in) :: x(minim%nx) !< Control vector
+real(kind_real),intent(out) :: f          !< Cost function value
+
+! Local variables
+integer :: ix,iy
+real(kind_real) :: a,rv,fit_ver(minim%nl0r)
+real(kind_real) :: xtmp(minim%nx),fit_pack(minim%ny),wgt_pack(minim%ny)
+
+! Set name
+@:set_name(minim_cost_scale_a_rv)
+
+! Probe in
+@:probe_in()
+
+! Renormalize
+xtmp = x
+call minim%vt_dir(xtmp)
+
+! Parameters
+ix = 1
+a = xtmp(ix)
+ix = ix+1
+rv = xtmp(ix)
+
+! Compute vertical fit
+call diag_iso(mpl,minim%nl0r,minim%distv,'ver',rv,fit_ver)
+fit_ver = a*fit_ver
+
+! Pack
+fit_pack(1:minim%nl0r) = fit_ver
+
+! Compute weight
+wgt_pack(1:minim%nl0r) = minim%distv
+wgt_pack = wgt_pack**2
+
+! Observations penalty
+f = zero
+do iy=1,minim%ny
+   if (mpl%msv%isnot(minim%obs(iy)).and.mpl%msv%isnot(fit_pack(iy))) then
+      if (sup(fit_pack(iy),minim%obs(iy))) then
+         ! Fit value is too large: large penalty
+         f = f+ten*wgt_pack(iy)*(fit_pack(iy)-minim%obs(iy))**2
+      else
+         ! Fit value is too small: normal penalty
+         f = f+wgt_pack(iy)*(fit_pack(iy)-minim%obs(iy))**2
+      end if
+   end if
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine minim_cost_scale_a_rv
+
+!----------------------------------------------------------------------
+! Function: minim_cost_scale_rh_rv
+!> Scale optimization cost function for rh and rv
+!----------------------------------------------------------------------
+subroutine minim_cost_scale_rh_rv(minim,mpl,x,f)
+
+implicit none
+
+! Passed variables
+class(minim_type),intent(in) :: minim     !< Minimization data
+type(mpl_type),intent(inout) :: mpl       !< MPI data
+real(kind_real),intent(in) :: x(minim%nx) !< Control vector
+real(kind_real),intent(out) :: f          !< Cost function value
+
+! Local variables
+integer :: ix,iy,jc4
+real(kind_real) :: a,rh(minim%nc4),rv,fit_hor(minim%nc3,minim%nc4),fit_ver(minim%nl0r)
+real(kind_real) :: xtmp(minim%nx),fit_pack(minim%ny)
+
+! Set name
+@:set_name(minim_cost_scale_rh_rv)
+
+! Probe in
+@:probe_in()
+
+! Renormalize
+xtmp = x
+call minim%vt_dir(xtmp)
+
+! Parameters
+ix = 0
+a = minim%a
+if (minim%lrh) then
+   do jc4=1,minim%nc4
+      ix = ix+1
+      rh(jc4) = xtmp(ix)
+   end do
+else
+   rh = zero
+end if
+if (minim%lrv) then
+   ix = ix+1
+   rv = xtmp(ix)
+else
+   rv = zero
+end if
+
+! Compute horizontal fit for each angular sector
+do jc4=1,minim%nc4
+   call diag_iso(mpl,minim%nc3,minim%disth,'hor',rh(jc4),fit_hor(:,jc4))
+end do
+fit_hor = a*fit_hor
+
+! Compute vertical fit
+call diag_iso(mpl,minim%nl0r,minim%distv,'ver',rv,fit_ver)
+fit_ver = a*fit_ver
+
+! Pack
+fit_pack(1:minim%nc3*minim%nc4) = reshape(fit_hor,(/minim%nc3*minim%nc4/))
+fit_pack(minim%nc3*minim%nc4+1:minim%ny) = fit_ver
+
+! Observations penalty
+f = zero
+do iy=1,minim%ny
+   if (mpl%msv%isnot(minim%obs(iy)).and.mpl%msv%isnot(fit_pack(iy))) then
+      ! Normal penalty
+      f = f+(fit_pack(iy)-minim%obs(iy))**2
+   end if
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine minim_cost_scale_rh_rv
+
+!----------------------------------------------------------------------
+! Subroutine: minim_hooke
+!> Seeks a minimizer of a scalar function of several variables
+! Author: ALGOL original by Arthur Kaupe, C version by Mark Johnson, FORTRAN90 version by John Burkardt
+!----------------------------------------------------------------------
+subroutine minim_hooke(minim,mpl,guess)
+
+implicit none
+
+! Passed variables
+class(minim_type),intent(inout) :: minim      !< Minimization data
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+real(kind_real),intent(in) :: guess(minim%nx) !< Guess
+
+! Local variables
+integer :: funevals,i,iters,keep
+real(kind_real) :: fbefore,newf,steplength,tmp
+real(kind_real) :: delta(minim%nx),newx(minim%nx)
+
+! Set name
+@:set_name(minim_hooke)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+newx = guess
+minim%x = guess
+do i=1,minim%nx
+   if (minim%bsup(i)>minim%binf(i)) then
+      if (sup(abs(guess(i)),repro_th)) then
+         delta(i) = minim%hooke_rho*abs(guess(i))
+      else
+         delta(i) = minim%hooke_rho
+      end if
+   end if
+end do
+funevals = 0
+steplength = minim%hooke_rho
+iters = 0
+call minim%cost(mpl,newx,fbefore)
+funevals = funevals+1
+newf = fbefore
+
+! Iterative search
+do while ((iters<minim%hooke_itermax).and.inf(minim%hooke_tol,steplength))
+   ! Update iteration
+   iters = iters+1
+
+   ! Find best new point, one coordinate at a time
+   newx = minim%x
+   call minim%best_nearby(mpl,delta,newx,fbefore,funevals,newf)
+
+   ! If we made some improvements, pursue that direction
+   keep = 1
+
+   do while (inf(newf,fbefore).and.(keep==1))
+      do i=1,minim%nx
+         if (minim%bsup(i)>minim%binf(i)) then
+            ! Arrange the sign of delta
+            if (sup(newx(i),minim%x(i))) then
+               delta(i) = abs(delta(i))
+            else
+               delta(i) = -abs(delta(i))
+            end if
+
+            ! Now, move further in this direction.
+            tmp = minim%x(i)
+            minim%x(i) = newx(i)
+            newx(i) = newx(i)+newx(i)-tmp
+         end if
+      end do
+
+      ! Update
+      fbefore = newf
+      call minim%best_nearby(mpl,delta,newx,fbefore,funevals,newf)
+
+      ! If the further (optimistic) move was bad...
+      if (inf(fbefore,newf)) exit
+
+      ! Make sure that the differences between the new and the old points
+      ! are due to actual displacements; beware of roundoff errors that
+      ! might cause NEWF<FBEFORE.
+      keep = 0
+
+      do i=1,minim%nx
+         if (minim%bsup(i)>minim%binf(i)) then
+            if (inf(half*abs(delta(i)),abs(newx(i)-minim%x(i)))) then
+               keep = 1
+               exit
+            end if
+         end if
+      end do
+   end do
+
+   if (infeq(minim%hooke_tol,steplength).and.infeq(fbefore,newf)) then
+      steplength = steplength*minim%hooke_rho
+      delta = delta*minim%hooke_rho
+   end if
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine minim_hooke
+
+!----------------------------------------------------------------------
+! Subroutine: minim_best_nearby
+!> Looks for a better nearby point, one coordinate at a time
+! Author: ALGOL original by Arthur Kaupe, C version by Mark Johnson, FORTRAN90 version by John Burkardt
+!----------------------------------------------------------------------
+subroutine minim_best_nearby(minim,mpl,delta,point,prevbest,funevals,minf)
+
+implicit none
+
+! Passed variables
+class(minim_type),intent(inout) :: minim         !< Minimization data
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+real(kind_real),intent(inout) :: delta(minim%nx) !< Step
+real(kind_real),intent(inout) :: point(minim%nx) !< Point
+real(kind_real),intent(in) :: prevbest           !< Best existing cost
+integer,intent(inout) :: funevals                !< Number of evaluations
+real(kind_real),intent(out) :: minf              !< Minimum cost
+
+! Local variables
+integer :: i
+real(kind_real) :: ftmp
+real(kind_real) :: z(minim%nx)
+
+! Set name
+@:set_name(minim_best_nearby)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+minf = prevbest
+z = point
+
+do i=1,minim%nx
+   if (minim%bsup(i)>minim%binf(i)) then
+      z(i) = point(i)+delta(i)
+      call minim%cost(mpl,z,ftmp)
+      funevals = funevals+1
+      if (inf(ftmp,minf)) then
+         minf = ftmp
+      else
+         delta(i) = -delta(i)
+         z(i) = point(i)+delta(i)
+         call minim%cost(mpl,z,ftmp)
+         funevals = funevals+1
+         if (inf(ftmp,minf)) then
+            minf = ftmp
+         else
+            z(i) = point(i)
+         end if
+      end if
+   end if
+end do
+
+! Update
+point = z
+
+! Probe out
+@:probe_out()
+
+end subroutine minim_best_nearby
+
+!----------------------------------------------------------------------
+! Subroutine: vt_dir
+!> Direct variable transform
+!----------------------------------------------------------------------
+subroutine minim_vt_dir(minim,x)
+
+implicit none
+
+! Passed variables
+class(minim_type),intent(in) :: minim        !< Minimization data
+real(kind_real),intent(inout) :: x(minim%nx) !< Vector
+
+! Set name
+@:set_name(minim_vt_dir)
+
+! Probe in
+@:probe_in()
+
+! Linear expansion of the hyperbolic tangent of the variable
+x = minim%binf+half*(one+tanh(x))*(minim%bsup-minim%binf)
+
+! Probe out
+@:probe_out()
+
+end subroutine minim_vt_dir
+
+!----------------------------------------------------------------------
+! Subroutine: vt_inv
+!> Inverse variable transform
+!----------------------------------------------------------------------
+subroutine minim_vt_inv(minim,mpl,x)
+
+implicit none
+
+! Passed variables
+class(minim_type),intent(in) :: minim        !< Minimization data
+type(mpl_type),intent(inout) :: mpl          !< MPI data
+real(kind_real),intent(inout) :: x(minim%nx) !< Vector
+
+! Local variables
+integer :: ix
+
+! Set name
+@:set_name(minim_vt_inv)
+
+! Probe in
+@:probe_in()
+
+! Inverse hyperbolic tangent of the linearly bounded variable
+if (any((x<minim%binf).or.(x>minim%bsup))) call mpl%abort('${subr}$','variable out of bounds in vt_inv')
+do ix=1,minim%nx
+   if (sup(minim%bsup(ix),minim%binf(ix))) then
+      x(ix) = atanh(two*(x(ix)-minim%binf(ix))/(minim%bsup(ix)-minim%binf(ix))-one)
+   else
+      x(ix) = zero
+   end if
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine minim_vt_inv
+
+end module type_minim

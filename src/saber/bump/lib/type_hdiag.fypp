@@ -1,0 +1,364 @@
+#:include 'instrumentation.fypp'
+!----------------------------------------------------------------------
+! Module: type_hdiag
+!> Hybrid diagnostics derived type
+! Author: Benjamin Menetrier
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+module type_hdiag
+
+use tools_const, only: zero,rad2deg
+use tools_kinds, only: kind_real
+use tools_netcdf, only: create_file,define_grp,define_dim,define_var,put_var,close_file
+use type_avg, only: avg_type
+use type_diag, only: diag_type
+use type_ens, only: ens_type
+use type_geom, only: geom_type
+use type_mom, only: mom_type
+use type_mpl, only: mpl_type
+use type_nam, only: nam_type
+@:use_probe()
+use type_samp, only: samp_type
+
+implicit none
+
+! Hybrid diagnostics derived type
+type hdiag_type
+   type(avg_type),allocatable :: avg(:)  !< Averaged statistics
+   type(diag_type),allocatable :: cov(:) !< Covariance
+   type(diag_type),allocatable :: cor(:) !< Correlation
+   type(diag_type),allocatable :: loc(:) !< Localization
+contains
+   procedure :: partial_dealloc => hdiag_partial_dealloc
+   procedure :: dealloc => hdiag_dealloc
+   procedure :: write => hdiag_write
+   procedure :: run_hdiag => hdiag_run_hdiag
+end type hdiag_type
+
+private
+public :: hdiag_type
+
+contains
+
+!----------------------------------------------------------------------
+! Subroutine: hdiag_partial_dealloc
+!> Release memory (partial)
+!----------------------------------------------------------------------
+subroutine hdiag_partial_dealloc(hdiag)
+
+implicit none
+
+! Passed variables
+class(hdiag_type),intent(inout) :: hdiag !< Hybrid diagnostics
+
+! Set name
+@:set_name(hdiag_partial_dealloc)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+if (allocated(hdiag%avg)) then
+   call hdiag%avg(1)%dealloc
+   call hdiag%avg(2)%dealloc
+end if
+if (allocated(hdiag%cov)) then
+   call hdiag%cov(1)%partial_dealloc
+   call hdiag%cov(2)%partial_dealloc
+end if
+if (allocated(hdiag%cor)) then
+   call hdiag%cor(1)%partial_dealloc
+   call hdiag%cor(2)%partial_dealloc
+end if
+if (allocated(hdiag%loc)) then
+   call hdiag%loc(1)%partial_dealloc
+   call hdiag%loc(2)%partial_dealloc
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine hdiag_partial_dealloc
+
+!----------------------------------------------------------------------
+! Subroutine: hdiag_dealloc
+!> Release memory
+!----------------------------------------------------------------------
+subroutine hdiag_dealloc(hdiag)
+
+implicit none
+
+! Passed variables
+class(hdiag_type),intent(inout) :: hdiag !< Hybrid diagnostics
+
+! Set name
+@:set_name(hdiag_dealloc)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+if (allocated(hdiag%avg)) then
+   call hdiag%avg(1)%dealloc
+   call hdiag%avg(2)%dealloc
+   deallocate(hdiag%avg)
+end if
+if (allocated(hdiag%cov)) then
+   call hdiag%cov(1)%dealloc
+   call hdiag%cov(2)%dealloc
+   deallocate(hdiag%cov)
+end if
+if (allocated(hdiag%cor)) then
+   call hdiag%cor(1)%dealloc
+   call hdiag%cor(2)%dealloc
+   deallocate(hdiag%cor)
+end if
+if (allocated(hdiag%loc)) then
+   call hdiag%loc(1)%dealloc
+   call hdiag%loc(2)%dealloc
+   deallocate(hdiag%loc)
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine hdiag_dealloc
+
+!----------------------------------------------------------------------
+! Subroutine: hdiag_write
+!> Write diagnostics
+!----------------------------------------------------------------------
+subroutine hdiag_write(hdiag,mpl,nam,geom,samp)
+
+implicit none
+
+! Passed variables
+class(hdiag_type),intent(inout) :: hdiag !< Hybrid diagnostics
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+type(nam_type),intent(inout) :: nam      !< Namelist
+type(geom_type),intent(in) :: geom(2)    !< Geometry
+type(samp_type),intent(in) :: samp(2)    !< Sampling
+
+! Local variables
+integer :: ncid,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id,disth_id,as_id,vunit_id,ncmp_id
+integer :: ildwv,ig
+integer :: ic2a(0:nam%nldwv)
+character(len=1024),dimension(0:nam%nldwv) :: filename
+character(len=1024) :: grpname
+
+! Set name
+@:set_name(hdiag_write)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+ic2a(0) = mpl%msv%vali
+if (mpl%main) ic2a(0) = 0
+filename(0) = trim(nam%prefix)//'diag'
+do ildwv=1,nam%nldwv
+   ic2a(ildwv) = samp(1)%ldwv_to_c2a(ildwv)
+   filename(ildwv) = trim(nam%prefix)//'diag_'//trim(nam%name_ldwv(ildwv))
+end do
+
+do ildwv=0,nam%nldwv
+   if (mpl%msv%isnot(ic2a(ildwv))) then
+      ! Open file
+      ncid = create_file(mpl,filename(ildwv),0)
+
+      do ig=1,nam%ng
+         ! Get group name
+         call nam%alias(nam%group_names(ig),grpname)
+
+         ! Define group
+         grpid = define_grp(mpl,ncid,grpname)
+
+         ! Define dimensions
+         nc3_id = define_dim(mpl,grpid,'nc3',nam%nc3)
+         nc4_id = define_dim(mpl,grpid,'nc4',nam%nc4)
+         nl0r_id = define_dim(mpl,grpid,'nl0r',nam%nl0r)
+         nl0_1_id = define_dim(mpl,grpid,'nl0_1',geom(1)%nl0)
+         nl0_2_id = define_dim(mpl,grpid,'nl0_2',geom(1)%nl0)
+         if (nam%fit_ncmp>1) then
+            ncmp_id = define_dim(mpl,grpid,'ncmp',nam%fit_ncmp)
+         else
+            ncmp_id = mpl%msv%vali
+         end if
+
+         ! Define coordinates
+         disth_id = define_var(mpl,grpid,'disth','real',(/nc3_id/))
+         as_id = define_var(mpl,grpid,'as','real',(/nc4_id/))
+         vunit_id = define_var(mpl,grpid,'vunit','real',(/nl0_1_id/))
+
+         ! Write coordinates
+         call put_var(mpl,grpid,disth_id,geom(1)%disth(1:nam%nc3))
+         call put_var(mpl,grpid,as_id,geom(1)%as(1:nam%nc4))
+         call put_var(mpl,grpid,vunit_id,geom(1)%vunitavg)
+
+         ! Write ensemble 1 correlation
+         if (nam%compute_cor1) call hdiag%cor(1)%blk(ic2a(ildwv),ig)%write(mpl,nam,geom(1),grpid,nc3_id,nc4_id,nl0r_id, &
+ & nl0_1_id,nl0_2_id,ncmp_id)
+
+         ! Write ensemble 2 correlation
+         if (nam%compute_cor2) call hdiag%cor(2)%blk(ic2a(ildwv),ig)%write(mpl,nam,geom(2),grpid,nc3_id,nc4_id,nl0r_id, &
+ & nl0_1_id,nl0_2_id,ncmp_id)
+
+         ! Write ensemble 1 localization (and hybrid coefficient)
+         if (nam%compute_loc1.or.nam%compute_hyb) call hdiag%loc(1)%blk(ic2a(ildwv),ig)%write(mpl,nam,geom(1),grpid, &
+ & nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id,ncmp_id)
+
+         ! Write ensemble 2 localization (and hybrid coefficient)
+         if (nam%compute_loc2) call hdiag%loc(2)%blk(ic2a(ildwv),ig)%write(mpl,nam,geom(2),grpid,nc3_id,nc4_id,nl0r_id, &
+ & nl0_1_id,nl0_2_id,ncmp_id)
+      end do
+
+      ! Close file
+      call close_file(mpl,ncid)
+   end if
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine hdiag_write
+
+!----------------------------------------------------------------------
+! Subroutine: hdiag_run_hdiag
+!> HDIAG driver
+!----------------------------------------------------------------------
+subroutine hdiag_run_hdiag(hdiag,mpl,nam,geom,samp,mom)
+
+implicit none
+
+! Passed variables
+class(hdiag_type),intent(inout) :: hdiag !< Hybrid diagnostics
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+type(nam_type),intent(inout) :: nam      !< Namelist
+type(geom_type),intent(in) :: geom(2)    !< Geometry
+type(samp_type),intent(in) :: samp(2)    !< Sampling
+type(mom_type),intent(in) :: mom(2)      !< Moments
+
+! Set name
+@:set_name(hdiag_run_hdiag)
+
+! Probe in
+@:probe_in()
+
+! Allocation
+allocate(hdiag%avg(2))
+allocate(hdiag%cov(2))
+allocate(hdiag%cor(2))
+allocate(hdiag%loc(2))
+
+if (nam%compute_cov1.or.nam%compute_cor1.or.nam%compute_loc1.or. &
+ & nam%compute_cov2.or.nam%compute_cor2.or.nam%compute_loc2) then
+   ! Compute statistics
+   write(mpl%info,'(a)') '-------------------------------------------------------------------'
+   call mpl%flush
+   write(mpl%info,'(a)') '--- Compute statistics'
+   call mpl%flush
+end if
+
+if (nam%compute_cov1.or.nam%compute_cor1.or.nam%compute_loc1) then
+   ! Ensemble 1
+   write(mpl%info,'(a7,a)') '','Ensemble 1:'
+   call mpl%flush
+   call hdiag%avg(1)%compute(mpl,nam,geom(1),samp(1),mom(1),nam%ne,'avg1')
+end if
+
+if (nam%compute_cov2.or.nam%compute_cor2.or.nam%compute_loc2) then
+   ! Ensemble 2
+   write(mpl%info,'(a7,a)') '','Ensemble 2:'
+   call mpl%flush
+   call hdiag%avg(2)%compute(mpl,nam,geom(2),samp(2),mom(2),nam%ne_lr,'avg2')
+end if
+
+if (nam%compute_cov1.or.nam%compute_cov2) then
+   write(mpl%info,'(a)') '-------------------------------------------------------------------'
+   call mpl%flush
+   write(mpl%info,'(a)') '--- Compute covariance'
+   call mpl%flush
+end if
+
+if (nam%compute_cov1) then
+   ! Ensemble 1
+   write(mpl%info,'(a7,a)') '','Ensemble 1:'
+   call mpl%flush
+   call hdiag%cov(1)%covariance(mpl,nam,geom(1),samp(1),hdiag%avg(1),'cov1')
+end if
+
+if (nam%compute_cov2) then
+   ! Ensemble 2
+   write(mpl%info,'(a7,a)') '','Ensemble 2:'
+   call mpl%flush
+   call hdiag%cov(2)%covariance(mpl,nam,geom(2),samp(2),hdiag%avg(2),'cov2')
+end if
+
+if (nam%compute_cor1.or.nam%compute_cor2) then
+   write(mpl%info,'(a)') '-------------------------------------------------------------------'
+   call mpl%flush
+   write(mpl%info,'(a)') '--- Compute correlation'
+   call mpl%flush
+end if
+
+if (nam%compute_cor1) then
+   ! Compute ensemble 1 correlation
+   write(mpl%info,'(a7,a)') '','Ensemble 1:'
+   call mpl%flush
+   call hdiag%cor(1)%correlation(mpl,nam,geom(1),samp(1),hdiag%avg(1),'cor1')
+end if
+
+if (nam%compute_cor2) then
+   ! Compute ensemble 2 correlation
+   write(mpl%info,'(a7,a)') '','Ensemble 2:'
+   call mpl%flush
+   call hdiag%cor(2)%correlation(mpl,nam,geom(2),samp(2),hdiag%avg(2),'cor2')
+end if
+
+
+if (nam%compute_loc1.or.nam%compute_loc2) then
+   write(mpl%info,'(a)') '-------------------------------------------------------------------'
+   call mpl%flush
+   write(mpl%info,'(a)') '--- Compute localization'
+   call mpl%flush
+end if
+
+if (nam%compute_loc1) then
+   ! Ensemble 1
+   write(mpl%info,'(a7,a)') '','Ensemble 1:'
+   call mpl%flush
+   call hdiag%loc(1)%localization(mpl,nam,geom(1),samp(1),hdiag%avg(1),'loc1')
+end if
+
+if (nam%compute_loc2) then
+   ! Ensemble 2
+   write(mpl%info,'(a7,a)') '','Ensemble 2:'
+   call mpl%flush
+   call hdiag%loc(2)%localization(mpl,nam,geom(2),samp(2),hdiag%avg(2),'loc2')
+end if
+
+if (nam%compute_hyb) then
+   ! Compute hybridization
+   write(mpl%info,'(a)') '-------------------------------------------------------------------'
+   call mpl%flush
+   write(mpl%info,'(a)') '--- Compute hybridization'
+   call mpl%flush
+   call hdiag%loc(2)%hybridization(mpl,nam,geom,samp(2),hdiag%avg,hdiag%loc(1),'loc2')
+end if
+
+! Write diagnostics
+if (nam%write_hdiag) then
+   write(mpl%info,'(a)') '-------------------------------------------------------------------'
+   call mpl%flush
+   write(mpl%info,'(a)') '--- Write diagnostics'
+   call mpl%flush
+   call hdiag%write(mpl,nam,geom,samp)
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine hdiag_run_hdiag
+
+end module type_hdiag

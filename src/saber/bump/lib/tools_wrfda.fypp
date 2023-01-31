@@ -1,0 +1,242 @@
+#:include 'instrumentation.fypp'
+!----------------------------------------------------------------------
+! Module: tools_wrfda
+!> WRFDA functions
+! Source: https://github.com/wrf-model/WRFDA
+! Author: This routine is from WRFDA
+! Original licensing: none
+! Modified by Benjamin Menetrier for BUMP
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+module tools_wrfda
+
+use tools_const, only: zero,one
+use tools_kinds, only: kind_real
+use type_mpl, only: mpl_type
+@:use_probe()
+
+implicit none
+
+interface pseudoinv
+   module procedure wrfda_pseudoinv
+end interface
+interface da_eof_decomposition
+   module procedure wrfda_da_eof_decomposition
+end interface
+interface da_eof_dominant_mode
+   module procedure wrfda_da_eof_dominant_mode
+end interface
+interface da_eof_recomposition
+   module procedure wrfda_da_eof_recomposition
+end interface
+
+private
+public :: pseudoinv,da_eof_decomposition,da_eof_dominant_mode,da_eof_recomposition
+
+contains
+
+!----------------------------------------------------------------------
+! Subroutine: wrfda_pseudoinv
+!> Compute the pseudo-inverse of a covariance matrix
+!----------------------------------------------------------------------
+subroutine wrfda_pseudoinv(mpl,n,a,ainv,mmax,var_th)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+integer,intent(in) :: n                       !< Matrix size
+real(kind_real),intent(in) :: a(n,n)          !< Matrix
+real(kind_real),intent(out) :: ainv(n,n)      !< Matrix inverse
+integer,intent(in),optional :: mmax           !< Dominant mode
+real(kind_real),intent(in),optional :: var_th !< Variance threshold
+
+! Local variables
+integer :: i,lmmax
+real(kind_real) :: evec(n,n),eval(n),evalinv(n)
+
+! Set name
+@:set_name(wrfda_pseudoinv)
+
+! Probe in
+@:probe_in()
+
+! EOF decomposition
+call da_eof_decomposition(mpl,n,a,evec,eval)
+
+! Select dominant mode
+if (present(mmax)) then
+   ! Input argument
+   lmmax = mmax
+else
+   if (present(var_th)) then
+      ! Based on variance threshold
+      lmmax = da_eof_dominant_mode(n,eval,var_th)
+   else
+      call mpl%abort('${subr}$','either dominant mode or variance threshold should be specified')
+   end if
+end if
+if (lmmax>n) call mpl%abort('${subr}$','dominant mode should smaller than the matrix rank')
+
+! Inverse eigenvalues
+do i=1,n
+   if (abs(eval(i))>zero) then
+      evalinv(i) = one/eval(i)
+   else
+      evalinv(i) = zero
+   end if
+end do
+
+! Rebuild inverse
+call da_eof_recomposition(n,lmmax,evec,evalinv,ainv)
+
+! Probe out
+@:probe_out()
+
+end subroutine wrfda_pseudoinv
+
+!----------------------------------------------------------------------
+! Subroutine: wrfda_da_eof_decomposition
+!> Compute eigenvectors and eigenvalues of a covariance matrix
+!----------------------------------------------------------------------
+subroutine wrfda_da_eof_decomposition(mpl,n,a,evec,eval)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+integer, intent(in)  :: n                !< Matrix size
+real(kind_real),intent(in) :: a(n,n)     !< Matrix
+real(kind_real),intent(out) :: evec(n,n) !< Eigenvectors
+real(kind_real),intent(out) :: eval(n)   !< Eigenvalues
+
+! Local variables
+integer :: work,ierr,i
+real(kind_real) :: work_array(3*n-1),evec_copy(n,n),eval_copy(n)
+external :: dsyev
+
+! Set name
+@:set_name(wrfda_da_eof_decomposition)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+work = 3*n-1
+evec_copy = a
+eval_copy = zero
+
+! Perform global eigenvalue decomposition using LAPACK software
+call dsyev('V','U',n,evec_copy,n,eval_copy,work_array,work,ierr)
+if (ierr/=0) call mpl%abort('${subr}$','dsyev failed')
+
+! Swap order of eigenvalues, vectors so 1st is one with most variance
+do i=1,n
+   eval(i) = eval_copy(n+1-i)
+   evec(:,i) = evec_copy(:,n+1-i)
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine wrfda_da_eof_decomposition
+
+!----------------------------------------------------------------------
+! Function: wrfda_da_eof_dominant_mode
+!> Compute dominant mode given a variance threshold
+!----------------------------------------------------------------------
+function wrfda_da_eof_dominant_mode(n,eval,var_th) result(lmmax)
+
+implicit none
+
+! Passed variables
+integer, intent(in)  :: n             !< Number of eigenvalues
+real(kind_real),intent(in) :: eval(n) !< Eigenvalues
+real(kind_real),intent(in) :: var_th  !< Variance threshold
+
+! Returned variable
+integer :: lmmax
+
+! Local variables
+integer :: i
+real(kind_real) :: total_variance,cumul_variance
+
+! Set name
+@:set_name(wrfda_da_eof_dominant_mode)
+
+! Probe in
+@:probe_in()
+
+! Total variance
+total_variance = sum(eval)
+
+! Cumulated variance
+cumul_variance = zero
+lmmax = n
+do i=1,n
+   cumul_variance = cumul_variance+eval(i)/total_variance
+   if (cumul_variance>one-var_th) then
+      lmmax = i-1
+      exit
+   end if
+end do
+
+! Probe out
+@:probe_out()
+
+end function wrfda_da_eof_dominant_mode
+
+!----------------------------------------------------------------------
+! Subroutine: wrfda_da_eof_recomposition
+!> Recompute covariance matrix from a subset of eigenvectors and eigenvalues
+!----------------------------------------------------------------------
+subroutine wrfda_da_eof_recomposition(n,mmax,evec,eval,a)
+
+implicit none
+
+! Passed variables
+integer, intent(in)  :: n               !< Matrix size
+integer, intent(in)  :: mmax            !< Dominant mode
+real(kind_real),intent(in) :: evec(n,n) !< Eigenvectors of a
+real(kind_real),intent(in) :: eval(n)   !< Eigenvalues of a
+real(kind_real),intent(out) :: a(n,n)   !< Matrix
+
+! Local variables
+integer :: i,j
+real(kind_real) :: tmp(n,n)
+
+! Set name
+@:set_name(wrfda_da_eof_recomposition)
+
+! Probe in
+@:probe_in()
+
+! First matrix product
+tmp = zero
+do i=1,n
+   do j=1,mmax
+      tmp(j,i) = evec(i,j)*eval(j)
+   end do
+end do
+
+! Second matrix product
+do i=1,n
+   do j=1,i
+      a(i,j) = sum(evec(i,:)*tmp(:,j))
+   end do
+end do
+
+! Symmetry
+do i=1,n
+   do j=i+1,n
+      a(i,j) = a(j,i)
+   end do
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine wrfda_da_eof_recomposition
+
+end module tools_wrfda

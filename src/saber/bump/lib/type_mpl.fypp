@@ -1,0 +1,1159 @@
+#:include 'generics.fypp'
+#:include 'instrumentation.fypp'
+!----------------------------------------------------------------------
+! Module: type_mpl
+!> MPI parameters derived type
+! Author: Benjamin Menetrier
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+module type_mpl
+
+use fckit_log_module, only: fckit_logchannel
+use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_status
+use iso_c_binding, only: c_ptr,c_null_ptr,c_associated
+use iso_fortran_env, only: output_unit
+!$ use omp_lib
+use tools_const, only: zero,one,ten,hundred
+use tools_kinds, only: kind_int,kind_float,kind_double,kind_real
+use tools_log, only: write_log
+use tools_qsort, only: qsort
+use type_msv, only: msv_type
+#:if getvar('ENABLE_SABER_INSTRUMENTATION', 0)
+use type_probe, only: iinst,cinst,probe
+#:endif
+
+implicit none
+
+integer,parameter :: ddis = 5                !< Progression display step
+#:if getvar('ENABLE_SABER_INSTRUMENTATION', 0)
+   real(kind_real) :: min_total_timing = one !< Minimum total timing to print
+   integer :: max_calls = 10                 !< Number of timing to print with maximum calls
+#:endif
+
+type mpl_type
+   ! MPI communicator
+   type(fckit_mpi_comm) :: f_comm         !< MPI communicator (fckit wrapper)
+   integer :: nproc                       !< Number of MPI tasks
+   integer :: myproc                      !< MPI task index
+   integer :: rootproc                    !< Main task index
+   logical :: main                        !< Main task logical
+   integer :: tag                         !< MPI tag
+
+   ! I/O
+   character(len=1024) :: datadir         !< Data directory
+   logical :: parallel_netcdf             !< Parallel NetCDF I/O
+   integer :: nprocio                     !< Number of I/O tasks
+   logical,allocatable :: pioproc(:)      !< Flag for I/O MPI tasks
+   type(fckit_mpi_comm) :: f_comm_io      !< MPI communicator for I/O (fckit wrapper)
+
+   ! Number of OpenMP threads
+   integer :: nthread                     !< Number of OpenMP threads
+
+   ! Missing values
+   type(msv_type) :: msv                  !< Missing values
+
+   ! Display parameters
+   type(fckit_logchannel) :: info_channel !< Info channel pointer
+   type(fckit_logchannel) :: test_channel !< Test channel pointer
+   character(len=1024) :: info            !< Info buffer
+   character(len=1024) :: test            !< Test buffer
+   character(len=1024) :: wng             !< Warning buffer
+   logical :: previous_newl               !< Previous new line
+   logical :: testing                     !< Stream test messages into a dedicated channel
+
+   ! Display colors
+   character(len=1024) :: black           !< Black color code
+   character(len=1024) :: green           !< Green color code
+   character(len=1024) :: peach           !< Peach color code
+   character(len=1024) :: aqua            !< Aqua color code
+   character(len=1024) :: purple          !< Purple color code
+   character(len=1024) :: wng_color       !< Warning color code
+
+   ! Progression print
+   integer :: nprog                       !< Progression array size
+   integer :: progint                     !< Progression integer
+   logical,allocatable :: done(:)         !< Progression array
+contains
+   procedure :: init => mpl_init
+   procedure :: final => mpl_final
+   procedure :: flush => mpl_flush
+   procedure :: abort => mpl_abort
+   procedure :: warning => mpl_warning
+   procedure :: update_tag => mpl_update_tag
+   #:for dtype in dtypes_irl
+      procedure :: mpl_allgather_${dtype}$_r1
+   #:endfor
+@:init_procedure(3)
+   generic :: allgather => &
+   #:for dtype in dtypes_irl
+@:add_procedure(mpl_allgather_${dtype}$_r1)
+   #:endfor
+   #:for rank in ranks_1234
+      procedure :: mpl_dot_prod_r${rank}$
+   #:endfor
+@:init_procedure(4)
+   generic :: dot_prod => &
+   #:for rank in ranks_1234
+@:add_procedure(mpl_dot_prod_r${rank}$)
+   #:endfor
+   procedure :: glb_to_loc_index => mpl_glb_to_loc_index
+   #:for dtype in dtypes_irl
+      #:for rank in ranks_12
+         procedure :: mpl_glb_to_loc_${dtype}$_r${rank}$
+         procedure :: mpl_loc_to_glb_${dtype}$_r${rank}$
+      #:endfor
+   #:endfor
+@:init_procedure(6)
+   generic :: glb_to_loc => &
+   #:for dtype in dtypes_irl
+      #:for rank in ranks_12
+@:add_procedure(mpl_glb_to_loc_${dtype}$_r${rank}$)
+      #:endfor
+   #:endfor
+@:init_procedure(6)
+   generic :: loc_to_glb => &
+   #:for dtype in dtypes_irl
+      #:for rank in ranks_12
+@:add_procedure(mpl_loc_to_glb_${dtype}$_r${rank}$)
+      #:endfor
+   #:endfor
+   procedure :: prog_init => mpl_prog_init
+   procedure :: prog_print => mpl_prog_print
+   procedure :: prog_final => mpl_prog_final
+   #:if getvar('ENABLE_SABER_INSTRUMENTATION', 0)
+      procedure :: print_instance => mpl_print_instance
+      procedure :: timings => mpl_timings
+   #:endif
+end type mpl_type
+
+interface
+
+subroutine c_tools_log(channel,msg,newl,flush) bind(c,name='tools_log_f')
+  use,intrinsic :: iso_c_binding
+  implicit none
+  type(c_ptr),value :: channel
+  character(kind=c_char),dimension(*) :: msg
+  integer(c_int32_t),value :: newl
+  integer(c_int32_t),value :: flush
+end subroutine c_tools_log
+
+end interface
+
+private
+public :: mpl_type
+
+contains
+
+!----------------------------------------------------------------------
+! Subroutine: mpl_init
+!> Initialize MPL object
+!----------------------------------------------------------------------
+subroutine mpl_init(mpl,f_comm)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl             !< MPI data
+type(fckit_mpi_comm),intent(in),target :: f_comm !< FCKIT MPI communicator wrapper
+
+! Set name
+@:set_name(mpl_init)
+
+! Probe in
+@:probe_in()
+
+! Get own FCKIT MPI communicator wrapper
+mpl%f_comm = f_comm
+
+! Get MPI size
+mpl%nproc = mpl%f_comm%size()
+
+! Get MPI rank
+mpl%myproc = mpl%f_comm%rank()+1
+
+! Define main task
+mpl%rootproc = 1
+mpl%main = (mpl%myproc==mpl%rootproc)
+
+! Time-based tag
+if (mpl%main) then
+   call system_clock(count=mpl%tag)
+end if
+call mpl%f_comm%broadcast(mpl%tag,mpl%rootproc-1)
+call mpl%update_tag(0)
+
+! Set max number of OpenMP threads
+mpl%nthread = 1
+!$ mpl%nthread = omp_get_max_threads()
+!$ call omp_set_num_threads(mpl%nthread)
+
+! Set log at 'no message'
+mpl%info = 'no_message'
+mpl%test = 'no_message'
+mpl%wng = 'no_message'
+mpl%previous_newl = .true.
+
+! Set default listing
+mpl%black = ' '
+mpl%green = ' '
+mpl%peach = ' '
+mpl%aqua = ' '
+mpl%purple = ' '
+mpl%wng_color = ' '
+
+! Testing flag
+mpl%testing = .false.
+
+! Missing value
+mpl%msv%vali = -999
+mpl%msv%valr = -999.0_kind_real
+
+! Write parallel setup
+write(mpl%info,'(a)') '-------------------------------------------------------------------'
+call mpl%flush
+write(mpl%info,'(a,i3,a,i2,a)') '--- Parallelization with ',mpl%nproc,' MPI tasks and ', &
+ & mpl%nthread,' OpenMP threads'
+call mpl%flush
+
+! Probe out
+@:probe_out()
+
+end subroutine mpl_init
+
+!----------------------------------------------------------------------
+! Subroutine: mpl_final
+!> Finalize MPI
+!----------------------------------------------------------------------
+subroutine mpl_final(mpl)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl !< MPI data
+
+! Set name
+@:set_name(mpl_final)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+if (allocated(mpl%pioproc)) deallocate(mpl%pioproc)
+if (allocated(mpl%done)) deallocate(mpl%done)
+
+! Probe out
+@:probe_out()
+
+end subroutine mpl_final
+
+!----------------------------------------------------------------------
+! Subroutine: mpl_flush
+!> Flush listings
+!----------------------------------------------------------------------
+subroutine mpl_flush(mpl,newl,flush)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl !< MPI data
+logical,intent(in),optional :: newl  !< New line flag
+logical,intent(in),optional :: flush !< Flush flag
+
+! Local variables
+logical :: lnewl,lflush
+
+! Set name
+@:set_name(mpl_flush)
+
+! Probe in
+@:probe_in()
+
+! Set local flags
+lnewl = .true.
+if (present(newl)) lnewl = newl
+lflush = .true.
+if (present(flush)) lflush = flush
+
+if (lflush) then
+   ! Check info message
+   if (trim(mpl%info)/='no_message') then
+      ! Add prefix
+      if (mpl%previous_newl) mpl%info = 'Info     : '//trim(mpl%info)
+
+      ! Write message
+      call write_log(mpl%info_channel,mpl%info,lnewl,lflush)
+
+      ! Set at 'no_message'
+      mpl%info = 'no_message'
+   end if
+
+   ! Check test message
+   if (trim(mpl%test)/='no_message') then
+      if (mpl%testing) then
+         ! Write message
+         call write_log(mpl%test_channel,mpl%test,lnewl,lflush)
+      else
+         ! Add prefix
+         if (mpl%previous_newl) mpl%test = 'Info     : '//trim(mpl%test)
+
+         ! Write message
+         call write_log(mpl%info_channel,mpl%test,lnewl,lflush)
+      end if
+
+      ! Set at 'no_message'
+      mpl%test = 'no_message'
+   end if
+
+   ! Check warning message
+   if (trim(mpl%wng)/='no_message') then
+      ! Add prefix
+      if (mpl%previous_newl) mpl%wng = 'Warning  : '//trim(mpl%wng)
+
+      ! Write message
+      call write_log(mpl%info_channel,mpl%wng,lnewl,lflush)
+
+      ! Set at 'no_message'
+      mpl%wng = 'no_message'
+   end if
+
+   ! Set previous new line flag
+   mpl%previous_newl = lnewl
+else
+   ! Reset at 'no_message'
+   mpl%info = 'no_message'
+   mpl%test = 'no_message'
+   mpl%wng = 'no_message'
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine mpl_flush
+
+!----------------------------------------------------------------------
+! Subroutine: mpl_abort
+!> Clean MPI abort
+!----------------------------------------------------------------------
+subroutine mpl_abort(mpl,subr,message)
+
+implicit none
+
+! Passed variable
+class(mpl_type),intent(inout) :: mpl   !< MPI data
+character(len=*),intent(in) :: subr    !< Calling subroutine
+character(len=*),intent(in) :: message !< Message
+
+! Write standard output message
+write(output_unit,'(a,i6.6,a)') '!!! ABORT in '//trim(subr)//' on task #',mpl%myproc,': '//trim(message)
+call flush(output_unit)
+
+! Print traceback
+@:probe_traceback(output_unit)
+
+! Abort with proper MPI communicator
+call mpl%f_comm%abort(1)
+
+end subroutine mpl_abort
+
+!----------------------------------------------------------------------
+! Subroutine: mpl_warning
+!> Print warning message
+!----------------------------------------------------------------------
+subroutine mpl_warning(mpl,subr,message)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl   !< MPI data
+character(len=*),intent(in) :: subr    !< Calling subroutine
+character(len=*),intent(in) :: message !< Message
+
+! Print warning message
+write(mpl%wng,'(a)') 'in '//trim(subr)//': '//trim(message)//trim(mpl%black)
+call mpl%flush
+
+end subroutine mpl_warning
+
+!----------------------------------------------------------------------
+! Subroutine: mpl_update_tag
+!> Update MPI tag
+!----------------------------------------------------------------------
+subroutine mpl_update_tag(mpl,add)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl !< MPI data
+integer,intent(in) :: add            !< Tag update incrememnt
+
+! Set name
+@:set_name(mpl_update_tag)
+
+! Probe in
+@:probe_in()
+
+! Update tag
+mpl%tag = mpl%tag+add
+
+! Apply bounds (between 1 and 10000)
+mpl%tag = mod(mpl%tag,10000)
+mpl%tag = max(mpl%tag,1)
+
+! Probe out
+@:probe_out()
+
+end subroutine mpl_update_tag
+
+#:for dtype in dtypes_irl
+!----------------------------------------------------------------------
+! Subroutine: mpl_allgather_${dtype}$_r1
+!> Allgather for a 1d array
+!----------------------------------------------------------------------
+subroutine mpl_allgather_${dtype}$_r1(mpl,var,proc_to_var)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl             !< MPI data
+${ftype[dtype]}$,intent(in) :: var(:)            !< Input real array, 1d
+${ftype[dtype]}$,intent(out) :: proc_to_var(:,:) !< Ouput real array, (1+1)d
+
+! Local variable
+integer :: n,iproc,sendcount,recvcounts(mpl%nproc),displs(mpl%nproc)
+${ftype[dtype]}$,allocatable :: rbuf(:)
+
+! Set name
+@:set_name(mpl_allgather_${dtype}$_r1)
+
+! Probe in
+@:probe_in()
+
+! Buffer size
+n = size(var)
+
+! Allocation
+allocate(rbuf(n*mpl%nproc))
+
+! Initialization
+sendcount = n
+recvcounts = n
+displs(1) = 0
+do iproc=2,mpl%nproc
+   displs(iproc) = displs(iproc-1)+n
+end do
+
+! Allgather
+call mpl%f_comm%allgather(var,rbuf,sendcount,recvcounts,displs)
+
+! Reshape
+proc_to_var = reshape(rbuf,(/n,mpl%nproc/))
+
+! Probe out
+@:probe_out()
+
+end subroutine mpl_allgather_${dtype}$_r1
+#:endfor
+
+#:for rank in ranks_1234
+!----------------------------------------------------------------------
+! Subroutine: mpl_dot_prod_r${rank}$
+!> Global dot product over local fields
+!----------------------------------------------------------------------
+subroutine mpl_dot_prod_r${rank}$(mpl,fld1,fld2,dp)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl              !< MPI data
+real(kind_real),intent(in) :: fld1(${dim[rank]}$) !< Field 1
+real(kind_real),intent(in) :: fld2(${dim[rank]}$) !< Field 2
+real(kind_real),intent(out) :: dp                 !< Global dot product
+
+! Local variable
+real(kind_real) :: dp_loc(1)
+
+! Set name
+@:set_name(mpl_dot_prod_r${rank}$)
+
+! Probe in
+@:probe_in()
+
+! Check sizes
+if (size(fld1)/=size(fld2)) call mpl%abort('${subr}$','different sizes')
+
+! Initialization
+dp_loc(1) = zero
+
+! Product and sum
+if (size(fld1)>0) dp_loc(1) = sum(fld1*fld2,mask=mpl%msv%isnot(fld1).and.mpl%msv%isnot(fld2))
+
+! Allreduce
+call mpl%f_comm%allreduce(dp_loc,fckit_mpi_sum())
+dp = dp_loc(1)
+
+! Broadcast
+call mpl%f_comm%broadcast(dp,mpl%rootproc-1)
+
+! Probe out
+@:probe_out()
+
+end subroutine mpl_dot_prod_r${rank}$
+#:endfor
+
+!----------------------------------------------------------------------
+! Subroutine: mpl_glb_to_loc_index
+!> Communicate global index to local index
+!----------------------------------------------------------------------
+subroutine mpl_glb_to_loc_index(mpl,n_loc,loc_to_glb,n_glb,glb_to_loc,glb_to_proc,rootproc,pool)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl           !< MPI data
+integer,intent(in) :: n_loc                    !< Local dimension
+integer,intent(in) :: loc_to_glb(n_loc)        !< Local to global index
+integer,intent(in) :: n_glb                    !< Global dimension
+integer,intent(out) :: glb_to_loc(:)           !< Global to local index
+integer,intent(out) :: glb_to_proc(:)          !< Global to processor
+integer,intent(in),optional :: rootproc        !< Root task
+logical,intent(in),optional :: pool(mpl%nproc) !< Tasks pool
+
+! Local variables
+integer :: iproc,i_loc,n_loc_tmp,lrootproc
+integer,allocatable :: loc_to_glb_tmp(:)
+logical :: lpool(mpl%nproc)
+type(fckit_mpi_status) :: status
+
+! Set name
+@:set_name(mpl_glb_to_loc_index)
+
+! Probe in
+@:probe_in()
+
+! Get local rootproc and pool
+lrootproc = mpl%rootproc
+if (present(rootproc)) lrootproc = rootproc
+lpool = .true.
+if (present(pool)) lpool = pool
+
+! Check global array size
+if (mpl%myproc==lrootproc) then
+   if (.not.lpool(lrootproc)) call mpl%abort('${subr}$','root task should be in the tasks pool')
+end if
+
+if (mpl%myproc==lrootproc) then
+   ! Check global array size
+   if (size(glb_to_loc)/=n_glb) call mpl%abort('${subr}$','wrong dimension for the glb_to_loc')
+   if (size(glb_to_proc)/=n_glb) call mpl%abort('${subr}$','wrong dimension for the glb_to_proc')
+
+   ! Initialization
+   glb_to_loc = mpl%msv%vali
+   glb_to_proc = mpl%msv%vali
+
+   do iproc=1,mpl%nproc
+      if (lpool(iproc)) then
+         if (iproc==lrootproc) then
+            ! Copy dimension
+            n_loc_tmp = n_loc
+         else
+            ! Receive dimension on rootproc
+            call mpl%f_comm%receive(n_loc_tmp,iproc-1,mpl%tag,status)
+         end if
+
+         ! Allocation
+         allocate(loc_to_glb_tmp(n_loc_tmp))
+
+         if (iproc==lrootproc) then
+            ! Copy data
+            loc_to_glb_tmp = loc_to_glb
+         else
+            ! Receive data on rootproc
+            call mpl%f_comm%receive(loc_to_glb_tmp,iproc-1,mpl%tag+1,status)
+         end if
+
+         ! Fill glb_to_loc and glb_to_proc if required
+         do i_loc=1,n_loc_tmp
+            glb_to_loc(loc_to_glb_tmp(i_loc)) = i_loc
+            glb_to_proc(loc_to_glb_tmp(i_loc)) = iproc
+         end do
+
+         ! Release memory
+         deallocate(loc_to_glb_tmp)
+      end if
+   end do
+else
+   if (lpool(mpl%myproc)) then
+      ! Send dimensions to rootproc
+      call mpl%f_comm%send(n_loc,lrootproc-1,mpl%tag)
+
+      ! Send data to rootproc
+      call mpl%f_comm%send(loc_to_glb,lrootproc-1,mpl%tag+1)
+   end if
+end if
+call mpl%update_tag(2)
+
+! Probe out
+@:probe_out()
+
+end subroutine mpl_glb_to_loc_index
+
+#:for dtype in dtypes_irl
+   #:for rank in ranks_12
+!----------------------------------------------------------------------
+! Subroutine: mpl_glb_to_loc_${dtype}$_r${rank}$
+!> Global to local
+!----------------------------------------------------------------------
+subroutine mpl_glb_to_loc_${dtype}$_r${rank}$(mpl,n_loc,n_glb,loc_to_glb,glb,loc,rootproc,pool)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl               !< MPI data
+integer,intent(in) :: n_loc                        !< Local array size
+integer,intent(in) :: n_glb                        !< Global array size
+integer,intent(in) :: loc_to_glb(n_loc)            !< Local to global
+${ftype[dtype]}$,intent(in) :: glb(${dim[rank]}$)  !< Global array
+${ftype[dtype]}$,intent(out) :: loc(${dim[rank]}$) !< Local array
+integer,intent(in),optional :: rootproc            !< Root task
+logical,intent(in),optional :: pool(mpl%nproc)     !< Tasks pool
+
+! Local variables
+integer :: iproc,jproc,i_glb,i_loc,n_loc_tmp,nl,lrootproc
+#{if rank == 2}# integer :: il #{endif}#
+integer,allocatable :: glb_to_loc(:),glb_to_proc(:)
+${ftype[dtype]}$,allocatable :: sbuf(:),rbuf(:)
+logical :: lpool(mpl%nproc)
+type(fckit_mpi_status) :: status
+
+! Set name
+@:set_name(mpl_glb_to_loc_${dtype}$_r${rank}$)
+
+! Probe in
+@:probe_in()
+
+! Get local rootproc and pool
+lrootproc = mpl%rootproc
+if (present(rootproc)) lrootproc = rootproc
+lpool = .true.
+if (present(pool)) lpool = pool
+
+! Check sizes
+if (mpl%myproc==lrootproc) then
+   if (.not.lpool(lrootproc)) call mpl%abort('${subr}$','root task should be in the tasks pool')
+   if (size(glb,1)/=n_glb) call mpl%abort('${subr}$', &
+ & 'wrong first dimension for the global array')
+   #:if rank == 1
+      nl = 1
+   #:else
+      nl = size(glb,2)
+   #:endif
+end if
+call mpl%f_comm%broadcast(nl,lrootproc-1)
+if (lpool(mpl%myproc)) then
+   if (size(loc,1)/=n_loc) call mpl%abort('${subr}$', &
+ & 'wrong first dimension for the local array')
+   #:if rank == 2
+      if (size(loc,2)/=nl) call mpl%abort('${subr}$', &
+ & 'wrong second dimension for the local array')
+   #:endif
+end if
+
+! Allocation
+if (mpl%myproc==lrootproc) then
+   allocate(glb_to_loc(n_glb))
+   allocate(glb_to_proc(n_glb))
+else
+   allocate(glb_to_loc(0))
+   allocate(glb_to_proc(0))
+end if
+
+! Get global index and processor
+call mpl%glb_to_loc_index(n_loc,loc_to_glb,n_glb,glb_to_loc,glb_to_proc)
+
+! Allocation
+if (lpool(mpl%myproc)) allocate(rbuf(n_loc*nl))
+
+if (mpl%myproc==lrootproc) then
+   do iproc=1,mpl%nproc
+      if (lpool(iproc)) then
+         ! Allocation
+         n_loc_tmp = count(glb_to_proc==iproc)
+         allocate(sbuf(n_loc_tmp*nl))
+
+         ! Prepare buffers
+         do i_glb=1,n_glb
+            jproc = glb_to_proc(i_glb)
+            if (iproc==jproc) then
+               i_loc = glb_to_loc(i_glb)
+               #:if rank == 1
+                  sbuf(i_loc) = glb(i_glb)
+               #:else
+                  do il=1,nl
+                     sbuf((il-1)*n_loc_tmp+i_loc) = glb(i_glb,il)
+                  end do
+               #:endif
+            end if
+         end do
+
+         if (iproc==lrootproc) then
+            ! Copy data
+            rbuf = sbuf
+         else
+            ! Send data to iproc
+            call mpl%f_comm%send(sbuf,iproc-1,mpl%tag)
+         end if
+
+         ! Release memory
+         deallocate(sbuf)
+      end if
+   end do
+else
+   if (lpool(mpl%myproc)) then
+      ! Receive data from rootproc
+      call mpl%f_comm%receive(rbuf,lrootproc-1,mpl%tag,status)
+   end if
+end if
+call mpl%update_tag(1)
+
+if (lpool(mpl%myproc)) then
+   ! Unpack buffer
+   #:if rank == 1
+      loc = rbuf
+   #:else
+      do il=1,nl
+         do i_loc=1,n_loc
+            loc(i_loc,il) = rbuf((il-1)*n_loc+i_loc)
+         end do
+      end do
+   #:endif
+end if
+
+! Release memory
+deallocate(rbuf)
+deallocate(glb_to_loc)
+deallocate(glb_to_proc)
+
+! Probe out
+@:probe_out()
+
+end subroutine mpl_glb_to_loc_${dtype}$_r${rank}$
+   #:endfor
+#:endfor
+
+#:for dtype in dtypes_irl
+   #:for rank in ranks_12
+!----------------------------------------------------------------------
+! Subroutine: mpl_loc_to_glb_${dtype}$_r${rank}$
+!> Local to global
+!----------------------------------------------------------------------
+subroutine mpl_loc_to_glb_${dtype}$_r${rank}$(mpl,n_loc,n_glb,loc_to_glb,loc,glb,bcast)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl               !< MPI data
+integer,intent(in) :: n_loc                        !< Local array size
+integer,intent(in) :: n_glb                        !< Global array size
+integer,intent(in) :: loc_to_glb(n_loc)            !< Local to global
+${ftype[dtype]}$,intent(in) :: loc(${dim[rank]}$)  !< Local array
+${ftype[dtype]}$,intent(out) :: glb(${dim[rank]}$) !< Global array
+logical,intent(in),optional :: bcast               !< Broadcast option
+
+! Local variables
+integer :: iproc,jproc,i_glb,i_loc,n_loc_tmp,nl
+#{if rank == 2}# integer :: il #{endif}#
+integer,allocatable :: glb_to_loc(:),glb_to_proc(:)
+${ftype[dtype]}$,allocatable :: rbuf(:),sbuf(:)
+logical :: lbcast
+type(fckit_mpi_status) :: status
+
+! Set name
+@:set_name(mpl_loc_to_glb_${dtype}$_r${rank}$)
+
+! Probe in
+@:probe_in()
+
+! Get local bcast
+lbcast = .false.
+if (present(bcast)) lbcast = bcast
+
+! Check sizes
+if (mpl%main.or.lbcast) then
+   if (size(glb,1)/=n_glb) call mpl%abort('${subr}$','wrong first dimension for the global array in mpl_loc_to_glb_${dtype}$_r${rank}$')
+   #:if rank == 1
+      nl = 1
+   #:else
+      nl = size(glb,2)
+   #:endif
+end if
+call mpl%f_comm%broadcast(nl,mpl%rootproc-1)
+if (size(loc,1)/=n_loc) call mpl%abort('${subr}$', &
+ & 'wrong first dimension for the local array')
+#:if rank == 2
+   if (size(loc,2)/=nl) call mpl%abort('${subr}$', &
+ & 'wrong second dimension for the local array')
+#:endif
+
+! Allocation
+if (mpl%main) then
+   allocate(glb_to_loc(n_glb))
+   allocate(glb_to_proc(n_glb))
+else
+   allocate(glb_to_loc(0))
+   allocate(glb_to_proc(0))
+end if
+
+! Get global index and processor
+call mpl%glb_to_loc_index(n_loc,loc_to_glb,n_glb,glb_to_loc,glb_to_proc)
+
+if (mpl%main) then
+   do iproc=1,mpl%nproc
+      ! Allocation
+      n_loc_tmp = count(glb_to_proc==iproc)
+      allocate(rbuf(n_loc_tmp*nl))
+
+      if (iproc==mpl%rootproc) then
+         ! Copy data
+         #:if rank == 1
+            rbuf = loc
+         #:else
+            do il=1,nl
+               do i_loc=1,n_loc
+                  rbuf((il-1)*n_loc+i_loc) = loc(i_loc,il)
+               end do
+            end do
+         #:endif
+      else
+          ! Receive data from iproc
+          call mpl%f_comm%receive(rbuf,iproc-1,mpl%tag,status)
+      end if
+
+      ! Add data to glb
+      do i_glb=1,n_glb
+         jproc = glb_to_proc(i_glb)
+         if (iproc==jproc) then
+            i_loc = glb_to_loc(i_glb)
+            #:if rank == 1
+               glb(i_glb) = rbuf(i_loc)
+            #:else
+               do il=1,nl
+                  glb(i_glb,il) = rbuf((il-1)*n_loc_tmp+i_loc)
+               end do
+            #:endif
+         end if
+      end do
+
+      ! Release memory
+      deallocate(rbuf)
+   end do
+else
+   ! Allocation
+   allocate(sbuf(n_loc*nl))
+
+   ! Copy data
+   #:if rank == 1
+      sbuf = loc
+   #:else
+      do il=1,nl
+         do i_loc=1,n_loc
+            sbuf((il-1)*n_loc+i_loc) = loc(i_loc,il)
+         end do
+      end do
+   #:endif
+
+   ! Send data to rootproc
+   call mpl%f_comm%send(sbuf,mpl%rootproc-1,mpl%tag)
+
+   ! Release memory
+   deallocate(sbuf)
+end if
+call mpl%update_tag(1)
+
+! Broadcast
+if (lbcast) call mpl%f_comm%broadcast(glb,mpl%rootproc-1)
+
+! Release memory
+deallocate(glb_to_loc)
+deallocate(glb_to_proc)
+
+! Probe out
+@:probe_out()
+
+end subroutine mpl_loc_to_glb_${dtype}$_r${rank}$
+   #:endfor
+#:endfor
+
+!----------------------------------------------------------------------
+! Subroutine: mpl_prog_init
+!> Initialize progression display
+!----------------------------------------------------------------------
+subroutine mpl_prog_init(mpl,nprog)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl !< MPI data
+integer,intent(in) :: nprog          !< Array size
+
+! Local variables
+integer :: ithread
+
+! Set name
+@:set_name(mpl_prog_init)
+
+! Probe in
+@:probe_in()
+
+! Print message
+ithread = 0
+!$ ithread = omp_get_thread_num()
+if (ithread==0) then
+   write(mpl%info,'(a)') ' 0%'
+   call mpl%flush(.false.)
+end if
+
+! Allocation
+allocate(mpl%done(nprog))
+
+! Initialization
+mpl%nprog = nprog
+mpl%progint = ddis
+mpl%done = .false.
+
+! Probe out
+@:probe_out()
+
+end subroutine mpl_prog_init
+
+!----------------------------------------------------------------------
+! Subroutine: mpl_prog_print
+!> Print progression display
+!----------------------------------------------------------------------
+subroutine mpl_prog_print(mpl,i)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl !< MPI data
+integer,intent(in),optional :: i     !< Index
+
+! Local variables
+integer :: ithread
+real(kind_real) :: prog
+
+! Set name
+@:set_name(mpl_prog_print)
+
+! Probe in
+@:probe_in()
+
+if (mpl%nprog>0) then
+   ! Update progression array
+   if (present(i)) mpl%done(i) = .true.
+
+   ! Print message
+   prog = hundred*real(count(mpl%done),kind_real)/real(mpl%nprog,kind_real)
+   ithread = 0
+   !$ ithread = omp_get_thread_num()
+   do while ((int(prog)>mpl%progint).and.(ithread==0))
+      if (mpl%progint<100) then
+         if (mpl%progint<10) then
+            write(mpl%info,'(i2,a)') mpl%progint,'% '
+         else
+            write(mpl%info,'(i3,a)') mpl%progint,'% '
+         end if
+         call mpl%flush(.false.)
+      end if
+      mpl%progint = mpl%progint+ddis
+   end do
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine mpl_prog_print
+
+!----------------------------------------------------------------------
+! Subroutine: mpl_prog_final
+!> Finalize progression display
+!----------------------------------------------------------------------
+subroutine mpl_prog_final(mpl,newl)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl !< MPI data
+logical,intent(in),optional :: newl  !< New line flag
+
+! Local variables
+integer :: ithread
+logical :: lnewl
+
+! Set name
+@:set_name(mpl_prog_final)
+
+! Probe in
+@:probe_in()
+
+! Set new line flag
+lnewl = .true.
+if (present(newl)) lnewl = newl
+
+! Print message
+ithread = 0
+!$ ithread = omp_get_thread_num()
+do while ((mpl%progint<=100).and.(ithread==0))
+   if (mpl%progint<100) then
+      if (mpl%progint<10) then
+         write(mpl%info,'(i2,a)') mpl%progint,'% '
+      else
+         write(mpl%info,'(i3,a)') mpl%progint,'% '
+      end if
+      call mpl%flush(.false.)
+   else
+      write(mpl%info,'(a)') ' 100%'
+      call mpl%flush(lnewl)
+   end if
+   mpl%progint = mpl%progint+ddis
+end do
+
+! Release memory
+deallocate(mpl%done)
+
+! Probe out
+@:probe_out()
+
+end subroutine mpl_prog_final
+
+#:if getvar('ENABLE_SABER_INSTRUMENTATION', 0)
+!----------------------------------------------------------------------
+! Subroutine: mpl_print_instance
+!> Print instance
+!----------------------------------------------------------------------
+subroutine mpl_print_instance(mpl)
+
+implicit none
+
+! Passed variable
+class(mpl_type),intent(inout) :: mpl !< MPI data
+
+! Set name
+@:set_name(mpl_print_instance)
+
+! Probe in
+@:probe_in()
+
+write(mpl%info,'(a,i6,a,a,a)') '--- This is instance #',iinst,' (',trim(cinst),')'
+call mpl%flush
+
+! Probe out
+@:probe_out()
+
+end subroutine mpl_print_instance
+
+!----------------------------------------------------------------------
+! Subroutine: mpl_timings
+!> Print execution timings
+!----------------------------------------------------------------------
+subroutine mpl_timings(mpl)
+
+implicit none
+
+! Passed variables
+class(mpl_type),intent(inout) :: mpl !< MPI data
+
+! Local variable
+integer :: probe_size,i,i_eff
+integer,allocatable :: n(:),order(:)
+real(kind_real) :: elapsed_total
+real(kind_real),allocatable :: stats(:,:)
+character(len=1024),allocatable :: subfunc(:)
+
+! Number of instrumented functions/subroutines called
+probe_size = count(probe%instance(iinst)%timing_associated)
+
+! Print number of instrumented functions/subroutines called
+write(mpl%info,'(a7,a,i3,a,i3)') '','Instrumented function/subroutines called: ',probe_size,'/',${subr_list_size}$
+call mpl%flush
+
+if (probe_size>0) then
+   ! Allocation
+   allocate(n(probe_size))
+   allocate(stats(probe_size,3))
+   allocate(subfunc(probe_size))
+   allocate(order(probe_size))
+
+   ! Get timings
+   i_eff = 0
+   do i=0,${subr_list_size}$-1
+      if (probe%instance(iinst)%timing_associated(i)) then
+         ! Update effective index
+         i_eff = i_eff+1
+
+         ! Save number of calls
+         n(i_eff) = probe%instance(iinst)%timing(i)%n
+
+         ! Compute stats
+         stats(i_eff,1) = probe%instance(iinst)%timing(i)%total_own
+         stats(i_eff,2) = probe%instance(iinst)%timing(i)%min_own
+         stats(i_eff,3) = probe%instance(iinst)%timing(i)%max_own
+
+         ! Save subroutine/function name
+         subfunc(i_eff) = trim(probe%instance(iinst)%timing(i)%subr)
+      end if
+   end do
+
+   ! Get total timing
+   elapsed_total = sum(stats(:,1))
+
+   ! Print elapsed time
+   write(mpl%info,'(a7,a,e10.3,a)') '','Elapsed time: ',elapsed_total,' s'
+   call mpl%flush
+
+   if (elapsed_total>zero) then
+      ! Order timings with total time
+      call qsort(probe_size,stats(:,1),order)
+      n = n(order)
+      stats(:,2:3) = stats(order,2:3)
+      subfunc = subfunc(order)
+
+      ! Print timing in decreasing total time
+      write(mpl%info,'(a7,a,f6.2,a)') '','Decreasing total time:'
+      call mpl%flush
+      do i=probe_size,1,-1
+         if (stats(i,1)/elapsed_total*hundred>min_total_timing) then
+            write(mpl%info,'(a10,a30,a,e10.3,a,e10.3,a,f6.2,a,e10.3,a,e10.3,a,e10.3)') '',subfunc(i),': ',stats(i,1),' s in ', &
+ & real(n(i),kind_real),' call(s)  - ',stats(i,1)/elapsed_total*hundred,'% - min/mean/max: ',stats(i,2),' /', &
+ & stats(i,1)/real(n(i),kind_real),' /',stats(i,3)
+            call mpl%flush
+         end if
+      end do
+
+      ! Order timings with number of calls
+      call qsort(probe_size,n,order)
+      stats(:,:) = stats(order,:)
+      subfunc = subfunc(order)
+
+      ! Print timing in decreasing number of calls
+      write(mpl%info,'(a7,a,f6.2,a)') '','Decreasing number of calls:'
+      call mpl%flush
+      do i=probe_size,max(probe_size-max_calls+1,1),-1
+         write(mpl%info,'(a10,a30,a,e10.3,a,e10.3,a,f6.2,a,e10.3,a,e10.3,a,e10.3)') '',subfunc(i),': ',stats(i,1),' s in ', &
+ & real(n(i),kind_real),' call(s)  - ',stats(i,1)/elapsed_total*hundred,'% - min/mean/max: ',stats(i,2),' /', &
+ & stats(i,1)/real(n(i),kind_real),' /',stats(i,3)
+         call mpl%flush
+      end do
+   end if
+
+   ! Release memory
+   deallocate(n)
+   deallocate(stats)
+   deallocate(subfunc)
+   deallocate(order)
+end if
+
+end subroutine mpl_timings
+#:endif
+
+end module type_mpl

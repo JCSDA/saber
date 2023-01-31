@@ -1,0 +1,1447 @@
+#:include 'instrumentation.fypp'
+!----------------------------------------------------------------------
+! Module: type_nicas_blk
+!> NICAS data block derived type
+! Author: Benjamin Menetrier
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+module type_nicas_blk
+
+use atlas_module, only: atlas_structuredgrid
+use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
+!$ use omp_lib
+use tools_const, only: zero,quarter,half,tenth,one,two,three,four,five,hundred,pi,req,reqkm,deg2rad,rad2deg
+use tools_fit, only: tensor_d2h
+use tools_func, only: lonlatmod,sphere_dist,inside,convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count
+use tools_gc99, only: fit_func_sqrt
+use tools_kinds, only: kind_int,kind_real,kind_long,huge_int,huge_real
+use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim,check_dim
+use tools_qsort, only: qsort
+use tools_repro, only: supeq,sup,inf,infeq,eq,indist,repro_th
+use type_cmat_blk, only: cmat_blk_type
+use type_com, only: com_type
+use type_cv_blk, only: cv_blk_type
+use type_geom, only: geom_type
+use type_io, only: io_type
+use type_linop, only: linop_type
+use type_mesh, only: mesh_type
+use type_mpl, only: mpl_type
+use type_nam, only: nam_type
+use type_nicas_cmp, only: nicas_cmp_type
+@:use_probe()
+use type_rng, only: rng_type
+use type_tree, only: tree_type
+
+implicit none
+
+! NICAS block derived type
+type nicas_blk_type
+   ! General parameters
+   integer :: ig                              !< Group index
+   logical :: verbosity                       !< Verbosity flag
+
+   ! I/O IDs
+   integer :: ncid                            !< main ID
+   integer :: blkid                           !< block ID
+   integer :: dirac_id                        !< dirac ID
+
+   ! NICAS components
+   integer :: ncmp                            !< Number of components
+   type(nicas_cmp_type),allocatable :: cmp(:) !< Components
+
+   ! Min/max levels
+   integer :: min_lev                         !< Minimum level
+   integer :: max_lev                         !< Maximum level
+
+   ! Horizontal smoother
+   integer,allocatable :: l0_to_l0i(:)        !< Base level to independent level
+contains
+   procedure :: partial_dealloc => nicas_blk_partial_dealloc
+   procedure :: dealloc => nicas_blk_dealloc
+   procedure :: read_local => nicas_blk_read_local
+   procedure :: write_local_def => nicas_blk_write_local_def
+   procedure :: write_local_data => nicas_blk_write_local_data
+   procedure :: buffer_size => nicas_blk_buffer_size
+   procedure :: serialize => nicas_blk_serialize
+   procedure :: deserialize => nicas_blk_deserialize
+   procedure :: read_global => nicas_blk_read_global
+   procedure :: write_global_def => nicas_blk_write_global_def
+   procedure :: write_global_data => nicas_blk_write_global_data
+   procedure :: write_grids_def => nicas_blk_write_grids_def
+   procedure :: write_grids_data => nicas_blk_write_grids_data
+   procedure :: nicas_blk_compute_parameters
+   procedure :: nicas_blk_compute_parameters_horizontal_smoother
+   generic :: compute_parameters => nicas_blk_compute_parameters,nicas_blk_compute_parameters_horizontal_smoother
+   procedure :: copy_cmat => nicas_blk_copy_cmat
+   procedure :: apply_sqrt => nicas_blk_apply_sqrt
+   procedure :: apply_sqrt_ad => nicas_blk_apply_sqrt_ad
+   procedure :: test_adjoint => nicas_blk_test_adjoint
+   procedure :: test_normalization => nicas_blk_test_normalization
+   procedure :: test_dirac => nicas_blk_test_dirac
+end type nicas_blk_type
+
+private
+public :: nicas_blk_type
+
+contains
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_blk_partial_dealloc
+!> Release memory (partial)
+!----------------------------------------------------------------------
+subroutine nicas_blk_partial_dealloc(nicas_blk)
+
+implicit none
+
+! Passed variables
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
+
+! Local variables
+integer :: icmp
+
+! Set name
+@:set_name(nicas_blk_partial_dealloc)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+if (allocated(nicas_blk%cmp)) then
+   do icmp=1,nicas_blk%ncmp
+      call nicas_blk%cmp(icmp)%partial_dealloc
+   end do
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_blk_partial_dealloc
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_blk_dealloc
+!> Release memory (full)
+!----------------------------------------------------------------------
+subroutine nicas_blk_dealloc(nicas_blk)
+
+implicit none
+
+! Passed variables
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
+
+! Local variables
+integer :: icmp
+
+! Set name
+@:set_name(nicas_blk_dealloc)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+call nicas_blk%partial_dealloc
+if (allocated(nicas_blk%cmp)) then
+   do icmp=1,nicas_blk%ncmp
+      call nicas_blk%cmp(icmp)%dealloc
+   end do
+   deallocate(nicas_blk%cmp)
+end if
+if (allocated(nicas_blk%l0_to_l0i)) deallocate(nicas_blk%l0_to_l0i)
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_blk_dealloc
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_blk_read_local
+!> Read local for global I/O
+!----------------------------------------------------------------------
+subroutine nicas_blk_read_local(nicas_blk,mpl,nam,geom)
+
+implicit none
+
+! Passed variables
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(nam_type),intent(in) :: nam                 !< Namelist
+type(geom_type),intent(in) :: geom               !< Geometry
+
+! Local variables
+integer :: icmp
+character(len=1024) :: blkname,cmpname
+
+! Set name
+@:set_name(nicas_blk_read_local)
+
+! Probe in
+@:probe_in()
+
+! Associate
+associate(ig=>nicas_blk%ig)
+
+! Get group name
+call nam%alias(nam%group_names(ig),blkname)
+write(mpl%info,'(a13,a)') '','Block: '//trim(blkname)
+call mpl%flush
+
+! Get group
+nicas_blk%blkid = inquire_grp(mpl,nicas_blk%ncid,blkname)
+
+! Check number of levels (TODO: first if condition should be removed at some point)
+if (mpl%msv%isnot(inquire_dim(mpl,nicas_blk%blkid,'nl0'))) then
+   if (.not.check_dim(mpl,nicas_blk%blkid,'nl0',geom%nl0)) call mpl%abort('${subr}$','wrong size for dimension nl0')
+end if
+
+! Get number of components
+call get_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp,1)
+
+! Allocation
+if (.not.allocated(nicas_blk%cmp)) allocate(nicas_blk%cmp(nicas_blk%ncmp))
+
+do icmp=1,nicas_blk%ncmp
+   ! Set attributes
+   nicas_blk%cmp(icmp)%ig = ig
+   nicas_blk%cmp(icmp)%ncmp = nicas_blk%ncmp
+   nicas_blk%cmp(icmp)%verbosity = nicas_blk%verbosity
+   nicas_blk%cmp(icmp)%smoother = .false.
+   nicas_blk%cmp(icmp)%compute_norm = (.not.allocated(nicas_blk%cmp(icmp)%norm))
+
+   ! Copy file ID
+   nicas_blk%cmp(icmp)%ncid = nicas_blk%ncid
+
+   ! Get component
+   write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
+   call mpl%flush
+
+   if (nicas_blk%ncmp==1) then
+      nicas_blk%cmp(icmp)%cmpid = nicas_blk%blkid
+   else
+      write(cmpname,'(a,i1)') 'cmp_',icmp
+      nicas_blk%cmp(icmp)%cmpid = inquire_grp(mpl,nicas_blk%blkid,cmpname)
+   end if
+
+   ! Component work
+   call nicas_blk%cmp(icmp)%read_local(mpl,geom)
+end do
+
+! End associate
+end associate
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_blk_read_local
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_blk_write_local_def
+!> Write data for local I/O, definition mode
+!----------------------------------------------------------------------
+subroutine nicas_blk_write_local_def(nicas_blk,mpl,nam,geom)
+
+implicit none
+
+! Passed variables
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(nam_type),intent(in) :: nam                 !< Namelist
+type(geom_type),intent(in) :: geom               !< Geometry
+
+! Local variables
+integer :: icmp,nl0_id
+character(len=1024) :: blkname,cmpname
+
+! Set name
+@:set_name(nicas_blk_write_local_def)
+
+! Probe in
+@:probe_in()
+
+! Associate
+associate(ig=>nicas_blk%ig)
+
+! Get group name
+call nam%alias(nam%group_names(ig),blkname)
+write(mpl%info,'(a13,a)') '','Block: '//trim(blkname)
+call mpl%flush
+
+! Define group
+nicas_blk%blkid = define_grp(mpl,nicas_blk%ncid,blkname)
+
+! Write number of components
+call put_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp)
+
+! Define number of levels
+nl0_id = define_dim(mpl,nicas_blk%blkid,'nl0',geom%nl0)
+
+do icmp=1,nicas_blk%ncmp
+   ! Get component
+   write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
+   call mpl%flush
+
+   if (nicas_blk%ncmp==1) then
+      nicas_blk%cmp(icmp)%cmpid = nicas_blk%blkid
+   else
+      write(cmpname,'(a,i1)') 'cmp_',icmp
+      nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%blkid,cmpname)
+   end if
+
+   ! Copy number of levels
+   nicas_blk%cmp(icmp)%nl0_id = nl0_id
+
+   ! Component work
+   call nicas_blk%cmp(icmp)%write_local_def(mpl)
+end do
+
+! End associate
+end associate
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_blk_write_local_def
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_blk_write_local_data
+!> Write data for local I/O, data mode
+!----------------------------------------------------------------------
+subroutine nicas_blk_write_local_data(nicas_blk,mpl,geom)
+
+implicit none
+
+! Passed variables
+class(nicas_blk_type),intent(in) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+type(geom_type),intent(in) :: geom            !< Geometry
+
+! Local variables
+integer :: icmp
+
+! Set name
+@:set_name(nicas_blk_write_local_data)
+
+! Probe in
+@:probe_in()
+
+do icmp=1,nicas_blk%ncmp
+   ! Component work
+   call nicas_blk%cmp(icmp)%write_local_data(mpl,geom)
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_blk_write_local_data
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_blk_buffer_size
+!> Buffer size
+!----------------------------------------------------------------------
+subroutine nicas_blk_buffer_size(nicas_blk,mpl,geom,nbufi,nbufr,nbufl)
+
+implicit none
+
+! Passed variables
+class(nicas_blk_type),intent(in) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+type(geom_type),intent(in) :: geom            !< Geometry
+integer,intent(out) :: nbufi                  !< Buffer size (integer)
+integer,intent(out) :: nbufr                  !< Buffer size (real)
+integer,intent(out) :: nbufl                  !< Buffer size (logical)
+
+! Local variables
+integer :: icmp
+
+! Set name
+@:set_name(nicas_blk_buffer_size)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+nbufi = 0
+nbufr = 0
+nbufl = 0
+
+! Total dimensions
+nbufi = nbufi+3
+
+! Number of components
+nbufi = nbufi+1
+
+do icmp=1,nicas_blk%ncmp
+   ! Component work
+   call nicas_blk%cmp(icmp)%buffer_size(mpl,geom,nbufi,nbufr,nbufl)
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_blk_buffer_size
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_blk_serialize
+!> Serialize
+!----------------------------------------------------------------------
+subroutine nicas_blk_serialize(nicas_blk,mpl,geom,nbufi,nbufr,nbufl,bufi,bufr,bufl)
+
+implicit none
+
+! Passed variables
+class(nicas_blk_type),intent(in) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+type(geom_type),intent(in) :: geom            !< Geometry
+integer,intent(in) :: nbufi                   !< Buffer size (integer)
+integer,intent(in) :: nbufr                   !< Buffer size (real)
+integer,intent(in) :: nbufl                   !< Buffer size (logical)
+integer,intent(out) :: bufi(nbufi)            !< Buffer (integer)
+real(kind_real),intent(out) :: bufr(nbufr)    !< Buffer (real)
+logical,intent(out) :: bufl(nbufl)            !< Buffer (logical)
+
+! Local variables
+integer :: ibufi,ibufr,ibufl,icmp
+
+! Set name
+@:set_name(nicas_blk_serialize)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+ibufi = 0
+ibufr = 0
+ibufl = 0
+
+! Total dimensions
+bufi(ibufi+1) = nbufi
+ibufi = ibufi+1
+bufi(ibufi+1) = nbufr
+ibufi = ibufi+1
+bufi(ibufi+1) = nbufl
+ibufi = ibufi+1
+
+! Number of components
+bufi(ibufi+1) = nicas_blk%ncmp
+ibufi = ibufi+1
+
+do icmp=1,nicas_blk%ncmp
+   ! Component work
+   call nicas_blk%cmp(icmp)%serialize(mpl,geom,nbufi,nbufr,nbufl,ibufi,ibufr,ibufl,bufi,bufr,bufl)
+end do
+
+! Check sizes
+if (ibufi/=nbufi) call mpl%abort('${subr}$','inconsistent final offset/buffer size (integer)')
+if (ibufr/=nbufr) call mpl%abort('${subr}$','inconsistent final offset/buffer size (real)')
+if (ibufl/=nbufl) call mpl%abort('${subr}$','inconsistent final offset/buffer size (logical)')
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_blk_serialize
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_blk_deserialize
+!> Deserialize
+!----------------------------------------------------------------------
+subroutine nicas_blk_deserialize(nicas_blk,mpl,geom,nbufi,nbufr,nbufl,bufi,bufr,bufl)
+
+implicit none
+
+! Passed variables
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(geom_type),intent(in) :: geom               !< Geometry
+integer,intent(in) :: nbufi                      !< Buffer size (integer)
+integer,intent(in) :: nbufr                      !< Buffer size (real)
+integer,intent(in) :: nbufl                      !< Buffer size (logical)
+integer,intent(in) :: bufi(nbufi)                !< Buffer (integer)
+real(kind_real),intent(in) :: bufr(nbufr)        !< Buffer (real)
+logical,intent(in) :: bufl(nbufl)                !< Buffer (logical)
+
+! Local variables
+integer :: ibufi,ibufr,ibufl,icmp
+
+! Set name
+@:set_name(nicas_blk_deserialize)
+
+! Probe in
+@:probe_in()
+
+! Associate
+associate(ig=>nicas_blk%ig)
+
+! Initialization
+ibufi = 0
+ibufr = 0
+ibufl = 0
+
+! Check total dimensions
+if (bufi(ibufi+1)/=nbufi) call mpl%abort('${subr}$','inconsistent initial value/buffer size (integer)')
+ibufi = ibufi+1
+if (bufi(ibufi+1)/=nbufr) call mpl%abort('${subr}$','inconsistent initial value/buffer size (real)')
+ibufi = ibufi+1
+if (bufi(ibufi+1)/=nbufl) call mpl%abort('${subr}$','inconsistent initial value/buffer size (logical)')
+ibufi = ibufi+1
+
+! Number of components
+nicas_blk%ncmp = bufi(ibufi+1)
+ibufi = ibufi+1
+
+! Allocation
+if (.not.allocated(nicas_blk%cmp)) allocate(nicas_blk%cmp(nicas_blk%ncmp))
+
+do icmp=1,nicas_blk%ncmp
+   ! Set attributes
+   nicas_blk%cmp(icmp)%ig = ig
+   nicas_blk%cmp(icmp)%ncmp = nicas_blk%ncmp
+   nicas_blk%cmp(icmp)%verbosity = nicas_blk%verbosity
+   nicas_blk%cmp(icmp)%smoother = .false.
+   nicas_blk%cmp(icmp)%compute_norm = (.not.allocated(nicas_blk%cmp(icmp)%norm))
+
+   ! Component work
+   call nicas_blk%cmp(icmp)%deserialize(mpl,geom,nbufi,nbufr,nbufl,ibufi,ibufr,ibufl,bufi,bufr,bufl)
+end do
+
+! End associate
+end associate
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_blk_deserialize
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_blk_read_global
+!> Read data for global I/O
+!----------------------------------------------------------------------
+subroutine nicas_blk_read_global(nicas_blk,mpl,nam,geom)
+
+implicit none
+
+! Passed variables
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(nam_type),intent(in) :: nam                 !< Namelist
+type(geom_type),intent(in) :: geom               !< Geometry
+
+! Local variables
+integer :: icmp
+character(len=1024) :: blkname,cmpname
+
+! Set name
+@:set_name(nicas_blk_read_global)
+
+! Probe in
+@:probe_in()
+
+! Associate
+associate(ig=>nicas_blk%ig)
+
+! Get group name
+call nam%alias(nam%group_names(ig),blkname)
+write(mpl%info,'(a13,a)') '','Block: '//trim(blkname)
+call mpl%flush
+
+! Get group
+nicas_blk%blkid = inquire_grp(mpl,nicas_blk%ncid,blkname)
+
+! Get number of components
+if (mpl%main) call get_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp,1)
+
+! Get min and max levels
+if (mpl%main) call get_att(mpl,nicas_blk%blkid,0,'min_lev',nicas_blk%min_lev,1)
+if (mpl%main) call get_att(mpl,nicas_blk%blkid,0,'max_lev',nicas_blk%max_lev,geom%nl0)
+
+! Broadcast attributes
+call mpl%f_comm%broadcast(nicas_blk%ncmp,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nicas_blk%min_lev,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nicas_blk%max_lev,mpl%rootproc-1)
+
+! Allocation
+if (.not.allocated(nicas_blk%cmp)) allocate(nicas_blk%cmp(nicas_blk%ncmp))
+
+do icmp=1,nicas_blk%ncmp
+   ! Set attributes
+   nicas_blk%cmp(icmp)%ig = ig
+   nicas_blk%cmp(icmp)%ncmp = nicas_blk%ncmp
+   nicas_blk%cmp(icmp)%min_lev = nicas_blk%min_lev
+   nicas_blk%cmp(icmp)%max_lev = nicas_blk%max_lev
+   nicas_blk%cmp(icmp)%verbosity = nicas_blk%verbosity
+   nicas_blk%cmp(icmp)%smoother = .false.
+   nicas_blk%cmp(icmp)%compute_norm = (.not.allocated(nicas_blk%cmp(icmp)%norm))
+
+   ! Copy file ID
+   nicas_blk%cmp(icmp)%ncid = nicas_blk%ncid
+
+   ! Get component
+   write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
+   call mpl%flush
+
+   if (nicas_blk%ncmp==1) then
+      nicas_blk%cmp(icmp)%cmpid = nicas_blk%blkid
+   else
+      write(cmpname,'(a,i1)') 'cmp_',icmp
+      nicas_blk%cmp(icmp)%cmpid = inquire_grp(mpl,nicas_blk%blkid,cmpname)
+   end if
+
+   ! Component work
+   call nicas_blk%cmp(icmp)%read_global(mpl,geom)
+end do
+
+! End associate
+end associate
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_blk_read_global
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_blk_write_global_def
+!> Write data for global I/O, definition mode
+!----------------------------------------------------------------------
+subroutine nicas_blk_write_global_def(nicas_blk,mpl,nam,geom)
+
+implicit none
+
+! Passed variables
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(nam_type),intent(in) :: nam                 !< Namelist
+type(geom_type),intent(in) :: geom               !< Geometry
+
+! Local variables
+integer :: icmp,nl0_id
+character(len=1024) :: blkname,cmpname
+
+! Set name
+@:set_name(nicas_blk_write_global_def)
+
+! Probe in
+@:probe_in()
+
+! Associate
+associate(ig=>nicas_blk%ig)
+
+! Get group name
+call nam%alias(nam%group_names(ig),blkname)
+write(mpl%info,'(a10,a)') '','Block: '//trim(blkname)
+call mpl%flush
+
+! Define group
+nicas_blk%blkid = define_grp(mpl,nicas_blk%ncid,blkname)
+
+! Write number of components
+call put_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp)
+
+! Write min and max levels
+call put_att(mpl,nicas_blk%blkid,0,'min_lev',nicas_blk%min_lev)
+call put_att(mpl,nicas_blk%blkid,0,'max_lev',nicas_blk%max_lev)
+
+! Define number of levels
+nl0_id = define_dim(mpl,nicas_blk%blkid,'nl0',geom%nl0)
+
+do icmp=1,nicas_blk%ncmp
+   ! Get component
+   write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
+   call mpl%flush
+
+   if (nicas_blk%ncmp==1) then
+      nicas_blk%cmp(icmp)%cmpid = nicas_blk%blkid
+   else
+      write(cmpname,'(a,i1)') 'cmp_',icmp
+      nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%blkid,cmpname)
+   end if
+
+   ! Copy number of levels
+   nicas_blk%cmp(icmp)%nl0_id = nl0_id
+
+   ! Component work
+   call nicas_blk%cmp(icmp)%write_global_def(mpl)
+end do
+
+! End associate
+end associate
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_blk_write_global_def
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_blk_write_global_data
+!> Write data for global I/O, data mode
+!----------------------------------------------------------------------
+subroutine nicas_blk_write_global_data(nicas_blk,mpl,geom)
+
+implicit none
+
+! Passed variables
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(geom_type),intent(in) :: geom               !< Geometry
+
+! Local variables
+integer :: icmp
+
+! Set name
+@:set_name(nicas_blk_write_global_data)
+
+! Probe in
+@:probe_in()
+
+do icmp=1,nicas_blk%ncmp
+   ! Component work
+   call nicas_blk%cmp(icmp)%write_global_data(mpl,geom)
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_blk_write_global_data
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_blk_write_grids_def
+!> Write NICAS grids, definition mode
+!----------------------------------------------------------------------
+subroutine nicas_blk_write_grids_def(nicas_blk,mpl,nam)
+
+implicit none
+
+! Passed variables
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(nam_type),intent(in) :: nam                 !< Namelist
+
+! Local variables
+integer :: icmp
+character(len=1024) :: blkname,cmpname
+
+! Set name
+@:set_name(nicas_blk_write_grids_def)
+
+! Probe in
+@:probe_in()
+
+! Associate
+associate(ig=>nicas_blk%ig)
+
+! Get group name
+call nam%alias(nam%group_names(ig),blkname)
+write(mpl%info,'(a10,a)') '','Block: '//trim(blkname)
+call mpl%flush
+
+! Define group
+nicas_blk%blkid = define_grp(mpl,nicas_blk%ncid,blkname)
+
+do icmp=1,nicas_blk%ncmp
+   ! Get component
+   write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
+   call mpl%flush
+
+   if (nicas_blk%ncmp==1) then
+      nicas_blk%cmp(icmp)%cmpid = nicas_blk%blkid
+   else
+      write(cmpname,'(a,i1)') 'cmp_',icmp
+      nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%blkid,cmpname)
+   end if
+
+   ! Component work
+   call nicas_blk%cmp(icmp)%write_grids_def(mpl)
+end do
+
+! End associate
+end associate
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_blk_write_grids_def
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_blk_write_grids_data
+!> Write NICAS grids, data mode
+!----------------------------------------------------------------------
+subroutine nicas_blk_write_grids_data(nicas_blk,mpl)
+
+implicit none
+
+! Passed variables
+class(nicas_blk_type),intent(in) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+
+! Local variables
+integer :: icmp
+
+! Set name
+@:set_name(nicas_blk_write_grids_data)
+
+! Probe in
+@:probe_in()
+
+do icmp=1,nicas_blk%ncmp
+   ! Component work
+   call nicas_blk%cmp(icmp)%write_grids_data(mpl)
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_blk_write_grids_data
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_blk_compute_parameters
+!> Compute NICAS parameters
+!----------------------------------------------------------------------
+subroutine nicas_blk_compute_parameters(nicas_blk,mpl,rng,nam,geom)
+
+implicit none
+
+! Passed variables
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(rng_type),intent(inout) :: rng              !< Random number generator
+type(nam_type),intent(in) :: nam                 !< Namelist
+type(geom_type),intent(in) :: geom               !< Geometry
+
+! Local variables
+integer :: icmp
+
+! Set name
+@:set_name(nicas_blk_compute_parameters)
+
+! Probe in
+@:probe_in()
+
+! Associate
+associate(ig=>nicas_blk%ig)
+
+! Allocation
+if (.not.allocated(nicas_blk%cmp)) allocate(nicas_blk%cmp(nicas_blk%ncmp))
+
+if (.not.nam%load_nicas_global) then
+   ! Reset random numbers seed
+   if (trim(nam%strategy)=='crossed') call rng%reseed(mpl)
+end if
+
+do icmp=1,nicas_blk%ncmp
+   write(mpl%info,'(a7,a,i1)') '','Component: ',icmp
+   call mpl%flush
+ 
+   ! Set attributes
+   nicas_blk%cmp(icmp)%ig = ig
+   nicas_blk%cmp(icmp)%ncmp = nicas_blk%ncmp
+   nicas_blk%cmp(icmp)%verbosity = nicas_blk%verbosity
+   nicas_blk%cmp(icmp)%draw_type = nam%nicas_draw_type
+   nicas_blk%cmp(icmp)%interp_type = nam%nicas_interp_type(ig)
+   nicas_blk%cmp(icmp)%smoother = .false.
+   nicas_blk%cmp(icmp)%compute_norm = (.not.allocated(nicas_blk%cmp(icmp)%norm))
+
+   ! Component work
+   call nicas_blk%cmp(icmp)%compute_parameters(mpl,rng,nam,geom)
+end do
+
+! End associate
+end associate
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_blk_compute_parameters
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_blk_compute_parameters_horizontal_smoother
+!> Compute NICAS parameters for a horizontal smoother
+!----------------------------------------------------------------------
+subroutine nicas_blk_compute_parameters_horizontal_smoother(nicas_blk,mpl,rng,nam,geom,rhflt)
+
+implicit none
+
+! Passed variables
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(rng_type),intent(inout) :: rng              !< Random number generator
+type(nam_type),intent(inout) :: nam              !< Namelist
+type(geom_type),intent(inout) :: geom            !< Geometry
+real(kind_real),intent(in) :: rhflt(geom%nl0)    !< Horizontal support radius profile
+
+! Local variables
+integer :: il0,il0i,jl0,jl0i,jl0is,jl0is_tmp,nl0,nl0i
+integer :: l0i_to_l0(geom%nl0),proc_to_jl0is(mpl%nproc)
+integer :: nc0_gmask(0:geom%nl0)
+real(kind_real) :: resol
+real(kind_real) :: vunit_c0a(geom%nc0a,geom%nl0),area_ver_c0(geom%nl0),vunitavg(geom%nl0),vunit_c0u(geom%nc0u,geom%nl0)
+logical :: gmask_c0a(geom%nc0a,geom%nl0),gmask_hor_c0a(geom%nc0a),gmask_c0u(geom%nc0u,geom%nl0)
+
+! Set name
+@:set_name(nicas_blk_compute_parameters_horizontal_smoother)
+
+! Probe in
+@:probe_in()
+
+! Associate
+associate(ig=>nicas_blk%ig)
+
+! Allocation
+allocate(nicas_blk%l0_to_l0i(geom%nl0))
+
+! Initialization
+l0i_to_l0 = mpl%msv%vali
+il0 = 1
+nl0i = 1
+nicas_blk%l0_to_l0i(il0) = nl0i
+l0i_to_l0(nl0i) = il0
+
+do il0=2,geom%nl0
+   ! Look for similar levels (same mask, same horizontal radius)
+   jl0is = mpl%msv%vali
+   do jl0i=1,nl0i
+      ! Index
+      jl0 = l0i_to_l0(jl0i)
+
+      ! Check mask
+      jl0is_tmp = mpl%msv%vali
+      if (all(geom%gmask_c0a(:,il0).eqv.geom%gmask_c0a(:,jl0))) then
+         ! Check horizontal radius
+         if (abs(rhflt(il0)-rhflt(jl0))<1.0e-8*rhflt(il0)) jl0is_tmp = jl0i
+      end if
+
+      ! Gather results
+      call mpl%f_comm%allgather(jl0is_tmp,proc_to_jl0is)
+
+      ! Check if the result is the same for all tasks
+      if (all(proc_to_jl0is==jl0is_tmp)) then
+         jl0is = jl0is_tmp  
+         exit
+      end if
+   end do
+
+   if (mpl%msv%isnot(jl0is)) then
+      ! Similar level found
+      nicas_blk%l0_to_l0i(il0) = jl0is
+   else
+      ! No similar level found, new independent level
+      nl0i = nl0i+1
+      nicas_blk%l0_to_l0i(il0) = nl0i
+      l0i_to_l0(nl0i) = il0
+   end if
+end do
+
+! Save namelist parameters
+resol = nam%resol
+
+! Save geometry parameters
+nl0 = geom%nl0
+vunit_c0a = geom%vunit_c0a
+gmask_c0a = geom%gmask_c0a
+gmask_hor_c0a = geom%gmask_hor_c0a
+nc0_gmask = geom%nc0_gmask
+area_ver_c0 = geom%area_ver_c0
+vunitavg = geom%vunitavg
+vunit_c0u = geom%vunit_c0u
+gmask_c0u = geom%gmask_c0u
+
+! Allocation
+nicas_blk%ncmp = nl0i
+allocate(nicas_blk%cmp(nicas_blk%ncmp))
+
+! Setup independent levels
+do il0i=1,nl0i
+   ! Level index
+   il0 = l0i_to_l0(il0i)
+
+   ! Set local namelist parameters
+   nam%resol = five
+
+   ! Set local geometry parameters
+   geom%nl0 = 1
+   geom%vunit_c0a(:,1) = vunit_c0a(:,il0)
+   geom%gmask_c0a(:,1) = gmask_c0a(:,il0)
+   geom%gmask_hor_c0a(1) = any(gmask_c0a(:,il0))
+   geom%nc0_gmask(1) = nc0_gmask(il0)
+   geom%area_ver_c0(1) = area_ver_c0(il0)
+   geom%vunitavg(1) = vunitavg(il0)
+   geom%vunit_c0u(:,1) = vunit_c0u(:,il0)
+   geom%gmask_c0u(:,1) = gmask_c0u(:,il0)
+
+
+   ! NICAS block initialization
+   nicas_blk%cmp(il0i)%ig = ig
+   nicas_blk%cmp(il0i)%ncmp = 1
+   nicas_blk%cmp(il0i)%verbosity = .false.
+   nicas_blk%cmp(il0i)%draw_type = 'octahedral'
+   nicas_blk%cmp(il0i)%interp_type = 'c0'
+   nicas_blk%cmp(il0i)%smoother = .true.
+   nicas_blk%cmp(il0i)%compute_norm = .false.
+
+   ! Compute parameters
+   call nicas_blk%cmp(il0i)%compute_parameters(mpl,rng,nam,geom,rhflt(il0))
+end do
+
+! Reset namelist parameters
+nam%resol = resol
+
+! Reset geometry parameters
+geom%nl0 = nl0
+geom%vunit_c0a = vunit_c0a
+geom%gmask_c0a = gmask_c0a
+geom%gmask_hor_c0a = gmask_hor_c0a
+geom%nc0_gmask = nc0_gmask
+geom%area_ver_c0 = area_ver_c0
+geom%vunitavg = vunitavg
+geom%vunit_c0u = vunit_c0u
+geom%gmask_c0u = gmask_c0u
+
+! End associate
+end associate
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_blk_compute_parameters_horizontal_smoother
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_blk_copy_cmat
+!> Copy C matrix data
+!----------------------------------------------------------------------
+subroutine nicas_blk_copy_cmat(nicas_blk,mpl,nam,geom,cmat_blk)
+
+implicit none
+
+! Passed variables
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(nam_type),intent(in) :: nam                 !< Namelist
+type(geom_type),intent(in) :: geom               !< Geometry
+type(cmat_blk_type),intent(in) :: cmat_blk       !< C matrix data block
+
+! Local variables
+integer :: ic0a,il0,icmp
+real(kind_real) :: rhs_max
+character(len=1024) :: message
+
+! Set name
+@:set_name(nicas_blk_copy_cmat)
+
+! Probe in
+@:probe_in()
+
+! Associate
+associate(ig=>nicas_blk%ig)
+
+! Copy number of components
+nicas_blk%ncmp = cmat_blk%ncmp
+
+! Copy min/max levels
+nicas_blk%min_lev = nam%min_lev(ig)
+nicas_blk%max_lev = nam%max_lev(ig)
+
+! Allocation
+if (.not.allocated(nicas_blk%cmp)) allocate(nicas_blk%cmp(nicas_blk%ncmp))
+
+do icmp=1,nicas_blk%ncmp
+   ! Set anisotropic parameter
+   nicas_blk%cmp(icmp)%anisotropic = allocated(cmat_blk%D11).and.allocated(cmat_blk%D22).and.allocated(cmat_blk%D12)
+
+   ! Allocation
+   allocate(nicas_blk%cmp(icmp)%a(geom%nc0a,geom%nl0))
+   allocate(nicas_blk%cmp(icmp)%rh(geom%nc0a,geom%nl0))
+   if (nicas_blk%cmp(icmp)%anisotropic) then
+      allocate(nicas_blk%cmp(icmp)%H11(geom%nc0a,geom%nl0))
+      allocate(nicas_blk%cmp(icmp)%H22(geom%nc0a,geom%nl0))
+      allocate(nicas_blk%cmp(icmp)%H12(geom%nc0a,geom%nl0))
+   end if
+   allocate(nicas_blk%cmp(icmp)%rv(geom%nc0a,geom%nl0))
+   allocate(nicas_blk%cmp(icmp)%rhs(geom%nc0a,geom%nl0))
+   allocate(nicas_blk%cmp(icmp)%rvs(geom%nc0a,geom%nl0))
+
+   ! Initialization
+   nicas_blk%cmp(icmp)%a = zero
+   nicas_blk%cmp(icmp)%rh = mpl%msv%valr
+   if (nicas_blk%cmp(icmp)%anisotropic) then
+      nicas_blk%cmp(icmp)%H11 = mpl%msv%valr
+      nicas_blk%cmp(icmp)%H22 = mpl%msv%valr
+      nicas_blk%cmp(icmp)%H12 = mpl%msv%valr
+   end if
+   nicas_blk%cmp(icmp)%rv = mpl%msv%valr
+   nicas_blk%cmp(icmp)%rhs = mpl%msv%valr
+   nicas_blk%cmp(icmp)%rvs = mpl%msv%valr
+
+   ! Copy C matrix fields from min_lev to max_lev
+   do il0=nicas_blk%min_lev,nicas_blk%max_lev
+      do ic0a=1,geom%nc0a
+         if (geom%gmask_c0a(ic0a,il0)) then
+            nicas_blk%cmp(icmp)%a(ic0a,il0) = cmat_blk%a(ic0a,il0,icmp)
+            nicas_blk%cmp(icmp)%rh(ic0a,il0) = cmat_blk%rh(ic0a,il0,icmp)
+            if (nicas_blk%cmp(icmp)%anisotropic) call tensor_d2h(mpl,cmat_blk%D11(ic0a,il0,icmp),cmat_blk%D22(ic0a,il0,icmp), &
+ & cmat_blk%D12(ic0a,il0,icmp),nicas_blk%cmp(icmp)%H11(ic0a,il0),nicas_blk%cmp(icmp)%H22(ic0a,il0), &
+ & nicas_blk%cmp(icmp)%H12(ic0a,il0))
+            nicas_blk%cmp(icmp)%rv(ic0a,il0) = cmat_blk%rv(ic0a,il0,icmp)
+            nicas_blk%cmp(icmp)%rhs(ic0a,il0) = cmat_blk%rhs(ic0a,il0,icmp)
+            nicas_blk%cmp(icmp)%rvs(ic0a,il0) = cmat_blk%rvs(ic0a,il0,icmp)
+            if (mpl%msv%is(nicas_blk%cmp(icmp)%a(ic0a,il0)).or.mpl%msv%is(nicas_blk%cmp(icmp)%rh(ic0a,il0)) &
+ & .or.mpl%msv%is(nicas_blk%cmp(icmp)%rv(ic0a,il0)).or.mpl%msv%is(nicas_blk%cmp(icmp)%rhs(ic0a,il0)) &
+ & .or.mpl%msv%is(nicas_blk%cmp(icmp)%rvs(ic0a,il0))) then
+               write(message,'(a,i3,a,a)') 'missing value for NICAS at level ',il0,' of block ',trim(nam%group_names(ig))
+               call mpl%abort('${subr}$',message)
+            end if
+         end if
+      end do
+   end do
+
+   ! Check horizontal support radius vs. universe radius
+   if (geom%nc0a>0) then
+      rhs_max = zero
+      if (any(geom%gmask_c0a.and.mpl%msv%isnot(nicas_blk%cmp(icmp)%rhs))) rhs_max = zss_maxval(nicas_blk%cmp(icmp)%rhs, &
+ & mask=(geom%gmask_c0a.and.mpl%msv%isnot(nicas_blk%cmp(icmp)%rhs)))
+      if (rhs_max>nam%universe_radius) then
+         write(message,'(a,f10.2,a,f10.2,a)') 'horizontal support radius (',rhs_max*reqkm,' km) larger than universe radius (', &
+ & nam%universe_radius*reqkm,' km)'
+         call mpl%warning('${subr}$',message)
+      end if
+   end if
+end do
+
+! End associate
+end associate
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_blk_copy_cmat
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_blk_apply_sqrt
+!> Apply NICAS method square-root
+!----------------------------------------------------------------------
+subroutine nicas_blk_apply_sqrt(nicas_blk,mpl,geom,cv_blk,fld)
+
+implicit none
+
+! Passed variables
+class(nicas_blk_type),intent(in) :: nicas_blk          !< NICAS data block
+type(mpl_type),intent(inout) :: mpl                    !< MPI data
+type(geom_type),intent(in) :: geom                     !< Geometry
+type(cv_blk_type),intent(in) :: cv_blk                 !< Control vector block
+real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0) !< Field
+
+! Local variable
+integer :: icmp
+real(kind_real) :: fld_tmp(geom%nc0a,geom%nl0)
+
+! Set name
+@:set_name(nicas_blk_apply_sqrt)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+fld = zero
+
+do icmp=1,cv_blk%ncmp
+   ! Component work
+   call nicas_blk%cmp(icmp)%apply_sqrt(mpl,geom,cv_blk%cmp(icmp),fld_tmp)
+
+   ! Add to field
+   fld = fld+fld_tmp
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_blk_apply_sqrt
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_blk_apply_sqrt_ad
+!> Apply NICAS method square-root adjoint
+!----------------------------------------------------------------------
+subroutine nicas_blk_apply_sqrt_ad(nicas_blk,mpl,geom,fld,cv_blk)
+
+implicit none
+
+! Passed variables
+class(nicas_blk_type),intent(in) :: nicas_blk         !< NICAS data block
+type(mpl_type),intent(inout) :: mpl                   !< MPI data
+type(geom_type),intent(in) :: geom                    !< Geometry
+real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0) !< Field
+type(cv_blk_type),intent(inout) :: cv_blk             !< Control vector block
+
+! Local variable
+integer :: icmp
+
+! Set name
+@:set_name(nicas_blk_apply_sqrt_ad)
+
+! Probe in
+@:probe_in()
+
+do icmp=1,cv_blk%ncmp
+   ! Component work
+   call nicas_blk%cmp(icmp)%apply_sqrt_ad(mpl,geom,fld,cv_blk%cmp(icmp))
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_blk_apply_sqrt_ad
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_blk_test_adjoint
+!> Test NICAS adjoint accuracy
+!----------------------------------------------------------------------
+subroutine nicas_blk_test_adjoint(nicas_blk,mpl,rng,nam,geom)
+
+implicit none
+
+! Passed variables
+class(nicas_blk_type),intent(in) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+type(rng_type),intent(inout) :: rng           !< Random number generator
+type(nam_type),intent(in) :: nam              !< Namelist
+type(geom_type),intent(in) :: geom            !< Geometry
+
+! Local variables
+integer :: icmp
+real(kind_real) :: sum1,sum1_tmp,sum2
+real(kind_real) :: fld1(geom%nc0a,geom%nl0)
+real(kind_real) :: fld2(geom%nc0a,geom%nl0)
+type(cv_blk_type) :: cv_blk1,cv_blk2
+
+! Set name
+@:set_name(nicas_blk_test_adjoint)
+
+! Probe in
+@:probe_in()
+
+! Allocation
+cv_blk1%ncmp = nicas_blk%ncmp
+cv_blk2%ncmp = nicas_blk%ncmp
+allocate(cv_blk1%cmp(nicas_blk%ncmp))
+allocate(cv_blk2%cmp(nicas_blk%ncmp))
+do icmp=1,nicas_blk%ncmp
+   call cv_blk1%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%nsa)
+   call cv_blk2%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%nsa)
+end do
+
+! Initialization
+do icmp=1,nicas_blk%ncmp
+   call rng%rand(zero,one,cv_blk1%cmp(icmp)%alpha)
+end do
+call rng%rand(zero,one,fld2)
+
+! Adjoint test
+call nicas_blk%apply_sqrt(mpl,geom,cv_blk1,fld1)
+call nicas_blk%apply_sqrt_ad(mpl,geom,fld2,cv_blk2)
+
+! Print result
+sum1 = zero
+do icmp=1,nicas_blk%ncmp
+   call mpl%dot_prod(cv_blk1%cmp(icmp)%alpha,cv_blk2%cmp(icmp)%alpha,sum1_tmp)
+   sum1 = sum1+sum1_tmp
+end do
+call mpl%dot_prod(fld1,fld2,sum2)
+write(mpl%info,'(a7,a,e15.8,a,e15.8,a,e15.8)') '','Block NICAS adjoint test values:                    ', &
+ & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
+if (nicas_blk%verbosity) call mpl%flush
+write(mpl%test,'(a7,a,l1)') '','Block NICAS adjoint test result:                    ', &
+ & two*abs(sum1-sum2)/abs(sum1+sum2)<repro_th
+if (nicas_blk%verbosity) call mpl%flush
+
+! Release memory
+do icmp=1,nicas_blk%ncmp
+   call cv_blk1%cmp(icmp)%dealloc
+   call cv_blk2%cmp(icmp)%dealloc
+end do
+deallocate(cv_blk1%cmp)
+deallocate(cv_blk2%cmp)
+
+! Reset random seed if necessary
+if (nam%default_seed) call rng%reseed(mpl)
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_blk_test_adjoint
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_blk_test_normalization
+!> Test NICAS normalization
+!----------------------------------------------------------------------
+subroutine nicas_blk_test_normalization(nicas_blk,mpl,rng,nam,geom)
+
+implicit none
+
+! Passed variables
+class(nicas_blk_type),intent(in) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+type(rng_type),intent(inout) :: rng           !< Random number generator
+type(nam_type),intent(in) :: nam              !< Namelist
+type(geom_type),intent(in) :: geom            !< Geometry
+
+! Local variables
+integer :: icmp,itest
+integer :: il0(nam%check_normalization),iproc(nam%check_normalization),ic0a(nam%check_normalization)
+real(kind_real) :: fld(geom%nc0a,geom%nl0),norm,val(nam%check_normalization)
+type(cv_blk_type) :: cv_blk
+
+! Set name
+@:set_name(nicas_blk_test_normalization)
+
+! Probe in
+@:probe_in()
+
+! Copy number of components
+cv_blk%ncmp = nicas_blk%ncmp
+
+! Allocation
+allocate(cv_blk%cmp(cv_blk%ncmp))
+
+do icmp=1,cv_blk%ncmp
+   ! Allocation and initialization
+   call cv_blk%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%nsa)
+end do
+
+! Get random levels
+if (mpl%main) call rng%rand(1,geom%nl0,il0)
+call mpl%f_comm%broadcast(il0,mpl%rootproc-1)
+
+! Resynchronize random number generator
+call rng%resync(mpl)
+
+! Get random points
+do itest=1,nam%check_normalization
+   call geom%rand_point(mpl,rng,il0(itest),iproc(itest),ic0a(itest))
+end do
+
+! Desynchronize random number generator
+call rng%desync(mpl)
+
+! Check normalization
+write(mpl%info,'(a10,a)') '','Check normalization'
+if (nicas_blk%verbosity) call mpl%flush
+do itest=1,nam%check_normalization
+   ! Initialization
+   fld = zero
+   if (mpl%myproc==iproc(itest)) fld(ic0a(itest),il0(itest)) = one
+
+   ! Apply NICAS square-root adjoint
+   call nicas_blk%apply_sqrt_ad(mpl,geom,fld,cv_blk)
+
+   ! Apply NICAS square-root
+   call nicas_blk%apply_sqrt(mpl,geom,cv_blk,fld)
+
+   ! Broadcast normalization value
+   if (mpl%myproc==iproc(itest)) norm = fld(ic0a(itest),il0(itest))
+   call mpl%f_comm%broadcast(norm,iproc(itest)-1)
+   val(itest) = norm
+end do
+write(mpl%test,'(a13,a,f10.7,a,f10.7,a,i6,a)') '','Min / max:',minval(val),' / ',maxval(val),' over ', &
+ & nam%check_normalization,' tests'
+if (nicas_blk%verbosity) call mpl%flush
+
+! Reset random seed if necessary
+if (nam%default_seed) call rng%reseed(mpl)
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_blk_test_normalization
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_blk_test_dirac
+!> Apply NICAS to diracs
+!----------------------------------------------------------------------
+subroutine nicas_blk_test_dirac(nicas_blk,mpl,nam,geom)
+
+implicit none
+
+! Passed variables
+class(nicas_blk_type),intent(in) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+type(nam_type),intent(in) :: nam              !< Namelist
+type(geom_type),intent(in) :: geom            !< Geometry
+
+! Local variables
+integer :: ic0a,il0,idir,icmp
+real(kind_real) :: val,valmin,valmax
+real(kind_real) :: fld(geom%nc0a,geom%nl0),fld_tot(geom%nc0a,geom%nl0)
+type(cv_blk_type) :: cv_blk
+ 
+! Set name
+@:set_name(nicas_blk_test_dirac)
+
+! Probe in
+@:probe_in()
+
+! Associate
+associate(ig=>nicas_blk%ig)
+
+! Copy number of components
+cv_blk%ncmp = nicas_blk%ncmp
+
+! Allocation
+allocate(cv_blk%cmp(cv_blk%ncmp))
+
+do icmp=1,cv_blk%ncmp
+   ! Allocation and initialization
+   call cv_blk%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%nsa)
+end do
+
+do idir=1,geom%ndir
+   ! Generate dirac field
+   fld = zero
+   if (geom%iprocdir(idir)==mpl%myproc) then
+      if (ig==nam%group_index(geom%ivdir(idir))) fld(geom%ic0adir(idir),geom%il0dir(idir)) = one
+   end if
+
+   ! Apply NICAS square-root adjoint
+   call nicas_blk%apply_sqrt_ad(mpl,geom,fld,cv_blk)
+
+   ! Apply NICAS square-root
+   call nicas_blk%apply_sqrt(mpl,geom,cv_blk,fld)
+
+   ! Copy points
+   do ic0a=1,geom%nc0a
+      if (idir==geom%inbdir(ic0a)) fld_tot(ic0a,:) = fld(ic0a,:)
+   end do
+end do
+
+! Print results
+write(mpl%info,'(a7,a)') '','Values at dirac points:'
+if (nicas_blk%verbosity) call mpl%flush
+do idir=1,geom%ndir
+   if (geom%iprocdir(idir)==mpl%myproc) val = fld_tot(geom%ic0adir(idir),geom%il0dir(idir))
+   call mpl%f_comm%broadcast(val,geom%iprocdir(idir)-1)
+   if (mpl%msv%isnot(val)) then
+      write(mpl%test,'(a10,f6.1,a,f6.1,a,f10.7)') '',geom%londir(idir)*rad2deg,' / ',geom%latdir(idir)*rad2deg,': ',val
+      if (nicas_blk%verbosity) call mpl%flush
+   else
+      write(mpl%test,'(a10,f6.1,a,f6.1,a)') '',geom%londir(idir)*rad2deg,' / ',geom%latdir(idir)*rad2deg,': missing value'
+      if (nicas_blk%verbosity) call mpl%flush
+   end if
+end do
+write(mpl%info,'(a7,a)') '','Min - max: '
+if (nicas_blk%verbosity) call mpl%flush
+do il0=1,geom%nl0
+   valmin = zss_minval(fld_tot(:,il0),mask=geom%gmask_c0a(:,il0))
+   valmax = zss_maxval(fld_tot(:,il0),mask=geom%gmask_c0a(:,il0))
+   call mpl%f_comm%allreduce(valmin,fckit_mpi_min())
+   call mpl%f_comm%allreduce(valmax,fckit_mpi_max())
+   if (mpl%msv%isnot(valmin).or.mpl%msv%isnot(valmax)) then
+      write(mpl%test,'(a10,a,i3,a,f10.7,a,f10.7)') '','Level ',il0,': ',valmin,' - ',valmax
+      if (nicas_blk%verbosity) call mpl%flush
+   else
+      write(mpl%test,'(a10,a,i3,a)') '','Level ',il0,': missing values'
+      if (nicas_blk%verbosity) call mpl%flush
+   end if
+end do
+
+! End associate
+end associate
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_blk_test_dirac
+
+end module type_nicas_blk

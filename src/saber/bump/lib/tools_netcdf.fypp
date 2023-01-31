@@ -1,0 +1,1338 @@
+#:include 'generics.fypp'
+#:include 'instrumentation.fypp'
+!----------------------------------------------------------------------
+! Module: tools_netcdf
+!> NetCDF wrappers
+! Author: Benjamin Menetrier
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+module tools_netcdf
+
+use iso_fortran_env, only: output_unit
+use netcdf, only: nf90_clobber,nf90_create,nf90_close,nf90_def_dim,nf90_def_grp,nf90_def_var,nf90_ebaddim,nf90_get_att, &
+ & nf90_get_var,nf90_global,nf90_inq_dimid,nf90_inq_grp_ncid,nf90_inquire_dimension,nf90_inquire_variable,nf90_inq_varid, &
+ & nf90_mpiio,nf90_netcdf4,nf90_noerr,nf90_nowrite,nf90_open,nf90_put_att,nf90_put_var,nf90_strerror,nf90_write
+use tools_func, only: convert_i2l,convert_l2i
+use tools_kinds, only: kind_signed_char,kind_int,kind_float,kind_double,kind_real,nc_kind_int,nc_kind_real
+use type_mpl, only: mpl_type
+@:use_probe()
+
+implicit none
+
+integer,parameter :: nidmax = 10000  !< Maximum number of simultaneous file and group ids
+integer,parameter :: ncharmax = 1024 !< Maximum number of characters to store file and group names
+
+type registry_type
+   ! Current activity
+   integer :: id(nidmax,2) = -1            !< Parent/child registry
+   character(len=ncharmax) :: name(nidmax) !< Child names
+
+   ! Archive
+   integer :: nopened = 0                  !< Number of opened files
+   integer :: nclosed = 0                  !< Number of closed files
+contains
+   procedure :: report => registry_report
+   procedure :: save => registry_save
+   procedure :: get_root_id => registry_get_root_id
+   procedure :: free => registry_free
+   procedure :: recursive_cleaning => registry_recursive_cleaning
+end type registry_type
+
+type(registry_type) :: registry
+
+interface create_file
+   module procedure netcdf_create_file
+end interface
+interface open_file
+   module procedure netcdf_open_file
+end interface
+interface define_grp
+   module procedure netcdf_define_grp
+end interface
+interface inquire_grp
+   module procedure netcdf_inquire_grp
+end interface
+interface put_att
+   #:for dtype in dtypes_irls
+      module procedure netcdf_put_att_${dtype}$
+   #:endfor
+end interface
+interface get_att
+   #:for dtype in dtypes_irls
+      module procedure netcdf_get_att_${dtype}$
+   #:endfor
+end interface
+interface define_dim
+   module procedure netcdf_define_dim
+end interface
+interface inquire_dim
+   module procedure netcdf_inquire_dim
+end interface
+interface inquire_dim_size
+   module procedure netcdf_inquire_dim_size
+end interface
+interface check_dim
+   module procedure netcdf_check_dim_size
+end interface
+interface define_var
+   module procedure netcdf_define_var
+end interface
+interface inquire_var
+   module procedure netcdf_inquire_var
+end interface
+interface put_var
+   #:for dtype in dtypes_irl
+      module procedure netcdf_put_var_${dtype}$_r0
+   #:endfor
+   #:for rank in ranks_123456
+      #:for dtype in dtypes_irl
+         module procedure netcdf_put_var_${dtype}$_r${rank}$
+      #:endfor
+   #:endfor
+end interface
+interface get_var
+   #:for dtype in dtypes_bifrl
+      module procedure netcdf_get_var_${dtype}$_r0
+   #:endfor
+   #:for rank in ranks_123456
+      #:for dtype in dtypes_bifrl
+         module procedure netcdf_get_var_${dtype}$_r${rank}$
+      #:endfor
+   #:endfor
+end interface
+interface close_file
+   module procedure netcdf_close_file
+end interface
+interface strerror
+   module procedure netcdf_strerror
+end interface
+
+private
+public :: registry
+public :: create_file,open_file,define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim,inquire_dim_size,check_dim, &
+ & define_var,inquire_var,put_var,get_var,close_file,strerror
+
+contains
+
+!----------------------------------------------------------------------
+! Subroutine: registry_report
+!> Print registry report
+!----------------------------------------------------------------------
+subroutine registry_report(registry,mpl)
+
+implicit none
+
+! Passed variable
+class(registry_type),intent(inout) :: registry !< Registry
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+
+! Set name
+@:set_name(registry_report)
+
+! Probe in
+@:probe_in()
+
+write(mpl%info,'(a7,a,i3)') '','Number of opened files: ',registry%nopened
+call mpl%flush
+write(mpl%info,'(a7,a,i3)') '','Number of closed files: ',registry%nclosed
+call mpl%flush
+write(mpl%info,'(a7,a,i3)') '','Registry status: ',count(registry%id(:,1)/=-1)
+call mpl%flush
+
+! Probe out
+@:probe_out()
+
+end subroutine registry_report
+
+!----------------------------------------------------------------------
+! Subroutine: registry_save
+!> Save ID in registry
+!----------------------------------------------------------------------
+subroutine registry_save(registry,mpl,parent_id,child_id,child_name)
+
+implicit none
+
+! Passed variable
+class(registry_type),intent(inout) :: registry !< Registry
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+integer,intent(in) :: parent_id                !< Parent ID
+integer,intent(in) :: child_id                 !< Child ID
+character(len=*),intent(in) :: child_name      !< Child name
+
+! Local variables
+integer :: i,rid
+
+! Set name
+@:set_name(registry_save)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+rid = mpl%msv%vali
+
+! Get a free slot
+do i=1,nidmax
+   if (registry%id(i,1)==-1) then
+      rid = i
+      exit
+   end if
+end do
+
+! Check slot index
+if (mpl%msv%is(rid)) call mpl%abort('${subr}$','no more free slots in the files registry')
+
+! Save parent ID
+registry%id(rid,1) = parent_id
+
+! Save child ID
+registry%id(rid,2) = child_id
+
+! Save child name
+registry%name(rid) = child_name(1:min(len(child_name),ncharmax))
+
+! Update archive
+if (parent_id==0) registry%nopened = registry%nopened+1
+
+! Probe out
+@:probe_out()
+
+end subroutine registry_save
+
+!----------------------------------------------------------------------
+! Function: registry_get_root_id
+!> Get root ID in registry from a given ID
+!----------------------------------------------------------------------
+function registry_get_root_id(registry,mpl,ncid) result(rid)
+
+implicit none
+
+! Passed variable
+class(registry_type),intent(inout) :: registry !< Registry
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+integer,intent(in) :: ncid                     !< Child ID
+
+! Returned variable
+integer :: rid
+
+! Local variable
+integer :: child_id,parent_id,i
+logical :: found
+
+! Set name
+@:set_name(registry_get_root_id)
+
+! Probe in
+@:probe_in()
+
+if (mpl%msv%isnot(ncid)) then
+   ! Initialization
+   found = .false.
+   child_id = ncid
+
+   ! Look for successive parents
+   do while (.not.found)
+      ! Initialization
+      rid = mpl%msv%vali
+
+      ! Get corresponding slot
+      do i=1,nidmax
+         if (registry%id(i,2)==child_id) then
+            rid = i
+            exit
+         end if
+      end do
+
+      ! Check slot index
+      if (mpl%msv%is(rid)) call mpl%abort('${subr}$','cannot find this child ID in registry')
+
+      ! Get parent_id
+      parent_id = registry%id(i,1)
+
+      if (parent_id==0) then
+         ! Found root ID
+         found = .true.
+      else
+         ! Update child ID
+         child_id = parent_id
+      end if
+   end do
+else
+   ! Missing value
+   rid = mpl%msv%vali
+end if
+
+! Probe out
+@:probe_out()
+
+end function registry_get_root_id
+
+!----------------------------------------------------------------------
+! Subroutine: registry_free
+!> Free registry slot
+!----------------------------------------------------------------------
+subroutine registry_free(registry,mpl,ncid)
+
+implicit none
+
+! Passed variable
+class(registry_type),intent(inout) :: registry !< Registry
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+integer,intent(in) :: ncid                     !< Child ID
+
+! Set name
+@:set_name(registry_free)
+
+! Probe in
+@:probe_in()
+
+! Run recursive cleaning
+call registry%recursive_cleaning(mpl,ncid)
+
+! Update archive
+registry%nclosed = registry%nclosed+1
+
+! Probe out
+@:probe_out()
+
+end subroutine registry_free
+
+!----------------------------------------------------------------------
+! Subroutine: registry_recursive_cleaning
+!> Recursive registry cleaning
+!----------------------------------------------------------------------
+recursive subroutine registry_recursive_cleaning(registry,mpl,parent_id)
+
+implicit none
+
+! Passed variable
+class(registry_type),intent(inout) :: registry !< Registry
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+integer,intent(in) :: parent_id                !< Parent ID
+
+! Local variables
+integer :: i,child_id
+
+! Set name
+@:set_name(registry_recursive_cleaning)
+
+! Probe in
+@:probe_in()
+
+! Call recursive cleaning for all the children
+do i=1,nidmax
+   if (registry%id(i,1)==parent_id) then
+      child_id = registry%id(i,2)
+      call registry%recursive_cleaning(mpl,child_id)
+   end if
+end do
+
+! Clean parent slot
+do i=1,nidmax
+   if (registry%id(i,2)==parent_id) then
+      registry%id(i,:) = -1
+      exit
+   end if
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine registry_recursive_cleaning
+
+!----------------------------------------------------------------------
+! Function: netcdf_create_file
+!> Create file
+!----------------------------------------------------------------------
+function netcdf_create_file(mpl,filename,iproc) result(ncid)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl     !< MPI data
+character(len=*),intent(in) :: filename !< File name
+integer,intent(in),optional :: iproc    !< Processor index
+
+! Returned variable
+integer :: ncid
+
+! Local variables
+character(len=1024) :: fullname
+
+! Set name
+@:set_name(netcdf_create_file)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+ncid = mpl%msv%vali
+
+if (present(iproc)) then
+   ! Local I/O
+
+   ! Full file name
+   if (iproc==0) then
+      fullname = trim(mpl%datadir)//'/'//trim(filename)//'.nc'
+   else
+      write(fullname,'(a,i6.6,a,i6.6,a)') trim(mpl%datadir)//'/'//trim(filename)//'_local_',mpl%nproc,'-',iproc,'.nc'
+   end if
+
+   ! Create file
+   call strerror(mpl,'${subr}$',ncid,nf90_create(fullname,ior(nf90_clobber,nf90_netcdf4),ncid),'file '//trim(fullname))
+else
+   ! Global I/O
+   if (mpl%pioproc(mpl%myproc)) then
+      ! Full file name
+      fullname = trim(mpl%datadir)//'/'//trim(filename)//'.nc'
+
+      ! Create file
+      if (mpl%parallel_netcdf) then
+         call strerror(mpl,'${subr}$',ncid,nf90_create(fullname,ior(nf90_clobber,ior(nf90_netcdf4,nf90_mpiio)),ncid, &
+ & comm=mpl%f_comm_io%communicator(),info=mpl%f_comm_io%info_null()),'file '//trim(fullname))
+      else
+         call strerror(mpl,'${subr}$',ncid,nf90_create(fullname,ior(nf90_clobber,nf90_netcdf4),ncid),'file '//trim(fullname))
+      end if
+   end if
+end if
+
+! Save ID in registry
+if (mpl%msv%isnot(ncid)) call registry%save(mpl,0,ncid,filename)
+
+! Set global missing value
+call put_att(mpl,ncid,0,'_FillValue',mpl%msv%valr)
+
+! Probe out
+@:probe_out()
+
+end function netcdf_create_file
+
+!----------------------------------------------------------------------
+! Function: netcdf_open_file
+!> Open file
+!----------------------------------------------------------------------
+function netcdf_open_file(mpl,filename,iproc) result(ncid)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl     !< MPI data
+character(len=*),intent(in) :: filename !< File name
+integer,intent(in),optional :: iproc    !< Processor index
+
+! Returned variable
+integer :: ncid
+
+! Local variables
+character(len=1024) :: fullname
+
+! Set name
+@:set_name(netcdf_open_file)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+ncid = mpl%msv%vali
+
+if (present(iproc)) then
+   ! Local I/O
+
+   ! Full file name
+   if (iproc==0) then
+      fullname = trim(mpl%datadir)//'/'//trim(filename)//'.nc'
+   else
+      write(fullname,'(a,i6.6,a,i6.6,a)') trim(mpl%datadir)//'/'//trim(filename)//'_local_',mpl%nproc,'-',iproc,'.nc'
+   end if
+
+   ! Open file
+   call strerror(mpl,'${subr}$',ncid,nf90_open(fullname,nf90_nowrite,ncid),'file '//trim(fullname))
+else
+   ! Global I/O
+   if (mpl%pioproc(mpl%myproc)) then
+      ! Full file name
+      fullname = trim(mpl%datadir)//'/'//trim(filename)//'.nc'
+
+      ! Open file
+      if (mpl%parallel_netcdf) then
+         call strerror(mpl,'${subr}$',ncid,nf90_open(fullname,nf90_nowrite,ncid, &
+ & comm=mpl%f_comm_io%communicator(),info=mpl%f_comm_io%info_null()),'file '//trim(fullname))
+      else
+         call strerror(mpl,'${subr}$',ncid,nf90_open(fullname,nf90_nowrite,ncid),'file '//trim(fullname))
+      end if
+   end if
+end if
+
+! Save ID in registry
+if (mpl%msv%isnot(ncid)) call registry%save(mpl,0,ncid,filename)
+
+! Probe out
+@:probe_out()
+
+end function netcdf_open_file
+
+!----------------------------------------------------------------------
+! Function: netcdf_define_grp
+!> Define group
+!----------------------------------------------------------------------
+function netcdf_define_grp(mpl,ncid,grpname) result(grpid)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+integer,intent(in) :: ncid                       !< File ID
+character(len=*),intent(in) :: grpname           !< Group name
+
+! Returned variable
+integer :: grpid
+
+! Local variable
+integer :: rid
+
+! Set name
+@:set_name(netcdf_define_grp)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+grpid = mpl%msv%vali
+
+! Get root ID in registry
+rid = registry%get_root_id(mpl,ncid)
+
+if (mpl%msv%isnot(rid)) then
+   ! Define group
+   call strerror(mpl,'${subr}$',ncid,nf90_def_grp(ncid,grpname,grpid),'group '//trim(grpname))
+
+   ! Save ID in registry
+   if (mpl%msv%isnot(grpid)) call registry%save(mpl,ncid,grpid,grpname)
+end if
+
+! Probe out
+@:probe_out()
+
+end function netcdf_define_grp
+
+!----------------------------------------------------------------------
+! Function: netcdf_inquire_grp
+!> Inquire group ID
+!----------------------------------------------------------------------
+function netcdf_inquire_grp(mpl,ncid,grpname) result(grpid)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+integer,intent(in) :: ncid                       !< File ID
+character(len=*),intent(in) :: grpname           !< Group name
+
+! Returned variable
+integer :: grpid
+
+! Local variable
+integer :: rid
+
+! Set name
+@:set_name(netcdf_inquire_grp)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+grpid = mpl%msv%vali
+
+! Get root ID in registry
+rid = registry%get_root_id(mpl,ncid)
+
+if (mpl%msv%isnot(rid)) then
+   ! Define group
+   call strerror(mpl,'${subr}$',ncid,nf90_inq_grp_ncid(ncid,grpname,grpid),'group '//trim(grpname))
+
+   ! Save ID in registry
+   if (mpl%msv%isnot(grpid)) call registry%save(mpl,ncid,grpid,grpname)
+end if
+
+! Probe out
+@:probe_out()
+
+end function netcdf_inquire_grp
+
+#:for dtype in dtypes_irls
+!----------------------------------------------------------------------
+! Subroutine: netcdf_put_att_${dtype}$
+!> Put attribute
+!----------------------------------------------------------------------
+subroutine netcdf_put_att_${dtype}$(mpl,ncid,varid,attname,att)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+integer,intent(in) :: ncid             !< File ID
+integer,intent(in) :: varid            !< Variable ID
+character(len=*),intent(in) :: attname !< Attribute name
+${ftype[dtype]}$,intent(in) :: att     !< Attribute
+
+! Local variable
+integer :: rid,lvarid
+#{if dtype == 'logical'}# integer :: attint #{endif}#
+
+! Set name
+@:set_name(netcdf_put_att_${dtype}$)
+
+! Probe in
+@:probe_in()
+
+! Get root ID in registry
+rid = registry%get_root_id(mpl,ncid)
+
+if (mpl%msv%isnot(rid)) then
+   ! Local variable ID
+   if (varid==0) then
+      lvarid = nf90_global
+   else
+      lvarid = varid
+   end if
+
+   ! Put attribute
+   #:if dtype == 'logical'
+      call convert_l2i(att,attint)
+      call strerror(mpl,'${subr}$',ncid,nf90_put_att(ncid,lvarid,attname,attint),'attribute '//trim(attname))
+   #:else
+      call strerror(mpl,'${subr}$',ncid,nf90_put_att(ncid,lvarid,attname,att),'attribute '//trim(attname))
+   #:endif
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine netcdf_put_att_${dtype}$
+#:endfor
+
+#:for dtype in dtypes_irls
+!----------------------------------------------------------------------
+! Subroutine: netcdf_get_att_${dtype}$
+!> Get attribute
+!----------------------------------------------------------------------
+subroutine netcdf_get_att_${dtype}$(mpl,ncid,varid,attname,att,defval)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+integer,intent(in) :: ncid                     !< File ID
+integer,intent(in) :: varid                    !< Variable ID
+character(len=*),intent(in) :: attname         !< Attribute name
+${ftype[dtype]}$,intent(out) :: att            !< Attribute
+${ftype[dtype]}$,intent(in),optional :: defval !< Default value
+
+! Local variable
+integer :: rid,lvarid,info
+#{if dtype == 'logical'}# integer :: attint #{endif}#
+
+! Set name
+@:set_name(netcdf_get_att_${dtype}$)
+
+! Probe in
+@:probe_in()
+
+! Get root ID in registry
+rid = registry%get_root_id(mpl,ncid)
+
+if (mpl%msv%isnot(rid)) then
+   ! Local variable ID
+   if (varid==0) then
+      lvarid = nf90_global
+   else
+      lvarid = varid
+   end if
+
+   ! Get attribute
+   #:if dtype == 'logical'
+      info = nf90_get_att(ncid,lvarid,attname,attint)
+      if (info/=nf90_noerr) then
+         if (present(defval)) then
+            att = defval
+         else
+            call strerror(mpl,'${subr}$',ncid,info,'attribute '//trim(attname))
+         end if
+      else
+         call convert_i2l(mpl,attint,att)
+      end if
+   #:else
+      info = nf90_get_att(ncid,lvarid,attname,att)
+      if (info/=nf90_noerr) then
+         if (present(defval)) then
+            att = defval
+         else
+            call strerror(mpl,'${subr}$',ncid,info,'attribute '//trim(attname))
+         end if
+      end if
+   #:endif
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine netcdf_get_att_${dtype}$
+#:endfor
+
+!----------------------------------------------------------------------
+! Function: netcdf_define_dim
+!> Define dimension
+!----------------------------------------------------------------------
+function netcdf_define_dim(mpl,ncid,dimname,dimsize) result(dimid)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+integer,intent(in) :: ncid             !< File ID
+character(len=*),intent(in) :: dimname !< Dimension name
+integer,intent(in) :: dimsize          !< Dimension size
+
+! Returned variable
+integer :: dimid
+
+! Local variable
+integer :: rid
+
+! Set name
+@:set_name(netcdf_define_dim)
+
+! Probe in
+@:probe_in()
+
+! Get root ID in registry
+rid = registry%get_root_id(mpl,ncid)
+
+! Initialization
+dimid = mpl%msv%vali
+
+! Define dimension
+if (mpl%msv%isnot(rid)) call strerror(mpl,'${subr}$',ncid,nf90_def_dim(ncid,dimname,dimsize,dimid),'dimension '//trim(dimname))
+
+! Probe out
+@:probe_out()
+
+end function netcdf_define_dim
+
+!----------------------------------------------------------------------
+! Function: netcdf_inquire_dim
+!> Inquire dimension ID
+!----------------------------------------------------------------------
+function netcdf_inquire_dim(mpl,ncid,dimname) result(dimid)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+integer,intent(in) :: ncid             !< File ID
+character(len=*),intent(in) :: dimname !< Dimension name
+
+! Returned variable
+integer :: dimid
+
+! Local variable
+integer :: rid,info
+
+! Set name
+@:set_name(netcdf_inquire_dim)
+
+! Probe in
+@:probe_in()
+
+! Get root ID in registry
+rid = registry%get_root_id(mpl,ncid)
+
+! Initialization
+dimid = mpl%msv%vali
+
+if (mpl%msv%isnot(rid)) then
+   ! Define dimension
+   info = nf90_inq_dimid(ncid,dimname,dimid)
+
+   if (info==nf90_ebaddim) then
+      dimid = mpl%msv%vali
+   else
+      call strerror(mpl,'${subr}$',ncid,info,'dimension '//trim(dimname))
+   end if
+end if
+
+! Probe out
+@:probe_out()
+
+end function netcdf_inquire_dim
+
+!----------------------------------------------------------------------
+! Function: netcdf_inquire_dim_size
+!> Inquire dimension size
+!----------------------------------------------------------------------
+function netcdf_inquire_dim_size(mpl,ncid,dimname,default) result(dimsize)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+integer,intent(in) :: ncid             !< File ID
+character(len=*),intent(in) :: dimname !< Dimension name
+integer,intent(in),optional :: default !< Default value
+
+! Returned variable
+integer :: dimsize
+
+! Local variables
+integer :: rid,dimid
+
+! Set name
+@:set_name(netcdf_inquire_dim_size)
+
+! Probe in
+@:probe_in()
+
+! Get root ID in registry
+rid = registry%get_root_id(mpl,ncid)
+
+! Initialization
+dimsize = mpl%msv%vali
+if (present(default)) dimsize = default
+
+if (mpl%msv%isnot(rid)) then
+   ! Inquire dimension ID
+   dimid = netcdf_inquire_dim(mpl,ncid,dimname)
+
+   ! Inquire dimension size
+   if (mpl%msv%isnot(dimid)) call strerror(mpl,'${subr}$',ncid,nf90_inquire_dimension(ncid,dimid,len=dimsize), &
+ & 'dimension '//trim(dimname))
+end if
+
+! Probe out
+@:probe_out()
+
+end function netcdf_inquire_dim_size
+
+!----------------------------------------------------------------------
+! Function: netcdf_check_dim_size
+!> Check dimension size
+!----------------------------------------------------------------------
+function netcdf_check_dim_size(mpl,ncid,dimname,dimsize) result(value)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+integer,intent(in) :: ncid             !< File ID
+character(len=*),intent(in) :: dimname !< Dimension name
+integer,intent(in) :: dimsize          !< Expected dimension size
+
+! Returned value
+logical :: value
+
+! Local variables
+integer :: rid,dimsize_test
+
+! Set name
+@:set_name(netcdf_check_dim_size)
+
+! Probe in
+@:probe_in()
+
+! Get root ID in registry
+rid = registry%get_root_id(mpl,ncid)
+
+! Initialization
+value = .true.
+
+if (mpl%msv%isnot(rid)) then
+   ! Inquire dimension size
+   dimsize_test = netcdf_inquire_dim_size(mpl,ncid,dimname)
+
+   ! Check dimension size
+   value = (dimsize_test==dimsize)
+end if
+
+! Probe out
+@:probe_out()
+
+end function netcdf_check_dim_size
+
+!----------------------------------------------------------------------
+! Function: netcdf_define_var
+!> Define variable
+!----------------------------------------------------------------------
+function netcdf_define_var(mpl,ncid,varname,varkind,varshape,unitname) result(varid)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+integer,intent(in) :: ncid                       !< File ID
+character(len=*),intent(in) :: varname           !< Variable name
+character(len=*),intent(in) :: varkind           !< Variable kind
+integer,intent(in) :: varshape(:)                !< Variable shape
+character(len=*),intent(in),optional :: unitname !< Unit name
+
+! Returned variable
+integer :: varid
+
+! Local variable
+integer  :: rid
+
+! Set name
+@:set_name(netcdf_define_var)
+
+! Probe in
+@:probe_in()
+
+! Get root ID in registry
+rid = registry%get_root_id(mpl,ncid)
+
+! Initialization
+varid = mpl%msv%vali
+
+if (mpl%msv%isnot(rid)) then
+   if ((trim(varkind)=='int').or.(trim(varkind)=='logical')) then
+      ! Define variable
+      call strerror(mpl,'${subr}$',ncid,nf90_def_var(ncid,varname,nc_kind_int,varshape,varid),'variable '//trim(varname))
+
+      ! Set missing value attribute
+      call put_att(mpl,ncid,varid,'_FillValue',mpl%msv%vali)
+   elseif (trim(varkind)=='real') then
+      ! Define variable
+      call strerror(mpl,'${subr}$',ncid,nf90_def_var(ncid,varname,nc_kind_real,varshape,varid),'variable '//trim(varname))
+
+      ! Set missing value attribute
+      call put_att(mpl,ncid,varid,'_FillValue',mpl%msv%valr)
+   else
+      call mpl%abort('${subr}$','wrong variable kind')
+   end if
+
+   ! Set unit
+   if (present(unitname)) call put_att(mpl,ncid,varid,'unit',unitname)
+end if
+
+! Probe out
+@:probe_out()
+
+end function netcdf_define_var
+
+!----------------------------------------------------------------------
+! Function: netcdf_inquire_var
+!> Inquire variable ID
+!----------------------------------------------------------------------
+function netcdf_inquire_var(mpl,ncid,varname) result(varid)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+integer,intent(in) :: ncid             !< File ID
+character(len=*),intent(in) :: varname !< Variable name
+
+! Returned variable
+integer :: varid
+
+! Local variable
+integer  :: rid
+
+! Set name
+@:set_name(netcdf_inquire_var)
+
+! Probe in
+@:probe_in()
+
+! Get root ID in registry
+rid = registry%get_root_id(mpl,ncid)
+
+! Initialization
+varid = mpl%msv%vali
+
+! Inquire variable ID
+if (mpl%msv%isnot(rid)) call strerror(mpl,'${subr}$',ncid,nf90_inq_varid(ncid,varname,varid),'variable '//trim(varname))
+
+! Probe out
+@:probe_out()
+
+end function netcdf_inquire_var
+
+#:for dtype in dtypes_irl
+!----------------------------------------------------------------------
+! Subroutine: netcdf_put_var_${dtype}$_r0
+!> Put variable
+!----------------------------------------------------------------------
+subroutine netcdf_put_var_${dtype}$_r0(mpl,ncid,varid,var,varstart)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl        !< MPI data
+integer,intent(in) :: ncid                 !< File ID
+integer,intent(in) :: varid                !< Variable ID
+${ftype[dtype]}$,intent(in) :: var         !< Variable
+integer,intent(in),optional :: varstart(:) !< Start
+
+! Local variable
+integer :: rid
+#{if dtype == 'logical'}# integer :: varint #{endif}#
+
+! Set name
+@:set_name(netcdf_put_var_${dtype}$_r0)
+
+! Probe in
+@:probe_in()
+
+! Get root ID in registry
+rid = registry%get_root_id(mpl,ncid)
+
+if (mpl%msv%isnot(rid)) then
+   ! Put variable
+   #:if dtype == 'logical'
+      call convert_l2i(var,varint)
+      if (present(varstart)) then
+         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,varint,varstart),'variable',varid)
+      else
+         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,varint),'variable',varid)
+      end if
+   #:else
+      if (present(varstart)) then
+         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,var,varstart),'variable',varid)
+      else
+         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,var),'variable',varid)
+      end if
+   #:endif
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine netcdf_put_var_${dtype}$_r0
+#:endfor
+
+#:for rank in ranks_123456
+   #:for dtype in dtypes_irl
+!----------------------------------------------------------------------
+! Subroutine: netcdf_put_var_${dtype}$_r${rank}$
+!> Put variable
+!----------------------------------------------------------------------
+subroutine netcdf_put_var_${dtype}$_r${rank}$(mpl,ncid,varid,var,varstart,varcount)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl               !< MPI data
+integer,intent(in) :: ncid                        !< File ID
+integer,intent(in) :: varid                       !< Variable ID
+${ftype[dtype]}$,intent(in) :: var(${dim[rank]}$) !< Variable
+integer,intent(in),optional :: varstart(:)        !< Start
+integer,intent(in),optional :: varcount(:)        !< Count
+
+! Local variable
+integer :: rid
+#:if dtype == 'logical'
+  integer :: shp(${rank}$)
+  integer,allocatable :: varint(${dim[rank]}$)
+#:endif
+
+! Set name
+@:set_name(netcdf_put_var_${dtype}$_r${rank}$)
+
+! Probe in
+@:probe_in()
+
+! Get root ID in registry
+rid = registry%get_root_id(mpl,ncid)
+
+if (mpl%msv%isnot(rid)) then
+   ! Put variable
+   #:if dtype == 'logical'
+      shp = shape(var)
+      #{if rank == 1}# allocate(varint(shp(1))) #{endif}#
+      #{if rank == 2}# allocate(varint(shp(1),shp(2))) #{endif}#
+      #{if rank == 3}# allocate(varint(shp(1),shp(2),shp(3))) #{endif}#
+      #{if rank == 4}# allocate(varint(shp(1),shp(2),shp(3),shp(4))) #{endif}#
+      call convert_l2i(var,varint)
+      if (present(varstart).and.present(varcount)) then
+         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,varint,varstart,varcount),'variable',varid)
+      elseif (present(varstart)) then
+         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,varint,varstart),'variable',varid)
+      else
+         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,varint),'variable',varid)
+      end if
+      deallocate(varint)
+   #:else
+      if (present(varstart).and.present(varcount)) then
+         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,var,varstart,varcount),'variable',varid)
+      elseif (present(varstart)) then
+         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,var,varstart),'variable',varid)
+      else
+         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,var),'variable',varid)
+      end if
+   #:endif
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine netcdf_put_var_${dtype}$_r${rank}$
+   #:endfor
+#:endfor
+
+#:for dtype in dtypes_bifrl
+!----------------------------------------------------------------------
+! Subroutine: netcdf_get_var_${dtype}$_r0
+!> Get variable
+!----------------------------------------------------------------------
+subroutine netcdf_get_var_${dtype}$_r0(mpl,ncid,varid,var,varstart)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl        !< MPI data
+integer,intent(in) :: ncid                 !< File ID
+integer,intent(in) :: varid                !< Variable ID
+${ftype[dtype]}$,intent(out) :: var        !< Variable
+integer,intent(in),optional :: varstart(:) !< Start
+
+! Local variable
+integer :: rid
+#{if dtype == 'logical'}# integer :: varint #{endif}#
+
+! Set name
+@:set_name(netcdf_get_var_${dtype}$_r0)
+
+! Probe in
+@:probe_in()
+
+! Get root ID in registry
+rid = registry%get_root_id(mpl,ncid)
+
+if (mpl%msv%isnot(rid)) then
+   ! Get variable
+   #:if dtype == 'logical'
+      if (present(varstart)) then
+         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,varint,varstart),'variable',varid)
+      else
+         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,varint),'variable',varid)
+      end if
+      call convert_i2l(mpl,varint,var)
+   #:else
+      if (present(varstart)) then
+         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,var,varstart),'variable',varid)
+      else
+         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,var),'variable',varid)
+      end if
+   #:endif
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine netcdf_get_var_${dtype}$_r0
+#:endfor
+
+#:for rank in ranks_123456
+   #:for dtype in dtypes_bifrl
+!----------------------------------------------------------------------
+! Subroutine: netcdf_get_var_${dtype}$_r${rank}$
+!> Get variable
+!----------------------------------------------------------------------
+subroutine netcdf_get_var_${dtype}$_r${rank}$(mpl,ncid,varid,var,varstart,varcount)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl                !< MPI data
+integer,intent(in) :: ncid                         !< File ID
+integer,intent(in) :: varid                        !< Variable ID
+${ftype[dtype]}$,intent(out) :: var(${dim[rank]}$) !< Variable
+integer,intent(in),optional :: varstart(:)         !< Start
+integer,intent(in),optional :: varcount(:)         !< Count
+
+! Local variable
+integer :: rid
+#:if dtype == 'logical'
+  integer :: shp(${rank}$)
+  integer,allocatable :: varint(${dim[rank]}$)
+#:endif
+
+! Set name
+@:set_name(netcdf_get_var_${dtype}$_r${rank}$)
+
+! Probe in
+@:probe_in()
+
+! Get root ID in registry
+rid = registry%get_root_id(mpl,ncid)
+
+if (mpl%msv%isnot(rid)) then
+   ! Get variable
+   #:if dtype == 'logical'
+      shp = shape(var)
+      #{if rank == 1}# allocate(varint(shp(1))) #{endif}#
+      #{if rank == 2}# allocate(varint(shp(1),shp(2))) #{endif}#
+      #{if rank == 3}# allocate(varint(shp(1),shp(2),shp(3))) #{endif}#
+      #{if rank == 4}# allocate(varint(shp(1),shp(2),shp(3),shp(4))) #{endif}#
+      if (present(varstart).and.present(varcount)) then
+         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,varint,varstart,varcount),'variable',varid)
+      elseif (present(varstart)) then
+         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,varint,varstart),'variable',varid)
+      else
+         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,varint),'variable',varid)
+      end if
+      call convert_i2l(mpl,varint,var)
+      deallocate(varint)
+   #:else
+      if (present(varstart).and.present(varcount)) then
+         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,var,varstart,varcount),'variable',varid)
+      elseif (present(varstart)) then
+         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,var,varstart),'variable',varid)
+      else
+         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,var),'variable',varid)
+      end if
+   #:endif
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine netcdf_get_var_${dtype}$_r${rank}$
+   #:endfor
+#:endfor
+
+!----------------------------------------------------------------------
+! Subroutine: netcdf_close_file
+!> Close file
+!----------------------------------------------------------------------
+subroutine netcdf_close_file(mpl,ncid)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl !< MPI data
+integer,intent(in) :: ncid          !< File ID
+
+! Local variables
+integer :: rid
+
+! Set name
+@:set_name(netcdf_close_file)
+
+! Probe in
+@:probe_in()
+
+! Get root ID in registry
+rid = registry%get_root_id(mpl,ncid)
+
+if (mpl%msv%isnot(rid)) then
+   ! Close file
+   call strerror(mpl,'${subr}$',ncid,nf90_close(ncid),'file',ncid)
+
+   ! Free registry slot
+   call registry%free(mpl,ncid)
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine netcdf_close_file
+
+!----------------------------------------------------------------------
+! Subroutine: netcdf_strerror
+!> Handle error
+!----------------------------------------------------------------------
+subroutine netcdf_strerror(mpl,subr,ncid,info,hint,hint_id)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl          !< MPI data
+character(len=*),intent(in) :: subr          !< Calling subroutine
+integer,intent(in) :: ncid                   !< File ID
+integer,intent(in) :: info                   !< Info index
+character(len=*),intent(in),optional :: hint !< Hint
+integer,intent(in),optional :: hint_id       !< Hint ID
+
+! Local variables
+integer :: child_id,rid,i,parent_id,indent
+logical :: found
+character(len=3) :: cindent
+character(len=1024) :: message
+
+! Set name
+@:set_name(netcdf_strerror)
+
+! Probe in
+@:probe_in()
+
+! Check status
+if (info/=nf90_noerr) then
+   write(output_unit,'(a,i6.6,a)') '!!! NetCDF error in '//trim(subr)//' on task #',mpl%myproc,': '//trim(nf90_strerror(info))
+   call flush(output_unit)
+   if (present(hint)) then
+      if (present(hint_id)) then
+         write(message,'(a,i6)') trim(hint)//' ID ',hint_id
+      else
+         message = trim(hint)
+      end if
+      write(output_unit,'(a)') '!!! Hint: '//trim(message)
+      call flush(output_unit)
+   end if
+
+   ! Initialization
+   found = .false.
+   child_id = ncid
+   indent = 4
+
+   ! Look for successive parents
+   do while (.not.found)
+      ! Initialization
+      rid = mpl%msv%vali
+
+      ! Get corresponding slot
+      do i=1,nidmax
+         if (registry%id(i,2)==child_id) then
+            rid = i
+            exit
+         end if
+      end do
+
+      ! Check slot index
+      if (mpl%msv%is(rid)) call mpl%abort('${subr}$','cannot find this child ID in registry')
+
+      ! Define indentation
+      indent = indent+3
+      if (indent<10) then
+         write(cindent,'(a,i1)') 'a',indent
+      elseif (indent<100) then
+         write(cindent,'(a,i2)') 'a',indent
+      end if
+
+      ! Print traceback
+      write(output_unit,'('//trim(cindent)//',a,a)') '','|-> ',trim(registry%name(rid))
+      call flush(output_unit)
+
+      ! Get parent_id
+      parent_id = registry%id(i,1)
+
+      if (parent_id==0) then
+         ! Found root ID
+         found = .true.
+      else
+         ! Update child ID
+         child_id = parent_id
+      end if
+   end do
+
+   ! Abort with proper MPI communicator
+   call mpl%f_comm%abort(1)
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine netcdf_strerror
+
+end module tools_netcdf

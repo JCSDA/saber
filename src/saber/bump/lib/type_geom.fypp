@@ -1,0 +1,2234 @@
+#:include 'generics.fypp'
+#:include 'instrumentation.fypp'
+!----------------------------------------------------------------------
+! Module: type_geom
+!> Geometry derived type
+! Author: Benjamin Menetrier
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+module type_geom
+
+use atlas_module, only: atlas_field,atlas_functionspace,atlas_functionspace_nodecolumns,atlas_functionspace_pointcloud, &
+ & atlas_functionspace_structuredcolumns,atlas_mesh_nodes,atlas_metadata,atlas_structuredgrid,atlas_regionalgrid
+use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
+!$ use omp_lib
+use tools_atlas, only: get_grid,field_to_array
+use tools_const, only: zero,quarter,half,one,two,four,hundred,pi,req,deg2rad,rad2deg,reqkm
+use tools_func, only: fletcher32,lonlatmod,grid_hash,independent_levels,sphere_dist,lonlat2xyz,xyz2lonlat,cart_dist,inside, &
+ & vector_product,cx_to_cxa,cx_to_proc,cx_to_cxu,convert_l2i,convert_i2l,zss_maxval,zss_minval,zss_sum,zss_count
+use tools_kinds, only: kind_int,kind_real,huge_real,huge_int
+use tools_qsort, only: qsort
+use tools_repro, only: inf,sup,eq,infeq,indist,repro_th
+use tools_stripack, only: area
+use type_com, only: com_type
+use type_fieldset, only: fieldset_type
+use type_io, only: io_type
+use type_linop, only: linop_type
+use type_mesh, only: mesh_type
+use type_mpl, only: mpl_type
+use type_nam, only: nam_type
+@:use_probe()
+use type_rng, only: rng_type
+use type_tree, only: tree_type
+
+implicit none
+
+! Geometry derived type
+type geom_type
+   ! Number of processors
+   integer :: nproc                               !< Number of processors
+
+   ! Input metadata
+   logical,allocatable :: hmask_mga(:,:)          !< Halo mask
+   logical :: area_provided                       !< Activated if areas are provided
+   logical :: global                              !< Global grid (regional if false)
+
+   ! Geometry data on model grid, halo A
+   integer :: nmga                                !< Halo A size for model grid
+   real(kind_real),allocatable :: lon_mga(:)      !< Longitudes
+   real(kind_real),allocatable :: lat_mga(:)      !< Latitudes
+   real(kind_real),allocatable :: area_mga(:)     !< Areas
+   real(kind_real),allocatable :: vunit_mga(:,:)  !< Vertical unit
+   logical,allocatable :: gmask_mga(:,:)          !< Geometry mask
+   type(atlas_functionspace) :: afunctionspace_mg !< ATLAS function space of model grid
+
+   ! Link between model grid and subset Sc0 on halo A
+   integer,allocatable :: c0a_to_mga(:)           !< Subset Sc0 to model grid on halo A
+
+   ! Geometry data on model grid, global
+   integer :: nmg                                 !< Number of model grid points
+
+   ! Universe
+   logical,allocatable :: myuniverse(:)           !< MPI tasks in the universe of the local task
+
+   ! Geometry data on subset Sc0, halo A
+   integer,allocatable :: proc_to_nc0a(:)         !< Processor to halo A size for subset Sc0
+   integer :: nc0a                                !< Halo A size for subset Sc0
+   logical :: same_grid                           !< Same grid and distribution flag
+   real(kind_real),allocatable :: lon_c0a(:)      !< Longitudes
+   real(kind_real),allocatable :: lat_c0a(:)      !< Latitudes
+   real(kind_real),allocatable :: area_c0a(:)     !< Area
+   real(kind_real),allocatable :: vunit_c0a(:,:)  !< Vertical unit
+   logical,allocatable :: gmask_c0a(:,:)          !< Geometry mask
+   logical,allocatable :: gmask_hor_c0a(:)        !< Union of horizontal geometry masks
+   real(kind_real),allocatable :: mdist_c0a(:,:)  !< Minimum distance to mask
+
+   ! Geometry data on subset Sc0, universe
+   integer,allocatable :: proc_to_nc0u(:)         !< Processor to universe size for subset Sc0
+   integer :: nc0u                                !< Universe size for subset Sc0
+   real(kind_real),allocatable :: lon_c0u(:)      !< Longitudes
+   real(kind_real),allocatable :: lat_c0u(:)      !< Latitudes
+   real(kind_real),allocatable :: vunit_c0u(:,:)  !< Vertical unit
+   logical,allocatable :: gmask_c0u(:,:)          !< Geometry mask
+   logical,allocatable :: gmask_hor_c0u(:)        !< Union of horizontal geometry masks
+   real(kind_real),allocatable :: mdist_c0u(:,:)  !< Minimum distance to mask
+   real(kind_real) :: area_max_c0u                !< Area maximum on universe
+
+   ! Geometry data on subset Sc0, global
+   integer :: nc0                                 !< Number of subset Sc0 points
+   integer,allocatable :: proc_to_c0_offset(:)    !< Processor to offset on subset Sc0
+   real(kind_real) :: lon_min                     !< Minimum longitude
+   real(kind_real) :: lon_max                     !< Maximum longitude
+   real(kind_real) :: lat_min                     !< Minimum latitude
+   real(kind_real) :: lat_max                     !< Maximum latitude
+   real(kind_real) :: sin_lat_min                 !< Minimum latitude sinus
+   real(kind_real) :: sin_lat_max                 !< Maximum latitude sinus
+   integer,allocatable :: nc0_gmask(:)            !< Horizontal mask size on subset Sc0
+   real(kind_real),allocatable :: area_ver_c0(:)  !< Area profile on subset Sc0
+   real(kind_real) :: area_max_c0                 !< Area maximum on subset Sc0
+
+   ! Link between halo A and universe on subset Sc0
+   integer,allocatable :: c0a_to_c0u(:)           !< Halo A to universe on subset Sc0
+   integer,allocatable :: c0u_to_c0a(:)           !< Universe to halo A on subset Sc0
+   type(com_type) :: com_AU                       !< Communication between halo A and universe on subset Sc0
+
+   ! Link between halo A and global on subset Sc0
+   integer,allocatable :: c0a_to_c0(:)            !< Subset Sc0, halo A to global
+
+   ! Link between universe and global on subset Sc0
+   integer,allocatable :: c0u_to_c0(:)            !< Subset Sc0, universe to global
+
+   ! Number of levels
+   integer :: nl0                                 !< Number of levels in subset Sl0
+   integer,allocatable :: l0rl0_to_l0(:,:)        !< Reduced level to level
+   integer,allocatable :: il0rz(:)                !< Reduced level at zero separation
+   integer :: nl0i                                !< Number of independent levels in subset Sl0
+   integer,allocatable :: l0_to_l0i(:)            !< Levels to independent levels in Sl0
+   integer,allocatable :: l0i_to_l0(:)            !< Independent levels to level in Sl0
+
+   ! Other fields
+   real(kind_real),allocatable :: vunitavg(:)     !< Averaged vertical unit
+   real(kind_real),allocatable :: disth(:)        !< Horizontal distance
+   real(kind_real),allocatable :: as(:)           !< Angular sectors
+   real(kind_real) :: das                         !< Angular sector width
+
+   ! Tree
+   type(tree_type) :: tree_c0u                    !< Tree on subset Sc0, universe
+
+   ! Mesh
+   type(mesh_type) :: mesh_c0u                    !< Mesh on subset Sc0, universe
+
+   ! Dirac fields for variables
+   integer :: ndir                                !< Number of valid Dirac points
+   real(kind_real),allocatable :: londir(:)       !< Dirac longitude
+   real(kind_real),allocatable :: latdir(:)       !< Dirac latitude
+   integer,allocatable :: iprocdir(:)             !< Dirac processor
+   integer,allocatable :: ic0adir(:)              !< Dirac gridpoint
+   integer,allocatable :: il0dir(:)               !< Dirac level
+   integer,allocatable :: ivdir(:)                !< Dirac field index
+   integer,allocatable :: inbdir(:)               !< Neighboring dirac index
+
+   ! I/O
+   type(io_type) :: io                             !< Subset Sc0 I/O
+   logical :: io_initialized                       !< Flag to check if subset Sc0 I/O is initialized
+
+   ! Allocation flag
+   logical :: allocated                            !< Allocation flag
+contains
+   procedure :: partial_dealloc => geom_partial_dealloc
+   procedure :: dealloc => geom_dealloc
+   procedure :: setup => geom_setup
+   procedure :: from_atlas => geom_from_atlas
+   procedure :: setup_universe => geom_setup_universe
+   procedure :: setup_c0 => geom_setup_c0
+   procedure :: setup_mask_check => geom_setup_mask_check
+   procedure :: geom_index_from_lonlat_r0
+   procedure :: geom_index_from_lonlat_r1
+   generic :: index_from_lonlat => geom_index_from_lonlat_r0,geom_index_from_lonlat_r1
+   procedure :: setup_dirac => geom_setup_dirac
+   #:for dtype in dtypes_irl
+      procedure :: geom_copy_c0a_to_mga_${dtype}$_single
+      procedure :: geom_copy_c0a_to_mga_${dtype}$_all
+      procedure :: geom_copy_mga_to_c0a_${dtype}$_single
+      procedure :: geom_copy_mga_to_c0a_${dtype}$_all
+   #:endfor
+@:init_procedure(6)
+   generic :: copy_c0a_to_mga => &
+   #:for dtype in dtypes_irl
+@:add_procedure(geom_copy_c0a_to_mga_${dtype}$_single)
+@:add_procedure(geom_copy_c0a_to_mga_${dtype}$_all)
+   #:endfor
+@:init_procedure(6)
+   generic :: copy_mga_to_c0a => &
+   #:for dtype in dtypes_irl
+@:add_procedure(geom_copy_mga_to_c0a_${dtype}$_single)
+@:add_procedure(geom_copy_mga_to_c0a_${dtype}$_all)
+   #:endfor
+   procedure :: fieldset_to_c0 => geom_fieldset_to_c0
+   procedure :: c0_to_fieldset => geom_c0_to_fieldset
+   procedure :: rand_point => geom_rand_point
+   procedure :: initialize_sampling => geom_initialize_sampling
+   procedure :: define_test_vectors => geom_define_test_vectors
+   procedure :: c0_to_c0a => geom_c0_to_c0a
+   procedure :: c0_to_proc => geom_c0_to_proc
+   procedure :: c0_to_c0u => geom_c0_to_c0u
+end type geom_type
+
+integer,parameter :: nfacmin = 4     !< Minimum size factor for the first subsampling
+integer,parameter :: nsmax = 1000000 !< Maximum sampling size
+
+private
+public :: geom_type
+
+contains
+
+!----------------------------------------------------------------------
+! Subroutine: geom_partial_dealloc
+!> Release memory (partial)
+!----------------------------------------------------------------------
+subroutine geom_partial_dealloc(geom)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(inout) :: geom !< Geometry
+
+! Set name
+@:set_name(geom_partial_dealloc)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+if (allocated(geom%l0rl0_to_l0)) deallocate(geom%l0rl0_to_l0)
+if (allocated(geom%il0rz)) deallocate(geom%il0rz)
+if (allocated(geom%lon_mga)) deallocate(geom%lon_mga)
+if (allocated(geom%lat_mga)) deallocate(geom%lat_mga)
+if (allocated(geom%area_mga)) deallocate(geom%area_mga)
+if (allocated(geom%vunit_mga)) deallocate(geom%vunit_mga)
+if (allocated(geom%myuniverse)) deallocate(geom%myuniverse)
+if (allocated(geom%proc_to_nc0a)) deallocate(geom%proc_to_nc0a)
+if (allocated(geom%gmask_hor_c0a)) deallocate(geom%gmask_hor_c0a)
+if (allocated(geom%mdist_c0a)) deallocate(geom%mdist_c0a)
+if (allocated(geom%proc_to_nc0u)) deallocate(geom%proc_to_nc0u)
+if (allocated(geom%lon_c0u)) deallocate(geom%lon_c0u)
+if (allocated(geom%lat_c0u)) deallocate(geom%lat_c0u)
+if (allocated(geom%vunit_c0u)) deallocate(geom%vunit_c0u)
+if (allocated(geom%gmask_c0u)) deallocate(geom%gmask_c0u)
+if (allocated(geom%gmask_hor_c0u)) deallocate(geom%gmask_hor_c0u)
+if (allocated(geom%mdist_c0u)) deallocate(geom%mdist_c0u)
+if (allocated(geom%proc_to_c0_offset)) deallocate(geom%proc_to_c0_offset)
+if (allocated(geom%c0a_to_c0u)) deallocate(geom%c0a_to_c0u)
+if (allocated(geom%c0u_to_c0a)) deallocate(geom%c0u_to_c0a)
+call geom%com_AU%dealloc
+if (allocated(geom%c0a_to_c0)) deallocate(geom%c0a_to_c0)
+if (allocated(geom%c0u_to_c0)) deallocate(geom%c0u_to_c0)
+if (allocated(geom%nc0_gmask)) deallocate(geom%nc0_gmask)
+if (allocated(geom%l0i_to_l0)) deallocate(geom%l0i_to_l0)
+if (allocated(geom%area_ver_c0)) deallocate(geom%area_ver_c0)
+if (allocated(geom%vunitavg)) deallocate(geom%vunitavg)
+if (allocated(geom%disth)) deallocate(geom%disth)
+if (allocated(geom%as)) deallocate(geom%as)
+call geom%tree_c0u%dealloc
+call geom%mesh_c0u%dealloc
+if (allocated(geom%londir)) deallocate(geom%londir)
+if (allocated(geom%latdir)) deallocate(geom%latdir)
+if (allocated(geom%iprocdir)) deallocate(geom%iprocdir)
+if (allocated(geom%ic0adir)) deallocate(geom%ic0adir)
+if (allocated(geom%il0dir)) deallocate(geom%il0dir)
+if (allocated(geom%ivdir)) deallocate(geom%ivdir)
+if (allocated(geom%inbdir)) deallocate(geom%inbdir)
+
+! Probe out
+@:probe_out()
+
+end subroutine geom_partial_dealloc
+
+!----------------------------------------------------------------------
+! Subroutine: geom_dealloc
+!> Release memory
+!----------------------------------------------------------------------
+subroutine geom_dealloc(geom)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(inout) :: geom !< Geometry
+
+! Set name
+@:set_name(geom_dealloc)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+call geom%partial_dealloc
+call geom%afunctionspace_mg%final()
+if (allocated(geom%gmask_mga)) deallocate(geom%gmask_mga)
+if (allocated(geom%c0a_to_mga)) deallocate(geom%c0a_to_mga)
+if (allocated(geom%lon_c0a)) deallocate(geom%lon_c0a)
+if (allocated(geom%lat_c0a)) deallocate(geom%lat_c0a)
+if (allocated(geom%area_c0a)) deallocate(geom%area_c0a)
+if (allocated(geom%vunit_c0a)) deallocate(geom%vunit_c0a)
+if (allocated(geom%gmask_c0a)) deallocate(geom%gmask_c0a)
+if (allocated(geom%l0_to_l0i)) deallocate(geom%l0_to_l0i)
+call geom%io%dealloc
+geom%allocated = .false.
+
+! Probe out
+@:probe_out()
+
+end subroutine geom_dealloc
+
+!----------------------------------------------------------------------
+! Subroutine: geom_setup
+!> Setup geometry
+!----------------------------------------------------------------------
+subroutine geom_setup(geom,mpl,rng,nam,afunctionspace,fieldset)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(inout) :: geom                 !< Geometry
+type(mpl_type),intent(inout) :: mpl                    !< MPI data
+type(rng_type),intent(inout) :: rng                    !< Random number generator
+type(nam_type),intent(in) :: nam                       !< Namelist
+type(atlas_functionspace),intent(in) :: afunctionspace !< ATLAS function space
+type(fieldset_type),intent(in),optional :: fieldset    !< Fieldset containing geometry elements
+
+! Local variables
+integer :: il0,jl0off,jl0r,jc3,jc4,iproc
+
+! Set name
+@:set_name(geom_setup)
+
+! Probe in
+@:probe_in()
+
+! Number of processors
+geom%nproc = mpl%nproc
+
+! Number of levels
+geom%nl0 = nam%nl0
+
+! Reduced number of levels
+allocate(geom%l0rl0_to_l0(nam%nl0r,geom%nl0))
+allocate(geom%il0rz(geom%nl0))
+do il0=1,geom%nl0
+   jl0off = il0-(nam%nl0r-1)/2-1
+   if (jl0off<1) jl0off = 0
+   if (jl0off+nam%nl0r>geom%nl0) jl0off = geom%nl0-nam%nl0r
+   do jl0r=1,nam%nl0r
+      geom%l0rl0_to_l0(jl0r,il0) = jl0off+jl0r
+      if (geom%l0rl0_to_l0(jl0r,il0)==il0) geom%il0rz(il0) = jl0r
+   end do
+end do
+
+! Copy function space pointer
+if (present(fieldset)) then
+   call geom%from_atlas(mpl,afunctionspace,fieldset)
+else
+   call geom%from_atlas(mpl,afunctionspace)
+end if
+
+! Setup subset Sc0
+call geom%setup_c0(mpl)
+
+! Setup universe
+call geom%setup_universe(mpl,rng,nam)
+
+! Setup tree
+write(mpl%info,'(a7,a)') '','Setup tree'
+call mpl%flush
+call geom%tree_c0u%alloc(mpl,geom%nc0u)
+call geom%tree_c0u%init(geom%lon_c0u,geom%lat_c0u)
+
+! Setup mesh
+write(mpl%info,'(a7,a)') '','Setup mesh'
+call mpl%flush
+call geom%mesh_c0u%alloc(geom%nc0u)
+call geom%mesh_c0u%init(mpl,rng,geom%lon_c0u,geom%lat_c0u,hull_bnd=.true.)
+
+! Setup mask boudaries checking fields
+call geom%setup_mask_check(mpl,nam)
+
+! Setup horizontal distance
+write(mpl%info,'(a7,a)') '','Setup horizontal distance'
+call mpl%flush
+allocate(geom%disth(nam%nc3))
+do jc3=1,nam%nc3
+   geom%disth(jc3) = real(jc3-1,kind_real)*nam%dc
+end do
+if (maxval(geom%disth)>nam%universe_radius) call mpl%abort('${subr}$','horizontal distance larger than universe radius')
+
+! Setup angular sector
+write(mpl%info,'(a7,a)') '','Setup angular sector'
+call mpl%flush
+allocate(geom%as(nam%nc4))
+geom%das = pi/real(nam%nc4,kind_real)
+do jc4=1,nam%nc4
+   geom%as(jc4) = -pi*half+real(jc4-1,kind_real)*geom%das
+end do
+
+! Setup dirac points
+call geom%setup_dirac(mpl,nam)
+
+! Set allocation flag
+geom%allocated = .true.
+
+! Print summary
+write(mpl%info,'(a7,a)') '','Geometry summary:'
+call mpl%flush
+write(mpl%test,'(a10,a,i8)') '','Model grid size:         ',geom%nmg
+call mpl%flush
+write(mpl%test,'(a10,a,i8)') '','Subset Sc0 size:         ',geom%nc0
+call mpl%flush
+write(mpl%test,'(a10,a,i6,a,f6.2,a)') '','Number of duplicated points (halo):    ',(geom%nmg-geom%nc0), &
+ & ' (',real(geom%nmg-geom%nc0,kind_real)/real(geom%nmg,kind_real)*hundred,'%)'
+call mpl%flush
+write(mpl%test,'(a10,a,f7.1,a,f7.1)') '','Min. / max. longitudes:',geom%lon_min*rad2deg,' / ',geom%lon_max*rad2deg
+call mpl%flush
+write(mpl%test,'(a10,a,f7.1,a,f7.1)') '','Min. / max. latitudes: ',geom%lat_min*rad2deg,' / ',geom%lat_max*rad2deg
+call mpl%flush
+write(mpl%test,'(a10,a,e10.3,a)') '','Domain area (% of Earth area):',hundred*geom%area_max_c0/(four*pi),'%'
+call mpl%flush
+write(mpl%info,'(a10,a)') '','Valid points (% of total domain):'
+call mpl%flush
+do il0=1,geom%nl0
+   write(mpl%test,'(a13,a,i3,a,f5.1,a)') '','Level ',il0,' ~> ', &
+ & hundred*real(geom%nc0_gmask(il0),kind_real)/real(geom%nc0,kind_real),'%'
+   call mpl%flush
+end do
+write(mpl%info,'(a10,a)') '','Vertical unit:'
+call mpl%flush
+do il0=1,geom%nl0
+   write(mpl%test,'(a13,a,i3,a,e10.3,a)') '','Level ',il0,' ~> ',geom%vunitavg(il0),' vert. unit'
+   call mpl%flush
+end do
+write(mpl%info,'(a10,a)') '','Distribution (local / universe):'
+call mpl%flush
+do iproc=1,mpl%nproc
+   write(mpl%info,'(a13,a,i6,a,i8,a,i8)') '','Task ',iproc,': ',geom%proc_to_nc0a(iproc),' / ',geom%proc_to_nc0u(iproc)
+   call mpl%flush
+end do
+
+! Reset random seed if necessary
+if (nam%default_seed) call rng%reseed(mpl)
+
+! Probe out
+@:probe_out()
+
+end subroutine geom_setup
+
+!----------------------------------------------------------------------
+! Subroutine: geom_from_atlas
+!> Set geometry from fieldset
+!----------------------------------------------------------------------
+subroutine geom_from_atlas(geom,mpl,afunctionspace,fieldset)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(inout) :: geom                 !< Geometry
+type(mpl_type),intent(inout) :: mpl                    !< MPI data
+type(atlas_functionspace),intent(in) :: afunctionspace !< ATLAS function space
+type(fieldset_type),intent(in),optional :: fieldset    !< Fieldset
+
+! Local variables
+integer :: il0,i,j,imga
+real(kind_real) :: lonlat(2)
+real(kind_real),allocatable :: area_mga(:,:)
+real(kind_real),pointer :: real_ptr(:,:)
+type(atlas_field) :: afield,afield_lonlat
+type(atlas_functionspace_nodecolumns) :: afunctionspace_nc
+type(atlas_functionspace_pointcloud) :: afunctionspace_pc
+type(atlas_functionspace_structuredcolumns) :: afunctionspace_sc
+type(atlas_mesh_nodes) :: anodes
+type(atlas_structuredgrid) :: asgrid
+
+! Set name
+@:set_name(geom_from_atlas)
+
+! Probe in
+@:probe_in()
+
+! Copy function space
+geom%afunctionspace_mg = atlas_functionspace(afunctionspace%c_ptr())
+
+! Get size and lon/lat
+select case (afunctionspace%name())
+case ('NodeColumns')
+   ! Get node columns function space
+   afunctionspace_nc = atlas_functionspace_nodecolumns(afunctionspace%c_ptr())
+
+   ! Get number of nodes
+   geom%nmga = afunctionspace_nc%nb_nodes()
+
+   ! Allocation
+   allocate(geom%lon_mga(geom%nmga))
+   allocate(geom%lat_mga(geom%nmga))
+
+   ! Get lon/lat field
+   anodes = afunctionspace_nc%nodes()
+   afield_lonlat = anodes%lonlat()
+   call afield_lonlat%data(real_ptr)
+   if (geom%nmga>0) then
+      geom%lon_mga = real_ptr(1,:)*deg2rad
+      geom%lat_mga = real_ptr(2,:)*deg2rad
+   end if
+case ('PointCloud')
+   ! Get point cloud function space
+   afunctionspace_pc = atlas_functionspace_pointcloud(afunctionspace%c_ptr())
+
+   ! Get number of points
+   geom%nmga = afunctionspace_pc%size()
+
+   ! Allocation
+   allocate(geom%lon_mga(geom%nmga))
+   allocate(geom%lat_mga(geom%nmga))
+
+   ! Get lon/lat field
+   afield_lonlat = afunctionspace_pc%lonlat()
+   call afield_lonlat%data(real_ptr)
+   if (geom%nmga>0) then
+     geom%lon_mga = real_ptr(1,:)*deg2rad
+     geom%lat_mga = real_ptr(2,:)*deg2rad
+   end if
+case ('StructuredColumns')
+   ! Get structured columns function space
+   afunctionspace_sc = atlas_functionspace_structuredcolumns(afunctionspace%c_ptr())
+
+   ! Get number of nodes
+   geom%nmga = afunctionspace_sc%size_owned()
+
+   ! Allocation
+   allocate(geom%lon_mga(geom%nmga))
+   allocate(geom%lat_mga(geom%nmga))
+
+   ! Get lon/lat
+   asgrid = afunctionspace_sc%grid()
+   imga = 0
+   do j=afunctionspace_sc%j_begin(),afunctionspace_sc%j_end()
+      do i=afunctionspace_sc%i_begin(j),afunctionspace_sc%i_end(j)
+         imga = imga+1
+         lonlat = asgrid%lonlat(i,j)
+         geom%lon_mga(imga) = lonlat(1)*deg2rad
+         geom%lat_mga(imga) = lonlat(2)*deg2rad
+      end do
+   end do
+case default
+   call mpl%abort('${subr}$','wrong function space: '//afunctionspace%name())
+end select
+
+! Enforce proper bounds
+do imga=1,geom%nmga
+   call lonlatmod(geom%lon_mga(imga),geom%lat_mga(imga))
+end do
+
+! Get min/max lon/lat
+geom%lon_min = zss_minval(geom%lon_mga)
+geom%lon_max = zss_maxval(geom%lon_mga)
+geom%lat_min = zss_minval(geom%lat_mga)
+geom%lat_max = zss_maxval(geom%lat_mga)
+call mpl%f_comm%allreduce(geom%lon_min,fckit_mpi_min())
+call mpl%f_comm%allreduce(geom%lon_max,fckit_mpi_max())
+call mpl%f_comm%allreduce(geom%lat_min,fckit_mpi_min())
+call mpl%f_comm%allreduce(geom%lat_max,fckit_mpi_max())
+geom%sin_lat_min = sin(geom%lat_min)
+geom%sin_lat_max = sin(geom%lat_max)
+
+! Allocation
+allocate(geom%hmask_mga(geom%nmga,1))
+allocate(geom%vunit_mga(geom%nmga,geom%nl0))
+allocate(geom%gmask_mga(geom%nmga,geom%nl0))
+
+! Default values
+geom%hmask_mga = .true.
+geom%area_provided = .false.
+do il0=1,geom%nl0
+   geom%vunit_mga(:,il0) = real(il0,kind_real)
+end do
+geom%gmask_mga = .true.
+
+if (present(fieldset)) then
+   ! Get halo mask
+   if (fieldset%has_field('hmask')) then
+      afield = fieldset%field('hmask')
+      call field_to_array(afield,mpl,geom%hmask_mga)
+      call afield%final()
+   end if
+
+   ! Get area
+   if (fieldset%has_field('area')) then
+      afield = fieldset%field('area')
+      allocate(area_mga(geom%nmga,1))
+      call field_to_array(afield,mpl,area_mga)
+      allocate(geom%area_mga(geom%nmga))
+      geom%area_mga = area_mga(:,1)/req**2
+      deallocate(area_mga)
+      call afield%final()
+      geom%area_provided = .true.
+   end if
+
+   ! Get vertical unit
+   if (fieldset%has_field('vunit')) then
+      afield = fieldset%field('vunit')
+      call field_to_array(afield,mpl,geom%vunit_mga)
+      call afield%final()
+   end if
+
+   ! Get geometry mask
+   if (fieldset%has_field('gmask')) then
+      afield = fieldset%field('gmask')
+      call field_to_array(afield,mpl,geom%gmask_mga)
+      call afield%final()
+   end if
+end if
+
+! Total number of points
+call mpl%f_comm%allreduce(geom%nmga,geom%nmg,fckit_mpi_sum())
+
+! Probe out
+@:probe_out()
+
+end subroutine geom_from_atlas
+
+!----------------------------------------------------------------------
+! Subroutine: geom_setup_c0
+!> Setup subset Sc0
+!----------------------------------------------------------------------
+subroutine geom_setup_c0(geom,mpl)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(inout) :: geom !< Geometry
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+
+! Local variables
+integer :: iproc,imga,ic0a,ic0,diff_grid,il0
+real(kind_real) :: xyz_ne(3),xyz_nw(3),xyz_se(3),xyz_sw(3),area_nw,area_se,area_total
+real(kind_real) :: norm_c0(geom%nl0),vunit_hor_c0(geom%nl0)
+
+! Set name
+@:set_name(geom_setup_c0)
+
+! Probe in
+@:probe_in()
+
+write(mpl%info,'(a7,a)') '','Setup subset Sc0'
+call mpl%flush
+
+! Allocation
+allocate(geom%proc_to_nc0a(mpl%nproc))
+
+if (all(geom%hmask_mga)) then
+   ! No duplicated points (no halo)
+   geom%nc0a = geom%nmga
+else
+   ! Duplicated points present (halo)
+   geom%nc0a = count(geom%hmask_mga)
+end if
+
+! Check grid similarity
+if (geom%nc0a==geom%nmga) then
+   diff_grid = 0
+else
+   diff_grid = 1
+end if
+call mpl%f_comm%allreduce(diff_grid,fckit_mpi_sum())
+geom%same_grid = (diff_grid==0)
+
+! Communication
+call mpl%f_comm%allgather(geom%nc0a,geom%proc_to_nc0a)
+
+! Subset Sc0 global size
+geom%nc0 = sum(geom%proc_to_nc0a)
+
+! Allocation
+allocate(geom%proc_to_c0_offset(mpl%nproc))
+allocate(geom%c0a_to_c0(geom%nc0a))
+allocate(geom%c0a_to_mga(geom%nc0a))
+allocate(geom%lon_c0a(geom%nc0a))
+allocate(geom%lat_c0a(geom%nc0a))
+allocate(geom%area_c0a(geom%nc0a))
+allocate(geom%vunit_c0a(geom%nc0a,geom%nl0))
+allocate(geom%gmask_c0a(geom%nc0a,geom%nl0))
+allocate(geom%gmask_hor_c0a(geom%nc0a))
+allocate(geom%nc0_gmask(0:geom%nl0))
+allocate(geom%area_ver_c0(geom%nl0))
+allocate(geom%vunitavg(geom%nl0))
+allocate(geom%l0_to_l0i(geom%nl0))
+allocate(geom%l0i_to_l0(geom%nl0))
+
+! Default area
+if (.not.geom%area_provided) then
+   if ((geom%lon_min<-0.9_kind_real*pi).and.(geom%lon_max>0.9_kind_real*pi) &
+ & .and.(geom%lat_min<-0.45_kind_real*pi).and.(geom%lat_max>0.45_kind_real*pi)) then
+      ! Full sphere, equally distributed
+      geom%area_c0a = four*pi/real(geom%nc0,kind_real)
+   else
+      ! Limited Area Model, equally distributed
+      call lonlat2xyz(mpl,geom%lon_min,geom%lat_min,xyz_sw(1),xyz_sw(2),xyz_sw(3))
+      call lonlat2xyz(mpl,geom%lon_min,geom%lat_max,xyz_nw(1),xyz_nw(2),xyz_nw(3))
+      call lonlat2xyz(mpl,geom%lon_max,geom%lat_min,xyz_se(1),xyz_se(2),xyz_se(3))
+      call lonlat2xyz(mpl,geom%lon_max,geom%lat_max,xyz_ne(1),xyz_ne(2),xyz_ne(3))
+      call area(xyz_sw,xyz_nw,xyz_ne,area_nw)
+      call area(xyz_sw,xyz_ne,xyz_se,area_se)
+      geom%area_c0a = (area_nw+area_se)/real(geom%nc0,kind_real)
+   end if
+end if
+
+! Subset Sc0 offset for halo A
+geom%proc_to_c0_offset(1) = 0
+do iproc=2,mpl%nproc
+   geom%proc_to_c0_offset(iproc) = geom%proc_to_c0_offset(iproc-1)+geom%proc_to_nc0a(iproc-1)
+end do
+
+! Conversion
+do ic0a=1,geom%nc0a
+   ic0 = geom%proc_to_c0_offset(mpl%myproc)+ic0a
+   geom%c0a_to_c0(ic0a) = ic0
+end do
+ic0a = 0
+do imga=1,geom%nmga
+   if (geom%hmask_mga(imga,1)) then
+      ic0a = ic0a+1
+      geom%c0a_to_mga(ic0a) = imga
+   end if
+end do
+
+if (geom%same_grid) then
+   ! Copy fields
+   geom%lon_c0a = geom%lon_mga
+   geom%lat_c0a = geom%lat_mga
+   if (geom%area_provided) geom%area_c0a = geom%area_mga
+   geom%vunit_c0a = geom%vunit_mga
+   geom%gmask_c0a = geom%gmask_mga
+else
+   ! Copy fields from model grid to subset Sc0 on halo A
+   do ic0a=1,geom%nc0a
+      imga = geom%c0a_to_mga(ic0a)
+      geom%lon_c0a(ic0a) = geom%lon_mga(imga)
+      geom%lat_c0a(ic0a) = geom%lat_mga(imga)
+      if (geom%area_provided) geom%area_c0a(ic0a) = geom%area_mga(imga)
+      geom%vunit_c0a(ic0a,:) = geom%vunit_mga(imga,:)
+      geom%gmask_c0a(ic0a,:) = geom%gmask_mga(imga,:)
+   end do
+end if
+
+! Release memory
+deallocate(geom%lon_mga)
+deallocate(geom%lat_mga)
+if (geom%area_provided) deallocate(geom%area_mga)
+deallocate(geom%vunit_mga)
+
+! Related fields
+if (geom%nc0a>0) geom%gmask_hor_c0a = any(geom%gmask_c0a,dim=2)
+geom%nc0_gmask(0) = zss_count(geom%gmask_hor_c0a)
+do il0=1,geom%nl0
+   geom%nc0_gmask(il0) = zss_count(geom%gmask_c0a(:,il0))
+end do
+call mpl%f_comm%allreduce(geom%nc0_gmask,fckit_mpi_sum())
+if (geom%nc0_gmask(0)>0) then
+   geom%area_max_c0 = zss_sum(geom%area_c0a,mask=geom%gmask_hor_c0a)
+else
+   geom%area_max_c0 = zero
+end if
+do il0=1,geom%nl0
+   norm_c0(il0) = zss_count(geom%gmask_c0a(:,il0))
+   if (norm_c0(il0)>0) then
+      geom%area_ver_c0(il0) = zss_sum(geom%area_c0a,mask=geom%gmask_c0a(:,il0))
+      vunit_hor_c0(il0) = zss_sum(geom%vunit_c0a(:,il0),mask=geom%gmask_c0a(:,il0))
+   else
+      geom%area_ver_c0(il0) = zero
+      vunit_hor_c0(il0) = zero
+   end if
+end do
+call mpl%f_comm%allreduce(norm_c0,fckit_mpi_sum())
+call mpl%f_comm%allreduce(geom%area_max_c0,fckit_mpi_sum())
+call mpl%f_comm%allreduce(geom%area_ver_c0,fckit_mpi_sum())
+call mpl%f_comm%allreduce(vunit_hor_c0,fckit_mpi_sum())
+do il0=1,geom%nl0
+   if (norm_c0(il0)>0) then
+      geom%vunitavg(il0) = vunit_hor_c0(il0)/real(norm_c0(il0),kind_real)
+   else
+      geom%vunitavg(il0) = mpl%msv%valr
+   end if
+end do
+area_total = zss_sum(geom%area_c0a)
+call mpl%f_comm%allreduce(area_total,fckit_mpi_sum())
+geom%global = (area_total>0.99_kind_real*four*pi)
+
+! Compute independent levels
+write(mpl%test,'(a7,a)') '','Independent levels: '
+call mpl%flush(newl=.false.)
+call independent_levels(mpl,geom%nc0a,geom%nl0,geom%gmask_c0a,geom%nl0i,geom%l0_to_l0i,geom%l0i_to_l0)
+
+! Probe out
+@:probe_out()
+
+end subroutine geom_setup_c0
+
+!----------------------------------------------------------------------
+! Subroutine: geom_setup_universe
+!> Setup universe
+!----------------------------------------------------------------------
+subroutine geom_setup_universe(geom,mpl,rng,nam)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(inout) :: geom !< Geometry
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(rng_type),intent(inout) :: rng    !< Random number generator
+type(nam_type),intent(in) :: nam       !< Namelist
+
+! Local variables
+integer :: iproc,ic0a,ic0u,ic0,notempty
+integer :: proc_to_universe_size(mpl%nproc)
+integer,allocatable :: order(:)
+real(kind_real) :: dist,x,y,z,x_avg,y_avg,z_avg,n_avg,lon_avg,lat_avg,distmax,norm_c0u
+real(kind_real),allocatable :: proc_to_lon(:),proc_to_lat(:),proc_to_distmax(:)
+real(kind_real),allocatable :: area_c0u(:)
+
+! Set name
+@:set_name(geom_setup_universe)
+
+! Probe in
+@:probe_in()
+
+write(mpl%info,'(a7,a)') '','Setup universe'
+call mpl%flush
+
+! Allocation
+allocate(geom%myuniverse(mpl%nproc))
+
+if (mpl%nproc==1) then
+   ! Single-processors case
+   geom%myuniverse = .true.
+else
+   ! Allocation
+   allocate(proc_to_lon(mpl%nproc))
+   allocate(proc_to_lat(mpl%nproc))
+   allocate(proc_to_distmax(mpl%nproc))
+
+   ! Initialization
+   x_avg = zero
+   y_avg = zero
+   z_avg = zero
+   n_avg = zero
+   distmax = zero
+
+   ! Convert to cartesian coordinates and average
+   do ic0a=1,geom%nc0a
+      call lonlat2xyz(mpl,geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),x,y,z)
+      x_avg = x_avg+x
+      y_avg = y_avg+y
+      z_avg = z_avg+z
+      n_avg = n_avg+one
+   end do
+   if (n_avg>zero) then
+      ! Normalization
+      x_avg = x_avg/n_avg
+      y_avg = y_avg/n_avg
+      z_avg = z_avg/n_avg
+
+      ! Convert average back to lon/lat
+      call xyz2lonlat(mpl,x_avg,y_avg,z_avg,lon_avg,lat_avg)
+
+      ! Compute maximum distance to average
+      do ic0a=1,geom%nc0a
+         if (any(geom%gmask_c0a(ic0a,:))) then
+            call sphere_dist(lon_avg,lat_avg,geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),dist)
+            if (sup(dist,distmax)) distmax = dist
+         end if
+      end do
+   else
+      ! Missing values
+      lon_avg = mpl%msv%valr
+      lat_avg = mpl%msv%valr
+   end if
+
+   ! Communication
+   call mpl%f_comm%allgather(lon_avg,proc_to_lon)
+   call mpl%f_comm%allgather(lat_avg,proc_to_lat)
+   call mpl%f_comm%allgather(distmax,proc_to_distmax)
+
+   ! Compute distances from sampling points to my processor to other sampling points
+   geom%myuniverse = .false.
+   do iproc=1,geom%nproc
+      if (mpl%msv%isnot(lon_avg).and.mpl%msv%isnot(lat_avg) &
+ & .and.mpl%msv%isnot(proc_to_lon(iproc)).and.mpl%msv%isnot(proc_to_lat(iproc))) then
+         ! Compute distance
+         call sphere_dist(lon_avg,lat_avg,proc_to_lon(iproc),proc_to_lat(iproc),dist)
+
+         ! Check distance
+         if (inf(dist,distmax+proc_to_distmax(iproc)+nam%universe_radius)) geom%myuniverse(iproc) = .true.
+      end if
+   end do
+
+   ! Release memory
+   deallocate(proc_to_lon)
+   deallocate(proc_to_lat)
+   deallocate(proc_to_distmax)
+end if
+
+! Share universe size
+call mpl%f_comm%allgather(count(geom%myuniverse),proc_to_universe_size)
+
+! Print results
+call mpl%flush
+do iproc=1,mpl%nproc
+   write(mpl%info,'(a10,a,i6,a,f6.2,a)') '','Task ',iproc,': ',hundred*real(proc_to_universe_size(iproc),kind_real) &
+ & /real(mpl%nproc,kind_real),'%'
+   call mpl%flush
+end do
+
+! Reset random seed if necessary
+if (nam%default_seed) call rng%reseed(mpl)
+
+! Communicate data from halo A to universe on subset Sc0
+write(mpl%info,'(a10,a)') '','Communicate data from halo A to universe on subset Sc0'
+call mpl%flush
+
+! Subset Sc0 universe size
+geom%nc0u = sum(geom%proc_to_nc0a,mask=geom%myuniverse)
+
+! Allocation
+allocate(geom%proc_to_nc0u(mpl%nproc))
+
+! Communication
+call mpl%f_comm%allgather(geom%nc0u,geom%proc_to_nc0u)
+
+! Check universe size
+notempty = 0
+do iproc=1,mpl%nproc
+   if (geom%proc_to_nc0a(iproc)>0) notempty = notempty+1
+end do
+if (notempty>1) then
+   do iproc=1,mpl%nproc
+      if (geom%proc_to_nc0u(iproc)==geom%proc_to_nc0a(iproc)) call mpl%abort('${subr}$','universe is not larger than halo A')
+   end do
+end if
+
+! Allocation
+allocate(geom%c0a_to_c0u(geom%nc0a))
+allocate(geom%c0u_to_c0a(geom%nc0u))
+allocate(geom%c0u_to_c0(geom%nc0u))
+allocate(geom%lon_c0u(geom%nc0u))
+allocate(geom%lat_c0u(geom%nc0u))
+allocate(area_c0u(geom%nc0u))
+allocate(geom%vunit_c0u(geom%nc0u,geom%nl0))
+allocate(geom%gmask_c0u(geom%nc0u,geom%nl0))
+allocate(geom%gmask_hor_c0u(geom%nc0u))
+allocate(order(geom%nc0u))
+
+! Conversions
+geom%c0u_to_c0a = mpl%msv%vali
+ic0u = 0
+do ic0=1,geom%nc0
+   iproc = geom%c0_to_proc(ic0)
+   if (geom%myuniverse(iproc)) then
+      ic0u = ic0u+1
+      if (iproc==mpl%myproc) then
+         ic0a = geom%c0_to_c0a(ic0)
+         geom%c0a_to_c0u(ic0a) = ic0u
+         geom%c0u_to_c0a(ic0u) = ic0a
+      end if
+      geom%c0u_to_c0(ic0u) = ic0
+   end if
+end do
+
+! Setup subset Sc0 communication, local to universe
+call geom%com_AU%setup(mpl,'com_AU',geom%nc0a,geom%nc0u,geom%nc0,geom%c0a_to_c0,geom%c0u_to_c0)
+
+! Extend fields from halo A to universe on subset Sc0
+call geom%com_AU%ext(mpl,geom%lon_c0a,geom%lon_c0u)
+call geom%com_AU%ext(mpl,geom%lat_c0a,geom%lat_c0u)
+call geom%com_AU%ext(mpl,geom%area_c0a,area_c0u)
+call geom%com_AU%ext(mpl,geom%vunit_c0a,geom%vunit_c0u)
+call geom%com_AU%ext(mpl,geom%gmask_c0a,geom%gmask_c0u)
+if (geom%nc0u>0) geom%gmask_hor_c0u = any(geom%gmask_c0u,dim=2)
+
+! Related fields
+norm_c0u = zss_count(geom%gmask_hor_c0u)
+if (norm_c0u>0) then
+   geom%area_max_c0u = zss_sum(area_c0u,mask=geom%gmask_hor_c0u)
+else
+   geom%area_max_c0u = zero
+end if
+
+! Check that Sc0 points in universe are not duplicated
+write(mpl%info,'(a7,a)') '','Check that Sc0 points in universe are not duplicated'
+call mpl%flush
+call qsort(geom%nc0u,geom%lon_c0u,geom%lat_c0u,order,.false.)
+do ic0u=2,geom%nc0u
+   if (eq(geom%lon_c0u(order(ic0u)),geom%lon_c0u(order(ic0u-1))).and.eq(geom%lat_c0u(order(ic0u)),geom%lat_c0u(order(ic0u-1)))) &
+ & call mpl%abort('${subr}$','duplicated points in Sc0 point on universe, check the universe')
+end do
+
+! Release memory
+deallocate(order)
+
+! Probe out
+@:probe_out()
+
+end subroutine geom_setup_universe
+
+!----------------------------------------------------------------------
+! Subroutine: geom_setup_mask_check
+!> Setup mask boundaries checking fields
+!----------------------------------------------------------------------
+subroutine geom_setup_mask_check(geom,mpl,nam)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(inout) :: geom !< Geometry
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
+
+! Local variables
+integer :: il0,ibnda,nbndamax
+integer,allocatable :: bnda_to_c0u(:,:)
+real(kind_real) :: lon_arc(2),lat_arc(2),xbnda(2),ybnda(2),zbnda(2)
+
+! Set name
+@:set_name(geom_setup_mask_check)
+
+! Probe in
+@:probe_in()
+
+! Setup mask check
+if (nam%mask_check) then
+   write(mpl%info,'(a7,a)') '','Setup mask check'
+   call mpl%flush
+
+   ! Allocation
+   allocate(geom%mesh_c0u%nbnda(0:geom%nl0))
+
+   ! Count boundary arcs
+   do il0=0,geom%nl0
+      if (il0==0) then
+         call geom%mesh_c0u%count_bnda(geom%gmask_hor_c0u,geom%mesh_c0u%nbnda(il0))
+      else
+         call geom%mesh_c0u%count_bnda(geom%gmask_c0u(:,il0),geom%mesh_c0u%nbnda(il0))
+      end if
+   end do
+
+   ! Allocation
+   nbndamax = zss_maxval(geom%mesh_c0u%nbnda)
+   allocate(bnda_to_c0u(2,nbndamax))
+   allocate(geom%mesh_c0u%v1bnda(3,nbndamax,0:geom%nl0))
+   allocate(geom%mesh_c0u%v2bnda(3,nbndamax,0:geom%nl0))
+   allocate(geom%mesh_c0u%vabnda(3,nbndamax,0:geom%nl0))
+
+   do il0=0,geom%nl0
+      ! Get boundary arcs
+      if (il0==0) then
+         call geom%mesh_c0u%get_bnda(geom%gmask_hor_c0u,geom%mesh_c0u%nbnda(il0),bnda_to_c0u)
+      else
+         call geom%mesh_c0u%get_bnda(geom%gmask_c0u(:,il0),geom%mesh_c0u%nbnda(il0),bnda_to_c0u)
+      end if
+
+      ! Compute boundary arcs coordinates
+      do ibnda=1,geom%mesh_c0u%nbnda(il0)
+         lon_arc = geom%lon_c0u(bnda_to_c0u(:,ibnda))
+         lat_arc = geom%lat_c0u(bnda_to_c0u(:,ibnda))
+         call lonlat2xyz(mpl,lon_arc(1),lat_arc(1),xbnda(1),ybnda(1),zbnda(1))
+         call lonlat2xyz(mpl,lon_arc(2),lat_arc(2),xbnda(2),ybnda(2),zbnda(2))
+         geom%mesh_c0u%v1bnda(:,ibnda,il0) = (/xbnda(1),ybnda(1),zbnda(1)/)
+         geom%mesh_c0u%v2bnda(:,ibnda,il0) = (/xbnda(2),ybnda(2),zbnda(2)/)
+         call vector_product(geom%mesh_c0u%v1bnda(:,ibnda,il0),geom%mesh_c0u%v2bnda(:,ibnda,il0), &
+ & geom%mesh_c0u%vabnda(:,ibnda,il0))
+      end do
+   end do
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine geom_setup_mask_check
+
+!----------------------------------------------------------------------
+! Subroutine: geom_index_from_lonlat_r0
+!> Get nearest neighbor index from longitude/latitude/level, scalar
+!----------------------------------------------------------------------
+subroutine geom_index_from_lonlat_r0(geom,mpl,lon,lat,il0,iproc,ic0a,gmask)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(in) :: geom !< Geometry
+type(mpl_type),intent(inout) :: mpl !< MPI data
+real(kind_real),intent(in) :: lon   !< Longitude
+real(kind_real),intent(in) :: lat   !< Latitude
+integer,intent(in) :: il0           !< Level index
+integer,intent(out) :: iproc        !< Task index
+integer,intent(out) :: ic0a         !< Local index
+logical,intent(out) :: gmask        !< Local mask
+
+! Local variables
+integer :: nn_index(1),ic0,nn_proc,proc_to_nn_proc(mpl%nproc),jproc,ic0u
+real(kind_real) :: nn_dist(1),proc_to_nn_dist(mpl%nproc),distmin
+logical :: valid
+
+! Set name
+@:set_name(geom_index_from_lonlat_r0)
+
+! Probe in
+@:probe_in()
+
+! Check if the point is inside the universe
+call inside(mpl,geom%mesh_c0u%vbnd,lon,lat,valid)
+
+if (valid) then
+   ! Find nearest neighbor
+   call geom%tree_c0u%find_nearest_neighbors(lon,lat,1,nn_index,nn_dist)
+   ic0 = geom%c0u_to_c0(nn_index(1))
+   nn_proc = geom%c0_to_proc(ic0)
+else
+   nn_dist = huge_real
+   nn_proc = mpl%msv%vali
+end if
+
+! Communication
+call mpl%f_comm%allgather(nn_dist(1),proc_to_nn_dist)
+call mpl%f_comm%allgather(nn_proc,proc_to_nn_proc)
+
+if (mpl%msv%isanynot(proc_to_nn_proc)) then
+   ! The correct processor should handle its own nearest neighbor, with the minimum distance
+   distmin = minval(proc_to_nn_dist)
+   iproc = mpl%msv%vali
+   do jproc=1,mpl%nproc
+      if ((proc_to_nn_proc(jproc)==jproc).and.eq(proc_to_nn_dist(jproc),distmin)) iproc = jproc
+   end do
+   if (mpl%msv%is(iproc)) call mpl%abort('${subr}$','cannot find root processor: did you make sure rng is synchronized?')
+
+   if (iproc==mpl%myproc) then
+      ! Check whether the location is in the hull
+      if (.not.valid) call mpl%abort('${subr}$','wrong processor')
+
+      ! Local index
+      ic0u = nn_index(1)
+      ic0a = geom%c0u_to_c0a(ic0u)
+
+      ! Check mask
+      if (il0==0) then
+         gmask = geom%gmask_hor_c0a(ic0a)
+      else
+         gmask = geom%gmask_c0a(ic0a,il0)
+      end if
+   end if
+
+   ! Broadcast data
+   call mpl%f_comm%broadcast(ic0a,iproc-1)
+   call mpl%f_comm%broadcast(gmask,iproc-1)
+else
+   ! Missing values
+   iproc = mpl%msv%vali
+   ic0a = mpl%msv%vali
+   gmask = .false.
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine geom_index_from_lonlat_r0
+
+!----------------------------------------------------------------------
+! Subroutine: geom_index_from_lonlat_r1
+!> Get nearest neighbor index from longitude/latitude/level, vector
+!----------------------------------------------------------------------
+subroutine geom_index_from_lonlat_r1(geom,mpl,n,lon,lat,il0,iproc,ic0a,gmask)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(in) :: geom  !< Geometry
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+integer,intent(in) :: n              !< Vector size
+real(kind_real),intent(in) :: lon(n) !< Longitudes
+real(kind_real),intent(in) :: lat(n) !< Latitudes
+integer,intent(in) :: il0(n)         !< Level indices
+integer,intent(out) :: iproc(n)      !< Task indices
+integer,intent(out) :: ic0a(n)       !< Local indices
+logical,intent(out) :: gmask(n)      !< Local mask
+
+! Local variables
+integer :: i,nn_index(n),ic0,nn_proc(n),proc_to_nn_proc(n,mpl%nproc),jproc,ic0u,imask(n)
+real(kind_real) :: nn_dist(n),proc_to_nn_dist(n,mpl%nproc),distmin
+logical :: valid(n)
+
+! Set name
+@:set_name(geom_index_from_lonlat_r1)
+
+! Probe in
+@:probe_in()
+
+do i=1,n
+   ! Check if the point is inside the universe
+   call inside(mpl,geom%mesh_c0u%vbnd,lon(i),lat(i),valid(i))
+
+   if (valid(i)) then
+      ! Find nearest neighbor
+      call geom%tree_c0u%find_nearest_neighbors(lon(i),lat(i),1,nn_index(i:i),nn_dist(i:i))
+      ic0 = geom%c0u_to_c0(nn_index(i))
+      nn_proc(i) = geom%c0_to_proc(ic0)
+   else
+      nn_dist(i) = huge_real
+      nn_proc(i) = mpl%msv%vali
+   end if
+end do
+
+! Communication
+call mpl%allgather(nn_dist,proc_to_nn_dist)
+call mpl%allgather(nn_proc,proc_to_nn_proc)
+
+! Initialization
+iproc = mpl%msv%vali
+ic0a = 0
+imask = 0
+
+do i=1,n
+   if (mpl%msv%isanynot(proc_to_nn_proc(i,:))) then
+      ! The correct processor should handle its own nearest neighbor, with the minimum distance
+      distmin = minval(proc_to_nn_dist(i,:))
+      do jproc=1,mpl%nproc
+         if ((proc_to_nn_proc(i,jproc)==jproc).and.eq(proc_to_nn_dist(i,jproc),distmin)) iproc(i) = jproc
+      end do
+      if (mpl%msv%is(iproc(i))) call mpl%abort('${subr}$','cannot find root processor')
+
+      if (iproc(i)==mpl%myproc) then
+         ! Check whether the location is in the hull
+         if (.not.valid(i)) call mpl%abort('${subr}$','wrong processor')
+
+         ! Local index
+         ic0u = nn_index(i)
+         ic0a(i) = geom%c0u_to_c0a(ic0u)
+
+         ! Check mask
+         if (il0(i)==0) then
+            call convert_l2i(geom%gmask_hor_c0a(ic0a(i)),imask(i))
+         else
+            call convert_l2i(geom%gmask_c0a(ic0a(i),il0(i)),imask(i))
+         end if
+      end if
+   end if
+end do
+
+! Communication
+call mpl%f_comm%allreduce(ic0a,fckit_mpi_sum())
+call mpl%f_comm%allreduce(imask,fckit_mpi_sum())
+
+! Final values
+do i=1,n
+   if (mpl%msv%is(iproc(i))) ic0a(i) = mpl%msv%vali
+   call convert_i2l(mpl,imask(i),gmask(i))
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine geom_index_from_lonlat_r1
+
+!----------------------------------------------------------------------
+! Subroutine: geom_setup_dirac
+!> Setup dirac indices
+!----------------------------------------------------------------------
+subroutine geom_setup_dirac(geom,mpl,nam)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(inout) :: geom !< Geometry
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
+
+! Local variables
+integer :: idir,il0,ic0a,il0dir(nam%ndir),iprocdir(nam%ndir),ic0adir(nam%ndir),nn_index(1)
+logical :: valid(nam%ndir)
+type(tree_type) :: tree_dirac
+
+! Set name
+@:set_name(geom_setup_dirac)
+
+! Probe in
+@:probe_in()
+
+if (nam%check_dirac.and.(nam%ndir>0)) then
+   write(mpl%info,'(a7,a)') '','Setup Dirac parameters'
+   call mpl%flush
+
+   ! Find level
+   do idir=1,nam%ndir
+      il0dir(idir) = mpl%msv%vali
+      do il0=1,geom%nl0
+         if (il0==nam%levdir(idir)) il0dir(idir) = il0
+      end do
+      if (mpl%msv%is(il0dir(idir))) call mpl%abort('${subr}$','impossible to find the Dirac level')
+   end do
+
+   ! Index from lon/lat/level
+   call geom%index_from_lonlat(mpl,nam%ndir,nam%londir,nam%latdir,il0dir,iprocdir,ic0adir,valid)
+
+   ! Allocation
+   geom%ndir = count(valid)
+   if (geom%ndir==0) call mpl%abort('${subr}$','no valid dirac point')
+   allocate(geom%londir(geom%ndir))
+   allocate(geom%latdir(geom%ndir))
+   allocate(geom%iprocdir(geom%ndir))
+   allocate(geom%ic0adir(geom%ndir))
+   allocate(geom%il0dir(geom%ndir))
+   allocate(geom%ivdir(geom%ndir))
+   allocate(geom%inbdir(geom%nc0a))
+
+   ! Add valid dirac points
+   geom%ndir = 0
+   do idir=1,nam%ndir
+      if (valid(idir)) then
+         geom%ndir = geom%ndir+1
+         geom%iprocdir(geom%ndir) = iprocdir(idir)
+         geom%ic0adir(geom%ndir) = ic0adir(idir)
+         geom%il0dir(geom%ndir) = il0dir(idir)
+         geom%ivdir(geom%ndir) = nam%ivdir(idir)
+      end if
+   end do
+
+   ! Get exact coordinates
+   do idir=1,geom%ndir
+      if (geom%iprocdir(idir)==mpl%myproc) then
+         geom%londir(idir) = geom%lon_c0a(geom%ic0adir(idir))
+         geom%latdir(idir) = geom%lat_c0a(geom%ic0adir(idir))
+      else
+         geom%londir(idir) = zero
+         geom%latdir(idir) = zero
+      end if
+   end do
+   call mpl%f_comm%allreduce(geom%londir,fckit_mpi_sum())
+   call mpl%f_comm%allreduce(geom%latdir,fckit_mpi_sum())
+
+   ! Create tree
+   call tree_dirac%alloc(mpl,geom%ndir)
+   call tree_dirac%init(geom%londir,geom%latdir)
+
+   ! Affect each horizontal point to a dirac point
+   do ic0a=1,geom%nc0a
+      call tree_dirac%find_nearest_neighbors(geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),1,nn_index)
+      geom%inbdir(ic0a) = nn_index(1)
+   end do
+
+   ! Release memory
+   call tree_dirac%dealloc
+else
+   ! No dirac
+   geom%ndir = 0
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine geom_setup_dirac
+
+#:for dtype in dtypes_irl
+!----------------------------------------------------------------------
+! Subroutine: geom_copy_c0a_to_mga_${dtype}$_single
+!> Copy from subset Sc0 to model grid, halo A, single field
+!----------------------------------------------------------------------
+subroutine geom_copy_c0a_to_mga_${dtype}$_single(geom,mpl,fld_c0a,fld_mga)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(in) :: geom                         !< Geometry
+type(mpl_type),intent(inout) :: mpl                         !< MPI data
+${ftype[dtype]}$,intent(in) :: fld_c0a(geom%nc0a,geom%nl0)  !< Field on subset Sc0, halo A
+${ftype[dtype]}$,intent(out) :: fld_mga(geom%nmga,geom%nl0) !< Field on model grid, halo A
+
+! Local variables
+integer :: ic0a,imga,il0
+${ftype[dtype]}$ :: fld_c0a_masked(geom%nc0a,geom%nl0)
+
+! Set name
+@:set_name(geom_copy_c0a_to_mga_${dtype}$_single)
+
+! Probe in
+@:probe_in()
+
+! Set masked values at missing value
+do il0=1,geom%nl0
+   do ic0a=1,geom%nc0a
+      if (geom%gmask_c0a(ic0a,il0)) then
+         fld_c0a_masked(ic0a,il0) = fld_c0a(ic0a,il0)
+      else
+         fld_c0a_masked(ic0a,il0) = mpl%${msv[dtype]}$
+      end if
+   end do
+end do
+
+if (geom%same_grid) then
+   ! Same grid
+   fld_mga = fld_c0a_masked
+else
+   ! Initialization
+   fld_mga = ${zero[dtype]}$
+
+   ! Copy from subset Sc0 to model grid
+   do il0=1,geom%nl0
+      do ic0a=1,geom%nc0a
+         imga = geom%c0a_to_mga(ic0a)
+         fld_mga(imga,il0) = fld_c0a(ic0a,il0)
+      end do
+   end do
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine geom_copy_c0a_to_mga_${dtype}$_single
+
+!----------------------------------------------------------------------
+! Subroutine: geom_copy_c0a_to_mga_${dtype}$_all
+!> Copy from subset Sc0 to model grid, halo A, all fields
+!----------------------------------------------------------------------
+subroutine geom_copy_c0a_to_mga_${dtype}$_all(geom,mpl,nam,fld_c0a,fld_mga)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(in) :: geom                                !< Geometry
+type(mpl_type),intent(inout) :: mpl                                !< MPI data
+type(nam_type),intent(in) :: nam                                   !< Namelist
+${ftype[dtype]}$,intent(in) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv)  !< Field on subset Sc0, halo A
+${ftype[dtype]}$,intent(out) :: fld_mga(geom%nmga,geom%nl0,nam%nv) !< Field on model grid, halo A
+
+! Local variables
+integer :: iv
+
+! Set name
+@:set_name(geom_copy_c0a_to_mga_${dtype}$_all)
+
+! Probe in
+@:probe_in()
+
+do iv=1,nam%nv
+   call geom%copy_c0a_to_mga(mpl,fld_c0a(:,:,iv),fld_mga(:,:,iv))
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine geom_copy_c0a_to_mga_${dtype}$_all
+
+!----------------------------------------------------------------------
+! Subroutine: geom_copy_mga_to_c0a_${dtype}$_single
+!> Copy from model grid to subset Sc0, halo A, single field
+!----------------------------------------------------------------------
+subroutine geom_copy_mga_to_c0a_${dtype}$_single(geom,mpl,fld_mga,fld_c0a)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(in) :: geom                         !< Geometry
+type(mpl_type),intent(inout) :: mpl                         !< MPI data
+${ftype[dtype]}$,intent(in) :: fld_mga(geom%nmga,geom%nl0)  !< Field on model grid, halo A
+${ftype[dtype]}$,intent(out) :: fld_c0a(geom%nc0a,geom%nl0) !< Field on subset Sc0, halo A
+
+! Local variables
+integer :: ic0a,imga,il0
+
+! Set name
+@:set_name(geom_copy_mga_to_c0a_${dtype}$_single)
+
+! Probe in
+@:probe_in()
+
+if (geom%same_grid) then
+   ! Same grid
+   fld_c0a = fld_mga
+else
+   ! Copy from model grid to subset Sc0
+   do il0=1,geom%nl0
+      do ic0a=1,geom%nc0a
+         imga = geom%c0a_to_mga(ic0a)
+         fld_c0a(ic0a,il0) = fld_mga(imga,il0)
+      end do
+   end do
+end if
+
+! Set masked values at missing value
+do il0=1,geom%nl0
+   do ic0a=1,geom%nc0a
+      if (.not.geom%gmask_c0a(ic0a,il0)) fld_c0a(ic0a,il0) = mpl%${msv[dtype]}$
+   end do
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine geom_copy_mga_to_c0a_${dtype}$_single
+
+!----------------------------------------------------------------------
+! Subroutine: geom_copy_mga_to_c0a_${dtype}$_all
+!> Copy from model grid to subset Sc0, halo A, all fields
+!----------------------------------------------------------------------
+subroutine geom_copy_mga_to_c0a_${dtype}$_all(geom,mpl,nam,fld_c0a,fld_mga)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(in) :: geom                                !< Geometry
+type(mpl_type),intent(inout) :: mpl                                !< MPI data
+type(nam_type),intent(in) :: nam                                   !< Namelist
+${ftype[dtype]}$,intent(in) :: fld_mga(geom%nmga,geom%nl0,nam%nv)  !< Field on model grid, halo A
+${ftype[dtype]}$,intent(out) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) !< Field on subset Sc0, halo A
+
+! Local variables
+integer :: iv
+
+! Set name
+@:set_name(geom_copy_mga_to_c0a_${dtype}$_all)
+
+! Probe in
+@:probe_in()
+
+do iv=1,nam%nv
+   call geom%copy_mga_to_c0a(mpl,fld_mga(:,:,iv),fld_c0a(:,:,iv))
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine geom_copy_mga_to_c0a_${dtype}$_all
+#:endfor
+
+!----------------------------------------------------------------------
+! Subroutine: geom_fieldset_to_c0
+!> Fieldset to Fortran array on subset Sc0
+!----------------------------------------------------------------------
+subroutine geom_fieldset_to_c0(geom,mpl,nam,fieldset,fld_c0a)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(in) :: geom                               !< Geometry
+type(mpl_type),intent(inout) :: mpl                               !< MPI data
+type(nam_type),intent(in) :: nam                                  !< Namelist
+type(fieldset_type),intent(in) :: fieldset                        !< Fieldset
+real(kind_real),intent(out) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) !< Field on subset Sc0, halo A
+
+! Local variables
+real(kind_real) :: fld_mga(geom%nmga,geom%nl0,nam%nv)
+
+! Set name
+@:set_name(geom_fieldset_to_c0)
+
+! Probe in
+@:probe_in()
+
+if (geom%same_grid) then
+   ! Fieldset to Fortran array on subset Sc0
+   call fieldset%to_array(mpl,fld_c0a)
+else
+   ! Fieldset to Fortran array on model grid
+   call fieldset%to_array(mpl,fld_mga)
+
+   ! Model grid to subset Sc0
+   call geom_copy_mga_to_c0a_real_all(geom,mpl,nam,fld_c0a,fld_mga)
+   ! TODO: BUG, should be call geom%copy_mga_to_c0a(mpl,nam,fld_c0a,fld_mga) 
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine geom_fieldset_to_c0
+
+!----------------------------------------------------------------------
+! Subroutine: geom_c0_to_fieldset
+!> Fortran array on subset Sc0 to fieldset
+!----------------------------------------------------------------------
+subroutine geom_c0_to_fieldset(geom,mpl,nam,fld_c0a,fieldset)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(in) :: geom                              !< Geometry
+type(mpl_type),intent(inout) :: mpl                              !< MPI data
+type(nam_type),intent(in) :: nam                                 !< Namelist
+real(kind_real),intent(in) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv) !< Field on subset Sc0, halo A
+type(fieldset_type),intent(inout) :: fieldset                    !< Fieldset
+
+! Local variables
+real(kind_real),allocatable :: fld_mga(:,:,:)
+
+! Set name
+@:set_name(geom_c0_to_fieldset)
+
+! Probe in
+@:probe_in()
+
+if (geom%same_grid) then
+   ! Fortran array on subset Sc0 to fieldset
+   call fieldset%from_array(mpl,fld_c0a)
+else
+   ! Allocation
+   allocate(fld_mga(geom%nmga,geom%nl0,nam%nv))
+
+   ! Subset Sc0 to model grid
+   call geom%copy_c0a_to_mga(mpl,nam,fld_c0a,fld_mga)
+
+   ! Fortran array on model grid to fieldset
+   call fieldset%from_array(mpl,fld_mga)
+
+   ! Release memory
+   deallocate(fld_mga)
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine geom_c0_to_fieldset
+
+!----------------------------------------------------------------------
+! Subroutine: geom_rand_point
+!> Select random valid point on the horizontal grid
+!----------------------------------------------------------------------
+subroutine geom_rand_point(geom,mpl,rng,il0,iproc,ic0a,nr)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(in) :: geom !< Geometry
+type(mpl_type),intent(inout) :: mpl !< MPI data
+type(rng_type),intent(inout) :: rng !< Random number generator
+integer,intent(in) :: il0           !< Level
+integer,intent(out) :: iproc        !< Processor
+integer,intent(out) :: ic0a         !< Local index
+integer,intent(out),optional :: nr  !< Number of random tries
+
+! Local variables
+integer :: lnr
+real(kind_real) :: lon,lat
+logical :: valid
+
+! Set name
+@:set_name(geom_rand_point)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+valid = .false.
+lnr = 0
+
+! Loop
+do while (.not.valid)
+   ! Generate random lon/lat
+   call rng%rand(geom%lon_min,geom%lon_max,lon)
+   call rng%rand(geom%sin_lat_min,geom%sin_lat_max,lat)
+   lat = asin(lat)
+
+   ! Get index from lon/lat
+   call geom%index_from_lonlat(mpl,lon,lat,il0,iproc,ic0a,valid)
+
+   ! Update number of tries
+   lnr = lnr+1
+end do
+
+! Set number of tries
+if (present(nr)) nr = lnr
+
+! Probe out
+@:probe_out()
+
+end subroutine geom_rand_point
+
+!----------------------------------------------------------------------
+! Subroutine: geom_initialize_sampling
+!> Intialize sampling
+!----------------------------------------------------------------------
+subroutine geom_initialize_sampling(geom,mpl,ncxa,lon_cxa,lat_cxa,mask_cxa,rh_cxa,cxa_to_cx,ncxu,cxu_to_cxa,tree_cxu,mesh_cxu, &
+ & verbosity,ifmt,ns,s_to_cx)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(in) :: geom         !< Geometry
+type(mpl_type),intent(inout) :: mpl         !< MPI data
+integer,intent(in) :: ncxa                  !< Number of points (local)
+real(kind_real),intent(in) :: lon_cxa(ncxa) !< Longitudes (local)
+real(kind_real),intent(in) :: lat_cxa(ncxa) !< Latitudes (local)
+logical,intent(in) :: mask_cxa(ncxa)        !< Mask (local)
+real(kind_real),intent(in) :: rh_cxa(ncxa)  !< Horizontal support radius (local)
+integer,intent(in) :: cxa_to_cx(ncxa)       !< Local to global index
+integer,intent(in) :: ncxu                  !< Number of points (universe)
+integer,intent(in) :: cxu_to_cxa(ncxu)      !< Universe to local index
+type(tree_type),intent(in) :: tree_cxu      !< Universe KD-tree
+type(mesh_type),intent(in) :: mesh_cxu      !< Universe mesh
+logical,intent(in) :: verbosity             !< Verbosity flag
+integer,intent(in) :: ifmt                  !< Format indentation
+integer,intent(in) :: ns                    !< Number of samplings points (global)
+integer,intent(out) :: s_to_cx(ns)          !< Horizontal sampling index (global)
+
+! Local variables
+integer :: ncxa_eff,ncx_eff,isa,icxa,is,icx,nfac,nssa,nss,issa,ix,iy,issamin,icxmin,iprocmin,nsa,nodemin,inode,hash
+integer :: s_to_cxa(ns),nn_index(1)
+integer,allocatable :: proc_to_icxmin(:),ssa_to_cxa(:),ssa_to_cx(:),ssa_to_node(:),s_to_ssa(:)
+integer,allocatable :: proc_to_nodemin(:),sa_to_s(:),order_s(:),cxa_to_node(:)
+real(kind_real) :: nss_real,lonlat(2),valmin,xmin,ymin,zmin,chmin,dist
+real(kind_real),allocatable :: proc_to_xmin(:),proc_to_ymin(:),proc_to_zmin(:),proc_to_chmin(:)
+real(kind_real),allocatable :: x_ssa(:),y_ssa(:),z_ssa(:),ch_ssa(:),potential(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:)
+logical :: retry,valid
+logical,allocatable :: lmask_cxa(:),lmask_ssa(:),indist_ssa(:),gmask_s(:)
+character(len=1024) :: cfmt
+type(atlas_structuredgrid) :: agrid
+
+! Set name
+@:set_name(geom_initialize_sampling)
+
+! Probe in
+@:probe_in()
+
+! Number of effective points
+ncxa_eff = zss_count(mask_cxa)
+call mpl%f_comm%allreduce(ncxa_eff,ncx_eff,fckit_mpi_sum())
+
+! Check mask size
+if (ncx_eff==0) then
+   ! Empty mask
+   call mpl%abort('${subr}$','empty mask in initialize sampling')
+elseif (ns>nsmax) then
+   ! Sampling is too large
+   call mpl%abort('${subr}$','sampling size is too large')
+else
+   ! Sampling
+
+   ! Allocation
+   allocate(lmask_cxa(ncxa))
+   allocate(cxa_to_node(ncxa))
+
+   ! First step: decimate the grid
+
+   ! Initialization
+   nfac = nfacmin
+   retry = .true.
+   write(cfmt,'(a,i2.2,a)') '(a',ifmt+3,',a,i8,a)'
+   write(mpl%test,trim(cfmt)) '','Decimate full grid, at least ',ns,' points required, '
+   if (verbosity) call mpl%flush(newl=.false.)
+
+   do while (retry)
+      ! Initialization
+      lmask_cxa = .false.
+      cxa_to_node = mpl%msv%vali
+
+      ! Update nfac
+      nfac = 2*nfac
+
+      ! Number of required points at global scale
+      nss_real = real(nfac*ns,kind_real)*four*pi/geom%area_max_c0*(one+repro_th)
+
+      if (geom%global) then
+         ! Global grid
+         call get_grid(mpl,floor(nss_real),agrid,nss)
+
+         ! Initialization
+         lmask_cxa = .false.
+         cxa_to_node = mpl%msv%vali
+
+         ! Loop over grid points
+         inode = 0
+         do iy=1,int(agrid%ny(),kind_int)
+            do ix=1,int(agrid%nx(iy),kind_int)
+               ! Global index
+               inode = inode+1
+
+               ! Get longitude/latitude
+               lonlat = agrid%lonlat(ix,iy)*deg2rad
+               call lonlatmod(lonlat(1),lonlat(2))
+
+               ! Check if point is inside the hull
+               call inside(mpl,mesh_cxu%vbnd,lonlat(1),lonlat(2),valid)
+
+               if (valid) then
+                  ! Find nearest neighbor in universe
+                  call tree_cxu%find_nearest_neighbors(lonlat(1),lonlat(2),1,nn_index)
+                  icxa = cxu_to_cxa(nn_index(1))
+
+                  ! Keep valid points on each processor
+                  if (mpl%msv%isnot(icxa)) then
+                     lmask_cxa(icxa) = mask_cxa(icxa)
+                     cxa_to_node(icxa) = inode
+                  end if
+               end if
+            end do
+         end do
+      else
+         ! Regional grid
+         call get_grid(mpl,nfac*ns,geom%lon_min,geom%lon_max,geom%lat_min,geom%lat_max,agrid,nss)
+
+         ! Loop over grid points
+         inode = 0
+         do iy=1,int(agrid%ny(),kind_int)
+            do ix=1,int(agrid%nx(iy),kind_int)
+               ! Global index
+               inode = inode+1
+
+               ! Get longitude/latitude
+               lonlat = agrid%lonlat(ix,iy)*deg2rad
+               call lonlatmod(lonlat(1),lonlat(2))
+
+               ! Check if point is inside the hull
+               call inside(mpl,mesh_cxu%vbnd,lonlat(1),lonlat(2),valid)
+
+               if (valid) then
+                  ! Find nearest neighbor in universe
+                  call tree_cxu%find_nearest_neighbors(lonlat(1),lonlat(2),1,nn_index)
+                  icxa = cxu_to_cxa(nn_index(1))
+
+                  ! Keep valid points on each processor
+                  if (mpl%msv%isnot(icxa)) then
+                     lmask_cxa(icxa) = mask_cxa(icxa)
+                     cxa_to_node(icxa) = inode
+                  end if
+               end if
+            end do
+         end do
+      end if
+
+      ! Release memory
+      call agrid%final()
+
+      ! Local and global number of valid points
+      nssa = zss_count(lmask_cxa)
+      call mpl%f_comm%allreduce(nssa,nss,fckit_mpi_sum())
+
+      ! Print result
+      write(mpl%test,'(i8,a)') nss,' valid points found'
+      if (verbosity) call mpl%flush
+      retry = (nss<ns)
+   end do
+
+   ! Second step: get data on effective local grid
+
+   ! Allocation
+   allocate(s_to_ssa(ns))
+   allocate(ssa_to_cxa(nssa))
+   allocate(ssa_to_cx(nssa))
+   allocate(ssa_to_node(nssa))
+   allocate(x_ssa(nssa))
+   allocate(y_ssa(nssa))
+   allocate(z_ssa(nssa))
+   allocate(ch_ssa(nssa))
+   allocate(lmask_ssa(nssa))
+
+   ! Initialization
+   issa = 0
+   do icxa=1,ncxa
+      if (lmask_cxa(icxa)) then
+         issa = issa+1
+         icx = cxa_to_cx(icxa)
+         ssa_to_cxa(issa) = icxa
+         ssa_to_cx(issa) = icx
+         ssa_to_node(issa) = cxa_to_node(icxa)
+         call lonlat2xyz(mpl,lon_cxa(icxa),lat_cxa(icxa),x_ssa(issa),y_ssa(issa),z_ssa(issa))
+         ch_ssa(issa) = two*sin(half*min(rh_cxa(icxa),pi))
+      end if
+   end do
+   lmask_ssa = .true.
+
+   ! Third step: electric potential method
+
+   ! Allocation
+   allocate(potential(nssa))
+   allocate(indist_ssa(nssa))
+   allocate(proc_to_nodemin(mpl%nproc))
+   allocate(proc_to_xmin(mpl%nproc))
+   allocate(proc_to_ymin(mpl%nproc))
+   allocate(proc_to_zmin(mpl%nproc))
+   allocate(proc_to_chmin(mpl%nproc))
+   allocate(proc_to_icxmin(mpl%nproc))
+
+   ! Initialization
+   s_to_ssa = mpl%msv%vali
+   s_to_cx = mpl%msv%vali
+   write(cfmt,'(a,i2.2,a)') '(a',ifmt+3,',a)'
+   write(mpl%info,trim(cfmt)) '','Potential method: '
+   if (verbosity) then
+      call mpl%flush(newl=.false.)
+      call mpl%prog_init(ns)
+   end if
+
+   ! Set initial sampling point as close as possible to (0,0)
+   is = 1
+
+   ! Compute distance to point of coordinate (0,0)
+   do issa=1,nssa
+      call cart_dist(x_ssa(issa),y_ssa(issa),z_ssa(issa),zero,zero,zero,potential(issa))
+   end do
+
+   ! Find minimum distance globally
+   valmin = zss_minval(potential)
+   call mpl%f_comm%allreduce(valmin,fckit_mpi_min())
+
+   ! Check if minimum is indistinguishable
+   do issa=1,nssa
+      indist_ssa(issa) = indist(potential(issa),valmin)
+   end do
+   nodemin = mpl%msv%vali
+   xmin = mpl%msv%valr
+   ymin = mpl%msv%valr
+   zmin = mpl%msv%valr
+   chmin = mpl%msv%valr
+   icxmin = mpl%msv%vali
+   if (nssa>0) then
+      if (any(indist_ssa)) then
+         issamin = minloc(ssa_to_node,mask=indist_ssa,dim=1)
+         nodemin = ssa_to_node(issamin)
+         xmin = x_ssa(issamin)
+         ymin = y_ssa(issamin)
+         zmin = z_ssa(issamin)
+         chmin = ch_ssa(issamin)
+         icxmin = ssa_to_cx(issamin)
+      end if
+   end if
+
+   ! Communication
+   call mpl%f_comm%allgather(nodemin,proc_to_nodemin)
+   call mpl%f_comm%allgather(xmin,proc_to_xmin)
+   call mpl%f_comm%allgather(ymin,proc_to_ymin)
+   call mpl%f_comm%allgather(zmin,proc_to_zmin)
+   call mpl%f_comm%allgather(chmin,proc_to_chmin)
+   call mpl%f_comm%allgather(icxmin,proc_to_icxmin)
+
+   ! Find processor handling the minimum distance
+   iprocmin = minloc(proc_to_nodemin,mask=mpl%msv%isnot(proc_to_nodemin),dim=1)
+
+   ! Reset potential
+   potential = zero
+
+   ! Update global sampling, local mask and local potential
+   s_to_cx(is) = proc_to_icxmin(iprocmin)
+   if (iprocmin==mpl%myproc) then
+      lmask_ssa(issamin) = .false.
+      s_to_ssa(is) = issamin
+   end if
+   !$omp parallel do schedule(static) private(issa,dist)
+   do issa=1,nssa
+      if (lmask_ssa(issa)) then
+         ! Cartesian distance
+         call cart_dist(x_ssa(issa),y_ssa(issa),z_ssa(issa), &
+ & proc_to_xmin(iprocmin),proc_to_ymin(iprocmin),proc_to_zmin(iprocmin),dist)
+
+         ! Update potential
+         potential(issa) = potential(issa)+proc_to_chmin(iprocmin)/dist
+      end if
+   end do
+   !$omp end parallel do
+
+   ! Update
+   if (verbosity) call mpl%prog_print(is)
+
+   ! Set other points where the potential is minimum
+   do is=2,ns
+      ! Find minimum distance globally
+      valmin = huge_real
+      if (nssa>0) then
+         if (any(lmask_ssa)) valmin = zss_minval(potential,mask=lmask_ssa)
+      end if
+      call mpl%f_comm%allreduce(valmin,fckit_mpi_min())
+
+      ! Check if minimum is indistinguishable
+      indist_ssa = .false.
+      do issa=1,nssa
+         if (lmask_ssa(issa)) indist_ssa(issa) = indist(potential(issa),valmin)
+      end do
+      nodemin = mpl%msv%vali
+      xmin = mpl%msv%valr
+      ymin = mpl%msv%valr
+      zmin = mpl%msv%valr
+      chmin = mpl%msv%valr
+      icxmin = mpl%msv%vali
+      if (nssa>0) then
+         if (any(indist_ssa)) then
+            issamin = minloc(ssa_to_node,mask=indist_ssa,dim=1)
+            nodemin = ssa_to_node(issamin)
+            xmin = x_ssa(issamin)
+            ymin = y_ssa(issamin)
+            zmin = z_ssa(issamin)
+            chmin = ch_ssa(issamin)
+            icxmin = ssa_to_cx(issamin)
+         end if
+      end if
+
+      ! Communication
+      call mpl%f_comm%allgather(nodemin,proc_to_nodemin)
+      call mpl%f_comm%allgather(xmin,proc_to_xmin)
+      call mpl%f_comm%allgather(ymin,proc_to_ymin)
+      call mpl%f_comm%allgather(zmin,proc_to_zmin)
+      call mpl%f_comm%allgather(chmin,proc_to_chmin)
+      call mpl%f_comm%allgather(icxmin,proc_to_icxmin)
+
+      ! Find processor handling the minimum distance
+      iprocmin = minloc(proc_to_nodemin,mask=mpl%msv%isnot(proc_to_nodemin),dim=1)
+
+      ! Update global sampling, local mask and local potential
+      s_to_cx(is) = proc_to_icxmin(iprocmin)
+      if (iprocmin==mpl%myproc) then
+         lmask_ssa(issamin) = .false.
+         s_to_ssa(is) = issamin
+      end if
+      !$omp parallel do schedule(static) private(issa,dist)
+      do issa=1,nssa
+         if (lmask_ssa(issa)) then
+            ! Cartesian distance
+            call cart_dist(x_ssa(issa),y_ssa(issa),z_ssa(issa), &
+ & proc_to_xmin(iprocmin),proc_to_ymin(iprocmin),proc_to_zmin(iprocmin),dist)
+
+            ! Update potential
+            potential(issa) = potential(issa)+proc_to_chmin(iprocmin)/dist
+         end if
+      end do
+      !$omp end parallel do
+
+      ! Update
+      if (verbosity) call mpl%prog_print(is)
+   end do
+   if (verbosity) call mpl%prog_final
+
+   ! Copy back from effective grid
+   do is=1,ns
+      issa = s_to_ssa(is)
+      if (mpl%msv%isnot(issa)) then
+         icxa = ssa_to_cxa(issa)
+         s_to_cxa(is) = icxa
+      else
+         s_to_cxa(is) = mpl%msv%vali
+      end if
+   end do
+
+   ! Release memory
+   deallocate(lmask_cxa)
+   deallocate(cxa_to_node)
+   deallocate(s_to_ssa)
+   deallocate(ssa_to_cxa)
+   deallocate(ssa_to_cx)
+   deallocate(ssa_to_node)
+   deallocate(x_ssa)
+   deallocate(y_ssa)
+   deallocate(z_ssa)
+   deallocate(ch_ssa)
+   deallocate(lmask_ssa)
+   deallocate(potential)
+   deallocate(proc_to_xmin)
+   deallocate(proc_to_ymin)
+   deallocate(proc_to_zmin)
+   deallocate(proc_to_chmin)
+   deallocate(proc_to_nodemin)
+   deallocate(proc_to_icxmin)
+end if
+
+! Reorder points
+
+! Allocation
+nsa = count(mpl%msv%isnot(s_to_cxa))
+allocate(sa_to_s(nsa))
+allocate(lon_sa(nsa))
+allocate(lat_sa(nsa))
+allocate(lon_s(ns))
+allocate(lat_s(ns))
+allocate(order_s(ns))
+allocate(gmask_s(ns))
+
+! Initialization
+isa = 0
+do is=1,ns
+   icxa = s_to_cxa(is)
+   if (mpl%msv%isnot(icxa)) then
+      isa = isa+1
+      sa_to_s(isa) = is
+      lon_sa(isa) = lon_cxa(icxa)
+      lat_sa(isa) = lat_cxa(icxa)
+   end if
+end do
+
+! Communication
+call mpl%loc_to_glb(nsa,ns,sa_to_s,lon_sa,lon_s,.true.)
+call mpl%loc_to_glb(nsa,ns,sa_to_s,lat_sa,lat_s,.true.)
+
+! Define points order
+call qsort(ns,lon_s,lat_s,order_s)
+
+! Reorder sampling
+s_to_cx = s_to_cx(order_s)
+
+! Grid hash
+gmask_s = .true.
+call grid_hash(ns,lon_s,lat_s,gmask_s,hash)
+
+! Test grid hash
+write(cfmt,'(a,i2.2,a)') '(a',ifmt+3,',a,i12)'
+write(mpl%test,trim(cfmt)) '','Subgrid hash: ',hash
+if (verbosity) call mpl%flush
+
+! Release memory
+deallocate(sa_to_s)
+deallocate(lon_sa)
+deallocate(lat_sa)
+deallocate(lon_s)
+deallocate(lat_s)
+deallocate(order_s)
+deallocate(gmask_s)
+
+! Probe out
+@:probe_out()
+
+end subroutine geom_initialize_sampling
+
+!----------------------------------------------------------------------
+! Subroutine: geom_define_test_vectors
+!> Define test vectors
+!----------------------------------------------------------------------
+subroutine geom_define_test_vectors(geom,mpl,rng,nam,ntest,fld)
+
+! Passed variables
+class(geom_type),intent(in) :: geom                                 !< Geometry
+type(mpl_type),intent(inout) :: mpl                                 !< MPI data
+type(rng_type),intent(inout) :: rng                                 !< Random number generator
+type(nam_type),intent(in) :: nam                                    !< Namelist
+integer,intent(in) :: ntest                                         !< Number of vectors
+real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0,nam%nv,ntest) !< Field
+
+! Local variables
+integer :: itest
+integer :: il0dir,iprocdir,ic0adir
+
+! Set name
+@:set_name(geom_define_test_vectors)
+
+! Probe in
+@:probe_in()
+
+! Resynchronize random number generator
+call rng%resync(mpl)
+
+do itest=1,ntest
+   ! Define random dirac location
+   call rng%rand(1,geom%nl0,il0dir)
+   call geom%rand_point(mpl,rng,il0dir,iprocdir,ic0adir)
+
+   ! Define test vector
+   fld(:,:,:,itest) = zero
+   if (iprocdir==mpl%myproc) fld(ic0adir,il0dir,1,itest) = one
+end do
+
+! Desynchronize random number generator
+call rng%desync(mpl)
+
+! Reset random seed if necessary
+if (nam%default_seed) call rng%reseed(mpl)
+
+! Probe out
+@:probe_out()
+
+end subroutine geom_define_test_vectors
+
+!----------------------------------------------------------------------
+! Function: geom_c0_to_c0a
+!> Conversion from global to halo A on subset Sc0
+!----------------------------------------------------------------------
+function geom_c0_to_c0a(geom,ic0) result(ic0a)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(in) :: geom !< Geometry
+integer,intent(in) :: ic0           !< Global index
+
+! Returned variable
+integer :: ic0a
+
+! Set name
+@:set_name(geom_c0_to_c0a)
+
+! Probe in
+@:probe_in()
+
+! Call generic function
+ic0a = cx_to_cxa(geom%nproc,geom%proc_to_c0_offset,ic0)
+
+! Probe out
+@:probe_out()
+
+end function geom_c0_to_c0a
+
+!----------------------------------------------------------------------
+! Function: geom_c0_to_proc
+!> Conversion from global to processor on subset Sc0
+!----------------------------------------------------------------------
+function geom_c0_to_proc(geom,ic0) result(iproc)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(in) :: geom !< Geometry
+integer,intent(in) :: ic0           !< Global index
+
+! Returned variable
+integer :: iproc
+
+! Set name
+@:set_name(geom_c0_to_proc)
+
+! Probe in
+@:probe_in()
+
+! Call generic function
+iproc = cx_to_proc(geom%nproc,geom%proc_to_c0_offset,ic0)
+
+! Probe out
+@:probe_out()
+
+end function geom_c0_to_proc
+
+!----------------------------------------------------------------------
+! Function: geom_c0_to_c0u
+!> Conversion from global to universe on subset Sc0
+!----------------------------------------------------------------------
+function geom_c0_to_c0u(geom,ic0) result(ic0u)
+
+implicit none
+
+! Passed variables
+class(geom_type),intent(in) :: geom !< Geometry
+integer,intent(in) :: ic0           !< Global index
+
+! Returned variable
+integer :: ic0u
+
+! Set name
+@:set_name(geom_c0_to_c0u)
+
+! Probe in
+@:probe_in()
+
+! Call generic function
+ic0u = cx_to_cxu(geom%nproc,geom%proc_to_c0_offset,geom%proc_to_nc0a,geom%myuniverse,ic0)
+
+! Probe out
+@:probe_out()
+
+end function geom_c0_to_c0u
+
+end module type_geom

@@ -1,0 +1,216 @@
+#:include 'instrumentation.fypp'
+!----------------------------------------------------------------------
+! Module: type_cmat_blk
+!> Correlation matrix derived type
+! Author: Benjamin Menetrier
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+module type_cmat_blk
+
+use fckit_mpi_module, only: fckit_mpi_sum
+use tools_const, only: one
+use tools_func, only: zss_sum
+use tools_kinds, only: kind_real
+use type_geom, only: geom_type
+use type_mpl, only: mpl_type
+use type_nam, only: nam_type
+@:use_probe()
+
+implicit none
+
+! C matrix block data derived type
+type cmat_blk_type
+   ! Attributes
+   logical :: anisotropic                            !< Anisotropy flag
+
+   ! Computational data
+   integer :: ncmp = 1                               !< Number of components
+   real(kind_real),allocatable :: a(:,:,:)           !< Amplitudes
+   real(kind_real),allocatable :: rh(:,:,:)          !< Horizontal support radius
+   real(kind_real),allocatable :: D11(:,:,:)         !< Horizontal direct tensor, component 11
+   real(kind_real),allocatable :: D22(:,:,:)         !< Horizontal direct tensor, component 22
+   real(kind_real),allocatable :: D12(:,:,:)         !< Horizontal direct tensor, component 12 (normalized)
+   real(kind_real),allocatable :: rv(:,:,:)          !< Vertical support radius
+   real(kind_real),allocatable :: rhs(:,:,:)         !< Fit support radius  for sampling
+   real(kind_real),allocatable :: rvs(:,:,:)         !< Fit support radius, for sampling
+
+   ! BUMP interface data
+   real(kind_real),allocatable :: bump_a(:,:,:)      !< Amplitudes
+   real(kind_real),allocatable :: bump_rh(:,:,:)     !< Horizontal support radius
+   real(kind_real),allocatable :: bump_D11(:,:,:)    !< Horizontal direct tensor, component 11
+   real(kind_real),allocatable :: bump_D22(:,:,:)    !< Horizontal direct tensor, component 22
+   real(kind_real),allocatable :: bump_D12(:,:,:)    !< Horizontal direct tensor, component 12 (normalized)
+   real(kind_real),allocatable :: bump_rv(:,:,:)     !< Vertical support radius
+contains
+   procedure :: alloc => cmat_blk_alloc
+   procedure :: init => cmat_blk_init
+   procedure :: partial_bump_dealloc => cmat_blk_partial_bump_dealloc
+   procedure :: partial_dealloc => cmat_blk_partial_dealloc
+   procedure :: dealloc => cmat_blk_dealloc
+end type cmat_blk_type
+
+private
+public :: cmat_blk_type
+
+contains
+
+!----------------------------------------------------------------------
+! Subroutine: cmat_blk_alloc
+!> Allocation
+!----------------------------------------------------------------------
+subroutine cmat_blk_alloc(cmat_blk,geom)
+
+implicit none
+
+! Passed variables
+class(cmat_blk_type),intent(inout) :: cmat_blk !< C matrix data block
+type(geom_type),intent(in) :: geom             !< Geometry
+
+! Set name
+@:set_name(cmat_blk_alloc)
+
+! Probe in
+@:probe_in()
+
+! Allocation
+allocate(cmat_blk%a(geom%nc0a,geom%nl0,cmat_blk%ncmp))
+allocate(cmat_blk%rh(geom%nc0a,geom%nl0,cmat_blk%ncmp))
+if (cmat_blk%anisotropic) then
+   allocate(cmat_blk%D11(geom%nc0a,geom%nl0,cmat_blk%ncmp))
+   allocate(cmat_blk%D22(geom%nc0a,geom%nl0,cmat_blk%ncmp))
+   allocate(cmat_blk%D12(geom%nc0a,geom%nl0,cmat_blk%ncmp))
+end if
+allocate(cmat_blk%rv(geom%nc0a,geom%nl0,cmat_blk%ncmp))
+allocate(cmat_blk%rhs(geom%nc0a,geom%nl0,cmat_blk%ncmp))
+allocate(cmat_blk%rvs(geom%nc0a,geom%nl0,cmat_blk%ncmp))
+
+! Probe out
+@:probe_out()
+
+end subroutine cmat_blk_alloc
+
+!----------------------------------------------------------------------
+! Subroutine: cmat_blk_init
+!> Initialization
+!----------------------------------------------------------------------
+subroutine cmat_blk_init(cmat_blk,mpl)
+
+implicit none
+
+! Passed variables
+class(cmat_blk_type),intent(inout) :: cmat_blk !< C matrix data block
+type(mpl_type),intent(in) :: mpl               !< MPI data
+
+! Set name
+@:set_name(cmat_blk_init)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+cmat_blk%a = mpl%msv%valr
+cmat_blk%rh = mpl%msv%valr
+if (cmat_blk%anisotropic) then
+   cmat_blk%D11 = mpl%msv%valr
+   cmat_blk%D22 = mpl%msv%valr
+   cmat_blk%D12 = mpl%msv%valr
+end if
+cmat_blk%rv = mpl%msv%valr
+cmat_blk%rhs = mpl%msv%valr
+cmat_blk%rvs = mpl%msv%valr
+
+! Probe out
+@:probe_out()
+
+end subroutine cmat_blk_init
+
+!----------------------------------------------------------------------
+! Subroutine: cmat_blk_partial_bump_dealloc
+!> Release memory (partial)
+!----------------------------------------------------------------------
+subroutine cmat_blk_partial_bump_dealloc(cmat_blk)
+
+implicit none
+
+! Passed variables
+class(cmat_blk_type),intent(inout) :: cmat_blk !< C matrix data block
+
+! Set name
+@:set_name(cmat_blk_partial_bump_dealloc)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+if (allocated(cmat_blk%bump_a)) deallocate(cmat_blk%bump_a)
+if (allocated(cmat_blk%bump_rh)) deallocate(cmat_blk%bump_rh)
+if (allocated(cmat_blk%bump_D11)) deallocate(cmat_blk%bump_D11)
+if (allocated(cmat_blk%bump_D22)) deallocate(cmat_blk%bump_D22)
+if (allocated(cmat_blk%bump_D12)) deallocate(cmat_blk%bump_D12)
+if (allocated(cmat_blk%bump_rv)) deallocate(cmat_blk%bump_rv)
+
+! Probe out
+@:probe_out()
+
+end subroutine cmat_blk_partial_bump_dealloc
+
+!----------------------------------------------------------------------
+! Subroutine: cmat_blk_partial_dealloc
+!> Release memory (partial)
+!----------------------------------------------------------------------
+subroutine cmat_blk_partial_dealloc(cmat_blk)
+
+implicit none
+
+! Passed variables
+class(cmat_blk_type),intent(inout) :: cmat_blk !< C matrix data block
+
+! Set name
+@:set_name(cmat_blk_partial_dealloc)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+call cmat_blk%partial_bump_dealloc
+if (allocated(cmat_blk%rhs)) deallocate(cmat_blk%rhs)
+if (allocated(cmat_blk%rvs)) deallocate(cmat_blk%rvs)
+
+! Probe out
+@:probe_out()
+
+end subroutine cmat_blk_partial_dealloc
+
+!----------------------------------------------------------------------
+! Subroutine: cmat_blk_dealloc
+!> Release memory
+!----------------------------------------------------------------------
+subroutine cmat_blk_dealloc(cmat_blk)
+
+implicit none
+
+! Passed variables
+class(cmat_blk_type),intent(inout) :: cmat_blk !< C matrix data block
+
+! Set name
+@:set_name(cmat_blk_dealloc)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+call cmat_blk%partial_dealloc
+if (allocated(cmat_blk%a)) deallocate(cmat_blk%a)
+if (allocated(cmat_blk%rh)) deallocate(cmat_blk%rh)
+if (allocated(cmat_blk%D11)) deallocate(cmat_blk%D11)
+if (allocated(cmat_blk%D22)) deallocate(cmat_blk%D22)
+if (allocated(cmat_blk%D12)) deallocate(cmat_blk%D12)
+if (allocated(cmat_blk%rv)) deallocate(cmat_blk%rv)
+
+! Probe out
+@:probe_out()
+
+end subroutine cmat_blk_dealloc
+
+end module type_cmat_blk

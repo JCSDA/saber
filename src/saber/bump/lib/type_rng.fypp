@@ -1,0 +1,437 @@
+#:include 'generics.fypp'
+#:include 'instrumentation.fypp'
+!----------------------------------------------------------------------
+! Module: type_rng
+!> Random numbers generator derived type
+! Author: Benjamin Menetrier
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+module type_rng
+
+use tools_const, only: zero,one,two
+use tools_kinds, only: kind_int,kind_long,kind_real
+use type_mpl, only: mpl_type
+use type_nam, only: nam_type
+@:use_probe()
+
+implicit none
+
+integer,parameter :: default_seed = 140587               !< Default seed
+integer(kind_long),parameter :: a = 1103515245_kind_long !< Linear congruential multiplier
+integer(kind_long),parameter :: c = 12345_kind_long      !< Linear congruential offset
+integer(kind_long),parameter :: m = 2147483648_kind_long !< Linear congruential modulo
+
+type rng_type
+   ! Seed
+   integer(kind_long) :: seed !< Seed
+
+   ! Gaussian deviates parameters
+   logical :: lset = .true.   !< Gaussian number generator switch
+   real(kind_real) :: gset    !< Gaussian number generator alternative
+contains
+   procedure :: init => rng_init
+   procedure :: reseed => rng_reseed
+   procedure :: resync => rng_resync
+   procedure :: desync => rng_desync
+   procedure :: lcg => rng_lcg
+   #:for dtype in dtypes_ir
+      procedure :: rng_rand_${dtype}$_r0
+      #:for rank in ranks_123456
+         procedure :: rng_rand_${dtype}$_r${rank}$
+      #:endfor
+   #:endfor
+@:init_procedure(14)
+   generic :: rand => &
+   #:for dtype in dtypes_ir
+@:add_procedure(rng_rand_${dtype}$_r0)
+      #:for rank in ranks_123456
+@:add_procedure(rng_rand_${dtype}$_r${rank}$)
+      #:endfor
+   #:endfor
+   procedure :: rng_rand_gau_r0
+   #:for rank in ranks_123456
+      procedure :: rng_rand_gau_r${rank}$
+   #:endfor
+@:init_procedure(6)
+   generic :: rand_gau => rng_rand_gau_r0, &
+   #:for rank in ranks_123456
+@:add_procedure(rng_rand_gau_r${rank}$)
+   #:endfor
+end type rng_type
+
+private
+public :: rng_type
+
+contains
+
+!----------------------------------------------------------------------
+! Subroutine: rng_init
+!> Initialize the random number generator
+!----------------------------------------------------------------------
+subroutine rng_init(rng,mpl,nam)
+
+implicit none
+
+! Passed variables
+class(rng_type),intent(inout) :: rng !< Random number generator
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+type(nam_type),intent(in) :: nam     !< Namelist variables
+
+! Local variable
+integer :: seed
+
+! Set name
+@:set_name(rng_init)
+
+! Probe in
+@:probe_in()
+
+! Set seed
+if (nam%default_seed) then
+   ! Default seed
+   seed = default_seed
+else
+   ! Time-based seed
+   call system_clock(count=seed)
+end if
+
+! Different seed for each processor
+seed = seed+mpl%myproc-1
+
+! Long integer
+rng%seed = int(seed,kind_long)
+
+! Print result
+if (nam%default_seed) then
+   write(mpl%info,'(a7,a)') '','Linear congruential generator initialized with a default seed'
+   call mpl%flush
+else
+   write(mpl%info,'(a7,a)') '','Linear congruential generator initialized'
+   call mpl%flush
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine rng_init
+
+!----------------------------------------------------------------------
+! Subroutine: rng_reseed
+!> Re-seed the random number generator
+!----------------------------------------------------------------------
+subroutine rng_reseed(rng,mpl)
+
+implicit none
+
+! Passed variable
+class(rng_type),intent(inout) :: rng !< Random number generator
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+
+! Local variable
+integer :: seed
+
+! Set name
+@:set_name(rng_reseed)
+
+! Probe in
+@:probe_in()
+
+! Default seed
+seed = default_seed
+
+! Different seed for each processor
+seed = seed+mpl%myproc-1
+
+! Long integer
+rng%seed = int(seed,kind_long)
+
+! Probe out
+@:probe_out()
+
+end subroutine rng_reseed
+
+!----------------------------------------------------------------------
+! Subroutine: rng_resync
+!> Resynchronize the random number generator between processors
+!----------------------------------------------------------------------
+subroutine rng_resync(rng,mpl)
+
+implicit none
+
+! Passed variable
+class(rng_type),intent(inout) :: rng !< Random number generator
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+
+! Set name
+@:set_name(rng_resync)
+
+! Probe in
+@:probe_in()
+
+! Wait
+call mpl%f_comm%barrier()
+
+! Broadcast root seed
+call mpl%f_comm%broadcast(rng%seed,mpl%rootproc-1)
+
+! Probe out
+@:probe_out()
+
+end subroutine rng_resync
+
+!----------------------------------------------------------------------
+! Subroutine: rng_desync
+!> Desynchronize the random number generator between processors
+!----------------------------------------------------------------------
+subroutine rng_desync(rng,mpl)
+
+implicit none
+
+! Passed variable
+class(rng_type),intent(inout) :: rng !< Random number generator
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+
+! Set name
+@:set_name(rng_desync)
+
+! Probe in
+@:probe_in()
+
+! Wait
+call mpl%f_comm%barrier()
+
+! Different seed for each processor
+rng%seed = rng%seed+int(mpl%myproc-1,kind_long)
+
+! Probe out
+@:probe_out()
+
+end subroutine rng_desync
+
+!----------------------------------------------------------------------
+! Subroutine: rng_lcg
+!> Linear congruential generator
+!----------------------------------------------------------------------
+subroutine rng_lcg(rng,x,seed)
+
+implicit none
+
+! Passed variables
+class(rng_type),intent(inout) :: rng              !< Random number generator
+real(kind_real),intent(out) :: x                  !< Random number between 0 and 1
+integer(kind_long),intent(inout),optional :: seed !< Seed
+
+! Local variables
+integer(kind_long) :: lseed
+
+! Set name
+@:set_name(rng_lcg)
+
+! Probe in
+@:probe_in()
+
+! Local seed
+if (present(seed)) then
+   lseed = mod(seed,m)
+else
+   lseed = rng%seed
+end if
+
+! Update seed
+lseed = mod(a*lseed+c,m)
+
+if (present(seed)) then
+   seed = lseed
+else
+   rng%seed = lseed
+end if
+
+! Random number
+x = real(lseed,kind_real)/real(m-1,kind_real)
+
+! Probe out
+@:probe_out()
+
+end subroutine rng_lcg
+
+#:for dtype in dtypes_ir
+!----------------------------------------------------------------------
+! Subroutine: rng_rand_${dtype}$_r0
+!> Generate a random ${dtype}$
+!----------------------------------------------------------------------
+subroutine rng_rand_${dtype}$_r0(rng,binf,bsup,value)
+
+implicit none
+
+! Passed variables
+class(rng_type),intent(inout) :: rng  !< Random number generator
+${ftype[dtype]}$,intent(in) :: binf   !< Lower bound
+${ftype[dtype]}$,intent(in) :: bsup   !< Upper bound
+${ftype[dtype]}$,intent(out) :: value !< Random value
+
+! Local variables
+real(kind_real) :: x
+
+! Set name
+@:set_name(rng_rand_${dtype}$_r0)
+
+! Probe in
+@:probe_in()
+
+! Generate random number between 0 and 1
+call rng%lcg(x)
+
+! Apply bounds
+#:if dtype == 'int'
+   ! Adapt range
+   x = x*real(bsup-binf+1,kind_real)
+
+   ! Add offset
+   value = binf+int(x)
+#:else
+   ! Adapt range
+   x = x*(bsup-binf)
+
+   ! Add offset
+   value = binf+x
+#:endif
+
+! Probe out
+@:probe_out()
+
+end subroutine rng_rand_${dtype}$_r0
+#:endfor
+
+#:for dtype in dtypes_ir
+   #:for rank in ranks_123456
+!----------------------------------------------------------------------
+! Subroutine: rng_rand_${dtype}$_r${rank}$
+!> Generate a random ${dtype}$
+!----------------------------------------------------------------------
+subroutine rng_rand_${dtype}$_r${rank}$(rng,binf,bsup,array)
+
+implicit none
+
+! Passed variables
+class(rng_type),intent(inout) :: rng                 !< Random number generator
+${ftype[dtype]}$,intent(in) :: binf                  !< Lower bound
+${ftype[dtype]}$,intent(in) :: bsup                  !< Upper bound
+${ftype[dtype]}$,intent(out) :: array(${dim[rank]}$) !< Random array
+
+! Local variables
+integer :: #{for arg_dim in range(1,rank+1)}# i${arg_dim}$${delim[arg_dim == rank]}$ #{endfor}#
+
+! Set name
+@:set_name(rng_rand_${dtype}$_r${rank}$)
+
+! Probe in
+@:probe_in()
+
+! Call r0 generator
+#:for arg_dim in range(1,rank+1)
+do i${arg_dim}$=size(array,${arg_dim}$),1,-1
+#:endfor
+   call rng%rand(binf,bsup,array( &
+   #:for arg_dim in range(1,rank)
+ & i${arg_dim}$, &
+   #:endfor
+ & i${rank}$))
+#:for arg_dim in range(1,rank+1)
+end do
+#:endfor
+
+! Probe out
+@:probe_out()
+
+end subroutine rng_rand_${dtype}$_r${rank}$
+   #:endfor
+#:endfor
+
+!----------------------------------------------------------------------
+! Subroutine: rng_rand_gau_r0
+!> Generate random Gaussian deviate
+!----------------------------------------------------------------------
+subroutine rng_rand_gau_r0(rng,value)
+
+implicit none
+
+! Passed variables
+class(rng_type),intent(inout) :: rng !< Random number generator
+real(kind_real),intent(out) :: value !< Gaussian deviate
+
+! Local variables
+real(kind_real) :: fac,rsq,v1,v2
+
+! Set name
+@:set_name(rng_rand_gau_r0)
+
+! Probe in
+@:probe_in()
+
+! Gaussian distribution
+if (rng%lset) then
+   rsq = zero
+   do while((rsq>=one).or.(rsq<=zero))
+      call rng%rand(zero,one,v1)
+      v1 = two*v1-one
+      call rng%rand(zero,one,v2)
+      v2 = two*v2-one
+      rsq = v1**2+v2**2
+   end do
+   fac = sqrt(-two*log(rsq)/rsq)
+   rng%gset = v1*fac
+   value = v2*fac
+   rng%lset = .false.
+else
+   value = rng%gset
+   rng%lset = .true.
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine rng_rand_gau_r0
+
+#:for rank in ranks_123456
+!----------------------------------------------------------------------
+! Subroutine: rng_rand_gau_r${rank}$
+!> Generate a random Gaussian deviates array
+!----------------------------------------------------------------------
+subroutine rng_rand_gau_r${rank}$(rng,array)
+
+implicit none
+
+! Passed variables
+class(rng_type),intent(inout) :: rng                !< Random number generator
+real(kind_real),intent(out) :: array(${dim[rank]}$) !< Random array
+
+! Local variables
+integer :: #{for arg_dim in range(1,rank+1)}# i${arg_dim}$${delim[arg_dim == rank]}$ #{endfor}#
+
+! Set name
+@:set_name(rng_rand_gau_r${rank}$)
+
+! Probe in
+@:probe_in()
+
+! Call r0 generator
+#:for arg_dim in range(1,rank+1)
+do i${arg_dim}$=size(array,${arg_dim}$),1,-1
+#:endfor
+   call rng%rand_gau(array( &
+   #:for arg_dim in range(1,rank)
+ & i${arg_dim}$, &
+   #:endfor
+ & i${rank}$))
+#:for arg_dim in range(1,rank+1)
+end do
+#:endfor
+
+! Probe out
+@:probe_out()
+
+end subroutine rng_rand_gau_r${rank}$
+#:endfor
+
+end module type_rng

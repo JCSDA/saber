@@ -1,0 +1,95 @@
+#:include 'instrumentation.fypp'
+!----------------------------------------------------------------------
+! Module: type_cv_cmp
+!> Control vector component derived type
+! Author: Benjamin Menetrier
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+module type_cv_cmp
+
+use tools_kinds, only: kind_real
+use type_mpl, only: mpl_type
+@:use_probe()
+
+implicit none
+
+! Control vector block derived type
+type cv_cmp_type
+   integer :: n                            !< Control variable component size
+   real(kind_real),allocatable :: alpha(:) !< Control vector component field
+contains
+   procedure :: alloc => cv_cmp_alloc
+   procedure :: dealloc => cv_cmp_dealloc
+end type cv_cmp_type
+
+private
+public :: cv_cmp_type
+
+contains
+
+!----------------------------------------------------------------------
+! Subroutine: cv_cmp_alloc
+!> Allocation
+!----------------------------------------------------------------------
+subroutine cv_cmp_alloc(cv_cmp,mpl,n,getsizeonly)
+
+! Passed variables
+class(cv_cmp_type),intent(inout) :: cv_cmp !< Control vector component
+type(mpl_type),intent(inout) :: mpl        !< MPI data
+integer,intent(in) :: n                    !< Control vector size
+logical,intent(in),optional :: getsizeonly !< Flag to get the control variable size only (no allocation)
+
+! Local variables
+logical :: lgetsizeonly
+
+! Set name
+@:set_name(cv_cmp_alloc)
+
+! Probe in
+@:probe_in()
+
+! Local flag
+lgetsizeonly = .false.
+if (present(getsizeonly)) lgetsizeonly = getsizeonly
+
+! Copy attribute
+cv_cmp%n = n
+
+if (.not.lgetsizeonly) then
+   ! Allocation
+   if (.not.allocated(cv_cmp%alpha)) allocate(cv_cmp%alpha(cv_cmp%n))
+
+   ! Initialization
+   cv_cmp%alpha = mpl%msv%valr
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine cv_cmp_alloc
+
+!----------------------------------------------------------------------
+! Subroutine: cv_cmp_dealloc
+!> Release memory
+!----------------------------------------------------------------------
+subroutine cv_cmp_dealloc(cv_cmp)
+
+! Passed variables
+class(cv_cmp_type),intent(inout) :: cv_cmp !< Control vector component
+
+! Set name
+@:set_name(cv_cmp_dealloc)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+if (allocated(cv_cmp%alpha)) deallocate(cv_cmp%alpha)
+
+! Probe out
+@:probe_out()
+
+end subroutine cv_cmp_dealloc
+
+end module type_cv_cmp

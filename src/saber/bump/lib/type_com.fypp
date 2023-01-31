@@ -1,0 +1,1057 @@
+#:include 'generics.fypp'
+#:include 'instrumentation.fypp'
+!----------------------------------------------------------------------
+! Module: type_com
+!> Communications derived type
+! Author: Benjamin Menetrier
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+module type_com
+
+use fckit_mpi_module, only: fckit_mpi_status
+!$ use omp_lib
+use tools_kinds, only: kind_int,kind_real
+use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim_size,define_var,inquire_var,put_var,get_var
+use tools_qsort, only: qsort
+use tools_repro, only: eq
+use type_mpl, only: mpl_type
+@:use_probe()
+
+implicit none
+
+! Communication derived type
+type com_type
+   ! Setup data
+   integer,allocatable :: ext_to_proc(:) !< Extended index to processor
+   integer,allocatable :: ext_to_red(:)  !< Extended index to reduced index
+
+   ! Communication data
+   character(len=1024) :: prefix         !< Communication prefix
+   integer :: nred                       !< Reduction size
+   integer :: next                       !< Extension size
+   integer :: nown                       !< Own data size
+   integer,allocatable :: own_to_ext(:)  !< Own data to extension conversion
+   integer,allocatable :: own_to_red(:)  !< Own data to reduction conversion
+   integer :: nhalo                      !< Halo buffer size
+   integer :: nexcl                      !< Exclusive interior buffer size
+   integer,allocatable :: jhalocounts(:) !< Halo counts
+   integer,allocatable :: jexclcounts(:) !< Exclusive interior counts
+   integer,allocatable :: jhalodispls(:) !< Halo displacement
+   integer,allocatable :: jexcldispls(:) !< Exclusive interior displacement
+   integer,allocatable :: halo(:)        !< Halo buffer
+   integer,allocatable :: excl(:)        !< Exclusive interior buffer
+
+   ! I/O IDs
+   integer :: grpid                      !< group ID
+   integer :: own_to_ext_id              !< own_to_ext ID
+   integer :: own_to_red_id              !< own_to_red ID
+   integer :: jhalocounts_id             !< jhalocounts ID
+   integer :: jexclcounts_id             !< jexclcounts ID
+   integer :: jhalodispls_id             !< jhalodispls ID
+   integer :: jexcldispls_id             !< jexcldispls ID
+   integer :: halo_id                    !< halo ID
+   integer :: excl_id                    !< excl ID
+contains
+   procedure :: dealloc => com_dealloc
+   procedure :: read => com_read
+   procedure :: write_def => com_write_def
+   procedure :: write_data => com_write_data
+   procedure :: buffer_size => com_buffer_size
+   procedure :: serialize => com_serialize
+   procedure :: deserialize => com_deserialize
+   procedure :: setup => com_setup
+   #:for dtype in dtypes_irl
+      #:for rank in ranks_1234
+         procedure :: com_ext_${dtype}$_r${rank}$
+         procedure :: com_red_${dtype}$_r${rank}$
+      #:endfor
+   #:endfor
+   generic :: ext => &
+@:init_procedure(12)
+   #:for dtype in dtypes_irl
+      #:for rank in ranks_1234
+@:add_procedure(com_ext_${dtype}$_r${rank}$)
+      #:endfor
+   #:endfor
+@:init_procedure(12)
+   generic :: red => &
+   #:for dtype in dtypes_irl
+      #:for rank in ranks_1234
+@:add_procedure(com_red_${dtype}$_r${rank}$)
+      #:endfor
+   #:endfor
+end type com_type
+
+private
+public :: com_type
+
+contains
+
+!----------------------------------------------------------------------
+! Subroutine: com_dealloc
+!> Release memory
+!----------------------------------------------------------------------
+subroutine com_dealloc(com)
+
+implicit none
+
+! Passed variables
+class(com_type),intent(inout) :: com !< Communication data
+
+! Set name
+@:set_name(com_dealloc)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+if (allocated(com%ext_to_proc)) deallocate(com%ext_to_proc)
+if (allocated(com%ext_to_red)) deallocate(com%ext_to_red)
+if (allocated(com%own_to_ext)) deallocate(com%own_to_ext)
+if (allocated(com%own_to_red)) deallocate(com%own_to_red)
+if (allocated(com%jhalocounts)) deallocate(com%jhalocounts)
+if (allocated(com%jexclcounts)) deallocate(com%jexclcounts)
+if (allocated(com%jhalodispls)) deallocate(com%jhalodispls)
+if (allocated(com%jexcldispls)) deallocate(com%jexcldispls)
+if (allocated(com%halo)) deallocate(com%halo)
+if (allocated(com%excl)) deallocate(com%excl)
+
+! Probe out
+@:probe_out()
+
+end subroutine com_dealloc
+
+!----------------------------------------------------------------------
+! Subroutine: com_read
+!> Read communications from a NetCDF file
+!----------------------------------------------------------------------
+subroutine com_read(com,mpl,ncid)
+
+implicit none
+
+! Passed variables
+class(com_type),intent(inout) :: com  !< Communication data
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+integer,intent(in) :: ncid            !< NetCDF file
+
+! Set name
+@:set_name(com_read)
+
+! Probe in
+@:probe_in()
+
+! Get group
+com%grpid = inquire_grp(mpl,ncid,com%prefix)
+
+! Get dimensions
+call get_att(mpl,com%grpid,0,'nred',com%nred)
+call get_att(mpl,com%grpid,0,'next',com%next)
+com%nown = inquire_dim_size(mpl,com%grpid,'nown',0)
+com%nhalo = inquire_dim_size(mpl,com%grpid,'nhalo',0)
+com%nexcl = inquire_dim_size(mpl,com%grpid,'nexcl',0)
+
+! Allocation
+if (com%nown>0) allocate(com%own_to_ext(com%nown))
+if (com%nown>0) allocate(com%own_to_red(com%nown))
+allocate(com%jhalocounts(mpl%nproc))
+allocate(com%jexclcounts(mpl%nproc))
+allocate(com%jhalodispls(mpl%nproc))
+allocate(com%jexcldispls(mpl%nproc))
+if (com%nhalo>0) allocate(com%halo(com%nhalo))
+if (com%nexcl>0) allocate(com%excl(com%nexcl))
+
+! Get variables
+if (com%nown>0) com%own_to_ext_id = inquire_var(mpl,com%grpid,'own_to_ext')
+if (com%nown>0) com%own_to_red_id = inquire_var(mpl,com%grpid,'own_to_red')
+com%jhalocounts_id = inquire_var(mpl,com%grpid,'jhalocounts')
+com%jexclcounts_id = inquire_var(mpl,com%grpid,'jexclcounts')
+com%jhalodispls_id = inquire_var(mpl,com%grpid,'jhalodispls')
+com%jexcldispls_id = inquire_var(mpl,com%grpid,'jexcldispls')
+if (com%nhalo>0) com%halo_id = inquire_var(mpl,com%grpid,'halo')
+if (com%nexcl>0) com%excl_id = inquire_var(mpl,com%grpid,'excl')
+
+! Read variables
+if (com%nown>0) call get_var(mpl,com%grpid,com%own_to_ext_id,com%own_to_ext)
+if (com%nown>0) call get_var(mpl,com%grpid,com%own_to_red_id,com%own_to_red)
+call get_var(mpl,com%grpid,com%jhalocounts_id,com%jhalocounts)
+call get_var(mpl,com%grpid,com%jexclcounts_id,com%jexclcounts)
+call get_var(mpl,com%grpid,com%jhalodispls_id,com%jhalodispls)
+call get_var(mpl,com%grpid,com%jexcldispls_id,com%jexcldispls)
+if (com%nhalo>0) call get_var(mpl,com%grpid,com%halo_id,com%halo)
+if (com%nexcl>0) call get_var(mpl,com%grpid,com%excl_id,com%excl)
+
+! Probe out
+@:probe_out()
+
+end subroutine com_read
+
+!----------------------------------------------------------------------
+! Subroutine: com_write_def
+!> Write, definition mode
+!----------------------------------------------------------------------
+subroutine com_write_def(com,mpl,ncid)
+
+implicit none
+
+! Passed variables
+class(com_type),intent(inout) :: com !< Communication data
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+integer,intent(in) :: ncid           !< NetCDF file
+
+! Local variables
+integer :: nproc_id,nown_id,nhalo_id,nexcl_id
+
+! Set name
+@:set_name(com_write_def)
+
+! Probe in
+@:probe_in()
+
+! Define group
+com%grpid = define_grp(mpl,ncid,com%prefix)
+
+! Define dimensions
+nproc_id = define_dim(mpl,com%grpid,'nproc',mpl%nproc)
+call put_att(mpl,com%grpid,0,'nred',com%nred)
+call put_att(mpl,com%grpid,0,'next',com%next)
+if (com%nown>0) nown_id = define_dim(mpl,com%grpid,'nown',com%nown)
+if (com%nhalo>0) nhalo_id = define_dim(mpl,com%grpid,'nhalo',com%nhalo)
+if (com%nexcl>0) nexcl_id = define_dim(mpl,com%grpid,'nexcl',com%nexcl)
+
+! Define variables
+if (com%nown>0) com%own_to_ext_id = define_var(mpl,com%grpid,'own_to_ext','int',(/nown_id/))
+if (com%nown>0) com%own_to_red_id = define_var(mpl,com%grpid,'own_to_red','int',(/nown_id/))
+com%jhalocounts_id = define_var(mpl,com%grpid,'jhalocounts','int',(/nproc_id/))
+com%jexclcounts_id = define_var(mpl,com%grpid,'jexclcounts','int',(/nproc_id/))
+com%jhalodispls_id = define_var(mpl,com%grpid,'jhalodispls','int',(/nproc_id/))
+com%jexcldispls_id = define_var(mpl,com%grpid,'jexcldispls','int',(/nproc_id/))
+if (com%nhalo>0) com%halo_id = define_var(mpl,com%grpid,'halo','int',(/nhalo_id/))
+if (com%nexcl>0) com%excl_id = define_var(mpl,com%grpid,'excl','int',(/nexcl_id/))
+
+! Probe out
+@:probe_out()
+
+end subroutine com_write_def
+
+!----------------------------------------------------------------------
+! Subroutine: com_write_data
+!> Write, data mode
+!----------------------------------------------------------------------
+subroutine com_write_data(com,mpl)
+
+implicit none
+
+! Passed variables
+class(com_type),intent(in) :: com   !< Communication data
+type(mpl_type),intent(inout) :: mpl !< MPI data
+
+! Set name
+@:set_name(com_write_data)
+
+! Probe in
+@:probe_in()
+
+! Write variables
+if (com%nown>0) call put_var(mpl,com%grpid,com%own_to_ext_id,com%own_to_ext)
+if (com%nown>0) call put_var(mpl,com%grpid,com%own_to_red_id,com%own_to_red)
+call put_var(mpl,com%grpid,com%jhalocounts_id,com%jhalocounts)
+call put_var(mpl,com%grpid,com%jexclcounts_id,com%jexclcounts)
+call put_var(mpl,com%grpid,com%jhalodispls_id,com%jhalodispls)
+call put_var(mpl,com%grpid,com%jexcldispls_id,com%jexcldispls)
+if (com%nhalo>0) call put_var(mpl,com%grpid,com%halo_id,com%halo)
+if (com%nexcl>0) call put_var(mpl,com%grpid,com%excl_id,com%excl)
+
+! Probe out
+@:probe_out()
+
+end subroutine com_write_data
+
+!----------------------------------------------------------------------
+! Subroutine: com_buffer_size
+!> Buffer size
+!----------------------------------------------------------------------
+subroutine com_buffer_size(com,mpl,nbufi)
+
+implicit none
+
+! Passed variables
+class(com_type),intent(in) :: com   !< Communication data
+type(mpl_type),intent(inout) :: mpl !< MPI data
+integer,intent(out) :: nbufi        !< Buffer size (integer)
+
+! Set name
+@:set_name(com_buffer_size)
+
+! Probe in
+@:probe_in()
+
+! Define buffer size
+nbufi = 6+2*com%nown+4*mpl%nproc+com%nhalo+com%nexcl
+
+! Probe out
+@:probe_out()
+
+end subroutine com_buffer_size
+
+!----------------------------------------------------------------------
+! Subroutine: com_serialize
+!> Serialize
+!----------------------------------------------------------------------
+subroutine com_serialize(com,mpl,nbufi,bufi)
+
+implicit none
+
+! Passed variables
+class(com_type),intent(in) :: com   !< Communication data
+type(mpl_type),intent(inout) :: mpl !< MPI data
+integer,intent(in) :: nbufi         !< Buffer size (integer)
+integer,intent(out) :: bufi(nbufi)  !< Buffer (integer)
+
+! Local variables
+integer :: ibufi
+
+! Set name
+@:set_name(com_serialize)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+ibufi = 0
+
+! Dimensions
+bufi(ibufi+1) = nbufi
+ibufi = ibufi+1
+bufi(ibufi+1) = com%nred
+ibufi = ibufi+1
+bufi(ibufi+1) = com%next
+ibufi = ibufi+1
+bufi(ibufi+1) = com%nown
+ibufi = ibufi+1
+bufi(ibufi+1) = com%nhalo
+ibufi = ibufi+1
+bufi(ibufi+1) = com%nexcl
+ibufi = ibufi+1
+
+! Data
+if (com%nown>0) bufi(ibufi+1:ibufi+com%nown) = com%own_to_ext
+ibufi = ibufi+com%nown
+if (com%nown>0) bufi(ibufi+1:ibufi+com%nown) = com%own_to_red
+ibufi = ibufi+com%nown
+bufi(ibufi+1:ibufi+mpl%nproc) = com%jhalocounts
+ibufi = ibufi+mpl%nproc
+bufi(ibufi+1:ibufi+mpl%nproc) = com%jexclcounts
+ibufi = ibufi+mpl%nproc
+bufi(ibufi+1:ibufi+mpl%nproc) = com%jhalodispls
+ibufi = ibufi+mpl%nproc
+bufi(ibufi+1:ibufi+mpl%nproc) = com%jexcldispls
+ibufi = ibufi+mpl%nproc
+if (com%nhalo>0) bufi(ibufi+1:ibufi+com%nhalo) = com%halo
+ibufi = ibufi+com%nhalo
+if (com%nexcl>0) bufi(ibufi+1:ibufi+com%nexcl) = com%excl
+ibufi = ibufi+com%nexcl
+
+! Check
+if (ibufi/=nbufi) call mpl%abort('${subr}$','inconsistent final offset/buffer size (integer)')
+
+! Probe out
+@:probe_out()
+
+end subroutine com_serialize
+
+!----------------------------------------------------------------------
+! Subroutine: com_deserialize
+!> Receive
+!----------------------------------------------------------------------
+subroutine com_deserialize(com,mpl,nbufi,bufi)
+
+implicit none
+
+! Passed variables
+class(com_type),intent(inout) :: com !< Communication data
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+integer,intent(in) :: nbufi          !< Buffer size (integer)
+integer,intent(in) :: bufi(nbufi)    !< Buffer (integer)
+
+! Local variables
+integer :: ibufi
+
+! Set name
+@:set_name(com_deserialize)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+ibufi = 0
+
+! Check
+if (bufi(ibufi+1)/=nbufi) call mpl%abort('${subr}$','inconsistent initial value/buffer size (integer)')
+ibufi = ibufi+1
+
+! Dimensions
+com%nred = bufi(ibufi+1)
+ibufi = ibufi+1
+com%next = bufi(ibufi+1)
+ibufi = ibufi+1
+com%nown = bufi(ibufi+1)
+ibufi = ibufi+1
+com%nhalo = bufi(ibufi+1)
+ibufi = ibufi+1
+com%nexcl = bufi(ibufi+1)
+ibufi = ibufi+1
+
+! Allocation
+if (com%nown>0) allocate(com%own_to_ext(com%nown))
+if (com%nown>0) allocate(com%own_to_red(com%nown))
+allocate(com%jhalocounts(mpl%nproc))
+allocate(com%jexclcounts(mpl%nproc))
+allocate(com%jhalodispls(mpl%nproc))
+allocate(com%jexcldispls(mpl%nproc))
+if (com%nhalo>0) allocate(com%halo(com%nhalo))
+if (com%nexcl>0) allocate(com%excl(com%nexcl))
+
+! Data
+if (com%nown>0) com%own_to_ext = bufi(ibufi+1:ibufi+com%nown)
+ibufi = ibufi+com%nown
+if (com%nown>0) com%own_to_red = bufi(ibufi+1:ibufi+com%nown)
+ibufi = ibufi+com%nown
+com%jhalocounts = bufi(ibufi+1:ibufi+mpl%nproc)
+ibufi = ibufi+mpl%nproc
+com%jexclcounts = bufi(ibufi+1:ibufi+mpl%nproc)
+ibufi = ibufi+mpl%nproc
+com%jhalodispls = bufi(ibufi+1:ibufi+mpl%nproc)
+ibufi = ibufi+mpl%nproc
+com%jexcldispls = bufi(ibufi+1:ibufi+mpl%nproc)
+ibufi = ibufi+mpl%nproc
+if (com%nhalo>0) com%halo = bufi(ibufi+1:ibufi+com%nhalo)
+ibufi = ibufi+com%nhalo
+if (com%nexcl>0) com%excl = bufi(ibufi+1:ibufi+com%nexcl)
+ibufi = ibufi+com%nexcl
+
+! Check
+if (ibufi/=nbufi) call mpl%abort('${subr}$','inconsistent final offset/buffer size (integer)')
+
+! Probe out
+@:probe_out()
+
+end subroutine com_deserialize
+
+!----------------------------------------------------------------------
+! Subroutine: com_setup
+!> Setup communications
+!----------------------------------------------------------------------
+subroutine com_setup(com_out,mpl,prefix,nred,next,nglb,red_to_glb,ext_to_glb,own_to_glb)
+
+implicit none
+
+! Passed variables
+class(com_type),intent(inout) :: com_out     !< Communication data
+type(mpl_type),intent(inout) :: mpl          !< MPI data
+character(len=*),intent(in) :: prefix        !< Prefix
+integer,intent(in) :: nred                   !< Reduced halo size
+integer,intent(in) :: next                   !< Extended halo size
+integer,intent(in) :: nglb                   !< Global size
+integer,intent(in) :: red_to_glb(nred)       !< Reduced halo to global
+integer,intent(in) :: ext_to_glb(next)       !< Extended halo to global
+integer,intent(in),optional :: own_to_glb(:) !< Own data to global
+
+! Local variables
+integer :: iproc,jproc,iown,ired,iext,iglb,icount,nglb_test
+integer,allocatable :: glb_to_red(:),glb_to_proc(:)
+integer,allocatable :: own_to_glb_tmp(:),red_to_glb_tmp(:),ext_to_glb_tmp(:)
+integer,allocatable :: own_to_glb_order(:),red_to_glb_order(:),ext_to_glb_order(:)
+type(com_type) :: com_in(mpl%nproc)
+type(fckit_mpi_status) :: status
+
+! Set name
+@:set_name(com_setup)
+
+! Probe in
+@:probe_in()
+
+if (mpl%main) then
+   ! Get dimensions
+   nglb_test = 0
+   do iproc=1,mpl%nproc
+      if (iproc==mpl%rootproc) then
+         ! Copy dimensions
+         com_in(iproc)%nred = nred
+         com_in(iproc)%next = next
+      else
+         ! Receive dimensions on rootproc
+         call mpl%f_comm%receive(com_in(iproc)%nred,iproc-1,mpl%tag,status)
+         call mpl%f_comm%receive(com_in(iproc)%next,iproc-1,mpl%tag+1,status)
+      end if
+
+      ! Rebuild global size
+      nglb_test = nglb_test+com_in(iproc)%nred
+   end do
+
+   ! Check global size
+   if (nglb_test/=nglb) call mpl%abort('${subr}$','sum of reduced halos sizes is not equal to the global size')
+
+   ! Allocation
+   allocate(glb_to_red(nglb))
+   allocate(glb_to_proc(nglb))
+
+   ! Initialization
+   glb_to_red = mpl%msv%vali
+
+   ! Build global to reduced halo conversion
+   do iproc=1,mpl%nproc
+      ! Allocation
+      allocate(red_to_glb_tmp(com_in(iproc)%nred))
+
+      if (iproc==mpl%rootproc) then
+         ! Copy data
+         red_to_glb_tmp = red_to_glb
+      else
+         ! Receive data on rootproc
+         call mpl%f_comm%receive(red_to_glb_tmp,iproc-1,mpl%tag+2,status)
+      end if
+
+      ! Fill glb_to_red and glb_to_proc
+      do ired=1,com_in(iproc)%nred
+         iglb = red_to_glb_tmp(ired)
+         if (mpl%msv%isnot(glb_to_red(iglb))) call mpl%abort('${subr}$','distinct reduced halo points have the same global index')
+         glb_to_red(iglb) = ired
+         glb_to_proc(iglb) = iproc
+      end do
+
+      ! Release memory
+      deallocate(red_to_glb_tmp)
+   end do
+
+   do iproc=1,mpl%nproc
+      ! Allocation
+      allocate(ext_to_glb_tmp(com_in(iproc)%next))
+      allocate(com_in(iproc)%ext_to_red(com_in(iproc)%next))
+      allocate(com_in(iproc)%ext_to_proc(com_in(iproc)%next))
+
+      if (iproc==mpl%rootproc) then
+         ! Copy data
+         ext_to_glb_tmp = ext_to_glb
+      else
+         ! Receive data on rootproc
+         call mpl%f_comm%receive(ext_to_glb_tmp,iproc-1,mpl%tag+3,status)
+      end if
+
+      ! Communication parameters
+      do iext=1,com_in(iproc)%next
+         iglb = ext_to_glb_tmp(iext)
+         ired = glb_to_red(iglb)
+         jproc = glb_to_proc(iglb)
+         com_in(iproc)%ext_to_red(iext) = ired
+         com_in(iproc)%ext_to_proc(iext) = jproc
+      end do
+
+      ! Release memory
+      deallocate(ext_to_glb_tmp)
+   end do
+else
+   ! Send dimensions to rootproc
+   call mpl%f_comm%send(nred,mpl%rootproc-1,mpl%tag)
+   call mpl%f_comm%send(next,mpl%rootproc-1,mpl%tag+1)
+
+   ! Send data to rootproc
+   call mpl%f_comm%send(red_to_glb,mpl%rootproc-1,mpl%tag+2)
+   call mpl%f_comm%send(ext_to_glb,mpl%rootproc-1,mpl%tag+3)
+end if
+call mpl%update_tag(4)
+
+if (mpl%main) then
+   ! Allocation
+   do iproc=1,mpl%nproc
+      allocate(com_in(iproc)%jhalocounts(mpl%nproc))
+      allocate(com_in(iproc)%jexclcounts(mpl%nproc))
+      allocate(com_in(iproc)%jhalodispls(mpl%nproc))
+      allocate(com_in(iproc)%jexcldispls(mpl%nproc))
+   end do
+
+   ! Initialization
+   do iproc=1,mpl%nproc
+      com_in(iproc)%jhalocounts = 0
+      com_in(iproc)%jexclcounts = 0
+      com_in(iproc)%jhalodispls = 0
+      com_in(iproc)%jexcldispls = 0
+   end do
+
+   ! Compute counts
+   do iproc=1,mpl%nproc
+      do iext=1,com_in(iproc)%next
+         jproc = com_in(iproc)%ext_to_proc(iext)
+         if (jproc/=iproc) then
+            ! Count of points sent from IPROC to JPROC
+            com_in(iproc)%jhalocounts(jproc) = com_in(iproc)%jhalocounts(jproc)+1
+
+            ! Count of points received on JPROC from IPROC
+            com_in(jproc)%jexclcounts(iproc) = com_in(jproc)%jexclcounts(iproc)+1
+         end if
+      end do
+   end do
+
+   ! Compute displacement
+   do iproc=1,mpl%nproc
+      com_in(iproc)%jhalodispls(1) = 0
+      com_in(iproc)%jexcldispls(1) = 0
+      do jproc=2,mpl%nproc
+         com_in(iproc)%jhalodispls(jproc) = com_in(iproc)%jhalodispls(jproc-1)+com_in(iproc)%jhalocounts(jproc-1)
+         com_in(iproc)%jexcldispls(jproc) = com_in(iproc)%jexcldispls(jproc-1)+com_in(iproc)%jexclcounts(jproc-1)
+      end do
+   end do
+
+   ! Allocation
+   do iproc=1,mpl%nproc
+      com_in(iproc)%nhalo = sum(com_in(iproc)%jhalocounts)
+      com_in(iproc)%nexcl = sum(com_in(iproc)%jexclcounts)
+      allocate(com_in(iproc)%halo(com_in(iproc)%nhalo))
+      allocate(com_in(iproc)%excl(com_in(iproc)%nexcl))
+   end do
+
+   ! Fill halo array
+   do iproc=1,mpl%nproc
+      com_in(iproc)%jhalocounts = 0
+   end do
+   do iproc=1,mpl%nproc
+      do iext=1,com_in(iproc)%next
+         ! Check for halo points
+         jproc = com_in(iproc)%ext_to_proc(iext)
+         if (jproc/=iproc) then
+            ! Count of points sent from IPROC to JPROC
+            com_in(iproc)%jhalocounts(jproc) = com_in(iproc)%jhalocounts(jproc)+1
+
+            ! Local index of points sent from IPROC to JPROC
+            com_in(iproc)%halo(com_in(iproc)%jhalodispls(jproc)+com_in(iproc)%jhalocounts(jproc)) = iext
+         end if
+      end do
+   end do
+
+   ! Fill excl array
+   do jproc=1,mpl%nproc
+      ! Loop over processors sending data to JPROC
+      do iproc=1,mpl%nproc
+         do icount=1,com_in(iproc)%jhalocounts(jproc)
+            ! Local index of points received on JPROC from IPROC
+            com_in(jproc)%excl(com_in(jproc)%jexcldispls(iproc)+icount) = &
+ & com_in(iproc)%ext_to_red(com_in(iproc)%halo(com_in(iproc)%jhalodispls(jproc)+icount))
+         end do
+      end do
+   end do
+
+   ! Communicate dimensions
+   do iproc=1,mpl%nproc
+      if (iproc==mpl%rootproc) then
+         ! Copy dimensions
+         com_out%nhalo = com_in(iproc)%nhalo
+         com_out%nexcl = com_in(iproc)%nexcl
+      else
+         ! Send dimensions to iproc
+         call mpl%f_comm%send(com_in(iproc)%nhalo,iproc-1,mpl%tag)
+         call mpl%f_comm%send(com_in(iproc)%nexcl,iproc-1,mpl%tag+1)
+      end if
+   end do
+else
+   ! Receive dimensions from rootproc
+   call mpl%f_comm%receive(com_out%nhalo,mpl%rootproc-1,mpl%tag,status)
+   call mpl%f_comm%receive(com_out%nexcl,mpl%rootproc-1,mpl%tag+1,status)
+end if
+call mpl%update_tag(2)
+
+! Allocation
+if (present(own_to_glb)) then
+   com_out%nown = size(own_to_glb)
+else
+   com_out%nown = nred
+end if
+com_out%nred = nred
+com_out%next = next
+allocate(com_out%own_to_ext(com_out%nown))
+allocate(com_out%own_to_red(com_out%nown))
+allocate(com_out%jhalocounts(mpl%nproc))
+allocate(com_out%jexclcounts(mpl%nproc))
+allocate(com_out%jhalodispls(mpl%nproc))
+allocate(com_out%jexcldispls(mpl%nproc))
+allocate(com_out%halo(com_out%nhalo))
+allocate(com_out%excl(com_out%nexcl))
+
+! Local conversions
+if (com_out%nown>0) then
+   ! Initialization
+   com_out%own_to_red = mpl%msv%vali
+   com_out%own_to_ext = mpl%msv%vali
+
+   ! Allocation
+   allocate(own_to_glb_tmp(com_out%nown))
+   allocate(red_to_glb_tmp(com_out%nred))
+   allocate(ext_to_glb_tmp(com_out%next))
+   allocate(own_to_glb_order(com_out%nown))
+   allocate(red_to_glb_order(com_out%nred))
+   allocate(ext_to_glb_order(com_out%next))
+
+   ! Copy arrays
+   if (present(own_to_glb)) then
+      own_to_glb_tmp = own_to_glb
+   else
+      own_to_glb_tmp = red_to_glb
+   end if
+   red_to_glb_tmp = red_to_glb
+   ext_to_glb_tmp = ext_to_glb
+
+   ! Sort arrays
+   call qsort(com_out%nown,own_to_glb_tmp,own_to_glb_order)
+   call qsort(com_out%nred,red_to_glb_tmp,red_to_glb_order)
+   call qsort(com_out%next,ext_to_glb_tmp,ext_to_glb_order)
+
+   ! Fill local conversions
+   ired = 1
+   iext = 1
+   do iown=1,com_out%nown
+      do while (red_to_glb_tmp(ired)/=own_to_glb_tmp(iown))
+         ired = ired+1
+      end do
+      com_out%own_to_red(own_to_glb_order(iown)) = red_to_glb_order(ired)
+      do while (ext_to_glb_tmp(iext)/=own_to_glb_tmp(iown))
+         iext = iext+1
+      end do
+      com_out%own_to_ext(own_to_glb_order(iown)) = ext_to_glb_order(iext)
+   end do
+
+   ! Release memory
+   deallocate(own_to_glb_tmp)
+   deallocate(red_to_glb_tmp)
+   deallocate(ext_to_glb_tmp)
+   deallocate(own_to_glb_order)
+   deallocate(red_to_glb_order)
+   deallocate(ext_to_glb_order)
+
+   ! Check local conversion
+   if (com_out%nown>0) then
+      if (mpl%msv%isany(com_out%own_to_red)) call mpl%abort('${subr}$','missing own_to_red value')
+      if (mpl%msv%isany(com_out%own_to_ext)) call mpl%abort('${subr}$','missing own_to_ext value')
+   end if
+end if
+
+! Communicate data
+if (mpl%main) then
+   do iproc=1,mpl%nproc
+      if (iproc==mpl%rootproc) then
+         ! Copy data
+         com_out%jhalocounts = com_in(iproc)%jhalocounts
+         com_out%jexclcounts = com_in(iproc)%jexclcounts
+         com_out%jhalodispls = com_in(iproc)%jhalodispls
+         com_out%jexcldispls = com_in(iproc)%jexcldispls
+         com_out%halo = com_in(iproc)%halo
+         com_out%excl = com_in(iproc)%excl
+      else
+         ! Send dimensions to iproc
+         call mpl%f_comm%send(com_in(iproc)%jhalocounts,iproc-1,mpl%tag)
+         call mpl%f_comm%send(com_in(iproc)%jexclcounts,iproc-1,mpl%tag+1)
+         call mpl%f_comm%send(com_in(iproc)%jhalodispls,iproc-1,mpl%tag+2)
+         call mpl%f_comm%send(com_in(iproc)%jexcldispls,iproc-1,mpl%tag+3)
+         if (com_in(iproc)%nhalo>0) call mpl%f_comm%send(com_in(iproc)%halo,iproc-1,mpl%tag+4)
+         if (com_in(iproc)%nexcl>0) call mpl%f_comm%send(com_in(iproc)%excl,iproc-1,mpl%tag+5)
+      end if
+   end do
+else
+   ! Receive dimensions from rootproc
+   call mpl%f_comm%receive(com_out%jhalocounts,mpl%rootproc-1,mpl%tag,status)
+   call mpl%f_comm%receive(com_out%jexclcounts,mpl%rootproc-1,mpl%tag+1,status)
+   call mpl%f_comm%receive(com_out%jhalodispls,mpl%rootproc-1,mpl%tag+2,status)
+   call mpl%f_comm%receive(com_out%jexcldispls,mpl%rootproc-1,mpl%tag+3,status)
+   if (com_out%nhalo>0) call mpl%f_comm%receive(com_out%halo,mpl%rootproc-1,mpl%tag+4,status)
+   if (com_out%nexcl>0) call mpl%f_comm%receive(com_out%excl,mpl%rootproc-1,mpl%tag+5,status)
+end if
+call mpl%update_tag(6)
+
+! Set prefix
+com_out%prefix = prefix
+
+! Probe out
+@:probe_out()
+
+end subroutine com_setup
+
+#:for dtype in dtypes_irl
+   #:for rank in ranks_1234
+!----------------------------------------------------------------------
+! Subroutine: com_ext_${dtype}$_r${rank}$
+!> Communicate field to halo (extension)
+!----------------------------------------------------------------------
+subroutine com_ext_${dtype}$_r${rank}$(com,mpl,vec_red,vec_ext)
+
+implicit none
+
+! Passed variables
+class(com_type),intent(in) :: com                      !< Communication data
+type(mpl_type),intent(inout) :: mpl                    !< MPI data
+${ftype[dtype]}$,intent(in) :: vec_red(${dim[rank]}$)  !< Reduced vector
+${ftype[dtype]}$,intent(out) :: vec_ext(${dim[rank]}$) !< Extended vector
+
+! Local variables
+integer :: nl,iexcl,iown,ihalo
+integer :: jexclcounts(mpl%nproc),jexcldispls(mpl%nproc),jhalocounts(mpl%nproc),jhalodispls(mpl%nproc)
+#{if rank > 1}# integer :: il,shp_red(${rank}$),shp_ext(${rank}$) #{endif}#
+#{if rank > 1}# integer :: #{for arg_dim in range(2,rank+1)}# i${arg_dim}$${delim[arg_dim == rank]}$ #{endfor}# #{endif}#
+${ftype[dtype]}$,allocatable :: sbuf(:),rbuf(:)
+
+! Set name
+@:set_name(com_ext_${dtype}$_r${rank}$)
+
+! Probe in
+@:probe_in()
+
+! Check dimensions
+if (size(vec_red,1)/=com%nred) call mpl%abort('${subr}$','wrong dimension for vec_red')
+if (size(vec_ext,1)/=com%next) call mpl%abort('${subr}$','wrong dimension for vec_ext')
+#:if rank == 1
+   nl = 1
+#:else
+   shp_red = shape(vec_red)
+   shp_ext = shape(vec_ext)
+   if (any(shp_red(2:${rank}$)/=shp_ext(2:${rank}$))) call mpl%abort('${subr}$','inconsistent red/ext sizes')
+   nl = product(shp_red(2:${rank}$))
+#:endif
+
+! Allocation
+allocate(sbuf(com%nexcl*nl))
+allocate(rbuf(com%nhalo*nl))
+
+! Prepare buffers to send
+do iexcl=1,com%nexcl
+   #:if rank == 1
+      sbuf(iexcl) = vec_red(com%excl(iexcl))
+   #:else
+      il = 0
+      #:for arg_dim in range(2,rank+1)
+      do i${arg_dim}$=shp_red(${arg_dim}$),1,-1
+      #:endfor
+         il = il+1
+         sbuf((iexcl-1)*nl+il) = vec_red(com%excl(iexcl), &
+         #:for arg_dim in range(2,rank)
+ & i${arg_dim}$, &
+         #:endfor
+ & i${rank}$)
+      #:for arg_dim in range(2,rank+1)
+      end do
+      #:endfor
+   #:endif
+end do
+
+! Communication
+jexclcounts = com%jexclcounts*nl
+jexcldispls = com%jexcldispls*nl
+jhalocounts = com%jhalocounts*nl
+jhalodispls = com%jhalodispls*nl
+call mpl%f_comm%alltoall(sbuf,jexclcounts,jexcldispls,rbuf,jhalocounts,jhalodispls)
+
+! Initialization
+vec_ext = ${zero[dtype]}$
+
+! Copy interior
+do iown=1,com%nown
+   #:if rank == 1
+      vec_ext(com%own_to_ext(iown)) = vec_red(com%own_to_red(iown))
+   #:else
+      vec_ext(com%own_to_ext(iown),${dim[rank-1]}$) = vec_red(com%own_to_red(iown),${dim[rank-1]}$)
+   #:endif
+end do
+
+! Copy halo
+do ihalo=1,com%nhalo
+   #:if rank == 1
+      vec_ext(com%halo(ihalo)) = rbuf(ihalo)
+   #:else
+      il = 0
+      #:for arg_dim in range(2,rank+1)
+      do i${arg_dim}$=shp_red(${arg_dim}$),1,-1
+      #:endfor
+         il = il+1
+         vec_ext(com%halo(ihalo), &
+         #:for arg_dim in range(2,rank)
+ & i${arg_dim}$, &
+         #:endfor
+ & i${rank}$) = rbuf((ihalo-1)*nl+il)
+      #:for arg_dim in range(2,rank+1)
+      end do
+      #:endfor
+   #:endif
+end do
+
+! Release memory
+deallocate(sbuf)
+deallocate(rbuf)
+
+! Probe out
+@:probe_out()
+
+end subroutine com_ext_${dtype}$_r${rank}$
+   #:endfor
+#:endfor
+
+#:for dtype in dtypes_irl
+   #:for rank in ranks_1234
+!----------------------------------------------------------------------
+! Subroutine: com_red_${dtype}$_r${rank}$
+!> Communicate vector from halo (reduction)
+!----------------------------------------------------------------------
+subroutine com_red_${dtype}$_r${rank}$(com,mpl,vec_ext,vec_red,op)
+
+implicit none
+
+! Passed variables
+class(com_type),intent(in) :: com                      !< Communication data
+type(mpl_type),intent(inout) :: mpl                    !< MPI data
+${ftype[dtype]}$,intent(in) :: vec_ext(${dim[rank]}$)  !< Extended vector
+${ftype[dtype]}$,intent(out) :: vec_red(${dim[rank]}$) !< Reduced vector
+character(len=*),intent(in),optional :: op             !< Logical operation for the sum
+
+! Local variables
+integer :: nl,ihalo,iown,iexcl
+integer :: jexclcounts(mpl%nproc),jexcldispls(mpl%nproc),jhalocounts(mpl%nproc),jhalodispls(mpl%nproc)
+#{if rank > 1}# integer :: il,shp_red(${rank}$),shp_ext(${rank}$) #{endif}#
+#{if rank > 1}# integer :: #{for arg_dim in range(2,rank+1)}# i${arg_dim}$${delim[arg_dim == rank]}$ #{endfor}# #{endif}#
+${ftype[dtype]}$,allocatable :: sbuf(:),rbuf(:)
+logical,allocatable :: valid(:)
+character(len=3) :: lop
+
+! Set name
+@:set_name(com_red_${dtype}$_r${rank}$)
+
+! Probe in
+@:probe_in()
+
+! Check dimensions
+if (size(vec_ext,1)/=com%next) call mpl%abort('${subr}$','wrong dimension for vec_ext')
+if (size(vec_red,1)/=com%nred) call mpl%abort('${subr}$','wrong dimension for vec_red')
+#:if rank == 1
+   nl = 1
+#:else
+   shp_ext = shape(vec_ext)
+   shp_red = shape(vec_red)
+   if (any(shp_ext(2:${rank}$)/=shp_red(2:${rank}$))) call mpl%abort('${subr}$','inconsistent red/ext sizes')
+   nl = product(shp_ext(2:${rank}$))
+#:endif
+
+! Set logical operation
+lop = 'and'
+if (present(op)) lop = op
+
+! Check operation argument
+if ((trim(lop)/='and').and.(trim(lop)/='or')) call mpl%abort('${subr}$','wrong logical operation')
+
+! Allocation
+allocate(sbuf(com%nhalo*nl))
+allocate(rbuf(com%nexcl*nl))
+allocate(valid(nl))
+
+! Prepare buffers to send
+do ihalo=1,com%nhalo
+   #:if rank == 1
+      sbuf(ihalo) = vec_ext(com%halo(ihalo))
+   #:else
+      il = 0
+      #:for arg_dim in range(2,rank+1)
+      do i${arg_dim}$=shp_red(${arg_dim}$),1,-1
+      #:endfor
+         il = il+1
+         sbuf((ihalo-1)*nl+il) = vec_ext(com%halo(ihalo), &
+         #:for arg_dim in range(2,rank)
+ & i${arg_dim}$, &
+         #:endfor
+ & i${rank}$)
+      #:for arg_dim in range(2,rank+1)
+      end do
+      #:endfor
+   #:endif
+end do
+
+! Communication
+jexclcounts = com%jexclcounts*nl
+jexcldispls = com%jexcldispls*nl
+jhalocounts = com%jhalocounts*nl
+jhalodispls = com%jhalodispls*nl
+call mpl%f_comm%alltoall(sbuf,jhalocounts,jhalodispls,rbuf,jexclcounts,jexcldispls)
+
+! Initialization
+vec_red = ${zero[dtype]}$
+#:if dtype == 'logical'
+   if (trim(lop)=='and') vec_red = .true.
+   if (trim(lop)=='or') vec_red = .false.
+#:endif
+
+! Copy interior
+do iown=1,com%nown
+   #:if rank == 1
+      vec_red(com%own_to_red(iown)) = vec_ext(com%own_to_ext(iown))
+   #:else
+      vec_red(com%own_to_red(iown),${dim[rank-1]}$) = vec_ext(com%own_to_ext(iown),${dim[rank-1]}$)
+   #:endif
+end do
+
+! Copy halo
+do iexcl=1,com%nexcl
+   #:if rank == 1
+      #:if dtype == 'logical'
+         if (trim(lop)=='and') vec_red(com%excl(iexcl)) = vec_red(com%excl(iexcl)).and.rbuf(iexcl)
+         if (trim(lop)=='or') vec_red(com%excl(iexcl)) = vec_red(com%excl(iexcl)).or.rbuf(iexcl)
+      #:else
+         vec_red(com%excl(iexcl)) = vec_red(com%excl(iexcl))+rbuf(iexcl)
+      #:endif
+   #:else
+
+      il = 0
+      #:for arg_dim in range(2,rank+1)
+      do i${arg_dim}$=shp_red(${arg_dim}$),1,-1
+      #:endfor
+         il = il+1
+         #:if dtype == 'logical'
+            if (trim(lop)=='and') vec_red(com%excl(iexcl), &
+            #:for arg_dim in range(2,rank)
+ & i${arg_dim}$, &
+            #:endfor
+ & i${rank}$) = vec_red(com%excl(iexcl), &
+            #:for arg_dim in range(2,rank)
+ & i${arg_dim}$, &
+            #:endfor
+ & i${rank}$).and.rbuf((iexcl-1)*nl+il)
+            if (trim(lop)=='or') vec_red(com%excl(iexcl), &
+            #:for arg_dim in range(2,rank)
+ & i${arg_dim}$, &
+            #:endfor
+ & i${rank}$) = vec_red(com%excl(iexcl), &
+            #:for arg_dim in range(2,rank)
+ & i${arg_dim}$, &
+            #:endfor
+ & i${rank}$).or.rbuf((iexcl-1)*nl+il)
+         #:else
+            vec_red(com%excl(iexcl), &
+            #:for arg_dim in range(2,rank)
+ & i${arg_dim}$, &
+            #:endfor
+ & i${rank}$) = vec_red(com%excl(iexcl), &
+            #:for arg_dim in range(2,rank)
+ & i${arg_dim}$, &
+            #:endfor
+ & i${rank}$)+rbuf((iexcl-1)*nl+il)
+         #:endif
+      #:for arg_dim in range(2,rank+1)
+      end do
+      #:endfor
+   #:endif
+end do
+
+! Release memory
+deallocate(sbuf)
+deallocate(rbuf)
+#{if rank > 1}# deallocate(valid) #{endif}#
+
+! Probe out
+@:probe_out()
+
+end subroutine com_red_${dtype}$_r${rank}$
+   #:endfor
+#:endfor
+
+end module type_com

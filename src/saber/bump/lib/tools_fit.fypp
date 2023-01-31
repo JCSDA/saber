@@ -1,0 +1,787 @@
+#:include 'instrumentation.fypp'
+!----------------------------------------------------------------------
+! Module: tools_fit
+!> Fit-related tools
+! Author: Benjamin Menetrier
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+module tools_fit
+
+use tools_const, only: zero,tenth,quarter,half,one,two,thousand
+use tools_gc99, only: naxis_inv,axis_inv,axis_invmax,func_inv_hor,func_inv_ver,fit_func,fit_func_sqrt
+use tools_kinds, only: kind_real,huge_real
+use tools_repro, only: inf,sup,infeq
+use type_mpl, only: mpl_type
+@:use_probe()
+
+implicit none
+
+real(kind_real),parameter :: condmax = thousand !< Maximum tensor conditioning number
+
+interface diag_iso
+   module procedure fit_diag_iso
+end interface
+interface diag_tensor
+   module procedure fit_diag_tensor
+end interface
+interface diag_ver
+   module procedure fit_diag_ver
+end interface
+interface diag_iso_full
+   module procedure fit_diag_iso_full
+end interface
+interface diag_tensor_full
+   module procedure fit_diag_tensor_full
+end interface
+interface tensor_d2h
+   module procedure fit_tensor_d2h
+end interface
+interface tensor_d2r
+   module procedure fit_tensor_d2r
+end interface
+interface tensor_check_cond
+   module procedure fit_tensor_check_cond
+end interface
+interface fast_fit
+   module procedure fit_fast_fit
+end interface
+interface ver_smooth
+   module procedure fit_ver_smooth
+end interface
+
+private
+public :: condmax
+public :: diag_iso,diag_tensor,diag_ver,diag_iso_full,diag_tensor_full,tensor_d2h,tensor_d2r,tensor_check_cond
+public :: fast_fit,ver_smooth
+
+contains
+
+!----------------------------------------------------------------------
+! Subroutine: fit_diag_iso
+!> Compute isotropic diagnostic fit function
+!----------------------------------------------------------------------
+subroutine fit_diag_iso(mpl,n,dist,dir,r,fit)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+integer,intent(in) :: n               !< Vector size
+real(kind_real),intent(in) :: dist(n) !< Distance
+character(len=*),intent(in) :: dir    !< Direction
+real(kind_real),intent(in) :: r       !< Support radius
+real(kind_real),intent(out) :: fit(n) !< Fit
+
+! Local variables
+integer :: i
+real(kind_real) :: nd
+
+! Set name
+@:set_name(fit_diag_iso)
+
+! Probe in
+@:probe_in()
+
+if (mpl%msv%isnot(r)) then
+   do i=1,n
+      ! Normalized distance
+      if (r>zero) then
+         nd = dist(i)/r
+      elseif (dist(i)>zero) then
+         nd = one
+      else
+         nd = zero
+      end if
+
+      ! Unitary function
+      fit(i) = fit_func(mpl,dir,nd)
+   end do
+else
+   ! Set to missing values
+   fit = mpl%msv%valr
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine fit_diag_iso
+
+!----------------------------------------------------------------------
+! Subroutine: fit_diag_tensor
+!> Compute anisotropic diagnostic fit function
+!----------------------------------------------------------------------
+subroutine fit_diag_tensor(mpl,nc3,nc4,disth,as,D11,D22,D12,fit)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl         !< MPI data
+integer,intent(in) :: nc3                   !< Number of horizontal distance classes
+integer,intent(in) :: nc4                   !< Number of angular sectors
+real(kind_real),intent(in) :: disth(nc3)    !< Horizontal distance
+real(kind_real),intent(in) :: as(nc4)       !< Angular sectors
+real(kind_real),intent(in) :: D11           !< Tensor coefficient 11
+real(kind_real),intent(in) :: D22           !< Tensor coefficient 22
+real(kind_real),intent(in) :: D12           !< Tensor coefficient 12 (normalized)
+real(kind_real),intent(out) :: fit(nc3,nc4) !< Fit
+
+! Local variables
+integer :: jc3,jc4
+real(kind_real) :: H11,H22,H12,dx,dy,nd
+
+! Set name
+@:set_name(fit_diag_tensor)
+
+! Probe in
+@:probe_in()
+
+if (mpl%msv%isnot(D11).or.mpl%msv%isnot(D22).or.mpl%msv%isnot(D12)) then
+   ! Inverse D to get H
+   call tensor_d2h(mpl,D11,D22,D12,H11,H22,H12)
+
+   do jc4=1,nc4
+      do jc3=1,nc3
+         ! Homogeneous anisotropic approximation
+         dx = disth(jc3)*cos(as(jc4))
+         dy = disth(jc3)*sin(as(jc4))
+
+         ! Normalized distance
+         nd = sqrt(H11*dx**2+H22*dy**2+two*H12*dx*dy)
+
+         ! Add component
+         fit(jc3,jc4) = fit_func(mpl,'hor',nd)
+      end do
+   end do
+else
+   ! Set to missing values
+   fit = mpl%msv%valr
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine fit_diag_tensor
+
+!----------------------------------------------------------------------
+! Subroutine: fit_diag_ver
+!> Compute vertical diagnostic fit function
+!----------------------------------------------------------------------
+subroutine fit_diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,vunit,rv,fit)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl          !< MPI data
+integer,intent(in) :: nl0r                   !< Effective number of levels
+integer,intent(in) :: nl0                    !< Number of levels
+integer,intent(in) :: l0rl0_to_l0(nl0r,nl0)  !< Effective level to level
+real(kind_real),intent(in) :: vunit(nl0)     !< Vertical unit
+real(kind_real),intent(in) :: rv(nl0)        !< Vertical support radius
+real(kind_real),intent(out) :: fit(nl0r,nl0) !< Fit
+
+! Local variables
+integer :: il0,jl0r,jl0
+real(kind_real) :: vnd
+real(kind_real) :: ver_sqrt(nl0,nl0),ver_full(nl0,nl0),ver_full_norm(nl0)
+
+! Set name
+@:set_name(fit_diag_ver)
+
+! Probe in
+@:probe_in()
+
+if (mpl%msv%isanynot(rv)) then
+   ! Initialization
+   ver_sqrt = zero
+
+   do il0=1,nl0
+      if (mpl%msv%isnot(rv(il0))) then
+         do jl0=1,nl0
+            ! Normalized distance
+            if (rv(il0)>zero) then
+               vnd = abs(vunit(jl0)-vunit(il0))/rv(il0)
+            elseif (il0/=jl0) then
+               vnd = one
+            else
+               vnd = zero
+            end if
+
+            ! Unitary fit function
+            ver_sqrt(jl0,il0) = fit_func_sqrt(mpl,vnd)
+         end do
+      end if
+   end do
+
+   ! Product
+   ver_full = matmul(ver_sqrt,transpose(ver_sqrt))
+
+   ! Normalization
+   do il0=1,nl0
+      if (ver_full(il0,il0)>zero) then
+         ver_full_norm(il0) = one/sqrt(ver_full(il0,il0))
+      else
+         ver_full_norm(il0) = mpl%msv%valr
+      end if
+   end do
+
+   ! Reduced matrix
+   do il0=1,nl0
+      do jl0r=1,nl0r
+         ! Level index
+         jl0 = l0rl0_to_l0(jl0r,il0)
+
+         ! Fit
+         if (mpl%msv%isnot(ver_full(jl0,il0)).and.mpl%msv%isnot(ver_full_norm(il0)).and.mpl%msv%isnot(ver_full_norm(jl0))) then
+            fit(jl0r,il0) = ver_full(jl0,il0)*ver_full_norm(il0)*ver_full_norm(jl0)
+         else
+            fit(jl0r,il0) = mpl%msv%valr
+         end if
+      end do
+   end do
+else
+   ! Set to missing values
+   fit = mpl%msv%valr
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine fit_diag_ver
+
+!----------------------------------------------------------------------
+! Subroutine: fit_diag_iso_full
+!> Compute isotropic diagnostic fit function, full profile
+!----------------------------------------------------------------------
+subroutine fit_diag_iso_full(mpl,nc3,nl0r,nl0,l0rl0_to_l0,disth,vunit,ncmp,a,rh,rv,fit)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+integer,intent(in) :: nc3                        !< Number of horizontal distance classes
+integer,intent(in) :: nl0r                       !< Effective number of levels
+integer,intent(in) :: nl0                        !< Number of levels
+integer,intent(in) :: l0rl0_to_l0(nl0r,nl0)      !< Effective level to level
+real(kind_real),intent(in) :: disth(nc3)         !< Horizontal distance
+real(kind_real),intent(in) :: vunit(nl0)         !< Vertical unit
+integer,intent(in) :: ncmp                       !< Number of components
+real(kind_real),intent(in) :: a(nl0,ncmp)        !< Amplitudes
+real(kind_real),intent(in) :: rh(nl0,ncmp)       !< Horizontal support radii
+real(kind_real),intent(in) :: rv(nl0,ncmp)       !< Vertical support radii
+real(kind_real),intent(out) :: fit(nc3,nl0r,nl0) !< Fit
+
+! Local variables
+integer :: icmp,il0,jl0r,jc3
+real(kind_real) :: hor_fit(nc3),ver_fit(nl0r,nl0)
+
+! Set name
+@:set_name(fit_diag_iso_full)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+fit = zero
+
+do icmp=1,ncmp
+   ! Vertical component
+   call diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,vunit,rv(:,icmp),ver_fit)
+
+   do il0=1,nl0
+      do jl0r=1,nl0r
+         if (mpl%msv%isnot(ver_fit(jl0r,il0)).and.mpl%msv%isnot(rh(il0,icmp))) then
+            ! Horizontal component
+            call diag_iso(mpl,nc3,disth,'hor',rh(il0,icmp),hor_fit)
+
+            do jc3=1,nc3
+               ! Fit function
+               if (mpl%msv%isnot(fit(jc3,jl0r,il0))) fit(jc3,jl0r,il0) = fit(jc3,jl0r,il0) &
+ & +a(il0,icmp)*hor_fit(jc3)*ver_fit(jl0r,il0)
+            end do
+         else
+            fit(:,jl0r,il0) = mpl%msv%valr
+         end if
+      end do
+   end do
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine fit_diag_iso_full
+
+!----------------------------------------------------------------------
+! Subroutine: fit_diag_tensor_full
+!> Compute anistropic diagnostic fit function, full profile
+!----------------------------------------------------------------------
+subroutine fit_diag_tensor_full(mpl,nc3,nc4,nl0r,nl0,l0rl0_to_l0,disth,as,vunit,ncmp,a,D11,D22,D12,rv,fit)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl                  !< MPI data
+integer,intent(in) :: nc3                            !< Number of horizontal distance classes
+integer,intent(in) :: nc4                            !< Number of angular sectos
+integer,intent(in) :: nl0r                           !< Effective number of levels
+integer,intent(in) :: nl0                            !< Number of levels
+integer,intent(in) :: l0rl0_to_l0(nl0r,nl0)          !< Effective level to level
+real(kind_real),intent(in) :: disth(nc3)             !< Horizontal distance
+real(kind_real),intent(in) :: as(nc4)                !< Angular sectors
+real(kind_real),intent(in) :: vunit(nl0)             !< Vertical unit
+integer,intent(in) :: ncmp                           !< Number of components
+real(kind_real),intent(in) :: a(nl0,ncmp)            !< Amplitudes
+real(kind_real),intent(in) :: D11(nl0,ncmp)          !< Horizontal tensor coefficients 11
+real(kind_real),intent(in) :: D22(nl0,ncmp)          !< Horizontal tensor coefficients 22
+real(kind_real),intent(in) :: D12(nl0,ncmp)          !< Horizontal tensor coefficients 12 (normalized)
+real(kind_real),intent(in) :: rv(nl0,ncmp)           !< Vertical support radii
+real(kind_real),intent(out) :: fit(nc3,nc4,nl0r,nl0) !< Fit
+
+! Local variables
+integer :: icmp,il0,jl0r,jc3,jc4
+real(kind_real) :: hor_fit(nc3,nc4),ver_fit(nl0r,nl0)
+
+! Set name
+@:set_name(fit_diag_tensor_full)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+fit = zero
+
+do icmp=1,ncmp
+   ! Vertical component
+   call diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,vunit,rv(:,icmp),ver_fit)
+
+   do il0=1,nl0
+      do jl0r=1,nl0r
+         if (mpl%msv%isnot(ver_fit(jl0r,il0)).and.mpl%msv%isnot(D11(il0,icmp)).and.mpl%msv%isnot(D22(il0,icmp)) &
+ & .and.mpl%msv%isnot(D12(il0,icmp))) then
+            ! Horizontal component
+            call diag_tensor(mpl,nc3,nc4,disth,as,D11(il0,icmp),D22(il0,icmp),D12(il0,icmp),hor_fit)
+            do jc4=1,nc4
+               do jc3=1,nc3
+                  ! Fit function
+                  if (mpl%msv%isnot(fit(jc3,jc4,jl0r,il0))) fit(jc3,jc4,jl0r,il0) = fit(jc3,jc4,jl0r,il0) &
+ & +a(il0,icmp)*hor_fit(jc3,jc4)*ver_fit(jl0r,il0)
+               end do
+            end do
+         else
+            fit(:,:,jl0r,il0) = mpl%msv%valr
+         end if
+      end do
+   end do
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine fit_diag_tensor_full
+
+!----------------------------------------------------------------------
+! Subroutine: fit_tensor_d2h
+!> From D (tensor) to H (local tensor used to compute the normalized distance)
+!----------------------------------------------------------------------
+subroutine fit_tensor_d2h(mpl,D11,D22,D12,H11,H22,H12)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl !< MPI data
+real(kind_real),intent(in) :: D11   !< Direct tensor component 11
+real(kind_real),intent(in) :: D22   !< Direct tensor component 22
+real(kind_real),intent(in) :: D12   !< Direct tensor component 12 (normalized)
+real(kind_real),intent(out) :: H11  !< Inverse tensor component 11
+real(kind_real),intent(out) :: H22  !< Inverse tensor component 22
+real(kind_real),intent(out) :: H12  !< Inverse tensor component 12
+
+! Local variables
+real(kind_real) :: det,D12sq
+
+! Set name
+@:set_name(fit_tensor_d2h)
+
+! Probe in
+@:probe_in()
+
+if (mpl%msv%isnot(D11).and.mpl%msv%isnot(D22).and.mpl%msv%isnot(D12)) then
+   ! Full D12 component
+   D12sq = D11*D22*D12**2
+
+   ! Compute horizontal determinant
+   det = D11*D22-D12sq
+
+   ! Inverse D to get H
+   if (det>zero) then
+      H11 = D22/det
+      H22 = D11/det
+      H12 = -sqrt(D12sq)/det
+   else
+      write(mpl%info,'(a,e15.8,a,e15.8,a,e15.8,a,e15.8,a,e15.8,a,e15.8)') 'Tensor values (D11,D22,D12,D11*D12,D12sq,det): ', &
+ & D11,',',D22,',',D12,',',D11*D12,',',D12sq,',',det
+      call mpl%flush
+      call mpl%abort('${subr}$','non-invertible tensor')
+   end if
+else
+   ! Missing values
+   H11 = mpl%msv%valr
+   H22 = mpl%msv%valr
+   H12 = mpl%msv%valr
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine fit_tensor_d2h
+
+!----------------------------------------------------------------------
+! Subroutine: fit_tensor_d2r
+!> From D (tensor) to support radius
+!----------------------------------------------------------------------
+subroutine fit_tensor_d2r(mpl,D11,D22,D12,rh)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl !< MPI data
+real(kind_real),intent(in) :: D11   !< Direct tensor component 11
+real(kind_real),intent(in) :: D22   !< Direct tensor component 22
+real(kind_real),intent(in) :: D12   !< Direct tensor component 12 (normalized)
+real(kind_real),intent(out) :: rh   !< Support radius
+
+! Local variables
+real(kind_real) :: det,D12sq
+
+! Set name
+@:set_name(fit_tensor_d2r)
+
+! Probe in
+@:probe_in()
+
+if (mpl%msv%isnot(D11).and.mpl%msv%isnot(D22).and.mpl%msv%isnot(D12)) then
+   ! Full D12 component
+   D12sq = D11*D22*D12**2
+
+   ! Compute horizontal determinant
+   det = D11*D22-D12sq
+
+   ! Take square-root twice
+   if (det>zero) then
+      rh = sqrt(sqrt(det))
+   else
+      call mpl%abort('${subr}$','non-invertible tensor')
+   end if
+else
+   ! Missing values
+   rh = mpl%msv%valr
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine fit_tensor_d2r
+
+!----------------------------------------------------------------------
+! Subroutine: fit_tensor_check_cond
+!> Check tensor conditioning
+!----------------------------------------------------------------------
+subroutine fit_tensor_check_cond(D11,D22,D12,valid)
+
+implicit none
+
+! Passed variables
+real(kind_real),intent(in) :: D11 !< Direct tensor component 11
+real(kind_real),intent(in) :: D22 !< Direct tensor component 22
+real(kind_real),intent(in) :: D12 !< Direct tensor component 12 (normalized)
+logical,intent(out) :: valid      !< Conditioning validity
+
+! Local variables
+real(kind_real) :: det,tr,diff,ev1,ev2
+
+! Set name
+@:set_name(fit_tensor_check_cond)
+
+! Probe in
+@:probe_in()
+
+! Compute trace and determinant
+tr = D11+D22
+det = D11*D22*(one-D12**2)
+diff = quarter*(D11-D22)**2+D11*D22*D12**2
+
+if ((det>zero).and..not.(diff<zero)) then
+   ! Compute eigenvalues
+   ev1 = half*tr+sqrt(diff)
+   ev2 = half*tr-sqrt(diff)
+
+   if (ev2>zero) then
+      ! Check conditioning
+      valid = inf(ev1,condmax*ev2)
+   else
+      ! Lowest negative eigenvalue is negative
+      valid = .false.
+   end if
+else
+   ! Non-positive definite tensor
+   valid = .false.
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine fit_tensor_check_cond
+
+!----------------------------------------------------------------------
+! Subroutine: fit_fast_fit
+!> Fast fit length-scale estimation based on the value at mid-height
+!----------------------------------------------------------------------
+subroutine fit_fast_fit(mpl,n,iz,dist,dir,raw,fit_r)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+integer,intent(in) :: n               !< Vector size
+integer,intent(in) :: iz              !< Zero separation index
+real(kind_real),intent(in) :: dist(n) !< Distance
+character(len=*),intent(in) :: dir    !< Direction
+real(kind_real),intent(in) :: raw(n)  !< Raw data
+real(kind_real),intent(out) :: fit_r  !< Support radius
+
+! Local variables
+integer,parameter :: itermax = 10
+integer :: ntmp,iaxis_inv,di,i,im,ip,ntest,itest,iter
+real(kind_real) :: raw_tmp(n),fit_r_m,fit_r_p,raw_min,dscale,thtest
+real(kind_real) :: cost,cost_min,fit_r_min,fit(n)
+real(kind_real),allocatable :: scaletest(:),axis_invtest(:)
+
+! Set name
+@:set_name(fit_fast_fit)
+
+! Probe in
+@:probe_in()
+
+if (any(dist<zero)) call mpl%abort('${subr}$','negative distance')
+
+if (raw(iz)>zero) then
+   if (n>1) then
+      ! Copy points that are lower than the zero-separation
+      raw_tmp = mpl%msv%valr
+      raw_tmp(iz) = one
+      do i=1,n
+        if (i/=iz) then
+           if (mpl%msv%isnot(raw(i)).and.inf(raw(i),raw(iz))) raw_tmp(i) = raw(i)/raw(iz)
+        end if
+      end do
+      ntmp = count(mpl%msv%isnot(raw_tmp))
+
+      if (ntmp>1) then
+         ! Initialization
+         ntest = 0
+         raw_min = minval(raw_tmp,mask=mpl%msv%isnot(raw_tmp))
+         cost_min = huge_real
+         fit_r_min = mpl%msv%valr
+
+         ! Count number of scales to test
+         do iaxis_inv=1,naxis_inv
+            if (infeq(raw_min,axis_inv(iaxis_inv))) ntest = ntest+1
+         end do
+         if (ntest>0) then
+            ! Save scales to test
+            allocate(scaletest(ntest))
+            allocate(axis_invtest(ntest))
+            itest = 0
+            do iaxis_inv=1,naxis_inv
+               if (infeq(raw_min,axis_inv(iaxis_inv))) then
+                  itest = itest+1
+                  if (dir=='hor') then
+                     scaletest(itest) = func_inv_hor(iaxis_inv)
+                  elseif (dir=='ver') then
+                     scaletest(itest) = func_inv_ver(iaxis_inv)
+                  end if
+                  axis_invtest(itest) = axis_inv(iaxis_inv)
+               end if
+            end do
+         else
+            ! Unique data-based scale
+            ntest = 1
+            allocate(axis_invtest(ntest))
+            allocate(scaletest(ntest))
+            axis_invtest(1) = raw_min+tenth*(one-raw_min)
+            scaletest(1) = half
+            dscale = quarter
+            do iter=1,itermax
+               thtest = fit_func(mpl,dir,scaletest(1))
+               if (sup(axis_invtest(1),thtest)) then
+                  scaletest(1) = scaletest(1)-dscale
+               else
+                  scaletest(1) = scaletest(1)+dscale
+               end if
+               dscale = half*dscale
+            end do
+         end if
+
+         ! Loop over thresholds
+         do itest=1,ntest
+            ! Find support radius, lower value
+            fit_r_m = mpl%msv%valr
+            if (iz>1) then
+               ip = iz
+               do di=1,n
+                  ! Check whether fit value has been found
+                  if (mpl%msv%is(fit_r_m)) then
+                     ! Index
+                     im = iz-di
+
+                     ! Check index validity
+                     if (im>=1) then
+                        ! Check whether threshold has been crossed
+                        if (mpl%msv%isnot(raw_tmp(im)).and.inf(raw_tmp(im),axis_invtest(itest))) then
+                           ! Set fit value
+                           fit_r_m = dist(im)+(dist(ip)-dist(im))*(axis_invtest(itest)-raw_tmp(im))/(raw_tmp(ip)-raw_tmp(im))
+                        else
+                           ! Update index
+                           ip = im
+                        end if
+                     end if
+                  end if
+               end do
+            end if
+
+            ! Find support radius, upper value
+            fit_r_p = mpl%msv%valr
+            if (iz<n) then
+               im = iz
+               do di=1,n
+                  ! Check whether fit value has been found
+                  if (mpl%msv%is(fit_r_p)) then
+                     ! Index
+                     ip = iz+di
+
+                     ! Check index validity
+                     if (ip<=n) then
+                        ! Check whether threshold has been crossed
+                        if (mpl%msv%isnot(raw_tmp(ip)).and.inf(raw_tmp(ip),axis_invtest(itest))) then
+                           ! Set fit value
+                           fit_r_p = dist(im)+(dist(ip)-dist(im))*(axis_invtest(itest)-raw_tmp(im))/(raw_tmp(ip)-raw_tmp(im))
+                        else
+                           ! Update index
+                           im = ip
+                        end if
+                     end if
+                  end if
+               end do
+            end if
+
+            ! Gather values
+            if (mpl%msv%isnot(fit_r_m).and.mpl%msv%isnot(fit_r_p)) then
+               fit_r = half*(fit_r_m+fit_r_p)
+            elseif (mpl%msv%isnot(fit_r_m)) then
+               fit_r = fit_r_m
+            elseif (mpl%msv%isnot(fit_r_p)) then
+               fit_r = fit_r_p
+            else
+               fit_r = mpl%msv%valr
+            end if
+
+            if (mpl%msv%isnot(fit_r)) then
+               ! Scale normalization
+               fit_r = fit_r/scaletest(itest)
+
+               ! Compute fitness
+               call diag_iso(mpl,n,dist,dir,fit_r,fit)
+               cost = sum((fit-raw_tmp)**2)/real(ntmp,kind_real)
+               if (inf(cost,cost_min)) then
+                  ! Better fit
+                  cost_min = cost
+                  fit_r_min = fit_r
+               end if
+            end if
+         end do
+
+         ! Set best support radius
+         fit_r = fit_r_min
+      else
+         ! All positive-separation points are missing
+         fit_r = mpl%msv%valr
+      end if
+   else
+      ! Only one point, zero radius
+      fit_r = zero
+   end if
+else
+   ! Zero-separation point is negative
+   fit_r = mpl%msv%valr
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine fit_fast_fit
+
+!----------------------------------------------------------------------
+! Subroutine: fit_ver_smooth
+!> Homogeneous smoothing of a vertical profile
+!----------------------------------------------------------------------
+subroutine fit_ver_smooth(mpl,n,x,rv,profile)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl         !< MPI data
+integer,intent(in) :: n                     !< Vector size
+real(kind_real),intent(in) :: x(n)          !< Coordinate
+real(kind_real),intent(in) :: rv            !< Filtering support radius
+real(kind_real),intent(inout) :: profile(n) !< Vertical profile
+
+! Local variables
+integer :: i,j
+real(kind_real) :: kernel(n,n),distnorm,profile_init(n),norm
+
+! Set name
+@:set_name(fit_ver_smooth)
+
+! Probe in
+@:probe_in()
+
+if (n>1) then
+   if (rv<zero) call mpl%abort('${subr}$','negative filtering support radius')
+
+   if ((rv>zero).and.mpl%msv%isanynot(profile)) then
+      ! Vertical smoothing kernel
+      kernel = zero
+      do i=1,n
+         do j=1,n
+            if (mpl%msv%isnot(profile(i)).and.mpl%msv%isnot(profile(j))) then
+               ! Gaspari-Cohn (1999) function
+               distnorm = abs(x(j)-x(i))/rv
+               kernel(i,j) = fit_func(mpl,'ver',distnorm)
+            end if
+         end do
+      end do
+
+      ! Apply kernel
+      profile_init = profile
+      profile = zero
+      do i=1,n
+         norm = zero
+         do j=1,n
+            profile(i) = profile(i)+kernel(i,j)*profile_init(j)
+            norm = norm+kernel(i,j)
+         end do
+         if (norm>zero) then
+            profile(i) = profile(i)/norm
+         else
+            profile(i) = mpl%msv%valr
+         end if
+      end do
+   end if
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine fit_ver_smooth
+
+end module tools_fit

@@ -1,0 +1,467 @@
+#:include 'instrumentation.fypp'
+!----------------------------------------------------------------------
+! Module: type_cmat
+!> C matrix derived type
+! Author: Benjamin Menetrier
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+module type_cmat
+
+use fckit_mpi_module, only: fckit_mpi_sum
+use tools_const, only: zero,one,rad2deg,reqkm,req
+use tools_fit, only: tensor_d2r
+use tools_func, only: convert_l2i,convert_i2l,zss_sum
+use tools_kinds, only: kind_real,huge_real
+use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,put_att,get_att,define_dim,inquire_var,define_var,close_file
+use type_cmat_blk, only: cmat_blk_type
+use type_diag, only: diag_type
+use type_geom, only: geom_type
+use type_hdiag, only: hdiag_type
+use type_mom, only: mom_type
+use type_mpl, only: mpl_type
+use type_nam, only: nam_type
+@:use_probe()
+use type_samp, only: samp_type
+
+implicit none
+
+! C matrix derived type
+type cmat_type
+   character(len=1024) :: prefix             !< Prefix
+   type(cmat_blk_type),allocatable :: blk(:) !< C matrix blocks
+   logical :: allocated                      !< Allocation flag
+contains
+   procedure :: alloc => cmat_alloc
+   procedure :: init => cmat_init
+   procedure :: partial_dealloc => cmat_partial_dealloc
+   procedure :: dealloc => cmat_dealloc
+   procedure :: from_hdiag => cmat_from_hdiag
+   procedure :: from_nam => cmat_from_nam
+   procedure :: from_bump => cmat_from_bump
+   procedure :: setup_sampling => cmat_setup_sampling
+end type cmat_type
+
+private
+public :: cmat_type
+
+contains
+
+!----------------------------------------------------------------------
+! Subroutine: cmat_alloc
+!> C matrix allocation
+!----------------------------------------------------------------------
+subroutine cmat_alloc(cmat,nam,geom,ncmp,anisotropic)
+
+implicit none
+
+! Passed variables
+class(cmat_type),intent(inout) :: cmat     !< C matrix
+type(nam_type),intent(in) :: nam           !< Namelist
+type(geom_type),intent(in) :: geom         !< Geometry
+integer,intent(in) :: ncmp                 !< Number of components
+logical,intent(in),optional :: anisotropic !< Anisotropic flag
+
+! Local variables
+integer :: ig
+
+! Set name
+@:set_name(cmat_alloc)
+
+! Probe in
+@:probe_in()
+
+! Allocation
+if (.not.allocated(cmat%blk)) allocate(cmat%blk(nam%ng))
+do ig=1,nam%ng
+   ! Number of components
+   cmat%blk(ig)%ncmp = ncmp
+
+   ! Anisotropy flag
+   cmat%blk(ig)%anisotropic = (nam%nc4>1)
+   if (present(anisotropic)) cmat%blk(ig)%anisotropic = anisotropic
+
+   ! Allocation
+   call cmat%blk(ig)%alloc(geom)
+end do
+
+! Update allocation flag
+cmat%allocated = .true.
+
+! Probe out
+@:probe_out()
+
+end subroutine cmat_alloc
+
+!----------------------------------------------------------------------
+! Subroutine: cmat_init
+!> C matrix initialization
+!----------------------------------------------------------------------
+subroutine cmat_init(cmat,mpl,nam)
+
+implicit none
+
+! Passed variables
+class(cmat_type),intent(inout) :: cmat !< C matrix
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
+
+! Local variables
+integer :: ig
+
+! Set name
+@:set_name(cmat_init)
+
+! Probe in
+@:probe_in()
+
+! Initialize blocks
+do ig=1,nam%ng
+   call cmat%blk(ig)%init(mpl)
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine cmat_init
+
+!----------------------------------------------------------------------
+! Subroutine: cmat_partial_dealloc
+!> Release memory (partial)
+!----------------------------------------------------------------------
+subroutine cmat_partial_dealloc(cmat)
+
+implicit none
+
+! Passed variables
+class(cmat_type),intent(inout) :: cmat !< C matrix
+
+! Local variables
+integer :: ig
+
+! Set name
+@:set_name(cmat_partial_dealloc)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+if (allocated(cmat%blk)) then
+   do ig=1,size(cmat%blk)
+      call cmat%blk(ig)%partial_dealloc
+   end do
+end if
+
+! Update allocation flag
+cmat%allocated = .false.
+
+! Probe out
+@:probe_out()
+
+end subroutine cmat_partial_dealloc
+
+!----------------------------------------------------------------------
+! Subroutine: cmat_dealloc
+!> Release memory
+!----------------------------------------------------------------------
+subroutine cmat_dealloc(cmat)
+
+implicit none
+
+! Passed variables
+class(cmat_type),intent(inout) :: cmat !< C matrix
+
+! Local variables
+integer :: ig
+
+! Set name
+@:set_name(cmat_dealloc)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+if (allocated(cmat%blk)) then
+   do ig=1,size(cmat%blk)
+      call cmat%blk(ig)%dealloc
+   end do
+   deallocate(cmat%blk)
+end if
+
+! Update allocation flag
+cmat%allocated = .false.
+
+! Probe out
+@:probe_out()
+
+end subroutine cmat_dealloc
+
+!----------------------------------------------------------------------
+! Subroutine: cmat_from_hdiag
+!> Import HDIAG into C matrix
+!----------------------------------------------------------------------
+subroutine cmat_from_hdiag(cmat,mpl,nam,geom,diag,scaling_factor)
+
+implicit none
+
+! Passed variables
+class(cmat_type),intent(inout) :: cmat                !< C matrix
+type(mpl_type),intent(inout) :: mpl                   !< MPI data
+type(nam_type),intent(in) :: nam                      !< Namelist
+type(geom_type),intent(in) :: geom                    !< Geometry
+type(diag_type),intent(in) :: diag                    !< Diagnostics
+real(kind_real),intent(in),optional :: scaling_factor !< Scaling factor 
+
+! Local variables
+integer :: ig
+real(kind_real) :: lscaling_factor
+
+! Set name
+@:set_name(cmat_from_hdiag)
+
+! Probe in
+@:probe_in()
+
+! Local scaling factor
+lscaling_factor = one
+if (present(scaling_factor)) lscaling_factor = scaling_factor
+
+if (.not.cmat%allocated) then
+   ! Allocation
+   call cmat%alloc(nam,geom,nam%fit_ncmp)
+
+   ! Initialization
+   call cmat%init(mpl,nam)
+end if
+
+! Convolution parameters
+do ig=1,nam%ng
+   ! Copy fields
+   cmat%blk(ig)%a = diag%blk(0,ig)%a_c0a
+   cmat%blk(ig)%rh = diag%blk(0,ig)%rh_c0a*lscaling_factor
+   if (nam%nc4>1) then
+      cmat%blk(ig)%D11 = diag%blk(0,ig)%D11_c0a*lscaling_factor**2
+      cmat%blk(ig)%D22 = diag%blk(0,ig)%D22_c0a*lscaling_factor**2
+      cmat%blk(ig)%D12 = diag%blk(0,ig)%D12_c0a*lscaling_factor**2
+   end if
+   cmat%blk(ig)%rv = diag%blk(0,ig)%rv_c0a*lscaling_factor
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine cmat_from_hdiag
+
+!----------------------------------------------------------------------
+! Subroutine: cmat_from_nam
+!> Import radii into C matrix
+!----------------------------------------------------------------------
+subroutine cmat_from_nam(cmat,mpl,nam,geom)
+
+implicit none
+
+! Passed variables
+class(cmat_type),intent(inout) :: cmat !< C matrix
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
+
+! Local variables
+integer :: ig,il0
+
+! Set name
+@:set_name(cmat_from_nam)
+
+! Probe in
+@:probe_in()
+
+if (nam%forced_radii) then
+   if (.not.cmat%allocated) then
+      ! Allocation
+      call cmat%alloc(nam,geom,1)
+
+      ! Initialization
+      call cmat%init(mpl,nam)
+   end if
+
+   ! Convolution parameters
+   write(mpl%info,'(a7,a)') '','Copy namelist radii into C matrix'
+   call mpl%flush
+
+   do ig=1,nam%ng
+      ! Copy support radii and number of components
+      do il0=1,geom%nl0
+         cmat%blk(ig)%a(:,il0,1) = one
+         cmat%blk(ig)%rh(:,il0,1) = nam%rh(il0,ig)
+         cmat%blk(ig)%rv(:,il0,1) = nam%rv(il0,ig)
+      end do
+   end do
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine cmat_from_nam
+
+!----------------------------------------------------------------------
+! Subroutine: cmat_from_bump
+!> Import C matrix from BUMP
+!----------------------------------------------------------------------
+subroutine cmat_from_bump(cmat,mpl,nam,geom)
+
+implicit none
+
+! Passed variables
+class(cmat_type),intent(inout) :: cmat !< C matrix
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
+
+! Local variables
+integer :: ig,ic0a,il0,icmp
+integer :: ncmp(nam%ng)
+logical :: anisotropic
+
+! Set name
+@:set_name(cmat_from_bump)
+
+! Probe in
+@:probe_in()
+
+do ig=1,nam%ng
+   ! Anisotropic flag
+   anisotropic = (allocated(cmat%blk(ig)%bump_D11).and.allocated(cmat%blk(ig)%bump_D22).and.allocated(cmat%blk(ig)%bump_D12))
+
+   ! Number of components
+   ncmp(ig) = cmat%blk(ig)%ncmp
+end do
+
+! Check number of components consistency
+if (any(ncmp/=ncmp(1))) call mpl%abort('${subr}$','inconsistent number of components')
+
+if (.not.cmat%allocated) then
+   ! Allocation
+   call cmat%alloc(nam,geom,ncmp(1),anisotropic)
+
+   ! Initialization
+   call cmat%init(mpl,nam)
+end if
+
+do ig=1,nam%ng
+   write(mpl%info,'(a7,a,a)') '','Block ',trim(nam%group_names(ig))
+   call mpl%flush
+
+   ! Copy values
+   write(mpl%info,'(a10,a,i3,a)') '','BUMP import for ',cmat%blk(ig)%ncmp,' components'
+   call mpl%flush
+
+   ! Amplitudes
+   if (allocated(cmat%blk(ig)%bump_a)) then
+      cmat%blk(ig)%a = cmat%blk(ig)%bump_a
+   else
+      cmat%blk(ig)%a = one
+   end if
+
+   ! Horizontal
+   if (cmat%blk(ig)%anisotropic) then
+      cmat%blk(ig)%D11 = cmat%blk(ig)%bump_D11
+      cmat%blk(ig)%D22 = cmat%blk(ig)%bump_D22
+      cmat%blk(ig)%D12 = cmat%blk(ig)%bump_D12
+      do icmp=1,cmat%blk(ig)%ncmp
+         do il0=1,geom%nl0
+            do ic0a=1,geom%nc0a
+               call tensor_d2r(mpl,cmat%blk(ig)%D11(ic0a,il0,icmp),cmat%blk(ig)%D22(ic0a,il0,icmp), &
+ & cmat%blk(ig)%D12(ic0a,il0,icmp),cmat%blk(ig)%rh(ic0a,il0,icmp))
+            end do
+         end do
+      end do
+   else
+      if (allocated(cmat%blk(ig)%bump_rh)) cmat%blk(ig)%rh = cmat%blk(ig)%bump_rh
+   end if
+
+   ! Vertical
+   if (allocated(cmat%blk(ig)%bump_rv)) cmat%blk(ig)%rv = cmat%blk(ig)%bump_rv
+
+   ! Release memory (partial)
+   call cmat%blk(ig)%partial_bump_dealloc
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine cmat_from_bump
+
+!----------------------------------------------------------------------
+! Subroutine: cmat_setup_sampling
+!> Setup C matrix sampling
+!----------------------------------------------------------------------
+subroutine cmat_setup_sampling(cmat,nam,geom)
+
+implicit none
+
+! Passed variables
+class(cmat_type),intent(inout) :: cmat !< C matrix
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
+
+! Local variables
+integer :: ig,il0,ic0a,ncmpmax,icmp
+real(kind_real),allocatable :: rhs(:),rvs(:)
+
+! Set name
+@:set_name(cmat_setup_sampling)
+
+! Probe in
+@:probe_in()
+
+! Sampling parameters
+if (trim(nam%strategy)=='crossed') then
+   ! Maximum number of components
+   ncmpmax = 0
+   do ig=1,nam%ng
+      ncmpmax = max(ncmpmax,cmat%blk(ig)%ncmp)
+   end do
+
+   ! Allocation
+   allocate(rhs(ncmpmax))
+   allocate(rvs(ncmpmax))
+
+   do il0=1,geom%nl0
+      do ic0a=1,geom%nc0a
+         ! Get minimum
+         rhs = huge_real
+         rvs = huge_real
+         do ig=1,nam%ng
+            do icmp=1,cmat%blk(ig)%ncmp
+               rhs(icmp) = min(rhs(icmp),cmat%blk(ig)%rh(ic0a,il0,icmp))
+               rvs(icmp) = min(rvs(icmp),cmat%blk(ig)%rv(ic0a,il0,icmp))
+            end do
+         end do
+
+         ! Copy minimum
+         do ig=1,nam%ng
+            do icmp=1,cmat%blk(ig)%ncmp
+               cmat%blk(ig)%rhs(ic0a,il0,icmp) = rhs(icmp)
+               cmat%blk(ig)%rvs(ic0a,il0,icmp) = rvs(icmp)
+            end do
+         end do
+      end do
+   end do
+
+   ! Release memory
+   deallocate(rhs)
+   deallocate(rvs)
+else
+   ! Copy
+   do ig=1,nam%ng
+      cmat%blk(ig)%rhs = cmat%blk(ig)%rh
+      cmat%blk(ig)%rvs = cmat%blk(ig)%rv
+   end do
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine cmat_setup_sampling
+
+end module type_cmat

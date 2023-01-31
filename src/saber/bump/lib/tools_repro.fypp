@@ -1,0 +1,283 @@
+#:include 'generics.fypp'
+#:include 'instrumentation.fypp'
+!----------------------------------------------------------------------
+! Module: tools_repro
+!> Reproducibility functions
+! Author: Benjamin Menetrier
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+module tools_repro
+
+use tools_const, only: zero,one,pi
+use tools_kinds, only: kind_int,kind_real
+@:use_probe()
+
+implicit none
+
+logical :: repro_ops = .true.         !< Reproducibility operators
+real(kind_real) :: repro_th = 1.0e-12 !< Reproducibility threshold
+
+interface eq
+  #:for dtype in dtypes_irl
+     module procedure repro_eq_${dtype}$
+  #:endfor
+end interface
+interface inf
+  #:for dtype in dtypes_ir
+     module procedure repro_inf_${dtype}$
+  #:endfor
+end interface
+interface infeq
+  #:for dtype in dtypes_ir
+     module procedure repro_infeq_${dtype}$
+  #:endfor
+end interface
+interface sup
+  #:for dtype in dtypes_ir
+     module procedure repro_sup_${dtype}$
+  #:endfor
+end interface
+interface supeq
+  #:for dtype in dtypes_ir
+     module procedure repro_supeq_${dtype}$
+  #:endfor
+end interface
+interface indist
+   module procedure repro_indist
+end interface
+interface small
+   module procedure repro_small
+end interface
+
+private
+public :: repro_ops,repro_th
+public :: eq,inf,infeq,sup,supeq,indist,small
+
+contains
+
+#:for dtype in dtypes_irl
+!----------------------------------------------------------------------
+! Function: repro_eq_${dtype}$
+!> Equal test for ${dtype}$
+!----------------------------------------------------------------------
+function repro_eq_${dtype}$(x,y) result(test)
+
+implicit none
+
+! Passed variables
+${ftype[dtype]}$,intent(in) :: x !< First real
+${ftype[dtype]}$,intent(in) :: y !< Second real
+
+! Returned variable
+logical :: test
+
+! Set name
+@:set_name(repro_eq_${dtype}$)
+
+! Probe in
+@:probe_in()
+
+#{if dtype == 'int'}# test = (x==y) #{endif}#
+#:if dtype == 'real'
+   if (repro_ops) then
+      test = indist(x,y)
+   else
+      test = .not.(abs(x-y)>zero)
+   end if
+#:endif
+#{if dtype == 'logical'}# test = (x.eqv.y) #{endif}#
+
+! Probe out
+@:probe_out()
+
+end function repro_eq_${dtype}$
+#:endfor
+
+#:for dtype in dtypes_ir
+!----------------------------------------------------------------------
+! Function: repro_inf_${dtype}$
+!> Inferior test for ${dtype}$
+!----------------------------------------------------------------------
+function repro_inf_${dtype}$(x,y) result(test)
+
+implicit none
+
+! Passed variables
+${ftype[dtype]}$,intent(in) :: x !< First real
+${ftype[dtype]}$,intent(in) :: y !< Second real
+
+! Returned variable
+logical :: test
+
+! Set name
+@:set_name(repro_inf_${dtype}$)
+
+! Probe in
+@:probe_in()
+
+test = (x<y)
+#{if dtype == 'real'}# if (repro_ops) test = test.and.(.not.indist(x,y)) #{endif}#
+
+! Probe out
+@:probe_out()
+
+end function repro_inf_${dtype}$
+#:endfor
+
+#:for dtype in dtypes_ir
+!----------------------------------------------------------------------
+! Function: repro_infeq_${dtype}$
+!> Inferior or equal test for ${dtype}$
+!----------------------------------------------------------------------
+function repro_infeq_${dtype}$(x,y) result(test)
+
+implicit none
+
+! Passed variables
+${ftype[dtype]}$,intent(in) :: x !< First real
+${ftype[dtype]}$,intent(in) :: y !< Second real
+
+! Returned variable
+logical :: test
+
+! Set name
+@:set_name(repro_infeq_${dtype}$)
+
+! Probe in
+@:probe_in()
+
+test = inf(x,y).or.eq(x,y)
+
+! Probe out
+@:probe_out()
+
+end function repro_infeq_${dtype}$
+#:endfor
+
+#:for dtype in dtypes_ir
+!----------------------------------------------------------------------
+! Function: repro_sup_${dtype}$
+!> Superior test for ${dtype}$
+!----------------------------------------------------------------------
+function repro_sup_${dtype}$(x,y) result(test)
+
+implicit none
+
+! Passed variables
+${ftype[dtype]}$,intent(in) :: x !< First real
+${ftype[dtype]}$,intent(in) :: y !< Second real
+
+! Returned variable
+logical :: test
+
+! Set name
+@:set_name(repro_sup_${dtype}$)
+
+! Probe in
+@:probe_in()
+
+test = (x>y)
+#{if dtype == 'real'}# if (repro_ops) test = test.and.(.not.indist(x,y)) #{endif}#
+
+! Probe out
+@:probe_out()
+
+end function repro_sup_${dtype}$
+#:endfor
+
+#:for dtype in dtypes_ir
+!----------------------------------------------------------------------
+! Function: repro_supeq_${dtype}$
+!> Superior or equal test for ${dtype}$
+!----------------------------------------------------------------------
+function repro_supeq_${dtype}$(x,y) result(test)
+
+implicit none
+
+! Passed variables
+${ftype[dtype]}$,intent(in) :: x !< First real
+${ftype[dtype]}$,intent(in) :: y !< Second real
+
+! Returned variable
+logical :: test
+
+! Set name
+@:set_name(repro_supeq_${dtype}$)
+
+! Probe in
+@:probe_in()
+
+test = sup(x,y).or.eq(x,y)
+
+! Probe out
+@:probe_out()
+
+end function repro_supeq_${dtype}$
+#:endfor
+
+!----------------------------------------------------------------------
+! Function: repro_indist
+!> Indistiguishability test
+!----------------------------------------------------------------------
+function repro_indist(x,y) result(test)
+
+implicit none
+
+! Passed variables
+real(kind_real),intent(in) :: x !< First real
+real(kind_real),intent(in) :: y !< Second real
+
+! Returned variable
+logical :: test
+
+! Set name
+@:set_name(repro_indist)
+
+! Probe in
+@:probe_in()
+
+test = .false.
+if (repro_ops) then
+   if ((abs(x)>zero).or.(abs(y)>zero)) then
+      test = abs(x-y)<repro_th*(abs(x+y))
+   else
+      test = .true.
+   end if
+end if
+
+! Probe out
+@:probe_out()
+
+end function repro_indist
+
+!----------------------------------------------------------------------
+! Function: repro_small
+!> Small value test
+!----------------------------------------------------------------------
+function repro_small(x,y) result(test)
+
+implicit none
+
+! Passed variables
+real(kind_real),intent(in) :: x !< First real
+real(kind_real),intent(in) :: y !< Second real
+
+! Returned variable
+logical :: test
+
+! Set name
+@:set_name(repro_small)
+
+! Probe in
+@:probe_in()
+
+test = .false.
+if (repro_ops) test = abs(x)<repro_th*abs(y)
+
+! Probe out
+@:probe_out()
+
+end function repro_small
+
+end module tools_repro

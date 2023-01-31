@@ -1,0 +1,977 @@
+#:include 'instrumentation.fypp'
+!----------------------------------------------------------------------
+! Module: tools_ssrfpack
+!> SSRFPACK routines
+! Source: https://dl.acm.org/doi/abs/10.1145/27532three275330
+! Author: Robert Renka
+! Original licensing: none
+! Modified by Benjamin Menetrier for BUMP
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+module tools_ssrfpack
+
+use tools_const, only: zero,quarter,half,one,two,three,four,six,pi
+use tools_kinds, only: kind_real
+use tools_repro, only: infeq,supeq
+use tools_stripack, only: getnp
+use type_mpl, only: mpl_type
+@:use_probe()
+
+implicit none
+
+interface aplyr
+   module procedure ssrfpack_aplyr
+end interface
+interface aplyrt
+   module procedure ssrfpack_aplyrt
+end interface
+interface arcint
+   module procedure ssrfpack_arcint
+end interface
+interface arcint_op
+   module procedure ssrfpack_arcint_op
+end interface
+interface arclen
+   module procedure ssrfpack_arclen
+end interface
+interface constr
+   module procedure ssrfpack_constr
+end interface
+interface fval
+   module procedure ssrfpack_fval
+end interface
+interface fval_op
+   module procedure ssrfpack_fval_op
+end interface
+interface givens
+   module procedure ssrfpack_givens
+end interface
+interface gradl
+   module procedure ssrfpack_gradl
+end interface
+interface hval
+   module procedure ssrfpack_hval
+end interface
+interface hval_op
+   module procedure ssrfpack_hval_op
+end interface
+interface rotate
+   module procedure ssrfpack_rotate
+end interface
+interface setup
+   module procedure ssrfpack_setup
+end interface
+
+private
+public :: aplyr,constr,fval,fval_op,gradl
+
+contains
+
+!----------------------------------------------------------------------
+! Subroutine: ssrfpack_aplyr
+!> Apply the rotation R defined by CONSTR to a unit vector
+!----------------------------------------------------------------------
+subroutine ssrfpack_aplyr(mpl,x,y,z,cx,sx,cy,sy,xp,yp,zp)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl !< MPI data
+real(kind_real),intent(in) :: x     !< X-coordinate of the vector
+real(kind_real),intent(in) :: y     !< Y-coordinate of the vector
+real(kind_real),intent(in) :: z     !< Z-coordinate of the vector
+real(kind_real),intent(in) :: cx    !< Element of the rotation matrix
+real(kind_real),intent(in) :: sx    !< Element of the rotation matrix
+real(kind_real),intent(in) :: cy    !< Element of the rotation matrix
+real(kind_real),intent(in) :: sy    !< Element of the rotation matrix
+real(kind_real),intent(out) :: xp   !< X-coordinate of the rotated vector
+real(kind_real),intent(out) :: yp   !< Y-coordinate of the rotated vector
+real(kind_real),intent(out) :: zp   !< Z-coordinate of the rotated vector
+
+! Local variables
+real(kind_real) :: t
+
+! Set name
+@:set_name(ssrfpack_aplyr)
+
+! Probe in
+@:probe_in()
+
+! Apply rotation
+t = sx*y+cx*z
+xp = cy*x-sy*t
+yp = cx*y-sx*z
+zp = sy*x+cy*t
+
+! Check zp
+if (zp<zero) call mpl%abort('${subr}$','rotated point under the equator')
+
+! Probe out
+@:probe_out()
+
+end subroutine ssrfpack_aplyr
+
+!----------------------------------------------------------------------
+! Subroutine: ssrfpack_aplyrt
+!> Apply the inverse rotation R defined by CONSTR to a unit vector
+!----------------------------------------------------------------------
+subroutine ssrfpack_aplyrt(g1p,g2p,cx,sx,cy,sy,g)
+
+implicit none
+
+! Passed variables
+real(kind_real),intent(in) :: g1p   !< X-coordinate of the vector
+real(kind_real),intent(in) :: g2p   !< Y-coordinate of the vector
+real(kind_real),intent(in) :: cx    !< Element of the rotation matrix
+real(kind_real),intent(in) :: sx    !< Element of the rotation matrix
+real(kind_real),intent(in) :: cy    !< Element of the rotation matrix
+real(kind_real),intent(in) :: sy    !< Element of the rotation matrix
+real(kind_real),intent(out) :: g(3) !< Coordinates of the inverse rotated vector
+
+! Local variables
+real(kind_real) :: t
+
+! Set name
+@:set_name(ssrfpack_aplyrt)
+
+! Probe in
+@:probe_in()
+
+! Apply inverse rotation
+t = sy*g1p
+g(1) = cy*g1p
+g(2) = cx*g2p-sx*t
+g(3) = -sx*g2p-cx*t
+
+! Probe out
+@:probe_out()
+
+end subroutine ssrfpack_aplyrt
+
+!----------------------------------------------------------------------
+! Subroutine: ssrfpack_arcint
+!> Compute interpolatation value f and gradient vector g at p, between p1 and p2
+!----------------------------------------------------------------------
+subroutine ssrfpack_arcint(mpl,p,p1,p2,f1,f2,g1,g2,f,g)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl !< MPI data
+real(kind_real),intent(in) :: p(3)  !< Interpolation point
+real(kind_real),intent(in) :: p1(3) !< First vertex
+real(kind_real),intent(in) :: p2(3) !< Second vertex
+real(kind_real),intent(in) :: f1    !< First vertex value
+real(kind_real),intent(in) :: f2    !< Second vertex value
+real(kind_real),intent(in) :: g1(3) !< First vertex gradient
+real(kind_real),intent(in) :: g2(3) !< Second vertex gradient
+real(kind_real),intent(out) :: f    !< Interpolated values
+real(kind_real),intent(out) :: g(3) !< Interpolated gradient
+
+! Local variables
+real(kind_real) :: a,al,b1,b2,d1,d2,gn,gt,s,tau1,tau2,un(3),unorm
+
+! Set name
+@:set_name(ssrfpack_arcint)
+
+! Probe in
+@:probe_in()
+
+! Compute un
+un(1) = p1(2)*p2(3)-p1(3)*p2(2)
+un(2) = p1(3)*p2(1)-p1(1)*p2(3)
+un(3) = p1(1)*p2(2)-p1(2)*p2(1)
+
+! Compute unorm
+unorm = sqrt(un(1)**2+un(2)**2+un(3)**2)
+if (.not.(unorm>zero)) call mpl%abort('${subr}$','unorm is not positive')
+
+! Normalize un
+un = un/unorm
+
+! Compute tangential derivatives at the endpoints
+tau1 = (g1(1)*p2(1)+g1(2)*p2(2)+g1(3)*p2(3))/unorm
+tau2 =-(g2(1)*p1(1)+g2(2)*p1(2)+g2(3)*p1(3))/unorm
+
+! Compute first arc-length
+a = arclen(p1,p2)
+if (.not.(a>zero)) call mpl%abort('${subr}$','arc length is not positive')
+
+! Compute second arc-length
+al = arclen(p1,p)
+
+! Factors
+b2 = al/a
+b1 = one-b2
+s = (f2-f1)/a
+d1 = s-tau1
+d2 = tau2-s
+
+! Hermite cubic interpolation
+f = f1+al*(tau1+b2*(d1+b1*(d1-d2)))
+gt = tau1+b2*(d1+d2+three*b1*(d1-d2))
+
+! Compute gn
+gn = b1*(un(1)*g1(1)+un(2)*g1(2)+un(3)*g1(3))+b2*(un(1)*g2(1)+un(2)*g2(2)+un(3)*g2(3))
+
+! Compute g = gt*(un x p)+gn*un
+g(1) = gt*(un(2)*p(3)-un(3)*p(2))+gn*un(1)
+g(2) = gt*(un(3)*p(1)-un(1)*p(3))+gn*un(2)
+g(3) = gt*(un(1)*p(2)-un(2)*p(1))+gn*un(3)
+
+! Probe out
+@:probe_out()
+
+end subroutine ssrfpack_arcint
+
+!----------------------------------------------------------------------
+! Subroutine: ssrfpack_arcint_op
+!> Compute interpolatation value f and gradient vector g at p, between p1 and p2 (linear operator)
+!----------------------------------------------------------------------
+subroutine ssrfpack_arcint_op(mpl,p,p1,p2,f_mat,g_mat)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl       !< MPI data
+real(kind_real),intent(in) :: p(3)        !< Interpolation point
+real(kind_real),intent(in) :: p1(3)       !< First vertex
+real(kind_real),intent(in) :: p2(3)       !< Second vertex
+real(kind_real),intent(out) :: f_mat(8)   !< Interpolant for the value
+real(kind_real),intent(out) :: g_mat(8,3) !< Interpolant for the gradient
+
+! Local variables
+real(kind_real) :: a,al,b1,b2,un(3),unorm
+real(kind_real) :: f1_mat(8),d1_mat(8),d2_mat(8),gn_mat(8),gt_mat(8),s_mat(8),tau1_mat(8),tau2_mat(8)
+
+! Set name
+@:set_name(ssrfpack_arcint_op)
+
+! Probe in
+@:probe_in()
+
+! Compute un
+un(1) = p1(2)*p2(3)-p1(3)*p2(2)
+un(2) = p1(3)*p2(1)-p1(1)*p2(3)
+un(3) = p1(1)*p2(2)-p1(2)*p2(1)
+
+! Compute unorm
+unorm = sqrt(un(1)**2+un(2)**2+un(3)**2)
+if (.not.(unorm>zero)) call mpl%abort('${subr}$','unorm is not positive')
+
+! Normalize un
+un = un/unorm
+
+! Compute first arc-length
+a = arclen(p1,p2)
+if (.not.(a>zero)) call mpl%abort('${subr}$','arc length is not positive')
+
+! Compute second arc-length
+al = arclen(p1,p)
+
+! Factors
+b2 = al/a
+b1 = one-b2
+
+! Matrices
+f1_mat = (/one,zero,zero,zero,zero,zero,zero,zero/)
+tau1_mat = (/zero,zero,p2(1)/unorm,p2(2)/unorm,p2(3)/unorm,zero,zero,zero/)
+tau2_mat = (/zero,zero,zero,zero,zero,-p1(1)/unorm,-p1(2)/unorm,-p1(3)/unorm/)
+s_mat = (/-one/a,one/a,zero,zero,zero,zero,zero,zero/)
+d1_mat = s_mat-tau1_mat
+d2_mat = tau2_mat-s_mat
+
+! Hermite cubic interpolation
+f_mat = f1_mat+al*(tau1_mat+b2*(d1_mat+b1*(d1_mat-d2_mat)))
+gt_mat = tau1_mat+b2*(d1_mat+d2_mat+three*b1*(d1_mat-d2_mat))
+gn_mat = (/zero,zero,b1*un(1),b1*un(2),b1*un(3),b2*un(1),b2*un(2),b2*un(3)/)
+g_mat(:,1) = gt_mat*(un(2)*p(3)-un(3)*p(2))+gn_mat*un(1)
+g_mat(:,2) = gt_mat*(un(3)*p(1)-un(1)*p(3))+gn_mat*un(2)
+g_mat(:,3) = gt_mat*(un(1)*p(2)-un(2)*p(1))+gn_mat*un(3)
+
+! Probe out
+@:probe_out()
+
+end subroutine ssrfpack_arcint_op
+
+!----------------------------------------------------------------------
+! Subroutine: ssrfpack_arclen
+!> Compute the arc-length between a pair of points on the unit sphere
+!----------------------------------------------------------------------
+function ssrfpack_arclen(p,q) result(al)
+
+implicit none
+
+! Passed variables
+real(kind_real),intent(in) :: p(3) !< First point
+real(kind_real),intent(in) :: q(3) !< Second point
+
+! Returned variable
+real(kind_real) :: al
+
+! Local variables
+integer :: i
+real(kind_real) :: d
+
+! Set name
+@:set_name(ssrfpack_arclen)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+d = zero
+do i=1,3
+  d = d+(p(i)+q(i))**2
+end do
+if (.not.(d>zero)) then
+   ! p and q are separated by 180 degrees
+   al = pi
+elseif (supeq(d,four)) then
+   ! p and q coincide
+   al = zero
+else
+   al = two*atan(sqrt((four-d)/d))
+end if
+
+! Probe out
+@:probe_out()
+
+end function ssrfpack_arclen
+
+!----------------------------------------------------------------------
+! Subroutine: ssrfpack_constr
+!> Compute the elements of a 3 by 3 orthogonal matrix R
+!----------------------------------------------------------------------
+subroutine ssrfpack_constr(xk,yk,zk,cx,sx,cy,sy)
+
+implicit none
+
+! Passed variables
+real(kind_real),intent(in) :: xk  !< X-component of the unit vector
+real(kind_real),intent(in) :: yk  !< Y-component of the unit vector
+real(kind_real),intent(in) :: zk  !< Z-component of the unit vector
+real(kind_real),intent(out) :: cx !< Element of the rotation matrix
+real(kind_real),intent(out) :: sx !< Element of the rotation matrix
+real(kind_real),intent(out) :: cy !< Element of the rotation matrix
+real(kind_real),intent(out) :: sy !< Element of the rotation matrix
+
+! Set name
+@:set_name(ssrfpack_aplyr)
+
+! Probe in
+@:probe_in()
+
+! Compute elements
+cy = sqrt(yk**2+zk**2)
+sy = xk
+if (cy>zero) then
+   ! (xk,yk,zk) does not lie on the X-axis
+   cx = zk/cy
+   sx = yk/cy
+else
+   ! (xk,yk,zk) lies on the X-axis
+   cx = one
+   sx = zero
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine ssrfpack_constr
+
+!----------------------------------------------------------------------
+! Subroutine: ssrfpack_fval
+!> Compute the c1 interpolation
+!----------------------------------------------------------------------
+function ssrfpack_fval(mpl,b1,b2,b3,v1,v2,v3,f1,f2,f3,g1,g2,g3) result(v)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl !< MPI data
+real(kind_real),intent(in) :: b1    !< First vertex barycentric weight
+real(kind_real),intent(in) :: b2    !< Second vertex barycentric weight
+real(kind_real),intent(in) :: b3    !< Third vertex barycentric weight
+real(kind_real),intent(in) :: v1(3) !< First vertex barycentric coordinates
+real(kind_real),intent(in) :: v2(3) !< Second vertex barycentric coordinates
+real(kind_real),intent(in) :: v3(3) !< Third vertex barycentric coordinates
+real(kind_real),intent(in) :: f1    !< First vertex data value
+real(kind_real),intent(in) :: f2    !< Second vertex data value
+real(kind_real),intent(in) :: f3    !< Third vertex data value
+real(kind_real),intent(in) :: g1(3) !< First vertex gradient
+real(kind_real),intent(in) :: g2(3) !< Second vertex gradient
+real(kind_real),intent(in) :: g3(3) !< Third vertex gradient
+
+! Returned variable
+real(kind_real) :: v
+
+! Local variables
+integer :: i
+real(kind_real) :: c1,c2,c3,csum,c1n,c2n,c3n,ds,dv,f,g(3),q1(3),q2(3),q3(3),s1,s2,s3,u1(3),u2(3),u3(3),u1n,u2n,u3n
+
+! Set name
+@:set_name(ssrfpack_fval)
+
+! Probe in
+@:probe_in()
+
+! Compute c1, c2 and c3
+c1 = b2*b3
+c2 = b3*b1
+c3 = b1*b2
+csum = c1+c2+c3
+
+if (.not.(csum>zero)) then
+   ! p coincides with a vertex
+   v = b1*f1+b2*f2+b3*f3
+else
+   ! Normalize c1, c2, and c3
+   c1n = c1/csum
+   c2n = c2/csum
+   c3n = c3/csum
+
+   ! Compute (s1,s2,s3), (u1,u2,u3) and (u1n,u2n,u3n)
+   s1 = b2+b3
+   s2 = b3+b1
+   s3 = b1+b2
+   u1n = zero
+   u2n = zero
+   u3n = zero
+   do i=1,3
+      u1(i) = (b2*v2(i)+b3*v3(i))/s1
+      u2(i) = (b3*v3(i)+b1*v1(i))/s2
+      u3(i) = (b1*v1(i)+b2*v2(i))/s3
+      u1n = u1n+u1(i)**2
+      u2n = u2n+u2(i)**2
+      u3n = u3n+u3(i)**2
+   end do
+
+   ! Compute q1, q2, and q3
+   u1n = sqrt(u1n)
+   u2n = sqrt(u2n)
+   u3n = sqrt(u3n)
+   do i=1,3
+      q1(i) = u1(i)/u1n
+      q2(i) = u2(i)/u2n
+      q3(i) = u3(i)/u3n
+   end do
+
+   ! Compute interpolated value (v) at p by looping on triangle sides
+   v = zero
+
+   ! Contribution from side opposite v1
+   call arcint(mpl,q1,v2,v3,f2,f3,g2,g3,f,g)
+   dv = g1(1)*u1(1)+g1(2)*u1(2)+g1(3)*u1(3)
+   ds = -(g(1)*v1(1)+g(2)*v1(2)+g(3)*v1(3))/u1n
+   v = v+c1n*hval(b1,f1,f,dv,ds)
+
+   ! Contribution from side opposite v2
+   call arcint(mpl,q2,v3,v1,f3,f1,g3,g1,f,g)
+   dv = g2(1)*u2(1)+g2(2)*u2(2)+g2(3)*u2(3)
+   ds = -(g(1)*v2(1)+g(2)*v2(2)+g(3)*v2(3))/u2n
+   v = v+c2n*hval(b2,f2,f,dv,ds)
+
+   ! Contribution from side opposite v3
+   call arcint(mpl,q3,v1,v2,f1,f2,g1,g2,f,g)
+   dv = g3(1)*u3(1)+g3(2)*u3(2)+g3(3)*u3(3)
+   ds = -(g(1)*v3(1)+g(2)*v3(2)+g(3)*v3(3))/u3n
+   v = v+c3n*hval(b3,f3,f,dv,ds)
+end if
+
+! Probe out
+@:probe_out()
+
+end function ssrfpack_fval
+
+!----------------------------------------------------------------------
+! Subroutine: ssrfpack_fval_op
+!> Compute the c1 interpolation (linear operator)
+!----------------------------------------------------------------------
+subroutine ssrfpack_fval_op(mpl,b1,b2,b3,v1,v2,v3,v_mat)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+real(kind_real),intent(in) :: b1         !< First vertex barycentric weight
+real(kind_real),intent(in) :: b2         !< Second vertex barycentric weight
+real(kind_real),intent(in) :: b3         !< Third vertex barycentric weight
+real(kind_real),intent(in) :: v1(3)      !< First vertex barycentric coordinates
+real(kind_real),intent(in) :: v2(3)      !< Second vertex barycentric coordinates
+real(kind_real),intent(in) :: v3(3)      !< Third vertex barycentric coordinates
+real(kind_real),intent(out) :: v_mat(12) !< Interpolant
+
+! Local variables
+integer :: i
+integer :: subset(8)
+real(kind_real) :: c1,c2,c3,csum,c1n,c2n,c3n,s1,s2,s3,u1n,u2n,u3n,q1(3),q2(3),q3(3),u1(3),u2(3),u3(3)
+real(kind_real) :: f_mat_sub(8),g_mat_sub(8,3)
+real(kind_real) :: f1_mat(12),f2_mat(12),f3_mat(12),v1_mat(12),v2_mat(12),v3_mat(12),f_mat(12),g_mat(12,3),dv_mat(12),ds_mat(12)
+
+! Set name
+@:set_name(ssrfpack_fval_op)
+
+! Probe in
+@:probe_in()
+
+! Compute c1, c2 and c3
+c1 = b2*b3
+c2 = b3*b1
+c3 = b1*b2
+csum = c1+c2+c3
+
+if (.not.(csum>zero)) then
+   ! p coincides with a vertex
+   v_mat = (/b1,b2,b3,zero,zero,zero,zero,zero,zero,zero,zero,zero/)
+else
+   ! Normalize c1, c2, and c3
+   c1n = c1/csum
+   c2n = c2/csum
+   c3n = c3/csum
+
+   ! Compute (s1,s2,s3), (u1,u2,u3) and (u1n,u2n,u3n)
+   s1 = b2+b3
+   s2 = b3+b1
+   s3 = b1+b2
+   u1n = zero
+   u2n = zero
+   u3n = zero
+   do i=1,3
+      u1(i) = (b2*v2(i)+b3*v3(i))/s1
+      u2(i) = (b3*v3(i)+b1*v1(i))/s2
+      u3(i) = (b1*v1(i)+b2*v2(i))/s3
+      u1n = u1n+u1(i)**2
+      u2n = u2n+u2(i)**2
+      u3n = u3n+u3(i)**2
+   end do
+
+   ! Compute q1, q2, and q3
+   u1n = sqrt(u1n)
+   u2n = sqrt(u2n)
+   u3n = sqrt(u3n)
+   do i=1,3
+      q1(i) = u1(i)/u1n
+      q2(i) = u2(i)/u2n
+      q3(i) = u3(i)/u3n
+   end do
+
+   ! Initialization
+   v_mat = zero
+
+   ! Contribution from side opposite v1
+   f1_mat = (/one,zero,zero,zero,zero,zero,zero,zero,zero,zero,zero,zero/)
+   subset = (/2,3,7,8,9,10,11,12/)
+   call arcint_op(mpl,q1,v2,v3,f_mat_sub,g_mat_sub)
+   f_mat = zero
+   f_mat(subset) = f_mat_sub
+   g_mat = zero
+   g_mat(subset,:) = g_mat_sub
+   dv_mat = (/zero,zero,zero,u1(1),u1(2),u1(3),zero,zero,zero,zero,zero,zero/)
+   ds_mat = -(g_mat(:,1)*v1(1)+g_mat(:,2)*v1(2)+g_mat(:,3)*v1(3))/u1n
+   call hval_op(b1,f1_mat,f_mat,dv_mat,ds_mat,v1_mat)
+   v_mat = v_mat+c1n*v1_mat
+
+   ! Contribution from side opposite v2
+   f2_mat = (/zero,one,zero,zero,zero,zero,zero,zero,zero,zero,zero,zero/)
+   subset = (/3,1,10,11,12,4,5,6/)
+   call arcint_op(mpl,q2,v3,v1,f_mat_sub,g_mat_sub)
+   f_mat = zero
+   f_mat(subset) = f_mat_sub
+   g_mat = zero
+   g_mat(subset,:) = g_mat_sub
+   dv_mat = (/zero,zero,zero,zero,zero,zero,u2(1),u2(2),u2(3),zero,zero,zero/)
+   ds_mat = -(g_mat(:,1)*v2(1)+g_mat(:,2)*v2(2)+g_mat(:,3)*v2(3))/u2n
+   call hval_op(b2,f2_mat,f_mat,dv_mat,ds_mat,v2_mat)
+   v_mat = v_mat+c2n*v2_mat
+
+   ! Contribution from side opposite v3
+   f3_mat = (/zero,zero,one,zero,zero,zero,zero,zero,zero,zero,zero,zero/)
+   subset = (/1,2,4,5,6,7,8,9/)
+   call arcint_op(mpl,q3,v1,v2,f_mat_sub,g_mat_sub)
+   f_mat = zero
+   f_mat(subset) = f_mat_sub
+   g_mat = zero
+   g_mat(subset,:) = g_mat_sub
+   dv_mat = (/zero,zero,zero,zero,zero,zero,zero,zero,zero,u3(1),u3(2),u3(3)/)
+   ds_mat = -(g_mat(:,1)*v3(1)+g_mat(:,2)*v3(2)+g_mat(:,3)*v3(3))/u3n
+   call hval_op(b3,f3_mat,f_mat,dv_mat,ds_mat,v3_mat)
+   v_mat = v_mat+c3n*v3_mat
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine ssrfpack_fval_op
+
+!----------------------------------------------------------------------
+! Subroutine: ssrf_givens
+!> Construct the Givens plane rotation
+!----------------------------------------------------------------------
+subroutine ssrfpack_givens(a,b,c,s)
+
+implicit none
+
+! Passed variables
+real(kind_real),intent(inout) :: a !< Component of the vector defining the rotation
+real(kind_real),intent(inout) :: b !< Component of the vector defining the rotation
+real(kind_real),intent(out) :: c   !< Plus or minus a/r, or 1 if r = 0
+real(kind_real),intent(out) :: s   !< Plus or minus b/r, or 1 if r = 0
+
+! Local variables
+real(kind_real) :: aa,bb,r,u,v
+
+! Set name
+@:set_name(ssrfpack_givens)
+
+! Probe in
+@:probe_in()
+
+! Copy
+aa = a
+bb = b
+
+if (abs(aa)>abs(bb)) then
+   ! abs(a) > abs(b)
+   u = two*aa
+   u = aa + aa
+   v = bb/u
+   r = sqrt(quarter+v**2)*u
+   c = aa/r
+   s = two*v*c
+   b = s
+   a = r
+elseif  (abs(bb)>zero) then
+   ! abs(a) <= abs(b)
+   u = bb + bb
+   v = aa/u
+   a = sqrt(quarter+v**2)*u
+   s = bb/a
+   c = two*v*s
+   b = one
+   if (abs(c)>zero) b = one/c
+else
+   ! a = b = 0
+   c = one
+   s = zero
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine ssrfpack_givens
+
+!----------------------------------------------------------------------
+! Subroutine: ssrfpack_givens
+!> Construct the Givens plane rotation
+!----------------------------------------------------------------------
+subroutine ssrfpack_gradl(mpl,n,k,x,y,z,w,list,lptr,lend,g)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl !< MPI data
+integer,intent(in) :: n             !< Number of nodes
+integer,intent(in) :: k             !< Node at which the gradient is sought
+real(kind_real),intent(in) :: x(n)  !< X-coordinates of the nodes
+real(kind_real),intent(in) :: y(n)  !< Y-coordinates of the nodes
+real(kind_real),intent(in) :: z(n)  !< Z-coordinates of the nodes
+real(kind_real),intent(in) :: w(n)  !< Values associated with the nodes
+integer,intent(in) :: list(*)       !< On input, the data structure associated with the triangulation of nodes 1 to K-1. On output, the data has been updated to include node K. The array lengths are assumed to be large enough to add node K. Refer to TRMESH.
+integer,intent(in) :: lptr(*)       !< cf. list
+integer,intent(in) :: lend(n)       !< cf. list
+real(kind_real),intent(out) :: g(3) !< Gradient
+
+! Local variables
+integer,parameter :: lmn = 10
+integer,parameter :: lmx = 30
+real(kind_real),parameter :: rtol = 1.0e-6_kind_real
+real(kind_real),parameter :: dtol = 1.0e-2_kind_real
+real(kind_real),parameter :: sf = one
+integer :: i,im1,ip1,j,jp1,l,lm1,lmax,lmin,lnp,np,npts(lmx)
+real(kind_real) :: a(6,6),av,avsq,c,cx,cy,df,dmin,dsum,dx,dy,rf,rin,s,sx,sy,wt,xp,yp,zp
+
+! Set name
+@:set_name(ssrfpack_gradl)
+
+! Probe in
+@:probe_in()
+
+! Check for errors
+if ((n<7).or.(k<1).or.(k>n)) call mpl%abort('${subr}$','n or k is outside its valid range')
+
+! Initialize lmin, lmax
+lmin = min(lmn,n)
+lmax = min(lmx,n)
+
+! Compute npts, lnp, avsq, av, and r. Set npts to the closest lmin-1 nodes to K. df contains the negative Z component (in the rotated coordinate system) of the new node on return from getnp.
+dsum = zero
+npts(1) = k
+lm1 = lmin-1
+do lnp=2,lm1
+   call getnp(mpl,n,x,y,z,list,lptr,lend,lnp,npts,df)
+   dsum = dsum+one-df**2
+end do
+
+! Add additional nodes to npts until the increase in r = 1+rf is at least rtol
+do lnp=lmin,lmax
+   call getnp(mpl,n,x,y,z,list,lptr,lend,lnp,npts,rf)
+   if (rf-df>=rtol) go to 3
+   dsum = dsum+one-rf**2
+end do
+
+! Use all lmax nodes in the least squares fit. r is arbitrarily increased by 5 percent.
+rf = 1.05_kind_real*rf+0.05_kind_real
+lnp = lmax+1
+
+! There are lnp-2 equations corresponding to nodes npts(2),...,npts(lnp-1).
+3 avsq = dsum/real(lnp-2,kind_real)
+av = sqrt(avsq)
+rin = one/(one+rf)
+
+! Construct the rotation
+call constr(x(k),y(k),z(k),cx,sx,cy,sy)
+
+! Set up the first 5 equations of the augmented regression matrix (transposed) as the columns of a, and zero out the lower triangle (upper triangle of a) with Givens rotations.
+DO i=1,5
+   np = npts(i+1)
+   call aplyr(mpl,x(np),y(np),z(np),cx,sx,cy,sy,xp,yp,zp)
+   wt = one/(one-zp)-rin
+   call setup(xp,yp,w(np),w(k),av,avsq,wt,a(:,i))
+   if (i>1) then
+      im1 = i-1
+      do j=1,im1
+         jp1 = j+1
+         l = 6-j
+         call givens(a(j,j),a(j,i),c,s)
+         call rotate(l,c,s,a(jp1:jp1+l-1,j),a(jp1:jp1+l-1,i))
+      end do
+   end if
+end do
+
+! Add the additional equations to the system using the last column of a. i<=lnp.
+i = 7
+6 if (i==lnp) go to 8
+np = npts(i)
+call aplyr(mpl,x(np),y(np),z(np),cx,sx,cy,sy,xp,yp,zp)
+wt = one/(one-zp)-rin
+call setup(xp,yp,w(np),w(k),av,avsq,wt,a(:,6))
+DO j=1,5
+   jp1 = j+1
+   l = 6-j
+   call givens(a(j,j),a(j,6),c,s)
+   call rotate(l,c,s,a(jp1:jp1+l-1,j),a(jp1:jp1+l-1,6))
+end do
+i = i+1
+go to 6
+
+! Test the system for ill-conditioning
+8 dmin = min(abs(a(1,1)),abs(a(2,2)),abs(a(3,3)),abs(a(4,4)),abs(a(5,5)))
+if (dmin>=dtol) go to 12
+if (lnp<=lmax) then
+   ! Add another node to the system and increase r. i = lnp.
+   lnp = lnp+1
+   if (lnp<=lmax) call getnp(mpl,n,x,y,z,list,lptr,lend,lnp,npts,rf)
+   rin = one/(1.05_kind_real*(one+rf))
+   go to 6
+end if
+
+! Stabilize the system by damping second partials.  Add multiples of the first three unit vectors to the first three equations.
+do i=1,3
+   a(i,6) = sf
+   ip1 = i+1
+   do j=ip1,6
+      a(j,6) = zero
+   end do
+   do j=i,5
+      jp1 = j+1
+      l = 6-j
+      call givens(a(j,j),a(j,6),c,s)
+      call rotate(l,c,s,a(jp1:jp1+l-1,j),a(jp1:jp1+l-1,6))
+   end do
+end do
+
+! Test the linear portion of the stabilized system for ill-conditioning
+dmin = min(abs(a(4,4)),abs(a(5,5)) )
+IF (dmin<dtol) call mpl%abort('${subr}$','No unique solution due to collinear nodes')
+
+! Solve the 2 by 2 triangular system for the estimated partial derivatives
+12 dy = a(6,5)/a(5,5)
+dx = (a(6,4)-a(5,4)*dy)/a(4,4)/av
+dy = dy/av
+
+! Rotate the gradient (dx,dy,0) back into the original coordinate system
+call aplyrt(dx,dy,cx,sx,cy,sy,g)
+
+! Probe out
+@:probe_out()
+
+end subroutine ssrfpack_gradl
+
+!----------------------------------------------------------------------
+! Subroutine: ssrfpack_hval
+!> Compute the Hermite interpolatory tension spline defined by the endpoint data
+!----------------------------------------------------------------------
+function ssrfpack_hval(b,h1,h2,hp1,hp2) result(v)
+
+implicit none
+
+! Passed variables
+real(kind_real),intent(in) :: b   !< Local coordinate of p with respect to p1-p2
+real(kind_real),intent(in) :: h1  !< Value interpolated at p1
+real(kind_real),intent(in) :: h2  !< Value interpolated at p2
+real(kind_real),intent(in) :: hp1 !< Product of d(p1,p2) with first order derivatives at p1
+real(kind_real),intent(in) :: hp2 !< Product of d(p1,p2) with first order derivatives at p2
+
+! Returned variable
+real(kind_real) :: v
+
+! Local variables
+real(kind_real) :: b1,b2,d1,d2,s
+
+! Set name
+@:set_name(ssrfpack_hval)
+
+! Probe in
+@:probe_in()
+
+! Factors
+b1 = b
+b2 = one-b1
+
+! Compute slope s and second differences d1 and d2 scaled by the separation between p1 and p2
+s = h2-h1
+d1 = s-hp1
+d2 = hp2-s
+
+! Hermite cubic interpolation
+v = h1+b2*(hp1+b2*(d1+b1*(d1-d2)))
+
+! Probe out
+@:probe_out()
+
+end function ssrfpack_hval
+
+!----------------------------------------------------------------------
+! Subroutine: ssrfpack_hval_op
+!> Compute the Hermite interpolatory tension spline defined by the endpoint data (linear operator)
+!----------------------------------------------------------------------
+subroutine ssrfpack_hval_op(b,h1_mat,h2_mat,hp1_mat,hp2_mat,v_mat)
+
+implicit none
+
+! Passed variables
+real(kind_real),intent(in) :: b           !< Local coordinate of p with respect to p1-p2
+real(kind_real),intent(in) :: h1_mat(12)  !< Value interpolated at p1
+real(kind_real),intent(in) :: h2_mat(12)  !< Value interpolated at p2
+real(kind_real),intent(in) :: hp1_mat(12) !< Product of d(p1,p2) with first order derivatives at p1
+real(kind_real),intent(in) :: hp2_mat(12) !< Product of d(p1,p2) with first order derivatives at p2
+real(kind_real),intent(out) :: v_mat(12)  !< Interpolant
+
+! Local variables
+real(kind_real) ::  b1,b2,d1_mat(12),d2_mat(12),s_mat(12)
+
+! Set name
+@:set_name(ssrfpack_hval_op)
+
+! Probe in
+@:probe_in()
+
+! Factors
+b1 = b
+b2 = one-b1
+
+! Compute slope s and second differences d1 and d2 scaled by the separation between p1 and p2
+s_mat = h2_mat-h1_mat
+d1_mat = s_mat-hp1_mat
+d2_mat = hp2_mat-s_mat
+
+! Hermite cubic interpolation
+v_mat = h1_mat+b2*(hp1_mat+b2*(d1_mat+b1*(d1_mat-d2_mat)))
+
+! Probe out
+@:probe_out()
+
+end subroutine ssrfpack_hval_op
+
+!----------------------------------------------------------------------
+! Subroutine: ssrfpack_rotate
+!> Applies the Givens plane rotation
+!----------------------------------------------------------------------
+subroutine ssrfpack_rotate(n,c,s,x,y)
+
+implicit none
+
+! Passed variables
+integer,intent(in) :: n               !< Number of columns to be rotated
+real(kind_real),intent(in) :: c       !< Elements of the Givens rotation
+real(kind_real),intent(in) :: s       !< Elements of the Givens rotation
+real(kind_real),intent(inout) :: x(n) !< X-components of the vectors to be rotated
+real(kind_real),intent(inout) :: y(n) !< Y-components of the vectors to be rotated
+
+! Local variables
+integer :: i
+real(kind_real) :: xi,yi
+
+! Set name
+@:set_name(ssrfpack_rotate)
+
+! Probe in
+@:probe_in()
+
+do i=1,n
+  xi = x(i)
+  yi = y(i)
+  x(i) = c*xi+s*yi
+  y(i) = -s*xi+c*yi
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine ssrfpack_rotate
+
+!----------------------------------------------------------------------
+! Subroutine: ssrfpack_setup
+!> Set-up the i-th row of an augmented regression matrix for a weighted least squares fit of a quadratic function
+!----------------------------------------------------------------------
+subroutine ssrfpack_setup(xi,yi,wi,wk,s1,s2,wt,row)
+
+implicit none
+
+! Passed variables
+real(kind_real),intent(in) :: xi        !< X-coordinate of node i
+real(kind_real),intent(in) :: yi        !< Y-coordinate of node i
+real(kind_real),intent(in) :: wi        !< Data value at node i
+real(kind_real),intent(in) :: wk        !< Data value interpolated by Q at the origin
+real(kind_real),intent(in) :: s1        !< First inverse scale factors
+real(kind_real),intent(in) :: s2        !< Second inverse scale factors
+real(kind_real),intent(in) :: wt        !< Weight factor corresponding to the i-th equation
+real(kind_real),intent(inout) :: row(6) !< Array containing a row of the augmented regression matrix
+
+! Local variables
+real(kind_real) :: w1,w2
+
+! Set name
+@:set_name(ssrfpack_setup)
+
+! Probe in
+@:probe_in()
+
+! Setup
+w1 = wt/s1
+w2 = wt/s2
+row(1) = xi**2*w2
+row(2) = xi*yi*w2
+row(3) = yi**2*w2
+row(4) = xi*w1
+row(5) = yi*w1
+row(6) = (wi-wk)*wt
+
+! Probe out
+@:probe_out()
+
+end subroutine ssrfpack_setup
+
+end module tools_ssrfpack
