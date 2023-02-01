@@ -71,6 +71,8 @@ class Fields : public util::Printable,
   void serialize(std::vector<double> &) const override;
   void deserialize(const std::vector<double> &, size_t &) override;
 
+  atlas::FieldSet & fields() {return fset_;}
+
  private:
   void print(std::ostream &) const override;
   std::shared_ptr<const Geometry> geom_;
