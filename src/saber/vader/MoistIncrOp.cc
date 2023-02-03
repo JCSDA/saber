@@ -62,8 +62,8 @@ MoistIncrOp::MoistIncrOp(const oops::GeometryData & outerGeometryData,
     "mass_content_of_cloud_ice_in_atmosphere_layer",  // to be populated in evalMassCloudIce
     "qrain",  // to be populated in evalMassRain
     "rht",  // to be populated in evalTotalRelativeHumidity
-    "liquid_cloud_volume_fraction_in_atmosphere_layer",  // from file
-    "ice_cloud_volume_fraction_in_atmosphere_layer",  // from file
+    "liquid_cloud_fraction",  // from file
+    "frozen_cloud_fraction",  // from file
     "cleff", "cfeff"  // to be populated in getMIOFields
   };
 
