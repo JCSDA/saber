@@ -33,6 +33,8 @@ namespace vader {
 
 class HydroBalParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(HydroBalParameters, SaberBlockParametersBase)
+ public:
+  oops::RequiredParameter<std::string> svp_file{"saturation vapour pressure file", this};
 };
 
 // -----------------------------------------------------------------------------

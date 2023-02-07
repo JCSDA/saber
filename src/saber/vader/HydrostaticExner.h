@@ -48,6 +48,7 @@ class HydrostaticExnerCovarianceParameters : public oops::Parameters {
 class HydrostaticExnerParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(HydrostaticExnerParameters, SaberBlockParametersBase)
  public:
+  oops::RequiredParameter<std::string> svp_file{"saturation vapour pressure file", this};
   oops::RequiredParameter<HydrostaticExnerCovarianceParameters>
     hydrostaticexnerParams{"covariance data", this};
 };
@@ -85,6 +86,7 @@ class HydrostaticExner : public SaberOuterBlockBase {
   void print(std::ostream &) const override;
   const oops::GeometryData & innerGeometryData_;
   oops::Variables innerVars_;
+  oops::Variables activeVars_;
   atlas::FieldSet covFieldSet_;
   atlas::FieldSet augmentedStateFieldSet_;
 };

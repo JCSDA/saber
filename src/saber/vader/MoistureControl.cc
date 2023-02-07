@@ -19,6 +19,7 @@
 #include "mo/common_varchange.h"
 #include "mo/control2analysis_linearvarchange.h"
 #include "mo/control2analysis_varchange.h"
+#include "mo/eval_sat_vapour_pressure.h"
 #include "mo/model2geovals_varchange.h"
 
 #include "oops/base/Variables.h"
@@ -90,7 +91,7 @@ MoistureControl::MoistureControl(const oops::GeometryData & outerGeometryData,
 
   mo::evalAirTemperature(augmentedStateFieldSet_);
   mo::evalTotalMassMoistAir(augmentedStateFieldSet_);
-  mo::evalSatVaporPressure(augmentedStateFieldSet_);
+  mo::eval_sat_vapour_pressure_nl(params.svp_file, augmentedStateFieldSet_);
   mo::evalSatSpecificHumidity(augmentedStateFieldSet_);
   mo::evalSpecificHumidity(augmentedStateFieldSet_);
   mo::evalMassCloudLiquid(augmentedStateFieldSet_);
@@ -107,6 +108,8 @@ MoistureControl::MoistureControl(const oops::GeometryData & outerGeometryData,
 
   // populate "specific moisture control dependencies"
   mo::evalMoistureControlDependencies(augmentedStateFieldSet_);
+
+  augmentedStateFieldSet_.haloExchange();
 
   oops::Log::trace() << classname() << "::MoistureControl done" << std::endl;
 }
@@ -156,7 +159,13 @@ atlas::FieldSet createMuStats(const atlas::FieldSet & extraFields,
   // path to covariance file with gp covariance parameters.
   std::string covFileName(params.covariance_file_path);
   // number of model levels
-  std::size_t modelLevels(extraFields["height"].levels());
+  std::size_t modelLevels;
+  if (extraFields.has("height")) {
+    modelLevels = extraFields["height"].levels();
+  } else {
+    modelLevels = extraFields["vunit"].levels();
+  }
+
   // geostrophic pressure vertical regression statistics are grouped
   // into overlapping bins based on latitude;
   // number of bins associated with the gP vertical regression

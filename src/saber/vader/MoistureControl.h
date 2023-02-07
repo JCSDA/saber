@@ -46,6 +46,7 @@ class MoistureControlCovarianceParameters : public oops::Parameters {
 class MoistureControlParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(MoistureControlParameters, SaberBlockParametersBase)
  public:
+  oops::RequiredParameter<std::string> svp_file{"saturation vapour pressure file", this};
   oops::RequiredParameter<MoistureControlCovarianceParameters>
     moistureControlParams{"covariance data", this};
 };

@@ -18,6 +18,8 @@
 
 #include "../../vader/src/mo/common_varchange.h"
 #include "../../vader/src/mo/control2analysis_linearvarchange.h"
+#include "../../vader/src/mo/eval_mio_fields.h"
+#include "../../vader/src/mo/eval_sat_vapour_pressure.h"
 #include "../../vader/src/mo/functions.h"
 #include "../../vader/src/mo/model2geovals_varchange.h"
 
@@ -83,14 +85,14 @@ MoistIncrOp::MoistIncrOp(const oops::GeometryData & outerGeometryData,
 
   mo::evalAirTemperature(augmentedStateFieldSet_);
   mo::evalTotalMassMoistAir(augmentedStateFieldSet_);
-  mo::evalSatVaporPressure(augmentedStateFieldSet_);
+  mo::eval_sat_vapour_pressure_nl(params.svp_file, augmentedStateFieldSet_);
   mo::evalSatSpecificHumidity(augmentedStateFieldSet_);
   mo::evalSpecificHumidity(augmentedStateFieldSet_);
   mo::evalMassCloudLiquid(augmentedStateFieldSet_);
   mo::evalMassCloudIce(augmentedStateFieldSet_);
   mo::evalMassRain(augmentedStateFieldSet_);
   mo::evalTotalRelativeHumidity(augmentedStateFieldSet_);
-  mo::functions::getMIOFields(augmentedStateFieldSet_);
+  mo::eval_mio_fields_nl(params.mio_file, augmentedStateFieldSet_);
 
   oops::Log::trace() << classname() << "::MoistIncrOp done" << std::endl;
 }

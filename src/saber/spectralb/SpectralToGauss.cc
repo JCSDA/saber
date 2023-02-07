@@ -78,7 +78,8 @@ atlas::FieldSet allocateSpectralVortDiv(
   if (activeVariables.has("vorticity") && activeVariables.has("divergence")) {
     indx[0] = activeVariables.find("vorticity");
     indx[1] = activeVariables.find("divergence");
-  } else if (activeVariables.has("streamfunction") && activeVariables.has("velocity_potential")) {
+  } else if (activeVariables.has("streamfunction") &&
+             activeVariables.has("velocity_potential")) {
     indx[0] = activeVariables.find("streamfunction");
     indx[1] = activeVariables.find("velocity_potential");
   } else {

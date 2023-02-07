@@ -3,3 +3,7 @@ gsi-coeffs-global-l127x64y32.nc4
 gsi-coeffs-gmao-global-l72x72y46.nc4
 spectralcov.nc
 gauss_state.nc
+FPstats.nc
+MIO_coefficients.nc
+MUstats.nc
+svp_dlsvp_svpW_dlsvpW.nc

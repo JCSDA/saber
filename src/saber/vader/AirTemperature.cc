@@ -47,9 +47,6 @@ AirTemperature::AirTemperature(const oops::GeometryData & outerGeometryData,
   std::vector<std::string> requiredStateVariables{"exner_levels_minus_one",
                                                   "potential_temperature"};
 
-  std::vector<std::string> requiredGeometryVariables{"height_levels",
-                                                     "height"};
-
   // Check that they are allocated (i.e. exist in the state fieldset)
   // Use meta data to see if they are populated with actual data.
   for (auto & s : requiredStateVariables) {
@@ -64,8 +61,14 @@ AirTemperature::AirTemperature(const oops::GeometryData & outerGeometryData,
     augmentedStateFieldSet_.add(xb[s]);
   }
 
+  std::vector<std::string> requiredGeometryVariables{"height_levels",
+                                                     "height"};
   for (const auto & s : requiredGeometryVariables) {
-    augmentedStateFieldSet_.add(outerGeometryData.fieldSet()[s]);
+    if (outerGeometryData.fieldSet().has(s)) {
+      augmentedStateFieldSet_.add(outerGeometryData.fieldSet()[s]);
+    } else {
+      augmentedStateFieldSet_.add(xb[s]);
+    }
   }
 
   oops::Log::trace() << classname() << "::AirTemperature done" << std::endl;

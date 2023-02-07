@@ -53,8 +53,6 @@ DryAirDensity::DryAirDensity(const oops::GeometryData & outerGeometryData,
                                                    "air_temperature",
                                                    "dry_air_density_levels_minus_one"};
 
-  std::vector<std::string> requiredGeometryVariables{"height_levels",
-                                                     "height"};
 
   // Check that they are allocated (i.e. exist in the state fieldset)
   for (auto & s : requiredStateVariables) {
@@ -69,12 +67,20 @@ DryAirDensity::DryAirDensity(const oops::GeometryData & outerGeometryData,
     augmentedStateFieldSet_.add(xb[s]);
   }
 
+  std::vector<std::string> requiredGeometryVariables{"height_levels",
+                                                     "height"};
   for (const auto & s : requiredGeometryVariables) {
-    augmentedStateFieldSet_.add(outerGeometryData.fieldSet()[s]);
+    if (outerGeometryData.fieldSet().has(s)) {
+      augmentedStateFieldSet_.add(outerGeometryData.fieldSet()[s]);
+    } else {
+      augmentedStateFieldSet_.add(xb[s]);
+    }
   }
 
   mo::evalAirTemperature(augmentedStateFieldSet_);
   mo::evalDryAirDensity(augmentedStateFieldSet_);
+
+  augmentedStateFieldSet_.haloExchange();
 
   oops::Log::trace() << classname() << "::DryAirDensity done" << std::endl;
 }

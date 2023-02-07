@@ -114,8 +114,9 @@ void SaberOuterBlockBase::adjointTest(const eckit::mpi::Comm & comm,
   // Compute adjoint test
   const double dp1 = util::dotProductFieldSets(innerFset, outerFsetSave, outerVars, comm);
   const double dp2 = util::dotProductFieldSets(outerFset, innerFsetSave, innerVars, comm);
-  oops::Log::info() << "Info     : Adjoint test: y^t (Ax) = " << dp1
-                    << ": x^t (A^t y) = " << dp2 << std::endl;
+  oops::Log::info() << std::setprecision(16) << "Info     : Adjoint test: y^t (Ax) = " << dp1
+                    << ": x^t (A^t y) = " << dp2 << " : adjoint tolerance = "
+                    << adjointTolerance << std::endl;
   oops::Log::test() << "Adjoint test";
   if (std::abs(dp1-dp2)/std::abs(0.5*(dp1+dp2)) < adjointTolerance) {
     oops::Log::test() << " passed" << std::endl;

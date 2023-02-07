@@ -28,11 +28,14 @@ namespace oops {
 namespace saber {
 namespace vader {
 
+
 // -----------------------------------------------------------------------------
 
 class MoistIncrOpParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(MoistIncrOpParameters, SaberBlockParametersBase)
  public:
+  oops::RequiredParameter<std::string> svp_file{"saturation vapour pressure file", this};
+  oops::RequiredParameter<std::string> mio_file{"moisture incrementing operator file", this};
 };
 
 // -----------------------------------------------------------------------------

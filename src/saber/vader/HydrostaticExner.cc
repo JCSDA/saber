@@ -19,6 +19,7 @@
 #include "mo/common_varchange.h"
 #include "mo/control2analysis_linearvarchange.h"
 #include "mo/control2analysis_varchange.h"
+#include "mo/eval_sat_vapour_pressure.h"
 #include "mo/model2geovals_varchange.h"
 
 #include "oops/base/Variables.h"
@@ -43,12 +44,11 @@ HydrostaticExner::HydrostaticExner(const oops::GeometryData & outerGeometryData,
                                    const atlas::FieldSet & xb,
                                    const atlas::FieldSet & fg,
                                    const std::vector<atlas::FieldSet> & fsetVec)
-  : innerGeometryData_(outerGeometryData), innerVars_(outerVars), augmentedStateFieldSet_()
+  : innerGeometryData_(outerGeometryData), innerVars_(outerVars),
+    activeVars_(params.activeVars.value().get_value_or(outerVars)),
+    augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::HydrostaticExner starting" << std::endl;
-
-  // Get active variables
-  oops::Variables activeVars = params.activeVars.value().get_value_or(outerVars);
 
   // Covariance FieldSet
   covFieldSet_ = createGpRegressionStats(outerGeometryData.functionSpace(),
@@ -75,8 +75,6 @@ HydrostaticExner::HydrostaticExner(const oops::GeometryData & outerGeometryData,
     "hydrostatic_exner_levels", "hydrostatic_pressure_levels"
      };
 
-  std::vector<std::string> requiredGeometryVariables{"height_levels"};
-
   // Check that they are allocated (i.e. exist in the state fieldset)
   // Use meta data to see if they are populated with actual data.
   for (auto & s : requiredStateVariables) {
@@ -91,21 +89,28 @@ HydrostaticExner::HydrostaticExner(const oops::GeometryData & outerGeometryData,
     augmentedStateFieldSet_.add(xb[s]);
   }
 
+
+  std::vector<std::string> requiredGeometryVariables{"height_levels"};
   for (const auto & s : requiredGeometryVariables) {
-    augmentedStateFieldSet_.add(outerGeometryData.fieldSet()[s]);
+    if (outerGeometryData.fieldSet().has(s)) {
+      augmentedStateFieldSet_.add(outerGeometryData.fieldSet()[s]);
+    } else {
+      augmentedStateFieldSet_.add(xb[s]);
+    }
   }
 
   // we will need geometry here for height variables.
   mo::evalAirPressureLevels(augmentedStateFieldSet_);
   mo::evalAirTemperature(augmentedStateFieldSet_);
   mo::evalTotalMassMoistAir(augmentedStateFieldSet_);
-  mo::evalSatVaporPressure(augmentedStateFieldSet_);
+  mo::eval_sat_vapour_pressure_nl(params.svp_file, augmentedStateFieldSet_);
   mo::evalSatSpecificHumidity(augmentedStateFieldSet_);
   mo::evalSpecificHumidity(augmentedStateFieldSet_);
   mo::evalVirtualPotentialTemperature(augmentedStateFieldSet_);
   mo::evalHydrostaticExnerLevels(augmentedStateFieldSet_);
   mo::evalHydrostaticPressureLevels(augmentedStateFieldSet_);
 
+  augmentedStateFieldSet_.haloExchange();
 
   // Need to setup derived state fields that we need.
   std::vector<std::string> requiredCovarianceVariables{
@@ -130,8 +135,10 @@ HydrostaticExner::~HydrostaticExner() {
 
 void HydrostaticExner::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
+
   mo::evalHydrostaticPressureTL(fset, augmentedStateFieldSet_);
   mo::evalHydrostaticExnerTL(fset, augmentedStateFieldSet_);
+
   const auto hydrostaticPressureView =
       atlas::array::make_view<const double, 2>(fset["hydrostatic_pressure_levels"]);
   auto airPressureView =
@@ -154,6 +161,7 @@ void HydrostaticExner::multiply(atlas::FieldSet & fset) const {
 
 void HydrostaticExner::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
+
   auto airPressureView =
       atlas::array::make_view<double, 2>(fset["air_pressure_levels"]);
   auto hydrostaticPressureView =
@@ -178,6 +186,7 @@ void HydrostaticExner::multiplyAD(atlas::FieldSet & fset) const {
 
   mo::evalHydrostaticExnerAD(fset, augmentedStateFieldSet_);
   mo::evalHydrostaticPressureAD(fset, augmentedStateFieldSet_);
+
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
@@ -224,6 +233,7 @@ atlas::FieldSet createGpRegressionStats(const atlas::FunctionSpace & functionSpa
   std::size_t covGlobalNLats(static_cast<std::size_t>(params.covariance_nlat));
   // number of model levels
   std::size_t modelLevels(variableSizes[0]);
+
   // geostrophic pressure vertical regression statistics are grouped
   // into overlapping bins based on latitude;
   // number of bins associated with the gP vertical regression

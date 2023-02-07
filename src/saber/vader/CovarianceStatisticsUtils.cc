@@ -171,9 +171,9 @@ atlas::Field createGpRegressionWeights(const atlas::FunctionSpace & functionSpac
 
   // need to look over horiz latitude points to calculate gp regression.
   // the horizontal points need to be PE decomposed.
-  auto interWgtFld = atlas::Field(std::string("interpolation_weights"),
-    atlas::array::make_datatype<double>(),
-    atlas::array::make_shape(horizPts, gpBins));
+  auto interWgtFld =
+    functionSpace.createField<double>(atlas::option::name("interpolation_weights") |
+                                      atlas::option::levels(gpBins));
 
   auto lonlatView = atlas::array::make_view<double, 2>(functionSpace.lonlat());
   auto interWgtFldView = atlas::array::make_view<double, 2>(interWgtFld);
@@ -189,6 +189,7 @@ atlas::Field createGpRegressionWeights(const atlas::FunctionSpace & functionSpac
       interWgtFldView(h, b) = tempWgt[b] * invWeightTot;
     }
   }
+  interWgtFld.haloExchange();
 
   return interWgtFld;
 }

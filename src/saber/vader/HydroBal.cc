@@ -19,8 +19,8 @@
 #include "mo/common_varchange.h"
 #include "mo/control2analysis_linearvarchange.h"
 #include "mo/control2analysis_varchange.h"
+#include "mo/eval_sat_vapour_pressure.h"
 #include "mo/model2geovals_varchange.h"
-
 #include "oops/base/Variables.h"
 #include "oops/util/Timer.h"
 
@@ -60,8 +60,6 @@ HydroBal::HydroBal(const oops::GeometryData & outerGeometryData,
     "virtual_potential_temperature"
   };
 
-  std::vector<std::string> requiredGeometryVariables{"height_levels"};
-
   // Check that they are allocated (i.e. exist in the state fieldset)
   // Use meta data to see if they are populated with actual data.
   for (auto & s : requiredStateVariables) {
@@ -76,17 +74,25 @@ HydroBal::HydroBal(const oops::GeometryData & outerGeometryData,
     augmentedStateFieldSet_.add(xb[s]);
   }
 
+
+  std::vector<std::string> requiredGeometryVariables{"height_levels"};
+  for (const auto & s : requiredGeometryVariables) {
+    if (outerGeometryData.fieldSet().has(s)) {
+      augmentedStateFieldSet_.add(outerGeometryData.fieldSet()[s]);
+    } else {
+      augmentedStateFieldSet_.add(xb[s]);
+    }
+  }
+
+
   // check how virtual potential temperature is calculated.
   mo::evalAirTemperature(augmentedStateFieldSet_);
   mo::evalTotalMassMoistAir(augmentedStateFieldSet_);
-  mo::evalSatVaporPressure(augmentedStateFieldSet_);
+  mo::eval_sat_vapour_pressure_nl(params.svp_file, augmentedStateFieldSet_);
   mo::evalSatSpecificHumidity(augmentedStateFieldSet_);
   mo::evalSpecificHumidity(augmentedStateFieldSet_);
   mo::evalVirtualPotentialTemperature(augmentedStateFieldSet_);
 
-  for (const auto & s : requiredGeometryVariables) {
-    augmentedStateFieldSet_.add(outerGeometryData.fieldSet()[s]);
-  }
 
   oops::Log::trace() << classname() << "::HydroBal done" << std::endl;
 }
