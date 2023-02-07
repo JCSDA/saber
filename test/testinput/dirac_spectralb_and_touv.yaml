@@ -73,5 +73,4 @@ output variance:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_spectralb_and_touv/variance_%id%_%MPI%
 test:
-  mpi pattern: '%MPI%'
-  reference filename: testref/dirac_spectralb_and_touv_%MPI%.ref
+  reference filename: testref/dirac_spectralb_and_touv.ref

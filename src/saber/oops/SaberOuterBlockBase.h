@@ -53,7 +53,7 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
                    const oops::GeometryData &,
                    const std::vector<size_t> &,
                    const oops::Variables &,
-                   const double & adjointTolerance = 1.0e-12) const;
+                   const double & adjointTolerance) const;
 
  private:
   virtual void print(std::ostream &) const = 0;
