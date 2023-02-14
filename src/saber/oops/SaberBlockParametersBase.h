@@ -31,6 +31,7 @@ class SaberBlockParametersBase : public oops::Parameters {
   oops::OptionalParameter<eckit::LocalConfiguration> ensemblePert{"ensemble pert", this};
   oops::OptionalParameter<eckit::LocalConfiguration> ensembleBase{"ensemble base", this};
   oops::OptionalParameter<eckit::LocalConfiguration> ensemblePairs{"ensemble pairs", this};
+  oops::OptionalParameter<double> adjointTolerance{"adjoint tolerance", this};
 };
 
 // -----------------------------------------------------------------------------

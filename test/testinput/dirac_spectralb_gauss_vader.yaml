@@ -58,6 +58,8 @@ geometry:
 background error:
   covariance model: SABER
   adjoint test: true
+  # Small tolerance to illustrate local overriding in saber blocks:
+  adjoint tolerance: 1e-13
   saber central block:
     saber block name: spectral covariance
     active variables:
@@ -97,8 +99,10 @@ background error:
     - hydrostatic_pressure_levels
     - unbalanced_pressure_levels_minus_one
   - saber block name: mo_hydro_bal
+    adjoint tolerance: 5e-12
     saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
   - saber block name: mo_moisture_control
+    adjoint tolerance: 5e-12
     covariance data:
       covariance file path: testdata/MUstats.nc
     saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc

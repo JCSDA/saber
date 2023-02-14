@@ -182,6 +182,9 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
         oops::Variables activeInnerVars = activeVars;
         activeInnerVars.intersection(innerVars);
 
+        const double localAdjointTolerance =
+                saberOuterBlockParams.adjointTolerance.value().get_value_or(adjointTolerance);
+
         saberOuterBlocks_.back().adjointTest(geom.getComm(),
                                              outerGeometryData.back().get(),
                                              geom.variableSizes(activeOuterVars),
@@ -189,7 +192,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
                                              innerGeometryData,
                                              geom.variableSizes(activeInnerVars),
                                              activeInnerVars,
-                                             adjointTolerance);
+                                             localAdjointTolerance);
       }
 
       // Update outer geometry and variables for the next block
@@ -250,11 +253,15 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
 
   // Adjoint test
   if (adjointTest) {
+    const double localAdjointTolerance =
+            saberCentralBlockParams.adjointTolerance.value().get_value_or(adjointTolerance);
+
+
     saberCentralBlock_->adjointTest(geom.getComm(),
                                     outerGeometryData.back().get(),
                                     geom.variableSizes(activeVars),
                                     activeVars,
-                                    adjointTolerance);
+                                    localAdjointTolerance);
   }
 
   oops::Log::trace() << "ErrorCovariance::ErrorCovariance done" << std::endl;
