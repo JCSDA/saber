@@ -9,26 +9,26 @@
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-   Norm of var1:  0.11944763E+04
-   Norm of var1:  0.14721784E+04
-   Norm of var1:  0.16145938E+04
-   Norm of var1:  0.13067005E+04
-   Norm of var1:  0.17486923E+04
-   Norm of var1:  0.15764273E+04
-   Norm of var1:  0.13236317E+04
-   Norm of var1:  0.14191267E+04
-   Norm of var1:  0.15332155E+04
-   Norm of var1:  0.17672958E+04
-   Norm of var1:  0.12927898E+04
-   Norm of var1:  0.15139511E+04
-   Norm of var1:  0.17243885E+04
-   Norm of var1:  0.13383964E+04
-   Norm of var1:  0.15221107E+04
-   Norm of var1:  0.11553104E+04
-   Norm of var1:  0.14551249E+04
-   Norm of var1:  0.14994891E+04
-   Norm of var1:  0.16456209E+04
-   Norm of var1:  0.14908281E+04
+   Norm of stream_function:  0.11944763E+04
+   Norm of stream_function:  0.14721784E+04
+   Norm of stream_function:  0.16145938E+04
+   Norm of stream_function:  0.13067005E+04
+   Norm of stream_function:  0.17486923E+04
+   Norm of stream_function:  0.15764273E+04
+   Norm of stream_function:  0.13236317E+04
+   Norm of stream_function:  0.14191267E+04
+   Norm of stream_function:  0.15332155E+04
+   Norm of stream_function:  0.17672958E+04
+   Norm of stream_function:  0.12927898E+04
+   Norm of stream_function:  0.15139511E+04
+   Norm of stream_function:  0.17243885E+04
+   Norm of stream_function:  0.13383964E+04
+   Norm of stream_function:  0.15221107E+04
+   Norm of stream_function:  0.11553104E+04
+   Norm of stream_function:  0.14551249E+04
+   Norm of stream_function:  0.14994891E+04
+   Norm of stream_function:  0.16456209E+04
+   Norm of stream_function:  0.14908281E+04
                 Level   1: rhflt =   40000.00 km, rel. diff. =  0.38729E-02
                 Level   2: rhflt =   40000.00 km, rel. diff. =  0.13978E-01
              Level   1 ~>  0.10267E+01 /  0.10267E+01

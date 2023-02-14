@@ -55,8 +55,8 @@
                 Level:   1 ~> cov. at class zero:  0.99E+00
                 Level:   2 ~> cov. at class zero:  0.10E+01
                 Level:   1 ~> cov. at class zero:  0.97E+00
-             Block var1:  0.34671936E+00 for    37356 diagnostic points
-             Block var_2d:  0.36421464E+00 for     9339 diagnostic points
+             Block stream_function:  0.34671936E+00 for    37356 diagnostic points
+             Block surface_pressure:  0.36421464E+00 for     9339 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        0.78

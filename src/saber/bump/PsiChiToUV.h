@@ -35,6 +35,11 @@ class PsiChiToUVParameters : public SaberBlockParametersBase {
 
  public:
   oops::RequiredParameter<BUMPParameters> bumpParams{"bump", this};
+  oops::Variables mandatoryActiveVars() const {return oops::Variables({
+    "stream_function",
+    "velocity_potential",
+    "eastward_wind",
+    "northward_wind"});}
 };
 
 // -----------------------------------------------------------------------------

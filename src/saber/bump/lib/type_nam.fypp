@@ -184,10 +184,6 @@ type nam_type
    logical :: interp_test                                     !< Horizontal NICAS interpolation test
 
    ! Psichitouv section
-   character(len=1024) :: wind_streamfunction                 !< Streamfunction variable name
-   character(len=1024) :: wind_velocity_potential             !< Velocity potential variable name
-   character(len=1024) :: wind_eastward                       !< Eastward wind variable name
-   character(len=1024) :: wind_northward                      !< Northward wind variable name
    integer :: wind_nlon                                       !< Number of longitudes for the regular grid
    integer :: wind_nlat                                       !< Number of latitudes for the regular grid
    integer :: wind_nsg                                        !< Half-width of the Savitzky-Golay to compute derivatives
@@ -860,10 +856,6 @@ end if
 ! Psichitouv section
 if (conf%get('psichitouv',section)) then
    if (lverbose) call print_section(mpl,section,'Psichitouv')
-   call nam%get(section,'stream function',nam%wind_streamfunction)
-   call nam%get(section,'velocity potential',nam%wind_velocity_potential)
-   call nam%get(section,'eastward wind',nam%wind_eastward)
-   call nam%get(section,'northward wind',nam%wind_northward)
    call nam%get(section,'longitudes',nam%wind_nlon)
    call nam%get(section,'latitudes',nam%wind_nlat)
    call nam%get(section,'savitzky-golay half width',nam%wind_nsg)

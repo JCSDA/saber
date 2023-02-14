@@ -5,14 +5,14 @@ geometry:
     N: 10
   groups:
   - variables:
-    - var1
-    - var2
+    - stream_function
+    - velocity_potential
     levels: 2
 initial condition:
   date: '2010-01-01T12:00:00Z'
   state variables:
-  - var1
-  - var2
+  - stream_function
+  - velocity_potential
 background error:
   covariance model: SABER
   randomization size: 50
@@ -26,7 +26,7 @@ dirac:
   level:
   - 1
   variable:
-  - var1
+  - stream_function
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_id/dirac_%id%_%MPI%

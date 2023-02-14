@@ -1550,18 +1550,18 @@ type(atlas_field) :: afield
 @:probe_in()
 
 ! Get u/v variables in fieldset or create and add them
-if (fieldset%has_field(bump%nam%wind_eastward)) then
-   afield = fieldset%field(bump%nam%wind_eastward)
+if (fieldset%has_field('eastward_wind')) then
+   afield = fieldset%field('eastward_wind')
 else
-   afield = bump%geom(1)%afunctionspace_mg%create_field(name=bump%nam%wind_eastward,kind=atlas_real(kind_real), &
-    & levels=bump%geom(1)%nl0)
+   afield = bump%geom(1)%afunctionspace_mg%create_field(name='eastward_wind',kind=atlas_real(kind_real), &
+ & levels=bump%geom(1)%nl0)
    call fieldset%add(afield)
 end if
-if (fieldset%has_field(bump%nam%wind_northward)) then
-   afield = fieldset%field(bump%nam%wind_northward)
+if (fieldset%has_field('northward_wind')) then
+   afield = fieldset%field('northward_wind')
 else
-   afield = bump%geom(1)%afunctionspace_mg%create_field(name=bump%nam%wind_northward,kind=atlas_real(kind_real), &
-    & levels=bump%geom(1)%nl0)
+   afield = bump%geom(1)%afunctionspace_mg%create_field(name='northward_wind',kind=atlas_real(kind_real), &
+ & levels=bump%geom(1)%nl0)
    call fieldset%add(afield)
 end if
 
@@ -1573,10 +1573,10 @@ call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
 
 ! Get psi/chi/ua/va indices
 do iv=1,bump%nam%nv
-   if (bump%nam%variables(iv)==bump%nam%wind_streamfunction) iv_psi = iv
-   if (bump%nam%variables(iv)==bump%nam%wind_velocity_potential) iv_chi = iv
-   if (bump%nam%variables(iv)==bump%nam%wind_eastward) iv_ua = iv
-   if (bump%nam%variables(iv)==bump%nam%wind_northward) iv_va = iv
+   if (bump%nam%variables(iv)=='stream_function') iv_psi = iv
+   if (bump%nam%variables(iv)=='velocity_potential') iv_chi = iv
+   if (bump%nam%variables(iv)=='eastward_wind') iv_ua = iv
+   if (bump%nam%variables(iv)=='northward_wind') iv_va = iv
 end do
 
 ! Transform psi/chi to u/v
@@ -1618,18 +1618,18 @@ type(atlas_field) :: afield
 @:probe_in()
 
 ! Get psi/chi variables in fieldset or create and add them
-if (fieldset%has_field(bump%nam%wind_streamfunction)) then
-   afield = fieldset%field(bump%nam%wind_streamfunction)
+if (fieldset%has_field('stream_function')) then
+   afield = fieldset%field('stream_function')
 else
-   afield = bump%geom(1)%afunctionspace_mg%create_field(name=bump%nam%wind_streamfunction,kind=atlas_real(kind_real), &
-    & levels=bump%geom(1)%nl0)
+   afield = bump%geom(1)%afunctionspace_mg%create_field(name='stream_function',kind=atlas_real(kind_real), &
+ & levels=bump%geom(1)%nl0)
    call fieldset%add(afield)
 end if
-if (fieldset%has_field(bump%nam%wind_velocity_potential)) then
-   afield = fieldset%field(bump%nam%wind_velocity_potential)
+if (fieldset%has_field('velocity_potential')) then
+   afield = fieldset%field('velocity_potential')
 else
-   afield = bump%geom(1)%afunctionspace_mg%create_field(name=bump%nam%wind_velocity_potential,kind=atlas_real(kind_real), &
-    & levels=bump%geom(1)%nl0)
+   afield = bump%geom(1)%afunctionspace_mg%create_field(name='velocity_potential',kind=atlas_real(kind_real), &
+ & levels=bump%geom(1)%nl0)
    call fieldset%add(afield)
 end if
 
@@ -1641,10 +1641,10 @@ call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
 
 ! Get psi/chi/ua/va indices
 do iv=1,bump%nam%nv
-   if (bump%nam%variables(iv)==bump%nam%wind_eastward) iv_ua = iv
-   if (bump%nam%variables(iv)==bump%nam%wind_northward) iv_va = iv
-   if (bump%nam%variables(iv)==bump%nam%wind_streamfunction) iv_psi = iv
-   if (bump%nam%variables(iv)==bump%nam%wind_velocity_potential) iv_chi = iv
+   if (bump%nam%variables(iv)=='stream_function') iv_psi = iv
+   if (bump%nam%variables(iv)=='velocity_potential') iv_chi = iv
+   if (bump%nam%variables(iv)=='eastward_wind') iv_ua = iv
+   if (bump%nam%variables(iv)=='northward_wind') iv_va = iv
 end do
 
 ! Transform psi/chi to u/v adjoint

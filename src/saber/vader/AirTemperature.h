@@ -34,6 +34,10 @@ namespace vader {
 class AirTemperatureParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(AirTemperatureParameters, SaberBlockParametersBase)
  public:
+  oops::Variables mandatoryActiveVars() const {return oops::Variables({
+    "air_temperature",
+    "exner_levels_minus_one",
+    "potential_temperature"});}
 };
 
 // -----------------------------------------------------------------------------

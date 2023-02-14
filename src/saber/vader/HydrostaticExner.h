@@ -51,6 +51,13 @@ class HydrostaticExnerParameters : public SaberBlockParametersBase {
   oops::RequiredParameter<std::string> svp_file{"saturation vapour pressure file", this};
   oops::RequiredParameter<HydrostaticExnerCovarianceParameters>
     hydrostaticexnerParams{"covariance data", this};
+  oops::Variables mandatoryActiveVars() const {return oops::Variables({
+    "air_pressure_levels",
+    "exner_levels_minus_one",
+    "geostrophic_pressure_levels_minus_one",
+    "hydrostatic_exner_levels",
+    "hydrostatic_pressure_levels",
+    "unbalanced_pressure_levels_minus_one"});}
 };
 
 // -----------------------------------------------------------------------------

@@ -33,6 +33,7 @@ class SpectralToGaussParameters : public SaberBlockParametersBase {
   oops::OptionalParameter<oops::Variables> activeVariables{"active variables", this};
   // In the future may add N as a parameter if it is possible
   // to use the one different from the one inferred from the gaussian grid
+  oops::Variables mandatoryActiveVars() const {return oops::Variables();}
 };
 
 // -----------------------------------------------------------------------------

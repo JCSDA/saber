@@ -5,20 +5,20 @@ geometry:
     N: 10
   groups:
   - variables:
-    - var1
+    - stream_function
     levels: 2
   - variables:
-    - var_2d
+    - surface_pressure
     levels: 1
   halo: 1
 input variables:
-- var1
-- var_2d
+- stream_function
+- surface_pressure
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
-  - var1
-  - var_2d
+  - stream_function
+  - surface_pressure
 bump:
   general:
     testing: true

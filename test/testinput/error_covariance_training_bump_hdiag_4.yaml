@@ -5,23 +5,23 @@ geometry:
     N: 10
   groups:
   - variables:
-    - var1
-    - var2
+    - stream_function
+    - velocity_potential
     levels: 2
   - variables:
-    - var_2d
+    - surface_pressure
     levels: 1
   halo: 1
 input variables:
-- var1
-- var2
-- var_2d
+- stream_function
+- velocity_potential
+- surface_pressure
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
-  - var1
-  - var2
-  - var_2d
+  - stream_function
+  - velocity_potential
+  - surface_pressure
 bump:
   general:
     testing: true
@@ -39,11 +39,11 @@ bump:
     groups:
     - group name: group 1
       variables:
-      - var1
-      - var_2d
+      - stream_function
+      - surface_pressure
     - group name: group 2
       variables:
-      - var2
+      - velocity_potential
   sampling:
     computation grid size: 500
     diagnostic grid size: 250
@@ -59,9 +59,9 @@ ensemble:
       date: '2010-01-01T12:00:00Z'
       filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
       state variables:
-      - var1
-      - var2
-      - var_2d
+      - stream_function
+      - velocity_potential
+      - surface_pressure
     pattern: '%mem%'
     nmembers: 25
     zero padding: 6

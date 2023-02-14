@@ -23,6 +23,7 @@ namespace saber {
 class SaberBlockParametersBase : public oops::Parameters {
   OOPS_ABSTRACT_PARAMETERS(SaberBlockParametersBase, Parameters)
  public:
+  // Parameters
   oops::RequiredParameter<std::string> saberBlockName{"saber block name", this};
   oops::OptionalParameter<oops::Variables> activeVars{"active variables", this};
   oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> inputFieldConfs{"input fields",
@@ -32,6 +33,9 @@ class SaberBlockParametersBase : public oops::Parameters {
   oops::OptionalParameter<eckit::LocalConfiguration> ensembleBase{"ensemble base", this};
   oops::OptionalParameter<eckit::LocalConfiguration> ensemblePairs{"ensemble pairs", this};
   oops::OptionalParameter<double> adjointTolerance{"adjoint tolerance", this};
+
+  // Mandatory active variables
+  virtual oops::Variables mandatoryActiveVars() const = 0;
 };
 
 // -----------------------------------------------------------------------------

@@ -31,6 +31,7 @@ class VaderBlockParameters : public SaberBlockParametersBase {
  public:
   oops::Parameter<vader::VaderParameters> vader{"vader", {}, this};
   oops::RequiredParameter<oops::Variables> innerVars{"inner variables", this};
+  oops::Variables mandatoryActiveVars() const {return oops::Variables();}
 };
 
 // -----------------------------------------------------------------------------

@@ -91,13 +91,6 @@ background error:
       covariance file path: testdata/FPstats.nc
       number of covariance latitude rings: 481
     saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
-    active variables:
-    - air_pressure_levels
-    - exner_levels_minus_one
-    - geostrophic_pressure_levels_minus_one
-    - hydrostatic_exner_levels
-    - hydrostatic_pressure_levels
-    - unbalanced_pressure_levels_minus_one
   - saber block name: mo_hydro_bal
     adjoint tolerance: 5e-12
     saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc

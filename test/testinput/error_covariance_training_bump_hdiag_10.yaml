@@ -5,22 +5,22 @@ geometry:
     N: 10
   groups:
   - variables:
-    - var1
+    - stream_function
     levels: 10
   halo: 1
 input variables:
-- var1
+- stream_function
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
-  - var1
+  - stream_function
 ensemble:
   members from template:
     template:
       date: '2010-01-01T12:00:00Z'
       filepath: testdata/randomization_bump_nicas_L10L10/member_%mem%
       state variables:
-      - var1
+      - stream_function
     pattern: '%mem%'
     nmembers: 25
     zero padding: 6
@@ -50,11 +50,11 @@ bump:
     - type: stddev
       threshold: 1.005
       side: lower
-      variable: var1
+      variable: stream_function
     - type: input
       threshold: 0.5
       side: upper
-      variable: var1
+      variable: stream_function
     contiguous levels threshold: 3
   local profiles:
   - longitude: 0.0

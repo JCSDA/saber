@@ -32,6 +32,10 @@ class GaussUVToGPParameters : public SaberBlockParametersBase {
  public:
   oops::OptionalParameter<std::string> modelGridName{"model grid name", this};
   oops::OptionalParameter<std::string> gaussState{"gauss state", this};
+  oops::Variables mandatoryActiveVars() const {return oops::Variables({
+    "eastward_wind",
+    "geostrophic_pressure_levels_minus_one",
+    "northward_wind"});}
 };
 
 // -----------------------------------------------------------------------------

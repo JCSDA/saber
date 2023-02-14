@@ -31,6 +31,7 @@ class SpectralCovarianceParameters : public SaberBlockParametersBase {
 
  public:
   oops::RequiredParameter<spectralbParameters> spectralbParams{"spectralb", this};
+  oops::Variables mandatoryActiveVars() const {return oops::Variables();}
 };
 
 // -----------------------------------------------------------------------------

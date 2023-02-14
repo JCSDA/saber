@@ -290,14 +290,6 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   // Psichitouv section
   PsichitouvDef psichitouvDef;
   eckit::LocalConfiguration psichitouvConf;
-  // Streamfunction variable name
-  param(psichitouvDef.wind_streamfunction, psichitouvConf);
-  // Velocity potential variable name
-  param(psichitouvDef.wind_velocity_potential, psichitouvConf);
-  // Eastward wind variable name
-  param(psichitouvDef.wind_eastward, psichitouvConf);
-  // Northward wind variable name
-  param(psichitouvDef.wind_northward, psichitouvConf);
   // Number of longitudes for the regular grid
   param(psichitouvDef.wind_nlon, psichitouvConf);
   // Number of latitudes for the regular grid

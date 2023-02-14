@@ -5,15 +5,15 @@ geometry:
     N: 10
   groups:
   - variables:
-    - var1
+    - stream_function
     levels: 2
   halo: 1
 input variables:
-- var1
+- stream_function
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
-  - var1
+  - stream_function
 bump:
   general:
     testing: true
@@ -30,7 +30,7 @@ bump:
     filtering passes: 3
     initial length-scale:
     - variables:
-      - var1
+      - stream_function
       value: 1000.0e3
   ensemble:
     members from template:
@@ -38,7 +38,7 @@ bump:
         date: '2010-01-01T12:00:00Z'
         filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
         state variables:
-        - var1
+        - stream_function
       pattern: '%mem%'
       nmembers: 20
       zero padding: 6

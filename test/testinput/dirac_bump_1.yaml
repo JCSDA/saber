@@ -5,17 +5,17 @@ geometry:
     N: 10
   groups:
   - variables:
-    - var1
-    - var2
-    - var3
-    - var4
+    - stream_function
+    - velocity_potential
+    - eastward_wind
+    - northward_wind
     levels: 2
   halo: 1
 initial condition:
   date: '2010-01-01T12:00:00Z'
   state variables:
-  - var3
-  - var4
+  - eastward_wind
+  - northward_wind
 background error:
   covariance model: hybrid
   components:
@@ -64,10 +64,10 @@ background error:
             explicit stddev: true
             stddev:
             - variables:
-              - var1
+              - stream_function
               value: 1.0
             - variables:
-              - var2
+              - velocity_potential
               value: 2.0
       - saber block name: StdDev
         input fields:
@@ -88,14 +88,9 @@ background error:
             read vertical balance: true
           vertical balance:
             vbal:
-            - balanced variable: var2
-              unbalanced variable: var1
+            - balanced variable: velocity_potential
+              unbalanced variable: stream_function
       - saber block name: BUMP_PsiChiToUV
-        active variables:
-        - var1
-        - var2
-        - var3
-        - var4
         bump:
           general:
             testing: true
@@ -106,11 +101,6 @@ background error:
             overriding psichitouv file: error_covariance_training_bump_wind/_MPI_-_OMP__wind
           drivers:
             read local psichitouv: true
-          psichitouv:
-            stream function: var1
-            velocity potential: var2
-            eastward wind: var3
-            northward wind: var4
     weight:
       value: 0.5
   - covariance:
@@ -120,8 +110,8 @@ background error:
           date: '2010-01-01T12:00:00Z'
           filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
           state variables:
-          - var3
-          - var4
+          - eastward_wind
+          - northward_wind
         pattern: '%mem%'
         nmembers: 25
         zero padding: 6
@@ -137,7 +127,7 @@ background error:
               files prefix: dirac_bump_1/_MPI_-_OMP_
               alias:
               - in code: common
-                in file: var1
+                in file: stream_function
               overriding nicas file: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas
             drivers:
               multivariate strategy: duplicated
@@ -156,7 +146,7 @@ dirac:
   level:
   - 1
   variable:
-  - var3
+  - eastward_wind
 output dirac:
   filepath: testdata/dirac_bump_1/dirac_%id%
 test:

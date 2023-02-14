@@ -56,6 +56,9 @@ class CovarianceParameters : public SaberBlockParametersBase {
   oops::Parameter<bool> debugMode{"debugging mode", false, this};
   oops::Parameter<bool> bypassGSI{"debugging bypass gsi", false, this};
   oops::Parameter<bool> bypassGSIbe{"debugging deep bypass gsi B error", false, this};
+
+  // Mandatory active variables
+  oops::Variables mandatoryActiveVars() const {return oops::Variables();}
 };
 
 // -------------------------------------------------------------------------------------------------

@@ -26,6 +26,8 @@ namespace generic {
 
 class StdDevParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(StdDevParameters, SaberBlockParametersBase)
+ public:
+  oops::Variables mandatoryActiveVars() const {return oops::Variables();}
 };
 
 // -----------------------------------------------------------------------------

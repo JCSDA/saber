@@ -5,20 +5,20 @@ geometry:
     N: 12
   groups:
   - variables:
-    - var1
+    - stream_function
     levels: 2
   - variables:
-    - var_2d
+    - surface_pressure
     levels: 1
   halo: 1
 variables:
-- var1
-- var_2d
+- stream_function
+- surface_pressure
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
-  - var1
-  - var_2d
+  - stream_function
+  - surface_pressure
 background error:
   covariance model: SABER
   saber central block:
@@ -37,23 +37,23 @@ background error:
         explicit length-scales: true
         horizontal length-scale:
         - groups:
-          - var1
-          - var_2d
+          - stream_function
+          - surface_pressure
           value: 4.0e6
         vertical length-scale:
         - groups:
-          - var1
+          - stream_function
           value: 3.0
         - groups:
-          - var_2d
+          - surface_pressure
           value: 0.0
       grids:
       - model:
           variables:
-          - var1
+          - stream_function
       - model:
           variables:
-          - var_2d
+          - surface_pressure
   randomization size: 25
 output:
   filepath: testdata/randomization_bump_nicas_L12L2/member

@@ -41,49 +41,18 @@ PsiChiToUV::PsiChiToUV(const oops::GeometryData & outerGeometryData,
                        const atlas::FieldSet & xb,
                        const atlas::FieldSet & fg,
                        const std::vector<atlas::FieldSet> & fsetVec)
-  : innerGeometryData_(outerGeometryData), outerVars_(outerVars), levels_(activeVariableSizes[0]),
-    bump_()
+  : innerGeometryData_(outerGeometryData),
+    innerVars_(oops::Variables({"stream_function", "velocity_potential"})),
+    outerVars_(outerVars), levels_(activeVariableSizes[0]), bump_()
 {
   oops::Log::trace() << classname() << "::PsiChiToUV starting" << std::endl;
-
-  // Check that active variables are present in parameters
-  ASSERT(params.activeVars.value() != boost::none);
-
-  // Get active variables
-  oops::Variables activeVars = *params.activeVars.value();
-
-  // Check active variables sizes vector size and consistency
-  ASSERT(activeVariableSizes.size() == 4);
-  if (std::adjacent_find(activeVariableSizes.begin(), activeVariableSizes.end(),
-    std::not_equal_to<>()) != activeVariableSizes.end()) {
-    ABORT("inconsistent elements in activeVariableSizes");
-  }
-
-  // Check active variables size
-  ASSERT(activeVars.size() == 4);
-
-  // Only two active variables should be part of outer variables, other two are inner variables
-  size_t activeVarsInOuter = 0;
-  for (const auto & var : outerVars.variables()) {
-    if (activeVars.has(var)) {
-      activeVarsInOuter += 1;
-    } else {
-      innerVars_.push_back(var);
-    }
-  }
-  ASSERT(activeVarsInOuter == 2);
-  for (const auto & var : activeVars.variables()) {
-    if (!outerVars.has(var)) {
-      innerVars_.push_back(var);
-    }
-  }
 
   // Initialize BUMP
   bump_.reset(new BUMP(outerGeometryData.comm(),
                        outerGeometryData.functionSpace(),
                        outerGeometryData.fieldSet(),
                        activeVariableSizes,
-                       activeVars,
+                       params.mandatoryActiveVars(),
                        params.bumpParams.value(),
                        fsetVec));
 

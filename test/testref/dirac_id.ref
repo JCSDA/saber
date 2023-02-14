@@ -15,8 +15,8 @@ Groups:
   - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  var1: 1.0000000000000000e+00
-  var2: 0.0000000000000000e+00
+  stream_function: 1.0000000000000000e+00
+  velocity_potential: 0.0000000000000000e+00
 Covariance(SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -34,8 +34,8 @@ Groups:
   - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  var1: 1.0000000000000000e+00
-  var2: 0.0000000000000000e+00
+  stream_function: 1.0000000000000000e+00
+  velocity_potential: 0.0000000000000000e+00
 Randomized variance: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -53,5 +53,5 @@ Groups:
   - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  var1: 4.0911892632773075e+01
-  var2: 4.0624196197597726e+01
+  stream_function: 4.0911892632773075e+01
+  velocity_potential: 4.0624196197597726e+01

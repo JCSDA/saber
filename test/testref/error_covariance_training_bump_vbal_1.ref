@@ -9,26 +9,26 @@
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-   Norm of var1:  0.12987550E+04
-   Norm of var2:  0.10880960E+04
-   Norm of var1:  0.12658453E+04
-   Norm of var2:  0.14223565E+04
-   Norm of var1:  0.11638989E+04
-   Norm of var2:  0.13773073E+04
-   Norm of var1:  0.13244765E+04
-   Norm of var2:  0.12971831E+04
-   Norm of var1:  0.12476096E+04
-   Norm of var2:  0.11582421E+04
-   Norm of var1:  0.15645136E+04
-   Norm of var2:  0.13607842E+04
-   Norm of var1:  0.12760139E+04
-   Norm of var2:  0.12397470E+04
-   Norm of var1:  0.17142726E+04
-   Norm of var2:  0.13783263E+04
-   Norm of var1:  0.15482138E+04
-   Norm of var2:  0.16993962E+04
-   Norm of var1:  0.12424576E+04
-   Norm of var2:  0.14744957E+04
+   Norm of stream_function:  0.12987550E+04
+   Norm of velocity_potential:  0.10880960E+04
+   Norm of stream_function:  0.12658453E+04
+   Norm of velocity_potential:  0.14223565E+04
+   Norm of stream_function:  0.11638989E+04
+   Norm of velocity_potential:  0.13773073E+04
+   Norm of stream_function:  0.13244765E+04
+   Norm of velocity_potential:  0.12971831E+04
+   Norm of stream_function:  0.12476096E+04
+   Norm of velocity_potential:  0.11582421E+04
+   Norm of stream_function:  0.15645136E+04
+   Norm of velocity_potential:  0.13607842E+04
+   Norm of stream_function:  0.12760139E+04
+   Norm of velocity_potential:  0.12397470E+04
+   Norm of stream_function:  0.17142726E+04
+   Norm of velocity_potential:  0.13783263E+04
+   Norm of stream_function:  0.15482138E+04
+   Norm of velocity_potential:  0.16993962E+04
+   Norm of stream_function:  0.12424576E+04
+   Norm of velocity_potential:  0.14744957E+04
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
           Decimate full grid, at least      500 points required,     762 valid points found
@@ -42,7 +42,7 @@
        Vertical balance inverse/direct test result:  T
        Vertical balance direct/inverse (adjoint) test result:  T
        Vertical balance inverse/direct (adjoint) test result:  T
-       Vertical balance block var1-var2 adjoint test result:  T
+       Vertical balance block stream_function-velocity_potential adjoint test result:  T
        Vertical balance direct adjoint test results:  T
        Vertical balance inverse adjoint test results: T
 Norm of BUMP output parameter dirac_vbal - 1: 1.0000000000000000e+00

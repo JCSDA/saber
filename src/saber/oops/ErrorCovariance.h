@@ -87,6 +87,8 @@ class ErrorCovariance : public oops::ModelSpaceCovarianceBase<MODEL>,
   void doInverseMultiply(const Increment_ &, Increment_ &) const override;
 
   void print(std::ostream &) const override;
+  oops::Variables getActiveVars(const SaberBlockParametersBase &,
+                                const oops::Variables &) const;
 
   std::unique_ptr<SaberCentralBlockBase> saberCentralBlock_;
   SaberOuterBlockVec_ saberOuterBlocks_;
@@ -140,8 +142,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
                         << saberOuterBlockParams.saberBlockName.value() << std::endl;
 
       // Get active variables
-      const oops::Variables activeVars =
-        saberOuterBlockParams.activeVars.value().get_value_or(outerVars);
+      oops::Variables activeVars = getActiveVars(saberOuterBlockParams, outerVars);
 
       // Initialize vector of FieldSet
       std::vector<atlas::FieldSet> fsetVec;
@@ -213,8 +214,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
                     << saberCentralBlockParams.saberBlockName.value() << std::endl;
 
   // Get active variables
-  const oops::Variables activeVars =
-    saberCentralBlockParams.activeVars.value().get_value_or(outerVars);
+  oops::Variables activeVars = getActiveVars(saberCentralBlockParams, outerVars);
 
   // Check that active variables are present in variables
   for (const auto & var : activeVars.variables()) {
@@ -354,6 +354,24 @@ void ErrorCovariance<MODEL>::print(std::ostream & os) const {
   util::Timer timer(classname(), "print");
   os << "ErrorCovariance<MODEL>::print not implemented";
   oops::Log::trace() << "ErrorCovariance<MODEL>::print done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+template<typename MODEL>
+oops::Variables ErrorCovariance<MODEL>::getActiveVars(const SaberBlockParametersBase & params,
+                                                      const oops::Variables & defaultVars) const {
+  oops::Log::trace() << "ErrorCovariance<MODEL>::getActiveVars starting" << std::endl;
+  oops::Variables activeVars;
+  if (params.mandatoryActiveVars().size() == 0) {
+    // No mandatory active variables for this block
+    activeVars = params.activeVars.value().get_value_or(defaultVars);
+  } else {
+    // Block with mandatory active variables
+    activeVars = params.activeVars.value().get_value_or(params.mandatoryActiveVars());
+    ASSERT(params.mandatoryActiveVars() <= activeVars);
+  }
+  return activeVars;
 }
 
 // -----------------------------------------------------------------------------

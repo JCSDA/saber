@@ -64,7 +64,7 @@
                 Level:   2 ~> cov. at class zero:  0.91E+00
                 Level:   1 ~> cov. at class zero:  0.10E+01
                 Level:   2 ~> cov. at class zero:  0.99E+00
-             Block var1:  0.13770789E+00 for       60 diagnostic points
+             Block stream_function:  0.13770789E+00 for       60 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
@@ -73,7 +73,7 @@
                    Level:   2 ~> amplitude:        1.00
                                  cor. hor. support:      3811.08 km
                                  cor. ver. support:         3.10 vertical units
-             Block var1:  0.14383666E+00 for       60 diagnostic points
+             Block stream_function:  0.14383666E+00 for       60 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
@@ -82,7 +82,7 @@
                    Level:   2 ~> amplitude:        1.00
                                  cor. hor. support:      3694.54 km
                                  cor. ver. support:         3.22 vertical units
-             Block var1:  0.23347467E+00 for       39 diagnostic points
+             Block stream_function:  0.23347467E+00 for       39 diagnostic points
                 Level:   1 ~> loc. at class zero:       0.83
                 Level:   2 ~> loc. at class zero:       0.82
                    Level:   1 ~> amplitude:        1.00
@@ -91,7 +91,7 @@
                    Level:   2 ~> amplitude:        1.00
                                  loc. hor. support:      4370.72 km
                                  loc. ver. support:         4.10 vertical units
-             Block var1:  0.26555556E+00 for       37 diagnostic points
+             Block stream_function:  0.26555556E+00 for       37 diagnostic points
                 Level:   1 ~> loc. at class zero:       0.92
                 Level:   2 ~> loc. at class zero:       0.92
                    Level:   1 ~> amplitude:        1.00

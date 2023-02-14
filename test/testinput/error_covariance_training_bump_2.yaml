@@ -351,15 +351,15 @@ geometry:
     - -11.7037
   groups:
   - variables:
-    - var1
+    - stream_function
     levels: 2
   halo: 1
 input variables:
-- var1
+- stream_function
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
-  - var1
+  - stream_function
 bump:
   general:
     testing: true

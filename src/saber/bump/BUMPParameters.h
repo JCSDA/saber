@@ -606,14 +606,6 @@ class PsichitouvSection : public oops::Parameters {
   PsichitouvDef def;
 
  public:
-  // Streamfunction variable name
-  oops::Parameter<std::string> wind_streamfunction = param(def.wind_streamfunction, this);
-  // Velocity potential variable name
-  oops::Parameter<std::string> wind_velocity_potential = param(def.wind_velocity_potential, this);
-  // Eastward wind variable name
-  oops::Parameter<std::string> wind_eastward = param(def.wind_eastward, this);
-  // Northward wind variable name
-  oops::Parameter<std::string> wind_northward = param(def.wind_northward, this);
   // Number of longitudes for the regular grid
   oops::Parameter<int> wind_nlon = param(def.wind_nlon, this);
   // Number of latitudes for the regular grid

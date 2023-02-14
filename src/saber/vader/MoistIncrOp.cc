@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2022 Met Office
+ * (C) Crown Copyright 2022-2023 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -93,6 +93,8 @@ MoistIncrOp::MoistIncrOp(const oops::GeometryData & outerGeometryData,
   mo::evalMassRain(augmentedStateFieldSet_);
   mo::evalTotalRelativeHumidity(augmentedStateFieldSet_);
   mo::eval_mio_fields_nl(params.mio_file, augmentedStateFieldSet_);
+
+  augmentedStateFieldSet_.haloExchange();
 
   oops::Log::trace() << classname() << "::MoistIncrOp done" << std::endl;
 }

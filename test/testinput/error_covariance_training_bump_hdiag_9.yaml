@@ -5,7 +5,7 @@ geometry:
     N: 12
   groups:
   - variables:
-    - var1
+    - stream_function
     levels: 2
   halo: 1
 lowres geometry:
@@ -15,22 +15,22 @@ lowres geometry:
     N: 10
   groups:
   - variables:
-    - var1
+    - stream_function
     levels: 2
   halo: 3
 input variables:
-- var1
+- stream_function
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
-  - var1
+  - stream_function
 ensemble:
   members from template:
     template:
       date: '2010-01-01T12:00:00Z'
       filepath: testdata/randomization_bump_nicas_L12L2/member_%mem%
       state variables:
-      - var1
+      - stream_function
     pattern: '%mem%'
     nmembers: 10
     zero padding: 6
@@ -52,11 +52,11 @@ background error:
         explicit length-scales: true
         horizontal length-scale:
         - groups:
-          - var1
+          - stream_function
           value: 7.0e6
         vertical length-scale:
         - groups:
-          - var1
+          - stream_function
           value: 1.5
   randomization size: 25
 bump:
@@ -90,11 +90,11 @@ bump:
     explicit length-scales: true
     horizontal length-scale:
     - groups:
-      - var1
+      - stream_function
       value: 10.0e6
     vertical length-scale:
     - groups:
-      - var1
+      - stream_function
       value: 2.0
 output:
 - parameter: loc_rh

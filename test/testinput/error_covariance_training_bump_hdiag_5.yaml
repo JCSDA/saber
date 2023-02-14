@@ -5,7 +5,7 @@ geometry:
     N: 12
   groups:
   - variables:
-    - var1
+    - stream_function
     levels: 2
   halo: 1
 lowres geometry:
@@ -15,159 +15,159 @@ lowres geometry:
     N: 10
   groups:
   - variables:
-    - var1
+    - stream_function
     levels: 2
   halo: 1
 input variables:
-- var1
+- stream_function
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
-  - var1
+  - stream_function
 ensemble:
   members:
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L12L2/member_000001
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L12L2/member_000002
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L12L2/member_000003
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L12L2/member_000004
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L12L2/member_000005
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L12L2/member_000006
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L12L2/member_000007
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L12L2/member_000008
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L12L2/member_000009
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L12L2/member_000010
     state variables:
-    - var1
+    - stream_function
 lowres ensemble:
   members:
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000001
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000002
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000003
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000004
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000005
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000006
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000007
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000008
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000009
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000010
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000011
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000012
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000013
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000014
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000015
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000016
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000017
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000018
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000019
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000020
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000021
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000022
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000023
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000024
     state variables:
-    - var1
+    - stream_function
   - date: '2010-01-01T12:00:00Z'
     filepath: testdata/randomization_bump_nicas_L10L2/member_000025
     state variables:
-    - var1
+    - stream_function
 bump:
   general:
     testing: true

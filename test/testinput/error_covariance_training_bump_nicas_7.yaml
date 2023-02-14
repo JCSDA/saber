@@ -5,18 +5,18 @@ geometry:
     N: 10
   groups:
   - variables:
-    - var1
-    - var2
+    - stream_function
+    - velocity_potential
     levels: 10
   halo: 1
 input variables:
-- var1
-- var2
+- stream_function
+- velocity_potential
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
-  - var1
-  - var2
+  - stream_function
+  - velocity_potential
 bump:
   general:
     testing: true
@@ -44,15 +44,15 @@ bump:
     explicit length-scales: true
     horizontal length-scale:
     - groups:
-      - var1
+      - stream_function
       value: 4000.0e3
     - groups:
-      - var2
+      - velocity_potential
       value: 2000.0e3
     vertical length-scale:
     - groups:
-      - var1
-      - var2
+      - stream_function
+      - velocity_potential
       value: 3.0
 test:
   reference filename: testref/error_covariance_training_bump_nicas_7.ref

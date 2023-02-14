@@ -30,6 +30,7 @@ class NICASParameters : public SaberBlockParametersBase {
 
  public:
   oops::RequiredParameter<BUMPParameters> bumpParams{"bump", this};
+  oops::Variables mandatoryActiveVars() const {return oops::Variables();}
 };
 
 // -----------------------------------------------------------------------------

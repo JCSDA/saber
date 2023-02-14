@@ -502,22 +502,6 @@ struct NICASDef {
 
 // Psichitouv section
 struct PsichitouvDef {
-  // Streamfunction variable name
-  std::pair<const char *, std::string> wind_streamfunction =
-    std::make_pair("stream function", "stream_function");
-
-  // Velocity potential variable name
-  std::pair<const char *, std::string> wind_velocity_potential =
-    std::make_pair("velocity potential", "velocity_potential");
-
-  // Eastward wind variable name
-  std::pair<const char *, std::string> wind_eastward =
-    std::make_pair("eastward wind", "eastward_wind");
-
-  // Northward wind variable name
-  std::pair<const char *, std::string> wind_northward =
-    std::make_pair("northward wind", "northward_wind");
-
   // Number of longitudes for the regular grid
   std::pair<const char *, int> wind_nlon =
     std::make_pair("longitudes", 0);

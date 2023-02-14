@@ -26,31 +26,31 @@ Norm of input parameter sampling_mask_field: 8.6177684288955561e+01
              Level   8 ~>  0.800E+01 vert. unit
              Level   9 ~>  0.900E+01 vert. unit
              Level  10 ~>  0.100E+02 vert. unit
-   Norm of var1:  0.74265933E+04
-   Norm of var1:  0.64993855E+04
-   Norm of var1:  0.66309979E+04
-   Norm of var1:  0.76893083E+04
-   Norm of var1:  0.76670656E+04
-   Norm of var1:  0.73707518E+04
-   Norm of var1:  0.75821843E+04
-   Norm of var1:  0.74785904E+04
-   Norm of var1:  0.67163945E+04
-   Norm of var1:  0.66968956E+04
-   Norm of var1:  0.78918555E+04
-   Norm of var1:  0.77242903E+04
-   Norm of var1:  0.72726733E+04
-   Norm of var1:  0.81499743E+04
-   Norm of var1:  0.72189706E+04
-   Norm of var1:  0.70109152E+04
-   Norm of var1:  0.77634213E+04
-   Norm of var1:  0.74441471E+04
-   Norm of var1:  0.76413991E+04
-   Norm of var1:  0.75102966E+04
-   Norm of var1:  0.72398954E+04
-   Norm of var1:  0.71601698E+04
-   Norm of var1:  0.65315224E+04
-   Norm of var1:  0.77336881E+04
-   Norm of var1:  0.69206190E+04
+   Norm of stream_function:  0.74265933E+04
+   Norm of stream_function:  0.64993855E+04
+   Norm of stream_function:  0.66309979E+04
+   Norm of stream_function:  0.76893083E+04
+   Norm of stream_function:  0.76670656E+04
+   Norm of stream_function:  0.73707518E+04
+   Norm of stream_function:  0.75821843E+04
+   Norm of stream_function:  0.74785904E+04
+   Norm of stream_function:  0.67163945E+04
+   Norm of stream_function:  0.66968956E+04
+   Norm of stream_function:  0.78918555E+04
+   Norm of stream_function:  0.77242903E+04
+   Norm of stream_function:  0.72726733E+04
+   Norm of stream_function:  0.81499743E+04
+   Norm of stream_function:  0.72189706E+04
+   Norm of stream_function:  0.70109152E+04
+   Norm of stream_function:  0.77634213E+04
+   Norm of stream_function:  0.74441471E+04
+   Norm of stream_function:  0.76413991E+04
+   Norm of stream_function:  0.75102966E+04
+   Norm of stream_function:  0.72398954E+04
+   Norm of stream_function:  0.71601698E+04
+   Norm of stream_function:  0.65315224E+04
+   Norm of stream_function:  0.77336881E+04
+   Norm of stream_function:  0.69206190E+04
           Level   1 ~>   2.6%
           Level   2 ~>   4.2%
           Level   3 ~>   5.2%
@@ -104,7 +104,7 @@ Norm of input parameter sampling_mask_field: 8.6177684288955561e+01
                 Level:   8 ~> cov. at class zero:  0.13E+01
                 Level:   9 ~> cov. at class zero:  0.12E+01
                 Level:  10 ~> cov. at class zero:  0.12E+01
-             Block var1:  0.31659737E+00 for    12908 diagnostic points
+             Block stream_function:  0.31659737E+00 for    12908 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                 Level:   3 ~> cor. at class zero:        1.00

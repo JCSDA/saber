@@ -11,18 +11,18 @@ geometry:
     y_numbering: 1
   groups:
   - variables:
-    - var1
-    - var2
+    - stream_function
+    - velocity_potential
     levels: 2
   halo: 1
 input variables:
-- var1
-- var2
+- stream_function
+- velocity_potential
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
-  - var1
-  - var2
+  - stream_function
+  - velocity_potential
 bump:
   general:
     testing: true
@@ -48,9 +48,9 @@ bump:
       value: 3.0
     common localization weights:
     - row variables:
-      - var1
+      - stream_function
       column variables:
-      - var2
+      - velocity_potential
       value: 0.5
     positive-definiteness test: true
     horizontal interpolation test: true
@@ -58,6 +58,6 @@ bump:
   - longitude: 150.0
     latitude: -30.0
     level: 1
-    variable: var1
+    variable: stream_function
 test:
   reference filename: testref/error_covariance_training_bump_nicas_5.ref

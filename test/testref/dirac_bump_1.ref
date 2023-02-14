@@ -15,8 +15,8 @@ Groups:
   - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  var3: 1.0000000000000000e+00
-  var4: 0.0000000000000000e+00
+  eastward_wind: 1.0000000000000000e+00
+  northward_wind: 0.0000000000000000e+00
        Independent levels:  1[2]
           Model grid size:              840
           Subset Sc0 size:              762
@@ -112,8 +112,8 @@ Groups:
   - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  var3: 6.7636675043647476e-01
-  var4: 1.6118874945640360e-01
+  eastward_wind: 6.7636675043647476e-01
+  northward_wind: 1.6118874945640360e-01
        Independent levels:  1[2]
           Model grid size:              840
           Subset Sc0 size:              762
@@ -198,8 +198,8 @@ Groups:
   - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  var3: 9.6825438805381713e-14
-  var4: 4.0904433449715275e-14
+  eastward_wind: 9.6825438805381713e-14
+  northward_wind: 4.0904433449715275e-14
        Independent levels:  1[2]
           Model grid size:              840
           Subset Sc0 size:              762
@@ -228,8 +228,8 @@ Groups:
   - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  var3: 1.3527335008729175e+00
-  var4: 3.2237749891280709e-01
+  eastward_wind: 1.3527335008729175e+00
+  northward_wind: 3.2237749891280709e-01
        Independent levels:  1[2]
           Model grid size:              840
           Subset Sc0 size:              762
@@ -258,5 +258,5 @@ Groups:
   - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  var3: 2.2164145384133902e+00
-  var4: 2.2164145384133902e+00
+  eastward_wind: 2.2164145384133902e+00
+  northward_wind: 2.2164145384133902e+00

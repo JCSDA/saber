@@ -84,7 +84,6 @@ HydroBal::HydroBal(const oops::GeometryData & outerGeometryData,
     }
   }
 
-
   // check how virtual potential temperature is calculated.
   mo::evalAirTemperature(augmentedStateFieldSet_);
   mo::evalTotalMassMoistAir(augmentedStateFieldSet_);
@@ -93,6 +92,7 @@ HydroBal::HydroBal(const oops::GeometryData & outerGeometryData,
   mo::evalSpecificHumidity(augmentedStateFieldSet_);
   mo::evalVirtualPotentialTemperature(augmentedStateFieldSet_);
 
+  augmentedStateFieldSet_.haloExchange();
 
   oops::Log::trace() << classname() << "::HydroBal done" << std::endl;
 }
