@@ -18,6 +18,8 @@ if( oops_FOUND AND atlas_TRANS_FOUND )
     SpectralCovariance.h
     SpectralToGauss.cc
     SpectralToGauss.h
+    SpectralToSpectral.cc
+    SpectralToSpectral.h
     SPCTRL_Cov.cc
     SPCTRL_Cov.h
     )

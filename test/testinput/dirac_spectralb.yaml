@@ -33,6 +33,10 @@ background error:
       - MU_inc_Uv_matrix
       variance_opt: true
   saber outer blocks:
+  - saber block name: spectral to spectral
+    input truncation: 15 # 15 -> 20 by zero-padding
+  - saber block name: spectral to spectral
+    input truncation: 20 # 20 -> 15 by truncation
   - saber block name: spectral to gauss
 dirac:
   lon:
