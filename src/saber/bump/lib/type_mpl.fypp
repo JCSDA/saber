@@ -54,6 +54,7 @@ type mpl_type
    type(msv_type) :: msv                  !< Missing values
 
    ! Display parameters
+   logical :: verbose = .true.            !< Verbosity for this task
    type(fckit_logchannel) :: info_channel !< Info channel pointer
    type(fckit_logchannel) :: test_channel !< Test channel pointer
    character(len=1024) :: info            !< Info buffer
@@ -269,61 +270,63 @@ logical :: lnewl,lflush
 ! Probe in
 @:probe_in()
 
-! Set local flags
-lnewl = .true.
-if (present(newl)) lnewl = newl
-lflush = .true.
-if (present(flush)) lflush = flush
+if (mpl%verbose) then
+   ! Set local flags
+   lnewl = .true.
+   if (present(newl)) lnewl = newl
+   lflush = .true.
+   if (present(flush)) lflush = flush
 
-if (lflush) then
-   ! Check info message
-   if (trim(mpl%info)/='no_message') then
-      ! Add prefix
-      if (mpl%previous_newl) mpl%info = 'Info     : '//trim(mpl%info)
-
-      ! Write message
-      call write_log(mpl%info_channel,mpl%info,lnewl,lflush)
-
-      ! Set at 'no_message'
-      mpl%info = 'no_message'
-   end if
-
-   ! Check test message
-   if (trim(mpl%test)/='no_message') then
-      if (mpl%testing) then
-         ! Write message
-         call write_log(mpl%test_channel,mpl%test,lnewl,lflush)
-      else
+   if (lflush) then
+      ! Check info message
+      if (trim(mpl%info)/='no_message') then
          ! Add prefix
-         if (mpl%previous_newl) mpl%test = 'Info     : '//trim(mpl%test)
+         if (mpl%previous_newl) mpl%info = 'Info     : '//trim(mpl%info)
 
          ! Write message
-         call write_log(mpl%info_channel,mpl%test,lnewl,lflush)
+         call write_log(mpl%info_channel,mpl%info,lnewl,lflush)
+
+         ! Set at 'no_message'
+         mpl%info = 'no_message'
       end if
 
-      ! Set at 'no_message'
+      ! Check test message
+      if (trim(mpl%test)/='no_message') then
+         if (mpl%testing) then
+            ! Write message
+            call write_log(mpl%test_channel,mpl%test,lnewl,lflush)
+         else
+            ! Add prefix
+            if (mpl%previous_newl) mpl%test = 'Info     : '//trim(mpl%test)
+
+            ! Write message
+            call write_log(mpl%info_channel,mpl%test,lnewl,lflush)
+         end if
+
+         ! Set at 'no_message'
+         mpl%test = 'no_message'
+      end if
+
+      ! Check warning message
+      if (trim(mpl%wng)/='no_message') then
+         ! Add prefix
+         if (mpl%previous_newl) mpl%wng = 'Warning  : '//trim(mpl%wng)
+
+         ! Write message
+         call write_log(mpl%info_channel,mpl%wng,lnewl,lflush)
+
+         ! Set at 'no_message'
+         mpl%wng = 'no_message'
+      end if
+
+      ! Set previous new line flag
+      mpl%previous_newl = lnewl
+   else
+      ! Reset at 'no_message'
+      mpl%info = 'no_message'
       mpl%test = 'no_message'
-   end if
-
-   ! Check warning message
-   if (trim(mpl%wng)/='no_message') then
-      ! Add prefix
-      if (mpl%previous_newl) mpl%wng = 'Warning  : '//trim(mpl%wng)
-
-      ! Write message
-      call write_log(mpl%info_channel,mpl%wng,lnewl,lflush)
-
-      ! Set at 'no_message'
       mpl%wng = 'no_message'
    end if
-
-   ! Set previous new line flag
-   mpl%previous_newl = lnewl
-else
-   ! Reset at 'no_message'
-   mpl%info = 'no_message'
-   mpl%test = 'no_message'
-   mpl%wng = 'no_message'
 end if
 
 ! Probe out
