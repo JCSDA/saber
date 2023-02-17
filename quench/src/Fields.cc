@@ -569,6 +569,7 @@ void Fields::toFieldSet(atlas::FieldSet & fset) const {
           view_local(jnode, jlevel) = view_input(jnode, jlevel);
         }
       }
+      field_local.metadata().set("interp_type", "default");
     } else {
       ABORT("Variable " + var + " not in source fieldset");
     }

@@ -1,0 +1,46 @@
+geometry:
+  function space: NodeColumns
+  grid:
+    name: CS-LFR-15
+  partitioner: cubedsphere
+  groups:
+  - variables:
+    - stream_function
+    levels: 1
+  halo: 1
+initial condition:
+  date: '2010-01-01T12:00:00Z'
+  state variables:
+  - stream_function
+background error:
+  covariance model: SABER
+  adjoint test: true
+  saber central block:
+    saber block name: ID
+  saber outer blocks:
+  - saber block name: interpolation
+    inner geometry:
+      function space: StructuredColumns
+      grid:
+        name: F15
+      halo: 1
+    local interpolator:
+      interpolation method:
+        type: structured-linear2D
+        adjoint: true
+    active variables:
+    - stream_function
+dirac:
+  lon:
+  - 0.0
+  lat:
+  - 0.0
+  level:
+  - 1
+  variable:
+  - stream_function
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_interpolation_2/dirac_%id%_%MPI%
+test:
+  reference filename: testref/dirac_interpolation_2.ref

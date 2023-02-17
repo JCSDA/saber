@@ -1,6 +1,8 @@
 dirac_bump_1
 dirac_bump_2
 dirac_id
+dirac_interpolation_1
+dirac_interpolation_2
 error_covariance_training_bump_1
 error_covariance_training_bump_2
 error_covariance_training_bump_3

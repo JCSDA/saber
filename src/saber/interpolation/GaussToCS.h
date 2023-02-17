@@ -24,13 +24,6 @@
 
 namespace saber {
 namespace interpolation {
-class AtlasInterpWrapper;
-}
-}
-
-
-namespace saber {
-namespace interpolation {
 
 // -----------------------------------------------------------------------------
 class GaussToCSParameters : public SaberBlockParametersBase {

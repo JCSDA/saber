@@ -8,6 +8,11 @@ if( oops_FOUND )
     # ATLAS interpolation wrapper
     AtlasInterpWrapper.h
     AtlasInterpWrapper.cc
+    # Interpolation block
+    Geometry.cc
+    Geometry.h
+    Interpolation.cc
+    Interpolation.h
     )
 
     if( atlas_TRANS_FOUND )
