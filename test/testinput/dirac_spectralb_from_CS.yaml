@@ -53,6 +53,7 @@ dirac:
   - unbalanced_pressure
   - moisture_control_variable
 output dirac:
-  filepath: testdata/dirac_spectralb_from_CS/dirac_%id%
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_spectralb_from_CS/%MPI%_dirac_%id%
 test:
   reference filename: testref/dirac_spectralb_from_CS.ref

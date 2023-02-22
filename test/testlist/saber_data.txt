@@ -1,6 +1,14 @@
 CovStats.nc
+dirac_gsi_geos_global.nml
+dirac_gsi_geos_global_opt_1.nml
+dirac_gsi_geos_global_opt_2.nml
+dirac_gsi_geos_global_opt_3.nml
+dirac_gsi_gfs_global.nml
 gsi-coeffs-global-l127x64y32.nc4
 gsi-coeffs-gmao-global-l72x72y46.nc4
+gsi-coeffs-gmao-global-l72x72y46_opt1.nc4
+gsi-coeffs-gmao-global-l72x72y46_opt2.nc4
+gsi-coeffs-gmao-global-l72x72y46_opt3.nc4
 spectralcov.nc
 gauss_state.nc
 FPstats.nc

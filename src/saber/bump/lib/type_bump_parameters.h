@@ -80,6 +80,14 @@ struct IODef {
   // Psichitouv transform file
   std::pair<const char *, std::string> fname_wind =
     std::make_pair("overriding psichitouv file", "");
+
+  // GSI data file
+  std::pair<const char *, std::string> fname_gsi_data =
+    std::make_pair("gsi data file", "");
+
+  // GSI namelist
+  std::pair<const char *, std::string> fname_gsi_nam =
+    std::make_pair("gsi namelist", "");
 };
 
 // Drivers section
@@ -260,6 +268,10 @@ struct DriversDef {
   // Test HDIAG optimality
   std::pair<const char *, bool> check_optimality =
     std::make_pair("localization optimality test", false);
+
+  // Interpolate vertical balance, standard-deviation or length-scales from GSI data
+  std::pair<const char *, bool> from_gsi =
+    std::make_pair("interpolate from gsi data", false);
 };
 
 // Model section

@@ -4,18 +4,8 @@ background error:
   saber central block:
     saber block name: gsi covariance
     gsi error covariance file: testdata/gsi-coeffs-gmao-global-l72x72y46.nc4
-    gsi berror namelist file: testinput/dirac_gsi_geos_global.nml
+    gsi berror namelist file: testdata/dirac_gsi_geos_global.nml
     gsi akbk: /dev/null
-    processor layout x direction: 1
-    processor layout y direction: 1
-    debugging mode: false
-  saber outer blocks:
-  - saber block name: gsi interpolation to model grid
-    gsi error covariance file: testdata/gsi-coeffs-gmao-global-l72x72y46.nc4
-    gsi berror namelist file: testinput/dirac_gsi_geos_global.nml
-    gsi akbk: /dev/null
-    processor layout x direction: 1
-    processor layout y direction: 1
     debugging mode: false
 dirac:
   lon:
@@ -23,28 +13,34 @@ dirac:
   lat:
   - 0.0
   level:
-  - 1
+  - 72
   variable:
   - stream_function
 geometry:
   function space: StructuredColumns
   grid:
-    type: regular_gaussian
-    N: 15
+    type: regular_lonlat
+    nx: 72
+    ny: 46
   groups:
   - variables:
     - stream_function
     - velocity_potential
     - air_temperature
     levels: 72
+  - variables:
+    - surface_pressure
+    levels: 1
 initial condition:
   date: '2010-01-01T12:00:00Z'
   state variables:
   - stream_function
   - velocity_potential
   - air_temperature
+  - surface_pressure
 output dirac:
-  filepath: testdata/dirac_gsi_geos_global/dirac_%id%
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_gsi_geos_global/%MPI%_dirac_%id%
 test:
   float relative tolerance: 1.5e-06
   reference filename: testref/dirac_gsi_geos_global.ref

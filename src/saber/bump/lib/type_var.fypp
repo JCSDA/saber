@@ -16,6 +16,7 @@ use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,put_att,get_att,define_dim,inquire_var,define_var,close_file
 use type_ens, only: ens_type
 use type_geom, only: geom_type
+use type_gsi, only: gsi
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 use type_nicas_blk, only: nicas_blk_type
@@ -53,6 +54,7 @@ contains
    procedure :: dealloc => var_dealloc
    procedure :: update => var_update
    procedure :: run_var => var_run_var
+   procedure :: from_gsi => var_from_gsi
    procedure :: filter => var_filter
    procedure :: apply_sqrt => var_apply_sqrt
    procedure :: apply_sqrt_inv => var_apply_sqrt_inv
@@ -368,6 +370,15 @@ if (nam%forced_var) then
 
    ! Missing fourth-order centered moment
    var%m4 = mpl%msv%valr
+elseif (nam%from_gsi) then
+   ! Initialization
+   var%ne = 0
+
+   ! Interpolate variance from GSI data
+   call var%from_gsi(mpl,nam,geom)
+
+   ! Missing fourth-order centered moment
+   var%m4 = mpl%msv%valr
 elseif (nam%new_var) then
    write(mpl%info,'(a7,a)') '','Compute variance'
    call mpl%flush
@@ -429,6 +440,62 @@ if (nam%default_seed) call rng%reseed(mpl)
 @:probe_out()
 
 end subroutine var_run_var
+
+!----------------------------------------------------------------------
+! Subroutine: var_from_gsi
+!> Interpolate standard-deviation from GSI data
+!----------------------------------------------------------------------
+subroutine var_from_gsi(var,mpl,nam,geom)
+
+implicit none
+
+! Passed variables
+class(var_type),intent(inout) :: var !< Variance
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+type(nam_type),intent(inout) :: nam  !< Namelist
+type(geom_type),intent(in) :: geom   !< Geometry
+
+! Local variables
+integer :: il0,ic0a,iv,ilatm,ilatp
+real(kind_real) :: rlatm,rlatp
+
+! Set name
+@:set_name(var_from_gsi)
+
+! Probe in
+@:probe_in()
+
+! Interpolate
+do iv=1,nam%nv
+   ! Initialization
+   var%m2(:,:,iv) = zero
+
+   if (gsi%var2d(iv)) then
+      ! 2D variable
+      var%m2 = mpl%msv%valr
+      do ic0a=1,geom%nc0a
+         call gsi%interp_lat(mpl,geom%lat_c0a(ic0a),ilatm,ilatp,rlatm,rlatp)
+         var%m2(ic0a,gsi%ilev2d,iv) = (rlatm*gsi%stddev(ilatm,1,iv)+rlatp*gsi%stddev(ilatp,1,iv))**2
+      end do
+   else
+      ! 3D variable
+      do ic0a=1,geom%nc0a
+         call gsi%interp_lat(mpl,geom%lat_c0a(ic0a),ilatm,ilatp,rlatm,rlatp)
+         do il0=1,geom%nl0
+            var%m2(ic0a,il0,iv) = &
+ & (rlatm*gsi%rlevm(il0)*gsi%stddev(ilatm,gsi%l0_to_levm(il0),iv) &
+ & +rlatm*gsi%rlevp(il0)*gsi%stddev(ilatm,gsi%l0_to_levp(il0),iv) &
+ & +rlatp*gsi%rlevm(il0)*gsi%stddev(ilatp,gsi%l0_to_levm(il0),iv) &
+ & +rlatp*gsi%rlevp(il0)*gsi%stddev(ilatp,gsi%l0_to_levp(il0),iv))**2
+         end do
+      end do
+   end if
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine var_from_gsi
 
 !----------------------------------------------------------------------
 ! Subroutine: var_filter

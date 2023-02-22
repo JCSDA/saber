@@ -1,0 +1,61 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    nx : 72
+    ny : 46
+  groups:
+  - variables:
+    - stream_function
+    - velocity_potential
+    - air_temperature
+    levels: 4
+    vunit: [-1.0,-5.0,-9.0,-11.0]
+  - variables:
+    - surface_pressure
+    levels: 1
+input variables: &id001
+- stream_function
+- velocity_potential
+- air_temperature
+- surface_pressure
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables: *id001
+bump:
+  general:
+    testing: true
+  io:
+    data directory: testdata
+    files prefix: error_covariance_training_bump_vbal_7/_MPI_-_OMP_
+    gsi data file: gsi-coeffs-gmao-global-l72x72y46
+    gsi namelist: dirac_gsi_geos_global.nml
+  drivers:
+    write local sampling: true
+    write global sampling: true
+    compute vertical balance: true
+    write vertical balance: true
+    adjoints test: true
+    internal dirac test: true
+    interpolate from gsi data: true
+  sampling:
+    diagnostic grid size: 89
+  vertical balance:
+    vbal:
+    - balanced variable: velocity_potential
+      unbalanced variable: stream_function
+    - balanced variable: air_temperature
+      unbalanced variable: stream_function
+    - balanced variable: surface_pressure
+      unbalanced variable: stream_function
+  dirac:
+  - longitude: 0.0
+    latitude: 0.0
+    level: 4
+    variable: stream_function
+output:
+- parameter: dirac_vbal
+  file:
+    filepath: testdata/error_covariance_training_bump_vbal_7/_MPI_-_OMP__dirac
+test:
+  reference filename: testref/error_covariance_training_bump_vbal_7.ref

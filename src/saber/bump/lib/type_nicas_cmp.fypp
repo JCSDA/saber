@@ -3456,7 +3456,11 @@ do isb=1,nicas_cmp%nsb
                   if (nicas_cmp%smoother) then
                      if (il0==jl0) vnd(jc1u) = zero
                   else
-                     distv = abs(nicas_cmp%hor(il1)%vunit_c1u(ic1u)-nicas_cmp%hor(jl1)%vunit_c1u(jc1u))
+                     if (nam%from_gsi) then
+                        distv = real(abs(il0-jl0),kind_real)
+                     else
+                        distv = abs(nicas_cmp%hor(il1)%vunit_c1u(ic1u)-nicas_cmp%hor(jl1)%vunit_c1u(jc1u))
+                     end if
                      if (nicas_cmp%hor(il1)%rv_c1b(ic1b)>zero) then
                         vnd(jc1u) = distv/nicas_cmp%hor(il1)%rv_c1b(ic1b)
                         if (supeq(vnd(jc1u),half)) vnd(jc1u) = mpl%msv%valr

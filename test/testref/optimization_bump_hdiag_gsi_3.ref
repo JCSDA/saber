@@ -1,0 +1,170 @@
+Norm of input parameter gsi_ref: 1.1608302132835185e+01
+       Independent levels:  1[72]
+          Model grid size:             3312
+          Subset Sc0 size:             3170
+          Number of duplicated points (halo):       142 (  4.29%)
+          Min. / max. longitudes: -175.0 /   180.0
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   3 ~> 100.0%
+             Level   4 ~> 100.0%
+             Level   5 ~> 100.0%
+             Level   6 ~> 100.0%
+             Level   7 ~> 100.0%
+             Level   8 ~> 100.0%
+             Level   9 ~> 100.0%
+             Level  10 ~> 100.0%
+             Level  11 ~> 100.0%
+             Level  12 ~> 100.0%
+             Level  13 ~> 100.0%
+             Level  14 ~> 100.0%
+             Level  15 ~> 100.0%
+             Level  16 ~> 100.0%
+             Level  17 ~> 100.0%
+             Level  18 ~> 100.0%
+             Level  19 ~> 100.0%
+             Level  20 ~> 100.0%
+             Level  21 ~> 100.0%
+             Level  22 ~> 100.0%
+             Level  23 ~> 100.0%
+             Level  24 ~> 100.0%
+             Level  25 ~> 100.0%
+             Level  26 ~> 100.0%
+             Level  27 ~> 100.0%
+             Level  28 ~> 100.0%
+             Level  29 ~> 100.0%
+             Level  30 ~> 100.0%
+             Level  31 ~> 100.0%
+             Level  32 ~> 100.0%
+             Level  33 ~> 100.0%
+             Level  34 ~> 100.0%
+             Level  35 ~> 100.0%
+             Level  36 ~> 100.0%
+             Level  37 ~> 100.0%
+             Level  38 ~> 100.0%
+             Level  39 ~> 100.0%
+             Level  40 ~> 100.0%
+             Level  41 ~> 100.0%
+             Level  42 ~> 100.0%
+             Level  43 ~> 100.0%
+             Level  44 ~> 100.0%
+             Level  45 ~> 100.0%
+             Level  46 ~> 100.0%
+             Level  47 ~> 100.0%
+             Level  48 ~> 100.0%
+             Level  49 ~> 100.0%
+             Level  50 ~> 100.0%
+             Level  51 ~> 100.0%
+             Level  52 ~> 100.0%
+             Level  53 ~> 100.0%
+             Level  54 ~> 100.0%
+             Level  55 ~> 100.0%
+             Level  56 ~> 100.0%
+             Level  57 ~> 100.0%
+             Level  58 ~> 100.0%
+             Level  59 ~> 100.0%
+             Level  60 ~> 100.0%
+             Level  61 ~> 100.0%
+             Level  62 ~> 100.0%
+             Level  63 ~> 100.0%
+             Level  64 ~> 100.0%
+             Level  65 ~> 100.0%
+             Level  66 ~> 100.0%
+             Level  67 ~> 100.0%
+             Level  68 ~> 100.0%
+             Level  69 ~> 100.0%
+             Level  70 ~> 100.0%
+             Level  71 ~> 100.0%
+             Level  72 ~> 100.0%
+             Level   1 ~> -0.405E+00 vert. unit
+             Level   2 ~> -0.969E+00 vert. unit
+             Level   3 ~> -0.139E+01 vert. unit
+             Level   4 ~> -0.174E+01 vert. unit
+             Level   5 ~> -0.205E+01 vert. unit
+             Level   6 ~> -0.235E+01 vert. unit
+             Level   7 ~> -0.264E+01 vert. unit
+             Level   8 ~> -0.292E+01 vert. unit
+             Level   9 ~> -0.320E+01 vert. unit
+             Level  10 ~> -0.347E+01 vert. unit
+             Level  11 ~> -0.374E+01 vert. unit
+             Level  12 ~> -0.400E+01 vert. unit
+             Level  13 ~> -0.426E+01 vert. unit
+             Level  14 ~> -0.451E+01 vert. unit
+             Level  15 ~> -0.475E+01 vert. unit
+             Level  16 ~> -0.499E+01 vert. unit
+             Level  17 ~> -0.523E+01 vert. unit
+             Level  18 ~> -0.546E+01 vert. unit
+             Level  19 ~> -0.569E+01 vert. unit
+             Level  20 ~> -0.591E+01 vert. unit
+             Level  21 ~> -0.612E+01 vert. unit
+             Level  22 ~> -0.633E+01 vert. unit
+             Level  23 ~> -0.654E+01 vert. unit
+             Level  24 ~> -0.674E+01 vert. unit
+             Level  25 ~> -0.694E+01 vert. unit
+             Level  26 ~> -0.713E+01 vert. unit
+             Level  27 ~> -0.732E+01 vert. unit
+             Level  28 ~> -0.750E+01 vert. unit
+             Level  29 ~> -0.769E+01 vert. unit
+             Level  30 ~> -0.787E+01 vert. unit
+             Level  31 ~> -0.804E+01 vert. unit
+             Level  32 ~> -0.822E+01 vert. unit
+             Level  33 ~> -0.839E+01 vert. unit
+             Level  34 ~> -0.856E+01 vert. unit
+             Level  35 ~> -0.872E+01 vert. unit
+             Level  36 ~> -0.889E+01 vert. unit
+             Level  37 ~> -0.905E+01 vert. unit
+             Level  38 ~> -0.922E+01 vert. unit
+             Level  39 ~> -0.938E+01 vert. unit
+             Level  40 ~> -0.954E+01 vert. unit
+             Level  41 ~> -0.970E+01 vert. unit
+             Level  42 ~> -0.987E+01 vert. unit
+             Level  43 ~> -0.100E+02 vert. unit
+             Level  44 ~> -0.102E+02 vert. unit
+             Level  45 ~> -0.103E+02 vert. unit
+             Level  46 ~> -0.105E+02 vert. unit
+             Level  47 ~> -0.106E+02 vert. unit
+             Level  48 ~> -0.107E+02 vert. unit
+             Level  49 ~> -0.107E+02 vert. unit
+             Level  50 ~> -0.108E+02 vert. unit
+             Level  51 ~> -0.109E+02 vert. unit
+             Level  52 ~> -0.110E+02 vert. unit
+             Level  53 ~> -0.110E+02 vert. unit
+             Level  54 ~> -0.111E+02 vert. unit
+             Level  55 ~> -0.111E+02 vert. unit
+             Level  56 ~> -0.112E+02 vert. unit
+             Level  57 ~> -0.112E+02 vert. unit
+             Level  58 ~> -0.112E+02 vert. unit
+             Level  59 ~> -0.113E+02 vert. unit
+             Level  60 ~> -0.113E+02 vert. unit
+             Level  61 ~> -0.113E+02 vert. unit
+             Level  62 ~> -0.113E+02 vert. unit
+             Level  63 ~> -0.113E+02 vert. unit
+             Level  64 ~> -0.114E+02 vert. unit
+             Level  65 ~> -0.114E+02 vert. unit
+             Level  66 ~> -0.114E+02 vert. unit
+             Level  67 ~> -0.114E+02 vert. unit
+             Level  68 ~> -0.114E+02 vert. unit
+             Level  69 ~> -0.114E+02 vert. unit
+             Level  70 ~> -0.115E+02 vert. unit
+             Level  71 ~> -0.115E+02 vert. unit
+             Level  72 ~> -0.115E+02 vert. unit
+       Factor 0.20, horizontal MSE:  0.58521958E+02 / vertical MSE:  0.15792563E+02 
+       Factor 0.30, horizontal MSE:  0.50002129E+02 / vertical MSE:  0.13001276E+02 
+       Factor 0.40, horizontal MSE:  0.40378901E+02 / vertical MSE:  0.10639742E+02 
+       Factor 0.50, horizontal MSE:  0.31099494E+02 / vertical MSE:  0.85765375E+01 
+       Factor 0.60, horizontal MSE:  0.22866841E+02 / vertical MSE:  0.71665609E+01 
+       Factor 0.70, horizontal MSE:  0.16143575E+02 / vertical MSE:  0.66522705E+01 <~ best vertical factor 
+       Factor 0.80, horizontal MSE:  0.11232907E+02 / vertical MSE:  0.70453574E+01 
+       Factor 0.90, horizontal MSE:  0.83274221E+01 / vertical MSE:  0.82681909E+01 
+       Factor 1.00, horizontal MSE:  0.75443982E+01 / vertical MSE:  0.10286294E+02 <~ best horizontal factor 
+       Factor 1.10, horizontal MSE:  0.89413808E+01 / vertical MSE:  0.13144424E+02 
+       Factor 1.20, horizontal MSE:  0.12549194E+02 / vertical MSE:  0.16898320E+02 
+       Factor 1.30, horizontal MSE:  0.18394021E+02 / vertical MSE:  0.21557637E+02 
+       Factor 1.40, horizontal MSE:  0.26502467E+02 / vertical MSE:  0.27100738E+02 
+       Factor 1.50, horizontal MSE:  0.36901215E+02 / vertical MSE:  0.33484471E+02 
+       Factor 1.60, horizontal MSE:  0.49604183E+02 / vertical MSE:  0.40606035E+02 
+       Factor 1.70, horizontal MSE:  0.64622861E+02 / vertical MSE:  0.48407722E+02 
+       Factor 1.80, horizontal MSE:  0.81953102E+02 / vertical MSE:  0.56761880E+02 
+Norm of BUMP output parameter dirac_diag_cor - 1: 1.1124088441441865e+01

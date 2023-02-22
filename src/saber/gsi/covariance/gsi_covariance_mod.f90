@@ -61,7 +61,6 @@ type :: gsi_covariance
     procedure, public :: delete
     procedure, public :: randomize
     procedure, public :: multiply
-    procedure, public :: multiply_ad
 end type gsi_covariance
 
 character(len=*), parameter :: myname='gsi_covariance_mod'
@@ -527,25 +526,6 @@ call afield%final()
 
 
 end subroutine multiply
-
-! --------------------------------------------------------------------------------------------------
-
-subroutine multiply_ad(self, fields)
-
-! Arguments
-class(gsi_covariance), intent(inout) :: self
-type(atlas_fieldset),  intent(inout) :: fields
-
-! This routine only needed when B = G^T G (sqrt-factored)
-
-! To do list for this method
-! 1. Convert fields (Atlas fieldsets) to GSI bundle
-! 2. Call GSI covariance operator adjoint (sqrt version)
-!        afield = fields%field('stream_function')
-!        call afield%data(var3d)
-!        var3d=0.0_kind_real
-
-end subroutine multiply_ad
 
 ! --------------------------------------------------------------------------------------------------
 

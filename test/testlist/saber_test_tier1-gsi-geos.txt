@@ -1,1 +1,7 @@
 dirac_gsi_geos_global
+dirac_gsi_geos_global_opt_1
+dirac_gsi_geos_global_opt_2
+dirac_gsi_geos_global_opt_3
+optimization_bump_hdiag_gsi_1
+optimization_bump_hdiag_gsi_2
+optimization_bump_hdiag_gsi_3

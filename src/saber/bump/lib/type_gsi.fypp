@@ -1,0 +1,718 @@
+#:include 'instrumentation.fypp'
+!----------------------------------------------------------------------
+! Module: type_gsi
+!> GSI functions
+! Source: GSI or FV3-JEDI code
+! Modified by Benjamin Menetrier for BUMP
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+module type_gsi
+
+use tools_const, only: zero,one,three,hundred,req,deg2rad
+use tools_kinds, only: kind_real
+use tools_netcdf, only: open_file,inquire_grp,get_att,inquire_dim_size,inquire_var,get_var,close_file
+use tools_repro, only: inf,infeq,sup,supeq,eq
+use type_geom, only: geom_type
+use type_mpl, only: mpl_type
+use type_nam, only: nam_type
+@:use_probe()
+
+implicit none
+
+! GSI scaling factor for BUMP
+real(kind_real),parameter :: gsi_scaling = 4.8_kind_real
+
+! GSI derived type
+type gsi_type
+   ! Status
+   logical :: initialized = .false.             !< Initialization status
+
+   ! Latitude bands
+   integer :: nlat                              !< Number of latitudes
+   real(kind_real),allocatable :: lat(:)        !< Latitudes
+
+   ! Vertical interpolation
+   integer,allocatable :: l0_to_levm(:)         !< Model level to lower levma level
+   integer,allocatable :: l0_to_levp(:)         !< Model level to higher levma level
+   real(kind_real),allocatable :: rlevm(:)      !< Lower levma level coefficient
+   real(kind_real),allocatable :: rlevp(:)      !< Higher levma level coefficient
+
+   ! Vertical balance regressions
+   real(kind_real),allocatable :: tcon(:,:,:)   !< Stream function / air temperature regression
+   real(kind_real),allocatable :: vpcon(:,:)    !< Stream function / velocity potential regression
+   real(kind_real),allocatable :: pscon(:,:)    !< Stream function / surface pressure regression
+
+   ! Standard-deviation
+   real(kind_real),allocatable :: stddev(:,:,:) !< Standard-deviation
+
+   ! Correlation amplitudes and support radii
+   real(kind_real),allocatable :: a(:)          !< Amplitude
+   real(kind_real),allocatable :: rh(:,:,:,:)   !< Horizontal support radius
+   real(kind_real),allocatable :: rv(:,:,:,:)   !< Vertical support radius
+
+   ! 2D variables
+   logical,allocatable :: var2d(:)              !< 2D variables flag
+   integer :: ilev2d                            !< 3D level for 2D variables
+contains
+   procedure :: dealloc => gsi_dealloc
+   procedure :: setup => gsi_setup
+   procedure :: interp_lat => gsi_interp_lat
+end type gsi_type
+
+interface interp_linear
+   module procedure gsi_interp_linear
+end interface
+
+interface get_table_size
+   module procedure gsi_get_table_size
+end interface
+
+interface get_table
+   module procedure gsi_get_table
+end interface
+
+! GSI object
+type(gsi_type) :: gsi
+
+private
+public :: gsi
+
+contains
+
+!----------------------------------------------------------------------
+! Subroutine: gsi_dealloc
+!> Release memory
+!----------------------------------------------------------------------
+subroutine gsi_dealloc(gsi)
+
+implicit none
+
+! Passed variables
+class(gsi_type),intent(inout) :: gsi !< GSI data
+
+! Set name
+@:set_name(gsi_dealloc)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+if (allocated(gsi%lat)) deallocate(gsi%lat)
+if (allocated(gsi%l0_to_levm)) deallocate(gsi%l0_to_levm)
+if (allocated(gsi%l0_to_levp)) deallocate(gsi%l0_to_levp)
+if (allocated(gsi%rlevm)) deallocate(gsi%rlevm)
+if (allocated(gsi%rlevp)) deallocate(gsi%rlevp)
+if (allocated(gsi%var2d)) deallocate(gsi%var2d)
+if (allocated(gsi%tcon)) deallocate(gsi%tcon)
+if (allocated(gsi%vpcon)) deallocate(gsi%vpcon)
+if (allocated(gsi%pscon)) deallocate(gsi%pscon)
+if (allocated(gsi%stddev)) deallocate(gsi%stddev)
+if (allocated(gsi%a)) deallocate(gsi%a)
+if (allocated(gsi%rh)) deallocate(gsi%rh)
+if (allocated(gsi%rv)) deallocate(gsi%rv)
+
+! Update status
+gsi%initialized = .false.
+
+! Probe out
+@:probe_out()
+
+end subroutine gsi_dealloc
+
+!----------------------------------------------------------------------
+! Subroutine: gsi_setup
+!> Read GSI file and prepare vertical interpolation and data
+!----------------------------------------------------------------------
+subroutine gsi_setup(gsi,mpl,nam,geom)
+
+implicit none
+
+! Passed variables
+class(gsi_type),intent(inout) :: gsi !< GSI data
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+type(nam_type),intent(in) :: nam     !< Namelist
+type(geom_type),intent(in) :: geom   !< Geometry
+
+! Local variables
+integer :: ncid,lat_id,lev_id,tcon_id,vpcon_id,pscon_id,var_id,rh_id,rv_id
+integer :: nlev,ilev,il0,iv,itracer,icmp
+integer :: luin,ntot,nvars,ivars,ioflag
+real(kind_real) :: aas,amp,bes
+real(kind_real),allocatable :: lev(:),vc(:)
+character(len=4) :: ilevchar
+character(len=20) :: var,source,funcof
+character(len=1024) :: gsivar,bumpvar
+character(len=256),allocatable :: utable(:)
+
+! Namelist variables
+integer :: norsp
+real(kind_real) :: vs,bw,bkgv_rewgtfct
+real(kind_real) :: hzscl(3),hswgt(3)
+logical :: bkgv_flowdep,fpsproj,adjustozvar,simcv
+namelist/bkgerr/vs,hzscl,hswgt,bw,norsp,bkgv_flowdep,bkgv_rewgtfct,fpsproj,adjustozvar,simcv
+
+! Set name
+@:set_name(gsi_setup)
+
+! Probe in
+@:probe_in()
+
+if (mpl%main) then
+   ! Open file
+   ncid = open_file(mpl,nam%fname_gsi_data,0,'nc4')
+
+   ! Inquire dimensions
+   gsi%nlat = inquire_dim_size(mpl,ncid,'lat')
+   nlev = inquire_dim_size(mpl,ncid,'lev')
+end if
+
+! Broadcast dimension
+call mpl%f_comm%broadcast(gsi%nlat,mpl%rootproc-1)
+call mpl%f_comm%broadcast(nlev,mpl%rootproc-1)
+
+! Allocation
+allocate(gsi%lat(gsi%nlat))
+allocate(gsi%l0_to_levm(geom%nl0))
+allocate(gsi%l0_to_levp(geom%nl0))
+allocate(gsi%rlevm(geom%nl0))
+allocate(gsi%rlevp(geom%nl0))
+allocate(gsi%var2d(nam%nv))
+allocate(gsi%tcon(gsi%nlat,nlev,nlev))
+allocate(gsi%vpcon(gsi%nlat,nlev))
+allocate(gsi%pscon(gsi%nlat,nlev))
+allocate(gsi%stddev(gsi%nlat,nlev,nam%nv))
+allocate(gsi%a(3))
+allocate(gsi%rh(gsi%nlat,nlev,3,nam%nv))
+allocate(gsi%rv(gsi%nlat,nlev,3,nam%nv))
+
+if (mpl%main) then
+   ! Allocation
+   allocate(lev(nlev))
+   allocate(vc(nlev))
+
+   ! Inquire coordinates
+   lat_id = inquire_var(mpl,ncid,'lat')
+   lev_id = inquire_var(mpl,ncid,'lev')
+
+   ! Read coordinates
+   call get_var(mpl,ncid,lat_id,gsi%lat)
+   call get_var(mpl,ncid,lev_id,lev)
+
+   ! Normalize latitude
+   gsi%lat = gsi%lat*deg2rad
+
+   ! Compute vertical coordinate (-log(P[Pa]))
+   vc = -log(lev*hundred)
+   write(mpl%info,'(a7,a)') '','Vertical coordinate of GSI statistics:'
+   call mpl%flush
+   do ilev=1,nlev
+       write(mpl%info,'(a10,a,i3,a,e15.8)') '','Level ',ilev,' ~> ',vc(ilev)
+       call mpl%flush
+   end do
+
+   ! Compute vertical interpolation
+   do il0=1,geom%nl0
+      call interp_linear(mpl,nlev,vc,geom%vunitavg(il0),gsi%l0_to_levm(il0),gsi%l0_to_levp(il0),gsi%rlevm(il0),gsi%rlevp(il0))
+   end do
+
+   do ilev=1,nlev
+      ! Inquire variables
+      write(ilevchar,'(i4.4)') ilev
+      tcon_id = inquire_var(mpl,ncid,'tcon'//ilevchar)
+
+      ! Get variable
+      call get_var(mpl,ncid,tcon_id,gsi%tcon(:,:,ilev))
+   end do
+
+   ! Inquire variables
+   vpcon_id = inquire_var(mpl,ncid,'vpcon')
+   pscon_id = inquire_var(mpl,ncid,'pscon')
+
+   ! Get variable
+   call get_var(mpl,ncid,vpcon_id,gsi%vpcon)
+   call get_var(mpl,ncid,pscon_id,gsi%pscon)
+
+   ! Get standard-deviation, horizontal radius and vertical radius
+   do iv=1,nam%nv
+      ! Get corresponding variable name (qr, qs, cw)
+      gsivar = ''
+      gsi%var2d(iv) = .false.
+      select case (trim(nam%variables(iv)))
+      case ('stream_function')
+         gsivar = 'sf'
+      case ('velocity_potential')
+         gsivar = 'vp'
+      case ('air_temperature')
+         gsivar = 't'
+      case ('specific_humidity')
+         gsivar = 'q'
+      case ('cloud_liquid_ice')
+         gsivar = 'qi'
+      case ('cloud_liquid_water')
+         gsivar = 'ql'
+      case ('ozone_mass_mixing_ratio')
+         gsivar = 'oz'
+      case ('surface_pressure')
+         gsivar = 'ps'
+         gsi%var2d(iv) = .true.
+      case default
+         call mpl%abort('${subr}$','cannot find GSI variable name')
+      end select
+
+      ! Inquire variable
+      var_id = inquire_var(mpl,ncid,trim(gsivar))
+      rh_id = inquire_var(mpl,ncid,'h'//trim(gsivar))
+      if (.not.gsi%var2d(iv)) rv_id = inquire_var(mpl,ncid,'v'//trim(gsivar))
+
+      ! Get variable
+      if (gsi%var2d(iv)) then
+         gsi%stddev(:,:,iv) = mpl%msv%valr
+         gsi%rh(:,:,1,iv) = mpl%msv%valr
+         gsi%rv(:,:,1,iv) = mpl%msv%valr
+         call get_var(mpl,ncid,var_id,gsi%stddev(:,1,iv))
+         call get_var(mpl,ncid,rh_id,gsi%rh(:,1,1,iv))
+         gsi%rv(:,1,1,iv) = zero
+      else
+         call get_var(mpl,ncid,var_id,gsi%stddev(:,:,iv))
+         call get_var(mpl,ncid,rh_id,gsi%rh(:,:,1,iv))
+         call get_var(mpl,ncid,rv_id,gsi%rv(:,:,1,iv))
+      end if
+      do icmp=2,3
+         gsi%rh(:,:,icmp,iv) = gsi%rh(:,:,1,iv)
+         gsi%rv(:,:,icmp,iv) = gsi%rv(:,:,1,iv)
+      end do
+   end do
+
+   ! Close file
+   call close_file(mpl,ncid)
+
+   ! Release memory
+   deallocate(lev)
+   deallocate(vc)
+
+
+   if (nam%new_hdiag) then
+      ! Get unit
+      luin = 12
+
+      ! Default values
+      vs = one/1.5_kind_real
+      hzscl = one
+      hswgt = one/three
+      bw = zero
+
+      ! Read namelist
+      open(luin,file=trim(nam%datadir)//'/'//trim(nam%fname_gsi_nam),iostat=ioflag,status='old')
+      if (ioflag/=0) call mpl%abort('${subr}$','cannot open GSI namelist')
+      read(luin,bkgerr,iostat=ioflag)
+      if (ioflag/=0) call mpl%abort('${subr}$','cannot read GSI namelist')
+      close(luin)
+
+      ! Transform parameters
+      vs = one/vs
+      hzscl = one/hzscl
+      if (abs(bw)>zero) call mpl%abort('${subr}$','bw usage not implemented')
+
+      ! Apply parameters and scaling
+      gsi%a = hswgt
+      do iv=1,nam%nv
+         do icmp=1,3
+            if (gsi%var2d(iv)) then
+               gsi%rh(:,1,icmp,iv) = gsi%rh(:,1,icmp,iv)*hzscl(icmp)*gsi_scaling
+            else
+               gsi%rh(:,:,icmp,iv) = gsi%rh(:,:,icmp,iv)*hzscl(icmp)*gsi_scaling
+               gsi%rv(:,:,icmp,iv) = gsi%rv(:,:,icmp,iv)*vs/gsi_scaling
+            end if
+         end do
+      end do
+   end if
+
+   if (nam%new_var) then
+      ! Get unit
+      luin = 12
+
+      ! Read namelist
+      open(luin,file=trim(nam%datadir)//'/'//trim(nam%fname_gsi_nam),iostat=ioflag,status='old')
+      if (ioflag/=0) call mpl%abort('${subr}$','cannot open GSI namelist')
+
+      ! Scan file for desired table first and get size of table
+      call get_table_size('control_vector::',luin,ntot,nvars)
+
+      ! Allocation
+      allocate(utable(nvars))
+
+      ! Get contents of table
+      call get_table(mpl,'control_vector::',luin,ntot,nvars,utable)
+
+      ! Release file unit
+      close(luin)
+
+      ! Load information from table
+      do ivars=1,nvars
+         ! Read data from table
+         read(utable(ivars),*,iostat=ioflag) var,ilev,itracer,aas,amp,source,funcof,bes
+         if (ioflag/=0) then
+            read(utable(ivars),*) var,ilev,itracer,aas,amp,source,funcof
+            bes = -one
+         end if
+
+         ! Find variable
+         select case (trim(adjustl(var)))
+         case ('sf')
+            bumpvar = 'stream_function'
+         case ('vp')
+            bumpvar = 'velocity_potential'
+         case ('t')
+            bumpvar = 'air_temperature'
+         case ('q')
+            bumpvar = 'specific_humidity'
+         case ('qi')
+            bumpvar = 'cloud_liquid_ice'
+         case ('ql')
+            bumpvar = 'cloud_liquid_water'
+         case ('oz')
+            bumpvar = 'ozone_mass_mixing_ratio'
+         case ('ps')
+            bumpvar = 'surface_pressure'
+         case default
+            call mpl%abort('${subr}$','cannot find BUMP variable name')
+         end select
+
+         ! Find variable index and apply inflation
+         do iv=1,nam%nv
+            if (nam%variables(iv)==bumpvar) then
+               if (gsi%var2d(iv)) then
+                  gsi%stddev(:,1,iv) = gsi%stddev(:,1,iv)*aas
+               else
+                  gsi%stddev(:,:,iv) = gsi%stddev(:,:,iv)*aas
+               end if
+            end if
+         end do
+      end do
+
+      ! Release memory
+      deallocate(utable)
+   end if
+end if
+
+! Broadcast data
+call mpl%f_comm%broadcast(gsi%lat,mpl%rootproc-1)
+call mpl%f_comm%broadcast(gsi%l0_to_levm,mpl%rootproc-1)
+call mpl%f_comm%broadcast(gsi%l0_to_levp,mpl%rootproc-1)
+call mpl%f_comm%broadcast(gsi%rlevm,mpl%rootproc-1)
+call mpl%f_comm%broadcast(gsi%rlevp,mpl%rootproc-1)
+call mpl%f_comm%broadcast(gsi%var2d,mpl%rootproc-1)
+call mpl%f_comm%broadcast(gsi%tcon,mpl%rootproc-1)
+call mpl%f_comm%broadcast(gsi%vpcon,mpl%rootproc-1)
+call mpl%f_comm%broadcast(gsi%pscon,mpl%rootproc-1)
+call mpl%f_comm%broadcast(gsi%stddev,mpl%rootproc-1)
+call mpl%f_comm%broadcast(gsi%a,mpl%rootproc-1)
+call mpl%f_comm%broadcast(gsi%rh,mpl%rootproc-1)
+call mpl%f_comm%broadcast(gsi%rv,mpl%rootproc-1)
+
+! Level for 2D variables
+if (nam%lev2d=='first') then
+   gsi%ilev2d = 1
+else if (nam%lev2d=='last') then
+   gsi%ilev2d = geom%nl0
+end if
+
+! Update status
+gsi%initialized = .true.
+
+! Probe out
+@:probe_out()
+
+end subroutine gsi_setup
+
+!----------------------------------------------------------------------
+! Subroutine: gsi_interp_lat
+!> Latitude interpolation
+!----------------------------------------------------------------------
+subroutine gsi_interp_lat(gsi,mpl,lat,ilatm,ilatp,rlatm,rlatp)
+
+implicit none
+
+! Passed variables
+class(gsi_type),intent(inout) :: gsi !< GSI data
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+real(kind_real),intent(in) :: lat    !< Latitude
+integer,intent(out) :: ilatm         !< Lower latitude index
+integer,intent(out) :: ilatp         !< Higher latitude index
+real(kind_real),intent(out) :: rlatm !< Lower latitude coefficient
+real(kind_real),intent(out) :: rlatp !< Higher latitude coefficient
+
+! Set name
+@:set_name(gsi_interp_lat)
+
+! Probe in
+@:probe_in()
+
+! Linear interpolation
+call interp_linear(mpl,gsi%nlat,gsi%lat,lat,ilatm,ilatp,rlatm,rlatp)
+
+! Probe out
+@:probe_out()
+
+end subroutine gsi_interp_lat
+
+!----------------------------------------------------------------------
+! Subroutine: gsi_interp_linear
+!> Linear interpolation (for latitude and vertical interpolation)
+!----------------------------------------------------------------------
+subroutine gsi_interp_linear(mpl,n,axis,val,im,ip,rm,rp)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl   !< MPI data
+integer,intent(in) :: n               !< Axis size
+real(kind_real),intent(in) :: axis(n) !< Axis
+real(kind_real),intent(in) :: val     !< Value
+integer,intent(out) :: im             !< Lower index
+integer,intent(out) :: ip             !< Higher index
+real(kind_real),intent(out) :: rm     !< Lower coefficient
+real(kind_real),intent(out) :: rp     !< Higher coefficient
+
+! Local variables
+integer :: i
+
+! Set name
+@:set_name(gsi_interp_linear)
+
+! Probe in
+@:probe_in()
+
+if (axis(1)<axis(n)) then
+   ! Increasing axis
+   do i=2,n
+      if (inf(axis(i),axis(i-1))) call mpl%abort('${subr}$','axis not increasing')
+   end do
+   if (inf(val,axis(1))) then
+      im = 1
+      ip = 1
+      rm = one
+      rp = zero
+   elseif (supeq(val,axis(n))) then
+      im = n
+      ip = n
+      rm = one
+      rp = zero
+   else
+      do i=1,n-1
+         if (eq(val,axis(i))) then
+            im = i
+            ip = i+1
+            rm = one
+            rp = zero
+         elseif (sup(val,axis(i)).and.inf(val,axis(i+1))) then
+            im = i
+            ip = i+1
+            rm = (axis(ip)-val)/(axis(ip)-axis(im))
+            rp = (val-axis(im))/(axis(ip)-axis(im))
+            exit
+         end if
+      end do
+   end if
+else
+   ! Decreasing axis
+   do i=2,n
+      if (sup(axis(i),axis(i-1))) call mpl%abort('${subr}$','axis not decreasing')
+   end do
+   if (sup(val,axis(1))) then
+      im = 1
+      ip = 1
+      rm = one
+      rp = zero
+   elseif (infeq(val,axis(n))) then
+      im = n
+      ip = n
+      rm = one
+      rp = zero
+   else
+      do i=1,n-1
+         if (eq(val,axis(i))) then
+            im = i
+            ip = i+1
+            rm = one
+            rp = zero
+         elseif (inf(val,axis(i)).and.sup(val,axis(i+1))) then
+            im = i
+            ip = i+1
+            rm = (axis(ip)-val)/(axis(ip)-axis(im))
+            rp = (val-axis(im))/(axis(ip)-axis(im))
+            exit
+         end if
+      end do
+   end if
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine gsi_interp_linear
+
+!----------------------------------------------------------------------
+! Subroutine: gsi_get_table_size
+!> Get GSI namelist table size
+!> Source: gsibec/src/gsibec/gsi/mpeu_util.F90
+!----------------------------------------------------------------------
+subroutine gsi_get_table_size(tname,lu,ntot,nact)
+
+implicit none
+
+! Passed variables
+character(len=*),intent(in) :: tname !< Table name
+integer,intent(in) :: lu             !< Unit
+integer,intent(out) :: ntot          !< Total size
+integer,intent(out) :: nact          !< Actual size
+
+! Local variables
+integer :: ioflag,ln,ios,n,ncomment
+character(len=1024) :: buf
+
+! Set name
+@:set_name(gsi_get_table_size)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+ncomment = 0
+n = 0
+
+! Rewind file
+rewind(lu)
+
+! Scan file for desired table first and get size of table
+file_scan: do
+   ! Read buffer
+   read(lu,*,iostat=ioflag) buf
+   if(ioflag/=0) exit
+
+   ! Ignore comments outside table
+   if(trim(buf)==''.or.buf(1:1)=='#'.or.buf(1:1)=='!') cycle
+
+   ! Get length
+   ln = len(trim(tname))
+   if (index(buf(1:ln),trim(tname))>0) then
+      ! Found wanted table
+      n = 0
+
+      ! Start reading table
+      table_scan: do
+         ! Start reading line
+         line_scan: do
+            ! Increment
+            n = n+1
+
+            ! Read next line, save contents
+            read(lu,'(a)',advance='no',eor=998,iostat=ios) buf
+         end do line_scan
+998 continue
+         ! End of table
+         if (buf(1:2)=='::') exit
+         if (buf(1:1)=='#'.or.buf(1:1)=='!') ncomment = ncomment+1
+      end do table_scan
+
+      ! Finished reading table
+      exit
+   end if
+end do file_scan
+
+! Total size
+ntot = n
+
+! Actual size
+nact = max(0,n-ncomment-1)
+
+! Probe out
+@:probe_out()
+
+end subroutine gsi_get_table_size
+
+!----------------------------------------------------------------------
+! Subroutine: gsi_get_table
+!> Get GSI namelist table
+!> Source: gsibec/src/gsibec/gsi/mpeu_util.F90
+!----------------------------------------------------------------------
+subroutine gsi_get_table(mpl,tname,lu,ntot,nact,utable)
+
+implicit none
+
+! Input variables
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+character(len=*),intent(in):: tname           !< Table name
+integer,intent(in) :: lu                      !< Unit
+integer,intent(in) :: ntot                    !< Total size
+integer,intent(in) :: nact                    !< Actual size
+character(len=*),intent(inout):: utable(nact) !< Table
+
+! Local variables
+integer :: ioflag,ln,i,n,ios
+character(len=256) :: buf
+
+! Set name
+@:set_name(gsi_get_table)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+n = ntot
+
+! Rewind file
+rewind(lu)
+
+! Get data
+file_scan: do
+   ! Read buffer
+   read(lu,*,iostat=ioflag) buf
+   if (ioflag/=0) exit
+
+   ! Ignore comments outside table
+   if (trim(buf)==''.or.buf(1:1)=='#'.or.buf(1:1)=='!') cycle
+
+   ! Get length
+   ln = len(trim(tname))
+
+   if(index(buf(1:ln),trim(tname))>0) then
+      ! Found wanted table
+      i = 0
+
+      ! Start reading table
+      table_scan: do
+         ! Start reading line
+         line_scan: do
+            ! Read next line, save contents
+            read(lu,'(a)',advance='no',eor=999,iostat=ios) buf
+         end do line_scan
+999 continue
+
+         ! End of table
+         if (buf(1:2)=='::') exit
+
+         if (.not.(buf(1:1)=='#'.or.buf(1:1)=='!')) then
+            ! Check index
+            if (i>nact) call mpl%abort('${subr}$','error reading table')
+
+            ! Increment
+            i = i+1
+
+            ! Copy buffer
+            utable(i) = trim(buf)
+         end if
+      end do table_scan
+
+      ! Finished reading table
+      exit
+   end if
+end do file_scan
+
+! Probe out
+@:probe_out()
+
+end subroutine gsi_get_table
+
+end module type_gsi

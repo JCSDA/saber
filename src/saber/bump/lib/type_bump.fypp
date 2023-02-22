@@ -21,6 +21,7 @@ use type_cv, only: cv_type
 use type_ens, only: ens_type
 use type_fieldset, only: fieldset_type
 use type_geom, only: geom_type
+use type_gsi, only: gsi
 use type_hdiag, only: hdiag_type
 use type_mom, only: mom_type
 use type_mpl, only: mpl_type
@@ -303,6 +304,14 @@ if (bump%nam%ens2_ne>0) then
    call bump%ens(2)%set_att(bump%nam%ens2_ne,bump%nam%ens2_nsub)
 end if
 
+if ((bump%nam%from_gsi.and.(bump%nam%new_vbal.or.bump%nam%new_var.or.bump%nam%new_hdiag)).and.(.not.gsi%initialized)) then
+   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   call bump%mpl%flush
+   write(bump%mpl%info,'(a)') '--- Initialize GSI data'
+   call bump%mpl%flush
+   call gsi%setup(bump%mpl,bump%nam,bump%geom(1))
+end if
+
 ! Probe out
 @:probe_out()
 
@@ -568,7 +577,7 @@ class(bump_type),intent(inout) :: bump !< BUMP
 ! Probe in
 @:probe_in()
 
-if (bump%nam%check_consistency.or.bump%nam%check_optimality) then  
+if (bump%nam%check_consistency.or.bump%nam%check_optimality) then
    ! Copy namelist support radii into C matrix, ensemble 1
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
@@ -752,12 +761,21 @@ elseif (bump%nam%load_mom) then
 end if
 
 if (bump%nam%new_hdiag) then
-   ! Run HDIAG driver
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
-   call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Run HDIAG driver'
-   call bump%mpl%flush
-   call bump%hdiag%run_hdiag(bump%mpl,bump%nam,bump%geom,bump%samp,bump%mom)
+   if (bump%nam%from_gsi) then
+      ! Interpolate length-scales from GSI data
+      write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+      call bump%mpl%flush
+      write(bump%mpl%info,'(a)') '--- Interpolate length-scales from GSI data'
+      call bump%mpl%flush
+      call bump%hdiag%from_gsi(bump%mpl,bump%nam,bump%geom(1))
+   else
+      ! Run HDIAG driver
+      write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+      call bump%mpl%flush
+      write(bump%mpl%info,'(a)') '--- Run HDIAG driver'
+      call bump%mpl%flush
+      call bump%hdiag%run_hdiag(bump%mpl,bump%nam,bump%geom,bump%samp,bump%mom)
+   end if
 end if
 
 if (bump%nam%check_consistency) then
@@ -2060,7 +2078,7 @@ do iv=1,bump%nam%nv
 
    ! Check allocation / parameter existence
    select case (trim(param))
-   case ('stddev','var','m4','sampling_mask_field')
+   case ('stddev','var','m4','sampling_mask_field','gsi_ref')
    case ('a','rh','rh1','rh2','rhc','rv')
       if (.not.allocated(bump%cmat(1)%blk)) allocate(bump%cmat(1)%blk(bump%nam%ng))
    case ('nicas_a','nicas_norm')
@@ -2074,7 +2092,7 @@ do iv=1,bump%nam%nv
       if ((.not.allocated(bump%nicas(1)%blk(ig)%cmp))) allocate(bump%nicas(1)%blk(ig)%cmp(bump%nicas(1)%blk(ig)%ncmp))
    case default
       call bump%mpl%abort('${subr}$','parameter '//trim(param)//' not yet implemented, available input parameters are:'// &
- & 'stddev, var, m4, sampling_mask_field, a, rh, rh1, rh2, rhc, rv, nicas_norm')
+ & 'stddev, var, m4, sampling_mask_field, gsi_ref, a, rh, rh1, rh2, rhc, rv, nicas_norm')
    end select
 
    ! Copy to model grid
@@ -2108,6 +2126,14 @@ do iv=1,bump%nam%nv
          bump%var%bump_m4 = zero
       end if
       bump%var%bump_m4(:,:,iv) = bump%var%bump_m4(:,:,iv)+fld_c0a
+      found = .true.
+   end select
+
+   ! Select parameter from hdiag
+   select case (trim(param))
+   case('gsi_ref')
+      if (.not.allocated(bump%hdiag%gsi_ref)) allocate(bump%hdiag%gsi_ref(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv))
+      bump%hdiag%gsi_ref(:,:,iv) = fld_c0a
       found = .true.
    end select
 
@@ -2221,6 +2247,7 @@ if (allocated(bump%geom)) then
    call bump%geom(1)%partial_dealloc
    call bump%geom(2)%partial_dealloc
 end if
+call gsi%dealloc
 call bump%hdiag%partial_dealloc
 if (allocated(bump%mom)) then
    call bump%mom(1)%partial_dealloc
@@ -2285,6 +2312,7 @@ if (allocated(bump%geom)) then
    call bump%geom(2)%dealloc
    deallocate(bump%geom)
 end if
+call gsi%dealloc
 call bump%hdiag%dealloc
 if (allocated(bump%mom)) then
    call bump%mom(1)%dealloc

@@ -29,9 +29,9 @@ dirac:
   - stream_function
 output dirac:
   mpi pattern: '%MPI%'
-  filepath: testdata/dirac_id/dirac_%id%_%MPI%
+  filepath: testdata/dirac_id/%MPI%_dirac_%id%
 output variance:
   mpi pattern: '%MPI%'
-  filepath: testdata/dirac_id/variance_%MPI%
+  filepath: testdata/dirac_id/%MPI%_variance
 test:
   reference filename: testref/dirac_id.ref

@@ -32,11 +32,15 @@ if( oops_FOUND )
     set( SABER_TEST_VALGRIND 0 )
     set( SABER_TEST_GSI_GEOS 0 )
     if( gsibec_FOUND )
-        set( SABER_TEST_GSI_GEOS 1 )
+        if (gsibec_VERSION VERSION_GREATER_EQUAL "1.0.7" )
+            set( SABER_TEST_GSI_GEOS 1 )
+        endif()
     endif()
     set( SABER_TEST_GSI_GFS 0 )
     if( gsibec_FOUND AND sp_FOUND )
-        set( SABER_TEST_GSI_GFS 1 )
+        if (gsibec_VERSION VERSION_GREATER_EQUAL "1.0.7" )
+            set( SABER_TEST_GSI_GFS 1 )
+        endif()
     endif()
     set( SABER_TEST_SPECTRALB 0 )
     if( atlas_TRANS_FOUND )
@@ -82,28 +86,22 @@ if( oops_FOUND )
     message( STATUS "  - TIER 1 base" )
     file( STRINGS testlist/saber_test_tier1.txt saber_test )
     list( APPEND saber_test_full ${saber_test} )
-    file( STRINGS testlist/saber_ref_tier1.txt saber_extra_ref )
-    list( APPEND saber_extra_ref_full ${saber_extra_ref} )
     if( SABER_TEST_GSI_GEOS )
         message( STATUS "  - TIER 1 GSI-GEOS-specific" )
         file( STRINGS testlist/saber_test_tier1-gsi-geos.txt saber_test )
         list( APPEND saber_test_full ${saber_test} )
-        list( APPEND saber_test_nml ${saber_test} )
     endif()
     if( SABER_TEST_GSI_GFS )
         message( STATUS "  - TIER 1 GSI-GFS-specific" )
         file( STRINGS testlist/saber_test_tier1-gsi-gfs.txt saber_test )
         list( APPEND saber_test_full ${saber_test} )
-        list( APPEND saber_test_nml ${saber_test} )
     endif()
     if( SABER_TEST_SPECTRALB )
         message( STATUS "  - TIER 1 SPECTRALB-specific" )
         # TODO(Benjamin): remove that once ATLAS 0.31.0 is available everywhere
-        if( atlas_VERSION GREATER_EQUAL 0.31.0 )
+        if( atlas_VERSION VERSION_GREATER_EQUAL "0.31.0" )
             file( STRINGS testlist/saber_test_tier1-spectralb.txt saber_test )
             list( APPEND saber_test_full ${saber_test} )
-            file( STRINGS testlist/saber_ref_tier1-spectralb.txt saber_extra_ref )
-            list( APPEND saber_extra_ref_full ${saber_extra_ref} )
         else()
             file( STRINGS testlist/saber_test_tier1-spectralb_old.txt saber_test )
             list( APPEND saber_test_full ${saber_test} )
@@ -152,19 +150,6 @@ if( oops_FOUND )
                              ${CMAKE_CURRENT_SOURCE_DIR}/testref/${test}.ref
                              ${CMAKE_CURRENT_BINARY_DIR}/testref/${test}.ref )
         endif()
-    endforeach()
-    foreach( test ${saber_extra_ref_full} )
-        # Extra references
-        execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
-                         ${CMAKE_CURRENT_SOURCE_DIR}/testref/${test}.ref
-                         ${CMAKE_CURRENT_BINARY_DIR}/testref/${test}.ref )
-    endforeach()
-    foreach( test ${saber_test_nml} )
-        # Link to nml file
-        execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
-                         ${CMAKE_CURRENT_SOURCE_DIR}/testinput/${test}.nml
-                         ${CMAKE_CURRENT_BINARY_DIR}/testinput/${test}.nml )
-
     endforeach()
     foreach( data ${saber_data} )
         # Link to input data file
@@ -219,10 +204,9 @@ if( oops_FOUND )
         foreach( test ${saber_test_full} )
             string( FIND ${test} "dirac" result )
             if( result MATCHES 0 )
-                # Special check for gsi and spectralb_from_L15 (TODO: should be removed at some point) 
-                string( FIND ${test} "gsi" gsi_result )
-                string( FIND ${test} "spectralb_from_L15" spectralb_from_L15_result )
-                if( ( gsi_result EQUAL -1 AND spectralb_from_L15_result EQUAL -1 ) OR ( ${mpi} LESS_EQUAL 1 AND ${omp} LESS_EQUAL 1 ) )
+                # Special check for GSI GFS (TODO: should be removed at some point) 
+                string( FIND ${test} "gsi_gfs" gsi_gfs_result )
+                if( ( gsi_gfs_result EQUAL -1 ) OR ( ${mpi} LESS_EQUAL 1 AND ${omp} LESS_EQUAL 1 ) )
                     ecbuild_add_test( TARGET saber_test_${test}_${mpi}-${omp}
                                       MPI ${mpi}
                                       OMP ${omp}
@@ -230,6 +214,19 @@ if( oops_FOUND )
                                       ARGS testinput/${test}.yaml
                                       DEPENDS saber_quench_dirac.x )
                 endif()
+            endif()
+        endforeach()
+
+        # GSI scaling optimization for HDIAG
+        foreach( test ${saber_test_full} )
+            string( FIND ${test} "optimization_bump_hdiag_gsi" result )
+            if( result MATCHES 0 )
+                ecbuild_add_test( TARGET saber_test_${test}_${mpi}-${omp}
+                                  MPI ${mpi}
+                                  OMP ${omp}
+                                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_training.x
+                                  ARGS testinput/${test}.yaml
+                                  DEPENDS saber_quench_error_covariance_training.x )
             endif()
         endforeach()
     endforeach()

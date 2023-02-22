@@ -30,8 +30,6 @@ namespace saber {
       void gsi_covariance_randomize_f90(const CovarianceKey &,
                                         const atlas::field::FieldSetImpl *);
       void gsi_covariance_multiply_f90(const CovarianceKey &, const atlas::field::FieldSetImpl *);
-      void gsi_covariance_multiply_ad_f90(const CovarianceKey &,
-                                          const atlas::field::FieldSetImpl *);
     }
   }  // namespace gsi
 }  // namespace saber

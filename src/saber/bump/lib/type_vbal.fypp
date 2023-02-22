@@ -17,6 +17,7 @@ use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,define_dim,
 use tools_repro, only: infeq,repro_th
 use type_ens, only: ens_type
 use type_geom, only: geom_type
+use type_gsi, only: gsi
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 @:use_probe()
@@ -50,6 +51,7 @@ contains
    procedure :: read_global => vbal_read_global
    procedure :: write_global => vbal_write_global
    procedure :: run_vbal => vbal_run_vbal
+   procedure :: from_gsi => vbal_from_gsi
    procedure :: run_vbal_tests => vbal_run_vbal_tests
    procedure :: apply => vbal_apply
    procedure :: apply_inv => vbal_apply_inv
@@ -981,22 +983,22 @@ do iv=1,nam%nv
 
       ! Define variables
       if (nam%vbal_block(iv,jv)) reg_c2_id(iv,jv) = define_var(mpl,grpid(iv,jv),'reg_c2','real',(/nc2_id,nl0_1_id,nl0_2_id/))
-      if (nam%new_vbal.and.(nam%vbal_block(iv,jv).or.(iv==jv))) cov_c2_id(iv,jv) = define_var(mpl,grpid(iv,jv),'cov_c2', &
- & 'real',(/nc2_id,nl0_1_id,nl0_2_id/))
-      if (nam%new_vbal.and.nam%vbal_block(iv,jv)) explained_var_c2_id(iv,jv) = define_var(mpl,grpid(iv,jv),'explained_var_c2', &
- & 'real',(/nc2_id,nl0_1_id/))
+      if (nam%new_vbal.and.(nam%vbal_block(iv,jv).or.(iv==jv)).and.(.not.nam%from_gsi)) &
+ & cov_c2_id(iv,jv) = define_var(mpl,grpid(iv,jv),'cov_c2','real',(/nc2_id,nl0_1_id,nl0_2_id/))
+      if (nam%new_vbal.and.nam%vbal_block(iv,jv).and.(.not.nam%from_gsi)) &
+ & explained_var_c2_id(iv,jv) = define_var(mpl,grpid(iv,jv),'explained_var_c2','real',(/nc2_id,nl0_1_id/))
    end do
 end do
 
 ! Allocation
-if (nam%new_vbal) then
+if (nam%new_vbal.and.(.not.nam%from_gsi)) then
    allocate(cov_c2a(samp%nc2a,geom%nl0,geom%nl0))
    allocate(explained_var_norm(geom%nl0,samp%nc2b))
    allocate(explained_var_c2a(samp%nc2a,geom%nl0))
 end if
 
 do iv=1,nam%nv
-   if (nam%new_vbal) then
+   if (nam%new_vbal.and.(.not.nam%from_gsi)) then
       ! Compute explained variance normalization
       explained_var_norm = 0.0
       do jv=1,iv
@@ -1019,7 +1021,7 @@ do iv=1,nam%nv
          call samp%io_c2%fld_write(mpl,grpid(iv,jv),reg_c2_id(iv,jv),reg_c2a)
       end if
 
-      if (nam%new_vbal.and.(nam%vbal_block(iv,jv).or.(iv==jv))) then
+      if (nam%new_vbal.and.(nam%vbal_block(iv,jv).or.(iv==jv)).and.(.not.nam%from_gsi)) then
          ! Horizontal index as first dimension
          do ic2a=1,samp%nc2a
             ic2b = samp%c2a_to_c2b(ic2a)
@@ -1030,7 +1032,7 @@ do iv=1,nam%nv
          call samp%io_c2%fld_write(mpl,grpid(iv,jv),cov_c2_id(iv,jv),cov_c2a)
       end if
 
-      if (nam%new_vbal.and.nam%vbal_block(iv,jv)) then
+      if (nam%new_vbal.and.nam%vbal_block(iv,jv).and.(.not.nam%from_gsi)) then
          ! Horizontal index as first dimension
          do ic2a=1,samp%nc2a
             ic2b = samp%c2a_to_c2b(ic2a)
@@ -1044,7 +1046,7 @@ do iv=1,nam%nv
 end do
 
 ! Release memory
-if (nam%new_vbal) then
+if (nam%new_vbal.and.(.not.nam%from_gsi)) then
    deallocate(cov_c2a)
    deallocate(explained_var_norm)
    deallocate(explained_var_c2a)
@@ -1119,145 +1121,153 @@ do il0i=1,geom%nl0i
    end do
 end do
 
-! Compute vertical balance operators
-write(mpl%info,'(a)') '-------------------------------------------------------------------'
-call mpl%flush
-write(mpl%info,'(a)') '--- Compute vertical balance operators'
-call mpl%flush
-
-! Allocation
-if (.not.(nam%new_vbal_cov.or.nam%load_vbal_cov)) then
-   call vbal%alloc(mpl,nam,geom,samp,ens%nsub)
-   call ensu%alloc(ens%ne,ens%nsub)
-end if
-
-if (nam%new_vbal_cov.or.nam%load_vbal_cov) then
-   ! Initialize diagonal block of A
-   do iv=1,nam%nv
-      vbal%blk(iv,iv)%a_c1a = 0.0
-      do ic1a=1,samp%nc1a
-         do il0=1,geom%nl0
-            vbal%blk(iv,iv)%a_c1a(il0,il0,ic1a) = 1.0
-         end do
-      end do
-   end do
+if (nam%from_gsi) then
+   write(mpl%info,'(a)') '-------------------------------------------------------------------'
+   call mpl%flush
+   write(mpl%info,'(a)') '--- Interpolate vertical balance from GSI data'
+   call mpl%flush
+   call vbal%from_gsi(mpl,nam,geom,samp)
 else
-   ! Copy ensemble
-   call ensu%copy(mpl,nam,geom,ens)
-end if
+   ! Compute vertical balance operators
+   write(mpl%info,'(a)') '-------------------------------------------------------------------'
+   call mpl%flush
+   write(mpl%info,'(a)') '--- Compute vertical balance operators'
+   call mpl%flush
 
-do iv=1,nam%nv
-   do jv=1,iv
-      if (nam%vbal_block(iv,jv)) then
-         ! Compute cross-covariance
-         write(mpl%info,'(a7,a)') '','Compute cross-covariance between '//trim(nam%variables(iv))//' and unbalanced ' &
- & //trim(nam%variables(jv))
-         call mpl%flush
-         if (nam%new_vbal_cov.or.nam%load_vbal_cov) then
-            do ic1a=1,samp%nc1a
-               vbal%blk(iv,jv)%cov_c1a(ic1a,:,:) = 0.0
-               do kv=1,jv
-                  vbal%blk(iv,jv)%cov_c1a(ic1a,:,:) = vbal%blk(iv,jv)%cov_c1a(ic1a,:,:) &
- & +matmul(vbal%blk(iv,kv)%full_cov_c1a(ic1a,:,:),transpose(vbal%blk(jv,kv)%a_c1a(:,:,ic1a)))
-               end do
-            end do
-         else
-            call vbal%blk(iv,jv)%compute_covariance(mpl,nam,geom,samp,ens,ensu)
-         end if
-
-         ! Spatial average
-         write(mpl%info,'(a7,a)') '','Spatial average for cross-covariance:'
-         call mpl%flush(newl=.false.)
-         call vbal%blk(iv,jv)%compute_spatial_average(mpl,nam,geom,samp)
-
-         ! Compute regression
-         write(mpl%info,'(a7,a)') '','Compute regression:'
-         call mpl%flush(newl=.false.)
-         call vbal%blk(iv,jv)%compute_regression(mpl,nam,geom,samp,vbal%blk(jv,jv)%cov_c2b,vbal%blk(iv,jv)%cov_c2b)
-      end if
-   end do
+   ! Allocation
+   if (.not.(nam%new_vbal_cov.or.nam%load_vbal_cov)) then
+      call vbal%alloc(mpl,nam,geom,samp,ens%nsub)
+      call ensu%alloc(ens%ne,ens%nsub)
+   end if
 
    if (nam%new_vbal_cov.or.nam%load_vbal_cov) then
-      do jv=1,iv-1
-         ! Compute A matrix
-         write(mpl%info,'(a7,a)') '','Compute A matrix between '//trim(nam%variables(iv))//' and '//trim(nam%variables(jv))
-         call mpl%flush
-         vbal%blk(iv,jv)%a_c1a = 0.0
+      ! Initialize diagonal block of A
+      do iv=1,nam%nv
+         vbal%blk(iv,iv)%a_c1a = 0.0
          do ic1a=1,samp%nc1a
-            do kv=jv,iv-1
-               if (nam%vbal_block(iv,kv)) then
-                  vbal%blk(iv,jv)%a_c1a(:,:,ic1a) = vbal%blk(iv,jv)%a_c1a(:,:,ic1a) &
- & -matmul(vbal%blk(iv,kv)%reg_c1a(:,:,ic1a),vbal%blk(kv,jv)%a_c1a(:,:,ic1a))
-               end if
-            end do
-         end do
-      end do
-
-      ! Compute auto-covariance
-      write(mpl%info,'(a7,a)') '','Compute auto-covariance of unbalanced '//trim(nam%variables(iv))
-      call mpl%flush
-      do ic1a=1,samp%nc1a
-         vbal%blk(iv,iv)%cov_c1a(ic1a,:,:) = 0.0
-         do kv=1,iv
-            do lv=1,iv
-               if (kv>=lv) then
-                  vbal%blk(iv,iv)%cov_c1a(ic1a,:,:) = vbal%blk(iv,iv)%cov_c1a(ic1a,:,:) &
- & +matmul(vbal%blk(iv,kv)%a_c1a(:,:,ic1a),matmul(vbal%blk(kv,lv)%full_cov_c1a(ic1a,:,:), &
- & transpose(vbal%blk(iv,lv)%a_c1a(:,:,ic1a))))
-               else
-                  vbal%blk(iv,iv)%cov_c1a(ic1a,:,:) = vbal%blk(iv,iv)%cov_c1a(ic1a,:,:) &
- & +matmul(vbal%blk(iv,kv)%a_c1a(:,:,ic1a),matmul(transpose(vbal%blk(lv,kv)%full_cov_c1a(ic1a,:,:)), &
- & transpose(vbal%blk(iv,lv)%a_c1a(:,:,ic1a))))
-               end if
+            do il0=1,geom%nl0
+               vbal%blk(iv,iv)%a_c1a(il0,il0,ic1a) = 1.0
             end do
          end do
       end do
    else
-      ! Unbalance ensemble
-      if (any(nam%vbal_block(iv,:))) then
-         write(mpl%info,'(a7,a)') '','Unbalance ensemble members: '
-         call mpl%flush(newl=.false.)
-         do ie=1,ensu%ne
-            write(mpl%info,'(i6)') ie
-            call mpl%flush(newl=.false.)
-
-            ! Get member on subset Sc0
-            call ensu%get_c0(mpl,iv,geom,'member',ie,fld_c0a_1)
-
-            do jv=1,iv
-               if (nam%vbal_block(iv,jv)) then
-                  ! Get member on subset Sc0
-                  call ensu%get_c0(mpl,jv,geom,'member',ie,fld_c0a_2)
-
-                  ! Apply balance operator block
-                  call vbal%blk(iv,jv)%apply(geom,vbal%h_n_s_max,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld_c0a_2)
-
-                  ! Subtract balanced part
-                  fld_c0a_1 = fld_c0a_1-fld_c0a_2
-               end if
-            end do
-
-            ! Set member from subset Sc0
-            call ensu%set_c0(mpl,iv,geom,'member',ie,fld_c0a_1)
-         end do
-         write(mpl%info,'(a)') ''
-         call mpl%flush
-
-         ! Recompute ensemble mean
-         call ensu%compute_mean(mpl,nam,geom)
-      end if
-
-      ! Compute auto-covariance
-      write(mpl%info,'(a7,a)') '','Compute auto-covariance of unbalanced '//trim(nam%variables(iv))
-      call mpl%flush
-      call vbal%blk(iv,iv)%compute_covariance(mpl,nam,geom,samp,ensu)
+      ! Copy ensemble
+      call ensu%copy(mpl,nam,geom,ens)
    end if
 
-   ! Spatial average
-   write(mpl%info,'(a7,a)') '','Spatial average for auto-covariance:'
-   call mpl%flush(newl=.false.)
-   call vbal%blk(iv,iv)%compute_spatial_average(mpl,nam,geom,samp)
-end do
+   do iv=1,nam%nv
+      do jv=1,iv
+         if (nam%vbal_block(iv,jv)) then
+            ! Compute cross-covariance
+            write(mpl%info,'(a7,a)') '','Compute cross-covariance between '//trim(nam%variables(iv))//' and unbalanced ' &
+ & //trim(nam%variables(jv))
+            call mpl%flush
+            if (nam%new_vbal_cov.or.nam%load_vbal_cov) then
+               do ic1a=1,samp%nc1a
+                  vbal%blk(iv,jv)%cov_c1a(ic1a,:,:) = 0.0
+                  do kv=1,jv
+                     vbal%blk(iv,jv)%cov_c1a(ic1a,:,:) = vbal%blk(iv,jv)%cov_c1a(ic1a,:,:) &
+ & +matmul(vbal%blk(iv,kv)%full_cov_c1a(ic1a,:,:),transpose(vbal%blk(jv,kv)%a_c1a(:,:,ic1a)))
+                  end do
+               end do
+            else
+               call vbal%blk(iv,jv)%compute_covariance(mpl,nam,geom,samp,ens,ensu)
+            end if
+
+            ! Spatial average
+            write(mpl%info,'(a7,a)') '','Spatial average for cross-covariance:'
+            call mpl%flush(newl=.false.)
+            call vbal%blk(iv,jv)%compute_spatial_average(mpl,nam,geom,samp)
+
+            ! Compute regression
+            write(mpl%info,'(a7,a)') '','Compute regression:'
+            call mpl%flush(newl=.false.)
+            call vbal%blk(iv,jv)%compute_regression(mpl,nam,geom,samp,vbal%blk(jv,jv)%cov_c2b,vbal%blk(iv,jv)%cov_c2b)
+         end if
+      end do
+
+      if (nam%new_vbal_cov.or.nam%load_vbal_cov) then
+         do jv=1,iv-1
+            ! Compute A matrix
+            write(mpl%info,'(a7,a)') '','Compute A matrix between '//trim(nam%variables(iv))//' and '//trim(nam%variables(jv))
+            call mpl%flush
+            vbal%blk(iv,jv)%a_c1a = 0.0
+            do ic1a=1,samp%nc1a
+               do kv=jv,iv-1
+                  if (nam%vbal_block(iv,kv)) then
+                     vbal%blk(iv,jv)%a_c1a(:,:,ic1a) = vbal%blk(iv,jv)%a_c1a(:,:,ic1a) &
+ & -matmul(vbal%blk(iv,kv)%reg_c1a(:,:,ic1a),vbal%blk(kv,jv)%a_c1a(:,:,ic1a))
+                  end if
+               end do
+            end do
+         end do
+
+         ! Compute auto-covariance
+         write(mpl%info,'(a7,a)') '','Compute auto-covariance of unbalanced '//trim(nam%variables(iv))
+         call mpl%flush
+         do ic1a=1,samp%nc1a
+            vbal%blk(iv,iv)%cov_c1a(ic1a,:,:) = 0.0
+            do kv=1,iv
+               do lv=1,iv
+                  if (kv>=lv) then
+                     vbal%blk(iv,iv)%cov_c1a(ic1a,:,:) = vbal%blk(iv,iv)%cov_c1a(ic1a,:,:) &
+ & +matmul(vbal%blk(iv,kv)%a_c1a(:,:,ic1a),matmul(vbal%blk(kv,lv)%full_cov_c1a(ic1a,:,:), &
+ & transpose(vbal%blk(iv,lv)%a_c1a(:,:,ic1a))))
+                  else
+                     vbal%blk(iv,iv)%cov_c1a(ic1a,:,:) = vbal%blk(iv,iv)%cov_c1a(ic1a,:,:) &
+ & +matmul(vbal%blk(iv,kv)%a_c1a(:,:,ic1a),matmul(transpose(vbal%blk(lv,kv)%full_cov_c1a(ic1a,:,:)), &
+ & transpose(vbal%blk(iv,lv)%a_c1a(:,:,ic1a))))
+                  end if
+               end do
+            end do
+         end do
+      else
+         ! Unbalance ensemble
+         if (any(nam%vbal_block(iv,:))) then
+            write(mpl%info,'(a7,a)') '','Unbalance ensemble members: '
+            call mpl%flush(newl=.false.)
+            do ie=1,ensu%ne
+               write(mpl%info,'(i6)') ie
+               call mpl%flush(newl=.false.)
+
+               ! Get member on subset Sc0
+               call ensu%get_c0(mpl,iv,geom,'member',ie,fld_c0a_1)
+
+               do jv=1,iv
+                  if (nam%vbal_block(iv,jv)) then
+                     ! Get member on subset Sc0
+                     call ensu%get_c0(mpl,jv,geom,'member',ie,fld_c0a_2)
+
+                     ! Apply balance operator block
+                     call vbal%blk(iv,jv)%apply(geom,vbal%h_n_s_max,vbal%h_n_s,vbal%h_c2b,vbal%h_S,fld_c0a_2)
+
+                     ! Subtract balanced part
+                     fld_c0a_1 = fld_c0a_1-fld_c0a_2
+                  end if
+               end do
+
+               ! Set member from subset Sc0
+               call ensu%set_c0(mpl,iv,geom,'member',ie,fld_c0a_1)
+            end do
+            write(mpl%info,'(a)') ''
+            call mpl%flush
+
+            ! Recompute ensemble mean
+            call ensu%compute_mean(mpl,nam,geom)
+         end if
+
+         ! Compute auto-covariance
+         write(mpl%info,'(a7,a)') '','Compute auto-covariance of unbalanced '//trim(nam%variables(iv))
+         call mpl%flush
+         call vbal%blk(iv,iv)%compute_covariance(mpl,nam,geom,samp,ensu)
+      end if
+
+      ! Spatial average
+      write(mpl%info,'(a7,a)') '','Spatial average for auto-covariance:'
+      call mpl%flush(newl=.false.)
+      call vbal%blk(iv,iv)%compute_spatial_average(mpl,nam,geom,samp)
+   end do
+end if
 
 ! Write balance operator
 if (nam%write_vbal) then
@@ -1272,6 +1282,105 @@ call ensu%dealloc
 @:probe_out()
 
 end subroutine vbal_run_vbal
+
+!----------------------------------------------------------------------
+! Subroutine: vbal_from_gsi
+!> Interpolate vertical balance from GSI data
+!----------------------------------------------------------------------
+subroutine vbal_from_gsi(vbal,mpl,nam,geom,samp)
+
+implicit none
+
+! Passed variables
+class(vbal_type),intent(inout) :: vbal !< Vertical balance
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(inout) :: nam    !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
+type(samp_type),intent(in) :: samp     !< Sampling
+
+! Local variables
+integer :: ic2b,ic2u,il0,jl0,iv,jv,ilatm,ilatp
+real(kind_real) :: rlatm,rlatp
+
+! Set name
+@:set_name(vbal_from_gsi)
+
+! Probe in
+@:probe_in()
+
+! Allocation
+call vbal%alloc(mpl,nam,geom,samp,0)
+
+! Loop over blocks
+do iv=1,nam%nv
+   do jv=1,iv
+      if (nam%vbal_block(iv,jv)) then
+         ! Interpolate
+         if ((nam%variables(iv)=='velocity_potential').and.(nam%variables(jv)=='stream_function')) then
+            ! Stream function / velocity potential regression
+            do ic2b=1,samp%nc2b
+               vbal%blk(iv,jv)%reg_c2b(:,:,ic2b) = zero
+               ic2u = samp%c2b_to_c2u(ic2b)
+               call gsi%interp_lat(mpl,samp%lat_c2u(ic2u),ilatm,ilatp,rlatm,rlatp)
+               do il0=1,geom%nl0
+                  vbal%blk(iv,jv)%reg_c2b(il0,il0,ic2b) = &
+ &  rlatm*gsi%rlevm(il0)*gsi%vpcon(ilatm,gsi%l0_to_levm(il0)) &
+ & +rlatm*gsi%rlevp(il0)*gsi%vpcon(ilatm,gsi%l0_to_levp(il0)) &
+ & +rlatp*gsi%rlevm(il0)*gsi%vpcon(ilatp,gsi%l0_to_levm(il0)) &
+ & +rlatp*gsi%rlevp(il0)*gsi%vpcon(ilatp,gsi%l0_to_levp(il0))
+               end do
+            end do
+         else if ((nam%variables(iv)=='air_temperature').and.(nam%variables(jv)=='stream_function')) then
+            ! Stream function / air temperature regression
+            do ic2b=1,samp%nc2b
+               ic2u = samp%c2b_to_c2u(ic2b)
+               call gsi%interp_lat(mpl,samp%lat_c2u(ic2u),ilatm,ilatp,rlatm,rlatp)
+               do jl0=1,geom%nl0
+                  do il0=1,geom%nl0
+                     vbal%blk(iv,jv)%reg_c2b(il0,jl0,ic2b) = &
+ &  rlatm*gsi%rlevm(jl0)*gsi%rlevm(il0)*gsi%tcon(ilatm,gsi%l0_to_levm(il0),gsi%l0_to_levm(jl0)) &
+ & +rlatm*gsi%rlevm(jl0)*gsi%rlevp(il0)*gsi%tcon(ilatm,gsi%l0_to_levm(il0),gsi%l0_to_levp(jl0)) &
+ & +rlatm*gsi%rlevp(jl0)*gsi%rlevm(il0)*gsi%tcon(ilatm,gsi%l0_to_levp(il0),gsi%l0_to_levm(jl0)) &
+ & +rlatm*gsi%rlevp(jl0)*gsi%rlevp(il0)*gsi%tcon(ilatm,gsi%l0_to_levp(il0),gsi%l0_to_levp(jl0)) &
+ & +rlatp*gsi%rlevm(jl0)*gsi%rlevm(il0)*gsi%tcon(ilatp,gsi%l0_to_levm(il0),gsi%l0_to_levm(jl0)) &
+ & +rlatp*gsi%rlevm(jl0)*gsi%rlevp(il0)*gsi%tcon(ilatp,gsi%l0_to_levm(il0),gsi%l0_to_levp(jl0)) &
+ & +rlatp*gsi%rlevp(jl0)*gsi%rlevm(il0)*gsi%tcon(ilatp,gsi%l0_to_levp(il0),gsi%l0_to_levm(jl0)) &
+ & +rlatp*gsi%rlevp(jl0)*gsi%rlevp(il0)*gsi%tcon(ilatp,gsi%l0_to_levp(il0),gsi%l0_to_levp(jl0))
+                  end do
+               end do
+            end do
+         else if ((nam%variables(iv)=='surface_pressure').and.(nam%variables(jv)=='stream_function')) then
+            ! Stream function / surface pressure regression
+            do ic2b=1,samp%nc2b
+               vbal%blk(iv,jv)%reg_c2b(:,:,ic2b) = zero
+               ic2u = samp%c2b_to_c2u(ic2b)
+               call gsi%interp_lat(mpl,samp%lat_c2u(ic2u),ilatm,ilatp,rlatm,rlatp)
+               do il0=1,geom%nl0
+                  if (il0==gsi%ilev2d) then
+                     ! Copy fist level as is
+                     vbal%blk(iv,jv)%reg_c2b(gsi%ilev2d,il0,ic2b) = rlatm*gsi%pscon(ilatm,1)+rlatp*gsi%pscon(ilatp,1)
+                  else
+                     ! Other levels
+                     vbal%blk(iv,jv)%reg_c2b(gsi%ilev2d,il0,ic2b) = &
+ &  rlatm*gsi%rlevm(il0)*gsi%pscon(ilatm,gsi%l0_to_levm(il0)) &
+ & +rlatm*gsi%rlevp(il0)*gsi%pscon(ilatm,gsi%l0_to_levp(il0)) &
+ & +rlatp*gsi%rlevm(il0)*gsi%pscon(ilatp,gsi%l0_to_levm(il0)) &
+ & +rlatp*gsi%rlevp(il0)*gsi%pscon(ilatp,gsi%l0_to_levp(il0))
+                  end if
+               end do
+            end do
+         else
+            ! Empty block
+            vbal%blk(iv,jv)%reg_c2b = zero
+         end if
+      end if
+   end do
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine vbal_from_gsi
 
 !----------------------------------------------------------------------
 ! Subroutine: vbal_run_vbal_tests
@@ -1711,7 +1820,7 @@ do idir=1,geom%ndir
 
    ! Copy points
    do ic0a=1,geom%nc0a
-      if (idir==geom%inbdir(ic0a)) then
+      if (any(geom%inbdir(:,ic0a)==idir)) then
          vbal%dirac(ic0a,:,:) = fld_c0a(ic0a,:,:)
       end if
    end do

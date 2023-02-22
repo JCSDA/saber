@@ -42,6 +42,7 @@ dirac:
   - virtual_temperature
   - specific_humidity
 output dirac:
-  filepath: testdata/dirac_vader/dirac_%id%
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_vader/%MPI%_dirac_%id%
 test:
   reference filename: testref/dirac_vader.ref

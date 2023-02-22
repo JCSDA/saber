@@ -61,6 +61,6 @@ dirac:
   - moisture_control_variable
 output dirac:
   mpi pattern: '%MPI%'
-  filepath: testdata/dirac_spectralb/dirac_%id%_%MPI%
+  filepath: testdata/dirac_spectralb/%MPI%_dirac_%id%
 test:
   reference filename: testref/dirac_spectralb.ref

@@ -412,26 +412,31 @@ end function netcdf_create_file
 ! Function: netcdf_open_file
 !> Open file
 !----------------------------------------------------------------------
-function netcdf_open_file(mpl,filename,iproc) result(ncid)
+function netcdf_open_file(mpl,filename,iproc,ext) result(ncid)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl     !< MPI data
-character(len=*),intent(in) :: filename !< File name
-integer,intent(in),optional :: iproc    !< Processor index
+type(mpl_type),intent(inout) :: mpl         !< MPI data
+character(len=*),intent(in) :: filename     !< File name
+integer,intent(in),optional :: iproc        !< Processor index
+character(len=*),intent(in),optional :: ext !< Extension (default is .nc)
 
 ! Returned variable
 integer :: ncid
 
 ! Local variables
-character(len=1024) :: fullname
+character(len=1024) :: lext,fullname
 
 ! Set name
 @:set_name(netcdf_open_file)
 
 ! Probe in
 @:probe_in()
+
+! Local extension
+lext = '.nc'
+if (present(ext)) lext = '.'//trim(ext)
 
 ! Initialization
 ncid = mpl%msv%vali
@@ -441,9 +446,9 @@ if (present(iproc)) then
 
    ! Full file name
    if (iproc==0) then
-      fullname = trim(mpl%datadir)//'/'//trim(filename)//'.nc'
+      fullname = trim(mpl%datadir)//'/'//trim(filename)//trim(lext)
    else
-      write(fullname,'(a,i6.6,a,i6.6,a)') trim(mpl%datadir)//'/'//trim(filename)//'_local_',mpl%nproc,'-',iproc,'.nc'
+      write(fullname,'(a,i6.6,a,i6.6,a)') trim(mpl%datadir)//'/'//trim(filename)//'_local_',mpl%nproc,'-',iproc,trim(lext)
    end if
 
    ! Open file
@@ -452,7 +457,7 @@ else
    ! Global I/O
    if (mpl%pioproc(mpl%myproc)) then
       ! Full file name
-      fullname = trim(mpl%datadir)//'/'//trim(filename)//'.nc'
+      fullname = trim(mpl%datadir)//'/'//trim(filename)//trim(lext)
 
       ! Open file
       if (mpl%parallel_netcdf) then

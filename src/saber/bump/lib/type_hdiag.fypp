@@ -8,32 +8,37 @@
 !----------------------------------------------------------------------
 module type_hdiag
 
-use tools_const, only: zero,rad2deg
+use fckit_mpi_module, only: fckit_mpi_sum
+use tools_const, only: zero,half,one,rad2deg,req,ps
 use tools_kinds, only: kind_real
 use tools_netcdf, only: create_file,define_grp,define_dim,define_var,put_var,close_file
 use type_avg, only: avg_type
 use type_diag, only: diag_type
 use type_ens, only: ens_type
 use type_geom, only: geom_type
+use type_gsi, only: gsi
 use type_mom, only: mom_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 @:use_probe()
 use type_samp, only: samp_type
+use type_tree, only: tree_type
 
 implicit none
 
 ! Hybrid diagnostics derived type
 type hdiag_type
-   type(avg_type),allocatable :: avg(:)  !< Averaged statistics
-   type(diag_type),allocatable :: cov(:) !< Covariance
-   type(diag_type),allocatable :: cor(:) !< Correlation
-   type(diag_type),allocatable :: loc(:) !< Localization
+   type(avg_type),allocatable :: avg(:)          !< Averaged statistics
+   type(diag_type),allocatable :: cov(:)         !< Covariance
+   type(diag_type),allocatable :: cor(:)         !< Correlation
+   type(diag_type),allocatable :: loc(:)         !< Localization
+   real(kind_real),allocatable :: gsi_ref(:,:,:) !< GSI reference field
 contains
    procedure :: partial_dealloc => hdiag_partial_dealloc
    procedure :: dealloc => hdiag_dealloc
    procedure :: write => hdiag_write
    procedure :: run_hdiag => hdiag_run_hdiag
+   procedure :: from_gsi => hdiag_from_gsi
 end type hdiag_type
 
 private
@@ -75,6 +80,7 @@ if (allocated(hdiag%loc)) then
    call hdiag%loc(1)%partial_dealloc
    call hdiag%loc(2)%partial_dealloc
 end if
+if (allocated(hdiag%gsi_ref)) deallocate(hdiag%gsi_ref)
 
 ! Probe out
 @:probe_out()
@@ -99,26 +105,11 @@ class(hdiag_type),intent(inout) :: hdiag !< Hybrid diagnostics
 @:probe_in()
 
 ! Release memory
-if (allocated(hdiag%avg)) then
-   call hdiag%avg(1)%dealloc
-   call hdiag%avg(2)%dealloc
-   deallocate(hdiag%avg)
-end if
-if (allocated(hdiag%cov)) then
-   call hdiag%cov(1)%dealloc
-   call hdiag%cov(2)%dealloc
-   deallocate(hdiag%cov)
-end if
-if (allocated(hdiag%cor)) then
-   call hdiag%cor(1)%dealloc
-   call hdiag%cor(2)%dealloc
-   deallocate(hdiag%cor)
-end if
-if (allocated(hdiag%loc)) then
-   call hdiag%loc(1)%dealloc
-   call hdiag%loc(2)%dealloc
-   deallocate(hdiag%loc)
-end if
+call hdiag%partial_dealloc
+if (allocated(hdiag%avg)) deallocate(hdiag%avg)
+if (allocated(hdiag%cov)) deallocate(hdiag%cov)
+if (allocated(hdiag%cor)) deallocate(hdiag%cor)
+if (allocated(hdiag%loc)) deallocate(hdiag%loc)
 
 ! Probe out
 @:probe_out()
@@ -360,5 +351,198 @@ end if
 @:probe_out()
 
 end subroutine hdiag_run_hdiag
+
+!----------------------------------------------------------------------
+! Subroutine: hdiag_from_gsi
+!> Interpolate length-scales from GSI data
+!----------------------------------------------------------------------
+subroutine hdiag_from_gsi(hdiag,mpl,nam,geom)
+
+implicit none
+
+! Passed variables
+class(hdiag_type),intent(inout) :: hdiag !< Hybrid diagnostics
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+type(nam_type),intent(inout) :: nam      !< Namelist
+type(geom_type),intent(in) :: geom       !< Geometry
+
+! Local variables
+integer :: il0,ic0a,iv,ig,ilatm,ilatp,icmp
+integer :: ifac,ifac_hor_best,ifac_ver_best,idir
+real(kind_real) :: rlatm,rlatp
+real(kind_real),allocatable :: fac(:),mse_hor(:),mse_ver(:)
+type(diag_type) :: cor_tmp
+
+! Set name
+@:set_name(hdiag_from_gsi)
+
+! Probe in
+@:probe_in()
+
+! Allocation
+allocate(hdiag%cor(2))
+allocate(hdiag%cor(1)%blk(0:0,nam%ng))
+if (nam%check_dirac) allocate(hdiag%cor(1)%dirac(geom%nc0a,geom%nl0,nam%nv))
+
+do ig=1,nam%ng
+   ! Variable index
+   if (count(nam%group_index==ig)/=1) call mpl%abort('${subr}$','only one variable per group expected')
+   do iv=1,nam%nv
+      if (nam%group_index(iv)==ig) exit
+   end do
+
+   ! Initialization
+   hdiag%cor(1)%blk(0,ig)%ncmp = size(gsi%a)
+   write(mpl%info,'(a7,a,i1)') '','Number of component for GSI: ',hdiag%cor(1)%blk(0,ig)%ncmp
+   call mpl%flush
+
+   ! Allocation
+   allocate(hdiag%cor(1)%blk(0,ig)%a_c0a(geom%nc0a,geom%nl0,hdiag%cor(1)%blk(0,ig)%ncmp))
+   allocate(hdiag%cor(1)%blk(0,ig)%rh_c0a(geom%nc0a,geom%nl0,hdiag%cor(1)%blk(0,ig)%ncmp))
+   allocate(hdiag%cor(1)%blk(0,ig)%rv_c0a(geom%nc0a,geom%nl0,hdiag%cor(1)%blk(0,ig)%ncmp))
+
+   do icmp=1,hdiag%cor(1)%blk(0,ig)%ncmp
+      ! Interpolate
+      if (gsi%var2d(iv)) then
+         ! 2D variable
+         hdiag%cor(1)%blk(0,ig)%rh_c0a = mpl%msv%valr
+         hdiag%cor(1)%blk(0,ig)%rv_c0a = mpl%msv%valr
+         do ic0a=1,geom%nc0a
+            call gsi%interp_lat(mpl,geom%lat_c0a(ic0a),ilatm,ilatp,rlatm,rlatp)
+            hdiag%cor(1)%blk(0,ig)%rh_c0a(ic0a,gsi%ilev2d,:) = rlatm*gsi%rh(ilatm,1,icmp,iv)+rlatp*gsi%rh(ilatp,1,icmp,iv)
+            hdiag%cor(1)%blk(0,ig)%rh_c0a(ic0a,gsi%ilev2d,:) = zero
+         end do
+      else
+         ! 3D variable
+         do ic0a=1,geom%nc0a
+            call gsi%interp_lat(mpl,geom%lat_c0a(ic0a),ilatm,ilatp,rlatm,rlatp)
+            do il0=1,geom%nl0
+               hdiag%cor(1)%blk(0,ig)%rh_c0a(ic0a,il0,icmp) = &
+ &  rlatm*gsi%rlevm(il0)*gsi%rh(ilatm,gsi%l0_to_levm(il0),icmp,iv) &
+ & +rlatm*gsi%rlevp(il0)*gsi%rh(ilatm,gsi%l0_to_levp(il0),icmp,iv) &
+ & +rlatp*gsi%rlevm(il0)*gsi%rh(ilatp,gsi%l0_to_levm(il0),icmp,iv) &
+ & +rlatp*gsi%rlevp(il0)*gsi%rh(ilatp,gsi%l0_to_levp(il0),icmp,iv)
+               hdiag%cor(1)%blk(0,ig)%rv_c0a(ic0a,il0,icmp) = &
+ &  rlatm*gsi%rlevm(il0)/gsi%rv(ilatm,gsi%l0_to_levm(il0),icmp,iv) &
+ & +rlatm*gsi%rlevp(il0)/gsi%rv(ilatm,gsi%l0_to_levp(il0),icmp,iv) &
+ & +rlatp*gsi%rlevm(il0)/gsi%rv(ilatp,gsi%l0_to_levm(il0),icmp,iv) &
+ & +rlatp*gsi%rlevp(il0)/gsi%rv(ilatp,gsi%l0_to_levp(il0),icmp,iv)
+            end do
+         end do
+      end if
+
+      ! Amplitude and scaling
+      if (gsi%var2d(iv)) then
+         hdiag%cor(1)%blk(0,ig)%a_c0a(:,:,icmp) = mpl%msv%valr
+         hdiag%cor(1)%blk(0,ig)%a_c0a(:,gsi%ilev2d,icmp) = gsi%a(icmp)
+         hdiag%cor(1)%blk(0,ig)%rh_c0a(:,gsi%ilev2d,icmp) = hdiag%cor(1)%blk(0,ig)%rh_c0a(:,gsi%ilev2d,icmp)/req
+      else
+         hdiag%cor(1)%blk(0,ig)%a_c0a(:,:,icmp) = gsi%a(icmp)
+         hdiag%cor(1)%blk(0,ig)%rh_c0a(:,:,icmp) = hdiag%cor(1)%blk(0,ig)%rh_c0a(:,:,icmp)/req
+      end if
+   end do
+end do
+
+! Dirac test
+call hdiag%cor(1)%test_dirac(mpl,nam,geom)
+
+if (nam%check_dirac.and.allocated(hdiag%gsi_ref)) then
+   ! Allocation
+   allocate(cor_tmp%blk(0:0,nam%ng))
+   allocate(cor_tmp%dirac(geom%nc0a,geom%nl0,nam%nv))
+   allocate(fac(-nam%optimality_nfac:nam%optimality_nfac))
+   allocate(mse_hor(-nam%optimality_nfac:nam%optimality_nfac))
+   allocate(mse_ver(-nam%optimality_nfac:nam%optimality_nfac))
+
+   do ig=1,nam%ng
+      ! Initialization
+      cor_tmp%blk(0,ig)%ncmp = hdiag%cor(1)%blk(0,ig)%ncmp
+
+      ! Allocation
+      allocate(cor_tmp%blk(0,ig)%a_c0a(geom%nc0a,geom%nl0,cor_tmp%blk(0,ig)%ncmp))
+      allocate(cor_tmp%blk(0,ig)%rh_c0a(geom%nc0a,geom%nl0,cor_tmp%blk(0,ig)%ncmp))
+      allocate(cor_tmp%blk(0,ig)%rv_c0a(geom%nc0a,geom%nl0,cor_tmp%blk(0,ig)%ncmp))
+
+      ! Copy amplitudes
+      cor_tmp%blk(0,ig)%a_c0a = hdiag%cor(1)%blk(0,ig)%a_c0a
+   end do
+
+   ! Initialization
+   mse_hor = zero
+   mse_ver = zero
+
+   do ifac=-nam%optimality_nfac,nam%optimality_nfac
+      ! Multiplication factor
+      fac(ifac) = one+nam%optimality_delta*real(ifac,kind_real)
+
+      do ig=1,nam%ng
+         ! Variable index
+         do iv=1,nam%nv
+            if (nam%group_index(iv)==ig) exit
+         end do
+
+         do icmp=1,cor_tmp%blk(0,ig)%ncmp
+            ! Copy and multiply length-scales
+            if (gsi%var2d(iv)) then
+               cor_tmp%blk(0,ig)%rh_c0a(:,gsi%ilev2d,icmp) = hdiag%cor(1)%blk(0,ig)%rh_c0a(:,gsi%ilev2d,icmp)*fac(ifac)
+               cor_tmp%blk(0,ig)%rv_c0a(:,gsi%ilev2d,icmp) = hdiag%cor(1)%blk(0,ig)%rv_c0a(:,gsi%ilev2d,icmp)*fac(ifac)
+            else
+               cor_tmp%blk(0,ig)%rh_c0a(:,:,icmp) = hdiag%cor(1)%blk(0,ig)%rh_c0a(:,:,icmp)*fac(ifac)
+               cor_tmp%blk(0,ig)%rv_c0a(:,:,icmp) = hdiag%cor(1)%blk(0,ig)%rv_c0a(:,:,icmp)*fac(ifac)
+            end if
+         end do
+      end do
+
+      ! Dirac test
+      call cor_tmp%test_dirac(mpl,nam,geom)
+
+      ! Compute local MSE
+      do idir=1,geom%ndir
+         ! Horizontal mse
+         mse_hor(ifac) = mse_hor(ifac)+ &
+ & sum((cor_tmp%dirac(:,geom%il0dir(idir),geom%ivdir(idir))-hdiag%gsi_ref(:,geom%il0dir(idir),geom%ivdir(idir)))**2)
+
+         ! Vertical mse
+         if (geom%iprocdir(idir)==mpl%myproc) mse_ver(ifac) = mse_ver(ifac)+ &
+ & sum((cor_tmp%dirac(geom%ic0adir(idir),:,geom%ivdir(idir))-hdiag%gsi_ref(geom%ic0adir(idir),:,geom%ivdir(idir)))**2)
+      end do
+   end do
+
+   ! Global MSE
+   call mpl%f_comm%allreduce(mse_hor,fckit_mpi_sum())
+   call mpl%f_comm%allreduce(mse_ver,fckit_mpi_sum())
+
+   ! Print scores summary
+   write(mpl%info,'(a7,a)') '','GSI scaling optimality test:'
+   call mpl%flush
+   ifac_hor_best = minloc(mse_hor,dim=1)-(nam%optimality_nfac+1)
+   ifac_ver_best = minloc(mse_ver,dim=1)-(nam%optimality_nfac+1)
+   do ifac=-nam%optimality_nfac,nam%optimality_nfac
+      write(mpl%test,'(a7,a,f4.2,a,e15.8,a,e15.8)') '','Factor ',fac(ifac),', horizontal MSE: ',mse_hor(ifac), &
+ & ' / vertical MSE: ',mse_ver(ifac)
+      call mpl%flush(.false.)
+      if (ifac==ifac_hor_best) then
+         write(mpl%test,'(a)') ' <~ best horizontal factor '
+         call mpl%flush(.false.) 
+      end if
+      if (ifac==ifac_ver_best) then
+         write(mpl%test,'(a)') ' <~ best vertical factor '
+         call mpl%flush(.false.) 
+      end if
+      write(mpl%test,'(a)') ''
+      call mpl%flush()
+   end do
+
+   ! Release memory
+   call cor_tmp%dealloc
+   deallocate(fac)
+   deallocate(mse_hor)
+   deallocate(mse_ver)
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine hdiag_from_gsi
 
 end module type_hdiag

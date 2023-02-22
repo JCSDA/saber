@@ -1,0 +1,69 @@
+# Check GSI scaling for BUMP, with homogeneous length-scales and no rescaling in the namelist
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    nx : 72
+    ny : 46
+  groups:
+  - variables:
+    - stream_function
+    levels: 72
+    vunit: [-0.4054651478445934, -0.9688832151321504, -1.3898506889083206, -1.7368193369006553, -2.0499163223664194, -2.3468317738269797, -2.6361890081136825, -2.920049313444167, -3.1984180817644146, -3.471293998656264, -3.73867760365508, -4.000569533058123, -4.256968638719227, -4.507873868017513, -4.753568683874985, -4.994268886318526, -5.229974404457203, -5.460687171987537, -5.686405915328049, -5.9071316154983835, -6.12286248656377, -6.333599493209634, -6.539343384219414, -6.740092712403556, -6.9358490907964345, -7.1277057954772065, -7.316564855255197, -7.502426712096, -7.685289811026624, -7.865153657933345, -8.04202119986901, -8.215891055261773, -8.387304535149323, -8.556719840502788, -8.724136832934816, -8.889554516830891, -9.052973070608582, -9.215470925940025, -9.377971406917693, -9.54047126436394, -9.702970730122608, -9.865190320313745, -10.02673907498042, -10.187708288685856, -10.346161690950057, -10.474725516856862, -10.573615541409229, -10.663530008215947, -10.745961567163453, -10.822071307718623, -10.892768348525205, -10.95876961319312, -11.020665642301424, -11.078942007424425, -11.12502713834353, -11.160420716429348, -11.194603370389862, -11.22765081136927, -11.259636405980784, -11.287574278426272, -11.308775497944834, -11.326595298487899, -11.344102093652195, -11.36130724064521, -11.378221510163284, -11.39485382108114, -11.411213071969783, -11.427308467831294, -11.443148703907209, -11.458741354544463, -11.474094285313923, -11.489268249093996]
+input variables: &id001
+- stream_function
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables: *id001
+bump:
+  general:
+    testing: true
+  io:
+    data directory: testdata
+    files prefix: optimization_bump_hdiag_gsi_1/_MPI_-_OMP_
+    gsi data file: gsi-coeffs-gmao-global-l72x72y46_opt1
+    gsi namelist: dirac_gsi_geos_global_opt_1.nml
+  drivers:
+    multivariate strategy: univariate
+    compute correlation: true
+    write diagnostics: true
+    internal dirac test: true
+    interpolate from gsi data: true
+  sampling:
+    diagnostic grid size: 89
+  optimality test:
+   half number of factors: 8
+   factors increment: 0.1
+  fit:
+    number of components: 3
+  dirac:
+  - longitude: 0.0
+    latitude: 0.0
+    level: 1
+    variable: stream_function
+  - longitude: 0.0
+    latitude: 0.0
+    level: 19
+    variable: stream_function
+  - longitude: 0.0
+    latitude: 0.0
+    level: 37
+    variable: stream_function
+  - longitude: 0.0
+    latitude: 0.0
+    level: 55
+    variable: stream_function
+  - longitude: 0.0
+    latitude: 0.0
+    level: 72
+    variable: stream_function
+input fields:
+- parameter: gsi_ref
+  file:
+    filepath: testdata/dirac_gsi_geos_global_opt_1/_MPI__dirac_SABER
+output:
+- parameter: dirac_diag_cor
+  file:
+    filepath: testdata/optimization_bump_hdiag_gsi_1/_MPI_-_OMP__dirac_diag
+test:
+  reference filename: testref/optimization_bump_hdiag_gsi_1.ref

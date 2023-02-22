@@ -204,6 +204,11 @@ Geometry::Geometry(const Parameters_ & params,
 
     // Vertical unit
     const boost::optional<std::vector<double>> &vunitParams = groupParams.vunit.value();
+    if (vunitParams != boost::none) {
+      if (vunitParams->size() != group.levels_) {
+        ABORT("Wrong number of levels in the user-specified vertical unit");
+      }
+    }
     for (size_t jlevel = 0; jlevel < group.levels_; ++jlevel) {
       if (vunitParams != boost::none) {
         group.vunit_.push_back((*vunitParams)[jlevel]);

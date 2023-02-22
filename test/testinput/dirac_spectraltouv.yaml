@@ -49,6 +49,7 @@ dirac:
   variable:
   - eastward_wind
 output dirac:
-  filepath: testdata/dirac_spectraltouv/dirac_%id%
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_spectraltouv/%MPI%_dirac_%id%
 test:
   reference filename: testref/dirac_spectraltouv.ref

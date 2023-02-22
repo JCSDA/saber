@@ -119,7 +119,7 @@ control_vector::
 #qi       72      1       0.00        -1.0     state    qi      -1.00
 #qr       72      1       0.00        -1.0     state    qr      -1.00
 #qs       72      1       0.00        -1.0     state    qs      -1.00
-#ps        1      0       0.75        -1.0     state    prse    -1.00
+ps        1      0       0.75        -1.0     state    prse    -1.00
 #sst       1      0       2.40        -1.0     state    sst     -1.00
 #sst       1      0       1.20        -1.0     state    sst     -1.00
 #stl       1      0       3.00        -1.0     motley   sst     -1.00

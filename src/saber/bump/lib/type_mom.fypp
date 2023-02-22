@@ -420,6 +420,11 @@ if (ie==1) then
    call mom%init(nam)
 end if
 
+! Check dirac distribution
+if (nam%check_dirac) then
+   if (any(geom%nnbdir>1)) call mpl%abort('${subr}$','dirac points on the same column')
+end if
+
 ! Halo extension
 do iv=1,nam%nv
    call samp%com_c0_AB%ext(mpl,fld_c0a(:,:,iv),fld_c0b(:,:,iv))
@@ -519,12 +524,10 @@ if (nam%check_dirac) then
    call mpl%f_comm%allreduce(wgt_dir,fckit_mpi_sum())
 
    do jc0a=1,geom%nc0a
-      ! Dirac sector
-      idir = geom%inbdir(jc0a)
-
       do jl0=1,geom%nl0
          if (geom%gmask_c0a(jc0a,jl0)) then
             ! Update covariance
+            idir = geom%inbdir(1,jc0a)
             mom%dirac(jc0a,jl0,:) = mom%dirac(jc0a,jl0,:)+fac5*wgt_dir(idir)*pert_c0a(jc0a,jl0,:)
 
             ! Update variance
@@ -596,7 +599,7 @@ if (ie==mom%ne) then
 
       ! Normalize
       do jc0a=1,geom%nc0a
-         idir = geom%inbdir(jc0a)
+         idir = geom%inbdir(1,jc0a)
          do jl0=1,geom%nl0
             if (geom%gmask_c0a(jc0a,jl0)) then
                do iv=1,nam%nv
@@ -669,6 +672,11 @@ end if
 
 ! Initialization
 call mom%init(nam)
+
+! Check dirac distribution
+if (nam%check_dirac) then
+   if (any(geom%nnbdir>1)) call mpl%abort('${subr}$','dirac points on the same column')
+end if
 
 ! Loop on sub-ensembles
 do isub=1,ens%nsub
@@ -761,7 +769,7 @@ do isub=1,ens%nsub
 
          ! Covariance
          do jc0a=1,geom%nc0a
-            idir = geom%inbdir(jc0a)
+            idir = geom%inbdir(1,jc0a)
             do jl0=1,geom%nl0
               if (geom%gmask_c0a(jc0a,jl0)) mom%dirac(jc0a,jl0,:) = mom%dirac(jc0a,jl0,:)+wgt_dir(idir)*fld_c0a(jc0a,jl0,:)
             end do
@@ -827,7 +835,7 @@ if (nam%check_dirac) then
 
    ! Normalize
    do jc0a=1,geom%nc0a
-      idir = geom%inbdir(jc0a)
+      idir = geom%inbdir(1,jc0a)
       do jl0=1,geom%nl0
          if (geom%gmask_c0a(jc0a,jl0)) then
             do iv=1,nam%nv

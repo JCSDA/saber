@@ -165,32 +165,4 @@ end subroutine gsi_covariance_multiply_cpp
 
 ! --------------------------------------------------------------------------------------------------
 
-subroutine gsi_covariance_multiply_ad_cpp(c_self, c_inc) &
-           bind(c,name='gsi_covariance_multiply_ad_f90')
-
-implicit none
-
-!Arguments
-integer(c_int),     intent(in) :: c_self
-type(c_ptr), value, intent(in) :: c_inc
-
-type(gsi_covariance), pointer :: f_self
-type(atlas_fieldset)          :: f_inc
-
-! LinkedList
-! ----------
-call gsi_covariance_registry%get(c_self, f_self)
-
-! Fortran APIs
-! ------------
-f_inc = atlas_fieldset(c_inc)
-
-! Call implementation
-! -------------------
-call f_self%multiply_ad(f_inc)
-
-end subroutine gsi_covariance_multiply_ad_cpp
-
-! --------------------------------------------------------------------------------------------------
-
 end module gsi_covariance_interface_mod

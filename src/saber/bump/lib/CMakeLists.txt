@@ -39,6 +39,7 @@ type_diag_blk.fypp
 type_ens.fypp
 type_fieldset.fypp
 type_geom.fypp
+type_gsi.fypp
 type_hdiag.fypp
 type_io.fypp
 type_linop.fypp

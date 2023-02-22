@@ -66,6 +66,10 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   param(ioDef.fname_nicas, ioConf);
   // Psichitouv transform file
   param(ioDef.fname_wind, ioConf);
+  // GSI data file
+  param(ioDef.fname_gsi_data, ioConf);
+  // GSI namelist
+  param(ioDef.fname_gsi_nam, ioConf);
 
   // Drivers section
   DriversDef driversDef;
@@ -159,6 +163,8 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   param(driversDef.check_consistency, driversConf);
   // Test HDIAG optimality
   param(driversDef.check_optimality, driversConf);
+  // Interpolate vertical balance, standard-deviation or length-scales from GSI data
+  param(driversDef.from_gsi, driversConf);
 
   // Model section
   ModelDef modelDef;

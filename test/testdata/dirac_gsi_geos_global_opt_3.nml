@@ -1,0 +1,38 @@
+ &SETUP
+ /
+ &GRIDOPTS
+   JCAP=62,NLAT=46,NLON=72,nsig=72,use_sp_eqspace=.true.,
+ /
+ &BKGERR
+   vs=0.6,
+   hzscl=0.588,1.25,2.0,
+   hswgt=0.45,0.3,0.25,
+   simcv=.true,
+ /
+
+met_guess::
+!var     level   crtm_use    desc                 orig_name
+  ps        1      -1         surface_pressure     ps
+  tv       72       2         virtial_temperature  tv
+::
+
+state_derivatives::
+!var  level  src
+::
+
+state_tendencies::
+!var  levels  source
+::
+
+state_vector::
+!var     level  itracer source     funcof
+ tv       72      0     met_guess    tv
+ ps        1      0     met_guess    prse
+::
+
+control_vector::
+!var     level  itracer as/tsfc_sdv  an_amp0   source  funcof  be
+ sf       72      0       1.0         -1.0     state    u:v     -1.00   
+ vp       72      0       1.0         -1.0     state    u:v     -1.00
+ t        72      0       1.0         -1.0     state    tv      -1.00
+::

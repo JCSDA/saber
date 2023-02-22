@@ -227,6 +227,10 @@ class IOSection : public oops::Parameters {
   oops::Parameter<std::string> fname_nicas = param(def.fname_nicas, this);
   // Psichitouv transform file
   oops::Parameter<std::string> fname_wind = param(def.fname_wind, this);
+  // GSI data file
+  oops::Parameter<std::string> fname_gsi_data = param(def.fname_gsi_data, this);
+  // GSI namelist
+  oops::Parameter<std::string> fname_gsi_nam = param(def.fname_gsi_nam, this);
 };
 
 // -----------------------------------------------------------------------------
@@ -327,6 +331,8 @@ class DriversSection : public oops::Parameters {
   oops::Parameter<bool> check_consistency = param(def.check_consistency, this);
   // Test HDIAG optimality
   oops::Parameter<bool> check_optimality = param(def.check_optimality, this);
+  // Interpolate vertical balance, standard-deviation or length-scales from GSI data
+  oops::Parameter<bool> from_gsi = param(def.from_gsi, this);
 };
 
 // -----------------------------------------------------------------------------

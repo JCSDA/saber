@@ -1387,6 +1387,9 @@ do icmp=1,cv_blk%ncmp
    call cv_blk%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%nsa)
 end do
 
+! Initialization
+fld_tot = mpl%msv%valr
+
 do idir=1,geom%ndir
    ! Generate dirac field
    fld = zero
@@ -1402,7 +1405,7 @@ do idir=1,geom%ndir
 
    ! Copy points
    do ic0a=1,geom%nc0a
-      if (idir==geom%inbdir(ic0a)) fld_tot(ic0a,:) = fld(ic0a,:)
+      if (any(geom%inbdir(:,ic0a)==idir)) fld_tot(ic0a,:) = fld(ic0a,:)
    end do
 end do
 

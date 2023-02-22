@@ -1564,7 +1564,7 @@ do idir=1,geom%ndir
 
    ! Copy points
    do ic0a=1,geom%nc0a
-      if (idir==geom%inbdir(ic0a)) then
+      if (any(geom%inbdir(:,ic0a)==idir)) then
          nicas%dirac(ic0a,:,:) = fld_c0a(ic0a,:,:)
       end if
    end do

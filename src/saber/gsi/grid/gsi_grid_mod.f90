@@ -84,8 +84,13 @@ call conf%get_or_die("debugging bypass gsi", self%noGSI)
 
 ! Domain decomposition
 ! --------------------
-call conf%get_or_die("processor layout x direction", self%layout(1))
-call conf%get_or_die("processor layout y direction", self%layout(2))
+if (conf%has("processor layout x direction").and.conf%has("processor layout y direction")) then
+  call conf%get_or_die("processor layout x direction", self%layout(1))
+  call conf%get_or_die("processor layout y direction", self%layout(2))
+else
+  self%layout(1) = floor(sqrt(real(comm%size(),kind_real)))
+  self%layout(2) = comm%size()/self%layout(1)
+end if
 
 ! Handle vertical grid opt
 ! ------------------------
