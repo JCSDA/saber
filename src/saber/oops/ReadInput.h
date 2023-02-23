@@ -70,7 +70,7 @@ void readInputFields(
       oops::Log::test() << "Norm of input parameter " << name << ": " << dx.norm() << std::endl;
       atlas::FieldSet fset;
       fset.name() = name;
-      for (const auto field : dx.fieldSet()) {
+      for (const auto & field : dx.fieldSet()) {
         fset.add(field);
       }
       fsetVec.push_back(fset);
@@ -156,7 +156,7 @@ void readEnsemble(
        // Transform Increment into FieldSet
        atlas::FieldSet fset;
        fset.name() = "ensemble member";
-       for (const auto field : (*ensemble)[ie].fieldSet()) {
+       for (const auto & field : (*ensemble)[ie].fieldSet()) {
          fset.add(field);
        }
       fsetVec.push_back(fset);

@@ -31,7 +31,7 @@ class EnsembleParameters : public SaberBlockParametersBase {
  public:
   oops::RequiredParameter<eckit::LocalConfiguration> localization{
         "localization", this};
-  oops::Variables mandatoryActiveVars() const {return oops::Variables();}
+  oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
 
 // -----------------------------------------------------------------------------

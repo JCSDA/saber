@@ -35,7 +35,7 @@ class SPCTRL_COVParameters : public SaberBlockParametersBase {
 
  public:
   oops::RequiredParameter<spectralbParameters> spectralbParams{"spectralb", this};
-  oops::Variables mandatoryActiveVars() const {return oops::Variables();}
+  oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
 
 // -----------------------------------------------------------------------------

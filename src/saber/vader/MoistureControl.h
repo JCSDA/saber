@@ -49,7 +49,7 @@ class MoistureControlParameters : public SaberBlockParametersBase {
   oops::RequiredParameter<std::string> svp_file{"saturation vapour pressure file", this};
   oops::RequiredParameter<MoistureControlCovarianceParameters>
     moistureControlParams{"covariance data", this};
-  oops::Variables mandatoryActiveVars() const {return oops::Variables({
+  oops::Variables mandatoryActiveVars() const override {return oops::Variables({
     "qt",
     "mu",
     "potential_temperature",

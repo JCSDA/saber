@@ -32,7 +32,7 @@ Ensemble::Ensemble(const oops::GeometryData & geometryData,
   oops::Log::trace() << classname() << "::Ensemble starting" << std::endl;
 
   // Initialize ensemble
-  for (const auto fset : fsetVec) {
+  for (const auto & fset : fsetVec) {
     ensemble_.push_back(fset);
   }
 

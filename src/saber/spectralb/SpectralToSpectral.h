@@ -25,7 +25,7 @@ class SpectralToSpectralParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(SpectralToSpectralParameters, SaberBlockParametersBase)
  public:
   oops::RequiredParameter<int> inputTruncation{"input truncation", this};
-  oops::Variables mandatoryActiveVars() const {return oops::Variables();}
+  oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
 
 

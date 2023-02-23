@@ -35,7 +35,7 @@ class GaussToCSParameters : public SaberBlockParametersBase {
   // to use the one different from the one inferred from the gaussian grid
   oops::RequiredParameter<std::string> gaussGridUid{"gauss grid uid",
     "Gauss Grid UID", this};
-  oops::Variables mandatoryActiveVars() const {return oops::Variables();}
+  oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
 
 // -----------------------------------------------------------------------------

@@ -26,7 +26,7 @@ namespace generic {
 class IDParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(IDParameters, SaberBlockParametersBase)
  public:
-  oops::Variables mandatoryActiveVars() const {return oops::Variables();}
+  oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
 
 // -----------------------------------------------------------------------------

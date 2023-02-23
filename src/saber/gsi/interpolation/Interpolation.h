@@ -56,7 +56,7 @@ class InterpolationParameters : public SaberBlockParametersBase {
   oops::Parameter<bool> bypassGSI{"debugging bypass gsi", false, this};
 
   // Mandatory active variables
-  oops::Variables mandatoryActiveVars() const {return oops::Variables();}
+  oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
 
 // -------------------------------------------------------------------------------------------------

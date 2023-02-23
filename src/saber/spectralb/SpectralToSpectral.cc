@@ -5,7 +5,6 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include <set>
 #include <vector>
 
 #include "saber/spectralb/SpectralToSpectral.h"
@@ -120,7 +119,8 @@ void SpectralToSpectral::truncate(const atlas::functionspace::Spectral & input_f
       for (int jm=0; jm < nb_zonal_wavenumbers_in; ++jm) {
         const atlas::idx_t m = zonal_wavenumbers_in(jm);
         for (std::size_t n = m; n <= truncation_in; ++n) {
-          for (auto & part : std::set<std::string>{"real", "imaginary"}) {
+          for (auto & part : {"real", "imaginary"}) {
+            (void)part;  // unused
             if (jm < nb_zonal_wavenumbers_out && n <= truncation_out) {
                 // In common zone, copy values.
                 for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
@@ -177,7 +177,8 @@ void SpectralToSpectral::truncateAD(const atlas::functionspace::Spectral & input
       for (int jm=0; jm < nb_zonal_wavenumbers_out; ++jm) {
         const atlas::idx_t m = zonal_wavenumbers_out(jm);
         for (std::size_t n = m; n <= truncation_out; ++n) {
-          for (auto & part : std::set<std::string>{"real", "imaginary"}) {
+          for (auto & part : {"real", "imaginary"}) {
+            (void)part;  // unused
             if (jm < nb_zonal_wavenumbers_in && n <= truncation_in) {
                 // In common zone, copy values.
                 for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
