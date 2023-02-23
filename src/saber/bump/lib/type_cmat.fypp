@@ -395,12 +395,13 @@ end subroutine cmat_from_bump
 ! Subroutine: cmat_setup_sampling
 !> Setup C matrix sampling
 !----------------------------------------------------------------------
-subroutine cmat_setup_sampling(cmat,nam,geom)
+subroutine cmat_setup_sampling(cmat,mpl,nam,geom)
 
 implicit none
 
 ! Passed variables
 class(cmat_type),intent(inout) :: cmat !< C matrix
+type(mpl_type),intent(inout) :: mpl    !< MPI data
 type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 
@@ -433,8 +434,10 @@ if (trim(nam%strategy)=='crossed') then
          rvs = huge_real
          do ig=1,nam%ng
             do icmp=1,cmat%blk(ig)%ncmp
-               rhs(icmp) = min(rhs(icmp),cmat%blk(ig)%rh(ic0a,il0,icmp))
-               rvs(icmp) = min(rvs(icmp),cmat%blk(ig)%rv(ic0a,il0,icmp))
+               if (geom%gmask_c0a(ic0a,il0)) then
+                  if (mpl%msv%isnot(cmat%blk(ig)%rh(ic0a,il0,icmp))) rhs(icmp) = min(rhs(icmp),cmat%blk(ig)%rh(ic0a,il0,icmp))
+                  if (mpl%msv%isnot(cmat%blk(ig)%rv(ic0a,il0,icmp))) rvs(icmp) = min(rvs(icmp),cmat%blk(ig)%rv(ic0a,il0,icmp))
+               end if
             end do
          end do
 
@@ -443,6 +446,7 @@ if (trim(nam%strategy)=='crossed') then
             do icmp=1,cmat%blk(ig)%ncmp
                cmat%blk(ig)%rhs(ic0a,il0,icmp) = rhs(icmp)
                cmat%blk(ig)%rvs(ic0a,il0,icmp) = rvs(icmp)
+               if ((geom%nl0>1).and.(.not.(rvs(icmp)>zero))) call mpl%abort('${subr}$','minimum rvs is zero')
             end do
          end do
       end do

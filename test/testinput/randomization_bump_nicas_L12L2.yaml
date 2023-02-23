@@ -44,9 +44,6 @@ background error:
         - groups:
           - stream_function
           value: 3.0
-        - groups:
-          - surface_pressure
-          value: 0.0
       grids:
       - model:
           variables:

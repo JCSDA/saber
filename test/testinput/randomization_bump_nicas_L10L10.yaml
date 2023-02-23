@@ -41,9 +41,6 @@ background error:
           - stream_function
           - velocity_potential
           value: 5.0
-        - groups:
-          - surface_pressure
-          value: 0.0
   randomization size: 25
 output:
   filepath: testdata/randomization_bump_nicas_L10L10/member

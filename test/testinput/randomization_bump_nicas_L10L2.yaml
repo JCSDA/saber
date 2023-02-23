@@ -59,9 +59,6 @@ background error:
           - eastward_wind
           - northward_wind
           value: 3.0
-        - groups:
-          - surface_pressure
-          value: 0.0
       grids:
       - model:
           variables:

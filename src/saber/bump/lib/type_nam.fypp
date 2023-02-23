@@ -944,6 +944,14 @@ if (nam%ndir>0) nam%londir = nam%londir*deg2rad
 if (nam%ndir>0) nam%latdir = nam%latdir*deg2rad
 if (nam%nldwv>0) nam%lon_ldwv = nam%lon_ldwv*deg2rad
 if (nam%nldwv>0) nam%lat_ldwv = nam%lat_ldwv*deg2rad
+if (nam%forced_radii) then
+   do ig=1,nam%ng
+      if (mpl%msv%isallnot(nam%rh(:,ig)).and.mpl%msv%isall(nam%rv(:,ig))) then
+         call mpl%warning('${subr}$','rh specified but not rv for '//trim(nam%group_names(ig))//', set to zero')
+         nam%rv(:,ig) = zero
+      end if
+   end do
+end if
 
 ! Required parameters
 if (.not.allocated(nam%nicas_interp_type)) then
@@ -1264,17 +1272,16 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
       if (nam%nc1max<=0) call mpl%abort('${subr}$','nc1max should be positive')
    end if
    if (nam%forced_radii) then
-      if (.not.(allocated(nam%rh).and.allocated(nam%rv))) then
-      if (allocated(nam%rh).and.allocated(nam%rv)) call mpl%abort('${subr}$','rh and/or rv are missing')
-         do ig=1,nam%ng
-            do il0=1,nam%nl0
-               if (mpl%msv%is(nam%rh(il0,ig))) call mpl%abort('${subr}$','rh is missing')
-               if (mpl%msv%is(nam%rv(il0,ig))) call mpl%abort('${subr}$','rv is missing')
-               if (nam%rh(il0,ig)<zero) call mpl%abort('${subr}$','rh should be non-negative')
-               if (nam%rv(il0,ig)<zero) call mpl%abort('${subr}$','rv should be non-negative')
-            end do
+      if (.not.allocated(nam%rh)) call mpl%abort('${subr}$','rh is missing')
+      if (.not.allocated(nam%rv)) call mpl%abort('${subr}$','rv is missing')
+      do ig=1,nam%ng
+         do il0=1,nam%nl0
+            if (mpl%msv%is(nam%rh(il0,ig))) call mpl%abort('${subr}$','rh is missing for '//trim(nam%group_names(ig)))
+            if (mpl%msv%is(nam%rv(il0,ig))) call mpl%abort('${subr}$','rv is missing for '//trim(nam%group_names(ig)))
+            if (nam%rh(il0,ig)<zero) call mpl%abort('${subr}$','rh should be non-negative for '//trim(nam%group_names(ig)))
+            if (nam%rv(il0,ig)<zero) call mpl%abort('${subr}$','rv should be non-negative for '//trim(nam%group_names(ig)))
          end do
-      end if
+      end do
    end if
    do ig=1,nam%ng
       if (nam%min_lev(ig)<1) call mpl%abort('${subr}$','min_lev should be positive')

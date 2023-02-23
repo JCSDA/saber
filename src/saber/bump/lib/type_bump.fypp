@@ -590,7 +590,7 @@ if (bump%nam%check_consistency.or.bump%nam%check_optimality) then
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Setup C matrix sampling, ensemble 1'
    call bump%mpl%flush
-   call bump%cmat(1)%setup_sampling(bump%nam,bump%geom(1))
+   call bump%cmat(1)%setup_sampling(bump%mpl,bump%nam,bump%geom(1))
 
    ! Run NICAS driver, ensemble 1
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -845,7 +845,7 @@ if (bump%cmat(1)%allocated) then
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Setup C matrix sampling, ensemble 1'
    call bump%mpl%flush
-   call bump%cmat(1)%setup_sampling(bump%nam,bump%geom(1))
+   call bump%cmat(1)%setup_sampling(bump%mpl,bump%nam,bump%geom(1))
 end if
 
 if (bump%cmat(2)%allocated) then
@@ -854,7 +854,7 @@ if (bump%cmat(2)%allocated) then
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Setup C matrix sampling, ensemble 2'
    call bump%mpl%flush
-   call bump%cmat(2)%setup_sampling(bump%nam,bump%geom(2))
+   call bump%cmat(2)%setup_sampling(bump%mpl,bump%nam,bump%geom(2))
 end if
 
 if (bump%nam%new_nicas.or.bump%nam%load_nicas_global) then
