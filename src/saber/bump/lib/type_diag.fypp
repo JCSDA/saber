@@ -620,8 +620,12 @@ do ig=1,nam%ng
       ! Interpolation
       do i=1,n
          do il0=1,geom%nl0
-            il0i = min(il0,geom%nl0i)
-            call samp%interp_c2b_to_c0a(il0i)%apply(mpl,fld_c2b(:,il0,i),fld_c0a(:,il0,i))
+            if (mpl%msv%isanynot(fld_c2b(:,il0,i))) then
+               il0i = min(il0,geom%nl0i)
+               call samp%interp_c2b_to_c0a(il0i)%apply(mpl,fld_c2b(:,il0,i),fld_c0a(:,il0,i))
+            else
+               fld_c0a(:,il0,i) = mpl%msv%valr
+            end if
          end do
       end do
    end if

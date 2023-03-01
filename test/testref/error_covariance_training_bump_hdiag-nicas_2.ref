@@ -13,14 +13,8 @@
           Level   2 ~> 100.0%
           Decimate full grid, at least      500 points required,     503 valid points found
           Subgrid hash:   -547664083
-             -90.00 deg.  ~>100-98- 6-95-92-87-80-45-70-59 
-             -45.00 deg.  ~>100-42-95-88-85-78-74-71-69-65 
-               0.00 deg.  ~>100-97-89-66-87-80-72-61-64-61 
-              45.00 deg.  ~>100-41-98-95-90-80-78-69-66-61 
-             -90.00 deg.  ~>99-98- 5-94-92-87-80-45-70-59 
-             -45.00 deg.  ~>99-42-94-88-85-78-74-71-69-65 
-               0.00 deg.  ~>99-97-89-66-87-80-72-61-64-61 
-              45.00 deg.  ~>99-41-97-95-90-80-78-69-66-61 
+             -90.00 deg.  ~>100-98-98-92-88-85-78-68-69-62 
+             -90.00 deg.  ~>99-98-97-92-88-85-78-68-69-62 
           nc1 =      500
           Independent levels:  1[1]  2[1]
           Independent levels for angular sector   1 / class   1:  1[1]  2[1]
@@ -32,75 +26,45 @@
           Independent levels for angular sector   1 / class   7:  1[2]
           Independent levels for angular sector   1 / class   8:  1[2]
           Independent levels for angular sector   1 / class   9:  1[2]
-          Independent levels for angular sector   1 / class  10:  1[2]
-          Independent levels for angular sector   2 / class   1:  1[1]  2[1]
-          Independent levels for angular sector   2 / class   2:  1[1]  2[1]
-          Independent levels for angular sector   2 / class   3:  1[1]  2[1]
-          Independent levels for angular sector   2 / class   4:  1[2]
-          Independent levels for angular sector   2 / class   5:  1[2]
-          Independent levels for angular sector   2 / class   6:  1[2]
-          Independent levels for angular sector   2 / class   7:  1[1]  2[1]
-          Independent levels for angular sector   2 / class   8:  1[2]
-          Independent levels for angular sector   2 / class   9:  1[2]
-          Independent levels for angular sector   2 / class  10:  1[2]
-          Independent levels for angular sector   3 / class   1:  1[1]  2[1]
-          Independent levels for angular sector   3 / class   2:  1[1]  2[1]
-          Independent levels for angular sector   3 / class   3:  1[1]  2[1]
-          Independent levels for angular sector   3 / class   4:  1[1]  2[1]
-          Independent levels for angular sector   3 / class   5:  1[1]  2[1]
-          Independent levels for angular sector   3 / class   6:  1[1]  2[1]
-          Independent levels for angular sector   3 / class   7:  1[2]
-          Independent levels for angular sector   3 / class   8:  1[2]
-          Independent levels for angular sector   3 / class   9:  1[2]
-          Independent levels for angular sector   3 / class  10:  1[1]  2[1]
-          Independent levels for angular sector   4 / class   1:  1[1]  2[1]
-          Independent levels for angular sector   4 / class   2:  1[1]  2[1]
-          Independent levels for angular sector   4 / class   3:  1[1]  2[1]
-          Independent levels for angular sector   4 / class   4:  1[1]  2[1]
-          Independent levels for angular sector   4 / class   5:  1[1]  2[1]
-          Independent levels for angular sector   4 / class   6:  1[2]
-          Independent levels for angular sector   4 / class   7:  1[1]  2[1]
-          Independent levels for angular sector   4 / class   8:  1[2]
-          Independent levels for angular sector   4 / class   9:  1[1]  2[1]
-          Independent levels for angular sector   4 / class  10:  1[2]
+          Independent levels for angular sector   1 / class  10:  1[1]  2[1]
                 Level:   1 ~> cov. at class zero:  0.10E+01
                 Level:   2 ~> cov. at class zero:  0.97E+00
-             Block common:  0.18288168E+00 for      160 diagnostic points
+             Block common:  0.14491868E+00 for       40 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      3470.31 km
+                                 cor. hor. support:      3731.03 km
                                  cor. ver. support:         3.16 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      3573.55 km
+                                 cor. hor. support:      3813.62 km
                                  cor. ver. support:         3.16 vertical units
-             Block common:  0.29988506E+00 for      117 diagnostic points
+             Block common:  0.28891625E+00 for       26 diagnostic points
                 Level:   1 ~> loc. at class zero:       0.92
                 Level:   2 ~> loc. at class zero:       0.92
                    Level:   1 ~> amplitude:        1.00
-                                 loc. hor. support:      5170.39 km
+                                 loc. hor. support:      5448.28 km
                                  loc. ver. support:         5.83 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 loc. hor. support:      5584.13 km
+                                 loc. hor. support:      5856.19 km
                                  loc. ver. support:         5.84 vertical units
              Effective levels:   1   2 
-                   Horizontal support radius:    5170.39 km (   5170.39 km -    5170.39 km)
-                   Estimated nc1 from horizontal support radius:      232
-                      Decimate full grid, at least      232 points required,     503 valid points found
-                      Subgrid hash:   -873411136
-                   Final nc1:      232
+                   Horizontal support radius:    5448.28 km (   5448.28 km -    5448.28 km)
+                   Estimated nc1 from horizontal support radius:      209
+                      Decimate full grid, at least      209 points required,     503 valid points found
+                      Subgrid hash:   -592487823
+                   Final nc1:      209
                    Effective horizontal resolution:  3.99
-                   Horizontal support radius:    5584.13 km (   5584.13 km -    5584.13 km)
-                   Estimated nc1 from horizontal support radius:      199
-                      Decimate full grid, at least      199 points required,     503 valid points found
-                      Subgrid hash:  -1093784163
-                   Final nc1:      199
+                   Horizontal support radius:    5856.19 km (   5856.19 km -    5856.19 km)
+                   Estimated nc1 from horizontal support radius:      181
+                      Decimate full grid, at least      181 points required,     503 valid points found
+                      Subgrid hash:   1523495917
+                   Final nc1:      181
                    Effective horizontal resolution:  4.00
-             nc1(  1) =                        232
-             nc1(  2) =                        199
-             ns =                              431
+             nc1(  1) =                        209
+             nc1(  2) =                        181
+             ns =                              390
              v%n_s =                             2
-             c%n_s[global] =                  7974
+             c%n_s[global] =                  6999
     Full NICAS adjoint test result:                        T
        Block NICAS adjoint test result:                    T
           Interpolation adjoint test (horizontal) result:  T
@@ -114,11 +78,11 @@
              Min / max: 1.0000000 /  1.0000000 over     10 tests
              0.0 /    0.0:  1.0000000
           Level   1:  0.0000000 -  1.0000000
-          Level   2:  0.0000000 -  0.9128577
+          Level   2:  0.0000000 -  0.9169709
 Norm of BUMP output parameter dirac_mom - 1: 7.6722033222410460e+00
-Norm of BUMP output parameter dirac_diag_loc - 1: 2.6927491724263728e+00
-Norm of BUMP output parameter cor_rh - 1: 1.3740079730890846e+08
+Norm of BUMP output parameter dirac_diag_loc - 1: 2.8237637990962439e+00
+Norm of BUMP output parameter cor_rh - 1: 1.4698268008781141e+08
 Norm of BUMP output parameter cor_rv - 1: 1.2277632584815632e+02
-Norm of BUMP output parameter loc_rh - 1: 2.1155124214914161e+08
+Norm of BUMP output parameter loc_rh - 1: 2.2217804712567914e+08
 Norm of BUMP output parameter loc_rv - 1: 2.2660945472033691e+02
-Norm of BUMP output parameter nicas_norm - 1: 4.2452350609076262e+01
+Norm of BUMP output parameter nicas_norm - 1: 4.2537351587542162e+01

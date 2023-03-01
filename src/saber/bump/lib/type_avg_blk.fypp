@@ -676,7 +676,7 @@ type(mom_blk_type),intent(in) :: mom_blk     !< Moments
 
 ! Local variables
 integer :: il0,jl0,jl0r,jc3,jc4,isub,jsub,nc1max,ic1d,ic1u,i,nc1a,nc1a_cor
-real(kind_real) :: m2_1,m2_2,norm,gen_kurt
+real(kind_real) :: m2_1,m2_2,norm,den,gen_kurt
 real(kind_real),allocatable :: list_m11(:),list_m11m11(:,:,:),list_m2m2(:,:,:),list_m22(:,:),list_cor(:)
 logical :: valid
 
@@ -723,9 +723,14 @@ do il0=1,geom%nl0
                if (valid) then
                   ! Check generalized kurtosis
                   do isub=1,avg_blk%nsub
-                     gen_kurt = three*mom_blk%m22(ic1d,jc3,jc4,jl0r,il0,isub)/(two*mom_blk%m11(ic1d,jc3,jc4,jl0r,il0,isub)**2 &
- & +mom_blk%m2_1(ic1d,il0,isub)*mom_blk%m2_2(ic1d,jc3,jc4,jl0,isub))
-                     if (gen_kurt>nam%gen_kurt_th) valid = .false.
+                     den = two*mom_blk%m11(ic1d,jc3,jc4,jl0r,il0,isub)**2 &
+ & +mom_blk%m2_1(ic1d,il0,isub)*mom_blk%m2_2(ic1d,jc3,jc4,jl0,isub)
+                     if (abs(den)>zero) then
+                        gen_kurt = three*mom_blk%m22(ic1d,jc3,jc4,jl0r,il0,isub)/den
+                        if (gen_kurt>nam%gen_kurt_th) valid = .false.
+                     else
+                        valid = .false.
+                     end if
                   end do
                end if
 

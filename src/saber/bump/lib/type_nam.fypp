@@ -954,6 +954,7 @@ if (nam%forced_radii) then
 end if
 
 ! Required parameters
+if (nam%ne==0) nam%ne = nam%ens1_ne
 if (.not.allocated(nam%nicas_interp_type)) then
    allocate(nam%nicas_interp_type(nam%ng))
    nam%nicas_interp_type = 'c0'
@@ -1181,8 +1182,10 @@ end do
 
 ! Diagnostics section
 if (nam%new_hdiag.or.nam%check_optimality) then
-   if (nam%compute_loc1.and.(nam%ne<=3)) call mpl%abort('${subr}$','ne should be larger than 3')
-   if (nam%compute_loc2.and.(nam%ne_lr<=3)) call mpl%abort('${subr}$','ne_lr should be larger than 3')
+   if (((.not.nam%from_gsi).and.(nam%compute_cov1.or.nam%compute_cor1.or.nam%compute_loc1)).and.(nam%ne<=3)) &
+ & call mpl%abort('${subr}$','ne should be larger than 3')
+   if (((.not.nam%from_gsi).and.(nam%compute_cov2.or.nam%compute_cor2.or.nam%compute_loc2)).and.(nam%ne_lr<=3)) &
+ & call mpl%abort('${subr}$','ne_lr should be larger than 3')
    if (.not.(nam%gen_kurt_th>zero)) call mpl%abort('${subr}$','gen_kurt_th should be positive')
 end if
 

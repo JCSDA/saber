@@ -54,8 +54,6 @@ bump:
     angular sectors: 4
     distance class width: 800.0e3
     reduced levels: 2
-  diagnostics:
-    target ensemble size: 25
   fit:
     number of components: 2
   nicas:

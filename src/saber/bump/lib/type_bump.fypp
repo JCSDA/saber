@@ -1718,6 +1718,7 @@ fld_mga = bump%mpl%msv%valr
 do iv=1,bump%nam%nv
    ! Initialization
    found = .false.
+   fld_c0a = bump%mpl%msv%valr
 
    ! Group index
    ig = bump%nam%group_index(iv)
@@ -1807,7 +1808,7 @@ do iv=1,bump%nam%nv
    case ('cor_rh','cor_rh_lr')
       if (bump%nam%forced_radii) then
          do il0=1,bump%geom(igeom)%nl0
-            fld_c0a(:,il0) = bump%nam%rh(il0,iv)*req
+            if (bump%mpl%msv%isnot(bump%nam%rh(il0,iv))) fld_c0a(:,il0) = bump%nam%rh(il0,iv)*req
          end do
       else
          if (.not.allocated(bump%hdiag%cor(igeom)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
@@ -1816,7 +1817,8 @@ do iv=1,bump%nam%nv
          fld_c0a = bump%hdiag%cor(igeom)%blk(0,ig)%rh_c0a(:,:,icmp)
          do il0=1,bump%geom(igeom)%nl0
             do ic0a=1,bump%geom(igeom)%nc0a
-               if (bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) fld_c0a(ic0a,il0) = fld_c0a(ic0a,il0)*req
+               if (bump%geom(igeom)%gmask_c0a(ic0a,il0).and.bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) &
+ & fld_c0a(ic0a,il0) = fld_c0a(ic0a,il0)*req
             end do
          end do
       end if
@@ -1828,7 +1830,8 @@ do iv=1,bump%nam%nv
       fld_c0a = bump%hdiag%cor(igeom)%blk(0,ig)%D11_c0a(:,:,icmp)
       do il0=1,bump%geom(igeom)%nl0
          do ic0a=1,bump%geom(igeom)%nc0a
-            if (bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) fld_c0a(ic0a,il0) = sqrt(fld_c0a(ic0a,il0))*req
+            if (bump%geom(igeom)%gmask_c0a(ic0a,il0).and.bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) &
+ & fld_c0a(ic0a,il0) = sqrt(fld_c0a(ic0a,il0))*req
          end do
       end do
       found = .true.
@@ -1839,7 +1842,8 @@ do iv=1,bump%nam%nv
       fld_c0a = bump%hdiag%cor(igeom)%blk(0,ig)%D22_c0a(:,:,icmp)
       do il0=1,bump%geom(igeom)%nl0
          do ic0a=1,bump%geom(igeom)%nc0a
-            if (bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) fld_c0a(ic0a,il0) = sqrt(fld_c0a(ic0a,il0))*req
+            if (bump%geom(igeom)%gmask_c0a(ic0a,il0).and.bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) &
+ & fld_c0a(ic0a,il0) = sqrt(fld_c0a(ic0a,il0))*req
          end do
       end do
       found = .true.
@@ -1874,7 +1878,7 @@ do iv=1,bump%nam%nv
    case ('loc_rh','loc_rh_lr')
       if (bump%nam%forced_radii) then
          do il0=1,bump%geom(igeom)%nl0
-            fld_c0a(:,il0) = bump%nam%rh(il0,iv)*req
+            if (bump%mpl%msv%isnot(bump%nam%rh(il0,iv))) fld_c0a(:,il0) = bump%nam%rh(il0,iv)*req
          end do
       else
          if (.not.allocated(bump%hdiag%loc(igeom)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
@@ -1883,7 +1887,8 @@ do iv=1,bump%nam%nv
          fld_c0a = bump%hdiag%loc(igeom)%blk(0,ig)%rh_c0a(:,:,icmp)
          do il0=1,bump%geom(igeom)%nl0
             do ic0a=1,bump%geom(igeom)%nc0a
-               if (bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) fld_c0a(ic0a,il0) = fld_c0a(ic0a,il0)*req
+               if (bump%geom(igeom)%gmask_c0a(ic0a,il0).and.bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) &
+ & fld_c0a(ic0a,il0) = fld_c0a(ic0a,il0)*req
             end do
          end do
       end if
@@ -1895,7 +1900,8 @@ do iv=1,bump%nam%nv
       fld_c0a = bump%hdiag%loc(igeom)%blk(0,ig)%D11_c0a(:,:,icmp)
       do il0=1,bump%geom(igeom)%nl0
          do ic0a=1,bump%geom(igeom)%nc0a
-            if (bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) fld_c0a(ic0a,il0) = sqrt(fld_c0a(ic0a,il0))*req
+            if (bump%geom(igeom)%gmask_c0a(ic0a,il0).and.bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) &
+ & fld_c0a(ic0a,il0) = sqrt(fld_c0a(ic0a,il0))*req
          end do
       end do
       found = .true.
@@ -1906,7 +1912,8 @@ do iv=1,bump%nam%nv
       fld_c0a = bump%hdiag%loc(igeom)%blk(0,ig)%D22_c0a(:,:,icmp)
       do il0=1,bump%geom(igeom)%nl0
          do ic0a=1,bump%geom(igeom)%nc0a
-            if (bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) fld_c0a(ic0a,il0) = sqrt(fld_c0a(ic0a,il0))*req
+            if (bump%geom(igeom)%gmask_c0a(ic0a,il0).and.bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) &
+ & fld_c0a(ic0a,il0) = sqrt(fld_c0a(ic0a,il0))*req
          end do
       end do
       found = .true.

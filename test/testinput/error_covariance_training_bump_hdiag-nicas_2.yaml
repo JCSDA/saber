@@ -48,7 +48,6 @@ bump:
   sampling:
     computation grid size: 500
     distance classes: 10
-    angular sectors: 4
     distance class width: 800.0e3
     reduced levels: 2
   diagnostics:
