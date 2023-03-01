@@ -16,7 +16,7 @@ use type_avg, only: avg_type
 use type_diag, only: diag_type
 use type_ens, only: ens_type
 use type_geom, only: geom_type
-use type_gsi, only: gsi
+use type_gsi, only: gsi_type
 use type_mom, only: mom_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
@@ -356,7 +356,7 @@ end subroutine hdiag_run_hdiag
 ! Subroutine: hdiag_from_gsi
 !> Interpolate length-scales from GSI data
 !----------------------------------------------------------------------
-subroutine hdiag_from_gsi(hdiag,mpl,nam,geom)
+subroutine hdiag_from_gsi(hdiag,mpl,nam,geom,gsi)
 
 implicit none
 
@@ -365,6 +365,7 @@ class(hdiag_type),intent(inout) :: hdiag !< Hybrid diagnostics
 type(mpl_type),intent(inout) :: mpl      !< MPI data
 type(nam_type),intent(inout) :: nam      !< Namelist
 type(geom_type),intent(in) :: geom       !< Geometry
+type(gsi_type),intent(in) :: gsi         !< GSI data
 
 ! Local variables
 integer :: il0,ic0a,iv,ig,ilatm,ilatp,icmp
@@ -405,12 +406,12 @@ do ig=1,nam%ng
       ! Interpolate
       if (gsi%var2d(iv)) then
          ! 2D variable
-         hdiag%cor(1)%blk(0,ig)%rh_c0a = mpl%msv%valr
-         hdiag%cor(1)%blk(0,ig)%rv_c0a = mpl%msv%valr
+         hdiag%cor(1)%blk(0,ig)%rh_c0a(:,:,icmp) = mpl%msv%valr
+         hdiag%cor(1)%blk(0,ig)%rv_c0a(:,:,icmp) = mpl%msv%valr
          do ic0a=1,geom%nc0a
             call gsi%interp_lat(mpl,geom%lat_c0a(ic0a),ilatm,ilatp,rlatm,rlatp)
-            hdiag%cor(1)%blk(0,ig)%rh_c0a(ic0a,gsi%ilev2d,:) = rlatm*gsi%rh(ilatm,1,icmp,iv)+rlatp*gsi%rh(ilatp,1,icmp,iv)
-            hdiag%cor(1)%blk(0,ig)%rh_c0a(ic0a,gsi%ilev2d,:) = zero
+            hdiag%cor(1)%blk(0,ig)%rh_c0a(ic0a,gsi%ilev2d,icmp) = rlatm*gsi%rh(ilatm,1,icmp,iv)+rlatp*gsi%rh(ilatp,1,icmp,iv)
+            hdiag%cor(1)%blk(0,ig)%rv_c0a(ic0a,gsi%ilev2d,icmp) = zero
          end do
       else
          ! 3D variable

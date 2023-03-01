@@ -17,7 +17,7 @@ use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,define_dim,
 use tools_repro, only: infeq,repro_th
 use type_ens, only: ens_type
 use type_geom, only: geom_type
-use type_gsi, only: gsi
+use type_gsi, only: gsi_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 @:use_probe()
@@ -1064,7 +1064,7 @@ end subroutine vbal_write_global
 ! Subroutine: vbal_run_vbal
 !> Compute vertical balance
 !----------------------------------------------------------------------
-subroutine vbal_run_vbal(vbal,mpl,nam,geom,samp,ens)
+subroutine vbal_run_vbal(vbal,mpl,nam,geom,samp,gsi,ens)
 
 implicit none
 
@@ -1074,7 +1074,8 @@ type(mpl_type),intent(inout) :: mpl    !< MPI data
 type(nam_type),intent(inout) :: nam    !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 type(samp_type),intent(in) :: samp     !< Sampling
-type(ens_type), intent(inout) :: ens   !< Ensemble
+type(gsi_type),intent(in) :: gsi       !< GSI data
+type(ens_type),intent(inout) :: ens    !< Ensemble
 
 ! Local variables
 integer :: il0,il0i,i_s,ic0a,ic1a,iv,jv,kv,lv,ie
@@ -1126,7 +1127,7 @@ if (nam%from_gsi) then
    call mpl%flush
    write(mpl%info,'(a)') '--- Interpolate vertical balance from GSI data'
    call mpl%flush
-   call vbal%from_gsi(mpl,nam,geom,samp)
+   call vbal%from_gsi(mpl,nam,geom,samp,gsi)
 else
    ! Compute vertical balance operators
    write(mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -1287,7 +1288,7 @@ end subroutine vbal_run_vbal
 ! Subroutine: vbal_from_gsi
 !> Interpolate vertical balance from GSI data
 !----------------------------------------------------------------------
-subroutine vbal_from_gsi(vbal,mpl,nam,geom,samp)
+subroutine vbal_from_gsi(vbal,mpl,nam,geom,samp,gsi)
 
 implicit none
 
@@ -1297,6 +1298,7 @@ type(mpl_type),intent(inout) :: mpl    !< MPI data
 type(nam_type),intent(inout) :: nam    !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 type(samp_type),intent(in) :: samp     !< Sampling
+type(gsi_type),intent(in) :: gsi       !< GSI data
 
 ! Local variables
 integer :: ic2b,ic2u,il0,jl0,iv,jv,ilatm,ilatp

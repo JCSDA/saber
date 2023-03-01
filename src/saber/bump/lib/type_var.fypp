@@ -16,7 +16,7 @@ use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,put_att,get_att,define_dim,inquire_var,define_var,close_file
 use type_ens, only: ens_type
 use type_geom, only: geom_type
-use type_gsi, only: gsi
+use type_gsi, only: gsi_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 use type_nicas_blk, only: nicas_blk_type
@@ -333,7 +333,7 @@ end subroutine var_update
 ! Subroutine: var_run_var
 !> Compute variance
 !----------------------------------------------------------------------
-subroutine var_run_var(var,mpl,rng,nam,geom,ens)
+subroutine var_run_var(var,mpl,rng,nam,geom,gsi,ens)
 
 implicit none
 
@@ -343,6 +343,7 @@ type(mpl_type),intent(inout) :: mpl   !< MPI data
 type(rng_type),intent(inout) :: rng   !< Random number generator
 type(nam_type),intent(inout) :: nam   !< Namelist
 type(geom_type),intent(inout) :: geom !< Geometry
+type(gsi_type),intent(in) :: gsi      !< GSI data
 type(ens_type), intent(inout) :: ens  !< Ensemble
 
 ! Local variables
@@ -375,7 +376,7 @@ elseif (nam%from_gsi) then
    var%ne = 0
 
    ! Interpolate variance from GSI data
-   call var%from_gsi(mpl,nam,geom)
+   call var%from_gsi(mpl,nam,geom,gsi)
 
    ! Missing fourth-order centered moment
    var%m4 = mpl%msv%valr
@@ -445,7 +446,7 @@ end subroutine var_run_var
 ! Subroutine: var_from_gsi
 !> Interpolate standard-deviation from GSI data
 !----------------------------------------------------------------------
-subroutine var_from_gsi(var,mpl,nam,geom)
+subroutine var_from_gsi(var,mpl,nam,geom,gsi)
 
 implicit none
 
@@ -454,6 +455,7 @@ class(var_type),intent(inout) :: var !< Variance
 type(mpl_type),intent(inout) :: mpl  !< MPI data
 type(nam_type),intent(inout) :: nam  !< Namelist
 type(geom_type),intent(in) :: geom   !< Geometry
+type(gsi_type),intent(in) :: gsi     !< GSI data
 
 ! Local variables
 integer :: il0,ic0a,iv,ilatm,ilatp
@@ -472,7 +474,7 @@ do iv=1,nam%nv
 
    if (gsi%var2d(iv)) then
       ! 2D variable
-      var%m2 = mpl%msv%valr
+      var%m2(:,:,iv) = mpl%msv%valr
       do ic0a=1,geom%nc0a
          call gsi%interp_lat(mpl,geom%lat_c0a(ic0a),ilatm,ilatp,rlatm,rlatp)
          var%m2(ic0a,gsi%ilev2d,iv) = (rlatm*gsi%stddev(ilatm,1,iv)+rlatp*gsi%stddev(ilatp,1,iv))**2

@@ -21,7 +21,7 @@ use type_cv, only: cv_type
 use type_ens, only: ens_type
 use type_fieldset, only: fieldset_type
 use type_geom, only: geom_type
-use type_gsi, only: gsi
+use type_gsi, only: gsi_type
 use type_hdiag, only: hdiag_type
 use type_mom, only: mom_type
 use type_mpl, only: mpl_type
@@ -44,6 +44,7 @@ type bump_type
    type(cmat_type),allocatable :: cmat(:)   !< C matrix
    type(ens_type),allocatable :: ens(:)     !< Ensembles
    type(geom_type),allocatable :: geom(:)   !< Geometry
+   type(gsi_type) :: gsi                    !< GSI data
    type(hdiag_type) :: hdiag                !< Hybrid diagnostics
    type(mom_type),allocatable :: mom(:)     !< Moments
    type(mpl_type) :: mpl                    !< MPI data
@@ -304,12 +305,12 @@ if (bump%nam%ens2_ne>0) then
    call bump%ens(2)%set_att(bump%nam%ens2_ne,bump%nam%ens2_nsub)
 end if
 
-if ((bump%nam%from_gsi.and.(bump%nam%new_vbal.or.bump%nam%new_var.or.bump%nam%new_hdiag)).and.(.not.gsi%initialized)) then
+if ((bump%nam%from_gsi.and.(bump%nam%new_vbal.or.bump%nam%new_var.or.bump%nam%new_hdiag)).and.(.not.bump%gsi%initialized)) then
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Initialize GSI data'
    call bump%mpl%flush
-   call gsi%setup(bump%mpl,bump%nam,bump%geom(1))
+   call bump%gsi%setup(bump%mpl,bump%nam,bump%geom(1))
 end if
 
 ! Probe out
@@ -686,7 +687,7 @@ if (bump%nam%new_vbal) then
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Run vertical balance driver'
    call bump%mpl%flush
-   call bump%vbal%run_vbal(bump%mpl,bump%nam,bump%geom(1),bump%samp(1),bump%ens(1))
+   call bump%vbal%run_vbal(bump%mpl,bump%nam,bump%geom(1),bump%samp(1),bump%gsi,bump%ens(1))
 elseif (bump%nam%load_vbal) then
    ! Read vertical balance
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -715,7 +716,7 @@ if ((bump%nam%new_var.and.(.not.bump%nam%iterative_algo)).or.(bump%var%bump_m2_c
    call bump%mpl%flush
    write(bump%mpl%info,'(a)') '--- Run variance driver'
    call bump%mpl%flush
-   call bump%var%run_var(bump%mpl,bump%rng,bump%nam,bump%geom(1),bump%ens(1))
+   call bump%var%run_var(bump%mpl,bump%rng,bump%nam,bump%geom(1),bump%gsi,bump%ens(1))
 end if
 
 if (bump%nam%new_mom.and.(.not.bump%nam%iterative_algo)) then
@@ -767,7 +768,7 @@ if (bump%nam%new_hdiag) then
       call bump%mpl%flush
       write(bump%mpl%info,'(a)') '--- Interpolate length-scales from GSI data'
       call bump%mpl%flush
-      call bump%hdiag%from_gsi(bump%mpl,bump%nam,bump%geom(1))
+      call bump%hdiag%from_gsi(bump%mpl,bump%nam,bump%geom(1),bump%gsi)
    else
       ! Run HDIAG driver
       write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -2247,7 +2248,7 @@ if (allocated(bump%geom)) then
    call bump%geom(1)%partial_dealloc
    call bump%geom(2)%partial_dealloc
 end if
-call gsi%dealloc
+call bump%gsi%dealloc
 call bump%hdiag%partial_dealloc
 if (allocated(bump%mom)) then
    call bump%mom(1)%partial_dealloc
@@ -2312,7 +2313,7 @@ if (allocated(bump%geom)) then
    call bump%geom(2)%dealloc
    deallocate(bump%geom)
 end if
-call gsi%dealloc
+call bump%gsi%dealloc
 call bump%hdiag%dealloc
 if (allocated(bump%mom)) then
    call bump%mom(1)%dealloc

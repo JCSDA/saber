@@ -72,11 +72,8 @@ interface get_table
    module procedure gsi_get_table
 end interface
 
-! GSI object
-type(gsi_type) :: gsi
-
 private
-public :: gsi
+public :: gsi_type
 
 contains
 
@@ -435,7 +432,7 @@ subroutine gsi_interp_lat(gsi,mpl,lat,ilatm,ilatp,rlatm,rlatp)
 implicit none
 
 ! Passed variables
-class(gsi_type),intent(inout) :: gsi !< GSI data
+class(gsi_type),intent(in) :: gsi    !< GSI data
 type(mpl_type),intent(inout) :: mpl  !< MPI data
 real(kind_real),intent(in) :: lat    !< Latitude
 integer,intent(out) :: ilatm         !< Lower latitude index

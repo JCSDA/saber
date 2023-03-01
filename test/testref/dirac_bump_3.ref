@@ -41,7 +41,7 @@ Fields:
              Level   4 ~> -0.110E+02 vert. unit
           nc2 =       89
 Adjoint test passed
-Norm of input parameter StdDev: 6.5040782391619052e+40
+Norm of input parameter StdDev: 3.1578046935870653e+08
 Adjoint test passed
        Independent levels:  1[4]
           Model grid size:             3312
@@ -90,7 +90,7 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 2.0568645410444924e+77
-  velocity_potential: 1.9277676837246593e+76
-  air_temperature: 1.8875362094655650e+69
-  surface_pressure: 4.4823940565888164e+67
+  stream_function: 5.0130559711480493e+11
+  velocity_potential: 4.1001562691303795e+10
+  air_temperature: 9.3203396513546195e+03
+  surface_pressure: 3.3127956919608329e+02
