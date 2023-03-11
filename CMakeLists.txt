@@ -21,7 +21,9 @@ list( APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake )
 set( CMAKE_DIRECTORY_LABELS ${PROJECT_NAME} )
 
 ## Configuration options
-option( ENABLE_SABER_DOC "Build SABER documentation" OFF )
+option( ENABLE_SABER_INSTRUMENTATION "Enable SABER instrumentation" OFF )
+option( ENABLE_OFFLINE_CODECOV "Enable SABER offline code coverage" OFF )
+option( ENABLE_SABER_DOC "Enable SABER documentation" OFF )
 option( ENABLE_MKL "Use MKL for LAPACK implementation (if available)" ON )
 include( ${PROJECT_NAME}_compiler_flags )
 
@@ -70,16 +72,24 @@ else()
 endif()
 
 ## SABER instrumentation
-set( ENABLE_SABER_INSTRUMENTATION 0 )
-if( DEFINED ENV{ENABLE_SABER_INSTRUMENTATION} )
-    set( ENABLE_SABER_INSTRUMENTATION $ENV{ENABLE_SABER_INSTRUMENTATION} )
-endif()
 if( ENABLE_SABER_INSTRUMENTATION )
     message( STATUS "SABER instrumentation is enabled" )
     add_definitions(-DENABLE_SABER_INSTRUMENTATION=1)
 else()
     message( STATUS "SABER instrumentation is not enabled" )
     add_definitions(-DENABLE_SABER_INSTRUMENTATION=0)
+endif()
+
+
+## Code coverage
+if ( ENABLE_OFFLINE_CODECOV )
+    message( STATUS "Offline code coverage is enabled" )
+    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
+    set( CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -fprofile-arcs -ftest-coverage")
+    set( CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fprofile-arcs -ftest-coverage")
+    set( CMAKE_Fortran_LINK_FLAGS "${CMAKE_Fortran_LINK_FLAGS} -fprofile-arcs -ftest-coverage")
+else()
+    message( STATUS "Offline code coverage is not enabled" )
 endif()
 
 ## Sources
@@ -90,7 +100,10 @@ add_subdirectory( src/saber )
 add_subdirectory( tools )
 add_subdirectory( test )
 if( ENABLE_SABER_DOC )
+    message( STATUS "SABER documentation is enabled" )
     add_subdirectory( docs )
+else()
+    message( STATUS "SABER documentation is not enabled" )
 endif()
 
 ## Global tests

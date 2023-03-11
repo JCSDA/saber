@@ -335,7 +335,7 @@ end subroutine balldata_dealloc
 ! Subroutine: balldata_pack
 !> Pack data into balldata object
 !----------------------------------------------------------------------
-subroutine balldata_pack(balldata,mpl,nc1u,hnd,vnd)
+subroutine balldata_pack(balldata,mpl,nc1u,hnd,vnd,mnd)
 
 implicit none
 
@@ -345,6 +345,7 @@ type(mpl_type),intent(inout) :: mpl            !< MPI data
 integer,intent(in) :: nc1u                     !< Horizontal box size
 real(kind_real),intent(in) :: hnd(nc1u)        !< Horizontal normalized distance
 real(kind_real),intent(in) :: vnd(nc1u)        !< Vertical normalized distance
+logical,intent(in) :: mnd(nc1u)                !< Mask for normalized distances
 
 ! Local variables
 integer :: ibd,ic1u
@@ -357,7 +358,7 @@ integer :: ibd,ic1u
 
 if (nc1u>0) then
    ! Count non-missing values
-   balldata%nbd = zss_count(mpl%msv%isnot(hnd).and.mpl%msv%isnot(vnd))
+   balldata%nbd = zss_count(mnd)
 
    ! Allocation
    call balldata%alloc
@@ -365,7 +366,7 @@ if (nc1u>0) then
    ! Pack data
    ibd = 0
    do ic1u=1,nc1u
-      if (mpl%msv%isnot(hnd(ic1u)).and.mpl%msv%isnot(vnd(ic1u))) then
+      if (mnd(ic1u)) then
          ibd = ibd+1
          balldata%bd_to_c1u(ibd) = ic1u
          balldata%hnd(ibd) = hnd(ic1u)
@@ -3354,6 +3355,7 @@ real(kind_real) :: rv_th,distv,dx,dy,distv_min
 real(kind_real) :: rv_max(geom%nl0),vunit_min(nicas_cmp%nl1),vunit_max(nicas_cmp%nl1)
 real(kind_real),allocatable :: hnd(:),vnd(:),nn_dist(:)
 logical :: valid
+logical,allocatable :: mnd(:)
 
 ! Set name
 @:set_name(nicas_cmp_compute_convol_distance)
@@ -3378,7 +3380,7 @@ write(mpl%info,'(a13,a)') '','Count and find nearest neighbors, compute distance
 call mpl%flush(newl=.false.,flush=nicas_cmp%verbosity)
 if (nicas_cmp%verbosity) call mpl%prog_init(nicas_cmp%nsb)
 !$omp parallel do schedule(static) private(isb,isu,ic1u,ic1b,il1,il0,jl1,jl0,rv_th,nn,j,jc1,jc1u,valid,dx,dy,distv,distv_min), &
-!$omp&                             firstprivate(nn_index,nn_dist,hnd,vnd)
+!$omp&                             firstprivate(nn_index,nn_dist,hnd,vnd,mnd)
 do isb=1,nicas_cmp%nsb
    ! Indices
    isu = nicas_cmp%sb_to_su(isb)
@@ -3394,10 +3396,10 @@ do isb=1,nicas_cmp%nsb
       ! Allocation
       allocate(hnd(nicas_cmp%hor(jl1)%nc1u))
       allocate(vnd(nicas_cmp%hor(jl1)%nc1u))
+      allocate(mnd(nicas_cmp%hor(jl1)%nc1u))
 
       ! Initialization
-      hnd = mpl%msv%valr
-      vnd = mpl%msv%valr
+      mnd = .false.
 
       ! Find smallest possible vertical distance
       if (sup(geom%vunitavg(il1),geom%vunitavg(jl1))) then
@@ -3442,19 +3444,23 @@ do isb=1,nicas_cmp%nsb
                      call lonlatmod(dx,dy)
                      dx = dx*cos(nicas_cmp%hor(il1)%lat_c1u(ic1u))
                      hnd(jc1u) = sqrt(nicas_cmp%hor(il1)%H11_c1b(ic1b)*dx**2+nicas_cmp%hor(il1)%H22_c1b(ic1b)*dy**2 &
- & +two*nicas_cmp%hor(il1)%H12_c1b(ic1b)*dx*dy)
+ & +two*nicas_cmp%hor(il1)%H12_c1b(ic1b)*dx*dy)                     
+                     mnd(jc1u) = inf(hnd(jc1u),half)
                   else
                      if (nicas_cmp%hor(il1)%rh_c1b(ic1b)>zero) then
                         hnd(jc1u) = nn_dist(j)/nicas_cmp%hor(il1)%rh_c1b(ic1b)
-                        if (supeq(hnd(jc1u),half)) hnd(jc1u) = mpl%msv%valr
-                     elseif (nn_dist(j)>zero) then
-                        hnd(jc1u) = mpl%msv%valr
-                     else
+                        mnd(jc1u) = inf(hnd(jc1u),half)
+                     elseif (.not.(nn_dist(j)>zero)) then
                         hnd(jc1u) = zero
+                        mnd(jc1u) = .true.
                      end if
                   end if
                   if (nicas_cmp%smoother) then
-                     if (il0==jl0) vnd(jc1u) = zero
+                     if (il0==jl0) then
+                        vnd(jc1u) = zero
+                     else
+                        mnd(jc1u) = .false.
+                     end if
                   else
                      if (nam%from_gsi) then
                         distv = real(abs(il0-jl0),kind_real)
@@ -3463,9 +3469,9 @@ do isb=1,nicas_cmp%nsb
                      end if
                      if (nicas_cmp%hor(il1)%rv_c1b(ic1b)>zero) then
                         vnd(jc1u) = distv/nicas_cmp%hor(il1)%rv_c1b(ic1b)
-                        if (supeq(vnd(jc1u),half)) vnd(jc1u) = mpl%msv%valr
+                        mnd(jc1u) = mnd(jc1u).and.inf(vnd(jc1u),half)
                      elseif (distv>zero) then
-                        vnd(jc1u) = mpl%msv%valr
+                        mnd(jc1u) = .false.
                      else
                         vnd(jc1u) = zero
                      end if
@@ -3480,11 +3486,12 @@ do isb=1,nicas_cmp%nsb
       end if
 
       ! Pack data
-      call nicas_cmp%ball(jl1,isb)%pack(mpl,nicas_cmp%hor(jl1)%nc1u,hnd,vnd)
+      call nicas_cmp%ball(jl1,isb)%pack(mpl,nicas_cmp%hor(jl1)%nc1u,hnd,vnd,mnd)
 
       ! Release memory
       deallocate(hnd)
       deallocate(vnd)
+      deallocate(mnd)
    end do
 
    ! Update

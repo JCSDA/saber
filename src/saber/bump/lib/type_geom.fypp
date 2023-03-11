@@ -11,7 +11,7 @@ module type_geom
 
 use atlas_module, only: atlas_field,atlas_functionspace,atlas_functionspace_nodecolumns,atlas_functionspace_pointcloud, &
  & atlas_functionspace_structuredcolumns,atlas_mesh_nodes,atlas_metadata,atlas_structuredgrid,atlas_regionalgrid
-use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
+use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max,fckit_mpi_status
 !$ use omp_lib
 use tools_atlas, only: get_grid,field_to_array
 use tools_const, only: zero,quarter,half,one,two,four,hundred,pi,req,deg2rad,rad2deg,reqkm
@@ -1568,7 +1568,7 @@ else
 
    ! Model grid to subset Sc0
    call geom_copy_mga_to_c0a_real_all(geom,mpl,nam,fld_c0a,fld_mga)
-   ! TODO: BUG, should be call geom%copy_mga_to_c0a(mpl,nam,fld_c0a,fld_mga) 
+   ! TODO: BUG, should be call geom%copy_mga_to_c0a(mpl,nam,fld_c0a,fld_mga)
 end if
 
 ! Probe out
@@ -1704,17 +1704,21 @@ integer,intent(in) :: ns                    !< Number of samplings points (globa
 integer,intent(out) :: s_to_cx(ns)          !< Horizontal sampling index (global)
 
 ! Local variables
-integer :: ncxa_eff,ncx_eff,isa,icxa,is,icx,nfac,nssa,nss,issa,ix,iy,issamin,icxmin,iprocmin,nsa,nodemin,inode,hash
-integer :: s_to_cxa(ns),nn_index(1)
+integer :: ncxa_eff,ncx_eff,isa,icxa,is,icx,nfac,nssa,nss,issa,ix,iy,issamin,icxmin,iprocmin,nsa,nodemin,inode,hash,iss,iproc
+integer :: nn_index(1),proc_to_ncxa(mpl%nproc),proc_to_cx_offset(mpl%nproc)
 integer,allocatable :: proc_to_icxmin(:),ssa_to_cxa(:),ssa_to_cx(:),ssa_to_node(:),s_to_ssa(:)
 integer,allocatable :: proc_to_nodemin(:),sa_to_s(:),order_s(:),cxa_to_node(:)
+integer,allocatable :: proc_to_nssa(:),ssa_to_ss(:),ss_to_cxa(:),ss_to_cx(:),ss_to_node(:)
 real(kind_real) :: nss_real,lonlat(2),valmin,xmin,ymin,zmin,chmin,dist
 real(kind_real),allocatable :: proc_to_xmin(:),proc_to_ymin(:),proc_to_zmin(:),proc_to_chmin(:)
 real(kind_real),allocatable :: x_ssa(:),y_ssa(:),z_ssa(:),ch_ssa(:),potential(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:)
+real(kind_real),allocatable :: x_ss(:),y_ss(:),z_ss(:),ch_ss(:)
 logical :: retry,valid
-logical,allocatable :: lmask_cxa(:),lmask_ssa(:),indist_ssa(:),gmask_s(:)
+logical,allocatable :: lmask_cxa(:),lmask_ssa(:),indist_ssa(:),gmask_s(:),lmask_ss(:)
 character(len=1024) :: cfmt
 type(atlas_structuredgrid) :: agrid
+
+logical,parameter :: parallel = .false.
 
 ! Set name
 @:set_name(geom_initialize_sampling)
@@ -1763,70 +1767,42 @@ else
       if (geom%global) then
          ! Global grid
          call get_grid(mpl,floor(nss_real),agrid,nss)
-
-         ! Initialization
-         lmask_cxa = .false.
-         cxa_to_node = mpl%msv%vali
-
-         ! Loop over grid points
-         inode = 0
-         do iy=1,int(agrid%ny(),kind_int)
-            do ix=1,int(agrid%nx(iy),kind_int)
-               ! Global index
-               inode = inode+1
-
-               ! Get longitude/latitude
-               lonlat = agrid%lonlat(ix,iy)*deg2rad
-               call lonlatmod(lonlat(1),lonlat(2))
-
-               ! Check if point is inside the hull
-               call inside(mpl,mesh_cxu%vbnd,lonlat(1),lonlat(2),valid)
-
-               if (valid) then
-                  ! Find nearest neighbor in universe
-                  call tree_cxu%find_nearest_neighbors(lonlat(1),lonlat(2),1,nn_index)
-                  icxa = cxu_to_cxa(nn_index(1))
-
-                  ! Keep valid points on each processor
-                  if (mpl%msv%isnot(icxa)) then
-                     lmask_cxa(icxa) = mask_cxa(icxa)
-                     cxa_to_node(icxa) = inode
-                  end if
-               end if
-            end do
-         end do
       else
          ! Regional grid
          call get_grid(mpl,nfac*ns,geom%lon_min,geom%lon_max,geom%lat_min,geom%lat_max,agrid,nss)
-
-         ! Loop over grid points
-         inode = 0
-         do iy=1,int(agrid%ny(),kind_int)
-            do ix=1,int(agrid%nx(iy),kind_int)
-               ! Global index
-               inode = inode+1
-
-               ! Get longitude/latitude
-               lonlat = agrid%lonlat(ix,iy)*deg2rad
-               call lonlatmod(lonlat(1),lonlat(2))
-
-               ! Check if point is inside the hull
-               call inside(mpl,mesh_cxu%vbnd,lonlat(1),lonlat(2),valid)
-
-               if (valid) then
-                  ! Find nearest neighbor in universe
-                  call tree_cxu%find_nearest_neighbors(lonlat(1),lonlat(2),1,nn_index)
-                  icxa = cxu_to_cxa(nn_index(1))
-
-                  ! Keep valid points on each processor
-                  if (mpl%msv%isnot(icxa)) then
-                     lmask_cxa(icxa) = mask_cxa(icxa)
-                     cxa_to_node(icxa) = inode
-                  end if
-               end if
-            end do
-         end do
       end if
+
+      ! Initialization
+      lmask_cxa = .false.
+      cxa_to_node = mpl%msv%vali
+
+      ! Loop over grid points
+      inode = 0
+      do iy=1,int(agrid%ny(),kind_int)
+         do ix=1,int(agrid%nx(iy),kind_int)
+            ! Global index
+            inode = inode+1
+
+            ! Get longitude/latitude
+            lonlat = agrid%lonlat(ix,iy)*deg2rad
+            call lonlatmod(lonlat(1),lonlat(2))
+
+            ! Check if point is inside the hull
+            call inside(mpl,mesh_cxu%vbnd,lonlat(1),lonlat(2),valid)
+
+            if (valid) then
+               ! Find nearest neighbor in universe
+               call tree_cxu%find_nearest_neighbors(lonlat(1),lonlat(2),1,nn_index)
+               icxa = cxu_to_cxa(nn_index(1))
+
+               ! Keep valid points on each processor
+               if (mpl%msv%isnot(icxa)) then
+                  lmask_cxa(icxa) = mask_cxa(icxa)
+                  cxa_to_node(icxa) = inode
+               end if
+            end if
+         end do
+      end do
 
       ! Release memory
       call agrid%final()
@@ -1869,111 +1845,133 @@ else
    end do
    lmask_ssa = .true.
 
+   if (.not.parallel) then
+      ! Allocation
+      allocate(proc_to_nssa(mpl%nproc))
+      allocate(ssa_to_ss(nssa))
+      if (mpl%main) then
+         allocate(ss_to_cxa(nss))
+         allocate(ss_to_cx(nss))
+         allocate(ss_to_node(nss))
+         allocate(x_ss(nss))
+         allocate(y_ss(nss))
+         allocate(z_ss(nss))
+         allocate(ch_ss(nss))
+         allocate(lmask_ss(nss))
+      else
+         allocate(ss_to_cxa(0))
+         allocate(ss_to_cx(0))
+         allocate(ss_to_node(0))
+         allocate(x_ss(0))
+         allocate(y_ss(0))
+         allocate(z_ss(0))
+         allocate(ch_ss(0))
+         allocate(lmask_ss(0))
+      end if
+
+      ! Initialization
+      call mpl%f_comm%allgather(nssa,proc_to_nssa)
+      iss = 0
+      do iproc=1,mpl%nproc
+         do issa=1,proc_to_nssa(iproc)
+            iss = iss+1
+            if (iproc==mpl%myproc) ssa_to_ss(issa) = iss
+         end do
+      end do
+
+      ! Second step and a half: get data on effective global grid
+      call mpl%loc_to_glb(nssa,nss,ssa_to_ss,ssa_to_cxa,ss_to_cxa)
+      call mpl%loc_to_glb(nssa,nss,ssa_to_ss,ssa_to_cx,ss_to_cx)
+      call mpl%loc_to_glb(nssa,nss,ssa_to_ss,ssa_to_node,ss_to_node)
+      call mpl%loc_to_glb(nssa,nss,ssa_to_ss,x_ssa,x_ss)
+      call mpl%loc_to_glb(nssa,nss,ssa_to_ss,y_ssa,y_ss)
+      call mpl%loc_to_glb(nssa,nss,ssa_to_ss,z_ssa,z_ss)
+      call mpl%loc_to_glb(nssa,nss,ssa_to_ss,ch_ssa,ch_ss)
+      call mpl%loc_to_glb(nssa,nss,ssa_to_ss,lmask_ssa,lmask_ss)
+
+      if (mpl%main) then
+         ! Mimick local variables
+         nssa = nss
+
+         ! Release memory
+         deallocate(ssa_to_cxa)
+         deallocate(ssa_to_cx)
+         deallocate(ssa_to_node)
+         deallocate(x_ssa)
+         deallocate(y_ssa)
+         deallocate(z_ssa)
+         deallocate(ch_ssa)
+         deallocate(lmask_ssa)
+
+         ! Allocation
+         allocate(ssa_to_cxa(nssa))
+         allocate(ssa_to_cx(nssa))
+         allocate(ssa_to_node(nssa))
+         allocate(x_ssa(nssa))
+         allocate(y_ssa(nssa))
+         allocate(z_ssa(nssa))
+         allocate(ch_ssa(nssa))
+         allocate(lmask_ssa(nssa))
+
+         ! Copy
+         ssa_to_cxa = ss_to_cxa
+         ssa_to_cx = ss_to_cx
+         ssa_to_node = ss_to_node
+         x_ssa = x_ss
+         y_ssa = y_ss
+         z_ssa = z_ss
+         ch_ssa = ch_ss
+         lmask_ssa = lmask_ss
+
+         ! Release memory
+         deallocate(ss_to_cxa)
+         deallocate(ss_to_cx)
+         deallocate(ss_to_node)
+         deallocate(x_ss)
+         deallocate(y_ss)
+         deallocate(z_ss)
+         deallocate(ch_ss)
+         deallocate(lmask_ss)
+      end if
+   end if
+
    ! Third step: electric potential method
+   if (parallel.or.mpl%main) then
+      ! Allocation
+      allocate(potential(nssa))
+      allocate(indist_ssa(nssa))
+      allocate(proc_to_nodemin(mpl%nproc))
+      allocate(proc_to_xmin(mpl%nproc))
+      allocate(proc_to_ymin(mpl%nproc))
+      allocate(proc_to_zmin(mpl%nproc))
+      allocate(proc_to_chmin(mpl%nproc))
+      allocate(proc_to_icxmin(mpl%nproc))
 
-   ! Allocation
-   allocate(potential(nssa))
-   allocate(indist_ssa(nssa))
-   allocate(proc_to_nodemin(mpl%nproc))
-   allocate(proc_to_xmin(mpl%nproc))
-   allocate(proc_to_ymin(mpl%nproc))
-   allocate(proc_to_zmin(mpl%nproc))
-   allocate(proc_to_chmin(mpl%nproc))
-   allocate(proc_to_icxmin(mpl%nproc))
-
-   ! Initialization
-   s_to_ssa = mpl%msv%vali
-   s_to_cx = mpl%msv%vali
-   write(cfmt,'(a,i2.2,a)') '(a',ifmt+3,',a)'
-   write(mpl%info,trim(cfmt)) '','Potential method: '
-   if (verbosity) then
-      call mpl%flush(newl=.false.)
-      call mpl%prog_init(ns)
-   end if
-
-   ! Set initial sampling point as close as possible to (0,0)
-   is = 1
-
-   ! Compute distance to point of coordinate (0,0)
-   do issa=1,nssa
-      call cart_dist(x_ssa(issa),y_ssa(issa),z_ssa(issa),zero,zero,zero,potential(issa))
-   end do
-
-   ! Find minimum distance globally
-   valmin = zss_minval(potential)
-   call mpl%f_comm%allreduce(valmin,fckit_mpi_min())
-
-   ! Check if minimum is indistinguishable
-   do issa=1,nssa
-      indist_ssa(issa) = indist(potential(issa),valmin)
-   end do
-   nodemin = mpl%msv%vali
-   xmin = mpl%msv%valr
-   ymin = mpl%msv%valr
-   zmin = mpl%msv%valr
-   chmin = mpl%msv%valr
-   icxmin = mpl%msv%vali
-   if (nssa>0) then
-      if (any(indist_ssa)) then
-         issamin = minloc(ssa_to_node,mask=indist_ssa,dim=1)
-         nodemin = ssa_to_node(issamin)
-         xmin = x_ssa(issamin)
-         ymin = y_ssa(issamin)
-         zmin = z_ssa(issamin)
-         chmin = ch_ssa(issamin)
-         icxmin = ssa_to_cx(issamin)
+      ! Initialization
+      s_to_ssa = mpl%msv%vali
+      s_to_cx = mpl%msv%vali
+      write(cfmt,'(a,i2.2,a)') '(a',ifmt+3,',a)'
+      write(mpl%info,trim(cfmt)) '','Potential method: '
+      if (verbosity) then
+         call mpl%flush(newl=.false.)
+         call mpl%prog_init(ns)
       end if
-   end if
 
-   ! Communication
-   call mpl%f_comm%allgather(nodemin,proc_to_nodemin)
-   call mpl%f_comm%allgather(xmin,proc_to_xmin)
-   call mpl%f_comm%allgather(ymin,proc_to_ymin)
-   call mpl%f_comm%allgather(zmin,proc_to_zmin)
-   call mpl%f_comm%allgather(chmin,proc_to_chmin)
-   call mpl%f_comm%allgather(icxmin,proc_to_icxmin)
+      ! Set initial sampling point as close as possible to (0,0)
+      is = 1
 
-   ! Find processor handling the minimum distance
-   iprocmin = minloc(proc_to_nodemin,mask=mpl%msv%isnot(proc_to_nodemin),dim=1)
+      ! Compute distance to point of coordinate (0,0)
+      do issa=1,nssa
+         call cart_dist(x_ssa(issa),y_ssa(issa),z_ssa(issa),zero,zero,zero,potential(issa))
+      end do
 
-   ! Reset potential
-   potential = zero
-
-   ! Update global sampling, local mask and local potential
-   s_to_cx(is) = proc_to_icxmin(iprocmin)
-   if (iprocmin==mpl%myproc) then
-      lmask_ssa(issamin) = .false.
-      s_to_ssa(is) = issamin
-   end if
-   !$omp parallel do schedule(static) private(issa,dist)
-   do issa=1,nssa
-      if (lmask_ssa(issa)) then
-         ! Cartesian distance
-         call cart_dist(x_ssa(issa),y_ssa(issa),z_ssa(issa), &
- & proc_to_xmin(iprocmin),proc_to_ymin(iprocmin),proc_to_zmin(iprocmin),dist)
-
-         ! Update potential
-         potential(issa) = potential(issa)+proc_to_chmin(iprocmin)/dist
-      end if
-   end do
-   !$omp end parallel do
-
-   ! Update
-   if (verbosity) call mpl%prog_print(is)
-
-   ! Set other points where the potential is minimum
-   do is=2,ns
       ! Find minimum distance globally
-      valmin = huge_real
-      if (nssa>0) then
-         if (any(lmask_ssa)) valmin = zss_minval(potential,mask=lmask_ssa)
-      end if
-      call mpl%f_comm%allreduce(valmin,fckit_mpi_min())
+      valmin = zss_minval(potential)
+      if (parallel) call mpl%f_comm%allreduce(valmin,fckit_mpi_min())
 
       ! Check if minimum is indistinguishable
-      indist_ssa = .false.
       do issa=1,nssa
-         if (lmask_ssa(issa)) indist_ssa(issa) = indist(potential(issa),valmin)
+         indist_ssa(issa) = indist(potential(issa),valmin)
       end do
       nodemin = mpl%msv%vali
       xmin = mpl%msv%valr
@@ -1993,16 +1991,30 @@ else
          end if
       end if
 
-      ! Communication
-      call mpl%f_comm%allgather(nodemin,proc_to_nodemin)
-      call mpl%f_comm%allgather(xmin,proc_to_xmin)
-      call mpl%f_comm%allgather(ymin,proc_to_ymin)
-      call mpl%f_comm%allgather(zmin,proc_to_zmin)
-      call mpl%f_comm%allgather(chmin,proc_to_chmin)
-      call mpl%f_comm%allgather(icxmin,proc_to_icxmin)
+      if (parallel) then
+         ! Communication
+         call mpl%f_comm%allgather(nodemin,proc_to_nodemin)
+         call mpl%f_comm%allgather(xmin,proc_to_xmin)
+         call mpl%f_comm%allgather(ymin,proc_to_ymin)
+         call mpl%f_comm%allgather(zmin,proc_to_zmin)
+         call mpl%f_comm%allgather(chmin,proc_to_chmin)
+         call mpl%f_comm%allgather(icxmin,proc_to_icxmin)
 
-      ! Find processor handling the minimum distance
-      iprocmin = minloc(proc_to_nodemin,mask=mpl%msv%isnot(proc_to_nodemin),dim=1)
+         ! Find processor handling the minimum distance
+         iprocmin = minloc(proc_to_nodemin,mask=mpl%msv%isnot(proc_to_nodemin),dim=1)
+      else
+         ! Root proc only
+         iprocmin = mpl%rootproc
+         proc_to_nodemin(iprocmin) = nodemin
+         proc_to_xmin(iprocmin) = xmin
+         proc_to_ymin(iprocmin) = ymin
+         proc_to_zmin(iprocmin) = zmin
+         proc_to_chmin(iprocmin) = chmin
+         proc_to_icxmin(iprocmin) = icxmin
+      end if
+
+      ! Reset potential
+      potential = zero
 
       ! Update global sampling, local mask and local potential
       s_to_cx(is) = proc_to_icxmin(iprocmin)
@@ -2025,19 +2037,94 @@ else
 
       ! Update
       if (verbosity) call mpl%prog_print(is)
-   end do
-   if (verbosity) call mpl%prog_final
 
-   ! Copy back from effective grid
-   do is=1,ns
-      issa = s_to_ssa(is)
-      if (mpl%msv%isnot(issa)) then
-         icxa = ssa_to_cxa(issa)
-         s_to_cxa(is) = icxa
-      else
-         s_to_cxa(is) = mpl%msv%vali
-      end if
-   end do
+      ! Set other points where the potential is minimum
+      do is=2,ns
+         ! Find minimum distance globally
+         valmin = huge_real
+         if (nssa>0) then
+            if (any(lmask_ssa)) valmin = zss_minval(potential,mask=lmask_ssa)
+         end if
+         if (parallel) call mpl%f_comm%allreduce(valmin,fckit_mpi_min())
+
+         ! Check if minimum is indistinguishable
+         indist_ssa = .false.
+         do issa=1,nssa
+            if (lmask_ssa(issa)) indist_ssa(issa) = indist(potential(issa),valmin)
+         end do
+         nodemin = mpl%msv%vali
+         xmin = mpl%msv%valr
+         ymin = mpl%msv%valr
+         zmin = mpl%msv%valr
+         chmin = mpl%msv%valr
+         icxmin = mpl%msv%vali
+         if (nssa>0) then
+            if (any(indist_ssa)) then
+               issamin = minloc(ssa_to_node,mask=indist_ssa,dim=1)
+               nodemin = ssa_to_node(issamin)
+               xmin = x_ssa(issamin)
+               ymin = y_ssa(issamin)
+               zmin = z_ssa(issamin)
+               chmin = ch_ssa(issamin)
+               icxmin = ssa_to_cx(issamin)
+            end if
+         end if
+
+         if (parallel) then
+            ! Communication
+            call mpl%f_comm%allgather(nodemin,proc_to_nodemin)
+            call mpl%f_comm%allgather(xmin,proc_to_xmin)
+            call mpl%f_comm%allgather(ymin,proc_to_ymin)
+            call mpl%f_comm%allgather(zmin,proc_to_zmin)
+            call mpl%f_comm%allgather(chmin,proc_to_chmin)
+            call mpl%f_comm%allgather(icxmin,proc_to_icxmin)
+
+            ! Find processor handling the minimum distance
+            iprocmin = minloc(proc_to_nodemin,mask=mpl%msv%isnot(proc_to_nodemin),dim=1)
+         else
+            ! Root proc only
+            iprocmin = mpl%rootproc
+            proc_to_nodemin(iprocmin) = nodemin
+            proc_to_xmin(iprocmin) = xmin
+            proc_to_ymin(iprocmin) = ymin
+            proc_to_zmin(iprocmin) = zmin
+            proc_to_chmin(iprocmin) = chmin
+            proc_to_icxmin(iprocmin) = icxmin
+         end if
+
+         ! Update global sampling, local mask and local potential
+         s_to_cx(is) = proc_to_icxmin(iprocmin)
+         if (iprocmin==mpl%myproc) then
+            lmask_ssa(issamin) = .false.
+            s_to_ssa(is) = issamin
+         end if
+         !$omp parallel do schedule(static) private(issa,dist)
+         do issa=1,nssa
+            if (lmask_ssa(issa)) then
+               ! Cartesian distance
+               call cart_dist(x_ssa(issa),y_ssa(issa),z_ssa(issa), &
+ & proc_to_xmin(iprocmin),proc_to_ymin(iprocmin),proc_to_zmin(iprocmin),dist)
+
+               ! Update potential
+               potential(issa) = potential(issa)+proc_to_chmin(iprocmin)/dist
+            end if
+         end do
+         !$omp end parallel do
+
+         ! Update
+         if (verbosity) call mpl%prog_print(is)
+      end do
+      if (verbosity) call mpl%prog_final
+
+      ! Release memory
+      deallocate(potential)
+      deallocate(proc_to_xmin)
+      deallocate(proc_to_ymin)
+      deallocate(proc_to_zmin)
+      deallocate(proc_to_chmin)
+      deallocate(proc_to_nodemin)
+      deallocate(proc_to_icxmin)
+   end if
 
    ! Release memory
    deallocate(lmask_cxa)
@@ -2051,19 +2138,27 @@ else
    deallocate(z_ssa)
    deallocate(ch_ssa)
    deallocate(lmask_ssa)
-   deallocate(potential)
-   deallocate(proc_to_xmin)
-   deallocate(proc_to_ymin)
-   deallocate(proc_to_zmin)
-   deallocate(proc_to_chmin)
-   deallocate(proc_to_nodemin)
-   deallocate(proc_to_icxmin)
 end if
 
 ! Reorder points
 
+! Broadcast
+if (.not.parallel) call mpl%f_comm%broadcast(s_to_cx,mpl%rootproc-1)
+
+! Offset
+call mpl%f_comm%allgather(ncxa,proc_to_ncxa)
+proc_to_cx_offset(1) = 0
+do iproc=2,mpl%nproc
+   proc_to_cx_offset(iproc) = proc_to_cx_offset(iproc-1)+proc_to_ncxa(iproc-1)
+end do
+
 ! Allocation
-nsa = count(mpl%msv%isnot(s_to_cxa))
+nsa = 0
+do is=1,ns
+   icx = s_to_cx(is)
+   iproc = cx_to_proc(geom%nproc,proc_to_cx_offset,icx)
+   if (iproc==mpl%myproc) nsa = nsa+1
+end do
 allocate(sa_to_s(nsa))
 allocate(lon_sa(nsa))
 allocate(lat_sa(nsa))
@@ -2075,9 +2170,11 @@ allocate(gmask_s(ns))
 ! Initialization
 isa = 0
 do is=1,ns
-   icxa = s_to_cxa(is)
-   if (mpl%msv%isnot(icxa)) then
+   icx = s_to_cx(is)
+   iproc = cx_to_proc(geom%nproc,proc_to_cx_offset,icx)
+   if (iproc==mpl%myproc) then
       isa = isa+1
+      icxa = cx_to_cxa(geom%nproc,proc_to_cx_offset,icx)
       sa_to_s(isa) = is
       lon_sa(isa) = lon_cxa(icxa)
       lat_sa(isa) = lat_cxa(icxa)

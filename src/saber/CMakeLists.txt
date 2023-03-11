@@ -39,6 +39,9 @@ endif()
 if( vader_FOUND )
     target_link_libraries( ${PROJECT_NAME} PUBLIC vader )
 endif()
+if ( ENABLE_OFFLINE_CODECOV )
+    target_link_libraries( ${PROJECT_NAME} PUBLIC gcov )
+endif()
 
 # Enable including of local header Fortran file templates
 target_include_directories( ${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..> )

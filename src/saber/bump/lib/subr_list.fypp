@@ -10,6 +10,7 @@
 
 ! Subroutines/functions list
 #:set subr_list = []
+#:set subr_list = subr_list + ["const_initialize_constants"]
 #:set subr_list = subr_list + ["fit_diag_sqrt"]
 #:set subr_list = subr_list + ["fit_diag_iso"]
 #:set subr_list = subr_list + ["fit_diag_tensor"]

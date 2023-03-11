@@ -11,7 +11,7 @@ module type_bump
 use atlas_module, only: atlas_field,atlas_fieldset,atlas_integer,atlas_real,atlas_functionspace
 use fckit_configuration_module, only: fckit_configuration
 use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
-use tools_const, only: zero,half,one,thousand,req,reqkm,deg2rad,rad2deg
+use tools_const, only: initialize_constants,zero,half,one,thousand,req,reqkm,deg2rad,rad2deg
 use tools_func, only: fletcher32,rad2short,sphere_dist,zss_maxval,zss_minval,zss_sum
 use tools_kinds,only: kind_short,kind_real
 use tools_netcdf, only: registry
@@ -118,6 +118,9 @@ type(fieldset_type),intent(in) :: universe_radius       !< Fieldset optionally c
 
 ! Probe in
 @:probe_in()
+
+! Initialize constants
+call initialize_constants
 
 ! Initialize MPL
 call bump%mpl%init(comm)
