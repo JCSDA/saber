@@ -8,7 +8,7 @@ add_subdirectory( mains )
 
 ecbuild_add_test( TARGET saber_coding_norms_quench
                   TYPE SCRIPT
-                  COMMAND ${CMAKE_BINARY_DIR}/bin/oops_cpplint.py
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/${PROJECT_NAME}_cpplint.py
                   ARGS --quiet --recursive ${CMAKE_CURRENT_SOURCE_DIR} )
 
 # Setup QUENCH data links
