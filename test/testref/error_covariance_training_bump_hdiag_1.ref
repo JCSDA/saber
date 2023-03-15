@@ -149,9 +149,9 @@
                 Level:   1 ~> cov. at class zero:  0.97E+00
                 Level:   2 ~> cov. at class zero:  0.10E+01
                 Level:   1 ~> cov. at class zero:  0.97E+00
-             Block stream_function:  0.34671936E+00 for    37356 diagnostic points
-             Block velocity_potential:  0.35294103E+00 for    37356 diagnostic points
-             Block surface_pressure:  0.36421464E+00 for     9339 diagnostic points
+             Block stream_function:  0.34672034E+00 for    37356 diagnostic points
+             Block velocity_potential:  0.35286654E+00 for    37356 diagnostic points
+             Block surface_pressure:  0.36461164E+00 for     9339 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        0.78
@@ -182,20 +182,20 @@
                                  cor. ver. support:         0.51 vertical units
                 Level:   1 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        0.77
-                                 cor. hor. support:      3519.71 km
+                                 cor. hor. support:      3515.16 km
                                  cor. ver. support:         0.00 vertical units
                    Level:   1 ~> amplitude:        0.23
-                                 cor. hor. support:      3519.36 km
+                                 cor. hor. support:      3512.49 km
                                  cor. ver. support:         0.00 vertical units
 Norm of BUMP output parameter cor_a - 1: 4.6206030769773228e+01
 Norm of BUMP output parameter cor_a - 2: 1.8764134198642523e+01
-Norm of BUMP output parameter cor_rh1 - 1: 2.4770911728747132e+08
-Norm of BUMP output parameter cor_rh1 - 2: 2.4531506456800568e+08
-Norm of BUMP output parameter cor_rh2 - 1: 2.4759496374396583e+08
-Norm of BUMP output parameter cor_rh2 - 2: 2.4504010977570057e+08
-Norm of BUMP output parameter cor_rhc - 1: 4.8079995315366935e+00
-Norm of BUMP output parameter cor_rhc - 2: 3.9840022937447945e+00
-Norm of BUMP output parameter cor_rh - 1: 2.4611961305133197e+08
-Norm of BUMP output parameter cor_rh - 2: 2.4379486909095803e+08
+Norm of BUMP output parameter cor_rh1 - 1: 2.5282513078871313e+08
+Norm of BUMP output parameter cor_rh1 - 2: 2.5073534977769154e+08
+Norm of BUMP output parameter cor_rh2 - 1: 2.5103230199905613e+08
+Norm of BUMP output parameter cor_rh2 - 2: 2.4845338881909248e+08
+Norm of BUMP output parameter cor_rhc - 1: 7.4009183602459805e+00
+Norm of BUMP output parameter cor_rhc - 2: 7.1219252178825725e+00
+Norm of BUMP output parameter cor_rh - 1: 2.4985032543060943e+08
+Norm of BUMP output parameter cor_rh - 2: 2.4759330580217209e+08
 Norm of BUMP output parameter cor_rv - 1: 2.7755959498314081e+02
 Norm of BUMP output parameter cor_rv - 2: 3.5375089272281322e+01

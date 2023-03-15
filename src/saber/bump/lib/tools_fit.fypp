@@ -397,7 +397,7 @@ real(kind_real),intent(out) :: H22  !< Inverse tensor component 22
 real(kind_real),intent(out) :: H12  !< Inverse tensor component 12
 
 ! Local variables
-real(kind_real) :: det,D12sq
+real(kind_real) :: det,D12full
 
 ! Set name
 @:set_name(fit_tensor_d2h)
@@ -407,19 +407,19 @@ real(kind_real) :: det,D12sq
 
 if (mpl%msv%isnot(D11).and.mpl%msv%isnot(D22).and.mpl%msv%isnot(D12)) then
    ! Full D12 component
-   D12sq = D11*D22*D12**2
+   D12full = D12*sqrt(D11*D22)
 
    ! Compute horizontal determinant
-   det = D11*D22-D12sq
+   det = D11*D22-D12full**2
 
    ! Inverse D to get H
    if (det>zero) then
       H11 = D22/det
       H22 = D11/det
-      H12 = -sqrt(D12sq)/det
+      H12 = -D12full/det
    else
-      write(mpl%info,'(a,e15.8,a,e15.8,a,e15.8,a,e15.8,a,e15.8,a,e15.8)') 'Tensor values (D11,D22,D12,D11*D12,D12sq,det): ', &
- & D11,',',D22,',',D12,',',D11*D12,',',D12sq,',',det
+      write(mpl%info,'(a,e15.8,a,e15.8,a,e15.8,a,e15.8,a,e15.8,a,e15.8)') 'Tensor values (D11,D22,D12,D11*D22,D12full**2,det): ', &
+ & D11,',',D22,',',D12,',',D11*D12,',',D12full**2,',',det
       call mpl%flush
       call mpl%abort('${subr}$','non-invertible tensor')
    end if

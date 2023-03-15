@@ -242,7 +242,7 @@ do ig=1,nam%ng
    if (nam%nc4>1) then
       cmat%blk(ig)%D11 = diag%blk(0,ig)%D11_c0a*lscaling_factor**2
       cmat%blk(ig)%D22 = diag%blk(0,ig)%D22_c0a*lscaling_factor**2
-      cmat%blk(ig)%D12 = diag%blk(0,ig)%D12_c0a*lscaling_factor**2
+      cmat%blk(ig)%D12 = diag%blk(0,ig)%D12_c0a
    end if
    cmat%blk(ig)%rv = diag%blk(0,ig)%rv_c0a*lscaling_factor
 end do

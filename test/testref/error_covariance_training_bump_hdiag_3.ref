@@ -66,7 +66,7 @@
           Independent levels for angular sector   4 / class  10:  1[2]
                 Level:   1 ~> cov. at class zero:  0.98E+00
                 Level:   2 ~> cov. at class zero:  0.10E+01
-             Block common:  0.18158144E+00 for    38768 diagnostic points
+             Block common:  0.18159867E+00 for    38768 diagnostic points
                 Level:   1 ~> cor. at class zero:        1.00
                 Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        0.77
@@ -81,30 +81,30 @@
                    Level:   2 ~> amplitude:        0.23
                                  cor. hor. support:      3637.05 km
                                  cor. ver. support:         0.53 vertical units
-             Block common:  0.42589763E+00 for    32912 diagnostic points
+             Block common:  0.42615711E+00 for    32912 diagnostic points
                 Level:   1 ~> loc. at class zero:       0.92
                 Level:   2 ~> loc. at class zero:       0.92
                    Level:   1 ~> amplitude:        0.86
-                                 loc. hor. support:      5575.34 km
+                                 loc. hor. support:      5583.40 km
                                  loc. ver. support:        86.54 vertical units
                    Level:   2 ~> amplitude:        0.86
-                                 loc. hor. support:      5387.80 km
+                                 loc. hor. support:      5395.65 km
                                  loc. ver. support:        86.54 vertical units
                    Level:   1 ~> amplitude:        0.14
-                                 loc. hor. support:      5577.03 km
+                                 loc. hor. support:      5580.61 km
                                  loc. ver. support:         0.08 vertical units
                    Level:   2 ~> amplitude:        0.14
-                                 loc. hor. support:      5392.75 km
+                                 loc. hor. support:      5396.26 km
                                  loc. ver. support:         0.58 vertical units
 Norm of BUMP output parameter loc_a - 1: 3.1329099211357597e+01
 Norm of BUMP output parameter loc_a - 2: 1.9083518549087035e+01
-Norm of BUMP output parameter loc_rh1 - 1: 4.2008542761793208e+08
-Norm of BUMP output parameter loc_rh1 - 2: 3.4957917412329131e+08
-Norm of BUMP output parameter loc_rh2 - 1: 4.0848044625293738e+08
-Norm of BUMP output parameter loc_rh2 - 2: 3.2975105482485384e+08
-Norm of BUMP output parameter loc_rhc - 1: 2.5818731963226860e+01
-Norm of BUMP output parameter loc_rhc - 2: 4.9190460135628395e+00
-Norm of BUMP output parameter loc_rh - 1: 3.6753601765881848e+08
-Norm of BUMP output parameter loc_rh - 2: 3.3593191167361027e+08
+Norm of BUMP output parameter loc_rh1 - 1: 4.2083614520125109e+08
+Norm of BUMP output parameter loc_rh1 - 2: 3.5250725906315798e+08
+Norm of BUMP output parameter loc_rh2 - 1: 4.0954193626137692e+08
+Norm of BUMP output parameter loc_rh2 - 2: 3.3335471805617309e+08
+Norm of BUMP output parameter loc_rhc - 1: 2.6682410471801550e+01
+Norm of BUMP output parameter loc_rhc - 2: 9.2688930331960346e+00
+Norm of BUMP output parameter loc_rh - 1: 3.6622728833418977e+08
+Norm of BUMP output parameter loc_rh - 2: 3.3700051968755341e+08
 Norm of BUMP output parameter loc_rv - 1: 4.5279226541796579e+03
 Norm of BUMP output parameter loc_rv - 2: 2.7944780213468928e+01
