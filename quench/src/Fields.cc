@@ -1226,20 +1226,42 @@ void Fields::print(std::ostream & os) const {
 // -----------------------------------------------------------------------------
 size_t Fields::serialSize() const {
   size_t nn = 0;
-  if (geom_->functionSpace().type() == "StructuredColumns") {
-    nn = geom_->functionSpace().size();
-  } else if (geom_->functionSpace().type() == "NodeColumns") {
-    nn = geom_->functionSpace().size();
+  for (const auto & var : vars_.variables()) {
+    atlas::Field field = fset_[var];
+    if (field.rank() == 2) {
+      nn += field.shape(0)*field.shape(1);
+    }
   }
   return nn;
 }
 // -----------------------------------------------------------------------------
 void Fields::serialize(std::vector<double> & vect)  const {
-  ABORT("not implemented yet");
+  for (const auto & var : vars_.variables()) {
+    const atlas::Field field = fset_[var];
+    if (field.rank() == 2) {
+      const auto view = atlas::array::make_view<double, 2>(field);
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+          vect.push_back(view(jnode, jlevel));
+        }
+      }
+    }
+  }
 }
 // -----------------------------------------------------------------------------
 void Fields::deserialize(const std::vector<double> & vect, size_t & index) {
-  ABORT("not implemented yet");
+  for (const auto & var : vars_.variables()) {
+    atlas::Field field = fset_[var];
+    if (field.rank() == 2) {
+      auto view = atlas::array::make_view<double, 2>(field);
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+          view(jnode, jlevel) = vect[index];
+          ++index;
+        }
+      }
+    }
+  }
 }
 // -----------------------------------------------------------------------------
 }  // namespace quench
