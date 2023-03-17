@@ -20,6 +20,7 @@ use type_mpl, only: mpl_type
 implicit none
 
 type nam_type
+   ! General section
    logical :: default_seed                                    !< Default seed for random numbers
    logical :: repro_ops                                       !< Reproducibility operators
    real(kind_real) :: repro_th                                !< Reproducibility threshold

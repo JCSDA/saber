@@ -317,6 +317,7 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
                                 inputVars,
                                 *bumpParams,
                                 fsetVec1,
+                                geom1.timeComm().rank(),
                                 ens1_ne,
                                 geom2->functionSpace(),
                                 geom2->extraFields(),

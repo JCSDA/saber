@@ -249,7 +249,8 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
                            saberCentralBlockParams,
                            xbLocal.fieldSet(),
                            fgLocal.fieldSet(),
-                           fsetVec));
+                           fsetVec,
+                           geom.timeComm().rank()));
 
   // Adjoint test
   if (adjointTest) {

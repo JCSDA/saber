@@ -48,7 +48,8 @@ class SpectralCovariance : public SaberCentralBlockBase {
                      const Parameters_ &,
                      const atlas::FieldSet &,
                      const atlas::FieldSet &,
-                     const std::vector<atlas::FieldSet> &);
+                     const std::vector<atlas::FieldSet> &,
+                     const size_t &);
 
   virtual ~SpectralCovariance() = default;
 
@@ -75,6 +76,8 @@ class SpectralCovariance : public SaberCentralBlockBase {
   const oops::GeometryData & geometryData_;
   /// Spectral FunctionSpace
   const atlas::functionspace::Spectral specFunctionSpace_;
+  /// Time rank
+  size_t timeRank_;
 };
 
 }  // namespace spectralb

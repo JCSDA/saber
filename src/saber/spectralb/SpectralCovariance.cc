@@ -35,12 +35,14 @@ SpectralCovariance::SpectralCovariance(const oops::GeometryData & geometryData,
                                        const Parameters_ & params,
                                        const atlas::FieldSet & xb,
                                        const atlas::FieldSet & fg,
-                                       const std::vector<atlas::FieldSet> & fsetVec)
+                                       const std::vector<atlas::FieldSet> & fsetVec,
+                                       const size_t & timeRank)
   : activeVars_(params.activeVars.value().get_value_or(centralVars)),
     variance_opt_(params.spectralbParams.value().varianceOpt),
     cs_(),
     geometryData_(geometryData),
-    specFunctionSpace_(geometryData_.functionSpace())
+    specFunctionSpace_(geometryData_.functionSpace()),
+    timeRank_(timeRank)
 {
   oops::Log::trace() << classname() << "::SpectralCovariance starting " << std::endl;
 
@@ -71,7 +73,8 @@ void SpectralCovariance::testUUtConsistency(const std::vector<size_t> & variable
   // Create random FieldSet y
   atlas::FieldSet y =  util::createRandomFieldSet(geometryData_,
                                                   variableSizes,
-                                                  activeVars_);
+                                                  activeVars_,
+                                                  timeRank_);
 
   // Apply forward multiplication using B or UU^t
   atlas::FieldSet By = util::copyFieldSet(y);

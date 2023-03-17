@@ -9,6 +9,7 @@
 !----------------------------------------------------------------------
 module type_mpl
 
+use fckit_configuration_module, only: fckit_configuration
 use fckit_log_module, only: fckit_logchannel
 use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_status
 use iso_c_binding, only: c_ptr,c_null_ptr,c_associated
@@ -39,6 +40,9 @@ type mpl_type
    integer :: rootproc                    !< Main task index
    logical :: main                        !< Main task logical
    integer :: tag                         !< MPI tag
+
+   ! Time rank
+   integer :: time_rank                   !< Time rank
 
    ! I/O
    character(len=1024) :: datadir         !< Data directory
@@ -150,13 +154,14 @@ contains
 ! Subroutine: mpl_init
 !> Initialize MPL object
 !----------------------------------------------------------------------
-subroutine mpl_init(mpl,f_comm)
+subroutine mpl_init(mpl,f_comm,conf)
 
 implicit none
 
 ! Passed variables
 class(mpl_type),intent(inout) :: mpl             !< MPI data
 type(fckit_mpi_comm),intent(in),target :: f_comm !< FCKIT MPI communicator wrapper
+type(fckit_configuration),intent(in) :: conf     !< Configuration
 
 ! Set name
 @:set_name(mpl_init)
@@ -183,6 +188,9 @@ if (mpl%main) then
 end if
 call mpl%f_comm%broadcast(mpl%tag,mpl%rootproc-1)
 call mpl%update_tag(0)
+
+! Get time rank
+if (.not.conf%get('time rank',mpl%time_rank)) mpl%time_rank = 0
 
 ! Set max number of OpenMP threads
 mpl%nthread = 1

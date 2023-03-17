@@ -48,7 +48,8 @@ class Ensemble : public SaberCentralBlockBase {
            const Parameters_ &,
            const atlas::FieldSet &,
            const atlas::FieldSet &,
-           const std::vector<atlas::FieldSet> &);
+           const std::vector<atlas::FieldSet> &,
+           const size_t &);
 
   void randomize(atlas::FieldSet &) const override;
   void multiply(atlas::FieldSet &) const override;
@@ -56,6 +57,7 @@ class Ensemble : public SaberCentralBlockBase {
  private:
   std::vector<atlas::FieldSet> ensemble_;
   std::unique_ptr<SaberCentralBlockBase> loc_;
+  size_t timeRank_;
   void print(std::ostream &) const override;
 };
 

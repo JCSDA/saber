@@ -43,7 +43,8 @@ class ID : public SaberCentralBlockBase {
      const Parameters_ &,
      const atlas::FieldSet &,
      const atlas::FieldSet &,
-     const std::vector<atlas::FieldSet> &);
+     const std::vector<atlas::FieldSet> &,
+     const size_t &);
 
   virtual ~ID();
 
@@ -54,6 +55,7 @@ class ID : public SaberCentralBlockBase {
   const oops::GeometryData & geometryData_;
   const std::vector<size_t> activeVariableSizes_;
   const oops::Variables activeVars_;
+  size_t timeRank_;
   void print(std::ostream &) const override;
 };
 

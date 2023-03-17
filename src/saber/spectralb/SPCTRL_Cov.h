@@ -52,7 +52,8 @@ class SPCTRL_COV : public SaberCentralBlockBase {
              const Parameters_ &,
              const atlas::FieldSet &,
              const atlas::FieldSet &,
-             const std::vector<atlas::FieldSet> &);
+             const std::vector<atlas::FieldSet> &,
+             const size_t &);
   virtual ~SPCTRL_COV();
 
   void randomize(atlas::FieldSet &) const override;

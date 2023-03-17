@@ -99,7 +99,8 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
                            saberCentralBlockParams,
                            dummyFs,
                            dummyFs,
-                           fsetVec));
+                           fsetVec,
+                           geom.timeComm().rank()));
 
   // Check that active variables are present in central variables
   for (const auto & var : activeVars.variables()) {

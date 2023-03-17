@@ -27,8 +27,9 @@ Ensemble::Ensemble(const oops::GeometryData & geometryData,
                    const Parameters_ & params,
                    const atlas::FieldSet & xb,
                    const atlas::FieldSet & fg,
-                   const std::vector<atlas::FieldSet> & fsetVec)
-{
+                   const std::vector<atlas::FieldSet> & fsetVec,
+                   const size_t & timeRank) :
+  timeRank_(timeRank) {
   oops::Log::trace() << classname() << "::Ensemble starting" << std::endl;
 
   // Initialize ensemble
@@ -45,7 +46,7 @@ Ensemble::Ensemble(const oops::GeometryData & geometryData,
   oops::Log::info() << "Info     : Creating localization block: "
                     << saberCentralBlockParams.saberBlockName.value() << std::endl;
   loc_.reset(SaberCentralBlockFactory::create(geometryData, activeVariableSizes, activeVars,
-    saberCentralBlockParams, xb, fg, fsetVec));
+    saberCentralBlockParams, xb, fg, fsetVec, timeRank));
 
   oops::Log::trace() << classname() << "::Ensemble done" << std::endl;
 }

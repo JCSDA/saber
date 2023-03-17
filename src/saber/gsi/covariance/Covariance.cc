@@ -41,12 +41,15 @@ Covariance::Covariance(const oops::GeometryData & geometryData,
                        const Parameters_ & params,
                        const atlas::FieldSet & xb,
                        const atlas::FieldSet & fg,
-                       const std::vector<atlas::FieldSet> & fsetVec)
+                       const std::vector<atlas::FieldSet> & fsetVec,
+                       const size_t & timeRank)
   : variables_(params.activeVars.value().get_value_or(centralVars).variables()),
     gsiGridFuncSpace_(geometryData.functionSpace())
 {
   oops::Log::trace() << classname() << "::Covariance starting" << std::endl;
   util::Timer timer(classname(), "Covariance");
+
+  // TODO(GSI team) use timeRank to initialize random seed
 
   // Create covariance module
   gsi_covariance_create_f90(keySelf_, geometryData.comm(), params.toConfiguration(), xb.get(),

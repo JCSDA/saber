@@ -103,12 +103,12 @@ subroutine bump_create(bump,comm,afunctionspace,fieldset,conf,universe_radius)
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump                  !< BUMP
-type(fckit_mpi_comm),intent(in) :: comm                 !< FCKIT MPI communicator wrapper
-type(atlas_functionspace),intent(in) :: afunctionspace  !< Function space
-type(fieldset_type),intent(in) :: fieldset              !< SABER geometry fields
-type(fckit_configuration),intent(in) :: conf            !< FCKIT configuration
-type(fieldset_type),intent(in) :: universe_radius       !< Fieldset optionally containing universe radius
+class(bump_type),intent(inout) :: bump                 !< BUMP
+type(fckit_mpi_comm),intent(in) :: comm                !< FCKIT MPI communicator wrapper
+type(atlas_functionspace),intent(in) :: afunctionspace !< Function space
+type(fieldset_type),intent(in) :: fieldset             !< SABER geometry fields
+type(fckit_configuration),intent(in) :: conf           !< FCKIT configuration
+type(fieldset_type),intent(in) :: universe_radius      !< Fieldset optionally containing universe radius
 
 ! Set name
 @:set_name(bump_create)
@@ -123,7 +123,7 @@ type(fieldset_type),intent(in) :: universe_radius       !< Fieldset optionally c
 call initialize_constants
 
 ! Initialize MPL
-call bump%mpl%init(comm)
+call bump%mpl%init(comm, conf)
 
 ! Initialize parameters
 call bump%nam%init(bump%mpl)

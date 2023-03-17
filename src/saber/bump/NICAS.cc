@@ -35,7 +35,8 @@ NICAS::NICAS(const oops::GeometryData & geometryData,
              const Parameters_ & params,
              const atlas::FieldSet & xb,
              const atlas::FieldSet & fg,
-             const std::vector<atlas::FieldSet> & fsetVec)
+             const std::vector<atlas::FieldSet> & fsetVec,
+             const size_t & timeRank)
   : bump_()
 {
   oops::Log::trace() << classname() << "::NICAS starting" << std::endl;
@@ -50,7 +51,8 @@ NICAS::NICAS(const oops::GeometryData & geometryData,
                        activeVariableSizes,
                        activeVars,
                        params.bumpParams.value(),
-                       fsetVec));
+                       fsetVec,
+                       timeRank));
 
   // Run drivers
   bump_->runDrivers();

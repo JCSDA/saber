@@ -99,6 +99,9 @@ end if
 ! Different seed for each processor
 seed = seed+mpl%myproc-1
 
+! Different seed for each subwindow
+seed = seed+mpl%time_rank*mpl%nproc
+
 ! Long integer
 rng%seed = int(seed,kind_long)
 
@@ -142,6 +145,9 @@ seed = default_seed
 
 ! Different seed for each processor
 seed = seed+mpl%myproc-1
+
+! Different seed for each subwindow
+seed = seed+mpl%time_rank*mpl%nproc
 
 ! Long integer
 rng%seed = int(seed,kind_long)
@@ -203,6 +209,9 @@ call mpl%f_comm%barrier()
 
 ! Different seed for each processor
 rng%seed = rng%seed+int(mpl%myproc-1,kind_long)
+
+! Different seed for each subwindow
+rng%seed = rng%seed+int(mpl%time_rank*mpl%nproc,kind_long)
 
 ! Probe out
 @:probe_out()

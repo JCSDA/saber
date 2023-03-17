@@ -151,15 +151,15 @@ type(fckit_configuration) :: conf
 ! Probe in
 @:probe_in()
 
-! Initialize MPL
-call bint%bump%mpl%init(comm)
-
 ! Configuration
 conf = fckit_configuration()
 call conf%set('io.data directory','testdata')
 call conf%set('io.files prefix','bump_interpolator')
 call conf%set('model.nl0',nl0)
 call conf%set('model.variables',(/'var'/))
+
+! Initialize MPL
+call bint%bump%mpl%init(comm,conf)
 
 ! Initialize constants
 call initialize_constants

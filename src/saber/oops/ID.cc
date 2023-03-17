@@ -27,10 +27,12 @@ ID::ID(const oops::GeometryData & geometryData,
        const Parameters_ & params,
        const atlas::FieldSet & xb,
        const atlas::FieldSet & fg,
-       const std::vector<atlas::FieldSet> & fsetVec) :
+       const std::vector<atlas::FieldSet> & fsetVec,
+       const size_t & timeRank) :
     geometryData_(geometryData),
     activeVariableSizes_(activeVariableSizes),
-    activeVars_(activeVars)
+    activeVars_(activeVars),
+    timeRank_(timeRank)
 {
   oops::Log::trace() << classname() << "::ID starting" << std::endl;
   oops::Log::trace() << classname() << "::ID done" << std::endl;
@@ -52,7 +54,8 @@ void ID::randomize(atlas::FieldSet & fset) const {
   // Overwrite input fieldSet with random numbers
   const atlas::FieldSet newFieldSet = util::createRandomFieldSet(geometryData_,
                                                                  activeVariableSizes_,
-                                                                 activeVars_);
+                                                                 activeVars_,
+                                                                 timeRank_);
 
   for (const auto & var : activeVars_.variables()) {
     fset[var] = newFieldSet[var];

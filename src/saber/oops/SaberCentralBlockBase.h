@@ -65,12 +65,13 @@ class SaberCentralBlockParametersWrapper : public oops::Parameters {
 class SaberCentralBlockFactory {
  public:
   static SaberCentralBlockBase * create(const oops::GeometryData &,
-                                 const std::vector<size_t> &,
-                                 const oops::Variables &,
-                                 const SaberBlockParametersBase &,
-                                 const atlas::FieldSet &,
-                                 const atlas::FieldSet &,
-                                 const std::vector<atlas::FieldSet> &);
+                                        const std::vector<size_t> &,
+                                        const oops::Variables &,
+                                        const SaberBlockParametersBase &,
+                                        const atlas::FieldSet &,
+                                        const atlas::FieldSet &,
+                                        const std::vector<atlas::FieldSet> &,
+                                        const size_t & timeRank = 0);
 
   static std::unique_ptr<SaberBlockParametersBase> createParameters(const std::string &name);
 
@@ -90,7 +91,8 @@ class SaberCentralBlockFactory {
                                        const SaberBlockParametersBase &,
                                        const atlas::FieldSet &,
                                        const atlas::FieldSet &,
-                                       const std::vector<atlas::FieldSet> &) = 0;
+                                       const std::vector<atlas::FieldSet> &,
+                                       const size_t &) = 0;
 
   virtual std::unique_ptr<SaberBlockParametersBase> makeParameters() const = 0;
 
@@ -112,10 +114,11 @@ class SaberCentralBlockMaker : public SaberCentralBlockFactory {
                                const SaberBlockParametersBase & params,
                                const atlas::FieldSet & xb,
                                const atlas::FieldSet & fg,
-                               const std::vector<atlas::FieldSet> & fsetVec) override {
+                               const std::vector<atlas::FieldSet> & fsetVec,
+                               const size_t & timeRank) override {
     const auto &stronglyTypedParams = dynamic_cast<const Parameters_&>(params);
     return new T(geometryData, activeVariableSizes,
-                 outerVars, stronglyTypedParams, xb, fg, fsetVec);
+                 outerVars, stronglyTypedParams, xb, fg, fsetVec, timeRank);
   }
 
   std::unique_ptr<SaberBlockParametersBase> makeParameters() const override {

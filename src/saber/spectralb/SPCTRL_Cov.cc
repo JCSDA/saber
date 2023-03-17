@@ -34,7 +34,8 @@ SPCTRL_COV::SPCTRL_COV(const oops::GeometryData & geometryData,
                        const Parameters_ & params,
                        const atlas::FieldSet & xb,
                        const atlas::FieldSet & fg,
-                       const std::vector<atlas::FieldSet> & fsetVec)
+                       const std::vector<atlas::FieldSet> & fsetVec,
+                       const size_t & timeRank)
   : spectralb_()
 {
   oops::Log::trace() << classname() << "::SPCTRL_COV starting" << std::endl;

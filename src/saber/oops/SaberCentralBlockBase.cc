@@ -53,7 +53,8 @@ SaberCentralBlockBase * SaberCentralBlockFactory::create(
   const SaberBlockParametersBase & params,
   const atlas::FieldSet & xb,
   const atlas::FieldSet & fg,
-  const std::vector<atlas::FieldSet> & fsetVec) {
+  const std::vector<atlas::FieldSet> & fsetVec,
+  const size_t & timeRank) {
   oops::Log::trace() << "SaberCentralBlockBase::create starting" << std::endl;
   const std::string id = params.saberBlockName;
   typename std::map<std::string, SaberCentralBlockFactory*>::iterator jsb = getMakers().find(id);
@@ -62,7 +63,7 @@ SaberCentralBlockBase * SaberCentralBlockFactory::create(
     ABORT("Element does not exist in saber::SaberCentralBlockFactory.");
   }
   SaberCentralBlockBase * ptr = jsb->second->make(geometryData, variableSizes, vars, params, xb, fg,
-    fsetVec);
+    fsetVec, timeRank);
   oops::Log::trace() << "SaberCentralBlockBase::create done" << std::endl;
   return ptr;
 }

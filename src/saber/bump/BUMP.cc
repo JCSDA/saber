@@ -41,6 +41,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
            const oops::Variables & activeVars,
            const BUMPParameters & params,
            const std::vector<atlas::FieldSet> & fsetVec1,
+           const size_t & timeRank,
            const size_t & ens1_ne_in,
            const atlas::FunctionSpace & functionSpace2,
            const atlas::FieldSet & extraFields2,
@@ -189,6 +190,9 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   // Update ensemble sizes
   conf.set("ensemble sizes.total ensemble size", ens1_ne);
   conf.set("ensemble sizes.total lowres ensemble size", ens2_ne);
+
+  // Set time rank
+  conf.set("time rank", timeRank);
 
   // Grids
   std::vector<eckit::LocalConfiguration> grids;
