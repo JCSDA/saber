@@ -39,6 +39,6 @@ Groups:
   Mask size: 100%
 Fields:
   dry_air_density_levels_minus_one: 0.0000000000000000e+00
-  eastward_wind: 2.1419996120709385e+01
-  northward_wind: 1.9684738584495978e+01
-  geostrophic_pressure_levels_minus_one: 9.4833704468144133e+03
+  eastward_wind: 2.1336683576082507e+01
+  northward_wind: 1.9597601640366605e+01
+  geostrophic_pressure_levels_minus_one: 9.4136277068560576e+03

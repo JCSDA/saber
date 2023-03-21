@@ -17,7 +17,6 @@
 #include "atlas/field.h"
 #include "atlas/grid.h"
 #include "atlas/grid/detail/partitioner/CubedSpherePartitioner.h"
-#include "atlas/grid/detail/partitioner/TransPartitioner.h"
 #include "atlas/grid/Partitioner.h"
 #include "atlas/interpolation/Interpolation.h"
 #include "atlas/mesh/Mesh.h"
@@ -27,7 +26,9 @@
 #include "atlas/util/Constants.h"
 #include "atlas/util/Earth.h"
 
+#include "mo/common_varchange.h"
 #include "mo/control2analysis_varchange.h"
+#include "mo/eval_dry_air_density.h"
 #include "mo/model2geovals_varchange.h"
 
 #include "oops/base/Variables.h"
@@ -41,7 +42,6 @@
 
 #define ERR(e) {ABORT(nc_strerror(e));}
 
-using atlas::grid::detail::partitioner::TransPartitioner;
 
 namespace saber {
 namespace spectralb {
@@ -125,12 +125,25 @@ void populateFields(const atlas::FieldSet & geomfields,
   atlas::FieldSet tempfields;
 
   // Need to setup derived state fields that we need (done on model grid).
-  std::vector<std::string> requiredStateVariables{ "exner_levels_minus_one",
-                                                   "potential_temperature",
-                                                   "exner",
-                                                   "air_pressure_levels_minus_one",
-                                                   "air_temperature",
-                                                   "dry_air_density_levels_minus_one"};
+  std::vector<std::string> requiredStateVariables{
+    "air_temperature",
+    "air_pressure",
+    "air_pressure_levels_minus_one",
+    "dlsvpdT",
+    "dry_air_density_levels_minus_one",
+    "exner",
+    "height",
+    "height_levels",
+    "m_ci",
+    "m_cl",
+    "m_r",
+    "m_v",
+    "m_t",
+    "potential_temperature",
+    "qsat",
+    "specific_humidity",
+    "svp",
+    "virtual_potential_temperature"};
 
   std::vector<std::string> requiredGeometryVariables{"height_levels",
                                                      "height"};
@@ -156,7 +169,12 @@ void populateFields(const atlas::FieldSet & geomfields,
   }
 
   mo::evalAirTemperature(tempfields);
-  mo::evalDryAirDensity(tempfields);
+  mo::evalTotalMassMoistAir(tempfields);
+  mo::evalSatVaporPressure(tempfields);
+  mo::evalSatSpecificHumidity(tempfields);
+  mo::evalSpecificHumidity(tempfields);
+  mo::evalVirtualPotentialTemperature(tempfields);
+  mo::eval_dry_air_density_nl(tempfields);
 
   std::string s("dry_air_density_levels_minus_one");
   outputfields.add(tempfields[s]);
@@ -416,7 +434,8 @@ void applyRecipNtimesNplus1SpectralScaling(const oops::Variables & innerNames,
     atlas::Field scaledFld = fSet[innerNames[var]];
     auto fldView = atlas::array::make_view<double, 2>(scaledFld);
 
-    double a = atlas::util::Earth::radius();  // radius of earth;
+    double earthRadius = atlas::util::Earth::radius();  // radius of earth;
+    const double squaredEarthRadius = earthRadius * earthRadius;
     int i(0);
     for (int jm = 0; jm < nb_zonal_wavenumbers; ++jm) {
       const int m1 = zonal_wavenumbers(jm);
@@ -424,7 +443,7 @@ void applyRecipNtimesNplus1SpectralScaling(const oops::Variables & innerNames,
         for (std::size_t img = 0; img < 2; ++img, ++i) {
           for (atlas::idx_t jl = 0; jl < fSet[innerNames[var]].levels(); ++jl) {
             if (n1 != 0) {
-              fldView(i, jl) = a * a *  fldView(i, jl) / (n1 * (n1 + 1));
+              fldView(i, jl) *= squaredEarthRadius / (n1 * (n1 + 1));
             } else {
               fldView(i, jl) = 0.0;
             }
@@ -537,6 +556,7 @@ void GaussUVToGP::multiplyAD(atlas::FieldSet & fset) const {
       newFields.add(fset[s]);
     }
   }
+
   fset["geostrophic_pressure_levels_minus_one"].adjointHaloExchange();
 
   // apply inverse spectral transform to

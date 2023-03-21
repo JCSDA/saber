@@ -90,12 +90,11 @@ background error:
     covariance data:
       covariance file path: testdata/FPstats.nc
       number of covariance latitude rings: 481
+      gp regression bins: 18
     saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
   - saber block name: mo_hydro_bal
-    adjoint tolerance: 5e-12
     saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
   - saber block name: mo_moisture_control
-    adjoint tolerance: 5e-12
     covariance data:
       covariance file path: testdata/MUstats.nc
     saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
@@ -104,14 +103,32 @@ background error:
     moisture incrementing operator file: testdata/MIO_coefficients.nc
     saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
   - saber block name: mo_dry_air_density
+    saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
 dirac:
   lon:
   - 0.0
   lat:
-  - 0.0
+  - 3.672
   level:
   - 1
   variable:
+  - dry_air_density_levels_minus_one
+diagnostic points:
+  lon:
+  - 180.0
+  - 0.0
+  - 0.0
+  lat:
+  - 3.672
+  - 84.37
+  - 3.672
+  level:
+  - 1
+  - 1
+  - 70
+  variable:
+  - dry_air_density_levels_minus_one
+  - dry_air_density_levels_minus_one
   - dry_air_density_levels_minus_one
 initial condition:
   date: 2016-01-01T16:00:00Z
@@ -163,3 +180,7 @@ initial condition:
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_spectralb_gauss_vader/dirac_%id%_%MPI%
+test:
+  test output filename: testref/dirac_spectralb_gauss_vader.out
+  reference filename: testref/dirac_spectralb_gauss_vader.ref
+

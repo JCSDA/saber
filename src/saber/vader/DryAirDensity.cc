@@ -16,8 +16,11 @@
 
 #include "eckit/exception/Exceptions.h"
 
+#include "mo/common_varchange.h"
 #include "mo/control2analysis_linearvarchange.h"
 #include "mo/control2analysis_varchange.h"
+#include "mo/eval_dry_air_density.h"
+#include "mo/eval_sat_vapour_pressure.h"
 #include "mo/model2geovals_varchange.h"
 
 #include "oops/base/Variables.h"
@@ -46,12 +49,25 @@ DryAirDensity::DryAirDensity(const oops::GeometryData & outerGeometryData,
   oops::Log::trace() << classname() << "::DryAirDensity starting" << std::endl;
 
   // Need to setup derived state fields that we need.
-  std::vector<std::string> requiredStateVariables{ "exner_levels_minus_one",
-                                                   "potential_temperature",
-                                                   "exner",
+  std::vector<std::string> requiredStateVariables{ "air_temperature",
+                                                   "air_pressure",
                                                    "air_pressure_levels_minus_one",
-                                                   "air_temperature",
-                                                   "dry_air_density_levels_minus_one"};
+                                                   "dlsvpdT",
+                                                   "dry_air_density_levels_minus_one",
+                                                   "exner",
+                                                   "exner_levels_minus_one",
+                                                   "height",
+                                                   "height_levels",
+                                                   "m_ci",
+                                                   "m_cl",
+                                                   "m_r",
+                                                   "m_v",
+                                                   "m_t",
+                                                   "potential_temperature",
+                                                   "qsat",
+                                                   "specific_humidity",
+                                                   "svp",
+                                                   "virtual_potential_temperature"};
 
 
   // Check that they are allocated (i.e. exist in the state fieldset)
@@ -78,7 +94,12 @@ DryAirDensity::DryAirDensity(const oops::GeometryData & outerGeometryData,
   }
 
   mo::evalAirTemperature(augmentedStateFieldSet_);
-  mo::evalDryAirDensity(augmentedStateFieldSet_);
+  mo::evalTotalMassMoistAir(augmentedStateFieldSet_);
+  mo::eval_sat_vapour_pressure_nl(params.svp_file, augmentedStateFieldSet_);
+  mo::evalSatSpecificHumidity(augmentedStateFieldSet_);
+  mo::evalSpecificHumidity(augmentedStateFieldSet_);
+  mo::evalVirtualPotentialTemperature(augmentedStateFieldSet_);
+  mo::eval_dry_air_density_nl(augmentedStateFieldSet_);
 
   augmentedStateFieldSet_.haloExchange();
 
@@ -97,7 +118,7 @@ DryAirDensity::~DryAirDensity() {
 
 void DryAirDensity::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  mo::evalDryAirDensityTL(fset, augmentedStateFieldSet_);
+  mo::eval_dry_air_density_tl(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
@@ -106,7 +127,7 @@ void DryAirDensity::multiply(atlas::FieldSet & fset) const {
 
 void DryAirDensity::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  mo::evalDryAirDensityAD(fset, augmentedStateFieldSet_);
+  mo::eval_dry_air_density_ad(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 

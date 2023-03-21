@@ -34,10 +34,11 @@ namespace vader {
 class DryAirDensityParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(DryAirDensityParameters, SaberBlockParametersBase)
  public:
+  oops::RequiredParameter<std::string> svp_file{"saturation vapour pressure file", this};
   oops::Variables mandatoryActiveVars() const override {return oops::Variables({
     "dry_air_density_levels_minus_one",
-    "exner_levels_minus_one",
-    "potential_temperature"});}
+    "air_pressure_levels_minus_one",
+    "virtual_potential_temperature"});}
 };
 
 // -----------------------------------------------------------------------------

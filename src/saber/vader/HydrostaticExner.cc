@@ -53,10 +53,9 @@ HydrostaticExner::HydrostaticExner(const oops::GeometryData & outerGeometryData,
   // Covariance FieldSet
   covFieldSet_ = createGpRegressionStats(outerGeometryData.functionSpace(),
                                          outerGeometryData.fieldSet(),
+                                         params.mandatoryActiveVars(),
                                          activeVariableSizes,
                                          params.hydrostaticexnerParams.value());
-
-
 
   std::vector<std::string> requiredStateVariables{
     "air_temperature",
@@ -113,8 +112,11 @@ HydrostaticExner::HydrostaticExner(const oops::GeometryData & outerGeometryData,
   augmentedStateFieldSet_.haloExchange();
 
   // Need to setup derived state fields that we need.
-  std::vector<std::string> requiredCovarianceVariables{
-    "vertical_regression_matrices", "interpolation_weights"};
+  std::vector<std::string> requiredCovarianceVariables;
+  if (covFieldSet_.has("interpolation_weights")) {
+    requiredCovarianceVariables.push_back("vertical_regression_matrices");
+    requiredCovarianceVariables.push_back("interpolation_weights");
+  }
 
   for (const auto & s : requiredCovarianceVariables) {
     augmentedStateFieldSet_.add(covFieldSet_[s]);
@@ -224,6 +226,7 @@ void HydrostaticExner::print(std::ostream & os) const {
 ///
 atlas::FieldSet createGpRegressionStats(const atlas::FunctionSpace & functionSpace,
                                         const atlas::FieldSet & extraFields,
+                                        const oops::Variables & variables,
                                         const std::vector<size_t> & variableSizes,
                                         const HydrostaticExnerCovarianceParameters & params) {
   // Get necessary parameters
@@ -232,19 +235,28 @@ atlas::FieldSet createGpRegressionStats(const atlas::FunctionSpace & functionSpa
   // number of latitudes that existed in the generation of the covariance file
   std::size_t covGlobalNLats(static_cast<std::size_t>(params.covariance_nlat));
   // number of model levels
-  std::size_t modelLevels(variableSizes[0]);
+  std::size_t modelLevels =
+    variableSizes[variables.find("unbalanced_pressure_levels_minus_one")];
 
   // geostrophic pressure vertical regression statistics are grouped
   // into overlapping bins based on latitude;
   // number of bins associated with the gP vertical regression
   std::size_t gPBins(static_cast<std::size_t>(params.gp_regression_bins));
 
+  oops::Log::info() <<
+    "HydrostaticExner::gp regression no of bins = " << gPBins << std::endl;
+  oops::Log::info() <<
+    "HydrostaticExner::gp regression model levels = " << modelLevels << std::endl;
+
   atlas::FieldSet gpStatistics;
 
-  gpStatistics.add(createGpRegressionMatrices(covFileName, gPBins, modelLevels));
+  // If gPBins is 0 - then we switch off the balanced pressure contribution.
+  if (gPBins > 0) {
+    gpStatistics.add(createGpRegressionMatrices(covFileName, gPBins, modelLevels));
 
-  gpStatistics.add(createGpRegressionWeights(functionSpace, extraFields,
-                                             covFileName, covGlobalNLats, gPBins));
+    gpStatistics.add(createGpRegressionWeights(functionSpace, extraFields,
+                                               covFileName, covGlobalNLats, gPBins));
+  }
 
   return gpStatistics;
 }
