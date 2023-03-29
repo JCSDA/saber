@@ -41,7 +41,7 @@ Fields:
              Level   4 ~> -0.110E+02 vert. unit
           nc2 =       89
 Adjoint test passed
-Norm of input parameter StdDev: 3.1578046935870653e+08
+Norm of input parameter StdDev: 3.2367672341781867e+08
 Adjoint test passed
        Independent levels:  1[4]
           Model grid size:             3312

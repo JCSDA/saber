@@ -719,28 +719,19 @@ samp%sc1 = mpl%msv%isnot(nc1_id)
 
 if (samp%sc1) then
    ! Get dimension
-   if (mpl%main) samp%nc1 = inquire_dim_size(mpl,ncid,'nc1')
-
-   ! Broadcast dimension
-   call mpl%f_comm%broadcast(samp%nc1,mpl%rootproc-1)
+   samp%nc1 = inquire_dim_size(mpl,ncid,'nc1')
 
    ! Allocation
    allocate(lon_c1(samp%nc1))
    allocate(lat_c1(samp%nc1))
 
-   if (mpl%main) then
-      ! Inquire variables
-      lon_c1_id = inquire_var(mpl,ncid,'lon_c1')
-      lat_c1_id = inquire_var(mpl,ncid,'lat_c1')
+   ! Inquire variables
+   lon_c1_id = inquire_var(mpl,ncid,'lon_c1')
+   lat_c1_id = inquire_var(mpl,ncid,'lat_c1')
 
-      ! Read variables
-      call get_var(mpl,ncid,lon_c1_id,lon_c1)
-      call get_var(mpl,ncid,lat_c1_id,lat_c1)
-   end if
-
-   ! Broadcast lon/lat
-   call mpl%f_comm%broadcast(lon_c1,mpl%rootproc-1)
-   call mpl%f_comm%broadcast(lat_c1,mpl%rootproc-1)
+   ! Read variables
+   call get_var(mpl,ncid,lon_c1_id,lon_c1)
+   call get_var(mpl,ncid,lat_c1_id,lat_c1)
 
    ! Allocation
    allocate(lev_c1(samp%nc1))
@@ -828,33 +819,23 @@ end if
 
 if (samp%sc2) then
    ! Get dimension
-   if (mpl%main) samp%nc2 = inquire_dim_size(mpl,ncid,'nc2')
-
-   ! Broadcast dimension
-   call mpl%f_comm%broadcast(samp%nc2,mpl%rootproc-1)
+   samp%nc2 = inquire_dim_size(mpl,ncid,'nc2')
 
    ! Allocation
    allocate(lon_c2(samp%nc2))
    allocate(lat_c2(samp%nc2))
 
-   if (mpl%main) then
-      ! Get attribute
-      call get_att(mpl,ncid,0,'lat_bands',lat_bands_int)
-      call convert_i2l(mpl,lat_bands_int,samp%lat_bands)
+   ! Get attribute
+   call get_att(mpl,ncid,0,'lat_bands',lat_bands_int)
+   call convert_i2l(mpl,lat_bands_int,samp%lat_bands)
 
-      ! Inquire variables
-      lon_c2_id = inquire_var(mpl,ncid,'lon_c2')
-      lat_c2_id = inquire_var(mpl,ncid,'lat_c2')
+   ! Inquire variables
+   lon_c2_id = inquire_var(mpl,ncid,'lon_c2')
+   lat_c2_id = inquire_var(mpl,ncid,'lat_c2')
 
-      ! Read variables
-      call get_var(mpl,ncid,lon_c2_id,lon_c2)
-      call get_var(mpl,ncid,lat_c2_id,lat_c2)
-   end if
-
-   ! Broadcast variables
-   call mpl%f_comm%broadcast(samp%lat_bands,mpl%rootproc-1)
-   call mpl%f_comm%broadcast(lon_c2,mpl%rootproc-1)
-   call mpl%f_comm%broadcast(lat_c2,mpl%rootproc-1)
+   ! Read variables
+   call get_var(mpl,ncid,lon_c2_id,lon_c2)
+   call get_var(mpl,ncid,lat_c2_id,lat_c2)
 
    ! Allocation
    allocate(lev_c2(samp%nc2))

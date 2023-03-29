@@ -123,11 +123,11 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 3.8844202152330972e+01
-  velocity_potential: 3.5307738503692953e+01
-  eastward_wind: 3.6606387860618021e+01
-  northward_wind: 4.1576178177078781e+01
-  surface_pressure: 2.7823618095860798e+01
+  stream_function: 4.0910029867800802e+01
+  velocity_potential: 3.6950668983322167e+01
+  eastward_wind: 3.7036011164347883e+01
+  northward_wind: 4.1923686486844701e+01
+  surface_pressure: 2.7849450299714885e+01
 Member 1: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -150,11 +150,11 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 3.7512664170086211e+01
-  velocity_potential: 3.8701474633488800e+01
-  eastward_wind: 3.6671052019280062e+01
-  northward_wind: 3.6100492981356481e+01
-  surface_pressure: 2.6979102182207235e+01
+  stream_function: 3.9711789552097741e+01
+  velocity_potential: 4.2182385335411517e+01
+  eastward_wind: 3.7083549138925299e+01
+  northward_wind: 3.6678851130900924e+01
+  surface_pressure: 2.8017206444354080e+01
 Member 2: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -177,11 +177,11 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 3.5336257282887381e+01
-  velocity_potential: 3.7353398965283105e+01
-  eastward_wind: 4.0520461813747914e+01
-  northward_wind: 4.0884688865858180e+01
-  surface_pressure: 2.5954544214550900e+01
+  stream_function: 3.6153085401012255e+01
+  velocity_potential: 3.8311147495093373e+01
+  eastward_wind: 4.1221028162402192e+01
+  northward_wind: 4.2458738149528763e+01
+  surface_pressure: 2.6987174137809188e+01
 Member 3: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -204,11 +204,11 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 3.9672605587850903e+01
-  velocity_potential: 3.8777232964584464e+01
-  eastward_wind: 4.1149142456224354e+01
-  northward_wind: 4.1639783280076756e+01
-  surface_pressure: 2.9384654478568784e+01
+  stream_function: 4.1424796115094402e+01
+  velocity_potential: 4.0425473020431255e+01
+  eastward_wind: 4.1734406388238519e+01
+  northward_wind: 4.1763547553707838e+01
+  surface_pressure: 2.9614768545852705e+01
 Member 4: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -231,11 +231,11 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 3.7658882824995487e+01
-  velocity_potential: 3.6631799880867860e+01
-  eastward_wind: 4.1351796490431099e+01
-  northward_wind: 3.6524680202810046e+01
-  surface_pressure: 2.4716651370319731e+01
+  stream_function: 4.1099822078310218e+01
+  velocity_potential: 3.7743669951009487e+01
+  eastward_wind: 4.4088783005243329e+01
+  northward_wind: 3.7793642219109003e+01
+  surface_pressure: 2.4854171991275614e+01
 Member 5: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -258,11 +258,11 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.1055839769144711e+01
-  velocity_potential: 4.0568364352094733e+01
-  eastward_wind: 4.2493228162357546e+01
-  northward_wind: 3.7635857521302761e+01
-  surface_pressure: 2.4813266650245044e+01
+  stream_function: 4.5441140202452146e+01
+  velocity_potential: 4.1734647484319268e+01
+  eastward_wind: 4.6454939229699157e+01
+  northward_wind: 3.9971660093863704e+01
+  surface_pressure: 2.5478390516132450e+01
 Member 6: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -285,11 +285,11 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 3.6880197346728906e+01
-  velocity_potential: 3.8112180107631168e+01
-  eastward_wind: 4.2289272521712405e+01
-  northward_wind: 4.2220742247640175e+01
-  surface_pressure: 2.9247637712629587e+01
+  stream_function: 3.8281335067633997e+01
+  velocity_potential: 3.9626511302939797e+01
+  eastward_wind: 4.3138257523312234e+01
+  northward_wind: 4.4666485628998103e+01
+  surface_pressure: 3.0918088424950145e+01
 Member 7: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -312,11 +312,11 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.1016626759268497e+01
-  velocity_potential: 3.9188076815286514e+01
-  eastward_wind: 3.9783644527800149e+01
-  northward_wind: 3.4034789181467239e+01
-  surface_pressure: 2.9166001976621327e+01
+  stream_function: 4.2529362529135383e+01
+  velocity_potential: 4.0635177276724932e+01
+  eastward_wind: 4.0982186277630355e+01
+  northward_wind: 3.4713158503165204e+01
+  surface_pressure: 3.2580574455714235e+01
 Member 8: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -339,11 +339,11 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.1234695133008394e+01
-  velocity_potential: 4.3096114706659264e+01
-  eastward_wind: 3.8490070536529764e+01
-  northward_wind: 4.0044673979876144e+01
-  surface_pressure: 2.6699955382976388e+01
+  stream_function: 4.1575530258596288e+01
+  velocity_potential: 4.7779459988633192e+01
+  eastward_wind: 4.0106676419279779e+01
+  northward_wind: 4.2372714504713421e+01
+  surface_pressure: 2.7203621124459822e+01
 Member 9: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -366,11 +366,11 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 3.7342173269851322e+01
-  velocity_potential: 3.9138366262882798e+01
-  eastward_wind: 3.6560647636266708e+01
-  northward_wind: 3.8483908072122979e+01
-  surface_pressure: 2.5444047172987442e+01
+  stream_function: 3.8486734026675222e+01
+  velocity_potential: 3.9519862372805832e+01
+  eastward_wind: 3.9375339697341104e+01
+  northward_wind: 4.2232870252479543e+01
+  surface_pressure: 2.9408187412055817e+01
 Member 10: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -393,11 +393,11 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 3.9508099298397013e+01
-  velocity_potential: 3.8354526174430866e+01
-  eastward_wind: 4.1658818879747692e+01
-  northward_wind: 4.0072543737997002e+01
-  surface_pressure: 2.7706574222105182e+01
+  stream_function: 3.9734562418643641e+01
+  velocity_potential: 3.9655290351318669e+01
+  eastward_wind: 4.6063452305057830e+01
+  northward_wind: 4.5241688577861112e+01
+  surface_pressure: 2.9233115609877224e+01
 Member 11: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -420,11 +420,11 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 3.9646895754471807e+01
-  velocity_potential: 4.3749304778884131e+01
-  eastward_wind: 4.1803753692892215e+01
-  northward_wind: 4.4220229796744349e+01
-  surface_pressure: 2.6056515952530692e+01
+  stream_function: 4.0280557870595743e+01
+  velocity_potential: 4.5028539625844260e+01
+  eastward_wind: 4.3984977751461727e+01
+  northward_wind: 4.4624613802627664e+01
+  surface_pressure: 2.6209913860347719e+01
 Member 12: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -447,11 +447,11 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 3.9294557888825445e+01
-  velocity_potential: 4.2590547612634246e+01
-  eastward_wind: 4.7086528107259170e+01
-  northward_wind: 4.1763687246760838e+01
-  surface_pressure: 2.7840064553456731e+01
+  stream_function: 4.1407804586354338e+01
+  velocity_potential: 4.3944775083880927e+01
+  eastward_wind: 4.8476615197045504e+01
+  northward_wind: 4.2080940391728674e+01
+  surface_pressure: 2.8199995475170667e+01
 Member 13: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -474,11 +474,11 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.3533964005274939e+01
-  velocity_potential: 3.5539660071514042e+01
-  eastward_wind: 3.8795938132689891e+01
-  northward_wind: 3.6630353959756199e+01
-  surface_pressure: 2.4502283917332015e+01
+  stream_function: 4.7841447064507669e+01
+  velocity_potential: 3.6440969945138299e+01
+  eastward_wind: 3.9544570687509712e+01
+  northward_wind: 3.9511921902273890e+01
+  surface_pressure: 2.4640243459109140e+01
 Member 14: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -501,11 +501,11 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 3.7788258485158025e+01
-  velocity_potential: 3.9596163481670004e+01
-  eastward_wind: 4.3211351995077599e+01
-  northward_wind: 3.9276548782314201e+01
-  surface_pressure: 2.6625999173977156e+01
+  stream_function: 4.4450823207668307e+01
+  velocity_potential: 4.1339835116847041e+01
+  eastward_wind: 4.8244982234176121e+01
+  northward_wind: 4.4912166244323444e+01
+  surface_pressure: 2.7360945132307926e+01
 Member 15: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -528,11 +528,11 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 3.9712792168679734e+01
-  velocity_potential: 3.8902854831268222e+01
-  eastward_wind: 4.1049559134336775e+01
-  northward_wind: 3.5397551060880204e+01
-  surface_pressure: 2.6158921534299552e+01
+  stream_function: 4.0948956768614295e+01
+  velocity_potential: 4.2263535347766378e+01
+  eastward_wind: 4.4942803931761738e+01
+  northward_wind: 3.7809456364736263e+01
+  surface_pressure: 2.6636721165056684e+01
 Member 16: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -555,11 +555,11 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.2702551783182372e+01
-  velocity_potential: 4.1019263355207826e+01
-  eastward_wind: 3.6575702906291561e+01
-  northward_wind: 3.9408244929977442e+01
-  surface_pressure: 2.4680170523062532e+01
+  stream_function: 4.4801686175015220e+01
+  velocity_potential: 4.2731767039368918e+01
+  eastward_wind: 3.7540338106747313e+01
+  northward_wind: 4.1629899058213446e+01
+  surface_pressure: 2.5033167075320353e+01
 Member 17: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -582,11 +582,11 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.0185051797727581e+01
-  velocity_potential: 3.6824456813819069e+01
-  eastward_wind: 4.6409121311978886e+01
-  northward_wind: 3.9399359738668892e+01
-  surface_pressure: 2.9932106846187832e+01
+  stream_function: 4.2756616552407756e+01
+  velocity_potential: 3.9239301984078296e+01
+  eastward_wind: 4.8236453265784597e+01
+  northward_wind: 4.1406353395229551e+01
+  surface_pressure: 3.0143288821571470e+01
 Member 18: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -609,11 +609,11 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 3.7085928515688579e+01
-  velocity_potential: 3.4650738956304352e+01
-  eastward_wind: 3.8660793146706219e+01
-  northward_wind: 3.7660843430705462e+01
-  surface_pressure: 2.7639364508124519e+01
+  stream_function: 3.7540947596699567e+01
+  velocity_potential: 3.5387891020032647e+01
+  eastward_wind: 3.9306583300043052e+01
+  northward_wind: 3.8486461267847069e+01
+  surface_pressure: 2.8034342485849251e+01
 Member 19: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -636,11 +636,11 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 3.9020579800514440e+01
-  velocity_potential: 3.4320606298743556e+01
-  eastward_wind: 3.7139940168724962e+01
-  northward_wind: 3.9664051404514950e+01
-  surface_pressure: 2.3744977011294559e+01
+  stream_function: 3.9213734377921860e+01
+  velocity_potential: 3.5360917932683620e+01
+  eastward_wind: 4.1255376203709986e+01
+  northward_wind: 4.2677975171401208e+01
+  surface_pressure: 2.4192851576381532e+01
 Member 20: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -663,11 +663,11 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 3.4064307539102757e+01
-  velocity_potential: 3.8185628360910520e+01
-  eastward_wind: 3.9209955926322614e+01
-  northward_wind: 3.9976268260086556e+01
-  surface_pressure: 2.6281645074651848e+01
+  stream_function: 3.4434091958087741e+01
+  velocity_potential: 3.9481022505828449e+01
+  eastward_wind: 4.0384520725528226e+01
+  northward_wind: 4.1560283373795386e+01
+  surface_pressure: 2.7580765018058273e+01
 Member 21: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -690,11 +690,11 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.0196813287369146e+01
-  velocity_potential: 3.9109602340386687e+01
-  eastward_wind: 3.7015486407850183e+01
-  northward_wind: 4.0193539849218453e+01
-  surface_pressure: 2.6424394787524562e+01
+  stream_function: 4.1587737931778378e+01
+  velocity_potential: 4.0047678474648528e+01
+  eastward_wind: 3.8536167382178569e+01
+  northward_wind: 4.2990618624311935e+01
+  surface_pressure: 2.7197952871326184e+01
 Member 22: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -717,11 +717,11 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.0446261338978374e+01
-  velocity_potential: 4.0248948249187194e+01
-  eastward_wind: 3.8527893640190065e+01
-  northward_wind: 4.1872334685114964e+01
-  surface_pressure: 2.9295406097615935e+01
+  stream_function: 4.3196683676623131e+01
+  velocity_potential: 4.3439777931590569e+01
+  eastward_wind: 4.0924821548540571e+01
+  northward_wind: 4.6338440240882740e+01
+  surface_pressure: 3.0719515207978937e+01
 Member 23: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -744,11 +744,11 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.0660851129325017e+01
-  velocity_potential: 3.6678727625936737e+01
-  eastward_wind: 3.9312686198516978e+01
-  northward_wind: 4.1473865443527508e+01
-  surface_pressure: 2.5460544822195821e+01
+  stream_function: 4.1837886665495894e+01
+  velocity_potential: 3.7508622745618155e+01
+  eastward_wind: 4.1676361210165332e+01
+  northward_wind: 4.8919942765905496e+01
+  surface_pressure: 2.8552218352970069e+01
 Member 24: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -771,8 +771,8 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 3.8459039452459137e+01
-  velocity_potential: 3.7156616265534616e+01
-  eastward_wind: 3.8116700719431783e+01
-  northward_wind: 3.7123457801236221e+01
-  surface_pressure: 2.8203228936444095e+01
+  stream_function: 4.0996531532455187e+01
+  velocity_potential: 3.9995130063385645e+01
+  eastward_wind: 3.8711363642424544e+01
+  northward_wind: 4.4027676125723126e+01
+  surface_pressure: 3.1562224620889232e+01

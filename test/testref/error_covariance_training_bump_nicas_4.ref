@@ -1,9 +1,9 @@
-Norm of input parameter a::1: 4.2727231385893987e+01
-Norm of input parameter a::2: 1.2508898244244907e+01
-Norm of input parameter rh::1: 2.0260549797898138e+08
-Norm of input parameter rh::2: 2.0253293992704690e+08
-Norm of input parameter rv::1: 2.4756731041691455e+02
-Norm of input parameter rv::2: 2.9510746798853440e+01
+Norm of input parameter a::1: 4.4860789243474272e+01
+Norm of input parameter a::2: 1.3133522336960826e+01
+Norm of input parameter rh::1: 2.1272247813849464e+08
+Norm of input parameter rh::2: 2.1264629694513962e+08
+Norm of input parameter rv::1: 2.5992943085597460e+02
+Norm of input parameter rv::2: 3.0984347677578992e+01
        Independent levels:  1[2]
           Model grid size:              840
           Subset Sc0 size:              762

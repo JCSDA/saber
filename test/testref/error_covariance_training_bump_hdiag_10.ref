@@ -1,4 +1,4 @@
-Norm of input parameter sampling_mask_field: 8.6177684288955561e+01
+Norm of input parameter sampling_mask_field: 9.0764768186843639e+01
        Independent levels:  1[10]
           Model grid size:              840
           Subset Sc0 size:              762
@@ -26,31 +26,31 @@ Norm of input parameter sampling_mask_field: 8.6177684288955561e+01
              Level   8 ~>  0.800E+01 vert. unit
              Level   9 ~>  0.900E+01 vert. unit
              Level  10 ~>  0.100E+02 vert. unit
-   Norm of stream_function:  0.74265933E+04
-   Norm of stream_function:  0.64993855E+04
-   Norm of stream_function:  0.66309979E+04
-   Norm of stream_function:  0.76893083E+04
-   Norm of stream_function:  0.76670656E+04
-   Norm of stream_function:  0.73707518E+04
-   Norm of stream_function:  0.75821843E+04
-   Norm of stream_function:  0.74785904E+04
-   Norm of stream_function:  0.67163945E+04
-   Norm of stream_function:  0.66968956E+04
-   Norm of stream_function:  0.78918555E+04
-   Norm of stream_function:  0.77242903E+04
-   Norm of stream_function:  0.72726733E+04
-   Norm of stream_function:  0.81499743E+04
-   Norm of stream_function:  0.72189706E+04
-   Norm of stream_function:  0.70109152E+04
-   Norm of stream_function:  0.77634213E+04
-   Norm of stream_function:  0.74441471E+04
-   Norm of stream_function:  0.76413991E+04
-   Norm of stream_function:  0.75102966E+04
-   Norm of stream_function:  0.72398954E+04
-   Norm of stream_function:  0.71601698E+04
-   Norm of stream_function:  0.65315224E+04
-   Norm of stream_function:  0.77336881E+04
-   Norm of stream_function:  0.69206190E+04
+   Norm of stream_function:  0.82382431E+04
+   Norm of stream_function:  0.73182887E+04
+   Norm of stream_function:  0.72563665E+04
+   Norm of stream_function:  0.80743355E+04
+   Norm of stream_function:  0.84807771E+04
+   Norm of stream_function:  0.78244939E+04
+   Norm of stream_function:  0.83433824E+04
+   Norm of stream_function:  0.83436518E+04
+   Norm of stream_function:  0.73000968E+04
+   Norm of stream_function:  0.74269088E+04
+   Norm of stream_function:  0.84573312E+04
+   Norm of stream_function:  0.90132565E+04
+   Norm of stream_function:  0.77130441E+04
+   Norm of stream_function:  0.84566117E+04
+   Norm of stream_function:  0.85285805E+04
+   Norm of stream_function:  0.79286417E+04
+   Norm of stream_function:  0.83081202E+04
+   Norm of stream_function:  0.84631356E+04
+   Norm of stream_function:  0.86866904E+04
+   Norm of stream_function:  0.85844647E+04
+   Norm of stream_function:  0.82263542E+04
+   Norm of stream_function:  0.78794666E+04
+   Norm of stream_function:  0.74395781E+04
+   Norm of stream_function:  0.89710970E+04
+   Norm of stream_function:  0.73046551E+04
           Level   1 ~>   2.6%
           Level   2 ~>   4.2%
           Level   3 ~>   5.2%
@@ -145,5 +145,5 @@ Norm of input parameter sampling_mask_field: 8.6177684288955561e+01
                    Level:  10 ~> amplitude:        1.00
                                  cor. hor. support:      4621.41 km
                                  cor. ver. support:         5.77 vertical units
-Norm of BUMP output parameter cor_rh - 1: 4.0649456073752576e+08
-Norm of BUMP output parameter cor_rv - 1: 5.3607484487607110e+02
+Norm of BUMP output parameter cor_rh - 1: 4.3106717187620759e+08
+Norm of BUMP output parameter cor_rv - 1: 5.6212440065904252e+02
