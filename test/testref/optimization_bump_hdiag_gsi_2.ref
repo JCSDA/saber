@@ -1,4 +1,4 @@
-Norm of input parameter gsi_ref: 2.8285238362553752e+01
+Norm of input parameter gsi_ref: 2.8285238362554871e+01
        Independent levels:  1[72]
           Model grid size:             3312
           Subset Sc0 size:             3170
@@ -167,4 +167,4 @@ Norm of input parameter gsi_ref: 2.8285238362553752e+01
        Factor 1.60, horizontal MSE:  0.23831582E+03 / vertical MSE:  0.14205582E+02 
        Factor 1.70, horizontal MSE:  0.31556975E+03 / vertical MSE:  0.18172306E+02 
        Factor 1.80, horizontal MSE:  0.40200216E+03 / vertical MSE:  0.22414150E+02 
-Norm of BUMP output parameter dirac_diag_cor - 1: 2.9370843809358977e+01
+Norm of BUMP output parameter dirac_diag_cor - 1: 2.9371366052991974e+01

@@ -44,7 +44,7 @@ Adjoint test passed
           nc2 =      250
           Independent levels:  1[2]
 Adjoint test passed
-Norm of input parameter StdDev: 5.4916088699553633e+01
+Norm of input parameter StdDev: 5.7658289604038131e+01
 Adjoint test passed
        Independent levels:  1[2]
           Model grid size:              840
@@ -58,7 +58,7 @@ Adjoint test passed
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
 Adjoint test passed
-Norm of input parameter stddev: 5.4916088699553633e+01
+Norm of input parameter stddev: 5.7658289604038131e+01
        Independent levels:  1[2]
           Model grid size:              840
           Subset Sc0 size:              762
@@ -71,7 +71,7 @@ Norm of input parameter stddev: 5.4916088699553633e+01
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
 Adjoint test passed
-Norm of input parameter universe radius: 2.0253293992704690e+08
+Norm of input parameter universe radius: 2.1264629694513962e+08
        Independent levels:  1[2]
           Model grid size:              840
           Subset Sc0 size:              762
@@ -114,7 +114,7 @@ Groups:
   Mask size: 100%
 Fields:
   eastward_wind: 6.7636675043647476e-01
-  northward_wind: 1.6118874945640360e-01
+  northward_wind: 1.6118874945640357e-01
        Independent levels:  1[2]
           Model grid size:              840
           Subset Sc0 size:              762
@@ -142,7 +142,7 @@ Adjoint test passed
           nc2 =      250
           Independent levels:  1[2]
 Adjoint test passed
-Norm of input parameter StdDev: 5.4916088699553633e+01
+Norm of input parameter StdDev: 5.7658289604038131e+01
 Adjoint test passed
        Independent levels:  1[2]
           Model grid size:              840
@@ -156,7 +156,7 @@ Adjoint test passed
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
 Adjoint test passed
-Norm of input parameter stddev: 5.4916088699553633e+01
+Norm of input parameter stddev: 5.7658289604038131e+01
        Independent levels:  1[2]
           Model grid size:              840
           Subset Sc0 size:              762
@@ -169,7 +169,7 @@ Norm of input parameter stddev: 5.4916088699553633e+01
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
 Adjoint test passed
-Norm of input parameter universe radius: 2.0253293992704690e+08
+Norm of input parameter universe radius: 2.1264629694513962e+08
        Independent levels:  1[2]
           Model grid size:              840
           Subset Sc0 size:              762
@@ -199,8 +199,8 @@ Groups:
   - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  eastward_wind: 9.6825438805381713e-14
-  northward_wind: 4.0904433449715275e-14
+  eastward_wind: 9.7055767936381558e-14
+  northward_wind: 4.0904965790103876e-14
        Independent levels:  1[2]
           Model grid size:              840
           Subset Sc0 size:              762
@@ -230,5 +230,5 @@ Groups:
   - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  eastward_wind: 1.3527335008729175e+00
+  eastward_wind: 1.3527335008729178e+00
   northward_wind: 3.2237749891280709e-01

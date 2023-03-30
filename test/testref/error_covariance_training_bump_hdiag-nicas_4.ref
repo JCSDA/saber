@@ -500,13 +500,13 @@
              Min / max: 1.0000000 /  1.0000000 over     10 tests
           Level   1: missing values
 Norm of BUMP output parameter dirac_diag_cor - 1: 2.2704826206090210e+00
-Norm of BUMP output parameter cor_a - 1: 9.1351108367689449e+01
-Norm of BUMP output parameter cor_a - 2: 6.0900738911788849e+01
-Norm of BUMP output parameter cor_a - 3: 5.0750615759811232e+01
-Norm of BUMP output parameter cor_rh - 1: 9.2529308367175138e+08
-Norm of BUMP output parameter cor_rh - 2: 4.3525786655918783e+08
-Norm of BUMP output parameter cor_rh - 3: 2.7203616659950030e+08
-Norm of BUMP output parameter cor_rv - 1: 1.2904833987685040e+03
-Norm of BUMP output parameter cor_rv - 2: 1.2904833987685040e+03
-Norm of BUMP output parameter cor_rv - 3: 1.2904833987685040e+03
+Norm of BUMP output parameter cor_a - 1: 9.3374728915291982e+01
+Norm of BUMP output parameter cor_a - 2: 6.2249819276863299e+01
+Norm of BUMP output parameter cor_a - 3: 5.1874849397371747e+01
+Norm of BUMP output parameter cor_rh - 1: 9.4720567632165372e+08
+Norm of BUMP output parameter cor_rh - 2: 4.4556555014170951e+08
+Norm of BUMP output parameter cor_rh - 3: 2.7847846883856505e+08
+Norm of BUMP output parameter cor_rv - 1: 1.3396492944638560e+03
+Norm of BUMP output parameter cor_rv - 2: 1.3396492944638560e+03
+Norm of BUMP output parameter cor_rv - 3: 1.3396492944638560e+03
 Norm of BUMP output parameter dirac_nicas - 1: 1.9608214405394815e+00

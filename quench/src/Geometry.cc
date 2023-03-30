@@ -30,7 +30,7 @@ namespace quench {
 // -----------------------------------------------------------------------------
 Geometry::Geometry(const Parameters_ & params,
                    const eckit::mpi::Comm & comm)
-  : comm_(comm), groups_(), iodaBased_(false) {
+  : comm_(comm), gridType_("no_type"), groups_(), iodaBased_(false) {
   // Initialize eckit communicator for ATLAS
   eckit::mpi::setCommDefault(comm_.name().c_str());
 
@@ -50,8 +50,8 @@ Geometry::Geometry(const Parameters_ & params,
     oops::Log::info() << "Info     : Grid config: " << *gridParams << std::endl;
     eckit::LocalConfiguration gridParams_(*gridParams);
     if (gridParams_.has("type")) {
-      std::string type = gridParams_.getString("type");
-      if (type == "unstructured") {
+      gridType_ = gridParams->getString("type");
+      if (gridType_ == "unstructured") {
         // Split unstructured grid among processors
         std::vector<double> xyFull = gridParams_.getDoubleVector("xy");
         size_t gridSize = xyFull.size()/2;
@@ -315,8 +315,9 @@ Geometry::Geometry(const Parameters_ & params,
 }
 // -----------------------------------------------------------------------------
 Geometry::Geometry(const Geometry & other) : comm_(other.comm_), halo_(other.halo_),
-  grid_(other.grid_), unstructuredGrid_(other.unstructuredGrid_), partitioner_(other.partitioner_),
-  mesh_(other.mesh_), groupIndex_(other.groupIndex_), iodaBased_(other.iodaBased_)  {
+  grid_(other.grid_), gridType_(other.gridType_), unstructuredGrid_(other.unstructuredGrid_),
+  partitioner_(other.partitioner_), mesh_(other.mesh_), groupIndex_(other.groupIndex_),
+  iodaBased_(other.iodaBased_) {
   // Copy function space
   if (other.functionSpace_.type() == "StructuredColumns") {
     // StructuredColumns
