@@ -160,9 +160,9 @@
              0.0 /    0.0:  1.0000000
           Level   1:  0.0000000 -  1.0000000
           Level   2:  0.0000000 -  0.9238457
-Norm of BUMP output parameter loc_rh - 1: 2.0887209781576023e+08
-Norm of BUMP output parameter loc_rv - 1: 1.9300550966718345e+02
-Norm of BUMP output parameter hyb_coef_ens - 1: 2.3394546280336115e+01
-Norm of BUMP output parameter loc_rh_lr - 1: 2.2402645166962382e+08
-Norm of BUMP output parameter loc_rv_lr - 1: 2.3565073016010172e+02
-Norm of BUMP output parameter hyb_coef_ens_lr - 1: 2.2112140269206634e+01
+Norm of BUMP output parameter loc_rh - 1: 2.1756723284850624e+08
+Norm of BUMP output parameter loc_rv - 1: 2.0104013461790797e+02
+Norm of BUMP output parameter hyb_coef_ens - 1: 2.4368437676384502e+01
+Norm of BUMP output parameter loc_rh_lr - 1: 2.3521307389535755e+08
+Norm of BUMP output parameter loc_rv_lr - 1: 2.4741780353859281e+02
+Norm of BUMP output parameter hyb_coef_ens_lr - 1: 2.3032646394794376e+01

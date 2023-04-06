@@ -49,41 +49,41 @@
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-   Norm of stream_function:  0.21748928E+04
-   Norm of stream_function:  0.25083589E+04
-   Norm of stream_function:  0.22067422E+04
-   Norm of stream_function:  0.19494091E+04
-   Norm of stream_function:  0.18652756E+04
-   Norm of stream_function:  0.14097925E+04
-   Norm of stream_function:  0.18329924E+04
-   Norm of stream_function:  0.19011539E+04
-   Norm of stream_function:  0.20420117E+04
-   Norm of stream_function:  0.14294964E+04
-   Norm of stream_function:  0.14469769E+04
-   Norm of stream_function:  0.18566296E+04
-   Norm of stream_function:  0.14839797E+04
-   Norm of stream_function:  0.16374084E+04
-   Norm of stream_function:  0.15109721E+04
-   Norm of stream_function:  0.14611206E+04
-   Norm of stream_function:  0.90513610E+03
-   Norm of stream_function:  0.13138283E+04
-   Norm of stream_function:  0.13820477E+04
-   Norm of stream_function:  0.20840388E+04
-   Norm of stream_function:  0.16642893E+04
-   Norm of stream_function:  0.13650138E+04
-   Norm of stream_function:  0.17871464E+04
-   Norm of stream_function:  0.17364860E+04
-   Norm of stream_function:  0.10232469E+04
-   Norm of stream_function:  0.14300409E+04
-   Norm of stream_function:  0.16702021E+04
-   Norm of stream_function:  0.11886292E+04
-   Norm of stream_function:  0.16238791E+04
-   Norm of stream_function:  0.14090074E+04
-   Norm of stream_function:  0.12655928E+04
-   Norm of stream_function:  0.12769037E+04
-   Norm of stream_function:  0.15467375E+04
-   Norm of stream_function:  0.14186458E+04
-   Norm of stream_function:  0.15924176E+04
+   Norm of stream_function:  0.22823056E+04
+   Norm of stream_function:  0.29237337E+04
+   Norm of stream_function:  0.26596068E+04
+   Norm of stream_function:  0.20501072E+04
+   Norm of stream_function:  0.19750584E+04
+   Norm of stream_function:  0.15619509E+04
+   Norm of stream_function:  0.18957352E+04
+   Norm of stream_function:  0.24825323E+04
+   Norm of stream_function:  0.25223303E+04
+   Norm of stream_function:  0.14836065E+04
+   Norm of stream_function:  0.16158779E+04
+   Norm of stream_function:  0.21705634E+04
+   Norm of stream_function:  0.15155695E+04
+   Norm of stream_function:  0.20737311E+04
+   Norm of stream_function:  0.18099306E+04
+   Norm of stream_function:  0.14807856E+04
+   Norm of stream_function:  0.97439831E+03
+   Norm of stream_function:  0.15103031E+04
+   Norm of stream_function:  0.14729493E+04
+   Norm of stream_function:  0.24374410E+04
+   Norm of stream_function:  0.18464016E+04
+   Norm of stream_function:  0.15351950E+04
+   Norm of stream_function:  0.20523489E+04
+   Norm of stream_function:  0.19161217E+04
+   Norm of stream_function:  0.10426340E+04
+   Norm of stream_function:  0.15132424E+04
+   Norm of stream_function:  0.19471252E+04
+   Norm of stream_function:  0.13207794E+04
+   Norm of stream_function:  0.16757889E+04
+   Norm of stream_function:  0.14918563E+04
+   Norm of stream_function:  0.13126894E+04
+   Norm of stream_function:  0.13607456E+04
+   Norm of stream_function:  0.17681203E+04
+   Norm of stream_function:  0.17264894E+04
+   Norm of stream_function:  0.17478064E+04
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
           Decimate full grid, at least      500 points required,    1090 valid points found
@@ -157,7 +157,7 @@
                                  loc. ver. support:         4.10 vertical units
                 Level:   1 ~> hybrid coefficients: 0.49 / 0.49
                 Level:   2 ~> hybrid coefficients: 0.36 / 0.59
-Norm of BUMP output parameter loc_rh - 1: 2.0887209781576023e+08
-Norm of BUMP output parameter loc_rv - 1: 1.9300550966718345e+02
-Norm of BUMP output parameter hyb_coef_ens - 1: 2.0390192306984709e+01
-Norm of BUMP output parameter hyb_coef_sta - 1: 2.5351322011958800e+01
+Norm of BUMP output parameter loc_rh - 1: 2.1756723284850624e+08
+Norm of BUMP output parameter loc_rv - 1: 2.0104013461790797e+02
+Norm of BUMP output parameter hyb_coef_ens - 1: 2.1239015473443583e+01
+Norm of BUMP output parameter hyb_coef_sta - 1: 2.6406672010631368e+01

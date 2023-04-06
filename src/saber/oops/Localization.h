@@ -95,7 +95,7 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
   saberCentralBlock_.reset(SaberCentralBlockFactory::create(
                            geom.generic(),
                            geom.variableSizes(activeVars),
-                           centralVars,
+                           activeVars,
                            saberCentralBlockParams,
                            dummyFs,
                            dummyFs,

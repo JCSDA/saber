@@ -546,16 +546,11 @@ call mpl%flush
 nicas_blk%blkid = inquire_grp(mpl,nicas_blk%ncid,blkname)
 
 ! Get number of components
-if (mpl%main) call get_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp,1)
+call get_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp,1)
 
 ! Get min and max levels
-if (mpl%main) call get_att(mpl,nicas_blk%blkid,0,'min_lev',nicas_blk%min_lev,1)
-if (mpl%main) call get_att(mpl,nicas_blk%blkid,0,'max_lev',nicas_blk%max_lev,geom%nl0)
-
-! Broadcast attributes
-call mpl%f_comm%broadcast(nicas_blk%ncmp,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nicas_blk%min_lev,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nicas_blk%max_lev,mpl%rootproc-1)
+call get_att(mpl,nicas_blk%blkid,0,'min_lev',nicas_blk%min_lev,1)
+call get_att(mpl,nicas_blk%blkid,0,'max_lev',nicas_blk%max_lev,geom%nl0)
 
 ! Allocation
 if (.not.allocated(nicas_blk%cmp)) allocate(nicas_blk%cmp(nicas_blk%ncmp))

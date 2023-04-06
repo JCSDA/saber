@@ -1213,7 +1213,6 @@ type(geom_type),intent(in) :: geom               !< Geometry
 ! Local variables
 integer :: vlev_id,l1_to_l0_id,lon_c1_id,lat_c1_id,c_col_s_id,c_S_s_id,inorm_s_id
 integer :: il0,il1,ic1,ic1a,ic0a,iproc,is,isa,jsu,c_nopmax,nop,js,i_s,iop
-integer :: vlev_int(geom%nl0)
 integer,allocatable :: lev_c1(:),c1_to_proc(:),c1_to_c0a(:),order_s(:),order_inv_s(:),order_inv_sa(:),c_col_sa(:,:)
 real(kind_real),allocatable :: lon_c1(:),lat_c1(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:),c_S_sa(:,:)
 logical,allocatable :: gmask_c1(:)
@@ -1270,31 +1269,21 @@ write(mpl%info,'(a16,a)') '','Read vertical sampling'
 call mpl%flush
 
 ! Get dimension
-if (mpl%main) nicas_cmp%nl1 = inquire_dim_size(mpl,nicas_cmp%cmpid,'nl1')
+nicas_cmp%nl1 = inquire_dim_size(mpl,nicas_cmp%cmpid,'nl1')
 
 ! Broadcast dimension
-call mpl%f_comm%broadcast(nicas_cmp%nl1,mpl%rootproc-1)
 
 ! Allocation
 allocate(nicas_cmp%vlev(geom%nl0))
 allocate(nicas_cmp%l1_to_l0(nicas_cmp%nl1))
 
-if (mpl%main) then
-   ! Get variables
-   vlev_id = inquire_var(mpl,nicas_cmp%cmpid,'vlev')
-   l1_to_l0_id = inquire_var(mpl,nicas_cmp%cmpid,'l1_to_l0')
+! Get variables
+vlev_id = inquire_var(mpl,nicas_cmp%cmpid,'vlev')
+l1_to_l0_id = inquire_var(mpl,nicas_cmp%cmpid,'l1_to_l0')
 
-   ! Read variables
-   call get_var(mpl,nicas_cmp%cmpid,vlev_id,vlev_int)
-   call get_var(mpl,nicas_cmp%cmpid,l1_to_l0_id,nicas_cmp%l1_to_l0)
-
-   ! Convert integer to logical
-   call convert_i2l(mpl,vlev_int,nicas_cmp%vlev)
-end if
-
-! Broadcast variable
-call mpl%f_comm%broadcast(nicas_cmp%vlev,mpl%rootproc-1)
-call mpl%f_comm%broadcast(nicas_cmp%l1_to_l0,mpl%rootproc-1)
+! Read variables
+call get_var(mpl,nicas_cmp%cmpid,vlev_id,nicas_cmp%vlev)
+call get_var(mpl,nicas_cmp%cmpid,l1_to_l0_id,nicas_cmp%l1_to_l0)
 
 ! Read horizontal sampling
 write(mpl%info,'(a16,a)') '','Read horizontal sampling:'
@@ -1309,34 +1298,23 @@ do il1=1,nicas_cmp%nl1
    write(mpl%info,'(a19,a,i3)') '','Sublevel: ',il1
    call mpl%flush
 
-   if (mpl%main) then
-      ! Get group
-      nicas_cmp%hor(il1)%levid = inquire_grp(mpl,nicas_cmp%cmpid,levname)
+   ! Get group
+   nicas_cmp%hor(il1)%levid = inquire_grp(mpl,nicas_cmp%cmpid,levname)
 
-      ! Get dimension
-      nicas_cmp%hor(il1)%nc1 = inquire_dim_size(mpl,nicas_cmp%hor(il1)%levid,'nc1')
-   end if
-
-   ! Broadcast dimension
-   call mpl%f_comm%broadcast(nicas_cmp%hor(il1)%nc1,mpl%rootproc-1)
+   ! Get dimension
+   nicas_cmp%hor(il1)%nc1 = inquire_dim_size(mpl,nicas_cmp%hor(il1)%levid,'nc1')
 
    ! Allocation
    allocate(lon_c1(nicas_cmp%hor(il1)%nc1))
    allocate(lat_c1(nicas_cmp%hor(il1)%nc1))
 
-   if (mpl%main) then
-      ! Get variables
-      lon_c1_id = inquire_var(mpl,nicas_cmp%hor(il1)%levid,'lon_c1')
-      lat_c1_id = inquire_var(mpl,nicas_cmp%hor(il1)%levid,'lat_c1')
+   ! Get variables
+   lon_c1_id = inquire_var(mpl,nicas_cmp%hor(il1)%levid,'lon_c1')
+   lat_c1_id = inquire_var(mpl,nicas_cmp%hor(il1)%levid,'lat_c1')
 
-      ! Read variables
-      call get_var(mpl,nicas_cmp%hor(il1)%levid,lon_c1_id,lon_c1)
-      call get_var(mpl,nicas_cmp%hor(il1)%levid,lat_c1_id,lat_c1)
-   end if
-
-   ! Broadcast variables
-   call mpl%f_comm%broadcast(lon_c1,mpl%rootproc-1)
-   call mpl%f_comm%broadcast(lat_c1,mpl%rootproc-1)
+   ! Read variables
+   call get_var(mpl,nicas_cmp%hor(il1)%levid,lon_c1_id,lon_c1)
+   call get_var(mpl,nicas_cmp%hor(il1)%levid,lat_c1_id,lat_c1)
 
    ! Allocation
    allocate(lev_c1(nicas_cmp%hor(il1)%nc1))
@@ -1487,11 +1465,14 @@ if (mpl%main) then
    end do
 end if
 
+! Broadcast order
+call mpl%f_comm%broadcast(order_s,mpl%rootproc-1)
+
 ! Communication
 call mpl%glb_to_loc(nicas_cmp%nsa,nicas_cmp%ns,nicas_cmp%sa_to_s,order_s,nicas_cmp%order_sa)
 call mpl%glb_to_loc(nicas_cmp%nsa,nicas_cmp%ns,nicas_cmp%sa_to_s,order_inv_s,order_inv_sa)
 
- ! Setup fields output
+! Setup fields output
 call io_s%init(mpl,'s',nicas_cmp%ns,nicas_cmp%nsa,nicas_cmp%sa_to_s,nicas_cmp%proc_to_s_offset,nicas_cmp%order_sa)
 
 ! Release memory
@@ -1507,10 +1488,7 @@ write(mpl%info,'(a16,a)') '','Read convolution'
 call mpl%flush
 
 ! Get dimension
-if (mpl%main) c_nopmax = inquire_dim_size(mpl,nicas_cmp%cmpid,'c_nopmax',0)
-
-! Broadcast dimension
-call mpl%f_comm%broadcast(c_nopmax,mpl%rootproc-1)
+c_nopmax = inquire_dim_size(mpl,nicas_cmp%cmpid,'c_nopmax',0)
 
 ! Allocation
 allocate(c_col_sa(nicas_cmp%nsa,c_nopmax))
@@ -1526,9 +1504,6 @@ inorm_s_id = inquire_var(mpl,nicas_cmp%cmpid,'inorm_s')
 call io_s%fld_read(mpl,nicas_cmp%cmpid,c_col_s_id,c_col_sa)
 call io_s%fld_read(mpl,nicas_cmp%cmpid,c_S_s_id,c_S_sa)
 call io_s%fld_read(mpl,nicas_cmp%cmpid,inorm_s_id,nicas_cmp%inorm)
-
-! Broadcast order
-call mpl%f_comm%broadcast(order_s,mpl%rootproc-1)
 
 ! Allocation
 nicas_cmp%c%n_s = 0

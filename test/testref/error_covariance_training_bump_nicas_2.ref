@@ -1,5 +1,5 @@
-Norm of input parameter nicas_a::1: 4.2727231385893987e+01
-Norm of input parameter nicas_a::2: 1.2508898244244907e+01
+Norm of input parameter nicas_a::1: 4.4860789243474272e+01
+Norm of input parameter nicas_a::2: 1.3133522336960826e+01
        Independent levels:  1[2]
           Model grid size:              840
           Subset Sc0 size:              762
@@ -11,56 +11,56 @@ Norm of input parameter nicas_a::2: 1.2508898244244907e+01
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-   Norm of stream_function:  0.14126025E+04
-   Norm of velocity_potential:  0.12323883E+04
-   Norm of stream_function:  0.13765489E+04
-   Norm of velocity_potential:  0.14074276E+04
-   Norm of stream_function:  0.12309160E+04
-   Norm of velocity_potential:  0.13792409E+04
-   Norm of stream_function:  0.14717717E+04
-   Norm of velocity_potential:  0.14061769E+04
-   Norm of stream_function:  0.13699966E+04
-   Norm of velocity_potential:  0.12513083E+04
-   Norm of stream_function:  0.16326230E+04
-   Norm of velocity_potential:  0.15844588E+04
-   Norm of stream_function:  0.13049597E+04
-   Norm of velocity_potential:  0.13412942E+04
-   Norm of stream_function:  0.17805510E+04
-   Norm of velocity_potential:  0.14354833E+04
-   Norm of stream_function:  0.16067731E+04
-   Norm of velocity_potential:  0.17769672E+04
-   Norm of stream_function:  0.12788813E+04
-   Norm of velocity_potential:  0.15624475E+04
-   Norm of stream_function:  0.14535409E+04
-   Norm of velocity_potential:  0.14532876E+04
-   Norm of stream_function:  0.15558979E+04
-   Norm of velocity_potential:  0.18522245E+04
-   Norm of stream_function:  0.15917174E+04
-   Norm of velocity_potential:  0.17978397E+04
-   Norm of stream_function:  0.18009664E+04
-   Norm of velocity_potential:  0.12379540E+04
-   Norm of stream_function:  0.13435218E+04
-   Norm of velocity_potential:  0.14736925E+04
-   Norm of stream_function:  0.15219554E+04
-   Norm of velocity_potential:  0.13720112E+04
-   Norm of stream_function:  0.16957607E+04
-   Norm of velocity_potential:  0.16161038E+04
-   Norm of stream_function:  0.15083721E+04
-   Norm of velocity_potential:  0.13880313E+04
-   Norm of stream_function:  0.13625727E+04
-   Norm of velocity_potential:  0.11703510E+04
-   Norm of stream_function:  0.15191922E+04
-   Norm of velocity_potential:  0.11447836E+04
-   Norm of stream_function:  0.11732024E+04
-   Norm of velocity_potential:  0.14369029E+04
-   Norm of stream_function:  0.14656734E+04
-   Norm of velocity_potential:  0.14555562E+04
-   Norm of stream_function:  0.15221355E+04
-   Norm of velocity_potential:  0.15331318E+04
-   Norm of stream_function:  0.16108719E+04
-   Norm of velocity_potential:  0.12715702E+04
-   Norm of stream_function:  0.15050564E+04
-   Norm of velocity_potential:  0.12892202E+04
+   Norm of stream_function:  0.15579346E+04
+   Norm of velocity_potential:  0.13710824E+04
+   Norm of stream_function:  0.14840202E+04
+   Norm of velocity_potential:  0.16565891E+04
+   Norm of stream_function:  0.12940664E+04
+   Norm of velocity_potential:  0.14360889E+04
+   Norm of stream_function:  0.15699724E+04
+   Norm of velocity_potential:  0.15202855E+04
+   Norm of stream_function:  0.16634726E+04
+   Norm of velocity_potential:  0.13245140E+04
+   Norm of stream_function:  0.19946213E+04
+   Norm of velocity_potential:  0.16975438E+04
+   Norm of stream_function:  0.13897421E+04
+   Norm of velocity_potential:  0.14539846E+04
+   Norm of stream_function:  0.19549025E+04
+   Norm of velocity_potential:  0.15661872E+04
+   Norm of stream_function:  0.16406601E+04
+   Norm of velocity_potential:  0.22328775E+04
+   Norm of stream_function:  0.13238849E+04
+   Norm of velocity_potential:  0.15917382E+04
+   Norm of stream_function:  0.14950920E+04
+   Norm of velocity_potential:  0.15603242E+04
+   Norm of stream_function:  0.16315350E+04
+   Norm of velocity_potential:  0.19589613E+04
+   Norm of stream_function:  0.18295197E+04
+   Norm of velocity_potential:  0.19231079E+04
+   Norm of stream_function:  0.21336317E+04
+   Norm of velocity_potential:  0.13176914E+04
+   Norm of stream_function:  0.18680388E+04
+   Norm of velocity_potential:  0.16063580E+04
+   Norm of stream_function:  0.16086922E+04
+   Norm of velocity_potential:  0.16115453E+04
+   Norm of stream_function:  0.18259781E+04
+   Norm of velocity_potential:  0.17439960E+04
+   Norm of stream_function:  0.16654886E+04
+   Norm of velocity_potential:  0.15909390E+04
+   Norm of stream_function:  0.14155585E+04
+   Norm of velocity_potential:  0.12323798E+04
+   Norm of stream_function:  0.15563456E+04
+   Norm of velocity_potential:  0.12178365E+04
+   Norm of stream_function:  0.11955325E+04
+   Norm of velocity_potential:  0.15530792E+04
+   Norm of stream_function:  0.15662073E+04
+   Norm of velocity_potential:  0.15188388E+04
+   Norm of stream_function:  0.17065854E+04
+   Norm of velocity_potential:  0.17808198E+04
+   Norm of stream_function:  0.16922486E+04
+   Norm of velocity_potential:  0.13360784E+04
+   Norm of stream_function:  0.17012366E+04
+   Norm of velocity_potential:  0.14807828E+04
              nc1(  1) =                        762
              nc1(  2) =                        671
              ns =                             1433
