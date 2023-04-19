@@ -5,32 +5,37 @@ geometry:
     N: 10
   groups:
   - variables:
+    - eastward_wind
+    - northward_wind
     - stream_function
     - velocity_potential
     levels: 2
   halo: 1
-input variables:
-- stream_function
-- velocity_potential
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
-  - stream_function
-  - velocity_potential
-bump:
-  general:
-    testing: true
-  io:
-    data directory: testdata
-    files prefix: error_covariance_training_bump_wind/_MPI_-_OMP_
-    io tasks: 1
-  drivers:
-    compute psichitouv: true
-    write local psichitouv: true
-  psichitouv:
-    longitudes: 10
-    latitudes: 5
-    savitzky-golay half width: 3
-    wind inflation: 1.1
+  - eastward_wind
+  - northward_wind
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: ID
+  saber outer blocks:
+  - saber block name: BUMP_PsiChiToUV
+    read:
+      general:
+        testing: true
+      io:
+        data directory: testdata
+        files prefix: error_covariance_training_bump_wind/_MPI_-_OMP_
+        io tasks: 1
+      drivers:
+        compute psichitouv: true
+        write local psichitouv: true
+      psichitouv:
+        longitudes: 10
+        latitudes: 5
+        savitzky-golay half width: 3
+        wind inflation: 1.1
 test:
   reference filename: testref/error_covariance_training_bump_wind.ref

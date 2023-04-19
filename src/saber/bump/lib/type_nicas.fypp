@@ -55,6 +55,7 @@ contains
    procedure :: read_global => nicas_read_global
    procedure :: write_global => nicas_write_global
    procedure :: write_grids => nicas_write_grids
+   procedure :: write_steps => nicas_write_steps
    procedure :: send => nicas_send
    procedure :: receive => nicas_receive
    procedure :: run_nicas => nicas_run_nicas
@@ -572,6 +573,51 @@ call close_file(mpl,ncid)
 end subroutine nicas_write_grids
 
 !----------------------------------------------------------------------
+! Subroutine: nicas_write_steps
+!> Write
+!----------------------------------------------------------------------
+subroutine nicas_write_steps(nicas,mpl,nam)
+
+! Passed variables
+class(nicas_type),intent(inout) :: nicas !< NICAS data
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+type(nam_type),intent(in) :: nam         !< Namelist
+
+! Local variable
+integer :: ncid
+integer :: ig
+
+! Set name
+@:set_name(nicas_write_steps)
+
+! Probe in
+@:probe_in()
+
+! Open file
+ncid = create_file(mpl,trim(nam%fname_nicas)//'_steps',mpl%myproc)
+
+do ig=1,nam%ng
+   ! Copy global ID
+   nicas%blk(ig)%ncid = ncid
+
+   ! Write grids (definition mode)
+   call nicas%blk(ig)%write_steps_def(mpl,nam)
+end do
+
+do ig=1,nam%ng
+   ! Write grids (data mode)
+   call nicas%blk(ig)%write_steps_data(mpl)
+end do
+
+! Close file
+call close_file(mpl,ncid)
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_write_steps
+
+!----------------------------------------------------------------------
 ! Subroutine: nicas_send
 !> Send
 !----------------------------------------------------------------------
@@ -919,6 +965,9 @@ if (nam%check_dirac) then
       call mpl%flush
       call nicas%blk(ig)%test_dirac(mpl,nam,geom)
    end do
+
+   ! Write steps
+   if (nam%write_nicas_steps) call nicas%write_steps(mpl,nam)
 end if
 
 if (nam%check_randomization) then
@@ -1106,7 +1155,7 @@ subroutine nicas_apply(nicas,mpl,nam,geom,fld)
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(in) :: nicas                           !< NICAS data
+class(nicas_type),intent(inout) :: nicas                        !< NICAS data
 type(mpl_type),intent(inout) :: mpl                             !< MPI data
 type(nam_type),intent(in) :: nam                                !< Namelist
 type(geom_type),intent(in) :: geom                              !< Geometry
@@ -1159,7 +1208,7 @@ subroutine nicas_apply_sqrt(nicas,mpl,nam,geom,cv,fld)
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(in) :: nicas                         !< NICAS data
+class(nicas_type),intent(inout) :: nicas                      !< NICAS data
 type(mpl_type),intent(inout) :: mpl                           !< MPI data
 type(nam_type),intent(in) :: nam                              !< Namelist
 type(geom_type),intent(in) :: geom                            !< Geometry
@@ -1256,7 +1305,7 @@ subroutine nicas_apply_sqrt_ad(nicas,mpl,nam,geom,fld,cv)
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(in) :: nicas                        !< NICAS data
+class(nicas_type),intent(inout) :: nicas                     !< NICAS data
 type(mpl_type),intent(inout) :: mpl                          !< MPI data
 type(nam_type),intent(in) :: nam                             !< Namelist
 type(geom_type),intent(in) :: geom                           !< Geometry
@@ -1398,7 +1447,7 @@ do ie=1,ne
    call nicas%apply_sqrt(mpl,nam,geom,cv_ens(ie),fld_c0a)
 
    ! Set metadata
-   call ens%mem(ie)%init(mpl,geom%afunctionspace_mg,geom%gmask_mga,nam%variables(1:nam%nv),nam%lev2d)
+   call ens%mem(ie)%init(mpl,geom%afunctionspace_mg,geom%gmask_mga,nam%variables(1:nam%nv),nam%lev2d,nam%var2d)
 
    ! Set member from subset Sc0
    call ens%set_c0(mpl,nam,geom,'member',ie,fld_c0a)
@@ -1424,7 +1473,7 @@ subroutine nicas_apply_bens(nicas,mpl,nam,geom,ens,fld)
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(in) :: nicas                           !< NICAS data
+class(nicas_type),intent(inout) :: nicas                        !< NICAS data
 type(mpl_type),intent(inout) :: mpl                             !< MPI data
 type(nam_type),intent(in) :: nam                                !< Namelist
 type(geom_type),intent(in) :: geom                              !< Geometry
@@ -1478,11 +1527,11 @@ subroutine nicas_test_adjoint(nicas,mpl,rng,nam,geom)
 implicit none
 
 ! Passed variables
-class(nicas_type),intent(in) :: nicas !< NICAS data
-type(mpl_type),intent(inout) :: mpl   !< MPI data
-type(rng_type),intent(inout) :: rng   !< Random number generator
-type(nam_type),intent(in) :: nam      !< Namelist
-type(geom_type),intent(in) :: geom    !< Geometry
+class(nicas_type),intent(inout) :: nicas !< NICAS data
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+type(rng_type),intent(inout) :: rng      !< Random number generator
+type(nam_type),intent(in) :: nam         !< Namelist
+type(geom_type),intent(in) :: geom       !< Geometry
 
 ! Local variables
 real(kind_real) :: sum1,sum2

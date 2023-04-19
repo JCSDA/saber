@@ -1,48 +1,8 @@
        Independent levels:  1[2]
-          Model grid size:              840
-          Subset Sc0 size:              762
-          Number of duplicated points (halo):        78 (  9.29%)
-          Min. / max. longitudes: -171.0 /   180.0
-          Min. / max. latitudes:   -90.0 /    90.0
-          Domain area (% of Earth area): 0.100E+03%
-             Level   1 ~> 100.0%
-             Level   2 ~> 100.0%
-             Level   1 ~>  0.100E+01 vert. unit
-             Level   2 ~>  0.200E+01 vert. unit
-             Effective levels:   1   2 
-                   Horizontal support radius:    7000.00 km (   7000.00 km -    7000.00 km)
-                   Estimated nc1 from horizontal support radius:      192
-                      Decimate full grid, at least      192 points required,     714 valid points found
-                      Subgrid hash:    762717970
-                   Final nc1:      192
-                   Effective horizontal resolution:  4.00
-                   Horizontal support radius:    7000.00 km (   7000.00 km -    7000.00 km)
-                   Estimated nc1 from horizontal support radius:      192
-                      Decimate full grid, at least      192 points required,     714 valid points found
-                      Subgrid hash:    762717970
-                   Final nc1:      192
-                   Effective horizontal resolution:  4.00
-             nc1(  1) =                        192
-             nc1(  2) =                        192
-             ns =                              384
-             v%n_s =                             2
-             c%n_s[global] =                  5256
-       Independent levels:  1[2]
           Model grid size:             1200
           Subset Sc0 size:             1106
           Number of duplicated points (halo):        94 (  7.83%)
           Min. / max. longitudes: -172.5 /   180.0
-          Min. / max. latitudes:   -90.0 /    90.0
-          Domain area (% of Earth area): 0.100E+03%
-             Level   1 ~> 100.0%
-             Level   2 ~> 100.0%
-             Level   1 ~>  0.100E+01 vert. unit
-             Level   2 ~>  0.200E+01 vert. unit
-       Independent levels:  1[2]
-          Model grid size:              840
-          Subset Sc0 size:              762
-          Number of duplicated points (halo):        78 (  9.29%)
-          Min. / max. longitudes: -171.0 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
@@ -59,31 +19,42 @@
    Norm of stream_function:  0.24825323E+04
    Norm of stream_function:  0.25223303E+04
    Norm of stream_function:  0.14836065E+04
-   Norm of stream_function:  0.16323560E+04
-   Norm of stream_function:  0.22011911E+04
-   Norm of stream_function:  0.15186514E+04
-   Norm of stream_function:  0.21162992E+04
-   Norm of stream_function:  0.18390973E+04
-   Norm of stream_function:  0.14827041E+04
-   Norm of stream_function:  0.98115559E+03
-   Norm of stream_function:  0.15294714E+04
-   Norm of stream_function:  0.14818177E+04
-   Norm of stream_function:  0.24719192E+04
-   Norm of stream_function:  0.18641686E+04
-   Norm of stream_function:  0.15517980E+04
-   Norm of stream_function:  0.20782224E+04
-   Norm of stream_function:  0.19336471E+04
-   Norm of stream_function:  0.10445255E+04
-   Norm of stream_function:  0.15213596E+04
-   Norm of stream_function:  0.19741421E+04
-   Norm of stream_function:  0.13336721E+04
-   Norm of stream_function:  0.16808533E+04
-   Norm of stream_function:  0.14999391E+04
-   Norm of stream_function:  0.13172842E+04
-   Norm of stream_function:  0.13689253E+04
-   Norm of stream_function:  0.17897186E+04
-   Norm of stream_function:  0.17565230E+04
-   Norm of stream_function:  0.17629662E+04
+       Independent levels:  1[2]
+          Model grid size:              840
+          Subset Sc0 size:              762
+          Number of duplicated points (halo):        78 (  9.29%)
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. unit
+             Level   2 ~>  0.200E+01 vert. unit
+   Norm of stream_function:  0.16076388E+04
+   Norm of stream_function:  0.21552496E+04
+   Norm of stream_function:  0.15140285E+04
+   Norm of stream_function:  0.20524471E+04
+   Norm of stream_function:  0.17953473E+04
+   Norm of stream_function:  0.14798263E+04
+   Norm of stream_function:  0.97101966E+03
+   Norm of stream_function:  0.15007190E+04
+   Norm of stream_function:  0.14685150E+04
+   Norm of stream_function:  0.24202019E+04
+   Norm of stream_function:  0.18375181E+04
+   Norm of stream_function:  0.15268935E+04
+   Norm of stream_function:  0.20394122E+04
+   Norm of stream_function:  0.19073590E+04
+   Norm of stream_function:  0.10416883E+04
+   Norm of stream_function:  0.15091838E+04
+   Norm of stream_function:  0.19336168E+04
+   Norm of stream_function:  0.13143331E+04
+   Norm of stream_function:  0.16732567E+04
+   Norm of stream_function:  0.14878149E+04
+   Norm of stream_function:  0.13103920E+04
+   Norm of stream_function:  0.13566558E+04
+   Norm of stream_function:  0.17573212E+04
+   Norm of stream_function:  0.17114727E+04
+   Norm of stream_function:  0.17402264E+04
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
           Decimate full grid, at least      500 points required,    1090 valid points found
@@ -155,7 +126,7 @@
                                  loc. ver. support:         2.00 vertical units
                 Level:   1 ~> hybrid coefficients: 0.43 / 0.54
                 Level:   2 ~> hybrid coefficients: 0.25 / 0.69
-Norm of BUMP output parameter loc_rh - 1: 4.8989794855663562e+08
-Norm of BUMP output parameter loc_rv - 1: 9.7979589711327122e+01
-Norm of BUMP output parameter hyb_coef_ens - 1: 1.7326160529424399e+01
-Norm of BUMP output parameter hyb_coef_sta - 1: 3.0522032116673756e+01
+Norm of output parameter loc_rh - 1: 4.8989794855663562e+08
+Norm of output parameter loc_rv - 1: 9.7979589711327122e+01
+Norm of output parameter hyb_coef_ens - 1: 1.7326160529424399e+01
+Norm of output parameter hyb_coef_sta - 1: 2.4142721729512761e+01

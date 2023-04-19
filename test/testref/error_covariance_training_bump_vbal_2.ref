@@ -39,4 +39,4 @@
        Vertical balance block stream_function-velocity_potential adjoint test result:  T
        Vertical balance direct adjoint test results:  T
        Vertical balance inverse adjoint test results: T
-Norm of BUMP output parameter dirac_vbal - 1: 1.0000000000000000e+00
+Norm of output parameter dirac_vbal - 1: 1.0000000000000000e+00

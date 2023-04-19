@@ -31,6 +31,7 @@ class EnsembleParameters : public SaberBlockParametersBase {
  public:
   oops::RequiredParameter<eckit::LocalConfiguration> localization{
         "localization", this};
+
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
 
@@ -45,14 +46,16 @@ class Ensemble : public SaberCentralBlockBase {
   Ensemble(const oops::GeometryData &,
            const std::vector<size_t> &,
            const oops::Variables &,
+           const eckit::Configuration &,
            const Parameters_ &,
            const atlas::FieldSet &,
            const atlas::FieldSet &,
-           const std::vector<atlas::FieldSet> &,
            const size_t &);
 
   void randomize(atlas::FieldSet &) const override;
   void multiply(atlas::FieldSet &) const override;
+
+  void directCalibration(const std::vector<atlas::FieldSet> &) override;
 
  private:
   std::vector<atlas::FieldSet> ensemble_;

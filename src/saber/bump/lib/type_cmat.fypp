@@ -8,10 +8,10 @@
 !----------------------------------------------------------------------
 module type_cmat
 
-use fckit_mpi_module, only: fckit_mpi_sum
+use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_max
 use tools_const, only: zero,one,rad2deg,reqkm,req
 use tools_fit, only: tensor_d2r
-use tools_func, only: convert_l2i,convert_i2l,zss_sum
+use tools_func, only: convert_l2i,convert_i2l,zss_sum,zss_maxval
 use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,put_att,get_att,define_dim,inquire_var,define_var,close_file
 use type_cmat_blk, only: cmat_blk_type
@@ -40,6 +40,7 @@ contains
    procedure :: from_nam => cmat_from_nam
    procedure :: from_bump => cmat_from_bump
    procedure :: setup_sampling => cmat_setup_sampling
+   procedure :: write_universe_radius => cmat_write_universe_radius
 end type cmat_type
 
 private
@@ -467,5 +468,69 @@ end if
 @:probe_out()
 
 end subroutine cmat_setup_sampling
+
+!----------------------------------------------------------------------
+! Subroutine: cmat_write_universe_radius
+!> Write universe_radius
+!----------------------------------------------------------------------
+subroutine cmat_write_universe_radius(cmat,mpl,nam,geom)
+
+implicit none
+
+! Passed variables
+class(cmat_type),intent(in) :: cmat !< C matrix
+type(mpl_type),intent(inout) :: mpl !< MPI data
+type(nam_type),intent(in) :: nam    !< Namelist
+type(geom_type),intent(in) :: geom  !< Geometry
+
+! Local variables
+integer :: iv,ig,il0,lunit,ioflag
+real(kind_real) :: universe_radius(nam%ng)
+
+! Set name
+@:set_name(cmat_write_universe_radius)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+universe_radius = zero
+
+do ig=1,nam%ng
+   ! Get maximum value
+   do il0=1,geom%nl0
+      universe_radius(ig) = zss_maxval((/universe_radius(ig),zss_maxval(cmat%blk(ig)%rhs(:,il0,1), &
+ & mask=mpl%msv%isnot(cmat%blk(ig)%rhs(:,il0,1)))/))
+   end do
+end do
+
+! Get global maximum
+call mpl%f_comm%allreduce(universe_radius,fckit_mpi_max())
+
+! Write universe radius
+if (mpl%main) then
+   ! Get unit
+   lunit = 12
+
+   ! Open file
+   open(lunit,file=trim(nam%datadir)//'/'//trim(nam%fname_universe_radius),iostat=ioflag,status='replace')
+   if (ioflag/=0) call mpl%abort('${subr}$','cannot write universe radius file')
+
+   do iv=1,nam%nv
+     ! Get group index
+     ig = nam%group_index(iv)
+
+     ! Write data
+     write(lunit,'(a,e15.8)') trim(nam%variables(iv)),universe_radius(ig)*req
+   end do
+
+   ! Close file
+   close(lunit)
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine cmat_write_universe_radius
 
 end module type_cmat

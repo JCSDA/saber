@@ -21,9 +21,9 @@
 #include "oops/util/Duration.h"
 #include "oops/util/Logger.h"
 
-#include "saber/oops/ReadInput.h"
 #include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberCentralBlockBase.h"
+#include "saber/oops/Utilities.h"
 
 namespace saber {
 
@@ -79,28 +79,24 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
   oops::Variables activeVars =
     saberCentralBlockParams.activeVars.value().get_value_or(centralVars);
 
-  // Initialize vector of FieldSet
-  std::vector<atlas::FieldSet> fsetVec;
-
-  // Read input fields (on model increment geometry)
-  std::vector<eckit::LocalConfiguration> inputFieldConfs;
-  inputFieldConfs = saberCentralBlockParams.inputFieldConfs.value().get_value_or(inputFieldConfs);
-  readInputFields(geom,
-                  activeVars,
-                  dummyTime,
-                  inputFieldConfs,
-                  fsetVec);
-
   // Create central block
   saberCentralBlock_.reset(SaberCentralBlockFactory::create(
                            geom.generic(),
                            geom.variableSizes(activeVars),
                            activeVars,
+                           conf,
                            saberCentralBlockParams,
                            dummyFs,
                            dummyFs,
-                           fsetVec,
                            geom.timeComm().rank()));
+
+  if (saberCentralBlockParams.doCalibration()) {
+    // Block calibration
+    ABORT("no localization calibration yet");
+  } else if (saberCentralBlockParams.doRead()) {
+    // Read data
+    saberCentralBlock_->read();
+  }
 
   // Check that active variables are present in central variables
   for (const auto & var : activeVars.variables()) {

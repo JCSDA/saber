@@ -106,6 +106,30 @@ contains
    procedure :: dealloc => hor_dealloc
 end type hor_type
 
+! Steps data derived type
+type steps_type
+   ! Size
+   integer :: nnz = 0                       !< Number of non-zero points
+
+   ! Coordinates and values
+   real(kind_real),allocatable :: lon(:)    !< Longitudes
+   real(kind_real),allocatable :: lat(:)    !< Latitudes
+   integer,allocatable :: lev(:)            !< Levels
+   real(kind_real),allocatable :: values(:) !< Values
+
+   ! I/O IDs
+   integer :: stepsid                       !< Steps group ID
+   integer :: lon_id                        !< lon ID
+   integer :: lat_id                        !< lat ID
+   integer :: lev_id                        !< lev ID
+   integer :: values_id                     !< values ID
+contains
+   procedure :: dealloc => steps_dealloc
+   procedure :: steps_add_fld
+   procedure :: steps_add_vec
+   generic :: add => steps_add_fld,steps_add_vec
+end type
+
 ! NICAS component derived type
 type nicas_cmp_type
    ! General parameters
@@ -169,6 +193,9 @@ type nicas_cmp_type
    integer,allocatable :: sc_to_su(:)                   !< Subgrid, halo C to universe
    integer,allocatable :: sa_to_sc(:)                   !< Subgrid, halo A to halo C
    integer,allocatable :: sb_to_sc(:)                   !< Subgrid, halo B to halo C
+   real(kind_real),allocatable :: lon_sa(:)             !< Longitude on subgrid, halo A
+   real(kind_real),allocatable :: lat_sa(:)             !< Latitude on subgrid, halo A
+   integer,allocatable :: lev_sa(:)                     !< Level on subgrid, halo A
 
    ! C matrix data
    real(kind_real),allocatable :: a(:,:)                !< Amplitude
@@ -220,6 +247,9 @@ type nicas_cmp_type
    integer :: lev_sc_id                                 !< lev_sc ID
    integer :: c_nopmax                                  !< Maximum number of operations for convolution
 
+   ! Steps data
+   type(steps_type) :: steps(7)                         !< Steps data
+
    ! Interpolation test
    real(kind_real),allocatable :: fld_ref(:,:)          !< Reference field
    real(kind_real),allocatable :: fld_ssrf(:,:)         !< SSRF-based interpolated field
@@ -239,6 +269,8 @@ contains
    procedure :: write_global_data => nicas_cmp_write_global_data
    procedure :: write_grids_def => nicas_cmp_write_grids_def
    procedure :: write_grids_data => nicas_cmp_write_grids_data
+   procedure :: write_steps_def => nicas_cmp_write_steps_def
+   procedure :: write_steps_data => nicas_cmp_write_steps_data
    procedure :: nicas_cmp_compute_parameters
    procedure :: nicas_cmp_compute_parameters_horizontal_smoother
    generic :: compute_parameters => nicas_cmp_compute_parameters,nicas_cmp_compute_parameters_horizontal_smoother
@@ -335,13 +367,12 @@ end subroutine balldata_dealloc
 ! Subroutine: balldata_pack
 !> Pack data into balldata object
 !----------------------------------------------------------------------
-subroutine balldata_pack(balldata,mpl,nc1u,hnd,vnd,mnd)
+subroutine balldata_pack(balldata,nc1u,hnd,vnd,mnd)
 
 implicit none
 
 ! Passed variables
 class(balldata_type),intent(inout) :: balldata !< Ball data
-type(mpl_type),intent(inout) :: mpl            !< MPI data
 integer,intent(in) :: nc1u                     !< Horizontal box size
 real(kind_real),intent(in) :: hnd(nc1u)        !< Horizontal normalized distance
 real(kind_real),intent(in) :: vnd(nc1u)        !< Vertical normalized distance
@@ -463,6 +494,141 @@ if (allocated(hor%c1b_to_sb)) deallocate(hor%c1b_to_sb)
 end subroutine hor_dealloc
 
 !----------------------------------------------------------------------
+! Subroutine: steps_dealloc
+!> Release memory
+!----------------------------------------------------------------------
+subroutine steps_dealloc(steps)
+
+implicit none
+
+! Passed variables
+class(steps_type),intent(inout) :: steps !< Steps data
+
+! Set name
+@:set_name(steps_dealloc)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+if (allocated(steps%lon)) deallocate(steps%lon)
+if (allocated(steps%lat)) deallocate(steps%lat)
+if (allocated(steps%lev)) deallocate(steps%lev)
+if (allocated(steps%values)) deallocate(steps%values)
+
+! Probe out
+@:probe_out()
+
+end subroutine steps_dealloc
+
+!----------------------------------------------------------------------
+! Subroutine: steps_add_fld
+!> Add field to steps data
+!----------------------------------------------------------------------
+subroutine steps_add_fld(steps,mpl,geom,fld)
+
+implicit none
+
+! Passed variables
+class(steps_type),intent(inout) :: steps              !< Steps data
+type(mpl_type),intent(inout) :: mpl                   !< MPI data
+type(geom_type),intent(in) :: geom                    !< Geometry
+real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0) !< Field
+
+! Local variables
+integer :: inz,ic0a,il0
+
+! Set name
+@:set_name(steps_add_fld)
+
+! Probe in
+@:probe_in()
+
+! Count number of non-zero points
+steps%nnz = count((abs(fld)>zero).and.mpl%msv%isnot(fld))
+
+if (steps%nnz>0) then
+   ! Allocation
+   allocate(steps%lon(steps%nnz))
+   allocate(steps%lat(steps%nnz))
+   allocate(steps%lev(steps%nnz))
+   allocate(steps%values(steps%nnz))
+
+   ! Copy
+   inz = 0
+   do il0=1,geom%nl0
+      do ic0a=1,geom%nc0a
+         if ((abs(fld(ic0a,il0))>zero).and.mpl%msv%isnot(fld(ic0a,il0))) then
+            inz = inz+1
+            steps%lon(inz) = geom%lon_c0a(ic0a)*rad2deg
+            steps%lat(inz) = geom%lat_c0a(ic0a)*rad2deg
+            steps%lev(inz) = il0
+            steps%values(inz) = fld(ic0a,il0)
+         end if
+      end do
+   end do
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine steps_add_fld
+
+!----------------------------------------------------------------------
+! Subroutine: steps_add_vec
+!> Add vector to steps data
+!----------------------------------------------------------------------
+subroutine steps_add_vec(steps,mpl,n,lon,lat,lev,vec)
+
+implicit none
+
+! Passed variables
+class(steps_type),intent(inout) :: steps !< Steps data
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+integer,intent(in) :: n                  !< Vector size
+real(kind_real),intent(in) :: lon(n)     !< Longitudes
+real(kind_real),intent(in) :: lat(n)     !< Latitudes
+integer,intent(in) :: lev(n)             !< Levels
+real(kind_real),intent(in) :: vec(n)     !< Vector
+
+! Local variables
+integer :: inz,i
+
+! Set name
+@:set_name(steps_add_vec)
+
+! Probe in
+@:probe_in()
+
+! Count number of non-zero points
+steps%nnz = count((abs(vec)>zero).and.mpl%msv%isnot(vec))
+
+if (steps%nnz>0) then
+   ! Allocation
+   allocate(steps%lon(steps%nnz))
+   allocate(steps%lat(steps%nnz))
+   allocate(steps%lev(steps%nnz))
+   allocate(steps%values(steps%nnz))
+
+   ! Copy
+   inz = 0
+   do i=1,n
+      if ((abs(vec(i))>zero).and.mpl%msv%isnot(vec(i))) then
+         inz = inz+1
+         steps%lon(inz) = lon(i)*rad2deg
+         steps%lat(inz) = lat(i)*rad2deg
+         steps%lev(inz) = lev(i)
+         steps%values(inz) = vec(i)
+      end if
+   end do
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine steps_add_vec
+
+!----------------------------------------------------------------------
 ! Subroutine: nicas_cmp_partial_dealloc
 !> Release memory (partial)
 !----------------------------------------------------------------------
@@ -567,7 +733,7 @@ implicit none
 class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data component
 
 ! Local variables
-integer :: il1
+integer :: il1,i
 
 ! Set name
 @:set_name(nicas_cmp_dealloc)
@@ -577,6 +743,9 @@ integer :: il1
 
 ! Release memory
 call nicas_cmp%partial_dealloc
+if (allocated(nicas_cmp%lon_sa)) deallocate(nicas_cmp%lon_sa)
+if (allocated(nicas_cmp%lat_sa)) deallocate(nicas_cmp%lat_sa)
+if (allocated(nicas_cmp%lev_sa)) deallocate(nicas_cmp%lev_sa)
 if (allocated(nicas_cmp%sa_to_s)) deallocate(nicas_cmp%sa_to_s)
 if (allocated(nicas_cmp%vlev)) deallocate(nicas_cmp%vlev)
 if (allocated(nicas_cmp%norm)) deallocate(nicas_cmp%norm)
@@ -604,6 +773,9 @@ if (allocated(nicas_cmp%fld_ref)) deallocate(nicas_cmp%fld_ref)
 if (allocated(nicas_cmp%fld_ssrf)) deallocate(nicas_cmp%fld_ssrf)
 if (allocated(nicas_cmp%fld_op)) deallocate(nicas_cmp%fld_op)
 if (allocated(nicas_cmp%fld_ssrf_from_op)) deallocate(nicas_cmp%fld_ssrf_from_op)
+do i=1,7
+   call nicas_cmp%steps(i)%dealloc
+end do
 
 ! Probe out
 @:probe_out()
@@ -1214,7 +1386,7 @@ type(geom_type),intent(in) :: geom               !< Geometry
 integer :: vlev_id,l1_to_l0_id,lon_c1_id,lat_c1_id,c_col_s_id,c_S_s_id,inorm_s_id
 integer :: il0,il1,ic1,ic1a,ic0a,iproc,is,isa,jsu,c_nopmax,nop,js,i_s,iop
 integer,allocatable :: lev_c1(:),c1_to_proc(:),c1_to_c0a(:),order_s(:),order_inv_s(:),order_inv_sa(:),c_col_sa(:,:)
-real(kind_real),allocatable :: lon_c1(:),lat_c1(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:),c_S_sa(:,:)
+real(kind_real),allocatable :: lon_c1(:),lat_c1(:),lon_s(:),lat_s(:),lon_sa(:),lat_sa(:),c_S_sa(:,:)
 logical,allocatable :: gmask_c1(:)
 character(len=1024) :: levname
 type(io_type) :: io_s
@@ -1804,10 +1976,10 @@ class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data component
 type(mpl_type),intent(inout) :: mpl           !< MPI data
 
 ! Local variables
-integer :: isa,isb,isc,isu,ic1a,ic1u,il1,il0
-real(kind_real) :: lon_sa(nicas_cmp%nsa),lat_sa(nicas_cmp%nsa),lev_sa(nicas_cmp%nsa)
-real(kind_real) :: lon_sb(nicas_cmp%nsb),lat_sb(nicas_cmp%nsb),lev_sb(nicas_cmp%nsb)
-real(kind_real) :: lon_sc(nicas_cmp%nsc),lat_sc(nicas_cmp%nsc),lev_sc(nicas_cmp%nsc)
+integer :: isb,isc,isu,ic1u,il1,il0
+integer :: lev_sb(nicas_cmp%nsb),lev_sc(nicas_cmp%nsc)
+real(kind_real) :: lon_sb(nicas_cmp%nsb),lon_sc(nicas_cmp%nsc)
+real(kind_real) :: lat_sb(nicas_cmp%nsb),lat_sc(nicas_cmp%nsc)
 
 ! Set name
 @:set_name(nicas_cmp_write_grids_data)
@@ -1816,16 +1988,6 @@ real(kind_real) :: lon_sc(nicas_cmp%nsc),lat_sc(nicas_cmp%nsc),lev_sc(nicas_cmp%
 @:probe_in()
 
 ! Copy
-if (nicas_cmp%nsa>0) then
-   do isa=1,nicas_cmp%nsa
-      ic1a = nicas_cmp%sa_to_c1a(isa)
-      il1 = nicas_cmp%sa_to_l1(isa)
-      il0 = nicas_cmp%l1_to_l0(il1)
-      lon_sa(isa) = nicas_cmp%hor(il1)%lon_c1a(ic1a)*rad2deg
-      lat_sa(isa) = nicas_cmp%hor(il1)%lat_c1a(ic1a)*rad2deg
-      lev_sa(isa) = il0
-   end do
-end if
 if (nicas_cmp%nsb>0) then
    do isb=1,nicas_cmp%nsb
       isu = nicas_cmp%sb_to_su(isb)
@@ -1851,9 +2013,9 @@ end if
 
 ! Write variables
 if (nicas_cmp%nsa>0) then
-   call put_var(mpl,nicas_cmp%cmpid,nicas_cmp%lon_sa_id,lon_sa)
-   call put_var(mpl,nicas_cmp%cmpid,nicas_cmp%lat_sa_id,lat_sa)
-   call put_var(mpl,nicas_cmp%cmpid,nicas_cmp%lev_sa_id,lev_sa)
+   call put_var(mpl,nicas_cmp%cmpid,nicas_cmp%lon_sa_id,nicas_cmp%lon_sa)
+   call put_var(mpl,nicas_cmp%cmpid,nicas_cmp%lat_sa_id,nicas_cmp%lat_sa)
+   call put_var(mpl,nicas_cmp%cmpid,nicas_cmp%lev_sa_id,nicas_cmp%lev_sa)
 end if
 if (nicas_cmp%nsb>0) then
    call put_var(mpl,nicas_cmp%cmpid,nicas_cmp%lon_sb_id,lon_sb)
@@ -1870,6 +2032,87 @@ end if
 @:probe_out()
 
 end subroutine nicas_cmp_write_grids_data
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_cmp_write_steps_def
+!> Write NICAS steps, definition mode
+!----------------------------------------------------------------------
+subroutine nicas_cmp_write_steps_def(nicas_cmp,mpl)
+
+implicit none
+
+! Passed variables
+class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data component
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+
+! Local variables
+integer :: nnz_id
+integer :: i
+character(len=7) :: stepsname
+
+! Set name
+@:set_name(nicas_cmp_write_steps_def)
+
+! Probe in
+@:probe_in()
+
+do i=1,7
+   if (nicas_cmp%steps(i)%nnz>0) then
+      ! Create group
+      write(stepsname,'(a,i1)') 'steps_',i
+      nicas_cmp%steps(i)%stepsid = define_grp(mpl,nicas_cmp%cmpid,stepsname)
+
+      ! Define dimensions
+      nnz_id = define_dim(mpl,nicas_cmp%steps(i)%stepsid,'nnz',nicas_cmp%steps(i)%nnz)
+
+      ! Define variables
+      nicas_cmp%steps(i)%lon_id = define_var(mpl,nicas_cmp%steps(i)%stepsid,'lon','real',(/nnz_id/))
+      nicas_cmp%steps(i)%lat_id = define_var(mpl,nicas_cmp%steps(i)%stepsid,'lat','real',(/nnz_id/))
+      nicas_cmp%steps(i)%lev_id = define_var(mpl,nicas_cmp%steps(i)%stepsid,'lev','int',(/nnz_id/))
+      nicas_cmp%steps(i)%values_id = define_var(mpl,nicas_cmp%steps(i)%stepsid,'values','real',(/nnz_id/))
+   end if
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_cmp_write_steps_def
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_cmp_write_steps_data
+!> Write NICAS steps, data mode
+!----------------------------------------------------------------------
+subroutine nicas_cmp_write_steps_data(nicas_cmp,mpl)
+
+implicit none
+
+! Passed variables
+class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data component
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+
+! Local variables
+integer :: i
+
+! Set name
+@:set_name(nicas_cmp_write_steps_data)
+
+! Probe in
+@:probe_in()
+
+do i=1,7
+   if (nicas_cmp%steps(i)%nnz>0) then
+      ! Write variables
+      call put_var(mpl,nicas_cmp%steps(i)%stepsid,nicas_cmp%steps(i)%lon_id,nicas_cmp%steps(i)%lon)
+      call put_var(mpl,nicas_cmp%steps(i)%stepsid,nicas_cmp%steps(i)%lat_id,nicas_cmp%steps(i)%lat)
+      call put_var(mpl,nicas_cmp%steps(i)%stepsid,nicas_cmp%steps(i)%lev_id,nicas_cmp%steps(i)%lev)
+      call put_var(mpl,nicas_cmp%steps(i)%stepsid,nicas_cmp%steps(i)%values_id,nicas_cmp%steps(i)%values)
+   end if
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_cmp_write_steps_data
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_cmp_compute_parameters
@@ -2232,7 +2475,7 @@ integer,allocatable :: c1_to_c0(:),order_c1(:),order_inv_c1(:),c0u_to_c0b(:),c0b
 integer,allocatable :: order_s(:),order_inv_s(:),order_inv_sa(:)
 real(kind_real) :: nc1_real,lon,lat,alon,alat
 real(kind_real) :: rhs_min(geom%nl0),rhs_max(geom%nl0),rhs_avg(geom%nl0),lonlat(2),g(3)
-real(kind_real),allocatable :: lon_c1(:),lat_c1(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:)
+real(kind_real),allocatable :: lon_c1(:),lat_c1(:),lon_s(:),lat_s(:)
 real(kind_real),allocatable :: fld_src_c1a(:),fld_src_c1b(:),fld_src_c1(:)
 real(kind_real),allocatable :: grad_ref_c1a(:,:),grad_ssrf_c1a(:,:),grad_op_c1a(:,:),grad_op_c1(:,:)
 logical :: valid
@@ -2907,8 +3150,9 @@ do il1=1,nicas_cmp%nl1
    allocate(nicas_cmp%hor(il1)%c1a_to_sa(nicas_cmp%hor(il1)%nc1a))
    allocate(nicas_cmp%hor(il1)%c1b_to_sb(nicas_cmp%hor(il1)%nc1b))
 end do
-allocate(lon_sa(nicas_cmp%nsa))
-allocate(lat_sa(nicas_cmp%nsa))
+allocate(nicas_cmp%lon_sa(nicas_cmp%nsa))
+allocate(nicas_cmp%lat_sa(nicas_cmp%nsa))
+allocate(nicas_cmp%lev_sa(nicas_cmp%nsa))
 if (mpl%main) then
    allocate(lon_s(nicas_cmp%ns))
    allocate(lat_s(nicas_cmp%ns))
@@ -3012,13 +3256,15 @@ if (.not.nam%load_nicas_global) then
    do isa=1,nicas_cmp%nsa
       ic1a = nicas_cmp%sa_to_c1a(isa)
       il1 = nicas_cmp%sa_to_l1(isa)
-      lon_sa(isa) = nicas_cmp%hor(il1)%lon_c1a(ic1a)
-      lat_sa(isa) = nicas_cmp%hor(il1)%lat_c1a(ic1a)
+      il0 = nicas_cmp%l1_to_l0(il1)
+      nicas_cmp%lon_sa(isa) = nicas_cmp%hor(il1)%lon_c1a(ic1a)
+      nicas_cmp%lat_sa(isa) = nicas_cmp%hor(il1)%lat_c1a(ic1a)
+      nicas_cmp%lev_sa(isa) = il0
    end do
 
    ! Communication
-   call mpl%loc_to_glb(nicas_cmp%nsa,nicas_cmp%ns,nicas_cmp%sa_to_s,lon_sa,lon_s)
-   call mpl%loc_to_glb(nicas_cmp%nsa,nicas_cmp%ns,nicas_cmp%sa_to_s,lat_sa,lat_s)
+   call mpl%loc_to_glb(nicas_cmp%nsa,nicas_cmp%ns,nicas_cmp%sa_to_s,nicas_cmp%lon_sa,lon_s)
+   call mpl%loc_to_glb(nicas_cmp%nsa,nicas_cmp%ns,nicas_cmp%sa_to_s,nicas_cmp%lat_sa,lat_s)
 
    ! Get subgrid order and inverse order
    if (mpl%main) then
@@ -3048,8 +3294,6 @@ if (nam%write_nicas_global) call nicas_cmp%com_s_AU%ext(mpl,order_inv_sa,nicas_c
 ! Release memory
 deallocate(sb_to_s)
 if (.not.nam%load_nicas_global) then
-   deallocate(lon_sa)
-   deallocate(lat_sa)
    deallocate(lon_s)
    deallocate(lat_s)
    deallocate(order_s)
@@ -3461,7 +3705,7 @@ do isb=1,nicas_cmp%nsb
       end if
 
       ! Pack data
-      call nicas_cmp%ball(jl1,isb)%pack(mpl,nicas_cmp%hor(jl1)%nc1u,hnd,vnd,mnd)
+      call nicas_cmp%ball(jl1,isb)%pack(nicas_cmp%hor(jl1)%nc1u,hnd,vnd,mnd)
 
       ! Release memory
       deallocate(hnd)
@@ -3986,26 +4230,32 @@ end subroutine nicas_cmp_apply_horizontal_smoother
 ! Subroutine: nicas_cmp_apply_sqrt
 !> Apply NICAS method square-root
 !----------------------------------------------------------------------
-subroutine nicas_cmp_apply_sqrt(nicas_cmp,mpl,geom,cv_cmp,fld)
+subroutine nicas_cmp_apply_sqrt(nicas_cmp,mpl,geom,cv_cmp,fld,steps)
 
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp          !< NICAS data component
+class(nicas_cmp_type),intent(inout) :: nicas_cmp       !< NICAS data component
 type(mpl_type),intent(inout) :: mpl                    !< MPI data
 type(geom_type),intent(in) :: geom                     !< Geometry
 type(cv_cmp_type),intent(in) :: cv_cmp                 !< Control vector component
 real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0) !< Field
+logical,intent(in),optional :: steps                   !< Steps flag
 
 ! Local variable
 integer :: ic0a,il0
 real(kind_real) :: alpha_a(nicas_cmp%nsa),alpha_b(nicas_cmp%nsb)
+logical :: lsteps
 
 ! Set name
 @:set_name(nicas_cmp_apply_sqrt)
 
 ! Probe in
 @:probe_in()
+
+! Local flag
+lsteps = .false.
+if (present(steps)) lsteps = steps
 
 ! Check dimension
 if (cv_cmp%n/=nicas_cmp%nsa) call mpl%abort('${subr}$','wrong control vector dimension')
@@ -4015,12 +4265,14 @@ alpha_a = cv_cmp%alpha
 
 ! Convolution square-root
 call nicas_cmp%apply_convol_sqrt(mpl,alpha_a)
+if (lsteps) call nicas_cmp%steps(5)%add(mpl,nicas_cmp%nsa,nicas_cmp%lon_sa,nicas_cmp%lat_sa,nicas_cmp%lev_sa,alpha_a)
 
 ! Halo extension from zone A to zone B
 call nicas_cmp%com_s_AB%ext(mpl,alpha_a,alpha_b)
 
 ! Interpolation
 call nicas_cmp%apply_interp(mpl,geom,alpha_b,fld)
+if (lsteps) call nicas_cmp%steps(6)%add(mpl,geom,fld)
 
 !$omp parallel do schedule(static) private(il0,ic0a)
 do il0=1,geom%nl0
@@ -4035,6 +4287,7 @@ do il0=1,geom%nl0
    end do
 end do
 !$omp end parallel do
+if (lsteps) call nicas_cmp%steps(7)%add(mpl,geom,fld)
 
 ! Probe out
 @:probe_out()
@@ -4045,20 +4298,22 @@ end subroutine nicas_cmp_apply_sqrt
 ! Subroutine: nicas_cmp_apply_sqrt_ad
 !> Apply NICAS method square-root adjoint
 !----------------------------------------------------------------------
-subroutine nicas_cmp_apply_sqrt_ad(nicas_cmp,mpl,geom,fld,cv_cmp)
+subroutine nicas_cmp_apply_sqrt_ad(nicas_cmp,mpl,geom,fld,cv_cmp,steps)
 
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp         !< NICAS data component
+class(nicas_cmp_type),intent(inout) :: nicas_cmp      !< NICAS data component
 type(mpl_type),intent(inout) :: mpl                   !< MPI data
 type(geom_type),intent(in) :: geom                    !< Geometry
 real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0) !< Field
 type(cv_cmp_type),intent(inout) :: cv_cmp             !< Control vector component
+logical,intent(in),optional :: steps                  !< Steps flag
 
 ! Local variable
 integer :: ic0a,il0
 real(kind_real) :: fld_tmp(geom%nc0a,geom%nl0),alpha_b(nicas_cmp%nsb)
+logical :: lsteps
 
 ! Set name
 @:set_name(nicas_cmp_apply_sqrt_ad)
@@ -4066,8 +4321,13 @@ real(kind_real) :: fld_tmp(geom%nc0a,geom%nl0),alpha_b(nicas_cmp%nsb)
 ! Probe in
 @:probe_in()
 
+! Local flag
+lsteps = .false.
+if (present(steps)) lsteps = steps
+
 ! Initialization
 fld_tmp = fld
+if (lsteps) call nicas_cmp%steps(1)%add(mpl,geom,fld_tmp)
 
 !$omp parallel do schedule(static) private(il0,ic0a)
 do il0=1,geom%nl0
@@ -4082,15 +4342,18 @@ do il0=1,geom%nl0
    end do
 end do
 !$omp end parallel do
+if (lsteps) call nicas_cmp%steps(2)%add(mpl,geom,fld_tmp)
 
 ! Adjoint interpolation
 call nicas_cmp%apply_interp_ad(mpl,geom,fld_tmp,alpha_b)
 
 ! Halo reduction from zone B to zone A
 call nicas_cmp%com_s_AB%red(mpl,alpha_b,cv_cmp%alpha)
+if (lsteps) call nicas_cmp%steps(3)%add(mpl,nicas_cmp%nsa,nicas_cmp%lon_sa,nicas_cmp%lat_sa,nicas_cmp%lev_sa,cv_cmp%alpha)
 
 ! Convolution square-root adjoint
 call nicas_cmp%apply_convol_sqrt_ad(mpl,cv_cmp%alpha)
+if (lsteps) call nicas_cmp%steps(4)%add(mpl,nicas_cmp%nsa,nicas_cmp%lon_sa,nicas_cmp%lat_sa,nicas_cmp%lev_sa,cv_cmp%alpha)
 
 ! Probe out
 @:probe_out()
@@ -4455,11 +4718,11 @@ subroutine nicas_cmp_test_adjoint(nicas_cmp,mpl,rng,nam,geom)
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data component
-type(mpl_type),intent(inout) :: mpl           !< MPI data
-type(rng_type),intent(inout) :: rng           !< Random number generator
-type(nam_type),intent(in) :: nam              !< Namelist
-type(geom_type),intent(in) :: geom            !< Geometry
+class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data component
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(rng_type),intent(inout) :: rng              !< Random number generator
+type(nam_type),intent(in) :: nam                 !< Namelist
+type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
 integer :: il0

@@ -12,8 +12,7 @@
 
 #include "eckit/config/LocalConfiguration.h"
 
-namespace saber {
-namespace bump {
+namespace bump_lib {
 
 // -----------------------------------------------------------------------------
 
@@ -90,11 +89,8 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   param(driversDef.compute_hyb, driversConf);
   // Hybrid term source ('randomized static' or 'lowres ensemble')
   param(driversDef.hybrid_source, driversConf);
-  // Multivariate strategy ('diag_all', 'common', 'common_weighted', 'specific_univariate' or
-  // 'specific_multivariate')
+  // Multivariate strategy ('univariate', 'duplicated', 'duplicated and weighted' or 'crossed')
   param(driversDef.strategy, driversConf);
-  // Iterative algorithm (ensemble members loaded sequentially)
-  param(driversDef.iterative_algo, driversConf);
   // New normality test
   param(driversDef.new_normality, driversConf);
   // Read local sampling
@@ -131,6 +127,10 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   param(driversDef.write_hdiag, driversConf);
   // Write HDIAG components detail
   param(driversDef.write_hdiag_detail, driversConf);
+  // Read universe radius
+  param(driversDef.load_universe_radius, driversConf);
+  // Write universe radius
+  param(driversDef.write_universe_radius, driversConf);
   // Compute NICAS
   param(driversDef.new_nicas, driversConf);
   // Read local NICAS parameters
@@ -143,6 +143,8 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   param(driversDef.write_nicas_global, driversConf);
   // Write NICAS grids
   param(driversDef.write_nicas_grids, driversConf);
+  // Write NICAS steps
+  param(driversDef.write_nicas_steps, driversConf);
   // Compute wind transform
   param(driversDef.new_wind, driversConf);
   // Read local wind transform
@@ -305,7 +307,11 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   // Wind inflation to compensate the Savitzky-Golay smoothing
   param(psichitouvDef.wind_inflation, psichitouvConf);
 
-  // Internal parameters
+  // External section
+  ExternalDef externalDef;
+  eckit::LocalConfiguration externalConf;
+  // Iterative algorithm (ensemble members loaded sequentially)
+  param(externalDef.iterative_algo, externalConf);
 
   // General parameters
   config->set("general", generalConf);
@@ -333,9 +339,10 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   config->set("nicas", nicasConf);
   // Psichitouv parameters
   config->set("psichitouv", psichitouvConf);
+  // External parameters
+  config->set("external", externalConf);
 }
 
 // -----------------------------------------------------------------------------
 
-}  // namespace bump
-}  // namespace saber
+}  // namespace bump_lib

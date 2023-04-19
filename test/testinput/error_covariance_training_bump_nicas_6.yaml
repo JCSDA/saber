@@ -12,87 +12,87 @@ geometry:
     - surface_pressure
     levels: 1
   halo: 1
-input variables:
-- stream_function
-- velocity_potential
-- surface_pressure
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
   - stream_function
   - velocity_potential
   - surface_pressure
-bump:
-  general:
-    testing: true
-    universe length-scale: 10000.0e3
-  io:
-    data directory: testdata
-    files prefix: error_covariance_training_bump_nicas_6/_MPI_-_OMP_
-  drivers:
-    multivariate strategy: crossed
-    compute nicas: true
-    adjoints test: true
-    internal dirac test: true
-  nicas:
-    resolution: 4.0
-  dirac:
-  - longitude: 0.0
-    latitude: 0.0
-    level: 1
-    variable: stream_function
-  - longitude: 0.0
-    latitude: 0.0
-    level: 1
-    variable: surface_pressure
-  grids:
-  - model:
-      variables:
-      - stream_function
-      - velocity_potential
-  - model:
-      variables:
-      - surface_pressure
-input fields:
-- parameter: a
-  component: 1
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_a_1
-- parameter: a
-  component: 2
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_a_2
-- parameter: rh1
-  component: 1
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh1_1
-- parameter: rh1
-  component: 2
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh1_2
-- parameter: rh2
-  component: 1
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh2_1
-- parameter: rh2
-  component: 2
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh2_2
-- parameter: rhc
-  component: 1
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rhc_1
-- parameter: rhc
-  component: 2
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rhc_2
-- parameter: rv
-  component: 1
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rv_1
-- parameter: rv
-  component: 2
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rv_2
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: BUMP_NICAS
+    calibration:
+      general:
+        testing: true
+        universe length-scale: 10000.0e3
+      io:
+        data directory: testdata
+        files prefix: error_covariance_training_bump_nicas_6/_MPI_-_OMP_
+      drivers:
+        multivariate strategy: crossed
+        compute nicas: true
+        adjoints test: true
+        internal dirac test: true
+      nicas:
+        resolution: 4.0
+      dirac:
+      - longitude: 0.0
+        latitude: 0.0
+        level: 1
+        variable: stream_function
+      - longitude: 0.0
+        latitude: 0.0
+        level: 1
+        variable: surface_pressure
+      grids:
+      - model:
+          variables:
+          - stream_function
+          - velocity_potential
+      - model:
+          variables:
+          - surface_pressure
+      input model files:
+      - parameter: a
+        component: 1
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_a_1
+      - parameter: a
+        component: 2
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_a_2
+      - parameter: rh1
+        component: 1
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh1_1
+      - parameter: rh1
+        component: 2
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh1_2
+      - parameter: rh2
+        component: 1
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh2_1
+      - parameter: rh2
+        component: 2
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh2_2
+      - parameter: rhc
+        component: 1
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rhc_1
+      - parameter: rhc
+        component: 2
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rhc_2
+      - parameter: rv
+        component: 1
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rv_1
+      - parameter: rv
+        component: 2
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rv_2
 test:
   reference filename: testref/error_covariance_training_bump_nicas_6.ref

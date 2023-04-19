@@ -40,10 +40,10 @@ static SaberOuterBlockMaker<DryAirDensity> makerDryAirDensity_("mo_dry_air_densi
 DryAirDensity::DryAirDensity(const oops::GeometryData & outerGeometryData,
                              const std::vector<size_t> & activeVariableSizes,
                              const oops::Variables & outerVars,
+                             const eckit::Configuration & covarConf,
                              const Parameters_ & params,
                              const atlas::FieldSet & xb,
-                             const atlas::FieldSet & fg,
-                             const std::vector<atlas::FieldSet> & fsetVec)
+                             const atlas::FieldSet & fg)
   : innerGeometryData_(outerGeometryData), innerVars_(outerVars), augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::DryAirDensity starting" << std::endl;
@@ -133,9 +133,9 @@ void DryAirDensity::multiplyAD(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void DryAirDensity::calibrationInverseMultiply(atlas::FieldSet & fset) const {
+void DryAirDensity::leftInverseMultiply(atlas::FieldSet & fset) const {
   oops::Log::info() << classname()
-                    << "::calibrationInverseMultiply not meaningful so fieldset unchanged"
+                    << "::leftInverseMultiply not meaningful so fieldset unchanged"
                     << std::endl;
 }
 

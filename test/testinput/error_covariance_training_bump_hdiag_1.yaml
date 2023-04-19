@@ -12,115 +12,115 @@ geometry:
     - surface_pressure
     levels: 1
   halo: 1
-input variables:
-- stream_function
-- velocity_potential
-- surface_pressure
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
   - stream_function
   - velocity_potential
   - surface_pressure
-ensemble:
-  members from template:
-    template:
-      date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
-      state variables:
-      - stream_function
-      - velocity_potential
-      - surface_pressure
-    pattern: '%mem%'
-    nmembers: 25
-    zero padding: 6
-bump:
-  general:
-    testing: true
-  io:
-    data directory: testdata
-    files prefix: error_covariance_training_bump_hdiag_1/_MPI_-_OMP_
-  drivers:
-    compute covariance: true
-    compute correlation: true
-    multivariate strategy: univariate
-    write local sampling: true
-    write global sampling: true
-    compute moments: true
-    write moments: true
-    write diagnostics: true
-    write diagnostics detail: true
-  sampling:
-    computation grid size: 500
-    diagnostic grid size: 250
-    distance classes: 10
-    angular sectors: 4
-    distance class width: 800.0e3
-    reduced levels: 2
-    local diagnostic: true
-    averaging length-scale: 1000.0e3
-    interpolation type: c1
-  fit:
-    horizontal filtering length-scale: 3000.0e3
-    number of components: 2
-  local profiles:
-  - longitude: 0.0
-    latitude: 0.0
-    name: A
-  - longitude: -22.0
-    latitude: 55.0
-    name: B
-  - longitude: -127.0
-    latitude: -63.0
-    name: C
-output:
-- parameter: cor_a
-  component: 1
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_a_1
-- parameter: cor_a
-  component: 2
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_a_2
-- parameter: cor_rh1
-  component: 1
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh1_1
-- parameter: cor_rh1
-  component: 2
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh1_2
-- parameter: cor_rh2
-  component: 1
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh2_1
-- parameter: cor_rh2
-  component: 2
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh2_2
-- parameter: cor_rhc
-  component: 1
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rhc_1
-- parameter: cor_rhc
-  component: 2
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rhc_2
-- parameter: cor_rh
-  component: 1
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh_1
-- parameter: cor_rh
-  component: 2
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh_2
-- parameter: cor_rv
-  component: 1
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rv_1
-- parameter: cor_rv
-  component: 2
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rv_2
+background error:
+  covariance model: SABER
+  ensemble:
+    members from template:
+      template:
+        date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
+        state variables:
+        - stream_function
+        - velocity_potential
+        - surface_pressure
+      pattern: '%mem%'
+      nmembers: 25
+      zero padding: 6
+  saber central block:
+    saber block name: BUMP_NICAS
+    calibration:
+      general:
+        testing: true
+      io:
+        data directory: testdata
+        files prefix: error_covariance_training_bump_hdiag_1/_MPI_-_OMP_
+      drivers:
+        compute covariance: true
+        compute correlation: true
+        multivariate strategy: univariate
+        write local sampling: true
+        write global sampling: true
+        compute moments: true
+        write moments: true
+        write diagnostics: true
+        write diagnostics detail: true
+      sampling:
+        computation grid size: 500
+        diagnostic grid size: 250
+        distance classes: 10
+        angular sectors: 4
+        distance class width: 800.0e3
+        reduced levels: 2
+        local diagnostic: true
+        averaging length-scale: 1000.0e3
+        interpolation type: c1
+      fit:
+        horizontal filtering length-scale: 3000.0e3
+        number of components: 2
+      local profiles:
+      - longitude: 0.0
+        latitude: 0.0
+        name: A
+      - longitude: -22.0
+        latitude: 55.0
+        name: B
+      - longitude: -127.0
+        latitude: -63.0
+        name: C
+      output model files:
+      - parameter: cor_a
+        component: 1
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_a_1
+      - parameter: cor_a
+        component: 2
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_a_2
+      - parameter: cor_rh1
+        component: 1
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh1_1
+      - parameter: cor_rh1
+        component: 2
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh1_2
+      - parameter: cor_rh2
+        component: 1
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh2_1
+      - parameter: cor_rh2
+        component: 2
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh2_2
+      - parameter: cor_rhc
+        component: 1
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rhc_1
+      - parameter: cor_rhc
+        component: 2
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rhc_2
+      - parameter: cor_rh
+        component: 1
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh_1
+      - parameter: cor_rh
+        component: 2
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rh_2
+      - parameter: cor_rv
+        component: 1
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rv_1
+      - parameter: cor_rv
+        component: 2
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_1/_MPI_-_OMP__cor_rv_2
 test:
   reference filename: testref/error_covariance_training_bump_hdiag_1.ref

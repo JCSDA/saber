@@ -1,0 +1,50 @@
+geometry:
+  function space: NodeColumns
+  grid:
+    name: CS-LFR-15
+  partitioner: cubedsphere
+  groups:
+  - variables:
+    - stream_function
+    levels: 1
+  halo: 1
+initial condition:
+  date: '2010-01-01T12:00:00Z'
+  state variables:
+  - stream_function
+background error:
+  covariance model: SABER
+  adjoint test: true
+  inverse test: true
+  saber central block:
+    saber block name: ID
+  saber outer blocks:
+  - saber block name: interpolation
+    inner geometry:
+      function space: NodeColumns
+      grid:
+        name: CS-LFR-12
+      partitioner: cubedsphere
+      halo: 1
+    local interpolator:
+      interpolation method:
+        type: cubedsphere-bilinear
+        adjoint: true
+    active variables:
+    - stream_function
+    inner inverse tolerance: 0.05
+    outer inverse tolerance: 0.05
+dirac:
+  lon:
+  - 0.0
+  lat:
+  - 0.0
+  level:
+  - 1
+  variable:
+  - stream_function
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_interpolation_3/dirac_%id%_%MPI%
+test:
+  reference filename: testref/dirac_interpolation_3.ref

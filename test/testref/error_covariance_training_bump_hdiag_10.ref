@@ -1,4 +1,3 @@
-Norm of input parameter sampling_mask_field: 9.0764768186843639e+01
        Independent levels:  1[10]
           Model grid size:              840
           Subset Sc0 size:              762
@@ -26,6 +25,7 @@ Norm of input parameter sampling_mask_field: 9.0764768186843639e+01
              Level   8 ~>  0.800E+01 vert. unit
              Level   9 ~>  0.900E+01 vert. unit
              Level  10 ~>  0.100E+02 vert. unit
+Norm of input parameter sampling_mask_field - 1: 9.0764768186843639e+01
    Norm of stream_function:  0.82382431E+04
    Norm of stream_function:  0.73182887E+04
    Norm of stream_function:  0.72563665E+04
@@ -145,5 +145,5 @@ Norm of input parameter sampling_mask_field: 9.0764768186843639e+01
                    Level:  10 ~> amplitude:        1.00
                                  cor. hor. support:      4621.41 km
                                  cor. ver. support:         5.77 vertical units
-Norm of BUMP output parameter cor_rh - 1: 4.3106717187620759e+08
-Norm of BUMP output parameter cor_rv - 1: 5.6212440065904252e+02
+Norm of output parameter cor_rh - 1: 4.3106717187620759e+08
+Norm of output parameter cor_rv - 1: 5.6212440065904252e+02

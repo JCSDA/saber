@@ -4,6 +4,8 @@
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
 list(APPEND bump_lib_src_files_list
+BUMP.cc
+BUMP.h
 interpolatorbump_mod.fypp
 tools_asa007.fypp
 tools_atlas.fypp
@@ -60,6 +62,8 @@ type_var.fypp
 type_vbal.fypp
 type_vbal_blk.fypp
 type_wind.fypp
+Utilities.cc
+Utilities.h
 )
 
 if( ENABLE_SABER_INSTRUMENTATION )

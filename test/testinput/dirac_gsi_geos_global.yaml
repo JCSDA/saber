@@ -3,15 +3,16 @@ background error:
   adjoint test: true
   saber central block:
     saber block name: gsi covariance
-    gsi error covariance file: testdata/gsi-coeffs-gmao-global-l72x72y46.nc4
-    gsi berror namelist file: testdata/dirac_gsi_geos_global.nml
-    gsi akbk: /dev/null
-    debugging mode: false
+    read:
+      gsi error covariance file: testdata/gsi-coeffs-gmao-global-l72x72y46.nc4
+      gsi berror namelist file: testdata/dirac_gsi_geos_global.nml
+      gsi akbk: /dev/null
+      debugging mode: false
 dirac:
   lon:
   - 0.0
   lat:
-  - 0.0
+  - 2.0
   level:
   - 72
   variable:

@@ -9,6 +9,16 @@
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
+   Norm of stream_function:  0.22823056E+04
+   Norm of stream_function:  0.29237337E+04
+   Norm of stream_function:  0.26596068E+04
+   Norm of stream_function:  0.20501072E+04
+   Norm of stream_function:  0.19750584E+04
+   Norm of stream_function:  0.15619509E+04
+   Norm of stream_function:  0.18957352E+04
+   Norm of stream_function:  0.24825323E+04
+   Norm of stream_function:  0.25223303E+04
+   Norm of stream_function:  0.14836065E+04
        Independent levels:  1[2]
           Model grid size:              840
           Subset Sc0 size:              762
@@ -20,16 +30,6 @@
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-   Norm of stream_function:  0.22823056E+04
-   Norm of stream_function:  0.29237337E+04
-   Norm of stream_function:  0.26596068E+04
-   Norm of stream_function:  0.20501072E+04
-   Norm of stream_function:  0.19750584E+04
-   Norm of stream_function:  0.15619509E+04
-   Norm of stream_function:  0.18957352E+04
-   Norm of stream_function:  0.24825323E+04
-   Norm of stream_function:  0.25223303E+04
-   Norm of stream_function:  0.14836065E+04
    Norm of stream_function:  0.15579346E+04
    Norm of stream_function:  0.14840202E+04
    Norm of stream_function:  0.12940664E+04
@@ -137,9 +137,9 @@
                                  loc. ver. support:         6.04 vertical units
                 Level:   1 ~> hybrid coefficients: 0.52 / 0.46
                 Level:   2 ~> hybrid coefficients: 0.48 / 0.48
-Norm of BUMP output parameter loc_rh - 1: 2.1756723284850624e+08
-Norm of BUMP output parameter loc_rv - 1: 2.0104013461790797e+02
-Norm of BUMP output parameter hyb_coef_ens - 1: 2.4368437676384502e+01
-Norm of BUMP output parameter loc_rh_lr - 1: 2.3521307389535755e+08
-Norm of BUMP output parameter loc_rv_lr - 1: 2.4741780353859281e+02
-Norm of BUMP output parameter hyb_coef_ens_lr - 1: 2.3032646394794376e+01
+Norm of output parameter loc_rh - 1: 2.1756723284850624e+08
+Norm of output parameter loc_rv - 1: 2.0104013461790385e+02
+Norm of output parameter hyb_coef_ens - 1: 2.4368437676384502e+01
+Norm of output parameter hyb_coef_ens_lr - 1: 2.3032646394794376e+01
+Norm of output parameter loc_rh_lr - 1: 2.3577243990263674e+08
+Norm of output parameter loc_rv_lr - 1: 2.4800619391419218e+02

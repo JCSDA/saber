@@ -9,38 +9,39 @@ geometry:
     - velocity_potential
     levels: 2
   halo: 1
-input variables:
-- stream_function
-- velocity_potential
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
   - stream_function
   - velocity_potential
-bump:
-  general:
-    testing: true
-    universe length-scale: 10000.0e3
-  io:
-    data directory: testdata
-    files prefix: error_covariance_training_bump_nicas_3/_MPI_-_OMP_
-    overriding nicas file: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas
-  drivers:
-    multivariate strategy: univariate
-    read global nicas: true
-    write local nicas: true
-    adjoints test: true
-input fields:
-- parameter: nicas_a
-  component: 1
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_a_1
-- parameter: nicas_a
-  component: 2
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_a_2
-- parameter: nicas_norm
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas_norm
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: BUMP_NICAS
+    calibration:
+      general:
+        testing: true
+        universe length-scale: 10000.0e3
+      io:
+        data directory: testdata
+        files prefix: error_covariance_training_bump_nicas_3/_MPI_-_OMP_
+        overriding nicas file: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas
+      drivers:
+        multivariate strategy: univariate
+        read global nicas: true
+        write local nicas: true
+        adjoints test: true
+      input model files:
+      - parameter: nicas_a
+        component: 1
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_a_1
+      - parameter: nicas_a
+        component: 2
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_a_2
+      - parameter: nicas_norm
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas_norm
 test:
   reference filename: testref/error_covariance_training_bump_nicas_3.ref

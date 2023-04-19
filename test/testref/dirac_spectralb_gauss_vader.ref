@@ -69,8 +69,12 @@ Adjoint test passed
 Adjoint test passed
 Adjoint test passed
 Adjoint test passed
+Inner inverse test passed: U Uinv (U x) == (U x)
+Outer inverse test passed: Uinv U (Uinv x) == (Uinv x)
 Adjoint test passed
 Adjoint test passed
+Inner inverse test passed: U Uinv (U x) == (U x)
+Outer inverse test passed: Uinv U (Uinv x) == (Uinv x)
 Adjoint test passed
 Covariance(SABER) diagnostics:
 - Variances at Dirac points:

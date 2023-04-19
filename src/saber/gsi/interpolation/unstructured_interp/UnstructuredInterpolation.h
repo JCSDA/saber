@@ -15,6 +15,7 @@
 #include "atlas/field.h"
 #include "atlas/functionspace.h"
 
+#include "oops/base/Variables.h"
 #include "oops/mpi/mpi.h"
 #include "oops/util/ObjectCounter.h"
 
@@ -40,7 +41,7 @@ class UnstructuredInterpolation : private util::ObjectCounter<UnstructuredInterp
                             const atlas::FunctionSpace &,
                             const atlas::FunctionSpace &,
                             const std::vector<size_t> &,
-                            const std::vector<std::string> &);
+                            const oops::Variables &);
   ~UnstructuredInterpolation();
 
   void apply(const atlas::Field &, atlas::Field &);
@@ -55,10 +56,8 @@ class UnstructuredInterpolation : private util::ObjectCounter<UnstructuredInterp
   int keyUnstructuredInterpolator_;
   const atlas::FunctionSpace innerFuncSpace_;
   const atlas::FunctionSpace outerFuncSpace_;
-  atlas::Field innerField_;
-  atlas::Field outerField_;
   std::vector<size_t> activeVariableSizes_;
-  std::vector<std::string> activeVars_;
+  oops::Variables activeVars_;
   void print(std::ostream &) const;
 };
 

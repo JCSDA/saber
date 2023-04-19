@@ -10,9 +10,9 @@ module type_bump
 
 use atlas_module, only: atlas_field,atlas_fieldset,atlas_integer,atlas_real,atlas_functionspace
 use fckit_configuration_module, only: fckit_configuration
-use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
+use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_min
 use tools_const, only: initialize_constants,zero,half,one,thousand,req,reqkm,deg2rad,rad2deg
-use tools_func, only: fletcher32,rad2short,sphere_dist,zss_maxval,zss_minval,zss_sum
+use tools_func, only: fletcher32,rad2short,sphere_dist,zss_minval,zss_sum
 use tools_kinds,only: kind_short,kind_real
 use tools_netcdf, only: registry
 use tools_repro,only: repro_ops,repro_th
@@ -45,7 +45,7 @@ type bump_type
    type(ens_type),allocatable :: ens(:)     !< Ensembles
    type(geom_type),allocatable :: geom(:)   !< Geometry
    type(gsi_type) :: gsi                    !< GSI data
-   type(hdiag_type) :: hdiag                !< Hybrid diagnostics
+   type(hdiag_type) :: hdiag                !< dual_resolution diagnostics
    type(mom_type),allocatable :: mom(:)     !< Moments
    type(mpl_type) :: mpl                    !< MPI data
    type(nam_type) :: nam                    !< Namelist
@@ -61,7 +61,7 @@ type bump_type
 contains
    procedure :: create => bump_create
    procedure :: setup => bump_setup
-   procedure :: second_geometry => bump_second_geometry
+   procedure :: dual_resolution_setup => bump_dual_resolution_setup
    procedure :: add_member => bump_add_member
    procedure :: update_vbal_cov => bump_update_vbal_cov
    procedure :: update_var => bump_update_var
@@ -98,7 +98,7 @@ contains
 ! Subroutine: bump_create
 !> Create
 !----------------------------------------------------------------------
-subroutine bump_create(bump,comm,afunctionspace,fieldset,conf,universe_radius)
+subroutine bump_create(bump,comm,afunctionspace,fieldset,conf)
 
 implicit none
 
@@ -108,7 +108,6 @@ type(fckit_mpi_comm),intent(in) :: comm                !< FCKIT MPI communicator
 type(atlas_functionspace),intent(in) :: afunctionspace !< Function space
 type(fieldset_type),intent(in) :: fieldset             !< SABER geometry fields
 type(fckit_configuration),intent(in) :: conf           !< FCKIT configuration
-type(fieldset_type),intent(in) :: universe_radius      !< Fieldset optionally containing universe radius
 
 ! Set name
 @:set_name(bump_create)
@@ -123,7 +122,7 @@ type(fieldset_type),intent(in) :: universe_radius      !< Fieldset optionally co
 call initialize_constants
 
 ! Initialize MPL
-call bump%mpl%init(comm, conf)
+call bump%mpl%init(comm,conf)
 
 ! Initialize parameters
 call bump%nam%init(bump%mpl)
@@ -135,7 +134,7 @@ call bump%nam%from_conf(bump%mpl,conf)
 call bump%nam%final(bump%mpl)
 
 ! Setup BUMP
-call bump%setup(afunctionspace,fieldset,universe_radius=universe_radius)
+call bump%setup(afunctionspace,fieldset)
 
 ! Probe out
 @:probe_out()
@@ -146,7 +145,7 @@ end subroutine bump_create
 ! Subroutine: bump_setup
 !> Setup
 !----------------------------------------------------------------------
-subroutine bump_setup(bump,afunctionspace,fieldset,universe_radius)
+subroutine bump_setup(bump,afunctionspace,fieldset)
 
 implicit none
 
@@ -154,13 +153,10 @@ implicit none
 class(bump_type),intent(inout) :: bump                     !< BUMP
 type(atlas_functionspace),intent(in) :: afunctionspace     !< Functionspace
 type(fieldset_type),intent(in),optional :: fieldset        !< SABER geometry fields
-type(fieldset_type),intent(in),optional :: universe_radius !< Fieldset optionally containing universe radius
 
 ! Local variables
-integer :: iv,ig,il0,color,sc
-real(kind_real),pointer :: ptr_2(:,:)
+integer :: color,sc
 character(len=1024) :: cname
-type(atlas_field) :: afield
 
 ! Set name
 @:set_name(bump_setup)
@@ -174,43 +170,13 @@ type(atlas_field) :: afield
 ! Header
 @:print_bump_instance()
 
-! Set universe radius
-if (present(universe_radius)) then
-   if (universe_radius%size()>0) then
-      ! Set universe radius
-      write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
-      call bump%mpl%flush
-      write(bump%mpl%info,'(a)') '--- Set universe radius'
-      call bump%mpl%flush(.false.)
+if (bump%nam%load_universe_radius) then
+   ! Read universe radius   
+   call bump%nam%read_universe_radius(bump%mpl)
 
-      ! Initialization
-      bump%nam%universe_radius = zero
-
-      do iv=1,bump%nam%nv
-         ! Get field
-         afield = universe_radius%field(bump%nam%variables(iv))
-
-         ! Get data maximum
-         if (afield%rank()==2) then
-            ! Get data
-            call afield%data(ptr_2)
-
-            ! Get maximum radius
-            ig = bump%nam%group_index(iv)
-            do il0=bump%nam%min_lev(ig),bump%nam%max_lev(ig)
-               bump%nam%universe_radius = max(bump%nam%universe_radius,zss_maxval(ptr_2(il0,:), &
- & mask=bump%mpl%msv%isnot(ptr_2(il0,:))))
-            end do
-         else
-            call bump%mpl%abort('${subr}$','cannot get universe radius for this field rank')
-         end if
-      end do
-
-      ! Get global maximum
-      call bump%mpl%f_comm%allreduce(bump%nam%universe_radius,fckit_mpi_max())
-      write(bump%mpl%info,'(a7,a,f10.2,a)') '','Universe radius: ',bump%nam%universe_radius/thousand,' km'
-      call bump%mpl%flush
-   end if
+   ! Print result
+   write(bump%mpl%info,'(a7,a,f10.2,a)') '','Universe radius: ',bump%nam%universe_radius*reqkm,' km'
+   call bump%mpl%flush
 end if
 
 ! Check namelist parameters
@@ -299,15 +265,6 @@ if (bump%nam%ens1_ne>0) then
    call bump%ens(1)%set_att(bump%nam%ens1_ne,bump%nam%ens1_nsub)
 end if
 
-if (bump%nam%ens2_ne>0) then
-   ! Initialize ensemble 2
-   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
-   call bump%mpl%flush
-   write(bump%mpl%info,'(a)') '--- Initialize ensemble 2'
-   call bump%mpl%flush
-   call bump%ens(2)%set_att(bump%nam%ens2_ne,bump%nam%ens2_nsub)
-end if
-
 if ((bump%nam%from_gsi.and.(bump%nam%new_vbal.or.bump%nam%new_var.or.bump%nam%new_hdiag)).and.(.not.bump%gsi%initialized)) then
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
@@ -322,20 +279,20 @@ end if
 end subroutine bump_setup
 
 !----------------------------------------------------------------------
-! Subroutine: bump_second_geometry
-!> Initialize second geometry
+! Subroutine: bump_dual_resolution_setup
+!> Dual resolution setup
 !----------------------------------------------------------------------
-subroutine bump_second_geometry(bump,afunctionspace,fieldset)
+subroutine bump_dual_resolution_setup(bump,afunctionspace,fieldset)
 
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump                 !< BUMP
-type(atlas_functionspace),intent(in) :: afunctionspace !< ATLAS functionspace
-type(fieldset_type),intent(in) :: fieldset             !< Fieldset containing geometry elements
+class(bump_type),intent(inout) :: bump                  !< BUMP
+type(atlas_functionspace),intent(in) :: afunctionspace  !< Function space
+type(fieldset_type),intent(in) :: fieldset              !< SABER geometry fields
 
 ! Set name
-@:set_name(bump_second_geometry)
+@:set_name(bump_dual_resolution_setup)
 
 ! Get instance
 @:get_instance(bump)
@@ -353,16 +310,25 @@ call bump%geom(2)%setup(bump%mpl,bump%rng,bump%nam,afunctionspace,fieldset)
 ! Check consistency between geometries
 if (bump%geom(1)%nl0/=bump%geom(2)%nl0) call bump%mpl%abort('${subr}','both geometries should have the same number of levels')
 
+if (bump%nam%ens2_ne>0) then
+   ! Initialize ensemble 2
+   write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
+   call bump%mpl%flush
+   write(bump%mpl%info,'(a)') '--- Initialize ensemble 2'
+   call bump%mpl%flush
+   call bump%ens(2)%set_att(bump%nam%ens2_ne,bump%nam%ens2_nsub)
+end if
+
 ! Probe out
 @:probe_out()
 
-end subroutine bump_second_geometry
+end subroutine bump_dual_resolution_setup
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_add_member
 !> Add member into bump%ens[1,2]
 !----------------------------------------------------------------------
-subroutine bump_add_member(bump,fieldset,ie,iens)
+subroutine bump_add_member(bump,fieldset,ie,igeom)
 
 implicit none
 
@@ -370,7 +336,7 @@ implicit none
 class(bump_type),intent(inout) :: bump     !< BUMP
 type(fieldset_type),intent(in) :: fieldset !< Fieldset
 integer,intent(in) :: ie                   !< Member index
-integer,intent(in) :: iens                 !< Ensemble number
+integer,intent(in) :: igeom                !< Geometry index
 
 ! Local variables
 integer :: ne,nsub
@@ -385,10 +351,10 @@ integer :: ne,nsub
 @:probe_in()
 
 ! Check ensemble number
-if (iens==1) then
+if (igeom==1) then
    ne = bump%nam%ens1_ne
    nsub = bump%nam%ens1_nsub
-elseif (iens==2) then
+elseif (igeom==2) then
    ne = bump%nam%ens2_ne
    nsub = bump%nam%ens2_nsub
 else
@@ -396,17 +362,17 @@ else
 end if
 
 ! Allocation
-if (.not.bump%ens(iens)%loaded) call bump%ens(iens)%alloc(ne,nsub)
-bump%ens(iens)%loaded = .true.
+if (.not.bump%ens(igeom)%loaded) call bump%ens(igeom)%alloc(ne,nsub)
+bump%ens(igeom)%loaded = .true.
 
 ! Pass fields
-call bump%ens(iens)%mem(ie)%init(bump%mpl,fieldset,bump%geom(iens)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d, &
- & pass=.true.)
+call bump%ens(igeom)%mem(ie)%init(bump%mpl,fieldset,bump%geom(igeom)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d, &
+ & bump%nam%var2d,pass=.true.)
 
 ! Print norm
-write(bump%mpl%info,'(a,i1,a,i6,a)') 'Ensemble ',iens,' member ',ie,': '
+write(bump%mpl%info,'(a,i1,a,i6,a)') 'Ensemble ',igeom,' member ',ie,': '
 call bump%mpl%flush
-call bump%ens(iens)%mem(ie)%print(bump%mpl)
+call bump%ens(igeom)%mem(ie)%print(bump%mpl,bump%geom(igeom)%hmask_mga)
 
 ! Probe out
 @:probe_out()
@@ -450,7 +416,7 @@ if (ie==1) then
 end if
 
 ! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d)
+call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d,bump%nam%var2d)
 
 ! Fieldset to Fortran on subset Sc0
 call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
@@ -489,7 +455,7 @@ real(kind_real) :: fld_c0a(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
 @:probe_in()
 
 ! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d)
+call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d,bump%nam%var2d)
 
 ! Fieldset to Fortran on subset Sc0
 call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
@@ -506,7 +472,7 @@ end subroutine bump_update_var
 ! Subroutine: bump_update_mom
 !> Update moments, one member at a time
 !----------------------------------------------------------------------
-subroutine bump_update_mom(bump,fieldset,ie,iens)
+subroutine bump_update_mom(bump,fieldset,ie,igeom)
 
 implicit none
 
@@ -514,10 +480,10 @@ implicit none
 class(bump_type),intent(inout) :: bump        !< BUMP
 type(fieldset_type),intent(inout) :: fieldset !< Fieldset
 integer,intent(in) :: ie                      !< Member index
-integer,intent(in) :: iens                    !< Ensemble number
+integer,intent(in) :: igeom                   !< Geometry index
 
 ! Local variable
-real(kind_real) :: fld_c0a(bump%geom(iens)%nc0a,bump%geom(iens)%nl0,bump%nam%nv)
+real(kind_real) :: fld_c0a(bump%geom(igeom)%nc0a,bump%geom(igeom)%nl0,bump%nam%nv)
 
 ! Set name
 @:set_name(bump_update_mom)
@@ -529,32 +495,32 @@ real(kind_real) :: fld_c0a(bump%geom(iens)%nc0a,bump%geom(iens)%nl0,bump%nam%nv)
 @:probe_in()
 
 ! Check ensemble number
-if ((iens/=1).and.(iens/=2)) call bump%mpl%abort('${subr}$','wrong ensemble number')
+if ((igeom/=1).and.(igeom/=2)) call bump%mpl%abort('${subr}$','wrong ensemble number')
 
 if (ie==1) then
    ! Setup sampling
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush
-   write(bump%mpl%info,'(a,i1)') '--- Setup sampling for ensemble ',iens
+   write(bump%mpl%info,'(a,i1)') '--- Setup sampling for ensemble ',igeom
    call bump%mpl%flush
-   if (iens==1) then
+   if (igeom==1) then
       call bump%samp(1)%setup(bump%mpl,bump%rng,bump%nam,bump%geom(1),bump%ens(1))
       call bump%samp(1)%setup_mpi(bump%mpl,bump%rng,bump%nam,bump%geom(1))
       call bump%samp(1)%setup_write(bump%mpl,bump%nam,bump%geom(1))
-   elseif (iens==2) then
-      call bump%samp(iens)%copy(bump%mpl,bump%nam,bump%geom(iens),bump%samp(1))
+   elseif (igeom==2) then
+      call bump%samp(igeom)%copy(bump%mpl,bump%nam,bump%geom(igeom),bump%samp(1))
       call bump%samp(2)%setup_mpi(bump%mpl,bump%rng,bump%nam,bump%geom(2))
    end if
 end if
 
 ! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(iens)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d)
+call fieldset%set_metadata(bump%mpl,bump%geom(igeom)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d,bump%nam%var2d)
 
 ! Fieldset to Fortran on subset Sc0
-call bump%geom(iens)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
+call bump%geom(igeom)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
 
 ! Update moments
-call bump%mom(iens)%update(bump%mpl,bump%nam,bump%geom(iens),bump%samp(iens),fld_c0a,ie,iens)
+call bump%mom(igeom)%update(bump%mpl,bump%nam,bump%geom(igeom),bump%samp(igeom),fld_c0a,ie,igeom)
 
 ! Probe out
 @:probe_out()
@@ -850,6 +816,11 @@ if (bump%cmat(1)%allocated) then
    write(bump%mpl%info,'(a)') '--- Setup C matrix sampling, ensemble 1'
    call bump%mpl%flush
    call bump%cmat(1)%setup_sampling(bump%mpl,bump%nam,bump%geom(1))
+
+   if (bump%nam%write_universe_radius) then
+      ! Write universe radius
+      call bump%cmat(1)%write_universe_radius(bump%mpl,bump%nam,bump%geom(1))
+   end if
 end if
 
 if (bump%cmat(2)%allocated) then
@@ -1138,7 +1109,7 @@ real(kind_real) :: fld_c0a(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
 @:probe_in()
 
 ! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d)
+call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d,bump%nam%var2d)
 
 ! Fieldset to Fortran on subset Sc0
 call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
@@ -1179,7 +1150,7 @@ real(kind_real) :: fld_c0a(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
 @:probe_in()
 
 ! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d)
+call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d,bump%nam%var2d)
 
 ! Fieldset to Fortran on subset Sc0
 call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
@@ -1220,7 +1191,7 @@ real(kind_real) :: fld_c0a(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
 @:probe_in()
 
 ! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d)
+call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d,bump%nam%var2d)
 
 ! Fieldset to Fortran on subset Sc0
 call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
@@ -1261,7 +1232,7 @@ real(kind_real) :: fld_c0a(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
 @:probe_in()
 
 ! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d)
+call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d,bump%nam%var2d)
 
 ! Fieldset to Fortran on subset Sc0
 call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
@@ -1302,7 +1273,7 @@ real(kind_real) :: fld_c0a(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
 @:probe_in()
 
 ! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d)
+call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d,bump%nam%var2d)
 
 ! Fieldset to Fortran on subset Sc0
 call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
@@ -1343,7 +1314,7 @@ real(kind_real) :: fld_c0a(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
 @:probe_in()
 
 ! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d)
+call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d,bump%nam%var2d)
 
 ! Fieldset to Fortran on subset Sc0
 call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
@@ -1445,7 +1416,7 @@ do iv=1,bump%nam%nv
 end do
 
 ! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d)
+call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d,bump%nam%var2d)
 
 ! Fortran array on subset Sc0 to fieldset
 call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
@@ -1482,7 +1453,7 @@ type(cv_type) :: cv
 @:probe_in()
 
 ! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d)
+call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d,bump%nam%var2d)
 
 ! Fieldset to Fortran on subset Sc0
 call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
@@ -1535,7 +1506,7 @@ call bump%nicas(1)%random_cv(bump%mpl,bump%rng,bump%nam,cv)
 call bump%nicas(1)%apply_sqrt(bump%mpl,bump%nam,bump%geom(1),cv,fld_c0a)
 
 ! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d)
+call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d,bump%nam%var2d)
 
 ! Fortran array on subset Sc0 to fieldset
 call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
@@ -1588,7 +1559,7 @@ else
 end if
 
 ! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d)
+call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d,bump%nam%var2d)
 
 ! Fieldset to Fortran on subset Sc0
 call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
@@ -1656,7 +1627,7 @@ else
 end if
 
 ! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d)
+call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d,bump%nam%var2d)
 
 ! Fieldset to Fortran on subset Sc0
 call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
@@ -1685,7 +1656,7 @@ end subroutine bump_psichi_to_uv_ad
 ! Subroutine: bump_get_parameter
 !> Get parameter
 !----------------------------------------------------------------------
-subroutine bump_get_parameter(bump,param,icmp,igeom,fieldset)
+subroutine bump_get_parameter(bump,param,icmp,fieldset)
 
 implicit none
 
@@ -1693,13 +1664,11 @@ implicit none
 class(bump_type),intent(inout) :: bump        !< BUMP
 character(len=*),intent(in) :: param          !< Parameter
 integer,intent(in) :: icmp                    !< Component index
-integer,intent(in) :: igeom                   !< Geometry index
 type(fieldset_type),intent(inout) :: fieldset !< Fieldset
 
 ! Local variables
-integer :: ig,iv,ic0a,il0
-real(kind_real) :: fld_c0a(bump%geom(igeom)%nc0a,bump%geom(igeom)%nl0)
-real(kind_real) :: fld_mga(bump%geom(igeom)%nmga,bump%geom(igeom)%nl0,bump%nam%nv)
+integer :: iens,igeom,ig,iv,ic0a,il0
+real(kind_real),allocatable :: fld_c0a(:,:),fld_mga(:,:,:)
 logical :: found
 
 ! Set name
@@ -1713,6 +1682,23 @@ logical :: found
 
 write(bump%mpl%info,'(a7,a,a)') '','Get ',trim(param)
 call bump%mpl%flush
+
+! Get local geometry index
+iens = 1
+if (len_trim(param)>2) then
+   if (param(len_trim(param)-2:len_trim(param))=='_lr') iens = 2
+end if
+if (len_trim(param)>3) then
+   if (param(len_trim(param)-3:len_trim(param))=='_sta') iens = 2
+end if
+
+! Get output geometry index
+igeom = iens
+if (param=='hyb_coef_ens_lr') igeom = 1
+
+! Allocation
+allocate(fld_c0a(bump%geom(igeom)%nc0a,bump%geom(igeom)%nl0))
+allocate(fld_mga(bump%geom(igeom)%nmga,bump%geom(igeom)%nl0,bump%nam%nv))
 
 ! Initialization
 fld_mga = bump%mpl%msv%valr
@@ -1803,10 +1789,10 @@ do iv=1,bump%nam%nv
    ! Select parameter from hdiag
    select case (trim(param))
    case ('cor_a','cor_a_lr')
-      if (.not.allocated(bump%hdiag%cor(igeom)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (.not.allocated(bump%hdiag%cor(igeom)%blk(0,ig)%a_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (icmp>size(bump%hdiag%cor(igeom)%blk(0,ig)%a_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-      fld_c0a = bump%hdiag%cor(igeom)%blk(0,ig)%a_c0a(:,:,icmp)
+      if (.not.allocated(bump%hdiag%cor(iens)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (.not.allocated(bump%hdiag%cor(iens)%blk(0,ig)%a_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (icmp>size(bump%hdiag%cor(iens)%blk(0,ig)%a_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
+      fld_c0a = bump%hdiag%cor(iens)%blk(0,ig)%a_c0a(:,:,icmp)
       found = .true.
    case ('cor_rh','cor_rh_lr')
       if (bump%nam%forced_radii) then
@@ -1814,10 +1800,10 @@ do iv=1,bump%nam%nv
             if (bump%mpl%msv%isnot(bump%nam%rh(il0,iv))) fld_c0a(:,il0) = bump%nam%rh(il0,iv)*req
          end do
       else
-         if (.not.allocated(bump%hdiag%cor(igeom)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-         if (.not.allocated(bump%hdiag%cor(igeom)%blk(0,ig)%rh_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-         if (icmp>size(bump%hdiag%cor(igeom)%blk(0,ig)%rh_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-         fld_c0a = bump%hdiag%cor(igeom)%blk(0,ig)%rh_c0a(:,:,icmp)
+         if (.not.allocated(bump%hdiag%cor(iens)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+         if (.not.allocated(bump%hdiag%cor(iens)%blk(0,ig)%rh_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+         if (icmp>size(bump%hdiag%cor(iens)%blk(0,ig)%rh_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
+         fld_c0a = bump%hdiag%cor(iens)%blk(0,ig)%rh_c0a(:,:,icmp)
          do il0=1,bump%geom(igeom)%nl0
             do ic0a=1,bump%geom(igeom)%nc0a
                if (bump%geom(igeom)%gmask_c0a(ic0a,il0).and.bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) &
@@ -1827,10 +1813,10 @@ do iv=1,bump%nam%nv
       end if
       found = .true.
    case ('cor_rh1','cor_rh1_lr')
-      if (.not.allocated(bump%hdiag%cor(igeom)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (.not.allocated(bump%hdiag%cor(igeom)%blk(0,ig)%D11_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (icmp>size(bump%hdiag%cor(igeom)%blk(0,ig)%D11_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-      fld_c0a = bump%hdiag%cor(igeom)%blk(0,ig)%D11_c0a(:,:,icmp)
+      if (.not.allocated(bump%hdiag%cor(iens)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (.not.allocated(bump%hdiag%cor(iens)%blk(0,ig)%D11_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (icmp>size(bump%hdiag%cor(iens)%blk(0,ig)%D11_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
+      fld_c0a = bump%hdiag%cor(iens)%blk(0,ig)%D11_c0a(:,:,icmp)
       do il0=1,bump%geom(igeom)%nl0
          do ic0a=1,bump%geom(igeom)%nc0a
             if (bump%geom(igeom)%gmask_c0a(ic0a,il0).and.bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) &
@@ -1839,10 +1825,10 @@ do iv=1,bump%nam%nv
       end do
       found = .true.
    case ('cor_rh2','cor_rh2_lr')
-      if (.not.allocated(bump%hdiag%cor(igeom)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (.not.allocated(bump%hdiag%cor(igeom)%blk(0,ig)%D22_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (icmp>size(bump%hdiag%cor(igeom)%blk(0,ig)%D22_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-      fld_c0a = bump%hdiag%cor(igeom)%blk(0,ig)%D22_c0a(:,:,icmp)
+      if (.not.allocated(bump%hdiag%cor(iens)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (.not.allocated(bump%hdiag%cor(iens)%blk(0,ig)%D22_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (icmp>size(bump%hdiag%cor(iens)%blk(0,ig)%D22_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
+      fld_c0a = bump%hdiag%cor(iens)%blk(0,ig)%D22_c0a(:,:,icmp)
       do il0=1,bump%geom(igeom)%nl0
          do ic0a=1,bump%geom(igeom)%nc0a
             if (bump%geom(igeom)%gmask_c0a(ic0a,il0).and.bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) &
@@ -1851,10 +1837,10 @@ do iv=1,bump%nam%nv
       end do
       found = .true.
    case ('cor_rhc','cor_rhc_lr')
-      if (.not.allocated(bump%hdiag%cor(igeom)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (.not.allocated(bump%hdiag%cor(igeom)%blk(0,ig)%D12_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (icmp>size(bump%hdiag%cor(igeom)%blk(0,ig)%D12_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-      fld_c0a = bump%hdiag%cor(igeom)%blk(0,ig)%D12_c0a(:,:,icmp)
+      if (.not.allocated(bump%hdiag%cor(iens)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (.not.allocated(bump%hdiag%cor(iens)%blk(0,ig)%D12_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (icmp>size(bump%hdiag%cor(iens)%blk(0,ig)%D12_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
+      fld_c0a = bump%hdiag%cor(iens)%blk(0,ig)%D12_c0a(:,:,icmp)
       found = .true.
    case ('cor_rv','cor_rv_lr')
       if (bump%nam%forced_radii) then
@@ -1862,21 +1848,21 @@ do iv=1,bump%nam%nv
             fld_c0a(:,il0) = bump%nam%rv(il0,iv)
          end do
       else
-         if (.not.allocated(bump%hdiag%cor(igeom)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-         if (.not.allocated(bump%hdiag%cor(igeom)%blk(0,ig)%rv_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-         if (icmp>size(bump%hdiag%cor(igeom)%blk(0,ig)%rv_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-         fld_c0a = bump%hdiag%cor(igeom)%blk(0,ig)%rv_c0a(:,:,icmp)
+         if (.not.allocated(bump%hdiag%cor(iens)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+         if (.not.allocated(bump%hdiag%cor(iens)%blk(0,ig)%rv_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+         if (icmp>size(bump%hdiag%cor(iens)%blk(0,ig)%rv_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
+         fld_c0a = bump%hdiag%cor(iens)%blk(0,ig)%rv_c0a(:,:,icmp)
       end if
       found = .true.
    case ('dirac_diag_cor','dirac_diag_cor_lr')
-      if (.not.allocated(bump%hdiag%cor(igeom)%dirac)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      fld_c0a = bump%hdiag%cor(igeom)%dirac(:,:,iv)
+      if (.not.allocated(bump%hdiag%cor(iens)%dirac)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      fld_c0a = bump%hdiag%cor(iens)%dirac(:,:,iv)
       found = .true.
    case ('loc_a','loc_a_lr')
-      if (.not.allocated(bump%hdiag%loc(igeom)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (.not.allocated(bump%hdiag%loc(igeom)%blk(0,ig)%a_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (icmp>size(bump%hdiag%loc(igeom)%blk(0,ig)%a_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-      fld_c0a = bump%hdiag%loc(igeom)%blk(0,ig)%a_c0a(:,:,icmp)
+      if (.not.allocated(bump%hdiag%loc(iens)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (.not.allocated(bump%hdiag%loc(iens)%blk(0,ig)%a_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (icmp>size(bump%hdiag%loc(iens)%blk(0,ig)%a_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
+      fld_c0a = bump%hdiag%loc(iens)%blk(0,ig)%a_c0a(:,:,icmp)
       found = .true.
    case ('loc_rh','loc_rh_lr')
       if (bump%nam%forced_radii) then
@@ -1884,10 +1870,10 @@ do iv=1,bump%nam%nv
             if (bump%mpl%msv%isnot(bump%nam%rh(il0,iv))) fld_c0a(:,il0) = bump%nam%rh(il0,iv)*req
          end do
       else
-         if (.not.allocated(bump%hdiag%loc(igeom)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-         if (.not.allocated(bump%hdiag%loc(igeom)%blk(0,ig)%rh_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-         if (icmp>size(bump%hdiag%loc(igeom)%blk(0,ig)%rh_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-         fld_c0a = bump%hdiag%loc(igeom)%blk(0,ig)%rh_c0a(:,:,icmp)
+         if (.not.allocated(bump%hdiag%loc(iens)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+         if (.not.allocated(bump%hdiag%loc(iens)%blk(0,ig)%rh_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+         if (icmp>size(bump%hdiag%loc(iens)%blk(0,ig)%rh_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
+         fld_c0a = bump%hdiag%loc(iens)%blk(0,ig)%rh_c0a(:,:,icmp)
          do il0=1,bump%geom(igeom)%nl0
             do ic0a=1,bump%geom(igeom)%nc0a
                if (bump%geom(igeom)%gmask_c0a(ic0a,il0).and.bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) &
@@ -1897,10 +1883,10 @@ do iv=1,bump%nam%nv
       end if
       found = .true.
    case ('loc_rh1','loc_rh1_lr')
-      if (.not.allocated(bump%hdiag%loc(igeom)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (.not.allocated(bump%hdiag%loc(igeom)%blk(0,ig)%D11_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (icmp>size(bump%hdiag%loc(igeom)%blk(0,ig)%D11_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-      fld_c0a = bump%hdiag%loc(igeom)%blk(0,ig)%D11_c0a(:,:,icmp)
+      if (.not.allocated(bump%hdiag%loc(iens)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (.not.allocated(bump%hdiag%loc(iens)%blk(0,ig)%D11_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (icmp>size(bump%hdiag%loc(iens)%blk(0,ig)%D11_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
+      fld_c0a = bump%hdiag%loc(iens)%blk(0,ig)%D11_c0a(:,:,icmp)
       do il0=1,bump%geom(igeom)%nl0
          do ic0a=1,bump%geom(igeom)%nc0a
             if (bump%geom(igeom)%gmask_c0a(ic0a,il0).and.bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) &
@@ -1909,10 +1895,10 @@ do iv=1,bump%nam%nv
       end do
       found = .true.
    case ('loc_rh2','loc_rh2_lr')
-      if (.not.allocated(bump%hdiag%loc(igeom)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (.not.allocated(bump%hdiag%loc(igeom)%blk(0,ig)%D22_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (icmp>size(bump%hdiag%loc(igeom)%blk(0,ig)%D22_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-      fld_c0a = bump%hdiag%loc(igeom)%blk(0,ig)%D22_c0a(:,:,icmp)
+      if (.not.allocated(bump%hdiag%loc(iens)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (.not.allocated(bump%hdiag%loc(iens)%blk(0,ig)%D22_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (icmp>size(bump%hdiag%loc(iens)%blk(0,ig)%D22_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
+      fld_c0a = bump%hdiag%loc(iens)%blk(0,ig)%D22_c0a(:,:,icmp)
       do il0=1,bump%geom(igeom)%nl0
          do ic0a=1,bump%geom(igeom)%nc0a
             if (bump%geom(igeom)%gmask_c0a(ic0a,il0).and.bump%mpl%msv%isnot(fld_c0a(ic0a,il0))) &
@@ -1921,10 +1907,10 @@ do iv=1,bump%nam%nv
       end do
       found = .true.
    case ('loc_rhc','loc_rhc_lr')
-      if (.not.allocated(bump%hdiag%loc(igeom)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (.not.allocated(bump%hdiag%loc(igeom)%blk(0,ig)%D12_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (icmp>size(bump%hdiag%loc(igeom)%blk(0,ig)%D12_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-      fld_c0a = bump%hdiag%loc(igeom)%blk(0,ig)%D12_c0a(:,:,icmp)
+      if (.not.allocated(bump%hdiag%loc(iens)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (.not.allocated(bump%hdiag%loc(iens)%blk(0,ig)%D12_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (icmp>size(bump%hdiag%loc(iens)%blk(0,ig)%D12_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
+      fld_c0a = bump%hdiag%loc(iens)%blk(0,ig)%D12_c0a(:,:,icmp)
       found = .true.
    case ('loc_rv','loc_rv_lr')
       if (bump%nam%forced_radii) then
@@ -1932,42 +1918,36 @@ do iv=1,bump%nam%nv
             fld_c0a(:,il0) = bump%nam%rv(il0,iv)
          end do
       else
-         if (.not.allocated(bump%hdiag%loc(igeom)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-         if (.not.allocated(bump%hdiag%loc(igeom)%blk(0,ig)%rv_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-         if (icmp>size(bump%hdiag%loc(igeom)%blk(0,ig)%rv_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-         fld_c0a = bump%hdiag%loc(igeom)%blk(0,ig)%rv_c0a(:,:,icmp)
+         if (.not.allocated(bump%hdiag%loc(iens)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+         if (.not.allocated(bump%hdiag%loc(iens)%blk(0,ig)%rv_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+         if (icmp>size(bump%hdiag%loc(iens)%blk(0,ig)%rv_c0a,3)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
+         fld_c0a = bump%hdiag%loc(iens)%blk(0,ig)%rv_c0a(:,:,icmp)
       end if
       found = .true.
    case ('dirac_diag_loc','dirac_diag_loc_lr')
-      if (.not.allocated(bump%hdiag%loc(igeom)%dirac)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      fld_c0a = bump%hdiag%loc(igeom)%dirac(:,:,iv)
+      if (.not.allocated(bump%hdiag%loc(iens)%dirac)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      fld_c0a = bump%hdiag%loc(iens)%dirac(:,:,iv)
       found = .true.
-   case ('hyb_coef_ens')
-      if (.not.allocated(bump%hdiag%loc(1)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (.not.allocated(bump%hdiag%loc(1)%blk(0,ig)%hyb_coef_c0a)) call bump%mpl%abort('${subr}$', &
+   case ('hyb_coef_ens','hyb_coef_sta','hyb_coef_ens_lr')
+      if (.not.allocated(bump%hdiag%loc(iens)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      if (.not.allocated(bump%hdiag%loc(iens)%blk(0,ig)%hyb_coef_c0a)) call bump%mpl%abort('${subr}$', &
  & trim(param)//' is not allocated')
-      fld_c0a = bump%hdiag%loc(1)%blk(0,ig)%hyb_coef_c0a
-      found = .true.
-   case ('hyb_coef_sta','hyb_coef_ens_lr')
-      if (.not.allocated(bump%hdiag%loc(2)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      if (.not.allocated(bump%hdiag%loc(2)%blk(0,ig)%hyb_coef_c0a)) call bump%mpl%abort('${subr}$', &
- & trim(param)//' is not allocated')
-      fld_c0a = bump%hdiag%loc(2)%blk(0,ig)%hyb_coef_c0a
+      fld_c0a = bump%hdiag%loc(iens)%blk(0,ig)%hyb_coef_c0a
       found = .true.
    end select
 
    ! Select parameter from nicas
    select case (trim(param))
    case ('nicas_norm','nicas_norm_lr')
-      if (.not.allocated(bump%nicas(igeom)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' block is not allocated')
-      if (.not.allocated(bump%nicas(igeom)%blk(ig)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is not allocated')
-      if (icmp>size(bump%nicas(igeom)%blk(ig)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
-      if (.not.allocated(bump%nicas(igeom)%blk(ig)%cmp(icmp)%norm)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      fld_c0a = bump%nicas(igeom)%blk(ig)%cmp(icmp)%norm
+      if (.not.allocated(bump%nicas(iens)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' block is not allocated')
+      if (.not.allocated(bump%nicas(iens)%blk(ig)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is not allocated')
+      if (icmp>size(bump%nicas(iens)%blk(ig)%cmp)) call bump%mpl%abort('${subr}$',trim(param)//' component is too large')
+      if (.not.allocated(bump%nicas(iens)%blk(ig)%cmp(icmp)%norm)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      fld_c0a = bump%nicas(iens)%blk(ig)%cmp(icmp)%norm
       found = .true.
    case ('dirac_nicas','dirac_nicas_lr')
-      if (.not.allocated(bump%nicas(igeom)%dirac)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      fld_c0a = bump%nicas(igeom)%dirac(:,:,iv)
+      if (.not.allocated(bump%nicas(iens)%dirac)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      fld_c0a = bump%nicas(iens)%dirac(:,:,iv)
       found = .true.
    end select
 
@@ -1978,11 +1958,19 @@ do iv=1,bump%nam%nv
    if (.not.found) call bump%mpl%abort('${subr}$','parameter '//trim(param)//' not found')
 end do
 
-! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(igeom)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d)
+! Create fieldset
+call fieldset%init(bump%mpl,bump%geom(igeom)%afunctionspace_mg,bump%geom(igeom)%gmask_mga,bump%nam%variables(1:bump%nam%nv), &
+ & bump%nam%lev2d,bump%nam%var2d)
 
 ! Fortran array to fieldset
 call fieldset%from_array(bump%mpl,fld_mga)
+
+! Apply mask
+call fieldset%apply_mask(bump%mpl,bump%mpl%msv%valr)
+
+! Release memory
+deallocate(fld_c0a)
+deallocate(fld_mga)
 
 ! Probe out
 @:probe_out()
@@ -1993,13 +1981,12 @@ end subroutine bump_get_parameter
 ! Subroutine: bump_set_ncmp
 !> Set number of components
 !----------------------------------------------------------------------
-subroutine bump_set_ncmp(bump,igeom,ncmp)
+subroutine bump_set_ncmp(bump,ncmp)
 
 implicit none
 
 ! Passed variables
 class(bump_type),intent(inout) :: bump !< BUMP
-integer,intent(in) :: igeom            !< Geometry index
 integer,intent(in) :: ncmp             !< Number of components
 
 ! Local variables
@@ -2018,13 +2005,13 @@ write(bump%mpl%info,'(a7,a,i1)') '','Set number of components: ',ncmp
 call bump%mpl%flush
 
 ! Check allocation
-if (.not.allocated(bump%cmat(igeom)%blk)) allocate(bump%cmat(igeom)%blk(bump%nam%ng))
-if (.not.allocated(bump%nicas(igeom)%blk)) allocate(bump%nicas(igeom)%blk(bump%nam%ng))
+if (.not.allocated(bump%cmat(1)%blk)) allocate(bump%cmat(1)%blk(bump%nam%ng))
+if (.not.allocated(bump%nicas(1)%blk)) allocate(bump%nicas(1)%blk(bump%nam%ng))
 
 ! Copy
 do ig=1,bump%nam%ng
-   bump%cmat(igeom)%blk(ig)%ncmp = ncmp
-   bump%nicas(igeom)%blk(ig)%ncmp = ncmp
+   bump%cmat(1)%blk(ig)%ncmp = ncmp
+   bump%nicas(1)%blk(ig)%ncmp = ncmp
 end do
 
 ! Probe out
@@ -2065,7 +2052,7 @@ write(bump%mpl%info,'(a7,a,a)') '','Set ',trim(param)
 call bump%mpl%flush
 
 ! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d)
+call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d,bump%nam%var2d)
 
 ! Fieldset to Fortran array
 call fieldset%to_array(bump%mpl,fld_mga)

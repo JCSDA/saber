@@ -3,10 +3,11 @@ background error:
   adjoint test: true
   saber central block:
     saber block name: gsi covariance
-    gsi error covariance file: testdata/gsi-coeffs-global-l127x64y32.nc4
-    gsi berror namelist file: testdata/dirac_gsi_gfs_global.nml
-    gsi akbk: /dev/null
-    debugging mode: false
+    read:
+      gsi error covariance file: testdata/gsi-coeffs-global-l127x64y32.nc4
+      gsi berror namelist file: testdata/dirac_gsi_gfs_global.nml
+      gsi akbk: /dev/null
+      debugging mode: false
   saber outer blocks:
   - saber block name: gsi interpolation to model grid
     gsi error covariance file: testdata/gsi-coeffs-global-l127x64y32.nc4
@@ -17,7 +18,7 @@ dirac:
   lon:
   - 0.0
   lat:
-  - 0.0
+  - 2.950423
   level:
   - 1
   variable:

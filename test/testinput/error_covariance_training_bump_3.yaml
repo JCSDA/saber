@@ -8,17 +8,19 @@ geometry:
     - stream_function
     levels: 2
   halo: 0
-input variables:
-- stream_function
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
   - stream_function
-bump:
-  general:
-    testing: true
-  io:
-    data directory: testdata
-    files prefix: error_covariance_training_bump_3/_MPI_-_OMP_
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: BUMP_NICAS
+    calibration:
+      general:
+        testing: true
+      io:
+        data directory: testdata
+        files prefix: error_covariance_training_bump_3/_MPI_-_OMP_
 test:
   reference filename: testref/error_covariance_training_bump_3.ref

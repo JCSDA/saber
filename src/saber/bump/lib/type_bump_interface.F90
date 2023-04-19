@@ -38,7 +38,7 @@ contains
 ! Subroutine: bump_create_c
 !> Create
 !----------------------------------------------------------------------
-subroutine bump_create_c(key_bump,c_comm,c_afunctionspace,c_afieldset,c_conf,c_universe_rad,c_info_channel,c_test_channel) &
+subroutine bump_create_c(key_bump,c_comm,c_afunctionspace,c_afieldset,c_conf,c_info_channel,c_test_channel) &
  & bind(c,name='bump_create_f90')
 
 implicit none
@@ -49,7 +49,6 @@ type(c_ptr),intent(in),value :: c_comm           !< FCKIT MPI communicator wrapp
 type(c_ptr),intent(in),value :: c_afunctionspace !< Function space
 type(c_ptr),intent(in),value :: c_afieldset      !< SABER geometry fields
 type(c_ptr),intent(in),value :: c_conf           !< FCKIT configuration
-type(c_ptr),intent(in),value :: c_universe_rad   !< ATLAS fieldset optionally containing universe radius
 type(c_ptr),intent(in),value :: c_info_channel   !< ECKIT channel for info
 type(c_ptr),intent(in),value :: c_test_channel   !< ECKIT channel for test
 
@@ -59,7 +58,6 @@ type(fckit_mpi_comm) :: f_comm
 type(atlas_functionspace) :: f_afunctionspace
 type(fieldset_type) :: f_fieldset
 type(fckit_configuration) :: f_conf
-type(fieldset_type) :: f_universe_rad
 
 ! Interface
 f_comm = fckit_mpi_comm(c_comm)
@@ -69,22 +67,21 @@ call bump_registry%get(key_bump,bump)
 f_afunctionspace = atlas_functionspace(c_afunctionspace)
 f_fieldset = atlas_fieldset(c_afieldset)
 f_conf = fckit_configuration(c_conf)
-f_universe_rad = atlas_fieldset(c_universe_rad)
 
 ! Initialize log channels
 call bump%mpl%info_channel%reset_c_ptr(c_info_channel)
 call bump%mpl%test_channel%reset_c_ptr(c_test_channel)
 
 ! Call Fortran
-call bump%create(f_comm,f_afunctionspace,f_fieldset,f_conf,f_universe_rad)
+call bump%create(f_comm,f_afunctionspace,f_fieldset,f_conf)
 
 end subroutine bump_create_c
 
 !----------------------------------------------------------------------
-! Subroutine: bump_second_geometry_c
+! Subroutine: bump_dual_resolution_setup_c
 !> Second geometry
 !----------------------------------------------------------------------
-subroutine bump_second_geometry_c(key_bump,c_afunctionspace,c_afieldset) bind(c,name='bump_second_geometry_f90')
+subroutine bump_dual_resolution_setup_c(key_bump,c_afunctionspace,c_afieldset) bind(c,name='bump_dual_resolution_setup_f90')
 
 implicit none
 
@@ -104,9 +101,9 @@ f_afunctionspace = atlas_functionspace(c_afunctionspace)
 f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
-call bump%second_geometry(f_afunctionspace,f_fieldset)
+call bump%dual_resolution_setup(f_afunctionspace,f_fieldset)
 
-end subroutine bump_second_geometry_c
+end subroutine bump_dual_resolution_setup_c
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_add_member_c
@@ -465,7 +462,7 @@ end subroutine bump_psichi_to_uv_ad_c
 ! Subroutine: bump_get_parameter_c
 !> Get a parameter as field
 !----------------------------------------------------------------------
-subroutine bump_get_parameter_c(key_bump,npar,cpar,icmp,igeom,c_afieldset) bind(c,name='bump_get_parameter_f90')
+subroutine bump_get_parameter_c(key_bump,npar,cpar,icmp,c_afieldset) bind(c,name='bump_get_parameter_f90')
 
 implicit none
 
@@ -474,7 +471,6 @@ integer(c_int),intent(in) :: key_bump       !< BUMP
 integer(c_int),intent(in) :: npar           !< Parameter name size
 character(c_char),intent(in) :: cpar(npar)  !< Parameter name
 integer(c_int),intent(in) :: icmp           !< Component index
-integer(c_int),intent(in) :: igeom          !< Geometry index
 type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
 
 ! Local variables
@@ -492,7 +488,7 @@ end do
 f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
-call bump%get_parameter(param,icmp,igeom,f_fieldset)
+call bump%get_parameter(param,icmp,f_fieldset)
 
 end subroutine bump_get_parameter_c
 
@@ -500,13 +496,12 @@ end subroutine bump_get_parameter_c
 ! Subroutine: bump_set_ncmp_c
 !> Set number of components
 !----------------------------------------------------------------------
-subroutine bump_set_ncmp_c(key_bump,igeom,c_ncmp) bind(c,name='bump_set_ncmp_f90')
+subroutine bump_set_ncmp_c(key_bump,c_ncmp) bind(c,name='bump_set_ncmp_f90')
 
 implicit none
 
 ! Passed variables
 integer(c_int),intent(in) :: key_bump !< BUMP
-integer(c_int),intent(in) :: igeom    !< Geometry index
 integer(c_int),intent(in) :: c_ncmp   !< Number of components
 
 ! Local variables
@@ -516,7 +511,7 @@ type(bump_type),pointer :: bump
 call bump_registry%get(key_bump,bump)
 
 ! Call Fortran
-call bump%set_ncmp(igeom,c_ncmp)
+call bump%set_ncmp(c_ncmp)
 
 end subroutine bump_set_ncmp_c
 

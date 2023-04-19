@@ -14,6 +14,7 @@
 #include "eckit/exception/Exceptions.h"
 
 #include "oops/util/abor1_cpp.h"
+#include "oops/util/FieldSetHelpers.h"
 #include "oops/util/Logger.h"
 
 #include "saber/gsi/interpolation/unstructured_interp/UnstructuredInterpolation.h"
@@ -29,7 +30,7 @@ UnstructuredInterpolation::UnstructuredInterpolation(
   const atlas::FunctionSpace & innerFuncSpace,
   const atlas::FunctionSpace & outerFuncSpace,
   const std::vector<size_t> & activeVariableSizes,
-  const std::vector<std::string> & activeVars)
+  const oops::Variables & activeVars)
   : innerFuncSpace_(innerFuncSpace), outerFuncSpace_(outerFuncSpace),
     activeVariableSizes_(activeVariableSizes), activeVars_(activeVars)
 {
@@ -65,6 +66,7 @@ void UnstructuredInterpolation::apply(atlas::FieldSet & fset) {
     atlas::Field outerField = outerFuncSpace_.createField<double>(
       atlas::option::name(activeVars_[i]) | atlas::option::levels(activeVariableSizes_[i]));
     this->apply(fset[activeVars_[i]], outerField);
+    util::removeFieldsFromFieldSet(fset, {activeVars_[i]});
     fset.add(outerField);
   }
 }
@@ -75,6 +77,7 @@ void UnstructuredInterpolation::applyAD(atlas::FieldSet & fset) {
     atlas::Field innerField = innerFuncSpace_.createField<double>(
       atlas::option::name(activeVars_[i]) | atlas::option::levels(activeVariableSizes_[i]));
     this->applyAD(fset[activeVars_[i]], innerField);
+    util::removeFieldsFromFieldSet(fset, {activeVars_[i]});
     fset.add(innerField);
   }
 }

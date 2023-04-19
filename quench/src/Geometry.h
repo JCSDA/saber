@@ -68,10 +68,7 @@ class GeometryParameters : public oops::Parameters {
   oops::RequiredParameter<std::string> functionSpace{"function space", this};
 
   /// Grid
-  oops::OptionalParameter<eckit::LocalConfiguration> grid{"grid", this};
-
-  /// IODA input file (NetCDF format) to get longitude/latitude
-  oops::OptionalParameter<std::string> iodaFile{"ioda file", this};
+  oops::RequiredParameter<eckit::LocalConfiguration> grid{"grid", this};
 
   /// Partitioner
   oops::Parameter<std::string> partitioner{"partitioner", "equal_regions", this};
@@ -98,6 +95,7 @@ class Geometry : public util::Printable,
   Geometry(const Geometry &);
 
   const eckit::mpi::Comm & getComm() const {return comm_;}
+  const size_t halo() const {return halo_;}
   const atlas::Grid grid() const {return grid_;}
   const std::string gridType() const {return gridType_;}
   const atlas::grid::Partitioner partitioner() const {return partitioner_;}
@@ -109,14 +107,14 @@ class Geometry : public util::Printable,
   const atlas::FieldSet & extraFields(const size_t & groupIndex) const
     {return groups_[groupIndex].extraFields_;}
   size_t levels(const size_t & groupIndex) const {return groups_[groupIndex].levels_;}
-  size_t levels(const std::string & var) const {return groups_[groupIndex_.at(var)].levels_;}
+  size_t levels(const std::string & var) const;
   size_t groups() const {return groups_.size();}
-  size_t groupIndex(const std::string & var) const {return groupIndex_.at(var);}
+  size_t groupIndex(const std::string & var) const;
 
   size_t variableSize(const std::string &) const;
   size_t maskLevel(const std::string &, const size_t &) const;
   std::vector<size_t> variableSizes(const oops::Variables & vars) const;
-  void latlon(std::vector<double> &, std::vector<double> &, const bool) const {}
+  void latlon(std::vector<double> &, std::vector<double> &, const bool) const;
   bool levelsAreTopDown() const {return true;}
   bool iodaBased() const {return iodaBased_;}
 

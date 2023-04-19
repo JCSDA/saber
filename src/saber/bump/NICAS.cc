@@ -7,18 +7,13 @@
 
 #include "saber/bump/NICAS.h"
 
-#include <memory>
-#include <string>
-#include <vector>
-
-#include "atlas/field.h"
-
-#include "oops/base/Geometry.h"
-#include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
+#include "oops/util/FieldSetHelpers.h"
+#include "oops/util/FieldSetOperations.h"
+#include "oops/util/Logger.h"
+#include "oops/util/Timer.h"
 
-#include "saber/bump/BUMP.h"
-#include "saber/oops/SaberCentralBlockBase.h"
+#include "saber/bump/lib/Utilities.h"
 
 namespace saber {
 namespace bump {
@@ -32,33 +27,43 @@ static SaberCentralBlockMaker<NICAS> makerNICAS_("BUMP_NICAS");
 NICAS::NICAS(const oops::GeometryData & geometryData,
              const std::vector<size_t> & activeVariableSizes,
              const oops::Variables & centralVars,
+             const eckit::Configuration & covarConf,
              const Parameters_ & params,
              const atlas::FieldSet & xb,
              const atlas::FieldSet & fg,
-             const std::vector<atlas::FieldSet> & fsetVec,
              const size_t & timeRank)
-  : bump_()
+  : bumpParams_(),
+    bump_(),
+    memberIndex_(0)
 {
   oops::Log::trace() << classname() << "::NICAS starting" << std::endl;
 
   // Get active variables
-  oops::Variables activeVars = params.activeVars.value().get_value_or(centralVars);
+  activeVars_ = params.activeVars.value().get_value_or(centralVars);
+
+  // Get BUMP parameters
+  if (params.doCalibration()) {
+    bumpParams_ = *params.calibrationParams.value();
+  } else if (params.doRead()) {
+    bumpParams_ = *params.readParams.value();
+  } else {
+    ABORT("calibration or read required in BUMP");
+  }
 
   // Initialize BUMP
-  bump_.reset(new BUMP(geometryData.comm(),
-                       geometryData.functionSpace(),
-                       geometryData.fieldSet(),
-                       activeVariableSizes,
-                       activeVars,
-                       params.bumpParams.value(),
-                       fsetVec,
-                       timeRank));
+  bump_.reset(new bump_lib::BUMP(geometryData.comm(),
+                                 oops::LibOOPS::instance().infoChannel(),
+                                 oops::LibOOPS::instance().testChannel(),
+                                 geometryData.functionSpace(),
+                                 geometryData.fieldSet(),
+                                 activeVariableSizes,
+                                 activeVars_.variables(),
+                                 covarConf,
+                                 bumpParams_.toConfiguration(),
+                                 timeRank));
 
-  // Run drivers
-  bump_->runDrivers();
-
-  // Partial deallocation
-  bump_->partialDealloc();
+  // Read input ATLAS files
+  bump_->readAtlasFiles();
 
   oops::Log::trace() << classname() << "::NICAS done" << std::endl;
 }
@@ -85,6 +90,92 @@ void NICAS::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   bump_->multiplyNicas(fset);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> NICAS::fieldsToRead() {
+  oops::Log::trace() << classname() << "::fieldsToRead starting" << std::endl;
+  std::vector<eckit::LocalConfiguration> inputModelFilesConf
+    = bumpParams_.inputModelFilesConf.value().get_value_or({});
+  return bump_->fieldsToRead(inputModelFilesConf);
+}
+
+// -----------------------------------------------------------------------------
+
+void NICAS::read() {
+  oops::Log::trace() << classname() << "::read starting" << std::endl;
+  for (const auto & input : bump_->inputs()) {
+    bump_->addField(input.second);
+  }
+  bump_->runDrivers();
+  oops::Log::trace() << classname() << "::read done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void NICAS::directCalibration(const std::vector<atlas::FieldSet> & fsetEns) {
+  oops::Log::trace() << classname() << "::directCalibration starting" << std::endl;
+  for (const auto & input : bump_->inputs()) {
+    bump_->addField(input.second);
+  }
+  bump_->addEnsemble(fsetEns);
+  bump_->runDrivers();
+  oops::Log::trace() << classname() << "::directCalibration done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void NICAS::iterativeCalibrationInit() {
+  oops::Log::trace() << classname() << "::iterativeCalibrationInit starting" << std::endl;
+  for (const auto & input : bump_->inputs()) {
+    bump_->addField(input.second);
+  }
+  memberIndex_ = 0;
+  oops::Log::trace() << classname() << "::iterativeCalibrationInit done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void NICAS::iterativeCalibrationUpdate(const atlas::FieldSet & fset) {
+  oops::Log::trace() << classname() << "::iterativeCalibrationUpdate starting" << std::endl;
+  bump_->iterativeUpdate(fset, memberIndex_);
+  ++memberIndex_;
+  oops::Log::trace() << classname() << "::iterativeCalibrationUpdate done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void NICAS::iterativeCalibrationFinal() {
+  oops::Log::trace() << classname() << "::iterativeCalibrationFinal starting" << std::endl;
+  bump_->runDrivers();
+  oops::Log::trace() << classname() << "::iterativeCalibrationFinal done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void NICAS::dualResolutionSetup(const oops::GeometryData & geometryData) {
+  oops::Log::trace() << classname() << "::dualResolutionSetup starting" << std::endl;
+  bump_->dualResolutionSetup(geometryData.functionSpace(),
+                             geometryData.fieldSet());
+  oops::Log::trace() << classname() << "::dualResolutionSetup done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> NICAS::fieldsToWrite() const {
+  oops::Log::trace() << classname() << "::fieldsToWrite starting" << std::endl;
+  std::vector<eckit::LocalConfiguration> outputModelFilesConf
+    = bumpParams_.outputModelFilesConf.value().get_value_or({});
+  return bump_->fieldsToWrite(outputModelFilesConf);
+}
+
+// -----------------------------------------------------------------------------
+
+void NICAS::write() const {
+  oops::Log::trace() << classname() << "::write starting" << std::endl;
+  bump_->writeAtlasFiles();
+  oops::Log::trace() << classname() << "::write done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

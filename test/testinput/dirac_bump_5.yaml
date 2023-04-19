@@ -1,0 +1,89 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    nx : 72
+    ny : 46
+  groups:
+  - variables:
+    - stream_function
+    - velocity_potential
+    - air_temperature
+    levels: 4
+    vunit: [-1.0,-5.0,-9.0,-11.0]
+  - variables:
+    - surface_pressure
+    levels: 1
+initial condition:
+  date: '2010-01-01T12:00:00Z'
+  state variables:
+  - stream_function
+  - velocity_potential
+  - air_temperature
+  - surface_pressure
+background error:
+  covariance model: SABER
+  adjoint test: true
+  saber central block:
+    saber block name: BUMP_NICAS
+    read:
+      general:
+        testing: true
+      io:
+        data directory: testdata
+        files prefix: dirac_bump_5/_MPI_-_OMP_
+      drivers:
+        multivariate strategy: univariate
+        read local nicas: true
+      grids:
+      - io:
+          overriding nicas file: error_covariance_training_bump_hdiag-nicas_4/_MPI_-_OMP__3D_nicas
+        model:
+          variables:
+          - stream_function
+          - velocity_potential
+          - air_temperature
+      - io:
+          overriding nicas file: error_covariance_training_bump_hdiag-nicas_4/_MPI_-_OMP__2D_nicas
+        model:
+          variables:
+          - surface_pressure
+  saber outer blocks:
+  - saber block name: StdDev
+    read:
+      model file:
+        filepath: testdata/error_covariance_training_bump_stddev_6/1-1_stddev
+  - saber block name: BUMP_VerticalBalance
+    read:
+      general:
+        testing: true
+      io:
+        data directory: testdata
+        files prefix: dirac_bump_5/_MPI_-_OMP_
+        overriding sampling file: error_covariance_training_bump_vbal_7/_MPI_-_OMP__sampling
+        overriding vertical balance file: error_covariance_training_bump_vbal_7/_MPI_-_OMP__vbal
+      drivers:
+        read local sampling: true
+        read vertical balance: true
+      vertical balance:
+        vbal:
+        - balanced variable: velocity_potential
+          unbalanced variable: stream_function
+        - balanced variable: air_temperature
+          unbalanced variable: stream_function
+        - balanced variable: surface_pressure
+          unbalanced variable: stream_function
+dirac:
+  lon:
+  - 0.0
+  lat:
+  - 2.0
+  level:
+  - 4
+  variable:
+  - stream_function
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_bump_5/%MPI%_dirac_%id%
+test:
+  reference filename: testref/dirac_bump_5.ref

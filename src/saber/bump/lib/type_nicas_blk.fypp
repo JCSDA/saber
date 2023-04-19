@@ -70,6 +70,8 @@ contains
    procedure :: write_global_data => nicas_blk_write_global_data
    procedure :: write_grids_def => nicas_blk_write_grids_def
    procedure :: write_grids_data => nicas_blk_write_grids_data
+   procedure :: write_steps_def => nicas_blk_write_steps_def
+   procedure :: write_steps_data => nicas_blk_write_steps_data
    procedure :: nicas_blk_compute_parameters
    procedure :: nicas_blk_compute_parameters_horizontal_smoother
    generic :: compute_parameters => nicas_blk_compute_parameters,nicas_blk_compute_parameters_horizontal_smoother
@@ -785,6 +787,95 @@ end do
 end subroutine nicas_blk_write_grids_data
 
 !----------------------------------------------------------------------
+! Subroutine: nicas_blk_write_steps_def
+!> Write NICAS steps, definition mode
+!----------------------------------------------------------------------
+subroutine nicas_blk_write_steps_def(nicas_blk,mpl,nam)
+
+implicit none
+
+! Passed variables
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(nam_type),intent(in) :: nam                 !< Namelist
+
+! Local variables
+integer :: icmp
+character(len=1024) :: blkname,cmpname
+
+! Set name
+@:set_name(nicas_blk_write_steps_def)
+
+! Probe in
+@:probe_in()
+
+! Associate
+associate(ig=>nicas_blk%ig)
+
+! Get group name
+call nam%alias(nam%group_names(ig),blkname)
+write(mpl%info,'(a10,a)') '','Block: '//trim(blkname)
+call mpl%flush
+
+! Define group
+nicas_blk%blkid = define_grp(mpl,nicas_blk%ncid,blkname)
+
+do icmp=1,nicas_blk%ncmp
+   ! Get component
+   write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
+   call mpl%flush
+
+   if (nicas_blk%ncmp==1) then
+      nicas_blk%cmp(icmp)%cmpid = nicas_blk%blkid
+   else
+      write(cmpname,'(a,i1)') 'cmp_',icmp
+      nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%blkid,cmpname)
+   end if
+
+   ! Component work
+   call nicas_blk%cmp(icmp)%write_steps_def(mpl)
+end do
+
+! End associate
+end associate
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_blk_write_steps_def
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_blk_write_steps_data
+!> Write NICAS steps, data mode
+!----------------------------------------------------------------------
+subroutine nicas_blk_write_steps_data(nicas_blk,mpl)
+
+implicit none
+
+! Passed variables
+class(nicas_blk_type),intent(in) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+
+! Local variables
+integer :: icmp
+
+! Set name
+@:set_name(nicas_blk_write_steps_data)
+
+! Probe in
+@:probe_in()
+
+do icmp=1,nicas_blk%ncmp
+   ! Component work
+   call nicas_blk%cmp(icmp)%write_steps_data(mpl)
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_blk_write_steps_data
+
+!----------------------------------------------------------------------
 ! Subroutine: nicas_blk_compute_parameters
 !> Compute NICAS parameters
 !----------------------------------------------------------------------
@@ -1109,20 +1200,22 @@ end subroutine nicas_blk_copy_cmat
 ! Subroutine: nicas_blk_apply_sqrt
 !> Apply NICAS method square-root
 !----------------------------------------------------------------------
-subroutine nicas_blk_apply_sqrt(nicas_blk,mpl,geom,cv_blk,fld)
+subroutine nicas_blk_apply_sqrt(nicas_blk,mpl,geom,cv_blk,fld,steps)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(in) :: nicas_blk          !< NICAS data block
+class(nicas_blk_type),intent(inout) :: nicas_blk       !< NICAS data block
 type(mpl_type),intent(inout) :: mpl                    !< MPI data
 type(geom_type),intent(in) :: geom                     !< Geometry
 type(cv_blk_type),intent(in) :: cv_blk                 !< Control vector block
 real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0) !< Field
+logical,intent(in),optional :: steps                   !< Steps flag
 
 ! Local variable
 integer :: icmp
 real(kind_real) :: fld_tmp(geom%nc0a,geom%nl0)
+logical :: lsteps
 
 ! Set name
 @:set_name(nicas_blk_apply_sqrt)
@@ -1130,12 +1223,16 @@ real(kind_real) :: fld_tmp(geom%nc0a,geom%nl0)
 ! Probe in
 @:probe_in()
 
+! Local flag
+lsteps = .false.
+if (present(steps)) lsteps = steps
+
 ! Initialization
 fld = zero
 
 do icmp=1,cv_blk%ncmp
    ! Component work
-   call nicas_blk%cmp(icmp)%apply_sqrt(mpl,geom,cv_blk%cmp(icmp),fld_tmp)
+   call nicas_blk%cmp(icmp)%apply_sqrt(mpl,geom,cv_blk%cmp(icmp),fld_tmp,lsteps)
 
    ! Add to field
    fld = fld+fld_tmp
@@ -1150,19 +1247,21 @@ end subroutine nicas_blk_apply_sqrt
 ! Subroutine: nicas_blk_apply_sqrt_ad
 !> Apply NICAS method square-root adjoint
 !----------------------------------------------------------------------
-subroutine nicas_blk_apply_sqrt_ad(nicas_blk,mpl,geom,fld,cv_blk)
+subroutine nicas_blk_apply_sqrt_ad(nicas_blk,mpl,geom,fld,cv_blk,steps)
 
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(in) :: nicas_blk         !< NICAS data block
+class(nicas_blk_type),intent(inout) :: nicas_blk      !< NICAS data block
 type(mpl_type),intent(inout) :: mpl                   !< MPI data
 type(geom_type),intent(in) :: geom                    !< Geometry
 real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0) !< Field
 type(cv_blk_type),intent(inout) :: cv_blk             !< Control vector block
+logical,intent(in),optional :: steps                  !< Steps flag
 
 ! Local variable
 integer :: icmp
+logical :: lsteps
 
 ! Set name
 @:set_name(nicas_blk_apply_sqrt_ad)
@@ -1170,9 +1269,13 @@ integer :: icmp
 ! Probe in
 @:probe_in()
 
+! Local flag
+lsteps = .false.
+if (present(steps)) lsteps = steps
+
 do icmp=1,cv_blk%ncmp
    ! Component work
-   call nicas_blk%cmp(icmp)%apply_sqrt_ad(mpl,geom,fld,cv_blk%cmp(icmp))
+   call nicas_blk%cmp(icmp)%apply_sqrt_ad(mpl,geom,fld,cv_blk%cmp(icmp),lsteps)
 end do
 
 ! Probe out
@@ -1189,11 +1292,11 @@ subroutine nicas_blk_test_adjoint(nicas_blk,mpl,rng,nam,geom)
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(in) :: nicas_blk !< NICAS data block
-type(mpl_type),intent(inout) :: mpl           !< MPI data
-type(rng_type),intent(inout) :: rng           !< Random number generator
-type(nam_type),intent(in) :: nam              !< Namelist
-type(geom_type),intent(in) :: geom            !< Geometry
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(rng_type),intent(inout) :: rng              !< Random number generator
+type(nam_type),intent(in) :: nam                 !< Namelist
+type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
 integer :: icmp
@@ -1267,11 +1370,11 @@ subroutine nicas_blk_test_normalization(nicas_blk,mpl,rng,nam,geom)
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(in) :: nicas_blk !< NICAS data block
-type(mpl_type),intent(inout) :: mpl           !< MPI data
-type(rng_type),intent(inout) :: rng           !< Random number generator
-type(nam_type),intent(in) :: nam              !< Namelist
-type(geom_type),intent(in) :: geom            !< Geometry
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(rng_type),intent(inout) :: rng              !< Random number generator
+type(nam_type),intent(in) :: nam                 !< Namelist
+type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
 integer :: icmp,itest
@@ -1351,17 +1454,18 @@ subroutine nicas_blk_test_dirac(nicas_blk,mpl,nam,geom)
 implicit none
 
 ! Passed variables
-class(nicas_blk_type),intent(in) :: nicas_blk !< NICAS data block
-type(mpl_type),intent(inout) :: mpl           !< MPI data
-type(nam_type),intent(in) :: nam              !< Namelist
-type(geom_type),intent(in) :: geom            !< Geometry
+class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(nam_type),intent(in) :: nam                 !< Namelist
+type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
 integer :: ic0a,il0,idir,icmp
 real(kind_real) :: val,valmin,valmax
 real(kind_real) :: fld(geom%nc0a,geom%nl0),fld_tot(geom%nc0a,geom%nl0)
+logical :: steps
 type(cv_blk_type) :: cv_blk
- 
+
 ! Set name
 @:set_name(nicas_blk_test_dirac)
 
@@ -1392,11 +1496,14 @@ do idir=1,geom%ndir
       if (ig==nam%group_index(geom%ivdir(idir))) fld(geom%ic0adir(idir),geom%il0dir(idir)) = one
    end if
 
+   ! Steps flag
+   steps = nam%write_nicas_steps.and.(idir==1)
+
    ! Apply NICAS square-root adjoint
-   call nicas_blk%apply_sqrt_ad(mpl,geom,fld,cv_blk)
+   call nicas_blk%apply_sqrt_ad(mpl,geom,fld,cv_blk,steps)
 
    ! Apply NICAS square-root
-   call nicas_blk%apply_sqrt(mpl,geom,cv_blk,fld)
+   call nicas_blk%apply_sqrt(mpl,geom,cv_blk,fld,steps)
 
    ! Copy points
    do ic0a=1,geom%nc0a

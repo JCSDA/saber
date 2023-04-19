@@ -23,7 +23,6 @@ if( oops_FOUND AND gsibec_FOUND )
     # Interpolation block
     interpolation/Interpolation.cc
     interpolation/Interpolation.h
-    interpolation/InterpolationImpl.h
 
     # Unstructured interpolation code ported from oops (until new interp code can be used)
     interpolation/unstructured_interp/saber_unstructured_interpolation_mod.F90
@@ -33,6 +32,7 @@ if( oops_FOUND AND gsibec_FOUND )
     interpolation/unstructured_interp/UnstructuredInterpolation.interface.h
 
     # Utilities
+    utils/GSIParameters.h
     utils/gsi_utils_mod.f90
     )
 endif()

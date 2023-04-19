@@ -29,26 +29,20 @@ static SaberCentralBlockMaker<SPCTRL_COV> makerSPCTRL_COV_("SPCTRL_COV");
 // -----------------------------------------------------------------------------
 
 SPCTRL_COV::SPCTRL_COV(const oops::GeometryData & geometryData,
-                       const std::vector<size_t> & activeVariableSizes,
+                       const std::vector<size_t> & variableSizes,
                        const oops::Variables & centralVars,
+                       const eckit::Configuration & covarConf,
                        const Parameters_ & params,
                        const atlas::FieldSet & xb,
                        const atlas::FieldSet & fg,
-                       const std::vector<atlas::FieldSet> & fsetVec,
                        const size_t & timeRank)
-  : spectralb_()
+  : params_(params),
+    variableSizes_(variableSizes),
+    activeVars_(params.activeVars.value().get_value_or(centralVars)),
+    geometryData_(geometryData),
+    spectralb_()
 {
   oops::Log::trace() << classname() << "::SPCTRL_COV starting" << std::endl;
-
-  // Get active variables
-  oops::Variables activeVars = params.activeVars.value().get_value_or(centralVars);
-
-  // Initialize SpectralB
-  spectralb_.reset(new SpectralB(geometryData.functionSpace(),
-                                 activeVariableSizes,
-                                 activeVars,
-                                 params.spectralbParams.value()));
-
   oops::Log::trace() << classname() << "::SPCTRL_COV done" << std::endl;
 }
 
@@ -74,6 +68,18 @@ void SPCTRL_COV::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   spectralb_->multiply_InterpAndCov(fset);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void SPCTRL_COV::read() {
+  oops::Log::trace() << classname() << "::read starting" << std::endl;
+  // Initialize SpectralB
+  spectralb_.reset(new SpectralB(geometryData_.functionSpace(),
+                                 variableSizes_,
+                                 activeVars_,
+                                 *params_.readParams.value()));
+  oops::Log::trace() << classname() << "::read done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

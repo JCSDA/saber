@@ -23,10 +23,10 @@ static SaberOuterBlockMaker<SpectralToSpectral> makerSpectralToSpectral_("spectr
 SpectralToSpectral::SpectralToSpectral(const oops::GeometryData & outerGeometryData,
                                        const std::vector<size_t> & outerVariableSizes,
                                        const oops::Variables & outerVars,
+                                       const eckit::Configuration & covarConf,
                                        const SpectralToSpectralParameters & params,
                                        const atlas::FieldSet & xb,
-                                       const atlas::FieldSet & fg,
-                                       const std::vector<atlas::FieldSet> & fsetVec) :
+                                       const atlas::FieldSet & fg) :
     innerFunctionSpace_(2 * params.inputTruncation.value() - 1),
     outerFunctionSpace_(outerGeometryData.functionSpace()),
     innerGeometryData_(innerFunctionSpace_,
@@ -57,10 +57,10 @@ void SpectralToSpectral::multiplyAD(atlas::FieldSet & fieldSet) const {
 
 // -----------------------------------------------------------------------------
 
-void SpectralToSpectral::calibrationInverseMultiply(atlas::FieldSet & fieldSet) const {
-  oops::Log::trace() << classname() << "::calibrationInverseMultiply starting" << std::endl;
-  throw eckit::NotImplemented(Here());
-  oops::Log::trace() << classname() << "::calibrationInverseMultiply done" << std::endl;
+void SpectralToSpectral::leftInverseMultiply(atlas::FieldSet & fieldSet) const {
+  oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
+  truncate_or_extend(outerFunctionSpace_, innerFunctionSpace_, fieldSet);
+  oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

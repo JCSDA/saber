@@ -20,4 +20,4 @@ loadmap
 docs/mainpage.h
 
 #Ignore generated plots
-tools/*.jpg
+*.jpg

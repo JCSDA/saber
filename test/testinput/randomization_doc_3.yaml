@@ -1,0 +1,50 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_gaussian
+    N: 50
+  groups:
+  - variables:
+    - stream_function
+    levels: 1
+variables:
+- stream_function
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables:
+  - stream_function
+  filepath: testdata/convertstate_doc_1/rh2_avg
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: BUMP_NICAS
+    calibration:
+      io:
+        data directory: testdata
+        files prefix: randomization_doc_3/1-1
+      drivers:
+        multivariate strategy: univariate
+        compute nicas: true
+      nicas:
+        resolution: 12.0
+        explicit length-scales: true
+        horizontal length-scale:
+        - groups:
+          - stream_function
+          value: 10000.0e3
+        vertical length-scale:
+        - groups:
+          - stream_function
+          value: 0.0
+        interpolation type:
+        - groups:
+          - stream_function
+          type: si
+  saber outer blocks:
+  - saber block name: StdDev
+    read:
+      model file:
+        filepath: testdata/convertstate_doc_1/rh2_pert
+  randomization size: 1
+output:
+  filepath: testdata/randomization_doc_3/rh2

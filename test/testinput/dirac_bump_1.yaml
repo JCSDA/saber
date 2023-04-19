@@ -24,35 +24,33 @@ background error:
       adjoint test: true
       saber central block:
         saber block name: BUMP_NICAS
-        bump:
+        read:
           general:
             testing: true
           io:
             data directory: testdata
             files prefix: dirac_bump_1/_MPI_-_OMP_
             io tasks: 1
+            overriding universe radius file: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__universe_radius
             overriding nicas file: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas
           drivers:
             multivariate strategy: univariate
+            read universe radius: true
             read local nicas: true
-        input fields:
-        - parameter: universe radius
-          file:
-            filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_rh_2
       saber outer blocks:
       - saber block name: BUMP_StdDev
-        bump:
+        read:
           general:
             testing: true
           io:
             data directory: testdata
             files prefix: dirac_bump_1/_MPI_-_OMP_
-        input fields:
-        - parameter: stddev
-          file:
-            filepath: testdata/error_covariance_training_bump_stddev_3/_MPI_-_OMP__stddev
+          input model files:
+          - parameter: stddev
+            file:
+              filepath: testdata/error_covariance_training_bump_stddev_3/_MPI_-_OMP__stddev
       - saber block name: BUMP_StdDev
-        bump:
+        read:
           general:
             testing: true
           io:
@@ -70,12 +68,11 @@ background error:
               - velocity_potential
               value: 2.0
       - saber block name: StdDev
-        input fields:
-        - parameter: StdDev
-          file:
-            filepath: testdata/error_covariance_training_bump_stddev_3/_MPI_-_OMP__stddev
+        read:
+          model file:
+            filepath: testdata/error_covariance_training_bump_stddev_3/1-1_stddev
       - saber block name: BUMP_VerticalBalance
-        bump:
+        read:
           general:
             testing: true
           io:
@@ -91,7 +88,7 @@ background error:
             - balanced variable: velocity_potential
               unbalanced variable: stream_function
       - saber block name: BUMP_PsiChiToUV
-        bump:
+        read:
           general:
             testing: true
           io:
@@ -119,7 +116,7 @@ background error:
         localization method: SABER
         saber central block:
           saber block name: BUMP_NICAS
-          bump:
+          read:
             general:
               testing: true
             io:
@@ -132,10 +129,6 @@ background error:
             drivers:
               multivariate strategy: duplicated
               read local nicas: true
-        input fields:
-        - parameter: universe radius
-          file:
-            filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__loc_rh_2
     weight:
       value: 0.5
 dirac:

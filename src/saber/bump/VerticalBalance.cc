@@ -7,18 +7,13 @@
 
 #include "saber/bump/VerticalBalance.h"
 
-#include <functional>
-#include <memory>
-#include <string>
-#include <vector>
+#include "oops/util/abor1_cpp.h"
+#include "oops/util/FieldSetHelpers.h"
+#include "oops/util/FieldSetOperations.h"
+#include "oops/util/Logger.h"
+#include "oops/util/Timer.h"
 
-#include "atlas/field.h"
-
-#include "oops/base/Geometry.h"
-#include "oops/base/Variables.h"
-
-#include "saber/bump/BUMP.h"
-#include "saber/oops/SaberOuterBlockBase.h"
+#include "saber/bump/lib/Utilities.h"
 
 namespace saber {
 namespace bump {
@@ -32,32 +27,41 @@ static SaberOuterBlockMaker<VerticalBalance> makerVerticalBalance_("BUMP_Vertica
 VerticalBalance::VerticalBalance(const oops::GeometryData & outerGeometryData,
                                  const std::vector<size_t> & activeVariableSizes,
                                  const oops::Variables & outerVars,
+                                 const eckit::Configuration & covarConf,
                                  const Parameters_ & params,
                                  const atlas::FieldSet & xb,
-                                 const atlas::FieldSet & fg,
-                                 const std::vector<atlas::FieldSet> & fsetVec)
-  : innerGeometryData_(outerGeometryData), innerVars_(outerVars), bump_()
+                                 const atlas::FieldSet & fg)
+  : innerGeometryData_(outerGeometryData),
+    innerVars_(outerVars),
+    bumpParams_(),
+    bump_(),
+    memberIndex_(0)
 {
   oops::Log::trace() << classname() << "::VerticalBalance starting"
                      << std::endl;
 
   // Get active variables
-  oops::Variables activeVars = params.activeVars.value().get_value_or(outerVars);
+  activeVars_ = params.activeVars.value().get_value_or(outerVars);
+
+  // Get BUMP parameters
+  if (params.doCalibration()) {
+    bumpParams_ = *params.calibrationParams.value();
+  } else if (params.doRead()) {
+    bumpParams_ = *params.readParams.value();
+  } else {
+    ABORT("calibration or read required in BUMP");
+  }
 
   // Initialize BUMP
-  bump_.reset(new BUMP(outerGeometryData.comm(),
-                       outerGeometryData.functionSpace(),
-                       outerGeometryData.fieldSet(),
-                       activeVariableSizes,
-                       activeVars,
-                       params.bumpParams.value(),
-                       fsetVec));
-
-  // Run drivers
-  bump_->runDrivers();
-
-  // Partial deallocation
-  bump_->partialDealloc();
+  bump_.reset(new bump_lib::BUMP(outerGeometryData.comm(),
+                                 oops::LibOOPS::instance().infoChannel(),
+                                 oops::LibOOPS::instance().testChannel(),
+                                 outerGeometryData.functionSpace(),
+                                 outerGeometryData.fieldSet(),
+                                 activeVariableSizes,
+                                 activeVars_.variables(),
+                                 covarConf,
+                                 bumpParams_.toConfiguration()));
 
   oops::Log::trace() << classname() << "::VerticalBalance done" << std::endl;
 }
@@ -88,10 +92,72 @@ void VerticalBalance::multiplyAD(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void VerticalBalance::calibrationInverseMultiply(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::calibrationInverseMultiply starting" << std::endl;
+void VerticalBalance::leftInverseMultiply(atlas::FieldSet & fset) const {
+  oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
   bump_->inverseMultiplyVbal(fset);
-  oops::Log::trace() << classname() << "::calibrationInverseMultiply done" << std::endl;
+  oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void VerticalBalance::read() {
+  oops::Log::trace() << classname() << "::read starting" << std::endl;
+  bump_->runDrivers();
+  oops::Log::trace() << classname() << "::read done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void VerticalBalance::directCalibration(const std::vector<atlas::FieldSet> & fsetEns) {
+  oops::Log::trace() << classname() << "::directCalibration starting" << std::endl;
+  bump_->addEnsemble(fsetEns);
+  bump_->runDrivers();
+  oops::Log::trace() << classname() << "::directCalibration done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void VerticalBalance::iterativeCalibrationInit() {
+  oops::Log::trace() << classname() << "::iterativeCalibrationInit starting" << std::endl;
+  memberIndex_ = 0;
+  oops::Log::trace() << classname() << "::iterativeCalibrationInit done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void VerticalBalance::iterativeCalibrationUpdate(const atlas::FieldSet & fset) {
+  oops::Log::trace() << classname() << "::iterativeCalibrationUpdate starting" << std::endl;
+  bump_->iterativeUpdate(fset, memberIndex_);
+  ++memberIndex_;
+  oops::Log::trace() << classname() << "::iterativeCalibrationUpdate done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void VerticalBalance::iterativeCalibrationFinal() {
+  oops::Log::trace() << classname() << "::iterativeCalibrationFinal starting" << std::endl;
+  bump_->runDrivers();
+  oops::Log::trace() << classname() << "::iterativeCalibrationFinal done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void VerticalBalance::write() const {
+  oops::Log::trace() << classname() << "::write starting" << std::endl;
+  bump_->writeAtlasFiles();
+  oops::Log::trace() << classname() << "::write done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> VerticalBalance::fieldsToWrite()
+  const {
+  oops::Log::trace() << classname() << "::fieldsToWrite starting" << std::endl;
+
+  // Return configuration/fieldset pairs
+  std::vector<eckit::LocalConfiguration> outputModelFilesConf
+    = bumpParams_.outputModelFilesConf.value().get_value_or({});
+  return bump_->fieldsToWrite(outputModelFilesConf);
 }
 
 // -----------------------------------------------------------------------------

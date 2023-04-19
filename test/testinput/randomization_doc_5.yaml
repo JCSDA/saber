@@ -1,0 +1,58 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_gaussian
+    N: 50
+  groups:
+  - variables:
+    - stream_function
+    levels: 1
+variables:
+- stream_function
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables:
+  - stream_function
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: BUMP_NICAS
+    read:
+      io:
+        data directory: testdata
+        files prefix: randomization_doc_5/1-1
+      drivers:
+        multivariate strategy: univariate
+        compute nicas: true
+        internal dirac test: true
+      nicas:
+        resolution: 12.0
+        interpolation type:
+        - groups:
+          - stream_function
+          type: si
+      dirac:
+      - longitude: 0.0
+        latitude: 8.059601090025296
+        level: 1
+        variable: stream_function
+      input model files:
+      - parameter: rh1
+        file:
+          filepath: testdata/randomization_doc_2/rh1_000001
+      - parameter: rh2
+        file:
+          filepath: testdata/randomization_doc_3/rh2_000001
+      - parameter: rhc
+        file:
+          filepath: testdata/randomization_doc_4/rhc_000003
+      - parameter: rv
+        file:
+          filepath: testdata/convertstate_doc_1/rv
+      output model files:
+      - parameter: dirac_nicas
+        file:
+          filepath: testdata/randomization_doc_5/dirac_nicas
+  randomization size: 50
+output:
+  filepath: testdata/randomization_doc_5/member

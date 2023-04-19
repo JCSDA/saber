@@ -8,74 +8,76 @@ geometry:
     - stream_function
     levels: 10
   halo: 1
-input variables:
-- stream_function
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
   - stream_function
-ensemble:
-  members from template:
-    template:
-      date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L10/member_%mem%
-      state variables:
-      - stream_function
-    pattern: '%mem%'
-    nmembers: 25
-    zero padding: 6
-bump:
-  general:
-    testing: true
-  io:
-    data directory: testdata
-    files prefix: error_covariance_training_bump_hdiag_10/_MPI_-_OMP_
-  drivers:
-    compute covariance: true
-    compute correlation: true
-    multivariate strategy: univariate
-    compute moments: true
-    write diagnostics: true
-  sampling:
-    computation grid size: 500
-    diagnostic grid size: 250
-    distance classes: 10
-    distance class width: 800.0e3
-    reduced levels: 7
-    local diagnostic: true
-    averaging length-scale: 4000.0e3
-    masks:
-    - type: lat-20060
-    - type: ldwv
-    - type: stddev
-      threshold: 1.005
-      side: lower
-      variable: stream_function
-    - type: input
-      threshold: 0.5
-      side: upper
-      variable: stream_function
-    contiguous levels threshold: 3
-  local profiles:
-  - longitude: 0.0
-    latitude: 0.0
-    name: A
-  - longitude: -22.0
-    latitude: 55.0
-    name: B
-  - longitude: -127.0
-    latitude: -10.0
-    name: C
-input fields:
-- parameter: sampling_mask_field
-  file:
-    filepath: testdata/randomization_bump_nicas_L10L10/member_000001
-output:
-- parameter: cor_rh
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_10/_MPI_-_OMP__cor_rh
-- parameter: cor_rv
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_10/_MPI_-_OMP__cor_rv
+background error:
+  covariance model: SABER
+  ensemble:
+    members from template:
+      template:
+        date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L10/member_%mem%
+        state variables:
+        - stream_function
+      pattern: '%mem%'
+      nmembers: 25
+      zero padding: 6
+  saber central block:
+    saber block name: BUMP_NICAS
+    calibration:
+      general:
+        testing: true
+      io:
+        data directory: testdata
+        files prefix: error_covariance_training_bump_hdiag_10/_MPI_-_OMP_
+      drivers:
+        compute covariance: true
+        compute correlation: true
+        multivariate strategy: univariate
+        compute moments: true
+        write diagnostics: true
+      sampling:
+        computation grid size: 500
+        diagnostic grid size: 250
+        distance classes: 10
+        distance class width: 800.0e3
+        reduced levels: 7
+        local diagnostic: true
+        averaging length-scale: 4000.0e3
+        masks:
+        - type: lat-20060
+        - type: ldwv
+        - type: stddev
+          threshold: 1.005
+          side: lower
+          variable: stream_function
+        - type: input
+          threshold: 0.5
+          side: upper
+          variable: stream_function
+        contiguous levels threshold: 3
+      local profiles:
+      - longitude: 0.0
+        latitude: 0.0
+        name: A
+      - longitude: -22.0
+        latitude: 55.0
+        name: B
+      - longitude: -127.0
+        latitude: -10.0
+        name: C
+      input model files:
+      - parameter: sampling_mask_field
+        file:
+          filepath: testdata/randomization_bump_nicas_L10L10/member_000001
+      output model files:
+      - parameter: cor_rh
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_10/_MPI_-_OMP__cor_rh
+      - parameter: cor_rv
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_10/_MPI_-_OMP__cor_rv
 test:
   reference filename: testref/error_covariance_training_bump_hdiag_10.ref

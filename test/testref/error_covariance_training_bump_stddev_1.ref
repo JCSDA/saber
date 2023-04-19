@@ -33,6 +33,6 @@
                 Level   2: rhflt =   40000.00 km, rel. diff. =  0.13978E-01
              Level   1 ~>  0.10267E+01 /  0.10267E+01
              Level   2 ~>  0.10174E+01 /  0.10174E+01
-Norm of BUMP output parameter stddev - 1: 4.1446848101725315e+01
-Norm of BUMP output parameter var - 1: 4.3650316264863811e+01
-Norm of BUMP output parameter m4 - 1: 1.4599276989031361e+02
+Norm of output parameter stddev - 1: 4.1446848101725315e+01
+Norm of output parameter var - 1: 4.3650316264863811e+01
+Norm of output parameter m4 - 1: 1.4599276989031367e+02

@@ -16,6 +16,7 @@
 
 #include "eckit/exception/Exceptions.h"
 
+#include "oops/util/FieldSetHelpers.h"
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/Logger.h"
 
@@ -32,13 +33,14 @@ static SaberCentralBlockMaker<SpectralCovariance> makerSpectralCovariance_("spec
 SpectralCovariance::SpectralCovariance(const oops::GeometryData & geometryData,
                                        const std::vector<size_t> & variableSizes,
                                        const oops::Variables & centralVars,
+                                       const eckit::Configuration & covarConf,
                                        const Parameters_ & params,
                                        const atlas::FieldSet & xb,
                                        const atlas::FieldSet & fg,
-                                       const std::vector<atlas::FieldSet> & fsetVec,
                                        const size_t & timeRank)
-  : activeVars_(params.activeVars.value().get_value_or(centralVars)),
-    variance_opt_(params.spectralbParams.value().varianceOpt),
+  : params_(params),
+    variableSizes_(variableSizes),
+    activeVars_(params.activeVars.value().get_value_or(centralVars)),
     cs_(),
     geometryData_(geometryData),
     specFunctionSpace_(geometryData_.functionSpace()),
@@ -46,34 +48,28 @@ SpectralCovariance::SpectralCovariance(const oops::GeometryData & geometryData,
 {
   oops::Log::trace() << classname() << "::SpectralCovariance starting " << std::endl;
 
-  // Initialize CovStat_ErrorCov
-  cs_.reset(new CovStat_ErrorCov(variableSizes,
-                                 activeVars_,
-                                 params.spectralbParams.value()));
-
-  // Check consistency of UU^t and B
-  static bool uut_first_pass = true;
-  if (params.spectralbParams.value().uutConsistencyTest && uut_first_pass) {
-      testUUtConsistency(variableSizes,
-                         params.spectralbParams.value().consistencyTolerance);
-      uut_first_pass = false;
+  if (params.doCalibration()) {
+    // TODO(Marek)
+  } else {
+    variance_opt_ = params.readParams.value()->varianceOpt;
   }
+
   oops::Log::trace() << classname() << "::SpectralCovariance done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void SpectralCovariance::testUUtConsistency(const std::vector<size_t> & variableSizes,
-                                            const double & consistencyTolerance,
+void SpectralCovariance::testUUtConsistency(const double & consistencyTolerance,
                                             const double & adjointTolerance) const {
   // Test that UU^t = B and that U and U^t are adjoint.
   oops::Log::trace() << "SpectralCovariance::testUUtConsistency starting" << std::endl;
 
   // Step 1/2: Test that UU^t = B
   // Create random FieldSet y
-  atlas::FieldSet y =  util::createRandomFieldSet(geometryData_,
-                                                  variableSizes,
-                                                  activeVars_,
+  atlas::FieldSet y =  util::createRandomFieldSet(geometryData_.comm(),
+                                                  geometryData_.functionSpace(),
+                                                  variableSizes_,
+                                                  activeVars_.variables(),
                                                   timeRank_);
 
   // Apply forward multiplication using B or UU^t
@@ -127,16 +123,19 @@ void SpectralCovariance::testUUtConsistency(const std::vector<size_t> & variable
 
   // Step 2/2: Adjoint test for U and U^t
   // Generate random field set x in spectral space
-  atlas::FieldSet x = util::createRandomFieldSet(geometryData_,
-                                                 variableSizes,
-                                                 activeVars_);
+  atlas::FieldSet x = util::createRandomFieldSet(geometryData_.comm(),
+                                                 geometryData_.functionSpace(),
+                                                 variableSizes_,
+                                                 activeVars_.variables());
   // Apply U
   atlas::FieldSet Ux = util::copyFieldSet(x);
   this->multiplyUMatrix(Ux);
 
   // Compute adjoint test
-  const double dp1 = util::dotProductFieldSets(y, Ux, activeVars_, geometryData_.comm());
-  const double dp2 = util::dotProductFieldSets(Uty, x, activeVars_, geometryData_.comm());
+  const double dp1 = util::dotProductFieldSets(y, Ux, activeVars_.variables(),
+                                               geometryData_.comm());
+  const double dp2 = util::dotProductFieldSets(Uty, x, activeVars_.variables(),
+                                               geometryData_.comm());
   oops::Log::info() << "Info     : Adjoint test: <y ; Ux> = " << dp1
                     << ": <U^t y ; x> = " << dp2 << std::endl;
   oops::Log::test() << "Adjoint test for U and U^t";
@@ -156,14 +155,10 @@ void SpectralCovariance::randomize(atlas::FieldSet & fieldSet) const {
   oops::Log::trace() << classname() << "::randomize starting" << std::endl;
 
   // Overwrite input fieldSet with random numbers in spectral space
-  std::vector<size_t> variableSizes;
-  for (auto & var : activeVars_.variables()) {
-    ASSERT(fieldSet.has(var));
-    variableSizes.push_back(static_cast<size_t>(fieldSet[var].levels()));
-  }
-  atlas::FieldSet newFieldSet = util::createRandomFieldSet(geometryData_,
-                                                           variableSizes,
-                                                           activeVars_);
+  atlas::FieldSet newFieldSet = util::createRandomFieldSet(geometryData_.comm(),
+                                                           geometryData_.functionSpace(),
+                                                           variableSizes_,
+                                                           activeVars_.variables());
   for (auto & var : activeVars_.variables()) {
     fieldSet[var] = newFieldSet[var];
   }
@@ -342,6 +337,24 @@ void SpectralCovariance::multiplyUMatrixAD(atlas::FieldSet & fieldSet) const {
     }
   }
   oops::Log::trace() << classname() << "::multiplyUMatrixAD done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void SpectralCovariance::read() {
+  oops::Log::trace() << classname() << "::read starting" << std::endl;
+  // Initialize CovStat_ErrorCov
+  cs_.reset(new CovStat_ErrorCov(variableSizes_,
+                                 activeVars_,
+                                 *params_.readParams.value()));
+
+  // Check consistency of UU^t and B
+  static bool uut_first_pass = true;
+  if (params_.readParams.value()->uutConsistencyTest && uut_first_pass) {
+      testUUtConsistency(params_.readParams.value()->consistencyTolerance);
+      uut_first_pass = false;
+  }
+  oops::Log::trace() << classname() << "::read done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

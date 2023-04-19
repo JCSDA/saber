@@ -9,7 +9,7 @@
 
 #include <vector>
 
-#include "oops/util/FieldSetOperations.h"
+#include "oops/util/FieldSetHelpers.h"
 #include "oops/util/Logger.h"
 
 namespace saber {
@@ -24,10 +24,10 @@ static SaberCentralBlockMaker<ID> makerID_("ID");
 ID::ID(const oops::GeometryData & geometryData,
        const std::vector<size_t> & activeVariableSizes,
        const oops::Variables & activeVars,
+       const eckit::Configuration & covarConf,
        const Parameters_ & params,
        const atlas::FieldSet & xb,
        const atlas::FieldSet & fg,
-       const std::vector<atlas::FieldSet> & fsetVec,
        const size_t & timeRank) :
     geometryData_(geometryData),
     activeVariableSizes_(activeVariableSizes),
@@ -38,10 +38,13 @@ ID::ID(const oops::GeometryData & geometryData,
   oops::Log::trace() << classname() << "::ID done" << std::endl;
 }
 
+// -----------------------------------------------------------------------------
+
 ID::~ID() {
     oops::Log::trace() << classname() << "::~ID starting" << std::endl;
     oops::Log::trace() << classname() << "::~ID done" << std::endl;
 }
+
 // -----------------------------------------------------------------------------
 
 void ID::randomize(atlas::FieldSet & fset) const {
@@ -52,9 +55,10 @@ void ID::randomize(atlas::FieldSet & fset) const {
   }
 
   // Overwrite input fieldSet with random numbers
-  const atlas::FieldSet newFieldSet = util::createRandomFieldSet(geometryData_,
+  const atlas::FieldSet newFieldSet = util::createRandomFieldSet(geometryData_.comm(),
+                                                                 geometryData_.functionSpace(),
                                                                  activeVariableSizes_,
-                                                                 activeVars_,
+                                                                 activeVars_.variables(),
                                                                  timeRank_);
 
   for (const auto & var : activeVars_.variables()) {

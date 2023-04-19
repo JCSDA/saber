@@ -15,8 +15,7 @@
 
 #include "eckit/config/Configuration.h"
 
-namespace saber {
-namespace bump {
+namespace bump_lib {
 
 // -----------------------------------------------------------------------------
 
@@ -73,6 +72,10 @@ struct IODef {
   std::pair<const char *, std::string> fname_vbal =
     std::make_pair("overriding vertical balance file", "");
 
+  // Universe radius file
+  std::pair<const char *, std::string> fname_universe_radius =
+    std::make_pair("overriding universe radius file", "");
+
   // NICAS file
   std::pair<const char *, std::string> fname_nicas =
     std::make_pair("overriding nicas file", "");
@@ -124,14 +127,9 @@ struct DriversDef {
   std::pair<const char *, std::string> hybrid_source =
     std::make_pair("hybrid source", "");
 
-  // Multivariate strategy ('diag_all', 'common', 'common_weighted', 'specific_univariate' or
-  // 'specific_multivariate')
+  // Multivariate strategy ('univariate', 'duplicated', 'duplicated and weighted' or 'crossed')
   std::pair<const char *, std::string> strategy =
     std::make_pair("multivariate strategy", "");
-
-  // Iterative algorithm (ensemble members loaded sequentially)
-  std::pair<const char *, bool> iterative_algo =
-    std::make_pair("iterative algorithm", false);
 
   // New normality test
   std::pair<const char *, bool> new_normality =
@@ -205,6 +203,14 @@ struct DriversDef {
   std::pair<const char *, bool> write_hdiag_detail =
     std::make_pair("write diagnostics detail", false);
 
+  // Read universe radius
+  std::pair<const char *, bool> load_universe_radius =
+    std::make_pair("read universe radius", false);
+
+  // Write universe radius
+  std::pair<const char *, bool> write_universe_radius =
+    std::make_pair("write universe radius", false);
+
   // Compute NICAS
   std::pair<const char *, bool> new_nicas =
     std::make_pair("compute nicas", false);
@@ -228,6 +234,10 @@ struct DriversDef {
   // Write NICAS grids
   std::pair<const char *, bool> write_nicas_grids =
     std::make_pair("write nicas grids", false);
+
+  // Write NICAS steps
+  std::pair<const char *, bool> write_nicas_steps =
+    std::make_pair("write nicas steps", false);
 
   // Compute wind transform
   std::pair<const char *, bool> new_wind =
@@ -531,6 +541,13 @@ struct PsichitouvDef {
     std::make_pair("wind inflation", 1.0);
 };
 
+// External section
+struct ExternalDef {
+  // Iterative algorithm (ensemble members loaded sequentially)
+  std::pair<const char *, bool> iterative_algo =
+    std::make_pair("iterative algorithm", false);
+};
+
 // -----------------------------------------------------------------------------
 
 extern "C" {
@@ -539,5 +556,4 @@ extern "C" {
 
 // -----------------------------------------------------------------------------
 
-}  // namespace bump
-}  // namespace saber
+}  // namespace bump_lib

@@ -33,7 +33,7 @@ Geometry::Geometry(const Parameters_ & params,
                    const eckit::mpi::Comm & comm) :
   comm_(comm) {
   // Halo
-  const boost::optional<size_t> &halo = params.halo.value();
+  const auto & halo = params.halo.value();
   if (halo != boost::none) {
     halo_ = *halo;
   } else {
@@ -41,7 +41,7 @@ Geometry::Geometry(const Parameters_ & params,
   }
 
   // Setup grid
-  const boost::optional<eckit::LocalConfiguration> &gridParams = params.grid.value();
+  const auto & gridParams = params.grid.value();
   unstructuredGrid_ = false;
   if (gridParams != boost::none) {
     oops::Log::info() << "Info     : Grid config: " << *gridParams << std::endl;
@@ -78,11 +78,13 @@ Geometry::Geometry(const Parameters_ & params,
     ABORT("Grid or grid input file required");
   }
 
-  if (params.functionSpace.value() == "StructuredColumns") {
-    // StructuredColumns
-
+  if (!unstructuredGrid_) {
     // Setup partitioner
     partitioner_ = atlas::grid::Partitioner(params.partitioner.value());
+  }
+
+  if (params.functionSpace.value() == "StructuredColumns") {
+    // StructuredColumns
 
     // Setup distribution
     atlas::grid::Distribution distribution = atlas::grid::Distribution(grid_, partitioner_);

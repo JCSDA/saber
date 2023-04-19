@@ -32,13 +32,13 @@ if( oops_FOUND )
     set( SABER_TEST_VALGRIND 0 )
     set( SABER_TEST_GSI_GEOS 0 )
     if( gsibec_FOUND )
-        if (gsibec_VERSION VERSION_GREATER_EQUAL "1.0.7" )
+        if( gsibec_VERSION VERSION_GREATER_EQUAL "1.0.7" )
             set( SABER_TEST_GSI_GEOS 1 )
         endif()
     endif()
     set( SABER_TEST_GSI_GFS 0 )
     if( gsibec_FOUND AND sp_FOUND )
-        if (gsibec_VERSION VERSION_GREATER_EQUAL "1.0.7" )
+        if( gsibec_VERSION VERSION_GREATER_EQUAL "1.0.7" )
             set( SABER_TEST_GSI_GFS 1 )
         endif()
     endif()
@@ -170,51 +170,33 @@ if( oops_FOUND )
         list( APPEND omp_list 2)
     endif()  
 
+    # Executables list
+    list( APPEND exe_list convertstate randomization error_covariance_training dirac )
+
     # Loop over MPI/OpenMP configurations
     foreach( mpi omp IN ZIP_LISTS mpi_list omp_list )
         message( STATUS "Tests parallel configuration: MPI: ${mpi} / OMP: ${omp}" )
- 
-        # Randomization tests
-        foreach( test ${saber_test_full} )
-            string( FIND ${test} "randomization" result )
-            if( result MATCHES 0 )
-                ecbuild_add_test( TARGET saber_test_${test}_${mpi}-${omp}
-                                  MPI ${mpi}
-                                  OMP ${omp}
-                                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_randomization.x
-                                  ARGS testinput/${test}.yaml
-                                  DEPENDS saber_quench_randomization.x )
-            endif()
-        endforeach()
 
-        # Error covariance training tests
-        foreach( test ${saber_test_full} )
-            string( FIND ${test} "error_covariance_training" result )
-            if( result MATCHES 0 )
-                ecbuild_add_test( TARGET saber_test_${test}_${mpi}-${omp}
-                                  MPI ${mpi}
-                                  OMP ${omp}
-                                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_training.x
-                                  ARGS testinput/${test}.yaml
-                                  DEPENDS saber_quench_error_covariance_training.x )
-            endif()
-        endforeach()
-
-        # Dirac tests
-        foreach( test ${saber_test_full} )
-            string( FIND ${test} "dirac" result )
-            if( result MATCHES 0 )
-                # Special check for GSI GFS (TODO: should be removed at some point) 
-                string( FIND ${test} "gsi_gfs" gsi_gfs_result )
-                if( ( gsi_gfs_result EQUAL -1 ) OR ( ${mpi} LESS_EQUAL 1 AND ${omp} LESS_EQUAL 1 ) )
-                    ecbuild_add_test( TARGET saber_test_${test}_${mpi}-${omp}
-                                      MPI ${mpi}
-                                      OMP ${omp}
-                                      COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_dirac.x
-                                      ARGS testinput/${test}.yaml
-                                      DEPENDS saber_quench_dirac.x )
+        # Loop over executables
+        foreach( exe ${exe_list} )
+            foreach( test ${saber_test_full} )
+                string( FIND ${test} ${exe} result )
+                if( result MATCHES 0 )
+                    # Special check for GSI GFS, only run with 1 MPI / 1 OMP (TODO: should be removed at some point) 
+                    string( FIND ${test} "gsi_gfs" gsi_gfs_result )
+                    # Special check for doc and tutorial, only run with 1 MPI / 1 OMP
+                    string( FIND ${test} "doc_" doc_result )
+                    string( FIND ${test} "tutorial_" tutorial_result )
+                    if( ( doc_result EQUAL -1 OR tutorial_result EQUAL 1 OR gsi_gfs_result EQUAL -1 ) OR ( ${mpi} LESS_EQUAL 1 AND ${omp} LESS_EQUAL 1 ) )
+                        ecbuild_add_test( TARGET saber_test_${test}_${mpi}-${omp}
+                                          MPI ${mpi}
+                                          OMP ${omp}
+                                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_${exe}.x
+                                          ARGS testinput/${test}.yaml
+                                          DEPENDS saber_quench_${exe}.x )
+                    endif()
                 endif()
-            endif()
+            endforeach()
         endforeach()
 
         # GSI scaling optimization for HDIAG

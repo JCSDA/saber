@@ -1,0 +1,121 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_gaussian
+    N: 50
+  groups:
+  - variables:
+    - stream_function
+    levels: 1
+  halo: 1
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables:
+  - stream_function
+background error:
+  covariance model: SABER
+  ensemble:
+    members from template:
+      template:
+        date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_doc_5/member_%mem%
+        state variables:
+        - stream_function
+      pattern: '%mem%'
+      nmembers: 50
+      zero padding: 6
+  saber central block:
+    saber block name: BUMP_NICAS
+    calibration:
+      io:
+        data directory: testdata
+        files prefix: error_covariance_training_tutorial_8/1-1
+      drivers:
+        compute covariance: true
+        compute correlation: true
+        multivariate strategy: univariate
+        compute moments: true
+        write local sampling: true
+        write sampling grids: true
+        write diagnostics: true
+        internal dirac test: true
+      sampling:
+        computation grid size: 1000
+        diagnostic grid size: 200
+        distance classes: 25
+        distance class width: 200.0e3
+        angular sectors: 8
+        reduced levels: 1
+        local diagnostic: true
+        averaging length-scale: 4000.0e3
+        interpolation type: si
+      diagnostics:
+        target ensemble size: 50
+      dirac:
+      - longitude: -45.0
+        latitude: 0.0
+        level: 1
+        variable: stream_function
+      - longitude: -135.0
+        latitude: 0.0
+        level: 1
+        variable: stream_function
+      - longitude: 45.0
+        latitude: 0.0
+        level: 1
+        variable: stream_function
+      - longitude: 135.0
+        latitude: 0.0
+        level: 1
+        variable: stream_function
+      - longitude: -135.0
+        latitude: 45.0
+        level: 1
+        variable: stream_function
+      - longitude: -45.0
+        latitude: 45.0
+        level: 1
+        variable: stream_function
+      - longitude: 45.0
+        latitude: 45.0
+        level: 1
+        variable: stream_function
+      - longitude: 135.0
+        latitude: 45.0
+        level: 1
+        variable: stream_function
+      - longitude: -135.0
+        latitude: -45.0
+        level: 1
+        variable: stream_function
+      - longitude: -45.0
+        latitude: -45.0
+        level: 1
+        variable: stream_function
+      - longitude: 45.0
+        latitude: -45.0
+        level: 1
+        variable: stream_function
+      - longitude: 135.0
+        latitude: -45.0
+        level: 1
+        variable: stream_function
+      output model files:
+      - parameter: dirac_diag_cor
+        file:
+          filepath: testdata/error_covariance_training_tutorial_8/dirac_cor
+      - parameter: cor_rh
+        file:
+          filepath: testdata/error_covariance_training_tutorial_8/cor_rh
+      - parameter: cor_rh1
+        file:
+          filepath: testdata/error_covariance_training_tutorial_8/cor_rh1
+      - parameter: cor_rh2
+        file:
+          filepath: testdata/error_covariance_training_tutorial_8/cor_rh2
+      - parameter: cor_rhc
+        file:
+          filepath: testdata/error_covariance_training_tutorial_8/cor_rhc
+      - parameter: cor_rv
+        file:
+          filepath: testdata/error_covariance_training_tutorial_8/cor_rv

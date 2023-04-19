@@ -25,7 +25,7 @@ background error:
     active variables:
     - streamfunction
     - velocity_potential
-    spectralb:
+    read:
       covariance_file: testdata/spectralcov.nc
       gauss_grid_uid: F15
       umatrix_netcdf_names:
@@ -42,12 +42,25 @@ background error:
 dirac:
   lon:
   - 0.0
-  lat:
-  - 0.0
+  lat:    # slightly less than 0 to remove ambiguity on chosen grid point.
+  - -0.001
   level:
   - 1
   variable:
   - eastward_wind
+diagnostic points:
+  lon:
+  - 20.0
+  - 20.0
+  lat:
+  - 20.0
+  - 20.0
+  level:
+  - 2
+  - 2
+  variable:
+  - eastward_wind
+  - northward_wind
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_spectraltouv/%MPI%_dirac_%id%

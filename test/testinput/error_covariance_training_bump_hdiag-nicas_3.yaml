@@ -8,87 +8,90 @@ geometry:
     - stream_function
     levels: 2
   halo: 1
-lowres geometry:
-  function space: StructuredColumns
-  grid:
-    type: regular_lonlat
-    N: 10
-  groups:
-  - variables:
-    - stream_function
-    levels: 2
-  halo: 1
-input variables:
-- stream_function
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
   - stream_function
-bump:
-  general:
-    testing: true
-  io:
-    data directory: testdata
-    files prefix: error_covariance_training_bump_hdiag-nicas_3/_MPI_-_OMP_
-    overriding sampling file: error_covariance_training_bump_hdiag_5/_MPI_-_OMP__sampling
-    overriding moments file:
-    - error_covariance_training_bump_hdiag_5/_MPI_-_OMP__mom_000001_1
-    overriding lowres moments file:
-    - error_covariance_training_bump_hdiag_5/_MPI_-_OMP__mom_000001_2
-  drivers:
-    compute covariance: true
-    compute lowres covariance: true
-    compute correlation: true
-    compute lowres correlation: true
-    compute localization: true
-    compute lowres localization: true
-    compute hybrid weights: true
-    hybrid source: lowres ensemble
-    multivariate strategy: univariate
-    read local sampling: true
-    read moments: true
-    write diagnostics: true
-    compute nicas: true
-    write local nicas: true
-    adjoints test: true
-    normalization test: 10
-    internal dirac test: true
-  ensemble sizes:
-    total ensemble size: 10
-    total lowres ensemble size: 25
-  sampling:
-    computation grid size: 500
-    distance classes: 15
-    distance class width: 500.0e3
-    reduced levels: 2
-  diagnostics:
-    target ensemble size: 10
-    target lowres ensemble size: 25
-  nicas:
-    resolution: 4.0
-  dirac:
-  - longitude: 0.0
-    latitude: 0.0
-    level: 1
-    variable: stream_function
-output:
-- parameter: loc_rh
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag-nicas_3/_MPI_-_OMP__loc_rh
-- parameter: loc_rv
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag-nicas_3/_MPI_-_OMP__loc_rv
-- parameter: hyb_coef_ens
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag-nicas_3/_MPI_-_OMP__hyb_coef_ens
-- parameter: loc_rh_lr
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag-nicas_3/_MPI_-_OMP__loc_rh_lr
-- parameter: loc_rv_lr
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag-nicas_3/_MPI_-_OMP__loc_rv_lr
-- parameter: hyb_coef_ens_lr
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag-nicas_3/_MPI_-_OMP__hyb_coef_ens_lr
+background error:
+  covariance model: SABER
+  dual resolution calibration:
+    geometry:
+      function space: StructuredColumns
+      grid:
+        type: regular_lonlat
+        N: 10
+      groups:
+      - variables:
+        - stream_function
+        levels: 2
+      halo: 1
+  saber central block:
+    saber block name: BUMP_NICAS
+    calibration:
+      general:
+        testing: true
+      io:
+        data directory: testdata
+        files prefix: error_covariance_training_bump_hdiag-nicas_3/_MPI_-_OMP_
+        overriding sampling file: error_covariance_training_bump_hdiag_5/_MPI_-_OMP__sampling
+        overriding moments file:
+        - error_covariance_training_bump_hdiag_5/_MPI_-_OMP__mom_000001_1
+        overriding lowres moments file:
+        - error_covariance_training_bump_hdiag_5/_MPI_-_OMP__mom_000001_2
+      drivers:
+        compute covariance: true
+        compute lowres covariance: true
+        compute correlation: true
+        compute lowres correlation: true
+        compute localization: true
+        compute lowres localization: true
+        compute hybrid weights: true
+        hybrid source: lowres ensemble
+        multivariate strategy: univariate
+        read local sampling: true
+        read moments: true
+        write diagnostics: true
+        compute nicas: true
+        write local nicas: true
+        adjoints test: true
+        normalization test: 10
+        internal dirac test: true
+      ensemble sizes:
+        total ensemble size: 10
+        total lowres ensemble size: 25
+      sampling:
+        computation grid size: 500
+        distance classes: 15
+        distance class width: 500.0e3
+        reduced levels: 2
+      diagnostics:
+        target ensemble size: 10
+        target lowres ensemble size: 25
+      nicas:
+        resolution: 4.0
+      dirac:
+      - longitude: 0.0
+        latitude: 0.0
+        level: 1
+        variable: stream_function
+      output model files:
+      - parameter: loc_rh
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag-nicas_3/_MPI_-_OMP__loc_rh
+      - parameter: loc_rv
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag-nicas_3/_MPI_-_OMP__loc_rv
+      - parameter: hyb_coef_ens
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag-nicas_3/_MPI_-_OMP__hyb_coef_ens
+      - parameter: hyb_coef_ens_lr
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag-nicas_3/_MPI_-_OMP__hyb_coef_ens_lr
+      - parameter: loc_rh_lr
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag-nicas_3/_MPI_-_OMP__loc_rh_lr
+      - parameter: loc_rv_lr
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag-nicas_3/_MPI_-_OMP__loc_rv_lr
 test:
   reference filename: testref/error_covariance_training_bump_hdiag-nicas_3.ref

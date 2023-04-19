@@ -20,6 +20,7 @@
 
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
+#include "oops/util/FieldSetHelpers.h"
 #include "oops/util/Logger.h"
 #include "oops/util/Timer.h"
 
@@ -38,22 +39,22 @@ static SaberCentralBlockMaker<Covariance> makerCovariance_("gsi covariance");
 Covariance::Covariance(const oops::GeometryData & geometryData,
                        const std::vector<size_t> & activeVariableSizes,
                        const oops::Variables & centralVars,
+                       const eckit::Configuration & covarConf,
                        const Parameters_ & params,
                        const atlas::FieldSet & xb,
                        const atlas::FieldSet & fg,
-                       const std::vector<atlas::FieldSet> & fsetVec,
                        const size_t & timeRank)
-  : variables_(params.activeVars.value().get_value_or(centralVars).variables()),
-    gsiGridFuncSpace_(geometryData.functionSpace())
+  : params_(params), variables_(params.activeVars.value().get_value_or(centralVars).variables()),
+    gsiGridFuncSpace_(geometryData.functionSpace()), comm_(&geometryData.comm())
 {
   oops::Log::trace() << classname() << "::Covariance starting" << std::endl;
   util::Timer timer(classname(), "Covariance");
 
   // TODO(GSI team) use timeRank to initialize random seed
 
-  // Create covariance module
-  gsi_covariance_create_f90(keySelf_, geometryData.comm(), params.toConfiguration(), xb.get(),
-    fg.get());
+  // Share xb and fg pointers
+  xb_ = util::shareFields(xb);
+  fg_ = util::shareFields(fg);
 
   oops::Log::trace() << classname() << "::Covariance done" << std::endl;
 }
@@ -104,6 +105,16 @@ void Covariance::multiply(atlas::FieldSet & fset) const {
   util::Timer timer(classname(), "multiply");
   gsi_covariance_multiply_f90(keySelf_, fset.get());
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void Covariance::read() {
+  oops::Log::trace() << classname() << "::read starting" << std::endl;
+  // Create covariance module
+  gsi_covariance_create_f90(keySelf_, *comm_, params_.readParams.value()->toConfiguration(),
+     xb_.get(), fg_.get());
+  oops::Log::trace() << classname() << "::read done" << std::endl;
 }
 
 // -------------------------------------------------------------------------------------------------

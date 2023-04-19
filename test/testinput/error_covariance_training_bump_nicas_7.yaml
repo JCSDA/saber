@@ -9,50 +9,51 @@ geometry:
     - velocity_potential
     levels: 10
   halo: 1
-input variables:
-- stream_function
-- velocity_potential
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
   - stream_function
   - velocity_potential
-bump:
-  general:
-    testing: true
-    universe length-scale: 10000.0e3
-  io:
-    data directory: testdata
-    files prefix: error_covariance_training_bump_nicas_7/_MPI_-_OMP_
-  drivers:
-    compute covariance: true
-    compute correlation: true
-    multivariate strategy: crossed
-    compute moments: true
-    write diagnostics: true
-    adjoints test: true
-    internal consistency test: true
-  ensemble sizes:
-    total ensemble size: 50
-  sampling:
-    computation grid size: 500
-    distance classes: 10
-    distance class width: 800.0e3
-    reduced levels: 7
-  nicas:
-    resolution: 4.0
-    explicit length-scales: true
-    horizontal length-scale:
-    - groups:
-      - stream_function
-      value: 4000.0e3
-    - groups:
-      - velocity_potential
-      value: 2000.0e3
-    vertical length-scale:
-    - groups:
-      - stream_function
-      - velocity_potential
-      value: 3.0
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: BUMP_NICAS
+    calibration:
+      general:
+        testing: true
+        universe length-scale: 10000.0e3
+      io:
+        data directory: testdata
+        files prefix: error_covariance_training_bump_nicas_7/_MPI_-_OMP_
+      drivers:
+        compute covariance: true
+        compute correlation: true
+        multivariate strategy: crossed
+        compute moments: true
+        write diagnostics: true
+        adjoints test: true
+        internal consistency test: true
+      ensemble sizes:
+        total ensemble size: 50
+      sampling:
+        computation grid size: 500
+        distance classes: 10
+        distance class width: 800.0e3
+        reduced levels: 7
+      nicas:
+        resolution: 4.0
+        explicit length-scales: true
+        horizontal length-scale:
+        - groups:
+          - stream_function
+          value: 4000.0e3
+        - groups:
+          - velocity_potential
+          value: 2000.0e3
+        vertical length-scale:
+        - groups:
+          - stream_function
+          - velocity_potential
+          value: 3.0
 test:
   reference filename: testref/error_covariance_training_bump_nicas_7.ref

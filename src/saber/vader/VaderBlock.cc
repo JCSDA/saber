@@ -25,10 +25,10 @@ static SaberOuterBlockMaker<VaderBlock> makerVaderBlock_("vader variable change"
 VaderBlock::VaderBlock(const oops::GeometryData & outerGeometryData,
                        const std::vector<size_t> & activeVariableSizes,
                        const oops::Variables & outerVars,
+                       const eckit::Configuration & covarConf,
                        const Parameters_ & params,
                        const atlas::FieldSet & xb,
-                       const atlas::FieldSet & fg,
-                       const std::vector<atlas::FieldSet> & fsetVec)
+                       const atlas::FieldSet & fg)
   : outerVars_(outerVars),
     innerGeometryData_(outerGeometryData), innerVars_(params.innerVars),
     vader_(params.vader)
@@ -91,9 +91,9 @@ void VaderBlock::multiplyAD(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void VaderBlock::calibrationInverseMultiply(atlas::FieldSet & fset) const {
+void VaderBlock::leftInverseMultiply(atlas::FieldSet & fset) const {
   oops::Log::info() << classname()
-                    << "::calibrationInverseMultiply not meaningful so fieldset unchanged"
+                    << "::leftInverseMultiply not meaningful so fieldset unchanged"
                     << std::endl;
 }
 

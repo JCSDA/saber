@@ -10,16 +10,21 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "atlas/field.h"
 
 #include <boost/noncopyable.hpp>
 
+// TODO(AS): only need a forward declaration of Geometry (and Increment?)
+#include "oops/base/Geometry.h"
 #include "oops/base/GeometryData.h"
+#include "oops/base/Increment.h"
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/AssociativeContainers.h"
+#include "oops/util/FieldSetHelpers.h"
 #include "oops/util/Logger.h"
 #include "oops/util/parameters/OptionalParameter.h"
 #include "oops/util/parameters/Parameter.h"
@@ -39,13 +44,101 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
   SaberOuterBlockBase() {}
   virtual ~SaberOuterBlockBase() {}
 
+  // Accessor
+
+  // To inner Geometry data
   virtual const oops::GeometryData & innerGeometryData() const = 0;
+
+  // To inner variables
   virtual const oops::Variables & innerVars() const = 0;
 
-  virtual void multiply(atlas::FieldSet &) const = 0;
-  virtual void multiplyAD(atlas::FieldSet &) const = 0;
-  virtual void calibrationInverseMultiply(atlas::FieldSet &) const = 0;
+  // Application methods
 
+  // Block multiplication
+  virtual void multiply(atlas::FieldSet &) const = 0;
+
+  // Block multiplication adjoint
+  virtual void multiplyAD(atlas::FieldSet &) const = 0;
+
+  // Block inverse multiplication for calibration (can be an approximate inverse)
+  virtual void leftInverseMultiply(atlas::FieldSet &) const = 0;
+
+  // Setup / calibration methods
+
+  // Read block data
+  virtual void read()
+    {ABORT("read not implemented yet for this block");}
+
+  // Read model fields
+  virtual std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> fieldsToRead()
+    {return {};}
+
+  // Direct calibration
+  virtual void directCalibration(const std::vector<atlas::FieldSet> &)
+    {ABORT("directCalibration not implemented yet for this block");}
+
+  // Iterative calibration
+  virtual void iterativeCalibrationInit()
+    {ABORT("iterativeCalibrationInit not implemented yet for this block");}
+  virtual void iterativeCalibrationUpdate(const atlas::FieldSet &)
+    {ABORT("iterativeCalibrationUpdate not implemented yet for this block");}
+  virtual void iterativeCalibrationFinal()
+    {ABORT("iterativeCalibrationUpdate not implemented yet for this block");}
+
+  // Dual resolution setup
+  virtual void dualResolutionSetup(const oops::GeometryData &)
+    {ABORT("dualResolutionSetup not implemented yet for this block");}
+
+  // Write block data
+  virtual void write() const {}
+
+  // Write model fields
+  virtual std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> fieldsToWrite() const
+     {return {};}
+
+  // Generate inner FieldSet (for the inverse test)
+  virtual atlas::FieldSet generateInnerFieldSet(const oops::GeometryData & innerGeometryData,
+                                                const std::vector<size_t> & innerVariableSizes,
+                                                const oops::Variables & innerVars,
+                                                const size_t & timeRank) const
+    {return util::createRandomFieldSet(innerGeometryData.comm(),
+                                       innerGeometryData.functionSpace(),
+                                       innerVariableSizes,
+                                       innerVars.variables(),
+                                       timeRank);}
+
+  // Generate outer FieldSet (for the inverse test)
+  virtual atlas::FieldSet generateOuterFieldSet(const oops::GeometryData & outerGeometryData,
+                                                const std::vector<size_t> & outerVariableSizes,
+                                                const oops::Variables & outerVars,
+                                                const size_t & timeRank) const
+    {return util::createRandomFieldSet(outerGeometryData.comm(),
+                                       outerGeometryData.functionSpace(),
+                                       outerVariableSizes,
+                                       outerVars.variables(),
+                                       timeRank);}
+
+  // Compare FieldSets (for the inverse test)
+  virtual bool compareFieldSets(const atlas::FieldSet & fset1,
+                                const atlas::FieldSet & fset2,
+                                const double & tol) const
+    {return util::compareFieldSets(fset1, fset2, tol);}
+
+  // Non-virtual methods
+
+  // Read model fields
+  template <typename MODEL>
+  void read(const oops::Geometry<MODEL> &,
+            const oops::Variables &,
+            const util::DateTime &);
+
+  // Write model fields
+  template <typename MODEL>
+  void write(const oops::Geometry<MODEL> &,
+             const oops::Variables &,
+             const util::DateTime &) const;
+
+  // Adjoint test
   void adjointTest(const eckit::mpi::Comm &,
                    const oops::GeometryData &,
                    const std::vector<size_t> &,
@@ -54,6 +147,19 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
                    const std::vector<size_t> &,
                    const oops::Variables &,
                    const double & adjointTolerance) const;
+
+  // Left-inverse test
+  void inverseTest(const oops::GeometryData &,
+                   const std::vector<size_t> &,
+                   const oops::Variables &,
+                   const oops::GeometryData &,
+                   const std::vector<size_t> &,
+                   const oops::Variables &,
+                   const oops::Variables &,
+                   const oops::Variables &,
+                   const double &,
+                   const double &,
+                   const size_t &) const;
 
  private:
   virtual void print(std::ostream &) const = 0;
@@ -79,10 +185,10 @@ class SaberOuterBlockFactory {
   static SaberOuterBlockBase * create(const oops::GeometryData &,
                                       const std::vector<size_t> &,
                                       const oops::Variables &,
+                                      const eckit::Configuration &,
                                       const SaberBlockParametersBase &,
                                       const atlas::FieldSet &,
-                                      const atlas::FieldSet &,
-                                      const std::vector<atlas::FieldSet> &);
+                                      const atlas::FieldSet &);
 
   static std::unique_ptr<SaberBlockParametersBase> createParameters(const std::string &name);
 
@@ -99,10 +205,10 @@ class SaberOuterBlockFactory {
   virtual SaberOuterBlockBase * make(const oops::GeometryData &,
                                      const std::vector<size_t> &,
                                      const oops::Variables &,
+                                     const eckit::Configuration &,
                                      const SaberBlockParametersBase &,
                                      const atlas::FieldSet &,
-                                     const atlas::FieldSet &,
-                                     const std::vector<atlas::FieldSet> &) = 0;
+                                     const atlas::FieldSet &) = 0;
 
   virtual std::unique_ptr<SaberBlockParametersBase> makeParameters() const = 0;
 
@@ -121,13 +227,13 @@ class SaberOuterBlockMaker : public SaberOuterBlockFactory {
   SaberOuterBlockBase * make(const oops::GeometryData & outerGeometryData,
                              const std::vector<size_t> & activeVariableSizes,
                              const oops::Variables & outerVars,
+                             const eckit::Configuration & covarConf,
                              const SaberBlockParametersBase & params,
                              const atlas::FieldSet & xb,
-                             const atlas::FieldSet & fg,
-                             const std::vector<atlas::FieldSet> & fsetVec) override {
+                             const atlas::FieldSet & fg) override {
     const auto &stronglyTypedParams = dynamic_cast<const Parameters_&>(params);
-    return new T(outerGeometryData, activeVariableSizes,
-                 outerVars, stronglyTypedParams, xb, fg, fsetVec);
+    return new T(outerGeometryData, activeVariableSizes, outerVars,
+                 covarConf, stronglyTypedParams, xb, fg);
   }
 
   std::unique_ptr<SaberBlockParametersBase> makeParameters() const override {
@@ -137,6 +243,59 @@ class SaberOuterBlockMaker : public SaberOuterBlockFactory {
  public:
   explicit SaberOuterBlockMaker(const std::string & name) : SaberOuterBlockFactory(name) {}
 };
+
+// -----------------------------------------------------------------------------
+
+template <typename MODEL>
+void SaberOuterBlockBase::read(const oops::Geometry<MODEL> & geom,
+                                 const oops::Variables & vars,
+                                 const util::DateTime & date) {
+  oops::Log::trace() << "SaberOuterBlockBase::read starting" << std::endl;
+
+  // Get vector of configuration/FieldSet pairs
+  std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> inputs
+    = this->fieldsToRead();
+
+  // Read fieldsets as increments
+  for (auto & input : inputs) {
+    // Create increment
+    oops::Increment<MODEL> dx(geom, vars, date);
+    dx.read(input.first);
+    oops::Log::test() << "Norm of input parameter " << input.second.name()
+                      << ": " << dx.norm() << std::endl;
+    util::copyFieldSet(dx.fieldSet(), input.second);
+  }
+
+  oops::Log::trace() << "SaberOuterBlockBase::read done" << std::endl;
+}
+
+
+// -----------------------------------------------------------------------------
+
+template <typename MODEL>
+void SaberOuterBlockBase::write(const oops::Geometry<MODEL> & geom,
+                                const oops::Variables & vars,
+                                const util::DateTime & date) const {
+  oops::Log::trace() << "SaberOuterBlockBase::write starting" << std::endl;
+
+  // Get vector of configuration/FieldSet pairs
+  std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> outputs
+    = this->fieldsToWrite();
+
+  // Create increment
+  oops::Increment<MODEL> dx(geom, vars, date);
+
+  // Loop and write
+  for (const auto & output : outputs) {
+    dx.fieldSet() = util::copyFieldSet(output.second);
+    dx.synchronizeFields();
+    oops::Log::test() << "Norm of output parameter " << output.second.name()
+                      << ": " << dx.norm() << std::endl;
+    dx.write(output.first);
+  }
+
+  oops::Log::trace() << "SaberOuterBlockBase::write done" << std::endl;
+}
 
 // -----------------------------------------------------------------------------
 

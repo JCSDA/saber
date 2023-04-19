@@ -9,6 +9,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "atlas/field.h"
@@ -16,7 +17,10 @@
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
-#include "saber/bump/BUMP.h"
+#include "saber/bump/BUMPParameters.h"
+
+#include "saber/bump/lib/BUMP.h"
+
 #include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberCentralBlockBase.h"
 
@@ -29,7 +33,9 @@ class NICASParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(NICASParameters, SaberBlockParametersBase)
 
  public:
-  oops::RequiredParameter<BUMPParameters> bumpParams{"bump", this};
+  oops::OptionalParameter<BUMPParameters> readParams{"read", this};
+  oops::OptionalParameter<BUMPParameters> calibrationParams{"calibration", this};
+
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
 
@@ -44,19 +50,37 @@ class NICAS : public SaberCentralBlockBase {
   NICAS(const oops::GeometryData &,
         const std::vector<size_t> &,
         const oops::Variables &,
+        const eckit::Configuration &,
         const Parameters_ &,
         const atlas::FieldSet &,
         const atlas::FieldSet &,
-        const std::vector<atlas::FieldSet> &,
         const size_t &);
   virtual ~NICAS();
 
   void randomize(atlas::FieldSet &) const override;
   void multiply(atlas::FieldSet &) const override;
 
+  std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> fieldsToRead() override;
+
+  void read() override;
+
+  void directCalibration(const std::vector<atlas::FieldSet> &) override;
+
+  void iterativeCalibrationInit() override;
+  void iterativeCalibrationUpdate(const atlas::FieldSet &) override;
+  void iterativeCalibrationFinal() override;
+
+  void dualResolutionSetup(const oops::GeometryData &) override;
+
+  void write() const override;
+  std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> fieldsToWrite() const override;
+
  private:
   void print(std::ostream &) const override;
-  std::unique_ptr<BUMP> bump_;
+  BUMPParameters bumpParams_;
+  oops::Variables activeVars_;
+  std::unique_ptr<bump_lib::BUMP> bump_;
+  size_t memberIndex_;
 };
 
 // -----------------------------------------------------------------------------

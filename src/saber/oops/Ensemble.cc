@@ -9,6 +9,7 @@
 
 #include <vector>
 
+#include "oops/util/FieldSetHelpers.h"
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/Logger.h"
 
@@ -24,18 +25,13 @@ static SaberCentralBlockMaker<Ensemble> makerEnsemble_("Ensemble");
 Ensemble::Ensemble(const oops::GeometryData & geometryData,
                    const std::vector<size_t> & activeVariableSizes,
                    const oops::Variables & activeVars,
+                   const eckit::Configuration & covarConf,
                    const Parameters_ & params,
                    const atlas::FieldSet & xb,
                    const atlas::FieldSet & fg,
-                   const std::vector<atlas::FieldSet> & fsetVec,
                    const size_t & timeRank) :
   timeRank_(timeRank) {
   oops::Log::trace() << classname() << "::Ensemble starting" << std::endl;
-
-  // Initialize ensemble
-  for (const auto & fset : fsetVec) {
-    ensemble_.push_back(fset);
-  }
 
   // Initialize localization
   SaberCentralBlockParametersWrapper locParams;
@@ -46,7 +42,8 @@ Ensemble::Ensemble(const oops::GeometryData & geometryData,
   oops::Log::info() << "Info     : Creating localization block: "
                     << saberCentralBlockParams.saberBlockName.value() << std::endl;
   loc_.reset(SaberCentralBlockFactory::create(geometryData, activeVariableSizes, activeVars,
-    saberCentralBlockParams, xb, fg, fsetVec, timeRank));
+    covarConf, saberCentralBlockParams, xb, fg, timeRank));
+  loc_->read();
 
   oops::Log::trace() << classname() << "::Ensemble done" << std::endl;
 }
@@ -113,6 +110,17 @@ void Ensemble::multiply(atlas::FieldSet & fset) const {
   util::multiplyFieldSet(fset, rk);
 
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void Ensemble::directCalibration(const std::vector<atlas::FieldSet> & fsetEns) {
+  oops::Log::trace() << classname() << "::directCalibration starting" << std::endl;
+  // Initialize ensemble
+  for (const auto & fset : fsetEns) {
+    ensemble_.push_back(fset);
+  }
+  oops::Log::trace() << classname() << "::directCalibration done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

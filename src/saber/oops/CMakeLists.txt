@@ -6,8 +6,13 @@
 if( oops_FOUND )
     list(APPEND oops_src_files_list
     # SABER block parameters base
+    SaberBlockParametersBase.cc
     SaberBlockParametersBase.h
 
+    # SABER block chain
+    SaberBlockChain.cc
+    SaberBlockChain.h
+    
     # SABER central block base
     SaberCentralBlockBase.cc
     SaberCentralBlockBase.h
@@ -24,6 +29,10 @@ if( oops_FOUND )
     Ensemble.h
     Ensemble.cc
 
+    # Hybrid block
+    Hybrid.h
+    Hybrid.cc
+
     # StdDev block
     StdDev.h
     StdDev.cc
@@ -33,10 +42,11 @@ if( oops_FOUND )
     instantiateLocalizationFactory.h
 
     # Utilities
-    ReadInput.h
+    Utilities.h
 
     # Drivers
     ErrorCovariance.h
+    ErrorCovarianceParameters.h
     Localization.h
 
     # Applications

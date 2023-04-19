@@ -58,8 +58,10 @@ geometry:
 background error:
   covariance model: SABER
   adjoint test: true
-  # Small tolerance to illustrate local overriding in saber blocks:
+  inverse test: true
+  # Small tolerances to illustrate local overriding in saber blocks:
   adjoint tolerance: 1e-13
+  inverse tolerance: 1e-15
   saber central block:
     saber block name: spectral covariance
     active variables:
@@ -67,7 +69,7 @@ background error:
     - streamfunction
     - unbalanced_pressure_levels_minus_one
     - velocity_potential
-    spectralb:
+    read:
       covariance_file: testdata/spectralcov.nc
       gauss_grid_uid: F12
       umatrix_netcdf_names:
@@ -78,6 +80,8 @@ background error:
       variance_opt: true
   saber outer blocks:
   - saber block name: spectral to gauss
+    inner inverse tolerance: 1e-12
+    outer inverse tolerance: 1e-8
     active variables:
     - eastward_wind
     - mu
@@ -86,23 +90,34 @@ background error:
     - unbalanced_pressure_levels_minus_one
     - velocity_potential
   - saber block name: gauss winds to geostrophic pressure
+    skip inverse test: true
   - saber block name: mo_hydrostatic_exner
+    inner inverse tolerance: 1e-13
+    outer inverse tolerance: 1e-9
+    inner variables to compare:
+      - unbalanced_pressure_levels_minus_one
+      - geostrophic_pressure_levels_minus_one
     covariance data:
       covariance file path: testdata/FPstats.nc
       number of covariance latitude rings: 481
       gp regression bins: 18
     saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
   - saber block name: mo_hydro_bal
+    skip inverse test: true
     saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
   - saber block name: mo_moisture_control
+    skip inverse test: true
     covariance data:
       covariance file path: testdata/MUstats.nc
     saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
   - saber block name: mo_air_temperature
+    skip inverse test: true
   - saber block name: mo_moistincrop
+    skip inverse test: true
     moisture incrementing operator file: testdata/MIO_coefficients.nc
     saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
   - saber block name: mo_dry_air_density
+    skip inverse test: true
     saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
 dirac:
   lon:
@@ -181,6 +196,4 @@ output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_spectralb_gauss_vader/dirac_%id%_%MPI%
 test:
-  test output filename: testref/dirac_spectralb_gauss_vader.out
   reference filename: testref/dirac_spectralb_gauss_vader.ref
-

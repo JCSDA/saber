@@ -24,6 +24,7 @@
 #include "oops/util/parameters/RequiredParameter.h"
 
 #include "saber/gsi/covariance/Covariance.interface.h"
+#include "saber/gsi/utils/GSIParameters.h"
 #include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberCentralBlockBase.h"
 
@@ -41,21 +42,7 @@ class CovarianceParameters : public SaberBlockParametersBase {
 
  public:
   // File containing grid and coefficients
-  oops::RequiredParameter<std::string> GSIFile{"gsi error covariance file", this};
-  oops::RequiredParameter<std::string> GSINML{"gsi berror namelist file", this};
-  oops::RequiredParameter<std::string> GSIVGRD{"gsi akbk", this};
-
-  // Handle vertical top-2-bottom and vice-verse wrt to GSI
-  oops::Parameter<bool> vflip{"flip vertical grid", true, this};
-
-  // Processor layout
-  oops::OptionalParameter<size_t> layoutx{"processor layout x direction", this};
-  oops::OptionalParameter<size_t> layouty{"processor layout y direction", this};
-
-  // Debugging mode
-  oops::Parameter<bool> debugMode{"debugging mode", false, this};
-  oops::Parameter<bool> bypassGSI{"debugging bypass gsi", false, this};
-  oops::Parameter<bool> bypassGSIbe{"debugging deep bypass gsi B error", false, this};
+  oops::OptionalParameter<GSIParameters> readParams{"read", this};
 
   // Mandatory active variables
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
@@ -72,24 +59,35 @@ class Covariance : public SaberCentralBlockBase {
   Covariance(const oops::GeometryData &,
              const std::vector<size_t> &,
              const oops::Variables &,
+             const eckit::Configuration &,
              const Parameters_ &,
              const atlas::FieldSet &,
              const atlas::FieldSet &,
-             const std::vector<atlas::FieldSet> &,
              const size_t &);
   virtual ~Covariance();
 
   void randomize(atlas::FieldSet &) const override;
   void multiply(atlas::FieldSet &) const override;
 
+  void read() override;
+
  private:
   void print(std::ostream &) const override;
+
   // Fortran LinkedList key
   CovarianceKey keySelf_;
+  // Parameters
+  Parameters_ params_;
   // Variables
   std::vector<std::string> variables_;
   // GSI grid FunctionSpace
   atlas::FunctionSpace gsiGridFuncSpace_;
+  // Communicator
+  const eckit::mpi::Comm * comm_;
+  // Background
+  atlas::FieldSet xb_;
+  // First guess
+  atlas::FieldSet fg_;
 };
 
 // -------------------------------------------------------------------------------------------------

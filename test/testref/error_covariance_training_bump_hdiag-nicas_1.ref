@@ -262,18 +262,18 @@
              0.0 /    0.0:  0.0000000
           Level   1:  0.0000000 -  0.0000000
           Level   2:  0.0000000 -  0.0000000
-Norm of BUMP output parameter dirac_mom - 1: 1.1133435979795900e+01
-Norm of BUMP output parameter dirac_diag_cor - 1: 2.1547459270745373e+00
-Norm of BUMP output parameter cor_a - 1: 4.4860789243474272e+01
-Norm of BUMP output parameter cor_a - 2: 1.3133522336960826e+01
-Norm of BUMP output parameter cor_rh1 - 1: 2.1620203112118259e+08
-Norm of BUMP output parameter cor_rh1 - 2: 2.1615962614830619e+08
-Norm of BUMP output parameter cor_rh2 - 1: 2.1009131909329090e+08
-Norm of BUMP output parameter cor_rh2 - 2: 2.0998074883015856e+08
-Norm of BUMP output parameter cor_rhc - 1: 1.9827939533530927e+00
-Norm of BUMP output parameter cor_rhc - 2: 1.9631603297144040e+00
-Norm of BUMP output parameter cor_rh - 1: 2.1272247813849464e+08
-Norm of BUMP output parameter cor_rh - 2: 2.1264629694513962e+08
-Norm of BUMP output parameter cor_rv - 1: 2.5992943085597460e+02
-Norm of BUMP output parameter cor_rv - 2: 3.0984347677578992e+01
-Norm of BUMP output parameter nicas_norm - 1: 5.8200247609498071e+01
+Norm of output parameter dirac_mom - 1: 1.1133435979795902e+01
+Norm of output parameter dirac_diag_cor - 1: 2.1547459270745373e+00
+Norm of output parameter cor_a - 1: 4.4860789243474272e+01
+Norm of output parameter cor_a - 2: 1.3133522336960826e+01
+Norm of output parameter cor_rh1 - 1: 2.1620203112118259e+08
+Norm of output parameter cor_rh1 - 2: 2.1615962614830619e+08
+Norm of output parameter cor_rh2 - 1: 2.1009131909329090e+08
+Norm of output parameter cor_rh2 - 2: 2.0998074883015856e+08
+Norm of output parameter cor_rhc - 1: 1.9827939533530927e+00
+Norm of output parameter cor_rhc - 2: 1.9631603297144040e+00
+Norm of output parameter cor_rh - 1: 2.1272247813849464e+08
+Norm of output parameter cor_rh - 2: 2.1264629694513962e+08
+Norm of output parameter cor_rv - 1: 2.5992943085597460e+02
+Norm of output parameter cor_rv - 2: 3.0984347677578992e+01
+Norm of output parameter nicas_norm - 1: 5.8200247609498071e+01

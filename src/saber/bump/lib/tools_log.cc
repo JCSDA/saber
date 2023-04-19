@@ -14,23 +14,25 @@
 
 using int32 = std::int32_t;
 
-namespace bump {
+namespace bump_lib {
+
+// -----------------------------------------------------------------------------
 
 extern "C" {
-
-void log__write_log(eckit::Channel * channel, char* msg, int32 newl, int32 flush) {
-  if (eckit::Main::ready()) {
-    if (::strlen( msg ) )
-      *channel << msg;
-    else
-      *channel << " ";
-    if ( newl )
-      *channel << eckit::newl;
-    if ( flush )
-      *channel << std::flush;
+  void log__write_log(eckit::Channel * channel, char* msg, int32 newl, int32 flush) {
+    if (eckit::Main::ready()) {
+      if (::strlen( msg ) )
+        *channel << msg;
+      else
+        *channel << " ";
+      if ( newl )
+        *channel << eckit::newl;
+      if ( flush )
+        *channel << std::flush;
+    }
   }
 }
 
-}
+// -----------------------------------------------------------------------------
 
-}  // namespace bump
+}  // namespace bump_lib

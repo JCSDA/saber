@@ -12,65 +12,65 @@ geometry:
     - surface_pressure
     levels: 1
   halo: 1
-input variables:
-- stream_function
-- velocity_potential
-- surface_pressure
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
   - stream_function
   - velocity_potential
   - surface_pressure
-bump:
-  general:
-    testing: true
-  io:
-    data directory: testdata
-    files prefix: error_covariance_training_bump_hdiag_4/_MPI_-_OMP_
-  drivers:
-    compute covariance: true
-    compute correlation: true
-    compute localization: true
-    multivariate strategy: duplicated
-    compute moments: true
-    write diagnostics: true
-  model:
-    groups:
-    - group name: group 1
-      variables:
-      - stream_function
-      - surface_pressure
-    - group name: group 2
-      variables:
-      - velocity_potential
-  sampling:
-    computation grid size: 500
-    diagnostic grid size: 250
-    distance classes: 10
-    angular sectors: 4
-    distance class width: 800.0e3
-    reduced levels: 2
-  diagnostics:
-    target ensemble size: 25
-ensemble:
-  members from template:
-    template:
-      date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
-      state variables:
-      - stream_function
-      - velocity_potential
-      - surface_pressure
-    pattern: '%mem%'
-    nmembers: 25
-    zero padding: 6
-output:
-- parameter: loc_rh
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_4/_MPI_-_OMP__loc_rh
-- parameter: loc_rv
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_4/_MPI_-_OMP__loc_rv
+background error:
+  covariance model: SABER
+  ensemble:
+    members from template:
+      template:
+        date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
+        state variables:
+        - stream_function
+        - velocity_potential
+        - surface_pressure
+      pattern: '%mem%'
+      nmembers: 25
+      zero padding: 6
+  saber central block:
+    saber block name: BUMP_NICAS
+    calibration:
+      general:
+        testing: true
+      io:
+        data directory: testdata
+        files prefix: error_covariance_training_bump_hdiag_4/_MPI_-_OMP_
+      drivers:
+        compute covariance: true
+        compute correlation: true
+        compute localization: true
+        multivariate strategy: duplicated
+        compute moments: true
+        write diagnostics: true
+      model:
+        groups:
+        - group name: group 1
+          variables:
+          - stream_function
+          - surface_pressure
+        - group name: group 2
+          variables:
+          - velocity_potential
+      sampling:
+        computation grid size: 500
+        diagnostic grid size: 250
+        distance classes: 10
+        angular sectors: 4
+        distance class width: 800.0e3
+        reduced levels: 2
+      diagnostics:
+        target ensemble size: 25
+      output model files:
+      - parameter: loc_rh
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_4/_MPI_-_OMP__loc_rh
+      - parameter: loc_rv
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_4/_MPI_-_OMP__loc_rv
 test:
   reference filename: testref/error_covariance_training_bump_hdiag_4.ref

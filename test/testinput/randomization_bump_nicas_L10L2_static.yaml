@@ -1,0 +1,45 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 10
+  groups:
+  - variables:
+    - stream_function
+    levels: 2
+  halo: 1
+variables:
+- stream_function
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables:
+  - stream_function
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: BUMP_NICAS
+    calibration:
+      general:
+        testing: true
+      io:
+        data directory: testdata
+        files prefix: randomization_bump_nicas_L10L2_static/_MPI_-_OMP_
+      drivers:
+        multivariate strategy: univariate
+        compute nicas: true
+      nicas:
+        resolution: 4.0
+        explicit length-scales: true
+        horizontal length-scale:
+        - groups:
+          - stream_function
+          value: 7.0e6
+        vertical length-scale:
+        - groups:
+          - stream_function
+          value: 1.5
+  randomization size: 25
+output increment:
+  filepath: testdata/randomization_bump_nicas_L10L2_static/member_pert
+test:
+  reference filename: testref/randomization_bump_nicas_L10L2_static.ref

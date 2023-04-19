@@ -40,10 +40,10 @@ class ID : public SaberCentralBlockBase {
   ID(const oops::GeometryData &,
      const std::vector<size_t> &,
      const oops::Variables &,
+     const eckit::Configuration &,
      const Parameters_ &,
      const atlas::FieldSet &,
      const atlas::FieldSet &,
-     const std::vector<atlas::FieldSet> &,
      const size_t &);
 
   virtual ~ID();

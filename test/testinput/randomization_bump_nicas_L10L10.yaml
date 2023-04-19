@@ -18,7 +18,7 @@ background error:
   covariance model: SABER
   saber central block:
     saber block name: BUMP_NICAS
-    bump:
+    calibration:
       general:
         testing: true
       io:

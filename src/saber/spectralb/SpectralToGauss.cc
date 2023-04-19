@@ -155,7 +155,6 @@ atlas::Field convertUVToFieldSetAD(const atlas::FieldSet & fset) {
                                              atlas::option::variables(2) |
                                              atlas::option::levels(modellevels));
 
-
   uField.adjointHaloExchange();
   vField.adjointHaloExchange();
 
@@ -173,7 +172,34 @@ atlas::Field convertUVToFieldSetAD(const atlas::FieldSet & fset) {
   return uvgp;
 }
 
+// -----------------------------------------------------------------------------
 
+atlas::Field convertFieldSetToUV(const atlas::FieldSet & fset) {
+  const atlas::Field & uField = fset["eastward_wind"];
+  const atlas::Field & vField = fset["northward_wind"];
+
+  const auto modellevels = static_cast<atlas::idx_t>(uField.levels());
+  const auto sc = atlas::functionspace::StructuredColumns(uField.functionspace());
+
+  atlas::Field uvgp = sc.createField<double>(atlas::option::name("uv_gp") |
+                                             atlas::option::variables(2) |
+                                             atlas::option::levels(modellevels));
+
+  const auto uView = atlas::array::make_view<double, 2>(uField);
+  const auto vView = atlas::array::make_view<double, 2>(vField);
+  auto uvView = atlas::array::make_view<double, 3>(uvgp);
+
+  for (atlas::idx_t jn = 0; jn < uvView.shape()[0]; ++jn) {
+    for (atlas::idx_t jl = 0; jl < uvView.shape()[1]; ++jl) {
+      uvView(jn, jl, 0) = uView(jn, jl);
+      uvView(jn, jl, 1) = vView(jn, jl);
+    }
+  }
+
+  uvgp.haloExchange();
+
+  return uvgp;
+}
 // -----------------------------------------------------------------------------
 
 // Create inner variables from outer variables.
@@ -182,7 +208,7 @@ oops::Variables createInnerVars(const oops::Variables & activeVars) {
   oops::Variables innerVars;
 
   for (const auto & var : activeVars.variables()) {
-    if (var.compare("eastward_wind") && var.compare("northward_wind")) {
+    if (var != "eastward_wind" && var != "northward_wind") {
       innerVars.push_back(var);
     }
   }
@@ -196,7 +222,8 @@ void applyNtimesNplus1SpectralScaling(const oops::Variables & innerNames,
                                       const oops::Variables & outerNames,
                                       const atlas::functionspace::Spectral & specFS,
                                       const atlas::idx_t & totalWavenumber,
-                                      atlas::FieldSet & fSet) {
+                                      atlas::FieldSet & fSet,
+                                      const bool inverse = false) {
   const auto zonal_wavenumbers = specFS.zonal_wavenumbers();
   const int nb_zonal_wavenumbers = zonal_wavenumbers.size();
 
@@ -221,7 +248,15 @@ void applyNtimesNplus1SpectralScaling(const oops::Variables & innerNames,
       for (std::size_t n1 = m1; n1 <= static_cast<std::size_t>(totalWavenumber); ++n1) {
         for (std::size_t img = 0; img < 2; ++img, ++i) {
           for (atlas::idx_t jl = 0; jl < fSet[innerNames[var]].levels(); ++jl) {
-            fldView(i, jl) *=  n1 * (n1 + 1) / squaredEarthRadius;
+            if (inverse) {
+              if (n1 != 0) {
+                fldView(i, jl) /=  n1 * (n1 + 1) / squaredEarthRadius;
+              } else {  // Inverse not defined for total wavenumber 0, assume zero mean.
+                fldView(i, jl) = 0.0;
+              }
+            } else {
+              fldView(i, jl) *=  n1 * (n1 + 1) / squaredEarthRadius;
+            }
           }
         }
       }
@@ -248,10 +283,10 @@ static SaberOuterBlockMaker<SpectralToGauss> makerSpectralToGauss_("spectral to 
 SpectralToGauss::SpectralToGauss(const oops::GeometryData & outerGeometryData,
                                  const std::vector<size_t> & activeVariableSizes,
                                  const oops::Variables & outerVars,
+                                 const eckit::Configuration & covarConf,
                                  const Parameters_ & params,
                                  const atlas::FieldSet & xb,
-                                 const atlas::FieldSet & fg,
-                                 const std::vector<atlas::FieldSet> & fsetVec)
+                                 const atlas::FieldSet & fg)
   : params_(params),
     activeVars_(params.activeVariables.value().get_value_or(outerVars)),
     innerVars_(createInnerVars(activeVars_)),
@@ -281,10 +316,9 @@ void SpectralToGauss::multiplyVectorFields(atlas::FieldSet & spectralWindFieldSe
       spectralWindFieldSet.has("velocity_potential")) {
     ASSERT(innerVars_.has("streamfunction") && innerVars_.has("velocity_potential"));
     const int N = specFunctionSpace_.truncation();
-    applyNtimesNplus1SpectralScaling(
-      oops::Variables(std::vector<std::string>({"streamfunction", "velocity_potential"})),
-      oops::Variables(std::vector<std::string>({"vorticity", "divergence"})),
-      specFunctionSpace_, N, spectralWindFieldSet);
+    applyNtimesNplus1SpectralScaling(oops::Variables({"streamfunction", "velocity_potential"}),
+                                     oops::Variables({"vorticity", "divergence"}),
+                                     specFunctionSpace_, N, spectralWindFieldSet);
   }
 
   // 2- Convert divergence and vorticity to eastward and northward wind.
@@ -325,11 +359,10 @@ void SpectralToGauss::multiplyVectorFieldsAD(atlas::FieldSet & windFieldSet,
 
 
   if (innerVars_.has("streamfunction") && innerVars_.has("velocity_potential")) {
-      const int N = specFunctionSpace_.truncation();
-    applyNtimesNplus1SpectralScaling(
-      oops::Variables(std::vector<std::string>({"vorticity", "divergence"})),
-      oops::Variables(std::vector<std::string>({"streamfunction", "velocity_potential"})),
-      specFunctionSpace_, N, spectralWindFieldSet);
+    const int N = specFunctionSpace_.truncation();
+    applyNtimesNplus1SpectralScaling(oops::Variables({"vorticity", "divergence"}),
+                                     oops::Variables({"streamfunction", "velocity_potential"}),
+                                     specFunctionSpace_, N, spectralWindFieldSet);
   }
 
   outFieldSet.add(spectralWindFieldSet[0]);
@@ -389,6 +422,59 @@ void SpectralToGauss::multiplyScalarFieldsAD(const atlas::FieldSet & gaussFieldS
 
 // -----------------------------------------------------------------------------
 
+void SpectralToGauss::invertMultiplyScalarFields(const atlas::FieldSet & gaussFieldSet,
+                                                 atlas::FieldSet & outFieldSet) const {
+  oops::Log::trace() << classname() << "::invertMultiplyScalarFields starting" << std::endl;
+
+  for (const auto & gaussField : gaussFieldSet) {
+    const auto fieldConfig = atlas::option::name(gaussField.name()) |
+                             atlas::option::levels(gaussField.levels());
+    auto spectralField = specFunctionSpace_.createField<double>(fieldConfig);
+    trans_.dirtrans(gaussField, spectralField);
+    ASSERT(!outFieldSet.has(spectralField.name()));
+    outFieldSet.add(spectralField);
+  }
+
+  oops::Log::trace() << classname() << "::invertMultiplyScalarFields done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void SpectralToGauss::invertMultiplyVectorFields(const atlas::FieldSet & gaussFieldSet,
+                                                 atlas::FieldSet & outFieldSet) const {
+  oops::Log::trace() << classname() << "::invertMultiplyVectorFields starting" << std::endl;
+
+  ASSERT(gaussFieldSet.has("eastward_wind") && gaussFieldSet.has("northward_wind"));
+  ASSERT(!outFieldSet.has("vorticity") && !outFieldSet.has("divergence"));
+  ASSERT(!outFieldSet.has("streamfunction") && !outFieldSet.has("velocity_potential"));
+
+  atlas::Field uvgp = convertFieldSetToUV(gaussFieldSet);
+
+  atlas::FieldSet spectralWindFieldSet = allocateSpectralVortDiv(specFunctionSpace_,
+                                                                 innerVars_,
+                                                                 activeVariableSizes_);
+
+  trans_.dirtrans_wind2vordiv(uvgp,
+                              spectralWindFieldSet["vorticity"],
+                              spectralWindFieldSet["divergence"]);
+
+  if (innerVars_.has("streamfunction") && innerVars_.has("velocity_potential")) {
+    const int N = specFunctionSpace_.truncation();
+    const bool inverse = true;
+    applyNtimesNplus1SpectralScaling(oops::Variables({"vorticity", "divergence"}),
+                                     oops::Variables({"streamfunction", "velocity_potential"}),
+                                     specFunctionSpace_, N, spectralWindFieldSet,
+                                     inverse);
+  }
+
+  outFieldSet.add(spectralWindFieldSet[0]);
+  outFieldSet.add(spectralWindFieldSet[1]);
+
+  oops::Log::trace() << classname() << "::invertMultiplyVectorFields done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
 void SpectralToGauss::multiply(atlas::FieldSet & fieldSet) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
 
@@ -399,25 +485,19 @@ void SpectralToGauss::multiply(atlas::FieldSet & fieldSet) const {
 
   // copy "passive variables" and sort out wind variables.
   for (const auto & fieldname : fieldSet.field_names()) {
-     if (!activeVars_.has(fieldname)) {  // Passive variables
-       newFields.add(fieldSet[fieldname]);
-     } else {  // Active variables
-       if (useWindTransform &&
-           (fieldname.compare("vorticity") == 0 ||
-            fieldname.compare("divergence") == 0 ||
-            fieldname.compare("streamfunction") == 0 ||
-            fieldname.compare("velocity_potential") == 0)) {
-         // Active variables to be converted to vector wind
-         spectralWindFieldSet.add(fieldSet[fieldname]);
-       } else {
-         if (fieldname.compare("eastward_wind") &&
-             fieldname.compare("northward_wind")) {
-           // Active scalar variables
-           spectralFieldSet.add(fieldSet[fieldname]);
-         }
-       }
-     }  // end if active variables
-  }  // end for
+    if (!activeVars_.has(fieldname)) {  // Passive variables
+      newFields.add(fieldSet[fieldname]);
+    } else if (useWindTransform && (fieldname == "vorticity" ||
+                                    fieldname == "divergence" ||
+                                    fieldname == "streamfunction" ||
+                                    fieldname == "velocity_potential")) {
+        // Active variables to be converted to vector wind
+        spectralWindFieldSet.add(fieldSet[fieldname]);
+    } else if (fieldname != "eastward_wind" && fieldname != "northward_wind") {
+        // Active scalar variables
+        spectralFieldSet.add(fieldSet[fieldname]);
+    }
+  }
 
   // Convert active wind variables to u/v on Gaussian grid.
   if (useWindTransform) {multiplyVectorFields(spectralWindFieldSet, newFields);}
@@ -441,24 +521,19 @@ void SpectralToGauss::multiplyAD(atlas::FieldSet & fieldSet) const {
   atlas::FieldSet windFieldSet = atlas::FieldSet();
 
   // copy "passive variables" and sort out wind variables.
-  for (auto & fieldname : fieldSet.field_names()) {
-     if (!activeVars_.has(fieldname)) {  // Passive variables
-       newFields.add(fieldSet[fieldname]);
-     } else {  // Active variables
-       if (fieldname.compare("eastward_wind") == 0 ||
-           fieldname.compare("northward_wind") == 0) {
-         // Active vector wind variables
-         windFieldSet.add(fieldSet[fieldname]);
-       } else {
-         if (!useWindTransform || (fieldname.compare("vorticity") &&
-                                   fieldname.compare("divergence") &&
-                                   fieldname.compare("streamfunction") &&
-                                   fieldname.compare("velocity_potential"))) {
-           // Active scalar variables
-           gaussFieldSet.add(fieldSet[fieldname]);
-         }
-       }
-     }  // end if active variables
+  for (const auto & fieldname : fieldSet.field_names()) {
+    if (!activeVars_.has(fieldname)) {  // Passive variables
+      newFields.add(fieldSet[fieldname]);
+    } else if (fieldname == "eastward_wind" || fieldname == "northward_wind") {
+        // Active vector wind variables
+        windFieldSet.add(fieldSet[fieldname]);
+    } else if (!useWindTransform || (fieldname != "vorticity" &&
+                                     fieldname != "divergence" &&
+                                     fieldname != "streamfunction" &&
+                                     fieldname != "velocity_potential")) {
+        // Active scalar variables
+        gaussFieldSet.add(fieldSet[fieldname]);
+    }  // end if active variables
   }  // end for
 
   // Convert active scalar variables to spectral space.
@@ -474,10 +549,32 @@ void SpectralToGauss::multiplyAD(atlas::FieldSet & fieldSet) const {
 
 // -----------------------------------------------------------------------------
 
-void SpectralToGauss::calibrationInverseMultiply(atlas::FieldSet & fset) const {
-  oops::Log::info() << classname()
-                    << "::calibrationInverseMultiply not meaningful so fieldset unchanged"
-                    << std::endl;
+void SpectralToGauss::leftInverseMultiply(atlas::FieldSet & fieldSet) const {
+  oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
+  auto outFieldSet = atlas::FieldSet();
+  auto scalarFieldSet = atlas::FieldSet();
+  auto windFieldSet = atlas::FieldSet();
+
+  for (const auto & fieldName : fieldSet.field_names()) {
+    if (!activeVars_.has(fieldName)) {
+        outFieldSet.add(fieldSet[fieldName]);
+    } else if (fieldName == "eastward_wind" || fieldName == "northward_wind") {
+        windFieldSet.add(fieldSet[fieldName]);
+    } else if (!useWindTransform || (fieldName != "vorticity" &&
+                                     fieldName != "divergence" &&
+                                     fieldName != "streamfunction" &&
+                                     fieldName != "velocity_potential")) {
+        scalarFieldSet.add(fieldSet[fieldName]);
+    }
+  }
+
+  if (!scalarFieldSet.empty()) invertMultiplyScalarFields(scalarFieldSet, outFieldSet);
+
+  if (useWindTransform) invertMultiplyVectorFields(windFieldSet, outFieldSet);
+
+  fieldSet = outFieldSet;
+
+  oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

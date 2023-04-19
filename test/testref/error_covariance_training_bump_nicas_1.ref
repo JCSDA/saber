@@ -77,5 +77,5 @@
           MSE (exp. / th. / ratio):  0.82647003E+02 /  0.82811495E+02 / 0.998
           MSE (exp. / th. / ratio):  0.71394676E+02 /  0.71256402E+02 / 1.002
           MSE (exp. / th. / ratio):  0.63495705E+02 /  0.62531129E+02 / 1.015
-Norm of BUMP output parameter cor_rh - 1: 2.3186202793903100e+08
-Norm of BUMP output parameter cor_rv - 1: 1.7389652095427326e+02
+Norm of output parameter cor_rh - 1: 2.3186202793903100e+08
+Norm of output parameter cor_rv - 1: 1.7389652095427326e+02

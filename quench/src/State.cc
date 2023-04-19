@@ -37,7 +37,11 @@ State::State(const Geometry & resol, const eckit::Configuration & file)
     fields_->read(file);
   } else {
     oops::Log::info() << "Info     : Create empty state" << std::endl;
-    fields_->zero();
+    if (file.has("constant value")) {
+      fields_->constantValue(file.getDouble("constant value"));
+    } else {
+      fields_->zero();
+    }
   }
   const util::DateTime vt(file.getString("date"));
   fields_->time() = vt;

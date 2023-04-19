@@ -9,25 +9,14 @@ geometry:
     - velocity_potential
     levels: 2
   halo: 1
-input variables:
-- stream_function
-- velocity_potential
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
   - stream_function
   - velocity_potential
-bump:
-  general:
-    testing: true
-  io:
-    data directory: testdata
-    files prefix: error_covariance_training_bump_stddev_3/_MPI_-_OMP_
-  drivers:
-    iterative algorithm: true
-    compute variance: true
-  variance:
-    objective filtering: true
+background error:
+  covariance model: SABER
+  iterative ensemble loading: true
   ensemble:
     members from template:
       template:
@@ -39,9 +28,23 @@ bump:
       pattern: '%mem%'
       nmembers: 10
       zero padding: 6
-output:
-- parameter: stddev
-  file:
-    filepath: testdata/error_covariance_training_bump_stddev_3/_MPI_-_OMP__stddev
+  saber central block:
+    saber block name: ID
+  saber outer blocks:
+  - saber block name: BUMP_StdDev
+    calibration:
+      general:
+        testing: true
+      io:
+        data directory: testdata
+        files prefix: error_covariance_training_bump_stddev_3/_MPI_-_OMP_
+      drivers:
+        compute variance: true
+      variance:
+        objective filtering: true
+      output model files:
+      - parameter: stddev
+        file:
+          filepath: testdata/error_covariance_training_bump_stddev_3/_MPI_-_OMP__stddev
 test:
   reference filename: testref/error_covariance_training_bump_stddev_3.ref

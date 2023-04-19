@@ -40,10 +40,10 @@ static SaberOuterBlockMaker<GaussToCS> makerGaussToCS_("gauss to cubed-sphere-du
 GaussToCS::GaussToCS(const oops::GeometryData & outerGeometryData,
                      const std::vector<size_t> & activeVariableSizes,
                      const oops::Variables & outerVars,
+                     const eckit::Configuration & covarConf,
                      const Parameters_ & params,
                      const atlas::FieldSet & xb,
-                     const atlas::FieldSet & fg,
-                     const std::vector<atlas::FieldSet> & fsetVec)
+                     const atlas::FieldSet & fg)
   : innerVars_(outerVars),
     activeVars_(params.activeVariables.value().get_value_or(innerVars_)),
     CSFunctionSpace_(outerGeometryData.functionSpace()),
@@ -153,9 +153,9 @@ void GaussToCS::multiplyAD(atlas::FieldSet & fieldSet) const {
 
 // -----------------------------------------------------------------------------
 
-void GaussToCS::calibrationInverseMultiply(atlas::FieldSet & fset) const {
+void GaussToCS::leftInverseMultiply(atlas::FieldSet & fset) const {
   oops::Log::info() << classname()
-                    << "::calibrationInverseMultiply not meaningful so fieldset unchanged"
+                    << "::leftInverseMultiply not meaningful so fieldset unchanged"
                     << std::endl;
 }
 

@@ -17,9 +17,10 @@
 #include "eckit/exception/Exceptions.h"
 
 #include "mo/common_varchange.h"
-#include "mo/control2analysis_linearvarchange.h"
 #include "mo/control2analysis_varchange.h"
+#include "mo/eval_hydrostatic_balance.h"
 #include "mo/eval_sat_vapour_pressure.h"
+
 #include "mo/model2geovals_varchange.h"
 #include "oops/base/Variables.h"
 #include "oops/util/Timer.h"
@@ -39,10 +40,10 @@ static SaberOuterBlockMaker<HydroBal> makerHydroBal_("mo_hydro_bal");
 HydroBal::HydroBal(const oops::GeometryData & outerGeometryData,
                    const std::vector<size_t> & activeVariableSizes,
                    const oops::Variables & outerVars,
+                   const eckit::Configuration & covarConf,
                    const Parameters_ & params,
                    const atlas::FieldSet & xb,
-                   const atlas::FieldSet & fg,
-                   const std::vector<atlas::FieldSet> & fsetVec)
+                   const atlas::FieldSet & fg)
   : innerGeometryData_(outerGeometryData), innerVars_(outerVars), augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::HydroBal starting" << std::endl;
@@ -109,7 +110,7 @@ HydroBal::~HydroBal() {
 
 void HydroBal::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  mo::hexner2ThetavTL(fset, augmentedStateFieldSet_);
+  mo::eval_hydrobal_virtual_potential_temperature_tl(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
@@ -117,15 +118,16 @@ void HydroBal::multiply(atlas::FieldSet & fset) const {
 
 void HydroBal::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  mo::hexner2ThetavAD(fset, augmentedStateFieldSet_);
+  mo::eval_hydrobal_virtual_potential_temperature_ad(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void HydroBal::calibrationInverseMultiply(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::calibrationInverseMultiply starting" << std::endl;
-  oops::Log::trace() << classname() << "::calibrationInverseMultiply done" << std::endl;
+void HydroBal::leftInverseMultiply(atlas::FieldSet & fset) const {
+  oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
+  mo::eval_hydrobal_hydrostatic_exner_levels_tl(fset, augmentedStateFieldSet_);
+  oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

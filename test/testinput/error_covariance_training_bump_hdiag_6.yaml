@@ -8,51 +8,13 @@ geometry:
     - stream_function
     levels: 2
   halo: 1
-lowres geometry:
-  function space: StructuredColumns
-  grid:
-    type: regular_lonlat
-    N: 10
-  groups:
-  - variables:
-    - stream_function
-    levels: 2
-  halo: 1
-input variables:
-- stream_function
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
   - stream_function
-bump:
-  general:
-    testing: true
-  io:
-    data directory: testdata
-    files prefix: error_covariance_training_bump_hdiag_6/_MPI_-_OMP_
-  drivers:
-    compute covariance: true
-    compute lowres covariance: true
-    compute correlation: true
-    compute lowres correlation: true
-    compute localization: true
-    compute lowres localization: true
-    compute hybrid weights: true
-    hybrid source: lowres ensemble
-    multivariate strategy: univariate
-    iterative algorithm: true
-    compute moments: true
-    write diagnostics: true
-    adjoints test: true
-    normalization test: 10
-  sampling:
-    computation grid size: 500
-    distance classes: 15
-    distance class width: 500.0e3
-    reduced levels: 2
-  diagnostics:
-    target ensemble size: 10
-    target lowres ensemble size: 25
+background error:
+  covariance model: SABER
+  iterative ensemble loading: true
   ensemble:
     members:
     - date: '2010-01-01T12:00:00Z'
@@ -86,101 +48,142 @@ bump:
     - date: '2010-01-01T12:00:00Z'
       filepath: testdata/randomization_bump_nicas_L12L2/member_000010
       state variables: *id001
-  lowres ensemble:
-    members:
-    - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L2/member_000001
-      state variables: *id001
-    - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L2/member_000002
-      state variables: *id001
-    - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L2/member_000003
-      state variables: *id001
-    - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L2/member_000004
-      state variables: *id001
-    - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L2/member_000005
-      state variables: *id001
-    - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L2/member_000006
-      state variables: *id001
-    - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L2/member_000007
-      state variables: *id001
-    - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L2/member_000008
-      state variables: *id001
-    - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L2/member_000009
-      state variables: *id001
-    - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L2/member_000010
-      state variables: *id001
-    - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L2/member_000011
-      state variables: *id001
-    - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L2/member_000012
-      state variables: *id001
-    - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L2/member_000013
-      state variables: *id001
-    - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L2/member_000014
-      state variables: *id001
-    - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L2/member_000015
-      state variables: *id001
-    - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L2/member_000016
-      state variables: *id001
-    - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L2/member_000017
-      state variables: *id001
-    - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L2/member_000018
-      state variables: *id001
-    - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L2/member_000019
-      state variables: *id001
-    - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L2/member_000020
-      state variables: *id001
-    - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L2/member_000021
-      state variables: *id001
-    - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L2/member_000022
-      state variables: *id001
-    - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L2/member_000023
-      state variables: *id001
-    - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L2/member_000024
-      state variables: *id001
-    - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L10L2/member_000025
-      state variables: *id001
-output:
-- parameter: loc_rh
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_6/_MPI_-_OMP__loc_rh
-- parameter: loc_rv
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_6/_MPI_-_OMP__loc_rv
-- parameter: hyb_coef_ens
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_6/_MPI_-_OMP__hyb_coef_ens
-- parameter: loc_rh_lr
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_6/_MPI_-_OMP__loc_rh_lr
-- parameter: loc_rv_lr
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_6/_MPI_-_OMP__loc_rv_lr
-- parameter: hyb_coef_ens_lr
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_6/_MPI_-_OMP__hyb_coef_ens_lr
+  dual resolution calibration:
+    geometry:
+      function space: StructuredColumns
+      grid:
+        type: regular_lonlat
+        N: 10
+      groups:
+      - variables:
+        - stream_function
+        levels: 2
+      halo: 1
+    ensemble:
+      members:
+      - date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L2/member_000001
+        state variables: *id001
+      - date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L2/member_000002
+        state variables: *id001
+      - date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L2/member_000003
+        state variables: *id001
+      - date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L2/member_000004
+        state variables: *id001
+      - date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L2/member_000005
+        state variables: *id001
+      - date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L2/member_000006
+        state variables: *id001
+      - date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L2/member_000007
+        state variables: *id001
+      - date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L2/member_000008
+        state variables: *id001
+      - date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L2/member_000009
+        state variables: *id001
+      - date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L2/member_000010
+        state variables: *id001
+      - date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L2/member_000011
+        state variables: *id001
+      - date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L2/member_000012
+        state variables: *id001
+      - date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L2/member_000013
+        state variables: *id001
+      - date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L2/member_000014
+        state variables: *id001
+      - date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L2/member_000015
+        state variables: *id001
+      - date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L2/member_000016
+        state variables: *id001
+      - date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L2/member_000017
+        state variables: *id001
+      - date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L2/member_000018
+        state variables: *id001
+      - date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L2/member_000019
+        state variables: *id001
+      - date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L2/member_000020
+        state variables: *id001
+      - date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L2/member_000021
+        state variables: *id001
+      - date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L2/member_000022
+        state variables: *id001
+      - date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L2/member_000023
+        state variables: *id001
+      - date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L2/member_000024
+        state variables: *id001
+      - date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L2/member_000025
+        state variables: *id001
+  saber central block:
+    saber block name: BUMP_NICAS
+    calibration:
+      general:
+        testing: true
+      io:
+        data directory: testdata
+        files prefix: error_covariance_training_bump_hdiag_6/_MPI_-_OMP_
+      drivers:
+        compute covariance: true
+        compute lowres covariance: true
+        compute correlation: true
+        compute lowres correlation: true
+        compute localization: true
+        compute lowres localization: true
+        compute hybrid weights: true
+        hybrid source: lowres ensemble
+        multivariate strategy: univariate
+        compute moments: true
+        write diagnostics: true
+        adjoints test: true
+        normalization test: 10
+      sampling:
+        computation grid size: 500
+        distance classes: 15
+        distance class width: 500.0e3
+        reduced levels: 2
+      diagnostics:
+        target ensemble size: 10
+        target lowres ensemble size: 25
+      output model files:
+      - parameter: loc_rh
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_6/_MPI_-_OMP__loc_rh
+      - parameter: loc_rv
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_6/_MPI_-_OMP__loc_rv
+      - parameter: hyb_coef_ens
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_6/_MPI_-_OMP__hyb_coef_ens
+      - parameter: hyb_coef_ens_lr
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_6/_MPI_-_OMP__hyb_coef_ens_lr
+      - parameter: loc_rh_lr
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_6/_MPI_-_OMP__loc_rh_lr
+      - parameter: loc_rv_lr
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_6/_MPI_-_OMP__loc_rv_lr
 test:
   reference filename: testref/error_covariance_training_bump_hdiag_6.ref

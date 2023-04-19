@@ -40,10 +40,10 @@ static SaberOuterBlockMaker<MoistIncrOp> makerMoistIncrOp_("mo_moistincrop");
 MoistIncrOp::MoistIncrOp(const oops::GeometryData & outerGeometryData,
                          const std::vector<size_t> & activeVariableSizes,
                          const oops::Variables & outerVars,
+                         const eckit::Configuration & covarConf,
                          const Parameters_ & params,
                          const atlas::FieldSet & xb,
-                         const atlas::FieldSet & fg,
-                         const std::vector<atlas::FieldSet> & fsetVec)
+                         const atlas::FieldSet & fg)
   : innerGeometryData_(outerGeometryData), innerVars_(outerVars), augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::MoistIncrOp starting" << std::endl;
@@ -125,9 +125,9 @@ void MoistIncrOp::multiplyAD(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void MoistIncrOp::calibrationInverseMultiply(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::calibrationInverseMultiply starting" << std::endl;
-  oops::Log::trace() << classname() << "::calibrationInverseMultiply done" << std::endl;
+void MoistIncrOp::leftInverseMultiply(atlas::FieldSet & fset) const {
+  oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
+  oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

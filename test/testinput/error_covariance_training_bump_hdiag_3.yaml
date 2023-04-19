@@ -9,43 +9,14 @@ geometry:
     - velocity_potential
     levels: 2
   halo: 1
-input variables:
-- stream_function
-- velocity_potential
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
   - stream_function
   - velocity_potential
-bump:
-  general:
-    testing: true
-  io:
-    data directory: testdata
-    files prefix: error_covariance_training_bump_hdiag_3/_MPI_-_OMP_
-  drivers:
-    compute covariance: true
-    compute correlation: true
-    compute localization: true
-    multivariate strategy: duplicated
-    iterative algorithm: true
-    compute moments: true
-    write diagnostics: true
-  sampling:
-    computation grid size: 500
-    diagnostic grid size: 250
-    distance classes: 10
-    angular sectors: 4
-    distance class width: 800.0e3
-    reduced levels: 2
-    local diagnostic: true
-    averaging latitude width: 15.0
-    interpolation type: si
-  diagnostics:
-    target ensemble size: 25
-    gaussian approximation: true
-  fit:
-    number of components: 2
+background error:
+  covariance model: SABER
+  iterative ensemble loading: true
   ensemble:
     members from template:
       template:
@@ -57,54 +28,84 @@ bump:
       pattern: '%mem%'
       nmembers: 25
       zero padding: 6
-output:
-- parameter: loc_a
-  component: 1
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_3/_MPI_-_OMP__loc_a_1
-- parameter: loc_a
-  component: 2
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_3/_MPI_-_OMP__loc_a_2
-- parameter: loc_rh1
-  component: 1
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_3/_MPI_-_OMP__loc_rh1_1
-- parameter: loc_rh1
-  component: 2
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_3/_MPI_-_OMP__loc_rh1_2
-- parameter: loc_rh2
-  component: 1
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_3/_MPI_-_OMP__loc_rh2_1
-- parameter: loc_rh2
-  component: 2
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_3/_MPI_-_OMP__loc_rh2_2
-- parameter: loc_rhc
-  component: 1
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_3/_MPI_-_OMP__loc_rhc_1
-- parameter: loc_rhc
-  component: 2
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_3/_MPI_-_OMP__loc_rhc_2
-- parameter: loc_rh
-  component: 1
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_3/_MPI_-_OMP__loc_rh_1
-- parameter: loc_rh
-  component: 2
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_3/_MPI_-_OMP__loc_rh_2
-- parameter: loc_rv
-  component: 1
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_3/_MPI_-_OMP__loc_rv_1
-- parameter: loc_rv
-  component: 2
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag_3/_MPI_-_OMP__loc_rv_2
+  saber central block:
+    saber block name: BUMP_NICAS
+    calibration:
+      general:
+        testing: true
+      io:
+        data directory: testdata
+        files prefix: error_covariance_training_bump_hdiag_3/_MPI_-_OMP_
+      drivers:
+        compute covariance: true
+        compute correlation: true
+        compute localization: true
+        multivariate strategy: duplicated
+        compute moments: true
+        write diagnostics: true
+      sampling:
+        computation grid size: 500
+        diagnostic grid size: 250
+        distance classes: 10
+        angular sectors: 4
+        distance class width: 800.0e3
+        reduced levels: 2
+        local diagnostic: true
+        averaging latitude width: 15.0
+        interpolation type: si
+      diagnostics:
+        target ensemble size: 25
+        gaussian approximation: true
+      fit:
+        number of components: 2
+      output model files:
+      - parameter: loc_a
+        component: 1
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_3/_MPI_-_OMP__loc_a_1
+      - parameter: loc_a
+        component: 2
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_3/_MPI_-_OMP__loc_a_2
+      - parameter: loc_rh1
+        component: 1
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_3/_MPI_-_OMP__loc_rh1_1
+      - parameter: loc_rh1
+        component: 2
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_3/_MPI_-_OMP__loc_rh1_2
+      - parameter: loc_rh2
+        component: 1
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_3/_MPI_-_OMP__loc_rh2_1
+      - parameter: loc_rh2
+        component: 2
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_3/_MPI_-_OMP__loc_rh2_2
+      - parameter: loc_rhc
+        component: 1
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_3/_MPI_-_OMP__loc_rhc_1
+      - parameter: loc_rhc
+        component: 2
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_3/_MPI_-_OMP__loc_rhc_2
+      - parameter: loc_rh
+        component: 1
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_3/_MPI_-_OMP__loc_rh_1
+      - parameter: loc_rh
+        component: 2
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_3/_MPI_-_OMP__loc_rh_2
+      - parameter: loc_rv
+        component: 1
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_3/_MPI_-_OMP__loc_rv_1
+      - parameter: loc_rv
+        component: 2
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag_3/_MPI_-_OMP__loc_rv_2
 test:
   reference filename: testref/error_covariance_training_bump_hdiag_3.ref

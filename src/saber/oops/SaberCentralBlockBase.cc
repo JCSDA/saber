@@ -20,6 +20,7 @@
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/AssociativeContainers.h"
+#include "oops/util/FieldSetHelpers.h"
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/Logger.h"
 #include "oops/util/parameters/OptionalParameter.h"
@@ -50,10 +51,10 @@ SaberCentralBlockBase * SaberCentralBlockFactory::create(
   const oops::GeometryData & geometryData,
   const std::vector<size_t> & variableSizes,
   const oops::Variables & vars,
+  const eckit::Configuration & covarConf,
   const SaberBlockParametersBase & params,
   const atlas::FieldSet & xb,
   const atlas::FieldSet & fg,
-  const std::vector<atlas::FieldSet> & fsetVec,
   const size_t & timeRank) {
   oops::Log::trace() << "SaberCentralBlockBase::create starting" << std::endl;
   const std::string id = params.saberBlockName;
@@ -62,8 +63,8 @@ SaberCentralBlockBase * SaberCentralBlockFactory::create(
     oops::Log::error() << id << " does not exist in saber::SaberCentralBlockFactory." << std::endl;
     ABORT("Element does not exist in saber::SaberCentralBlockFactory.");
   }
-  SaberCentralBlockBase * ptr = jsb->second->make(geometryData, variableSizes, vars, params, xb, fg,
-    fsetVec, timeRank);
+  SaberCentralBlockBase * ptr = jsb->second->make(geometryData, variableSizes, vars, covarConf,
+    params, xb, fg, timeRank);
   oops::Log::trace() << "SaberCentralBlockBase::create done" << std::endl;
   return ptr;
 }
@@ -90,12 +91,14 @@ void SaberCentralBlockBase::adjointTest(const eckit::mpi::Comm & comm,
   oops::Log::trace() << "SaberCentralBlockBase::adjointTest starting" << std::endl;
 
   // Create random FieldSets
-  atlas::FieldSet fset1 =  util::createRandomFieldSet(geometryData,
+  atlas::FieldSet fset1 =  util::createRandomFieldSet(geometryData.comm(),
+                                                      geometryData.functionSpace(),
                                                       variableSizes,
-                                                      vars);
-  atlas::FieldSet fset2 =  util::createRandomFieldSet(geometryData,
+                                                      vars.variables());
+  atlas::FieldSet fset2 =  util::createRandomFieldSet(geometryData.comm(),
+                                                      geometryData.functionSpace(),
                                                       variableSizes,
-                                                      vars);
+                                                      vars.variables());
 
   // Copy FieldSets
   atlas::FieldSet fset1Save = util::copyFieldSet(fset1);
@@ -106,8 +109,8 @@ void SaberCentralBlockBase::adjointTest(const eckit::mpi::Comm & comm,
   this->multiply(fset2);
 
   // Compute adjoint test
-  const double dp1 = util::dotProductFieldSets(fset1, fset2Save, vars, comm);
-  const double dp2 = util::dotProductFieldSets(fset2, fset1Save, vars, comm);
+  const double dp1 = util::dotProductFieldSets(fset1, fset2Save, vars.variables(), comm);
+  const double dp2 = util::dotProductFieldSets(fset2, fset1Save, vars.variables(), comm);
   oops::Log::info() << std::setprecision(16) << "Info     : Adjoint test: y^t (Ax) = " << dp1
                     << ": x^t (A^t y) = " << dp2 << " : adjoint tolerance = "
                     << adjointTolerance << std::endl;

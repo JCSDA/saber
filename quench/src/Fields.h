@@ -41,6 +41,7 @@ class Fields : public util::Printable,
 
 // Basic operators
   void zero();
+  void constantValue(const double &);
   Fields & operator=(const Fields &);
   Fields & operator+=(const Fields &);
   Fields & operator-=(const Fields &);

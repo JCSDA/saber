@@ -22,7 +22,7 @@ background error:
     active variables:
     - unbalanced_pressure
     - moisture_control_variable
-    spectralb:
+    read:
       covariance_file: testdata/spectralcov.nc
       gauss_grid_uid: F15
       umatrix_netcdf_names:
@@ -49,6 +49,19 @@ dirac:
   level:
   - 1
   - 1
+  variable:
+  - unbalanced_pressure
+  - moisture_control_variable
+diagnostic points:
+  lon:
+  - 20.0
+  - 20.0
+  lat:
+  - 20.0
+  - 20.0
+  level:
+  - 2
+  - 2
   variable:
   - unbalanced_pressure
   - moisture_control_variable

@@ -42,6 +42,7 @@ TEST( test_interpolatorbump )
   real(kind_real) :: dp_in,dp_out
   real(kind_real),allocatable :: array_in_1(:,:,:),array_in_2(:,:,:),array_out_1(:,:,:),array_out_2(:,:,:)
   logical,allocatable :: gmask_in(:,:),gmask_out(:,:)
+  logical,dimension(2),parameter :: var2d = (/.false.,.false./)
   character(len=4),dimension(2),parameter :: variables = (/'var1','var2'/)
   character(len=5),parameter :: lev2d = 'first'
   type(fckit_mpi_comm) :: f_comm
@@ -70,8 +71,8 @@ TEST( test_interpolatorbump )
   nmga_in = fspace_in_sc%size_owned()
   allocate(gmask_in(nmga_in,nl0))
   gmask_in = .true.
-  call fset_in_1%init(bumpinterp%bump%mpl,fspace_in,gmask_in,variables,lev2d)
-  call fset_in_2%init(bumpinterp%bump%mpl,fspace_in,gmask_in,variables,lev2d)
+  call fset_in_1%init(bumpinterp%bump%mpl,fspace_in,gmask_in,variables,lev2d,var2d)
+  call fset_in_2%init(bumpinterp%bump%mpl,fspace_in,gmask_in,variables,lev2d,var2d)
 
   ! Initialize input fieldsets
   allocate(array_in_1(nmga_in,nl0,2))
@@ -86,8 +87,8 @@ TEST( test_interpolatorbump )
   nmga_out = fspace_out_sc%size_owned()
   allocate(gmask_out(nmga_out,nl0))
   gmask_out = .true.
-  call fset_out_1%init(bumpinterp%bump%mpl,fspace_out,gmask_out,variables,lev2d)
-  call fset_out_2%init(bumpinterp%bump%mpl,fspace_out,gmask_out,variables,lev2d)
+  call fset_out_1%init(bumpinterp%bump%mpl,fspace_out,gmask_out,variables,lev2d,var2d)
+  call fset_out_2%init(bumpinterp%bump%mpl,fspace_out,gmask_out,variables,lev2d,var2d)
 
   ! Initialize output fieldset
   allocate(array_out_1(nmga_out,nl0,2))

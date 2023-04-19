@@ -50,10 +50,10 @@ class GaussUVToGP : public SaberOuterBlockBase {
   GaussUVToGP(const oops::GeometryData &,
               const std::vector<std::size_t> &,
               const oops::Variables &,
+              const eckit::Configuration &,
               const Parameters_ &,
               const atlas::FieldSet &,
-              const atlas::FieldSet &,
-              const std::vector<atlas::FieldSet> &);
+              const atlas::FieldSet &);
 
   virtual ~GaussUVToGP() = default;
 
@@ -62,7 +62,7 @@ class GaussUVToGP : public SaberOuterBlockBase {
 
   void multiply(atlas::FieldSet &) const override;
   void multiplyAD(atlas::FieldSet &) const override;
-  void calibrationInverseMultiply(atlas::FieldSet &) const override;
+  void leftInverseMultiply(atlas::FieldSet &) const override;
 
  private:
   void print(std::ostream &) const override;

@@ -473,10 +473,10 @@ static SaberOuterBlockMaker<GaussUVToGP>
 GaussUVToGP::GaussUVToGP(const oops::GeometryData & outerGeometryData,
                const std::vector<size_t> & activeVariableSizes,
                const oops::Variables & outerVars,
+               const eckit::Configuration & covarConf,
                const Parameters_ & params,
                const atlas::FieldSet & xb,
-               const atlas::FieldSet & fg,
-               const std::vector<atlas::FieldSet> & fsetVec)
+               const atlas::FieldSet & fg)
   : params_(params),
     innerVars_(createInnerVars(outerVars)),
     outerVars_(outerVars),
@@ -591,9 +591,9 @@ void GaussUVToGP::multiplyAD(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void GaussUVToGP::calibrationInverseMultiply(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::calibrationInverseMultiply starting" << std::endl;
-  oops::Log::trace() << classname() << "::calibrationInverseMultiply done" << std::endl;
+void GaussUVToGP::leftInverseMultiply(atlas::FieldSet & fset) const {
+  oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
+  oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

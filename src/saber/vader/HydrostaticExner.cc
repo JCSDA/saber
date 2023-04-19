@@ -17,8 +17,9 @@
 #include "eckit/exception/Exceptions.h"
 
 #include "mo/common_varchange.h"
-#include "mo/control2analysis_linearvarchange.h"
 #include "mo/control2analysis_varchange.h"
+#include "mo/eval_exner.h"
+#include "mo/eval_geostrophic_to_hydrostatic_pressure.h"
 #include "mo/eval_sat_vapour_pressure.h"
 #include "mo/model2geovals_varchange.h"
 
@@ -40,10 +41,10 @@ static SaberOuterBlockMaker<HydrostaticExner> makerHydrostaticExner_("mo_hydrost
 HydrostaticExner::HydrostaticExner(const oops::GeometryData & outerGeometryData,
                                    const std::vector<size_t> & activeVariableSizes,
                                    const oops::Variables & outerVars,
+                                   const eckit::Configuration & covarConf,
                                    const Parameters_ & params,
                                    const atlas::FieldSet & xb,
-                                   const atlas::FieldSet & fg,
-                                   const std::vector<atlas::FieldSet> & fsetVec)
+                                   const atlas::FieldSet & fg)
   : innerGeometryData_(outerGeometryData), innerVars_(outerVars),
     activeVars_(params.activeVars.value().get_value_or(outerVars)),
     augmentedStateFieldSet_()
@@ -138,8 +139,8 @@ HydrostaticExner::~HydrostaticExner() {
 void HydrostaticExner::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
 
-  mo::evalHydrostaticPressureTL(fset, augmentedStateFieldSet_);
-  mo::evalHydrostaticExnerTL(fset, augmentedStateFieldSet_);
+  mo::eval_hydrostatic_pressure_levels_tl(fset, augmentedStateFieldSet_);
+  mo::eval_hydrostatic_exner_levels_tl(fset, augmentedStateFieldSet_);
 
   const auto hydrostaticPressureView =
       atlas::array::make_view<const double, 2>(fset["hydrostatic_pressure_levels"]);
@@ -186,18 +187,38 @@ void HydrostaticExner::multiplyAD(atlas::FieldSet & fset) const {
     }
   }
 
-  mo::evalHydrostaticExnerAD(fset, augmentedStateFieldSet_);
-  mo::evalHydrostaticPressureAD(fset, augmentedStateFieldSet_);
+  mo::eval_hydrostatic_exner_levels_ad(fset, augmentedStateFieldSet_);
+  mo::eval_hydrostatic_pressure_levels_ad(fset, augmentedStateFieldSet_);
 
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void HydrostaticExner::calibrationInverseMultiply(atlas::FieldSet & fset) const {
-  oops::Log::info() << classname()
-                    << "::calibrationInverseMultiply not meaningful so fieldset unchanged"
-                    << std::endl;
+void HydrostaticExner::leftInverseMultiply(atlas::FieldSet & fset) const {
+  oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
+
+  // Retrieve hydrostatic Exner from Exner. Need to extrapolate top level
+  auto exner_view = atlas::array::make_view<const double, 2>(fset["exner_levels_minus_one"]);
+  auto hexner_view = atlas::array::make_view<double, 2>(fset["hydrostatic_exner_levels"]);
+  const auto levels = fset["hydrostatic_exner_levels"].levels();
+  for (atlas::idx_t jnode = 0; jnode < hexner_view.shape(0); jnode++) {
+    for (atlas::idx_t jlev = 0; jlev < levels - 1; jlev++) {
+      hexner_view(jnode, jlev) = exner_view(jnode, jlev);
+    }
+    // Extrapolate to top level assuming the same hydrostatic Exner increment as in level below.
+    // This is consistent with the extrapolation of hydrostatic pressure increment done in
+    // mo::eval_hydrostatic_exner_tl.
+    hexner_view(jnode, levels - 1) = hexner_view(jnode, levels - 2);
+  }
+
+  // Retrieve hydrostatic pressure from hydrostatic Exner.
+  mo::eval_hydrostatic_exner_levels_tl_inv(fset, augmentedStateFieldSet_);
+
+  // Retrieve unbalanced pressure from hydrostatic pressure and geostrophic pressure.
+  mo::eval_hydrostatic_pressure_levels_tl_inv(fset, augmentedStateFieldSet_);
+
+  oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

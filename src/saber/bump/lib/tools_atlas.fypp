@@ -14,7 +14,6 @@ use atlas_module, only: atlas_structuredgrid,atlas_regionalgrid,atlas_field,atla
 use tools_const, only: zero,quarter,half,rad2deg
 use tools_kinds, only: kind_int,kind_real
 use tools_func, only: sphere_dist,convert_i2l,convert_l2i
-use tools_netcdf, only: create_file
 use type_mpl, only: mpl_type
 @:use_probe()
 

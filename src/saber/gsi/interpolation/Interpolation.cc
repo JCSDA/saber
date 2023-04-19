@@ -34,10 +34,10 @@ static SaberOuterBlockMaker<Interpolation> makerInterpolation_("gsi interpolatio
 Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
                              const std::vector<size_t> & activeVariableSizes,
                              const oops::Variables & outerVars,
+                             const eckit::Configuration & covarConf,
                              const Parameters_ & params,
                              const atlas::FieldSet & xb,
-                             const atlas::FieldSet & fg,
-                             const std::vector<atlas::FieldSet> & fsetVec)
+                             const atlas::FieldSet & fg)
   : innerVars_(outerVars)
 {
   oops::Log::trace() << classname() << "::Interpolation starting" << std::endl;
@@ -53,8 +53,7 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
                                                   outerGeometryData.comm()));
 
   // Active variables
-  std::vector<std::string> activeVars =
-    params.activeVars.value().get_value_or(outerVars).variables();
+  oops::Variables activeVars = params.activeVars.value().get_value_or(outerVars);
 
   // Create the interpolator
   interpolator_.reset(new UnstructuredInterpolation(outerGeometryData.comm(),
@@ -103,11 +102,11 @@ void Interpolation::multiplyAD(atlas::FieldSet & fset) const {
 
 // -------------------------------------------------------------------------------------------------
 
-void Interpolation::calibrationInverseMultiply(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::calibrationInverseMultiply starting" << std::endl;
-  util::Timer timer(classname(), "calibrationInverseMultiply");
+void Interpolation::leftInverseMultiply(atlas::FieldSet & fset) const {
+  oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
+  util::Timer timer(classname(), "leftInverseMultiply");
   inverseInterpolator_->apply(fset);
-  oops::Log::trace() << classname() << "::calibrationInverseMultiply done" << std::endl;
+  oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }
 
 // -------------------------------------------------------------------------------------------------

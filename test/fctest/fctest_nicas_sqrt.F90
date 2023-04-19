@@ -40,9 +40,11 @@ TEST( test_interpolatorbump )
   ! Local variables
   integer,parameter :: nl0 = 5
   integer :: n,nmga_out
+  integer,dimension(2),parameter :: var2d_int = (/0,0/)
   real(kind_real) :: dp_in,dp_out
   real(kind_real),allocatable :: cv_1(:),cv_2(:),array_out_1(:,:,:),array_out_2(:,:,:)
   logical,allocatable :: gmask_out(:,:)
+  logical,dimension(2),parameter :: var2d = (/.false.,.false./)
   character(len=4),dimension(2),parameter :: variables = (/'var1','var2'/)
   character(len=5),parameter :: lev2d = 'first'
   type(fckit_mpi_comm) :: f_comm
@@ -50,7 +52,7 @@ TEST( test_interpolatorbump )
   type(atlas_functionspace) :: fspace_out
   type(atlas_functionspace_structuredcolumns) :: fspace_out_sc
   type(bump_type) :: bump
-  type(fieldset_type) :: fset,universe_rad,fset_out_1,fset_out_2
+  type(fieldset_type) :: fset,fset_out_1,fset_out_2
   type(fckit_configuration) :: conf
   type(fckit_configuration) :: rh(1),rv(1)
 
@@ -63,9 +65,8 @@ TEST( test_interpolatorbump )
   ! Create output function space
   fspace_out = atlas_functionspace_structuredcolumns(grid_out)
 
-  ! Create empty fieldsets
+  ! Create empty fieldset
   fset = atlas_fieldset()
-  universe_rad = atlas_fieldset()
 
   ! Create configuration
   conf = fckit_configuration()
@@ -74,6 +75,7 @@ TEST( test_interpolatorbump )
   call conf%set('model.variables',variables)
   call conf%set('model.nl0',nl0)
   call conf%set('model.lev2d',lev2d)
+  call conf%set('model.var2d',var2d_int)
   call conf%set('nicas.resolution',4.0_kind_real)
   call conf%set('nicas.explicit length-scales',.true.)
   rh(1) = fckit_configuration()
@@ -86,7 +88,7 @@ TEST( test_interpolatorbump )
   call conf%set('nicas.vertical length-scale',rv)
 
   ! Create BUMP
-  call bump%create(f_comm,fspace_out,fset,conf,universe_rad)
+  call bump%create(f_comm,fspace_out,fset,conf)
 
   ! Run drivers
   call bump%run_drivers()
@@ -108,8 +110,8 @@ TEST( test_interpolatorbump )
   nmga_out = fspace_out_sc%size_owned()
   allocate(gmask_out(nmga_out,nl0))
   gmask_out = .true.
-  call fset_out_1%init(bump%mpl,fspace_out,gmask_out,variables,lev2d)
-  call fset_out_2%init(bump%mpl,fspace_out,gmask_out,variables,lev2d)
+  call fset_out_1%init(bump%mpl,fspace_out,gmask_out,variables,lev2d,var2d)
+  call fset_out_2%init(bump%mpl,fspace_out,gmask_out,variables,lev2d,var2d)
 
   ! Initialize output fieldset
   allocate(array_out_1(nmga_out,nl0,2))

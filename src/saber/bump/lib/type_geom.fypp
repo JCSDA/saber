@@ -1338,7 +1338,7 @@ if (nam%check_dirac.and.(nam%ndir>0)) then
       geom%nnbdir(ic0a) = 1
       geom%inbdir(geom%nnbdir(ic0a),ic0a) = nn_index(1)
       do idir=2,geom%ndir
-         if (indist(nn_dist(idir),nn_dist(1))) then
+         if (indist(geom%londir(idir),geom%londir(1)).and.indist(geom%latdir(idir),geom%latdir(1))) then
             geom%nnbdir(ic0a) = geom%nnbdir(ic0a)+1
             geom%inbdir(geom%nnbdir(ic0a),ic0a) = nn_index(idir)
          else
@@ -1709,7 +1709,7 @@ integer :: nn_index(1),proc_to_ncxa(mpl%nproc),proc_to_cx_offset(mpl%nproc)
 integer,allocatable :: proc_to_icxmin(:),ssa_to_cxa(:),ssa_to_cx(:),ssa_to_node(:),s_to_ssa(:)
 integer,allocatable :: proc_to_nodemin(:),sa_to_s(:),order_s(:),cxa_to_node(:)
 integer,allocatable :: proc_to_nssa(:),ssa_to_ss(:),ss_to_cxa(:),ss_to_cx(:),ss_to_node(:)
-real(kind_real) :: nss_real,lonlat(2),valmin,xmin,ymin,zmin,chmin,dist
+real(kind_real) :: nss_real,lonlat(2),valmin,xmin,ymin,zmin,chmin,dist,lon_start,lat_start,x_start,y_start,z_start
 real(kind_real),allocatable :: proc_to_xmin(:),proc_to_ymin(:),proc_to_zmin(:),proc_to_chmin(:)
 real(kind_real),allocatable :: x_ssa(:),y_ssa(:),z_ssa(:),ch_ssa(:),potential(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:)
 real(kind_real),allocatable :: x_ss(:),y_ss(:),z_ss(:),ch_ss(:)
@@ -1957,12 +1957,27 @@ else
          call mpl%prog_init(ns)
       end if
 
-      ! Set initial sampling point as close as possible to (0,0)
+      ! Define starting point 
+      ! TODO: this is not correct, should be replaced later with the commented section
+      x_start = zero
+      y_start = zero
+      z_start = zero
+!      if (geom%global) then
+!         x_start = zero
+!         y_start = zero
+!         z_start = one
+!      else
+!         lon_start = half*(geom%lon_min+geom%lon_max)
+!         lat_start = half*(geom%lat_min+geom%lat_max)
+!         call lonlat2xyz(mpl,lon_start,lat_start,x_start,y_start,z_start)
+!      end if
+
+      ! Compute distance to the starting point
       is = 1
 
       ! Compute distance to point of coordinate (0,0)
       do issa=1,nssa
-         call cart_dist(x_ssa(issa),y_ssa(issa),z_ssa(issa),zero,zero,zero,potential(issa))
+         call cart_dist(x_ssa(issa),y_ssa(issa),z_ssa(issa),x_start,y_start,z_start,potential(issa))
       end do
 
       ! Find minimum distance globally

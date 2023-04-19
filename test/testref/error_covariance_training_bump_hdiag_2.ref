@@ -78,15 +78,15 @@
                    Level:   1 ~> amplitude:        0.23
                                  cor. hor. support:      3512.49 km
                                  cor. ver. support:         0.00 vertical units
-Norm of BUMP output parameter cor_a - 1: 3.8526677762474783e+01
-Norm of BUMP output parameter cor_a - 2: 1.4744284082681768e+01
-Norm of BUMP output parameter cor_rh1 - 1: 2.0239613054844999e+08
-Norm of BUMP output parameter cor_rh1 - 2: 2.0144134471140322e+08
-Norm of BUMP output parameter cor_rh2 - 1: 2.0382907829319543e+08
-Norm of BUMP output parameter cor_rh2 - 2: 2.0279141444999039e+08
-Norm of BUMP output parameter cor_rhc - 1: 5.6702997404239381e+00
-Norm of BUMP output parameter cor_rhc - 2: 5.4930816898118975e+00
-Norm of BUMP output parameter cor_rh - 1: 2.0154472855413705e+08
-Norm of BUMP output parameter cor_rh - 2: 2.0059387302053571e+08
-Norm of BUMP output parameter cor_rv - 1: 2.2164250507302452e+02
-Norm of BUMP output parameter cor_rv - 2: 2.4433321646611649e+01
+Norm of output parameter cor_a - 1: 3.8526677762474783e+01
+Norm of output parameter cor_a - 2: 1.4744284082681764e+01
+Norm of output parameter cor_rh1 - 1: 2.0239613054844999e+08
+Norm of output parameter cor_rh1 - 2: 2.0144134471140322e+08
+Norm of output parameter cor_rh2 - 1: 2.0382907829319546e+08
+Norm of output parameter cor_rh2 - 2: 2.0279141444999039e+08
+Norm of output parameter cor_rhc - 1: 5.6702997404239381e+00
+Norm of output parameter cor_rhc - 2: 5.4930816898118966e+00
+Norm of output parameter cor_rh - 1: 2.0154472855413705e+08
+Norm of output parameter cor_rh - 2: 2.0059387302053571e+08
+Norm of output parameter cor_rv - 1: 2.2164250507302455e+02
+Norm of output parameter cor_rv - 2: 2.4433321646611642e+01

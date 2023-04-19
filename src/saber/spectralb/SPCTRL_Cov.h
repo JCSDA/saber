@@ -34,7 +34,8 @@ class SPCTRL_COVParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(SPCTRL_COVParameters, SaberBlockParametersBase)
 
  public:
-  oops::RequiredParameter<spectralbParameters> spectralbParams{"spectralb", this};
+  oops::OptionalParameter<spectralbParameters> readParams{"read", this};
+
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
 
@@ -49,18 +50,30 @@ class SPCTRL_COV : public SaberCentralBlockBase {
   SPCTRL_COV(const oops::GeometryData &,
              const std::vector<size_t> &,
              const oops::Variables &,
+             const eckit::Configuration &,
              const Parameters_ &,
              const atlas::FieldSet &,
              const atlas::FieldSet &,
-             const std::vector<atlas::FieldSet> &,
              const size_t &);
   virtual ~SPCTRL_COV();
 
   void randomize(atlas::FieldSet &) const override;
   void multiply(atlas::FieldSet &) const override;
 
+  void read() override;
+
  private:
   void print(std::ostream &) const override;
+
+  /// Parameters
+  Parameters_ params_;
+  /// Variables sizes
+  const std::vector<size_t> variableSizes_;
+  /// Active variables
+  const oops::Variables activeVars_;
+  /// Geometry data
+  const oops::GeometryData & geometryData_;
+  /// Spectral B
   std::unique_ptr<SpectralB> spectralb_;
 };
 

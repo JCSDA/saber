@@ -17,13 +17,12 @@
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 
-#include "saber/bump/BUMP.h"
+#include "saber/bump/BUMPParameters.h"
+
+#include "saber/bump/lib/BUMP.h"
+
 #include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberOuterBlockBase.h"
-
-namespace oops {
-  class Variables;
-}
 
 namespace saber {
 namespace bump {
@@ -34,7 +33,9 @@ class PsiChiToUVParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(PsiChiToUVParameters, SaberBlockParametersBase)
 
  public:
-  oops::RequiredParameter<BUMPParameters> bumpParams{"bump", this};
+  oops::OptionalParameter<BUMPParameters> readParams{"read", this};
+  oops::OptionalParameter<BUMPParameters> calibrationParams{"calibration", this};
+
   oops::Variables mandatoryActiveVars() const override {return oops::Variables({
     "stream_function",
     "velocity_potential",
@@ -53,10 +54,10 @@ class PsiChiToUV : public SaberOuterBlockBase {
   PsiChiToUV(const oops::GeometryData &,
              const std::vector<size_t> &,
              const oops::Variables &,
+             const eckit::Configuration &,
              const Parameters_ &,
              const atlas::FieldSet &,
-             const atlas::FieldSet &,
-             const std::vector<atlas::FieldSet> &);
+             const atlas::FieldSet &);
   virtual ~PsiChiToUV();
 
   const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}
@@ -64,7 +65,9 @@ class PsiChiToUV : public SaberOuterBlockBase {
 
   void multiply(atlas::FieldSet &) const override;
   void multiplyAD(atlas::FieldSet &) const override;
-  void calibrationInverseMultiply(atlas::FieldSet &) const override;
+  void leftInverseMultiply(atlas::FieldSet &) const override;
+
+  void read() override;
 
  private:
   void print(std::ostream &) const override;
@@ -72,7 +75,9 @@ class PsiChiToUV : public SaberOuterBlockBase {
   oops::Variables innerVars_;
   oops::Variables outerVars_;
   size_t levels_;
-  std::unique_ptr<BUMP> bump_;
+  BUMPParameters bumpParams_;
+  std::unique_ptr<bump_lib::BUMP> bump_;
+  size_t memberIndex_;
 };
 
 // -----------------------------------------------------------------------------

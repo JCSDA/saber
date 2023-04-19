@@ -175,7 +175,7 @@ class GeneralSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(GeneralSection, oops::Parameters)
 
  private:
-  GeneralDef def;
+  bump_lib::GeneralDef def;
 
  public:
   // Add colors to the log (for display on terminal)
@@ -199,7 +199,7 @@ class IOSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(IOSection, oops::Parameters)
 
  private:
-  IODef def;
+  bump_lib::IODef def;
 
  public:
   // Data directory
@@ -223,6 +223,8 @@ class IOSection : public oops::Parameters {
   oops::Parameter<std::vector<std::string>> fname_mom{"overriding moments file", {}, this};
   // Ensemble 2 moments files
   oops::Parameter<std::vector<std::string>> fname_mom2{"overriding lowres moments file", {}, this};
+  // Universe radius file
+  oops::Parameter<std::string> fname_universe_radius = param(def.fname_universe_radius, this);
   // NICAS file
   oops::Parameter<std::string> fname_nicas = param(def.fname_nicas, this);
   // Psichitouv transform file
@@ -240,7 +242,7 @@ class DriversSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(DriversSection, oops::Parameters)
 
  private:
-  DriversDef def;
+  bump_lib::DriversDef def;
 
  public:
   // Compute covariance, ensemble 1
@@ -261,8 +263,6 @@ class DriversSection : public oops::Parameters {
   oops::Parameter<std::string> hybrid_source = param(def.hybrid_source, this);
   // Multivariate strategy ('univariate', 'duplicated', 'duplicated and weighted' or 'crossed')
   oops::Parameter<std::string> strategy = param(def.strategy, this);
-  // Iterative algorithm (ensemble members loaded sequentially)
-  oops::Parameter<bool> iterative_algo = param(def.iterative_algo, this);
   // New normality test
   oops::Parameter<bool> new_normality = param(def.new_normality, this);
   // Read local sampling
@@ -279,7 +279,7 @@ class DriversSection : public oops::Parameters {
   oops::Parameter<bool> new_vbal_cov = param(def.new_vbal_cov, this);
   // Read local vertical covariance
   oops::Parameter<bool> load_vbal_cov = param(def.load_vbal_cov, this);
-  // Write local vertical covariancee
+  // Write local vertical covariance
   oops::Parameter<bool> write_vbal_cov = param(def.write_vbal_cov, this);
   // Compute vertical balance operator
   oops::Parameter<bool> new_vbal = param(def.new_vbal, this);
@@ -299,6 +299,10 @@ class DriversSection : public oops::Parameters {
   oops::Parameter<bool> write_hdiag = param(def.write_hdiag, this);
   // Write HDIAG components detail
   oops::Parameter<bool> write_hdiag_detail = param(def.write_hdiag_detail, this);
+  // Read universe radius
+  oops::Parameter<bool> load_universe_radius = param(def.load_universe_radius, this);
+  // Write universe radius
+  oops::Parameter<bool> write_universe_radius = param(def.write_universe_radius, this);
   // Compute NICAS
   oops::Parameter<bool> new_nicas = param(def.new_nicas, this);
   // Read local NICAS parameters
@@ -311,6 +315,8 @@ class DriversSection : public oops::Parameters {
   oops::Parameter<bool> write_nicas_global = param(def.write_nicas_global, this);
   // Write NICAS grids
   oops::Parameter<bool> write_nicas_grids = param(def.write_nicas_grids, this);
+  // Write NICAS steps
+  oops::Parameter<bool> write_nicas_steps = param(def.write_nicas_steps, this);
   // Compute wind transform
   oops::Parameter<bool> new_wind = param(def.new_wind, this);
   // Read local wind transform
@@ -342,13 +348,15 @@ class ModelSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(ModelSection, oops::Parameters)
 
  private:
-  ModelDef def;
+  bump_lib::ModelDef def;
 
  public:
   // Level for 2D variables ('first' or 'last')
   oops::Parameter<std::string> lev2d = param(def.lev2d, this);
   // Variables names
   oops::Parameter<std::vector<std::string>> variables{"variables", {}, this};
+  // 2D variables names
+  oops::Parameter<std::vector<std::string>> var2d{"2d variables", {}, this};
   // Groups of variables
   oops::OptionalParameter<std::vector<GroupParameters>> groups{"groups", this};
   // Check that sampling couples and interpolations do not cross mask boundaries
@@ -362,7 +370,7 @@ class EnsembleSizesSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(EnsembleSizesSection, oops::Parameters)
 
  private:
-  EnsembleSizesDef def;
+  bump_lib::EnsembleSizesDef def;
 
  public:
   // Ensemble 1 size
@@ -382,7 +390,7 @@ class MaskParameters : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(MaskParameters, oops::Parameters)
 
  private:
-  MaskDef def;
+  bump_lib::MaskDef def;
 
  public:
   // Mask restriction type
@@ -400,7 +408,7 @@ class SamplingSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(SamplingSection, oops::Parameters)
 
  private:
-  SamplingDef def;
+  bump_lib::SamplingDef def;
 
  public:
   // Computation grid size
@@ -441,7 +449,7 @@ class DiagnosticsSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(DiagnosticsSection, oops::Parameters)
 
  private:
-  DiagnosticsDef def;
+  bump_lib::DiagnosticsDef def;
 
  public:
   // Ensemble size
@@ -463,7 +471,7 @@ class VerticalBalanceBlockParameters : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(VerticalBalanceBlockParameters, oops::Parameters)
 
  private:
-  VerticalBalanceBlockDef def;
+  bump_lib::VerticalBalanceBlockDef def;
 
  public:
   // Balanced variable
@@ -483,7 +491,7 @@ class VerticalBalanceSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(VerticalBalanceSection, oops::Parameters)
 
  private:
-  VerticalBalanceDef def;
+  bump_lib::VerticalBalanceDef def;
 
  public:
   // Vertical balance parameters
@@ -505,7 +513,7 @@ class VarianceSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(VarianceSection, oops::Parameters)
 
  private:
-  VarianceDef def;
+  bump_lib::VarianceDef def;
 
  public:
   // Force specific variance
@@ -530,7 +538,7 @@ class OptimalityTestSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(OptimalityTestSection, oops::Parameters)
 
  private:
-  OptimalityTestDef def;
+  bump_lib::OptimalityTestDef def;
 
  public:
   // Number of length-scale factors for optimization
@@ -548,7 +556,7 @@ class FitSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(FitSection, oops::Parameters)
 
  private:
-  FitDef def;
+  bump_lib::FitDef def;
 
  public:
   // Horizontal filtering suport radius [in meters]
@@ -568,7 +576,7 @@ class NICASSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(NICASSection, oops::Parameters)
 
  private:
-  NICASDef def;
+  bump_lib::NICASDef def;
 
  public:
   // Resolution
@@ -609,7 +617,7 @@ class PsichitouvSection : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(PsichitouvSection, oops::Parameters)
 
  private:
-  PsichitouvDef def;
+  bump_lib::PsichitouvDef def;
 
  public:
   // Number of longitudes for the regular grid
@@ -669,15 +677,20 @@ class BUMPParameters : public oops::Parameters {
 
   // Missing real value
   oops::Parameter<double> msvalr{"msvalr", util::missingValue(double()), this};
-  // Ensemble 1 parameters
-  oops::OptionalParameter<eckit::LocalConfiguration> ensemble1{"ensemble", this};
-  // Ensemble 2 parameters
-  oops::OptionalParameter<eckit::LocalConfiguration> ensemble2{"lowres ensemble", this};
   // Grids
   oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> grids{"grids", this};
-  // Operators application
-  oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> appConfs{"operators application",
-    this};
+  // Input ATLAS files
+  oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> inputAtlasFilesConf{
+    "input atlas files", this};
+  // Input model files
+  oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> inputModelFilesConf{
+    "input model files", this};
+  // Output ATLAS files
+  oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> outputAtlasFilesConf{
+    "output atlas files", this};
+  // Output model files
+  oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> outputModelFilesConf{
+    "output model files", this};
 };
 
 // -----------------------------------------------------------------------------

@@ -21,9 +21,10 @@ initial condition:
 background error:
   covariance model: SABER
   adjoint test: true
+  inverse test: true
   saber central block:
     saber block name: spectral covariance
-    spectralb:
+    read:
       covariance_file: testdata/spectralcov.nc
       gauss_grid_uid: F15
       umatrix_netcdf_names:
@@ -35,8 +36,12 @@ background error:
   saber outer blocks:
   - saber block name: spectral to spectral
     input truncation: 15 # 15 -> 20 by zero-padding
+    inner inverse tolerance: 1e-15
+    outer inverse tolerance: 1e-15
   - saber block name: spectral to spectral
     input truncation: 20 # 20 -> 15 by truncation
+    inner inverse tolerance: 1e-15
+    outer inverse tolerance: 1e-15
   - saber block name: spectral to gauss
 dirac:
   lon:
@@ -44,16 +49,37 @@ dirac:
   - 0.0
   - 0.0
   - 0.0
-  lat:
-  - 0.0
-  - 0.0
-  - 0.0
-  - 0.0
+  lat:  # slightly less than 0 to remove ambiguity on chosen grid point.
+  - -0.001
+  - -0.001
+  - -0.001
+  - -0.001
   level:
   - 1
   - 1
   - 1
   - 1
+  variable:
+  - streamfunction
+  - velocity_potential
+  - unbalanced_pressure
+  - moisture_control_variable
+diagnostic points:
+  lon:
+  - 20.0
+  - 20.0
+  - 20.0
+  - 20.0
+  lat:
+  - 20.0
+  - 20.0
+  - 20.0
+  - 20.0
+  level:
+  - 2
+  - 2
+  - 2
+  - 2
   variable:
   - streamfunction
   - velocity_potential

@@ -9,69 +9,70 @@ geometry:
     - velocity_potential
     levels: 2
   halo: 1
-input variables:
-- stream_function
-- velocity_potential
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
   - stream_function
   - velocity_potential
-bump:
-  general:
-    testing: true
-    universe length-scale: 10000.0e3
-  io:
-    data directory: testdata
-    files prefix: error_covariance_training_bump_nicas_4/_MPI_-_OMP_
-  drivers:
-    multivariate strategy: duplicated and weighted
-    compute nicas: true
-    adjoints test: true
-    internal dirac test: true
-  nicas:
-    resolution: 4.0
-    common localization weights:
-    - row variables:
-      - stream_function
-      column variables:
-      - velocity_potential
-      value: 0.5
-    interpolation type:
-    - groups:
-      - common
-      type: c1
-    positive-definiteness test: true
-    horizontal interpolation test: true
-  dirac:
-  - longitude: 0.0
-    latitude: 0.0
-    level: 1
-    variable: stream_function
-input fields:
-- parameter: a
-  component: 1
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_a_1
-- parameter: a
-  component: 2
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_a_2
-- parameter: rh
-  component: 1
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_rh_1
-- parameter: rh
-  component: 2
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_rh_2
-- parameter: rv
-  component: 1
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_rv_1
-- parameter: rv
-  component: 2
-  file:
-    filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_rv_2
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: BUMP_NICAS
+    calibration:
+      general:
+        testing: true
+        universe length-scale: 10000.0e3
+      io:
+        data directory: testdata
+        files prefix: error_covariance_training_bump_nicas_4/_MPI_-_OMP_
+      drivers:
+        multivariate strategy: duplicated and weighted
+        compute nicas: true
+        adjoints test: true
+        internal dirac test: true
+      nicas:
+        resolution: 4.0
+        common localization weights:
+        - row variables:
+          - stream_function
+          column variables:
+          - velocity_potential
+          value: 0.5
+        interpolation type:
+        - groups:
+          - common
+          type: c1
+        positive-definiteness test: true
+        horizontal interpolation test: true
+      dirac:
+      - longitude: 0.0
+        latitude: 0.0
+        level: 1
+        variable: stream_function
+      input model files:
+      - parameter: a
+        component: 1
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_a_1
+      - parameter: a
+        component: 2
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_a_2
+      - parameter: rh
+        component: 1
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_rh_1
+      - parameter: rh
+        component: 2
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_rh_2
+      - parameter: rv
+        component: 1
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_rv_1
+      - parameter: rv
+        component: 2
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_rv_2
 test:
   reference filename: testref/error_covariance_training_bump_nicas_4.ref

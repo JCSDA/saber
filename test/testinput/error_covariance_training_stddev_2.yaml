@@ -1,0 +1,39 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 10
+  groups:
+  - variables:
+    - stream_function
+    - velocity_potential
+    levels: 2
+  halo: 1
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables:
+  - stream_function
+  - velocity_potential
+background error:
+  covariance model: SABER
+  iterative ensemble loading: true
+  ensemble:
+    members from template:
+      template:
+        date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
+        state variables:
+        - stream_function
+        - velocity_potential
+      pattern: '%mem%'
+      nmembers: 10
+      zero padding: 6
+  saber central block:
+    saber block name: ID
+  saber outer blocks:
+  - saber block name: StdDev
+    calibration:
+      write to model file:
+        filepath: testdata/error_covariance_training_stddev_2/stddev
+test:
+  reference filename: testref/error_covariance_training_stddev_1.ref

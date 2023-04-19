@@ -30,7 +30,7 @@ class SpectralCovarianceParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(SpectralCovarianceParameters, SaberBlockParametersBase)
 
  public:
-  oops::RequiredParameter<spectralbParameters> spectralbParams{"spectralb", this};
+  oops::OptionalParameter<spectralbParameters> readParams{"read", this};
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
 
@@ -45,10 +45,10 @@ class SpectralCovariance : public SaberCentralBlockBase {
   SpectralCovariance(const oops::GeometryData &,
                      const std::vector<size_t> &,
                      const oops::Variables &,
+                     const eckit::Configuration &,
                      const Parameters_ &,
                      const atlas::FieldSet &,
                      const atlas::FieldSet &,
-                     const std::vector<atlas::FieldSet> &,
                      const size_t &);
 
   virtual ~SpectralCovariance() = default;
@@ -56,18 +56,23 @@ class SpectralCovariance : public SaberCentralBlockBase {
   void randomize(atlas::FieldSet &) const override;
   void multiply(atlas::FieldSet &) const override;
 
+  void read() override;
+
  private:
-  void testUUtConsistency(const std::vector<size_t> &,
-                          const double &,
+  void testUUtConsistency(const double &,
                           const double & adjointTolerance = 1.0e-12) const;
   void multiplyUMatrix(atlas::FieldSet &) const;
   void multiplyUMatrixAD(atlas::FieldSet &) const;
   void print(std::ostream &) const override;
 
+  /// Parameters
+  Parameters_ params_;
+  /// Variables sizes
+  const std::vector<size_t> variableSizes_;
   /// Active variables
   const oops::Variables activeVars_;
   /// Option to use vertical covariances or correlations
-  const bool variance_opt_;
+  bool variance_opt_;
   /// Covariance statistics
   // Note: only need vertical covariances or correlations from this;
   // probably can be gotten in the ctor and saved here instead of cs_

@@ -22,11 +22,11 @@ static SaberOuterBlockMaker<Interpolation> makerInterpolation_("interpolation");
 Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
                              const std::vector<size_t> & activeVariableSizes,
                              const oops::Variables & outerVars,
+                             const eckit::Configuration & covarConf,
                              const Parameters_ & params,
                              const atlas::FieldSet & xb,
-                             const atlas::FieldSet & fg,
-                             const std::vector<atlas::FieldSet> & fsetVec)
-  : outerGeomData_(outerGeometryData), innerVars_(outerVars)
+                             const atlas::FieldSet & fg)
+  : params_(params), outerGeomData_(outerGeometryData), innerVars_(outerVars)
 {
   oops::Log::trace() << classname() << "::Interpolation starting" << std::endl;
 
@@ -112,10 +112,31 @@ void Interpolation::multiplyAD(atlas::FieldSet & fieldSet) const {
 
 // -----------------------------------------------------------------------------
 
-void Interpolation::calibrationInverseMultiply(atlas::FieldSet & fset) const {
-  oops::Log::info() << classname()
-                    << "::calibrationInverseMultiply not meaningful so fieldset unchanged"
-                    << std::endl;
+void Interpolation::leftInverseMultiply(atlas::FieldSet & fieldSet) const {
+  if (!inverseInterp_) {
+    inverseInterp_.reset(new oops::GlobalAtlasInterpolator(
+          params_.localInterpConf.value(), outerGeomData_,
+          innerGeomData_->functionSpace(), innerGeomData_->comm()));
+  }
+
+  // Temporary FieldSet for interpolation target
+  atlas::FieldSet targetFieldSet;
+  for (const auto & f : fieldSet) {
+    const std::string name = f.name();
+    const size_t nlev = f.levels();
+    atlas::Field field = innerGeomData_->functionSpace()->createField<double>(
+        atlas::option::name(name) | atlas::option::levels(nlev));
+    field.metadata() = f.metadata();
+    targetFieldSet.add(field);
+  }
+
+  // Interpolate to target/inner grid
+  inverseInterp_->apply(fieldSet, targetFieldSet);
+
+  // Reset
+  fieldSet = targetFieldSet;
+
+  oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

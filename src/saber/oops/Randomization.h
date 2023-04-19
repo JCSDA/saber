@@ -52,10 +52,10 @@ template <typename MODEL> class RandomizationParameters
   /// Background error covariance model
   oops::RequiredParameter<CovarianceParameters_> backgroundError{"background error", this};
 
-  /// Where to write the output
-  oops::RequiredParameter<StateWriterParameters_> output{"output", this};
+  /// Where to write the state output
+  oops::OptionalParameter<StateWriterParameters_> output{"output", this};
 
-  /// Where to write the output
+  /// Where to write the increment output
   oops::OptionalParameter<WriteParameters_> outputIncrement{"output increment", this};
 };
 
@@ -104,11 +104,14 @@ template <typename MODEL> class Randomization : public oops::Application {
     std::unique_ptr<CovarianceBase_> Bmat(CovarianceFactory_::create(
                                           geom, vars, covarParams, xx, xx));
 
-    // Generate and write perturbations
+    // Possible outputs
+    const auto & inputIncrOutParams = params.outputIncrement.value();
+    const auto & inputOutputParams = params.output.value();
+
+    // Generate perturbations
     std::vector<Increment_> ens;
     Increment_ mean(geom, vars, xx.validTime());
     mean.zero();
-    const boost::optional<WriteParameters_> &inputIncrOutParams = params.outputIncrement.value();
     for (size_t jm = 0; jm < covarParams.randomizationSize.value(); ++jm) {
       // Generate perturbation
       Increment_ dx(geom, vars, xx.validTime());
@@ -128,7 +131,7 @@ template <typename MODEL> class Randomization : public oops::Application {
 
     for (size_t jm = 0; jm < covarParams.randomizationSize.value(); ++jm) {
       // Remove mean
-      ens[jm] -= mean;
+      if (covarParams.randomizationSize.value() > 1) ens[jm] -= mean;
 
       // Write perturbation
       if (inputIncrOutParams != boost::none) {
@@ -137,14 +140,16 @@ template <typename MODEL> class Randomization : public oops::Application {
         ens[jm].write(incrOutParams);
       }
 
-      // Add mean state
-      State_ xp(xx);
-      xp += ens[jm];
+      if (inputOutputParams != boost::none) {
+        // Add background state
+        State_ xp(xx);
+        xp += ens[jm];
 
-      // Write perturbed state
-      StateWriterParameters_ outParams = params.output;
-      outParams.write.setMember(jm+1);
-      xp.write(outParams.write);
+        // Write perturbed state
+        StateWriterParameters_ outParams = *inputOutputParams;
+        outParams.write.setMember(jm+1);
+        xp.write(outParams.write);
+      }
     }
     return 0;
   }

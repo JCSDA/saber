@@ -20,9 +20,26 @@ Fields:
   unbalanced_pressure: 1.0000000000000000e+00
   moisture_control_variable: 1.0000000000000000e+00
 Adjoint test passed
+Inner inverse test passed: U Uinv (U x) == (U x)
+Outer inverse test passed: Uinv U (Uinv x) == (Uinv x)
 Adjoint test passed
+Inner inverse test passed: U Uinv (U x) == (U x)
+Outer inverse test passed: Uinv U (Uinv x) == (Uinv x)
 Adjoint test passed
+Inner inverse test passed: U Uinv (U x) == (U x)
+Outer inverse test passed: Uinv U (Uinv x) == (Uinv x)
 Adjoint test passed
+Covariance(SABER) diagnostics:
+- Variances at Dirac points:
+  + Value for variable streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 4.1528258986494652e+10
+  + Value for variable velocity_potential, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 4.2512569844839142e+10
+  + Value for variable unbalanced_pressure, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 5.5129549997972583e+02
+  + Value for variable moisture_control_variable, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 2.0062216828888657e-01
+- Covariances at diagnostic points:
+  + Value for variable streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 1.0639047299362942e+10
+  + Value for variable velocity_potential, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 1.2191889123702671e+10
+  + Value for variable unbalanced_pressure, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 6.1857159205407150e+01
+  + Value for variable moisture_control_variable, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 7.3882682789723321e-03
 Covariance(SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:

@@ -7,23 +7,14 @@
 
 #include "saber/bump/PsiChiToUV.h"
 
-#include <functional>
-#include <memory>
-#include <string>
-#include <vector>
-
-#include "atlas/field.h"
 #include "atlas/functionspace.h"
 
 #include "eckit/mpi/Comm.h"
 
-#include "oops/base/Geometry.h"
-#include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
-#include "oops/util/FieldSetOperations.h"
-
-#include "saber/bump/BUMP.h"
-#include "saber/oops/SaberOuterBlockBase.h"
+#include "oops/util/FieldSetHelpers.h"
+#include "oops/util/Logger.h"
+#include "oops/util/Timer.h"
 
 namespace saber {
 namespace bump {
@@ -37,30 +28,39 @@ static SaberOuterBlockMaker<PsiChiToUV> makerPsiChiToUV_("BUMP_PsiChiToUV");
 PsiChiToUV::PsiChiToUV(const oops::GeometryData & outerGeometryData,
                        const std::vector<size_t> & activeVariableSizes,
                        const oops::Variables & outerVars,
+                       const eckit::Configuration & covarConf,
                        const Parameters_ & params,
                        const atlas::FieldSet & xb,
-                       const atlas::FieldSet & fg,
-                       const std::vector<atlas::FieldSet> & fsetVec)
+                       const atlas::FieldSet & fg)
   : innerGeometryData_(outerGeometryData),
     innerVars_(oops::Variables({"stream_function", "velocity_potential"})),
-    outerVars_(outerVars), levels_(activeVariableSizes[0]), bump_()
+    outerVars_(outerVars),
+    levels_(activeVariableSizes[0]),
+    bumpParams_(),
+    bump_(),
+    memberIndex_(0)
 {
   oops::Log::trace() << classname() << "::PsiChiToUV starting" << std::endl;
 
+  // Get BUMP parameters
+  if (params.doCalibration()) {
+    bumpParams_ = *params.calibrationParams.value();
+  } else if (params.doRead()) {
+    bumpParams_ = *params.readParams.value();
+  } else {
+    ABORT("calibration or read required in BUMP");
+  }
+
   // Initialize BUMP
-  bump_.reset(new BUMP(outerGeometryData.comm(),
-                       outerGeometryData.functionSpace(),
-                       outerGeometryData.fieldSet(),
-                       activeVariableSizes,
-                       params.mandatoryActiveVars(),
-                       params.bumpParams.value(),
-                       fsetVec));
-
-  // Run drivers
-  bump_->runDrivers();
-
-  // Partial deallocation
-  bump_->partialDealloc();
+  bump_.reset(new bump_lib::BUMP(outerGeometryData.comm(),
+                                 oops::LibOOPS::instance().infoChannel(),
+                                 oops::LibOOPS::instance().testChannel(),
+                                 outerGeometryData.functionSpace(),
+                                 outerGeometryData.fieldSet(),
+                                 activeVariableSizes,
+                                 params.mandatoryActiveVars().variables(),
+                                 covarConf,
+                                 bumpParams_.toConfiguration()));
 
   oops::Log::trace() << classname() << "::PsiChiToUV done" << std::endl;
 }
@@ -78,7 +78,7 @@ PsiChiToUV::~PsiChiToUV() {
 void PsiChiToUV::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   bump_->multiplyPsiChiToUV(fset);
-  util::removeFieldsFromFieldSet(fset, innerVars_);
+  util::removeFieldsFromFieldSet(fset, innerVars_.variables());
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
@@ -87,31 +87,24 @@ void PsiChiToUV::multiply(atlas::FieldSet & fset) const {
 void PsiChiToUV::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
   bump_->multiplyPsiChiToUVAd(fset);
-  util::removeFieldsFromFieldSet(fset, outerVars_);
+  util::removeFieldsFromFieldSet(fset, outerVars_.variables());
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void PsiChiToUV::calibrationInverseMultiply(atlas::FieldSet & fset)
-  const {
-  oops::Log::trace() << classname() << "::calibrationInverseMultiply starting" << std::endl;
-  oops::Log::info() << classname()
-                    << "::calibrationInverseMultiply not meaningful: psi/chi fields are empty"
-                    << std::endl;
-  atlas::FieldSet fset_;
-  for (const auto & var : innerVars_.variables()) {
-     if (outerVars_.has(var)) {
-       // Add field
-       fset_.add(fset.field(var));
-     } else {
-       // Create empty field
-       fset_.add(innerGeometryData_.functionSpace().createField<double>(
-         atlas::option::name(var) | atlas::option::levels(levels_)));
-     }
-  }
-  fset = fset_;
-  oops::Log::trace() << classname() << "::calibrationInverseMultiply done" << std::endl;
+void PsiChiToUV::leftInverseMultiply(atlas::FieldSet & fset) const {
+  oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
+  ABORT(classname() + "::leftInverseMultiply not implemented");
+  oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void PsiChiToUV::read() {
+  oops::Log::trace() << classname() << "::read starting" << std::endl;
+  bump_->runDrivers();
+  oops::Log::trace() << classname() << "::read done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
