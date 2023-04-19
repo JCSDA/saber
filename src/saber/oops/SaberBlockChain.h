@@ -43,7 +43,6 @@ class SaberBlockChain {
   // Accessors
   const SaberCentralBlockBase & centralBlock() const {return *centralBlock_;}
   SaberCentralBlockBase & centralBlock() {return *centralBlock_;}
-  SaberCentralBlockBase * centralBlockPtr() {return centralBlock_.get();}
   const SaberOuterBlockVec_ & outerBlocks() const {return outerBlocks_;}
   SaberOuterBlockVec_ & outerBlocks() {return outerBlocks_;}
   const SaberOuterBlockBase & lastOuterBlock() const {return outerBlocks_.back();}

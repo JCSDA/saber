@@ -9,12 +9,17 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
+
+#include <boost/range/adaptor/reversed.hpp>
 
 #include "atlas/field.h"
 
 #include "oops/base/Geometry.h"
 #include "oops/base/Increment.h"
+#include "oops/base/IncrementEnsemble.h"
+#include "oops/base/StateEnsemble.h"
 #include "oops/base/Variables.h"
 #include "oops/util/ConfigFunctions.h"
 #include "oops/util/DateTime.h"
@@ -388,6 +393,95 @@ oops::Variables getActiveVars(const SaberBlockParametersBase & params,
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
+std::unique_ptr<SaberBlockChain> localizationBlockChain(const oops::Geometry<MODEL> & geom,
+                                                        const oops::Variables & incVars,
+                                                        const oops::State<MODEL> & xb,
+                                                        const oops::State<MODEL> & fg,
+                                                        const eckit::Configuration & conf) {
+  oops::Log::trace() << "localizationBlockChain starting" << std::endl;
+
+  // Local copy of background and first guess
+  oops::State<MODEL> xbLocal(xb);
+  oops::State<MODEL> fgLocal(fg);
+
+  // Extend backgroud and first guess with extra fields
+  // TODO(Benjamin, Marek, Mayeul, ?)
+
+  // Initialize geometry data
+  std::vector<std::reference_wrapper<const oops::GeometryData>> outerGeometryData;
+  outerGeometryData.push_back(geom.generic());
+
+  // Intialize outer variables
+  oops::Variables outerVars(incVars);
+
+  // Initialize localization blockchain
+  std::unique_ptr<SaberBlockChain> locBlockChain(new SaberBlockChain(incVars, xbLocal.fieldSet()));
+
+  // Initialize empty vector of FieldSets
+  std::vector<atlas::FieldSet> emptyFsetEns;
+
+  // Create covariance configuration
+  eckit::LocalConfiguration covarConf;
+  eckit::LocalConfiguration ensembleConf;
+  ensembleConf.set("ensemble size", 0);
+  covarConf.set("ensemble configuration", ensembleConf);
+  covarConf.set("adjoint test", conf.getBool("adjoint test", false));
+  covarConf.set("adjoint tolerance", conf.getDouble("adjoint tolerance", 1.0e-12));
+  covarConf.set("inverse test", conf.getBool("inverse test", false));
+  covarConf.set("inverse tolerance", conf.getDouble("inverse tolerance", 1.0e-12));
+  covarConf.set("iterative ensemble loading", false);
+
+  if (conf.has("saber outer blocks")) {
+    // Build outer blocks successively
+    std::vector<SaberOuterBlockParametersWrapper> saberOuterBlocksParams;
+    for (const auto & saberOuterBlockConf : conf.getSubConfigurations("saber outer blocks")) {
+      SaberOuterBlockParametersWrapper saberOuterBlockParamsWrapper;
+      saberOuterBlockParamsWrapper.deserialize(saberOuterBlockConf);
+      saberOuterBlocksParams.push_back(saberOuterBlockParamsWrapper);
+      const SaberBlockParametersBase & saberOuterBlockParams =
+        saberOuterBlockParamsWrapper.saberOuterBlockParameters;
+      if (saberOuterBlockParams.doCalibration()) {
+        ABORT("no calibration within localization");
+      }
+    }
+    buildOuterBlocks(geom,
+                     outerGeometryData,
+                     outerVars,
+                     xbLocal,
+                     fgLocal,
+                     emptyFsetEns,
+                     covarConf,
+                     saberOuterBlocksParams,
+                     *locBlockChain);
+  }
+
+  // Central block
+  SaberCentralBlockParametersWrapper saberCentralBlockParamsWrapper;
+  saberCentralBlockParamsWrapper.deserialize(conf.getSubConfiguration("saber central block"));
+  const SaberBlockParametersBase & saberCentralBlockParams =
+    saberCentralBlockParamsWrapper.saberCentralBlockParameters;
+  if (saberCentralBlockParams.doCalibration()) {
+    ABORT("no calibration within localization");
+  }
+  buildCentralBlock(geom,
+                    geom,
+                    outerGeometryData.back().get(),
+                    outerVars,
+                    xbLocal,
+                    fgLocal,
+                    emptyFsetEns,
+                    emptyFsetEns,
+                    covarConf,
+                    saberCentralBlockParamsWrapper,
+                    *locBlockChain);
+
+  // Return localization blockchain
+  return locBlockChain;
+}
+
+// -----------------------------------------------------------------------------
+
+template<typename MODEL>
 void buildOuterBlocks(const oops::Geometry<MODEL> & geom,
                       std::vector<std::reference_wrapper<const oops::GeometryData>> &
                         outerGeometryData,
@@ -641,6 +735,23 @@ void buildCentralBlock(const oops::Geometry<MODEL> & geom,
     } else {
       // Direct calibration
       saberBlockChain.centralBlock().directCalibration(fsetEns);
+
+      // Localization for the Ensemble central block
+      std::unique_ptr<SaberBlockChain> locBlockChain;
+      if (saberCentralBlockParams.saberBlockName.value() == "Ensemble") {
+        const auto & locConf = saberCentralBlockParams.localization.value();
+        if (locConf == boost::none) {
+          ABORT("Ensemble block without localization is not implemented yet");
+        } else {
+          // Initialize localization blockchain
+          locBlockChain = localizationBlockChain<MODEL>(geom, outerVars, xb, fg, *locConf);
+        }
+      }
+
+      // Set localization if needed
+      if (locBlockChain) {
+        saberBlockChain.centralBlock().setLocalization(std::move(locBlockChain));
+      }
     }
   } else if (saberCentralBlockParams.doRead()) {
     // Read data

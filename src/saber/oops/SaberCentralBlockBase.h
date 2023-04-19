@@ -16,6 +16,7 @@
 #include "atlas/field.h"
 
 #include <boost/noncopyable.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
 
 // TODO(AS): only need a forward declaration of Geometry (and Increment?)
 #include "oops/base/Geometry.h"
@@ -30,6 +31,12 @@
 #include "oops/util/Printable.h"
 
 #include "saber/oops/SaberBlockParametersBase.h"
+#include "saber/oops/SaberOuterBlockBase.h"
+
+// Forward declaration
+namespace saber {
+  class SaberBlockChain;
+}
 
 namespace saber {
 
@@ -49,6 +56,10 @@ class SaberCentralBlockBase : public util::Printable, private boost::noncopyable
   virtual void multiply(atlas::FieldSet &) const = 0;
 
   // Setup / calibration methods
+
+  // Set localization blockchain
+  virtual void setLocalization(std::unique_ptr<SaberBlockChain>)
+    {ABORT("setLocalization not implemented yet for this block");}
 
   // Read block data
   virtual void read()

@@ -21,8 +21,8 @@
 #include "oops/util/Duration.h"
 #include "oops/util/Logger.h"
 
+#include "saber/oops/SaberBlockChain.h"
 #include "saber/oops/SaberBlockParametersBase.h"
-#include "saber/oops/SaberCentralBlockBase.h"
 #include "saber/oops/Utilities.h"
 
 namespace saber {
@@ -46,7 +46,7 @@ class Localization : public oops::LocalizationBase<MODEL> {
 
  private:
   void print(std::ostream &) const override;
-  std::unique_ptr<SaberCentralBlockBase> saberCentralBlock_;
+  std::unique_ptr<SaberBlockChain> locBlockChain_;
 };
 
 // =============================================================================
@@ -55,53 +55,19 @@ template<typename MODEL>
 Localization<MODEL>::Localization(const Geometry_ & geom,
                                   const oops::Variables & incVars,
                                   const eckit::Configuration & conf)
-  : saberCentralBlock_()
+  : locBlockChain_()
 {
   oops::Log::trace() << "Localization::Localization starting" << std::endl;
-
-  // Get parameters from configuration
-  const eckit::LocalConfiguration saberCentralBlock(conf, "saber central block");
-  SaberCentralBlockParametersWrapper saberCentralBlockParamWrapper;
-  saberCentralBlockParamWrapper.validateAndDeserialize(saberCentralBlock);
-  const SaberBlockParametersBase & saberCentralBlockParams =
-    saberCentralBlockParamWrapper.saberCentralBlockParameters;
-
-  // Create dummy FieldSet (for xb and fg)
-  atlas::FieldSet dummyFs;
 
   // Create dummy time
   util::DateTime dummyTime(1977, 5, 25, 0, 0, 0);
 
-  // Define central variables
-  oops::Variables centralVars = incVars;
+  // Create dummy xb and fg
+  const State_ xb(geom, incVars, dummyTime);
+  const State_ fg(geom, incVars, dummyTime);
 
-  // Get active variables
-  oops::Variables activeVars =
-    saberCentralBlockParams.activeVars.value().get_value_or(centralVars);
-
-  // Create central block
-  saberCentralBlock_.reset(SaberCentralBlockFactory::create(
-                           geom.generic(),
-                           geom.variableSizes(activeVars),
-                           activeVars,
-                           conf,
-                           saberCentralBlockParams,
-                           dummyFs,
-                           dummyFs,
-                           geom.timeComm().rank()));
-
-  if (saberCentralBlockParams.doCalibration()) {
-    // Block calibration
-    ABORT("no localization calibration yet");
-  } else if (saberCentralBlockParams.doRead()) {
-    // Read data
-    saberCentralBlock_->read();
-  }
-
-  // Check that active variables are present in central variables
-  for (const auto & var : activeVars.variables()) {
-    ASSERT(centralVars.has(var));
-  }
+  // Initialize localization blockchain
+  locBlockChain_ = localizationBlockChain<MODEL>(geom, incVars, xb, fg, conf);
 
   oops::Log::trace() << "Localization:Localization done" << std::endl;
 }
@@ -119,11 +85,8 @@ template<typename MODEL>
 void Localization<MODEL>::randomize(Increment_ & dx) const {
   oops::Log::trace() << "Localization:randomize starting" << std::endl;
 
-  // Random vector (necessary for some SABER blocks)
-  dx.random();
-
-  // Central block randomization
-  saberCentralBlock_->randomize(dx.fieldSet());
+  // SABER block chain randomization
+  locBlockChain_->randomize(dx.fieldSet());
 
   // ATLAS fieldset to Increment_
   dx.synchronizeFields();
@@ -137,8 +100,8 @@ template<typename MODEL>
 void Localization<MODEL>::multiply(Increment_ & dx) const {
   oops::Log::trace() << "Localization:multiply starting" << std::endl;
 
-  // Central block multiplication
-  saberCentralBlock_->multiply(dx.fieldSet());
+  // SABER block chain multiplication
+  locBlockChain_->multiply(dx.fieldSet());
 
   // ATLAS fieldset to Increment_
   dx.synchronizeFields();

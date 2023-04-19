@@ -7,11 +7,14 @@
 
 #include "saber/oops/Ensemble.h"
 
+#include <utility>
 #include <vector>
 
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/Logger.h"
+
+#include "saber/oops/SaberBlockChain.h"
 
 namespace saber {
 namespace generic {
@@ -32,19 +35,6 @@ Ensemble::Ensemble(const oops::GeometryData & geometryData,
                    const size_t & timeRank) :
   timeRank_(timeRank) {
   oops::Log::trace() << classname() << "::Ensemble starting" << std::endl;
-
-  // Initialize localization
-  SaberCentralBlockParametersWrapper locParams;
-  locParams.validateAndDeserialize(params.localization);
-  const SaberBlockParametersBase & saberCentralBlockParams =
-    locParams.saberCentralBlockParameters;
-
-  oops::Log::info() << "Info     : Creating localization block: "
-                    << saberCentralBlockParams.saberBlockName.value() << std::endl;
-  loc_.reset(SaberCentralBlockFactory::create(geometryData, activeVariableSizes, activeVars,
-    covarConf, saberCentralBlockParams, xb, fg, timeRank));
-  loc_->read();
-
   oops::Log::trace() << classname() << "::Ensemble done" << std::endl;
 }
 
@@ -121,6 +111,13 @@ void Ensemble::directCalibration(const std::vector<atlas::FieldSet> & fsetEns) {
     ensemble_.push_back(fset);
   }
   oops::Log::trace() << classname() << "::directCalibration done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void Ensemble::setLocalization(std::unique_ptr<SaberBlockChain> locBlockChain) {
+  // Pass central block
+  loc_ = std::move(locBlockChain);
 }
 
 // -----------------------------------------------------------------------------

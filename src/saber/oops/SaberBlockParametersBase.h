@@ -38,6 +38,9 @@ class SaberBlockParametersBase : public oops::Parameters {
   // Calibration of block parameters [optional]
   oops::OptionalParameter<eckit::LocalConfiguration> calibrationParams{"calibration", this};
 
+  // Localization parameter for the Ensemble block
+  oops::OptionalParameter<eckit::LocalConfiguration> localization{"localization", this};
+
   // Adjoint tolerance
   oops::OptionalParameter<double> adjointTolerance{"adjoint tolerance", this};
 

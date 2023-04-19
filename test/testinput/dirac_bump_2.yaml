@@ -117,20 +117,21 @@ background error:
       saber central block:
         saber block name: Ensemble
         localization:
-          saber block name: BUMP_NICAS
-          read:
-            general:
-              testing: true
-            io:
-              data directory: testdata
-              files prefix: dirac_bump_2/_MPI_-_OMP_
-              alias:
-              - in code: common
-                in file: stream_function
-              overriding nicas file: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas
-            drivers:
-              multivariate strategy: duplicated
-              read local nicas: true
+          saber central block:
+            saber block name: BUMP_NICAS
+            read:
+              general:
+                testing: true
+              io:
+                data directory: testdata
+                files prefix: dirac_bump_2/_MPI_-_OMP_
+                alias:
+                - in code: common
+                  in file: stream_function
+                overriding nicas file: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas
+              drivers:
+                multivariate strategy: duplicated
+                read local nicas: true
     weight:
       value: 0.5
 dirac:

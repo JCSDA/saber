@@ -57,9 +57,11 @@ class Ensemble : public SaberCentralBlockBase {
 
   void directCalibration(const std::vector<atlas::FieldSet> &) override;
 
+  void setLocalization(std::unique_ptr<SaberBlockChain>) override;
+
  private:
   std::vector<atlas::FieldSet> ensemble_;
-  std::unique_ptr<SaberCentralBlockBase> loc_;
+  std::unique_ptr<SaberBlockChain> loc_;
   size_t timeRank_;
   void print(std::ostream &) const override;
 };
