@@ -50,7 +50,7 @@ endif()
 
 # Optionals
 find_package( oops QUIET )
-find_package( gsibec 1.0.6 QUIET )
+find_package( gsibec 1.1.1 QUIET )
 find_package( vader QUIET )
 
 # Optional SABER blocks

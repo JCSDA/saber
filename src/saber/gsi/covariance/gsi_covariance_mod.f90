@@ -27,12 +27,17 @@ use m_gsibec,                       only: gsibec_sv_space
 use m_gsibec,                       only: gsibec_befname
 use m_gsibec,                       only: gsibec_init_guess
 use m_gsibec,                       only: gsibec_set_guess
-use m_gsibec,                       only: gsibec_final
 
 use guess_grids,                    only: gsiguess_bkgcov_init  ! temporary
+use m_rf,                           only: rf_set    ! temporary
 use gsi_metguess_mod,               only: gsi_metguess_get
 use gsi_bundlemod,                  only: gsi_bundle
 use gsi_bundlemod,                  only: gsi_bundlegetpointer
+
+!use m_gsibec,                       only: gsibec_final_guess
+!use m_gsibec,                       only: gsibec_final
+!use guess_grids,                    only: gsiguess_bkgcov_final ! temporary
+!use m_rf,                           only: rf_unset  ! temporary
 
 use control_vectors,                only: control_vector
 use control_vectors,                only: cvars2d,cvars3d
@@ -54,7 +59,7 @@ type :: gsi_covariance
   type(gsi_grid) :: grid
   logical :: bypassGSIbe
   logical :: cv   ! cv=.true.; sv=.false.
-  integer :: mp_comm_world
+  integer :: mp_comm
   integer :: rank
   contains
     procedure, public :: create
@@ -85,7 +90,7 @@ character(len=*), parameter :: myname_=myname//'*create'
 character(len=:), allocatable :: nml,bef
 real(kind=kind_real), pointer :: rank2(:,:)=>NULL()
 logical :: bkgmock
-integer :: ier,n,itbd
+integer :: ier,n,itbd,jouter
 integer :: ngsivars2d,ngsivars3d
 character(len=20),allocatable :: gsivars(:)
 character(len=20),allocatable :: usrvars(:)
@@ -93,7 +98,7 @@ character(len=30),allocatable :: tbdvars(:)
 
 ! Hold communicator
 ! -----------------
-!self%mp_comm_world=comm%communicator()
+self%mp_comm=comm%communicator()
 
 ! Create the grid
 ! ---------------
@@ -111,8 +116,9 @@ if (.not. self%grid%noGSI) then
 ! Initialize GSI-Berror components
 ! --------------------------------
   call gsibec_init(self%cv,bkgmock=bkgmock,nmlfile=nml,befile=bef,&
-                   layout=self%grid%layout,comm=comm%communicator())
-  call gsibec_init_guess()
+                   layout=self%grid%layout,jouter=jouter,&
+                   comm=comm%communicator())
+  if(jouter==1) call gsibec_init_guess()
 
 ! Initialize and set background fields needed by GSI Berror formulation/operators
 ! -------------------------------------------------------------------------------
@@ -179,8 +185,9 @@ if (.not. self%grid%noGSI) then
      deallocate(tbdvars)
      
   endif
+  if(jouter==1) call rf_set()
 
-endif
+endif ! noGSI
 
 contains
   subroutine bkg_set2_(varname)
@@ -188,7 +195,7 @@ contains
   character(len=*), intent(in) :: varname
   real(kind=kind_real), allocatable :: aux(:,:)
 
-  print *, 'Atlas 2-dim: ', size(rank2,2), ' gsi-vec: ', self%grid%lat2,' ', self%grid%lon2
+! print *, 'Atlas 2-dim: ', size(rank2,2), ' gsi-vec: ', self%grid%lat2,' ', self%grid%lon2
   allocate(aux(self%grid%lat2,self%grid%lon2))
   call addhalo_(rank2(1,:),aux)
   call gsibec_set_guess(varname,aux)
@@ -229,14 +236,20 @@ subroutine delete(self)
 class(gsi_covariance) :: self
 
 ! Locals
+integer :: ier
 
-if (.not. self%grid%noGSI) then
-!! call gsibec_final(.false.)
-endif
+! Unfortunately, having these here break the multi-outer-loop opt
+! I think the create/delete in saber are working as expected
+!if (.not. self%grid%noGSI) then
+!  call rf_unset()
+!  call gsiguess_bkgcov_final()
+!  call gsibec_final_guess()
+!  call gsibec_final(.false.)
+!endif
 
 ! Delete the grid
 ! ---------------
-call self%grid%delete()
+!call self%grid%delete()
 
 end subroutine delete
 
@@ -362,7 +375,7 @@ else
    allocate(gvars2d(size(svars2d)),gvars3d(size(svars3d)))
    gvars2d=svars2d; gvars3d=svars3d
    allocate(gsisv(1))
-   call allocate_state(gsisv(1))
+   call allocate_state(gsisv(1),'saber')
 endif
 allocate(tbdvars(size(gvars2d)+size(gvars3d)))
 allocate(needvrs(size(gvars2d)+size(gvars3d)))
@@ -522,7 +535,6 @@ deallocate(tbdvars)
 deallocate(gvars2d,gvars3d)
 call afield%final()
 
-!contains
 
 
 end subroutine multiply
@@ -584,12 +596,12 @@ end subroutine multiply
       call afield%data(rank2)
       ier=0
    endif
-!  if (trim(vname) == 'tv' ) then
-!     if (.not.fields%has('virtual_temperature')) return
-!     afield = fields%field('virtual_temperature')
-!     call afield%data(rank2)
-!     ier=0
-!  endif
+   if (trim(vname) == 'tv' ) then
+      if (.not.fields%has('virtual_temperature')) return
+      afield = fields%field('virtual_temperature')
+      call afield%data(rank2)
+      ier=0
+   endif
    if (trim(vname) == 'q' .or. trim(vname) == 'sphum' ) then
       if (.not.fields%has('specific_humidity')) return
       afield = fields%field('specific_humidity')

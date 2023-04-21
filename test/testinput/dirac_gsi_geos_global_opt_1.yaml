@@ -44,14 +44,16 @@ geometry:
   - variables:
     - stream_function
     - velocity_potential
-    - air_temperature
     levels: 72
+  - variables:
+    - surface_pressure
+    levels: 1
 initial condition:
   date: '2010-01-01T12:00:00Z'
   state variables:
   - stream_function
   - velocity_potential
-  - air_temperature
+  - surface_pressure
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_gsi_geos_global_opt_1/%MPI%_dirac_%id%

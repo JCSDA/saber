@@ -26,9 +26,9 @@ met_guess::
 # z         1      -1         geopotential_height  phis
 # u        72       2         zonal_wind           u
 # v        72       2         meridional_wind      v
-# div      72      -1         zonal_wind           div
-# vor      72      -1         meridional_wind      vor
-  tv       72       2         virtial_temperature  tv
+  div      72      -1         diverence            div
+  vor      72      -1         vorticity            vor
+# tv       72       2         virtial_temperature  tv
 # q        72       2         specific_humidity    sphu
 # oz       72       2         ozone                ozone
 # cw       72      -1         cloud_condensate     qctot
@@ -88,9 +88,11 @@ state_tendencies::
 
 state_vector::
 !var     level  itracer source     funcof
+#sf       72      0     met_guess    sf
+#vp       72      0     met_guess    vp
 #u        72      0     met_guess    u
 #v        72      0     met_guess    v
- tv       72      0     met_guess    tv
+#tv       72      0     met_guess    tv
 #tsen     72      0     met_guess    tv,q
 #q        72      1     met_guess    q
 #oz       72      1     met_guess    oz
@@ -102,7 +104,7 @@ state_vector::
 #prse     73      0     met_guess    prse
 #co       72      1     chem_guess   co
 #co2      72      1     chem_guess   co2
- ps        1      0     met_guess    prse
+#ps        1      0     met_guess    prse
 #sst       1      0     met_guess    sst
 ::
 
@@ -110,7 +112,7 @@ control_vector::
 !var     level  itracer as/tsfc_sdv  an_amp0   source  funcof  be
  sf       72      0       0.45        -1.0     state    u:v     -1.00   
  vp       72      0       0.55        -1.0     state    u:v     -1.00
- t        72      0       0.90        -1.0     state    tv      -1.00
+#t        72      0       0.90        -1.0     state    tv      -1.00
 #q        72      1       0.60        -1.0     state    q       -1.00
 #oz       72      1       0.20        -1.0     state    oz      -1.00
 #co       72      1       0.20        -1.0     state    co      -1.00
@@ -119,7 +121,7 @@ control_vector::
 #qi       72      1       0.00        -1.0     state    qi      -1.00
 #qr       72      1       0.00        -1.0     state    qr      -1.00
 #qs       72      1       0.00        -1.0     state    qs      -1.00
-ps        1      0       0.75        -1.0     state    prse    -1.00
+ ps        1      0       0.75        -1.0     state    prse    -1.00
 #sst       1      0       2.40        -1.0     state    sst     -1.00
 #sst       1      0       1.20        -1.0     state    sst     -1.00
 #stl       1      0       3.00        -1.0     motley   sst     -1.00

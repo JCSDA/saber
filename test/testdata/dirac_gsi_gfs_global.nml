@@ -26,7 +26,7 @@ met_guess::
 # v       127       2         meridional_wind      v
 # div     127      -1         zonal_wind           div
 # vor     127      -1         meridional_wind      vor
-  tv      127       2         virtial_temperature  tv
+# tv      127       2         virtial_temperature  tv
 # q       127       2         specific_humidity    sphu
 # oz      127       2         ozone                ozone
 # cw      127      -1         cloud_condensate     qctot
@@ -75,7 +75,7 @@ state_vector::
 !var     level  itracer source     funcof
 #u       127      0     met_guess    u
 #v       127      0     met_guess    v
- tv      127      0     met_guess    tv
+#tv      127      0     met_guess    tv
 #tsen    127      0     met_guess    tv,q
 #q       127      1     met_guess    q
 #oz      127      1     met_guess    oz
@@ -95,7 +95,7 @@ control_vector::
 !var     level  itracer as/tsfc_sdv  an_amp0   source  funcof  be
  sf      127      0       0.45        -1.0     state    u:v     -1.00   
  vp      127      0       0.55        -1.0     state    u:v     -1.00
- t       127      0       0.90        -1.0     state    tv      -1.00
+#t       127      0       0.90        -1.0     state    tv      -1.00
 #q       127      1       0.60        -1.0     state    q       -1.00
 #oz      127      1       0.20        -1.0     state    oz      -1.00
 #co      127      1       0.20        -1.0     state    co      -1.00

@@ -10,7 +10,8 @@
 met_guess::
 !var     level   crtm_use    desc                 orig_name
   ps        1      -1         surface_pressure     ps
-  tv       72       2         virtial_temperature  tv
+  div      72      -1         divergence           div
+  vor      72      -1         vorticity            vor
 ::
 
 state_derivatives::
@@ -23,13 +24,11 @@ state_tendencies::
 
 state_vector::
 !var     level  itracer source     funcof
- tv       72      0     met_guess    tv
- ps        1      0     met_guess    prse
 ::
 
 control_vector::
 !var     level  itracer as/tsfc_sdv  an_amp0   source  funcof  be
  sf       72      0       1.0         -1.0     state    u:v     -1.00   
  vp       72      0       1.0         -1.0     state    u:v     -1.00
- t        72      0       1.0         -1.0     state    tv      -1.00
+ ps        1      0       0.75        -1.0     state    prse    -1.00
 ::

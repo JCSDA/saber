@@ -113,8 +113,8 @@ else
 endif
 
 ! Create arrays of lon/lat to be compatible with interpolation
-allocate(self%grid_lons(self%isc:self%iec, self%jsc:self%jec))
-allocate(self%grid_lats(self%isc:self%iec, self%jsc:self%jec))
+if(.not.allocated(self%grid_lons)) allocate(self%grid_lons(self%isc:self%iec, self%jsc:self%jec))
+if(.not.allocated(self%grid_lats)) allocate(self%grid_lats(self%isc:self%iec, self%jsc:self%jec))
 
 do i = self%isc, self%iec
   self%grid_lons(i,:) = self%lons(i)
@@ -167,8 +167,8 @@ contains
 
   ! Allocate the lat/lon arrays
   ! ---------------------------
-  allocate(self%lons(self%npx))
-  allocate(self%lats(self%npy))
+  if(.not.allocated(self%lons)) allocate(self%lons(self%npx))
+  if(.not.allocated(self%lats)) allocate(self%lats(self%npy))
 
   ! Read the latitudes and longitudes per GSIbec
   ! --------------------------------------------
@@ -247,8 +247,8 @@ contains
 
   ! Allocate the lat/lon arrays
   ! ---------------------------
-  allocate(self%lons(self%npx))
-  allocate(self%lats(self%npy))
+  if(.not.allocated(self%lons)) allocate(self%lons(self%npx))
+  if(.not.allocated(self%lats)) allocate(self%lats(self%npy))
 
   ! Read the latitude and longitude
   ! -------------------------------
