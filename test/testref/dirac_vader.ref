@@ -17,8 +17,8 @@ Groups:
 Fields:
   virtual_temperature: 1.0000000000000000e+00
   specific_humidity: 1.0000000000000000e+00
-Adjoint test passed
-Adjoint test passed
+Adjoint test for block vader variable change passed
+Adjoint test for block ID passed
 Covariance(SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:

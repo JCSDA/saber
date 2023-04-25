@@ -41,6 +41,13 @@ class SaberBlockParametersBase : public oops::Parameters {
   // Localization parameter for the Ensemble block
   oops::OptionalParameter<eckit::LocalConfiguration> localization{"localization", this};
 
+  // Flag to skip inverse application (for ensemble perturbations, background and first guess)
+  oops::Parameter<bool> skipInverse{"skip inverse", false, this};
+
+  // Variables to update with left inverse for background and first guess
+  oops::Parameter<oops::Variables> inverseVars{"state variables to inverse", oops::Variables(),
+    this};
+
   // Adjoint tolerance
   oops::OptionalParameter<double> adjointTolerance{"adjoint tolerance", this};
 

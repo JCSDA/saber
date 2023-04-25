@@ -19,12 +19,12 @@ Fields:
   northward_wind: 0.0000000000000000e+00
   unbalanced_pressure: 1.0000000000000000e+00
   moisture_control_variable: 1.0000000000000000e+00
-Adjoint test passed
-Inner inverse test passed: U Uinv (U x) == (U x)
-Outer inverse test passed: Uinv U (Uinv x) == (Uinv x)
+Adjoint test for block spectral to gauss passed
+Inner inverse test passed for block spectral to gauss passed: U Uinv (U x) == (U x)
+Outer inverse test for block spectral to gauss passed: Uinv U (Uinv x) == (Uinv x)
 UU^t consistency test passed
 Adjoint test for U and U^t passed
-Adjoint test passed
+Adjoint test for block spectral covariance passed
 Covariance(SABER) diagnostics:
 - Variances at Dirac points:
   + Value for variable eastward_wind, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 1.2843501075304320e-01
@@ -55,10 +55,10 @@ Fields:
   northward_wind: 2.2511716006873311e-01
   unbalanced_pressure: 5.4773673943778640e+03
   moisture_control_variable: 8.0295972259155168e-01
-Adjoint test passed
-Inner inverse test passed: U Uinv (U x) == (U x)
-Outer inverse test passed: Uinv U (Uinv x) == (Uinv x)
-Adjoint test passed
+Adjoint test for block spectral to gauss passed
+Inner inverse test passed for block spectral to gauss passed: U Uinv (U x) == (U x)
+Outer inverse test for block spectral to gauss passed: Uinv U (Uinv x) == (Uinv x)
+Adjoint test for block spectral covariance passed
 Randomized variance: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:

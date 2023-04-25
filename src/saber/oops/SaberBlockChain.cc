@@ -9,6 +9,7 @@
 
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/FieldSetOperations.h"
+#include "oops/util/Logger.h"
 
 namespace saber {
 
@@ -107,18 +108,28 @@ void SaberBlockChain::multiply(atlas::FieldSet & fset) const {
 // -----------------------------------------------------------------------------
 
 void SaberBlockChain::leftInverseMultiply(atlas::FieldSet & fset) const {
-  // Outer blocks calibration inverse multiplication
+  // Outer blocks left inverse multiplication
   for (icst_ it = outerBlocks_.begin(); it != outerBlocks_.end(); ++it) {
-    it->leftInverseMultiply(fset);
+    if (it->skipInverse()) {
+      oops::Log::info() << "Warning: left inverse multiplication skipped for block "
+                      << it->blockName() << std::endl;
+    } else {
+      it->leftInverseMultiply(fset);
+    }
   }
 }
 
 // -----------------------------------------------------------------------------
 
 void SaberBlockChain::leftInverseMultiplyExceptLast(atlas::FieldSet & fset) const {
-  // Outer blocks calibration inverse multiplication
+  // Outer blocks left inverse multiplication
   for (icst_ it = outerBlocks_.begin(); it != std::prev(outerBlocks_.end()); ++it) {
-    it->leftInverseMultiply(fset);
+    if (it->skipInverse()) {
+      oops::Log::info() << "Warning: left inverse multiplication skipped for block "
+                      << it->blockName() << std::endl;
+    } else {
+      it->leftInverseMultiply(fset);
+    }
   }
 }
 

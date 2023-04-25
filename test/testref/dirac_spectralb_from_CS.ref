@@ -17,9 +17,9 @@ Groups:
 Fields:
   unbalanced_pressure: 1.0000000000000000e+00
   moisture_control_variable: 1.0000000000000000e+00
-Adjoint test passed
-Adjoint test passed
-Adjoint test passed
+Adjoint test for block gauss to cubed-sphere-dual passed
+Adjoint test for block spectral to gauss passed
+Adjoint test for block spectral covariance passed
 Covariance(SABER) diagnostics:
 - Variances at Dirac points:
   + Value for variable unbalanced_pressure, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 4.3119148681247742e+02

@@ -65,7 +65,6 @@ class PsiChiToUV : public SaberOuterBlockBase {
 
   void multiply(atlas::FieldSet &) const override;
   void multiplyAD(atlas::FieldSet &) const override;
-  void leftInverseMultiply(atlas::FieldSet &) const override;
 
   void read() override;
 

@@ -32,6 +32,8 @@ background error:
         adjoint: true
     active variables:
     - stream_function
+    state variables to inverse:
+    - stream_function
     inner inverse tolerance: 0.05
     outer inverse tolerance: 0.05
 dirac:

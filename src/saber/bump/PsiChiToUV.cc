@@ -93,14 +93,6 @@ void PsiChiToUV::multiplyAD(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void PsiChiToUV::leftInverseMultiply(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
-  ABORT(classname() + "::leftInverseMultiply not implemented");
-  oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
 void PsiChiToUV::read() {
   oops::Log::trace() << classname() << "::read starting" << std::endl;
   bump_->runDrivers();

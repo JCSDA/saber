@@ -28,7 +28,7 @@ Fields:
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-Adjoint test passed
+Adjoint test for block BUMP_PsiChiToUV passed
        Independent levels:  1[2]
           Model grid size:              840
           Subset Sc0 size:              762
@@ -43,9 +43,9 @@ Adjoint test passed
           nc1 =      500
           nc2 =      250
           Independent levels:  1[2]
-Adjoint test passed
+Adjoint test for block BUMP_VerticalBalance passed
 Norm of input parameter StdDev: 5.7658289604038131e+01
-Adjoint test passed
+Adjoint test for block StdDev passed
        Independent levels:  1[2]
           Model grid size:              840
           Subset Sc0 size:              762
@@ -57,7 +57,7 @@ Adjoint test passed
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-Adjoint test passed
+Adjoint test for block BUMP_StdDev passed
        Independent levels:  1[2]
           Model grid size:              840
           Subset Sc0 size:              762
@@ -70,7 +70,7 @@ Adjoint test passed
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
 Norm of input parameter stddev - 1: 5.7658289604038131e+01
-Adjoint test passed
+Adjoint test for block BUMP_StdDev passed
        Independent levels:  1[2]
           Model grid size:              840
           Subset Sc0 size:              762
@@ -82,7 +82,7 @@ Adjoint test passed
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-Adjoint test passed
+Adjoint test for block BUMP_NICAS passed
        Independent levels:  1[2]
           Model grid size:              840
           Subset Sc0 size:              762
@@ -124,7 +124,7 @@ Fields:
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-Adjoint test passed
+Adjoint test for block BUMP_PsiChiToUV passed
        Independent levels:  1[2]
           Model grid size:              840
           Subset Sc0 size:              762
@@ -139,9 +139,9 @@ Adjoint test passed
           nc1 =      500
           nc2 =      250
           Independent levels:  1[2]
-Adjoint test passed
+Adjoint test for block BUMP_VerticalBalance passed
 Norm of input parameter StdDev: 5.7658289604038131e+01
-Adjoint test passed
+Adjoint test for block StdDev passed
        Independent levels:  1[2]
           Model grid size:              840
           Subset Sc0 size:              762
@@ -153,7 +153,7 @@ Adjoint test passed
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-Adjoint test passed
+Adjoint test for block BUMP_StdDev passed
        Independent levels:  1[2]
           Model grid size:              840
           Subset Sc0 size:              762
@@ -166,7 +166,7 @@ Adjoint test passed
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
 Norm of input parameter stddev - 1: 5.7658289604038131e+01
-Adjoint test passed
+Adjoint test for block BUMP_StdDev passed
        Independent levels:  1[2]
           Model grid size:              840
           Subset Sc0 size:              762
@@ -178,7 +178,7 @@ Adjoint test passed
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-Adjoint test passed
+Adjoint test for block BUMP_NICAS passed
 Covariance(hybrid1_SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:

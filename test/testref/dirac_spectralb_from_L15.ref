@@ -16,7 +16,7 @@ Groups:
   Mask size: 100%
 Fields:
   psi_inc: 1.0000000000000000e+00
-Adjoint test passed
+Adjoint test for block SPCTRL_COV passed
 Covariance(SABER) diagnostics:
 - Variances at Dirac points:
   + Value for variable psi_inc, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 8.6604885547608212e-01

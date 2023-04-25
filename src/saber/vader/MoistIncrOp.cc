@@ -125,13 +125,6 @@ void MoistIncrOp::multiplyAD(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void MoistIncrOp::leftInverseMultiply(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
-  oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
 void MoistIncrOp::print(std::ostream & os) const {
   os << classname();
 }

@@ -65,6 +65,7 @@ SaberCentralBlockBase * SaberCentralBlockFactory::create(
   }
   SaberCentralBlockBase * ptr = jsb->second->make(geometryData, variableSizes, vars, covarConf,
     params, xb, fg, timeRank);
+  ptr->setBlockName(params.saberBlockName.value());
   oops::Log::trace() << "SaberCentralBlockBase::create done" << std::endl;
   return ptr;
 }
@@ -114,12 +115,12 @@ void SaberCentralBlockBase::adjointTest(const eckit::mpi::Comm & comm,
   oops::Log::info() << std::setprecision(16) << "Info     : Adjoint test: y^t (Ax) = " << dp1
                     << ": x^t (A^t y) = " << dp2 << " : adjoint tolerance = "
                     << adjointTolerance << std::endl;
-  oops::Log::test() << "Adjoint test";
+  oops::Log::test() << "Adjoint test for block " << this->blockName();
   if (std::abs(dp1-dp2)/std::abs(0.5*(dp1+dp2)) < adjointTolerance) {
     oops::Log::test() << " passed" << std::endl;
   } else {
     oops::Log::test() << " failed" << std::endl;
-    ABORT("Adjoint test failure");
+    ABORT("Adjoint test failure for block " + this->blockName());
   }
 
   oops::Log::trace() << "SaberCentralBlockBase::adjointTest done" << std::endl;

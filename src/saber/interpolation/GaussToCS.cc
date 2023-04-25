@@ -153,14 +153,6 @@ void GaussToCS::multiplyAD(atlas::FieldSet & fieldSet) const {
 
 // -----------------------------------------------------------------------------
 
-void GaussToCS::leftInverseMultiply(atlas::FieldSet & fset) const {
-  oops::Log::info() << classname()
-                    << "::leftInverseMultiply not meaningful so fieldset unchanged"
-                    << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
 void GaussToCS::print(std::ostream & os) const {
   os << classname();
 }

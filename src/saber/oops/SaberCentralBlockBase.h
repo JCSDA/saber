@@ -59,11 +59,11 @@ class SaberCentralBlockBase : public util::Printable, private boost::noncopyable
 
   // Set localization blockchain
   virtual void setLocalization(std::unique_ptr<SaberBlockChain>)
-    {ABORT("setLocalization not implemented yet for this block");}
+    {ABORT("setLocalization not implemented yet for the block " + this->blockName());}
 
   // Read block data
   virtual void read()
-    {ABORT("read not implemented yet for this block");}
+    {ABORT("read not implemented yet for the block " + this->blockName());}
 
   // Read model files
   virtual std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> fieldsToRead()
@@ -71,19 +71,19 @@ class SaberCentralBlockBase : public util::Printable, private boost::noncopyable
 
   // Direct calibration
   virtual void directCalibration(const std::vector<atlas::FieldSet> &)
-    {ABORT("directCalibration not implemented yet for this block");}
+    {ABORT("directCalibration not implemented yet for the block " + this->blockName());}
 
   // Iterative calibration
   virtual void iterativeCalibrationInit()
-    {ABORT("iterativeCalibrationInit not implemented yet for this block");}
+    {ABORT("iterativeCalibrationInit not implemented yet for the block " + this->blockName());}
   virtual void iterativeCalibrationUpdate(const atlas::FieldSet &)
-    {ABORT("iterativeCalibrationUpdate not implemented yet for this block");}
+    {ABORT("iterativeCalibrationUpdate not implemented yet for the block " + this->blockName());}
   virtual void iterativeCalibrationFinal()
-    {ABORT("iterativeCalibrationUpdate not implemented yet for this block");}
+    {ABORT("iterativeCalibrationUpdate not implemented yet for the block " + this->blockName());}
 
   // Dual resolution setup
   virtual void dualResolutionSetup(const oops::GeometryData &)
-    {ABORT("dualResolutionSetup not implemented yet for this block");}
+    {ABORT("dualResolutionSetup not implemented yet for the block " + this->blockName());}
 
   // Write block data
   virtual void write() const {}
@@ -93,6 +93,12 @@ class SaberCentralBlockBase : public util::Printable, private boost::noncopyable
      {return {};}
 
   // Non-virtual methods
+
+  // Set block name
+  void setBlockName(const std::string & blockName) {blockName_ = blockName;}
+
+  // Return block name
+  std::string blockName() const {return blockName_;}
 
   // Read model fields
   template <typename MODEL>
@@ -114,6 +120,8 @@ class SaberCentralBlockBase : public util::Printable, private boost::noncopyable
                    const double & adjointTolerance = 1.0e-12) const;
 
  private:
+  std::string blockName_;
+  bool skipInverse_;
   virtual void print(std::ostream &) const = 0;
 };
 

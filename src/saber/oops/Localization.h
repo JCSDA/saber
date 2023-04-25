@@ -67,7 +67,8 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
   const State_ fg(geom, incVars, dummyTime);
 
   // Initialize localization blockchain
-  locBlockChain_ = localizationBlockChain<MODEL>(geom, incVars, xb, fg, conf);
+  locBlockChain_ = localizationBlockChain<MODEL>(geom, incVars, xb.fieldSet(), fg.fieldSet(),
+                                                 xb.validTime(), conf);
 
   oops::Log::trace() << "Localization:Localization done" << std::endl;
 }

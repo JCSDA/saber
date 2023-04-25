@@ -17,8 +17,8 @@ Groups:
 Fields:
   eastward_wind: 1.0000000000000000e+00
   northward_wind: 0.0000000000000000e+00
-Adjoint test passed
-Adjoint test passed
+Adjoint test for block spectral to gauss passed
+Adjoint test for block spectral covariance passed
 Covariance(SABER) diagnostics:
 - Variances at Dirac points:
   + Value for variable eastward_wind, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 1.2843501075304320e-01

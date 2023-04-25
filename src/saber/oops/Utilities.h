@@ -395,17 +395,18 @@ oops::Variables getActiveVars(const SaberBlockParametersBase & params,
 template<typename MODEL>
 std::unique_ptr<SaberBlockChain> localizationBlockChain(const oops::Geometry<MODEL> & geom,
                                                         const oops::Variables & incVars,
-                                                        const oops::State<MODEL> & xb,
-                                                        const oops::State<MODEL> & fg,
+                                                        const atlas::FieldSet & fsetXbIn,
+                                                        const atlas::FieldSet & fsetFgIn,
+                                                        const util::DateTime & validTime,
                                                         const eckit::Configuration & conf) {
   oops::Log::trace() << "localizationBlockChain starting" << std::endl;
 
-  // Local copy of background and first guess
-  oops::State<MODEL> xbLocal(xb);
-  oops::State<MODEL> fgLocal(fg);
-
   // Extend backgroud and first guess with extra fields
   // TODO(Benjamin, Marek, Mayeul, ?)
+
+  // Make copy of fieldsets that can be changed
+  atlas::FieldSet fsetXb = util::copyFieldSet(fsetXbIn);
+  atlas::FieldSet fsetFg = util::copyFieldSet(fsetFgIn);
 
   // Initialize geometry data
   std::vector<std::reference_wrapper<const oops::GeometryData>> outerGeometryData;
@@ -415,7 +416,7 @@ std::unique_ptr<SaberBlockChain> localizationBlockChain(const oops::Geometry<MOD
   oops::Variables outerVars(incVars);
 
   // Initialize localization blockchain
-  std::unique_ptr<SaberBlockChain> locBlockChain(new SaberBlockChain(incVars, xbLocal.fieldSet()));
+  std::unique_ptr<SaberBlockChain> locBlockChain(new SaberBlockChain(incVars, fsetXb));
 
   // Initialize empty vector of FieldSets
   std::vector<atlas::FieldSet> emptyFsetEns;
@@ -447,8 +448,9 @@ std::unique_ptr<SaberBlockChain> localizationBlockChain(const oops::Geometry<MOD
     buildOuterBlocks(geom,
                      outerGeometryData,
                      outerVars,
-                     xbLocal,
-                     fgLocal,
+                     fsetXb,
+                     fsetFg,
+                     validTime,
                      emptyFsetEns,
                      covarConf,
                      saberOuterBlocksParams,
@@ -467,8 +469,9 @@ std::unique_ptr<SaberBlockChain> localizationBlockChain(const oops::Geometry<MOD
                     geom,
                     outerGeometryData.back().get(),
                     outerVars,
-                    xbLocal,
-                    fgLocal,
+                    fsetXb,
+                    fsetFg,
+                    validTime,
                     emptyFsetEns,
                     emptyFsetEns,
                     covarConf,
@@ -486,8 +489,9 @@ void buildOuterBlocks(const oops::Geometry<MODEL> & geom,
                       std::vector<std::reference_wrapper<const oops::GeometryData>> &
                         outerGeometryData,
                       oops::Variables & outerVars,
-                      const oops::State<MODEL> & xb,
-                      const oops::State<MODEL> & fg,
+                      atlas::FieldSet & fsetXb,
+                      atlas::FieldSet & fsetFg,
+                      const util::DateTime & validTime,
                       std::vector<atlas::FieldSet> & fsetEns,
                       const eckit::LocalConfiguration & covarConf,
                       const std::vector<SaberOuterBlockParametersWrapper> & saberOuterBlocksParams,
@@ -516,11 +520,11 @@ void buildOuterBlocks(const oops::Geometry<MODEL> & geom,
                                             outerVars,
                                             covarConf,
                                             saberOuterBlockParams,
-                                            xb.fieldSet(),
-                                            fg.fieldSet()));
+                                            fsetXb,
+                                            fsetFg));
 
     // Read and add model fields
-    saberBlockChain.lastOuterBlock().read(geom, outerVars, xb.validTime());
+    saberBlockChain.lastOuterBlock().read(geom, outerVars, validTime);
 
     if (saberOuterBlockParams.doCalibration()) {
       // Block calibration
@@ -543,7 +547,7 @@ void buildOuterBlocks(const oops::Geometry<MODEL> & geom,
           atlas::FieldSet fset;
           readEnsembleMember(geom,
                              saberBlockChain.incVars(),
-                             xb.validTime(),
+                             validTime,
                              ensembleConf,
                              ie,
                              fset);
@@ -563,18 +567,11 @@ void buildOuterBlocks(const oops::Geometry<MODEL> & geom,
       }
 
       // Write calibration data
-      saberBlockChain.lastOuterBlock().write(geom, outerVars, xb.validTime());
+      saberBlockChain.lastOuterBlock().write(geom, outerVars, validTime);
       saberBlockChain.lastOuterBlock().write();
     } else if (saberOuterBlockParams.doRead()) {
       // Read data
       saberBlockChain.lastOuterBlock().read();
-    }
-
-    if (!iterativeEnsembleLoading) {
-      // Calibration inverse multiplication on ensemble members
-      for (auto & fset : fsetEns) {
-        saberBlockChain.lastOuterBlock().leftInverseMultiply(fset);
-      }
     }
 
     // Inner geometry data and variables
@@ -592,6 +589,35 @@ void buildOuterBlocks(const oops::Geometry<MODEL> & geom,
     activeOuterVars.intersection(outerVars);
     oops::Variables activeInnerVars = activeVars;
     activeInnerVars.intersection(innerVars);
+
+    if (!iterativeEnsembleLoading) {
+      // Calibration inverse multiplication on ensemble members
+      for (auto & fset : fsetEns) {
+        if (saberBlockChain.lastOuterBlock().skipInverse()) {
+          oops::Log::info() << "Warning: left inverse multiplication skipped for block "
+                            << saberBlockChain.lastOuterBlock().blockName() << std::endl;
+        } else {
+          saberBlockChain.lastOuterBlock().leftInverseMultiply(fset);
+        }
+      }
+    }
+
+    // Calibration inverse multiplication on xb and fg if inner and outer Geometry is different
+    if (util::getGridUid(innerGeometryData.functionSpace())
+      != util::getGridUid(outerGeometryData.back().get().functionSpace())
+      && saberOuterBlockParams.inverseVars.value().size() > 0) {
+      // Share fields pointers
+      atlas::FieldSet fsetXbInv;
+      atlas::FieldSet fsetFgInv;
+      for (const auto & var : saberOuterBlockParams.inverseVars.value().variables()) {
+        fsetXbInv.add(fsetXb.field(var));
+        fsetFgInv.add(fsetFg.field(var));
+      }
+
+      // Apply left inverse
+      saberBlockChain.lastOuterBlock().leftInverseMultiply(fsetXbInv);
+      saberBlockChain.lastOuterBlock().leftInverseMultiply(fsetFgInv);
+    }
 
     // Adjoint test
     if (covarConf.getBool("adjoint test")) {
@@ -662,8 +688,9 @@ void buildCentralBlock(const oops::Geometry<MODEL> & geom,
                        const oops::Geometry<MODEL> & dualResolutionGeom,
                        const oops::GeometryData & outerGeometryData,
                        oops::Variables & outerVars,
-                       const oops::State<MODEL> & xb,
-                       const oops::State<MODEL> & fg,
+                       const atlas::FieldSet & fsetXb,
+                       const atlas::FieldSet & fsetFg,
+                       const util::DateTime & validTime,
                        std::vector<atlas::FieldSet> & fsetEns,
                        std::vector<atlas::FieldSet> & dualResolutionFsetEns,
                        const eckit::LocalConfiguration & covarConf,
@@ -694,12 +721,12 @@ void buildCentralBlock(const oops::Geometry<MODEL> & geom,
                                    activeVars,
                                    covarConf,
                                    saberCentralBlockParams,
-                                   xb.fieldSet(),
-                                   fg.fieldSet(),
+                                   fsetXb,
+                                   fsetFg,
                                    geom.timeComm().rank()));
 
   // Read and add model fields
-  saberBlockChain.centralBlock().read(geom, outerVars, xb.validTime());
+  saberBlockChain.centralBlock().read(geom, outerVars, validTime);
 
   if (saberCentralBlockParams.doCalibration()) {
     // Block calibration
@@ -722,7 +749,7 @@ void buildCentralBlock(const oops::Geometry<MODEL> & geom,
         atlas::FieldSet fset;
         readEnsembleMember(geom,
                            saberBlockChain.incVars(),
-                           xb.validTime(),
+                           validTime,
                            ensembleConf,
                            ie,
                            fset);
@@ -746,7 +773,8 @@ void buildCentralBlock(const oops::Geometry<MODEL> & geom,
         const auto & locConf = saberCentralBlockParams.localization.value();
         if (locConf != boost::none) {
           // Initialize localization blockchain
-          locBlockChain = localizationBlockChain<MODEL>(geom, outerVars, xb, fg, *locConf);
+          locBlockChain = localizationBlockChain<MODEL>(geom, outerVars, fsetXb, fsetXb, validTime,
+                                                        *locConf);
         }
       }
 
@@ -783,7 +811,7 @@ void buildCentralBlock(const oops::Geometry<MODEL> & geom,
         atlas::FieldSet fset;
         readEnsembleMember(dualResolutionGeom,
                            saberBlockChain.incVars(),
-                           xb.validTime(),
+                           validTime,
                            dualResolutionEnsembleConf,
                            ie,
                            fset);
@@ -802,7 +830,7 @@ void buildCentralBlock(const oops::Geometry<MODEL> & geom,
 
   // Write calibration data
   if (saberCentralBlockParams.doCalibration()) {
-    saberBlockChain.centralBlock().write(geom, outerVars, xb.validTime());
+    saberBlockChain.centralBlock().write(geom, outerVars, validTime);
     saberBlockChain.centralBlock().write();
   }
 
@@ -813,7 +841,7 @@ void buildCentralBlock(const oops::Geometry<MODEL> & geom,
     outputEnsemble.deserialize(covarConf.getSubConfiguration("output ensemble"));
     writeEnsemble(geom,
                   activeVars,
-                  xb.validTime(),
+                  validTime,
                   outputEnsemble,
                   covarConf.getSubConfiguration("ensemble configuration"),
                   iterativeEnsembleLoading,

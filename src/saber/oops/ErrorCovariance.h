@@ -22,6 +22,7 @@
 #include "oops/base/StateEnsemble.h"
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
+#include "oops/util/FieldSetHelpers.h"
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/Logger.h"
 #include "oops/util/ObjectCounter.h"
@@ -88,9 +89,11 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
 {
   oops::Log::trace() << "ErrorCovariance::ErrorCovariance starting" << std::endl;
 
-  // Local copy of background and first guess
-  State_ xbLocal(xb);
-  State_ fgLocal(fg);
+  // Local copy of background and first guess that can undergo interpolation
+  atlas::FieldSet fsetXb = util::copyFieldSet(xb.fieldSet());
+  atlas::FieldSet fsetFg = util::copyFieldSet(fg.fieldSet());
+  ASSERT(xb.validTime() == fg.validTime());
+  const util::DateTime validTime = xb.validTime();
 
   // Extend backgroud and first guess with extra fields
   // TODO(Benjamin, Marek, Mayeul, ?)
@@ -102,8 +105,8 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
   // Intialize outer variables
   oops::Variables outerVars(incVars);
 
-  // Initialize single blockchain
-  Increment_ dx(geom, incVars, xb.validTime());
+  // Initialize blockchain
+  Increment_ dx(geom, incVars, validTime);
   singleBlockChain_.reset(new SaberBlockChain(incVars, dx.fieldSet()));
 
   // Iterative ensemble loading flag
@@ -115,8 +118,8 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
   // Read ensemble
   eckit::LocalConfiguration ensembleConf = readEnsemble(geom,
                                                         incVars,
-                                                        xbLocal,
-                                                        fgLocal,
+                                                        xb,
+                                                        fg,
                                                         params.toConfiguration(),
                                                         iterativeEnsembleLoading,
                                                         fsetEns);
@@ -136,8 +139,9 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
     buildOuterBlocks(geom,
                      outerGeometryData,
                      outerVars,
-                     xbLocal,
-                     fgLocal,
+                     fsetXb,
+                     fsetFg,
+                     validTime,
                      fsetEns,
                      covarConf,
                      *saberOuterBlocksParams,
@@ -221,7 +225,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
         atlas::FieldSet fset;
         readHybridWeight(*hybridGeom,
                          outerVars,
-                         xbLocal.validTime(),
+                         validTime,
                          weightConf.getSubConfiguration("file"),
                          fset);
         hybridBlockChain_.back().setWeight(fset);
@@ -236,8 +240,8 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
       eckit::LocalConfiguration cmpEnsembleConf
          = readEnsemble(*hybridGeom,
                         cmpOuterVars,
-                        xbLocal,
-                        fgLocal,
+                        xb,
+                        fg,
                         cmpConf,
                         params.iterativeEnsembleLoading.value(),
                         cmpFsetEns);
@@ -262,8 +266,9 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
         buildOuterBlocks(*hybridGeom,
                          cmpOuterGeometryData,
                          cmpOuterVars,
-                         xbLocal,
-                         fgLocal,
+                         fsetXb,
+                         fsetFg,
+                         validTime,
                          cmpFsetEns,
                          cmpCovarConf,
                          cmpOuterBlocksParams,
@@ -277,8 +282,9 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
                         *dualResolutionGeom,
                         cmpOuterGeometryData.back().get(),
                         cmpOuterVars,
-                        xbLocal,
-                        fgLocal,
+                        fsetXb,
+                        fsetFg,
+                        validTime,
                         cmpFsetEns,
                         dualResolutionFsetEns,
                         cmpCovarConf,
@@ -291,8 +297,9 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
                       *dualResolutionGeom,
                       outerGeometryData.back().get(),
                       outerVars,
-                      xbLocal,
-                      fgLocal,
+                      fsetXb,
+                      fsetFg,
+                      validTime,
                       fsetEns,
                       dualResolutionFsetEns,
                       covarConf,

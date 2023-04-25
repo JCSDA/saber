@@ -19,6 +19,7 @@ background error:
     saber block name: ID
   saber outer blocks:
   - saber block name: gauss to cubed-sphere-dual
+    skip inverse: true # TODO: remove this when the left inverse is implemented
     gauss grid uid: F15
     active variables:
     - stream_function

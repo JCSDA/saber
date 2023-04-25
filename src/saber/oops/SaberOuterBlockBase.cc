@@ -64,6 +64,8 @@ SaberOuterBlockBase * SaberOuterBlockFactory::create(
   }
   SaberOuterBlockBase * ptr = jsb->second->make(outerGeometryData, outerVariableSizes,
                                                 outerVars, covarConfig, params, xb, fg);
+  ptr->setBlockName(params.saberBlockName.value());
+  ptr->setSkipInverse(params.skipInverse.value());
   oops::Log::trace() << "SaberOuterBlockBase::create done" << std::endl;
   return ptr;
 }
@@ -122,12 +124,12 @@ void SaberOuterBlockBase::adjointTest(const eckit::mpi::Comm & comm,
   oops::Log::info() << std::setprecision(16) << "Info     : Adjoint test: y^t (Ax) = " << dp1
                     << ": x^t (A^t y) = " << dp2 << " : adjoint tolerance = "
                     << adjointTolerance << std::endl;
-  oops::Log::test() << "Adjoint test";
+  oops::Log::test() << "Adjoint test for block " << this->blockName();
   if (std::abs(dp1-dp2)/std::abs(0.5*(dp1+dp2)) < adjointTolerance) {
     oops::Log::test() << " passed" << std::endl;
   } else {
     oops::Log::test() << " failed" << std::endl;
-    ABORT("Adjoint test failure");
+    ABORT("Adjoint test failure for block " + this->blockName());
   }
 
   oops::Log::trace() << "SaberOuterBlockBase::adjointTest done" << std::endl;
@@ -149,6 +151,7 @@ void SaberOuterBlockBase::inverseTest(const oops::GeometryData & innerGeometryDa
   oops::Log::trace() << "SaberOuterBlockBase::inverseTest starting" << std::endl;
 
   // Inner inverse test
+
   // Create inner FieldSet
   atlas::FieldSet innerFset = this->generateInnerFieldSet(innerGeometryData,
                                                           innerVariableSizes,
@@ -172,7 +175,8 @@ void SaberOuterBlockBase::inverseTest(const oops::GeometryData & innerGeometryDa
   auto innerFieldNamesSave = oops::Variables(innerFsetSave.field_names());
 
   if (innerFieldNames != innerFieldNamesSave) {
-    ABORT("Inner inverse test: fieldsets content does not match");
+    ABORT("Inner inverse test for block " + this->blockName()
+      + ": fieldsets content does not match");
   }
 
   // Check that the fieldsets are similar within tolerance
@@ -184,14 +188,16 @@ void SaberOuterBlockBase::inverseTest(const oops::GeometryData & innerGeometryDa
   const bool outerComparison = this->compareFieldSets(innerFset,
                                                       innerFsetSave,
                                                       innerInverseTolerance);
-
+  oops::Log::test() << "Inner inverse test passed for block " << this->blockName();
   if (outerComparison) {
-    oops::Log::test() << "Inner inverse test passed: U Uinv (U x) == (U x)" << std::endl;
+    oops::Log::test() << " passed: U Uinv (U x) == (U x)" << std::endl;
   } else {
-    ABORT("Inner inverse test failed: U Uinv (U x) != (U x)");
+    oops::Log::test() << " failed: U Uinv (U x) != (U x)" << std::endl;
+    ABORT("Inner inverse test failure for block " + this->blockName());
   }
 
   // Outer inverse test
+
   // Create outer FieldSet
   atlas::FieldSet outerFset = this->generateOuterFieldSet(outerGeometryData,
                                                           outerVariableSizes,
@@ -214,7 +220,8 @@ void SaberOuterBlockBase::inverseTest(const oops::GeometryData & innerGeometryDa
   auto outerFieldNames = oops::Variables(outerFset.field_names());
   auto outerFieldNamesSave = oops::Variables(outerFsetSave.field_names());
   if (outerFieldNames != outerFieldNamesSave) {
-    ABORT("Outer inverse test: fieldsets content does not match");
+    ABORT("Outer inverse test for block " + this->blockName()
+      + ": fieldsets content does not match");
   }
 
   // Check that the fieldsets are similar within tolerance
@@ -225,10 +232,12 @@ void SaberOuterBlockBase::inverseTest(const oops::GeometryData & innerGeometryDa
   const bool innerComparison = this->compareFieldSets(outerFset,
                                                       outerFsetSave,
                                                       outerInverseTolerance);
+  oops::Log::test() << "Outer inverse test for block " << this->blockName();
   if (innerComparison) {
-    oops::Log::test() << "Outer inverse test passed: Uinv U (Uinv x) == (Uinv x)" << std::endl;
+    oops::Log::test() << " passed: Uinv U (Uinv x) == (Uinv x)" << std::endl;
   } else {
-    ABORT("Outer inverse test failed: Uinv U (Uinv x) != (Uinv x)");
+    oops::Log::test() << " failed: Uinv U (Uinv x) != (Uinv x)" << std::endl;
+    ABORT("Outer inverse test failure for block " + this->blockName());
   }
 
   oops::Log::trace() << "SaberOuterBlockBase::inverseTest done" << std::endl;

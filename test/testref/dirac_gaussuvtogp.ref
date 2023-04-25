@@ -19,8 +19,8 @@ Fields:
   eastward_wind: 0.0000000000000000e+00
   northward_wind: 0.0000000000000000e+00
   geostrophic_pressure_levels_minus_one: 1.0000000000000000e+00
-Adjoint test passed
-Adjoint test passed
+Adjoint test for block gauss winds to geostrophic pressure passed
+Adjoint test for block ID passed
 Covariance(SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -39,6 +39,6 @@ Groups:
   Mask size: 100%
 Fields:
   dry_air_density_levels_minus_one: 0.0000000000000000e+00
-  eastward_wind: 2.1336683576082507e+01
-  northward_wind: 1.9597601640366605e+01
-  geostrophic_pressure_levels_minus_one: 9.4136277068560576e+03
+  eastward_wind: 2.1336683576082514e+01
+  northward_wind: 1.9597601640366626e+01
+  geostrophic_pressure_levels_minus_one: 9.4136277068560594e+03

@@ -591,13 +591,6 @@ void GaussUVToGP::multiplyAD(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void GaussUVToGP::leftInverseMultiply(atlas::FieldSet & fset) const {
-  oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
-  oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
 void GaussUVToGP::print(std::ostream & os) const {
   os << classname();
 }

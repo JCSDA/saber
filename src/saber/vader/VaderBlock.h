@@ -55,7 +55,6 @@ class VaderBlock : public SaberOuterBlockBase {
 
   void multiply(atlas::FieldSet &) const override;
   void multiplyAD(atlas::FieldSet &) const override;
-  void leftInverseMultiply(atlas::FieldSet &) const override;
 
  private:
   void print(std::ostream &) const override;

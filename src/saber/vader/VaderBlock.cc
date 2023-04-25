@@ -91,14 +91,6 @@ void VaderBlock::multiplyAD(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void VaderBlock::leftInverseMultiply(atlas::FieldSet & fset) const {
-  oops::Log::info() << classname()
-                    << "::leftInverseMultiply not meaningful so fieldset unchanged"
-                    << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
 void VaderBlock::print(std::ostream & os) const {
   os << "Vader linear variable change from " << innerVars_
      << " to " << outerVars_;

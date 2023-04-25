@@ -19,6 +19,7 @@ background error:
     saber block name: ID
   saber outer blocks:
   - saber block name: interpolation
+    skip inverse: true # TODO: remove this when ATLAS interpolator is fixed
     inner geometry:
       function space: StructuredColumns
       grid:

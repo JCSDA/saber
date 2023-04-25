@@ -133,14 +133,6 @@ void DryAirDensity::multiplyAD(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void DryAirDensity::leftInverseMultiply(atlas::FieldSet & fset) const {
-  oops::Log::info() << classname()
-                    << "::leftInverseMultiply not meaningful so fieldset unchanged"
-                    << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
 void DryAirDensity::print(std::ostream & os) const {
   os << classname();
 }

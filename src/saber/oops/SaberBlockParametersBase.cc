@@ -15,7 +15,8 @@ bool SaberBlockParametersBase::doCalibration() const {
   const auto & readConf = readParams.value();
   const auto & calibrationConf = calibrationParams.value();
   if (readConf != boost::none && calibrationConf != boost::none) {
-    ABORT("read and calibration configuration cannot be present at the same time");
+    ABORT("read and calibration configuration cannot be present at the same time in block " +
+    saberBlockName.value());
   }
   const auto & blockName = saberBlockName.value();
   return (calibrationConf != boost::none || blockName == "Ensemble");
@@ -27,7 +28,8 @@ bool SaberBlockParametersBase::doRead() const {
   const auto & readConf = readParams.value();
   const auto & calibrationConf = calibrationParams.value();
   if (readConf != boost::none && calibrationConf != boost::none) {
-    ABORT("read and calibration configuration cannot be present at the same time");
+    ABORT("read and calibration configuration cannot be present at the same time in block " +
+    saberBlockName.value());
   }
   return (readConf != boost::none);
 }

@@ -31,10 +31,12 @@ background error:
       variance_opt: true
   saber outer blocks:
   - saber block name: spectral to gauss
+    skip inverse: true
     active variables:
     - unbalanced_pressure
     - moisture_control_variable
   - saber block name: gauss to cubed-sphere-dual
+    skip inverse: true
     gauss grid uid: F15
     active variables:
     - unbalanced_pressure

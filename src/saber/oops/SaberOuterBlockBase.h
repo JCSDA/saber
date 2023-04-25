@@ -61,13 +61,14 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
   virtual void multiplyAD(atlas::FieldSet &) const = 0;
 
   // Block inverse multiplication for calibration (can be an approximate inverse)
-  virtual void leftInverseMultiply(atlas::FieldSet &) const = 0;
+  virtual void leftInverseMultiply(atlas::FieldSet &) const
+    {ABORT("leftInverseMultiply not implemented yet for the block " + this->blockName());}
 
   // Setup / calibration methods
 
   // Read block data
   virtual void read()
-    {ABORT("read not implemented yet for this block");}
+    {ABORT("read not implemented yet for the block " + this->blockName());}
 
   // Read model fields
   virtual std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> fieldsToRead()
@@ -75,19 +76,19 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
 
   // Direct calibration
   virtual void directCalibration(const std::vector<atlas::FieldSet> &)
-    {ABORT("directCalibration not implemented yet for this block");}
+    {ABORT("directCalibration not implemented yet for the block " + this->blockName());}
 
   // Iterative calibration
   virtual void iterativeCalibrationInit()
-    {ABORT("iterativeCalibrationInit not implemented yet for this block");}
+    {ABORT("iterativeCalibrationInit not implemented yet for the block " + this->blockName());}
   virtual void iterativeCalibrationUpdate(const atlas::FieldSet &)
-    {ABORT("iterativeCalibrationUpdate not implemented yet for this block");}
+    {ABORT("iterativeCalibrationUpdate not implemented yet for the block " + this->blockName());}
   virtual void iterativeCalibrationFinal()
-    {ABORT("iterativeCalibrationUpdate not implemented yet for this block");}
+    {ABORT("iterativeCalibrationUpdate not implemented yet for the block " + this->blockName());}
 
   // Dual resolution setup
   virtual void dualResolutionSetup(const oops::GeometryData &)
-    {ABORT("dualResolutionSetup not implemented yet for this block");}
+    {ABORT("dualResolutionSetup not implemented yet for the block " + this->blockName());}
 
   // Write block data
   virtual void write() const {}
@@ -126,6 +127,18 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
 
   // Non-virtual methods
 
+  // Set block name
+  void setBlockName(const std::string & blockName) {blockName_ = blockName;}
+
+  // Return block name
+  std::string blockName() const {return blockName_;}
+
+  // Set flag to skip inverse application
+  void setSkipInverse(const bool skipInverse) {skipInverse_ = skipInverse;}
+
+  // Return flag to skip inverse application
+  bool skipInverse() const {return skipInverse_;}
+
   // Read model fields
   template <typename MODEL>
   void read(const oops::Geometry<MODEL> &,
@@ -162,6 +175,8 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
                    const size_t &) const;
 
  private:
+  std::string blockName_;
+  bool skipInverse_;
   virtual void print(std::ostream &) const = 0;
 };
 

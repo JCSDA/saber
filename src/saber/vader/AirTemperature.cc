@@ -100,14 +100,6 @@ void AirTemperature::multiplyAD(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void AirTemperature::leftInverseMultiply(atlas::FieldSet & fset) const {
-  oops::Log::info() << classname()
-                    << "::leftInverseMultiply not meaningful so fieldset unchanged"
-                    << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
 void AirTemperature::print(std::ostream & os) const {
   os << classname();
 }
