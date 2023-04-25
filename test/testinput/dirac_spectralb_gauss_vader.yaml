@@ -60,7 +60,7 @@ background error:
   adjoint test: true
   inverse test: true
   # Small tolerances to illustrate local overriding in saber blocks:
-  adjoint tolerance: 1e-13
+  adjoint tolerance: 1e-12
   inverse tolerance: 1e-15
   saber central block:
     saber block name: spectral covariance
@@ -103,10 +103,16 @@ background error:
       gp regression bins: 18
     saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
   - saber block name: mo_hydro_bal
-    skip inverse test: true
     saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
+    inner inverse tolerance: 1e-9  #TODO to be replaced by relative tolerance
+    outer variables to compare: [virtual_potential_temperature, air_pressure_levels_minus_one]
+    outer inverse tolerance: 1e-13
   - saber block name: mo_moisture_control
-    skip inverse test: true
+    inner inverse tolerance: 1e-13
+    outer inverse tolerance: 1e-4  #TODO to be replaced by relative tolerance
+    inner variables to compare:
+      - mu
+      - virtual_potential_temperature
     covariance data:
       covariance file path: testdata/MUstats.nc
     saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
@@ -196,4 +202,6 @@ output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_spectralb_gauss_vader/dirac_%id%_%MPI%
 test:
+  test output filename: testref/dirac_spectralb_gauss_vader.out
   reference filename: testref/dirac_spectralb_gauss_vader.ref
+

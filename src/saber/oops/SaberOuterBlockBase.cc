@@ -149,7 +149,6 @@ void SaberOuterBlockBase::inverseTest(const oops::GeometryData & innerGeometryDa
   oops::Log::trace() << "SaberOuterBlockBase::inverseTest starting" << std::endl;
 
   // Inner inverse test
-
   // Create inner FieldSet
   atlas::FieldSet innerFset = this->generateInnerFieldSet(innerGeometryData,
                                                           innerVariableSizes,
@@ -171,6 +170,7 @@ void SaberOuterBlockBase::inverseTest(const oops::GeometryData & innerGeometryDa
   // Check that the fieldsets contain the same fields
   auto innerFieldNames = oops::Variables(innerFset.field_names());
   auto innerFieldNamesSave = oops::Variables(innerFsetSave.field_names());
+
   if (innerFieldNames != innerFieldNamesSave) {
     ABORT("Inner inverse test: fieldsets content does not match");
   }
@@ -178,11 +178,13 @@ void SaberOuterBlockBase::inverseTest(const oops::GeometryData & innerGeometryDa
   // Check that the fieldsets are similar within tolerance
   oops::Variables outerVariablesToRemove(innerFieldNames);
   outerVariablesToRemove -= outerVarsToCompare;
+
   util::removeFieldsFromFieldSet(innerFset, outerVariablesToRemove.variables());
   util::removeFieldsFromFieldSet(innerFsetSave, outerVariablesToRemove.variables());
   const bool outerComparison = this->compareFieldSets(innerFset,
                                                       innerFsetSave,
                                                       innerInverseTolerance);
+
   if (outerComparison) {
     oops::Log::test() << "Inner inverse test passed: U Uinv (U x) == (U x)" << std::endl;
   } else {
@@ -190,8 +192,6 @@ void SaberOuterBlockBase::inverseTest(const oops::GeometryData & innerGeometryDa
   }
 
   // Outer inverse test
-
-
   // Create outer FieldSet
   atlas::FieldSet outerFset = this->generateOuterFieldSet(outerGeometryData,
                                                           outerVariableSizes,

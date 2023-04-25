@@ -51,14 +51,19 @@ HydroBal::HydroBal(const oops::GeometryData & outerGeometryData,
   std::vector<std::string> requiredStateVariables{
     "air_temperature",
     "air_pressure",
+    "air_pressure_levels_minus_one",
+    "air_pressure_levels",
     "potential_temperature",   // from file
     "exner",  // from file on theta levels ("exner_levels_minus_one" is on rho levels)
+    "exner_levels_minus_one",
     "m_v", "m_ci", "m_cl", "m_r",  // mixing ratios from file
     "m_t",  //  to be populated in evalTotalMassMoistAir
     "svp", "dlsvpdT",  //  to be populated in evalSatVaporPressure
     "qsat",  // to be populated in evalSatSpecificHumidity
     "specific_humidity",  //  to be populated in evalSpecificHumidity
-    "virtual_potential_temperature"
+    "virtual_potential_temperature",
+    "hydrostatic_exner_levels",
+    "hydrostatic_pressure_levels"
   };
 
   // Check that they are allocated (i.e. exist in the state fieldset)
@@ -86,12 +91,15 @@ HydroBal::HydroBal(const oops::GeometryData & outerGeometryData,
   }
 
   // check how virtual potential temperature is calculated.
+  mo::evalAirPressureLevels(augmentedStateFieldSet_);
   mo::evalAirTemperature(augmentedStateFieldSet_);
   mo::evalTotalMassMoistAir(augmentedStateFieldSet_);
   mo::eval_sat_vapour_pressure_nl(params.svp_file, augmentedStateFieldSet_);
   mo::evalSatSpecificHumidity(augmentedStateFieldSet_);
   mo::evalSpecificHumidity(augmentedStateFieldSet_);
   mo::evalVirtualPotentialTemperature(augmentedStateFieldSet_);
+  mo::evalHydrostaticExnerLevels(augmentedStateFieldSet_);
+  mo::evalHydrostaticPressureLevels(augmentedStateFieldSet_);
 
   augmentedStateFieldSet_.haloExchange();
 

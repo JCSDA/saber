@@ -17,8 +17,8 @@
 #include "eckit/exception/Exceptions.h"
 
 #include "mo/common_varchange.h"
-#include "mo/control2analysis_linearvarchange.h"
 #include "mo/control2analysis_varchange.h"
+#include "mo/eval_moisture_control.h"
 #include "mo/eval_sat_vapour_pressure.h"
 #include "mo/model2geovals_varchange.h"
 
@@ -126,7 +126,7 @@ MoistureControl::~MoistureControl() {
 
 void MoistureControl::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  mo::evalQtThetaTL(fset, augmentedStateFieldSet_);
+  mo::eval_moisture_control_inv_tl(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
@@ -134,7 +134,7 @@ void MoistureControl::multiply(atlas::FieldSet & fset) const {
 
 void MoistureControl::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  mo::evalQtThetaAD(fset, augmentedStateFieldSet_);
+  mo::eval_moisture_control_inv_ad(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
@@ -142,6 +142,7 @@ void MoistureControl::multiplyAD(atlas::FieldSet & fset) const {
 
 void MoistureControl::leftInverseMultiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
+  mo::eval_moisture_control_tl(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }
 

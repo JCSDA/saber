@@ -613,31 +613,35 @@ void buildOuterBlocks(const oops::Geometry<MODEL> & geom,
 
     // Inverse test
     const bool skipInverseTest = saberOuterBlockParams.skipInverseTest.value();
-    if (covarConf.getBool("inverse test", false) && !skipInverseTest) {
-      // Get inner and outer tolerances
-      const double innerInverseTolerance = saberOuterBlockParams.innerInverseTolerance.value()
-        .get_value_or(covarConf.getDouble("inverse tolerance"));
-      const double outerInverseTolerance = saberOuterBlockParams.outerInverseTolerance.value()
-        .get_value_or(covarConf.getDouble("inverse tolerance"));
+    if (covarConf.getBool("inverse test", false)) {
+      if (skipInverseTest) {
+        oops::Log::test() << "skipping inverse test" << std::endl;
+      } else {
+        // Get inner and outer tolerances
+        const double innerInverseTolerance = saberOuterBlockParams.innerInverseTolerance.value()
+          .get_value_or(covarConf.getDouble("inverse tolerance"));
+        const double outerInverseTolerance = saberOuterBlockParams.outerInverseTolerance.value()
+          .get_value_or(covarConf.getDouble("inverse tolerance"));
 
-      // Get inner and outer variables to compare
-      oops::Variables innerVarsToCompare = saberOuterBlockParams.innerVariables.value()
-        .get_value_or(activeInnerVars);
-      oops::Variables outerVarsToCompare = saberOuterBlockParams.outerVariables.value()
-        .get_value_or(activeOuterVars);
+        // Get inner and outer variables to compare
+        oops::Variables innerVarsToCompare = saberOuterBlockParams.innerVariables.value()
+          .get_value_or(activeInnerVars);
+        oops::Variables outerVarsToCompare = saberOuterBlockParams.outerVariables.value()
+          .get_value_or(activeOuterVars);
 
-      // Run test
-      saberBlockChain.lastOuterBlock().inverseTest(innerGeometryData,
-                                                   geom.variableSizes(activeInnerVars),
-                                                   activeInnerVars,
-                                                   outerGeometryData.back().get(),
-                                                   geom.variableSizes(activeOuterVars),
-                                                   activeOuterVars,
-                                                   innerVarsToCompare,
-                                                   outerVarsToCompare,
-                                                   innerInverseTolerance,
-                                                   outerInverseTolerance,
-                                                   geom.timeComm().rank());
+        // Run test
+        saberBlockChain.lastOuterBlock().inverseTest(innerGeometryData,
+                                                     geom.variableSizes(activeInnerVars),
+                                                     activeInnerVars,
+                                                     outerGeometryData.back().get(),
+                                                     geom.variableSizes(activeOuterVars),
+                                                     activeOuterVars,
+                                                     innerVarsToCompare,
+                                                     outerVarsToCompare,
+                                                     innerInverseTolerance,
+                                                     outerInverseTolerance,
+                                                     geom.timeComm().rank());
+      }
     }
 
     // Update outer geometry and variables for the next block
