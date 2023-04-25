@@ -740,9 +740,7 @@ void buildCentralBlock(const oops::Geometry<MODEL> & geom,
       std::unique_ptr<SaberBlockChain> locBlockChain;
       if (saberCentralBlockParams.saberBlockName.value() == "Ensemble") {
         const auto & locConf = saberCentralBlockParams.localization.value();
-        if (locConf == boost::none) {
-          ABORT("Ensemble block without localization is not implemented yet");
-        } else {
+        if (locConf != boost::none) {
           // Initialize localization blockchain
           locBlockChain = localizationBlockChain<MODEL>(geom, outerVars, xb, fg, *locConf);
         }

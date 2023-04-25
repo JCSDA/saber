@@ -29,9 +29,6 @@ class EnsembleParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(EnsembleParameters, SaberBlockParametersBase)
 
  public:
-  oops::RequiredParameter<eckit::LocalConfiguration> localization{
-        "localization", this};
-
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
 
@@ -63,6 +60,9 @@ class Ensemble : public SaberCentralBlockBase {
   std::vector<atlas::FieldSet> ensemble_;
   std::unique_ptr<SaberBlockChain> loc_;
   size_t timeRank_;
+  const oops::Variables vars_;
+  const eckit::mpi::Comm & comm_;
+  int seed_ = 7;  // For reproducibility
   void print(std::ostream &) const override;
 };
 

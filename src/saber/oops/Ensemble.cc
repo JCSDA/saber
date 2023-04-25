@@ -13,6 +13,7 @@
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/Logger.h"
+#include "oops/util/Random.h"
 
 #include "saber/oops/SaberBlockChain.h"
 
@@ -33,7 +34,7 @@ Ensemble::Ensemble(const oops::GeometryData & geometryData,
                    const atlas::FieldSet & xb,
                    const atlas::FieldSet & fg,
                    const size_t & timeRank) :
-  timeRank_(timeRank) {
+  timeRank_(timeRank), vars_(activeVars), comm_(geometryData.comm()) {
   oops::Log::trace() << classname() << "::Ensemble starting" << std::endl;
   oops::Log::trace() << classname() << "::Ensemble done" << std::endl;
 }
@@ -46,19 +47,34 @@ void Ensemble::randomize(atlas::FieldSet & fset) const {
   // Initialization
   util::zeroFieldSet(fset);
 
-  // Loop over ensemble members
-  for (unsigned int ie = 0; ie < ensemble_.size(); ++ie) {
-    // Temporary copy for this ensemble member
-    atlas::FieldSet fsetMem = util::copyFieldSet(fset);
+  if (loc_) {
+    // Apply localization
+    for (unsigned int ie = 0; ie < ensemble_.size(); ++ie) {
+      // Temporary copy for this ensemble member
+      atlas::FieldSet fsetMem = util::copyFieldSet(fset);
 
-    // Randomize SABER central block
-    loc_->randomize(fsetMem);
+      // Randomize SABER central block
+      loc_->randomize(fsetMem);
 
-    // Schur product
-    util::multiplyFieldSets(fsetMem, ensemble_[ie]);
+      // Schur product
+      util::multiplyFieldSets(fsetMem, ensemble_[ie]);
 
-    // Add up member contribution
-    util::addFieldSets(fset, fsetMem);
+      // Add up member contribution
+      util::addFieldSets(fset, fsetMem);
+    }
+  } else {
+    // No localization
+    util::NormalDistribution<double> normalDist(ensemble_.size(), 0.0, 1.0, seed_);
+    for (unsigned int ie = 0; ie < ensemble_.size(); ++ie) {
+      // Copy ensemble member
+      atlas::FieldSet fsetMem = util::copyFieldSet(ensemble_[ie]);
+
+      // Apply weight
+      util::multiplyFieldSet(fsetMem, normalDist[ie]);
+
+      // Add up member contribution
+      util::addFieldSets(fset, fsetMem);
+    }
   }
 
   // Normalize result
@@ -77,22 +93,43 @@ void Ensemble::multiply(atlas::FieldSet & fset) const {
   atlas::FieldSet fsetInit = util::copyFieldSet(fset);
   util::zeroFieldSet(fset);
 
-  // Loop over ensemble members
-  for (unsigned int ie = 0; ie < ensemble_.size(); ++ie) {
-    // Temporary copy for this ensemble member
-    atlas::FieldSet fsetMem = util::copyFieldSet(fsetInit);
-
-    // First schur product
-    util::multiplyFieldSets(fsetMem, ensemble_[ie]);
-
+  if (loc_) {
     // Apply localization
-    loc_->multiply(fsetMem);
+    for (unsigned int ie = 0; ie < ensemble_.size(); ++ie) {
+      // Temporary copy for this ensemble member
+      atlas::FieldSet fsetMem = util::copyFieldSet(fsetInit);
 
-    // Second schur product
-    util::multiplyFieldSets(fsetMem, ensemble_[ie]);
+      // First schur product
+      util::multiplyFieldSets(fsetMem, ensemble_[ie]);
 
-    // Add up member contribution
-    util::addFieldSets(fset, fsetMem);
+      // Apply localization
+      loc_->multiply(fsetMem);
+
+      // Second schur product
+      util::multiplyFieldSets(fsetMem, ensemble_[ie]);
+
+      // Add up member contribution
+      util::addFieldSets(fset, fsetMem);
+    }
+  } else {
+    // No localization
+    for (unsigned int ie = 0; ie < ensemble_.size(); ++ie) {
+      // Compute weight
+      const double wgt = util::dotProductFieldSets(fsetInit,
+                                                   ensemble_[ie],
+                                                   vars_.variables(),
+                                                   comm_,
+                                                   false);
+
+      // Copy ensemble member
+      atlas::FieldSet fsetMem = util::copyFieldSet(ensemble_[ie]);
+
+      // Apply weight
+      util::multiplyFieldSet(fsetMem, wgt);
+
+      // Add up member contribution
+      util::addFieldSets(fset, fsetMem);
+    }
   }
 
   // Normalize result
