@@ -19,6 +19,7 @@
 #include "../../vader/src/mo/common_varchange.h"
 #include "../../vader/src/mo/control2analysis_linearvarchange.h"
 #include "../../vader/src/mo/eval_mio_fields.h"
+#include "../../vader/src/mo/eval_moisture_incrementing_operator.h"
 #include "../../vader/src/mo/eval_sat_vapour_pressure.h"
 #include "../../vader/src/mo/functions.h"
 #include "../../vader/src/mo/model2geovals_varchange.h"
@@ -111,7 +112,7 @@ MoistIncrOp::~MoistIncrOp() {
 
 void MoistIncrOp::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  mo::qtTemperature2qqclqcfTL(fset, augmentedStateFieldSet_);
+  mo::eval_moisture_incrementing_operator_tl(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
@@ -119,8 +120,16 @@ void MoistIncrOp::multiply(atlas::FieldSet & fset) const {
 
 void MoistIncrOp::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  mo::qtTemperature2qqclqcfAD(fset, augmentedStateFieldSet_);
+  mo::eval_moisture_incrementing_operator_ad(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void MoistIncrOp::leftInverseMultiply(atlas::FieldSet & fset) const {
+  oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
+  mo::eval_total_water_tl(fset, augmentedStateFieldSet_);
+  oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

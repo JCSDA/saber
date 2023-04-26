@@ -119,7 +119,7 @@ background error:
   - saber block name: mo_air_temperature
     skip inverse test: true
   - saber block name: mo_moistincrop
-    skip inverse test: true
+    inner variables to compare: [qt, air_temperature]
     moisture incrementing operator file: testdata/MIO_coefficients.nc
     saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
   - saber block name: mo_dry_air_density
