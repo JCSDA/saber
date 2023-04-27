@@ -15,10 +15,10 @@ geometry:
     - eastward_wind
     - exner
     - exner_levels_minus_one
-    - frozen_cloud_fraction
+    - ice_cloud_volume_fraction_in_atmosphere_layer
     - geostrophic_pressure_levels_minus_one
     - height
-    - liquid_cloud_fraction
+    - liquid_cloud_volume_fraction_in_atmosphere_layer
     - mass_content_of_cloud_liquid_water_in_atmosphere_layer
     - mass_content_of_cloud_ice_in_atmosphere_layer
     - mu
@@ -165,13 +165,13 @@ initial condition:
   - eastward_wind
   - exner
   - exner_levels_minus_one
-  - frozen_cloud_fraction
+  - ice_cloud_volume_fraction_in_atmosphere_layer
   - geostrophic_pressure_levels_minus_one
   - height
   - height_levels
   - hydrostatic_exner_levels
   - hydrostatic_pressure_levels
-  - liquid_cloud_fraction
+  - liquid_cloud_volume_fraction_in_atmosphere_layer
   - mass_content_of_cloud_liquid_water_in_atmosphere_layer
   - mass_content_of_cloud_ice_in_atmosphere_layer
   - mu
