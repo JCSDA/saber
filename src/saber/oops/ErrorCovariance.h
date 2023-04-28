@@ -16,7 +16,6 @@
 #include "oops/base/Geometry.h"
 #include "oops/base/GeometryData.h"
 #include "oops/base/Increment.h"
-#include "oops/base/IncrementEnsemble.h"
 #include "oops/base/ModelSpaceCovarianceBase.h"
 #include "oops/base/State.h"
 #include "oops/base/StateEnsemble.h"

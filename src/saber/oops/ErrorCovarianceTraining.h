@@ -100,14 +100,9 @@ template <typename MODEL> class ErrorCovarianceTraining : public oops::Applicati
   typedef oops::CovarianceFactory<MODEL>                     CovarianceFactory_;
   typedef oops::ModelSpaceCovarianceParametersBase<MODEL>    CovarianceParametersBase_;
   typedef oops::StateEnsembleParameters<MODEL>               StateEnsembleParameters_;
-  typedef oops::IncrementEnsembleFromStatesParameters<MODEL> IncrementEnsembleFromStatesParameters_;
-  typedef oops::IncrementEnsembleParameters<MODEL>           IncrementEnsembleParameters_;
   typedef typename oops::Geometry<MODEL>::Parameters_        GeometryParameters_;
   typedef oops::Geometry<MODEL>                              Geometry_;
-  typedef oops::Increment<MODEL>                             Increment_;
   typedef oops::State<MODEL>                                 State_;
-  typedef oops::IncrementEnsemble<MODEL>                     Ensemble_;
-  typedef std::shared_ptr<Ensemble_>                         EnsemblePtr_;
   typedef ErrorCovarianceTrainingParameters<MODEL>           ErrorCovarianceTrainingParameters_;
 
  public:

@@ -126,7 +126,8 @@ eckit::LocalConfiguration readEnsemble(const oops::Geometry<MODEL> & geom,
     if (!ensembleConf.empty()) {
       oops::Log::info() << "Info     : Ensemble of states, perturbation using the mean"
                         << std::endl;
-      ensemble.reset(new oops::IncrementEnsemble<MODEL>(ensembleParams, xb, fg, geom, vars));
+      ensemble.reset(new oops::IncrementEnsemble<MODEL>(ensembleParams, geom, vars,
+        xb.validTime()));
     }
 
     // Increment ensemble from increments on disk
