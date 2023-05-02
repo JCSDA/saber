@@ -27,8 +27,8 @@
 #include "atlas/util/Earth.h"
 
 #include "mo/common_varchange.h"
-#include "mo/control2analysis_varchange.h"
 #include "mo/eval_dry_air_density.h"
+#include "mo/eval_virtual_potential_temperature.h"
 #include "mo/model2geovals_varchange.h"
 
 #include "oops/base/Variables.h"
@@ -173,7 +173,7 @@ void populateFields(const atlas::FieldSet & geomfields,
   mo::evalSatVaporPressure(tempfields);
   mo::evalSatSpecificHumidity(tempfields);
   mo::evalSpecificHumidity(tempfields);
-  mo::evalVirtualPotentialTemperature(tempfields);
+  mo::eval_virtual_potential_temperature_nl(tempfields);
   mo::eval_dry_air_density_nl(tempfields);
 
   std::string s("dry_air_density_levels_minus_one");

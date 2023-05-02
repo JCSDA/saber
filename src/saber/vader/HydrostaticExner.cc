@@ -21,6 +21,7 @@
 #include "mo/eval_exner.h"
 #include "mo/eval_geostrophic_to_hydrostatic_pressure.h"
 #include "mo/eval_sat_vapour_pressure.h"
+#include "mo/eval_virtual_potential_temperature.h"
 #include "mo/model2geovals_varchange.h"
 
 #include "oops/base/Variables.h"
@@ -106,7 +107,7 @@ HydrostaticExner::HydrostaticExner(const oops::GeometryData & outerGeometryData,
   mo::eval_sat_vapour_pressure_nl(params.svp_file, augmentedStateFieldSet_);
   mo::evalSatSpecificHumidity(augmentedStateFieldSet_);
   mo::evalSpecificHumidity(augmentedStateFieldSet_);
-  mo::evalVirtualPotentialTemperature(augmentedStateFieldSet_);
+  mo::eval_virtual_potential_temperature_nl(augmentedStateFieldSet_);
   mo::evalHydrostaticExnerLevels(augmentedStateFieldSet_);
   mo::evalHydrostaticPressureLevels(augmentedStateFieldSet_);
 

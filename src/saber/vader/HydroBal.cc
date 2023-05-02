@@ -20,6 +20,7 @@
 #include "mo/control2analysis_varchange.h"
 #include "mo/eval_hydrostatic_balance.h"
 #include "mo/eval_sat_vapour_pressure.h"
+#include "mo/eval_virtual_potential_temperature.h"
 
 #include "mo/model2geovals_varchange.h"
 #include "oops/base/Variables.h"
@@ -97,7 +98,7 @@ HydroBal::HydroBal(const oops::GeometryData & outerGeometryData,
   mo::eval_sat_vapour_pressure_nl(params.svp_file, augmentedStateFieldSet_);
   mo::evalSatSpecificHumidity(augmentedStateFieldSet_);
   mo::evalSpecificHumidity(augmentedStateFieldSet_);
-  mo::evalVirtualPotentialTemperature(augmentedStateFieldSet_);
+  mo::eval_virtual_potential_temperature_nl(augmentedStateFieldSet_);
   mo::evalHydrostaticExnerLevels(augmentedStateFieldSet_);
   mo::evalHydrostaticPressureLevels(augmentedStateFieldSet_);
 

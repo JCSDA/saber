@@ -18,9 +18,9 @@
 
 #include "mo/common_varchange.h"
 #include "mo/control2analysis_linearvarchange.h"
-#include "mo/control2analysis_varchange.h"
 #include "mo/eval_dry_air_density.h"
 #include "mo/eval_sat_vapour_pressure.h"
+#include "mo/eval_virtual_potential_temperature.h"
 #include "mo/model2geovals_varchange.h"
 
 #include "oops/base/Variables.h"
@@ -98,7 +98,7 @@ DryAirDensity::DryAirDensity(const oops::GeometryData & outerGeometryData,
   mo::eval_sat_vapour_pressure_nl(params.svp_file, augmentedStateFieldSet_);
   mo::evalSatSpecificHumidity(augmentedStateFieldSet_);
   mo::evalSpecificHumidity(augmentedStateFieldSet_);
-  mo::evalVirtualPotentialTemperature(augmentedStateFieldSet_);
+  mo::eval_virtual_potential_temperature_nl(augmentedStateFieldSet_);
   mo::eval_dry_air_density_nl(augmentedStateFieldSet_);
 
   augmentedStateFieldSet_.haloExchange();
