@@ -21,6 +21,7 @@
 #include "../../vader/src/mo/eval_mio_fields.h"
 #include "../../vader/src/mo/eval_moisture_incrementing_operator.h"
 #include "../../vader/src/mo/eval_sat_vapour_pressure.h"
+#include "../../vader/src/mo/eval_total_relative_humidity.h"
 #include "../../vader/src/mo/functions.h"
 #include "../../vader/src/mo/model2geovals_varchange.h"
 
@@ -64,7 +65,7 @@ MoistIncrOp::MoistIncrOp(const oops::GeometryData & outerGeometryData,
       // to be populated in evalMassCloudLiquid
     "mass_content_of_cloud_ice_in_atmosphere_layer",  // to be populated in evalMassCloudIce
     "qrain",  // to be populated in evalMassRain
-    "rht",  // to be populated in evalTotalRelativeHumidity
+    "rht",  // to be populated in eval_total_relative_humidity_nl
     "liquid_cloud_volume_fraction_in_atmosphere_layer",  // from file
     "ice_cloud_volume_fraction_in_atmosphere_layer",  // from file
     "cleff", "cfeff"  // to be populated in getMIOFields
@@ -92,7 +93,7 @@ MoistIncrOp::MoistIncrOp(const oops::GeometryData & outerGeometryData,
   mo::evalMassCloudLiquid(augmentedStateFieldSet_);
   mo::evalMassCloudIce(augmentedStateFieldSet_);
   mo::evalMassRain(augmentedStateFieldSet_);
-  mo::evalTotalRelativeHumidity(augmentedStateFieldSet_);
+  mo::eval_total_relative_humidity_nl(augmentedStateFieldSet_);
   mo::eval_mio_fields_nl(params.mio_file, augmentedStateFieldSet_);
 
   augmentedStateFieldSet_.haloExchange();

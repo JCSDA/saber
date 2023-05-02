@@ -20,6 +20,7 @@
 #include "mo/control2analysis_varchange.h"
 #include "mo/eval_moisture_control.h"
 #include "mo/eval_sat_vapour_pressure.h"
+#include "mo/eval_total_relative_humidity.h"
 #include "mo/model2geovals_varchange.h"
 
 #include "oops/base/Variables.h"
@@ -68,7 +69,7 @@ MoistureControl::MoistureControl(const oops::GeometryData & outerGeometryData,
     "mass_content_of_cloud_ice_in_atmosphere_layer",  // to be populated in evalMassCloudIce
     "qrain",  // to be populated in evalMassRain
     "qt",  // to be populated in qqclqcf2qtTL
-    "rht",  // to be populated in evalTotalRelativeHumidity
+    "rht",  // to be populated in eval_total_relative_humidity_nl
     "muA", "muH1",  // to be populated in function call from CovarianceStatisticsUtils.h
     "muRow1Column1", "muRow1Column2",  // to be populated in evalMoistureControlDependencies
     "muRow2Column1", "muRow2Column2",  //   ""
@@ -98,7 +99,7 @@ MoistureControl::MoistureControl(const oops::GeometryData & outerGeometryData,
   mo::evalMassCloudIce(augmentedStateFieldSet_);
   mo::evalMassRain(augmentedStateFieldSet_);
   mo::qqclqcf2qt(augmentedStateFieldSet_);
-  mo::evalTotalRelativeHumidity(augmentedStateFieldSet_);
+  mo::eval_total_relative_humidity_nl(augmentedStateFieldSet_);
 
   // populate "muA" and "muH1"
   for (auto & covFld : covFieldSet_) {
