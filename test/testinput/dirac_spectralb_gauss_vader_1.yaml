@@ -15,9 +15,9 @@ geometry:
     - eastward_wind
     - exner
     - exner_levels_minus_one
-    - ice_cloud_volume_fraction_in_atmosphere_layer
     - geostrophic_pressure_levels_minus_one
     - height
+    - ice_cloud_volume_fraction_in_atmosphere_layer
     - liquid_cloud_volume_fraction_in_atmosphere_layer
     - mass_content_of_cloud_liquid_water_in_atmosphere_layer
     - mass_content_of_cloud_ice_in_atmosphere_layer
@@ -165,12 +165,12 @@ initial condition:
   - eastward_wind
   - exner
   - exner_levels_minus_one
-  - ice_cloud_volume_fraction_in_atmosphere_layer
   - geostrophic_pressure_levels_minus_one
   - height
   - height_levels
   - hydrostatic_exner_levels
   - hydrostatic_pressure_levels
+  - ice_cloud_volume_fraction_in_atmosphere_layer
   - liquid_cloud_volume_fraction_in_atmosphere_layer
   - mass_content_of_cloud_liquid_water_in_atmosphere_layer
   - mass_content_of_cloud_ice_in_atmosphere_layer
@@ -200,8 +200,8 @@ initial condition:
   filepath: testdata/gauss_state
 output dirac:
   mpi pattern: '%MPI%'
-  filepath: testdata/dirac_spectralb_gauss_vader/dirac_%id%_%MPI%
+  filepath: testdata/dirac_spectralb_gauss_vader_1/dirac_%id%_%MPI%
 test:
-  test output filename: testref/dirac_spectralb_gauss_vader.out
-  reference filename: testref/dirac_spectralb_gauss_vader.ref
+  test output filename: testref/dirac_spectralb_gauss_vader_1.out
+  reference filename: testref/dirac_spectralb_gauss_vader_1.ref
 

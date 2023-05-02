@@ -4,4 +4,5 @@ dirac_spectralb_and_touv
 dirac_spectralb_from_CS
 dirac_spectralb_from_L15
 dirac_spectraltouv
-dirac_spectralb_gauss_vader
+dirac_spectralb_gauss_vader_1
+dirac_spectralb_gauss_vader_2

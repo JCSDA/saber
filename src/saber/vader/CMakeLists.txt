@@ -16,6 +16,12 @@ if ( oops_FOUND AND vader_FOUND )
     CovarianceStatisticsUtils.h
     DryAirDensity.cc
     DryAirDensity.h
+    GpToHp.cc
+    GpToHp.h
+    HpToHexner.cc
+    HpToHexner.h
+    HpHexnerToPExner.cc
+    HpHexnerToPExner.h
     HydroBal.cc
     HydroBal.h
     HydrostaticExner.cc
@@ -26,6 +32,7 @@ if ( oops_FOUND AND vader_FOUND )
     MoistureControl.h
     movader_covstats_interface.F90
     movader_covstats_interface.h
+    PressureParameters.h
     )
 endif()
 

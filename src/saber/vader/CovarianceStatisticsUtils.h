@@ -17,6 +17,8 @@
 
 #include "oops/base/Variables.h"
 
+#include "saber/vader/PressureParameters.h"
+
 namespace saber {
 namespace vader {
 
@@ -37,5 +39,10 @@ atlas::Field createGpRegressionWeights(const atlas::FunctionSpace &,
 void populateInterpMuStats(atlas::FieldSet &,
                            const atlas::Field &);
 
+atlas::FieldSet createGpRegressionStats(const atlas::FunctionSpace &,
+                                        const atlas::FieldSet &,
+                                        const oops::Variables &,
+                                        const std::vector<size_t> &,
+                                        const GpToHpCovarianceParameters &);
 }  // namespace vader
 }  // namespace saber

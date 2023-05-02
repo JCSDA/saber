@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2022 Met Office
+ * (C) Crown Copyright 2022-2023 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -22,24 +22,14 @@
 #include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberOuterBlockBase.h"
 
+#include "saber/vader/PressureParameters.h"
+
 namespace saber {
 namespace spectralb {
 
 // -----------------------------------------------------------------------------
-
-class GaussUVToGPParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(GaussUVToGPParameters, SaberBlockParametersBase)
- public:
-  oops::OptionalParameter<std::string> modelGridName{"model grid name", this};
-  oops::OptionalParameter<std::string> gaussState{"gauss state", this};
-  oops::Variables mandatoryActiveVars() const override {return oops::Variables({
-    "eastward_wind",
-    "geostrophic_pressure_levels_minus_one",
-    "northward_wind"});}
-};
-
-// -----------------------------------------------------------------------------
-
+/// \brief saber block that converts zonal and meridional wind to geostrophic
+///        pressure on a Gaussian latitude mesh.
 
 class GaussUVToGP : public SaberOuterBlockBase {
  public:

@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2022 Met Office
+ * (C) Crown Copyright 2023 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -25,8 +25,6 @@
 #include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberOuterBlockBase.h"
 
-#include "saber/vader/PressureParameters.h"
-
 namespace oops {
   class Variables;
 }
@@ -35,42 +33,34 @@ namespace saber {
 namespace vader {
 
 // -----------------------------------------------------------------------------
-class HydrostaticExnerParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(HydrostaticExnerParameters, SaberBlockParametersBase)
+
+class HpToHexnerParameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(HpToHexnerParameters, SaberBlockParametersBase)
  public:
   oops::RequiredParameter<std::string> svp_file{"saturation vapour pressure file", this};
-  oops::RequiredParameter<GpToHpCovarianceParameters>
-    hydrostaticexnerParams{"covariance data", this};
   oops::Variables mandatoryActiveVars() const override {return oops::Variables({
-    "air_pressure_levels",
-    "exner_levels_minus_one",
-    "geostrophic_pressure_levels_minus_one",
     "hydrostatic_exner_levels",
-    "hydrostatic_pressure_levels",
-    "unbalanced_pressure_levels_minus_one"});}
+    "hydrostatic_pressure_levels"});}
 };
 
 // -----------------------------------------------------------------------------
-/// \brief  This saber block is here to do 3 jobs:
-///         1) the vertical regression on geostrophic pressure
-///         2) summing the result with unbalanced pressure to
-///            create hydrostatic_pressure
-///         3) converting hydrostatic pressure to exner pressure.
-// TO DO: Marek - remove saber block when results identical to 3 new saber blocks
-class HydrostaticExner : public SaberOuterBlockBase {
+/// \brief This saber block converts
+///        hydrostatic pressure to hydrostatic exner pressure.
+
+class HpToHexner : public SaberOuterBlockBase {
  public:
-  static const std::string classname() {return "saber::vader::HydrostaticExner";}
+  static const std::string classname() {return "saber::vader::HpToHexner";}
 
-  typedef HydrostaticExnerParameters Parameters_;
+  typedef HpToHexnerParameters Parameters_;
 
-  HydrostaticExner(const oops::GeometryData &,
-                   const std::vector<size_t> &,
-                   const oops::Variables &,
-                   const eckit::Configuration &,
-                   const Parameters_ &,
-                   const atlas::FieldSet &,
-                   const atlas::FieldSet &);
-  virtual ~HydrostaticExner();
+  HpToHexner(const oops::GeometryData &,
+             const std::vector<size_t> &,
+             const oops::Variables &,
+             const eckit::Configuration &,
+             const Parameters_ &,
+             const atlas::FieldSet &,
+             const atlas::FieldSet &);
+  virtual ~HpToHexner();
 
   const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}
   const oops::Variables & innerVars() const override {return innerVars_;}

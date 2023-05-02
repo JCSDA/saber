@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2022 Met Office
+ * (C) Crown Copyright 2022-2023 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -527,7 +527,16 @@ void GaussUVToGP::multiply(atlas::FieldSet & fset) const {
 
   gp.haloExchange();
 
-  fset.add(gp);
+  if (fset.has("geostrophic_pressure_levels_minus_one")) {
+    auto gpView =
+      atlas::array::make_view<double, 2>(
+        fset["geostrophic_pressure_levels_minus_one"]);
+    auto gpViewKeep =
+      atlas::array::make_view<const double, 2>(gp);
+    gpView.assign(gpViewKeep);
+  } else {
+    fset.add(gp);
+  }
 
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }

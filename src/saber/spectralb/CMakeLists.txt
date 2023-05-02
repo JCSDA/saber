@@ -28,6 +28,8 @@ if( oops_FOUND AND atlas_TRANS_FOUND )
           list(APPEND spectralb_src_files_list
           GaussUVToGP.cc
           GaussUVToGP.h
+          HydrostaticPressure.cc
+          HydrostaticPressure.h
           )
     endif()
 endif()

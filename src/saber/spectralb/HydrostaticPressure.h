@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2022 Met Office
+ * (C) Crown Copyright 2023 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -25,6 +25,8 @@
 #include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberOuterBlockBase.h"
 
+#include "saber/spectralb/GaussUVToGP.h"
+#include "saber/vader/GpToHp.h"
 #include "saber/vader/PressureParameters.h"
 
 namespace oops {
@@ -33,44 +35,33 @@ namespace oops {
 
 namespace saber {
 namespace vader {
+  class GpToHp;
+}
+
+namespace spectralb {
+  class GaussUVToGP;
 
 // -----------------------------------------------------------------------------
-class HydrostaticExnerParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(HydrostaticExnerParameters, SaberBlockParametersBase)
+/// \brief a saber block that creates hydrostatic pressure using
+///        horizontal winds and unbalanced pressure. The "hydrostatic" part is
+///        implied and not enforced in this saber block.
+///        Note also that this saber block expects the outer and inner functionspaces
+///        to be on the same Gaussian mesh.
+///        To do this it uses GaussUVToGp and GpToHp saber blocks
+class HydrostaticPressure : public SaberOuterBlockBase {
  public:
-  oops::RequiredParameter<std::string> svp_file{"saturation vapour pressure file", this};
-  oops::RequiredParameter<GpToHpCovarianceParameters>
-    hydrostaticexnerParams{"covariance data", this};
-  oops::Variables mandatoryActiveVars() const override {return oops::Variables({
-    "air_pressure_levels",
-    "exner_levels_minus_one",
-    "geostrophic_pressure_levels_minus_one",
-    "hydrostatic_exner_levels",
-    "hydrostatic_pressure_levels",
-    "unbalanced_pressure_levels_minus_one"});}
-};
+  static const std::string classname() {return "saber::vader::HydrostaticPressure";}
 
-// -----------------------------------------------------------------------------
-/// \brief  This saber block is here to do 3 jobs:
-///         1) the vertical regression on geostrophic pressure
-///         2) summing the result with unbalanced pressure to
-///            create hydrostatic_pressure
-///         3) converting hydrostatic pressure to exner pressure.
-// TO DO: Marek - remove saber block when results identical to 3 new saber blocks
-class HydrostaticExner : public SaberOuterBlockBase {
- public:
-  static const std::string classname() {return "saber::vader::HydrostaticExner";}
+  typedef HydrostaticPressureParameters Parameters_;
 
-  typedef HydrostaticExnerParameters Parameters_;
-
-  HydrostaticExner(const oops::GeometryData &,
+  HydrostaticPressure(const oops::GeometryData &,
                    const std::vector<size_t> &,
                    const oops::Variables &,
                    const eckit::Configuration &,
                    const Parameters_ &,
                    const atlas::FieldSet &,
                    const atlas::FieldSet &);
-  virtual ~HydrostaticExner();
+  virtual ~HydrostaticPressure();
 
   const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}
   const oops::Variables & innerVars() const override {return innerVars_;}
@@ -84,11 +75,15 @@ class HydrostaticExner : public SaberOuterBlockBase {
   const oops::GeometryData & innerGeometryData_;
   oops::Variables innerVars_;
   oops::Variables activeVars_;
-  atlas::FieldSet covFieldSet_;
-  atlas::FieldSet augmentedStateFieldSet_;
+  /// Gaussian (outer) functionspace
+  const atlas::functionspace::StructuredColumns gaussFunctionSpace_;
+  GpToHpParameters gptohpparams_;
+  GaussUVToGPParameters gaussuvtogpparams_;
+  std::unique_ptr<saber::vader::GpToHp> gptohp_;
+  std::unique_ptr<GaussUVToGP> gaussuvtogp_;
 };
 
 // -----------------------------------------------------------------------------
 
-}  // namespace vader
+}  // namespace spectralb
 }  // namespace saber

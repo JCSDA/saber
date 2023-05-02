@@ -254,6 +254,62 @@ void populateInterpMuStats(atlas::FieldSet & augmentedStateFieldSet,
   }
 }
 
+
+// -----------------------------------------------------------------------------
+
+/// \details This extracts the hp_gp regression matrix for a number of
+///          of overlapping latitude bands from the operational covariance
+///          statistics file. The matrices are stored as a single field.
+///
+/// B = (vertical regression matrix bin_0)
+///     (vertical regression matrix bin_1)
+///     (          ...                   )
+///     (vertical regression matrix bin_m)
+/// Since each matrix is square we can easily infer the bin index from the row index
+/// First index of vertRegView is bin_index * number of levels + level index,
+///     the second is number of levels associated with matrix column.
+///
+/// The interpolation weights are calculated for each grid point location
+/// The second index relates to the bin index.
+/// We ensure that across all bins for a grid point we sum to 1.
+///
+atlas::FieldSet createGpRegressionStats(const atlas::FunctionSpace & functionSpace,
+                                        const atlas::FieldSet & extraFields,
+                                        const oops::Variables & variables,
+                                        const std::vector<size_t> & variableSizes,
+                                        const GpToHpCovarianceParameters & params) {
+  // Get necessary parameters
+  // path to covariance file with gp covariance parameters.
+  std::string covFileName(params.covariance_file_path);
+  // number of latitudes that existed in the generation of the covariance file
+  std::size_t covGlobalNLats(static_cast<std::size_t>(params.covariance_nlat));
+  // number of model levels
+  std::size_t modelLevels =
+    variableSizes[variables.find("unbalanced_pressure_levels_minus_one")];
+
+  // geostrophic pressure vertical regression statistics are grouped
+  // into overlapping bins based on latitude;
+  // number of bins associated with the gP vertical regression
+  std::size_t gPBins(static_cast<std::size_t>(params.gp_regression_bins));
+
+  oops::Log::info() <<
+    "gp regression no of bins = " << gPBins << std::endl;
+  oops::Log::info() <<
+    "gp regression model levels = " << modelLevels << std::endl;
+
+  atlas::FieldSet gpStatistics;
+
+  // If gPBins is 0 - then we switch off the balanced pressure contribution.
+  if (gPBins > 0) {
+    gpStatistics.add(createGpRegressionMatrices(covFileName, gPBins, modelLevels));
+
+    gpStatistics.add(createGpRegressionWeights(functionSpace, extraFields,
+                                               covFileName, covGlobalNLats, gPBins));
+  }
+
+  return gpStatistics;
+}
+
 // -----------------------------------------------------------------------------
 
 }  // namespace vader
