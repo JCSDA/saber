@@ -755,35 +755,35 @@ write(mpl%info,'(a7,a)') '','Write normality diagnostics'
 call mpl%flush
 
 ! Create file
-ncid = create_file(mpl,trim(nam%prefix)//'normality',mpl%myproc)
+ncid = create_file(mpl,trim(nam%prefix)//'normality',mpl%myproc,io_override=.true.)
 
 ! Define dimensions
-nloc_id = define_dim(mpl,ncid,'nloc',nloc)
-ne_id = define_dim(mpl,ncid,'ne',ens%ne)
-nem1_id = define_dim(mpl,ncid,'nem1',ens%ne-1)
+nloc_id = define_dim(mpl,ncid,'nloc',nloc,io_override=.true.)
+ne_id = define_dim(mpl,ncid,'ne',ens%ne,io_override=.true.)
+nem1_id = define_dim(mpl,ncid,'nem1',ens%ne-1,io_override=.true.)
 
 if (nloc>0) then
    ! Define variables
-   ic0a_id = define_var(mpl,ncid,'ic0a','int',(/nloc_id/))
-   il0_id = define_var(mpl,ncid,'il0','int',(/nloc_id/))
-   iv_id = define_var(mpl,ncid,'iv','int',(/nloc_id/))
-   order_id = define_var(mpl,ncid,'order','int',(/ne_id,nloc_id/))
-   ens_norm_id = define_var(mpl,ncid,'ens_norm','real',(/ne_id,nloc_id/))
-   ens_step_id = define_var(mpl,ncid,'ens_step','real',(/nem1_id,nloc_id/))
+   ic0a_id = define_var(mpl,ncid,'ic0a','int',(/nloc_id/),io_override=.true.)
+   il0_id = define_var(mpl,ncid,'il0','int',(/nloc_id/),io_override=.true.)
+   iv_id = define_var(mpl,ncid,'iv','int',(/nloc_id/),io_override=.true.)
+   order_id = define_var(mpl,ncid,'order','int',(/ne_id,nloc_id/),io_override=.true.)
+   ens_norm_id = define_var(mpl,ncid,'ens_norm','real',(/ne_id,nloc_id/),io_override=.true.)
+   ens_step_id = define_var(mpl,ncid,'ens_step','real',(/nem1_id,nloc_id/),io_override=.true.)
 end if
 
 if (nloc>0) then
    ! Write variables
-   call put_var(mpl,ncid,ic0a_id,ic0a_loc)
-   call put_var(mpl,ncid,il0_id,il0_loc)
-   call put_var(mpl,ncid,iv_id,iv_loc)
-   call put_var(mpl,ncid,order_id,order)
-   call put_var(mpl,ncid,ens_norm_id,ens_norm)
-   call put_var(mpl,ncid,ens_step_id,ens_step)
+   call put_var(mpl,ncid,ic0a_id,ic0a_loc,io_override=.true.)
+   call put_var(mpl,ncid,il0_id,il0_loc,io_override=.true.)
+   call put_var(mpl,ncid,iv_id,iv_loc,io_override=.true.)
+   call put_var(mpl,ncid,order_id,order,io_override=.true.)
+   call put_var(mpl,ncid,ens_norm_id,ens_norm,io_override=.true.)
+   call put_var(mpl,ncid,ens_step_id,ens_step,io_override=.true.)
 end if
 
 ! Close file
-call close_file(mpl,ncid)
+call close_file(mpl,ncid,io_override=.true.)
 
 ! Release memory
 deallocate(ic0a_loc)

@@ -190,37 +190,66 @@ Geometry::Geometry(const Parameters_ & params,
     group.extraFields_->add(gmask);
 
     // Halo mask
-    if (grid_.name().compare(0, 1, std::string{"L"}) == 0) {
-      // Regular lonlat grid
+    if (functionSpace_.type() == "StructuredColumns") {
+      // Structured columns
       atlas::functionspace::StructuredColumns fs(functionSpace_);
       atlas::StructuredGrid grid = fs.grid();
       atlas::Field hmask = fs.createField<int>(atlas::option::name("hmask")
         | atlas::option::levels(1));
       auto hmaskView = atlas::array::make_view<int, 2>(hmask);
+      auto ghostView = atlas::array::make_view<int, 1>(fs.ghost());
       auto view_i = atlas::array::make_view<int, 1>(fs.index_i());
       auto view_j = atlas::array::make_view<int, 1>(fs.index_j());
       for (atlas::idx_t j = fs.j_begin_halo(); j < fs.j_end_halo(); ++j) {
         for (atlas::idx_t i = fs.i_begin_halo(j); i < fs.i_end_halo(j); ++i) {
           atlas::idx_t jnode = fs.index(i, j);
-          if (((view_j(jnode) == 1) || (view_j(jnode) == grid.ny())) && (view_i(jnode) != 1)) {
-            hmaskView(jnode, 0) = 0;
-          } else {
-            hmaskView(jnode, 0) = 1;
+          hmaskView(jnode, 0) = ghostView(jnode) > 0 ? 0 : 1;
+        }
+      }
+
+      // Special case for lon/lat grids
+      if (grid_.name().compare(0, 1, std::string{"L"}) == 0) {
+        for (atlas::idx_t j = fs.j_begin_halo(); j < fs.j_end_halo(); ++j) {
+          for (atlas::idx_t i = fs.i_begin_halo(j); i < fs.i_end_halo(j); ++i) {
+            atlas::idx_t jnode = fs.index(i, j);
+            if (((view_j(jnode) == 1) || (view_j(jnode) == grid.ny())) && (view_i(jnode) != 1)) {
+              hmaskView(jnode, 0) = 0;
+            }
           }
         }
       }
+
+      // Add halo mask
       group.extraFields_->add(hmask);
-    } else if (grid_.name().compare(0, 2, std::string{"CS"}) == 0) {
-      // Cubed-sphere grid
-      atlas::functionspace::NodeColumns fs(functionSpace_);
-      atlas::Field hmask = fs.createField<int>(atlas::option::name("hmask")
-        | atlas::option::levels(1));
-      auto hmaskView = atlas::array::make_view<int, 2>(hmask);
-      auto ghostView = atlas::array::make_view<int, 1>(fs.ghost());
-      for (atlas::idx_t jnode = 0; jnode < hmask.shape(0); ++jnode) {
-        hmaskView(jnode, 0) = ghostView(jnode) > 0 ? 0 : 1;
+    } else if (functionSpace_.type() == "NodeColumns") {
+      // NodeColumns
+      if (grid_.name().compare(0, 2, std::string{"CS"}) == 0) {
+        // CubedSphere
+        atlas::functionspace::NodeColumns fs(functionSpace_);
+        atlas::Field hmask = fs.createField<int>(atlas::option::name("hmask")
+          | atlas::option::levels(1));
+        auto hmaskView = atlas::array::make_view<int, 2>(hmask);
+        auto ghostView = atlas::array::make_view<int, 1>(fs.ghost());
+        for (atlas::idx_t jnode = 0; jnode < hmask.shape(0); ++jnode) {
+          hmaskView(jnode, 0) = ghostView(jnode) > 0 ? 0 : 1;
+        }
+
+        // Add halo mask
+        group.extraFields_->add(hmask);
+      } else {
+        // Other NodeColumns
+        atlas::functionspace::NodeColumns fs(functionSpace_);
+        atlas::Field hmask = fs.createField<int>(atlas::option::name("hmask")
+          | atlas::option::levels(1));
+        auto hmaskView = atlas::array::make_view<int, 2>(hmask);
+        auto ghostView = atlas::array::make_view<int, 1>(fs.ghost());
+        for (atlas::idx_t jnode = 0; jnode < hmask.shape(0); ++jnode) {
+          hmaskView(jnode, 0) = ghostView(jnode) > 0 ? 0 : 1;
+        }
+
+        // Add halo mask
+        group.extraFields_->add(hmask);
       }
-      group.extraFields_->add(hmask);
     }
 
     // Mask size

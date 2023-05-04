@@ -8,12 +8,12 @@
 !----------------------------------------------------------------------
 module type_mom
 
-use fckit_mpi_module, only: fckit_mpi_sum
+use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_status
 !$ use omp_lib
 use tools_const, only: zero,one,two,four
 use tools_kinds, only: kind_real
-use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,define_dim,check_dim,define_var,inquire_var,put_var,get_var, &
- & close_file
+use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,define_dim,check_dim,inquire_dim_size,define_var, &
+ & inquire_var,put_var,get_var,close_file
 use tools_repro, only: eq
 use type_ens, only: ens_type
 use type_geom, only: geom_type
@@ -35,13 +35,22 @@ type mom_type
    real(kind_real),allocatable :: m1(:,:,:)    !< Ensemble mean
    real(kind_real),allocatable :: m2(:,:,:)    !< Ensemble variance
    real(kind_real),allocatable :: dirac(:,:,:) !< Raw ensemble dirac test
+
+   ! Dimensions for local I/O
+   integer :: nc1a                             !< Number of points in subset Sc1, halo A
 contains
    procedure :: alloc => mom_alloc
    procedure :: init => mom_init
    procedure :: partial_dealloc => mom_partial_dealloc
    procedure :: dealloc => mom_dealloc
-   procedure :: read => mom_read
-   procedure :: write => mom_write
+   procedure :: mom_read
+   procedure :: mom_read_single
+   generic :: read => mom_read,mom_read_single
+   procedure :: mom_write
+   procedure :: mom_write_single
+   generic :: write => mom_write,mom_write_single
+   procedure :: send => mom_send
+   procedure :: receive => mom_receive
    procedure :: update => mom_update
    procedure :: compute => mom_compute
 end type mom_type
@@ -55,7 +64,7 @@ contains
 ! Subroutine: mom_alloc
 !> Allocation
 !----------------------------------------------------------------------
-subroutine mom_alloc(mom,nam,geom,samp,ne,nsub,iens)
+subroutine mom_alloc(mom,nam,geom,ne,nsub,iens)
 
 implicit none
 
@@ -63,7 +72,6 @@ implicit none
 class(mom_type),intent(inout) :: mom  !< Moments
 type(nam_type),intent(in) :: nam      !< Namelist
 type(geom_type),intent(in) :: geom    !< Geometry
-type(samp_type),intent(in) :: samp    !< Sampling
 integer,intent(in) :: ne              !< Ensemble size
 integer,intent(in) :: nsub            !< Number of sub-ensembles
 integer,intent(in) :: iens            !< Ensemble index
@@ -86,7 +94,7 @@ mom%iens = iens
 allocate(mom%blk(nam%nv))
 do iv=1,nam%nv
    ! Allocation
-   call mom%blk(iv)%alloc(nam,geom,samp%nc1a,ne,nsub,nam%iterative_algo)
+   call mom%blk(iv)%alloc(nam,geom,mom%nc1a,ne,nsub,nam%iterative_algo)
 end do
 if (nam%check_dirac) then
    if (nam%iterative_algo) then
@@ -218,9 +226,8 @@ type(ens_type), intent(in) :: ens    !< Ensemble
 integer,intent(in) :: iens           !< Ensemble index
 
 ! Local variables
-integer :: iv,isub
-integer :: ncid,grpid,m2_1_id,m2_2_id,m11_id,m22_id
-character(len=1024) :: fname_mom,grpname
+integer :: iproc,iprocio
+type(mom_type) :: mom_tmp
 
 ! Set name
 @:set_name(mom_read)
@@ -228,24 +235,97 @@ character(len=1024) :: fname_mom,grpname
 ! Probe in
 @:probe_in()
 
-! Allocation
-if (ens%ne==0) call mpl%abort('${subr}$','ensemble size is zero')
-call mom%alloc(nam,geom,samp,ens%ne,ens%nsub,iens)
+do iproc=1,mpl%nproc
+   ! Reading task
+   iprocio = mod(iproc,mpl%nprocio)
+   if (iprocio==0) iprocio = mpl%nprocio
 
-! Initialization
-call mom%init(nam)
+   if (mpl%myproc==iprocio) then
+      write(mpl%info,'(a10,a,i6,a,i6)') '','Read moments of task ',iproc,' from task ',iprocio
+      call mpl%flush
 
-do isub=1,mom%nsub
+      if (iproc==iprocio) then
+         ! Read data
+         call mom%read(mpl,nam,geom,ens,iens,iproc)
+         if (mom%nc1a/=samp%nc1a) call mpl%abort('${subr}$','mom%nc1a is not equal to samp%nc1a')
+      else
+         ! Read data
+         call mom_tmp%read(mpl,nam,geom,ens,iens,iproc)
+
+         ! Send data to task iproc
+         call mom_tmp%send(mpl,nam,geom,iproc)
+
+         ! Release memory
+         call mom_tmp%dealloc
+      end if
+   elseif (mpl%myproc==iproc) then
+      ! Receive data from task iprocio
+      write(mpl%info,'(a10,a,i6,a,i6)') '','Receive moments of task ',iproc,' from task ',iprocio
+      call mpl%flush
+      call mom%receive(mpl,nam,geom,ens%ne,ens%nsub,iens,iprocio)
+      if (mom%nc1a/=samp%nc1a) call mpl%abort('${subr}$','mom%nc1a is not equal to samp%nc1a')
+   end if
+end do
+
+! Update tag
+call mpl%update_tag(3)
+
+! Probe out
+@:probe_out()
+
+end subroutine mom_read
+
+!----------------------------------------------------------------------
+! Subroutine: mom_read_single
+!> Read, single task
+!----------------------------------------------------------------------
+subroutine mom_read_single(mom,mpl,nam,geom,ens,iens,iproc)
+
+implicit none
+
+! Passed variables
+class(mom_type),intent(inout) :: mom !< Moments
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+type(nam_type),intent(in) :: nam     !< Namelist
+type(geom_type),intent(in) :: geom   !< Geometry
+type(ens_type), intent(in) :: ens    !< Ensemble
+integer,intent(in) :: iens           !< Ensemble index
+integer,intent(in) :: iproc          !< Task index
+
+! Local variables
+integer :: iv,isub
+integer :: ncid,grpid,m2_1_id,m2_2_id,m11_id,m22_id
+character(len=1024) :: fname_mom,grpname
+
+! Set name
+@:set_name(mom_read_single)
+
+! Probe in
+@:probe_in()
+
+do isub=1,ens%nsub
    ! Set file name
-   write(fname_mom,'(a,a,i6.6,a,i1)') trim(nam%fname_mom_default),'_',isub,'_',mom%iens
-   if (mom%iens==1) then
+   write(fname_mom,'(a,a,i6.6,a,i1)') trim(nam%fname_mom_default),'_',isub,'_',iens
+   if (iens==1) then
       if (allocated(nam%fname_mom1)) fname_mom = nam%fname_mom1(isub)
-   elseif (mom%iens==2) then
+   elseif (iens==2) then
       if (allocated(nam%fname_mom2)) fname_mom = nam%fname_mom2(isub)
    end if
 
    ! Open file
-   ncid = open_file(mpl,fname_mom,mpl%myproc)
+   ncid = open_file(mpl,fname_mom,iproc)
+
+   if (isub==1) then
+      ! Get dimension
+      mom%nc1a = inquire_dim_size(mpl,ncid,'nc1a',0)
+
+      ! Allocation
+      if (ens%ne==0) call mpl%abort('${subr}$','ensemble size is zero')
+      call mom%alloc(nam,geom,ens%ne,ens%nsub,iens)
+
+      ! Initialization
+      call mom%init(nam)
+   end if
 
    do iv=1,nam%nv
       ! Get group name
@@ -253,13 +333,6 @@ do isub=1,mom%nsub
 
       ! Get group
       grpid = inquire_grp(mpl,ncid,grpname)
-
-      ! Check dimensions
-      if (.not.check_dim(mpl,grpid,'nc1a',samp%nc1a)) call mpl%abort('${subr}$','wrong size for dimension nc1a')
-      if (.not.check_dim(mpl,grpid,'nl0',geom%nl0)) call mpl%abort('${subr}$','wrong size for dimension nl0')
-      if (.not.check_dim(mpl,grpid,'nc3',nam%nc3)) call mpl%abort('${subr}$','wrong size for dimension nc3')
-      if (.not.check_dim(mpl,grpid,'nc4',nam%nc4)) call mpl%abort('${subr}$','wrong size for dimension nc4')
-      if (.not.check_dim(mpl,grpid,'nl0r',nam%nl0r)) call mpl%abort('${subr}$','wrong size for dimension nl0r')
 
       ! Get variables
       m2_1_id = inquire_var(mpl,grpid,'m2_1')
@@ -281,7 +354,7 @@ end do
 ! Probe out
 @:probe_out()
 
-end subroutine mom_read
+end subroutine mom_read_single
 
 !----------------------------------------------------------------------
 ! Subroutine: mom_write
@@ -292,11 +365,76 @@ subroutine mom_write(mom,mpl,nam,geom,samp)
 implicit none
 
 ! Passed variables
+class(mom_type),intent(inout) :: mom !< Moments
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+type(nam_type),intent(in) :: nam     !< Namelist
+type(geom_type),intent(in) :: geom   !< Geometry
+type(samp_type),intent(in) :: samp   !< Sampling
+
+! Local variables
+integer :: iproc,iprocio
+type(mom_type) :: mom_tmp
+
+! Set name
+@:set_name(mom_write)
+
+! Probe in
+@:probe_in()
+
+do iproc=1,mpl%nproc
+   ! Writing task
+   iprocio = mod(iproc,mpl%nprocio)
+   if (iprocio==0) iprocio = mpl%nprocio
+
+   if (mpl%myproc==iprocio) then
+      write(mpl%info,'(a10,a,i6,a,i6)') '','Write moments of task ',iproc,' from task ',iprocio
+      call mpl%flush
+
+      if (iproc==iprocio) then
+         ! Write data
+         mom%nc1a = samp%nc1a
+         call mom%write(mpl,nam,geom,iproc)
+      else
+         ! Receive data from task iproc
+         call mom_tmp%receive(mpl,nam,geom,mom%ne,mom%nsub,mom%iens,iproc)
+
+         ! Write data
+         call mom_tmp%write(mpl,nam,geom,iproc)
+
+         ! Release memory
+         call mom_tmp%dealloc
+      end if
+   elseif (mpl%myproc==iproc) then
+      ! Send data to task iprocio
+      write(mpl%info,'(a10,a,i6,a,i6)') '','Send moments of task ',iproc,' to task ',iprocio
+      call mpl%flush
+      mom%nc1a = samp%nc1a
+      call mom%send(mpl,nam,geom,iprocio)
+   end if
+end do
+
+! Update tag
+call mpl%update_tag(3)
+
+! Probe out
+@:probe_out()
+
+end subroutine mom_write
+
+!----------------------------------------------------------------------
+! Subroutine: mom_write_single
+!> Write, single task
+!----------------------------------------------------------------------
+subroutine mom_write_single(mom,mpl,nam,geom,iproc)
+
+implicit none
+
+! Passed variables
 class(mom_type),intent(in) :: mom   !< Moments
 type(mpl_type),intent(inout) :: mpl !< MPI data
 type(nam_type),intent(in) :: nam    !< Namelist
 type(geom_type),intent(in) :: geom  !< Geometry
-type(samp_type),intent(in) :: samp  !< Sampling
+integer,intent(in) :: iproc         !< Task index
 
 ! Local variables
 integer :: iv,isub
@@ -304,7 +442,7 @@ integer :: ncid,grpid,nc1a_id,nc3_id,nc4_id,nl0r_id,nl0_id,m2_1_id,m2_2_id,m11_i
 character(len=1024) :: fname_mom,grpname
 
 ! Set name
-@:set_name(mom_write)
+@:set_name(mom_write_single)
 
 ! Probe in
 @:probe_in()
@@ -319,7 +457,10 @@ do isub=1,mom%nsub
    end if
 
    ! Create file
-   ncid = create_file(mpl,fname_mom,mpl%myproc)
+   ncid = create_file(mpl,fname_mom,iproc)
+
+   ! Define or get dimension
+   if (isub==1) nc1a_id = define_dim(mpl,ncid,'nc1a',mom%nc1a)
 
    do iv=1,nam%nv
       ! Get group name
@@ -329,7 +470,6 @@ do isub=1,mom%nsub
       grpid = define_grp(mpl,ncid,grpname)
 
       ! Define or get dimensions
-      nc1a_id = define_dim(mpl,grpid,'nc1a',samp%nc1a)
       nl0_id = define_dim(mpl,grpid,'nl0',geom%nl0)
       nc3_id = define_dim(mpl,grpid,'nc3',nam%nc3)
       nc4_id = define_dim(mpl,grpid,'nc4',nam%nc4)
@@ -355,7 +495,197 @@ end do
 ! Probe out
 @:probe_out()
 
-end subroutine mom_write
+end subroutine mom_write_single
+
+!----------------------------------------------------------------------
+! Subroutine: mom_send
+!> Send
+!----------------------------------------------------------------------
+subroutine mom_send(mom,mpl,nam,geom,iproc)
+
+implicit none
+
+! Passed variables
+class(mom_type),intent(in) :: mom  !< Moments
+type(mpl_type),intent(inout) :: mpl !< MPI data
+type(nam_type),intent(in) :: nam    !< Namelist
+type(geom_type),intent(in) :: geom  !< Geometry
+integer,intent(in) :: iproc         !< Destination task
+
+! Local variables
+integer :: nbufi,nbufr,ibufi,ibufr,iv,bufs(2)
+integer,allocatable :: bufi(:)
+real(kind_real),allocatable :: bufr(:)
+
+! Set name
+@:set_name(mom_send)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+nbufi = 0
+nbufr = 0
+
+! nc1a
+nbufi = nbufi+1
+
+do iv=1,nam%nv
+   ! m2_1
+   nbufr = nbufr+mom%nc1a*geom%nl0*mom%nsub
+
+   ! m2_2
+   nbufr = nbufr+mom%nc1a*nam%nc3*nam%nc4*geom%nl0*mom%nsub
+
+   ! m11
+   nbufr = nbufr+mom%nc1a*nam%nc3*nam%nc4*nam%nl0r*geom%nl0*mom%nsub
+
+   ! m22
+   nbufr = nbufr+mom%nc1a*nam%nc3*nam%nc4*nam%nl0r*geom%nl0*mom%nsub
+end do
+
+
+! Allocation
+allocate(bufi(nbufi))
+allocate(bufr(nbufr))
+
+! Initialization
+ibufi = 0
+ibufr = 0
+
+! nc1a
+bufi(ibufi+1) = mom%nc1a
+ibufi = ibufi+1
+
+do iv=1,nam%nv
+   ! m2_1
+   bufr(ibufr+1:ibufr+mom%nc1a*geom%nl0*mom%nsub) = reshape(mom%blk(iv)%m2_1,(/mom%nc1a*geom%nl0*mom%nsub/))
+   ibufr = ibufr+mom%nc1a*geom%nl0*mom%nsub
+
+   ! m2_2
+   bufr(ibufr+1:ibufr+mom%nc1a*nam%nc3*nam%nc4*geom%nl0*mom%nsub) = reshape(mom%blk(iv)%m2_2, &
+ & (/mom%nc1a*nam%nc3*nam%nc4*geom%nl0*mom%nsub/))
+   ibufr = ibufr+mom%nc1a*nam%nc3*nam%nc4*geom%nl0*mom%nsub
+
+   ! m11
+   bufr(ibufr+1:ibufr+mom%nc1a*nam%nc3*nam%nc4*nam%nl0r*geom%nl0*mom%nsub) = reshape(mom%blk(iv)%m11, &
+ & (/mom%nc1a*nam%nc3*nam%nc4*nam%nl0r*geom%nl0*mom%nsub/))
+   ibufr = ibufr+mom%nc1a*nam%nc3*nam%nc4*nam%nl0r*geom%nl0*mom%nsub
+
+   ! m22
+   bufr(ibufr+1:ibufr+mom%nc1a*nam%nc3*nam%nc4*nam%nl0r*geom%nl0*mom%nsub) = reshape(mom%blk(iv)%m22, &
+ & (/mom%nc1a*nam%nc3*nam%nc4*nam%nl0r*geom%nl0*mom%nsub/))
+   ibufr = ibufr+mom%nc1a*nam%nc3*nam%nc4*nam%nl0r*geom%nl0*mom%nsub
+end do
+
+! Check sizes
+if (ibufi/=nbufi) call mpl%abort('${subr}$','wrong final index ibufi')
+if (ibufr/=nbufr) call mpl%abort('${subr}$','wrong final index ibufr')
+
+! Send buffer size
+bufs = (/nbufi,nbufr/)
+call mpl%f_comm%send(bufs,iproc-1,mpl%tag)
+
+! Send data
+call mpl%f_comm%send(bufi,iproc-1,mpl%tag+1)
+call mpl%f_comm%send(bufr,iproc-1,mpl%tag+2)
+
+! Release memory
+deallocate(bufi)
+deallocate(bufr)
+
+! Probe out
+@:probe_out()
+
+end subroutine mom_send
+
+!----------------------------------------------------------------------
+! Subroutine: mom_receive
+!> Receive
+!----------------------------------------------------------------------
+subroutine mom_receive(mom,mpl,nam,geom,ne,nsub,iens,iproc)
+
+implicit none
+
+! Passed variables
+class(mom_type),intent(inout) :: mom !< Moments
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
+integer,intent(in) :: ne               !< Ensemble size
+integer,intent(in) :: nsub             !< Number of sub-ensembles
+integer,intent(in) :: iens             !< Ensemble index
+integer,intent(in) :: iproc            !< Source task
+
+! Local variables
+integer :: nbufi,nbufr,ibufi,ibufr,iv,bufs(2)
+integer,allocatable :: bufi(:)
+real(kind_real),allocatable :: bufr(:)
+type(fckit_mpi_status) :: status
+
+! Set name
+@:set_name(mom_receive)
+
+! Probe in
+@:probe_in()
+
+! Receive buffer size
+call mpl%f_comm%receive(bufs,iproc-1,mpl%tag,status)
+nbufi = bufs(1)
+nbufr = bufs(2)
+
+! Allocation
+allocate(bufi(nbufi))
+allocate(bufr(nbufr))
+
+! Receive data
+call mpl%f_comm%receive(bufi,iproc-1,mpl%tag+1,status)
+call mpl%f_comm%receive(bufr,iproc-1,mpl%tag+2,status)
+
+! Initialization
+ibufi = 0
+ibufr = 0
+
+! nc1a
+mom%nc1a = bufi(ibufi+1)
+ibufi = ibufi+1
+
+! Allocation
+call mom%alloc(nam,geom,ne,nsub,iens)
+
+do iv=1,nam%nv
+   ! m2_1
+   mom%blk(iv)%m2_1 = reshape(bufr(ibufr+1:ibufr+mom%nc1a*geom%nl0*mom%nsub),(/mom%nc1a,geom%nl0,mom%nsub/))
+   ibufr = ibufr+mom%nc1a*geom%nl0*mom%nsub
+
+   ! m2_2
+   mom%blk(iv)%m2_2 = reshape(bufr(ibufr+1:ibufr+mom%nc1a*nam%nc3*nam%nc4*geom%nl0*mom%nsub), &
+ & (/mom%nc1a,nam%nc3,nam%nc4,geom%nl0,mom%nsub/))
+   ibufr = ibufr+mom%nc1a*nam%nc3*nam%nc4*geom%nl0*mom%nsub
+
+   ! m11
+   mom%blk(iv)%m11 = reshape(bufr(ibufr+1:ibufr+mom%nc1a*nam%nc3*nam%nc4*nam%nl0r*geom%nl0*mom%nsub), &
+ & (/mom%nc1a,nam%nc3,nam%nc4,nam%nl0r,geom%nl0,mom%nsub/))
+   ibufr = ibufr+mom%nc1a*nam%nc3*nam%nc4*nam%nl0r*geom%nl0*mom%nsub
+
+   ! m22
+   mom%blk(iv)%m22 = reshape(bufr(ibufr+1:ibufr+mom%nc1a*nam%nc3*nam%nc4*nam%nl0r*geom%nl0*mom%nsub), &
+ & (/mom%nc1a,nam%nc3,nam%nc4,nam%nl0r,geom%nl0,mom%nsub/))
+   ibufr = ibufr+mom%nc1a*nam%nc3*nam%nc4*nam%nl0r*geom%nl0*mom%nsub
+end do
+
+
+! Check sizes
+if (ibufi/=nbufi) call mpl%abort('${subr}$','wrong final index ibufi')
+if (ibufr/=nbufr) call mpl%abort('${subr}$','wrong final index ibufr')
+
+! Release memory
+deallocate(bufr)
+
+! Probe out
+@:probe_out()
+
+end subroutine mom_receive
 
 !----------------------------------------------------------------------
 ! Subroutine: mom_update
@@ -414,7 +744,8 @@ fac5 = real(ie_sub-1,kind_real)/real(ie_sub,kind_real)
 
 if (ie==1) then
    ! Allocation
-   call mom%alloc(nam,geom,samp,ens_ne,ens_nsub,iens)
+   mom%nc1a = samp%nc1a
+   call mom%alloc(nam,geom,ens_ne,ens_nsub,iens)
 
    ! Initialization
    call mom%init(nam)
@@ -664,7 +995,8 @@ real(kind_real),allocatable :: fld_c3a(:,:,:,:),wgt_dir(:),m2(:,:,:)
 @:probe_in()
 
 ! Allocation
-call mom%alloc(nam,geom,samp,ens%ne,ens%nsub,iens)
+mom%nc1a = samp%nc1a
+call mom%alloc(nam,geom,ens%ne,ens%nsub,iens)
 if (nam%check_dirac) then
    allocate(wgt_dir(geom%ndir))
    allocate(m2(geom%nc0a,geom%nl0,nam%nv))

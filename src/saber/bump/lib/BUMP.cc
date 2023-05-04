@@ -105,6 +105,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   }
 
   // Loop over grids
+  size_t jgrid = 0;
   for (auto & grid : grids) {
     // Merge bumpConf_ into grid
     grid = mergeConfigs(grid, bumpConf_);
@@ -112,6 +113,11 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
     // Replace patterns
     seekAndReplace(grid, "_MPI_", mpi);
     seekAndReplace(grid, "_OMP_", omp);
+
+    // New files
+    if (jgrid > 0) {
+      grid.set("io.new files", false);
+    }
 
     // Add input variables to the grid configuration
     std::vector<std::string> vars_str;
@@ -166,6 +172,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
     bump_create_f90(keyBUMP, comm_, fspace_.get(), extraFields.get(),
                     grid, infoChannel_, testChannel_);
     keyBUMP_.push_back(keyBUMP);
+    ++jgrid;
   }
 
   // Get max number of components

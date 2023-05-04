@@ -25,9 +25,7 @@ Fields:
   air_temperature: 0.0000000000000000e+00
   surface_pressure: 0.0000000000000000e+00
        Independent levels:  1[4]
-          Model grid size:             3312
           Subset Sc0 size:             3170
-          Number of duplicated points (halo):       142 (  4.29%)
           Min. / max. longitudes: -175.0 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
@@ -44,9 +42,7 @@ Adjoint test for block BUMP_VerticalBalance passed
 Norm of input parameter StdDev: 3.2367672341785246e+08
 Adjoint test for block StdDev passed
        Independent levels:  1[4]
-          Model grid size:             3312
           Subset Sc0 size:             3170
-          Number of duplicated points (halo):       142 (  4.29%)
           Min. / max. longitudes: -175.0 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
@@ -59,9 +55,7 @@ Adjoint test for block StdDev passed
              Level   3 ~> -0.900E+01 vert. unit
              Level   4 ~> -0.110E+02 vert. unit
        Independent levels:  1[1]
-          Model grid size:             3312
           Subset Sc0 size:             3170
-          Number of duplicated points (halo):       142 (  4.29%)
           Min. / max. longitudes: -175.0 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%

@@ -56,6 +56,10 @@ struct IODef {
   std::pair<const char *, std::string> files_prefix =
     std::make_pair("files prefix", "");
 
+  // Write in new files
+  std::pair<const char *, bool> new_files =
+    std::make_pair("new files", true);
+
   // Parallel NetCDF I/O
   std::pair<const char *, bool> parallel_netcdf =
     std::make_pair("parallel netcdf", true);
@@ -406,6 +410,10 @@ struct DiagnosticsDef {
   // Number of bins for averaged statistics histograms
   std::pair<const char *, int> avg_nbins =
     std::make_pair("histogram bins", 0);
+
+  // Support radius scaling in CMAT from HDIAG
+  std::pair<const char *, double> lengths_scaling =
+    std::make_pair("diagnosed lengths scaling", 1.0);
 };
 
 // Vertical balance block parameters
@@ -520,6 +528,10 @@ struct NICASDef {
   // Horizontal NICAS interpolation test
   std::pair<const char *, bool> interp_test =
     std::make_pair("horizontal interpolation test", false);
+
+  // Overriding component in file
+  std::pair<const char *, int> file_component =
+    std::make_pair("overriding component in file", 0);
 };
 
 // Psichitouv section

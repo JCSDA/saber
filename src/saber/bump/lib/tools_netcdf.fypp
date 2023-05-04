@@ -12,7 +12,7 @@ module tools_netcdf
 use iso_fortran_env, only: output_unit
 use netcdf, only: nf90_clobber,nf90_create,nf90_close,nf90_def_dim,nf90_def_grp,nf90_def_var,nf90_ebaddim,nf90_get_att, &
  & nf90_get_var,nf90_global,nf90_inq_dimid,nf90_inq_grp_ncid,nf90_inquire_dimension,nf90_inquire_variable,nf90_inq_varid, &
- & nf90_mpiio,nf90_netcdf4,nf90_noerr,nf90_nowrite,nf90_open,nf90_put_att,nf90_put_var,nf90_strerror,nf90_write
+ & nf90_mpiio,nf90_netcdf4,nf90_noerr,nf90_nowrite,nf90_write,nf90_open,nf90_put_att,nf90_put_var,nf90_strerror,nf90_write
 use tools_func, only: convert_i2l,convert_l2i
 use tools_kinds, only: kind_signed_char,kind_int,kind_float,kind_double,kind_real,nc_kind_int,nc_kind_real
 use type_mpl, only: mpl_type
@@ -345,19 +345,21 @@ end subroutine registry_recursive_cleaning
 ! Function: netcdf_create_file
 !> Create file
 !----------------------------------------------------------------------
-function netcdf_create_file(mpl,filename,iproc) result(ncid)
+function netcdf_create_file(mpl,filename,iproc,io_override) result(ncid)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl     !< MPI data
-character(len=*),intent(in) :: filename !< File name
-integer,intent(in),optional :: iproc    !< Processor index
+type(mpl_type),intent(inout) :: mpl        !< MPI data
+character(len=*),intent(in) :: filename    !< File name
+integer,intent(in),optional :: iproc       !< Processor index
+logical,intent(in),optional :: io_override !< Override mpl%pioproc
 
 ! Returned variable
 integer :: ncid
 
 ! Local variables
+logical :: lio
 character(len=1024) :: fullname
 
 ! Set name
@@ -366,24 +368,29 @@ character(len=1024) :: fullname
 ! Probe in
 @:probe_in()
 
+! Local I/O flag
+lio = mpl%pioproc(mpl%myproc)
+if (present(io_override)) lio = lio.or.io_override
+
 ! Initialization
 ncid = mpl%msv%vali
 
-if (present(iproc)) then
-   ! Local I/O
+if (lio) then
+   if (present(iproc)) then
+      ! Local I/O
 
-   ! Full file name
-   if (iproc==0) then
-      fullname = trim(mpl%datadir)//'/'//trim(filename)//'.nc'
+      ! Full file name
+      if (iproc==0) then
+         fullname = trim(mpl%datadir)//'/'//trim(filename)//'.nc'
+      else
+         write(fullname,'(a,i6.6,a,i6.6,a)') trim(mpl%datadir)//'/'//trim(filename)//'_local_',mpl%nproc,'-',iproc,'.nc'
+      end if
+
+      ! Create file
+      call strerror(mpl,'${subr}$',ncid,nf90_create(fullname,ior(nf90_clobber,nf90_netcdf4),ncid),'file '//trim(fullname))
    else
-      write(fullname,'(a,i6.6,a,i6.6,a)') trim(mpl%datadir)//'/'//trim(filename)//'_local_',mpl%nproc,'-',iproc,'.nc'
-   end if
+      ! Global I/O
 
-   ! Create file
-   call strerror(mpl,'${subr}$',ncid,nf90_create(fullname,ior(nf90_clobber,nf90_netcdf4),ncid),'file '//trim(fullname))
-else
-   ! Global I/O
-   if (mpl%pioproc(mpl%myproc)) then
       ! Full file name
       fullname = trim(mpl%datadir)//'/'//trim(filename)//'.nc'
 
@@ -395,13 +402,13 @@ else
          call strerror(mpl,'${subr}$',ncid,nf90_create(fullname,ior(nf90_clobber,nf90_netcdf4),ncid),'file '//trim(fullname))
       end if
    end if
+
+   ! Save ID in registry
+   if (mpl%msv%isnot(ncid)) call registry%save(mpl,0,ncid,filename)
+
+   ! Set global missing value
+   call put_att(mpl,ncid,0,'_FillValue',mpl%msv%valr)
 end if
-
-! Save ID in registry
-if (mpl%msv%isnot(ncid)) call registry%save(mpl,0,ncid,filename)
-
-! Set global missing value
-call put_att(mpl,ncid,0,'_FillValue',mpl%msv%valr)
 
 ! Probe out
 @:probe_out()
@@ -412,7 +419,7 @@ end function netcdf_create_file
 ! Function: netcdf_open_file
 !> Open file
 !----------------------------------------------------------------------
-function netcdf_open_file(mpl,filename,iproc,ext) result(ncid)
+function netcdf_open_file(mpl,filename,iproc,ext,nowrite,io_override) result(ncid)
 
 implicit none
 
@@ -421,11 +428,15 @@ type(mpl_type),intent(inout) :: mpl         !< MPI data
 character(len=*),intent(in) :: filename     !< File name
 integer,intent(in),optional :: iproc        !< Processor index
 character(len=*),intent(in),optional :: ext !< Extension (default is .nc)
+logical,intent(in),optional :: nowrite      !< Read-only mode (default is true)
+logical,intent(in),optional :: io_override  !< Override mpl%pioproc
 
 ! Returned variable
 integer :: ncid
 
 ! Local variables
+logical :: lio
+integer :: mode
 character(len=1024) :: lext,fullname
 
 ! Set name
@@ -438,39 +449,50 @@ character(len=1024) :: lext,fullname
 lext = '.nc'
 if (present(ext)) lext = '.'//trim(ext)
 
+! Local I/O mode
+mode = nf90_nowrite
+if (present(nowrite)) then
+   if (.not.nowrite) mode = nf90_write
+end if
+
+! Local I/O flag
+lio = mpl%pioproc(mpl%myproc)
+if (present(io_override)) lio = lio.or.io_override
+
 ! Initialization
 ncid = mpl%msv%vali
 
-if (present(iproc)) then
-   ! Local I/O
+if (lio) then
+   if (present(iproc)) then
+      ! Local I/O
 
-   ! Full file name
-   if (iproc==0) then
-      fullname = trim(mpl%datadir)//'/'//trim(filename)//trim(lext)
+      ! Full file name
+      if (iproc==0) then
+         fullname = trim(mpl%datadir)//'/'//trim(filename)//trim(lext)
+      else
+         write(fullname,'(a,i6.6,a,i6.6,a)') trim(mpl%datadir)//'/'//trim(filename)//'_local_',mpl%nproc,'-',iproc,trim(lext)
+      end if
+
+      ! Open file
+      call strerror(mpl,'${subr}$',ncid,nf90_open(fullname,mode,ncid),'file '//trim(fullname))
    else
-      write(fullname,'(a,i6.6,a,i6.6,a)') trim(mpl%datadir)//'/'//trim(filename)//'_local_',mpl%nproc,'-',iproc,trim(lext)
-   end if
+      ! Global I/O
 
-   ! Open file
-   call strerror(mpl,'${subr}$',ncid,nf90_open(fullname,nf90_nowrite,ncid),'file '//trim(fullname))
-else
-   ! Global I/O
-   if (mpl%pioproc(mpl%myproc)) then
       ! Full file name
       fullname = trim(mpl%datadir)//'/'//trim(filename)//trim(lext)
 
       ! Open file
       if (mpl%parallel_netcdf) then
-         call strerror(mpl,'${subr}$',ncid,nf90_open(fullname,nf90_nowrite,ncid, &
+         call strerror(mpl,'${subr}$',ncid,nf90_open(fullname,mode,ncid, &
  & comm=mpl%f_comm_io%communicator(),info=mpl%f_comm_io%info_null()),'file '//trim(fullname))
       else
-         call strerror(mpl,'${subr}$',ncid,nf90_open(fullname,nf90_nowrite,ncid),'file '//trim(fullname))
+         call strerror(mpl,'${subr}$',ncid,nf90_open(fullname,mode,ncid),'file '//trim(fullname))
       end if
    end if
-end if
 
-! Save ID in registry
-if (mpl%msv%isnot(ncid)) call registry%save(mpl,0,ncid,filename)
+   ! Save ID in registry
+   if (mpl%msv%isnot(ncid)) call registry%save(mpl,0,ncid,filename)
+end if
 
 ! Probe out
 @:probe_out()
@@ -481,7 +503,7 @@ end function netcdf_open_file
 ! Function: netcdf_define_grp
 !> Define group
 !----------------------------------------------------------------------
-function netcdf_define_grp(mpl,ncid,grpname) result(grpid)
+function netcdf_define_grp(mpl,ncid,grpname,io_override) result(grpid)
 
 implicit none
 
@@ -489,12 +511,14 @@ implicit none
 type(mpl_type),intent(inout) :: mpl              !< MPI data
 integer,intent(in) :: ncid                       !< File ID
 character(len=*),intent(in) :: grpname           !< Group name
+logical,intent(in),optional :: io_override !< Override mpl%pioproc
 
 ! Returned variable
 integer :: grpid
 
 ! Local variable
 integer :: rid
+logical :: lio
 
 ! Set name
 @:set_name(netcdf_define_grp)
@@ -502,18 +526,24 @@ integer :: rid
 ! Probe in
 @:probe_in()
 
+! Local I/O flag
+lio = mpl%pioproc(mpl%myproc)
+if (present(io_override)) lio = lio.or.io_override
+
 ! Initialization
 grpid = mpl%msv%vali
 
-! Get root ID in registry
-rid = registry%get_root_id(mpl,ncid)
-
-if (mpl%msv%isnot(rid)) then
-   ! Define group
-   call strerror(mpl,'${subr}$',ncid,nf90_def_grp(ncid,grpname,grpid),'group '//trim(grpname))
-
-   ! Save ID in registry
-   if (mpl%msv%isnot(grpid)) call registry%save(mpl,ncid,grpid,grpname)
+if (lio) then
+   ! Get root ID in registry
+   rid = registry%get_root_id(mpl,ncid)
+   
+   if (mpl%msv%isnot(rid)) then
+      ! Define group
+      call strerror(mpl,'${subr}$',ncid,nf90_def_grp(ncid,grpname,grpid),'group '//trim(grpname))
+   
+      ! Save ID in registry
+      if (mpl%msv%isnot(grpid)) call registry%save(mpl,ncid,grpid,grpname)
+   end if
 end if
 
 ! Probe out
@@ -525,7 +555,7 @@ end function netcdf_define_grp
 ! Function: netcdf_inquire_grp
 !> Inquire group ID
 !----------------------------------------------------------------------
-function netcdf_inquire_grp(mpl,ncid,grpname) result(grpid)
+function netcdf_inquire_grp(mpl,ncid,grpname,io_override) result(grpid)
 
 implicit none
 
@@ -533,12 +563,14 @@ implicit none
 type(mpl_type),intent(inout) :: mpl              !< MPI data
 integer,intent(in) :: ncid                       !< File ID
 character(len=*),intent(in) :: grpname           !< Group name
+logical,intent(in),optional :: io_override !< Override mpl%pioproc
 
 ! Returned variable
 integer :: grpid
 
 ! Local variable
 integer :: rid
+logical :: lio
 
 ! Set name
 @:set_name(netcdf_inquire_grp)
@@ -546,18 +578,24 @@ integer :: rid
 ! Probe in
 @:probe_in()
 
+! Local I/O flag
+lio = mpl%pioproc(mpl%myproc)
+if (present(io_override)) lio = lio.or.io_override
+
 ! Initialization
 grpid = mpl%msv%vali
 
-! Get root ID in registry
-rid = registry%get_root_id(mpl,ncid)
-
-if (mpl%msv%isnot(rid)) then
-   ! Define group
-   call strerror(mpl,'${subr}$',ncid,nf90_inq_grp_ncid(ncid,grpname,grpid),'group '//trim(grpname))
-
-   ! Save ID in registry
-   if (mpl%msv%isnot(grpid)) call registry%save(mpl,ncid,grpid,grpname)
+if (lio) then
+   ! Get root ID in registry
+   rid = registry%get_root_id(mpl,ncid)
+   
+   if (mpl%msv%isnot(rid)) then
+      ! Define group
+      call strerror(mpl,'${subr}$',ncid,nf90_inq_grp_ncid(ncid,grpname,grpid),'group '//trim(grpname))
+   
+      ! Save ID in registry
+      if (mpl%msv%isnot(grpid)) call registry%save(mpl,ncid,grpid,grpname)
+   end if
 end if
 
 ! Probe out
@@ -570,7 +608,7 @@ end function netcdf_inquire_grp
 ! Subroutine: netcdf_put_att_${dtype}$
 !> Put attribute
 !----------------------------------------------------------------------
-subroutine netcdf_put_att_${dtype}$(mpl,ncid,varid,attname,att)
+subroutine netcdf_put_att_${dtype}$(mpl,ncid,varid,attname,att,io_override)
 
 implicit none
 
@@ -580,10 +618,12 @@ integer,intent(in) :: ncid             !< File ID
 integer,intent(in) :: varid            !< Variable ID
 character(len=*),intent(in) :: attname !< Attribute name
 ${ftype[dtype]}$,intent(in) :: att     !< Attribute
+logical,intent(in),optional :: io_override !< Override mpl%pioproc
 
 ! Local variable
 integer :: rid,lvarid
 #{if dtype == 'logical'}# integer :: attint #{endif}#
+logical :: lio
 
 ! Set name
 @:set_name(netcdf_put_att_${dtype}$)
@@ -591,24 +631,30 @@ integer :: rid,lvarid
 ! Probe in
 @:probe_in()
 
-! Get root ID in registry
-rid = registry%get_root_id(mpl,ncid)
+! Local I/O flag
+lio = mpl%pioproc(mpl%myproc)
+if (present(io_override)) lio = lio.or.io_override
 
-if (mpl%msv%isnot(rid)) then
-   ! Local variable ID
-   if (varid==0) then
-      lvarid = nf90_global
-   else
-      lvarid = varid
+if (lio) then
+   ! Get root ID in registry
+   rid = registry%get_root_id(mpl,ncid)
+   
+   if (mpl%msv%isnot(rid)) then
+      ! Local variable ID
+      if (varid==0) then
+         lvarid = nf90_global
+      else
+         lvarid = varid
+      end if
+   
+      ! Put attribute
+      #:if dtype == 'logical'
+         call convert_l2i(att,attint)
+         call strerror(mpl,'${subr}$',ncid,nf90_put_att(ncid,lvarid,attname,attint),'attribute '//trim(attname))
+      #:else
+         call strerror(mpl,'${subr}$',ncid,nf90_put_att(ncid,lvarid,attname,att),'attribute '//trim(attname))
+      #:endif
    end if
-
-   ! Put attribute
-   #:if dtype == 'logical'
-      call convert_l2i(att,attint)
-      call strerror(mpl,'${subr}$',ncid,nf90_put_att(ncid,lvarid,attname,attint),'attribute '//trim(attname))
-   #:else
-      call strerror(mpl,'${subr}$',ncid,nf90_put_att(ncid,lvarid,attname,att),'attribute '//trim(attname))
-   #:endif
 end if
 
 ! Probe out
@@ -622,7 +668,7 @@ end subroutine netcdf_put_att_${dtype}$
 ! Subroutine: netcdf_get_att_${dtype}$
 !> Get attribute
 !----------------------------------------------------------------------
-subroutine netcdf_get_att_${dtype}$(mpl,ncid,varid,attname,att,defval)
+subroutine netcdf_get_att_${dtype}$(mpl,ncid,varid,attname,att,defval,io_override)
 
 implicit none
 
@@ -633,10 +679,12 @@ integer,intent(in) :: varid                    !< Variable ID
 character(len=*),intent(in) :: attname         !< Attribute name
 ${ftype[dtype]}$,intent(out) :: att            !< Attribute
 ${ftype[dtype]}$,intent(in),optional :: defval !< Default value
+logical,intent(in),optional :: io_override !< Override mpl%pioproc
 
 ! Local variable
 integer :: rid,lvarid,info
 #{if dtype == 'logical'}# integer :: attint #{endif}#
+logical :: lio
 
 ! Set name
 @:set_name(netcdf_get_att_${dtype}$)
@@ -644,39 +692,45 @@ integer :: rid,lvarid,info
 ! Probe in
 @:probe_in()
 
-! Get root ID in registry
-rid = registry%get_root_id(mpl,ncid)
+! Local I/O flag
+lio = mpl%pioproc(mpl%myproc)
+if (present(io_override)) lio = lio.or.io_override
 
-if (mpl%msv%isnot(rid)) then
-   ! Local variable ID
-   if (varid==0) then
-      lvarid = nf90_global
-   else
-      lvarid = varid
-   end if
-
-   ! Get attribute
-   #:if dtype == 'logical'
-      info = nf90_get_att(ncid,lvarid,attname,attint)
-      if (info/=nf90_noerr) then
-         if (present(defval)) then
-            att = defval
-         else
-            call strerror(mpl,'${subr}$',ncid,info,'attribute '//trim(attname))
-         end if
+if (lio) then
+   ! Get root ID in registry
+   rid = registry%get_root_id(mpl,ncid)
+   
+   if (mpl%msv%isnot(rid)) then
+      ! Local variable ID
+      if (varid==0) then
+         lvarid = nf90_global
       else
-         call convert_i2l(mpl,attint,att)
+         lvarid = varid
       end if
-   #:else
-      info = nf90_get_att(ncid,lvarid,attname,att)
-      if (info/=nf90_noerr) then
-         if (present(defval)) then
-            att = defval
+   
+      ! Get attribute
+      #:if dtype == 'logical'
+         info = nf90_get_att(ncid,lvarid,attname,attint)
+         if (info/=nf90_noerr) then
+            if (present(defval)) then
+               att = defval
+            else
+               call strerror(mpl,'${subr}$',ncid,info,'attribute '//trim(attname))
+            end if
          else
-            call strerror(mpl,'${subr}$',ncid,info,'attribute '//trim(attname))
+            call convert_i2l(mpl,attint,att)
          end if
-      end if
-   #:endif
+      #:else
+         info = nf90_get_att(ncid,lvarid,attname,att)
+         if (info/=nf90_noerr) then
+            if (present(defval)) then
+               att = defval
+            else
+               call strerror(mpl,'${subr}$',ncid,info,'attribute '//trim(attname))
+            end if
+         end if
+      #:endif
+   end if
 end if
 
 ! Probe out
@@ -689,7 +743,7 @@ end subroutine netcdf_get_att_${dtype}$
 ! Function: netcdf_define_dim
 !> Define dimension
 !----------------------------------------------------------------------
-function netcdf_define_dim(mpl,ncid,dimname,dimsize) result(dimid)
+function netcdf_define_dim(mpl,ncid,dimname,dimsize,io_override) result(dimid)
 
 implicit none
 
@@ -698,12 +752,14 @@ type(mpl_type),intent(inout) :: mpl    !< MPI data
 integer,intent(in) :: ncid             !< File ID
 character(len=*),intent(in) :: dimname !< Dimension name
 integer,intent(in) :: dimsize          !< Dimension size
+logical,intent(in),optional :: io_override !< Override mpl%pioproc
 
 ! Returned variable
 integer :: dimid
 
 ! Local variable
 integer :: rid
+logical :: lio
 
 ! Set name
 @:set_name(netcdf_define_dim)
@@ -711,14 +767,20 @@ integer :: rid
 ! Probe in
 @:probe_in()
 
-! Get root ID in registry
-rid = registry%get_root_id(mpl,ncid)
+! Local I/O flag
+lio = mpl%pioproc(mpl%myproc)
+if (present(io_override)) lio = lio.or.io_override
 
 ! Initialization
 dimid = mpl%msv%vali
 
-! Define dimension
-if (mpl%msv%isnot(rid)) call strerror(mpl,'${subr}$',ncid,nf90_def_dim(ncid,dimname,dimsize,dimid),'dimension '//trim(dimname))
+if (lio) then
+   ! Get root ID in registry
+   rid = registry%get_root_id(mpl,ncid)   
+  
+   ! Define dimension
+   if (mpl%msv%isnot(rid)) call strerror(mpl,'${subr}$',ncid,nf90_def_dim(ncid,dimname,dimsize,dimid),'dimension '//trim(dimname))
+end if
 
 ! Probe out
 @:probe_out()
@@ -729,7 +791,7 @@ end function netcdf_define_dim
 ! Function: netcdf_inquire_dim
 !> Inquire dimension ID
 !----------------------------------------------------------------------
-function netcdf_inquire_dim(mpl,ncid,dimname) result(dimid)
+function netcdf_inquire_dim(mpl,ncid,dimname,io_override) result(dimid)
 
 implicit none
 
@@ -737,12 +799,14 @@ implicit none
 type(mpl_type),intent(inout) :: mpl    !< MPI data
 integer,intent(in) :: ncid             !< File ID
 character(len=*),intent(in) :: dimname !< Dimension name
+logical,intent(in),optional :: io_override !< Override mpl%pioproc
 
 ! Returned variable
 integer :: dimid
 
 ! Local variable
 integer :: rid,info
+logical :: lio
 
 ! Set name
 @:set_name(netcdf_inquire_dim)
@@ -750,20 +814,26 @@ integer :: rid,info
 ! Probe in
 @:probe_in()
 
-! Get root ID in registry
-rid = registry%get_root_id(mpl,ncid)
+! Local I/O flag
+lio = mpl%pioproc(mpl%myproc)
+if (present(io_override)) lio = lio.or.io_override
 
 ! Initialization
 dimid = mpl%msv%vali
 
-if (mpl%msv%isnot(rid)) then
-   ! Define dimension
-   info = nf90_inq_dimid(ncid,dimname,dimid)
-
-   if (info==nf90_ebaddim) then
-      dimid = mpl%msv%vali
-   else
-      call strerror(mpl,'${subr}$',ncid,info,'dimension '//trim(dimname))
+if (lio) then
+   ! Get root ID in registry
+   rid = registry%get_root_id(mpl,ncid)
+    
+   if (mpl%msv%isnot(rid)) then
+      ! Define dimension
+      info = nf90_inq_dimid(ncid,dimname,dimid)
+   
+      if (info==nf90_ebaddim) then
+         dimid = mpl%msv%vali
+      else
+         call strerror(mpl,'${subr}$',ncid,info,'dimension '//trim(dimname))
+      end if
    end if
 end if
 
@@ -776,7 +846,7 @@ end function netcdf_inquire_dim
 ! Function: netcdf_inquire_dim_size
 !> Inquire dimension size
 !----------------------------------------------------------------------
-function netcdf_inquire_dim_size(mpl,ncid,dimname,default) result(dimsize)
+function netcdf_inquire_dim_size(mpl,ncid,dimname,default,io_override) result(dimsize)
 
 implicit none
 
@@ -785,12 +855,14 @@ type(mpl_type),intent(inout) :: mpl    !< MPI data
 integer,intent(in) :: ncid             !< File ID
 character(len=*),intent(in) :: dimname !< Dimension name
 integer,intent(in),optional :: default !< Default value
+logical,intent(in),optional :: io_override !< Override mpl%pioproc
 
 ! Returned variable
 integer :: dimsize
 
 ! Local variables
 integer :: rid,dimid
+logical :: lio
 
 ! Set name
 @:set_name(netcdf_inquire_dim_size)
@@ -798,20 +870,26 @@ integer :: rid,dimid
 ! Probe in
 @:probe_in()
 
-! Get root ID in registry
-rid = registry%get_root_id(mpl,ncid)
-
 ! Initialization
 dimsize = mpl%msv%vali
 if (present(default)) dimsize = default
 
-if (mpl%msv%isnot(rid)) then
-   ! Inquire dimension ID
-   dimid = netcdf_inquire_dim(mpl,ncid,dimname)
+! Local I/O flag
+lio = mpl%pioproc(mpl%myproc)
+if (present(io_override)) lio = lio.or.io_override
 
-   ! Inquire dimension size
-   if (mpl%msv%isnot(dimid)) call strerror(mpl,'${subr}$',ncid,nf90_inquire_dimension(ncid,dimid,len=dimsize), &
- & 'dimension '//trim(dimname))
+if (lio) then
+   ! Get root ID in registry
+   rid = registry%get_root_id(mpl,ncid)
+ 
+   if (mpl%msv%isnot(rid)) then
+      ! Inquire dimension ID
+      dimid = netcdf_inquire_dim(mpl,ncid,dimname)
+   
+      ! Inquire dimension size
+      if (mpl%msv%isnot(dimid)) call strerror(mpl,'${subr}$',ncid,nf90_inquire_dimension(ncid,dimid,len=dimsize), &
+    & 'dimension '//trim(dimname))
+   end if
 end if
 
 ! Probe out
@@ -823,7 +901,7 @@ end function netcdf_inquire_dim_size
 ! Function: netcdf_check_dim_size
 !> Check dimension size
 !----------------------------------------------------------------------
-function netcdf_check_dim_size(mpl,ncid,dimname,dimsize) result(value)
+function netcdf_check_dim_size(mpl,ncid,dimname,dimsize,io_override) result(value)
 
 implicit none
 
@@ -832,12 +910,14 @@ type(mpl_type),intent(inout) :: mpl    !< MPI data
 integer,intent(in) :: ncid             !< File ID
 character(len=*),intent(in) :: dimname !< Dimension name
 integer,intent(in) :: dimsize          !< Expected dimension size
+logical,intent(in),optional :: io_override !< Override mpl%pioproc
 
 ! Returned value
 logical :: value
 
 ! Local variables
 integer :: rid,dimsize_test
+logical :: lio
 
 ! Set name
 @:set_name(netcdf_check_dim_size)
@@ -845,18 +925,24 @@ integer :: rid,dimsize_test
 ! Probe in
 @:probe_in()
 
-! Get root ID in registry
-rid = registry%get_root_id(mpl,ncid)
+! Local I/O flag
+lio = mpl%pioproc(mpl%myproc)
+if (present(io_override)) lio = lio.or.io_override
 
 ! Initialization
 value = .true.
 
-if (mpl%msv%isnot(rid)) then
-   ! Inquire dimension size
-   dimsize_test = netcdf_inquire_dim_size(mpl,ncid,dimname)
-
-   ! Check dimension size
-   value = (dimsize_test==dimsize)
+if (lio) then
+   ! Get root ID in registry
+   rid = registry%get_root_id(mpl,ncid)   
+  
+   if (mpl%msv%isnot(rid)) then
+      ! Inquire dimension size
+      dimsize_test = netcdf_inquire_dim_size(mpl,ncid,dimname)
+   
+      ! Check dimension size
+      value = (dimsize_test==dimsize)
+   end if
 end if
 
 ! Probe out
@@ -868,7 +954,7 @@ end function netcdf_check_dim_size
 ! Function: netcdf_define_var
 !> Define variable
 !----------------------------------------------------------------------
-function netcdf_define_var(mpl,ncid,varname,varkind,varshape,unitname) result(varid)
+function netcdf_define_var(mpl,ncid,varname,varkind,varshape,unitname,io_override) result(varid)
 
 implicit none
 
@@ -879,12 +965,14 @@ character(len=*),intent(in) :: varname           !< Variable name
 character(len=*),intent(in) :: varkind           !< Variable kind
 integer,intent(in) :: varshape(:)                !< Variable shape
 character(len=*),intent(in),optional :: unitname !< Unit name
+logical,intent(in),optional :: io_override !< Override mpl%pioproc
 
 ! Returned variable
 integer :: varid
 
 ! Local variable
 integer  :: rid
+logical :: lio
 
 ! Set name
 @:set_name(netcdf_define_var)
@@ -892,31 +980,37 @@ integer  :: rid
 ! Probe in
 @:probe_in()
 
-! Get root ID in registry
-rid = registry%get_root_id(mpl,ncid)
+! Local I/O flag
+lio = mpl%pioproc(mpl%myproc)
+if (present(io_override)) lio = lio.or.io_override
 
 ! Initialization
 varid = mpl%msv%vali
 
-if (mpl%msv%isnot(rid)) then
-   if ((trim(varkind)=='int').or.(trim(varkind)=='logical')) then
-      ! Define variable
-      call strerror(mpl,'${subr}$',ncid,nf90_def_var(ncid,varname,nc_kind_int,varshape,varid),'variable '//trim(varname))
-
-      ! Set missing value attribute
-      call put_att(mpl,ncid,varid,'_FillValue',mpl%msv%vali)
-   elseif (trim(varkind)=='real') then
-      ! Define variable
-      call strerror(mpl,'${subr}$',ncid,nf90_def_var(ncid,varname,nc_kind_real,varshape,varid),'variable '//trim(varname))
-
-      ! Set missing value attribute
-      call put_att(mpl,ncid,varid,'_FillValue',mpl%msv%valr)
-   else
-      call mpl%abort('${subr}$','wrong variable kind')
+if (lio) then
+   ! Get root ID in registry
+   rid = registry%get_root_id(mpl,ncid)
+ 
+   if (mpl%msv%isnot(rid)) then
+      if ((trim(varkind)=='int').or.(trim(varkind)=='logical')) then
+         ! Define variable
+         call strerror(mpl,'${subr}$',ncid,nf90_def_var(ncid,varname,nc_kind_int,varshape,varid),'variable '//trim(varname))
+   
+         ! Set missing value attribute
+         call put_att(mpl,ncid,varid,'_FillValue',mpl%msv%vali)
+      elseif (trim(varkind)=='real') then
+         ! Define variable
+         call strerror(mpl,'${subr}$',ncid,nf90_def_var(ncid,varname,nc_kind_real,varshape,varid),'variable '//trim(varname))
+   
+         ! Set missing value attribute
+         call put_att(mpl,ncid,varid,'_FillValue',mpl%msv%valr)
+      else
+         call mpl%abort('${subr}$','wrong variable kind')
+      end if
+   
+      ! Set unit
+      if (present(unitname)) call put_att(mpl,ncid,varid,'unit',unitname)
    end if
-
-   ! Set unit
-   if (present(unitname)) call put_att(mpl,ncid,varid,'unit',unitname)
 end if
 
 ! Probe out
@@ -928,7 +1022,7 @@ end function netcdf_define_var
 ! Function: netcdf_inquire_var
 !> Inquire variable ID
 !----------------------------------------------------------------------
-function netcdf_inquire_var(mpl,ncid,varname) result(varid)
+function netcdf_inquire_var(mpl,ncid,varname,io_override) result(varid)
 
 implicit none
 
@@ -936,12 +1030,14 @@ implicit none
 type(mpl_type),intent(inout) :: mpl    !< MPI data
 integer,intent(in) :: ncid             !< File ID
 character(len=*),intent(in) :: varname !< Variable name
+logical,intent(in),optional :: io_override !< Override mpl%pioproc
 
 ! Returned variable
 integer :: varid
 
 ! Local variable
 integer  :: rid
+logical :: lio
 
 ! Set name
 @:set_name(netcdf_inquire_var)
@@ -949,14 +1045,20 @@ integer  :: rid
 ! Probe in
 @:probe_in()
 
-! Get root ID in registry
-rid = registry%get_root_id(mpl,ncid)
+! Local I/O flag
+lio = mpl%pioproc(mpl%myproc)
+if (present(io_override)) lio = lio.or.io_override
 
 ! Initialization
 varid = mpl%msv%vali
 
-! Inquire variable ID
-if (mpl%msv%isnot(rid)) call strerror(mpl,'${subr}$',ncid,nf90_inq_varid(ncid,varname,varid),'variable '//trim(varname))
+if (lio) then
+   ! Get root ID in registry
+   rid = registry%get_root_id(mpl,ncid)
+  
+   ! Inquire variable ID
+   if (mpl%msv%isnot(rid)) call strerror(mpl,'${subr}$',ncid,nf90_inq_varid(ncid,varname,varid),'variable '//trim(varname))
+end if
 
 ! Probe out
 @:probe_out()
@@ -968,7 +1070,7 @@ end function netcdf_inquire_var
 ! Subroutine: netcdf_put_var_${dtype}$_r0
 !> Put variable
 !----------------------------------------------------------------------
-subroutine netcdf_put_var_${dtype}$_r0(mpl,ncid,varid,var,varstart)
+subroutine netcdf_put_var_${dtype}$_r0(mpl,ncid,varid,var,varstart,io_override)
 
 implicit none
 
@@ -978,10 +1080,12 @@ integer,intent(in) :: ncid                 !< File ID
 integer,intent(in) :: varid                !< Variable ID
 ${ftype[dtype]}$,intent(in) :: var         !< Variable
 integer,intent(in),optional :: varstart(:) !< Start
+logical,intent(in),optional :: io_override !< Override mpl%pioproc
 
 ! Local variable
 integer :: rid
 #{if dtype == 'logical'}# integer :: varint #{endif}#
+logical :: lio
 
 ! Set name
 @:set_name(netcdf_put_var_${dtype}$_r0)
@@ -989,25 +1093,31 @@ integer :: rid
 ! Probe in
 @:probe_in()
 
-! Get root ID in registry
-rid = registry%get_root_id(mpl,ncid)
+! Local I/O flag
+lio = mpl%pioproc(mpl%myproc)
+if (present(io_override)) lio = lio.or.io_override
 
-if (mpl%msv%isnot(rid)) then
-   ! Put variable
-   #:if dtype == 'logical'
-      call convert_l2i(var,varint)
-      if (present(varstart)) then
-         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,varint,varstart),'variable',varid)
-      else
-         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,varint),'variable',varid)
-      end if
-   #:else
-      if (present(varstart)) then
-         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,var,varstart),'variable',varid)
-      else
-         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,var),'variable',varid)
-      end if
-   #:endif
+if (lio) then
+   ! Get root ID in registry
+   rid = registry%get_root_id(mpl,ncid)
+   
+   if (mpl%msv%isnot(rid)) then
+      ! Put variable
+      #:if dtype == 'logical'
+         call convert_l2i(var,varint)
+         if (present(varstart)) then
+            call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,varint,varstart),'variable',varid)
+         else
+            call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,varint),'variable',varid)
+         end if
+      #:else
+         if (present(varstart)) then
+            call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,var,varstart),'variable',varid)
+         else
+            call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,var),'variable',varid)
+         end if
+      #:endif
+   end if
 end if
 
 ! Probe out
@@ -1022,7 +1132,7 @@ end subroutine netcdf_put_var_${dtype}$_r0
 ! Subroutine: netcdf_put_var_${dtype}$_r${rank}$
 !> Put variable
 !----------------------------------------------------------------------
-subroutine netcdf_put_var_${dtype}$_r${rank}$(mpl,ncid,varid,var,varstart,varcount)
+subroutine netcdf_put_var_${dtype}$_r${rank}$(mpl,ncid,varid,var,varstart,varcount,io_override)
 
 implicit none
 
@@ -1033,6 +1143,7 @@ integer,intent(in) :: varid                       !< Variable ID
 ${ftype[dtype]}$,intent(in) :: var(${dim[rank]}$) !< Variable
 integer,intent(in),optional :: varstart(:)        !< Start
 integer,intent(in),optional :: varcount(:)        !< Count
+logical,intent(in),optional :: io_override !< Override mpl%pioproc
 
 ! Local variable
 integer :: rid
@@ -1040,6 +1151,7 @@ integer :: rid
   integer :: shp(${rank}$)
   integer,allocatable :: varint(${dim[rank]}$)
 #:endif
+logical :: lio
 
 ! Set name
 @:set_name(netcdf_put_var_${dtype}$_r${rank}$)
@@ -1047,35 +1159,41 @@ integer :: rid
 ! Probe in
 @:probe_in()
 
-! Get root ID in registry
-rid = registry%get_root_id(mpl,ncid)
+! Local I/O flag
+lio = mpl%pioproc(mpl%myproc)
+if (present(io_override)) lio = lio.or.io_override
 
-if (mpl%msv%isnot(rid)) then
-   ! Put variable
-   #:if dtype == 'logical'
-      shp = shape(var)
-      #{if rank == 1}# allocate(varint(shp(1))) #{endif}#
-      #{if rank == 2}# allocate(varint(shp(1),shp(2))) #{endif}#
-      #{if rank == 3}# allocate(varint(shp(1),shp(2),shp(3))) #{endif}#
-      #{if rank == 4}# allocate(varint(shp(1),shp(2),shp(3),shp(4))) #{endif}#
-      call convert_l2i(var,varint)
-      if (present(varstart).and.present(varcount)) then
-         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,varint,varstart,varcount),'variable',varid)
-      elseif (present(varstart)) then
-         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,varint,varstart),'variable',varid)
-      else
-         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,varint),'variable',varid)
-      end if
-      deallocate(varint)
-   #:else
-      if (present(varstart).and.present(varcount)) then
-         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,var,varstart,varcount),'variable',varid)
-      elseif (present(varstart)) then
-         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,var,varstart),'variable',varid)
-      else
-         call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,var),'variable',varid)
-      end if
-   #:endif
+if (lio) then
+   ! Get root ID in registry
+   rid = registry%get_root_id(mpl,ncid)
+   
+   if (mpl%msv%isnot(rid)) then
+      ! Put variable
+      #:if dtype == 'logical'
+         shp = shape(var)
+         #{if rank == 1}# allocate(varint(shp(1))) #{endif}#
+         #{if rank == 2}# allocate(varint(shp(1),shp(2))) #{endif}#
+         #{if rank == 3}# allocate(varint(shp(1),shp(2),shp(3))) #{endif}#
+         #{if rank == 4}# allocate(varint(shp(1),shp(2),shp(3),shp(4))) #{endif}#
+         call convert_l2i(var,varint)
+         if (present(varstart).and.present(varcount)) then
+            call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,varint,varstart,varcount),'variable',varid)
+         elseif (present(varstart)) then
+            call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,varint,varstart),'variable',varid)
+         else
+            call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,varint),'variable',varid)
+         end if
+         deallocate(varint)
+      #:else
+         if (present(varstart).and.present(varcount)) then
+            call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,var,varstart,varcount),'variable',varid)
+         elseif (present(varstart)) then
+            call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,var,varstart),'variable',varid)
+         else
+            call strerror(mpl,'${subr}$',ncid,nf90_put_var(ncid,varid,var),'variable',varid)
+         end if
+      #:endif
+   end if
 end if
 
 ! Probe out
@@ -1090,7 +1208,7 @@ end subroutine netcdf_put_var_${dtype}$_r${rank}$
 ! Subroutine: netcdf_get_var_${dtype}$_r0
 !> Get variable
 !----------------------------------------------------------------------
-subroutine netcdf_get_var_${dtype}$_r0(mpl,ncid,varid,var,varstart)
+subroutine netcdf_get_var_${dtype}$_r0(mpl,ncid,varid,var,varstart,io_override)
 
 implicit none
 
@@ -1100,10 +1218,12 @@ integer,intent(in) :: ncid                 !< File ID
 integer,intent(in) :: varid                !< Variable ID
 ${ftype[dtype]}$,intent(out) :: var        !< Variable
 integer,intent(in),optional :: varstart(:) !< Start
+logical,intent(in),optional :: io_override !< Override mpl%pioproc
 
 ! Local variable
 integer :: rid
 #{if dtype == 'logical'}# integer :: varint #{endif}#
+logical :: lio
 
 ! Set name
 @:set_name(netcdf_get_var_${dtype}$_r0)
@@ -1111,25 +1231,31 @@ integer :: rid
 ! Probe in
 @:probe_in()
 
-! Get root ID in registry
-rid = registry%get_root_id(mpl,ncid)
+! Local I/O flag
+lio = mpl%pioproc(mpl%myproc)
+if (present(io_override)) lio = lio.or.io_override
 
-if (mpl%msv%isnot(rid)) then
-   ! Get variable
-   #:if dtype == 'logical'
-      if (present(varstart)) then
-         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,varint,varstart),'variable',varid)
-      else
-         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,varint),'variable',varid)
-      end if
-      call convert_i2l(mpl,varint,var)
-   #:else
-      if (present(varstart)) then
-         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,var,varstart),'variable',varid)
-      else
-         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,var),'variable',varid)
-      end if
-   #:endif
+if (lio) then
+   ! Get root ID in registry
+   rid = registry%get_root_id(mpl,ncid)
+   
+   if (mpl%msv%isnot(rid)) then
+      ! Get variable
+      #:if dtype == 'logical'
+         if (present(varstart)) then
+            call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,varint,varstart),'variable',varid)
+         else
+            call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,varint),'variable',varid)
+         end if
+         call convert_i2l(mpl,varint,var)
+      #:else
+         if (present(varstart)) then
+            call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,var,varstart),'variable',varid)
+         else
+            call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,var),'variable',varid)
+         end if
+      #:endif
+   end if
 end if
 
 ! Probe out
@@ -1144,7 +1270,7 @@ end subroutine netcdf_get_var_${dtype}$_r0
 ! Subroutine: netcdf_get_var_${dtype}$_r${rank}$
 !> Get variable
 !----------------------------------------------------------------------
-subroutine netcdf_get_var_${dtype}$_r${rank}$(mpl,ncid,varid,var,varstart,varcount)
+subroutine netcdf_get_var_${dtype}$_r${rank}$(mpl,ncid,varid,var,varstart,varcount,io_override)
 
 implicit none
 
@@ -1155,6 +1281,7 @@ integer,intent(in) :: varid                        !< Variable ID
 ${ftype[dtype]}$,intent(out) :: var(${dim[rank]}$) !< Variable
 integer,intent(in),optional :: varstart(:)         !< Start
 integer,intent(in),optional :: varcount(:)         !< Count
+logical,intent(in),optional :: io_override !< Override mpl%pioproc
 
 ! Local variable
 integer :: rid
@@ -1162,6 +1289,7 @@ integer :: rid
   integer :: shp(${rank}$)
   integer,allocatable :: varint(${dim[rank]}$)
 #:endif
+logical :: lio
 
 ! Set name
 @:set_name(netcdf_get_var_${dtype}$_r${rank}$)
@@ -1169,35 +1297,41 @@ integer :: rid
 ! Probe in
 @:probe_in()
 
-! Get root ID in registry
-rid = registry%get_root_id(mpl,ncid)
+! Local I/O flag
+lio = mpl%pioproc(mpl%myproc)
+if (present(io_override)) lio = lio.or.io_override
 
-if (mpl%msv%isnot(rid)) then
-   ! Get variable
-   #:if dtype == 'logical'
-      shp = shape(var)
-      #{if rank == 1}# allocate(varint(shp(1))) #{endif}#
-      #{if rank == 2}# allocate(varint(shp(1),shp(2))) #{endif}#
-      #{if rank == 3}# allocate(varint(shp(1),shp(2),shp(3))) #{endif}#
-      #{if rank == 4}# allocate(varint(shp(1),shp(2),shp(3),shp(4))) #{endif}#
-      if (present(varstart).and.present(varcount)) then
-         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,varint,varstart,varcount),'variable',varid)
-      elseif (present(varstart)) then
-         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,varint,varstart),'variable',varid)
-      else
-         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,varint),'variable',varid)
-      end if
-      call convert_i2l(mpl,varint,var)
-      deallocate(varint)
-   #:else
-      if (present(varstart).and.present(varcount)) then
-         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,var,varstart,varcount),'variable',varid)
-      elseif (present(varstart)) then
-         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,var,varstart),'variable',varid)
-      else
-         call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,var),'variable',varid)
-      end if
-   #:endif
+if (lio) then
+   ! Get root ID in registry
+   rid = registry%get_root_id(mpl,ncid)
+   
+   if (mpl%msv%isnot(rid)) then
+      ! Get variable
+      #:if dtype == 'logical'
+         shp = shape(var)
+         #{if rank == 1}# allocate(varint(shp(1))) #{endif}#
+         #{if rank == 2}# allocate(varint(shp(1),shp(2))) #{endif}#
+         #{if rank == 3}# allocate(varint(shp(1),shp(2),shp(3))) #{endif}#
+         #{if rank == 4}# allocate(varint(shp(1),shp(2),shp(3),shp(4))) #{endif}#
+         if (present(varstart).and.present(varcount)) then
+            call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,varint,varstart,varcount),'variable',varid)
+         elseif (present(varstart)) then
+            call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,varint,varstart),'variable',varid)
+         else
+            call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,varint),'variable',varid)
+         end if
+         call convert_i2l(mpl,varint,var)
+         deallocate(varint)
+      #:else
+         if (present(varstart).and.present(varcount)) then
+            call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,var,varstart,varcount),'variable',varid)
+         elseif (present(varstart)) then
+            call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,var,varstart),'variable',varid)
+         else
+            call strerror(mpl,'${subr}$',ncid,nf90_get_var(ncid,varid,var),'variable',varid)
+         end if
+      #:endif
+   end if
 end if
 
 ! Probe out
@@ -1211,16 +1345,18 @@ end subroutine netcdf_get_var_${dtype}$_r${rank}$
 ! Subroutine: netcdf_close_file
 !> Close file
 !----------------------------------------------------------------------
-subroutine netcdf_close_file(mpl,ncid)
+subroutine netcdf_close_file(mpl,ncid,io_override)
 
 implicit none
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl !< MPI data
 integer,intent(in) :: ncid          !< File ID
+logical,intent(in),optional :: io_override !< Override mpl%pioproc
 
 ! Local variables
 integer :: rid
+logical :: lio
 
 ! Set name
 @:set_name(netcdf_close_file)
@@ -1228,15 +1364,21 @@ integer :: rid
 ! Probe in
 @:probe_in()
 
-! Get root ID in registry
-rid = registry%get_root_id(mpl,ncid)
+! Local I/O flag
+lio = mpl%pioproc(mpl%myproc)
+if (present(io_override)) lio = lio.or.io_override
 
-if (mpl%msv%isnot(rid)) then
-   ! Close file
-   call strerror(mpl,'${subr}$',ncid,nf90_close(ncid),'file',ncid)
-
-   ! Free registry slot
-   call registry%free(mpl,ncid)
+if (lio) then
+   ! Get root ID in registry
+   rid = registry%get_root_id(mpl,ncid)
+   
+   if (mpl%msv%isnot(rid)) then
+      ! Close file
+      call strerror(mpl,'${subr}$',ncid,nf90_close(ncid),'file',ncid)
+   
+      ! Free registry slot
+      call registry%free(mpl,ncid)
+   end if
 end if
 
 ! Probe out

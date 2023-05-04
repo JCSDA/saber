@@ -28,6 +28,7 @@
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/FieldSetHelpers.h"
+#include "oops/util/FieldSetOperations.h"
 #include "oops/util/Logger.h"
 #include "oops/util/missingValues.h"
 #include "oops/util/Random.h"
@@ -688,9 +689,7 @@ void Fields::write(const eckit::Configuration & config) const {
 }
 // -----------------------------------------------------------------------------
 double Fields::norm() const {
-  double zz = this->dot_product_with(*this);
-  zz = sqrt(zz);
-  return zz;
+  return util::normFieldSet(fset_, vars_.variables(), geom_->getComm());
 }
 // -----------------------------------------------------------------------------
 void Fields::print(std::ostream & os) const {

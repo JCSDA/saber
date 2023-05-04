@@ -1,7 +1,5 @@
        Independent levels:  1[72]
-          Model grid size:             3312
           Subset Sc0 size:             3170
-          Number of duplicated points (halo):       142 (  4.29%)
           Min. / max. longitudes: -175.0 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
@@ -149,7 +147,7 @@
              Level  70 ~> -0.115E+02 vert. unit
              Level  71 ~> -0.115E+02 vert. unit
              Level  72 ~> -0.115E+02 vert. unit
-Norm of input parameter gsi_ref - 1: 2.8285238362553713e+01
+Norm of input parameter gsi_ref - 1: 2.8285238362553752e+01
        Factor 0.20, horizontal MSE:  0.25476734E+03 / vertical MSE:  0.38389586E+02 
        Factor 0.30, horizontal MSE:  0.21007331E+03 / vertical MSE:  0.29768386E+02 
        Factor 0.40, horizontal MSE:  0.16265105E+03 / vertical MSE:  0.20045999E+02 

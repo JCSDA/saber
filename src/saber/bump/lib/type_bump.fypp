@@ -36,8 +36,6 @@ use type_wind, only: wind_type
 
 implicit none
 
-real(kind_real),parameter :: loc_scaling_factor = one !< Scaling factor to get optimal localization
-
 ! BUMP derived type
 type bump_type
    ! Derived types
@@ -45,7 +43,7 @@ type bump_type
    type(ens_type),allocatable :: ens(:)     !< Ensembles
    type(geom_type),allocatable :: geom(:)   !< Geometry
    type(gsi_type) :: gsi                    !< GSI data
-   type(hdiag_type) :: hdiag                !< dual_resolution diagnostics
+   type(hdiag_type) :: hdiag                !< Hybrid diagnostics
    type(mom_type),allocatable :: mom(:)     !< Moments
    type(mpl_type) :: mpl                    !< MPI data
    type(nam_type) :: nam                    !< Namelist
@@ -204,7 +202,11 @@ allocate(bump%samp(2))
 ! Set I/O parameters
 bump%mpl%datadir = bump%nam%datadir
 bump%mpl%parallel_netcdf = bump%nam%parallel_netcdf
-bump%mpl%nprocio = bump%nam%nprocio
+if (bump%mpl%parallel_netcdf) then
+   bump%mpl%nprocio = bump%nam%nprocio
+else
+   bump%mpl%nprocio = 1
+end if
 bump%mpl%pioproc = .false.
 if (bump%mpl%parallel_netcdf) then
    bump%mpl%pioproc(1:min(bump%mpl%nprocio,bump%mpl%nproc)) = .true.
@@ -221,6 +223,15 @@ else
    write(cname,'(a,i12.12)') trim(bump%mpl%f_comm%name())//'_'//trim(bump%nam%prefix)//'no_io_',sc
 endif
 bump%mpl%f_comm_io = bump%mpl%f_comm%split(color,cname)
+bump%mpl%iobcast = (bump%mpl%main.or.(.not.bump%mpl%pioproc(bump%mpl%myproc)))
+if (bump%mpl%iobcast) then
+   color = 1
+   write(cname,'(a,i12.12)') trim(bump%mpl%f_comm%name())//'_'//trim(bump%nam%prefix)//'iobcast_',sc
+else
+   color = 0
+   write(cname,'(a,i12.12)') trim(bump%mpl%f_comm%name())//'_'//trim(bump%nam%prefix)//'no_iobcast_',sc
+endif
+bump%mpl%f_comm_iobcast = bump%mpl%f_comm%split(color,cname)
 
 ! Set reproducibility parameters
 write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -788,10 +799,10 @@ if (bump%nam%compute_cor1.or.bump%nam%compute_cor2.or.bump%nam%compute_loc1.or.b
       call bump%mpl%flush
       if (bump%nam%compute_loc1) then
          ! Localization
-         call bump%cmat(1)%from_hdiag(bump%mpl,bump%nam,bump%geom(1),bump%hdiag%loc(1),loc_scaling_factor)
+         call bump%cmat(1)%from_hdiag(bump%mpl,bump%nam,bump%geom(1),bump%hdiag%loc(1),bump%nam%lengths_scaling)
       elseif (bump%nam%compute_cor1) then
          ! Correlation
-         call bump%cmat(1)%from_hdiag(bump%mpl,bump%nam,bump%geom(1),bump%hdiag%cor(1))
+         call bump%cmat(1)%from_hdiag(bump%mpl,bump%nam,bump%geom(1),bump%hdiag%cor(1),bump%nam%lengths_scaling)
       end if
    end if
 
@@ -801,10 +812,10 @@ if (bump%nam%compute_cor1.or.bump%nam%compute_cor2.or.bump%nam%compute_loc1.or.b
       call bump%mpl%flush
       if (bump%nam%compute_loc2) then
          ! Localization
-         call bump%cmat(2)%from_hdiag(bump%mpl,bump%nam,bump%geom(2),bump%hdiag%loc(2),loc_scaling_factor)
+         call bump%cmat(2)%from_hdiag(bump%mpl,bump%nam,bump%geom(2),bump%hdiag%loc(2),bump%nam%lengths_scaling)
       elseif (bump%nam%compute_cor2) then
          ! Correlation
-         call bump%cmat(2)%from_hdiag(bump%mpl,bump%nam,bump%geom(2),bump%hdiag%cor(2))
+         call bump%cmat(2)%from_hdiag(bump%mpl,bump%nam,bump%geom(2),bump%hdiag%cor(2),bump%nam%lengths_scaling)
       end if
    end if
 end if

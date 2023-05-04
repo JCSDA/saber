@@ -150,11 +150,17 @@ contains
    procedure :: alloc => samp_alloc
    procedure :: dealloc => samp_dealloc
    procedure :: copy => samp_copy
-   procedure :: read_local => samp_read_local
-   procedure :: write_local => samp_write_local
+   procedure :: samp_read_local
+   procedure :: samp_read_local_single
+   generic :: read_local => samp_read_local,samp_read_local_single
+   procedure :: samp_write_local
+   procedure :: samp_write_local_single
+   generic :: write_local => samp_write_local,samp_write_local_single
    procedure :: read_global => samp_read_global
    procedure :: write_global => samp_write_global
    procedure :: write_grids => samp_write_grids
+   procedure :: send => samp_send
+   procedure :: receive => samp_receive
    procedure :: setup => samp_setup
    procedure :: setup_mpi => samp_setup_mpi
    procedure :: setup_write => samp_setup_write
@@ -459,9 +465,8 @@ type(nam_type),intent(inout) :: nam    !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
-integer :: ncid,nc1a_id,lon_c1a_id,lat_c1a_id,vunit_c1a_id,smask_c1a_id,lon_c3a_id,lat_c3a_id,smask_c3a_id
-integer :: lon_c2a_id,lat_c2a_id,vunit_c2a_id,smask_c2a_id
-integer :: ic1,ic1a,iproc,ic2,ic2a,lat_bands_int
+integer :: iproc,iprocio,ic2,ic2a,ic1,ic1a
+type(samp_type) :: samp_tmp
 
 ! Set name
 @:set_name(samp_read_local)
@@ -469,8 +474,114 @@ integer :: ic1,ic1a,iproc,ic2,ic2a,lat_bands_int
 ! Probe in
 @:probe_in()
 
+do iproc=1,mpl%nproc
+   ! Reading task
+   iprocio = mod(iproc,mpl%nprocio)
+   if (iprocio==0) iprocio = mpl%nprocio
+
+   if (mpl%myproc==iprocio) then
+      write(mpl%info,'(a10,a,i6,a,i6)') '','Read sampling of task ',iproc,' from task ',iprocio
+      call mpl%flush
+
+      if (iproc==iprocio) then
+         ! Read data
+         call samp%read_local(mpl,nam,geom,iproc)
+      else
+         ! Allocation
+         call samp_tmp%alloc(mpl,nam,geom)
+
+         ! Read data
+         call samp_tmp%read_local(mpl,nam,geom,iproc)
+
+         ! Send data to task iproc
+         call samp_tmp%send(mpl,nam,geom,iproc)
+
+         ! Release memory
+         call samp_tmp%dealloc
+      end if
+   elseif (mpl%myproc==iproc) then
+      ! Receive data from task iprocio
+      write(mpl%info,'(a10,a,i6,a,i6)') '','Receive sampling of task ',iproc,' from task ',iprocio
+      call mpl%flush
+      call samp%receive(mpl,nam,geom,iprocio)
+   end if
+end do
+
+! Update tag
+call mpl%update_tag(4)
+
+! Post-processing
+if (samp%sc1) then
+   ! Communication
+   call mpl%f_comm%allgather(samp%nc1a,samp%proc_to_nc1a)
+   
+   ! Subset Sc1 offset for halo A
+   samp%proc_to_c1_offset(1) = 0
+   do iproc=2,mpl%nproc
+      samp%proc_to_c1_offset(iproc) = samp%proc_to_c1_offset(iproc-1)+samp%proc_to_nc1a(iproc-1)
+   end do
+   
+   ! Conversion
+   samp%nc1 = sum(samp%proc_to_nc1a)
+   do ic1=1,samp%nc1
+      iproc = samp%c1_to_proc(ic1)
+      if (iproc==mpl%myproc) then
+         ic1a = samp%c1_to_c1a(ic1)
+         samp%c1a_to_c1(ic1a) = ic1
+      end if
+   end do
+end if
+
+if (samp%sc2) then
+   ! Communication
+   call mpl%f_comm%allgather(samp%nc2a,samp%proc_to_nc2a)
+
+   ! Subset Sc2 offset for halo A
+   samp%proc_to_c2_offset(1) = 0
+   do iproc=2,mpl%nproc
+      samp%proc_to_c2_offset(iproc) = samp%proc_to_c2_offset(iproc-1)+samp%proc_to_nc2a(iproc-1)
+   end do
+
+   ! Conversion
+   samp%nc2 = sum(samp%proc_to_nc2a)
+   do ic2=1,samp%nc2
+      iproc = samp%c2_to_proc(ic2)
+      if (iproc==mpl%myproc) then
+         ic2a = samp%c2_to_c2a(ic2)
+         samp%c2a_to_c2(ic2a) = ic2
+      end if
+   end do
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine samp_read_local
+
+!----------------------------------------------------------------------
+! Subroutine: samp_read_local_single
+!> Read single task (local)
+!----------------------------------------------------------------------
+subroutine samp_read_local_single(samp,mpl,nam,geom,iproc)
+
+implicit none
+
+! Passed variables
+class(samp_type),intent(inout) :: samp !< Sampling
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(inout) :: nam    !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
+integer,intent(in) :: iproc            !< Task index
+
+! Local variables
+integer :: ncid,nc1a_id,lon_c1a_id,lat_c1a_id,vunit_c1a_id,smask_c1a_id,lon_c3a_id,lat_c3a_id,smask_c3a_id
+integer :: lon_c2a_id,lat_c2a_id,vunit_c2a_id,smask_c2a_id
+
+! Set name
+@:set_name(samp_read_local_single)
+
 ! Open file
-ncid = open_file(mpl,nam%fname_samp,mpl%myproc)
+ncid = open_file(mpl,nam%fname_samp,iproc)
 
 ! Check whether subset Sc1 is present
 nc1a_id = inquire_dim(mpl,ncid,'nc1a')
@@ -513,34 +624,14 @@ if (samp%sc1) then
       call get_var(mpl,ncid,lat_c3a_id,samp%lat_c3a)
       call get_var(mpl,ncid,smask_c3a_id,samp%smask_c3a)
    end if
-
-   ! Communication
-   call mpl%f_comm%allgather(samp%nc1a,samp%proc_to_nc1a)
-
-   ! Subset Sc1 offset for halo A
-   samp%proc_to_c1_offset(1) = 0
-   do iproc=2,mpl%nproc
-      samp%proc_to_c1_offset(iproc) = samp%proc_to_c1_offset(iproc-1)+samp%proc_to_nc1a(iproc-1)
-   end do
-
-   ! Conversion
-   samp%nc1 = sum(samp%proc_to_nc1a)
-   do ic1=1,samp%nc1
-      iproc = samp%c1_to_proc(ic1)
-      if (iproc==mpl%myproc) then
-         ic1a = samp%c1_to_c1a(ic1)
-         samp%c1a_to_c1(ic1a) = ic1
-      end if
-   end do
 end if
 
 if (samp%sc2) then
-   ! Get dimensions
+   ! Get dimension
    samp%nc2a = inquire_dim_size(mpl,ncid,'nc2a',0)
 
    ! Get attribute
-   call get_att(mpl,ncid,0,'lat_bands',lat_bands_int)
-   call convert_i2l(mpl,lat_bands_int,samp%lat_bands)
+   call get_att(mpl,ncid,0,'lat_bands',samp%lat_bands)
 
    ! Allocation
    allocate(samp%lon_c2a(samp%nc2a))
@@ -560,37 +651,18 @@ if (samp%sc2) then
    call get_var(mpl,ncid,lat_c2a_id,samp%lat_c2a)
    call get_var(mpl,ncid,vunit_c2a_id,samp%vunit_c2a)
    call get_var(mpl,ncid,smask_c2a_id,samp%smask_c2a)
-
-   ! Communication
-   call mpl%f_comm%allgather(samp%nc2a,samp%proc_to_nc2a)
-
-   ! Subset Sc2 offset for halo A
-   samp%proc_to_c2_offset(1) = 0
-   do iproc=2,mpl%nproc
-      samp%proc_to_c2_offset(iproc) = samp%proc_to_c2_offset(iproc-1)+samp%proc_to_nc2a(iproc-1)
-   end do
-
-   ! Conversion
-   samp%nc2 = sum(samp%proc_to_nc2a)
-   do ic2=1,samp%nc2
-      iproc = samp%c2_to_proc(ic2)
-      if (iproc==mpl%myproc) then
-         ic2a = samp%c2_to_c2a(ic2)
-         samp%c2a_to_c2(ic2a) = ic2
-      end if
-   end do
 else
    ! Initialization
    samp%nc2a = 0
 end if
 
 ! Close file
-call close_file(mpl,ncid)
+call close_file(mpl,ncid) 
 
 ! Probe out
 @:probe_out()
 
-end subroutine samp_read_local
+end subroutine samp_read_local_single
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_write_local
@@ -607,9 +679,8 @@ type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
-integer :: ncid,nc1a_id,nl0_id,nc3_id,nc4_id,nc2a_id,lon_c1a_id,lat_c1a_id,vunit_c1a_id,smask_c1a_id
-integer :: lon_c3a_id,lat_c3a_id,smask_c3a_id,lon_c2a_id,lat_c2a_id,vunit_c2a_id,smask_c2a_id
-integer :: lat_bands_int
+integer :: iproc,iprocio
+type(samp_type) :: samp_tmp
 
 ! Set name
 @:set_name(samp_write_local)
@@ -617,8 +688,74 @@ integer :: lat_bands_int
 ! Probe in
 @:probe_in()
 
+do iproc=1,mpl%nproc
+   ! Writing task
+   iprocio = mod(iproc,mpl%nprocio)
+   if (iprocio==0) iprocio = mpl%nprocio
+
+   if (mpl%myproc==iprocio) then
+      write(mpl%info,'(a10,a,i6,a,i6)') '','Write sampling of task ',iproc,' from task ',iprocio
+      call mpl%flush
+
+      if (iproc==iprocio) then
+         ! Write data
+         call samp%write_local(mpl,nam,geom,iproc)
+      else
+         ! Allocation
+         call samp_tmp%alloc(mpl,nam,geom)
+
+         ! Receive data from task iproc
+         call samp_tmp%receive(mpl,nam,geom,iproc)
+
+         ! Write data
+         call samp_tmp%write_local(mpl,nam,geom,iproc)
+
+         ! Release memory
+         call samp_tmp%dealloc
+      end if
+   elseif (mpl%myproc==iproc) then
+      ! Send data to task iprocio
+      write(mpl%info,'(a10,a,i6,a,i6)') '','Send sampling of task ',iproc,' to task ',iprocio
+      call mpl%flush
+      call samp%send(mpl,nam,geom,iprocio)
+   end if
+end do
+
+! Update tag
+call mpl%update_tag(4)
+
+! Probe out
+@:probe_out()
+
+end subroutine samp_write_local
+
+!----------------------------------------------------------------------
+! Subroutine: samp_write_local_single
+!> Write single task (local)
+!----------------------------------------------------------------------
+subroutine samp_write_local_single(samp,mpl,nam,geom,iproc)
+
+implicit none
+
+! Passed variables
+class(samp_type),intent(inout) :: samp !< Sampling
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
+integer,intent(in) :: iproc            !< Task index
+
+! Local variables
+integer :: ncid,nc1a_id,nl0_id,nc3_id,nc4_id,nc2a_id,lon_c1a_id,lat_c1a_id,vunit_c1a_id,smask_c1a_id
+integer :: lon_c3a_id,lat_c3a_id,smask_c3a_id,lon_c2a_id,lat_c2a_id,vunit_c2a_id,smask_c2a_id
+
+! Set name
+@:set_name(samp_write_local_single)
+
+! Probe in
+@:probe_in()
+
 ! Open file
-ncid = create_file(mpl,nam%fname_samp,mpl%myproc)
+ncid = create_file(mpl,nam%fname_samp,iproc)
 
 ! Define dimensions
 if (samp%sc1) nc1a_id = define_dim(mpl,ncid,'nc1a',samp%nc1a)
@@ -649,10 +786,7 @@ if (samp%sc2) then
 end if
 
 ! Put attributes
-if (samp%sc2) then
-   call convert_l2i(samp%lat_bands,lat_bands_int)
-   call put_att(mpl,ncid,0,'lat_bands',lat_bands_int)
-end if
+if (samp%sc2) call put_att(mpl,ncid,0,'lat_bands',samp%lat_bands)
 
 ! Write variables
 if (samp%sc1) then
@@ -679,7 +813,7 @@ call close_file(mpl,ncid)
 ! Probe out
 @:probe_out()
 
-end subroutine samp_write_local
+end subroutine samp_write_local_single
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_read_global
@@ -698,7 +832,7 @@ type(geom_type),intent(in) :: geom     !< Geometry
 ! Local variables
 integer :: ncid,nc1_id,lon_c1_id,lat_c1_id,vunit_c1_id,smask_c1_id,lon_c3_id,lat_c3_id,smask_c3_id
 integer :: lon_c2_id,lat_c2_id,vunit_c2_id,smask_c2_id
-integer :: ic1,ic1a,iproc,ic2,ic2a,lat_bands_int
+integer :: ic1,ic1a,iproc,ic2,ic2a
 integer,allocatable :: lev_c1(:),c1_on_file_to_proc(:),c1_to_c0a(:)
 integer,allocatable :: lev_c2(:),c2_on_file_to_proc(:),c2_to_c0a(:)
 real(kind_real),allocatable :: lon_c1(:),lat_c1(:),lon_c2(:),lat_c2(:)
@@ -715,11 +849,13 @@ ncid = open_file(mpl,nam%fname_samp)
 
 ! Check whether subset Sc1 is present
 nc1_id = inquire_dim(mpl,ncid,'nc1')
+if (mpl%iobcast) call mpl%f_comm_iobcast%broadcast(nc1_id,mpl%rootproc-1)
 samp%sc1 = mpl%msv%isnot(nc1_id)
 
 if (samp%sc1) then
    ! Get dimension
    samp%nc1 = inquire_dim_size(mpl,ncid,'nc1')
+   if (mpl%iobcast) call mpl%f_comm_iobcast%broadcast(samp%nc1,mpl%rootproc-1)
 
    ! Allocation
    allocate(lon_c1(samp%nc1))
@@ -732,6 +868,10 @@ if (samp%sc1) then
    ! Read variables
    call get_var(mpl,ncid,lon_c1_id,lon_c1)
    call get_var(mpl,ncid,lat_c1_id,lat_c1)
+   if (mpl%iobcast) then
+      call mpl%f_comm_iobcast%broadcast(lon_c1,mpl%rootproc-1)
+      call mpl%f_comm_iobcast%broadcast(lat_c1,mpl%rootproc-1)
+   end if
 
    ! Allocation
    allocate(lev_c1(samp%nc1))
@@ -820,14 +960,15 @@ end if
 if (samp%sc2) then
    ! Get dimension
    samp%nc2 = inquire_dim_size(mpl,ncid,'nc2')
+   if (mpl%iobcast) call mpl%f_comm_iobcast%broadcast(samp%nc2,mpl%rootproc-1)
 
    ! Allocation
    allocate(lon_c2(samp%nc2))
    allocate(lat_c2(samp%nc2))
 
    ! Get attribute
-   call get_att(mpl,ncid,0,'lat_bands',lat_bands_int)
-   call convert_i2l(mpl,lat_bands_int,samp%lat_bands)
+   call get_att(mpl,ncid,0,'lat_bands',samp%lat_bands)
+   if (mpl%iobcast) call mpl%f_comm_iobcast%broadcast(samp%lat_bands,mpl%rootproc-1)
 
    ! Inquire variables
    lon_c2_id = inquire_var(mpl,ncid,'lon_c2')
@@ -836,6 +977,10 @@ if (samp%sc2) then
    ! Read variables
    call get_var(mpl,ncid,lon_c2_id,lon_c2)
    call get_var(mpl,ncid,lat_c2_id,lat_c2)
+   if (mpl%iobcast) then
+      call mpl%f_comm_iobcast%broadcast(lon_c2,mpl%rootproc-1)
+      call mpl%f_comm_iobcast%broadcast(lat_c2,mpl%rootproc-1)
+   end if
 
    ! Allocation
    allocate(lev_c2(samp%nc2))
@@ -933,7 +1078,6 @@ type(geom_type),intent(in) :: geom     !< Geometry
 ! Local variables
 integer :: ncid,nc1_id,nl0_id,nc3_id,nc4_id,nc2_id,lon_c1_id,lat_c1_id,vunit_c1_id,smask_c1_id,lon_c3_id,lat_c3_id,smask_c3_id
 integer :: lon_c2_id,lat_c2_id,vunit_c2_id,smask_c2_id
-integer :: lat_bands_int
 
 ! Set name
 @:set_name(samp_write_global)
@@ -973,10 +1117,7 @@ if (samp%sc2) then
 end if
 
 ! Put attributes
-if (samp%sc2) then
-   call convert_l2i(samp%lat_bands,lat_bands_int)
-   call put_att(mpl,ncid,0,'lat_bands',lat_bands_int)
-end if
+if (samp%sc2) call put_att(mpl,ncid,0,'lat_bands',samp%lat_bands)
 
 ! Write variables
 if (samp%sc1) then
@@ -1035,14 +1176,14 @@ real(kind_real),allocatable :: lon_vbal(:,:,:),lat_vbal(:,:,:)
 @:probe_in()
 
 ! Open file
-ncid = create_file(mpl,trim(nam%prefix)//'sampling_grids',mpl%myproc)
+ncid = create_file(mpl,trim(nam%prefix)//'sampling_grids',mpl%myproc,io_override=.true.)
 
 ! Define dimensions
-nl0_id = define_dim(mpl,ncid,'nl0',geom%nl0)
+nl0_id = define_dim(mpl,ncid,'nl0',geom%nl0,io_override=.true.)
 if (samp%sc3) then
-   nc3_id = define_dim(mpl,ncid,'nc3',nam%nc3)
-   nc4_id = define_dim(mpl,ncid,'nc4',nam%nc4)
-   nc1a_id = define_dim(mpl,ncid,'nc1a',samp%nc1a)
+   nc3_id = define_dim(mpl,ncid,'nc3',nam%nc3,io_override=.true.)
+   nc4_id = define_dim(mpl,ncid,'nc4',nam%nc4,io_override=.true.)
+   nc1a_id = define_dim(mpl,ncid,'nc1a',samp%nc1a,io_override=.true.)
 end if
 if (samp%sc1.and.nam%new_hdiag.and.nam%local_diag) then
    nc1max = 0
@@ -1051,8 +1192,8 @@ if (samp%sc1.and.nam%new_hdiag.and.nam%local_diag) then
    end do
    call mpl%f_comm%allreduce(nc1max,fckit_mpi_sum())
    nc1max = nc1max+1
-   nc1max_id = define_dim(mpl,ncid,'nc1max',nc1max)
-   nc2a_id = define_dim(mpl,ncid,'nc2a',samp%nc2a)
+   nc1max_id = define_dim(mpl,ncid,'nc1max',nc1max,io_override=.true.)
+   nc2a_id = define_dim(mpl,ncid,'nc2a',samp%nc2a,io_override=.true.)
 end if
 if (samp%sc1.and.nam%new_vbal) then
    nc1max = 0
@@ -1061,22 +1202,22 @@ if (samp%sc1.and.nam%new_vbal) then
    end do
    call mpl%f_comm%allreduce(nc1max,fckit_mpi_sum())
    nc1max = nc1max+1
-   nc1max_id = define_dim(mpl,ncid,'nc1max',nc1max)
-   nc2b_id = define_dim(mpl,ncid,'nc2b',samp%nc2b)
+   nc1max_id = define_dim(mpl,ncid,'nc1max',nc1max,io_override=.true.)
+   nc2b_id = define_dim(mpl,ncid,'nc2b',samp%nc2b,io_override=.true.)
 end if
 
 ! Define variables
 if (samp%sc3) then
-   lon_id = define_var(mpl,ncid,'lon','real',(/nc1a_id,nc3_id,nc4_id,nl0_id/),'degrees_east')
-   lat_id = define_var(mpl,ncid,'lat','real',(/nc1a_id,nc3_id,nc4_id,nl0_id/),'degrees_north')
+   lon_id = define_var(mpl,ncid,'lon','real',(/nc1a_id,nc3_id,nc4_id,nl0_id/),'degrees_east',io_override=.true.)
+   lat_id = define_var(mpl,ncid,'lat','real',(/nc1a_id,nc3_id,nc4_id,nl0_id/),'degrees_north',io_override=.true.)
 end if
 if (samp%sc1.and.nam%new_hdiag.and.nam%local_diag) then
-   lon_local_id = define_var(mpl,ncid,'lon_local','real',(/nc1max_id,nc2a_id,nl0_id/),'degrees_east')
-   lat_local_id = define_var(mpl,ncid,'lat_local','real',(/nc1max_id,nc2a_id,nl0_id/),'degrees_north')
+   lon_local_id = define_var(mpl,ncid,'lon_local','real',(/nc1max_id,nc2a_id,nl0_id/),'degrees_east',io_override=.true.)
+   lat_local_id = define_var(mpl,ncid,'lat_local','real',(/nc1max_id,nc2a_id,nl0_id/),'degrees_north',io_override=.true.)
 end if
 if (samp%sc1.and.nam%new_vbal) then
-   lon_vbal_id = define_var(mpl,ncid,'lon_vbal','real',(/nc1max_id,nc2b_id,nl0_id/),'degrees_east')
-   lat_vbal_id = define_var(mpl,ncid,'lat_vbal','real',(/nc1max_id,nc2b_id,nl0_id/),'degrees_north')
+   lon_vbal_id = define_var(mpl,ncid,'lon_vbal','real',(/nc1max_id,nc2b_id,nl0_id/),'degrees_east',io_override=.true.)
+   lat_vbal_id = define_var(mpl,ncid,'lat_vbal','real',(/nc1max_id,nc2b_id,nl0_id/),'degrees_north',io_override=.true.)
 end if
 
 ! Convert data
@@ -1170,20 +1311,20 @@ end if
 
 ! Write variables
 if (samp%sc3) then
-   call put_var(mpl,ncid,lon_id,lon)
-   call put_var(mpl,ncid,lat_id,lat)
+   call put_var(mpl,ncid,lon_id,lon,io_override=.true.)
+   call put_var(mpl,ncid,lat_id,lat,io_override=.true.)
 end if
 if (samp%sc1.and.nam%new_hdiag.and.nam%local_diag) then
-   call put_var(mpl,ncid,lon_local_id,lon_local)
-   call put_var(mpl,ncid,lat_local_id,lat_local)
+   call put_var(mpl,ncid,lon_local_id,lon_local,io_override=.true.)
+   call put_var(mpl,ncid,lat_local_id,lat_local,io_override=.true.)
 end if
 if (samp%sc1.and.nam%new_vbal) then
-   call put_var(mpl,ncid,lon_vbal_id,lon_vbal)
-   call put_var(mpl,ncid,lat_vbal_id,lat_vbal)
+   call put_var(mpl,ncid,lon_vbal_id,lon_vbal,io_override=.true.)
+   call put_var(mpl,ncid,lat_vbal_id,lat_vbal,io_override=.true.)
 end if
 
 ! Close file
-call close_file(mpl,ncid)
+call close_file(mpl,ncid,io_override=.true.)
 
 ! Release memory
 if (samp%sc3) then
@@ -1203,6 +1344,362 @@ end if
 @:probe_out()
 
 end subroutine samp_write_grids
+
+!----------------------------------------------------------------------
+! Subroutine: samp_send
+!> Send
+!----------------------------------------------------------------------
+subroutine samp_send(samp,mpl,nam,geom,iproc)
+
+implicit none
+
+! Passed variables
+class(samp_type),intent(in) :: samp !< Sampling
+type(mpl_type),intent(inout) :: mpl !< MPI data
+type(nam_type),intent(in) :: nam    !< Namelist
+type(geom_type),intent(in) :: geom  !< Geometry
+integer,intent(in) :: iproc         !< Destination task
+
+! Local variables
+integer :: nbufi,nbufr,nbufl,ibufi,ibufr,ibufl,bufs(3)
+integer,allocatable :: bufi(:)
+real(kind_real),allocatable :: bufr(:)
+logical,allocatable :: bufl(:)
+
+! Set name
+@:set_name(samp_send)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+nbufi = 0
+nbufr = 0
+nbufl = 0
+
+! sc1, sc2 and sc3
+nbufl = nbufl+3
+
+! nc1a
+nbufi = nbufi+1
+
+if (samp%sc1) then
+   ! lon_c1a
+   nbufr = nbufr+samp%nc1a
+
+   ! lat_c1a
+   nbufr = nbufr+samp%nc1a
+
+   ! vunit_c1a
+   nbufr = nbufr+samp%nc1a*geom%nl0
+
+   ! smask_c1a
+   nbufl = nbufl+samp%nc1a*geom%nl0
+
+   if (samp%sc3) then
+      ! lon_c3a
+      nbufr = nbufr+samp%nc1a*nam%nc3*nam%nc4
+
+      ! lat_c3a
+      nbufr = nbufr+samp%nc1a*nam%nc3*nam%nc4
+
+      ! smask_c3a
+      nbufl = nbufl+samp%nc1a*nam%nc3*nam%nc4*geom%nl0
+   end if
+
+   ! c1a_to_c1
+   nbufi = nbufi+samp%nc1a
+end if
+
+! nc2a
+nbufi = nbufi+1
+      
+if (samp%sc2) then
+   ! lat_bands
+   nbufl = nbufl+1
+
+   ! lon_c2a
+   nbufr = nbufr+samp%nc2a
+
+   ! lon_c2a
+   nbufr = nbufr+samp%nc2a
+
+   ! vunit_c2a
+   nbufr = nbufr+samp%nc2a*geom%nl0
+
+   ! smask_c2a
+   nbufl = nbufl+samp%nc2a*geom%nl0
+
+   ! c2a_to_c2
+   nbufi = nbufi+samp%nc2a
+end if
+
+! Allocation
+allocate(bufi(nbufi))
+allocate(bufr(nbufr))
+allocate(bufl(nbufl))
+
+! Initialization
+ibufi = 0
+ibufr = 0
+ibufl = 0
+
+! sc1, sc2 and sc3
+bufl(ibufl+1) = samp%sc1
+ibufl = ibufl+1
+bufl(ibufl+1) = samp%sc2
+ibufl = ibufl+1
+bufl(ibufl+1) = samp%sc3
+ibufl = ibufl+1
+
+! nc1a
+bufi(ibufi+1) = samp%nc1a
+ibufi = ibufi+1
+
+if (samp%sc1) then
+   ! lon_c1a
+   bufr(ibufr+1:ibufr+samp%nc1a) = samp%lon_c1a
+   ibufr = ibufr+samp%nc1a
+
+   ! lat_c1a
+   bufr(ibufr+1:ibufr+samp%nc1a) = samp%lat_c1a
+   ibufr = ibufr+samp%nc1a
+
+   ! vunit_c1a
+   bufr(ibufr+1:ibufr+samp%nc1a*geom%nl0) = reshape(samp%vunit_c1a,(/samp%nc1a*geom%nl0/))
+   ibufr = ibufr+samp%nc1a*geom%nl0
+
+   ! smask_c1a
+   bufl(ibufl+1:ibufl+samp%nc1a*geom%nl0) = reshape(samp%smask_c1a,(/samp%nc1a*geom%nl0/))
+   ibufl = ibufl+samp%nc1a*geom%nl0
+
+   if (samp%sc3) then
+      ! lon_c3a
+      bufr(ibufr+1:ibufr+samp%nc1a*nam%nc3*nam%nc4) = reshape(samp%lon_c3a,(/samp%nc1a*nam%nc3*nam%nc4/))
+      ibufr = ibufr+samp%nc1a*nam%nc3*nam%nc4
+
+      ! lat_c3a
+      bufr(ibufr+1:ibufr+samp%nc1a*nam%nc3*nam%nc4) = reshape(samp%lat_c3a,(/samp%nc1a*nam%nc3*nam%nc4/))
+      ibufr = ibufr+samp%nc1a*nam%nc3*nam%nc4
+
+      ! smask_c3a
+      bufl(ibufl+1:ibufl+samp%nc1a*nam%nc3*nam%nc4*geom%nl0) = reshape(samp%smask_c3a,(/samp%nc1a*nam%nc3*nam%nc4*geom%nl0/))
+      ibufl = ibufl+samp%nc1a*nam%nc3*nam%nc4*geom%nl0
+   end if
+
+   ! c1a_to_c1
+   bufi(ibufi+1:ibufi+samp%nc1a) = samp%c1a_to_c1
+   ibufi = ibufi+samp%nc1a
+end if
+
+! nc2a
+bufi(ibufi+1) = samp%nc2a
+ibufi = ibufi+1
+      
+if (samp%sc2) then
+   ! lat_bands
+   bufl(ibufl+1) = samp%lat_bands
+   ibufl = ibufl+1
+
+   ! lon_c2a
+   bufr(ibufr+1:ibufr+samp%nc2a) = samp%lon_c2a
+   ibufr = ibufr+samp%nc2a
+
+   ! lat_c2a
+   bufr(ibufr+1:ibufr+samp%nc2a) = samp%lat_c2a
+   ibufr = ibufr+samp%nc2a
+
+   ! vunit_c2a
+   bufr(ibufr+1:ibufr+samp%nc2a*geom%nl0) = reshape(samp%vunit_c2a,(/samp%nc2a*geom%nl0/))
+   ibufr = ibufr+samp%nc2a*geom%nl0
+
+   ! smask_c2a
+   bufl(ibufl+1:ibufl+samp%nc2a*geom%nl0) = reshape(samp%smask_c2a,(/samp%nc2a*geom%nl0/))
+   ibufl = ibufl+samp%nc2a*geom%nl0
+
+   ! c2a_to_c2
+   bufi(ibufi+1:ibufi+samp%nc2a) = samp%c2a_to_c2
+   ibufi = ibufi+samp%nc2a
+end if
+
+! Check sizes
+if (ibufi/=nbufi) call mpl%abort('${subr}$','wrong final index ibufi')
+if (ibufr/=nbufr) call mpl%abort('${subr}$','wrong final index ibufr')
+if (ibufl/=nbufl) call mpl%abort('${subr}$','wrong final index ibufl')
+
+! Send buffer size
+bufs = (/nbufi,nbufr,nbufl/)
+call mpl%f_comm%send(bufs,iproc-1,mpl%tag)
+
+! Send data
+call mpl%f_comm%send(bufi,iproc-1,mpl%tag+1)
+call mpl%f_comm%send(bufr,iproc-1,mpl%tag+2)
+call mpl%f_comm%send(bufl,iproc-1,mpl%tag+3)
+
+! Release memory
+deallocate(bufi)
+deallocate(bufr)
+deallocate(bufl)
+
+! Probe out
+@:probe_out()
+
+end subroutine samp_send
+
+!----------------------------------------------------------------------
+! Subroutine: samp_receive
+!> Receive
+!----------------------------------------------------------------------
+subroutine samp_receive(samp,mpl,nam,geom,iproc)
+
+implicit none
+
+! Passed variables
+class(samp_type),intent(inout) :: samp !< Sampling
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
+integer,intent(in) :: iproc            !< Source task
+
+! Local variables
+integer :: nbufi,nbufr,nbufl,ibufi,ibufr,ibufl,bufs(3)
+integer,allocatable :: bufi(:)
+real(kind_real),allocatable :: bufr(:)
+logical,allocatable :: bufl(:)
+type(fckit_mpi_status) :: status
+
+! Set name
+@:set_name(samp_receive)
+
+! Probe in
+@:probe_in()
+
+! Receive buffer size
+call mpl%f_comm%receive(bufs,iproc-1,mpl%tag,status)
+nbufi = bufs(1)
+nbufr = bufs(2)
+nbufl = bufs(3)
+
+! Allocation
+allocate(bufi(nbufi))
+allocate(bufr(nbufr))
+allocate(bufl(nbufl))
+
+! Receive data
+call mpl%f_comm%receive(bufi,iproc-1,mpl%tag+1,status)
+call mpl%f_comm%receive(bufr,iproc-1,mpl%tag+2,status)
+call mpl%f_comm%receive(bufl,iproc-1,mpl%tag+3,status)
+
+! Initialization
+ibufi = 0
+ibufr = 0
+ibufl = 0
+
+! sc1, sc2 and sc3
+samp%sc1 = bufl(ibufl+1)
+ibufl = ibufl+1
+samp%sc2 = bufl(ibufl+1)
+ibufl = ibufl+1
+samp%sc3 = bufl(ibufl+1)
+ibufl = ibufl+1
+
+! nc1a
+samp%nc1a = bufi(ibufi+1)
+ibufi = ibufi+1
+
+if (samp%sc1) then
+   ! lon_c1a
+   allocate(samp%lon_c1a(samp%nc1a))
+   samp%lon_c1a = bufr(ibufr+1:ibufr+samp%nc1a)
+   ibufr = ibufr+samp%nc1a
+
+   ! lat_c1a
+   allocate(samp%lat_c1a(samp%nc1a))
+   samp%lat_c1a = bufr(ibufr+1:ibufr+samp%nc1a)
+   ibufr = ibufr+samp%nc1a
+
+   ! vunit_c1a
+   allocate(samp%vunit_c1a(samp%nc1a,geom%nl0))
+   samp%vunit_c1a = reshape(bufr(ibufr+1:ibufr+samp%nc1a*geom%nl0),(/samp%nc1a,geom%nl0/))
+   ibufr = ibufr+samp%nc1a*geom%nl0
+
+   ! smask_c1a
+   allocate(samp%smask_c1a(samp%nc1a,geom%nl0))
+   samp%smask_c1a = reshape(bufl(ibufl+1:ibufl+samp%nc1a*geom%nl0),(/samp%nc1a,geom%nl0/))
+   ibufl = ibufl+samp%nc1a*geom%nl0
+
+   if (samp%sc3) then
+      ! lon_c3a
+      allocate(samp%lon_c3a(samp%nc1a,nam%nc3,nam%nc4))
+      samp%lon_c3a = reshape(bufr(ibufr+1:ibufr+samp%nc1a*nam%nc3*nam%nc4),(/samp%nc1a,nam%nc3,nam%nc4/))
+      ibufr = ibufr+samp%nc1a*nam%nc3*nam%nc4
+
+      ! lat_c3a
+      allocate(samp%lat_c3a(samp%nc1a,nam%nc3,nam%nc4))
+      samp%lat_c3a = reshape(bufr(ibufr+1:ibufr+samp%nc1a*nam%nc3*nam%nc4),(/samp%nc1a,nam%nc3,nam%nc4/))
+      ibufr = ibufr+samp%nc1a*nam%nc3*nam%nc4
+
+      ! smask_c3a
+      allocate(samp%smask_c3a(samp%nc1a,nam%nc3,nam%nc4,geom%nl0))
+      samp%smask_c3a = reshape(bufl(ibufl+1:ibufl+samp%nc1a*nam%nc3*nam%nc4*geom%nl0),(/samp%nc1a,nam%nc3,nam%nc4,geom%nl0/))
+      ibufl = ibufl+samp%nc1a*nam%nc3*nam%nc4*geom%nl0
+   end if
+
+   ! c1a_to_c1
+   allocate(samp%c1a_to_c1(samp%nc1a))
+   samp%c1a_to_c1 = bufi(ibufi+1:ibufi+samp%nc1a)
+   ibufi = ibufi+samp%nc1a
+end if
+
+! nc2a
+samp%nc2a = bufi(ibufi+1)
+ibufi = ibufi+1
+      
+if (samp%sc2) then
+   ! lat_bands
+   samp%lat_bands = bufl(ibufl+1)
+   ibufl = ibufl+1
+
+   ! lon_c2a
+   allocate(samp%lon_c2a(samp%nc2a))
+   samp%lon_c2a = bufr(ibufr+1:ibufr+samp%nc2a)
+   ibufr = ibufr+samp%nc2a
+
+   ! lat_c2a
+   allocate(samp%lat_c2a(samp%nc2a))
+   samp%lat_c2a = bufr(ibufr+1:ibufr+samp%nc2a)
+   ibufr = ibufr+samp%nc2a
+
+   ! vunit_c2a
+   allocate(samp%vunit_c2a(samp%nc2a,geom%nl0))
+   samp%vunit_c2a = reshape(bufr(ibufr+1:ibufr+samp%nc2a*geom%nl0),(/samp%nc2a,geom%nl0/))
+   ibufr = ibufr+samp%nc2a*geom%nl0
+
+   ! smask_c2a
+   allocate(samp%smask_c2a(samp%nc2a,geom%nl0))
+   samp%smask_c2a = reshape(bufl(ibufl+1:ibufl+samp%nc2a*geom%nl0),(/samp%nc2a,geom%nl0/))
+   ibufl = ibufl+samp%nc2a*geom%nl0
+
+   ! c2a_to_c2
+   allocate(samp%c2a_to_c2(samp%nc2a))
+   samp%c2a_to_c2 = bufi(ibufi+1:ibufi+samp%nc2a)
+   ibufi = ibufi+samp%nc2a
+end if
+
+! Check sizes
+if (ibufi/=nbufi) call mpl%abort('${subr}$','wrong final index ibufi')
+if (ibufr/=nbufr) call mpl%abort('${subr}$','wrong final index ibufr')
+if (ibufl/=nbufl) call mpl%abort('${subr}$','wrong final index ibufl')
+
+! Release memory
+deallocate(bufi)
+deallocate(bufr)
+deallocate(bufl)
+
+! Probe out
+@:probe_out()
+
+end subroutine samp_receive
 
 !----------------------------------------------------------------------
 ! Subroutine: samp_setup

@@ -33,13 +33,16 @@ interface field_from_array
       module procedure atlas_field_from_array_${dtype}$
     #:endfor
 end interface
+interface get_atlas_functionspace_size
+   module procedure atlas_get_atlas_functionspace_size
+end interface
 interface get_atlas_field_size
    module procedure atlas_get_atlas_field_size
 end interface
 
 private
 public :: get_grid
-public :: field_to_array,field_from_array,get_atlas_field_size
+public :: field_to_array,field_from_array,get_atlas_functionspace_size,get_atlas_field_size
 
 contains
 
@@ -330,6 +333,60 @@ end subroutine atlas_field_from_array_${dtype}$
 #:endfor
 
 !----------------------------------------------------------------------
+! Function: atlas_get_atlas_functionspace_size
+!> Get the local horizontal size of an ATLAS function space
+!----------------------------------------------------------------------
+function atlas_get_atlas_functionspace_size(mpl,afunctionspace) result(nmga)
+
+implicit none
+
+! Passed variables
+type(mpl_type),intent(inout) :: mpl                    !< MPI data
+type(atlas_functionspace),intent(in) :: afunctionspace !< ATLAS function space
+
+! Returned variable
+integer :: nmga
+
+! Local variables
+type(atlas_functionspace_nodecolumns) :: afunctionspace_nc
+type(atlas_functionspace_pointcloud) :: afunctionspace_pc
+type(atlas_functionspace_structuredcolumns) :: afunctionspace_sc
+
+! Set name
+@:set_name(atlas_get_atlas_functionspace_size)
+
+! Probe in
+@:probe_in()
+
+select case (afunctionspace%name())
+case ('NodeColumns')
+   ! Get NodeColumns function space
+   afunctionspace_nc = afunctionspace
+
+   ! Get number of nodes
+   nmga = afunctionspace_nc%nb_nodes()
+case ('PointCloud')
+   ! Get PointCloud function space
+   afunctionspace_pc = afunctionspace
+
+   ! Get number of points
+   nmga = afunctionspace_pc%size()
+case ('StructuredColumns')
+   ! Get StructuredColumns function space
+   afunctionspace_sc = afunctionspace
+
+   ! Get number of nodes
+   nmga = afunctionspace_sc%size()
+case default
+   call mpl%abort('${subr}$','wrong function space '//afunctionspace%name())
+end select
+
+! Probe out
+@:probe_out()
+
+end function atlas_get_atlas_functionspace_size
+
+!----------------------------------------------------------------------
 ! Function: atlas_get_atlas_field_size
 !> Get the local horizontal size of an ATLAS field
 !----------------------------------------------------------------------
@@ -346,9 +403,6 @@ integer :: nmga
 
 ! Local variables
 type(atlas_functionspace) :: afunctionspace
-type(atlas_functionspace_nodecolumns) :: afunctionspace_nc
-type(atlas_functionspace_pointcloud) :: afunctionspace_pc
-type(atlas_functionspace_structuredcolumns) :: afunctionspace_sc
 
 ! Set name
 @:set_name(atlas_get_atlas_field_size)
@@ -356,31 +410,11 @@ type(atlas_functionspace_structuredcolumns) :: afunctionspace_sc
 ! Probe in
 @:probe_in()
 
-! Get generic functionspace
+! Get generic function space
 afunctionspace = afield%functionspace()
 
-select case (afunctionspace%name())
-case ('NodeColumns')
-   ! Get NodeColumns function space
-   afunctionspace_nc = afield%functionspace()
-
-   ! Get number of nodes
-   nmga = afunctionspace_nc%nb_nodes()
-case ('PointCloud')
-   ! Get PointCloud function space
-   afunctionspace_pc = afield%functionspace()
-
-   ! Get number of points
-   nmga = afunctionspace_pc%size()
-case ('StructuredColumns')
-   ! Get StructuredColumns function space
-   afunctionspace_sc = afield%functionspace()
-
-   ! Get number of nodes
-   nmga = afunctionspace_sc%size_owned()
-case default
-   call mpl%abort('${subr}$','wrong function space for field '//afield%name()//': '//afunctionspace%name())
-end select
+! Get function space size
+nmga = get_atlas_functionspace_size(mpl,afunctionspace)
 
 ! Probe out
 @:probe_out()

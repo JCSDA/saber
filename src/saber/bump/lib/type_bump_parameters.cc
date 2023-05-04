@@ -53,6 +53,8 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   param(ioDef.data_directory, ioConf);
   // Data prefix
   param(ioDef.files_prefix, ioConf);
+  // Write in new files
+  param(ioDef.new_files, ioConf);
   // Parallel NetCDF I/O
   param(ioDef.parallel_netcdf, ioConf);
   // Number of I/O processors
@@ -232,6 +234,8 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   param(diagnosticsDef.gen_kurt_th, diagnosticsConf);
   // Number of bins for averaged statistics histograms
   param(diagnosticsDef.avg_nbins, diagnosticsConf);
+  // Support radius scaling in CMAT from HDIAG
+  param(diagnosticsDef.lengths_scaling, diagnosticsConf);
 
   // Vertical balance section
   VerticalBalanceDef verticalBalanceDef;
@@ -294,6 +298,8 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   param(nicasDef.pos_def_test, nicasConf);
   // Horizontal NICAS interpolation test
   param(nicasDef.interp_test, nicasConf);
+  // Overriding component in file
+  param(nicasDef.file_component, nicasConf);
 
   // Psichitouv section
   PsichitouvDef psichitouvDef;

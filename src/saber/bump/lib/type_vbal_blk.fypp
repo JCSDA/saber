@@ -29,18 +29,23 @@ type vbal_blk_type
    integer :: nsub                                       !< Number of sub-ensemble
    character(len=1024) :: name                           !< Name
 
-   ! Subset Sc1
-   real(kind_real),allocatable :: cov_c1a(:,:,:)         !< Covariance on subset Sc1, halo A
+   ! Vertical covariance, subset Sc1
    real(kind_real),allocatable :: full_cov_c1a(:,:,:)    !< Full covariance on subset Sc1, halo A
-   real(kind_real),allocatable :: reg_c1a(:,:,:)         !< Regression on subset Sc1, halo A
-   real(kind_real),allocatable :: a_c1a(:,:,:)           !< A matrix on subset Sc1, halo A
    real(kind_real),allocatable :: seq_avg_c1a_1(:,:)     !< Sequentially updated mean for first variable on subset Sc1, halo A
    real(kind_real),allocatable :: seq_avg_c1a_2(:,:)     !< Sequentially updated mean for second variable on subset Sc1, halo A
    real(kind_real),allocatable :: seq_cov_c1a(:,:,:)     !< Sequentially updated covariance on subset Sc1, halo A
 
-   ! Subset Sc2
+   ! Vertical balance, subset Sc1
+   real(kind_real),allocatable :: cov_c1a(:,:,:)         !< Covariance on subset Sc1, halo A
+   real(kind_real),allocatable :: reg_c1a(:,:,:)         !< Regression on subset Sc1, halo A
+   real(kind_real),allocatable :: a_c1a(:,:,:)           !< A matrix on subset Sc1, halo A
+
+   ! Vertical balance, subset Sc2
+   real(kind_real),allocatable :: cov_c2a(:,:,:)         !< Covariance on subset Sc2, halo A
    real(kind_real),allocatable :: cov_c2b(:,:,:)         !< Covariance on subset Sc2, halo B
+   real(kind_real),allocatable :: reg_c2a(:,:,:)         !< Regression on subset Sc2, halo A
    real(kind_real),allocatable :: reg_c2b(:,:,:)         !< Regression on subset Sc2, halo B
+   real(kind_real),allocatable :: explained_var_c2a(:,:) !< Explained variance on subset Sc2, halo A
    real(kind_real),allocatable :: explained_var_c2b(:,:) !< Explained variance on subset Sc2, halo B
 contains
    procedure :: alloc => vbal_blk_alloc
@@ -81,11 +86,6 @@ integer,intent(in) :: jv                       !< Second variable index
 ! Probe in
 @:probe_in()
 
-! Set attributes
-vbal_blk%name = trim(nam%variables(jv))//'-'//trim(nam%variables(iv))
-vbal_blk%iv = iv
-vbal_blk%jv = jv
-
 ! Allocation
 if (nam%vbal_block(iv,jv)) allocate(vbal_blk%reg_c2b(geom%nl0,geom%nl0,samp%nc2b))
 if (nam%new_vbal) then
@@ -99,7 +99,7 @@ if (nam%new_vbal) then
       allocate(vbal_blk%reg_c1a(geom%nl0,geom%nl0,samp%nc1a))
    end if
 end if
-if (nam%new_vbal_cov.or.nam%load_vbal_cov) allocate(vbal_blk%full_cov_c1a(samp%nc1a,geom%nl0,geom%nl0))
+if (nam%new_vbal_cov) allocate(vbal_blk%full_cov_c1a(samp%nc1a,geom%nl0,geom%nl0))
 if (nam%iterative_algo) then
    allocate(vbal_blk%seq_avg_c1a_1(samp%nc1a,geom%nl0))
    allocate(vbal_blk%seq_avg_c1a_2(samp%nc1a,geom%nl0))
@@ -130,15 +130,17 @@ class(vbal_blk_type),intent(inout) :: vbal_blk !< Vertical balance block
 
 ! Release memory
 if (allocated(vbal_blk%cov_c1a)) deallocate(vbal_blk%cov_c1a)
-if (allocated(vbal_blk%cov_c2b)) deallocate(vbal_blk%cov_c2b)
-if (allocated(vbal_blk%seq_avg_c1a_1)) deallocate(vbal_blk%seq_avg_c1a_1)
-if (allocated(vbal_blk%seq_avg_c1a_2)) deallocate(vbal_blk%seq_avg_c1a_2)
 if (allocated(vbal_blk%full_cov_c1a)) deallocate(vbal_blk%full_cov_c1a)
-if (allocated(vbal_blk%a_c1a)) deallocate(vbal_blk%a_c1a)
 if (allocated(vbal_blk%reg_c1a)) deallocate(vbal_blk%reg_c1a)
+if (allocated(vbal_blk%a_c1a)) deallocate(vbal_blk%a_c1a)
 if (allocated(vbal_blk%seq_avg_c1a_1)) deallocate(vbal_blk%seq_avg_c1a_1)
 if (allocated(vbal_blk%seq_avg_c1a_2)) deallocate(vbal_blk%seq_avg_c1a_2)
 if (allocated(vbal_blk%seq_cov_c1a)) deallocate(vbal_blk%seq_cov_c1a)
+if (allocated(vbal_blk%cov_c2a)) deallocate(vbal_blk%cov_c2a)
+if (allocated(vbal_blk%cov_c2b)) deallocate(vbal_blk%cov_c2b)
+if (allocated(vbal_blk%reg_c2a)) deallocate(vbal_blk%reg_c2a)
+if (allocated(vbal_blk%explained_var_c2a)) deallocate(vbal_blk%explained_var_c2a)
+if (allocated(vbal_blk%explained_var_c2b)) deallocate(vbal_blk%explained_var_c2b)
 
 ! Probe out
 @:probe_out()

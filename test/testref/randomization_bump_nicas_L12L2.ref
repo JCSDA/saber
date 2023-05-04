@@ -1,7 +1,5 @@
        Independent levels:  1[2]
-          Model grid size:             1200
           Subset Sc0 size:             1106
-          Number of duplicated points (halo):        94 (  7.83%)
           Min. / max. longitudes: -172.5 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
@@ -10,9 +8,7 @@
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
        Independent levels:  1[1]
-          Model grid size:             1200
           Subset Sc0 size:             1106
-          Number of duplicated points (halo):        94 (  7.83%)
           Min. / max. longitudes: -172.5 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%

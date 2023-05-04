@@ -1,7 +1,5 @@
        Independent levels:  1[1]  2[1]
-          Model grid size:              840
           Subset Sc0 size:              762
-          Number of duplicated points (halo):        78 (  9.29%)
           Min. / max. longitudes: -171.0 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.660E+02%
@@ -79,10 +77,10 @@
              0.0 /    0.0:  1.0000000
           Level   1:  0.0000000 -  1.0000000
           Level   2:  0.0000000 -  0.9169709
-Norm of output parameter dirac_mom - 1: 7.7914473076303121e+00
-Norm of output parameter dirac_diag_loc - 1: 2.8237637990962452e+00
+Norm of output parameter dirac_mom - 1: 7.7914473076303112e+00
+Norm of output parameter dirac_diag_loc - 1: 2.8237637990962439e+00
 Norm of output parameter cor_rh - 1: 1.5258184047202858e+08
 Norm of output parameter cor_rv - 1: 1.2745328074542292e+02
-Norm of output parameter loc_rh - 1: 2.3064205859904465e+08
-Norm of output parameter loc_rv - 1: 2.3524176177096820e+02
-Norm of output parameter nicas_norm - 1: 4.3891034599210279e+01
+Norm of output parameter loc_rh - 1: 2.3064205859904462e+08
+Norm of output parameter loc_rv - 1: 2.3524176177096635e+02
+Norm of output parameter nicas_norm - 1: 4.3891072897369185e+01

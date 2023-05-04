@@ -15,7 +15,7 @@ use tools_const, only: zero,quarter,half,tenth,one,two,three,four,five,hundred,p
 use tools_fit, only: tensor_d2h
 use tools_func, only: lonlatmod,sphere_dist,inside,convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count
 use tools_gc99, only: fit_func_sqrt
-use tools_kinds, only: kind_int,kind_real,kind_long,huge_int,huge_real
+use tools_kinds, only: kind_real
 use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim,check_dim
 use tools_qsort, only: qsort
 use tools_repro, only: supeq,sup,inf,infeq,eq,indist,repro_th
@@ -49,10 +49,6 @@ type nicas_blk_type
    ! NICAS components
    integer :: ncmp                            !< Number of components
    type(nicas_cmp_type),allocatable :: cmp(:) !< Components
-
-   ! Min/max levels
-   integer :: min_lev                         !< Minimum level
-   integer :: max_lev                         !< Maximum level
 
    ! Horizontal smoother
    integer,allocatable :: l0_to_l0i(:)        !< Base level to independent level
@@ -216,12 +212,12 @@ do icmp=1,nicas_blk%ncmp
    write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
    call mpl%flush
 
-   if (nicas_blk%ncmp==1) then
-      nicas_blk%cmp(icmp)%cmpid = nicas_blk%blkid
+   if (nam%file_component>0) then
+      write(cmpname,'(a,i1)') 'cmp_',nam%file_component
    else
       write(cmpname,'(a,i1)') 'cmp_',icmp
-      nicas_blk%cmp(icmp)%cmpid = inquire_grp(mpl,nicas_blk%blkid,cmpname)
    end if
+   nicas_blk%cmp(icmp)%cmpid = inquire_grp(mpl,nicas_blk%blkid,cmpname)
 
    ! Component work
    call nicas_blk%cmp(icmp)%read_local(mpl,geom)
@@ -281,12 +277,12 @@ do icmp=1,nicas_blk%ncmp
    write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
    call mpl%flush
 
-   if (nicas_blk%ncmp==1) then
-      nicas_blk%cmp(icmp)%cmpid = nicas_blk%blkid
+   if (nam%file_component>0) then
+      write(cmpname,'(a,i1)') 'cmp_',nam%file_component
    else
       write(cmpname,'(a,i1)') 'cmp_',icmp
-      nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%blkid,cmpname)
    end if
+   nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%blkid,cmpname)
 
    ! Copy number of levels
    nicas_blk%cmp(icmp)%nl0_id = nl0_id
@@ -307,14 +303,13 @@ end subroutine nicas_blk_write_local_def
 ! Subroutine: nicas_blk_write_local_data
 !> Write data for local I/O, data mode
 !----------------------------------------------------------------------
-subroutine nicas_blk_write_local_data(nicas_blk,mpl,geom)
+subroutine nicas_blk_write_local_data(nicas_blk,mpl)
 
 implicit none
 
 ! Passed variables
 class(nicas_blk_type),intent(in) :: nicas_blk !< NICAS data block
 type(mpl_type),intent(inout) :: mpl           !< MPI data
-type(geom_type),intent(in) :: geom            !< Geometry
 
 ! Local variables
 integer :: icmp
@@ -327,7 +322,7 @@ integer :: icmp
 
 do icmp=1,nicas_blk%ncmp
    ! Component work
-   call nicas_blk%cmp(icmp)%write_local_data(mpl,geom)
+   call nicas_blk%cmp(icmp)%write_local_data(mpl)
 end do
 
 ! Probe out
@@ -549,10 +544,7 @@ nicas_blk%blkid = inquire_grp(mpl,nicas_blk%ncid,blkname)
 
 ! Get number of components
 call get_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp,1)
-
-! Get min and max levels
-call get_att(mpl,nicas_blk%blkid,0,'min_lev',nicas_blk%min_lev,1)
-call get_att(mpl,nicas_blk%blkid,0,'max_lev',nicas_blk%max_lev,geom%nl0)
+if (mpl%iobcast) call mpl%f_comm_iobcast%broadcast(nicas_blk%ncmp,mpl%rootproc-1)
 
 ! Allocation
 if (.not.allocated(nicas_blk%cmp)) allocate(nicas_blk%cmp(nicas_blk%ncmp))
@@ -561,8 +553,6 @@ do icmp=1,nicas_blk%ncmp
    ! Set attributes
    nicas_blk%cmp(icmp)%ig = ig
    nicas_blk%cmp(icmp)%ncmp = nicas_blk%ncmp
-   nicas_blk%cmp(icmp)%min_lev = nicas_blk%min_lev
-   nicas_blk%cmp(icmp)%max_lev = nicas_blk%max_lev
    nicas_blk%cmp(icmp)%verbosity = nicas_blk%verbosity
    nicas_blk%cmp(icmp)%smoother = .false.
    nicas_blk%cmp(icmp)%compute_norm = (.not.allocated(nicas_blk%cmp(icmp)%norm))
@@ -574,12 +564,13 @@ do icmp=1,nicas_blk%ncmp
    write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
    call mpl%flush
 
-   if (nicas_blk%ncmp==1) then
-      nicas_blk%cmp(icmp)%cmpid = nicas_blk%blkid
+   ! Get group ID
+   if (nam%file_component>0) then
+      write(cmpname,'(a,i1)') 'cmp_',nam%file_component
    else
       write(cmpname,'(a,i1)') 'cmp_',icmp
-      nicas_blk%cmp(icmp)%cmpid = inquire_grp(mpl,nicas_blk%blkid,cmpname)
    end if
+   nicas_blk%cmp(icmp)%cmpid = inquire_grp(mpl,nicas_blk%blkid,cmpname)
 
    ! Component work
    call nicas_blk%cmp(icmp)%read_global(mpl,geom)
@@ -631,10 +622,6 @@ nicas_blk%blkid = define_grp(mpl,nicas_blk%ncid,blkname)
 ! Write number of components
 call put_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp)
 
-! Write min and max levels
-call put_att(mpl,nicas_blk%blkid,0,'min_lev',nicas_blk%min_lev)
-call put_att(mpl,nicas_blk%blkid,0,'max_lev',nicas_blk%max_lev)
-
 ! Define number of levels
 nl0_id = define_dim(mpl,nicas_blk%blkid,'nl0',geom%nl0)
 
@@ -643,12 +630,13 @@ do icmp=1,nicas_blk%ncmp
    write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
    call mpl%flush
 
-   if (nicas_blk%ncmp==1) then
-      nicas_blk%cmp(icmp)%cmpid = nicas_blk%blkid
+   ! Define group ID
+   if (nam%file_component>0) then
+      write(cmpname,'(a,i1)') 'cmp_',nam%file_component
    else
       write(cmpname,'(a,i1)') 'cmp_',icmp
-      nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%blkid,cmpname)
    end if
+   nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%blkid,cmpname)
 
    ! Copy number of levels
    nicas_blk%cmp(icmp)%nl0_id = nl0_id
@@ -669,14 +657,13 @@ end subroutine nicas_blk_write_global_def
 ! Subroutine: nicas_blk_write_global_data
 !> Write data for global I/O, data mode
 !----------------------------------------------------------------------
-subroutine nicas_blk_write_global_data(nicas_blk,mpl,geom)
+subroutine nicas_blk_write_global_data(nicas_blk,mpl)
 
 implicit none
 
 ! Passed variables
 class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data
 type(mpl_type),intent(inout) :: mpl              !< MPI data
-type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
 integer :: icmp
@@ -689,7 +676,7 @@ integer :: icmp
 
 do icmp=1,nicas_blk%ncmp
    ! Component work
-   call nicas_blk%cmp(icmp)%write_global_data(mpl,geom)
+   call nicas_blk%cmp(icmp)%write_global_data(mpl)
 end do
 
 ! Probe out
@@ -729,19 +716,20 @@ write(mpl%info,'(a10,a)') '','Block: '//trim(blkname)
 call mpl%flush
 
 ! Define group
-nicas_blk%blkid = define_grp(mpl,nicas_blk%ncid,blkname)
+nicas_blk%blkid = define_grp(mpl,nicas_blk%ncid,blkname,io_override=.true.)
 
 do icmp=1,nicas_blk%ncmp
    ! Get component
    write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
    call mpl%flush
 
-   if (nicas_blk%ncmp==1) then
-      nicas_blk%cmp(icmp)%cmpid = nicas_blk%blkid
+   ! Define group ID
+   if (nam%file_component>0) then
+      write(cmpname,'(a,i1)') 'cmp_',nam%file_component
    else
       write(cmpname,'(a,i1)') 'cmp_',icmp
-      nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%blkid,cmpname)
    end if
+   nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%blkid,cmpname,io_override=.true.)
 
    ! Component work
    call nicas_blk%cmp(icmp)%write_grids_def(mpl)
@@ -818,19 +806,20 @@ write(mpl%info,'(a10,a)') '','Block: '//trim(blkname)
 call mpl%flush
 
 ! Define group
-nicas_blk%blkid = define_grp(mpl,nicas_blk%ncid,blkname)
+nicas_blk%blkid = define_grp(mpl,nicas_blk%ncid,blkname,io_override=.true.)
 
 do icmp=1,nicas_blk%ncmp
    ! Get component
    write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
    call mpl%flush
 
-   if (nicas_blk%ncmp==1) then
-      nicas_blk%cmp(icmp)%cmpid = nicas_blk%blkid
+   ! Define group ID
+   if (nam%file_component>0) then
+      write(cmpname,'(a,i1)') 'cmp_',nam%file_component
    else
       write(cmpname,'(a,i1)') 'cmp_',icmp
-      nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%blkid,cmpname)
    end if
+   nicas_blk%cmp(icmp)%cmpid = define_grp(mpl,nicas_blk%blkid,cmpname,io_override=.true.)
 
    ! Component work
    call nicas_blk%cmp(icmp)%write_steps_def(mpl)
@@ -913,7 +902,7 @@ end if
 do icmp=1,nicas_blk%ncmp
    write(mpl%info,'(a7,a,i1)') '','Component: ',icmp
    call mpl%flush
- 
+
    ! Set attributes
    nicas_blk%cmp(icmp)%ig = ig
    nicas_blk%cmp(icmp)%ncmp = nicas_blk%ncmp
@@ -952,7 +941,7 @@ type(geom_type),intent(inout) :: geom            !< Geometry
 real(kind_real),intent(in) :: rhflt(geom%nl0)    !< Horizontal support radius profile
 
 ! Local variables
-integer :: il0,il0i,jl0,jl0i,jl0is,jl0is_tmp,nl0,nl0i
+integer :: il0,il0i,jl0,jl0i,jl0is,jl0is_tmp,nl0,nl0i,icmp
 integer :: l0i_to_l0(geom%nl0),proc_to_jl0is(mpl%nproc)
 integer :: nc0_gmask(0:geom%nl0)
 real(kind_real) :: resol
@@ -997,7 +986,7 @@ do il0=2,geom%nl0
 
       ! Check if the result is the same for all tasks
       if (all(proc_to_jl0is==jl0is_tmp)) then
-         jl0is = jl0is_tmp  
+         jl0is = jl0is_tmp
          exit
       end if
    end do
@@ -1027,9 +1016,20 @@ vunitavg = geom%vunitavg
 vunit_c0u = geom%vunit_c0u
 gmask_c0u = geom%gmask_c0u
 
+! One level only
+geom%nl0 = 1
+
 ! Allocation
 nicas_blk%ncmp = nl0i
 allocate(nicas_blk%cmp(nicas_blk%ncmp))
+do icmp=1,nicas_blk%ncmp
+   allocate(nicas_blk%cmp(icmp)%vlev(geom%nl0))
+end do
+
+! Initialization
+do icmp=1,nicas_blk%ncmp
+   nicas_blk%cmp(icmp)%vlev = .true.
+end do
 
 ! Setup independent levels
 do il0i=1,nl0i
@@ -1040,7 +1040,6 @@ do il0i=1,nl0i
    nam%resol = five
 
    ! Set local geometry parameters
-   geom%nl0 = 1
    geom%vunit_c0a(:,1) = vunit_c0a(:,il0)
    geom%gmask_c0a(:,1) = gmask_c0a(:,il0)
    geom%gmask_hor_c0a(1) = any(gmask_c0a(:,il0))
@@ -1102,8 +1101,8 @@ type(geom_type),intent(in) :: geom               !< Geometry
 type(cmat_blk_type),intent(in) :: cmat_blk       !< C matrix data block
 
 ! Local variables
-integer :: ic0a,il0,icmp
-real(kind_real) :: rhs_max
+integer :: ic0a,il0,icmp,level_status,nover
+real(kind_real) :: rhs_max,rover,ratio
 character(len=1024) :: message
 
 ! Set name
@@ -1118,10 +1117,6 @@ associate(ig=>nicas_blk%ig)
 ! Copy number of components
 nicas_blk%ncmp = cmat_blk%ncmp
 
-! Copy min/max levels
-nicas_blk%min_lev = nam%min_lev(ig)
-nicas_blk%max_lev = nam%max_lev(ig)
-
 ! Allocation
 if (.not.allocated(nicas_blk%cmp)) allocate(nicas_blk%cmp(nicas_blk%ncmp))
 
@@ -1130,6 +1125,7 @@ do icmp=1,nicas_blk%ncmp
    nicas_blk%cmp(icmp)%anisotropic = allocated(cmat_blk%D11).and.allocated(cmat_blk%D22).and.allocated(cmat_blk%D12)
 
    ! Allocation
+   allocate(nicas_blk%cmp(icmp)%vlev(geom%nl0))
    allocate(nicas_blk%cmp(icmp)%a(geom%nc0a,geom%nl0))
    allocate(nicas_blk%cmp(icmp)%rh(geom%nc0a,geom%nl0))
    if (nicas_blk%cmp(icmp)%anisotropic) then
@@ -1153,26 +1149,73 @@ do icmp=1,nicas_blk%ncmp
    nicas_blk%cmp(icmp)%rhs = mpl%msv%valr
    nicas_blk%cmp(icmp)%rvs = mpl%msv%valr
 
-   ! Copy C matrix fields from min_lev to max_lev
-   do il0=nicas_blk%min_lev,nicas_blk%max_lev
+   ! Copy C matrix fields
+   do il0=1,geom%nl0
+      ! Check the level status
+      level_status = 0
       do ic0a=1,geom%nc0a
-         if (geom%gmask_c0a(ic0a,il0)) then
-            nicas_blk%cmp(icmp)%a(ic0a,il0) = cmat_blk%a(ic0a,il0,icmp)
-            nicas_blk%cmp(icmp)%rh(ic0a,il0) = cmat_blk%rh(ic0a,il0,icmp)
-            if (nicas_blk%cmp(icmp)%anisotropic) call tensor_d2h(mpl,cmat_blk%D11(ic0a,il0,icmp),cmat_blk%D22(ic0a,il0,icmp), &
- & cmat_blk%D12(ic0a,il0,icmp),nicas_blk%cmp(icmp)%H11(ic0a,il0),nicas_blk%cmp(icmp)%H22(ic0a,il0), &
- & nicas_blk%cmp(icmp)%H12(ic0a,il0))
-            nicas_blk%cmp(icmp)%rv(ic0a,il0) = cmat_blk%rv(ic0a,il0,icmp)
-            nicas_blk%cmp(icmp)%rhs(ic0a,il0) = cmat_blk%rhs(ic0a,il0,icmp)
-            nicas_blk%cmp(icmp)%rvs(ic0a,il0) = cmat_blk%rvs(ic0a,il0,icmp)
-            if (mpl%msv%is(nicas_blk%cmp(icmp)%a(ic0a,il0)).or.mpl%msv%is(nicas_blk%cmp(icmp)%rh(ic0a,il0)) &
- & .or.mpl%msv%is(nicas_blk%cmp(icmp)%rv(ic0a,il0)).or.mpl%msv%is(nicas_blk%cmp(icmp)%rhs(ic0a,il0)) &
- & .or.mpl%msv%is(nicas_blk%cmp(icmp)%rvs(ic0a,il0))) then
-               write(message,'(a,i3,a,a)') 'missing value for NICAS at level ',il0,' of block ',trim(nam%group_names(ig))
-               call mpl%abort('${subr}$',message)
-            end if
+         if ((level_status==0).and.geom%gmask_c0a(ic0a,il0)) then
+            if (mpl%msv%is(cmat_blk%a(ic0a,il0,icmp)).or.mpl%msv%is(cmat_blk%rh(ic0a,il0,icmp)) &
+ & .or.mpl%msv%is(cmat_blk%rv(ic0a,il0,icmp)).or.mpl%msv%is(cmat_blk%rhs(ic0a,il0,icmp)) &
+ & .or.mpl%msv%is(cmat_blk%rvs(ic0a,il0,icmp))) level_status = 1
+            if (cmat_blk%a(ic0a,il0,icmp)<1.0e-2) level_status = 1
          end if
       end do
+      call mpl%f_comm%allreduce(level_status,fckit_mpi_sum())
+      nicas_blk%cmp(icmp)%vlev(il0) = (level_status==0)
+
+      if (nicas_blk%cmp(icmp)%vlev(il0)) then
+         ! Copy values
+         do ic0a=1,geom%nc0a
+            if (geom%gmask_c0a(ic0a,il0)) then
+               nicas_blk%cmp(icmp)%a(ic0a,il0) = cmat_blk%a(ic0a,il0,icmp)
+               nicas_blk%cmp(icmp)%rh(ic0a,il0) = cmat_blk%rh(ic0a,il0,icmp)
+               if (nicas_blk%cmp(icmp)%anisotropic) call tensor_d2h(mpl,cmat_blk%D11(ic0a,il0,icmp),cmat_blk%D22(ic0a,il0,icmp), &
+ & cmat_blk%D12(ic0a,il0,icmp),nicas_blk%cmp(icmp)%H11(ic0a,il0),nicas_blk%cmp(icmp)%H22(ic0a,il0), &
+ & nicas_blk%cmp(icmp)%H12(ic0a,il0))
+               nicas_blk%cmp(icmp)%rv(ic0a,il0) = cmat_blk%rv(ic0a,il0,icmp)
+               nicas_blk%cmp(icmp)%rhs(ic0a,il0) = cmat_blk%rhs(ic0a,il0,icmp)
+               nicas_blk%cmp(icmp)%rvs(ic0a,il0) = cmat_blk%rvs(ic0a,il0,icmp)
+            end if
+         end do
+
+         ! Apply bounds
+         nover = count((nicas_blk%cmp(icmp)%rh(:,il0)>nam%universe_radius).and.geom%gmask_c0a(:,il0))
+         if (nover>0) then
+            rover = real(nover,kind_real)/real(geom%nc0_gmask(il0),kind_real)*hundred
+            write(message,'(a,f6.2,a,i3,a,a,a,i1)') 'rh over universe radius (',rover,'%) for NICAS at level ',il0,' of block ', &
+ & trim(nam%group_names(ig)),', component ',icmp
+            call mpl%warning('${subr}$',message)
+            do ic0a=1,geom%nc0a
+               if (geom%gmask_c0a(ic0a,il0)) then
+                  nicas_blk%cmp(icmp)%rh(ic0a,il0) = min(nicas_blk%cmp(icmp)%rh(ic0a,il0),nam%universe_radius)
+                  if (nicas_blk%cmp(icmp)%anisotropic) then
+                     ratio = (nicas_blk%cmp(icmp)%rh(ic0a,il0)/nam%universe_radius)**2
+                     if (ratio>one) then
+                        nicas_blk%cmp(icmp)%H11(ic0a,il0) = nicas_blk%cmp(icmp)%H11(ic0a,il0)*ratio
+                        nicas_blk%cmp(icmp)%H22(ic0a,il0) = nicas_blk%cmp(icmp)%H22(ic0a,il0)*ratio
+                        nicas_blk%cmp(icmp)%H12(ic0a,il0) = nicas_blk%cmp(icmp)%H12(ic0a,il0)*ratio
+                     end if
+                  end if
+               end if
+            end do
+         end if
+         nover = count((nicas_blk%cmp(icmp)%rhs(:,il0)>nam%universe_radius).and.geom%gmask_c0a(:,il0))
+         if (nover>0) then
+            rover = real(nover,kind_real)/real(geom%nc0_gmask(il0),kind_real)*hundred
+            write(message,'(a,f6.2,a,i3,a,a,a,i1)') 'rhs over universe radius (',rover,'%) for NICAS at level ',il0,' of block ', &
+ & trim(nam%group_names(ig)),', component ',icmp
+            call mpl%warning('${subr}$',message)
+            do ic0a=1,geom%nc0a
+               if (geom%gmask_c0a(ic0a,il0)) nicas_blk%cmp(icmp)%rhs(ic0a,il0) = min(nicas_blk%cmp(icmp)%rhs(ic0a,il0), &
+ & nam%universe_radius)
+            end do
+         end if
+      else
+         write(message,'(a,i3,a,a,a,i1)') 'invalid data for NICAS at level ',il0,' of block ',trim(nam%group_names(ig)), &
+ & ', component ',icmp
+         call mpl%warning('${subr}$',message)
+      end if
    end do
 
    ! Check horizontal support radius vs. universe radius

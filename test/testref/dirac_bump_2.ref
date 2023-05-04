@@ -18,9 +18,7 @@ Fields:
   eastward_wind: 1.0000000000000000e+00
   northward_wind: 0.0000000000000000e+00
        Independent levels:  1[2]
-          Model grid size:              840
           Subset Sc0 size:              762
-          Number of duplicated points (halo):        78 (  9.29%)
           Min. / max. longitudes: -171.0 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
@@ -30,9 +28,7 @@ Fields:
              Level   2 ~>  0.200E+01 vert. unit
 Adjoint test for block BUMP_PsiChiToUV passed
        Independent levels:  1[2]
-          Model grid size:              840
           Subset Sc0 size:              762
-          Number of duplicated points (halo):        78 (  9.29%)
           Min. / max. longitudes: -171.0 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
@@ -47,9 +43,7 @@ Adjoint test for block BUMP_VerticalBalance passed
 Norm of input parameter StdDev: 5.7658289604038131e+01
 Adjoint test for block StdDev passed
        Independent levels:  1[2]
-          Model grid size:              840
           Subset Sc0 size:              762
-          Number of duplicated points (halo):        78 (  9.29%)
           Min. / max. longitudes: -171.0 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
@@ -59,9 +53,7 @@ Adjoint test for block StdDev passed
              Level   2 ~>  0.200E+01 vert. unit
 Adjoint test for block BUMP_StdDev passed
        Independent levels:  1[2]
-          Model grid size:              840
           Subset Sc0 size:              762
-          Number of duplicated points (halo):        78 (  9.29%)
           Min. / max. longitudes: -171.0 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
@@ -72,9 +64,7 @@ Adjoint test for block BUMP_StdDev passed
 Norm of input parameter stddev - 1: 5.7658289604038131e+01
 Adjoint test for block BUMP_StdDev passed
        Independent levels:  1[2]
-          Model grid size:              840
           Subset Sc0 size:              762
-          Number of duplicated points (halo):        78 (  9.29%)
           Min. / max. longitudes: -171.0 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
@@ -84,9 +74,7 @@ Adjoint test for block BUMP_StdDev passed
              Level   2 ~>  0.200E+01 vert. unit
 Adjoint test for block BUMP_NICAS passed
        Independent levels:  1[2]
-          Model grid size:              840
           Subset Sc0 size:              762
-          Number of duplicated points (halo):        78 (  9.29%)
           Min. / max. longitudes: -171.0 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
@@ -115,9 +103,7 @@ Fields:
   eastward_wind: 6.7636675043647476e-01
   northward_wind: 1.6118874945640357e-01
        Independent levels:  1[2]
-          Model grid size:              840
           Subset Sc0 size:              762
-          Number of duplicated points (halo):        78 (  9.29%)
           Min. / max. longitudes: -171.0 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
@@ -127,9 +113,7 @@ Fields:
              Level   2 ~>  0.200E+01 vert. unit
 Adjoint test for block BUMP_PsiChiToUV passed
        Independent levels:  1[2]
-          Model grid size:              840
           Subset Sc0 size:              762
-          Number of duplicated points (halo):        78 (  9.29%)
           Min. / max. longitudes: -171.0 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
@@ -144,9 +128,7 @@ Adjoint test for block BUMP_VerticalBalance passed
 Norm of input parameter StdDev: 5.7658289604038131e+01
 Adjoint test for block StdDev passed
        Independent levels:  1[2]
-          Model grid size:              840
           Subset Sc0 size:              762
-          Number of duplicated points (halo):        78 (  9.29%)
           Min. / max. longitudes: -171.0 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
@@ -156,9 +138,7 @@ Adjoint test for block StdDev passed
              Level   2 ~>  0.200E+01 vert. unit
 Adjoint test for block BUMP_StdDev passed
        Independent levels:  1[2]
-          Model grid size:              840
           Subset Sc0 size:              762
-          Number of duplicated points (halo):        78 (  9.29%)
           Min. / max. longitudes: -171.0 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
@@ -169,9 +149,7 @@ Adjoint test for block BUMP_StdDev passed
 Norm of input parameter stddev - 1: 5.7658289604038131e+01
 Adjoint test for block BUMP_StdDev passed
        Independent levels:  1[2]
-          Model grid size:              840
           Subset Sc0 size:              762
-          Number of duplicated points (halo):        78 (  9.29%)
           Min. / max. longitudes: -171.0 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
@@ -200,9 +178,7 @@ Fields:
   eastward_wind: 9.7055767936381558e-14
   northward_wind: 4.0904965790103876e-14
        Independent levels:  1[2]
-          Model grid size:              840
           Subset Sc0 size:              762
-          Number of duplicated points (halo):        78 (  9.29%)
           Min. / max. longitudes: -171.0 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%

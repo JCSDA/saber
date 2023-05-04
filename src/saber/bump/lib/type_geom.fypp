@@ -10,10 +10,10 @@
 module type_geom
 
 use atlas_module, only: atlas_field,atlas_functionspace,atlas_functionspace_nodecolumns,atlas_functionspace_pointcloud, &
- & atlas_functionspace_structuredcolumns,atlas_mesh_nodes,atlas_metadata,atlas_structuredgrid,atlas_regionalgrid
+ & atlas_functionspace_structuredcolumns,atlas_mesh_nodes,atlas_structuredgrid
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max,fckit_mpi_status
 !$ use omp_lib
-use tools_atlas, only: get_grid,field_to_array
+use tools_atlas, only: get_grid,field_to_array,get_atlas_functionspace_size
 use tools_const, only: zero,quarter,half,one,two,four,hundred,pi,req,deg2rad,rad2deg,reqkm
 use tools_func, only: fletcher32,lonlatmod,grid_hash,independent_levels,sphere_dist,lonlat2xyz,xyz2lonlat,cart_dist,inside, &
  & vector_product,cx_to_cxa,cx_to_proc,cx_to_cxu,convert_l2i,convert_i2l,zss_maxval,zss_minval,zss_sum,zss_count
@@ -188,6 +188,7 @@ end type geom_type
 
 integer,parameter :: nfacmin = 4     !< Minimum size factor for the first subsampling
 integer,parameter :: nsmax = 1000000 !< Maximum sampling size
+logical,parameter :: parallel = .false. !< Parallel sampling (can be slow because of communications)
 
 private
 public :: geom_type
@@ -392,11 +393,11 @@ geom%allocated = .true.
 ! Print summary
 write(mpl%info,'(a7,a)') '','Geometry summary:'
 call mpl%flush
-write(mpl%test,'(a10,a,i8)') '','Model grid size:         ',geom%nmg
+write(mpl%info,'(a10,a,i8)') '','Model grid size:         ',geom%nmg
 call mpl%flush
 write(mpl%test,'(a10,a,i8)') '','Subset Sc0 size:         ',geom%nc0
 call mpl%flush
-write(mpl%test,'(a10,a,i6,a,f6.2,a)') '','Number of duplicated points (halo):    ',(geom%nmg-geom%nc0), &
+write(mpl%info,'(a10,a,i6,a,f6.2,a)') '','Number of duplicated points (halo):    ',(geom%nmg-geom%nc0), &
  & ' (',real(geom%nmg-geom%nc0,kind_real)/real(geom%nmg,kind_real)*hundred,'%)'
 call mpl%flush
 write(mpl%test,'(a10,a,f7.1,a,f7.1)') '','Min. / max. longitudes:',geom%lon_min*rad2deg,' / ',geom%lon_max*rad2deg
@@ -457,7 +458,6 @@ type(atlas_functionspace_nodecolumns) :: afunctionspace_nc
 type(atlas_functionspace_pointcloud) :: afunctionspace_pc
 type(atlas_functionspace_structuredcolumns) :: afunctionspace_sc
 type(atlas_mesh_nodes) :: anodes
-type(atlas_structuredgrid) :: asgrid
 
 ! Set name
 @:set_name(geom_from_atlas)
@@ -468,92 +468,18 @@ type(atlas_structuredgrid) :: asgrid
 ! Copy function space
 geom%afunctionspace_mg = atlas_functionspace(afunctionspace%c_ptr())
 
-! Get size and lon/lat
-select case (afunctionspace%name())
-case ('NodeColumns')
-   ! Get node columns function space
-   afunctionspace_nc = atlas_functionspace_nodecolumns(afunctionspace%c_ptr())
+! Get number of points
+geom%nmga = get_atlas_functionspace_size(mpl,geom%afunctionspace_mg)
 
-   ! Get number of nodes
-   geom%nmga = afunctionspace_nc%nb_nodes()
-
-   ! Allocation
-   allocate(geom%lon_mga(geom%nmga))
-   allocate(geom%lat_mga(geom%nmga))
-
-   ! Get lon/lat field
-   anodes = afunctionspace_nc%nodes()
-   afield_lonlat = anodes%lonlat()
-   call afield_lonlat%data(real_ptr)
-   if (geom%nmga>0) then
-      geom%lon_mga = real_ptr(1,:)*deg2rad
-      geom%lat_mga = real_ptr(2,:)*deg2rad
-   end if
-case ('PointCloud')
-   ! Get point cloud function space
-   afunctionspace_pc = atlas_functionspace_pointcloud(afunctionspace%c_ptr())
-
-   ! Get number of points
-   geom%nmga = afunctionspace_pc%size()
-
-   ! Allocation
-   allocate(geom%lon_mga(geom%nmga))
-   allocate(geom%lat_mga(geom%nmga))
-
-   ! Get lon/lat field
-   afield_lonlat = afunctionspace_pc%lonlat()
-   call afield_lonlat%data(real_ptr)
-   if (geom%nmga>0) then
-     geom%lon_mga = real_ptr(1,:)*deg2rad
-     geom%lat_mga = real_ptr(2,:)*deg2rad
-   end if
-case ('StructuredColumns')
-   ! Get structured columns function space
-   afunctionspace_sc = atlas_functionspace_structuredcolumns(afunctionspace%c_ptr())
-
-   ! Get number of nodes
-   geom%nmga = afunctionspace_sc%size_owned()
-
-   ! Allocation
-   allocate(geom%lon_mga(geom%nmga))
-   allocate(geom%lat_mga(geom%nmga))
-
-   ! Get lon/lat
-   asgrid = afunctionspace_sc%grid()
-   imga = 0
-   do j=afunctionspace_sc%j_begin(),afunctionspace_sc%j_end()
-      do i=afunctionspace_sc%i_begin(j),afunctionspace_sc%i_end(j)
-         imga = imga+1
-         lonlat = asgrid%lonlat(i,j)
-         geom%lon_mga(imga) = lonlat(1)*deg2rad
-         geom%lat_mga(imga) = lonlat(2)*deg2rad
-      end do
-   end do
-case default
-   call mpl%abort('${subr}$','wrong function space: '//afunctionspace%name())
-end select
-
-! Enforce proper bounds
-do imga=1,geom%nmga
-   call lonlatmod(geom%lon_mga(imga),geom%lat_mga(imga))
-end do
-
-! Get min/max lon/lat
-geom%lon_min = zss_minval(geom%lon_mga)
-geom%lon_max = zss_maxval(geom%lon_mga)
-geom%lat_min = zss_minval(geom%lat_mga)
-geom%lat_max = zss_maxval(geom%lat_mga)
-call mpl%f_comm%allreduce(geom%lon_min,fckit_mpi_min())
-call mpl%f_comm%allreduce(geom%lon_max,fckit_mpi_max())
-call mpl%f_comm%allreduce(geom%lat_min,fckit_mpi_min())
-call mpl%f_comm%allreduce(geom%lat_max,fckit_mpi_max())
-geom%sin_lat_min = sin(geom%lat_min)
-geom%sin_lat_max = sin(geom%lat_max)
+! Total number of points
+call mpl%f_comm%allreduce(geom%nmga,geom%nmg,fckit_mpi_sum())
 
 ! Allocation
 allocate(geom%hmask_mga(geom%nmga,1))
 allocate(geom%vunit_mga(geom%nmga,geom%nl0))
 allocate(geom%gmask_mga(geom%nmga,geom%nl0))
+allocate(geom%lon_mga(geom%nmga))
+allocate(geom%lat_mga(geom%nmga))
 
 ! Default values
 geom%hmask_mga = .true.
@@ -598,8 +524,62 @@ if (present(fieldset)) then
    end if
 end if
 
-! Total number of points
-call mpl%f_comm%allreduce(geom%nmga,geom%nmg,fckit_mpi_sum())
+! Get lon/lat
+select case (afunctionspace%name())
+case ('NodeColumns')
+   ! Get node columns function space
+   afunctionspace_nc = atlas_functionspace_nodecolumns(afunctionspace%c_ptr())
+
+   ! Get lon/lat field
+   anodes = afunctionspace_nc%nodes()
+   afield_lonlat = anodes%lonlat()
+   call afield_lonlat%data(real_ptr)
+   if (geom%nmga>0) then
+      geom%lon_mga = real_ptr(1,:)*deg2rad
+      geom%lat_mga = real_ptr(2,:)*deg2rad
+   end if
+case ('PointCloud')
+   ! Get point cloud function space
+   afunctionspace_pc = atlas_functionspace_pointcloud(afunctionspace%c_ptr())
+
+   ! Get lon/lat field
+   afield_lonlat = afunctionspace_pc%lonlat()
+   call afield_lonlat%data(real_ptr)
+   if (geom%nmga>0) then
+     geom%lon_mga = real_ptr(1,:)*deg2rad
+     geom%lat_mga = real_ptr(2,:)*deg2rad
+   end if
+case ('StructuredColumns')
+   ! Get structured columns function space
+   afunctionspace_sc = atlas_functionspace_structuredcolumns(afunctionspace%c_ptr())
+
+   ! Get lon/lat
+   afield_lonlat = afunctionspace_sc%xy()
+   call afield_lonlat%data(real_ptr)
+   if (geom%nmga>0) then
+     geom%lon_mga = real_ptr(1,:)*deg2rad
+     geom%lat_mga = real_ptr(2,:)*deg2rad
+   end if
+case default
+   call mpl%abort('${subr}$','wrong function space: '//afunctionspace%name())
+end select
+
+! Enforce proper bounds
+do imga=1,geom%nmga
+   if (geom%hmask_mga(imga,1)) call lonlatmod(geom%lon_mga(imga),geom%lat_mga(imga))
+end do
+
+! Get min/max lon/lat
+geom%lon_min = zss_minval(geom%lon_mga,geom%hmask_mga(:,1))
+geom%lon_max = zss_maxval(geom%lon_mga,geom%hmask_mga(:,1))
+geom%lat_min = zss_minval(geom%lat_mga,geom%hmask_mga(:,1))
+geom%lat_max = zss_maxval(geom%lat_mga,geom%hmask_mga(:,1))
+call mpl%f_comm%allreduce(geom%lon_min,fckit_mpi_min())
+call mpl%f_comm%allreduce(geom%lon_max,fckit_mpi_max())
+call mpl%f_comm%allreduce(geom%lat_min,fckit_mpi_min())
+call mpl%f_comm%allreduce(geom%lat_max,fckit_mpi_max())
+geom%sin_lat_min = sin(geom%lat_min)
+geom%sin_lat_max = sin(geom%lat_max)
 
 ! Probe out
 @:probe_out()
@@ -1717,8 +1697,6 @@ logical :: retry,valid
 logical,allocatable :: lmask_cxa(:),lmask_ssa(:),indist_ssa(:),gmask_s(:),lmask_ss(:)
 character(len=1024) :: cfmt
 type(atlas_structuredgrid) :: agrid
-
-logical,parameter :: parallel = .false.
 
 ! Set name
 @:set_name(geom_initialize_sampling)

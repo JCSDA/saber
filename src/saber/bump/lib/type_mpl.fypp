@@ -50,6 +50,8 @@ type mpl_type
    integer :: nprocio                     !< Number of I/O tasks
    logical,allocatable :: pioproc(:)      !< Flag for I/O MPI tasks
    type(fckit_mpi_comm) :: f_comm_io      !< MPI communicator for I/O (fckit wrapper)
+   logical :: iobcast                     !< Root task + non-I/O tasks
+   type(fckit_mpi_comm) :: f_comm_iobcast !< MPI communicator to broadcast similar data from root task (fckit wrapper)
 
    ! Number of OpenMP threads
    integer :: nthread                     !< Number of OpenMP threads

@@ -206,6 +206,8 @@ class IOSection : public oops::Parameters {
   oops::Parameter<std::string> data_directory = param(def.data_directory, this);
   // Data prefix
   oops::Parameter<std::string> files_prefix = param(def.files_prefix, this);
+  // Write in new files
+  oops::Parameter<bool> new_files = param(def.new_files, this);
   // Parallel NetCDF I/O
   oops::Parameter<bool> parallel_netcdf = param(def.parallel_netcdf, this);
   // Number of I/O processors
@@ -462,6 +464,8 @@ class DiagnosticsSection : public oops::Parameters {
   oops::Parameter<double> gen_kurt_th = param(def.gen_kurt_th, this);
   // Number of bins for averaged statistics histograms
   oops::Parameter<int> avg_nbins = param(def.avg_nbins, this);
+  // Support radius scaling in CMAT from HDIAG
+  oops::Parameter<double> lengths_scaling = param(def.lengths_scaling, this);
 };
 
 // -----------------------------------------------------------------------------
@@ -596,10 +600,6 @@ class NICASSection : public oops::Parameters {
   // Forced localization weights
   oops::Parameter<std::vector<LocWgtParameters>> loc_wgt{"common localization weights", {},
     this};
-  // Minimum level
-  oops::Parameter<std::vector<GroupsValueParameters>> min_lev{"minimum level", {}, this};
-  // Maximum level
-  oops::Parameter<std::vector<GroupsValueParameters>> max_lev{"maximum level", {}, this};
   // NICAS C1B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based
   // or 'si': smooth interpolation)
   oops::Parameter<std::vector<GroupsTypeParameters>> interp_type{"interpolation type", {},
@@ -608,6 +608,8 @@ class NICASSection : public oops::Parameters {
   oops::Parameter<bool> pos_def_test = param(def.pos_def_test, this);
   // Horizontal NICAS interpolation test
   oops::Parameter<bool> interp_test = param(def.interp_test, this);
+  // Overriding component in file
+  oops::Parameter<int> file_component = param(def.file_component, this);
 };
 
 // -----------------------------------------------------------------------------

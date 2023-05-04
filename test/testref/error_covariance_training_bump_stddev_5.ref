@@ -1,7 +1,5 @@
        Independent levels:  1[2]
-          Model grid size:              840
           Subset Sc0 size:              762
-          Number of duplicated points (halo):        78 (  9.29%)
           Min. / max. longitudes: -171.0 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
@@ -10,7 +8,7 @@
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
 Norm of input parameter var - 1: 4.3650316264863811e+01
-Norm of input parameter m4 - 1: 1.4599276989031367e+02
+Norm of input parameter m4 - 1: 1.4599276989031361e+02
                 Level   1: rhflt =   40000.00 km, rel. diff. =  0.38729E-02
                 Level   2: rhflt =   40000.00 km, rel. diff. =  0.13978E-01
              Level   1 ~>  0.10267E+01 /  0.10267E+01

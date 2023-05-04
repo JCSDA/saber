@@ -1,7 +1,5 @@
        Independent levels:  1[10]
-          Model grid size:              840
           Subset Sc0 size:              762
-          Number of duplicated points (halo):        78 (  9.29%)
           Min. / max. longitudes: -171.0 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
@@ -26,31 +24,31 @@
              Level   9 ~>  0.900E+01 vert. unit
              Level  10 ~>  0.100E+02 vert. unit
 Norm of input parameter sampling_mask_field - 1: 9.0764768186843639e+01
-   Norm of stream_function:  0.82382431E+04
-   Norm of stream_function:  0.73182887E+04
-   Norm of stream_function:  0.72563665E+04
-   Norm of stream_function:  0.80743355E+04
-   Norm of stream_function:  0.84807771E+04
-   Norm of stream_function:  0.78244939E+04
-   Norm of stream_function:  0.83433824E+04
-   Norm of stream_function:  0.83436518E+04
-   Norm of stream_function:  0.73000968E+04
-   Norm of stream_function:  0.74269088E+04
-   Norm of stream_function:  0.84573312E+04
-   Norm of stream_function:  0.90132565E+04
-   Norm of stream_function:  0.77130441E+04
-   Norm of stream_function:  0.84566117E+04
-   Norm of stream_function:  0.85285805E+04
-   Norm of stream_function:  0.79286417E+04
-   Norm of stream_function:  0.83081202E+04
-   Norm of stream_function:  0.84631356E+04
-   Norm of stream_function:  0.86866904E+04
-   Norm of stream_function:  0.85844647E+04
-   Norm of stream_function:  0.82263542E+04
-   Norm of stream_function:  0.78794666E+04
-   Norm of stream_function:  0.74395781E+04
-   Norm of stream_function:  0.89710970E+04
-   Norm of stream_function:  0.73046551E+04
+   Norm of stream_function:  0.86177684E+02
+   Norm of stream_function:  0.80618766E+02
+   Norm of stream_function:  0.81430939E+02
+   Norm of stream_function:  0.87688701E+02
+   Norm of stream_function:  0.87561782E+02
+   Norm of stream_function:  0.85853083E+02
+   Norm of stream_function:  0.87075739E+02
+   Norm of stream_function:  0.86478844E+02
+   Norm of stream_function:  0.81953612E+02
+   Norm of stream_function:  0.81834562E+02
+   Norm of stream_function:  0.88836116E+02
+   Norm of stream_function:  0.87887942E+02
+   Norm of stream_function:  0.85279970E+02
+   Norm of stream_function:  0.90277208E+02
+   Norm of stream_function:  0.84964525E+02
+   Norm of stream_function:  0.83731208E+02
+   Norm of stream_function:  0.88110279E+02
+   Norm of stream_function:  0.86279471E+02
+   Norm of stream_function:  0.87415097E+02
+   Norm of stream_function:  0.86661967E+02
+   Norm of stream_function:  0.85087575E+02
+   Norm of stream_function:  0.84617786E+02
+   Norm of stream_function:  0.80817835E+02
+   Norm of stream_function:  0.87941390E+02
+   Norm of stream_function:  0.83190258E+02
           Level   1 ~>   2.6%
           Level   2 ~>   4.2%
           Level   3 ~>   5.2%

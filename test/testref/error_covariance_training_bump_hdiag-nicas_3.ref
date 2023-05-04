@@ -1,7 +1,5 @@
        Independent levels:  1[2]
-          Model grid size:             1200
           Subset Sc0 size:             1106
-          Number of duplicated points (halo):        94 (  7.83%)
           Min. / max. longitudes: -172.5 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
@@ -10,9 +8,7 @@
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
        Independent levels:  1[2]
-          Model grid size:              840
           Subset Sc0 size:              762
-          Number of duplicated points (halo):        78 (  9.29%)
           Min. / max. longitudes: -171.0 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
@@ -161,8 +157,8 @@
           Level   1:  0.0000000 -  1.0000000
           Level   2:  0.0000000 -  0.9238457
 Norm of output parameter loc_rh - 1: 2.1756723284850624e+08
-Norm of output parameter loc_rv - 1: 2.0104013461790385e+02
-Norm of output parameter hyb_coef_ens - 1: 2.4368437676384502e+01
+Norm of output parameter loc_rv - 1: 2.0104013461790797e+02
+Norm of output parameter hyb_coef_ens - 1: 2.4368437676384506e+01
 Norm of output parameter hyb_coef_ens_lr - 1: 2.3032646394794376e+01
-Norm of output parameter loc_rh_lr - 1: 2.3577243990263674e+08
-Norm of output parameter loc_rv_lr - 1: 2.4800619391419218e+02
+Norm of output parameter loc_rh_lr - 1: 2.3521307389535755e+08
+Norm of output parameter loc_rv_lr - 1: 2.4741780353859281e+02

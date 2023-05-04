@@ -345,10 +345,11 @@ implicit none
 class(fieldset_type),intent(inout) :: fieldset !< Fieldset
 type(mpl_type),intent(inout) :: mpl            !< MPI data
 logical,intent(in) :: hmask(:,:)               !< Halo mask
+
 ! Local variables
 integer :: iv,il0,imga
 real(kind_real) :: norm
-real(kind_real),pointer :: ptr_2(:,:)
+real(kind_real) :: array(fieldset%nmga,fieldset%nl0)
 type(atlas_field) :: afield
 
 ! Set name
@@ -365,26 +366,18 @@ do iv=1,fieldset%nv
    ! Field
    afield = fieldset%field(fieldset%variables(iv))
 
+   ! Array
+   call field_to_array(afield,mpl,array)
+
    ! Compute global norm
-   select case (afield%rank())
-   case (2)
-      call afield%data(ptr_2)
-      if (.false.) then
-         ! TODO(Benjamin): activate this
-         norm = zero
-         do il0=1,size(ptr_2,2)
-            do imga=1,size(ptr_2,1)
-               if (hmask(imga,1).and.mpl%msv%isnot(ptr_2(imga,il0))) norm = norm+ptr_2(imga,il0)**2
-            end do
-         end do
-         norm = sqrt(norm)
-      else
-         if (fieldset%nmga>0) norm = zss_sum(ptr_2**2,mask=mpl%msv%isnot(ptr_2))
-      end if
-   case default
-      call mpl%abort('${subr}$','wrong field rank')
-   end select
+   norm = zero
+   do il0=1,fieldset%nl0
+      do imga=1,fieldset%nmga
+         if (hmask(imga,1).and.mpl%msv%isnot(array(imga,il0))) norm = norm+array(imga,il0)**2
+      end do
+   end do
    call mpl%f_comm%allreduce(norm,fckit_mpi_sum())
+   norm = sqrt(norm)
 
    ! Print norm
    write(mpl%test,'(a3,a,e15.8)') '','Norm of '//trim(afield%name())//': ',norm

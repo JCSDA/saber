@@ -221,14 +221,11 @@ do iproc=1,mpl%nproc
    if (iprocio==0) iprocio = mpl%nprocio
 
    if (mpl%myproc==iprocio) then
-      write(mpl%info,'(a10,a,i6)') '','Read NICAS data of task ',iproc
+      write(mpl%info,'(a10,a,i6,a,i6)') '','Read NICAS data of task ',iproc,' from task ',iprocio
       call mpl%flush
 
       ! Open file
       ncid = open_file(mpl,nam%fname_nicas,iproc)
-
-      ! Check subset Sc0 on halo A size
-      if (.not.check_dim(mpl,ncid,'nc0a',geom%proc_to_nc0a(iproc))) call mpl%abort('${subr}$','wrong size for dimension nc0a')
 
       ! Check number of levels (TODO: nl0 is now defined at block level, whole block should be removed at some point)
       if (mpl%msv%isnot(inquire_dim(mpl,ncid,'nl0'))) then
@@ -266,7 +263,7 @@ do iproc=1,mpl%nproc
       call close_file(mpl,ncid)
    elseif (mpl%myproc==iproc) then
       ! Receive data from task iprocio
-      write(mpl%info,'(a10,a,i6)') '','Receive NICAS data from task ',iprocio
+      write(mpl%info,'(a10,a,i6,a,i6)') '','Receive NICAS data of task ',iproc,' from task ',iprocio
       call mpl%flush
       call nicas%receive(mpl,nam,geom,iprocio)
    end if
@@ -274,6 +271,15 @@ end do
 
 ! Update tag
 call mpl%update_tag(4)
+
+! Check subset Sc0 on halo A size
+do ig=1,nam%ng
+   do icmp=1,nicas%blk(ig)%ncmp
+      if (any(nicas%blk(ig)%cmp(icmp)%vlev)) then
+         if (nicas%blk(ig)%cmp(icmp)%nc0a/=geom%nc0a) call mpl%abort('${subr}$','wrong size for dimension nc0a')
+      end if
+   end do
+end do
 
 ! Set other fields
 do ig=1,nam%ng
@@ -334,7 +340,7 @@ type(nam_type),intent(in) :: nam         !< Namelist
 type(geom_type),intent(in) :: geom       !< Geometry
 
 ! Local variables
-integer :: ncid,nc0a_id
+integer :: ncid
 integer :: ig,icmp,iproc,iprocio
 type(nicas_type) :: nicas_tmp
 
@@ -354,26 +360,21 @@ do iproc=1,mpl%nproc
    if (iprocio==0) iprocio = mpl%nprocio
 
    if (mpl%myproc==iprocio) then
-      write(mpl%info,'(a10,a,i6)') '','Write NICAS data of task ',iproc
+      write(mpl%info,'(a10,a,i6,a,i6)') '','Write NICAS data of task ',iproc,' from task ',iprocio
       call mpl%flush
 
-      ! Create file
-      ncid = create_file(mpl,nam%fname_nicas,iproc)
-
-      ! Define dimensions
-      if (geom%proc_to_nc0a(iproc)>0) then
-         nc0a_id = define_dim(mpl,ncid,'nc0a',geom%proc_to_nc0a(iproc))
+      if (nam%new_files) then
+         ! Create file
+         ncid = create_file(mpl,nam%fname_nicas,iproc)
       else
-         nc0a_id = mpl%msv%vali
+         ! Open file
+         ncid = open_file(mpl,nam%fname_nicas,iproc,nowrite=.false.)
       end if
 
       if (iproc==iprocio) then
          do ig=1,nam%ng
-            ! Copy global IDs
+            ! Copy global ID
             nicas%blk(ig)%ncid = ncid
-            do icmp=1,nicas%blk(ig)%ncmp
-               nicas%blk(ig)%cmp(icmp)%nc0a_id = nc0a_id
-            end do
 
             ! Write data (definition mode)
             call nicas%blk(ig)%write_local_def(mpl,nam,geom)
@@ -381,7 +382,7 @@ do iproc=1,mpl%nproc
 
          do ig=1,nam%ng
             ! Write data (data mode)
-            call nicas%blk(ig)%write_local_data(mpl,geom)
+            call nicas%blk(ig)%write_local_data(mpl)
          end do
       else
          ! Allocation
@@ -391,11 +392,8 @@ do iproc=1,mpl%nproc
          call nicas_tmp%receive(mpl,nam,geom,iproc)
 
          do ig=1,nam%ng
-            ! Copy global IDs
+            ! Copy global ID
             nicas_tmp%blk(ig)%ncid = ncid
-            do icmp=1,nicas%blk(ig)%ncmp
-               nicas_tmp%blk(ig)%cmp(icmp)%nc0a_id = nc0a_id
-            end do
 
             ! Write data (definition mode)
             call nicas_tmp%blk(ig)%write_local_def(mpl,nam,geom)
@@ -403,7 +401,7 @@ do iproc=1,mpl%nproc
 
          do ig=1,nam%ng
             ! Write data (data mode)
-            call nicas_tmp%blk(ig)%write_local_data(mpl,geom)
+            call nicas_tmp%blk(ig)%write_local_data(mpl)
          end do
 
          ! Release memory
@@ -414,7 +412,7 @@ do iproc=1,mpl%nproc
       call close_file(mpl,ncid)
    elseif (mpl%myproc==iproc) then
       ! Send data to task iprocio
-      write(mpl%info,'(a10,a,i6)') '','Send NICAS data to task ',iprocio
+      write(mpl%info,'(a10,a,i6,a,i6)') '','Send NICAS data of task ',iproc,' to task ',iprocio
       call mpl%flush
       call nicas%send(mpl,nam,geom,iprocio)
    end if
@@ -485,7 +483,7 @@ type(nam_type),intent(in) :: nam         !< Namelist
 type(geom_type),intent(in) :: geom       !< Geometry
 
 ! Local variable
-integer :: ncid,nc0_id
+integer :: ncid
 integer :: ig,icmp
 
 ! Set name
@@ -498,17 +496,17 @@ write(mpl%info,'(a7,a)') '','Write NICAS global data'
 call mpl%flush
 
 ! Open file
-ncid = create_file(mpl,nam%fname_nicas)
-
-! Define dimensions
-nc0_id = define_dim(mpl,ncid,'nc0',geom%nc0)
+if (nam%new_files) then
+   ! Create file
+   ncid = create_file(mpl,nam%fname_nicas)
+else
+   ! Open file
+   ncid = open_file(mpl,nam%fname_nicas,nowrite=.false.)
+end if
 
 do ig=1,nam%ng
-   ! Copy global IDs
+   ! Copy global ID
    nicas%blk(ig)%ncid = ncid
-   do icmp=1,nicas%blk(ig)%ncmp
-      nicas%blk(ig)%cmp(icmp)%nc0_id = nc0_id
-   end do
 
    ! Write global data (definition mode)
    call nicas%blk(ig)%write_global_def(mpl,nam,geom)
@@ -516,7 +514,7 @@ end do
 
 do ig=1,nam%ng
    ! Write global data (data mode)
-   call nicas%blk(ig)%write_global_data(mpl,geom)
+   call nicas%blk(ig)%write_global_data(mpl)
 end do
 
 ! Close file
@@ -549,7 +547,13 @@ integer :: ig
 @:probe_in()
 
 ! Open file
-ncid = create_file(mpl,trim(nam%fname_nicas)//'_grids',mpl%myproc)
+if (nam%new_files) then
+   ! Create file
+   ncid = create_file(mpl,trim(nam%fname_nicas)//'_grids',mpl%myproc,io_override=.true.)
+else
+   ! Open file
+   ncid = open_file(mpl,trim(nam%fname_nicas)//'_grids',mpl%myproc,nowrite=.false.,io_override=.true.)
+end if
 
 do ig=1,nam%ng
    ! Copy global ID
@@ -565,7 +569,7 @@ do ig=1,nam%ng
 end do
 
 ! Close file
-call close_file(mpl,ncid)
+call close_file(mpl,ncid,io_override=.true.)
 
 ! Probe out
 @:probe_out()
@@ -594,7 +598,13 @@ integer :: ig
 @:probe_in()
 
 ! Open file
-ncid = create_file(mpl,trim(nam%fname_nicas)//'_steps',mpl%myproc)
+if (nam%new_files) then
+   ! Create file
+   ncid = create_file(mpl,trim(nam%fname_nicas)//'_steps',mpl%myproc,io_override=.true.)
+else
+   ! Open file
+   ncid = open_file(mpl,trim(nam%fname_nicas)//'_steps',mpl%myproc,nowrite=.false.,io_override=.true.)
+end if
 
 do ig=1,nam%ng
    ! Copy global ID
@@ -610,7 +620,7 @@ do ig=1,nam%ng
 end do
 
 ! Close file
-call close_file(mpl,ncid)
+call close_file(mpl,ncid,io_override=.true.)
 
 ! Probe out
 @:probe_out()
@@ -811,13 +821,11 @@ if (nam%load_nicas_global) then
                ! Initialization
                nicas%blk(ig)%cmp(icmp)%rhs = mpl%msv%valr
 
-               ! Copy C matrix fields from min_lev to max_lev
+               ! Copy C matrix fields
                do il0=1,geom%nl0
-                  if ((nicas%blk(ig)%min_lev<=il0).and.(il0<=nicas%blk(ig)%max_lev)) then
-                     do ic0a=1,geom%nc0a
-                        if (geom%gmask_c0a(ic0a,il0)) nicas%blk(ig)%cmp(icmp)%rhs(ic0a,il0) = cmat%blk(ig)%rhs(ic0a,il0,icmp)
-                     end do
-                  end if
+                  do ic0a=1,geom%nc0a
+                    if (geom%gmask_c0a(ic0a,il0)) nicas%blk(ig)%cmp(icmp)%rhs(ic0a,il0) = cmat%blk(ig)%rhs(ic0a,il0,icmp)
+                  end do
                end do
             end do
          end do
@@ -1032,7 +1040,7 @@ allocate(cv%blk(cv%nb))
 
 ! CV block to NICAS group
 select case (nam%strategy)
-case ('univariate','duplicated and weighted')  
+case ('univariate','duplicated and weighted')
    do iv=1,nam%nv
       cv%b_to_g(iv) = nam%group_index(iv)
    end do

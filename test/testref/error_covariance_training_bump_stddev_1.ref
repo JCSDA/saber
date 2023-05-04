@@ -1,7 +1,5 @@
        Independent levels:  1[2]
-          Model grid size:              840
           Subset Sc0 size:              762
-          Number of duplicated points (halo):        78 (  9.29%)
           Min. / max. longitudes: -171.0 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
@@ -9,30 +7,30 @@
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-   Norm of stream_function:  0.12779158E+04
-   Norm of stream_function:  0.15581350E+04
-   Norm of stream_function:  0.20267012E+04
-   Norm of stream_function:  0.13727776E+04
-   Norm of stream_function:  0.19109088E+04
-   Norm of stream_function:  0.16019441E+04
-   Norm of stream_function:  0.13843335E+04
-   Norm of stream_function:  0.14638850E+04
-   Norm of stream_function:  0.17537823E+04
-   Norm of stream_function:  0.20649382E+04
-   Norm of stream_function:  0.17621387E+04
-   Norm of stream_function:  0.16248298E+04
-   Norm of stream_function:  0.18381443E+04
-   Norm of stream_function:  0.13853385E+04
-   Norm of stream_function:  0.15488526E+04
-   Norm of stream_function:  0.11671913E+04
-   Norm of stream_function:  0.15339175E+04
-   Norm of stream_function:  0.17179271E+04
-   Norm of stream_function:  0.17301581E+04
-   Norm of stream_function:  0.17209153E+04
+   Norm of stream_function:  0.34561197E+02
+   Norm of stream_function:  0.38368977E+02
+   Norm of stream_function:  0.40182008E+02
+   Norm of stream_function:  0.36148312E+02
+   Norm of stream_function:  0.41817368E+02
+   Norm of stream_function:  0.39704248E+02
+   Norm of stream_function:  0.36381749E+02
+   Norm of stream_function:  0.37671298E+02
+   Norm of stream_function:  0.39156296E+02
+   Norm of stream_function:  0.42039217E+02
+   Norm of stream_function:  0.35955386E+02
+   Norm of stream_function:  0.38909524E+02
+   Norm of stream_function:  0.41525757E+02
+   Norm of stream_function:  0.36584101E+02
+   Norm of stream_function:  0.39014237E+02
+   Norm of stream_function:  0.33989857E+02
+   Norm of stream_function:  0.38146099E+02
+   Norm of stream_function:  0.38723237E+02
+   Norm of stream_function:  0.40566253E+02
+   Norm of stream_function:  0.38611244E+02
                 Level   1: rhflt =   40000.00 km, rel. diff. =  0.38729E-02
                 Level   2: rhflt =   40000.00 km, rel. diff. =  0.13978E-01
              Level   1 ~>  0.10267E+01 /  0.10267E+01
              Level   2 ~>  0.10174E+01 /  0.10174E+01
 Norm of output parameter stddev - 1: 4.1446848101725315e+01
 Norm of output parameter var - 1: 4.3650316264863811e+01
-Norm of output parameter m4 - 1: 1.4599276989031367e+02
+Norm of output parameter m4 - 1: 1.4599276989031361e+02

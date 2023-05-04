@@ -1,7 +1,5 @@
        Independent levels:  1[2]
-          Model grid size:              840
           Subset Sc0 size:              762
-          Number of duplicated points (halo):        78 (  9.29%)
           Min. / max. longitudes: -171.0 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
@@ -9,26 +7,26 @@
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-   Norm of stream_function:  0.13878655E+04
-   Norm of velocity_potential:  0.12027918E+04
-   Norm of stream_function:  0.13324212E+04
-   Norm of velocity_potential:  0.17157958E+04
-   Norm of stream_function:  0.11859676E+04
-   Norm of velocity_potential:  0.14673791E+04
-   Norm of stream_function:  0.14856733E+04
-   Norm of velocity_potential:  0.13920313E+04
-   Norm of stream_function:  0.14404919E+04
-   Norm of velocity_potential:  0.12317442E+04
-   Norm of stream_function:  0.17993547E+04
-   Norm of velocity_potential:  0.14481101E+04
-   Norm of stream_function:  0.14321448E+04
-   Norm of velocity_potential:  0.13688638E+04
-   Norm of stream_function:  0.19346300E+04
-   Norm of velocity_potential:  0.14693092E+04
-   Norm of stream_function:  0.16218501E+04
-   Norm of velocity_potential:  0.21323876E+04
-   Norm of stream_function:  0.12732529E+04
-   Norm of velocity_potential:  0.14970526E+04
+   Norm of stream_function:  0.36038244E+02
+   Norm of velocity_potential:  0.32986300E+02
+   Norm of stream_function:  0.35578720E+02
+   Norm of velocity_potential:  0.37714142E+02
+   Norm of stream_function:  0.34115963E+02
+   Norm of velocity_potential:  0.37112091E+02
+   Norm of stream_function:  0.36393358E+02
+   Norm of velocity_potential:  0.36016428E+02
+   Norm of stream_function:  0.35321517E+02
+   Norm of velocity_potential:  0.34032956E+02
+   Norm of stream_function:  0.39553933E+02
+   Norm of velocity_potential:  0.36888808E+02
+   Norm of stream_function:  0.35721337E+02
+   Norm of velocity_potential:  0.35210041E+02
+   Norm of stream_function:  0.41403775E+02
+   Norm of velocity_potential:  0.37125817E+02
+   Norm of stream_function:  0.39347348E+02
+   Norm of velocity_potential:  0.41223733E+02
+   Norm of stream_function:  0.35248512E+02
+   Norm of velocity_potential:  0.38399163E+02
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
           Decimate full grid, at least      500 points required,     762 valid points found

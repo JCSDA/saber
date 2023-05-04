@@ -13,7 +13,6 @@ use tools_const, only: zero,one,rad2deg,reqkm,req
 use tools_fit, only: tensor_d2r
 use tools_func, only: convert_l2i,convert_i2l,zss_sum,zss_maxval
 use tools_kinds, only: kind_real,huge_real
-use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,put_att,get_att,define_dim,inquire_var,define_var,close_file
 use type_cmat_blk, only: cmat_blk_type
 use type_diag, only: diag_type
 use type_geom, only: geom_type

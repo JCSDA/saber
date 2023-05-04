@@ -32,20 +32,17 @@ background error:
       io:
         data directory: testdata
         files prefix: dirac_bump_7/_MPI_-_OMP_
+        overriding nicas file: error_covariance_training_bump_hdiag-nicas_4/_MPI_-_OMP__nicas
       drivers:
         multivariate strategy: univariate
         read local nicas: true
       grids:
-      - io:
-          overriding nicas file: error_covariance_training_bump_hdiag-nicas_4/_MPI_-_OMP__3D_nicas
-        model:
+      - model:
           variables:
           - stream_function
           - velocity_potential
           - air_temperature
-      - io:
-          overriding nicas file: error_covariance_training_bump_hdiag-nicas_4/_MPI_-_OMP__2D_nicas
-        model:
+      - model:
           variables:
           - surface_pressure
   saber outer blocks:
