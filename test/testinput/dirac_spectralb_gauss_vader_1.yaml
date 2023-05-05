@@ -1,3 +1,5 @@
+# met office covariance on gaussian mesh without super saber blocks
+# should give same dirac test results as dirac_spectralb_gauss_vader_2
 geometry:
   function space: StructuredColumns
   grid:

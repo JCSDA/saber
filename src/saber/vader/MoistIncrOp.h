@@ -20,6 +20,7 @@
 
 #include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberOuterBlockBase.h"
+#include "saber/vader/MoistIncrOpParameters.h"
 
 namespace oops {
   class Variables;
@@ -28,27 +29,11 @@ namespace oops {
 namespace saber {
 namespace vader {
 
-
-// -----------------------------------------------------------------------------
-
-class MoistIncrOpParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(MoistIncrOpParameters, SaberBlockParametersBase)
- public:
-  oops::RequiredParameter<std::string> svp_file{"saturation vapour pressure file", this};
-  oops::RequiredParameter<std::string> mio_file{"moisture incrementing operator file", this};
-  oops::Variables mandatoryActiveVars() const override {return oops::Variables({
-    "air_temperature",
-    "mass_content_of_cloud_ice_in_atmosphere_layer",
-    "mass_content_of_cloud_liquid_water_in_atmosphere_layer",
-    "qt",
-    "specific_humidity"});}
-};
-
 // -----------------------------------------------------------------------------
 
 class MoistIncrOp : public SaberOuterBlockBase {
  public:
-  static const std::string classname() {return "saber::vader::AirTemperature";}
+  static const std::string classname() {return "saber::vader::MoistIncrOp";}
 
   typedef MoistIncrOpParameters Parameters_;
 

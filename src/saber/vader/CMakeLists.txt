@@ -28,10 +28,13 @@ if ( oops_FOUND AND vader_FOUND )
     HydrostaticExner.h
     MoistIncrOp.cc
     MoistIncrOp.h
+    MoistIncrOpParameters.h
     MoistureControl.cc
     MoistureControl.h
     movader_covstats_interface.F90
     movader_covstats_interface.h
+    SuperMoistIncrOp.cc
+    SuperMoistIncrOp.h
     PressureParameters.h
     )
 endif()

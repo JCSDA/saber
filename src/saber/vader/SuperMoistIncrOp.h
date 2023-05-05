@@ -18,16 +18,13 @@
 
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
-#include "oops/util/parameters/Parameter.h"
-#include "oops/util/parameters/Parameters.h"
-#include "oops/util/parameters/RequiredParameter.h"
 
 #include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberOuterBlockBase.h"
 
-#include "saber/spectralb/GaussUVToGP.h"
-#include "saber/vader/GpToHp.h"
-#include "saber/vader/PressureParameters.h"
+#include "saber/vader/AirTemperature.h"
+#include "saber/vader/MoistIncrOp.h"
+#include "saber/vader/MoistIncrOpParameters.h"
 
 namespace oops {
   class Variables;
@@ -35,33 +32,32 @@ namespace oops {
 
 namespace saber {
 namespace vader {
-  class GpToHp;
-}
-
-namespace spectralb {
-  class GaussUVToGP;
+  class AirTemperature;
+  class MoistIncrOp;
 
 // -----------------------------------------------------------------------------
-/// \brief a saber block that creates hydrostatic pressure using
-///        horizontal winds and unbalanced pressure. The "hydrostatic" part is
-///        implied and not enforced in this saber block.
-///        Note also that this saber block expects the outer and inner functionspaces
-///        to be on the same Gaussian mesh.
-///        To do this it uses GaussUVToGp and GpToHp saber blocks
-class HydrostaticPressure : public SaberOuterBlockBase {
+/// \brief a super saber block that splits total water ("qt") into
+///        specific_humidity, mass_content_of_cloud_ice_in_atmosphere_layer
+///        and mass_content_of_cloud_liquid_water_in_atmosphere_layer. To do this
+///        separation, the MoistIncrOp saber block requires the air_temperature increment.
+///        The calibration also requires the air_temperature increment as input.
+///        To make sure that the order of saber blocks is unaffected, this super
+///        saber block has been created that uses the MoistIncrOp and AirTemperature
+///        saber blocks.
+class SuperMoistIncrOp : public SaberOuterBlockBase {
  public:
-  static const std::string classname() {return "saber::vader::HydrostaticPressure";}
+  static const std::string classname() {return "saber::vader::SuperMoistIncrOp";}
 
-  typedef HydrostaticPressureParameters Parameters_;
+  typedef SuperMoistIncrOpParameters Parameters_;
 
-  HydrostaticPressure(const oops::GeometryData &,
+  SuperMoistIncrOp(const oops::GeometryData &,
                    const std::vector<size_t> &,
                    const oops::Variables &,
                    const eckit::Configuration &,
                    const Parameters_ &,
                    const atlas::FieldSet &,
                    const atlas::FieldSet &);
-  virtual ~HydrostaticPressure();
+  virtual ~SuperMoistIncrOp();
 
   const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}
   const oops::Variables & innerVars() const override {return innerVars_;}
@@ -75,13 +71,11 @@ class HydrostaticPressure : public SaberOuterBlockBase {
   const oops::GeometryData & innerGeometryData_;
   oops::Variables innerVars_;
   oops::Variables activeVars_;
-  /// Gaussian (outer) functionspace
-  const atlas::functionspace::StructuredColumns gaussFunctionSpace_;
-  std::unique_ptr<saber::vader::GpToHp> gptohp_;
-  std::unique_ptr<GaussUVToGP> gaussuvtogp_;
+  std::unique_ptr<AirTemperature> exnerThetaToTemp_;
+  std::unique_ptr<MoistIncrOp> MIO_;
 };
 
 // -----------------------------------------------------------------------------
 
-}  // namespace spectralb
+}  // namespace vader
 }  // namespace saber

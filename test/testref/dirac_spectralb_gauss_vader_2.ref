@@ -64,12 +64,12 @@ Fields:
   virtual_potential_temperature: 0.0000000000000000e+00
 Adjoint test for block mo_dry_air_density passed
 skipping inverse test
-Adjoint test for block mo_moistincrop passed
-skipping inverse test
-Adjoint test for block mo_air_temperature passed
-skipping inverse test
+Adjoint test for block mo_super_mio passed
+Inner inverse test passed for block mo_super_mio passed: U Uinv (U x) == (U x)
+Outer inverse test for block mo_super_mio passed: Uinv U (Uinv x) == (Uinv x)
 Adjoint test for block mo_hydrostatic_pressure_hydrostatic_exner_to_pressure_exner passed
-skipping inverse test
+Inner inverse test passed for block mo_hydrostatic_pressure_hydrostatic_exner_to_pressure_exner passed: U Uinv (U x) == (U x)
+Outer inverse test for block mo_hydrostatic_pressure_hydrostatic_exner_to_pressure_exner passed: Uinv U (Uinv x) == (Uinv x)
 Adjoint test for block mo_moisture_control passed
 Inner inverse test passed for block mo_moisture_control passed: U Uinv (U x) == (U x)
 Outer inverse test for block mo_moisture_control passed: Uinv U (Uinv x) == (Uinv x)

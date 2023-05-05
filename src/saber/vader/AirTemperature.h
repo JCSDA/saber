@@ -21,6 +21,7 @@
 
 #include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberOuterBlockBase.h"
+#include "saber/vader/MoistIncrOpParameters.h"
 
 namespace oops {
   class Variables;
@@ -28,17 +29,6 @@ namespace oops {
 
 namespace saber {
 namespace vader {
-
-// -----------------------------------------------------------------------------
-
-class AirTemperatureParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(AirTemperatureParameters, SaberBlockParametersBase)
- public:
-  oops::Variables mandatoryActiveVars() const override {return oops::Variables({
-    "air_temperature",
-    "exner_levels_minus_one",
-    "potential_temperature"});}
-};
 
 // -----------------------------------------------------------------------------
 

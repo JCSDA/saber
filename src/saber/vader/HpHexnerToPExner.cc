@@ -115,6 +115,13 @@ void HpHexnerToPExner::leftInverseMultiply(atlas::FieldSet & fset) const {
   // Retrieve hydrostatic Exner from Exner. Need to extrapolate top level
   auto exner_view = atlas::array::make_view<const double, 2>(fset["exner_levels_minus_one"]);
   auto hexner_view = atlas::array::make_view<double, 2>(fset["hydrostatic_exner_levels"]);
+  auto airPressureView =
+    atlas::array::make_view<const double, 2>(fset["air_pressure_levels"]);
+  auto hydrostaticPressureView =
+    atlas::array::make_view<double, 2>(fset["hydrostatic_pressure_levels"]);
+
+  hydrostaticPressureView.assign(airPressureView);
+
   const auto levels = fset["hydrostatic_exner_levels"].levels();
   for (atlas::idx_t jnode = 0; jnode < hexner_view.shape(0); jnode++) {
     for (atlas::idx_t jlev = 0; jlev < levels - 1; jlev++) {

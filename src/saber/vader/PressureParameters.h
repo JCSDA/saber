@@ -59,11 +59,8 @@ class GpToHpParameters : public SaberBlockParametersBase {
 class HydrostaticPressureParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(HydrostaticPressureParameters, SaberBlockParametersBase)
  public:
-  oops::OptionalParameter<std::string> modelGridName{"model grid name", this};
-  oops::OptionalParameter<std::string> gaussState{"gauss state", this};
-  oops::RequiredParameter<std::string> svp_file{"saturation vapour pressure file", this};
-  oops::RequiredParameter<GpToHpCovarianceParameters>
-    gptohpcovarianceparams{"covariance data", this};
+  GaussUVToGPParameters gaussUVToGp{this};
+  GpToHpParameters gpToHp{this};
   oops::Variables mandatoryActiveVars() const override {return oops::Variables({
     "eastward_wind",
     "hydrostatic_pressure_levels",
