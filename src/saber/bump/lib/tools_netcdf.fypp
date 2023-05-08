@@ -508,9 +508,9 @@ function netcdf_define_grp(mpl,ncid,grpname,io_override) result(grpid)
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl              !< MPI data
-integer,intent(in) :: ncid                       !< File ID
-character(len=*),intent(in) :: grpname           !< Group name
+type(mpl_type),intent(inout) :: mpl        !< MPI data
+integer,intent(in) :: ncid                 !< File ID
+character(len=*),intent(in) :: grpname     !< Group name
 logical,intent(in),optional :: io_override !< Override mpl%pioproc
 
 ! Returned variable
@@ -555,21 +555,22 @@ end function netcdf_define_grp
 ! Function: netcdf_inquire_grp
 !> Inquire group ID
 !----------------------------------------------------------------------
-function netcdf_inquire_grp(mpl,ncid,grpname,io_override) result(grpid)
+function netcdf_inquire_grp(mpl,ncid,grpname,defid,io_override) result(grpid)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl              !< MPI data
-integer,intent(in) :: ncid                       !< File ID
-character(len=*),intent(in) :: grpname           !< Group name
+type(mpl_type),intent(inout) :: mpl        !< MPI data
+integer,intent(in) :: ncid                 !< File ID
+character(len=*),intent(in) :: grpname     !< Group name
+integer,intent(in),optional :: defid       !< Default ID
 logical,intent(in),optional :: io_override !< Override mpl%pioproc
 
 ! Returned variable
 integer :: grpid
 
 ! Local variable
-integer :: rid
+integer :: rid,info
 logical :: lio
 
 ! Set name
@@ -590,11 +591,20 @@ if (lio) then
    rid = registry%get_root_id(mpl,ncid)
    
    if (mpl%msv%isnot(rid)) then
-      ! Define group
-      call strerror(mpl,'${subr}$',ncid,nf90_inq_grp_ncid(ncid,grpname,grpid),'group '//trim(grpname))
-   
-      ! Save ID in registry
-      if (mpl%msv%isnot(grpid)) call registry%save(mpl,ncid,grpid,grpname)
+      ! Get group ID
+      info = nf90_inq_grp_ncid(ncid,grpname,grpid)
+      if (info/=nf90_noerr) then
+         if (present(defid)) then
+            ! Default ID
+            grpid = defid
+         else
+            ! Missing group, no default ID
+            call strerror(mpl,'${subr}$',ncid,info,'group '//trim(grpname))
+         end if
+      else
+         ! Save ID in registry
+         if (mpl%msv%isnot(grpid)) call registry%save(mpl,ncid,grpid,grpname)
+      end if
    end if
 end if
 
@@ -613,11 +623,11 @@ subroutine netcdf_put_att_${dtype}$(mpl,ncid,varid,attname,att,io_override)
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl    !< MPI data
-integer,intent(in) :: ncid             !< File ID
-integer,intent(in) :: varid            !< Variable ID
-character(len=*),intent(in) :: attname !< Attribute name
-${ftype[dtype]}$,intent(in) :: att     !< Attribute
+type(mpl_type),intent(inout) :: mpl        !< MPI data
+integer,intent(in) :: ncid                 !< File ID
+integer,intent(in) :: varid                !< Variable ID
+character(len=*),intent(in) :: attname     !< Attribute name
+${ftype[dtype]}$,intent(in) :: att         !< Attribute
 logical,intent(in),optional :: io_override !< Override mpl%pioproc
 
 ! Local variable
@@ -679,7 +689,7 @@ integer,intent(in) :: varid                    !< Variable ID
 character(len=*),intent(in) :: attname         !< Attribute name
 ${ftype[dtype]}$,intent(out) :: att            !< Attribute
 ${ftype[dtype]}$,intent(in),optional :: defval !< Default value
-logical,intent(in),optional :: io_override !< Override mpl%pioproc
+logical,intent(in),optional :: io_override     !< Override mpl%pioproc
 
 ! Local variable
 integer :: rid,lvarid,info
@@ -748,10 +758,10 @@ function netcdf_define_dim(mpl,ncid,dimname,dimsize,io_override) result(dimid)
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl    !< MPI data
-integer,intent(in) :: ncid             !< File ID
-character(len=*),intent(in) :: dimname !< Dimension name
-integer,intent(in) :: dimsize          !< Dimension size
+type(mpl_type),intent(inout) :: mpl        !< MPI data
+integer,intent(in) :: ncid                 !< File ID
+character(len=*),intent(in) :: dimname     !< Dimension name
+integer,intent(in) :: dimsize              !< Dimension size
 logical,intent(in),optional :: io_override !< Override mpl%pioproc
 
 ! Returned variable
@@ -796,9 +806,9 @@ function netcdf_inquire_dim(mpl,ncid,dimname,io_override) result(dimid)
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl    !< MPI data
-integer,intent(in) :: ncid             !< File ID
-character(len=*),intent(in) :: dimname !< Dimension name
+type(mpl_type),intent(inout) :: mpl        !< MPI data
+integer,intent(in) :: ncid                 !< File ID
+character(len=*),intent(in) :: dimname     !< Dimension name
 logical,intent(in),optional :: io_override !< Override mpl%pioproc
 
 ! Returned variable
@@ -851,10 +861,10 @@ function netcdf_inquire_dim_size(mpl,ncid,dimname,default,io_override) result(di
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl    !< MPI data
-integer,intent(in) :: ncid             !< File ID
-character(len=*),intent(in) :: dimname !< Dimension name
-integer,intent(in),optional :: default !< Default value
+type(mpl_type),intent(inout) :: mpl        !< MPI data
+integer,intent(in) :: ncid                 !< File ID
+character(len=*),intent(in) :: dimname     !< Dimension name
+integer,intent(in),optional :: default     !< Default value
 logical,intent(in),optional :: io_override !< Override mpl%pioproc
 
 ! Returned variable
@@ -906,10 +916,10 @@ function netcdf_check_dim_size(mpl,ncid,dimname,dimsize,io_override) result(valu
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl    !< MPI data
-integer,intent(in) :: ncid             !< File ID
-character(len=*),intent(in) :: dimname !< Dimension name
-integer,intent(in) :: dimsize          !< Expected dimension size
+type(mpl_type),intent(inout) :: mpl        !< MPI data
+integer,intent(in) :: ncid                 !< File ID
+character(len=*),intent(in) :: dimname     !< Dimension name
+integer,intent(in) :: dimsize              !< Expected dimension size
 logical,intent(in),optional :: io_override !< Override mpl%pioproc
 
 ! Returned value
@@ -965,7 +975,7 @@ character(len=*),intent(in) :: varname           !< Variable name
 character(len=*),intent(in) :: varkind           !< Variable kind
 integer,intent(in) :: varshape(:)                !< Variable shape
 character(len=*),intent(in),optional :: unitname !< Unit name
-logical,intent(in),optional :: io_override !< Override mpl%pioproc
+logical,intent(in),optional :: io_override       !< Override mpl%pioproc
 
 ! Returned variable
 integer :: varid
@@ -1027,9 +1037,9 @@ function netcdf_inquire_var(mpl,ncid,varname,io_override) result(varid)
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl    !< MPI data
-integer,intent(in) :: ncid             !< File ID
-character(len=*),intent(in) :: varname !< Variable name
+type(mpl_type),intent(inout) :: mpl        !< MPI data
+integer,intent(in) :: ncid                 !< File ID
+character(len=*),intent(in) :: varname     !< Variable name
 logical,intent(in),optional :: io_override !< Override mpl%pioproc
 
 ! Returned variable
@@ -1143,7 +1153,7 @@ integer,intent(in) :: varid                       !< Variable ID
 ${ftype[dtype]}$,intent(in) :: var(${dim[rank]}$) !< Variable
 integer,intent(in),optional :: varstart(:)        !< Start
 integer,intent(in),optional :: varcount(:)        !< Count
-logical,intent(in),optional :: io_override !< Override mpl%pioproc
+logical,intent(in),optional :: io_override        !< Override mpl%pioproc
 
 ! Local variable
 integer :: rid
@@ -1281,7 +1291,7 @@ integer,intent(in) :: varid                        !< Variable ID
 ${ftype[dtype]}$,intent(out) :: var(${dim[rank]}$) !< Variable
 integer,intent(in),optional :: varstart(:)         !< Start
 integer,intent(in),optional :: varcount(:)         !< Count
-logical,intent(in),optional :: io_override !< Override mpl%pioproc
+logical,intent(in),optional :: io_override         !< Override mpl%pioproc
 
 ! Local variable
 integer :: rid
@@ -1350,8 +1360,8 @@ subroutine netcdf_close_file(mpl,ncid,io_override)
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl !< MPI data
-integer,intent(in) :: ncid          !< File ID
+type(mpl_type),intent(inout) :: mpl        !< MPI data
+integer,intent(in) :: ncid                 !< File ID
 logical,intent(in),optional :: io_override !< Override mpl%pioproc
 
 ! Local variables

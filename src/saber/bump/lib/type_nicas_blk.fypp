@@ -168,6 +168,7 @@ type(geom_type),intent(in) :: geom               !< Geometry
 ! Local variables
 integer :: icmp
 character(len=1024) :: blkname,cmpname
+character(len=1024) :: message
 
 ! Set name
 @:set_name(nicas_blk_read_local)
@@ -217,7 +218,14 @@ do icmp=1,nicas_blk%ncmp
    else
       write(cmpname,'(a,i1)') 'cmp_',icmp
    end if
-   nicas_blk%cmp(icmp)%cmpid = inquire_grp(mpl,nicas_blk%blkid,cmpname)
+   nicas_blk%cmp(icmp)%cmpid = inquire_grp(mpl,nicas_blk%blkid,cmpname,defid=nicas_blk%blkid)
+   if (nicas_blk%cmp(icmp)%cmpid==nicas_blk%blkid) then
+      ! Temporary hack to allow reading of the old files without component groups
+      ! TODO(AS): remove when all files are updated, always inquire_grp(...,cmpname)
+      write(message,'(a,a,a)') trim(cmpname), ' group is not available in the file.', &
+ & 'Switch to using new file format with component groups.'
+      call mpl%warning('${subr}$',message)
+   end if
 
    ! Component work
    call nicas_blk%cmp(icmp)%read_local(mpl,geom)
