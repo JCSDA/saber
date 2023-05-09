@@ -618,6 +618,12 @@ void buildOuterBlocks(const oops::Geometry<MODEL> & geom,
       // Apply left inverse
       saberBlockChain.lastOuterBlock().leftInverseMultiply(fsetXbInv);
       saberBlockChain.lastOuterBlock().leftInverseMultiply(fsetFgInv);
+
+      // Copy the fields back
+      for (const auto & var : saberOuterBlockParams.inverseVars.value().variables()) {
+        fsetXb.field(var) = fsetXbInv.field(var);
+        fsetFg.field(var) = fsetFgInv.field(var);
+      }
     }
 
     // Adjoint test
