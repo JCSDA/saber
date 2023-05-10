@@ -41,7 +41,8 @@ namespace saber {
 
 class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
  public:
-  SaberOuterBlockBase() {}
+  explicit SaberOuterBlockBase(const SaberBlockParametersBase & params)
+    : blockName_(params.saberBlockName), skipInverse_(params.skipInverse) {}
   virtual ~SaberOuterBlockBase() {}
 
   // Accessor
@@ -62,7 +63,7 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
 
   // Block inverse multiplication for calibration (can be an approximate inverse)
   virtual void leftInverseMultiply(atlas::FieldSet &) const
-    {ABORT("leftInverseMultiply not implemented yet for the block " + this->blockName());}
+    {ABORT("leftInverseMultiply not implemented yet for the block " + blockName_);}
 
   // Setup / calibration methods
 
@@ -127,14 +128,8 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
 
   // Non-virtual methods
 
-  // Set block name
-  void setBlockName(const std::string & blockName) {blockName_ = blockName;}
-
   // Return block name
   std::string blockName() const {return blockName_;}
-
-  // Set flag to skip inverse application
-  void setSkipInverse(const bool skipInverse) {skipInverse_ = skipInverse;}
 
   // Return flag to skip inverse application
   bool skipInverse() const {return skipInverse_;}

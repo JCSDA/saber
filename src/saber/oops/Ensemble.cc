@@ -35,6 +35,7 @@ Ensemble::Ensemble(const oops::GeometryData & geometryData,
                    const atlas::FieldSet & fg,
                    const util::DateTime & validTimeOfXbFg,
                    const size_t & timeRank) :
+  SaberCentralBlockBase(params),
   timeRank_(timeRank), vars_(activeVars), comm_(geometryData.comm()) {
   oops::Log::trace() << classname() << "::Ensemble starting" << std::endl;
   oops::Log::trace() << classname() << "::Ensemble done" << std::endl;

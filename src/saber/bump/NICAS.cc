@@ -33,7 +33,7 @@ NICAS::NICAS(const oops::GeometryData & geometryData,
              const atlas::FieldSet & fg,
              const util::DateTime & validTimeOfXbFg,
              const size_t & timeRank)
-  : bumpParams_(),
+  : SaberCentralBlockBase(params), bumpParams_(),
     bump_(),
     memberIndex_(0)
 {

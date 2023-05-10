@@ -45,7 +45,8 @@ Covariance::Covariance(const oops::GeometryData & geometryData,
                        const atlas::FieldSet & fg,
                        const util::DateTime & validTimeOfXbFg,
                        const size_t & timeRank)
-  : params_(params), variables_(params.activeVars.value().get_value_or(centralVars).variables()),
+  : SaberCentralBlockBase(params),
+    params_(params), variables_(params.activeVars.value().get_value_or(centralVars).variables()),
     gsiGridFuncSpace_(geometryData.functionSpace()), comm_(&geometryData.comm()),
     validTimeOfXbFg_(validTimeOfXbFg)
 {

@@ -44,7 +44,8 @@ namespace saber {
 
 class SaberCentralBlockBase : public util::Printable, private boost::noncopyable {
  public:
-  SaberCentralBlockBase() {}
+  explicit SaberCentralBlockBase(const SaberBlockParametersBase & params)
+    : blockName_(params.saberBlockName) {}
   virtual ~SaberCentralBlockBase() {}
 
   // Application methods
@@ -94,9 +95,6 @@ class SaberCentralBlockBase : public util::Printable, private boost::noncopyable
 
   // Non-virtual methods
 
-  // Set block name
-  void setBlockName(const std::string & blockName) {blockName_ = blockName;}
-
   // Return block name
   std::string blockName() const {return blockName_;}
 
@@ -121,7 +119,6 @@ class SaberCentralBlockBase : public util::Printable, private boost::noncopyable
 
  private:
   std::string blockName_;
-  bool skipInverse_;
   virtual void print(std::ostream &) const = 0;
 };
 

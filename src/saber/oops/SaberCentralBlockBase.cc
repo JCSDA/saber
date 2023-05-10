@@ -66,7 +66,6 @@ SaberCentralBlockBase * SaberCentralBlockFactory::create(
   }
   SaberCentralBlockBase * ptr = jsb->second->make(geometryData, variableSizes, vars, covarConf,
     params, xb, fg, validTime, timeRank);
-  ptr->setBlockName(params.saberBlockName.value());
   oops::Log::trace() << "SaberCentralBlockBase::create done" << std::endl;
   return ptr;
 }

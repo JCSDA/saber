@@ -95,11 +95,12 @@ class Hybrid : public SaberCentralBlockBase {
          const std::vector<size_t> &,
          const oops::Variables &,
          const eckit::Configuration &,
-         const Parameters_ &,
+         const Parameters_ & params,
          const atlas::FieldSet &,
          const atlas::FieldSet &,
          const util::DateTime &,
          const size_t &)
+      : SaberCentralBlockBase(params)
     {ABORT("the Hybrid block is a fake block, it should not be constructed");}
 
   virtual ~Hybrid() {}

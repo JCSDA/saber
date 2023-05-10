@@ -47,7 +47,8 @@ MoistureControl::MoistureControl(const oops::GeometryData & outerGeometryData,
                                  const atlas::FieldSet & xb,
                                  const atlas::FieldSet & fg,
                                  const util::DateTime & validTimeOfXbFg)
-  : innerGeometryData_(outerGeometryData), innerVars_(outerVars), augmentedStateFieldSet_()
+  : SaberOuterBlockBase(params),
+    innerGeometryData_(outerGeometryData), innerVars_(outerVars), augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::MoistureControl starting" << std::endl;
 

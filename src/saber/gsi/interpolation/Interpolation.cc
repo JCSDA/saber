@@ -39,7 +39,7 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
                              const atlas::FieldSet & xb,
                              const atlas::FieldSet & fg,
                              const util::DateTime & validTimeOfXbFg)
-  : innerVars_(outerVars)
+  : SaberOuterBlockBase(params), innerVars_(outerVars)
 {
   oops::Log::trace() << classname() << "::Interpolation starting" << std::endl;
   util::Timer timer(classname(), "Interpolation");

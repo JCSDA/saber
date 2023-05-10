@@ -27,7 +27,8 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
                              const atlas::FieldSet & xb,
                              const atlas::FieldSet & fg,
                              const util::DateTime & validTimeOfXbFg)
-  : params_(params), outerGeomData_(outerGeometryData), innerVars_(outerVars)
+  : SaberOuterBlockBase(params),
+    params_(params), outerGeomData_(outerGeometryData), innerVars_(outerVars)
 {
   oops::Log::trace() << classname() << "::Interpolation starting" << std::endl;
 

@@ -28,6 +28,7 @@ SpectralToSpectral::SpectralToSpectral(const oops::GeometryData & outerGeometryD
                                        const atlas::FieldSet & xb,
                                        const atlas::FieldSet & fg,
                                        const util::DateTime & validTimeOfXbFg) :
+    SaberOuterBlockBase(params),
     innerFunctionSpace_(2 * params.inputTruncation.value() - 1),
     outerFunctionSpace_(outerGeometryData.functionSpace()),
     innerGeometryData_(innerFunctionSpace_,

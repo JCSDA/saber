@@ -39,7 +39,7 @@ SpectralCovariance::SpectralCovariance(const oops::GeometryData & geometryData,
                                        const atlas::FieldSet & fg,
                                        const util::DateTime & validTimeOfXbFg,
                                        const size_t & timeRank)
-  : params_(params),
+  : SaberCentralBlockBase(params), params_(params),
     variableSizes_(variableSizes),
     activeVars_(params.activeVars.value().get_value_or(centralVars)),
     cs_(),

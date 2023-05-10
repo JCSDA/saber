@@ -42,7 +42,8 @@ HydrostaticPressure::HydrostaticPressure(const oops::GeometryData & outerGeometr
                                    const atlas::FieldSet & xb,
                                    const atlas::FieldSet & fg,
                                    const util::DateTime & validTimeOfXbFg)
-  : innerGeometryData_(outerGeometryData), innerVars_(outerVars),
+  : SaberOuterBlockBase(params),
+    innerGeometryData_(outerGeometryData), innerVars_(outerVars),
     activeVars_(params.activeVars.value().get_value_or(outerVars)),
     gaussFunctionSpace_(outerGeometryData.functionSpace()),
     gptohp_(std::make_unique<saber::vader::GpToHp>(outerGeometryData,

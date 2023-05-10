@@ -30,6 +30,7 @@ ID::ID(const oops::GeometryData & geometryData,
        const atlas::FieldSet & fg,
        const util::DateTime & validTimeOfXbFg,
        const size_t & timeRank) :
+    SaberCentralBlockBase(params),
     geometryData_(geometryData),
     activeVariableSizes_(activeVariableSizes),
     activeVars_(activeVars),

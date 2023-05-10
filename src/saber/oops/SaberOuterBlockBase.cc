@@ -65,8 +65,6 @@ SaberOuterBlockBase * SaberOuterBlockFactory::create(
   }
   SaberOuterBlockBase * ptr = jsb->second->make(outerGeometryData, outerVariableSizes,
                                                 outerVars, covarConfig, params, xb, fg, validTime);
-  ptr->setBlockName(params.saberBlockName.value());
-  ptr->setSkipInverse(params.skipInverse.value());
   oops::Log::trace() << "SaberOuterBlockBase::create done" << std::endl;
   return ptr;
 }
