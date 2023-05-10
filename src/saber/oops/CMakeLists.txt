@@ -12,7 +12,7 @@ if( oops_FOUND )
     # SABER block chain
     SaberBlockChain.cc
     SaberBlockChain.h
-    
+
     # SABER central block base
     SaberCentralBlockBase.cc
     SaberCentralBlockBase.h

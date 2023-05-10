@@ -155,10 +155,9 @@ void VerticalBalance::write() const {
 std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> VerticalBalance::fieldsToWrite()
   const {
   oops::Log::trace() << classname() << "::fieldsToWrite starting" << std::endl;
-
-  // Return configuration/fieldset pairs
   std::vector<eckit::LocalConfiguration> outputModelFilesConf
     = bumpParams_.outputModelFilesConf.value().get_value_or({});
+  oops::Log::trace() << classname() << "::fieldsToWrite done" << std::endl;
   return bump_->fieldsToWrite(outputModelFilesConf);
 }
 

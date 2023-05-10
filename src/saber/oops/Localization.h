@@ -46,16 +46,16 @@ class Localization : public oops::LocalizationBase<MODEL> {
 
  private:
   void print(std::ostream &) const override;
-  std::unique_ptr<SaberBlockChain> locBlockChain_;
+  std::unique_ptr<SaberBlockChain> loc_;
 };
 
-// =============================================================================
+// -----------------------------------------------------------------------------
 
 template<typename MODEL>
 Localization<MODEL>::Localization(const Geometry_ & geom,
                                   const oops::Variables & incVars,
                                   const eckit::Configuration & conf)
-  : locBlockChain_()
+  : loc_()
 {
   oops::Log::trace() << "Localization::Localization starting" << std::endl;
 
@@ -67,8 +67,12 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
   const State_ fg(geom, incVars, dummyTime);
 
   // Initialize localization blockchain
-  locBlockChain_ = localizationBlockChain<MODEL>(geom, incVars, xb.fieldSet(), fg.fieldSet(),
-                                                 xb.validTime(), conf);
+  loc_ = ensembleBlockChain<MODEL>(geom,
+                                   incVars,
+                                   xb.fieldSet(),
+                                   fg.fieldSet(),
+                                   xb.validTime(),
+                                   conf);
 
   oops::Log::trace() << "Localization:Localization done" << std::endl;
 }
@@ -87,7 +91,7 @@ void Localization<MODEL>::randomize(Increment_ & dx) const {
   oops::Log::trace() << "Localization:randomize starting" << std::endl;
 
   // SABER block chain randomization
-  locBlockChain_->randomize(dx.fieldSet());
+  loc_->randomize(dx.fieldSet());
 
   // ATLAS fieldset to Increment_
   dx.synchronizeFields();
@@ -102,7 +106,7 @@ void Localization<MODEL>::multiply(Increment_ & dx) const {
   oops::Log::trace() << "Localization:multiply starting" << std::endl;
 
   // SABER block chain multiplication
-  locBlockChain_->multiply(dx.fieldSet());
+  loc_->multiply(dx.fieldSet());
 
   // ATLAS fieldset to Increment_
   dx.synchronizeFields();

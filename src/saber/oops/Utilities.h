@@ -47,6 +47,9 @@ eckit::LocalConfiguration readEnsemble(const oops::Geometry<MODEL> & geom,
                                        std::vector<atlas::FieldSet> & fsetEns) {
   oops::Log::trace() << "readEnsemble starting" << std::endl;
 
+  // Prepare ensemble configuration
+  oops::Log::info() << "Info     : Prepare ensemble configuration" << std::endl;
+
   // Get number of MPI tasks and OpenMP threads
   std::string mpi(std::to_string(geom.getComm().size()));
   std::string omp("1");
@@ -118,6 +121,7 @@ eckit::LocalConfiguration readEnsemble(const oops::Geometry<MODEL> & geom,
 
   if (!iterativeEnsembleLoading) {
     // Full ensemble loading
+    oops::Log::info() << "Info     : Read full ensemble" << std::endl;
 
     // Ensemble pointer
     std::unique_ptr<oops::IncrementEnsemble<MODEL>> ensemble;
@@ -166,6 +170,8 @@ void readHybridWeight(const oops::Geometry<MODEL> & geom,
                       atlas::FieldSet & fset) {
   oops::Log::trace() << "readHybridWeight starting" << std::endl;
 
+  oops::Log::info() << "Info     : Read hybrid weight" << std::endl;
+
   // Get number of MPI tasks and OpenMP threads
   std::string mpi(std::to_string(geom.getComm().size()));
   std::string omp("1");
@@ -205,6 +211,8 @@ void readEnsembleMember(const oops::Geometry<MODEL> & geom,
                         const size_t & ie,
                         atlas::FieldSet & fset) {
   oops::Log::trace() << "readEnsembleMember starting" << std::endl;
+
+  oops::Log::info() << "Info     : Read ensemble member " << ie << std::endl;
 
   // Fill FieldSet
   size_t ensembleFound = 0;
@@ -278,6 +286,8 @@ void writeEnsemble(const oops::Geometry<MODEL> & geom,
                    const std::vector<atlas::FieldSet> & fsetEns) {
   oops::Log::trace() << "writeEnsemble starting" << std::endl;
 
+  oops::Log::info() << "Info     : Write ensemble members" << std::endl;
+
   // Check whether geometry grid is similar to the last outer block inner geometry
   const bool useModelWriter = (util::getGridUid(geom.generic().functionSpace())
     == util::getGridUid(saberBlockChain.lastOuterBlock().innerGeometryData().functionSpace()));
@@ -326,6 +336,8 @@ void writeEnsemble(const oops::Geometry<MODEL> & geom,
   }
 
   for (size_t ie = 0; ie < ensembleSize; ++ie) {
+    oops::Log::info() << "Info     : Write member " << ie << std::endl;
+
     // Increment pointer
     std::unique_ptr<oops::Increment<MODEL>> dx;
 
@@ -394,13 +406,16 @@ oops::Variables getActiveVars(const SaberBlockParametersBase & params,
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-std::unique_ptr<SaberBlockChain> localizationBlockChain(const oops::Geometry<MODEL> & geom,
-                                                        const oops::Variables & incVars,
-                                                        const atlas::FieldSet & fsetXbIn,
-                                                        const atlas::FieldSet & fsetFgIn,
-                                                        const util::DateTime & validTimeOfXbFg,
-                                                        const eckit::Configuration & conf) {
-  oops::Log::trace() << "localizationBlockChain starting" << std::endl;
+std::unique_ptr<SaberBlockChain> ensembleBlockChain(const oops::Geometry<MODEL> & geom,
+                                                    const oops::Variables & incVars,
+                                                    const atlas::FieldSet & fsetXbIn,
+                                                    const atlas::FieldSet & fsetFgIn,
+                                                    const util::DateTime & validTimeOfXbFg,
+                                                    const eckit::Configuration & conf) {
+  oops::Log::trace() << "ensembleBlockChain starting" << std::endl;
+
+  oops::Log::info() << "Info     : Create ensemble transform or localization blockchain"
+                    << std::endl;
 
   // Extend backgroud and first guess with extra fields
   // TODO(Benjamin, Marek, Mayeul, ?)
@@ -416,8 +431,8 @@ std::unique_ptr<SaberBlockChain> localizationBlockChain(const oops::Geometry<MOD
   // Intialize outer variables
   oops::Variables outerVars(incVars);
 
-  // Initialize localization blockchain
-  std::unique_ptr<SaberBlockChain> locBlockChain(new SaberBlockChain(incVars, fsetXb));
+  // Initialize blockchain
+  std::unique_ptr<SaberBlockChain> blockChain(new SaberBlockChain(incVars, fsetXb));
 
   // Initialize empty vector of FieldSets
   std::vector<atlas::FieldSet> emptyFsetEns;
@@ -443,7 +458,7 @@ std::unique_ptr<SaberBlockChain> localizationBlockChain(const oops::Geometry<MOD
       const SaberBlockParametersBase & saberOuterBlockParams =
         saberOuterBlockParamsWrapper.saberOuterBlockParameters;
       if (saberOuterBlockParams.doCalibration()) {
-        ABORT("no calibration within localization");
+        ABORT("no calibration within ensemble transform / localization");
       }
     }
     buildOuterBlocks(geom,
@@ -455,32 +470,34 @@ std::unique_ptr<SaberBlockChain> localizationBlockChain(const oops::Geometry<MOD
                      emptyFsetEns,
                      covarConf,
                      saberOuterBlocksParams,
-                     *locBlockChain);
+                     *blockChain);
   }
 
-  // Central block
-  SaberCentralBlockParametersWrapper saberCentralBlockParamsWrapper;
-  saberCentralBlockParamsWrapper.deserialize(conf.getSubConfiguration("saber central block"));
-  const SaberBlockParametersBase & saberCentralBlockParams =
-    saberCentralBlockParamsWrapper.saberCentralBlockParameters;
-  if (saberCentralBlockParams.doCalibration()) {
-    ABORT("no calibration within localization");
+  if (conf.has("saber central block")) {
+    // Central block
+    SaberCentralBlockParametersWrapper saberCentralBlockParamsWrapper;
+    saberCentralBlockParamsWrapper.deserialize(conf.getSubConfiguration("saber central block"));
+    const SaberBlockParametersBase & saberCentralBlockParams =
+      saberCentralBlockParamsWrapper.saberCentralBlockParameters;
+    if (saberCentralBlockParams.doCalibration()) {
+      ABORT("no calibration within ensemble transform / localization");
+    }
+    buildCentralBlock(geom,
+                      geom,
+                      outerGeometryData.back().get(),
+                      outerVars,
+                      fsetXb,
+                      fsetFg,
+                      validTimeOfXbFg,
+                      emptyFsetEns,
+                      emptyFsetEns,
+                      covarConf,
+                      saberCentralBlockParamsWrapper,
+                      *blockChain);
   }
-  buildCentralBlock(geom,
-                    geom,
-                    outerGeometryData.back().get(),
-                    outerVars,
-                    fsetXb,
-                    fsetFg,
-                    validTimeOfXbFg,
-                    emptyFsetEns,
-                    emptyFsetEns,
-                    covarConf,
-                    saberCentralBlockParamsWrapper,
-                    *locBlockChain);
 
-  // Return localization blockchain
-  return locBlockChain;
+  // Return blockchain
+  return blockChain;
 }
 
 // -----------------------------------------------------------------------------
@@ -499,6 +516,8 @@ void buildOuterBlocks(const oops::Geometry<MODEL> & geom,
                       SaberBlockChain & saberBlockChain) {
   oops::Log::trace() << "buildOuterBlocks starting" << std::endl;
 
+  oops::Log::info() << "Info     : Creating outer blocks" << std::endl;
+
   // Iterative ensemble loading flag
   const bool iterativeEnsembleLoading = covarConf.getBool("iterative ensemble loading");
 
@@ -515,15 +534,15 @@ void buildOuterBlocks(const oops::Geometry<MODEL> & geom,
     oops::Variables activeVars = getActiveVars(saberOuterBlockParams, outerVars);
 
     // Create outer block
-    saberBlockChain.outerBlocks().push_back(SaberOuterBlockFactory::create(
-                                            outerGeometryData.back().get(),
-                                            geom.variableSizes(activeVars),
-                                            outerVars,
-                                            covarConf,
-                                            saberOuterBlockParams,
-                                            fsetXb,
-                                            fsetFg,
-                                            validTimeOfXbFg));
+    saberBlockChain.outerBlocks().emplace_back(SaberOuterBlockFactory::create(
+                                               outerGeometryData.back().get(),
+                                               geom.variableSizes(activeVars),
+                                               outerVars,
+                                               covarConf,
+                                               saberOuterBlockParams,
+                                               fsetXb,
+                                               fsetFg,
+                                               validTimeOfXbFg));
 
     // Read and add model fields
     saberBlockChain.lastOuterBlock().read(geom, outerVars, validTimeOfXbFg);
@@ -537,6 +556,7 @@ void buildOuterBlocks(const oops::Geometry<MODEL> & geom,
 
       if (iterativeEnsembleLoading) {
         // Iterative calibration
+         oops::Log::info() << "Info     : Iterative calibration" << std::endl;
 
         // Initialization
         saberBlockChain.lastOuterBlock().iterativeCalibrationInit();
@@ -554,25 +574,30 @@ void buildOuterBlocks(const oops::Geometry<MODEL> & geom,
                              ie,
                              fset);
 
-          // Outer blocks inverse multiplication (all of them)
+          // Apply outer blocks inverse (except last)
           saberBlockChain.leftInverseMultiplyExceptLast(fset);
 
           // Use FieldSet in the central block
+          oops::Log::info() << "Info     : Use FieldSet in the central block" << std::endl;
           saberBlockChain.lastOuterBlock().iterativeCalibrationUpdate(fset);
         }
 
         // Finalization
+        oops::Log::info() << "Info     : Finalization" << std::endl;
         saberBlockChain.lastOuterBlock().iterativeCalibrationFinal();
       } else {
         // Direct calibration
+        oops::Log::info() << "Info     : Direct calibration" << std::endl;
         saberBlockChain.lastOuterBlock().directCalibration(fsetEns);
       }
 
       // Write calibration data
+      oops::Log::info() << "Info     : Write calibration data" << std::endl;
       saberBlockChain.lastOuterBlock().write(geom, outerVars, validTimeOfXbFg);
       saberBlockChain.lastOuterBlock().write();
     } else if (saberOuterBlockParams.doRead()) {
       // Read data
+      oops::Log::info() << "Info     : Read data" << std::endl;
       saberBlockChain.lastOuterBlock().read();
     }
 
@@ -593,10 +618,12 @@ void buildOuterBlocks(const oops::Geometry<MODEL> & geom,
     activeInnerVars.intersection(innerVars);
 
     if (!iterativeEnsembleLoading) {
-      // Calibration inverse multiplication on ensemble members
+      // Left inverse multiplication on ensemble members
+      oops::Log::info() << "Info     : Left inverse multiplication on ensemble members"
+                        << std::endl;
       for (auto & fset : fsetEns) {
         if (saberBlockChain.lastOuterBlock().skipInverse()) {
-          oops::Log::info() << "Warning: left inverse multiplication skipped for block "
+          oops::Log::info() << "Info     : Warning: left inverse multiplication skipped for block "
                             << saberBlockChain.lastOuterBlock().blockName() << std::endl;
         } else {
           saberBlockChain.lastOuterBlock().leftInverseMultiply(fset);
@@ -604,10 +631,12 @@ void buildOuterBlocks(const oops::Geometry<MODEL> & geom,
       }
     }
 
-    // Calibration inverse multiplication on xb and fg if inner and outer Geometry is different
+    // Left inverse multiplication on xb and fg if inner and outer Geometry is different
     if (util::getGridUid(innerGeometryData.functionSpace())
       != util::getGridUid(outerGeometryData.back().get().functionSpace())
       && saberOuterBlockParams.inverseVars.value().size() > 0) {
+      oops::Log::info() << "Info     : Left inverse multiplication on xb and fg" << std::endl;
+
       // Share fields pointers
       atlas::FieldSet fsetXbInv;
       atlas::FieldSet fsetFgInv;
@@ -648,6 +677,7 @@ void buildOuterBlocks(const oops::Geometry<MODEL> & geom,
     // Inverse test
     const bool skipInverseTest = saberOuterBlockParams.skipInverseTest.value();
     if (covarConf.getBool("inverse test", false)) {
+      oops::Log::info() << "Info     : Inverse test" << std::endl;
       if (skipInverseTest) {
         oops::Log::test() << "skipping inverse test" << std::endl;
       } else {
@@ -746,6 +776,7 @@ void buildCentralBlock(const oops::Geometry<MODEL> & geom,
 
     if (iterativeEnsembleLoading) {
       // Iterative calibration
+      oops::Log::info() << "Info     : Iterative calibration" << std::endl;
 
       // Initialization
       saberBlockChain.centralBlock().iterativeCalibrationInit();
@@ -763,42 +794,92 @@ void buildCentralBlock(const oops::Geometry<MODEL> & geom,
                            ie,
                            fset);
 
-        // Outer blocks inverse multiplication (all of them)
+        // Apply outer blocks inverse (all of them)
+        oops::Log::info() << "Info     : Apply outer blocks inverse (all of them)" << std::endl;
         saberBlockChain.leftInverseMultiply(fset);
 
         // Use FieldSet in the central block
+        oops::Log::info() << "Info     : Use FieldSet in the central block" << std::endl;
         saberBlockChain.centralBlock().iterativeCalibrationUpdate(fset);
       }
 
       // Finalization
+      oops::Log::info() << "Info     : Finalization" << std::endl;
       saberBlockChain.centralBlock().iterativeCalibrationFinal();
     } else {
-      // Direct calibration
-      saberBlockChain.centralBlock().directCalibration(fsetEns);
-
-      // Localization for the Ensemble central block
-      std::unique_ptr<SaberBlockChain> locBlockChain;
+      // Ensemble transform and localization for the Ensemble central block
       if (saberCentralBlockParams.saberBlockName.value() == "Ensemble") {
+        // Read inflation field
+        oops::Log::info() << "Info     : Read inflation field" << std::endl;
+        saberBlockChain.centralBlock().read();
+
+        // Apply inflation on ensemble members
+        oops::Log::info() << "Info     : Apply inflation on ensemble members" << std::endl;
+        saberBlockChain.centralBlock().applyInflation(fsetEns);
+
+        // Ensemble transform
+        const auto & ensTransConf = saberCentralBlockParams.ensembleTransform.value();
+        if (ensTransConf != boost::none) {
+          // Initialize ensemble transform blockchain
+          std::unique_ptr<SaberBlockChain> ensTransBlockChain;
+          ensTransBlockChain = ensembleBlockChain<MODEL>(geom,
+                                                         outerVars,
+                                                         fsetXb,
+                                                         fsetXb,
+                                                         validTimeOfXbFg,
+                                                         *ensTransConf);
+
+          // Left inverse of ensemble transform on ensemble members
+          oops::Log::info() << "Info     : Left inverse of ensemble transform on ensemble members"
+                            << std::endl;
+          for (auto & fset : fsetEns) {
+            for (auto itob = ensTransBlockChain->outerBlocks().begin();
+              itob != ensTransBlockChain->outerBlocks().end(); ++itob) {
+                itob->get()->leftInverseMultiply(fset);
+            }
+          }
+
+          // Add ensemble transform blocks to outer blocks
+          oops::Log::info() << "Info     : Add ensemble transform blocks to outer blocks"
+                            << std::endl;
+          std::move(ensTransBlockChain->outerBlocks().begin(),
+            ensTransBlockChain->outerBlocks().end(),
+            std::back_inserter(saberBlockChain.outerBlocks()));
+          ensTransBlockChain->outerBlocks().erase(ensTransBlockChain->outerBlocks().begin(),
+            ensTransBlockChain->outerBlocks().end());
+        }
+
+        // Localization
         const auto & locConf = saberCentralBlockParams.localization.value();
         if (locConf != boost::none) {
           // Initialize localization blockchain
-          locBlockChain = localizationBlockChain<MODEL>(geom, outerVars, fsetXb, fsetXb,
-                                                        validTimeOfXbFg, *locConf);
+          std::unique_ptr<SaberBlockChain> locBlockChain;
+          locBlockChain = ensembleBlockChain<MODEL>(geom,
+                                                    outerVars,
+                                                    fsetXb,
+                                                    fsetXb,
+                                                    validTimeOfXbFg,
+                                                    *locConf);
+          // Move localization blockchain
+          oops::Log::info() << "Info     : Move localization blockchain" << std::endl;
+          saberBlockChain.centralBlock().setLocalization(std::move(locBlockChain));
         }
       }
 
-      // Set localization if needed
-      if (locBlockChain) {
-        saberBlockChain.centralBlock().setLocalization(std::move(locBlockChain));
-      }
+      // Direct calibration
+      oops::Log::info() << "Info     : Direct calibration" << std::endl;
+      saberBlockChain.centralBlock().directCalibration(fsetEns);
     }
   } else if (saberCentralBlockParams.doRead()) {
     // Read data
+    oops::Log::info() << "Info     : Read data" << std::endl;
     saberBlockChain.centralBlock().read();
   }
 
   // Dual resolution ensemble
   if (covarConf.has("dual resolution ensemble configuration")) {
+    oops::Log::info() << "Info     : Dual resolution setup" << std::endl;
+
     // Dual resolution setup
     saberBlockChain.centralBlock().dualResolutionSetup(dualResolutionGeom.generic());
 
@@ -808,6 +889,7 @@ void buildCentralBlock(const oops::Geometry<MODEL> & geom,
 
     if (iterativeEnsembleLoading) {
       // Iterative calibration
+      oops::Log::info() << "Info     : Iterative calibration" << std::endl;
 
       // Initialization
       saberBlockChain.centralBlock().iterativeCalibrationInit();
@@ -826,19 +908,23 @@ void buildCentralBlock(const oops::Geometry<MODEL> & geom,
                            fset);
 
         // Use FieldSet in the central block
+        oops::Log::info() << "Info     : Use FieldSet in the central block" << std::endl;
         saberBlockChain.centralBlock().iterativeCalibrationUpdate(fset);
      }
 
       // Finalization
+      oops::Log::info() << "Info     : Finalization" << std::endl;
       saberBlockChain.centralBlock().iterativeCalibrationFinal();
     } else {
       // Direct calibration
+      oops::Log::info() << "Info     : Direct calibration" << std::endl;
       saberBlockChain.centralBlock().directCalibration(dualResolutionFsetEns);
     }
   }
 
   // Write calibration data
   if (saberCentralBlockParams.doCalibration()) {
+    oops::Log::info() << "Info     : Write calibration data" << std::endl;
     saberBlockChain.centralBlock().write(geom, outerVars, validTimeOfXbFg);
     saberBlockChain.centralBlock().write();
   }

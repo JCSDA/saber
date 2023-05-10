@@ -23,7 +23,7 @@ background error:
   - saber block name: StdDev
     read:
       atlas file:
-        filepath: testdata/error_covariance_training_stddev_1/stddev
+        filepath: testdata/error_covariance_training_stddev_1/_MPI_-_OMP__stddev
 dirac:
   lon:
   - 0.0

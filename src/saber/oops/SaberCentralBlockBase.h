@@ -31,7 +31,6 @@
 #include "oops/util/Printable.h"
 
 #include "saber/oops/SaberBlockParametersBase.h"
-#include "saber/oops/SaberOuterBlockBase.h"
 
 // Forward declaration
 namespace saber {
@@ -69,6 +68,10 @@ class SaberCentralBlockBase : public util::Printable, private boost::noncopyable
   // Read model files
   virtual std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> fieldsToRead()
     {return {};}
+
+  // Apply inflation on ensemble members
+  virtual void applyInflation(std::vector<atlas::FieldSet> &)
+    {ABORT("applyInflation not implemented yet for the block " + this->blockName());}
 
   // Direct calibration
   virtual void directCalibration(const std::vector<atlas::FieldSet> &)
@@ -122,7 +125,7 @@ class SaberCentralBlockBase : public util::Printable, private boost::noncopyable
   virtual void print(std::ostream &) const = 0;
 };
 
-// =============================================================================
+// -----------------------------------------------------------------------------
 
 class SaberCentralBlockFactory;
 
@@ -135,7 +138,7 @@ class SaberCentralBlockParametersWrapper : public oops::Parameters {
     saberCentralBlockParameters{"saber block name", this};
 };
 
-// =============================================================================
+// -----------------------------------------------------------------------------
 
 class SaberCentralBlockFactory {
  public:

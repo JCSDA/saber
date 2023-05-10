@@ -15,7 +15,8 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-SaberBlockChain::SaberBlockChain(const oops::Variables & incVars, const atlas::FieldSet & fset) :
+SaberBlockChain::SaberBlockChain(const oops::Variables & incVars,
+                                 const atlas::FieldSet & fset) :
   centralBlock_(), outerBlocks_(), centralFieldSet_(), incVars_(incVars), scalarWeightSqrt_(1.0),
   fileWeightSqrt_() {
   // Initialize central FieldSet
@@ -45,12 +46,7 @@ void SaberBlockChain::setWeight(const atlas::FieldSet & fileWeight) {
 
 // -----------------------------------------------------------------------------
 
-void SaberBlockChain::applyOuterBlocks(atlas::FieldSet & fset) const {
-  // Outer blocks forward multiplication
-  for (ircst_ it = outerBlocks_.rbegin(); it != outerBlocks_.rend(); ++it) {
-    it->multiply(fset);
-  }
-
+void SaberBlockChain::applyWeight(atlas::FieldSet & fset) const {
   // Weight square-root multiplication
   if (fileWeightSqrt_.empty()) {
     // Scalar weight
@@ -63,19 +59,19 @@ void SaberBlockChain::applyOuterBlocks(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void SaberBlockChain::applyOuterBlocksAD(atlas::FieldSet & fset) const {
-  // Weight square-root multiplication
-  if (fileWeightSqrt_.empty()) {
-    // Scalar weight
-    util::multiplyFieldSet(fset, scalarWeightSqrt_);
-  } else {
-    // File-based weight
-    util::multiplyFieldSets(fset, fileWeightSqrt_);
+void SaberBlockChain::applyOuterBlocks(atlas::FieldSet & fset) const {
+  // Outer blocks forward multiplication
+  for (auto it = outerBlocks_.rbegin(); it != outerBlocks_.rend(); ++it) {
+    it->get()->multiply(fset);
   }
+}
 
+// -----------------------------------------------------------------------------
+
+void SaberBlockChain::applyOuterBlocksAD(atlas::FieldSet & fset) const {
   // Outer blocks adjoint multiplication
-  for (icst_ it = outerBlocks_.begin(); it != outerBlocks_.end(); ++it) {
-    it->multiplyAD(fset);
+  for (auto it = outerBlocks_.begin(); it != outerBlocks_.end(); ++it) {
+    it->get()->multiplyAD(fset);
   }
 }
 
@@ -109,12 +105,12 @@ void SaberBlockChain::multiply(atlas::FieldSet & fset) const {
 
 void SaberBlockChain::leftInverseMultiply(atlas::FieldSet & fset) const {
   // Outer blocks left inverse multiplication
-  for (icst_ it = outerBlocks_.begin(); it != outerBlocks_.end(); ++it) {
-    if (it->skipInverse()) {
+  for (auto it = outerBlocks_.begin(); it != outerBlocks_.end(); ++it) {
+    if (it->get()->skipInverse()) {
       oops::Log::info() << "Warning: left inverse multiplication skipped for block "
-                      << it->blockName() << std::endl;
+                      << it->get()->blockName() << std::endl;
     } else {
-      it->leftInverseMultiply(fset);
+      it->get()->leftInverseMultiply(fset);
     }
   }
 }
@@ -123,12 +119,12 @@ void SaberBlockChain::leftInverseMultiply(atlas::FieldSet & fset) const {
 
 void SaberBlockChain::leftInverseMultiplyExceptLast(atlas::FieldSet & fset) const {
   // Outer blocks left inverse multiplication
-  for (icst_ it = outerBlocks_.begin(); it != std::prev(outerBlocks_.end()); ++it) {
-    if (it->skipInverse()) {
+  for (auto it = outerBlocks_.begin(); it != std::prev(outerBlocks_.end()); ++it) {
+    if (it->get()->skipInverse()) {
       oops::Log::info() << "Warning: left inverse multiplication skipped for block "
-                      << it->blockName() << std::endl;
+                      << it->get()->blockName() << std::endl;
     } else {
-      it->leftInverseMultiply(fset);
+      it->get()->leftInverseMultiply(fset);
     }
   }
 }

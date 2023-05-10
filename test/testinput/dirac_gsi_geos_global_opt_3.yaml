@@ -1,4 +1,4 @@
-# Dirac test to generate a reference for BUMP scaling check (optimization_bump_hdiag_gsi_1.yaml), with GSI length-scales and rescaling in the namelist
+# Dirac test to generate a reference for BUMP scaling check (optimization_bump_hdiag_gsi_3.yaml), with GSI length-scales and rescaling in the namelist
 background error:
   covariance model: SABER
   adjoint test: true

@@ -7,7 +7,12 @@
 
 #pragma once
 
+#include "eckit/config/LocalConfiguration.h"
+
 #include "oops/base/LinearVariableChangeParametersBase.h"
+
+#include "oops/base/Variables.h"
+#include "oops/util/parameters/RequiredParameter.h"
 
 namespace quench {
 
@@ -17,6 +22,11 @@ namespace quench {
 class LinearVariableChangeParameters : public oops::LinearVariableChangeParametersBase {
   OOPS_CONCRETE_PARAMETERS(LinearVariableChangeParameters, LinearVariableChangeParametersBase)
  public:
+  /// Variables (input/output)
+  oops::RequiredParameter<oops::Variables> variables{"variables", this};
+
+  /// ATLAS file
+  oops::RequiredParameter<eckit::LocalConfiguration> atlasFile{"atlas file", this};
 };
 
 // -------------------------------------------------------------------------------------------------

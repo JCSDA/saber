@@ -17,6 +17,7 @@
 
 #include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberCentralBlockBase.h"
+#include "saber/oops/SaberOuterBlockBase.h"
 
 namespace saber {
 namespace generic {
@@ -31,23 +32,23 @@ class IDParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class ID : public SaberCentralBlockBase {
+class IDCentral : public SaberCentralBlockBase {
  public:
-  static const std::string classname() {return "saber::generic::ID";}
+  static const std::string classname() {return "saber::generic::IDCentral";}
 
   typedef IDParameters Parameters_;
 
-  ID(const oops::GeometryData &,
-     const std::vector<size_t> &,
-     const oops::Variables &,
-     const eckit::Configuration &,
-     const Parameters_ &,
-     const atlas::FieldSet &,
-     const atlas::FieldSet &,
-     const util::DateTime &,
-     const size_t &);
+  IDCentral(const oops::GeometryData &,
+            const std::vector<size_t> &,
+            const oops::Variables &,
+            const eckit::Configuration &,
+            const Parameters_ &,
+            const atlas::FieldSet &,
+            const atlas::FieldSet &,
+            const util::DateTime &,
+            const size_t &);
 
-  virtual ~ID();
+  virtual ~IDCentral();
 
   void randomize(atlas::FieldSet &) const override;
   void multiply(atlas::FieldSet &) const override;
@@ -58,6 +59,38 @@ class ID : public SaberCentralBlockBase {
   const oops::Variables activeVars_;
   size_t timeRank_;
   void print(std::ostream &) const override;
+};
+
+// -----------------------------------------------------------------------------
+
+class IDOuter : public SaberOuterBlockBase {
+ public:
+  static const std::string classname() {return "saber::generic::IDOuter";}
+
+  typedef IDParameters Parameters_;
+
+  IDOuter(const oops::GeometryData &,
+          const std::vector<size_t> &,
+          const oops::Variables &,
+          const eckit::Configuration &,
+          const Parameters_ &,
+          const atlas::FieldSet &,
+          const atlas::FieldSet &,
+          const util::DateTime &);
+
+  virtual ~IDOuter() = default;
+
+  const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}
+  const oops::Variables & innerVars() const override {return innerVars_;}
+
+  void multiply(atlas::FieldSet &) const override;
+  void multiplyAD(atlas::FieldSet &) const override;
+  void leftInverseMultiply(atlas::FieldSet &) const override;
+
+ private:
+  void print(std::ostream &) const override;
+  const oops::GeometryData & innerGeometryData_;
+  oops::Variables innerVars_;
 };
 
 // -----------------------------------------------------------------------------

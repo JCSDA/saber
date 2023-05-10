@@ -38,7 +38,10 @@ class SaberBlockParametersBase : public oops::Parameters {
   // Calibration of block parameters [optional]
   oops::OptionalParameter<eckit::LocalConfiguration> calibrationParams{"calibration", this};
 
-  // Localization parameter for the Ensemble block
+  // Ensemble transform parameters for the Ensemble block
+  oops::OptionalParameter<eckit::LocalConfiguration> ensembleTransform{"ensemble transform", this};
+
+  // Localization parameters for the Ensemble block
   oops::OptionalParameter<eckit::LocalConfiguration> localization{"localization", this};
 
   // Flag to skip inverse application (for ensemble perturbations, background and first guess)

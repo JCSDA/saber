@@ -9,6 +9,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "atlas/field.h"
@@ -25,10 +26,28 @@ namespace generic {
 
 // -----------------------------------------------------------------------------
 
+class InflationFieldParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(InflationFieldParameters, Parameters)
+
+ public:
+  // ATLAS inflation file
+  oops::OptionalParameter<eckit::LocalConfiguration> atlasFileConf{"atlas file", this};
+  // Model inflation file
+  oops::OptionalParameter<eckit::LocalConfiguration> modelFileConf{"model file", this};
+};
+
+// -----------------------------------------------------------------------------
+
 class EnsembleParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(EnsembleParameters, SaberBlockParametersBase)
 
  public:
+  // Inflation fiesld
+  oops::OptionalParameter<InflationFieldParameters> inflationField{"inflation field", this};
+
+  // Inflation value
+  oops::Parameter<double> inflationValue{"inflation value", 1.0, this};
+
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
 
@@ -53,6 +72,12 @@ class Ensemble : public SaberCentralBlockBase {
   void randomize(atlas::FieldSet &) const override;
   void multiply(atlas::FieldSet &) const override;
 
+  void read() override;
+
+  std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> fieldsToRead() override;
+
+  void applyInflation(std::vector<atlas::FieldSet> &) override;
+
   void directCalibration(const std::vector<atlas::FieldSet> &) override;
 
   void setLocalization(std::unique_ptr<SaberBlockChain>) override;
@@ -61,8 +86,15 @@ class Ensemble : public SaberCentralBlockBase {
   std::vector<atlas::FieldSet> ensemble_;
   std::unique_ptr<SaberBlockChain> loc_;
   size_t timeRank_;
+  const oops::GeometryData & geometryData_;
+  std::vector<size_t> variableSizes_;
   const oops::Variables vars_;
-  const eckit::mpi::Comm & comm_;
+  const double inflationValue_;
+  bool readFromAtlas_;
+  bool readFromModel_;
+  eckit::LocalConfiguration readConf_;
+  std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> inputs_;
+  atlas::FieldSet inflationField_;
   int seed_ = 7;  // For reproducibility
   void print(std::ostream &) const override;
 };

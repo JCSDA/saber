@@ -99,8 +99,8 @@ Groups:
   - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  eastward_wind: 6.7636675043647476e-01
-  northward_wind: 1.6118874945640357e-01
+  eastward_wind: 1.0613277573032629e+00
+  northward_wind: 1.0818849551889985e-01
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Min. / max. longitudes: -171.0 /   180.0
@@ -202,8 +202,8 @@ Groups:
   - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  eastward_wind: 1.3527335008729178e+00
-  northward_wind: 3.2237749891280709e-01
+  eastward_wind: 1.8918172856315629e+00
+  northward_wind: 3.0059557247503160e-01
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Min. / max. longitudes: -171.0 /   180.0

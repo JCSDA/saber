@@ -34,6 +34,6 @@ background error:
   - saber block name: StdDev
     calibration:
       write to model file:
-        filepath: testdata/error_covariance_training_stddev_2/stddev
+        filepath: testdata/error_covariance_training_stddev_2/_MPI_-_OMP__stddev
 test:
   reference filename: testref/error_covariance_training_stddev_1.ref

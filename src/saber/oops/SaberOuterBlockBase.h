@@ -61,7 +61,7 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
   // Block multiplication adjoint
   virtual void multiplyAD(atlas::FieldSet &) const = 0;
 
-  // Block inverse multiplication for calibration (can be an approximate inverse)
+  // Block left inverse multiplication
   virtual void leftInverseMultiply(atlas::FieldSet &) const
     {ABORT("leftInverseMultiply not implemented yet for the block " + blockName_);}
 
@@ -175,7 +175,7 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
   virtual void print(std::ostream &) const = 0;
 };
 
-// =============================================================================
+// -----------------------------------------------------------------------------
 
 class SaberOuterBlockFactory;
 
@@ -188,7 +188,7 @@ class SaberOuterBlockParametersWrapper : public oops::Parameters {
     saberOuterBlockParameters{"saber block name", this};
 };
 
-// =============================================================================
+// -----------------------------------------------------------------------------
 
 class SaberOuterBlockFactory {
  public:
@@ -261,8 +261,8 @@ class SaberOuterBlockMaker : public SaberOuterBlockFactory {
 
 template <typename MODEL>
 void SaberOuterBlockBase::read(const oops::Geometry<MODEL> & geom,
-                                 const oops::Variables & vars,
-                                 const util::DateTime & date) {
+                               const oops::Variables & vars,
+                               const util::DateTime & date) {
   oops::Log::trace() << "SaberOuterBlockBase::read starting" << std::endl;
 
   // Get vector of configuration/FieldSet pairs
@@ -281,7 +281,6 @@ void SaberOuterBlockBase::read(const oops::Geometry<MODEL> & geom,
 
   oops::Log::trace() << "SaberOuterBlockBase::read done" << std::endl;
 }
-
 
 // -----------------------------------------------------------------------------
 

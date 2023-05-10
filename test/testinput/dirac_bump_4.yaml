@@ -78,7 +78,7 @@ background error:
   - saber block name: StdDev
     read:
       model file:
-        filepath: testdata/error_covariance_training_bump_stddev_3/1-1_stddev
+        filepath: testdata/error_covariance_training_bump_stddev_3/_MPI_-_OMP__stddev
   - saber block name: BUMP_VerticalBalance
     read:
       general:

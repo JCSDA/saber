@@ -334,11 +334,12 @@ void ErrorCovariance<MODEL>::doRandomize(Increment_ & dx) const {
 
     // Loop over components for the central block
     for (chainIcst_ it = hybridBlockChain_.begin(); it != hybridBlockChain_.end(); ++it) {
-      // Create temporary FieldSet
-      atlas::FieldSet fset = util::copyFieldSet(dx.fieldSet());
-
       // Randomize covariance
+      atlas::FieldSet fset;
       it->randomize(fset);
+
+      // Apply weight
+      it->applyWeight(fset);
 
       // Add component
       util::addFieldSets(dx.fieldSet(), fset);
@@ -386,8 +387,14 @@ void ErrorCovariance<MODEL>::doMultiply(const Increment_ & dxi,
       // Create temporary FieldSet
       atlas::FieldSet fset = util::copyFieldSet(inputFset);
 
+      // Apply weight
+      it->applyWeight(fset);
+
       // Apply covariance
       it->multiply(fset);
+
+      // Apply weight
+      it->applyWeight(fset);
 
       // Add component
       util::addFieldSets(dxo.fieldSet(), fset);

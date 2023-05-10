@@ -17,6 +17,8 @@ Groups:
 Fields:
   eastward_wind: 1.0000000000000000e+00
   northward_wind: 0.0000000000000000e+00
+Norm of input parameter StdDev: 5.8775731880980217e+01
+Adjoint test for block StdDev passed
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Min. / max. longitudes: -171.0 /   180.0
@@ -64,6 +66,8 @@ Adjoint test for block BUMP_StdDev passed
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
 Adjoint test for block BUMP_NICAS passed
+Norm of input parameter inflation: 5.5748959626610493e+01
+Norm of input parameter StdDev: 4.9746780825557792e+01
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Min. / max. longitudes: -171.0 /   180.0
@@ -91,5 +95,5 @@ Groups:
   - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  eastward_wind: 6.7636675043647487e-01
-  northward_wind: 1.6118874945640363e-01
+  eastward_wind: 1.0613277573032631e+00
+  northward_wind: 1.0818849551889982e-01

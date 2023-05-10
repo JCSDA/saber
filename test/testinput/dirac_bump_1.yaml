@@ -70,7 +70,7 @@ background error:
       - saber block name: StdDev
         read:
           model file:
-            filepath: testdata/error_covariance_training_bump_stddev_3/1-1_stddev
+            filepath: testdata/error_covariance_training_bump_stddev_3/_MPI_-_OMP__stddev
       - saber block name: BUMP_VerticalBalance
         read:
           general:
@@ -112,6 +112,15 @@ background error:
         pattern: '%mem%'
         nmembers: 25
         zero padding: 6
+      inflation value: 1.2
+      inflation field:
+        filepath: testdata/randomization_bump_nicas_L10L2/member_000001 # Does not make sense scientifically, just for technical testing
+      ensemble transform:
+        variables:
+        - eastward_wind
+        - northward_wind
+        atlas file:
+          filepath: testdata/randomization_bump_nicas_L10L2/member_000002 # Does not make sense scientifically, just for technical testing
       localization:
         localization method: SABER
         saber central block:
@@ -131,6 +140,12 @@ background error:
               read local nicas: true
     weight:
       value: 0.5
+  linear variable change:
+    variables:
+    - eastward_wind
+    - northward_wind
+    atlas file:
+      filepath: testdata/randomization_bump_nicas_L10L2/member_000003 # Does not make sense scientifically, just for technical testing
 dirac:
   lon:
   - 0.0

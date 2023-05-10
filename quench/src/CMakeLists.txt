@@ -13,6 +13,7 @@ Geometry.h
 Increment.cc
 Increment.h
 LinearVariableChange.h
+LinearVariableChange.cc
 State.cc
 State.h
 VariableChange.h

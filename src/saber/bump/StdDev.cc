@@ -108,6 +108,7 @@ std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> StdDev::field
   oops::Log::trace() << classname() << "::fieldsToRead starting" << std::endl;
   std::vector<eckit::LocalConfiguration> inputModelFilesConf
     = bumpParams_.inputModelFilesConf.value().get_value_or({});
+  oops::Log::trace() << classname() << "::fieldsToRead done" << std::endl;
   return bump_->fieldsToRead(inputModelFilesConf);
 }
 
@@ -174,10 +175,9 @@ void StdDev::write() const {
 
 std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> StdDev::fieldsToWrite() const {
   oops::Log::trace() << classname() << "::fieldsToWrite starting" << std::endl;
-
-  // Return configuration/fieldset pairs
   std::vector<eckit::LocalConfiguration> outputModelFilesConf
     = bumpParams_.outputModelFilesConf.value().get_value_or({});
+  oops::Log::trace() << classname() << "::fieldsToWrite done" << std::endl;
   return bump_->fieldsToWrite(outputModelFilesConf);
 }
 

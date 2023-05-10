@@ -8,8 +8,7 @@
 #pragma once
 
 #include <memory>
-
-#include <boost/ptr_container/ptr_vector.hpp>
+#include <vector>
 
 #include "atlas/field.h"
 
@@ -23,30 +22,28 @@ namespace saber {
 // -----------------------------------------------------------------------------
 
 class SaberBlockChain {
-  typedef typename boost::ptr_vector<SaberOuterBlockBase>      SaberOuterBlockVec_;
-  typedef typename SaberOuterBlockVec_::const_iterator         icst_;
-  typedef typename SaberOuterBlockVec_::const_reverse_iterator ircst_;
-
  public:
   SaberBlockChain();
   explicit SaberBlockChain(const oops::Variables &,
                            const atlas::FieldSet &);
   ~SaberBlockChain() {}
 
+  // Central block initialization
+  void centralBlockInit(SaberCentralBlockBase *);  // TODO(Benjamin): remove that
+
   // Hybrid weight initialization
   void setWeight(const double &);
   void setWeight(const atlas::FieldSet &);
-
-  // Central block initialization
-  void centralBlockInit(SaberCentralBlockBase *);
+  void applyWeight(atlas::FieldSet &) const;
 
   // Accessors
   const SaberCentralBlockBase & centralBlock() const {return *centralBlock_;}
   SaberCentralBlockBase & centralBlock() {return *centralBlock_;}
-  const SaberOuterBlockVec_ & outerBlocks() const {return outerBlocks_;}
-  SaberOuterBlockVec_ & outerBlocks() {return outerBlocks_;}
-  const SaberOuterBlockBase & lastOuterBlock() const {return outerBlocks_.back();}
-  SaberOuterBlockBase & lastOuterBlock() {return outerBlocks_.back();}
+  const std::vector<std::unique_ptr<SaberOuterBlockBase>> & outerBlocks() const
+    {return outerBlocks_;}
+  std::vector<std::unique_ptr<SaberOuterBlockBase>> & outerBlocks() {return outerBlocks_;}
+  const SaberOuterBlockBase & lastOuterBlock() const {return *outerBlocks_.back();}
+  SaberOuterBlockBase & lastOuterBlock() {return *outerBlocks_.back();}
   const atlas::FieldSet & centralFieldSet() const {return centralFieldSet_;}
   atlas::FieldSet & centralFieldSet() {return centralFieldSet_;}
   const oops::Variables & incVars() const {return incVars_;}
@@ -68,7 +65,7 @@ class SaberBlockChain {
   std::unique_ptr<SaberCentralBlockBase> centralBlock_;
 
   // Outer blocks
-  SaberOuterBlockVec_ outerBlocks_;
+  std::vector<std::unique_ptr<SaberOuterBlockBase>> outerBlocks_;
 
   // Central FieldSet (for randomization)
   atlas::FieldSet centralFieldSet_;
