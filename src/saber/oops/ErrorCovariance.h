@@ -92,7 +92,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
   atlas::FieldSet fsetXb = util::copyFieldSet(xb.fieldSet());
   atlas::FieldSet fsetFg = util::copyFieldSet(fg.fieldSet());
   ASSERT(xb.validTime() == fg.validTime());
-  const util::DateTime validTime = xb.validTime();
+  const util::DateTime validTimeOfXbFg = xb.validTime();
 
   // Extend backgroud and first guess with extra fields
   // TODO(Benjamin, Marek, Mayeul, ?)
@@ -105,7 +105,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
   oops::Variables outerVars(incVars);
 
   // Initialize blockchain
-  Increment_ dx(geom, incVars, validTime);
+  Increment_ dx(geom, incVars, validTimeOfXbFg);
   singleBlockChain_.reset(new SaberBlockChain(incVars, dx.fieldSet()));
 
   // Iterative ensemble loading flag
@@ -140,7 +140,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
                      outerVars,
                      fsetXb,
                      fsetFg,
-                     validTime,
+                     validTimeOfXbFg,
                      fsetEns,
                      covarConf,
                      *saberOuterBlocksParams,
@@ -224,7 +224,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
         atlas::FieldSet fset;
         readHybridWeight(*hybridGeom,
                          outerVars,
-                         validTime,
+                         validTimeOfXbFg,
                          weightConf.getSubConfiguration("file"),
                          fset);
         hybridBlockChain_.back().setWeight(fset);
@@ -267,7 +267,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
                          cmpOuterVars,
                          fsetXb,
                          fsetFg,
-                         validTime,
+                         validTimeOfXbFg,
                          cmpFsetEns,
                          cmpCovarConf,
                          cmpOuterBlocksParams,
@@ -283,7 +283,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
                         cmpOuterVars,
                         fsetXb,
                         fsetFg,
-                        validTime,
+                        validTimeOfXbFg,
                         cmpFsetEns,
                         dualResolutionFsetEns,
                         cmpCovarConf,
@@ -298,7 +298,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
                       outerVars,
                       fsetXb,
                       fsetFg,
-                      validTime,
+                      validTimeOfXbFg,
                       fsetEns,
                       dualResolutionFsetEns,
                       covarConf,

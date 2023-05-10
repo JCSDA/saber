@@ -48,7 +48,8 @@ class VaderBlock : public SaberOuterBlockBase {
              const eckit::Configuration &,
              const Parameters_ &,
              const atlas::FieldSet &,
-             const atlas::FieldSet &);
+             const atlas::FieldSet &,
+             const util::DateTime &);
 
   const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}
   const oops::Variables & innerVars() const override {return innerVars_;}

@@ -52,7 +52,8 @@ class Interpolation : public SaberOuterBlockBase {
                 const eckit::Configuration &,
                 const Parameters_ &,
                 const atlas::FieldSet &,
-                const atlas::FieldSet &);
+                const atlas::FieldSet &,
+                const util::DateTime &);
   virtual ~Interpolation() = default;
 
   const oops::GeometryData & innerGeometryData() const override {return *innerGeomData_;}

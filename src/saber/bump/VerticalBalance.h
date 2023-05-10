@@ -54,7 +54,8 @@ class VerticalBalance : public SaberOuterBlockBase {
                   const eckit::Configuration &,
                   const Parameters_ &,
                   const atlas::FieldSet &,
-                  const atlas::FieldSet &);
+                  const atlas::FieldSet &,
+                  const util::DateTime &);
   virtual ~VerticalBalance();
 
   const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}

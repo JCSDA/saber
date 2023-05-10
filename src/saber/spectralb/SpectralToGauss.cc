@@ -286,7 +286,8 @@ SpectralToGauss::SpectralToGauss(const oops::GeometryData & outerGeometryData,
                                  const eckit::Configuration & covarConf,
                                  const Parameters_ & params,
                                  const atlas::FieldSet & xb,
-                                 const atlas::FieldSet & fg)
+                                 const atlas::FieldSet & fg,
+                                 const util::DateTime & validTimeOfXbFg)
   : params_(params),
     activeVars_(params.activeVariables.value().get_value_or(outerVars)),
     innerVars_(createInnerVars(activeVars_)),

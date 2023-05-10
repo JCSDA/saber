@@ -43,7 +43,8 @@ class GaussUVToGP : public SaberOuterBlockBase {
               const eckit::Configuration &,
               const Parameters_ &,
               const atlas::FieldSet &,
-              const atlas::FieldSet &);
+              const atlas::FieldSet &,
+              const util::DateTime &);
 
   virtual ~GaussUVToGP() = default;
 

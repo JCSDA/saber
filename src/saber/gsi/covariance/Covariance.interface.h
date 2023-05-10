@@ -25,7 +25,8 @@ namespace saber {
       void gsi_covariance_create_f90(CovarianceKey &, const eckit::mpi::Comm &,
                                      const eckit::Configuration &,
                                      const atlas::field::FieldSetImpl *,
-                                     const atlas::field::FieldSetImpl *);
+                                     const atlas::field::FieldSetImpl *,
+                                     const util::DateTime &);
       void gsi_covariance_delete_f90(CovarianceKey &);
       void gsi_covariance_randomize_f90(const CovarianceKey &,
                                         const atlas::field::FieldSetImpl *);

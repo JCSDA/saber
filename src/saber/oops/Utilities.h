@@ -398,7 +398,7 @@ std::unique_ptr<SaberBlockChain> localizationBlockChain(const oops::Geometry<MOD
                                                         const oops::Variables & incVars,
                                                         const atlas::FieldSet & fsetXbIn,
                                                         const atlas::FieldSet & fsetFgIn,
-                                                        const util::DateTime & validTime,
+                                                        const util::DateTime & validTimeOfXbFg,
                                                         const eckit::Configuration & conf) {
   oops::Log::trace() << "localizationBlockChain starting" << std::endl;
 
@@ -451,7 +451,7 @@ std::unique_ptr<SaberBlockChain> localizationBlockChain(const oops::Geometry<MOD
                      outerVars,
                      fsetXb,
                      fsetFg,
-                     validTime,
+                     validTimeOfXbFg,
                      emptyFsetEns,
                      covarConf,
                      saberOuterBlocksParams,
@@ -472,7 +472,7 @@ std::unique_ptr<SaberBlockChain> localizationBlockChain(const oops::Geometry<MOD
                     outerVars,
                     fsetXb,
                     fsetFg,
-                    validTime,
+                    validTimeOfXbFg,
                     emptyFsetEns,
                     emptyFsetEns,
                     covarConf,
@@ -492,7 +492,7 @@ void buildOuterBlocks(const oops::Geometry<MODEL> & geom,
                       oops::Variables & outerVars,
                       atlas::FieldSet & fsetXb,
                       atlas::FieldSet & fsetFg,
-                      const util::DateTime & validTime,
+                      const util::DateTime & validTimeOfXbFg,
                       std::vector<atlas::FieldSet> & fsetEns,
                       const eckit::LocalConfiguration & covarConf,
                       const std::vector<SaberOuterBlockParametersWrapper> & saberOuterBlocksParams,
@@ -522,10 +522,11 @@ void buildOuterBlocks(const oops::Geometry<MODEL> & geom,
                                             covarConf,
                                             saberOuterBlockParams,
                                             fsetXb,
-                                            fsetFg));
+                                            fsetFg,
+                                            validTimeOfXbFg));
 
     // Read and add model fields
-    saberBlockChain.lastOuterBlock().read(geom, outerVars, validTime);
+    saberBlockChain.lastOuterBlock().read(geom, outerVars, validTimeOfXbFg);
 
     if (saberOuterBlockParams.doCalibration()) {
       // Block calibration
@@ -548,7 +549,7 @@ void buildOuterBlocks(const oops::Geometry<MODEL> & geom,
           atlas::FieldSet fset;
           readEnsembleMember(geom,
                              saberBlockChain.incVars(),
-                             validTime,
+                             validTimeOfXbFg,
                              ensembleConf,
                              ie,
                              fset);
@@ -568,7 +569,7 @@ void buildOuterBlocks(const oops::Geometry<MODEL> & geom,
       }
 
       // Write calibration data
-      saberBlockChain.lastOuterBlock().write(geom, outerVars, validTime);
+      saberBlockChain.lastOuterBlock().write(geom, outerVars, validTimeOfXbFg);
       saberBlockChain.lastOuterBlock().write();
     } else if (saberOuterBlockParams.doRead()) {
       // Read data
@@ -697,7 +698,7 @@ void buildCentralBlock(const oops::Geometry<MODEL> & geom,
                        oops::Variables & outerVars,
                        const atlas::FieldSet & fsetXb,
                        const atlas::FieldSet & fsetFg,
-                       const util::DateTime & validTime,
+                       const util::DateTime & validTimeOfXbFg,
                        std::vector<atlas::FieldSet> & fsetEns,
                        std::vector<atlas::FieldSet> & dualResolutionFsetEns,
                        const eckit::LocalConfiguration & covarConf,
@@ -730,10 +731,11 @@ void buildCentralBlock(const oops::Geometry<MODEL> & geom,
                                    saberCentralBlockParams,
                                    fsetXb,
                                    fsetFg,
+                                   validTimeOfXbFg,
                                    geom.timeComm().rank()));
 
   // Read and add model fields
-  saberBlockChain.centralBlock().read(geom, outerVars, validTime);
+  saberBlockChain.centralBlock().read(geom, outerVars, validTimeOfXbFg);
 
   if (saberCentralBlockParams.doCalibration()) {
     // Block calibration
@@ -756,7 +758,7 @@ void buildCentralBlock(const oops::Geometry<MODEL> & geom,
         atlas::FieldSet fset;
         readEnsembleMember(geom,
                            saberBlockChain.incVars(),
-                           validTime,
+                           validTimeOfXbFg,
                            ensembleConf,
                            ie,
                            fset);
@@ -780,8 +782,8 @@ void buildCentralBlock(const oops::Geometry<MODEL> & geom,
         const auto & locConf = saberCentralBlockParams.localization.value();
         if (locConf != boost::none) {
           // Initialize localization blockchain
-          locBlockChain = localizationBlockChain<MODEL>(geom, outerVars, fsetXb, fsetXb, validTime,
-                                                        *locConf);
+          locBlockChain = localizationBlockChain<MODEL>(geom, outerVars, fsetXb, fsetXb,
+                                                        validTimeOfXbFg, *locConf);
         }
       }
 
@@ -818,7 +820,7 @@ void buildCentralBlock(const oops::Geometry<MODEL> & geom,
         atlas::FieldSet fset;
         readEnsembleMember(dualResolutionGeom,
                            saberBlockChain.incVars(),
-                           validTime,
+                           validTimeOfXbFg,
                            dualResolutionEnsembleConf,
                            ie,
                            fset);
@@ -837,7 +839,7 @@ void buildCentralBlock(const oops::Geometry<MODEL> & geom,
 
   // Write calibration data
   if (saberCentralBlockParams.doCalibration()) {
-    saberBlockChain.centralBlock().write(geom, outerVars, validTime);
+    saberBlockChain.centralBlock().write(geom, outerVars, validTimeOfXbFg);
     saberBlockChain.centralBlock().write();
   }
 
@@ -848,7 +850,7 @@ void buildCentralBlock(const oops::Geometry<MODEL> & geom,
     outputEnsemble.deserialize(covarConf.getSubConfiguration("output ensemble"));
     writeEnsemble(geom,
                   activeVars,
-                  validTime,
+                  validTimeOfXbFg,
                   outputEnsemble,
                   covarConf.getSubConfiguration("ensemble configuration"),
                   iterativeEnsembleLoading,

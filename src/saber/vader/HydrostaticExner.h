@@ -69,7 +69,8 @@ class HydrostaticExner : public SaberOuterBlockBase {
                    const eckit::Configuration &,
                    const Parameters_ &,
                    const atlas::FieldSet &,
-                   const atlas::FieldSet &);
+                   const atlas::FieldSet &,
+                   const util::DateTime &);
   virtual ~HydrostaticExner();
 
   const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}

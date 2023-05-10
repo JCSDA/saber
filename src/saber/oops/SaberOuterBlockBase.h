@@ -203,7 +203,8 @@ class SaberOuterBlockFactory {
                                       const eckit::Configuration &,
                                       const SaberBlockParametersBase &,
                                       const atlas::FieldSet &,
-                                      const atlas::FieldSet &);
+                                      const atlas::FieldSet &,
+                                      const util::DateTime &);
 
   static std::unique_ptr<SaberBlockParametersBase> createParameters(const std::string &name);
 
@@ -223,7 +224,8 @@ class SaberOuterBlockFactory {
                                      const eckit::Configuration &,
                                      const SaberBlockParametersBase &,
                                      const atlas::FieldSet &,
-                                     const atlas::FieldSet &) = 0;
+                                     const atlas::FieldSet &,
+                                     const util::DateTime &) = 0;
 
   virtual std::unique_ptr<SaberBlockParametersBase> makeParameters() const = 0;
 
@@ -245,10 +247,11 @@ class SaberOuterBlockMaker : public SaberOuterBlockFactory {
                              const eckit::Configuration & covarConf,
                              const SaberBlockParametersBase & params,
                              const atlas::FieldSet & xb,
-                             const atlas::FieldSet & fg) override {
+                             const atlas::FieldSet & fg,
+                             const util::DateTime & validTime) override {
     const auto &stronglyTypedParams = dynamic_cast<const Parameters_&>(params);
     return new T(outerGeometryData, activeVariableSizes, outerVars,
-                 covarConf, stronglyTypedParams, xb, fg);
+                 covarConf, stronglyTypedParams, xb, fg, validTime);
   }
 
   std::unique_ptr<SaberBlockParametersBase> makeParameters() const override {

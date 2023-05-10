@@ -47,6 +47,7 @@ class Ensemble : public SaberCentralBlockBase {
            const Parameters_ &,
            const atlas::FieldSet &,
            const atlas::FieldSet &,
+           const util::DateTime &,
            const size_t &);
 
   void randomize(atlas::FieldSet &) const override;

@@ -39,7 +39,8 @@ StdDev::StdDev(const oops::GeometryData & outerGeometryData,
                const eckit::Configuration & covarConfig,
                const Parameters_ & params,
                const atlas::FieldSet & xb,
-               const atlas::FieldSet & fg)
+               const atlas::FieldSet & fg,
+               const util::DateTime & validTimeOfXbFg)
   : innerGeometryData_(outerGeometryData),
     activeVariableSizes_(activeVariableSizes),
     innerVars_(outerVars),

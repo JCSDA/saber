@@ -28,7 +28,8 @@ VaderBlock::VaderBlock(const oops::GeometryData & outerGeometryData,
                        const eckit::Configuration & covarConf,
                        const Parameters_ & params,
                        const atlas::FieldSet & xb,
-                       const atlas::FieldSet & fg)
+                       const atlas::FieldSet & fg,
+                       const util::DateTime & validTimeOfXbFg)
   : outerVars_(outerVars),
     innerGeometryData_(outerGeometryData), innerVars_(params.innerVars),
     vader_(params.vader)

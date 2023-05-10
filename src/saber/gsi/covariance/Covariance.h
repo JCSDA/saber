@@ -63,6 +63,7 @@ class Covariance : public SaberCentralBlockBase {
              const Parameters_ &,
              const atlas::FieldSet &,
              const atlas::FieldSet &,
+             const util::DateTime &,
              const size_t &);
   virtual ~Covariance();
 
@@ -88,6 +89,8 @@ class Covariance : public SaberCentralBlockBase {
   atlas::FieldSet xb_;
   // First guess
   atlas::FieldSet fg_;
+  // Valid time
+  util::DateTime validTimeOfXbFg_;
 };
 
 // -------------------------------------------------------------------------------------------------

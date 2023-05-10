@@ -476,7 +476,8 @@ GaussUVToGP::GaussUVToGP(const oops::GeometryData & outerGeometryData,
                const eckit::Configuration & covarConf,
                const Parameters_ & params,
                const atlas::FieldSet & xb,
-               const atlas::FieldSet & fg)
+               const atlas::FieldSet & fg,
+               const util::DateTime & validTimeOfXbFg)
   : params_(params),
     innerVars_(createInnerVars(outerVars)),
     outerVars_(outerVars),

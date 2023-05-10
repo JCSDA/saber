@@ -54,6 +54,7 @@ class SPCTRL_COV : public SaberCentralBlockBase {
              const Parameters_ &,
              const atlas::FieldSet &,
              const atlas::FieldSet &,
+             const util::DateTime &,
              const size_t &);
   virtual ~SPCTRL_COV();
 

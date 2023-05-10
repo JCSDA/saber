@@ -38,7 +38,8 @@ SuperMoistIncrOp::SuperMoistIncrOp(const oops::GeometryData & outerGeometryData,
                                    const eckit::Configuration & covarConf,
                                    const Parameters_ & params,
                                    const atlas::FieldSet & xb,
-                                   const atlas::FieldSet & fg)
+                                   const atlas::FieldSet & fg,
+                                   const util::DateTime & validTimeOfXbFg)
   : innerGeometryData_(outerGeometryData), innerVars_(outerVars),
     activeVars_(params.activeVars.value().get_value_or(outerVars)),
     exnerThetaToTemp_(std::make_unique<AirTemperature>(outerGeometryData,
@@ -46,12 +47,12 @@ SuperMoistIncrOp::SuperMoistIncrOp(const oops::GeometryData & outerGeometryData,
                                                        outerVars,
                                                        covarConf,
                                                        params.airTemperature,
-                                                       xb, fg)),
+                                                       xb, fg, validTimeOfXbFg)),
     MIO_(std::make_unique<MoistIncrOp>(outerGeometryData,
                                        activeVariableSizes,
                                        outerVars,
                                        covarConf,
-                                       params.moistIncrOp, xb, fg))
+                                       params.moistIncrOp, xb, fg, validTimeOfXbFg))
 {
   oops::Log::trace() << classname() << "::SuperMoistIncrOp starting" << std::endl;
   oops::Log::trace() << classname() << "::SuperMoistIncrOp done" << std::endl;

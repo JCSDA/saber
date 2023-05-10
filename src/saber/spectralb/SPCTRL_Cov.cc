@@ -35,6 +35,7 @@ SPCTRL_COV::SPCTRL_COV(const oops::GeometryData & geometryData,
                        const Parameters_ & params,
                        const atlas::FieldSet & xb,
                        const atlas::FieldSet & fg,
+                       const util::DateTime & validTimeOfXbFg,
                        const size_t & timeRank)
   : params_(params),
     variableSizes_(variableSizes),

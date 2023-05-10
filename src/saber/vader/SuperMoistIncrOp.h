@@ -56,7 +56,8 @@ class SuperMoistIncrOp : public SaberOuterBlockBase {
                    const eckit::Configuration &,
                    const Parameters_ &,
                    const atlas::FieldSet &,
-                   const atlas::FieldSet &);
+                   const atlas::FieldSet &,
+                   const util::DateTime &);
   virtual ~SuperMoistIncrOp();
 
   const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}

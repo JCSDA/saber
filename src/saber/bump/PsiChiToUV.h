@@ -57,7 +57,8 @@ class PsiChiToUV : public SaberOuterBlockBase {
              const eckit::Configuration &,
              const Parameters_ &,
              const atlas::FieldSet &,
-             const atlas::FieldSet &);
+             const atlas::FieldSet &,
+             const util::DateTime &);
   virtual ~PsiChiToUV();
 
   const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}

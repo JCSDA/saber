@@ -43,9 +43,11 @@ Covariance::Covariance(const oops::GeometryData & geometryData,
                        const Parameters_ & params,
                        const atlas::FieldSet & xb,
                        const atlas::FieldSet & fg,
+                       const util::DateTime & validTimeOfXbFg,
                        const size_t & timeRank)
   : params_(params), variables_(params.activeVars.value().get_value_or(centralVars).variables()),
-    gsiGridFuncSpace_(geometryData.functionSpace()), comm_(&geometryData.comm())
+    gsiGridFuncSpace_(geometryData.functionSpace()), comm_(&geometryData.comm()),
+    validTimeOfXbFg_(validTimeOfXbFg)
 {
   oops::Log::trace() << classname() << "::Covariance starting" << std::endl;
   util::Timer timer(classname(), "Covariance");
@@ -113,7 +115,7 @@ void Covariance::read() {
   oops::Log::trace() << classname() << "::read starting" << std::endl;
   // Create covariance module
   gsi_covariance_create_f90(keySelf_, *comm_, params_.readParams.value()->toConfiguration(),
-     xb_.get(), fg_.get());
+     xb_.get(), fg_.get(), validTimeOfXbFg_);
   oops::Log::trace() << classname() << "::read done" << std::endl;
 }
 

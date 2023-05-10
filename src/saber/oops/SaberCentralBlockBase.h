@@ -149,6 +149,7 @@ class SaberCentralBlockFactory {
                                         const SaberBlockParametersBase &,
                                         const atlas::FieldSet &,
                                         const atlas::FieldSet &,
+                                        const util::DateTime &,
                                         const size_t & timeRank = 0);
 
   static std::unique_ptr<SaberBlockParametersBase> createParameters(const std::string &name);
@@ -170,6 +171,7 @@ class SaberCentralBlockFactory {
                                        const SaberBlockParametersBase &,
                                        const atlas::FieldSet &,
                                        const atlas::FieldSet &,
+                                       const util::DateTime &,
                                        const size_t &) = 0;
 
   virtual std::unique_ptr<SaberBlockParametersBase> makeParameters() const = 0;
@@ -193,10 +195,11 @@ class SaberCentralBlockMaker : public SaberCentralBlockFactory {
                                const SaberBlockParametersBase & params,
                                const atlas::FieldSet & xb,
                                const atlas::FieldSet & fg,
+                               const util::DateTime & validTime,
                                const size_t & timeRank) override {
     const auto &stronglyTypedParams = dynamic_cast<const Parameters_&>(params);
     return new T(geometryData, activeVariableSizes, outerVars, covarConf,
-                 stronglyTypedParams, xb, fg, timeRank);
+                 stronglyTypedParams, xb, fg, validTime, timeRank);
   }
 
   std::unique_ptr<SaberBlockParametersBase> makeParameters() const override {

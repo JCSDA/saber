@@ -98,6 +98,7 @@ class Hybrid : public SaberCentralBlockBase {
          const Parameters_ &,
          const atlas::FieldSet &,
          const atlas::FieldSet &,
+         const util::DateTime &,
          const size_t &)
     {ABORT("the Hybrid block is a fake block, it should not be constructed");}
 

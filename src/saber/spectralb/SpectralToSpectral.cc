@@ -26,7 +26,8 @@ SpectralToSpectral::SpectralToSpectral(const oops::GeometryData & outerGeometryD
                                        const eckit::Configuration & covarConf,
                                        const SpectralToSpectralParameters & params,
                                        const atlas::FieldSet & xb,
-                                       const atlas::FieldSet & fg) :
+                                       const atlas::FieldSet & fg,
+                                       const util::DateTime & validTimeOfXbFg) :
     innerFunctionSpace_(2 * params.inputTruncation.value() - 1),
     outerFunctionSpace_(outerGeometryData.functionSpace()),
     innerGeometryData_(innerFunctionSpace_,

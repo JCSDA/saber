@@ -41,7 +41,8 @@ class SpectralToSpectral : public SaberOuterBlockBase {
                      const eckit::Configuration &,
                      const SpectralToSpectralParameters &,
                      const atlas::FieldSet &,
-                     const atlas::FieldSet &);
+                     const atlas::FieldSet &,
+                     const util::DateTime &);
 
   virtual ~SpectralToSpectral() = default;
 

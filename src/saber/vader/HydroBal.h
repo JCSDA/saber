@@ -55,7 +55,8 @@ class HydroBal : public SaberOuterBlockBase {
            const eckit::Configuration &,
            const Parameters_ &,
            const atlas::FieldSet &,
-           const atlas::FieldSet &);
+           const atlas::FieldSet &,
+           const util::DateTime &);
   virtual ~HydroBal();
 
   const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}

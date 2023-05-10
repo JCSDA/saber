@@ -45,7 +45,8 @@ HpToHexner::HpToHexner(const oops::GeometryData & outerGeometryData,
                                    const eckit::Configuration & covarConf,
                                    const Parameters_ & params,
                                    const atlas::FieldSet & xb,
-                                   const atlas::FieldSet & fg)
+                                   const atlas::FieldSet & fg,
+                                   const util::DateTime & validTimeOfXbFg)
   : innerGeometryData_(outerGeometryData), innerVars_(outerVars),
     activeVars_(params.activeVars.value().get_value_or(outerVars)),
     augmentedStateFieldSet_()

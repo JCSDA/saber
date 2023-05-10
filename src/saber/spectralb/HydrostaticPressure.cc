@@ -40,7 +40,8 @@ HydrostaticPressure::HydrostaticPressure(const oops::GeometryData & outerGeometr
                                    const eckit::Configuration & covarConf,
                                    const Parameters_ & params,
                                    const atlas::FieldSet & xb,
-                                   const atlas::FieldSet & fg)
+                                   const atlas::FieldSet & fg,
+                                   const util::DateTime & validTimeOfXbFg)
   : innerGeometryData_(outerGeometryData), innerVars_(outerVars),
     activeVars_(params.activeVars.value().get_value_or(outerVars)),
     gaussFunctionSpace_(outerGeometryData.functionSpace()),
@@ -49,12 +50,12 @@ HydrostaticPressure::HydrostaticPressure(const oops::GeometryData & outerGeometr
                                                    outerVars,
                                                    covarConf,
                                                    params.gpToHp,
-                                                   xb, fg)),
+                                                   xb, fg, validTimeOfXbFg)),
     gaussuvtogp_(std::make_unique<GaussUVToGP>(outerGeometryData,
                                                activeVariableSizes,
                                                gptohp_->innerVars(),
                                                covarConf,
-                                               params.gaussUVToGp, xb, fg))
+                                               params.gaussUVToGp, xb, fg, validTimeOfXbFg))
 {
   oops::Log::trace() << classname() << "::HydrostaticPressure starting" << std::endl;
   oops::Log::trace() << classname() << "::HydrostaticPressure done" << std::endl;

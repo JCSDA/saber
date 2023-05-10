@@ -33,6 +33,7 @@ Ensemble::Ensemble(const oops::GeometryData & geometryData,
                    const Parameters_ & params,
                    const atlas::FieldSet & xb,
                    const atlas::FieldSet & fg,
+                   const util::DateTime & validTimeOfXbFg,
                    const size_t & timeRank) :
   timeRank_(timeRank), vars_(activeVars), comm_(geometryData.comm()) {
   oops::Log::trace() << classname() << "::Ensemble starting" << std::endl;

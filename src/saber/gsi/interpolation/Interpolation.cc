@@ -37,7 +37,8 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
                              const eckit::Configuration & covarConf,
                              const Parameters_ & params,
                              const atlas::FieldSet & xb,
-                             const atlas::FieldSet & fg)
+                             const atlas::FieldSet & fg,
+                             const util::DateTime & validTimeOfXbFg)
   : innerVars_(outerVars)
 {
   oops::Log::trace() << classname() << "::Interpolation starting" << std::endl;

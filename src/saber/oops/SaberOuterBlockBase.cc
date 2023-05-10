@@ -54,7 +54,8 @@ SaberOuterBlockBase * SaberOuterBlockFactory::create(
   const eckit::Configuration & covarConfig,
   const SaberBlockParametersBase & params,
   const atlas::FieldSet & xb,
-  const atlas::FieldSet & fg) {
+  const atlas::FieldSet & fg,
+  const util::DateTime & validTime) {
   oops::Log::trace() << "SaberOuterBlockBase::create starting" << std::endl;
   const std::string id = params.saberBlockName;
   typename std::map<std::string, SaberOuterBlockFactory*>::iterator jsb = getMakers().find(id);
@@ -63,7 +64,7 @@ SaberOuterBlockBase * SaberOuterBlockFactory::create(
     ABORT("Element does not exist in saber::SaberOuterBlockFactory.");
   }
   SaberOuterBlockBase * ptr = jsb->second->make(outerGeometryData, outerVariableSizes,
-                                                outerVars, covarConfig, params, xb, fg);
+                                                outerVars, covarConfig, params, xb, fg, validTime);
   ptr->setBlockName(params.saberBlockName.value());
   ptr->setSkipInverse(params.skipInverse.value());
   oops::Log::trace() << "SaberOuterBlockBase::create done" << std::endl;

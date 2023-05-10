@@ -16,6 +16,7 @@ use fckit_configuration_module,     only: fckit_configuration
 ! oops
 use kinds,                          only: kind_real
 use random_mod
+use datetime_mod
 
 ! saber
 use gsi_grid_mod,                   only: gsi_grid
@@ -76,7 +77,7 @@ contains
 
 ! --------------------------------------------------------------------------------------------------
 
-subroutine create(self, comm, config, background, firstguess)
+subroutine create(self, comm, config, background, firstguess, valid_time)
 
 ! Arguments
 class(gsi_covariance),     intent(inout) :: self
@@ -84,6 +85,7 @@ type(fckit_mpi_comm),      intent(in)    :: comm
 type(fckit_configuration), intent(in)    :: config
 type(atlas_fieldset),      intent(in)    :: background
 type(atlas_fieldset),      intent(in)    :: firstguess
+type(datetime),            intent(in)    :: valid_time
 
 ! Locals
 character(len=*), parameter :: myname_=myname//'*create'
@@ -95,10 +97,15 @@ integer :: ngsivars2d,ngsivars3d
 character(len=20),allocatable :: gsivars(:)
 character(len=20),allocatable :: usrvars(:)
 character(len=30),allocatable :: tbdvars(:)
+character(len=20) :: valid_time_string
 
 ! Hold communicator
 ! -----------------
 self%mp_comm=comm%communicator()
+
+! Convert datetime to string in ISO form "yyyy-mm-ddT00:00:00Z"
+! -------------------------------------------------------------
+call datetime_to_string(valid_time, valid_time_string)
 
 ! Create the grid
 ! ---------------
@@ -127,7 +134,7 @@ if (.not. self%grid%noGSI) then
   else
      ! the correct way to handle the guess vars is to get what the met-guess
      ! from GSI vars are, sip through the JEDI firstguess, copy over what is
-     ! found and and construct what is missing.  
+     ! found and and construct what is missing.
 
      call gsi_metguess_get('dim::2d',ngsivars2d,ier)
      call gsi_metguess_get('dim::3d',ngsivars3d,ier)
@@ -170,9 +177,9 @@ if (.not. self%grid%noGSI) then
          enddo
          deallocate(gsivars,usrvars)
      endif
- 
+
 !    Auxiliar vars for GSI-B
-!    -----------------------  
+!    -----------------------
      call gsiguess_bkgcov_init(tbdvars)
      if (size(tbdvars)>0) then
        if (any(tbdvars(:)(1:6)/='filled')) then
@@ -183,7 +190,7 @@ if (.not. self%grid%noGSI) then
        endif
      endif
      deallocate(tbdvars)
-     
+
   endif
   if(jouter==1) call rf_set()
 
@@ -693,14 +700,14 @@ end subroutine multiply
    end subroutine remhalo_
 
    subroutine cvfix_(gsicv,jedicv,vflip,need,which)
- 
+
    use control_vectors, only: control_vector
    use gsi_bundlemod, only: gsi_bundlegetpointer
    use gsi_metguess_mod, only: gsi_metguess_bundle
    use gsi_metguess_mod, only: gsi_metguess_get
    use gsi_convert_cv_mod, only: gsi_tv_to_t_tl
    use gsi_convert_cv_mod, only: gsi_tv_to_t_ad
- 
+
    implicit none
 
    type(control_vector),intent(inout) :: gsicv
@@ -708,7 +715,7 @@ end subroutine multiply
    logical,intent(in) :: vflip
    character(len=*),intent(inout) :: need(:)
    character(len=*),intent(in) :: which
-! 
+!
    real(kind=kind_real), allocatable :: t_pt(:,:,:)
    real(kind=kind_real), pointer ::    tv(:,:,:)=>NULL()
    real(kind=kind_real), pointer :: tv_pt(:,:,:)=>NULL()
@@ -771,14 +778,14 @@ end subroutine multiply
    end subroutine cvfix_
 
    subroutine svfix_(gsisv,jedicv,vflip,need,which)
- 
+
    use gsi_bundlemod, only: gsi_bundle
    use gsi_bundlemod, only: gsi_bundlegetpointer
    use gsi_metguess_mod, only: gsi_metguess_bundle
    use gsi_metguess_mod, only: gsi_metguess_get
    use gsi_convert_cv_mod, only: gsi_tv_to_t_tl
    use gsi_convert_cv_mod, only: gsi_tv_to_t_ad
- 
+
    implicit none
 
    type(gsi_bundle),intent(inout) :: gsisv
@@ -786,7 +793,7 @@ end subroutine multiply
    logical,intent(in) :: vflip
    character(len=*),intent(inout) :: need(:)
    character(len=*),intent(in) :: which
-! 
+!
    real(kind=kind_real), allocatable :: t_pt(:,:,:)
    real(kind=kind_real), pointer ::       tv(:,:,:)=>NULL()
    real(kind=kind_real), pointer ::    tv_pt(:,:,:)=>NULL()

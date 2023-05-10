@@ -9,6 +9,9 @@ module gsi_covariance_interface_mod
 ! iso
 use iso_c_binding
 
+! oops
+use datetime_mod
+
 ! atlas
 use atlas_module,               only: atlas_functionspace, atlas_fieldset
 
@@ -46,7 +49,7 @@ contains
 
 ! --------------------------------------------------------------------------------------------------
 
-subroutine gsi_covariance_create_cpp(c_self, c_comm, c_conf, c_bg, c_fg) &
+subroutine gsi_covariance_create_cpp(c_self, c_comm, c_conf, c_bg, c_fg, c_valid_time) &
            bind(c, name='gsi_covariance_create_f90')
 
 ! Arguments
@@ -55,6 +58,7 @@ type(c_ptr), value, intent(in)    :: c_conf
 type(c_ptr), value, intent(in)    :: c_comm
 type(c_ptr), value, intent(in)    :: c_bg
 type(c_ptr), value, intent(in)    :: c_fg
+type(c_ptr), value, intent(in)    :: c_valid_time
 
 ! Locals
 type(gsi_covariance), pointer :: f_self
@@ -62,6 +66,7 @@ type(fckit_mpi_comm)          :: f_comm
 type(fckit_configuration)     :: f_conf
 type(atlas_fieldset)          :: f_bg
 type(atlas_fieldset)          :: f_fg
+type(datetime)                :: f_valid_time
 
 ! LinkedList
 ! ----------
@@ -75,10 +80,11 @@ f_conf = fckit_configuration(c_conf)
 f_comm = fckit_mpi_comm(c_comm)
 f_bg = atlas_fieldset(c_bg)
 f_fg = atlas_fieldset(c_fg)
+call c_f_datetime(c_valid_time, f_valid_time)
 
 ! Call implementation
 ! -------------------
-call f_self%create(f_comm, f_conf, f_bg, f_fg)
+call f_self%create(f_comm, f_conf, f_bg, f_fg, f_valid_time)
 
 end subroutine gsi_covariance_create_cpp
 

@@ -55,6 +55,7 @@ SaberCentralBlockBase * SaberCentralBlockFactory::create(
   const SaberBlockParametersBase & params,
   const atlas::FieldSet & xb,
   const atlas::FieldSet & fg,
+  const util::DateTime & validTime,
   const size_t & timeRank) {
   oops::Log::trace() << "SaberCentralBlockBase::create starting" << std::endl;
   const std::string id = params.saberBlockName;
@@ -64,7 +65,7 @@ SaberCentralBlockBase * SaberCentralBlockFactory::create(
     ABORT("Element does not exist in saber::SaberCentralBlockFactory.");
   }
   SaberCentralBlockBase * ptr = jsb->second->make(geometryData, variableSizes, vars, covarConf,
-    params, xb, fg, timeRank);
+    params, xb, fg, validTime, timeRank);
   ptr->setBlockName(params.saberBlockName.value());
   oops::Log::trace() << "SaberCentralBlockBase::create done" << std::endl;
   return ptr;
