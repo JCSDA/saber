@@ -595,6 +595,21 @@ void buildOuterBlocks(const oops::Geometry<MODEL> & geom,
       oops::Log::info() << "Info     : Write calibration data" << std::endl;
       saberBlockChain.lastOuterBlock().write(geom, outerVars, validTimeOfXbFg);
       saberBlockChain.lastOuterBlock().write();
+
+      if (!iterativeEnsembleLoading) {
+        // Left inverse multiplication on ensemble members
+        oops::Log::info() << "Info     : Left inverse multiplication on ensemble members"
+                          << std::endl;
+        for (auto & fset : fsetEns) {
+          if (saberBlockChain.lastOuterBlock().skipInverse()) {
+            oops::Log::info()
+                    << "Info     : Warning: left inverse multiplication skipped for block "
+                    << saberBlockChain.lastOuterBlock().blockName() << std::endl;
+          } else {
+            saberBlockChain.lastOuterBlock().leftInverseMultiply(fset);
+          }
+        }
+      }
     } else if (saberOuterBlockParams.doRead()) {
       // Read data
       oops::Log::info() << "Info     : Read data" << std::endl;
@@ -617,19 +632,6 @@ void buildOuterBlocks(const oops::Geometry<MODEL> & geom,
     oops::Variables activeInnerVars = activeVars;
     activeInnerVars.intersection(innerVars);
 
-    if (!iterativeEnsembleLoading) {
-      // Left inverse multiplication on ensemble members
-      oops::Log::info() << "Info     : Left inverse multiplication on ensemble members"
-                        << std::endl;
-      for (auto & fset : fsetEns) {
-        if (saberBlockChain.lastOuterBlock().skipInverse()) {
-          oops::Log::info() << "Info     : Warning: left inverse multiplication skipped for block "
-                            << saberBlockChain.lastOuterBlock().blockName() << std::endl;
-        } else {
-          saberBlockChain.lastOuterBlock().leftInverseMultiply(fset);
-        }
-      }
-    }
 
     // Left inverse multiplication on xb and fg if inner and outer Geometry is different
     if (util::getGridUid(innerGeometryData.functionSpace())
