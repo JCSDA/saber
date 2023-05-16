@@ -26,7 +26,9 @@ Covariance(SABER) diagnostics:
   + Value for variable moisture_control_variable, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.3590865841806005e-01
 - Covariances at diagnostic points:
   + Value for variable unbalanced_pressure, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 17.17204, 2): 7.1850738003498435e+01
+  + Value for variable unbalanced_pressure, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 90.00000, 1): -1.6680520305981073e+01
   + Value for variable moisture_control_variable, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 17.17204, 2): 4.8855734704877753e-03
+  + Value for variable moisture_control_variable, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 90.00000, 1): -2.6856664913069378e-04
 Covariance(SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:

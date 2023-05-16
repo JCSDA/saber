@@ -388,9 +388,13 @@ void SpectralToGauss::multiplyScalarFields(const atlas::FieldSet & specFieldSet,
       gaussFieldSet.add(gaussField);
   }
 
-  // Transform to gaussian grid
+  // Transform to Gaussian grid
   trans_.invtrans(specFieldSet, gaussFieldSet);
+  // TODO(Mayeul) Understand why ectrans yield dirty fields marked as clean (on 1 PE).
+  //              Fix this so that next line is not needed.
+  gaussFieldSet.set_dirty();
 
+  // Exchange halos
   for (const auto & fieldname : specFieldSet.field_names()) {
     gaussFieldSet[fieldname].haloExchange();
     ASSERT(!outFieldSet.has(fieldname));
@@ -413,8 +417,12 @@ void SpectralToGauss::multiplyScalarFieldsAD(const atlas::FieldSet & gaussFieldS
     specFieldSet.add(specField);
   }
 
-  // Transform to spectral space
-  trans_.invtrans_adj(gaussFieldSet, specFieldSet);
+  // (Adjoint of:) Exchange halos
+  atlas::FieldSet tmpFieldSet = gaussFieldSet;
+  tmpFieldSet->adjointHaloExchange();
+
+  // (Adjoint of:) Transform to Gaussian grid
+  trans_.invtrans_adj(tmpFieldSet, specFieldSet);
 
   for (const auto & fieldname : gaussFieldSet.field_names()) {
     outFieldSet.add(specFieldSet[fieldname]);

@@ -58,13 +58,21 @@ diagnostic points:
   lon:
   - 20.0
   - 20.0
+  - 0
+  - 0
   lat:
   - 20.0
   - 20.0
+  - 90
+  - 90
   level:
   - 2
   - 2
+  - 1
+  - 1
   variable:
+  - unbalanced_pressure
+  - moisture_control_variable
   - unbalanced_pressure
   - moisture_control_variable
 output dirac:
