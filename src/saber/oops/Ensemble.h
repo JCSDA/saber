@@ -85,7 +85,6 @@ class Ensemble : public SaberCentralBlockBase {
  private:
   std::vector<atlas::FieldSet> ensemble_;
   std::unique_ptr<SaberBlockChain> loc_;
-  size_t timeRank_;
   const oops::GeometryData & geometryData_;
   std::vector<size_t> variableSizes_;
   const oops::Variables vars_;

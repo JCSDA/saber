@@ -39,8 +39,7 @@ PsiChiToUV::PsiChiToUV(const oops::GeometryData & outerGeometryData,
     outerVars_(outerVars),
     levels_(activeVariableSizes[0]),
     bumpParams_(),
-    bump_(),
-    memberIndex_(0)
+    bump_()
 {
   oops::Log::trace() << classname() << "::PsiChiToUV starting" << std::endl;
 

@@ -77,7 +77,6 @@ class PsiChiToUV : public SaberOuterBlockBase {
   size_t levels_;
   BUMPParameters bumpParams_;
   std::unique_ptr<bump_lib::BUMP> bump_;
-  size_t memberIndex_;
 };
 
 // -----------------------------------------------------------------------------

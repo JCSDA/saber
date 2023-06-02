@@ -35,9 +35,8 @@ Ensemble::Ensemble(const oops::GeometryData & geometryData,
                    const atlas::FieldSet & xb,
                    const atlas::FieldSet & fg,
                    const util::DateTime & validTimeOfXbFg,
-                   const size_t & timeRank) :
+                   const size_t & /*timeRank*/) :
   SaberCentralBlockBase(params),
-  timeRank_(timeRank),
   geometryData_(geometryData),
   variableSizes_(activeVariableSizes),
   vars_(activeVars),
