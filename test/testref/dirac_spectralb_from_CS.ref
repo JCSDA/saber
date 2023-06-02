@@ -18,7 +18,9 @@ Fields:
   unbalanced_pressure: 1.0000000000000000e+00
   moisture_control_variable: 1.0000000000000000e+00
 Adjoint test for block gauss to cubed-sphere-dual passed
+skipping inverse test
 Adjoint test for block spectral to gauss passed
+skipping inverse test
 Adjoint test for block spectral covariance passed
 Covariance(SABER) diagnostics:
 - Variances at Dirac points:

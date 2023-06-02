@@ -15,11 +15,12 @@ initial condition:
 background error:
   covariance model: SABER
   adjoint test: true
+  inverse test: true
   saber central block:
     saber block name: ID
   saber outer blocks:
   - saber block name: interpolation
-    skip inverse: true # TODO: remove this when ATLAS interpolator is fixed
+    skip inverse test: true # TODO: remove this when ATLAS interpolator is fixed
     inner geometry:
       function space: StructuredColumns
       grid:

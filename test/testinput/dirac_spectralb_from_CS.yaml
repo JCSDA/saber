@@ -17,6 +17,7 @@ initial condition:
 background error:
   covariance model: SABER
   adjoint test: true
+  inverse test: true
   saber central block:
     saber block name: spectral covariance
     active variables:
@@ -31,12 +32,12 @@ background error:
       variance_opt: true
   saber outer blocks:
   - saber block name: spectral to gauss
-    skip inverse: true
+    skip inverse test: true
     active variables:
     - unbalanced_pressure
     - moisture_control_variable
   - saber block name: gauss to cubed-sphere-dual
-    skip inverse: true
+    skip inverse test: true
     gauss grid uid: F15
     active variables:
     - unbalanced_pressure
