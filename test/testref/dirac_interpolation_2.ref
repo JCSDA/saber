@@ -17,7 +17,7 @@ Groups:
 Fields:
   stream_function: 1.0000000000000000e+00
 Adjoint test for block interpolation passed
-skipping inverse test
+skipping inverse test for block interpolation
 Adjoint test for block ID passed
 Covariance(SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z

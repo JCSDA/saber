@@ -187,7 +187,7 @@ void SaberOuterBlockBase::inverseTest(const oops::GeometryData & innerGeometryDa
   const bool outerComparison = this->compareFieldSets(innerFset,
                                                       innerFsetSave,
                                                       innerInverseTolerance);
-  oops::Log::test() << "Inner inverse test passed for block " << this->blockName();
+  oops::Log::test() << "Inner inverse test for block " << this->blockName();
   if (outerComparison) {
     oops::Log::test() << " passed: U Uinv (U x) == (U x)" << std::endl;
   } else {

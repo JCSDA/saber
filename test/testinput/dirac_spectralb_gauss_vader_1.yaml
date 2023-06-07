@@ -204,6 +204,5 @@ output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_spectralb_gauss_vader_1/dirac_%id%_%MPI%
 test:
-  test output filename: testref/dirac_spectralb_gauss_vader_1.out
   reference filename: testref/dirac_spectralb_gauss_vader_1.ref
 

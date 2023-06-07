@@ -681,7 +681,8 @@ void buildOuterBlocks(const oops::Geometry<MODEL> & geom,
     if (covarConf.getBool("inverse test", false)) {
       oops::Log::info() << "Info     : Inverse test" << std::endl;
       if (skipInverseTest) {
-        oops::Log::test() << "skipping inverse test" << std::endl;
+        oops::Log::test() << "skipping inverse test for block "
+                          << saberBlockChain.lastOuterBlock().blockName() << std::endl;
       } else {
         // Get inner and outer tolerances
         const double innerInverseTolerance = saberOuterBlockParams.innerInverseTolerance.value()

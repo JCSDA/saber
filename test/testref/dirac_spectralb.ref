@@ -20,13 +20,13 @@ Fields:
   unbalanced_pressure: 1.0000000000000000e+00
   moisture_control_variable: 1.0000000000000000e+00
 Adjoint test for block spectral to gauss passed
-Inner inverse test passed for block spectral to gauss passed: U Uinv (U x) == (U x)
+Inner inverse test for block spectral to gauss passed: U Uinv (U x) == (U x)
 Outer inverse test for block spectral to gauss passed: Uinv U (Uinv x) == (Uinv x)
 Adjoint test for block spectral to spectral passed
-Inner inverse test passed for block spectral to spectral passed: U Uinv (U x) == (U x)
+Inner inverse test for block spectral to spectral passed: U Uinv (U x) == (U x)
 Outer inverse test for block spectral to spectral passed: Uinv U (Uinv x) == (Uinv x)
 Adjoint test for block spectral to spectral passed
-Inner inverse test passed for block spectral to spectral passed: U Uinv (U x) == (U x)
+Inner inverse test for block spectral to spectral passed: U Uinv (U x) == (U x)
 Outer inverse test for block spectral to spectral passed: Uinv U (Uinv x) == (Uinv x)
 Adjoint test for block spectral covariance passed
 Covariance(SABER) diagnostics:
