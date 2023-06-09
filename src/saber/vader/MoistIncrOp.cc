@@ -16,14 +16,14 @@
 
 #include "eckit/exception/Exceptions.h"
 
-#include "../../vader/src/mo/common_varchange.h"
-#include "../../vader/src/mo/control2analysis_linearvarchange.h"
-#include "../../vader/src/mo/eval_mio_fields.h"
-#include "../../vader/src/mo/eval_moisture_incrementing_operator.h"
-#include "../../vader/src/mo/eval_sat_vapour_pressure.h"
-#include "../../vader/src/mo/eval_total_relative_humidity.h"
-#include "../../vader/src/mo/functions.h"
-#include "../../vader/src/mo/model2geovals_varchange.h"
+#include "mo/common_varchange.h"
+#include "mo/control2analysis_linearvarchange.h"
+#include "mo/eval_mio_fields.h"
+#include "mo/eval_moisture_incrementing_operator.h"
+#include "mo/eval_sat_vapour_pressure.h"
+#include "mo/eval_total_relative_humidity.h"
+#include "mo/functions.h"
+#include "mo/model2geovals_varchange.h"
 
 #include "oops/base/Variables.h"
 #include "oops/util/Timer.h"
