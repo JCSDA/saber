@@ -126,12 +126,8 @@ void populateFields(const atlas::FieldSet & geomfields,
 
   // Need to setup derived state fields that we need (done on model grid).
   std::vector<std::string> requiredStateVariables{
-    "air_temperature",
-    "air_pressure",
     "air_pressure_levels_minus_one",
-    "dlsvpdT",
     "dry_air_density_levels_minus_one",
-    "exner",
     "height",
     "height_levels",
     "m_ci",
@@ -140,9 +136,7 @@ void populateFields(const atlas::FieldSet & geomfields,
     "m_v",
     "m_t",
     "potential_temperature",
-    "qsat",
     "specific_humidity",
-    "svp",
     "virtual_potential_temperature"};
 
   std::vector<std::string> requiredGeometryVariables{"height_levels",
@@ -168,10 +162,7 @@ void populateFields(const atlas::FieldSet & geomfields,
     tempfields.add(geomfields[s]);
   }
 
-  mo::evalAirTemperature(tempfields);
   mo::evalTotalMassMoistAir(tempfields);
-  mo::evalSatVaporPressure(tempfields);
-  mo::evalSatSpecificHumidity(tempfields);
   mo::evalSpecificHumidity(tempfields);
   mo::eval_virtual_potential_temperature_nl(tempfields);
   mo::eval_dry_air_density_nl(tempfields);

@@ -136,7 +136,6 @@ background error:
       - qt
   - saber block name: mo_dry_air_density
     skip inverse test: true
-    saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
 dirac:
   lon:
   - 0.0

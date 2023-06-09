@@ -51,13 +51,9 @@ DryAirDensity::DryAirDensity(const oops::GeometryData & outerGeometryData,
   oops::Log::trace() << classname() << "::DryAirDensity starting" << std::endl;
 
   // Need to setup derived state fields that we need.
-  std::vector<std::string> requiredStateVariables{ "air_temperature",
-                                                   "air_pressure",
+  std::vector<std::string> requiredStateVariables{
                                                    "air_pressure_levels_minus_one",
-                                                   "dlsvpdT",
                                                    "dry_air_density_levels_minus_one",
-                                                   "exner",
-                                                   "exner_levels_minus_one",
                                                    "height",
                                                    "height_levels",
                                                    "m_ci",
@@ -66,9 +62,7 @@ DryAirDensity::DryAirDensity(const oops::GeometryData & outerGeometryData,
                                                    "m_v",
                                                    "m_t",
                                                    "potential_temperature",
-                                                   "qsat",
                                                    "specific_humidity",
-                                                   "svp",
                                                    "virtual_potential_temperature"};
 
 
@@ -95,10 +89,7 @@ DryAirDensity::DryAirDensity(const oops::GeometryData & outerGeometryData,
     }
   }
 
-  mo::evalAirTemperature(augmentedStateFieldSet_);
   mo::evalTotalMassMoistAir(augmentedStateFieldSet_);
-  mo::eval_sat_vapour_pressure_nl(params.svp_file, augmentedStateFieldSet_);
-  mo::evalSatSpecificHumidity(augmentedStateFieldSet_);
   mo::evalSpecificHumidity(augmentedStateFieldSet_);
   mo::eval_virtual_potential_temperature_nl(augmentedStateFieldSet_);
   mo::eval_dry_air_density_nl(augmentedStateFieldSet_);
