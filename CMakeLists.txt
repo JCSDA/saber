@@ -9,7 +9,7 @@
 
 cmake_minimum_required( VERSION 3.12 )
 
-project( saber VERSION 1.6.0 LANGUAGES CXX Fortran )
+project( saber VERSION 1.7.0 LANGUAGES CXX Fortran )
 
 option(OPENMP "Build saber with OpenMP support" ON)
 
@@ -35,9 +35,9 @@ if(OPENMP)
 endif()
 find_package( MPI REQUIRED COMPONENTS Fortran )
 find_package( NetCDF REQUIRED COMPONENTS C Fortran )
-find_package( eckit 1.11.6 REQUIRED COMPONENTS MPI )
-find_package( fckit 0.7.0  REQUIRED )
-find_package( atlas 0.30.0 REQUIRED COMPONENTS OMP_Fortran )
+find_package( eckit 1.23.0 REQUIRED COMPONENTS MPI )
+find_package( fckit 0.10.1 REQUIRED )
+find_package( atlas 0.33.0 REQUIRED COMPONENTS OMP_Fortran )
 
 if( ENABLE_MKL )
     find_package( MKL )
@@ -49,9 +49,9 @@ else()
 endif()
 
 # Optionals
-find_package( oops QUIET )
+find_package( oops 1.7.0 QUIET )
 find_package( gsibec 1.1.2 QUIET )
-find_package( vader QUIET )
+find_package( vader 1.4.0 QUIET )
 
 # Optional SABER blocks
 if( gsibec_FOUND )
