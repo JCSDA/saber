@@ -11,22 +11,8 @@ else()
 endif()
 
 # Executables
-ecbuild_add_executable( TARGET  saber_quench_randomization.x
-                        SOURCES quenchRandomization.cc
-                        LIBS    quench
-                                ${vader_LIBRARIES}
-                                ${gsibec_LIBRARIES}
-                                saber )
-
-ecbuild_add_executable( TARGET  saber_quench_error_covariance_training.x
-                        SOURCES quenchErrorCovarianceTraining.cc
-                        LIBS    quench
-                                ${vader_LIBRARIES}
-                                ${gsibec_LIBRARIES}
-                                saber )
-
-ecbuild_add_executable( TARGET  saber_quench_dirac.x
-                        SOURCES quenchDirac.cc
+ecbuild_add_executable( TARGET  saber_quench_error_covariance_toolbox.x
+                        SOURCES quenchErrorCovarianceToolbox.cc
                         LIBS    quench
                                 ${vader_LIBRARIES}
                                 ${gsibec_LIBRARIES}

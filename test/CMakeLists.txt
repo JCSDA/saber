@@ -179,6 +179,11 @@ if( oops_FOUND )
 
         # Loop over executables
         foreach( exe ${exe_list} )
+            if( "${exe}" STREQUAL "convertstate" )
+                set( exename "convertstate" )
+            else()
+                set( exename "error_covariance_toolbox" )
+            endif()
             foreach( test ${saber_test_full} )
                 string( FIND ${test} ${exe} result )
                 if( result MATCHES 0 )
@@ -191,9 +196,9 @@ if( oops_FOUND )
                         ecbuild_add_test( TARGET saber_test_${test}_${mpi}-${omp}
                                           MPI ${mpi}
                                           OMP ${omp}
-                                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_${exe}.x
+                                          COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_${exename}.x
                                           ARGS testinput/${test}.yaml
-                                          DEPENDS saber_quench_${exe}.x )
+                                          DEPENDS saber_quench_${exename}.x )
                     endif()
                 endif()
             endforeach()
@@ -206,9 +211,9 @@ if( oops_FOUND )
                 ecbuild_add_test( TARGET saber_test_${test}_${mpi}-${omp}
                                   MPI ${mpi}
                                   OMP ${omp}
-                                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_training.x
+                                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
                                   ARGS testinput/${test}.yaml
-                                  DEPENDS saber_quench_error_covariance_training.x )
+                                  DEPENDS saber_quench_error_covariance_toolbox.x )
             endif()
         endforeach()
     endforeach()

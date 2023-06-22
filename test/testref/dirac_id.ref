@@ -53,5 +53,5 @@ Groups:
   - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.0911892632773075e+01
-  velocity_potential: 4.0624196197597726e+01
+  stream_function: 4.0899866276594516e+01
+  velocity_potential: 4.0616497024838942e+01

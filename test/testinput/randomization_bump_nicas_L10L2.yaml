@@ -14,12 +14,6 @@ geometry:
     - surface_pressure
     levels: 1
   halo: 1
-variables:
-- stream_function
-- velocity_potential
-- eastward_wind
-- northward_wind
-- surface_pressure
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
@@ -70,9 +64,9 @@ background error:
           variables:
           - surface_pressure
   randomization size: 25
-output:
+output states:
   filepath: testdata/randomization_bump_nicas_L10L2/member
-output increment:
+output perturbations:
   filepath: testdata/randomization_bump_nicas_L10L2/member_pert
 test:
   reference filename: testref/randomization_bump_nicas_L10L2.ref

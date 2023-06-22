@@ -6,13 +6,13 @@
  */
 
 #include "oops/runs/Run.h"
+#include "saber/oops/ErrorCovarianceToolbox.h"
 #include "saber/oops/instantiateCovarFactory.h"
-#include "saber/oops/Randomization.h"
 #include "src/Traits.h"
 
 int main(int argc,  char ** argv) {
   oops::Run run(argc, argv);
   saber::instantiateCovarFactory<quench::Traits>();
-  saber::Randomization<quench::Traits> dir;
-  return run.execute(dir);
+  saber::ErrorCovarianceToolbox<quench::Traits> ect;
+  return run.execute(ect);
 }

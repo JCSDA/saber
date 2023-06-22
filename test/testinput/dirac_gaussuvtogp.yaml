@@ -12,7 +12,7 @@ geometry:
     levels: 70
   partitioner: ectrans
   halo: 1
-initial condition:
+background:
   date: '2010-01-01T12:00:00Z'
   state variables:
   - dry_air_density_levels_minus_one

@@ -21,7 +21,6 @@
 #include "oops/base/IncrementEnsemble.h"
 #include "oops/base/StateEnsemble.h"
 #include "oops/base/Variables.h"
-#include "oops/util/ConfigFunctions.h"
 #include "oops/util/DateTime.h"
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/FieldSetOperations.h"
@@ -50,16 +49,6 @@ eckit::LocalConfiguration readEnsemble(const oops::Geometry<MODEL> & geom,
   // Prepare ensemble configuration
   oops::Log::info() << "Info     : Prepare ensemble configuration" << std::endl;
 
-  // Get number of MPI tasks and OpenMP threads
-  std::string mpi(std::to_string(geom.getComm().size()));
-  std::string omp("1");
-#ifdef _OPENMP
-  # pragma omp parallel
-  {
-    omp = std::to_string(omp_get_num_threads());
-  }
-#endif
-
   // Create output configuration
   eckit::LocalConfiguration outputConf;
 
@@ -72,8 +61,6 @@ eckit::LocalConfiguration readEnsemble(const oops::Geometry<MODEL> & geom,
   eckit::LocalConfiguration ensembleConf;
   if (inputConf.has("ensemble")) {
     ensembleConf = inputConf.getSubConfiguration("ensemble");
-    util::seekAndReplace(ensembleConf, "_MPI_", mpi);
-    util::seekAndReplace(ensembleConf, "_OMP_", omp);
     ensembleParams.deserialize(ensembleConf);
     nens = ensembleParams.states.size();
     outputConf.set("ensemble", ensembleConf);
@@ -85,8 +72,6 @@ eckit::LocalConfiguration readEnsemble(const oops::Geometry<MODEL> & geom,
   eckit::LocalConfiguration ensemblePert;
   if (inputConf.has("ensemble pert")) {
     ensemblePert = inputConf.getSubConfiguration("ensemble pert");
-    util::seekAndReplace(ensemblePert, "_MPI_", mpi);
-    util::seekAndReplace(ensemblePert, "_OMP_", omp);
     ensemblePertParams.deserialize(ensemblePert);
     nens = ensemblePertParams.size();
     outputConf.set("ensemble pert", ensemblePert);
@@ -101,11 +86,7 @@ eckit::LocalConfiguration readEnsemble(const oops::Geometry<MODEL> & geom,
   if (inputConf.has("ensemble base") && inputConf.has("ensemble pairs")) {
     ensembleBase = inputConf.getSubConfiguration("ensemble base");
     ensemblePairs = inputConf.getSubConfiguration("ensemble pairs");
-    util::seekAndReplace(ensembleBase, "_MPI_", mpi);
-    util::seekAndReplace(ensembleBase, "_OMP_", omp);
     ensembleBaseParams.deserialize(ensembleBase);
-    util::seekAndReplace(ensemblePairs, "_MPI_", mpi);
-    util::seekAndReplace(ensemblePairs, "_OMP_", omp);
     ensemblePairsParams.deserialize(ensemblePairs);
     nens = ensembleBaseParams.size();
     outputConf.set("ensemble base", ensembleBase);
@@ -172,22 +153,8 @@ void readHybridWeight(const oops::Geometry<MODEL> & geom,
 
   oops::Log::info() << "Info     : Read hybrid weight" << std::endl;
 
-  // Get number of MPI tasks and OpenMP threads
-  std::string mpi(std::to_string(geom.getComm().size()));
-  std::string omp("1");
-#ifdef _OPENMP
-  # pragma omp parallel
-  {
-    omp = std::to_string(omp_get_num_threads());
-  }
-#endif
-
   // Local copy
   eckit::LocalConfiguration localConf(conf);
-
-  // Replace patterns
-  util::seekAndReplace(localConf, "_MPI_", mpi);
-  util::seekAndReplace(localConf, "_OMP_", omp);
 
   // Create Increment
   oops::Increment<MODEL> dx(geom, vars, date);
@@ -292,16 +259,6 @@ void writeEnsemble(const oops::Geometry<MODEL> & geom,
   const bool useModelWriter = (util::getGridUid(geom.generic().functionSpace())
     == util::getGridUid(saberBlockChain.lastOuterBlock().innerGeometryData().functionSpace()));
 
-  // Get number of MPI tasks and OpenMP threads
-  std::string mpi(std::to_string(geom.getComm().size()));
-  std::string omp("1");
-#ifdef _OPENMP
-  # pragma omp parallel
-  {
-    omp = std::to_string(omp_get_num_threads());
-  }
-#endif
-
   // Get ensemble size
   size_t ensembleSize = conf.getInt("ensemble size");
 
@@ -366,13 +323,6 @@ void writeEnsemble(const oops::Geometry<MODEL> & geom,
 
       // Set member index
       writeParams.setMember(ie+1);
-
-      // Replace patterns
-      eckit::LocalConfiguration file;
-      writeParams.serialize(file);
-      util::seekAndReplace(file, "_MPI_", mpi);
-      util::seekAndReplace(file, "_OMP_", omp);
-      writeParams.deserialize(file);
 
       // Write Increment
       dx->write(writeParams);

@@ -162,7 +162,7 @@ diagnostic points:
   - dry_air_density_levels_minus_one
   - dry_air_density_levels_minus_one
   - dry_air_density_levels_minus_one
-initial condition:
+background:
   date: 2016-01-01T16:00:00Z
   state variables:
   - air_pressure

@@ -9,7 +9,7 @@ geometry:
     - moisture_control_variable
     levels: 70
   halo: 1
-initial condition:
+background:
   date: '2010-01-01T12:00:00Z'
   state variables:
   - unbalanced_pressure

@@ -10,7 +10,6 @@
 #include <utility>
 #include <vector>
 
-#include "oops/util/ConfigFunctions.h"
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/Logger.h"
@@ -61,20 +60,6 @@ Ensemble::Ensemble(const oops::GeometryData & geometryData,
     if (readFromModel_) {
       readConf_ = *modelFileConf;
     }
-
-    // Get number of MPI tasks and OpenMP threads
-    std::string mpi(std::to_string(geometryData_.comm().size()));
-    std::string omp("1");
-#ifdef _OPENMP
-    # pragma omp parallel
-    {
-      omp = std::to_string(omp_get_num_threads());
-    }
-#endif
-
-    // Replace patterns
-    util::seekAndReplace(readConf_, "_MPI_", mpi);
-    util::seekAndReplace(readConf_, "_OMP_", omp);
   }
 
   oops::Log::trace() << classname() << "::Ensemble done" << std::endl;

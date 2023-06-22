@@ -7,8 +7,6 @@ geometry:
   - variables:
     - stream_function
     levels: 1
-variables:
-- stream_function
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
@@ -54,5 +52,5 @@ background error:
         file:
           filepath: testdata/randomization_doc_5/dirac_nicas
   randomization size: 50
-output:
+output states:
   filepath: testdata/randomization_doc_5/member

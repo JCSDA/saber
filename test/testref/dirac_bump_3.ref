@@ -17,7 +17,7 @@ Groups:
 Fields:
   eastward_wind: 1.0000000000000000e+00
   northward_wind: 0.0000000000000000e+00
-Norm of input parameter StdDev: 5.8775731880980217e+01
+Norm of input parameter StdDev: 5.9177002357468261e+01
 Adjoint test for block StdDev passed
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -44,6 +44,15 @@ Adjoint test for block BUMP_PsiChiToUV passed
 Adjoint test for block BUMP_VerticalBalance passed
 Norm of input parameter StdDev: 5.7658289604038131e+01
 Adjoint test for block StdDev passed
+       Independent levels:  1[2]
+          Subset Sc0 size:              762
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. unit
+             Level   2 ~>  0.200E+01 vert. unit
 Adjoint test for block BUMP_StdDev passed
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -66,8 +75,8 @@ Adjoint test for block BUMP_StdDev passed
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
 Adjoint test for block BUMP_NICAS passed
-Norm of input parameter inflation: 5.5748959626610493e+01
-Norm of input parameter StdDev: 4.9746780825557792e+01
+Norm of input parameter inflation: 5.5939803464196579e+01
+Norm of input parameter StdDev: 5.2158678443974217e+01
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Min. / max. longitudes: -171.0 /   180.0
@@ -95,5 +104,5 @@ Groups:
   - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  eastward_wind: 1.0613277573032631e+00
-  northward_wind: 1.0818849551889982e-01
+  eastward_wind: 9.8493085184178253e-01
+  northward_wind: 1.2222722776881007e-01

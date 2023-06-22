@@ -11,7 +11,7 @@ geometry:
     - northward_wind
     levels: 2
   halo: 1
-initial condition:
+background:
   date: '2010-01-01T12:00:00Z'
   state variables:
   - eastward_wind
@@ -53,7 +53,7 @@ background error:
         - saber block name: BUMP_StdDev
           read:
             general:
-            testing: true
+              testing: true
             io:
               data directory: testdata
               files prefix: dirac_bump_3/_MPI_-_OMP_

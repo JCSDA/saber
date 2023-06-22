@@ -7,8 +7,6 @@ geometry:
   - variables:
     - stream_function
     levels: 1
-variables:
-- stream_function
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
@@ -46,5 +44,5 @@ background error:
       model file:
         filepath: testdata/convertstate_doc_1/rh2_pert
   randomization size: 1
-output:
+output states:
   filepath: testdata/randomization_doc_3/rh2

@@ -18,7 +18,6 @@
 
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
-#include "oops/util/ConfigFunctions.h"
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/Timer.h"
@@ -73,20 +72,6 @@ StdDev::StdDev(const oops::GeometryData & outerGeometryData,
     if (readFromModel_) {
       readConf_ = *modelFileConf;
     }
-
-    // Get number of MPI tasks and OpenMP threads
-    std::string mpi(std::to_string(innerGeometryData_.comm().size()));
-    std::string omp("1");
-#ifdef _OPENMP
-    # pragma omp parallel
-    {
-      omp = std::to_string(omp_get_num_threads());
-    }
-#endif
-
-    // Replace patterns
-    util::seekAndReplace(readConf_, "_MPI_", mpi);
-    util::seekAndReplace(readConf_, "_OMP_", omp);
   }
 
   // Prepare write parameters
@@ -105,20 +90,6 @@ StdDev::StdDev(const oops::GeometryData & outerGeometryData,
     if (writeToModel_) {
       writeConf_ = *modelFileConf;
     }
-
-    // Get number of MPI tasks and OpenMP threads
-    std::string mpi(std::to_string(innerGeometryData_.comm().size()));
-    std::string omp("1");
-#ifdef _OPENMP
-    # pragma omp parallel
-    {
-      omp = std::to_string(omp_get_num_threads());
-    }
-#endif
-
-    // Replace patterns
-    util::seekAndReplace(writeConf_, "_MPI_", mpi);
-    util::seekAndReplace(writeConf_, "_OMP_", omp);
   }
 
   oops::Log::trace() << classname() << "::StdDev done" << std::endl;

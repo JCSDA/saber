@@ -49,9 +49,8 @@ if( oops_FOUND )
     ErrorCovarianceParameters.h
     Localization.h
 
-    # Applications
-    ErrorCovarianceTraining.h
-    Randomization.h
+    # Application
+    ErrorCovarianceToolbox.h
     )
 endif()
 

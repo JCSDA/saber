@@ -8,8 +8,6 @@ geometry:
     - stream_function
     levels: 10
   halo: 1
-variables:
-- stream_function
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
@@ -42,9 +40,9 @@ background error:
           - velocity_potential
           value: 5.0
   randomization size: 25
-output:
+output states:
   filepath: testdata/randomization_bump_nicas_L10L10/member
-output increment:
+output perturbations:
   filepath: testdata/randomization_bump_nicas_L10L10/member_pert
 test:
   reference filename: testref/randomization_bump_nicas_L10L10.ref

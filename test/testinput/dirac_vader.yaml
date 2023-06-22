@@ -9,7 +9,7 @@ geometry:
     - virtual_temperature
     - specific_humidity
     levels: 2
-initial condition:
+background:
   date: '2010-01-01T12:00:00Z'
   state variables:
   - virtual_temperature
