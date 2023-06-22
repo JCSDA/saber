@@ -8,6 +8,7 @@
 #pragma once
 
 #include <iostream>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -35,10 +36,26 @@ class GaussToCSParameters : public SaberBlockParametersBase {
   // to use the one different from the one inferred from the gaussian grid
   oops::RequiredParameter<std::string> gaussGridUid{"gauss grid uid",
     "Gauss Grid UID", this};
+  oops::Parameter<bool> initializeInverseInterpolation{"initialize inverse interpolator",
+    true, this};
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
 
 // -----------------------------------------------------------------------------
+
+
+struct CS2Gauss {
+  // PointCloud FunctionSpace on Gauss grid with matching CubedSphere partitioner
+  std::unique_ptr<const atlas::functionspace::PointCloud> matchingPtcldFspace;
+  // PointCloud FunctionSpace on Gauss grid with Gauss grid partitioner
+  std::unique_ptr<const atlas::functionspace::PointCloud> targetPtcldFspace;
+  // Interpolation from CubedSpere NodeColumns to matchingPtcldFspace
+  atlas::Interpolation interpolation;
+  // Redistribution of MPI tasks from matchingPtcldFspace to targetPtcldFspace
+  atlas::Redistribution redistribution;
+};
+
+// ------------------------------------------------------------------------------
 
 class GaussToCS : public SaberOuterBlockBase {
  public:
@@ -61,6 +78,25 @@ class GaussToCS : public SaberOuterBlockBase {
 
   void multiply(atlas::FieldSet &) const override;
   void multiplyAD(atlas::FieldSet &) const override;
+  void leftInverseMultiply(atlas::FieldSet &) const override;
+
+  atlas::FieldSet generateInnerFieldSet(const oops::GeometryData & innerGeometryData,
+                                        const std::vector<size_t> & innerVariableSizes,
+                                        const oops::Variables & innerVars,
+                                        const size_t & timeRank) const override
+    {return util::createSmoothFieldSet(innerGeometryData.comm(),
+                                       innerGeometryData.functionSpace(),
+                                       innerVariableSizes,
+                                       innerVars.variables());}
+
+  atlas::FieldSet generateOuterFieldSet(const oops::GeometryData & outerGeometryData,
+                                        const std::vector<size_t> & outerVariableSizes,
+                                        const oops::Variables & outerVars,
+                                        const size_t & timeRank) const override
+    {return util::createSmoothFieldSet(outerGeometryData.comm(),
+                                       outerGeometryData.functionSpace(),
+                                       outerVariableSizes,
+                                       outerVars.variables());}
 
  private:
   void print(std::ostream &) const override;
@@ -85,6 +121,9 @@ class GaussToCS : public SaberOuterBlockBase {
 
   /// Interpolation Wrapper
   saber::interpolation::AtlasInterpWrapper interp_;
+
+  /// Wrapper for inverse interpolation objects
+  const CS2Gauss inverseInterpolation_;
 
   const oops::GeometryData innerGeometryData_;
 };

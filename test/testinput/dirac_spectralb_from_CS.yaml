@@ -37,7 +37,8 @@ background error:
     - unbalanced_pressure
     - moisture_control_variable
   - saber block name: gauss to cubed-sphere-dual
-    skip inverse test: true
+    inner inverse tolerance: 0.2
+    outer inverse tolerance: 0.2
     gauss grid uid: F15
     active variables:
     - unbalanced_pressure

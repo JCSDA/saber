@@ -17,6 +17,8 @@ Groups:
 Fields:
   stream_function: 1.0000000000000000e+00
 Adjoint test for block gauss to cubed-sphere-dual passed
+Inner inverse test for block gauss to cubed-sphere-dual passed: U Uinv (U x) == (U x)
+Outer inverse test for block gauss to cubed-sphere-dual passed: Uinv U (Uinv x) == (Uinv x)
 Adjoint test for block ID passed
 Covariance(SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z

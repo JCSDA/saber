@@ -18,7 +18,8 @@ Fields:
   unbalanced_pressure: 1.0000000000000000e+00
   moisture_control_variable: 1.0000000000000000e+00
 Adjoint test for block gauss to cubed-sphere-dual passed
-skipping inverse test for block gauss to cubed-sphere-dual
+Inner inverse test for block gauss to cubed-sphere-dual passed: U Uinv (U x) == (U x)
+Outer inverse test for block gauss to cubed-sphere-dual passed: Uinv U (Uinv x) == (Uinv x)
 Adjoint test for block spectral to gauss passed
 skipping inverse test for block spectral to gauss
 Adjoint test for block spectral covariance passed

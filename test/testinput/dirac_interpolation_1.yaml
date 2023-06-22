@@ -15,11 +15,13 @@ background:
 background error:
   covariance model: SABER
   adjoint test: true
+  inverse test: true
   saber central block:
     saber block name: ID
   saber outer blocks:
   - saber block name: gauss to cubed-sphere-dual
-    skip inverse test: true # TODO: remove this when the left inverse is implemented
+    inner inverse tolerance: 0.005
+    outer inverse tolerance: 0.005
     gauss grid uid: F15
     active variables:
     - stream_function
