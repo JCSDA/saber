@@ -25,7 +25,7 @@ static SaberOuterBlockMaker<VaderBlock> makerVaderBlock_("vader variable change"
 VaderBlock::VaderBlock(const oops::GeometryData & outerGeometryData,
                        const std::vector<size_t> & activeVariableSizes,
                        const oops::Variables & outerVars,
-                       const eckit::Configuration & covarConf,
+                       const eckit::Configuration & outerBlockConf,
                        const Parameters_ & params,
                        const atlas::FieldSet & xb,
                        const atlas::FieldSet & fg,
@@ -33,7 +33,7 @@ VaderBlock::VaderBlock(const oops::GeometryData & outerGeometryData,
   : SaberOuterBlockBase(params),
     outerVars_(outerVars),
     innerGeometryData_(outerGeometryData), innerVars_(params.innerVars),
-    vader_(params.vader)
+    vader_(params.vader, outerBlockConf.getSubConfiguration("vader"))
 {
   oops::Log::trace() << classname() << "::VaderBlock starting" << std::endl;
 

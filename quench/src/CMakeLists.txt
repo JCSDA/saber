@@ -14,6 +14,8 @@ Increment.cc
 Increment.h
 LinearVariableChange.h
 LinearVariableChange.cc
+ModelData.cc
+ModelData.h
 State.cc
 State.h
 VariableChange.h

@@ -11,6 +11,7 @@
 #include "src/Geometry.h"
 #include "src/Increment.h"
 #include "src/LinearVariableChange.h"
+#include "src/ModelData.h"
 #include "src/State.h"
 #include "src/TraitsFwd.h"
 #include "src/VariableChange.h"

@@ -21,6 +21,7 @@
 #include "oops/base/IncrementEnsemble.h"
 #include "oops/base/StateEnsemble.h"
 #include "oops/base/Variables.h"
+#include "oops/interface/ModelData.h"
 #include "oops/util/DateTime.h"
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/FieldSetOperations.h"
@@ -468,6 +469,12 @@ void buildOuterBlocks(const oops::Geometry<MODEL> & geom,
 
   oops::Log::info() << "Info     : Creating outer blocks" << std::endl;
 
+  oops::ModelData<MODEL> modelData{geom};
+  eckit::LocalConfiguration modelDataConf;
+  modelDataConf.set("model data", modelData.modelData());  // Key here is vader::configModelVarsKey
+  eckit::LocalConfiguration outerBlockConf{covarConf};
+  outerBlockConf.set("vader", modelDataConf);
+
   // Iterative ensemble loading flag
   const bool iterativeEnsembleLoading = covarConf.getBool("iterative ensemble loading");
 
@@ -488,7 +495,7 @@ void buildOuterBlocks(const oops::Geometry<MODEL> & geom,
                                                outerGeometryData.back().get(),
                                                geom.variableSizes(activeVars),
                                                outerVars,
-                                               covarConf,
+                                               outerBlockConf,
                                                saberOuterBlockParams,
                                                fsetXb,
                                                fsetFg,
