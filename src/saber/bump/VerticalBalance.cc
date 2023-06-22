@@ -157,8 +157,29 @@ std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> VerticalBalan
   oops::Log::trace() << classname() << "::fieldsToWrite starting" << std::endl;
   std::vector<eckit::LocalConfiguration> outputModelFilesConf
     = bumpParams_.outputModelFilesConf.value().get_value_or({});
+  if (outputModelFilesConf.size() > 0) {
+    // Print log info
+    oops::Log::info() << "Info     : "
+                      << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+                      << std::endl;
+    oops::Log::info() << "Info     : +++ Get parameters from BUMP"
+                      << std::endl;
+  }
+
+  // Return configuration/fieldset pairs
+  std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> pairs
+  = bump_->fieldsToWrite(outputModelFilesConf);
+
+  if (outputModelFilesConf.size() > 0) {
+    // Print log info
+    oops::Log::info() << "Info     : "
+                      << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+                      << std::endl;
+    oops::Log::info() << "Info     : +++ Write files"
+                      << std::endl;
+  }
   oops::Log::trace() << classname() << "::fieldsToWrite done" << std::endl;
-  return bump_->fieldsToWrite(outputModelFilesConf);
+  return pairs;
 }
 
 // -----------------------------------------------------------------------------

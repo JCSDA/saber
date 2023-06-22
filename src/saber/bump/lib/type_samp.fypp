@@ -929,7 +929,7 @@ if (samp%sc1) then
    end do
 
    ! Setup fields I/O
-   call samp%io_c1%init(mpl,'1',samp%nc1,samp%nc1a,samp%c1a_to_c1,samp%proc_to_c1_offset, &
+   call samp%io_c1%init(mpl,10,'1',samp%nc1,samp%nc1a,samp%c1a_to_c1,samp%proc_to_c1_offset, &
  & lon_cxa=samp%lon_c1a,lat_cxa=samp%lat_c1a)
 
    ! Inquire variables
@@ -1032,7 +1032,7 @@ if (samp%sc2) then
    end do
 
    ! Setup fields I/O
-   call samp%io_c2%init(mpl,'2',samp%nc2,samp%nc2a,samp%c2a_to_c2,samp%proc_to_c2_offset, &
+   call samp%io_c2%init(mpl,10,'2',samp%nc2,samp%nc2a,samp%c2a_to_c2,samp%proc_to_c2_offset, &
  & lon_cxa=samp%lon_c2a,lat_cxa=samp%lat_c2a)
 
    ! Inquire variables
@@ -1988,7 +1988,7 @@ if (nam%write_samp_global) then
       ! Setup global I/O for subset Sc1
       write(mpl%info,'(a7,a)') '','Setup global I/O for subset Sc1'
       call mpl%flush
-      call samp%io_c1%init(mpl,'1',samp%nc1,samp%nc1a,samp%c1a_to_c1,samp%proc_to_c1_offset, &
+      call samp%io_c1%init(mpl,10,'1',samp%nc1,samp%nc1a,samp%c1a_to_c1,samp%proc_to_c1_offset, &
  & lon_cxa=samp%lon_c1a,lat_cxa=samp%lat_c1a)
    end if
 
@@ -1996,7 +1996,7 @@ if (nam%write_samp_global) then
       ! Setup global I/O for subset Sc2
       write(mpl%info,'(a7,a)') '','Setup global I/O for subset Sc2'
       call mpl%flush
-      call samp%io_c2%init(mpl,'2',samp%nc2,samp%nc2a,samp%c2a_to_c2,samp%proc_to_c2_offset, &
+      call samp%io_c2%init(mpl,10,'2',samp%nc2,samp%nc2a,samp%c2a_to_c2,samp%proc_to_c2_offset, &
  & lon_cxa=samp%lon_c2a,lat_cxa=samp%lat_c2a)
    end if
 end if
@@ -2332,7 +2332,7 @@ else
       write(mpl%info,'(a7,a,i1,a)') '','Compute horizontal subset Sc',subset,':'
       call mpl%flush
       call geom%initialize_sampling(mpl,geom%nc0a,geom%lon_c0a,geom%lat_c0a,smask_hor_c0a,rh_c0a,geom%c0a_to_c0, &
- & geom%nc0u,geom%c0u_to_c0a,geom%tree_c0u,geom%mesh_c0u,.true.,7,ncx_eff,cx_to_c0)
+ & geom%nc0u,geom%c0u_to_c0a,geom%tree_c0u,geom%mesh_c0u,7,ncx_eff,cx_to_c0)
 
       ! Count Scx point in halo A
       ncxa = 0

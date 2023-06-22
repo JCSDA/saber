@@ -47,8 +47,11 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
     omp = std::to_string(omp_get_num_threads());
   }
 #endif
-  *infoChannel_ << "Info     : MPI tasks:      " << mpi << std::endl;
-  *infoChannel_ << "Info     : OpenMP threads: " << omp << std::endl;
+  *infoChannel_ << "Info     :"
+                << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+                << std::endl;
+  *infoChannel_ << "Info     : +++ MPI tasks:      " << mpi << std::endl;
+  *infoChannel_ << "Info     : +++ OpenMP threads: " << omp << std::endl;
 
   // Initialization
   nens_.reserve(2);
@@ -168,6 +171,11 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
     }
 
     // Create BUMP instance
+    *infoChannel_ << "Info     :"
+                  << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+                  << std::endl;
+    *infoChannel_ << "Info     : +++ Create BUMP instance " << (jgrid+1) << " / " << grids.size()
+                  << std::endl;
     int keyBUMP = 0;
     bump_create_f90(keyBUMP, comm_, fspace_.get(), extraFields.get(),
                     grid, infoChannel_, testChannel_);
@@ -192,18 +200,44 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
 
   if (ncmp > 0) {
     // Set number of components
-    for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+    for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+      *infoChannel_ << "Info     :"
+                  << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+                    << std::endl;
+      *infoChannel_ << "Info     : +++ Set number of components for BUMP instance " << (jgrid+1)
+                    << " / " << keyBUMP_.size() << std::endl;
       bump_set_ncmp_f90(keyBUMP_[jgrid], ncmp);
     }
   }
+  *infoChannel_ << "Info     :"
+                << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+                << std::endl;
+  *infoChannel_ << "Info     : +++ End of BUMP creation" << std::endl;
+  *infoChannel_ << "Info     :"
+                << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+                << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 BUMP::~BUMP() {
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    if (keyBUMP_[jgrid] > 0) bump_dealloc_f90(keyBUMP_[jgrid]);
+  for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+    if (keyBUMP_[jgrid] > 0) {
+      *infoChannel_ << "Info     :"
+                    << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+                    << std::endl;
+      *infoChannel_ << "Info     : +++ Terminate BUMP instance " << (jgrid+1) << " / "
+                    << keyBUMP_.size() << std::endl;
+      bump_dealloc_f90(keyBUMP_[jgrid]);
+    }
   }
+  *infoChannel_ << "Info     :"
+                << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+                << std::endl;
+  *infoChannel_ << "Info     : +++ All BUMP instances terminated" << std::endl;
+  *infoChannel_ << "Info     :"
+                << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+                << std::endl;
 }
 
 // -----------------------------------------------------------------------------
@@ -228,7 +262,7 @@ void BUMP::readAtlasFiles() {
       readFieldSet(*comm_, fspace_, variableSizes_, vars_, file, fset);
 
       // Print FieldSet norm
-        *testChannel_ << "Norm of input parameter " << fset.name() << ": "
+        *testChannel_ << "+++ Norm of input parameter " << fset.name() << ": "
                       << normFieldSet(fset, vars_, *comm_)
                       << std::endl;
 
@@ -285,7 +319,7 @@ void BUMP::addField(const atlas::FieldSet & fset) {
   const char *cpar = param.c_str();
 
   // Set parameter
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+  for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_set_parameter_f90(keyBUMP_[jgrid], npar, cpar, icmp, fset.get());
   }
 }
@@ -314,14 +348,17 @@ void BUMP::addEnsemble(const std::vector<atlas::FieldSet> & fsetEns) {
       }
     }
 
-    for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+    for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
       // Initial message
       if (ie == 0) {
-        *infoChannel_ << "Info     : --- Add members of ensemble " << (igeom+1) << std::endl;
+        *infoChannel_ << "Info     :"
+                      << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+                      << std::endl;
+        *infoChannel_ << "Info     : +++ Add members of ensemble " << (igeom+1) << std::endl;
       }
 
       // Add member
-      *infoChannel_ << "Info     :       Member " << ie+1 << " / " << nens_[igeom] << std::endl;
+      *infoChannel_ << "Info     :        Member " << ie+1 << " / " << nens_[igeom] << std::endl;
       bump_add_member_f90(keyBUMP_[jgrid], fset.get(), ie+1, igeom+1);
     }
 
@@ -338,7 +375,7 @@ void BUMP::dualResolutionSetup(const atlas::FunctionSpace & fspace,
   dualResolutionGridUid_ = getGridUid(fspace);
 
   // Dual resolution setup
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+  for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_dual_resolution_setup_f90(keyBUMP_[jgrid], fspace.get(), extraFields.get());
   }
 }
@@ -364,15 +401,16 @@ void BUMP::iterativeUpdate(const atlas::FieldSet & fset, const size_t & ie) {
   }
 
   // Print info
-  *infoChannel_ << "Info     : "
-    << "-------------------------------------------------------------------" << std::endl;
-  *infoChannel_ << "Info     : --- Load member " << ie+1 << " / " << nens_[igeom] << std::endl;
+  *infoChannel_ << "Info     :"
+                << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+                << std::endl;
+  *infoChannel_ << "Info     : +++ Load member " << ie+1 << " / " << nens_[igeom] << std::endl;
 
   // Get driver keys
   bool new_vbal_cov = bumpConf_.getBool("drivers.compute vertical covariance", false);
   bool new_var = bumpConf_.getBool("drivers.compute variance", false);
   bool new_mom = bumpConf_.getBool("drivers.compute moments", false);
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+  for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     if (igeom == 0) {
       if (new_vbal_cov) {
         // Update vertical covariance
@@ -388,6 +426,17 @@ void BUMP::iterativeUpdate(const atlas::FieldSet & fset, const size_t & ie) {
       bump_update_mom_f90(keyBUMP_[jgrid], fset.get(), ie+1, igeom+1);
     }
   }
+
+  // Print info
+  if (ie+1 == nens_[igeom]) {
+    *infoChannel_ << "Info     :"
+                  << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+                  << std::endl;
+    *infoChannel_ << "Info     : +++ End of iterative update" << std::endl;
+    *infoChannel_ << "Info     :"
+                  << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+                  << std::endl;
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -401,7 +450,7 @@ void BUMP::writeAtlasFiles() const {
       eckit::LocalConfiguration file = this->getFileConf(*comm_, output.first);
 
       // Print FieldSet norm
-      *testChannel_ << "Norm of output parameter " << output.second.name() << ": "
+      *testChannel_ << "+++ Norm of output parameter " << output.second.name() << ": "
                     << normFieldSet(output.second, vars_, *comm_)
                     << std::endl;
 
@@ -431,7 +480,7 @@ std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> BUMP::fieldsT
     // Get FieldSet
     const int npar = param.size();
     const char *cpar = param.c_str();
-    for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+    for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
       bump_get_parameter_f90(keyBUMP_[jgrid], npar, cpar, icmp, fset.get());
     }
 
@@ -451,17 +500,29 @@ void BUMP::runDrivers() {
   if (waitForDualResolution_) {
     waitForDualResolution_ = false;
   } else {
-    for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+    for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+      *infoChannel_ << "Info     :"
+                    << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+                    << std::endl;
+      *infoChannel_ << "Info     : +++ Run drivers for BUMP instance " << (jgrid+1)
+                    << " / " << keyBUMP_.size() << std::endl;
       bump_run_drivers_f90(keyBUMP_[jgrid]);
       bump_partial_dealloc_f90(keyBUMP_[jgrid]);
     }
+    *infoChannel_ << "Info     :"
+                  << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+                  << std::endl;
+    *infoChannel_ << "Info     : +++ End of BUMP drivers" << std::endl;
+    *infoChannel_ << "Info     :"
+                  << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+                  << std::endl;
   }
 }
 
 // -----------------------------------------------------------------------------
 
 void BUMP::multiplyVbal(atlas::FieldSet & fset) const {
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+  for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_apply_vbal_f90(keyBUMP_[jgrid], fset.get());
   }
 }
@@ -469,7 +530,7 @@ void BUMP::multiplyVbal(atlas::FieldSet & fset) const {
 // -----------------------------------------------------------------------------
 
 void BUMP::multiplyVbalAd(atlas::FieldSet & fset) const {
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+  for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_apply_vbal_ad_f90(keyBUMP_[jgrid], fset.get());
   }
 }
@@ -477,7 +538,7 @@ void BUMP::multiplyVbalAd(atlas::FieldSet & fset) const {
 // -----------------------------------------------------------------------------
 
 void BUMP::inverseMultiplyVbal(atlas::FieldSet & fset) const {
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+  for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_apply_vbal_inv_f90(keyBUMP_[jgrid], fset.get());
   }
 }
@@ -485,7 +546,7 @@ void BUMP::inverseMultiplyVbal(atlas::FieldSet & fset) const {
 // -----------------------------------------------------------------------------
 
 void BUMP::multiplyStdDev(atlas::FieldSet & fset) const {
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+  for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_apply_stddev_f90(keyBUMP_[jgrid], fset.get());
   }
 }
@@ -493,7 +554,7 @@ void BUMP::multiplyStdDev(atlas::FieldSet & fset) const {
 // -----------------------------------------------------------------------------
 
 void BUMP::inverseMultiplyStdDev(atlas::FieldSet & fset) const {
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+  for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_apply_stddev_inv_f90(keyBUMP_[jgrid], fset.get());
   }
 }
@@ -501,7 +562,7 @@ void BUMP::inverseMultiplyStdDev(atlas::FieldSet & fset) const {
 // -----------------------------------------------------------------------------
 
 void BUMP::randomizeNicas(atlas::FieldSet & fset) const {
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+  for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_randomize_f90(keyBUMP_[jgrid], fset.get());
   }
 }
@@ -509,7 +570,7 @@ void BUMP::randomizeNicas(atlas::FieldSet & fset) const {
 // -----------------------------------------------------------------------------
 
 void BUMP::multiplyNicas(atlas::FieldSet & fset) const {
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+  for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_apply_nicas_f90(keyBUMP_[jgrid], fset.get());
   }
 }
@@ -517,7 +578,7 @@ void BUMP::multiplyNicas(atlas::FieldSet & fset) const {
 // -----------------------------------------------------------------------------
 
 void BUMP::multiplyPsiChiToUV(atlas::FieldSet & fset) const {
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+  for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_psichi_to_uv_f90(keyBUMP_[jgrid], fset.get());
   }
 }
@@ -525,7 +586,7 @@ void BUMP::multiplyPsiChiToUV(atlas::FieldSet & fset) const {
 // -----------------------------------------------------------------------------
 
 void BUMP::multiplyPsiChiToUVAd(atlas::FieldSet & fset) const {
-  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+  for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_psichi_to_uv_ad_f90(keyBUMP_[jgrid], fset.get());
   }
 }

@@ -185,8 +185,8 @@ call bint%bump%setup(bint%afunctionspace_in)
 
 ! Initialize output grid
 if (bint%bump%mpl%main) then
-   call fckit_log%info('-------------------------------------------------------------------')
-   call fckit_log%info('--- Initialize output grid')
+   call fckit_log%info('Info     : -------------------------------------------------------------------')
+   call fckit_log%info('Info     : --- Initialize output grid')
 end if
 
 ! Unpack output grid from output functionspace
@@ -199,15 +199,15 @@ call bint%bump%run_drivers
 
 ! Run interpolation driver
 if (bint%bump%mpl%main) then
-   call fckit_log%info('-------------------------------------------------------------------')
-   call fckit_log%info('--- Run bump_interpolation driver')
+   call fckit_log%info('Info     : -------------------------------------------------------------------')
+   call fckit_log%info('Info     : --- Run bump_interpolation driver')
 end if
 call bint%driver(bint%bump%mpl,bint%bump%nam,bint%bump%geom(1))
 
 ! Release memory (partial)
 if (bint%bump%mpl%main) then
-   call fckit_log%info('-------------------------------------------------------------------')
-   call fckit_log%info('--- Release memory (partial)')
+   call fckit_log%info('Info     : -------------------------------------------------------------------')
+   call fckit_log%info('Info     : --- Release memory (partial)')
 end if
 call bint%bump%partial_dealloc
 call bint%geom_out%partial_dealloc

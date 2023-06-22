@@ -1660,7 +1660,7 @@ if (any(nicas_cmp%vlev)) then
    call mpl%glb_to_loc(nicas_cmp%nsa,nicas_cmp%ns,nicas_cmp%sa_to_s,order_inv_s,order_inv_sa)
 
     ! Setup fields output
-   call io_s%init(mpl,'s',nicas_cmp%ns,nicas_cmp%nsa,nicas_cmp%sa_to_s,nicas_cmp%proc_to_s_offset,nicas_cmp%order_sa)
+   call io_s%init(mpl,16,'s',nicas_cmp%ns,nicas_cmp%nsa,nicas_cmp%sa_to_s,nicas_cmp%proc_to_s_offset,nicas_cmp%order_sa)
 
    ! Release memory
    deallocate(lon_sa)
@@ -1854,7 +1854,7 @@ type(io_type) :: io_c1,io_s
 @:probe_in()
 
 ! Write vertical sampling
-write(mpl%info,'(a16,a)') '','Write vertical sampling'
+write(mpl%info,'(a10,a)') '','Write vertical sampling'
 call mpl%flush
 
 ! Valid levels
@@ -1865,17 +1865,17 @@ if (any(nicas_cmp%vlev)) then
    call put_var(mpl,nicas_cmp%cmpid,nicas_cmp%l1_to_l0_id,nicas_cmp%l1_to_l0)
 
    ! Write horizontal sampling
-   write(mpl%info,'(a16,a)') '','Write horizontal sampling'
+   write(mpl%info,'(a10,a)') '','Write horizontal sampling'
    call mpl%flush
 
    do il1=1,nicas_cmp%nl1
       ! Get group name
       write(levname,'(a,i3.3)') 'sublevel_',il1
-      write(mpl%info,'(a19,a,i3)') '','Sublevel: ',il1
+      write(mpl%info,'(a13,a,i3)') '','Sublevel: ',il1
       call mpl%flush
 
       ! Setup fields output
-      call io_c1%init(mpl,'1',nicas_cmp%hor(il1)%nc1,nicas_cmp%hor(il1)%nc1a,nicas_cmp%hor(il1)%c1a_to_c1, &
+      call io_c1%init(mpl,16,'1',nicas_cmp%hor(il1)%nc1,nicas_cmp%hor(il1)%nc1a,nicas_cmp%hor(il1)%c1a_to_c1, &
  & nicas_cmp%hor(il1)%proc_to_c1_offset,nicas_cmp%hor(il1)%order_c1a)
 
       ! Write variables
@@ -1887,11 +1887,11 @@ if (any(nicas_cmp%vlev)) then
    end do
 
    ! Write convolution
-   write(mpl%info,'(a16,a)') '','Write convolution'
+   write(mpl%info,'(a10,a)') '','Write convolution'
    call mpl%flush
 
    ! Setup fields output
-   call io_s%init(mpl,'s',nicas_cmp%ns,nicas_cmp%nsa,nicas_cmp%sa_to_s,nicas_cmp%proc_to_s_offset,nicas_cmp%order_sa)
+   call io_s%init(mpl,13,'s',nicas_cmp%ns,nicas_cmp%nsa,nicas_cmp%sa_to_s,nicas_cmp%proc_to_s_offset,nicas_cmp%order_sa)
 
    ! Allocation
    allocate(c_nop(nicas_cmp%nsa))
@@ -2561,24 +2561,26 @@ if (.not.nam%load_nicas_global) then
 end if
 
 ! Vertically dependent horizontal subsampling
-write(mpl%info,'(a13,a)') '','Compute vertically dependent horizontal subsampling: '
-call mpl%flush(flush=nicas_cmp%verbosity)
 do il1=1,nicas_cmp%nl1
    ! Index
    il0 = nicas_cmp%l1_to_l0(il1)
 
-   write(mpl%info,'(a16,a,i3,a,i3,a,i3,a)') '','Sublevel ',il1,'/',nicas_cmp%nl1,' (level ',il0,'):'
+   write(mpl%info,'(a13,a,i3,a,i3,a,i3,a)') '','Sublevel ',il1,'/',nicas_cmp%nl1,' (level ',il0,'):'
    call mpl%flush(flush=nicas_cmp%verbosity)
+
+   ! Indentation
+   ifmt = 0
+   if (nicas_cmp%verbosity) ifmt = 16
 
    if (.not.nam%load_nicas_global) then
       ! Compute nc1
-      write(mpl%test,'(a19,a,f10.2,a,f10.2,a,f10.2,a)') '','Horizontal support radius: ',rhs_avg(il0)*reqkm,' km (', &
+      write(mpl%test,'(a16,a,f10.2,a,f10.2,a,f10.2,a)') '','Horizontal support radius: ',rhs_avg(il0)*reqkm,' km (', &
  & rhs_min(il0)*reqkm,' km - ',rhs_max(il0)*reqkm,' km)'
       call mpl%flush(flush=nicas_cmp%verbosity)
       nc1_real = two*geom%area_ver_c0(il0)*nam%resol**2/(sqrt(three)*rhs_avg(il0)**2)
       if (nc1_real>real(huge_int,kind_real)) call mpl%abort('${subr}$','estimated nc1 is too large for an integer')
       nicas_cmp%hor(il1)%nc1 = floor(nc1_real)
-      write(mpl%test,'(a19,a,i8)') '','Estimated nc1 from horizontal support radius: ',nicas_cmp%hor(il1)%nc1
+      write(mpl%test,'(a16,a,i8)') '','Estimated nc1 from horizontal support radius: ',nicas_cmp%hor(il1)%nc1
       call mpl%flush(flush=nicas_cmp%verbosity)
       if (nicas_cmp%hor(il1)%nc1>nam%nc1max) then
          if (nicas_cmp%verbosity) call mpl%warning('${subr}$','required nc1 larger than nc1max, resetting to nc1max')
@@ -2599,10 +2601,10 @@ do il1=1,nicas_cmp%nl1
          c1_to_c0 = mpl%msv%vali
 
          ! Compute sampling
-         write(mpl%info,'(a19,a)') '','Compute horizontal subset Sc1:'
+         write(mpl%info,'(a16,a)') '','Compute horizontal subset Sc1:'
          call mpl%flush(flush=nicas_cmp%verbosity)
          call geom%initialize_sampling(mpl,geom%nc0a,geom%lon_c0a,geom%lat_c0a,mask_hor_c0a,nicas_cmp%rhs(:,il0),geom%c0a_to_c0, &
- & geom%nc0u,geom%c0u_to_c0a,geom%tree_c0u,geom%mesh_c0u,nicas_cmp%verbosity,19,nicas_cmp%hor(il1)%nc1,c1_to_c0)
+ & geom%nc0u,geom%c0u_to_c0a,geom%tree_c0u,geom%mesh_c0u,ifmt,nicas_cmp%hor(il1)%nc1,c1_to_c0)
 
          ! Count Sc1 point in halo A
          nicas_cmp%hor(il1)%nc1a = 0
@@ -2635,14 +2637,14 @@ do il1=1,nicas_cmp%nl1
          deallocate(c1_to_c0)
 
          ! Print subset Sc1 size
-         write(mpl%test,'(a19,a,i8)') '','Final nc1: ',nicas_cmp%hor(il1)%nc1
+         write(mpl%test,'(a16,a,i8)') '','Final nc1: ',nicas_cmp%hor(il1)%nc1
          call mpl%flush(flush=nicas_cmp%verbosity)
-         write(mpl%test,'(a19,a,f5.2)') '','Effective horizontal resolution: ', &
+         write(mpl%test,'(a16,a,f5.2)') '','Effective horizontal resolution: ', &
  & sqrt(real(nicas_cmp%hor(il1)%nc1,kind_real)*sqrt(three)*rhs_avg(il0)**2/(two*geom%area_ver_c0(il0)))
          call mpl%flush(flush=nicas_cmp%verbosity)
       case ('octahedral')
          ! Use an octahedral grid
-         write(mpl%info,'(a19,a)') '','Use an octahedral grid for subset Sc1 '
+         write(mpl%info,'(a16,a)') '','Use an octahedral grid for subset Sc1 '
          call mpl%flush(flush=nicas_cmp%verbosity)
 
          ! Global grid
@@ -2723,9 +2725,9 @@ do il1=1,nicas_cmp%nl1
          call mpl%f_comm%allreduce(nicas_cmp%hor(il1)%nc1a,nicas_cmp%hor(il1)%nc1,fckit_mpi_sum())
 
          ! Print subset Sc1 size
-         write(mpl%test,'(a19,a,i8)') '','Final nc1: ',nicas_cmp%hor(il1)%nc1
+         write(mpl%test,'(a16,a,i8)') '','Final nc1: ',nicas_cmp%hor(il1)%nc1
          call mpl%flush(flush=nicas_cmp%verbosity)
-         write(mpl%test,'(a19,a,f5.2)') '','Effective horizontal resolution: ', &
+         write(mpl%test,'(a16,a,f5.2)') '','Effective horizontal resolution: ', &
  & sqrt(real(nicas_cmp%hor(il1)%nc1,kind_real)*sqrt(three)*rhs_avg(il0)**2/(two*geom%area_ver_c0(il0)))
          call mpl%flush(flush=nicas_cmp%verbosity)
       end select
@@ -2746,7 +2748,7 @@ do il1=1,nicas_cmp%nl1
    end if
 
    ! Compute halo A and universe conversions and communication for subset Sc1
-   write(mpl%info,'(a19,a)') '','Compute halo A and universe conversions and communication for subset Sc1'
+   write(mpl%info,'(a16,a)') '','Compute halo A and universe conversions and communication for subset Sc1'
    call mpl%flush(flush=nicas_cmp%verbosity)
 
    ! Get subset Sc1 size on universe
@@ -2785,7 +2787,7 @@ do il1=1,nicas_cmp%nl1
    call nicas_cmp%com_c1_AU(il1)%ext(mpl,nicas_cmp%hor(il1)%vunit_c1a,nicas_cmp%hor(il1)%vunit_c1u)
 
    ! Get global lon/lat
-   write(mpl%info,'(a19,a)') '','Get global lon/lat'
+   write(mpl%info,'(a16,a)') '','Get global lon/lat'
    call mpl%flush(flush=nicas_cmp%verbosity)
 
    ! Allocation
@@ -2799,7 +2801,7 @@ do il1=1,nicas_cmp%nl1
  & lat_c1,.true.)
 
    ! Get global order
-   write(mpl%info,'(a19,a)') '','Get global order'
+   write(mpl%info,'(a16,a)') '','Get global order'
    call mpl%flush(flush=nicas_cmp%verbosity)
 
    ! Allocation
@@ -2828,7 +2830,7 @@ do il1=1,nicas_cmp%nl1
    deallocate(order_inv_c1)
 
    ! Compute interpolation from subset Sc1 to subset Sc0
-   write(mpl%info,'(a19,a)') '','Compute interpolation from subset Sc1 to subset Sc0'
+   write(mpl%info,'(a16,a)') '','Compute interpolation from subset Sc1 to subset Sc0'
    call mpl%flush(flush=nicas_cmp%verbosity)
 
    ! Allocation
@@ -2840,8 +2842,6 @@ do il1=1,nicas_cmp%nl1
    gmask_c1 = .true.
    call nicas_cmp%hor(il1)%mesh_c1%init(mpl,rng,lon_c1,lat_c1)
    call nicas_cmp%hor(il1)%tree_c1%init(lon_c1,lat_c1)
-   ifmt = 0
-   if (nicas_cmp%verbosity) ifmt = 19
 
    ! Compute interpolation
    il0 = nicas_cmp%l1_to_l0(il1)
@@ -2871,7 +2871,7 @@ do il1=1,nicas_cmp%nl1
    deallocate(gmask_c1)
 
    ! Compute interpolation from subset Sc0 to subset Sc1
-   write(mpl%info,'(a19,a)') '','Compute interpolation from subset Sc0 to subset Sc1'
+   write(mpl%info,'(a16,a)') '','Compute interpolation from subset Sc0 to subset Sc1'
    call mpl%flush(flush=nicas_cmp%verbosity)
 
    ! Allocation
@@ -2891,7 +2891,7 @@ do il1=1,nicas_cmp%nl1
    deallocate(gmask_c1a)
 
    ! Define halo B, compute conversions and communications for subset Sc1
-   write(mpl%info,'(a19,a)') '','Define halo B, compute conversions and communications for subset Sc1'
+   write(mpl%info,'(a16,a)') '','Define halo B, compute conversions and communications for subset Sc1'
    call mpl%flush(flush=nicas_cmp%verbosity)
 
    ! Allocation
@@ -2959,7 +2959,7 @@ do il1=1,nicas_cmp%nl1
  & nicas_cmp%hor(il1)%c1a_to_c1,nicas_cmp%hor(il1)%c1b_to_c1)
 
    ! Define halo B, compute conversions and communications for subset Sc0'
-   write(mpl%info,'(a19,a)') '','Define halo B, compute conversions and communications for subset Sc0'
+   write(mpl%info,'(a16,a)') '','Define halo B, compute conversions and communications for subset Sc0'
    call mpl%flush(flush=nicas_cmp%verbosity)
 
    ! Define halo B (including halo A) for subset Sc0
@@ -3036,7 +3036,7 @@ end do
 if (nicas_cmp%interp_type=='si') deallocate(interpolation_radius)
 
 if (nam%interp_test.and.(nicas_cmp%interp_type=='c1')) then
-   write(mpl%info,'(a19,a)') '','Horizontal C1 interpolation test:'
+   write(mpl%info,'(a16,a)') '','Horizontal C1 interpolation test:'
    call mpl%flush(flush=nicas_cmp%verbosity)
 
    ! Allocation
@@ -3134,25 +3134,25 @@ if (nam%interp_test.and.(nicas_cmp%interp_type=='c1')) then
  & geom%nc0a,geom%lon_c0a,geom%lat_c0a,nicas_cmp%fld_ssrf_from_op(:,il0),grad_op_c1)
 
       ! Print results
-      write(mpl%info,'(a22,a,i3,a)') '','Level ',il1,': '
+      write(mpl%info,'(a19,a,i3,a)') '','Level ',il1,': '
       call mpl%flush(flush=nicas_cmp%verbosity)
-      write(mpl%info,'(a25,a,e15.8,a,e15.8,a)') '','Gradient-X:       ', &
+      write(mpl%info,'(a22,a,e15.8,a,e15.8,a)') '','Gradient-X:       ', &
  & sum(abs(grad_ssrf_c1a(:,1)-grad_ref_c1a(:,1)))/real(nicas_cmp%hor(il1)%nc1a,kind_real),' (SSRF) / ', &
  & sum(abs(grad_op_c1a(:,1)-grad_ref_c1a(:,1)))/real(nicas_cmp%hor(il1)%nc1a,kind_real),' (operator)'
       call mpl%flush(flush=nicas_cmp%verbosity)
-      write(mpl%info,'(a25,a,e15.8,a,e15.8,a)') '','Gradient-Y:       ', &
+      write(mpl%info,'(a22,a,e15.8,a,e15.8,a)') '','Gradient-Y:       ', &
  & sum(abs(grad_ssrf_c1a(:,2)-grad_ref_c1a(:,2)))/real(nicas_cmp%hor(il1)%nc1a,kind_real),' (SSRF) / ', &
  & sum(abs(grad_op_c1a(:,2)-grad_ref_c1a(:,2)))/real(nicas_cmp%hor(il1)%nc1a,kind_real),' (operator)'
       call mpl%flush(flush=nicas_cmp%verbosity)
-      write(mpl%info,'(a25,a,e15.8,a,e15.8,a)') '','Gradient-Z:       ', &
+      write(mpl%info,'(a22,a,e15.8,a,e15.8,a)') '','Gradient-Z:       ', &
  & sum(abs(grad_ssrf_c1a(:,3)-grad_ref_c1a(:,3)))/real(nicas_cmp%hor(il1)%nc1a,kind_real),' (SSRF) / ', &
  & sum(abs(grad_op_c1a(:,3)-grad_ref_c1a(:,3)))/real(nicas_cmp%hor(il1)%nc1a,kind_real),' (operator)'
       call mpl%flush(flush=nicas_cmp%verbosity)
-      write(mpl%info,'(a25,a,e15.8,a,e15.8,a,e15.8,a)') '','Function:         ', &
+      write(mpl%info,'(a22,a,e15.8,a,e15.8,a,e15.8,a)') '','Function:         ', &
  & sum(abs(nicas_cmp%fld_ssrf(:,il0)-nicas_cmp%fld_ref(:,il0)))/real(geom%nc0a,kind_real),' (SSRF) / ', &
  & sum(abs(nicas_cmp%fld_op(:,il0)-nicas_cmp%fld_ref(:,il0)))/real(geom%nc0a,kind_real),' (operator)'
       call mpl%flush(flush=nicas_cmp%verbosity)
-      write(mpl%info,'(a25,a,e15.8,a,e15.8,a,e15.8,a)') '','Check operator:   ', &
+      write(mpl%info,'(a22,a,e15.8,a,e15.8,a,e15.8,a)') '','Check operator:   ', &
  & sum(abs(nicas_cmp%fld_op(:,il0)-nicas_cmp%fld_ssrf_from_op(:,il0)))/real(geom%nc0a,kind_real)
       call mpl%flush(flush=nicas_cmp%verbosity)
 
@@ -3169,7 +3169,7 @@ if (nam%interp_test.and.(nicas_cmp%interp_type=='c1')) then
 end if
 
 ! Define subgrid and conversions
-write(mpl%info,'(a16,a)') '','Define subgrid, conversions and communication'
+write(mpl%info,'(a13,a)') '','Define subgrid, conversions and communication'
 call mpl%flush(flush=nicas_cmp%verbosity)
 
 ! Count subgrid points
@@ -3428,8 +3428,8 @@ if (.not.nam%load_nicas_global) then
          allocate(nicas_cmp%hor(il1)%H12_c1b(nicas_cmp%hor(il1)%nc1b))
       end if
 
-      ! Interpolate
-      write(mpl%info,'(a19,a)') '','Interpolate'
+      ! Interpolate fields on convolution grid
+      write(mpl%info,'(a19,a)') '','Interpolate fields on convolution grid'
       call mpl%flush(flush=nicas_cmp%verbosity)
 
       ! Halo extension
@@ -3450,8 +3450,8 @@ if (.not.nam%load_nicas_global) then
          call nicas_cmp%interp_c0b_to_c1a(il1)%apply(mpl,H12_c0b,H12_c1a)
       end if
 
-      ! Communication
-      write(mpl%info,'(a19,a)') '','Communication'
+      ! Communication field on halo B
+      write(mpl%info,'(a19,a)') '','Communication field on halo B'
       call mpl%flush(flush=nicas_cmp%verbosity)
       call nicas_cmp%com_c1_AB(il1)%ext(mpl,rh_c1a,nicas_cmp%hor(il1)%rh_c1b)
       if (.not.nicas_cmp%smoother) call nicas_cmp%com_c1_AB(il1)%ext(mpl,rv_c1a,nicas_cmp%hor(il1)%rv_c1b)

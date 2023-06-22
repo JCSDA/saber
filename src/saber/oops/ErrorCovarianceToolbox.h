@@ -362,6 +362,10 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
                      const std::unique_ptr<CovarianceBase_> & Bmat,
                      const size_t & ntasks) const {
     if (Bmat->randomizationSize() > 0) {
+      oops::Log::info() << "Info     : " << std::endl;
+      oops::Log::info() << "Info     : Generate perturbations:" << std::endl;
+      oops::Log::info() << "Info     : -----------------------" << std::endl;
+
       // Create increments
       Increment_ dx(xx.geometry(), xx.variables(), xx.validTime());
       Increment_ dxsq(xx.geometry(), xx.variables(), xx.validTime());
@@ -380,6 +384,7 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
 
       for (size_t jm = 0; jm < Bmat->randomizationSize(); ++jm) {
         // Generate member
+        oops::Log::info() << "Info     : Member " << jm << std::endl;
         Bmat->randomize(dx);
 
         if ((outputPerturbations != boost::none) || (outputStates != boost::none)) {
@@ -394,8 +399,12 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
         // Update variance
         variance += dxsq;
       }
+      oops::Log::info() << "Info     : " << std::endl;
 
       if ((outputPerturbations != boost::none) || (outputStates != boost::none)) {
+        oops::Log::info() << "Info     : Write states and/or perturbations:" << std::endl;
+        oops::Log::info() << "Info     : ----------------------------------" << std::endl;
+        oops::Log::info() << "Info     : " << std::endl;
         for (size_t jm = 0; jm < Bmat->randomizationSize(); ++jm) {
           oops::Log::test() << "Member " << jm << ": " << ens[jm] << std::endl;
 
@@ -422,10 +431,15 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
             // Write state
             xp.write(outputStatesUpdated);
           }
+
+          oops::Log::info() << "Info     : " << std::endl;
         }
       }
 
       if (outputVariance != boost::none) {
+        oops::Log::info() << "Info     : Write randomized variance:" << std::endl;
+        oops::Log::info() << "Info     : --------------------------" << std::endl;
+        oops::Log::info() << "Info     : " << std::endl;
         if (Bmat->randomizationSize() > 1) {
           // Normalize variance
           double rk_norm = 1.0/static_cast<double>(Bmat->randomizationSize());

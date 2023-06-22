@@ -381,7 +381,6 @@ call bump%ens(igeom)%mem(ie)%init(bump%mpl,fieldset,bump%geom(igeom)%gmask_mga,b
  & bump%nam%var2d,pass=.true.)
 
 ! Print norm
-write(bump%mpl%info,'(a,i1,a,i6,a)') 'Ensemble ',igeom,' member ',ie,': '
 call bump%mpl%flush
 call bump%ens(igeom)%mem(ie)%print(bump%mpl,bump%geom(igeom)%hmask_mga)
 

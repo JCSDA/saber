@@ -380,7 +380,7 @@ do iv=1,fieldset%nv
    norm = sqrt(norm)
 
    ! Print norm
-   write(mpl%test,'(a3,a,e15.8)') '','Norm of '//trim(afield%name())//': ',norm
+   write(mpl%test,'(a10,a,e15.8)') '','Norm of '//trim(afield%name())//': ',norm
    call mpl%flush
 
    ! Release pointer

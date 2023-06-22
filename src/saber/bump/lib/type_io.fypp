@@ -100,13 +100,14 @@ end subroutine io_dealloc
 ! Subroutine: io_init
 !> Initialize fields output
 !----------------------------------------------------------------------
-subroutine io_init(io,mpl,x,ncx,ncxa,cxa_to_cx,proc_to_cx_offset,order_cxa,lon_cxa,lat_cxa)
+subroutine io_init(io,mpl,ifmt,x,ncx,ncxa,cxa_to_cx,proc_to_cx_offset,order_cxa,lon_cxa,lat_cxa)
 
 implicit none
 
 ! Passed variables
 class(io_type),intent(inout) :: io                   !< I/O
 type(mpl_type),intent(inout) :: mpl                  !< MPI data
+integer,intent(in) :: ifmt                           !< Format indentation
 character(len=*),intent(in) :: x                     !< Subset index
 integer,intent(in) :: ncx                            !< Number of subset Scx points
 integer,intent(in) :: ncxa                           !< Number of subset Scx points, halo A
@@ -123,6 +124,7 @@ integer :: lorder_cxa(ncxa),order_proc(mpl%nproc)
 integer,allocatable :: procio_to_ncxio(:),procio_to_proc(:),cxown_to_cx(:),order_cx(:),order_inv_cx(:)
 real(kind_real),allocatable :: lon_cx(:),lat_cx(:)
 logical :: proc_isio(mpl%nproc)
+character(len=1024) :: cfmt
 type(fckit_mpi_status) :: status
 
 ! Set name
@@ -310,10 +312,12 @@ do icx=1,io%ncx
 end do
 
 ! Print results
-write(mpl%info,'(a7,a)') '','I/O splitting:'
+write(cfmt,'(a,i2.2,a)') '(a',ifmt,',a)'
+write(mpl%info,trim(cfmt)) '','I/O splitting:'
 call mpl%flush
 do iprocio=1,nprocio
-   write(mpl%info,'(a10,a,i6,a,i8,a,i6)') '','Chunk ',iprocio,' ~> ',procio_to_ncxio(iprocio),' grid-points handled by task ', &
+   write(cfmt,'(a,i2.2,a)') '(a',ifmt+3,',a,i6,a,i8,a,i6)'
+   write(mpl%info,trim(cfmt)) '','Chunk ',iprocio,' ~> ',procio_to_ncxio(iprocio),' grid-points handled by task ', &
  & procio_to_proc(iprocio)
    call mpl%flush
 end do

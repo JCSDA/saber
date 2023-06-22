@@ -1661,7 +1661,7 @@ end subroutine geom_rand_point
 !> Intialize sampling
 !----------------------------------------------------------------------
 subroutine geom_initialize_sampling(geom,mpl,ncxa,lon_cxa,lat_cxa,mask_cxa,rh_cxa,cxa_to_cx,ncxu,cxu_to_cxa,tree_cxu,mesh_cxu, &
- & verbosity,ifmt,ns,s_to_cx)
+ & ifmt,ns,s_to_cx)
 
 implicit none
 
@@ -1678,7 +1678,6 @@ integer,intent(in) :: ncxu                  !< Number of points (universe)
 integer,intent(in) :: cxu_to_cxa(ncxu)      !< Universe to local index
 type(tree_type),intent(in) :: tree_cxu      !< Universe KD-tree
 type(mesh_type),intent(in) :: mesh_cxu      !< Universe mesh
-logical,intent(in) :: verbosity             !< Verbosity flag
 integer,intent(in) :: ifmt                  !< Format indentation
 integer,intent(in) :: ns                    !< Number of samplings points (global)
 integer,intent(out) :: s_to_cx(ns)          !< Horizontal sampling index (global)
@@ -1729,7 +1728,7 @@ else
    retry = .true.
    write(cfmt,'(a,i2.2,a)') '(a',ifmt+3,',a,i8,a)'
    write(mpl%test,trim(cfmt)) '','Decimate full grid, at least ',ns,' points required, '
-   if (verbosity) call mpl%flush(newl=.false.)
+   if (ifmt>0) call mpl%flush(newl=.false.)
 
    do while (retry)
       ! Initialization
@@ -1791,7 +1790,7 @@ else
 
       ! Print result
       write(mpl%test,'(i8,a)') nss,' valid points found'
-      if (verbosity) call mpl%flush
+      if (ifmt>0) call mpl%flush
       retry = (nss<ns)
    end do
 
@@ -1930,7 +1929,7 @@ else
       s_to_cx = mpl%msv%vali
       write(cfmt,'(a,i2.2,a)') '(a',ifmt+3,',a)'
       write(mpl%info,trim(cfmt)) '','Potential method: '
-      if (verbosity) then
+      if (ifmt>0) then
          call mpl%flush(newl=.false.)
          call mpl%prog_init(ns)
       end if
@@ -2029,7 +2028,7 @@ else
       !$omp end parallel do
 
       ! Update
-      if (verbosity) call mpl%prog_print(is)
+      if (ifmt>0) call mpl%prog_print(is)
 
       ! Set other points where the potential is minimum
       do is=2,ns
@@ -2105,9 +2104,9 @@ else
          !$omp end parallel do
 
          ! Update
-         if (verbosity) call mpl%prog_print(is)
+         if (ifmt>0) call mpl%prog_print(is)
       end do
-      if (verbosity) call mpl%prog_final
+      if (ifmt>0) call mpl%prog_final
 
       ! Release memory
       deallocate(potential)
@@ -2191,7 +2190,7 @@ call grid_hash(ns,lon_s,lat_s,gmask_s,hash)
 ! Test grid hash
 write(cfmt,'(a,i2.2,a)') '(a',ifmt+3,',a,i12)'
 write(mpl%test,trim(cfmt)) '','Subgrid hash: ',hash
-if (verbosity) call mpl%flush
+if (ifmt>0) call mpl%flush
 
 ! Release memory
 deallocate(sa_to_s)

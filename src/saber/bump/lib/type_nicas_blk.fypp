@@ -635,7 +635,7 @@ nl0_id = define_dim(mpl,nicas_blk%blkid,'nl0',geom%nl0)
 
 do icmp=1,nicas_blk%ncmp
    ! Get component
-   write(mpl%info,'(a16,a,i1)') '','Component: ',icmp
+   write(mpl%info,'(a13,a,i1)') '','Component: ',icmp
    call mpl%flush
 
    ! Define group ID
