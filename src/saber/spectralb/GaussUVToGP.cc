@@ -7,8 +7,6 @@
 
 #include "saber/spectralb/GaussUVToGP.h"
 
-#include <netcdf.h>
-
 #include <memory>
 #include <string>
 #include <vector>
@@ -17,14 +15,16 @@
 #include "atlas/field.h"
 #include "atlas/grid.h"
 #include "atlas/grid/detail/partitioner/CubedSpherePartitioner.h"
-#include "atlas/grid/Partitioner.h"
 #include "atlas/interpolation/Interpolation.h"
 #include "atlas/mesh/Mesh.h"
 #include "atlas/meshgenerator.h"
 #include "atlas/redistribution/Redistribution.h"
 #include "atlas/trans/Trans.h"
+#include "atlas/util/Config.h"
 #include "atlas/util/Constants.h"
 #include "atlas/util/Earth.h"
+
+#include "eckit/exception/Exceptions.h"
 
 #include "mo/common_varchange.h"
 #include "mo/eval_dry_air_density.h"
@@ -42,7 +42,6 @@
 
 #define ERR(e) {ABORT(nc_strerror(e));}
 
-
 namespace saber {
 namespace spectralb {
 
@@ -59,6 +58,8 @@ atlas::Field allocateRHSVec(const atlas::FunctionSpace & gaussFS,
   rhsVecView.assign(0.0);
   return rhsvec;
 }
+
+// -----------------------------------------------------------------------------
 
 void populateRHSVec(const atlas::Field & rhoState,
                     const atlas::Field & coriolis,
@@ -79,6 +80,8 @@ void populateRHSVec(const atlas::Field & rhoState,
     }
   }
 }
+
+// -----------------------------------------------------------------------------
 
 void populateRHSVecAdj(const atlas::Field & rhoState,
                        const atlas::Field & coriolis,
@@ -101,6 +104,8 @@ void populateRHSVecAdj(const atlas::Field & rhoState,
   rhsvecView.assign(0.0);
 }
 
+// -----------------------------------------------------------------------------
+
 double normfield(const eckit::mpi::Comm & comm, const atlas::Field& fld) {
   // to do - maybe not include halos?
   auto view = atlas::array::make_view<double, 2>(fld);
@@ -118,14 +123,12 @@ double normfield(const eckit::mpi::Comm & comm, const atlas::Field& fld) {
   return std::sqrt(zz)/static_cast<double>(i);
 }
 
+// -----------------------------------------------------------------------------
 
-void populateFields(const atlas::FieldSet & geomfields,
-                    const atlas::FieldSet & statefields,
-                    atlas::FieldSet & outputfields) {
-  atlas::FieldSet tempfields;
-
+atlas::FieldSet populateFields(const atlas::FieldSet & geomfields,
+                               const atlas::FieldSet & statefields) {
   // Need to setup derived state fields that we need (done on model grid).
-  std::vector<std::string> requiredStateVariables{
+  const std::vector<std::string> requiredStateVariables{
     "air_pressure_levels_minus_one",
     "dry_air_density_levels_minus_one",
     "height",
@@ -139,21 +142,21 @@ void populateFields(const atlas::FieldSet & geomfields,
     "specific_humidity",
     "virtual_potential_temperature"};
 
-  std::vector<std::string> requiredGeometryVariables{"height_levels",
-                                                     "height"};
+  const std::vector<std::string> requiredGeometryVariables{"height_levels",
+                                                           "height"};
 
-  std::vector<std::string> outputVariables{"dry_air_density_levels_minus_one"};
+  const std::string outputVariable{"dry_air_density_levels_minus_one"};
 
   // Check that they are allocated (i.e. exist in the state fieldset)
   for (auto & s : requiredStateVariables) {
     if (!statefields.has(s)) {
       oops::Log::error() << "::gaussuvtogp::populateFields variable " << s <<
-                            "is not part of state object." << std::endl;
+                            " is not part of state object." << std::endl;
     }
   }
 
-  tempfields.clear();
-  outputfields.clear();
+  atlas::FieldSet tempfields;
+
   for (const auto & s : requiredStateVariables) {
     tempfields.add(statefields[s]);
   }
@@ -167,62 +170,143 @@ void populateFields(const atlas::FieldSet & geomfields,
   mo::eval_virtual_potential_temperature_nl(tempfields);
   mo::eval_dry_air_density_nl(tempfields);
 
-  std::string s("dry_air_density_levels_minus_one");
-  outputfields.add(tempfields[s]);
+  return atlas::FieldSet(tempfields[outputVariable]);
 }
 
-void interpolateCSToGauss(const std::string & modelGridName,
-                          const oops::GeometryData & outerGeometryData,
-                          const atlas::FieldSet &  csfields,
+// -----------------------------------------------------------------------------
+
+auto createPointCloud(const atlas::Grid& grid,
+                      const atlas::grid::Partitioner& partitioner) {
+    const auto distribution = atlas::grid::Distribution(grid, partitioner);
+
+    auto lonLats = std::vector<atlas::PointXY>{};
+    auto idx = atlas::gidx_t{0};
+    for (const auto& lonLat : grid.lonlat()) {
+        if (distribution.partition(idx++) == atlas::mpi::rank()) {
+            lonLats.emplace_back(lonLat.data());
+        }
+    }
+    return atlas::functionspace::PointCloud(lonLats);
+}
+
+// -----------------------------------------------------------------------------
+
+void interpolateCSToGauss(const oops::GeometryData & outerGeometryData,
+                          const atlas::FieldSet & csfields,
                           atlas::FieldSet & gfields) {
   std::string s("dry_air_density_levels_minus_one");
 
   const auto srcFunctionspace =
       atlas::functionspace::NodeColumns(csfields[s].functionspace());
 
-  atlas::CubedSphereGrid grid(modelGridName);
-  const auto meshConfig = atlas::util::Config("partitioner", "cubedsphere")
-    | atlas::util::Config("halo", 0);
-  const auto meshGen = atlas::MeshGenerator("cubedsphere_dual", meshConfig);
-  auto csmesh = atlas::Mesh(meshGen.generate(grid));
-
-  const auto partitioner = atlas::grid::MatchingPartitioner(srcFunctionspace.mesh(),
+  const auto srcPartitioner = atlas::grid::MatchingPartitioner(srcFunctionspace.mesh(),
                            atlas::util::Config("type", "cubedsphere"));
 
-  const auto targetGrid =
-    atlas::functionspace::StructuredColumns(outerGeometryData.functionSpace()).grid();
-  const auto targetMesh = atlas::MeshGenerator("structured").generate(targetGrid,
-                                                                      partitioner);
-  const auto targetFunctionspace = atlas::functionspace::NodeColumns(targetMesh);
+  const auto targetFunctionspace =
+      atlas::functionspace::StructuredColumns(outerGeometryData.functionSpace());
+
+  const auto targetGrid = targetFunctionspace.grid();
+
+  const auto targetPartitioner = atlas::grid::Partitioner(targetFunctionspace.distribution());
+
+  atlas::FunctionSpace step1Functionspace;
+  try {
+    step1Functionspace = createPointCloud(targetGrid, srcPartitioner);
+  }  catch (const eckit::Exception &) {
+    oops::Log::error()
+            << "ERROR  : SABER block \"gauss winds to geostrophic pressure\" cannot be built"
+            << std::endl
+            << "ERROR  : with 2 or 3 MPI tasks on a " << targetGrid.name()
+            << " grid with a " << srcFunctionspace.mesh().grid().name() << " model grid."
+            << std::endl
+            << "ERROR  : Try one of the two possible solutions:" << std::endl
+            << "ERROR  :   1. Use 1, 4 or more MPI tasks" << std::endl
+            << "ERROR  :   2. Use a Gaussian (F) grid with less points" << std::endl;
+    throw(eckit::FunctionalityNotSupported(
+                "Block not implemented on 2 and 3 PEs with these grids.", Here()));
+  }
+
+  const auto step2Functionspace = createPointCloud(targetGrid, targetPartitioner);
 
   // Set up interpolation object.
   const auto scheme = atlas::util::Config("type", "cubedsphere-bilinear") |
                       atlas::util::Config("adjoint", false);
-  const auto interp = atlas::Interpolation(scheme, csfields[0].functionspace(),
-                                           targetFunctionspace);
+  const auto interp = atlas::Interpolation(scheme, srcFunctionspace,
+                                           step1Functionspace);
 
-  auto targetField = targetFunctionspace.createField<double>
-    (atlas::option::name(s) |
-     atlas::option::levels(csfields[s].levels()) |
-                           atlas::option::halo(1));
+  // Set up redistribution object.
+  const auto redistr = atlas::Redistribution(step1Functionspace, step2Functionspace);
 
-  interp.execute(csfields[s], targetField);
+  // Interpolate to intermediate PointCloud 1
+  const auto field_options = atlas::option::name(s) |
+                             atlas::option::levels(csfields[s].levels());
+  auto step1Field = step1Functionspace.createField<double>(
+              field_options | atlas::option::halo(0));
 
-  auto atlaswrap = ::saber::interpolation::AtlasInterpWrapper(
-    partitioner, targetFunctionspace,
-    targetGrid, outerGeometryData.functionSpace());
+  interp.execute(csfields[s], step1Field);
 
-  atlas::Field gaussField =
-    atlas::functionspace::StructuredColumns(outerGeometryData.functionSpace()).createField<double>(
-    (atlas::option::name(s) | atlas::option::levels(csfields[s].levels()) |
-     atlas::option::halo(1)));
+  // Redistribute to intermediate PointCloud 2
+  auto step2Field = step2Functionspace.createField<double>(
+              field_options | atlas::option::halo(0));
 
-  atlaswrap.execute(targetField, gaussField);
+  redistr.execute(step1Field, step2Field);
+
+  // Copy to target StructuredColumns
+  atlas::Field gaussField = targetFunctionspace.createField<double>(
+              field_options | atlas::option::halo(targetFunctionspace.halo()));
+
+  atlas::array::make_view<double, 2>(gaussField).assign(
+              atlas::array::make_view<double, 2>(step2Field));
 
   gaussField.haloExchange();
 
   gfields.add(gaussField);
 }
+
+// -----------------------------------------------------------------------------
+
+void interpolateCSToGaussSinglePE(const oops::GeometryData & outerGeometryData,
+                                  const atlas::FieldSet & csfields,
+                                  atlas::FieldSet & gfields) {
+  std::string s("dry_air_density_levels_minus_one");
+
+  const auto srcFunctionspace =
+      atlas::functionspace::NodeColumns(csfields[s].functionspace());
+
+  const auto targetFunctionspace =
+      atlas::functionspace::StructuredColumns(outerGeometryData.functionSpace());
+  const auto targetGrid = targetFunctionspace.grid();
+  const auto targetMesh = atlas::MeshGenerator("structured").generate(targetGrid);
+  const auto hybridFunctionSpace = atlas::functionspace::NodeColumns(targetMesh);
+
+  // Set up interpolation object.
+  const auto scheme = atlas::util::Config("type", "cubedsphere-bilinear") |
+                      atlas::util::Config("adjoint", "false");
+  const auto interp = atlas::Interpolation(scheme, srcFunctionspace, hybridFunctionSpace);
+
+
+  // Perform interpolation
+  atlas::Field hybridField = hybridFunctionSpace.createField<double>(
+                  atlas::option::name(s) |
+                  atlas::option::levels(csfields[s].levels()));
+
+  interp.execute(csfields[s], hybridField);
+
+  // Copy to target StructuredColumns
+  atlas::Field gaussField = targetFunctionspace.createField<double>(
+                  atlas::option::name(s) |
+                  atlas::option::levels(csfields[s].levels()) |
+                  atlas::option::halo(targetFunctionspace.halo()));
+
+  atlas::array::make_view<double, 2>(gaussField).assign(
+              atlas::array::make_view<double, 2>(hybridField));
+
+  gaussField.haloExchange();
+
+  gfields.add(gaussField);
+}
+
+// -----------------------------------------------------------------------------
 
 atlas::Field createCoriolis(const atlas::Field & scstate) {
   // create coriolis parameter.
@@ -246,129 +330,70 @@ atlas::Field createCoriolis(const atlas::Field & scstate) {
   return coriolis;
 }
 
-atlas::FieldSet createAugmentedState(const std::string & modelGridName,
-                                     const std::string & gaussStateName,
-                                     const oops::GeometryData & outerGeometryData,
+// -----------------------------------------------------------------------------
+
+atlas::FieldSet createAugmentedState(const oops::GeometryData & outerGeometryData,
                                      const atlas::FieldSet & xb) {
-  atlas::FieldSet tempfields;
-  atlas::FieldSet gfields;
+  const std::string error_message(
+      "ERROR - saber block gauss winds to geostrophic pressure failed.");
+  const std::string s("dry_air_density_levels_minus_one");
+  const double tolerance(1.0e-6);
 
-  std::string s("dry_air_density_levels_minus_one");
-  double tolerance(1.0e-6);
-
-  // error trap that xb has field "s" even if it is not populated.
+  // Error trap that xb has field "s" even if it is not populated.
   if (!xb.has(s)) {
-    oops::Log::error() <<  "expect " << s
-                       << "to be allocated in xb fieldset"
+    oops::Log::error() << "Expect " << s
+                       << " to be allocated in xb fieldset."
                        << std::endl;
-    throw std::runtime_error("ERROR - gaussuvtogp saber block: failed");
+    throw eckit::Exception(error_message, Here());
   }
 
-  if ( (xb[s].functionspace().type() == "StructuredColumns") &&
-       (atlas::functionspace::StructuredColumns(
-          xb[s].functionspace()).grid().name().compare(0, 1, std::string("F")) == 0) ) {
-    if (normfield(outerGeometryData.comm(), xb[s]) <= tolerance) {
-      populateFields(outerGeometryData.fieldSet(), xb, gfields);
+  // Get and check model grid name
+  enum ModelGrid { gauss, cubedsphere, unknown};
+  ModelGrid modelGrid = unknown;
+  if (xb[s].functionspace().type() == "StructuredColumns") {
+    const auto fs = atlas::functionspace::StructuredColumns(xb[s].functionspace());
+    if (fs.grid().name().compare(0, 1, "F") == 0) {
+      modelGrid = gauss;
+    }
+  } else if (xb[s].functionspace().type() == "NodeColumns") {
+    const auto fs = atlas::functionspace::NodeColumns(xb[s].functionspace());
+    if (fs.mesh().grid().name().compare(0, 2, "CS") == 0) {
+      modelGrid = cubedsphere;
+    }
+  }
+  if (modelGrid == unknown) {
+    oops::Log::error() << "Only Gauss grid on StructuredColumns FunctionSpace"
+                          " or cubed-sphere grid on NodeColumns FunctionSpace"
+                          " are currently handled." << std::endl;
+    throw eckit::FunctionalityNotSupported(error_message, Here());
+  }
+
+  // Populate field "s"
+  atlas::FieldSet modelFields;
+  if (normfield(outerGeometryData.comm(), xb[s]) <= tolerance) {
+    modelFields = populateFields(outerGeometryData.fieldSet(), xb);
+  } else {
+    modelFields.add(xb[s]);
+  }
+
+  // Interpolate to Gauss
+  atlas::FieldSet gaussFields;
+  if (modelGrid == cubedsphere) {
+    // Disjunction based on numbers of PEs
+    if (outerGeometryData.comm().size() == 1) {
+      interpolateCSToGaussSinglePE(outerGeometryData, modelFields, gaussFields);
     } else {
-      gfields.add(xb[s]);
+      interpolateCSToGauss(outerGeometryData, modelFields, gaussFields);
     }
-    gfields.add(createCoriolis(xb[s]));
-    return gfields;
+  } else if (modelGrid == gauss) {
+    gaussFields = modelFields;
   }
 
-  if (gaussStateName.size() > 0)  {
-    atlas::FieldSet globalData;
+  // Add Coriolis term
+  gaussFields.add(createCoriolis(gaussFields[s]));
 
-    atlas::Field field = outerGeometryData.functionSpace().createField<double>(
-      atlas::option::name(s) | atlas::option::levels(xb[s].levels()) |
-      atlas::option::global());
-    globalData.add(field);
-
-    // read in gauss state on a single PE.
-    if (outerGeometryData.comm().rank() == 0) {
-      atlas::StructuredGrid grid =
-        atlas::functionspace::StructuredColumns(outerGeometryData.functionSpace()).grid();
-
-      // Get sizes
-      atlas::idx_t nx = grid.nxmax();
-      atlas::idx_t ny = grid.ny();
-
-      // NetCDF IDs
-      int ncid, retval, var_id;
-
-      // NetCDF file path
-      std::string ncfilepath = gaussStateName;
-      oops::Log::info() << "Info     : Reading file: " << ncfilepath << std::endl;
-
-      // Open NetCDF file
-      if ((retval = nc_open(ncfilepath.c_str(), NC_NOWRITE, &ncid))) ERR(retval);
-
-      oops::Log::info() << "Info     : Reading file done: " << retval << std::endl;
-
-      // Get variable
-      if ((retval = nc_inq_varid(ncid, s.c_str(), &var_id))) ERR(retval);
-
-      // Read data
-      double zvar[xb[s].levels()][ny][nx];
-
-      if ((retval = nc_get_var_double(ncid, var_id, &zvar[0][0][0]))) ERR(retval);
-      // Copy data
-
-      auto varView = atlas::array::make_view<double, 2>(globalData[s]);
-      for (atlas::idx_t k = 0; k < xb[s].levels(); ++k) {
-        for (atlas::idx_t j = 0; j < ny; ++j) {
-          for (atlas::idx_t i = 0; i < grid.nx(ny-1-j); ++i) {
-            atlas::gidx_t gidx = grid.index(i, ny-1-j);
-            varView(gidx, k) = zvar[k][j][i];
-          }
-        }
-      }
-      // Close file
-      if ((retval = nc_close(ncid))) ERR(retval);
-    }
-
-    // redistribute field across PEs.
-    atlas::functionspace::StructuredColumns fs(outerGeometryData.functionSpace());
-
-    atlas::Field fieldLoc =
-      outerGeometryData.functionSpace().createField<double>(atlas::option::name(s)
-      | atlas::option::levels(xb[s].levels()) | atlas::option::halo(1));
-    gfields.add(fieldLoc);
-    fs.scatter(globalData, gfields);
-
-    // create Coriolis
-    gfields.add(createCoriolis(gfields[s]));
-
-    // halo exchange
-    gfields.haloExchange();
-
-    return gfields;
-  }
-
-  // We don't have a gauss state to read in, so we interpolate
-  // Unfortunately does not work all the way to StructureColumns
-  // ie only valid for a single2 1PE (for now)
-
-  if (normfield(outerGeometryData.comm(), xb[s]) > tolerance) {
-    // just link to existing data.
-    tempfields.add(xb[s]);
-  } else {
-    // gauss field exists but is not populated.
-    populateFields(outerGeometryData.fieldSet(), xb, tempfields);
-  }
-
-  if ((xb[s].functionspace().type() == "NodeColumns") &&
-      (modelGridName.compare(0, 2, std::string{"CS"}) == 0)) {
-    interpolateCSToGauss(modelGridName, outerGeometryData, tempfields, gfields);
-  } else {
-    gfields.add(tempfields[s]);
-  }
-  // create Coriolis
-  gfields.add(createCoriolis(gfields[s]));
-
-  return gfields;
+  return gaussFields;
 }
-
 
 // -----------------------------------------------------------------------------
 
@@ -386,7 +411,6 @@ atlas::FieldSet allocateSpectralVortDiv(
 
   return specfset;
 }
-
 
 // -----------------------------------------------------------------------------
 
@@ -474,16 +498,13 @@ GaussUVToGP::GaussUVToGP(const oops::GeometryData & outerGeometryData,
     innerVars_(createInnerVars(outerVars)),
     outerVars_(outerVars),
     activeVariableSizes_(activeVariableSizes),
-    modelGridName_(params_.modelGridName.value().get_value_or("")),
-    gaussStateName_(params_.gaussState.value().get_value_or("")),
     gaussFunctionSpace_(outerGeometryData.functionSpace()),
     specFunctionSpace_(2 * atlas::GaussianGrid(gaussFunctionSpace_.grid()).N() - 1),
     trans_(gaussFunctionSpace_, specFunctionSpace_),
     innerGeometryData_(atlas::FunctionSpace(gaussFunctionSpace_),
                        outerGeometryData.fieldSet(),
                        outerGeometryData.levelsAreTopDown(), outerGeometryData.comm()),
-    augmentedState_(createAugmentedState(modelGridName_, gaussStateName_,
-                                         outerGeometryData, xb))
+    augmentedState_(createAugmentedState(outerGeometryData, xb))
 {
   oops::Log::trace() << classname() << "::GaussUVToGP starting" << std::endl;
   // read in "gaussian air density" state.

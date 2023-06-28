@@ -61,8 +61,6 @@ class GaussUVToGP : public SaberOuterBlockBase {
   oops::Variables innerVars_;
   oops::Variables outerVars_;
   std::vector<std::size_t> activeVariableSizes_;
-  std::string modelGridName_;
-  std::string gaussStateName_;
 
   /// Gaussian (outer) functionspace
   const atlas::functionspace::StructuredColumns gaussFunctionSpace_;
