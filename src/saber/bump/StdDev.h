@@ -50,7 +50,6 @@ class StdDev : public SaberOuterBlockBase {
   typedef StdDevParameters Parameters_;
 
   StdDev(const oops::GeometryData &,
-         const std::vector<size_t> &,
          const oops::Variables &,
          const eckit::Configuration &,
          const Parameters_ &,

@@ -28,6 +28,7 @@
 #include "oops/util/Timer.h"
 
 #include "saber/oops/SaberOuterBlockBase.h"
+#include "saber/oops/Utilities.h"
 #include "saber/vader/CovarianceStatisticsUtils.h"
 
 namespace saber {
@@ -40,7 +41,6 @@ static SaberOuterBlockMaker<HydrostaticExner> makerHydrostaticExner_("mo_hydrost
 // -----------------------------------------------------------------------------
 
 HydrostaticExner::HydrostaticExner(const oops::GeometryData & outerGeometryData,
-                                   const std::vector<size_t> & activeVariableSizes,
                                    const oops::Variables & outerVars,
                                    const eckit::Configuration & covarConf,
                                    const Parameters_ & params,
@@ -49,7 +49,7 @@ HydrostaticExner::HydrostaticExner(const oops::GeometryData & outerGeometryData,
                                    const util::DateTime & validTimeOfXbFg)
   : SaberOuterBlockBase(params),
     innerGeometryData_(outerGeometryData), innerVars_(outerVars),
-    activeVars_(params.activeVars.value().get_value_or(outerVars)),
+    activeVars_(getActiveVars(params, outerVars)),
     augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::HydrostaticExner starting" << std::endl;
@@ -57,8 +57,7 @@ HydrostaticExner::HydrostaticExner(const oops::GeometryData & outerGeometryData,
   // Covariance FieldSet
   covFieldSet_ = createGpRegressionStats(outerGeometryData.functionSpace(),
                                          outerGeometryData.fieldSet(),
-                                         params.mandatoryActiveVars(),
-                                         activeVariableSizes,
+                                         activeVars_,
                                          params.hydrostaticexnerParams.value());
 
   std::vector<std::string> requiredStateVariables{

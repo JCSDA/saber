@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2022 Met Office
+ * (C) Crown Copyright 2023 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -7,14 +7,13 @@
 
 #pragma once
 
-#include <memory>
+#include <iostream>
+#include <map>
 #include <string>
 #include <vector>
 
 #include "atlas/field.h"
 #include "atlas/functionspace.h"
-
-#include "eckit/exception/Exceptions.h"
 
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
@@ -22,43 +21,42 @@
 #include "saber/oops/SaberBlockParametersBase.h"
 #include "saber/oops/SaberOuterBlockBase.h"
 
-namespace oops {
-  class Variables;
-}
-
+// Note that this is a saber block to demonstrate proof of concept
+// When we have a fully working vertical mode to model level saber block
+// we can get rid of this.
 namespace saber {
-namespace vader {
+namespace interpolation {
 
 // -----------------------------------------------------------------------------
+class VertProjParameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(VertProjParameters, SaberBlockParametersBase)
 
-class HydroBalParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(HydroBalParameters, SaberBlockParametersBase)
  public:
-  oops::RequiredParameter<std::string> svp_file{"saturation vapour pressure file", this};
-  oops::Variables mandatoryActiveVars() const override {return oops::Variables({
-    "air_pressure_levels_minus_one",
-    "hydrostatic_exner_levels",
-    "virtual_potential_temperature"});}
+  oops::OptionalParameter<oops::Variables> activeVariables{"active variables", this};
+  oops::RequiredParameter<atlas::idx_t> innerVerticalLevels{"inner vertical levels",
+    "inner number of vertical levels", this};
+  oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
 
 // -----------------------------------------------------------------------------
 
-class HydroBal : public SaberOuterBlockBase {
+class VertProj : public SaberOuterBlockBase {
  public:
-  static const std::string classname() {return "saber::vader::HydroBal";}
+  static const std::string classname() {return "saber::spectralb::VertProj";}
 
-  typedef HydroBalParameters Parameters_;
+  typedef VertProjParameters Parameters_;
 
-  HydroBal(const oops::GeometryData &,
+  VertProj(const oops::GeometryData &,
            const oops::Variables &,
            const eckit::Configuration &,
            const Parameters_ &,
            const atlas::FieldSet &,
            const atlas::FieldSet &,
            const util::DateTime &);
-  virtual ~HydroBal();
+  virtual ~VertProj() = default;
 
-  const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}
+  const oops::GeometryData & innerGeometryData()
+    const override {return outerGeometryData_;}
   const oops::Variables & innerVars() const override {return innerVars_;}
 
   void multiply(atlas::FieldSet &) const override;
@@ -67,12 +65,12 @@ class HydroBal : public SaberOuterBlockBase {
 
  private:
   void print(std::ostream &) const override;
-  const oops::GeometryData & innerGeometryData_;
+
+  const oops::GeometryData & outerGeometryData_;
+  oops::Variables outerVars_;
+  oops::Variables activeVars_;
   oops::Variables innerVars_;
-  atlas::FieldSet augmentedStateFieldSet_;
 };
 
-// -----------------------------------------------------------------------------
-
-}  // namespace vader
+}  // namespace interpolation
 }  // namespace saber

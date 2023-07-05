@@ -48,7 +48,6 @@ class SPCTRL_COV : public SaberCentralBlockBase {
   typedef SPCTRL_COVParameters Parameters_;
 
   SPCTRL_COV(const oops::GeometryData &,
-             const std::vector<size_t> &,
              const oops::Variables &,
              const eckit::Configuration &,
              const Parameters_ &,
@@ -68,8 +67,6 @@ class SPCTRL_COV : public SaberCentralBlockBase {
 
   /// Parameters
   Parameters_ params_;
-  /// Variables sizes
-  const std::vector<size_t> variableSizes_;
   /// Active variables
   const oops::Variables activeVars_;
   /// Geometry data

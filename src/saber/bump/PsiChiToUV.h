@@ -52,7 +52,6 @@ class PsiChiToUV : public SaberOuterBlockBase {
   typedef PsiChiToUVParameters Parameters_;
 
   PsiChiToUV(const oops::GeometryData &,
-             const std::vector<size_t> &,
              const oops::Variables &,
              const eckit::Configuration &,
              const Parameters_ &,
@@ -74,7 +73,6 @@ class PsiChiToUV : public SaberOuterBlockBase {
   const oops::GeometryData & innerGeometryData_;
   oops::Variables innerVars_;
   oops::Variables outerVars_;
-  size_t levels_;
   BUMPParameters bumpParams_;
   std::unique_ptr<bump_lib::BUMP> bump_;
 };

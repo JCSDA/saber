@@ -38,7 +38,6 @@ static SaberOuterBlockMaker<DryAirDensity> makerDryAirDensity_("mo_dry_air_densi
 // -----------------------------------------------------------------------------
 
 DryAirDensity::DryAirDensity(const oops::GeometryData & outerGeometryData,
-                             const std::vector<size_t> & activeVariableSizes,
                              const oops::Variables & outerVars,
                              const eckit::Configuration & covarConf,
                              const Parameters_ & params,
@@ -51,19 +50,18 @@ DryAirDensity::DryAirDensity(const oops::GeometryData & outerGeometryData,
   oops::Log::trace() << classname() << "::DryAirDensity starting" << std::endl;
 
   // Need to setup derived state fields that we need.
-  std::vector<std::string> requiredStateVariables{
-                                                   "air_pressure_levels_minus_one",
-                                                   "dry_air_density_levels_minus_one",
-                                                   "height",
-                                                   "height_levels",
-                                                   "m_ci",
-                                                   "m_cl",
-                                                   "m_r",
-                                                   "m_v",
-                                                   "m_t",
-                                                   "potential_temperature",
-                                                   "specific_humidity",
-                                                   "virtual_potential_temperature"};
+  std::vector<std::string> requiredStateVariables{"air_pressure_levels_minus_one",
+                                                  "dry_air_density_levels_minus_one",
+                                                  "height",
+                                                  "height_levels",
+                                                  "m_ci",
+                                                  "m_cl",
+                                                  "m_r",
+                                                  "m_v",
+                                                  "m_t",
+                                                  "potential_temperature",
+                                                  "specific_humidity",
+                                                  "virtual_potential_temperature"};
 
 
   // Check that they are allocated (i.e. exist in the state fieldset)

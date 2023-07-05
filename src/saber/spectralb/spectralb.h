@@ -16,6 +16,8 @@
 
 #include "eckit/exception/Exceptions.h"
 #include "oops/base/Variables.h"
+#include "oops/util/ConfigFunctions.h"
+#include "oops/util/FieldSetHelpers.h"
 #include "oops/util/Logger.h"
 
 #include "atlas/array/MakeView.h"
@@ -103,14 +105,12 @@ class SpectralB {
   typedef spectralbParameters Parameters_;
 
   SpectralB(const atlas::FunctionSpace &,
-            const std::vector<size_t> &,
             const oops::Variables &,
             const Parameters_ &);
   ~SpectralB();
 
   void multiply_InterpAndCov(atlas::FieldSet &) const;
   static atlas::FieldSet createFieldsSpace(const atlas::FunctionSpace &,
-                                           const std::vector<size_t> &,
                                            const oops::Variables &);
 
  private:
@@ -135,11 +135,9 @@ using atlas::array::make_view;
 using atlas::idx_t;
 
 SpectralB::SpectralB(const atlas::FunctionSpace & functionSpace,
-                     const std::vector<size_t> & variableSizes,
                      const oops::Variables & vars,
                      const Parameters_ & params) :
   modelFieldSet_(std::make_shared<const atlas::FieldSet>(createFieldsSpace(functionSpace,
-                                                                           variableSizes,
                                                                            vars))),
   gaussNames_(vars.variables()),
   gaussGrid_(params.gaussGridUid),
@@ -148,7 +146,7 @@ SpectralB::SpectralB(const atlas::FunctionSpace & functionSpace,
   interp_(atlas::grid::Partitioner(new TransPartitioner()), gaussFunctionSpace_,
     detail::createOutputGrid(params), detail::createOutputFunctionSpace(*modelFieldSet_)),
   variance_opt_(params.varianceOpt),
-  cs_(std::make_unique<const CovStat_ErrorCov>(variableSizes, vars, params))
+  cs_(std::make_unique<const CovStat_ErrorCov>(vars, params))
 {
   oops::Log::trace() << "SpectralB::SpectralB done" << std::endl;
 }
@@ -191,7 +189,6 @@ void SpectralB::multiply_InterpAndCov(atlas::FieldSet & modelGridFieldSet) const
 // -----------------------------------------------------------------------------
 
 atlas::FieldSet SpectralB::createFieldsSpace(const atlas::FunctionSpace & functionSpace,
-                                             const std::vector<size_t> & variableSizes,
                                              const oops::Variables & vars) {
   oops::Log::trace() << "start createFieldsSpace:: Rank, Variables = "
                      << atlas::mpi::rank() << " " << vars << std::endl;
@@ -200,14 +197,12 @@ atlas::FieldSet SpectralB::createFieldsSpace(const atlas::FunctionSpace & functi
 
   ASSERT(vars.size() > 0);
 
-  std::vector<size_t> sizes = variableSizes;
-
   for (unsigned int i = 0; i < vars.size(); ++i) {
     atlas::FunctionSpace nodesFs = functionSpace;
 
     atlas::Field tempField =
       nodesFs.createField<double>(atlas::option::name(vars[i]) |
-                                  atlas::option::levels(sizes[i]));
+                                  atlas::option::levels(vars.getLevels(vars[i])));
 
     auto view = atlas::array::make_view<double, 2>(tempField);
     view.assign(0.0);

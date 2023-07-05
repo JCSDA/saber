@@ -53,7 +53,7 @@ class Localization : public oops::LocalizationBase<MODEL> {
 
 template<typename MODEL>
 Localization<MODEL>::Localization(const Geometry_ & geom,
-                                  const oops::Variables & incVars,
+                                  const oops::Variables & incVarsNoMeta,
                                   const eckit::Configuration & conf)
   : loc_()
 {
@@ -61,6 +61,13 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
 
   // Create dummy time
   util::DateTime dummyTime(1977, 5, 25, 0, 0, 0);
+
+  // Initialize
+  const std::vector<std::size_t> vlevs = geom.variableSizes(incVarsNoMeta);
+  oops::Variables incVars(incVarsNoMeta);
+  for (std::size_t i = 0; i < vlevs.size() ; ++i) {
+    incVars.addMetaData(incVarsNoMeta.variables()[i], "levels", vlevs[i]);
+  }
 
   // Create dummy xb and fg
   const State_ xb(geom, incVars, dummyTime);

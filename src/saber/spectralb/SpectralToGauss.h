@@ -45,7 +45,6 @@ class SpectralToGauss : public SaberOuterBlockBase {
   typedef SpectralToGaussParameters Parameters_;
 
   SpectralToGauss(const oops::GeometryData &,
-                  const std::vector<size_t> &,
                   const oops::Variables &,
                   const eckit::Configuration &,
                   const Parameters_ &,
@@ -62,22 +61,18 @@ class SpectralToGauss : public SaberOuterBlockBase {
   void leftInverseMultiply(atlas::FieldSet &) const override;
 
   atlas::FieldSet generateInnerFieldSet(const oops::GeometryData & innerGeometryData,
-                                        const std::vector<size_t> & innerVariableSizes,
                                         const oops::Variables & innerVars,
                                         const size_t & timeRank) const override
     {return util::createSmoothFieldSet(innerGeometryData.comm(),
                                        innerGeometryData.functionSpace(),
-                                       innerVariableSizes,
-                                       innerVars.variables());}
+                                       innerVars);}
 
   atlas::FieldSet generateOuterFieldSet(const oops::GeometryData & outerGeometryData,
-                                        const std::vector<size_t> & outerVariableSizes,
                                         const oops::Variables & outerVars,
                                         const size_t & timeRank) const override
     {return util::createSmoothFieldSet(outerGeometryData.comm(),
                                        outerGeometryData.functionSpace(),
-                                       outerVariableSizes,
-                                       outerVars.variables());}
+                                       outerVars);}
 
  private:
   void print(std::ostream &) const override;
@@ -90,12 +85,12 @@ class SpectralToGauss : public SaberOuterBlockBase {
 
   Parameters_ params_;
   oops::Variables activeVars_;
-  oops::Variables innerVars_;
   oops::Variables outerVars_;
-  std::vector<std::size_t> activeVariableSizes_;
-
   /// Whether to convert to and from u/v.
-  const bool useWindTransform;
+  const bool useWindTransform_;
+  oops::Variables innerVars_;
+
+
   /// Gaussian (outer) functionspace
   const atlas::functionspace::StructuredColumns gaussFunctionSpace_;
   /// Spectral (inner) functionspace

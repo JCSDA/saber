@@ -16,6 +16,8 @@
 
 #include "atlas/field.h"
 
+#include "eckit/config/Configuration.h"
+
 #include "oops/base/Geometry.h"
 #include "oops/base/Increment.h"
 #include "oops/base/IncrementEnsemble.h"
@@ -34,6 +36,9 @@
 #include "saber/oops/SaberOuterBlockBase.h"
 
 namespace saber {
+
+oops::Variables getActiveVars(const SaberBlockParametersBase &,
+                              const oops::Variables &);
 
 // -----------------------------------------------------------------------------
 
@@ -339,23 +344,6 @@ void writeEnsemble(const oops::Geometry<MODEL> & geom,
 
 // -----------------------------------------------------------------------------
 
-oops::Variables getActiveVars(const SaberBlockParametersBase & params,
-                              const oops::Variables & defaultVars) {
-  oops::Log::trace() << "getActiveVars starting" << std::endl;
-  oops::Variables activeVars;
-  if (params.mandatoryActiveVars().size() == 0) {
-    // No mandatory active variables for this block
-    activeVars = params.activeVars.value().get_value_or(defaultVars);
-  } else {
-    // Block with mandatory active variables
-    activeVars = params.activeVars.value().get_value_or(params.mandatoryActiveVars());
-    ASSERT(params.mandatoryActiveVars() <= activeVars);
-  }
-  return activeVars;
-}
-
-// -----------------------------------------------------------------------------
-
 template<typename MODEL>
 std::unique_ptr<SaberBlockChain> ensembleBlockChain(const oops::Geometry<MODEL> & geom,
                                                     const oops::Variables & incVars,
@@ -493,7 +481,6 @@ void buildOuterBlocks(const oops::Geometry<MODEL> & geom,
     // Create outer block
     saberBlockChain.outerBlocks().emplace_back(SaberOuterBlockFactory::create(
                                                outerGeometryData.back().get(),
-                                               geom.variableSizes(activeVars),
                                                outerVars,
                                                outerBlockConf,
                                                saberOuterBlockParams,
@@ -584,10 +571,10 @@ void buildOuterBlocks(const oops::Geometry<MODEL> & geom,
     }
 
     // Get intersection of active variables and outer/inner variables
-    oops::Variables activeOuterVars = activeVars;
-    activeOuterVars.intersection(outerVars);
-    oops::Variables activeInnerVars = activeVars;
-    activeInnerVars.intersection(innerVars);
+    oops::Variables activeOuterVars = outerVars;
+    activeOuterVars.intersection(activeVars);
+    oops::Variables activeInnerVars = innerVars;
+    activeInnerVars.intersection(activeVars);
 
 
     // Left inverse multiplication on xb and fg if inner and outer Geometry is different
@@ -625,10 +612,8 @@ void buildOuterBlocks(const oops::Geometry<MODEL> & geom,
       // Run test
       saberBlockChain.lastOuterBlock().adjointTest(geom.getComm(),
                                                    outerGeometryData.back().get(),
-                                                   geom.variableSizes(activeOuterVars),
                                                    activeOuterVars,
                                                    innerGeometryData,
-                                                   geom.variableSizes(activeInnerVars),
                                                    activeInnerVars,
                                                    localAdjointTolerance);
     }
@@ -655,10 +640,8 @@ void buildOuterBlocks(const oops::Geometry<MODEL> & geom,
 
         // Run test
         saberBlockChain.lastOuterBlock().inverseTest(innerGeometryData,
-                                                     geom.variableSizes(activeInnerVars),
                                                      activeInnerVars,
                                                      outerGeometryData.back().get(),
-                                                     geom.variableSizes(activeOuterVars),
                                                      activeOuterVars,
                                                      innerVarsToCompare,
                                                      outerVarsToCompare,
@@ -715,7 +698,6 @@ void buildCentralBlock(const oops::Geometry<MODEL> & geom,
   // Create central block
   saberBlockChain.centralBlockInit(SaberCentralBlockFactory::create(
                                    outerGeometryData,
-                                   geom.variableSizes(activeVars),
                                    activeVars,
                                    covarConf,
                                    saberCentralBlockParams,
@@ -914,7 +896,6 @@ void buildCentralBlock(const oops::Geometry<MODEL> & geom,
     // Run test
     saberBlockChain.centralBlock().adjointTest(geom.getComm(),
                                                outerGeometryData,
-                                               geom.variableSizes(activeVars),
                                                activeVars,
                                                localAdjointTolerance);
   }

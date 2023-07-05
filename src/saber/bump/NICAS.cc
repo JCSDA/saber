@@ -8,7 +8,6 @@
 #include "saber/bump/NICAS.h"
 
 #include "oops/util/abor1_cpp.h"
-#include "oops/util/FieldSetHelpers.h"
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/Logger.h"
 #include "oops/util/Timer.h"
@@ -25,7 +24,6 @@ static SaberCentralBlockMaker<NICAS> makerNICAS_("BUMP_NICAS");
 // -----------------------------------------------------------------------------
 
 NICAS::NICAS(const oops::GeometryData & geometryData,
-             const std::vector<size_t> & activeVariableSizes,
              const oops::Variables & centralVars,
              const eckit::Configuration & covarConf,
              const Parameters_ & params,
@@ -41,6 +39,12 @@ NICAS::NICAS(const oops::GeometryData & geometryData,
 
   // Get active variables
   activeVars_ = params.activeVars.value().get_value_or(centralVars);
+
+  // Get active variable sizes
+  std::vector<size_t> activeVariableSizes;
+  for (const std::string & var : activeVars_.variables()) {
+    activeVariableSizes.push_back(centralVars.getLevels(var));
+  }
 
   // Get BUMP parameters
   if (params.doCalibration()) {

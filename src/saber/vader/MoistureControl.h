@@ -65,7 +65,6 @@ class MoistureControl : public SaberOuterBlockBase {
   typedef MoistureControlParameters Parameters_;
 
   MoistureControl(const oops::GeometryData &,
-                  const std::vector<size_t> &,
                   const oops::Variables &,
                   const eckit::Configuration &,
                   const Parameters_ &,

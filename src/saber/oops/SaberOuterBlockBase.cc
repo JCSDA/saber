@@ -49,7 +49,6 @@ SaberOuterBlockFactory::SaberOuterBlockFactory(const std::string & name) {
 
 SaberOuterBlockBase * SaberOuterBlockFactory::create(
   const oops::GeometryData & outerGeometryData,
-  const std::vector<size_t> & outerVariableSizes,
   const oops::Variables & outerVars,
   const eckit::Configuration & covarConfig,
   const SaberBlockParametersBase & params,
@@ -63,7 +62,7 @@ SaberOuterBlockBase * SaberOuterBlockFactory::create(
     oops::Log::error() << id << " does not exist in saber::SaberOuterBlockFactory." << std::endl;
     ABORT("Element does not exist in saber::SaberOuterBlockFactory.");
   }
-  SaberOuterBlockBase * ptr = jsb->second->make(outerGeometryData, outerVariableSizes,
+  SaberOuterBlockBase * ptr = jsb->second->make(outerGeometryData,
                                                 outerVars, covarConfig, params, xb, fg, validTime);
   oops::Log::trace() << "SaberOuterBlockBase::create done" << std::endl;
   return ptr;
@@ -85,10 +84,8 @@ SaberOuterBlockFactory::createParameters(const std::string &name) {
 
 void SaberOuterBlockBase::adjointTest(const eckit::mpi::Comm & comm,
                                       const oops::GeometryData & outerGeometryData,
-                                      const std::vector<size_t> & outerVariableSizes,
                                       const oops::Variables & outerVars,
                                       const oops::GeometryData & innerGeometryData,
-                                      const std::vector<size_t> & innerVariableSizes,
                                       const oops::Variables & innerVars,
                                       const double & adjointTolerance) const {
   oops::Log::trace() << "SaberOuterBlockBase::adjointTest starting" << std::endl;
@@ -96,8 +93,7 @@ void SaberOuterBlockBase::adjointTest(const eckit::mpi::Comm & comm,
   // Create random inner FieldSet
   atlas::FieldSet innerFset = util::createRandomFieldSet(innerGeometryData.comm(),
                                                          innerGeometryData.functionSpace(),
-                                                         innerVariableSizes,
-                                                         innerVars.variables());
+                                                         innerVars);
 
   // Copy inner FieldSet
   atlas::FieldSet innerFsetSave = util::copyFieldSet(innerFset);
@@ -105,8 +101,7 @@ void SaberOuterBlockBase::adjointTest(const eckit::mpi::Comm & comm,
   // Create random outer FieldSet
   atlas::FieldSet outerFset = util::createRandomFieldSet(outerGeometryData.comm(),
                                                          outerGeometryData.functionSpace(),
-                                                         outerVariableSizes,
-                                                         outerVars.variables());
+                                                         outerVars);
 
   // Copy outer FieldSet
   atlas::FieldSet outerFsetSave = util::copyFieldSet(outerFset);
@@ -137,10 +132,8 @@ void SaberOuterBlockBase::adjointTest(const eckit::mpi::Comm & comm,
 // -----------------------------------------------------------------------------
 
 void SaberOuterBlockBase::inverseTest(const oops::GeometryData & innerGeometryData,
-                                      const std::vector<size_t> & innerVariableSizes,
                                       const oops::Variables & innerVars,
                                       const oops::GeometryData & outerGeometryData,
-                                      const std::vector<size_t> & outerVariableSizes,
                                       const oops::Variables & outerVars,
                                       const oops::Variables & innerVarsToCompare,
                                       const oops::Variables & outerVarsToCompare,
@@ -153,7 +146,6 @@ void SaberOuterBlockBase::inverseTest(const oops::GeometryData & innerGeometryDa
 
   // Create inner FieldSet
   atlas::FieldSet innerFset = this->generateInnerFieldSet(innerGeometryData,
-                                                          innerVariableSizes,
                                                           innerVars,
                                                           timeRank);
 
@@ -199,7 +191,6 @@ void SaberOuterBlockBase::inverseTest(const oops::GeometryData & innerGeometryDa
 
   // Create outer FieldSet
   atlas::FieldSet outerFset = this->generateOuterFieldSet(outerGeometryData,
-                                                          outerVariableSizes,
                                                           outerVars,
                                                           timeRank);
 

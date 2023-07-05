@@ -58,7 +58,6 @@ class HpHexnerToPExner : public SaberOuterBlockBase {
   typedef HpHexnerToPExnerParameters Parameters_;
 
   HpHexnerToPExner(const oops::GeometryData &,
-                   const std::vector<size_t> &,
                    const oops::Variables &,
                    const eckit::Configuration &,
                    const Parameters_ &,

@@ -18,11 +18,13 @@
 
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
+#include "oops/util/ConfigFunctions.h"
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/Timer.h"
 
 #include "saber/oops/SaberOuterBlockBase.h"
+#include "saber/oops/Utilities.h"
 
 namespace saber {
 namespace generic {
@@ -34,7 +36,6 @@ static SaberOuterBlockMaker<StdDev> makerStdDev_("StdDev");
 // -----------------------------------------------------------------------------
 
 StdDev::StdDev(const oops::GeometryData & outerGeometryData,
-               const std::vector<size_t> & activeVariableSizes,
                const oops::Variables & outerVars,
                const eckit::Configuration & covarConfig,
                const Parameters_ & params,
@@ -43,7 +44,6 @@ StdDev::StdDev(const oops::GeometryData & outerGeometryData,
                const util::DateTime & validTimeOfXbFg)
   : SaberOuterBlockBase(params),
     innerGeometryData_(outerGeometryData),
-    activeVariableSizes_(activeVariableSizes),
     innerVars_(outerVars),
     params_(params),
     readFromAtlas_(false),
@@ -52,9 +52,6 @@ StdDev::StdDev(const oops::GeometryData & outerGeometryData,
     writeToModel_(false)
 {
   oops::Log::trace() << classname() << "::StdDev starting" << std::endl;
-
-  // Get active variables
-  oops::Variables activeVars = params_.activeVars.value().get_value_or(outerVars);
 
   // Prepare read parameters
   const auto & readParams = params_.readParams.value();
@@ -146,8 +143,7 @@ void StdDev::read() {
     // Read file
     util::readFieldSet(innerGeometryData_.comm(),
                        innerGeometryData_.functionSpace(),
-                       activeVariableSizes_,
-                       innerVars_.variables(),
+                       innerVars_,
                        readConf_,
                        stdDevFset_);
 
@@ -180,10 +176,10 @@ void StdDev::directCalibration(const std::vector<atlas::FieldSet> & fsetEns) {
   for (size_t jvar = 0; jvar < innerVars_.size(); ++jvar) {
     mean.add(innerGeometryData_.functionSpace().createField<double>(
              atlas::option::name(innerVars_[jvar]) |
-             atlas::option::levels(activeVariableSizes_[jvar])));
+             atlas::option::levels(innerVars_.getLevels(innerVars_[jvar]))));
     var.add(innerGeometryData_.functionSpace().createField<double>(
             atlas::option::name(innerVars_[jvar]) |
-            atlas::option::levels(activeVariableSizes_[jvar])));
+            atlas::option::levels(innerVars_.getLevels(innerVars_[jvar]))));
   }
   util::zeroFieldSet(mean);
   util::zeroFieldSet(var);
@@ -229,10 +225,10 @@ void StdDev::iterativeCalibrationInit() {
   for (size_t jvar = 0; jvar < innerVars_.size(); ++jvar) {
     iterativeMean_.add(innerGeometryData_.functionSpace().createField<double>(
                        atlas::option::name(innerVars_[jvar]) |
-                       atlas::option::levels(activeVariableSizes_[jvar])));
+                       atlas::option::levels(innerVars_.getLevels(innerVars_[jvar]))));
     iterativeVar_.add(innerGeometryData_.functionSpace().createField<double>(
                       atlas::option::name(innerVars_[jvar]) |
-                      atlas::option::levels(activeVariableSizes_[jvar])));
+                      atlas::option::levels(innerVars_.getLevels(innerVars_[jvar]))));
   }
   util::zeroFieldSet(iterativeMean_);
   util::zeroFieldSet(iterativeVar_);

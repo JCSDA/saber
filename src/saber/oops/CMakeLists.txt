@@ -43,6 +43,7 @@ if( oops_FOUND )
 
     # Utilities
     Utilities.h
+    Utilities.cc
 
     # Drivers
     ErrorCovariance.h

@@ -35,8 +35,7 @@ class CovStat_ErrorCov {
  public:
   static const std::string classname() {return "saber::CovStat_ErrorCov";}
 
-  CovStat_ErrorCov(const std::vector<size_t> &,
-                   const oops::Variables &,
+  CovStat_ErrorCov(const oops::Variables &,
                    const Parameters_ &);
 
   /// \details getSpectralUMatrix() gets the "square root" of the spectral vertical

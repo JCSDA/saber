@@ -43,7 +43,6 @@ class VaderBlock : public SaberOuterBlockBase {
   typedef VaderBlockParameters Parameters_;
 
   VaderBlock(const oops::GeometryData &,
-             const std::vector<size_t> &,
              const oops::Variables &,
              const eckit::Configuration &,
              const Parameters_ &,

@@ -20,7 +20,6 @@ static SaberOuterBlockMaker<Interpolation> makerInterpolation_("interpolation");
 // -----------------------------------------------------------------------------
 
 Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
-                             const std::vector<size_t> & activeVariableSizes,
                              const oops::Variables & outerVars,
                              const eckit::Configuration & covarConf,
                              const Parameters_ & params,

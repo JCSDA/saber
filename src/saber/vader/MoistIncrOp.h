@@ -38,7 +38,6 @@ class MoistIncrOp : public SaberOuterBlockBase {
   typedef MoistIncrOpParameters Parameters_;
 
   MoistIncrOp(const oops::GeometryData &,
-              const std::vector<size_t> &,
               const oops::Variables &,
               const eckit::Configuration &,
               const Parameters_ &,

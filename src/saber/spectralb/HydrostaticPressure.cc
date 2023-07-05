@@ -35,7 +35,6 @@ static SaberOuterBlockMaker<HydrostaticPressure>
 // -----------------------------------------------------------------------------
 
 HydrostaticPressure::HydrostaticPressure(const oops::GeometryData & outerGeometryData,
-                                   const std::vector<size_t> & activeVariableSizes,
                                    const oops::Variables & outerVars,
                                    const eckit::Configuration & covarConf,
                                    const Parameters_ & params,
@@ -47,13 +46,11 @@ HydrostaticPressure::HydrostaticPressure(const oops::GeometryData & outerGeometr
     activeVars_(params.activeVars.value().get_value_or(outerVars)),
     gaussFunctionSpace_(outerGeometryData.functionSpace()),
     gptohp_(std::make_unique<saber::vader::GpToHp>(outerGeometryData,
-                                                   activeVariableSizes,
                                                    outerVars,
                                                    covarConf,
                                                    params.gpToHp,
                                                    xb, fg, validTimeOfXbFg)),
     gaussuvtogp_(std::make_unique<GaussUVToGP>(outerGeometryData,
-                                               activeVariableSizes,
                                                gptohp_->innerVars(),
                                                covarConf,
                                                params.gaussUVToGp, xb, fg, validTimeOfXbFg))

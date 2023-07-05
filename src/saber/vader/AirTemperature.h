@@ -39,7 +39,6 @@ class AirTemperature : public SaberOuterBlockBase {
   typedef AirTemperatureParameters Parameters_;
 
   AirTemperature(const oops::GeometryData &,
-                 const std::vector<size_t> &,
                  const oops::Variables &,
                  const eckit::Configuration &,
                  const Parameters_ &,

@@ -36,7 +36,6 @@ class SpectralToSpectral : public SaberOuterBlockBase {
   typedef SpectralToSpectralParameters Parameters_;
 
   SpectralToSpectral(const oops::GeometryData &,
-                     const std::vector<size_t> &,
                      const oops::Variables &,
                      const eckit::Configuration &,
                      const SpectralToSpectralParameters &,

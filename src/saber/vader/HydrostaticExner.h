@@ -64,7 +64,6 @@ class HydrostaticExner : public SaberOuterBlockBase {
   typedef HydrostaticExnerParameters Parameters_;
 
   HydrostaticExner(const oops::GeometryData &,
-                   const std::vector<size_t> &,
                    const oops::Variables &,
                    const eckit::Configuration &,
                    const Parameters_ &,

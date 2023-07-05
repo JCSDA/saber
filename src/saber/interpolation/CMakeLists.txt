@@ -13,6 +13,8 @@ if( oops_FOUND )
     Geometry.h
     Interpolation.cc
     Interpolation.h
+    VertProj.cc
+    VertProj.h
     )
 
     if( atlas_TRANS_FOUND )

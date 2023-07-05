@@ -59,19 +59,16 @@ class SpectralBNoInterp {
  public:
   typedef spectralbParameters Parameters_;
 
-  SpectralBNoInterp(const std::vector<size_t> & variableSizes,
-                    const oops::Variables & vars,
+  SpectralBNoInterp(const oops::Variables & vars,
                     const Parameters_ & params);
   ~SpectralBNoInterp();
 
   void multiply(atlas::FieldSet &) const;
 
  private:
-  std::vector<std::string> vars_;
-  std::vector<size_t> varSizes_;
+  oops::Variables vars_;
   atlas::StructuredGrid gaussGrid_;
   atlas::functionspace::StructuredColumns gaussFunctionSpace_;
-//  atlas::FieldSet  gaussFieldSet_;
   bool variance_opt_;
   std::unique_ptr<const CovStat_ErrorCov> cs_;
 
@@ -90,15 +87,13 @@ using atlas::idx_t;
 // geometry object "resol" comes from the model interface.
 // However we need to create a Gaussian functionspace here.
 // We use the number of vertical levels from "resol"
-SpectralBNoInterp::SpectralBNoInterp(const std::vector<size_t> & variableSizes,
-                                     const oops::Variables & vars,
+SpectralBNoInterp::SpectralBNoInterp(const oops::Variables & vars,
                                      const Parameters_ & params) :
-  vars_(vars.variables()),
-  varSizes_(variableSizes),
+  vars_(vars),
   gaussGrid_(params.gaussGridUid),
   gaussFunctionSpace_(detailnointerp::createGaussFunctionSpace(gaussGrid_)),
   variance_opt_(params.varianceOpt),
-  cs_(std::make_unique<const CovStat_ErrorCov>(variableSizes, vars, params))
+  cs_(std::make_unique<const CovStat_ErrorCov>(vars, params))
 {
   oops::Log::trace() << "SpectralBNoInterp::SpectralBNoInterp done" << std::endl;
 }

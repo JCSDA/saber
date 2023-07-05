@@ -43,7 +43,6 @@ class SpectralCovariance : public SaberCentralBlockBase {
   typedef SpectralCovarianceParameters Parameters_;
 
   SpectralCovariance(const oops::GeometryData &,
-                     const std::vector<size_t> &,
                      const oops::Variables &,
                      const eckit::Configuration &,
                      const Parameters_ &,
@@ -68,8 +67,6 @@ class SpectralCovariance : public SaberCentralBlockBase {
 
   /// Parameters
   Parameters_ params_;
-  /// Variables sizes
-  const std::vector<size_t> variableSizes_;
   /// Active variables
   const oops::Variables activeVars_;
   /// Option to use vertical covariances or correlations

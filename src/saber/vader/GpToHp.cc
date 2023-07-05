@@ -27,10 +27,26 @@
 #include "oops/util/Timer.h"
 
 #include "saber/oops/SaberOuterBlockBase.h"
+#include "saber/oops/Utilities.h"
 #include "saber/vader/CovarianceStatisticsUtils.h"
 
 namespace saber {
 namespace vader {
+
+namespace {
+
+oops::Variables createInnerVars(const oops::Variables & outerVars) {
+  oops::Variables innerVars(outerVars);
+  int modelLevels = innerVars.getLevels("hydrostatic_pressure_levels") - 1;
+  innerVars -= "hydrostatic_pressure_levels";
+  innerVars.push_back("geostrophic_pressure_levels_minus_one");
+  innerVars.addMetaData("geostrophic_pressure_levels_minus_one",
+                           "levels", modelLevels);
+  return innerVars;
+}
+
+
+}  // namespace
 
 // -----------------------------------------------------------------------------
 
@@ -40,16 +56,15 @@ static SaberOuterBlockMaker<GpToHp>
 // -----------------------------------------------------------------------------
 
 GpToHp::GpToHp(const oops::GeometryData & outerGeometryData,
-                                   const std::vector<size_t> & activeVariableSizes,
-                                   const oops::Variables & outerVars,
-                                   const eckit::Configuration & covarConf,
-                                   const Parameters_ & params,
-                                   const atlas::FieldSet & xb,
-                                   const atlas::FieldSet & fg,
-                                   const util::DateTime & validTimeOfXbFg)
+               const oops::Variables & outerVars,
+               const eckit::Configuration & covarConf,
+               const Parameters_ & params,
+               const atlas::FieldSet & xb,
+               const atlas::FieldSet & fg,
+               const util::DateTime & validTimeOfXbFg)
   : SaberOuterBlockBase(params),
-    innerGeometryData_(outerGeometryData), innerVars_(outerVars),
-    activeVars_(params.activeVars.value().get_value_or(outerVars)),
+    innerGeometryData_(outerGeometryData), innerVars_(createInnerVars(outerVars)),
+    activeVars_(getActiveVars(params, outerVars)),
     augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::GpToHp starting" << std::endl;
@@ -57,8 +72,7 @@ GpToHp::GpToHp(const oops::GeometryData & outerGeometryData,
   // Covariance FieldSet
   covFieldSet_ = createGpRegressionStats(outerGeometryData.functionSpace(),
                                          outerGeometryData.fieldSet(),
-                                         params.mandatoryActiveVars(),
-                                         activeVariableSizes,
+                                         activeVars_,
                                          params.gptohpcovarianceparams.value());
 
   std::vector<std::string> requiredStateVariables{

@@ -20,6 +20,8 @@
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/Logger.h"
 
+#include "saber/oops/Utilities.h"
+
 // -----------------------------------------------------------------------------
 
 namespace saber {
@@ -31,7 +33,6 @@ static SaberCentralBlockMaker<SpectralCovariance> makerSpectralCovariance_("spec
 
 // -----------------------------------------------------------------------------
 SpectralCovariance::SpectralCovariance(const oops::GeometryData & geometryData,
-                                       const std::vector<size_t> & variableSizes,
                                        const oops::Variables & centralVars,
                                        const eckit::Configuration & covarConf,
                                        const Parameters_ & params,
@@ -40,8 +41,7 @@ SpectralCovariance::SpectralCovariance(const oops::GeometryData & geometryData,
                                        const util::DateTime & validTimeOfXbFg,
                                        const size_t & timeRank)
   : SaberCentralBlockBase(params), params_(params),
-    variableSizes_(variableSizes),
-    activeVars_(params.activeVars.value().get_value_or(centralVars)),
+    activeVars_(getActiveVars(params, centralVars)),
     cs_(),
     geometryData_(geometryData),
     specFunctionSpace_(geometryData_.functionSpace()),
@@ -63,14 +63,13 @@ SpectralCovariance::SpectralCovariance(const oops::GeometryData & geometryData,
 void SpectralCovariance::testUUtConsistency(const double & consistencyTolerance,
                                             const double & adjointTolerance) const {
   // Test that UU^t = B and that U and U^t are adjoint.
-  oops::Log::trace() << "SpectralCovariance::testUUtConsistency starting" << std::endl;
+  oops::Log::trace() << "SpectralCovariance::testUUtConsistency " <<std::endl;
 
   // Step 1/2: Test that UU^t = B
   // Create random FieldSet y
   atlas::FieldSet y =  util::createRandomFieldSet(geometryData_.comm(),
                                                   geometryData_.functionSpace(),
-                                                  variableSizes_,
-                                                  activeVars_.variables(),
+                                                  activeVars_,
                                                   timeRank_);
 
   // Apply forward multiplication using B or UU^t
@@ -126,8 +125,8 @@ void SpectralCovariance::testUUtConsistency(const double & consistencyTolerance,
   // Generate random field set x in spectral space
   atlas::FieldSet x = util::createRandomFieldSet(geometryData_.comm(),
                                                  geometryData_.functionSpace(),
-                                                 variableSizes_,
-                                                 activeVars_.variables());
+                                                 activeVars_);
+
   // Apply U
   atlas::FieldSet Ux = util::copyFieldSet(x);
   this->multiplyUMatrix(Ux);
@@ -158,8 +157,8 @@ void SpectralCovariance::randomize(atlas::FieldSet & fieldSet) const {
   // Overwrite input fieldSet with random numbers in spectral space
   atlas::FieldSet newFieldSet = util::createRandomFieldSet(geometryData_.comm(),
                                                            geometryData_.functionSpace(),
-                                                           variableSizes_,
-                                                           activeVars_.variables());
+                                                           activeVars_);
+
   for (auto & var : activeVars_.variables()) {
     fieldSet[var] = newFieldSet[var];
   }
@@ -345,8 +344,7 @@ void SpectralCovariance::multiplyUMatrixAD(atlas::FieldSet & fieldSet) const {
 void SpectralCovariance::read() {
   oops::Log::trace() << classname() << "::read starting" << std::endl;
   // Initialize CovStat_ErrorCov
-  cs_.reset(new CovStat_ErrorCov(variableSizes_,
-                                 activeVars_,
+  cs_.reset(new CovStat_ErrorCov(activeVars_,
                                  *params_.readParams.value()));
 
   // Check consistency of UU^t and B

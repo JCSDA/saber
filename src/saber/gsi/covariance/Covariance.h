@@ -57,7 +57,6 @@ class Covariance : public SaberCentralBlockBase {
   typedef CovarianceParameters Parameters_;
 
   Covariance(const oops::GeometryData &,
-             const std::vector<size_t> &,
              const oops::Variables &,
              const eckit::Configuration &,
              const Parameters_ &,

@@ -42,7 +42,6 @@ void populateInterpMuStats(atlas::FieldSet &,
 atlas::FieldSet createGpRegressionStats(const atlas::FunctionSpace &,
                                         const atlas::FieldSet &,
                                         const oops::Variables &,
-                                        const std::vector<size_t> &,
                                         const GpToHpCovarianceParameters &);
 }  // namespace vader
 }  // namespace saber

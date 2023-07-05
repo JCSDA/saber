@@ -100,24 +100,20 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
 
   // Generate inner FieldSet (for the inverse test)
   virtual atlas::FieldSet generateInnerFieldSet(const oops::GeometryData & innerGeometryData,
-                                                const std::vector<size_t> & innerVariableSizes,
                                                 const oops::Variables & innerVars,
                                                 const size_t & timeRank) const
     {return util::createRandomFieldSet(innerGeometryData.comm(),
                                        innerGeometryData.functionSpace(),
-                                       innerVariableSizes,
-                                       innerVars.variables(),
+                                       innerVars,
                                        timeRank);}
 
   // Generate outer FieldSet (for the inverse test)
   virtual atlas::FieldSet generateOuterFieldSet(const oops::GeometryData & outerGeometryData,
-                                                const std::vector<size_t> & outerVariableSizes,
                                                 const oops::Variables & outerVars,
                                                 const size_t & timeRank) const
     {return util::createRandomFieldSet(outerGeometryData.comm(),
                                        outerGeometryData.functionSpace(),
-                                       outerVariableSizes,
-                                       outerVars.variables(),
+                                       outerVars,
                                        timeRank);}
 
   // Compare FieldSets (for the inverse test)
@@ -149,19 +145,15 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
   // Adjoint test
   void adjointTest(const eckit::mpi::Comm &,
                    const oops::GeometryData &,
-                   const std::vector<size_t> &,
                    const oops::Variables &,
                    const oops::GeometryData &,
-                   const std::vector<size_t> &,
                    const oops::Variables &,
                    const double & adjointTolerance) const;
 
   // Left-inverse test
   void inverseTest(const oops::GeometryData &,
-                   const std::vector<size_t> &,
                    const oops::Variables &,
                    const oops::GeometryData &,
-                   const std::vector<size_t> &,
                    const oops::Variables &,
                    const oops::Variables &,
                    const oops::Variables &,
@@ -193,7 +185,6 @@ class SaberOuterBlockParametersWrapper : public oops::Parameters {
 class SaberOuterBlockFactory {
  public:
   static SaberOuterBlockBase * create(const oops::GeometryData &,
-                                      const std::vector<size_t> &,
                                       const oops::Variables &,
                                       const eckit::Configuration &,
                                       const SaberBlockParametersBase &,
@@ -214,7 +205,6 @@ class SaberOuterBlockFactory {
 
  private:
   virtual SaberOuterBlockBase * make(const oops::GeometryData &,
-                                     const std::vector<size_t> &,
                                      const oops::Variables &,
                                      const eckit::Configuration &,
                                      const SaberBlockParametersBase &,
@@ -237,7 +227,6 @@ class SaberOuterBlockMaker : public SaberOuterBlockFactory {
   typedef typename T::Parameters_ Parameters_;
 
   SaberOuterBlockBase * make(const oops::GeometryData & outerGeometryData,
-                             const std::vector<size_t> & activeVariableSizes,
                              const oops::Variables & outerVars,
                              const eckit::Configuration & covarConf,
                              const SaberBlockParametersBase & params,
@@ -245,7 +234,7 @@ class SaberOuterBlockMaker : public SaberOuterBlockFactory {
                              const atlas::FieldSet & fg,
                              const util::DateTime & validTime) override {
     const auto &stronglyTypedParams = dynamic_cast<const Parameters_&>(params);
-    return new T(outerGeometryData, activeVariableSizes, outerVars,
+    return new T(outerGeometryData, outerVars,
                  covarConf, stronglyTypedParams, xb, fg, validTime);
   }
 

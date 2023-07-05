@@ -37,7 +37,6 @@ static SaberCentralBlockMaker<Covariance> makerCovariance_("gsi covariance");
 // -------------------------------------------------------------------------------------------------
 
 Covariance::Covariance(const oops::GeometryData & geometryData,
-                       const std::vector<size_t> & activeVariableSizes,
                        const oops::Variables & centralVars,
                        const eckit::Configuration & covarConf,
                        const Parameters_ & params,

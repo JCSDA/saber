@@ -68,7 +68,6 @@ class Interpolation : public SaberOuterBlockBase {
   typedef InterpolationParameters Parameters_;
 
   Interpolation(const oops::GeometryData &,
-                const std::vector<size_t> &,
                 const oops::Variables &,
                 const eckit::Configuration &,
                 const Parameters_ &,

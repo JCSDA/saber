@@ -48,7 +48,6 @@ class NICAS : public SaberCentralBlockBase {
   typedef NICASParameters Parameters_;
 
   NICAS(const oops::GeometryData &,
-        const std::vector<size_t> &,
         const oops::Variables &,
         const eckit::Configuration &,
         const Parameters_ &,

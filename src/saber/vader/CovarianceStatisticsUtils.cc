@@ -276,21 +276,19 @@ void populateInterpMuStats(atlas::FieldSet & augmentedStateFieldSet,
 atlas::FieldSet createGpRegressionStats(const atlas::FunctionSpace & functionSpace,
                                         const atlas::FieldSet & extraFields,
                                         const oops::Variables & variables,
-                                        const std::vector<size_t> & variableSizes,
                                         const GpToHpCovarianceParameters & params) {
   // Get necessary parameters
   // path to covariance file with gp covariance parameters.
-  std::string covFileName(params.covariance_file_path);
+  const std::string covFileName(params.covariance_file_path);
   // number of latitudes that existed in the generation of the covariance file
-  std::size_t covGlobalNLats(static_cast<std::size_t>(params.covariance_nlat));
+  const std::size_t covGlobalNLats(static_cast<std::size_t>(params.covariance_nlat));
   // number of model levels
-  std::size_t modelLevels =
-    variableSizes[variables.find("unbalanced_pressure_levels_minus_one")];
-
+  const std::size_t modelLevels = variables.getLevels(
+                            "unbalanced_pressure_levels_minus_one");
   // geostrophic pressure vertical regression statistics are grouped
   // into overlapping bins based on latitude;
   // number of bins associated with the gP vertical regression
-  std::size_t gPBins(static_cast<std::size_t>(params.gp_regression_bins));
+  const std::size_t gPBins(static_cast<std::size_t>(params.gp_regression_bins));
 
   oops::Log::info() <<
     "gp regression no of bins = " << gPBins << std::endl;

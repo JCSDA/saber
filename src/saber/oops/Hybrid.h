@@ -92,7 +92,6 @@ class Hybrid : public SaberCentralBlockBase {
   typedef HybridParameters Parameters_;
 
   Hybrid(const oops::GeometryData &,
-         const std::vector<size_t> &,
          const oops::Variables &,
          const eckit::Configuration &,
          const Parameters_ & params,

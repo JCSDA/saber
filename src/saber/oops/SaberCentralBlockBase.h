@@ -116,7 +116,6 @@ class SaberCentralBlockBase : public util::Printable, private boost::noncopyable
   // Adjoint test
   void adjointTest(const eckit::mpi::Comm &,
                    const oops::GeometryData &,
-                   const std::vector<size_t> &,
                    const oops::Variables &,
                    const double & adjointTolerance = 1.0e-12) const;
 
@@ -143,7 +142,6 @@ class SaberCentralBlockParametersWrapper : public oops::Parameters {
 class SaberCentralBlockFactory {
  public:
   static SaberCentralBlockBase * create(const oops::GeometryData &,
-                                        const std::vector<size_t> &,
                                         const oops::Variables &,
                                         const eckit::Configuration &,
                                         const SaberBlockParametersBase &,
@@ -165,7 +163,6 @@ class SaberCentralBlockFactory {
 
  private:
   virtual SaberCentralBlockBase * make(const oops::GeometryData &,
-                                       const std::vector<size_t> &,
                                        const oops::Variables &,
                                        const eckit::Configuration &,
                                        const SaberBlockParametersBase &,
@@ -189,7 +186,6 @@ class SaberCentralBlockMaker : public SaberCentralBlockFactory {
   typedef typename T::Parameters_ Parameters_;
 
   SaberCentralBlockBase * make(const oops::GeometryData & geometryData,
-                               const std::vector<size_t> & activeVariableSizes,
                                const oops::Variables & outerVars,
                                const eckit::Configuration & covarConf,
                                const SaberBlockParametersBase & params,
@@ -198,7 +194,7 @@ class SaberCentralBlockMaker : public SaberCentralBlockFactory {
                                const util::DateTime & validTime,
                                const size_t & timeRank) override {
     const auto &stronglyTypedParams = dynamic_cast<const Parameters_&>(params);
-    return new T(geometryData, activeVariableSizes, outerVars, covarConf,
+    return new T(geometryData, outerVars, covarConf,
                  stronglyTypedParams, xb, fg, validTime, timeRank);
   }
 

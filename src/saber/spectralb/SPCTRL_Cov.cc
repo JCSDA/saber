@@ -17,6 +17,7 @@
 #include "oops/util/abor1_cpp.h"
 
 #include "saber/oops/SaberCentralBlockBase.h"
+#include "saber/oops/Utilities.h"
 #include "saber/spectralb/spectralb.h"
 
 namespace saber {
@@ -29,7 +30,6 @@ static SaberCentralBlockMaker<SPCTRL_COV> makerSPCTRL_COV_("SPCTRL_COV");
 // -----------------------------------------------------------------------------
 
 SPCTRL_COV::SPCTRL_COV(const oops::GeometryData & geometryData,
-                       const std::vector<size_t> & variableSizes,
                        const oops::Variables & centralVars,
                        const eckit::Configuration & covarConf,
                        const Parameters_ & params,
@@ -39,8 +39,7 @@ SPCTRL_COV::SPCTRL_COV(const oops::GeometryData & geometryData,
                        const size_t & timeRank)
   : SaberCentralBlockBase(params),
     params_(params),
-    variableSizes_(variableSizes),
-    activeVars_(params.activeVars.value().get_value_or(centralVars)),
+    activeVars_(getActiveVars(params, centralVars)),
     geometryData_(geometryData),
     spectralb_()
 {
@@ -78,7 +77,6 @@ void SPCTRL_COV::read() {
   oops::Log::trace() << classname() << "::read starting" << std::endl;
   // Initialize SpectralB
   spectralb_.reset(new SpectralB(geometryData_.functionSpace(),
-                                 variableSizes_,
                                  activeVars_,
                                  *params_.readParams.value()));
   oops::Log::trace() << classname() << "::read done" << std::endl;

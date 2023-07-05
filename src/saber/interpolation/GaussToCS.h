@@ -64,7 +64,6 @@ class GaussToCS : public SaberOuterBlockBase {
   typedef GaussToCSParameters Parameters_;
 
   GaussToCS(const oops::GeometryData &,
-            const std::vector<size_t> &,
             const oops::Variables &,
             const eckit::Configuration &,
             const Parameters_ &,
@@ -81,22 +80,18 @@ class GaussToCS : public SaberOuterBlockBase {
   void leftInverseMultiply(atlas::FieldSet &) const override;
 
   atlas::FieldSet generateInnerFieldSet(const oops::GeometryData & innerGeometryData,
-                                        const std::vector<size_t> & innerVariableSizes,
                                         const oops::Variables & innerVars,
                                         const size_t & timeRank) const override
     {return util::createSmoothFieldSet(innerGeometryData.comm(),
                                        innerGeometryData.functionSpace(),
-                                       innerVariableSizes,
-                                       innerVars.variables());}
+                                       innerVars);}
 
   atlas::FieldSet generateOuterFieldSet(const oops::GeometryData & outerGeometryData,
-                                        const std::vector<size_t> & outerVariableSizes,
                                         const oops::Variables & outerVars,
                                         const size_t & timeRank) const override
     {return util::createSmoothFieldSet(outerGeometryData.comm(),
                                        outerGeometryData.functionSpace(),
-                                       outerVariableSizes,
-                                       outerVars.variables());}
+                                       outerVars);}
 
  private:
   void print(std::ostream &) const override;

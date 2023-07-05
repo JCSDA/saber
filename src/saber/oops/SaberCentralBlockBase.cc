@@ -49,7 +49,6 @@ SaberCentralBlockFactory::SaberCentralBlockFactory(const std::string & name) {
 
 SaberCentralBlockBase * SaberCentralBlockFactory::create(
   const oops::GeometryData & geometryData,
-  const std::vector<size_t> & variableSizes,
   const oops::Variables & vars,
   const eckit::Configuration & covarConf,
   const SaberBlockParametersBase & params,
@@ -64,7 +63,7 @@ SaberCentralBlockBase * SaberCentralBlockFactory::create(
     oops::Log::error() << id << " does not exist in saber::SaberCentralBlockFactory." << std::endl;
     ABORT("Element does not exist in saber::SaberCentralBlockFactory.");
   }
-  SaberCentralBlockBase * ptr = jsb->second->make(geometryData, variableSizes, vars, covarConf,
+  SaberCentralBlockBase * ptr = jsb->second->make(geometryData, vars, covarConf,
     params, xb, fg, validTime, timeRank);
   oops::Log::trace() << "SaberCentralBlockBase::create done" << std::endl;
   return ptr;
@@ -86,7 +85,6 @@ SaberCentralBlockFactory::createParameters(const std::string &name) {
 
 void SaberCentralBlockBase::adjointTest(const eckit::mpi::Comm & comm,
                                         const oops::GeometryData & geometryData,
-                                        const std::vector<size_t> & variableSizes,
                                         const oops::Variables & vars,
                                         const double & adjointTolerance) const {
   oops::Log::trace() << "SaberCentralBlockBase::adjointTest starting" << std::endl;
@@ -94,13 +92,11 @@ void SaberCentralBlockBase::adjointTest(const eckit::mpi::Comm & comm,
   // Create random FieldSets
   atlas::FieldSet fset1 =  util::createRandomFieldSet(geometryData.comm(),
                                                       geometryData.functionSpace(),
-                                                      variableSizes,
-                                                      vars.variables());
+                                                      vars);
+
   atlas::FieldSet fset2 =  util::createRandomFieldSet(geometryData.comm(),
                                                       geometryData.functionSpace(),
-                                                      variableSizes,
-                                                      vars.variables());
-
+                                                      vars);
   // Copy FieldSets
   atlas::FieldSet fset1Save = util::copyFieldSet(fset1);
   atlas::FieldSet fset2Save = util::copyFieldSet(fset2);

@@ -49,7 +49,6 @@ class DryAirDensity : public SaberOuterBlockBase {
   typedef DryAirDensityParameters Parameters_;
 
   DryAirDensity(const oops::GeometryData &,
-                const std::vector<size_t> &,
                 const oops::Variables &,
                 const eckit::Configuration &,
                 const Parameters_ &,

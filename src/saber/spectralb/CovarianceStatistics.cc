@@ -16,6 +16,8 @@
 #include "eckit/exception/Exceptions.h"
 #include "eckit/memory/NonCopyable.h"
 
+#include "oops/util/ConfigFunctions.h"
+#include "oops/util/FieldSetHelpers.h"
 #include "oops/util/Logger.h"
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"
@@ -29,11 +31,10 @@
 namespace saber {
 namespace spectralb {
 
-CovStat_ErrorCov::CovStat_ErrorCov(const std::vector<size_t> & variableSizes,
-                                   const oops::Variables & vars,
+CovStat_ErrorCov::CovStat_ErrorCov(const oops::Variables & vars,
                                    const Parameters_ & params) :
   covarianceFileName_(params.covarianceFile),
-  modelLevels_(variableSizes[0]),
+  modelLevels_(vars.getLevels(vars[0])),
   nSpectralBinsFull_(getNSpectralBinsFull(params)),
   spectralUMatrices_(createUMatrices(vars, modelLevels_,
                                      nSpectralBinsFull_, params)),
@@ -50,8 +51,8 @@ CovStat_ErrorCov::CovStat_ErrorCov(const std::vector<size_t> & variableSizes,
                                 vars, modelLevels_, spectralVerticalCovariances_,
                                 verticalSD_))
 {
-  for (std::size_t lvl : variableSizes) {
-    if (static_cast<int>(lvl) != modelLevels_) {
+  for (const std::string & s : vars.variables()) {
+    if (static_cast<int>(vars.getLevels(s)) != modelLevels_) {
       throw eckit::UnexpectedState("spectral covariance block assumes all fields have "
                                    "same number of model levels");
     }

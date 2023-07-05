@@ -49,7 +49,6 @@ class VerticalBalance : public SaberOuterBlockBase {
   typedef VerticalBalanceParameters Parameters_;
 
   VerticalBalance(const oops::GeometryData &,
-                  const std::vector<size_t> &,
                   const oops::Variables &,
                   const eckit::Configuration &,
                   const Parameters_ &,

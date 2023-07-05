@@ -1,0 +1,58 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_gaussian
+    N: 12
+  groups:
+  - variables:
+    - dry_air_density_levels_minus_one
+    - exner_levels_minus_one
+    - potential_temperature
+    - eastward_wind
+    levels: 70
+  partitioner: ectrans
+  halo: 0
+background:
+  date: 2016-01-01T16:00:00Z
+  state variables:
+  - dry_air_density_levels_minus_one
+  - exner_levels_minus_one
+  - potential_temperature
+  - eastward_wind
+  filepath: testdata/gauss_state
+background error:
+  covariance model: SABER
+  adjoint test: true
+  inverse test: true
+  # Small tolerances to illustrate local overriding in saber blocks:
+  adjoint tolerance: 1e-12
+  inverse tolerance: 1e-15
+  saber central block:
+    saber block name: ID
+    active variables:
+     - dry_air_density_levels_minus_one
+  saber outer blocks:
+  - saber block name: simple vertical projection
+    inner vertical levels: 4
+    active variables:
+    - dry_air_density_levels_minus_one
+    inner inverse tolerance: 1e-13
+    outer inverse tolerance: 1e-13
+    inner variables to compare:
+      - dry_air_density_levels_minus_one
+dirac:
+  lon:
+  - 0.0
+  lat:
+  - 3.672
+  level:
+  - 1
+  variable:
+  - dry_air_density_levels_minus_one
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_spectralb_gauss_vader_1/dirac_%id%_%MPI%
+test:
+  test output filename: testref/dirac_vertproj.out
+  reference filename: testref/dirac_vertproj.ref
+

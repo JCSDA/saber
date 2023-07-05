@@ -33,7 +33,6 @@ static SaberOuterBlockMaker<AirTemperature> makerAirTemperature_("mo_air_tempera
 // -----------------------------------------------------------------------------
 
 AirTemperature::AirTemperature(const oops::GeometryData & outerGeometryData,
-                               const std::vector<size_t> & activeVariableSizes,
                                const oops::Variables & outerVars,
                                const eckit::Configuration & covarConf,
                                const Parameters_ & params,

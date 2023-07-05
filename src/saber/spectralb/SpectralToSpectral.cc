@@ -21,7 +21,6 @@ static SaberOuterBlockMaker<SpectralToSpectral> makerSpectralToSpectral_("spectr
 // -----------------------------------------------------------------------------
 
 SpectralToSpectral::SpectralToSpectral(const oops::GeometryData & outerGeometryData,
-                                       const std::vector<size_t> & outerVariableSizes,
                                        const oops::Variables & outerVars,
                                        const eckit::Configuration & covarConf,
                                        const SpectralToSpectralParameters & params,

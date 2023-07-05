@@ -16,6 +16,7 @@
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 #include "oops/generic/GlobalAtlasInterpolator.h"
+#include "oops/util/FieldSetHelpers.h"
 #include "oops/util/parameters/Parameter.h"
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
@@ -47,7 +48,6 @@ class Interpolation : public SaberOuterBlockBase {
   typedef InterpolationParameters Parameters_;
 
   Interpolation(const oops::GeometryData &,
-                const std::vector<size_t> &,
                 const oops::Variables &,
                 const eckit::Configuration &,
                 const Parameters_ &,
@@ -64,22 +64,18 @@ class Interpolation : public SaberOuterBlockBase {
   void leftInverseMultiply(atlas::FieldSet &) const override;
 
   atlas::FieldSet generateInnerFieldSet(const oops::GeometryData & innerGeometryData,
-                                        const std::vector<size_t> & innerVariableSizes,
                                         const oops::Variables & innerVars,
                                         const size_t & timeRank) const override
     {return util::createSmoothFieldSet(innerGeometryData.comm(),
                                        innerGeometryData.functionSpace(),
-                                       innerVariableSizes,
-                                       innerVars.variables());}
+                                       innerVars);}
 
   atlas::FieldSet generateOuterFieldSet(const oops::GeometryData & outerGeometryData,
-                                        const std::vector<size_t> & outerVariableSizes,
                                         const oops::Variables & outerVars,
                                         const size_t & timeRank) const override
     {return util::createSmoothFieldSet(outerGeometryData.comm(),
                                        outerGeometryData.functionSpace(),
-                                       outerVariableSizes,
-                                       outerVars.variables());}
+                                       outerVars);}
 
  private:
   void print(std::ostream &) const override;

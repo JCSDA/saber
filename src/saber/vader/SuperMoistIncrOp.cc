@@ -33,7 +33,6 @@ static SaberOuterBlockMaker<SuperMoistIncrOp>
 // -----------------------------------------------------------------------------
 
 SuperMoistIncrOp::SuperMoistIncrOp(const oops::GeometryData & outerGeometryData,
-                                   const std::vector<size_t> & activeVariableSizes,
                                    const oops::Variables & outerVars,
                                    const eckit::Configuration & covarConf,
                                    const Parameters_ & params,
@@ -44,13 +43,11 @@ SuperMoistIncrOp::SuperMoistIncrOp(const oops::GeometryData & outerGeometryData,
     innerGeometryData_(outerGeometryData), innerVars_(outerVars),
     activeVars_(params.activeVars.value().get_value_or(outerVars)),
     exnerThetaToTemp_(std::make_unique<AirTemperature>(outerGeometryData,
-                                                       activeVariableSizes,
                                                        outerVars,
                                                        covarConf,
                                                        params.airTemperature,
                                                        xb, fg, validTimeOfXbFg)),
     MIO_(std::make_unique<MoistIncrOp>(outerGeometryData,
-                                       activeVariableSizes,
                                        outerVars,
                                        covarConf,
                                        params.moistIncrOp, xb, fg, validTimeOfXbFg))

@@ -40,7 +40,6 @@ static SaberOuterBlockMaker<MoistureControl> makerMoistureControlBlock_("mo_mois
 // -----------------------------------------------------------------------------
 
 MoistureControl::MoistureControl(const oops::GeometryData & outerGeometryData,
-                                 const std::vector<size_t> & activeVariableSizes,
                                  const oops::Variables & outerVars,
                                  const eckit::Configuration & covarConf,
                                  const Parameters_ & params,

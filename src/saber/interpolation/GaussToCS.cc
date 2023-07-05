@@ -195,7 +195,6 @@ static SaberOuterBlockMaker<GaussToCS> makerGaussToCS_("gauss to cubed-sphere-du
 // In the future it might make sense to include an atlas grid (if available) from
 // the model in outerGeometryData.
 GaussToCS::GaussToCS(const oops::GeometryData & outerGeometryData,
-                     const std::vector<size_t> & activeVariableSizes,
                      const oops::Variables & outerVars,
                      const eckit::Configuration & covarConf,
                      const Parameters_ & params,

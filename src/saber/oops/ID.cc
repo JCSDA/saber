@@ -22,7 +22,6 @@ static SaberCentralBlockMaker<IDCentral> makerIDCentral_("ID");
 // -----------------------------------------------------------------------------
 
 IDCentral::IDCentral(const oops::GeometryData & geometryData,
-                     const std::vector<size_t> & activeVariableSizes,
                      const oops::Variables & activeVars,
                      const eckit::Configuration & covarConf,
                      const Parameters_ & params,
@@ -32,7 +31,6 @@ IDCentral::IDCentral(const oops::GeometryData & geometryData,
                      const size_t & timeRank) :
     SaberCentralBlockBase(params),
     geometryData_(geometryData),
-    activeVariableSizes_(activeVariableSizes),
     activeVars_(activeVars),
     timeRank_(timeRank)
 {
@@ -59,8 +57,7 @@ void IDCentral::randomize(atlas::FieldSet & fset) const {
   // Overwrite input fieldSet with random numbers
   const atlas::FieldSet newFieldSet = util::createRandomFieldSet(geometryData_.comm(),
                                                                  geometryData_.functionSpace(),
-                                                                 activeVariableSizes_,
-                                                                 activeVars_.variables(),
+                                                                 activeVars_,
                                                                  timeRank_);
 
   for (const auto & var : activeVars_.variables()) {
@@ -90,7 +87,6 @@ static SaberOuterBlockMaker<IDOuter> makerIDOuter_("ID");
 // -----------------------------------------------------------------------------
 
 IDOuter::IDOuter(const oops::GeometryData & outerGeometryData,
-                 const std::vector<size_t> & activeVariableSizes,
                  const oops::Variables & outerVars,
                  const eckit::Configuration & covarConfig,
                  const Parameters_ & params,

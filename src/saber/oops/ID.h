@@ -39,7 +39,6 @@ class IDCentral : public SaberCentralBlockBase {
   typedef IDParameters Parameters_;
 
   IDCentral(const oops::GeometryData &,
-            const std::vector<size_t> &,
             const oops::Variables &,
             const eckit::Configuration &,
             const Parameters_ &,
@@ -55,7 +54,6 @@ class IDCentral : public SaberCentralBlockBase {
 
  private:
   const oops::GeometryData & geometryData_;
-  const std::vector<size_t> activeVariableSizes_;
   const oops::Variables activeVars_;
   size_t timeRank_;
   void print(std::ostream &) const override;
@@ -70,7 +68,6 @@ class IDOuter : public SaberOuterBlockBase {
   typedef IDParameters Parameters_;
 
   IDOuter(const oops::GeometryData &,
-          const std::vector<size_t> &,
           const oops::Variables &,
           const eckit::Configuration &,
           const Parameters_ &,

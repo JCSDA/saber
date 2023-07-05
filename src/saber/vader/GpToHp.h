@@ -47,13 +47,12 @@ class GpToHp : public SaberOuterBlockBase {
   typedef GpToHpParameters Parameters_;
 
   GpToHp(const oops::GeometryData &,
-              const std::vector<size_t> &,
-              const oops::Variables &,
-                   const eckit::Configuration &,
-                   const Parameters_ &,
-                   const atlas::FieldSet &,
-                   const atlas::FieldSet &,
-                 const util::DateTime &);
+         const oops::Variables &,
+         const eckit::Configuration &,
+         const Parameters_ &,
+         const atlas::FieldSet &,
+         const atlas::FieldSet &,
+         const util::DateTime &);
   virtual ~GpToHp();
 
   const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}

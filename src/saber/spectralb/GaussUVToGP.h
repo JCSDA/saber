@@ -38,7 +38,6 @@ class GaussUVToGP : public SaberOuterBlockBase {
   typedef GaussUVToGPParameters Parameters_;
 
   GaussUVToGP(const oops::GeometryData &,
-              const std::vector<std::size_t> &,
               const oops::Variables &,
               const eckit::Configuration &,
               const Parameters_ &,
@@ -48,7 +47,8 @@ class GaussUVToGP : public SaberOuterBlockBase {
 
   virtual ~GaussUVToGP() = default;
 
-  const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}
+  const oops::GeometryData & innerGeometryData()
+    const override {return innerGeometryData_;}
   const oops::Variables & innerVars() const override {return innerVars_;}
 
   void multiply(atlas::FieldSet &) const override;
@@ -58,9 +58,8 @@ class GaussUVToGP : public SaberOuterBlockBase {
   void print(std::ostream &) const override;
 
   Parameters_ params_;
-  oops::Variables innerVars_;
   oops::Variables outerVars_;
-  std::vector<std::size_t> activeVariableSizes_;
+  oops::Variables innerVars_;
 
   /// Gaussian (outer) functionspace
   const atlas::functionspace::StructuredColumns gaussFunctionSpace_;

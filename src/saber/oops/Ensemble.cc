@@ -27,7 +27,6 @@ static SaberCentralBlockMaker<Ensemble> makerEnsemble_("Ensemble");
 // -----------------------------------------------------------------------------
 
 Ensemble::Ensemble(const oops::GeometryData & geometryData,
-                   const std::vector<size_t> & activeVariableSizes,
                    const oops::Variables & activeVars,
                    const eckit::Configuration & covarConf,
                    const Parameters_ & params,
@@ -37,7 +36,6 @@ Ensemble::Ensemble(const oops::GeometryData & geometryData,
                    const size_t & /*timeRank*/) :
   SaberCentralBlockBase(params),
   geometryData_(geometryData),
-  variableSizes_(activeVariableSizes),
   vars_(activeVars),
   inflationValue_(params.inflationValue.value()),
   readFromAtlas_(false),
@@ -166,14 +164,13 @@ void Ensemble::multiply(atlas::FieldSet & fset) const {
 // -----------------------------------------------------------------------------
 
 void Ensemble::read() {
-  oops::Log::trace() << classname() << "::read starting" << std::endl;
+  oops::Log::trace() << classname() << "::read starting" <<  std::endl;
   // Read ATLAS inflation file
   if (readFromAtlas_) {
     // Read file
     util::readFieldSet(geometryData_.comm(),
                        geometryData_.functionSpace(),
-                       variableSizes_,
-                       vars_.variables(),
+                       vars_,
                        readConf_,
                        inflationField_);
 

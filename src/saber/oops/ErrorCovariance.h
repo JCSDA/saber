@@ -101,12 +101,16 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
   std::vector<std::reference_wrapper<const oops::GeometryData>> outerGeometryData;
   outerGeometryData.push_back(geom.generic());
 
-  // Intialize outer variables
-  oops::Variables outerVars(incVars);
+  // Initialize outer variables
+  const std::vector<std::size_t> vlevs = geom.variableSizes(incVars);
+  oops::Variables outerVars(incVars.variables());
+  for (std::size_t i = 0; i < vlevs.size() ; ++i) {
+    outerVars.addMetaData(outerVars[i], "levels", vlevs[i]);
+  }
 
   // Initialize blockchain
-  Increment_ dx(geom, incVars, validTimeOfXbFg);
-  singleBlockChain_.reset(new SaberBlockChain(incVars, dx.fieldSet()));
+  Increment_ dx(geom, outerVars, validTimeOfXbFg);
+  singleBlockChain_.reset(new SaberBlockChain(outerVars, dx.fieldSet()));
 
   // Iterative ensemble loading flag
   const bool iterativeEnsembleLoading = params.iterativeEnsembleLoading.value();
@@ -116,7 +120,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
 
   // Read ensemble
   eckit::LocalConfiguration ensembleConf = readEnsemble(geom,
-                                                        incVars,
+                                                        outerVars,
                                                         xb,
                                                         fg,
                                                         params.toConfiguration(),
@@ -204,7 +208,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
       std::vector<std::reference_wrapper<const oops::GeometryData>> cmpOuterGeometryData;
       cmpOuterGeometryData.push_back(outerGeometryData.back().get());
 
-      // Intialize component outer variables
+      // Initialize component outer variables
       oops::Variables cmpOuterVars(outerVars);
 
       // Initialize ensembles as vector of FieldSets

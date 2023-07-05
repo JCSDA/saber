@@ -22,6 +22,8 @@
 #include "saber/gsi/grid/Grid.h"
 #include "saber/oops/SaberOuterBlockBase.h"
 
+#include "saber/oops/Utilities.h"
+
 namespace saber {
 namespace gsi {
 
@@ -32,7 +34,6 @@ static SaberOuterBlockMaker<Interpolation> makerInterpolation_("gsi interpolatio
 // -------------------------------------------------------------------------------------------------
 
 Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
-                             const std::vector<size_t> & activeVariableSizes,
                              const oops::Variables & outerVars,
                              const eckit::Configuration & covarConf,
                              const Parameters_ & params,
@@ -54,7 +55,11 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
                                                   outerGeometryData.comm()));
 
   // Active variables
-  oops::Variables activeVars = params.activeVars.value().get_value_or(outerVars);
+  const oops::Variables activeVars = getActiveVars(params, outerVars);
+  std::vector<size_t> activeVariableSizes;
+  for (const std::string & var : activeVars.variables()) {
+    activeVariableSizes.push_back(activeVars.getLevels(var));
+  }
 
   // Create the interpolator
   interpolator_.reset(new UnstructuredInterpolation(outerGeometryData.comm(),

@@ -55,7 +55,6 @@ class HydrostaticPressure : public SaberOuterBlockBase {
   typedef HydrostaticPressureParameters Parameters_;
 
   HydrostaticPressure(const oops::GeometryData &,
-                   const std::vector<size_t> &,
                    const oops::Variables &,
                    const eckit::Configuration &,
                    const Parameters_ &,

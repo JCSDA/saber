@@ -60,7 +60,6 @@ class Ensemble : public SaberCentralBlockBase {
   typedef EnsembleParameters Parameters_;
 
   Ensemble(const oops::GeometryData &,
-           const std::vector<size_t> &,
            const oops::Variables &,
            const eckit::Configuration &,
            const Parameters_ &,
@@ -86,7 +85,6 @@ class Ensemble : public SaberCentralBlockBase {
   std::vector<atlas::FieldSet> ensemble_;
   std::unique_ptr<SaberBlockChain> loc_;
   const oops::GeometryData & geometryData_;
-  std::vector<size_t> variableSizes_;
   const oops::Variables vars_;
   const double inflationValue_;
   bool readFromAtlas_;

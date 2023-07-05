@@ -14,6 +14,7 @@
 #include "oops/util/Timer.h"
 
 #include "saber/bump/lib/Utilities.h"
+#include "saber/oops/Utilities.h"
 
 namespace saber {
 namespace bump {
@@ -25,7 +26,6 @@ static SaberOuterBlockMaker<StdDev> makerStdDev_("BUMP_StdDev");
 // -----------------------------------------------------------------------------
 
 StdDev::StdDev(const oops::GeometryData & outerGeometryData,
-               const std::vector<size_t> & activeVariableSizes,
                const oops::Variables & outerVars,
                const eckit::Configuration & covarConf,
                const Parameters_ & params,
@@ -42,7 +42,11 @@ StdDev::StdDev(const oops::GeometryData & outerGeometryData,
   oops::Log::trace() << classname() << "::StdDev starting" << std::endl;
 
   // Get active variables
-  activeVars_ = params.activeVars.value().get_value_or(outerVars);
+  activeVars_ = getActiveVars(params, outerVars);
+  std::vector<size_t> activeVariableSizes;
+  for (const std::string & var : activeVars_.variables()) {
+    activeVariableSizes.push_back(activeVars_.getLevels(var));
+  }
 
   // Get BUMP parameters
   if (params.doCalibration()) {

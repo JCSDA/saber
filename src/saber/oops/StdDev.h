@@ -72,7 +72,6 @@ class StdDev : public SaberOuterBlockBase {
   typedef StdDevParameters Parameters_;
 
   StdDev(const oops::GeometryData &,
-         const std::vector<size_t> &,
          const oops::Variables &,
          const eckit::Configuration &,
          const Parameters_ &,
@@ -105,7 +104,6 @@ class StdDev : public SaberOuterBlockBase {
  private:
   void print(std::ostream &) const override;
   const oops::GeometryData & innerGeometryData_;
-  std::vector<size_t> activeVariableSizes_;
   oops::Variables innerVars_;
   Parameters_ params_;
   bool readFromAtlas_;

@@ -415,13 +415,9 @@ atlas::FieldSet allocateSpectralVortDiv(
 // -----------------------------------------------------------------------------
 
 oops::Variables createInnerVars(const oops::Variables & outerVars) {
-  oops::Variables innerVars;
-
-  for (auto & var : outerVars.variables()) {
-    if (var.compare("geostrophic_pressure_levels_minus_one") == 0) {
-    } else {
-      innerVars.push_back(var);
-    }
+  oops::Variables innerVars(outerVars);
+  if (innerVars.has("geostrophic_pressure_levels_minus_one")) {
+    innerVars -= "geostrophic_pressure_levels_minus_one";
   }
   return innerVars;
 }
@@ -486,7 +482,6 @@ static SaberOuterBlockMaker<GaussUVToGP>
 
 
 GaussUVToGP::GaussUVToGP(const oops::GeometryData & outerGeometryData,
-               const std::vector<size_t> & activeVariableSizes,
                const oops::Variables & outerVars,
                const eckit::Configuration & covarConf,
                const Parameters_ & params,
@@ -495,9 +490,8 @@ GaussUVToGP::GaussUVToGP(const oops::GeometryData & outerGeometryData,
                const util::DateTime & validTimeOfXbFg)
   : SaberOuterBlockBase(params),
     params_(params),
-    innerVars_(createInnerVars(outerVars)),
     outerVars_(outerVars),
-    activeVariableSizes_(activeVariableSizes),
+    innerVars_(createInnerVars(outerVars)),
     gaussFunctionSpace_(outerGeometryData.functionSpace()),
     specFunctionSpace_(2 * atlas::GaussianGrid(gaussFunctionSpace_.grid()).N() - 1),
     trans_(gaussFunctionSpace_, specFunctionSpace_),

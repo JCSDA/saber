@@ -40,7 +40,6 @@ static SaberOuterBlockMaker<MoistIncrOp> makerMoistIncrOp_("mo_moistincrop");
 // -----------------------------------------------------------------------------
 
 MoistIncrOp::MoistIncrOp(const oops::GeometryData & outerGeometryData,
-                         const std::vector<size_t> & activeVariableSizes,
                          const oops::Variables & outerVars,
                          const eckit::Configuration & covarConf,
                          const Parameters_ & params,

@@ -13,8 +13,40 @@
 
 #include "eckit/exception/Exceptions.h"
 
+#include "saber/oops/Utilities.h"
+
 
 namespace saber {
+
+namespace {
+
+oops::Variables createInnerVars(
+    const oops::Variables & outerVars,
+    const oops::Variables & innerActiveVarsWithoutMeta) {
+  // TO DO: Ideally we should get model levels of innerVars from vader.
+  // For now we assume that
+  // All vertical levels are the same in outerVars and that innerVars
+  // has the same number of model levels
+  oops::Variables innerActiveVarsWithMeta(innerActiveVarsWithoutMeta);
+  std::vector<int> modelLevels;
+  for (const std::string & var : outerVars.variables()) {
+    modelLevels.push_back(outerVars.getLevels(var));
+  }
+
+  if (outerVars.size() > 1) {
+     ASSERT(std::equal(modelLevels.begin() + 1, modelLevels.end(),
+                       modelLevels.begin()));
+  }
+
+  for (const std::string & var : innerActiveVarsWithoutMeta.variables()) {
+    innerActiveVarsWithMeta.addMetaData(var, "levels", modelLevels[0]);
+  }
+
+  return innerActiveVarsWithMeta;
+}
+
+}  // namespace
+
 
 // -----------------------------------------------------------------------------
 
@@ -23,7 +55,6 @@ static SaberOuterBlockMaker<VaderBlock> makerVaderBlock_("vader variable change"
 // -----------------------------------------------------------------------------
 
 VaderBlock::VaderBlock(const oops::GeometryData & outerGeometryData,
-                       const std::vector<size_t> & activeVariableSizes,
                        const oops::Variables & outerVars,
                        const eckit::Configuration & outerBlockConf,
                        const Parameters_ & params,
@@ -32,7 +63,8 @@ VaderBlock::VaderBlock(const oops::GeometryData & outerGeometryData,
                        const util::DateTime & validTimeOfXbFg)
   : SaberOuterBlockBase(params),
     outerVars_(outerVars),
-    innerGeometryData_(outerGeometryData), innerVars_(params.innerVars),
+    innerGeometryData_(outerGeometryData),
+    innerVars_(createInnerVars(outerVars, params.innerVars)),
     vader_(params.vader, outerBlockConf.getSubConfiguration("vader"))
 {
   oops::Log::trace() << classname() << "::VaderBlock starting" << std::endl;
@@ -41,6 +73,7 @@ VaderBlock::VaderBlock(const oops::GeometryData & outerGeometryData,
   // TODO(someone): perhaps this code will happen in the ErrorCovariance ctor?
   oops::Variables neededVars = innerVars_;
   atlas::FieldSet xb_inner = xb;
+
   oops::Variables varsVaderPopulates = vader_.changeVar(xb_inner, neededVars);
   ASSERT_MSG(varsVaderPopulates == innerVars_, "VADER can not populate all "
              "inner variables for SABER block.");

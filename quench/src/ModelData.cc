@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-#include "atlas/util/Config.h"
+#include "eckit/config/LocalConfiguration.h"
 
 #include "saber/quench/src/ModelData.h"
 

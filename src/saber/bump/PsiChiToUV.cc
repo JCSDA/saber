@@ -9,6 +9,7 @@
 
 #include "atlas/functionspace.h"
 
+#include "eckit/config/LocalConfiguration.h"
 #include "eckit/mpi/Comm.h"
 
 #include "oops/util/abor1_cpp.h"
@@ -25,8 +26,20 @@ static SaberOuterBlockMaker<PsiChiToUV> makerPsiChiToUV_("BUMP_PsiChiToUV");
 
 // -----------------------------------------------------------------------------
 
+namespace {
+oops::Variables createInnerVars(const oops::Variables & outerVars) {
+  oops::Variables innerVars(std::vector<std::string>(
+    {"stream_function", "velocity_potential"}));
+  const int modelLevels(outerVars.getLevels("eastward_wind"));
+  innerVars.addMetaData("stream_function", "levels", modelLevels);
+  innerVars.addMetaData("velocity_potential", "levels", modelLevels);
+  return innerVars;
+}
+
+}  // namespace
+
+
 PsiChiToUV::PsiChiToUV(const oops::GeometryData & outerGeometryData,
-                       const std::vector<size_t> & activeVariableSizes,
                        const oops::Variables & outerVars,
                        const eckit::Configuration & covarConf,
                        const Parameters_ & params,
@@ -35,9 +48,8 @@ PsiChiToUV::PsiChiToUV(const oops::GeometryData & outerGeometryData,
                        const util::DateTime & validTimeOfXbFg)
   : SaberOuterBlockBase(params),
     innerGeometryData_(outerGeometryData),
-    innerVars_(oops::Variables({"stream_function", "velocity_potential"})),
+    innerVars_(createInnerVars(outerVars)),
     outerVars_(outerVars),
-    levels_(activeVariableSizes[0]),
     bumpParams_(),
     bump_()
 {
@@ -52,6 +64,17 @@ PsiChiToUV::PsiChiToUV(const oops::GeometryData & outerGeometryData,
     ABORT("calibration or read required in BUMP");
   }
 
+  oops::Variables activeVars;
+  activeVars += innerVars_;
+  activeVars += outerVars_;
+  const std::vector<std::string> activeStrings{"stream_function", "velocity_potential",
+                                               "eastward_wind", "northward_wind"};
+  activeVars.intersection(oops::Variables(activeStrings));
+  std::vector<size_t> activeVariableSizes;
+  for (const std::string & var : activeStrings) {
+    activeVariableSizes.push_back(activeVars.getLevels(var));
+  }
+
   // Initialize BUMP
   bump_.reset(new bump_lib::BUMP(outerGeometryData.comm(),
                                  oops::LibOOPS::instance().infoChannel(),
@@ -59,7 +82,7 @@ PsiChiToUV::PsiChiToUV(const oops::GeometryData & outerGeometryData,
                                  outerGeometryData.functionSpace(),
                                  outerGeometryData.fieldSet(),
                                  activeVariableSizes,
-                                 params.mandatoryActiveVars().variables(),
+                                 activeVars.variables(),
                                  covarConf,
                                  bumpParams_.toConfiguration()));
 
