@@ -197,8 +197,9 @@ type nicas_cmp_type
    real(kind_real),allocatable :: a(:,:)                !< Amplitude
    real(kind_real),allocatable :: rh(:,:)               !< Horizontal fit support radius
    real(kind_real),allocatable :: rv(:,:)               !< Vertical fit support radius
-   real(kind_real),allocatable :: rhs(:,:)              !< Fit support radius  for sampling
-   real(kind_real),allocatable :: rvs(:,:)              !< Fit support radius, for sampling
+   real(kind_real),allocatable :: as(:,:)               !< Amplitude for sampling
+   real(kind_real),allocatable :: rhs(:,:)              !< Horizontal fit support radius for sampling
+   real(kind_real),allocatable :: rvs(:,:)              !< Vertical fit support radius for sampling
    real(kind_real),allocatable :: H11(:,:)              !< LCT component 11
    real(kind_real),allocatable :: H22(:,:)              !< LCT component 22
    real(kind_real),allocatable :: H12(:,:)              !< LCT component 12
@@ -694,6 +695,7 @@ if (allocated(nicas_cmp%sc_to_su)) deallocate(nicas_cmp%sc_to_su)
 if (allocated(nicas_cmp%sb_to_sc)) deallocate(nicas_cmp%sb_to_sc)
 if (allocated(nicas_cmp%rh)) deallocate(nicas_cmp%rh)
 if (allocated(nicas_cmp%rv)) deallocate(nicas_cmp%rv)
+if (allocated(nicas_cmp%as)) deallocate(nicas_cmp%as)
 if (allocated(nicas_cmp%rhs)) deallocate(nicas_cmp%rhs)
 if (allocated(nicas_cmp%rvs)) deallocate(nicas_cmp%rvs)
 if (allocated(nicas_cmp%H11)) deallocate(nicas_cmp%H11)
@@ -2298,6 +2300,7 @@ real(kind_real),intent(in) :: rhflt              !< Horizontal support radius
 ! Allocation
 allocate(nicas_cmp%rh(geom%nc0a,geom%nl0))
 allocate(nicas_cmp%rv(geom%nc0a,geom%nl0))
+allocate(nicas_cmp%as(geom%nc0a,geom%nl0))
 allocate(nicas_cmp%rhs(geom%nc0a,geom%nl0))
 allocate(nicas_cmp%rvs(geom%nc0a,geom%nl0))
 
@@ -2305,6 +2308,7 @@ allocate(nicas_cmp%rvs(geom%nc0a,geom%nl0))
 nicas_cmp%anisotropic = .false.
 nicas_cmp%rh(:,1) = rhflt
 nicas_cmp%rv = zero
+nicas_cmp%as = one
 nicas_cmp%rhs(:,1) = rhflt
 nicas_cmp%rvs = zero
 

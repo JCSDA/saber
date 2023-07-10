@@ -28,8 +28,6 @@
                 Level:   1 ~> cov. at class zero:  0.10E+01
                 Level:   2 ~> cov. at class zero:  0.97E+00
              Block common:  0.14491868E+00 for       40 diagnostic points
-                Level:   1 ~> cor. at class zero:        1.00
-                Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
                                  cor. hor. support:      3731.03 km
                                  cor. ver. support:         3.16 vertical units
@@ -46,18 +44,18 @@
                                  loc. hor. support:      5856.19 km
                                  loc. ver. support:         5.84 vertical units
              Effective levels:   1   2 
-                   Horizontal support radius:    5448.28 km (   5448.28 km -    5448.28 km)
-                   Estimated nc1 from horizontal support radius:      209
-                      Decimate full grid, at least      209 points required,     503 valid points found
-                      Subgrid hash:   -592487823
-                   Final nc1:      209
-                   Effective horizontal resolution:  3.99
-                   Horizontal support radius:    5856.19 km (   5856.19 km -    5856.19 km)
-                   Estimated nc1 from horizontal support radius:      181
-                      Decimate full grid, at least      181 points required,     503 valid points found
-                      Subgrid hash:   1523495917
-                   Final nc1:      181
-                   Effective horizontal resolution:  4.00
+                Horizontal support radius:    5448.28 km (   5448.28 km -    5448.28 km)
+                Estimated nc1 from horizontal support radius:      209
+                   Decimate full grid, at least      209 points required,     503 valid points found
+                   Subgrid hash:   -592487823
+                Final nc1:      209
+                Effective horizontal resolution:  3.99
+                Horizontal support radius:    5856.19 km (   5856.19 km -    5856.19 km)
+                Estimated nc1 from horizontal support radius:      181
+                   Decimate full grid, at least      181 points required,     503 valid points found
+                   Subgrid hash:   1523495917
+                Final nc1:      181
+                Effective horizontal resolution:  4.00
              nc1(  1) =                        209
              nc1(  2) =                        181
              ns =                              390
@@ -77,10 +75,10 @@
              0.0 /    0.0:  1.0000000
           Level   1:  0.0000000 -  1.0000000
           Level   2:  0.0000000 -  0.9169709
-Norm of output parameter dirac_mom - 1: 7.7914473076303112e+00
-Norm of output parameter dirac_diag_loc - 1: 2.8237637990962439e+00
+Norm of output parameter dirac_mom - 1: 7.7914473076303121e+00
+Norm of output parameter dirac_diag_loc - 1: 2.8237637990962430e+00
 Norm of output parameter cor_rh - 1: 1.5258184047202858e+08
 Norm of output parameter cor_rv - 1: 1.2745328074542292e+02
 Norm of output parameter loc_rh - 1: 2.3064205859904462e+08
 Norm of output parameter loc_rv - 1: 2.3524176177096635e+02
-Norm of output parameter nicas_norm - 1: 4.3891072897369185e+01
+Norm of output parameter nicas_norm - 1: 4.3891072897369177e+01

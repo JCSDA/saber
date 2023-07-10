@@ -953,13 +953,6 @@ do ig=1,nam%ng
    write(mpl%info,'(a13,a,a,a)') '','Block ',trim(nam%group_names(ig)),':'
    call mpl%flush
 
-   do il0=1,geom%nl0
-       if (mpl%msv%isnot(diag%blk(0,ig)%raw(1,1,geom%il0rz(il0),il0))) then
-           write(mpl%test,'(a16,a,i3,a,a,f10.2,a)') '','Level: ',il0,' ~> cor. at class zero:  ', &
- & trim(mpl%peach),diag%blk(0,ig)%raw(1,1,geom%il0rz(il0),il0),trim(mpl%black)
-           call mpl%flush
-       end if
-   end do
    if (mpl%msv%isnot(diag%blk(0,ig)%ncmp)) then
       write(mpl%info,'(a16,a,a,i1,a)') '','Number of components: ',trim(mpl%aqua),diag%blk(0,ig)%ncmp,trim(mpl%black)
       call mpl%flush

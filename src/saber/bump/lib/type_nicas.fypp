@@ -341,7 +341,7 @@ type(geom_type),intent(in) :: geom       !< Geometry
 
 ! Local variables
 integer :: ncid
-integer :: ig,icmp,iproc,iprocio
+integer :: ig,iproc,iprocio
 type(nicas_type) :: nicas_tmp
 
 ! Set name
@@ -484,7 +484,7 @@ type(geom_type),intent(in) :: geom       !< Geometry
 
 ! Local variable
 integer :: ncid
-integer :: ig,icmp
+integer :: ig
 
 ! Set name
 @:set_name(nicas_write_global)

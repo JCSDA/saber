@@ -32,8 +32,9 @@ type cmat_blk_type
    real(kind_real),allocatable :: D22(:,:,:)         !< Horizontal direct tensor, component 22
    real(kind_real),allocatable :: D12(:,:,:)         !< Horizontal direct tensor, component 12 (normalized)
    real(kind_real),allocatable :: rv(:,:,:)          !< Vertical support radius
-   real(kind_real),allocatable :: rhs(:,:,:)         !< Fit support radius  for sampling
-   real(kind_real),allocatable :: rvs(:,:,:)         !< Fit support radius, for sampling
+   real(kind_real),allocatable :: as(:,:,:)          !< Amplitude for sampling
+   real(kind_real),allocatable :: rhs(:,:,:)         !< Horizontal fit support radius for sampling
+   real(kind_real),allocatable :: rvs(:,:,:)         !< Vertical fit support radius for sampling
 
    ! BUMP interface data
    real(kind_real),allocatable :: bump_a(:,:,:)      !< Amplitudes
@@ -82,6 +83,7 @@ if (cmat_blk%anisotropic) then
    allocate(cmat_blk%D12(geom%nc0a,geom%nl0,cmat_blk%ncmp))
 end if
 allocate(cmat_blk%rv(geom%nc0a,geom%nl0,cmat_blk%ncmp))
+allocate(cmat_blk%as(geom%nc0a,geom%nl0,cmat_blk%ncmp))
 allocate(cmat_blk%rhs(geom%nc0a,geom%nl0,cmat_blk%ncmp))
 allocate(cmat_blk%rvs(geom%nc0a,geom%nl0,cmat_blk%ncmp))
 
@@ -117,6 +119,7 @@ if (cmat_blk%anisotropic) then
    cmat_blk%D12 = mpl%msv%valr
 end if
 cmat_blk%rv = mpl%msv%valr
+cmat_blk%as = mpl%msv%valr
 cmat_blk%rhs = mpl%msv%valr
 cmat_blk%rvs = mpl%msv%valr
 
@@ -174,6 +177,7 @@ class(cmat_blk_type),intent(inout) :: cmat_blk !< C matrix data block
 
 ! Release memory
 call cmat_blk%partial_bump_dealloc
+if (allocated(cmat_blk%as)) deallocate(cmat_blk%as)
 if (allocated(cmat_blk%rhs)) deallocate(cmat_blk%rhs)
 if (allocated(cmat_blk%rvs)) deallocate(cmat_blk%rvs)
 

@@ -11,7 +11,7 @@ module type_nicas_blk
 use atlas_module, only: atlas_structuredgrid
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 !$ use omp_lib
-use tools_const, only: zero,quarter,half,tenth,one,two,three,four,five,hundred,pi,req,reqkm,deg2rad,rad2deg
+use tools_const, only: zero,hundredth,quarter,half,tenth,one,two,three,four,five,hundred,pi,req,reqkm,deg2rad,rad2deg
 use tools_fit, only: tensor_d2h
 use tools_func, only: lonlatmod,sphere_dist,inside,convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count
 use tools_gc99, only: fit_func_sqrt
@@ -1142,6 +1142,7 @@ do icmp=1,nicas_blk%ncmp
       allocate(nicas_blk%cmp(icmp)%H12(geom%nc0a,geom%nl0))
    end if
    allocate(nicas_blk%cmp(icmp)%rv(geom%nc0a,geom%nl0))
+   allocate(nicas_blk%cmp(icmp)%as(geom%nc0a,geom%nl0))
    allocate(nicas_blk%cmp(icmp)%rhs(geom%nc0a,geom%nl0))
    allocate(nicas_blk%cmp(icmp)%rvs(geom%nc0a,geom%nl0))
 
@@ -1154,6 +1155,7 @@ do icmp=1,nicas_blk%ncmp
       nicas_blk%cmp(icmp)%H12 = mpl%msv%valr
    end if
    nicas_blk%cmp(icmp)%rv = mpl%msv%valr
+   nicas_blk%cmp(icmp)%as = mpl%msv%valr
    nicas_blk%cmp(icmp)%rhs = mpl%msv%valr
    nicas_blk%cmp(icmp)%rvs = mpl%msv%valr
 
@@ -1163,10 +1165,8 @@ do icmp=1,nicas_blk%ncmp
       level_status = 0
       do ic0a=1,geom%nc0a
          if ((level_status==0).and.geom%gmask_c0a(ic0a,il0)) then
-            if (mpl%msv%is(cmat_blk%a(ic0a,il0,icmp)).or.mpl%msv%is(cmat_blk%rh(ic0a,il0,icmp)) &
- & .or.mpl%msv%is(cmat_blk%rv(ic0a,il0,icmp)).or.mpl%msv%is(cmat_blk%rhs(ic0a,il0,icmp)) &
+            if (mpl%msv%is(cmat_blk%as(ic0a,il0,icmp)).or.mpl%msv%is(cmat_blk%rhs(ic0a,il0,icmp)) &
  & .or.mpl%msv%is(cmat_blk%rvs(ic0a,il0,icmp))) level_status = 1
-            if (cmat_blk%a(ic0a,il0,icmp)<1.0e-2) level_status = 1
          end if
       end do
       call mpl%f_comm%allreduce(level_status,fckit_mpi_sum())
@@ -1182,6 +1182,7 @@ do icmp=1,nicas_blk%ncmp
  & cmat_blk%D12(ic0a,il0,icmp),nicas_blk%cmp(icmp)%H11(ic0a,il0),nicas_blk%cmp(icmp)%H22(ic0a,il0), &
  & nicas_blk%cmp(icmp)%H12(ic0a,il0))
                nicas_blk%cmp(icmp)%rv(ic0a,il0) = cmat_blk%rv(ic0a,il0,icmp)
+               nicas_blk%cmp(icmp)%as(ic0a,il0) = cmat_blk%as(ic0a,il0,icmp)
                nicas_blk%cmp(icmp)%rhs(ic0a,il0) = cmat_blk%rhs(ic0a,il0,icmp)
                nicas_blk%cmp(icmp)%rvs(ic0a,il0) = cmat_blk%rvs(ic0a,il0,icmp)
             end if

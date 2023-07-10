@@ -7,16 +7,16 @@
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-   Norm of stream_function:  0.46635745E+02
-   Norm of stream_function:  0.50083519E+02
-   Norm of stream_function:  0.46975975E+02
-   Norm of stream_function:  0.44152113E+02
-   Norm of stream_function:  0.43188836E+02
-   Norm of stream_function:  0.37547204E+02
-   Norm of stream_function:  0.42813460E+02
-   Norm of stream_function:  0.43602223E+02
-   Norm of stream_function:  0.45188624E+02
-   Norm of stream_function:  0.37808682E+02
+          Norm of stream_function:  0.46635745E+02
+          Norm of stream_function:  0.50083519E+02
+          Norm of stream_function:  0.46975975E+02
+          Norm of stream_function:  0.44152113E+02
+          Norm of stream_function:  0.43188836E+02
+          Norm of stream_function:  0.37547204E+02
+          Norm of stream_function:  0.42813460E+02
+          Norm of stream_function:  0.43602223E+02
+          Norm of stream_function:  0.45188624E+02
+          Norm of stream_function:  0.37808682E+02
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Min. / max. longitudes: -171.0 /   180.0
@@ -26,31 +26,31 @@
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-   Norm of stream_function:  0.38039149E+02
-   Norm of stream_function:  0.43088625E+02
-   Norm of stream_function:  0.38522457E+02
-   Norm of stream_function:  0.40464904E+02
-   Norm of stream_function:  0.38871224E+02
-   Norm of stream_function:  0.38224608E+02
-   Norm of stream_function:  0.30085480E+02
-   Norm of stream_function:  0.36246770E+02
-   Norm of stream_function:  0.37175902E+02
-   Norm of stream_function:  0.45651274E+02
-   Norm of stream_function:  0.40795702E+02
-   Norm of stream_function:  0.36946093E+02
-   Norm of stream_function:  0.42274655E+02
-   Norm of stream_function:  0.41671166E+02
-   Norm of stream_function:  0.31988231E+02
-   Norm of stream_function:  0.37815881E+02
-   Norm of stream_function:  0.40868106E+02
-   Norm of stream_function:  0.34476503E+02
-   Norm of stream_function:  0.40297383E+02
-   Norm of stream_function:  0.37536747E+02
-   Norm of stream_function:  0.35575171E+02
-   Norm of stream_function:  0.35733790E+02
-   Norm of stream_function:  0.39328584E+02
-   Norm of stream_function:  0.37664914E+02
-   Norm of stream_function:  0.39905108E+02
+          Norm of stream_function:  0.38039149E+02
+          Norm of stream_function:  0.43088625E+02
+          Norm of stream_function:  0.38522457E+02
+          Norm of stream_function:  0.40464904E+02
+          Norm of stream_function:  0.38871224E+02
+          Norm of stream_function:  0.38224608E+02
+          Norm of stream_function:  0.30085480E+02
+          Norm of stream_function:  0.36246770E+02
+          Norm of stream_function:  0.37175902E+02
+          Norm of stream_function:  0.45651274E+02
+          Norm of stream_function:  0.40795702E+02
+          Norm of stream_function:  0.36946093E+02
+          Norm of stream_function:  0.42274655E+02
+          Norm of stream_function:  0.41671166E+02
+          Norm of stream_function:  0.31988231E+02
+          Norm of stream_function:  0.37815881E+02
+          Norm of stream_function:  0.40868106E+02
+          Norm of stream_function:  0.34476503E+02
+          Norm of stream_function:  0.40297383E+02
+          Norm of stream_function:  0.37536747E+02
+          Norm of stream_function:  0.35575171E+02
+          Norm of stream_function:  0.35733790E+02
+          Norm of stream_function:  0.39328584E+02
+          Norm of stream_function:  0.37664914E+02
+          Norm of stream_function:  0.39905108E+02
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
           Decimate full grid, at least      500 points required,    1090 valid points found
@@ -96,8 +96,6 @@
                 Level:   1 ~> cov. at class zero:  0.10E+01
                 Level:   2 ~> cov. at class zero:  0.99E+00
              Block stream_function:  0.13770789E+00 for       60 diagnostic points
-                Level:   1 ~> cor. at class zero:        1.00
-                Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
                                  cor. hor. support:      3687.33 km
                                  cor. ver. support:         3.10 vertical units
@@ -105,8 +103,6 @@
                                  cor. hor. support:      3811.08 km
                                  cor. ver. support:         3.10 vertical units
              Block stream_function:  0.11335877E+00 for       60 diagnostic points
-                Level:   1 ~> cor. at class zero:        1.00
-                Level:   2 ~> cor. at class zero:        1.00
                    Level:   1 ~> amplitude:        1.00
                                  cor. hor. support:      7351.17 km
                                  cor. ver. support:         1.28 vertical units

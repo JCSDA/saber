@@ -24,31 +24,31 @@
              Level   9 ~>  0.900E+01 vert. unit
              Level  10 ~>  0.100E+02 vert. unit
 Norm of input parameter sampling_mask_field - 1: 9.2428254978917408e+01
-   Norm of stream_function:  0.86177684E+02
-   Norm of stream_function:  0.80618766E+02
-   Norm of stream_function:  0.81430939E+02
-   Norm of stream_function:  0.87688701E+02
-   Norm of stream_function:  0.87561782E+02
-   Norm of stream_function:  0.85853083E+02
-   Norm of stream_function:  0.87075739E+02
-   Norm of stream_function:  0.86478844E+02
-   Norm of stream_function:  0.81953612E+02
-   Norm of stream_function:  0.81834562E+02
-   Norm of stream_function:  0.88836116E+02
-   Norm of stream_function:  0.87887942E+02
-   Norm of stream_function:  0.85279970E+02
-   Norm of stream_function:  0.90277208E+02
-   Norm of stream_function:  0.84964525E+02
-   Norm of stream_function:  0.83731208E+02
-   Norm of stream_function:  0.88110279E+02
-   Norm of stream_function:  0.86279471E+02
-   Norm of stream_function:  0.87415097E+02
-   Norm of stream_function:  0.86661967E+02
-   Norm of stream_function:  0.85087575E+02
-   Norm of stream_function:  0.84617786E+02
-   Norm of stream_function:  0.80817835E+02
-   Norm of stream_function:  0.87941390E+02
-   Norm of stream_function:  0.83190258E+02
+          Norm of stream_function:  0.86177684E+02
+          Norm of stream_function:  0.80618766E+02
+          Norm of stream_function:  0.81430939E+02
+          Norm of stream_function:  0.87688701E+02
+          Norm of stream_function:  0.87561782E+02
+          Norm of stream_function:  0.85853083E+02
+          Norm of stream_function:  0.87075739E+02
+          Norm of stream_function:  0.86478844E+02
+          Norm of stream_function:  0.81953612E+02
+          Norm of stream_function:  0.81834562E+02
+          Norm of stream_function:  0.88836116E+02
+          Norm of stream_function:  0.87887942E+02
+          Norm of stream_function:  0.85279970E+02
+          Norm of stream_function:  0.90277208E+02
+          Norm of stream_function:  0.84964525E+02
+          Norm of stream_function:  0.83731208E+02
+          Norm of stream_function:  0.88110279E+02
+          Norm of stream_function:  0.86279471E+02
+          Norm of stream_function:  0.87415097E+02
+          Norm of stream_function:  0.86661967E+02
+          Norm of stream_function:  0.85087575E+02
+          Norm of stream_function:  0.84617786E+02
+          Norm of stream_function:  0.80817835E+02
+          Norm of stream_function:  0.87941390E+02
+          Norm of stream_function:  0.83190258E+02
           Level   1 ~>   2.6%
           Level   2 ~>   4.1%
           Level   3 ~>   5.8%
@@ -102,17 +102,7 @@ Norm of input parameter sampling_mask_field - 1: 9.2428254978917408e+01
                 Level:   8 ~> cov. at class zero:  0.13E+01
                 Level:   9 ~> cov. at class zero:  0.12E+01
                 Level:  10 ~> cov. at class zero:  0.12E+01
-             Block stream_function:  0.31690201E+00 for    13997 diagnostic points
-                Level:   1 ~> cor. at class zero:        1.00
-                Level:   2 ~> cor. at class zero:        1.00
-                Level:   3 ~> cor. at class zero:        1.00
-                Level:   4 ~> cor. at class zero:        1.00
-                Level:   5 ~> cor. at class zero:        1.00
-                Level:   6 ~> cor. at class zero:        1.00
-                Level:   7 ~> cor. at class zero:        1.00
-                Level:   8 ~> cor. at class zero:        1.00
-                Level:   9 ~> cor. at class zero:        1.00
-                Level:  10 ~> cor. at class zero:        1.00
+             Block stream_function:  0.31643796E+00 for    13997 diagnostic points
                    Level:   1 ~> amplitude:        1.00
                                  cor. hor. support:      3701.99 km
                                  cor. ver. support:         6.46 vertical units
@@ -143,5 +133,5 @@ Norm of input parameter sampling_mask_field - 1: 9.2428254978917408e+01
                    Level:  10 ~> amplitude:        1.00
                                  cor. hor. support:      4547.45 km
                                  cor. ver. support:         5.82 vertical units
-Norm of output parameter cor_rh - 1: 4.3536415588743263e+08
-Norm of output parameter cor_rv - 1: 5.6289743423328889e+02
+Norm of output parameter cor_rh - 1: 4.2914101484745139e+08
+Norm of output parameter cor_rv - 1: 5.6289639892504408e+02

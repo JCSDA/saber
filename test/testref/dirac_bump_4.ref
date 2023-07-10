@@ -79,5 +79,5 @@ Groups:
   - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  eastward_wind: 2.8698543543755107e-13
-  northward_wind: 2.6005865445914785e-13
+  eastward_wind: 2.7243530228115694e-13
+  northward_wind: 2.4589131916901755e-13

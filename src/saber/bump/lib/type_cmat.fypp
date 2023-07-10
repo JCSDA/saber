@@ -407,7 +407,8 @@ type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
 integer :: ig,il0,ic0a,ncmpmax,icmp
-real(kind_real),allocatable :: rhs(:),rvs(:)
+integer,allocatable :: igmin(:)
+real(kind_real),allocatable :: rhmin(:)
 
 ! Set name
 @:set_name(cmat_setup_sampling)
@@ -424,40 +425,63 @@ if (trim(nam%strategy)=='crossed') then
    end do
 
    ! Allocation
-   allocate(rhs(ncmpmax))
-   allocate(rvs(ncmpmax))
+   allocate(igmin(ncmpmax))
+   allocate(rhmin(ncmpmax))
 
    do il0=1,geom%nl0
       do ic0a=1,geom%nc0a
-         ! Get minimum
-         rhs = huge_real
-         rvs = huge_real
-         do ig=1,nam%ng
-            do icmp=1,cmat%blk(ig)%ncmp
-               if (geom%gmask_c0a(ic0a,il0)) then
-                  if (mpl%msv%isnot(cmat%blk(ig)%rh(ic0a,il0,icmp))) rhs(icmp) = min(rhs(icmp),cmat%blk(ig)%rh(ic0a,il0,icmp))
-                  if (mpl%msv%isnot(cmat%blk(ig)%rv(ic0a,il0,icmp))) rvs(icmp) = min(rvs(icmp),cmat%blk(ig)%rv(ic0a,il0,icmp))
-               end if
+         if (geom%gmask_c0a(ic0a,il0)) then
+            ! Find group with the minimum horizontal horizontal length-scale
+            igmin = 1
+            rhmin = huge_real
+            do ig=1,nam%ng
+               do icmp=1,cmat%blk(ig)%ncmp
+                  if (mpl%msv%isnot(cmat%blk(ig)%rh(ic0a,il0,icmp)).and.(igmin(icmp)>0)) then
+                     if (cmat%blk(ig)%rh(ic0a,il0,icmp)<rhmin(icmp)) then
+                        igmin(icmp) = ig
+                        rhmin(icmp) = cmat%blk(ig)%rh(ic0a,il0,icmp)
+                     end if
+                  else
+                     ! Missing value
+                     igmin(icmp) = 0
+                  end if
+               end do
             end do
-         end do
-
-         ! Copy minimum
-         do ig=1,nam%ng
-            do icmp=1,cmat%blk(ig)%ncmp
-               cmat%blk(ig)%rhs(ic0a,il0,icmp) = rhs(icmp)
-               cmat%blk(ig)%rvs(ic0a,il0,icmp) = rvs(icmp)
-               if ((geom%nl0>1).and.(.not.(rvs(icmp)>zero))) call mpl%abort('${subr}$','minimum rvs is zero')
+         
+            ! Copy values of the selected group
+            do ig=1,nam%ng
+               do icmp=1,cmat%blk(ig)%ncmp
+                  if (igmin(icmp)>0) then
+                     cmat%blk(ig)%as(ic0a,il0,icmp) = cmat%blk(igmin(icmp))%a(ic0a,il0,icmp)
+                     cmat%blk(ig)%rhs(ic0a,il0,icmp) = cmat%blk(igmin(icmp))%rh(ic0a,il0,icmp)
+                     cmat%blk(ig)%rvs(ic0a,il0,icmp) = cmat%blk(igmin(icmp))%rv(ic0a,il0,icmp)
+                  else
+                     cmat%blk(ig)%as(ic0a,il0,icmp) = mpl%msv%valr
+                     cmat%blk(ig)%rhs(ic0a,il0,icmp) = mpl%msv%valr
+                     cmat%blk(ig)%rvs(ic0a,il0,icmp) = mpl%msv%valr
+                  end if
+               end do
             end do
-         end do
+         else
+            ! Masked values
+            do ig=1,nam%ng
+               do icmp=1,cmat%blk(ig)%ncmp
+                  cmat%blk(ig)%as(ic0a,il0,icmp) = mpl%msv%valr
+                  cmat%blk(ig)%rhs(ic0a,il0,icmp) = mpl%msv%valr
+                  cmat%blk(ig)%rvs(ic0a,il0,icmp) = mpl%msv%valr
+               end do
+            end do
+         end if
       end do
    end do
 
    ! Release memory
-   deallocate(rhs)
-   deallocate(rvs)
+   deallocate(igmin)
+   deallocate(rhmin)
 else
    ! Copy
    do ig=1,nam%ng
+      cmat%blk(ig)%as = cmat%blk(ig)%a
       cmat%blk(ig)%rhs = cmat%blk(ig)%rh
       cmat%blk(ig)%rvs = cmat%blk(ig)%rv
    end do
