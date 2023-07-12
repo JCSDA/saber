@@ -1,0 +1,3 @@
+randomization_bump_nicas_L10L2
+error_covariance_training_bump_hdiag-nicas_1
+error_covariance_training_bump_stddev_3

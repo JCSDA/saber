@@ -193,12 +193,24 @@ if( oops_FOUND )
                     string( FIND ${test} "doc_" doc_result )
                     string( FIND ${test} "tutorial_" tutorial_result )
                     if( ( doc_result EQUAL -1 OR tutorial_result EQUAL 1 OR gsi_gfs_result EQUAL -1 ) OR ( ${mpi} LESS_EQUAL 1 AND ${omp} LESS_EQUAL 1 ) )
+                        # Get dependencies
+                        file( STRINGS testdeps/${test}.txt deps )
+                        set( deps_list "" )
+                        list( APPEND deps_list ${deps} )
+                        list( LENGTH deps_list deps_length )
+                        if( ${deps_length} GREATER 0 )
+                            list( TRANSFORM deps_list PREPEND saber_test_ )
+                            list( TRANSFORM deps_list APPEND _${mpi}-${omp} )
+                        endif()
+
+                        # Add test
                         ecbuild_add_test( TARGET saber_test_${test}_${mpi}-${omp}
                                           MPI ${mpi}
                                           OMP ${omp}
                                           COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_${exename}.x
                                           ARGS testinput/${test}.yaml
-                                          DEPENDS saber_quench_${exename}.x )
+                                          DEPENDS saber_quench_${exename}.x
+                                          TEST_DEPENDS ${deps_list} )
                     endif()
                 endif()
             endforeach()
@@ -208,12 +220,24 @@ if( oops_FOUND )
         foreach( test ${saber_test_full} )
             string( FIND ${test} "optimization_bump_hdiag_gsi" result )
             if( result MATCHES 0 )
+                # Get dependencies
+                file( STRINGS testdeps/${test}.txt deps )
+                set( deps_list "" )
+                list( APPEND deps_list ${deps} )
+                list( LENGTH deps_list deps_length )
+                if( ${deps_length} GREATER 0 )
+                    list( TRANSFORM deps_list PREPEND saber_test_ )
+                    list( TRANSFORM deps_list APPEND _${mpi}-${omp} )
+                endif()
+
+                # Add test
                 ecbuild_add_test( TARGET saber_test_${test}_${mpi}-${omp}
                                   MPI ${mpi}
                                   OMP ${omp}
                                   COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
                                   ARGS testinput/${test}.yaml
-                                  DEPENDS saber_quench_error_covariance_toolbox.x )
+                                  DEPENDS saber_quench_error_covariance_toolbox.x
+                                  TEST_DEPENDS ${deps_list} )
             endif()
         endforeach()
     endforeach()
