@@ -16,7 +16,7 @@ Groups:
   Mask size: 100%
 Fields:
   stream_function: 1.0000000000000000e+00
-Norm of input parameter StdDev: 4.0883163355933576e+01
+Norm of input parameter StdDev: 4.0693857173965277e+01
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Min. / max. longitudes: -171.0 /   180.0
@@ -44,4 +44,4 @@ Groups:
   - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 1.7899653582399997e+00
+  stream_function: 2.0497561324834241e+00

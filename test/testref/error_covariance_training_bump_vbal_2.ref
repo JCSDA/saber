@@ -7,26 +7,26 @@
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-   Norm of stream_function:  0.36038244E+02
-   Norm of velocity_potential:  0.32986300E+02
-   Norm of stream_function:  0.35578720E+02
-   Norm of velocity_potential:  0.37714142E+02
-   Norm of stream_function:  0.34115963E+02
-   Norm of velocity_potential:  0.37112091E+02
-   Norm of stream_function:  0.36393358E+02
-   Norm of velocity_potential:  0.36016428E+02
-   Norm of stream_function:  0.35321517E+02
-   Norm of velocity_potential:  0.34032956E+02
-   Norm of stream_function:  0.39553933E+02
-   Norm of velocity_potential:  0.36888808E+02
-   Norm of stream_function:  0.35721337E+02
-   Norm of velocity_potential:  0.35210041E+02
-   Norm of stream_function:  0.41403775E+02
-   Norm of velocity_potential:  0.37125817E+02
-   Norm of stream_function:  0.39347348E+02
-   Norm of velocity_potential:  0.41223733E+02
-   Norm of stream_function:  0.35248512E+02
-   Norm of velocity_potential:  0.38399163E+02
+          Norm of stream_function:  0.34934727E+02
+          Norm of velocity_potential:  0.33277957E+02
+          Norm of stream_function:  0.35520041E+02
+          Norm of velocity_potential:  0.37535701E+02
+          Norm of stream_function:  0.34153362E+02
+          Norm of velocity_potential:  0.37485676E+02
+          Norm of stream_function:  0.36323707E+02
+          Norm of velocity_potential:  0.35905742E+02
+          Norm of stream_function:  0.35675153E+02
+          Norm of velocity_potential:  0.33924409E+02
+          Norm of stream_function:  0.39648734E+02
+          Norm of velocity_potential:  0.37392671E+02
+          Norm of stream_function:  0.36825333E+02
+          Norm of velocity_potential:  0.34664759E+02
+          Norm of stream_function:  0.41411100E+02
+          Norm of velocity_potential:  0.37093261E+02
+          Norm of stream_function:  0.38499855E+02
+          Norm of velocity_potential:  0.42503555E+02
+          Norm of stream_function:  0.33971185E+02
+          Norm of velocity_potential:  0.36962913E+02
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
           Decimate full grid, at least      500 points required,     762 valid points found

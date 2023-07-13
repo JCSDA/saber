@@ -24,7 +24,7 @@ background error:
     members from template:
       template:
         date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
+        filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_%mem%
         state variables:
         - stream_function
         - velocity_potential
@@ -59,7 +59,6 @@ background error:
         reduced levels: 2
         local diagnostic: true
         averaging length-scale: 1000.0e3
-        interpolation type: c1
       fit:
         horizontal filtering length-scale: 3000.0e3
         number of components: 2

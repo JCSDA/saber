@@ -107,7 +107,7 @@ background error:
         members from template:
           template:
             date: '2010-01-01T12:00:00Z'
-            filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
+            filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_%mem%
             state variables:
             - eastward_wind
             - northward_wind
@@ -119,14 +119,14 @@ background error:
         inflation value: 1.2
         inflation field:
           model file:
-            filepath: testdata/randomization_bump_nicas_L10L2/member_000001 # Does not make sense scientifically, just for technical testing
+            filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000001 # Does not make sense scientifically, just for technical testing
         ensemble transform:
           saber outer blocks:
           - saber block name: ID
           - saber block name: StdDev
             read:
               model file:
-                filepath: testdata/randomization_bump_nicas_L10L2/member_000002 # Does not make sense scientifically, just for technical testing
+                filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000002 # Does not make sense scientifically, just for technical testing
         localization:
           saber central block:
             saber block name: BUMP_NICAS
@@ -150,7 +150,7 @@ background error:
     - eastward_wind
     - northward_wind
     atlas file:
-      filepath: testdata/randomization_bump_nicas_L10L2/member_000003 # Does not make sense scientifically, just for technical testing
+      filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000003 # Does not make sense scientifically, just for technical testing
 dirac:
   lon:
   - 0.0

@@ -1931,7 +1931,7 @@ if (samp%sc1) then
    ! Compute MPI distribution, subset Sc0, halo B
    write(mpl%info,'(a7,a)') '','Compute MPI distribution, subset Sc0, halo B'
    call mpl%flush
-   call samp%compute_mpi_c0b(mpl,geom)
+   call samp%compute_mpi_c0b(mpl,nam,geom)
 end if
 
 if (samp%sc3) then
@@ -3000,8 +3000,6 @@ if (.not.samp%lat_bands) then
 end if
 if (samp%compute_c2b_to_c1a) smask_hor_c1a = .true.
 
-! Allocation
-
 ! Compute interpolation
 do il0i=1,geom%nl0i
    il0 = geom%l0i_to_l0(il0i)
@@ -3018,8 +3016,8 @@ do il0i=1,geom%nl0i
  & mesh_c2,tree_c2,geom%nc0a,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a(:,il0),geom%mesh_c0u,7,.true.)
       case ('si')
          rh = nam%local_rad
-         call samp%interp_c2b_to_c0a(il0i)%interp(mpl,samp%nc2,smask_c2(:,il0i), &
- & tree_c2,geom%nc0a,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a(:,il0),7,rh)
+         call samp%interp_c2b_to_c0a(il0i)%interp(mpl,nam,il0,samp%nc2,lon_c2,lat_c2,smask_c2(:,il0i), &
+ & tree_c2,geom%nc0a,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a(:,il0),geom%mesh_c0u,7,rh)
       end select
    end if
 end do
@@ -3160,13 +3158,14 @@ end subroutine samp_compute_mpi_c2b
 ! Subroutine: samp_compute_mpi_c0b
 !> Compute MPI distribution, halo B, subset Sc0
 !----------------------------------------------------------------------
-subroutine samp_compute_mpi_c0b(samp,mpl,geom)
+subroutine samp_compute_mpi_c0b(samp,mpl,nam,geom)
 
 implicit none
 
 ! Passed variables
 class(samp_type),intent(inout) :: samp !< Sampling
 type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
@@ -3197,8 +3196,8 @@ allocate(samp%interp_c0b_to_c1a(samp%nl0ic1))
 do il0ic1=1,samp%nl0ic1
    il0 = samp%l0ic1_to_l0(il0ic1)
    write(samp%interp_c0b_to_c1a(il0ic1)%prefix,'(a,i3.3)') 'interp_c0b_to_c1a_',il0ic1
-   call samp%interp_c0b_to_c1a(il0ic1)%interp(mpl,geom%nc0u,geom%gmask_c0u(:,il0),geom%tree_c0u, &
- & samp%nc1a,samp%lon_c1a,samp%lat_c1a,samp%smask_c1a(:,il0),7)
+   call samp%interp_c0b_to_c1a(il0ic1)%interp(mpl,nam,0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,geom%gmask_c0u(:,il0),geom%tree_c0u, &
+ & samp%nc1a,samp%lon_c1a,samp%lat_c1a,samp%smask_c1a(:,il0),geom%mesh_c0u,7)
 end do
 
 ! Define halo B
@@ -3327,8 +3326,8 @@ do jc4=1,nam%nc4
       do il0ic3=1,samp%nl0ic3(jc3,jc4)
          il0 = samp%l0ic3_to_l0(il0ic3,jc3,jc4)
          write(samp%interp_c0c_to_c3a(jc3,jc4,il0ic3)%prefix,'(a,i3.3,a,i3.3,a,i3.3)') 'interp_c0c_to_c3a_',jc3,'-',jc4,'_',il0ic3
-         call samp%interp_c0c_to_c3a(jc3,jc4,il0ic3)%interp(mpl,geom%nc0u,geom%gmask_c0u(:,il0),geom%tree_c0u, &
- & samp%nc1a,samp%lon_c3a(:,jc3,jc4),samp%lat_c3a(:,jc3,jc4),samp%smask_c3a(:,jc3,jc4,il0),7)
+         call samp%interp_c0c_to_c3a(jc3,jc4,il0ic3)%interp(mpl,nam,0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,geom%gmask_c0u(:,il0), &
+ & geom%tree_c0u,samp%nc1a,samp%lon_c3a(:,jc3,jc4),samp%lat_c3a(:,jc3,jc4),samp%smask_c3a(:,jc3,jc4,il0),geom%mesh_c0u,7)
       end do
    end do
 end do

@@ -27,10 +27,6 @@ background error:
       nicas:
         resolution: 10.0
         max horizontal grid size: 7000
-        interpolation type:
-        - groups:
-          - stream_function
-          type: si
         explicit length-scales: true
         horizontal length-scale:
         - groups:

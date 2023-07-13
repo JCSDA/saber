@@ -7,30 +7,30 @@
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-   Norm of stream_function:  0.34561197E+02
-   Norm of stream_function:  0.38368977E+02
-   Norm of stream_function:  0.40182008E+02
-   Norm of stream_function:  0.36148312E+02
-   Norm of stream_function:  0.41817368E+02
-   Norm of stream_function:  0.39704248E+02
-   Norm of stream_function:  0.36381749E+02
-   Norm of stream_function:  0.37671298E+02
-   Norm of stream_function:  0.39156296E+02
-   Norm of stream_function:  0.42039217E+02
-   Norm of stream_function:  0.35955386E+02
-   Norm of stream_function:  0.38909524E+02
-   Norm of stream_function:  0.41525757E+02
-   Norm of stream_function:  0.36584101E+02
-   Norm of stream_function:  0.39014237E+02
-   Norm of stream_function:  0.33989857E+02
-   Norm of stream_function:  0.38146099E+02
-   Norm of stream_function:  0.38723237E+02
-   Norm of stream_function:  0.40566253E+02
-   Norm of stream_function:  0.38611244E+02
-                Level   1: rhflt =   40000.00 km, rel. diff. =  0.38729E-02
-                Level   2: rhflt =   40000.00 km, rel. diff. =  0.13978E-01
-             Level   1 ~>  0.10267E+01 /  0.10267E+01
-             Level   2 ~>  0.10174E+01 /  0.10174E+01
-Norm of output parameter stddev - 1: 4.1446848101725315e+01
-Norm of output parameter var - 1: 4.3650316264863811e+01
-Norm of output parameter m4 - 1: 1.4599276989031361e+02
+          Norm of stream_function:  0.35396179E+02
+          Norm of stream_function:  0.38076755E+02
+          Norm of stream_function:  0.40804483E+02
+          Norm of stream_function:  0.36862100E+02
+          Norm of stream_function:  0.41519621E+02
+          Norm of stream_function:  0.38500152E+02
+          Norm of stream_function:  0.35352190E+02
+          Norm of stream_function:  0.38195989E+02
+          Norm of stream_function:  0.38655007E+02
+          Norm of stream_function:  0.41941606E+02
+          Norm of stream_function:  0.38221939E+02
+          Norm of stream_function:  0.40015189E+02
+          Norm of stream_function:  0.40233105E+02
+          Norm of stream_function:  0.35662190E+02
+          Norm of stream_function:  0.38758212E+02
+          Norm of stream_function:  0.33106432E+02
+          Norm of stream_function:  0.37570543E+02
+          Norm of stream_function:  0.38633052E+02
+          Norm of stream_function:  0.40024833E+02
+          Norm of stream_function:  0.39135818E+02
+                Level   1: rhflt =   40000.00 km, rel. diff. =  0.33902E-02
+                Level   2: rhflt =   40000.00 km, rel. diff. =  0.19375E-01
+             Level   1 ~>  0.10169E+01 /  0.10169E+01
+             Level   2 ~>  0.10195E+01 /  0.10195E+01
+Norm of output parameter stddev - 1: 4.1359270513803665e+01
+Norm of output parameter var - 1: 4.3289362578921313e+01
+Norm of output parameter m4 - 1: 1.3993375181143369e+02

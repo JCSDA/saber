@@ -562,6 +562,8 @@ do icmp=1,nicas_blk%ncmp
    nicas_blk%cmp(icmp)%ig = ig
    nicas_blk%cmp(icmp)%ncmp = nicas_blk%ncmp
    nicas_blk%cmp(icmp)%verbosity = nicas_blk%verbosity
+   nicas_blk%cmp(icmp)%draw_type = nam%nicas_draw_type
+   nicas_blk%cmp(icmp)%interp_type = nam%nicas_interp_type(ig)
    nicas_blk%cmp(icmp)%smoother = .false.
    nicas_blk%cmp(icmp)%compute_norm = (.not.allocated(nicas_blk%cmp(icmp)%norm))
 
@@ -1063,7 +1065,7 @@ do il0i=1,nl0i
    nicas_blk%cmp(il0i)%ncmp = 1
    nicas_blk%cmp(il0i)%verbosity = .false.
    nicas_blk%cmp(il0i)%draw_type = 'octahedral'
-   nicas_blk%cmp(il0i)%interp_type = 'c0'
+   nicas_blk%cmp(il0i)%interp_type = 'si'
    nicas_blk%cmp(il0i)%smoother = .true.
    nicas_blk%cmp(il0i)%compute_norm = .false.
 

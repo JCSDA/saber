@@ -35,8 +35,8 @@ Groups:
   - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  eastward_wind: 8.0469311873524045e+00
-  northward_wind: 7.8851468010615049e+00
+  eastward_wind: 9.5069162749111751e+00
+  northward_wind: 1.0248748436398648e+01
 Covariance(hybrid1_ensemble) * Increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -54,8 +54,8 @@ Groups:
   - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  eastward_wind: 8.0469311873524045e+00
-  northward_wind: 7.8851468010615049e+00
+  eastward_wind: 9.5069162749111751e+00
+  northward_wind: 1.0248748436398648e+01
 Adjoint test for block Ensemble passed
 Covariance(hybrid2_SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z
@@ -74,5 +74,5 @@ Groups:
   - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  eastward_wind: 8.0469311873524045e+00
-  northward_wind: 7.8851468010615049e+00
+  eastward_wind: 9.5069162749111751e+00
+  northward_wind: 1.0248748436398648e+01

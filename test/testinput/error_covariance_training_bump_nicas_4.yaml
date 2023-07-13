@@ -41,7 +41,7 @@ background error:
         interpolation type:
         - groups:
           - common
-          type: c1
+          type: c0
         positive-definiteness test: true
         horizontal interpolation test: true
       dirac:

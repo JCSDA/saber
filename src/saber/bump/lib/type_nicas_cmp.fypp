@@ -2869,12 +2869,15 @@ do il1=1,nicas_cmp%nl1
  & geom%nc0a,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a(:,il0),geom%mesh_c0u,ifmt,.true.)
    case ('si')
       interpolation_radius = nicas_cmp%rhs(:,il0)
+      do ic0a=1,geom%nc0a
+         if (mpl%msv%isnot(interpolation_radius(ic0a))) interpolation_radius(ic0a) = interpolation_radius(ic0a)/four
+      end do
       if (any((interpolation_radius>nam%universe_radius).and.geom%gmask_c0a(:,il0))) then
          call mpl%warning('${subr}$','universe radius smaller than rhs for si interpolation')
          interpolation_radius = min(interpolation_radius,nam%universe_radius)
       end if
-      call nicas_cmp%interp_c1b_to_c0a(il1)%interp(mpl,nicas_cmp%hor(il1)%nc1,gmask_c1,nicas_cmp%hor(il1)%tree_c1, &
- & geom%nc0a,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a(:,il0),ifmt,interpolation_radius,four)
+      call nicas_cmp%interp_c1b_to_c0a(il1)%interp(mpl,nam,il0,nicas_cmp%hor(il1)%nc1,lon_c1,lat_c1,gmask_c1, &
+ & nicas_cmp%hor(il1)%tree_c1,geom%nc0a,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a(:,il0),geom%mesh_c0u,ifmt,interpolation_radius)
    end select
 
    ! Release memory
@@ -2896,8 +2899,8 @@ do il1=1,nicas_cmp%nl1
 
    ! Compute interpolation
    write(nicas_cmp%interp_c0b_to_c1a(il1)%prefix,'(a,i3.3)') 'interp_c0b_to_c1a_',il1
-   call nicas_cmp%interp_c0b_to_c1a(il1)%interp(mpl,geom%nc0u,geom%gmask_c0u(:,il0),geom%tree_c0u, &
- & nicas_cmp%hor(il1)%nc1a,nicas_cmp%hor(il1)%lon_c1a,nicas_cmp%hor(il1)%lat_c1a,gmask_c1a,ifmt)
+   call nicas_cmp%interp_c0b_to_c1a(il1)%interp(mpl,nam,0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,geom%gmask_c0u(:,il0), &
+ & geom%tree_c0u,nicas_cmp%hor(il1)%nc1a,nicas_cmp%hor(il1)%lon_c1a,nicas_cmp%hor(il1)%lat_c1a,gmask_c1a,geom%mesh_c0u,ifmt)
 
    ! Release memory
    deallocate(gmask_c1a)

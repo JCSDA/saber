@@ -299,7 +299,7 @@ type(fckit_configuration),intent(in) :: conf !< Configuration
 logical,intent(in),optional :: verbose       !< Print configuration sections
 
 ! Local variables
-integer :: iv,jv,iconf,rank,itest,it,ivv,jvv
+integer :: iv,jv,iconf,rank,itest,it,ivv,jvv,ig
 integer,allocatable :: vbal_order(:)
 real(kind_real) :: real_scalar
 real(kind_real),allocatable :: loc_wgt(:,:)
@@ -858,22 +858,21 @@ if (conf%get('nicas',section)) then
       end if
    end if
    if (section%get('interpolation type',confs)) then
-      if ((size(confs)>0).and.(nam%nv>0)) then
+      if ((size(confs)>0).and.(nam%ng>0)) then
          ! Release memory
          if (allocated(nam%nicas_interp_type)) deallocate(nam%nicas_interp_type)
 
          ! Allocation
-         allocate(nam%nicas_interp_type(0:nam%nv))
+         allocate(nam%nicas_interp_type(nam%ng))
 
          ! Copy
-         nam%nicas_interp_type = 'c0'
+         nam%nicas_interp_type = 'si'
          do iconf=1,size(confs)
             call confs(iconf)%get_or_die('groups',str_array)
             call confs(iconf)%get_or_die('type',str)
             do it=1,size(str_array)
-               if (str_array(it)=='common') nam%nicas_interp_type(0) = str
-               do iv=1,nam%nv
-                  if (str_array(it)==nam%variables(iv)) nam%nicas_interp_type(iv) = str
+               do ig=1,nam%ng
+                  if (str_array(it)==nam%group_names(ig)) nam%nicas_interp_type(ig) = str
                end do
             end do
          end do
@@ -989,7 +988,7 @@ end if
 if (nam%ne==0) nam%ne = nam%ens1_ne
 if (.not.allocated(nam%nicas_interp_type)) then
    allocate(nam%nicas_interp_type(nam%ng))
-   nam%nicas_interp_type = 'c0'
+   nam%nicas_interp_type = 'si'
 end if
 
 ! Apply bounds

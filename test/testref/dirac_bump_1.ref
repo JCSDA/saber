@@ -40,7 +40,7 @@ Adjoint test for block BUMP_PsiChiToUV passed
           nc2 =      250
           Independent levels:  1[2]
 Adjoint test for block BUMP_VerticalBalance passed
-Norm of input parameter StdDev: 5.7658289604038131e+01
+Norm of input parameter StdDev: 5.7539391781676251e+01
 Adjoint test for block StdDev passed
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -61,7 +61,7 @@ Adjoint test for block BUMP_StdDev passed
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-Norm of input parameter stddev - 1: 5.7658289604038131e+01
+Norm of input parameter stddev - 1: 5.7539391781676251e+01
 Adjoint test for block BUMP_StdDev passed
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -99,8 +99,8 @@ Groups:
   - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  eastward_wind: 9.2704006384128301e-01
-  northward_wind: 1.2519839832411980e-01
+  eastward_wind: 4.6279789413894318e-01
+  northward_wind: 1.2282258734663955e-01
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Min. / max. longitudes: -171.0 /   180.0
@@ -124,7 +124,7 @@ Adjoint test for block BUMP_PsiChiToUV passed
           nc2 =      250
           Independent levels:  1[2]
 Adjoint test for block BUMP_VerticalBalance passed
-Norm of input parameter StdDev: 5.7658289604038131e+01
+Norm of input parameter StdDev: 5.7539391781676251e+01
 Adjoint test for block StdDev passed
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -145,7 +145,7 @@ Adjoint test for block BUMP_StdDev passed
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-Norm of input parameter stddev - 1: 5.7658289604038131e+01
+Norm of input parameter stddev - 1: 5.7539391781676251e+01
 Adjoint test for block BUMP_StdDev passed
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -174,8 +174,8 @@ Groups:
   - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  eastward_wind: 9.7458103597219407e-14
-  northward_wind: 4.1544840148705662e-14
+  eastward_wind: 9.4326766281929146e-14
+  northward_wind: 3.3389718418878846e-14
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Min. / max. longitudes: -171.0 /   180.0
@@ -202,8 +202,8 @@ Groups:
   - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  eastward_wind: 2.2751835794274280e+00
-  northward_wind: 3.8401289771301494e-01
+  eastward_wind: 6.2995593942433925e-01
+  northward_wind: 2.5165114702606473e-01
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Min. / max. longitudes: -171.0 /   180.0
@@ -230,5 +230,5 @@ Groups:
   - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  eastward_wind: 2.1229783409753948e+00
-  northward_wind: 2.1229783409753948e+00
+  eastward_wind: 2.2533507386711493e+00
+  northward_wind: 2.2533507386711493e+00

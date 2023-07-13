@@ -21,7 +21,7 @@ background error:
     members from template:
       template:
         date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
+        filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_%mem%
         state variables:
         - stream_function
         - velocity_potential
@@ -52,7 +52,7 @@ background error:
         reduced levels: 2
         local diagnostic: true
         averaging latitude width: 15.0
-        interpolation type: si
+        interpolation type: c0
       diagnostics:
         target ensemble size: 25
         gaussian approximation: true

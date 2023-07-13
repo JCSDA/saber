@@ -15,30 +15,30 @@
              Level   1 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Effective levels:   1   2 
-                   Horizontal support radius:    4000.00 km (   4000.00 km -    4000.00 km)
-                   Estimated nc1 from horizontal support radius:      589
-                      Decimate full grid, at least      589 points required,    1098 valid points found
-                      Subgrid hash:   -791070867
-                   Final nc1:      589
-                   Effective horizontal resolution:  4.00
-                   Horizontal support radius:    4000.00 km (   4000.00 km -    4000.00 km)
-                   Estimated nc1 from horizontal support radius:      589
-                      Decimate full grid, at least      589 points required,    1098 valid points found
-                      Subgrid hash:   -791070867
-                   Final nc1:      589
-                   Effective horizontal resolution:  4.00
+                Horizontal support radius:    4000.00 km (   4000.00 km -    4000.00 km)
+                Estimated nc1 from horizontal support radius:      589
+                   Decimate full grid, at least      589 points required,    1098 valid points found
+                   Subgrid hash:   -791070867
+                Final nc1:      589
+                Effective horizontal resolution:  4.00
+                Horizontal support radius:    4000.00 km (   4000.00 km -    4000.00 km)
+                Estimated nc1 from horizontal support radius:      589
+                   Decimate full grid, at least      589 points required,    1098 valid points found
+                   Subgrid hash:   -791070867
+                Final nc1:      589
+                Effective horizontal resolution:  4.00
              nc1(  1) =                        589
              nc1(  2) =                        589
              ns =                             1178
              v%n_s =                             2
              c%n_s[global] =                 35196
              Effective levels:   1 
-                   Horizontal support radius:    4000.00 km (   4000.00 km -    4000.00 km)
-                   Estimated nc1 from horizontal support radius:      589
-                      Decimate full grid, at least      589 points required,    1098 valid points found
-                      Subgrid hash:   -791070867
-                   Final nc1:      589
-                   Effective horizontal resolution:  4.00
+                Horizontal support radius:    4000.00 km (   4000.00 km -    4000.00 km)
+                Estimated nc1 from horizontal support radius:      589
+                   Decimate full grid, at least      589 points required,    1098 valid points found
+                   Subgrid hash:   -791070867
+                Final nc1:      589
+                Effective horizontal resolution:  4.00
              nc1(  1) =                        589
              ns =                              589
              v%n_s =                             1
@@ -65,8 +65,8 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 5.2723103835770651e+01
-  surface_pressure: 3.6647332416911141e+01
+  stream_function: 5.2654209899567903e+01
+  surface_pressure: 3.6493196800034859e+01
 Member 1: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -89,8 +89,8 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 6.1823008100797296e+01
-  surface_pressure: 3.0627139358193855e+01
+  stream_function: 6.1308623552923613e+01
+  surface_pressure: 3.0497521202377900e+01
 Member 2: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -113,8 +113,8 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 5.4425361705395012e+01
-  surface_pressure: 3.6809490859137213e+01
+  stream_function: 5.4252304738225256e+01
+  surface_pressure: 3.6546122174208186e+01
 Member 3: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -137,8 +137,8 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.6539674926274117e+01
-  surface_pressure: 3.4525512210350662e+01
+  stream_function: 4.6354739463248535e+01
+  surface_pressure: 3.4440406150291579e+01
 Member 4: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -161,8 +161,8 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.5692735183681712e+01
-  surface_pressure: 3.5538403069713397e+01
+  stream_function: 4.5381748346070736e+01
+  surface_pressure: 3.5574095937598663e+01
 Member 5: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -185,8 +185,8 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.6539487530842408e+01
-  surface_pressure: 3.1234534392007941e+01
+  stream_function: 4.6614781327696001e+01
+  surface_pressure: 3.0985424312747210e+01
 Member 6: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -209,8 +209,8 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.6452404638875130e+01
-  surface_pressure: 4.1812822928604376e+01
+  stream_function: 4.6400614870703784e+01
+  surface_pressure: 4.2166176348860205e+01
 Member 7: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -233,8 +233,8 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.6435070059321859e+01
-  surface_pressure: 3.0350180492077978e+01
+  stream_function: 4.6785424421149301e+01
+  surface_pressure: 3.0406764653883645e+01
 Member 8: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -257,8 +257,8 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 5.1383376872598156e+01
-  surface_pressure: 3.2335183019824342e+01
+  stream_function: 5.1837418589558872e+01
+  surface_pressure: 3.2426197268635661e+01
 Member 9: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -281,8 +281,8 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.2527196943978453e+01
-  surface_pressure: 3.4268818710481852e+01
+  stream_function: 4.2221951885493191e+01
+  surface_pressure: 3.4303396182742098e+01
 Member 10: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -305,8 +305,8 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.4823656922235614e+01
-  surface_pressure: 2.8654301364838545e+01
+  stream_function: 4.5169534092091297e+01
+  surface_pressure: 2.8853381913731290e+01
 Member 11: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -329,8 +329,8 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.9100689776047382e+01
-  surface_pressure: 3.1681813405362117e+01
+  stream_function: 4.9136954090198714e+01
+  surface_pressure: 3.1516122060644104e+01
 Member 12: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -353,8 +353,8 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.5777110226387606e+01
-  surface_pressure: 3.7808504648188560e+01
+  stream_function: 4.5619369981739645e+01
+  surface_pressure: 3.7830756443392929e+01
 Member 13: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -377,8 +377,8 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.4517014015982390e+01
-  surface_pressure: 2.8440386240308516e+01
+  stream_function: 4.4721049734735828e+01
+  surface_pressure: 2.8392676303788651e+01
 Member 14: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -401,8 +401,8 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.7398166292107092e+01
-  surface_pressure: 3.2327010990385510e+01
+  stream_function: 4.7343916399977161e+01
+  surface_pressure: 3.2405838516636301e+01
 Member 15: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -425,8 +425,8 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 5.0312410099816326e+01
-  surface_pressure: 3.4546879943296972e+01
+  stream_function: 5.0308184795334448e+01
+  surface_pressure: 3.4694217584989104e+01
 Member 16: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -449,8 +449,8 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.2825115612734606e+01
-  surface_pressure: 3.3556009764132298e+01
+  stream_function: 4.2861341251630485e+01
+  surface_pressure: 3.3373396614389542e+01
 Member 17: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -473,8 +473,8 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.4766923845147581e+01
-  surface_pressure: 3.5382726605209349e+01
+  stream_function: 4.4929966649571092e+01
+  surface_pressure: 3.5376638446985140e+01
 Member 18: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -497,8 +497,8 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.0931914686354610e+01
-  surface_pressure: 3.2212039542818680e+01
+  stream_function: 4.1237976043364824e+01
+  surface_pressure: 3.2082315749252722e+01
 Member 19: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -521,8 +521,8 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.2121832024962572e+01
-  surface_pressure: 3.2327890960047746e+01
+  stream_function: 4.2053902656124500e+01
+  surface_pressure: 3.2637287852385739e+01
 Member 20: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -545,8 +545,8 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.4695280036429835e+01
-  surface_pressure: 2.8959491375523839e+01
+  stream_function: 4.4446643230752571e+01
+  surface_pressure: 2.8887323602459212e+01
 Member 21: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -569,8 +569,8 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.0068551399801635e+01
-  surface_pressure: 3.4020396596220351e+01
+  stream_function: 4.0215588892258275e+01
+  surface_pressure: 3.4121667223317800e+01
 Member 22: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -593,8 +593,8 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.6060284646548716e+01
-  surface_pressure: 3.5403990840791344e+01
+  stream_function: 4.6380739206188814e+01
+  surface_pressure: 3.5440975581038273e+01
 Member 23: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -617,8 +617,8 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.5949103308095289e+01
-  surface_pressure: 3.6142009451287450e+01
+  stream_function: 4.6130791261390335e+01
+  surface_pressure: 3.5749882318396132e+01
 Member 24: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -641,5 +641,5 @@ Groups:
   - vunit: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.5235848562355919e+01
-  surface_pressure: 3.2914916306596901e+01
+  stream_function: 4.4922445644650558e+01
+  surface_pressure: 3.2994136361575862e+01

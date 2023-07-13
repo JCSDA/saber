@@ -24,7 +24,7 @@ background error:
     members from template:
       template:
         date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L10L2/member_%mem%
+        filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_%mem%
         state variables:
         - stream_function
         - velocity_potential
@@ -63,6 +63,7 @@ background error:
         angular sectors: 4
         distance class width: 800.0e3
         reduced levels: 2
+        interpolation type: c1
       diagnostics:
         target ensemble size: 25
       output model files:

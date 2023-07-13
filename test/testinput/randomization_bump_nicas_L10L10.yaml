@@ -31,18 +31,15 @@ background error:
         horizontal length-scale:
         - groups:
           - stream_function
-          - velocity_potential
-          - surface_pressure
           value: 4.0e6
         vertical length-scale:
         - groups:
           - stream_function
-          - velocity_potential
           value: 5.0
   randomization size: 25
 output states:
-  filepath: testdata/randomization_bump_nicas_L10L10/member
+  filepath: testdata/randomization_bump_nicas_L10L10/_MPI_-_OMP__member
 output perturbations:
-  filepath: testdata/randomization_bump_nicas_L10L10/member_pert
+  filepath: testdata/randomization_bump_nicas_L10L10/_MPI_-_OMP__member_pert
 test:
   reference filename: testref/randomization_bump_nicas_L10L10.ref

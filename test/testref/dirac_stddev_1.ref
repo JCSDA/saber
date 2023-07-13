@@ -17,7 +17,7 @@ Groups:
 Fields:
   stream_function: 1.0000000000000000e+00
   velocity_potential: 0.0000000000000000e+00
-Norm of input parameter StdDev: 5.7560709513521310e+01
+Norm of input parameter StdDev: 5.7530746965415659e+01
 Adjoint test for block StdDev passed
 Adjoint test for block ID passed
 Covariance(SABER) * Increment:
@@ -37,5 +37,5 @@ Groups:
   - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 1.2944134874642317e+00
+  stream_function: 1.0356656962519004e+00
   velocity_potential: 0.0000000000000000e+00

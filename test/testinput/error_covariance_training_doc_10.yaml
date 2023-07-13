@@ -19,7 +19,7 @@ background error:
     members from template:
       template:
         date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_doc_5/member_%mem%
+        filepath: testdata/randomization_doc_5/_MPI_-_OMP__member_%mem%
         state variables:
         - stream_function
       pattern: '%mem%'

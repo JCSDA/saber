@@ -18,7 +18,7 @@ background error:
     members from template:
       template:
         date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L10L10/member_%mem%
+        filepath: testdata/randomization_bump_nicas_L10L10/_MPI_-_OMP__member_%mem%
         state variables:
         - stream_function
       pattern: '%mem%'
@@ -71,7 +71,7 @@ background error:
       input model files:
       - parameter: sampling_mask_field
         file:
-          filepath: testdata/randomization_bump_nicas_L10L10/member_000001
+          filepath: testdata/randomization_bump_nicas_L10L10/_MPI_-_OMP__member_000001
       output model files:
       - parameter: cor_rh
         file:

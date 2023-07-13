@@ -25,10 +25,6 @@ background error:
         internal dirac test: true
       nicas:
         resolution: 12.0
-        interpolation type:
-        - groups:
-          - stream_function
-          type: si
       dirac:
       - longitude: 0.0
         latitude: 8.059601090025296
@@ -53,4 +49,4 @@ background error:
           filepath: testdata/randomization_doc_5/dirac_nicas
   randomization size: 50
 output states:
-  filepath: testdata/randomization_doc_5/member
+  filepath: testdata/randomization_doc_5/_MPI_-_OMP__member

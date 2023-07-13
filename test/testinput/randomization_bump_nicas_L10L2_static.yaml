@@ -38,6 +38,6 @@ background error:
           value: 1.5
   randomization size: 25
 output perturbations:
-  filepath: testdata/randomization_bump_nicas_L10L2_static/member_pert
+  filepath: testdata/randomization_bump_nicas_L10L2_static/_MPI_-_OMP__member_pert
 test:
   reference filename: testref/randomization_bump_nicas_L10L2_static.ref

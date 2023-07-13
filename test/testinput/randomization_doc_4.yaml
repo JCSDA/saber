@@ -33,10 +33,6 @@ background error:
         - groups:
           - stream_function
           value: 0.0
-        interpolation type:
-        - groups:
-          - stream_function
-          type: si
   saber outer blocks:
   - saber block name: StdDev
     read:

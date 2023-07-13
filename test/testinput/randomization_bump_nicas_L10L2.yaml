@@ -65,8 +65,8 @@ background error:
           - surface_pressure
   randomization size: 25
 output states:
-  filepath: testdata/randomization_bump_nicas_L10L2/member
+  filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member
 output perturbations:
-  filepath: testdata/randomization_bump_nicas_L10L2/member_pert
+  filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_pert
 test:
   reference filename: testref/randomization_bump_nicas_L10L2.ref

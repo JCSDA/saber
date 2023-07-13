@@ -17,43 +17,43 @@ background error:
   ensemble:
     members:
     - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L12L2/member_000001
+      filepath: testdata/randomization_bump_nicas_L12L2/_MPI_-_OMP__member_000001
       state variables:
       - stream_function
     - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L12L2/member_000002
+      filepath: testdata/randomization_bump_nicas_L12L2/_MPI_-_OMP__member_000002
       state variables:
       - stream_function
     - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L12L2/member_000003
+      filepath: testdata/randomization_bump_nicas_L12L2/_MPI_-_OMP__member_000003
       state variables:
       - stream_function
     - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L12L2/member_000004
+      filepath: testdata/randomization_bump_nicas_L12L2/_MPI_-_OMP__member_000004
       state variables:
       - stream_function
     - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L12L2/member_000005
+      filepath: testdata/randomization_bump_nicas_L12L2/_MPI_-_OMP__member_000005
       state variables:
       - stream_function
     - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L12L2/member_000006
+      filepath: testdata/randomization_bump_nicas_L12L2/_MPI_-_OMP__member_000006
       state variables:
       - stream_function
     - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L12L2/member_000007
+      filepath: testdata/randomization_bump_nicas_L12L2/_MPI_-_OMP__member_000007
       state variables:
       - stream_function
     - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L12L2/member_000008
+      filepath: testdata/randomization_bump_nicas_L12L2/_MPI_-_OMP__member_000008
       state variables:
       - stream_function
     - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L12L2/member_000009
+      filepath: testdata/randomization_bump_nicas_L12L2/_MPI_-_OMP__member_000009
       state variables:
       - stream_function
     - date: '2010-01-01T12:00:00Z'
-      filepath: testdata/randomization_bump_nicas_L12L2/member_000010
+      filepath: testdata/randomization_bump_nicas_L12L2/_MPI_-_OMP__member_000010
       state variables:
       - stream_function
   dual resolution calibration:
@@ -70,103 +70,103 @@ background error:
     ensemble:
       members:
       - date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L10L2/member_000001
+        filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000001
         state variables:
         - stream_function
       - date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L10L2/member_000002
+        filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000002
         state variables:
         - stream_function
       - date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L10L2/member_000003
+        filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000003
         state variables:
         - stream_function
       - date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L10L2/member_000004
+        filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000004
         state variables:
         - stream_function
       - date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L10L2/member_000005
+        filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000005
         state variables:
         - stream_function
       - date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L10L2/member_000006
+        filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000006
         state variables:
         - stream_function
       - date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L10L2/member_000007
+        filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000007
         state variables:
         - stream_function
       - date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L10L2/member_000008
+        filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000008
         state variables:
         - stream_function
       - date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L10L2/member_000009
+        filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000009
         state variables:
         - stream_function
       - date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L10L2/member_000010
+        filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000010
         state variables:
         - stream_function
       - date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L10L2/member_000011
+        filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000011
         state variables:
         - stream_function
       - date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L10L2/member_000012
+        filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000012
         state variables:
         - stream_function
       - date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L10L2/member_000013
+        filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000013
         state variables:
         - stream_function
       - date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L10L2/member_000014
+        filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000014
         state variables:
         - stream_function
       - date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L10L2/member_000015
+        filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000015
         state variables:
         - stream_function
       - date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L10L2/member_000016
+        filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000016
         state variables:
         - stream_function
       - date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L10L2/member_000017
+        filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000017
         state variables:
         - stream_function
       - date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L10L2/member_000018
+        filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000018
         state variables:
         - stream_function
       - date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L10L2/member_000019
+        filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000019
         state variables:
         - stream_function
       - date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L10L2/member_000020
+        filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000020
         state variables:
         - stream_function
       - date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L10L2/member_000021
+        filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000021
         state variables:
         - stream_function
       - date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L10L2/member_000022
+        filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000022
         state variables:
         - stream_function
       - date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L10L2/member_000023
+        filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000023
         state variables:
         - stream_function
       - date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L10L2/member_000024
+        filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000024
         state variables:
         - stream_function
       - date: '2010-01-01T12:00:00Z'
-        filepath: testdata/randomization_bump_nicas_L10L2/member_000025
+        filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000025
         state variables:
         - stream_function
   saber central block:
