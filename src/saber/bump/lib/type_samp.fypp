@@ -2401,7 +2401,11 @@ else
             call lonlatmod(lonlat(1),lonlat(2))
 
             ! Check if the point is inside the universe
-            call inside(mpl,geom%mesh_c0u%vbnd,lonlat(1),lonlat(2),valid)
+            if (geom%mesh_c0u%n>0) then
+               call inside(mpl,geom%mesh_c0u%vbnd,lonlat(1),lonlat(2),valid)
+            else
+               valid = .false.
+            end if
 
             if (valid) then
                ! Find nearest neighbor in universe
@@ -2434,7 +2438,11 @@ else
             call lonlatmod(lonlat(1),lonlat(2))
 
             ! Check if the point is inside the universe
-            call inside(mpl,geom%mesh_c0u%vbnd,lonlat(1),lonlat(2),valid)
+            if (geom%mesh_c0u%n>0) then
+               call inside(mpl,geom%mesh_c0u%vbnd,lonlat(1),lonlat(2),valid)
+            else
+               valid = .false.
+            end if
 
             if (valid) then
                ! Find nearest neighbor in universe

@@ -65,7 +65,11 @@ Geometry::Geometry(const Parameters_ & params,
 
         // Update task index
         ++rank;
-        if (rank == comm_.size()) rank = 0;
+        if (params.noPointOnLastTask.value() && (comm_.size() > 1)) {
+          if (rank == comm_.size()-1) rank = 0;
+        } else {
+          if (rank == comm_.size()) rank = 0;
+        }
       }
 
       // Reset coordinates

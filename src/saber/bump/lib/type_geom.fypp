@@ -894,15 +894,8 @@ allocate(geom%proc_to_nc0u(mpl%nproc))
 call mpl%f_comm%allgather(geom%nc0u,geom%proc_to_nc0u)
 
 ! Check universe size
-notempty = 0
-do iproc=1,mpl%nproc
-   if (geom%proc_to_nc0a(iproc)>0) notempty = notempty+1
-end do
-if (notempty>1) then
-   do iproc=1,mpl%nproc
-      if (geom%proc_to_nc0u(iproc)==geom%proc_to_nc0a(iproc)) call mpl%abort('${subr}$','universe is not larger than halo A')
-   end do
-end if
+if ((geom%nc0a>0).and.(geom%nc0a<geom%nc0).and.(geom%nc0u==geom%nc0a)) &
+ & call mpl%abort('${subr}$','universe is not larger than halo A')
 
 ! Allocation
 allocate(geom%c0a_to_c0u(geom%nc0a))
@@ -1073,7 +1066,11 @@ logical :: valid
 @:probe_in()
 
 ! Check if the point is inside the universe
-call inside(mpl,geom%mesh_c0u%vbnd,lon,lat,valid)
+if (geom%mesh_c0u%n>0) then
+   call inside(mpl,geom%mesh_c0u%vbnd,lon,lat,valid)
+else
+   valid = .false.
+end if
 
 if (valid) then
    ! Find nearest neighbor
@@ -1161,7 +1158,11 @@ logical :: valid(n)
 
 do i=1,n
    ! Check if the point is inside the universe
-   call inside(mpl,geom%mesh_c0u%vbnd,lon(i),lat(i),valid(i))
+   if (geom%mesh_c0u%n>0) then
+      call inside(mpl,geom%mesh_c0u%vbnd,lon(i),lat(i),valid(i))
+   else
+      valid(i) = .false.
+   end if
 
    if (valid(i)) then
       ! Find nearest neighbor
@@ -1731,61 +1732,68 @@ else
    if (ifmt>0) call mpl%flush(newl=.false.)
 
    do while (retry)
-      ! Initialization
-      lmask_cxa = .false.
-      cxa_to_node = mpl%msv%vali
+      if (ncxa > 0) then
+         ! Initialization
+         lmask_cxa = .false.
+         cxa_to_node = mpl%msv%vali
 
-      ! Update nfac
-      nfac = 2*nfac
+         ! Update nfac
+         nfac = 2*nfac
 
-      ! Number of required points at global scale
-      nss_real = real(nfac*ns,kind_real)*four*pi/geom%area_max_c0*(one+repro_th)
+         ! Number of required points at global scale
+         nss_real = real(nfac*ns,kind_real)*four*pi/geom%area_max_c0*(one+repro_th)
 
-      if (geom%global) then
-         ! Global grid
-         call get_grid(mpl,floor(nss_real),agrid,nss)
+         if (geom%global) then
+            ! Global grid
+            call get_grid(mpl,floor(nss_real),agrid,nss)
+         else
+            ! Regional grid
+            call get_grid(mpl,nfac*ns,geom%lon_min,geom%lon_max,geom%lat_min,geom%lat_max,agrid,nss)
+         end if
+
+         ! Initialization
+         lmask_cxa = .false.
+         cxa_to_node = mpl%msv%vali
+
+         ! Loop over grid points
+         inode = 0
+         do iy=1,int(agrid%ny(),kind_int)
+            do ix=1,int(agrid%nx(iy),kind_int)
+               ! Global index
+               inode = inode+1
+
+               ! Get longitude/latitude
+               lonlat = agrid%lonlat(ix,iy)*deg2rad
+               call lonlatmod(lonlat(1),lonlat(2))
+
+               ! Check if point is inside the hull
+               call inside(mpl,mesh_cxu%vbnd,lonlat(1),lonlat(2),valid)
+
+               if (valid) then
+                  ! Find nearest neighbor in universe
+                  call tree_cxu%find_nearest_neighbors(lonlat(1),lonlat(2),1,nn_index)
+                  icxa = cxu_to_cxa(nn_index(1))
+
+                  ! Keep valid points on each processor
+                  if (mpl%msv%isnot(icxa)) then
+                     lmask_cxa(icxa) = mask_cxa(icxa)
+                     cxa_to_node(icxa) = inode
+                  end if
+               end if
+            end do
+         end do
+
+         ! Release memory
+         call agrid%final()
+
+         ! Local number of valid points
+         nssa = zss_count(lmask_cxa)
       else
-         ! Regional grid
-         call get_grid(mpl,nfac*ns,geom%lon_min,geom%lon_max,geom%lat_min,geom%lat_max,agrid,nss)
+         ! Local number of valid points
+         nssa = 0
       end if
 
-      ! Initialization
-      lmask_cxa = .false.
-      cxa_to_node = mpl%msv%vali
-
-      ! Loop over grid points
-      inode = 0
-      do iy=1,int(agrid%ny(),kind_int)
-         do ix=1,int(agrid%nx(iy),kind_int)
-            ! Global index
-            inode = inode+1
-
-            ! Get longitude/latitude
-            lonlat = agrid%lonlat(ix,iy)*deg2rad
-            call lonlatmod(lonlat(1),lonlat(2))
-
-            ! Check if point is inside the hull
-            call inside(mpl,mesh_cxu%vbnd,lonlat(1),lonlat(2),valid)
-
-            if (valid) then
-               ! Find nearest neighbor in universe
-               call tree_cxu%find_nearest_neighbors(lonlat(1),lonlat(2),1,nn_index)
-               icxa = cxu_to_cxa(nn_index(1))
-
-               ! Keep valid points on each processor
-               if (mpl%msv%isnot(icxa)) then
-                  lmask_cxa(icxa) = mask_cxa(icxa)
-                  cxa_to_node(icxa) = inode
-               end if
-            end if
-         end do
-      end do
-
-      ! Release memory
-      call agrid%final()
-
-      ! Local and global number of valid points
-      nssa = zss_count(lmask_cxa)
+      ! Global number of valid points
       call mpl%f_comm%allreduce(nssa,nss,fckit_mpi_sum())
 
       ! Print result

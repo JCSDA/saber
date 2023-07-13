@@ -78,9 +78,6 @@ end if
 ! Effective tree size
 tree%neff = count(tree%mask)
 
-! Check size
-if (tree%neff<1) call mpl%abort('${subr}$','mask should have at least one valid point to create a tree')
-
 ! Allocation
 allocate(tree%lon(tree%neff))
 allocate(tree%lat(tree%neff))

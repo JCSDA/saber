@@ -255,7 +255,11 @@ if (any(.not.geom%myuniverse)) call mpl%abort('${subr}$','universe should be glo
 ! Check whether output grid points are inside the hull boundaries
 if (bint%nouta > 0) then
    do iouta=1,bint%nouta
-      call inside(mpl,bint%bump%geom(1)%mesh_c0u%vbnd,bint%geom_out%lon_mga(iouta),bint%geom_out%lat_mga(iouta),maskouta(iouta))
+      if (bint%bump%geom(1)%mesh_c0u%n>0) then
+         call inside(mpl,bint%bump%geom(1)%mesh_c0u%vbnd,bint%geom_out%lon_mga(iouta),bint%geom_out%lat_mga(iouta),maskouta(iouta))
+      else
+         maskouta(iouta) = .false.
+      end if
       if (.not.maskouta(iouta)) then
          ! Check for very close points
          call geom%tree_c0u%find_nearest_neighbors(bint%geom_out%lon_mga(iouta),bint%geom_out%lat_mga(iouta), &

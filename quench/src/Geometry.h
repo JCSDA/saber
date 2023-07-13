@@ -78,6 +78,9 @@ class GeometryParameters : public oops::Parameters {
 
   /// Halo size
   oops::OptionalParameter<size_t> halo{"halo", this};
+
+  /// No point on last task
+  oops::Parameter<bool> noPointOnLastTask{"no point on last task", false, this};
 };
 
 // -----------------------------------------------------------------------------

@@ -2663,7 +2663,11 @@ do il1=1,nicas_cmp%nl1
                lonlat = agrid%lonlat(ix,iy)*deg2rad
 
                ! Check if the point is inside the universe
-               call inside(mpl,geom%mesh_c0u%vbnd,lonlat(1),lonlat(2),valid)
+               if (geom%mesh_c0u%n>0) then
+                  call inside(mpl,geom%mesh_c0u%vbnd,lonlat(1),lonlat(2),valid)
+               else
+                  valid = .false.
+               end if
 
                if (valid) then
                   ! Find nearest neighbor in universe
@@ -2697,7 +2701,11 @@ do il1=1,nicas_cmp%nl1
                call lonlatmod(lonlat(1),lonlat(2))
 
                ! Check if the point is inside the universe
-               call inside(mpl,geom%mesh_c0u%vbnd,lonlat(1),lonlat(2),valid)
+               if (geom%mesh_c0u%n>0) then
+                  call inside(mpl,geom%mesh_c0u%vbnd,lonlat(1),lonlat(2),valid)
+               else
+                  valid = .false.
+               end if
 
                if (valid) then
                   ! Find nearest neighbor in universe
@@ -4977,13 +4985,17 @@ call nicas_cmp%apply_sqrt_ad(mpl,geom,fld2,cv_cmp2)
 ! Print result
 call mpl%dot_prod(cv_cmp1%alpha,cv_cmp2%alpha,sum1)
 call mpl%dot_prod(fld1,fld2,sum2)
-write(mpl%info,'(a10,a,e15.8,a,e15.8,a,e15.8)') '','Component NICAS adjoint test values:             ', &
+if (abs(sum1+sum2)>zero) then
+   write(mpl%info,'(a10,a,e15.8,a,e15.8,a,e15.8)') '','Component NICAS adjoint test values:             ', &
  & sum1,' / ',sum2,' / ',two*abs(sum1-sum2)/abs(sum1+sum2)
-call mpl%flush(flush=nicas_cmp%verbosity)
-write(mpl%test,'(a10,a,l1)') '','Component NICAS adjoint test result:             ', &
+   call mpl%flush(flush=nicas_cmp%verbosity)
+   write(mpl%test,'(a10,a,l1)') '','Component NICAS adjoint test result:             ', &
  & two*abs(sum1-sum2)/abs(sum1+sum2)<repro_th
-call mpl%flush(flush=nicas_cmp%verbosity)
-
+   call mpl%flush(flush=nicas_cmp%verbosity)
+else
+   write(mpl%info,'(a10,a)') '','Component NICAS adjoint test: zero amplitude'
+   call mpl%flush(flush=nicas_cmp%verbosity)
+end if
 ! Release memory
 call cv_cmp1%dealloc
 call cv_cmp2%dealloc

@@ -218,7 +218,7 @@ mesh%lend = 0
 mesh%lnew = 0
 
 ! Call TRMESH
-call trmesh(mpl,mesh%n,mesh%x,mesh%y,mesh%z,mesh%list,mesh%lptr,mesh%lend,mesh%lnew,near,next,dist)
+if (mesh%n>0) call trmesh(mpl,mesh%n,mesh%x,mesh%y,mesh%z,mesh%list,mesh%lptr,mesh%lend,mesh%lnew,near,next,dist)
 
 ! Count neighbors
 do i=1,mesh%n
@@ -270,8 +270,12 @@ if (lhull_bnd) then
    ! Allocation
    allocate(bnd(mesh%n))
 
-   ! Get bboundary nodes
-   call bnodes(mesh%n,mesh%list,mesh%lptr,mesh%lend,bnd,nb)
+   ! Get boundary nodes
+   if (mesh%n>0) then
+      call bnodes(mesh%n,mesh%list,mesh%lptr,mesh%lend,bnd,nb)
+   else
+      nb = 0
+   end if
 
    ! Allocation
    allocate(mesh%vbnd(3,nb))
