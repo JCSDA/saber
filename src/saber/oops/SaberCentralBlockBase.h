@@ -141,14 +141,14 @@ class SaberCentralBlockParametersWrapper : public oops::Parameters {
 
 class SaberCentralBlockFactory {
  public:
-  static SaberCentralBlockBase * create(const oops::GeometryData &,
-                                        const oops::Variables &,
-                                        const eckit::Configuration &,
-                                        const SaberBlockParametersBase &,
-                                        const atlas::FieldSet &,
-                                        const atlas::FieldSet &,
-                                        const util::DateTime &,
-                                        const size_t & timeRank = 0);
+  static std::unique_ptr<SaberCentralBlockBase> create(const oops::GeometryData &,
+                                                       const oops::Variables &,
+                                                       const eckit::Configuration &,
+                                                       const SaberBlockParametersBase &,
+                                                       const atlas::FieldSet &,
+                                                       const atlas::FieldSet &,
+                                                       const util::DateTime &,
+                                                       const size_t & timeRank = 0);
 
   static std::unique_ptr<SaberBlockParametersBase> createParameters(const std::string &name);
 
@@ -162,14 +162,14 @@ class SaberCentralBlockFactory {
   explicit SaberCentralBlockFactory(const std::string &name);
 
  private:
-  virtual SaberCentralBlockBase * make(const oops::GeometryData &,
-                                       const oops::Variables &,
-                                       const eckit::Configuration &,
-                                       const SaberBlockParametersBase &,
-                                       const atlas::FieldSet &,
-                                       const atlas::FieldSet &,
-                                       const util::DateTime &,
-                                       const size_t &) = 0;
+  virtual std::unique_ptr<SaberCentralBlockBase> make(const oops::GeometryData &,
+                                                      const oops::Variables &,
+                                                      const eckit::Configuration &,
+                                                      const SaberBlockParametersBase &,
+                                                      const atlas::FieldSet &,
+                                                      const atlas::FieldSet &,
+                                                      const util::DateTime &,
+                                                      const size_t &) = 0;
 
   virtual std::unique_ptr<SaberBlockParametersBase> makeParameters() const = 0;
 
@@ -185,17 +185,17 @@ template<class T>
 class SaberCentralBlockMaker : public SaberCentralBlockFactory {
   typedef typename T::Parameters_ Parameters_;
 
-  SaberCentralBlockBase * make(const oops::GeometryData & geometryData,
-                               const oops::Variables & outerVars,
-                               const eckit::Configuration & covarConf,
-                               const SaberBlockParametersBase & params,
-                               const atlas::FieldSet & xb,
-                               const atlas::FieldSet & fg,
-                               const util::DateTime & validTime,
-                               const size_t & timeRank) override {
+  std::unique_ptr<SaberCentralBlockBase> make(const oops::GeometryData & geometryData,
+                                              const oops::Variables & outerVars,
+                                              const eckit::Configuration & covarConf,
+                                              const SaberBlockParametersBase & params,
+                                              const atlas::FieldSet & xb,
+                                              const atlas::FieldSet & fg,
+                                              const util::DateTime & validTime,
+                                              const size_t & timeRank) override {
     const auto &stronglyTypedParams = dynamic_cast<const Parameters_&>(params);
-    return new T(geometryData, outerVars, covarConf,
-                 stronglyTypedParams, xb, fg, validTime, timeRank);
+    return std::make_unique<T>(geometryData, outerVars, covarConf,
+                               stronglyTypedParams, xb, fg, validTime, timeRank);
   }
 
   std::unique_ptr<SaberBlockParametersBase> makeParameters() const override {

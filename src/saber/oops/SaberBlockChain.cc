@@ -26,8 +26,22 @@ SaberBlockChain::SaberBlockChain(const oops::Variables & incVars,
 
 // -----------------------------------------------------------------------------
 
-void SaberBlockChain::centralBlockInit(SaberCentralBlockBase * centralBlockPtr) {
-  centralBlock_.reset(centralBlockPtr);
+void SaberBlockChain::centralBlockInit(const oops::GeometryData & geometryData,
+                                       const oops::Variables & outerVars,
+                                       const eckit::Configuration & covarConf,
+                                       const SaberBlockParametersBase & params,
+                                       const atlas::FieldSet & xb,
+                                       const atlas::FieldSet & fg,
+                                       const util::DateTime & validTime,
+                                       const size_t & timeRank) {
+  centralBlock_ = SaberCentralBlockFactory::create(geometryData,
+                                                   outerVars,
+                                                   covarConf,
+                                                   params,
+                                                   xb,
+                                                   fg,
+                                                   validTime,
+                                                   timeRank);
 }
 
 // -----------------------------------------------------------------------------

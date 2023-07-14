@@ -696,15 +696,14 @@ void buildCentralBlock(const oops::Geometry<MODEL> & geom,
   }
 
   // Create central block
-  saberBlockChain.centralBlockInit(SaberCentralBlockFactory::create(
-                                   outerGeometryData,
+  saberBlockChain.centralBlockInit(outerGeometryData,
                                    activeVars,
                                    covarConf,
                                    saberCentralBlockParams,
                                    fsetXb,
                                    fsetFg,
                                    validTimeOfXbFg,
-                                   geom.timeComm().rank()));
+                                   geom.timeComm().rank());
 
   // Read and add model fields
   saberBlockChain.centralBlock().read(geom, outerVars, validTimeOfXbFg);

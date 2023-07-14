@@ -29,7 +29,14 @@ class SaberBlockChain {
   ~SaberBlockChain() {}
 
   // Central block initialization
-  void centralBlockInit(SaberCentralBlockBase *);  // TODO(Benjamin): remove that
+  void centralBlockInit(const oops::GeometryData &,
+                        const oops::Variables &,
+                        const eckit::Configuration &,
+                        const SaberBlockParametersBase &,
+                        const atlas::FieldSet &,
+                        const atlas::FieldSet &,
+                        const util::DateTime &,
+                        const size_t & timeRank = 0);
 
   // Hybrid weight initialization
   void setWeight(const double &);

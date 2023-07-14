@@ -47,7 +47,7 @@ SaberCentralBlockFactory::SaberCentralBlockFactory(const std::string & name) {
 
 // -----------------------------------------------------------------------------
 
-SaberCentralBlockBase * SaberCentralBlockFactory::create(
+std::unique_ptr<SaberCentralBlockBase> SaberCentralBlockFactory::create(
   const oops::GeometryData & geometryData,
   const oops::Variables & vars,
   const eckit::Configuration & covarConf,
@@ -63,8 +63,9 @@ SaberCentralBlockBase * SaberCentralBlockFactory::create(
     oops::Log::error() << id << " does not exist in saber::SaberCentralBlockFactory." << std::endl;
     ABORT("Element does not exist in saber::SaberCentralBlockFactory.");
   }
-  SaberCentralBlockBase * ptr = jsb->second->make(geometryData, vars, covarConf,
-    params, xb, fg, validTime, timeRank);
+  std::unique_ptr<SaberCentralBlockBase> ptr =
+    jsb->second->make(geometryData, vars, covarConf,
+                      params, xb, fg, validTime, timeRank);
   oops::Log::trace() << "SaberCentralBlockBase::create done" << std::endl;
   return ptr;
 }

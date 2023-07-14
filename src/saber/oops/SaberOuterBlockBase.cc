@@ -47,7 +47,7 @@ SaberOuterBlockFactory::SaberOuterBlockFactory(const std::string & name) {
 
 // -----------------------------------------------------------------------------
 
-SaberOuterBlockBase * SaberOuterBlockFactory::create(
+std::unique_ptr<SaberOuterBlockBase> SaberOuterBlockFactory::create(
   const oops::GeometryData & outerGeometryData,
   const oops::Variables & outerVars,
   const eckit::Configuration & covarConfig,
@@ -62,8 +62,8 @@ SaberOuterBlockBase * SaberOuterBlockFactory::create(
     oops::Log::error() << id << " does not exist in saber::SaberOuterBlockFactory." << std::endl;
     ABORT("Element does not exist in saber::SaberOuterBlockFactory.");
   }
-  SaberOuterBlockBase * ptr = jsb->second->make(outerGeometryData,
-                                                outerVars, covarConfig, params, xb, fg, validTime);
+  std::unique_ptr<SaberOuterBlockBase> ptr =
+    jsb->second->make(outerGeometryData, outerVars, covarConfig, params, xb, fg, validTime);
   oops::Log::trace() << "SaberOuterBlockBase::create done" << std::endl;
   return ptr;
 }

@@ -184,13 +184,13 @@ class SaberOuterBlockParametersWrapper : public oops::Parameters {
 
 class SaberOuterBlockFactory {
  public:
-  static SaberOuterBlockBase * create(const oops::GeometryData &,
-                                      const oops::Variables &,
-                                      const eckit::Configuration &,
-                                      const SaberBlockParametersBase &,
-                                      const atlas::FieldSet &,
-                                      const atlas::FieldSet &,
-                                      const util::DateTime &);
+  static std::unique_ptr<SaberOuterBlockBase> create(const oops::GeometryData &,
+                                                     const oops::Variables &,
+                                                     const eckit::Configuration &,
+                                                     const SaberBlockParametersBase &,
+                                                     const atlas::FieldSet &,
+                                                     const atlas::FieldSet &,
+                                                     const util::DateTime &);
 
   static std::unique_ptr<SaberBlockParametersBase> createParameters(const std::string &name);
 
@@ -204,13 +204,13 @@ class SaberOuterBlockFactory {
   explicit SaberOuterBlockFactory(const std::string &name);
 
  private:
-  virtual SaberOuterBlockBase * make(const oops::GeometryData &,
-                                     const oops::Variables &,
-                                     const eckit::Configuration &,
-                                     const SaberBlockParametersBase &,
-                                     const atlas::FieldSet &,
-                                     const atlas::FieldSet &,
-                                     const util::DateTime &) = 0;
+  virtual std::unique_ptr<SaberOuterBlockBase> make(const oops::GeometryData &,
+                                                    const oops::Variables &,
+                                                    const eckit::Configuration &,
+                                                    const SaberBlockParametersBase &,
+                                                    const atlas::FieldSet &,
+                                                    const atlas::FieldSet &,
+                                                    const util::DateTime &) = 0;
 
   virtual std::unique_ptr<SaberBlockParametersBase> makeParameters() const = 0;
 
@@ -226,16 +226,16 @@ template<class T>
 class SaberOuterBlockMaker : public SaberOuterBlockFactory {
   typedef typename T::Parameters_ Parameters_;
 
-  SaberOuterBlockBase * make(const oops::GeometryData & outerGeometryData,
-                             const oops::Variables & outerVars,
-                             const eckit::Configuration & covarConf,
-                             const SaberBlockParametersBase & params,
-                             const atlas::FieldSet & xb,
-                             const atlas::FieldSet & fg,
-                             const util::DateTime & validTime) override {
+  std::unique_ptr<SaberOuterBlockBase> make(const oops::GeometryData & outerGeometryData,
+                                            const oops::Variables & outerVars,
+                                            const eckit::Configuration & covarConf,
+                                            const SaberBlockParametersBase & params,
+                                            const atlas::FieldSet & xb,
+                                            const atlas::FieldSet & fg,
+                                            const util::DateTime & validTime) override {
     const auto &stronglyTypedParams = dynamic_cast<const Parameters_&>(params);
-    return new T(outerGeometryData, outerVars,
-                 covarConf, stronglyTypedParams, xb, fg, validTime);
+    return std::make_unique<T>(outerGeometryData, outerVars,
+                               covarConf, stronglyTypedParams, xb, fg, validTime);
   }
 
   std::unique_ptr<SaberBlockParametersBase> makeParameters() const override {
