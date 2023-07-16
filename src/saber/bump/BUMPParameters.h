@@ -604,6 +604,8 @@ class NICASSection : public oops::Parameters {
   // or 'si': smooth interpolation)
   oops::Parameter<std::vector<GroupsTypeParameters>> interp_type{"interpolation type", {},
     this};
+  // Normalization randomization size
+  oops::Parameter<int> norm_rand_size = param(def.norm_rand_size, this);
   // Positive-definiteness test
   oops::Parameter<bool> pos_def_test = param(def.pos_def_test, this);
   // Horizontal NICAS interpolation test

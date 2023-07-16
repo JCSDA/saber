@@ -1100,8 +1100,6 @@ type(cv_type),intent(out) :: cv          !< Control vector
 
 ! Local variables
 integer :: ib,ig,icmp
-integer,allocatable :: order_s(:)
-real(kind_real),allocatable :: alpha(:)
 
 ! Set name
 @:set_name(nicas_random_cv)
@@ -1118,34 +1116,8 @@ do ib=1,cv%nb
    ig = cv%b_to_g(ib)
 
    do icmp=1,cv%blk(ib)%ncmp
-      ! Allocation
-      if (mpl%main) then
-         allocate(order_s(nicas%blk(ig)%cmp(icmp)%ns))
-         allocate(alpha(nicas%blk(ig)%cmp(icmp)%ns))
-      else
-         allocate(order_s(0))
-         allocate(alpha(0))
-      end if
-
-      ! Communication
-      call mpl%loc_to_glb(nicas%blk(ig)%cmp(icmp)%nsa,nicas%blk(ig)%cmp(icmp)%ns,nicas%blk(ig)%cmp(icmp)%sa_to_s, &
- & nicas%blk(ig)%cmp(icmp)%order_sa,order_s)
-
-      if (mpl%main) then
-         ! Random vector
-         call rng%rand_gau(alpha)
-
-         ! Reorder random vector
-         alpha(order_s) = alpha
-      end if
-
-      ! Copy local section
-      call mpl%glb_to_loc(nicas%blk(ig)%cmp(icmp)%nsa,nicas%blk(ig)%cmp(icmp)%ns,nicas%blk(ig)%cmp(icmp)%sa_to_s,alpha, &
- & cv%blk(ib)%cmp(icmp)%alpha)
-
-      ! Release memory
-      deallocate(order_s)
-      deallocate(alpha)
+      ! Component work
+      call nicas%blk(ig)%cmp(icmp)%random_cv(mpl,rng,nam,cv%blk(ib)%cmp(icmp))
    end do
 end do
 

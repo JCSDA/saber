@@ -186,6 +186,7 @@ type nam_type
    real(kind_real),allocatable :: rv(:,:)                     !< Forced vertical support radius
    real(kind_real),allocatable :: loc_wgt_sqrt(:,:)           !< Weights square-root for the 'block_weighted' strategy
    character(len=2),allocatable :: nicas_interp_type(:)       !< NICAS C1B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based or 'si': smooth interpolation)
+   integer :: norm_rand_size                                  !< Normalization randomization size (default is 0, which means exact normalization)
    logical :: pos_def_test                                    !< Positive-definiteness test
    logical :: interp_test                                     !< Horizontal NICAS interpolation test
    integer :: file_component                                  !< Overriding component in file
@@ -878,6 +879,7 @@ if (conf%get('nicas',section)) then
          end do
       end if
    end if
+   call nam%get(section,'normalization randomization size',nam%norm_rand_size)
    call nam%get(section,'positive-definiteness test',nam%pos_def_test)
    call nam%get(section,'horizontal interpolation test',nam%interp_test)
    call nam%get(section,'overriding component in file',nam%file_component)

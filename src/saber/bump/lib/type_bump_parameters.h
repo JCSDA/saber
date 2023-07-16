@@ -521,6 +521,10 @@ struct NICASDef {
   std::pair<const char *, bool> forced_radii =
     std::make_pair("explicit length-scales", false);
 
+  // Normalization randomization size
+  std::pair<const char *, int> norm_rand_size =
+    std::make_pair("normalization randomization size", 0);
+
   // Positive-definiteness test
   std::pair<const char *, bool> pos_def_test =
     std::make_pair("positive-definiteness test", false);

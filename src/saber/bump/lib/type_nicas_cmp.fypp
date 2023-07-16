@@ -277,6 +277,8 @@ contains
    procedure :: compute_convol_weights => nicas_cmp_compute_convol_weights
    procedure :: compute_internal_normalization => nicas_cmp_compute_internal_normalization
    procedure :: compute_normalization => nicas_cmp_compute_normalization
+   procedure :: randomize_normalization => nicas_cmp_randomize_normalization
+   procedure :: random_cv => nicas_cmp_random_cv
    procedure :: apply_horizontal_smoother => nicas_cmp_apply_horizontal_smoother
    procedure :: apply_sqrt => nicas_cmp_apply_sqrt
    procedure :: apply_sqrt_ad => nicas_cmp_apply_sqrt_ad
@@ -2213,9 +2215,15 @@ if (any(nicas_cmp%vlev)) then
 
       if (nicas_cmp%compute_norm) then
          ! Compute normalization
-         write(mpl%info,'(a10,a)') '','Compute normalization'
-         call mpl%flush(flush=nicas_cmp%verbosity)
-         call nicas_cmp%compute_normalization(mpl,geom)
+         if (nam%norm_rand_size>1) then
+            write(mpl%info,'(a10,a,i6,a)') '','Randomize normalization with ',nam%norm_rand_size,' members'
+            call mpl%flush(flush=nicas_cmp%verbosity)
+            call nicas_cmp%randomize_normalization(mpl,rng,nam,geom)
+         else
+            write(mpl%info,'(a10,a)') '','Compute normalization'
+            call mpl%flush(flush=nicas_cmp%verbosity)
+            call nicas_cmp%compute_normalization(mpl,geom)
+         end if
       end if
    end if
 
@@ -4223,6 +4231,144 @@ deallocate(c_S)
 @:probe_out()
 
 end subroutine nicas_cmp_compute_normalization
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_cmp_randomize_normalization
+!> Compute normalization
+!----------------------------------------------------------------------
+subroutine nicas_cmp_randomize_normalization(nicas_cmp,mpl,rng,nam,geom)
+
+implicit none
+
+! Passed variables
+class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data component
+type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(rng_type),intent(inout) :: rng              !< Random number generator
+type(nam_type),intent(in) :: nam                 !< Namelist
+type(geom_type),intent(in) :: geom               !< Geometry
+
+! Local variables
+integer :: il0,ic0a,ie
+real(kind_real) :: scaling
+real(kind_real) :: fld(geom%nc0a,geom%nl0),m2(geom%nc0a,geom%nl0)
+type(cv_cmp_type) :: cv_cmp
+
+! Set name
+@:set_name(nicas_cmp_randomize_normalization)
+
+! Probe in
+@:probe_in()
+
+! Allocation
+allocate(nicas_cmp%norm(geom%nc0a,geom%nl0))
+call cv_cmp%alloc(mpl,nicas_cmp%nsa)
+
+! Initialization
+m2 = zero
+nicas_cmp%norm = mpl%msv%valr
+do il0=1,geom%nl0
+   if (nicas_cmp%vlev(il0)) then
+      do ic0a=1,geom%nc0a
+         if (geom%gmask_c0a(ic0a,il0)) nicas_cmp%norm(ic0a,il0) = one
+      end do
+   end if
+end do
+
+! Randomization
+do ie=1,nam%norm_rand_size
+  ! Create random control vector
+  call nicas_cmp%random_cv(mpl,rng,nam,cv_cmp)
+
+  ! Apply square-root
+  call nicas_cmp%apply_sqrt(mpl,geom,cv_cmp,fld)
+
+  ! Update variance
+  m2 = m2+fld**2
+end do
+
+! Compute variance
+scaling = one/real(nam%norm_rand_size,kind_real)
+do il0=1,geom%nl0
+   if (nicas_cmp%vlev(il0)) then
+      do ic0a=1,geom%nc0a
+         if (geom%gmask_c0a(ic0a,il0)) then
+            if (.not.(m2(ic0a,il0)>zero)) call mpl%abort('${subr}$','randomized variance is not positive')
+            m2(ic0a,il0) = m2(ic0a,il0)*scaling
+         end if
+      end do
+   end if
+end do
+
+! Convert to normalization weight
+do il0=1,geom%nl0
+   if (nicas_cmp%vlev(il0)) then
+      do ic0a=1,geom%nc0a
+         if (geom%gmask_c0a(ic0a,il0)) nicas_cmp%norm(ic0a,il0) = one/sqrt(m2(ic0a,il0))
+      end do
+   end if
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_cmp_randomize_normalization
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_cmp_random_cv
+!> Generate a random control vector for a component
+!----------------------------------------------------------------------
+subroutine nicas_cmp_random_cv(nicas_cmp,mpl,rng,nam,cv_cmp)
+
+implicit none
+
+! Passed variables
+class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data component
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+type(rng_type),intent(inout) :: rng           !< Random number generator
+type(nam_type),intent(in) :: nam              !< Namelist
+type(cv_cmp_type),intent(inout) :: cv_cmp     !< Control vector component
+
+! Local variables
+integer,allocatable :: order_s(:)
+real(kind_real),allocatable :: alpha(:)
+
+! Set name
+@:set_name(nicas_cmp_random_cv)
+
+! Probe in
+@:probe_in()
+
+! Allocation
+if (mpl%main) then
+   allocate(order_s(nicas_cmp%ns))
+   allocate(alpha(nicas_cmp%ns))
+else
+   allocate(order_s(0))
+   allocate(alpha(0))
+end if
+
+! Communication
+call mpl%loc_to_glb(nicas_cmp%nsa,nicas_cmp%ns,nicas_cmp%sa_to_s,nicas_cmp%order_sa,order_s)
+
+if (mpl%main) then
+   ! Random vector
+   call rng%rand_gau(alpha)
+
+   ! Reorder random vector
+   alpha(order_s) = alpha
+end if
+
+! Copy local section
+call mpl%glb_to_loc(nicas_cmp%nsa,nicas_cmp%ns,nicas_cmp%sa_to_s,alpha,cv_cmp%alpha)
+
+! Release memory
+deallocate(order_s)
+deallocate(alpha)
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_cmp_random_cv
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_cmp_apply_horizontal_smoother

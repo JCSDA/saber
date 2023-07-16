@@ -294,6 +294,8 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   param(nicasDef.nicas_draw_type, nicasConf);
   // Force specific support radii
   param(nicasDef.forced_radii, nicasConf);
+  // Normalization randomization size
+  param(nicasDef.norm_rand_size, nicasConf);
   // Positive-definiteness test
   param(nicasDef.pos_def_test, nicasConf);
   // Horizontal NICAS interpolation test

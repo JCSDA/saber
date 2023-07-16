@@ -456,6 +456,8 @@
 #:set subr_list = subr_list + ["nicas_cmp_compute_convol_weights"]
 #:set subr_list = subr_list + ["nicas_cmp_compute_internal_normalization"]
 #:set subr_list = subr_list + ["nicas_cmp_compute_normalization"]
+#:set subr_list = subr_list + ["nicas_cmp_randomize_normalization"]
+#:set subr_list = subr_list + ["nicas_cmp_random_cv"]
 #:set subr_list = subr_list + ["nicas_cmp_apply_horizontal_smoother"]
 #:set subr_list = subr_list + ["nicas_cmp_apply_sqrt"]
 #:set subr_list = subr_list + ["nicas_cmp_apply_sqrt_ad"]
