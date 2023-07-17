@@ -45,6 +45,8 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   param(generalDef.repro_th, generalConf);
   // Universe radius [in meters]
   param(generalDef.universe_radius, generalConf);
+  // Sampling method
+  param(generalDef.sampling_method, generalConf);
 
   // I/O section
   IODef ioDef;

@@ -190,6 +190,8 @@ class GeneralSection : public oops::Parameters {
   oops::Parameter<double> repro_th = param(def.repro_th, this);
   // Universe radius [in meters]
   oops::Parameter<double> universe_radius = param(def.universe_radius, this);
+  // Sampling method
+  oops::Parameter<std::string> sampling_method = param(def.sampling_method, this);
 };
 
 // -----------------------------------------------------------------------------

@@ -44,6 +44,10 @@ struct GeneralDef {
   // Universe radius [in meters]
   std::pair<const char *, double> universe_radius =
     std::make_pair("universe length-scale", 6371229*M_PI);
+
+  // Sampling method
+  std::pair<const char *, std::string> sampling_method =
+    std::make_pair("sampling method", "potential");
 };
 
 // I/O section

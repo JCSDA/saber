@@ -25,6 +25,7 @@ type nam_type
    logical :: repro_ops                                       !< Reproducibility operators
    real(kind_real) :: repro_th                                !< Reproducibility threshold
    real(kind_real) :: universe_radius                         !< Universe radius [in meters]
+   character(len=1024) :: sampling_method                     !< Sampling method
 
    ! I/O section
    character(len=1024) :: datadir                             !< Data directory
@@ -360,6 +361,7 @@ if (conf%get('general',section)) then
    call nam%get(section,'reproducibility operators',nam%repro_ops)
    call nam%get(section,'reproducibility threshold',nam%repro_th)
    call nam%get(section,'universe length-scale',nam%universe_radius)
+   call nam%get(section,'sampling method',nam%sampling_method)
 end if
 
 ! I/O param
@@ -1025,6 +1027,11 @@ character(len=2) :: ildwvchar
 if (nam%repro_ops) then
   if (nam%repro_th<zero) call mpl%abort('${subr}$','repro_th should be non-negative')
 end if
+select case (nam%sampling_method)
+case ('potential','maxrandom')
+case default
+   call mpl%abort('${subr}$','wrong sampling method: '//trim(nam%sampling_method))
+end select
 
 ! I/O section
 if (nam%prefix/='') nam%prefix = trim(nam%prefix)//'_'

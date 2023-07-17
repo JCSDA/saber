@@ -1817,7 +1817,7 @@ else
       ! Compute sampling, subset Sc1
       write(mpl%info,'(a7,a,i5,a)') '','Compute sampling, subset Sc1 (nc1 = ',nam%nc1,')'
       call mpl%flush
-      call samp%compute_c1_or_c2(mpl,nam,geom,1)
+      call samp%compute_c1_or_c2(mpl,rng,nam,geom,1)
    else
       samp%nc1a = 0
    end if
@@ -1826,7 +1826,7 @@ else
       ! Compute sampling, subset Sc2
       write(mpl%info,'(a7,a,i5,a)') '','Compute sampling, subset Sc2 (nc2 = ',nam%nc2,')'
       call mpl%flush
-      call samp%compute_c1_or_c2(mpl,nam,geom,2)
+      call samp%compute_c1_or_c2(mpl,rng,nam,geom,2)
    else
       samp%nc2a = 0
    end if
@@ -2219,13 +2219,14 @@ end subroutine samp_compute_mask
 ! Subroutine: samp_compute_c1_or_c2
 !> Compute sampling, subset Sc1 or Sc2
 !----------------------------------------------------------------------
-subroutine samp_compute_c1_or_c2(samp,mpl,nam,geom,subset)
+subroutine samp_compute_c1_or_c2(samp,mpl,rng,nam,geom,subset)
 
 implicit none
 
 ! Passed variables
 class(samp_type),intent(inout) :: samp !< Sampling
 type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(rng_type),intent(inout) :: rng    !< Random number generator
 type(nam_type),intent(inout) :: nam    !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 integer,intent(in) :: subset           !< Subset index (1 or 2)
@@ -2331,8 +2332,8 @@ else
       ! Compte subsampling
       write(mpl%info,'(a7,a,i1,a)') '','Compute horizontal subset Sc',subset,':'
       call mpl%flush
-      call geom%initialize_sampling(mpl,geom%nc0a,geom%lon_c0a,geom%lat_c0a,smask_hor_c0a,rh_c0a,geom%c0a_to_c0, &
- & geom%nc0u,geom%c0u_to_c0a,geom%tree_c0u,geom%mesh_c0u,7,ncx_eff,cx_to_c0)
+      call geom%initialize_sampling(mpl,rng,nam%sampling_method,geom%nc0a,geom%lon_c0a,geom%lat_c0a,smask_hor_c0a,rh_c0a, &
+ & geom%c0a_to_c0,geom%nc0u,geom%c0u_to_c0a,geom%tree_c0u,geom%mesh_c0u,7,ncx_eff,cx_to_c0)
 
       ! Count Scx point in halo A
       ncxa = 0

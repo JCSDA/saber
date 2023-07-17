@@ -2051,8 +2051,8 @@ if (any(nicas_cmp%vlev)) then
 
    ! Write variables
    if (nicas_cmp%nsa>0) then
-      call put_var(mpl,nicas_cmp%cmpid,nicas_cmp%lon_sa_id,nicas_cmp%lon_sa,io_override=.true.)
-      call put_var(mpl,nicas_cmp%cmpid,nicas_cmp%lat_sa_id,nicas_cmp%lat_sa,io_override=.true.)
+      call put_var(mpl,nicas_cmp%cmpid,nicas_cmp%lon_sa_id,nicas_cmp%lon_sa*rad2deg,io_override=.true.)
+      call put_var(mpl,nicas_cmp%cmpid,nicas_cmp%lat_sa_id,nicas_cmp%lat_sa*rad2deg,io_override=.true.)
       call put_var(mpl,nicas_cmp%cmpid,nicas_cmp%lev_sa_id,nicas_cmp%lev_sa,io_override=.true.)
    end if
    if (nicas_cmp%nsb>0) then
@@ -2615,8 +2615,8 @@ do il1=1,nicas_cmp%nl1
          ! Compute sampling
          write(mpl%info,'(a16,a)') '','Compute horizontal subset Sc1:'
          call mpl%flush(flush=nicas_cmp%verbosity)
-         call geom%initialize_sampling(mpl,geom%nc0a,geom%lon_c0a,geom%lat_c0a,mask_hor_c0a,nicas_cmp%rhs(:,il0),geom%c0a_to_c0, &
- & geom%nc0u,geom%c0u_to_c0a,geom%tree_c0u,geom%mesh_c0u,ifmt,nicas_cmp%hor(il1)%nc1,c1_to_c0)
+         call geom%initialize_sampling(mpl,rng,nam%sampling_method,geom%nc0a,geom%lon_c0a,geom%lat_c0a,mask_hor_c0a, &
+ & nicas_cmp%rhs(:,il0),geom%c0a_to_c0,geom%nc0u,geom%c0u_to_c0a,geom%tree_c0u,geom%mesh_c0u,ifmt,nicas_cmp%hor(il1)%nc1,c1_to_c0)
 
          ! Count Sc1 point in halo A
          nicas_cmp%hor(il1)%nc1a = 0

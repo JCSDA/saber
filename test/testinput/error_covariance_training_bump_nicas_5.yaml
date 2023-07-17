@@ -28,6 +28,7 @@ background error:
       general:
         testing: true
         universe length-scale: 10000.0e3
+        sampling method: maxrandom
       io:
         data directory: testdata
         files prefix: error_covariance_training_bump_nicas_5/_MPI_-_OMP_
