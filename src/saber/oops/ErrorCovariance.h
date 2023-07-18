@@ -16,8 +16,10 @@
 #include "oops/base/Geometry.h"
 #include "oops/base/GeometryData.h"
 #include "oops/base/Increment.h"
+#include "oops/base/Increment4D.h"
 #include "oops/base/ModelSpaceCovarianceBase.h"
 #include "oops/base/State.h"
+#include "oops/base/State4D.h"
 #include "oops/base/StateEnsemble.h"
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
@@ -43,7 +45,8 @@ class ErrorCovariance : public oops::ModelSpaceCovarianceBase<MODEL>,
                         private util::ObjectCounter<ErrorCovariance<MODEL>> {
   typedef oops::Geometry<MODEL>                                Geometry_;
   typedef oops::Increment<MODEL>                               Increment_;
-  typedef oops::State<MODEL>                                   State_;
+  typedef oops::Increment4D<MODEL>                             Increment4D_;
+  typedef oops::State4D<MODEL>                                 State4D_;
   typedef typename oops::Increment<MODEL>::WriteParameters_    WriteParameters_;
   typedef typename boost::ptr_vector<SaberBlockChain>          SaberBlockChainVec_;
   typedef typename SaberBlockChainVec_::const_iterator         chainIcst_;
@@ -53,21 +56,20 @@ class ErrorCovariance : public oops::ModelSpaceCovarianceBase<MODEL>,
 
   static const std::string classname() {return "saber::ErrorCovariance";}
 
-  ErrorCovariance(const Geometry_ &, const oops::Variables &,
-                  const Parameters_ &,
-                  const State_ &, const State_ &);
+  ErrorCovariance(const Geometry_ &, const oops::Variables &, const Parameters_ &,
+                  const State4D_ &, const State4D_ &);
   virtual ~ErrorCovariance();
 
   // Required by iterative inverse
-  void multiply(const Increment_ & dxi, Increment_ & dxo) const {this->doMultiply(dxi, dxo);}
+  void multiply(const Increment4D_ & dxi, Increment4D_ & dxo) const {this->doMultiply(dxi, dxo);}
 
  private:
   ErrorCovariance(const ErrorCovariance&);
   ErrorCovariance& operator=(const ErrorCovariance&);
 
-  void doRandomize(Increment_ &) const override;
-  void doMultiply(const Increment_ &, Increment_ &) const override;
-  void doInverseMultiply(const Increment_ &, Increment_ &) const override;
+  void doRandomize(Increment4D_ &) const override;
+  void doMultiply(const Increment4D_ &, Increment4D_ &) const override;
+  void doInverseMultiply(const Increment4D_ &, Increment4D_ &) const override;
 
   void print(std::ostream &) const override;
 
@@ -81,18 +83,18 @@ template<typename MODEL>
 ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
                                         const oops::Variables & incVars,
                                         const Parameters_ & params,
-                                        const State_ & xb,
-                                        const State_ & fg)
+                                        const State4D_ & xb,
+                                        const State4D_ & fg)
   : oops::ModelSpaceCovarianceBase<MODEL>(geom, params, xb, fg), singleBlockChain_(),
     hybridBlockChain_()
 {
   oops::Log::trace() << "ErrorCovariance::ErrorCovariance starting" << std::endl;
 
   // Local copy of background and first guess that can undergo interpolation
-  atlas::FieldSet fsetXb = util::copyFieldSet(xb.fieldSet());
-  atlas::FieldSet fsetFg = util::copyFieldSet(fg.fieldSet());
-  ASSERT(xb.validTime() == fg.validTime());
-  const util::DateTime validTimeOfXbFg = xb.validTime();
+  atlas::FieldSet fsetXb = util::copyFieldSet(xb[0].fieldSet());
+  atlas::FieldSet fsetFg = util::copyFieldSet(fg[0].fieldSet());
+  ASSERT(xb[0].validTime() == fg[0].validTime());
+  const util::DateTime validTimeOfXbFg = xb[0].validTime();
 
   // Extend backgroud and first guess with extra fields
   // TODO(Benjamin, Marek, Mayeul, ?)
@@ -121,8 +123,8 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
   // Read ensemble
   eckit::LocalConfiguration ensembleConf = readEnsemble(geom,
                                                         outerVars,
-                                                        xb,
-                                                        fg,
+                                                        xb[0],
+                                                        fg[0],
                                                         params.toConfiguration(),
                                                         iterativeEnsembleLoading,
                                                         fsetEns);
@@ -165,8 +167,8 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
     }
 
     // Background and first guess at dual resolution geometry
-    oops::State<MODEL> xbDualResolution(*dualResolutionGeom, xb);
-    oops::State<MODEL> fgDualResolution(*dualResolutionGeom, fg);
+    oops::State<MODEL> xbDualResolution(*dualResolutionGeom, xb[0]);
+    oops::State<MODEL> fgDualResolution(*dualResolutionGeom, fg[0]);
 
     // Read dual resolution ensemble
     eckit::LocalConfiguration dualResolutionEnsembleConf
@@ -243,8 +245,8 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
       eckit::LocalConfiguration cmpEnsembleConf
          = readEnsemble(*hybridGeom,
                         cmpOuterVars,
-                        xb,
-                        fg,
+                        xb[0],
+                        fg[0],
                         cmpConf,
                         params.iterativeEnsembleLoading.value(),
                         cmpFsetEns);
@@ -325,7 +327,7 @@ ErrorCovariance<MODEL>::~ErrorCovariance() {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void ErrorCovariance<MODEL>::doRandomize(Increment_ & dx) const {
+void ErrorCovariance<MODEL>::doRandomize(Increment4D_ & dx) const {
   oops::Log::trace() << "ErrorCovariance<MODEL>::doRandomize starting" << std::endl;
   util::Timer timer(classname(), "doRandomize");
 
@@ -334,7 +336,7 @@ void ErrorCovariance<MODEL>::doRandomize(Increment_ & dx) const {
     // Hybrid central block
 
     // Initialize sum to zero
-    util::zeroFieldSet(dx.fieldSet());
+    util::zeroFieldSet(dx[0].fieldSet());
 
     // Loop over components for the central block
     for (chainIcst_ it = hybridBlockChain_.begin(); it != hybridBlockChain_.end(); ++it) {
@@ -346,18 +348,18 @@ void ErrorCovariance<MODEL>::doRandomize(Increment_ & dx) const {
       it->applyWeight(fset);
 
       // Add component
-      util::addFieldSets(dx.fieldSet(), fset);
+      util::addFieldSets(dx[0].fieldSet(), fset);
     }
 
     // Apply outer blocks forward
-    singleBlockChain_->applyOuterBlocks(dx.fieldSet());
+    singleBlockChain_->applyOuterBlocks(dx[0].fieldSet());
   } else {
     // Single central block
-    singleBlockChain_->randomize(dx.fieldSet());
+    singleBlockChain_->randomize(dx[0].fieldSet());
   }
 
   // ATLAS fieldset to Increment_
-  dx.synchronizeFields();
+  dx[0].synchronizeFields();
 
   oops::Log::trace() << "ErrorCovariance<MODEL>::doRandomize done" << std::endl;
 }
@@ -365,8 +367,7 @@ void ErrorCovariance<MODEL>::doRandomize(Increment_ & dx) const {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void ErrorCovariance<MODEL>::doMultiply(const Increment_ & dxi,
-                                        Increment_ & dxo) const {
+void ErrorCovariance<MODEL>::doMultiply(const Increment4D_ & dxi, Increment4D_ & dxo) const {
   oops::Log::trace() << "ErrorCovariance<MODEL>::doMultiply starting" << std::endl;
   util::Timer timer(classname(), "doMultiply");
 
@@ -378,13 +379,13 @@ void ErrorCovariance<MODEL>::doMultiply(const Increment_ & dxi,
     // Hybrid central block
 
     // Apply outer blocks adjoint
-    singleBlockChain_->applyOuterBlocksAD(dxo.fieldSet());
+    singleBlockChain_->applyOuterBlocksAD(dxo[0].fieldSet());
 
     // Create input FieldSet
-    atlas::FieldSet inputFset = util::copyFieldSet(dxo.fieldSet());
+    atlas::FieldSet inputFset = util::copyFieldSet(dxo[0].fieldSet());
 
     // Initialize sum to zero
-    util::zeroFieldSet(dxo.fieldSet());
+    util::zeroFieldSet(dxo[0].fieldSet());
 
     // Loop over components for the central block
     for (chainIcst_ it = hybridBlockChain_.begin(); it != hybridBlockChain_.end(); ++it) {
@@ -401,18 +402,18 @@ void ErrorCovariance<MODEL>::doMultiply(const Increment_ & dxi,
       it->applyWeight(fset);
 
       // Add component
-      util::addFieldSets(dxo.fieldSet(), fset);
+      util::addFieldSets(dxo[0].fieldSet(), fset);
     }
 
     // Apply outer blocks forward
-    singleBlockChain_->applyOuterBlocks(dxo.fieldSet());
+    singleBlockChain_->applyOuterBlocks(dxo[0].fieldSet());
   } else {
     // Single central block
-    singleBlockChain_->multiply(dxo.fieldSet());
+    singleBlockChain_->multiply(dxo[0].fieldSet());
   }
 
   // ATLAS fieldset to Increment_
-  dxo.synchronizeFields();
+  dxo[0].synchronizeFields();
 
   oops::Log::trace() << "ErrorCovariance<MODEL>::doMultiply done" << std::endl;
 }
@@ -420,13 +421,12 @@ void ErrorCovariance<MODEL>::doMultiply(const Increment_ & dxi,
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void ErrorCovariance<MODEL>::doInverseMultiply(const Increment_ & dxi,
-                                               Increment_ & dxo) const {
+void ErrorCovariance<MODEL>::doInverseMultiply(const Increment4D_ & dxi, Increment4D_ & dxo) const {
   oops::Log::trace() << "ErrorCovariance<MODEL>::doInverseMultiply starting" << std::endl;
   util::Timer timer(classname(), "doInverseMultiply");
 
   // Iterative inverse
-  oops::IdentityMatrix<Increment_> Id;
+  oops::IdentityMatrix<Increment4D_> Id;
   dxo.zero();
   GMRESR(dxo, dxi, *this, Id, 10, 1.0e-3);
 

@@ -19,11 +19,13 @@
 
 #include "oops/base/Geometry.h"
 #include "oops/base/Increment.h"
+#include "oops/base/Increment4D.h"
 #include "oops/base/IncrementEnsemble.h"
 #include "oops/base/instantiateCovarFactory.h"
 #include "oops/base/ModelSpaceCovarianceBase.h"
 #include "oops/base/PostProcessor.h"
 #include "oops/base/State.h"
+#include "oops/base/State4D.h"
 #include "oops/base/StateWriter.h"
 #include "oops/base/Variables.h"
 #include "oops/mpi/mpi.h"
@@ -92,7 +94,9 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
   typedef oops::ModelSpaceCovarianceParametersBase<MODEL> CovarianceParametersBase_;
   typedef oops::Geometry<MODEL>                           Geometry_;
   typedef oops::Increment<MODEL>                          Increment_;
+  typedef oops::Increment4D<MODEL>                        Increment4D_;
   typedef oops::State<MODEL>                              State_;
+  typedef oops::State4D<MODEL>                            State4D_;
   typedef oops::StateWriterParameters<State_>             StateWriterParameters_;
   typedef typename Increment_::WriteParameters_           IncrementWriterParameters_;
   typedef oops::Localization<MODEL>                       Localization_;
@@ -166,13 +170,13 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
     const Geometry_ geom(params.geometry, *commSpace, *commTime);
 
     // Setup background
-    const State_ xx(geom, params.background);
+    const State4D_ xx(geom, params.background.value().toConfiguration());
 
     // Setup variables
     const oops::Variables vars = xx.variables();
 
     // Setup time
-    util::DateTime time = xx.validTime();
+    util::DateTime time = xx[0].validTime();
 
     // Background error covariance parameters
     const CovarianceParametersBase_ & covarParams
@@ -182,8 +186,8 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
     const auto & diracParams = params.dirac.value();
     if (diracParams != boost::none) {
       // Setup Dirac field
-      Increment_ dxi(geom, vars, time);
-      dxi.dirac(*diracParams);
+      Increment4D_ dxi(geom, vars, {time});
+      dxi[0].dirac(*diracParams);
       oops::Log::test() << "Input Dirac increment:" << dxi << std::endl;
 
       // Test configuration
@@ -263,10 +267,10 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
   void dirac(const eckit::LocalConfiguration & covarConfig,
              const eckit::LocalConfiguration & testConfig,
              std::string & id,
-             const State_ & xx,
-             const Increment_ & dxi) const {
+             const State4D_ & xx,
+             const Increment4D_ & dxi) const {
     // Define output increment
-    Increment_ dxo(dxi, false);
+    Increment4D_ dxo(dxi, false);
 
     // Covariance
     std::unique_ptr<CovarianceBase_> Bmat(CovarianceFactory_::create(
@@ -284,13 +288,13 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
 
       // Print variances
       oops::Log::test() << "- Variances at Dirac points:" << std::endl;
-      print_value_at_positions(testConfig.getSubConfiguration("dirac"), dxo);
+      print_value_at_positions(testConfig.getSubConfiguration("dirac"), dxo[0]);
 
       // Print covariances
       const auto & diagnosticConfig = testConfig.getSubConfiguration("diagnostic points");
       if (!diagnosticConfig.empty()) {
         oops::Log::test() << "- Covariances at diagnostic points:" << std::endl;
-        print_value_at_positions(diagnosticConfig, dxo);
+        print_value_at_positions(diagnosticConfig, dxo[0]);
       }
     }
 
@@ -301,7 +305,7 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
     util::seekAndReplace(outputBConf, "%id%", id);
 
     // Write output increment
-    dxo.write(outputBConf);
+    dxo[0].write(outputBConf);
     oops::Log::test() << "Covariance(" << id << ") * Increment:" << dxo << std::endl;
 
     // Look for hybrid or ensemble covariance models
@@ -320,16 +324,16 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
     if (covarianceModel == "ensemble" && covarConfig.has("localization")) {
       // Localization configuration
       eckit::LocalConfiguration locConfig(covarConfig.getSubConfiguration("localization"));
-      locConfig.set("date", xx.validTime().toString());
+      locConfig.set("date", xx[0].validTime().toString());
 
       // Define output increment
-      Increment_ dxo(dxi);
+      Increment4D_ dxo(dxi);
 
       // Setup localization
       Localization_ Lmat(xx.geometry(), xx.variables(), locConfig);
 
       // Apply localization
-      Lmat.multiply(dxo);
+      Lmat.multiply(dxo[0]);
 
       // Update ID
       std::string idL(id);
@@ -341,7 +345,7 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
           oops::Log::test() << "Localization(" << idL << ") diagnostics:" << std::endl;
           // Print localization
           oops::Log::test() << "- Localization at diagnostic points:" << std::endl;
-          print_value_at_positions(diagnosticConfig, dxo);
+          print_value_at_positions(diagnosticConfig, dxo[0]);
         }
       }
 
@@ -352,13 +356,13 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
       util::seekAndReplace(outputLConf, "%id%", idL);
 
       // Write output increment
-      dxo.write(outputLConf);
+      dxo[0].write(outputLConf);
       oops::Log::test() << "Localization(" << id << ") * Increment:" << dxo << std::endl;
     }
   }
 // -----------------------------------------------------------------------------
   void randomization(const ErrorCovarianceToolboxParameters_ & params,
-                     const State_ & xx,
+                     const State4D_ & xx,
                      const std::unique_ptr<CovarianceBase_> & Bmat,
                      const size_t & ntasks) const {
     if (Bmat->randomizationSize() > 0) {
@@ -367,9 +371,9 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
       oops::Log::info() << "Info     : -----------------------" << std::endl;
 
       // Create increments
-      Increment_ dx(xx.geometry(), xx.variables(), xx.validTime());
-      Increment_ dxsq(xx.geometry(), xx.variables(), xx.validTime());
-      Increment_ variance(xx.geometry(), xx.variables(), xx.validTime());
+      Increment4D_ dx(xx.geometry(), xx.variables(), xx.times());
+      Increment4D_ dxsq(xx.geometry(), xx.variables(), xx.times());
+      Increment4D_ variance(xx.geometry(), xx.variables(), xx.times());
 
       // Initialize variance
       variance.zero();
@@ -389,7 +393,7 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
 
         if ((outputPerturbations != boost::none) || (outputStates != boost::none)) {
           // Save member
-          ens.push_back(dx);
+          ens.push_back(dx[0]);
         }
 
         // Square perturbation
@@ -425,7 +429,7 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
             setMPI(outputStatesUpdated, ntasks);
 
             // Add background state to perturbation
-            State_ xp(xx);
+            State_ xp(xx[0]);
             xp += ens[jm];
 
             // Write state
@@ -451,7 +455,7 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
         setMPI(outputVarianceUpdated, ntasks);
 
         // Write variance
-        variance.write(outputVarianceUpdated);
+        variance[0].write(outputVarianceUpdated);
         oops::Log::test() << "Randomized variance: " << variance << std::endl;
       }
     }
