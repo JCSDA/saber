@@ -17,7 +17,7 @@ if( oops_FOUND )
     VertProj.h
     )
 
-    if( atlas_TRANS_FOUND )
+    if( atlas_TRANS_FOUND OR atlas_ECTRANS_FOUND )
         list(APPEND interpolation_src_files_list
             # ATLAS gauss to cubed-sphere-dual saber block
             GaussToCS.h

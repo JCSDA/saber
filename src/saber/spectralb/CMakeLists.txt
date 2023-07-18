@@ -3,7 +3,7 @@
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
-if( oops_FOUND AND atlas_TRANS_FOUND )
+if( oops_FOUND AND (atlas_TRANS_FOUND OR atlas_ECTRANS_FOUND) )
     list(APPEND spectralb_src_files_list
     CovarianceStatistics.cc
     CovarianceStatistics.h
