@@ -9,6 +9,8 @@ if( oops_FOUND AND (atlas_TRANS_FOUND OR atlas_ECTRANS_FOUND) )
     CovarianceStatistics.h
     CovarianceStatisticsUtils.cc
     CovarianceStatisticsUtils.h
+    SpectralAnalyticalFilter.cc
+    SpectralAnalyticalFilter.h
     spectralb_covstats_interface.h
     spectralb_covstats_interface.F90
     spectralbParameters.h

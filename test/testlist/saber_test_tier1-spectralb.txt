@@ -7,3 +7,4 @@ dirac_spectraltouv
 dirac_spectralb_gauss_vader_1
 dirac_spectralb_gauss_vader_2
 dirac_vertproj
+dirac_spectralb_horizontal_localization
