@@ -9,8 +9,6 @@ if( oops_FOUND AND (atlas_TRANS_FOUND OR atlas_ECTRANS_FOUND) )
     CovarianceStatistics.h
     CovarianceStatisticsUtils.cc
     CovarianceStatisticsUtils.h
-    spectralb.h
-    spectralbnointerp.h
     spectralb_covstats_interface.h
     spectralb_covstats_interface.F90
     spectralbParameters.h
@@ -20,8 +18,6 @@ if( oops_FOUND AND (atlas_TRANS_FOUND OR atlas_ECTRANS_FOUND) )
     SpectralToGauss.h
     SpectralToSpectral.cc
     SpectralToSpectral.h
-    SPCTRL_Cov.cc
-    SPCTRL_Cov.h
     )
 
     if( vader_FOUND AND atlas_VERSION VERSION_GREATER_EQUAL "0.31.0" )
