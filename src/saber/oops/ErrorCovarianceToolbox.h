@@ -339,10 +339,12 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
       std::string idL(id);
       idL.append("_localization");
 
+      oops::Log::test() << "Localization(" << idL << ") diagnostics:" << std::endl;
+      oops::Log::test() << "- Localization at zero separation:" << std::endl;
+      print_value_at_positions(testConfig.getSubConfiguration("dirac"), dxo[0]);
       if (testConfig.has("diagnostic points")) {
         const auto & diagnosticConfig = testConfig.getSubConfiguration("diagnostic points");
         if (!diagnosticConfig.empty()) {
-          oops::Log::test() << "Localization(" << idL << ") diagnostics:" << std::endl;
           // Print localization
           oops::Log::test() << "- Localization at diagnostic points:" << std::endl;
           print_value_at_positions(diagnosticConfig, dxo[0]);

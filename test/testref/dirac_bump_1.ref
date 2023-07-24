@@ -213,6 +213,9 @@ Fields:
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
+Localization(hybrid2_ensemble_localization) diagnostics:
+- Localization at zero separation:
+  + Value for variable eastward_wind, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0000055783680013e+00
 Localization(hybrid2_ensemble) * Increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
