@@ -36,6 +36,8 @@ if ( oops_FOUND AND vader_FOUND )
     SuperMoistIncrOp.cc
     SuperMoistIncrOp.h
     PressureParameters.h
+    VertLoc.cc
+    VertLoc.h
     )
 endif()
 

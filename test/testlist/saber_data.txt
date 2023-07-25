@@ -12,6 +12,8 @@ gsi-coeffs-gmao-global-l72x72y46_opt3.nc4
 spectralcov.nc
 gauss_state.nc
 FPstats.nc
+Lv.nc
 MIO_coefficients.nc
 MUstats.nc
+ptheta_bar_mean.nc
 svp_dlsvp_svpW_dlsvpW.nc
