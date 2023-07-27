@@ -24,7 +24,6 @@ background error:
   covariance model: SABER
   adjoint test: true
   inverse test: true
-  randomization size: 2
   saber central block:
     saber block name: spectral covariance
     active variables:
@@ -41,7 +40,6 @@ background error:
       - aP_inc_Uv_matrix
       - MU_inc_Uv_matrix
       variance_opt: true
-      uut consistency test: true
   saber outer blocks:
   - saber block name: spectral to gauss
     active variables:

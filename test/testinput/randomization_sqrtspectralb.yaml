@@ -1,0 +1,47 @@
+# To be called by saber_quench_error_covariance_toolbox.x
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_gaussian
+    N: 15
+  groups:
+  - variables:
+    - streamfunction
+    - velocity_potential
+    - unbalanced_pressure
+    - moisture_control_variable
+    levels: 70
+  partitioner: ectrans
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables:
+  - streamfunction
+  - velocity_potential
+  - unbalanced_pressure
+  - moisture_control_variable 
+background error:
+  covariance model: SABER
+  randomization size: 2
+  saber central block:
+    saber block name: ID
+  saber outer blocks:
+  - saber block name: square root of spectral covariance
+    skip inverse test: true
+    read:
+      covariance_file: testdata/spectralcov.nc
+      gauss_grid_uid: F15
+      umatrix_netcdf_names:
+      - PSI_inc_Uv_matrix
+      - CHI_inc_Uv_matrix
+      - aP_inc_Uv_matrix
+      - MU_inc_Uv_matrix
+      variance_opt: true
+  - saber block name: spectral to gauss
+output variance:  # This section is optional
+  mpi pattern: '%MPI%'
+  filepath: testdata/randomization_sqrtspectralb/variance_%MPI%pes
+output perturbations:
+  member pattern: '%MEM%'
+  filepath: testdata/randomization_sqrtspectralb/randomized_gauss_mb%MEM%
+test:
+  reference filename: testref/randomization_sqrtspectralb.ref

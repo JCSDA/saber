@@ -1,6 +1,5 @@
 /*
- * (C) Crown Copyright 2022-2023 Met Office
- * (C) Copyright 2022- UCAR
+ * (C) Crown Copyright 2023 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -17,7 +16,7 @@
 #include "oops/base/Variables.h"
 
 #include "saber/oops/SaberBlockParametersBase.h"
-#include "saber/oops/SaberCentralBlockBase.h"
+#include "saber/oops/SaberOuterBlockBase.h"
 #include "saber/spectralb/CovarianceStatistics.h"
 #include "saber/spectralb/spectralbParameters.h"
 
@@ -26,8 +25,8 @@ namespace spectralb {
 
 // -----------------------------------------------------------------------------
 
-class SpectralCovarianceParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(SpectralCovarianceParameters, SaberBlockParametersBase)
+class SqrtOfSpectralCovarianceParameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(SqrtOfSpectralCovarianceParameters, SaberBlockParametersBase)
 
  public:
   oops::OptionalParameter<spectralbParameters> readParams{"read", this};
@@ -36,25 +35,27 @@ class SpectralCovarianceParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class SpectralCovariance : public SaberCentralBlockBase {
+class SqrtOfSpectralCovariance : public SaberOuterBlockBase {
  public:
-  static const std::string classname() {return "saber::spectralb::SpectralCovariance";}
+  static const std::string classname() {return "saber::spectralb::SqrtOfSpectralCovariance";}
 
-  typedef SpectralCovarianceParameters Parameters_;
+  typedef SqrtOfSpectralCovarianceParameters Parameters_;
 
-  SpectralCovariance(const oops::GeometryData &,
-                     const oops::Variables &,
-                     const eckit::Configuration &,
-                     const Parameters_ &,
-                     const atlas::FieldSet &,
-                     const atlas::FieldSet &,
-                     const util::DateTime &,
-                     const size_t &);
+  SqrtOfSpectralCovariance(const oops::GeometryData &,
+                           const oops::Variables &,
+                           const eckit::Configuration &,
+                           const Parameters_ &,
+                           const atlas::FieldSet &,
+                           const atlas::FieldSet &,
+                           const util::DateTime &);
 
-  virtual ~SpectralCovariance() = default;
+  virtual ~SqrtOfSpectralCovariance() = default;
 
-  void randomize(atlas::FieldSet &) const override;
+  const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}
+  const oops::Variables & innerVars() const override {return outerVars_;}
+
   void multiply(atlas::FieldSet &) const override;
+  void multiplyAD(atlas::FieldSet &) const override;
 
   void read() override;
 
@@ -65,18 +66,19 @@ class SpectralCovariance : public SaberCentralBlockBase {
   Parameters_ params_;
   /// Active variables
   const oops::Variables activeVars_;
-  /// Option to use vertical covariances or correlations
+  /// Outer variables
+  oops::Variables outerVars_;
+
+  /// Option to use sqrt of vertical covariances or correlations
   bool variance_opt_;
   /// Covariance statistics
-  // Note: only need vertical covariances or correlations from this;
+  // Note: only need square root of vertical covariances or correlations from this;
   // probably can be gotten in the ctor and saved here instead of cs_
   std::unique_ptr<CovStat_ErrorCov> cs_;
-  /// Geometry data
-  const oops::GeometryData & geometryData_;
   /// Spectral FunctionSpace
   const atlas::functionspace::Spectral specFunctionSpace_;
-  /// Time rank
-  size_t timeRank_;
+  /// Geometry data
+  const oops::GeometryData & innerGeometryData_;
 };
 
 }  // namespace spectralb

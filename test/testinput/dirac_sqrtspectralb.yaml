@@ -9,7 +9,7 @@ geometry:
     - velocity_potential
     - unbalanced_pressure
     - moisture_control_variable
-    levels: 2
+    levels: 70
   partitioner: ectrans
 background:
   date: '2010-01-01T12:00:00Z'
@@ -25,29 +25,34 @@ background error:
   saber central block:
     saber block name: ID
   saber outer blocks:
-  - saber block name: spectral analytical filter
-    function:
-      horizontal daley length: 5008e3  # For localization to be 0.5 on 1st diagnostic point in theory
-    # Line below deactivates outer inverse test by applying the comparison to no variables.
-    # TODO(Mayeul): Restore outer inverse test once it can use *relative* tolerance
-    inner variables to compare: []
+  - saber block name: square root of spectral covariance
+    skip inverse test: true
+    read:
+      covariance_file: testdata/spectralcov.nc
+      gauss_grid_uid: F15
+      umatrix_netcdf_names:
+      - PSI_inc_Uv_matrix
+      - CHI_inc_Uv_matrix
+      - aP_inc_Uv_matrix
+      - MU_inc_Uv_matrix
+      variance_opt: true
   - saber block name: spectral to gauss
 dirac:
   lon:
-  - 240.0
-  - 18.0
-  - 180.0
-  - 90.0
-  lat:
-  - 85.48
-  - 61.95
-  - 32.45
-  - 2.95
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  lat:  # slightly less than 0 to remove ambiguity on chosen grid point.
+  - -0.001
+  - -0.001
+  - -0.001
+  - -0.001
   level:
   - 1
   - 1
-  - 2
-  - 2
+  - 1
+  - 1
   variable:
   - streamfunction
   - velocity_potential
@@ -55,19 +60,19 @@ dirac:
   - moisture_control_variable
 diagnostic points:
   lon:
-  - 240.0  # Theorical value 0.5
-  - 198.0  # Test across pole.
-  - 180.0  # Test across levels. Theorical value 0.0
-  - 60.0   # Test on level 2.
+  - 20.0
+  - 20.0
+  - 20.0
+  - 20.0
   lat:
-  - 32.45
-  - 67.85
-  - 32.45
-  - 2.95
+  - 20.0
+  - 20.0
+  - 20.0
+  - 20.0
   level:
-  - 1
-  - 1
-  - 1
+  - 2
+  - 2
+  - 2
   - 2
   variable:
   - streamfunction
@@ -76,7 +81,6 @@ diagnostic points:
   - moisture_control_variable
 output dirac:
   mpi pattern: '%MPI%'
-  filepath: testdata/dirac_spectralb_horizontal_localization/%MPI%_dirac_%id%
-
+  filepath: testdata/dirac_spectralb/%MPI%_dirac_%id%
 test:
-  reference filename: testref/dirac_spectralb_horizontal_localization.ref
+  reference filename: testref/dirac_sqrtspectralb.ref
