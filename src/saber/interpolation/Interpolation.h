@@ -15,7 +15,7 @@
 
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
-#include "oops/generic/GlobalAtlasInterpolator.h"
+#include "oops/generic/GlobalInterpolator.h"
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/parameters/Parameter.h"
 #include "oops/util/parameters/Parameters.h"
@@ -86,8 +86,8 @@ class Interpolation : public SaberOuterBlockBase {
   const oops::Variables activeVars_;
   // pointers for delayed initialization
   std::unique_ptr<oops::GeometryData> innerGeomData_;
-  std::unique_ptr<oops::GlobalAtlasInterpolator> interp_;
-  mutable std::unique_ptr<oops::GlobalAtlasInterpolator> inverseInterp_;
+  std::unique_ptr<oops::GlobalInterpolator> interp_;
+  mutable std::unique_ptr<oops::GlobalInterpolator> inverseInterp_;
 };
 
 }  // namespace interpolation

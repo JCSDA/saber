@@ -50,13 +50,14 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
                                               true, outerGeometryData.comm()));
   std::vector<double> lats;
   std::vector<double> lons;
+  // TODO(Algo): uncomment below when eckit is updated to 1.24+ and atlas to 0.34
+  // geom.latlon(lats, lons, true);
+  // innerGeomData_->setLocalTree(lats, lons);
   geom.latlon(lats, lons, false);
   innerGeomData_->setGlobalTree(lats, lons);
-
-  interp_.reset(new oops::GlobalAtlasInterpolator(
-        params.localInterpConf.value(), *innerGeomData_,
-        outerGeometryData.functionSpace(), outerGeometryData.comm()));
-
+  interp_.reset(new oops::GlobalInterpolator(
+          params.localInterpConf.value(), *innerGeomData_,
+          outerGeometryData.functionSpace(), outerGeometryData.comm()));
   oops::Log::trace() << classname() << "::Interpolation done" << std::endl;
 }
 
@@ -142,7 +143,7 @@ void Interpolation::multiplyAD(atlas::FieldSet & fieldSet) const {
 
 void Interpolation::leftInverseMultiply(atlas::FieldSet & fieldSet) const {
   if (!inverseInterp_) {
-    inverseInterp_.reset(new oops::GlobalAtlasInterpolator(
+    inverseInterp_.reset(new oops::GlobalInterpolator(
           params_.localInterpConf.value(), outerGeomData_,
           innerGeomData_->functionSpace(), innerGeomData_->comm()));
   }

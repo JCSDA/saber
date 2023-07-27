@@ -27,6 +27,7 @@ background error:
         name: F15
       halo: 1
     local interpolator:
+      local interpolator type: atlas interpolator
       interpolation method:
         type: structured-linear2D
         adjoint: true

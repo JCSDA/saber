@@ -27,6 +27,7 @@ background error:
       partitioner: cubedsphere
       halo: 1
     local interpolator:
+      local interpolator type: atlas interpolator
       interpolation method:
         type: cubedsphere-bilinear
         adjoint: true
