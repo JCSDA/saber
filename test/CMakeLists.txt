@@ -216,7 +216,7 @@ if( oops_FOUND )
             endforeach()
         endforeach()
 
-        # GSI scaling optimization for HDIAG
+        # GSI scaling optimization for HDIAG & Comparison of diagnostics in reference files
         foreach( test ${saber_test_full} )
             string( FIND ${test} "optimization_bump_hdiag_gsi" result )
             if( result MATCHES 0 )
@@ -238,6 +238,27 @@ if( oops_FOUND )
                                   ARGS testinput/${test}.yaml
                                   DEPENDS saber_quench_error_covariance_toolbox.x
                                   TEST_DEPENDS ${deps_list} )
+            endif()
+            string( FIND ${test} "compare_diagnostics" result )
+            if( result MATCHES 0 )
+                if ( ${mpi} LESS_EQUAL 1 AND ${omp} LESS_EQUAL 1 )
+                    # Get dependencies
+                    file( STRINGS testdeps/${test}.txt deps )
+                    set( deps_list "" )
+                    list( APPEND deps_list ${deps} )
+                    list( LENGTH deps_list deps_length )
+                    if( ${deps_length} GREATER 0 )
+                        list( TRANSFORM deps_list PREPEND saber_test_ )
+                        list( TRANSFORM deps_list APPEND _${mpi}-${omp} )
+                    endif()
+
+                    # Add test
+                    ecbuild_add_test( TARGET saber_test_${test}
+                                      TYPE SCRIPT
+                                      COMMAND ${CMAKE_BINARY_DIR}/bin/saber_compare_dirac_diagnostics.py
+                                      ARGS testinput/${test}.yaml
+                                      TEST_DEPENDS ${deps_list} )
+                endif()
             endif()
         endforeach()
     endforeach()

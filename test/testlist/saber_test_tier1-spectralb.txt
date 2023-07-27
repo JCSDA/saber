@@ -11,3 +11,5 @@ dirac_spectralb_gauss_vertloc_vader
 dirac_vertproj
 dirac_spectralb_horizontal_localization
 randomization_sqrtspectralb
+compare_diagnostics_sqrtspectralb
+compare_diagnostics_gauss_vader

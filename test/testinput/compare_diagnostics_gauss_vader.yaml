@@ -1,0 +1,4 @@
+# Compare Dirac outputs using or not super blocks `super_mio` and `mo_hydrostatic_pressure`
+file to compare 1: testref/dirac_spectralb_gauss_vader_1.ref
+file to compare 2: testref/dirac_spectralb_gauss_vader_2.ref
+relative float tolerance: 1e-15

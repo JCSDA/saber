@@ -1,0 +1,4 @@
+# Compares Dirac outputs for spectral covariance using either central block or outer block.
+file to compare 1: testref/dirac_sqrtspectralb.ref
+file to compare 2: testref/dirac_spectralb.ref
+relative float tolerance: 1e-15

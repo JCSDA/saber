@@ -1,6 +1,7 @@
 # Link scripts
 list( APPEND test_files
     saber_cpplint.py
+    saber_compare_dirac_diagnostics.py
     saber_doc_overview.sh
 )
 
