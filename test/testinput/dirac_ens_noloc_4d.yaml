@@ -1,0 +1,52 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 10
+  groups:
+  - variables:
+    - stream_function
+    levels: 2
+  halo: 1
+background:
+  states:
+  - date: '2010-01-01T12:00:00Z'
+    state variables:
+    - stream_function
+  - date: '2010-01-01T18:00:00Z'
+    state variables:
+    - stream_function
+background error:
+  covariance model: SABER
+  ensemble:
+    members from template:
+      template:
+        states:
+        - date: '2010-01-01T12:00:00Z'
+          filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_%mem%
+          state variables:
+          - stream_function
+        - date: '2010-01-01T18:00:00Z'
+          filepath: testdata/randomization_bump_nicas_L10L2T18/_MPI_-_OMP__member_%mem%
+          state variables:
+          - stream_function
+      pattern: '%mem%'
+      nmembers: 25
+      zero padding: 6
+  saber central block:
+    saber block name: Ensemble
+dirac:
+  - lon:
+    - 0.0
+    lat:
+    - 0.0
+    level:
+    - 1
+    variable:
+    - stream_function
+  - {}
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_ens_noloc_4d/%MPI%_dirac_%id%
+test:
+  reference filename: testref/dirac_ens_noloc_4d.ref

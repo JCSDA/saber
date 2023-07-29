@@ -170,7 +170,7 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
     const Geometry_ geom(params.geometry, *commSpace, *commTime);
 
     // Setup background
-    const State4D_ xx(geom, params.background.value().toConfiguration());
+    const State4D_ xx(geom, params.background.value().toConfiguration(), *commTime);
 
     // Setup variables
     const oops::Variables vars = xx.variables();
@@ -186,8 +186,8 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
     const auto & diracParams = params.dirac.value();
     if (diracParams != boost::none) {
       // Setup Dirac field
-      Increment4D_ dxi(geom, vars, {time});
-      dxi[0].dirac(*diracParams);
+      Increment4D_ dxi(geom, vars, xx.times(), *commTime);
+      dxi.dirac(*diracParams);
       oops::Log::test() << "Input Dirac increment:" << dxi << std::endl;
 
       // Test configuration
@@ -373,9 +373,9 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
       oops::Log::info() << "Info     : -----------------------" << std::endl;
 
       // Create increments
-      Increment4D_ dx(xx.geometry(), xx.variables(), xx.times());
-      Increment4D_ dxsq(xx.geometry(), xx.variables(), xx.times());
-      Increment4D_ variance(xx.geometry(), xx.variables(), xx.times());
+      Increment4D_ dx(xx.geometry(), xx.variables(), xx.times(), xx.commTime());
+      Increment4D_ dxsq(xx.geometry(), xx.variables(), xx.times(), xx.commTime());
+      Increment4D_ variance(xx.geometry(), xx.variables(), xx.times(), xx.commTime());
 
       // Initialize variance
       variance.zero();

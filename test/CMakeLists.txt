@@ -192,7 +192,9 @@ if( oops_FOUND )
                     # Special check for doc and tutorial, only run with 1 MPI / 1 OMP
                     string( FIND ${test} "doc_" doc_result )
                     string( FIND ${test} "tutorial_" tutorial_result )
-                    if( ( doc_result EQUAL -1 OR tutorial_result EQUAL 1 OR gsi_gfs_result EQUAL -1 ) OR ( ${mpi} LESS_EQUAL 1 AND ${omp} LESS_EQUAL 1 ) )
+                    # Special check for 4D tests: only run with 2 MPI (TODO: remove once sequential in time is supported)
+                    string( FIND ${test} "_4d" fourd_result )
+                    if( (( doc_result EQUAL -1 OR tutorial_result EQUAL -1 OR gsi_gfs_result EQUAL -1 ) OR ( ${mpi} LESS_EQUAL 1 AND ${omp} LESS_EQUAL 1  ) AND (fourd_result EQUAL -1)) OR (fourd_result GREATER_EQUAL 0 AND ${mpi} GREATER 1) )
                         # Get dependencies
                         file( STRINGS testdeps/${test}.txt deps )
                         set( deps_list "" )

@@ -1,0 +1,72 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 10
+  groups:
+  - variables:
+    - stream_function
+    - velocity_potential
+    - eastward_wind
+    - northward_wind
+    levels: 2
+  - variables:
+    - surface_pressure
+    levels: 1
+  halo: 1
+background:
+  date: '2010-01-01T18:00:00Z'
+  state variables:
+  - stream_function
+  - velocity_potential
+  - eastward_wind
+  - northward_wind
+  - surface_pressure
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: BUMP_NICAS
+    calibration:
+      general:
+        testing: true
+      io:
+        data directory: testdata
+        files prefix: randomization_bump_nicas_L10L2T18/_MPI_-_OMP_
+      drivers:
+        multivariate strategy: univariate
+        compute nicas: true
+      nicas:
+        resolution: 4.0
+        explicit length-scales: true
+        horizontal length-scale:
+        - groups:
+          - stream_function
+          - velocity_potential
+          - eastward_wind
+          - northward_wind
+          - surface_pressure
+          value: 4.5e6
+        vertical length-scale:
+        - groups:
+          - stream_function
+          - velocity_potential
+          - eastward_wind
+          - northward_wind
+          value: 2.5
+      grids:
+      - model:
+          variables:
+          - stream_function
+          - velocity_potential
+          - eastward_wind
+          - northward_wind
+      - model:
+          variables:
+          - surface_pressure
+  randomization size: 25
+output states:
+  filepath: testdata/randomization_bump_nicas_L10L2T18/_MPI_-_OMP__member
+output perturbations:
+  filepath: testdata/randomization_bump_nicas_L10L2T18/_MPI_-_OMP__member_pert
+test:
+  reference filename: testref/randomization_bump_nicas_L10L2T18.ref

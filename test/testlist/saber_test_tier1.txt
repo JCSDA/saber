@@ -5,7 +5,9 @@ dirac_bump_4
 dirac_bump_5
 dirac_bump_6
 dirac_bump_7
+dirac_ens_noloc_4d
 dirac_id
+dirac_id_4d
 dirac_interpolation_2
 dirac_interpolation_3
 dirac_stddev_1
@@ -55,3 +57,4 @@ randomization_bump_nicas_L10L2
 randomization_bump_nicas_L10L2_static
 randomization_bump_nicas_L10L10
 randomization_bump_nicas_L12L2
+randomization_bump_nicas_L10L2T18
