@@ -21,6 +21,7 @@
 #include "mo/eval_dry_air_density.h"
 #include "mo/eval_sat_vapour_pressure.h"
 #include "mo/eval_virtual_potential_temperature.h"
+#include "mo/eval_water_vapor_mixing_ratio.h"
 #include "mo/model2geovals_varchange.h"
 
 #include "oops/base/Variables.h"
@@ -88,7 +89,8 @@ DryAirDensity::DryAirDensity(const oops::GeometryData & outerGeometryData,
   }
 
   mo::evalTotalMassMoistAir(augmentedStateFieldSet_);
-  mo::evalSpecificHumidity(augmentedStateFieldSet_);
+  mo::eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
+              augmentedStateFieldSet_);
   mo::eval_virtual_potential_temperature_nl(augmentedStateFieldSet_);
   mo::eval_dry_air_density_nl(augmentedStateFieldSet_);
 

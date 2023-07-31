@@ -18,9 +18,12 @@
 
 #include "mo/common_varchange.h"
 #include "mo/control2analysis_varchange.h"
+#include "mo/eval_air_pressure_levels.h"
+#include "mo/eval_air_temperature.h"
 #include "mo/eval_exner.h"
 #include "mo/eval_geostrophic_to_hydrostatic_pressure.h"
 #include "mo/eval_sat_vapour_pressure.h"
+#include "mo/eval_water_vapor_mixing_ratio.h"
 #include "mo/model2geovals_varchange.h"
 
 #include "oops/base/Variables.h"
@@ -85,9 +88,10 @@ GpToHp::GpToHp(const oops::GeometryData & outerGeometryData,
     "air_pressure",
     "m_v", "m_ci", "m_cl", "m_r",  // mixing ratios from file
     "m_t",  //  to be populated in evalTotalMassMoistAir
-    "svp", "dlsvpdT",  //  to be populated in evalSatVaporPressure
+    "svp", "dlsvpdT",  //  to be populated in eval_sat_vapour_pressure_nl
     "qsat",  // to be populated in evalSatSpecificHumidity
-    "specific_humidity",  //  to be populated in evalSpecificHumidity
+    "specific_humidity",
+      //  to be populated in eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl
     "virtual_potential_temperature",
     "hydrostatic_exner_levels", "hydrostatic_pressure_levels"
      };
@@ -117,12 +121,13 @@ GpToHp::GpToHp(const oops::GeometryData & outerGeometryData,
   }
 
   // we will need geometry here for height variables.
-  mo::evalAirPressureLevels(augmentedStateFieldSet_);
-  mo::evalAirTemperature(augmentedStateFieldSet_);
+  mo::eval_air_pressure_levels_nl(augmentedStateFieldSet_);
+  mo::eval_air_temperature_nl(augmentedStateFieldSet_);
   mo::evalTotalMassMoistAir(augmentedStateFieldSet_);
   mo::eval_sat_vapour_pressure_nl(params.svp_file, augmentedStateFieldSet_);
   mo::evalSatSpecificHumidity(augmentedStateFieldSet_);
-  mo::evalSpecificHumidity(augmentedStateFieldSet_);
+  mo::eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
+              augmentedStateFieldSet_);
   mo::evalVirtualPotentialTemperature(augmentedStateFieldSet_);
   mo::evalHydrostaticExnerLevels(augmentedStateFieldSet_);
   mo::evalHydrostaticPressureLevels(augmentedStateFieldSet_);

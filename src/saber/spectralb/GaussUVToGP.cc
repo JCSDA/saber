@@ -29,6 +29,7 @@
 #include "mo/common_varchange.h"
 #include "mo/eval_dry_air_density.h"
 #include "mo/eval_virtual_potential_temperature.h"
+#include "mo/eval_water_vapor_mixing_ratio.h"
 #include "mo/model2geovals_varchange.h"
 
 #include "oops/base/Variables.h"
@@ -166,7 +167,7 @@ atlas::FieldSet populateFields(const atlas::FieldSet & geomfields,
   }
 
   mo::evalTotalMassMoistAir(tempfields);
-  mo::evalSpecificHumidity(tempfields);
+  mo::eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl(tempfields);
   mo::eval_virtual_potential_temperature_nl(tempfields);
   mo::eval_dry_air_density_nl(tempfields);
 

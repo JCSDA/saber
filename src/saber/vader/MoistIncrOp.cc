@@ -18,10 +18,15 @@
 
 #include "mo/common_varchange.h"
 #include "mo/control2analysis_linearvarchange.h"
+#include "mo/eval_air_temperature.h"
+#include "mo/eval_cloud_ice_mixing_ratio.h"
+#include "mo/eval_cloud_liquid_mixing_ratio.h"
 #include "mo/eval_mio_fields.h"
 #include "mo/eval_moisture_incrementing_operator.h"
+#include "mo/eval_rain_mixing_ratio.h"
 #include "mo/eval_sat_vapour_pressure.h"
 #include "mo/eval_total_relative_humidity.h"
+#include "mo/eval_water_vapor_mixing_ratio.h"
 #include "mo/functions.h"
 #include "mo/model2geovals_varchange.h"
 
@@ -56,16 +61,19 @@ MoistIncrOp::MoistIncrOp(const oops::GeometryData & outerGeometryData,
     "potential_temperature",  // from file
     "exner",  // on theta levels from file ("exner_levels_minus_one" is on rho levels)
     "air_pressure",  // on theta levels from file ("air_pressure_levels_minus_one" is on rho levels)
-    "air_temperature",  // to be populated in evalAirTemperature
+    "air_temperature",  // to be populated in eval_air_temperature_nl
     "m_v", "m_ci", "m_cl", "m_r",  // mixing ratios from file
     "m_t",  // to be populated in evalTotalMassMoistAir
-    "svp", "dlsvpdT",  // to be populated in evalSatVaporPressure
+    "svp", "dlsvpdT",  // to be populated in eval_sat_vapour_pressure_nl
     "qsat",  // to be populated in evalSatSpecificHumidity
-    "specific_humidity",  // to be populated in evalSpecificHumidity
+    "specific_humidity",
+      // to be populated in eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl
     "mass_content_of_cloud_liquid_water_in_atmosphere_layer",
-      // to be populated in evalMassCloudLiquid
-    "mass_content_of_cloud_ice_in_atmosphere_layer",  // to be populated in evalMassCloudIce
-    "qrain",  // to be populated in evalMassRain
+      // to be populated in
+      // eval_cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water_nl
+    "mass_content_of_cloud_ice_in_atmosphere_layer",
+      // to be populated in eval_cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water_nl
+    "qrain",  // to be populated in eval_rain_mixing_ratio_wrt_moist_air_and_condensed_water_nl
     "rht",  // to be populated in eval_total_relative_humidity_nl
     "liquid_cloud_volume_fraction_in_atmosphere_layer",  // from file
     "ice_cloud_volume_fraction_in_atmosphere_layer",  // from file
@@ -86,14 +94,17 @@ MoistIncrOp::MoistIncrOp(const oops::GeometryData & outerGeometryData,
     augmentedStateFieldSet_.add(xb[s]);
   }
 
-  mo::evalAirTemperature(augmentedStateFieldSet_);
+  mo::eval_air_temperature_nl(augmentedStateFieldSet_);
   mo::evalTotalMassMoistAir(augmentedStateFieldSet_);
   mo::eval_sat_vapour_pressure_nl(params.svp_file, augmentedStateFieldSet_);
   mo::evalSatSpecificHumidity(augmentedStateFieldSet_);
-  mo::evalSpecificHumidity(augmentedStateFieldSet_);
-  mo::evalMassCloudLiquid(augmentedStateFieldSet_);
-  mo::evalMassCloudIce(augmentedStateFieldSet_);
-  mo::evalMassRain(augmentedStateFieldSet_);
+  mo::eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
+              augmentedStateFieldSet_);
+  mo::eval_cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
+              augmentedStateFieldSet_);
+  mo::eval_cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
+              augmentedStateFieldSet_);
+  mo::eval_rain_mixing_ratio_wrt_moist_air_and_condensed_water_nl(augmentedStateFieldSet_);
   mo::eval_total_relative_humidity_nl(augmentedStateFieldSet_);
   mo::eval_mio_fields_nl(params.mio_file, augmentedStateFieldSet_);
 

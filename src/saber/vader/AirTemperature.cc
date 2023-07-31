@@ -16,7 +16,7 @@
 
 #include "eckit/exception/Exceptions.h"
 
-#include "mo/control2analysis_linearvarchange.h"
+#include "mo/eval_air_temperature.h"
 
 #include "oops/base/Variables.h"
 #include "oops/util/Timer.h"
@@ -87,7 +87,7 @@ AirTemperature::~AirTemperature() {
 
 void AirTemperature::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  mo::evalAirTemperatureTL(fset, augmentedStateFieldSet_);
+  mo::eval_air_temperature_tl(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
@@ -95,7 +95,7 @@ void AirTemperature::multiply(atlas::FieldSet & fset) const {
 
 void AirTemperature::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  mo::evalAirTemperatureAD(fset, augmentedStateFieldSet_);
+  mo::eval_air_temperature_ad(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
