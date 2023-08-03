@@ -333,7 +333,7 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
       Localization_ Lmat(xx.geometry(), xx.variables(), locConfig);
 
       // Apply localization
-      Lmat.multiply(dxo[0]);
+      Lmat.multiply(dxo);
 
       // Update ID
       std::string idL(id);
