@@ -7,31 +7,31 @@
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. unit
              Level   2 ~>  0.200E+01 vert. unit
-          Norm of stream_function:  0.19207282E+02
-          Norm of stream_function:  0.17444750E+02
-          Norm of stream_function:  0.18665171E+02
-          Norm of stream_function:  0.18417692E+02
-          Norm of stream_function:  0.18737843E+02
-          Norm of stream_function:  0.19494512E+02
-          Norm of stream_function:  0.19142584E+02
-          Norm of stream_function:  0.18426401E+02
-          Norm of stream_function:  0.18555215E+02
-          Norm of stream_function:  0.18504593E+02
-          Norm of stream_function:  0.18842866E+02
-          Norm of stream_function:  0.18092399E+02
-          Norm of stream_function:  0.17704744E+02
-          Norm of stream_function:  0.19902036E+02
-          Norm of stream_function:  0.19041982E+02
-          Norm of stream_function:  0.18442568E+02
-          Norm of stream_function:  0.17369077E+02
-          Norm of stream_function:  0.18388685E+02
-          Norm of stream_function:  0.15980004E+02
-          Norm of stream_function:  0.18443231E+02
-          Norm of stream_function:  0.18975997E+02
-          Norm of stream_function:  0.18439284E+02
-          Norm of stream_function:  0.17839642E+02
-          Norm of stream_function:  0.17629169E+02
-          Norm of stream_function:  0.17294624E+02
+          Norm of stream_function:  0.19409091E+02
+          Norm of stream_function:  0.17279190E+02
+          Norm of stream_function:  0.18487635E+02
+          Norm of stream_function:  0.18760230E+02
+          Norm of stream_function:  0.18957922E+02
+          Norm of stream_function:  0.19838408E+02
+          Norm of stream_function:  0.19982855E+02
+          Norm of stream_function:  0.18948965E+02
+          Norm of stream_function:  0.18752763E+02
+          Norm of stream_function:  0.18785222E+02
+          Norm of stream_function:  0.18961091E+02
+          Norm of stream_function:  0.17123303E+02
+          Norm of stream_function:  0.16553431E+02
+          Norm of stream_function:  0.20843991E+02
+          Norm of stream_function:  0.19208116E+02
+          Norm of stream_function:  0.18954059E+02
+          Norm of stream_function:  0.17648702E+02
+          Norm of stream_function:  0.16810909E+02
+          Norm of stream_function:  0.15210781E+02
+          Norm of stream_function:  0.18522532E+02
+          Norm of stream_function:  0.18768681E+02
+          Norm of stream_function:  0.17925961E+02
+          Norm of stream_function:  0.17021250E+02
+          Norm of stream_function:  0.17660929E+02
+          Norm of stream_function:  0.17078781E+02
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
           Decimate full grid, at least      173 points required,     173 valid points found
@@ -86,57 +86,57 @@
           Independent levels for angular sector   4 / class   8:  1[2]
           Independent levels for angular sector   4 / class   9:  1[2]
           Independent levels for angular sector   4 / class  10:  1[2]
-                Level:   1 ~> cov. at class zero:  0.98E+00
-                Level:   2 ~> cov. at class zero:  0.97E+00
-             Block stream_function:  0.12422483E+00 for      144 diagnostic points
-                   Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      3174.89 km
-                                 cor. ver. support:         3.12 vertical units
-                   Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      3127.81 km
-                                 cor. ver. support:         3.12 vertical units
-                   Level:   1 ~> amplitude:        0.00
-                                 cor. hor. support:      3174.89 km
-                                 cor. ver. support:         3.12 vertical units
-                   Level:   2 ~> amplitude:        0.00
-                                 cor. hor. support:      3127.81 km
-                                 cor. ver. support:         3.12 vertical units
+                Level:   1 ~> cov. at class zero:  0.97E+00
+                Level:   2 ~> cov. at class zero:  0.96E+00
+             Block stream_function:  0.18702613E+00 for      144 diagnostic points
+                   Level:   1 ~> amplitude:        0.58
+                                 cor. hor. support:      4742.88 km
+                                 cor. ver. support:         7.90 vertical units
+                   Level:   2 ~> amplitude:        0.62
+                                 cor. hor. support:      4428.39 km
+                                 cor. ver. support:         6.54 vertical units
+                   Level:   1 ~> amplitude:        0.42
+                                 cor. hor. support:      2667.12 km
+                                 cor. ver. support:         0.79 vertical units
+                   Level:   2 ~> amplitude:        0.38
+                                 cor. hor. support:      2490.27 km
+                                 cor. ver. support:         0.65 vertical units
              Effective levels:   1   2 
-                Horizontal support radius:    3174.89 km (   3174.89 km -    3174.89 km)
-                Estimated nc1 from horizontal support radius:      934
+                Horizontal support radius:    4742.88 km (   4742.88 km -    4742.88 km)
+                Estimated nc1 from horizontal support radius:      418
                    Decimate full grid, at least      173 points required,     173 valid points found
                    Subgrid hash:   1239477474
                 Final nc1:      173
-                Effective horizontal resolution:  1.72
-                Horizontal support radius:    3127.81 km (   3127.81 km -    3127.81 km)
-                Estimated nc1 from horizontal support radius:      963
+                Effective horizontal resolution:  2.57
+                Horizontal support radius:    4428.39 km (   4428.39 km -    4428.39 km)
+                Estimated nc1 from horizontal support radius:      480
                    Decimate full grid, at least      173 points required,     173 valid points found
                    Subgrid hash:   1239477474
                 Final nc1:      173
-                Effective horizontal resolution:  1.70
+                Effective horizontal resolution:  2.40
              nc1(  1) =                        173
              nc1(  2) =                        173
              ns =                              346
              v%n_s =                             2
-             c%n_s[global] =                  1151
+             c%n_s[global] =                  4253
              Effective levels:   1   2 
-                Horizontal support radius:    3174.89 km (   3174.89 km -    3174.89 km)
-                Estimated nc1 from horizontal support radius:      934
+                Horizontal support radius:    2667.12 km (   2667.12 km -    2667.12 km)
+                Estimated nc1 from horizontal support radius:     1324
                    Decimate full grid, at least      173 points required,     173 valid points found
                    Subgrid hash:   1239477474
                 Final nc1:      173
-                Effective horizontal resolution:  1.72
-                Horizontal support radius:    3127.81 km (   3127.81 km -    3127.81 km)
-                Estimated nc1 from horizontal support radius:      963
+                Effective horizontal resolution:  1.45
+                Horizontal support radius:    2490.27 km (   2490.27 km -    2490.27 km)
+                Estimated nc1 from horizontal support radius:     1519
                    Decimate full grid, at least      173 points required,     173 valid points found
                    Subgrid hash:   1239477474
                 Final nc1:      173
-                Effective horizontal resolution:  1.70
+                Effective horizontal resolution:  1.35
              nc1(  1) =                        173
              nc1(  2) =                        173
              ns =                              346
              v%n_s =                             2
-             c%n_s[global] =                  1151
+             c%n_s[global] =                   385
     Full NICAS adjoint test result:                        T
        Block NICAS adjoint test result:                    T
           Interpolation adjoint test (horizontal) result:  T
@@ -152,24 +152,25 @@
           Communication AB adjoint test result:            T
           Communication AC adjoint test result:            T
           Convolution / communication adjoint test result: T
+          Component NICAS adjoint test result:             T
              Min / max: 1.0000000 /  1.0000000 over     10 tests
              Min / max: 1.0000000 /  1.0000000 over     10 tests
              Min / max: 1.0000000 /  1.0000000 over     10 tests
              0.0 /    0.0:  1.0000000
           Level   1:  0.0000000 -  1.0000000
-          Level   2:  0.0000000 -  0.6353324
-Norm of output parameter dirac_mom - 1: 3.9826465522195038e+00
-Norm of output parameter dirac_diag_cor - 1: 1.1954449792302648e+00
-Norm of output parameter cor_a - 1: 1.8601075237738275e+01
-Norm of output parameter cor_a - 2: 0.0000000000000000e+00
-Norm of output parameter cor_rh1 - 1: 5.8227409849610671e+07
-Norm of output parameter cor_rh1 - 2: 5.8227409849610671e+07
-Norm of output parameter cor_rh2 - 1: 5.9033781563468426e+07
-Norm of output parameter cor_rh2 - 2: 5.9033781563468426e+07
-Norm of output parameter cor_rhc - 1: 2.7955369070959912e-01
-Norm of output parameter cor_rhc - 2: 2.7955369070959912e-01
-Norm of output parameter cor_rh - 1: 5.8620112917837463e+07
-Norm of output parameter cor_rh - 2: 5.8620112917837463e+07
-Norm of output parameter cor_rv - 1: 5.7991676529124440e+01
-Norm of output parameter cor_rv - 2: 5.7991676529124440e+01
+          Level   2:  0.0000000 -  0.5687413
+Norm of output parameter dirac_mom - 1: 4.5847594118047885e+00
+Norm of output parameter dirac_diag_cor - 1: 1.4049010083234903e+00
+Norm of output parameter cor_a - 1: 1.1193645188076077e+01
+Norm of output parameter cor_a - 2: 7.4246181896717696e+00
+Norm of output parameter cor_rh1 - 1: 7.3652032943927839e+07
+Norm of output parameter cor_rh1 - 2: 4.1417581808692828e+07
+Norm of output parameter cor_rh2 - 1: 9.9135796551314577e+07
+Norm of output parameter cor_rh2 - 2: 5.5748155206522353e+07
+Norm of output parameter cor_rhc - 1: 1.2373360854270123e+00
+Norm of output parameter cor_rhc - 2: 1.2373360854270123e+00
+Norm of output parameter cor_rh - 1: 8.5347899082850680e+07
+Norm of output parameter cor_rh - 2: 4.7994650672510058e+07
+Norm of output parameter cor_rv - 1: 1.3487852705213120e+02
+Norm of output parameter cor_rv - 2: 1.3487852705266574e+01
 Norm of output parameter nicas_norm - 1: 1.8601075237738275e+01
