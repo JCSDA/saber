@@ -35,7 +35,7 @@
 
 #include "src/Geometry.h"
 
-#include "saber/src/saber/interpolation/AtlasInterpWrapper.h"
+#include "saber/interpolation/AtlasInterpWrapper.h"
 
 #define ERR(e) {ABORT(nc_strerror(e));}
 
