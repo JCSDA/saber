@@ -57,10 +57,6 @@ class SaberCentralBlockBase : public util::Printable, private boost::noncopyable
 
   // Setup / calibration methods
 
-  // Set localization blockchain
-  virtual void setLocalization(std::unique_ptr<SaberBlockChain>)
-    {ABORT("setLocalization not implemented yet for the block " + this->blockName());}
-
   // Read block data
   virtual void read()
     {ABORT("read not implemented yet for the block " + this->blockName());}
@@ -68,10 +64,6 @@ class SaberCentralBlockBase : public util::Printable, private boost::noncopyable
   // Read model files
   virtual std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> fieldsToRead()
     {return {};}
-
-  // Apply inflation on ensemble members
-  virtual void applyInflation(std::vector<atlas::FieldSet> &)
-    {ABORT("applyInflation not implemented yet for the block " + this->blockName());}
 
   // Direct calibration
   virtual void directCalibration(const std::vector<atlas::FieldSet> &)

@@ -10,8 +10,12 @@ if( oops_FOUND )
     SaberBlockParametersBase.h
 
     # SABER block chain
-    SaberBlockChain.cc
-    SaberBlockChain.h
+    SaberBlockChainBase.h
+    SaberOuterBlockChain.h
+    SaberParametricBlockChain.cc
+    SaberParametricBlockChain.h
+    SaberEnsembleBlockChain.cc
+    SaberEnsembleBlockChain.h
 
     # SABER central block base
     SaberCentralBlockBase.cc

@@ -87,7 +87,7 @@ class SpectralAnalyticalFilter : public SaberOuterBlockBase {
   /// inner Geometry Data for next block
   const oops::GeometryData & innerGeometryData_;
   /// inner variables for next block
-  const oops::Variables & innerVars_;
+  const oops::Variables innerVars_;
   /// Spectral FunctionSpace
   const atlas::functionspace::Spectral specFunctionSpace_;
   /// Filter in spectral space

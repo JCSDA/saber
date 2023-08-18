@@ -21,8 +21,7 @@
 #include "oops/util/Duration.h"
 #include "oops/util/Logger.h"
 
-#include "saber/oops/SaberBlockChain.h"
-#include "saber/oops/SaberBlockParametersBase.h"
+#include "saber/oops/SaberParametricBlockChain.h"
 #include "saber/oops/Utilities.h"
 
 namespace saber {
@@ -46,7 +45,7 @@ class Localization : public oops::LocalizationBase<MODEL> {
 
  private:
   void print(std::ostream &) const override;
-  std::unique_ptr<SaberBlockChain> loc_;
+  std::unique_ptr<SaberParametricBlockChain> loc_;
 };
 
 // -----------------------------------------------------------------------------
@@ -73,13 +72,21 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
   const State_ xb(geom, incVars, dummyTime);
   const State_ fg(geom, incVars, dummyTime);
 
+  std::vector<atlas::FieldSet> emptyFsetEns;
+  // TODO(AS): revisit what configuration needs to be passed to SaberParametricBlockChain.
+  eckit::LocalConfiguration covarConf;
+  eckit::LocalConfiguration ensembleConf;
+  ensembleConf.set("ensemble size", 0);
+  covarConf.set("ensemble configuration", ensembleConf);
+  covarConf.set("adjoint test", conf.getBool("adjoint test", false));
+  covarConf.set("adjoint tolerance", conf.getDouble("adjoint tolerance", 1.0e-12));
+  covarConf.set("inverse test", conf.getBool("inverse test", false));
+  covarConf.set("inverse tolerance", conf.getDouble("inverse tolerance", 1.0e-12));
+  covarConf.set("iterative ensemble loading", false);
   // Initialize localization blockchain
-  loc_ = ensembleBlockChain<MODEL>(geom,
-                                   incVars,
-                                   xb.fieldSet(),
-                                   fg.fieldSet(),
-                                   xb.validTime(),
-                                   conf);
+  loc_ = std::make_unique<SaberParametricBlockChain>(geom, geom,
+              incVars, xb.fieldSet(), fg.fieldSet(), xb.validTime(),
+              emptyFsetEns, emptyFsetEns, covarConf, conf);
 
   oops::Log::trace() << "Localization:Localization done" << std::endl;
 }

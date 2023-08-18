@@ -52,7 +52,8 @@ class EnsembleParameters : public SaberBlockParametersBase {
 };
 
 // -----------------------------------------------------------------------------
-
+// TODO(AS): remove this block once the parameters are refactored and passed
+// correctly to SaberEnsembleBlockChain.
 class Ensemble : public SaberCentralBlockBase {
  public:
   static const std::string classname() {return "saber::generic::Ensemble";}
@@ -62,38 +63,18 @@ class Ensemble : public SaberCentralBlockBase {
   Ensemble(const oops::GeometryData &,
            const oops::Variables &,
            const eckit::Configuration &,
-           const Parameters_ &,
+           const Parameters_ & params,
            const atlas::FieldSet &,
            const atlas::FieldSet &,
            const util::DateTime &,
-           const size_t &);
+           const size_t &) : SaberCentralBlockBase(params)
+  {ABORT("the Ensemble block is a fake block, it should not be constructed");}
 
-  void randomize(atlas::FieldSet &) const override;
-  void multiply(atlas::FieldSet &) const override;
-
-  void read() override;
-
-  std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> fieldsToRead() override;
-
-  void applyInflation(std::vector<atlas::FieldSet> &) override;
-
-  void directCalibration(const std::vector<atlas::FieldSet> &) override;
-
-  void setLocalization(std::unique_ptr<SaberBlockChain>) override;
+  void randomize(atlas::FieldSet &) const override {}
+  void multiply(atlas::FieldSet &) const override {}
 
  private:
-  std::vector<atlas::FieldSet> ensemble_;
-  std::unique_ptr<SaberBlockChain> loc_;
-  const oops::GeometryData & geometryData_;
-  const oops::Variables vars_;
-  const double inflationValue_;
-  bool readFromAtlas_;
-  bool readFromModel_;
-  eckit::LocalConfiguration readConf_;
-  std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> inputs_;
-  atlas::FieldSet inflationField_;
-  int seed_ = 7;  // For reproducibility
-  void print(std::ostream &) const override;
+  void print(std::ostream &) const override {}
 };
 
 // -----------------------------------------------------------------------------
