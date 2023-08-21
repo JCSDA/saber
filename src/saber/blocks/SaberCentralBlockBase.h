@@ -18,10 +18,7 @@
 #include <boost/noncopyable.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 
-// TODO(AS): only need a forward declaration of Geometry (and Increment?)
-#include "oops/base/Geometry.h"
 #include "oops/base/GeometryData.h"
-#include "oops/base/Increment.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/AssociativeContainers.h"
 #include "oops/util/FieldSetHelpers.h"
@@ -30,9 +27,14 @@
 #include "oops/util/parameters/RequiredPolymorphicParameter.h"
 #include "oops/util/Printable.h"
 
-#include "saber/oops/SaberBlockParametersBase.h"
+#include "saber/blocks/SaberBlockParametersBase.h"
 
 // Forward declaration
+namespace oops {
+  template <typename MODEL> class Geometry;
+  template <typename MODEL> class Increment;
+}
+
 namespace saber {
   class SaberBlockChain;
 }
@@ -106,10 +108,10 @@ class SaberCentralBlockBase : public util::Printable, private boost::noncopyable
              const util::DateTime &) const;
 
   // Adjoint test
-  void adjointTest(const eckit::mpi::Comm &,
-                   const oops::GeometryData &,
+  void adjointTest(const oops::GeometryData &,
                    const oops::Variables &,
-                   const double & adjointTolerance = 1.0e-12) const;
+                   const double &,
+                   const size_t &) const;
 
  private:
   std::string blockName_;

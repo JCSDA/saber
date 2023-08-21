@@ -17,12 +17,10 @@
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 
+#include "saber/blocks/SaberBlockParametersBase.h"
+#include "saber/blocks/SaberOuterBlockBase.h"
 #include "saber/bump/BUMPParameters.h"
-
 #include "saber/bump/lib/BUMP.h"
-
-#include "saber/oops/SaberBlockParametersBase.h"
-#include "saber/oops/SaberOuterBlockBase.h"
 
 namespace saber {
 namespace bump {

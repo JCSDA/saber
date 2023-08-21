@@ -21,7 +21,7 @@
 #include "oops/util/Duration.h"
 #include "oops/util/Logger.h"
 
-#include "saber/oops/SaberParametricBlockChain.h"
+#include "saber/blocks/SaberParametricBlockChain.h"
 #include "saber/oops/Utilities.h"
 
 namespace saber {

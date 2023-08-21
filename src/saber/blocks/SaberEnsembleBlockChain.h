@@ -19,10 +19,10 @@
 #include "oops/interface/ModelData.h"
 #include "oops/util/Random.h"
 
-#include "saber/oops/SaberBlockChainBase.h"
-#include "saber/oops/SaberBlockParametersBase.h"
-#include "saber/oops/SaberOuterBlockChain.h"
-#include "saber/oops/SaberParametricBlockChain.h"
+#include "saber/blocks/SaberBlockChainBase.h"
+#include "saber/blocks/SaberBlockParametersBase.h"
+#include "saber/blocks/SaberOuterBlockChain.h"
+#include "saber/blocks/SaberParametricBlockChain.h"
 #include "saber/oops/Utilities.h"
 
 namespace saber {

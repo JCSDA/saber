@@ -37,9 +37,8 @@
 #include "oops/util/Logger.h"
 #include "oops/util/Timer.h"
 
+#include "saber/blocks/SaberOuterBlockBase.h"
 #include "saber/interpolation/AtlasInterpWrapper.h"
-
-#include "saber/oops/SaberOuterBlockBase.h"
 
 #define ERR(e) {ABORT(nc_strerror(e));}
 

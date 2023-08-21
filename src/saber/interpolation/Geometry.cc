@@ -20,7 +20,6 @@
 #include "atlas/util/KDTree.h"
 #include "atlas/util/Point.h"
 
-#include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/Logger.h"
 

@@ -4,7 +4,7 @@
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
 # Build list of subdirs with files to add
-set(_subdirs bump gsi interpolation oops spectralb util vader)
+set(_subdirs blocks bump generic gsi interpolation oops spectralb util vader)
 foreach( _subdir IN LISTS _subdirs )
     add_subdirectory( ${_subdir} )
     list( TRANSFORM ${_subdir}_src_files PREPEND ${_subdir}/ )
@@ -18,18 +18,18 @@ ecbuild_add_library( TARGET ${PROJECT_NAME}
                      HEADER_DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}
                      LINKER_LANGUAGE CXX )
 
-if(OPENMP)
-  target_link_libraries( ${PROJECT_NAME} PUBLIC OpenMP::OpenMP_Fortran )
+if(OpenMP_FOUND)
+    target_link_libraries( ${PROJECT_NAME} PUBLIC OpenMP::OpenMP_Fortran OpenMP::OpenMP_CXX )
 endif()
+
 target_link_libraries( ${PROJECT_NAME} PUBLIC NetCDF::NetCDF_Fortran NetCDF::NetCDF_C )
 target_link_libraries( ${PROJECT_NAME} PUBLIC MPI::MPI_Fortran )
 target_link_libraries( ${PROJECT_NAME} PUBLIC ${LAPACK_LIBRARIES} )
 target_link_libraries( ${PROJECT_NAME} PUBLIC eckit )
 target_link_libraries( ${PROJECT_NAME} PUBLIC fckit )
 target_link_libraries( ${PROJECT_NAME} PUBLIC atlas_f )
-if( oops_FOUND )
-    target_link_libraries( ${PROJECT_NAME} PUBLIC ${oops_LIBRARIES} )
-endif()
+target_link_libraries( ${PROJECT_NAME} PUBLIC ${oops_LIBRARIES} )
+
 if( gsibec_FOUND )
     target_link_libraries( ${PROJECT_NAME} PUBLIC gsibec )
     if ( sp_FOUND )

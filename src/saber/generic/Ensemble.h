@@ -15,11 +15,10 @@
 #include "atlas/field.h"
 
 #include "oops/base/GeometryData.h"
-
 #include "oops/util/parameters/RequiredParameter.h"
 
-#include "saber/oops/SaberBlockParametersBase.h"
-#include "saber/oops/SaberCentralBlockBase.h"
+#include "saber/blocks/SaberBlockParametersBase.h"
+#include "saber/blocks/SaberCentralBlockBase.h"
 
 namespace saber {
 namespace generic {

@@ -17,12 +17,11 @@
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
+#include "saber/blocks/SaberBlockParametersBase.h"
+#include "saber/blocks/SaberCentralBlockBase.h"
 #include "saber/bump/BUMPParameters.h"
-
 #include "saber/bump/lib/BUMP.h"
 
-#include "saber/oops/SaberBlockParametersBase.h"
-#include "saber/oops/SaberCentralBlockBase.h"
 
 namespace saber {
 namespace bump {

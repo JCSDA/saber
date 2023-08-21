@@ -15,9 +15,9 @@
 
 #include "oops/base/GeometryData.h"
 
-#include "saber/oops/SaberBlockParametersBase.h"
-#include "saber/oops/SaberCentralBlockBase.h"
-#include "saber/oops/SaberOuterBlockBase.h"
+#include "saber/blocks/SaberBlockParametersBase.h"
+#include "saber/blocks/SaberCentralBlockBase.h"
+#include "saber/blocks/SaberOuterBlockBase.h"
 
 namespace saber {
 namespace generic {

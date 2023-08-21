@@ -26,9 +26,9 @@
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
+#include "saber/blocks/SaberBlockParametersBase.h"
+#include "saber/blocks/SaberOuterBlockBase.h"
 #include "saber/gsi/interpolation/unstructured_interp/UnstructuredInterpolation.h"
-#include "saber/oops/SaberBlockParametersBase.h"
-#include "saber/oops/SaberOuterBlockBase.h"
 
 namespace saber {
 namespace gsi {

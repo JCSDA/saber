@@ -31,7 +31,7 @@ include( ${PROJECT_NAME}_compiler_flags )
 # Required
 find_package( jedicmake REQUIRED )  # Prefer find modules from jedi-cmake
 if(OPENMP)
-  find_package( OpenMP REQUIRED COMPONENTS Fortran )
+  find_package( OpenMP REQUIRED COMPONENTS CXX Fortran )
 endif()
 find_package( MPI REQUIRED COMPONENTS Fortran )
 find_package( NetCDF REQUIRED COMPONENTS C Fortran )
@@ -48,8 +48,10 @@ else()
     find_package( LAPACK REQUIRED )
 endif()
 
+# OOPS
+find_package( oops 1.7.0 REQUIRED )
+
 # Optionals
-find_package( oops 1.7.0 QUIET )
 find_package( gsibec 1.1.2 QUIET )
 find_package( vader 1.4.0 QUIET )
 
@@ -80,7 +82,6 @@ else()
     add_definitions(-DENABLE_SABER_INSTRUMENTATION=0)
 endif()
 
-
 ## Code coverage
 if ( ENABLE_OFFLINE_CODECOV )
     message( STATUS "Offline code coverage is enabled" )
@@ -93,9 +94,7 @@ else()
 endif()
 
 ## Sources
-if( oops_FOUND )
-    add_subdirectory( quench )
-endif()
+add_subdirectory( quench )
 add_subdirectory( src/saber )
 add_subdirectory( tools )
 add_subdirectory( test )
@@ -111,10 +110,6 @@ ecbuild_add_test( TARGET saber_coding_norms_src
                   TYPE SCRIPT
                   COMMAND ${CMAKE_BINARY_DIR}/bin/${PROJECT_NAME}_cpplint.py
                   ARGS --quiet --recursive ${CMAKE_SOURCE_DIR}/${PROJECT_NAME}/src )
-ecbuild_add_test( TARGET saber_coding_norms_test
-                  TYPE SCRIPT
-                  COMMAND ${CMAKE_BINARY_DIR}/bin/${PROJECT_NAME}_cpplint.py
-                  ARGS --quiet --recursive ${CMAKE_SOURCE_DIR}/${PROJECT_NAME}/test )
 
 ## Package Config
 ecbuild_install_project( NAME ${PROJECT_NAME} )

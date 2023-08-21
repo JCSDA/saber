@@ -5,10 +5,14 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
+#include <string>
+#include <vector>
+
 #include "saber/oops/Utilities.h"
 
-// -----------------------------------------------------------------------------
 namespace saber {
+
+// -----------------------------------------------------------------------------
 
 oops::Variables getActiveVars(const SaberBlockParametersBase & params,
                               const oops::Variables & defaultVars) {
@@ -33,6 +37,36 @@ oops::Variables getActiveVars(const SaberBlockParametersBase & params,
   } else {
     return activeVars;
   }
+}
+
+// -----------------------------------------------------------------------------
+
+void setMember(eckit::LocalConfiguration & conf,
+               const int & member) {
+  oops::Log::trace() << "setMember starting" << std::endl;
+
+  if (conf.has("member pattern")) {
+    std::string memberPattern = conf.getString("member pattern");
+    util::seekAndReplace(conf, memberPattern, std::to_string(member));
+  } else {
+    conf.set("member", member);
+  }
+
+  oops::Log::trace() << "setMember done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void setMPI(eckit::LocalConfiguration & conf,
+            const int & mpi) {
+  oops::Log::trace() << "setMPI starting" << std::endl;
+
+  if (conf.has("mpi pattern")) {
+    std::string mpiPattern = conf.getString("mpi pattern");
+    util::seekAndReplace(conf, mpiPattern, std::to_string(mpi));
+  }
+
+  oops::Log::trace() << "setMPI done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

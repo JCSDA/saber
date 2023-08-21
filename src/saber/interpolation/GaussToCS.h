@@ -19,9 +19,9 @@
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
+#include "saber/blocks/SaberBlockParametersBase.h"
+#include "saber/blocks/SaberOuterBlockBase.h"
 #include "saber/interpolation/AtlasInterpWrapper.h"
-#include "saber/oops/SaberBlockParametersBase.h"
-#include "saber/oops/SaberOuterBlockBase.h"
 
 namespace saber {
 namespace interpolation {

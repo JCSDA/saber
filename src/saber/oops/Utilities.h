@@ -29,15 +29,21 @@
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/Logger.h"
 
+#include "saber/blocks/SaberBlockParametersBase.h"
+#include "saber/blocks/SaberCentralBlockBase.h"
+#include "saber/blocks/SaberOuterBlockBase.h"
 #include "saber/oops/ErrorCovarianceParameters.h"
-#include "saber/oops/SaberBlockParametersBase.h"
-#include "saber/oops/SaberCentralBlockBase.h"
-#include "saber/oops/SaberOuterBlockBase.h"
 
 namespace saber {
 
 oops::Variables getActiveVars(const SaberBlockParametersBase &,
                               const oops::Variables &);
+
+void setMember(eckit::LocalConfiguration & conf,
+               const int & member);
+
+void setMPI(eckit::LocalConfiguration & conf,
+            const int & mpi);
 
 // -----------------------------------------------------------------------------
 

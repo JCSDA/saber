@@ -15,8 +15,8 @@
 #include "oops/base/Geometry.h"
 #include "oops/interface/ModelData.h"
 
-#include "saber/oops/SaberBlockParametersBase.h"
-#include "saber/oops/SaberOuterBlockBase.h"
+#include "saber/blocks/SaberBlockParametersBase.h"
+#include "saber/blocks/SaberOuterBlockBase.h"
 #include "saber/oops/Utilities.h"
 
 namespace saber {
@@ -272,12 +272,12 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
         covarConf.getDouble("adjoint tolerance"));
 
       // Run test
-      outerBlocks_.back()->adjointTest(geom.getComm(),
-                                       currentOuterGeometryData,
+      outerBlocks_.back()->adjointTest(currentOuterGeometryData,
                                        activeOuterVars,
                                        innerGeometryData,
                                        activeInnerVars,
-                                       localAdjointTolerance);
+                                       localAdjointTolerance,
+                                       geom.timeComm().rank());
     }
     // Inverse test
     const bool skipInverseTest = saberOuterBlockParams.skipInverseTest.value();

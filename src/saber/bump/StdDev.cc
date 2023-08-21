@@ -13,7 +13,6 @@
 #include "oops/util/Logger.h"
 #include "oops/util/Timer.h"
 
-#include "saber/bump/lib/Utilities.h"
 #include "saber/oops/Utilities.h"
 
 namespace saber {

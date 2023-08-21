@@ -17,10 +17,7 @@
 
 #include <boost/noncopyable.hpp>
 
-// TODO(AS): only need a forward declaration of Geometry (and Increment?)
-#include "oops/base/Geometry.h"
 #include "oops/base/GeometryData.h"
-#include "oops/base/Increment.h"
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/AssociativeContainers.h"
@@ -33,7 +30,13 @@
 #include "oops/util/parameters/RequiredPolymorphicParameter.h"
 #include "oops/util/Printable.h"
 
-#include "saber/oops/SaberBlockParametersBase.h"
+#include "saber/blocks/SaberBlockParametersBase.h"
+
+// Forward declaration
+namespace oops {
+  template <typename MODEL> class Geometry;
+  template <typename MODEL> class Increment;
+}
 
 namespace saber {
 
@@ -143,12 +146,12 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
              const util::DateTime &) const;
 
   // Adjoint test
-  void adjointTest(const eckit::mpi::Comm &,
-                   const oops::GeometryData &,
+  void adjointTest(const oops::GeometryData &,
                    const oops::Variables &,
                    const oops::GeometryData &,
                    const oops::Variables &,
-                   const double & adjointTolerance) const;
+                   const double &,
+                   const size_t &) const;
 
   // Left-inverse test
   void inverseTest(const oops::GeometryData &,

@@ -11,7 +11,6 @@
 #include <vector>
 
 #include "oops/base/ModelSpaceCovarianceParametersBase.h"
-#include "oops/base/ParameterTraitsVariables.h"
 
 #include "oops/util/DateTime.h"
 #include "oops/util/parameters/OptionalParameter.h"

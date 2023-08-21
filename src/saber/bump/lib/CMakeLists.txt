@@ -62,8 +62,6 @@ type_var.fypp
 type_vbal.fypp
 type_vbal_blk.fypp
 type_wind.fypp
-Utilities.cc
-Utilities.h
 )
 
 if( ENABLE_SABER_INSTRUMENTATION )

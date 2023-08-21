@@ -29,12 +29,12 @@
 #include "oops/util/Printable.h"
 #include "oops/util/Timer.h"
 
+#include "saber/blocks/SaberBlockChainBase.h"
+#include "saber/blocks/SaberBlockParametersBase.h"
+#include "saber/blocks/SaberEnsembleBlockChain.h"
+#include "saber/blocks/SaberOuterBlockChain.h"
+#include "saber/blocks/SaberParametricBlockChain.h"
 #include "saber/oops/ErrorCovarianceParameters.h"
-#include "saber/oops/SaberBlockChainBase.h"
-#include "saber/oops/SaberBlockParametersBase.h"
-#include "saber/oops/SaberEnsembleBlockChain.h"
-#include "saber/oops/SaberOuterBlockChain.h"
-#include "saber/oops/SaberParametricBlockChain.h"
 #include "saber/oops/Utilities.h"
 
 namespace saber {

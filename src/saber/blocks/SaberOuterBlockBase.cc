@@ -5,7 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "saber/oops/SaberOuterBlockBase.h"
+#include "saber/blocks/SaberOuterBlockBase.h"
 
 #include <map>
 #include <memory>
@@ -30,7 +30,7 @@
 #include "oops/util/parameters/RequiredPolymorphicParameter.h"
 #include "oops/util/Printable.h"
 
-#include "saber/oops/SaberBlockParametersBase.h"
+#include "saber/blocks/SaberBlockParametersBase.h"
 
 namespace saber {
 
@@ -82,18 +82,19 @@ SaberOuterBlockFactory::createParameters(const std::string &name) {
 
 // -----------------------------------------------------------------------------
 
-void SaberOuterBlockBase::adjointTest(const eckit::mpi::Comm & comm,
-                                      const oops::GeometryData & outerGeometryData,
+void SaberOuterBlockBase::adjointTest(const oops::GeometryData & outerGeometryData,
                                       const oops::Variables & outerVars,
                                       const oops::GeometryData & innerGeometryData,
                                       const oops::Variables & innerVars,
-                                      const double & adjointTolerance) const {
+                                      const double & adjointTolerance,
+                                      const size_t & timeRank) const {
   oops::Log::trace() << "SaberOuterBlockBase::adjointTest starting" << std::endl;
 
   // Create random inner FieldSet
   atlas::FieldSet innerFset = util::createRandomFieldSet(innerGeometryData.comm(),
                                                          innerGeometryData.functionSpace(),
-                                                         innerVars);
+                                                         innerVars,
+                                                         timeRank);
 
   // Copy inner FieldSet
   atlas::FieldSet innerFsetSave = util::copyFieldSet(innerFset);
@@ -101,7 +102,8 @@ void SaberOuterBlockBase::adjointTest(const eckit::mpi::Comm & comm,
   // Create random outer FieldSet
   atlas::FieldSet outerFset = util::createRandomFieldSet(outerGeometryData.comm(),
                                                          outerGeometryData.functionSpace(),
-                                                         outerVars);
+                                                         outerVars,
+                                                         timeRank);
 
   // Copy outer FieldSet
   atlas::FieldSet outerFsetSave = util::copyFieldSet(outerFset);
@@ -112,9 +114,9 @@ void SaberOuterBlockBase::adjointTest(const eckit::mpi::Comm & comm,
 
   // Compute adjoint test
   const double dp1 = util::dotProductFieldSets(innerFset, outerFsetSave,
-                                               outerVars.variables(), comm);
+                                               outerVars.variables(), outerGeometryData.comm());
   const double dp2 = util::dotProductFieldSets(outerFset, innerFsetSave,
-                                               innerVars.variables(), comm);
+                                               innerVars.variables(), innerGeometryData.comm());
   oops::Log::info() << std::setprecision(16) << "Info     : Adjoint test: y^t (Ax) = " << dp1
                     << ": x^t (A^t y) = " << dp2 << " : adjoint tolerance = "
                     << adjointTolerance << std::endl;

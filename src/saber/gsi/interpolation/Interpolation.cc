@@ -19,8 +19,8 @@
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 
+#include "saber/blocks/SaberOuterBlockBase.h"
 #include "saber/gsi/grid/Grid.h"
-#include "saber/oops/SaberOuterBlockBase.h"
 
 #include "saber/oops/Utilities.h"
 

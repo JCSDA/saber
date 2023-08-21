@@ -14,10 +14,10 @@
 
 #include "oops/interface/ModelData.h"
 
-#include "saber/oops/SaberBlockChainBase.h"
-#include "saber/oops/SaberBlockParametersBase.h"
-#include "saber/oops/SaberCentralBlockBase.h"
-#include "saber/oops/SaberOuterBlockChain.h"
+#include "saber/blocks/SaberBlockChainBase.h"
+#include "saber/blocks/SaberBlockParametersBase.h"
+#include "saber/blocks/SaberCentralBlockBase.h"
+#include "saber/blocks/SaberOuterBlockChain.h"
 #include "saber/oops/Utilities.h"
 
 namespace saber {
@@ -311,10 +311,10 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
       covarConf.getDouble("adjoint tolerance"));
 
     // Run test
-    centralBlock_->adjointTest(geom.getComm(),
-                                               currentOuterGeom,
-                                               activeVars,
-                                               localAdjointTolerance);
+    centralBlock_->adjointTest(currentOuterGeom,
+                               activeVars,
+                               localAdjointTolerance,
+                               geom.timeComm().rank());
   }
 
   oops::Log::trace() << "SaberParametricBlockChain ctor done" << std::endl;

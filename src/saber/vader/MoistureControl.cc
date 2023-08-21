@@ -32,7 +32,7 @@
 #include "oops/base/Variables.h"
 #include "oops/util/Timer.h"
 
-#include "saber/oops/SaberOuterBlockBase.h"
+#include "saber/blocks/SaberOuterBlockBase.h"
 #include "saber/vader/CovarianceStatisticsUtils.h"
 #include "saber/vader/movader_covstats_interface.h"
 

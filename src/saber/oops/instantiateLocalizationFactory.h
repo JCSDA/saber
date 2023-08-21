@@ -16,7 +16,7 @@ namespace saber {
 // -----------------------------------------------------------------------------
 
 template <typename MODEL> void instantiateLocalizationFactory() {
-  static oops::LocalizationMaker<MODEL, Localization<MODEL> >  makerSABER_("SABER");
+  static oops::LocalizationMaker<MODEL, Localization<MODEL> > makerSABER_("SABER");
 }
 
 // -----------------------------------------------------------------------------

@@ -17,8 +17,12 @@
 #include <utility>
 #include <vector>
 
+
+#include "oops/util/ConfigFunctions.h"
+#include "oops/util/FieldSetHelpers.h"
+#include "oops/util/FieldSetOperations.h"
 #include "saber/bump/lib/type_bump_parameters.h"
-#include "saber/bump/lib/Utilities.h"
+
 
 namespace bump_lib {
 
@@ -37,7 +41,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   keyBUMP_(), comm_(&comm), infoChannel_(&infoChannel), testChannel_(&testChannel),
   fspace_(fspace), variableSizes_(variableSizes), vars_(vars),
   covarConf_(covarConf), bumpConf_(bumpConf), nens_(), waitForDualResolution_(false),
-  gridUid_(getGridUid(fspace)), dualResolutionGridUid_("") {
+  gridUid_(util::getGridUid(fspace)), dualResolutionGridUid_("") {
   // Get number of MPI tasks and OpenMP threads
   std::string mpi(std::to_string(comm.size()));
   std::string omp("1");
@@ -111,11 +115,11 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   size_t jgrid = 0;
   for (auto & grid : grids) {
     // Merge bumpConf_ into grid
-    grid = mergeConfigs(grid, bumpConf_);
+    grid = util::mergeConfigs(grid, bumpConf_);
 
     // Replace patterns
-    seekAndReplace(grid, "_MPI_", mpi);
-    seekAndReplace(grid, "_OMP_", omp);
+    util::seekAndReplace(grid, "_MPI_", mpi);
+    util::seekAndReplace(grid, "_OMP_", omp);
 
     // New files
     if (jgrid > 0) {
@@ -259,11 +263,11 @@ void BUMP::readAtlasFiles() {
       fset.name() = param + " - " + std::to_string(icmp);
 
       // Read file
-      readFieldSet(*comm_, fspace_, variableSizes_, vars_, file, fset);
+      util::readFieldSet(*comm_, fspace_, variableSizes_, vars_, file, fset);
 
       // Print FieldSet norm
         *testChannel_ << "+++ Norm of input parameter " << fset.name() << ": "
-                      << normFieldSet(fset, vars_, *comm_)
+                      << util::normFieldSet(fset, vars_, *comm_)
                       << std::endl;
 
       // Add fields
@@ -301,7 +305,7 @@ std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> BUMP::fieldsT
 void BUMP::addField(const atlas::FieldSet & fset) {
   // Check fset grid UID
   if (fset.size() > 0) {
-    if (getGridUid(fset) != gridUid_) {
+    if (util::getGridUid(fset) != gridUid_) {
       *infoChannel_ << "BUMP: wrong grid UID" << std::endl;
       std::abort();
     }
@@ -336,13 +340,13 @@ void BUMP::addEnsemble(const std::vector<atlas::FieldSet> & fsetEns) {
     size_t igeom;
     if (dualResolutionGridUid_ == "") {
       igeom = 0;
-      if (getGridUid(fset) != gridUid_) {
+      if (util::getGridUid(fset) != gridUid_) {
         *infoChannel_ << "BUMP::iterativeUpdate: wrong grid UID" << std::endl;
         std::abort();
       }
     } else {
       igeom = 1;
-      if (getGridUid(fset) != dualResolutionGridUid_) {
+      if (util::getGridUid(fset) != dualResolutionGridUid_) {
         *infoChannel_ << "BUMP::iterativeUpdate: wrong dual resolution grid UID" << std::endl;
         std::abort();
       }
@@ -372,7 +376,7 @@ void BUMP::addEnsemble(const std::vector<atlas::FieldSet> & fsetEns) {
 void BUMP::dualResolutionSetup(const atlas::FunctionSpace & fspace,
                                const atlas::FieldSet & extraFields) {
   // Set dual resolution grid UID
-  dualResolutionGridUid_ = getGridUid(fspace);
+  dualResolutionGridUid_ = util::getGridUid(fspace);
 
   // Dual resolution setup
   for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
@@ -388,13 +392,13 @@ void BUMP::iterativeUpdate(const atlas::FieldSet & fset, const size_t & ie) {
   size_t igeom;
   if (dualResolutionGridUid_ == "") {
     igeom = 0;
-    if (getGridUid(fset) != gridUid_) {
+    if (util::getGridUid(fset) != gridUid_) {
       *infoChannel_ << "BUMP::iterativeUpdate: wrong grid UID" << std::endl;
       std::abort();
     }
   } else {
     igeom = 1;
-    if (getGridUid(fset) != dualResolutionGridUid_) {
+    if (util::getGridUid(fset) != dualResolutionGridUid_) {
       *infoChannel_ << "BUMP::iterativeUpdate: wrong dual resolution grid UID" << std::endl;
       std::abort();
     }
@@ -451,11 +455,11 @@ void BUMP::writeAtlasFiles() const {
 
       // Print FieldSet norm
       *testChannel_ << "+++ Norm of output parameter " << output.second.name() << ": "
-                    << normFieldSet(output.second, vars_, *comm_)
+                    << util::normFieldSet(output.second, vars_, *comm_)
                     << std::endl;
 
       // Write FieldSet
-      writeFieldSet(*comm_, file, output.second);
+      util::writeFieldSet(*comm_, file, output.second);
     }
   }
 }
@@ -609,8 +613,8 @@ eckit::LocalConfiguration BUMP::getFileConf(const eckit::mpi::Comm & comm,
   eckit::LocalConfiguration file = conf.getSubConfiguration("file");
 
   // Replace patterns
-  seekAndReplace(file, "_MPI_", mpi);
-  seekAndReplace(file, "_OMP_", omp);
+  util::seekAndReplace(file, "_MPI_", mpi);
+  util::seekAndReplace(file, "_OMP_", omp);
 
   return file;
 }

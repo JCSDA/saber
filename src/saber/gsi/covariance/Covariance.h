@@ -23,10 +23,10 @@
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
+#include "saber/blocks/SaberBlockParametersBase.h"
+#include "saber/blocks/SaberCentralBlockBase.h"
 #include "saber/gsi/covariance/Covariance.interface.h"
 #include "saber/gsi/utils/GSIParameters.h"
-#include "saber/oops/SaberBlockParametersBase.h"
-#include "saber/oops/SaberCentralBlockBase.h"
 
 namespace oops {
   class Variables;

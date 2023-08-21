@@ -5,7 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "saber/oops/SaberCentralBlockBase.h"
+#include "saber/blocks/SaberCentralBlockBase.h"
 
 #include <map>
 #include <memory>
@@ -30,7 +30,7 @@
 #include "oops/util/parameters/RequiredPolymorphicParameter.h"
 #include "oops/util/Printable.h"
 
-#include "saber/oops/SaberBlockParametersBase.h"
+#include "saber/blocks/SaberBlockParametersBase.h"
 
 namespace saber {
 
@@ -84,20 +84,22 @@ SaberCentralBlockFactory::createParameters(const std::string &name) {
 
 // -----------------------------------------------------------------------------
 
-void SaberCentralBlockBase::adjointTest(const eckit::mpi::Comm & comm,
-                                        const oops::GeometryData & geometryData,
+void SaberCentralBlockBase::adjointTest(const oops::GeometryData & geometryData,
                                         const oops::Variables & vars,
-                                        const double & adjointTolerance) const {
+                                        const double & adjointTolerance,
+                                        const size_t & timeRank) const {
   oops::Log::trace() << "SaberCentralBlockBase::adjointTest starting" << std::endl;
 
   // Create random FieldSets
   atlas::FieldSet fset1 =  util::createRandomFieldSet(geometryData.comm(),
                                                       geometryData.functionSpace(),
-                                                      vars);
-
+                                                      vars,
+                                                      timeRank);
   atlas::FieldSet fset2 =  util::createRandomFieldSet(geometryData.comm(),
                                                       geometryData.functionSpace(),
-                                                      vars);
+                                                      vars,
+                                                      timeRank);
+
   // Copy FieldSets
   atlas::FieldSet fset1Save = util::copyFieldSet(fset1);
   atlas::FieldSet fset2Save = util::copyFieldSet(fset2);
@@ -107,8 +109,14 @@ void SaberCentralBlockBase::adjointTest(const eckit::mpi::Comm & comm,
   this->multiply(fset2);
 
   // Compute adjoint test
-  const double dp1 = util::dotProductFieldSets(fset1, fset2Save, vars.variables(), comm);
-  const double dp2 = util::dotProductFieldSets(fset2, fset1Save, vars.variables(), comm);
+  const double dp1 = util::dotProductFieldSets(fset1,
+                                               fset2Save,
+                                               vars.variables(),
+                                               geometryData.comm());
+  const double dp2 = util::dotProductFieldSets(fset2,
+                                               fset1Save,
+                                               vars.variables(),
+                                               geometryData.comm());
   oops::Log::info() << std::setprecision(16) << "Info     : Adjoint test: y^t (Ax) = " << dp1
                     << ": x^t (A^t y) = " << dp2 << " : adjoint tolerance = "
                     << adjointTolerance << std::endl;

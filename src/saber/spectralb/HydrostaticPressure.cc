@@ -20,7 +20,7 @@
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/Timer.h"
 
-#include "saber/oops/SaberOuterBlockBase.h"
+#include "saber/blocks/SaberOuterBlockBase.h"
 #include "saber/spectralb/GaussUVToGP.h"
 #include "saber/vader/GpToHp.h"
 

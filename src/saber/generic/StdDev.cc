@@ -5,7 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "saber/oops/StdDev.h"
+#include "saber/generic/StdDev.h"
 
 #include <cmath>
 #include <memory>
@@ -23,7 +23,7 @@
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/Timer.h"
 
-#include "saber/oops/SaberOuterBlockBase.h"
+#include "saber/blocks/SaberOuterBlockBase.h"
 #include "saber/oops/Utilities.h"
 
 namespace saber {
@@ -295,7 +295,6 @@ void StdDev::write() const {
                                             innerVars_.variables(),
                                             innerGeometryData_.comm())
                       << std::endl;
-
 
     // Write file
     util::writeFieldSet(innerGeometryData_.comm(), writeConf_, stdDevFset_);

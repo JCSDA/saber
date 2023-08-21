@@ -5,7 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "saber/oops/ID.h"
+#include "saber/generic/ID.h"
 
 #include <vector>
 

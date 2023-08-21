@@ -17,9 +17,6 @@
 #include "atlas/grid.h"
 
 #include "eckit/mpi/Comm.h"
-
-#include "oops/mpi/mpi.h"
-
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/parameters/OptionalParameter.h"
 #include "oops/util/parameters/Parameter.h"
@@ -48,7 +45,7 @@ class GeometryParameters : public oops::Parameters {
 };
 
 // -----------------------------------------------------------------------------
-/// Geometry handles geometry for  model.
+/// Geometry handles geometry for model.
 
 class Geometry : public util::Printable,
                  private util::ObjectCounter<Geometry> {
@@ -58,7 +55,7 @@ class Geometry : public util::Printable,
   static const std::string classname() {return "interpolation::Geometry";}
 
   Geometry(const Parameters_ &,
-           const eckit::mpi::Comm & comm = oops::mpi::world());
+           const eckit::mpi::Comm & comm = eckit::mpi::comm());
 
   const atlas::FunctionSpace & functionSpace() const {return functionSpace_;}
   void latlon(std::vector<double> &, std::vector<double> &, const bool) const;

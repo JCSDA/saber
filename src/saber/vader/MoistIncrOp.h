@@ -18,8 +18,8 @@
 
 #include "oops/base/Variables.h"
 
-#include "saber/oops/SaberBlockParametersBase.h"
-#include "saber/oops/SaberOuterBlockBase.h"
+#include "saber/blocks/SaberBlockParametersBase.h"
+#include "saber/blocks/SaberOuterBlockBase.h"
 #include "saber/vader/MoistIncrOpParameters.h"
 
 namespace oops {

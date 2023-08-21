@@ -40,6 +40,8 @@
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
+#include "saber/oops/Utilities.h"
+
 namespace saber {
 
 // -----------------------------------------------------------------------------
@@ -207,7 +209,9 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
 
       // Update parameters
       auto outputDiracUpdated(outputDirac->write);
-      setMPI(outputDiracUpdated, ntasks);
+      eckit::LocalConfiguration outputDiracConf = outputDiracUpdated.toConfiguration();
+      setMPI(outputDiracConf, ntasks);
+      outputDiracUpdated.validateAndDeserialize(outputDiracConf);
 
       // Add output Dirac configuration
       eckit::LocalConfiguration outputConf(outputDiracUpdated.toConfiguration());
@@ -215,7 +219,7 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
 
       // Apply B matrix components recursively
       std::string id;
-      dirac(covarParams.toConfiguration(), testConf, id, xx, dxi);
+      dirac(covarParams.toConfiguration(), testConf, id, geom, vars, xx, dxi);
     }
 
     const auto & randomizationSize = covarParams.randomizationSize.value();
@@ -225,7 +229,7 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
                                             geom, vars, covarParams, xx, xx));
 
       // Randomization
-      randomization(params, xx, Bmat, ntasks);
+      randomization(params, geom, vars, xx, Bmat, ntasks);
     }
 
     return 0;
@@ -246,7 +250,9 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
     return "oops::ErrorCovarianceToolbox<" + MODEL::name() + ">";
   }
 // -----------------------------------------------------------------------------
+// The passed geometry should be consistent with the passed increment
   void print_value_at_positions(const eckit::LocalConfiguration & diagConf,
+                                const Geometry_ & geom,
                                 const Increment_ & data) const {
     oops::Log::trace() << appname() << "::print_value_at_position starting" << std::endl;
 
@@ -255,18 +261,21 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
     diagPoints.dirac(diagConf);
 
     // Get diagnostic values
-    util::printDiagValues(data.geometry().timeComm(),
-                          data.geometry().getComm(),
-                          data.geometry().functionSpace(),
+    util::printDiagValues(geom.timeComm(),
+                          geom.getComm(),
+                          geom.functionSpace(),
                           data.fieldSet(),
                           diagPoints.fieldSet());
 
     oops::Log::trace() << appname() << "::print_value_at_position done" << std::endl;
   }
 // -----------------------------------------------------------------------------
-  void dirac(const eckit::LocalConfiguration & covarConfig,
-             const eckit::LocalConfiguration & testConfig,
+// The passed geometry/variables should be consistent with the passed increment
+  void dirac(const eckit::LocalConfiguration & covarConf,
+             const eckit::LocalConfiguration & testConf,
              std::string & id,
+             const Geometry_ & geom,
+             const oops::Variables & vars,
              const State4D_ & xx,
              const Increment4D_ & dxi) const {
     // Define output increment
@@ -274,7 +283,7 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
 
     // Covariance
     std::unique_ptr<CovarianceBase_> Bmat(CovarianceFactory_::create(
-        xx.geometry(), xx.variables(), covarConfig, xx, xx));
+                                          geom, vars, covarConf, xx, xx));
 
     // Multiply
     Bmat->multiply(dxi, dxo);
@@ -283,23 +292,23 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
     if (id != "") id.append("_");
     id.append(Bmat->covarianceModel());
 
-    if (testConfig.has("diagnostic points")) {
+    if (testConf.has("diagnostic points")) {
       oops::Log::test() << "Covariance(" << id << ") diagnostics:" << std::endl;
 
       // Print variances
       oops::Log::test() << "- Variances at Dirac points:" << std::endl;
-      print_value_at_positions(testConfig.getSubConfiguration("dirac"), dxo[0]);
+      print_value_at_positions(testConf.getSubConfiguration("dirac"), geom, dxo[0]);
 
       // Print covariances
-      const auto & diagnosticConfig = testConfig.getSubConfiguration("diagnostic points");
+      const auto & diagnosticConfig = testConf.getSubConfiguration("diagnostic points");
       if (!diagnosticConfig.empty()) {
         oops::Log::test() << "- Covariances at diagnostic points:" << std::endl;
-        print_value_at_positions(diagnosticConfig, dxo[0]);
+        print_value_at_positions(diagnosticConfig, geom, dxo[0]);
       }
     }
 
     // Copy configuration
-    eckit::LocalConfiguration outputBConf(testConfig.getSubConfiguration("output dirac"));
+    eckit::LocalConfiguration outputBConf(testConf.getSubConfiguration("output dirac"));
 
     // Seek and replace %id% with id, recursively
     util::seekAndReplace(outputBConf, "%id%", id);
@@ -309,28 +318,28 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
     oops::Log::test() << "Covariance(" << id << ") * Increment:" << dxo << std::endl;
 
     // Look for hybrid or ensemble covariance models
-    const std::string covarianceModel(covarConfig.getString("covariance model"));
+    const std::string covarianceModel(covarConf.getString("covariance model"));
     if (covarianceModel == "hybrid") {
       std::vector<eckit::LocalConfiguration> confs;
-      covarConfig.get("components", confs);
+      covarConf.get("components", confs);
       size_t componentIndex(1);
       for (const auto & conf : confs) {
         std::string idC(id + std::to_string(componentIndex));
         const eckit::LocalConfiguration componentConfig(conf, "covariance");
-        dirac(componentConfig, testConfig, idC, xx, dxi);
+        dirac(componentConfig, testConf, idC, geom, vars, xx, dxi);
         ++componentIndex;
       }
     }
-    if (covarianceModel == "ensemble" && covarConfig.has("localization")) {
+    if (covarianceModel == "ensemble" && covarConf.has("localization")) {
       // Localization configuration
-      eckit::LocalConfiguration locConfig(covarConfig.getSubConfiguration("localization"));
+      eckit::LocalConfiguration locConfig(covarConf.getSubConfiguration("localization"));
       locConfig.set("date", xx[0].validTime().toString());
 
       // Define output increment
       Increment4D_ dxo(dxi);
 
       // Setup localization
-      Localization_ Lmat(xx.geometry(), xx.variables(), locConfig);
+      Localization_ Lmat(geom, vars, locConfig);
 
       // Apply localization
       Lmat.multiply(dxo);
@@ -341,18 +350,18 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
 
       oops::Log::test() << "Localization(" << idL << ") diagnostics:" << std::endl;
       oops::Log::test() << "- Localization at zero separation:" << std::endl;
-      print_value_at_positions(testConfig.getSubConfiguration("dirac"), dxo[0]);
-      if (testConfig.has("diagnostic points")) {
-        const auto & diagnosticConfig = testConfig.getSubConfiguration("diagnostic points");
+      print_value_at_positions(testConf.getSubConfiguration("dirac"), geom, dxo[0]);
+      if (testConf.has("diagnostic points")) {
+        const auto & diagnosticConfig = testConf.getSubConfiguration("diagnostic points");
         if (!diagnosticConfig.empty()) {
           // Print localization
           oops::Log::test() << "- Localization at diagnostic points:" << std::endl;
-          print_value_at_positions(diagnosticConfig, dxo[0]);
+          print_value_at_positions(diagnosticConfig, geom, dxo[0]);
         }
       }
 
       // Copy configuration
-      eckit::LocalConfiguration outputLConf(testConfig.getSubConfiguration("output dirac"));
+      eckit::LocalConfiguration outputLConf(testConf.getSubConfiguration("output dirac"));
 
       // Seek and replace %id% with id, recursively
       util::seekAndReplace(outputLConf, "%id%", idL);
@@ -364,6 +373,8 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
   }
 // -----------------------------------------------------------------------------
   void randomization(const ErrorCovarianceToolboxParameters_ & params,
+                     const Geometry_ & geom,
+                     const oops::Variables & vars,
                      const State4D_ & xx,
                      const std::unique_ptr<CovarianceBase_> & Bmat,
                      const size_t & ntasks) const {
@@ -373,9 +384,9 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
       oops::Log::info() << "Info     : -----------------------" << std::endl;
 
       // Create increments
-      Increment4D_ dx(xx.geometry(), xx.variables(), xx.times(), xx.commTime());
-      Increment4D_ dxsq(xx.geometry(), xx.variables(), xx.times(), xx.commTime());
-      Increment4D_ variance(xx.geometry(), xx.variables(), xx.times(), xx.commTime());
+      Increment4D_ dx(geom, vars, xx.times(), xx.commTime());
+      Increment4D_ dxsq(geom, vars, xx.times(), xx.commTime());
+      Increment4D_ variance(geom, vars, xx.times(), xx.commTime());
 
       // Initialize variance
       variance.zero();
@@ -416,9 +427,11 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
 
           if (outputPerturbations != boost::none) {
             // Update parameters
-            auto outputPerturbationsUpdated = *outputPerturbations;
+            auto outputPerturbationsUpdated(*outputPerturbations);
             outputPerturbationsUpdated.setMember(jm+1);
-            setMPI(outputPerturbationsUpdated, ntasks);
+            eckit::LocalConfiguration outputPertConf = outputPerturbationsUpdated.toConfiguration();
+            setMPI(outputPertConf, ntasks);
+            outputPerturbationsUpdated.validateAndDeserialize(outputPertConf);
 
             // Write perturbation
             ens[jm].write(outputPerturbationsUpdated);
@@ -426,9 +439,11 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
 
           if (outputStates != boost::none) {
             // Update parameters
-            auto outputStatesUpdated = outputStates->write;
+            auto outputStatesUpdated(outputStates->write);
             outputStatesUpdated.setMember(jm+1);
-            setMPI(outputStatesUpdated, ntasks);
+            eckit::LocalConfiguration outputStatesConf = outputStatesUpdated.toConfiguration();
+            setMPI(outputStatesConf, ntasks);
+            outputStatesUpdated.validateAndDeserialize(outputStatesConf);
 
             // Add background state to perturbation
             State_ xp(xx[0]);
@@ -454,27 +469,15 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
 
         // Update parameters
         auto outputVarianceUpdated = *outputVariance;
-        setMPI(outputVarianceUpdated, ntasks);
+        eckit::LocalConfiguration outputVarianceConf = outputVarianceUpdated.toConfiguration();
+        setMPI(outputVarianceConf, ntasks);
+        outputVarianceUpdated.validateAndDeserialize(outputVarianceConf);
 
         // Write variance
         variance[0].write(outputVarianceUpdated);
         oops::Log::test() << "Randomized variance: " << variance << std::endl;
       }
     }
-  }
-// -----------------------------------------------------------------------------
-  void setMPI(oops::WriteParametersBase & params,
-              const int & mpi) const {
-    oops::Log::trace() << appname() << "::setMPI starting" << std::endl;
-
-    eckit::LocalConfiguration conf = params.toConfiguration();
-    if (conf.has("mpi pattern")) {
-      std::string mpiPattern = conf.getString("mpi pattern");
-      util::seekAndReplace(conf, mpiPattern, std::to_string(mpi));
-    }
-    params.validateAndDeserialize(conf);
-
-    oops::Log::trace() << appname() << "::setMPI done" << std::endl;
   }
 // -----------------------------------------------------------------------------
 };

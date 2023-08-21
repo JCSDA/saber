@@ -19,7 +19,6 @@ namespace saber {
 template <typename MODEL> void instantiateCovarFactory() {
   oops::instantiateCovarFactory<MODEL>();
   static oops::CovarMaker<MODEL, ErrorCovariance<MODEL> > makerSABER_("SABER");
-
   instantiateLocalizationFactory<MODEL>();
 }
 

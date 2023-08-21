@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 
+#include "atlas/array.h"
 #include "atlas/field.h"
 
 #include "saber/spectralb/spectralb_covstats_interface.h"
