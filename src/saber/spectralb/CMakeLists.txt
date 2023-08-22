@@ -24,7 +24,7 @@ if( oops_FOUND AND (atlas_TRANS_FOUND OR atlas_ECTRANS_FOUND) )
     SqrtOfSpectralCovariance.h
     )
 
-    if( vader_FOUND AND atlas_VERSION VERSION_GREATER_EQUAL "0.31.0" )
+    if( vader_FOUND )
           list(APPEND spectralb_src_files_list
           GaussUVToGP.cc
           GaussUVToGP.h
