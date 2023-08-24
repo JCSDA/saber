@@ -11,10 +11,11 @@
 #include <string>
 #include <boost/noncopyable.hpp>
 
+#include "eckit/config/Configuration.h"
+
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"
 
-#include "src/CovarianceParameters.h"
 #include "src/Geometry.h"
 
 namespace quench {
@@ -28,11 +29,10 @@ class Covariance : public util::Printable,
                    private boost::noncopyable,
                    private util::ObjectCounter<Covariance> {
  public:
-  typedef CovarianceParameters Parameters_;
   static const std::string classname() {return "quench::Covariance";}
 
   Covariance(const Geometry &, const oops::Variables &,
-             const Parameters_ &, const State &, const State &) {}
+             const eckit::Configuration &, const State &, const State &) {}
 
   void multiply(const Increment &, Increment &) const {}
   void inverseMultiply(const Increment &, Increment &) const {}

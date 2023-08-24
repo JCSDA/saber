@@ -13,6 +13,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "eckit/config/Configuration.h"
+
 #include "atlas/field.h"
 #include "atlas/functionspace.h"
 #include "atlas/grid.h"
@@ -89,11 +91,9 @@ class GeometryParameters : public oops::Parameters {
 class Geometry : public util::Printable,
                  private util::ObjectCounter<Geometry> {
  public:
-  typedef GeometryParameters Parameters_;
-
   static const std::string classname() {return "quench::Geometry";}
 
-  Geometry(const Parameters_ &,
+  Geometry(const eckit::Configuration &,
            const eckit::mpi::Comm & comm = oops::mpi::world());
   Geometry(const Geometry &);
 

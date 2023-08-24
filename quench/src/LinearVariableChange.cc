@@ -14,12 +14,17 @@
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/FieldSetOperations.h"
 
+#include "src/LinearVariableChangeParameters.h"
+
 namespace quench {
 
 // -----------------------------------------------------------------------------
 
-LinearVariableChange::LinearVariableChange(const Geometry & geom, const Parameters_ & params) {
+LinearVariableChange::LinearVariableChange(const Geometry & geom,
+                                           const eckit::Configuration & config) {
   // Local configuration
+  LinearVariableChangeParameters params;
+  params.deserialize(config);
   eckit::LocalConfiguration conf(params.atlasFile.value());
 
   // Get number of MPI tasks and OpenMP threads

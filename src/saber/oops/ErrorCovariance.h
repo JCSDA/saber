@@ -52,11 +52,10 @@ class ErrorCovariance : public oops::ModelSpaceCovarianceBase<MODEL>,
   typedef typename oops::Increment<MODEL>::WriteParameters_    WriteParameters_;
 
  public:
-  typedef ErrorCovarianceParameters<MODEL> Parameters_;
-
   static const std::string classname() {return "saber::ErrorCovariance";}
 
-  ErrorCovariance(const Geometry_ &, const oops::Variables &, const Parameters_ &,
+  ErrorCovariance(const Geometry_ &, const oops::Variables &,
+                  const eckit::Configuration &,
                   const State4D_ &, const State4D_ &);
   virtual ~ErrorCovariance();
 
@@ -90,12 +89,14 @@ class ErrorCovariance : public oops::ModelSpaceCovarianceBase<MODEL>,
 template<typename MODEL>
 ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
                                         const oops::Variables & incVars,
-                                        const Parameters_ & params,
+                                        const eckit::Configuration & config,
                                         const State4D_ & xb,
                                         const State4D_ & fg)
-  : oops::ModelSpaceCovarianceBase<MODEL>(geom, params, xb, fg)
+  : oops::ModelSpaceCovarianceBase<MODEL>(geom, config, xb, fg)
 {
   oops::Log::trace() << "ErrorCovariance::ErrorCovariance starting" << std::endl;
+  ErrorCovarianceParameters<MODEL> params;
+  params.deserialize(config);
 
   // Local copy of background and first guess that can undergo interpolation
   atlas::FieldSet fsetXb = util::copyFieldSet(xb[0].fieldSet());

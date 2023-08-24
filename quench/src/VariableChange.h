@@ -10,11 +10,12 @@
 #include <ostream>
 #include <string>
 
+#include "eckit/config/Configuration.h"
+
 #include "oops/util/Printable.h"
 
 #include "src/Geometry.h"
 #include "src/State.h"
-#include "src/VariableChangeParameters.h"
 
 namespace quench {
   class State;
@@ -24,10 +25,9 @@ namespace quench {
 
 class VariableChange : public util::Printable {
  public:
-  typedef VariableChangeParameters Parameters_;
   static const std::string classname() {return "quench::VariableChange";}
 
-  VariableChange(const Parameters_ &, const Geometry &) {}
+  VariableChange(const eckit::Configuration &, const Geometry &) {}
 
 /// Perform transforms
   void changeVar(State &, const oops::Variables &) const {}

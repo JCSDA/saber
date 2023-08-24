@@ -10,13 +10,14 @@
 #include <ostream>
 #include <string>
 
+#include "eckit/config/Configuration.h"
+
 #include "atlas/field.h"
 
 #include "oops/util/Printable.h"
 
 #include "src/Geometry.h"
 #include "src/Increment.h"
-#include "src/LinearVariableChangeParameters.h"
 #include "src/State.h"
 
 namespace quench {
@@ -27,10 +28,9 @@ namespace quench {
 
 class LinearVariableChange: public util::Printable {
  public:
-  typedef LinearVariableChangeParameters Parameters_;
   static const std::string classname() {return "quench::LinearVariableChange";}
 
-  LinearVariableChange(const Geometry &, const Parameters_ &);
+  LinearVariableChange(const Geometry &, const eckit::Configuration &);
   ~LinearVariableChange();
 
 /// Perform linear transforms

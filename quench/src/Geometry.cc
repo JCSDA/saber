@@ -28,9 +28,11 @@
 // -----------------------------------------------------------------------------
 namespace quench {
 // -----------------------------------------------------------------------------
-Geometry::Geometry(const Parameters_ & params,
-                   const eckit::mpi::Comm & comm)
-  : comm_(comm), gridType_("no_type"), groups_() {
+Geometry::Geometry(const eckit::Configuration & config, const eckit::mpi::Comm & comm)
+  : comm_(comm), gridType_("no_type"), groups_()
+{
+  GeometryParameters params;
+  params.deserialize(config);
   // Initialize eckit communicator for ATLAS
   eckit::mpi::setCommDefault(comm_.name().c_str());
 
