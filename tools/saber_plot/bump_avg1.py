@@ -19,11 +19,11 @@ def bump_avg1(args, suffix):
    f = Dataset(args.testdata + "/" + args.test + "/" + args.mpi + "-" + args.omp + "_" + suffix + ".nc", "r", format="NETCDF4")
 
    for group in f.groups:
-      # Get vertical unit
-      vunit = f.groups[group]["vunit"][:]
+      # Get vertical coordinate
+      vert_coord = f.groups[group]["vert_coord"][:]
 
       # Get number of levels
-      nl0 = vunit.shape[0]
+      nl0 = vert_coord.shape[0]
 
       # Get horizontal distance
       disth = f.groups[group]["disth"][:]
@@ -90,7 +90,7 @@ def bump_avg1(args, suffix):
                   ax[i].plot(x, cor_hist[il0,jl0r,jc3,:], 'r-')
 
                   # Add title
-                  fig.suptitle("Between levels " + '%.2e'%vunit[il0] + " and " + '%.2e'%vunit[l0rl0_to_l0[il0,jl0r]-1] + " for distance class " + '%.2e'%disth[jc3])
+                  fig.suptitle("Between levels " + '%.2e'%vert_coord[il0] + " and " + '%.2e'%vert_coord[l0rl0_to_l0[il0,jl0r]-1] + " for distance class " + '%.2e'%disth[jc3])
 
                   # Save and close figure
                   plotpath = args.test + "/" + args.mpi + "-" + args.omp + "_" + suffix + "_" + group + "_" + str(il0+1) + "-" + str(l0rl0_to_l0[il0,jl0r]) + "-" + str(jc3+1) + ".jpg"

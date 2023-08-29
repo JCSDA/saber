@@ -126,12 +126,12 @@ std::vector<double> interpWeights(std::vector<std::vector<double>> & regWeights,
 // -----------------------------------------------------------------------------
 
 atlas::Field createGpRegressionWeights(const atlas::FunctionSpace & functionSpace,
-                                       const atlas::FieldSet & extraFields,
+                                       const atlas::FieldSet & fields,
                                        const std::string & covFileName,
                                        const std::size_t covGlobalNLats,
                                        const std::size_t gpBins) {
   // get interpolation weights from file
-  atlas::idx_t horizPts = extraFields[0].shape(0);
+  atlas::idx_t horizPts = fields[0].shape(0);
 
   std::vector<float> regresssionWeights1D(covGlobalNLats * gpBins, 0.0);
   std::vector<float> covLatitudesVec(covGlobalNLats);
@@ -274,7 +274,7 @@ void populateInterpMuStats(atlas::FieldSet & augmentedStateFieldSet,
 /// We ensure that across all bins for a grid point we sum to 1.
 ///
 atlas::FieldSet createGpRegressionStats(const atlas::FunctionSpace & functionSpace,
-                                        const atlas::FieldSet & extraFields,
+                                        const atlas::FieldSet & fields,
                                         const oops::Variables & variables,
                                         const GpToHpCovarianceParameters & params) {
   // Get necessary parameters
@@ -301,7 +301,7 @@ atlas::FieldSet createGpRegressionStats(const atlas::FunctionSpace & functionSpa
   if (gPBins > 0) {
     gpStatistics.add(createGpRegressionMatrices(covFileName, gPBins, modelLevels));
 
-    gpStatistics.add(createGpRegressionWeights(functionSpace, extraFields,
+    gpStatistics.add(createGpRegressionWeights(functionSpace, fields,
                                                covFileName, covGlobalNLats, gPBins));
   }
 

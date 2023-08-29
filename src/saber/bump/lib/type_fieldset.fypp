@@ -337,14 +337,14 @@ end subroutine fieldset_set_metadata
 ! Subroutine: fieldset_print
 !> Print active fields norm
 !----------------------------------------------------------------------
-subroutine fieldset_print(fieldset,mpl,hmask)
+subroutine fieldset_print(fieldset,mpl,owned)
 
 implicit none
 
 ! Passed variables
 class(fieldset_type),intent(inout) :: fieldset !< Fieldset
 type(mpl_type),intent(inout) :: mpl            !< MPI data
-logical,intent(in) :: hmask(:,:)               !< Halo mask
+logical,intent(in) :: owned(:,:)               !< Owned vs Halo/BC
 
 ! Local variables
 integer :: iv,il0,imga
@@ -373,7 +373,7 @@ do iv=1,fieldset%nv
    norm = zero
    do il0=1,fieldset%nl0
       do imga=1,fieldset%nmga
-         if (hmask(imga,1).and.mpl%msv%isnot(array(imga,il0))) norm = norm+array(imga,il0)**2
+         if (owned(imga,1).and.mpl%msv%isnot(array(imga,il0))) norm = norm+array(imga,il0)**2
       end do
    end do
    call mpl%f_comm%allreduce(norm,fckit_mpi_sum())

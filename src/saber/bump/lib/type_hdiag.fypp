@@ -132,7 +132,7 @@ type(geom_type),intent(in) :: geom(2)    !< Geometry
 type(samp_type),intent(in) :: samp(2)    !< Sampling
 
 ! Local variables
-integer :: ncid,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id,disth_id,as_id,vunit_id,ncmp_id
+integer :: ncid,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id,disth_id,as_id,vert_coord_id,ncmp_id
 integer :: ildwv,ig
 integer :: ic2a(0:nam%nldwv)
 character(len=1024),dimension(0:nam%nldwv) :: filename
@@ -180,12 +180,12 @@ do ildwv=0,nam%nldwv
          ! Define coordinates
          disth_id = define_var(mpl,grpid,'disth','real',(/nc3_id/))
          as_id = define_var(mpl,grpid,'as','real',(/nc4_id/))
-         vunit_id = define_var(mpl,grpid,'vunit','real',(/nl0_1_id/))
+         vert_coord_id = define_var(mpl,grpid,'vert_coord','real',(/nl0_1_id/))
 
          ! Write coordinates
          call put_var(mpl,grpid,disth_id,geom(1)%disth(1:nam%nc3))
          call put_var(mpl,grpid,as_id,geom(1)%as(1:nam%nc4))
-         call put_var(mpl,grpid,vunit_id,geom(1)%vunitavg)
+         call put_var(mpl,grpid,vert_coord_id,geom(1)%vert_coordavg)
 
          ! Write ensemble 1 correlation
          if (nam%compute_cor1) call hdiag%cor(1)%blk(ic2a(ildwv),ig)%write(mpl,nam,geom(1),grpid,nc3_id,nc4_id,nl0r_id, &

@@ -33,8 +33,8 @@ background error:
       - parameter: area
         file:
           filepath: testdata/error_covariance_training_bump_1/_MPI_-_OMP__area
-      - parameter: vunit
+      - parameter: vert_coord
         file:
-          filepath: testdata/error_covariance_training_bump_1/_MPI_-_OMP__vunit
+          filepath: testdata/error_covariance_training_bump_1/_MPI_-_OMP__vert_coord
 test:
   reference filename: testref/error_covariance_training_bump_1.ref

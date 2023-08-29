@@ -373,17 +373,17 @@ if (nam%diag_rvflt>zero) then
       ! Vertical filtering
       do ic2a=0,diag%nc2a
          if (lhyb_coef_only) then
-            call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ig)%hyb_coef)
+            call ver_smooth(mpl,geom%nl0,geom%vert_coordavg,nam%diag_rvflt,diag%blk(ic2a,ig)%hyb_coef)
          else
             do icmp=1,diag%blk(0,ig)%ncmp
-               call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ig)%a_l0(:,icmp))
-               call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ig)%rh_l0(:,icmp))
+               call ver_smooth(mpl,geom%nl0,geom%vert_coordavg,nam%diag_rvflt,diag%blk(ic2a,ig)%a_l0(:,icmp))
+               call ver_smooth(mpl,geom%nl0,geom%vert_coordavg,nam%diag_rvflt,diag%blk(ic2a,ig)%rh_l0(:,icmp))
                if (nam%nc4>1) then
-                  call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ig)%D11_l0(:,icmp))
-                  call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ig)%D22_l0(:,icmp))
-                  call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ig)%D12_l0(:,icmp))
+                  call ver_smooth(mpl,geom%nl0,geom%vert_coordavg,nam%diag_rvflt,diag%blk(ic2a,ig)%D11_l0(:,icmp))
+                  call ver_smooth(mpl,geom%nl0,geom%vert_coordavg,nam%diag_rvflt,diag%blk(ic2a,ig)%D22_l0(:,icmp))
+                  call ver_smooth(mpl,geom%nl0,geom%vert_coordavg,nam%diag_rvflt,diag%blk(ic2a,ig)%D12_l0(:,icmp))
                end if
-               call ver_smooth(mpl,geom%nl0,geom%vunitavg,nam%diag_rvflt,diag%blk(ic2a,ig)%rv_l0(:,icmp))
+               call ver_smooth(mpl,geom%nl0,geom%vert_coordavg,nam%diag_rvflt,diag%blk(ic2a,ig)%rv_l0(:,icmp))
             end do
          end if
       end do
@@ -432,11 +432,12 @@ do ig=1,nam%ng
       ! Compute full fit
       if (nam%nc4==1) then
          call diag_iso_full(mpl,nam%nc3,nam%nl0r,geom%nl0,geom%l0rl0_to_l0,geom%disth, &
- & diag%blk(ic2a,ig)%vunit,diag%blk(ic2a,ig)%ncmp,diag%blk(ic2a,ig)%a_l0,diag%blk(ic2a,ig)%rh_l0,diag%blk(ic2a,ig)%rv_l0,fit_iso)
+ & diag%blk(ic2a,ig)%vert_coord,diag%blk(ic2a,ig)%ncmp,diag%blk(ic2a,ig)%a_l0, &
+ & diag%blk(ic2a,ig)%rh_l0,diag%blk(ic2a,ig)%rv_l0,fit_iso)
          diag%blk(ic2a,ig)%fit(:,1,:,:) = fit_iso
       else
          call diag_tensor_full(mpl,nam%nc3,nam%nc4,nam%nl0r,geom%nl0,geom%l0rl0_to_l0,geom%disth, &
- & geom%as,diag%blk(ic2a,ig)%vunit,diag%blk(ic2a,ig)%ncmp,diag%blk(ic2a,ig)%a_l0,diag%blk(ic2a,ig)%D11_l0, &
+ & geom%as,diag%blk(ic2a,ig)%vert_coord,diag%blk(ic2a,ig)%ncmp,diag%blk(ic2a,ig)%a_l0,diag%blk(ic2a,ig)%D11_l0, &
  & diag%blk(ic2a,ig)%D22_l0,diag%blk(ic2a,ig)%D12_l0,diag%blk(ic2a,ig)%rv_l0,diag%blk(ic2a,ig)%fit)
       end if
    end do
@@ -471,12 +472,12 @@ do ig=1,nam%ng
             ! Compute full fit
             if (nam%nc4==1) then
                call diag_iso_full(mpl,nam%nc3,nam%nl0r,geom%nl0,geom%l0rl0_to_l0,geom%disth, &
- & diag%blk(ic2a,ig)%vunit,icmp,diag%blk(ic2a,ig)%a_l0(:,1:icmp),diag%blk(ic2a,ig)%rh_l0(:,1:icmp), &
+ & diag%blk(ic2a,ig)%vert_coord,icmp,diag%blk(ic2a,ig)%a_l0(:,1:icmp),diag%blk(ic2a,ig)%rh_l0(:,1:icmp), &
  & diag%blk(ic2a,ig)%rv_l0(:,1:icmp),fit_iso)
                diag%blk(ic2a,ig)%fit_detail(:,1,:,:,icmp) = fit_iso
             else
                call diag_tensor_full(mpl,nam%nc3,nam%nc4,nam%nl0r,geom%nl0,geom%l0rl0_to_l0, &
- & geom%disth,geom%as,diag%blk(ic2a,ig)%vunit,icmp,diag%blk(ic2a,ig)%a_l0(:,1:icmp),diag%blk(ic2a,ig)%D11_l0(:,1:icmp), &
+ & geom%disth,geom%as,diag%blk(ic2a,ig)%vert_coord,icmp,diag%blk(ic2a,ig)%a_l0(:,1:icmp),diag%blk(ic2a,ig)%D11_l0(:,1:icmp), &
  & diag%blk(ic2a,ig)%D22_l0(:,1:icmp),diag%blk(ic2a,ig)%D12_l0(:,1:icmp),diag%blk(ic2a,ig)%rv_l0(:,1:icmp), &
  & diag%blk(ic2a,ig)%fit_detail(:,:,:,:,icmp))
             end if
@@ -787,7 +788,7 @@ if (nam%check_dirac) then
                      if (nam%from_gsi) then
                         distv = real(abs(jl0-geom%il0dir(jdir)),kind_real)
                      else
-                        distv = abs(geom%vunitavg(jl0)-geom%vunitavg(geom%il0dir(jdir)))
+                        distv = abs(geom%vert_coordavg(jl0)-geom%vert_coordavg(geom%il0dir(jdir)))
                      end if
                      if (rv_dir(jdir,icmp)>zero) then
                         vnd = distv/rv_dir(jdir,icmp)

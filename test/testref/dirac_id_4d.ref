@@ -12,7 +12,7 @@ Groups:
 - Group 0:
   Vertical levels: 
   - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
   stream_function: 1.0000000000000000e+00
@@ -30,7 +30,7 @@ Groups:
 - Group 0:
   Vertical levels: 
   - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
   stream_function: 0.0000000000000000e+00
@@ -49,7 +49,7 @@ Groups:
 - Group 0:
   Vertical levels: 
   - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
   stream_function: 1.0000000000000000e+00
@@ -67,7 +67,7 @@ Groups:
 - Group 0:
   Vertical levels: 
   - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
   stream_function: 0.0000000000000000e+00
@@ -86,7 +86,7 @@ Groups:
 - Group 0:
   Vertical levels: 
   - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
   stream_function: 4.0899866276594516e+01
@@ -104,7 +104,7 @@ Groups:
 - Group 0:
   Vertical levels: 
   - number: 2
-  - vunit: [1.0000000000000000e+00,2.0000000000000000e+00]
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
   stream_function: 4.0755241627440796e+01

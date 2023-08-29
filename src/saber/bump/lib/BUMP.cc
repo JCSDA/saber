@@ -32,7 +32,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
            eckit::Channel & infoChannel,
            eckit::Channel & testChannel,
            const atlas::FunctionSpace & fspace,
-           const atlas::FieldSet & extraFields,
+           const atlas::FieldSet & fields,
            const std::vector<size_t> & variableSizes,
            const std::vector<std::string> & vars,
            const eckit::Configuration & covarConf,
@@ -181,7 +181,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
     *infoChannel_ << "Info     : +++ Create BUMP instance " << (jgrid+1) << " / " << grids.size()
                   << std::endl;
     int keyBUMP = 0;
-    bump_create_f90(keyBUMP, comm_, fspace_.get(), extraFields.get(),
+    bump_create_f90(keyBUMP, comm_, fspace_.get(), fields.get(),
                     grid, infoChannel_, testChannel_);
     keyBUMP_.push_back(keyBUMP);
     ++jgrid;
@@ -374,13 +374,13 @@ void BUMP::addEnsemble(const std::vector<atlas::FieldSet> & fsetEns) {
 // -----------------------------------------------------------------------------
 
 void BUMP::dualResolutionSetup(const atlas::FunctionSpace & fspace,
-                               const atlas::FieldSet & extraFields) {
+                               const atlas::FieldSet & fields) {
   // Set dual resolution grid UID
   dualResolutionGridUid_ = util::getGridUid(fspace);
 
   // Dual resolution setup
   for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_dual_resolution_setup_f90(keyBUMP_[jgrid], fspace.get(), extraFields.get());
+    bump_dual_resolution_setup_f90(keyBUMP_[jgrid], fspace.get(), fields.get());
   }
 }
 

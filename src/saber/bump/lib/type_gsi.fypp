@@ -210,7 +210,7 @@ if (mpl%main) then
 
    ! Compute vertical interpolation
    do il0=1,geom%nl0
-      call interp_linear(mpl,nlev,vc,geom%vunitavg(il0),gsi%l0_to_levm(il0),gsi%l0_to_levp(il0),gsi%rlevm(il0),gsi%rlevp(il0))
+      call interp_linear(mpl,nlev,vc,geom%vert_coordavg(il0),gsi%l0_to_levm(il0),gsi%l0_to_levp(il0),gsi%rlevm(il0),gsi%rlevp(il0))
    end do
 
    do ilev=1,nlev

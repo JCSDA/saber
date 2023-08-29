@@ -382,7 +382,7 @@ call bump%ens(igeom)%mem(ie)%init(bump%mpl,fieldset,bump%geom(igeom)%gmask_mga,b
 
 ! Print norm
 call bump%mpl%flush
-call bump%ens(igeom)%mem(ie)%print(bump%mpl,bump%geom(igeom)%hmask_mga)
+call bump%ens(igeom)%mem(ie)%print(bump%mpl,bump%geom(igeom)%owned_mga)
 
 ! Probe out
 @:probe_out()
@@ -1742,9 +1742,9 @@ do iv=1,bump%nam%nv
          fld_c0a(:,il0) = bump%geom(igeom)%area_c0a*req**2
       end do
       found = .true.
-   case ('vunit')
-      if (.not.allocated(bump%geom(igeom)%vunit_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      fld_c0a = bump%geom(igeom)%vunit_c0a
+   case ('vert_coord')
+      if (.not.allocated(bump%geom(igeom)%vert_coord_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      fld_c0a = bump%geom(igeom)%vert_coord_c0a
       found = .true.
    end select
 

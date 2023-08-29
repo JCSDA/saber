@@ -167,18 +167,18 @@ end subroutine fit_diag_tensor
 ! Subroutine: fit_diag_ver
 !> Compute vertical diagnostic fit function
 !----------------------------------------------------------------------
-subroutine fit_diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,vunit,rv,fit)
+subroutine fit_diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,vert_coord,rv,fit)
 
 implicit none
 
 ! Passed variables
-type(mpl_type),intent(inout) :: mpl          !< MPI data
-integer,intent(in) :: nl0r                   !< Effective number of levels
-integer,intent(in) :: nl0                    !< Number of levels
-integer,intent(in) :: l0rl0_to_l0(nl0r,nl0)  !< Effective level to level
-real(kind_real),intent(in) :: vunit(nl0)     !< Vertical unit
-real(kind_real),intent(in) :: rv(nl0)        !< Vertical support radius
-real(kind_real),intent(out) :: fit(nl0r,nl0) !< Fit
+type(mpl_type),intent(inout) :: mpl           !< MPI data
+integer,intent(in) :: nl0r                    !< Effective number of levels
+integer,intent(in) :: nl0                     !< Number of levels
+integer,intent(in) :: l0rl0_to_l0(nl0r,nl0)   !< Effective level to level
+real(kind_real),intent(in) :: vert_coord(nl0) !< Generalized vertical coordinate
+real(kind_real),intent(in) :: rv(nl0)         !< Vertical support radius
+real(kind_real),intent(out) :: fit(nl0r,nl0)  !< Fit
 
 ! Local variables
 integer :: il0,jl0r,jl0
@@ -200,7 +200,7 @@ if (mpl%msv%isanynot(rv)) then
          do jl0=1,nl0
             ! Normalized distance
             if (rv(il0)>zero) then
-               vnd = abs(vunit(jl0)-vunit(il0))/rv(il0)
+               vnd = abs(vert_coord(jl0)-vert_coord(il0))/rv(il0)
             elseif (il0/=jl0) then
                vnd = one
             else
@@ -253,7 +253,7 @@ end subroutine fit_diag_ver
 ! Subroutine: fit_diag_iso_full
 !> Compute isotropic diagnostic fit function, full profile
 !----------------------------------------------------------------------
-subroutine fit_diag_iso_full(mpl,nc3,nl0r,nl0,l0rl0_to_l0,disth,vunit,ncmp,a,rh,rv,fit)
+subroutine fit_diag_iso_full(mpl,nc3,nl0r,nl0,l0rl0_to_l0,disth,vert_coord,ncmp,a,rh,rv,fit)
 
 implicit none
 
@@ -264,7 +264,7 @@ integer,intent(in) :: nl0r                       !< Effective number of levels
 integer,intent(in) :: nl0                        !< Number of levels
 integer,intent(in) :: l0rl0_to_l0(nl0r,nl0)      !< Effective level to level
 real(kind_real),intent(in) :: disth(nc3)         !< Horizontal distance
-real(kind_real),intent(in) :: vunit(nl0)         !< Vertical unit
+real(kind_real),intent(in) :: vert_coord(nl0)    !< Generalized vertical coordinate
 integer,intent(in) :: ncmp                       !< Number of components
 real(kind_real),intent(in) :: a(nl0,ncmp)        !< Amplitudes
 real(kind_real),intent(in) :: rh(nl0,ncmp)       !< Horizontal support radii
@@ -286,7 +286,7 @@ fit = zero
 
 do icmp=1,ncmp
    ! Vertical component
-   call diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,vunit,rv(:,icmp),ver_fit)
+   call diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,vert_coord,rv(:,icmp),ver_fit)
 
    do il0=1,nl0
       do jl0r=1,nl0r
@@ -315,7 +315,7 @@ end subroutine fit_diag_iso_full
 ! Subroutine: fit_diag_tensor_full
 !> Compute anistropic diagnostic fit function, full profile
 !----------------------------------------------------------------------
-subroutine fit_diag_tensor_full(mpl,nc3,nc4,nl0r,nl0,l0rl0_to_l0,disth,as,vunit,ncmp,a,D11,D22,D12,rv,fit)
+subroutine fit_diag_tensor_full(mpl,nc3,nc4,nl0r,nl0,l0rl0_to_l0,disth,as,vert_coord,ncmp,a,D11,D22,D12,rv,fit)
 
 implicit none
 
@@ -328,7 +328,7 @@ integer,intent(in) :: nl0                            !< Number of levels
 integer,intent(in) :: l0rl0_to_l0(nl0r,nl0)          !< Effective level to level
 real(kind_real),intent(in) :: disth(nc3)             !< Horizontal distance
 real(kind_real),intent(in) :: as(nc4)                !< Angular sectors
-real(kind_real),intent(in) :: vunit(nl0)             !< Vertical unit
+real(kind_real),intent(in) :: vert_coord(nl0)        !< Generalized vertical coordinate
 integer,intent(in) :: ncmp                           !< Number of components
 real(kind_real),intent(in) :: a(nl0,ncmp)            !< Amplitudes
 real(kind_real),intent(in) :: D11(nl0,ncmp)          !< Horizontal tensor coefficients 11
@@ -352,7 +352,7 @@ fit = zero
 
 do icmp=1,ncmp
    ! Vertical component
-   call diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,vunit,rv(:,icmp),ver_fit)
+   call diag_ver(mpl,nl0r,nl0,l0rl0_to_l0,vert_coord,rv(:,icmp),ver_fit)
 
    do il0=1,nl0
       do jl0r=1,nl0r

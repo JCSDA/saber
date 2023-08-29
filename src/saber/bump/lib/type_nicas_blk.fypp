@@ -955,7 +955,8 @@ integer :: il0,il0i,jl0,jl0i,jl0is,jl0is_tmp,nl0,nl0i,icmp
 integer :: l0i_to_l0(geom%nl0),proc_to_jl0is(mpl%nproc)
 integer :: nc0_gmask(0:geom%nl0)
 real(kind_real) :: resol
-real(kind_real) :: vunit_c0a(geom%nc0a,geom%nl0),area_ver_c0(geom%nl0),vunitavg(geom%nl0),vunit_c0u(geom%nc0u,geom%nl0)
+real(kind_real) :: vert_coord_c0a(geom%nc0a,geom%nl0),area_ver_c0(geom%nl0), &
+ & vert_coordavg(geom%nl0),vert_coord_c0u(geom%nc0u,geom%nl0)
 logical :: gmask_c0a(geom%nc0a,geom%nl0),gmask_hor_c0a(geom%nc0a),gmask_c0u(geom%nc0u,geom%nl0)
 
 ! Set name
@@ -1017,13 +1018,13 @@ resol = nam%resol
 
 ! Save geometry parameters
 nl0 = geom%nl0
-vunit_c0a = geom%vunit_c0a
+vert_coord_c0a = geom%vert_coord_c0a
 gmask_c0a = geom%gmask_c0a
 gmask_hor_c0a = geom%gmask_hor_c0a
 nc0_gmask = geom%nc0_gmask
 area_ver_c0 = geom%area_ver_c0
-vunitavg = geom%vunitavg
-vunit_c0u = geom%vunit_c0u
+vert_coordavg = geom%vert_coordavg
+vert_coord_c0u = geom%vert_coord_c0u
 gmask_c0u = geom%gmask_c0u
 
 ! One level only
@@ -1050,13 +1051,13 @@ do il0i=1,nl0i
    nam%resol = five
 
    ! Set local geometry parameters
-   geom%vunit_c0a(:,1) = vunit_c0a(:,il0)
+   geom%vert_coord_c0a(:,1) = vert_coord_c0a(:,il0)
    geom%gmask_c0a(:,1) = gmask_c0a(:,il0)
    geom%gmask_hor_c0a(1) = any(gmask_c0a(:,il0))
    geom%nc0_gmask(1) = nc0_gmask(il0)
    geom%area_ver_c0(1) = area_ver_c0(il0)
-   geom%vunitavg(1) = vunitavg(il0)
-   geom%vunit_c0u(:,1) = vunit_c0u(:,il0)
+   geom%vert_coordavg(1) = vert_coordavg(il0)
+   geom%vert_coord_c0u(:,1) = vert_coord_c0u(:,il0)
    geom%gmask_c0u(:,1) = gmask_c0u(:,il0)
 
 
@@ -1078,13 +1079,13 @@ nam%resol = resol
 
 ! Reset geometry parameters
 geom%nl0 = nl0
-geom%vunit_c0a = vunit_c0a
+geom%vert_coord_c0a = vert_coord_c0a
 geom%gmask_c0a = gmask_c0a
 geom%gmask_hor_c0a = gmask_hor_c0a
 geom%nc0_gmask = nc0_gmask
 geom%area_ver_c0 = area_ver_c0
-geom%vunitavg = vunitavg
-geom%vunit_c0u = vunit_c0u
+geom%vert_coordavg = vert_coordavg
+geom%vert_coord_c0u = vert_coord_c0u
 geom%gmask_c0u = gmask_c0u
 
 ! End associate

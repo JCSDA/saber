@@ -34,7 +34,7 @@ type diag_blk_type
    real(kind_real),allocatable :: raw(:,:,:,:)          !< Raw diagnostic
    real(kind_real),allocatable :: valid(:,:,:,:)        !< Number of valid couples
 
-   real(kind_real),allocatable :: vunit(:)              !< Vertical unit
+   real(kind_real),allocatable :: vert_coord(:)         !< Generalized vertical coordinate
    real(kind_real),allocatable :: fit(:,:,:,:)          !< Fit
    real(kind_real),allocatable :: fit_detail(:,:,:,:,:) !< Multi-components fit detail
 
@@ -106,7 +106,7 @@ diag_blk%ncmp = nam%fit_ncmp
 if ((ic2a==0).or.nam%local_diag) then
    allocate(diag_blk%raw(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
    allocate(diag_blk%valid(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
-   allocate(diag_blk%vunit(geom%nl0))
+   allocate(diag_blk%vert_coord(geom%nl0))
    allocate(diag_blk%fit(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
    allocate(diag_blk%hyb_coef_raw(geom%nl0))
    allocate(diag_blk%hyb_coef(geom%nl0))
@@ -121,12 +121,12 @@ if ((ic2a==0).or.nam%local_diag) then
    diag_blk%hyb_coef = mpl%msv%valr
 end if
 
-! Vertical unit and distance
+! Vertical coordinate and distance
 if ((ic2a==0).or.nam%local_diag) then
    if (ic2a==0) then
-      diag_blk%vunit = geom%vunitavg
+      diag_blk%vert_coord = geom%vert_coordavg
    else
-      diag_blk%vunit = samp%vunit_c2a(ic2a,:)
+      diag_blk%vert_coord = samp%vert_coord_c2a(ic2a,:)
    end if
 end if
 
@@ -155,7 +155,7 @@ class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block
 ! Release memory
 if (allocated(diag_blk%raw)) deallocate(diag_blk%raw)
 if (allocated(diag_blk%valid)) deallocate(diag_blk%valid)
-if (allocated(diag_blk%vunit)) deallocate(diag_blk%vunit)
+if (allocated(diag_blk%vert_coord)) deallocate(diag_blk%vert_coord)
 if (allocated(diag_blk%fit)) deallocate(diag_blk%fit)
 if (allocated(diag_blk%fit_detail)) deallocate(diag_blk%fit_detail)
 if (allocated(diag_blk%rh_l0)) deallocate(diag_blk%rh_l0)
@@ -577,7 +577,7 @@ do il1=1,nl1
       ! Vertical distance
       do jl0r=1,nl0r
          jl0 = geom%l0rl0_to_l0(jl0r,il0)
-         distv(jl0r) = abs(diag_blk%vunit(il0)-diag_blk%vunit(jl0))
+         distv(jl0r) = abs(diag_blk%vert_coord(il0)-diag_blk%vert_coord(jl0))
       end do
 
       ! Fast vertical fit

@@ -231,7 +231,7 @@ type(geom_type),intent(in) :: geom           !< Geometry
 character(len=*),intent(in) :: filename      !< File name
 
 ! Local variables
-integer :: ncid,grpid,nc3_id,nl0r_id,nl0_id,nbinsp1_id,nbins_id,disth_id,vunit_id,l0rl0_to_l0_id
+integer :: ncid,grpid,nc3_id,nl0r_id,nl0_id,nbinsp1_id,nbins_id,disth_id,vert_coord_id,l0rl0_to_l0_id
 integer :: m11_bins_id,m11_hist_id,m11m11_bins_id,m11m11_hist_id,m2m2_bins_id,m2m2_hist_id,m22_bins_id,m22_hist_id
 integer :: cor_bins_id,cor_hist_id
 character(len=1024) :: grpname
@@ -260,7 +260,7 @@ nbins_id = define_dim(mpl,grpid,'nbins',nam%avg_nbins)
 
 ! Define coordinates
 disth_id = define_var(mpl,grpid,'disth','real',(/nc3_id/))
-vunit_id = define_var(mpl,grpid,'vunit','real',(/nl0_id/))
+vert_coord_id = define_var(mpl,grpid,'vert_coord','real',(/nl0_id/))
 
 ! Define variables
 l0rl0_to_l0_id = define_var(mpl,grpid,'l0rl0_to_l0','int',(/nl0r_id,nl0_id/))
@@ -277,7 +277,7 @@ cor_hist_id = define_var(mpl,grpid,'cor_hist','real',(/nbins_id,nc3_id,nl0r_id,n
 
 ! Write coordinates
 call put_var(mpl,grpid,disth_id,geom%disth(1:nam%nc3))
-call put_var(mpl,grpid,vunit_id,geom%vunitavg)
+call put_var(mpl,grpid,vert_coord_id,geom%vert_coordavg)
 
 ! Write variables
 call put_var(mpl,grpid,l0rl0_to_l0_id,geom%l0rl0_to_l0)

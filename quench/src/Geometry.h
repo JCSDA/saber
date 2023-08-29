@@ -49,8 +49,8 @@ class GroupParameters : public oops::Parameters {
   /// Corresponding level for 2D variables (first or last)
   oops::Parameter<std::string> lev2d{"lev2d", "first", this};
 
-  /// Vertical unit
-  oops::OptionalParameter<std::vector<double>> vunit{"vunit", this};
+  /// Vertical coordinate
+  oops::OptionalParameter<std::vector<double>> vert_coord{"vert_coord", this};
 
   /// Mask type
   oops::Parameter<std::string> maskType{"mask type", "none", this};
@@ -105,10 +105,9 @@ class Geometry : public util::Printable,
   const atlas::Mesh mesh() const {return mesh_;}
   const atlas::FunctionSpace & functionSpace() const {return functionSpace_;}
   atlas::FunctionSpace & functionSpace() {return functionSpace_;}
-  const atlas::FieldSet & extraFields() const {return groups_[0].extraFields_;}
-  atlas::FieldSet & extraFields() {return groups_[0].extraFields_;}
-  const atlas::FieldSet & extraFields(const size_t & groupIndex) const
-    {return groups_[groupIndex].extraFields_;}
+  const atlas::FieldSet & fields() const {return groups_[0].fields_;}
+  const atlas::FieldSet & fields(const size_t & groupIndex) const
+    {return groups_[groupIndex].fields_;}
   size_t levels(const size_t & groupIndex) const {return groups_[groupIndex].levels_;}
   size_t levels(const std::string & var) const;
   size_t groups() const {return groups_.size();}
@@ -137,8 +136,8 @@ class Geometry : public util::Printable,
   struct groupData {
     size_t levels_;
     std::string lev2d_;
-    std::vector<double> vunit_;
-    atlas::FieldSet extraFields_;
+    std::vector<double> vert_coord_;
+    atlas::FieldSet fields_;
     double gmaskSize_;
   };
   std::vector<groupData> groups_;

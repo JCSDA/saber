@@ -35,21 +35,21 @@ def bump_diag(args, suffix):
 
       for group in f.groups:
          if group != "cov_full_vertical":
-            # Get vertical unit
-            vunit = f.groups[group]["vunit"][:]
-            vunitmin = np.min(vunit)
-            vunitmax = np.max(vunit)
-            if vunitmin < vunitmax:
-               ax.set_ylim([vunitmin,vunitmax])
+            # Get vertical coordinate
+            vert_coord = f.groups[group]["vert_coord"][:]
+            vert_coordmin = np.min(vert_coord)
+            vert_coordmax = np.max(vert_coord)
+            if vert_coordmin < vert_coordmax:
+               ax.set_ylim([vert_coordmin,vert_coordmax])
 
             # Get number of levels
-            nl0 = vunit.shape[0]
+            nl0 = vert_coord.shape[0]
 
             # Profiles only
             if nl0 > 1:
                for subgroup in f.groups[group].groups:
                   if (diag in f.groups[group].groups[subgroup].variables):
-                     ax.plot(f.groups[group].groups[subgroup][diag][:], vunit, label=group + " - " + subgroup)
+                     ax.plot(f.groups[group].groups[subgroup][diag][:], vert_coord, label=group + " - " + subgroup)
                      valid = True
 
       if (valid):
@@ -69,11 +69,11 @@ def bump_diag(args, suffix):
    # Raw and fitted fields
    for group in f.groups:
       if group != "cov_full_vertical":
-         # Get vertical unit
-         vunit = f.groups[group]["vunit"][:]
+         # Get vertical coordinate
+         vert_coord = f.groups[group]["vert_coord"][:]
 
          # Get number of levels
-         nl0 = vunit.shape[0]
+         nl0 = vert_coord.shape[0]
 
          # Horizontal distance
          disth = f.groups[group]["disth"][:]

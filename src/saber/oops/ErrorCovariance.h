@@ -104,7 +104,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
   ASSERT(xb[0].validTime() == fg[0].validTime());
   const util::DateTime validTimeOfXbFg = xb[0].validTime();
 
-  // Extend backgroud and first guess with extra fields
+  // Extend background and first guess with geometry fields
   // TODO(Benjamin, Marek, Mayeul, ?)
 
   // Initialize outer variables

@@ -63,12 +63,12 @@ type hor_type
    integer,allocatable :: proc_to_c1_offset(:)          !< Processor to offset on subset Sc1
    real(kind_real),allocatable :: lon_c1a(:)            !< Longitudes on subset Sc1, halo A
    real(kind_real),allocatable :: lat_c1a(:)            !< Latitudes on subset Sc1, halo A
-   real(kind_real),allocatable :: vunit_c1a(:)          !< Latitudes on subset Sc1, halo 1
+   real(kind_real),allocatable :: vert_coord_c1a(:)     !< Generalized vertical coordinate on subset Sc1, halo 1
    integer,allocatable :: order_c1a(:)                  !< Subset Sc1 order for halo A
    integer,allocatable :: order_inv_c1a(:)              !< Subset Sc1 inverse order for halo A
    real(kind_real),allocatable :: lon_c1u(:)            !< Longitudes on subset Sc1, universe
    real(kind_real),allocatable :: lat_c1u(:)            !< Latitudes on subset Sc1, universe
-   real(kind_real),allocatable :: vunit_c1u(:)          !< Latitudes on subset Sc1, universe
+   real(kind_real),allocatable :: vert_coord_c1u(:)     !< Latitudes on subset Sc1, universe
    real(kind_real),allocatable :: rh_c1b(:)             !< Horizontal support radius on subset Sc1, halo B
    real(kind_real),allocatable :: rv_c1b(:)             !< Vertical support radius on subset Sc1, halo B
    real(kind_real),allocatable :: H11_c1b(:)            !< Local correlation tensor, component 11, on subset Sc1, halo B
@@ -437,12 +437,12 @@ if (allocated(hor%proc_to_nc1a)) deallocate(hor%proc_to_nc1a)
 if (allocated(hor%proc_to_c1_offset)) deallocate(hor%proc_to_c1_offset)
 if (allocated(hor%lon_c1a)) deallocate(hor%lon_c1a)
 if (allocated(hor%lat_c1a)) deallocate(hor%lat_c1a)
-if (allocated(hor%vunit_c1a)) deallocate(hor%vunit_c1a)
+if (allocated(hor%vert_coord_c1a)) deallocate(hor%vert_coord_c1a)
 if (allocated(hor%order_c1a)) deallocate(hor%order_c1a)
 if (allocated(hor%order_inv_c1a)) deallocate(hor%order_inv_c1a)
 if (allocated(hor%lon_c1u)) deallocate(hor%lon_c1u)
 if (allocated(hor%lat_c1u)) deallocate(hor%lat_c1u)
-if (allocated(hor%vunit_c1u)) deallocate(hor%vunit_c1u)
+if (allocated(hor%vert_coord_c1u)) deallocate(hor%vert_coord_c1u)
 if (allocated(hor%rv_c1b)) deallocate(hor%rv_c1b)
 if (allocated(hor%H11_c1b)) deallocate(hor%H11_c1b)
 if (allocated(hor%H22_c1b)) deallocate(hor%H22_c1b)
@@ -1527,9 +1527,9 @@ if (any(nicas_cmp%vlev)) then
       ! Allocation
       allocate(nicas_cmp%hor(il1)%lon_c1a(nicas_cmp%hor(il1)%nc1a))
       allocate(nicas_cmp%hor(il1)%lat_c1a(nicas_cmp%hor(il1)%nc1a))
-      allocate(nicas_cmp%hor(il1)%vunit_c1a(nicas_cmp%hor(il1)%nc1a))
+      allocate(nicas_cmp%hor(il1)%vert_coord_c1a(nicas_cmp%hor(il1)%nc1a))
 
-      ! Copy lon/lat/vunit
+      ! Copy lon/lat/vert_coord
       ic1a = 0
       il0 = nicas_cmp%l1_to_l0(il1)
       do ic1=1,nicas_cmp%hor(il1)%nc1
@@ -1538,7 +1538,7 @@ if (any(nicas_cmp%vlev)) then
             nicas_cmp%hor(il1)%lon_c1a(ic1a) = lon_c1(ic1)
             nicas_cmp%hor(il1)%lat_c1a(ic1a) = lat_c1(ic1)
             ic0a = c1_to_c0a(ic1)
-            nicas_cmp%hor(il1)%vunit_c1a(ic1a) = geom%vunit_c0a(ic0a,il0)
+            nicas_cmp%hor(il1)%vert_coord_c1a(ic1a) = geom%vert_coord_c0a(ic0a,il0)
          end if
       end do
 
@@ -2402,7 +2402,7 @@ else
             do ic0a=1,geom%nc0a
                if (geom%gmask_c0a(ic0a,il0)) then
                   rv = half*(nicas_cmp%rvs(ic0a,il0)+nicas_cmp%rvs(ic0a,il0_prev))
-                  if (rv>zero) distnorm(ic0a) = abs(geom%vunit_c0a(ic0a,il0)-geom%vunit_c0a(ic0a,il0_prev))/rv
+                  if (rv>zero) distnorm(ic0a) = abs(geom%vert_coord_c0a(ic0a,il0)-geom%vert_coord_c0a(ic0a,il0_prev))/rv
                end if
             end do
             distnormmin = zss_minval(distnorm)
@@ -2484,15 +2484,15 @@ do jl0=1,geom%nl0
             nicas_cmp%v%row(nicas_cmp%v%n_s) = il0
             nicas_cmp%v%col(nicas_cmp%v%n_s) = il0inf
             do ic0a=1,geom%nc0a
-               nicas_cmp%v%Svec(nicas_cmp%v%n_s,ic0a) = abs(geom%vunit_c0a(ic0a,il0sup)-geom%vunit_c0a(ic0a,il0)) &
- & /abs(geom%vunit_c0a(ic0a,il0sup)-geom%vunit_c0a(ic0a,il0inf))
+               nicas_cmp%v%Svec(nicas_cmp%v%n_s,ic0a) = abs(geom%vert_coord_c0a(ic0a,il0sup)-geom%vert_coord_c0a(ic0a,il0)) &
+ & /abs(geom%vert_coord_c0a(ic0a,il0sup)-geom%vert_coord_c0a(ic0a,il0inf))
             end do
             nicas_cmp%v%n_s = nicas_cmp%v%n_s+1
             nicas_cmp%v%row(nicas_cmp%v%n_s) = il0
             nicas_cmp%v%col(nicas_cmp%v%n_s) = il0sup
             do ic0a=1,geom%nc0a
-               nicas_cmp%v%Svec(nicas_cmp%v%n_s,ic0a) = abs(geom%vunit_c0a(ic0a,il0)-geom%vunit_c0a(ic0a,il0inf)) &
- & /abs(geom%vunit_c0a(ic0a,il0sup)-geom%vunit_c0a(ic0a,il0inf))
+               nicas_cmp%v%Svec(nicas_cmp%v%n_s,ic0a) = abs(geom%vert_coord_c0a(ic0a,il0)-geom%vert_coord_c0a(ic0a,il0inf)) &
+ & /abs(geom%vert_coord_c0a(ic0a,il0sup)-geom%vert_coord_c0a(ic0a,il0inf))
             end do
             if (geom%nc0a==0) nicas_cmp%v%S(nicas_cmp%v%n_s) = zero
          end if
@@ -2629,9 +2629,9 @@ do il1=1,nicas_cmp%nl1
          ! Allocation
          allocate(nicas_cmp%hor(il1)%lon_c1a(nicas_cmp%hor(il1)%nc1a))
          allocate(nicas_cmp%hor(il1)%lat_c1a(nicas_cmp%hor(il1)%nc1a))
-         allocate(nicas_cmp%hor(il1)%vunit_c1a(nicas_cmp%hor(il1)%nc1a))
+         allocate(nicas_cmp%hor(il1)%vert_coord_c1a(nicas_cmp%hor(il1)%nc1a))
 
-         ! Get lon/lat/vunit
+         ! Get lon/lat/vert_coord
          ic1a = 0
          do ic1=1,nicas_cmp%hor(il1)%nc1
             ic0 = c1_to_c0(ic1)
@@ -2641,7 +2641,7 @@ do il1=1,nicas_cmp%nl1
                ic0a = geom%c0_to_c0a(ic0)
                nicas_cmp%hor(il1)%lon_c1a(ic1a) = geom%lon_c0a(ic0a)
                nicas_cmp%hor(il1)%lat_c1a(ic1a) = geom%lat_c0a(ic0a)
-               nicas_cmp%hor(il1)%vunit_c1a(ic1a) = geom%vunit_c0a(ic0a,il0)
+               nicas_cmp%hor(il1)%vert_coord_c1a(ic1a) = geom%vert_coord_c0a(ic0a,il0)
             end if
          end do
 
@@ -2698,9 +2698,9 @@ do il1=1,nicas_cmp%nl1
          ! Allocation
          allocate(nicas_cmp%hor(il1)%lon_c1a(nicas_cmp%hor(il1)%nc1a))
          allocate(nicas_cmp%hor(il1)%lat_c1a(nicas_cmp%hor(il1)%nc1a))
-         allocate(nicas_cmp%hor(il1)%vunit_c1a(nicas_cmp%hor(il1)%nc1a))
+         allocate(nicas_cmp%hor(il1)%vert_coord_c1a(nicas_cmp%hor(il1)%nc1a))
 
-         ! Copy grid lon/lat and vunit
+         ! Copy grid lon/lat and vert_coord
          ic1a = 0
          do iy=1,int(agrid%ny(),kind_int)
             do ix=1,int(agrid%nx(iy),kind_int)
@@ -2731,10 +2731,10 @@ do il1=1,nicas_cmp%nl1
                         ic1a = ic1a+1
                         ic0a = geom%c0u_to_c0a(ic0u)
 
-                        ! Copy lon/lat/vunit
+                        ! Copy lon/lat/vert_coord
                         nicas_cmp%hor(il1)%lon_c1a(ic1a) = lonlat(1)
                         nicas_cmp%hor(il1)%lat_c1a(ic1a) = lonlat(2)
-                        nicas_cmp%hor(il1)%vunit_c1a(ic1a) = geom%vunit_c0a(ic0a,il0)
+                        nicas_cmp%hor(il1)%vert_coord_c1a(ic1a) = geom%vert_coord_c0a(ic0a,il0)
                      end if
                   end if
                end if
@@ -2780,7 +2780,7 @@ do il1=1,nicas_cmp%nl1
    allocate(nicas_cmp%hor(il1)%c1u_to_c1(nicas_cmp%hor(il1)%nc1u))
    allocate(nicas_cmp%hor(il1)%lon_c1u(nicas_cmp%hor(il1)%nc1u))
    allocate(nicas_cmp%hor(il1)%lat_c1u(nicas_cmp%hor(il1)%nc1u))
-   allocate(nicas_cmp%hor(il1)%vunit_c1u(nicas_cmp%hor(il1)%nc1u))
+   allocate(nicas_cmp%hor(il1)%vert_coord_c1u(nicas_cmp%hor(il1)%nc1u))
 
    ! Conversions
    nicas_cmp%hor(il1)%c1u_to_c1a = mpl%msv%vali
@@ -2804,7 +2804,7 @@ do il1=1,nicas_cmp%nl1
    ! Extend fields from halo A to universe on subset Sc1
    call nicas_cmp%com_c1_AU(il1)%ext(mpl,nicas_cmp%hor(il1)%lon_c1a,nicas_cmp%hor(il1)%lon_c1u)
    call nicas_cmp%com_c1_AU(il1)%ext(mpl,nicas_cmp%hor(il1)%lat_c1a,nicas_cmp%hor(il1)%lat_c1u)
-   call nicas_cmp%com_c1_AU(il1)%ext(mpl,nicas_cmp%hor(il1)%vunit_c1a,nicas_cmp%hor(il1)%vunit_c1u)
+   call nicas_cmp%com_c1_AU(il1)%ext(mpl,nicas_cmp%hor(il1)%vert_coord_c1a,nicas_cmp%hor(il1)%vert_coord_c1u)
 
    ! Get global lon/lat
    write(mpl%info,'(a16,a)') '','Get global lon/lat'
@@ -3651,7 +3651,7 @@ type(geom_type),intent(in) :: geom               !< Geometry
 integer :: isu,ic1u,ic1b,jc1,jc1u,il1,il0,j,jl0,jl1,isb,nn
 integer,allocatable :: nn_index(:)
 real(kind_real) :: rv_th,distv,dx,dy,distv_min
-real(kind_real) :: rv_max(geom%nl0),vunit_min(nicas_cmp%nl1),vunit_max(nicas_cmp%nl1)
+real(kind_real) :: rv_max(geom%nl0),vert_coord_min(nicas_cmp%nl1),vert_coord_max(nicas_cmp%nl1)
 real(kind_real),allocatable :: hnd(:),vnd(:),nn_dist(:)
 logical :: valid
 logical,allocatable :: mnd(:)
@@ -3668,10 +3668,10 @@ do il0=1,geom%nl0
 end do
 call mpl%f_comm%allreduce(rv_max,fckit_mpi_max())
 
-! Prepare vunit min/max to find smallest possible vertical distance
+! Prepare vert_coord min/max to find smallest possible vertical distance
 do il1=1,nicas_cmp%nl1
-   vunit_min(il1) = zss_minval(nicas_cmp%hor(il1)%vunit_c1u)
-   vunit_max(il1) = zss_maxval(nicas_cmp%hor(il1)%vunit_c1u)
+   vert_coord_min(il1) = zss_minval(nicas_cmp%hor(il1)%vert_coord_c1u)
+   vert_coord_max(il1) = zss_maxval(nicas_cmp%hor(il1)%vert_coord_c1u)
 end do
 
 ! Count and find nearest neighbors
@@ -3701,10 +3701,10 @@ do isb=1,nicas_cmp%nsb
       mnd = .false.
 
       ! Find smallest possible vertical distance
-      if (sup(geom%vunitavg(il1),geom%vunitavg(jl1))) then
-         distv_min = max(vunit_min(il1)-vunit_max(jl1),zero)
+      if (sup(geom%vert_coordavg(il1),geom%vert_coordavg(jl1))) then
+         distv_min = max(vert_coord_min(il1)-vert_coord_max(jl1),zero)
       else
-         distv_min = max(vunit_min(jl1)-vunit_max(il1),zero)
+         distv_min = max(vert_coord_min(jl1)-vert_coord_max(il1),zero)
       end if
 
       if (infeq(distv_min,rv_max(il0)).or.(all(.not.(rv_max>zero)))) then
@@ -3764,7 +3764,7 @@ do isb=1,nicas_cmp%nsb
                      if (nam%from_gsi) then
                         distv = real(abs(il0-jl0),kind_real)
                      else
-                        distv = abs(nicas_cmp%hor(il1)%vunit_c1u(ic1u)-nicas_cmp%hor(jl1)%vunit_c1u(jc1u))
+                        distv = abs(nicas_cmp%hor(il1)%vert_coord_c1u(ic1u)-nicas_cmp%hor(jl1)%vert_coord_c1u(jc1u))
                      end if
                      if (nicas_cmp%hor(il1)%rv_c1b(ic1b)>zero) then
                         vnd(jc1u) = distv/nicas_cmp%hor(il1)%rv_c1b(ic1b)

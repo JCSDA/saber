@@ -83,7 +83,7 @@ type samp_type
    integer,allocatable :: c1a_to_c1u(:)                   !< Subset Sc1, halo A, to subset Sc1, universe
    real(kind_real),allocatable :: lon_c1a(:)              !< Longitudes on subset Sc1, halo A
    real(kind_real),allocatable :: lat_c1a(:)              !< Latitudes on subset Sc1, halo A
-   real(kind_real),allocatable :: vunit_c1a(:,:)          !< Vertical unit on subset Sc1, halo A
+   real(kind_real),allocatable :: vert_coord_c1a(:,:)     !< Generalized vertical coordinate on subset Sc1, halo A
    logical,allocatable :: smask_c1a(:,:)                  !< Mask on subset Sc1, halo A
    real(kind_real),allocatable :: lon_c3a(:,:,:)          !< Longitudes on subset Sc1 and Sc3, halo A
    real(kind_real),allocatable :: lat_c3a(:,:,:)          !< Latitudes on subset Sc1 and Sc3, halo A
@@ -110,7 +110,7 @@ type samp_type
    integer,allocatable :: c2a_to_c2u(:)                   !< Subset Sc2, halo A, to subset Sc2, universe
    real(kind_real),allocatable :: lon_c2a(:)              !< Longitudes on subset Sc2, halo A
    real(kind_real),allocatable :: lat_c2a(:)              !< Latitudes on subset Sc2, halo A
-   real(kind_real),allocatable :: vunit_c2a(:,:)          !< Vertical unit on subset Sc2, halo A
+   real(kind_real),allocatable :: vert_coord_c2a(:,:)     !< Generalized vertical coordinate on subset Sc2, halo A
    logical,allocatable :: smask_c2a(:,:)                  !< Mask on subset Sc2, halo A
    integer :: nc2b                                        !< Number of points in subset Sc2, halo B
    integer,allocatable :: c2a_to_c2b(:)                   !< Subset Sc2, halo A to halo B
@@ -279,7 +279,7 @@ if (allocated(samp%c1a_to_c1)) deallocate(samp%c1a_to_c1)
 if (allocated(samp%c1a_to_c1u)) deallocate(samp%c1a_to_c1u)
 if (allocated(samp%lon_c1a)) deallocate(samp%lon_c1a)
 if (allocated(samp%lat_c1a)) deallocate(samp%lat_c1a)
-if (allocated(samp%vunit_c1a)) deallocate(samp%vunit_c1a)
+if (allocated(samp%vert_coord_c1a)) deallocate(samp%vert_coord_c1a)
 if (allocated(samp%smask_c1a)) deallocate(samp%smask_c1a)
 if (allocated(samp%lon_c3a)) deallocate(samp%lon_c3a)
 if (allocated(samp%lat_c3a)) deallocate(samp%lat_c3a)
@@ -299,7 +299,7 @@ if (allocated(samp%c2a_to_c2)) deallocate(samp%c2a_to_c2)
 if (allocated(samp%c2a_to_c2u)) deallocate(samp%c2a_to_c2u)
 if (allocated(samp%lon_c2a)) deallocate(samp%lon_c2a)
 if (allocated(samp%lat_c2a)) deallocate(samp%lat_c2a)
-if (allocated(samp%vunit_c2a)) deallocate(samp%vunit_c2a)
+if (allocated(samp%vert_coord_c2a)) deallocate(samp%vert_coord_c2a)
 if (allocated(samp%smask_c2a)) deallocate(samp%smask_c2a)
 if (allocated(samp%c2a_to_c2b)) deallocate(samp%c2a_to_c2b)
 if (allocated(samp%c2b_to_c2u)) deallocate(samp%c2b_to_c2u)
@@ -384,7 +384,7 @@ if (samp%sc1) then
    ! Allocation
    allocate(samp%lon_c1a(samp%nc1a))
    allocate(samp%lat_c1a(samp%nc1a))
-   allocate(samp%vunit_c1a(samp%nc1a,geom%nl0))
+   allocate(samp%vert_coord_c1a(samp%nc1a,geom%nl0))
    allocate(samp%smask_c1a(samp%nc1a,geom%nl0))
    allocate(samp%c1a_to_c1(samp%nc1a))
 
@@ -393,7 +393,7 @@ if (samp%sc1) then
    samp%lat_c1a = other%lat_c1a
    samp%proc_to_nc1a = other%proc_to_nc1a
    samp%proc_to_c1_offset = other%proc_to_c1_offset
-   samp%vunit_c1a = other%vunit_c1a
+   samp%vert_coord_c1a = other%vert_coord_c1a
    samp%smask_c1a = other%smask_c1a
    samp%c1a_to_c1 = other%c1a_to_c1
 else
@@ -413,7 +413,7 @@ if (samp%sc2) then
    ! Allocation
    allocate(samp%lon_c2a(samp%nc2a))
    allocate(samp%lat_c2a(samp%nc2a))
-   allocate(samp%vunit_c2a(samp%nc2a,geom%nl0))
+   allocate(samp%vert_coord_c2a(samp%nc2a,geom%nl0))
    allocate(samp%smask_c2a(samp%nc2a,geom%nl0))
    allocate(samp%c2a_to_c2(samp%nc2a))
 
@@ -422,7 +422,7 @@ if (samp%sc2) then
    samp%lat_c2a = other%lat_c2a
    samp%proc_to_nc2a = other%proc_to_nc2a
    samp%proc_to_c2_offset = other%proc_to_c2_offset
-   samp%vunit_c2a = other%vunit_c2a
+   samp%vert_coord_c2a = other%vert_coord_c2a
    samp%smask_c2a = other%smask_c2a
    samp%c2a_to_c2 = other%c2a_to_c2
 else
@@ -574,8 +574,8 @@ type(geom_type),intent(in) :: geom     !< Geometry
 integer,intent(in) :: iproc            !< Task index
 
 ! Local variables
-integer :: ncid,nc1a_id,lon_c1a_id,lat_c1a_id,vunit_c1a_id,smask_c1a_id,lon_c3a_id,lat_c3a_id,smask_c3a_id
-integer :: lon_c2a_id,lat_c2a_id,vunit_c2a_id,smask_c2a_id
+integer :: ncid,nc1a_id,lon_c1a_id,lat_c1a_id,vert_coord_c1a_id,smask_c1a_id,lon_c3a_id,lat_c3a_id,smask_c3a_id
+integer :: lon_c2a_id,lat_c2a_id,vert_coord_c2a_id,smask_c2a_id
 
 ! Set name
 @:set_name(samp_read_local_single)
@@ -594,7 +594,7 @@ if (samp%sc1) then
    ! Allocation
    allocate(samp%lon_c1a(samp%nc1a))
    allocate(samp%lat_c1a(samp%nc1a))
-   allocate(samp%vunit_c1a(samp%nc1a,geom%nl0))
+   allocate(samp%vert_coord_c1a(samp%nc1a,geom%nl0))
    allocate(samp%smask_c1a(samp%nc1a,geom%nl0))
    if (samp%sc3) then
       allocate(samp%lon_c3a(samp%nc1a,nam%nc3,nam%nc4))
@@ -606,7 +606,7 @@ if (samp%sc1) then
    ! Inquire variables
    lon_c1a_id = inquire_var(mpl,ncid,'lon_c1a')
    lat_c1a_id = inquire_var(mpl,ncid,'lat_c1a')
-   vunit_c1a_id = inquire_var(mpl,ncid,'vunit_c1a')
+   vert_coord_c1a_id = inquire_var(mpl,ncid,'vert_coord_c1a')
    smask_c1a_id = inquire_var(mpl,ncid,'smask_c1a')
    if (samp%sc3) then
       lon_c3a_id = inquire_var(mpl,ncid,'lon_c3a')
@@ -617,7 +617,7 @@ if (samp%sc1) then
    ! Read variables
    call get_var(mpl,ncid,lon_c1a_id,samp%lon_c1a)
    call get_var(mpl,ncid,lat_c1a_id,samp%lat_c1a)
-   call get_var(mpl,ncid,vunit_c1a_id,samp%vunit_c1a)
+   call get_var(mpl,ncid,vert_coord_c1a_id,samp%vert_coord_c1a)
    call get_var(mpl,ncid,smask_c1a_id,samp%smask_c1a)
    if (samp%sc3) then
       call get_var(mpl,ncid,lon_c3a_id,samp%lon_c3a)
@@ -636,20 +636,20 @@ if (samp%sc2) then
    ! Allocation
    allocate(samp%lon_c2a(samp%nc2a))
    allocate(samp%lat_c2a(samp%nc2a))
-   allocate(samp%vunit_c2a(samp%nc2a,geom%nl0))
+   allocate(samp%vert_coord_c2a(samp%nc2a,geom%nl0))
    allocate(samp%smask_c2a(samp%nc2a,geom%nl0))
    allocate(samp%c2a_to_c2(samp%nc2a))
 
    ! Inquire variables
    lon_c2a_id = inquire_var(mpl,ncid,'lon_c2a')
    lat_c2a_id = inquire_var(mpl,ncid,'lat_c2a')
-   vunit_c2a_id = inquire_var(mpl,ncid,'vunit_c2a')
+   vert_coord_c2a_id = inquire_var(mpl,ncid,'vert_coord_c2a')
    smask_c2a_id = inquire_var(mpl,ncid,'smask_c2a')
 
    ! Read variables
    call get_var(mpl,ncid,lon_c2a_id,samp%lon_c2a)
    call get_var(mpl,ncid,lat_c2a_id,samp%lat_c2a)
-   call get_var(mpl,ncid,vunit_c2a_id,samp%vunit_c2a)
+   call get_var(mpl,ncid,vert_coord_c2a_id,samp%vert_coord_c2a)
    call get_var(mpl,ncid,smask_c2a_id,samp%smask_c2a)
 else
    ! Initialization
@@ -745,8 +745,8 @@ type(geom_type),intent(in) :: geom     !< Geometry
 integer,intent(in) :: iproc            !< Task index
 
 ! Local variables
-integer :: ncid,nc1a_id,nl0_id,nc3_id,nc4_id,nc2a_id,lon_c1a_id,lat_c1a_id,vunit_c1a_id,smask_c1a_id
-integer :: lon_c3a_id,lat_c3a_id,smask_c3a_id,lon_c2a_id,lat_c2a_id,vunit_c2a_id,smask_c2a_id
+integer :: ncid,nc1a_id,nl0_id,nc3_id,nc4_id,nc2a_id,lon_c1a_id,lat_c1a_id,vert_coord_c1a_id,smask_c1a_id
+integer :: lon_c3a_id,lat_c3a_id,smask_c3a_id,lon_c2a_id,lat_c2a_id,vert_coord_c2a_id,smask_c2a_id
 
 ! Set name
 @:set_name(samp_write_local_single)
@@ -770,7 +770,7 @@ if (samp%sc2) nc2a_id = define_dim(mpl,ncid,'nc2a',samp%nc2a)
 if (samp%sc1) then
    lon_c1a_id = define_var(mpl,ncid,'lon_c1a','real',(/nc1a_id/))
    lat_c1a_id = define_var(mpl,ncid,'lat_c1a','real',(/nc1a_id/))
-   vunit_c1a_id = define_var(mpl,ncid,'vunit_c1a','real',(/nc1a_id,nl0_id/))
+   vert_coord_c1a_id = define_var(mpl,ncid,'vert_coord_c1a','real',(/nc1a_id,nl0_id/))
    smask_c1a_id = define_var(mpl,ncid,'smask_c1a','logical',(/nc1a_id,nl0_id/))
 end if
 if (samp%sc3) then
@@ -781,7 +781,7 @@ end if
 if (samp%sc2) then
    lon_c2a_id = define_var(mpl,ncid,'lon_c2a','real',(/nc2a_id/))
    lat_c2a_id = define_var(mpl,ncid,'lat_c2a','real',(/nc2a_id/))
-   vunit_c2a_id = define_var(mpl,ncid,'vunit_c2a','real',(/nc2a_id,nl0_id/))
+   vert_coord_c2a_id = define_var(mpl,ncid,'vert_coord_c2a','real',(/nc2a_id,nl0_id/))
    smask_c2a_id = define_var(mpl,ncid,'smask_c2a','logical',(/nc2a_id,nl0_id/))
 end if
 
@@ -792,7 +792,7 @@ if (samp%sc2) call put_att(mpl,ncid,0,'lat_bands',samp%lat_bands)
 if (samp%sc1) then
    call put_var(mpl,ncid,lon_c1a_id,samp%lon_c1a)
    call put_var(mpl,ncid,lat_c1a_id,samp%lat_c1a)
-   call put_var(mpl,ncid,vunit_c1a_id,samp%vunit_c1a)
+   call put_var(mpl,ncid,vert_coord_c1a_id,samp%vert_coord_c1a)
    call put_var(mpl,ncid,smask_c1a_id,samp%smask_c1a)
 end if
 if (samp%sc3) then
@@ -803,7 +803,7 @@ end if
 if (samp%sc2) then
    call put_var(mpl,ncid,lon_c2a_id,samp%lon_c2a)
    call put_var(mpl,ncid,lat_c2a_id,samp%lat_c2a)
-   call put_var(mpl,ncid,vunit_c2a_id,samp%vunit_c2a)
+   call put_var(mpl,ncid,vert_coord_c2a_id,samp%vert_coord_c2a)
    call put_var(mpl,ncid,smask_c2a_id,samp%smask_c2a)
 end if
 
@@ -830,8 +830,8 @@ type(nam_type),intent(inout) :: nam    !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
-integer :: ncid,nc1_id,lon_c1_id,lat_c1_id,vunit_c1_id,smask_c1_id,lon_c3_id,lat_c3_id,smask_c3_id
-integer :: lon_c2_id,lat_c2_id,vunit_c2_id,smask_c2_id
+integer :: ncid,nc1_id,lon_c1_id,lat_c1_id,vert_coord_c1_id,smask_c1_id,lon_c3_id,lat_c3_id,smask_c3_id
+integer :: lon_c2_id,lat_c2_id,vert_coord_c2_id,smask_c2_id
 integer :: ic1,ic1a,iproc,ic2,ic2a
 integer,allocatable :: lev_c1(:),c1_on_file_to_proc(:),c1_to_c0a(:)
 integer,allocatable :: lev_c2(:),c2_on_file_to_proc(:),c2_to_c0a(:)
@@ -891,7 +891,7 @@ if (samp%sc1) then
    allocate(samp%lon_c1a(samp%nc1a))
    allocate(samp%lat_c1a(samp%nc1a))
    allocate(samp%c1a_to_c1(samp%nc1a))
-   allocate(samp%vunit_c1a(samp%nc1a,geom%nl0))
+   allocate(samp%vert_coord_c1a(samp%nc1a,geom%nl0))
    allocate(samp%smask_c1a(samp%nc1a,geom%nl0))
    if (samp%sc3) then
       allocate(samp%lon_c3a(samp%nc1a,nam%nc3,nam%nc4))
@@ -933,7 +933,7 @@ if (samp%sc1) then
  & lon_cxa=samp%lon_c1a,lat_cxa=samp%lat_c1a)
 
    ! Inquire variables
-   vunit_c1_id = inquire_var(mpl,ncid,'vunit_c1')
+   vert_coord_c1_id = inquire_var(mpl,ncid,'vert_coord_c1')
    smask_c1_id = inquire_var(mpl,ncid,'smask_c1')
    if (samp%sc3) then
       lon_c3_id = inquire_var(mpl,ncid,'lon_c3')
@@ -942,7 +942,7 @@ if (samp%sc1) then
    end if
 
    ! Read variables
-   call samp%io_c1%fld_read(mpl,ncid,vunit_c1_id,samp%vunit_c1a)
+   call samp%io_c1%fld_read(mpl,ncid,vert_coord_c1_id,samp%vert_coord_c1a)
    call samp%io_c1%fld_read(mpl,ncid,smask_c1_id,samp%smask_c1a)
    if (samp%sc3) then
       call samp%io_c1%fld_read(mpl,ncid,lon_c3_id,samp%lon_c3a)
@@ -1000,7 +1000,7 @@ if (samp%sc2) then
    allocate(samp%lon_c2a(samp%nc2a))
    allocate(samp%lat_c2a(samp%nc2a))
    allocate(samp%c2a_to_c2(samp%nc2a))
-   allocate(samp%vunit_c2a(samp%nc2a,geom%nl0))
+   allocate(samp%vert_coord_c2a(samp%nc2a,geom%nl0))
    allocate(samp%smask_c2a(samp%nc2a,geom%nl0))
 
    ! Copy lon/lat
@@ -1036,11 +1036,11 @@ if (samp%sc2) then
  & lon_cxa=samp%lon_c2a,lat_cxa=samp%lat_c2a)
 
    ! Inquire variables
-   vunit_c2_id = inquire_var(mpl,ncid,'vunit_c2')
+   vert_coord_c2_id = inquire_var(mpl,ncid,'vert_coord_c2')
    smask_c2_id = inquire_var(mpl,ncid,'smask_c2')
 
    ! Read variables
-   call samp%io_c2%fld_read(mpl,ncid,vunit_c2_id,samp%vunit_c2a)
+   call samp%io_c2%fld_read(mpl,ncid,vert_coord_c2_id,samp%vert_coord_c2a)
    call samp%io_c2%fld_read(mpl,ncid,smask_c2_id,samp%smask_c2a)
 
    ! Release memory
@@ -1076,8 +1076,8 @@ type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
-integer :: ncid,nc1_id,nl0_id,nc3_id,nc4_id,nc2_id,lon_c1_id,lat_c1_id,vunit_c1_id,smask_c1_id,lon_c3_id,lat_c3_id,smask_c3_id
-integer :: lon_c2_id,lat_c2_id,vunit_c2_id,smask_c2_id
+integer :: ncid,nc1_id,nl0_id,nc3_id,nc4_id,nc2_id,lon_c1_id,lat_c1_id,vert_coord_c1_id,smask_c1_id,lon_c3_id,lat_c3_id,smask_c3_id
+integer :: lon_c2_id,lat_c2_id,vert_coord_c2_id,smask_c2_id
 
 ! Set name
 @:set_name(samp_write_global)
@@ -1101,7 +1101,7 @@ if (samp%sc2) nc2_id = define_dim(mpl,ncid,'nc2',samp%nc2)
 if (samp%sc1) then
    lon_c1_id = define_var(mpl,ncid,'lon_c1','real',(/nc1_id/))
    lat_c1_id = define_var(mpl,ncid,'lat_c1','real',(/nc1_id/))
-   vunit_c1_id = define_var(mpl,ncid,'vunit_c1','real',(/nc1_id,nl0_id/))
+   vert_coord_c1_id = define_var(mpl,ncid,'vert_coord_c1','real',(/nc1_id,nl0_id/))
    smask_c1_id = define_var(mpl,ncid,'smask_c1','logical',(/nc1_id,nl0_id/))
 end if
 if (samp%sc3) then
@@ -1112,7 +1112,7 @@ end if
 if (samp%sc2) then
    lon_c2_id = define_var(mpl,ncid,'lon_c2','real',(/nc2_id/))
    lat_c2_id = define_var(mpl,ncid,'lat_c2','real',(/nc2_id/))
-   vunit_c2_id = define_var(mpl,ncid,'vunit_c2','real',(/nc2_id,nl0_id/))
+   vert_coord_c2_id = define_var(mpl,ncid,'vert_coord_c2','real',(/nc2_id,nl0_id/))
    smask_c2_id = define_var(mpl,ncid,'smask_c2','logical',(/nc2_id,nl0_id/))
 end if
 
@@ -1123,7 +1123,7 @@ if (samp%sc2) call put_att(mpl,ncid,0,'lat_bands',samp%lat_bands)
 if (samp%sc1) then
    call samp%io_c1%fld_write(mpl,ncid,lon_c1_id,samp%lon_c1a)
    call samp%io_c1%fld_write(mpl,ncid,lat_c1_id,samp%lat_c1a)
-   call samp%io_c1%fld_write(mpl,ncid,vunit_c1_id,samp%vunit_c1a)
+   call samp%io_c1%fld_write(mpl,ncid,vert_coord_c1_id,samp%vert_coord_c1a)
    call samp%io_c1%fld_write(mpl,ncid,smask_c1_id,samp%smask_c1a)
 end if
 if (samp%sc3) then
@@ -1134,7 +1134,7 @@ end if
 if (samp%sc2) then
    call samp%io_c2%fld_write(mpl,ncid,lon_c2_id,samp%lon_c2a)
    call samp%io_c2%fld_write(mpl,ncid,lat_c2_id,samp%lat_c2a)
-   call samp%io_c2%fld_write(mpl,ncid,vunit_c2_id,samp%vunit_c2a)
+   call samp%io_c2%fld_write(mpl,ncid,vert_coord_c2_id,samp%vert_coord_c2a)
    call samp%io_c2%fld_write(mpl,ncid,smask_c2_id,samp%smask_c2a)
 end if
 
@@ -1390,7 +1390,7 @@ if (samp%sc1) then
    ! lat_c1a
    nbufr = nbufr+samp%nc1a
 
-   ! vunit_c1a
+   ! vert_coord_c1a
    nbufr = nbufr+samp%nc1a*geom%nl0
 
    ! smask_c1a
@@ -1424,7 +1424,7 @@ if (samp%sc2) then
    ! lon_c2a
    nbufr = nbufr+samp%nc2a
 
-   ! vunit_c2a
+   ! vert_coord_c2a
    nbufr = nbufr+samp%nc2a*geom%nl0
 
    ! smask_c2a
@@ -1465,8 +1465,8 @@ if (samp%sc1) then
    bufr(ibufr+1:ibufr+samp%nc1a) = samp%lat_c1a
    ibufr = ibufr+samp%nc1a
 
-   ! vunit_c1a
-   bufr(ibufr+1:ibufr+samp%nc1a*geom%nl0) = reshape(samp%vunit_c1a,(/samp%nc1a*geom%nl0/))
+   ! vert_coord_c1a
+   bufr(ibufr+1:ibufr+samp%nc1a*geom%nl0) = reshape(samp%vert_coord_c1a,(/samp%nc1a*geom%nl0/))
    ibufr = ibufr+samp%nc1a*geom%nl0
 
    ! smask_c1a
@@ -1509,8 +1509,8 @@ if (samp%sc2) then
    bufr(ibufr+1:ibufr+samp%nc2a) = samp%lat_c2a
    ibufr = ibufr+samp%nc2a
 
-   ! vunit_c2a
-   bufr(ibufr+1:ibufr+samp%nc2a*geom%nl0) = reshape(samp%vunit_c2a,(/samp%nc2a*geom%nl0/))
+   ! vert_coord_c2a
+   bufr(ibufr+1:ibufr+samp%nc2a*geom%nl0) = reshape(samp%vert_coord_c2a,(/samp%nc2a*geom%nl0/))
    ibufr = ibufr+samp%nc2a*geom%nl0
 
    ! smask_c2a
@@ -1618,9 +1618,9 @@ if (samp%sc1) then
    samp%lat_c1a = bufr(ibufr+1:ibufr+samp%nc1a)
    ibufr = ibufr+samp%nc1a
 
-   ! vunit_c1a
-   allocate(samp%vunit_c1a(samp%nc1a,geom%nl0))
-   samp%vunit_c1a = reshape(bufr(ibufr+1:ibufr+samp%nc1a*geom%nl0),(/samp%nc1a,geom%nl0/))
+   ! vert_coord_c1a
+   allocate(samp%vert_coord_c1a(samp%nc1a,geom%nl0))
+   samp%vert_coord_c1a = reshape(bufr(ibufr+1:ibufr+samp%nc1a*geom%nl0),(/samp%nc1a,geom%nl0/))
    ibufr = ibufr+samp%nc1a*geom%nl0
 
    ! smask_c1a
@@ -1670,9 +1670,9 @@ if (samp%sc2) then
    samp%lat_c2a = bufr(ibufr+1:ibufr+samp%nc2a)
    ibufr = ibufr+samp%nc2a
 
-   ! vunit_c2a
-   allocate(samp%vunit_c2a(samp%nc2a,geom%nl0))
-   samp%vunit_c2a = reshape(bufr(ibufr+1:ibufr+samp%nc2a*geom%nl0),(/samp%nc2a,geom%nl0/))
+   ! vert_coord_c2a
+   allocate(samp%vert_coord_c2a(samp%nc2a,geom%nl0))
+   samp%vert_coord_c2a = reshape(bufr(ibufr+1:ibufr+samp%nc2a*geom%nl0),(/samp%nc2a,geom%nl0/))
    ibufr = ibufr+samp%nc2a*geom%nl0
 
    ! smask_c2a
@@ -2236,7 +2236,7 @@ integer :: ic0,ic0a,ic0u,icx,icxa,ildwv,iproc,nn_index(1),n,ix,iy,ncx,ncx_eff,nc
 integer :: proc_to_ncxa(mpl%nproc),proc_to_cx_offset(mpl%nproc)
 integer,allocatable :: cx_to_c0(:),cxa_to_cx(:)
 real(kind_real) :: lonlat(2),latmin,latmax
-real(kind_real),allocatable :: rh_c0a(:),lon_cxa(:),lat_cxa(:),vunit_cxa(:,:)
+real(kind_real),allocatable :: rh_c0a(:),lon_cxa(:),lat_cxa(:),vert_coord_cxa(:,:)
 logical :: smask_hor_c0a(geom%nc0a),valid
 logical,allocatable :: smask_cxa(:,:)
 type(atlas_structuredgrid) :: agrid
@@ -2484,15 +2484,15 @@ end do
 ncx = sum(proc_to_ncxa)
 
 ! Allocation
-allocate(vunit_cxa(ncxa,geom%nl0))
+allocate(vert_coord_cxa(ncxa,geom%nl0))
 allocate(smask_cxa(ncxa,geom%nl0))
 allocate(cxa_to_cx(ncxa))
 
-! Get vertical unit and sampling mask on nearest neighbor
+! Get vertical coordinate and sampling mask on nearest neighbor
 do icxa=1,ncxa
    call geom%tree_c0u%find_nearest_neighbors(lon_cxa(icxa),lat_cxa(icxa),1,nn_index)
    ic0u = nn_index(1)
-   vunit_cxa(icxa,:) = geom%vunit_c0u(ic0u,:)
+   vert_coord_cxa(icxa,:) = geom%vert_coord_c0u(ic0u,:)
    smask_cxa(icxa,:) = samp%smask_c0u(ic0u,:)
 end do
 
@@ -2512,7 +2512,7 @@ if (subset==1) then
    samp%nc1a = ncxa
    allocate(samp%lon_c1a(samp%nc1a))
    allocate(samp%lat_c1a(samp%nc1a))
-   allocate(samp%vunit_c1a(samp%nc1a,geom%nl0))
+   allocate(samp%vert_coord_c1a(samp%nc1a,geom%nl0))
    allocate(samp%smask_c1a(samp%nc1a,geom%nl0))
    allocate(samp%c1a_to_c1(samp%nc1a))
 
@@ -2521,7 +2521,7 @@ if (subset==1) then
    samp%lat_c1a = lat_cxa
    samp%proc_to_nc1a = proc_to_ncxa
    samp%proc_to_c1_offset = proc_to_cx_offset
-   samp%vunit_c1a = vunit_cxa
+   samp%vert_coord_c1a = vert_coord_cxa
    samp%smask_c1a = smask_cxa
    samp%c1a_to_c1 = cxa_to_cx
 elseif (subset==2) then
@@ -2530,7 +2530,7 @@ elseif (subset==2) then
    samp%nc2a = ncxa
    allocate(samp%lon_c2a(samp%nc2a))
    allocate(samp%lat_c2a(samp%nc2a))
-   allocate(samp%vunit_c2a(samp%nc2a,geom%nl0))
+   allocate(samp%vert_coord_c2a(samp%nc2a,geom%nl0))
    allocate(samp%smask_c2a(samp%nc2a,geom%nl0))
    allocate(samp%c2a_to_c2(samp%nc2a))
 
@@ -2539,7 +2539,7 @@ elseif (subset==2) then
    samp%lat_c2a = lat_cxa
    samp%proc_to_nc2a = proc_to_ncxa
    samp%proc_to_c2_offset = proc_to_cx_offset
-   samp%vunit_c2a = vunit_cxa
+   samp%vert_coord_c2a = vert_coord_cxa
    samp%smask_c2a = smask_cxa
    samp%c2a_to_c2 = cxa_to_cx
 end if
@@ -2547,7 +2547,7 @@ end if
 ! Release memory
 deallocate(lon_cxa)
 deallocate(lat_cxa)
-deallocate(vunit_cxa)
+deallocate(vert_coord_cxa)
 deallocate(smask_cxa)
 deallocate(cxa_to_cx)
 

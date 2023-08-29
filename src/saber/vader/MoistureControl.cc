@@ -168,17 +168,17 @@ void MoistureControl::print(std::ostream & os) const {
 
 // -----------------------------------------------------------------------------
 
-atlas::FieldSet createMuStats(const atlas::FieldSet & extraFields,
+atlas::FieldSet createMuStats(const atlas::FieldSet & fields,
                               const MoistureControlCovarianceParameters & params) {
   // Get necessary parameters
   // path to covariance file with gp covariance parameters.
   std::string covFileName(params.covariance_file_path);
   // number of model levels
   std::size_t modelLevels;
-  if (extraFields.has("height")) {
-    modelLevels = extraFields["height"].levels();
+  if (fields.has("height")) {
+    modelLevels = fields["height"].levels();
   } else {
-    modelLevels = extraFields["vunit"].levels();
+    modelLevels = fields["vert_coord"].levels();
   }
 
   // geostrophic pressure vertical regression statistics are grouped
