@@ -18,6 +18,7 @@
 
 #include "mo/eval_air_temperature.h"
 
+#include "oops/base/FieldSet3D.h"
 #include "oops/base/Variables.h"
 #include "oops/util/Timer.h"
 
@@ -36,9 +37,8 @@ AirTemperature::AirTemperature(const oops::GeometryData & outerGeometryData,
                                const oops::Variables & outerVars,
                                const eckit::Configuration & covarConf,
                                const Parameters_ & params,
-                               const atlas::FieldSet & xb,
-                               const atlas::FieldSet & fg,
-                               const util::DateTime & validTimeOfXbFg)
+                               const oops::FieldSet3D & xb,
+                               const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params),
     innerGeometryData_(outerGeometryData), innerVars_(outerVars), augmentedStateFieldSet_()
 {
@@ -51,7 +51,7 @@ AirTemperature::AirTemperature(const oops::GeometryData & outerGeometryData,
   // Check that they are allocated (i.e. exist in the state fieldset)
   // Use meta data to see if they are populated with actual data.
   for (auto & s : requiredStateVariables) {
-    if (!xb.has(s)) {
+    if (!xb.fieldSet().has(s)) {
       oops::Log::info() << "AirTemperature variable " << s <<
                            " is not part of state object." << std::endl;
     }
@@ -59,7 +59,7 @@ AirTemperature::AirTemperature(const oops::GeometryData & outerGeometryData,
 
   augmentedStateFieldSet_.clear();
   for (const auto & s : requiredStateVariables) {
-    augmentedStateFieldSet_.add(xb[s]);
+    augmentedStateFieldSet_.add(xb.fieldSet()[s]);
   }
 
   std::vector<std::string> requiredGeometryVariables{"height_levels",
@@ -68,7 +68,7 @@ AirTemperature::AirTemperature(const oops::GeometryData & outerGeometryData,
     if (outerGeometryData.fieldSet().has(s)) {
       augmentedStateFieldSet_.add(outerGeometryData.fieldSet()[s]);
     } else {
-      augmentedStateFieldSet_.add(xb[s]);
+      augmentedStateFieldSet_.add(xb.fieldSet()[s]);
     }
   }
 

@@ -18,6 +18,7 @@
 #include "atlas/library.h"
 #include "atlas/runtime/Log.h"
 
+#include "oops/base/FieldSet3D.h"
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/FieldSetHelpers.h"
@@ -40,14 +41,13 @@ Covariance::Covariance(const oops::GeometryData & geometryData,
                        const oops::Variables & centralVars,
                        const eckit::Configuration & covarConf,
                        const Parameters_ & params,
-                       const atlas::FieldSet & xb,
-                       const atlas::FieldSet & fg,
-                       const util::DateTime & validTimeOfXbFg,
+                       const oops::FieldSet3D & xb,
+                       const oops::FieldSet3D & fg,
                        const size_t & timeRank)
   : SaberCentralBlockBase(params),
     params_(params), variables_(params.activeVars.value().get_value_or(centralVars).variables()),
     gsiGridFuncSpace_(geometryData.functionSpace()), comm_(&geometryData.comm()),
-    validTimeOfXbFg_(validTimeOfXbFg)
+    validTimeOfXbFg_(xb.validTime())
 {
   oops::Log::trace() << classname() << "::Covariance starting" << std::endl;
   util::Timer timer(classname(), "Covariance");
@@ -55,8 +55,8 @@ Covariance::Covariance(const oops::GeometryData & geometryData,
   // TODO(GSI team) use timeRank to initialize random seed
 
   // Share xb and fg pointers
-  xb_ = util::shareFields(xb);
-  fg_ = util::shareFields(fg);
+  xb_ = util::shareFields(xb.fieldSet());
+  fg_ = util::shareFields(fg.fieldSet());
 
   oops::Log::trace() << classname() << "::Covariance done" << std::endl;
 }

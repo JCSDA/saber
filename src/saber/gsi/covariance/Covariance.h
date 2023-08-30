@@ -60,9 +60,8 @@ class Covariance : public SaberCentralBlockBase {
              const oops::Variables &,
              const eckit::Configuration &,
              const Parameters_ &,
-             const atlas::FieldSet &,
-             const atlas::FieldSet &,
-             const util::DateTime &,
+             const oops::FieldSet3D &,
+             const oops::FieldSet3D &,
              const size_t &);
   virtual ~Covariance();
 

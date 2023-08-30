@@ -25,9 +25,8 @@ IDCentral::IDCentral(const oops::GeometryData & geometryData,
                      const oops::Variables & activeVars,
                      const eckit::Configuration & covarConf,
                      const Parameters_ & params,
-                     const atlas::FieldSet & xb,
-                     const atlas::FieldSet & fg,
-                     const util::DateTime & validTimeOfXbFg,
+                     const oops::FieldSet3D & xb,
+                     const oops::FieldSet3D & fg,
                      const size_t & timeRank) :
     SaberCentralBlockBase(params),
     geometryData_(geometryData),
@@ -90,9 +89,8 @@ IDOuter::IDOuter(const oops::GeometryData & outerGeometryData,
                  const oops::Variables & outerVars,
                  const eckit::Configuration & covarConfig,
                  const Parameters_ & params,
-                 const atlas::FieldSet & xb,
-                 const atlas::FieldSet & fg,
-                 const util::DateTime & validTimeOfXbFg)
+                 const oops::FieldSet3D & xb,
+                 const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params),
     innerGeometryData_(outerGeometryData),
     innerVars_(outerVars)

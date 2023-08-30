@@ -36,9 +36,8 @@ SuperMoistIncrOp::SuperMoistIncrOp(const oops::GeometryData & outerGeometryData,
                                    const oops::Variables & outerVars,
                                    const eckit::Configuration & covarConf,
                                    const Parameters_ & params,
-                                   const atlas::FieldSet & xb,
-                                   const atlas::FieldSet & fg,
-                                   const util::DateTime & validTimeOfXbFg)
+                                   const oops::FieldSet3D & xb,
+                                   const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params),
     innerGeometryData_(outerGeometryData), innerVars_(outerVars),
     activeVars_(params.activeVars.value().get_value_or(outerVars)),
@@ -46,11 +45,11 @@ SuperMoistIncrOp::SuperMoistIncrOp(const oops::GeometryData & outerGeometryData,
                                                        outerVars,
                                                        covarConf,
                                                        params.airTemperature,
-                                                       xb, fg, validTimeOfXbFg)),
+                                                       xb, fg)),
     MIO_(std::make_unique<MoistIncrOp>(outerGeometryData,
                                        outerVars,
                                        covarConf,
-                                       params.moistIncrOp, xb, fg, validTimeOfXbFg))
+                                       params.moistIncrOp, xb, fg))
 {
   oops::Log::trace() << classname() << "::SuperMoistIncrOp starting" << std::endl;
   oops::Log::trace() << classname() << "::SuperMoistIncrOp done" << std::endl;

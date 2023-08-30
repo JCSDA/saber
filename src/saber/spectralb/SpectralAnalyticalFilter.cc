@@ -122,9 +122,8 @@ SpectralAnalyticalFilter::SpectralAnalyticalFilter(const oops::GeometryData & ge
                                                const oops::Variables & outerVars,
                                                const eckit::Configuration & covarConf,
                                                const Parameters_ & params,
-                                               const atlas::FieldSet & xb,
-                                               const atlas::FieldSet & fg,
-                                               const util::DateTime & validTimeOfXbFg)
+                                               const oops::FieldSet3D & xb,
+                                               const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params), params_(params),
     activeVars_(getActiveVars(params, outerVars)),
     innerGeometryData_(geometryData),

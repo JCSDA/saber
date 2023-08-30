@@ -24,9 +24,8 @@ SpectralToSpectral::SpectralToSpectral(const oops::GeometryData & outerGeometryD
                                        const oops::Variables & outerVars,
                                        const eckit::Configuration & covarConf,
                                        const SpectralToSpectralParameters & params,
-                                       const atlas::FieldSet & xb,
-                                       const atlas::FieldSet & fg,
-                                       const util::DateTime & validTimeOfXbFg) :
+                                       const oops::FieldSet3D & xb,
+                                       const oops::FieldSet3D & fg) :
     SaberOuterBlockBase(params),
     innerFunctionSpace_(2 * params.inputTruncation.value() - 1),
     outerFunctionSpace_(outerGeometryData.functionSpace()),

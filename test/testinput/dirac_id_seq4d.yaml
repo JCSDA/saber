@@ -23,6 +23,7 @@ background error:
   randomization size: 50
   saber central block:
     saber block name: ID
+parallel subwindows: false
 dirac:
   - lon:
     - 0.0
@@ -45,9 +46,9 @@ diagnostic points:
   - {}
 output dirac:
   mpi pattern: '%MPI%'
-  filepath: testdata/dirac_id_4d/%MPI%_dirac_%id%
+  filepath: testdata/dirac_id_seq4d/%MPI%_dirac_%id%
 output variance:
   mpi pattern: '%MPI%'
-  filepath: testdata/dirac_id_4d/%MPI%_variance
+  filepath: testdata/dirac_id_seq4d/%MPI%_variance
 test:
-  reference filename: testref/dirac_id_4d.ref
+  reference filename: testref/dirac_id_seq4d.ref

@@ -68,6 +68,9 @@ template <typename MODEL> class ErrorCovarianceToolboxParameters :
   /// Background error covariance model.
   oops::RequiredParameter<CovarianceParameters_> backgroundError{"background error", this};
 
+  /// Geometry parameters.
+  oops::Parameter<bool> parallel{"parallel subwindows", true, this};
+
   /// Dirac location/variables parameters.
   oops::OptionalParameter<eckit::LocalConfiguration> dirac{"dirac", this};
 
@@ -121,35 +124,39 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
 
     // Define number of subwindows
     const eckit::LocalConfiguration backgroundConfig(fullConfig, "background");
-    size_t nslots = 1;
+    size_t nsubwin = 1;
     if (backgroundConfig.has("states")) {
       std::vector<eckit::LocalConfiguration> confs;
       backgroundConfig.get("states", confs);
-      nslots = confs.size();
+      nsubwin = confs.size();
     }
 
     // Define space and time communicators
     const eckit::mpi::Comm * commSpace = &this->getComm();
     const eckit::mpi::Comm * commTime = &oops::mpi::myself();
-    if (nslots > 1) {
-      size_t ntasks = this->getComm().size();
-      ASSERT(ntasks % nslots == 0);
-      size_t myrank = this->getComm().rank();
-      size_t ntaskpslot = ntasks / nslots;
-      size_t myslot = myrank / ntaskpslot;
+    if (nsubwin > 1) {
+      // Define sub-windows
+      const size_t ntasks = this->getComm().size();
+      size_t mysubwin = 0;
+      size_t nsublocal = nsubwin;
+      if (params.parallel) {
+        ASSERT(ntasks % nsubwin == 0);
+        nsublocal = 1;
+        mysubwin = this->getComm().rank() / (ntasks / nsubwin);
+        ASSERT(mysubwin < nsubwin);
+      }
 
       // Create a communicator for same sub-window, to be used for communications in space
-      std::string sgeom = "comm_geom_" + std::to_string(myslot);
+      const std::string sgeom = "comm_geom_" + std::to_string(mysubwin);
       char const *geomName = sgeom.c_str();
-      commSpace = &this->getComm().split(myslot, geomName);
-      ASSERT(commSpace->size() == ntaskpslot);
+      commSpace = &this->getComm().split(mysubwin, geomName);
 
       // Create a communicator for same local area, to be used for communications in time
-      size_t myarea = commSpace->rank();
-      std::string stime = "comm_time_" + std::to_string(myarea);
+      const size_t myarea = commSpace->rank();
+      const std::string stime = "comm_time_" + std::to_string(myarea);
       char const *timeName = stime.c_str();
       commTime = &this->getComm().split(myarea, timeName);
-      ASSERT(commTime->size() == nslots);
+      ASSERT(commTime->size() == (nsubwin / nsublocal));
     }
 
     // Get number of MPI tasks and OpenMP threads
@@ -253,19 +260,21 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
 // The passed geometry should be consistent with the passed increment
   void print_value_at_positions(const eckit::LocalConfiguration & diagConf,
                                 const Geometry_ & geom,
-                                const Increment_ & data) const {
+                                const Increment4D_ & data) const {
     oops::Log::trace() << appname() << "::print_value_at_position starting" << std::endl;
 
     // Create diagnostic field
-    Increment_ diagPoints(data);
+    Increment4D_ diagPoints(data);
     diagPoints.dirac(diagConf);
 
     // Get diagnostic values
-    util::printDiagValues(geom.timeComm(),
-                          geom.getComm(),
-                          geom.functionSpace(),
-                          data.fieldSet(),
-                          diagPoints.fieldSet());
+    for (int jj = 0; jj < data.size(); ++jj) {
+      util::printDiagValues(geom.timeComm(),
+                            geom.getComm(),
+                            geom.functionSpace(),
+                            data[jj].fieldSet(),
+                            diagPoints[jj].fieldSet());
+    }
 
     oops::Log::trace() << appname() << "::print_value_at_position done" << std::endl;
   }
@@ -297,14 +306,12 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
 
       // Print variances
       oops::Log::test() << "- Variances at Dirac points:" << std::endl;
-      print_value_at_positions(testConf.getSubConfiguration("dirac"), geom, dxo[0]);
+      print_value_at_positions(testConf.getSubConfiguration("dirac"), geom, dxo);
 
       // Print covariances
-      const auto & diagnosticConfig = testConf.getSubConfiguration("diagnostic points");
-      if (!diagnosticConfig.empty()) {
-        oops::Log::test() << "- Covariances at diagnostic points:" << std::endl;
-        print_value_at_positions(diagnosticConfig, geom, dxo[0]);
-      }
+      const eckit::LocalConfiguration covarDiagConf(testConf, "diagnostic points");
+      oops::Log::test() << "- Covariances at diagnostic points:" << std::endl;
+      print_value_at_positions(covarDiagConf, geom, dxo);
     }
 
     // Copy configuration
@@ -350,14 +357,12 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
 
       oops::Log::test() << "Localization(" << idL << ") diagnostics:" << std::endl;
       oops::Log::test() << "- Localization at zero separation:" << std::endl;
-      print_value_at_positions(testConf.getSubConfiguration("dirac"), geom, dxo[0]);
+      print_value_at_positions(testConf.getSubConfiguration("dirac"), geom, dxo);
       if (testConf.has("diagnostic points")) {
-        const auto & diagnosticConfig = testConf.getSubConfiguration("diagnostic points");
-        if (!diagnosticConfig.empty()) {
-          // Print localization
-          oops::Log::test() << "- Localization at diagnostic points:" << std::endl;
-          print_value_at_positions(diagnosticConfig, geom, dxo[0]);
-        }
+        const eckit::LocalConfiguration covarDiagConf(testConf, "diagnostic points");
+        // Print localization
+        oops::Log::test() << "- Localization at diagnostic points:" << std::endl;
+        print_value_at_positions(covarDiagConf, geom, dxo);
       }
 
       // Copy configuration

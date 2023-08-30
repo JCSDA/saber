@@ -13,6 +13,8 @@
 
 #include "eckit/exception/Exceptions.h"
 
+#include "oops/base/FieldSet3D.h"
+
 #include "saber/oops/Utilities.h"
 
 
@@ -58,9 +60,8 @@ VaderBlock::VaderBlock(const oops::GeometryData & outerGeometryData,
                        const oops::Variables & outerVars,
                        const eckit::Configuration & outerBlockConf,
                        const Parameters_ & params,
-                       const atlas::FieldSet & xb,
-                       const atlas::FieldSet & fg,
-                       const util::DateTime & validTimeOfXbFg)
+                       const oops::FieldSet3D & xb,
+                       const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params),
     outerVars_(outerVars),
     innerGeometryData_(outerGeometryData),
@@ -72,7 +73,7 @@ VaderBlock::VaderBlock(const oops::GeometryData & outerGeometryData,
   // Change variables in the background to inner variables
   // TODO(someone): perhaps this code will happen in the ErrorCovariance ctor?
   oops::Variables neededVars = innerVars_;
-  atlas::FieldSet xb_inner = xb;
+  atlas::FieldSet xb_inner = xb.fieldSet();
 
   oops::Variables varsVaderPopulates = vader_.changeVar(xb_inner, neededVars);
   ASSERT_MSG(varsVaderPopulates == innerVars_, "VADER can not populate all "

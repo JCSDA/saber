@@ -7,7 +7,9 @@
 
 #pragma once
 
-#include "atlas/field.h"
+namespace oops {
+  class FieldSet4D;
+}
 
 namespace saber {
 
@@ -19,8 +21,8 @@ class SaberBlockChainBase {
   SaberBlockChainBase() = default;
   virtual ~SaberBlockChainBase() = default;
 
-  virtual void randomize(atlas::FieldSet &) const = 0;
-  virtual void multiply(atlas::FieldSet &) const = 0;
+  virtual void randomize(oops::FieldSet4D &) const = 0;
+  virtual void multiply(oops::FieldSet4D &) const = 0;
 };
 
 }  // namespace saber

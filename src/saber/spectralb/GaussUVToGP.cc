@@ -32,6 +32,7 @@
 #include "mo/eval_water_vapor_mixing_ratio.h"
 #include "mo/model2geovals_varchange.h"
 
+#include "oops/base/FieldSet3D.h"
 #include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/Logger.h"
@@ -485,9 +486,8 @@ GaussUVToGP::GaussUVToGP(const oops::GeometryData & outerGeometryData,
                const oops::Variables & outerVars,
                const eckit::Configuration & covarConf,
                const Parameters_ & params,
-               const atlas::FieldSet & xb,
-               const atlas::FieldSet & fg,
-               const util::DateTime & validTimeOfXbFg)
+               const oops::FieldSet3D & xb,
+               const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params),
     params_(params),
     outerVars_(outerVars),
@@ -498,7 +498,7 @@ GaussUVToGP::GaussUVToGP(const oops::GeometryData & outerGeometryData,
     innerGeometryData_(atlas::FunctionSpace(gaussFunctionSpace_),
                        outerGeometryData.fieldSet(),
                        outerGeometryData.levelsAreTopDown(), outerGeometryData.comm()),
-    augmentedState_(createAugmentedState(outerGeometryData, xb))
+    augmentedState_(createAugmentedState(outerGeometryData, xb.fieldSet()))
 {
   oops::Log::trace() << classname() << "::GaussUVToGP starting" << std::endl;
   // read in "gaussian air density" state.

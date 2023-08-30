@@ -12,6 +12,7 @@
 
 #include "atlas/field.h"
 
+#include "oops/base/FieldSet4D.h"
 #include "oops/base/Geometry.h"
 #include "oops/interface/ModelData.h"
 
@@ -29,9 +30,8 @@ class SaberOuterBlockChain {
   template<typename MODEL>
   SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
                        const oops::Variables & outerVars,
-                       const atlas::FieldSet & fsetXb,
-                       const atlas::FieldSet & fsetFg,
-                       const util::DateTime & validTimeOfXbFg,
+                       const oops::FieldSet4D & fsetXb,
+                       const oops::FieldSet4D & fsetFg,
                        std::vector<atlas::FieldSet> & fsetEns,
                        const eckit::LocalConfiguration & covarConf,
                        const std::vector<saber::SaberOuterBlockParametersWrapper> & params);
@@ -54,17 +54,20 @@ class SaberOuterBlockChain {
   }
 
   /// @brief Forward multiplication by all outer blocks.
-  void applyOuterBlocks(atlas::FieldSet & fset) const {
-    for (auto it = outerBlocks_.rbegin(); it != outerBlocks_.rend(); ++it) {
-      it->get()->multiply(fset);
+  void applyOuterBlocks(oops::FieldSet4D & fset) const {
+    for (size_t jtime = 0; jtime < fset.size(); ++jtime) {
+      for (auto it = outerBlocks_.rbegin(); it != outerBlocks_.rend(); ++it) {
+        it->get()->multiply(fset[jtime].fieldSet());
+      }
     }
   }
 
   /// @brief Adjoint multiplication by all outer blocks.
-  void applyOuterBlocksAD(atlas::FieldSet & fset) const {
-    // Outer blocks adjoint multiplication
-    for (auto it = outerBlocks_.begin(); it != outerBlocks_.end(); ++it) {
-      it->get()->multiplyAD(fset);
+  void applyOuterBlocksAD(oops::FieldSet4D & fset) const {
+    for (size_t jtime = 0; jtime < fset.size(); ++jtime) {
+      for (auto it = outerBlocks_.begin(); it != outerBlocks_.end(); ++it) {
+        it->get()->multiplyAD(fset[jtime].fieldSet());
+      }
     }
   }
 
@@ -97,6 +100,8 @@ class SaberOuterBlockChain {
   }
 
   /// @brief Vector of all outer blocks.
+  /// TODO(AS): Need to expand this to create different outer blocks for different
+  /// times for the 4D with multiple times on one MPI task.
   std::vector<std::unique_ptr<SaberOuterBlockBase>> outerBlocks_;
 };
 
@@ -105,9 +110,8 @@ class SaberOuterBlockChain {
 template<typename MODEL>
 SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
                        const oops::Variables & outerVars,
-                       const atlas::FieldSet & fsetXb,
-                       const atlas::FieldSet & fsetFg,
-                       const util::DateTime & validTimeOfXbFg,
+                       const oops::FieldSet4D & fsetXb,
+                       const oops::FieldSet4D & fsetFg,
                        std::vector<atlas::FieldSet> & fsetEns,
                        const eckit::LocalConfiguration & covarConf,
                        const std::vector<saber::SaberOuterBlockParametersWrapper> & params) {
@@ -149,12 +153,11 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
                                                  currentOuterVars,
                                                  outerBlockConf,
                                                  saberOuterBlockParams,
-                                                 fsetXb,
-                                                 fsetFg,
-                                                 validTimeOfXbFg));
+                                                 fsetXb[0],
+                                                 fsetFg[0]));
 
     // Read and add model fields
-    outerBlocks_.back()->read(geom, currentOuterVars, validTimeOfXbFg);
+    outerBlocks_.back()->read(geom, currentOuterVars, fsetXb[0].validTime());
 
     if (saberOuterBlockParams.doCalibration()) {
       // Block calibration
@@ -178,7 +181,7 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
           atlas::FieldSet fset;
           readEnsembleMember(geom,
                              outerVars,
-                             validTimeOfXbFg,
+                             fsetXb[0].validTime(),
                              ensembleConf,
                              ie,
                              fset);
@@ -201,7 +204,7 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
 
       // Write calibration data
       oops::Log::info() << "Info     : Write calibration data" << std::endl;
-      outerBlocks_.back()->write(geom, currentOuterVars, validTimeOfXbFg);
+      outerBlocks_.back()->write(geom, currentOuterVars, fsetXb[0].validTime());
       outerBlocks_.back()->write();
 
       if (!iterativeEnsembleLoading) {
@@ -249,8 +252,8 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
       atlas::FieldSet fsetXbInv;
       atlas::FieldSet fsetFgInv;
       for (const auto & var : saberOuterBlockParams.inverseVars.value().variables()) {
-        fsetXbInv.add(fsetXb.field(var));
-        fsetFgInv.add(fsetFg.field(var));
+        fsetXbInv.add(fsetXb[0].fieldSet().field(var));
+        fsetFgInv.add(fsetFg[0].fieldSet().field(var));
       }
 
       // Apply left inverse
@@ -259,8 +262,8 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
 
       // Copy the fields back
       for (const auto & var : saberOuterBlockParams.inverseVars.value().variables()) {
-        fsetXb.field(var) = fsetXbInv.field(var);
-        fsetFg.field(var) = fsetFgInv.field(var);
+        fsetXb[0].fieldSet().field(var) = fsetXbInv.field(var);
+        fsetFg[0].fieldSet().field(var) = fsetFgInv.field(var);
       }
     }
 

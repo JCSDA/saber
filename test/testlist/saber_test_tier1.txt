@@ -8,6 +8,7 @@ dirac_bump_7
 dirac_ens_noloc_4d
 dirac_id
 dirac_id_4d
+dirac_id_seq4d
 dirac_interpolation_2
 dirac_interpolation_3
 dirac_stddev_1

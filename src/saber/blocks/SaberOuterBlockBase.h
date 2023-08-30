@@ -38,6 +38,10 @@ namespace oops {
   template <typename MODEL> class Increment;
 }
 
+namespace oops {
+  class FieldSet3D;
+}
+
 namespace saber {
 
 // -----------------------------------------------------------------------------
@@ -191,9 +195,8 @@ class SaberOuterBlockFactory {
                                                      const oops::Variables &,
                                                      const eckit::Configuration &,
                                                      const SaberBlockParametersBase &,
-                                                     const atlas::FieldSet &,
-                                                     const atlas::FieldSet &,
-                                                     const util::DateTime &);
+                                                     const oops::FieldSet3D &,
+                                                     const oops::FieldSet3D &);
 
   static std::unique_ptr<SaberBlockParametersBase> createParameters(const std::string &name);
 
@@ -211,9 +214,8 @@ class SaberOuterBlockFactory {
                                                     const oops::Variables &,
                                                     const eckit::Configuration &,
                                                     const SaberBlockParametersBase &,
-                                                    const atlas::FieldSet &,
-                                                    const atlas::FieldSet &,
-                                                    const util::DateTime &) = 0;
+                                                    const oops::FieldSet3D &,
+                                                    const oops::FieldSet3D &) = 0;
 
   virtual std::unique_ptr<SaberBlockParametersBase> makeParameters() const = 0;
 
@@ -233,12 +235,11 @@ class SaberOuterBlockMaker : public SaberOuterBlockFactory {
                                             const oops::Variables & outerVars,
                                             const eckit::Configuration & covarConf,
                                             const SaberBlockParametersBase & params,
-                                            const atlas::FieldSet & xb,
-                                            const atlas::FieldSet & fg,
-                                            const util::DateTime & validTime) override {
+                                            const oops::FieldSet3D & xb,
+                                            const oops::FieldSet3D & fg) override {
     const auto &stronglyTypedParams = dynamic_cast<const Parameters_&>(params);
     return std::make_unique<T>(outerGeometryData, outerVars,
-                               covarConf, stronglyTypedParams, xb, fg, validTime);
+                               covarConf, stronglyTypedParams, xb, fg);
   }
 
   std::unique_ptr<SaberBlockParametersBase> makeParameters() const override {

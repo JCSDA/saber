@@ -36,9 +36,8 @@ VertLoc::VertLoc(const oops::GeometryData & outerGeometryData,
                                    const oops::Variables & outerVars,
                                    const eckit::Configuration & covarConf,
                                    const Parameters_ & params,
-                                   const atlas::FieldSet & xb,
-                                   const atlas::FieldSet & fg,
-                                   const util::DateTime & validTimeOfXbFg)
+                                   const oops::FieldSet3D & xb,
+                                   const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params),
     innerGeometryData_(outerGeometryData), innerVars_(outerVars),
     activeVars_(params.activeVars.value().get_value_or(outerVars)),

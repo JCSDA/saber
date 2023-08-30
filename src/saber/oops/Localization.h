@@ -16,6 +16,7 @@
 
 #include "eckit/config/Configuration.h"
 
+#include "oops/base/State4D.h"
 #include "oops/base/Variables.h"
 #include "oops/generic/LocalizationBase.h"
 #include "oops/util/Duration.h"
@@ -69,8 +70,10 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
   }
 
   // Create dummy xb and fg
-  const State_ xb(geom, incVars, dummyTime);
-  const State_ fg(geom, incVars, dummyTime);
+  const State_ xb_state(geom, incVars, dummyTime);
+  const oops::FieldSet3D xb(xb_state.fieldSet(), xb_state.validTime(), geom.getComm());
+  const State_ fg_state(geom, incVars, dummyTime);
+  const oops::FieldSet3D fg(fg_state.fieldSet(), fg_state.validTime(), geom.getComm());
 
   std::vector<atlas::FieldSet> emptyFsetEns;
   // TODO(AS): revisit what configuration needs to be passed to SaberParametricBlockChain.
@@ -85,7 +88,7 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
   covarConf.set("iterative ensemble loading", false);
   // Initialize localization blockchain
   loc_ = std::make_unique<SaberParametricBlockChain>(geom, geom,
-              incVars, xb.fieldSet(), fg.fieldSet(), xb.validTime(),
+              incVars, oops::FieldSet4D(xb), oops::FieldSet4D(fg),
               emptyFsetEns, emptyFsetEns, covarConf, conf);
 
   oops::Log::trace() << "Localization:Localization done" << std::endl;
@@ -101,14 +104,16 @@ Localization<MODEL>::~Localization() {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void Localization<MODEL>::randomize(Increment_ & dx) const {
+void Localization<MODEL>::randomize(Increment_ & dx_inc) const {
   oops::Log::trace() << "Localization:randomize starting" << std::endl;
 
   // SABER block chain randomization
-  loc_->randomize(dx.fieldSet());
+  oops::FieldSet3D dx3d(dx_inc.fieldSet(), dx_inc.validTime(), dx_inc.geometry().getComm());
+  oops::FieldSet4D dx(dx3d);
+  loc_->randomize(dx);
 
   // ATLAS fieldset to Increment_
-  dx.synchronizeFields();
+  dx_inc.synchronizeFields();
 
   oops::Log::trace() << "Localization:randomize done" << std::endl;
 }
@@ -116,14 +121,15 @@ void Localization<MODEL>::randomize(Increment_ & dx) const {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void Localization<MODEL>::multiply(Increment_ & dx) const {
+void Localization<MODEL>::multiply(Increment_ & dx_inc) const {
   oops::Log::trace() << "Localization:multiply starting" << std::endl;
 
   // SABER block chain multiplication
-  loc_->multiply(dx.fieldSet());
+  oops::FieldSet4D dx({dx_inc.fieldSet(), dx_inc.validTime(), dx_inc.geometry().getComm()});
+  loc_->multiply(dx);
 
   // ATLAS fieldset to Increment_
-  dx.synchronizeFields();
+  dx_inc.synchronizeFields();
 
   oops::Log::trace() << "Localization:multiply done" << std::endl;
 }

@@ -18,6 +18,7 @@
 #include <boost/noncopyable.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 
+#include "oops/base/FieldSet3D.h"
 #include "oops/base/GeometryData.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/AssociativeContainers.h"
@@ -139,9 +140,8 @@ class SaberCentralBlockFactory {
                                                        const oops::Variables &,
                                                        const eckit::Configuration &,
                                                        const SaberBlockParametersBase &,
-                                                       const atlas::FieldSet &,
-                                                       const atlas::FieldSet &,
-                                                       const util::DateTime &,
+                                                       const oops::FieldSet3D &,
+                                                       const oops::FieldSet3D &,
                                                        const size_t & timeRank = 0);
 
   static std::unique_ptr<SaberBlockParametersBase> createParameters(const std::string &name);
@@ -160,9 +160,8 @@ class SaberCentralBlockFactory {
                                                       const oops::Variables &,
                                                       const eckit::Configuration &,
                                                       const SaberBlockParametersBase &,
-                                                      const atlas::FieldSet &,
-                                                      const atlas::FieldSet &,
-                                                      const util::DateTime &,
+                                                      const oops::FieldSet3D &,
+                                                      const oops::FieldSet3D &,
                                                       const size_t &) = 0;
 
   virtual std::unique_ptr<SaberBlockParametersBase> makeParameters() const = 0;
@@ -183,13 +182,12 @@ class SaberCentralBlockMaker : public SaberCentralBlockFactory {
                                               const oops::Variables & outerVars,
                                               const eckit::Configuration & covarConf,
                                               const SaberBlockParametersBase & params,
-                                              const atlas::FieldSet & xb,
-                                              const atlas::FieldSet & fg,
-                                              const util::DateTime & validTime,
+                                              const oops::FieldSet3D & xb,
+                                              const oops::FieldSet3D & fg,
                                               const size_t & timeRank) override {
     const auto &stronglyTypedParams = dynamic_cast<const Parameters_&>(params);
     return std::make_unique<T>(geometryData, outerVars, covarConf,
-                               stronglyTypedParams, xb, fg, validTime, timeRank);
+                               stronglyTypedParams, xb, fg, timeRank);
   }
 
   std::unique_ptr<SaberBlockParametersBase> makeParameters() const override {

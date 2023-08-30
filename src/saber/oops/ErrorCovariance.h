@@ -99,10 +99,8 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
   params.deserialize(config);
 
   // Local copy of background and first guess that can undergo interpolation
-  atlas::FieldSet fsetXb = util::copyFieldSet(xb[0].fieldSet());
-  atlas::FieldSet fsetFg = util::copyFieldSet(fg[0].fieldSet());
-  ASSERT(xb[0].validTime() == fg[0].validTime());
-  const util::DateTime validTimeOfXbFg = xb[0].validTime();
+  oops::FieldSet4D fsetXb(xb);
+  oops::FieldSet4D fsetFg(fg);
 
   // Extend background and first guess with geometry fields
   // TODO(Benjamin, Marek, Mayeul, ?)
@@ -182,7 +180,6 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
                        outerVars,
                        fsetXb,
                        fsetFg,
-                       validTimeOfXbFg,
                        fsetEns,
                        covarConf,
                        *saberOuterBlocksParams);
@@ -215,7 +212,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
         // File-base weight
         readHybridWeight(*hybridGeom,
                          outerVars,
-                         validTimeOfXbFg,
+                         xb[0].validTime(),
                          weightConf.getSubConfiguration("file"),
                          weightFset);
         util::sqrtFieldSet(weightFset);
@@ -257,7 +254,6 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
                           cmpOuterVars,
                           fsetXb,
                           fsetFg,
-                          validTimeOfXbFg,
                           cmpFsetEns,
                           dualResolutionFsetEns,
                           cmpCovarConf,
@@ -268,7 +264,6 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
                           cmpOuterVars,
                           fsetXb,
                           fsetFg,
-                          validTimeOfXbFg,
                           cmpFsetEns,
                           dualResolutionFsetEns,
                           cmpCovarConf,
@@ -283,7 +278,6 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
                           outerVars,
                           fsetXb,
                           fsetFg,
-                          validTimeOfXbFg,
                           fsetEns,
                           dualResolutionFsetEns,
                           covarConf,
@@ -294,7 +288,6 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
                           outerVars,
                           fsetXb,
                           fsetFg,
-                          validTimeOfXbFg,
                           fsetEns,
                           dualResolutionFsetEns,
                           covarConf,
@@ -323,40 +316,43 @@ ErrorCovariance<MODEL>::~ErrorCovariance() {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void ErrorCovariance<MODEL>::doRandomize(Increment4D_ & dx) const {
+void ErrorCovariance<MODEL>::doRandomize(Increment4D_ & dx_inc) const {
   oops::Log::trace() << "ErrorCovariance<MODEL>::doRandomize starting" << std::endl;
   util::Timer timer(classname(), "doRandomize");
 
   // SABER block chain randomization
   // Initialize sum to zero
-  dx.zero();
-  const atlas::FieldSet zeroFset = util::copyFieldSet(dx[0].fieldSet());
+  dx_inc.zero();
+  oops::FieldSet4D dx(dx_inc);
+  const oops::FieldSet4D zeroFset = oops::copyFieldSet4D(dx);
 
   // Loop over components for the central block
   for (size_t jj = 0; jj < hybridBlockChain_.size(); ++jj) {
     // Randomize covariance
-    atlas::FieldSet fset = util::copyFieldSet(zeroFset);
+    oops::FieldSet4D fset = oops::copyFieldSet4D(zeroFset);
     hybridBlockChain_[jj]->randomize(fset);
 
     // Apply weight
     // Weight square-root multiplication
     if (hybridScalarWeightSqrt_[jj] != 1.0) {
       // Scalar weight
-      util::multiplyFieldSet(fset, hybridScalarWeightSqrt_[jj]);
+      fset *= hybridScalarWeightSqrt_[jj];
     }
     if (!hybridFieldWeightSqrt_[jj].empty()) {
       // File-based weight
-      util::multiplyFieldSets(fset, hybridFieldWeightSqrt_[jj]);
+      fset *= hybridFieldWeightSqrt_[jj];
     }
 
     // Add component
-    util::addFieldSets(dx[0].fieldSet(), fset);
+    dx += fset;
   }
 
-  if (outerBlockChain_) outerBlockChain_->applyOuterBlocks(dx[0].fieldSet());
+  if (outerBlockChain_) outerBlockChain_->applyOuterBlocks(dx);
 
   // ATLAS fieldset to Increment_
-  dx[0].synchronizeFields();
+  for (size_t jtime = 0; jtime < dx_inc.size(); ++jtime) {
+    dx_inc[jtime].fromFieldSet(dx[jtime].fieldSet());
+  }
 
   oops::Log::trace() << "ErrorCovariance<MODEL>::doRandomize done" << std::endl;
 }
@@ -364,35 +360,34 @@ void ErrorCovariance<MODEL>::doRandomize(Increment4D_ & dx) const {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void ErrorCovariance<MODEL>::doMultiply(const Increment4D_ & dxi, Increment4D_ & dxo) const {
+void ErrorCovariance<MODEL>::doMultiply(const Increment4D_ & dxi_inc,
+                                        Increment4D_ & dxo_inc) const {
   oops::Log::trace() << "ErrorCovariance<MODEL>::doMultiply starting" << std::endl;
   util::Timer timer(classname(), "doMultiply");
 
   // Copy input
-  dxo = dxi;
+  dxo_inc = dxi_inc;
+  oops::FieldSet4D dxo(dxo_inc);
 
   // Apply outer blocks adjoint
-  if (outerBlockChain_) outerBlockChain_->applyOuterBlocksAD(dxo[0].fieldSet());
-
-  // Create input FieldSet
-  atlas::FieldSet inputFset = util::copyFieldSet(dxo[0].fieldSet());
+  if (outerBlockChain_) outerBlockChain_->applyOuterBlocksAD(dxo);
+  const oops::FieldSet4D dxi = oops::copyFieldSet4D(dxo);
 
   // Initialize sum to zero
-  util::zeroFieldSet(dxo[0].fieldSet());
-
+  dxo.zero();
   // Loop over B components
   for (size_t jj = 0; jj < hybridBlockChain_.size(); ++jj) {
     // Create temporary FieldSet
-    atlas::FieldSet fset = util::copyFieldSet(inputFset);
+    oops::FieldSet4D fset = oops::copyFieldSet4D(dxi);
 
     // Apply weight
     if (hybridScalarWeightSqrt_[jj] != 1.0) {
       // Scalar weight
-      util::multiplyFieldSet(fset, hybridScalarWeightSqrt_[jj]);
+      fset *= hybridScalarWeightSqrt_[jj];
     }
     if (!hybridFieldWeightSqrt_[jj].empty()) {
       // File-based weight
-      util::multiplyFieldSets(fset, hybridFieldWeightSqrt_[jj]);
+      fset *= hybridFieldWeightSqrt_[jj];
     }
 
     // Apply covariance
@@ -401,22 +396,24 @@ void ErrorCovariance<MODEL>::doMultiply(const Increment4D_ & dxi, Increment4D_ &
     // Apply weight
     if (hybridScalarWeightSqrt_[jj] != 1.0) {
       // Scalar weight
-      util::multiplyFieldSet(fset, hybridScalarWeightSqrt_[jj]);
+      fset *= hybridScalarWeightSqrt_[jj];
     }
     if (!hybridFieldWeightSqrt_[jj].empty()) {
       // File-based weight
-      util::multiplyFieldSets(fset, hybridFieldWeightSqrt_[jj]);
+      fset *= hybridFieldWeightSqrt_[jj];
     }
 
     // Add component
-    util::addFieldSets(dxo[0].fieldSet(), fset);
+    dxo += fset;
   }
 
   // Apply outer blocks forward
-  if (outerBlockChain_) outerBlockChain_->applyOuterBlocks(dxo[0].fieldSet());
+  if (outerBlockChain_) outerBlockChain_->applyOuterBlocks(dxo);
 
   // ATLAS fieldset to Increment_
-  dxo[0].synchronizeFields();
+  for (size_t jtime = 0; jtime < dxo_inc.size(); ++jtime) {
+    dxo_inc[jtime].fromFieldSet(dxo[jtime].fieldSet());
+  }
 
   oops::Log::trace() << "ErrorCovariance<MODEL>::doMultiply done" << std::endl;
 }

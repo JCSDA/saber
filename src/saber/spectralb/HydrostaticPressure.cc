@@ -16,6 +16,7 @@
 
 #include "eckit/exception/Exceptions.h"
 
+#include "oops/base/FieldSet3D.h"
 #include "oops/base/Variables.h"
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/Timer.h"
@@ -38,9 +39,8 @@ HydrostaticPressure::HydrostaticPressure(const oops::GeometryData & outerGeometr
                                    const oops::Variables & outerVars,
                                    const eckit::Configuration & covarConf,
                                    const Parameters_ & params,
-                                   const atlas::FieldSet & xb,
-                                   const atlas::FieldSet & fg,
-                                   const util::DateTime & validTimeOfXbFg)
+                                   const oops::FieldSet3D & xb,
+                                   const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params),
     innerGeometryData_(outerGeometryData), innerVars_(outerVars),
     activeVars_(params.activeVars.value().get_value_or(outerVars)),
@@ -49,11 +49,11 @@ HydrostaticPressure::HydrostaticPressure(const oops::GeometryData & outerGeometr
                                                    outerVars,
                                                    covarConf,
                                                    params.gpToHp,
-                                                   xb, fg, validTimeOfXbFg)),
+                                                   xb, fg)),
     gaussuvtogp_(std::make_unique<GaussUVToGP>(outerGeometryData,
                                                gptohp_->innerVars(),
                                                covarConf,
-                                               params.gaussUVToGp, xb, fg, validTimeOfXbFg))
+                                               params.gaussUVToGp, xb, fg))
 {
   oops::Log::trace() << classname() << "::HydrostaticPressure starting" << std::endl;
   oops::Log::trace() << classname() << "::HydrostaticPressure done" << std::endl;

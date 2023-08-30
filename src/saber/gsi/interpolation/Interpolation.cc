@@ -37,9 +37,8 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
                              const oops::Variables & outerVars,
                              const eckit::Configuration & covarConf,
                              const Parameters_ & params,
-                             const atlas::FieldSet & xb,
-                             const atlas::FieldSet & fg,
-                             const util::DateTime & validTimeOfXbFg)
+                             const oops::FieldSet3D & xb,
+                             const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params), innerVars_(outerVars)
 {
   oops::Log::trace() << classname() << "::Interpolation starting" << std::endl;

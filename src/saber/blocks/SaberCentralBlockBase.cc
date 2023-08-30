@@ -52,9 +52,8 @@ std::unique_ptr<SaberCentralBlockBase> SaberCentralBlockFactory::create(
   const oops::Variables & vars,
   const eckit::Configuration & covarConf,
   const SaberBlockParametersBase & params,
-  const atlas::FieldSet & xb,
-  const atlas::FieldSet & fg,
-  const util::DateTime & validTime,
+  const oops::FieldSet3D & xb,
+  const oops::FieldSet3D & fg,
   const size_t & timeRank) {
   oops::Log::trace() << "SaberCentralBlockBase::create starting" << std::endl;
   const std::string id = params.saberBlockName;
@@ -65,7 +64,7 @@ std::unique_ptr<SaberCentralBlockBase> SaberCentralBlockFactory::create(
   }
   std::unique_ptr<SaberCentralBlockBase> ptr =
     jsb->second->make(geometryData, vars, covarConf,
-                      params, xb, fg, validTime, timeRank);
+                      params, xb, fg, timeRank);
   oops::Log::trace() << "SaberCentralBlockBase::create done" << std::endl;
   return ptr;
 }

@@ -57,9 +57,8 @@ class HpToHexner : public SaberOuterBlockBase {
              const oops::Variables &,
              const eckit::Configuration &,
              const Parameters_ &,
-             const atlas::FieldSet &,
-             const atlas::FieldSet &,
-             const util::DateTime &);
+             const oops::FieldSet3D &,
+             const oops::FieldSet3D &);
   virtual ~HpToHexner();
 
   const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}

@@ -13,14 +13,16 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-void SaberParametricBlockChain::multiply(atlas::FieldSet & fset) const {
+void SaberParametricBlockChain::multiply(oops::FieldSet4D & fset) const {
   // Outer blocks adjoint multiplication
   if (outerBlockChain_) {
     outerBlockChain_->applyOuterBlocksAD(fset);
   }
 
   // Central block multiplication
-  centralBlock_->multiply(fset);
+  for (size_t jtime = 0; jtime < fset.size(); ++jtime) {
+    centralBlock_->multiply(fset[jtime].fieldSet());
+  }
 
   // Outer blocks forward multiplication
   if (outerBlockChain_) {
@@ -30,14 +32,16 @@ void SaberParametricBlockChain::multiply(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void SaberParametricBlockChain::randomize(atlas::FieldSet & fset) const {
+void SaberParametricBlockChain::randomize(oops::FieldSet4D & fset) const {
   // Outer blocks adjoint multiplication
   if (outerBlockChain_) {
     outerBlockChain_->applyOuterBlocksAD(fset);
   }
 
   // Central block randomization
-  centralBlock_->randomize(fset);
+  for (size_t jtime = 0; jtime < fset.size(); ++jtime) {
+    centralBlock_->randomize(fset[jtime].fieldSet());
+  }
 
   // Outer blocks forward multiplication
   if (outerBlockChain_) {

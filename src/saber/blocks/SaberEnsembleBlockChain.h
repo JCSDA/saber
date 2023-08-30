@@ -15,8 +15,10 @@
 
 #include "eckit/exception/Exceptions.h"
 
+#include "oops/base/FieldSet4D.h"
 #include "oops/base/Geometry.h"
 #include "oops/interface/ModelData.h"
+#include "oops/util/Logger.h"
 #include "oops/util/Random.h"
 
 #include "saber/blocks/SaberBlockChainBase.h"
@@ -34,9 +36,8 @@ class SaberEnsembleBlockChain : public SaberBlockChainBase {
   SaberEnsembleBlockChain(const oops::Geometry<MODEL> & geom,
                           const oops::Geometry<MODEL> & dualResGeom,
                           const oops::Variables & outerVars,
-                          const atlas::FieldSet & fsetXb,
-                          const atlas::FieldSet & fsetFg,
-                          const util::DateTime & validTimeOfXbFg,
+                          const oops::FieldSet4D & fsetXb,
+                          const oops::FieldSet4D & fsetFg,
                           std::vector<atlas::FieldSet> & fsetEns,
                           std::vector<atlas::FieldSet> & dualResolutionFsetEns,
                           const eckit::LocalConfiguration & covarConf,
@@ -44,9 +45,9 @@ class SaberEnsembleBlockChain : public SaberBlockChainBase {
   ~SaberEnsembleBlockChain() = default;
 
   /// @brief Randomize the increment according to this B matrix.
-  void randomize(atlas::FieldSet &) const;
+  void randomize(oops::FieldSet4D &) const;
   /// @brief Multiply the increment by this B matrix.
-  void multiply(atlas::FieldSet &) const;
+  void multiply(oops::FieldSet4D &) const;
 
  private:
   /// @brief Outer blocks (optional).
@@ -70,9 +71,8 @@ template<typename MODEL>
 SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & geom,
                        const oops::Geometry<MODEL> & dualResolutionGeom,
                        const oops::Variables & outerVars,
-                       const atlas::FieldSet & fsetXb,
-                       const atlas::FieldSet & fsetFg,
-                       const util::DateTime & validTimeOfXbFg,
+                       const oops::FieldSet4D & fsetXb,
+                       const oops::FieldSet4D & fsetFg,
                        // TODO(AS): remove as argument: this should be read inside the
                        // block.
                        std::vector<atlas::FieldSet> & fsetEns,
@@ -99,7 +99,7 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
       cmpOuterBlocksParams.push_back(cmpOuterBlockParamsWrapper);
     }
     outerBlockChain_ = std::make_unique<SaberOuterBlockChain>(geom, outerVars,
-                          fsetXb, fsetFg, validTimeOfXbFg, fsetEns, covarConf,
+                          fsetXb, fsetFg, fsetEns, covarConf,
                           cmpOuterBlocksParams);
   }
 
@@ -160,7 +160,7 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
     // Copy file
     // Read fieldsets as increments
     // Create increment
-    oops::Increment<MODEL> dx(geom, activeVars, validTimeOfXbFg);
+    oops::Increment<MODEL> dx(geom, activeVars, fsetXb[0].validTime());
     dx.read(inflationConf);
     oops::Log::test() << "Norm of input parameter inflation"
                       << ": " << dx.norm() << std::endl;
@@ -200,7 +200,7 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
     }
     std::unique_ptr<SaberOuterBlockChain> ensTransBlockChain =
            std::make_unique<SaberOuterBlockChain>(geom,
-             outerVars, fsetXb, fsetFg, validTimeOfXbFg, fsetEns,
+             outerVars, fsetXb, fsetFg, fsetEns,
              covarConfUpdated, ensTransOuterBlocksParams);
 
     // Left inverse of ensemble transform on ensemble members
@@ -231,7 +231,7 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
   if (locConf != boost::none) {
   // Initialize localization blockchain
      locBlockChain_ = std::make_unique<SaberParametricBlockChain>(geom, dualResolutionGeom,
-             outerVars, fsetXb, fsetFg, validTimeOfXbFg, fsetEns, dualResolutionFsetEns,
+             outerVars, fsetXb, fsetFg, fsetEns, dualResolutionFsetEns,
              covarConfUpdated, *locConf);
   }
   // Direct calibration
@@ -251,15 +251,22 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
       saberCentralBlockParams.adjointTolerance.value().get_value_or(
       covarConf.getDouble("adjoint tolerance"));
     // Create random FieldSets
-    atlas::FieldSet fset1 =  util::createRandomFieldSet(currentOuterGeom.comm(),
-                                                        currentOuterGeom.functionSpace(),
-                                                        activeVars);
-    atlas::FieldSet fset2 =  util::createRandomFieldSet(currentOuterGeom.comm(),
-                                                        currentOuterGeom.functionSpace(),
-                                                        activeVars);
+    oops::FieldSet4D fset1(fsetFg.validTimes(), fsetFg.commTime(), currentOuterGeom.comm());
+    for (size_t jtime = 0; jtime < fset1.size(); ++jtime) {
+      fset1[jtime].fieldSet() = util::createRandomFieldSet(currentOuterGeom.comm(),
+                                                           currentOuterGeom.functionSpace(),
+                                                           activeVars);
+    }
+    oops::FieldSet4D fset2(fsetFg.validTimes(), fsetFg.commTime(), currentOuterGeom.comm());
+    for (size_t jtime = 0; jtime < fset2.size(); ++jtime) {
+      fset2[jtime].fieldSet() = util::createRandomFieldSet(currentOuterGeom.comm(),
+                                                           currentOuterGeom.functionSpace(),
+                                                           activeVars);
+    }
+
     // Copy FieldSets
-    atlas::FieldSet fset1Save = util::copyFieldSet(fset1);
-    atlas::FieldSet fset2Save = util::copyFieldSet(fset2);
+    const oops::FieldSet4D fset1Save = oops::copyFieldSet4D(fset1);
+    const oops::FieldSet4D fset2Save = oops::copyFieldSet4D(fset2);
 
     // Apply forward multiplication only (self-adjointness test)
     // TODO(AS): need to change this to only call it for the ensemble part, not outer blocks!
@@ -267,10 +274,8 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
     this->multiply(fset2);
 
     // Compute adjoint test
-    const double dp1 = util::dotProductFieldSets(fset1, fset2Save,
-                                                 activeVars.variables(), currentOuterGeom.comm());
-    const double dp2 = util::dotProductFieldSets(fset2, fset1Save,
-                                                 activeVars.variables(), currentOuterGeom.comm());
+    const double dp1 = fset1.dot_product_with(fset2Save, activeVars);
+    const double dp2 = fset2.dot_product_with(fset1Save, activeVars);
     oops::Log::info() << std::setprecision(16) << "Info     : Adjoint test: y^t (Ax) = " << dp1
                       << ": x^t (A^t y) = " << dp2 << " : adjoint tolerance = "
                       << localAdjointTolerance << std::endl;

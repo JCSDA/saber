@@ -292,9 +292,8 @@ SpectralToGauss::SpectralToGauss(const oops::GeometryData & outerGeometryData,
                                  const oops::Variables & outerVars,
                                  const eckit::Configuration & covarConf,
                                  const Parameters_ & params,
-                                 const atlas::FieldSet & xb,
-                                 const atlas::FieldSet & fg,
-                                 const util::DateTime & validTimeOfXbFg)
+                                 const oops::FieldSet3D & xb,
+                                 const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params),
     params_(params),
     activeVars_(params.activeVariables.value().get_value_or(outerVars)),

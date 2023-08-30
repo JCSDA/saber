@@ -12,6 +12,7 @@
 
 #include "atlas/field.h"
 
+#include "oops/base/FieldSet4D.h"
 #include "oops/interface/ModelData.h"
 
 #include "saber/blocks/SaberBlockChainBase.h"
@@ -31,9 +32,8 @@ class SaberParametricBlockChain : public SaberBlockChainBase {
   SaberParametricBlockChain(const oops::Geometry<MODEL> & geom,
                         const oops::Geometry<MODEL> & dualResGeom,
                         const oops::Variables & outerVars,
-                        const atlas::FieldSet & fsetXb,
-                        const atlas::FieldSet & fsetFg,
-                        const util::DateTime & validTimeOfXbFg,
+                        const oops::FieldSet4D & fsetXb,
+                        const oops::FieldSet4D & fsetFg,
                         std::vector<atlas::FieldSet> & fsetEns,
                         std::vector<atlas::FieldSet> & dualResolutionFsetEns,
                         const eckit::LocalConfiguration & covarConf,
@@ -41,9 +41,9 @@ class SaberParametricBlockChain : public SaberBlockChainBase {
   ~SaberParametricBlockChain() = default;
 
   /// @brief Randomize the increment according to this B matrix.
-  void randomize(atlas::FieldSet &) const;
+  void randomize(oops::FieldSet4D &) const;
   /// @brief Multiply the increment by this B matrix.
-  void multiply(atlas::FieldSet &) const;
+  void multiply(oops::FieldSet4D &) const;
 
  private:
   std::unique_ptr<SaberOuterBlockChain> outerBlockChain_;
@@ -56,9 +56,8 @@ template<typename MODEL>
 SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL> & geom,
                        const oops::Geometry<MODEL> & dualResolutionGeom,
                        const oops::Variables & outerVars,
-                       const atlas::FieldSet & fsetXb,
-                       const atlas::FieldSet & fsetFg,
-                       const util::DateTime & validTimeOfXbFg,
+                       const oops::FieldSet4D & fsetXb,
+                       const oops::FieldSet4D & fsetFg,
                        // TODO(AS): read inside the block so there is no need to pass
                        // as non-const
                        std::vector<atlas::FieldSet> & fsetEns,
@@ -76,7 +75,7 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
       cmpOuterBlocksParams.push_back(cmpOuterBlockParamsWrapper);
     }
     outerBlockChain_ = std::make_unique<SaberOuterBlockChain>(geom, outerVars,
-                          fsetXb, fsetFg, validTimeOfXbFg, fsetEns, covarConf,
+                          fsetXb, fsetFg, fsetEns, covarConf,
                           cmpOuterBlocksParams);
   }
 
@@ -109,13 +108,12 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
                                                    activeVars,
                                                    covarConf,
                                                    saberCentralBlockParams,
-                                                   fsetXb,
-                                                   fsetFg,
-                                                   validTimeOfXbFg,
+                                                   fsetXb[0],
+                                                   fsetFg[0],
                                                    geom.timeComm().rank());
 
   // Read and add model fields
-  centralBlock_->read(geom, currentOuterVars, validTimeOfXbFg);
+  centralBlock_->read(geom, currentOuterVars, fsetXb[0].validTime());
 
   // Ensemble configuration
   eckit::LocalConfiguration ensembleConf
@@ -137,7 +135,7 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
         atlas::FieldSet fset;
         readEnsembleMember(geom,
                            outerVars,
-                           validTimeOfXbFg,
+                           fsetXb[0].validTime(),
                            ensembleConf,
                            ie,
                            fset);
@@ -191,7 +189,7 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
         atlas::FieldSet fset;
         readEnsembleMember(dualResolutionGeom,
                            outerVars,
-                           validTimeOfXbFg,
+                           fsetXb[0].validTime(),
                            dualResolutionEnsembleConf,
                            ie,
                            fset);
@@ -214,7 +212,7 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
   // Write calibration data
   if (saberCentralBlockParams.doCalibration()) {
     oops::Log::info() << "Info     : Write calibration data" << std::endl;
-    centralBlock_->write(geom, currentOuterVars, validTimeOfXbFg);
+    centralBlock_->write(geom, currentOuterVars, fsetXb[0].validTime());
     centralBlock_->write();
   }
 
@@ -237,7 +235,7 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
       for (size_t ie = 0; ie < ensembleSize; ++ie) {
         // Read member
         atlas::FieldSet fset;
-        readEnsembleMember(geom, activeVars, validTimeOfXbFg, ensembleConf, ie, fset);
+        readEnsembleMember(geom, activeVars, fsetXb[0].validTime(), ensembleConf, ie, fset);
 
         // Update mean
         if (ie == 0) {
@@ -270,8 +268,9 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
       // Get ensemble member
       if (iterativeEnsembleLoading) {
         // Read ensemble member
-        dx.reset(new oops::Increment<MODEL>(geom, activeVars, validTimeOfXbFg));
-        readEnsembleMember(geom, activeVars, validTimeOfXbFg, ensembleConf, ie, dx->fieldSet());
+        dx.reset(new oops::Increment<MODEL>(geom, activeVars, fsetXb[0].validTime()));
+        readEnsembleMember(geom, activeVars, fsetXb[0].validTime(), ensembleConf, ie,
+                           dx->fieldSet());
 
         // Remove mean
         util::subtractFieldSets(dx->fieldSet(), mean);
@@ -280,7 +279,7 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
         if (outerBlockChain_) outerBlockChain_->leftInverseMultiply(dx->fieldSet());
       } else {
         // Copy member
-        dx.reset(new oops::Increment<MODEL>(geom, activeVars, validTimeOfXbFg));
+        dx.reset(new oops::Increment<MODEL>(geom, activeVars, fsetXb[0].validTime()));
         dx->fieldSet() = fsetEns[ie];
       }
 

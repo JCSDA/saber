@@ -63,9 +63,8 @@ class Ensemble : public SaberCentralBlockBase {
            const oops::Variables &,
            const eckit::Configuration &,
            const Parameters_ & params,
-           const atlas::FieldSet &,
-           const atlas::FieldSet &,
-           const util::DateTime &,
+           const oops::FieldSet3D &,
+           const oops::FieldSet3D &,
            const size_t &) : SaberCentralBlockBase(params)
   {ABORT("the Ensemble block is a fake block, it should not be constructed");}
 
