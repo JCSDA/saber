@@ -606,7 +606,7 @@ if (samp%sc1) then
    ! Inquire variables
    lon_c1a_id = inquire_var(mpl,ncid,'lon_c1a')
    lat_c1a_id = inquire_var(mpl,ncid,'lat_c1a')
-   vert_coord_c1a_id = inquire_var(mpl,ncid,'vert_coord_c1a')
+   vert_coord_c1a_id = inquire_var(mpl,ncid,'vert_coord_c1a',varname_fallback='vunit_c1a')
    smask_c1a_id = inquire_var(mpl,ncid,'smask_c1a')
    if (samp%sc3) then
       lon_c3a_id = inquire_var(mpl,ncid,'lon_c3a')
@@ -643,7 +643,7 @@ if (samp%sc2) then
    ! Inquire variables
    lon_c2a_id = inquire_var(mpl,ncid,'lon_c2a')
    lat_c2a_id = inquire_var(mpl,ncid,'lat_c2a')
-   vert_coord_c2a_id = inquire_var(mpl,ncid,'vert_coord_c2a')
+   vert_coord_c2a_id = inquire_var(mpl,ncid,'vert_coord_c2a',varname_fallback='vunit_c2a')
    smask_c2a_id = inquire_var(mpl,ncid,'smask_c2a')
 
    ! Read variables
@@ -933,7 +933,7 @@ if (samp%sc1) then
  & lon_cxa=samp%lon_c1a,lat_cxa=samp%lat_c1a)
 
    ! Inquire variables
-   vert_coord_c1_id = inquire_var(mpl,ncid,'vert_coord_c1')
+   vert_coord_c1_id = inquire_var(mpl,ncid,'vert_coord_c1',varname_fallback='vunit_c1')
    smask_c1_id = inquire_var(mpl,ncid,'smask_c1')
    if (samp%sc3) then
       lon_c3_id = inquire_var(mpl,ncid,'lon_c3')
@@ -1036,7 +1036,7 @@ if (samp%sc2) then
  & lon_cxa=samp%lon_c2a,lat_cxa=samp%lat_c2a)
 
    ! Inquire variables
-   vert_coord_c2_id = inquire_var(mpl,ncid,'vert_coord_c2')
+   vert_coord_c2_id = inquire_var(mpl,ncid,'vert_coord_c2',varname_fallback='vunit_c2')
    smask_c2_id = inquire_var(mpl,ncid,'smask_c2')
 
    ! Read variables

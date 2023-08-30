@@ -1031,8 +1031,15 @@ end function netcdf_define_var
 !----------------------------------------------------------------------
 ! Function: netcdf_inquire_var
 !> Inquire variable ID
+!
+!  TODO(JEDI core team) the optional input varname_fallback exists to
+!    supprt reading of staticb files written with older variable names.
+!    Specifically, this was added by Francois H after the renaming of
+!    vunit -> vert_coord in the vertical balance. Once older staticb
+!    files are no longer being read in, this fallback feature and
+!    variable can be removed.
 !----------------------------------------------------------------------
-function netcdf_inquire_var(mpl,ncid,varname,io_override) result(varid)
+function netcdf_inquire_var(mpl,ncid,varname,varname_fallback,io_override) result(varid)
 
 implicit none
 
@@ -1040,6 +1047,7 @@ implicit none
 type(mpl_type),intent(inout) :: mpl        !< MPI data
 integer,intent(in) :: ncid                 !< File ID
 character(len=*),intent(in) :: varname     !< Variable name
+character(len=*),intent(in),optional :: varname_fallback !< Fallback name if varname is missing
 logical,intent(in),optional :: io_override !< Override mpl%pioproc
 
 ! Returned variable
@@ -1047,6 +1055,7 @@ integer :: varid
 
 ! Local variable
 integer  :: rid
+integer  :: inq_result
 logical :: lio
 
 ! Set name
@@ -1065,9 +1074,20 @@ varid = mpl%msv%vali
 if (lio) then
    ! Get root ID in registry
    rid = registry%get_root_id(mpl,ncid)
-  
+
    ! Inquire variable ID
-   if (mpl%msv%isnot(rid)) call strerror(mpl,'${subr}$',ncid,nf90_inq_varid(ncid,varname,varid),'variable '//trim(varname))
+   if (mpl%msv%isnot(rid)) then
+      inq_result = nf90_inq_varid(ncid,varname,varid)
+      if (inq_result/=nf90_noerr) then
+         if (.not.present(varname_fallback)) then
+            call strerror(mpl,'${subr}$',ncid,inq_result,'variable '//trim(varname))
+         else
+            inq_result = nf90_inq_varid(ncid,varname_fallback,varid)
+            call strerror(mpl,'${subr}$',ncid,inq_result,&
+                          'variable '//trim(varname)//' or fallback variable '//trim(varname_fallback))
+         end if
+      end if
+   end if
 end if
 
 ! Probe out
