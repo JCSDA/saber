@@ -234,7 +234,10 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
 
     // Check that active variables are present in either inner or outer variables, or both
     for (const auto & var : activeVars.variables()) {
-      ASSERT(innerVars.has(var) || currentOuterVars.has(var));
+      if (!(innerVars.has(var) || outerVars.has(var))) {
+        throw eckit::UserError("Active variable " + var + " is not present in inner "
+                               "or outer variables", Here());
+      }
     }
 
     // Get intersection of active variables and outer/inner variables

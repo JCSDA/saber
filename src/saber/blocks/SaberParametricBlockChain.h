@@ -100,7 +100,10 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
   oops::Variables activeVars = getActiveVars(saberCentralBlockParams, currentOuterVars);
   // Check that active variables are present in variables
   for (const auto & var : activeVars.variables()) {
-    ASSERT(currentOuterVars.has(var));
+    if (!currentOuterVars.has(var)) {
+      throw eckit::UserError("Active variable " + var + " is not present in "
+                             "outer variables", Here());
+    }
   }
 
   // Create central block
