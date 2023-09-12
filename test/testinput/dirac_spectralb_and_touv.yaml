@@ -33,13 +33,11 @@ background error:
     - moisture_control_variable
     read:
       covariance_file: testdata/spectralcov.nc
-      gauss_grid_uid: F15
       umatrix_netcdf_names:
       - PSI_inc_Uv_matrix
       - CHI_inc_Uv_matrix
       - aP_inc_Uv_matrix
       - MU_inc_Uv_matrix
-      variance_opt: true
   saber outer blocks:
   - saber block name: spectral to gauss
     active variables:

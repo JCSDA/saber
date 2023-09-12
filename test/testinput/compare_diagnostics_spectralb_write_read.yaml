@@ -1,0 +1,5 @@
+# Compares Dirac outputs from a MO covariance file (from dirac_spectralb)
+# and from a derived saber covariance file (from dirac_spectralb_from_saber_file)
+file to compare 1: testref/dirac_spectralb_from_saber_file.ref
+file to compare 2: testref/dirac_spectralb.ref
+relative float tolerance: 1e-15

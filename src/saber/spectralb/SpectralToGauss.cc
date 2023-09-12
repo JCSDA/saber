@@ -28,13 +28,13 @@ namespace {
 
 atlas::Field allocateGaussUVField(const atlas::FunctionSpace & gaussFS,
                                   const oops::Variables & innerVariables) {
-  std::array<size_t, 2> levels{{0, 0}};
+  std::array<size_t, 2> lvls{{0, 0}};
   if (innerVariables.has("vorticity") && innerVariables.has("divergence")) {
-    levels[0] = innerVariables.getLevels("vorticity");
-    levels[1] = innerVariables.getLevels("divergence");
+    lvls[0] = innerVariables.getLevels("vorticity");
+    lvls[1] = innerVariables.getLevels("divergence");
   } else if (innerVariables.has("streamfunction") && innerVariables.has("velocity_potential")) {
-    levels[0] = innerVariables.getLevels("streamfunction");
-    levels[1] = innerVariables.getLevels("velocity_potential");
+    lvls[0] = innerVariables.getLevels("streamfunction");
+    lvls[1] = innerVariables.getLevels("velocity_potential");
   } else {
     // error trap
     oops::Log::error() << "ERROR - either vorticity and divergence "
@@ -42,21 +42,21 @@ atlas::Field allocateGaussUVField(const atlas::FunctionSpace & gaussFS,
                        << "not present " << std::endl;
     throw std::runtime_error("inner fields mis-specified");
   }
-  if (levels[0] != levels[1]) {
+  if (lvls[0] != lvls[1]) {
     oops::Log::error() << "ERROR - the number of model levels in "
                        << "vorticity and divergence or "
                        << "streamfunction and velocity potential "
-                       << levels[0] << " "
-                       << levels[1]
+                       << lvls[0] << " "
+                       << lvls[1]
                        << std::endl;
     throw std::runtime_error("vertical levels are inconsistent");
   }
 
-  const atlas::idx_t modellevels = static_cast<atlas::idx_t>(levels[0]);
+  const atlas::idx_t levels = static_cast<atlas::idx_t>(lvls[0]);
   const auto sc = atlas::functionspace::StructuredColumns(gaussFS);
   atlas::Field uvgp = sc.createField<double>(atlas::option::name("uv_gp") |
                                              atlas::option::variables(2) |
-                                             atlas::option::levels(modellevels));
+                                             atlas::option::levels(levels));
   return uvgp;
 }
 
@@ -65,13 +65,13 @@ atlas::Field allocateGaussUVField(const atlas::FunctionSpace & gaussFS,
 atlas::FieldSet allocateSpectralVortDiv(
     const atlas::functionspace::Spectral & specfs,
     const oops::Variables & innerVariables) {
-  std::array<size_t, 2> levels{{0, 0}};
+  std::array<size_t, 2> lvls{{0, 0}};
   if (innerVariables.has("vorticity") && innerVariables.has("divergence")) {
-    levels[0] = innerVariables.getLevels("vorticity");
-    levels[1] = innerVariables.getLevels("divergence");
+    lvls[0] = innerVariables.getLevels("vorticity");
+    lvls[1] = innerVariables.getLevels("divergence");
   } else if (innerVariables.has("streamfunction") && innerVariables.has("velocity_potential")) {
-    levels[0] = innerVariables.getLevels("streamfunction");
-    levels[1] = innerVariables.getLevels("velocity_potential");
+    lvls[0] = innerVariables.getLevels("streamfunction");
+    lvls[1] = innerVariables.getLevels("velocity_potential");
   } else {
     // error trap
     oops::Log::error() << "ERROR - either vorticity and divergence "
@@ -79,21 +79,21 @@ atlas::FieldSet allocateSpectralVortDiv(
                        << "not present " << std::endl;
     throw std::runtime_error("inner fields mis-specified");
   }
-  if (levels[0] != levels[1]) {
+  if (lvls[0] != lvls[1]) {
     oops::Log::error() << "ERROR - the number of model levels in "
                        << "vorticity and divergence or "
                        << "streamfunction and velocity potential "
-                       << levels[0] << " "
-                       << levels[1]
+                       << lvls[0] << " "
+                       << lvls[1]
                        << std::endl;
     throw eckit::BadParameter("vertical levels are inconsistent");
   }
 
   atlas::FieldSet specfset;
   atlas::Field specvort = specfs.createField<double>(
-    atlas::option::name("vorticity") | atlas::option::levels(levels[0]));
+    atlas::option::name("vorticity") | atlas::option::levels(lvls[0]));
   atlas::Field specdiv = specfs.createField<double>(
-    atlas::option::name("divergence") | atlas::option::levels(levels[1]));
+    atlas::option::name("divergence") | atlas::option::levels(lvls[1]));
 
   specfset.add(specvort);
   specfset.add(specdiv);
@@ -143,12 +143,12 @@ atlas::Field convertUVToFieldSetAD(const atlas::FieldSet & fset) {
   const atlas::Field & uField = fset["eastward_wind"];
   const atlas::Field & vField = fset["northward_wind"];
 
-  atlas::idx_t modellevels = static_cast<atlas::idx_t>(uField.levels());
+  const atlas::idx_t levels = static_cast<atlas::idx_t>(uField.levels());
   const auto sc = atlas::functionspace::StructuredColumns(uField.functionspace());
 
   atlas::Field uvgp = sc.createField<double>(atlas::option::name("uv_gp") |
                                              atlas::option::variables(2) |
-                                             atlas::option::levels(modellevels));
+                                             atlas::option::levels(levels));
 
   uField.adjointHaloExchange();
   vField.adjointHaloExchange();
@@ -173,12 +173,12 @@ atlas::Field convertFieldSetToUV(const atlas::FieldSet & fset) {
   const atlas::Field & uField = fset["eastward_wind"];
   const atlas::Field & vField = fset["northward_wind"];
 
-  const auto modellevels = static_cast<atlas::idx_t>(uField.levels());
+  const auto levels = static_cast<atlas::idx_t>(uField.levels());
   const auto sc = atlas::functionspace::StructuredColumns(uField.functionspace());
 
   atlas::Field uvgp = sc.createField<double>(atlas::option::name("uv_gp") |
                                              atlas::option::variables(2) |
-                                             atlas::option::levels(modellevels));
+                                             atlas::option::levels(levels));
 
   const auto uView = atlas::array::make_view<double, 2>(uField);
   const auto vView = atlas::array::make_view<double, 2>(vField);
@@ -204,19 +204,19 @@ oops::Variables createInnerVars(const oops::Variables & outerVars,
                                 const bool & useWindTransform) {
   oops::Variables innerVars(outerVars);
   if (useWindTransform) {
-    int modelLevels = innerVars.getLevels("eastward_wind");
+    const int levels = innerVars.getLevels("eastward_wind");
 
     if (activeVars.has("streamfunction") && activeVars.has("velocity_potential")) {
       innerVars.push_back("streamfunction");
       innerVars.push_back("velocity_potential");
-      innerVars.addMetaData("streamfunction", "levels", modelLevels);
-      innerVars.addMetaData("velocity_potential", "levels", modelLevels);
+      innerVars.addMetaData("streamfunction", "levels", levels);
+      innerVars.addMetaData("velocity_potential", "levels", levels);
     }
     if (activeVars.has("divergence") && activeVars.has("vorticity")) {
       innerVars.push_back("divergence");
       innerVars.push_back("vorticity");
-      innerVars.addMetaData("divergence", "levels", modelLevels);
-      innerVars.addMetaData("vorticity", "levels", modelLevels);
+      innerVars.addMetaData("divergence", "levels", levels);
+      innerVars.addMetaData("vorticity", "levels", levels);
     }
     innerVars -= "eastward_wind";
     innerVars -= "northward_wind";
@@ -588,6 +588,10 @@ void SpectralToGauss::leftInverseMultiply(atlas::FieldSet & fieldSet) const {
   fieldSet = outFieldSet;
 
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+void SpectralToGauss::directCalibration(const std::vector<atlas::FieldSet> & fsetEns) {
 }
 
 // -----------------------------------------------------------------------------

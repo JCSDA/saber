@@ -48,5 +48,25 @@ atlas::FieldSet createSpectralCorrelations(const oops::Variables &,
                                            const atlas::FieldSet &,
                                            const atlas::FieldSet &);
 
+void createSpectralCovarianceFromUMatrixFile(const std::string &,
+                                             const std::string &,
+                                             const spectralbReadVertCovParameters &,
+                                             atlas::Field &);
+
+void readSpectralCovarianceFromFile(const std::string &,
+                                    const spectralbReadVertCovParameters &,
+                                    atlas::Field &);
+
+void updateSpectralVerticalCovariances(
+    const std::vector<atlas::FieldSet> & ensFieldSet,
+    int & priorSampleSize,
+    atlas::FieldSet & spectralVerticalCovariances);
+
+void copySpectralFieldSet(const atlas::FieldSet &,
+                          atlas::FieldSet &);
+
+void gatherSumSpectralFieldSet(const eckit::mpi::Comm &,
+                               const std::size_t & root,
+                               atlas::FieldSet & spectralVerticalCovariances);
 }  // namespace spectralb
 }  // namespace saber

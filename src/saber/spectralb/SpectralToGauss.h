@@ -59,6 +59,8 @@ class SpectralToGauss : public SaberOuterBlockBase {
   void multiplyAD(atlas::FieldSet &) const override;
   void leftInverseMultiply(atlas::FieldSet &) const override;
 
+  void directCalibration(const std::vector<atlas::FieldSet> &) override;
+
   atlas::FieldSet generateInnerFieldSet(const oops::GeometryData & innerGeometryData,
                                         const oops::Variables & innerVars,
                                         const size_t & timeRank) const override

@@ -16,7 +16,7 @@ background error:
   covariance model: SABER
   adjoint test: true
   saber central block:
-    saber block name: spectral covariance
+    saber block name: mo spectral covariance
     active variables:
     - streamfunction
     read:

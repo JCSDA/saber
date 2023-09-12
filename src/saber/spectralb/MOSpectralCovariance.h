@@ -26,25 +26,23 @@ namespace spectralb {
 
 // -----------------------------------------------------------------------------
 
-class SpectralCovarianceParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(SpectralCovarianceParameters, SaberBlockParametersBase)
+class MOSpectralCovarianceParameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(MOSpectralCovarianceParameters, SaberBlockParametersBase)
 
  public:
-  oops::OptionalParameter<spectralbCalibrationVertCovParameters>
-    calibrationParams{"calibration", this};
-  oops::OptionalParameter<spectralbReadVertCovParameters> readParams{"read", this};
+  oops::OptionalParameter<spectralbParameters> readParams{"read", this};
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
 
 // -----------------------------------------------------------------------------
 
-class SpectralCovariance : public SaberCentralBlockBase {
+class MOSpectralCovariance : public SaberCentralBlockBase {
  public:
-  static const std::string classname() {return "saber::spectralb::SpectralCovariance";}
+  static const std::string classname() {return "saber::spectralb::MOSpectralCovariance";}
 
-  typedef SpectralCovarianceParameters Parameters_;
+  typedef MOSpectralCovarianceParameters Parameters_;
 
-  SpectralCovariance(const oops::GeometryData &,
+  MOSpectralCovariance(const oops::GeometryData &,
                      const oops::Variables &,
                      const eckit::Configuration &,
                      const Parameters_ &,
@@ -52,16 +50,12 @@ class SpectralCovariance : public SaberCentralBlockBase {
                      const oops::FieldSet3D &,
                      const size_t &);
 
-  virtual ~SpectralCovariance() = default;
+  virtual ~MOSpectralCovariance() = default;
 
   void randomize(atlas::FieldSet &) const override;
   void multiply(atlas::FieldSet &) const override;
 
   void read() override;
-
-  void directCalibration(const std::vector<atlas::FieldSet> &) override;
-
-  void write() const override;
 
  private:
   void print(std::ostream &) const override;
@@ -70,8 +64,12 @@ class SpectralCovariance : public SaberCentralBlockBase {
   Parameters_ params_;
   /// Active variables
   const oops::Variables activeVars_;
-  /// Vertical Spectral Covariances
-  atlas::FieldSet spectralVerticalCovariances_;
+  /// Option to use vertical covariances or correlations
+  bool variance_opt_;
+  /// Covariance statistics
+  // Note: only need vertical covariances or correlations from this;
+  // probably can be gotten in the ctor and saved here instead of cs_
+  std::unique_ptr<CovStat_ErrorCov> cs_;
   /// Geometry data
   const oops::GeometryData & geometryData_;
   /// Spectral FunctionSpace

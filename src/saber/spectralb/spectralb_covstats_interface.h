@@ -17,6 +17,13 @@ namespace spectralb {
 
 extern "C" {
 
+void covSpectralBinsLevels_f90(
+  const eckit::Configuration &,
+  const int &,
+  const char *,
+  int &,
+  int &);
+
 void covSpectralBins_f90(
   const eckit::Configuration &,
   const int &,

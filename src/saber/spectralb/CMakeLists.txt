@@ -14,6 +14,8 @@ if( oops_FOUND AND (atlas_TRANS_FOUND OR atlas_ECTRANS_FOUND) )
     spectralb_covstats_interface.h
     spectralb_covstats_interface.F90
     spectralbParameters.h
+    MOSpectralCovariance.cc
+    MOSpectralCovariance.h
     SpectralCovariance.cc
     SpectralCovariance.h
     SpectralToGauss.cc
