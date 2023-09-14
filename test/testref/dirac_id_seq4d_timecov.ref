@@ -38,9 +38,10 @@ Fields:
 Covariance(SABER) diagnostics:
 - Variances at Dirac points:
   + Value for variable stream_function, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -4.38894, 1): 1.0000000000000000e+00
+  + Value for variable stream_function, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -4.38894, 1): 1.0000000000000000e+00
 - Covariances at diagnostic points:
   + Value for variable stream_function, subwindow 0, at (longitude, latitude, vertical index) point (9.00000, -4.38894, 1): 0.0000000000000000e+00
-  + Value for variable stream_function, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -4.38894, 1): 0.0000000000000000e+00
+  + Value for variable stream_function, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -4.38894, 1): 1.0000000000000000e+00
   + Value for variable stream_function, subwindow 0, at (longitude, latitude, vertical index) point (9.00000, -4.38894, 1): 0.0000000000000000e+00
 Covariance(SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z
@@ -77,7 +78,7 @@ Groups:
   - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 0.0000000000000000e+00
+  stream_function: 1.0000000000000000e+00
   velocity_potential: 0.0000000000000000e+00
 Randomized variance: 
 Valid time:2010-01-01T12:00:00Z

@@ -86,6 +86,9 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
   covarConf.set("inverse test", conf.getBool("inverse test", false));
   covarConf.set("inverse tolerance", conf.getDouble("inverse tolerance", 1.0e-12));
   covarConf.set("iterative ensemble loading", false);
+  // 3D localization always used here (4D aspects handled in oops::Localization),
+  // so this parameter can be anything.
+  covarConf.set("time covariance", "univariate");
   // Initialize localization blockchain
   loc_ = std::make_unique<SaberParametricBlockChain>(geom, geom,
               incVars, oops::FieldSet4D(xb), oops::FieldSet4D(fg),

@@ -65,6 +65,11 @@ class ErrorCovarianceParameters : public oops::ModelSpaceCovarianceParametersBas
   oops::OptionalParameter<std::vector<SaberOuterBlockParametersWrapper>>
     saberOuterBlocksParams{"saber outer blocks", this};
 
+  // Time covariance mode (by default duplicated multivariate)
+  // Options: univariate, duplicated multivariate.
+  oops::Parameter<std::string> timeCovariance{"time covariance", "multivariate duplicated",
+                                              this};
+
   // Ensemble
   oops::Parameter<bool> iterativeEnsembleLoading{"iterative ensemble loading", false, this};
   oops::OptionalParameter<eckit::LocalConfiguration> ensemble{"ensemble", this};

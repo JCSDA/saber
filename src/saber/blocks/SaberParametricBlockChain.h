@@ -47,6 +47,7 @@ class SaberParametricBlockChain : public SaberBlockChainBase {
 
  private:
   std::unique_ptr<SaberOuterBlockChain> outerBlockChain_;
+  const bool crossTimeCov_;
   std::unique_ptr<SaberCentralBlockBase> centralBlock_;
 };
 
@@ -63,7 +64,8 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
                        std::vector<atlas::FieldSet> & fsetEns,
                        std::vector<atlas::FieldSet> & dualResolutionFsetEns,
                        const eckit::LocalConfiguration & covarConf,
-                       const eckit::Configuration & conf) {
+                       const eckit::Configuration & conf)
+  : crossTimeCov_(covarConf.getString("time covariance") == "multivariate duplicated") {
   oops::Log::trace() << "SaberParametricBlockChain ctor starting" << std::endl;
 
   // If needed create outer block chain
