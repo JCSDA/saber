@@ -20,12 +20,12 @@
 #include "atlas/functionspace.h"
 #include "atlas/output/Gmsh.h"
 #include "atlas/util/Config.h"
+#include "atlas/util/KDTree.h"
+#include "atlas/util/Point.h"
 
 #include "eckit/config/Configuration.h"
 #include "eckit/mpi/Comm.h"
 
-#include "oops/base/GeometryData.h"
-#include "oops/base/Variables.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/FieldSetOperations.h"
@@ -657,18 +657,30 @@ void Fields::read(const eckit::Configuration & config) {
     variableSizes.push_back(geom_->levels(var));
   }
 
+  // Copy configuration
+  eckit::LocalConfiguration conf(config);
+  if (geom_->functionSpace().type() == "PointCloud") {
+    conf.set("one file per task", true);
+  }
+
   // Read fieldset
   util::readFieldSet(geom_->getComm(),
                      geom_->functionSpace(),
                      variableSizes,
                      vars_.variables(),
-                     config,
+                     conf,
                      fset_);
 }
 // -----------------------------------------------------------------------------
 void Fields::write(const eckit::Configuration & config) const {
+  // Copy configuration
+  eckit::LocalConfiguration conf(config);
+  if (geom_->functionSpace().type() == "PointCloud") {
+    conf.set("one file per task", true);
+  }
+
   // Write fieldset
-  util::writeFieldSet(geom_->getComm(), config, fset_);
+  util::writeFieldSet(geom_->getComm(), conf, fset_);
 
   if (geom_->mesh().generated()) {
     // GMSH file path

@@ -4,21 +4,21 @@
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
 # Build list of subdirs with files to add
-set(_subdirs blocks bump generic gsi interpolation oops spectralb util vader)
+set( _subdirs blocks bump generic gsi interpolation oops spectralb util vader )
 foreach( _subdir IN LISTS _subdirs )
     add_subdirectory( ${_subdir} )
     list( TRANSFORM ${_subdir}_src_files PREPEND ${_subdir}/ )
     list( APPEND ${PROJECT_NAME}_src_files ${${_subdir}_src_files} )
 endforeach()
 
-include(GNUInstallDirs)
+include( GNUInstallDirs )
 ecbuild_add_library( TARGET ${PROJECT_NAME}
                      SOURCES ${${PROJECT_NAME}_src_files}
                      INSTALL_HEADERS LISTED
                      HEADER_DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}
                      LINKER_LANGUAGE CXX )
 
-if(OpenMP_FOUND)
+if( OpenMP_FOUND )
     target_link_libraries( ${PROJECT_NAME} PUBLIC OpenMP::OpenMP_Fortran OpenMP::OpenMP_CXX )
 endif()
 

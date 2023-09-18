@@ -5,8 +5,8 @@
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
              Level   2 ~> 100.0%
-             Level   1 ~>  0.100E+01 vert. unit
-             Level   2 ~>  0.200E+01 vert. unit
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
           nc1 =      500
           nc2 =      250
           Independent levels:  1[2]

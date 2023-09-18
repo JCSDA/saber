@@ -30,9 +30,8 @@ Increment::Increment(const Geometry & resol, const oops::Variables & vars,
 }
 // -----------------------------------------------------------------------------
 Increment::Increment(const Geometry & resol, const Increment & other)
-  : fields_()
+  : fields_(new Fields(*other.fields_, resol))
 {
-  ABORT("Increment interpolator not implemented yet");
   oops::Log::trace() << "Increment constructed from other." << std::endl;
 }
 // -----------------------------------------------------------------------------
@@ -82,7 +81,7 @@ void Increment::zero(const util::DateTime & vt) {
 }
 // -----------------------------------------------------------------------------
 void Increment::axpy(const double & zz, const Increment & dx,
-                       const bool check) {
+                     const bool check) {
   ASSERT(!check || this->validTime() == dx.validTime());
   fields_->axpy(zz, *dx.fields_);
 }

@@ -25,8 +25,8 @@ namespace saber {
 
 // -------------------------------------------------------------------------------------------------
 
-class DualResolutionCalibrationParameters : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(DualResolutionCalibrationParameters, oops::Parameters)
+class DualResCalibrationParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(DualResCalibrationParameters, oops::Parameters)
  public:
   // Geometry
   oops::OptionalParameter<eckit::LocalConfiguration> geometry{"geometry", this};
@@ -36,19 +36,6 @@ class DualResolutionCalibrationParameters : public oops::Parameters {
   oops::OptionalParameter<eckit::LocalConfiguration> ensemblePert{"ensemble pert", this};
   oops::OptionalParameter<eckit::LocalConfiguration> ensembleBase{"ensemble base", this};
   oops::OptionalParameter<eckit::LocalConfiguration> ensemblePairs{"ensemble pairs", this};
-};
-
-// -------------------------------------------------------------------------------------------------
-
-template <typename MODEL>
-class OutputEnsembleParameters : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(OutputEnsembleParameters, oops::Parameters)
- public:
-  // Output ensemble
-  typename oops::Increment<MODEL>::WriteParameters_ writeParams{this};
-
-  // Write first member only
-  oops::Parameter<bool> firstMemberOnly{"first member only", false, this};
 };
 
 // -------------------------------------------------------------------------------------------------
@@ -78,11 +65,11 @@ class ErrorCovarianceParameters : public oops::ModelSpaceCovarianceParametersBas
   oops::OptionalParameter<eckit::LocalConfiguration> ensemblePairs{"ensemble pairs", this};
 
   // Dual resolution calibration
-  oops::OptionalParameter<DualResolutionCalibrationParameters> dualResolutionParams{
+  oops::OptionalParameter<DualResCalibrationParameters> dualResParams{
     "dual resolution calibration", this};
 
   // Output ensemble
-  oops::OptionalParameter<OutputEnsembleParameters<MODEL>> outputEnsemble{"output ensemble", this};
+  oops::OptionalParameter<eckit::LocalConfiguration> outputEnsemble{"output ensemble", this};
 
   // Adjoint test
   oops::Parameter<bool> adjointTest{"adjoint test", false, this};

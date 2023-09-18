@@ -26,8 +26,8 @@ Adjoint test for block StdDev passed
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
              Level   2 ~> 100.0%
-             Level   1 ~>  0.100E+01 vert. unit
-             Level   2 ~>  0.200E+01 vert. unit
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
 Adjoint test for block BUMP_PsiChiToUV passed
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -36,8 +36,8 @@ Adjoint test for block BUMP_PsiChiToUV passed
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
              Level   2 ~> 100.0%
-             Level   1 ~>  0.100E+01 vert. unit
-             Level   2 ~>  0.200E+01 vert. unit
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
           nc1 =      500
           nc2 =      250
           Independent levels:  1[2]
@@ -51,8 +51,8 @@ Adjoint test for block StdDev passed
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
              Level   2 ~> 100.0%
-             Level   1 ~>  0.100E+01 vert. unit
-             Level   2 ~>  0.200E+01 vert. unit
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
 Adjoint test for block BUMP_StdDev passed
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -61,8 +61,8 @@ Adjoint test for block BUMP_StdDev passed
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
              Level   2 ~> 100.0%
-             Level   1 ~>  0.100E+01 vert. unit
-             Level   2 ~>  0.200E+01 vert. unit
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
 Norm of input parameter stddev - 1: 5.7539391781676251e+01
 Adjoint test for block BUMP_StdDev passed
        Independent levels:  1[2]
@@ -72,8 +72,8 @@ Adjoint test for block BUMP_StdDev passed
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
              Level   2 ~> 100.0%
-             Level   1 ~>  0.100E+01 vert. unit
-             Level   2 ~>  0.200E+01 vert. unit
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
 Adjoint test for block BUMP_NICAS passed
 Norm of input parameter inflation: 5.7319844819175479e+01
 Norm of input parameter StdDev: 5.3046693215269315e+01
@@ -84,8 +84,8 @@ Norm of input parameter StdDev: 5.3046693215269315e+01
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
              Level   2 ~> 100.0%
-             Level   1 ~>  0.100E+01 vert. unit
-             Level   2 ~>  0.200E+01 vert. unit
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
 Adjoint test for block Ensemble passed
 Covariance(SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z

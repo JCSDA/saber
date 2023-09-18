@@ -37,12 +37,7 @@ Geometry::Geometry(const eckit::Configuration & config, const eckit::mpi::Comm &
   eckit::mpi::setCommDefault(comm_.name().c_str());
 
   // Halo
-  const boost::optional<size_t> &halo = params.halo.value();
-  if (halo != boost::none) {
-    halo_ = *halo;
-  } else {
-    halo_ = 0;
-  }
+  halo_ = params.halo.value();
 
   // Set flag
   unstructuredGrid_ = false;

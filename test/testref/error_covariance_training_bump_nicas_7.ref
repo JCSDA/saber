@@ -13,16 +13,16 @@
              Level   8 ~> 100.0%
              Level   9 ~> 100.0%
              Level  10 ~> 100.0%
-             Level   1 ~>  0.100E+01 vert. unit
-             Level   2 ~>  0.200E+01 vert. unit
-             Level   3 ~>  0.300E+01 vert. unit
-             Level   4 ~>  0.400E+01 vert. unit
-             Level   5 ~>  0.500E+01 vert. unit
-             Level   6 ~>  0.600E+01 vert. unit
-             Level   7 ~>  0.700E+01 vert. unit
-             Level   8 ~>  0.800E+01 vert. unit
-             Level   9 ~>  0.900E+01 vert. unit
-             Level  10 ~>  0.100E+02 vert. unit
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+             Level   3 ~>  0.300E+01 vert. coord.
+             Level   4 ~>  0.400E+01 vert. coord.
+             Level   5 ~>  0.500E+01 vert. coord.
+             Level   6 ~>  0.600E+01 vert. coord.
+             Level   7 ~>  0.700E+01 vert. coord.
+             Level   8 ~>  0.800E+01 vert. coord.
+             Level   9 ~>  0.900E+01 vert. coord.
+             Level  10 ~>  0.100E+02 vert. coord.
              Effective levels:   1   2   3   4   5   6   7   8   9  10 
                 Horizontal support radius:    2000.00 km (   2000.00 km -    2000.00 km)
                 Estimated nc1 from horizontal support radius:     2356

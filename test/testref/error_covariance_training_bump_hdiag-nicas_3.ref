@@ -5,8 +5,8 @@
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
              Level   2 ~> 100.0%
-             Level   1 ~>  0.100E+01 vert. unit
-             Level   2 ~>  0.200E+01 vert. unit
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Min. / max. longitudes: -171.0 /   180.0
@@ -14,8 +14,8 @@
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
              Level   2 ~> 100.0%
-             Level   1 ~>  0.100E+01 vert. unit
-             Level   2 ~>  0.200E+01 vert. unit
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
           nc1 =      500
           Independent levels:  1[2]
           Independent levels for angular sector   1 / class   1:  1[2]

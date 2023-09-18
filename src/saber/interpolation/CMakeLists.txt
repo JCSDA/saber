@@ -3,32 +3,29 @@
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
-if( oops_FOUND )
+list(APPEND interpolation_src_files_list
+# ATLAS interpolation wrapper
+AtlasInterpWrapper.cc
+AtlasInterpWrapper.h
+
+# Interpolation block
+Geometry.cc
+Geometry.h
+Interpolation.cc
+Interpolation.h
+
+# VertProj block
+VertProj.cc
+VertProj.h
+)
+
+if( atlas_TRANS_FOUND OR atlas_ECTRANS_FOUND )
     list(APPEND interpolation_src_files_list
-    # ATLAS interpolation wrapper
-    AtlasInterpWrapper.h
-    AtlasInterpWrapper.cc
-
-    # Interpolation block
-    Geometry.cc
-    Geometry.h
-    Interpolation.cc
-    Interpolation.h
-
-    # VertProj block
-    VertProj.cc
-    VertProj.h
+        # ATLAS gauss to cubed-sphere-dual saber block
+        GaussToCS.cc
+        GaussToCS.h
     )
-
-    if( atlas_TRANS_FOUND OR atlas_ECTRANS_FOUND )
-        list(APPEND interpolation_src_files_list
-            # ATLAS gauss to cubed-sphere-dual saber block
-            GaussToCS.h
-            GaussToCS.cc
-        )
-    endif()
 endif()
-
 
 set( interpolation_src_files
 

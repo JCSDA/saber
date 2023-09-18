@@ -69,7 +69,7 @@ class Increment : public util::Printable,
 
 /// ATLAS FieldSet accessor
   void toFieldSet(atlas::FieldSet &) const;
-  void toFieldSetAD(const atlas::FieldSet &) {ABORT("not implemented");}
+  void toFieldSetAD(const atlas::FieldSet &) {throw eckit::NotImplemented(Here());}
   void fromFieldSet(const atlas::FieldSet &);
 
 /// Access to fields

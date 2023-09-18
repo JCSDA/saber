@@ -5,8 +5,8 @@
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
              Level   2 ~> 100.0%
-             Level   1 ~>  0.100E+01 vert. unit
-             Level   2 ~>  0.200E+01 vert. unit
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
 Norm of input parameter nicas_a - 1: 4.3839794469441046e+01
 Norm of input parameter nicas_a - 2: 1.4136489898515414e+01
              nc1(  1) =                        567

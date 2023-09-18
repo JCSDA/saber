@@ -5,8 +5,8 @@
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
              Level   2 ~> 100.0%
-             Level   1 ~>  0.100E+01 vert. unit
-             Level   2 ~>  0.200E+01 vert. unit
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
           Norm of stream_function:  0.35396179E+02
           Norm of stream_function:  0.38076755E+02
           Norm of stream_function:  0.40804483E+02

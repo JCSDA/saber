@@ -49,7 +49,6 @@ class ErrorCovariance : public oops::ModelSpaceCovarianceBase<MODEL>,
   typedef oops::Increment<MODEL>                               Increment_;
   typedef oops::Increment4D<MODEL>                             Increment4D_;
   typedef oops::State4D<MODEL>                                 State4D_;
-  typedef typename oops::Increment<MODEL>::WriteParameters_    WriteParameters_;
 
  public:
   static const std::string classname() {return "saber::ErrorCovariance";}
@@ -135,38 +134,38 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
                                                         fsetEns);
   covarConf.set("ensemble configuration", ensembleConf);
   // Read dual resolution ensemble if needed
-  const auto & dualResolutionParams = params.dualResolutionParams.value();
-  const oops::Geometry<MODEL> * dualResolutionGeom = &geom;
-  std::vector<atlas::FieldSet> dualResolutionFsetEns;
-  if (dualResolutionParams != boost::none) {
-    const auto & dualResolutionGeomConf = dualResolutionParams->geometry.value();
-    if (dualResolutionGeomConf != boost::none) {
-      // Create dualResolution geometry
-      typename oops::Geometry<MODEL>::Parameters_ dualResolutionGeometryParams;
-      dualResolutionGeometryParams.deserialize(*dualResolutionGeomConf);
-      dualResolutionGeom = new oops::Geometry<MODEL>(dualResolutionGeometryParams, geom.getComm());
+  const auto & dualResParams = params.dualResParams.value();
+  const oops::Geometry<MODEL> * dualResGeom = &geom;
+  std::vector<atlas::FieldSet> dualResFsetEns;
+  if (dualResParams != boost::none) {
+    const auto & dualResGeomConf = dualResParams->geometry.value();
+    if (dualResGeomConf != boost::none) {
+      // Create dualRes geometry
+      typename oops::Geometry<MODEL>::Parameters_ dualResGeometryParams;
+      dualResGeometryParams.deserialize(*dualResGeomConf);
+      dualResGeom = new oops::Geometry<MODEL>(dualResGeometryParams, geom.getComm());
     }
     // Background and first guess at dual resolution geometry
-    oops::State<MODEL> xbDualResolution(*dualResolutionGeom, xb[0]);
-    oops::State<MODEL> fgDualResolution(*dualResolutionGeom, fg[0]);
+    oops::State<MODEL> xbDualRes(*dualResGeom, xb[0]);
+    oops::State<MODEL> fgDualRes(*dualResGeom, fg[0]);
     // Read dual resolution ensemble
-    eckit::LocalConfiguration dualResolutionEnsembleConf
-      = readEnsemble(*dualResolutionGeom,
+    eckit::LocalConfiguration dualResEnsembleConf
+      = readEnsemble(*dualResGeom,
                      outerVars,
-                     xbDualResolution,
-                     fgDualResolution,
-                     dualResolutionParams->toConfiguration(),
+                     xbDualRes,
+                     fgDualRes,
+                     dualResParams->toConfiguration(),
                      iterativeEnsembleLoading,
-                     dualResolutionFsetEns);
+                     dualResFsetEns);
 
     // Add dual resolution ensemble configuration
-    covarConf.set("dual resolution ensemble configuration", dualResolutionEnsembleConf);
+    covarConf.set("dual resolution ensemble configuration", dualResEnsembleConf);
   }
 
   // Add ensemble output
   const auto & outputEnsemble = params.outputEnsemble.value();
   if (outputEnsemble != boost::none) {
-    covarConf.set("output ensemble", outputEnsemble->toConfiguration());
+    covarConf.set("output ensemble", *outputEnsemble);
   }
 
   const SaberBlockParametersBase & saberCentralBlockParams =
@@ -251,22 +250,22 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
       // TODO(AS): move construction of BlockChain to factory method or function
       if (centralBlockParams.saberBlockName.value() == "Ensemble") {
         hybridBlockChain_.push_back(std::make_unique<SaberEnsembleBlockChain>(*hybridGeom,
-                          *dualResolutionGeom,
+                          *dualResGeom,
                           cmpOuterVars,
                           fsetXb,
                           fsetFg,
                           cmpFsetEns,
-                          dualResolutionFsetEns,
+                          dualResFsetEns,
                           cmpCovarConf,
                           cmpConf));
       } else {
         hybridBlockChain_.push_back(std::make_unique<SaberParametricBlockChain>(*hybridGeom,
-                          *dualResolutionGeom,
+                          *dualResGeom,
                           cmpOuterVars,
                           fsetXb,
                           fsetFg,
                           cmpFsetEns,
-                          dualResolutionFsetEns,
+                          dualResFsetEns,
                           cmpCovarConf,
                           cmpConf));
       }
@@ -275,22 +274,22 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
     // Non-hybrid covariance: single block chain
     if (saberCentralBlockParams.saberBlockName.value() == "Ensemble") {
       hybridBlockChain_.push_back(std::make_unique<SaberEnsembleBlockChain>(geom,
-                          *dualResolutionGeom,
+                          *dualResGeom,
                           outerVars,
                           fsetXb,
                           fsetFg,
                           fsetEns,
-                          dualResolutionFsetEns,
+                          dualResFsetEns,
                           covarConf,
                           params.toConfiguration()));
     } else {
       hybridBlockChain_.push_back(std::make_unique<SaberParametricBlockChain>(geom,
-                          *dualResolutionGeom,
+                          *dualResGeom,
                           outerVars,
                           fsetXb,
                           fsetFg,
                           fsetEns,
-                          dualResolutionFsetEns,
+                          dualResFsetEns,
                           covarConf,
                           params.toConfiguration()));
     }

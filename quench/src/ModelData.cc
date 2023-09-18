@@ -10,7 +10,7 @@
 
 #include "eckit/config/LocalConfiguration.h"
 
-#include "saber/quench/src/ModelData.h"
+#include "src/ModelData.h"
 
 // -------------------------------------------------------------------------------------------------
 

@@ -268,7 +268,7 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
     diagPoints.dirac(diagConf);
 
     // Get diagnostic values
-    for (int jj = 0; jj < data.size(); ++jj) {
+    for (size_t jj = 0; jj < data.size(); ++jj) {
       util::printDiagValues(diagPoints.commTime(),
                             geom.getComm(),
                             geom.functionSpace(),
@@ -309,9 +309,8 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
       print_value_at_positions(testConf.getSubConfiguration("dirac"), geom, dxo);
 
       // Print covariances
-      const eckit::LocalConfiguration covarDiagConf(testConf, "diagnostic points");
       oops::Log::test() << "- Covariances at diagnostic points:" << std::endl;
-      print_value_at_positions(covarDiagConf, geom, dxo);
+      print_value_at_positions(testConf.getSubConfiguration("diagnostic points"), geom, dxo);
     }
 
     // Copy configuration
@@ -355,14 +354,13 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
       std::string idL(id);
       idL.append("_localization");
 
+      // Print localization
       oops::Log::test() << "Localization(" << idL << ") diagnostics:" << std::endl;
       oops::Log::test() << "- Localization at zero separation:" << std::endl;
       print_value_at_positions(testConf.getSubConfiguration("dirac"), geom, dxo);
       if (testConf.has("diagnostic points")) {
-        const eckit::LocalConfiguration covarDiagConf(testConf, "diagnostic points");
-        // Print localization
         oops::Log::test() << "- Localization at diagnostic points:" << std::endl;
-        print_value_at_positions(covarDiagConf, geom, dxo);
+        print_value_at_positions(testConf.getSubConfiguration("diagnostic points"), geom, dxo);
       }
 
       // Copy configuration

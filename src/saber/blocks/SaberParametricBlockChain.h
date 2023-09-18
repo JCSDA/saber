@@ -223,9 +223,8 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
 
   // Write final ensemble
   if (covarConf.has("output ensemble")) {
-    // Write ensemble
-    OutputEnsembleParameters<MODEL> outputEnsemble;
-    outputEnsemble.deserialize(covarConf.getSubConfiguration("output ensemble"));
+    // Get output parameters configuration
+    const eckit::LocalConfiguration outputEnsembleConf(covarConf, "output ensemble");
 
     // Check whether geometry grid is similar to the last outer block inner geometry
     const bool useModelWriter = (util::getGridUid(geom.generic().functionSpace())
@@ -254,12 +253,8 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
       util::multiplyFieldSet(mean, 1.0/static_cast<double>(ensembleSize));
     }
 
-    // Output parameters
-    typename oops::Increment<MODEL>::WriteParameters_ writeParams
-      = outputEnsemble.writeParams;
-    const bool firstMemberOnly = outputEnsemble.firstMemberOnly.value();
-
     // Write first member only
+    const bool firstMemberOnly = outputEnsembleConf.getBool("first member only", false);
     if (firstMemberOnly) {
       ensembleSize = 1;
     }
@@ -295,10 +290,11 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
         // Use model writer
 
         // Set member index
-        writeParams.setMember(ie+1);
+        eckit::LocalConfiguration outputMemberConf(outputEnsembleConf);
+        setMember(outputMemberConf, ie+1);
 
         // Write Increment
-        dx->write(writeParams);
+        dx->write(outputMemberConf);
         oops::Log::test() << "Norm of ensemble member " << ie << ": " << dx->norm() << std::endl;
       } else {
         // Use generic ATLAS writer

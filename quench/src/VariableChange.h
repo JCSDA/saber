@@ -27,11 +27,14 @@ class VariableChange : public util::Printable {
  public:
   static const std::string classname() {return "quench::VariableChange";}
 
-  VariableChange(const eckit::Configuration &, const Geometry &) {}
+  VariableChange(const eckit::Configuration &, const Geometry &)
+    {throw eckit::NotImplemented(Here());}
 
 /// Perform transforms
-  void changeVar(State &, const oops::Variables &) const {}
-  void changeVarInverse(State &, const oops::Variables &) const {}
+  void changeVar(State &, const oops::Variables &) const
+    {throw eckit::NotImplemented(Here());}
+  void changeVarInverse(State &, const oops::Variables &) const
+    {throw eckit::NotImplemented(Here());}
 
  private:
   void print(std::ostream & os) const override {os << "VariableChange";};

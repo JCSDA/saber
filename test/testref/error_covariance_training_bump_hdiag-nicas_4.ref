@@ -7,17 +7,17 @@
              Level   2 ~> 100.0%
              Level   3 ~> 100.0%
              Level   4 ~> 100.0%
-             Level   1 ~> -0.100E+01 vert. unit
-             Level   2 ~> -0.500E+01 vert. unit
-             Level   3 ~> -0.900E+01 vert. unit
-             Level   4 ~> -0.110E+02 vert. unit
+             Level   1 ~> -0.100E+01 vert. coord.
+             Level   2 ~> -0.500E+01 vert. coord.
+             Level   3 ~> -0.900E+01 vert. coord.
+             Level   4 ~> -0.110E+02 vert. coord.
        Independent levels:  1[1]
           Subset Sc0 size:             3170
           Min. / max. longitudes: -175.0 /   180.0
           Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
-             Level   1 ~> -0.100E+01 vert. unit
+             Level   1 ~> -0.100E+01 vert. coord.
              Effective levels:   1   2   3   4 
                 Horizontal support radius:    8322.41 km (   7159.64 km -    9554.80 km)
                 Estimated nc1 from horizontal support radius:       76

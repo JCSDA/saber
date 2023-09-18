@@ -79,14 +79,14 @@ class GeometryParameters : public oops::Parameters {
   oops::RequiredParameter<std::vector<GroupParameters>> groups{"groups", this};
 
   /// Halo size
-  oops::OptionalParameter<size_t> halo{"halo", this};
+  oops::Parameter<size_t> halo{"halo", 0, this};
 
   /// No point on last task
   oops::Parameter<bool> noPointOnLastTask{"no point on last task", false, this};
 };
 
 // -----------------------------------------------------------------------------
-/// Geometry handles geometry for  model.
+/// Geometry handles geometry for quench model.
 
 class Geometry : public util::Printable,
                  private util::ObjectCounter<Geometry> {
@@ -118,7 +118,6 @@ class Geometry : public util::Printable,
   std::vector<size_t> variableSizes(const oops::Variables & vars) const;
   void latlon(std::vector<double> &, std::vector<double> &, const bool) const;
   bool levelsAreTopDown() const {return true;}
-  bool iodaBased() const {return iodaBased_;}
 
  private:
   void print(std::ostream &) const;
@@ -141,7 +140,6 @@ class Geometry : public util::Printable,
     double gmaskSize_;
   };
   std::vector<groupData> groups_;
-  bool iodaBased_;
 };
 // -----------------------------------------------------------------------------
 

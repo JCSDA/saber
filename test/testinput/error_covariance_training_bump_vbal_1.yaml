@@ -28,6 +28,7 @@ background error:
       nmembers: 10
       zero padding: 6
   output ensemble:
+    first member only: false
     filepath: testdata/error_covariance_training_bump_vbal_1/_MPI_-_OMP__unbalanced_member
   saber central block:
     saber block name: ID
