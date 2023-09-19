@@ -107,21 +107,17 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
 
   // Generate inner FieldSet (for the inverse test)
   virtual atlas::FieldSet generateInnerFieldSet(const oops::GeometryData & innerGeometryData,
-                                                const oops::Variables & innerVars,
-                                                const size_t & timeRank) const
+                                                const oops::Variables & innerVars) const
     {return util::createRandomFieldSet(innerGeometryData.comm(),
                                        innerGeometryData.functionSpace(),
-                                       innerVars,
-                                       timeRank);}
+                                       innerVars);}
 
   // Generate outer FieldSet (for the inverse test)
   virtual atlas::FieldSet generateOuterFieldSet(const oops::GeometryData & outerGeometryData,
-                                                const oops::Variables & outerVars,
-                                                const size_t & timeRank) const
+                                                const oops::Variables & outerVars) const
     {return util::createRandomFieldSet(outerGeometryData.comm(),
                                        outerGeometryData.functionSpace(),
-                                       outerVars,
-                                       timeRank);}
+                                       outerVars);}
 
   // Compare FieldSets (for the inverse test)
   virtual bool compareFieldSets(const atlas::FieldSet & fset1,
@@ -154,8 +150,7 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
                    const oops::Variables &,
                    const oops::GeometryData &,
                    const oops::Variables &,
-                   const double &,
-                   const size_t &) const;
+                   const double &) const;
 
   // Left-inverse test
   void inverseTest(const oops::GeometryData &,
@@ -165,8 +160,7 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
                    const oops::Variables &,
                    const oops::Variables &,
                    const double &,
-                   const double &,
-                   const size_t &) const;
+                   const double &) const;
 
  private:
   std::string blockName_;

@@ -111,8 +111,7 @@ class SaberCentralBlockBase : public util::Printable, private boost::noncopyable
   // Adjoint test
   void adjointTest(const oops::GeometryData &,
                    const oops::Variables &,
-                   const double &,
-                   const size_t &) const;
+                   const double &) const;
 
  private:
   std::string blockName_;
@@ -141,8 +140,7 @@ class SaberCentralBlockFactory {
                                                        const eckit::Configuration &,
                                                        const SaberBlockParametersBase &,
                                                        const oops::FieldSet3D &,
-                                                       const oops::FieldSet3D &,
-                                                       const size_t & timeRank = 0);
+                                                       const oops::FieldSet3D &);
 
   static std::unique_ptr<SaberBlockParametersBase> createParameters(const std::string &name);
 
@@ -161,8 +159,7 @@ class SaberCentralBlockFactory {
                                                       const eckit::Configuration &,
                                                       const SaberBlockParametersBase &,
                                                       const oops::FieldSet3D &,
-                                                      const oops::FieldSet3D &,
-                                                      const size_t &) = 0;
+                                                      const oops::FieldSet3D &) = 0;
 
   virtual std::unique_ptr<SaberBlockParametersBase> makeParameters() const = 0;
 
@@ -183,11 +180,10 @@ class SaberCentralBlockMaker : public SaberCentralBlockFactory {
                                               const eckit::Configuration & covarConf,
                                               const SaberBlockParametersBase & params,
                                               const oops::FieldSet3D & xb,
-                                              const oops::FieldSet3D & fg,
-                                              const size_t & timeRank) override {
+                                              const oops::FieldSet3D & fg) override {
     const auto &stronglyTypedParams = dynamic_cast<const Parameters_&>(params);
     return std::make_unique<T>(geometryData, outerVars, covarConf,
-                               stronglyTypedParams, xb, fg, timeRank);
+                               stronglyTypedParams, xb, fg);
   }
 
   std::unique_ptr<SaberBlockParametersBase> makeParameters() const override {

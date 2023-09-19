@@ -61,8 +61,7 @@ class Covariance : public SaberCentralBlockBase {
              const eckit::Configuration &,
              const Parameters_ &,
              const oops::FieldSet3D &,
-             const oops::FieldSet3D &,
-             const size_t &);
+             const oops::FieldSet3D &);
   virtual ~Covariance();
 
   void randomize(atlas::FieldSet &) const override;

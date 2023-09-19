@@ -96,11 +96,8 @@ else
    call system_clock(count=seed)
 end if
 
-! Different seed for each processor
-seed = seed+mpl%myproc-1
-
-! Different seed for each subwindow
-seed = seed+mpl%time_rank*mpl%nproc
+! Different seed for each MPI task (based on world communicator)
+seed = seed+mpl%myrank
 
 ! Long integer
 rng%seed = int(seed,kind_long)
@@ -143,11 +140,8 @@ integer :: seed
 ! Default seed
 seed = default_seed
 
-! Different seed for each processor
-seed = seed+mpl%myproc-1
-
-! Different seed for each subwindow
-seed = seed+mpl%time_rank*mpl%nproc
+! Different seed for each MPI task (based on world communicator)
+seed = seed+mpl%myrank-1
 
 ! Long integer
 rng%seed = int(seed,kind_long)
@@ -207,11 +201,8 @@ type(mpl_type),intent(inout) :: mpl  !< MPI data
 ! Wait
 call mpl%f_comm%barrier()
 
-! Different seed for each processor
-rng%seed = rng%seed+int(mpl%myproc-1,kind_long)
-
-! Different seed for each subwindow
-rng%seed = rng%seed+int(mpl%time_rank*mpl%nproc,kind_long)
+! Different seed for each MPI task (based on world communicator)
+rng%seed = rng%seed+int(mpl%myrank-1,kind_long)
 
 ! Probe out
 @:probe_out()

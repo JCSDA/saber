@@ -51,8 +51,7 @@ class NICAS : public SaberCentralBlockBase {
         const eckit::Configuration &,
         const Parameters_ &,
         const oops::FieldSet3D &,
-        const oops::FieldSet3D &,
-        const size_t &);
+        const oops::FieldSet3D &);
   virtual ~NICAS();
 
   void randomize(atlas::FieldSet &) const override;

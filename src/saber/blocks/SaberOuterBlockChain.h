@@ -282,8 +282,7 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
                                        activeOuterVars,
                                        innerGeometryData,
                                        activeInnerVars,
-                                       localAdjointTolerance,
-                                       geom.timeComm().rank());
+                                       localAdjointTolerance);
     }
     // Inverse test
     const bool skipInverseTest = saberOuterBlockParams.skipInverseTest.value();
@@ -313,8 +312,7 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
                                          innerVarsToCompare,
                                          outerVarsToCompare,
                                          innerInverseTolerance,
-                                         outerInverseTolerance,
-                                         geom.timeComm().rank());
+                                         outerInverseTolerance);
       }
     }
   }

@@ -36,8 +36,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
            const std::vector<size_t> & variableSizes,
            const std::vector<std::string> & vars,
            const eckit::Configuration & covarConf,
-           const eckit::Configuration & bumpConf,
-           const size_t & timeRank) :
+           const eckit::Configuration & bumpConf) :
   keyBUMP_(), comm_(&comm), infoChannel_(&infoChannel), testChannel_(&testChannel),
   fspace_(fspace), variableSizes_(variableSizes), vars_(vars),
   covarConf_(covarConf), bumpConf_(bumpConf), nens_(), waitForDualResolution_(false),
@@ -88,9 +87,6 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
 
   // Set iterative ensemble loading flag
   bumpConf_.set("external.iterative algorithm", iterativeEnsembleLoading_);
-
-  // Set time rank
-  bumpConf_.set("time rank", timeRank);
 
   // Grids
   std::vector<eckit::LocalConfiguration> grids;

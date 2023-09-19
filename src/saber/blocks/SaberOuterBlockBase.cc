@@ -85,15 +85,13 @@ void SaberOuterBlockBase::adjointTest(const oops::GeometryData & outerGeometryDa
                                       const oops::Variables & outerVars,
                                       const oops::GeometryData & innerGeometryData,
                                       const oops::Variables & innerVars,
-                                      const double & adjointTolerance,
-                                      const size_t & timeRank) const {
+                                      const double & adjointTolerance) const {
   oops::Log::trace() << "SaberOuterBlockBase::adjointTest starting" << std::endl;
 
   // Create random inner FieldSet
   atlas::FieldSet innerFset = util::createRandomFieldSet(innerGeometryData.comm(),
                                                          innerGeometryData.functionSpace(),
-                                                         innerVars,
-                                                         timeRank);
+                                                         innerVars);
 
   // Copy inner FieldSet
   atlas::FieldSet innerFsetSave = util::copyFieldSet(innerFset);
@@ -101,8 +99,7 @@ void SaberOuterBlockBase::adjointTest(const oops::GeometryData & outerGeometryDa
   // Create random outer FieldSet
   atlas::FieldSet outerFset = util::createRandomFieldSet(outerGeometryData.comm(),
                                                          outerGeometryData.functionSpace(),
-                                                         outerVars,
-                                                         timeRank);
+                                                         outerVars);
 
   // Copy outer FieldSet
   atlas::FieldSet outerFsetSave = util::copyFieldSet(outerFset);
@@ -139,16 +136,14 @@ void SaberOuterBlockBase::inverseTest(const oops::GeometryData & innerGeometryDa
                                       const oops::Variables & innerVarsToCompare,
                                       const oops::Variables & outerVarsToCompare,
                                       const double & innerInverseTolerance,
-                                      const double & outerInverseTolerance,
-                                      const size_t & timeRank) const {
+                                      const double & outerInverseTolerance) const {
   oops::Log::trace() << "SaberOuterBlockBase::inverseTest starting" << std::endl;
 
   // Inner inverse test
 
   // Create inner FieldSet
   atlas::FieldSet innerFset = this->generateInnerFieldSet(innerGeometryData,
-                                                          innerVars,
-                                                          timeRank);
+                                                          innerVars);
 
   // Apply forward multiplication
   this->multiply(innerFset);
@@ -192,8 +187,7 @@ void SaberOuterBlockBase::inverseTest(const oops::GeometryData & innerGeometryDa
 
   // Create outer FieldSet
   atlas::FieldSet outerFset = this->generateOuterFieldSet(outerGeometryData,
-                                                          outerVars,
-                                                          timeRank);
+                                                          outerVars);
 
   // Apply inverse multiplication
   this->leftInverseMultiply(outerFset);

@@ -26,8 +26,7 @@ NICAS::NICAS(const oops::GeometryData & geometryData,
              const eckit::Configuration & covarConf,
              const Parameters_ & params,
              const oops::FieldSet3D & xb,
-             const oops::FieldSet3D & fg,
-             const size_t & timeRank)
+             const oops::FieldSet3D & fg)
   : SaberCentralBlockBase(params), bumpParams_(),
     bump_(),
     memberIndex_(0)
@@ -61,8 +60,7 @@ NICAS::NICAS(const oops::GeometryData & geometryData,
                                  activeVariableSizes,
                                  activeVars_.variables(),
                                  covarConf,
-                                 bumpParams_.toConfiguration(),
-                                 timeRank));
+                                 bumpParams_.toConfiguration()));
 
   // Read input ATLAS files
   bump_->readAtlasFiles();

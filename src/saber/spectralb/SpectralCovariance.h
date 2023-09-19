@@ -49,8 +49,7 @@ class SpectralCovariance : public SaberCentralBlockBase {
                      const eckit::Configuration &,
                      const Parameters_ &,
                      const oops::FieldSet3D &,
-                     const oops::FieldSet3D &,
-                     const size_t &);
+                     const oops::FieldSet3D &);
 
   virtual ~SpectralCovariance() = default;
 
@@ -76,8 +75,6 @@ class SpectralCovariance : public SaberCentralBlockBase {
   const oops::GeometryData & geometryData_;
   /// Spectral FunctionSpace
   const atlas::functionspace::Spectral specFunctionSpace_;
-  /// Time rank
-  size_t timeRank_;
 };
 
 }  // namespace spectralb

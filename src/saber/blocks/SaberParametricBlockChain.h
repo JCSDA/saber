@@ -114,8 +114,7 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
                                                    covarConf,
                                                    saberCentralBlockParams,
                                                    fsetXb[0],
-                                                   fsetFg[0],
-                                                   geom.timeComm().rank());
+                                                   fsetFg[0]);
 
   // Read and add model fields
   centralBlock_->read(geom, currentOuterVars, fsetXb[0].validTime());
@@ -313,8 +312,7 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
     // Run test
     centralBlock_->adjointTest(currentOuterGeom,
                                activeVars,
-                               localAdjointTolerance,
-                               geom.timeComm().rank());
+                               localAdjointTolerance);
   }
 
   oops::Log::trace() << "SaberParametricBlockChain ctor done" << std::endl;

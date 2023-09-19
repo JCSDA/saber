@@ -42,8 +42,7 @@ Covariance::Covariance(const oops::GeometryData & geometryData,
                        const eckit::Configuration & covarConf,
                        const Parameters_ & params,
                        const oops::FieldSet3D & xb,
-                       const oops::FieldSet3D & fg,
-                       const size_t & timeRank)
+                       const oops::FieldSet3D & fg)
   : SaberCentralBlockBase(params),
     params_(params), variables_(params.activeVars.value().get_value_or(centralVars).variables()),
     gsiGridFuncSpace_(geometryData.functionSpace()), comm_(&geometryData.comm()),
@@ -51,8 +50,6 @@ Covariance::Covariance(const oops::GeometryData & geometryData,
 {
   oops::Log::trace() << classname() << "::Covariance starting" << std::endl;
   util::Timer timer(classname(), "Covariance");
-
-  // TODO(GSI team) use timeRank to initialize random seed
 
   // Share xb and fg pointers
   xb_ = util::shareFields(xb.fieldSet());

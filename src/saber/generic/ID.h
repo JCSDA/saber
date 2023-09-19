@@ -43,8 +43,7 @@ class IDCentral : public SaberCentralBlockBase {
             const eckit::Configuration &,
             const Parameters_ &,
             const oops::FieldSet3D &,
-            const oops::FieldSet3D &,
-            const size_t &);
+            const oops::FieldSet3D &);
 
   virtual ~IDCentral();
 
@@ -54,7 +53,6 @@ class IDCentral : public SaberCentralBlockBase {
  private:
   const oops::GeometryData & geometryData_;
   const oops::Variables activeVars_;
-  size_t timeRank_;
   void print(std::ostream &) const override;
 };
 

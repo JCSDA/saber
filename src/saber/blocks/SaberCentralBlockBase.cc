@@ -53,8 +53,7 @@ std::unique_ptr<SaberCentralBlockBase> SaberCentralBlockFactory::create(
   const eckit::Configuration & covarConf,
   const SaberBlockParametersBase & params,
   const oops::FieldSet3D & xb,
-  const oops::FieldSet3D & fg,
-  const size_t & timeRank) {
+  const oops::FieldSet3D & fg) {
   oops::Log::trace() << "SaberCentralBlockBase::create starting" << std::endl;
   const std::string id = params.saberBlockName;
   typename std::map<std::string, SaberCentralBlockFactory*>::iterator jsb = getMakers().find(id);
@@ -64,7 +63,7 @@ std::unique_ptr<SaberCentralBlockBase> SaberCentralBlockFactory::create(
   }
   std::unique_ptr<SaberCentralBlockBase> ptr =
     jsb->second->make(geometryData, vars, covarConf,
-                      params, xb, fg, timeRank);
+                      params, xb, fg);
   oops::Log::trace() << "SaberCentralBlockBase::create done" << std::endl;
   return ptr;
 }
@@ -85,19 +84,16 @@ SaberCentralBlockFactory::createParameters(const std::string &name) {
 
 void SaberCentralBlockBase::adjointTest(const oops::GeometryData & geometryData,
                                         const oops::Variables & vars,
-                                        const double & adjointTolerance,
-                                        const size_t & timeRank) const {
+                                        const double & adjointTolerance) const {
   oops::Log::trace() << "SaberCentralBlockBase::adjointTest starting" << std::endl;
 
   // Create random FieldSets
   atlas::FieldSet fset1 =  util::createRandomFieldSet(geometryData.comm(),
                                                       geometryData.functionSpace(),
-                                                      vars,
-                                                      timeRank);
+                                                      vars);
   atlas::FieldSet fset2 =  util::createRandomFieldSet(geometryData.comm(),
                                                       geometryData.functionSpace(),
-                                                      vars,
-                                                      timeRank);
+                                                      vars);
 
   // Copy FieldSets
   atlas::FieldSet fset1Save = util::copyFieldSet(fset1);

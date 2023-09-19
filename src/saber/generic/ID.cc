@@ -26,12 +26,10 @@ IDCentral::IDCentral(const oops::GeometryData & geometryData,
                      const eckit::Configuration & covarConf,
                      const Parameters_ & params,
                      const oops::FieldSet3D & xb,
-                     const oops::FieldSet3D & fg,
-                     const size_t & timeRank) :
+                     const oops::FieldSet3D & fg) :
     SaberCentralBlockBase(params),
     geometryData_(geometryData),
-    activeVars_(activeVars),
-    timeRank_(timeRank)
+    activeVars_(activeVars)
 {
   oops::Log::trace() << classname() << "::IDCentral starting" << std::endl;
   oops::Log::trace() << classname() << "::IDCentral done" << std::endl;
@@ -56,8 +54,7 @@ void IDCentral::randomize(atlas::FieldSet & fset) const {
   // Overwrite input fieldSet with random numbers
   const atlas::FieldSet newFieldSet = util::createRandomFieldSet(geometryData_.comm(),
                                                                  geometryData_.functionSpace(),
-                                                                 activeVars_,
-                                                                 timeRank_);
+                                                                 activeVars_);
 
   for (const auto & var : activeVars_.variables()) {
     fset[var] = newFieldSet[var];

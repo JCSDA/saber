@@ -39,14 +39,12 @@ SpectralCovariance::SpectralCovariance(const oops::GeometryData & geometryData,
                                        const eckit::Configuration & covarConf,
                                        const Parameters_ & params,
                                        const oops::FieldSet3D & xb,
-                                       const oops::FieldSet3D & fg,
-                                       const size_t & timeRank)
+                                       const oops::FieldSet3D & fg)
   : SaberCentralBlockBase(params), params_(params),
     activeVars_(getActiveVars(params, centralVars)),
     spectralVerticalCovariances_(),
     geometryData_(geometryData),
-    specFunctionSpace_(geometryData_.functionSpace()),
-    timeRank_(timeRank)
+    specFunctionSpace_(geometryData_.functionSpace())
 {
   oops::Log::trace() << classname() << "::SpectralCovariance starting " << std::endl;
 

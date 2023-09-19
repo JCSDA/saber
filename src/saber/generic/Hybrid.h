@@ -96,8 +96,7 @@ class Hybrid : public SaberCentralBlockBase {
          const eckit::Configuration &,
          const Parameters_ & params,
          const oops::FieldSet3D &,
-         const oops::FieldSet3D &,
-         const size_t &)
+         const oops::FieldSet3D &)
       : SaberCentralBlockBase(params)
     {ABORT("the Hybrid block is a fake block, it should not be constructed");}
 

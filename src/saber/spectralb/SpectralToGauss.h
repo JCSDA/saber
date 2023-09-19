@@ -62,15 +62,13 @@ class SpectralToGauss : public SaberOuterBlockBase {
   void directCalibration(const std::vector<atlas::FieldSet> &) override;
 
   atlas::FieldSet generateInnerFieldSet(const oops::GeometryData & innerGeometryData,
-                                        const oops::Variables & innerVars,
-                                        const size_t & timeRank) const override
+                                        const oops::Variables & innerVars) const override
     {return util::createSmoothFieldSet(innerGeometryData.comm(),
                                        innerGeometryData.functionSpace(),
                                        innerVars);}
 
   atlas::FieldSet generateOuterFieldSet(const oops::GeometryData & outerGeometryData,
-                                        const oops::Variables & outerVars,
-                                        const size_t & timeRank) const override
+                                        const oops::Variables & outerVars) const override
     {return util::createSmoothFieldSet(outerGeometryData.comm(),
                                        outerGeometryData.functionSpace(),
                                        outerVars);}

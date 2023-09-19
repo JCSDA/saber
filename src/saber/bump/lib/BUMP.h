@@ -34,8 +34,7 @@ class BUMP {
        const std::vector<size_t> &,
        const std::vector<std::string> &,
        const eckit::Configuration &,
-       const eckit::Configuration &,
-       const size_t & timeRank = 0);
+       const eckit::Configuration &);
 
   // Destructor
   ~BUMP();

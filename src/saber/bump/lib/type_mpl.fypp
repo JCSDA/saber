@@ -37,12 +37,10 @@ type mpl_type
    type(fckit_mpi_comm) :: f_comm         !< MPI communicator (fckit wrapper)
    integer :: nproc                       !< Number of MPI tasks
    integer :: myproc                      !< MPI task index
+   integer :: myrank                      !< MPI world rank
    integer :: rootproc                    !< Main task index
    logical :: main                        !< Main task logical
    integer :: tag                         !< MPI tag
-
-   ! Time rank
-   integer :: time_rank                   !< Time rank
 
    ! I/O
    character(len=1024) :: datadir         !< Data directory
@@ -165,6 +163,9 @@ class(mpl_type),intent(inout) :: mpl             !< MPI data
 type(fckit_mpi_comm),intent(in),target :: f_comm !< FCKIT MPI communicator wrapper
 type(fckit_configuration),intent(in) :: conf     !< Configuration
 
+! Local variables
+type(fckit_mpi_comm) :: world_comm
+
 ! Set name
 @:set_name(mpl_init)
 
@@ -177,8 +178,12 @@ mpl%f_comm = f_comm
 ! Get MPI size
 mpl%nproc = mpl%f_comm%size()
 
-! Get MPI rank
+! Get MPI local rank
 mpl%myproc = mpl%f_comm%rank()+1
+
+! Get MPI world rank
+world_comm = fckit_mpi_comm("world")
+mpl%myrank = world_comm%rank()+1
 
 ! Define main task
 mpl%rootproc = 1
@@ -190,9 +195,6 @@ if (mpl%main) then
 end if
 call mpl%f_comm%broadcast(mpl%tag,mpl%rootproc-1)
 call mpl%update_tag(0)
-
-! Get time rank
-if (.not.conf%get('time rank',mpl%time_rank)) mpl%time_rank = 0
 
 ! Set max number of OpenMP threads
 mpl%nthread = 1
