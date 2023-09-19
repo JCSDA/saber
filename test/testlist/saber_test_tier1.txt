@@ -15,6 +15,7 @@ dirac_interpolation_2
 dirac_interpolation_3
 dirac_stddev_1
 dirac_stddev_2
+dirac_mo_vertloc
 error_covariance_training_bump_1
 error_covariance_training_bump_2
 error_covariance_training_bump_hdiag_1

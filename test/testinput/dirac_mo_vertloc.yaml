@@ -26,8 +26,8 @@ background error:
       localization field name in file: Lv
       pressure file name: testdata/ptheta_bar_mean.nc
       pressure field name in pressure file: Ptheta_bar_Mean
-    number of vertical levels: 70
-    number of vertical modes: 70
+    number of vertical modes: 10
+    output file name: testdata/dirac_mo_vertloc/vertical_localization.nc
 
 dirac:
   lon:
@@ -62,6 +62,6 @@ background:
   filepath: testdata/gauss_state
 output dirac:
   mpi pattern: '%MPI%'
-  filepath: testdata/dirac_spectralb_gauss_vertloc_vader/dirac_%id%_%MPI%
+  filepath: testdata/dirac_mo_vertloc/dirac_%id%_%MPI%
 test:
-  reference filename: testref/dirac_spectralb_gauss_vertloc_vader.ref
+  reference filename: testref/dirac_mo_vertloc.ref

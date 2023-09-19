@@ -53,8 +53,8 @@ class VertLocParameters : public SaberBlockParametersBase {
   oops::RequiredParameter<VertLocCovarianceParameters>
     VertLocParams{"localization data", this};
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
-  oops::RequiredParameter<int> nlevels{"number of vertical levels", this};
   oops::RequiredParameter<int> truncation{"number of vertical modes", this};
+  oops::OptionalParameter<std::string> outputFileName{"output file name", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -81,20 +81,26 @@ class VertLoc : public SaberOuterBlockBase {
   void leftInverseMultiply(atlas::FieldSet &) const override;
 
  private:
-  void readLocMat(const std::string filepath, const std::string fieldname,
+  void readLocMat(const std::string  & filepath,
+                  const std::string & fieldname,
                   atlas::array::ArrayView<double, 2>& fview);
-  void readPressVec(const std::string filepath, const std::string fieldname,
-                           atlas::array::ArrayView<double, 1> & fview);
+  void readPressVec(const std::string & filepath,
+                    const std::string & fieldname,
+                    atlas::array::ArrayView<double, 1> & fview);
+  void writeLocalization(const std::string & filepath,
+                         const std::vector<double> & sqrtInnerProduct,
+                         const atlas::array::ArrayView<const double, 2> & targetLocalizationView,
+                         const Eigen::MatrixXd & localizationSquareRoot);
   void print(std::ostream &) const override;
   const oops::GeometryData & innerGeometryData_;
-  oops::Variables innerVars_;
-  oops::Variables activeVars_;
-  int nlevs;
-  int nmods;
-  std::string ncfilepath_;
-  std::string locfilepath_;
-  std::string locFieldName_;
-  std::string meanPressFieldName_;
+  const oops::Variables activeVars_;
+  const int nlevs_;
+  const int nmods_;
+  const oops::Variables innerVars_;
+  const std::string ncfilepath_;
+  const std::string locfilepath_;
+  const std::string locFieldName_;
+  const std::string meanPressFieldName_;
   Eigen::MatrixXd Umatrix_;
 };
 

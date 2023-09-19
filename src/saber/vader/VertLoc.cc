@@ -7,21 +7,41 @@
 
 #include "saber/vader/VertLoc.h"
 
+#include <iomanip>
 #include <memory>
+#include <numeric>
 #include <string>
 #include <vector>
 
 #include "atlas/array.h"
 #include "atlas/field.h"
+#include "atlas/parallel/omp/omp.h"
 
 #include "eckit/exception/Exceptions.h"
 
 #include "oops/base/Variables.h"
 #include "oops/util/AtlasArrayUtil.h"
+#include "oops/util/Logger.h"
 #include "oops/util/Timer.h"
 
 #include "saber/blocks/SaberOuterBlockBase.h"
-#include "saber/vader/CovarianceStatisticsUtils.h"
+#include "saber/oops/Utilities.h"
+
+namespace {
+
+auto setInnerVars(const oops::Variables & outerVars,
+                  const oops::Variables & activeVars,
+                  const int nmods) {
+  // Return variables which are a copy of outerVars, except for activeVars
+  // which should have levels changed to nmods
+  oops::Variables innerVars(outerVars);
+  for (auto & var : activeVars.variables()) {
+    innerVars.addMetaData(var, "levels", nmods);
+  }
+  return innerVars;
+}
+
+}  // namespace
 
 namespace saber {
 namespace vader {
@@ -33,86 +53,106 @@ static SaberOuterBlockMaker<VertLoc> makerVertLoc_("mo_vertical_localisation");
 // -----------------------------------------------------------------------------
 
 VertLoc::VertLoc(const oops::GeometryData & outerGeometryData,
-                                   const oops::Variables & outerVars,
-                                   const eckit::Configuration & covarConf,
-                                   const Parameters_ & params,
-                                   const oops::FieldSet3D & xb,
-                                   const oops::FieldSet3D & fg)
+                 const oops::Variables & outerVars,
+                 const eckit::Configuration & covarConf,
+                 const Parameters_ & params,
+                 const oops::FieldSet3D & xb,
+                 const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params),
-    innerGeometryData_(outerGeometryData), innerVars_(outerVars),
-    activeVars_(params.activeVars.value().get_value_or(outerVars)),
-    nlevs(params.nlevels.value()),
-    nmods(params.truncation.value()),
+    innerGeometryData_(outerGeometryData),
+    activeVars_(getActiveVars(params, outerVars)),
+    nlevs_(activeVars_.getLevels(activeVars_.variables()[0])),
+    nmods_(params.truncation.value()),
+    innerVars_(setInnerVars(outerVars, activeVars_, nmods_)),
     ncfilepath_(params.VertLocParams.value().covStatFileName.value().get_value_or("")),
     locfilepath_(params.VertLocParams.value().locFileName.value()),
     locFieldName_(params.VertLocParams.value().locFieldName.value()),
     meanPressFieldName_(params.VertLocParams.value().meanPressFieldName.value().get_value_or("")),
-    Umatrix_(Eigen::MatrixXd::Identity(nlevs, nmods))
+    Umatrix_(Eigen::MatrixXd::Identity(nlevs_, nmods_))
 {
   oops::Log::trace() << classname() << "::VertLoc starting" << std::endl;
 
-  // read from file on root PE if required.
-  std::size_t root(0);
+  // Check all active variables have same number of levels
+  for (const auto & var : activeVars_.variables()) {
+    if (activeVars_.getLevels(var) != nlevs_) {
+      oops::Log::error() << "Error    : Cannot deal with multiple vertical resolutions."
+                         << std::endl;
+      oops::Log::error() << "Error    : Vertical localization matrix has "
+                         << nlevs_ << " levels, but variable " << var << " has "
+                         << activeVars_.getLevels(var) << " levels." << std::endl;
+      throw eckit::Exception("Inconsistent number of levels in VertLoc", Here());
+    }
+  }
+
+  // Check range of nmods_
+  if (nmods_ <= 1 || nmods_ > nlevs_) {
+    oops::Log::error() << "Error    : Truncation should be between 1 and number"
+                       << " of model levels (" << nlevs_ << ") but is "
+                       << nmods_ << ". " << std::endl;
+    throw eckit::BadParameter("Invalid value for number of vertical modes", Here());
+  }
+
+  // Read localization files and perform computations on root PE
+  const std::size_t root(0);
   if (innerGeometryData_.comm().rank() == root) {
+    // Read mean pressure values at theta levels
     auto Fld1 = atlas::Field(meanPressFieldName_,
               atlas::array::make_datatype<double>(),
-              atlas::array::make_shape(nlevs+1));
+              atlas::array::make_shape(nlevs_+1));
     auto fv1 = atlas::array::make_view<double, 1>(Fld1);
     fv1.assign(0.0);
 
-    // read mean pressure values at theta levels
     VertLoc::readPressVec(ncfilepath_, meanPressFieldName_, fv1);
 
     std::vector<double> ptheta_bar_mean;
-    for (int i = 0; i < nlevs+1; ++i) {
+    for (int i = 0; i < nlevs_+1; ++i) {
       ptheta_bar_mean.push_back(fv1(i));
     }
 
-    std::vector<double> SqrtInnerProduct(nlevs, 1.0);
+    // Define an inner product W to weigh levels according to air mass
+    std::vector<double> SqrtInnerProduct(nlevs_, 1.0);
     if (*std::max_element(std::begin(ptheta_bar_mean),
                           std::end(ptheta_bar_mean)) > 0.0) {
-      std::vector<double> InnerProduct(nlevs, 1.0);
-      for (int i = 0; i < nlevs; ++i) {
+      std::vector<double> InnerProduct(nlevs_, 1.0);
+      for (int i = 0; i < nlevs_; ++i) {
         InnerProduct[i] = ptheta_bar_mean[i] - ptheta_bar_mean[i+1];
       }
 
-      double SumInnerProduct(0.0);
-      for (int i = 0; i < nlevs; ++i) {
-        SumInnerProduct += InnerProduct[i];
-      }
+      const double SumInnerProduct = std::accumulate(InnerProduct.begin(),
+                                                     InnerProduct.end(),
+                                                     0.0);
+      const double averageInnerProduct = SumInnerProduct / static_cast<double>(nlevs_);
 
-      // normalise inner product by the average delta pressure
-      // before taking the square root
-      for (int i = 0; i < nlevs; ++i) {
-        InnerProduct[i] *= static_cast<double>(nlevs);
-        InnerProduct[i] /= SumInnerProduct;
+      for (int i = 0; i < nlevs_; ++i) {
+        InnerProduct[i] /= averageInnerProduct;
         SqrtInnerProduct[i] = std::sqrt(InnerProduct[i]);
       }
     } else {
-      oops::Log::info() << "No valid mean pressure values at theta levels found"
+      oops::Log::info() << "Info     : No valid mean pressure values at theta levels found"
                         << std::endl;
     }
 
+    // Read localisation matrix C
     auto Fld = atlas::Field(locFieldName_,
               atlas::array::make_datatype<double>(),
-              atlas::array::make_shape(nlevs, nlevs));
+              atlas::array::make_shape(nlevs_, nlevs_));
     auto fv = atlas::array::make_view<double, 2>(Fld);
     fv.assign(0.0);
 
-    // read localisation matrix
     VertLoc::readLocMat(locfilepath_, locFieldName_, fv);
 
-    Eigen::MatrixXd m = Eigen::MatrixXd::Zero(nlevs, nlevs);
+    Eigen::MatrixXd m = Eigen::MatrixXd::Zero(nlevs_, nlevs_);
 
-    for (int i = 0; i < nlevs; ++i) {
-      for (int j = 0; j < nlevs; ++j) {
+    for (int i = 0; i < nlevs_; ++i) {
+      for (int j = 0; j < nlevs_; ++j) {
         m(i, j) = fv(i, j);
       }
     }
 
     if (m.any() > 0.0) {
-      for (int i = 0; i < nlevs; ++i) {
-        for (int j = 0; j < nlevs; ++j) {
+      // Apply inner product: C -> C' = W^{1/2} C W^{1/2}
+      for (int i = 0; i < nlevs_; ++i) {
+        for (int j = 0; j < nlevs_; ++j) {
           m(i, j) *= SqrtInnerProduct[i]*SqrtInnerProduct[j];
         }
       }
@@ -120,59 +160,83 @@ VertLoc::VertLoc(const oops::GeometryData & outerGeometryData,
       // Do EOF decomposition of target matrix to get eigenvalues and
       // eigenvectors.
       //
-      // C --> PCP
-
-      // The eigenvalues are sorted in increasing order
+      // C' == PDP^T with D diagonal and P unitary
       Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(m);
 
-      // reorder eigenvalues and eigenvectors to be in descending order
+      // The eigenvalues are sorted in increasing order.
+      // Reorder eigenvalues and eigenvectors to be in descending order
       Eigen::VectorXd evals(es.eigenvalues());
       Eigen::MatrixXd evecs(es.eigenvectors());
-      for (int i = 0; i < nlevs; ++i) {
-        evals(i) = es.eigenvalues()(nlevs-1-i);
-        evecs.col(i) = es.eigenvectors().col(nlevs-1-i);
+      for (int i = 0; i < nlevs_; ++i) {
+        evals(i) = es.eigenvalues()(nlevs_-1-i);
+        evecs.col(i) = es.eigenvectors().col(nlevs_-1-i);
       }
 
-      // calculates D := P^{-1} E \lambda^{1/2} so that DD^T = C
-      for (int j = 0; j < nlevs; ++j) {
+      // Calculate U := W^{-1/2} P D^{1/2} so that UU^T == C
+      for (int j = 0; j < nmods_; ++j) {
         if (evals(j) > 0.0) {
-          for (int i = 0; i < nlevs; ++i) {
+          for (int i = 0; i < nlevs_; ++i) {
             evecs(i, j) *= std::sqrt(evals(j))/SqrtInnerProduct[i];
           }
         } else {
-          for (int i = 0; i < nlevs; ++i) {
+          for (int i = 0; i < nlevs_; ++i) {
             evecs(i, j) = 0.0;
           }
         }
       }
 
-      for (int i = 0; i < nmods; ++i) {
+      // Total variance in weighted space
+      const double totalVariance = std::accumulate(evals.begin(), evals.end(), 0.0);
+
+      // Only keep first nmods_ modes into U
+      double retainedVariance(0.0);
+      for (int i = 0; i < nmods_; ++i) {
         Umatrix_.col(i) = evecs.col(i);
+        retainedVariance += evals(i);
       }
 
-      // Restore variance to target value at each level:
+      // Print percentage of variance retained
+      const double percentageRetained = 100 * retainedVariance / totalVariance;
+      oops::Log::info() << "Info     : Percentage of explained variance in "
+                        << "pressure-weighted space is "
+                        << std::setprecision(4) << percentageRetained << "%."
+                        << std::endl;
+
+      // Restore variance to original value at each level:
       double sumUmatrix(0.0);
-      for (int i = 0; i < nlevs; ++i) {
+      for (int i = 0; i < nlevs_; ++i) {
         if (m(i, i) > 0.0) {
           sumUmatrix = 0.0;
-          for (int j = 0; j < nmods; ++j) {
+          for (int j = 0; j < nmods_; ++j) {
             sumUmatrix += Umatrix_(i, j)*Umatrix_(i, j);
           }
-          for (int j = 0; j < nmods; ++j) {
+          for (int j = 0; j < nmods_; ++j) {
             Umatrix_(i, j) *= std::sqrt(fv(i, i))/std::sqrt(sumUmatrix);
           }
         } else {
-          for (int j = 0; j < nmods; ++j) {
+          for (int j = 0; j < nmods_; ++j) {
             Umatrix_(i, j) = 0.0;
           }
         }
       }
+
+      // Dump to file
+      const auto & outputFileName = params.outputFileName.value();
+      if (outputFileName != boost::none) {
+        this->writeLocalization(outputFileName.value(),
+                                SqrtInnerProduct,
+                                fv,
+                                Umatrix_);
+      }
+
     } else {
-      oops::Log::info() << "No valid localisation matrix found"
-                          << std::endl;
+      oops::Log::error() << "Error    : No valid localisation matrix found in "
+                         << locfilepath_
+                         << std::endl;
+      throw eckit::Exception("No valid localisation matrix.", Here());
     }
   }
-  innerGeometryData_.comm().broadcast(Umatrix_.data(), nmods*nlevs, root);
+  innerGeometryData_.comm().broadcast(Umatrix_.data(), nmods_*nlevs_, root);
 
   oops::Log::trace() << classname() << "::VertLoc done" << std::endl;
 }
@@ -190,28 +254,46 @@ VertLoc::~VertLoc() {
 void VertLoc::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
 
-  oops::Log::trace() << "active variables: " << activeVars_.variables() << std::endl;
+  atlas::FieldSet fsetOut;
 
-  if (nmods != nlevs)
-    ABORT("Number of vertical modes is here supposed to be equal to number of vertical levels");
-
-  for (const auto & var : activeVars_.variables()) {
-    auto fcsView = atlas::array::make_view<double, 2>(fset[var]);  // (nlocs, nmods)
-    std::vector<double> kRowByCol(nmods);
-    for (atlas::idx_t jn = 0; jn < fset[var].shape(0); ++jn) {
-      for (atlas::idx_t jl = 0; jl < nlevs; ++jl) {
-        kRowByCol[jl] = 0.0;
-        for (atlas::idx_t jm = 0; jm < nmods; ++jm) {
-          kRowByCol[jl] += Umatrix_(jl, jm) * fcsView(jn, jm);
-        }
-      }
-      for (atlas::idx_t jl = 0; jl < nlevs; ++jl) {
-        // this is the (nlocs, nlevs) localised field
-        // for now output same as input (must be nmods = nlevs)
-        fcsView(jn, jl) =  kRowByCol[jl];
-      }
+  // Passive variables
+  for (const auto & var : fset.field_names()) {
+    if (!activeVars_.has(var)) {
+      fsetOut.add(fset.field(var));
     }
   }
+
+  // Active variables
+  for (const auto & var : activeVars_.variables()) {
+    if (fset[var].levels() != nmods_) {
+      oops::Log::error() << "Error    : Field " << var << " has " << fset[var].levels()
+                         << ", expected " << nmods_ << ". " << std::endl;
+      throw eckit::UserError("Wrong number of vertical levels in field " + var, Here());
+    }
+
+    // Create new field with nlevs_ levels
+    atlas::Field outField =
+      innerGeometryData_.functionSpace().createField<double>
+        (atlas::option::name(var) |
+         atlas::option::levels(nlevs_));
+    auto outView = atlas::array::make_view<double, 2>(outField);
+    outView.assign(0.0);
+
+    // Apply U matrix
+    auto inView = atlas::array::make_view<double, 2>(fset[var]);  // nmods_ levels
+    atlas_omp_parallel_for(atlas::idx_t jn = 0; jn < outField.shape(0); ++jn) {
+      for (atlas::idx_t jl = 0; jl < nlevs_; ++jl) {
+        for (atlas::idx_t jm = 0; jm < nmods_; ++jm) {
+          outView(jn, jl) += Umatrix_(jl, jm) * inView(jn, jm);
+        }
+      }
+    }
+
+    outField.haloExchange();
+    fsetOut.add(outField);
+  }
+
+  fset = fsetOut;
 
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
@@ -221,27 +303,47 @@ void VertLoc::multiply(atlas::FieldSet & fset) const {
 void VertLoc::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
 
-  if (nmods != nlevs)
-    ABORT("Number of vertical modes is here supposed to be equal to number of vertical levels");
+  atlas::FieldSet fsetOut;
 
-  for (const auto & var : activeVars_.variables()) {
-    auto fcsHatView =
-      atlas::array::make_view<double, 2>(fset[var]);  // (nlocs, nlevs)
-    std::vector<double> kColByRow(nmods);
-    for (atlas::idx_t jn = 0; jn < fset[var].shape(0); ++jn) {
-      for (atlas::idx_t jl = 0; jl < nmods; ++jl) {
-        kColByRow[jl] = 0.0;
-        for (atlas::idx_t jm = 0; jm < nlevs; ++jm) {
-          kColByRow[jl] += Umatrix_(jm, jl) * fcsHatView(jn, jm);
-        }
-      }
-      for (atlas::idx_t jl = 0; jl < nmods; ++jl) {
-        // for now output same as input (must be nmods = nlevs)
-        // note here we set = and not += given input field same as output
-        fcsHatView(jn, jl) = kColByRow[jl];
-      }
+  // Passive variables
+  for (const auto & var : fset.field_names()) {
+    if (!activeVars_.has(var)) {
+      fsetOut.add(fset.field(var));
     }
   }
+
+  // Active variables
+  for (const auto & var : activeVars_.variables()) {
+    if (fset[var].levels() != nlevs_) {
+      oops::Log::error() << "Error    : Field " << var << " has " << fset[var].levels()
+                         << ", expected " << nlevs_ << ". " << std::endl;
+      throw eckit::UserError("Wrong number of vertical levels in field " + var, Here());
+    }
+
+    // Create new field with nmods_ levels
+    atlas::Field outField =
+      innerGeometryData_.functionSpace().createField<double>
+        (atlas::option::name(var) |
+         atlas::option::levels(nmods_));
+    auto outView = atlas::array::make_view<double, 2>(outField);
+
+    outView.assign(0.0);
+
+    // Apply U^t
+    auto inView = atlas::array::make_view<double, 2>(fset[var]);  // nlevs_ levels
+    atlas_omp_parallel_for(atlas::idx_t jn = 0; jn < outField.shape(0); ++jn) {
+      for (atlas::idx_t jl = 0; jl < nmods_; ++jl) {
+        for (atlas::idx_t jm = 0; jm < nlevs_; ++jm) {
+          outView(jn, jl) += Umatrix_(jm, jl) * inView(jn, jm);
+        }
+      }
+    }
+
+    outField.haloExchange();
+    fsetOut.add(outField);
+  }
+
+  fset = fsetOut;
 
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
@@ -254,7 +356,8 @@ void VertLoc::leftInverseMultiply(atlas::FieldSet & fset) const {
 }
 
 // -----------------------------------------------------------------------------
-void VertLoc::readLocMat(const std::string filepath, const std::string fieldname,
+void VertLoc::readLocMat(const std::string & filepath,
+                         const std::string & fieldname,
                          atlas::array::ArrayView<double, 2> & fview) {
   // Setup
   std::vector<std::string> dimNames;
@@ -293,8 +396,8 @@ void VertLoc::readLocMat(const std::string filepath, const std::string fieldname
 
     // current code assumes field in netcdf file to be 2D
     if (dimFld != 2) ABORT(fieldname+" is not a 2D field");
-    // check dimFldSizes[0] is nlevs+1
-    if (vecNumLevs != nlevs) ABORT(fieldname+" should have "+std::to_string(nlevs)+" levels");
+    // check dimFldSizes[0] is nlevs_+1
+    if (vecNumLevs != nlevs_) ABORT(fieldname+" should have "+std::to_string(nlevs_)+" levels");
 
     util::atlasArrayReadData(netcdfGeneralIDs,
                              dimFldSizes,
@@ -307,8 +410,9 @@ void VertLoc::readLocMat(const std::string filepath, const std::string fieldname
 
 // -----------------------------------------------------------------------------
 
-void VertLoc::readPressVec(const std::string filepath, const std::string fieldname,
-                         atlas::array::ArrayView<double, 1> & fview) {
+void VertLoc::readPressVec(const std::string & filepath,
+                           const std::string & fieldname,
+                           atlas::array::ArrayView<double, 1> & fview) {
   // Setup
   std::vector<std::string> dimNames;
   std::vector<atlas::idx_t> dimSizes;
@@ -348,9 +452,9 @@ void VertLoc::readPressVec(const std::string filepath, const std::string fieldna
 
         // current code assumes field in netcdf file to be 1D
         if (dimFld > 1) ABORT(meanPressFieldName_+" is not a 1D field");
-        // check dimFldSizes[0] is nlevs+1
-        if (vecNumLevs != nlevs+1) ABORT(meanPressFieldName_+" should have "+
-                                         std::to_string(nlevs+1)+" levels");
+        // check dimFldSizes[0] is nlevs_+1
+        if (vecNumLevs != nlevs_+1) ABORT(meanPressFieldName_+" should have "+
+                                         std::to_string(nlevs_+1)+" levels");
 
         util::atlasArrayReadData(netcdfGeneralIDs,
                                  dimFldSizes,
@@ -363,6 +467,122 @@ void VertLoc::readPressVec(const std::string filepath, const std::string fieldna
   }
 }
 
+// -----------------------------------------------------------------------------
+
+void VertLoc::writeLocalization(
+        const std::string & filepath,
+        const std::vector<double> & sqrtInnerProduct,
+        const atlas::array::ArrayView<const double, 2> & targetLocalizationView,
+        const Eigen::MatrixXd & localizationSquareRoot) {
+  // This function is meant to run on a single PE
+  oops::Log::trace() << classname() << "::writeLocalization starting" << std::endl;
+
+  // Compute low rank localization
+  const auto lowRankLoc = localizationSquareRoot * localizationSquareRoot.transpose();
+
+  // Convert all data holders to atlas fields
+  atlas::FieldSet fset;
+
+  auto field0 = atlas::Field(
+              "air_mass_weights",
+              atlas::array::make_datatype<double>(),
+              atlas::array::make_shape(nlevs_));
+  auto view0 = atlas::array::make_view<double, 1>(field0);
+  for (int i = 0; i < nlevs_; ++i) {
+    view0(i) = sqrtInnerProduct[i];
+  }
+  fset.add(field0);
+
+  auto field1 = atlas::Field("target_localization",
+                            atlas::array::make_datatype<double>(),
+                            atlas::array::make_shape(nlevs_, nlevs_));
+  auto view1 = atlas::array::make_view<double, 2>(field1);
+  view1.assign(targetLocalizationView);
+  fset.add(field1);
+
+  auto field2 = atlas::Field(
+              "localization_square_root",
+              atlas::array::make_datatype<double>(),
+              atlas::array::make_shape(nlevs_, nmods_));
+  auto view2 = atlas::array::make_view<double, 2>(field2);
+  for (int i = 0; i < nlevs_; ++i) {
+    for (int j = 0; j < nmods_; ++j) {
+      view2(i, j) = localizationSquareRoot(i, j);
+    }
+  }
+  fset.add(field2);
+
+  auto field3 = atlas::Field(
+              "low_rank_localization",
+              atlas::array::make_datatype<double>(),
+              atlas::array::make_shape(nlevs_, nlevs_));
+  auto view3 = atlas::array::make_view<double, 2>(field3);
+  for (int i = 0; i < nlevs_; ++i) {
+    for (int j = 0; j < nlevs_; ++j) {
+      view3(i, j) = lowRankLoc(i, j);
+    }
+  }
+  fset.add(field3);
+
+  // Define variables and dimensions
+  const std::vector<std::string> dimNames{"nz", "nmods"};
+  const std::vector<atlas::idx_t> dimSizes{nlevs_, nmods_};
+  const std::vector<std::string> variableNames{"air_mass_weights",
+                                               "target_localization",
+                                               "low_rank_localization",
+                                               "localization_square_root"};
+  const std::vector<std::vector<std::string>>
+    dimNamesForEveryVar{{"nz"},
+                        {"nz", "nz"},
+                        {"nz", "nz"},
+                        {"nz", "nmods"}};
+  const std::vector<std::vector<atlas::idx_t>>
+    dimSizesForEveryVar{{nlevs_},
+                        {nlevs_, nlevs_},
+                        {nlevs_, nlevs_},
+                        {nlevs_, nmods_}};
+
+
+  // Write Header
+  std::vector<int> netcdfGeneralIDs;
+  std::vector<int> netcdfDimIDs;
+  std::vector<int> netcdfVarIDs;
+  std::vector<std::vector<int>> netcdfDimVarIDs;
+  util::atlasArrayWriteHeader(filepath,
+                              dimNames,
+                              dimSizes,
+                              variableNames,
+                              dimNamesForEveryVar,
+                              netcdfGeneralIDs,
+                              netcdfDimIDs,
+                              netcdfVarIDs,
+                              netcdfDimVarIDs);
+
+  // Write Data
+  // Needs new views with datatype `const double`
+  int t = 0;
+  for (const auto & var : variableNames) {
+    const auto field = fset.field(var);
+    const size_t rank = field.shape().size();
+    if (rank == 1) {
+      auto view = atlas::array::make_view<const double, 1>(field);
+      util::atlasArrayWriteData(netcdfGeneralIDs, netcdfVarIDs[t], view);
+    } else if (rank == 2) {
+      auto view = atlas::array::make_view<const double, 2>(field);
+      util::atlasArrayWriteData(netcdfGeneralIDs, netcdfVarIDs[t], view);
+    }
+    t++;
+  }
+
+  oops::Log::info() << "Info     : Localization data written to file "
+                    << filepath << std::endl;
+
+  int retval;
+  if ((retval = nc_close(netcdfGeneralIDs[0]))) throw eckit::Exception("NetCDF closing error",
+                                                                       Here());
+
+  oops::Log::trace() << classname() << "::writeLocalization done" << std::endl;
+}
 // -----------------------------------------------------------------------------
 
 void VertLoc::print(std::ostream & os) const {

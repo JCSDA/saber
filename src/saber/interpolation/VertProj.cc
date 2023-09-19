@@ -184,7 +184,7 @@ void VertProj::multiplyAD(atlas::FieldSet & fieldSet) const {
     vertFieldSet.add(vertField);
   }
 
-  // Adjoint of simple prologation scheme
+  // Adjoint of simple prolongation scheme
   verticalProjectionAD(vertFieldSet, modelFieldSet);
 
   for (const auto & fieldname : activeVars_.variables()) {
