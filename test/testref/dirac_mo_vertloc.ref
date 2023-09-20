@@ -4,7 +4,7 @@ Quench geometry grid:
 - name: F12
 - size: 1152
 Partitioner:
-- type: ectrans
+- type: equal_regions
 Function space:
 - type: StructuredColumns
 - halo: 1
@@ -31,7 +31,7 @@ Quench geometry grid:
 - name: F12
 - size: 1152
 Partitioner:
-- type: ectrans
+- type: equal_regions
 Function space:
 - type: StructuredColumns
 - halo: 1

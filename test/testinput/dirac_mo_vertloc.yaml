@@ -7,7 +7,6 @@ geometry:
   - variables:
     - potential_temperature
     levels: 70
-  partitioner: ectrans
   halo: 1
 background error:
   covariance model: SABER
