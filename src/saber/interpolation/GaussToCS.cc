@@ -73,7 +73,7 @@ auto createInverseInterpolation(const bool initializeInverseInterpolation,
             << " grid to a " << csFunctionSpace.mesh().grid().name() << " grid."
             << std::endl
             << "ERROR  : Try one of the three possible solutions:" << std::endl
-            << "ERROR  :   1. Add yaml key `initialize inverse interpolation: false` to the block"
+            << "ERROR  :   1. Add yaml key `initialize inverse interpolator: false` to the block"
             << std::endl
             << "ERROR  :   2. Use 1, 4 or more MPI tasks" << std::endl
             << "ERROR  :   3. Use a Gaussian grid with less points" << std::endl;
