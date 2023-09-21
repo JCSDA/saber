@@ -14,6 +14,8 @@
 
 #include "atlas/field.h"
 
+#include "eckit/exception/Exceptions.h"
+
 #include "oops/base/GeometryData.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
@@ -65,7 +67,8 @@ class Ensemble : public SaberCentralBlockBase {
            const Parameters_ & params,
            const oops::FieldSet3D &,
            const oops::FieldSet3D &) : SaberCentralBlockBase(params)
-  {ABORT("the Ensemble block is a fake block, it should not be constructed");}
+  {throw eckit::Exception("the Ensemble block is a fake block, it should not be constructed",
+    Here());}
 
   void randomize(atlas::FieldSet &) const override {}
   void multiply(atlas::FieldSet &) const override {}

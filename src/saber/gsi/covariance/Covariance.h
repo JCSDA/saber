@@ -17,7 +17,6 @@
 
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
-#include "oops/util/abor1_cpp.h"
 #include "oops/util/parameters/OptionalParameter.h"
 #include "oops/util/parameters/Parameter.h"
 #include "oops/util/parameters/Parameters.h"

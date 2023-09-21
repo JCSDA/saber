@@ -16,9 +16,10 @@
 
 #include <boost/noncopyable.hpp>
 
+#include "eckit/exception/Exceptions.h"
+
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
-#include "oops/util/abor1_cpp.h"
 #include "oops/util/AssociativeContainers.h"
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/FieldSetOperations.h"
@@ -40,7 +41,8 @@ SaberCentralBlockFactory::SaberCentralBlockFactory(const std::string & name) {
   if (getMakers().find(name) != getMakers().end()) {
     oops::Log::error() << name << " already registered in saber::SaberCentralBlockFactory."
                        << std::endl;
-    ABORT("Element already registered in saber::SaberCentralBlockFactory.");
+    throw eckit::Exception("Element already registered in saber::SaberCentralBlockFactory.",
+      Here());
   }
   getMakers()[name] = this;
 }
@@ -59,7 +61,7 @@ std::unique_ptr<SaberCentralBlockBase> SaberCentralBlockFactory::create(
   typename std::map<std::string, SaberCentralBlockFactory*>::iterator jsb = getMakers().find(id);
   if (jsb == getMakers().end()) {
     oops::Log::error() << id << " does not exist in saber::SaberCentralBlockFactory." << std::endl;
-    ABORT("Element does not exist in saber::SaberCentralBlockFactory.");
+    throw eckit::UserError("Element does not exist in saber::SaberCentralBlockFactory.", Here());
   }
   std::unique_ptr<SaberCentralBlockBase> ptr =
     jsb->second->make(geometryData, vars, covarConf,
@@ -120,7 +122,7 @@ void SaberCentralBlockBase::adjointTest(const oops::GeometryData & geometryData,
     oops::Log::test() << " passed" << std::endl;
   } else {
     oops::Log::test() << " failed" << std::endl;
-    ABORT("Adjoint test failure for block " + this->blockName());
+    throw eckit::Exception("Adjoint test failure for block " + this->blockName(), Here());
   }
 
   oops::Log::trace() << "SaberCentralBlockBase::adjointTest done" << std::endl;

@@ -14,7 +14,6 @@
 #include "atlas/field.h"
 #include "atlas/functionspace.h"
 
-#include "oops/util/abor1_cpp.h"
 #include "oops/util/Logger.h"
 #include "oops/util/Timer.h"
 

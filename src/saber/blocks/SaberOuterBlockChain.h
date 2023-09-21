@@ -12,6 +12,8 @@
 
 #include "atlas/field.h"
 
+#include "eckit/exception/Exceptions.h"
+
 #include "oops/base/FieldSet4D.h"
 #include "oops/base/Geometry.h"
 #include "oops/interface/ModelData.h"

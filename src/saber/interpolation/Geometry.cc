@@ -20,7 +20,8 @@
 #include "atlas/util/KDTree.h"
 #include "atlas/util/Point.h"
 
-#include "oops/util/abor1_cpp.h"
+#include "eckit/exception/Exceptions.h"
+
 #include "oops/util/Logger.h"
 
 // -----------------------------------------------------------------------------
@@ -74,7 +75,7 @@ Geometry::Geometry(const Parameters_ & params,
     }
     grid_ = atlas::Grid(gridParams_);
   } else {
-    ABORT("Grid or grid input file required");
+    throw eckit::UserError("Grid or grid input file required", Here());
   }
 
   if (!unstructuredGrid_) {
@@ -104,14 +105,16 @@ Geometry::Geometry(const Parameters_ & params,
         const atlas::Mesh mesh = atlas::MeshGenerator("delaunay").generate(grid_);
         functionSpace_ = atlas::functionspace::NodeColumns(mesh);
       } else {
-        ABORT("NodeColumns function space on multiple PEs not supported yet");
+        throw eckit::FunctionalityNotSupported("NodeColumns function space on multiple PEs not"
+          " supported yet", Here());
       }
     }
   } else if (params.functionSpace.value() == "PointCloud") {
     // Setup function space
     functionSpace_ = atlas::functionspace::PointCloud(grid_);
   } else {
-    ABORT(params.functionSpace.value() + " function space not supported yet");
+    throw eckit::FunctionalityNotSupported(params.functionSpace.value() +
+      " function space not supported yet", Here());
   }
 
   // Print summary

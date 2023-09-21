@@ -12,6 +12,8 @@
 
 #include "atlas/field.h"
 
+#include "eckit/exception/Exceptions.h"
+
 #include "oops/base/FieldSet4D.h"
 #include "oops/interface/ModelData.h"
 
@@ -297,7 +299,7 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
         oops::Log::test() << "Norm of ensemble member " << ie << ": " << dx->norm() << std::endl;
       } else {
         // Use generic ATLAS writer
-        ABORT("generic output ensemble write not implemented yet");
+        throw eckit::NotImplemented("generic output ensemble write not implemented yet", Here());
       }
     }
   }

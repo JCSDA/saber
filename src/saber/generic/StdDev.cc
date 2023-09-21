@@ -15,6 +15,7 @@
 #include "atlas/field.h"
 
 #include "eckit/config/LocalConfiguration.h"
+#include "eckit/exception/Exceptions.h"
 
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
@@ -60,7 +61,8 @@ StdDev::StdDev(const oops::GeometryData & outerGeometryData,
     const auto & modelFileConf = readParams->modelFileConf.value();
     readFromModel_ = (modelFileConf != boost::none);
     if (readFromAtlas_ && readFromModel_) {
-      ABORT("either ATLAS or model stddev input file should be present, not both");
+      throw eckit::UserError("either ATLAS or model stddev input file should be present, not both",
+        Here());
     }
     if (readFromAtlas_) {
       readConf_ = *atlasFileConf;
@@ -78,7 +80,8 @@ StdDev::StdDev(const oops::GeometryData & outerGeometryData,
     const auto & modelFileConf = calibrationParams->modelFileConf.value();
     writeToModel_ = (modelFileConf != boost::none);
     if (writeToAtlas_ && writeToModel_) {
-      ABORT("either ATLAS or model stddev output file should be present, not both");
+      throw eckit::UserError("either ATLAS or model stddev output file should be present, not both",
+        Here());
     }
     if (writeToAtlas_) {
       writeConf_ = *atlasFileConf;

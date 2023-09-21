@@ -27,6 +27,8 @@
 #include "saber/blocks/SaberOuterBlockBase.h"
 #include "saber/oops/Utilities.h"
 
+#define ERR(e) {throw eckit::Exception(nc_strerror(e), Here());}
+
 namespace {
 
 auto setInnerVars(const oops::Variables & outerVars,
@@ -351,8 +353,7 @@ void VertLoc::multiplyAD(atlas::FieldSet & fset) const {
 // -----------------------------------------------------------------------------
 
 void VertLoc::leftInverseMultiply(atlas::FieldSet & fset) const {
-  throw eckit::NotImplemented(
-          "leftInverseMultiply not implemented", Here());
+  throw eckit::NotImplemented("leftInverseMultiply not implemented", Here());
 }
 
 // -----------------------------------------------------------------------------
@@ -395,16 +396,17 @@ void VertLoc::readLocMat(const std::string & filepath,
     auto vecNumLevs = *std::max_element(std::begin(dimFldSizes), std::end(dimFldSizes));
 
     // current code assumes field in netcdf file to be 2D
-    if (dimFld != 2) ABORT(fieldname+" is not a 2D field");
+    if (dimFld != 2) throw eckit::Exception(fieldname + " is not a 2D field", Here());
     // check dimFldSizes[0] is nlevs_+1
-    if (vecNumLevs != nlevs_) ABORT(fieldname+" should have "+std::to_string(nlevs_)+" levels");
+    if (vecNumLevs != nlevs_) throw eckit::Exception(fieldname+" should have "
+      + std::to_string(nlevs_) + " levels", Here());
 
     util::atlasArrayReadData(netcdfGeneralIDs,
                              dimFldSizes,
                              netcdfVarID,
                              fview);
     int retval;
-    if ((retval = nc_close(netcdfGeneralIDs[0]))) ABORT(nc_strerror(retval));
+    if ((retval = nc_close(netcdfGeneralIDs[0]))) ERR(retval);
   }
 }
 
@@ -451,17 +453,18 @@ void VertLoc::readPressVec(const std::string & filepath,
         auto vecNumLevs = *std::max_element(std::begin(dimFldSizes), std::end(dimFldSizes));
 
         // current code assumes field in netcdf file to be 1D
-        if (dimFld > 1) ABORT(meanPressFieldName_+" is not a 1D field");
+        if (dimFld > 1) throw eckit::Exception(meanPressFieldName_ + " is not a 1D field",
+          Here());
         // check dimFldSizes[0] is nlevs_+1
-        if (vecNumLevs != nlevs_+1) ABORT(meanPressFieldName_+" should have "+
-                                         std::to_string(nlevs_+1)+" levels");
+        if (vecNumLevs != nlevs_+1) throw eckit::Exception(meanPressFieldName_ + " should have " +
+          std::to_string(nlevs_+1) + " levels", Here());
 
         util::atlasArrayReadData(netcdfGeneralIDs,
                                  dimFldSizes,
                                  netcdfVarID,
                                  fview);
         int retval;
-        if ((retval = nc_close(netcdfGeneralIDs[0]))) ABORT(nc_strerror(retval));
+        if ((retval = nc_close(netcdfGeneralIDs[0]))) ERR(retval);
       }
     }
   }

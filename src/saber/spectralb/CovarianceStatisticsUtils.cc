@@ -18,6 +18,8 @@
 #include "atlas/array.h"
 #include "atlas/field.h"
 
+#include "eckit/exception/Exceptions.h"
+
 #include "saber/spectralb/spectralb_covstats_interface.h"
 #include "saber/spectralb/spectralbParameters.h"
 
@@ -25,7 +27,7 @@
 #include "oops/util/AtlasArrayUtil.h"
 #include "oops/util/Logger.h"
 
-#define COVERR(e) {ABORT(nc_strerror(e));}
+#define ERR(e) {throw eckit::Exception(nc_strerror(e), Here());}
 
 namespace saber {
 namespace spectralb {
@@ -394,7 +396,7 @@ void readSpectralCovarianceFromFile(const std::string & var,
 
   if (oops::mpi::world().rank() == root) {
     const int retval = nc_close(netcdfGeneralIDs[0]);
-    if (retval) COVERR(retval);
+    if (retval) ERR(retval);
   }
 }
 

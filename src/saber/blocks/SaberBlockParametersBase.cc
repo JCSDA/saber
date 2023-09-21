@@ -7,6 +7,8 @@
 
 #include "saber/blocks/SaberBlockParametersBase.h"
 
+#include "eckit/exception/Exceptions.h"
+
 namespace saber {
 
 // -----------------------------------------------------------------------------
@@ -15,8 +17,8 @@ bool SaberBlockParametersBase::doCalibration() const {
   const auto & readConf = readParams.value();
   const auto & calibrationConf = calibrationParams.value();
   if (readConf != boost::none && calibrationConf != boost::none) {
-    ABORT("read and calibration configuration cannot be present at the same time in block " +
-    saberBlockName.value());
+    throw eckit::UserError("read and calibration configuration cannot be present at the same time"
+      " in block " + saberBlockName.value(), Here());
   }
   const auto & blockName = saberBlockName.value();
   return (calibrationConf != boost::none || blockName == "Ensemble");
@@ -28,8 +30,8 @@ bool SaberBlockParametersBase::doRead() const {
   const auto & readConf = readParams.value();
   const auto & calibrationConf = calibrationParams.value();
   if (readConf != boost::none && calibrationConf != boost::none) {
-    ABORT("read and calibration configuration cannot be present at the same time in block " +
-    saberBlockName.value());
+    throw eckit::UserError("read and calibration configuration cannot be present at the same time"
+      " in block " + saberBlockName.value(), Here());
   }
   return (readConf != boost::none);
 }

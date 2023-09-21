@@ -7,6 +7,8 @@
 
 #include "saber/interpolation/AtlasInterpWrapper.h"
 
+#include "eckit/exception/Exceptions.h"
+
 // -----------------------------------------------------------------------------
 
 namespace saber {
@@ -31,7 +33,8 @@ atlas::FunctionSpace createTargetFunctionSpace(
     const atlas::functionspace::NodeColumns fs(srcFunctionSpace);
     srcMesh = fs.mesh();
   } else {
-    ABORT(srcFunctionSpace.type() + " source function space not supported yet");
+    throw eckit::FunctionalityNotSupported(srcFunctionSpace.type()
+      + " source function space not supported yet", Here());
   }
 
   // Get target partitioner from source mesh
@@ -57,7 +60,8 @@ atlas::FunctionSpace createTargetFunctionSpace(
       targetFunctionSpace = atlas::functionspace::NodeColumns(targetMesh);
     }
   } else {
-    ABORT(dstFunctionSpaceType + " destination function space type not supported yet");
+    throw eckit::FunctionalityNotSupported(dstFunctionSpaceType
+      + " destination function space type not supported yet", Here());
     targetFunctionSpace = atlas::FunctionSpace();
   }
 
@@ -79,7 +83,8 @@ atlas::Interpolation createAtlasInterpolation(const atlas::FunctionSpace & srcFu
     // NodeColumns
     interpConfig.set("type", "unstructured-bilinear-lonlat");
   } else {
-    ABORT(srcFunctionSpace.type() + " source function space type not supported yet");
+    throw eckit::FunctionalityNotSupported(srcFunctionSpace.type()
+      + " source function space type not supported yet", Here());
   }
   interpConfig.set("adjoint", "true");
 
@@ -279,7 +284,8 @@ void AtlasInterpWrapper::executeAdjoint(atlas::Field & srcField,
 
   if (dstField.functionspace().type() == "PointCloud") {
     // PointCloud destination function space
-    ABORT("Adjoint not supported for PointCloud destination function space yet");
+    throw eckit::FunctionalityNotSupported("Adjoint not supported for PointCloud destination"
+      " function space yet", Here());
   } else {
     // Other destination function space
 

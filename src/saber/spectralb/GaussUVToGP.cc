@@ -34,14 +34,13 @@
 
 #include "oops/base/FieldSet3D.h"
 #include "oops/base/Variables.h"
-#include "oops/util/abor1_cpp.h"
 #include "oops/util/Logger.h"
 #include "oops/util/Timer.h"
 
 #include "saber/blocks/SaberOuterBlockBase.h"
 #include "saber/interpolation/AtlasInterpWrapper.h"
 
-#define ERR(e) {ABORT(nc_strerror(e));}
+#define ERR(e) {throw eckit::Exception(nc_strerror(e), Here());}
 
 namespace saber {
 namespace spectralb {

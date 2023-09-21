@@ -13,6 +13,8 @@
 
 #include "atlas/field.h"
 
+#include "eckit/exception/Exceptions.h"
+
 #include "oops/base/GeometryData.h"
 #include "oops/util/parameters/OptionalParameter.h"
 #include "oops/util/parameters/Parameter.h"
@@ -98,14 +100,17 @@ class Hybrid : public SaberCentralBlockBase {
          const oops::FieldSet3D &,
          const oops::FieldSet3D &)
       : SaberCentralBlockBase(params)
-    {ABORT("the Hybrid block is a fake block, it should not be constructed");}
+    {throw eckit::Exception("the Hybrid block is a fake block, it should not be constructed",
+      Here());}
 
   virtual ~Hybrid() {}
 
   void randomize(atlas::FieldSet &) const override
-    {ABORT("the Hybrid block is a fake block, it should not be used for randomization");}
+    {throw eckit::Exception("the Hybrid block is a fake block, it should not be used for"
+      " randomization", Here());}
   void multiply(atlas::FieldSet &) const override
-    {ABORT("the Hybrid block is a fake block, it should not be used for multiplication");}
+    {throw eckit::Exception("the Hybrid block is a fake block, it should not be used for"
+      " multiplication", Here());}
 
  private:
   void print(std::ostream &) const override;

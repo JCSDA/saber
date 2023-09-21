@@ -16,9 +16,10 @@
 
 #include <boost/noncopyable.hpp>
 
+#include "eckit/exception/Exceptions.h"
+
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
-#include "oops/util/abor1_cpp.h"
 #include "oops/util/AssociativeContainers.h"
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/FieldSetOperations.h"
@@ -40,7 +41,7 @@ SaberOuterBlockFactory::SaberOuterBlockFactory(const std::string & name) {
   if (getMakers().find(name) != getMakers().end()) {
     oops::Log::error() << name << " already registered in saber::SaberOuterBlockFactory."
                        << std::endl;
-    ABORT("Element already registered in saber::SaberOuterBlockFactory.");
+    throw eckit::Exception("Element already registered in saber::SaberOuterBlockFactory.", Here());
   }
   getMakers()[name] = this;
 }
@@ -59,7 +60,7 @@ std::unique_ptr<SaberOuterBlockBase> SaberOuterBlockFactory::create(
   typename std::map<std::string, SaberOuterBlockFactory*>::iterator jsb = getMakers().find(id);
   if (jsb == getMakers().end()) {
     oops::Log::error() << id << " does not exist in saber::SaberOuterBlockFactory." << std::endl;
-    ABORT("Element does not exist in saber::SaberOuterBlockFactory.");
+    throw eckit::UserError("Element does not exist in saber::SaberOuterBlockFactory.", Here());
   }
   std::unique_ptr<SaberOuterBlockBase> ptr =
     jsb->second->make(outerGeometryData, outerVars, covarConfig, params, xb, fg);
@@ -121,7 +122,7 @@ void SaberOuterBlockBase::adjointTest(const oops::GeometryData & outerGeometryDa
     oops::Log::test() << " passed" << std::endl;
   } else {
     oops::Log::test() << " failed" << std::endl;
-    ABORT("Adjoint test failure for block " + this->blockName());
+    throw eckit::Exception("Adjoint test failure for block " + this->blockName(), Here());
   }
 
   oops::Log::trace() << "SaberOuterBlockBase::adjointTest done" << std::endl;
@@ -162,8 +163,8 @@ void SaberOuterBlockBase::inverseTest(const oops::GeometryData & innerGeometryDa
   auto innerFieldNamesSave = oops::Variables(innerFsetSave.field_names());
 
   if (innerFieldNames != innerFieldNamesSave) {
-    ABORT("Inner inverse test for block " + this->blockName()
-      + ": fieldsets content does not match");
+    throw eckit::Exception("Inner inverse test for block " + this->blockName()
+      + ": fieldsets content does not match", Here());
   }
 
   // Check that the fieldsets are similar within tolerance
@@ -180,7 +181,7 @@ void SaberOuterBlockBase::inverseTest(const oops::GeometryData & innerGeometryDa
     oops::Log::test() << " passed: U Uinv (U x) == (U x)" << std::endl;
   } else {
     oops::Log::test() << " failed: U Uinv (U x) != (U x)" << std::endl;
-    ABORT("Inner inverse test failure for block " + this->blockName());
+    throw eckit::Exception("Inner inverse test failure for block " + this->blockName(), Here());
   }
 
   // Outer inverse test
@@ -205,8 +206,8 @@ void SaberOuterBlockBase::inverseTest(const oops::GeometryData & innerGeometryDa
   auto outerFieldNames = oops::Variables(outerFset.field_names());
   auto outerFieldNamesSave = oops::Variables(outerFsetSave.field_names());
   if (outerFieldNames != outerFieldNamesSave) {
-    ABORT("Outer inverse test for block " + this->blockName()
-      + ": fieldsets content does not match");
+    throw eckit::Exception("Outer inverse test for block " + this->blockName()
+      + ": fieldsets content does not match", Here());
   }
 
   // Check that the fieldsets are similar within tolerance
@@ -222,7 +223,7 @@ void SaberOuterBlockBase::inverseTest(const oops::GeometryData & innerGeometryDa
     oops::Log::test() << " passed: Uinv U (Uinv x) == (Uinv x)" << std::endl;
   } else {
     oops::Log::test() << " failed: Uinv U (Uinv x) != (Uinv x)" << std::endl;
-    ABORT("Outer inverse test failure for block " + this->blockName());
+    throw eckit::Exception("Outer inverse test failure for block " + this->blockName(), Here());
   }
 
   oops::Log::trace() << "SaberOuterBlockBase::inverseTest done" << std::endl;

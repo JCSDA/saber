@@ -13,9 +13,6 @@
 #include <string>
 #include <vector>
 
-#include "eckit/exception/Exceptions.h"
-#include "eckit/memory/NonCopyable.h"
-
 #include "oops/util/ConfigFunctions.h"
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/Logger.h"
@@ -24,6 +21,9 @@
 
 #include "atlas/array.h"
 #include "atlas/field.h"
+
+#include "eckit/exception/Exceptions.h"
+#include "eckit/memory/NonCopyable.h"
 
 #include "saber/spectralb/CovarianceStatisticsUtils.h"
 #include "saber/spectralb/spectralbParameters.h"

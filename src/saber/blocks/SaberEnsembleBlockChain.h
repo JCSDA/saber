@@ -287,7 +287,7 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
       oops::Log::test() << " passed" << std::endl;
     } else {
       oops::Log::test() << " failed" << std::endl;
-      ABORT("Adjoint test failure for block Ensemble");
+      throw eckit::Exception("Adjoint test failure for block Ensemble", Here());
     }
   }
   oops::Log::trace() << "SaberEnsembleBlockChain ctor done" << std::endl;

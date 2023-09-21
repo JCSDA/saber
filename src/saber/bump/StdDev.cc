@@ -7,7 +7,8 @@
 
 #include "saber/bump/StdDev.h"
 
-#include "oops/util/abor1_cpp.h"
+#include "eckit/exception/Exceptions.h"
+
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/Logger.h"
@@ -52,7 +53,7 @@ StdDev::StdDev(const oops::GeometryData & outerGeometryData,
   } else if (params.doRead()) {
     bumpParams_ = *params.readParams.value();
   } else {
-    ABORT("calibration or read required in BUMP");
+    throw eckit::UserError("calibration or read required in BUMP", Here());
   }
 
   // Initialize BUMP

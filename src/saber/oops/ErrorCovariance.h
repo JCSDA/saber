@@ -21,7 +21,6 @@
 #include "oops/base/State.h"
 #include "oops/base/State4D.h"
 #include "oops/base/Variables.h"
-#include "oops/util/abor1_cpp.h"
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/Logger.h"

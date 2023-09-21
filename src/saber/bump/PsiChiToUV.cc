@@ -10,9 +10,9 @@
 #include "atlas/functionspace.h"
 
 #include "eckit/config/LocalConfiguration.h"
+#include "eckit/exception/Exceptions.h"
 #include "eckit/mpi/Comm.h"
 
-#include "oops/util/abor1_cpp.h"
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/Logger.h"
 #include "oops/util/Timer.h"
@@ -60,7 +60,7 @@ PsiChiToUV::PsiChiToUV(const oops::GeometryData & outerGeometryData,
   } else if (params.doRead()) {
     bumpParams_ = *params.readParams.value();
   } else {
-    ABORT("calibration or read required in BUMP");
+    throw eckit::UserError("calibration or read required in BUMP", Here());
   }
 
   oops::Variables activeVars;

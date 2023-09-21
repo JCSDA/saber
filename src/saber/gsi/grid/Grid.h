@@ -14,7 +14,6 @@
 #include "atlas/field.h"
 #include "atlas/functionspace.h"
 
-#include "oops/util/abor1_cpp.h"
 #include "oops/util/parameters/Parameter.h"
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"

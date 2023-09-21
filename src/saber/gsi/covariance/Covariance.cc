@@ -18,9 +18,10 @@
 #include "atlas/library.h"
 #include "atlas/runtime/Log.h"
 
+#include "eckit/exception/Exceptions.h"
+
 #include "oops/base/FieldSet3D.h"
 #include "oops/base/Variables.h"
-#include "oops/util/abor1_cpp.h"
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/Logger.h"
 #include "oops/util/Timer.h"
@@ -81,7 +82,8 @@ void Covariance::randomize(atlas::FieldSet & fset) const {
   for (const auto & sabField : fset) {
       // Ensure that the field name is in the variables list
       if (std::find(variables_.begin(), variables_.end(), sabField.name()) == variables_.end()) {
-        ABORT("Field " + sabField.name() + " not found in the " + classname() + " variables.");
+        throw eckit::Exception("Field " + sabField.name() + " not found in the " + classname() +
+          " variables.", Here());
       }
 
       // Create the gsi grid field and add to Fieldset

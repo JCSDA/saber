@@ -27,7 +27,6 @@
 #include "atlas/util/PolygonLocator.h"
 #include "atlas/util/PolygonXY.h"
 
-#include "oops/util/abor1_cpp.h"
 #include "oops/util/Logger.h"
 #include "oops/util/ObjectCounter.h"
 

@@ -14,9 +14,8 @@
 
 #include "atlas/field.h"
 
-#include "oops/base/Variables.h"
-
 #include "oops/base/GeometryData.h"
+#include "oops/base/Variables.h"
 
 #include "saber/blocks/SaberBlockParametersBase.h"
 #include "saber/blocks/SaberOuterBlockBase.h"

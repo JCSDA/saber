@@ -17,9 +17,10 @@
 
 #include <boost/noncopyable.hpp>
 
+#include "eckit/exception/Exceptions.h"
+
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
-#include "oops/util/abor1_cpp.h"
 #include "oops/util/AssociativeContainers.h"
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/Logger.h"
@@ -70,13 +71,15 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
 
   // Block left inverse multiplication
   virtual void leftInverseMultiply(atlas::FieldSet &) const
-    {ABORT("leftInverseMultiply not implemented yet for the block " + blockName_);}
+
+    {throw eckit::NotImplemented("leftInverseMultiply not implemented yet for the block "
+      + blockName_, Here());}
 
   // Setup / calibration methods
 
   // Read block data
   virtual void read()
-    {ABORT("read not implemented yet for the block " + this->blockName());}
+    {throw eckit::NotImplemented("read not implemented yet for the block " + this->blockName());}
 
   // Read model fields
   virtual std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> fieldsToRead()
@@ -84,19 +87,24 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
 
   // Direct calibration
   virtual void directCalibration(const std::vector<atlas::FieldSet> &)
-    {ABORT("directCalibration not implemented yet for the block " + this->blockName());}
+    {throw eckit::NotImplemented("directCalibration not implemented yet for the block "
+      + this->blockName(), Here());}
 
   // Iterative calibration
   virtual void iterativeCalibrationInit()
-    {ABORT("iterativeCalibrationInit not implemented yet for the block " + this->blockName());}
+    {throw eckit::NotImplemented("iterativeCalibrationInit not implemented yet for the block "
+      + this->blockName(), Here());}
   virtual void iterativeCalibrationUpdate(const atlas::FieldSet &)
-    {ABORT("iterativeCalibrationUpdate not implemented yet for the block " + this->blockName());}
+    {throw eckit::NotImplemented("iterativeCalibrationUpdate not implemented yet for the block "
+      + this->blockName(), Here());}
   virtual void iterativeCalibrationFinal()
-    {ABORT("iterativeCalibrationUpdate not implemented yet for the block " + this->blockName());}
+    {throw eckit::NotImplemented("iterativeCalibrationUpdate not implemented yet for the block "
+      + this->blockName(), Here());}
 
   // Dual resolution setup
   virtual void dualResolutionSetup(const oops::GeometryData &)
-    {ABORT("dualResolutionSetup not implemented yet for the block " + this->blockName());}
+    {throw eckit::NotImplemented("dualResolutionSetup not implemented yet for the block "
+      + this->blockName(), Here());}
 
   // Write block data
   virtual void write() const {}
