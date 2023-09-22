@@ -1,0 +1,44 @@
+geometry:
+  function space: NodeColumns
+  grid:
+    name: CS-LFR-15
+  partitioner: cubedsphere
+  groups:
+  - variables: &vars
+    - streamfunction
+    - velocity_potential
+    - unbalanced_pressure
+    - moisture_control_variable
+    levels: 70
+  halo: 1
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables: *vars
+saber filter blocks:
+  saber central block:
+    saber block name: ID
+  saber outer blocks:
+  - saber block name: spectral analytical filter
+    function:
+      horizontal daley length: 5008e3
+    normalize filter variance: false
+  - saber block name: spectral to gauss
+    filter mode: true # instead of running the adjoint code it runs the inverse
+  - saber block name: gauss to cubed-sphere-dual
+    gauss grid uid: F45
+    filter mode: true # instead of running the adjoint code it runs the inverse
+date: '2010-01-01T12:00:00Z'
+input variables: *vars
+# note that we are pretending that increments generated from randomisation are states
+ensemble:
+  members:
+  - date: '2010-01-01T12:00:00Z'
+    filepath: testdata/randomization_csdual_sqrtspectralb/randomized_csdual_mb1
+    state variables: *vars
+  - date: '2010-01-01T12:00:00Z'
+    filepath: testdata/randomization_csdual_sqrtspectralb/randomized_csdual_mb2
+    state variables: *vars
+low pass perturbations:
+  filepath: testdata/process_perts_from_csdual_states_1/low_pass
+output perturbations:
+  filepath: testdata/process_perts_from_csdual_states_1/high_pass

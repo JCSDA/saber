@@ -50,7 +50,8 @@ namespace saber {
 class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
  public:
   explicit SaberOuterBlockBase(const SaberBlockParametersBase & params)
-    : blockName_(params.saberBlockName), skipInverse_(params.skipInverse) {}
+    : blockName_(params.saberBlockName), skipInverse_(params.skipInverse),
+      filterMode_(params.filterMode) {}
   virtual ~SaberOuterBlockBase() {}
 
   // Accessor
@@ -139,6 +140,9 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
   std::string blockName() const {return blockName_;}
 
   // Return flag to skip inverse application
+  bool filterMode() const {return filterMode_;}
+
+  // Return flag to skip inverse application
   bool skipInverse() const {return skipInverse_;}
 
   // Read model fields
@@ -173,6 +177,7 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
  private:
   std::string blockName_;
   bool skipInverse_;
+  bool filterMode_;
   virtual void print(std::ostream &) const = 0;
 };
 

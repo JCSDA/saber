@@ -82,7 +82,6 @@ class SpectralToGauss : public SaberOuterBlockBase {
   void invertMultiplyScalarFields(const atlas::FieldSet &, atlas::FieldSet &) const;
   void invertMultiplyVectorFields(const atlas::FieldSet &, atlas::FieldSet &) const;
 
-  Parameters_ params_;
   oops::Variables activeVars_;
   oops::Variables outerVars_;
   /// Whether to convert to and from u/v.

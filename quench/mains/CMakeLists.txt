@@ -18,6 +18,13 @@ ecbuild_add_executable( TARGET  saber_quench_error_covariance_toolbox.x
                                 ${gsibec_LIBRARIES}
                                 saber )
 
+ecbuild_add_executable( TARGET  saber_quench_process_perts.x
+                        SOURCES quenchProcessPerts.cc
+                        LIBS    quench
+                                ${vader_LIBRARIES}
+                                ${gsibec_LIBRARIES}
+                                saber )
+
 ecbuild_add_executable( TARGET  saber_quench_convertstate.x
                         SOURCES quenchConvertState.cc
                         LIBS    quench

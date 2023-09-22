@@ -73,13 +73,26 @@ class SaberOuterBlockChain {
     }
   }
 
+  /// @brief Adjoint multiplication or filter to outer blocks.
+  void applyOuterBlocksFilter(oops::FieldSet4D & fset) const {
+    for (size_t jtime = 0; jtime < fset.size(); ++jtime) {
+      for (const auto & outerBlocks : outerBlocks_) {
+        if (outerBlocks->filterMode()) {
+          outerBlocks->leftInverseMultiply(fset[jtime].fieldSet());
+        } else {
+          outerBlocks->multiplyAD(fset[jtime].fieldSet());
+        }
+      }
+    }
+  }
+
   /// @brief Left inverse multiply (used in calibration) by all outer blocks
   ///        except the ones that haven't implemented inverse yet.
   void leftInverseMultiply(atlas::FieldSet & fset) const {
     for (auto it = outerBlocks_.begin(); it != outerBlocks_.end(); ++it) {
       if (it->get()->skipInverse()) {
         oops::Log::info() << "Warning: left inverse multiplication skipped for block "
-                        << it->get()->blockName() << std::endl;
+                          << it->get()->blockName() << std::endl;
       } else {
         it->get()->leftInverseMultiply(fset);
       }
@@ -94,7 +107,7 @@ class SaberOuterBlockChain {
     for (auto it = outerBlocks_.begin(); it != std::prev(outerBlocks_.end()); ++it) {
       if (it->get()->skipInverse()) {
         oops::Log::info() << "Warning: left inverse multiplication skipped for block "
-                        << it->get()->blockName() << std::endl;
+                          << it->get()->blockName() << std::endl;
       } else {
         it->get()->leftInverseMultiply(fset);
       }
@@ -187,7 +200,6 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
                              ensembleConf,
                              ie,
                              fset);
-
           // Apply outer blocks inverse (except last)
           this->leftInverseMultiplyExceptLast(fset);
 

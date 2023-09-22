@@ -280,11 +280,11 @@ void GaussToCS::multiplyAD(atlas::FieldSet & fieldSet) const {
 
   // copy "passive variables"
   for (auto & fieldname : fieldSet.field_names()) {
-     if (activeVars_.has(fieldname)) {
-       csFieldSet.add(fieldSet[fieldname]);
-     } else {
-       newFields.add(fieldSet[fieldname]);
-     }
+    if (activeVars_.has(fieldname)) {
+      csFieldSet.add(fieldSet[fieldname]);
+    } else {
+      newFields.add(fieldSet[fieldname]);
+    }
   }
 
   // Create gauss fieldset
@@ -292,8 +292,8 @@ void GaussToCS::multiplyAD(atlas::FieldSet & fieldSet) const {
   for (const auto & fieldname : activeVars_.variables()) {
     atlas::Field gaussField =
       gaussFunctionSpace_.createField<double>(atlas::option::name(fieldname) |
-          atlas::option::levels(csFieldSet[fieldname].levels()) |
-          atlas::option::halo(1));
+            atlas::option::levels(csFieldSet[fieldname].levels()) |
+            atlas::option::halo(1));
     gaussFieldSet.add(gaussField);
   }
 

@@ -1,0 +1,44 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_gaussian
+    N: 15
+  groups:
+  - variables:
+    - streamfunction
+    - velocity_potential
+    - unbalanced_pressure
+    - moisture_control_variable
+    levels: 70
+  partitioner: ectrans
+  halo: 1
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables:
+  - streamfunction
+  - velocity_potential
+  - unbalanced_pressure
+  - moisture_control_variable
+saber filter blocks:
+  saber central block:
+    saber block name: ID
+  saber outer blocks:
+  - saber block name: spectral analytical filter
+    function:
+      horizontal daley length: 5008e3
+    normalize filter variance: false
+  - saber block name: spectral to gauss
+    filter mode: true # instead of running the adjoint code it runs the inverse
+date: '2010-01-01T12:00:00Z'
+input variables:
+- streamfunction
+- velocity_potential
+- unbalanced_pressure
+- moisture_control_variable
+input perturbations:
+- filepath: testdata/randomization_sqrtspectralb/randomized_gauss_mb1
+- filepath: testdata/randomization_sqrtspectralb/randomized_gauss_mb2
+low pass perturbations:
+  filepath: testdata/process_perts_from_gauss_perts_1/low_pass
+output perturbations:
+  filepath: testdata/process_perts_from_gauss_perts_1/high_pass

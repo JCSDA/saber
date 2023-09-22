@@ -295,7 +295,6 @@ SpectralToGauss::SpectralToGauss(const oops::GeometryData & outerGeometryData,
                                  const oops::FieldSet3D & xb,
                                  const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params),
-    params_(params),
     activeVars_(params.activeVariables.value().get_value_or(outerVars)),
     outerVars_(outerVars),
     useWindTransform_(outerVars_.has("eastward_wind") && outerVars_.has("northward_wind")),
@@ -538,14 +537,14 @@ void SpectralToGauss::multiplyAD(atlas::FieldSet & fieldSet) const {
     if (!activeVars_.has(fieldname)) {  // Passive variables
       newFields.add(fieldSet[fieldname]);
     } else if (fieldname == "eastward_wind" || fieldname == "northward_wind") {
-        // Active vector wind variables
-        windFieldSet.add(fieldSet[fieldname]);
+      // Active vector wind variables
+      windFieldSet.add(fieldSet[fieldname]);
     } else if (!useWindTransform_ || (fieldname != "vorticity" &&
                                      fieldname != "divergence" &&
                                      fieldname != "streamfunction" &&
                                      fieldname != "velocity_potential")) {
-        // Active scalar variables
-        gaussFieldSet.add(fieldSet[fieldname]);
+      // Active scalar variables
+      gaussFieldSet.add(fieldSet[fieldname]);
     }  // end if active variables
   }  // end for
 
