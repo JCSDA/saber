@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "eckit/config/Configuration.h"
+#include "eckit/exception/Exceptions.h"
 
 #include "oops/base/Geometry.h"
 #include "oops/base/Increment.h"
@@ -69,6 +70,9 @@ template <typename MODEL> class ErrorCovarianceToolboxParameters :
 
   /// Geometry parameters.
   oops::Parameter<bool> parallel{"parallel subwindows", true, this};
+
+  /// Outer variables parameters
+  oops::OptionalParameter<oops::Variables> incrementVars{"increment variables", this};
 
   /// Dirac location/variables parameters.
   oops::OptionalParameter<eckit::LocalConfiguration> dirac{"dirac", this};
@@ -181,7 +185,17 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
     const State4D_ xx(geom, params.background.value().toConfiguration(), *commTime);
 
     // Setup variables
-    const oops::Variables vars = xx.variables();
+    oops::Variables tmpVars = xx.variables();
+    if (params.incrementVars.value() != boost::none) {
+      const auto & incrementVars = params.incrementVars.value().value();
+      if (incrementVars <= tmpVars) {
+        tmpVars.intersection(incrementVars);
+      } else {
+        throw eckit::UserError("Increment variables should be a subset of background variables",
+                               Here());
+      }
+    }
+    const oops::Variables vars = tmpVars;
 
     // Setup time
     util::DateTime time = xx[0].validTime();

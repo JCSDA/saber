@@ -1,0 +1,18 @@
+Member 0: 
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L8x5
+- size: 40
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 0
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+Fields:
+  air_pressure: 9.7036420295944534e+00

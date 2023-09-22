@@ -1,0 +1,28 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 2
+  groups:
+  - variables:
+    - air_pressure
+    - air_pressure_levels_minus_one
+    levels: 2
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables:
+  - air_pressure
+  - air_pressure_levels_minus_one
+increment variables:
+- air_pressure
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: ID
+  randomization size: 1
+output perturbations:
+  mpi pattern: '%MPI%'
+  member pattern: '%MEM%'
+  filepath: testdata/%MPI%_pert_%MEM%
+test:
+  reference filename: testref/randomization_increment_variables.ref
