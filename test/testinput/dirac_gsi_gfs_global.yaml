@@ -34,15 +34,20 @@ geometry:
     - velocity_potential
     - air_temperature
     levels: 127
+  - variables:
+    - surface_pressure
+    levels: 1
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
   - stream_function
   - velocity_potential
   - air_temperature
+  - surface_pressure
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_gsi_gfs_global/%MPI%_dirac_%id%
 test:
   float relative tolerance: 1.5e-06
   reference filename: testref/dirac_gsi_gfs_global.ref
+  test output filename: testref/dirac_gsi_gfs_global.out
