@@ -29,7 +29,6 @@ saber filter blocks:
     filter mode: true # instead of running the adjoint code it runs the inverse
 date: '2010-01-01T12:00:00Z'
 input variables: *vars
-# note that we are pretending that increments generated from randomisation are states
 ensemble:
   members:
   - date: '2010-01-01T12:00:00Z'

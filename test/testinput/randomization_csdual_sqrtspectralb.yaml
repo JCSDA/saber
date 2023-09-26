@@ -39,7 +39,7 @@ background error:
     skip inverse test: true
     gauss grid uid: F45
     active variables: *vars
-output perturbations:
+output states:
   member pattern: '%MEM%'
   filepath: testdata/randomization_csdual_sqrtspectralb/randomized_csdual_mb%MEM%
 test:
