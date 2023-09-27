@@ -97,8 +97,11 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
   params.deserialize(config);
 
   // Local copy of background and first guess that can undergo interpolation
-  oops::FieldSet4D fsetXb(xb);
-  oops::FieldSet4D fsetFg(fg);
+  const oops::FieldSet4D fsetXbtmp(xb);
+  const oops::FieldSet4D fsetFgtmp(fg);
+
+  oops::FieldSet4D fsetXb = oops::copyFieldSet4D(fsetXbtmp);
+  oops::FieldSet4D fsetFg = oops::copyFieldSet4D(fsetFgtmp);
 
   // Extend background and first guess with geometry fields
   // TODO(Benjamin, Marek, Mayeul, ?)
