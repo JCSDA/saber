@@ -16,6 +16,7 @@
 
 #include "oops/base/FieldSet4D.h"
 #include "oops/interface/ModelData.h"
+#include "oops/util/ConfigHelpers.h"
 
 #include "saber/blocks/SaberBlockChainBase.h"
 #include "saber/blocks/SaberBlockParametersBase.h"
@@ -295,7 +296,7 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
 
         // Set member index
         eckit::LocalConfiguration outputMemberConf(outputEnsembleConf);
-        setMember(outputMemberConf, ie+1);
+        util::setMember(outputMemberConf, ie+1);
 
         // Write Increment
         dx->write(outputMemberConf);

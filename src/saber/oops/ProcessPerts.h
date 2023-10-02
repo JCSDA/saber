@@ -28,7 +28,6 @@
 #include "oops/base/State.h"
 #include "oops/base/State4D.h"
 #include "oops/base/StateEnsemble.h"
-#include "oops/base/StateWriter.h"
 #include "oops/base/Variables.h"
 #include "oops/mpi/mpi.h"
 #include "oops/runs/Application.h"
@@ -37,7 +36,6 @@
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/Logger.h"
 #include "oops/util/parameters/OptionalParameter.h"
-#include "oops/util/parameters/Parameter.h"
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
@@ -62,10 +60,8 @@ template <typename MODEL> class ProcessPertsParameters :
   typedef oops::ModelSpaceCovarianceParametersWrapper<MODEL> CovarianceParameters_;
 
   typedef typename oops::Geometry<MODEL>::Parameters_        GeometryParameters_;
-  typedef oops::StateParametersND<MODEL>                     StateParametersND_;
   typedef oops::State<MODEL>                                 State_;
   typedef oops::StateEnsembleParameters<MODEL>               StateEnsembleParameters_;
-  typedef oops::StateWriterParameters<State_>                StateWriterParameters_;
   typedef typename oops::Increment<MODEL>::ReadParameters_   IncrementReadParameters_;
   typedef typename oops::Increment<MODEL>::WriteParameters_  IncrementWriterParameters_;
   typedef ErrorCovarianceParameters<MODEL>                   ErrorCovarianceParameters_;
@@ -74,7 +70,7 @@ template <typename MODEL> class ProcessPertsParameters :
   oops::RequiredParameter<GeometryParameters_> geometry{"geometry", this};
 
   /// Background parameters.
-  oops::RequiredParameter<StateParametersND_> background{"background", this};
+  oops::RequiredParameter<eckit::LocalConfiguration> background{"background", this};
 
   oops::RequiredParameter<util::DateTime> date{"date", this};
   oops::RequiredParameter<oops::Variables> inputVariables{"input variables", this};
@@ -142,7 +138,7 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
     const Geometry_ geom(params.geometry, *commSpace, *commTime);
 
     // Setup background
-    const State4D_ xx(geom, params.background.value().toConfiguration(), *commTime);
+    const State4D_ xx(geom, params.background, *commTime);
     oops::FieldSet4D fsetXb(xx);
     oops::FieldSet4D fsetFg(xx);
 

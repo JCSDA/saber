@@ -41,22 +41,6 @@ oops::Variables getActiveVars(const SaberBlockParametersBase & params,
 
 // -----------------------------------------------------------------------------
 
-void setMember(eckit::LocalConfiguration & conf,
-               const int & member) {
-  oops::Log::trace() << "setMember starting" << std::endl;
-
-  if (conf.has("member pattern")) {
-    std::string memberPattern = conf.getString("member pattern");
-    util::seekAndReplace(conf, memberPattern, std::to_string(member));
-  } else {
-    conf.set("member", member);
-  }
-
-  oops::Log::trace() << "setMember done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
 void setMPI(eckit::LocalConfiguration & conf,
             const int & mpi) {
   oops::Log::trace() << "setMPI starting" << std::endl;

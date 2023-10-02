@@ -39,9 +39,6 @@ namespace saber {
 oops::Variables getActiveVars(const SaberBlockParametersBase &,
                               const oops::Variables &);
 
-void setMember(eckit::LocalConfiguration & conf,
-               const int & member);
-
 void setMPI(eckit::LocalConfiguration & conf,
             const int & mpi);
 
@@ -195,13 +192,15 @@ void readEnsembleMember(const oops::Geometry<MODEL> & geom,
   // Fill FieldSet
   size_t ensembleFound = 0;
 
+  const size_t myrank = geom.timeComm().rank();
+
   if (conf.has("ensemble")) {
     // Ensemble of states passed as increments
     oops::StateEnsembleParameters<MODEL> states;
     states.deserialize(conf.getSubConfiguration("ensemble"));
 
     // Read state
-    oops::State<MODEL> xx(geom, states.getStateParameters(ie));
+    oops::State<MODEL> xx(geom, states.getStateConfig(ie, myrank));
 
     // Copy FieldSet
     fset = util::copyFieldSet(xx.fieldSet());
@@ -232,8 +231,8 @@ void readEnsembleMember(const oops::Geometry<MODEL> & geom,
     ensemblePairsParams.deserialize(conf.getSubConfiguration("ensemble pairs"));
 
     // Read states
-    oops::State<MODEL> xxBase(geom, ensembleBaseParams.getStateParameters(ie));
-    oops::State<MODEL> xxPairs(geom, ensemblePairsParams.getStateParameters(ie));
+    oops::State<MODEL> xxBase(geom, ensembleBaseParams.getStateConfig(ie, myrank));
+    oops::State<MODEL> xxPairs(geom, ensemblePairsParams.getStateConfig(ie, myrank));
 
     // Compute difference
     oops::Increment<MODEL> dx(geom, vars, date);
