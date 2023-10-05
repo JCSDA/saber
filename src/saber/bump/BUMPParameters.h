@@ -682,7 +682,7 @@ class BUMPParameters : public oops::Parameters {
   // External parameters
 
   // Missing real value
-  oops::Parameter<double> msvalr{"msvalr", util::missingValue(double()), this};
+  oops::Parameter<double> msvalr{"msvalr", util::missingValue<double>(), this};
   // Grids
   oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> grids{"grids", this};
   // Input ATLAS files
