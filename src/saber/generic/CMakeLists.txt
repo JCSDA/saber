@@ -8,6 +8,10 @@ list(APPEND generic_src_files_list
 ID.h
 ID.cc
 
+# Duplicate Variables
+DuplicateVariables.cc
+DuplicateVariables.h
+
 # Ensemble block
 Ensemble.h
 Ensemble.cc
