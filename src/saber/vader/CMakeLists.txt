@@ -38,6 +38,8 @@ if ( oops_FOUND AND vader_FOUND )
     PressureParameters.h
     VertLoc.cc
     VertLoc.h
+    VertLocInterp.cc
+    VertLocInterp.h
     )
 endif()
 

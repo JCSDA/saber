@@ -50,7 +50,7 @@ namespace vader {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<VertLoc> makerVertLoc_("mo_vertical_localisation");
+static SaberOuterBlockMaker<VertLoc> makerVertLoc_("mo_vertical_localization");
 
 // -----------------------------------------------------------------------------
 
@@ -97,7 +97,7 @@ VertLoc::VertLoc(const oops::GeometryData & outerGeometryData,
   // Read localization files and perform computations on root PE
   const std::size_t root(0);
   if (innerGeometryData_.comm().rank() == root) {
-    // Read mean pressure values at theta levels
+    // Read mean pressure values at alternate vertical stagger to localizaton matrix
     auto Fld1 = atlas::Field(meanPressFieldName_,
               atlas::array::make_datatype<double>(),
               atlas::array::make_shape(nlevs_+1));
@@ -106,18 +106,18 @@ VertLoc::VertLoc(const oops::GeometryData & outerGeometryData,
 
     VertLoc::readPressVec(ncfilepath_, meanPressFieldName_, fv1);
 
-    std::vector<double> ptheta_bar_mean;
+    std::vector<double> p_bar_mean;
     for (int i = 0; i < nlevs_+1; ++i) {
-      ptheta_bar_mean.push_back(fv1(i));
+      p_bar_mean.push_back(fv1(i));
     }
 
     // Define an inner product W to weigh levels according to air mass
     std::vector<double> SqrtInnerProduct(nlevs_, 1.0);
-    if (*std::max_element(std::begin(ptheta_bar_mean),
-                          std::end(ptheta_bar_mean)) > 0.0) {
+    if (*std::max_element(std::begin(p_bar_mean),
+                          std::end(p_bar_mean)) > 0.0) {
       std::vector<double> InnerProduct(nlevs_, 1.0);
       for (int i = 0; i < nlevs_; ++i) {
-        InnerProduct[i] = ptheta_bar_mean[i] - ptheta_bar_mean[i+1];
+        InnerProduct[i] = p_bar_mean[i] - p_bar_mean[i+1];
       }
 
       const double SumInnerProduct = std::accumulate(InnerProduct.begin(),
@@ -134,7 +134,7 @@ VertLoc::VertLoc(const oops::GeometryData & outerGeometryData,
                         << std::endl;
     }
 
-    // Read localisation matrix C
+    // Read localization matrix C
     auto Fld = atlas::Field(locFieldName_,
               atlas::array::make_datatype<double>(),
               atlas::array::make_shape(nlevs_, nlevs_));
@@ -232,10 +232,10 @@ VertLoc::VertLoc(const oops::GeometryData & outerGeometryData,
       }
 
     } else {
-      oops::Log::error() << "Error    : No valid localisation matrix found in "
+      oops::Log::error() << "Error    : No valid localization matrix found in "
                          << locfilepath_
                          << std::endl;
-      throw eckit::Exception("No valid localisation matrix.", Here());
+      throw eckit::Exception("No valid localization matrix.", Here());
     }
   }
   innerGeometryData_.comm().broadcast(Umatrix_.data(), nmods_*nlevs_, root);

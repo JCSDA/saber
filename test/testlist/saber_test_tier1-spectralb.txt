@@ -6,7 +6,8 @@ dirac_spectralb_from_L15
 dirac_spectraltouv
 dirac_sqrtspectralb
 dirac_vertproj
-dirac_spectralb_horizontal_localization
+dirac_spectralb_localization_1
+dirac_spectralb_localization_2
 randomization_csdual_sqrtspectralb
 randomization_sqrtspectralb
 compare_diagnostics_sqrtspectralb

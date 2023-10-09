@@ -1,0 +1,101 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_gaussian
+    N: 12
+  groups:
+  - variables:
+    - var1
+    - var2
+    - var1_levels_minus_one
+    - var2_levels_minus_one
+    levels: 70
+  - variables:
+    - var1_levels
+    - var2_levels
+    - var3_levels
+    levels: 71
+  partitioner: ectrans
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables: &vars
+  - var1
+  - var2
+  - var1_levels_minus_one
+  - var2_levels_minus_one
+  - var1_levels
+  - var2_levels
+  - var3_levels
+background error:
+  covariance model: SABER
+  adjoint test: true
+  saber central block:
+    saber block name: ID
+  saber outer blocks:
+  - saber block name: spectral analytical filter
+    function:
+      horizontal daley length: 5008e3  # For localization to be 0.5 on 1st diagnostic point in theory
+  - saber block name: spectral to gauss
+  - saber block name: mo_vertical_localization
+    localization data:
+      localization matrix file name: testdata/Lv.nc
+      localization field name in file: Lv
+      pressure file name: testdata/ptheta_bar_mean.nc
+      pressure field name in pressure file: Ptheta_bar_Mean
+    number of vertical modes: 10
+  - saber block name: mo vertical interpolation for localization
+    inner vertical levels: 70
+    reproduce bug stagger definition: true
+dirac:
+  lon:
+  - 240.0
+  - 18.0
+  - 180.0
+  - 90.0
+  - 180.0
+  - 90.0
+  - 180.0
+  lat:
+  - 85.48
+  - 61.95
+  - 32.45
+  - 2.95
+  - 32.45
+  - 2.95
+  - 2.95
+  level:
+  - 65
+  - 70
+  - 1
+  - 65
+  - 1
+  - 65
+  - 71
+  variable: *vars
+diagnostic points:
+  lon:
+  - 240.0
+  - 198.0  # Test across pole.
+  - 90.0
+  - 60.0
+  lat:
+  - 32.45
+  - 67.85
+  - 32.45
+  - 2.95
+  level:
+  - 1
+  - 1
+  - 1
+  - 2
+  variable:
+  - var1
+  - var1_levels_minus_one
+  - var1_levels
+  - var2
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_spectralb_localization_2/%MPI%_dirac_%id%
+
+test:
+  reference filename: testref/dirac_spectralb_localization_2.ref

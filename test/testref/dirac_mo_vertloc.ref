@@ -16,7 +16,7 @@ Groups:
   Mask size: 100%
 Fields:
   potential_temperature: 1.0000000000000000e+00
-Adjoint test for block mo_vertical_localisation passed
+Adjoint test for block mo_vertical_localization passed
 Adjoint test for block ID passed
 Covariance(SABER) diagnostics:
 - Variances at Dirac points:

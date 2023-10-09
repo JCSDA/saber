@@ -58,7 +58,7 @@ class VertLocParameters : public SaberBlockParametersBase {
 };
 
 // -----------------------------------------------------------------------------
-/// \brief  This saber block applies a vertical localisation to active variables
+/// \brief  This saber block applies a vertical localization to active variables
 class VertLoc : public SaberOuterBlockBase {
  public:
   static const std::string classname() {return "saber::vader::VertLoc";}

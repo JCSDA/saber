@@ -17,7 +17,7 @@ background error:
     active variables:
     - potential_temperature
   saber outer blocks:
-  - saber block name: mo_vertical_localisation
+  - saber block name: mo_vertical_localization
     active variables:
     - potential_temperature
     localization data:
