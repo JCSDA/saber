@@ -43,6 +43,8 @@ background error:
       pressure file name: testdata/Prho_bar_Mean.nc
       pressure field name in pressure file: Prho_bar_Mean
     number of vertical modes: 10
+    renormalize to unit diagonal: true
+    output file name: testdata/dirac_spectralb_localization_1/vertical_localization.nc
   - saber block name: mo vertical interpolation for localization
     inner vertical levels: 70
 dirac:

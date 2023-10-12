@@ -43,6 +43,7 @@ background error:
       pressure file name: testdata/ptheta_bar_mean.nc
       pressure field name in pressure file: Ptheta_bar_Mean
     number of vertical modes: 10
+    reproduce bug non-unit diagonal: true  # To reproduce VAR behaviour
   - saber block name: mo vertical interpolation for localization
     inner vertical levels: 70
     reproduce bug stagger definition: true

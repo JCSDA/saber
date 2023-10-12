@@ -55,6 +55,8 @@ class VertLocParameters : public SaberBlockParametersBase {
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
   oops::RequiredParameter<int> truncation{"number of vertical modes", this};
   oops::OptionalParameter<std::string> outputFileName{"output file name", this};
+  oops::Parameter<bool> allowNonUnitDiagonal{"reproduce bug non-unit diagonal", false, this};
+  oops::Parameter<bool> renormalizeDiagonal{"renormalize to unit diagonal", false, this};
 };
 
 // -----------------------------------------------------------------------------

@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <memory>
 #include <numeric>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -143,8 +144,44 @@ VertLoc::VertLoc(const oops::GeometryData & outerGeometryData,
 
     VertLoc::readLocMat(locfilepath_, locFieldName_, fv);
 
-    Eigen::MatrixXd m = Eigen::MatrixXd::Zero(nlevs_, nlevs_);
+    // Check localization has unit diagonal
+    const bool enforceUnitDiagonal = !params.allowNonUnitDiagonal;
+    const bool renormalizeDiagonal = params.renormalizeDiagonal;
+    if (enforceUnitDiagonal) {
+      constexpr double absoluteTolerance = 1.0e-6;
+      for (int i = 0; i <nlevs_; ++i) {
+        if (std::abs(fv(i, i) - 1.0) > absoluteTolerance) {
+          std::stringstream message;
+          message << "The vertical localization matrix prescribed has a"
+                  << " non unit diagonal: " << i + 1<< "th element is "
+                  << std::setprecision(15) << fv(i, i) << ". ";
+          if (renormalizeDiagonal) {
+            oops::Log::info() << "Info     : " << message.str() << std::endl;
+            oops::Log::info() << "Info     : I now normalize by multiplying "
+                              << "associated row and column. " << std::endl;
+            const double normalization = std::sqrt(1.0 / fv(i, i));
+            for (int j = 0; j < nlevs_; ++j) {
+              fv(i, j) *= normalization;
+              fv(j, i) *= normalization;
+            }
+          } else {
+            oops::Log::error() << "Error    : " << message.str() << std::endl;
+            oops::Log::error() << "Error    : If you want to use it as such, add key `reproduce "
+                               << "bug non-unit diagonal: true` in the saber block configuration. "
+                               << std::endl;
+            oops::Log::error() << "Error    : If you want to perform an internal renormalization, "
+                               << "add key `renormalize to unit diagonal: true` "
+                               << "in the saber block configuration. "
+                               << std::endl;
+          throw eckit::UserError("Vertical localization matrix has non-unit diagonal in "
+                                 + classname(), Here());
+          }
+        }
+      }
+    }
 
+
+    Eigen::MatrixXd m = Eigen::MatrixXd::Zero(nlevs_, nlevs_);
     for (int i = 0; i < nlevs_; ++i) {
       for (int j = 0; j < nlevs_; ++j) {
         m(i, j) = fv(i, j);
