@@ -126,9 +126,7 @@ class Geometry : public util::Printable,
   size_t halo_;
   atlas::Grid grid_;
   std::string gridType_;
-  bool unstructuredGrid_;
   atlas::grid::Partitioner partitioner_;
-  atlas::grid::Distribution distribution_;
   atlas::Mesh mesh_;
   atlas::FunctionSpace functionSpace_;
   std::unordered_map<std::string, size_t> groupIndex_;

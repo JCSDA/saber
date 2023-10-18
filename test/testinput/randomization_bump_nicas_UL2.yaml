@@ -349,11 +349,12 @@ geometry:
     - -14.4869
     - 60.5478
     - -11.7037
+  partitioner: equal_regions
+  no point on last task: true
   groups:
   - variables:
     - stream_function
     levels: 2
-  no point on last task: true
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:

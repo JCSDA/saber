@@ -729,9 +729,7 @@ void Fields::print(std::ostream & os) const {
         }
       }
     }
-    if (geom_->functionSpace().type() != "PointCloud") {
-      geom_->getComm().allReduceInPlace(zz, eckit::mpi::sum());
-    }
+    geom_->getComm().allReduceInPlace(zz, eckit::mpi::sum());
     zz = sqrt(zz);
     os << prefix << "  " << var << ": " << zz;
   }

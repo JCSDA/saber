@@ -875,7 +875,7 @@ call mpl%f_comm%allgather(count(geom%myuniverse),proc_to_universe_size)
 call mpl%flush
 do iproc=1,mpl%nproc
    write(mpl%info,'(a10,a,i6,a,f6.2,a)') '','Task ',iproc,': ',hundred*real(proc_to_universe_size(iproc),kind_real) &
- & /real(mpl%nproc,kind_real),'%'
+ & /real(count(geom%proc_to_nc0a > 0),kind_real),'%'
    call mpl%flush
 end do
 
