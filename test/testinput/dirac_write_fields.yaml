@@ -1,0 +1,210 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_gaussian
+    N: 12
+  groups:
+  - variables:
+    - air_pressure
+    - air_pressure_levels_minus_one
+    - air_temperature
+    - cfeff
+    - cleff
+    - dlsvpdT
+    - dry_air_density_levels_minus_one
+    - eastward_wind
+    - exner
+    - exner_levels_minus_one
+    - geostrophic_pressure_levels_minus_one
+    - height
+    - ice_cloud_volume_fraction_in_atmosphere_layer
+    - liquid_cloud_volume_fraction_in_atmosphere_layer
+    - mass_content_of_cloud_liquid_water_in_atmosphere_layer
+    - mass_content_of_cloud_ice_in_atmosphere_layer
+    - mu
+    - muA
+    - muH1
+    - muRecipDeterminant
+    - muRow1Column1
+    - muRow1Column2
+    - muRow2Column1
+    - muRow2Column2
+    - m_ci
+    - m_cl
+    - m_r
+    - m_t
+    - m_v
+    - northward_wind
+    - potential_temperature
+    - qrain
+    - qsat
+    - qt
+    - rht
+    - specific_humidity
+    - streamfunction
+    - svp
+    - unbalanced_pressure_levels_minus_one
+    - velocity_potential
+    - virtual_potential_temperature
+    levels: 70
+  - variables:
+    - air_pressure_levels
+    - height_levels
+    - hydrostatic_exner_levels
+    - hydrostatic_pressure_levels
+    levels: 71
+  partitioner: ectrans
+  halo: 1
+
+background:
+  date: 2016-01-01T16:00:00Z
+  state variables:
+  - air_pressure
+  - air_pressure_levels
+  - air_pressure_levels_minus_one
+  - air_temperature
+  - cfeff
+  - cleff
+  - dlsvpdT
+  - dry_air_density_levels_minus_one
+  - eastward_wind
+  - exner
+  - exner_levels_minus_one
+  - geostrophic_pressure_levels_minus_one
+  - height
+  - height_levels
+  - hydrostatic_exner_levels
+  - hydrostatic_pressure_levels
+  - ice_cloud_volume_fraction_in_atmosphere_layer
+  - liquid_cloud_volume_fraction_in_atmosphere_layer
+  - mass_content_of_cloud_liquid_water_in_atmosphere_layer
+  - mass_content_of_cloud_ice_in_atmosphere_layer
+  - mu
+  - muA
+  - muH1
+  - muRecipDeterminant
+  - muRow1Column1
+  - muRow1Column2
+  - muRow2Column1
+  - muRow2Column2
+  - m_ci
+  - m_cl
+  - m_r
+  - m_t
+  - m_v
+  - northward_wind
+  - potential_temperature
+  - qrain
+  - qsat
+  - qt
+  - rht
+  - specific_humidity
+  - svp
+  - unbalanced_pressure_levels_minus_one
+  - virtual_potential_temperature
+  filepath: testdata/gauss_state
+
+background error:
+  covariance model: SABER
+  adjoint test: true
+  inverse test: true
+  # Small tolerances to illustrate local overriding in saber blocks:
+  adjoint tolerance: 1e-12
+  inverse tolerance: 1e-15
+  saber central block:
+    saber block name: spectral covariance
+    active variables:
+    - mu
+    - streamfunction
+    - unbalanced_pressure_levels_minus_one
+    - velocity_potential
+    read:
+      covariance_file: testdata/spectralcov.nc
+      umatrix_netcdf_names:
+      - MU_inc_Uv_matrix
+      - PSI_inc_Uv_matrix
+      - aP_inc_Uv_matrix
+      - CHI_inc_Uv_matrix
+  saber outer blocks:
+  # Write out fields for the final time
+  - saber block name: write fields
+    output path: testdata/dirac_write_fields
+    label: final
+    field names:
+    - eastward_wind
+    write xb: true
+    write fg: true
+    write multiply fset: true
+    write multiplyad fset: true
+    write leftinversemultiply fset: true
+  - saber block name: spectral to gauss
+    inner inverse tolerance: 1e-12
+    outer inverse tolerance: 1e-8
+    active variables:
+    - eastward_wind
+    - mu
+    - northward_wind
+    - streamfunction
+    - unbalanced_pressure_levels_minus_one
+    - velocity_potential
+  - saber block name: gauss winds to geostrophic pressure
+    skip inverse test: true
+  # Write out fields after the mo_hydrostatic_exner transform
+  - saber block name: write fields
+    output path: testdata/dirac_write_fields
+    label: after_mo_hydrostatic_exner
+    field names:
+    - eastward_wind
+    write xb: true
+    write fg: true
+    write multiply fset: true
+    write multiplyad fset: true
+    write leftinversemultiply fset: true
+  - saber block name: mo_hydrostatic_exner
+    inner inverse tolerance: 1e-13
+    outer inverse tolerance: 1e-9
+    inner variables to compare:
+      - unbalanced_pressure_levels_minus_one
+      - geostrophic_pressure_levels_minus_one
+    covariance data:
+      covariance file path: testdata/FPstats.nc
+      number of covariance latitude rings: 481
+      gp regression bins: 18
+    saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
+  - saber block name: mo_hydro_bal
+    saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
+    inner inverse tolerance: 1e-9  #TODO to be replaced by relative tolerance
+    outer variables to compare: [virtual_potential_temperature, air_pressure_levels_minus_one]
+    outer inverse tolerance: 1e-13
+  - saber block name: mo_moisture_control
+    inner inverse tolerance: 1e-13
+    outer inverse tolerance: 1e-4  #TODO to be replaced by relative tolerance
+    inner variables to compare:
+      - mu
+      - virtual_potential_temperature
+    covariance data:
+      covariance file path: testdata/MUstats.nc
+    saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
+  - saber block name: mo_air_temperature
+    skip inverse test: true
+  - saber block name: mo_moistincrop
+    inner variables to compare: [qt, air_temperature]
+    moisture incrementing operator file: testdata/MIO_coefficients.nc
+    saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
+  - saber block name: mo_dry_air_density
+    skip inverse test: true
+  # Write out fields for the first time
+  - saber block name: write fields
+    output path: testdata/dirac_write_fields
+    label: initial
+    field names:
+    - air_temperature
+    - eastward_wind
+    - northward_wind
+    write xb: true
+    write fg: true
+    write multiply fset: true
+    write multiplyad fset: true
+    write leftinversemultiply fset: true
+test:
+  reference filename: testref/dirac_write_fields.ref

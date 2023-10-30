@@ -23,6 +23,10 @@ Hybrid.cc
 # StdDev block
 StdDev.h
 StdDev.cc
+
+# Write selected fields to a netCDF file
+WriteFields.h
+WriteFields.cc
 )
 
 set( generic_src_files ${generic_src_files_list} PARENT_SCOPE )
