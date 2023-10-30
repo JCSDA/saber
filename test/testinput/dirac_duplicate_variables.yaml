@@ -12,7 +12,6 @@ geometry:
     - northward_wind
     - air_pressure
     levels: 70
-  partitioner: ectrans
 background:
   date: '2010-01-01T12:00:00Z'
   state variables: *vars
