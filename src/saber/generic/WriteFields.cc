@@ -67,10 +67,10 @@ void WriteFields::writeToFile(const atlas::FieldSet & fset,
   util::writeFieldSet(innerGeometryData_.comm(), conf, fsetwrite);
 
   // Output for validation.
-  oops::Log::test() << "Wrote file " << filepathnc << " with fields";
+  oops::Log::test() << "Wrote file " << filepathnc << " with fields:" << std::endl;
   for (const auto & field : fsetwrite) {
-    oops::Log::test() << " " << field.name() << " ("
-                      << util::normField(field, innerGeometryData_.comm()) << ")";
+    oops::Log::test() << "  " << field.name() << ": "
+                      << util::normField(field, innerGeometryData_.comm()) << std::endl;
   }
   oops::Log::test() << std::endl;
 }
