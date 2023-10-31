@@ -1561,8 +1561,10 @@ do idir=1,geom%ndir
    call nicas_blk%apply_sqrt(mpl,geom,cv_blk,fld,steps)
 
    ! Copy points
-   do ic0a=1,geom%nc0a
-      if (any(geom%inbdir(:,ic0a)==idir)) fld_tot(ic0a,:) = fld(ic0a,:)
+   do il0=1,geom%nl0
+      do ic0a=1,geom%nc0a
+         if (geom%inbdir(ic0a,il0)==idir) fld_tot(ic0a,il0) = fld(ic0a,il0)
+      end do
    end do
 end do
 

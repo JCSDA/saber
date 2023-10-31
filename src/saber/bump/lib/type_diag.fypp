@@ -684,7 +684,7 @@ type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
 integer :: idir,jdir,ig,jc0a,jl0,icmp
-real(kind_real) :: D11,D22,D12,disth,dx,dy,hnd,hor_dir,distv,vnd
+real(kind_real) :: D11,D22,D12,disth,dx,dy,hnd,hor_dir,distv,vnd,ver_dir
 real(kind_real),allocatable :: a_dir(:,:),rh_dir(:,:),H11_dir(:,:),H22_dir(:,:),H12_dir(:,:),rv_dir(:,:)
 
 ! Set name
@@ -757,51 +757,52 @@ if (nam%check_dirac) then
    end do
 
    ! Loop over grid-points
-   do jc0a=1,geom%nc0a
-      do idir=1,geom%nnbdir(jc0a)
-         jdir = geom%inbdir(idir,jc0a)
-         ig = nam%group_index(geom%ivdir(jdir))
-         if (geom%gmask_hor_c0a(jc0a)) then
-            do icmp=1,diag%blk(0,ig)%ncmp
-               ! Horizontal component
-               if (nam%nc4>1) then
-                  dx = geom%lon_c0a(jc0a)-geom%londir(jdir)
-                  dy = geom%lat_c0a(jc0a)-geom%latdir(jdir)
-                  call lonlatmod(dx,dy)
-                  dx = dx*cos(half*(geom%lat_c0a(jc0a)+geom%latdir(jdir)))
-                  hnd = sqrt(H11_dir(jdir,icmp)*dx**2+H22_dir(jdir,icmp)*dy**2+two*H12_dir(jdir,icmp)*dx*dy)
-               else
-                  call sphere_dist(geom%lon_c0a(jc0a),geom%lat_c0a(jc0a),geom%londir(jdir),geom%latdir(jdir),disth)
-                  if (rh_dir(jdir,icmp)>zero) then
-                     hnd = disth/rh_dir(jdir,icmp)
-                  elseif (disth>zero) then
-                     hnd = half*huge_real
+   do jl0=1,geom%nl0
+      do jc0a=1,geom%nc0a
+         if (geom%gmask_c0a(jc0a,jl0)) then
+            jdir = geom%inbdir(jc0a, jl0)
+            if (mpl%msv%isnot(jdir)) then
+               ig = nam%group_index(geom%ivdir(jdir))
+               do icmp=1,diag%blk(0,ig)%ncmp
+                  ! Horizontal contribution
+                  if (nam%nc4>1) then
+                     dx = geom%lon_c0a(jc0a)-geom%londir(jdir)
+                     dy = geom%lat_c0a(jc0a)-geom%latdir(jdir)
+                     call lonlatmod(dx,dy)
+                     dx = dx*cos(half*(geom%lat_c0a(jc0a)+geom%latdir(jdir)))
+                     hnd = sqrt(H11_dir(jdir,icmp)*dx**2+H22_dir(jdir,icmp)*dy**2+two*H12_dir(jdir,icmp)*dx*dy)
                   else
-                     hnd = zero
+                     call sphere_dist(geom%lon_c0a(jc0a),geom%lat_c0a(jc0a),geom%londir(jdir),geom%latdir(jdir),disth)
+                     if (rh_dir(jdir,icmp)>zero) then
+                        hnd = disth/rh_dir(jdir,icmp)
+                     elseif (disth>zero) then
+                        hnd = half*huge_real
+                     else
+                        hnd = zero
+                     end if
                   end if
-               end if
-               hor_dir = fit_func(mpl,'hor',hnd)
+                  hor_dir = fit_func(mpl,'hor',hnd)
 
-               do jl0=1,geom%nl0
-                  if (geom%gmask_c0a(jc0a,jl0)) then
-                     ! Vertical component
-                     if (nam%from_gsi) then
-                        distv = real(abs(jl0-geom%il0dir(jdir)),kind_real)
-                     else
-                        distv = abs(geom%vert_coordavg(jl0)-geom%vert_coordavg(geom%il0dir(jdir)))
-                     end if
-                     if (rv_dir(jdir,icmp)>zero) then
-                        vnd = distv/rv_dir(jdir,icmp)
-                     elseif (distv>zero) then
-                        vnd = huge_real
-                     else
-                        vnd = zero
-                     end if
-                     diag%dirac(jc0a,jl0,geom%ivdir(jdir)) = diag%dirac(jc0a,jl0,geom%ivdir(jdir)) &
- & +a_dir(jdir,icmp)*hor_dir*fit_func(mpl,'ver',vnd)
+                  ! Vertical contribution
+                  if (nam%from_gsi) then
+                     distv = real(abs(jl0-geom%il0dir(jdir)),kind_real)
+                  else
+                     distv = abs(geom%vert_coordavg(jl0)-geom%vert_coordavg(geom%il0dir(jdir)))
                   end if
+                  if (rv_dir(jdir,icmp)>zero) then
+                     vnd = distv/rv_dir(jdir,icmp)
+                  elseif (distv>zero) then
+                     vnd = huge_real
+                  else
+                     vnd = zero
+                  end if
+                  ver_dir = fit_func(mpl,'ver',vnd)
+
+                  ! Add component 
+                  diag%dirac(jc0a,jl0,geom%ivdir(jdir)) = diag%dirac(jc0a,jl0,geom%ivdir(jdir)) &
+ & +a_dir(jdir,icmp)*hor_dir*ver_dir
                end do
-            end do
+            end if
          end if
       end do
    end do

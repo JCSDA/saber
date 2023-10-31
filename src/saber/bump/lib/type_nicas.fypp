@@ -1567,7 +1567,7 @@ type(nam_type),intent(in) :: nam         !< Namelist
 type(geom_type),intent(in) :: geom       !< Geometry
 
 ! Local variables
-integer :: ic0a,idir
+integer :: idir,ic0a,il0
 real(kind_real),allocatable :: fld_c0a(:,:,:)
 
 ! Set name
@@ -1592,10 +1592,10 @@ do idir=1,geom%ndir
    call nicas%apply(mpl,nam,geom,fld_c0a)
 
    ! Copy points
-   do ic0a=1,geom%nc0a
-      if (any(geom%inbdir(:,ic0a)==idir)) then
-         nicas%dirac(ic0a,:,:) = fld_c0a(ic0a,:,:)
-      end if
+   do il0=1,geom%nl0
+      do ic0a=1,geom%nc0a
+         if (geom%inbdir(ic0a,il0)==idir) nicas%dirac(ic0a,il0,:) = fld_c0a(ic0a,il0,:)
+      end do
    end do
 end do
 

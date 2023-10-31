@@ -148,21 +148,21 @@
              Level  71 ~> -0.115E+02 vert. coord.
              Level  72 ~> -0.115E+02 vert. coord.
 Norm of input parameter gsi_ref - 1: 1.1608302132835185e+01
-       Factor 0.20, horizontal MSE:  0.58521958E+02 / vertical MSE:  0.15792563E+02 
-       Factor 0.30, horizontal MSE:  0.50002129E+02 / vertical MSE:  0.13001276E+02 
-       Factor 0.40, horizontal MSE:  0.40378901E+02 / vertical MSE:  0.10639742E+02 
-       Factor 0.50, horizontal MSE:  0.31099494E+02 / vertical MSE:  0.85765375E+01 
-       Factor 0.60, horizontal MSE:  0.22866841E+02 / vertical MSE:  0.71665609E+01 
-       Factor 0.70, horizontal MSE:  0.16143575E+02 / vertical MSE:  0.66522705E+01 <~ best vertical factor 
-       Factor 0.80, horizontal MSE:  0.11232907E+02 / vertical MSE:  0.70453574E+01 
-       Factor 0.90, horizontal MSE:  0.83274221E+01 / vertical MSE:  0.82681909E+01 
-       Factor 1.00, horizontal MSE:  0.75443982E+01 / vertical MSE:  0.10286294E+02 <~ best horizontal factor 
-       Factor 1.10, horizontal MSE:  0.89413808E+01 / vertical MSE:  0.13144424E+02 
-       Factor 1.20, horizontal MSE:  0.12549194E+02 / vertical MSE:  0.16898320E+02 
-       Factor 1.30, horizontal MSE:  0.18394021E+02 / vertical MSE:  0.21557637E+02 
-       Factor 1.40, horizontal MSE:  0.26502467E+02 / vertical MSE:  0.27100738E+02 
-       Factor 1.50, horizontal MSE:  0.36901215E+02 / vertical MSE:  0.33484471E+02 
-       Factor 1.60, horizontal MSE:  0.49604183E+02 / vertical MSE:  0.40606035E+02 
-       Factor 1.70, horizontal MSE:  0.64622861E+02 / vertical MSE:  0.48407722E+02 
-       Factor 1.80, horizontal MSE:  0.81953102E+02 / vertical MSE:  0.56761880E+02 
-Norm of output parameter dirac_diag_cor - 1: 1.1124088441441865e+01
+       Factor 0.20, horizontal MSE:  0.58521958E+02 / vertical MSE:  0.18139937E+02 
+       Factor 0.30, horizontal MSE:  0.50002129E+02 / vertical MSE:  0.16603203E+02 
+       Factor 0.40, horizontal MSE:  0.40378901E+02 / vertical MSE:  0.15285014E+02 
+       Factor 0.50, horizontal MSE:  0.31099494E+02 / vertical MSE:  0.13994002E+02 
+       Factor 0.60, horizontal MSE:  0.22866841E+02 / vertical MSE:  0.13041621E+02 
+       Factor 0.70, horizontal MSE:  0.16143575E+02 / vertical MSE:  0.12658467E+02 <~ best vertical factor 
+       Factor 0.80, horizontal MSE:  0.11232907E+02 / vertical MSE:  0.12872899E+02 
+       Factor 0.90, horizontal MSE:  0.83274221E+01 / vertical MSE:  0.13639164E+02 
+       Factor 1.00, horizontal MSE:  0.75443982E+01 / vertical MSE:  0.14886796E+02 <~ best horizontal factor 
+       Factor 1.10, horizontal MSE:  0.89407636E+01 / vertical MSE:  0.16550233E+02 
+       Factor 1.20, horizontal MSE:  0.12539167E+02 / vertical MSE:  0.18551360E+02 
+       Factor 1.30, horizontal MSE:  0.18346075E+02 / vertical MSE:  0.20822705E+02 
+       Factor 1.40, horizontal MSE:  0.26361068E+02 / vertical MSE:  0.23302198E+02 
+       Factor 1.50, horizontal MSE:  0.36579895E+02 / vertical MSE:  0.25948177E+02 
+       Factor 1.60, horizontal MSE:  0.48986198E+02 / vertical MSE:  0.28714813E+02 
+       Factor 1.70, horizontal MSE:  0.63561094E+02 / vertical MSE:  0.31578778E+02 
+       Factor 1.80, horizontal MSE:  0.80273165E+02 / vertical MSE:  0.34496060E+02 
+Norm of output parameter dirac_diag_cor - 1: 1.0551114307232288e+01

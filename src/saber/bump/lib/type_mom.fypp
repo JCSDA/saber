@@ -751,11 +751,6 @@ if (ie==1) then
    call mom%init(nam)
 end if
 
-! Check dirac distribution
-if (nam%check_dirac) then
-   if (any(geom%nnbdir>1)) call mpl%abort('${subr}$','dirac points on the same column')
-end if
-
 ! Halo extension
 do iv=1,nam%nv
    call samp%com_c0_AB%ext(mpl,fld_c0a(:,:,iv),fld_c0b(:,:,iv))
@@ -839,8 +834,8 @@ if (nam%check_dirac) then
    allocate(pert_c0a(geom%nc0a,geom%nl0,nam%nv))
 
    ! Get perturbation
-   do jc0a=1,geom%nc0a
-      do jl0=1,geom%nl0
+   do jl0=1,geom%nl0
+      do jc0a=1,geom%nc0a
          if (geom%gmask_c0a(jc0a,jl0)) pert_c0a(jc0a,jl0,:) = fld_c0a(jc0a,jl0,:)-mom%m1(jc0a,jl0,:)
       end do
    end do
@@ -854,18 +849,20 @@ if (nam%check_dirac) then
    ! Communication
    call mpl%f_comm%allreduce(wgt_dir,fckit_mpi_sum())
 
-   do jc0a=1,geom%nc0a
-      do jl0=1,geom%nl0
+   do jl0=1,geom%nl0
+      do jc0a=1,geom%nc0a
          if (geom%gmask_c0a(jc0a,jl0)) then
-            ! Update covariance
-            idir = geom%inbdir(1,jc0a)
-            mom%dirac(jc0a,jl0,:) = mom%dirac(jc0a,jl0,:)+fac5*wgt_dir(idir)*pert_c0a(jc0a,jl0,:)
+            idir = geom%inbdir(jc0a,jl0)
+            if (mpl%msv%isnot(idir)) then
+               ! Update covariance
+               mom%dirac(jc0a,jl0,:) = mom%dirac(jc0a,jl0,:)+fac5*wgt_dir(idir)*pert_c0a(jc0a,jl0,:)
 
-            ! Update variance
-            mom%m2(jc0a,jl0,:) = mom%m2(jc0a,jl0,:)+fac5*pert_c0a(jc0a,jl0,:)**2
+               ! Update variance
+               mom%m2(jc0a,jl0,:) = mom%m2(jc0a,jl0,:)+fac5*pert_c0a(jc0a,jl0,:)**2
 
-            ! Update mean
-            mom%m1(jc0a,jl0,:) = mom%m1(jc0a,jl0,:)+fac1*pert_c0a(jc0a,jl0,:)
+               ! Update mean
+               mom%m1(jc0a,jl0,:) = mom%m1(jc0a,jl0,:)+fac1*pert_c0a(jc0a,jl0,:)
+            end if
          end if
       end do
    end do
@@ -929,18 +926,22 @@ if (ie==mom%ne) then
       call mpl%f_comm%allreduce(wgt_dir,fckit_mpi_sum())
 
       ! Normalize
-      do jc0a=1,geom%nc0a
-         idir = geom%inbdir(1,jc0a)
-         do jl0=1,geom%nl0
+      do jl0=1,geom%nl0
+         do jc0a=1,geom%nc0a
             if (geom%gmask_c0a(jc0a,jl0)) then
-               do iv=1,nam%nv
-                  cor_norm = wgt_dir(idir)*mom%m2(jc0a,jl0,iv)
-                  if (cor_norm>zero) then
-                     mom%dirac(jc0a,jl0,iv) = mom%dirac(jc0a,jl0,iv)/sqrt(cor_norm)
-                  else
-                     mom%dirac(jc0a,jl0,iv) = mpl%msv%valr
-                  end if
-               end do
+               idir = geom%inbdir(jc0a,jl0)
+               if (mpl%msv%isnot(idir)) then
+                  do iv=1,nam%nv
+                     cor_norm = wgt_dir(idir)*mom%m2(jc0a,jl0,iv)
+                     if (cor_norm>zero) then
+                        mom%dirac(jc0a,jl0,iv) = mom%dirac(jc0a,jl0,iv)/sqrt(cor_norm)
+                     else
+                        mom%dirac(jc0a,jl0,iv) = mpl%msv%valr
+                     end if
+                  end do
+               else
+                  mom%dirac(jc0a,jl0,:) = mpl%msv%valr
+               end if
             else
                mom%dirac(jc0a,jl0,:) = mpl%msv%valr
             end if
@@ -1004,11 +1005,6 @@ end if
 
 ! Initialization
 call mom%init(nam)
-
-! Check dirac distribution
-if (nam%check_dirac) then
-   if (any(geom%nnbdir>1)) call mpl%abort('${subr}$','dirac points on the same column')
-end if
 
 ! Loop on sub-ensembles
 do isub=1,ens%nsub
@@ -1100,10 +1096,14 @@ do isub=1,ens%nsub
          call mpl%f_comm%allreduce(wgt_dir,fckit_mpi_sum())
 
          ! Covariance
-         do jc0a=1,geom%nc0a
-            idir = geom%inbdir(1,jc0a)
-            do jl0=1,geom%nl0
-              if (geom%gmask_c0a(jc0a,jl0)) mom%dirac(jc0a,jl0,:) = mom%dirac(jc0a,jl0,:)+wgt_dir(idir)*fld_c0a(jc0a,jl0,:)
+         do jl0=1,geom%nl0
+            do jc0a=1,geom%nc0a
+               if (geom%gmask_c0a(jc0a,jl0)) then
+                  idir = geom%inbdir(jc0a,jl0)
+                  if (mpl%msv%isnot(idir)) then
+                     mom%dirac(jc0a,jl0,:) = mom%dirac(jc0a,jl0,:)+wgt_dir(idir)*fld_c0a(jc0a,jl0,:)
+                  end if
+               end if
             end do
          end do
       end if
@@ -1166,18 +1166,22 @@ if (nam%check_dirac) then
    call mpl%f_comm%allreduce(wgt_dir,fckit_mpi_sum())
 
    ! Normalize
-   do jc0a=1,geom%nc0a
-      idir = geom%inbdir(1,jc0a)
-      do jl0=1,geom%nl0
+   do jl0=1,geom%nl0
+      do jc0a=1,geom%nc0a
          if (geom%gmask_c0a(jc0a,jl0)) then
-            do iv=1,nam%nv
-               cor_norm = wgt_dir(idir)*m2(jc0a,jl0,iv)
-               if (cor_norm>zero) then
-                  mom%dirac(jc0a,jl0,iv) = mom%dirac(jc0a,jl0,iv)*fac_norm_cov/sqrt(cor_norm)
-               else
-                  mom%dirac(jc0a,jl0,iv) = mpl%msv%valr
-               end if
-           end do
+            idir = geom%inbdir(jc0a,jl0)
+            if (mpl%msv%isnot(idir)) then
+               do iv=1,nam%nv
+                  cor_norm = wgt_dir(idir)*m2(jc0a,jl0,iv)
+                  if (cor_norm>zero) then
+                     mom%dirac(jc0a,jl0,iv) = mom%dirac(jc0a,jl0,iv)*fac_norm_cov/sqrt(cor_norm)
+                  else
+                     mom%dirac(jc0a,jl0,iv) = mpl%msv%valr
+                  end if
+               end do
+            else
+               mom%dirac(jc0a,jl0,:) = mpl%msv%valr
+            end if
          else
             mom%dirac(jc0a,jl0,:) = mpl%msv%valr
          end if

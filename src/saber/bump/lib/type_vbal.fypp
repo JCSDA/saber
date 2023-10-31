@@ -2470,7 +2470,7 @@ type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
-integer :: idir,ic0a
+integer :: idir,ic0a,il0
 real(kind_real) :: fld_c0a(geom%nc0a,geom%nl0,nam%nv)
 
 ! Set name
@@ -2491,10 +2491,10 @@ do idir=1,geom%ndir
    call vbal%apply(nam,geom,vbal%dirac)
 
    ! Copy points
-   do ic0a=1,geom%nc0a
-      if (any(geom%inbdir(:,ic0a)==idir)) then
-         vbal%dirac(ic0a,:,:) = fld_c0a(ic0a,:,:)
-      end if
+   do il0=1,geom%nl0
+      do ic0a=1,geom%nc0a
+         if (geom%inbdir(ic0a,il0)==idir) vbal%dirac(ic0a,il0,:) = fld_c0a(ic0a,il0,:)
+      end do
    end do
 end do
 

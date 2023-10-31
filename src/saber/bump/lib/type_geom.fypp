@@ -137,8 +137,7 @@ type geom_type
    integer,allocatable :: ic0adir(:)                  !< Dirac gridpoint
    integer,allocatable :: il0dir(:)                   !< Dirac level
    integer,allocatable :: ivdir(:)                    !< Dirac field index
-   integer,allocatable :: nnbdir(:)                   !< Number of neighboring diracs
-   integer,allocatable :: inbdir(:,:)                 !< Neighboring dirac indices
+   integer,allocatable :: inbdir(:,:)                 !< Neighboring dirac index
 
    ! I/O
    type(io_type) :: io                                !< Subset Sc0 I/O
@@ -252,7 +251,6 @@ if (allocated(geom%iprocdir)) deallocate(geom%iprocdir)
 if (allocated(geom%ic0adir)) deallocate(geom%ic0adir)
 if (allocated(geom%il0dir)) deallocate(geom%il0dir)
 if (allocated(geom%ivdir)) deallocate(geom%ivdir)
-if (allocated(geom%nnbdir)) deallocate(geom%nnbdir)
 if (allocated(geom%inbdir)) deallocate(geom%inbdir)
 
 ! Probe out
@@ -1242,9 +1240,10 @@ type(mpl_type),intent(inout) :: mpl    !< MPI data
 type(nam_type),intent(in) :: nam       !< Namelist
 
 ! Local variables
-integer :: idir,il0,ic0a,il0dir(nam%ndir),iprocdir(nam%ndir),ic0adir(nam%ndir)
-integer,allocatable :: nn_index(:)
-real(kind_real),allocatable :: nn_dist(:)
+integer :: idir,il0,ic0a,idir_2d,ndir_2d,jl0
+integer :: il0dir(nam%ndir),iprocdir(nam%ndir),ic0adir(nam%ndir)
+integer,allocatable :: nn_index(:),distv(:),order(:,:),inbdir(:),idir_2dto3d(:)
+real(kind_real),allocatable :: londir_2d(:),latdir_2d(:)
 logical :: valid(nam%ndir)
 type(tree_type) :: tree_dirac
 
@@ -1253,6 +1252,12 @@ type(tree_type) :: tree_dirac
 
 ! Probe in
 @:probe_in()
+
+! Allocation
+allocate(geom%inbdir(geom%nc0a,geom%nl0))
+
+! Initialization
+geom%inbdir = mpl%msv%vali
 
 if (nam%check_dirac.and.(nam%ndir>0)) then
    write(mpl%info,'(a7,a)') '','Setup Dirac parameters'
@@ -1279,10 +1284,6 @@ if (nam%check_dirac.and.(nam%ndir>0)) then
    allocate(geom%ic0adir(geom%ndir))
    allocate(geom%il0dir(geom%ndir))
    allocate(geom%ivdir(geom%ndir))
-   allocate(geom%nnbdir(geom%nc0a))
-   allocate(geom%inbdir(geom%ndir,geom%nc0a))
-   allocate(nn_index(geom%ndir))
-   allocate(nn_dist(geom%ndir))
 
    ! Add valid dirac points
    geom%ndir = 0
@@ -1309,35 +1310,85 @@ if (nam%check_dirac.and.(nam%ndir>0)) then
    call mpl%f_comm%allreduce(geom%londir,fckit_mpi_sum())
    call mpl%f_comm%allreduce(geom%latdir,fckit_mpi_sum())
 
-   ! Create tree
-   call tree_dirac%alloc(mpl,geom%ndir)
-   call tree_dirac%init(geom%londir,geom%latdir)
+   ! Horizontal affectation
+   do il0=1,geom%nl0
+      ! Get number of Dirac points for this level
+      ndir_2d = count(geom%il0dir==il0)
 
-   ! Affect each horizontal point to a dirac point
-   geom%inbdir = mpl%msv%vali
+      if (ndir_2d>0) then
+         ! Allocation
+         allocate(londir_2d(ndir_2d))
+         allocate(latdir_2d(ndir_2d))
+         allocate(nn_index(ndir_2d))
+         allocate(idir_2dto3d(ndir_2d))
+
+         ! Initialization
+         idir_2d = 0
+         do idir=1,geom%ndir
+            if (geom%il0dir(idir)==il0) then
+               idir_2d = idir_2d+1
+               londir_2d(idir_2d) = geom%londir(idir)
+               latdir_2d(idir_2d) = geom%latdir(idir)
+               idir_2dto3d(idir_2d) = idir
+            end if
+         end do
+
+         ! Create tree
+         call tree_dirac%alloc(mpl,ndir_2d)
+         call tree_dirac%init(londir_2d,latdir_2d)
+
+         ! Affect each horizontal point to a dirac point
+         do ic0a=1,geom%nc0a
+            call tree_dirac%find_nearest_neighbors(geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),ndir_2d,nn_index)
+            geom%inbdir(ic0a,il0) = idir_2dto3d(nn_index(1))
+         end do
+
+         ! Release memory
+         deallocate(londir_2d)
+         deallocate(latdir_2d)
+         deallocate(nn_index)
+         deallocate(idir_2dto3d)
+         call tree_dirac%dealloc
+      end if
+   end do
+
+   ! Allocation
+   allocate(distv(geom%nl0))
+   allocate(order(geom%nl0,geom%nl0))
+   allocate(inbdir(geom%nl0))
+
+   ! Compute vertical distances
+   order = mpl%msv%vali
+   do il0=1,geom%nl0
+      if (all(geom%il0dir/=il0)) then
+         do jl0=1,geom%nl0
+            distv(jl0) = abs(geom%vert_coordavg(il0)-geom%vert_coordavg(jl0))
+         end do
+         call qsort(geom%nl0,distv,order(:,il0))
+      end if
+   end do
+
+   ! Vertical affectation
    do ic0a=1,geom%nc0a
-      call tree_dirac%find_nearest_neighbors(geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),geom%ndir,nn_index,nn_dist)
-      geom%nnbdir(ic0a) = 1
-      geom%inbdir(geom%nnbdir(ic0a),ic0a) = nn_index(1)
-      do idir=2,geom%ndir
-         if (indist(geom%londir(idir),geom%londir(1)).and.indist(geom%latdir(idir),geom%latdir(1))) then
-            geom%nnbdir(ic0a) = geom%nnbdir(ic0a)+1
-            geom%inbdir(geom%nnbdir(ic0a),ic0a) = nn_index(idir)
-         else
-            exit
-         end if
+      ! Copy profile
+      inbdir = geom%inbdir(ic0a,:)
+      do il0=1,geom%nl0
+         jl0 = 1
+         do while(mpl%msv%is(geom%inbdir(ic0a,il0)))
+            ! Affect point
+            if (mpl%msv%isnot(inbdir(order(jl0,il0)))) geom%inbdir(ic0a,il0) = inbdir(order(jl0,il0))
+            jl0 = jl0+1
+         end do
       end do
    end do
 
    ! Release memory
-   deallocate(nn_index)
-   deallocate(nn_dist)
-   call tree_dirac%dealloc
+   deallocate(distv)
+   deallocate(order)
+   deallocate(inbdir)
 else
    ! No dirac
-   allocate(geom%nnbdir(geom%nc0a))
    geom%ndir = 0
-   geom%nnbdir = 0
 end if
 
 ! Probe out
