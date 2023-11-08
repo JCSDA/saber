@@ -29,9 +29,20 @@ IDCentral::IDCentral(const oops::GeometryData & geometryData,
                      const oops::FieldSet3D & fg) :
     SaberCentralBlockBase(params),
     geometryData_(geometryData),
-    activeVars_(activeVars)
+    activeVars_(activeVars),
+    ctlVecSize_(0)
 {
   oops::Log::trace() << classname() << "::IDCentral starting" << std::endl;
+
+  // Compute total number of levels
+  size_t nlev = 0;
+  for (const std::string & var : activeVars.variables()) {
+    nlev += activeVars.getLevels(var);
+  }
+
+  // Compute control vector size
+  ctlVecSize_ = nlev*geometryData_.functionSpace().size();
+
   oops::Log::trace() << classname() << "::IDCentral done" << std::endl;
 }
 
@@ -61,6 +72,52 @@ void IDCentral::randomize(atlas::FieldSet & fset) const {
   }
 
   oops::Log::trace() << classname() << "::randomize done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void IDCentral::multiplySqrt(const atlas::Field & cv,
+                             atlas::FieldSet & fset,
+                             const size_t & offset) const {
+  oops::Log::trace() << classname() << "::multiplySqrt starting" << std::endl;
+
+  // Copy from control vector to fieldset
+  size_t index = offset;
+  const auto cvView = atlas::array::make_view<double, 1>(cv);
+  for (auto & field : fset) {
+    auto view = atlas::array::make_view<double, 2>(field);
+    for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+      for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+        view(jnode, jlevel) = cvView(index);
+        ++index;
+      }
+    }
+  }
+
+  oops::Log::trace() << classname() << "::multiplySqrt done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void IDCentral::multiplySqrtAD(const atlas::FieldSet & fset,
+                               atlas::Field & cv,
+                               const size_t & offset) const {
+  oops::Log::trace() << classname() << "::multiplySqrtAD starting" << std::endl;
+
+  // Copy from fieldset to control vector
+  size_t index = offset;
+  auto cvView = atlas::array::make_view<double, 1>(cv);
+  for (const auto & field : fset) {
+    const auto view = atlas::array::make_view<double, 2>(field);
+    for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+      for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+        cvView(index) = view(jnode, jlevel);
+        ++index;
+      }
+    }
+  }
+
+  oops::Log::trace() << classname() << "::multiplySqrtAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

@@ -81,6 +81,9 @@ class BUMP {
   void multiplyNicas(atlas::FieldSet &) const;
   void multiplyPsiChiToUV(atlas::FieldSet &) const;
   void multiplyPsiChiToUVAd(atlas::FieldSet &) const;
+  size_t getCvSize() const;
+  void multiplyNicasSqrt(const atlas::Field &, atlas::FieldSet &, const size_t &) const;
+  void multiplyNicasSqrtAd(const atlas::FieldSet &, atlas::Field &, const size_t &) const;
 
  private:
   std::vector<int> keyBUMP_;

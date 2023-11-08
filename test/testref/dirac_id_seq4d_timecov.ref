@@ -97,8 +97,8 @@ Groups:
   - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.0556782622390266e+01
-  velocity_potential: 4.0694714395579275e+01
+  stream_function: 4.0899866276594516e+01
+  velocity_potential: 4.0616497024838942e+01
 Valid time:2010-01-01T18:00:00Z
 Quench geometry grid:
 - name: F10
@@ -115,5 +115,5 @@ Groups:
   - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.1171796762738779e+01
-  velocity_potential: 4.1080595109727270e+01
+  stream_function: 4.0899866276594516e+01
+  velocity_potential: 4.0616497024838942e+01

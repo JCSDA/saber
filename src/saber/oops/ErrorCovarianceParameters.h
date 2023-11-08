@@ -78,6 +78,10 @@ class ErrorCovarianceParameters : public oops::ModelSpaceCovarianceParametersBas
   // Inverse test
   oops::Parameter<bool> inverseTest{"inverse test", false, this};
   oops::Parameter<double> inverseTolerance{"inverse tolerance", 1.0e-12, this};
+
+  // Square-root test
+  oops::Parameter<bool> sqrtTest{"square-root test", false, this};
+  oops::Parameter<double> sqrtTolerance{"square-root tolerance", 1.0e-12, this};
 };
 
 // -----------------------------------------------------------------------------

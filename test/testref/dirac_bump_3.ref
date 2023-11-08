@@ -75,6 +75,7 @@ Adjoint test for block BUMP_StdDev passed
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
 Adjoint test for block BUMP_NICAS passed
+Square-root test for block BUMP_NICAS passed
 Norm of input parameter inflation: 5.7319844819175479e+01
 Norm of input parameter StdDev: 5.3046693215269315e+01
        Independent levels:  1[2]
@@ -86,7 +87,9 @@ Norm of input parameter StdDev: 5.3046693215269315e+01
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
+Square-root test for block BUMP_NICAS passed
 Adjoint test for block Ensemble passed
+Square-root test for block Ensemble passed
 Covariance(SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:

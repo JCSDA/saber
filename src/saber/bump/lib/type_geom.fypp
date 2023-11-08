@@ -1832,7 +1832,7 @@ else
 
                if (valid) then
                   ! Find nearest neighbor in universe
-                  call tree_cxu%find_nearest_neighbors(lonlat(1),lonlat(2),1,nn_index)
+                  call tree_cxu%find_nearest_neighbors(lonlat(1),lonlat(2),1,nn_index(1:1))
                   icxa = cxu_to_cxa(nn_index(1))
 
                   ! Keep valid points on each processor

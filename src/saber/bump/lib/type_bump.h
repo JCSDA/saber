@@ -43,6 +43,10 @@ extern "C" {
   void bump_apply_stddev_inv_f90(const int &, const atlas::field::FieldSetImpl *);
   void bump_apply_nicas_f90(const int &, const atlas::field::FieldSetImpl *);
   void bump_get_cv_size_f90(const int &, int &);
+  void bump_apply_nicas_sqrt_f90(const int &, const atlas::field::FieldImpl *,
+                                 const atlas::field::FieldSetImpl *, const int &);
+  void bump_apply_nicas_sqrt_ad_f90(const int &, const atlas::field::FieldSetImpl *,
+                                    const atlas::field::FieldImpl *, const int &);
   void bump_randomize_f90(const int &, const atlas::field::FieldSetImpl *);
   void bump_psichi_to_uv_f90(const int &, const atlas::field::FieldSetImpl *);
   void bump_psichi_to_uv_ad_f90(const int &, const atlas::field::FieldSetImpl *);

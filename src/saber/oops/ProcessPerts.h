@@ -160,7 +160,12 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
     const IncrementWriteParameters_ & incrementsWriteParams =
       params.outputPerturbations;
 
-    const oops::Variables incvars = params.inputVariables;
+    // Increment variables
+    oops::Variables incVars = params.inputVariables;
+    const std::vector<std::size_t> vlevs = geom.variableSizes(incVars);
+    for (std::size_t i = 0; i < vlevs.size() ; ++i) {
+      incVars.addMetaData(incVars[i], "levels", vlevs[i]);
+    }
 
     std::vector<atlas::FieldSet> fsetEns;
     std::vector<atlas::FieldSet> dualResolutionFsetEns;
@@ -168,12 +173,13 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
     covarConf.set("iterative ensemble loading", false);
     covarConf.set("inverse test", false);
     covarConf.set("adjoint test", false);
+    covarConf.set("square-root test", false);
     covarConf.set("covariance model", "SABER");
     covarConf.set("time covariance", "");
 
     // Initialize filter blockchain
     saberFilterBlocks = std::make_unique<SaberParametricBlockChain>(geom, geom,
-      incvars, fsetXb, fsetFg, fsetEns, dualResolutionFsetEns,
+      incVars, fsetXb, fsetFg, fsetEns, dualResolutionFsetEns,
       covarConf, filterCovarianceBlockConf);
 
     int nincrements(0);
@@ -192,7 +198,7 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
     }
 
     // create ensemble mean states if states are read in
-    State_ meanState(geom, incvars, time);
+    State_ meanState(geom, incVars, time);
     meanState.zero();
     if (ensembleParams != boost::none) {
       nincrements = (*ensembleParams).size();
@@ -211,7 +217,7 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
     //  Loop over perturbations
     for (int jm = 0; jm < nincrements; ++jm) {
       //  Read ensemble member perturbations
-      Increment_ dxI(geom, incvars, time);
+      Increment_ dxI(geom, incVars, time);
 
       if (incrementsReadParams != boost::none) {
         dxI.read((*incrementsReadParams)[jm]);
@@ -229,7 +235,7 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
       saberFilterBlocks->filter(fset4dDx);
 
       if (lowpassPerturbations != boost::none) {
-        Increment_ dxLowPass(geom, incvars, time);
+        Increment_ dxLowPass(geom, incVars, time);
         dxLowPass.zero();
         dxLowPass.fromFieldSet(fset4dDx[0].fieldSet());
 
@@ -243,7 +249,7 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
       fset4dDxI += fset4dDx;
 
       // Write #Filtered.
-      Increment_ dxO(geom, incvars, time);
+      Increment_ dxO(geom, incVars, time);
       dxO.zero();
       dxO.fromFieldSet(fset4dDxI[0].fieldSet());
 

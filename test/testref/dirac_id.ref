@@ -17,6 +17,8 @@ Groups:
 Fields:
   stream_function: 1.0000000000000000e+00
   velocity_potential: 0.0000000000000000e+00
+Adjoint test for block ID passed
+Square-root test for block ID passed
 Covariance(SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -36,6 +38,8 @@ Groups:
 Fields:
   stream_function: 1.0000000000000000e+00
   velocity_potential: 0.0000000000000000e+00
+Adjoint test for block ID passed
+Square-root test for block ID passed
 Randomized variance: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -53,5 +57,5 @@ Groups:
   - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.0899866276594516e+01
-  velocity_potential: 4.0616497024838942e+01
+  stream_function: 4.0913457556747154e+01
+  velocity_potential: 4.0661973152712200e+01

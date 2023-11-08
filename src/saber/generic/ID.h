@@ -50,9 +50,14 @@ class IDCentral : public SaberCentralBlockBase {
   void randomize(atlas::FieldSet &) const override;
   void multiply(atlas::FieldSet &) const override;
 
+  size_t ctlVecSize() const override {return ctlVecSize_;}
+  void multiplySqrt(const atlas::Field &, atlas::FieldSet &, const size_t &) const override;
+  void multiplySqrtAD(const atlas::FieldSet &, atlas::Field &, const size_t &) const override;
+
  private:
   const oops::GeometryData & geometryData_;
   const oops::Variables activeVars_;
+  size_t ctlVecSize_;
   void print(std::ostream &) const override;
 };
 

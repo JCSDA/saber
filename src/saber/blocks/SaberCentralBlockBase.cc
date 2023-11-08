@@ -30,6 +30,7 @@
 #include "oops/util/parameters/RequiredParameter.h"
 #include "oops/util/parameters/RequiredPolymorphicParameter.h"
 #include "oops/util/Printable.h"
+#include "oops/util/Random.h"
 
 #include "saber/blocks/SaberBlockParametersBase.h"
 
@@ -126,6 +127,90 @@ void SaberCentralBlockBase::adjointTest(const oops::GeometryData & geometryData,
   }
 
   oops::Log::trace() << "SaberCentralBlockBase::adjointTest done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void SaberCentralBlockBase::sqrtTest(const oops::GeometryData & geometryData,
+                                     const oops::Variables & vars,
+                                     const double & sqrtTolerance) const {
+  oops::Log::trace() << "SaberOuterBlockBase::sqrtTest starting" << std::endl;
+
+  // Square-root test
+
+  // Create FieldSet
+  atlas::FieldSet fset = util::createRandomFieldSet(geometryData.comm(),
+                                                    geometryData.functionSpace(),
+                                                    vars);
+
+  // Copy FieldSet
+  atlas::FieldSet fsetSave = util::copyFieldSet(fset);
+
+  // Create control vector
+  oops::Log::info() << "Control vector size for block " << this->blockName() << ": "
+                      << ctlVecSize() << std::endl;
+  atlas::Field ctlVec = atlas::Field("genericCtlVec",
+                                     atlas::array::make_datatype<double>(),
+                                     atlas::array::make_shape(ctlVecSize()));
+  size_t seed = 7;  // To avoid impact on future random generator calls
+  util::NormalDistribution<double> dist(ctlVecSize(), 0.0, 1.0, seed);
+  auto view = atlas::array::make_view<double, 1>(ctlVec);
+  for (size_t jnode = 0; jnode < ctlVecSize(); ++jnode) {
+    view(jnode) = dist[jnode];
+  }
+
+  // Copy control vector
+  atlas::Field ctlVecSave = atlas::Field("genericCtlVec",
+                                         atlas::array::make_datatype<double>(),
+                                         atlas::array::make_shape(ctlVecSize()));
+  auto viewSave = atlas::array::make_view<double, 1>(ctlVecSave);
+  viewSave.assign(view);
+
+  // Apply square-root multiplication
+  this->multiplySqrt(ctlVecSave, fset, 0);
+
+  // Apply square-root adjoint multiplication
+  this->multiplySqrtAD(fsetSave, ctlVec, 0);
+
+  // Compute adjoint test
+  const double dp1 = util::dotProductFieldSets(fset,
+                                               fsetSave,
+                                               vars.variables(),
+                                               geometryData.comm());
+  double dp2 = 0.0;
+  for (size_t jnode = 0; jnode < ctlVecSize(); ++jnode) {
+      dp2 += view(jnode)*viewSave(jnode);
+  }
+  geometryData.comm().allReduceInPlace(dp2, eckit::mpi::sum());
+  oops::Log::info() << std::setprecision(16) << "Info     : Square-root test: y^t (Ux) = " << dp1
+                    << ": x^t (U^t y) = " << dp2 << " : square-root tolerance = "
+                    << sqrtTolerance << std::endl;
+  const bool adjComparison = (std::abs(dp1-dp2)/std::abs(0.5*(dp1+dp2)) < sqrtTolerance);
+
+  // Apply square-root multiplication
+  this->multiplySqrt(ctlVec, fset, 0);
+
+  // Apply full multiplication
+  this->multiply(fsetSave);
+
+  // Check that the fieldsets are similar within tolerance
+  const bool sqrtComparison = util::compareFieldSets(fset, fsetSave, sqrtTolerance, false);
+  if (sqrtComparison) {
+    oops::Log::info() << "Info     : Square-root test passed: U U^t x == B x" << std::endl;
+  } else {
+    oops::Log::info() << "Info     : Square-root test failed: U U^t x != B x" << std::endl;
+  }
+
+  // Print results
+  oops::Log::test() << "Square-root test for block " << this->blockName();
+  if (adjComparison && sqrtComparison) {
+    oops::Log::test() << " passed" << std::endl;
+  } else {
+    oops::Log::test() << " failed" << std::endl;
+    throw eckit::Exception("Square-root test failure for block " + this->blockName(), Here());
+  }
+
+  oops::Log::trace() << "SaberOuterBlockBase::sqrtTest done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

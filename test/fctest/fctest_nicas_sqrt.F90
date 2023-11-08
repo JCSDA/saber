@@ -27,7 +27,8 @@ END_TESTSUITE_FINALIZE
 ! -----------------------------------------------------------------------------
 
 TEST( test_interpolatorbump )
-  use atlas_module, only: atlas_fieldset,atlas_structuredgrid,atlas_functionspace,atlas_functionspace_structuredcolumns
+  use atlas_module, only: atlas_real,atlas_fieldset,atlas_field, &
+ & atlas_structuredgrid,atlas_functionspace,atlas_functionspace_structuredcolumns
   use fckit_configuration_module, only: fckit_configuration
   use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum
   use tools_kinds, only: kind_real
@@ -42,12 +43,14 @@ TEST( test_interpolatorbump )
   integer :: n,nmga_out
   integer,dimension(2),parameter :: var2d_int = (/0,0/)
   real(kind_real) :: dp_in,dp_out
-  real(kind_real),allocatable :: cv_1(:),cv_2(:),array_out_1(:,:,:),array_out_2(:,:,:)
+  real(kind_real),pointer :: ptr_1(:),ptr_2(:)
+  real(kind_real),allocatable :: array_out_1(:,:,:),array_out_2(:,:,:)
   logical,allocatable :: gmask_out(:,:)
   logical,dimension(2),parameter :: var2d = (/.false.,.false./)
   character(len=4),dimension(2),parameter :: variables = (/'var1','var2'/)
   character(len=5),parameter :: lev2d = 'first'
   type(fckit_mpi_comm) :: f_comm
+  type(atlas_field) :: cv_1,cv_2
   type(atlas_structuredgrid) :: grid_out
   type(atlas_functionspace) :: fspace_out
   type(atlas_functionspace_structuredcolumns) :: fspace_out_sc
@@ -100,10 +103,12 @@ TEST( test_interpolatorbump )
   call bump%get_cv_size(n)
 
   ! Initialize control variables
-  allocate(cv_1(n))
-  allocate(cv_2(n))
-  call bump%rng%rand_gau(cv_1)
-  cv_2 = cv_1
+  cv_1 = atlas_field("cv1", atlas_real(kind_real), (/n/))
+  cv_2 = atlas_field("cv2", atlas_real(kind_real), (/n/))
+  call cv_1%data(ptr_1)
+  call cv_2%data(ptr_2)
+  call bump%rng%rand_gau(ptr_1)
+  ptr_2 = ptr_1
 
   ! Create output fieldset
   fspace_out_sc = atlas_functionspace_structuredcolumns(fspace_out%c_ptr())
@@ -122,14 +127,14 @@ TEST( test_interpolatorbump )
   call fset_out_2%from_array(bump%mpl,array_out_2)
 
   ! Apply NICAS square-root
-  call bump%apply_nicas_sqrt(cv_1,fset_out_1)
+  call bump%apply_nicas_sqrt(cv_1,fset_out_1,0)
 
   ! Apply adjoint NICAS square-root
-  call bump%apply_nicas_sqrt_ad(fset_out_2,cv_2)
+  call bump%apply_nicas_sqrt_ad(fset_out_2,cv_2,0)
 
   ! Adjoint test
   call fset_out_1%to_array(bump%mpl,array_out_1)
-  dp_in = sum(cv_1*cv_2)
+  dp_in = sum(ptr_1*ptr_2)
   dp_out = sum(array_out_1*array_out_2)
   call bump%mpl%f_comm%allreduce(dp_in,fckit_mpi_sum())
   call bump%mpl%f_comm%allreduce(dp_out,fckit_mpi_sum())

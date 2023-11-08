@@ -14,6 +14,8 @@
 
 #include "atlas/field.h"
 
+#include "eckit/mpi/Comm.h"
+
 #include "oops/base/Variables.h"
 
 #include "saber/spectralb/spectralbParameters.h"

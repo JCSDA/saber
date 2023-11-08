@@ -26,7 +26,9 @@ Norm of input parameter StdDev: 4.0693857173965277e+01
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
+Square-root test for block BUMP_NICAS passed
 Adjoint test for block Ensemble passed
+Square-root test for block Ensemble passed
 Covariance(SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:

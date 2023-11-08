@@ -17,7 +17,7 @@ Groups:
 Fields:
   stream_function: 1.0000000000000000e+00
   velocity_potential: 0.0000000000000000e+00
-Norm of input parameter StdDev: 5.7530746965415659e+01
+Norm of input parameter StdDev: 5.7530746965415538e+01
 Adjoint test for block StdDev passed
 Adjoint test for block ID passed
 Covariance(SABER) * Increment:

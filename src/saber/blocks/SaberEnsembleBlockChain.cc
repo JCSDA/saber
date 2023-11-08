@@ -11,44 +11,44 @@
 
 namespace saber {
 
-
 // -----------------------------------------------------------------------------
 
-void SaberEnsembleBlockChain::multiply(oops::FieldSet4D & fset) const {
+void SaberEnsembleBlockChain::multiply(oops::FieldSet4D & fset4d) const {
   oops::Log::trace() << "saber::generic::SaberEnsembleBlockChain::multiply starting" << std::endl;
+
   // Outer blocks adjoint multiplication
   if (outerBlockChain_) {
-    outerBlockChain_->applyOuterBlocksAD(fset);
+    outerBlockChain_->applyOuterBlocksAD(fset4d);
   }
 
   // Central block: ensemble covariance
   // Initialization
-  const oops::FieldSet4D fsetInit = oops::copyFieldSet4D(fset);
-  fset.zero();
+  const oops::FieldSet4D fset4dInit = oops::copyFieldSet4D(fset4d);
+  fset4d.zero();
 
-  if (locBlockChain_) {
-    // Apply localization
-    for (size_t ie = 0; ie < ensemble_.size(); ++ie) {
-      // Temporary copy for this ensemble member
-      oops::FieldSet4D fsetMem = oops::copyFieldSet4D(fsetInit);
+  for (size_t ie = 0; ie < ensemble_.size(); ++ie) {
+    // Copy initial FieldSet4D
+    oops::FieldSet4D fset4dMem = oops::copyFieldSet4D(fset4dInit);
+
+    if (locBlockChain_) {
+      // With localization
 
       // First schur product
-      fsetMem *= ensemble_[ie];
+      fset4dMem *= ensemble_[ie];
 
       // Apply localization
-      locBlockChain_->multiply(fsetMem);
+      locBlockChain_->multiply(fset4dMem);
 
       // Second schur product
-      fsetMem *= ensemble_[ie];
+      fset4dMem *= ensemble_[ie];
 
       // Add up member contribution
-      fset += fsetMem;
-    }
-  } else {
-    // No localization
-    for (size_t ie = 0; ie < ensemble_.size(); ++ie) {
+      fset4d += fset4dMem;
+    } else {
+      // No localization
+
       // Compute weight
-      const double wgt = util::dotProductFieldSets(fsetInit[0].fieldSet(),
+      const double wgt = util::dotProductFieldSets(fset4dInit[0].fieldSet(),
                                                    ensemble_[ie],
                                                    vars_.variables(),
                                                    comm_,
@@ -56,26 +56,26 @@ void SaberEnsembleBlockChain::multiply(oops::FieldSet4D & fset) const {
 
       // Copy ensemble member
       // TODO(AS): revisit ensemble_ to be a 4D ensemble, remove the hack below.
-      oops::FieldSet4D fsetMem(fset.times(), fset.commTime(), fset[0].commGeom());
-      for (size_t jtime = 0; jtime < fsetMem.size(); ++jtime) {
-        fsetMem[jtime].fieldSet() = util::copyFieldSet(ensemble_[ie]);
+      oops::FieldSet4D fset4dMem(fset4d.times(), fset4d.commTime(), fset4d[0].commGeom());
+      for (size_t jtime = 0; jtime < fset4dMem.size(); ++jtime) {
+        fset4dMem[jtime].fieldSet() = util::copyFieldSet(ensemble_[ie]);
       }
 
       // Apply weight
-      fsetMem *= wgt;
+      fset4dMem *= wgt;
 
       // Add up member contribution
-      fset += fsetMem;
+      fset4d += fset4dMem;
     }
   }
 
   // Normalize result
   const double rk = 1.0/static_cast<double>(ensemble_.size()-1);
-  fset *= rk;
+  fset4d *= rk;
 
   // Outer blocks forward multiplication
   if (outerBlockChain_) {
-    outerBlockChain_->applyOuterBlocks(fset);
+    outerBlockChain_->applyOuterBlocks(fset4d);
   }
 
   oops::Log::trace() << "saber::generic::SaberEnsembleBlockChain::multiply done" << std::endl;
@@ -83,53 +83,161 @@ void SaberEnsembleBlockChain::multiply(oops::FieldSet4D & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void SaberEnsembleBlockChain::randomize(oops::FieldSet4D & fset) const {
-  // Outer blocks adjoint multiplication
-  if (outerBlockChain_) {
-    outerBlockChain_->applyOuterBlocksAD(fset);
-  }
-
+void SaberEnsembleBlockChain::randomize(oops::FieldSet4D & fset4d) const {
   // Central block: randomization with ensemble covariance
-  fset.zero();
-  if (locBlockChain_) {
-    // Apply localization
-    for (unsigned int ie = 0; ie < ensemble_.size(); ++ie) {
-      // Randomize SABER central block
-      oops::FieldSet4D fsetMem(fset.times(), fset.commTime(), fset[0].commGeom());
-      locBlockChain_->randomize(fsetMem);
+  fset4d.zero();
+  std::unique_ptr<util::NormalDistribution<double>> normalDist;
+
+  for (unsigned int ie = 0; ie < ensemble_.size(); ++ie) {
+    // Create empty FieldSet4D
+    oops::FieldSet4D fset4dMem(fset4d.times(), fset4d.commTime(), fset4d[0].commGeom());
+
+    if (locBlockChain_) {
+      // With localization
+
+      // Randomize localization
+      locBlockChain_->randomize(fset4dMem);
 
       // Schur product
-      fsetMem *= ensemble_[ie];
+      fset4dMem *= ensemble_[ie];
+    } else {
+      // No localization
+      if (!normalDist) {
+        normalDist.reset(new util::NormalDistribution<double>(ensemble_.size(), 0.0, 1.0, seed_));
+      }
 
-      // Add up member contribution
-      fset += fsetMem;
-    }
-  } else {
-    // No localization
-    util::NormalDistribution<double> normalDist(ensemble_.size(), 0.0, 1.0, seed_);
-    for (unsigned int ie = 0; ie < ensemble_.size(); ++ie) {
       // Copy ensemble member
-      oops::FieldSet4D fsetMem(fset.times(), fset.commTime(), fset[0].commGeom());
-      for (size_t jtime = 0; jtime < fsetMem.size(); ++jtime) {
-        fsetMem[jtime].fieldSet() = util::copyFieldSet(ensemble_[ie]);
+      // TODO(AS): revisit ensemble_ to be a 4D ensemble, remove the hack below.
+      for (size_t jtime = 0; jtime < fset4dMem.size(); ++jtime) {
+        fset4dMem[jtime].fieldSet() = util::copyFieldSet(ensemble_[ie]);
       }
 
       // Apply weight
-      fsetMem *= normalDist[ie];
-
-      // Add up member contribution
-      fset += fsetMem;
+      fset4dMem *= (*normalDist)[ie];
     }
+
+    // Add up member contribution
+    fset4d += fset4dMem;
   }
 
   // Normalize result
   const double rk = 1.0/sqrt(static_cast<double>(ensemble_.size()-1));
-  fset *= rk;
+  fset4d *= rk;
 
   // Outer blocks forward multiplication
   if (outerBlockChain_) {
-    outerBlockChain_->applyOuterBlocks(fset);
+    outerBlockChain_->applyOuterBlocks(fset4d);
   }
 }
+
+// -----------------------------------------------------------------------------
+
+void SaberEnsembleBlockChain::multiplySqrt(const atlas::Field & cv,
+                                           oops::FieldSet4D & fset4d,
+                                           const size_t & offset) const {
+  oops::Log::trace() << "saber::generic::SaberEnsembleBlockChain::multiplySqrt starting"
+                     << std::endl;
+
+  // Initialization
+  fset4d.zero();
+  size_t index = offset;
+
+  // Central block: ensemble covariance square-root
+  for (unsigned int ie = 0; ie < ensemble_.size(); ++ie) {
+    // Create empty FieldSet4D
+    oops::FieldSet4D fset4dMem(fset4d.times(), fset4d.commTime(), fset4d[0].commGeom());
+
+    if (locBlockChain_) {
+      // With localization
+      locBlockChain_->multiplySqrt(cv, fset4dMem, index);
+      index += locBlockChain_->ctlVecSize();
+
+      // Schur product
+      fset4dMem *= ensemble_[ie];
+    } else {
+      // No localization
+      const auto cvView = atlas::array::make_view<double, 1>(cv);
+      for (size_t jtime = 0; jtime < fset4dMem.size(); ++jtime) {
+        fset4dMem[jtime].fieldSet() = util::copyFieldSet(ensemble_[ie]);
+      }
+
+      // Apply weight
+      fset4dMem *= cvView(index);
+      ++index;
+    }
+
+    // Add up member contribution
+    fset4d += fset4dMem;
+  }
+
+  // Normalize result
+  const double rk = 1.0/std::sqrt(static_cast<double>(ensemble_.size()-1));
+  fset4d *= rk;
+
+  // Outer blocks forward multiplication
+  if (outerBlockChain_) {
+    outerBlockChain_->applyOuterBlocks(fset4d);
+  }
+
+  oops::Log::trace() << "saber::generic::SaberEnsembleBlockChain::multiplySqrt done"
+                     << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void SaberEnsembleBlockChain::multiplySqrtAD(const oops::FieldSet4D & fset4d,
+                                             atlas::Field & cv,
+                                             const size_t & offset) const {
+  oops::Log::trace() << "saber::generic::SaberEnsembleBlockChain::multiplySqrtAD starting"
+                     << std::endl;
+
+  // Copy input FieldSet
+  oops::FieldSet4D fset4dInit = oops::copyFieldSet4D(fset4d);
+
+  // Outer blocks adjoint multiplication
+  if (outerBlockChain_) {
+    outerBlockChain_->applyOuterBlocksAD(fset4dInit);
+  }
+
+  // Normalize initial fieldset
+  const double rk = 1.0/std::sqrt(static_cast<double>(ensemble_.size()-1));
+  fset4dInit *= rk;
+
+  // Initialization
+  size_t index = offset;
+
+  // Central block: ensemble covariance square-root adjoint
+  for (unsigned int ie = 0; ie < ensemble_.size(); ++ie) {
+    if (locBlockChain_) {
+      // Apply localization
+
+      // Copy initial fieldset
+      oops::FieldSet4D fset4dMem = oops::copyFieldSet4D(fset4dInit);
+
+      // First schur product
+      fset4dMem *= ensemble_[ie];
+
+      // Apply localization square-root adjoint
+      locBlockChain_->multiplySqrtAD(fset4dMem, cv, index);
+      index += locBlockChain_->ctlVecSize();
+    } else {
+      // No localization
+      auto cvView = atlas::array::make_view<double, 1>(cv);
+
+      // Compute weight
+      cvView(index) = util::dotProductFieldSets(fset4dInit[0].fieldSet(),
+                                                ensemble_[ie],
+                                                vars_.variables(),
+                                                comm_,
+                                                true);
+      ++index;
+    }
+  }
+
+  oops::Log::trace() << "saber::generic::SaberEnsembleBlockChain::multiplySqrtAD done"
+                     << std::endl;
+}
+
+// -----------------------------------------------------------------------------
 
 }  // namespace saber

@@ -19,7 +19,9 @@
 
 #include "eckit/exception/Exceptions.h"
 
+#include "oops/base/Geometry.h"
 #include "oops/base/GeometryData.h"
+#include "oops/base/Increment.h"
 #include "oops/base/Variables.h"
 #include "oops/util/AssociativeContainers.h"
 #include "oops/util/FieldSetHelpers.h"
@@ -32,12 +34,6 @@
 #include "oops/util/Printable.h"
 
 #include "saber/blocks/SaberBlockParametersBase.h"
-
-// Forward declaration
-namespace oops {
-  template <typename MODEL> class Geometry;
-  template <typename MODEL> class Increment;
-}
 
 namespace oops {
   class FieldSet3D;

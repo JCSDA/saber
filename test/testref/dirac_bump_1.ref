@@ -73,6 +73,7 @@ Adjoint test for block BUMP_StdDev passed
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
 Adjoint test for block BUMP_NICAS passed
+Square-root test for block BUMP_NICAS passed
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Min. / max. longitudes: -171.0 /   180.0
@@ -157,6 +158,7 @@ Adjoint test for block BUMP_StdDev passed
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
 Adjoint test for block BUMP_NICAS passed
+Square-root test for block BUMP_NICAS passed
 Covariance(hybrid1_SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:

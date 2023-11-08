@@ -593,6 +593,46 @@ void BUMP::multiplyPsiChiToUVAd(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
+size_t BUMP::getCvSize() const {
+  size_t n = 0;
+  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+    int nTmp;
+    bump_get_cv_size_f90(keyBUMP_[jgrid], nTmp);
+    n += nTmp;
+  }
+  return n;
+}
+
+// -----------------------------------------------------------------------------
+
+void BUMP::multiplyNicasSqrt(const atlas::Field & cv,
+                             atlas::FieldSet & fset,
+                             const size_t & offset) const {
+  int index = offset;
+  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+    bump_apply_nicas_sqrt_f90(keyBUMP_[jgrid], cv.get(), fset.get(), index);
+    int nTmp;
+    bump_get_cv_size_f90(keyBUMP_[jgrid], nTmp);
+    index += nTmp;
+  }
+}
+
+// -----------------------------------------------------------------------------
+
+void BUMP::multiplyNicasSqrtAd(const atlas::FieldSet & fset,
+                               atlas::Field & cv,
+                               const size_t & offset) const {
+  int index = offset;
+  for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+    bump_apply_nicas_sqrt_ad_f90(keyBUMP_[jgrid], fset.get(), cv.get(), index);
+    int nTmp;
+    bump_get_cv_size_f90(keyBUMP_[jgrid], nTmp);
+    index += nTmp;
+  }
+}
+
+// -----------------------------------------------------------------------------
+
 eckit::LocalConfiguration BUMP::getFileConf(const eckit::mpi::Comm & comm,
                                             const eckit::Configuration & conf) const {
   // Get number of MPI tasks and OpenMP threads

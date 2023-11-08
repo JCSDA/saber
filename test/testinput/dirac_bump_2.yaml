@@ -22,6 +22,7 @@ background error:
   - covariance:
       covariance model: SABER
       adjoint test: true
+      square-root test: true
       saber central block:
         saber block name: BUMP_NICAS
         read:
@@ -103,6 +104,8 @@ background error:
   - covariance:
       covariance model: SABER
       adjoint test: true
+      square-root test: true
+      square-root tolerance: 1.0e-11
       ensemble:
         members from template:
           template:

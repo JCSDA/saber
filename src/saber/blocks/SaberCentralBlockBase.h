@@ -38,10 +38,6 @@ namespace oops {
 }
 
 namespace saber {
-  class SaberBlockChain;
-}
-
-namespace saber {
 
 // -----------------------------------------------------------------------------
 
@@ -98,6 +94,17 @@ class SaberCentralBlockBase : public util::Printable, private boost::noncopyable
   virtual std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> fieldsToWrite() const
      {return {};}
 
+  // Square-root formulation
+  virtual size_t ctlVecSize() const
+    {throw eckit::NotImplemented("ctlVecSize not implemented yet for the block "
+      + this->blockName(), Here());}
+  virtual void multiplySqrt(const atlas::Field &, atlas::FieldSet &, const size_t &) const
+    {throw eckit::NotImplemented("multiplySqrt not implemented yet for the block "
+      + this->blockName(), Here());}
+  virtual void multiplySqrtAD(const atlas::FieldSet &, atlas::Field &, const size_t &) const
+    {throw eckit::NotImplemented("multiplySqrtAD not implemented yet for the block "
+      + this->blockName(), Here());}
+
   // Non-virtual methods
 
   // Return block name
@@ -119,6 +126,11 @@ class SaberCentralBlockBase : public util::Printable, private boost::noncopyable
   void adjointTest(const oops::GeometryData &,
                    const oops::Variables &,
                    const double &) const;
+
+  // Square-root test
+  void sqrtTest(const oops::GeometryData &,
+                const oops::Variables &,
+                const double &) const;
 
  private:
   std::string blockName_;

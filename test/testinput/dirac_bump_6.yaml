@@ -18,22 +18,10 @@ background error:
   covariance model: hybrid
   components:
   - covariance:
-      covariance model: ensemble
-      members from template:
-        template:
-          date: '2010-01-01T12:00:00Z'
-          filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_%mem%
-          state variables:
-          - eastward_wind
-          - northward_wind
-        pattern: '%mem%'
-        nmembers: 25
-        zero padding: 6
-    weight:
-      value: 0.5
-  - covariance:
       covariance model: SABER
       adjoint test: true
+      square-root test: true
+      square-root tolerance: 2.0e-11
       ensemble:
         members from template:
           template:
@@ -47,6 +35,20 @@ background error:
           zero padding: 6
       saber central block:
         saber block name: Ensemble
+    weight:
+      value: 0.5
+  - covariance:
+      covariance model: ensemble
+      members from template:
+        template:
+          date: '2010-01-01T12:00:00Z'
+          filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_%mem%
+          state variables:
+          - eastward_wind
+          - northward_wind
+        pattern: '%mem%'
+        nmembers: 25
+        zero padding: 6
     weight:
       value: 0.5
 dirac:

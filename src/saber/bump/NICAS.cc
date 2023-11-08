@@ -165,6 +165,26 @@ void NICAS::dualResolutionSetup(const oops::GeometryData & geometryData) {
 
 // -----------------------------------------------------------------------------
 
+void NICAS::multiplySqrt(const atlas::Field & cv,
+                         atlas::FieldSet & fset,
+                         const size_t & offset) const {
+  oops::Log::trace() << classname() << "::multiplySqrt starting" << std::endl;
+  bump_->multiplyNicasSqrt(cv, fset, offset);
+  oops::Log::trace() << classname() << "::multiplySqrt done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void NICAS::multiplySqrtAD(const atlas::FieldSet & fset,
+                           atlas::Field & cv,
+                           const size_t & offset) const {
+  oops::Log::trace() << classname() << "::multiplySqrtAD starting" << std::endl;
+  bump_->multiplyNicasSqrtAd(fset, cv, offset);
+  oops::Log::trace() << classname() << "::multiplySqrtAD done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
 std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> NICAS::fieldsToWrite() const {
   oops::Log::trace() << classname() << "::fieldsToWrite starting" << std::endl;
   std::vector<eckit::LocalConfiguration> outputModelFilesConf

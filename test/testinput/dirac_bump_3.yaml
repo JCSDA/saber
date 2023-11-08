@@ -19,6 +19,7 @@ background:
 background error:
   covariance model: SABER
   adjoint test: true
+  square-root test: true
   saber central block:
     saber block name: Hybrid
     components:
@@ -115,6 +116,7 @@ background error:
             zero padding: 6
         saber central block:
           saber block name: Ensemble
+          square-root tolerance: 1.0e-10
           inflation value: 1.2
           inflation field:
             atlas file:

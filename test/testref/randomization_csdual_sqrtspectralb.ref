@@ -16,7 +16,7 @@ Groups:
   Mask size: 100%
 Fields:
   streamfunction: 3.4549182353350133e+08
-  velocity_potential: 3.1093204296853274e+08
+  velocity_potential: 3.1093204296853268e+08
   unbalanced_pressure: 4.2085695266232915e+03
   moisture_control_variable: 2.0846575195600977e+02
 Member 1: 
@@ -37,6 +37,6 @@ Groups:
   Mask size: 100%
 Fields:
   streamfunction: 3.5120488360196769e+08
-  velocity_potential: 3.1771944908112794e+08
+  velocity_potential: 3.1771944908112788e+08
   unbalanced_pressure: 4.2862490715960921e+03
-  moisture_control_variable: 2.0439094070067205e+02
+  moisture_control_variable: 2.0439094070067208e+02

@@ -75,7 +75,7 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
   const State_ fg_state(geom, incVars, dummyTime);
   const oops::FieldSet3D fg(fg_state.fieldSet(), fg_state.validTime(), geom.getComm());
 
-  std::vector<atlas::FieldSet> emptyFsetEns;
+  std::vector<atlas::FieldSet> fsetEns;
   // TODO(AS): revisit what configuration needs to be passed to SaberParametricBlockChain.
   eckit::LocalConfiguration covarConf;
   eckit::LocalConfiguration ensembleConf;
@@ -85,14 +85,17 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
   covarConf.set("adjoint tolerance", conf.getDouble("adjoint tolerance", 1.0e-12));
   covarConf.set("inverse test", conf.getBool("inverse test", false));
   covarConf.set("inverse tolerance", conf.getDouble("inverse tolerance", 1.0e-12));
+  covarConf.set("square-root test", conf.getBool("square-root test", false));
+  covarConf.set("square-root tolerance", conf.getDouble("square-root tolerance", 1.0e-12));
   covarConf.set("iterative ensemble loading", false);
+
   // 3D localization always used here (4D aspects handled in oops::Localization),
   // so this parameter can be anything.
   covarConf.set("time covariance", "univariate");
   // Initialize localization blockchain
   loc_ = std::make_unique<SaberParametricBlockChain>(geom, geom,
               incVars, oops::FieldSet4D(xb), oops::FieldSet4D(fg),
-              emptyFsetEns, emptyFsetEns, covarConf, conf);
+              fsetEns, fsetEns, covarConf, conf);
 
   oops::Log::trace() << "Localization:Localization done" << std::endl;
 }
@@ -107,16 +110,16 @@ Localization<MODEL>::~Localization() {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void Localization<MODEL>::randomize(Increment_ & dx_inc) const {
+void Localization<MODEL>::randomize(Increment_ & dx) const {
   oops::Log::trace() << "Localization:randomize starting" << std::endl;
 
   // SABER block chain randomization
-  oops::FieldSet3D dx3d(dx_inc.fieldSet(), dx_inc.validTime(), dx_inc.geometry().getComm());
-  oops::FieldSet4D dx(dx3d);
-  loc_->randomize(dx);
+  oops::FieldSet3D fset3d(dx.validTime(), dx.geometry().getComm());
+  oops::FieldSet4D fset4d(fset3d);
+  loc_->randomize(fset4d);
 
   // ATLAS fieldset to Increment_
-  dx_inc.synchronizeFields();
+  dx.fromFieldSet(fset4d[0].fieldSet());
 
   oops::Log::trace() << "Localization:randomize done" << std::endl;
 }
@@ -124,15 +127,15 @@ void Localization<MODEL>::randomize(Increment_ & dx_inc) const {
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-void Localization<MODEL>::multiply(Increment_ & dx_inc) const {
+void Localization<MODEL>::multiply(Increment_ & dx) const {
   oops::Log::trace() << "Localization:multiply starting" << std::endl;
 
   // SABER block chain multiplication
-  oops::FieldSet4D dx({dx_inc.fieldSet(), dx_inc.validTime(), dx_inc.geometry().getComm()});
-  loc_->multiply(dx);
+  oops::FieldSet4D fset4d({dx.fieldSet(), dx.validTime(), dx.geometry().getComm()});
+  loc_->multiply(fset4d);
 
   // ATLAS fieldset to Increment_
-  dx_inc.synchronizeFields();
+  dx.synchronizeFields();
 
   oops::Log::trace() << "Localization:multiply done" << std::endl;
 }

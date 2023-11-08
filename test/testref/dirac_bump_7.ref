@@ -62,6 +62,7 @@ Adjoint test for block StdDev passed
              Level   1 ~> 100.0%
              Level   1 ~> -0.100E+01 vert. coord.
 Adjoint test for block BUMP_NICAS passed
+Square-root test for block BUMP_NICAS passed
 Covariance(SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:

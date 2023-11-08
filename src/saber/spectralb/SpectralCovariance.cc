@@ -16,6 +16,7 @@
 
 #include "eckit/exception/Exceptions.h"
 
+#include "oops/mpi/mpi.h"
 #include "oops/util/AtlasArrayUtil.h"
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/FieldSetOperations.h"

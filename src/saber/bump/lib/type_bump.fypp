@@ -1379,14 +1379,15 @@ end subroutine bump_get_cv_size
 ! Subroutine: bump_apply_nicas_sqrt
 !> NICAS square-root application
 !----------------------------------------------------------------------
-subroutine bump_apply_nicas_sqrt(bump,pcv,fieldset)
+subroutine bump_apply_nicas_sqrt(bump,acv,fieldset,offset)
 
 implicit none
 
 ! Passed variables
 class(bump_type),intent(inout) :: bump        !< BUMP
-real(kind_real),intent(in) :: pcv(:)          !< Packed control variable
+type(atlas_field),intent(in) :: acv           !< ATLAS field control vector
 type(fieldset_type),intent(inout) :: fieldset !< Fieldset
+integer,intent(in) :: offset                  !< Control vector offset
 
 ! Local variable
 integer :: ic0a,il0,iv
@@ -1405,13 +1406,8 @@ type(cv_type) :: cv
 ! Allocation
 call bump%nicas(1)%alloc_cv(bump%mpl,bump%nam,cv)
 
-! Check dimension
-if (size(pcv)==cv%n) then
-   ! Unpack control variable
-   call cv%unpack(pcv)
-else
-   call bump%mpl%abort('${subr}$','wrong control variable size')
-end if
+! Unpack control variable
+call cv%unpack(acv,offset)
 
 ! Apply NICAS square-root
 call bump%nicas(1)%apply_sqrt(bump%mpl,bump%nam,bump%geom(1),cv,fld_c0a)
@@ -1440,14 +1436,15 @@ end subroutine bump_apply_nicas_sqrt
 ! Subroutine: bump_apply_nicas_sqrt_ad
 !> NICAS square-root adjoint application
 !----------------------------------------------------------------------
-subroutine bump_apply_nicas_sqrt_ad(bump,fieldset,pcv)
+subroutine bump_apply_nicas_sqrt_ad(bump,fieldset,acv,offset)
 
 implicit none
 
 ! Passed variables
 class(bump_type),intent(inout) :: bump        !< BUMP
 type(fieldset_type),intent(inout) :: fieldset !< Fieldset
-real(kind_real),intent(inout) :: pcv(:)       !< Packed control variable
+type(atlas_field),intent(inout) :: acv        !< ATLAS field control vector
+integer,intent(in) :: offset                  !< Control vector offset
 
 ! Local variables
 real(kind_real) :: fld_c0a(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
@@ -1471,13 +1468,8 @@ call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
 ! Apply NICAS square-root adjoint
 call bump%nicas(1)%apply_sqrt_ad(bump%mpl,bump%nam,bump%geom(1),fld_c0a,cv)
 
-! Check dimension
-if (size(pcv)==cv%n) then
-   ! Pack control variable
-   call cv%pack(pcv)
-else
-   call bump%mpl%abort('${subr}$','wrong control variable size')
-end if
+! Pack control variable
+call cv%pack(acv,offset)
 
 ! Probe out
 @:probe_out()

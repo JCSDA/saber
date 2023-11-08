@@ -40,17 +40,20 @@ class SaberBlockParametersBase : public oops::Parameters {
   // Flag to skip inverse test
   oops::Parameter<bool> skipInverseTest{"skip inverse test", false, this};
 
+  // Flag to skip square-root test
+  oops::Parameter<bool> skipSqrtTest{"skip square-root test", false, this};
+
   // Flag to run the left inverse instead of the adjoint.
   oops::Parameter<bool> filterMode{"filter mode", false, this};
 
   // OPTIONAL
-  // Active variables [optional]
+  // Active variables
   oops::OptionalParameter<oops::Variables> activeVars{"active variables", this};
 
   // Adjoint tolerance
   oops::OptionalParameter<double> adjointTolerance{"adjoint tolerance", this};
 
-  // Calibration of block parameters [optional]
+  // Calibration of block parameters
   oops::OptionalParameter<eckit::LocalConfiguration> calibrationParams{"calibration", this};
 
   // Ensemble transform parameters for the Ensemble block
@@ -71,8 +74,11 @@ class SaberBlockParametersBase : public oops::Parameters {
   // Outer variables to compare in inner inverse test, default is all outer active variables.
   oops::OptionalParameter<oops::Variables> outerVariables{"outer variables to compare", this};
 
-  // Read block parameters [optional]
+  // Read block parameters
   oops::OptionalParameter<eckit::LocalConfiguration> readParams{"read", this};
+
+  // Tolerance for square-root test (U U^t x) == B x)
+  oops::OptionalParameter<double> sqrtTolerance{"square-root tolerance", this};
 
   // METHODS
   // Find out whether calibration is needed

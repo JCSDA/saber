@@ -17,6 +17,7 @@
 
 #include "atlas/array.h"
 #include "atlas/field.h"
+#include "atlas/functionspace.h"
 
 #include "eckit/exception/Exceptions.h"
 
@@ -24,6 +25,7 @@
 #include "saber/spectralb/spectralbParameters.h"
 
 #include "oops/base/Variables.h"
+#include "oops/mpi/mpi.h"
 #include "oops/util/AtlasArrayUtil.h"
 #include "oops/util/Logger.h"
 

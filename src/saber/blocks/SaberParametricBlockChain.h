@@ -33,14 +33,14 @@ class SaberParametricBlockChain : public SaberBlockChainBase {
  public:
   template<typename MODEL>
   SaberParametricBlockChain(const oops::Geometry<MODEL> & geom,
-                        const oops::Geometry<MODEL> & dualResGeom,
-                        const oops::Variables & outerVars,
-                        const oops::FieldSet4D & fsetXb,
-                        const oops::FieldSet4D & fsetFg,
-                        std::vector<atlas::FieldSet> & fsetEns,
-                        std::vector<atlas::FieldSet> & dualResolutionFsetEns,
-                        const eckit::LocalConfiguration & covarConf,
-                        const eckit::Configuration & conf);
+                            const oops::Geometry<MODEL> & dualResGeom,
+                            const oops::Variables & outerVars,
+                            const oops::FieldSet4D & fset4dXb,
+                            const oops::FieldSet4D & fset4dFg,
+                            std::vector<atlas::FieldSet> & fsetEns,
+                            std::vector<atlas::FieldSet> & fsetDualResEns,
+                            const eckit::LocalConfiguration & covarConf,
+                            const eckit::Configuration & conf);
   ~SaberParametricBlockChain() = default;
 
   /// @brief Filter the increment
@@ -50,11 +50,30 @@ class SaberParametricBlockChain : public SaberBlockChainBase {
   void randomize(oops::FieldSet4D &) const;
   /// @brief Multiply the increment by this B matrix.
   void multiply(oops::FieldSet4D &) const;
+  /// @brief Get this B matrix square-root control vector size.
+  size_t ctlVecSize() const;
+  /// @brief Multiply the control vector by this B matrix square-root.
+  void multiplySqrt(const atlas::Field &, oops::FieldSet4D &, const size_t &) const;
+  /// @brief Multiply the increment by this B matrix square-root adjoint.
+  void multiplySqrtAD(const oops::FieldSet4D &, atlas::Field &, const size_t &) const;
+
+  /// @brief Accessor to outer function space
+  const atlas::FunctionSpace & outerFunctionSpace() const {return outerFunctionSpace_;}
+  /// @brief Accessor to outer variables
+  const oops::Variables & outerVariables() const {return outerVariables_;}
 
  private:
+  /// @brief Outer function space
+  const atlas::FunctionSpace outerFunctionSpace_;
+  /// @brief Outer variables
+  const oops::Variables outerVariables_;
   std::unique_ptr<SaberOuterBlockChain> outerBlockChain_;
   const bool crossTimeCov_;
   std::unique_ptr<SaberCentralBlockBase> centralBlock_;
+  const eckit::mpi::Comm & timeComm_;
+  size_t size4D_;
+  oops::Variables centralVars_;
+  atlas::FunctionSpace centralFunctionSpace_;
 };
 
 // -----------------------------------------------------------------------------
@@ -63,15 +82,17 @@ template<typename MODEL>
 SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL> & geom,
                        const oops::Geometry<MODEL> & dualResolutionGeom,
                        const oops::Variables & outerVars,
-                       const oops::FieldSet4D & fsetXb,
-                       const oops::FieldSet4D & fsetFg,
+                       const oops::FieldSet4D & fset4dXb,
+                       const oops::FieldSet4D & fset4dFg,
                        // TODO(AS): read inside the block so there is no need to pass
                        // as non-const
                        std::vector<atlas::FieldSet> & fsetEns,
-                       std::vector<atlas::FieldSet> & dualResolutionFsetEns,
+                       std::vector<atlas::FieldSet> & fsetDualResEns,
                        const eckit::LocalConfiguration & covarConf,
                        const eckit::Configuration & conf)
-  : crossTimeCov_(covarConf.getString("time covariance") == "multivariate duplicated") {
+  : outerFunctionSpace_(geom.functionSpace()), outerVariables_(outerVars),
+  crossTimeCov_(covarConf.getString("time covariance") == "multivariate duplicated"),
+  timeComm_(geom.timeComm()), size4D_(fset4dXb.size()) {
   oops::Log::trace() << "SaberParametricBlockChain ctor starting" << std::endl;
 
   // If needed create outer block chain
@@ -83,7 +104,7 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
       cmpOuterBlocksParams.push_back(cmpOuterBlockParamsWrapper);
     }
     outerBlockChain_ = std::make_unique<SaberOuterBlockChain>(geom, outerVars,
-                          fsetXb, fsetFg, fsetEns, covarConf,
+                          fset4dXb, fset4dFg, fsetEns, covarConf,
                           cmpOuterBlocksParams);
   }
 
@@ -119,11 +140,15 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
                                                    activeVars,
                                                    covarConf,
                                                    saberCentralBlockParams,
-                                                   fsetXb[0],
-                                                   fsetFg[0]);
+                                                   fset4dXb[0],
+                                                   fset4dFg[0]);
+
+  // Save central function space and variables
+  centralFunctionSpace_ = currentOuterGeom.functionSpace();
+  centralVars_ = activeVars;
 
   // Read and add model fields
-  centralBlock_->read(geom, currentOuterVars, fsetXb[0].validTime());
+  centralBlock_->read(geom, currentOuterVars, fset4dXb[0].validTime());
 
   // Ensemble configuration
   eckit::LocalConfiguration ensembleConf
@@ -145,7 +170,7 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
         atlas::FieldSet fset;
         readEnsembleMember(geom,
                            outerVars,
-                           fsetXb[0].validTime(),
+                           fset4dXb[0].validTime(),
                            ensembleConf,
                            ie,
                            fset);
@@ -199,7 +224,7 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
         atlas::FieldSet fset;
         readEnsembleMember(dualResolutionGeom,
                            outerVars,
-                           fsetXb[0].validTime(),
+                           fset4dXb[0].validTime(),
                            dualResolutionEnsembleConf,
                            ie,
                            fset);
@@ -215,14 +240,14 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
     } else {
       // Direct calibration
       oops::Log::info() << "Info     : Direct calibration" << std::endl;
-      centralBlock_->directCalibration(dualResolutionFsetEns);
+      centralBlock_->directCalibration(fsetDualResEns);
     }
   }
 
   // Write calibration data
   if (saberCentralBlockParams.doCalibration()) {
     oops::Log::info() << "Info     : Write calibration data" << std::endl;
-    centralBlock_->write(geom, currentOuterVars, fsetXb[0].validTime());
+    centralBlock_->write(geom, currentOuterVars, fset4dXb[0].validTime());
     centralBlock_->write();
   }
 
@@ -239,23 +264,23 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
     size_t ensembleSize = ensembleConf.getInt("ensemble size");
 
     // Estimate mean
-    atlas::FieldSet mean;
+    atlas::FieldSet fsetMean;
     if (iterativeEnsembleLoading) {
       for (size_t ie = 0; ie < ensembleSize; ++ie) {
         // Read member
-        atlas::FieldSet fset;
-        readEnsembleMember(geom, activeVars, fsetXb[0].validTime(), ensembleConf, ie, fset);
+        atlas::FieldSet fsetMem;
+        readEnsembleMember(geom, activeVars, fset4dXb[0].validTime(), ensembleConf, ie, fsetMem);
 
         // Update mean
         if (ie == 0) {
-          mean = util::copyFieldSet(fset);
+          fsetMean = util::copyFieldSet(fsetMem);
         } else {
-          util::addFieldSets(mean, fset);
+          util::addFieldSets(fsetMean, fsetMem);
         }
       }
 
       // Normalize mean
-      util::multiplyFieldSet(mean, 1.0/static_cast<double>(ensembleSize));
+      util::multiplyFieldSet(fsetMean, 1.0/static_cast<double>(ensembleSize));
     }
 
     // Write first member only
@@ -273,18 +298,18 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
       // Get ensemble member
       if (iterativeEnsembleLoading) {
         // Read ensemble member
-        dx.reset(new oops::Increment<MODEL>(geom, activeVars, fsetXb[0].validTime()));
-        readEnsembleMember(geom, activeVars, fsetXb[0].validTime(), ensembleConf, ie,
+        dx.reset(new oops::Increment<MODEL>(geom, activeVars, fset4dXb[0].validTime()));
+        readEnsembleMember(geom, activeVars, fset4dXb[0].validTime(), ensembleConf, ie,
                            dx->fieldSet());
 
         // Remove mean
-        util::subtractFieldSets(dx->fieldSet(), mean);
+        util::subtractFieldSets(dx->fieldSet(), fsetMean);
 
         // Apply outer blocks inverse
         if (outerBlockChain_) outerBlockChain_->leftInverseMultiply(dx->fieldSet());
       } else {
         // Copy member
-        dx.reset(new oops::Increment<MODEL>(geom, activeVars, fsetXb[0].validTime()));
+        dx.reset(new oops::Increment<MODEL>(geom, activeVars, fset4dXb[0].validTime()));
         dx->fieldSet() = fsetEns[ie];
       }
 
@@ -319,6 +344,19 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
     centralBlock_->adjointTest(currentOuterGeom,
                                activeVars,
                                localAdjointTolerance);
+  }
+
+  // Square-root test
+  if (covarConf.getBool("square-root test")) {
+    // Get tolerance
+    const double localSqrtTolerance =
+      saberCentralBlockParams.sqrtTolerance.value().get_value_or(
+      covarConf.getDouble("square-root tolerance"));
+
+    // Run test
+    centralBlock_->sqrtTest(currentOuterGeom,
+                            activeVars,
+                            localSqrtTolerance);
   }
 
   oops::Log::trace() << "SaberParametricBlockChain ctor done" << std::endl;
