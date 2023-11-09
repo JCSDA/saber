@@ -1,0 +1,252 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_gaussian
+    N: 12
+  groups:
+  - variables:
+    - air_pressure
+    - air_pressure_levels_minus_one
+    - air_temperature
+    - cfeff
+    - cleff
+    - dlsvpdT
+    - dry_air_density_levels_minus_one
+    - eastward_wind
+    - exner
+    - exner_levels_minus_one
+    - geostrophic_pressure_levels_minus_one
+    - height
+    - ice_cloud_volume_fraction_in_atmosphere_layer
+    - liquid_cloud_volume_fraction_in_atmosphere_layer
+    - mass_content_of_cloud_liquid_water_in_atmosphere_layer
+    - mass_content_of_cloud_ice_in_atmosphere_layer
+    - mu
+    - muA
+    - muH1
+    - muRecipDeterminant
+    - muRow1Column1
+    - muRow1Column2
+    - muRow2Column1
+    - muRow2Column2
+    - m_ci
+    - m_cl
+    - m_r
+    - m_t
+    - m_v
+    - northward_wind
+    - potential_temperature
+    - qrain
+    - qsat
+    - qt
+    - rht
+    - specific_humidity
+    - streamfunction
+    - svp
+    - unbalanced_pressure_levels_minus_one
+    - velocity_potential
+    - virtual_potential_temperature
+    levels: 70
+  - variables:
+    - air_pressure_levels
+    - height_levels
+    - hydrostatic_exner_levels
+    - hydrostatic_pressure_levels
+    levels: 71
+  partitioner: ectrans
+  halo: 1
+background error:
+  covariance model: hybrid
+  components:
+  - covariance:
+      covariance model: SABER
+      adjoint test: false
+      ensemble pert:
+        date: 2016-01-01T16:00:00Z
+        members from template:
+          pattern: '%MEM%'
+          nmembers: 2
+          zero padding: 6
+          template:
+            date: 2016-01-01T16:00:00Z
+            filepath: testdata/process_perts_from_gauss_perts_1/high_pass_%MEM%
+            variables:
+            - eastward_wind
+            - mu
+            - northward_wind
+            - unbalanced_pressure_levels_minus_one
+      saber central block:
+        saber block name: Ensemble
+        localization:
+          saber central block:
+            saber block name: ID
+          saber outer blocks:
+          - saber block name: spectral analytical filter
+            active variables:
+            - eastward_wind__mu__northward_wind__unbalanced_pressure_levels_minus_one
+            function:
+              horizontal daley length: 1000e3
+          - saber block name: spectral to gauss
+            active variables:
+            - eastward_wind__mu__northward_wind__unbalanced_pressure_levels_minus_one
+          - saber block name: mo_vertical_localization
+            localization data:
+              localization matrix file name: testdata/Lv.nc
+              localization field name in file: Lv
+              pressure file name: testdata/Prho_bar_Mean.nc
+              pressure field name in pressure file: Prho_bar_Mean
+            number of vertical modes: 10
+            reproduce bug non-unit diagonal: true  # To reproduce VAR behaviour
+            active variables:
+            - eastward_wind__mu__northward_wind__unbalanced_pressure_levels_minus_one
+          - saber block name: duplicate variables
+            variable groupings:
+            - group variable name: eastward_wind__mu__northward_wind__unbalanced_pressure_levels_minus_one
+              group components:
+              - eastward_wind
+              - mu
+              - northward_wind
+              - unbalanced_pressure_levels_minus_one
+          - saber block name: mo vertical interpolation for localization
+            inner vertical levels: 70
+            active variables:
+            - eastward_wind
+            - mu
+            - northward_wind
+            - unbalanced_pressure_levels_minus_one
+      saber outer blocks:
+      - saber block name: mo_hydrostatic_pressure
+        covariance data:
+          covariance file path: testdata/FPstats.nc
+          number of covariance latitude rings: 481
+          gp regression bins: 18
+        saturation vapour pressure file: &svp_file testdata/svp_dlsvp_svpW_dlsvpW.nc
+      - saber block name: mo_hydrostatic_pressure_to_hydrostatic_exner
+        saturation vapour pressure file: *svp_file
+      - saber block name: mo_hydro_bal
+        saturation vapour pressure file: *svp_file
+      - saber block name: mo_moisture_control
+        covariance data:
+          covariance file path: testdata/MUstats.nc
+        saturation vapour pressure file: *svp_file
+      - saber block name: mo_hydrostatic_pressure_hydrostatic_exner_to_pressure_exner
+      - saber block name: mo_super_mio
+        moisture incrementing operator file: testdata/MIO_coefficients.nc
+        saturation vapour pressure file: *svp_file
+      - saber block name: mo_dry_air_density
+    weight:
+      value: 1.0
+dirac:
+  lon:
+  - 180.0
+  lat:
+  - 3.672
+  level:
+  - 1
+  variable:
+  - dry_air_density_levels_minus_one
+diagnostic points:
+  lon:
+  - 180.0
+  - 0.0
+  - 0.0
+  lat:
+  - 3.672
+  - 84.37
+  - 3.672
+  level:
+  - 1
+  - 1
+  - 70
+  variable:
+  - dry_air_density_levels_minus_one
+  - dry_air_density_levels_minus_one
+  - dry_air_density_levels_minus_one
+background:
+  date: 2016-01-01T16:00:00Z
+  state variables:
+  - air_pressure
+  - air_pressure_levels
+  - air_pressure_levels_minus_one
+  - air_temperature
+  - cfeff
+  - cleff
+  - dlsvpdT
+  - dry_air_density_levels_minus_one
+  - eastward_wind
+  - exner
+  - exner_levels_minus_one
+  - height
+  - height_levels
+  - hydrostatic_exner_levels
+  - hydrostatic_pressure_levels
+  - ice_cloud_volume_fraction_in_atmosphere_layer
+  - liquid_cloud_volume_fraction_in_atmosphere_layer
+  - mass_content_of_cloud_liquid_water_in_atmosphere_layer
+  - mass_content_of_cloud_ice_in_atmosphere_layer
+  - mu
+  - muA
+  - muH1
+  - muRecipDeterminant
+  - muRow1Column1
+  - muRow1Column2
+  - muRow2Column1
+  - muRow2Column2
+  - m_ci
+  - m_cl
+  - m_r
+  - m_t
+  - m_v
+  - northward_wind
+  - potential_temperature
+  - qrain
+  - qsat
+  - qt
+  - rht
+  - specific_humidity
+  - svp
+  - unbalanced_pressure_levels_minus_one
+  - virtual_potential_temperature
+  filepath: testdata/gauss_state
+increment variables:
+- air_pressure
+- air_pressure_levels
+- air_pressure_levels_minus_one
+- air_temperature
+- dry_air_density_levels_minus_one
+- eastward_wind
+- exner
+- exner_levels_minus_one
+- hydrostatic_exner_levels
+- hydrostatic_pressure_levels
+- ice_cloud_volume_fraction_in_atmosphere_layer
+- liquid_cloud_volume_fraction_in_atmosphere_layer
+- mass_content_of_cloud_liquid_water_in_atmosphere_layer
+- mass_content_of_cloud_ice_in_atmosphere_layer
+- mu
+- muA
+- muH1
+- muRecipDeterminant
+- muRow1Column1
+- muRow1Column2
+- muRow2Column1
+- muRow2Column2
+- m_ci
+- m_cl
+- m_r
+- m_t
+- m_v
+- northward_wind
+- potential_temperature
+- qrain
+- qsat
+- qt
+- rht
+- specific_humidity
+- unbalanced_pressure_levels_minus_one
+- virtual_potential_temperature
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_spectralb_gauss_vader_3/dirac_%id%_%MPI%
+test:
+  reference filename: testref/dirac_spectralb_gauss_vader_3.ref

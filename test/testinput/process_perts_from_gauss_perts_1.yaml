@@ -2,23 +2,25 @@ geometry:
   function space: StructuredColumns
   grid:
     type: regular_gaussian
-    N: 15
+    N: 12
   groups:
   - variables:
+    - eastward_wind
+    - mu
+    - northward_wind
     - streamfunction
+    - unbalanced_pressure_levels_minus_one
     - velocity_potential
-    - unbalanced_pressure
-    - moisture_control_variable
     levels: 70
   partitioner: ectrans
   halo: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: &date '2010-01-01T12:00:00Z'
   state variables:
-  - streamfunction
-  - velocity_potential
-  - unbalanced_pressure
-  - moisture_control_variable
+  - eastward_wind
+  - northward_wind
+  - unbalanced_pressure_levels_minus_one
+  - mu
 saber filter blocks:
   saber central block:
     saber block name: ID
@@ -27,18 +29,41 @@ saber filter blocks:
     function:
       horizontal daley length: 5008e3
     normalize filter variance: false
+    active variables:
+    - mu
+    - streamfunction
+    - unbalanced_pressure_levels_minus_one
+    - velocity_potential
   - saber block name: spectral to gauss
+    active variables:
+    - eastward_wind
+    - mu
+    - northward_wind
+    - streamfunction
+    - unbalanced_pressure_levels_minus_one
+    - velocity_potential
     filter mode: true # instead of running the adjoint code it runs the inverse
-date: '2010-01-01T12:00:00Z'
+date: *date
 input variables:
-- streamfunction
-- velocity_potential
-- unbalanced_pressure
-- moisture_control_variable
-input perturbations:
-- filepath: testdata/randomization_sqrtspectralb/randomized_gauss_mb1
-- filepath: testdata/randomization_sqrtspectralb/randomized_gauss_mb2
+- eastward_wind
+- northward_wind
+- unbalanced_pressure_levels_minus_one
+- mu
+ensemble pert:
+  date: *date
+  members from template:
+    nmembers: 2
+    pattern: '%MEM%'
+    template:
+      filepath: testdata/randomization_sqrtspectralb/randomized_gauss_mb%MEM%
+      variables:
+      - eastward_wind
+      - northward_wind
+      - unbalanced_pressure_levels_minus_one
+      - mu
 low pass perturbations:
   filepath: testdata/process_perts_from_gauss_perts_1/low_pass
 output perturbations:
   filepath: testdata/process_perts_from_gauss_perts_1/high_pass
+test:
+  reference filename: testref/process_perts_from_gauss_perts_1.ref

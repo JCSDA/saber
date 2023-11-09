@@ -369,8 +369,10 @@ void VertLoc::multiplyAD(atlas::FieldSet & fset) const {
     outView.assign(0.0);
 
     // Apply U^t
+    fset[var].adjointHaloExchange();
     auto inView = atlas::array::make_view<double, 2>(fset[var]);  // nlevs_ levels
-    atlas_omp_parallel_for(atlas::idx_t jn = 0; jn < outField.shape(0); ++jn) {
+
+    for (atlas::idx_t jn = 0; jn < outField.shape(0); ++jn) {
       for (atlas::idx_t jl = 0; jl < nmods_; ++jl) {
         for (atlas::idx_t jm = 0; jm < nlevs_; ++jm) {
           outView(jn, jl) += Umatrix_(jm, jl) * inView(jn, jm);
@@ -378,7 +380,7 @@ void VertLoc::multiplyAD(atlas::FieldSet & fset) const {
       }
     }
 
-    outField.haloExchange();
+
     fsetOut.add(outField);
   }
 

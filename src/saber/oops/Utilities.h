@@ -46,7 +46,7 @@ void setMPI(eckit::LocalConfiguration & conf,
 
 template<typename MODEL>
 eckit::LocalConfiguration readEnsemble(const oops::Geometry<MODEL> & geom,
-                                       const oops::Variables & vars,
+                                       const oops::Variables & modelvars,
                                        const oops::State<MODEL> & xb,
                                        const oops::State<MODEL> & fg,
                                        const eckit::LocalConfiguration & inputConf,
@@ -63,6 +63,8 @@ eckit::LocalConfiguration readEnsemble(const oops::Geometry<MODEL> & geom,
   // Fill output configuration and set ensemble size
   size_t nens = 0;
   size_t ensembleFound = 0;
+  eckit::LocalConfiguration varConf;
+
 
   // Ensemble of states, perturbation using the mean
   oops::IncrementEnsembleFromStatesParameters<MODEL> ensembleParams;
@@ -72,6 +74,7 @@ eckit::LocalConfiguration readEnsemble(const oops::Geometry<MODEL> & geom,
     ensembleParams.deserialize(ensembleConf);
     nens = ensembleParams.states.size();
     outputConf.set("ensemble", ensembleConf);
+    varConf = ensembleParams.states.getStateConfig(0, 0);
     ++ensembleFound;
   }
 
@@ -83,6 +86,7 @@ eckit::LocalConfiguration readEnsemble(const oops::Geometry<MODEL> & geom,
     ensemblePertParams.deserialize(ensemblePert);
     nens = ensemblePertParams.size();
     outputConf.set("ensemble pert", ensemblePert);
+    ensemblePertParams.getIncrementParameters(0).serialize(varConf);
     ++ensembleFound;
   }
 
@@ -97,6 +101,7 @@ eckit::LocalConfiguration readEnsemble(const oops::Geometry<MODEL> & geom,
     ensembleBaseParams.deserialize(ensembleBase);
     ensemblePairsParams.deserialize(ensemblePairs);
     nens = ensembleBaseParams.size();
+    varConf = ensembleBaseParams.getStateConfig(0, 0);
     outputConf.set("ensemble base", ensembleBase);
     outputConf.set("ensemble pairs", ensemblePairs);
     ++ensembleFound;
@@ -107,6 +112,10 @@ eckit::LocalConfiguration readEnsemble(const oops::Geometry<MODEL> & geom,
 
   // Check number of ensembles in yaml
   ASSERT(ensembleFound <= 1);
+
+  oops::Variables vars(varConf.has("variables") ?
+    oops::Variables{varConf.getStringVector("variables")} :
+    modelvars);
 
   if (!iterativeEnsembleLoading) {
     // Full ensemble loading

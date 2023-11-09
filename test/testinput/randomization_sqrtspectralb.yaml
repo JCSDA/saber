@@ -3,22 +3,24 @@ geometry:
   function space: StructuredColumns
   grid:
     type: regular_gaussian
-    N: 15
+    N: 12
   groups:
   - variables:
+    - eastward_wind
+    - mu
+    - northward_wind
     - streamfunction
+    - unbalanced_pressure_levels_minus_one
     - velocity_potential
-    - unbalanced_pressure
-    - moisture_control_variable
     levels: 70
   partitioner: ectrans
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
-  - streamfunction
-  - velocity_potential
-  - unbalanced_pressure
-  - moisture_control_variable 
+  - eastward_wind
+  - northward_wind
+  - unbalanced_pressure_levels_minus_one
+  - mu
 background error:
   covariance model: SABER
   randomization size: 2
@@ -27,16 +29,28 @@ background error:
   saber outer blocks:
   - saber block name: square root of spectral covariance
     skip inverse test: true
+    active variables:
+    - mu
+    - streamfunction
+    - unbalanced_pressure_levels_minus_one
+    - velocity_potential
     read:
       covariance_file: testdata/spectralcov.nc
-      gauss_grid_uid: F15
+      gauss_grid_uid: F12
       umatrix_netcdf_names:
-      - PSI_inc_Uv_matrix
-      - CHI_inc_Uv_matrix
-      - aP_inc_Uv_matrix
       - MU_inc_Uv_matrix
+      - PSI_inc_Uv_matrix
+      - aP_inc_Uv_matrix
+      - CHI_inc_Uv_matrix
       variance_opt: true
   - saber block name: spectral to gauss
+    active variables:
+    - eastward_wind
+    - mu
+    - northward_wind
+    - streamfunction
+    - unbalanced_pressure_levels_minus_one
+    - velocity_potential
 output variance:  # This section is optional
   mpi pattern: '%MPI%'
   filepath: testdata/randomization_sqrtspectralb/variance_%MPI%pes

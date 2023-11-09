@@ -38,12 +38,16 @@ oops::Variables createInnerVars(
 void verticalInterpolationFromFullLevels(const oops::Variables & activeVars,
                                          const atlas::FieldSet & fsetIn,
                                          atlas::FieldSet & fsetOut) {
+  // winds are on half-levels
+  oops::Variables windnames(std::vector<std::string>{"eastward_wind", "northward_wind"});
+
   // inner stagger is full-levels
   for (const std::string & v : activeVars.variables()) {
     auto fldInView = atlas::array::make_view<const double, 2>(fsetIn[v]);
     auto fldOutView = atlas::array::make_view<double, 2>(fsetOut[v]);
 
-    if ((v.find("_levels_minus_one")) != std::string::npos) {
+    if (((v.find("_levels_minus_one")) != std::string::npos) ||
+        windnames.has(v)) {
       for (atlas::idx_t jn = 0; jn < fldInView.shape()[0]; ++jn) {
         fldOutView(jn, 0) = fldInView(jn, 0);
         for (atlas::idx_t jl = 0; jl < fldInView.shape()[1]-1; ++jl) {
@@ -70,6 +74,9 @@ void verticalInterpolationFromFullLevels(const oops::Variables & activeVars,
 void mo_buggy_verticalInterpolationFromHalfLevels(const oops::Variables & activeVars,
                                                   const atlas::FieldSet & fsetIn,
                                                   atlas::FieldSet & fsetOut) {
+  // winds are on half-levels
+  oops::Variables windnames(std::vector<std::string>{"eastward_wind", "northward_wind"});
+
   // The Met Office bug unfortunately uses the interpolation weights needed for
   // going from full levels to half levels, when in fact we are wanting to interpolate
   // from half-levels.  This is not an issue if the vertical staggering is uniform.
@@ -78,7 +85,8 @@ void mo_buggy_verticalInterpolationFromHalfLevels(const oops::Variables & active
     auto fldInView = atlas::array::make_view<const double, 2>(fsetIn[v]);
     auto fldOutView = atlas::array::make_view<double, 2>(fsetOut[v]);
 
-    if ((v.find("_levels_minus_one")) != std::string::npos) {
+    if (((v.find("_levels_minus_one")) != std::string::npos) ||
+        windnames.has(v)) {
       fldOutView.assign(fldInView);
     } else if ((v.find("_levels")) != std::string::npos) {
       for (atlas::idx_t jn = 0; jn < fldInView.shape()[0]; ++jn) {
@@ -105,11 +113,15 @@ void mo_buggy_verticalInterpolationFromHalfLevels(const oops::Variables & active
 void verticalInterpolationFromFullLevelsAD(const oops::Variables & activeVars,
                                            atlas::FieldSet & fsetIn,
                                            atlas::FieldSet & fsetOut) {
+  // winds are on half-levels
+  oops::Variables windnames(std::vector<std::string>{"eastward_wind", "northward_wind"});
+
   for (const std::string & v : activeVars.variables()) {
     auto fldInView = atlas::array::make_view<double, 2>(fsetIn[v]);
     auto fldOutView = atlas::array::make_view<double, 2>(fsetOut[v]);
 
-    if ((v.find("_levels_minus_one")) != std::string::npos) {
+    if ((v.find("_levels_minus_one")) != std::string::npos ||
+        windnames.has(v)) {
       for (atlas::idx_t jn = 0; jn < fldInView.shape()[0]; ++jn) {
         for (atlas::idx_t jl = fldInView.shape()[1]-2; jl > -1; --jl) {
           fldInView(jn, jl+1) += 0.5 * fldOutView(jn, jl+1);
@@ -148,11 +160,15 @@ void verticalInterpolationFromFullLevelsAD(const oops::Variables & activeVars,
 void mo_buggy_verticalInterpolationFromHalfLevelsAD(const oops::Variables & activeVars,
                                                     atlas::FieldSet & fsetIn,
                                                     atlas::FieldSet & fsetOut) {
+  // winds are on half-levels
+  oops::Variables windnames(std::vector<std::string>{"eastward_wind", "northward_wind"});
+
   for (const std::string & v : activeVars.variables()) {
     auto fldInView = atlas::array::make_view<double, 2>(fsetIn[v]);
     auto fldOutView = atlas::array::make_view<double, 2>(fsetOut[v]);
 
-    if ((v.find("_levels_minus_one")) != std::string::npos) {
+    if ((v.find("_levels_minus_one")) != std::string::npos ||
+        windnames.has(v)) {
       for (atlas::idx_t jn = 0; jn < fldInView.shape()[0]; ++jn) {
         for (atlas::idx_t jl = 0; jl < fldInView.shape()[1]; ++jl) {
           fldInView(jn, jl) += fldOutView(jn, jl);

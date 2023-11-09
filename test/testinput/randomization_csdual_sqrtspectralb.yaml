@@ -25,7 +25,7 @@ background error:
     active variables: *vars
     read:
       covariance_file: testdata/spectralcov.nc
-      gauss_grid_uid: F45
+      gauss_grid_uid: F12
       umatrix_netcdf_names:
       - PSI_inc_Uv_matrix
       - CHI_inc_Uv_matrix
@@ -37,11 +37,10 @@ background error:
   - saber block name: gauss to cubed-sphere-dual
     initialize inverse interpolator: false
     skip inverse test: true
-    gauss grid uid: F45
+    gauss grid uid: F12
     active variables: *vars
 output states:
   member pattern: '%MEM%'
-  filepath: testdata/randomization_csdual_sqrtspectralb/randomized_csdual_mb%MEM%
+  filepath: testdata/randomization_csdual_sqrtspectralb/_MPI__randomized_csdual_mb%MEM%
 test:
-  test output filename: testref/randomization_csdual_sqrtspectralb.out
   reference filename: testref/randomization_csdual_sqrtspectralb.ref

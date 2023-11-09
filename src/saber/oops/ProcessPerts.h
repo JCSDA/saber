@@ -22,7 +22,6 @@
 
 #include "oops/base/Increment.h"
 #include "oops/base/Increment4D.h"
-#include "oops/base/IncrementEnsemble.h"
 #include "oops/base/instantiateCovarFactory.h"
 #include "oops/base/ModelSpaceCovarianceBase.h"
 #include "oops/base/State.h"
@@ -61,6 +60,7 @@ template <typename MODEL> class ProcessPertsParameters :
 
   typedef typename oops::Geometry<MODEL>::Parameters_        GeometryParameters_;
   typedef oops::State<MODEL>                                 State_;
+  typedef oops::IncrementMemberTemplateParameters<MODEL>     IncrementMemberTemplateParameters_;
   typedef oops::StateEnsembleParameters<MODEL>               StateEnsembleParameters_;
   typedef typename oops::Increment<MODEL>::ReadParameters_   IncrementReadParameters_;
   typedef typename oops::Increment<MODEL>::WriteParameters_  IncrementWriterParameters_;
@@ -78,13 +78,9 @@ template <typename MODEL> class ProcessPertsParameters :
   oops::RequiredParameter<ErrorCovarianceParameters_>
     saberFilterCovarianceParams{"saber filter blocks", this};
 
-  /// Where to read optional input perturbations
-  oops::OptionalParameter<std::vector<IncrementReadParameters_>>
-    inputPerturbations{"input perturbations", this};
-
-  /// Where to read optional input states
-  oops::OptionalParameter<StateEnsembleParameters_>
-    ensembleParams{"ensemble", this};
+  /// Where to read input ensemble: From states or perturbations
+  oops::OptionalParameter<eckit::LocalConfiguration> ensemble{"ensemble", this};
+  oops::OptionalParameter<eckit::LocalConfiguration> ensemblePert{"ensemble pert", this};
 
   /// Where to write low-pass filtered perturbations
   oops::OptionalParameter<IncrementWriterParameters_>
@@ -106,9 +102,6 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
   typedef oops::Increment4D<MODEL>                        Increment4D_;
   typedef oops::State<MODEL>                              State_;
   typedef oops::State4D<MODEL>                            State4D_;
-  typedef oops::StateEnsemble<MODEL>                      StateEnsemble_;
-  typedef oops::StateEnsembleParameters<MODEL>            StateEnsembleParameters_;
-  typedef typename Increment_::ReadParameters_            IncrementReadParameters_;
   typedef typename Increment_::WriteParameters_           IncrementWriteParameters_;
   typedef ProcessPertsParameters<MODEL>                   ProcessPertsParameters_;
 
@@ -142,26 +135,19 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
     oops::FieldSet4D fsetXb(xx);
     oops::FieldSet4D fsetFg(xx);
 
-    // Setup variables
-    const oops::Variables statevars = xx.variables();
-
     // Setup time
     const util::DateTime time = xx[0].validTime();
 
     eckit::LocalConfiguration filterCovarianceBlockConf(fullConfig, "saber filter blocks");
     std::unique_ptr<SaberParametricBlockChain> saberFilterBlocks;
 
-    //  List of input and output increments
-    const auto & incrementsReadParams = params.inputPerturbations.value();
-    const auto & ensembleParams = params.ensembleParams.value();
-
     // List of output increments
     const auto & lowpassPerturbations = params.lowpassPerturbations.value();
     const IncrementWriteParameters_ & incrementsWriteParams =
       params.outputPerturbations;
 
-    // Increment variables
     oops::Variables incVars = params.inputVariables;
+    // Initialize outer variables
     const std::vector<std::size_t> vlevs = geom.variableSizes(incVars);
     for (std::size_t i = 0; i < vlevs.size() ; ++i) {
       incVars.addMetaData(incVars[i], "levels", vlevs[i]);
@@ -182,54 +168,47 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
       incVars, fsetXb, fsetFg, fsetEns, dualResolutionFsetEns,
       covarConf, filterCovarianceBlockConf);
 
-    int nincrements(0);
-    if (incrementsReadParams != boost::none) {
-      nincrements = (*incrementsReadParams).size();
-    }
-
-    if (((incrementsReadParams == boost::none) &&
-        (ensembleParams == boost::none)) ||
-        ((incrementsReadParams != boost::none) &&
-        (ensembleParams != boost::none)))
+    // Yaml validation
+    // TODO(Mayeul): Move this do an override of deserialize
+    if (((params.ensemble.value() == boost::none) &&
+        (params.ensemblePert.value() == boost::none)) ||
+        ((params.ensemble.value() != boost::none) &&
+        (params.ensemblePert.value() != boost::none)))
     {
       throw eckit::UserError(
        "Require either input states or input perturbations to be set in yaml",
        Here());
     }
 
-    // create ensemble mean states if states are read in
-    State_ meanState(geom, incVars, time);
-    meanState.zero();
-    if (ensembleParams != boost::none) {
-      nincrements = (*ensembleParams).size();
-    }
-    StateEnsemble_ stateEnsemble(meanState, nincrements);
-    if (ensembleParams != boost::none) {
-      StateEnsemble_ stateEnsembleTmp(geom, *ensembleParams);
-      for (int jm = 0; jm < nincrements; ++jm) {
-        util::copyFieldSet(stateEnsembleTmp[jm].fieldSet(),
-                           stateEnsemble[jm].fieldSet());
-      }
-    }
-    util::copyFieldSet(stateEnsemble.mean().fieldSet(),
-                       meanState.fieldSet());
+    // Read input ensemble
+    const bool iterativeEnsembleLoading = false;
+    std::vector<atlas::FieldSet> fsetEnsI;
+    eckit::LocalConfiguration ensembleConf(fullConfig);
+    readEnsemble<MODEL>(geom,
+                        incVars,
+                        xx[0], xx[0],
+                        ensembleConf,
+                        iterativeEnsembleLoading,
+                        fsetEnsI);
+    int nincrements = fsetEnsI.size();
 
     //  Loop over perturbations
     for (int jm = 0; jm < nincrements; ++jm) {
-      //  Read ensemble member perturbations
+      //  Read ensemble member perturbation
+      atlas::FieldSet fsetI = fsetEnsI[jm];
       Increment_ dxI(geom, incVars, time);
+      dxI.zero();
+      dxI.fromFieldSet(fsetI);
 
-      if (incrementsReadParams != boost::none) {
-        dxI.read((*incrementsReadParams)[jm]);
-      }
-      if (ensembleParams != boost::none) {
-        dxI.diff(stateEnsemble[jm], meanState);
-      }
+      //  Copy perturbation
+      atlas::FieldSet fset;
+      util::copyFieldSet(fsetI, fset);
 
-      //  Copy pert to give #Copy
-      Increment_ dx(dxI, true);
-      oops::FieldSet4D fset4dDxI(oops::FieldSet3D{dxI.fieldSet(), time, geom.getComm()});
-      oops::FieldSet4D fset4dDx(oops::FieldSet3D{dx.fieldSet(), time, geom.getComm()});
+      oops::Log::test() << "Norm of perturbation : member  " << jm+1
+                        << ": " << dxI.norm() << std::endl;
+
+      oops::FieldSet4D fset4dDxI(oops::FieldSet3D{fsetI, time, geom.getComm()});
+      oops::FieldSet4D fset4dDx(oops::FieldSet3D{fset, time, geom.getComm()});
 
       // Apply filter blocks
       saberFilterBlocks->filter(fset4dDx);
@@ -242,20 +221,23 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
         auto lowpassPerturbationsUpdated(*lowpassPerturbations);
         lowpassPerturbationsUpdated.setMember(jm+1);
         dxLowPass.write(lowpassPerturbationsUpdated);
+        oops::Log::test() << "Norm of low pass perturbation : member  " << jm+1
+                          << ": " << dxLowPass.norm() << std::endl;
       }
 
       // High pass = full pert - low pass
       fset4dDx *= -1.0;
       fset4dDxI += fset4dDx;
 
-      // Write #Filtered.
-      Increment_ dxO(geom, incVars, time);
-      dxO.zero();
-      dxO.fromFieldSet(fset4dDxI[0].fieldSet());
+      // Write high pass
+      dxI.fromFieldSet(fset4dDxI[0].fieldSet());
 
       auto incrementsWriteParamsUpdated(incrementsWriteParams);
       incrementsWriteParamsUpdated.setMember(jm+1);
-      dxO.write(incrementsWriteParamsUpdated);
+      dxI.write(incrementsWriteParamsUpdated);
+
+      oops::Log::test() << "Norm of high pass perturbation : member  " << jm+1
+                        << ": " << dxI.norm() << std::endl;
     }
 
     return 0;

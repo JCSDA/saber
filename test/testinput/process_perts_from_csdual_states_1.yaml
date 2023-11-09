@@ -12,7 +12,7 @@ geometry:
     levels: 70
   halo: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: &date '2010-01-01T12:00:00Z'
   state variables: *vars
 saber filter blocks:
   saber central block:
@@ -27,17 +27,19 @@ saber filter blocks:
   - saber block name: gauss to cubed-sphere-dual
     gauss grid uid: F45
     filter mode: true # instead of running the adjoint code it runs the inverse
-date: '2010-01-01T12:00:00Z'
+date: *date
 input variables: *vars
 ensemble:
   members:
-  - date: '2010-01-01T12:00:00Z'
-    filepath: testdata/randomization_csdual_sqrtspectralb/randomized_csdual_mb1
+  - date: *date
+    filepath: testdata/randomization_csdual_sqrtspectralb/1_randomized_csdual_mb1
     state variables: *vars
-  - date: '2010-01-01T12:00:00Z'
-    filepath: testdata/randomization_csdual_sqrtspectralb/randomized_csdual_mb2
+  - date: *date
+    filepath: testdata/randomization_csdual_sqrtspectralb/1_randomized_csdual_mb2
     state variables: *vars
 low pass perturbations:
   filepath: testdata/process_perts_from_csdual_states_1/low_pass
 output perturbations:
   filepath: testdata/process_perts_from_csdual_states_1/high_pass
+test:
+  reference filename: testref/process_perts_from_csdual_states_1.ref
