@@ -16,7 +16,7 @@ background error:
   covariance model: SABER
   adjoint test: true
   saber central block:
-    saber block name: mo spectral covariance
+    saber block name: spectral correlation
     active variables:
     - streamfunction
     read:
@@ -24,7 +24,6 @@ background error:
       gauss_grid_uid: F15
       umatrix_netcdf_names:
       - PSI_inc_Uv_matrix
-      variance_opt: false
   saber outer blocks:
   - saber block name: spectral to gauss
     active variables:

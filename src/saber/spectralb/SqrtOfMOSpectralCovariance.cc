@@ -7,7 +7,7 @@
 
 #include <cmath>
 
-#include "saber/spectralb/SqrtOfSpectralCovariance.h"
+#include "saber/spectralb/SqrtOfMOSpectralCovariance.h"
 
 #include "atlas/array/MakeView.h"
 #include "atlas/field/Field.h"
@@ -28,11 +28,11 @@ namespace spectralb {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<SqrtOfSpectralCovariance>
-    makerSqrtOfSpectralCovariance_("square root of spectral covariance");
+static SaberOuterBlockMaker<SqrtOfMOSpectralCovariance>
+    makerSqrtOfMOSpectralCovariance_("square root of spectral covariance");
 
 // -----------------------------------------------------------------------------
-SqrtOfSpectralCovariance::SqrtOfSpectralCovariance(
+SqrtOfMOSpectralCovariance::SqrtOfMOSpectralCovariance(
     const oops::GeometryData & outerGeometryData,
     const oops::Variables & outerVars,
     const eckit::Configuration & covarConf,
@@ -47,7 +47,7 @@ SqrtOfSpectralCovariance::SqrtOfSpectralCovariance(
     specFunctionSpace_(outerGeometryData.functionSpace()),
     innerGeometryData_(outerGeometryData)
 {
-  oops::Log::trace() << classname() << "::SqrtOfSpectralCovariance starting " << std::endl;
+  oops::Log::trace() << classname() << "::SqrtOfMOSpectralCovariance starting " << std::endl;
 
   if (params.doCalibration()) {
     // TODO(Marek)
@@ -55,12 +55,12 @@ SqrtOfSpectralCovariance::SqrtOfSpectralCovariance(
     variance_opt_ = params.readParams.value()->varianceOpt;
   }
 
-  oops::Log::trace() << classname() << "::SqrtOfSpectralCovariance done" << std::endl;
+  oops::Log::trace() << classname() << "::SqrtOfMOSpectralCovariance done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void SqrtOfSpectralCovariance::multiply(atlas::FieldSet & fieldSet) const {
+void SqrtOfMOSpectralCovariance::multiply(atlas::FieldSet & fieldSet) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
 
   using atlas::array::make_view;
@@ -114,7 +114,7 @@ void SqrtOfSpectralCovariance::multiply(atlas::FieldSet & fieldSet) const {
 
 // -----------------------------------------------------------------------------
 
-void SqrtOfSpectralCovariance::multiplyAD(atlas::FieldSet & fieldSet) const {
+void SqrtOfMOSpectralCovariance::multiplyAD(atlas::FieldSet & fieldSet) const {
   oops::Log::trace() << classname() << "::multiplyUMatrixAD starting" << std::endl;
 
   using atlas::array::make_view;
@@ -169,7 +169,7 @@ void SqrtOfSpectralCovariance::multiplyAD(atlas::FieldSet & fieldSet) const {
 
 // -----------------------------------------------------------------------------
 
-void SqrtOfSpectralCovariance::read() {
+void SqrtOfMOSpectralCovariance::read() {
   oops::Log::trace() << classname() << "::read starting" << std::endl;
   // Initialize CovStat_ErrorCov
   cs_.reset(new CovStat_ErrorCov(activeVars_,
@@ -181,7 +181,7 @@ void SqrtOfSpectralCovariance::read() {
 
 // -----------------------------------------------------------------------------
 
-void SqrtOfSpectralCovariance::print(std::ostream & os) const {
+void SqrtOfMOSpectralCovariance::print(std::ostream & os) const {
   os << classname();
 }
 

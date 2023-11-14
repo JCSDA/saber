@@ -27,15 +27,15 @@ skipping inverse test for block square root of spectral covariance
 Adjoint test for block ID passed
 Covariance(SABER) diagnostics:
 - Variances at Dirac points:
-  + Value for variable streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 4.1528258986494659e+10
+  + Value for variable streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 4.1528258986494675e+10
   + Value for variable velocity_potential, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 4.2512569844839157e+10
   + Value for variable unbalanced_pressure, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 5.5129549997972595e+02
   + Value for variable moisture_control_variable, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 2.0062216828888668e-01
 - Covariances at diagnostic points:
   + Value for variable streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 1.0639047299362944e+10
   + Value for variable velocity_potential, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 1.2191889123702671e+10
-  + Value for variable unbalanced_pressure, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 6.1857159205407171e+01
-  + Value for variable moisture_control_variable, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 7.3882682789723304e-03
+  + Value for variable unbalanced_pressure, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 6.1857159205407164e+01
+  + Value for variable moisture_control_variable, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 7.3882682789723295e-03
 Covariance(SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -54,6 +54,6 @@ Groups:
   Mask size: 100%
 Fields:
   streamfunction: 1.0134161292055277e+12
-  velocity_potential: 1.1868817808221858e+12
+  velocity_potential: 1.1868817808221855e+12
   unbalanced_pressure: 5.4773673943778185e+03
   moisture_control_variable: 8.0295972259155324e-01

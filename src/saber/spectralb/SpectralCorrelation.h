@@ -1,6 +1,5 @@
 /*
- * (C) Crown Copyright 2022-2023 Met Office
- * (C) Copyright 2022- UCAR
+ * (C) Crown Copyright 2023 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -26,35 +25,41 @@ namespace spectralb {
 
 // -----------------------------------------------------------------------------
 
-class MOSpectralCovarianceParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(MOSpectralCovarianceParameters, SaberBlockParametersBase)
+class SpectralCorrelationParameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(SpectralCorrelationParameters, SaberBlockParametersBase)
 
  public:
-  oops::OptionalParameter<spectralbParameters> readParams{"read", this};
+  oops::OptionalParameter<spectralbCalibrationVertCovParameters>
+    calibrationParams{"calibration", this};
+  oops::OptionalParameter<spectralbReadVertCovParameters> readParams{"read", this};
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
 
 // -----------------------------------------------------------------------------
 
-class MOSpectralCovariance : public SaberCentralBlockBase {
+class SpectralCorrelation : public SaberCentralBlockBase {
  public:
-  static const std::string classname() {return "saber::spectralb::MOSpectralCovariance";}
+  static const std::string classname() {return "saber::spectralb::SpectralCorrelation";}
 
-  typedef MOSpectralCovarianceParameters Parameters_;
+  typedef SpectralCorrelationParameters Parameters_;
 
-  MOSpectralCovariance(const oops::GeometryData &,
-                     const oops::Variables &,
-                     const eckit::Configuration &,
-                     const Parameters_ &,
-                     const oops::FieldSet3D &,
-                     const oops::FieldSet3D &);
+  SpectralCorrelation(const oops::GeometryData &,
+                      const oops::Variables &,
+                      const eckit::Configuration &,
+                      const Parameters_ &,
+                      const oops::FieldSet3D &,
+                      const oops::FieldSet3D &);
 
-  virtual ~MOSpectralCovariance() = default;
+  virtual ~SpectralCorrelation() = default;
 
   void randomize(atlas::FieldSet &) const override;
   void multiply(atlas::FieldSet &) const override;
 
   void read() override;
+
+  void directCalibration(const std::vector<atlas::FieldSet> &) override;
+
+  void write() const override;
 
  private:
   void print(std::ostream &) const override;
@@ -63,12 +68,8 @@ class MOSpectralCovariance : public SaberCentralBlockBase {
   Parameters_ params_;
   /// Active variables
   const oops::Variables activeVars_;
-  /// Option to use vertical covariances or correlations
-  bool variance_opt_;
-  /// Covariance statistics
-  // Note: only need vertical covariances or correlations from this;
-  // probably can be gotten in the ctor and saved here instead of cs_
-  std::unique_ptr<CovStat_ErrorCov> cs_;
+  /// Vertical Spectral Correlations
+  atlas::FieldSet spectralVerticalCorrelations_;
   /// Geometry data
   const oops::GeometryData & geometryData_;
   /// Spectral FunctionSpace

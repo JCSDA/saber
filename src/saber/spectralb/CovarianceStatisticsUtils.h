@@ -37,7 +37,6 @@ atlas::FieldSet createSpectralCovariances(const oops::Variables &,
                                           const spectralbParameters &);
 
 atlas::FieldSet createVerticalSD(const oops::Variables &,
-                                 const int,
                                  const atlas::FieldSet &);
 
 atlas::FieldSet createCorrelUMatrices(const oops::Variables &,
@@ -46,7 +45,6 @@ atlas::FieldSet createCorrelUMatrices(const oops::Variables &,
                                       const atlas::FieldSet &);
 
 atlas::FieldSet createSpectralCorrelations(const oops::Variables &,
-                                           const int,
                                            const atlas::FieldSet &,
                                            const atlas::FieldSet &);
 

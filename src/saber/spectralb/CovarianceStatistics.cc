@@ -41,14 +41,14 @@ CovStat_ErrorCov::CovStat_ErrorCov(const oops::Variables & vars,
   spectralVerticalCovariances_(createSpectralCovariances(
                                vars, modelLevels_, nSpectralBinsFull_,
                                spectralUMatrices_, params)),
-  verticalSD_(createVerticalSD(vars, modelLevels_,
+  verticalSD_(createVerticalSD(vars,
                                spectralVerticalCovariances_)),
   spectralCorrelUMatrices_(createCorrelUMatrices(vars,
                                                  spectralVerticalCovariances_,
                                                  spectralUMatrices_,
                                                  verticalSD_)),
   spectralVerticalCorrelations_(createSpectralCorrelations(
-                                vars, modelLevels_, spectralVerticalCovariances_,
+                                vars, spectralVerticalCovariances_,
                                 verticalSD_))
 {
   for (const std::string & s : vars.variables()) {

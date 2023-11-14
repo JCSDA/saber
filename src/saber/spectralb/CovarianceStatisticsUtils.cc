@@ -159,11 +159,11 @@ atlas::FieldSet createSpectralCovariances(const oops::Variables & activeVars,
 }
 
 atlas::FieldSet createVerticalSD(const oops::Variables & activeVars,
-                                 const int modelLevels,
                                  const atlas::FieldSet & spectralVerticalCovariances) {
   atlas::FieldSet verticalSDs;
 
   for (std::string var : activeVars.variables()) {
+    const int modelLevels = activeVars.getLevels(var);
     auto spectralVertCovView =
       atlas::array::make_view<const double, 3>(spectralVerticalCovariances[var]);
 
@@ -222,12 +222,12 @@ atlas::FieldSet createCorrelUMatrices(const oops::Variables & activeVars,
 }
 
 atlas::FieldSet createSpectralCorrelations(const oops::Variables & activeVars,
-                                           const int modelLevels,
                                            const atlas::FieldSet & spectralVerticalCovariances,
                                            const atlas::FieldSet & verticalSDs) {
   atlas::FieldSet spectralCorrelations;
 
   for (std::string var : activeVars.variables()) {
+    const int modelLevels = activeVars.getLevels(var);
     auto spectralVertCovView =
       atlas::array::make_view<const double, 3>(spectralVerticalCovariances[var]);
 

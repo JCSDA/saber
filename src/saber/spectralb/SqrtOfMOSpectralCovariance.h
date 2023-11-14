@@ -25,8 +25,8 @@ namespace spectralb {
 
 // -----------------------------------------------------------------------------
 
-class SqrtOfSpectralCovarianceParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(SqrtOfSpectralCovarianceParameters, SaberBlockParametersBase)
+class SqrtOfMOSpectralCovarianceParameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(SqrtOfMOSpectralCovarianceParameters, SaberBlockParametersBase)
 
  public:
   oops::OptionalParameter<spectralbParameters> readParams{"read", this};
@@ -35,20 +35,20 @@ class SqrtOfSpectralCovarianceParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class SqrtOfSpectralCovariance : public SaberOuterBlockBase {
+class SqrtOfMOSpectralCovariance : public SaberOuterBlockBase {
  public:
-  static const std::string classname() {return "saber::spectralb::SqrtOfSpectralCovariance";}
+  static const std::string classname() {return "saber::spectralb::SqrtOfMOSpectralCovariance";}
 
-  typedef SqrtOfSpectralCovarianceParameters Parameters_;
+  typedef SqrtOfMOSpectralCovarianceParameters Parameters_;
 
-  SqrtOfSpectralCovariance(const oops::GeometryData &,
+  SqrtOfMOSpectralCovariance(const oops::GeometryData &,
                            const oops::Variables &,
                            const eckit::Configuration &,
                            const Parameters_ &,
                            const oops::FieldSet3D &,
                            const oops::FieldSet3D &);
 
-  virtual ~SqrtOfSpectralCovariance() = default;
+  virtual ~SqrtOfMOSpectralCovariance() = default;
 
   const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}
   const oops::Variables & innerVars() const override {return outerVars_;}

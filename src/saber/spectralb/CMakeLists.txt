@@ -14,16 +14,16 @@ if( atlas_TRANS_FOUND OR atlas_ECTRANS_FOUND )
     spectralb_covstats_interface.h
     spectralb_covstats_interface.F90
     spectralbParameters.h
-    MOSpectralCovariance.cc
-    MOSpectralCovariance.h
+    SpectralCorrelation.cc
+    SpectralCorrelation.h
     SpectralCovariance.cc
     SpectralCovariance.h
     SpectralToGauss.cc
     SpectralToGauss.h
     SpectralToSpectral.cc
     SpectralToSpectral.h
-    SqrtOfSpectralCovariance.cc
-    SqrtOfSpectralCovariance.h
+    SqrtOfMOSpectralCovariance.cc
+    SqrtOfMOSpectralCovariance.h
     )
 
     if( vader_FOUND )
