@@ -40,6 +40,15 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
+inline std::string parametricIfNotEnsemble(const std::string & blockName) {
+  if (blockName == "Ensemble")
+    return blockName;
+  else
+    return "Parametric";
+}
+
+// -----------------------------------------------------------------------------
+
 template <typename MODEL>
 class ErrorCovariance : public oops::ModelSpaceCovarianceBase<MODEL>,
                         public util::Printable,
@@ -254,53 +263,35 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
       cmpCentralBlockParamsWrapper.deserialize(cmpConf.getSubConfiguration("saber central block"));
       const auto & centralBlockParams =
                    cmpCentralBlockParamsWrapper.saberCentralBlockParameters.value();
-      // TODO(AS): move construction of BlockChain to factory method or function
-      if (centralBlockParams.saberBlockName.value() == "Ensemble") {
-        hybridBlockChain_.push_back(std::make_unique<SaberEnsembleBlockChain>(*hybridGeom,
-                          *dualResGeom,
-                          cmpOuterVars,
-                          fset4dXb,
-                          fset4dFg,
-                          fset4dCmpEns,
-                          fsetDualResEns,
-                          cmpCovarConf,
-                          cmpConf));
-      } else {
-        hybridBlockChain_.push_back(std::make_unique<SaberParametricBlockChain>(*hybridGeom,
-                          *dualResGeom,
-                          cmpOuterVars,
-                          fset4dXb,
-                          fset4dFg,
-                          fset4dCmpEns,
-                          fsetDualResEns,
-                          cmpCovarConf,
-                          cmpConf));
-      }
+
+      hybridBlockChain_.push_back
+        (SaberBlockChainFactory<MODEL>::create
+         (parametricIfNotEnsemble(centralBlockParams.saberBlockName.value()),
+          *hybridGeom,
+          *dualResGeom,
+          cmpOuterVars,
+          fset4dXb,
+          fset4dFg,
+          fset4dCmpEns,
+          fsetDualResEns,
+          cmpCovarConf,
+          cmpConf));
     }
     ASSERT(hybridBlockChain_.size() > 0);
   } else {
     // Non-hybrid covariance: single block chain
-    if (saberCentralBlockParams.saberBlockName.value() == "Ensemble") {
-      hybridBlockChain_.push_back(std::make_unique<SaberEnsembleBlockChain>(geom,
-                          *dualResGeom,
-                          outerVars,
-                          fset4dXb,
-                          fset4dFg,
-                          fsetEns,
-                          fsetDualResEns,
-                          covarConf,
-                          params.toConfiguration()));
-    } else {
-      hybridBlockChain_.push_back(std::make_unique<SaberParametricBlockChain>(geom,
-                          *dualResGeom,
-                          outerVars,
-                          fset4dXb,
-                          fset4dFg,
-                          fsetEns,
-                          fsetDualResEns,
-                          covarConf,
-                          params.toConfiguration()));
-    }
+    hybridBlockChain_.push_back
+      (SaberBlockChainFactory<MODEL>::create
+       (parametricIfNotEnsemble(saberCentralBlockParams.saberBlockName.value()),
+        geom,
+        *dualResGeom,
+        outerVars,
+        fset4dXb,
+        fset4dFg,
+        fsetEns,
+        fsetDualResEns,
+        covarConf,
+        params.toConfiguration()));
 
     // Set weights
     hybridScalarWeightSqrt_.push_back(1.0);

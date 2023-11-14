@@ -9,6 +9,7 @@
 
 #include "oops/base/instantiateCovarFactory.h"
 
+#include "saber/blocks/instantiateBlockChainFactory.h"
 #include "saber/oops/ErrorCovariance.h"
 #include "saber/oops/instantiateLocalizationFactory.h"
 
@@ -20,6 +21,7 @@ template <typename MODEL> void instantiateCovarFactory() {
   oops::instantiateCovarFactory<MODEL>();
   static oops::CovarMaker<MODEL, ErrorCovariance<MODEL> > makerSABER_("SABER");
   instantiateLocalizationFactory<MODEL>();
+  instantiateBlockChainFactory<MODEL>();
 }
 
 // -----------------------------------------------------------------------------

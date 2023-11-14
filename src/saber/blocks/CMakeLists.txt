@@ -29,6 +29,9 @@ SaberOuterBlockChain.h
 # SABER parametric block chain
 SaberParametricBlockChain.cc
 SaberParametricBlockChain.h
+
+# Factories
+instantiateBlockChainFactory.h
 )
 
 set( blocks_src_files ${blocks_src_files_list} PARENT_SCOPE )
