@@ -12,6 +12,7 @@
 #include <boost/noncopyable.hpp>
 
 #include "eckit/config/Configuration.h"
+#include "eckit/exception/Exceptions.h"
 
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"

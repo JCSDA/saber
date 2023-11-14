@@ -36,8 +36,12 @@
 
 namespace saber {
 
+// -----------------------------------------------------------------------------
+
 oops::Variables getActiveVars(const SaberBlockParametersBase &,
                               const oops::Variables &);
+
+// -----------------------------------------------------------------------------
 
 void setMPI(eckit::LocalConfiguration & conf,
             const int & mpi);

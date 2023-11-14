@@ -80,7 +80,7 @@ class SaberParametricBlockChain : public SaberBlockChainBase {
 
 template<typename MODEL>
 SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL> & geom,
-                       const oops::Geometry<MODEL> & dualResolutionGeom,
+                       const oops::Geometry<MODEL> & dualResGeom,
                        const oops::Variables & outerVars,
                        const oops::FieldSet4D & fset4dXb,
                        const oops::FieldSet4D & fset4dFg,
@@ -103,14 +103,14 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
       cmpOuterBlockParamsWrapper.deserialize(cmpOuterBlockConf);
       cmpOuterBlocksParams.push_back(cmpOuterBlockParamsWrapper);
     }
-    outerBlockChain_ = std::make_unique<SaberOuterBlockChain>(geom, outerVars,
+    outerBlockChain_ = std::make_unique<SaberOuterBlockChain>(geom, outerVariables_,
                           fset4dXb, fset4dFg, fsetEns, covarConf,
                           cmpOuterBlocksParams);
   }
 
   // Set outer variables and geometry data for central block
-  oops::Variables currentOuterVars = outerBlockChain_ ?
-                             outerBlockChain_->innerVars() : outerVars;
+  const oops::Variables currentOuterVars = outerBlockChain_ ?
+                             outerBlockChain_->innerVars() : outerVariables_;
   const oops::GeometryData & currentOuterGeom = outerBlockChain_ ?
                              outerBlockChain_->innerGeometryData() : geom.generic();
 
@@ -169,7 +169,7 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
         // Read ensemble member
         atlas::FieldSet fset;
         readEnsembleMember(geom,
-                           outerVars,
+                           outerVariables_,
                            fset4dXb[0].validTime(),
                            ensembleConf,
                            ie,
@@ -203,10 +203,10 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
     oops::Log::info() << "Info     : Dual resolution setup" << std::endl;
 
     // Dual resolution setup
-    centralBlock_->dualResolutionSetup(dualResolutionGeom.generic());
+    centralBlock_->dualResolutionSetup(dualResGeom.generic());
 
     // Ensemble configuration
-    eckit::LocalConfiguration dualResolutionEnsembleConf
+    eckit::LocalConfiguration dualResEnsembleConf
       = covarConf.getSubConfiguration("dual resolution ensemble configuration");
 
     if (iterativeEnsembleLoading) {
@@ -216,16 +216,16 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
       // Initialization
       centralBlock_->iterativeCalibrationInit();
 
-     // Get dual resolution ensemble size
-      size_t dualResolutionNens = dualResolutionEnsembleConf.getInt("ensemble size");
+      // Get dual resolution ensemble size
+      const size_t dualResNens = dualResEnsembleConf.getInt("ensemble size");
 
-      for (size_t ie = 0; ie < dualResolutionNens; ++ie) {
+      for (size_t ie = 0; ie < dualResNens; ++ie) {
         // Read ensemble member
         atlas::FieldSet fset;
-        readEnsembleMember(dualResolutionGeom,
-                           outerVars,
+        readEnsembleMember(dualResGeom,
+                           outerVariables_,
                            fset4dXb[0].validTime(),
-                           dualResolutionEnsembleConf,
+                           dualResEnsembleConf,
                            ie,
                            fset);
 
@@ -257,7 +257,7 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
     const eckit::LocalConfiguration outputEnsembleConf(covarConf, "output ensemble");
 
     // Check whether geometry grid is similar to the last outer block inner geometry
-    const bool useModelWriter = (util::getGridUid(geom.generic().functionSpace())
+    const bool useModelWriter = (util::getGridUid(geom.functionSpace())
       == util::getGridUid(currentOuterGeom.functionSpace()));
 
     // Get ensemble size
@@ -293,28 +293,26 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
       oops::Log::info() << "Info     : Write member " << ie << std::endl;
 
       // Increment pointer
-      std::unique_ptr<oops::Increment<MODEL>> dx;
+      oops::Increment<MODEL> dx(geom, activeVars, fset4dXb[0].validTime());
 
       // Get ensemble member
       if (iterativeEnsembleLoading) {
         // Read ensemble member
-        dx.reset(new oops::Increment<MODEL>(geom, activeVars, fset4dXb[0].validTime()));
         readEnsembleMember(geom, activeVars, fset4dXb[0].validTime(), ensembleConf, ie,
-                           dx->fieldSet());
+                           dx.fieldSet());
 
         // Remove mean
-        util::subtractFieldSets(dx->fieldSet(), fsetMean);
+        util::subtractFieldSets(dx.fieldSet(), fsetMean);
 
         // Apply outer blocks inverse
-        if (outerBlockChain_) outerBlockChain_->leftInverseMultiply(dx->fieldSet());
+        if (outerBlockChain_) outerBlockChain_->leftInverseMultiply(dx.fieldSet());
       } else {
         // Copy member
-        dx.reset(new oops::Increment<MODEL>(geom, activeVars, fset4dXb[0].validTime()));
-        dx->fieldSet() = fsetEns[ie];
+        dx.fieldSet() = fsetEns[ie];
       }
 
       // ATLAS fieldset to Increment_
-      dx->synchronizeFields();
+      dx.synchronizeFields();
 
       if (useModelWriter) {
         // Use model writer
@@ -324,8 +322,8 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
         util::setMember(outputMemberConf, ie+1);
 
         // Write Increment
-        dx->write(outputMemberConf);
-        oops::Log::test() << "Norm of ensemble member " << ie << ": " << dx->norm() << std::endl;
+        dx.write(outputMemberConf);
+        oops::Log::test() << "Norm of ensemble member " << ie << ": " << dx.norm() << std::endl;
       } else {
         // Use generic ATLAS writer
         throw eckit::NotImplemented("generic output ensemble write not implemented yet", Here());

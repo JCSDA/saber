@@ -97,11 +97,6 @@ Fields::Fields(const Fields & other, const Geometry & geom):
     interp.execute(other.fset_, fset_);
   }
 
-  // Interpolate
-  saber::interpolation::AtlasInterpWrapper interp(other.geom_->partitioner(),
-    other.geom_->functionSpace(), geom.grid(), geom.functionSpace());
-  interp.execute(other.fset_, fset_);
-
   oops::Log::trace() << "Fields::Fields done" << std::endl;
 }
 // -----------------------------------------------------------------------------

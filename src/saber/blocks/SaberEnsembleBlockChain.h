@@ -87,7 +87,7 @@ class SaberEnsembleBlockChain : public SaberBlockChainBase {
 
 template<typename MODEL>
 SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & geom,
-                       const oops::Geometry<MODEL> & dualResolutionGeom,
+                       const oops::Geometry<MODEL> & dualResGeom,
                        const oops::Variables & outerVars,
                        const oops::FieldSet4D & fset4dXb,
                        const oops::FieldSet4D & fset4dFg,
@@ -252,7 +252,7 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
   const auto & locConf = saberCentralBlockParams.localization.value();
   if (locConf != boost::none) {
     // Initialize localization blockchain
-    locBlockChain_ = std::make_unique<SaberParametricBlockChain>(geom, dualResolutionGeom,
+    locBlockChain_ = std::make_unique<SaberParametricBlockChain>(geom, dualResGeom,
       outerVars, fset4dXb, fset4dFg, fsetEns, fsetDualResEns, covarConfUpdated, *locConf);
   }
   // Direct calibration

@@ -55,7 +55,6 @@ template <typename MODEL> class ErrorCovarianceToolboxParameters :
  public:
   typedef oops::ModelSpaceCovarianceParametersWrapper<MODEL> CovarianceParameters_;
   typedef typename oops::Geometry<MODEL>::Parameters_        GeometryParameters_;
-  typedef oops::State<MODEL>                                 State_;
 
   /// Geometry parameters.
   oops::RequiredParameter<GeometryParameters_> geometry{"geometry", this};
@@ -108,7 +107,7 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
 
  public:
 // -----------------------------------------------------------------------------
-  explicit ErrorCovarianceToolbox(const eckit::mpi::Comm & comm = oops::mpi::world()) :
+  explicit ErrorCovarianceToolbox(const eckit::mpi::Comm & comm = eckit::mpi::comm()) :
     Application(comm) {
     oops::instantiateCovarFactory<MODEL>();
   }

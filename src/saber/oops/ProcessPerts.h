@@ -107,7 +107,7 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
 
  public:
 // -----------------------------------------------------------------------------
-  explicit ProcessPerts(const eckit::mpi::Comm & comm = oops::mpi::world()) :
+  explicit ProcessPerts(const eckit::mpi::Comm & comm = eckit::mpi::comm()) :
     Application(comm) {
     oops::instantiateCovarFactory<MODEL>();
   }
@@ -154,7 +154,7 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
     }
 
     std::vector<atlas::FieldSet> fsetEns;
-    std::vector<atlas::FieldSet> dualResolutionFsetEns;
+    std::vector<atlas::FieldSet> dualResFsetEns;
     eckit::LocalConfiguration covarConf;
     covarConf.set("iterative ensemble loading", false);
     covarConf.set("inverse test", false);
@@ -165,7 +165,7 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
 
     // Initialize filter blockchain
     saberFilterBlocks = std::make_unique<SaberParametricBlockChain>(geom, geom,
-      incVars, fsetXb, fsetFg, fsetEns, dualResolutionFsetEns,
+      incVars, fsetXb, fsetFg, fsetEns, dualResFsetEns,
       covarConf, filterCovarianceBlockConf);
 
     // Yaml validation

@@ -117,7 +117,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
 
   // Initialize outer variables
   const std::vector<std::size_t> vlevs = geom.variableSizes(incVars);
-  oops::Variables outerVars(incVars.variables());
+  oops::Variables outerVars(incVars);
   for (std::size_t i = 0; i < vlevs.size() ; ++i) {
     outerVars.addMetaData(outerVars[i], "levels", vlevs[i]);
   }
@@ -149,15 +149,15 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
   covarConf.set("ensemble configuration", ensembleConf);
   // Read dual resolution ensemble if needed
   const auto & dualResParams = params.dualResParams.value();
-  const oops::Geometry<MODEL> * dualResGeom = &geom;
+  const Geometry_ * dualResGeom = &geom;
   std::vector<atlas::FieldSet> fsetDualResEns;
   if (dualResParams != boost::none) {
     const auto & dualResGeomConf = dualResParams->geometry.value();
     if (dualResGeomConf != boost::none) {
       // Create dualRes geometry
-      typename oops::Geometry<MODEL>::Parameters_ dualResGeomParams;
+      typename Geometry_::Parameters_ dualResGeomParams;
       dualResGeomParams.deserialize(*dualResGeomConf);
-      dualResGeom = new oops::Geometry<MODEL>(dualResGeomParams, geom.getComm());
+      dualResGeom = new Geometry_(dualResGeomParams, geom.getComm());
     }
     // Background and first guess at dual resolution geometry
     oops::State<MODEL> xbDualRes(*dualResGeom, xb[0]);
@@ -203,9 +203,9 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
     eckit::LocalConfiguration hybridConf = saberCentralBlockParams.toConfiguration();
 
     // Create block geometry (needed for ensemble reading)
-    const oops::Geometry<MODEL> * hybridGeom = &geom;
+    const Geometry_ * hybridGeom = &geom;
     if (hybridConf.has("geometry")) {
-      hybridGeom = new oops::Geometry<MODEL>(hybridConf.getSubConfiguration("geometry"),
+      hybridGeom = new Geometry_(hybridConf.getSubConfiguration("geometry"),
         geom.getComm());
     }
 
@@ -213,7 +213,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
     for (const auto & cmp : hybridConf.getSubConfigurations("components")) {
       // Initialize component outer variables
       // TODO(AS): this should be either outerVars or outerBlockChain_->innerVars();
-      oops::Variables cmpOuterVars(outerVars);
+      const oops::Variables cmpOuterVars(outerVars);
 
       // Set weight
       eckit::LocalConfiguration weightConf = cmp.getSubConfiguration("weight");

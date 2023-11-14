@@ -107,10 +107,6 @@ Geometry::Geometry(const eckit::Configuration & config, const eckit::mpi::Comm &
     ABORT(params.functionSpace.value() + " function space not supported yet");
   }
 
-  // Ghost points
-  atlas::Field ghost = functionSpace_.ghost();
-  auto ghostView = atlas::array::make_view<int, 1>(ghost);
-
   // Groups
   size_t groupIndex = 0;
   for (const auto & groupParams : params.groups.value()) {
@@ -246,6 +242,7 @@ Geometry::Geometry(const eckit::Configuration & config, const eckit::mpi::Comm &
     // Mask size
     group.gmaskSize_ = 0.0;
     size_t domainSize = 0.0;
+    auto ghostView = atlas::array::make_view<int, 1>(functionSpace_.ghost());
     for (atlas::idx_t jnode = 0; jnode < gmask.shape(0); ++jnode) {
       for (atlas::idx_t jlevel = 0; jlevel < gmask.shape(1); ++jlevel) {
         if (ghostView(jnode) == 0) {

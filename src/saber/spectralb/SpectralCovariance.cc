@@ -218,7 +218,7 @@ void SpectralCovariance::write() const {
 
   const std::string filepath{writeParams.filePath};
   const std::string mpi_pattern = writeParams.mpiPattern;
-  const std::string mpi_size = std::to_string(oops::mpi::world().size());
+  const std::string mpi_size = std::to_string(eckit::mpi::comm().size());
   ::util::seekAndReplace(writeConfig, mpi_pattern, mpi_size);
   const std::string ncfilepath = "./" + writeConfig.getString("file path");
 
@@ -255,7 +255,7 @@ void SpectralCovariance::write() const {
   std::vector<int> netcdf_var_ids;
   std::vector<std::vector<int>> netcdf_dim_var_ids;
 
-  if (oops::mpi::world().rank() == root) {
+  if (eckit::mpi::comm().rank() == root) {
     ::util::atlasArrayWriteHeader(ncfilepath,
                                   dim_names,
                                   dim_sizes,
