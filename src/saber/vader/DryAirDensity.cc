@@ -18,6 +18,7 @@
 
 #include "mo/common_varchange.h"
 #include "mo/control2analysis_linearvarchange.h"
+#include "mo/eval_air_pressure_levels.h"
 #include "mo/eval_dry_air_density.h"
 #include "mo/eval_sat_vapour_pressure.h"
 #include "mo/eval_virtual_potential_temperature.h"
@@ -51,18 +52,21 @@ DryAirDensity::DryAirDensity(const oops::GeometryData & outerGeometryData,
   oops::Log::trace() << classname() << "::DryAirDensity starting" << std::endl;
 
   // Need to setup derived state fields that we need.
-  std::vector<std::string> requiredStateVariables{"air_pressure_levels_minus_one",
-                                                  "dry_air_density_levels_minus_one",
-                                                  "height",
-                                                  "height_levels",
-                                                  "m_ci",
-                                                  "m_cl",
-                                                  "m_r",
-                                                  "m_v",
-                                                  "m_t",
-                                                  "potential_temperature",
-                                                  "specific_humidity",
-                                                  "virtual_potential_temperature"};
+  std::vector<std::string> requiredStateVariables{
+      "air_pressure_levels",
+      "air_pressure_levels_minus_one",  // Assumed already populated
+      "exner_levels_minus_one",         // Assumed already populated
+      "dry_air_density_levels_minus_one",
+      "height",
+      "height_levels",
+      "m_ci",
+      "m_cl",
+      "m_r",
+      "m_v",
+      "m_t",
+      "potential_temperature",          // Assumed already populated
+      "specific_humidity",
+      "virtual_potential_temperature"};
 
 
   // Check that they are allocated (i.e. exist in the state fieldset)
@@ -92,7 +96,8 @@ DryAirDensity::DryAirDensity(const oops::GeometryData & outerGeometryData,
   mo::eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
               augmentedStateFieldSet_);
   mo::eval_virtual_potential_temperature_nl(augmentedStateFieldSet_);
-  mo::eval_dry_air_density_nl(augmentedStateFieldSet_);
+  mo::eval_air_pressure_levels_nl(augmentedStateFieldSet_);
+  mo::eval_dry_air_density_from_pressure_levels_nl(augmentedStateFieldSet_);
 
   augmentedStateFieldSet_.haloExchange();
 
@@ -111,7 +116,7 @@ DryAirDensity::~DryAirDensity() {
 
 void DryAirDensity::multiply(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  mo::eval_dry_air_density_tl(fset, augmentedStateFieldSet_);
+  mo::eval_dry_air_density_from_pressure_levels_tl(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
@@ -120,7 +125,7 @@ void DryAirDensity::multiply(atlas::FieldSet & fset) const {
 
 void DryAirDensity::multiplyAD(atlas::FieldSet & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  mo::eval_dry_air_density_ad(fset, augmentedStateFieldSet_);
+  mo::eval_dry_air_density_from_pressure_levels_ad(fset, augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 

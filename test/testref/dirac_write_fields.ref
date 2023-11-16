@@ -2,94 +2,88 @@ Wrote file testdata/dirac_write_fields/fields_initial_xb_0.nc with fields:
   air_temperature: 6.9612733413378621e+04
   eastward_wind: 4.3110191105979111e+03
   northward_wind: 2.6855538642475080e+03
+
 Wrote file testdata/dirac_write_fields/fields_initial_fg_0.nc with fields:
   air_temperature: 6.9612733413378621e+04
   eastward_wind: 4.3110191105979111e+03
   northward_wind: 2.6855538642475080e+03
+
 Wrote file testdata/dirac_write_fields/fields_initial_multiply_0.nc with fields:
   air_temperature: 2.8526486981989632e+02
   eastward_wind: 2.8429020128491067e+02
   northward_wind: 2.8334160203475670e+02
-Wrote file testdata/dirac_write_fields/fields_initial_multiplyad_0.nc with fields:
-  air_temperature: 2.8444179418063004e+02
-  eastward_wind: 2.8432026938315141e+02
-  northward_wind: 2.8315429052484058e+02
-Adjoint test for block write fields passed
-Wrote file testdata/dirac_write_fields/fields_initial_multiply_1.nc with fields:
-  air_temperature: 2.8499632687058931e+02
-  eastward_wind: 2.8400315249564449e+02
-  northward_wind: 2.8408153041569494e+02
+
 Wrote file testdata/dirac_write_fields/fields_initial_leftinversemultiply_0.nc with fields:
-  air_temperature: 2.8499632687058931e+02
-  eastward_wind: 2.8400315249564449e+02
-  northward_wind: 2.8408153041569494e+02
-Wrote file testdata/dirac_write_fields/fields_initial_multiply_2.nc with fields:
-  air_temperature: 2.8499632687058931e+02
-  eastward_wind: 2.8400315249564449e+02
-  northward_wind: 2.8408153041569494e+02
+  air_temperature: 2.8526486981989575e+02
+  eastward_wind: 2.8429020128491231e+02
+  northward_wind: 2.8334160203475454e+02
+
+Wrote file testdata/dirac_write_fields/fields_initial_multiply_1.nc with fields:
+  air_temperature: 2.8526486981989575e+02
+  eastward_wind: 2.8429020128491231e+02
+  northward_wind: 2.8334160203475454e+02
+
 Inner inverse test for block write fields passed: U Uinv (U x) == (U x)
 Wrote file testdata/dirac_write_fields/fields_initial_leftinversemultiply_1.nc with fields:
-  air_temperature: 2.8362383525832468e+02
-  eastward_wind: 2.8486644197345265e+02
-  northward_wind: 2.8474300942349510e+02
-Wrote file testdata/dirac_write_fields/fields_initial_multiply_3.nc with fields:
-  air_temperature: 2.8362383525832468e+02
-  eastward_wind: 2.8486644197345265e+02
-  northward_wind: 2.8474300942349510e+02
+  air_temperature: 2.8444179418063044e+02
+  eastward_wind: 2.8432026938315005e+02
+  northward_wind: 2.8315429052484080e+02
+
+Wrote file testdata/dirac_write_fields/fields_initial_multiply_2.nc with fields:
+  air_temperature: 2.8444179418063044e+02
+  eastward_wind: 2.8432026938315005e+02
+  northward_wind: 2.8315429052484080e+02
+
 Wrote file testdata/dirac_write_fields/fields_initial_leftinversemultiply_2.nc with fields:
-  air_temperature: 2.8362383525832468e+02
-  eastward_wind: 2.8486644197345265e+02
-  northward_wind: 2.8474300942349510e+02
+  air_temperature: 2.8444179418063044e+02
+  eastward_wind: 2.8432026938315005e+02
+  northward_wind: 2.8315429052484080e+02
+
 Outer inverse test for block write fields passed: Uinv U (Uinv x) == (Uinv x)
-Adjoint test for block mo_dry_air_density passed
 skipping inverse test for block mo_dry_air_density
-Adjoint test for block mo_moistincrop passed
 Inner inverse test for block mo_moistincrop passed: U Uinv (U x) == (U x)
 Outer inverse test for block mo_moistincrop passed: Uinv U (Uinv x) == (Uinv x)
-Adjoint test for block mo_air_temperature passed
 skipping inverse test for block mo_air_temperature
-Adjoint test for block mo_moisture_control passed
 Inner inverse test for block mo_moisture_control passed: U Uinv (U x) == (U x)
 Outer inverse test for block mo_moisture_control passed: Uinv U (Uinv x) == (Uinv x)
-Adjoint test for block mo_hydro_bal passed
 Inner inverse test for block mo_hydro_bal passed: U Uinv (U x) == (U x)
 Outer inverse test for block mo_hydro_bal passed: Uinv U (Uinv x) == (Uinv x)
-Adjoint test for block mo_hydrostatic_exner passed
 Inner inverse test for block mo_hydrostatic_exner passed: U Uinv (U x) == (U x)
 Outer inverse test for block mo_hydrostatic_exner passed: Uinv U (Uinv x) == (Uinv x)
 Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_xb_0.nc with fields:
   eastward_wind: 4.3110191105979111e+03
+
 Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_fg_0.nc with fields:
   eastward_wind: 4.3110191105979111e+03
+
 Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_multiply_0.nc with fields:
-  eastward_wind: 2.8377002796940235e+02
-Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_multiplyad_0.nc with fields:
-  eastward_wind: 2.8389126587499504e+02
-Adjoint test for block write fields passed
-Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_multiply_1.nc with fields:
-  eastward_wind: 2.8405473897335003e+02
+  eastward_wind: 2.8346469850476291e+02
+
 Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_leftinversemultiply_0.nc with fields:
-  eastward_wind: 2.8405473897335003e+02
-Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_multiply_2.nc with fields:
-  eastward_wind: 2.8405473897335003e+02
+  eastward_wind: 2.8346469850476291e+02
+
+Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_multiply_1.nc with fields:
+  eastward_wind: 2.8346469850476291e+02
+
 Inner inverse test for block write fields passed: U Uinv (U x) == (U x)
 Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_leftinversemultiply_1.nc with fields:
-  eastward_wind: 2.8382366060902496e+02
-Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_multiply_3.nc with fields:
-  eastward_wind: 2.8382366060902496e+02
+  eastward_wind: 2.8467132487867752e+02
+
+Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_multiply_2.nc with fields:
+  eastward_wind: 2.8467132487867752e+02
+
 Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_leftinversemultiply_2.nc with fields:
-  eastward_wind: 2.8382366060902496e+02
+  eastward_wind: 2.8467132487867752e+02
+
 Outer inverse test for block write fields passed: Uinv U (Uinv x) == (Uinv x)
-Adjoint test for block gauss winds to geostrophic pressure passed
 skipping inverse test for block gauss winds to geostrophic pressure
-Adjoint test for block spectral to gauss passed
 Inner inverse test for block spectral to gauss passed: U Uinv (U x) == (U x)
 Outer inverse test for block spectral to gauss passed: Uinv U (Uinv x) == (Uinv x)
 Wrote file testdata/dirac_write_fields/fields_final_xb_0.nc with fields:
   eastward_wind: 4.3110191105979111e+03
+
 Wrote file testdata/dirac_write_fields/fields_final_fg_0.nc with fields:
   eastward_wind: 4.3110191105979111e+03
-Adjoint test for block write fields passed
+
 Inner inverse test for block write fields passed: U Uinv (U x) == (U x)
 Outer inverse test for block write fields passed: Uinv U (Uinv x) == (Uinv x)
-Adjoint test for block spectral covariance passed

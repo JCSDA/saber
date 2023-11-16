@@ -57,6 +57,28 @@ geometry:
     levels: 71
   partitioner: ectrans
   halo: 1
+
+increment variables:
+# Model variables
+- dry_air_density_levels_minus_one
+- eastward_wind
+- exner_levels_minus_one
+- mass_content_of_cloud_ice_in_atmosphere_layer
+- mass_content_of_cloud_liquid_water_in_atmosphere_layer
+- northward_wind
+- potential_temperature
+- specific_humidity
+- virtual_potential_temperature
+# Derived variables
+- air_pressure_levels
+- air_temperature
+- geostrophic_pressure_levels_minus_one
+- hydrostatic_exner_levels
+- hydrostatic_pressure_levels
+- mu
+- qt
+- unbalanced_pressure_levels_minus_one
+
 background error:
   covariance model: SABER
   adjoint test: true

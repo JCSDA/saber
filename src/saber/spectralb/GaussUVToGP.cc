@@ -168,7 +168,7 @@ atlas::FieldSet populateFields(const atlas::FieldSet & geomfields,
   mo::evalTotalMassMoistAir(tempfields);
   mo::eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl(tempfields);
   mo::eval_virtual_potential_temperature_nl(tempfields);
-  mo::eval_dry_air_density_nl(tempfields);
+  mo::eval_dry_air_density_from_pressure_levels_minus_one_nl(tempfields);
 
   return atlas::FieldSet(tempfields[outputVariable]);
 }

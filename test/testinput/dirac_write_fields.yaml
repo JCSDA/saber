@@ -106,10 +106,7 @@ background:
 
 background error:
   covariance model: SABER
-  adjoint test: true
   inverse test: true
-  # Small tolerances to illustrate local overriding in saber blocks:
-  adjoint tolerance: 1e-12
   inverse tolerance: 1e-15
   saber central block:
     saber block name: spectral covariance

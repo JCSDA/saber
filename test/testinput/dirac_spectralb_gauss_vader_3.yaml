@@ -208,43 +208,27 @@ background:
   - unbalanced_pressure_levels_minus_one
   - virtual_potential_temperature
   filepath: testdata/gauss_state
+
 increment variables:
-- air_pressure
-- air_pressure_levels
-- air_pressure_levels_minus_one
-- air_temperature
+# Model variables
 - dry_air_density_levels_minus_one
 - eastward_wind
-- exner
 - exner_levels_minus_one
-- hydrostatic_exner_levels
-- hydrostatic_pressure_levels
-- ice_cloud_volume_fraction_in_atmosphere_layer
-- liquid_cloud_volume_fraction_in_atmosphere_layer
-- mass_content_of_cloud_liquid_water_in_atmosphere_layer
 - mass_content_of_cloud_ice_in_atmosphere_layer
-- mu
-- muA
-- muH1
-- muRecipDeterminant
-- muRow1Column1
-- muRow1Column2
-- muRow2Column1
-- muRow2Column2
-- m_ci
-- m_cl
-- m_r
-- m_t
-- m_v
+- mass_content_of_cloud_liquid_water_in_atmosphere_layer
 - northward_wind
 - potential_temperature
-- qrain
-- qsat
-- qt
-- rht
 - specific_humidity
-- unbalanced_pressure_levels_minus_one
 - virtual_potential_temperature
+# Derived variables
+- air_pressure_levels
+- air_temperature
+- hydrostatic_exner_levels
+- hydrostatic_pressure_levels
+- mu
+- qt
+- unbalanced_pressure_levels_minus_one
+
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_spectralb_gauss_vader_3/dirac_%id%_%MPI%
