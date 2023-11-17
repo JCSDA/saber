@@ -16,7 +16,7 @@
 #include "oops/base/Variables.h"
 
 #include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberCentralBlockBase.h"
+#include "saber/blocks/SaberOuterBlockBase.h"
 #include "saber/spectralb/spectralbParameters.h"
 
 namespace saber {
@@ -24,41 +24,38 @@ namespace spectralb {
 
 // -----------------------------------------------------------------------------
 
-class SpectralCorrelationParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(SpectralCorrelationParameters, SaberBlockParametersBase)
+class SqrtOfSpectralCorrelationParameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(SqrtOfSpectralCorrelationParameters, SaberBlockParametersBase)
 
  public:
-  oops::OptionalParameter<spectralbCalibrationVertCovParameters>
-    calibrationParams{"calibration", this};
   oops::OptionalParameter<spectralbReadParameters> readParams{"read", this};
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
 
 // -----------------------------------------------------------------------------
 
-class SpectralCorrelation : public SaberCentralBlockBase {
+class SqrtOfSpectralCorrelation : public SaberOuterBlockBase {
  public:
-  static const std::string classname() {return "saber::spectralb::SpectralCorrelation";}
+  static const std::string classname() {return "saber::spectralb::SqrtOfSpectralCorrelation";}
 
-  typedef SpectralCorrelationParameters Parameters_;
+  typedef SqrtOfSpectralCorrelationParameters Parameters_;
 
-  SpectralCorrelation(const oops::GeometryData &,
-                      const oops::Variables &,
-                      const eckit::Configuration &,
-                      const Parameters_ &,
-                      const oops::FieldSet3D &,
-                      const oops::FieldSet3D &);
+  SqrtOfSpectralCorrelation(const oops::GeometryData &,
+                            const oops::Variables &,
+                            const eckit::Configuration &,
+                            const Parameters_ &,
+                            const oops::FieldSet3D &,
+                            const oops::FieldSet3D &);
 
-  virtual ~SpectralCorrelation() = default;
+  virtual ~SqrtOfSpectralCorrelation() = default;
 
-  void randomize(atlas::FieldSet &) const override;
+  const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}
+  const oops::Variables & innerVars() const override {return outerVars_;}
+
   void multiply(atlas::FieldSet &) const override;
+  void multiplyAD(atlas::FieldSet &) const override;
 
   void read() override;
-
-  void directCalibration(const std::vector<atlas::FieldSet> &) override;
-
-  void write() const override;
 
  private:
   void print(std::ostream &) const override;
@@ -67,12 +64,15 @@ class SpectralCorrelation : public SaberCentralBlockBase {
   Parameters_ params_;
   /// Active variables
   const oops::Variables activeVars_;
-  /// Vertical Spectral Correlations
-  atlas::FieldSet spectralVerticalCorrelations_;
-  /// Geometry data
-  const oops::GeometryData & geometryData_;
+  /// Outer variables
+  oops::Variables outerVars_;
+
+  /// Covariance statistics
+  atlas::FieldSet spectralCorrelUMatrices_;
   /// Spectral FunctionSpace
   const atlas::functionspace::Spectral specFunctionSpace_;
+  /// Geometry data
+  const oops::GeometryData & innerGeometryData_;
 };
 
 }  // namespace spectralb

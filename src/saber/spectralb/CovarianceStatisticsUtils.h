@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2017-2022 Met Office
+ * (C) Crown Copyright 2017-2023 Met Office
  * 
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0. 
@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "atlas/field.h"
+#include "atlas/functionspace.h"
 
 #include "eckit/mpi/Comm.h"
 
@@ -22,22 +23,10 @@
 
 namespace saber {
 namespace spectralb {
+namespace specutils {
 
-std::vector<std::size_t> getNSpectralBinsFull(const spectralbParameters &);
-
-atlas::FieldSet createUMatrices(const oops::Variables &,
-                                const int,
-                                const std::vector<std::size_t> &,
-                                const spectralbParameters &);
-
-atlas::FieldSet createSpectralCovariances(const oops::Variables &,
-                                          const int,
-                                          const std::vector<std::size_t> &,
-                                          const atlas::FieldSet &,
-                                          const spectralbParameters &);
-
-atlas::FieldSet createVerticalSD(const oops::Variables &,
-                                 const atlas::FieldSet &);
+void copySpectralFieldSet(const atlas::FieldSet &,
+                          atlas::FieldSet &);
 
 atlas::FieldSet createCorrelUMatrices(const oops::Variables &,
                                       const atlas::FieldSet &,
@@ -50,23 +39,51 @@ atlas::FieldSet createSpectralCorrelations(const oops::Variables &,
 
 void createSpectralCovarianceFromUMatrixFile(const std::string &,
                                              const std::string &,
-                                             const spectralbReadVertCovParameters &,
+                                             const spectralbReadParameters &,
                                              atlas::Field &);
 
-void readSpectralCovarianceFromFile(const std::string &,
-                                    const spectralbReadVertCovParameters &,
-                                    atlas::Field &);
+atlas::FieldSet createSpectralCovariances(const oops::Variables &,
+                                          const std::vector<std::size_t> &,
+                                          const std::size_t,
+                                          const atlas::FieldSet &);
 
-void updateSpectralVerticalCovariances(
-    const std::vector<atlas::FieldSet> & ensFieldSet,
-    int & priorSampleSize,
-    atlas::FieldSet & spectralVerticalCovariances);
+atlas::FieldSet createUMatrices(const oops::Variables &,
+                                const std::vector<std::size_t> &,
+                                const spectralbReadParameters &);
 
-void copySpectralFieldSet(const atlas::FieldSet &,
-                          atlas::FieldSet &);
+atlas::FieldSet createVerticalSD(const oops::Variables &,
+                                 const atlas::FieldSet &);
 
 void gatherSumSpectralFieldSet(const eckit::mpi::Comm &,
-                               const std::size_t & root,
+                               const std::size_t root,
                                atlas::FieldSet & spectralVerticalCovariances);
+
+std::vector<std::size_t> getNSpectralBinsFull(const spectralbReadParameters &);
+
+void readSpectralCovarianceFromFile(const std::string &,
+                                    const spectralbReadParameters &,
+                                    atlas::Field &);
+
+void spectralVerticalConvolution(const oops::Variables &,
+                                 const atlas::functionspace::Spectral &,
+                                 const atlas::FieldSet &,
+                                 atlas::FieldSet &);
+
+void spectralVerticalConvolutionSqrt(const oops::Variables &,
+                                     const atlas::functionspace::Spectral &,
+                                     const atlas::FieldSet &,
+                                     atlas::FieldSet &);
+
+void spectralVerticalConvolutionSqrtAD(const oops::Variables &,
+                                       const atlas::functionspace::Spectral &,
+                                       const atlas::FieldSet &,
+                                       atlas::FieldSet &);
+
+void updateSpectralVerticalCovariances(
+  const std::vector<atlas::FieldSet> & ensFieldSet,
+  int & priorSampleSize,
+  atlas::FieldSet & spectralVerticalCovariances);
+
+}  // namespace specutils
 }  // namespace spectralb
 }  // namespace saber

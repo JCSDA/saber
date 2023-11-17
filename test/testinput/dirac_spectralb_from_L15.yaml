@@ -21,7 +21,6 @@ background error:
     - streamfunction
     read:
       covariance_file: testdata/CovStats.nc
-      gauss_grid_uid: F15
       umatrix_netcdf_names:
       - PSI_inc_Uv_matrix
   saber outer blocks:

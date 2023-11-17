@@ -5,6 +5,7 @@ dirac_spectralb_from_CS
 dirac_spectralb_from_L15
 dirac_spectraltouv
 dirac_sqrtspectralb
+dirac_sqrtspectralb_correl_1
 dirac_vertproj
 dirac_spectralb_localization_1
 dirac_spectralb_localization_2

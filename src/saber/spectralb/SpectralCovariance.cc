@@ -6,8 +6,6 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include <cmath>
-
 #include "saber/spectralb/SpectralCovariance.h"
 
 #include "atlas/array/MakeView.h"
@@ -71,52 +69,10 @@ void SpectralCovariance::randomize(atlas::FieldSet & fieldSet) const {
 void SpectralCovariance::multiply(atlas::FieldSet & fieldSet) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
 
-  using atlas::array::make_view;
-  using atlas::idx_t;
-
-  const idx_t N = specFunctionSpace_.truncation();
-
-  std::vector<std::string> vertCovNames = spectralVerticalCovariances_.field_names();
-
-  const auto zonal_wavenumbers = specFunctionSpace_.zonal_wavenumbers();
-  const idx_t nb_zonal_wavenumbers = zonal_wavenumbers.size();
-
-  // Only update the fields that were specified in the active variables
-  for (const auto & var : activeVars_.variables()) {
-    idx_t i = 0;
-    idx_t levels(fieldSet[var].levels());
-    auto vertCovView = make_view<const double, 3>(spectralVerticalCovariances_[var]);
-    auto spfView = make_view<double, 2>(fieldSet[var]);
-
-    std::vector<double> col(levels), col2(levels);
-    // For each total wavenumber n1, perform a 1D convolution with vertical covariances.
-    for (idx_t jm = 0; jm < nb_zonal_wavenumbers; ++jm) {
-      const idx_t m1 = zonal_wavenumbers(jm);
-      for (std::size_t n1 = m1; n1 <= static_cast<std::size_t>(N); ++n1) {
-        // Note that img stands for imaginary component and are the
-        // odd indices in the first index of the spectral fields.
-        for (std::size_t img = 0; img < 2; ++img) {
-          // Pre-fill vertical column to be convolved.
-          for (idx_t jl = 0; jl < levels; ++jl) {
-            col[static_cast<std::size_t>(jl)] = spfView(i, jl);
-          }
-          // The 2*n1+1 factor is there to equally distribute the covariance across
-          // the spectral coefficients associated to this total wavenumber.
-          const double norm = static_cast<double>((2 * n1 + 1) * vertCovView.shape(0));
-          for (idx_t r = 0; r < levels; ++r) {
-            col2[static_cast<std::size_t>(r)] = 0;
-            for (idx_t c = 0; c < levels; ++c) {
-              col2[static_cast<std::size_t>(r)] += vertCovView(n1, r, c) * col[c] / norm;
-            }
-          }
-          for  (idx_t jl = 0; jl < levels; ++jl) {
-            spfView(i, jl) = col2[static_cast<std::size_t>(jl)];
-          }
-          ++i;
-        }
-      }
-    }
-  }
+  specutils::spectralVerticalConvolution(activeVars_,
+                                         specFunctionSpace_,
+                                         spectralVerticalCovariances_,
+                                         fieldSet);
 
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
@@ -129,7 +85,7 @@ void SpectralCovariance::read() {
   // Note that the read can occur in either calibration mode
   // using calibrationReadParams or in standard covariance mode using
   // readParams
-  spectralbReadVertCovParameters sparams;
+  spectralbReadParameters sparams;
   const auto & calibparams = params_.calibrationParams.value();
   if (calibparams != boost::none) {
     const auto & calibrationReadParams = calibparams->calibrationReadParams.value();
@@ -155,14 +111,14 @@ void SpectralCovariance::read() {
                                             activeVars_.getLevels(activeVars_[i])));
     if (umatrixNetCDFParams != boost::none) {
       const oops::Variables netCDFVars(umatrixNetCDFParams.value());
-      createSpectralCovarianceFromUMatrixFile(activeVars_[i],
-                                              netCDFVars[i],
-                                              sparams,
-                                              spectralVertCov);
+      specutils::createSpectralCovarianceFromUMatrixFile(activeVars_[i],
+                                                         netCDFVars[i],
+                                                         sparams,
+                                                         spectralVertCov);
     } else {
-      readSpectralCovarianceFromFile(activeVars_[i],
-                                     sparams,
-                                     spectralVertCov);
+      specutils::readSpectralCovarianceFromFile(activeVars_[i],
+                                                sparams,
+                                                spectralVertCov);
     }
 
     spectralVerticalCovariances_.add(spectralVertCov);
@@ -201,8 +157,8 @@ void SpectralCovariance::directCalibration(const std::vector<atlas::FieldSet> &
     // TODO(Marek) When reading existing files we will need to somehow get priorSampleSize
     // from that file.
     int priorSampleSize(0);
-    updateSpectralVerticalCovariances(MOSpectralCovariancesEns, priorSampleSize,
-                                   spectralVerticalCovariances_);
+    specutils::updateSpectralVerticalCovariances(MOSpectralCovariancesEns, priorSampleSize,
+                                                 spectralVerticalCovariances_);
   }
 
   oops::Log::trace() << classname() << "::directCalibration done" << std::endl;
@@ -228,13 +184,14 @@ void SpectralCovariance::write() const {
   // The spectralVerticalCovariances that we write should be a gathered version of
   // the one in memory  ... it should not affect the internal version.
   atlas::FieldSet spectralVertCovToWrite;
-  copySpectralFieldSet(spectralVerticalCovariances_, spectralVertCovToWrite);
+  specutils::copySpectralFieldSet(spectralVerticalCovariances_,
+                                  spectralVertCovToWrite);
 
   // gather and sum on pe 0
   const std::size_t root(0);
-  gatherSumSpectralFieldSet(geometryData_.comm(),
-                            root,
-                            spectralVertCovToWrite);
+  specutils::gatherSumSpectralFieldSet(geometryData_.comm(),
+                                       root,
+                                       spectralVertCovToWrite);
 
 
   const std::vector<std::string> dim_names{"total wavenumber",

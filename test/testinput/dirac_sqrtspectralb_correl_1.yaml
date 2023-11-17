@@ -25,7 +25,7 @@ background error:
   saber central block:
     saber block name: ID
   saber outer blocks:
-  - saber block name: square root of spectral covariance
+  - saber block name: square root of spectral correlation
     skip inverse test: true
     read:
       covariance_file: testdata/spectralcov.nc
@@ -79,6 +79,6 @@ diagnostic points:
   - moisture_control_variable
 output dirac:
   mpi pattern: '%MPI%'
-  filepath: testdata/dirac_spectralb/%MPI%_dirac_%id%
+  filepath: testdata/dirac_sqrtspectralb_correl_1/%MPI%_dirac_%id%
 test:
-  reference filename: testref/dirac_sqrtspectralb.ref
+  reference filename: testref/dirac_sqrtspectralb_correl_1.ref

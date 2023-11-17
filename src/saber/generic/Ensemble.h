@@ -43,7 +43,7 @@ class EnsembleParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(EnsembleParameters, SaberBlockParametersBase)
 
  public:
-  // Inflation fiesld
+  // Inflation fields
   oops::OptionalParameter<InflationFieldParameters> inflationField{"inflation field", this};
 
   // Inflation value

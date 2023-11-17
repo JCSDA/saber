@@ -18,7 +18,6 @@
 
 #include "saber/blocks/SaberBlockParametersBase.h"
 #include "saber/blocks/SaberCentralBlockBase.h"
-#include "saber/spectralb/CovarianceStatistics.h"
 #include "saber/spectralb/spectralbParameters.h"
 
 namespace saber {
@@ -32,7 +31,7 @@ class SpectralCovarianceParameters : public SaberBlockParametersBase {
  public:
   oops::OptionalParameter<spectralbCalibrationVertCovParameters>
     calibrationParams{"calibration", this};
-  oops::OptionalParameter<spectralbReadVertCovParameters> readParams{"read", this};
+  oops::OptionalParameter<spectralbReadParameters> readParams{"read", this};
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
 
