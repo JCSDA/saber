@@ -2,43 +2,35 @@ Wrote file testdata/dirac_write_fields/fields_initial_xb_0.nc with fields:
   air_temperature: 6.9612733413378621e+04
   eastward_wind: 4.3110191105979111e+03
   northward_wind: 2.6855538642475080e+03
-
 Wrote file testdata/dirac_write_fields/fields_initial_fg_0.nc with fields:
   air_temperature: 6.9612733413378621e+04
   eastward_wind: 4.3110191105979111e+03
   northward_wind: 2.6855538642475080e+03
-
 Wrote file testdata/dirac_write_fields/fields_initial_multiply_0.nc with fields:
   air_temperature: 2.8526486981989632e+02
   eastward_wind: 2.8429020128491067e+02
   northward_wind: 2.8334160203475670e+02
-
 Wrote file testdata/dirac_write_fields/fields_initial_leftinversemultiply_0.nc with fields:
   air_temperature: 2.8526486981989575e+02
   eastward_wind: 2.8429020128491231e+02
   northward_wind: 2.8334160203475454e+02
-
 Wrote file testdata/dirac_write_fields/fields_initial_multiply_1.nc with fields:
   air_temperature: 2.8526486981989575e+02
   eastward_wind: 2.8429020128491231e+02
   northward_wind: 2.8334160203475454e+02
-
 Inner inverse test for block write fields passed: U Uinv (U x) == (U x)
 Wrote file testdata/dirac_write_fields/fields_initial_leftinversemultiply_1.nc with fields:
   air_temperature: 2.8444179418063044e+02
   eastward_wind: 2.8432026938315005e+02
   northward_wind: 2.8315429052484080e+02
-
 Wrote file testdata/dirac_write_fields/fields_initial_multiply_2.nc with fields:
   air_temperature: 2.8444179418063044e+02
   eastward_wind: 2.8432026938315005e+02
   northward_wind: 2.8315429052484080e+02
-
 Wrote file testdata/dirac_write_fields/fields_initial_leftinversemultiply_2.nc with fields:
   air_temperature: 2.8444179418063044e+02
   eastward_wind: 2.8432026938315005e+02
   northward_wind: 2.8315429052484080e+02
-
 Outer inverse test for block write fields passed: Uinv U (Uinv x) == (Uinv x)
 skipping inverse test for block mo_dry_air_density
 Inner inverse test for block mo_moistincrop passed: U Uinv (U x) == (U x)
@@ -52,38 +44,28 @@ Inner inverse test for block mo_hydrostatic_exner passed: U Uinv (U x) == (U x)
 Outer inverse test for block mo_hydrostatic_exner passed: Uinv U (Uinv x) == (Uinv x)
 Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_xb_0.nc with fields:
   eastward_wind: 4.3110191105979111e+03
-
 Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_fg_0.nc with fields:
   eastward_wind: 4.3110191105979111e+03
-
 Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_multiply_0.nc with fields:
   eastward_wind: 2.8346469850476291e+02
-
 Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_leftinversemultiply_0.nc with fields:
   eastward_wind: 2.8346469850476291e+02
-
 Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_multiply_1.nc with fields:
   eastward_wind: 2.8346469850476291e+02
-
 Inner inverse test for block write fields passed: U Uinv (U x) == (U x)
 Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_leftinversemultiply_1.nc with fields:
   eastward_wind: 2.8467132487867752e+02
-
 Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_multiply_2.nc with fields:
   eastward_wind: 2.8467132487867752e+02
-
 Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_leftinversemultiply_2.nc with fields:
   eastward_wind: 2.8467132487867752e+02
-
 Outer inverse test for block write fields passed: Uinv U (Uinv x) == (Uinv x)
 skipping inverse test for block gauss winds to geostrophic pressure
 Inner inverse test for block spectral to gauss passed: U Uinv (U x) == (U x)
 Outer inverse test for block spectral to gauss passed: Uinv U (Uinv x) == (Uinv x)
 Wrote file testdata/dirac_write_fields/fields_final_xb_0.nc with fields:
   eastward_wind: 4.3110191105979111e+03
-
 Wrote file testdata/dirac_write_fields/fields_final_fg_0.nc with fields:
   eastward_wind: 4.3110191105979111e+03
-
 Inner inverse test for block write fields passed: U Uinv (U x) == (U x)
 Outer inverse test for block write fields passed: Uinv U (Uinv x) == (Uinv x)
