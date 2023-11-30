@@ -219,7 +219,7 @@ VertLocInterp::VertLocInterp(const oops::GeometryData & outerGeometryData,
                              const Parameters_ & params,
                              const oops::FieldSet3D & xb,
                              const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params),
+  : SaberOuterBlockBase(params, xb.validTime()),
     params_(params),
     outerGeometryData_(outerGeometryData),
     outerVars_(outerVars),
@@ -232,7 +232,7 @@ VertLocInterp::VertLocInterp(const oops::GeometryData & outerGeometryData,
 
 // -----------------------------------------------------------------------------
 
-void VertLocInterp::multiply(atlas::FieldSet & fset) const {
+void VertLocInterp::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting " << std::endl;
 
   // Takes active fields in fset that are on
@@ -254,8 +254,8 @@ void VertLocInterp::multiply(atlas::FieldSet & fset) const {
 
   // Simple vertical interpolation
   params_.reproduceBugStaggerDefn ?
-    mo_buggy_verticalInterpolationFromHalfLevels(activeVars_, fset, fsetOut)
-    : verticalInterpolationFromFullLevels(activeVars_, fset, fsetOut);
+    mo_buggy_verticalInterpolationFromHalfLevels(activeVars_, fset.fieldSet(), fsetOut)
+    : verticalInterpolationFromFullLevels(activeVars_, fset.fieldSet(), fsetOut);
 
   for (auto & fld : fset) {
     if (!activeVars_.has(fld.name())) {
@@ -263,7 +263,7 @@ void VertLocInterp::multiply(atlas::FieldSet & fset) const {
     }
   }
 
-  fset = fsetOut;
+  fset.fieldSet() = fsetOut;
 
   oops::Log::trace() << classname() << "::multiply done"
                      << std::endl;
@@ -271,7 +271,7 @@ void VertLocInterp::multiply(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void VertLocInterp::multiplyAD(atlas::FieldSet & fset) const {
+void VertLocInterp::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname()
                      << "::multiplyAD starting" << std::endl;
 
@@ -293,8 +293,8 @@ void VertLocInterp::multiplyAD(atlas::FieldSet & fset) const {
 
   // Adjoint of simple vertical interpolation scheme
   params_.reproduceBugStaggerDefn ?
-    mo_buggy_verticalInterpolationFromHalfLevelsAD(activeVars_, fsetOut, fset)
-    : verticalInterpolationFromFullLevelsAD(activeVars_, fsetOut, fset);
+    mo_buggy_verticalInterpolationFromHalfLevelsAD(activeVars_, fsetOut, fset.fieldSet())
+    : verticalInterpolationFromFullLevelsAD(activeVars_, fsetOut, fset.fieldSet());
 
   // keep passive vars
   for (auto & fld : fset) {
@@ -303,7 +303,7 @@ void VertLocInterp::multiplyAD(atlas::FieldSet & fset) const {
     }
   }
 
-  fset = fsetOut;
+  fset.fieldSet() = fsetOut;
 
   oops::Log::trace() << classname()
                      << "::multiplyAD done" << std::endl;

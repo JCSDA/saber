@@ -22,7 +22,7 @@ void SaberParametricBlockChain::filter(oops::FieldSet4D & fset4d) const {
   // No cross-time covariances: apply central block to each of the
   // time slots.
   for (size_t jtime = 0; jtime < fset4d.size(); ++jtime) {
-    centralBlock_->multiply(fset4d[jtime].fieldSet());
+    centralBlock_->multiply(fset4d[jtime]);
   }
 
   // Outer blocks forward multiplication
@@ -70,19 +70,19 @@ void SaberParametricBlockChain::multiply(oops::FieldSet4D & fset4d) const {
         fset4d[0] += fset3d_tmp;
       }
       // Compute C * (x1+x2+...)
-      centralBlock_->multiply(fset4d[0].fieldSet());
+      centralBlock_->multiply(fset4d[0]);
     }
     // Broadcast the result to all tasks
     oops::mpi::broadcast(timeComm_, fset4d[0], 0);
     // Deep copy of the result to all the local time slots
     for (size_t jt = 1; jt < fset4d.local_time_size(); ++jt) {
-      fset4d[jt].fieldSet() = util::copyFieldSet(fset4d[0].fieldSet());
+      fset4d[jt].deepCopy(fset4d[0].fieldSet());
     }
   } else {
     // No cross-time covariances: apply central block to each of the
     // time slots.
     for (size_t jtime = 0; jtime < fset4d.size(); ++jtime) {
-      centralBlock_->multiply(fset4d[jtime].fieldSet());
+      centralBlock_->multiply(fset4d[jtime]);
     }
   }
 
@@ -97,28 +97,26 @@ void SaberParametricBlockChain::multiply(oops::FieldSet4D & fset4d) const {
 
 void SaberParametricBlockChain::randomize(oops::FieldSet4D & fset4d) const {
   // Create central FieldSet4D
-  atlas::FieldSet fset = util::createFieldSet(centralFunctionSpace_,
-                                              centralVars_);
   for (size_t jtime = 0; jtime < fset4d.size(); ++jtime) {
-    fset4d[jtime].fieldSet() = util::copyFieldSet(fset);
+    fset4d[jtime].init(centralFunctionSpace_, centralVars_);
   }
 
   // Central block randomization
   if (crossTimeCov_) {
     // Duplicated cross-time covariances
     if (timeComm_.rank() == 0) {
-      centralBlock_->randomize(fset4d[0].fieldSet());
+      centralBlock_->randomize(fset4d[0]);
     }
     // Broadcast the result to all tasks
     oops::mpi::broadcast(timeComm_, fset4d[0], 0);
     // Deep copy of the result to all the local time slots
     for (size_t jt = 1; jt < fset4d.local_time_size(); ++jt) {
-      fset4d[jt].fieldSet() = util::copyFieldSet(fset4d[0].fieldSet());
+      fset4d[jt].deepCopy(fset4d[0].fieldSet());
     }
   } else {
     // No cross-time covariances
     for (size_t jtime = 0; jtime < fset4d.size(); ++jtime) {
-      centralBlock_->randomize(fset4d[jtime].fieldSet());
+      centralBlock_->randomize(fset4d[jtime]);
     }
   }
 
@@ -152,10 +150,8 @@ void SaberParametricBlockChain::multiplySqrt(const atlas::Field & cv,
                                              oops::FieldSet4D & fset4d,
                                              const size_t & offset) const {
   // Create central FieldSet4D
-  atlas::FieldSet fset = util::createFieldSet(centralFunctionSpace_,
-                                              centralVars_);
   for (size_t jtime = 0; jtime < fset4d.size(); ++jtime) {
-    fset4d[jtime].fieldSet() = util::copyFieldSet(fset);
+    fset4d[jtime].init(centralFunctionSpace_, centralVars_);
   }
 
   // Central block square-root
@@ -163,19 +159,19 @@ void SaberParametricBlockChain::multiplySqrt(const atlas::Field & cv,
     // Duplicated cross-time covariances
     if (timeComm_.rank() == 0) {
       // Central block square-root for rank 0
-      centralBlock_->multiplySqrt(cv, fset4d[0].fieldSet(), offset);
+      centralBlock_->multiplySqrt(cv, fset4d[0], offset);
     }
     // Broadcast the result to all tasks
     oops::mpi::broadcast(timeComm_, fset4d[0], 0);
     // Deep copy of the result to all the local time slots
     for (size_t jt = 1; jt < fset4d.local_time_size(); ++jt) {
-      fset4d[jt].fieldSet() = util::copyFieldSet(fset4d[0].fieldSet());
+      fset4d[jt].deepCopy(fset4d[0].fieldSet());
     }
   } else {
     // No cross-time covariances
     size_t index = offset;
     for (size_t jtime = 0; jtime < fset4d.size(); ++jtime) {
-      centralBlock_->multiplySqrt(cv, fset4d[jtime].fieldSet(), index);
+      centralBlock_->multiplySqrt(cv, fset4d[jtime], index);
       index += centralBlock_->ctlVecSize();
     }
   }
@@ -216,13 +212,13 @@ void SaberParametricBlockChain::multiplySqrtAD(const oops::FieldSet4D & fset4d,
       }
 
       // Central block square-root adjoint for rank 0
-      centralBlock_->multiplySqrtAD(fset4dCopy[0].fieldSet(), cv, offset);
+      centralBlock_->multiplySqrtAD(fset4dCopy[0], cv, offset);
     }
   } else {
     // No cross-time covariances
     size_t index = offset;
     for (size_t jtime = 0; jtime < fset4dCopy.size(); ++jtime) {
-      centralBlock_->multiplySqrtAD(fset4dCopy[jtime].fieldSet(), cv, index);
+      centralBlock_->multiplySqrtAD(fset4dCopy[jtime], cv, index);
       index += centralBlock_->ctlVecSize();
     }
   }

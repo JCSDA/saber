@@ -61,7 +61,7 @@ VertLoc::VertLoc(const oops::GeometryData & outerGeometryData,
                  const Parameters_ & params,
                  const oops::FieldSet3D & xb,
                  const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params),
+  : SaberOuterBlockBase(params, xb.validTime()),
     innerGeometryData_(outerGeometryData),
     activeVars_(getActiveVars(params, outerVars)),
     nlevs_(activeVars_.getLevels(activeVars_.variables()[0])),
@@ -290,7 +290,7 @@ VertLoc::~VertLoc() {
 
 // -----------------------------------------------------------------------------
 
-void VertLoc::multiply(atlas::FieldSet & fset) const {
+void VertLoc::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
 
   atlas::FieldSet fsetOut;
@@ -298,7 +298,7 @@ void VertLoc::multiply(atlas::FieldSet & fset) const {
   // Passive variables
   for (const auto & var : fset.field_names()) {
     if (!activeVars_.has(var)) {
-      fsetOut.add(fset.field(var));
+      fsetOut.add(fset[var]);
     }
   }
 
@@ -332,14 +332,14 @@ void VertLoc::multiply(atlas::FieldSet & fset) const {
     fsetOut.add(outField);
   }
 
-  fset = fsetOut;
+  fset.fieldSet() = fsetOut;
 
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void VertLoc::multiplyAD(atlas::FieldSet & fset) const {
+void VertLoc::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
 
   atlas::FieldSet fsetOut;
@@ -347,7 +347,7 @@ void VertLoc::multiplyAD(atlas::FieldSet & fset) const {
   // Passive variables
   for (const auto & var : fset.field_names()) {
     if (!activeVars_.has(var)) {
-      fsetOut.add(fset.field(var));
+      fsetOut.add(fset[var]);
     }
   }
 
@@ -384,14 +384,14 @@ void VertLoc::multiplyAD(atlas::FieldSet & fset) const {
     fsetOut.add(outField);
   }
 
-  fset = fsetOut;
+  fset.fieldSet() = fsetOut;
 
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void VertLoc::leftInverseMultiply(atlas::FieldSet & fset) const {
+void VertLoc::leftInverseMultiply(oops::FieldSet3D & fset) const {
   throw eckit::NotImplemented("leftInverseMultiply not implemented", Here());
 }
 

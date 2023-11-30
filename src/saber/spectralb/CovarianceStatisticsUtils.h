@@ -17,6 +17,7 @@
 
 #include "eckit/mpi/Comm.h"
 
+#include "oops/base/FieldSet3D.h"
 #include "oops/base/Variables.h"
 
 #include "saber/spectralb/spectralbParameters.h"
@@ -80,7 +81,7 @@ void spectralVerticalConvolutionSqrtAD(const oops::Variables &,
                                        atlas::FieldSet &);
 
 void updateSpectralVerticalCovariances(
-  const std::vector<atlas::FieldSet> & ensFieldSet,
+  const std::vector<oops::FieldSet3D> & ensFieldSet,
   int & priorSampleSize,
   atlas::FieldSet & spectralVerticalCovariances);
 

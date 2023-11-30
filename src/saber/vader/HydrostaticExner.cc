@@ -50,7 +50,7 @@ HydrostaticExner::HydrostaticExner(const oops::GeometryData & outerGeometryData,
                                    const Parameters_ & params,
                                    const oops::FieldSet3D & xb,
                                    const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params),
+  : SaberOuterBlockBase(params, xb.validTime()),
     innerGeometryData_(outerGeometryData), innerVars_(outerVars),
     activeVars_(getActiveVars(params, outerVars)),
     augmentedStateFieldSet_()
@@ -143,11 +143,11 @@ HydrostaticExner::~HydrostaticExner() {
 
 // -----------------------------------------------------------------------------
 
-void HydrostaticExner::multiply(atlas::FieldSet & fset) const {
+void HydrostaticExner::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
 
-  mo::eval_hydrostatic_pressure_levels_tl(fset, augmentedStateFieldSet_);
-  mo::eval_hydrostatic_exner_levels_tl(fset, augmentedStateFieldSet_);
+  mo::eval_hydrostatic_pressure_levels_tl(fset.fieldSet(), augmentedStateFieldSet_);
+  mo::eval_hydrostatic_exner_levels_tl(fset.fieldSet(), augmentedStateFieldSet_);
 
   const auto hydrostaticPressureView =
       atlas::array::make_view<const double, 2>(fset["hydrostatic_pressure_levels"]);
@@ -169,7 +169,7 @@ void HydrostaticExner::multiply(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void HydrostaticExner::multiplyAD(atlas::FieldSet & fset) const {
+void HydrostaticExner::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
 
   auto airPressureView =
@@ -194,15 +194,15 @@ void HydrostaticExner::multiplyAD(atlas::FieldSet & fset) const {
     }
   }
 
-  mo::eval_hydrostatic_exner_levels_ad(fset, augmentedStateFieldSet_);
-  mo::eval_hydrostatic_pressure_levels_ad(fset, augmentedStateFieldSet_);
+  mo::eval_hydrostatic_exner_levels_ad(fset.fieldSet(), augmentedStateFieldSet_);
+  mo::eval_hydrostatic_pressure_levels_ad(fset.fieldSet(), augmentedStateFieldSet_);
 
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void HydrostaticExner::leftInverseMultiply(atlas::FieldSet & fset) const {
+void HydrostaticExner::leftInverseMultiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
 
   // Retrieve hydrostatic Exner from Exner. Need to extrapolate top level
@@ -220,10 +220,10 @@ void HydrostaticExner::leftInverseMultiply(atlas::FieldSet & fset) const {
   }
 
   // Retrieve hydrostatic pressure from hydrostatic Exner.
-  mo::eval_hydrostatic_exner_levels_tl_inv(fset, augmentedStateFieldSet_);
+  mo::eval_hydrostatic_exner_levels_tl_inv(fset.fieldSet(), augmentedStateFieldSet_);
 
   // Retrieve unbalanced pressure from hydrostatic pressure and geostrophic pressure.
-  mo::eval_hydrostatic_pressure_levels_tl_inv(fset, augmentedStateFieldSet_);
+  mo::eval_hydrostatic_pressure_levels_tl_inv(fset.fieldSet(), augmentedStateFieldSet_);
 
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }

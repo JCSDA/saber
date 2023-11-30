@@ -26,7 +26,7 @@ SpectralToSpectral::SpectralToSpectral(const oops::GeometryData & outerGeometryD
                                        const SpectralToSpectralParameters & params,
                                        const oops::FieldSet3D & xb,
                                        const oops::FieldSet3D & fg) :
-    SaberOuterBlockBase(params),
+    SaberOuterBlockBase(params, xb.validTime()),
     innerFunctionSpace_(2 * params.inputTruncation.value() - 1),
     outerFunctionSpace_(outerGeometryData.functionSpace()),
     innerGeometryData_(innerFunctionSpace_,
@@ -41,25 +41,25 @@ SpectralToSpectral::SpectralToSpectral(const oops::GeometryData & outerGeometryD
 
 // -----------------------------------------------------------------------------
 
-void SpectralToSpectral::multiply(atlas::FieldSet & fieldSet) const {
+void SpectralToSpectral::multiply(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  truncate_or_extend(innerFunctionSpace_, outerFunctionSpace_, fieldSet);
+  truncate_or_extend(innerFunctionSpace_, outerFunctionSpace_, fieldSet.fieldSet());
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void SpectralToSpectral::multiplyAD(atlas::FieldSet & fieldSet) const {
+void SpectralToSpectral::multiplyAD(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  truncate_or_extend(outerFunctionSpace_, innerFunctionSpace_, fieldSet);
+  truncate_or_extend(outerFunctionSpace_, innerFunctionSpace_, fieldSet.fieldSet());
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void SpectralToSpectral::leftInverseMultiply(atlas::FieldSet & fieldSet) const {
+void SpectralToSpectral::leftInverseMultiply(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
-  truncate_or_extend(outerFunctionSpace_, innerFunctionSpace_, fieldSet);
+  truncate_or_extend(outerFunctionSpace_, innerFunctionSpace_, fieldSet.fieldSet());
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }
 

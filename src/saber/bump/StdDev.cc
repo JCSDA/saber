@@ -31,7 +31,7 @@ StdDev::StdDev(const oops::GeometryData & outerGeometryData,
                const Parameters_ & params,
                const oops::FieldSet3D & xb,
                const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params),
+  : SaberOuterBlockBase(params, xb.validTime()),
     innerGeometryData_(outerGeometryData),
     innerVars_(outerVars),
     bumpParams_(),
@@ -42,10 +42,6 @@ StdDev::StdDev(const oops::GeometryData & outerGeometryData,
 
   // Get active variables
   activeVars_ = getActiveVars(params, outerVars);
-  std::vector<size_t> activeVariableSizes;
-  for (const std::string & var : activeVars_.variables()) {
-    activeVariableSizes.push_back(activeVars_.getLevels(var));
-  }
 
   // Get BUMP parameters
   if (params.doCalibration()) {
@@ -62,8 +58,8 @@ StdDev::StdDev(const oops::GeometryData & outerGeometryData,
                                  oops::LibOOPS::instance().testChannel(),
                                  outerGeometryData.functionSpace(),
                                  outerGeometryData.fieldSet(),
-                                 activeVariableSizes,
-                                 activeVars_.variables(),
+                                 activeVars_,
+                                 xb.validTime(),
                                  covarConf,
                                  bumpParams_.toConfiguration()));
 
@@ -83,7 +79,7 @@ StdDev::~StdDev() {
 
 // -----------------------------------------------------------------------------
 
-void StdDev::multiply(atlas::FieldSet & fset) const {
+void StdDev::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   bump_->multiplyStdDev(fset);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
@@ -91,7 +87,7 @@ void StdDev::multiply(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void StdDev::multiplyAD(atlas::FieldSet & fset) const {
+void StdDev::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
   this->multiply(fset);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
@@ -99,7 +95,7 @@ void StdDev::multiplyAD(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void StdDev::leftInverseMultiply(atlas::FieldSet & fset) const {
+void StdDev::leftInverseMultiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
   bump_->inverseMultiplyStdDev(fset);
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
@@ -107,32 +103,36 @@ void StdDev::leftInverseMultiply(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> StdDev::fieldsToRead() {
-  oops::Log::trace() << classname() << "::fieldsToRead starting" << std::endl;
+std::vector<std::pair<std::string, eckit::LocalConfiguration>> StdDev::getReadConfs() const {
+  oops::Log::trace() << classname() << "::getReadConfs starting" << std::endl;
   std::vector<eckit::LocalConfiguration> inputModelFilesConf
     = bumpParams_.inputModelFilesConf.value().get_value_or({});
-  oops::Log::trace() << classname() << "::fieldsToRead done" << std::endl;
-  return bump_->fieldsToRead(inputModelFilesConf);
+  oops::Log::trace() << classname() << "::getReadConfs done" << std::endl;
+  return bump_->getReadConfs(inputModelFilesConf);
+}
+
+// -----------------------------------------------------------------------------
+
+void StdDev::setReadFields(const std::vector<oops::FieldSet3D> & fsetVec) {
+  oops::Log::trace() << classname() << "::setReadFields starting" << std::endl;
+  for (const auto & fset : fsetVec) {
+    bump_->addField(fset);
+  }
+  oops::Log::trace() << classname() << "::setReadFields done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 void StdDev::read() {
   oops::Log::trace() << classname() << "::read starting" << std::endl;
-  for (const auto & input : bump_->inputs()) {
-    bump_->addField(input.second);
-  }
   bump_->runDrivers();
   oops::Log::trace() << classname() << "::read done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void StdDev::directCalibration(const std::vector<atlas::FieldSet> & fsetEns) {
+void StdDev::directCalibration(const std::vector<oops::FieldSet3D> & fsetEns) {
   oops::Log::trace() << classname() << "::directCalibration starting" << std::endl;
-  for (const auto & input : bump_->inputs()) {
-    bump_->addField(input.second);
-  }
   bump_->addEnsemble(fsetEns);
   bump_->runDrivers();
   oops::Log::trace() << classname() << "::directCalibration done" << std::endl;
@@ -142,16 +142,13 @@ void StdDev::directCalibration(const std::vector<atlas::FieldSet> & fsetEns) {
 
 void StdDev::iterativeCalibrationInit() {
   oops::Log::trace() << classname() << "::iterativeCalibrationInit starting" << std::endl;
-  for (const auto & input : bump_->inputs()) {
-    bump_->addField(input.second);
-  }
   memberIndex_ = 0;
   oops::Log::trace() << classname() << "::iterativeCalibrationInit done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void StdDev::iterativeCalibrationUpdate(const atlas::FieldSet & fset) {
+void StdDev::iterativeCalibrationUpdate(const oops::FieldSet3D & fset) {
   oops::Log::trace() << classname() << "::iterativeCalibrationUpdate starting" << std::endl;
   bump_->iterativeUpdate(fset, memberIndex_);
   ++memberIndex_;
@@ -176,7 +173,7 @@ void StdDev::write() const {
 
 // -----------------------------------------------------------------------------
 
-std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> StdDev::fieldsToWrite() const {
+std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> StdDev::fieldsToWrite() const {
   oops::Log::trace() << classname() << "::fieldsToWrite starting" << std::endl;
   std::vector<eckit::LocalConfiguration> outputModelFilesConf
     = bumpParams_.outputModelFilesConf.value().get_value_or({});
@@ -190,7 +187,7 @@ std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> StdDev::field
   }
 
   // Return configuration/fieldset pairs
-  std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> pairs
+  std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> pairs
   = bump_->fieldsToWrite(outputModelFilesConf);
 
   if (outputModelFilesConf.size() > 0) {

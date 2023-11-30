@@ -97,18 +97,18 @@ class Hybrid : public SaberCentralBlockBase {
          const oops::Variables &,
          const eckit::Configuration &,
          const Parameters_ & params,
-         const oops::FieldSet3D &,
+         const oops::FieldSet3D & xb,
          const oops::FieldSet3D &)
-      : SaberCentralBlockBase(params)
+      : SaberCentralBlockBase(params, xb.validTime())
     {throw eckit::Exception("the Hybrid block is a fake block, it should not be constructed",
       Here());}
 
   virtual ~Hybrid() {}
 
-  void randomize(atlas::FieldSet &) const override
+  void randomize(oops::FieldSet3D &) const override
     {throw eckit::Exception("the Hybrid block is a fake block, it should not be used for"
       " randomization", Here());}
-  void multiply(atlas::FieldSet &) const override
+  void multiply(oops::FieldSet3D &) const override
     {throw eckit::Exception("the Hybrid block is a fake block, it should not be used for"
       " multiplication", Here());}
 

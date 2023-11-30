@@ -51,12 +51,12 @@ class SpectralCorrelation : public SaberCentralBlockBase {
 
   virtual ~SpectralCorrelation() = default;
 
-  void randomize(atlas::FieldSet &) const override;
-  void multiply(atlas::FieldSet &) const override;
+  void randomize(oops::FieldSet3D &) const override;
+  void multiply(oops::FieldSet3D &) const override;
 
   void read() override;
 
-  void directCalibration(const std::vector<atlas::FieldSet> &) override;
+  void directCalibration(const std::vector<oops::FieldSet3D> &) override;
 
   void write() const override;
 

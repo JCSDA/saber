@@ -17,12 +17,10 @@
 #include <utility>
 #include <vector>
 
-
 #include "oops/util/ConfigFunctions.h"
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/FieldSetOperations.h"
 #include "saber/bump/lib/type_bump_parameters.h"
-
 
 namespace bump_lib {
 
@@ -33,12 +31,12 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
            eckit::Channel & testChannel,
            const atlas::FunctionSpace & fspace,
            const atlas::FieldSet & fields,
-           const std::vector<size_t> & variableSizes,
-           const std::vector<std::string> & vars,
+           const oops::Variables & vars,
+           const util::DateTime & validTime,
            const eckit::Configuration & covarConf,
            const eckit::Configuration & bumpConf) :
   keyBUMP_(), comm_(&comm), infoChannel_(&infoChannel), testChannel_(&testChannel),
-  fspace_(fspace), variableSizes_(variableSizes), vars_(vars),
+  fspace_(fspace), vars_(vars), validTime_(validTime),
   covarConf_(covarConf), bumpConf_(bumpConf), nens_(), waitForDualResolution_(false),
   gridUid_(util::getGridUid(fspace)), dualResolutionGridUid_("") {
   // Get number of MPI tasks and OpenMP threads
@@ -128,7 +126,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
       grid.get("model.variables", vars_str);
     }
     if (vars_str.size() == 0) {
-      vars_str = vars_;
+      vars_str = vars_.variables();
       grid.set("model.variables", vars_str);
     }
 
@@ -140,7 +138,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
       for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
         if (var == vars_[jvar]) {
           varFound = true;
-          int nl0_tmp = static_cast<int>(variableSizes_[jvar]);
+          int nl0_tmp = static_cast<int>(vars_.getLevels(var));
           if (nl0 > 1) {
             // Check that nl0_tmp is either 1 or nl0
             if ((nl0_tmp != 1) && (nl0_tmp != nl0)) {
@@ -255,15 +253,15 @@ void BUMP::readAtlasFiles() {
       const int icmp = conf.getInt("component", 1);
 
       // Create FieldSet
-      atlas::FieldSet fset;
+      oops::FieldSet3D fset(validTime_, *comm_);
       fset.name() = param + " - " + std::to_string(icmp);
 
       // Read file
-      util::readFieldSet(*comm_, fspace_, variableSizes_, vars_, file, fset);
+      fset.read(fspace_, vars_, file);
 
       // Print FieldSet norm
         *testChannel_ << "+++ Norm of input parameter " << fset.name() << ": "
-                      << util::normFieldSet(fset, vars_, *comm_)
+                      << fset.norm(vars_)
                       << std::endl;
 
       // Add fields
@@ -274,34 +272,30 @@ void BUMP::readAtlasFiles() {
 
 // -----------------------------------------------------------------------------
 
-std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> BUMP::fieldsToRead(
+std::vector<std::pair<std::string, eckit::LocalConfiguration>> BUMP::getReadConfs(
   const std::vector<eckit::LocalConfiguration> confs) {
-  // Write output fields
+  std::vector<std::pair<std::string, eckit::LocalConfiguration>> inputs;
   for (const auto & conf : confs) {
-    // Get file configuration
-    eckit::LocalConfiguration file = this->getFileConf(*comm_, conf);
-
     // Get parameter and component
     const std::string param = conf.getString("parameter");
     const int icmp = conf.getInt("component", 1);
+    const std::string name = param + " - " + std::to_string(icmp);
 
-    // Create FieldSet
-    atlas::FieldSet fset;
-    fset.name() = param + " - " + std::to_string(icmp);
+    // Get file configuration
+    eckit::LocalConfiguration file = this->getFileConf(*comm_, conf);
 
     // Add pair
-    inputs_.push_back(std::make_pair(file, fset));
+    inputs.push_back(std::make_pair(name, file));
   }
-
-  return inputs_;
+  return inputs;
 }
 
 // -----------------------------------------------------------------------------
 
-void BUMP::addField(const atlas::FieldSet & fset) {
+void BUMP::addField(const oops::FieldSet3D & fset) {
   // Check fset grid UID
   if (fset.size() > 0) {
-    if (util::getGridUid(fset) != gridUid_) {
+    if (fset.getGridUid() != gridUid_) {
       *infoChannel_ << "BUMP: wrong grid UID" << std::endl;
       std::abort();
     }
@@ -326,7 +320,7 @@ void BUMP::addField(const atlas::FieldSet & fset) {
 
 // -----------------------------------------------------------------------------
 
-void BUMP::addEnsemble(const std::vector<atlas::FieldSet> & fsetEns) {
+void BUMP::addEnsemble(const std::vector<oops::FieldSet3D> & fsetEns) {
   // Initialize ensemble index
   size_t ie = 0;
 
@@ -336,13 +330,13 @@ void BUMP::addEnsemble(const std::vector<atlas::FieldSet> & fsetEns) {
     size_t igeom;
     if (dualResolutionGridUid_ == "") {
       igeom = 0;
-      if (util::getGridUid(fset) != gridUid_) {
+      if (fset.getGridUid() != gridUid_) {
         *infoChannel_ << "BUMP::iterativeUpdate: wrong grid UID" << std::endl;
         std::abort();
       }
     } else {
       igeom = 1;
-      if (util::getGridUid(fset) != dualResolutionGridUid_) {
+      if (fset.getGridUid() != dualResolutionGridUid_) {
         *infoChannel_ << "BUMP::iterativeUpdate: wrong dual resolution grid UID" << std::endl;
         std::abort();
       }
@@ -382,19 +376,19 @@ void BUMP::dualResolutionSetup(const atlas::FunctionSpace & fspace,
 
 // -----------------------------------------------------------------------------
 
-void BUMP::iterativeUpdate(const atlas::FieldSet & fset, const size_t & ie) {
+void BUMP::iterativeUpdate(const oops::FieldSet3D & fset, const size_t & ie) {
   // Get geometry index (iterative update should be done after for the dual resolution part)
   // and check grid UID
   size_t igeom;
   if (dualResolutionGridUid_ == "") {
     igeom = 0;
-    if (util::getGridUid(fset) != gridUid_) {
+    if (fset.getGridUid() != gridUid_) {
       *infoChannel_ << "BUMP::iterativeUpdate: wrong grid UID" << std::endl;
       std::abort();
     }
   } else {
     igeom = 1;
-    if (util::getGridUid(fset) != dualResolutionGridUid_) {
+    if (fset.getGridUid() != dualResolutionGridUid_) {
       *infoChannel_ << "BUMP::iterativeUpdate: wrong dual resolution grid UID" << std::endl;
       std::abort();
     }
@@ -451,21 +445,21 @@ void BUMP::writeAtlasFiles() const {
 
       // Print FieldSet norm
       *testChannel_ << "+++ Norm of output parameter " << output.second.name() << ": "
-                    << util::normFieldSet(output.second, vars_, *comm_)
+                    << output.second.norm(vars_)
                     << std::endl;
 
       // Write FieldSet
-      util::writeFieldSet(*comm_, file, output.second);
+      output.second.write(file);
     }
   }
 }
 
 // -----------------------------------------------------------------------------
 
-std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> BUMP::fieldsToWrite(
+std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> BUMP::fieldsToWrite(
   const std::vector<eckit::LocalConfiguration> confs) const {
   // Define outputs vector
-  std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> outputs;
+  std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> outputs;
 
   // Write output fields
   for (const auto & conf : confs) {
@@ -474,7 +468,7 @@ std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> BUMP::fieldsT
     const int icmp = conf.getInt("component", 1);
 
     // Create FieldSet
-    atlas::FieldSet fset;
+    oops::FieldSet3D fset(validTime_, *comm_);
     fset.name() = param + " - " + std::to_string(icmp);
 
     // Get FieldSet
@@ -521,7 +515,7 @@ void BUMP::runDrivers() {
 
 // -----------------------------------------------------------------------------
 
-void BUMP::multiplyVbal(atlas::FieldSet & fset) const {
+void BUMP::multiplyVbal(oops::FieldSet3D & fset) const {
   for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_apply_vbal_f90(keyBUMP_[jgrid], fset.get());
   }
@@ -529,7 +523,7 @@ void BUMP::multiplyVbal(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void BUMP::multiplyVbalAd(atlas::FieldSet & fset) const {
+void BUMP::multiplyVbalAd(oops::FieldSet3D & fset) const {
   for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_apply_vbal_ad_f90(keyBUMP_[jgrid], fset.get());
   }
@@ -537,7 +531,7 @@ void BUMP::multiplyVbalAd(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void BUMP::inverseMultiplyVbal(atlas::FieldSet & fset) const {
+void BUMP::inverseMultiplyVbal(oops::FieldSet3D & fset) const {
   for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_apply_vbal_inv_f90(keyBUMP_[jgrid], fset.get());
   }
@@ -545,7 +539,7 @@ void BUMP::inverseMultiplyVbal(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void BUMP::multiplyStdDev(atlas::FieldSet & fset) const {
+void BUMP::multiplyStdDev(oops::FieldSet3D & fset) const {
   for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_apply_stddev_f90(keyBUMP_[jgrid], fset.get());
   }
@@ -553,7 +547,7 @@ void BUMP::multiplyStdDev(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void BUMP::inverseMultiplyStdDev(atlas::FieldSet & fset) const {
+void BUMP::inverseMultiplyStdDev(oops::FieldSet3D & fset) const {
   for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_apply_stddev_inv_f90(keyBUMP_[jgrid], fset.get());
   }
@@ -561,7 +555,7 @@ void BUMP::inverseMultiplyStdDev(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void BUMP::randomizeNicas(atlas::FieldSet & fset) const {
+void BUMP::randomizeNicas(oops::FieldSet3D & fset) const {
   for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_randomize_f90(keyBUMP_[jgrid], fset.get());
   }
@@ -569,7 +563,7 @@ void BUMP::randomizeNicas(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void BUMP::multiplyNicas(atlas::FieldSet & fset) const {
+void BUMP::multiplyNicas(oops::FieldSet3D & fset) const {
   for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_apply_nicas_f90(keyBUMP_[jgrid], fset.get());
   }
@@ -577,7 +571,7 @@ void BUMP::multiplyNicas(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void BUMP::multiplyPsiChiToUV(atlas::FieldSet & fset) const {
+void BUMP::multiplyPsiChiToUV(oops::FieldSet3D & fset) const {
   for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_psichi_to_uv_f90(keyBUMP_[jgrid], fset.get());
   }
@@ -585,7 +579,7 @@ void BUMP::multiplyPsiChiToUV(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void BUMP::multiplyPsiChiToUVAd(atlas::FieldSet & fset) const {
+void BUMP::multiplyPsiChiToUVAd(oops::FieldSet3D & fset) const {
   for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_psichi_to_uv_ad_f90(keyBUMP_[jgrid], fset.get());
   }
@@ -606,7 +600,7 @@ size_t BUMP::getCvSize() const {
 // -----------------------------------------------------------------------------
 
 void BUMP::multiplyNicasSqrt(const atlas::Field & cv,
-                             atlas::FieldSet & fset,
+                             oops::FieldSet3D & fset,
                              const size_t & offset) const {
   int index = offset;
   for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
@@ -619,7 +613,7 @@ void BUMP::multiplyNicasSqrt(const atlas::Field & cv,
 
 // -----------------------------------------------------------------------------
 
-void BUMP::multiplyNicasSqrtAd(const atlas::FieldSet & fset,
+void BUMP::multiplyNicasSqrtAd(const oops::FieldSet3D & fset,
                                atlas::Field & cv,
                                const size_t & offset) const {
   int index = offset;

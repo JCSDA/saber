@@ -49,7 +49,7 @@ HpToHexner::HpToHexner(const oops::GeometryData & outerGeometryData,
                        const Parameters_ & params,
                        const oops::FieldSet3D & xb,
                        const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params),
+  : SaberOuterBlockBase(params, xb.validTime()),
     innerGeometryData_(outerGeometryData), innerVars_(outerVars),
     activeVars_(params.activeVars.value().get_value_or(outerVars)),
     augmentedStateFieldSet_()
@@ -136,26 +136,26 @@ HpToHexner::~HpToHexner() {
 
 // -----------------------------------------------------------------------------
 
-void HpToHexner::multiply(atlas::FieldSet & fset) const {
+void HpToHexner::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  mo::eval_hydrostatic_exner_levels_tl(fset, augmentedStateFieldSet_);
+  mo::eval_hydrostatic_exner_levels_tl(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void HpToHexner::multiplyAD(atlas::FieldSet & fset) const {
+void HpToHexner::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  mo::eval_hydrostatic_exner_levels_ad(fset, augmentedStateFieldSet_);
+  mo::eval_hydrostatic_exner_levels_ad(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void HpToHexner::leftInverseMultiply(atlas::FieldSet & fset) const {
+void HpToHexner::leftInverseMultiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
   // Retrieve hydrostatic pressure from hydrostatic Exner.
-  mo::eval_hydrostatic_exner_levels_tl_inv(fset, augmentedStateFieldSet_);
+  mo::eval_hydrostatic_exner_levels_tl_inv(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }
 

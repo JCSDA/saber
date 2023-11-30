@@ -42,12 +42,13 @@ StdDev::StdDev(const oops::GeometryData & outerGeometryData,
                const Parameters_ & params,
                const oops::FieldSet3D & xb,
                const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params),
+  : SaberOuterBlockBase(params, xb.validTime()),
     innerGeometryData_(outerGeometryData),
     innerVars_(outerVars),
     params_(params),
     readFromAtlas_(false),
     readFromModel_(false),
+    stdDevFset_(new oops::FieldSet3D(xb.validTime(), innerGeometryData_.comm())),
     writeToAtlas_(false),
     writeToModel_(false)
 {
@@ -96,45 +97,56 @@ StdDev::StdDev(const oops::GeometryData & outerGeometryData,
 
 // -----------------------------------------------------------------------------
 
-void StdDev::multiply(atlas::FieldSet & fset) const {
+void StdDev::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  util::multiplyFieldSets(fset, stdDevFset_);
+  fset *= *stdDevFset_;
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void StdDev::multiplyAD(atlas::FieldSet & fset) const {
+void StdDev::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  util::multiplyFieldSets(fset, stdDevFset_);
+  fset *= *stdDevFset_;
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void StdDev::leftInverseMultiply(atlas::FieldSet & fset) const {
+void StdDev::leftInverseMultiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
-  util::divideFieldSets(fset, stdDevFset_);
+  fset /= *stdDevFset_;
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> StdDev::fieldsToRead() {
-  oops::Log::trace() << classname() << "::fieldsToRead starting" << std::endl;
+std::vector<std::pair<std::string, eckit::LocalConfiguration>> StdDev::getReadConfs() const {
+  oops::Log::trace() << classname() << "::getReadConfs starting" << std::endl;
 
+  std::vector<std::pair<std::string, eckit::LocalConfiguration>> inputs;
   if (readFromModel_) {
-    // Create FieldSet
-    atlas::FieldSet fset;
-    fset.name() = "StdDev";
-
-    // Add pair
-    inputs_.push_back(std::make_pair(readConf_, fset));
+    inputs.push_back(std::make_pair("StdDev", readConf_));
   }
 
-  oops::Log::trace() << classname() << "::fieldsToRead done" << std::endl;
-  return inputs_;
+  oops::Log::trace() << classname() << "::getReadConfs done" << std::endl;
+  return inputs;
 }
+
+// -----------------------------------------------------------------------------
+
+void StdDev::setReadFields(const std::vector<oops::FieldSet3D> & fsetVec) {
+  oops::Log::trace() << classname() << "::setReadFields starting" << std::endl;
+
+  if (readFromModel_) {
+    ASSERT(fsetVec.size() == 1);
+    stdDevFset_->deepCopy(fsetVec[0]);
+  }
+
+  oops::Log::trace() << classname() << "::setReadFields done" << std::endl;
+}
+
+
 
 // -----------------------------------------------------------------------------
 
@@ -143,27 +155,17 @@ void StdDev::read() {
   // Read ATLAS stddev file
   if (readFromAtlas_) {
     // Read file
-    util::readFieldSet(innerGeometryData_.comm(),
-                       innerGeometryData_.functionSpace(),
-                       innerVars_,
-                       readConf_,
-                       stdDevFset_);
+    stdDevFset_->read(innerGeometryData_.functionSpace(),
+                      innerVars_,
+                      readConf_);
 
     // Set name
-    stdDevFset_.name() = "StdDev";
+    stdDevFset_->name() = "StdDev";
 
     // Print FieldSet norm
     oops::Log::test() << "Norm of input parameter StdDev: "
-                      << util::normFieldSet(stdDevFset_,
-                                            innerVars_.variables(),
-                                            innerGeometryData_.comm())
+                      << stdDevFset_->norm(innerVars_)
                       << std::endl;
-  }
-
-  // Use model stddev file
-  if (readFromModel_) {
-    // Copy file
-    util::copyFieldSet(inputs_[0].second, stdDevFset_);
   }
 
   oops::Log::trace() << classname() << "::read done" << std::endl;
@@ -171,50 +173,47 @@ void StdDev::read() {
 
 // -----------------------------------------------------------------------------
 
-void StdDev::directCalibration(const std::vector<atlas::FieldSet> & fsetEns) {
+void StdDev::directCalibration(const std::vector<oops::FieldSet3D> & fsetEns) {
   // Initialize
-  atlas::FieldSet mean;
-  atlas::FieldSet var;
+  oops::FieldSet3D mean(this->validTime(), innerGeometryData_.comm());
+  oops::FieldSet3D var(this->validTime(), innerGeometryData_.comm());
   for (size_t jvar = 0; jvar < innerVars_.size(); ++jvar) {
-    mean.add(innerGeometryData_.functionSpace().createField<double>(
+    mean.fieldSet().add(innerGeometryData_.functionSpace().createField<double>(
              atlas::option::name(innerVars_[jvar]) |
              atlas::option::levels(innerVars_.getLevels(innerVars_[jvar]))));
-    var.add(innerGeometryData_.functionSpace().createField<double>(
+    var.fieldSet().add(innerGeometryData_.functionSpace().createField<double>(
             atlas::option::name(innerVars_[jvar]) |
             atlas::option::levels(innerVars_.getLevels(innerVars_[jvar]))));
   }
-  util::zeroFieldSet(mean);
-  util::zeroFieldSet(var);
+  mean.zero();
+  var.zero();
 
   // Compute mean
   for (const auto & fset : fsetEns) {
-    util::addFieldSets(mean, fset);
+    mean += fset;
   }
-  const double facMean = 1.0/static_cast<double>(fsetEns.size());
-  util::multiplyFieldSet(mean, facMean);
+  mean *= 1.0/static_cast<double>(fsetEns.size());
 
   // Compute variance
   for (const auto & fset : fsetEns) {
     // Compute perturbation
-    atlas::FieldSet fset_pert = util::copyFieldSet(fset);
-    util::subtractFieldSets(fset_pert, mean);
+    oops::FieldSet3D fset_pert(fset);
+    fset_pert -= mean;
 
     // Compute squared pertrubation
-    atlas::FieldSet fset_pert_squared = util::copyFieldSet(fset_pert);
-    util::multiplyFieldSets(fset_pert_squared, fset_pert);
+    fset_pert *= fset_pert;
 
     // Update sum
-    util::addFieldSets(var, fset_pert_squared);
+    var += fset_pert;
   }
-  const double facVar = 1.0/static_cast<double>(fsetEns.size()-1);
-  util::multiplyFieldSet(var, facVar);
+  var *= 1.0/static_cast<double>(fsetEns.size()-1);
 
   // Get standard deviation
-  stdDevFset_ = util::copyFieldSet(var);
-  util::sqrtFieldSet(stdDevFset_);
+  stdDevFset_.reset(new oops::FieldSet3D(var));
+  stdDevFset_->sqrt();
 
   // Set name
-  stdDevFset_.name() = "StdDev";
+  stdDevFset_->name() = "StdDev";
 }
 
 // -----------------------------------------------------------------------------
@@ -222,45 +221,43 @@ void StdDev::directCalibration(const std::vector<atlas::FieldSet> & fsetEns) {
 void StdDev::iterativeCalibrationInit() {
   // Initialize iterative counters with zeroes
   iterativeN_ = 0;
-  iterativeMean_.clear();
-  iterativeVar_.clear();
+  iterativeMean_.reset(new oops::FieldSet3D(this->validTime(), innerGeometryData_.comm()));
+  iterativeVar_.reset(new oops::FieldSet3D(this->validTime(), innerGeometryData_.comm()));
   for (size_t jvar = 0; jvar < innerVars_.size(); ++jvar) {
-    iterativeMean_.add(innerGeometryData_.functionSpace().createField<double>(
+    iterativeMean_->fieldSet().add(innerGeometryData_.functionSpace().createField<double>(
                        atlas::option::name(innerVars_[jvar]) |
                        atlas::option::levels(innerVars_.getLevels(innerVars_[jvar]))));
-    iterativeVar_.add(innerGeometryData_.functionSpace().createField<double>(
+    iterativeVar_->fieldSet().add(innerGeometryData_.functionSpace().createField<double>(
                       atlas::option::name(innerVars_[jvar]) |
                       atlas::option::levels(innerVars_.getLevels(innerVars_[jvar]))));
   }
-  util::zeroFieldSet(iterativeMean_);
-  util::zeroFieldSet(iterativeVar_);
+  iterativeMean_->zero();
+  iterativeVar_->zero();
 }
 
 // -----------------------------------------------------------------------------
 
-void StdDev::iterativeCalibrationUpdate(const atlas::FieldSet & fset) {
+void StdDev::iterativeCalibrationUpdate(const oops::FieldSet3D & fset) {
   // Increment ensemble index
   // ie = ie + 1
   iterativeN_++;
 
   // Remove mean
   // pert = state - mean
-  atlas::FieldSet fset_pert = util::copyFieldSet(fset);
-  util::subtractFieldSets(fset_pert, iterativeMean_);
+  oops::FieldSet3D fset_pert(fset);
+  fset_pert -= *iterativeMean_;
 
   // Update variance
   // var = var + (ie-1)/ie * pert^2
-  atlas::FieldSet fset_pert_squared = util::copyFieldSet(fset_pert);
-  util::multiplyFieldSets(fset_pert_squared, fset_pert);
-  const double facVar = static_cast<double>(iterativeN_-1)/static_cast<double>(iterativeN_);
-  util::multiplyFieldSet(fset_pert_squared, facVar);
-  util::addFieldSets(iterativeVar_, fset_pert_squared);
+  oops::FieldSet3D fset_pert_squared(fset_pert);
+  fset_pert_squared *= fset_pert;
+  fset_pert_squared *= static_cast<double>(iterativeN_-1)/static_cast<double>(iterativeN_);
+  *iterativeVar_ += fset_pert_squared;
 
   // Update mean
   // mean = mean + 1 / ie * pert
-  const double facMean = 1.0/static_cast<double>(iterativeN_);
-  util::multiplyFieldSet(fset_pert, facMean);
-  util::addFieldSets(iterativeMean_, fset_pert);
+  fset_pert *= 1.0/static_cast<double>(iterativeN_);
+  *iterativeMean_ += fset_pert;
 }
 
 // -----------------------------------------------------------------------------
@@ -268,20 +265,19 @@ void StdDev::iterativeCalibrationUpdate(const atlas::FieldSet & fset) {
 void StdDev::iterativeCalibrationFinal() {
   // Normalize variance
   // var = 1 / (N-1) * var
-  const double facVar = 1.0/static_cast<double>(iterativeN_-1);
-  util::multiplyFieldSet(iterativeVar_, facVar);
+  *iterativeVar_ *= 1.0/static_cast<double>(iterativeN_-1);
 
   // Get standard-deviation
-  stdDevFset_ = util::copyFieldSet(iterativeVar_);
-  util::sqrtFieldSet(stdDevFset_);
+  stdDevFset_.reset(new oops::FieldSet3D(*iterativeVar_));
+  stdDevFset_->sqrt();
 
   // Set name
-  stdDevFset_.name() = "StdDev";
+  stdDevFset_->name() = "StdDev";
 
   // Cleaning
   iterativeN_ = 0;
-  iterativeMean_.clear();
-  iterativeVar_.clear();
+  iterativeMean_.reset();
+  iterativeVar_.reset();
 }
 
 // -----------------------------------------------------------------------------
@@ -293,13 +289,11 @@ void StdDev::write() const {
   if (writeToAtlas_) {
     // Print FieldSet norm
     oops::Log::test() << "Norm of output parameter StdDev: "
-                      << util::normFieldSet(stdDevFset_,
-                                            innerVars_.variables(),
-                                            innerGeometryData_.comm())
+                      << stdDevFset_->norm(innerVars_)
                       << std::endl;
 
     // Write file
-    util::writeFieldSet(innerGeometryData_.comm(), writeConf_, stdDevFset_);
+    stdDevFset_->write(writeConf_);
   }
 
   oops::Log::trace() << classname() << "::write done" << std::endl;
@@ -307,13 +301,13 @@ void StdDev::write() const {
 
 // -----------------------------------------------------------------------------
 
-std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> StdDev::fieldsToWrite() const {
+std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> StdDev::fieldsToWrite() const {
   oops::Log::trace() << classname() << "::fieldsToWrite starting" << std::endl;
-  std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> outputs;
+  std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> outputs;
 
   if (writeToModel_) {
     // Add pair
-    outputs.push_back(std::make_pair(writeConf_, stdDevFset_));
+    outputs.push_back(std::make_pair(writeConf_, *stdDevFset_));
   }
 
   oops::Log::trace() << classname() << "::fieldsToWrite done" << std::endl;

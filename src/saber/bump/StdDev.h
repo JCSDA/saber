@@ -14,9 +14,9 @@
 
 #include "atlas/field.h"
 
-#include "oops/base/Variables.h"
-
+#include "oops/base/FieldSet3D.h"
 #include "oops/base/GeometryData.h"
+#include "oops/base/Variables.h"
 
 #include "saber/blocks/SaberBlockParametersBase.h"
 #include "saber/blocks/SaberOuterBlockBase.h"
@@ -58,22 +58,24 @@ class StdDev : public SaberOuterBlockBase {
   const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}
   const oops::Variables & innerVars() const override {return innerVars_;}
 
-  void multiply(atlas::FieldSet &) const override;
-  void multiplyAD(atlas::FieldSet &) const override;
-  void leftInverseMultiply(atlas::FieldSet &) const override;
+  void multiply(oops::FieldSet3D &) const override;
+  void multiplyAD(oops::FieldSet3D &) const override;
+  void leftInverseMultiply(oops::FieldSet3D &) const override;
 
-  std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> fieldsToRead() override;
+  std::vector<std::pair<std::string, eckit::LocalConfiguration>> getReadConfs() const override;
+  void setReadFields(const std::vector<oops::FieldSet3D> &) override;
 
   void read() override;
 
-  void directCalibration(const std::vector<atlas::FieldSet> &) override;
+  void directCalibration(const std::vector<oops::FieldSet3D> &) override;
 
   void iterativeCalibrationInit() override;
-  void iterativeCalibrationUpdate(const atlas::FieldSet &) override;
+  void iterativeCalibrationUpdate(const oops::FieldSet3D &) override;
   void iterativeCalibrationFinal() override;
 
   void write() const override;
-  std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> fieldsToWrite() const override;
+  std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> fieldsToWrite() const
+    override;
 
  private:
   void print(std::ostream &) const override;

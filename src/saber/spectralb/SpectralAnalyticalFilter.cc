@@ -124,7 +124,7 @@ SpectralAnalyticalFilter::SpectralAnalyticalFilter(const oops::GeometryData & ge
                                                const Parameters_ & params,
                                                const oops::FieldSet3D & xb,
                                                const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params), params_(params),
+  : SaberOuterBlockBase(params, xb.validTime()), params_(params),
     activeVars_(getActiveVars(params, outerVars)),
     innerGeometryData_(geometryData),
     innerVars_(outerVars),
@@ -137,7 +137,7 @@ SpectralAnalyticalFilter::SpectralAnalyticalFilter(const oops::GeometryData & ge
 
 // -----------------------------------------------------------------------------
 
-void SpectralAnalyticalFilter::multiply(atlas::FieldSet & fieldSet) const {
+void SpectralAnalyticalFilter::multiply(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
 
   const auto zonal_wavenumbers = specFunctionSpace_.zonal_wavenumbers();
@@ -172,7 +172,7 @@ void SpectralAnalyticalFilter::multiply(atlas::FieldSet & fieldSet) const {
 
 // -----------------------------------------------------------------------------
 
-void SpectralAnalyticalFilter::multiplyAD(atlas::FieldSet & fieldSet) const {
+void SpectralAnalyticalFilter::multiplyAD(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
 
   // The block is self-adjoint:
@@ -183,7 +183,7 @@ void SpectralAnalyticalFilter::multiplyAD(atlas::FieldSet & fieldSet) const {
 
 // -----------------------------------------------------------------------------
 
-void SpectralAnalyticalFilter::leftInverseMultiply(atlas::FieldSet & fieldSet) const {
+void SpectralAnalyticalFilter::leftInverseMultiply(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
 
   const auto zonal_wavenumbers = specFunctionSpace_.zonal_wavenumbers();
@@ -218,6 +218,30 @@ void SpectralAnalyticalFilter::leftInverseMultiply(atlas::FieldSet & fieldSet) c
   }
 
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+oops::FieldSet3D SpectralAnalyticalFilter::generateInnerFieldSet(
+  const oops::GeometryData & innerGeometryData,
+  const oops::Variables & innerVars) const {
+  oops::FieldSet3D fset(this->validTime(), innerGeometryData.comm());
+  fset.deepCopy(util::createSmoothFieldSet(innerGeometryData.comm(),
+                                           innerGeometryData.functionSpace(),
+                                           innerVars));
+  return fset;
+}
+
+// -----------------------------------------------------------------------------
+
+oops::FieldSet3D SpectralAnalyticalFilter::generateOuterFieldSet(
+  const oops::GeometryData & outerGeometryData,
+  const oops::Variables & outerVars) const {
+  oops::FieldSet3D fset(this->validTime(), outerGeometryData.comm());
+  fset.deepCopy(util::createSmoothFieldSet(outerGeometryData.comm(),
+                                           outerGeometryData.functionSpace(),
+                                           outerVars));
+  return fset;
 }
 
 // -----------------------------------------------------------------------------

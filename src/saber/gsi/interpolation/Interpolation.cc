@@ -38,7 +38,7 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
                              const Parameters_ & params,
                              const oops::FieldSet3D & xb,
                              const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params), innerVars_(outerVars)
+  : SaberOuterBlockBase(params, xb.validTime()), innerVars_(outerVars)
 {
   oops::Log::trace() << classname() << "::Interpolation starting" << std::endl;
   util::Timer timer(classname(), "Interpolation");
@@ -88,28 +88,28 @@ Interpolation::~Interpolation() {
 
 // -------------------------------------------------------------------------------------------------
 
-void Interpolation::multiply(atlas::FieldSet & fset) const {
+void Interpolation::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   util::Timer timer(classname(), "multiply");
-  interpolator_->apply(fset);
+  interpolator_->apply(fset.fieldSet());
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -------------------------------------------------------------------------------------------------
 
-void Interpolation::multiplyAD(atlas::FieldSet & fset) const {
+void Interpolation::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
   util::Timer timer(classname(), "multiplyAD");
-  interpolator_->applyAD(fset);
+  interpolator_->applyAD(fset.fieldSet());
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
 // -------------------------------------------------------------------------------------------------
 
-void Interpolation::leftInverseMultiply(atlas::FieldSet & fset) const {
+void Interpolation::leftInverseMultiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
   util::Timer timer(classname(), "leftInverseMultiply");
-  inverseInterpolator_->apply(fset);
+  inverseInterpolator_->apply(fset.fieldSet());
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }
 

@@ -65,13 +65,17 @@ class Ensemble : public SaberCentralBlockBase {
            const oops::Variables &,
            const eckit::Configuration &,
            const Parameters_ & params,
-           const oops::FieldSet3D &,
-           const oops::FieldSet3D &) : SaberCentralBlockBase(params)
+           const oops::FieldSet3D & xb,
+           const oops::FieldSet3D &) : SaberCentralBlockBase(params, xb.validTime())
   {throw eckit::Exception("the Ensemble block is a fake block, it should not be constructed",
     Here());}
 
-  void randomize(atlas::FieldSet &) const override {}
-  void multiply(atlas::FieldSet &) const override {}
+  void randomize(oops::FieldSet3D &) const override
+    {throw eckit::Exception("the Ensemble block is a fake block, it should not be used for"
+      " randomization", Here());}
+  void multiply(oops::FieldSet3D &) const override
+    {throw eckit::Exception("the Ensemble block is a fake block, it should not be used for"
+      " multiply", Here());}
 
  private:
   void print(std::ostream &) const override {}

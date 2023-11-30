@@ -65,7 +65,7 @@ GpToHp::GpToHp(const oops::GeometryData & outerGeometryData,
                const Parameters_ & params,
                const oops::FieldSet3D & xb,
                const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params),
+  : SaberOuterBlockBase(params, xb.validTime()),
     innerGeometryData_(outerGeometryData), innerVars_(createInnerVars(outerVars)),
     activeVars_(getActiveVars(params, outerVars)),
     augmentedStateFieldSet_()
@@ -158,26 +158,26 @@ GpToHp::~GpToHp() {
 
 // -----------------------------------------------------------------------------
 
-void GpToHp::multiply(atlas::FieldSet & fset) const {
+void GpToHp::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  mo::eval_hydrostatic_pressure_levels_tl(fset, augmentedStateFieldSet_);
+  mo::eval_hydrostatic_pressure_levels_tl(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void GpToHp::multiplyAD(atlas::FieldSet & fset) const {
+void GpToHp::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  mo::eval_hydrostatic_pressure_levels_ad(fset, augmentedStateFieldSet_);
+  mo::eval_hydrostatic_pressure_levels_ad(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiplyAD done"  << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void GpToHp::leftInverseMultiply(atlas::FieldSet & fset) const {
+void GpToHp::leftInverseMultiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
   // Retrieve unbalanced pressure from hydrostatic pressure and geostrophic pressure.
-  mo::eval_hydrostatic_pressure_levels_tl_inv(fset, augmentedStateFieldSet_);
+  mo::eval_hydrostatic_pressure_levels_tl_inv(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }
 

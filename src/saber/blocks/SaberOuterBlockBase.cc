@@ -12,8 +12,6 @@
 #include <string>
 #include <vector>
 
-#include "atlas/field.h"
-
 #include <boost/noncopyable.hpp>
 
 #include "eckit/exception/Exceptions.h"
@@ -90,30 +88,30 @@ void SaberOuterBlockBase::adjointTest(const oops::GeometryData & outerGeometryDa
   oops::Log::trace() << "SaberOuterBlockBase::adjointTest starting" << std::endl;
 
   // Create random inner FieldSet
-  atlas::FieldSet innerFset = util::createRandomFieldSet(innerGeometryData.comm(),
-                                                         innerGeometryData.functionSpace(),
-                                                         innerVars);
+  oops::FieldSet3D innerFset = oops::randomFieldSet3D(validTime_,
+                                                      innerGeometryData.comm(),
+                                                      innerGeometryData.functionSpace(),
+                                                      innerVars);
 
   // Copy inner FieldSet
-  atlas::FieldSet innerFsetSave = util::copyFieldSet(innerFset);
+  oops::FieldSet3D innerFsetSave(innerFset);
 
   // Create random outer FieldSet
-  atlas::FieldSet outerFset = util::createRandomFieldSet(outerGeometryData.comm(),
-                                                         outerGeometryData.functionSpace(),
-                                                         outerVars);
+  oops::FieldSet3D outerFset = oops::randomFieldSet3D(validTime_,
+                                                      outerGeometryData.comm(),
+                                                      outerGeometryData.functionSpace(),
+                                                      outerVars);
 
   // Copy outer FieldSet
-  atlas::FieldSet outerFsetSave = util::copyFieldSet(outerFset);
+  oops::FieldSet3D outerFsetSave(outerFset);
 
   // Apply forward and adjoint multiplication
   this->multiply(innerFset);
   this->multiplyAD(outerFset);
 
   // Compute adjoint test
-  const double dp1 = util::dotProductFieldSets(innerFset, outerFsetSave,
-                                               outerVars.variables(), outerGeometryData.comm());
-  const double dp2 = util::dotProductFieldSets(outerFset, innerFsetSave,
-                                               innerVars.variables(), innerGeometryData.comm());
+  const double dp1 = innerFset.dot_product_with(outerFsetSave, outerVars);
+  const double dp2 = outerFset.dot_product_with(innerFsetSave, innerVars);
   oops::Log::info() << std::setprecision(16) << "Info     : Adjoint test: y^t (Ax) = " << dp1
                     << ": x^t (A^t y) = " << dp2 << " : adjoint tolerance = "
                     << adjointTolerance << std::endl;
@@ -143,14 +141,14 @@ void SaberOuterBlockBase::inverseTest(const oops::GeometryData & innerGeometryDa
   // Inner inverse test
 
   // Create inner FieldSet
-  atlas::FieldSet innerFset = this->generateInnerFieldSet(innerGeometryData,
-                                                          innerVars);
+  oops::FieldSet3D innerFset = this->generateInnerFieldSet(innerGeometryData,
+                                                           innerVars);
 
   // Apply forward multiplication
   this->multiply(innerFset);
 
   // Save inner FieldSet
-  atlas::FieldSet innerFsetSave = util::copyFieldSet(innerFset);
+  oops::FieldSet3D innerFsetSave(innerFset);
 
   // Apply inverse multiplication
   this->leftInverseMultiply(innerFset);
@@ -171,8 +169,8 @@ void SaberOuterBlockBase::inverseTest(const oops::GeometryData & innerGeometryDa
   oops::Variables outerVariablesToRemove(innerFieldNames);
   outerVariablesToRemove -= outerVarsToCompare;
 
-  util::removeFieldsFromFieldSet(innerFset, outerVariablesToRemove.variables());
-  util::removeFieldsFromFieldSet(innerFsetSave, outerVariablesToRemove.variables());
+  innerFset.removeFields(outerVariablesToRemove);
+  innerFsetSave.removeFields(outerVariablesToRemove);
   const bool outerComparison = this->compareFieldSets(innerFset,
                                                       innerFsetSave,
                                                       innerInverseTolerance);
@@ -187,14 +185,14 @@ void SaberOuterBlockBase::inverseTest(const oops::GeometryData & innerGeometryDa
   // Outer inverse test
 
   // Create outer FieldSet
-  atlas::FieldSet outerFset = this->generateOuterFieldSet(outerGeometryData,
-                                                          outerVars);
+  oops::FieldSet3D outerFset = this->generateOuterFieldSet(outerGeometryData,
+                                                           outerVars);
 
   // Apply inverse multiplication
   this->leftInverseMultiply(outerFset);
 
   // Save outer FieldSet
-  atlas::FieldSet outerFsetSave = util::copyFieldSet(outerFset);
+  oops::FieldSet3D outerFsetSave(outerFset);
 
   // Apply forward multiplication
   this->multiply(outerFset);
@@ -213,8 +211,8 @@ void SaberOuterBlockBase::inverseTest(const oops::GeometryData & innerGeometryDa
   // Check that the fieldsets are similar within tolerance
   oops::Variables innerVariablesToRemove(outerFieldNames);
   innerVariablesToRemove -= innerVarsToCompare;
-  util::removeFieldsFromFieldSet(outerFset, innerVariablesToRemove.variables());
-  util::removeFieldsFromFieldSet(outerFsetSave, innerVariablesToRemove.variables());
+  outerFset.removeFields(innerVariablesToRemove);
+  outerFsetSave.removeFields(innerVariablesToRemove);
   const bool innerComparison = this->compareFieldSets(outerFset,
                                                       outerFsetSave,
                                                       outerInverseTolerance);

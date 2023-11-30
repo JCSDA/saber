@@ -82,21 +82,23 @@ class StdDev : public SaberOuterBlockBase {
   const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}
   const oops::Variables & innerVars() const override {return innerVars_;}
 
-  void multiply(atlas::FieldSet &) const override;
-  void multiplyAD(atlas::FieldSet &) const override;
-  void leftInverseMultiply(atlas::FieldSet &) const override;
+  void multiply(oops::FieldSet3D &) const override;
+  void multiplyAD(oops::FieldSet3D &) const override;
+  void leftInverseMultiply(oops::FieldSet3D &) const override;
 
-  std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> fieldsToRead() override;
+  std::vector<std::pair<std::string, eckit::LocalConfiguration>> getReadConfs() const override;
+  void setReadFields(const std::vector<oops::FieldSet3D> &) override;
 
   void read() override;
 
-  void directCalibration(const std::vector<atlas::FieldSet> &) override;
+  void directCalibration(const std::vector<oops::FieldSet3D> &) override;
 
   void iterativeCalibrationInit() override;
-  void iterativeCalibrationUpdate(const atlas::FieldSet &) override;
+  void iterativeCalibrationUpdate(const oops::FieldSet3D &) override;
   void iterativeCalibrationFinal() override;
 
-  std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> fieldsToWrite() const override;
+  std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> fieldsToWrite() const
+    override;
 
   void write() const override;
 
@@ -108,16 +110,15 @@ class StdDev : public SaberOuterBlockBase {
   bool readFromAtlas_;
   bool readFromModel_;
   eckit::LocalConfiguration readConf_;
-  std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> inputs_;
-  atlas::FieldSet stdDevFset_;
+  std::unique_ptr<oops::FieldSet3D> stdDevFset_;
   bool writeToAtlas_;
   bool writeToModel_;
   eckit::LocalConfiguration writeConf_;
 
   // Interative mean
-  atlas::FieldSet iterativeMean_;
+  std::unique_ptr<oops::FieldSet3D> iterativeMean_;
   // Interative variance
-  atlas::FieldSet iterativeVar_;
+  std::unique_ptr<oops::FieldSet3D> iterativeVar_;
   // Interative counter
   size_t iterativeN_;
 };

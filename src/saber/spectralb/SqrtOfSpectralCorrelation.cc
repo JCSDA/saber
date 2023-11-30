@@ -39,7 +39,7 @@ SqrtOfSpectralCorrelation::SqrtOfSpectralCorrelation(
     const Parameters_ & params,
     const oops::FieldSet3D & xb,
     const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params),
+  : SaberOuterBlockBase(params, xb.validTime()),
     params_(params),
     activeVars_(getActiveVars(params, outerVars)),
     outerVars_(outerVars),
@@ -53,26 +53,26 @@ SqrtOfSpectralCorrelation::SqrtOfSpectralCorrelation(
 
 // -----------------------------------------------------------------------------
 
-void SqrtOfSpectralCorrelation::multiply(atlas::FieldSet & fieldSet) const {
+void SqrtOfSpectralCorrelation::multiply(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
 
   specutils::spectralVerticalConvolutionSqrt(activeVars_,
                                              specFunctionSpace_,
                                              spectralCorrelUMatrices_,
-                                             fieldSet);
+                                             fieldSet.fieldSet());
 
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void SqrtOfSpectralCorrelation::multiplyAD(atlas::FieldSet & fieldSet) const {
+void SqrtOfSpectralCorrelation::multiplyAD(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::multiplyUMatrixAD starting" << std::endl;
 
   specutils::spectralVerticalConvolutionSqrtAD(activeVars_,
                                                specFunctionSpace_,
                                                spectralCorrelUMatrices_,
-                                               fieldSet);
+                                               fieldSet.fieldSet());
 
   oops::Log::trace() << classname() << "::multiplyUMatrixAD done" << std::endl;
 }

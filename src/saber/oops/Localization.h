@@ -71,11 +71,13 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
 
   // Create dummy xb and fg
   const State_ xb_state(geom, incVars, dummyTime);
-  const oops::FieldSet3D xb(xb_state.fieldSet(), xb_state.validTime(), geom.getComm());
+  oops::FieldSet3D xb(dummyTime, geom.getComm());
+  xb.shallowCopy(xb_state.fieldSet());
   const State_ fg_state(geom, incVars, dummyTime);
-  const oops::FieldSet3D fg(fg_state.fieldSet(), fg_state.validTime(), geom.getComm());
+  oops::FieldSet3D fg(dummyTime, geom.getComm());
+  fg.shallowCopy(fg_state.fieldSet());
 
-  std::vector<atlas::FieldSet> fsetEns;
+  std::vector<oops::FieldSet3D> fsetEns;
   // TODO(AS): revisit what configuration needs to be passed to SaberParametricBlockChain.
   eckit::LocalConfiguration covarConf;
   eckit::LocalConfiguration ensembleConf;
@@ -131,7 +133,8 @@ void Localization<MODEL>::multiply(Increment_ & dx) const {
   oops::Log::trace() << "Localization:multiply starting" << std::endl;
 
   // SABER block chain multiplication
-  oops::FieldSet4D fset4d({dx.fieldSet(), dx.validTime(), dx.geometry().getComm()});
+  oops::FieldSet4D fset4d({dx.validTime(), dx.geometry().getComm()});
+  fset4d[0].shallowCopy(dx.fieldSet());
   loc_->multiply(fset4d);
 
   // ATLAS fieldset to Increment_

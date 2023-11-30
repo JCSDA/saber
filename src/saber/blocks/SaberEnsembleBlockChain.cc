@@ -48,17 +48,13 @@ void SaberEnsembleBlockChain::multiply(oops::FieldSet4D & fset4d) const {
       // No localization
 
       // Compute weight
-      const double wgt = util::dotProductFieldSets(fset4dInit[0].fieldSet(),
-                                                   ensemble_[ie],
-                                                   vars_.variables(),
-                                                   comm_,
-                                                   true);
+      const double wgt = fset4dInit[0].dot_product_with(ensemble_[ie], vars_);
 
       // Copy ensemble member
       // TODO(AS): revisit ensemble_ to be a 4D ensemble, remove the hack below.
       oops::FieldSet4D fset4dMem(fset4d.times(), fset4d.commTime(), fset4d[0].commGeom());
       for (size_t jtime = 0; jtime < fset4dMem.size(); ++jtime) {
-        fset4dMem[jtime].fieldSet() = util::copyFieldSet(ensemble_[ie]);
+        fset4dMem[jtime].deepCopy(ensemble_[ie]);
       }
 
       // Apply weight
@@ -109,7 +105,7 @@ void SaberEnsembleBlockChain::randomize(oops::FieldSet4D & fset4d) const {
       // Copy ensemble member
       // TODO(AS): revisit ensemble_ to be a 4D ensemble, remove the hack below.
       for (size_t jtime = 0; jtime < fset4dMem.size(); ++jtime) {
-        fset4dMem[jtime].fieldSet() = util::copyFieldSet(ensemble_[ie]);
+        fset4dMem[jtime].deepCopy(ensemble_[ie]);
       }
 
       // Apply weight
@@ -158,7 +154,7 @@ void SaberEnsembleBlockChain::multiplySqrt(const atlas::Field & cv,
       // No localization
       const auto cvView = atlas::array::make_view<double, 1>(cv);
       for (size_t jtime = 0; jtime < fset4dMem.size(); ++jtime) {
-        fset4dMem[jtime].fieldSet() = util::copyFieldSet(ensemble_[ie]);
+        fset4dMem[jtime].deepCopy(ensemble_[ie]);
       }
 
       // Apply weight
@@ -225,11 +221,7 @@ void SaberEnsembleBlockChain::multiplySqrtAD(const oops::FieldSet4D & fset4d,
       auto cvView = atlas::array::make_view<double, 1>(cv);
 
       // Compute weight
-      cvView(index) = util::dotProductFieldSets(fset4dInit[0].fieldSet(),
-                                                ensemble_[ie],
-                                                vars_.variables(),
-                                                comm_,
-                                                true);
+      cvView(index) = fset4dInit[0].dot_product_with(ensemble_[ie], vars_);
       ++index;
     }
   }

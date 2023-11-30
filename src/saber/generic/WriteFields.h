@@ -76,15 +76,15 @@ class WriteFields : public SaberOuterBlockBase {
   const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}
   const oops::Variables & innerVars() const override {return innerVars_;}
 
-  void multiply(atlas::FieldSet &) const override;
-  void multiplyAD(atlas::FieldSet &) const override;
-  void leftInverseMultiply(atlas::FieldSet &) const override;
+  void multiply(oops::FieldSet3D &) const override;
+  void multiplyAD(oops::FieldSet3D &) const override;
+  void leftInverseMultiply(oops::FieldSet3D &) const override;
 
  private:
   void print(std::ostream &) const override;
 
   /// Write selected fields to a file.
-  void writeToFile(const atlas::FieldSet &, const std::string &, size_t &) const;
+  void writeToFile(const oops::FieldSet3D &, const std::string &, size_t &) const;
 
   const oops::GeometryData & innerGeometryData_;
   oops::Variables innerVars_;

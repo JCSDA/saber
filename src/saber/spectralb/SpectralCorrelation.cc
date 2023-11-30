@@ -40,7 +40,7 @@ SpectralCorrelation::SpectralCorrelation(const oops::GeometryData & geometryData
                                          const Parameters_ & params,
                                          const oops::FieldSet3D & xb,
                                          const oops::FieldSet3D & fg)
-  : SaberCentralBlockBase(params), params_(params),
+  : SaberCentralBlockBase(params, xb.validTime()), params_(params),
     activeVars_(getActiveVars(params, centralVars)),
     spectralVerticalCorrelations_(),
     geometryData_(geometryData),
@@ -53,7 +53,7 @@ SpectralCorrelation::SpectralCorrelation(const oops::GeometryData & geometryData
 
 // -----------------------------------------------------------------------------
 
-void SpectralCorrelation::randomize(atlas::FieldSet & fieldSet) const {
+void SpectralCorrelation::randomize(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::randomize starting" << std::endl;
 
   oops::Log::error() << "randomization with spectral correlation saber block"
@@ -67,13 +67,13 @@ void SpectralCorrelation::randomize(atlas::FieldSet & fieldSet) const {
 
 // -----------------------------------------------------------------------------
 
-void SpectralCorrelation::multiply(atlas::FieldSet & fieldSet) const {
+void SpectralCorrelation::multiply(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
 
   specutils::spectralVerticalConvolution(activeVars_,
                                          specFunctionSpace_,
                                          spectralVerticalCorrelations_,
-                                         fieldSet);
+                                         fieldSet.fieldSet());
 
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
@@ -140,7 +140,7 @@ void SpectralCorrelation::read() {
 }
 
 
-void SpectralCorrelation::directCalibration(const std::vector<atlas::FieldSet> &
+void SpectralCorrelation::directCalibration(const std::vector<oops::FieldSet3D> &
                                             MOSpectralCovariancesEns) {
   oops::Log::trace() << classname() << "::directCalibration starting" << std::endl;
 

@@ -26,23 +26,26 @@ static SaberOuterBlockMaker<WriteFields> makerWriteFields_("write fields");
 
 // -----------------------------------------------------------------------------
 
-void WriteFields::writeToFile(const atlas::FieldSet & fset,
+void WriteFields::writeToFile(const oops::FieldSet3D & fset,
                               const std::string & description,
                               size_t & count) const {
-  const auto & fieldNames = params_.fieldNames.value();
-
   // Select the fields to write out.
   // If the `fieldNames` list is empty, write out all fields in `fset`.
-  atlas::FieldSet fsetwrite;
+  oops::FieldSet3D fsetWrite(fset.validTime(), fset.commGeom());
+  oops::Variables variablesToWrite;
+  if (params_.fieldNames.value().empty()) {
+    variablesToWrite = fset.variables();
+  } else {
+    variablesToWrite = oops::Variables(params_.fieldNames.value());
+  }
   for (const auto & field : fset) {
-    if (fieldNames.empty() ||
-        std::find(fieldNames.begin(), fieldNames.end(), field.name()) != fieldNames.end()) {
-      fsetwrite.add(field);
+    if (variablesToWrite.has(field.name())) {
+      fsetWrite.add(field);
     }
   }
 
   // Check there is at least one field to write out.
-  if (fsetwrite.size() == 0) {
+  if (fsetWrite.size() == 0) {
     oops::Log::warning() << "No fields present. File will not be written." << std::endl;
     return;
   }
@@ -64,11 +67,11 @@ void WriteFields::writeToFile(const atlas::FieldSet & fset,
   }
 
   // Write field set to file.
-  util::writeFieldSet(innerGeometryData_.comm(), conf, fsetwrite);
+  fsetWrite.write(conf);
 
   // Output for validation.
   oops::Log::test() << "Wrote file " << filepathnc << " with fields:" << std::endl;
-  for (const auto & field : fsetwrite) {
+  for (const auto & field : fsetWrite) {
     oops::Log::test() << "  " << field.name() << ": "
                       << util::normField(field, innerGeometryData_.comm()) << std::endl;
   }
@@ -83,7 +86,7 @@ WriteFields::WriteFields(const oops::GeometryData & outerGeometryData,
                          const Parameters_ & params,
                          const oops::FieldSet3D & xb,
                          const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params),
+  : SaberOuterBlockBase(params, xb.validTime()),
     innerGeometryData_(outerGeometryData),
     innerVars_(outerVars),
     params_(params),
@@ -96,11 +99,15 @@ WriteFields::WriteFields(const oops::GeometryData & outerGeometryData,
   oops::Log::trace() << classname() << "::WriteFields starting" << std::endl;
 
   if (params_.writeXb) {
-    writeToFile(xb.fieldSet(), "xb", count_xb_);
+    oops::FieldSet3D fset(xb.validTime(), outerGeometryData.comm());
+    fset.shallowCopy(xb.fieldSet());
+    writeToFile(fset, "xb", count_xb_);
   }
 
   if (params_.writeFg) {
-    writeToFile(fg.fieldSet(), "fg", count_fg_);
+    oops::FieldSet3D fset(fg.validTime(), outerGeometryData.comm());
+    fset.shallowCopy(fg.fieldSet());
+    writeToFile(fset, "fg", count_fg_);
   }
 
   oops::Log::trace() << classname() << "::WriteFields done" << std::endl;
@@ -108,7 +115,7 @@ WriteFields::WriteFields(const oops::GeometryData & outerGeometryData,
 
 // -----------------------------------------------------------------------------
 
-void WriteFields::multiply(atlas::FieldSet & fset) const {
+void WriteFields::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
 
   if (params_.writeMultiply) {
@@ -120,7 +127,7 @@ void WriteFields::multiply(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void WriteFields::multiplyAD(atlas::FieldSet & fset) const {
+void WriteFields::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
 
   if (params_.writeMultiplyAD) {
@@ -132,7 +139,7 @@ void WriteFields::multiplyAD(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void WriteFields::leftInverseMultiply(atlas::FieldSet & fset) const {
+void WriteFields::leftInverseMultiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
 
   if (params_.writeLeftInverseMultiply) {

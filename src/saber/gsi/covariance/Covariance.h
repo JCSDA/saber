@@ -63,8 +63,8 @@ class Covariance : public SaberCentralBlockBase {
              const oops::FieldSet3D &);
   virtual ~Covariance();
 
-  void randomize(atlas::FieldSet &) const override;
-  void multiply(atlas::FieldSet &) const override;
+  void randomize(oops::FieldSet3D &) const override;
+  void multiply(oops::FieldSet3D &) const override;
 
   void read() override;
 
@@ -82,9 +82,9 @@ class Covariance : public SaberCentralBlockBase {
   // Communicator
   const eckit::mpi::Comm * comm_;
   // Background
-  atlas::FieldSet xb_;
+  const oops::FieldSet3D xb_;
   // First guess
-  atlas::FieldSet fg_;
+  const oops::FieldSet3D fg_;
   // Valid time
   util::DateTime validTimeOfXbFg_;
 };

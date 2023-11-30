@@ -27,7 +27,7 @@ IDCentral::IDCentral(const oops::GeometryData & geometryData,
                      const Parameters_ & params,
                      const oops::FieldSet3D & xb,
                      const oops::FieldSet3D & fg) :
-    SaberCentralBlockBase(params),
+    SaberCentralBlockBase(params, xb.validTime()),
     geometryData_(geometryData),
     activeVars_(activeVars),
     ctlVecSize_(0)
@@ -55,21 +55,16 @@ IDCentral::~IDCentral() {
 
 // -----------------------------------------------------------------------------
 
-void IDCentral::randomize(atlas::FieldSet & fset) const {
+void IDCentral::randomize(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::randomize starting" << std::endl;
 
+  // Consistency check
   for (const auto & var : activeVars_.variables()) {
       ASSERT(fset.has(var));
   }
 
-  // Overwrite input fieldSet with random numbers
-  const atlas::FieldSet newFieldSet = util::createRandomFieldSet(geometryData_.comm(),
-                                                                 geometryData_.functionSpace(),
-                                                                 activeVars_);
-
-  for (const auto & var : activeVars_.variables()) {
-    fset[var] = newFieldSet[var];
-  }
+  // Random initialization
+  fset.randomInit(geometryData_.functionSpace(), activeVars_);
 
   oops::Log::trace() << classname() << "::randomize done" << std::endl;
 }
@@ -77,7 +72,7 @@ void IDCentral::randomize(atlas::FieldSet & fset) const {
 // -----------------------------------------------------------------------------
 
 void IDCentral::multiplySqrt(const atlas::Field & cv,
-                             atlas::FieldSet & fset,
+                             oops::FieldSet3D & fset,
                              const size_t & offset) const {
   oops::Log::trace() << classname() << "::multiplySqrt starting" << std::endl;
 
@@ -99,7 +94,7 @@ void IDCentral::multiplySqrt(const atlas::Field & cv,
 
 // -----------------------------------------------------------------------------
 
-void IDCentral::multiplySqrtAD(const atlas::FieldSet & fset,
+void IDCentral::multiplySqrtAD(const oops::FieldSet3D & fset,
                                atlas::Field & cv,
                                const size_t & offset) const {
   oops::Log::trace() << classname() << "::multiplySqrtAD starting" << std::endl;
@@ -122,7 +117,7 @@ void IDCentral::multiplySqrtAD(const atlas::FieldSet & fset,
 
 // -----------------------------------------------------------------------------
 
-void IDCentral::multiply(atlas::FieldSet & fset) const {
+void IDCentral::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
@@ -145,7 +140,7 @@ IDOuter::IDOuter(const oops::GeometryData & outerGeometryData,
                  const Parameters_ & params,
                  const oops::FieldSet3D & xb,
                  const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params),
+  : SaberOuterBlockBase(params, xb.validTime()),
     innerGeometryData_(outerGeometryData),
     innerVars_(outerVars)
 {
@@ -155,21 +150,21 @@ IDOuter::IDOuter(const oops::GeometryData & outerGeometryData,
 
 // -----------------------------------------------------------------------------
 
-void IDOuter::multiply(atlas::FieldSet & fset) const {
+void IDOuter::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void IDOuter::multiplyAD(atlas::FieldSet & fset) const {
+void IDOuter::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void IDOuter::leftInverseMultiply(atlas::FieldSet & fset) const {
+void IDOuter::leftInverseMultiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }

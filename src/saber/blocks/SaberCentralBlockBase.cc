@@ -91,30 +91,26 @@ void SaberCentralBlockBase::adjointTest(const oops::GeometryData & geometryData,
   oops::Log::trace() << "SaberCentralBlockBase::adjointTest starting" << std::endl;
 
   // Create random FieldSets
-  atlas::FieldSet fset1 =  util::createRandomFieldSet(geometryData.comm(),
-                                                      geometryData.functionSpace(),
-                                                      vars);
-  atlas::FieldSet fset2 =  util::createRandomFieldSet(geometryData.comm(),
-                                                      geometryData.functionSpace(),
-                                                      vars);
+  oops::FieldSet3D fset1 = oops::randomFieldSet3D(validTime_,
+                                                  geometryData.comm(),
+                                                  geometryData.functionSpace(),
+                                                  vars);
+  oops::FieldSet3D fset2 = oops::randomFieldSet3D(validTime_,
+                                                  geometryData.comm(),
+                                                  geometryData.functionSpace(),
+                                                  vars);
 
   // Copy FieldSets
-  atlas::FieldSet fset1Save = util::copyFieldSet(fset1);
-  atlas::FieldSet fset2Save = util::copyFieldSet(fset2);
+  oops::FieldSet3D fset1Save(fset1);
+  oops::FieldSet3D fset2Save(fset2);
 
   // Apply forward multiplication only (self-adjointness test)
   this->multiply(fset1);
   this->multiply(fset2);
 
   // Compute adjoint test
-  const double dp1 = util::dotProductFieldSets(fset1,
-                                               fset2Save,
-                                               vars.variables(),
-                                               geometryData.comm());
-  const double dp2 = util::dotProductFieldSets(fset2,
-                                               fset1Save,
-                                               vars.variables(),
-                                               geometryData.comm());
+  const double dp1 = fset1.dot_product_with(fset2Save, vars);
+  const double dp2 = fset2.dot_product_with(fset1Save, vars);
   oops::Log::info() << std::setprecision(16) << "Info     : Adjoint test: y^t (Ax) = " << dp1
                     << ": x^t (A^t y) = " << dp2 << " : adjoint tolerance = "
                     << adjointTolerance << std::endl;
@@ -139,12 +135,13 @@ void SaberCentralBlockBase::sqrtTest(const oops::GeometryData & geometryData,
   // Square-root test
 
   // Create FieldSet
-  atlas::FieldSet fset = util::createRandomFieldSet(geometryData.comm(),
-                                                    geometryData.functionSpace(),
-                                                    vars);
+  oops::FieldSet3D fset = oops::randomFieldSet3D(validTime_,
+                                                 geometryData.comm(),
+                                                 geometryData.functionSpace(),
+                                                 vars);
 
   // Copy FieldSet
-  atlas::FieldSet fsetSave = util::copyFieldSet(fset);
+  oops::FieldSet3D fsetSave(fset);
 
   // Create control vector
   oops::Log::info() << "Control vector size for block " << this->blockName() << ": "
@@ -173,10 +170,7 @@ void SaberCentralBlockBase::sqrtTest(const oops::GeometryData & geometryData,
   this->multiplySqrtAD(fsetSave, ctlVec, 0);
 
   // Compute adjoint test
-  const double dp1 = util::dotProductFieldSets(fset,
-                                               fsetSave,
-                                               vars.variables(),
-                                               geometryData.comm());
+  const double dp1 = fset.dot_product_with(fsetSave, vars);
   double dp2 = 0.0;
   for (size_t jnode = 0; jnode < ctlVecSize(); ++jnode) {
       dp2 += view(jnode)*viewSave(jnode);
@@ -194,7 +188,7 @@ void SaberCentralBlockBase::sqrtTest(const oops::GeometryData & geometryData,
   this->multiply(fsetSave);
 
   // Check that the fieldsets are similar within tolerance
-  const bool sqrtComparison = util::compareFieldSets(fset, fsetSave, sqrtTolerance, false);
+  const bool sqrtComparison = fset.compare_with(fsetSave, sqrtTolerance, false);
   if (sqrtComparison) {
     oops::Log::info() << "Info     : Square-root test passed: U U^t x == B x" << std::endl;
   } else {

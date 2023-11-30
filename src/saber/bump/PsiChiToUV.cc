@@ -27,6 +27,7 @@ static SaberOuterBlockMaker<PsiChiToUV> makerPsiChiToUV_("BUMP_PsiChiToUV");
 // -----------------------------------------------------------------------------
 
 namespace {
+
 oops::Variables createInnerVars(const oops::Variables & outerVars) {
   oops::Variables innerVars(std::vector<std::string>(
     {"stream_function", "velocity_potential"}));
@@ -38,6 +39,7 @@ oops::Variables createInnerVars(const oops::Variables & outerVars) {
 
 }  // namespace
 
+// -----------------------------------------------------------------------------
 
 PsiChiToUV::PsiChiToUV(const oops::GeometryData & outerGeometryData,
                        const oops::Variables & outerVars,
@@ -45,7 +47,7 @@ PsiChiToUV::PsiChiToUV(const oops::GeometryData & outerGeometryData,
                        const Parameters_ & params,
                        const oops::FieldSet3D & xb,
                        const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params),
+  : SaberOuterBlockBase(params, xb.validTime()),
     innerGeometryData_(outerGeometryData),
     innerVars_(createInnerVars(outerVars)),
     outerVars_(outerVars),
@@ -69,10 +71,6 @@ PsiChiToUV::PsiChiToUV(const oops::GeometryData & outerGeometryData,
   const std::vector<std::string> activeStrings{"stream_function", "velocity_potential",
                                                "eastward_wind", "northward_wind"};
   activeVars.intersection(oops::Variables(activeStrings));
-  std::vector<size_t> activeVariableSizes;
-  for (const std::string & var : activeStrings) {
-    activeVariableSizes.push_back(activeVars.getLevels(var));
-  }
 
   // Initialize BUMP
   bump_.reset(new bump_lib::BUMP(outerGeometryData.comm(),
@@ -80,8 +78,8 @@ PsiChiToUV::PsiChiToUV(const oops::GeometryData & outerGeometryData,
                                  oops::LibOOPS::instance().testChannel(),
                                  outerGeometryData.functionSpace(),
                                  outerGeometryData.fieldSet(),
-                                 activeVariableSizes,
-                                 activeVars.variables(),
+                                 activeVars,
+                                 xb.validTime(),
                                  covarConf,
                                  bumpParams_.toConfiguration()));
 
@@ -98,19 +96,19 @@ PsiChiToUV::~PsiChiToUV() {
 
 // -----------------------------------------------------------------------------
 
-void PsiChiToUV::multiply(atlas::FieldSet & fset) const {
+void PsiChiToUV::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   bump_->multiplyPsiChiToUV(fset);
-  util::removeFieldsFromFieldSet(fset, innerVars_.variables());
+  fset.removeFields(innerVars_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void PsiChiToUV::multiplyAD(atlas::FieldSet & fset) const {
+void PsiChiToUV::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
   bump_->multiplyPsiChiToUVAd(fset);
-  util::removeFieldsFromFieldSet(fset, outerVars_.variables());
+  fset.removeFields(outerVars_);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 

@@ -294,7 +294,7 @@ SpectralToGauss::SpectralToGauss(const oops::GeometryData & outerGeometryData,
                                  const Parameters_ & params,
                                  const oops::FieldSet3D & xb,
                                  const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params),
+  : SaberOuterBlockBase(params, xb.validTime()),
     activeVars_(getActiveVars(params, outerVars)),
     outerVars_(outerVars),
     useWindTransform_(outerVars_.has("eastward_wind") && outerVars_.has("northward_wind")),
@@ -487,7 +487,7 @@ void SpectralToGauss::invertMultiplyVectorFields(const atlas::FieldSet & gaussFi
 
 // -----------------------------------------------------------------------------
 
-void SpectralToGauss::multiply(atlas::FieldSet & fieldSet) const {
+void SpectralToGauss::multiply(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
 
   // Create empty Model fieldset
@@ -517,14 +517,14 @@ void SpectralToGauss::multiply(atlas::FieldSet & fieldSet) const {
   // Convert active scalar variables to Gaussian grid.
   if (!spectralFieldSet.empty()) {multiplyScalarFields(spectralFieldSet, newFields);}
 
-  fieldSet = newFields;
+  fieldSet.fieldSet() = newFields;
 
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void SpectralToGauss::multiplyAD(atlas::FieldSet & fieldSet) const {
+void SpectralToGauss::multiplyAD(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
 
   // On input: fieldset on gaussian grid
@@ -554,14 +554,14 @@ void SpectralToGauss::multiplyAD(atlas::FieldSet & fieldSet) const {
   // Convert active u/v wind variables to spectral space.
   if (useWindTransform_) {multiplyVectorFieldsAD(windFieldSet, newFields);}
 
-  fieldSet = newFields;
+  fieldSet.fieldSet() = newFields;
 
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void SpectralToGauss::leftInverseMultiply(atlas::FieldSet & fieldSet) const {
+void SpectralToGauss::leftInverseMultiply(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
   auto outFieldSet = atlas::FieldSet();
   auto scalarFieldSet = atlas::FieldSet();
@@ -584,13 +584,37 @@ void SpectralToGauss::leftInverseMultiply(atlas::FieldSet & fieldSet) const {
 
   if (useWindTransform_) invertMultiplyVectorFields(windFieldSet, outFieldSet);
 
-  fieldSet = outFieldSet;
+  fieldSet.fieldSet() = outFieldSet;
 
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
-void SpectralToGauss::directCalibration(const std::vector<atlas::FieldSet> & fsetEns) {
+void SpectralToGauss::directCalibration(const std::vector<oops::FieldSet3D> & fsetEns) {
+}
+
+// -----------------------------------------------------------------------------
+
+oops::FieldSet3D SpectralToGauss::generateInnerFieldSet(
+  const oops::GeometryData & innerGeometryData,
+  const oops::Variables & innerVars) const {
+  oops::FieldSet3D fset(this->validTime(), innerGeometryData.comm());
+  fset.deepCopy(util::createSmoothFieldSet(innerGeometryData.comm(),
+                                           innerGeometryData.functionSpace(),
+                                           innerVars));
+  return fset;
+}
+
+// -----------------------------------------------------------------------------
+
+oops::FieldSet3D SpectralToGauss::generateOuterFieldSet(
+  const oops::GeometryData & outerGeometryData,
+  const oops::Variables & outerVars) const {
+  oops::FieldSet3D fset(this->validTime(), outerGeometryData.comm());
+  fset.deepCopy(util::createSmoothFieldSet(outerGeometryData.comm(),
+                                           outerGeometryData.functionSpace(),
+                                           outerVars));
+  return fset;
 }
 
 // -----------------------------------------------------------------------------

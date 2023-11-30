@@ -487,7 +487,7 @@ GaussUVToGP::GaussUVToGP(const oops::GeometryData & outerGeometryData,
                const Parameters_ & params,
                const oops::FieldSet3D & xb,
                const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params),
+  : SaberOuterBlockBase(params, xb.validTime()),
     params_(params),
     outerVars_(outerVars),
     innerVars_(createInnerVars(outerVars)),
@@ -506,7 +506,7 @@ GaussUVToGP::GaussUVToGP(const oops::GeometryData & outerGeometryData,
 
 // -----------------------------------------------------------------------------
 
-void GaussUVToGP::multiply(atlas::FieldSet & fset) const {
+void GaussUVToGP::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting " << std::endl;
 
   atlas::Field gp = gaussFunctionSpace_.createField<double>(
@@ -516,7 +516,7 @@ void GaussUVToGP::multiply(atlas::FieldSet & fset) const {
   atlas::Field rhsvec = allocateRHSVec(gaussFunctionSpace_, gp.levels());
 
   populateRHSVec(augmentedState_["dry_air_density_levels_minus_one"],
-                 augmentedState_["coriolis"], fset, rhsvec);
+                 augmentedState_["coriolis"], fset.fieldSet(), rhsvec);
 
   atlas::FieldSet specfset = allocateSpectralVortDiv(specFunctionSpace_, rhsvec.levels());
   // calculate dir vorticity and divergence spectrally
@@ -550,7 +550,7 @@ void GaussUVToGP::multiply(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void GaussUVToGP::multiplyAD(atlas::FieldSet & fset) const {
+void GaussUVToGP::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
 
   atlas::FieldSet specfset =
@@ -595,12 +595,12 @@ void GaussUVToGP::multiplyAD(atlas::FieldSet & fset) const {
 
   populateRHSVecAdj(augmentedState_["dry_air_density_levels_minus_one"],
                     augmentedState_["coriolis"],
-                    fset, rhsvec);
+                    fset.fieldSet(), rhsvec);
 
   newFields.add(fset["eastward_wind"]);
   newFields.add(fset["northward_wind"]);
 
-  fset = newFields;
+  fset.fieldSet() = newFields;
 
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }

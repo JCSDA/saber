@@ -72,8 +72,8 @@ class DuplicateVariables : public SaberOuterBlockBase {
   const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}
   const oops::Variables & innerVars() const override {return innerVars_;}
 
-  void multiply(atlas::FieldSet &) const override;
-  void multiplyAD(atlas::FieldSet &) const override;
+  void multiply(oops::FieldSet3D &) const override;
+  void multiplyAD(oops::FieldSet3D &) const override;
 
  private:
   void print(std::ostream &) const override;

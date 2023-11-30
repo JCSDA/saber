@@ -31,7 +31,7 @@ VerticalBalance::VerticalBalance(const oops::GeometryData & outerGeometryData,
                                  const Parameters_ & params,
                                  const oops::FieldSet3D & xb,
                                  const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params),
+  : SaberOuterBlockBase(params, xb.validTime()),
     innerGeometryData_(outerGeometryData),
     innerVars_(outerVars),
     bumpParams_(),
@@ -43,10 +43,6 @@ VerticalBalance::VerticalBalance(const oops::GeometryData & outerGeometryData,
 
   // Get active variables
   activeVars_ = getActiveVars(params, outerVars);
-  std::vector<size_t> activeVariableSizes;
-  for (std::string var : activeVars_.variables()) {
-    activeVariableSizes.push_back(activeVars_.getLevels(var));
-  }
 
   // Get BUMP parameters
   if (params.doCalibration()) {
@@ -63,8 +59,8 @@ VerticalBalance::VerticalBalance(const oops::GeometryData & outerGeometryData,
                                  oops::LibOOPS::instance().testChannel(),
                                  outerGeometryData.functionSpace(),
                                  outerGeometryData.fieldSet(),
-                                 activeVariableSizes,
-                                 activeVars_.variables(),
+                                 activeVars_,
+                                 xb.validTime(),
                                  covarConf,
                                  bumpParams_.toConfiguration()));
 
@@ -81,7 +77,7 @@ VerticalBalance::~VerticalBalance() {
 
 // -----------------------------------------------------------------------------
 
-void VerticalBalance::multiply(atlas::FieldSet & fset) const {
+void VerticalBalance::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   bump_->multiplyVbal(fset);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
@@ -89,7 +85,7 @@ void VerticalBalance::multiply(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void VerticalBalance::multiplyAD(atlas::FieldSet & fset) const {
+void VerticalBalance::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
   bump_->multiplyVbalAd(fset);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
@@ -97,7 +93,7 @@ void VerticalBalance::multiplyAD(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void VerticalBalance::leftInverseMultiply(atlas::FieldSet & fset) const {
+void VerticalBalance::leftInverseMultiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
   bump_->inverseMultiplyVbal(fset);
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
@@ -113,7 +109,7 @@ void VerticalBalance::read() {
 
 // -----------------------------------------------------------------------------
 
-void VerticalBalance::directCalibration(const std::vector<atlas::FieldSet> & fsetEns) {
+void VerticalBalance::directCalibration(const std::vector<oops::FieldSet3D> & fsetEns) {
   oops::Log::trace() << classname() << "::directCalibration starting" << std::endl;
   bump_->addEnsemble(fsetEns);
   bump_->runDrivers();
@@ -130,7 +126,7 @@ void VerticalBalance::iterativeCalibrationInit() {
 
 // -----------------------------------------------------------------------------
 
-void VerticalBalance::iterativeCalibrationUpdate(const atlas::FieldSet & fset) {
+void VerticalBalance::iterativeCalibrationUpdate(const oops::FieldSet3D & fset) {
   oops::Log::trace() << classname() << "::iterativeCalibrationUpdate starting" << std::endl;
   bump_->iterativeUpdate(fset, memberIndex_);
   ++memberIndex_;
@@ -155,7 +151,7 @@ void VerticalBalance::write() const {
 
 // -----------------------------------------------------------------------------
 
-std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> VerticalBalance::fieldsToWrite()
+std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> VerticalBalance::fieldsToWrite()
   const {
   oops::Log::trace() << classname() << "::fieldsToWrite starting" << std::endl;
   std::vector<eckit::LocalConfiguration> outputModelFilesConf
@@ -170,7 +166,7 @@ std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> VerticalBalan
   }
 
   // Return configuration/fieldset pairs
-  std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> pairs
+  std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> pairs
   = bump_->fieldsToWrite(outputModelFilesConf);
 
   if (outputModelFilesConf.size() > 0) {

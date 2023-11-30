@@ -25,7 +25,7 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
                              const Parameters_ & params,
                              const oops::FieldSet3D & xb,
                              const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params),
+  : SaberOuterBlockBase(params, xb.validTime()),
     params_(params), outerGeomData_(outerGeometryData), innerVars_(outerVars),
     activeVars_(params.activeVars.value().get_value_or(outerVars))
 {
@@ -62,7 +62,7 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
 
 // -----------------------------------------------------------------------------
 
-void Interpolation::multiply(atlas::FieldSet & fieldSet) const {
+void Interpolation::multiply(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
 
   // Temporary FieldSet of active variables for interpolation target
@@ -93,14 +93,14 @@ void Interpolation::multiply(atlas::FieldSet & fieldSet) const {
   }
 
   // Reset
-  fieldSet = targetFieldSet;
+  fieldSet.fieldSet() = targetFieldSet;
 
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void Interpolation::multiplyAD(atlas::FieldSet & fieldSet) const {
+void Interpolation::multiplyAD(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
 
   // Temporary FieldSet of active variables for interpolation source
@@ -133,14 +133,14 @@ void Interpolation::multiplyAD(atlas::FieldSet & fieldSet) const {
     }
   }
 
-  fieldSet = sourceFieldSet;
+  fieldSet.fieldSet() = sourceFieldSet;
 
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void Interpolation::leftInverseMultiply(atlas::FieldSet & fieldSet) const {
+void Interpolation::leftInverseMultiply(oops::FieldSet3D & fieldSet) const {
   if (!inverseInterp_) {
     inverseInterp_.reset(new oops::GlobalInterpolator(
           params_.localInterpConf.value(), outerGeomData_,
@@ -175,9 +175,31 @@ void Interpolation::leftInverseMultiply(atlas::FieldSet & fieldSet) const {
   }
 
   // Reset
-  fieldSet = targetFieldSet;
+  fieldSet.fieldSet() = targetFieldSet;
 
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+oops::FieldSet3D Interpolation::generateInnerFieldSet(const oops::GeometryData & innerGeometryData,
+                                                      const oops::Variables & innerVars) const {
+  oops::FieldSet3D fset(this->validTime(), innerGeometryData.comm());
+  fset.deepCopy(util::createSmoothFieldSet(innerGeometryData.comm(),
+                                           innerGeometryData.functionSpace(),
+                                           innerVars));
+  return fset;
+}
+
+// -----------------------------------------------------------------------------
+
+oops::FieldSet3D Interpolation::generateOuterFieldSet(const oops::GeometryData & outerGeometryData,
+                                                      const oops::Variables & outerVars) const {
+  oops::FieldSet3D fset(this->validTime(), outerGeometryData.comm());
+  fset.deepCopy(util::createSmoothFieldSet(outerGeometryData.comm(),
+                                           outerGeometryData.functionSpace(),
+                                           outerVars));
+  return fset;
 }
 
 // -----------------------------------------------------------------------------

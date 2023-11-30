@@ -38,7 +38,7 @@ HpHexnerToPExner::HpHexnerToPExner(const oops::GeometryData & outerGeometryData,
                      const Parameters_ & params,
                      const oops::FieldSet3D & xb,
                      const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params),
+  : SaberOuterBlockBase(params, xb.validTime()),
     innerGeometryData_(outerGeometryData), innerVars_(outerVars),
     activeVars_(params.activeVars.value().get_value_or(outerVars))
 {
@@ -56,7 +56,7 @@ HpHexnerToPExner::~HpHexnerToPExner() {
 
 // -----------------------------------------------------------------------------
 
-void HpHexnerToPExner::multiply(atlas::FieldSet & fset) const {
+void HpHexnerToPExner::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
 
   auto hydrostaticPressureView =
@@ -79,7 +79,7 @@ void HpHexnerToPExner::multiply(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void HpHexnerToPExner::multiplyAD(atlas::FieldSet & fset) const {
+void HpHexnerToPExner::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
 
   auto airPressureView =
@@ -109,7 +109,7 @@ void HpHexnerToPExner::multiplyAD(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void HpHexnerToPExner::leftInverseMultiply(atlas::FieldSet & fset) const {
+void HpHexnerToPExner::leftInverseMultiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
 
   // Retrieve hydrostatic Exner from Exner. Need to extrapolate top level

@@ -62,7 +62,7 @@ VaderBlock::VaderBlock(const oops::GeometryData & outerGeometryData,
                        const Parameters_ & params,
                        const oops::FieldSet3D & xb,
                        const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params),
+  : SaberOuterBlockBase(params, xb.validTime()),
     outerVars_(outerVars),
     innerGeometryData_(outerGeometryData),
     innerVars_(createInnerVars(outerVars, params.innerVars)),
@@ -95,33 +95,33 @@ VaderBlock::VaderBlock(const oops::GeometryData & outerGeometryData,
 
 // -----------------------------------------------------------------------------
 
-void VaderBlock::multiply(atlas::FieldSet & fset) const {
+void VaderBlock::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   oops::Variables vars = outerVars_;
-  vader_.changeVarTL(fset, vars);
+  vader_.changeVarTL(fset.fieldSet(), vars);
   // copy only outer variables to the output fieldset (vader leaves both
   // output and input variables in the fieldset)
   atlas::FieldSet fset_out;
   for (const auto & fieldname : outerVars_.variables()) {
     fset_out.add(fset[fieldname]);
   }
-  fset = fset_out;
+  fset.fieldSet() = fset_out;
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void VaderBlock::multiplyAD(atlas::FieldSet & fset) const {
+void VaderBlock::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
   oops::Variables vars = outerVars_;
-  vader_.changeVarAD(fset, vars);
+  vader_.changeVarAD(fset.fieldSet(), vars);
   // copy only inner variables to the output fieldset (vader leaves both
   // output and input variables in the fieldset)
   atlas::FieldSet fset_out;
   for (const auto & fieldname : innerVars_.variables()) {
     fset_out.add(fset[fieldname]);
   }
-  fset = fset_out;
+  fset.fieldSet() = fset_out;
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 

@@ -94,7 +94,7 @@ VertProj::VertProj(const oops::GeometryData & outerGeometryData,
                    const Parameters_ & params,
                    const oops::FieldSet3D & xb,
                    const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params),
+  : SaberOuterBlockBase(params, xb.validTime()),
     outerGeometryData_(outerGeometryData),
     outerVars_(outerVars),
     activeVars_(params.activeVars.value().get_value_or(outerVars)),
@@ -106,7 +106,7 @@ VertProj::VertProj(const oops::GeometryData & outerGeometryData,
 
 // -----------------------------------------------------------------------------
 
-void VertProj::multiply(atlas::FieldSet & fieldSet) const {
+void VertProj::multiply(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::multiply starting " << std::endl;
 
   // Create empty Model fieldset
@@ -144,7 +144,7 @@ void VertProj::multiply(atlas::FieldSet & fieldSet) const {
     newFields.add(modelFieldSet[fieldname]);
   }
 
-  fieldSet = newFields;
+  fieldSet.fieldSet() = newFields;
 
   oops::Log::trace() << classname() << "::multiply done"
                      << fieldSet.field_names() << std::endl;
@@ -152,7 +152,7 @@ void VertProj::multiply(atlas::FieldSet & fieldSet) const {
 
 // -----------------------------------------------------------------------------
 
-void VertProj::multiplyAD(atlas::FieldSet & fieldSet) const {
+void VertProj::multiplyAD(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname()
                      << "::multiplyAD starting" << std::endl;
 
@@ -191,7 +191,7 @@ void VertProj::multiplyAD(atlas::FieldSet & fieldSet) const {
     newFields.add(vertFieldSet[fieldname]);
   }
 
-  fieldSet = newFields;
+  fieldSet.fieldSet() = newFields;
 
   oops::Log::trace() << classname()
                      << "::multiplyAD done" << fieldSet.field_names()  << std::endl;
@@ -200,7 +200,7 @@ void VertProj::multiplyAD(atlas::FieldSet & fieldSet) const {
 
 // -----------------------------------------------------------------------------
 
-void VertProj::leftInverseMultiply(atlas::FieldSet & fieldSet) const {
+void VertProj::leftInverseMultiply(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname()
                      << "::leftInverseStarting starting" << std::endl;
 
@@ -239,7 +239,7 @@ void VertProj::leftInverseMultiply(atlas::FieldSet & fieldSet) const {
     newFields.add(vertFieldSet[fieldname]);
   }
 
-  fieldSet = newFields;
+  fieldSet.fieldSet() = newFields;
 
   oops::Log::trace() << classname()
                      << "::leftInverseMultiply done"

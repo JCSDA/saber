@@ -110,7 +110,7 @@ DuplicateVariables::DuplicateVariables(const oops::GeometryData & outerGeometryD
                                        const Parameters_ & params,
                                        const oops::FieldSet3D & xb,
                                        const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params),
+  : SaberOuterBlockBase(params, xb.validTime()),
     groups_(params.variableGroupParameters.value()),
     outerVars_(outerVars),
     activeVars_(createActiveVars(groups_, outerVars_)),
@@ -122,7 +122,7 @@ DuplicateVariables::DuplicateVariables(const oops::GeometryData & outerGeometryD
 }
 
 // -----------------------------------------------------------------------------
-void DuplicateVariables::multiply(atlas::FieldSet & fset) const {
+void DuplicateVariables::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
 
   // The aim is to copy groupVars_ fields into component fields.
@@ -143,7 +143,7 @@ void DuplicateVariables::multiply(atlas::FieldSet & fset) const {
   }
 
   // copy group fields into component fields
-  copyFields(groups_, fset, fsetOut);
+  copyFields(groups_, fset.fieldSet(), fsetOut);
 
   // keep passive vars
   for (auto & fld : fset) {
@@ -152,14 +152,14 @@ void DuplicateVariables::multiply(atlas::FieldSet & fset) const {
     }
   }
 
-  fset = fsetOut;
+  fset.fieldSet() = fsetOut;
 
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void DuplicateVariables::multiplyAD(atlas::FieldSet & fset) const {
+void DuplicateVariables::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
 
   // The aim is to do the adjoint of the copy groupVars_ fields into component fields.
@@ -180,7 +180,7 @@ void DuplicateVariables::multiplyAD(atlas::FieldSet & fset) const {
   }
 
   // sum component fields into group fields
-  gatherFields(groups_, fset, fsetOut);
+  gatherFields(groups_, fset.fieldSet(), fsetOut);
 
   // keep passive vars
   for (auto & fld : fset) {
@@ -189,7 +189,7 @@ void DuplicateVariables::multiplyAD(atlas::FieldSet & fset) const {
     }
   }
 
-  fset = fsetOut;
+  fset.fieldSet() = fsetOut;
 
   oops::Log::trace() << classname() << "::multiplyAD done = " << std::endl;
 }

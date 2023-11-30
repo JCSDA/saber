@@ -14,6 +14,7 @@
 
 #include "atlas/field.h"
 
+#include "oops/base/FieldSet3D.h"
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
@@ -54,27 +55,29 @@ class NICAS : public SaberCentralBlockBase {
         const oops::FieldSet3D &);
   virtual ~NICAS();
 
-  void randomize(atlas::FieldSet &) const override;
-  void multiply(atlas::FieldSet &) const override;
+  void randomize(oops::FieldSet3D &) const override;
+  void multiply(oops::FieldSet3D &) const override;
 
-  std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> fieldsToRead() override;
+  std::vector<std::pair<std::string, eckit::LocalConfiguration>> getReadConfs() const override;
+  void setReadFields(const std::vector<oops::FieldSet3D> &) override;
 
   void read() override;
 
-  void directCalibration(const std::vector<atlas::FieldSet> &) override;
+  void directCalibration(const std::vector<oops::FieldSet3D> &) override;
 
   void iterativeCalibrationInit() override;
-  void iterativeCalibrationUpdate(const atlas::FieldSet &) override;
+  void iterativeCalibrationUpdate(const oops::FieldSet3D &) override;
   void iterativeCalibrationFinal() override;
 
   void dualResolutionSetup(const oops::GeometryData &) override;
 
   void write() const override;
-  std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> fieldsToWrite() const override;
+  std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> fieldsToWrite() const
+    override;
 
   size_t ctlVecSize() const override {return bump_->getCvSize();}
-  void multiplySqrt(const atlas::Field &, atlas::FieldSet &, const size_t &) const override;
-  void multiplySqrtAD(const atlas::FieldSet &, atlas::Field &, const size_t &) const override;
+  void multiplySqrt(const atlas::Field &, oops::FieldSet3D &, const size_t &) const override;
+  void multiplySqrtAD(const oops::FieldSet3D &, atlas::Field &, const size_t &) const override;
 
  private:
   void print(std::ostream &) const override;

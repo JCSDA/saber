@@ -13,6 +13,8 @@
 #include "oops/util/Logger.h"
 #include "oops/util/Timer.h"
 
+#include "saber/oops/Utilities.h"
+
 namespace saber {
 namespace bump {
 
@@ -28,20 +30,14 @@ NICAS::NICAS(const oops::GeometryData & geometryData,
              const Parameters_ & params,
              const oops::FieldSet3D & xb,
              const oops::FieldSet3D & fg)
-  : SaberCentralBlockBase(params), bumpParams_(),
+  : SaberCentralBlockBase(params, xb.validTime()), bumpParams_(),
     bump_(),
     memberIndex_(0)
 {
   oops::Log::trace() << classname() << "::NICAS starting" << std::endl;
 
   // Get active variables
-  activeVars_ = params.activeVars.value().get_value_or(centralVars);
-
-  // Get active variable sizes
-  std::vector<size_t> activeVariableSizes;
-  for (const std::string & var : activeVars_.variables()) {
-    activeVariableSizes.push_back(centralVars.getLevels(var));
-  }
+  activeVars_ = getActiveVars(params, centralVars);
 
   // Get BUMP parameters
   if (params.doCalibration()) {
@@ -58,8 +54,8 @@ NICAS::NICAS(const oops::GeometryData & geometryData,
                                  oops::LibOOPS::instance().testChannel(),
                                  geometryData.functionSpace(),
                                  geometryData.fieldSet(),
-                                 activeVariableSizes,
-                                 activeVars_.variables(),
+                                 activeVars_,
+                                 xb.validTime(),
                                  covarConf,
                                  bumpParams_.toConfiguration()));
 
@@ -79,7 +75,7 @@ NICAS::~NICAS() {
 
 // -----------------------------------------------------------------------------
 
-void NICAS::randomize(atlas::FieldSet & fset) const {
+void NICAS::randomize(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::randomize starting" << std::endl;
   bump_->randomizeNicas(fset);
   oops::Log::trace() << classname() << "::randomize done" << std::endl;
@@ -87,7 +83,7 @@ void NICAS::randomize(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void NICAS::multiply(atlas::FieldSet & fset) const {
+void NICAS::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   bump_->multiplyNicas(fset);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
@@ -95,32 +91,36 @@ void NICAS::multiply(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> NICAS::fieldsToRead() {
-  oops::Log::trace() << classname() << "::fieldsToRead starting" << std::endl;
+std::vector<std::pair<std::string, eckit::LocalConfiguration>> NICAS::getReadConfs() const {
+  oops::Log::trace() << classname() << "::getReadConfs starting" << std::endl;
   std::vector<eckit::LocalConfiguration> inputModelFilesConf
     = bumpParams_.inputModelFilesConf.value().get_value_or({});
-  oops::Log::trace() << classname() << "::fieldsToRead done" << std::endl;
-  return bump_->fieldsToRead(inputModelFilesConf);
+  oops::Log::trace() << classname() << "::getReadConfs done" << std::endl;
+  return bump_->getReadConfs(inputModelFilesConf);
+}
+
+// -----------------------------------------------------------------------------
+
+void NICAS::setReadFields(const std::vector<oops::FieldSet3D> & fsetVec) {
+  oops::Log::trace() << classname() << "::setReadFields starting" << std::endl;
+  for (const auto & fset : fsetVec) {
+    bump_->addField(fset);
+  }
+  oops::Log::trace() << classname() << "::setReadFields starting" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 void NICAS::read() {
   oops::Log::trace() << classname() << "::read starting" << std::endl;
-  for (const auto & input : bump_->inputs()) {
-    bump_->addField(input.second);
-  }
   bump_->runDrivers();
   oops::Log::trace() << classname() << "::read done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void NICAS::directCalibration(const std::vector<atlas::FieldSet> & fsetEns) {
+void NICAS::directCalibration(const std::vector<oops::FieldSet3D> & fsetEns) {
   oops::Log::trace() << classname() << "::directCalibration starting" << std::endl;
-  for (const auto & input : bump_->inputs()) {
-    bump_->addField(input.second);
-  }
   bump_->addEnsemble(fsetEns);
   bump_->runDrivers();
   oops::Log::trace() << classname() << "::directCalibration done" << std::endl;
@@ -130,16 +130,13 @@ void NICAS::directCalibration(const std::vector<atlas::FieldSet> & fsetEns) {
 
 void NICAS::iterativeCalibrationInit() {
   oops::Log::trace() << classname() << "::iterativeCalibrationInit starting" << std::endl;
-  for (const auto & input : bump_->inputs()) {
-    bump_->addField(input.second);
-  }
   memberIndex_ = 0;
   oops::Log::trace() << classname() << "::iterativeCalibrationInit done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void NICAS::iterativeCalibrationUpdate(const atlas::FieldSet & fset) {
+void NICAS::iterativeCalibrationUpdate(const oops::FieldSet3D & fset) {
   oops::Log::trace() << classname() << "::iterativeCalibrationUpdate starting" << std::endl;
   bump_->iterativeUpdate(fset, memberIndex_);
   ++memberIndex_;
@@ -166,7 +163,7 @@ void NICAS::dualResolutionSetup(const oops::GeometryData & geometryData) {
 // -----------------------------------------------------------------------------
 
 void NICAS::multiplySqrt(const atlas::Field & cv,
-                         atlas::FieldSet & fset,
+                         oops::FieldSet3D & fset,
                          const size_t & offset) const {
   oops::Log::trace() << classname() << "::multiplySqrt starting" << std::endl;
   bump_->multiplyNicasSqrt(cv, fset, offset);
@@ -175,7 +172,7 @@ void NICAS::multiplySqrt(const atlas::Field & cv,
 
 // -----------------------------------------------------------------------------
 
-void NICAS::multiplySqrtAD(const atlas::FieldSet & fset,
+void NICAS::multiplySqrtAD(const oops::FieldSet3D & fset,
                            atlas::Field & cv,
                            const size_t & offset) const {
   oops::Log::trace() << classname() << "::multiplySqrtAD starting" << std::endl;
@@ -185,7 +182,7 @@ void NICAS::multiplySqrtAD(const atlas::FieldSet & fset,
 
 // -----------------------------------------------------------------------------
 
-std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> NICAS::fieldsToWrite() const {
+std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> NICAS::fieldsToWrite() const {
   oops::Log::trace() << classname() << "::fieldsToWrite starting" << std::endl;
   std::vector<eckit::LocalConfiguration> outputModelFilesConf
     = bumpParams_.outputModelFilesConf.value().get_value_or({});
@@ -199,7 +196,7 @@ std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> NICAS::fields
   }
 
   // Return configuration/fieldset pairs
-  std::vector<std::pair<eckit::LocalConfiguration, atlas::FieldSet>> pairs
+  std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> pairs
   = bump_->fieldsToWrite(outputModelFilesConf);
 
   if (outputModelFilesConf.size() > 0) {

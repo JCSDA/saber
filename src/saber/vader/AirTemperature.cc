@@ -39,7 +39,7 @@ AirTemperature::AirTemperature(const oops::GeometryData & outerGeometryData,
                                const Parameters_ & params,
                                const oops::FieldSet3D & xb,
                                const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params),
+  : SaberOuterBlockBase(params, xb.validTime()),
     innerGeometryData_(outerGeometryData), innerVars_(outerVars), augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::AirTemperature starting" << std::endl;
@@ -85,17 +85,17 @@ AirTemperature::~AirTemperature() {
 
 // -----------------------------------------------------------------------------
 
-void AirTemperature::multiply(atlas::FieldSet & fset) const {
+void AirTemperature::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  mo::eval_air_temperature_tl(fset, augmentedStateFieldSet_);
+  mo::eval_air_temperature_tl(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void AirTemperature::multiplyAD(atlas::FieldSet & fset) const {
+void AirTemperature::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  mo::eval_air_temperature_ad(fset, augmentedStateFieldSet_);
+  mo::eval_air_temperature_ad(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 

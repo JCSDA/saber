@@ -153,8 +153,8 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
       incVars.addMetaData(incVars[i], "levels", vlevs[i]);
     }
 
-    std::vector<atlas::FieldSet> fsetEns;
-    std::vector<atlas::FieldSet> dualResFsetEns;
+    std::vector<oops::FieldSet3D> fsetEns;
+    std::vector<oops::FieldSet3D> dualResFsetEns;
     eckit::LocalConfiguration covarConf;
     covarConf.set("iterative ensemble loading", false);
     covarConf.set("inverse test", false);
@@ -182,7 +182,7 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
 
     // Read input ensemble
     const bool iterativeEnsembleLoading = false;
-    std::vector<atlas::FieldSet> fsetEnsI;
+    std::vector<oops::FieldSet3D> fsetEnsI;
     eckit::LocalConfiguration ensembleConf(fullConfig);
     readEnsemble<MODEL>(geom,
                         incVars,
@@ -195,20 +195,19 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
     //  Loop over perturbations
     for (int jm = 0; jm < nincrements; ++jm) {
       //  Read ensemble member perturbation
-      atlas::FieldSet fsetI = fsetEnsI[jm];
+      oops::FieldSet3D fsetI(fsetEnsI[jm]);
       Increment_ dxI(geom, incVars, time);
       dxI.zero();
-      dxI.fromFieldSet(fsetI);
+      dxI.fromFieldSet(fsetI.fieldSet());
 
       //  Copy perturbation
-      atlas::FieldSet fset;
-      util::copyFieldSet(fsetI, fset);
+      oops::FieldSet3D fset(fsetI);
 
       oops::Log::test() << "Norm of perturbation : member  " << jm+1
                         << ": " << dxI.norm() << std::endl;
 
-      oops::FieldSet4D fset4dDxI(oops::FieldSet3D{fsetI, time, geom.getComm()});
-      oops::FieldSet4D fset4dDx(oops::FieldSet3D{fset, time, geom.getComm()});
+      oops::FieldSet4D fset4dDxI(fsetI);
+      oops::FieldSet4D fset4dDx(fset);
 
       // Apply filter blocks
       saberFilterBlocks->filter(fset4dDx);

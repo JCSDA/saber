@@ -55,7 +55,7 @@ eckit::LocalConfiguration readEnsemble(const oops::Geometry<MODEL> & geom,
                                        const oops::State<MODEL> & fg,
                                        const eckit::LocalConfiguration & inputConf,
                                        const bool & iterativeEnsembleLoading,
-                                       std::vector<atlas::FieldSet> & fsetEns) {
+                                       std::vector<oops::FieldSet3D> & fsetEns) {
   oops::Log::trace() << "readEnsemble starting" << std::endl;
 
   // Prepare ensemble configuration
@@ -152,7 +152,8 @@ eckit::LocalConfiguration readEnsemble(const oops::Geometry<MODEL> & geom,
 
     // Transform Increment into FieldSet
     for (unsigned int ie = 0; ie < nens; ++ie) {
-      atlas::FieldSet fset = util::shareFields((*ensemble)[ie].fieldSet());
+      oops::FieldSet3D fset(xb.validTime(), geom.getComm());
+      fset.shallowCopy((*ensemble)[ie].fieldSet());
       fset.name() = "ensemble member";
       fsetEns.push_back(fset);
     }
@@ -169,7 +170,7 @@ void readHybridWeight(const oops::Geometry<MODEL> & geom,
                       const oops::Variables & vars,
                       const util::DateTime & date,
                       const eckit::LocalConfiguration & conf,
-                      atlas::FieldSet & fset) {
+                      oops::FieldSet3D & fset) {
   oops::Log::trace() << "readHybridWeight starting" << std::endl;
 
   oops::Log::info() << "Info     : Read hybrid weight" << std::endl;
@@ -184,7 +185,7 @@ void readHybridWeight(const oops::Geometry<MODEL> & geom,
   dx.read(localConf);
 
   // Get FieldSet
-  fset = util::shareFields(dx.fieldSet());
+  fset.shallowCopy(dx.fieldSet());
 
   oops::Log::trace() << "readHybridWeight done" << std::endl;
 }
@@ -194,10 +195,9 @@ void readHybridWeight(const oops::Geometry<MODEL> & geom,
 template<typename MODEL>
 void readEnsembleMember(const oops::Geometry<MODEL> & geom,
                         const oops::Variables & vars,
-                        const util::DateTime & date,
                         const eckit::LocalConfiguration & conf,
                         const size_t & ie,
-                        atlas::FieldSet & fset) {
+                        oops::FieldSet3D & fset) {
   oops::Log::trace() << "readEnsembleMember starting" << std::endl;
 
   oops::Log::info() << "Info     : Read ensemble member " << ie << std::endl;
@@ -216,7 +216,7 @@ void readEnsembleMember(const oops::Geometry<MODEL> & geom,
     oops::State<MODEL> xx(geom, states.getStateConfig(ie, myrank));
 
     // Copy FieldSet
-    fset = util::copyFieldSet(xx.fieldSet());
+    fset.deepCopy(xx.fieldSet());
 
     ++ensembleFound;
   }
@@ -227,11 +227,11 @@ void readEnsembleMember(const oops::Geometry<MODEL> & geom,
     ensemblePertParams.deserialize(conf.getSubConfiguration("ensemble pert"));
 
     // Read Increment
-    oops::Increment<MODEL> dx(geom, vars, date);
+    oops::Increment<MODEL> dx(geom, vars, fset.validTime());
     dx.read(ensemblePertParams.getIncrementParameters(ie));
 
     // Get FieldSet
-    fset = util::copyFieldSet(dx.fieldSet());
+    fset.deepCopy(dx.fieldSet());
 
     ++ensembleFound;
   }
@@ -248,11 +248,11 @@ void readEnsembleMember(const oops::Geometry<MODEL> & geom,
     oops::State<MODEL> xxPairs(geom, ensemblePairsParams.getStateConfig(ie, myrank));
 
     // Compute difference
-    oops::Increment<MODEL> dx(geom, vars, date);
+    oops::Increment<MODEL> dx(geom, vars, fset.validTime());
     dx.diff(xxPairs, xxBase);
 
     // Get FieldSet
-    fset = util::copyFieldSet(dx.fieldSet());
+    fset.deepCopy(dx.fieldSet());
 
     ++ensembleFound;
   }

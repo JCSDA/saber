@@ -57,8 +57,8 @@ class SaberBlockChainFactory {
                                                      const oops::Variables &,
                                                      const oops::FieldSet4D &,
                                                      const oops::FieldSet4D &,
-                                                     std::vector<atlas::FieldSet> &,
-                                                     std::vector<atlas::FieldSet> &,
+                                                     std::vector<oops::FieldSet3D> &,
+                                                     std::vector<oops::FieldSet3D> &,
                                                      const eckit::LocalConfiguration &,
                                                      const eckit::Configuration &);
 
@@ -73,8 +73,8 @@ class SaberBlockChainFactory {
                                                     const oops::Variables &,
                                                     const oops::FieldSet4D &,
                                                     const oops::FieldSet4D &,
-                                                    std::vector<atlas::FieldSet> &,
-                                                    std::vector<atlas::FieldSet> &,
+                                                    std::vector<oops::FieldSet3D> &,
+                                                    std::vector<oops::FieldSet3D> &,
                                                     const eckit::LocalConfiguration &,
                                                     const eckit::Configuration &) = 0;
 
@@ -95,8 +95,8 @@ class SaberBlockChainMaker : public SaberBlockChainFactory<MODEL> {
                                             const oops::Variables & outerVars,
                                             const oops::FieldSet4D & fset4dXb,
                                             const oops::FieldSet4D & fset4dFg,
-                                            std::vector<atlas::FieldSet> & fsetEns,
-                                            std::vector<atlas::FieldSet> & fsetDualResEns,
+                                            std::vector<oops::FieldSet3D> & fsetEns,
+                                            std::vector<oops::FieldSet3D> & fsetDualResEns,
                                             const eckit::LocalConfiguration & covarConf,
                                             const eckit::Configuration & conf) override {
     return std::make_unique<T>(geom, dualResGeom, outerVars, fset4dXb, fset4dFg,
@@ -125,8 +125,8 @@ SaberBlockChainFactory<MODEL>::create(const std::string & name,
                                       const oops::Variables & outerVars,
                                       const oops::FieldSet4D & fset4dXb,
                                       const oops::FieldSet4D & fset4dFg,
-                                      std::vector<atlas::FieldSet> & fsetEns,
-                                      std::vector<atlas::FieldSet> & fsetDualResEns,
+                                      std::vector<oops::FieldSet3D> & fsetEns,
+                                      std::vector<oops::FieldSet3D> & fsetDualResEns,
                                       const eckit::LocalConfiguration & covarConf,
                                       const eckit::Configuration & conf) {
   oops::Log::trace() << "SaberBlockChainFactory<MODEL>::create starting" << std::endl;

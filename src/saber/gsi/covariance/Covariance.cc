@@ -44,18 +44,12 @@ Covariance::Covariance(const oops::GeometryData & geometryData,
                        const Parameters_ & params,
                        const oops::FieldSet3D & xb,
                        const oops::FieldSet3D & fg)
-  : SaberCentralBlockBase(params),
+  : SaberCentralBlockBase(params, xb.validTime()),
     params_(params), variables_(params.activeVars.value().get_value_or(centralVars).variables()),
     gsiGridFuncSpace_(geometryData.functionSpace()), comm_(&geometryData.comm()),
-    validTimeOfXbFg_(xb.validTime())
+    xb_(xb), fg_(fg), validTimeOfXbFg_(xb.validTime())
 {
   oops::Log::trace() << classname() << "::Covariance starting" << std::endl;
-  util::Timer timer(classname(), "Covariance");
-
-  // Share xb and fg pointers
-  xb_ = util::shareFields(xb.fieldSet());
-  fg_ = util::shareFields(fg.fieldSet());
-
   oops::Log::trace() << classname() << "::Covariance done" << std::endl;
 }
 
@@ -70,7 +64,7 @@ Covariance::~Covariance() {
 
 // -------------------------------------------------------------------------------------------------
 
-void Covariance::randomize(atlas::FieldSet & fset) const {
+void Covariance::randomize(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::randomize starting" << std::endl;
   util::Timer timer(classname(), "randomize");
 
@@ -92,7 +86,7 @@ void Covariance::randomize(atlas::FieldSet & fset) const {
   }
 
   // Replace whatever fields are coming in with the gsi grid fields
-  fset = newFields;
+  fset.fieldSet() = newFields;
 
   // Call implementation
   gsi_covariance_randomize_f90(keySelf_, fset.get());
@@ -101,7 +95,7 @@ void Covariance::randomize(atlas::FieldSet & fset) const {
 
 // -------------------------------------------------------------------------------------------------
 
-void Covariance::multiply(atlas::FieldSet & fset) const {
+void Covariance::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   util::Timer timer(classname(), "multiply");
   gsi_covariance_multiply_f90(keySelf_, fset.get());

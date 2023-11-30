@@ -38,7 +38,7 @@ SuperMoistIncrOp::SuperMoistIncrOp(const oops::GeometryData & outerGeometryData,
                                    const Parameters_ & params,
                                    const oops::FieldSet3D & xb,
                                    const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params),
+  : SaberOuterBlockBase(params, xb.validTime()),
     innerGeometryData_(outerGeometryData), innerVars_(outerVars),
     activeVars_(params.activeVars.value().get_value_or(outerVars)),
     exnerThetaToTemp_(std::make_unique<AirTemperature>(outerGeometryData,
@@ -65,9 +65,9 @@ SuperMoistIncrOp::~SuperMoistIncrOp() {
 
 // -----------------------------------------------------------------------------
 
-void SuperMoistIncrOp::multiply(atlas::FieldSet & fset) const {
+void SuperMoistIncrOp::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  util::addZeroFieldToFieldSet("air_temperature", "potential_temperature", fset);
+  util::addZeroFieldToFieldSet("air_temperature", "potential_temperature", fset.fieldSet());
   exnerThetaToTemp_->multiply(fset);
   MIO_->multiply(fset);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
@@ -75,9 +75,9 @@ void SuperMoistIncrOp::multiply(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void SuperMoistIncrOp::multiplyAD(atlas::FieldSet & fset) const {
+void SuperMoistIncrOp::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  util::addZeroFieldToFieldSet("air_temperature", "potential_temperature", fset);
+  util::addZeroFieldToFieldSet("air_temperature", "potential_temperature", fset.fieldSet());
   MIO_->multiplyAD(fset);
   exnerThetaToTemp_->multiplyAD(fset);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
@@ -85,9 +85,9 @@ void SuperMoistIncrOp::multiplyAD(atlas::FieldSet & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void SuperMoistIncrOp::leftInverseMultiply(atlas::FieldSet & fset) const {
+void SuperMoistIncrOp::leftInverseMultiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
-  util::addZeroFieldToFieldSet("air_temperature", "potential_temperature", fset);
+  util::addZeroFieldToFieldSet("air_temperature", "potential_temperature", fset.fieldSet());
   exnerThetaToTemp_->multiply(fset);
   MIO_->leftInverseMultiply(fset);
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;

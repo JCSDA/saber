@@ -41,7 +41,7 @@ HydrostaticPressure::HydrostaticPressure(const oops::GeometryData & outerGeometr
                                    const Parameters_ & params,
                                    const oops::FieldSet3D & xb,
                                    const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params),
+  : SaberOuterBlockBase(params, xb.validTime()),
     innerGeometryData_(outerGeometryData), innerVars_(outerVars),
     activeVars_(params.activeVars.value().get_value_or(outerVars)),
     gaussFunctionSpace_(outerGeometryData.functionSpace()),
@@ -69,7 +69,7 @@ HydrostaticPressure::~HydrostaticPressure() {
 
 // -----------------------------------------------------------------------------
 
-void HydrostaticPressure::multiply(atlas::FieldSet & fset) const {
+void HydrostaticPressure::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   // note gaussuvtogp_->multiply creates "geostrophic_pressure_levels_minus_one"
   // if not there.
@@ -77,13 +77,14 @@ void HydrostaticPressure::multiply(atlas::FieldSet & fset) const {
   gptohp_->multiply(fset);
   // remove "geostrophic_pressure_levels_minus_one" since it is not an
   // active variable (but a temporary one).
-  util::removeFieldsFromFieldSet(fset, {"geostrophic_pressure_levels_minus_one"});
+  oops::Variables variablesToRemove({"geostrophic_pressure_levels_minus_one"});
+  fset.removeFields(variablesToRemove);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void HydrostaticPressure::multiplyAD(atlas::FieldSet & fset) const {
+void HydrostaticPressure::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
   // add "geostrophic_pressure_levels_minus_one" to fset and assign to zero
 
@@ -98,17 +99,19 @@ void HydrostaticPressure::multiplyAD(atlas::FieldSet & fset) const {
   gaussuvtogp_->multiplyAD(fset);
   // remove "geostrophic_pressure_levels_minus_one" since it is not an
   // active variable (but a temporary one)."
-  util::removeFieldsFromFieldSet(fset, {"geostrophic_pressure_levels_minus_one"});
+  oops::Variables variablesToRemove({"geostrophic_pressure_levels_minus_one"});
+  fset.removeFields(variablesToRemove);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void HydrostaticPressure::leftInverseMultiply(atlas::FieldSet & fset) const {
+void HydrostaticPressure::leftInverseMultiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
   gaussuvtogp_->multiply(fset);
   gptohp_->leftInverseMultiply(fset);
-  util::removeFieldsFromFieldSet(fset, {"geostrophic_pressure_levels_minus_one"});
+  oops::Variables variablesToRemove({"geostrophic_pressure_levels_minus_one"});
+  fset.removeFields(variablesToRemove);
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }
 

@@ -272,8 +272,8 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
       util::printDiagValues(diagPoints.commTime(),
                             geom.getComm(),
                             geom.functionSpace(),
-                            data[jj].fieldSet(),
-                            diagPoints[jj].fieldSet());
+                            data[jj].fieldSet().fieldSet(),
+                            diagPoints[jj].fieldSet().fieldSet());
     }
 
     oops::Log::trace() << appname() << "::print_value_at_position done" << std::endl;

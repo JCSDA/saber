@@ -33,10 +33,9 @@ oops::Variables getActiveVars(const SaberBlockParametersBase & params,
     for (const std::string & var : activeVars.variables()) {
       varsconf = varsconf | atlas::util::Config(var, defvarsconf.getSubConfiguration(var));
     }
-    return oops::Variables(varsconf, varsStrings);
-  } else {
-    return activeVars;
+    activeVars = oops::Variables(varsconf, varsStrings);
   }
+  return activeVars;
 }
 
 // -----------------------------------------------------------------------------

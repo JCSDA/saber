@@ -34,7 +34,7 @@ class SaberOuterBlockChain {
                        const oops::Variables & outerVars,
                        const oops::FieldSet4D & fset4dXb,
                        const oops::FieldSet4D & fset4dFg,
-                       std::vector<atlas::FieldSet> & fsetEns,
+                       std::vector<oops::FieldSet3D> & fsetEns,
                        const eckit::LocalConfiguration & covarConf,
                        const std::vector<saber::SaberOuterBlockParametersWrapper> & params);
   ~SaberOuterBlockChain() = default;
@@ -59,7 +59,7 @@ class SaberOuterBlockChain {
   void applyOuterBlocks(oops::FieldSet4D & fset4d) const {
     for (size_t jtime = 0; jtime < fset4d.size(); ++jtime) {
       for (auto it = outerBlocks_.rbegin(); it != outerBlocks_.rend(); ++it) {
-        it->get()->multiply(fset4d[jtime].fieldSet());
+        it->get()->multiply(fset4d[jtime]);
       }
     }
   }
@@ -68,7 +68,7 @@ class SaberOuterBlockChain {
   void applyOuterBlocksAD(oops::FieldSet4D & fset4d) const {
     for (size_t jtime = 0; jtime < fset4d.size(); ++jtime) {
       for (auto it = outerBlocks_.begin(); it != outerBlocks_.end(); ++it) {
-        it->get()->multiplyAD(fset4d[jtime].fieldSet());
+        it->get()->multiplyAD(fset4d[jtime]);
       }
     }
   }
@@ -78,9 +78,9 @@ class SaberOuterBlockChain {
     for (size_t jtime = 0; jtime < fset.size(); ++jtime) {
       for (const auto & outerBlocks : outerBlocks_) {
         if (outerBlocks->filterMode()) {
-          outerBlocks->leftInverseMultiply(fset[jtime].fieldSet());
+          outerBlocks->leftInverseMultiply(fset[jtime]);
         } else {
-          outerBlocks->multiplyAD(fset[jtime].fieldSet());
+          outerBlocks->multiplyAD(fset[jtime]);
         }
       }
     }
@@ -88,7 +88,7 @@ class SaberOuterBlockChain {
 
   /// @brief Left inverse multiply (used in calibration) by all outer blocks
   ///        except the ones that haven't implemented inverse yet.
-  void leftInverseMultiply(atlas::FieldSet & fset) const {
+  void leftInverseMultiply(oops::FieldSet3D & fset) const {
     for (auto it = outerBlocks_.begin(); it != outerBlocks_.end(); ++it) {
       if (it->get()->skipInverse()) {
         oops::Log::info() << "Warning: left inverse multiplication skipped for block "
@@ -102,7 +102,7 @@ class SaberOuterBlockChain {
  private:
   /// @brief Left inverse multiply (used in calibration) by all outer blocks
   ///        except the last one and the ones that haven't implemented inverse yet.
-  void leftInverseMultiplyExceptLast(atlas::FieldSet & fset) const {
+  void leftInverseMultiplyExceptLast(oops::FieldSet3D & fset) const {
     // Outer blocks left inverse multiplication
     for (auto it = outerBlocks_.begin(); it != std::prev(outerBlocks_.end()); ++it) {
       if (it->get()->skipInverse()) {
@@ -127,7 +127,7 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
                        const oops::Variables & outerVars,
                        const oops::FieldSet4D & fset4dXb,
                        const oops::FieldSet4D & fset4dFg,
-                       std::vector<atlas::FieldSet> & fsetEns,
+                       std::vector<oops::FieldSet3D> & fsetEns,
                        const eckit::LocalConfiguration & covarConf,
                        const std::vector<saber::SaberOuterBlockParametersWrapper> & params) {
   oops::Log::trace() << "SaberOuterBlockChain ctor starting" << std::endl;
@@ -172,7 +172,7 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
                                                  fset4dFg[0]));
 
     // Read and add model fields
-    outerBlocks_.back()->read(geom, currentOuterVars, fset4dXb[0].validTime());
+    outerBlocks_.back()->read(geom, currentOuterVars);
 
     if (saberOuterBlockParams.doCalibration()) {
       // Block calibration
@@ -193,10 +193,9 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
 
         for (size_t ie = 0; ie < nens; ++ie) {
           // Read ensemble member
-          atlas::FieldSet fset;
+          oops::FieldSet3D fset(fset4dXb[0].validTime(), geom.getComm());
           readEnsembleMember(geom,
                              outerVars,
-                             fset4dXb[0].validTime(),
                              ensembleConf,
                              ie,
                              fset);
@@ -218,7 +217,7 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
 
       // Write calibration data
       oops::Log::info() << "Info     : Write calibration data" << std::endl;
-      outerBlocks_.back()->write(geom, currentOuterVars, fset4dXb[0].validTime());
+      outerBlocks_.back()->write(geom, currentOuterVars);
       outerBlocks_.back()->write();
 
       if (!iterativeEnsembleLoading) {
@@ -266,22 +265,16 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
       && saberOuterBlockParams.inverseVars.value().size() > 0) {
       oops::Log::info() << "Info     : Left inverse multiplication on xb and fg" << std::endl;
       // Share fields pointers
-      atlas::FieldSet fset4dXbInv;
-      atlas::FieldSet fset4dFgInv;
+      oops::FieldSet3D fsetXbInv(fset4dXb[0].validTime(), geom.getComm());
+      oops::FieldSet3D fsetFgInv(fset4dXb[0].validTime(), geom.getComm());
       for (const auto & var : saberOuterBlockParams.inverseVars.value().variables()) {
-        fset4dXbInv.add(fset4dXb[0].fieldSet().field(var));
-        fset4dFgInv.add(fset4dFg[0].fieldSet().field(var));
+        fsetXbInv.fieldSet().add(fset4dXb[0].fieldSet().field(var));
+        fsetFgInv.fieldSet().add(fset4dFg[0].fieldSet().field(var));
       }
 
       // Apply left inverse
-      outerBlocks_.back()->leftInverseMultiply(fset4dXbInv);
-      outerBlocks_.back()->leftInverseMultiply(fset4dFgInv);
-
-      // Copy the fields back
-      for (const auto & var : saberOuterBlockParams.inverseVars.value().variables()) {
-        fset4dXb[0].fieldSet().field(var) = fset4dXbInv.field(var);
-        fset4dFg[0].fieldSet().field(var) = fset4dFgInv.field(var);
-      }
+      outerBlocks_.back()->leftInverseMultiply(fsetXbInv);
+      outerBlocks_.back()->leftInverseMultiply(fsetFgInv);
     }
 
     // Adjoint test

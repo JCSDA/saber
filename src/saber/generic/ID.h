@@ -47,12 +47,12 @@ class IDCentral : public SaberCentralBlockBase {
 
   virtual ~IDCentral();
 
-  void randomize(atlas::FieldSet &) const override;
-  void multiply(atlas::FieldSet &) const override;
+  void randomize(oops::FieldSet3D &) const override;
+  void multiply(oops::FieldSet3D &) const override;
 
   size_t ctlVecSize() const override {return ctlVecSize_;}
-  void multiplySqrt(const atlas::Field &, atlas::FieldSet &, const size_t &) const override;
-  void multiplySqrtAD(const atlas::FieldSet &, atlas::Field &, const size_t &) const override;
+  void multiplySqrt(const atlas::Field &, oops::FieldSet3D &, const size_t &) const override;
+  void multiplySqrtAD(const oops::FieldSet3D &, atlas::Field &, const size_t &) const override;
 
  private:
   const oops::GeometryData & geometryData_;
@@ -81,9 +81,9 @@ class IDOuter : public SaberOuterBlockBase {
   const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}
   const oops::Variables & innerVars() const override {return innerVars_;}
 
-  void multiply(atlas::FieldSet &) const override;
-  void multiplyAD(atlas::FieldSet &) const override;
-  void leftInverseMultiply(atlas::FieldSet &) const override;
+  void multiply(oops::FieldSet3D &) const override;
+  void multiplyAD(oops::FieldSet3D &) const override;
+  void leftInverseMultiply(oops::FieldSet3D &) const override;
 
  private:
   void print(std::ostream &) const override;

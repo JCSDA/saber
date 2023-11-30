@@ -21,13 +21,14 @@
 
 #include "eckit/exception/Exceptions.h"
 
-#include "saber/spectralb/spectralb_covstats_interface.h"
-#include "saber/spectralb/spectralbParameters.h"
-
+#include "oops/base/FieldSet3D.h"
 #include "oops/base/Variables.h"
 #include "oops/mpi/mpi.h"
 #include "oops/util/AtlasArrayUtil.h"
 #include "oops/util/Logger.h"
+
+#include "saber/spectralb/spectralb_covstats_interface.h"
+#include "saber/spectralb/spectralbParameters.h"
 
 #define ERR(e) {throw eckit::Exception(nc_strerror(e), Here());}
 
@@ -595,7 +596,7 @@ void spectralVerticalConvolutionSqrtAD(const oops::Variables & activeVars,
 
 
 void updateSpectralVerticalCovariances(
-    const std::vector<atlas::FieldSet> & ensFieldSet,
+    const std::vector<oops::FieldSet3D> & ensFieldSet,
     int & priorSampleSize,
     atlas::FieldSet & spectralVerticalCovariances) {
   using atlas::array::make_view;
@@ -636,7 +637,7 @@ void updateSpectralVerticalCovariances(
       atlas::functionspace::Spectral(ensFieldSet[0][name].functionspace()).truncation();
     const atlas::idx_t nb_zonal_wavenumbers = zonal_wavenumbers.size();
 
-    for (const atlas::FieldSet & fs : ensFieldSet) {
+    for (const auto & fs : ensFieldSet) {
       auto spfView = make_view<const double, 2>(fs[name]);
 
       atlas::idx_t i = 0;  // i is the spectral coefficient index
