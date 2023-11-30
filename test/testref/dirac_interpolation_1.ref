@@ -1,8 +1,8 @@
 Input Dirac increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: CS-LFR-15
-- size: 1350
+- name: CS-LFR-12
+- size: 864
 Partitioner:
 - type: cubedsphere
 Function space:
@@ -23,8 +23,8 @@ Adjoint test for block ID passed
 Covariance(SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
-- name: CS-LFR-15
-- size: 1350
+- name: CS-LFR-12
+- size: 864
 Partitioner:
 - type: cubedsphere
 Function space:
@@ -37,4 +37,4 @@ Groups:
   - vert_coord: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 6.0558992597602279e-01
+  stream_function: 4.2853661038684659e-01

@@ -209,22 +209,7 @@ void interpolateCSToGauss(const oops::GeometryData & outerGeometryData,
 
   const auto targetPartitioner = atlas::grid::Partitioner(targetFunctionspace.distribution());
 
-  atlas::FunctionSpace step1Functionspace;
-  try {
-    step1Functionspace = createPointCloud(targetGrid, srcPartitioner);
-  }  catch (const eckit::Exception &) {
-    oops::Log::error()
-            << "ERROR  : SABER block \"gauss winds to geostrophic pressure\" cannot be built"
-            << std::endl
-            << "ERROR  : with 2 or 3 MPI tasks on a " << targetGrid.name()
-            << " grid with a " << srcFunctionspace.mesh().grid().name() << " model grid."
-            << std::endl
-            << "ERROR  : Try one of the two possible solutions:" << std::endl
-            << "ERROR  :   1. Use 1, 4 or more MPI tasks" << std::endl
-            << "ERROR  :   2. Use a Gaussian (F) grid with less points" << std::endl;
-    throw(eckit::FunctionalityNotSupported(
-                "Block not implemented on 2 and 3 PEs with these grids.", Here()));
-  }
+  const auto step1Functionspace = createPointCloud(targetGrid, srcPartitioner);
 
   const auto step2Functionspace = createPointCloud(targetGrid, targetPartitioner);
 

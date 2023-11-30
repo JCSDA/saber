@@ -1,7 +1,7 @@
 geometry:
   function space: NodeColumns
   grid:
-    name: CS-LFR-15
+    name: CS-LFR-12
   partitioner: cubedsphere
   groups:
   - variables:
@@ -20,8 +20,8 @@ background error:
     saber block name: ID
   saber outer blocks:
   - saber block name: gauss to cubed-sphere-dual
-    inner inverse tolerance: 0.005
-    outer inverse tolerance: 0.005
+    inner inverse tolerance: 0.01
+    outer inverse tolerance: 0.01
     gauss grid uid: F15
     active variables:
     - stream_function

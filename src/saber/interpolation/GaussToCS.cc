@@ -63,23 +63,7 @@ auto createInverseInterpolation(const bool initializeInverseInterpolation,
   const auto config = atlas::util::Config("type", "cubedsphere");
   const atlas::grid::MatchingMeshPartitioner csMatchingPartitioner(csFunctionSpace.mesh(),
                                                                    config);
-  try {
-    inverseInterpolation.matchingPtcldFspace = createPointCloud(gaussGrid, csMatchingPartitioner);
-  } catch (const eckit::Exception &) {
-    oops::Log::error()
-            << "ERROR  : SABER block \"gauss to cubed-sphere dual\" inverse cannot run"
-            << std::endl
-            << "ERROR  : with 2 or 3 MPI tasks from an " << gaussGrid.name()
-            << " grid to a " << csFunctionSpace.mesh().grid().name() << " grid."
-            << std::endl
-            << "ERROR  : Try one of the three possible solutions:" << std::endl
-            << "ERROR  :   1. Add yaml key `initialize inverse interpolator: false` to the block"
-            << std::endl
-            << "ERROR  :   2. Use 1, 4 or more MPI tasks" << std::endl
-            << "ERROR  :   3. Use a Gaussian grid with less points" << std::endl;
-    throw(eckit::FunctionalityNotSupported(
-                "Inverse not implemented on 2 and 3 PEs with these grids.", Here()));
-  }
+  inverseInterpolation.matchingPtcldFspace = createPointCloud(gaussGrid, csMatchingPartitioner);
 
   inverseInterpolation.targetPtcldFspace = createPointCloud(gaussGrid, gaussPartitioner);
 
@@ -331,10 +315,7 @@ void GaussToCS::leftInverseMultiply(oops::FieldSet3D & fieldSet) const {
                                  gaussFunctionSpace_,
                                  srcFieldSet, newFieldSet);
   } else {
-    // Approach above uses the cubed-sphere matching partitioner, which fails
-    // to partition on 1-3 PEs for some configurations (e.g. from a CS-LFR-12
-    // to F15). As a temporary and partial fix, we use a bespoke interpolation
-    // when running on one MPI task.
+    // A faster and more direct route is possible on a single PE
     inverseInterpolateSinglePE(activeVars_,
                                CSFunctionSpace_,
                                gaussFunctionSpace_,

@@ -98,7 +98,6 @@ if( SABER_TEST_GSI_GFS )
 endif()
 if( SABER_TEST_SPECTRALB )
     message( STATUS "  - TIER 1 SPECTRALB-specific" )
-    # TODO(Benjamin): remove that once ATLAS 0.31.0 is available everywhere
     file( STRINGS testlist/saber_test_tier1-spectralb.txt saber_test )
     list( APPEND saber_test_full ${saber_test} )
 endif()
@@ -213,19 +212,7 @@ foreach( mpi omp IN ZIP_LISTS mpi_list omp_list )
                     set( 4dCheck false CACHE BOOL "" FORCE )
                 endif()
 
-                # Special check for processPert, only run with 1 MPI for the interpolation from csdual
-                # (TODO: should be removed with atlas 0.34.0)
-                string( FIND ${test} "_perts_from_csdual_" interp_csdual_result )
-                if( interp_csdual_result EQUAL -1 OR
-                  ( interp_csdual_result GREATER_EQUAL 0 AND ${mpi} GREATER 1 AND
-                      ${atlas_VERSION} GREATER_EQUAL 0.34.0) OR
-                  ( interp_csdual_result GREATER_EQUAL 0 AND ${mpi} EQUAL 1) )
-                    set( interp_csdual_result true CACHE BOOL "" FORCE )
-                else()
-                    set( interp_csdual_result false CACHE BOOL "" FORCE )
-                endif()
-
-                if( docTutorialCheck AND gsiGfsCheck AND 4dCheck AND interp_csdual_result )
+                if( docTutorialCheck AND gsiGfsCheck AND 4dCheck )
                     # Get dependencies
                     file( STRINGS testdeps/${test}.txt deps )
                     set( deps_list "" )
