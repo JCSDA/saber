@@ -35,6 +35,7 @@
 #include "oops/util/Timer.h"
 
 #include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/oops/Utilities.h"
 
 namespace saber {
 namespace vader {
@@ -125,6 +126,16 @@ MoistIncrOp::~MoistIncrOp() {
 
 void MoistIncrOp::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
+  // Allocate output fields if they are not already present, e.g when randomizing.
+  const oops::Variables outputVars({"specific_humidity",
+                                    "mass_content_of_cloud_liquid_water_in_atmosphere_layer",
+                                    "mass_content_of_cloud_ice_in_atmosphere_layer"});
+  allocateFields(fset,
+                 outputVars,
+                 innerVars_,
+                 innerGeometryData_.functionSpace());
+
+  // Populate output fields.
   mo::eval_moisture_incrementing_operator_tl(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }

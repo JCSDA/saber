@@ -23,6 +23,7 @@
 #include "oops/util/Timer.h"
 
 #include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/oops/Utilities.h"
 
 namespace saber {
 namespace vader {
@@ -87,6 +88,14 @@ AirTemperature::~AirTemperature() {
 
 void AirTemperature::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
+  // Allocate output fields if they are not already present, e.g when randomizing.
+  const oops::Variables outputVars({"air_temperature"});
+  allocateFields(fset,
+                 outputVars,
+                 innerVars_,
+                 innerGeometryData_.functionSpace());
+
+  // Populate output fields.
   mo::eval_air_temperature_tl(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }

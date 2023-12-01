@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+#include "oops/base/FieldSet3D.h"
+
 #include "saber/oops/Utilities.h"
 
 namespace saber {
@@ -50,6 +52,30 @@ void setMPI(eckit::LocalConfiguration & conf,
   }
 
   oops::Log::trace() << "setMPI done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void allocateFields(oops::FieldSet3D & fset,
+                    const oops::Variables & varsToAllocate,
+                    const oops::Variables & varsWithLevels,
+                    const atlas::FunctionSpace & functionSpace,
+                    const bool haloExchange) {
+  oops::Log::trace() << "allocateFields starting" << std::endl;
+  for (const auto& var : varsToAllocate.variables()) {
+    if (!fset.has(var)) {
+      oops::Log::test() << "Allocating " << var << std::endl;
+      auto field = functionSpace.createField<double>(
+                atlas::option::name(var) |
+                atlas::option::levels(varsWithLevels.getLevels(var)));
+      atlas::array::make_view<double, 2>(field).assign(0.0);
+      if (haloExchange) {
+        field.haloExchange();
+      }
+      fset.add(field);
+    }
+  }
+  oops::Log::trace() << "allocateFields done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

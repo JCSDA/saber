@@ -1,5 +1,3 @@
-# met office covariance on gaussian mesh with super saber blocks
-# should give same dirac test results as dirac_spectralb_gauss_vader_1
 geometry:
   function space: StructuredColumns
   grid:
@@ -59,7 +57,7 @@ geometry:
   halo: 1
 
 increment variables:
-  # analysis variables
+# Model variables
 - dry_air_density_levels_minus_one
 - eastward_wind
 - exner_levels_minus_one
@@ -68,25 +66,29 @@ increment variables:
 - northward_wind
 - potential_temperature
 - specific_humidity
-  # intermediate variables for the B matrix
+- virtual_potential_temperature
+# Derived variables
 - air_pressure_levels
 - air_temperature
+- geostrophic_pressure_levels_minus_one
 - hydrostatic_exner_levels
 - hydrostatic_pressure_levels
 - mu
 - qt
 - unbalanced_pressure_levels_minus_one
-- virtual_potential_temperature
 
 background error:
   covariance model: SABER
-  adjoint test: true
-  inverse test: true
-  # Small tolerances to illustrate local overriding in saber blocks:
-  adjoint tolerance: 1e-12
-  inverse tolerance: 1e-15
+  randomization size: 1
   saber central block:
-    saber block name: spectral covariance
+    saber block name: ID
+    active variables:
+    - mu
+    - streamfunction
+    - unbalanced_pressure_levels_minus_one
+    - velocity_potential
+  saber outer blocks:
+  - saber block name: square root of spectral covariance
     active variables:
     - mu
     - streamfunction
@@ -99,10 +101,8 @@ background error:
       - PSI_inc_Uv_matrix
       - aP_inc_Uv_matrix
       - CHI_inc_Uv_matrix
-  saber outer blocks:
+      gauss_grid_uid: F12
   - saber block name: spectral to gauss
-    inner inverse tolerance: 1e-12
-    outer inverse tolerance: 1e-8
     active variables:
     - eastward_wind
     - mu
@@ -110,78 +110,27 @@ background error:
     - streamfunction
     - unbalanced_pressure_levels_minus_one
     - velocity_potential
-  - saber block name: mo_hydrostatic_pressure
-    inner inverse tolerance: 1e-11
-    outer inverse tolerance: 1e-9
-    inner variables to compare:
-      - eastward_wind
-      - northward_wind
-      - unbalanced_pressure_levels_minus_one
+  - saber block name: gauss winds to geostrophic pressure
+  - saber block name: mo_hydrostatic_pressure_from_geostrophic_pressure
     covariance data:
       covariance file path: testdata/FPstats.nc
       number of covariance latitude rings: 481
-      gp regression bins: 18
-    saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
+    saturation vapour pressure file: &svp_file testdata/svp_dlsvp_svpW_dlsvpW.nc
   - saber block name: mo_hydrostatic_pressure_to_hydrostatic_exner
-    saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
-    outer inverse tolerance: 1e-8
+    saturation vapour pressure file: *svp_file
+  - saber block name: mo_hydrostatic_pressure_hydrostatic_exner_to_pressure_exner
   - saber block name: mo_hydro_bal
-    saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
-    inner inverse tolerance: 1e-9  #TODO to be replaced by relative tolerance
-    outer variables to compare:
-      - virtual_potential_temperature
-      - air_pressure_levels
-    outer inverse tolerance: 1e-13
+    saturation vapour pressure file: *svp_file
   - saber block name: mo_moisture_control
-    inner inverse tolerance: 1e-13
-    outer inverse tolerance: 1e-4  #TODO to be replaced by relative tolerance
-    inner variables to compare:
-      - mu
-      - virtual_potential_temperature
     covariance data:
       covariance file path: testdata/MUstats.nc
-    saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
+    saturation vapour pressure file: *svp_file
   - saber block name: mo_hydrostatic_pressure_hydrostatic_exner_to_pressure_exner
-    inner variables to compare:
-    - hydrostatic_exner_levels
-    - hydrostatic_pressure_levels
-    outer variables to compare:
-    - air_pressure_levels
-    - exner_levels_minus_one
   - saber block name: mo_super_mio
     moisture incrementing operator file: testdata/MIO_coefficients.nc
-    saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
-    inner variables to compare:
-      - qt
+    saturation vapour pressure file: *svp_file
   - saber block name: mo_dry_air_density
-    skip inverse test: true
 
-dirac:
-  lon:
-  - 0.0
-  lat:
-  - 3.672
-  level:
-  - 1
-  variable:
-  - dry_air_density_levels_minus_one
-diagnostic points:
-  lon:
-  - 180.0
-  - 0.0
-  - 0.0
-  lat:
-  - 3.672
-  - 84.37
-  - 3.672
-  level:
-  - 1
-  - 1
-  - 70
-  variable:
-  - dry_air_density_levels_minus_one
-  - dry_air_density_levels_minus_one
-  - dry_air_density_levels_minus_one
 background:
   date: 2016-01-01T16:00:00Z
   state variables:
@@ -196,6 +145,7 @@ background:
   - eastward_wind
   - exner
   - exner_levels_minus_one
+  - geostrophic_pressure_levels_minus_one
   - height
   - height_levels
   - hydrostatic_exner_levels
@@ -228,9 +178,10 @@ background:
   - unbalanced_pressure_levels_minus_one
   - virtual_potential_temperature
   filepath: testdata/gauss_state
-output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_spectralb_gauss_vader_2/dirac_%id%_%MPI%
-test:
-  reference filename: testref/dirac_spectralb_gauss_vader_2.ref
 
+output perturbations:
+  member pattern: '%MEM%'
+  filepath: testdata/randomization_sqrtspectralb_2/randomized_gauss_mb%MEM%
+
+test:
+  reference filename: testref/randomization_sqrtspectralb_2.ref

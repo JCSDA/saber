@@ -34,6 +34,10 @@
 #include "saber/blocks/SaberOuterBlockBase.h"
 #include "saber/oops/ErrorCovarianceParameters.h"
 
+namespace oops {
+  class FieldSet3D;
+}
+
 namespace saber {
 
 // -----------------------------------------------------------------------------
@@ -45,6 +49,14 @@ oops::Variables getActiveVars(const SaberBlockParametersBase &,
 
 void setMPI(eckit::LocalConfiguration & conf,
             const int & mpi);
+
+// -----------------------------------------------------------------------------
+
+void allocateFields(oops::FieldSet3D & fset,
+                    const oops::Variables & varsToAllocate,
+                    const oops::Variables & varsWithLevels,
+                    const atlas::FunctionSpace & functionSpace,
+                    const bool haloExchange = true);
 
 // -----------------------------------------------------------------------------
 

@@ -1,4 +1,3 @@
-# To be called by saber_quench_error_covariance_toolbox.x
 geometry:
   function space: StructuredColumns
   grid:
@@ -51,9 +50,9 @@ background error:
     - velocity_potential
 output variance:  # This section is optional
   mpi pattern: '%MPI%'
-  filepath: testdata/randomization_sqrtspectralb/variance_%MPI%pes
+  filepath: testdata/randomization_sqrtspectralb_1/variance_%MPI%pes
 output perturbations:
   member pattern: '%MEM%'
-  filepath: testdata/randomization_sqrtspectralb/randomized_gauss_mb%MEM%
+  filepath: testdata/randomization_sqrtspectralb_1/randomized_gauss_mb%MEM%
 test:
-  reference filename: testref/randomization_sqrtspectralb.ref
+  reference filename: testref/randomization_sqrtspectralb_1.ref

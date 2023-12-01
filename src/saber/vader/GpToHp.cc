@@ -160,6 +160,14 @@ GpToHp::~GpToHp() {
 
 void GpToHp::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
+  // Allocate output fields if they are not already present, e.g when randomizing.
+  const oops::Variables outputVars({"hydrostatic_pressure_levels"});
+  allocateFields(fset,
+                 outputVars,
+                 activeVars_,
+                 innerGeometryData_.functionSpace());
+
+  // Populate output fields.
   mo::eval_hydrostatic_pressure_levels_tl(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }

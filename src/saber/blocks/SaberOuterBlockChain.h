@@ -195,7 +195,7 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
           // Read ensemble member
           oops::FieldSet3D fset(fset4dXb[0].validTime(), geom.getComm());
           readEnsembleMember(geom,
-                             outerVars,
+                             currentOuterVars,
                              ensembleConf,
                              ie,
                              fset);
@@ -247,7 +247,7 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
 
     // Check that active variables are present in either inner or outer variables, or both
     for (const auto & var : activeVars.variables()) {
-      if (!(innerVars.has(var) || outerVars.has(var))) {
+      if (!(innerVars.has(var) || currentOuterVars.has(var))) {
         throw eckit::UserError("Active variable " + var + " is not present in inner "
                                "or outer variables", Here());
       }

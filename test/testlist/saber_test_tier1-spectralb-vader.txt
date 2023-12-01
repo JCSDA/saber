@@ -2,3 +2,4 @@ dirac_spectralb_gauss_vader_1
 dirac_spectralb_gauss_vader_2
 dirac_spectralb_gauss_vader_3
 compare_diagnostics_gauss_vader
+randomization_sqrtspectralb_2

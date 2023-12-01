@@ -145,7 +145,17 @@ HydrostaticExner::~HydrostaticExner() {
 
 void HydrostaticExner::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
+  // Allocate output fields if they are not already present, e.g when randomizing.
+  const oops::Variables outputVars({"air_pressure_levels",
+                                    "exner_levels_minus_one",
+                                    "hydrostatic_exner_levels",
+                                    "hydrostatic_pressure_levels"});
+  allocateFields(fset,
+                 outputVars,
+                 activeVars_,
+                 innerGeometryData_.functionSpace());
 
+  // Populate output fields.
   mo::eval_hydrostatic_pressure_levels_tl(fset.fieldSet(), augmentedStateFieldSet_);
   mo::eval_hydrostatic_exner_levels_tl(fset.fieldSet(), augmentedStateFieldSet_);
 

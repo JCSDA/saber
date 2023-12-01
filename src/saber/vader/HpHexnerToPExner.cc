@@ -20,6 +20,7 @@
 #include "oops/util/Timer.h"
 
 #include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/oops/Utilities.h"
 
 namespace saber {
 namespace vader {
@@ -40,7 +41,7 @@ HpHexnerToPExner::HpHexnerToPExner(const oops::GeometryData & outerGeometryData,
                      const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params, xb.validTime()),
     innerGeometryData_(outerGeometryData), innerVars_(outerVars),
-    activeVars_(params.activeVars.value().get_value_or(outerVars))
+    activeVars_(getActiveVars(params, outerVars))
 {
   oops::Log::trace() << classname() << "::HpHexnerToPExner starting" << std::endl;
   oops::Log::trace() << classname() << "::HpHexnerToPExner done" << std::endl;
@@ -59,6 +60,15 @@ HpHexnerToPExner::~HpHexnerToPExner() {
 void HpHexnerToPExner::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
 
+  // Allocate output fields if they are not already present, e.g when randomizing.
+  const oops::Variables outputVars({"air_pressure_levels",
+                                    "exner_levels_minus_one"});
+  allocateFields(fset,
+                 outputVars,
+                 activeVars_,
+                 innerGeometryData_.functionSpace());
+
+  // Populate output fields.
   auto hydrostaticPressureView =
     atlas::array::make_view<const double, 2>(fset["hydrostatic_pressure_levels"]);
   auto hydrostaticExnerView =

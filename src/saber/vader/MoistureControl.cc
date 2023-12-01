@@ -34,6 +34,7 @@
 #include "oops/util/Timer.h"
 
 #include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/oops/Utilities.h"
 #include "saber/vader/CovarianceStatisticsUtils.h"
 #include "saber/vader/movader_covstats_interface.h"
 
@@ -140,6 +141,15 @@ MoistureControl::~MoistureControl() {
 
 void MoistureControl::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
+  // Allocate output fields if they are not already present, e.g when randomizing.
+  const oops::Variables outputVars({"potential_temperature",
+                                    "qt"});
+  allocateFields(fset,
+                 outputVars,
+                 innerVars_,
+                 innerGeometryData_.functionSpace());
+
+  // Populate output fields.
   mo::eval_moisture_control_inv_tl(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }

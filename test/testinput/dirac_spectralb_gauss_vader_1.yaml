@@ -59,7 +59,7 @@ geometry:
   halo: 1
 
 increment variables:
-# Model variables
+  # analysis variables
 - dry_air_density_levels_minus_one
 - eastward_wind
 - exner_levels_minus_one
@@ -68,8 +68,7 @@ increment variables:
 - northward_wind
 - potential_temperature
 - specific_humidity
-- virtual_potential_temperature
-# Derived variables
+  # intermediate variables for the B matrix
 - air_pressure_levels
 - air_temperature
 - geostrophic_pressure_levels_minus_one
@@ -78,6 +77,7 @@ increment variables:
 - mu
 - qt
 - unbalanced_pressure_levels_minus_one
+- virtual_potential_temperature
 
 background error:
   covariance model: SABER
@@ -127,7 +127,7 @@ background error:
   - saber block name: mo_hydro_bal
     saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
     inner inverse tolerance: 1e-9  #TODO to be replaced by relative tolerance
-    outer variables to compare: [virtual_potential_temperature, air_pressure_levels_minus_one]
+    outer variables to compare: [virtual_potential_temperature, air_pressure_levels]
     outer inverse tolerance: 1e-13
   - saber block name: mo_moisture_control
     inner inverse tolerance: 1e-13
@@ -146,6 +146,7 @@ background error:
     saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
   - saber block name: mo_dry_air_density
     skip inverse test: true
+
 dirac:
   lon:
   - 0.0
@@ -155,6 +156,7 @@ dirac:
   - 1
   variable:
   - dry_air_density_levels_minus_one
+
 diagnostic points:
   lon:
   - 180.0
@@ -172,6 +174,7 @@ diagnostic points:
   - dry_air_density_levels_minus_one
   - dry_air_density_levels_minus_one
   - dry_air_density_levels_minus_one
+
 background:
   date: 2016-01-01T16:00:00Z
   state variables:
@@ -219,9 +222,11 @@ background:
   - unbalanced_pressure_levels_minus_one
   - virtual_potential_temperature
   filepath: testdata/gauss_state
+
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_spectralb_gauss_vader_1/dirac_%id%_%MPI%
+
 test:
   reference filename: testref/dirac_spectralb_gauss_vader_1.ref
 

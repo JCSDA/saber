@@ -30,6 +30,7 @@
 #include "oops/util/Timer.h"
 
 #include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/oops/Utilities.h"
 
 namespace saber {
 namespace vader {
@@ -116,6 +117,14 @@ DryAirDensity::~DryAirDensity() {
 
 void DryAirDensity::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
+  // Allocate output fields if they are not already present, e.g when randomizing.
+  const oops::Variables outputVars({"dry_air_density_levels_minus_one"});
+  allocateFields(fset,
+                 outputVars,
+                 innerVars_,
+                 innerGeometryData_.functionSpace());
+
+  // Populate output fields.
   mo::eval_dry_air_density_from_pressure_levels_tl(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }

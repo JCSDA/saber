@@ -55,7 +55,7 @@ ensemble pert:
     nmembers: 2
     pattern: '%MEM%'
     template:
-      filepath: testdata/randomization_sqrtspectralb/randomized_gauss_mb%MEM%
+      filepath: testdata/randomization_sqrtspectralb_1/randomized_gauss_mb%MEM%
       variables:
       - eastward_wind
       - northward_wind
