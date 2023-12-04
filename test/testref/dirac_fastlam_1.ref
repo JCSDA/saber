@@ -1,0 +1,65 @@
+Input Dirac increment:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: structured
+- size: 3763
+Regional grid detected
+Partitioner:
+- type: checkerboard
+Function space:
+- type: StructuredColumns
+- halo: 0
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 10
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+  Mask size: 100%
+- Group 1:
+  Vertical levels: 
+  - number: 1
+  - vert_coord: [1.0000000000000000e+00]
+  Mask size: 100%
+Fields:
+  stream_function: 3.0000000000000000e+00
+  velocity_potential: 0.0000000000000000e+00
+  surface_pressure: 3.0000000000000000e+00
+    FastLAM interpolation accuracy test passed
+    FastLAM interpolation adjoint test passed
+    FastLAM redToRows test passed
+    FastLAM rowsToCols test passed
+    FastLAM interpolation accuracy test passed
+    FastLAM interpolation adjoint test passed
+    FastLAM redToRows test passed
+    FastLAM rowsToCols test passed
+Norm of output parameter : 1.1644890209873171e+04
+Norm of output parameter : 8.7234826187710150e+03
+Norm of output parameter : 1.6276513347796993e+03
+Norm of output parameter : 2.0345269720502603e+02
+Norm of output parameter : 2.1747388285958212e+02
+Covariance(SABER) * Increment:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: structured
+- size: 3763
+Regional grid detected
+Partitioner:
+- type: checkerboard
+Function space:
+- type: StructuredColumns
+- halo: 0
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 10
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+  Mask size: 100%
+- Group 1:
+  Vertical levels: 
+  - number: 1
+  - vert_coord: [1.0000000000000000e+00]
+  Mask size: 100%
+Fields:
+  stream_function: 1.5028933807604522e+01
+  velocity_potential: 0.0000000000000000e+00
+  surface_pressure: 1.3000673361229014e+01

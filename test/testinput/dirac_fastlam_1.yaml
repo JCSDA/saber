@@ -1,0 +1,160 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type : regional
+    nx : 71
+    ny : 53
+    dx : 2.5e3
+    dy : 2.5e3
+    lonlat(centre) : [9.9, 56.3]
+    projection :  
+      type : lambert_conformal_conic
+      latitude0  : 56.3
+      longitude0 : 0.0
+    y_numbering: 1
+  partitioner: checkerboard
+  groups:
+  - variables:
+    - stream_function
+    - velocity_potential
+    levels: 10
+  - variables:
+    - surface_pressure
+    levels: 1
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables:
+  - stream_function
+  - velocity_potential
+  - surface_pressure
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: FastLAM
+    calibration:
+      multivariate strategy: univariate
+      groups:
+      - group name: var3d
+        variable in model file: stream_function
+        variables:
+        - stream_function
+        - velocity_potential
+      - group name: var2d
+        variable in model file: surface_pressure
+        variables:
+        - surface_pressure
+      horizontal length-scale:
+      - group: var3d
+        value: 20.0e3
+      - group: var2d
+        value: 20.0e3
+      vertical length-scale:
+      - group: var3d
+        value: 3.0
+      - group: var2d
+        value: 0.0
+      number of layers: 1
+      resolution: 5
+      normalization accuracy stride: 3
+      data file: testdata/dirac_fastlam_1/_MPI__data
+      output model files:
+      - parameter: index i
+        file:
+          filepath: testdata/dirac_fastlam_1/_MPI__index_i
+      - parameter: index j
+        file:
+          filepath: testdata/dirac_fastlam_1/_MPI__index_j
+      - parameter: normalized horizontal length-scale
+        file:
+          filepath: testdata/dirac_fastlam_1/_MPI__normalized_rh
+      - parameter: weight
+        file:
+          filepath: testdata/dirac_fastlam_1/_MPI__weight_%component%
+      - parameter: normalization
+        file:
+          filepath: testdata/dirac_fastlam_1/_MPI__norm_%component%
+dirac:
+  lon:
+  - 10.04
+  - 8.696
+  - 11.379
+  - 8.5781
+  - 9.9058
+  - 11.2261
+  - 8.4537
+  - 9.7626
+  - 11.0644
+  - 10.04
+  - 8.696
+  - 11.379
+  - 8.5781
+  - 9.9058
+  - 11.2261
+  - 8.4537
+  - 9.7626
+  - 11.0644
+  lat:
+  - 56.86
+  - 56.935
+  - 56.719
+  - 56.4215
+  - 56.3223
+  - 56.2089
+  - 55.8638
+  - 55.7659
+  - 55.6542
+  - 56.86
+  - 56.935
+  - 56.719
+  - 56.4215
+  - 56.3223
+  - 56.2089
+  - 55.8638
+  - 55.7659
+  - 55.6542
+  level:
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  variable:
+  - stream_function
+  - stream_function
+  - stream_function
+  - stream_function
+  - stream_function
+  - stream_function
+  - stream_function
+  - stream_function
+  - stream_function
+  - surface_pressure
+  - surface_pressure
+  - surface_pressure
+  - surface_pressure
+  - surface_pressure
+  - surface_pressure
+  - surface_pressure
+  - surface_pressure
+  - surface_pressure
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_fastlam_1/%MPI%_dirac_%id%
+output variance:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_fastlam_1/%MPI%_variance
+test:
+  reference filename: testref/dirac_fastlam_1.ref

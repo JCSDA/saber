@@ -2,29 +2,29 @@
           Subset Sc0 size:              875
           Min. / max. longitudes:  100.0 /   170.0
           Min. / max. latitudes:   -50.0 /   -10.0
-          Domain area (% of Earth area): 0.591E+01%
+          Domain area (% of Earth area): 0.616E+01%
              Level   1 ~> 100.0%
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
              Effective levels:   1   2 
                 Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
-                Estimated nc1 from horizontal support radius:      556
-                   Decimate full grid, at least      556 points required,     875 valid points found
-                   Subgrid hash:   1529407114
-                Final nc1:      556
+                Estimated nc1 from horizontal support radius:      581
+                   Decimate full grid, at least      581 points required,     875 valid points found
+                   Subgrid hash:   -540767041
+                Final nc1:      581
                 Effective horizontal resolution:  4.00
                 Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
-                Estimated nc1 from horizontal support radius:      556
-                   Decimate full grid, at least      556 points required,     875 valid points found
-                   Subgrid hash:  -1787948303
-                Final nc1:      556
+                Estimated nc1 from horizontal support radius:      581
+                   Decimate full grid, at least      581 points required,     875 valid points found
+                   Subgrid hash:   -873112754
+                Final nc1:      581
                 Effective horizontal resolution:  4.00
-             nc1(  1) =                        556
-             nc1(  2) =                        556
-             ns =                             1112
+             nc1(  1) =                        581
+             nc1(  2) =                        581
+             ns =                             1162
              v%n_s =                             2
-             c%n_s[global] =                 30428
+             c%n_s[global] =                 33490
     Full NICAS adjoint test result:                        T
        Block NICAS adjoint test result:                    T
           Interpolation adjoint test (horizontal) result:  T
@@ -36,4 +36,4 @@
           Component NICAS adjoint test result:             T
            149.4 /  -30.0:  1.0000000
           Level   1:  0.0000000 -  1.0000000
-          Level   2:  0.0000000 -  0.6014499
+          Level   2:  0.0000000 -  0.5688720

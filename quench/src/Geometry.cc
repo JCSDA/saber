@@ -39,11 +39,17 @@ Geometry::Geometry(const eckit::Configuration & config, const eckit::mpi::Comm &
   // Halo
   halo_ = params.halo.value();
 
+  // Set regional grid flag
+  regionalGrid_ = false;
+
   // Setup grid
   eckit::LocalConfiguration gridParams = params.grid.value();
   oops::Log::info() << "Info     : Grid config: " << gridParams << std::endl;
   if (gridParams.has("type")) {
     gridType_ = gridParams.getString("type");
+    if (gridType_ == "regional") {
+      regionalGrid_ = true;
+    }
   }
   grid_ = atlas::Grid(gridParams);
 
@@ -62,6 +68,24 @@ Geometry::Geometry(const eckit::Configuration & config, const eckit::mpi::Comm &
     // Setup function space
     functionSpace_ = atlas::functionspace::StructuredColumns(grid_, partitioner_,
                      atlas::option::halo(halo_));
+
+    // Bugfix for regional grids
+    // It seems that the content of lonlat for a regional function space is actually the xy
+    // coordinates. The routine to compute distances on the sphere was complaining about
+    // impossible lon/lat values...
+    if (regionalGrid_) {
+      auto lonlat = atlas::array::make_view<double, 2>(functionSpace_.lonlat());
+      double lonlatPoint[] = {0, 0};
+      const atlas::functionspace::StructuredColumns fs(functionSpace_);
+      const atlas::StructuredGrid grid = fs.grid();
+      const auto view_i = atlas::array::make_view<int, 1>(fs.index_i());
+      const auto view_j = atlas::array::make_view<int, 1>(fs.index_j());
+      for (int jj = 0; jj < fs.size(); ++jj) {
+        grid.lonlat(view_i(jj)-1, view_j(jj)-1, lonlatPoint);
+        lonlat(jj, 1) = lonlatPoint[1];
+        lonlat(jj, 0) = lonlatPoint[0];
+      }
+    }
 
     // Setup mesh
     mesh_ = atlas::MeshGenerator("structured").generate(grid_, partitioner_);
@@ -162,13 +186,57 @@ Geometry::Geometry(const eckit::Configuration & config, const eckit::mpi::Comm &
     // Fill geometry fields
     group.fields_ = atlas::FieldSet();
 
+    if (regionalGrid_) {
+      // 2D indices
+      const atlas::functionspace::StructuredColumns fs(functionSpace_);
+      group.fields_->add(fs.index_i());
+      group.fields_->add(fs.index_j());
+
+      // Area
+      atlas::Field area = functionSpace_.createField<double>(
+        atlas::option::name("area") | atlas::option::levels(1));
+      auto areaView = atlas::array::make_view<double, 2>(area);
+      const atlas::StructuredGrid grid = fs.grid();
+      const auto view_i = atlas::array::make_view<int, 1>(fs.index_i());
+      const auto view_j = atlas::array::make_view<int, 1>(fs.index_j());
+      for (atlas::idx_t jnode = 0; jnode < area.shape(0); ++jnode) {
+        // Initialization
+        int i = view_i(jnode)-1;
+        int j = view_j(jnode)-1;
+        double dist_i = 0.0;
+        double dist_j = 0.0;
+
+        // i-direction component
+        if (i == 0) {
+          dist_i = atlas::util::Earth().distance(grid.lonlat(i, j), grid.lonlat(i+1, j));
+        } else if (i == grid.nx(j)-1) {
+          dist_i = atlas::util::Earth().distance(grid.lonlat(i-1, j), grid.lonlat(i, j));
+        } else {
+          dist_i = 0.5*atlas::util::Earth().distance(grid.lonlat(i-1, j), grid.lonlat(i+1, j));
+        }
+
+        // j-direction component
+        if (j == 0) {
+          dist_j = atlas::util::Earth().distance(grid.lonlat(i, j), grid.lonlat(i, j+1));
+        } else if (j == grid.ny()-1) {
+          dist_j = atlas::util::Earth().distance(grid.lonlat(i, j-1), grid.lonlat(i, j));
+        } else {
+          dist_j = 0.5*atlas::util::Earth().distance(grid.lonlat(i, j-1), grid.lonlat(i, j+1));
+       }
+
+        // Local scale
+        areaView(jnode, 0) = dist_i*dist_j;
+      }
+      group.fields_->add(area);
+    }
+
     // Vertical coordinate
     atlas::Field vert_coord = functionSpace_.createField<double>(
       atlas::option::name("vert_coord") | atlas::option::levels(group.levels_));
     auto vert_coordView = atlas::array::make_view<double, 2>(vert_coord);
     for (atlas::idx_t jnode = 0; jnode < vert_coord.shape(0); ++jnode) {
       for (size_t jlevel = 0; jlevel < group.levels_; ++jlevel) {
-         vert_coordView(jnode, jlevel) = group.vert_coord_[jlevel];
+        vert_coordView(jnode, jlevel) = group.vert_coord_[jlevel];
       }
     }
     group.fields_->add(vert_coord);
@@ -271,7 +339,7 @@ Geometry::Geometry(const eckit::Configuration & config, const eckit::mpi::Comm &
 }
 // -----------------------------------------------------------------------------
 Geometry::Geometry(const Geometry & other) : comm_(other.comm_), halo_(other.halo_),
-  grid_(other.grid_), gridType_(other.gridType_),
+  grid_(other.grid_), gridType_(other.gridType_), regionalGrid_(other.regionalGrid_),
   partitioner_(other.partitioner_), mesh_(other.mesh_), groupIndex_(other.groupIndex_)  {
   // Copy function space
   if (other.functionSpace_.type() == "StructuredColumns") {
@@ -398,6 +466,9 @@ void Geometry::print(std::ostream & os) const {
   os << prefix <<  "Quench geometry grid:" << std::endl;
   os << prefix << "- name: " << grid_.name() << std::endl;
   os << prefix << "- size: " << grid_.size() << std::endl;
+  if (regionalGrid_) {
+    os << prefix << "Regional grid detected" << std::endl;
+  }
   if (partitioner_) {
     os << prefix << "Partitioner:" << std::endl;
     os << prefix << "- type: " << partitioner_.type() << std::endl;

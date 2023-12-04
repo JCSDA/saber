@@ -1,0 +1,101 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type : regional
+    nx : 71
+    ny : 53
+    dx : 2.5e3
+    dy : 2.5e3
+    lonlat(centre) : [9.9, 56.3]
+    projection :  
+      type : lambert_conformal_conic
+      latitude0  : 56.3
+      longitude0 : 0.0
+    y_numbering: 1
+  partitioner: checkerboard
+  groups:
+  - variables:
+    - stream_function
+    - velocity_potential
+    levels: 10
+  - variables:
+    - surface_pressure
+    levels: 1
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables:
+  - stream_function
+  - velocity_potential
+  - surface_pressure
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: FastLAM
+    read:
+      multivariate strategy: duplicated
+      groups:
+      - group name: var3d
+        variable in model file: stream_function
+        variables:
+        - stream_function
+        - velocity_potential
+        - surface_pressure
+      input model files:
+      - parameter: weight
+        number of components: 3
+        file:
+          filepath: testdata/dirac_fastlam_3/_MPI__weight_%component%
+      - parameter: normalization
+        number of components: 3
+        file:
+          filepath: testdata/dirac_fastlam_3/_MPI__norm_%component%
+      data file: testdata/dirac_fastlam_3/_MPI__data
+dirac:
+  lon:
+  - 10.04
+  - 8.696
+  - 11.379
+  - 8.5781
+  - 9.9058
+  - 11.2261
+  - 8.4537
+  - 9.7626
+  - 11.0644
+  lat:
+  - 56.86
+  - 56.935
+  - 56.719
+  - 56.4215
+  - 56.3223
+  - 56.2089
+  - 55.8638
+  - 55.7659
+  - 55.6542
+  level:
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  variable:
+  - stream_function
+  - stream_function
+  - stream_function
+  - stream_function
+  - stream_function
+  - stream_function
+  - stream_function
+  - stream_function
+  - stream_function
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_fastlam_5/%MPI%_dirac_%id%
+output variance:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_fastlam_5/%MPI%_variance
+test:
+  reference filename: testref/dirac_fastlam_5.ref

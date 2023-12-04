@@ -146,8 +146,6 @@ void StdDev::setReadFields(const std::vector<oops::FieldSet3D> & fsetVec) {
   oops::Log::trace() << classname() << "::setReadFields done" << std::endl;
 }
 
-
-
 // -----------------------------------------------------------------------------
 
 void StdDev::read() {

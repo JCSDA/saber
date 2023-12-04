@@ -201,6 +201,31 @@ void Fields::constantValue(const double & value) {
   oops::Log::trace() << "Fields::constantValue end" << std::endl;
 }
 // -----------------------------------------------------------------------------
+void Fields::constantValue(const eckit::Configuration & config) {
+  oops::Log::trace() << "Fields::constantValue starting" << std::endl;
+  for (const auto & group : config.getSubConfigurations("constant group-specific value")) {
+    const std::vector<std::string> vars = group.getStringVector("variables");
+    const double value = group.getDouble("constant value");
+    for (const auto & var : vars_.variables()) {
+      if (std::find(vars.begin(), vars.end(), var) != vars.end()) {
+        const auto gmaskView = atlas::array::make_view<int, 2>(
+          geom_->fields(geom_->groupIndex(var)).field("gmask"));
+        atlas::Field field = fset_[var];
+        if (field.rank() == 2) {
+          auto view = atlas::array::make_view<double, 2>(field);
+          view.assign(0.0);
+          for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+            for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+              if (gmaskView(jnode, jlevel) == 1) view(jnode, jlevel) = value;
+            }
+          }
+        }
+      }
+    }
+  }
+  oops::Log::trace() << "Fields::constantValue end" << std::endl;
+}
+// -----------------------------------------------------------------------------
 Fields & Fields::operator=(const Fields & rhs) {
   oops::Log::trace() << "Fields::operator=(const Fields & rhs) starting" << std::endl;
   for (const auto & var : vars_.variables()) {

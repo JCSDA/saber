@@ -42,6 +42,7 @@ class Fields : public util::Printable,
 // Basic operators
   void zero();
   void constantValue(const double &);
+  void constantValue(const eckit::Configuration &);
   Fields & operator=(const Fields &);
   Fields & operator+=(const Fields &);
   Fields & operator-=(const Fields &);

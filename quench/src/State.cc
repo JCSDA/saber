@@ -39,6 +39,8 @@ State::State(const Geometry & resol, const eckit::Configuration & file)
     oops::Log::info() << "Info     : Create empty state" << std::endl;
     if (file.has("constant value")) {
       fields_->constantValue(file.getDouble("constant value"));
+    } else if (file.has("constant group-specific value")) {
+      fields_->constantValue(file);
     } else {
       fields_->zero();
     }

@@ -1,0 +1,77 @@
+input geometry: &geom
+  function space: StructuredColumns
+  grid:
+    type : regional
+    nx : 71
+    ny : 53
+    dx : 2.5e3
+    dy : 2.5e3
+    lonlat(centre) : [9.9, 56.3]
+    projection :  
+      type : lambert_conformal_conic
+      latitude0  : 56.3
+      longitude0 : 0.0
+    y_numbering: 1
+  partitioner: checkerboard
+  groups:
+  - variables:
+    - stream_function
+    - velocity_potential
+    levels: 10
+  - variables:
+    - surface_pressure
+    levels: 1
+output geometry: *geom
+states:
+- input:
+    date: '2010-01-01T12:00:00Z'
+    state variables:
+    - stream_function
+    - velocity_potential
+    - surface_pressure
+    constant value: 20.0e3
+  output:
+    filepath: testdata/convertstate_lam/rh_avg
+- input:
+    date: '2010-01-01T12:00:00Z'
+    state variables:
+    - stream_function
+    - velocity_potential
+    - surface_pressure
+    constant value: 5.0e3
+  output:
+    filepath: testdata/convertstate_lam/rh_pert
+- input:
+    date: '2010-01-01T12:00:00Z'
+    state variables:
+    - stream_function
+    - velocity_potential
+    - surface_pressure
+    constant group-specific value:
+    - variables:
+      - stream_function
+      - velocity_potential
+      constant value: 4.0
+    - variables:
+      - surface_pressure
+      constant value: 0.0
+  output:
+    filepath: testdata/convertstate_lam/rv_avg
+- input:
+    date: '2010-01-01T12:00:00Z'
+    state variables:
+    - stream_function
+    - velocity_potential
+    - surface_pressure
+    constant group-specific value:
+    - variables:
+      - stream_function
+      - velocity_potential
+      constant value: 1.0
+    - variables:
+      - surface_pressure
+      constant value: 0.0
+  output:
+    filepath: testdata/convertstate_lam/rv_pert
+test:
+  reference filename: testref/convertstate_lam.ref
