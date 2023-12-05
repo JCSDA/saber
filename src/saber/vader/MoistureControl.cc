@@ -116,10 +116,8 @@ MoistureControl::MoistureControl(const oops::GeometryData & outerGeometryData,
   mo::eval_total_relative_humidity_nl(augmentedStateFieldSet_);
 
   // populate "muA" and "muH1"
-  for (auto & covFld : covFieldSet_) {
-    populateInterpMuStats(augmentedStateFieldSet_,
-                          covFld);
-  }
+  interpMuStats(augmentedStateFieldSet_, covFieldSet_["muH1Stats"]);
+  populateMuA(augmentedStateFieldSet_, covFieldSet_["muAStats"]);
 
   // populate "specific moisture control dependencies"
   mo::eval_moisture_control_traj(augmentedStateFieldSet_);

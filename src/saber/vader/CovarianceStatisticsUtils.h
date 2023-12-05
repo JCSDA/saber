@@ -36,8 +36,11 @@ atlas::Field createGpRegressionWeights(const atlas::FunctionSpace &,
                                        const std::size_t,
                                        const std::size_t);
 
-void populateInterpMuStats(atlas::FieldSet &,
-                           const atlas::Field &);
+void interpMuStats(atlas::FieldSet &,
+                   const atlas::Field &);
+
+void populateMuA(atlas::FieldSet &,
+                 const atlas::Field &);
 
 atlas::FieldSet createGpRegressionStats(const atlas::FunctionSpace &,
                                         const atlas::FieldSet &,

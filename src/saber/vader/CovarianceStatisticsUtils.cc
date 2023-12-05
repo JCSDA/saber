@@ -196,8 +196,8 @@ atlas::Field createGpRegressionWeights(const atlas::FunctionSpace & functionSpac
 
 // -----------------------------------------------------------------------------
 
-void populateInterpMuStats(atlas::FieldSet & augmentedStateFieldSet,
-                           const atlas::Field & covFld) {
+void interpMuStats(atlas::FieldSet & augmentedStateFieldSet,
+                   const atlas::Field & covFld) {
   // variable name of field to be populated
   // (created by removing the "stats" from the end of string)
   std::string covFldName(covFld.name());
@@ -254,6 +254,78 @@ void populateInterpMuStats(atlas::FieldSet & augmentedStateFieldSet,
   }
 }
 
+
+void populateMuA(atlas::FieldSet & augmentedStateFieldSet,
+                 const atlas::Field & covFld) {
+  atlas::idx_t modelLevels(covFld.shape(0));
+  atlas::idx_t muBins(covFld.shape(1));
+  auto covFldView = atlas::array::make_view<double, 2>(covFld);
+
+  auto invStatsFld = atlas::Field("invMuStats",
+                                  atlas::array::make_datatype<double>(),
+    atlas::array::make_shape(modelLevels, muBins + 1));
+  auto invStatsFldView = atlas::array::make_view<double, 2>(invStatsFld);
+
+  std::vector<double> logStats(muBins, 0.0);
+  std::vector<double> sigmaExtended(muBins + 2, 0.0);
+  for (atlas::idx_t jl = 0; jl < modelLevels; ++jl) {
+    // calculate the natural logarithm of the original normalisation statistics.
+    for (atlas::idx_t bin = 0; bin < muBins; ++bin) {
+      logStats[bin] = std::log(covFldView(jl, bin));
+    }
+    // The bottom bin is often poorly sampled, so extrapolate down from bin 2
+    sigmaExtended[0] = covFldView(jl, 1) * mo::constants::effectiveRNegative /
+       (mo::constants::MinRhRef + 1.5 * mo::constants::rHTBin);
+
+    for (std::size_t ja = 1; ja < sigmaExtended.size(); ++ja) {
+      const double rhTColumn =  (static_cast<double>(ja)-0.5) * mo::constants::rHTBin;
+      if (rhTColumn <= mo::constants::MinRhRef) {
+        // make sigma tend to zero proportionally to rhTColumn
+        // The bottom bin is often poorly sampled, so extrapolate down from bin 2
+        sigmaExtended[ja] = covFldView(jl, 1) * rhTColumn /
+          (mo::constants::MinRhRef + 1.5 * mo::constants::rHTBin);
+      } else {
+        // interpolate or extrapolate log(sigma) in order to ensure sigma>0
+        double s = (rhTColumn - mo::constants::MinRhRef) / mo::constants::rHTBin + 0.5;
+        const int j = std::max(1, std::min(muBins-1, static_cast<int>(s)));
+        s -= j;
+        sigmaExtended[ja] = std::exp(logStats[j-1] + s * (logStats[j] - logStats[j-1]));
+      }
+    }
+
+    const double tol = mo::constants::TolMonotonicity * mo::constants::rHTBin;
+    for (int jb = 0; jb < muBins + 1; ++jb) {
+      const double s = (sigmaExtended[jb] + sigmaExtended[jb+1])/2.0;
+      invStatsFldView(jl, jb) = - mo::constants::rHTBin / s;
+      invStatsFldView(jl, jb)  =
+        invStatsFldView(jl, jb)  > - tol ? -tol : invStatsFldView(jl, jb);
+    }
+  }
+
+  // interpolate invStats onto model mesh
+  auto RHtView = atlas::array::make_view<double, 2>(augmentedStateFieldSet["rht"]);
+  auto muView = atlas::array::make_view<double, 2>(augmentedStateFieldSet["muA"]);
+
+  const double rhTlow = -0.5 * mo::constants::rHTBin;
+  const double rhThigh = rhTlow + (muBins + 1) *  mo::constants::rHTBin;
+
+  for (atlas::idx_t jl = 0; jl < modelLevels; ++jl) {
+    for (atlas::idx_t jn = 0; jn < RHtView.shape(0); ++jn) {
+      double wgt = (std::max(rhTlow, std::min(rhThigh, RHtView(jn, jl))) - rhTlow) /
+                    mo::constants::rHTBin;
+      int indx = std::min(static_cast<int>(wgt), static_cast<int>(RHtView.shape(0)) - 1);
+      wgt -= static_cast<double>(indx);
+
+      if (indx == 0) {
+        muView(jn, jl) = - invStatsFldView(jl, 0) / mo::constants::rHTBin;
+      } else {
+        muView(jn, jl) = ((1.0 - wgt) *
+                          (- invStatsFldView(jl, indx-1)) +
+                          wgt * (- invStatsFldView(jl, indx))) / mo::constants::rHTBin;
+      }
+    }
+  }
+}
 
 // -----------------------------------------------------------------------------
 
