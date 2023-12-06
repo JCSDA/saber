@@ -168,11 +168,33 @@ background error:
       number of covariance latitude rings: 481
       gp regression bins: 18
     saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
+  # Write out chosen fields after the mo_hydro_bal transform, but do not save the netCDF file
+  - saber block name: write fields
+    output path: testdata/dirac_write_fields
+    label: after_mo_hydrostatic_exner
+    field names:
+    - eastward_wind
+    write xb: true
+    write fg: true
+    write multiply fset: true
+    write multiplyad fset: true
+    write leftinversemultiply fset: true
+    save netCDF file: false
   - saber block name: mo_hydro_bal
     saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
     inner inverse tolerance: 1e-9  #TODO to be replaced by relative tolerance
     outer variables to compare: [virtual_potential_temperature, air_pressure_levels_minus_one]
     outer inverse tolerance: 1e-13
+  # Write out all fields after the mo_moisture_control transform.
+  # The output fields are not specified, so all fields are written out.
+  - saber block name: write fields
+    output path: testdata/dirac_write_fields
+    label: after_mo_moisture_control
+    write xb: true
+    write fg: true
+    write multiply fset: true
+    write multiplyad fset: true
+    write leftinversemultiply fset: true
   - saber block name: mo_moisture_control
     inner inverse tolerance: 1e-13
     outer inverse tolerance: 1e-4  #TODO to be replaced by relative tolerance

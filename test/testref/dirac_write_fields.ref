@@ -1,33 +1,41 @@
-Wrote file testdata/dirac_write_fields/fields_initial_xb_0.nc with fields:
-  air_temperature: 6.9612733413378621e+04
-  eastward_wind: 4.3110191105979111e+03
-  northward_wind: 2.6855538642475080e+03
-Wrote file testdata/dirac_write_fields/fields_initial_fg_0.nc with fields:
-  air_temperature: 6.9612733413378621e+04
-  eastward_wind: 4.3110191105979111e+03
-  northward_wind: 2.6855538642475080e+03
-Wrote file testdata/dirac_write_fields/fields_initial_multiply_0.nc with fields:
-  air_temperature: 2.8526486981989632e+02
-  eastward_wind: 2.8429020128491067e+02
-  northward_wind: 2.8334160203475670e+02
-Wrote file testdata/dirac_write_fields/fields_initial_leftinversemultiply_0.nc with fields:
+Wrote file testdata/dirac_write_fields/fields_initial_xb_0.nc
+Fields:
+  air_temperature: 6.9612733413378854e+04
+  eastward_wind: 4.3110191105979047e+03
+  northward_wind: 2.6855538642475099e+03
+Wrote file testdata/dirac_write_fields/fields_initial_fg_0.nc
+Fields:
+  air_temperature: 6.9612733413378854e+04
+  eastward_wind: 4.3110191105979047e+03
+  northward_wind: 2.6855538642475099e+03
+Wrote file testdata/dirac_write_fields/fields_initial_multiply_0.nc
+Fields:
   air_temperature: 2.8526486981989575e+02
   eastward_wind: 2.8429020128491231e+02
   northward_wind: 2.8334160203475454e+02
-Wrote file testdata/dirac_write_fields/fields_initial_multiply_1.nc with fields:
+Wrote file testdata/dirac_write_fields/fields_initial_leftinversemultiply_0.nc
+Fields:
+  air_temperature: 2.8526486981989575e+02
+  eastward_wind: 2.8429020128491231e+02
+  northward_wind: 2.8334160203475454e+02
+Wrote file testdata/dirac_write_fields/fields_initial_multiply_1.nc
+Fields:
   air_temperature: 2.8526486981989575e+02
   eastward_wind: 2.8429020128491231e+02
   northward_wind: 2.8334160203475454e+02
 Inner inverse test for block write fields passed: U Uinv (U x) == (U x)
-Wrote file testdata/dirac_write_fields/fields_initial_leftinversemultiply_1.nc with fields:
+Wrote file testdata/dirac_write_fields/fields_initial_leftinversemultiply_1.nc
+Fields:
   air_temperature: 2.8444179418063044e+02
   eastward_wind: 2.8432026938315005e+02
   northward_wind: 2.8315429052484080e+02
-Wrote file testdata/dirac_write_fields/fields_initial_multiply_2.nc with fields:
+Wrote file testdata/dirac_write_fields/fields_initial_multiply_2.nc
+Fields:
   air_temperature: 2.8444179418063044e+02
   eastward_wind: 2.8432026938315005e+02
   northward_wind: 2.8315429052484080e+02
-Wrote file testdata/dirac_write_fields/fields_initial_leftinversemultiply_2.nc with fields:
+Wrote file testdata/dirac_write_fields/fields_initial_leftinversemultiply_2.nc
+Fields:
   air_temperature: 2.8444179418063044e+02
   eastward_wind: 2.8432026938315005e+02
   northward_wind: 2.8315429052484080e+02
@@ -38,34 +46,432 @@ Outer inverse test for block mo_moistincrop passed: Uinv U (Uinv x) == (Uinv x)
 skipping inverse test for block mo_air_temperature
 Inner inverse test for block mo_moisture_control passed: U Uinv (U x) == (U x)
 Outer inverse test for block mo_moisture_control passed: Uinv U (Uinv x) == (Uinv x)
+Wrote file testdata/dirac_write_fields/fields_after_mo_moisture_control_xb_0.nc
+Fields:
+  air_pressure: 1.4854096513008883e+07
+  air_pressure_levels: 1.5033341703823879e+07
+  air_pressure_levels_minus_one: 1.5033341703823153e+07
+  air_temperature: 6.9613178551411635e+04
+  cfeff: 1.5480238828863865e+01
+  cleff: 7.9847087812465691e+00
+  dlsvpdT: 3.1080917551272151e+01
+  dry_air_density_levels_minus_one: 1.9511848571508773e+02
+  eastward_wind: 4.3110191105979047e+03
+  exner: 2.0080918049764423e+02
+  exner_levels_minus_one: 2.0217968465805600e+02
+  geostrophic_pressure_levels_minus_one: 0.0000000000000000e+00
+  height: 6.8355985801363457e+06
+  height_levels: 7.2007557895809812e+06
+  hydrostatic_exner_levels: 2.0215428624221380e+02
+  hydrostatic_pressure_levels: 1.5032899239984604e+07
+  ice_cloud_volume_fraction_in_atmosphere_layer: 5.4369022443949611e+01
+  liquid_cloud_volume_fraction_in_atmosphere_layer: 2.2228695426981105e+01
+  mass_content_of_cloud_liquid_water_in_atmosphere_layer: 5.2050502512631875e-03
+  mass_content_of_cloud_ice_in_atmosphere_layer: 3.3189423131903847e-03
+  mu: 0.0000000000000000e+00
+  muA: 8.9155494832921982e+09
+  muH1: 8.9486540365912333e+01
+  muRecipDeterminant: 1.1453278404116191e-01
+  muRow1Column1: 6.7622640867159082e+11
+  muRow1Column2: 1.0033631218304576e+02
+  muRow2Column1: 2.0205985994366536e+05
+  muRow2Column2: 2.8426580959819114e+02
+  m_ci: 3.3266757770325831e-03
+  m_cl: 5.2364188648319973e-03
+  m_r: 8.9711756812606302e-04
+  m_t: 2.8446253965335075e+02
+  m_v: 1.1411051460072106e+00
+  northward_wind: 2.6855538642475099e+03
+  potential_temperature: 3.3246175252039987e+05
+  qrain: 8.9206201774927004e-04
+  qsat: 7.3474566021533448e+01
+  qt: 1.1283546854014657e+00
+  rht: 1.6157990423494739e+04
+  specific_humidity: 1.1270323267062499e+00
+  svp: 2.2710223327097337e+05
+  unbalanced_pressure_levels_minus_one: 0.0000000000000000e+00
+  virtual_potential_temperature: 3.3248453710035066e+05
+Wrote file testdata/dirac_write_fields/fields_after_mo_moisture_control_fg_0.nc
+Fields:
+  air_pressure: 1.4854096513008883e+07
+  air_pressure_levels: 1.5033341703823879e+07
+  air_pressure_levels_minus_one: 1.5033341703823153e+07
+  air_temperature: 6.9612733413378854e+04
+  cfeff: 1.5479408108069435e+01
+  cleff: 8.2912401394164927e+00
+  dlsvpdT: 3.1084460876849345e+01
+  dry_air_density_levels_minus_one: 1.9513127379382220e+02
+  eastward_wind: 4.3110191105979047e+03
+  exner: 2.0080918049764423e+02
+  exner_levels_minus_one: 2.0217968465805600e+02
+  geostrophic_pressure_levels_minus_one: 0.0000000000000000e+00
+  height: 6.8355985801363457e+06
+  height_levels: 7.2007557895809812e+06
+  hydrostatic_exner_levels: 2.0215428624221380e+02
+  hydrostatic_pressure_levels: 1.5032899239984604e+07
+  ice_cloud_volume_fraction_in_atmosphere_layer: 5.4369022443949611e+01
+  liquid_cloud_volume_fraction_in_atmosphere_layer: 2.2228695426981105e+01
+  mass_content_of_cloud_liquid_water_in_atmosphere_layer: 5.2021960597237972e-03
+  mass_content_of_cloud_ice_in_atmosphere_layer: 3.3182362697958597e-03
+  mu: 0.0000000000000000e+00
+  muA: 0.0000000000000000e+00
+  muH1: 0.0000000000000000e+00
+  muRecipDeterminant: 0.0000000000000000e+00
+  muRow1Column1: 0.0000000000000000e+00
+  muRow1Column2: 0.0000000000000000e+00
+  muRow2Column1: 0.0000000000000000e+00
+  muRow2Column2: 0.0000000000000000e+00
+  m_ci: 3.3266757770325831e-03
+  m_cl: 5.2364188648319973e-03
+  m_r: 8.9711756812606302e-04
+  m_t: 2.8446253965335075e+02
+  m_v: 1.1411051460072106e+00
+  northward_wind: 2.6855538642475099e+03
+  potential_temperature: 3.3246175252039987e+05
+  qrain: 8.9175149204925126e-04
+  qsat: 7.3190874977377689e+01
+  qt: 0.0000000000000000e+00
+  rht: 1.5791728158309157e+04
+  specific_humidity: 1.1268446528272149e+00
+  svp: 2.2845360142896598e+05
+  unbalanced_pressure_levels_minus_one: 0.0000000000000000e+00
+  virtual_potential_temperature: 3.3248454242244380e+05
+Wrote file testdata/dirac_write_fields/fields_after_mo_moisture_control_multiply_0.nc
+Fields:
+  air_pressure: 2.8340384447202138e+02
+  air_pressure_levels: 2.8638025074591479e+02
+  air_pressure_levels_minus_one: 2.8351574690921325e+02
+  air_temperature: 2.8459236299817957e+02
+  cfeff: 2.8466571960782693e+02
+  cleff: 2.8353940072321922e+02
+  dlsvpdT: 2.8374221156027392e+02
+  dry_air_density_levels_minus_one: 2.8388805237199495e+02
+  eastward_wind: 2.8314874619385313e+02
+  exner: 2.8376656968011196e+02
+  exner_levels_minus_one: 2.8469433255453828e+02
+  geostrophic_pressure_levels_minus_one: 2.8516893536889017e+02
+  height: 2.8450709486925535e+02
+  height_levels: 2.8557360259146384e+02
+  hydrostatic_exner_levels: 2.8588210323267822e+02
+  hydrostatic_pressure_levels: 2.8608626707300226e+02
+  ice_cloud_volume_fraction_in_atmosphere_layer: 2.8463630498538896e+02
+  liquid_cloud_volume_fraction_in_atmosphere_layer: 2.8466301192134006e+02
+  m_ci: 2.8345775073163685e+02
+  m_cl: 2.8421907198510718e+02
+  m_r: 2.8361548053993982e+02
+  m_t: 2.8367644972873495e+02
+  m_v: 2.8294002874624397e+02
+  mass_content_of_cloud_ice_in_atmosphere_layer: 2.8491131057890652e+02
+  mass_content_of_cloud_liquid_water_in_atmosphere_layer: 2.8385258263156101e+02
+  mu: 2.8339927343886961e+02
+  muA: 2.8339504780125736e+02
+  muH1: 2.8507835793434270e+02
+  muRecipDeterminant: 2.8366088825251757e+02
+  muRow1Column1: 2.8438335952007958e+02
+  muRow1Column2: 2.8496720123000654e+02
+  muRow2Column1: 2.8325275287201345e+02
+  muRow2Column2: 2.8449581018109757e+02
+  northward_wind: 2.8480544615297265e+02
+  potential_temperature: 2.8440313233581799e+02
+  qrain: 2.8216333141745724e+02
+  qsat: 2.8388261114736736e+02
+  qt: 2.8488980008270426e+02
+  rht: 2.8416843660235781e+02
+  specific_humidity: 2.8366880186448549e+02
+  svp: 2.8432065802101971e+02
+  unbalanced_pressure_levels_minus_one: 2.8366962872804095e+02
+  virtual_potential_temperature: 2.8443626825268694e+02
+Wrote file testdata/dirac_write_fields/fields_after_mo_moisture_control_leftinversemultiply_0.nc
+Fields:
+  air_pressure: 2.8340384447202138e+02
+  air_pressure_levels: 2.8638025074591479e+02
+  air_pressure_levels_minus_one: 2.8351574690921325e+02
+  air_temperature: 2.8459236299817957e+02
+  cfeff: 2.8466571960782693e+02
+  cleff: 2.8353940072321922e+02
+  dlsvpdT: 2.8374221156027392e+02
+  dry_air_density_levels_minus_one: 2.8388805237199495e+02
+  eastward_wind: 2.8314874619385313e+02
+  exner: 2.8376656968011196e+02
+  exner_levels_minus_one: 2.8469433255453828e+02
+  geostrophic_pressure_levels_minus_one: 2.8516893536889017e+02
+  height: 2.8450709486925535e+02
+  height_levels: 2.8557360259146384e+02
+  hydrostatic_exner_levels: 2.8588210323267822e+02
+  hydrostatic_pressure_levels: 2.8608626707300226e+02
+  ice_cloud_volume_fraction_in_atmosphere_layer: 2.8463630498538896e+02
+  liquid_cloud_volume_fraction_in_atmosphere_layer: 2.8466301192134006e+02
+  m_ci: 2.8345775073163685e+02
+  m_cl: 2.8421907198510718e+02
+  m_r: 2.8361548053993982e+02
+  m_t: 2.8367644972873495e+02
+  m_v: 2.8294002874624397e+02
+  mass_content_of_cloud_ice_in_atmosphere_layer: 2.8491131057890652e+02
+  mass_content_of_cloud_liquid_water_in_atmosphere_layer: 2.8385258263156101e+02
+  mu: 2.8339927343886961e+02
+  muA: 2.8339504780125736e+02
+  muH1: 2.8507835793434270e+02
+  muRecipDeterminant: 2.8366088825251757e+02
+  muRow1Column1: 2.8438335952007958e+02
+  muRow1Column2: 2.8496720123000654e+02
+  muRow2Column1: 2.8325275287201345e+02
+  muRow2Column2: 2.8449581018109757e+02
+  northward_wind: 2.8480544615297265e+02
+  potential_temperature: 2.8440313233581799e+02
+  qrain: 2.8216333141745724e+02
+  qsat: 2.8388261114736736e+02
+  qt: 2.8488980008270426e+02
+  rht: 2.8416843660235781e+02
+  specific_humidity: 2.8366880186448549e+02
+  svp: 2.8432065802101971e+02
+  unbalanced_pressure_levels_minus_one: 2.8366962872804095e+02
+  virtual_potential_temperature: 2.8443626825268694e+02
+Wrote file testdata/dirac_write_fields/fields_after_mo_moisture_control_multiply_1.nc
+Fields:
+  air_pressure: 2.8340384447202138e+02
+  air_pressure_levels: 2.8638025074591479e+02
+  air_pressure_levels_minus_one: 2.8351574690921325e+02
+  air_temperature: 2.8459236299817957e+02
+  cfeff: 2.8466571960782693e+02
+  cleff: 2.8353940072321922e+02
+  dlsvpdT: 2.8374221156027392e+02
+  dry_air_density_levels_minus_one: 2.8388805237199495e+02
+  eastward_wind: 2.8314874619385313e+02
+  exner: 2.8376656968011196e+02
+  exner_levels_minus_one: 2.8469433255453828e+02
+  geostrophic_pressure_levels_minus_one: 2.8516893536889017e+02
+  height: 2.8450709486925535e+02
+  height_levels: 2.8557360259146384e+02
+  hydrostatic_exner_levels: 2.8588210323267822e+02
+  hydrostatic_pressure_levels: 2.8608626707300226e+02
+  ice_cloud_volume_fraction_in_atmosphere_layer: 2.8463630498538896e+02
+  liquid_cloud_volume_fraction_in_atmosphere_layer: 2.8466301192134006e+02
+  m_ci: 2.8345775073163685e+02
+  m_cl: 2.8421907198510718e+02
+  m_r: 2.8361548053993982e+02
+  m_t: 2.8367644972873495e+02
+  m_v: 2.8294002874624397e+02
+  mass_content_of_cloud_ice_in_atmosphere_layer: 2.8491131057890652e+02
+  mass_content_of_cloud_liquid_water_in_atmosphere_layer: 2.8385258263156101e+02
+  mu: 2.8339927343886961e+02
+  muA: 2.8339504780125736e+02
+  muH1: 2.8507835793434270e+02
+  muRecipDeterminant: 2.8366088825251757e+02
+  muRow1Column1: 2.8438335952007958e+02
+  muRow1Column2: 2.8496720123000654e+02
+  muRow2Column1: 2.8325275287201345e+02
+  muRow2Column2: 2.8449581018109757e+02
+  northward_wind: 2.8480544615297265e+02
+  potential_temperature: 2.8440313233581799e+02
+  qrain: 2.8216333141745724e+02
+  qsat: 2.8388261114736736e+02
+  qt: 2.8488980008270426e+02
+  rht: 2.8416843660235781e+02
+  specific_humidity: 2.8366880186448549e+02
+  svp: 2.8432065802101971e+02
+  unbalanced_pressure_levels_minus_one: 2.8366962872804095e+02
+  virtual_potential_temperature: 2.8443626825268694e+02
+Inner inverse test for block write fields passed: U Uinv (U x) == (U x)
+Wrote file testdata/dirac_write_fields/fields_after_mo_moisture_control_leftinversemultiply_1.nc
+Fields:
+  air_pressure: 2.8328115533397056e+02
+  air_pressure_levels: 2.8676326745996079e+02
+  air_pressure_levels_minus_one: 2.8334624835914582e+02
+  air_temperature: 2.8254004510051573e+02
+  cfeff: 2.8451634247367167e+02
+  cleff: 2.8411896313481458e+02
+  dlsvpdT: 2.8307946581256567e+02
+  dry_air_density_levels_minus_one: 2.8522929128851871e+02
+  eastward_wind: 2.8378829102738558e+02
+  exner: 2.8280196833017732e+02
+  exner_levels_minus_one: 2.8463222679130126e+02
+  geostrophic_pressure_levels_minus_one: 2.8351974236374929e+02
+  height: 2.8313932431115978e+02
+  height_levels: 2.8639697750063715e+02
+  hydrostatic_exner_levels: 2.8558098763958537e+02
+  hydrostatic_pressure_levels: 2.8686309318876408e+02
+  ice_cloud_volume_fraction_in_atmosphere_layer: 2.8362861487239184e+02
+  liquid_cloud_volume_fraction_in_atmosphere_layer: 2.8336206291527537e+02
+  m_ci: 2.8410619998576328e+02
+  m_cl: 2.8432409653102172e+02
+  m_r: 2.8401664438015530e+02
+  m_t: 2.8603174107704552e+02
+  m_v: 2.8513753668883231e+02
+  mass_content_of_cloud_ice_in_atmosphere_layer: 2.8433687826443509e+02
+  mass_content_of_cloud_liquid_water_in_atmosphere_layer: 2.8443036998849618e+02
+  mu: 2.8518614829077779e+02
+  muA: 2.8431115134573929e+02
+  muH1: 2.8249692421735398e+02
+  muRecipDeterminant: 2.8408718820189233e+02
+  muRow1Column1: 2.8475491050663095e+02
+  muRow1Column2: 2.8347163071158940e+02
+  muRow2Column1: 2.8351490807731898e+02
+  muRow2Column2: 2.8570546976774034e+02
+  northward_wind: 2.8495997101821706e+02
+  potential_temperature: 2.8404339370196237e+02
+  qrain: 2.8341247686117174e+02
+  qsat: 2.8469434704767468e+02
+  qt: 2.8468471381149737e+02
+  rht: 2.8300384166712752e+02
+  specific_humidity: 2.8364523177625125e+02
+  svp: 2.8305871122132538e+02
+  unbalanced_pressure_levels_minus_one: 2.8419694436930195e+02
+  virtual_potential_temperature: 2.8310012191266651e+02
+Wrote file testdata/dirac_write_fields/fields_after_mo_moisture_control_multiply_2.nc
+Fields:
+  air_pressure: 2.8328115533397056e+02
+  air_pressure_levels: 2.8676326745996079e+02
+  air_pressure_levels_minus_one: 2.8334624835914582e+02
+  air_temperature: 2.8254004510051573e+02
+  cfeff: 2.8451634247367167e+02
+  cleff: 2.8411896313481458e+02
+  dlsvpdT: 2.8307946581256567e+02
+  dry_air_density_levels_minus_one: 2.8522929128851871e+02
+  eastward_wind: 2.8378829102738558e+02
+  exner: 2.8280196833017732e+02
+  exner_levels_minus_one: 2.8463222679130126e+02
+  geostrophic_pressure_levels_minus_one: 2.8351974236374929e+02
+  height: 2.8313932431115978e+02
+  height_levels: 2.8639697750063715e+02
+  hydrostatic_exner_levels: 2.8558098763958537e+02
+  hydrostatic_pressure_levels: 2.8686309318876408e+02
+  ice_cloud_volume_fraction_in_atmosphere_layer: 2.8362861487239184e+02
+  liquid_cloud_volume_fraction_in_atmosphere_layer: 2.8336206291527537e+02
+  m_ci: 2.8410619998576328e+02
+  m_cl: 2.8432409653102172e+02
+  m_r: 2.8401664438015530e+02
+  m_t: 2.8603174107704552e+02
+  m_v: 2.8513753668883231e+02
+  mass_content_of_cloud_ice_in_atmosphere_layer: 2.8433687826443509e+02
+  mass_content_of_cloud_liquid_water_in_atmosphere_layer: 2.8443036998849618e+02
+  mu: 2.8518614829077779e+02
+  muA: 2.8431115134573929e+02
+  muH1: 2.8249692421735398e+02
+  muRecipDeterminant: 2.8408718820189233e+02
+  muRow1Column1: 2.8475491050663095e+02
+  muRow1Column2: 2.8347163071158940e+02
+  muRow2Column1: 2.8351490807731898e+02
+  muRow2Column2: 2.8570546976774034e+02
+  northward_wind: 2.8495997101821706e+02
+  potential_temperature: 2.8404339370196237e+02
+  qrain: 2.8341247686117174e+02
+  qsat: 2.8469434704767468e+02
+  qt: 2.8468471381149737e+02
+  rht: 2.8300384166712752e+02
+  specific_humidity: 2.8364523177625125e+02
+  svp: 2.8305871122132538e+02
+  unbalanced_pressure_levels_minus_one: 2.8419694436930195e+02
+  virtual_potential_temperature: 2.8310012191266651e+02
+Wrote file testdata/dirac_write_fields/fields_after_mo_moisture_control_leftinversemultiply_2.nc
+Fields:
+  air_pressure: 2.8328115533397056e+02
+  air_pressure_levels: 2.8676326745996079e+02
+  air_pressure_levels_minus_one: 2.8334624835914582e+02
+  air_temperature: 2.8254004510051573e+02
+  cfeff: 2.8451634247367167e+02
+  cleff: 2.8411896313481458e+02
+  dlsvpdT: 2.8307946581256567e+02
+  dry_air_density_levels_minus_one: 2.8522929128851871e+02
+  eastward_wind: 2.8378829102738558e+02
+  exner: 2.8280196833017732e+02
+  exner_levels_minus_one: 2.8463222679130126e+02
+  geostrophic_pressure_levels_minus_one: 2.8351974236374929e+02
+  height: 2.8313932431115978e+02
+  height_levels: 2.8639697750063715e+02
+  hydrostatic_exner_levels: 2.8558098763958537e+02
+  hydrostatic_pressure_levels: 2.8686309318876408e+02
+  ice_cloud_volume_fraction_in_atmosphere_layer: 2.8362861487239184e+02
+  liquid_cloud_volume_fraction_in_atmosphere_layer: 2.8336206291527537e+02
+  m_ci: 2.8410619998576328e+02
+  m_cl: 2.8432409653102172e+02
+  m_r: 2.8401664438015530e+02
+  m_t: 2.8603174107704552e+02
+  m_v: 2.8513753668883231e+02
+  mass_content_of_cloud_ice_in_atmosphere_layer: 2.8433687826443509e+02
+  mass_content_of_cloud_liquid_water_in_atmosphere_layer: 2.8443036998849618e+02
+  mu: 2.8518614829077779e+02
+  muA: 2.8431115134573929e+02
+  muH1: 2.8249692421735398e+02
+  muRecipDeterminant: 2.8408718820189233e+02
+  muRow1Column1: 2.8475491050663095e+02
+  muRow1Column2: 2.8347163071158940e+02
+  muRow2Column1: 2.8351490807731898e+02
+  muRow2Column2: 2.8570546976774034e+02
+  northward_wind: 2.8495997101821706e+02
+  potential_temperature: 2.8404339370196237e+02
+  qrain: 2.8341247686117174e+02
+  qsat: 2.8469434704767468e+02
+  qt: 2.8468471381149737e+02
+  rht: 2.8300384166712752e+02
+  specific_humidity: 2.8364523177625125e+02
+  svp: 2.8305871122132538e+02
+  unbalanced_pressure_levels_minus_one: 2.8419694436930195e+02
+  virtual_potential_temperature: 2.8310012191266651e+02
+Outer inverse test for block write fields passed: Uinv U (Uinv x) == (Uinv x)
 Inner inverse test for block mo_hydro_bal passed: U Uinv (U x) == (U x)
 Outer inverse test for block mo_hydro_bal passed: Uinv U (Uinv x) == (Uinv x)
+Did not write file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_xb_0.nc
+Fields:
+  eastward_wind: 4.3110191105979047e+03
+Did not write file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_fg_0.nc
+Fields:
+  eastward_wind: 4.3110191105979047e+03
+Did not write file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_multiply_0.nc
+Fields:
+  eastward_wind: 2.8453755915080643e+02
+Did not write file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_leftinversemultiply_0.nc
+Fields:
+  eastward_wind: 2.8453755915080643e+02
+Did not write file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_multiply_1.nc
+Fields:
+  eastward_wind: 2.8453755915080643e+02
+Inner inverse test for block write fields passed: U Uinv (U x) == (U x)
+Did not write file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_leftinversemultiply_1.nc
+Fields:
+  eastward_wind: 2.8420203380905730e+02
+Did not write file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_multiply_2.nc
+Fields:
+  eastward_wind: 2.8420203380905730e+02
+Did not write file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_leftinversemultiply_2.nc
+Fields:
+  eastward_wind: 2.8420203380905730e+02
+Outer inverse test for block write fields passed: Uinv U (Uinv x) == (Uinv x)
 Inner inverse test for block mo_hydrostatic_exner passed: U Uinv (U x) == (U x)
 Outer inverse test for block mo_hydrostatic_exner passed: Uinv U (Uinv x) == (Uinv x)
-Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_xb_0.nc with fields:
-  eastward_wind: 4.3110191105979111e+03
-Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_fg_0.nc with fields:
-  eastward_wind: 4.3110191105979111e+03
-Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_multiply_0.nc with fields:
-  eastward_wind: 2.8346469850476291e+02
-Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_leftinversemultiply_0.nc with fields:
-  eastward_wind: 2.8346469850476291e+02
-Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_multiply_1.nc with fields:
-  eastward_wind: 2.8346469850476291e+02
+Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_xb_0.nc
+Fields:
+  eastward_wind: 4.3110191105979047e+03
+Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_fg_0.nc
+Fields:
+  eastward_wind: 4.3110191105979047e+03
+Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_multiply_0.nc
+Fields:
+  eastward_wind: 2.8462310948296124e+02
+Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_leftinversemultiply_0.nc
+Fields:
+  eastward_wind: 2.8462310948296124e+02
+Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_multiply_1.nc
+Fields:
+  eastward_wind: 2.8462310948296124e+02
 Inner inverse test for block write fields passed: U Uinv (U x) == (U x)
-Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_leftinversemultiply_1.nc with fields:
-  eastward_wind: 2.8467132487867752e+02
-Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_multiply_2.nc with fields:
-  eastward_wind: 2.8467132487867752e+02
-Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_leftinversemultiply_2.nc with fields:
-  eastward_wind: 2.8467132487867752e+02
+Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_leftinversemultiply_1.nc
+Fields:
+  eastward_wind: 2.8341316036038830e+02
+Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_multiply_2.nc
+Fields:
+  eastward_wind: 2.8341316036038830e+02
+Wrote file testdata/dirac_write_fields/fields_after_mo_hydrostatic_exner_leftinversemultiply_2.nc
+Fields:
+  eastward_wind: 2.8341316036038830e+02
 Outer inverse test for block write fields passed: Uinv U (Uinv x) == (Uinv x)
 skipping inverse test for block gauss winds to geostrophic pressure
 Inner inverse test for block spectral to gauss passed: U Uinv (U x) == (U x)
 Outer inverse test for block spectral to gauss passed: Uinv U (Uinv x) == (Uinv x)
-Wrote file testdata/dirac_write_fields/fields_final_xb_0.nc with fields:
-  eastward_wind: 4.3110191105979111e+03
-Wrote file testdata/dirac_write_fields/fields_final_fg_0.nc with fields:
-  eastward_wind: 4.3110191105979111e+03
+Wrote file testdata/dirac_write_fields/fields_final_xb_0.nc
+Fields:
+  eastward_wind: 4.3110191105979047e+03
+Wrote file testdata/dirac_write_fields/fields_final_fg_0.nc
+Fields:
+  eastward_wind: 4.3110191105979047e+03
 Inner inverse test for block write fields passed: U Uinv (U x) == (U x)
 Outer inverse test for block write fields passed: Uinv U (Uinv x) == (Uinv x)

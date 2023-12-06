@@ -35,6 +35,11 @@ class WriteFieldsParameters : public SaberBlockParametersBase {
   /// Label to assign to output file.
   oops::RequiredParameter<std::string> label{"label", this};
 
+  /// Save fields to netCDF files.
+  /// Whatever the value of this parameter, some basic information about each field is written
+  /// to the test output stream.
+  oops::Parameter<bool> saveNetCDFFile{"save netCDF file", true, this};
+
   /// List of fields to write out.
   /// If this parameter is empty (the default) then all fields contained in the
   /// FieldSet are written out.

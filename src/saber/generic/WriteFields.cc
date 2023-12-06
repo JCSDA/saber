@@ -46,7 +46,7 @@ void WriteFields::writeToFile(const oops::FieldSet3D & fset,
 
   // Check there is at least one field to write out.
   if (fsetWrite.size() == 0) {
-    oops::Log::warning() << "No fields present. File will not be written." << std::endl;
+    oops::Log::warning() << "No field information to output." << std::endl;
     return;
   }
 
@@ -56,21 +56,29 @@ void WriteFields::writeToFile(const oops::FieldSet3D & fset,
            << "fields_" << params_.label.value() << "_" << description << "_" << count++;
   const std::string filepathnc = filepath.str() + ".nc";
 
-  eckit::LocalConfiguration conf;
-  conf.set("filepath", filepath.str());
+  if (params_.saveNetCDFFile) {
+    eckit::LocalConfiguration conf;
+    conf.set("filepath", filepath.str());
 
-  // todo: replace the use of `stat` with `std::filesystem::exists`
-  // when compilers have been upgraded.
-  struct stat buffer;
-  if (stat(filepathnc.c_str(), &buffer) == 0) {
-    oops::Log::warning() << "File " << filepathnc << " already exists. Overwriting." << std::endl;
+    // todo: replace the use of `stat` with `std::filesystem::exists`
+    // when compilers have been upgraded.
+    struct stat buffer;
+    if (stat(filepathnc.c_str(), &buffer) == 0) {
+      oops::Log::warning() << "File " << filepathnc << " already exists. Overwriting." << std::endl;
+    }
+
+    // Write field set to file.
+    fsetWrite.write(conf);
+
+    // Output filename to test stream.
+    oops::Log::test() << "Wrote file " << filepathnc << std::endl;
+  } else {
+    // Output filename to test stream.
+    oops::Log::test() << "Did not write file " << filepathnc << std::endl;
   }
 
-  // Write field set to file.
-  fsetWrite.write(conf);
-
-  // Output for validation.
-  oops::Log::test() << "Wrote file " << filepathnc << " with fields:" << std::endl;
+  // Output basic field information to test output stream.
+  oops::Log::test() << "Fields:" << std::endl;
   for (const auto & field : fsetWrite) {
     oops::Log::test() << "  " << field.name() << ": "
                       << util::normField(field, innerGeometryData_.comm()) << std::endl;
