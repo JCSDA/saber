@@ -17,3 +17,4 @@ dirac_spectralb_from_saber_file
 compare_diagnostics_spectralb_write_read
 process_perts_from_gauss_perts_1
 process_perts_from_csdual_states_1
+dirac_spectralb_duplicate_variables

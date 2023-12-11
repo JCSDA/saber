@@ -1,0 +1,81 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_gaussian
+    N: 15
+  groups:
+  - variables: &vars
+    - specific_humidity
+    - q_cl
+    - q_cf
+    - air_temperature
+    - exner
+    - air_pressure
+    levels: 2
+  partitioner: ectrans
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables: *vars
+background error:
+  covariance model: SABER
+  adjoint test: true
+  saber central block:
+    saber block name: ID
+  saber outer blocks:
+  - saber block name: duplicate variables
+    variable groupings:
+    - group variable name: specific_humidity__q_cl__q_cf
+      group components:
+      - specific_humidity
+      - q_cl
+      - q_cf
+    - group variable name: exner_air_temperature
+      group components:
+      - air_temperature
+      - exner
+  - saber block name: spectral to gauss
+dirac:
+  lon:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  lat:  # slightly less than 0 to remove ambiguity on chosen grid point.
+  - -0.001
+  - -0.001
+  - -0.001
+  - -0.001
+  - -0.001
+  - -0.001
+  level:
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  variable: *vars
+diagnostic points:
+  lon:
+  - 20.0
+  - 20.0
+  - 20.0
+  lat:
+  - 20.0
+  - 20.0
+  - 20.0
+  level:
+  - 2
+  - 2
+  - 2
+  variable:
+  - specific_humidity
+  - exner
+  - air_pressure
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_spectralb_duplicate_variables/%MPI%_dirac_%id%
+test:
+  reference filename: testref/dirac_spectralb_duplicate_variables.ref
