@@ -33,7 +33,7 @@ Quench geometry grid:
 Partitioner:
 - type: equal_regions
 Function space:
-- type: PointCloud
+- type: NodeColumns
 - halo: 0
 Groups: 
 - Group 0:
@@ -51,7 +51,7 @@ Quench geometry grid:
 Partitioner:
 - type: equal_regions
 Function space:
-- type: PointCloud
+- type: NodeColumns
 - halo: 0
 Groups: 
 - Group 0:
@@ -69,7 +69,7 @@ Quench geometry grid:
 Partitioner:
 - type: equal_regions
 Function space:
-- type: PointCloud
+- type: NodeColumns
 - halo: 0
 Groups: 
 - Group 0:
@@ -87,7 +87,7 @@ Quench geometry grid:
 Partitioner:
 - type: equal_regions
 Function space:
-- type: PointCloud
+- type: NodeColumns
 - halo: 0
 Groups: 
 - Group 0:
@@ -105,7 +105,7 @@ Quench geometry grid:
 Partitioner:
 - type: equal_regions
 Function space:
-- type: PointCloud
+- type: NodeColumns
 - halo: 0
 Groups: 
 - Group 0:
@@ -123,7 +123,7 @@ Quench geometry grid:
 Partitioner:
 - type: equal_regions
 Function space:
-- type: PointCloud
+- type: NodeColumns
 - halo: 0
 Groups: 
 - Group 0:
@@ -141,7 +141,7 @@ Quench geometry grid:
 Partitioner:
 - type: equal_regions
 Function space:
-- type: PointCloud
+- type: NodeColumns
 - halo: 0
 Groups: 
 - Group 0:
@@ -159,7 +159,7 @@ Quench geometry grid:
 Partitioner:
 - type: equal_regions
 Function space:
-- type: PointCloud
+- type: NodeColumns
 - halo: 0
 Groups: 
 - Group 0:
@@ -177,7 +177,7 @@ Quench geometry grid:
 Partitioner:
 - type: equal_regions
 Function space:
-- type: PointCloud
+- type: NodeColumns
 - halo: 0
 Groups: 
 - Group 0:
@@ -195,7 +195,7 @@ Quench geometry grid:
 Partitioner:
 - type: equal_regions
 Function space:
-- type: PointCloud
+- type: NodeColumns
 - halo: 0
 Groups: 
 - Group 0:
@@ -213,7 +213,7 @@ Quench geometry grid:
 Partitioner:
 - type: equal_regions
 Function space:
-- type: PointCloud
+- type: NodeColumns
 - halo: 0
 Groups: 
 - Group 0:
@@ -231,7 +231,7 @@ Quench geometry grid:
 Partitioner:
 - type: equal_regions
 Function space:
-- type: PointCloud
+- type: NodeColumns
 - halo: 0
 Groups: 
 - Group 0:
@@ -249,7 +249,7 @@ Quench geometry grid:
 Partitioner:
 - type: equal_regions
 Function space:
-- type: PointCloud
+- type: NodeColumns
 - halo: 0
 Groups: 
 - Group 0:
@@ -267,7 +267,7 @@ Quench geometry grid:
 Partitioner:
 - type: equal_regions
 Function space:
-- type: PointCloud
+- type: NodeColumns
 - halo: 0
 Groups: 
 - Group 0:
@@ -285,7 +285,7 @@ Quench geometry grid:
 Partitioner:
 - type: equal_regions
 Function space:
-- type: PointCloud
+- type: NodeColumns
 - halo: 0
 Groups: 
 - Group 0:
@@ -303,7 +303,7 @@ Quench geometry grid:
 Partitioner:
 - type: equal_regions
 Function space:
-- type: PointCloud
+- type: NodeColumns
 - halo: 0
 Groups: 
 - Group 0:
@@ -321,7 +321,7 @@ Quench geometry grid:
 Partitioner:
 - type: equal_regions
 Function space:
-- type: PointCloud
+- type: NodeColumns
 - halo: 0
 Groups: 
 - Group 0:
@@ -339,7 +339,7 @@ Quench geometry grid:
 Partitioner:
 - type: equal_regions
 Function space:
-- type: PointCloud
+- type: NodeColumns
 - halo: 0
 Groups: 
 - Group 0:
@@ -357,7 +357,7 @@ Quench geometry grid:
 Partitioner:
 - type: equal_regions
 Function space:
-- type: PointCloud
+- type: NodeColumns
 - halo: 0
 Groups: 
 - Group 0:
@@ -375,7 +375,7 @@ Quench geometry grid:
 Partitioner:
 - type: equal_regions
 Function space:
-- type: PointCloud
+- type: NodeColumns
 - halo: 0
 Groups: 
 - Group 0:
@@ -393,7 +393,7 @@ Quench geometry grid:
 Partitioner:
 - type: equal_regions
 Function space:
-- type: PointCloud
+- type: NodeColumns
 - halo: 0
 Groups: 
 - Group 0:
@@ -411,7 +411,7 @@ Quench geometry grid:
 Partitioner:
 - type: equal_regions
 Function space:
-- type: PointCloud
+- type: NodeColumns
 - halo: 0
 Groups: 
 - Group 0:
@@ -429,7 +429,7 @@ Quench geometry grid:
 Partitioner:
 - type: equal_regions
 Function space:
-- type: PointCloud
+- type: NodeColumns
 - halo: 0
 Groups: 
 - Group 0:
@@ -447,7 +447,7 @@ Quench geometry grid:
 Partitioner:
 - type: equal_regions
 Function space:
-- type: PointCloud
+- type: NodeColumns
 - halo: 0
 Groups: 
 - Group 0:
@@ -465,7 +465,7 @@ Quench geometry grid:
 Partitioner:
 - type: equal_regions
 Function space:
-- type: PointCloud
+- type: NodeColumns
 - halo: 0
 Groups: 
 - Group 0:

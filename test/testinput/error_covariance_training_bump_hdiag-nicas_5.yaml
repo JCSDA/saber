@@ -1,5 +1,5 @@
 geometry:
-  function space: PointCloud
+  function space: NodeColumns
   grid:
     type: unstructured
     xy:
@@ -367,7 +367,6 @@ background error:
       template:
         date: '2010-01-01T12:00:00Z'
         filepath: testdata/randomization_bump_nicas_UL2/member_pert_%mem%
-        one file per task: true
       pattern: '%mem%'
       nmembers: 25
       zero padding: 6
@@ -415,74 +414,59 @@ background error:
       - parameter: dirac_mom
         file:
           filepath: testdata/error_covariance_training_bump_hdiag-nicas_5/_MPI_-_OMP__dirac_mom
-          one file per task: true
       - parameter: dirac_diag_cor
         file:
           filepath: testdata/error_covariance_training_bump_hdiag-nicas_5/_MPI_-_OMP__dirac_diag
-          one file per task: true
       - parameter: cor_a
         component: 1
         file:
           filepath: testdata/error_covariance_training_bump_hdiag-nicas_5/_MPI_-_OMP__cor_a_1
-          one file per task: true
       - parameter: cor_a
         component: 2
         file:
           filepath: testdata/error_covariance_training_bump_hdiag-nicas_5/_MPI_-_OMP__cor_a_2
-          one file per task: true
       - parameter: cor_rh1
         component: 1
         file:
           filepath: testdata/error_covariance_training_bump_hdiag-nicas_5/_MPI_-_OMP__cor_rh1_1
-          one file per task: true
       - parameter: cor_rh1
         component: 2
         file:
           filepath: testdata/error_covariance_training_bump_hdiag-nicas_5/_MPI_-_OMP__cor_rh1_2
-          one file per task: true
       - parameter: cor_rh2
         component: 1
         file:
           filepath: testdata/error_covariance_training_bump_hdiag-nicas_5/_MPI_-_OMP__cor_rh2_1
-          one file per task: true
       - parameter: cor_rh2
         component: 2
         file:
           filepath: testdata/error_covariance_training_bump_hdiag-nicas_5/_MPI_-_OMP__cor_rh2_2
-          one file per task: true
       - parameter: cor_rhc
         component: 1
         file:
           filepath: testdata/error_covariance_training_bump_hdiag-nicas_5/_MPI_-_OMP__cor_rhc_1
-          one file per task: true
       - parameter: cor_rhc
         component: 2
         file:
           filepath: testdata/error_covariance_training_bump_hdiag-nicas_5/_MPI_-_OMP__cor_rhc_2
-          one file per task: true
       - parameter: cor_rh
         component: 1
         file:
           filepath: testdata/error_covariance_training_bump_hdiag-nicas_5/_MPI_-_OMP__cor_rh_1
-          one file per task: true
       - parameter: cor_rh
         component: 2
         file:
           filepath: testdata/error_covariance_training_bump_hdiag-nicas_5/_MPI_-_OMP__cor_rh_2
-          one file per task: true
       - parameter: cor_rv
         component: 1
         file:
           filepath: testdata/error_covariance_training_bump_hdiag-nicas_5/_MPI_-_OMP__cor_rv_1
-          one file per task: true
       - parameter: cor_rv
         component: 2
         file:
           filepath: testdata/error_covariance_training_bump_hdiag-nicas_5/_MPI_-_OMP__cor_rv_2
-          one file per task: true
       - parameter: nicas_norm
         file:
           filepath: testdata/error_covariance_training_bump_hdiag-nicas_5/_MPI_-_OMP__nicas_norm
-          one file per task: true
 test:
   reference filename: testref/error_covariance_training_bump_hdiag-nicas_5.ref

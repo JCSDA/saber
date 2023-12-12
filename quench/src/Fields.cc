@@ -679,9 +679,6 @@ void Fields::read(const eckit::Configuration & config) {
 
   // Copy configuration
   eckit::LocalConfiguration conf(config);
-  if (geom_->functionSpace().type() == "PointCloud") {
-    conf.set("one file per task", true);
-  }
 
   // Read fieldset
   util::readFieldSet(geom_->getComm(),
@@ -695,9 +692,6 @@ void Fields::read(const eckit::Configuration & config) {
 void Fields::write(const eckit::Configuration & config) const {
   // Copy configuration
   eckit::LocalConfiguration conf(config);
-  if (geom_->functionSpace().type() == "PointCloud") {
-    conf.set("one file per task", true);
-  }
 
   // Write fieldset
   util::writeFieldSet(geom_->getComm(), conf, fset_);

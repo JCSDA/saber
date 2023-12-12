@@ -1,5 +1,5 @@
 geometry:
-  function space: PointCloud
+  function space: NodeColumns
   grid:
     type: unstructured
     xy:
@@ -386,9 +386,7 @@ background error:
   randomization size: 25
 output states:
   filepath: testdata/randomization_bump_nicas_UL2/member
-  one file per task: true
 output perturbations:
   filepath: testdata/randomization_bump_nicas_UL2/member_pert
-  one file per task: true
 test:
   reference filename: testref/randomization_bump_nicas_UL2.ref

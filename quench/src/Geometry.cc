@@ -97,36 +97,14 @@ Geometry::Geometry(const eckit::Configuration & config, const eckit::mpi::Comm &
       mesh_ = atlas::MeshGenerator("cubedsphere_dual").generate(grid_, partitioner_);
       functionSpace_ = atlas::functionspace::CubedSphereNodeColumns(mesh_);
     } else {
+      // For now allow NodeColumns for unstructured triangulation meshes
       // Regular or Structured grids could be supported with extra code
-      // Delaunay grids on atlas 0.34- require compilation with CGAL and still only work in serial
-      // TODO(ALGO): When requiring atlas 0.35+, can clean this up
-      ABORT(params.functionSpace.value() + " function space with "
-            + grid_.name() + " is not supported yet");
+      ASSERT(partitioner_);
+      mesh_ = atlas::MeshGenerator("delaunay").generate(grid_, partitioner_);
+      functionSpace_ = atlas::functionspace::NodeColumns(mesh_);
     }
   } else if (params.functionSpace.value() == "PointCloud") {
-    // Setup function space
-    // In atlas 0.35+ we should call PointCloud(grid, partitioner), but in atlas 0.34- this
-    // interface does not exist. We instead rely on the PointCloud(vector<Point>) interface.
-    // TODO(ALGO): When requiring atlas 0.35+, can clean this up
-    std::vector<atlas::PointXY> points;
-    // Select points from grid according to partitioner
-    ASSERT(partitioner_);
-    const auto dist = partitioner_.partition(grid_);
-    int nb_points = 0;
-    if (static_cast<int>(comm_.rank()) < partitioner_.nb_partitions()) {
-      nb_points = dist.nb_pts()[comm_.rank()];
-    }
-    points.resize(nb_points);
-    int grid_counter = 0;
-    int part_counter = 0;
-    for (const atlas::PointXY & p : grid_.xy()) {
-      if (dist.partition(grid_counter) == static_cast<int>(comm_.rank())) {
-        points[part_counter] = p;
-        ++part_counter;
-      }
-      ++grid_counter;
-    }
-    functionSpace_ = atlas::functionspace::PointCloud(points);
+    ABORT(params.functionSpace.value() + " function space not supported");
   } else {
     ABORT(params.functionSpace.value() + " function space not supported yet");
   }
@@ -355,7 +333,7 @@ Geometry::Geometry(const Geometry & other) : comm_(other.comm_), halo_(other.hal
       functionSpace_ = atlas::functionspace::NodeColumns(other.functionSpace_);
     }
   } else if (other.functionSpace_.type() == "PointCloud") {
-      functionSpace_ = atlas::functionspace::PointCloud(other.functionSpace_);
+    ABORT(other.functionSpace_.type() + " function space not supported");
   } else {
     ABORT(other.functionSpace_.type() + " function space not supported yet");
   }
