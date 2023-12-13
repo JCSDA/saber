@@ -136,21 +136,21 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
   // Iterative ensemble loading flag
   const bool iterativeEnsembleLoading = params.iterativeEnsembleLoading.value();
 
-  // Initialize ensembles as vector of FieldSets
-  std::vector<oops::FieldSet3D> fsetEns;
   // Read ensemble (for non-iterative ensemble loading)
-  eckit::LocalConfiguration ensembleConf = readEnsemble(geom,
-                                                        outerVars,
-                                                        xb[0],
-                                                        fg[0],
-                                                        params.toConfiguration(),
-                                                        iterativeEnsembleLoading,
-                                                        fsetEns);
+  eckit::LocalConfiguration ensembleConf;
+  oops::FieldSets fsetEns = readEnsemble(geom,
+                                         outerVars,
+                                         xb,
+                                         fg,
+                                         params.toConfiguration(),
+                                         iterativeEnsembleLoading,
+                                         ensembleConf);
+
   covarConf.set("ensemble configuration", ensembleConf);
   // Read dual resolution ensemble if needed
   const auto & dualResParams = params.dualResParams.value();
   const Geometry_ * dualResGeom = &geom;
-  std::vector<oops::FieldSet3D> fsetDualResEns;
+  std::unique_ptr<oops::FieldSets> fsetDualResEns;
   if (dualResParams != boost::none) {
     const auto & dualResGeomConf = dualResParams->geometry.value();
     if (dualResGeomConf != boost::none) {
@@ -160,20 +160,25 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
       dualResGeom = new Geometry_(dualResGeomParams, geom.getComm());
     }
     // Background and first guess at dual resolution geometry
-    oops::State<MODEL> xbDualRes(*dualResGeom, xb[0]);
-    oops::State<MODEL> fgDualRes(*dualResGeom, fg[0]);
+    const State4D_ xbDualRes(*dualResGeom, xb);
+    const State4D_ fgDualRes(*dualResGeom, fg);
     // Read dual resolution ensemble
-    eckit::LocalConfiguration dualResEnsembleConf
-      = readEnsemble(*dualResGeom,
+    eckit::LocalConfiguration dualResEnsembleConf;
+    fsetDualResEns = std::make_unique<oops::FieldSets>(readEnsemble(*dualResGeom,
                      outerVars,
                      xbDualRes,
                      fgDualRes,
                      dualResParams->toConfiguration(),
                      iterativeEnsembleLoading,
-                     fsetDualResEns);
-
+                     dualResEnsembleConf));
     // Add dual resolution ensemble configuration
     covarConf.set("dual resolution ensemble configuration", dualResEnsembleConf);
+  }
+  if (!fsetDualResEns) {
+    std::vector<util::DateTime> dates;
+    std::vector<int> ensmems;
+    fsetDualResEns = std::make_unique<oops::FieldSets>(dates,
+                                      xb.commTime(), ensmems, xb.commEns());
   }
 
   // Add ensemble output
@@ -235,17 +240,16 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
       // Set covariance
       eckit::LocalConfiguration cmpConf = cmp.getSubConfiguration("covariance");
 
-      // Initialize ensembles as vector of FieldSets
-      std::vector<oops::FieldSet3D> fset4dCmpEns;
       // Read ensemble
-      eckit::LocalConfiguration cmpEnsembleConf
+      eckit::LocalConfiguration cmpEnsembleConf;
+      oops::FieldSets fset4dCmpEns
          = readEnsemble(*hybridGeom,
                         cmpOuterVars,
-                        xb[0],
-                        fg[0],
+                        xb,
+                        fg,
                         cmpConf,
                         params.iterativeEnsembleLoading.value(),
-                        fset4dCmpEns);
+                        cmpEnsembleConf);
 
       // Create internal configuration
       eckit::LocalConfiguration cmpCovarConf;
@@ -273,7 +277,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
           fset4dXb,
           fset4dFg,
           fset4dCmpEns,
-          fsetDualResEns,
+          *fsetDualResEns,
           cmpCovarConf,
           cmpConf));
     }
@@ -289,7 +293,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
         fset4dXb,
         fset4dFg,
         fsetEns,
-        fsetDualResEns,
+        *fsetDualResEns,
         covarConf,
         params.toConfiguration()));
 

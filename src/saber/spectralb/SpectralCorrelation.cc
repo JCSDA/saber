@@ -140,7 +140,7 @@ void SpectralCorrelation::read() {
 }
 
 
-void SpectralCorrelation::directCalibration(const std::vector<oops::FieldSet3D> &
+void SpectralCorrelation::directCalibration(const oops::FieldSets &
                                             MOSpectralCovariancesEns) {
   oops::Log::trace() << classname() << "::directCalibration starting" << std::endl;
 

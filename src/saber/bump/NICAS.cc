@@ -119,7 +119,7 @@ void NICAS::read() {
 
 // -----------------------------------------------------------------------------
 
-void NICAS::directCalibration(const std::vector<oops::FieldSet3D> & fsetEns) {
+void NICAS::directCalibration(const oops::FieldSets & fsetEns) {
   oops::Log::trace() << classname() << "::directCalibration starting" << std::endl;
   bump_->addEnsemble(fsetEns);
   bump_->runDrivers();

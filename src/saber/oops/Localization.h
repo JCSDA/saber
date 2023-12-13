@@ -16,6 +16,7 @@
 
 #include "eckit/config/Configuration.h"
 
+#include "oops/base/FieldSets.h"
 #include "oops/base/State4D.h"
 #include "oops/base/Variables.h"
 #include "oops/generic/LocalizationBase.h"
@@ -77,7 +78,7 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
   oops::FieldSet3D fg(dummyTime, geom.getComm());
   fg.shallowCopy(fg_state.fieldSet());
 
-  std::vector<oops::FieldSet3D> fsetEns;
+  oops::FieldSets emptyFsetEns({}, oops::mpi::myself(), {}, oops::mpi::myself());
   // TODO(AS): revisit what configuration needs to be passed to SaberParametricBlockChain.
   eckit::LocalConfiguration covarConf;
   eckit::LocalConfiguration ensembleConf;
@@ -97,7 +98,7 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
   // Initialize localization blockchain
   loc_ = std::make_unique<SaberParametricBlockChain>(geom, geom,
               incVars, oops::FieldSet4D(xb), oops::FieldSet4D(fg),
-              fsetEns, fsetEns, covarConf, conf);
+              emptyFsetEns, emptyFsetEns, covarConf, conf);
 
   oops::Log::trace() << "Localization:Localization done" << std::endl;
 }

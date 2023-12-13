@@ -18,8 +18,8 @@
 #include "eckit/config/LocalConfiguration.h"
 #include "eckit/exception/Exceptions.h"
 
+#include "oops/base/FieldSets.h"
 #include "oops/base/Geometry.h"
-
 #include "oops/base/Increment.h"
 #include "oops/base/Increment4D.h"
 #include "oops/base/instantiateCovarFactory.h"
@@ -153,8 +153,11 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
       incVars.addMetaData(incVars[i], "levels", vlevs[i]);
     }
 
-    std::vector<oops::FieldSet3D> fsetEns;
-    std::vector<oops::FieldSet3D> dualResFsetEns;
+    std::vector<util::DateTime> dates;
+    std::vector<int> ensmems;
+    oops::FieldSets fsetEns(dates, oops::mpi::myself(), ensmems, oops::mpi::myself());
+    oops::FieldSets dualResFsetEns(dates, oops::mpi::myself(),
+                                            ensmems, oops::mpi::myself());
     eckit::LocalConfiguration covarConf;
     covarConf.set("iterative ensemble loading", false);
     covarConf.set("inverse test", false);
@@ -182,15 +185,15 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
 
     // Read input ensemble
     const bool iterativeEnsembleLoading = false;
-    std::vector<oops::FieldSet3D> fsetEnsI;
     eckit::LocalConfiguration ensembleConf(fullConfig);
-    readEnsemble<MODEL>(geom,
+    eckit::LocalConfiguration outputEnsConf;
+    oops::FieldSets fsetEnsI = readEnsemble<MODEL>(geom,
                         incVars,
-                        xx[0], xx[0],
+                        xx, xx,
                         ensembleConf,
                         iterativeEnsembleLoading,
-                        fsetEnsI);
-    int nincrements = fsetEnsI.size();
+                        outputEnsConf);
+    int nincrements = fsetEnsI.ens_size();
 
     //  Loop over perturbations
     for (int jm = 0; jm < nincrements; ++jm) {

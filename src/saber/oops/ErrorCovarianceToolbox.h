@@ -137,11 +137,14 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
       const size_t ntasks = this->getComm().size();
       size_t mysubwin = 0;
       size_t nsublocal = nsubwin;
-      if (params.parallel) {
-        ASSERT(ntasks % nsubwin == 0);
+      if (params.parallel && (ntasks % nsubwin == 0)) {
         nsublocal = 1;
         mysubwin = this->getComm().rank() / (ntasks / nsubwin);
         ASSERT(mysubwin < nsubwin);
+      } else if (params.parallel) {
+        oops::Log::warning() << "Parallel time subwindows specified in yaml "
+                             << "but number of tasks is not divisible by "
+                             << "the number of subwindows, ignoring." << std::endl;
       }
 
       // Create a communicator for same sub-window, to be used for communications in space

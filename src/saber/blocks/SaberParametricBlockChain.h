@@ -15,6 +15,7 @@
 #include "eckit/exception/Exceptions.h"
 
 #include "oops/base/FieldSet4D.h"
+#include "oops/base/FieldSets.h"
 #include "oops/interface/ModelData.h"
 #include "oops/util/ConfigHelpers.h"
 
@@ -37,8 +38,8 @@ class SaberParametricBlockChain : public SaberBlockChainBase {
                             const oops::Variables & outerVars,
                             const oops::FieldSet4D & fset4dXb,
                             const oops::FieldSet4D & fset4dFg,
-                            std::vector<oops::FieldSet3D> & fsetEns,
-                            std::vector<oops::FieldSet3D> & fsetDualResEns,
+                            oops::FieldSets & fsetEns,
+                            oops::FieldSets & fsetDualResEns,
                             const eckit::LocalConfiguration & covarConf,
                             const eckit::Configuration & conf);
   ~SaberParametricBlockChain() = default;
@@ -86,13 +87,13 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
                        const oops::FieldSet4D & fset4dFg,
                        // TODO(AS): read inside the block so there is no need to pass
                        // as non-const
-                       std::vector<oops::FieldSet3D> & fsetEns,
-                       std::vector<oops::FieldSet3D> & fsetDualResEns,
+                       oops::FieldSets & fsetEns,
+                       oops::FieldSets & fsetDualResEns,
                        const eckit::LocalConfiguration & covarConf,
                        const eckit::Configuration & conf)
   : outerFunctionSpace_(geom.functionSpace()), outerVariables_(outerVars),
   crossTimeCov_(covarConf.getString("time covariance") == "multivariate duplicated"),
-  timeComm_(geom.timeComm()), size4D_(fset4dXb.size()) {
+  timeComm_(fset4dXb.commTime()), size4D_(fset4dXb.size()) {
   oops::Log::trace() << "SaberParametricBlockChain ctor starting" << std::endl;
 
   // If needed create outer block chain

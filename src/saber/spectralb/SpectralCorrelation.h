@@ -56,7 +56,7 @@ class SpectralCorrelation : public SaberCentralBlockBase {
 
   void read() override;
 
-  void directCalibration(const std::vector<oops::FieldSet3D> &) override;
+  void directCalibration(const oops::FieldSets &) override;
 
   void write() const override;
 

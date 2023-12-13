@@ -511,7 +511,7 @@ void FastLAM::setReadFields(const std::vector<oops::FieldSet3D> & fsetVec) {
 
 // -----------------------------------------------------------------------------
 
-void FastLAM::directCalibration(const std::vector<oops::FieldSet3D> &) {
+void FastLAM::directCalibration(const oops::FieldSets &) {
   oops::Log::trace() << classname() << "::calibration starting" << std::endl;
 
   // Get number of layers

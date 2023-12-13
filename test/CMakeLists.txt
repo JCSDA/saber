@@ -279,8 +279,7 @@ foreach( mpi omp IN ZIP_LISTS mpi_list omp_list )
                 ecbuild_add_test( TARGET saber_test_${test}
                                   TYPE SCRIPT
                                   COMMAND ${CMAKE_BINARY_DIR}/bin/saber_compare_dirac_diagnostics.py
-                                  ARGS testinput/${test}.yaml
-                                  TEST_DEPENDS ${deps_list} )
+                                  ARGS testinput/${test}.yaml )
             endif()
         endif()
     endforeach()

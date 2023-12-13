@@ -596,7 +596,7 @@ void spectralVerticalConvolutionSqrtAD(const oops::Variables & activeVars,
 
 
 void updateSpectralVerticalCovariances(
-    const std::vector<oops::FieldSet3D> & ensFieldSet,
+    const oops::FieldSets & ensFieldSet,
     int & priorSampleSize,
     atlas::FieldSet & spectralVerticalCovariances) {
   using atlas::array::make_view;
@@ -632,12 +632,14 @@ void updateSpectralVerticalCovariances(
     int levels = vertcov.shape()[2];
     std::string name(vertcov.name());
     const auto zonal_wavenumbers =
-      atlas::functionspace::Spectral(ensFieldSet[0][name].functionspace()).zonal_wavenumbers();
+      atlas::functionspace::Spectral(
+        ensFieldSet[0].fieldSet()[name].functionspace()).zonal_wavenumbers();
     const idx_t N =
-      atlas::functionspace::Spectral(ensFieldSet[0][name].functionspace()).truncation();
+      atlas::functionspace::Spectral(ensFieldSet[0].fieldSet()[name].functionspace()).truncation();
     const atlas::idx_t nb_zonal_wavenumbers = zonal_wavenumbers.size();
 
-    for (const auto & fs : ensFieldSet) {
+    for (size_t jj = 0; jj < ensFieldSet.size(); ++jj) {
+      const auto & fs = ensFieldSet[jj];
       auto spfView = make_view<const double, 2>(fs[name]);
 
       atlas::idx_t i = 0;  // i is the spectral coefficient index

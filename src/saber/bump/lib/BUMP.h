@@ -17,8 +17,7 @@
 #include "eckit/config/Configuration.h"
 #include "eckit/log/Channel.h"
 
-#include "oops/base/FieldSet3D.h"
-#include "oops/base/Variables.h"
+#include "oops/base/FieldSets.h"
 
 #include "saber/bump/lib/type_bump.h"
 
@@ -53,7 +52,7 @@ class BUMP {
   void addField(const oops::FieldSet3D &);
 
   // Add ensemble
-  void addEnsemble(const std::vector<oops::FieldSet3D> &);
+  void addEnsemble(const oops::FieldSets &);
 
   // Dual resolution setup
   void dualResolutionSetup(const atlas::FunctionSpace &,

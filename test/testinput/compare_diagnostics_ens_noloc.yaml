@@ -1,0 +1,3 @@
+file to compare 1: testref/dirac_ens_noloc_4d.ref
+file to compare 2: testref/dirac_oops_ens_noloc_4d.ref
+relative float tolerance: 1e-15

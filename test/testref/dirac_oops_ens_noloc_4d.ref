@@ -33,14 +33,14 @@ Groups:
   Mask size: 100%
 Fields:
   stream_function: 0.0000000000000000e+00
-Covariance(SABER) diagnostics:
+Covariance(ensemble) diagnostics:
 - Variances at Dirac points:
   + Value for variable stream_function, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.5601961752452702e+00
 - Covariances at diagnostic points:
   + Value for variable stream_function, subwindow 0, at (longitude, latitude, vertical index) point (9.00000, 0.00000, 1): 1.1708883611363763e+00
   + Value for variable stream_function, subwindow 1, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): -4.7657919341193386e-02
   + Value for variable stream_function, subwindow 1, at (longitude, latitude, vertical index) point (9.00000, 0.00000, 1): -1.6234849286208530e-01
-Covariance(SABER) * Increment:
+Covariance(ensemble) * Increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
 - name: L40x21

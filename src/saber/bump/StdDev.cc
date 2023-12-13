@@ -131,7 +131,7 @@ void StdDev::read() {
 
 // -----------------------------------------------------------------------------
 
-void StdDev::directCalibration(const std::vector<oops::FieldSet3D> & fsetEns) {
+void StdDev::directCalibration(const oops::FieldSets & fsetEns) {
   oops::Log::trace() << classname() << "::directCalibration starting" << std::endl;
   bump_->addEnsemble(fsetEns);
   bump_->runDrivers();

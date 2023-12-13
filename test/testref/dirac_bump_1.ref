@@ -17,6 +17,24 @@ Groups:
 Fields:
   eastward_wind: 1.0000000000000000e+00
   northward_wind: 0.0000000000000000e+00
+Valid time:2010-01-01T18:00:00Z
+Quench geometry grid:
+- name: L40x21
+- size: 840
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+Fields:
+  eastward_wind: 0.0000000000000000e+00
+  northward_wind: 0.0000000000000000e+00
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Min. / max. longitudes: -171.0 /   180.0
@@ -102,6 +120,24 @@ Groups:
 Fields:
   eastward_wind: 4.6279789413894318e-01
   northward_wind: 1.2282258734663955e-01
+Valid time:2010-01-01T18:00:00Z
+Quench geometry grid:
+- name: L40x21
+- size: 840
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+Fields:
+  eastward_wind: 9.1226562295384284e-02
+  northward_wind: 7.7785064897270773e-02
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Min. / max. longitudes: -171.0 /   180.0
@@ -178,6 +214,24 @@ Groups:
 Fields:
   eastward_wind: 9.4326766281929146e-14
   northward_wind: 3.3389718418878846e-14
+Valid time:2010-01-01T18:00:00Z
+Quench geometry grid:
+- name: L40x21
+- size: 840
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+Fields:
+  eastward_wind: 9.4326766281929095e-14
+  northward_wind: 3.3389718418878815e-14
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Min. / max. longitudes: -171.0 /   180.0
@@ -206,6 +260,24 @@ Groups:
 Fields:
   eastward_wind: 6.2995593942433925e-01
   northward_wind: 2.5165114702606473e-01
+Valid time:2010-01-01T18:00:00Z
+Quench geometry grid:
+- name: L40x21
+- size: 840
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+Fields:
+  eastward_wind: 1.7541938751614833e-01
+  northward_wind: 1.8006830761370743e-01
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Min. / max. longitudes: -171.0 /   180.0
@@ -237,3 +309,21 @@ Groups:
 Fields:
   eastward_wind: 2.2533507386711493e+00
   northward_wind: 2.2533507386711493e+00
+Valid time:2010-01-01T18:00:00Z
+Quench geometry grid:
+- name: L40x21
+- size: 840
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+Fields:
+  eastward_wind: 2.2533507386711489e+00
+  northward_wind: 2.2533507386711489e+00

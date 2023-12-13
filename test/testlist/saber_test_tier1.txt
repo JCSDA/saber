@@ -6,6 +6,8 @@ dirac_bump_5
 dirac_bump_6
 dirac_bump_7
 dirac_ens_noloc_4d
+dirac_oops_ens_noloc_4d
+compare_diagnostics_ens_noloc
 dirac_id
 dirac_id_4d
 dirac_id_4d_timecov

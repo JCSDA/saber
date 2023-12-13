@@ -320,23 +320,22 @@ void BUMP::addField(const oops::FieldSet3D & fset) {
 
 // -----------------------------------------------------------------------------
 
-void BUMP::addEnsemble(const std::vector<oops::FieldSet3D> & fsetEns) {
+void BUMP::addEnsemble(const oops::FieldSets & fsetEns) {
   // Initialize ensemble index
   size_t ie = 0;
-
-  for (const auto & fset : fsetEns) {
+  for (size_t jj = 0; jj < fsetEns.ens_size(); ++jj) {
     // Get geometry index (iterative update should be done after for the dual resolution part)
     // and check grid UID
     size_t igeom;
     if (dualResolutionGridUid_ == "") {
       igeom = 0;
-      if (fset.getGridUid() != gridUid_) {
+      if (fsetEns[jj].getGridUid() != gridUid_) {
         *infoChannel_ << "BUMP::iterativeUpdate: wrong grid UID" << std::endl;
         std::abort();
       }
     } else {
       igeom = 1;
-      if (fset.getGridUid() != dualResolutionGridUid_) {
+      if (fsetEns[jj].getGridUid() != dualResolutionGridUid_) {
         *infoChannel_ << "BUMP::iterativeUpdate: wrong dual resolution grid UID" << std::endl;
         std::abort();
       }
@@ -353,7 +352,7 @@ void BUMP::addEnsemble(const std::vector<oops::FieldSet3D> & fsetEns) {
 
       // Add member
       *infoChannel_ << "Info     :        Member " << ie+1 << " / " << nens_[igeom] << std::endl;
-      bump_add_member_f90(keyBUMP_[jgrid], fset.get(), ie+1, igeom+1);
+      bump_add_member_f90(keyBUMP_[jgrid], fsetEns[jj].fieldSet().get(), ie+1, igeom+1);
     }
 
     // Update member index

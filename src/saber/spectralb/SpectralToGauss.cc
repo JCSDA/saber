@@ -590,7 +590,7 @@ void SpectralToGauss::leftInverseMultiply(oops::FieldSet3D & fieldSet) const {
 }
 
 // -----------------------------------------------------------------------------
-void SpectralToGauss::directCalibration(const std::vector<oops::FieldSet3D> & fsetEns) {
+void SpectralToGauss::directCalibration(const oops::FieldSets & fsetEns) {
 }
 
 // -----------------------------------------------------------------------------

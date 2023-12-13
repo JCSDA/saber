@@ -12,10 +12,15 @@ geometry:
     levels: 2
   halo: 1
 background:
-  date: '2010-01-01T12:00:00Z'
-  state variables:
-  - eastward_wind
-  - northward_wind
+  states:
+  - date: '2010-01-01T12:00:00Z'
+    state variables:
+    - eastward_wind
+    - northward_wind
+  - date: '2010-01-01T18:00:00Z'
+    state variables:
+    - eastward_wind
+    - northward_wind
 background error:
   covariance model: hybrid
   components:
@@ -105,11 +110,17 @@ background error:
       covariance model: ensemble
       members from template:
         template:
-          date: '2010-01-01T12:00:00Z'
-          filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_%mem%
-          state variables:
-          - eastward_wind
-          - northward_wind
+          states:
+          - date: '2010-01-01T12:00:00Z'
+            filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_%mem%
+            state variables:
+            - eastward_wind
+            - northward_wind
+          - date: '2010-01-01T18:00:00Z'
+            filepath: testdata/randomization_bump_nicas_L10L2T18/_MPI_-_OMP__member_%mem%
+            state variables:
+            - eastward_wind
+            - northward_wind
         pattern: '%mem%'
         nmembers: 25
         zero padding: 6
@@ -148,7 +159,7 @@ background error:
     atlas file:
       filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000003 # Does not make sense scientifically, just for technical testing
 dirac:
-  lon:
+- lon:
   - 0.0
   lat:
   - 0.0
@@ -156,6 +167,7 @@ dirac:
   - 1
   variable:
   - eastward_wind
+- {}
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_bump_1/%MPI%_dirac_%id%

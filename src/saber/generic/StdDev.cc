@@ -18,7 +18,6 @@
 #include "eckit/exception/Exceptions.h"
 
 #include "oops/base/GeometryData.h"
-#include "oops/base/Variables.h"
 #include "oops/util/ConfigFunctions.h"
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/FieldSetOperations.h"
@@ -171,7 +170,7 @@ void StdDev::read() {
 
 // -----------------------------------------------------------------------------
 
-void StdDev::directCalibration(const std::vector<oops::FieldSet3D> & fsetEns) {
+void StdDev::directCalibration(const oops::FieldSets & fsetEns) {
   // Initialize
   oops::FieldSet3D mean(this->validTime(), innerGeometryData_.comm());
   oops::FieldSet3D var(this->validTime(), innerGeometryData_.comm());
@@ -187,15 +186,15 @@ void StdDev::directCalibration(const std::vector<oops::FieldSet3D> & fsetEns) {
   var.zero();
 
   // Compute mean
-  for (const auto & fset : fsetEns) {
-    mean += fset;
+  for (size_t jj = 0; jj < fsetEns.ens_size(); ++jj) {
+    mean += fsetEns[jj];
   }
-  mean *= 1.0/static_cast<double>(fsetEns.size());
+  mean *= 1.0/static_cast<double>(fsetEns.ens_size());
 
   // Compute variance
-  for (const auto & fset : fsetEns) {
+  for (size_t jj = 0; jj < fsetEns.ens_size(); ++jj) {
     // Compute perturbation
-    oops::FieldSet3D fset_pert(fset);
+    oops::FieldSet3D fset_pert(fsetEns[jj]);
     fset_pert -= mean;
 
     // Compute squared pertrubation
@@ -204,7 +203,7 @@ void StdDev::directCalibration(const std::vector<oops::FieldSet3D> & fsetEns) {
     // Update sum
     var += fset_pert;
   }
-  var *= 1.0/static_cast<double>(fsetEns.size()-1);
+  var *= 1.0/static_cast<double>(fsetEns.ens_size()-1);
 
   // Get standard deviation
   stdDevFset_.reset(new oops::FieldSet3D(var));

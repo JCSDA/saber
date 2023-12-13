@@ -35,6 +35,7 @@
 namespace oops {
   template <typename MODEL> class Geometry;
   template <typename MODEL> class Increment;
+  class FieldSets;
 }
 
 namespace saber {
@@ -70,7 +71,7 @@ class SaberCentralBlockBase : public util::Printable, private boost::noncopyable
 
 
   // Direct calibration
-  virtual void directCalibration(const std::vector<oops::FieldSet3D> &)
+  virtual void directCalibration(const oops::FieldSets &)
     {throw eckit::NotImplemented("directCalibration not implemented yet for the block "
       + this->blockName(), Here());}
 

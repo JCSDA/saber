@@ -18,10 +18,14 @@
 
 #include "eckit/config/Configuration.h"
 
+#include "oops/base/FieldSets.h"
 #include "oops/base/Geometry.h"
 #include "oops/base/Increment.h"
 #include "oops/base/IncrementEnsemble.h"
+#include "oops/base/IncrementSet.h"
+#include "oops/base/State4D.h"
 #include "oops/base/StateEnsemble.h"
+#include "oops/base/StateSet.h"
 #include "oops/base/Variables.h"
 #include "oops/interface/ModelData.h"
 #include "oops/util/DateTime.h"
@@ -61,26 +65,22 @@ void allocateFields(oops::FieldSet3D & fset,
 // -----------------------------------------------------------------------------
 
 template<typename MODEL>
-eckit::LocalConfiguration readEnsemble(const oops::Geometry<MODEL> & geom,
-                                       const oops::Variables & modelvars,
-                                       const oops::State<MODEL> & xb,
-                                       const oops::State<MODEL> & fg,
-                                       const eckit::LocalConfiguration & inputConf,
-                                       const bool & iterativeEnsembleLoading,
-                                       std::vector<oops::FieldSet3D> & fsetEns) {
+oops::FieldSets readEnsemble(const oops::Geometry<MODEL> & geom,
+                                      const oops::Variables & modelvars,
+                                      const oops::State4D<MODEL> & xb,
+                                      const oops::State4D<MODEL> & fg,
+                                      const eckit::LocalConfiguration & inputConf,
+                                      const bool & iterativeEnsembleLoading,
+                                      eckit::LocalConfiguration & outputConf) {
   oops::Log::trace() << "readEnsemble starting" << std::endl;
 
   // Prepare ensemble configuration
   oops::Log::info() << "Info     : Prepare ensemble configuration" << std::endl;
 
-  // Create output configuration
-  eckit::LocalConfiguration outputConf;
-
   // Fill output configuration and set ensemble size
   size_t nens = 0;
   size_t ensembleFound = 0;
   eckit::LocalConfiguration varConf;
-
 
   // Ensemble of states, perturbation using the mean
   oops::IncrementEnsembleFromStatesParameters<MODEL> ensembleParams;
@@ -137,42 +137,44 @@ eckit::LocalConfiguration readEnsemble(const oops::Geometry<MODEL> & geom,
     // Full ensemble loading
     oops::Log::info() << "Info     : Read full ensemble" << std::endl;
 
-    // Ensemble pointer
-    std::unique_ptr<oops::IncrementEnsemble<MODEL>> ensemble;
-
     // Ensemble of states, perturbation using the mean
     if (!ensembleConf.empty()) {
       oops::Log::info() << "Info     : Ensemble of states, perturbation using the mean"
                         << std::endl;
-      ensemble.reset(new oops::IncrementEnsemble<MODEL>(ensembleParams, geom, vars,
-        xb.validTime()));
+      oops::StateSet<MODEL> tmp(geom, ensembleParams.toConfiguration(), xb.commTime());
+      oops::IncrementSet<MODEL> ensemble(geom, vars, tmp, true);
+      ensemble -= ensemble.ens_mean();
+      oops::FieldSets fsetEns(ensemble);
+      return fsetEns;
     }
 
     // Increment ensemble from increments on disk
     if (!ensemblePert.empty()) {
       oops::Log::info() << "Info     : Increment ensemble from increments on disk" << std::endl;
-      ensemble.reset(new oops::IncrementEnsemble<MODEL>(geom, vars, ensemblePertParams));
+      oops::IncrementSet<MODEL> ensemble(geom, vars, xb.times(),
+                                         ensemblePertParams.toConfiguration(), xb.commTime());
+      oops::FieldSets fsetEns(ensemble);
+      return fsetEns;
     }
 
     // Increment ensemble from difference of two states
     if (!ensembleBase.empty() && !ensemblePairs.empty()) {
       oops::Log::info() << "Info     : Increment ensemble from difference of two states"
                         << std::endl;
-      ensemble.reset(new oops::IncrementEnsemble<MODEL>(geom, vars, ensembleBaseParams,
-        ensemblePairsParams));
-    }
-
-    // Transform Increment into FieldSet
-    for (unsigned int ie = 0; ie < nens; ++ie) {
-      oops::FieldSet3D fset(xb.validTime(), geom.getComm());
-      fset.shallowCopy((*ensemble)[ie].fieldSet());
-      fset.name() = "ensemble member";
-      fsetEns.push_back(fset);
+      oops::StateSet<MODEL> states1(geom, ensembleBaseParams.toConfiguration(), xb.commTime());
+      oops::StateSet<MODEL> states2(geom, ensemblePairsParams.toConfiguration(), xb.commTime());
+      oops::IncrementSet<MODEL> ensemble(geom, vars, states1.times(), states1.commTime(),
+                                         states1.members(), states1.commEns());
+      ensemble.diff(states1, states2);
+      oops::FieldSets fsetEns(ensemble);
+      return fsetEns;
     }
   }
-
-  // Return ensemble configuration for iterative ensemble loading
-  return outputConf;
+  // Return empty ensemble if none was returned before
+  std::vector<util::DateTime> dates;
+  std::vector<int> ensmems;
+  oops::FieldSets ensemble(dates, xb.commTime(), ensmems, xb.commEns());
+  return ensemble;
 }
 
 // -------------------------------------------------------------------------------------------------

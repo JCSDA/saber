@@ -15,6 +15,7 @@
 #include "eckit/exception/Exceptions.h"
 
 #include "oops/base/FieldSet4D.h"
+#include "oops/base/FieldSets.h"
 #include "oops/base/Geometry.h"
 #include "oops/interface/ModelData.h"
 
@@ -34,7 +35,7 @@ class SaberOuterBlockChain {
                        const oops::Variables & outerVars,
                        const oops::FieldSet4D & fset4dXb,
                        const oops::FieldSet4D & fset4dFg,
-                       std::vector<oops::FieldSet3D> & fsetEns,
+                       oops::FieldSets & fsetEns,
                        const eckit::LocalConfiguration & covarConf,
                        const std::vector<saber::SaberOuterBlockParametersWrapper> & params);
   ~SaberOuterBlockChain() = default;
@@ -127,7 +128,7 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
                        const oops::Variables & outerVars,
                        const oops::FieldSet4D & fset4dXb,
                        const oops::FieldSet4D & fset4dFg,
-                       std::vector<oops::FieldSet3D> & fsetEns,
+                       oops::FieldSets & fsetEns,
                        const eckit::LocalConfiguration & covarConf,
                        const std::vector<saber::SaberOuterBlockParametersWrapper> & params) {
   oops::Log::trace() << "SaberOuterBlockChain ctor starting" << std::endl;
@@ -224,13 +225,13 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
         // Left inverse multiplication on ensemble members
         oops::Log::info() << "Info     : Left inverse multiplication on ensemble members"
                           << std::endl;
-        for (auto & fset : fsetEns) {
-          if (outerBlocks_.back()->skipInverse()) {
+        if (outerBlocks_.back()->skipInverse()) {
             oops::Log::info()
                     << "Info     : Warning: left inverse multiplication skipped for block "
                     << outerBlocks_.back()->blockName() << std::endl;
-          } else {
-            outerBlocks_.back()->leftInverseMultiply(fset);
+        } else {
+          for (size_t jj = 0; jj < fsetEns.size(); ++jj) {
+            outerBlocks_.back()->leftInverseMultiply(fsetEns[jj]);
           }
         }
       }

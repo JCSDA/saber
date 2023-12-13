@@ -128,7 +128,7 @@ void SpectralCovariance::read() {
 }
 
 
-void SpectralCovariance::directCalibration(const std::vector<oops::FieldSet3D> &
+void SpectralCovariance::directCalibration(const oops::FieldSets &
                                            MOSpectralCovariancesEns) {
   oops::Log::trace() << classname() << "::directCalibration starting" << std::endl;
 
@@ -153,7 +153,7 @@ void SpectralCovariance::directCalibration(const std::vector<oops::FieldSet3D> &
     }
   }
 
-  if (MOSpectralCovariancesEns.size() > 0) {
+  if (MOSpectralCovariancesEns.ens_size() > 0) {
     // TODO(Marek) When reading existing files we will need to somehow get priorSampleSize
     // from that file.
     int priorSampleSize(0);

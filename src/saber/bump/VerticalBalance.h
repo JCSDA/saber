@@ -63,7 +63,7 @@ class VerticalBalance : public SaberOuterBlockBase {
 
   void read() override;
 
-  void directCalibration(const std::vector<oops::FieldSet3D> &) override;
+  void directCalibration(const oops::FieldSets &) override;
 
   void iterativeCalibrationInit() override;
   void iterativeCalibrationUpdate(const oops::FieldSet3D &) override;

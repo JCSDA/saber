@@ -17,7 +17,7 @@
 
 #include "eckit/exception/Exceptions.h"
 
-#include "oops/base/FieldSet3D.h"
+#include "oops/base/FieldSets.h"
 #include "oops/base/Geometry.h"
 #include "oops/base/GeometryData.h"
 #include "oops/base/Increment.h"
@@ -85,7 +85,7 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
   virtual void setReadFields(const std::vector<oops::FieldSet3D> &) {}
 
   // Direct calibration
-  virtual void directCalibration(const std::vector<oops::FieldSet3D> &)
+  virtual void directCalibration(const oops::FieldSets &)
     {throw eckit::NotImplemented("directCalibration not implemented yet for the block "
       + this->blockName(), Here());}
 
