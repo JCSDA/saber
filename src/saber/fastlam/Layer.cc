@@ -29,69 +29,73 @@ void Layer::setupVerticalCoord(const atlas::Field & fieldRv,
                                const atlas::Field & fieldWgt) {
   oops::Log::trace() << classname() << "::setupVerticalCoord starting" << std::endl;
 
-  // Ghost points
-  const auto viewGhost0 = atlas::array::make_view<int, 1>(gdata_.functionSpace().ghost());
+  if (nz0_ == 1) {
+    // Compute normalized vertical coordinate
+    normVertCoord_.resize(nz0_, 0.0);
 
-  // Compute horizontally-averaged vertical length-scale and vertical coordinate
-  std::vector<double> vertCoord(nz0_, 0.0);
-  std::vector<double> rv(nz0_, 0.0);
-  std::vector<double> wgt(nz0_, 0.0);
-  const auto viewRv = atlas::array::make_view<double, 2>(fieldRv);
-  const auto viewWgt = atlas::array::make_view<double, 2>(fieldWgt);
-  for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
-    if (viewGhost0(jnode0) == 0) {
-      for (size_t k0 = 0; k0 < nz0_; ++k0) {
-        double VC = static_cast<double>(k0+1);
-        if (gdata_.fieldSet().has_field("vert_coord")) {
-          const atlas::Field fieldVertCoord = gdata_.fieldSet()["vert_coord"];
-          const auto viewVertCoord = atlas::array::make_view<double, 2>(fieldVertCoord);
-          VC = viewVertCoord(jnode0, k0);
+    // Save rescaled vertical length-scale
+    rv_ = 1.0;
+  } else {
+    // Ghost points
+    const auto viewGhost0 = atlas::array::make_view<int, 1>(gdata_.functionSpace().ghost());
+
+    // Compute horizontally-averaged vertical length-scale and vertical coordinate
+    std::vector<double> vertCoord(nz0_, 0.0);
+    std::vector<double> rv(nz0_, 0.0);
+    std::vector<double> wgt(nz0_, 0.0);
+    const auto viewRv = atlas::array::make_view<double, 2>(fieldRv);
+    const auto viewWgt = atlas::array::make_view<double, 2>(fieldWgt);
+    for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
+      if (viewGhost0(jnode0) == 0) {
+        for (size_t k0 = 0; k0 < nz0_; ++k0) {
+          double VC = static_cast<double>(k0+1);
+          if (gdata_.fieldSet().has_field("vert_coord")) {
+            const atlas::Field fieldVertCoord = gdata_.fieldSet()["vert_coord"];
+            const auto viewVertCoord = atlas::array::make_view<double, 2>(fieldVertCoord);
+            VC = viewVertCoord(jnode0, k0);
+          }
+          vertCoord[k0] += VC*viewWgt(jnode0, k0);
+          rv[k0] += viewRv(jnode0, k0)*viewWgt(jnode0, k0);
+          wgt[k0] += viewWgt(jnode0, k0);
         }
-        vertCoord[k0] += VC*viewWgt(jnode0, k0);
-        rv[k0] += viewRv(jnode0, k0)*viewWgt(jnode0, k0);
-        wgt[k0] += viewWgt(jnode0, k0);
       }
     }
-  }
-  comm_.allReduceInPlace(vertCoord.begin(), vertCoord.end(), eckit::mpi::sum());
-  comm_.allReduceInPlace(rv.begin(), rv.end(), eckit::mpi::sum());
-  comm_.allReduceInPlace(wgt.begin(), wgt.end(), eckit::mpi::sum());
+    comm_.allReduceInPlace(vertCoord.begin(), vertCoord.end(), eckit::mpi::sum());
+    comm_.allReduceInPlace(rv.begin(), rv.end(), eckit::mpi::sum());
+    comm_.allReduceInPlace(wgt.begin(), wgt.end(), eckit::mpi::sum());
 
-  // Apply weight
-  for (size_t k0 = 0; k0 < nz0_; ++k0) {
-    ASSERT(wgt[k0] > 0.0);
-    vertCoord[k0] = vertCoord[k0]/wgt[k0];
-    rv[k0] = rv[k0]/wgt[k0];
-  }
-
-  // Compute thickness
-  std::vector<double> thickness(nz0_, 0.0);
-  for (size_t k0 = 0; k0 < nz0_; ++k0) {
-    if (k0 == 0) {
-      thickness[k0] = std::abs(vertCoord[k0+1]-vertCoord[k0]);
-    } else if (k0 == nz0_-1) {
-      thickness[k0] = std::abs(vertCoord[k0]-vertCoord[k0-1]);
-    } else {
-      thickness[k0] = 0.5*std::abs(vertCoord[k0+1]-vertCoord[k0-1]);
+    // Apply weight
+    for (size_t k0 = 0; k0 < nz0_; ++k0) {
+      ASSERT(wgt[k0] > 0.0);
+      vertCoord[k0] = vertCoord[k0]/wgt[k0];
+      rv[k0] = rv[k0]/wgt[k0];
     }
-  }
 
-  // Normalize thickness with vertical length-scale
-  std::vector<double> normThickness(nz0_, 0.0);
-  for (size_t k0 = 0; k0 < nz0_; ++k0) {
-    if (nz0_ > 1) {
+    // Compute thickness
+    std::vector<double> thickness(nz0_, 0.0);
+    for (size_t k0 = 0; k0 < nz0_; ++k0) {
+      if (k0 == 0) {
+        thickness[k0] = std::abs(vertCoord[k0+1]-vertCoord[k0]);
+      } else if (k0 == nz0_-1) {
+        thickness[k0] = std::abs(vertCoord[k0]-vertCoord[k0-1]);
+      } else {
+        thickness[k0] = 0.5*std::abs(vertCoord[k0+1]-vertCoord[k0-1]);
+      }
+    }
+
+    // Normalize thickness with vertical length-scale
+    std::vector<double> normThickness(nz0_, 0.0);
+    for (size_t k0 = 0; k0 < nz0_; ++k0) {
       ASSERT(rv[k0] > 0.0);
       normThickness[k0] = thickness[k0]/rv[k0];
     }
-  }
 
-  // Compute normalized vertical coordinate
-  normVertCoord_.resize(nz0_, 0.0);
-  for (size_t k0 = 1; k0 < nz0_; ++k0) {
-    normVertCoord_[k0] = normVertCoord_[k0-1]+0.5*(normThickness[k0]+normThickness[k0-1]);
-  }
+    // Compute normalized vertical coordinate
+    normVertCoord_.resize(nz0_, 0.0);
+    for (size_t k0 = 1; k0 < nz0_; ++k0) {
+      normVertCoord_[k0] = normVertCoord_[k0-1]+0.5*(normThickness[k0]+normThickness[k0-1]);
+    }
 
-  if (nz0_ > 1) {
     // Rescale normalized vertical coordinate from 0 to nz0_-1
     const double maxNormVertCoord = normVertCoord_[nz0_-1];
     for (size_t k0 = 0; k0 < nz0_; ++k0) {
@@ -100,9 +104,6 @@ void Layer::setupVerticalCoord(const atlas::Field & fieldRv,
 
     // Save rescaled vertical length-scale
     rv_ = static_cast<double>(nz0_-1)/maxNormVertCoord;
-  } else {
-    // Save rescaled vertical length-scale
-    rv_ = 1.0;
   }
 
   // Copy resolution
@@ -231,12 +232,11 @@ void Layer::setupInterpolation() {
   rRecvCounts_.resize(comm_.size());
   std::fill(rRecvCounts_.begin(), rRecvCounts_.end(), 0);
   std::vector<int> recvPointList;
-  size_t zero = 0;
   for (size_t j = 0; j < ny_; ++j) {
-    double jMin = yCoord[std::max(j-1, zero)];
+    double jMin = j > 0 ? yCoord[j-1] : yCoord[0];
     double jMax = yCoord[std::min(j+1, ny_-1)];
     for (size_t i = 0; i < nx_; ++i) {
-      double iMin = xCoord[std::max(i-1, zero)];
+      double iMin = i > 0 ? xCoord[i-1] : xCoord[0];
       double iMax = xCoord[std::min(i+1, nx_-1)];
       bool pointNeeded = false;
       for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
@@ -464,17 +464,22 @@ void Layer::setupInterpolation() {
       bool found = false;
       size_t k = 0;
       while ((!found) && (k < nz_-1)) {
-        if (zCoord[k] <= normVertCoord_[k0] && normVertCoord_[k0] < zCoord[k+1]) {
+        if (std::abs(normVertCoord_[k0] - zCoord[k]) < 1.0e-12) {
+          // Colocated point
+          index1 = k;
+          operations.push_back(std::make_pair(k, 1.0));
+          found = true;
+        }
+        ++k;
+      }
+      k = 0;
+      while ((!found) && (k < nz_-1)) {
+        if (zCoord[k] < normVertCoord_[k0] && normVertCoord_[k0] < zCoord[k+1]) {
+          // Linear interpolation
           index1 = k;
           const double alphaK = normVertCoord_[k0]-zCoord[k];
-          if (alphaK > 0.0) {
-            // Linear interpolation
-            operations.push_back(std::make_pair(k, 1.0-alphaK));
-            operations.push_back(std::make_pair(k+1, alphaK));
-          } else {
-            // Colocated point
-            operations.push_back(std::make_pair(k, 1.0));
-          }
+          operations.push_back(std::make_pair(k, 1.0-alphaK));
+          operations.push_back(std::make_pair(k+1, alphaK));
           found = true;
         }
         ++k;
@@ -1174,18 +1179,22 @@ void Layer::setupNormalization() {
   }
 
   // Compute vertical normalization
-  std::vector<double> verNorm(nz0_, 0.0);
-  verNorm[0] = 1.0;
-  verNorm[nz0_-1] = 1.0;
-  for (size_t k0 = 1; k0 < nz0_-1; ++k0) {
-    size_t verOffset = 2*verInterp_[k0].index1();
-    ASSERT(verOffset < 2*(nz_-1));
-    double xB = verConv[verOffset+0]*verInterp_[k0].operations()[0].second
-               +verConv[verOffset+1]*verInterp_[k0].operations()[1].second;
-    double xT = verConv[verOffset+1]*verInterp_[k0].operations()[0].second
-               +verConv[verOffset+0]*verInterp_[k0].operations()[1].second;
-    verNorm[k0] = verInterp_[k0].operations()[0].second*xB
-                 +verInterp_[k0].operations()[1].second*xT;
+  std::vector<double> verNorm(nz0_, 1.0);
+  if (nz0_ > 1) {
+    verNorm[0] = 1.0;
+    verNorm[nz0_-1] = 1.0;
+    for (size_t k0 = 1; k0 < nz0_-1; ++k0) {
+      if (verInterp_[k0].operations().size() > 1) {
+        size_t verOffset = 2*verInterp_[k0].index1();
+        ASSERT(verOffset < 2*(nz_-1));
+        double xB = verConv[verOffset+0]*verInterp_[k0].operations()[0].second
+                  + verConv[verOffset+1]*verInterp_[k0].operations()[1].second;
+        double xT = verConv[verOffset+1]*verInterp_[k0].operations()[0].second
+                  + verConv[verOffset+0]*verInterp_[k0].operations()[1].second;
+        verNorm[k0] = verInterp_[k0].operations()[0].second*xB
+                    + verInterp_[k0].operations()[1].second*xT;
+      }
+    }
   }
 
   // Compute 3D normalization
