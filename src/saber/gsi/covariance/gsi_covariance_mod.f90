@@ -50,6 +50,8 @@ use state_vectors,                  only: allocate_state
 use state_vectors,                  only: svars2d,svars3d
 use state_vectors,                  only: deallocate_state
 
+use constants,                      only: grav
+
 implicit none
 private
 public gsi_covariance
@@ -658,10 +660,20 @@ end subroutine multiply
       ier=0
    endif
    if (trim(vname) == 'phis' ) then
-      if (.not.fields%has('sfc_geopotential_height_times_grav')) return
-      afield = fields%field('sfc_geopotential_height_times_grav')
-      call afield%data(rank2)
-      ier=0
+      if (.not.fields%has('sfc_geopotential_height_times_grav')) then
+         if (fields%has('surface_geopotential_height')) then
+            afield = fields%field('surface_geopotential_height')
+            call afield%data(rank2)
+            rank2 = grav*rank2
+            ier=0
+         else
+            return
+         endif
+      else
+         afield = fields%field('sfc_geopotential_height_times_grav')
+         call afield%data(rank2)
+         ier=0
+      end if
    endif
    end subroutine get_rank2_
 
