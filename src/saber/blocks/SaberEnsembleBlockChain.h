@@ -78,9 +78,6 @@ class SaberEnsembleBlockChain : public SaberBlockChainBase {
   /// @brief Variables used in the ensemble covariance.
   /// TODO(AS): check whether this is needed or can be inferred from ensemble.
   oops::Variables vars_;
-  /// @brief Geometry communicator.
-  /// TODO(AS): this can be removed once FieldSet4D/FieldSet3D are used.
-  const eckit::mpi::Comm & comm_;
   int seed_ = 7;  // For reproducibility
 };
 
@@ -101,7 +98,7 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
                        const eckit::LocalConfiguration & covarConf,
                        const eckit::Configuration & conf)
   : outerFunctionSpace_(geom.functionSpace()), outerVariables_(outerVars),
-    ensemble_(fsetEns), ctlVecSize_(0), comm_(geom.getComm()) {
+    ensemble_(fsetEns), ctlVecSize_(0) {
   oops::Log::trace() << "SaberEnsembleBlockChain ctor starting" << std::endl;
 
   // Check that there is an ensemble of at least 2 members.

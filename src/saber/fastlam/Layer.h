@@ -36,7 +36,6 @@ class Layer {
   Layer(const ParametersBase_ & params,
         const oops::GeometryData & gdata,
         const std::string & myVar,
-        const size_t & myBin,
         const size_t & nx0,
         const size_t & ny0,
         const size_t & nz0) :
@@ -45,7 +44,6 @@ class Layer {
     comm_(gdata_.comm()),
     myrank_(comm_.rank()),
     myVar_(myVar),
-    myBin_(myBin),
     nx0_(nx0),
     ny0_(ny0),
     nodes0_(gdata_.functionSpace().ghost().shape(0)),
@@ -110,9 +108,8 @@ class Layer {
   const eckit::mpi::Comm & comm_;
   size_t myrank_;
 
-  // Variable and bin
+  // Variable
   std::string myVar_;
-  size_t myBin_;
 
   // Model grid
   size_t nx0_;

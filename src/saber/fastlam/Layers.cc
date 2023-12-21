@@ -25,7 +25,7 @@ Layers::Layers(const ParametersBase_ & params,
 
   // Create layers
   for (size_t jBin = 0; jBin < nLayers; ++jBin) {
-    Layer layer(params, gdata, myVar, jBin, nx0, ny0, nz0);
+    Layer layer(params, gdata, myVar, nx0, ny0, nz0);
     layers_.push_back(layer);
   }
 

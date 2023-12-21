@@ -49,7 +49,7 @@ void Layer::setupVerticalCoord(const atlas::Field & fieldRv,
       if (viewGhost0(jnode0) == 0) {
         for (size_t k0 = 0; k0 < nz0_; ++k0) {
           double VC = static_cast<double>(k0+1);
-          if (gdata_.fieldSet().has_field("vert_coord")) {
+          if (gdata_.fieldSet().has("vert_coord")) {
             const atlas::Field fieldVertCoord = gdata_.fieldSet()["vert_coord"];
             const auto viewVertCoord = atlas::array::make_view<double, 2>(fieldVertCoord);
             VC = viewVertCoord(jnode0, k0);
