@@ -48,7 +48,11 @@ DryAirDensity::DryAirDensity(const oops::GeometryData & outerGeometryData,
                              const oops::FieldSet3D & xb,
                              const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params, xb.validTime()),
-    innerGeometryData_(outerGeometryData), innerVars_(outerVars), augmentedStateFieldSet_()
+    innerGeometryData_(outerGeometryData),
+    innerVars_(getUnionOfInnerActiveAndOuterVars(params, outerVars)),
+    activeOuterVars_(params.activeOuterVars(outerVars)),
+    innerOnlyVars_(getInnerOnlyVars(params, outerVars)),
+    augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::DryAirDensity starting" << std::endl;
 
@@ -118,14 +122,14 @@ DryAirDensity::~DryAirDensity() {
 void DryAirDensity::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   // Allocate output fields if they are not already present, e.g when randomizing.
-  const oops::Variables outputVars({"dry_air_density_levels_minus_one"});
-  allocateFields(fset,
-                 outputVars,
-                 innerVars_,
-                 innerGeometryData_.functionSpace());
+  allocateMissingFields(fset, activeOuterVars_, activeOuterVars_,
+                        innerGeometryData_.functionSpace());
 
   // Populate output fields.
   mo::eval_dry_air_density_from_pressure_levels_tl(fset.fieldSet(), augmentedStateFieldSet_);
+
+  // Remove inner-only variables
+  fset.removeFields(innerOnlyVars_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
@@ -134,6 +138,11 @@ void DryAirDensity::multiply(oops::FieldSet3D & fset) const {
 
 void DryAirDensity::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
+  // Allocate inner-only variables
+  checkFieldsAreNotAllocated(fset, innerOnlyVars_);
+  allocateMissingFields(fset, innerOnlyVars_, innerOnlyVars_,
+                        innerGeometryData_.functionSpace());
+
   mo::eval_dry_air_density_from_pressure_levels_ad(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }

@@ -22,6 +22,7 @@
 #include "oops/util/Timer.h"
 
 #include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/oops/Utilities.h"
 #include "saber/spectralb/GaussUVToGP.h"
 #include "saber/vader/GpToHp.h"
 
@@ -42,8 +43,9 @@ HydrostaticPressure::HydrostaticPressure(const oops::GeometryData & outerGeometr
                                    const oops::FieldSet3D & xb,
                                    const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params, xb.validTime()),
-    innerGeometryData_(outerGeometryData), innerVars_(outerVars),
-    activeVars_(params.activeVars.value().get_value_or(outerVars)),
+    innerGeometryData_(outerGeometryData),
+    innerVars_(getUnionOfInnerActiveAndOuterVars(params, outerVars)),
+    intermediateTempVars_(params.intermediateTempVars(outerVars)),
     gaussFunctionSpace_(outerGeometryData.functionSpace()),
     gptohp_(std::make_unique<saber::vader::GpToHp>(outerGeometryData,
                                                    outerVars,
@@ -71,14 +73,14 @@ HydrostaticPressure::~HydrostaticPressure() {
 
 void HydrostaticPressure::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  // note gaussuvtogp_->multiply creates "geostrophic_pressure_levels_minus_one"
-  // if not there.
+  // Allocation and de-allocation of variables are done in sub-blocks.
+
   gaussuvtogp_->multiply(fset);
   gptohp_->multiply(fset);
-  // remove "geostrophic_pressure_levels_minus_one" since it is not an
-  // active variable (but a temporary one).
-  oops::Variables variablesToRemove({"geostrophic_pressure_levels_minus_one"});
-  fset.removeFields(variablesToRemove);
+
+  // Remove "geostrophic_pressure_levels_minus_one" since it is not an
+  // active variable but a temporary one.
+  fset.removeFields(intermediateTempVars_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
@@ -86,21 +88,14 @@ void HydrostaticPressure::multiply(oops::FieldSet3D & fset) const {
 
 void HydrostaticPressure::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  // add "geostrophic_pressure_levels_minus_one" to fset and assign to zero
-
-  atlas::Field gp = gaussFunctionSpace_.createField<double>(
-    atlas::option::name("geostrophic_pressure_levels_minus_one") |
-    atlas::option::levels(fset["eastward_wind"].levels()));
-  gp.haloExchange();
-  atlas::array::make_view<double, 2>(gp).assign(0.0);
-  fset.add(gp);
+  // Allocation of inner-only variables is done in sub-block gptohp_
 
   gptohp_->multiplyAD(fset);
   gaussuvtogp_->multiplyAD(fset);
-  // remove "geostrophic_pressure_levels_minus_one" since it is not an
-  // active variable (but a temporary one)."
-  oops::Variables variablesToRemove({"geostrophic_pressure_levels_minus_one"});
-  fset.removeFields(variablesToRemove);
+
+  // Remove "geostrophic_pressure_levels_minus_one" since it is not an
+  // active variable but a temporary one.
+  fset.removeFields(intermediateTempVars_);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
@@ -108,10 +103,14 @@ void HydrostaticPressure::multiplyAD(oops::FieldSet3D & fset) const {
 
 void HydrostaticPressure::leftInverseMultiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
+  // Allocation of inner-only variables is done in sub-block gptohp_
+
   gaussuvtogp_->multiply(fset);
   gptohp_->leftInverseMultiply(fset);
-  oops::Variables variablesToRemove({"geostrophic_pressure_levels_minus_one"});
-  fset.removeFields(variablesToRemove);
+
+  // Remove "geostrophic_pressure_levels_minus_one" since it is not an
+  // active variable but a temporary one.
+  fset.removeFields(intermediateTempVars_);
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }
 

@@ -39,13 +39,9 @@ namespace vader {
 
 namespace {
 
-oops::Variables createInnerVars(const oops::Variables & outerVars) {
-  oops::Variables innerVars(outerVars);
-  int modelLevels = innerVars.getLevels("hydrostatic_pressure_levels") - 1;
+oops::Variables removeOuterOnlyVar(const oops::Variables & vars) {
+  oops::Variables innerVars(vars);
   innerVars -= "hydrostatic_pressure_levels";
-  innerVars.push_back("geostrophic_pressure_levels_minus_one");
-  innerVars.addMetaData("geostrophic_pressure_levels_minus_one",
-                           "levels", modelLevels);
   return innerVars;
 }
 
@@ -66,16 +62,20 @@ GpToHp::GpToHp(const oops::GeometryData & outerGeometryData,
                const oops::FieldSet3D & xb,
                const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params, xb.validTime()),
-    innerGeometryData_(outerGeometryData), innerVars_(createInnerVars(outerVars)),
-    activeVars_(getActiveVars(params, outerVars)),
+    innerGeometryData_(outerGeometryData),
+    innerVars_(removeOuterOnlyVar(getUnionOfInnerActiveAndOuterVars(params, outerVars))),
+    activeOuterVars_(params.activeOuterVars(outerVars)),
+    innerOnlyVars_(getInnerOnlyVars(params, outerVars)),
     augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::GpToHp starting" << std::endl;
+  oops::Variables activeVars = activeOuterVars_;
+  activeVars += innerOnlyVars_;
 
   // Covariance FieldSet
   covFieldSet_ = createGpRegressionStats(outerGeometryData.functionSpace(),
                                          outerGeometryData.fieldSet(),
-                                         activeVars_,
+                                         activeVars,
                                          params.gptohpcovarianceparams.value());
 
   std::vector<std::string> requiredStateVariables{
@@ -161,14 +161,14 @@ GpToHp::~GpToHp() {
 void GpToHp::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   // Allocate output fields if they are not already present, e.g when randomizing.
-  const oops::Variables outputVars({"hydrostatic_pressure_levels"});
-  allocateFields(fset,
-                 outputVars,
-                 activeVars_,
-                 innerGeometryData_.functionSpace());
+  allocateMissingFields(fset, activeOuterVars_, activeOuterVars_,
+                        innerGeometryData_.functionSpace());
 
   // Populate output fields.
   mo::eval_hydrostatic_pressure_levels_tl(fset.fieldSet(), augmentedStateFieldSet_);
+
+  // Remove inner-only variables
+  fset.removeFields(innerOnlyVars_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
@@ -176,6 +176,11 @@ void GpToHp::multiply(oops::FieldSet3D & fset) const {
 
 void GpToHp::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
+  // Allocate inner-only variables
+  checkFieldsAreNotAllocated(fset, innerOnlyVars_);
+  allocateMissingFields(fset, innerOnlyVars_, innerOnlyVars_,
+                        innerGeometryData_.functionSpace());
+
   mo::eval_hydrostatic_pressure_levels_ad(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiplyAD done"  << std::endl;
 }
@@ -184,6 +189,21 @@ void GpToHp::multiplyAD(oops::FieldSet3D & fset) const {
 
 void GpToHp::leftInverseMultiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
+  if (!fset.has("geostrophic_pressure_levels_minus_one")) {
+    oops::Log::error() << "The inverse of block "
+          << classname()
+          << " is not correctly defined if geostrophic_pressure_levels_minus_one"
+          << " is not provided as an input." << std::endl;
+    throw eckit::UserError("Please only use leftInverseMultiply of this block "
+                           "within the mo_hydrostatic_pressure block.", Here());
+  }
+  //   Allocate inner-only variables except air temperature
+  oops::Variables innerOnlyVarsForInversion(innerOnlyVars_);
+  innerOnlyVarsForInversion -= "geostrophic_pressure_levels_minus_one";
+  checkFieldsAreNotAllocated(fset, innerOnlyVarsForInversion);
+  allocateMissingFields(fset, innerOnlyVarsForInversion, innerOnlyVarsForInversion,
+                        innerGeometryData_.functionSpace());
+
   // Retrieve unbalanced pressure from hydrostatic pressure and geostrophic pressure.
   mo::eval_hydrostatic_pressure_levels_tl_inv(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;

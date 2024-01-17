@@ -46,8 +46,18 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-oops::Variables getActiveVars(const SaberBlockParametersBase &,
-                              const oops::Variables &);
+oops::Variables getActiveVars(const SaberBlockParametersBase & params,
+                              const oops::Variables & defaultVars);
+
+// -----------------------------------------------------------------------------
+
+oops::Variables getUnionOfInnerActiveAndOuterVars(const SaberBlockParametersBase & params,
+                                                  const oops::Variables & outerVars);
+
+// -----------------------------------------------------------------------------
+
+oops::Variables getInnerOnlyVars(const SaberBlockParametersBase & params,
+                                 const oops::Variables & outerVars);
 
 // -----------------------------------------------------------------------------
 
@@ -56,11 +66,16 @@ void setMPI(eckit::LocalConfiguration & conf,
 
 // -----------------------------------------------------------------------------
 
-void allocateFields(oops::FieldSet3D & fset,
-                    const oops::Variables & varsToAllocate,
-                    const oops::Variables & varsWithLevels,
-                    const atlas::FunctionSpace & functionSpace,
-                    const bool haloExchange = true);
+void checkFieldsAreNotAllocated(const oops::FieldSet3D & fset,
+                                const oops::Variables & vars);
+
+// -----------------------------------------------------------------------------
+
+void allocateMissingFields(oops::FieldSet3D & fset,
+                           const oops::Variables & varsToAllocate,
+                           const oops::Variables & varsWithLevels,
+                           const atlas::FunctionSpace & functionSpace,
+                           const bool haloExchange = true);
 
 // -----------------------------------------------------------------------------
 

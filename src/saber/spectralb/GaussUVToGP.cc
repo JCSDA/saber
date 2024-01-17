@@ -39,6 +39,7 @@
 
 #include "saber/blocks/SaberOuterBlockBase.h"
 #include "saber/interpolation/AtlasInterpWrapper.h"
+#include "saber/oops/Utilities.h"
 
 #define ERR(e) {throw eckit::Exception(nc_strerror(e), Here());}
 
@@ -399,11 +400,9 @@ atlas::FieldSet allocateSpectralVortDiv(
 
 // -----------------------------------------------------------------------------
 
-oops::Variables createInnerVars(const oops::Variables & outerVars) {
-  oops::Variables innerVars(outerVars);
-  if (innerVars.has("geostrophic_pressure_levels_minus_one")) {
-    innerVars -= "geostrophic_pressure_levels_minus_one";
-  }
+oops::Variables removeOuterOnlyVar(const oops::Variables & vars) {
+  oops::Variables innerVars(vars);
+  innerVars -= "geostrophic_pressure_levels_minus_one";
   return innerVars;
 }
 
@@ -475,7 +474,9 @@ GaussUVToGP::GaussUVToGP(const oops::GeometryData & outerGeometryData,
   : SaberOuterBlockBase(params, xb.validTime()),
     params_(params),
     outerVars_(outerVars),
-    innerVars_(createInnerVars(outerVars)),
+    innerVars_(removeOuterOnlyVar(getUnionOfInnerActiveAndOuterVars(params, outerVars))),
+    activeOuterVars_(params.activeOuterVars(outerVars)),
+    innerOnlyVars_(getInnerOnlyVars(params, outerVars)),
     gaussFunctionSpace_(outerGeometryData.functionSpace()),
     specFunctionSpace_(2 * atlas::GaussianGrid(gaussFunctionSpace_.grid()).N() - 1),
     trans_(gaussFunctionSpace_, specFunctionSpace_),
@@ -493,10 +494,12 @@ GaussUVToGP::GaussUVToGP(const oops::GeometryData & outerGeometryData,
 
 void GaussUVToGP::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting " << std::endl;
+  // Allocate output fields if they are not already present, e.g when randomizing.
+  allocateMissingFields(fset, activeOuterVars_, activeOuterVars_,
+                        innerGeometryData_.functionSpace(),
+                        false);
 
-  atlas::Field gp = gaussFunctionSpace_.createField<double>(
-    atlas::option::name("geostrophic_pressure_levels_minus_one") |
-    atlas::option::levels(fset["eastward_wind"].levels()));
+  atlas::Field gp = fset["geostrophic_pressure_levels_minus_one"];
 
   atlas::Field rhsvec = allocateRHSVec(gaussFunctionSpace_, gp.levels());
 
@@ -519,17 +522,8 @@ void GaussUVToGP::multiply(oops::FieldSet3D & fset) const {
 
   gp.haloExchange();
 
-  if (fset.has("geostrophic_pressure_levels_minus_one")) {
-    auto gpView =
-      atlas::array::make_view<double, 2>(
-        fset["geostrophic_pressure_levels_minus_one"]);
-    auto gpViewKeep =
-      atlas::array::make_view<const double, 2>(gp);
-    gpView.assign(gpViewKeep);
-  } else {
-    fset.add(gp);
-  }
-
+  // Remove inner-only variables
+  fset.removeFields(innerOnlyVars_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
@@ -537,26 +531,14 @@ void GaussUVToGP::multiply(oops::FieldSet3D & fset) const {
 
 void GaussUVToGP::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
+  // Allocate inner-only variables
+  checkFieldsAreNotAllocated(fset, innerOnlyVars_);
+  allocateMissingFields(fset, innerOnlyVars_, innerOnlyVars_,
+                        innerGeometryData_.functionSpace());
 
   atlas::FieldSet specfset =
       allocateSpectralVortDiv(specFunctionSpace_,
                               fset["geostrophic_pressure_levels_minus_one"].levels());
-
-  // Create empty Model fieldset
-  atlas::FieldSet newFields = atlas::FieldSet();
-
-  // copy "passive variables"
-  std::vector<std::string> fsetNames = fset.field_names();
-
-  oops::Variables
-    activeVars(std::vector<std::string>({"eastward_wind", "northward_wind",
-                                         "geostrophic_pressure_levels_minus_one"}));
-
-  for (auto & s : fset.field_names()) {
-    if (!activeVars.has(s)) {
-      newFields.add(fset[s]);
-    }
-  }
 
   fset["geostrophic_pressure_levels_minus_one"].adjointHaloExchange();
 
@@ -581,11 +563,6 @@ void GaussUVToGP::multiplyAD(oops::FieldSet3D & fset) const {
   populateRHSVecAdj(augmentedState_["dry_air_density_levels_minus_one"],
                     augmentedState_["coriolis"],
                     fset.fieldSet(), rhsvec);
-
-  newFields.add(fset["eastward_wind"]);
-  newFields.add(fset["northward_wind"]);
-
-  fset.fieldSet() = newFields;
 
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }

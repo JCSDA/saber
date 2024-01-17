@@ -59,7 +59,6 @@ geometry:
   halo: 1
 
 increment variables:
-  # analysis variables
 - dry_air_density_levels_minus_one
 - eastward_wind
 - exner_levels_minus_one
@@ -68,16 +67,6 @@ increment variables:
 - northward_wind
 - potential_temperature
 - specific_humidity
-  # intermediate variables for the B matrix
-- air_pressure_levels
-- air_temperature
-- geostrophic_pressure_levels_minus_one
-- hydrostatic_exner_levels
-- hydrostatic_pressure_levels
-- mu
-- qt
-- unbalanced_pressure_levels_minus_one
-- virtual_potential_temperature
 
 background error:
   covariance model: SABER
@@ -112,7 +101,7 @@ background error:
     - unbalanced_pressure_levels_minus_one
     - velocity_potential
   - saber block name: gauss winds to geostrophic pressure
-    skip inverse test: true
+    skip inverse test: true  # Tested within mo_hydrostatic_pressure block
   - saber block name: mo_hydrostatic_exner
     inner inverse tolerance: 1e-13
     outer inverse tolerance: 1e-9
@@ -130,6 +119,7 @@ background error:
     outer variables to compare: [virtual_potential_temperature, air_pressure_levels]
     outer inverse tolerance: 1e-13
   - saber block name: mo_moisture_control
+    adjoint tolerance: 2e-12
     inner inverse tolerance: 1e-13
     outer inverse tolerance: 1e-4  #TODO to be replaced by relative tolerance
     inner variables to compare:
@@ -141,7 +131,7 @@ background error:
   - saber block name: mo_air_temperature
     skip inverse test: true
   - saber block name: mo_moistincrop
-    inner variables to compare: [qt, air_temperature]
+    skip inverse test: true  # Tested within the mo_super_mio block
     moisture incrementing operator file: testdata/MIO_coefficients.nc
     saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
   - saber block name: mo_dry_air_density

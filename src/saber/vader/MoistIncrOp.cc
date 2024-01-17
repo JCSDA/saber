@@ -53,7 +53,11 @@ MoistIncrOp::MoistIncrOp(const oops::GeometryData & outerGeometryData,
                          const oops::FieldSet3D & xb,
                          const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params, xb.validTime()),
-    innerGeometryData_(outerGeometryData), innerVars_(outerVars), augmentedStateFieldSet_()
+    innerGeometryData_(outerGeometryData),
+    innerVars_(getUnionOfInnerActiveAndOuterVars(params, outerVars)),
+    activeOuterVars_(params.activeOuterVars(outerVars)),
+    innerOnlyVars_(getInnerOnlyVars(params, outerVars)),
+    augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::MoistIncrOp starting" << std::endl;
 
@@ -127,16 +131,14 @@ MoistIncrOp::~MoistIncrOp() {
 void MoistIncrOp::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   // Allocate output fields if they are not already present, e.g when randomizing.
-  const oops::Variables outputVars({"specific_humidity",
-                                    "mass_content_of_cloud_liquid_water_in_atmosphere_layer",
-                                    "mass_content_of_cloud_ice_in_atmosphere_layer"});
-  allocateFields(fset,
-                 outputVars,
-                 innerVars_,
-                 innerGeometryData_.functionSpace());
+  allocateMissingFields(fset, activeOuterVars_, activeOuterVars_,
+                        innerGeometryData_.functionSpace());
 
   // Populate output fields.
   mo::eval_moisture_incrementing_operator_tl(fset.fieldSet(), augmentedStateFieldSet_);
+
+  // Remove inner-only variables
+  fset.removeFields(innerOnlyVars_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
@@ -144,6 +146,11 @@ void MoistIncrOp::multiply(oops::FieldSet3D & fset) const {
 
 void MoistIncrOp::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
+  // Allocate inner-only variables
+  checkFieldsAreNotAllocated(fset, innerOnlyVars_);
+  allocateMissingFields(fset, innerOnlyVars_, innerOnlyVars_,
+                        innerGeometryData_.functionSpace());
+
   mo::eval_moisture_incrementing_operator_ad(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
@@ -152,6 +159,20 @@ void MoistIncrOp::multiplyAD(oops::FieldSet3D & fset) const {
 
 void MoistIncrOp::leftInverseMultiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
+  if (!fset.has("air_temperature")) {
+    oops::Log::error() << "The inverse of the moisture incrementing operator "
+          << "is not correctly defined if air_temperature is not provided "
+          << "as an input." << std::endl;
+    throw eckit::UserError("Please only use leftInverseMultiply of the mo_moistincrop block "
+                           "within the mo_super_mio block.", Here());
+  }
+  //   Allocate inner-only variables except air temperature
+  oops::Variables innerOnlyVarsForInversion(innerOnlyVars_);
+  innerOnlyVarsForInversion -= "air_temperature";
+  checkFieldsAreNotAllocated(fset, innerOnlyVarsForInversion);
+  allocateMissingFields(fset, innerOnlyVarsForInversion, innerOnlyVarsForInversion,
+                        innerGeometryData_.functionSpace());
+
   mo::eval_total_water_tl(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }

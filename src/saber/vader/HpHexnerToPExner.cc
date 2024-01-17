@@ -40,8 +40,10 @@ HpHexnerToPExner::HpHexnerToPExner(const oops::GeometryData & outerGeometryData,
                      const oops::FieldSet3D & xb,
                      const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params, xb.validTime()),
-    innerGeometryData_(outerGeometryData), innerVars_(outerVars),
-    activeVars_(getActiveVars(params, outerVars))
+    innerGeometryData_(outerGeometryData),
+    innerVars_(getUnionOfInnerActiveAndOuterVars(params, outerVars)),
+    activeOuterVars_(params.activeOuterVars(outerVars)),
+    innerOnlyVars_(getInnerOnlyVars(params, outerVars))
 {
   oops::Log::trace() << classname() << "::HpHexnerToPExner starting" << std::endl;
   oops::Log::trace() << classname() << "::HpHexnerToPExner done" << std::endl;
@@ -61,12 +63,8 @@ void HpHexnerToPExner::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
 
   // Allocate output fields if they are not already present, e.g when randomizing.
-  const oops::Variables outputVars({"air_pressure_levels",
-                                    "exner_levels_minus_one"});
-  allocateFields(fset,
-                 outputVars,
-                 activeVars_,
-                 innerGeometryData_.functionSpace());
+  allocateMissingFields(fset, activeOuterVars_, activeOuterVars_,
+                        innerGeometryData_.functionSpace());
 
   // Populate output fields.
   auto hydrostaticPressureView =
@@ -84,6 +82,8 @@ void HpHexnerToPExner::multiply(oops::FieldSet3D & fset) const {
   // the assign method copies the region that is common to both Views.
   exnerLevelsMinusOneView.assign(hydrostaticExnerView);
 
+  // Remove inner-only variables
+  fset.removeFields(innerOnlyVars_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
@@ -91,6 +91,10 @@ void HpHexnerToPExner::multiply(oops::FieldSet3D & fset) const {
 
 void HpHexnerToPExner::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
+  // Allocate inner-only variables
+  checkFieldsAreNotAllocated(fset, innerOnlyVars_);
+  allocateMissingFields(fset, innerOnlyVars_, innerOnlyVars_,
+                        innerGeometryData_.functionSpace());
 
   auto airPressureView =
       atlas::array::make_view<double, 2>(fset["air_pressure_levels"]);
@@ -121,6 +125,10 @@ void HpHexnerToPExner::multiplyAD(oops::FieldSet3D & fset) const {
 
 void HpHexnerToPExner::leftInverseMultiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
+  // Allocate inner-only variables
+  checkFieldsAreNotAllocated(fset, innerOnlyVars_);
+  allocateMissingFields(fset, innerOnlyVars_, innerOnlyVars_,
+                        innerGeometryData_.functionSpace());
 
   // Retrieve hydrostatic Exner from Exner. Need to extrapolate top level
   auto exner_view = atlas::array::make_view<const double, 2>(fset["exner_levels_minus_one"]);

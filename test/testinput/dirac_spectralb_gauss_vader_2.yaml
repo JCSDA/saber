@@ -59,7 +59,6 @@ geometry:
   halo: 1
 
 increment variables:
-  # analysis variables
 - dry_air_density_levels_minus_one
 - eastward_wind
 - exner_levels_minus_one
@@ -68,15 +67,6 @@ increment variables:
 - northward_wind
 - potential_temperature
 - specific_humidity
-  # intermediate variables for the B matrix
-- air_pressure_levels
-- air_temperature
-- hydrostatic_exner_levels
-- hydrostatic_pressure_levels
-- mu
-- qt
-- unbalanced_pressure_levels_minus_one
-- virtual_potential_temperature
 
 background error:
   covariance model: SABER

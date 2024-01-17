@@ -21,6 +21,7 @@
 #include "oops/util/Timer.h"
 
 #include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/oops/Utilities.h"
 
 namespace saber {
 namespace vader {
@@ -39,17 +40,20 @@ SuperMoistIncrOp::SuperMoistIncrOp(const oops::GeometryData & outerGeometryData,
                                    const oops::FieldSet3D & xb,
                                    const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params, xb.validTime()),
-    innerGeometryData_(outerGeometryData), innerVars_(outerVars),
-    activeVars_(params.activeVars.value().get_value_or(outerVars)),
-    exnerThetaToTemp_(std::make_unique<AirTemperature>(outerGeometryData,
-                                                       outerVars,
-                                                       covarConf,
-                                                       params.airTemperature,
-                                                       xb, fg)),
+    innerGeometryData_(outerGeometryData),
+    innerVars_(getUnionOfInnerActiveAndOuterVars(params, outerVars)),
+    intermediateTempVars_(params.intermediateTempVars(outerVars)),
     MIO_(std::make_unique<MoistIncrOp>(outerGeometryData,
                                        outerVars,
                                        covarConf,
-                                       params.moistIncrOp, xb, fg))
+                                       params.moistIncrOp,
+                                       xb, fg)),
+    exnerThetaToTemp_(std::make_unique<AirTemperature>(outerGeometryData,
+                                                       MIO_->innerVars(),
+                                                       covarConf,
+                                                       params.airTemperature,
+                                                       xb, fg))
+
 {
   oops::Log::trace() << classname() << "::SuperMoistIncrOp starting" << std::endl;
   oops::Log::trace() << classname() << "::SuperMoistIncrOp done" << std::endl;
@@ -67,9 +71,9 @@ SuperMoistIncrOp::~SuperMoistIncrOp() {
 
 void SuperMoistIncrOp::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  util::addZeroFieldToFieldSet("air_temperature", "potential_temperature", fset.fieldSet());
   exnerThetaToTemp_->multiply(fset);
   MIO_->multiply(fset);
+  fset.removeFields(intermediateTempVars_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
@@ -77,9 +81,9 @@ void SuperMoistIncrOp::multiply(oops::FieldSet3D & fset) const {
 
 void SuperMoistIncrOp::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  util::addZeroFieldToFieldSet("air_temperature", "potential_temperature", fset.fieldSet());
   MIO_->multiplyAD(fset);
   exnerThetaToTemp_->multiplyAD(fset);
+  fset.removeFields(intermediateTempVars_);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
@@ -87,9 +91,9 @@ void SuperMoistIncrOp::multiplyAD(oops::FieldSet3D & fset) const {
 
 void SuperMoistIncrOp::leftInverseMultiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
-  util::addZeroFieldToFieldSet("air_temperature", "potential_temperature", fset.fieldSet());
   exnerThetaToTemp_->multiply(fset);
   MIO_->leftInverseMultiply(fset);
+  fset.removeFields(intermediateTempVars_);
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }
 

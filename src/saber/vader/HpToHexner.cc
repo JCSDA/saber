@@ -141,10 +141,10 @@ void HpToHexner::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   // Allocate output fields if they are not already present, e.g when randomizing.
   const oops::Variables outputVars({"hydrostatic_exner_levels"});
-  allocateFields(fset,
-                 outputVars,
-                 activeVars_,
-                 innerGeometryData_.functionSpace());
+  allocateMissingFields(fset,
+                        outputVars,
+                        activeVars_,
+                        innerGeometryData_.functionSpace());
 
   // Populate output fields.
   mo::eval_hydrostatic_exner_levels_tl(fset.fieldSet(), augmentedStateFieldSet_);

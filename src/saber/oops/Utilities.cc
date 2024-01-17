@@ -42,6 +42,27 @@ oops::Variables getActiveVars(const SaberBlockParametersBase & params,
 
 // -----------------------------------------------------------------------------
 
+// Return inner variables as outer variables + inner active variables
+// Can be used to help define innerVars_ member in SABER outer blocks
+oops::Variables getUnionOfInnerActiveAndOuterVars(const SaberBlockParametersBase & params,
+                                                  const oops::Variables & outerVars) {
+  oops::Variables innerVars(outerVars);
+  innerVars += params.activeInnerVars(outerVars);
+  return innerVars;
+}
+
+// -----------------------------------------------------------------------------
+
+// Return inner variables that are not outer variables
+oops::Variables getInnerOnlyVars(const SaberBlockParametersBase & params,
+                                 const oops::Variables & outerVars) {
+  oops::Variables innerOnlyVars(getUnionOfInnerActiveAndOuterVars(params, outerVars));
+  innerOnlyVars -= outerVars;
+  return innerOnlyVars;
+}
+
+// -----------------------------------------------------------------------------
+
 void setMPI(eckit::LocalConfiguration & conf,
             const int & mpi) {
   oops::Log::trace() << "setMPI starting" << std::endl;
@@ -56,15 +77,27 @@ void setMPI(eckit::LocalConfiguration & conf,
 
 // -----------------------------------------------------------------------------
 
-void allocateFields(oops::FieldSet3D & fset,
-                    const oops::Variables & varsToAllocate,
-                    const oops::Variables & varsWithLevels,
-                    const atlas::FunctionSpace & functionSpace,
-                    const bool haloExchange) {
-  oops::Log::trace() << "allocateFields starting" << std::endl;
+void checkFieldsAreNotAllocated(const oops::FieldSet3D & fset,
+                                const oops::Variables & vars) {
+  for (const auto& var : vars.variables()) {
+    if (fset.has(var)) {
+      throw eckit::UserError("Variable " + var + " is already allocated in FieldSet.",
+                             Here());
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+
+void allocateMissingFields(oops::FieldSet3D & fset,
+                           const oops::Variables & varsToAllocate,
+                           const oops::Variables & varsWithLevels,
+                           const atlas::FunctionSpace & functionSpace,
+                           const bool haloExchange) {
+  oops::Log::trace() << "allocateMissingFields starting" << std::endl;
   for (const auto& var : varsToAllocate.variables()) {
     if (!fset.has(var)) {
-      oops::Log::test() << "Allocating " << var << std::endl;
+      oops::Log::info() << "Info     : Allocating " << var << std::endl;
       auto field = functionSpace.createField<double>(
                 atlas::option::name(var) |
                 atlas::option::levels(varsWithLevels.getLevels(var)));
@@ -75,9 +108,10 @@ void allocateFields(oops::FieldSet3D & fset,
       fset.add(field);
     }
   }
-  oops::Log::trace() << "allocateFields done" << std::endl;
+  oops::Log::trace() << "allocateMissingFields done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
+
 
 }  // namespace saber

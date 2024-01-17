@@ -33,12 +33,32 @@ namespace vader {
 
 class HydroBalParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(HydroBalParameters, SaberBlockParametersBase)
+
  public:
   oops::RequiredParameter<std::string> svp_file{"saturation vapour pressure file", this};
-  oops::Variables mandatoryActiveVars() const override {return oops::Variables({
-    "air_pressure_levels",
-    "hydrostatic_exner_levels",
-    "virtual_potential_temperature"});}
+  oops::Variables mandatoryActiveVars() const override {
+    return oops::Variables({
+        "air_pressure_levels",
+        "hydrostatic_exner_levels",
+        "virtual_potential_temperature"});
+  }
+
+  oops::Variables activeInnerVars(const oops::Variables& outerVars) const override {
+    oops::Variables vars({"air_pressure_levels",
+                          "hydrostatic_exner_levels"});
+    const int modelLevels = outerVars.getLevels("virtual_potential_temperature");
+    vars.addMetaData("air_pressure_levels", "levels", modelLevels + 1);
+    vars.addMetaData("hydrostatic_exner_levels", "levels", modelLevels + 1);
+    return vars;
+  }
+
+  oops::Variables activeOuterVars(const oops::Variables& outerVars) const override {
+    oops::Variables vars({"virtual_potential_temperature"});
+    for (const auto & var : vars.variables()) {
+      vars.addMetaData(var, "levels", outerVars.getLevels(var));
+    }
+    return vars;
+  }
 };
 
 // -----------------------------------------------------------------------------
@@ -67,7 +87,9 @@ class HydroBal : public SaberOuterBlockBase {
  private:
   void print(std::ostream &) const override;
   const oops::GeometryData & innerGeometryData_;
-  oops::Variables innerVars_;
+  const oops::Variables innerVars_;
+  const oops::Variables activeOuterVars_;
+  const oops::Variables innerOnlyVars_;
   atlas::FieldSet augmentedStateFieldSet_;
 };
 

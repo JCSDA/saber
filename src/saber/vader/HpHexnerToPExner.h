@@ -38,12 +38,31 @@ namespace vader {
 
 class HpHexnerToPExnerParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(HpHexnerToPExnerParameters, SaberBlockParametersBase)
+
  public:
   oops::Variables mandatoryActiveVars() const override {return oops::Variables({
     "air_pressure_levels",
     "exner_levels_minus_one",
     "hydrostatic_exner_levels",
     "hydrostatic_pressure_levels"});}
+
+  oops::Variables activeInnerVars(const oops::Variables& outerVars) const override {
+    oops::Variables vars({"hydrostatic_exner_levels",
+                          "hydrostatic_pressure_levels"});
+    const int modelLevels = outerVars.getLevels("air_pressure_levels");
+    vars.addMetaData("hydrostatic_exner_levels", "levels", modelLevels);
+    vars.addMetaData("hydrostatic_pressure_levels", "levels", modelLevels);
+    return vars;
+  }
+
+  oops::Variables activeOuterVars(const oops::Variables& outerVars) const override {
+    oops::Variables vars({"air_pressure_levels",
+                          "exner_levels_minus_one"});
+    for (const auto & var : vars.variables()) {
+      vars.addMetaData(var, "levels", outerVars.getLevels(var));
+    }
+    return vars;
+  }
 };
 
 // -----------------------------------------------------------------------------
@@ -75,8 +94,9 @@ class HpHexnerToPExner : public SaberOuterBlockBase {
  private:
   void print(std::ostream &) const override;
   const oops::GeometryData & innerGeometryData_;
-  oops::Variables innerVars_;
-  oops::Variables activeVars_;
+  const oops::Variables innerVars_;
+  const oops::Variables activeOuterVars_;
+  const oops::Variables innerOnlyVars_;
 };
 
 // -----------------------------------------------------------------------------

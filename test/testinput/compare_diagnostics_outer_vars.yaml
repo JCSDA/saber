@@ -1,0 +1,4 @@
+# Compare Dirac outputs using limited or full set of increment variables
+file to compare 1: testref/dirac_spectralb_gauss_vader_1.ref
+file to compare 2: testref/dirac_spectralb_gauss_vader_4.ref
+relative float tolerance: 1e-15

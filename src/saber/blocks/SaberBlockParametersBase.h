@@ -90,6 +90,18 @@ class SaberBlockParametersBase : public oops::Parameters {
   // VIRTUAL METHODS
   // Mandatory active variables
   virtual oops::Variables mandatoryActiveVars() const = 0;
+
+  // Mandatory active inner variables, must be a subset of mandatoryActiveVars()
+  // Used by utilities getUnionOfInnerActiveAndOuterVars() and getInnerOnlyVars()
+  virtual oops::Variables activeInnerVars(const oops::Variables & outerVars) const {
+    return oops::Variables();
+  }
+
+  // Mandatory active outer variables, must be a subset of mandatoryActiveVars()
+  // Can be used to define outer variables to allocate when randomizing
+  virtual oops::Variables activeOuterVars(const oops::Variables & outerVars) const {
+    return oops::Variables();
+  }
 };
 
 // -----------------------------------------------------------------------------

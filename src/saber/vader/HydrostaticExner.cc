@@ -51,8 +51,10 @@ HydrostaticExner::HydrostaticExner(const oops::GeometryData & outerGeometryData,
                                    const oops::FieldSet3D & xb,
                                    const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params, xb.validTime()),
-    innerGeometryData_(outerGeometryData), innerVars_(outerVars),
-    activeVars_(getActiveVars(params, outerVars)),
+    innerGeometryData_(outerGeometryData),
+    innerVars_(getUnionOfInnerActiveAndOuterVars(params, outerVars)),
+    activeOuterVars_(params.activeOuterVars(outerVars)),
+    innerOnlyVars_(getInnerOnlyVars(params, outerVars)),
     augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::HydrostaticExner starting" << std::endl;
@@ -60,7 +62,7 @@ HydrostaticExner::HydrostaticExner(const oops::GeometryData & outerGeometryData,
   // Covariance FieldSet
   covFieldSet_ = createGpRegressionStats(outerGeometryData.functionSpace(),
                                          outerGeometryData.fieldSet(),
-                                         activeVars_,
+                                         innerVars_,
                                          params.hydrostaticexnerParams.value());
 
   std::vector<std::string> requiredStateVariables{
@@ -146,14 +148,11 @@ HydrostaticExner::~HydrostaticExner() {
 void HydrostaticExner::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   // Allocate output fields if they are not already present, e.g when randomizing.
-  const oops::Variables outputVars({"air_pressure_levels",
-                                    "exner_levels_minus_one",
-                                    "hydrostatic_exner_levels",
-                                    "hydrostatic_pressure_levels"});
-  allocateFields(fset,
-                 outputVars,
-                 activeVars_,
-                 innerGeometryData_.functionSpace());
+  allocateMissingFields(fset, activeOuterVars_, activeOuterVars_,
+                        innerGeometryData_.functionSpace());
+  // Allocate inner-only fields if they are not already present, e.g. when randomizing.
+  allocateMissingFields(fset, innerOnlyVars_, innerOnlyVars_,
+                        innerGeometryData_.functionSpace());
 
   // Populate output fields.
   mo::eval_hydrostatic_pressure_levels_tl(fset.fieldSet(), augmentedStateFieldSet_);
@@ -174,6 +173,8 @@ void HydrostaticExner::multiply(oops::FieldSet3D & fset) const {
   // the assign method copies the region that is common to both Views.
   exnerLevelsMinusOneView.assign(hydrostaticExnerView);
 
+  // Remove inner-only variables
+  fset.removeFields(innerOnlyVars_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
 
@@ -181,6 +182,10 @@ void HydrostaticExner::multiply(oops::FieldSet3D & fset) const {
 
 void HydrostaticExner::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
+  // Allocate inner-only variables
+  checkFieldsAreNotAllocated(fset, innerOnlyVars_);
+  allocateMissingFields(fset, innerOnlyVars_, innerOnlyVars_,
+                        innerGeometryData_.functionSpace());
 
   auto airPressureView =
       atlas::array::make_view<double, 2>(fset["air_pressure_levels"]);
@@ -214,6 +219,10 @@ void HydrostaticExner::multiplyAD(oops::FieldSet3D & fset) const {
 
 void HydrostaticExner::leftInverseMultiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
+  // Allocate inner-only variables
+  checkFieldsAreNotAllocated(fset, innerOnlyVars_);
+  allocateMissingFields(fset, innerOnlyVars_, innerOnlyVars_,
+                        innerGeometryData_.functionSpace());
 
   // Retrieve hydrostatic Exner from Exner. Need to extrapolate top level
   auto exner_view = atlas::array::make_view<const double, 2>(fset["exner_levels_minus_one"]);

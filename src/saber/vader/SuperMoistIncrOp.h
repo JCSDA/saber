@@ -67,10 +67,10 @@ class SuperMoistIncrOp : public SaberOuterBlockBase {
  private:
   void print(std::ostream &) const override;
   const oops::GeometryData & innerGeometryData_;
-  oops::Variables innerVars_;
-  oops::Variables activeVars_;
-  std::unique_ptr<AirTemperature> exnerThetaToTemp_;
+  const oops::Variables innerVars_;
+  const oops::Variables intermediateTempVars_;
   std::unique_ptr<MoistIncrOp> MIO_;
+  std::unique_ptr<AirTemperature> exnerThetaToTemp_;
 };
 
 // -----------------------------------------------------------------------------
