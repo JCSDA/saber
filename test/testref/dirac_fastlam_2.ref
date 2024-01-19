@@ -57,6 +57,8 @@ Norm of output parameter : 8.3073295732831852e+01
 Norm of output parameter : 2.2516083858506283e+02
 Norm of output parameter : 2.3912664898492423e+02
 Norm of output parameter : 2.3882479326608160e+02
+Adjoint test for block FastLAM passed
+Square-root test for block FastLAM passed
 Covariance(SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:

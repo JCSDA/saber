@@ -23,25 +23,30 @@ Groups:
 Fields:
   stream_function: 3.0000000000000000e+00
   velocity_potential: 0.0000000000000000e+00
-  surface_pressure: 0.0000000000000000e+00
-Norm of input parameter weight_0: 5.1821246270964352e+01
-Norm of input parameter weight_1: 1.3660485222955450e+02
-Norm of input parameter weight_2: 5.1115031705121055e+01
-Norm of input parameter normalization_0: 2.1701285379844464e+02
-Norm of input parameter normalization_1: 2.3177645116279072e+02
-Norm of input parameter normalization_2: 2.3173024180072034e+02
+  surface_pressure: 3.0000000000000000e+00
+Norm of input parameter rh: 6.4843947167090923e+06
+Norm of input parameter rv: 1.1332077298912429e+03
     FastLAM interpolation accuracy test passed
     FastLAM interpolation adjoint test passed
-    FastLAM redToRows test passed
-    FastLAM rowsToCols test passed
     FastLAM interpolation accuracy test passed
     FastLAM interpolation adjoint test passed
-    FastLAM redToRows test passed
-    FastLAM rowsToCols test passed
     FastLAM interpolation accuracy test passed
     FastLAM interpolation adjoint test passed
-    FastLAM redToRows test passed
-    FastLAM rowsToCols test passed
+    FastLAM interpolation accuracy test passed
+    FastLAM interpolation adjoint test passed
+    FastLAM interpolation accuracy test passed
+    FastLAM interpolation adjoint test passed
+    FastLAM interpolation accuracy test passed
+    FastLAM interpolation adjoint test passed
+Norm of output parameter : 1.1644890209873171e+04
+Norm of output parameter : 8.7234826187710150e+03
+Norm of output parameter : 1.6992922050928357e+03
+Norm of output parameter : 5.1821246270964352e+01
+Norm of output parameter : 1.3660485222955450e+02
+Norm of output parameter : 5.1115031705121055e+01
+Norm of output parameter : 2.1701285379844464e+02
+Norm of output parameter : 2.3177645116279072e+02
+Norm of output parameter : 2.3173024180072034e+02
 Adjoint test for block FastLAM passed
 Square-root test for block FastLAM passed
 Covariance(SABER) * Increment:
@@ -68,5 +73,5 @@ Groups:
   Mask size: 100%
 Fields:
   stream_function: 1.3667526069849375e+01
-  velocity_potential: 1.3667526069849375e+01
-  surface_pressure: 1.1557125009068081e+01
+  velocity_potential: 0.0000000000000000e+00
+  surface_pressure: 1.1833883108358981e+01

@@ -53,12 +53,14 @@ Norm of input parameter rv: 1.1332077298912429e+03
 Norm of output parameter : 1.1644890209873171e+04
 Norm of output parameter : 8.7234826187710150e+03
 Norm of output parameter : 1.6992922050928357e+03
-Norm of output parameter : 5.1821246270964323e+01
-Norm of output parameter : 1.3660485222955452e+02
-Norm of output parameter : 5.1115031705121069e+01
+Norm of output parameter : 5.1821246270964352e+01
+Norm of output parameter : 1.3660485222955450e+02
+Norm of output parameter : 5.1115031705121055e+01
 Norm of output parameter : 2.1701285379844464e+02
-Norm of output parameter : 2.3177645116279069e+02
-Norm of output parameter : 2.3173024180072025e+02
+Norm of output parameter : 2.3177645116279072e+02
+Norm of output parameter : 2.3173024180072034e+02
+Adjoint test for block FastLAM passed
+Square-root test for block FastLAM passed
 Covariance(SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:

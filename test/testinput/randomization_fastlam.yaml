@@ -1,0 +1,42 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type : regional
+    nx : 71
+    ny : 53
+    dx : 2.5e3
+    dy : 2.5e3
+    lonlat(centre) : [9.9, 56.3]
+    projection :  
+      type : lambert_conformal_conic
+      latitude0  : 56.3
+      longitude0 : 0.0
+    y_numbering: 1
+  partitioner: checkerboard
+  groups:
+  - variables:
+    - stream_function
+    levels: 2
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables:
+  - stream_function
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: FastLAM
+    calibration:
+      multivariate strategy: univariate
+      horizontal length-scale:
+      - group: stream_function
+        value: 20.0e3
+      vertical length-scale:
+      - group: stream_function
+        value: 3.0
+      number of layers: 1
+      resolution: 5
+  randomization size: 2
+output states:
+  filepath: testdata/randomization_fastlam/_MPI_-_OMP__member
+test:
+  reference filename: testref/randomization_fastlam.ref

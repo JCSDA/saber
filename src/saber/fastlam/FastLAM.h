@@ -25,7 +25,7 @@
 #include "saber/blocks/SaberCentralBlockBase.h"
 #include "saber/blocks/SaberOuterBlockBase.h"
 #include "saber/fastlam/FastLAMParametersBase.h"
-#include "saber/fastlam/Layers.h"
+#include "saber/fastlam/LayerBase.h"
 
 namespace saber {
 namespace fastlam {
@@ -48,13 +48,12 @@ class FastLAM : public SaberCentralBlockBase {
  public:
   static const std::string classname() {return "saber::fastlam::FastLAM";}
 
-  typedef FastLAMParameters     Parameters_;
-  typedef FastLAMParametersBase ParametersBase_;
+  typedef FastLAMParameters Parameters_;
 
   FastLAM(const oops::GeometryData &,
           const oops::Variables &,
           const eckit::Configuration &,
-          const Parameters_ &,
+          const FastLAMParameters &,
           const oops::FieldSet3D &,
           const oops::FieldSet3D &);
 
@@ -62,6 +61,14 @@ class FastLAM : public SaberCentralBlockBase {
 
   void randomize(oops::FieldSet3D &) const override;
   void multiply(oops::FieldSet3D &) const override;
+
+  size_t ctlVecSize() const override;
+  void multiplySqrt(const atlas::Field &,
+                    oops::FieldSet3D &,
+                    const size_t &) const override;
+  void multiplySqrtAD(const oops::FieldSet3D &,
+                      atlas::Field &,
+                      const size_t &) const override;
 
   std::vector<std::pair<std::string, eckit::LocalConfiguration>> getReadConfs() const override;
   void setReadFields(const std::vector<oops::FieldSet3D> &) override;
@@ -94,7 +101,7 @@ class FastLAM : public SaberCentralBlockBase {
   std::vector<std::tuple<std::string, size_t, std::string, std::vector<std::string>>> groups_;
 
   // Parameters
-  ParametersBase_ params_;
+  FastLAMParametersBase params_;
 
   // Inputs
   std::unique_ptr<oops::FieldSet3D> rh_;
@@ -103,7 +110,7 @@ class FastLAM : public SaberCentralBlockBase {
   std::vector<std::unique_ptr<oops::FieldSet3D>> normalization_;
 
   // Data
-  std::unordered_map<std::string, Layers> data_;
+  std::vector<std::vector<std::unique_ptr<LayerBase>>> data_;
 
   // Model grid
   size_t nx0_;
@@ -115,6 +122,15 @@ class FastLAM : public SaberCentralBlockBase {
 
   // Setup weight
   void setupWeight();
+
+  // Setup vertical coordinate
+  void setupVerticalCoord();
+
+  // Setup resolution
+  void setupResolution();
+
+  // Setup reduction factors
+  void setupReductionFactors();
 
   // Utilities
   size_t getGroupIndex(const std::string &) const;

@@ -45,36 +45,34 @@ background error:
         variable in model file: surface_pressure
         variables:
         - surface_pressure
-      horizontal length-scale:
-      - group: var3d
-        value: 20.0e3
-      - group: var2d
-        value: 20.0e3
-      vertical length-scale:
-      - group: var3d
-        value: 3.0
-      - group: var2d
-        value: 0.0
-      number of layers: 1
+      input model files:
+      - parameter: rh
+        file:
+          filepath: testdata/randomization_bump_nicas_lam_1/rh_000001
+      - parameter: rv
+        file:
+          filepath: testdata/randomization_bump_nicas_lam_2/rv_000002
+      number of layers: 3
       resolution: 5
+      parallelization: halo
       normalization accuracy stride: 3
-      data file: testdata/dirac_fastlam_1/_MPI__data
+      data file: testdata/dirac_fastlam_8/_MPI__data
       output model files:
       - parameter: index i
         file:
-          filepath: testdata/dirac_fastlam_1/_MPI__index_i
+          filepath: testdata/dirac_fastlam_8/_MPI__index_i
       - parameter: index j
         file:
-          filepath: testdata/dirac_fastlam_1/_MPI__index_j
+          filepath: testdata/dirac_fastlam_8/_MPI__index_j
       - parameter: normalized horizontal length-scale
         file:
-          filepath: testdata/dirac_fastlam_1/_MPI__normalized_rh
+          filepath: testdata/dirac_fastlam_8/_MPI__normalized_rh
       - parameter: weight
         file:
-          filepath: testdata/dirac_fastlam_1/_MPI__weight_%component%
+          filepath: testdata/dirac_fastlam_8/_MPI__weight_%component%
       - parameter: normalization
         file:
-          filepath: testdata/dirac_fastlam_1/_MPI__norm_%component%
+          filepath: testdata/dirac_fastlam_8/_MPI__norm_%component%
 dirac:
   lon:
   - 10.04
@@ -154,9 +152,9 @@ dirac:
   - surface_pressure
 output dirac:
   mpi pattern: '%MPI%'
-  filepath: testdata/dirac_fastlam_1/%MPI%_dirac_%id%
+  filepath: testdata/dirac_fastlam_8/%MPI%_dirac_%id%
 output variance:
   mpi pattern: '%MPI%'
-  filepath: testdata/dirac_fastlam_1/%MPI%_variance
+  filepath: testdata/dirac_fastlam_8/%MPI%_variance
 test:
-  reference filename: testref/dirac_fastlam_1.ref
+  reference filename: testref/dirac_fastlam_8.ref

@@ -18,15 +18,11 @@ geometry:
     - stream_function
     - velocity_potential
     levels: 10
-  - variables:
-    - surface_pressure
-    levels: 1
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
   - stream_function
   - velocity_potential
-  - surface_pressure
 background error:
   covariance model: SABER
   adjoint test: true
@@ -34,58 +30,48 @@ background error:
   saber central block:
     saber block name: FastLAM
     calibration:
-      multivariate strategy: univariate
+      multivariate strategy: crossed
       groups:
-      - group name: var3d
+      - group name: stream_function
         variable in model file: stream_function
         variables:
         - stream_function
-        - velocity_potential
-      - group name: var2d
-        variable in model file: surface_pressure
+      - group name: velocity_potential
+        variable in model file: velocity_potential
         variables:
-        - surface_pressure
+        - velocity_potential
       horizontal length-scale:
-      - group: var3d
-        value: 20.0e3
-      - group: var2d
-        value: 20.0e3
+      - group: stream_function
+        profile: [10.0e3, 12.0e3, 14.0e3, 16.0e3, 18.0e3, 20.0e3, 22.0e3, 24.0e3, 26.0e3, 28.0e3]
+      - group: velocity_potential
+        profile: [20.0e3, 24.0e3, 28.0e3, 32.0e3, 36.0e3, 40.0e3, 44.0e3, 48.0e3, 52.0e3, 56.0e3]
       vertical length-scale:
-      - group: var3d
-        value: 3.0
-      - group: var2d
-        value: 0.0
-      number of layers: 1
+      - group: stream_function
+        profile: [2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8]
+      - group: velocity_potential
+        profile: [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9]
+      number of layers: 3
       resolution: 5
       normalization accuracy stride: 3
-      data file: testdata/dirac_fastlam_1/_MPI__data
+      data file: testdata/dirac_fastlam_7/_MPI__data
       output model files:
       - parameter: index i
         file:
-          filepath: testdata/dirac_fastlam_1/_MPI__index_i
+          filepath: testdata/dirac_fastlam_7/_MPI__index_i
       - parameter: index j
         file:
-          filepath: testdata/dirac_fastlam_1/_MPI__index_j
+          filepath: testdata/dirac_fastlam_7/_MPI__index_j
       - parameter: normalized horizontal length-scale
         file:
-          filepath: testdata/dirac_fastlam_1/_MPI__normalized_rh
+          filepath: testdata/dirac_fastlam_7/_MPI__normalized_rh
       - parameter: weight
         file:
-          filepath: testdata/dirac_fastlam_1/_MPI__weight_%component%
+          filepath: testdata/dirac_fastlam_7/_MPI__weight_%component%
       - parameter: normalization
         file:
-          filepath: testdata/dirac_fastlam_1/_MPI__norm_%component%
+          filepath: testdata/dirac_fastlam_7/_MPI__norm_%component%
 dirac:
   lon:
-  - 10.04
-  - 8.696
-  - 11.379
-  - 8.5781
-  - 9.9058
-  - 11.2261
-  - 8.4537
-  - 9.7626
-  - 11.0644
   - 10.04
   - 8.696
   - 11.379
@@ -105,25 +91,7 @@ dirac:
   - 55.8638
   - 55.7659
   - 55.6542
-  - 56.86
-  - 56.935
-  - 56.719
-  - 56.4215
-  - 56.3223
-  - 56.2089
-  - 55.8638
-  - 55.7659
-  - 55.6542
   level:
-  - 1
-  - 1
-  - 1
-  - 1
-  - 1
-  - 1
-  - 1
-  - 1
-  - 1
   - 1
   - 1
   - 1
@@ -138,25 +106,16 @@ dirac:
   - stream_function
   - stream_function
   - stream_function
+  - velocity_potential
   - stream_function
   - stream_function
   - stream_function
   - stream_function
-  - stream_function
-  - surface_pressure
-  - surface_pressure
-  - surface_pressure
-  - surface_pressure
-  - surface_pressure
-  - surface_pressure
-  - surface_pressure
-  - surface_pressure
-  - surface_pressure
 output dirac:
   mpi pattern: '%MPI%'
-  filepath: testdata/dirac_fastlam_1/%MPI%_dirac_%id%
+  filepath: testdata/dirac_fastlam_7/%MPI%_dirac_%id%
 output variance:
   mpi pattern: '%MPI%'
-  filepath: testdata/dirac_fastlam_1/%MPI%_variance
+  filepath: testdata/dirac_fastlam_7/%MPI%_variance
 test:
-  reference filename: testref/dirac_fastlam_1.ref
+  reference filename: testref/dirac_fastlam_7.ref

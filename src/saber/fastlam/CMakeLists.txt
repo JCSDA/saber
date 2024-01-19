@@ -9,10 +9,12 @@ FastLAM.cc
 FastLAM.h
 FastLAMParametersBase.h
 InterpElement.h
-Layer.cc
-Layer.h
-Layers.cc
-Layers.h
+LayerBase.cc
+LayerBase.h
+LayerHalo.cc
+LayerHalo.h
+LayerRC.cc
+LayerRC.h
 )
 
 set( fastlam_src_files ${fastlam_src_files_list} PARENT_SCOPE )

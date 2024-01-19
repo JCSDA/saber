@@ -33,8 +33,8 @@ background error:
   square-root test: true
   saber central block:
     saber block name: FastLAM
-    calibration:
-      multivariate strategy: univariate
+    read:
+      multivariate strategy: duplicated
       groups:
       - group name: var3d
         variable in model file: stream_function
@@ -45,36 +45,17 @@ background error:
         variable in model file: surface_pressure
         variables:
         - surface_pressure
-      horizontal length-scale:
-      - group: var3d
-        value: 20.0e3
-      - group: var2d
-        value: 20.0e3
-      vertical length-scale:
-      - group: var3d
-        value: 3.0
-      - group: var2d
-        value: 0.0
-      number of layers: 1
-      resolution: 5
-      normalization accuracy stride: 3
-      data file: testdata/dirac_fastlam_1/_MPI__data
-      output model files:
-      - parameter: index i
-        file:
-          filepath: testdata/dirac_fastlam_1/_MPI__index_i
-      - parameter: index j
-        file:
-          filepath: testdata/dirac_fastlam_1/_MPI__index_j
-      - parameter: normalized horizontal length-scale
-        file:
-          filepath: testdata/dirac_fastlam_1/_MPI__normalized_rh
+      input model files:
       - parameter: weight
+        number of components: 3
         file:
-          filepath: testdata/dirac_fastlam_1/_MPI__weight_%component%
+          filepath: testdata/dirac_fastlam_8/_MPI__weight_%component%
       - parameter: normalization
+        number of components: 3
         file:
-          filepath: testdata/dirac_fastlam_1/_MPI__norm_%component%
+          filepath: testdata/dirac_fastlam_8/_MPI__norm_%component%
+      parallelization: halo
+      data file: testdata/dirac_fastlam_8/_MPI__data
 dirac:
   lon:
   - 10.04
@@ -154,9 +135,9 @@ dirac:
   - surface_pressure
 output dirac:
   mpi pattern: '%MPI%'
-  filepath: testdata/dirac_fastlam_1/%MPI%_dirac_%id%
+  filepath: testdata/dirac_fastlam_9/%MPI%_dirac_%id%
 output variance:
   mpi pattern: '%MPI%'
-  filepath: testdata/dirac_fastlam_1/%MPI%_variance
+  filepath: testdata/dirac_fastlam_9/%MPI%_variance
 test:
-  reference filename: testref/dirac_fastlam_1.ref
+  reference filename: testref/dirac_fastlam_9.ref
