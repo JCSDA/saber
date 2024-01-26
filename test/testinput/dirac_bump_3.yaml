@@ -146,11 +146,6 @@ background error:
                   read local nicas: true
       weight:
         value: 0.5
-  saber outer blocks:
-  - saber block name: StdDev
-    read:
-      model file:
-        filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000003 # Does not make sense scientifically, just for technical testing
 dirac:
   lon:
   - 0.0

@@ -17,8 +17,6 @@ Groups:
 Fields:
   eastward_wind: 1.0000000000000000e+00
   northward_wind: 0.0000000000000000e+00
-Norm of input parameter StdDev: 5.9976418021305122e+01
-Adjoint test for block StdDev passed
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Min. / max. longitudes: -171.0 /   180.0
@@ -42,7 +40,7 @@ Adjoint test for block BUMP_PsiChiToUV passed
           nc2 =      250
           Independent levels:  1[2]
 Adjoint test for block BUMP_VerticalBalance passed
-Norm of input parameter StdDev: 5.7539391781676251e+01
+Norm of input parameter StdDev: 5.7539391781678255e+01
 Adjoint test for block StdDev passed
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -63,7 +61,7 @@ Adjoint test for block BUMP_StdDev passed
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
-Norm of input parameter stddev - 1: 5.7539391781676251e+01
+Norm of input parameter stddev - 1: 5.7539391781678255e+01
 Adjoint test for block BUMP_StdDev passed
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -76,8 +74,8 @@ Adjoint test for block BUMP_StdDev passed
              Level   2 ~>  0.200E+01 vert. coord.
 Adjoint test for block BUMP_NICAS passed
 Square-root test for block BUMP_NICAS passed
-Norm of input parameter inflation: 5.7319844819175479e+01
-Norm of input parameter StdDev: 5.3046693215269315e+01
+Norm of input parameter inflation: 5.7319844819175614e+01
+Norm of input parameter StdDev: 5.3046693215269400e+01
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Min. / max. longitudes: -171.0 /   180.0
@@ -107,5 +105,114 @@ Groups:
   - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  eastward_wind: 4.6279789413894312e-01
-  northward_wind: 1.2282258734663952e-01
+  eastward_wind: 3.1497796971217978e-01
+  northward_wind: 1.2582557351303239e-01
+       Independent levels:  1[2]
+          Subset Sc0 size:              762
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+Adjoint test for block BUMP_PsiChiToUV passed
+       Independent levels:  1[2]
+          Subset Sc0 size:              762
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+          nc1 =      500
+          nc2 =      250
+          Independent levels:  1[2]
+Adjoint test for block BUMP_VerticalBalance passed
+Norm of input parameter StdDev: 5.7539391781678255e+01
+Adjoint test for block StdDev passed
+       Independent levels:  1[2]
+          Subset Sc0 size:              762
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+Adjoint test for block BUMP_StdDev passed
+       Independent levels:  1[2]
+          Subset Sc0 size:              762
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+Norm of input parameter stddev - 1: 5.7539391781678255e+01
+Adjoint test for block BUMP_StdDev passed
+       Independent levels:  1[2]
+          Subset Sc0 size:              762
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+Adjoint test for block BUMP_NICAS passed
+Square-root test for block BUMP_NICAS passed
+Covariance(SABER1_SABER) * Increment:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L40x21
+- size: 840
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+Fields:
+  eastward_wind: 9.4326766281929108e-14
+  northward_wind: 3.3389718418878827e-14
+Norm of input parameter inflation: 5.7319844819175614e+01
+Norm of input parameter StdDev: 5.3046693215269400e+01
+       Independent levels:  1[2]
+          Subset Sc0 size:              762
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+Square-root test for block BUMP_NICAS passed
+Adjoint test for block Ensemble passed
+Square-root test for block Ensemble passed
+Covariance(SABER2_SABER) * Increment:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: L40x21
+- size: 840
+Partitioner:
+- type: equal_regions
+Function space:
+- type: StructuredColumns
+- halo: 1
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+Fields:
+  eastward_wind: 6.2995593942433892e-01
+  northward_wind: 2.5165114702606489e-01

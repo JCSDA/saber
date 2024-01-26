@@ -339,6 +339,34 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
         ++componentIndex;
       }
     }
+    if (covarianceModel == "SABER") {
+      const std::string saberCentralBlockName =
+        covarConf.getString("saber central block.saber block name");
+      if (saberCentralBlockName == "Hybrid") {
+        // Check for outer blocks (can't pass the correct geometry/variables in that case)
+        if (!covarConf.has("saber outer blocks")) {
+          std::vector<eckit::LocalConfiguration> confs;
+          covarConf.get("saber central block.components", confs);
+          size_t componentIndex(1);
+          for (const auto & conf : confs) {
+            std::string idC(id + std::to_string(componentIndex));
+            eckit::LocalConfiguration componentConfig(conf, "covariance");
+            componentConfig.set("covariance model", "SABER");
+            if (covarConf.has("adjoint test")) {
+              componentConfig.set("adjoint test", covarConf.getBool("adjoint test"));
+            }
+            if (covarConf.has("inverse test")) {
+              componentConfig.set("inverse test", covarConf.getBool("inverse test"));
+            }
+            if (covarConf.has("square-root test")) {
+              componentConfig.set("square-root test", covarConf.getBool("square-root test"));
+            }
+            dirac(componentConfig, testConf, idC, geom, vars, xx, dxi);
+            ++componentIndex;
+          }
+        }
+      }
+    }
     if (covarianceModel == "ensemble" && covarConf.has("localization")) {
       // Localization configuration
       eckit::LocalConfiguration locConfig(covarConf.getSubConfiguration("localization"));
