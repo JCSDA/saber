@@ -21,6 +21,7 @@
 #include "atlas/util/Point.h"
 
 #include "oops/util/abor1_cpp.h"
+#include "oops/util/FunctionSpaceHelpers.h"
 #include "oops/util/Logger.h"
 
 #define ERR(e) {ABORT(nc_strerror(e));}
@@ -29,85 +30,19 @@
 namespace quench {
 // -----------------------------------------------------------------------------
 Geometry::Geometry(const eckit::Configuration & config, const eckit::mpi::Comm & comm)
-  : comm_(comm), gridType_("no_type"), groups_()
+  : comm_(comm), groups_()
 {
   GeometryParameters params;
   params.deserialize(config);
-  // Initialize eckit communicator for ATLAS
-  eckit::mpi::setCommDefault(comm_.name().c_str());
 
-  // Halo
+  // Setup atlas geometric data structures
+  atlas::FieldSet fieldsetOwnedMask;
+  util::setupFunctionSpace(comm_, config, grid_, partitioner_, mesh_,
+                           functionSpace_, fieldsetOwnedMask);
+
   halo_ = params.halo.value();
-
-  // Set regional grid flag
-  regionalGrid_ = false;
-
-  // Setup grid
-  eckit::LocalConfiguration gridParams = params.grid.value();
-  oops::Log::info() << "Info     : Grid config: " << gridParams << std::endl;
-  if (gridParams.has("type")) {
-    gridType_ = gridParams.getString("type");
-    if (gridType_ == "regional") {
-      regionalGrid_ = true;
-    }
-  }
-  grid_ = atlas::Grid(gridParams);
-
-  // Setup partitioner
-  if (params.noPointOnLastTask.value() && (comm_.size() > 1)) {
-    partitioner_ = atlas::grid::Partitioner(params.partitioner.value(), comm_.size()-1);
-  } else {
-    partitioner_ = atlas::grid::Partitioner(params.partitioner.value());
-  }
-
-  if (params.functionSpace.value() == "StructuredColumns") {
-    // StructuredColumns
-    ASSERT(gridType_ != "unstructured");
-    ASSERT(partitioner_);
-
-    // Setup function space
-    functionSpace_ = atlas::functionspace::StructuredColumns(grid_, partitioner_,
-                     atlas::option::halo(halo_));
-
-    // Bugfix for regional grids
-    // It seems that the content of lonlat for a regional function space is actually the xy
-    // coordinates. The routine to compute distances on the sphere was complaining about
-    // impossible lon/lat values...
-    if (regionalGrid_) {
-      auto lonlat = atlas::array::make_view<double, 2>(functionSpace_.lonlat());
-      double lonlatPoint[] = {0, 0};
-      const atlas::functionspace::StructuredColumns fs(functionSpace_);
-      const atlas::StructuredGrid grid = fs.grid();
-      const auto view_i = atlas::array::make_view<int, 1>(fs.index_i());
-      const auto view_j = atlas::array::make_view<int, 1>(fs.index_j());
-      for (int jj = 0; jj < fs.size(); ++jj) {
-        grid.lonlat(view_i(jj)-1, view_j(jj)-1, lonlatPoint);
-        lonlat(jj, 1) = lonlatPoint[1];
-        lonlat(jj, 0) = lonlatPoint[0];
-      }
-    }
-
-    // Setup mesh
-    mesh_ = atlas::MeshGenerator("structured").generate(grid_, partitioner_);
-  } else if (params.functionSpace.value() == "NodeColumns") {
-    // NodeColumns
-    if (grid_.name().compare(0, 2, std::string{"CS"}) == 0) {
-      // CubedSphere
-      ASSERT(partitioner_);
-      mesh_ = atlas::MeshGenerator("cubedsphere_dual").generate(grid_, partitioner_);
-      functionSpace_ = atlas::functionspace::CubedSphereNodeColumns(mesh_);
-    } else {
-      // For now allow NodeColumns for unstructured triangulation meshes
-      // Regular or Structured grids could be supported with extra code
-      ASSERT(partitioner_);
-      mesh_ = atlas::MeshGenerator("delaunay").generate(grid_, partitioner_);
-      functionSpace_ = atlas::functionspace::NodeColumns(mesh_);
-    }
-  } else if (params.functionSpace.value() == "PointCloud") {
-    ABORT(params.functionSpace.value() + " function space not supported");
-  } else {
-    ABORT(params.functionSpace.value() + " function space not supported yet");
-  }
+  gridType_ = params.grid.value().getString("type", "no_type");
+  regionalGrid_ = (gridType_ == "regional");  // grid.type() does not report if grid is regional
 
   // Groups
   size_t groupIndex = 0;
@@ -163,6 +98,9 @@ Geometry::Geometry(const eckit::Configuration & config, const eckit::mpi::Comm &
 
     // Fill geometry fields
     group.fields_ = atlas::FieldSet();
+
+    // Add owned points mask -- this mask does not depend on the group so was precomputed
+    group.fields_->add(fieldsetOwnedMask.field("owned"));
 
     if (regionalGrid_) {
       // 2D indices
@@ -221,69 +159,6 @@ Geometry::Geometry(const eckit::Configuration & config, const eckit::mpi::Comm &
 
     // Geographical mask
     group.fields_->add(gmask);
-
-    // Owned points mask
-    if (functionSpace_.type() == "StructuredColumns") {
-      // Structured columns
-      atlas::functionspace::StructuredColumns fs(functionSpace_);
-      atlas::StructuredGrid grid = fs.grid();
-      atlas::Field owned = fs.createField<int>(atlas::option::name("owned")
-        | atlas::option::levels(1));
-      auto ownedView = atlas::array::make_view<int, 2>(owned);
-      auto ghostView = atlas::array::make_view<int, 1>(fs.ghost());
-      auto view_i = atlas::array::make_view<int, 1>(fs.index_i());
-      auto view_j = atlas::array::make_view<int, 1>(fs.index_j());
-      for (atlas::idx_t j = fs.j_begin_halo(); j < fs.j_end_halo(); ++j) {
-        for (atlas::idx_t i = fs.i_begin_halo(j); i < fs.i_end_halo(j); ++i) {
-          atlas::idx_t jnode = fs.index(i, j);
-          ownedView(jnode, 0) = ghostView(jnode) > 0 ? 0 : 1;
-        }
-      }
-
-      // Special case for lon/lat grids
-      if (grid_.name().compare(0, 1, std::string{"L"}) == 0) {
-        for (atlas::idx_t j = fs.j_begin_halo(); j < fs.j_end_halo(); ++j) {
-          for (atlas::idx_t i = fs.i_begin_halo(j); i < fs.i_end_halo(j); ++i) {
-            atlas::idx_t jnode = fs.index(i, j);
-            if (((view_j(jnode) == 1) || (view_j(jnode) == grid.ny())) && (view_i(jnode) != 1)) {
-              ownedView(jnode, 0) = 0;
-            }
-          }
-        }
-      }
-
-      // Add owned points mask
-      group.fields_->add(owned);
-    } else if (functionSpace_.type() == "NodeColumns") {
-      // NodeColumns
-      if (grid_.name().compare(0, 2, std::string{"CS"}) == 0) {
-        // CubedSphere
-        atlas::functionspace::NodeColumns fs(functionSpace_);
-        atlas::Field owned = fs.createField<int>(atlas::option::name("owned")
-          | atlas::option::levels(1));
-        auto ownedView = atlas::array::make_view<int, 2>(owned);
-        auto ghostView = atlas::array::make_view<int, 1>(fs.ghost());
-        for (atlas::idx_t jnode = 0; jnode < owned.shape(0); ++jnode) {
-          ownedView(jnode, 0) = ghostView(jnode) > 0 ? 0 : 1;
-        }
-
-        // Add owned points mask
-        group.fields_->add(owned);
-      } else {
-        // Other NodeColumns
-        atlas::functionspace::NodeColumns fs(functionSpace_);
-        atlas::Field owned = fs.createField<int>(atlas::option::name("owned")
-          | atlas::option::levels(1));
-        auto ownedView = atlas::array::make_view<int, 2>(owned);
-        auto ghostView = atlas::array::make_view<int, 1>(fs.ghost());
-        for (atlas::idx_t jnode = 0; jnode < owned.shape(0); ++jnode) {
-          ownedView(jnode, 0) = ghostView(jnode) > 0 ? 0 : 1;
-        }
-
-        // Add owned points mask
-        group.fields_->add(owned);
-      }
-    }
 
     // Mask size
     group.gmaskSize_ = 0.0;
@@ -354,11 +229,11 @@ Geometry::Geometry(const Geometry & other) : comm_(other.comm_), halo_(other.hal
 
     // Copy geometry fields
     group.fields_ = atlas::FieldSet();
-    group.fields_->add(other.groups_[groupIndex].fields_["vert_coord"]);
-    group.fields_->add(other.groups_[groupIndex].fields_["gmask"]);
     if (other.groups_[groupIndex].fields_.has("owned")) {
       group.fields_->add(other.groups_[groupIndex].fields_["owned"]);
     }
+    group.fields_->add(other.groups_[groupIndex].fields_["vert_coord"]);
+    group.fields_->add(other.groups_[groupIndex].fields_["gmask"]);
 
     // Copy mask size
     group.gmaskSize_ = other.groups_[groupIndex].gmaskSize_;

@@ -27,49 +27,33 @@
 namespace saber {
 namespace interpolation {
 
-class GeometryParameters : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(GeometryParameters, Parameters)
-
- public:
-  /// Function space
-  oops::RequiredParameter<std::string> functionSpace{"function space", this};
-
-  /// Grid
-  oops::OptionalParameter<eckit::LocalConfiguration> grid{"grid", this};
-
-  /// Partitioner
-  oops::Parameter<std::string> partitioner{"partitioner", "equal_regions", this};
-
-  /// Halo size
-  oops::OptionalParameter<size_t> halo{"halo", this};
-};
-
-// -----------------------------------------------------------------------------
-/// Geometry handles geometry for model.
-
+/// This is a helper class for setting up the SABER interpolation blocks -- it looks similar to a
+/// model Geometry class (in particular, quench's), but is not fully conforming to the oops
+/// interface. Its purpose is to help convert yaml configs into the desired atlas data that must be
+/// passed into the interpolator.
 class Geometry : public util::Printable,
                  private util::ObjectCounter<Geometry> {
  public:
-  typedef GeometryParameters Parameters_;
-
   static const std::string classname() {return "interpolation::Geometry";}
 
-  Geometry(const Parameters_ &,
-           const eckit::mpi::Comm & comm = eckit::mpi::comm());
+  explicit Geometry(const eckit::Configuration &,
+                    const eckit::mpi::Comm & comm = eckit::mpi::comm());
 
   const atlas::FunctionSpace & functionSpace() const {return functionSpace_;}
+  const atlas::FieldSet & fields() const {return fieldSet_;}
+
   void latlon(std::vector<double> &, std::vector<double> &, const bool) const;
 
  private:
   void print(std::ostream &) const;
+
   const eckit::mpi::Comm & comm_;
-  size_t halo_;
   atlas::Grid grid_;
-  bool unstructuredGrid_;
   atlas::grid::Partitioner partitioner_;
+  size_t halo_;
   atlas::FunctionSpace functionSpace_;
+  atlas::FieldSet fieldSet_;
 };
-// -----------------------------------------------------------------------------
 
 }  // namespace interpolation
 }  // namespace saber

@@ -45,7 +45,7 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
   //    block, we can simply skip the initializiation of this data structure and conveniently avoid
   //    the incompatibility... an absolute house of cards!
   Geometry geom(params.innerGeom, outerGeometryData.comm());
-  innerGeomData_.reset(new oops::GeometryData(geom.functionSpace(), outerGeometryData.fieldSet(),
+  innerGeomData_.reset(new oops::GeometryData(geom.functionSpace(), geom.fields(),
                                               true, outerGeometryData.comm()));
   std::vector<double> lats;
   std::vector<double> lons;
@@ -54,9 +54,11 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
   // innerGeomData_->setLocalTree(lats, lons);
   geom.latlon(lats, lons, false);
   innerGeomData_->setGlobalTree(lats, lons);
+
   interp_.reset(new oops::GlobalInterpolator(
           params.localInterpConf.value(), *innerGeomData_,
           outerGeometryData.functionSpace(), outerGeometryData.comm()));
+
   oops::Log::trace() << classname() << "::Interpolation done" << std::endl;
 }
 

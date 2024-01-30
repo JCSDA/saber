@@ -104,7 +104,6 @@ class Geometry : public util::Printable,
   const atlas::grid::Partitioner partitioner() const {return partitioner_;}
   const atlas::Mesh mesh() const {return mesh_;}
   const atlas::FunctionSpace & functionSpace() const {return functionSpace_;}
-  atlas::FunctionSpace & functionSpace() {return functionSpace_;}
   const atlas::FieldSet & fields() const {return groups_[0].fields_;}
   const atlas::FieldSet & fields(const size_t & groupIndex) const
     {return groups_[groupIndex].fields_;}

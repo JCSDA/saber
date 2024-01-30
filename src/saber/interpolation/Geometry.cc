@@ -22,6 +22,7 @@
 
 #include "eckit/exception/Exceptions.h"
 
+#include "oops/util/FunctionSpaceHelpers.h"
 #include "oops/util/Logger.h"
 
 // -----------------------------------------------------------------------------
@@ -29,92 +30,15 @@ namespace saber {
 namespace interpolation {
 // -----------------------------------------------------------------------------
 
-Geometry::Geometry(const Parameters_ & params,
-                   const eckit::mpi::Comm & comm) :
-  comm_(comm) {
-  // Halo
-  const auto & halo = params.halo.value();
-  if (halo != boost::none) {
-    halo_ = *halo;
-  } else {
-    halo_ = 1;
-  }
+Geometry::Geometry(const eckit::Configuration & config,
+                   const eckit::mpi::Comm & comm)
+  : comm_(comm), halo_(1)
+{
+  atlas::Mesh mesh;
+  util::setupFunctionSpace(comm_, config, grid_, partitioner_, mesh, functionSpace_, fieldSet_);
 
-  // Setup grid
-  const auto & gridParams = params.grid.value();
-  unstructuredGrid_ = false;
-  if (gridParams != boost::none) {
-    oops::Log::info() << "Info     : Grid config: " << *gridParams << std::endl;
-    eckit::LocalConfiguration gridParams_(*gridParams);
-    if (gridParams_.has("type")) {
-      std::string type = gridParams_.getString("type");
-      if (type == "unstructured") {
-        // Split unstructured grid among processors
-        std::vector<double> xyFull = gridParams_.getDoubleVector("xy");
-        size_t gridSize = xyFull.size()/2;
-        size_t rank = 0;
-        std::vector<double> xy;
-        for (size_t jnode = 0; jnode < gridSize; ++jnode) {
-          // Copy coordinates on a given task
-          if (comm_.rank() == rank) {
-            xy.push_back(xyFull[2*jnode]);
-            xy.push_back(xyFull[2*jnode+1]);
-          }
-
-          // Update task index
-          ++rank;
-          if (rank == comm_.size()) rank = 0;
-        }
-
-        // Reset coordinates
-        gridParams_.set("xy", xy);
-
-        // Set flag
-        unstructuredGrid_ = true;
-      }
-    }
-    grid_ = atlas::Grid(gridParams_);
-  } else {
-    throw eckit::UserError("Grid or grid input file required", Here());
-  }
-
-  if (!unstructuredGrid_) {
-    // Setup partitioner
-    partitioner_ = atlas::grid::Partitioner(params.partitioner.value());
-  }
-
-  if (params.functionSpace.value() == "StructuredColumns") {
-    // StructuredColumns
-
-    // Setup distribution
-    atlas::grid::Distribution distribution = atlas::grid::Distribution(grid_, partitioner_);
-
-    // Setup function space
-    functionSpace_ = atlas::functionspace::StructuredColumns(grid_, distribution,
-                     atlas::option::halo(halo_));
-
-  } else if (params.functionSpace.value() == "NodeColumns") {
-    // NodeColumns
-    if (grid_.name().compare(0, 2, std::string{"CS"}) == 0) {
-      // CubedSphere
-      const atlas::Mesh mesh = atlas::MeshGenerator("cubedsphere_dual").generate(grid_);
-      functionSpace_ = atlas::functionspace::CubedSphereNodeColumns(mesh);
-    } else {
-      if (comm_.size() == 1) {
-        // NodeColumns
-        const atlas::Mesh mesh = atlas::MeshGenerator("delaunay").generate(grid_);
-        functionSpace_ = atlas::functionspace::NodeColumns(mesh);
-      } else {
-        throw eckit::FunctionalityNotSupported("NodeColumns function space on multiple PEs not"
-          " supported yet", Here());
-      }
-    }
-  } else if (params.functionSpace.value() == "PointCloud") {
-    // Setup function space
-    functionSpace_ = atlas::functionspace::PointCloud(grid_);
-  } else {
-    throw eckit::FunctionalityNotSupported(params.functionSpace.value() +
-      " function space not supported yet", Here());
+  if (config.has("halo")) {
+    halo_ = config.getUnsigned("halo");
   }
 
   // Print summary
@@ -165,7 +89,7 @@ void Geometry::print(std::ostream & os) const {
   os << prefix <<  "Interpolation geometry grid:" << std::endl;
   os << prefix << "- name: " << grid_.name() << std::endl;
   os << prefix << "- size: " << grid_.size() << std::endl;
-  if (!unstructuredGrid_) {
+  if (partitioner_) {
     os << prefix << "Partitioner:" << std::endl;
     os << prefix << "- type: " << partitioner_.type() << std::endl;
   }
