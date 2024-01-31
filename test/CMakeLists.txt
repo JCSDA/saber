@@ -230,6 +230,13 @@ foreach( mpi omp IN ZIP_LISTS mpi_list omp_list )
                     if( ${deps_length} GREATER 0 )
                         list( TRANSFORM deps_list PREPEND saber_test_ )
                         list( TRANSFORM deps_list APPEND _${mpi}-${omp} )
+                        if( ${mpi} GREATER 1 )
+                            set( deps_list_1 "" )
+                            list( APPEND deps_list_1 ${deps} )
+                            list( TRANSFORM deps_list_1 PREPEND saber_test_ )
+                            list( TRANSFORM deps_list_1 APPEND _1-1 )
+                            list( APPEND deps_list ${deps_list_1} )
+                        endif()
                     endif()
 
                     # Add test
