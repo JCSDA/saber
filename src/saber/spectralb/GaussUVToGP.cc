@@ -225,7 +225,7 @@ void interpolateCSToGauss(const oops::GeometryData & outerGeometryData,
 
   // Interpolate to intermediate PointCloud 1
   const auto field_options = atlas::option::name(s) |
-                             atlas::option::levels(csfields[s].levels());
+                             atlas::option::levels(csfields[s].shape(1));
   auto step1Field = step1Functionspace.createField<double>(
               field_options | atlas::option::halo(0));
 
@@ -274,14 +274,14 @@ void interpolateCSToGaussSinglePE(const oops::GeometryData & outerGeometryData,
   // Perform interpolation
   atlas::Field hybridField = hybridFunctionSpace.createField<double>(
                   atlas::option::name(s) |
-                  atlas::option::levels(csfields[s].levels()));
+                  atlas::option::levels(csfields[s].shape(1)));
 
   interp.execute(csfields[s], hybridField);
 
   // Copy to target StructuredColumns
   atlas::Field gaussField = targetFunctionspace.createField<double>(
                   atlas::option::name(s) |
-                  atlas::option::levels(csfields[s].levels()) |
+                  atlas::option::levels(csfields[s].shape(1)) |
                   atlas::option::halo(targetFunctionspace.halo()));
 
   atlas::array::make_view<double, 2>(gaussField).assign(
@@ -436,7 +436,7 @@ void applyRecipNtimesNplus1SpectralScaling(const oops::Variables & innerNames,
       const int m1 = zonal_wavenumbers(jm);
       for (std::size_t n1 = m1; n1 <= static_cast<std::size_t>(totalWavenumber); ++n1) {
         for (std::size_t img = 0; img < 2; ++img, ++i) {
-          for (atlas::idx_t jl = 0; jl < fSet[innerNames[var]].levels(); ++jl) {
+          for (atlas::idx_t jl = 0; jl < fSet[innerNames[var]].shape(1); ++jl) {
             if (n1 != 0) {
               fldView(i, jl) *= squaredEarthRadius / (n1 * (n1 + 1));
             } else {
@@ -501,12 +501,12 @@ void GaussUVToGP::multiply(oops::FieldSet3D & fset) const {
 
   atlas::Field gp = fset["geostrophic_pressure_levels_minus_one"];
 
-  atlas::Field rhsvec = allocateRHSVec(gaussFunctionSpace_, gp.levels());
+  atlas::Field rhsvec = allocateRHSVec(gaussFunctionSpace_, gp.shape(1));
 
   populateRHSVec(augmentedState_["dry_air_density_levels_minus_one"],
                  augmentedState_["coriolis"], fset.fieldSet(), rhsvec);
 
-  atlas::FieldSet specfset = allocateSpectralVortDiv(specFunctionSpace_, rhsvec.levels());
+  atlas::FieldSet specfset = allocateSpectralVortDiv(specFunctionSpace_, rhsvec.shape(1));
   // calculate dir vorticity and divergence spectrally
   trans_.dirtrans_wind2vordiv(rhsvec, specfset["vorticity"], specfset["divergence"]);
 
@@ -538,7 +538,7 @@ void GaussUVToGP::multiplyAD(oops::FieldSet3D & fset) const {
 
   atlas::FieldSet specfset =
       allocateSpectralVortDiv(specFunctionSpace_,
-                              fset["geostrophic_pressure_levels_minus_one"].levels());
+                              fset["geostrophic_pressure_levels_minus_one"].shape(1));
 
   fset["geostrophic_pressure_levels_minus_one"].adjointHaloExchange();
 
@@ -556,7 +556,7 @@ void GaussUVToGP::multiplyAD(oops::FieldSet3D & fset) const {
   vortView.assign(0.0);
 
   atlas::Field rhsvec = allocateRHSVec(gaussFunctionSpace_,
-                                       fset["geostrophic_pressure_levels_minus_one"].levels());
+                                       fset["geostrophic_pressure_levels_minus_one"].shape(1));
 
   trans_->dirtrans_wind2vordiv_adj(specfset["vorticity"], specfset["divergence"], rhsvec);
 

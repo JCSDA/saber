@@ -140,7 +140,7 @@ void HpHexnerToPExner::leftInverseMultiply(oops::FieldSet3D & fset) const {
 
   hydrostaticPressureView.assign(airPressureView);
 
-  const auto levels = fset["hydrostatic_exner_levels"].levels();
+  const auto levels = fset["hydrostatic_exner_levels"].shape(1);
   for (atlas::idx_t jnode = 0; jnode < hexner_view.shape(0); jnode++) {
     for (atlas::idx_t jlev = 0; jlev < levels - 1; jlev++) {
       hexner_view(jnode, jlev) = exner_view(jnode, jlev);

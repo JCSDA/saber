@@ -71,7 +71,7 @@ void Interpolation::multiply(oops::FieldSet3D & fieldSet) const {
   atlas::FieldSet targetFieldSet;
   for (const auto & varName : activeVars_.variables()) {
     const auto & f = fieldSet[varName];
-    const size_t nlev = f.levels();
+    const size_t nlev = f.shape(1);
     atlas::Field field = outerGeomData_.functionSpace()->createField<double>(
         atlas::option::name(varName) | atlas::option::levels(nlev));
     field.metadata() = f.metadata();
@@ -109,7 +109,7 @@ void Interpolation::multiplyAD(oops::FieldSet3D & fieldSet) const {
   atlas::FieldSet sourceFieldSet;
   for (const auto & varName : activeVars_.variables()) {
     const auto & f = fieldSet[varName];
-    const size_t nlev = f.levels();
+    const size_t nlev = f.shape(1);
     atlas::Field field = innerGeomData_->functionSpace()->createField<double>(
         atlas::option::name(varName) | atlas::option::levels(nlev));
     field.metadata() = f.metadata();
@@ -153,7 +153,7 @@ void Interpolation::leftInverseMultiply(oops::FieldSet3D & fieldSet) const {
   atlas::FieldSet targetFieldSet;
   for (const auto & varName : activeVars_.variables()) {
     const auto & f = fieldSet[varName];
-    const size_t nlev = f.levels();
+    const size_t nlev = f.shape(1);
     atlas::Field field = innerGeomData_->functionSpace()->createField<double>(
         atlas::option::name(varName) | atlas::option::levels(nlev));
     field.metadata() = f.metadata();

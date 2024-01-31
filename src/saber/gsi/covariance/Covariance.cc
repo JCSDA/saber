@@ -82,7 +82,7 @@ void Covariance::randomize(oops::FieldSet3D & fset) const {
 
       // Create the gsi grid field and add to Fieldset
       newFields.add(gsiGridFuncSpace_.createField<double>(atlas::option::name(sabField.name())
-        | atlas::option::levels(sabField.levels())));
+        | atlas::option::levels(sabField.shape(1))));
   }
 
   // Replace whatever fields are coming in with the gsi grid fields

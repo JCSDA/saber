@@ -197,9 +197,9 @@ atlas::FieldSet createMuStats(const atlas::FieldSet & fields,
   // number of model levels
   std::size_t modelLevels;
   if (fields.has("height")) {
-    modelLevels = fields["height"].levels();
+    modelLevels = fields["height"].shape(1);
   } else {
-    modelLevels = fields["vert_coord"].levels();
+    modelLevels = fields["vert_coord"].shape(1);
   }
 
   // geostrophic pressure vertical regression statistics are grouped

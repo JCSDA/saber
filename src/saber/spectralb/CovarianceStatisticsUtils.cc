@@ -465,7 +465,7 @@ void spectralVerticalConvolution(const oops::Variables & activeVars,
   // Only update the fields that were specified in the active variables
   for (const auto & var : activeVars.variables()) {
     idx_t i = 0;
-    idx_t levels(fieldSet[var].levels());
+    idx_t levels(fieldSet[var].shape(1));
     auto vertCovView = make_view<const double, 3>(spectralVerticalStats[var]);
     auto spfView = make_view<double, 2>(fieldSet[var]);
 
@@ -515,7 +515,7 @@ void spectralVerticalConvolutionSqrt(const oops::Variables & activeVars,
 
   // Only update the fields that were specified in the active variables
   for (const auto & var : activeVars.variables()) {
-    idx_t levels(fieldSet[var].levels());
+    idx_t levels(fieldSet[var].shape(1));
     auto UMatrixView = make_view<const double, 3>(spectralVerticalStatsSqrt[var]);
     auto spfView = make_view<double, 2>(fieldSet[var]);
     const int nSpectralBinsFull = spectralVerticalStatsSqrt[var].shape(0);
@@ -562,7 +562,7 @@ void spectralVerticalConvolutionSqrtAD(const oops::Variables & activeVars,
 
   // Only update the fields that were specified in the active variables
   for (const auto & var : activeVars.variables()) {
-    idx_t levels(fieldSet[var].levels());
+    idx_t levels(fieldSet[var].shape(1));
     auto UMatrixView = make_view<const double, 3>(spectralVerticalStatsSqrt[var]);
     auto spfView = make_view<double, 2>(fieldSet[var]);
     const int nSpectralBinsFull = spectralVerticalStatsSqrt[var].shape(0);

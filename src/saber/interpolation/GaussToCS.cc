@@ -102,7 +102,7 @@ void inverseInterpolateMultiplePEs(
   for (const auto & fieldname : variables.variables()) {
     auto matchingPtcldField = inverseInterpolation.matchingPtcldFspace->createField<double>(
                 atlas::option::name(fieldname) |
-                atlas::option::levels(srcFieldSet[fieldname].levels()));
+                atlas::option::levels(srcFieldSet[fieldname].shape(1)));
     atlas::array::make_view<double, 2>(matchingPtcldField).assign(0.0);
     matchingPtcldFset.add(matchingPtcldField);
   }
@@ -113,7 +113,7 @@ void inverseInterpolateMultiplePEs(
   for (const auto & fieldname : variables.variables()) {
     auto targetPtcldField = inverseInterpolation.targetPtcldFspace->createField<double>(
           atlas::option::name(fieldname) |
-          atlas::option::levels(srcFieldSet[fieldname].levels()));
+          atlas::option::levels(srcFieldSet[fieldname].shape(1)));
     targetPtcldFset.add(targetPtcldField);
   }
   inverseInterpolation.redistribution.execute(matchingPtcldFset, targetPtcldFset);
@@ -122,7 +122,7 @@ void inverseInterpolateMultiplePEs(
   for (const auto & fieldname : variables.variables()) {
     atlas::Field gaussField = gaussFunctionSpace.createField<double>(
                 atlas::option::name(fieldname) |
-                atlas::option::levels(srcFieldSet[fieldname].levels()));
+                atlas::option::levels(srcFieldSet[fieldname].shape(1)));
     atlas::array::make_view<double, 2>(gaussField).assign(
         atlas::array::make_view<const double, 2>(targetPtcldFset[fieldname]));
     gaussField.haloExchange();
@@ -149,7 +149,7 @@ void inverseInterpolateSinglePE(
   for (const auto & fieldname : variables.variables()) {
     atlas::Field hybridField = hybridFunctionSpace.createField<double>(
                 atlas::option::name(fieldname) |
-                atlas::option::levels(srcFieldSet[fieldname].levels()));
+                atlas::option::levels(srcFieldSet[fieldname].shape(1)));
     hybridFieldSet.add(hybridField);
   }
 
@@ -159,7 +159,7 @@ void inverseInterpolateSinglePE(
   for (const auto & fieldname : variables.variables()) {
     atlas::Field gaussField = gaussFunctionSpace.createField<double>(
                 atlas::option::name(fieldname) |
-                atlas::option::levels(srcFieldSet[fieldname].levels()));
+                atlas::option::levels(srcFieldSet[fieldname].shape(1)));
     atlas::array::make_view<double, 2>(gaussField).assign(
         atlas::array::make_view<const double, 2>(hybridFieldSet[fieldname]));
     gaussField.haloExchange();
@@ -234,7 +234,7 @@ void GaussToCS::multiply(oops::FieldSet3D & fieldSet) const {
     atlas::Field csField =
       CSFunctionSpace_.createField<double>(
           atlas::option::name(fieldname) |
-          atlas::option::levels(gaussFieldSet[fieldname].levels()) |
+          atlas::option::levels(gaussFieldSet[fieldname].shape(1)) |
           atlas::option::halo(1));
     csFieldSet.add(csField);
   }
@@ -276,7 +276,7 @@ void GaussToCS::multiplyAD(oops::FieldSet3D & fieldSet) const {
   for (const auto & fieldname : activeVars_.variables()) {
     atlas::Field gaussField =
       gaussFunctionSpace_.createField<double>(atlas::option::name(fieldname) |
-            atlas::option::levels(csFieldSet[fieldname].levels()) |
+            atlas::option::levels(csFieldSet[fieldname].shape(1)) |
             atlas::option::halo(1));
     gaussFieldSet.add(gaussField);
   }

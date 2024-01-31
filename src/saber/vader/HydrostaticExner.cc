@@ -227,7 +227,7 @@ void HydrostaticExner::leftInverseMultiply(oops::FieldSet3D & fset) const {
   // Retrieve hydrostatic Exner from Exner. Need to extrapolate top level
   auto exner_view = atlas::array::make_view<const double, 2>(fset["exner_levels_minus_one"]);
   auto hexner_view = atlas::array::make_view<double, 2>(fset["hydrostatic_exner_levels"]);
-  const auto levels = fset["hydrostatic_exner_levels"].levels();
+  const auto levels = fset["hydrostatic_exner_levels"].shape(1);
   for (atlas::idx_t jnode = 0; jnode < hexner_view.shape(0); jnode++) {
     for (atlas::idx_t jlev = 0; jlev < levels - 1; jlev++) {
       hexner_view(jnode, jlev) = exner_view(jnode, jlev);

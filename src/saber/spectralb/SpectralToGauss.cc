@@ -112,11 +112,11 @@ atlas::FieldSet convertUVToFieldSet(const atlas::Field & uvField) {
 
   atlas::Field u = uvField.functionspace().createField<double>
       (atlas::option::name("eastward_wind") |
-       atlas::option::levels(uvField.levels()));
+       atlas::option::levels(uvField.shape(1)));
 
   atlas::Field v = uvField.functionspace().createField<double>
       (atlas::option::name("northward_wind") |
-       atlas::option::levels(uvField.levels()));
+       atlas::option::levels(uvField.shape(1)));
 
   auto uView = atlas::array::make_view<double, 2>(u);
   auto vView = atlas::array::make_view<double, 2>(v);
@@ -143,7 +143,7 @@ atlas::Field convertUVToFieldSetAD(const atlas::FieldSet & fset) {
   const atlas::Field & uField = fset["eastward_wind"];
   const atlas::Field & vField = fset["northward_wind"];
 
-  const atlas::idx_t levels = static_cast<atlas::idx_t>(uField.levels());
+  const atlas::idx_t levels = static_cast<atlas::idx_t>(uField.shape(1));
   const auto sc = atlas::functionspace::StructuredColumns(uField.functionspace());
 
   atlas::Field uvgp = sc.createField<double>(atlas::option::name("uv_gp") |
@@ -173,7 +173,7 @@ atlas::Field convertFieldSetToUV(const atlas::FieldSet & fset) {
   const atlas::Field & uField = fset["eastward_wind"];
   const atlas::Field & vField = fset["northward_wind"];
 
-  const auto levels = static_cast<atlas::idx_t>(uField.levels());
+  const auto levels = static_cast<atlas::idx_t>(uField.shape(1));
   const auto sc = atlas::functionspace::StructuredColumns(uField.functionspace());
 
   atlas::Field uvgp = sc.createField<double>(atlas::option::name("uv_gp") |
@@ -255,7 +255,7 @@ void applyNtimesNplus1SpectralScaling(const oops::Variables & innerNames,
       const int m1 = zonal_wavenumbers(jm);
       for (std::size_t n1 = m1; n1 <= static_cast<std::size_t>(totalWavenumber); ++n1) {
         for (std::size_t img = 0; img < 2; ++img, ++i) {
-          for (atlas::idx_t jl = 0; jl < fSet[innerNames[var]].levels(); ++jl) {
+          for (atlas::idx_t jl = 0; jl < fSet[innerNames[var]].shape(1); ++jl) {
             if (inverse) {
               if (n1 != 0) {
                 fldView(i, jl) /=  n1 * (n1 + 1) / squaredEarthRadius;
@@ -385,7 +385,7 @@ void SpectralToGauss::multiplyScalarFields(const atlas::FieldSet & specFieldSet,
   for (const auto & fieldname : specFieldSet.field_names()) {
       atlas::Field gaussField =
         gaussFunctionSpace_.createField<double>(atlas::option::name(fieldname) |
-                                   atlas::option::levels(specFieldSet[fieldname].levels()));
+                                   atlas::option::levels(specFieldSet[fieldname].shape(1)));
       gaussField.haloExchange();
       atlas::array::make_view<double, 2>(gaussField).assign(0.0);
       gaussFieldSet.add(gaussField);
@@ -416,7 +416,7 @@ void SpectralToGauss::multiplyScalarFieldsAD(const atlas::FieldSet & gaussFieldS
   for (const auto & fieldname : gaussFieldSet.field_names()) {
     atlas::Field specField =
       specFunctionSpace_.createField<double>(atlas::option::name(fieldname) |
-                                 atlas::option::levels(gaussFieldSet[fieldname].levels()));
+                                 atlas::option::levels(gaussFieldSet[fieldname].shape(1)));
     specFieldSet.add(specField);
   }
 
@@ -441,7 +441,7 @@ void SpectralToGauss::invertMultiplyScalarFields(const atlas::FieldSet & gaussFi
 
   for (const auto & gaussField : gaussFieldSet) {
     const auto fieldConfig = atlas::option::name(gaussField.name()) |
-                             atlas::option::levels(gaussField.levels());
+                             atlas::option::levels(gaussField.shape(1));
     auto spectralField = specFunctionSpace_.createField<double>(fieldConfig);
     trans_.dirtrans(gaussField, spectralField);
     ASSERT(!outFieldSet.has(spectralField.name()));

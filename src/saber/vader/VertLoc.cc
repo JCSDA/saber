@@ -304,8 +304,8 @@ void VertLoc::multiply(oops::FieldSet3D & fset) const {
 
   // Active variables
   for (const auto & var : activeVars_.variables()) {
-    if (fset[var].levels() != nmods_) {
-      oops::Log::error() << "Error    : Field " << var << " has " << fset[var].levels()
+    if (fset[var].shape(1) != nmods_) {
+      oops::Log::error() << "Error    : Field " << var << " has " << fset[var].shape(1)
                          << ", expected " << nmods_ << ". " << std::endl;
       throw eckit::UserError("Wrong number of vertical levels in field " + var, Here());
     }
@@ -353,8 +353,8 @@ void VertLoc::multiplyAD(oops::FieldSet3D & fset) const {
 
   // Active variables
   for (const auto & var : activeVars_.variables()) {
-    if (fset[var].levels() != nlevs_) {
-      oops::Log::error() << "Error    : Field " << var << " has " << fset[var].levels()
+    if (fset[var].shape(1) != nlevs_) {
+      oops::Log::error() << "Error    : Field " << var << " has " << fset[var].shape(1)
                          << ", expected " << nlevs_ << ". " << std::endl;
       throw eckit::UserError("Wrong number of vertical levels in field " + var, Here());
     }

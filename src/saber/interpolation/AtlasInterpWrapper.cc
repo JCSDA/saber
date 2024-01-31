@@ -215,11 +215,11 @@ void AtlasInterpWrapper::execute(const atlas::Field & srcField,
     const atlas::functionspace::PointCloud localFs(localDstFunctionSpace_);
 
     // Global vector initialization
-    std::vector<double> globalData(fs.size()*dstField.levels(), 0.0);
+    std::vector<double> globalData(fs.size()*dstField.shape(1), 0.0);
 
     // Local destination field setup
     atlas::Field localDstField = localDstFunctionSpace_.createField<double>(
-      atlas::option::name(dstField.name()) | atlas::option::levels(dstField.levels()));
+      atlas::option::name(dstField.name()) | atlas::option::levels(dstField.shape(1)));
 
     // Interpolation from source field to local destination field
     interp_.execute(srcTmpField, localDstField);
@@ -227,7 +227,7 @@ void AtlasInterpWrapper::execute(const atlas::Field & srcField,
     // Copy of local destination field into global vector
     const auto localDstView = atlas::array::make_view<double, 2>(localDstField);
     atlas::idx_t globalInc = 0;
-    for (atlas::idx_t k = 0; k < dstField.levels(); ++k) {
+    for (atlas::idx_t k = 0; k < dstField.shape(1); ++k) {
       atlas::idx_t localInc = 0;
       for (atlas::idx_t i = 0; i < fs.size(); ++i) {
         if (eckit::mpi::comm().rank() == localTask_[i]) {
@@ -245,7 +245,7 @@ void AtlasInterpWrapper::execute(const atlas::Field & srcField,
     // Copy of global vector into global field
     auto dstView = atlas::array::make_view<double, 2>(dstField);
     globalInc = 0;
-    for (atlas::idx_t k = 0; k < dstField.levels(); ++k) {
+    for (atlas::idx_t k = 0; k < dstField.shape(1); ++k) {
       for (atlas::idx_t i = 0; i < fs.size(); ++i) {
         dstView(i, k) = globalData[globalInc];
         globalInc += 1;
@@ -257,7 +257,7 @@ void AtlasInterpWrapper::execute(const atlas::Field & srcField,
     // Empty target field setup
     auto targetField =
       targetFunctionSpace_.createField<double>(atlas::option::name(dstField.name()) |
-                                            atlas::option::levels(srcField.levels()));
+                                            atlas::option::levels(srcField.shape(1)));
 
     // Target field initialization
     auto targetView = atlas::array::make_view<double, 2>(targetField);
@@ -306,7 +306,7 @@ void AtlasInterpWrapper::executeAdjoint(atlas::Field & srcField,
 
     // Empty target field setup
     auto targetField = targetFunctionSpace_.createField<double>(
-    atlas::option::name(dstField.name()) | atlas::option::levels(dstField.levels()));
+    atlas::option::name(dstField.name()) | atlas::option::levels(dstField.shape(1)));
 
     // Target field initialization
     auto targetView = atlas::array::make_view<double, 2>(targetField);

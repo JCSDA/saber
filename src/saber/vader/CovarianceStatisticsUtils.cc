@@ -234,7 +234,7 @@ void interpMuStats(atlas::FieldSet & augmentedStateFieldSet,
   auto covFldView = atlas::array::make_view<double, 2>(covFld);
 
   for (atlas::idx_t jn = 0; jn < augmentedStateFieldSet["rht"].shape(0); ++jn) {
-    for (int jl = 0; jl < augmentedStateFieldSet["rht"].levels(); ++jl) {
+    for (int jl = 0; jl < augmentedStateFieldSet["rht"].shape(1); ++jl) {
       double normField = normalisedField(static_cast<double>(RHtView(jn, jl)));
       int indx = index(normField, muBins);
       double w = weight(normField, indx);
@@ -244,7 +244,7 @@ void interpMuStats(atlas::FieldSet & augmentedStateFieldSet,
   }
   if (varName.compare("muA") == 0) {
     for (atlas::idx_t jn = 0; jn < augmentedStateFieldSet[varName].shape(0); ++jn) {
-      for (int jl = 0; jl < augmentedStateFieldSet[varName].levels(); ++jl) {
+      for (int jl = 0; jl < augmentedStateFieldSet[varName].shape(1); ++jl) {
         // note -  the actual mu inverse field in VAR involves an additional step
         //         that involves interpolation of a "mu_table".
         //         What is here is a simplification.

@@ -110,7 +110,7 @@ void SpectralToSpectral::truncate(const atlas::functionspace::Spectral & input_f
       // active variable
       atlas::Field outField = output_functionspace.createField<double>(
                               atlas::option::name(field.name()) |
-                              atlas::option::levels(field.levels()));
+                              atlas::option::levels(field.shape(1)));
       auto inFieldView = atlas::array::make_view<double, 2>(field);
       auto outFieldView = atlas::array::make_view<double, 2>(outField);
 
@@ -168,7 +168,7 @@ void SpectralToSpectral::truncateAD(const atlas::functionspace::Spectral & input
       // active variable
       atlas::Field outField = output_functionspace.createField<double>(
                               atlas::option::name(field.name()) |
-                              atlas::option::levels(field.levels()));
+                              atlas::option::levels(field.shape(1)));
       auto inFieldView = atlas::array::make_view<double, 2>(field);
       auto outFieldView = atlas::array::make_view<double, 2>(outField);
 

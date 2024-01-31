@@ -146,7 +146,7 @@ void SpectralAnalyticalFilter::multiply(oops::FieldSet3D & fieldSet) const {
 
   for (const auto & var : activeVars_.variables()) {
     auto view = atlas::array::make_view<double, 2>(fieldSet[var]);
-    const atlas::idx_t levels = fieldSet[var].levels();
+    const atlas::idx_t levels = fieldSet[var].shape(1);
 
     // Element-wise multiplication
     atlas::idx_t jnode = 0;
@@ -196,7 +196,7 @@ void SpectralAnalyticalFilter::leftInverseMultiply(oops::FieldSet3D & fieldSet) 
 
   for (const auto & var : activeVars_.variables()) {
     auto view = atlas::array::make_view<double, 2>(fieldSet[var]);
-    const atlas::idx_t levels = fieldSet[var].levels();
+    const atlas::idx_t levels = fieldSet[var].shape(1);
 
     // Element-wise multiplication
     atlas::idx_t jnode = 0;
