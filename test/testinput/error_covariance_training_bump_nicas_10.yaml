@@ -1,0 +1,62 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 30
+  groups:
+  - variables:
+    - snow_depth
+    levels: 1
+    vert_coord: [0.0]
+    orography: 
+      top longitude: 180.0
+      top latitude: 0.0
+      zonal length: 6000.0e3
+      meridional length: 12000.0e3
+      height: 1.0
+  halo: 1
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables:
+  - snow_depth
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: BUMP_NICAS
+    calibration:
+      general:
+        testing: true
+        universe length-scale: 10000.0e3
+      io:
+        data directory: testdata
+        files prefix: error_covariance_training_bump_nicas_10/_MPI_-_OMP_
+      drivers:
+        multivariate strategy: univariate
+        compute nicas: true
+        adjoints test: true
+        internal dirac test: true
+      nicas:
+        resolution: 10.0
+        explicit length-scales: true
+        horizontal length-scale:
+        - groups:
+          - snow_depth
+          value: 6000.0e3
+        vertical length-scale:
+        - groups:
+          - snow_depth
+          value: 0.6
+      dirac:
+      - longitude: 180.0
+        latitude: 0.0
+        level: 1
+        variable: snow_depth
+      output model files:
+      - parameter: vert_coord
+        file:
+          filepath: testdata/error_covariance_training_bump_nicas_10/_MPI_-_OMP__vert_coord
+      - parameter: dirac_nicas
+        file:
+          filepath: testdata/error_covariance_training_bump_nicas_10/_MPI_-_OMP__dirac_nicas
+test:
+  reference filename: testref/error_covariance_training_bump_nicas_10.ref

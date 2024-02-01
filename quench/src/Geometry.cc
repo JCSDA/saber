@@ -20,6 +20,7 @@
 #include "atlas/util/KDTree.h"
 #include "atlas/util/Point.h"
 
+#include "oops/generic/gc99.h"
 #include "oops/util/abor1_cpp.h"
 #include "oops/util/FunctionSpaceHelpers.h"
 #include "oops/util/Logger.h"
@@ -153,6 +154,27 @@ Geometry::Geometry(const eckit::Configuration & config, const eckit::mpi::Comm &
     for (atlas::idx_t jnode = 0; jnode < vert_coord.shape(0); ++jnode) {
       for (size_t jlevel = 0; jlevel < group.levels_; ++jlevel) {
         vert_coordView(jnode, jlevel) = group.vert_coord_[jlevel];
+      }
+    }
+
+    // Add orography (mountain) on bottom level
+    const boost::optional<OrographyParameters> &orographyParams = groupParams.orography.value();
+    if (orographyParams != boost::none) {
+      const atlas::PointLonLat topPoint({orographyParams->topLon.value(),
+        orographyParams->topLat.value()});
+      const double delta = (group.levels_ == 1) ? 1.0 :
+        group.vert_coord_[group.levels_-2]-group.vert_coord_[group.levels_-1];
+      const auto lonlatView = atlas::array::make_view<double, 2>(functionSpace_.lonlat());
+      for (atlas::idx_t jnode = 0; jnode < lonlatView.shape(0); ++jnode) {
+        const atlas::PointLonLat xPoint({lonlatView(jnode, 0), orographyParams->topLat.value()});
+        const atlas::PointLonLat yPoint({orographyParams->topLon.value(), lonlatView(jnode, 1)});
+        double dxNorm = atlas::util::Earth().distance(xPoint, topPoint)
+          /orographyParams->zonalLength.value();
+        double dyNorm = atlas::util::Earth().distance(yPoint, topPoint)
+          /orographyParams->meridionalLength.value();
+        double distNorm = std::sqrt(dxNorm*dxNorm+dyNorm*dyNorm);
+        double orography = delta*orographyParams->height.value()*oops::gc99(distNorm);
+        vert_coordView(jnode, group.vert_coord_[group.levels_-1]) += orography;
       }
     }
     group.fields_->add(vert_coord);
