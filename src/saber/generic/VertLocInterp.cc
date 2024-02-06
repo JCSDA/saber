@@ -6,7 +6,7 @@
  */
 #include <string>
 
-#include "saber/vader/VertLocInterp.h"
+#include "saber/generic/VertLocInterp.h"
 
 #include "eckit/config/LocalConfiguration.h"
 

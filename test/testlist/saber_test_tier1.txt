@@ -18,7 +18,6 @@ dirac_interpolation_3
 dirac_stddev_1
 dirac_stddev_2
 dirac_duplicate_variables
-dirac_write_fields
 error_covariance_training_bump_1
 error_covariance_training_bump_2
 error_covariance_training_bump_hdiag_1

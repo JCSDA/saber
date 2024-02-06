@@ -3,12 +3,8 @@
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
-#list(vader_src_files_list
-# Add future non-MO VADER blocks here
-#)
-
-# MO-specific VADER blocks
-if ( oops_FOUND AND vader_FOUND )
+if ( vader_FOUND )
+    # MO-specific VADER blocks
     list(APPEND vader_src_files_list
     AirTemperature.cc
     AirTemperature.h
@@ -36,16 +32,10 @@ if ( oops_FOUND AND vader_FOUND )
     SuperMoistIncrOp.cc
     SuperMoistIncrOp.h
     PressureParameters.h
-    VertLoc.cc
-    VertLoc.h
-    VertLocInterp.cc
-    VertLocInterp.h
     )
-endif()
 
-if ( vader_FOUND )
+    # Generic VADER blocks
     list(APPEND vader_src_files_list
-
     VaderBlock.cc
     VaderBlock.h
     )

@@ -24,6 +24,14 @@ Hybrid.cc
 StdDev.h
 StdDev.cc
 
+# Vertical localization
+VertLoc.cc
+VertLoc.h
+
+# Interpolated vertical localization
+VertLocInterp.cc
+VertLocInterp.h
+
 # Write selected fields to a netCDF file
 WriteFields.h
 WriteFields.cc

@@ -5,7 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "saber/vader/VertLoc.h"
+#include "saber/generic/VertLoc.h"
 
 #include <iomanip>
 #include <memory>
