@@ -66,10 +66,9 @@ background error:
         members from template:
           pattern: '%MEM%'
           nmembers: 2
-          zero padding: 6
           template:
             date: 2016-01-01T16:00:00Z
-            filepath: testdata/process_perts_from_gauss_perts_1/high_pass_%MEM%
+            filepath: testdata/process_perts_from_gauss_perts_1/filtered_pert_mb%MEM%_wb2
             variables:
             - eastward_wind
             - mu

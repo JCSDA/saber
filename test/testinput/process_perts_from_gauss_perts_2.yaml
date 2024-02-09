@@ -1,0 +1,129 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_gaussian
+    N: 12
+  groups:
+  - variables:
+    - eastward_wind
+    - mu
+    - northward_wind
+    - streamfunction
+    - unbalanced_pressure_levels_minus_one
+    - velocity_potential
+    levels: 70
+  partitioner: ectrans
+  halo: 1
+
+background:
+  date: &date '2010-01-01T12:00:00Z'
+  state variables: &vars
+  - eastward_wind
+  - northward_wind
+  - unbalanced_pressure_levels_minus_one
+  - mu
+
+saber filter blocks:
+- saber central block:
+    saber block name: ID
+  saber outer blocks:
+  - saber block name: spectral analytical filter
+    function:
+      shape: waveband filter
+      waveband min: 0
+      waveband peak: 1
+      waveband max: 3
+    normalize filter variance: false
+    active variables:
+    - mu
+    - streamfunction
+    - unbalanced_pressure_levels_minus_one
+    - velocity_potential
+  - saber block name: spectral to gauss
+    active variables:
+    - eastward_wind
+    - mu
+    - northward_wind
+    - streamfunction
+    - unbalanced_pressure_levels_minus_one
+    - velocity_potential
+    filter mode: true # instead of running the adjoint code it runs the inverse
+- saber central block:
+    saber block name: ID
+  saber outer blocks:
+  - saber block name: spectral analytical filter
+    function:
+      shape: waveband filter
+      waveband min: 1
+      waveband peak: 3
+      waveband max: 9
+    normalize filter variance: false
+    active variables:
+    - mu
+    - streamfunction
+    - unbalanced_pressure_levels_minus_one
+    - velocity_potential
+  - saber block name: spectral to gauss
+    active variables:
+    - eastward_wind
+    - mu
+    - northward_wind
+    - streamfunction
+    - unbalanced_pressure_levels_minus_one
+    - velocity_potential
+    filter mode: true # instead of running the adjoint code it runs the inverse
+- saber central block:
+    saber block name: ID
+  saber outer blocks:
+  - saber block name: spectral analytical filter
+    function:
+      shape: waveband filter
+      waveband min: 3
+      waveband peak: 9
+      waveband max: 23 # last waveband max need to be 2N - 1
+    normalize filter variance: false
+    active variables:
+    - mu
+    - streamfunction
+    - unbalanced_pressure_levels_minus_one
+    - velocity_potential
+  - saber block name: spectral to gauss
+    active variables:
+    - eastward_wind
+    - mu
+    - northward_wind
+    - streamfunction
+    - unbalanced_pressure_levels_minus_one
+    - velocity_potential
+    filter mode: true # instead of running the adjoint code it runs the inverse
+
+input variables: *vars
+
+ensemble pert:
+  date: *date
+  members from template:
+    nmembers: 2
+    pattern: '%MEM%'
+    template:
+      filepath: testdata/randomization_sqrtspectralb_1/randomized_gauss_mb%MEM%
+      variables: *vars
+
+output perturbations:
+  # No output for waveband 1
+- {}
+  # Generic write only for waveband 2
+- generic write:
+    filepath: testdata/process_perts_from_gauss_perts_2/filtered_pert_%GRID%_mb%MEM%_wb2
+    member pattern: %MEM%
+    grid id pattern: %GRID%
+  # Both generic and model write only for waveband 3
+- generic write:
+    filepath: testdata/process_perts_from_gauss_perts_2/filtered_pert_mb%MEM%_wb3
+    member pattern: %MEM%
+  model write:
+    filepath: testdata/process_perts_from_gauss_perts_2/filtered_pert_modelwrite_mb%MEM%_wb3
+    member pattern: %MEM%
+
+
+test:
+  reference filename: testref/process_perts_from_gauss_perts_2.ref
