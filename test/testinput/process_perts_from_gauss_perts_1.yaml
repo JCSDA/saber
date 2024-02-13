@@ -46,7 +46,7 @@ saber filter blocks:
     - velocity_potential
     filter mode: true # instead of running the adjoint code it runs the inverse
 
-residual filter:
+residual filter: {}
 
 input variables: *vars
 
@@ -62,10 +62,10 @@ ensemble pert:
 output perturbations:
 - model write:
     filepath: testdata/process_perts_from_gauss_perts_1/filtered_pert_mb%MEM%_wb1
-    member pattern: %MEM%
+    member pattern: '%MEM%'
 - model write:
     filepath: testdata/process_perts_from_gauss_perts_1/filtered_pert_mb%MEM%_wb2
-    member pattern: %MEM%
+    member pattern: '%MEM%'
 
 test:
   reference filename: testref/process_perts_from_gauss_perts_1.ref

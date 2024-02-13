@@ -138,7 +138,7 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
 // -----------------------------------------------------------------------------
   explicit ProcessPerts(const eckit::mpi::Comm & comm = eckit::mpi::comm()) :
     Application(comm) {
-    oops::instantiateCovarFactory<MODEL>();
+    instantiateCovarFactory<MODEL>();
   }
 // -----------------------------------------------------------------------------
   virtual ~ProcessPerts() {}
@@ -149,9 +149,6 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
     ProcessPertsParameters_ params;
     if (validate) params.validate(fullConfig);
     params.deserialize(fullConfig);
-
-    // Define number of subwindows
-    const eckit::LocalConfiguration backgroundConfig(fullConfig, "background");
 
     // Define space and time communicators
     const eckit::mpi::Comm * commSpace = &this->getComm();

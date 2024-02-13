@@ -114,15 +114,15 @@ output perturbations:
   # Generic write only for waveband 2
 - generic write:
     filepath: testdata/process_perts_from_gauss_perts_2/filtered_pert_%GRID%_mb%MEM%_wb2
-    member pattern: %MEM%
-    grid id pattern: %GRID%
+    member pattern: '%MEM%'
+    grid id pattern: '%GRID%'
   # Both generic and model write only for waveband 3
 - generic write:
     filepath: testdata/process_perts_from_gauss_perts_2/filtered_pert_mb%MEM%_wb3
-    member pattern: %MEM%
+    member pattern: '%MEM%'
   model write:
     filepath: testdata/process_perts_from_gauss_perts_2/filtered_pert_modelwrite_mb%MEM%_wb3
-    member pattern: %MEM%
+    member pattern: '%MEM%'
 
 
 test:
