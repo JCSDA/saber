@@ -276,6 +276,8 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   // Fit section
   FitDef fitDef;
   eckit::LocalConfiguration fitConf;
+  // Threshold to filter out lower raw values
+  param(fitDef.diag_raw_th, fitConf);
   // Horizontal filtering suport radius [in meters]
   param(fitDef.diag_rhflt, fitConf);
   // Vertical filtering support radius

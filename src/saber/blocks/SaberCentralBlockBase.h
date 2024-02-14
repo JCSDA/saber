@@ -255,8 +255,7 @@ void SaberCentralBlockBase::write(const oops::Geometry<MODEL> & geom,
 
   // Write fieldsets as increments
   for (const auto & output : outputs) {
-    dx.fieldSet().deepCopy(output.second);
-    dx.synchronizeFields();
+    dx.fromFieldSet(output.second.fieldSet());
     oops::Log::test() << "Norm of output parameter " << output.second.name()
                       << ": " << dx.norm() << std::endl;
     dx.write(output.first);

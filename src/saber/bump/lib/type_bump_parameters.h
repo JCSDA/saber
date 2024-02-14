@@ -490,6 +490,10 @@ struct OptimalityTestDef {
 
 // Fit section
 struct FitDef {
+  // Threshold to filter out lower raw values
+  std::pair<const char *, double> diag_raw_th =
+    std::make_pair("raw diagnostic lower threshold", -std::numeric_limits<double>().max());
+
   // Horizontal filtering suport radius [in meters]
   std::pair<const char *, double> diag_rhflt =
     std::make_pair("horizontal filtering length-scale", 0.0);

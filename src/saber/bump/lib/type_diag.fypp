@@ -654,6 +654,16 @@ do ig=1,nam%ng
       end do
    end if
 
+   if (.not.lhyb_coef_only) then
+      ! Normalize amplitude
+      do il0=1,geom%nl0
+         do ic0a=1,geom%nc0a
+            if (geom%gmask_c0a(ic0a,il0)) diag%blk(0,ig)%a_c0a(ic0a,il0,:) = diag%blk(0,ig)%a_c0a(ic0a,il0,:) &
+ & /sum(diag%blk(0,ig)%a_c0a(ic0a,il0,:))
+         end do
+      end do
+   end if
+
    ! Release memory
    deallocate(profile)
    if (nam%local_diag) then

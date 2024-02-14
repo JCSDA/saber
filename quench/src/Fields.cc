@@ -609,22 +609,25 @@ void Fields::diff(const Fields & x1, const Fields & x2) {
 // -----------------------------------------------------------------------------
 void Fields::toFieldSet(atlas::FieldSet & fset) const {
   oops::Log::trace() << "Fields::toFieldSet starting" << std::endl;
-  // Copy internal fieldset (possibly at another resolution)
-  fset = util::copyFieldSet(fset_);
+  // Share internal fieldset
+  fset.clear();
+  fset = util::shareFields(fset_);
   for (auto field_external : fset) {
     field_external.metadata().set("interp_type", "default");
   }
+  fset.set_dirty(false);
   oops::Log::trace() << "Fields::toFieldSet done" << std::endl;
 }
 // -----------------------------------------------------------------------------
 void Fields::fromFieldSet(const atlas::FieldSet & fset) {
   oops::Log::trace() << "Fields::fromFieldSet starting" << std::endl;
 
-  // Copy internal fieldset (possibly at another resolution)
-  fset_ = util::copyFieldSet(fset);
+  // Reset internal fieldset
+  fset_.clear();
+  fset_ = util::shareFields(fset);
 
   if (geom_->gridType() == "regular_lonlat") {
-    // Copy poles points
+    // Reset poles points
     for (auto field_internal : fset_) {
       atlas::functionspace::StructuredColumns fs(field_internal.functionspace());
       atlas::StructuredGrid grid = fs.grid();
@@ -690,13 +693,10 @@ void Fields::read(const eckit::Configuration & config) {
 }
 // -----------------------------------------------------------------------------
 void Fields::write(const eckit::Configuration & config) const {
-  // Copy configuration
-  eckit::LocalConfiguration conf(config);
-
   // Write fieldset
-  util::writeFieldSet(geom_->getComm(), conf, fset_);
+  util::writeFieldSet(geom_->getComm(), config, fset_);
 
-  if (geom_->mesh().generated()) {
+  if (geom_->mesh().generated() && config.getBool("write gmsh", false)) {
     // GMSH file path
     std::string gmshfilepath = config.getString("filepath");;
     gmshfilepath.append(".msh");

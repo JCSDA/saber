@@ -368,11 +368,11 @@ type(nam_type),intent(in) :: nam               !< Namelist
 type(geom_type),intent(in) :: geom             !< Geometry
 
 ! Local variables
-integer :: il0,jl0rz,jl0r,jl0,nl0r,il1,nl1,ilev2d,jc4,icmp,jcmp
+integer :: il0,jl0rz,jl0r,jl0,nl0r,il1,nl1,ilev2d,jc3,jc4,icmp,jcmp
 integer,allocatable :: il0_interp(:),il1inf(:),il1sup(:)
 real(kind_real) :: a,m2(geom%nl0),scaling,rh_span
-real(kind_real),allocatable :: raw_hor(:,:),raw_ver(:),distv(:),rinf(:),rsup(:),rh_c4l1(:,:),fit_hor(:,:),fit_ver(:)
-real(kind_real),allocatable :: rh_l1(:,:),D11_l1(:,:),D22_l1(:,:),D12_l1(:,:),rv_l1(:,:),a_l1(:,:)
+real(kind_real),allocatable :: raw_copy(:,:,:,:),raw_hor(:,:),raw_ver(:),distv(:),rinf(:),rsup(:),rh_c4l1(:,:)
+real(kind_real),allocatable :: fit_hor(:,:),fit_ver(:),rh_l1(:,:),D11_l1(:,:),D22_l1(:,:),D12_l1(:,:),rv_l1(:,:),a_l1(:,:)
 logical :: valid
 type(minim_type) :: minim
 
@@ -445,6 +445,7 @@ minim%hooke_itermax = 10
 rh_span = half*pi
 
 ! Allocation
+allocate(raw_copy(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
 allocate(rh_c4l1(nam%nc4,nl1))
 allocate(rv_l1(nl1,0:diag_blk%ncmp))
 allocate(a_l1(nl1,diag_blk%ncmp))
@@ -460,6 +461,20 @@ if (nam%nc4>1) then
    allocate(D12_l1(nl1,0:diag_blk%ncmp))
 end if
 
+! Copy raw data
+raw_copy = diag_blk%raw
+
+! Clean raw data
+do il0=1,geom%nl0
+   do jl0r=1,nam%nl0r
+      do jc4=1,nam%nc4
+         do jc3=1,nam%nc3
+            if (raw_copy(jc3,jc4,jl0r,il0) < nam%diag_raw_th) raw_copy(jc3,jc4,jl0r,il0) = mpl%msv%valr
+         end do
+      end do
+   end do
+end do
+
 do il1=1,nl1
    ! Index
    il0 = il0_interp(il1)
@@ -473,7 +488,7 @@ do il1=1,nl1
    ! Horizontal fit for each angular sector
    do jc4=1,nam%nc4
       ! Fast horizontal fit
-      call fast_fit(mpl,nam%nc3,1,geom%disth,'hor',diag_blk%raw(:,jc4,jl0rz,il0),rh_c4l1(jc4,il1))
+      call fast_fit(mpl,nam%nc3,1,geom%disth,'hor',raw_copy(:,jc4,jl0rz,il0),rh_c4l1(jc4,il1))
 
       if (mpl%msv%isnot(rh_c4l1(jc4,il1))) then
          ! Optimized horizontal fit
@@ -489,7 +504,7 @@ do il1=1,nl1
          minim%bsup(1) = ten*rh_c4l1(jc4,il1)
 
          ! Observations
-         minim%obs(1:nam%nc3) = diag_blk%raw(:,jc4,jl0rz,il0)
+         minim%obs(1:nam%nc3) = raw_copy(:,jc4,jl0rz,il0)
 
          ! Compute fit
          minim%cost_function = 'rh'
@@ -523,7 +538,7 @@ do il1=1,nl1
          minim%bsup = (/rh_l1(il1,icmp)**2*sqrt(condmax),rh_l1(il1,icmp)**2*sqrt(condmax),D12max/)
 
          ! Observations
-         minim%obs = reshape(diag_blk%raw(:,:,jl0rz,il0),(/minim%ny/))
+         minim%obs = reshape(raw_copy(:,:,jl0rz,il0),(/minim%ny/))
 
          ! Compute fit
          minim%cost_function = 'tensor'
@@ -572,7 +587,7 @@ do il1=1,nl1
       rv_l1(il1,icmp) = zero
    else
       ! Raw vertical function, averaged over angular sectors
-      raw_ver = sum(diag_blk%raw(1,:,:,il0),dim=1)/real(nam%nc4,kind_real)
+      raw_ver = sum(raw_copy(1,:,:,il0),dim=1)/real(nam%nc4,kind_real)
 
       ! Vertical distance
       do jl0r=1,nl0r
@@ -643,8 +658,8 @@ do il1=1,nl1
          do icmp=1,diag_blk%ncmp
             ! Amplitude, horizontal and vertical raw functions
             a = one
-            raw_hor = diag_blk%raw(:,:,jl0rz,il0)
-            raw_ver = sum(diag_blk%raw(1,:,1:nl0r,il0),dim=1)/real(nam%nc4,kind_real)
+            raw_hor = raw_copy(:,:,jl0rz,il0)
+            raw_ver = sum(raw_copy(1,:,1:nl0r,il0),dim=1)/real(nam%nc4,kind_real)
 
             ! Remove previous components from raw functions
             do jcmp=1,icmp-1

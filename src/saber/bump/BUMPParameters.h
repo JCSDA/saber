@@ -565,6 +565,8 @@ class FitSection : public oops::Parameters {
   bump_lib::FitDef def;
 
  public:
+  // Threshold to filter out lower raw values
+  oops::Parameter<double> diag_raw_th = param(def.diag_raw_th, this);
   // Horizontal filtering suport radius [in meters]
   oops::Parameter<double> diag_rhflt = param(def.diag_rhflt, this);
   // Vertical filtering support radius

@@ -256,7 +256,9 @@
              0.0 /    0.0:  0.0000000
           Level   1:  0.0000000 -  0.0000000
           Level   2:  0.0000000 -  0.0000000
-Norm of output parameter dirac_mom - 1: 1.1810192991624231e+01
+Norm of output parameter dirac_mom_cov - 1: 1.4815235254391423e+01
+Norm of output parameter dirac_mom_single_obs - 1: 9.4957515532060626e+00
+Norm of output parameter dirac_mom - 1: 1.1810192991624243e+01
 Norm of output parameter dirac_diag_cor - 1: 2.2185808499236241e+00
 Norm of output parameter cor_a - 1: 4.3839794469441046e+01
 Norm of output parameter cor_a - 2: 1.4136489898515414e+01

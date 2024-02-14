@@ -1782,9 +1782,17 @@ do iv=1,bump%nam%nv
 
    ! Select parameter from mom
    select case (trim(param))
+   case ('dirac_mom_cov')
+      if (.not.allocated(bump%mom(1)%dirac)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      fld_c0a = bump%mom(1)%dirac(:,:,iv,1)
+      found = .true.
+   case ('dirac_mom_single_obs')
+      if (.not.allocated(bump%mom(1)%dirac)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
+      fld_c0a = bump%mom(1)%dirac(:,:,iv,2)
+      found = .true.
    case ('dirac_mom')
       if (.not.allocated(bump%mom(1)%dirac)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      fld_c0a = bump%mom(1)%dirac(:,:,iv)
+      fld_c0a = bump%mom(1)%dirac(:,:,iv,3)
       found = .true.
    end select
 

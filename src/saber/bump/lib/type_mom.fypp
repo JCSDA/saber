@@ -28,13 +28,13 @@ implicit none
 ! Moments derived type
 type mom_type
    ! Moments data
-   integer :: iens                             !< Ensemble index
-   integer :: ne                               !< Ensemble size
-   integer :: nsub                             !< Number of sub-ensembles
-   type(mom_blk_type),allocatable :: blk(:)    !< Moments blocks
-   real(kind_real),allocatable :: m1(:,:,:)    !< Ensemble mean
-   real(kind_real),allocatable :: m2(:,:,:)    !< Ensemble variance
-   real(kind_real),allocatable :: dirac(:,:,:) !< Raw ensemble dirac test
+   integer :: iens                               !< Ensemble index
+   integer :: ne                                 !< Ensemble size
+   integer :: nsub                               !< Number of sub-ensembles
+   type(mom_blk_type),allocatable :: blk(:)      !< Moments blocks
+   real(kind_real),allocatable :: m1(:,:,:)      !< Ensemble mean
+   real(kind_real),allocatable :: m2(:,:,:)      !< Ensemble variance
+   real(kind_real),allocatable :: dirac(:,:,:,:) !< Raw ensemble dirac test (covariance, single-obs and correlation)
 
    ! Dimensions for local I/O
    integer :: nc1a                             !< Number of points in subset Sc1, halo A
@@ -101,7 +101,7 @@ if (nam%check_dirac) then
       allocate(mom%m1(geom%nc0a,geom%nl0,nam%nv))
       allocate(mom%m2(geom%nc0a,geom%nl0,nam%nv))
    end if
-   allocate(mom%dirac(geom%nc0a,geom%nl0,nam%nv))
+   allocate(mom%dirac(geom%nc0a,geom%nl0,nam%nv,3))
 end if
 
 ! Probe out
@@ -855,7 +855,7 @@ if (nam%check_dirac) then
             idir = geom%inbdir(jc0a,jl0)
             if (mpl%msv%isnot(idir)) then
                ! Update covariance
-               mom%dirac(jc0a,jl0,:) = mom%dirac(jc0a,jl0,:)+fac5*wgt_dir(idir)*pert_c0a(jc0a,jl0,:)
+               mom%dirac(jc0a,jl0,:,1) = mom%dirac(jc0a,jl0,:,1)+fac5*wgt_dir(idir)*pert_c0a(jc0a,jl0,:)
 
                ! Update variance
                mom%m2(jc0a,jl0,:) = mom%m2(jc0a,jl0,:)+fac5*pert_c0a(jc0a,jl0,:)**2
@@ -916,6 +916,10 @@ if (ie==mom%ne) then
       ! Allocation
       allocate(wgt_dir(geom%ndir))
 
+      ! Normalize variance/covariance
+      mom%m2 = mom%m2*fac_norm_cov
+      mom%dirac(:,:,:,1) = mom%dirac(:,:,:,1)*fac_norm_cov
+
       ! Variance at dirac points
       wgt_dir = zero
       do idir=1,geom%ndir
@@ -932,18 +936,26 @@ if (ie==mom%ne) then
                idir = geom%inbdir(jc0a,jl0)
                if (mpl%msv%isnot(idir)) then
                   do iv=1,nam%nv
+                     ! Single-obs normalization
+                     if (wgt_dir(idir)>zero) then
+                        mom%dirac(jc0a,jl0,iv,2) = mom%dirac(jc0a,jl0,iv,1)/wgt_dir(idir)
+                     else
+                        mom%dirac(jc0a,jl0,iv,2) = mpl%msv%valr
+                     end if
+
+                     ! Correlation normalization
                      cor_norm = wgt_dir(idir)*mom%m2(jc0a,jl0,iv)
                      if (cor_norm>zero) then
-                        mom%dirac(jc0a,jl0,iv) = mom%dirac(jc0a,jl0,iv)/sqrt(cor_norm)
+                        mom%dirac(jc0a,jl0,iv,3) = mom%dirac(jc0a,jl0,iv,1)/sqrt(cor_norm)
                      else
-                        mom%dirac(jc0a,jl0,iv) = mpl%msv%valr
+                        mom%dirac(jc0a,jl0,iv,3) = mpl%msv%valr
                      end if
                   end do
                else
-                  mom%dirac(jc0a,jl0,:) = mpl%msv%valr
+                  mom%dirac(jc0a,jl0,:,:) = mpl%msv%valr
                end if
             else
-               mom%dirac(jc0a,jl0,:) = mpl%msv%valr
+               mom%dirac(jc0a,jl0,:,:) = mpl%msv%valr
             end if
          end do
       end do
@@ -1101,7 +1113,7 @@ do isub=1,ens%nsub
                if (geom%gmask_c0a(jc0a,jl0)) then
                   idir = geom%inbdir(jc0a,jl0)
                   if (mpl%msv%isnot(idir)) then
-                     mom%dirac(jc0a,jl0,:) = mom%dirac(jc0a,jl0,:)+wgt_dir(idir)*fld_c0a(jc0a,jl0,:)
+                     mom%dirac(jc0a,jl0,:,1) = mom%dirac(jc0a,jl0,:,1)+wgt_dir(idir)*fld_c0a(jc0a,jl0,:)
                   end if
                end if
             end do
@@ -1156,6 +1168,9 @@ if (nam%check_dirac) then
    call ens%compute_moments(mpl,nam,geom)
    call ens%get_c0(mpl,nam,geom,'m2',0,m2)
 
+   ! Covariance normalization
+   mom%dirac(:,:,:,1) = mom%dirac(:,:,:,1)*fac_norm_cov
+
    ! Variance at dirac points
    wgt_dir = zero
    do idir=1,geom%ndir
@@ -1172,18 +1187,26 @@ if (nam%check_dirac) then
             idir = geom%inbdir(jc0a,jl0)
             if (mpl%msv%isnot(idir)) then
                do iv=1,nam%nv
+                  ! Correlation normalization
+                  if (wgt_dir(idir)>zero) then
+                     mom%dirac(jc0a,jl0,iv,2) = mom%dirac(jc0a,jl0,iv,1)/wgt_dir(idir)
+                  else
+                     mom%dirac(jc0a,jl0,iv,2) = mpl%msv%valr
+                  end if
+
+                  ! Correlation normalization
                   cor_norm = wgt_dir(idir)*m2(jc0a,jl0,iv)
                   if (cor_norm>zero) then
-                     mom%dirac(jc0a,jl0,iv) = mom%dirac(jc0a,jl0,iv)*fac_norm_cov/sqrt(cor_norm)
+                     mom%dirac(jc0a,jl0,iv,3) = mom%dirac(jc0a,jl0,iv,1)/sqrt(cor_norm)
                   else
-                     mom%dirac(jc0a,jl0,iv) = mpl%msv%valr
+                     mom%dirac(jc0a,jl0,iv,3) = mpl%msv%valr
                   end if
                end do
             else
-               mom%dirac(jc0a,jl0,:) = mpl%msv%valr
+               mom%dirac(jc0a,jl0,:,:) = mpl%msv%valr
             end if
          else
-            mom%dirac(jc0a,jl0,:) = mpl%msv%valr
+            mom%dirac(jc0a,jl0,:,:) = mpl%msv%valr
          end if
       end do
    end do

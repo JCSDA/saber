@@ -66,6 +66,12 @@ background error:
         level: 1
         variable: stream_function
       output model files:
+      - parameter: dirac_mom_cov
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__dirac_mom_cov
+      - parameter: dirac_mom_single_obs
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__dirac_mom_single_obs
       - parameter: dirac_mom
         file:
           filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__dirac_mom
