@@ -160,6 +160,9 @@ type nam_type
    integer :: var_niter                                       !< Number of iterations for the variance filtering (0 for uniform variance)
    integer :: var_npass                                       !< Number of passes for the variance filtering (0 for uniform variance)
    real(kind_real),allocatable :: var_rhflt(:,:)              !< Variance initial filtering support radius [in meters]
+   real(kind_real) :: smoother_resol                          !< Resolution for the NICAS smoother
+   integer :: smoother_nc1max                                 !< Maximum size of the Sc1 subset for the NICAS smoother
+   real(kind_real) :: smoother_resol_eff_min                  !< Minimum effective resolution for the NICAS smoother
 
    ! Optimality test section
    integer :: optimality_nfac                                 !< Number of length-scale factors for optimization
@@ -182,6 +185,7 @@ type nam_type
    ! NICAS section
    real(kind_real) :: resol                                   !< Resolution
    integer :: nc1max                                          !< Maximum size of the Sc1 subset
+   real(kind_real) :: resol_eff_min                           !< Minimum effective resolution
    character(len=1024) :: nicas_draw_type                     !< NICAS draw type ('random' or 'octahedral')
    logical :: forced_radii                                    !< Force specific support radii
    real(kind_real),allocatable :: rh(:,:)                     !< Forced horizontal support radius [in meters]
@@ -757,6 +761,9 @@ if (conf%get('variance',section)) then
    call nam%get(section,'filtering iterations',nam%var_niter)
    call nam%get(section,'filtering passes',nam%var_npass)
    call nam%get(mpl,section,'initial length-scale',nam%var_rhflt,one/req)
+   call nam%get(section,'smoother resolution',nam%smoother_resol)
+   call nam%get(section,'smoother min effective resolution',nam%smoother_resol_eff_min)
+   call nam%get(section,'smoother max horizontal grid size',nam%smoother_nc1max)
 end if
 
 ! Optimality test section
@@ -810,6 +817,7 @@ if (conf%get('nicas',section)) then
    if (lverbose) call print_section(mpl,section,'NICAS')
    call nam%get(section,'resolution',nam%resol)
    call nam%get(section,'max horizontal grid size',nam%nc1max)
+   call nam%get(section,'min effective resolution',nam%resol_eff_min)
    call nam%get(section,'grid type',nam%nicas_draw_type)
    call nam%get(section,'explicit length-scales',nam%forced_radii)
    call nam%get(mpl,section,'horizontal length-scale',nam%rh,one/req)
@@ -1259,6 +1267,9 @@ if (nam%new_var) then
             end do
          end do
       end if
+      if (.not.(nam%smoother_resol>zero)) call mpl%abort('${subr}$','smoother_resol should be positive')
+      if (nam%smoother_nc1max<=0) call mpl%abort('${subr}$','smoother_nc1max should be positive')
+      if (.not.(nam%smoother_resol_eff_min>zero)) call mpl%abort('${subr}$','smoother_resol_eff_min should be positive')
    end if
 end if
 
@@ -1308,6 +1319,7 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
    if (nam%new_nicas) then
       if (.not.(nam%resol>zero)) call mpl%abort('${subr}$','resol should be positive')
       if (nam%nc1max<=0) call mpl%abort('${subr}$','nc1max should be positive')
+      if (.not.(nam%resol_eff_min>zero)) call mpl%abort('${subr}$','resol_eff_min should be positive')
    end if
    if (nam%forced_radii) then
       if (.not.allocated(nam%rh)) call mpl%abort('${subr}$','rh is missing')

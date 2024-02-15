@@ -6,14 +6,12 @@ geometry:
   groups:
   - variables:
     - stream_function
-    - velocity_potential
     levels: 2
   halo: 1
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
   - stream_function
-  - velocity_potential
 background error:
   covariance model: SABER
   saber central block:
@@ -24,16 +22,16 @@ background error:
         universe length-scale: 10000.0e3
       io:
         data directory: testdata
-        files prefix: error_covariance_training_bump_nicas_8/_MPI_-_OMP_
-        alias:
-        - in code: stream_function-stream_function
-          in file: fixed_1000-3.0
+        files prefix: error_covariance_training_bump_nicas_11/_MPI_-_OMP_
       drivers:
         multivariate strategy: crossed
         compute nicas: true
-        write local nicas: true
         adjoints test: true
         internal dirac test: true
+        randomization test: true
+        normalization test: 50
+      ensemble sizes:
+        total ensemble size: 50
       nicas:
         resolution: 4.0
         min effective resolution: 2.0
@@ -41,19 +39,11 @@ background error:
         horizontal length-scale:
         - groups:
           - stream_function
-          value: 4000.0e3
-        - groups:
-          - velocity_potential
           value: 2000.0e3
         vertical length-scale:
         - groups:
           - stream_function
-          - velocity_potential
           value: 3.0
-        interpolation type:
-        - groups:
-          - stream_function
-          type: si
       dirac:
       - longitude: 0.0
         latitude: 0.0
@@ -62,9 +52,9 @@ background error:
       output model files:
       - parameter: cor_rh
         file:
-          filepath: testdata/error_covariance_training_bump_nicas_8/_MPI_-_OMP__cor_rh
+          filepath: testdata/error_covariance_training_bump_nicas_11/_MPI_-_OMP__cor_rh
       - parameter: cor_rv
         file:
-          filepath: testdata/error_covariance_training_bump_nicas_8/_MPI_-_OMP__cor_rv
+          filepath: testdata/error_covariance_training_bump_nicas_11/_MPI_-_OMP__cor_rv
 test:
-  reference filename: testref/error_covariance_training_bump_nicas_8.ref
+  reference filename: testref/error_covariance_training_bump_nicas_11.ref

@@ -137,6 +137,9 @@ type nicas_cmp_type
    integer :: ncmp                                      !< Number of components in the same block
    logical :: anisotropic                               !< Anisotropic tensor flag
    logical :: verbosity                                 !< Verbosity flag
+   real(kind_real) :: resol                             !< Resolution
+   integer :: nc1max                                    !< Maximum size of the Sc1 subset
+   real(kind_real) :: resol_eff_min                     !< Minimum effective resolution
    character(len=1024) :: draw_type                     !< Draw type
    character(len=2) :: interp_type                      !< Interpolation type
    logical :: smoother                                  !< Smoother flag
@@ -2407,7 +2410,7 @@ else
             end do
             distnormmin = zss_minval(distnorm)
             call mpl%f_comm%allreduce(distnormmin,fckit_mpi_min())
-            slev(il0) = distnormmin>one/nam%resol
+            slev(il0) = distnormmin>one/nicas_cmp%resol
          end if
 
          ! Update
@@ -2530,7 +2533,7 @@ integer :: is,isu,isa,isb
 integer :: nn_index(1)
 integer,allocatable :: c1_to_c0(:),order_c1(:),order_inv_c1(:),c0u_to_c0b(:),c0b_to_c0(:),c0own_to_c0(:),sb_to_s(:)
 integer,allocatable :: order_s(:),order_inv_s(:),order_inv_sa(:)
-real(kind_real) :: nc1_real,lon,lat,alon,alat
+real(kind_real) :: nc1_real,resol_eff,lon,lat,alon,alat
 real(kind_real) :: rhs_min(geom%nl0),rhs_max(geom%nl0),rhs_avg(geom%nl0),lonlat(2),g(3)
 real(kind_real),allocatable :: lon_c1(:),lat_c1(:),lon_s(:),lat_s(:),interpolation_radius(:)
 real(kind_real),allocatable :: fld_src_c1a(:),fld_src_c1b(:),fld_src_c1(:)
@@ -2538,6 +2541,7 @@ real(kind_real),allocatable :: grad_ref_c1a(:,:),grad_ssrf_c1a(:,:),grad_op_c1a(
 logical :: valid
 logical :: mask_hor_c0a(geom%nc0a),lcheck_c0b(geom%nc0u)
 logical,allocatable :: gmask_c1(:),gmask_c1a(:)
+character(len=1024) :: msg
 type(atlas_structuredgrid) :: agrid
 type(linop_type),allocatable :: grad(:)
 
@@ -2589,14 +2593,14 @@ do il1=1,nicas_cmp%nl1
       write(mpl%test,'(a16,a,f10.2,a,f10.2,a,f10.2,a)') '','Horizontal support radius: ',rhs_avg(il0)*reqkm,' km (', &
  & rhs_min(il0)*reqkm,' km - ',rhs_max(il0)*reqkm,' km)'
       call mpl%flush(flush=nicas_cmp%verbosity)
-      nc1_real = two*geom%area_ver_c0(il0)*nam%resol**2/(sqrt(three)*rhs_avg(il0)**2)
+      nc1_real = two*geom%area_ver_c0(il0)*nicas_cmp%resol**2/(sqrt(three)*rhs_avg(il0)**2)
       if (nc1_real>real(huge_int,kind_real)) call mpl%abort('${subr}$','estimated nc1 is too large for an integer')
       nicas_cmp%hor(il1)%nc1 = floor(nc1_real)
       write(mpl%test,'(a16,a,i8)') '','Estimated nc1 from horizontal support radius: ',nicas_cmp%hor(il1)%nc1
       call mpl%flush(flush=nicas_cmp%verbosity)
-      if (nicas_cmp%hor(il1)%nc1>nam%nc1max) then
+      if (nicas_cmp%hor(il1)%nc1>nicas_cmp%nc1max) then
          if (nicas_cmp%verbosity) call mpl%warning('${subr}$','required nc1 larger than nc1max, resetting to nc1max')
-         nicas_cmp%hor(il1)%nc1 = nam%nc1max
+         nicas_cmp%hor(il1)%nc1 = nicas_cmp%nc1max
       end if
       if (nicas_cmp%hor(il1)%nc1<3) then
          call mpl%warning('${subr}$','nicas_cmp%nc1 lower than 3')
@@ -2651,9 +2655,23 @@ do il1=1,nicas_cmp%nl1
          ! Print subset Sc1 size
          write(mpl%test,'(a16,a,i8)') '','Final nc1: ',nicas_cmp%hor(il1)%nc1
          call mpl%flush(flush=nicas_cmp%verbosity)
-         write(mpl%test,'(a16,a,f5.2)') '','Effective horizontal resolution: ', &
- & sqrt(real(nicas_cmp%hor(il1)%nc1,kind_real)*sqrt(three)*rhs_avg(il0)**2/(two*geom%area_ver_c0(il0)))
+         resol_eff = sqrt(real(nicas_cmp%hor(il1)%nc1,kind_real)*sqrt(three)*rhs_avg(il0)**2/(two*geom%area_ver_c0(il0)))
+         write(mpl%test,'(a16,a,f5.2)') '','Effective horizontal resolution: ',resol_eff
          call mpl%flush(flush=nicas_cmp%verbosity)
+         if (resol_eff < nicas_cmp%resol_eff_min) then
+            if (.not.nicas_cmp%verbosity) then
+              write(mpl%info,'(a16,a,i8)') '','Final nc1: ',nicas_cmp%hor(il1)%nc1
+              call mpl%flush
+              write(mpl%info,'(a16,a,f5.2)') '','Effective horizontal resolution: ',resol_eff
+              call mpl%flush
+            end if
+            msg = 'effective resolution is too low, please increase resolution and/or max horizontal grid size parameters,' &
+ & //' or decrease min effective resolution (risky)'
+            call mpl%abort('${subr}$',msg)
+         else if (resol_eff < 3) then
+            msg = 'effective resolution is very low, please increase resolution and/or max horizontal grid size parameters'
+            call mpl%warning('${subr}$',msg)
+         end if
       case ('octahedral')
          ! Use an octahedral grid
          write(mpl%info,'(a16,a)') '','Use an octahedral grid for subset Sc1 '
@@ -2747,9 +2765,17 @@ do il1=1,nicas_cmp%nl1
          ! Print subset Sc1 size
          write(mpl%test,'(a16,a,i8)') '','Final nc1: ',nicas_cmp%hor(il1)%nc1
          call mpl%flush(flush=nicas_cmp%verbosity)
-         write(mpl%test,'(a16,a,f5.2)') '','Effective horizontal resolution: ', &
- & sqrt(real(nicas_cmp%hor(il1)%nc1,kind_real)*sqrt(three)*rhs_avg(il0)**2/(two*geom%area_ver_c0(il0)))
+         resol_eff = sqrt(real(nicas_cmp%hor(il1)%nc1,kind_real)*sqrt(three)*rhs_avg(il0)**2/(two*geom%area_ver_c0(il0)))
+         write(mpl%test,'(a16,a,f5.2)') '','Effective horizontal resolution: ',resol_eff
          call mpl%flush(flush=nicas_cmp%verbosity)
+         if (resol_eff < nicas_cmp%resol_eff_min) then
+            msg = 'effective resolution is too low, please increase resolution and/or max horizontal grid size parameters,' &
+ & //' or decrease min effective resolution (risky)'
+            call mpl%abort('${subr}$',msg)
+         else if (resol_eff < 3) then
+            msg = 'effective resolution is very low, please increase resolution and/or max horizontal grid size parameters'
+            call mpl%warning('${subr}$',msg)
+         end if
       end select
 
       ! Allocation

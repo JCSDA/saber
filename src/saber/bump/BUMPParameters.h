@@ -117,7 +117,7 @@ class GroupsTypeParameters : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(GroupsTypeParameters, oops::Parameters)
 
  public:
-  // Resolution
+  // Groups
   oops::RequiredParameter<std::vector<std::string>> groups{"groups", this};
   // Type
   oops::RequiredParameter<std::string> type{"type", this};
@@ -535,6 +535,12 @@ class VarianceSection : public oops::Parameters {
   // Variance initial filtering support radius [in meters]
   oops::Parameter<std::vector<VarsValueOrProfileParameters>> var_rhflt{"initial length-scale", {},
     this};
+  // Resolution for the NICAS smoother
+  oops::Parameter<double> smoother_resol = param(def.smoother_resol, this);
+  // Maximum size of the Sc1 subset for the NICAS smoother
+  oops::Parameter<int> smoother_nc1max = param(def.smoother_nc1max, this);
+  // Minimum effective resolution for the NICAS smoother
+  oops::Parameter<double> smoother_resol_eff_min = param(def.smoother_resol_eff_min, this);
 };
 
 // -----------------------------------------------------------------------------
@@ -591,6 +597,8 @@ class NICASSection : public oops::Parameters {
   oops::Parameter<double> resol = param(def.resol, this);
   // Maximum size of the Sc1 subset
   oops::Parameter<int> nc1max = param(def.nc1max, this);
+  // Minimum effective resolution
+  oops::Parameter<double> resol_eff_min = param(def.resol_eff_min, this);
   // NICAS draw type ('random' or 'octahedral')
   oops::Parameter<std::string> nicas_draw_type = param(def.nicas_draw_type, this);
   // Force specific support radii

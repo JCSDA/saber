@@ -405,6 +405,7 @@ background error:
         number of components: 2
       nicas:
         resolution: 4.0
+        min effective resolution: 1.2
       dirac:
       - longitude: 0.0
         latitude: 0.0

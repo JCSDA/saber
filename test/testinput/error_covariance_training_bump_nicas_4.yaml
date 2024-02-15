@@ -32,6 +32,7 @@ background error:
         internal dirac test: true
       nicas:
         resolution: 4.0
+        min effective resolution: 2.0
         common localization weights:
         - row variables:
           - stream_function

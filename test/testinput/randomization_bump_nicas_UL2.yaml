@@ -374,6 +374,7 @@ background error:
         compute nicas: true
       nicas:
         resolution: 4.0
+        min effective resolution: 2.0
         explicit length-scales: true
         horizontal length-scale:
         - groups:
