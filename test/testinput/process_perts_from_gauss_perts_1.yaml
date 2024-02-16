@@ -60,12 +60,16 @@ ensemble pert:
       variables: *vars
 
 output perturbations:
-- model write:
-    filepath: testdata/process_perts_from_gauss_perts_1/filtered_pert_mb%MEM%_wb1
-    member pattern: '%MEM%'
+  # No write for first waveband:
+- {}
+  # Model and generic write for second waveband:
 - model write:
     filepath: testdata/process_perts_from_gauss_perts_1/filtered_pert_mb%MEM%_wb2
     member pattern: '%MEM%'
+  generic write:
+    filepath: testdata/process_perts_from_gauss_perts_1/filtered_pert_grid%GRID%_mb%MEM%_wb2
+    member pattern: '%MEM%'
+    grid pattern: '%GRID%'
 
 test:
   reference filename: testref/process_perts_from_gauss_perts_1.ref
