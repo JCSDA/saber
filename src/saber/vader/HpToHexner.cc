@@ -113,17 +113,6 @@ HpToHexner::HpToHexner(const oops::GeometryData & outerGeometryData,
 
   augmentedStateFieldSet_.haloExchange();
 
-  // Need to setup derived state fields that we need.
-  std::vector<std::string> requiredCovarianceVariables;
-  if (covFieldSet_.has("interpolation_weights")) {
-    requiredCovarianceVariables.push_back("vertical_regression_matrices");
-    requiredCovarianceVariables.push_back("interpolation_weights");
-  }
-
-  for (const auto & s : requiredCovarianceVariables) {
-    augmentedStateFieldSet_.add(covFieldSet_[s]);
-  }
-
   oops::Log::trace() << classname() << "::HpToHexner done" << std::endl;
 }
 

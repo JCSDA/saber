@@ -82,7 +82,7 @@ MoistIncrOp::MoistIncrOp(const oops::GeometryData & outerGeometryData,
     "rht",  // to be populated in eval_total_relative_humidity_nl
     "liquid_cloud_volume_fraction_in_atmosphere_layer",  // from file
     "ice_cloud_volume_fraction_in_atmosphere_layer",  // from file
-    "cleff", "cfeff"  // to be populated in getMIOFields
+    "cleff", "cfeff"  // to be populated in eval_mio_fields_nl
   };
 
   // Check that they are allocated (i.e. exist in the state fieldset)
