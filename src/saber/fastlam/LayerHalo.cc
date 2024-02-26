@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2023 Meteorlogisk Institutt
+ * (C) Copyright 2024 Meteorlogisk Institutt
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -80,7 +80,6 @@ void LayerHalo::setupParallelization() {
   // Buffer size
   xcRecvSize_ = 0;
   for (const auto & n : xcRecvCounts_) xcRecvSize_ += n;
-  ASSERT(xcRecvSize_ == xcSize_);
 
   // RecvDispls
   xcRecvDispls_.push_back(0);
@@ -115,8 +114,6 @@ void LayerHalo::setupParallelization() {
   for (size_t jr = 0; jr < xcRecvSize_; ++jr) {
     size_t jt = mpiTask_[xcRecvPointsList[jr]];
     size_t jro = xcRecvDispls_[jt]+xcRecvOffset[jt];
-    ASSERT(jro >= 0);
-    ASSERT(jro < xcRecvSize_);
     xcRecvPointsListOrdered[jro] = xcRecvPointsList[jr];
     xcRecvMapping[jr] = jro;
     ++xcRecvOffset[jt];
@@ -198,7 +195,6 @@ void LayerHalo::setupParallelization() {
   // Buffer size
   ycRecvSize_ = 0;
   for (const auto & n : ycRecvCounts_) ycRecvSize_ += n;
-  ASSERT(ycRecvSize_ == ycSize_);
 
   // RecvDispls
   ycRecvDispls_.push_back(0);
@@ -233,8 +229,6 @@ void LayerHalo::setupParallelization() {
   for (size_t jr = 0; jr < ycRecvSize_; ++jr) {
     size_t jt = mpiTask_[ycRecvPointsList[jr]];
     size_t jro = ycRecvDispls_[jt]+ycRecvOffset[jt];
-    ASSERT(jro >= 0);
-    ASSERT(jro < ycRecvSize_);
     ycRecvPointsListOrdered[jro] = ycRecvPointsList[jr];
     ycRecvMapping[jr] = jro;
     ++ycRecvOffset[jt];
@@ -276,49 +270,11 @@ void LayerHalo::setupParallelization() {
 
 // -----------------------------------------------------------------------------
 
-void LayerHalo::setupNormalization() {
-  oops::Log::trace() << classname() << "::setupNormalization starting" << std::endl;
-
-  // Boundary normalization
-
-  // Create boundary normalization
-  xNormSize_ = (xKernelSize_-1)/2;
-  yNormSize_ = (yKernelSize_-1)/2;
-  zNormSize_ = (zKernelSize_-1)/2;
-  xNorm_.resize(xNormSize_);
-  yNorm_.resize(yNormSize_);
-  zNorm_.resize(zNormSize_);
-
-  // Compute boundary normalization
-  std::fill(xNorm_.begin(), xNorm_.end(), 0.0);
-  std::fill(yNorm_.begin(), yNorm_.end(), 0.0);
-  std::fill(zNorm_.begin(), zNorm_.end(), 0.0);
-  for (size_t jn = 0; jn < xNormSize_; ++jn) {
-    for (size_t jk = xNormSize_-jn; jk < xKernelSize_; ++jk) {
-      xNorm_[jn] += xKernel_[jk]*xKernel_[jk];
-    }
-    xNorm_[jn] = 1.0/std::sqrt(xNorm_[jn]);
-  }
-  for (size_t jn = 0; jn < yNormSize_; ++jn) {
-    for (size_t jk = yNormSize_-jn; jk < yKernelSize_; ++jk) {
-      yNorm_[jn] += yKernel_[jk]*yKernel_[jk];
-    }
-    yNorm_[jn] = 1.0/std::sqrt(yNorm_[jn]);
-  }
-  for (size_t jn = 0; jn < zNormSize_; ++jn) {
-    for (size_t jk = zNormSize_-jn; jk < zKernelSize_; ++jk) {
-      zNorm_[jn] += zKernel_[jk]*zKernel_[jk];
-    }
-    zNorm_[jn] = 1.0/std::sqrt(zNorm_[jn]);
-  }
-
-  // Full normalization
-  atlas::Field normField = gdata_.functionSpace().createField<double>(
-    atlas::option::name(myVar_) | atlas::option::levels(nz0_));
-  auto normView = atlas::array::make_view<double, 2>(normField);
-  norm_.add(normField);
-
-  // Cost-efficient normalization
+void LayerHalo::extractConvolution(const size_t & nxHalf,
+                                   const size_t & nyHalf,
+                                   std::vector<double> & horConv,
+                                   std::vector<double> & verConv) {
+  oops::Log::trace() << classname() << "::extractConvolution starting" << std::endl;
 
   // Reduced grid indices
   atlas::Field fieldIndexI = fset_["index_i"];
@@ -330,15 +286,10 @@ void LayerHalo::setupNormalization() {
   const size_t nzSave = nz_;
   nz_ = 1;
 
-  // Correlation at one reduced grid cell size distance
-
   // Horizontal convolution
   atlas::Field redFieldHor = fspace_.createField<double>(atlas::option::name("dummy") |
     atlas::option::levels(nz_));
   auto redViewHor = atlas::array::make_view<double, 2>(redFieldHor);
-  size_t nxHalf = xNormSize_+1;
-  size_t nyHalf = yNormSize_+1;
-  std::vector<double> horConv(4*nxHalf*nyHalf, 0.0);
   for (size_t i = 0; i < nxHalf; ++i) {
     for (size_t j = 0; j < nyHalf; ++j) {
       // Setup dirac point
@@ -382,18 +333,15 @@ void LayerHalo::setupNormalization() {
   nz_ = nzSave;
 
   // One grid point only
-  size_t rSizeSave = 0;
-  rSizeSave = rSize_;
+  const size_t rSizeSave = rSize_;
   rSize_ = 1;
 
   // Vertical convolution
   atlas::Field colsVerField("dummy", atlas::array::make_datatype<double>(),
     atlas::array::make_shape(rSize_, nz_));
   auto colsVerView = atlas::array::make_view<double, 2>(colsVerField);
-  std::vector<double> verConv(2*(nz_-1), 0.0);
   for (size_t k = 0; k < nz_-1; ++k) {
     // Setup dirac point
-
     colsVerView.assign(0.0);
     colsVerView(0, k) = 1.0;
 
@@ -415,193 +363,7 @@ void LayerHalo::setupNormalization() {
   // Reset number of grid points
   rSize_ = rSizeSave;
 
-  // Ghost points
-  const auto ghostView = atlas::array::make_view<int, 1>(gdata_.functionSpace().ghost());
-
-  // Compute horizontal normalization
-  normView.assign(0.0);
-  for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
-    if (ghostView(jnode0) == 0) {
-      // Define offset
-      size_t offsetI = std::min(std::min(horInterp_[jnode0].index1(),
-        nx_-2-horInterp_[jnode0].index1()), nxHalf-1);
-      size_t offsetJ = std::min(std::min(horInterp_[jnode0].index2(),
-        ny_-2-horInterp_[jnode0].index2()), nyHalf-1);
-      size_t horOffset = 4*(offsetI*nyHalf+offsetJ);
-      ASSERT(horOffset <= 4*(nxHalf*nyHalf-1));
-
-      if (horInterp_[jnode0].interpType() == "c") {
-        // Colocated point, no normalization needed
-        normView(jnode0, 0) = 1.0;
-      } else if (horInterp_[jnode0].interpType() == "x") {
-        // Linear interpolation along x
-        double xW = horConv[horOffset+0]*horInterp_[jnode0].operations()[0].second
-          +horConv[horOffset+1]*horInterp_[jnode0].operations()[1].second;
-        double xE = horConv[horOffset+1]*horInterp_[jnode0].operations()[0].second
-          +horConv[horOffset+0]*horInterp_[jnode0].operations()[1].second;
-        normView(jnode0, 0) = horInterp_[jnode0].operations()[0].second*xW
-          +horInterp_[jnode0].operations()[1].second*xE;
-      } else if (horInterp_[jnode0].interpType() == "y") {
-        // Linear interpolation along y
-        double xS = horConv[horOffset+0]*horInterp_[jnode0].operations()[0].second
-          +horConv[horOffset+2]*horInterp_[jnode0].operations()[1].second;
-        double xN = horConv[horOffset+2]*horInterp_[jnode0].operations()[0].second
-          +horConv[horOffset+0]*horInterp_[jnode0].operations()[1].second;
-        normView(jnode0, 0) = horInterp_[jnode0].operations()[0].second*xS
-          +horInterp_[jnode0].operations()[1].second*xN;
-      } else if (horInterp_[jnode0].interpType() == "b") {
-        // Bilinear interpolation
-        double xSW = horConv[horOffset+0]*horInterp_[jnode0].operations()[0].second
-          +horConv[horOffset+1]*horInterp_[jnode0].operations()[1].second
-          +horConv[horOffset+2]*horInterp_[jnode0].operations()[2].second
-          +horConv[horOffset+3]*horInterp_[jnode0].operations()[3].second;
-        double xSE = horConv[horOffset+1]*horInterp_[jnode0].operations()[0].second
-          +horConv[horOffset+0]*horInterp_[jnode0].operations()[1].second
-          +horConv[horOffset+3]*horInterp_[jnode0].operations()[2].second
-          +horConv[horOffset+2]*horInterp_[jnode0].operations()[3].second;
-        double xNW = horConv[horOffset+2]*horInterp_[jnode0].operations()[0].second
-          +horConv[horOffset+3]*horInterp_[jnode0].operations()[1].second
-          +horConv[horOffset+0]*horInterp_[jnode0].operations()[2].second
-          +horConv[horOffset+1]*horInterp_[jnode0].operations()[3].second;
-        double xNE = horConv[horOffset+3]*horInterp_[jnode0].operations()[0].second
-          +horConv[horOffset+2]*horInterp_[jnode0].operations()[1].second
-          +horConv[horOffset+1]*horInterp_[jnode0].operations()[2].second
-          +horConv[horOffset+0]*horInterp_[jnode0].operations()[3].second;
-        normView(jnode0, 0) = horInterp_[jnode0].operations()[0].second*xSW
-          +horInterp_[jnode0].operations()[1].second*xSE
-          +horInterp_[jnode0].operations()[2].second*xNW
-          +horInterp_[jnode0].operations()[3].second*xNE;
-      } else {
-        throw eckit::Exception("wrong interpolation type: " + horInterp_[jnode0].interpType(),
-          Here());
-      }
-    }
-  }
-
-  // Compute vertical normalization
-  std::vector<double> verNorm(nz0_, 1.0);
-  if (nz0_ > 1) {
-    verNorm[0] = 1.0;
-    verNorm[nz0_-1] = 1.0;
-    for (size_t k0 = 1; k0 < nz0_-1; ++k0) {
-      if (verInterp_[k0].operations().size() > 1) {
-        size_t verOffset = 2*verInterp_[k0].index1();
-        ASSERT(verOffset < 2*(nz_-1));
-        double xB = verConv[verOffset+0]*verInterp_[k0].operations()[0].second
-          +verConv[verOffset+1]*verInterp_[k0].operations()[1].second;
-        double xT = verConv[verOffset+1]*verInterp_[k0].operations()[0].second
-          +verConv[verOffset+0]*verInterp_[k0].operations()[1].second;
-        verNorm[k0] = verInterp_[k0].operations()[0].second*xB
-          +verInterp_[k0].operations()[1].second*xT;
-      }
-    }
-  }
-
-  // Compute 3D normalization
-  for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
-    if (ghostView(jnode0) == 0) {
-      for (size_t k0 = 0; k0 < nz0_; ++k0) {
-        normView(jnode0, k0) = normView(jnode0, 0)*verNorm[k0];
-      }
-    }
-  }
-
-  // Get normalization factor
-  for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
-    for (size_t k0 = 0; k0 < nz0_; ++k0) {
-      if (normView(jnode0, k0) > 0.0) {
-        normView(jnode0, k0) = 1.0/std::sqrt(normView(jnode0, k0));
-      }
-    }
-  }
-
-  // Check whether normalization accuracy should be computed
-  bool computeNormAcc = false;
-  std::vector<eckit::LocalConfiguration> outputModelFilesConf
-    = params_.outputModelFilesConf.value().get_value_or({});
-  for (const auto & conf : outputModelFilesConf) {
-    const std::string param = conf.getString("parameter");
-    if (param == "normalization accuracy") {
-      computeNormAcc = true;
-    }
-  }
-
-  if (computeNormAcc) {
-    // Brute-force normalization to assess cost-effective normalization accuracy
-
-    // Create fields
-    atlas::Field modelField = gdata_.functionSpace().createField<double>(
-      atlas::option::name("dummy") | atlas::option::levels(nz0_));
-    atlas::Field redField = fspace_.createField<double>(atlas::option::name("dummy") |
-      atlas::option::levels(nz_));
-    auto modelView = atlas::array::make_view<double, 2>(modelField);
-
-    // Model grid indices
-    atlas::Field fieldIndexI0 = gdata_.fieldSet()["index_i"];
-    atlas::Field fieldIndexJ0 = gdata_.fieldSet()["index_j"];
-    auto indexIView0 = atlas::array::make_view<int, 1>(fieldIndexI0);
-    auto indexJView0 = atlas::array::make_view<int, 1>(fieldIndexJ0);
-
-    // Compute normalization accuracy
-    oops::Log::info() << "Info     :     Compute exact normalization" << std::endl;
-    atlas::Field normAccField = gdata_.functionSpace().createField<double>(
-      atlas::option::name(myVar_) | atlas::option::levels(nz0_));
-    auto normAccView = atlas::array::make_view<double, 2>(normAccField);
-    normAccView.assign(util::missingValue<double>());
-    double normAccMax = 0.0;;
-
-    for (size_t i0 = 0; i0 < nx0_; i0 += params_.normAccStride.value()) {
-      for (size_t j0 = 0; j0 < ny0_; j0 += params_.normAccStride.value()) {
-        for (size_t k0 = 0; k0 < nz0_; k0 += params_.normAccStride.value()) {
-          // Set Dirac point
-          modelView.assign(0.0);
-          int myJnode0 = -1;
-          for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
-            if (indexIView0(jnode0)-1 == static_cast<int>(i0)
-              && indexJView0(jnode0)-1 == static_cast<int>(j0)) {
-              modelView(jnode0, k0) = 1.0;
-              myJnode0 = jnode0;
-            }
-          }
-
-          // Interpolation AD
-          interpolationAD(modelField, redField);
-
-          // Adjoint square-root multiplication
-          multiplyRedSqrtTrans(redField);
-
-          // Compute exact normalization
-          double exactNorm = 0.0;
-          const auto redView = atlas::array::make_view<double, 2>(redField);
-          for (size_t jnode = 0; jnode < rSize_; ++jnode) {
-            for (size_t k = 0; k < nz_; ++k) {
-              exactNorm += redView(jnode, k)*redView(jnode, k);
-            }
-          }
-          comm_.allReduceInPlace(exactNorm, eckit::mpi::sum());
-
-          // Get exact normalization factor
-          if (exactNorm > 0.0) {
-            exactNorm = 1.0/std::sqrt(exactNorm);
-          }
-
-          // Assess cost-efficient normalization quality
-          if (myJnode0 > -1) {
-            if (exactNorm > 0.0) {
-              normAccView(myJnode0, k0) = (normView(myJnode0, k0)-exactNorm)/exactNorm;
-              normAccMax = std::max(normAccMax, std::abs(normAccView(myJnode0, k0)));
-            }
-          }
-        }
-      }
-    }
-    normAcc_.add(normAccField);
-    comm_.allReduceInPlace(normAccMax, eckit::mpi::max());
-    oops::Log::info() << "Info     :     Cost-effective normalization maximum error: "
-      << normAccMax << std::endl;
-  }
-
-  oops::Log::trace() << classname() << "::setupNormalization done" << std::endl;
+  oops::Log::trace() << classname() << "::extractConvolution done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
@@ -613,7 +375,7 @@ void LayerHalo::multiplySqrt(const atlas::Field & cv,
 
   // Create field on reduced grid
   atlas::Field redField = fspace_.createField<double>(atlas::option::name("dummy") |
-                                                      atlas::option::levels(nz_));
+    atlas::option::levels(nz_));
 
   // Control vector to reduced grid
   const auto cvView = atlas::array::make_view<double, 1>(cv);
@@ -644,7 +406,7 @@ void LayerHalo::multiplySqrtTrans(const atlas::Field & modelField,
 
   // Create field on reduced grid
   atlas::Field redField = fspace_.createField<double>(atlas::option::name("dummy") |
-                                                      atlas::option::levels(nz_));
+    atlas::option::levels(nz_));
 
   // Interpolation AD
   interpolationAD(modelField, redField);
@@ -695,7 +457,6 @@ void LayerHalo::rowsConvolutionTL(atlas::Field & field) const {
   for (size_t js = 0; js < xcSendSize_; ++js) {
     size_t jnode = xcSendMapping_[js];
     for (size_t k = 0; k < nz_; ++k) {
-      ASSERT(js*nz_+k < xcSendSize_*nz_);
       xcSendVec[js*nz_+k] = view(jnode, k);
     }
   }
@@ -752,7 +513,6 @@ void LayerHalo::rowsConvolutionAD(atlas::Field & field) const {
   for (size_t js = 0; js < xcSendSize_; ++js) {
     size_t jnode = xcSendMapping_[js];
     for (size_t k = 0; k < nz_; ++k) {
-      ASSERT(js*nz_+k < xcSendSize_*nz_);
       view(jnode, k) += xcSendVec[js*nz_+k];
     }
   }
@@ -810,7 +570,6 @@ void LayerHalo::colsConvolutionTL(atlas::Field & field) const {
   for (size_t js = 0; js < ycSendSize_; ++js) {
     size_t jnode = ycSendMapping_[js];
     for (size_t k = 0; k < nz_; ++k) {
-      ASSERT(js*nz_+k < ycSendSize_*nz_);
       ycSendVec[js*nz_+k] = view(jnode, k);
     }
   }
@@ -868,7 +627,6 @@ void LayerHalo::colsConvolutionAD(atlas::Field & field) const {
   for (size_t js = 0; js < ycSendSize_; ++js) {
     size_t jnode = ycSendMapping_[js];
     for (size_t k = 0; k < nz_; ++k) {
-      ASSERT(js*nz_+k < ycSendSize_*nz_);
       view(jnode, k) += ycSendVec[js*nz_+k];
     }
   }

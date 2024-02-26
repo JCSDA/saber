@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2023 Meteorlogisk Institutt
+ * (C) Copyright 2024 Meteorlogisk Institutt
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -203,7 +203,7 @@ void LayerBase::setupInterpolation() {
       for (size_t j = 0; j < ny_; ++j) {
         for (size_t i = 0; i < nx_; ++i) {
           if (indexIView0(jnode0)-1 == std::round(xCoord[i]) &&
-              indexJView0(jnode0)-1 == std::round(yCoord[j])) {
+            indexJView0(jnode0)-1 == std::round(yCoord[j])) {
             mpiTask_[i*ny_+j] = myrank_;
             mpiMask[i*ny_+j] = 1;
           }
@@ -234,7 +234,7 @@ void LayerBase::setupInterpolation() {
     for (size_t i = 0; i < nx_; ++i) {
       if (static_cast<size_t>(mpiTask_[i*ny_+j]) == myrank_) {
         atlas::PointXY p({xCoord[i]/static_cast<double>(nx0_-1),
-                          yCoord[j]/static_cast<double>(ny0_-1)});  // Fake coordinate in [0,1]
+          yCoord[j]/static_cast<double>(ny0_-1)});  // Fake coordinate in [0,1]
         v.push_back(p);
       }
     }
@@ -274,9 +274,9 @@ void LayerBase::setupInterpolation() {
       for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
         if (ghostView(jnode0) == 0) {
           if (iMin <= static_cast<double>(indexIView0(jnode0)-1) &&
-              static_cast<double>(indexIView0(jnode0)-1) <= iMax &&
-              jMin <= static_cast<double>(indexJView0(jnode0)-1) &&
-              static_cast<double>(indexJView0(jnode0)-1) <= jMax) {
+            static_cast<double>(indexIView0(jnode0)-1) <= iMax &&
+            jMin <= static_cast<double>(indexJView0(jnode0)-1) &&
+            static_cast<double>(indexJView0(jnode0)-1) <= jMax) {
             pointsNeeded = true;
           }
         }
@@ -328,7 +328,7 @@ void LayerBase::setupInterpolation() {
   }
   std::vector<int> rSentPointsList(rSendSize_);
   comm_.allToAllv(mRecvPointsListOrdered.data(), mRecvCounts_.data(), mRecvDispls_.data(),
-                  rSentPointsList.data(), rSendCounts_.data(), rSendDispls_.data());
+    rSentPointsList.data(), rSendCounts_.data(), rSendDispls_.data());
 
   // Mapping for sent points
   rSendMapping_.resize(rSendSize_);
@@ -721,6 +721,244 @@ void LayerBase::setupKernels() {
 
 // -----------------------------------------------------------------------------
 
+void LayerBase::setupNormalization() {
+  oops::Log::trace() << classname() << "::setupNormalization starting" << std::endl;
+
+  // Boundary normalization
+
+  // Create boundary normalization
+  xNormSize_ = (xKernelSize_-1)/2;
+  yNormSize_ = (yKernelSize_-1)/2;
+  zNormSize_ = (zKernelSize_-1)/2;
+  xNorm_.resize(xNormSize_);
+  yNorm_.resize(yNormSize_);
+  zNorm_.resize(zNormSize_);
+
+  // Compute boundary normalization
+  std::fill(xNorm_.begin(), xNorm_.end(), 0.0);
+  std::fill(yNorm_.begin(), yNorm_.end(), 0.0);
+  std::fill(zNorm_.begin(), zNorm_.end(), 0.0);
+  for (size_t jn = 0; jn < xNormSize_; ++jn) {
+    for (size_t jk = xNormSize_-jn; jk < xKernelSize_; ++jk) {
+      xNorm_[jn] += xKernel_[jk]*xKernel_[jk];
+    }
+    xNorm_[jn] = 1.0/std::sqrt(xNorm_[jn]);
+  }
+  for (size_t jn = 0; jn < yNormSize_; ++jn) {
+    for (size_t jk = yNormSize_-jn; jk < yKernelSize_; ++jk) {
+      yNorm_[jn] += yKernel_[jk]*yKernel_[jk];
+    }
+    yNorm_[jn] = 1.0/std::sqrt(yNorm_[jn]);
+  }
+  for (size_t jn = 0; jn < zNormSize_; ++jn) {
+    for (size_t jk = zNormSize_-jn; jk < zKernelSize_; ++jk) {
+      zNorm_[jn] += zKernel_[jk]*zKernel_[jk];
+    }
+    zNorm_[jn] = 1.0/std::sqrt(zNorm_[jn]);
+  }
+
+  // Full normalization
+  atlas::Field normField = gdata_.functionSpace().createField<double>(
+    atlas::option::name(myVar_) | atlas::option::levels(nz0_));
+  auto normView = atlas::array::make_view<double, 2>(normField);
+  norm_.add(normField);
+
+  // Cost-efficient normalization
+
+  // Extract convolution values
+  size_t nxHalf = xNormSize_+1;
+  size_t nyHalf = yNormSize_+1;
+  std::vector<double> horConv(4*nxHalf*nyHalf, 0.0);
+  std::vector<double> verConv(2*(nz_-1), 0.0);
+  extractConvolution(nxHalf, nyHalf, horConv, verConv);
+
+  // Ghost points
+  const auto ghostView = atlas::array::make_view<int, 1>(gdata_.functionSpace().ghost());
+
+  // Compute horizontal normalization
+  normView.assign(0.0);
+  for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
+    if (ghostView(jnode0) == 0) {
+      // Define offset
+      size_t offsetI = std::min(std::min(horInterp_[jnode0].index1(),
+        nx_-2-horInterp_[jnode0].index1()), nxHalf-1);
+      size_t offsetJ = std::min(std::min(horInterp_[jnode0].index2(),
+        ny_-2-horInterp_[jnode0].index2()), nyHalf-1);
+      size_t horOffset = 4*(offsetI*nyHalf+offsetJ);
+
+      if (horInterp_[jnode0].interpType() == "c") {
+        // Colocated point, no normalization needed
+        normView(jnode0, 0) = 1.0;
+      } else if (horInterp_[jnode0].interpType() == "x") {
+        // Linear interpolation along x
+        double xW = horConv[horOffset+0]*horInterp_[jnode0].operations()[0].second
+          +horConv[horOffset+1]*horInterp_[jnode0].operations()[1].second;
+        double xE = horConv[horOffset+1]*horInterp_[jnode0].operations()[0].second
+          +horConv[horOffset+0]*horInterp_[jnode0].operations()[1].second;
+        normView(jnode0, 0) = horInterp_[jnode0].operations()[0].second*xW
+          +horInterp_[jnode0].operations()[1].second*xE;
+      } else if (horInterp_[jnode0].interpType() == "y") {
+        // Linear interpolation along y
+        double xS = horConv[horOffset+0]*horInterp_[jnode0].operations()[0].second
+          +horConv[horOffset+2]*horInterp_[jnode0].operations()[1].second;
+        double xN = horConv[horOffset+2]*horInterp_[jnode0].operations()[0].second
+          +horConv[horOffset+0]*horInterp_[jnode0].operations()[1].second;
+        normView(jnode0, 0) = horInterp_[jnode0].operations()[0].second*xS
+          +horInterp_[jnode0].operations()[1].second*xN;
+      } else if (horInterp_[jnode0].interpType() == "b") {
+        // Bilinear interpolation
+        double xSW = horConv[horOffset+0]*horInterp_[jnode0].operations()[0].second
+          +horConv[horOffset+1]*horInterp_[jnode0].operations()[1].second
+          +horConv[horOffset+2]*horInterp_[jnode0].operations()[2].second
+          +horConv[horOffset+3]*horInterp_[jnode0].operations()[3].second;
+        double xSE = horConv[horOffset+1]*horInterp_[jnode0].operations()[0].second
+          +horConv[horOffset+0]*horInterp_[jnode0].operations()[1].second
+          +horConv[horOffset+3]*horInterp_[jnode0].operations()[2].second
+          +horConv[horOffset+2]*horInterp_[jnode0].operations()[3].second;
+        double xNW = horConv[horOffset+2]*horInterp_[jnode0].operations()[0].second
+          +horConv[horOffset+3]*horInterp_[jnode0].operations()[1].second
+          +horConv[horOffset+0]*horInterp_[jnode0].operations()[2].second
+          +horConv[horOffset+1]*horInterp_[jnode0].operations()[3].second;
+        double xNE = horConv[horOffset+3]*horInterp_[jnode0].operations()[0].second
+          +horConv[horOffset+2]*horInterp_[jnode0].operations()[1].second
+          +horConv[horOffset+1]*horInterp_[jnode0].operations()[2].second
+          +horConv[horOffset+0]*horInterp_[jnode0].operations()[3].second;
+        normView(jnode0, 0) = horInterp_[jnode0].operations()[0].second*xSW
+          +horInterp_[jnode0].operations()[1].second*xSE
+          +horInterp_[jnode0].operations()[2].second*xNW
+          +horInterp_[jnode0].operations()[3].second*xNE;
+      } else {
+        throw eckit::Exception("wrong interpolation type: " + horInterp_[jnode0].interpType(),
+          Here());
+      }
+    }
+  }
+
+  // Compute vertical normalization
+  std::vector<double> verNorm(nz0_, 1.0);
+  if (nz0_ > 1) {
+    verNorm[0] = 1.0;
+    verNorm[nz0_-1] = 1.0;
+    for (size_t k0 = 1; k0 < nz0_-1; ++k0) {
+      if (verInterp_[k0].operations().size() > 1) {
+        size_t verOffset = 2*verInterp_[k0].index1();
+        double xB = verConv[verOffset+0]*verInterp_[k0].operations()[0].second
+          +verConv[verOffset+1]*verInterp_[k0].operations()[1].second;
+        double xT = verConv[verOffset+1]*verInterp_[k0].operations()[0].second
+          +verConv[verOffset+0]*verInterp_[k0].operations()[1].second;
+        verNorm[k0] = verInterp_[k0].operations()[0].second*xB
+          +verInterp_[k0].operations()[1].second*xT;
+      }
+    }
+  }
+
+  // Compute 3D normalization
+  for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
+    if (ghostView(jnode0) == 0) {
+      for (size_t k0 = 0; k0 < nz0_; ++k0) {
+        normView(jnode0, k0) = normView(jnode0, 0)*verNorm[k0];
+      }
+    }
+  }
+
+  // Get normalization factor
+  for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
+    for (size_t k0 = 0; k0 < nz0_; ++k0) {
+      if (normView(jnode0, k0) > 0.0) {
+        normView(jnode0, k0) = 1.0/std::sqrt(normView(jnode0, k0));
+      }
+    }
+  }
+
+  // Check whether normalization accuracy should be computed
+  bool computeNormAcc = false;
+  std::vector<eckit::LocalConfiguration> outputModelFilesConf
+    = params_.outputModelFilesConf.value().get_value_or({});
+  for (const auto & conf : outputModelFilesConf) {
+    const std::string param = conf.getString("parameter");
+    if (param == "normalization accuracy") {
+      computeNormAcc = true;
+    }
+  }
+
+  if (computeNormAcc) {
+    // Brute-force normalization to assess cost-effective normalization accuracy
+
+    // Create fields
+    atlas::Field modelField = gdata_.functionSpace().createField<double>(
+      atlas::option::name("dummy") | atlas::option::levels(nz0_));
+    atlas::Field redField = fspace_.createField<double>(atlas::option::name("dummy") |
+      atlas::option::levels(nz_));
+    atlas::Field cv("genericCtlVec", atlas::array::make_datatype<double>(),
+      atlas::array::make_shape(ctlVecSize()));
+    auto modelView = atlas::array::make_view<double, 2>(modelField);
+
+    // Model grid indices
+    atlas::Field fieldIndexI0 = gdata_.fieldSet()["index_i"];
+    atlas::Field fieldIndexJ0 = gdata_.fieldSet()["index_j"];
+    auto indexIView0 = atlas::array::make_view<int, 1>(fieldIndexI0);
+    auto indexJView0 = atlas::array::make_view<int, 1>(fieldIndexJ0);
+
+    // Compute normalization accuracy
+    oops::Log::info() << "Info     :     Compute exact normalization" << std::endl;
+    atlas::Field normAccField = gdata_.functionSpace().createField<double>(
+      atlas::option::name(myVar_) | atlas::option::levels(nz0_));
+    auto normAccView = atlas::array::make_view<double, 2>(normAccField);
+    normAccView.assign(util::missingValue<double>());
+    double normAccMax = 0.0;;
+
+    for (size_t i0 = 0; i0 < nx0_; i0 += params_.normAccStride.value()) {
+      for (size_t j0 = 0; j0 < ny0_; j0 += params_.normAccStride.value()) {
+        for (size_t k0 = 0; k0 < nz0_; k0 += params_.normAccStride.value()) {
+          // Set Dirac point
+          modelView.assign(0.0);
+          int myJnode0 = -1;
+          for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
+            if (indexIView0(jnode0)-1 == static_cast<int>(i0)
+              && indexJView0(jnode0)-1 == static_cast<int>(j0)) {
+              modelView(jnode0, k0) = 1.0;
+              myJnode0 = jnode0;
+            }
+          }
+
+          // Adjoint square-root multiplication
+          const size_t offset = 0;
+          multiplySqrtTrans(modelField, cv, offset);
+
+          // Compute exact normalization
+          double exactNorm = 0.0;
+          const auto cvView = atlas::array::make_view<double, 1>(cv);
+          for (size_t jj = 0; jj < ctlVecSize(); ++jj) {
+            exactNorm += cvView(jj)*cvView(jj);
+          }
+          comm_.allReduceInPlace(exactNorm, eckit::mpi::sum());
+
+          // Get exact normalization factor
+          if (exactNorm > 0.0) {
+            exactNorm = 1.0/std::sqrt(exactNorm);
+          }
+
+          // Assess cost-efficient normalization quality
+          if (myJnode0 > -1) {
+            if (exactNorm > 0.0) {
+              normAccView(myJnode0, k0) = (normView(myJnode0, k0)-exactNorm)/exactNorm;
+              normAccMax = std::max(normAccMax, std::abs(normAccView(myJnode0, k0)));
+            }
+          }
+        }
+      }
+    }
+    normAcc_.add(normAccField);
+    comm_.allReduceInPlace(normAccMax, eckit::mpi::max());
+    oops::Log::info() << "Info     :     Cost-effective normalization maximum error: "
+      << normAccMax << std::endl;
+  }
+
+  oops::Log::trace() << classname() << "::setupNormalization done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
 void LayerBase::read(const int & id) {
   oops::Log::trace() << classname() << "::read starting" << std::endl;
 
@@ -814,7 +1052,9 @@ void LayerBase::read(const int & id) {
   if ((retval = nc_get_att_double(id, NC_GLOBAL, "rv", &rv_))) ERR(retval);
   if ((retval = nc_get_att_double(id, NC_GLOBAL, "resol", &resol_))) ERR(retval);
   if (params_.resol.value() != boost::none) {
-    ASSERT(*params_.resol.value() == resol_);
+    if (*params_.resol.value() != resol_) {
+      throw eckit::UserError("resol parameter inconsistent between yaml and file", Here());
+    }
   }
 
   oops::Log::trace() << classname() << "::read done" << std::endl;
@@ -973,7 +1213,6 @@ void LayerBase::interpolationTL(const atlas::Field & redField,
   for (size_t js = 0; js < rSendSize_; ++js) {
     size_t jnode = rSendMapping_[js];
     for (size_t k = 0; k < nz_; ++k) {
-      ASSERT(js*nz_+k < rSendSize_*nz_);
       rSendVec[js*nz_+k] = redView(jnode, k);
     }
   }
@@ -981,7 +1220,7 @@ void LayerBase::interpolationTL(const atlas::Field & redField,
   // Communication
   std::vector<double> mRecvVec(mRecvSize_*nz_);
   comm_.allToAllv(rSendVec.data(), rSendCounts3D.data(), rSendDispls3D.data(),
-                  mRecvVec.data(), mRecvCounts3D.data(), mRecvDispls3D.data());
+    mRecvVec.data(), mRecvCounts3D.data(), mRecvDispls3D.data());
 
   // Interpolation
   auto modelView = atlas::array::make_view<double, 2>(modelField);
@@ -1035,7 +1274,7 @@ void LayerBase::interpolationAD(const atlas::Field & modelField,
   // Communication
   std::vector<double> rSendVec(rSendSize_*nz_);
   comm_.allToAllv(mRecvVec.data(), mRecvCounts3D.data(), mRecvDispls3D.data(),
-                  rSendVec.data(), rSendCounts3D.data(), rSendDispls3D.data());
+    rSendVec.data(), rSendCounts3D.data(), rSendDispls3D.data());
 
   // Deserialize
   auto redView = atlas::array::make_view<double, 2>(redField);

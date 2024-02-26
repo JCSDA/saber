@@ -5,7 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "saber/fastlam/LayerRC.h"
+#include "saber/fastlam/LayerSpec.h"
 
 #include <netcdf.h>
 
@@ -22,11 +22,11 @@ namespace fastlam {
 
 // -----------------------------------------------------------------------------
 
-static LayerMaker<LayerRC> makerRC_("rows-columns");
+static LayerMaker<LayerSpec> makerSpec_("spectral");
 
 // -----------------------------------------------------------------------------
 
-void LayerRC::setupParallelization() {
+void LayerSpec::setupParallelization() {
   oops::Log::trace() << classname() << "::setupParallelization starting" << std::endl;
 
   // Get index fields
@@ -35,13 +35,17 @@ void LayerRC::setupParallelization() {
   auto indexIView = atlas::array::make_view<int, 1>(fieldIndexI);
   auto indexJView = atlas::array::make_view<int, 1>(fieldIndexJ);
 
+  // Extended sizes
+  nxExt_ = nx_+xKernelSize_;
+  nyExt_ = ny_+yKernelSize_;
+
   // Sizes per task
   nxPerTask_.resize(comm_.size());
   nyPerTask_.resize(comm_.size());
   std::fill(nxPerTask_.begin(), nxPerTask_.end(), 0);
   std::fill(nyPerTask_.begin(), nyPerTask_.end(), 0);
   size_t index = 0;
-  for (size_t jx = 0; jx < nx_; ++jx) {
+  for (size_t jx = 0; jx < nxExt_; ++jx) {
     ++nxPerTask_[index];
     ++index;
     if (index == comm_.size()) index = 0;
@@ -143,11 +147,11 @@ void LayerRC::setupParallelization() {
   yTask_.resize(nyPerTask_[myrank_]);
   yOffset_.resize(nyPerTask_[myrank_]);
   for (size_t j = 0; j < nyPerTask_[myrank_]; ++j) {
-    yTask_[j].resize(nx_);
-    yOffset_[j].resize(nx_);
+    yTask_[j].resize(nxExt_);
+    yOffset_[j].resize(nxExt_);
   }
   std::vector<int> yOffsetPerTask(comm_.size(), 0);
-  for (size_t i = 0; i < nx_; ++i) {
+  for (size_t i = 0; i < nxExt_; ++i) {
     for (size_t j = 0; j < nyPerTask_[myrank_]; ++j) {
       bool found = false;
       for (size_t jt = 0; jt < comm_.size(); ++jt) {
@@ -166,7 +170,7 @@ void LayerRC::setupParallelization() {
   // RecvCounts
   xRecvCounts_.resize(comm_.size());
   std::fill(xRecvCounts_.begin(), xRecvCounts_.end(), 0);
-  for (size_t i = 0; i < nx_; ++i) {
+  for (size_t i = 0; i < nxExt_; ++i) {
     for (size_t j = 0; j < nyPerTask_[myrank_]; ++j) {
       ++xRecvCounts_[yTask_[j][i]];
     }
@@ -205,7 +209,7 @@ void LayerRC::setupParallelization() {
   // Communicate indices
   std::vector<int> xIndex_i;
   std::vector<int> xIndex_j;
-  for (size_t i = 0; i < nx_; ++i) {
+  for (size_t i = 0; i < nxExt_; ++i) {
     for (size_t j = 0; j < nyPerTask_[myrank_]; ++j) {
       xIndex_i.push_back(i);
       xIndex_j.push_back(j+nyStart_[myrank_]);
@@ -218,6 +222,82 @@ void LayerRC::setupParallelization() {
   comm_.allToAllv(xIndex_j.data(), xRecvCounts_.data(), xRecvDispls_.data(),
     yIndex_j_.data(), ySendCounts_.data(), ySendDispls_.data());
 
+  // Rows FFTW setup
+  int xRank = 1;
+  int xN[] = {static_cast<int>(nxExt_)};
+  int xHowmany = nyPerTask_[myrank_]*nz_;
+  int *xInembed = NULL;
+  const int xIstride = 1;
+  const int xIdist = static_cast<int>(nxExt_);
+  int *xOnembed = NULL;
+  const int xOstride = 1;
+  const int xOdist = static_cast<int>(nxExt_/2+1);
+  xBufR_ = fftw_alloc_real(nxExt_*nyPerTask_[myrank_]*nz_);
+  xBufC_ = fftw_alloc_complex((nxExt_/2+1)*nyPerTask_[myrank_]*nz_);
+  xPlan_r2c_ = fftw_plan_many_dft_r2c(xRank, xN, xHowmany, xBufR_, xInembed, xIstride, xIdist,
+    xBufC_, xOnembed, xOstride, xOdist, FFTW_PATIENT);
+  xPlan_c2r_ = fftw_plan_many_dft_c2r(xRank, xN, xHowmany, xBufC_, xOnembed, xOstride, xOdist,
+    xBufR_, xInembed, xIstride, xIdist, FFTW_PATIENT);
+
+  // Rows normalization factor
+  xNormFFT_ = 1.0/static_cast<double>(nxExt_);
+
+  // Rows spectral standard deviation
+  double *xBufR1d = fftw_alloc_real(nxExt_);
+  fftw_complex *xBufC1d = fftw_alloc_complex(nxExt_/2+1);
+  fftw_plan xPlan_r2c1d = fftw_plan_dft_r2c_1d(nxExt_, xBufR1d, xBufC1d, FFTW_PATIENT);
+  for (size_t i = 0; i < nxExt_; ++i) {
+    if (i <= (xKernelSize_-1)/2) {
+      xBufR1d[i] = xKernel_[(xKernelSize_-1)/2+i];
+    } else if (i > nxExt_-1-(xKernelSize_-1)/2) {
+      xBufR1d[i] = xKernel_[i-(nxExt_-(xKernelSize_-1)/2)];
+    } else {
+      xBufR1d[i] = 0.0;
+    }
+  }
+  fftw_execute(xPlan_r2c1d);
+  for (size_t kw = 0; kw < nxExt_/2+1; ++kw) {
+    xSpecStdDev_.push_back(xBufC1d[kw][0]);
+  }
+
+  // Columns FFTW setup
+  int yRank = 1;
+  int yN[] = {static_cast<int>(nyExt_)};
+  int yHowmany = nxPerTask_[myrank_]*nz_;
+  int *yInembed = NULL;
+  const int yIstride = 1;
+  const int yIdist = static_cast<int>(nyExt_);
+  int *yOnembed = NULL;
+  const int yOstride = 1;
+  const int yOdist = static_cast<int>(nyExt_/2+1);
+  yBufR_ = fftw_alloc_real(nxPerTask_[myrank_]*nyExt_*nz_);
+  yBufC_ = fftw_alloc_complex(nxPerTask_[myrank_]*(nyExt_/2+1)*nz_);
+  yPlan_r2c_ = fftw_plan_many_dft_r2c(yRank, yN, yHowmany, yBufR_, yInembed, yIstride, yIdist,
+    yBufC_, yOnembed, yOstride, yOdist, FFTW_PATIENT);
+  yPlan_c2r_ = fftw_plan_many_dft_c2r(yRank, yN, yHowmany, yBufC_, yOnembed, yOstride, yOdist,
+    yBufR_, yInembed, yIstride, yIdist, FFTW_PATIENT);
+
+  // Columns normalization factor
+  yNormFFT_ = 1.0/static_cast<double>(nyExt_);
+
+  // Rows spectral standard deviation
+  double *yBufR1d = fftw_alloc_real(nyExt_);
+  fftw_complex *yBufC1d = fftw_alloc_complex(nyExt_/2+1);
+  fftw_plan yPlan_r2c1d = fftw_plan_dft_r2c_1d(nyExt_, yBufR1d, yBufC1d, FFTW_PATIENT);
+  for (size_t j = 0; j < nyExt_; ++j) {
+    if (j <= (yKernelSize_-1)/2) {
+      yBufR1d[j] = yKernel_[(yKernelSize_-1)/2+j];
+    } else if (j > nyExt_-1-(yKernelSize_-1)/2) {
+      yBufR1d[j] = yKernel_[j-(nyExt_-(yKernelSize_-1)/2)];
+    } else {
+      yBufR1d[j] = 0.0;
+    }
+  }
+  fftw_execute(yPlan_r2c1d);
+  for (size_t kw = 0; kw < nyExt_/2+1; ++kw) {
+    ySpecStdDev_.push_back(yBufC1d[kw][0]);
+  }
+
   if (!params_.skipTests.value()) {
     // Tests
 
@@ -225,9 +305,9 @@ void LayerRC::setupParallelization() {
     atlas::Field redField = fspace_.createField<double>(atlas::option::name("dummy")
       | atlas::option::levels(nz_));
     atlas::Field rowsField = atlas::Field("dummy", atlas::array::make_datatype<double>(),
-      atlas::array::make_shape(nx_, nyPerTask_[myrank_], nz_));
+      atlas::array::make_shape(nxExt_, nyPerTask_[myrank_], nz_));
     atlas::Field colsField = atlas::Field("dummy", atlas::array::make_datatype<double>(),
-      atlas::array::make_shape(nxPerTask_[myrank_], ny_, nz_));
+      atlas::array::make_shape(nxPerTask_[myrank_], nyExt_, nz_));
     auto redView = atlas::array::make_view<double, 2>(redField);
     auto rowsView = atlas::array::make_view<double, 3>(rowsField);
     auto colsView = atlas::array::make_view<double, 3>(colsField);
@@ -245,10 +325,11 @@ void LayerRC::setupParallelization() {
 
     // Print result
     oops::Log::test() << "    FastLAM redToRows test";
-    for (size_t i = 0; i < nx_; ++i) {
+    for (size_t i = 0; i < nxExt_; ++i) {
       for (size_t j = 0; j < nyPerTask_[myrank_]; ++j) {
         for (size_t k = 0; k < nz_; ++k) {
-          if (rowsView(i, j, k) != static_cast<double>(i*ny_+(j+nyStart_[myrank_]))) {
+          double testValue = (i < nx_) ? static_cast<double>(i*ny_+(j+nyStart_[myrank_])) : 0.0;
+          if (rowsView(i, j, k) != testValue) {
             oops::Log::test() << " failed" << std::endl;
             throw eckit::Exception("redToRows test failed for block FastLAM", Here());
           }
@@ -272,9 +353,11 @@ void LayerRC::setupParallelization() {
     // Print result
     oops::Log::test() << "    FastLAM rowsToCols test";
     for (size_t i = 0; i < nxPerTask_[myrank_]; ++i) {
-      for (size_t j = 0; j < ny_; ++j) {
+      for (size_t j = 0; j < nyExt_; ++j) {
         for (size_t k = 0; k < nz_; ++k) {
-          if (colsView(i, j, k) != static_cast<double>((i+nxStart_[myrank_])*ny_+j)) {
+          double testValue = (i+nxStart_[myrank_] < nx_ && j < ny_) ?
+            static_cast<double>((i+nxStart_[myrank_])*ny_+j) : 0.0;
+          if (colsView(i, j, k) != testValue) {
             oops::Log::test() << " failed" << std::endl;
             throw eckit::Exception("rowsToCols test failed for block FastLAM", Here());
           }
@@ -284,7 +367,8 @@ void LayerRC::setupParallelization() {
     for (size_t i = 0; i < nx_; ++i) {
       for (size_t j = 0; j < nyPerTask_[myrank_]; ++j) {
         for (size_t k = 0; k < nz_; ++k) {
-          if (rowsView(i, j, k) != static_cast<double>(i*ny_+(j+nyStart_[myrank_]))) {
+          double testValue = (i < nx_) ? static_cast<double>(i*ny_+(j+nyStart_[myrank_])) : 0.0;
+          if (rowsView(i, j, k) != testValue) {
             oops::Log::test() << " failed" << std::endl;
             throw eckit::Exception("rowsToCols test failed for block FastLAM", Here());
           }
@@ -299,10 +383,10 @@ void LayerRC::setupParallelization() {
 
 // -----------------------------------------------------------------------------
 
-void LayerRC::extractConvolution(const size_t & nxHalf,
-                                 const size_t & nyHalf,
-                                 std::vector<double> & horConv,
-                                 std::vector<double> & verConv) {
+void LayerSpec::extractConvolution(const size_t & nxHalf,
+                                   const size_t & nyHalf,
+                                   std::vector<double> & horConv,
+                                   std::vector<double> & verConv) {
   oops::Log::trace() << classname() << "::extractConvolution starting" << std::endl;
 
   // Reduced grid indices
@@ -319,7 +403,7 @@ void LayerRC::extractConvolution(const size_t & nxHalf,
   atlas::Field redFieldHor = fspace_.createField<double>(atlas::option::name("dummy") |
     atlas::option::levels(nz_));
   atlas::Field colsFieldHor("dummy", atlas::array::make_datatype<double>(),
-    atlas::array::make_shape(nxPerTask_[myrank_], ny_, nz_));
+    atlas::array::make_shape(nxPerTask_[myrank_], nyExt_, nz_));
   auto redViewHor = atlas::array::make_view<double, 2>(redFieldHor);
   for (size_t i = 0; i < nxHalf; ++i) {
     for (size_t j = 0; j < nyHalf; ++j) {
@@ -365,13 +449,13 @@ void LayerRC::extractConvolution(const size_t & nxHalf,
 
   // One grid point only
   const size_t nxPerTaskSave = nxPerTask_[myrank_];
-  const size_t nySave = ny_;
+  const size_t nyExtSave = nyExt_;
   nxPerTask_[myrank_] = 1;
-  ny_ = 1;
+  nyExt_ = 1;
 
   // Vertical convolution
   atlas::Field colsVerField("dummy", atlas::array::make_datatype<double>(),
-    atlas::array::make_shape(nxPerTask_[myrank_], ny_, nz_));
+    atlas::array::make_shape(nxPerTask_[myrank_], nyExt_, nz_));
   auto colsVerView = atlas::array::make_view<double, 3>(colsVerField);
   for (size_t k = 0; k < nz_-1; ++k) {
     // Setup dirac point
@@ -395,28 +479,28 @@ void LayerRC::extractConvolution(const size_t & nxHalf,
 
   // Reset number of grid points
   nxPerTask_[myrank_] = nxPerTaskSave;
-  ny_ = nySave;
+  nyExt_ = nyExtSave;
 
   oops::Log::trace() << classname() << "::extractConvolution done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void LayerRC::multiplySqrt(const atlas::Field & cv,
-                           atlas::Field & modelField,
-                           const size_t & offset) const {
+void LayerSpec::multiplySqrt(const atlas::Field & cv,
+                             atlas::Field & modelField,
+                             const size_t & offset) const {
   oops::Log::trace() << classname() << "::multiplySqrt starting" << std::endl;
 
   // Create field on columns
   atlas::Field colsField("dummy", atlas::array::make_datatype<double>(),
-    atlas::array::make_shape(nxPerTask_[myrank_], ny_, nz_));
+    atlas::array::make_shape(nxPerTask_[myrank_], nyExt_, nz_));
 
   // Control vector to columns
   const auto cvView = atlas::array::make_view<double, 1>(cv);
   auto colsView = atlas::array::make_view<double, 3>(colsField);
   size_t index = offset;
   for (size_t i = 0; i < nxPerTask_[myrank_]; ++i) {
-    for (size_t j = 0; j < ny_; ++j) {
+    for (size_t j = 0; j < nyExt_; ++j) {
       for (size_t k = 0; k < nz_; ++k) {
         colsView(i, j, k) = cvView(index);
         ++index;
@@ -439,9 +523,9 @@ void LayerRC::multiplySqrt(const atlas::Field & cv,
 
 // -----------------------------------------------------------------------------
 
-void LayerRC::multiplySqrtTrans(const atlas::Field & modelField,
-                                atlas::Field & cv,
-                                const size_t & offset) const {
+void LayerSpec::multiplySqrtTrans(const atlas::Field & modelField,
+                                  atlas::Field & cv,
+                                  const size_t & offset) const {
   oops::Log::trace() << classname() << "::multiplySqrtTrans starting" << std::endl;
 
   // Create field on reduced grid
@@ -453,7 +537,7 @@ void LayerRC::multiplySqrtTrans(const atlas::Field & modelField,
 
   // Create field on columns
   atlas::Field colsField("dummy", atlas::array::make_datatype<double>(),
-    atlas::array::make_shape(nxPerTask_[myrank_], ny_, nz_));
+    atlas::array::make_shape(nxPerTask_[myrank_], nyExt_, nz_));
 
   // Adjoint square-root multiplication on reduced grid
   multiplyRedSqrtTrans(redField, colsField);
@@ -463,7 +547,7 @@ void LayerRC::multiplySqrtTrans(const atlas::Field & modelField,
   auto cvView = atlas::array::make_view<double, 1>(cv);
   size_t index = offset;
   for (size_t i = 0; i < nxPerTask_[myrank_]; ++i) {
-    for (size_t j = 0; j < ny_; ++j) {
+    for (size_t j = 0; j < nyExt_; ++j) {
       for (size_t k = 0; k < nz_; ++k) {
         cvView(index) = colsView(i, j, k);
         ++index;
@@ -476,14 +560,14 @@ void LayerRC::multiplySqrtTrans(const atlas::Field & modelField,
 
 // -----------------------------------------------------------------------------
 
-void LayerRC::print(std::ostream & os) const {
+void LayerSpec::print(std::ostream & os) const {
   os << classname();
 }
 
 // -----------------------------------------------------------------------------
 
-void LayerRC::redToRows(const atlas::Field & redField,
-                        atlas::Field & rowsField) const {
+void LayerSpec::redToRows(const atlas::Field & redField,
+                          atlas::Field & rowsField) const {
   oops::Log::trace() << classname() << "::redToRows starting" << std::endl;
 
   // Scale counts and displs for all levels
@@ -524,13 +608,22 @@ void LayerRC::redToRows(const atlas::Field & redField,
     }
   }
 
+  // Extend
+  for (size_t i = nx_; i < nxExt_; ++i) {
+    for (size_t j = 0; j < nyPerTask_[myrank_]; ++j) {
+      for (size_t k = 0; k < nz_; ++k) {
+        rowsView(i, j, k) = 0.0;
+      }
+    }
+  }
+
   oops::Log::trace() << classname() << "::redToRows done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void LayerRC::rowsToRed(const atlas::Field & rowsField,
-                        atlas::Field & redField) const {
+void LayerSpec::rowsToRed(const atlas::Field & rowsField,
+                          atlas::Field & redField) const {
   oops::Log::trace() << classname() << "::rowsToRed starting" << std::endl;
 
   // Scale counts and displs for all levels
@@ -576,26 +669,47 @@ void LayerRC::rowsToRed(const atlas::Field & rowsField,
 
 // -----------------------------------------------------------------------------
 
-void LayerRC::rowsConvolution(atlas::Field & field) const {
+void LayerSpec::rowsConvolution(atlas::Field & field) const {
   oops::Log::trace() << classname() << "::rowsConvolution starting" << std::endl;
 
-  // Copy field
-  atlas::Field copyField = field.clone();
-  const auto copyView = atlas::array::make_view<double, 3>(copyField);
-
-  // Apply kernel
+  // Pack data
   auto view = atlas::array::make_view<double, 3>(field);
-  view.assign(0.0);
+  size_t offset = 0;
   for (size_t j = 0; j < nyPerTask_[myrank_]; ++j) {
-    for (size_t i = 0; i < nx_; ++i) {
-      for (size_t jk = 0; jk < xKernelSize_; ++jk) {
-        size_t ii = i-jk+(xKernelSize_-1)/2;
-        if (ii >= 0 && ii < nx_) {
-          for (size_t k = 0; k < nz_; ++k) {
-            view(i, j, k) += copyView(ii, j, k)*xKernel_[jk];
-          }
-        }
+    for (size_t k = 0; k < nz_; ++k) {
+      for (size_t i = 0; i < nxExt_; ++i) {
+        xBufR_[offset+i] = view(i, j, k);
       }
+      offset += nxExt_;
+    }
+  }
+
+  // Compute direct transform
+  fftw_execute(xPlan_r2c_);
+
+  // Convolution in spectral space
+  offset = 0;
+  for (size_t j = 0; j < nyPerTask_[myrank_]; ++j) {
+    for (size_t k = 0; k < nz_; ++k) {
+      for (size_t kw = 0; kw < nxExt_/2+1; ++kw) {
+        xBufC_[offset+kw][0] *= xSpecStdDev_[kw];
+        xBufC_[offset+kw][1] *= xSpecStdDev_[kw];
+      }
+      offset += nxExt_/2+1;
+    }
+  }
+
+  // Compute inverse transform
+  fftw_execute(xPlan_c2r_);
+
+  // Unpack data and normalize
+  offset = 0;
+  for (size_t j = 0; j < nyPerTask_[myrank_]; ++j) {
+    for (size_t k = 0; k < nz_; ++k) {
+      for (size_t i = 0; i < nxExt_; ++i) {
+        view(i, j, k) = xBufR_[offset+i]*xNormFFT_;
+      }
+     offset += nxExt_;
     }
   }
 
@@ -604,27 +718,8 @@ void LayerRC::rowsConvolution(atlas::Field & field) const {
 
 // -----------------------------------------------------------------------------
 
-void LayerRC::rowsNormalization(atlas::Field & field) const {
-  oops::Log::trace() << classname() << "::rowsNormalization starting" << std::endl;
-
-  // Apply normalization
-  auto view = atlas::array::make_view<double, 3>(field);
-  for (size_t j = 0; j < nyPerTask_[myrank_]; ++j) {
-    for (size_t i = 0; i < xNormSize_; ++i) {
-      for (size_t k = 0; k < nz_; ++k) {
-        view(i, j, k) *= xNorm_[i];
-        view(nx_-1-i, j, k) *= xNorm_[i];
-      }
-    }
-  }
-
-  oops::Log::trace() << classname() << "::rowsNormalization done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-void LayerRC::rowsToCols(const atlas::Field & rowsField,
-                         atlas::Field & colsField) const {
+void LayerSpec::rowsToCols(const atlas::Field & rowsField,
+                           atlas::Field & colsField) const {
   oops::Log::trace() << classname() << "::rowsToCols starting" << std::endl;
 
   // Scale counts and displs for all levels
@@ -642,7 +737,7 @@ void LayerRC::rowsToCols(const atlas::Field & rowsField,
   // Serialize
   std::vector<double> xRecvVec(xRecvSize_*nz_);
   const auto rowsView = atlas::array::make_view<double, 3>(rowsField);
-  for (size_t i = 0; i < nx_; ++i) {
+  for (size_t i = 0; i < nxExt_; ++i) {
     for (size_t j = 0; j < nyPerTask_[myrank_]; ++j) {
       for (size_t k = 0; k < nz_; ++k) {
         size_t jv = xRecvDispls3D[yTask_[j][i]] + yOffset_[j][i]*nz_ + k;
@@ -667,13 +762,22 @@ void LayerRC::rowsToCols(const atlas::Field & rowsField,
     }
   }
 
+  // Extend
+  for (size_t i = 0; i < nxPerTask_[myrank_]; ++i) {
+    for (size_t j = ny_; j < nyExt_; ++j) {
+      for (size_t k = 0; k < nz_; ++k) {
+        colsView(i, j, k) = 0.0;
+      }
+    }
+  }
+
   oops::Log::trace() << classname() << "::rowsToCols done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void LayerRC::colsToRows(const atlas::Field & colsField,
-                         atlas::Field & rowsField) const {
+void LayerSpec::colsToRows(const atlas::Field & colsField,
+                           atlas::Field & rowsField) const {
   oops::Log::trace() << classname() << "::colsToRows starting" << std::endl;
 
   // Scale counts and displs for all levels
@@ -707,7 +811,7 @@ void LayerRC::colsToRows(const atlas::Field & colsField,
 
   // Deserialize
   auto rowsView = atlas::array::make_view<double, 3>(rowsField);
-  for (size_t i = 0; i < nx_; ++i) {
+  for (size_t i = 0; i < nxExt_; ++i) {
     for (size_t j = 0; j < nyPerTask_[myrank_]; ++j) {
       for (size_t k = 0; k < nz_; ++k) {
         size_t jv = xRecvDispls3D[yTask_[j][i]] + yOffset_[j][i]*nz_ + k;
@@ -721,26 +825,47 @@ void LayerRC::colsToRows(const atlas::Field & colsField,
 
 // -----------------------------------------------------------------------------
 
-void LayerRC::colsConvolution(atlas::Field & field) const {
+void LayerSpec::colsConvolution(atlas::Field & field) const {
   oops::Log::trace() << classname() << "::colsConvolution starting" << std::endl;
 
-  // Copy field
-  atlas::Field copyField = field.clone();
-  const auto copyView = atlas::array::make_view<double, 3>(copyField);
-
-  // Apply kernel
+  // Pack data
   auto view = atlas::array::make_view<double, 3>(field);
-  view.assign(0.0);
+  size_t offset = 0;
   for (size_t i = 0; i < nxPerTask_[myrank_]; ++i) {
-    for (size_t j = 0; j < ny_; ++j) {
-      for (size_t jk = 0; jk < yKernelSize_; ++jk) {
-        size_t jj = j-jk+(yKernelSize_-1)/2;
-        if (jj >= 0 && jj < ny_) {
-          for (size_t k = 0; k < nz_; ++k) {
-            view(i, j, k) += copyView(i, jj, k)*yKernel_[jk];
-          }
-        }
+    for (size_t k = 0; k < nz_; ++k) {
+      for (size_t j = 0; j < nyExt_; ++j) {
+        yBufR_[offset+j] = view(i, j, k);
       }
+      offset += nyExt_;
+    }
+  }
+
+  // Compute direct transform
+  fftw_execute(yPlan_r2c_);
+
+  // Convolution in spectral space
+  offset = 0;
+  for (size_t i = 0; i < nxPerTask_[myrank_]; ++i) {
+    for (size_t k = 0; k < nz_; ++k) {
+      for (size_t kw = 0; kw < nyExt_/2+1; ++kw) {
+        yBufC_[offset+kw][0] *= ySpecStdDev_[kw];
+        yBufC_[offset+kw][1] *= ySpecStdDev_[kw];
+      }
+      offset += nyExt_/2+1;
+    }
+  }
+
+  // Compute inverse transform
+  fftw_execute(yPlan_c2r_);
+
+  // Unpack data and normalize
+  offset = 0;
+  for (size_t i = 0; i < nxPerTask_[myrank_]; ++i) {
+    for (size_t k = 0; k < nz_; ++k) {
+      for (size_t j = 0; j < nyExt_; ++j) {
+        view(i, j, k) = yBufR_[offset+j]*yNormFFT_;
+      }
+      offset += nyExt_;
     }
   }
 
@@ -749,26 +874,7 @@ void LayerRC::colsConvolution(atlas::Field & field) const {
 
 // -----------------------------------------------------------------------------
 
-void LayerRC::colsNormalization(atlas::Field & field) const {
-  oops::Log::trace() << classname() << "::colsNormalization starting" << std::endl;
-
-  // Apply normalization
-  auto view = atlas::array::make_view<double, 3>(field);
-  for (size_t i = 0; i < nxPerTask_[myrank_]; ++i) {
-    for (size_t j = 0; j < yNormSize_; ++j) {
-      for (size_t k = 0; k < nz_; ++k) {
-        view(i, j, k) *= yNorm_[j];
-        view(i, ny_-1-j, k) *= yNorm_[j];
-      }
-    }
-  }
-
-  oops::Log::trace() << classname() << "::colsNormalization done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-void LayerRC::vertConvolution(atlas::Field & field) const {
+void LayerSpec::vertConvolution(atlas::Field & field) const {
   oops::Log::trace() << classname() << "::vertConvolution starting" << std::endl;
 
   // Copy field
@@ -779,7 +885,7 @@ void LayerRC::vertConvolution(atlas::Field & field) const {
   auto view = atlas::array::make_view<double, 3>(field);
   view.assign(0.0);
   for (size_t i = 0; i < nxPerTask_[myrank_]; ++i) {
-    for (size_t j = 0; j < ny_; ++j) {
+    for (size_t j = 0; j < nyExt_; ++j) {
       for (size_t k = 0; k < nz_; ++k) {
         for (size_t jk = 0; jk < zKernelSize_; ++jk) {
           size_t kk = k-jk+(zKernelSize_-1)/2;
@@ -796,13 +902,13 @@ void LayerRC::vertConvolution(atlas::Field & field) const {
 
 // -----------------------------------------------------------------------------
 
-void LayerRC::vertNormalization(atlas::Field & field) const {
+void LayerSpec::vertNormalization(atlas::Field & field) const {
   oops::Log::trace() << classname() << "::vertNormalization starting" << std::endl;
 
   // Apply normalization
   auto view = atlas::array::make_view<double, 3>(field);
   for (size_t i = 0; i < nxPerTask_[myrank_]; ++i) {
-    for (size_t j = 0; j < ny_; ++j) {
+    for (size_t j = 0; j < nyExt_; ++j) {
       for (size_t k = 0; k < zNormSize_; ++k) {
         view(i, j, k) *= zNorm_[k];
         view(i, j, nz_-1-k) *= zNorm_[k];
@@ -815,15 +921,15 @@ void LayerRC::vertNormalization(atlas::Field & field) const {
 
 // -----------------------------------------------------------------------------
 
-void LayerRC::multiplyRedSqrt(const atlas::Field & colsField,
-                              atlas::Field & redField) const {
+void LayerSpec::multiplyRedSqrt(const atlas::Field & colsField,
+                                atlas::Field & redField) const {
   oops::Log::trace() << classname() << "::multiplyRedSqrt starting" << std::endl;
 
   // Create intermediate fields
   atlas::Field colsFieldTmp = colsField.clone();
   atlas::Field rowsField("dummy",
                          atlas::array::make_datatype<double>(),
-                         atlas::array::make_shape(nx_, nyPerTask_[myrank_], nz_));
+                         atlas::array::make_shape(nxExt_, nyPerTask_[myrank_], nz_));
 
   if (nz_ > 1) {
     // Apply vertical kernel
@@ -833,20 +939,14 @@ void LayerRC::multiplyRedSqrt(const atlas::Field & colsField,
     vertNormalization(colsFieldTmp);
   }
 
-  // Apply kernel on columns
+  // Convolution on columns
   colsConvolution(colsFieldTmp);
-
-  // Apply normalization on columns
-  colsNormalization(colsFieldTmp);
 
   // Columns to rows
   colsToRows(colsFieldTmp, rowsField);
 
   // Apply kernel on rows
   rowsConvolution(rowsField);
-
-  // Apply normalization on rows
-  rowsNormalization(rowsField);
 
   // Rows to reduced grid
   rowsToRed(rowsField, redField);
@@ -856,30 +956,24 @@ void LayerRC::multiplyRedSqrt(const atlas::Field & colsField,
 
 // -----------------------------------------------------------------------------
 
-void LayerRC::multiplyRedSqrtTrans(const atlas::Field & redField,
-                                   atlas::Field & colsField) const {
+void LayerSpec::multiplyRedSqrtTrans(const atlas::Field & redField,
+                                     atlas::Field & colsField) const {
   oops::Log::trace() << classname() << "::multiplyRedSqrtTrans starting" << std::endl;
 
   // Create intermediate fields
   atlas::Field rowsField("dummy", atlas::array::make_datatype<double>(),
-    atlas::array::make_shape(nx_, nyPerTask_[myrank_], nz_));
+    atlas::array::make_shape(nxExt_, nyPerTask_[myrank_], nz_));
 
   // Reduced grid to rows
   redToRows(redField, rowsField);
 
-  // Apply normalization on rows
-  rowsNormalization(rowsField);
-
-  // Apply kernel on rows
+  // Convolution on rows
   rowsConvolution(rowsField);
 
   // Rows to columns
   rowsToCols(rowsField, colsField);
 
-  // Apply normalization on columns
-  colsNormalization(colsField);
-
-  // Apply kernel on columns
+  // Convolution on columns
   colsConvolution(colsField);
 
   if (nz_ > 1) {

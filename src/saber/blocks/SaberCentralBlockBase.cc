@@ -173,7 +173,7 @@ void SaberCentralBlockBase::sqrtTest(const oops::GeometryData & geometryData,
   const double dp1 = fset.dot_product_with(fsetSave, vars);
   double dp2 = 0.0;
   for (size_t jnode = 0; jnode < ctlVecSize(); ++jnode) {
-      dp2 += view(jnode)*viewSave(jnode);
+    dp2 += view(jnode)*viewSave(jnode);
   }
   geometryData.comm().allReduceInPlace(dp2, eckit::mpi::sum());
   oops::Log::info() << std::setprecision(16) << "Info     : Square-root test: y^t (Ux) = " << dp1

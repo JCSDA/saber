@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <fftw3.h>
+
 #include <string>
 #include <vector>
 
@@ -25,19 +27,19 @@ namespace fastlam {
 
 // -----------------------------------------------------------------------------
 
-class LayerRC : public LayerBase {
+class LayerSpec : public LayerBase {
  public:
-  static const std::string classname() {return "saber::fastlam::LayerRC";}
+  static const std::string classname() {return "saber::fastlam::LayerSpec";}
 
   // Constructor
-  LayerRC(const FastLAMParametersBase & params,
-          const oops::GeometryData & gdata,
-          const std::string & myVar,
-          const size_t & nx0,
-          const size_t & ny0,
-          const size_t & nz0) :
+  LayerSpec(const FastLAMParametersBase & params,
+            const oops::GeometryData & gdata,
+            const std::string & myVar,
+            const size_t & nx0,
+            const size_t & ny0,
+            const size_t & nz0) :
     LayerBase(params, gdata, myVar, nx0, ny0, nz0) {}
-    ~LayerRC() = default;
+    ~LayerSpec() = default;
 
   // Setups
   void setupParallelization() override;
@@ -47,7 +49,7 @@ class LayerRC : public LayerBase {
                           std::vector<double> &) override;
 
   // Multiply square-root and adjoint
-  size_t ctlVecSize() const override {return nxPerTask_[myrank_]*ny_*nz_;};
+  size_t ctlVecSize() const override {return nxPerTask_[myrank_]*nyExt_*nz_;};
   void multiplySqrt(const atlas::Field &,
                     atlas::Field &,
                     const size_t &) const override;
@@ -58,7 +60,7 @@ class LayerRC : public LayerBase {
  private:
   void print(std::ostream &) const override;
 
-  // Transforms
+  // Transforms (including extension)
   void redToRows(const atlas::Field &, atlas::Field &) const;
   void rowsToRed(const atlas::Field &, atlas::Field &) const;
   void rowsToCols(const atlas::Field &, atlas::Field &) const;
@@ -79,6 +81,8 @@ class LayerRC : public LayerBase {
   void multiplyRedSqrtTrans(const atlas::Field &, atlas::Field &) const;
 
   // Sizes
+  size_t nxExt_;
+  size_t nyExt_;
   std::vector<size_t> nxPerTask_;
   std::vector<size_t> nyPerTask_;
   std::vector<size_t> nxStart_;
@@ -109,6 +113,22 @@ class LayerRC : public LayerBase {
   std::vector<int> xRecvDispls_;
   std::vector<int> yIndex_i_;
   std::vector<int> yIndex_j_;
+
+  // Rows FFT
+  fftw_plan xPlan_r2c_;
+  fftw_plan xPlan_c2r_;
+  double *xBufR_;
+  fftw_complex *xBufC_;
+  double xNormFFT_;
+  std::vector<double> xSpecStdDev_;
+
+  // Columns FFT
+  fftw_plan yPlan_r2c_;
+  fftw_plan yPlan_c2r_;
+  double *yBufR_;
+  fftw_complex *yBufC_;
+  double yNormFFT_;
+  std::vector<double> ySpecStdDev_;
 };
 
 // -----------------------------------------------------------------------------
