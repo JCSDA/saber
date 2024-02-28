@@ -182,8 +182,8 @@ class GeneralSection : public oops::Parameters {
   oops::Parameter<bool> color_log = param(def.color_log, this);
   // Stream test messages into a dedicated channel
   oops::Parameter<bool> testing = param(def.testing, this);
-  // Default seed for random numbers
-  oops::Parameter<bool> default_seed = param(def.default_seed, this);
+  // Default seed for random numbers (0 for time-dependent seed)
+  oops::Parameter<int> default_seed = param(def.default_seed, this);
   // Inter-compilers reproducibility
   oops::Parameter<bool> repro_ops = param(def.repro_ops, this);
   // Reproducibility threshold

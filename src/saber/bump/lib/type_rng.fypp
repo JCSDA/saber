@@ -17,18 +17,19 @@ use type_nam, only: nam_type
 
 implicit none
 
-integer,parameter :: default_seed = 140587               !< Default seed
 integer(kind_long),parameter :: a = 1103515245_kind_long !< Linear congruential multiplier
 integer(kind_long),parameter :: c = 12345_kind_long      !< Linear congruential offset
 integer(kind_long),parameter :: m = 2147483648_kind_long !< Linear congruential modulo
 
 type rng_type
    ! Seed
-   integer(kind_long) :: seed !< Seed
+   logical :: reset_seed              !< Reseeding flag
+   integer(kind_long) :: seed         !< Seed
+   integer(kind_long) :: initial_seed !< Initial seed
 
    ! Gaussian deviates parameters
-   logical :: lset = .true.   !< Gaussian number generator switch
-   real(kind_real) :: gset    !< Gaussian number generator alternative
+   logical :: lset = .true.           !< Gaussian number generator switch
+   real(kind_real) :: gset            !< Gaussian number generator alternative
 contains
    procedure :: init => rng_init
    procedure :: reseed => rng_reseed
@@ -88,22 +89,30 @@ integer :: seed
 @:probe_in()
 
 ! Set seed
-if (nam%default_seed) then
-   ! Default seed
-   seed = default_seed
+if (nam%default_seed > 0) then
+   ! Reseed with default seed
+   seed = nam%default_seed
+   rng%reset_seed = .true.
 else
    ! Time-based seed
    call system_clock(count=seed)
+   rng%reset_seed = .false.
 end if
 
 ! Different seed for each MPI task (based on world communicator)
-seed = seed+mpl%myrank
+seed = seed+mpl%myrank-1
 
 ! Long integer
 rng%seed = int(seed,kind_long)
 
+! Save initial seed
+rng%initial_seed = rng%seed
+
+! Backward compatibility
+rng%seed = rng%seed+1
+
 ! Print result
-if (nam%default_seed) then
+if (nam%default_seed > 0) then
    write(mpl%info,'(a7,a)') '','Linear congruential generator initialized with a default seed'
    call mpl%flush
 else
@@ -137,14 +146,7 @@ integer :: seed
 ! Probe in
 @:probe_in()
 
-! Default seed
-seed = default_seed
-
-! Different seed for each MPI task (based on world communicator)
-seed = seed+mpl%myrank-1
-
-! Long integer
-rng%seed = int(seed,kind_long)
+if (rng%reset_seed) rng%seed = rng%initial_seed
 
 ! Probe out
 @:probe_out()

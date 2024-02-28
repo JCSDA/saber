@@ -5176,7 +5176,7 @@ call cv_cmp1%dealloc
 call cv_cmp2%dealloc
 
 ! Reset random seed if necessary
-if (nam%default_seed) call rng%reseed(mpl)
+call rng%reseed(mpl)
 
 ! End associate
 end associate
@@ -5258,7 +5258,7 @@ write(mpl%test,'(a13,a,f10.7,a,f10.7,a,i6,a)') '','Min / max:',minval(val),' / '
 call mpl%flush(flush=nicas_cmp%verbosity)
 
 ! Reset random seed if necessary
-if (nam%default_seed) call rng%reseed(mpl)
+call rng%reseed(mpl)
 
 ! End associate
 end associate

@@ -21,7 +21,7 @@ implicit none
 
 type nam_type
    ! General section
-   logical :: default_seed                                    !< Default seed for random numbers
+   integer :: default_seed                                    !< Default seed for random numbers (0 for time-dependent seed)
    logical :: repro_ops                                       !< Reproducibility operators
    real(kind_real) :: repro_th                                !< Reproducibility threshold
    real(kind_real) :: universe_radius                         !< Universe radius [in meters]

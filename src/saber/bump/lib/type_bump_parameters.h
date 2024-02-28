@@ -29,9 +29,9 @@ struct GeneralDef {
   std::pair<const char *, bool> testing =
     std::make_pair("testing", false);
 
-  // Default seed for random numbers
-  std::pair<const char *, bool> default_seed =
-    std::make_pair("default seed", true);
+  // Default seed for random numbers (0 for time-dependent seed)
+  std::pair<const char *, int> default_seed =
+    std::make_pair("default seed", 140587);
 
   // Inter-compilers reproducibility
   std::pair<const char *, bool> repro_ops =

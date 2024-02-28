@@ -1408,7 +1408,7 @@ deallocate(cv_blk1%cmp)
 deallocate(cv_blk2%cmp)
 
 ! Reset random seed if necessary
-if (nam%default_seed) call rng%reseed(mpl)
+call rng%reseed(mpl)
 
 ! Probe out
 @:probe_out()
@@ -1492,7 +1492,7 @@ write(mpl%test,'(a13,a,f10.7,a,f10.7,a,i6,a)') '','Min / max:',minval(val),' / '
 if (nicas_blk%verbosity) call mpl%flush
 
 ! Reset random seed if necessary
-if (nam%default_seed) call rng%reseed(mpl)
+call rng%reseed(mpl)
 
 ! Probe out
 @:probe_out()

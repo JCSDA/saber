@@ -37,7 +37,7 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   param(generalDef.color_log, generalConf);
   // Stream test messages into a dedicated channel
   param(generalDef.testing, generalConf);
-  // Default seed for random numbers
+  // Default seed for random numbers (0 for time-dependent seed)
   param(generalDef.default_seed, generalConf);
   // Inter-compilers reproducibility
   param(generalDef.repro_ops, generalConf);

@@ -1880,7 +1880,7 @@ else
 end if
 
 ! Reset random seed if necessary
-if (nam%default_seed) call rng%reseed(mpl)
+call rng%reseed(mpl)
 
 ! Probe out
 @:probe_out()
@@ -1956,7 +1956,7 @@ if (samp%sc1.and.nam%new_vbal) then
 end if
 
 ! Reset random seed if necessary
-if (nam%default_seed) call rng%reseed(mpl)
+call rng%reseed(mpl)
 
 ! Probe out
 @:probe_out()
