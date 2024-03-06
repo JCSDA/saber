@@ -5,14 +5,15 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "saber/bump/lib/type_bump_parameters.h"
+#include "saber/bump/type_bump_parameters.h"
 
 #include <csignal>
 #include <iostream>
 
 #include "eckit/config/LocalConfiguration.h"
 
-namespace bump_lib {
+namespace saber {
+namespace bump {
 
 // -----------------------------------------------------------------------------
 
@@ -365,4 +366,5 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
 
 // -----------------------------------------------------------------------------
 
-}  // namespace bump_lib
+}  // namespace bump
+}  // namespace saber

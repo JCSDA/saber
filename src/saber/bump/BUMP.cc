@@ -5,7 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
-#include "saber/bump/lib/BUMP.h"
+#include "saber/bump/BUMP.h"
 
 #include <omp.h>
 
@@ -17,30 +17,32 @@
 #include <utility>
 #include <vector>
 
+#include "oops/base/FieldSets.h"
 #include "oops/util/ConfigFunctions.h"
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/FieldSetOperations.h"
-#include "saber/bump/lib/type_bump_parameters.h"
+#include "oops/util/Logger.h"
 
-namespace bump_lib {
+#include "saber/bump/type_bump_parameters.h"
+
+namespace saber {
+namespace bump {
 
 // -----------------------------------------------------------------------------
 
-BUMP::BUMP(const eckit::mpi::Comm & comm,
-           eckit::Channel & infoChannel,
-           eckit::Channel & testChannel,
-           const atlas::FunctionSpace & fspace,
-           const atlas::FieldSet & fields,
+BUMP::BUMP(const oops::GeometryData & geometryData,
            const oops::Variables & vars,
-           const util::DateTime & validTime,
            const eckit::Configuration & covarConf,
-           const eckit::Configuration & bumpConf) :
-  keyBUMP_(), comm_(&comm), infoChannel_(&infoChannel), testChannel_(&testChannel),
-  fspace_(fspace), vars_(vars), validTime_(validTime),
-  covarConf_(covarConf), bumpConf_(bumpConf), nens_(), waitForDualResolution_(false),
-  gridUid_(util::getGridUid(fspace)), dualResolutionGridUid_("") {
+           const BUMPParameters & params,
+           const oops::FieldSet3D & xb)
+  : keyBUMP_(), comm_(geometryData.comm()), fspace_(geometryData.functionSpace()), vars_(vars),
+  validTime_(xb.validTime()), covarConf_(covarConf), bumpConf_(params.toConfiguration()),
+  nens_(), waitForDualResolution_(false), gridUid_(util::getGridUid(geometryData.functionSpace())),
+  dualResolutionGridUid_("") {
+  oops::Log::trace() << classname() << "::BUMP starting" << std::endl;
+
   // Get number of MPI tasks and OpenMP threads
-  std::string mpi(std::to_string(comm.size()));
+  std::string mpi(std::to_string(comm_.size()));
   std::string omp("1");
 #ifdef _OPENMP
   # pragma omp parallel
@@ -48,11 +50,11 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
     omp = std::to_string(omp_get_num_threads());
   }
 #endif
-  *infoChannel_ << "Info     :"
+  oops::Log::info() << "Info     :"
                 << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                 << std::endl;
-  *infoChannel_ << "Info     : +++ MPI tasks:      " << mpi << std::endl;
-  *infoChannel_ << "Info     : +++ OpenMP threads: " << omp << std::endl;
+  oops::Log::info() << "Info     : +++ MPI tasks:      " << mpi << std::endl;
+  oops::Log::info() << "Info     : +++ OpenMP threads: " << omp << std::endl;
 
   // Initialization
   nens_.reserve(2);
@@ -101,7 +103,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
 
   // Check grids number
   if (grids.size() == 0) {
-    *infoChannel_ << "BUMP: grid size is zero" << std::endl;
+    oops::Log::info() << "BUMP: grid size is zero" << std::endl;
     std::abort();
   }
 
@@ -142,7 +144,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
           if (nl0 > 1) {
             // Check that nl0_tmp is either 1 or nl0
             if ((nl0_tmp != 1) && (nl0_tmp != nl0)) {
-             *infoChannel_ << "BUMP::BUMP: inconsistent number of levels in BUMP" << std::endl;
+             oops::Log::info() << "BUMP::BUMP: inconsistent number of levels in BUMP" << std::endl;
               std::abort();
             }
           }
@@ -155,7 +157,7 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
         }
       }
       if (!varFound) {
-        *infoChannel_ << "BUMP: inconsistent variable names" << std::endl;
+        oops::Log::info() << "BUMP: inconsistent variable names" << std::endl;
         std::abort();
       }
     }
@@ -169,28 +171,29 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
     }
 
     // Create BUMP instance
-    *infoChannel_ << "Info     :"
+    oops::Log::info() << "Info     :"
                   << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                   << std::endl;
-    *infoChannel_ << "Info     : +++ Create BUMP instance " << (jgrid+1) << " / " << grids.size()
+    oops::Log::info() << "Info     : +++ Create BUMP instance " << (jgrid+1) << " / "
+      << grids.size()
                   << std::endl;
     int keyBUMP = 0;
-    bump_create_f90(keyBUMP, comm_, fspace_.get(), fields.get(),
-                    grid, infoChannel_, testChannel_);
+    bump_create_f90(keyBUMP, &comm_, fspace_.get(), geometryData.fieldSet().get(), grid,
+      &oops::LibOOPS::instance().infoChannel(), &oops::LibOOPS::instance().testChannel());
     keyBUMP_.push_back(keyBUMP);
     ++jgrid;
   }
 
   // Get max number of components
   size_t ncmp = 0;
-  if (bumpConf.has("input atlas files")) {
-    for (const auto & input : bumpConf.getSubConfigurations("input atlas files")) {
+  if (bumpConf_.has("input atlas files")) {
+    for (const auto & input : bumpConf_.getSubConfigurations("input atlas files")) {
       size_t icmp = input.getInt("component", 1);
       ncmp = std::max(ncmp, icmp);
     }
   }
-  if (bumpConf.has("input model files")) {
-    for (const auto & input : bumpConf.getSubConfigurations("input model files")) {
+  if (bumpConf_.has("input model files")) {
+    for (const auto & input : bumpConf_.getSubConfigurations("input model files")) {
       size_t icmp = input.getInt("component", 1);
       ncmp = std::max(ncmp, icmp);
     }
@@ -199,81 +202,93 @@ BUMP::BUMP(const eckit::mpi::Comm & comm,
   if (ncmp > 0) {
     // Set number of components
     for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-      *infoChannel_ << "Info     :"
+      oops::Log::info() << "Info     :"
                   << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                     << std::endl;
-      *infoChannel_ << "Info     : +++ Set number of components for BUMP instance " << (jgrid+1)
+      oops::Log::info() << "Info     : +++ Set number of components for BUMP instance " << (jgrid+1)
                     << " / " << keyBUMP_.size() << std::endl;
       bump_set_ncmp_f90(keyBUMP_[jgrid], ncmp);
     }
   }
-  *infoChannel_ << "Info     :"
+  oops::Log::info() << "Info     :"
                 << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                 << std::endl;
-  *infoChannel_ << "Info     : +++ End of BUMP creation" << std::endl;
-  *infoChannel_ << "Info     :"
+  oops::Log::info() << "Info     : +++ End of BUMP creation" << std::endl;
+  oops::Log::info() << "Info     :"
                 << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                 << std::endl;
+
+  oops::Log::trace() << classname() << "::BUMP done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 BUMP::~BUMP() {
+  oops::Log::trace() << classname() << "::~BUMP starting" << std::endl;
+
   for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     if (keyBUMP_[jgrid] > 0) {
-      *infoChannel_ << "Info     :"
+      oops::Log::info() << "Info     :"
                     << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                     << std::endl;
-      *infoChannel_ << "Info     : +++ Terminate BUMP instance " << (jgrid+1) << " / "
+      oops::Log::info() << "Info     : +++ Terminate BUMP instance " << (jgrid+1) << " / "
                     << keyBUMP_.size() << std::endl;
       bump_dealloc_f90(keyBUMP_[jgrid]);
     }
   }
-  *infoChannel_ << "Info     :"
+  oops::Log::info() << "Info     :"
                 << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                 << std::endl;
-  *infoChannel_ << "Info     : +++ All BUMP instances terminated" << std::endl;
-  *infoChannel_ << "Info     :"
+  oops::Log::info() << "Info     : +++ All BUMP instances terminated" << std::endl;
+  oops::Log::info() << "Info     :"
                 << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                 << std::endl;
+
+  oops::Log::trace() << classname() << "::~BUMP done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 void BUMP::readAtlasFiles() {
+  oops::Log::trace() << classname() << "::readAtlasFiles starting" << std::endl;
+
   if (bumpConf_.has("input atlas files")) {
     std::vector<eckit::LocalConfiguration> inputAtlasFilesConf
       = bumpConf_.getSubConfigurations("input atlas files");
     for (const auto & conf : inputAtlasFilesConf) {
       // Get file configuration
-      eckit::LocalConfiguration file = this->getFileConf(*comm_, conf);
+      eckit::LocalConfiguration file = this->getFileConf(comm_, conf);
 
       // Get parameter and component
       const std::string param = conf.getString("parameter");
       const int icmp = conf.getInt("component", 1);
 
       // Create FieldSet
-      oops::FieldSet3D fset(validTime_, *comm_);
+      oops::FieldSet3D fset(validTime_, comm_);
       fset.name() = param + " - " + std::to_string(icmp);
 
       // Read file
       fset.read(fspace_, vars_, file);
 
       // Print FieldSet norm
-        *testChannel_ << "+++ Norm of input parameter " << fset.name() << ": "
-                      << fset.norm(vars_)
-                      << std::endl;
+      oops::Log::test() << "+++ Norm of input parameter " << fset.name() << ": "
+                        << fset.norm(vars_)
+                        << std::endl;
 
       // Add fields
       this->addField(fset);
     }
   }
+
+  oops::Log::trace() << classname() << "::readAtlasFiles done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 std::vector<std::pair<std::string, eckit::LocalConfiguration>> BUMP::getReadConfs(
   const std::vector<eckit::LocalConfiguration> confs) {
+  oops::Log::trace() << classname() << "::getReadConfs starting" << std::endl;
+
   std::vector<std::pair<std::string, eckit::LocalConfiguration>> inputs;
   for (const auto & conf : confs) {
     // Get parameter and component
@@ -282,21 +297,25 @@ std::vector<std::pair<std::string, eckit::LocalConfiguration>> BUMP::getReadConf
     const std::string name = param + " - " + std::to_string(icmp);
 
     // Get file configuration
-    eckit::LocalConfiguration file = this->getFileConf(*comm_, conf);
+    eckit::LocalConfiguration file = this->getFileConf(comm_, conf);
 
     // Add pair
     inputs.push_back(std::make_pair(name, file));
   }
+
+  oops::Log::trace() << classname() << "::getReadConfs done" << std::endl;
   return inputs;
 }
 
 // -----------------------------------------------------------------------------
 
 void BUMP::addField(const oops::FieldSet3D & fset) {
+  oops::Log::trace() << classname() << "::addField starting" << std::endl;
+
   // Check fset grid UID
   if (fset.size() > 0) {
     if (fset.getGridUid() != gridUid_) {
-      *infoChannel_ << "BUMP: wrong grid UID" << std::endl;
+      oops::Log::info() << "BUMP: wrong grid UID" << std::endl;
       std::abort();
     }
   }
@@ -316,11 +335,15 @@ void BUMP::addField(const oops::FieldSet3D & fset) {
   for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_set_parameter_f90(keyBUMP_[jgrid], npar, cpar, icmp, fset.get());
   }
+
+  oops::Log::trace() << classname() << "::addField done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 void BUMP::addEnsemble(const oops::FieldSets & fsetEns) {
+  oops::Log::trace() << classname() << "::addEnsemble starting" << std::endl;
+
   // Initialize ensemble index
   size_t ie = 0;
   for (size_t jj = 0; jj < fsetEns.ens_size(); ++jj) {
@@ -330,13 +353,13 @@ void BUMP::addEnsemble(const oops::FieldSets & fsetEns) {
     if (dualResolutionGridUid_ == "") {
       igeom = 0;
       if (fsetEns[jj].getGridUid() != gridUid_) {
-        *infoChannel_ << "BUMP::iterativeUpdate: wrong grid UID" << std::endl;
+        oops::Log::info() << "BUMP::iterativeUpdate: wrong grid UID" << std::endl;
         std::abort();
       }
     } else {
       igeom = 1;
       if (fsetEns[jj].getGridUid() != dualResolutionGridUid_) {
-        *infoChannel_ << "BUMP::iterativeUpdate: wrong dual resolution grid UID" << std::endl;
+        oops::Log::info() << "BUMP::iterativeUpdate: wrong dual resolution grid UID" << std::endl;
         std::abort();
       }
     }
@@ -344,26 +367,31 @@ void BUMP::addEnsemble(const oops::FieldSets & fsetEns) {
     for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
       // Initial message
       if (ie == 0) {
-        *infoChannel_ << "Info     :"
+        oops::Log::info() << "Info     :"
                       << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                       << std::endl;
-        *infoChannel_ << "Info     : +++ Add members of ensemble " << (igeom+1) << std::endl;
+        oops::Log::info() << "Info     : +++ Add members of ensemble " << (igeom+1) << std::endl;
       }
 
       // Add member
-      *infoChannel_ << "Info     :        Member " << ie+1 << " / " << nens_[igeom] << std::endl;
+      oops::Log::info() << "Info     :        Member " << ie+1 << " / " << nens_[igeom]
+        << std::endl;
       bump_add_member_f90(keyBUMP_[jgrid], fsetEns[jj].fieldSet().get(), ie+1, igeom+1);
     }
 
     // Update member index
     ++ie;
   }
+
+  oops::Log::trace() << classname() << "::addEnsemble starting" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 void BUMP::dualResolutionSetup(const atlas::FunctionSpace & fspace,
                                const atlas::FieldSet & fields) {
+  oops::Log::trace() << classname() << "::dualResolutionSetup starting" << std::endl;
+
   // Set dual resolution grid UID
   dualResolutionGridUid_ = util::getGridUid(fspace);
 
@@ -371,33 +399,38 @@ void BUMP::dualResolutionSetup(const atlas::FunctionSpace & fspace,
   for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_dual_resolution_setup_f90(keyBUMP_[jgrid], fspace.get(), fields.get());
   }
+
+  oops::Log::trace() << classname() << "::dualResolutionSetup done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void BUMP::iterativeUpdate(const oops::FieldSet3D & fset, const size_t & ie) {
+void BUMP::iterativeUpdate(const oops::FieldSet3D & fset,
+                           const size_t & ie) {
+  oops::Log::trace() << classname() << "::iterativeUpdate starting" << std::endl;
+
   // Get geometry index (iterative update should be done after for the dual resolution part)
   // and check grid UID
   size_t igeom;
   if (dualResolutionGridUid_ == "") {
     igeom = 0;
     if (fset.getGridUid() != gridUid_) {
-      *infoChannel_ << "BUMP::iterativeUpdate: wrong grid UID" << std::endl;
+      oops::Log::info() << "BUMP::iterativeUpdate: wrong grid UID" << std::endl;
       std::abort();
     }
   } else {
     igeom = 1;
     if (fset.getGridUid() != dualResolutionGridUid_) {
-      *infoChannel_ << "BUMP::iterativeUpdate: wrong dual resolution grid UID" << std::endl;
+      oops::Log::info() << "BUMP::iterativeUpdate: wrong dual resolution grid UID" << std::endl;
       std::abort();
     }
   }
 
   // Print info
-  *infoChannel_ << "Info     :"
+  oops::Log::info() << "Info     :"
                 << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                 << std::endl;
-  *infoChannel_ << "Info     : +++ Load member " << ie+1 << " / " << nens_[igeom] << std::endl;
+  oops::Log::info() << "Info     : +++ Load member " << ie+1 << " / " << nens_[igeom] << std::endl;
 
   // Get driver keys
   bool new_vbal_cov = bumpConf_.getBool("drivers.compute vertical covariance", false);
@@ -422,41 +455,49 @@ void BUMP::iterativeUpdate(const oops::FieldSet3D & fset, const size_t & ie) {
 
   // Print info
   if (ie+1 == nens_[igeom]) {
-    *infoChannel_ << "Info     :"
+    oops::Log::info() << "Info     :"
                   << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                   << std::endl;
-    *infoChannel_ << "Info     : +++ End of iterative update" << std::endl;
-    *infoChannel_ << "Info     :"
+    oops::Log::info() << "Info     : +++ End of iterative update" << std::endl;
+    oops::Log::info() << "Info     :"
                   << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                   << std::endl;
   }
+
+  oops::Log::trace() << classname() << "::iterativeUpdate done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 void BUMP::writeAtlasFiles() const {
+  oops::Log::trace() << classname() << "::writeAtlasFiles starting" << std::endl;
+
   if (bumpConf_.has("output atlas files")) {
     std::vector<eckit::LocalConfiguration> outputAtlasFilesConf
       = bumpConf_.getSubConfigurations("output atlas files");
     for (const auto & output : this->fieldsToWrite(outputAtlasFilesConf)) {
       // Get file configuration
-      eckit::LocalConfiguration file = this->getFileConf(*comm_, output.first);
+      eckit::LocalConfiguration file = this->getFileConf(comm_, output.first);
 
       // Print FieldSet norm
-      *testChannel_ << "+++ Norm of output parameter " << output.second.name() << ": "
-                    << output.second.norm(vars_)
-                    << std::endl;
+      oops::Log::test() << "+++ Norm of output parameter " << output.second.name() << ": "
+                        << output.second.norm(vars_)
+                        << std::endl;
 
       // Write FieldSet
       output.second.write(file);
     }
   }
+
+  oops::Log::trace() << classname() << "::writeAtlasFiles done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> BUMP::fieldsToWrite(
   const std::vector<eckit::LocalConfiguration> confs) const {
+  oops::Log::trace() << classname() << "::fieldsToWrite starting" << std::endl;
+
   // Define outputs vector
   std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> outputs;
 
@@ -467,7 +508,7 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> BUMP::fields
     const int icmp = conf.getInt("component", 1);
 
     // Create FieldSet
-    oops::FieldSet3D fset(validTime_, *comm_);
+    oops::FieldSet3D fset(validTime_, comm_);
     fset.name() = param + " - " + std::to_string(icmp);
 
     // Get FieldSet
@@ -478,121 +519,166 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> BUMP::fields
     }
 
     // Get file configuration
-    eckit::LocalConfiguration file = this->getFileConf(*comm_, conf);
+    eckit::LocalConfiguration file = this->getFileConf(comm_, conf);
 
     // Add pair
     outputs.push_back(std::make_pair(file, fset));
   }
 
+  oops::Log::trace() << classname() << "::fieldsToWrite done" << std::endl;
   return outputs;
 }
 
 // -----------------------------------------------------------------------------
 
 void BUMP::runDrivers() {
+  oops::Log::trace() << classname() << "::runDrivers starting" << std::endl;
+
   if (waitForDualResolution_) {
     waitForDualResolution_ = false;
   } else {
     for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-      *infoChannel_ << "Info     :"
+      oops::Log::info() << "Info     :"
                     << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                     << std::endl;
-      *infoChannel_ << "Info     : +++ Run drivers for BUMP instance " << (jgrid+1)
+      oops::Log::info() << "Info     : +++ Run drivers for BUMP instance " << (jgrid+1)
                     << " / " << keyBUMP_.size() << std::endl;
       bump_run_drivers_f90(keyBUMP_[jgrid]);
       bump_partial_dealloc_f90(keyBUMP_[jgrid]);
     }
-    *infoChannel_ << "Info     :"
+    oops::Log::info() << "Info     :"
                   << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                   << std::endl;
-    *infoChannel_ << "Info     : +++ End of BUMP drivers" << std::endl;
-    *infoChannel_ << "Info     :"
+    oops::Log::info() << "Info     : +++ End of BUMP drivers" << std::endl;
+    oops::Log::info() << "Info     :"
                   << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                   << std::endl;
   }
+
+  oops::Log::trace() << classname() << "::runDrivers done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 void BUMP::multiplyVbal(oops::FieldSet3D & fset) const {
+  oops::Log::trace() << classname() << "::multiplyVbal starting" << std::endl;
+
   for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_apply_vbal_f90(keyBUMP_[jgrid], fset.get());
   }
+
+  oops::Log::trace() << classname() << "::done starting" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 void BUMP::multiplyVbalAd(oops::FieldSet3D & fset) const {
+  oops::Log::trace() << classname() << "::multiplyVbalAd starting" << std::endl;
+
   for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_apply_vbal_ad_f90(keyBUMP_[jgrid], fset.get());
   }
+
+  oops::Log::trace() << classname() << "::multiplyVbalAd done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 void BUMP::inverseMultiplyVbal(oops::FieldSet3D & fset) const {
+  oops::Log::trace() << classname() << "::inverseMultiplyVbal starting" << std::endl;
+
   for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_apply_vbal_inv_f90(keyBUMP_[jgrid], fset.get());
   }
+
+  oops::Log::trace() << classname() << "::inverseMultiplyVbal done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 void BUMP::multiplyStdDev(oops::FieldSet3D & fset) const {
+  oops::Log::trace() << classname() << "::multiplyStdDev starting" << std::endl;
+
   for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_apply_stddev_f90(keyBUMP_[jgrid], fset.get());
   }
+
+  oops::Log::trace() << classname() << "::multiplyStdDev done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 void BUMP::inverseMultiplyStdDev(oops::FieldSet3D & fset) const {
+  oops::Log::trace() << classname() << "::inverseMultiplyStdDev starting" << std::endl;
+
   for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_apply_stddev_inv_f90(keyBUMP_[jgrid], fset.get());
   }
+
+  oops::Log::trace() << classname() << "::inverseMultiplyStdDev done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 void BUMP::randomizeNicas(oops::FieldSet3D & fset) const {
+  oops::Log::trace() << classname() << "::randomizeNicas starting" << std::endl;
+
   for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_randomize_f90(keyBUMP_[jgrid], fset.get());
   }
+
+  oops::Log::trace() << classname() << "::randomizeNicas done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 void BUMP::multiplyNicas(oops::FieldSet3D & fset) const {
+  oops::Log::trace() << classname() << "::multiplyNicas starting" << std::endl;
+
   for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_apply_nicas_f90(keyBUMP_[jgrid], fset.get());
   }
+
+  oops::Log::trace() << classname() << "::multiplyNicas done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 void BUMP::multiplyPsiChiToUV(oops::FieldSet3D & fset) const {
+  oops::Log::trace() << classname() << "::multiplyPsiChiToUV starting" << std::endl;
+
   for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_psichi_to_uv_f90(keyBUMP_[jgrid], fset.get());
   }
+
+  oops::Log::trace() << classname() << "::multiplyPsiChiToUV done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 void BUMP::multiplyPsiChiToUVAd(oops::FieldSet3D & fset) const {
+  oops::Log::trace() << classname() << "::multiplyPsiChiToUVAd starting" << std::endl;
+
   for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_psichi_to_uv_ad_f90(keyBUMP_[jgrid], fset.get());
   }
+
+  oops::Log::trace() << classname() << "::multiplyPsiChiToUVAd done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 size_t BUMP::getCvSize() const {
+  oops::Log::trace() << classname() << "::getCvSize starting" << std::endl;
+
   size_t n = 0;
   for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     int nTmp;
     bump_get_cv_size_f90(keyBUMP_[jgrid], nTmp);
     n += nTmp;
   }
+
+  oops::Log::trace() << classname() << "::getCvSize done" << std::endl;
   return n;
 }
 
@@ -601,6 +687,8 @@ size_t BUMP::getCvSize() const {
 void BUMP::multiplyNicasSqrt(const atlas::Field & cv,
                              oops::FieldSet3D & fset,
                              const size_t & offset) const {
+  oops::Log::trace() << classname() << "::multiplyNicasSqrt starting" << std::endl;
+
   int index = offset;
   for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_apply_nicas_sqrt_f90(keyBUMP_[jgrid], cv.get(), fset.get(), index);
@@ -608,6 +696,8 @@ void BUMP::multiplyNicasSqrt(const atlas::Field & cv,
     bump_get_cv_size_f90(keyBUMP_[jgrid], nTmp);
     index += nTmp;
   }
+
+  oops::Log::trace() << classname() << "::multiplyNicasSqrt done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
@@ -615,6 +705,8 @@ void BUMP::multiplyNicasSqrt(const atlas::Field & cv,
 void BUMP::multiplyNicasSqrtAd(const oops::FieldSet3D & fset,
                                atlas::Field & cv,
                                const size_t & offset) const {
+  oops::Log::trace() << classname() << "::multiplyNicasSqrtAd starting" << std::endl;
+
   int index = offset;
   for (unsigned int jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
     bump_apply_nicas_sqrt_ad_f90(keyBUMP_[jgrid], fset.get(), cv.get(), index);
@@ -622,14 +714,18 @@ void BUMP::multiplyNicasSqrtAd(const oops::FieldSet3D & fset,
     bump_get_cv_size_f90(keyBUMP_[jgrid], nTmp);
     index += nTmp;
   }
+
+  oops::Log::trace() << classname() << "::multiplyNicasSqrtAd done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 eckit::LocalConfiguration BUMP::getFileConf(const eckit::mpi::Comm & comm,
                                             const eckit::Configuration & conf) const {
+  oops::Log::trace() << classname() << "::getFileConf starting" << std::endl;
+
   // Get number of MPI tasks and OpenMP threads
-  std::string mpi(std::to_string(comm.size()));
+  std::string mpi(std::to_string(comm_.size()));
   std::string omp("1");
 #ifdef _OPENMP
   # pragma omp parallel
@@ -645,9 +741,11 @@ eckit::LocalConfiguration BUMP::getFileConf(const eckit::mpi::Comm & comm,
   util::seekAndReplace(file, "_MPI_", mpi);
   util::seekAndReplace(file, "_OMP_", omp);
 
+  oops::Log::trace() << classname() << "::getFileConf done" << std::endl;
   return file;
 }
 
 // -----------------------------------------------------------------------------
 
-}  // namespace bump_lib
+}  // namespace bump
+}  // namespace saber

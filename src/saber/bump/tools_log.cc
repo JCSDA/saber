@@ -14,7 +14,8 @@
 
 using int32 = std::int32_t;
 
-namespace bump_lib {
+namespace saber {
+namespace bump {
 
 // -----------------------------------------------------------------------------
 
@@ -35,4 +36,5 @@ extern "C" {
 
 // -----------------------------------------------------------------------------
 
-}  // namespace bump_lib
+}  // namespace bump
+}  // namespace saber

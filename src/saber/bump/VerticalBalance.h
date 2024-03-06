@@ -20,8 +20,8 @@
 
 #include "saber/blocks/SaberBlockParametersBase.h"
 #include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/bump/BUMP.h"
 #include "saber/bump/BUMPParameters.h"
-#include "saber/bump/lib/BUMP.h"
 
 namespace saber {
 namespace bump {
@@ -79,7 +79,7 @@ class VerticalBalance : public SaberOuterBlockBase {
   oops::Variables innerVars_;
   BUMPParameters bumpParams_;
   oops::Variables activeVars_;
-  std::unique_ptr<bump_lib::BUMP> bump_;
+  std::unique_ptr<BUMP> bump_;
   size_t memberIndex_;
 };
 

@@ -316,6 +316,7 @@ fieldset%nv = size(variables)
 ! Allocation
 if (.not.allocated(fieldset%mask3d)) allocate(fieldset%mask3d(fieldset%nmga,fieldset%nl0))
 if (.not.allocated(fieldset%variables)) allocate(fieldset%variables(fieldset%nv))
+if (.not.allocated(fieldset%var2d)) allocate(fieldset%var2d(fieldset%nv))
 
 ! Copy mask and variables
 fieldset%mask3d = gmask

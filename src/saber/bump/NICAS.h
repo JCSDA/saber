@@ -20,8 +20,8 @@
 
 #include "saber/blocks/SaberBlockParametersBase.h"
 #include "saber/blocks/SaberCentralBlockBase.h"
+#include "saber/bump/BUMP.h"
 #include "saber/bump/BUMPParameters.h"
-#include "saber/bump/lib/BUMP.h"
 
 
 namespace saber {
@@ -83,7 +83,7 @@ class NICAS : public SaberCentralBlockBase {
   void print(std::ostream &) const override;
   BUMPParameters bumpParams_;
   oops::Variables activeVars_;
-  std::unique_ptr<bump_lib::BUMP> bump_;
+  std::unique_ptr<BUMP> bump_;
   size_t memberIndex_;
 };
 

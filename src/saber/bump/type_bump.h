@@ -14,7 +14,8 @@
 #include "eckit/log/Channel.h"
 #include "eckit/mpi/Comm.h"
 
-namespace bump_lib {
+namespace saber {
+namespace bump {
 
 // -----------------------------------------------------------------------------
 
@@ -61,4 +62,5 @@ extern "C" {
 
 // -----------------------------------------------------------------------------
 
-}  // namespace bump_lib
+}  // namespace bump
+}  // namespace saber

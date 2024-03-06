@@ -36,8 +36,7 @@ VerticalBalance::VerticalBalance(const oops::GeometryData & outerGeometryData,
     innerVars_(outerVars),
     bumpParams_(),
     bump_(),
-    memberIndex_(0)
-{
+    memberIndex_(0) {
   oops::Log::trace() << classname() << "::VerticalBalance starting"
                      << std::endl;
 
@@ -54,15 +53,11 @@ VerticalBalance::VerticalBalance(const oops::GeometryData & outerGeometryData,
   }
 
   // Initialize BUMP
-  bump_.reset(new bump_lib::BUMP(outerGeometryData.comm(),
-                                 oops::LibOOPS::instance().infoChannel(),
-                                 oops::LibOOPS::instance().testChannel(),
-                                 outerGeometryData.functionSpace(),
-                                 outerGeometryData.fieldSet(),
-                                 activeVars_,
-                                 xb.validTime(),
-                                 covarConf,
-                                 bumpParams_.toConfiguration()));
+  bump_.reset(new BUMP(outerGeometryData,
+                       activeVars_,
+                       covarConf,
+                       bumpParams_,
+                       xb));
 
   oops::Log::trace() << classname() << "::VerticalBalance done" << std::endl;
 }

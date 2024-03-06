@@ -19,24 +19,24 @@
 
 #include "oops/base/FieldSets.h"
 
-#include "saber/bump/lib/type_bump.h"
+#include "saber/bump/BUMPParameters.h"
+#include "saber/bump/type_bump.h"
 
-namespace bump_lib {
+namespace saber {
+namespace bump {
 
 // -----------------------------------------------------------------------------
 
 class BUMP {
  public:
+  static const std::string classname() {return "saber::bump::BUMP";}
+
   // Constructor
-  BUMP(const eckit::mpi::Comm &,
-       eckit::Channel &,
-       eckit::Channel &,
-       const atlas::FunctionSpace &,
-       const atlas::FieldSet &,
+  BUMP(const oops::GeometryData &,
        const oops::Variables &,
-       const util::DateTime &,
        const eckit::Configuration &,
-       const eckit::Configuration &);
+       const BUMPParameters &,
+       const oops::FieldSet3D &);
 
   // Destructor
   ~BUMP();
@@ -85,7 +85,7 @@ class BUMP {
 
  private:
   std::vector<int> keyBUMP_;
-  const eckit::mpi::Comm * comm_;
+  const eckit::mpi::Comm & comm_;
   eckit::Channel * infoChannel_;
   eckit::Channel * testChannel_;
   atlas::FunctionSpace fspace_;
@@ -105,4 +105,5 @@ class BUMP {
 
 // -----------------------------------------------------------------------------
 
-}  // namespace bump_lib
+}  // namespace bump
+}  // namespace saber

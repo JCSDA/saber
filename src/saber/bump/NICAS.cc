@@ -30,10 +30,10 @@ NICAS::NICAS(const oops::GeometryData & geometryData,
              const Parameters_ & params,
              const oops::FieldSet3D & xb,
              const oops::FieldSet3D & fg)
-  : SaberCentralBlockBase(params, xb.validTime()), bumpParams_(),
+  : SaberCentralBlockBase(params, xb.validTime()),
+    bumpParams_(),
     bump_(),
-    memberIndex_(0)
-{
+    memberIndex_(0) {
   oops::Log::trace() << classname() << "::NICAS starting" << std::endl;
 
   // Get active variables
@@ -49,15 +49,11 @@ NICAS::NICAS(const oops::GeometryData & geometryData,
   }
 
   // Initialize BUMP
-  bump_.reset(new bump_lib::BUMP(geometryData.comm(),
-                                 oops::LibOOPS::instance().infoChannel(),
-                                 oops::LibOOPS::instance().testChannel(),
-                                 geometryData.functionSpace(),
-                                 geometryData.fieldSet(),
-                                 activeVars_,
-                                 xb.validTime(),
-                                 covarConf,
-                                 bumpParams_.toConfiguration()));
+  bump_.reset(new BUMP(geometryData,
+                       activeVars_,
+                       covarConf,
+                       bumpParams_,
+                       xb));
 
   // Read input ATLAS files
   bump_->readAtlasFiles();

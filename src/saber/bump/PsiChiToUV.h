@@ -19,8 +19,8 @@
 
 #include "saber/blocks/SaberBlockParametersBase.h"
 #include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/bump/BUMP.h"
 #include "saber/bump/BUMPParameters.h"
-#include "saber/bump/lib/BUMP.h"
 
 namespace saber {
 namespace bump {
@@ -72,7 +72,7 @@ class PsiChiToUV : public SaberOuterBlockBase {
   oops::Variables innerVars_;
   oops::Variables outerVars_;
   BUMPParameters bumpParams_;
-  std::unique_ptr<bump_lib::BUMP> bump_;
+  std::unique_ptr<BUMP> bump_;
 };
 
 // -----------------------------------------------------------------------------

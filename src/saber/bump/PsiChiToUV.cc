@@ -52,8 +52,7 @@ PsiChiToUV::PsiChiToUV(const oops::GeometryData & outerGeometryData,
     innerVars_(createInnerVars(outerVars)),
     outerVars_(outerVars),
     bumpParams_(),
-    bump_()
-{
+    bump_() {
   oops::Log::trace() << classname() << "::PsiChiToUV starting" << std::endl;
 
   // Get BUMP parameters
@@ -73,15 +72,11 @@ PsiChiToUV::PsiChiToUV(const oops::GeometryData & outerGeometryData,
   activeVars.intersection(oops::Variables(activeStrings));
 
   // Initialize BUMP
-  bump_.reset(new bump_lib::BUMP(outerGeometryData.comm(),
-                                 oops::LibOOPS::instance().infoChannel(),
-                                 oops::LibOOPS::instance().testChannel(),
-                                 outerGeometryData.functionSpace(),
-                                 outerGeometryData.fieldSet(),
-                                 activeVars,
-                                 xb.validTime(),
-                                 covarConf,
-                                 bumpParams_.toConfiguration()));
+  bump_.reset(new BUMP(outerGeometryData,
+                       activeVars,
+                       covarConf,
+                       bumpParams_,
+                       xb));
 
   oops::Log::trace() << classname() << "::PsiChiToUV done" << std::endl;
 }
