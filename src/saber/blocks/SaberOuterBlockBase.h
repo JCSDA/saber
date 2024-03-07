@@ -132,7 +132,7 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
   virtual bool compareFieldSets(const oops::FieldSet3D & fset3D1,
                                 const oops::FieldSet3D & fset3D2,
                                 const double & tol) const
-    {return fset3D1.compare_with(fset3D2, tol);}
+    {return fset3D1.compare_with(fset3D2, tol, util::ToleranceType::normalized_absolute);}
 
   // Non-virtual methods
 

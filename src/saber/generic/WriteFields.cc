@@ -53,7 +53,7 @@ void WriteFields::writeToFile(const oops::FieldSet3D & fset,
   // Produce a filename and increment the relevant counter.
   std::stringstream filepath;
   filepath << params_.outputPath.value() << "/"
-           << "fields_" << params_.label.value() << "_" << description << "_" << count++;
+           << description << "_" << count++;
   const std::string filepathnc = filepath.str() + ".nc";
 
   if (params_.saveNetCDFFile) {
@@ -106,16 +106,16 @@ WriteFields::WriteFields(const oops::GeometryData & outerGeometryData,
 {
   oops::Log::trace() << classname() << "::WriteFields starting" << std::endl;
 
-  if (params_.writeXb) {
+  if (params_.XbFileName.value() != ::boost::none) {
     oops::FieldSet3D fset(xb.validTime(), outerGeometryData.comm());
     fset.shallowCopy(xb.fieldSet());
-    writeToFile(fset, "xb", count_xb_);
+    writeToFile(fset, params_.XbFileName.value().value() , count_xb_);
   }
 
-  if (params_.writeFg) {
+  if (params_.FgFileName.value() != ::boost::none) {
     oops::FieldSet3D fset(fg.validTime(), outerGeometryData.comm());
     fset.shallowCopy(fg.fieldSet());
-    writeToFile(fset, "fg", count_fg_);
+    writeToFile(fset, params_.FgFileName.value().value(), count_fg_);
   }
 
   oops::Log::trace() << classname() << "::WriteFields done" << std::endl;
@@ -126,8 +126,8 @@ WriteFields::WriteFields(const oops::GeometryData & outerGeometryData,
 void WriteFields::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
 
-  if (params_.writeMultiply) {
-    writeToFile(fset, "multiply", count_multiply_);
+  if (params_.multiplyFileName.value() != ::boost::none) {
+    writeToFile(fset, params_.multiplyFileName.value().value(), count_multiply_);
   }
 
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
@@ -138,8 +138,8 @@ void WriteFields::multiply(oops::FieldSet3D & fset) const {
 void WriteFields::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
 
-  if (params_.writeMultiplyAD) {
-    writeToFile(fset, "multiplyad", count_multiplyad_);
+  if (params_.multiplyADFileName.value() != ::boost::none) {
+    writeToFile(fset, params_.multiplyADFileName.value().value(), count_multiplyad_);
   }
 
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
@@ -150,8 +150,8 @@ void WriteFields::multiplyAD(oops::FieldSet3D & fset) const {
 void WriteFields::leftInverseMultiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
 
-  if (params_.writeLeftInverseMultiply) {
-    writeToFile(fset, "leftinversemultiply", count_leftinversemultiply_);
+  if (params_.leftInverseFileName.value() != ::boost::none) {
+    writeToFile(fset, params_.leftInverseFileName.value().value(), count_leftinversemultiply_);
   }
 
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;

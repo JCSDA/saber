@@ -53,6 +53,5 @@ output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_vertproj/dirac_%id%_%MPI%
 test:
-  test output filename: testref/dirac_vertproj.out
   reference filename: testref/dirac_vertproj.ref
 

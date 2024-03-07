@@ -188,7 +188,8 @@ void SaberCentralBlockBase::sqrtTest(const oops::GeometryData & geometryData,
   this->multiply(fsetSave);
 
   // Check that the fieldsets are similar within tolerance
-  const bool sqrtComparison = fset.compare_with(fsetSave, sqrtTolerance, false);
+  const bool sqrtComparison = fset.compare_with(fsetSave, sqrtTolerance,
+                                                util::ToleranceType::relative);
   if (sqrtComparison) {
     oops::Log::info() << "Info     : Square-root test passed: U U^t x == B x" << std::endl;
   } else {

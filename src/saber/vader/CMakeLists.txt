@@ -20,8 +20,6 @@ if ( vader_FOUND )
     HpHexnerToPExner.h
     HydroBal.cc
     HydroBal.h
-    HydrostaticExner.cc
-    HydrostaticExner.h
     MoistIncrOp.cc
     MoistIncrOp.h
     MoistIncrOpParameters.h

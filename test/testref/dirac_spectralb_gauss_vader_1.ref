@@ -34,15 +34,20 @@ Adjoint test for block mo_moistincrop passed
 skipping inverse test for block mo_moistincrop
 Adjoint test for block mo_air_temperature passed
 skipping inverse test for block mo_air_temperature
+Adjoint test for block mo_hydrostatic_pressure_hydrostatic_exner_to_pressure_exner passed
+Inner inverse test for block mo_hydrostatic_pressure_hydrostatic_exner_to_pressure_exner passed: U Uinv (U x) == (U x)
+Outer inverse test for block mo_hydrostatic_pressure_hydrostatic_exner_to_pressure_exner passed: Uinv U (Uinv x) == (Uinv x)
 Adjoint test for block mo_moisture_control passed
 Inner inverse test for block mo_moisture_control passed: U Uinv (U x) == (U x)
 Outer inverse test for block mo_moisture_control passed: Uinv U (Uinv x) == (Uinv x)
 Adjoint test for block mo_hydro_bal passed
 Inner inverse test for block mo_hydro_bal passed: U Uinv (U x) == (U x)
 Outer inverse test for block mo_hydro_bal passed: Uinv U (Uinv x) == (Uinv x)
-Adjoint test for block mo_hydrostatic_exner passed
-Inner inverse test for block mo_hydrostatic_exner passed: U Uinv (U x) == (U x)
-Outer inverse test for block mo_hydrostatic_exner passed: Uinv U (Uinv x) == (Uinv x)
+Adjoint test for block mo_hydrostatic_pressure_to_hydrostatic_exner passed
+Inner inverse test for block mo_hydrostatic_pressure_to_hydrostatic_exner passed: U Uinv (U x) == (U x)
+Outer inverse test for block mo_hydrostatic_pressure_to_hydrostatic_exner passed: Uinv U (Uinv x) == (Uinv x)
+Adjoint test for block mo_hydrostatic_pressure_from_geostrophic_pressure passed
+skipping inverse test for block mo_hydrostatic_pressure_from_geostrophic_pressure
 Adjoint test for block gauss winds to geostrophic pressure passed
 skipping inverse test for block gauss winds to geostrophic pressure
 Adjoint test for block spectral to gauss passed

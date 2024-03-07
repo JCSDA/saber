@@ -25,7 +25,6 @@ Fields:
   dry_air_density_levels_minus_one: 1.0000000000000000e+00
   eastward_wind: 0.0000000000000000e+00
   exner_levels_minus_one: 0.0000000000000000e+00
-  geostrophic_pressure_levels_minus_one: 0.0000000000000000e+00
   hydrostatic_exner_levels: 0.0000000000000000e+00
   hydrostatic_pressure_levels: 0.0000000000000000e+00
   mass_content_of_cloud_ice_in_atmosphere_layer: 0.0000000000000000e+00
@@ -43,17 +42,21 @@ Adjoint test for block mo_moistincrop passed
 skipping inverse test for block mo_moistincrop
 Adjoint test for block mo_air_temperature passed
 skipping inverse test for block mo_air_temperature
+Adjoint test for block mo_hydrostatic_pressure_hydrostatic_exner_to_pressure_exner passed
+Inner inverse test for block mo_hydrostatic_pressure_hydrostatic_exner_to_pressure_exner passed: U Uinv (U x) == (U x)
+Outer inverse test for block mo_hydrostatic_pressure_hydrostatic_exner_to_pressure_exner passed: Uinv U (Uinv x) == (Uinv x)
 Adjoint test for block mo_moisture_control passed
 Inner inverse test for block mo_moisture_control passed: U Uinv (U x) == (U x)
 Outer inverse test for block mo_moisture_control passed: Uinv U (Uinv x) == (Uinv x)
 Adjoint test for block mo_hydro_bal passed
 Inner inverse test for block mo_hydro_bal passed: U Uinv (U x) == (U x)
 Outer inverse test for block mo_hydro_bal passed: Uinv U (Uinv x) == (Uinv x)
-Adjoint test for block mo_hydrostatic_exner passed
-Inner inverse test for block mo_hydrostatic_exner passed: U Uinv (U x) == (U x)
-Outer inverse test for block mo_hydrostatic_exner passed: Uinv U (Uinv x) == (Uinv x)
-Adjoint test for block gauss winds to geostrophic pressure passed
-skipping inverse test for block gauss winds to geostrophic pressure
+Adjoint test for block mo_hydrostatic_pressure_to_hydrostatic_exner passed
+Inner inverse test for block mo_hydrostatic_pressure_to_hydrostatic_exner passed: U Uinv (U x) == (U x)
+Outer inverse test for block mo_hydrostatic_pressure_to_hydrostatic_exner passed: Uinv U (Uinv x) == (Uinv x)
+Adjoint test for block mo_hydrostatic_pressure passed
+Inner inverse test for block mo_hydrostatic_pressure passed: U Uinv (U x) == (U x)
+Outer inverse test for block mo_hydrostatic_pressure passed: Uinv U (Uinv x) == (Uinv x)
 Adjoint test for block spectral to gauss passed
 Inner inverse test for block spectral to gauss passed: U Uinv (U x) == (U x)
 Outer inverse test for block spectral to gauss passed: Uinv U (Uinv x) == (Uinv x)
@@ -92,7 +95,6 @@ Fields:
   dry_air_density_levels_minus_one: 8.1194744491696538e-06
   eastward_wind: 1.5898150258280666e-04
   exner_levels_minus_one: 2.2711773461249664e-07
-  geostrophic_pressure_levels_minus_one: 5.2731486869003336e-02
   hydrostatic_exner_levels: 2.2714037999068815e-07
   hydrostatic_pressure_levels: 7.4093289725615324e-02
   mass_content_of_cloud_ice_in_atmosphere_layer: 3.9007941510134007e-09

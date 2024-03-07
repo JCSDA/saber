@@ -74,7 +74,7 @@ background error:
   inverse test: true
   # Small tolerances to illustrate local overriding in saber blocks:
   adjoint tolerance: 1e-12
-  inverse tolerance: 1e-15
+  inverse tolerance: 1e-13
   saber central block:
     saber block name: spectral covariance
     active variables:
@@ -91,8 +91,6 @@ background error:
       - CHI_inc_Uv_matrix
   saber outer blocks:
   - saber block name: spectral to gauss
-    inner inverse tolerance: 1e-12
-    outer inverse tolerance: 1e-8
     active variables:
     - eastward_wind
     - mu
@@ -101,8 +99,6 @@ background error:
     - unbalanced_pressure_levels_minus_one
     - velocity_potential
   - saber block name: mo_hydrostatic_pressure
-    inner inverse tolerance: 1e-11
-    outer inverse tolerance: 1e-9
     inner variables to compare:
       - eastward_wind
       - northward_wind
@@ -114,17 +110,12 @@ background error:
     saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
   - saber block name: mo_hydrostatic_pressure_to_hydrostatic_exner
     saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
-    outer inverse tolerance: 1e-8
   - saber block name: mo_hydro_bal
     saturation vapour pressure file: testdata/svp_dlsvp_svpW_dlsvpW.nc
-    inner inverse tolerance: 1e-9  #TODO to be replaced by relative tolerance
     outer variables to compare:
       - virtual_potential_temperature
       - air_pressure_levels
-    outer inverse tolerance: 1e-13
   - saber block name: mo_moisture_control
-    inner inverse tolerance: 1e-13
-    outer inverse tolerance: 1e-4  #TODO to be replaced by relative tolerance
     inner variables to compare:
       - mu
       - virtual_potential_temperature

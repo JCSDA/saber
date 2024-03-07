@@ -377,7 +377,7 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
     bool sqrtComparison = true;
     for (size_t jtime = 0; jtime < fset4d.size(); ++jtime) {
       sqrtComparison = sqrtComparison && fset4d[jtime].compare_with(fset4dSave[jtime],
-        localSqrtTolerance, false);
+        localSqrtTolerance, util::ToleranceType::relative);
     }
     if (sqrtComparison) {
       oops::Log::info() << "Info     : Square-root test passed: U U^t x == B x" << std::endl;

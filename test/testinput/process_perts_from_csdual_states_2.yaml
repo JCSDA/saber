@@ -1,0 +1,111 @@
+geometry:
+  function space: NodeColumns
+  grid:
+    name: CS-LFR-15
+  partitioner: cubedsphere
+  groups:
+  - variables: &vars
+    - moisture_control_variable
+    - streamfunction
+    - unbalanced_pressure
+    - velocity_potential
+    levels: 70
+  halo: 1
+
+background:
+  date: &date '2010-01-01T12:00:00Z'
+  state variables: *vars
+
+saber filter blocks:
+- saber central block:
+    saber block name: ID
+  saber outer blocks:
+  - saber block name: spectral analytical filter
+    function:
+      shape: waveband filter
+      waveband min: 0
+      waveband peak: 1
+      waveband max: 3
+    normalize filter variance: false
+    active variables: *vars
+  - saber block name: spectral to gauss
+    active variables: *vars
+    filter mode: true # instead of running the adjoint code it runs the inverse
+  - saber block name: write fields
+    field names: *vars
+    multiply fset filename: fields_wb1_multiply
+    skip inverse test: true
+    output path: testdata/process_perts_from_csdual_states_2/
+  - saber block name: gauss to cubed-sphere-dual
+    gauss grid uid: F2
+    filter mode: true # instead of running the adjoint code it runs the inverse
+- saber central block:
+    saber block name: ID
+  saber outer blocks:
+  - saber block name: spectral analytical filter
+    function:
+      shape: waveband filter
+      waveband min: 1
+      waveband peak: 3
+      waveband max: 9
+    normalize filter variance: false
+    active variables: *vars
+  - saber block name: spectral to gauss
+    active variables: *vars
+    filter mode: true # instead of running the adjoint code it runs the inverse
+  - saber block name: write fields
+    field names: *vars
+    multiply fset filename: fields_wb2_multiply
+    skip inverse test: true
+    output path: testdata/process_perts_from_csdual_states_2/
+  - saber block name: gauss to cubed-sphere-dual
+    gauss grid uid: F5
+    filter mode: true # instead of running the adjoint code it runs the inverse
+- saber central block:
+    saber block name: ID
+  saber outer blocks:
+  - saber block name: spectral analytical filter
+    function:
+      shape: waveband filter
+      waveband min: 3
+      waveband peak: 9
+      waveband max: 23 # last waveband max need to be 2N - 1
+    normalize filter variance: false
+    active variables: *vars
+  - saber block name: spectral to gauss
+    active variables: *vars
+    filter mode: true # instead of running the adjoint code it runs the inverse
+  - saber block name: write fields
+    field names: *vars
+    multiply fset filename: fields_wb3_multiply
+    skip inverse test: true
+    output path: testdata/process_perts_from_csdual_states_2/
+  - saber block name: gauss to cubed-sphere-dual
+    gauss grid uid: F12
+    filter mode: true # instead of running the adjoint code it runs the inverse
+
+residual filter: {}
+
+input variables: *vars
+
+ensemble:
+  members:
+  - date: *date
+    filepath: testdata/randomization_csdual_sqrtspectralb/1_randomized_csdual_mb1
+    state variables: *vars
+  - date: *date
+    filepath: testdata/randomization_csdual_sqrtspectralb/1_randomized_csdual_mb2
+    state variables: *vars
+
+output perturbations:
+- {}
+- {}
+- {}
+- generic write:
+    filepath: testdata/process_perts_from_csdual_states_2/filtered_pert_grid%GRID%_mb%MEM%_wb4
+    member pattern: '%MEM%'
+    grid pattern: '%GRID%'
+
+test:
+  float relative tolerance: 2.0e-6       # default value of 1.0e-6
+  reference filename: testref/process_perts_from_csdual_states_2.ref

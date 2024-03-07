@@ -32,9 +32,6 @@ class WriteFieldsParameters : public SaberBlockParametersBase {
   /// Path of output file.
   oops::RequiredParameter<std::string> outputPath{"output path", this};
 
-  /// Label to assign to output file.
-  oops::RequiredParameter<std::string> label{"label", this};
-
   /// Save fields to netCDF files.
   /// Whatever the value of this parameter, some basic information about each field is written
   /// to the test output stream.
@@ -45,20 +42,20 @@ class WriteFieldsParameters : public SaberBlockParametersBase {
   /// FieldSet are written out.
   oops::Parameter<std::vector<std::string>> fieldNames{"field names", {}, this};
 
-  /// Write out fields, contained in xb, in the block's constructor.
-  oops::Parameter<bool> writeXb{"write xb", false, this};
+  /// Write out fields, contained in xb, in the block's constructor with filename below
+  oops::OptionalParameter<std::string> XbFileName{"xb filename", this};
 
-  /// Write out fields, contained in fg, in the block's constructor.
-  oops::Parameter<bool> writeFg{"write fg", false, this};
+  /// Write out fields, contained in fg, in the block's constructor with filename below
+  oops::OptionalParameter<std::string> FgFileName{"fg filename", this};
 
-  /// Write out fields in the block's multiply() routine.
-  oops::Parameter<bool> writeMultiply{"write multiply fset", false, this};
+  /// Write out fields in the block's multiply() routine with filename below
+  oops::OptionalParameter<std::string> multiplyFileName{"multiply fset filename", this};
 
-  /// Write out fields in the block's multiplyAD() routine.
-  oops::Parameter<bool> writeMultiplyAD{"write multiplyad fset", false, this};
+  /// Write out fields in the block's multiplyAD() routine with filename below
+  oops::OptionalParameter<std::string> multiplyADFileName{"multiplyad fset filename", this};
 
-  /// Write out fields in the block's leftInverseMultiply() routine.
-  oops::Parameter<bool> writeLeftInverseMultiply{"write leftinversemultiply fset", false, this};
+  /// Write out fields in the block's leftInverseMultiply() routine with filename below
+  oops::OptionalParameter<std::string> leftInverseFileName{"left inverse fset filename", this};
 };
 
 // -----------------------------------------------------------------------------

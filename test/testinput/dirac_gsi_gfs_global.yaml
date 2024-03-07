@@ -50,4 +50,3 @@ output dirac:
 test:
   float relative tolerance: 1.5e-06
   reference filename: testref/dirac_gsi_gfs_global.ref
-  test output filename: testref/dirac_gsi_gfs_global.out
