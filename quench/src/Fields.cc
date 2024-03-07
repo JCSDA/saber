@@ -13,6 +13,7 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -558,9 +559,13 @@ void Fields::dirac(const eckit::Configuration & config) {
     pointLonLat.normalise();
 
     // Search nearest neighbor
-    atlas::util::IndexKDTree::ValueList neighbor = search.closestPoints(pointLonLat, 1);
-    size_t index(neighbor[0].payload());
-    double distance(neighbor[0].distance());
+    size_t index = std::numeric_limits<size_t>::max();
+    double distance = std::numeric_limits<double>::max();
+    if (geom_->functionSpace().size() > 0) {
+      atlas::util::IndexKDTree::ValueList neighbor = search.closestPoints(pointLonLat, 1);
+      index = neighbor[0].payload();
+      distance = neighbor[0].distance();
+    }
     std::vector<double> distances(geom_->getComm().size());
     geom_->getComm().gather(distance, distances, 0);
 
