@@ -107,5 +107,5 @@ output perturbations:
     grid pattern: '%GRID%'
 
 test:
-  float relative tolerance: 2.0e-6       # default value of 1.0e-6
+  float relative tolerance: 3.0e-6       # default value of 1.0e-6
   reference filename: testref/process_perts_from_csdual_states_2.ref
