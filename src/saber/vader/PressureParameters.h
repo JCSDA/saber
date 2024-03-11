@@ -67,7 +67,6 @@ class GpToHpParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(GpToHpParameters, SaberBlockParametersBase)
 
  public:
-  oops::RequiredParameter<std::string> svp_file{"saturation vapour pressure file", this};
   oops::RequiredParameter<GpToHpCovarianceParameters>
     gptohpcovarianceparams{"covariance data", this};
   oops::Variables mandatoryActiveVars() const override {return oops::Variables({

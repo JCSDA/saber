@@ -106,11 +106,8 @@ background error:
       covariance file path: testdata/FPstats.nc
       number of covariance latitude rings: 481
       gp regression bins: 18
-    saturation vapour pressure file: &svp_file testdata/svp_dlsvp_svpW_dlsvpW.nc
   - saber block name: mo_hydrostatic_pressure_to_hydrostatic_exner
-    saturation vapour pressure file: *svp_file
   - saber block name: mo_hydro_bal
-    saturation vapour pressure file: *svp_file
     inner variables to compare: [hydrostatic_exner_levels]
     outer variables to compare: [virtual_potential_temperature, air_pressure_levels]
   - saber block name: mo_moisture_control
@@ -120,14 +117,12 @@ background error:
       - virtual_potential_temperature
     covariance data:
       covariance file path: testdata/MUstats.nc
-    saturation vapour pressure file: *svp_file
   - saber block name: mo_hydrostatic_pressure_hydrostatic_exner_to_pressure_exner
   - saber block name: mo_air_temperature
     skip inverse test: true
   - saber block name: mo_moistincrop
     skip inverse test: true  # Tested within the mo_super_mio block
     moisture incrementing operator file: testdata/MIO_coefficients.nc
-    saturation vapour pressure file: *svp_file
   - saber block name: mo_dry_air_density
     skip inverse test: true
 

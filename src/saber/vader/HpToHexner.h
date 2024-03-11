@@ -37,7 +37,6 @@ namespace vader {
 class HpToHexnerParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(HpToHexnerParameters, SaberBlockParametersBase)
  public:
-  oops::RequiredParameter<std::string> svp_file{"saturation vapour pressure file", this};
   oops::Variables mandatoryActiveVars() const override {return oops::Variables({
     "hydrostatic_exner_levels",
     "hydrostatic_pressure_levels"});}

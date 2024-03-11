@@ -17,4 +17,3 @@ MIO_coefficients.nc
 MUstats.nc
 ptheta_bar_mean.nc
 Prho_bar_Mean.nc
-svp_dlsvp_svpW_dlsvpW.nc

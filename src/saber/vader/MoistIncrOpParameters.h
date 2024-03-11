@@ -56,7 +56,6 @@ class MoistIncrOpParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(MoistIncrOpParameters, SaberBlockParametersBase)
 
  public:
-  oops::RequiredParameter<std::string> svp_file{"saturation vapour pressure file", this};
   oops::RequiredParameter<std::string> mio_file{"moisture incrementing operator file", this};
   oops::Variables mandatoryActiveVars() const override {return oops::Variables({
     "air_temperature",

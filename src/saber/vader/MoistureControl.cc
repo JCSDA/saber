@@ -107,7 +107,7 @@ MoistureControl::MoistureControl(const oops::GeometryData & outerGeometryData,
 
   mo::eval_air_temperature_nl(augmentedStateFieldSet_);
   mo::evalTotalMassMoistAir(augmentedStateFieldSet_);
-  mo::eval_sat_vapour_pressure_nl(params.svp_file, augmentedStateFieldSet_);
+  mo::eval_sat_vapour_pressure_nl(augmentedStateFieldSet_);
   mo::evalSatSpecificHumidity(augmentedStateFieldSet_);
   mo::eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
               augmentedStateFieldSet_);
