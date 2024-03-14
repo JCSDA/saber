@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2023 Met Office
+ * (C) Crown Copyright 2023-2024 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -88,7 +88,8 @@ GpToHp::GpToHp(const oops::GeometryData & outerGeometryData,
     "air_pressure",
     "m_v", "m_ci", "m_cl", "m_r",  // mixing ratios from file
     "m_t",  //  to be populated in evalTotalMassMoistAir
-    "svp", "dlsvpdT",  //  to be populated in eval_sat_vapour_pressure_nl
+    "svp",  //  to be populated in eval_sat_vapour_pressure_nl
+    "dlsvpdT",  //  to be populated in eval_derivative_ln_svp_wrt_temperature_nl
     "qsat",  // to be populated in evalSatSpecificHumidity
     "specific_humidity",
       //  to be populated in eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl
@@ -125,6 +126,7 @@ GpToHp::GpToHp(const oops::GeometryData & outerGeometryData,
   mo::eval_air_temperature_nl(augmentedStateFieldSet_);
   mo::evalTotalMassMoistAir(augmentedStateFieldSet_);
   mo::eval_sat_vapour_pressure_nl(augmentedStateFieldSet_);
+  mo::eval_derivative_ln_svp_wrt_temperature_nl(augmentedStateFieldSet_);
   mo::evalSatSpecificHumidity(augmentedStateFieldSet_);
   mo::eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
               augmentedStateFieldSet_);
