@@ -9,7 +9,6 @@
 
 #include <memory>
 #include <string>
-#include <tuple>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -98,7 +97,13 @@ class FastLAM : public SaberCentralBlockBase {
   oops::Variables active2dVars_;
 
   // Groups of variables
-  std::vector<std::tuple<std::string, size_t, std::string, std::vector<std::string>>> groups_;
+  struct Group {
+    std::string name_;
+    size_t nz0_;
+    std::string varInModelFile_;
+    std::vector<std::string> variables_;
+  };
+  std::vector<Group> groups_;
 
   // Parameters
   FastLAMParametersBase params_;

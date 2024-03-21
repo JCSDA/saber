@@ -144,8 +144,11 @@ void LayerHalo::setupParallelization() {
     for (size_t jk = 0; jk < xKernelSize_; ++jk) {
       size_t ii = i-jk+(xKernelSize_-1)/2;
       if (ii >= 0 && ii < nx_) {
-        xcOperations_.push_back(std::make_tuple(jnode, xcRecvMapping[xcPointsView(ii, j)],
-          xKernel_[jk]));
+        Convolution op;
+        op.row_ = jnode;
+        op.col_ = xcRecvMapping[xcPointsView(ii, j)];
+        op.S_ = xKernel_[jk];
+        xcOperations_.push_back(op);
       }
     }
   }
@@ -259,8 +262,11 @@ void LayerHalo::setupParallelization() {
     for (size_t jk = 0; jk < yKernelSize_; ++jk) {
       size_t jj = j-jk+(yKernelSize_-1)/2;
       if (jj >= 0 && jj < ny_) {
-        ycOperations_.push_back(std::make_tuple(jnode, ycRecvMapping[ycPointsView(i, jj)],
-          yKernel_[jk]));
+        Convolution op;
+        op.row_ = jnode;
+        op.col_ = ycRecvMapping[ycPointsView(i, jj)];
+        op.S_ = yKernel_[jk];
+        ycOperations_.push_back(op);
       }
     }
   }
@@ -470,7 +476,7 @@ void LayerHalo::rowsConvolutionTL(atlas::Field & field) const {
   view.assign(0.0);
   for (const auto & op : xcOperations_) {
     for (size_t k = 0; k < nz_; ++k) {
-      view(std::get<0>(op), k) += xcRecvVec[std::get<1>(op)*nz_+k]*std::get<2>(op);
+      view(op.row_, k) += xcRecvVec[op.col_*nz_+k]*op.S_;
     }
   }
 
@@ -499,7 +505,7 @@ void LayerHalo::rowsConvolutionAD(atlas::Field & field) const {
   std::vector<double> xcRecvVec(xcSize_*nz_, 0.0);
   for (const auto & op : xcOperations_) {
     for (size_t k = 0; k < nz_; ++k) {
-      xcRecvVec[std::get<1>(op)*nz_+k] += view(std::get<0>(op), k)*std::get<2>(op);
+      xcRecvVec[op.col_*nz_+k] += view(op.row_, k)*op.S_;
     }
   }
 
@@ -583,7 +589,7 @@ void LayerHalo::colsConvolutionTL(atlas::Field & field) const {
   view.assign(0.0);
   for (const auto & op : ycOperations_) {
     for (size_t k = 0; k < nz_; ++k) {
-      view(std::get<0>(op), k) += ycRecvVec[std::get<1>(op)*nz_+k]*std::get<2>(op);
+      view(op.row_, k) += ycRecvVec[op.col_*nz_+k]*op.S_;
     }
   }
 
@@ -612,7 +618,7 @@ void LayerHalo::colsConvolutionAD(atlas::Field & field) const {
   std::vector<double> ycRecvVec(ycSize_*nz_, 0.0);
   for (const auto & op : ycOperations_) {
     for (size_t k = 0; k < nz_; ++k) {
-      ycRecvVec[std::get<1>(op)*nz_+k] += view(std::get<0>(op), k)*std::get<2>(op);
+      ycRecvVec[op.col_*nz_+k] += view(op.row_, k)*op.S_;
     }
   }
 

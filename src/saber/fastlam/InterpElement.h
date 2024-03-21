@@ -46,7 +46,7 @@ class InterpElement {
   // Interpolation type ("c": colocated, "x": linear along x, "y": linear along y, "b": bilinear)
   std::string interpType_;
 
-  // Global indices of the most southwestern point
+  // Global indices of the most southwestern point or of the lower level
   size_t index1_;
   size_t index2_;
 

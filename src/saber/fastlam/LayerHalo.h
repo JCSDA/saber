@@ -8,7 +8,6 @@
 #pragma once
 
 #include <string>
-#include <tuple>
 #include <vector>
 
 #include "atlas/field.h"
@@ -33,11 +32,12 @@ class LayerHalo : public LayerBase {
   // Constructor
   LayerHalo(const FastLAMParametersBase & params,
             const oops::GeometryData & gdata,
-            const std::string & myVar,
+            const std::string & myGroup,
+            const std::vector<std::string> & myVars,
             const size_t & nx0,
             const size_t & ny0,
             const size_t & nz0) :
-    LayerBase(params, gdata, myVar, nx0, ny0, nz0) {}
+    LayerBase(params, gdata, myGroup, myVars, nx0, ny0, nz0) {}
   ~LayerHalo() = default;
 
   // Setups
@@ -75,9 +75,16 @@ class LayerHalo : public LayerBase {
   void multiplyRedSqrt(atlas::Field &) const;
   void multiplyRedSqrtTrans(atlas::Field &) const;
 
+  // Convolution structure
+  struct Convolution {
+    size_t row_;
+    size_t col_;
+    double S_;
+  };
+
   // Rows <=> reduced grid
   size_t xcSize_;
-  std::vector<std::tuple<int, int, double>> xcOperations_;
+  std::vector<Convolution> xcOperations_;
   size_t xcRecvSize_;
   std::vector<int> xcRecvCounts_;
   std::vector<int> xcRecvDispls_;
@@ -88,7 +95,7 @@ class LayerHalo : public LayerBase {
 
   // Columns <=> rows
   size_t ycSize_;
-  std::vector<std::tuple<int, int, double>> ycOperations_;
+  std::vector<Convolution> ycOperations_;
   size_t ycRecvSize_;
   std::vector<int> ycRecvCounts_;
   std::vector<int> ycRecvDispls_;

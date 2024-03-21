@@ -10,10 +10,14 @@
 #include <netcdf.h>
 
 #include <algorithm>
+#include <unordered_map>
 #include <utility>
 
 #include "atlas/array.h"
+#include "atlas/util/KDTree.h"
+#include "atlas/util/Point.h"
 
+#include "oops/generic/gc99.h"
 #include "oops/util/Logger.h"
 #include "oops/util/missingValues.h"
 #include "oops/util/Random.h"
@@ -40,7 +44,8 @@ LayerFactory::LayerFactory(const std::string & name) {
 std::unique_ptr<LayerBase> LayerFactory::create(
   const FastLAMParametersBase & params,
   const oops::GeometryData & gdata,
-  const std::string & myVar,
+  const std::string & myGroup,
+  const std::vector<std::string> & myVars,
   const size_t & nx0,
   const size_t & ny0,
   const size_t & nz0) {
@@ -52,7 +57,7 @@ std::unique_ptr<LayerBase> LayerFactory::create(
     throw eckit::UserError("Element does not exist in saber::LayerFactory.", Here());
   }
   std::unique_ptr<LayerBase> ptr =
-    jsb->second->make(params, gdata, myVar, nx0, ny0, nz0);
+    jsb->second->make(params, gdata, myGroup, myVars, nx0, ny0, nz0);
   oops::Log::trace() << "LayerBase::create done" << std::endl;
   return ptr;
 }
@@ -105,39 +110,53 @@ void LayerBase::setupVerticalCoord(const atlas::Field & rvField,
       rv[k0] = rv[k0]/wgt[k0];
     }
 
-    // Compute thickness
-    std::vector<double> thickness(nz0_, 0.0);
+    // Check if vertical length-scale is positive
+    bool posRv = true;
     for (size_t k0 = 0; k0 < nz0_; ++k0) {
-      if (k0 == 0) {
-        thickness[k0] = std::abs(vertCoord[k0+1]-vertCoord[k0]);
-      } else if (k0 == nz0_-1) {
-        thickness[k0] = std::abs(vertCoord[k0]-vertCoord[k0-1]);
-      } else {
-        thickness[k0] = 0.5*std::abs(vertCoord[k0+1]-vertCoord[k0-1]);
+      if (rv[k0] == 0.0) {
+        posRv = false;
+        break;
       }
     }
 
-    // Normalize thickness with vertical length-scale
-    std::vector<double> normThickness(nz0_, 0.0);
-    for (size_t k0 = 0; k0 < nz0_; ++k0) {
-      ASSERT(rv[k0] > 0.0);
-      normThickness[k0] = thickness[k0]/rv[k0];
-    }
+    if (posRv) {
+      // Compute thickness
+      std::vector<double> thickness(nz0_, 0.0);
+      for (size_t k0 = 0; k0 < nz0_; ++k0) {
+        if (k0 == 0) {
+          thickness[k0] = std::abs(vertCoord[k0+1]-vertCoord[k0]);
+        } else if (k0 == nz0_-1) {
+          thickness[k0] = std::abs(vertCoord[k0]-vertCoord[k0-1]);
+        } else {
+          thickness[k0] = 0.5*std::abs(vertCoord[k0+1]-vertCoord[k0-1]);
+        }
+      }
 
-    // Compute normalized vertical coordinate
-    normVertCoord_.resize(nz0_, 0.0);
-    for (size_t k0 = 1; k0 < nz0_; ++k0) {
-      normVertCoord_[k0] = normVertCoord_[k0-1]+0.5*(normThickness[k0]+normThickness[k0-1]);
-    }
+      // Normalize thickness with vertical length-scale
+      std::vector<double> normThickness(nz0_, 0.0);
+      for (size_t k0 = 0; k0 < nz0_; ++k0) {
+        ASSERT(rv[k0] > 0.0);
+        normThickness[k0] = thickness[k0]/rv[k0];
+      }
 
-    // Rescale normalized vertical coordinate from 0 to nz0_-1
-    const double maxNormVertCoord = normVertCoord_[nz0_-1];
-    for (size_t k0 = 0; k0 < nz0_; ++k0) {
-      normVertCoord_[k0] = normVertCoord_[k0]/maxNormVertCoord*static_cast<double>(nz0_-1);
-    }
+      // Compute normalized vertical coordinate
+      normVertCoord_.resize(nz0_, 0.0);
+      for (size_t k0 = 1; k0 < nz0_; ++k0) {
+        normVertCoord_[k0] = normVertCoord_[k0-1]+0.5*(normThickness[k0]+normThickness[k0-1]);
+      }
 
-    // Save rescaled vertical length-scale
-    rv_ = static_cast<double>(nz0_-1)/maxNormVertCoord;
+      // Rescale normalized vertical coordinate from 0 to nz0_-1
+      const double maxNormVertCoord = normVertCoord_[nz0_-1];
+      for (size_t k0 = 0; k0 < nz0_; ++k0) {
+        normVertCoord_[k0] = normVertCoord_[k0]/maxNormVertCoord*static_cast<double>(nz0_-1);
+      }
+
+      // Save rescaled vertical length-scale
+      rv_ = static_cast<double>(nz0_-1)/maxNormVertCoord;
+    } else {
+      normVertCoord_.resize(nz0_, 0.0);
+      rv_ = 0.0;
+    }
   }
 
   oops::Log::trace() << classname() << "::setupVerticalCoord done" << std::endl;
@@ -179,17 +198,20 @@ void LayerBase::setupInterpolation() {
 
   // Reduced grid coordinates
   std::vector<double> xCoord;
+  const double dxCoord = static_cast<double>(nx0_-1)/static_cast<double>(nx_-1);
   for (size_t i = 0; i < nx_; ++i) {
-    xCoord.push_back(static_cast<double>(i*(nx0_-1))/static_cast<double>(nx_-1));
+    xCoord.push_back(static_cast<double>(i)*dxCoord);
   }
   std::vector<double> yCoord;
+  const double dyCoord = static_cast<double>(ny0_-1)/static_cast<double>(ny_-1);
   for (size_t j = 0; j < ny_; ++j) {
-    yCoord.push_back(static_cast<double>(j*(ny0_-1))/static_cast<double>(ny_-1));
+    yCoord.push_back(static_cast<double>(j)*dyCoord);
   }
   std::vector<double> zCoord;
   if (nz_ > 1) {
+    const double dz = static_cast<double>(nz0_-1)/static_cast<double>(nz_-1);
     for (size_t k = 0; k < nz_; ++k) {
-      zCoord.push_back(static_cast<double>(k*(nz0_-1))/static_cast<double>(nz_-1));
+      zCoord.push_back(static_cast<double>(k)*dz);
     }
   } else {
     zCoord.push_back(0.0);
@@ -200,14 +222,23 @@ void LayerBase::setupInterpolation() {
   std::vector<int> mpiMask(nx_*ny_, 0);
   for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
     if (ghostView(jnode0) == 0) {
-      for (size_t j = 0; j < ny_; ++j) {
-        for (size_t i = 0; i < nx_; ++i) {
-          if (indexIView0(jnode0)-1 == std::round(xCoord[i]) &&
-            indexJView0(jnode0)-1 == std::round(yCoord[j])) {
-            mpiTask_[i*ny_+j] = myrank_;
-            mpiMask[i*ny_+j] = 1;
-          }
+      int srcI = -1;
+      for (size_t i = 0; i < nx_; ++i) {
+        if (indexIView0(jnode0)-1 == std::round(xCoord[i])) {
+          srcI = i;
+          break;
         }
+      }
+      int srcJ = -1;
+      for (size_t j = 0; j < ny_; ++j) {
+        if (indexJView0(jnode0)-1 == std::round(yCoord[j])) {
+          srcJ = j;
+          break;
+        }
+      }
+      if ((srcI > -1) && (srcJ > -1)) {
+        mpiTask_[srcI*ny_+srcJ] = myrank_;
+        mpiMask[srcI*ny_+srcJ] = 1;
       }
     }
   }
@@ -233,8 +264,9 @@ void LayerBase::setupInterpolation() {
   for (size_t j = 0; j < ny_; ++j) {
     for (size_t i = 0; i < nx_; ++i) {
       if (static_cast<size_t>(mpiTask_[i*ny_+j]) == myrank_) {
+        // Fake coordinate in [0,1]
         atlas::PointXY p({xCoord[i]/static_cast<double>(nx0_-1),
-          yCoord[j]/static_cast<double>(ny0_-1)});  // Fake coordinate in [0,1]
+          yCoord[j]/static_cast<double>(ny0_-1)});
         v.push_back(p);
       }
     }
@@ -260,24 +292,41 @@ void LayerBase::setupInterpolation() {
   fset_.add(fieldIndexI);
   fset_.add(fieldIndexJ);
 
+  // Define local tree on model grid
+  std::vector<atlas::Point3> points0(mSize_);
+  std::vector<size_t> indices0(mSize_);
+  for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
+    const double x0 = static_cast<double>(indexIView0(jnode0)-1);
+    const double y0 = static_cast<double>(indexJView0(jnode0)-1);
+    points0[jnode0] = atlas::Point3(x0, y0, 0.0);
+    indices0[jnode0] = jnode0;
+  }
+  atlas::util::IndexKDTree mTree;
+  mTree.build(points0, indices0);
+  const double radius = std::sqrt(dxCoord*dxCoord+dyCoord*dyCoord);
+
   // RecvCounts and received points list
   mRecvCounts_.resize(comm_.size());
   std::fill(mRecvCounts_.begin(), mRecvCounts_.end(), 0);
   std::vector<int> mRecvPointsList;
   for (size_t j = 0; j < ny_; ++j) {
-    double jMin = j > 0 ? yCoord[j-1] : yCoord[0];
-    double jMax = yCoord[std::min(j+1, ny_-1)];
+    const double jMin = j > 0 ? yCoord[j-1] : yCoord[0];
+    const double jMax = yCoord[std::min(j+1, ny_-1)];
     for (size_t i = 0; i < nx_; ++i) {
-      double iMin = i > 0 ? xCoord[i-1] : xCoord[0];
-      double iMax = xCoord[std::min(i+1, nx_-1)];
+      const double iMin = i > 0 ? xCoord[i-1] : xCoord[0];
+      const double iMax = xCoord[std::min(i+1, nx_-1)];
+      const atlas::Point3 p(xCoord[i], yCoord[j], 0.0);
+      const auto list = mTree.closestPointsWithinRadius(p, radius);
       bool pointsNeeded = false;
-      for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
+      for (const auto & item : list) {
+        const size_t jnode0 = item.payload();
         if (ghostView(jnode0) == 0) {
           if (iMin <= static_cast<double>(indexIView0(jnode0)-1) &&
             static_cast<double>(indexIView0(jnode0)-1) <= iMax &&
             jMin <= static_cast<double>(indexJView0(jnode0)-1) &&
             static_cast<double>(indexJView0(jnode0)-1) <= jMax) {
             pointsNeeded = true;
+            break;
           }
         }
       }
@@ -330,194 +379,144 @@ void LayerBase::setupInterpolation() {
   comm_.allToAllv(mRecvPointsListOrdered.data(), mRecvCounts_.data(), mRecvDispls_.data(),
     rSentPointsList.data(), rSendCounts_.data(), rSendDispls_.data());
 
+  // Sort indices
+  std::vector<size_t> gij;
+  for (size_t jnode = 0; jnode < rSize_; ++jnode) {
+    gij.push_back((indexIView(jnode)-1)*ny_+indexJView(jnode)-1);
+  }
+  std::vector<size_t> gidx(rSize_);
+  std::iota(gidx.begin(), gidx.end(), 0);
+  std::stable_sort(gidx.begin(), gidx.end(),
+    [&gij](size_t i1, size_t i2) {return gij[i1] < gij[i2];});
+  std::vector<size_t> ridx(rSendSize_);
+  std::iota(ridx.begin(), ridx.end(), 0);
+  std::stable_sort(ridx.begin(), ridx.end(),
+    [&rSentPointsList](size_t i1, size_t i2) {return rSentPointsList[i1] < rSentPointsList[i2];});
+
   // Mapping for sent points
   rSendMapping_.resize(rSendSize_);
+  jnode = 0;
   for (size_t js = 0; js < rSendSize_; ++js) {
-    bool found = false;
-    for (size_t jnode = 0; jnode < rSize_; ++jnode) {
-      if (static_cast<size_t>(rSentPointsList[js]) ==
-        (indexIView(jnode)-1)*ny_+indexJView(jnode)-1) {
-        ASSERT(!found);
-        rSendMapping_[js] = jnode;
-        found = true;
-      }
+    while (gij[gidx[jnode]] < static_cast<size_t>(rSentPointsList[ridx[js]])) {
+      ++jnode;
+      ASSERT(jnode < rSize_);
     }
-    ASSERT(found);
+    rSendMapping_[ridx[js]] = gidx[jnode];
   }
+
+  // Sort indices
+  std::vector<size_t> idx(mRecvPointsListOrdered.size());
+  std::iota(idx.begin(), idx.end(), 0);
+  std::stable_sort(idx.begin(), idx.end(), [&mRecvPointsListOrdered](size_t i1, size_t i2)
+    {return mRecvPointsListOrdered[i1] < mRecvPointsListOrdered[i2];});
 
   // Compute horizontal interpolation
   for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
-    // Interpolation element default values
-    std::string interpType = "n";
-    size_t index1 = nx_;
-    size_t index2 = ny_;
-    std::vector<std::pair<size_t, double>> operations;
     if (ghostView(jnode0) == 0) {
+      // Interpolation element default values
+      std::string interpType = "n";
+      size_t indexI = nx_;
+      size_t indexJ = ny_;
+      std::vector<std::pair<size_t, double>> operations;
+
       // Model grid indices
       const size_t i0 = indexIView0(jnode0)-1;
       const size_t j0 = indexJView0(jnode0)-1;
       const double di = static_cast<double>(i0)/xRedFac_;
       const double dj = static_cast<double>(j0)/yRedFac_;
-      const size_t i = static_cast<size_t>(di);
-      const size_t j = static_cast<size_t>(dj);
-      const bool integerI = (std::abs(static_cast<double>(i)-di) < 1.0e-12);
-      const bool integerJ = (std::abs(static_cast<double>(j)-dj) < 1.0e-12);
-      const double alphaI = di - static_cast<double>(i);
-      const double alphaJ = dj - static_cast<double>(j);
-      index1 = i;
-      index2 = j;
-      if (integerI && integerJ) {
+      indexI = static_cast<size_t>(di);
+      indexJ = static_cast<size_t>(dj);
+      const bool colocatedI = (std::abs(static_cast<double>(indexI)-di) < 1.0e-8);
+      const bool colocatedJ = (std::abs(static_cast<double>(indexJ)-dj) < 1.0e-8);
+      const double alphaI = di-static_cast<double>(indexI);
+      const double alphaJ = dj-static_cast<double>(indexJ);
+
+      // Points to find
+      std::vector<bool> toFind = {true, !colocatedI, !colocatedJ, !colocatedI && !colocatedJ};
+      std::vector<size_t> valueToFind = {indexI*ny_+indexJ, (indexI+1)*ny_+indexJ,
+        indexI*ny_+(indexJ+1), (indexI+1)*ny_+(indexJ+1)};
+      std::vector<int> foundIndex(4, -1);
+
+      // Binary search for each point
+      for (size_t jj = 0; jj < 4; ++jj) {
+        if (toFind[jj]) {
+          binarySearch(mRecvPointsListOrdered, idx, valueToFind[jj], foundIndex[jj]);
+          ASSERT(foundIndex[jj] > -1);
+          ASSERT(static_cast<size_t>(mRecvPointsListOrdered[foundIndex[jj]]) == valueToFind[jj]);
+        }
+      }
+
+      // Create interpolation operations
+      if (colocatedI && colocatedJ) {
         // Colocated point
-        size_t jroIJ = 0;
-        bool foundIJ = false;
-        size_t jro = 0;
-        while ((!foundIJ) && jro < mRecvSize_) {
-          if (static_cast<size_t>(mRecvPointsListOrdered[jro]) == i*ny_+j) {
-            ASSERT(!foundIJ);
-            jroIJ = jro;
-            foundIJ = true;
-          }
-          ++jro;
-        }
-        ASSERT(foundIJ);
         interpType = "c";
-        operations.push_back(std::make_pair(jroIJ, 1.0));
-      } else if (integerJ) {
+        operations.push_back(std::make_pair(foundIndex[0], 1.0));
+      } else if (colocatedJ) {
         // Linear interpolation along x
-        size_t jroIJ = 0;
-        size_t jroIpJ = 0;
-        bool foundIJ = false;
-        bool foundIpJ = false;
-        size_t jro = 0;
-        while ((!(foundIJ && foundIpJ)) && jro < mRecvSize_) {
-          if (static_cast<size_t>(mRecvPointsListOrdered[jro]) == i*ny_+j) {
-            ASSERT(!foundIJ);
-            jroIJ = jro;
-            foundIJ = true;
-          }
-          if (static_cast<size_t>(mRecvPointsListOrdered[jro]) == (i+1)*ny_+j) {
-            ASSERT(!foundIpJ);
-            jroIpJ = jro;
-            foundIpJ = true;
-          }
-          ++jro;
-        }
-        ASSERT(foundIJ);
-        ASSERT(foundIpJ);
         interpType = "x";
-        operations.push_back(std::make_pair(jroIJ, 1.0-alphaI));
-        operations.push_back(std::make_pair(jroIpJ, alphaI));
-      } else if (integerI) {
+        operations.push_back(std::make_pair(foundIndex[0], 1.0-alphaI));
+        operations.push_back(std::make_pair(foundIndex[1], alphaI));
+      } else if (colocatedI) {
         // Linear interpolation along y
-        size_t jroIJ = 0;
-        size_t jroIJp = 0;
-        bool foundIJ = false;
-        bool foundIJp = false;
-        size_t jro = 0;
-        while ((!(foundIJ && foundIJp)) && jro < mRecvSize_) {
-          if (static_cast<size_t>(mRecvPointsListOrdered[jro]) == i*ny_+j) {
-            ASSERT(!foundIJ);
-            jroIJ = jro;
-            foundIJ = true;
-          }
-          if (static_cast<size_t>(mRecvPointsListOrdered[jro]) == i*ny_+j+1) {
-            ASSERT(!foundIJp);
-            jroIJp = jro;
-            foundIJp = true;
-          }
-          ++jro;
-        }
-        ASSERT(foundIJ);
-        ASSERT(foundIJp);
         interpType = "y";
-        operations.push_back(std::make_pair(jroIJ, 1.0-alphaJ));
-        operations.push_back(std::make_pair(jroIJp, alphaJ));
+        operations.push_back(std::make_pair(foundIndex[0], 1.0-alphaJ));
+        operations.push_back(std::make_pair(foundIndex[2], alphaJ));
       } else {
         // Bilinear interpolation
-        size_t jroIJ = 0;
-        size_t jroIpJ = 0;
-        size_t jroIJp = 0;
-        size_t jroIpJp = 0;
-        bool foundIJ = false;
-        bool foundIpJ = false;
-        bool foundIJp = false;
-        bool foundIpJp = false;
-        size_t jro = 0;
-        while ((!(foundIJ && foundIpJ && foundIJp && foundIpJp)) && jro < mRecvSize_) {
-          if (static_cast<size_t>(mRecvPointsListOrdered[jro]) == i*ny_+j) {
-            ASSERT(!foundIJ);
-            jroIJ = jro;
-            foundIJ = true;
-          }
-          if (static_cast<size_t>(mRecvPointsListOrdered[jro]) == (i+1)*ny_+j) {
-            ASSERT(!foundIpJ);
-            jroIpJ = jro;
-            foundIpJ = true;
-          }
-          if (static_cast<size_t>(mRecvPointsListOrdered[jro]) == i*ny_+j+1) {
-            ASSERT(!foundIJp);
-            jroIJp = jro;
-            foundIJp = true;
-          }
-          if (static_cast<size_t>(mRecvPointsListOrdered[jro]) == (i+1)*ny_+j+1) {
-            ASSERT(!foundIpJp);
-            jroIpJp = jro;
-            foundIpJp = true;
-          }
-          ++jro;
-        }
-        ASSERT(foundIJ);
-        ASSERT(foundIpJ);
-        ASSERT(foundIJp);
-        ASSERT(foundIpJp);
         interpType = "b";
-        operations.push_back(std::make_pair(jroIJ, (1.0-alphaI)*(1.0-alphaJ)));
-        operations.push_back(std::make_pair(jroIpJ, alphaI*(1.0-alphaJ)));
-        operations.push_back(std::make_pair(jroIJp, (1.0-alphaI)*alphaJ));
-        operations.push_back(std::make_pair(jroIpJp, alphaI*alphaJ));
+        operations.push_back(std::make_pair(foundIndex[0], (1.0-alphaI)*(1.0-alphaJ)));
+        operations.push_back(std::make_pair(foundIndex[1], alphaI*(1.0-alphaJ)));
+        operations.push_back(std::make_pair(foundIndex[2], (1.0-alphaI)*alphaJ));
+        operations.push_back(std::make_pair(foundIndex[3], alphaI*alphaJ));
       }
+      horInterp_.push_back(InterpElement(interpType, indexI, indexJ, operations));
     }
-    horInterp_.push_back(InterpElement(interpType, index1, index2, operations));
   }
 
   // Compute vertical interpolation
   for (size_t k0 = 0; k0 < nz0_; ++k0) {
     size_t index1 = nz_;
     std::vector<std::pair<size_t, double>> operations;
-    if (k0 == 0) {
-      // First level
-      index1 = 0;
-      operations.push_back(std::make_pair(0, 1.0));
-    } else if (k0 == nz0_-1) {
-      // Last level
-      index1 = nz_-1;
-      operations.push_back(std::make_pair(nz_-1, 1.0));
+    if (rv_ > 0.0) {
+      if (k0 == 0) {
+        // First level
+        index1 = 0;
+        operations.push_back(std::make_pair(0, 1.0));
+      } else if (k0 == nz0_-1) {
+        // Last level
+        index1 = nz_-1;
+        operations.push_back(std::make_pair(nz_-1, 1.0));
+      } else {
+        // Other levels
+        bool found = false;
+        size_t k = 1;
+        while ((!found) && (k < nz_-1)) {
+          if (std::abs(normVertCoord_[k0]-zCoord[k]) < 1.0e-12) {
+            // Colocated point
+            index1 = k;
+            operations.push_back(std::make_pair(k, 1.0));
+            found = true;
+          }
+          ++k;
+        }
+        k = 0;
+        while ((!found) && (k < nz_-1)) {
+          if (zCoord[k] < normVertCoord_[k0] && normVertCoord_[k0] < zCoord[k+1]) {
+            // Linear interpolation
+            index1 = k;
+            const double alphaK = normVertCoord_[k0]-zCoord[k];
+            operations.push_back(std::make_pair(k, 1.0-alphaK));
+            operations.push_back(std::make_pair(k+1, alphaK));
+            found = true;
+          }
+          ++k;
+        }
+        ASSERT(found);
+      }
     } else {
-      // Other levels
-      bool found = false;
-      size_t k = 0;
-      while ((!found) && (k < nz_-1)) {
-        if (std::abs(normVertCoord_[k0] - zCoord[k]) < 1.0e-12) {
-          // Colocated point
-          index1 = k;
-          operations.push_back(std::make_pair(k, 1.0));
-          found = true;
-        }
-        ++k;
-      }
-      k = 0;
-      while ((!found) && (k < nz_-1)) {
-        if (zCoord[k] < normVertCoord_[k0] && normVertCoord_[k0] < zCoord[k+1]) {
-          // Linear interpolation
-          index1 = k;
-          const double alphaK = normVertCoord_[k0]-zCoord[k];
-          operations.push_back(std::make_pair(k, 1.0-alphaK));
-          operations.push_back(std::make_pair(k+1, alphaK));
-          found = true;
-        }
-        ++k;
-      }
-      ASSERT(found);
+      // No interpolation
+      index1 = k0;
+      operations.push_back(std::make_pair(k0, 1.0));
     }
     verInterp_.push_back(InterpElement(index1, operations));
   }
@@ -529,7 +528,6 @@ void LayerBase::setupInterpolation() {
     atlas::Field modelField = gdata_.functionSpace().createField<double>(
       atlas::option::name("dummy") | atlas::option::levels(nz0_));
     auto redView = atlas::array::make_view<double, 2>(redField);
-    auto modelView = atlas::array::make_view<double, 2>(modelField);
     for (size_t jnode = 0; jnode < rSize_; ++jnode) {
       const double x = static_cast<double>(indexIView(jnode)-1)/static_cast<double>(nx_-1);
       const double y = static_cast<double>(indexJView(jnode)-1)/static_cast<double>(ny_-1);
@@ -544,19 +542,23 @@ void LayerBase::setupInterpolation() {
     double maxVal = 0.0;
     double maxRefVal = 0.0;
     std::vector<double> locMax(3, 0.0);
+    const auto modelView = atlas::array::make_view<double, 2>(modelField);
     for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
       if (ghostView(jnode0) == 0) {
         const double x = static_cast<double>(indexIView0(jnode0)-1)/static_cast<double>(nx0_-1);
         const double y = static_cast<double>(indexJView0(jnode0)-1)/static_cast<double>(ny0_-1);
         for (size_t k0 = 0; k0 < nz0_; ++k0) {
           const double z = normVertCoord_[k0]/static_cast<double>(nz0_-1);
-          double refVal = 0.5*(std::sin(2.0*M_PI*x)*std::sin(2.0*M_PI*y)*std::cos(2.0*M_PI*z)+1.0);
-          double diff = std::abs(modelView(jnode0, k0)-refVal);
+          const double refVal = 0.5*(std::sin(2.0*M_PI*x)*std::sin(2.0*M_PI*y)
+            *std::cos(2.0*M_PI*z)+1.0);
+          const double diff = std::abs(modelView(jnode0, k0)-refVal);
           if (diff > accuracy) {
             accuracy = diff;
             maxVal = modelView(jnode0, k0);
             maxRefVal = refVal;
-            locMax = {x, y, z};
+            const auto lonLatView = atlas::array::make_view<double, 2>(
+              gdata_.functionSpace().lonlat());
+            locMax = {lonLatView(jnode0, 0), lonLatView(jnode0, 1), z};
           }
         }
       }
@@ -608,8 +610,8 @@ void LayerBase::setupInterpolation() {
     modelViewAD.assign(0.0);
     for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
       if (ghostView(jnode0) == 0) {
-        for (size_t k = 0; k < nz_; ++k) {
-          modelViewAD(jnode0, k) = dist[jj];
+        for (size_t k0 = 0; k0 < nz0_; ++k0) {
+          modelViewAD(jnode0, k0) = dist[jj];
           ++jj;
         }
       }
@@ -690,16 +692,21 @@ void LayerBase::setupKernels() {
     }
     yNorm += yKernel_[jk]*yKernel_[jk];
   }
-  double zAlpha = zRedFac_/(0.5*rv_);
   double zNorm = 0.0;
-  for (size_t jk = 0; jk < zKernelSize_; ++jk) {
-    int jkc = jk-(zKernelSize_-1)/2;
-    if (jkc < 0) {
-      zKernel_[jk] = zAlpha*static_cast<double>(jkc)+1.0;
-    } else {
-      zKernel_[jk] = -zAlpha*static_cast<double>(jkc)+1.0;
+  if (rv_ > 0.0) {
+    double zAlpha = zRedFac_/(0.5*rv_);
+    for (size_t jk = 0; jk < zKernelSize_; ++jk) {
+      int jkc = jk-(zKernelSize_-1)/2;
+      if (jkc < 0) {
+        zKernel_[jk] = zAlpha*static_cast<double>(jkc)+1.0;
+      } else {
+        zKernel_[jk] = -zAlpha*static_cast<double>(jkc)+1.0;
+      }
+      zNorm += zKernel_[jk]*zKernel_[jk];
     }
-    zNorm += zKernel_[jk]*zKernel_[jk];
+  } else {
+    zKernel_[0] = 1.0;
+    zNorm = 1.0;
   }
 
   // Normalize kernels
@@ -711,9 +718,11 @@ void LayerBase::setupKernels() {
   for (size_t jk = 0; jk < yKernelSize_; ++jk) {
     yKernel_[jk] *= yNorm;
   }
-  zNorm = 1.0/std::sqrt(zNorm);
-  for (size_t jk = 0; jk < zKernelSize_; ++jk) {
-    zKernel_[jk] *= zNorm;
+  if (zNorm > 0.0) {
+    zNorm = 1.0/std::sqrt(zNorm);
+    for (size_t jk = 0; jk < zKernelSize_; ++jk) {
+      zKernel_[jk] *= zNorm;
+    }
   }
 
   oops::Log::trace() << classname() << "::setupKernels done" << std::endl;
@@ -757,12 +766,6 @@ void LayerBase::setupNormalization() {
     zNorm_[jn] = 1.0/std::sqrt(zNorm_[jn]);
   }
 
-  // Full normalization
-  atlas::Field normField = gdata_.functionSpace().createField<double>(
-    atlas::option::name(myVar_) | atlas::option::levels(nz0_));
-  auto normView = atlas::array::make_view<double, 2>(normField);
-  norm_.add(normField);
-
   // Cost-efficient normalization
 
   // Extract convolution values
@@ -771,6 +774,12 @@ void LayerBase::setupNormalization() {
   std::vector<double> horConv(4*nxHalf*nyHalf, 0.0);
   std::vector<double> verConv(2*(nz_-1), 0.0);
   extractConvolution(nxHalf, nyHalf, horConv, verConv);
+
+  // Full normalization
+  atlas::Field normField = gdata_.functionSpace().createField<double>(
+    atlas::option::name(myGroup_) | atlas::option::levels(nz0_));
+  auto normView = atlas::array::make_view<double, 2>(normField);
+  norm_.add(normField);
 
   // Ghost points
   const auto ghostView = atlas::array::make_view<int, 1>(gdata_.functionSpace().ghost());
@@ -887,8 +896,6 @@ void LayerBase::setupNormalization() {
     // Create fields
     atlas::Field modelField = gdata_.functionSpace().createField<double>(
       atlas::option::name("dummy") | atlas::option::levels(nz0_));
-    atlas::Field redField = fspace_.createField<double>(atlas::option::name("dummy") |
-      atlas::option::levels(nz_));
     atlas::Field cv("genericCtlVec", atlas::array::make_datatype<double>(),
       atlas::array::make_shape(ctlVecSize()));
     auto modelView = atlas::array::make_view<double, 2>(modelField);
@@ -902,23 +909,33 @@ void LayerBase::setupNormalization() {
     // Compute normalization accuracy
     oops::Log::info() << "Info     :     Compute exact normalization" << std::endl;
     atlas::Field normAccField = gdata_.functionSpace().createField<double>(
-      atlas::option::name(myVar_) | atlas::option::levels(nz0_));
+      atlas::option::name(myGroup_) | atlas::option::levels(nz0_));
     auto normAccView = atlas::array::make_view<double, 2>(normAccField);
     normAccView.assign(util::missingValue<double>());
     double normAccMax = 0.0;;
 
+    // Sort indices
+    std::vector<int> gij0;
+    for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
+      gij0.push_back((indexIView0(jnode0)-1)*ny0_+indexJView0(jnode0)-1);
+    }
+    std::vector<size_t> gidx(mSize_);
+    std::iota(gidx.begin(), gidx.end(), 0);
+    std::stable_sort(gidx.begin(), gidx.end(),
+      [&gij0](size_t i1, size_t i2) {return gij0[i1] < gij0[i2];});
+
     for (size_t i0 = 0; i0 < nx0_; i0 += params_.normAccStride.value()) {
       for (size_t j0 = 0; j0 < ny0_; j0 += params_.normAccStride.value()) {
+        // Binary search
+        size_t valueToFind = i0*ny0_+j0;
+        int myJnode0;
+        binarySearch(gij0, gidx, valueToFind, myJnode0);
+
         for (size_t k0 = 0; k0 < nz0_; k0 += params_.normAccStride.value()) {
           // Set Dirac point
           modelView.assign(0.0);
-          int myJnode0 = -1;
-          for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
-            if (indexIView0(jnode0)-1 == static_cast<int>(i0)
-              && indexJView0(jnode0)-1 == static_cast<int>(j0)) {
-              modelView(jnode0, k0) = 1.0;
-              myJnode0 = jnode0;
-            }
+          if (myJnode0 > -1) {
+            modelView(myJnode0, k0) = 1.0;
           }
 
           // Adjoint square-root multiplication
@@ -934,16 +951,13 @@ void LayerBase::setupNormalization() {
           comm_.allReduceInPlace(exactNorm, eckit::mpi::sum());
 
           // Get exact normalization factor
-          if (exactNorm > 0.0) {
-            exactNorm = 1.0/std::sqrt(exactNorm);
-          }
+          ASSERT(exactNorm > 0.0);
+          exactNorm = 1.0/std::sqrt(exactNorm);
 
           // Assess cost-efficient normalization quality
           if (myJnode0 > -1) {
-            if (exactNorm > 0.0) {
-              normAccView(myJnode0, k0) = (normView(myJnode0, k0)-exactNorm)/exactNorm;
-              normAccMax = std::max(normAccMax, std::abs(normAccView(myJnode0, k0)));
-            }
+            normAccView(myJnode0, k0) = (normView(myJnode0, k0)-exactNorm)/exactNorm;
+            normAccMax = std::max(normAccMax, std::abs(normAccView(myJnode0, k0)));
           }
         }
       }
@@ -1211,7 +1225,7 @@ void LayerBase::interpolationTL(const atlas::Field & redField,
   const auto redView = atlas::array::make_view<double, 2>(redField);
   std::vector<double> rSendVec(rSendSize_*nz_);
   for (size_t js = 0; js < rSendSize_; ++js) {
-    size_t jnode = rSendMapping_[js];
+    const size_t jnode = rSendMapping_[js];
     for (size_t k = 0; k < nz_; ++k) {
       rSendVec[js*nz_+k] = redView(jnode, k);
     }
@@ -1222,15 +1236,22 @@ void LayerBase::interpolationTL(const atlas::Field & redField,
   comm_.allToAllv(rSendVec.data(), rSendCounts3D.data(), rSendDispls3D.data(),
     mRecvVec.data(), mRecvCounts3D.data(), mRecvDispls3D.data());
 
-  // Interpolation
+  // Initialization
   auto modelView = atlas::array::make_view<double, 2>(modelField);
   modelView.assign(0.0);
+
+  // Ghost points
+  const auto ghostView = atlas::array::make_view<int, 1>(gdata_.functionSpace().ghost());
+
+  // Interpolation
   for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
-    for (const auto & horOperation : horInterp_[jnode0].operations()) {
-      for (size_t k0 = 0; k0 < nz0_; ++k0) {
-        for (const auto & verOperation : verInterp_[k0].operations()) {
-          size_t mIndex = horOperation.first*nz_+verOperation.first;
-          modelView(jnode0, k0) += horOperation.second*verOperation.second*mRecvVec[mIndex];
+    if (ghostView(jnode0) == 0) {
+      for (const auto & horOperation : horInterp_[jnode0].operations()) {
+        for (size_t k0 = 0; k0 < nz0_; ++k0) {
+          for (const auto & verOperation : verInterp_[k0].operations()) {
+            const size_t mIndex = horOperation.first*nz_+verOperation.first;
+            modelView(jnode0, k0) += horOperation.second*verOperation.second*mRecvVec[mIndex];
+          }
         }
       }
     }
@@ -1257,15 +1278,22 @@ void LayerBase::interpolationAD(const atlas::Field & modelField,
     mRecvDispls3D[jt] = mRecvDispls_[jt]*nz_;
   }
 
-  // Interpolation adjoint
-  const auto modelView = atlas::array::make_view<double, 2>(modelField);
+  // Initialization
   std::vector<double> mRecvVec(mRecvSize_*nz_, 0.0);
+  const auto modelView = atlas::array::make_view<double, 2>(modelField);
+
+  // Ghost points
+  const auto ghostView = atlas::array::make_view<int, 1>(gdata_.functionSpace().ghost());
+
+  // Interpolation adjoint
   for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
-    for (const auto & horOperation : horInterp_[jnode0].operations()) {
-      for (size_t k0 = 0; k0 < nz0_; ++k0) {
-        for (const auto & verOperation : verInterp_[k0].operations()) {
-          size_t mIndex = horOperation.first*nz_+verOperation.first;
-          mRecvVec[mIndex] += horOperation.second*verOperation.second*modelView(jnode0, k0);
+    if (ghostView(jnode0) == 0) {
+      for (const auto & horOperation : horInterp_[jnode0].operations()) {
+        for (size_t k0 = 0; k0 < nz0_; ++k0) {
+          for (const auto & verOperation : verInterp_[k0].operations()) {
+            const size_t mIndex = horOperation.first*nz_+verOperation.first;
+            mRecvVec[mIndex] += horOperation.second*verOperation.second*modelView(jnode0, k0);
+          }
         }
       }
     }
@@ -1280,13 +1308,43 @@ void LayerBase::interpolationAD(const atlas::Field & modelField,
   auto redView = atlas::array::make_view<double, 2>(redField);
   redView.assign(0.0);
   for (size_t js = 0; js < rSendSize_; ++js) {
-    size_t jnode = rSendMapping_[js];
+    const size_t jnode = rSendMapping_[js];
     for (size_t k = 0; k < nz_; ++k) {
       redView(jnode, k) += rSendVec[js*nz_+k];
     }
   }
 
   oops::Log::trace() << classname() << "::interpolationAD done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void LayerBase::binarySearch(const std::vector<int> & vec,
+                             const std::vector<size_t> & idx,
+                             const size_t & valueToFind,
+                             int & foundIndex) {
+  // Initialization
+  foundIndex = -1;
+  size_t low = 0;
+  size_t high = vec.size()-1;
+
+  // Loop
+  while (low <= high) {
+    size_t mid = low+(high-low)/2;
+    if (valueToFind == static_cast<size_t>(vec[idx[mid]])) {
+      foundIndex = idx[mid];
+      break;
+    }
+    if (valueToFind > static_cast<size_t>(vec[idx[mid]])) {
+      low = mid+1;
+    }
+    if (valueToFind < static_cast<size_t>(vec[idx[mid]])) {
+      if (mid == 0) {
+        break;
+      }
+      high = mid-1;
+    }
+  }
 }
 
 // -----------------------------------------------------------------------------
