@@ -6,6 +6,10 @@
 
 if( gsibec_FOUND )
     list(APPEND gsi_src_files_list
+    # Block chain
+    GSIBlockChain.cc
+    GSIBlockChain.h
+
     # Covariance block
     covariance/Covariance.cc
     covariance/Covariance.h

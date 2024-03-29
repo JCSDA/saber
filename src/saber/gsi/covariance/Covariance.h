@@ -48,7 +48,9 @@ class CovarianceParameters : public SaberBlockParametersBase {
 };
 
 // -------------------------------------------------------------------------------------------------
-
+// This block is currently a "fake" block and doesn't implement anything. It will be
+// removed.
+// For GSI covariance implementation see GSIBlockChain.
 class Covariance : public SaberCentralBlockBase {
  public:
   static const std::string classname() {return "saber::gsi::Covariance";}
@@ -63,30 +65,11 @@ class Covariance : public SaberCentralBlockBase {
              const oops::FieldSet3D &);
   virtual ~Covariance();
 
-  void randomize(oops::FieldSet3D &) const override;
-  void multiply(oops::FieldSet3D &) const override;
-
-  void read() override;
+  void randomize(oops::FieldSet3D &) const override {};
+  void multiply(oops::FieldSet3D &) const override {};
 
  private:
-  void print(std::ostream &) const override;
-
-  // Fortran LinkedList key
-  CovarianceKey keySelf_;
-  // Parameters
-  Parameters_ params_;
-  // Variables
-  std::vector<std::string> variables_;
-  // GSI grid FunctionSpace
-  atlas::FunctionSpace gsiGridFuncSpace_;
-  // Communicator
-  const eckit::mpi::Comm * comm_;
-  // Background
-  const oops::FieldSet3D xb_;
-  // First guess
-  const oops::FieldSet3D fg_;
-  // Valid time
-  util::DateTime validTimeOfXbFg_;
+  void print(std::ostream &) const override {};
 };
 
 // -------------------------------------------------------------------------------------------------

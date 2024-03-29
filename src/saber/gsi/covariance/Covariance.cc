@@ -44,78 +44,13 @@ Covariance::Covariance(const oops::GeometryData & geometryData,
                        const Parameters_ & params,
                        const oops::FieldSet3D & xb,
                        const oops::FieldSet3D & fg)
-  : SaberCentralBlockBase(params, xb.validTime()),
-    params_(params), variables_(params.activeVars.value().get_value_or(centralVars).variables()),
-    gsiGridFuncSpace_(geometryData.functionSpace()), comm_(&geometryData.comm()),
-    xb_(xb), fg_(fg), validTimeOfXbFg_(xb.validTime())
+  : SaberCentralBlockBase(params, xb.validTime())
 {
-  oops::Log::trace() << classname() << "::Covariance starting" << std::endl;
-  oops::Log::trace() << classname() << "::Covariance done" << std::endl;
 }
 
 // -------------------------------------------------------------------------------------------------
 
 Covariance::~Covariance() {
-  oops::Log::trace() << classname() << "::~Covariance starting" << std::endl;
-  util::Timer timer(classname(), "~Covariance");
-  gsi_covariance_delete_f90(keySelf_);
-  oops::Log::trace() << classname() << "::~Covariance done" << std::endl;
-}
-
-// -------------------------------------------------------------------------------------------------
-
-void Covariance::randomize(oops::FieldSet3D & fset) const {
-  oops::Log::trace() << classname() << "::randomize starting" << std::endl;
-  util::Timer timer(classname(), "randomize");
-
-  // Ignore incoming fields and create new ones based on the block function space
-  // ----------------------------------------------------------------------------
-  atlas::FieldSet newFields = atlas::FieldSet();
-
-  // Loop over saber (model) fields and create corresponding fields on gsi grid
-  for (const auto & sabField : fset) {
-      // Ensure that the field name is in the variables list
-      if (std::find(variables_.begin(), variables_.end(), sabField.name()) == variables_.end()) {
-        throw eckit::Exception("Field " + sabField.name() + " not found in the " + classname() +
-          " variables.", Here());
-      }
-
-      // Create the gsi grid field and add to Fieldset
-      newFields.add(gsiGridFuncSpace_.createField<double>(atlas::option::name(sabField.name())
-        | atlas::option::levels(sabField.shape(1))));
-  }
-
-  // Replace whatever fields are coming in with the gsi grid fields
-  fset.fieldSet() = newFields;
-
-  // Call implementation
-  gsi_covariance_randomize_f90(keySelf_, fset.get());
-  oops::Log::trace() << classname() << "::randomize done" << std::endl;
-}
-
-// -------------------------------------------------------------------------------------------------
-
-void Covariance::multiply(oops::FieldSet3D & fset) const {
-  oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  util::Timer timer(classname(), "multiply");
-  gsi_covariance_multiply_f90(keySelf_, fset.get());
-  oops::Log::trace() << classname() << "::multiply done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-void Covariance::read() {
-  oops::Log::trace() << classname() << "::read starting" << std::endl;
-  // Create covariance module
-  gsi_covariance_create_f90(keySelf_, *comm_, params_.readParams.value()->toConfiguration(),
-     xb_.get(), fg_.get(), validTimeOfXbFg_);
-  oops::Log::trace() << classname() << "::read done" << std::endl;
-}
-
-// -------------------------------------------------------------------------------------------------
-
-void Covariance::print(std::ostream & os) const {
-  os << classname();
 }
 
 // -------------------------------------------------------------------------------------------------

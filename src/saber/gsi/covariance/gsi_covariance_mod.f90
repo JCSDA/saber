@@ -79,23 +79,25 @@ contains
 
 ! --------------------------------------------------------------------------------------------------
 
-subroutine create(self, comm, config, background, firstguess, valid_time)
+subroutine create(self, comm, config, ntimes, background, firstguess, valid_times)
 
 ! Arguments
 class(gsi_covariance),     intent(inout) :: self
 type(fckit_mpi_comm),      intent(in)    :: comm
 type(fckit_configuration), intent(in)    :: config
-type(atlas_fieldset),      intent(in)    :: background
-type(atlas_fieldset),      intent(in)    :: firstguess
-type(datetime),            intent(in)    :: valid_time
+integer,                   intent(in)    :: ntimes
+type(atlas_fieldset), dimension(ntimes), intent(in)    :: background
+type(atlas_fieldset), dimension(ntimes), intent(in)    :: firstguess
+type(datetime), dimension(ntimes),       intent(in)    :: valid_times
 
 ! Locals
 character(len=*), parameter :: myname_=myname//'*create'
 character(len=:), allocatable :: nml,bef
 real(kind=kind_real), pointer :: rank2(:,:)=>NULL()
 logical :: bkgmock
-integer :: ier,n,itbd,jouter
+integer :: ier,n,itbd,jouter,ii
 integer :: ngsivars2d,ngsivars3d
+integer, allocatable :: nymd(:), nhms(:)
 character(len=20),allocatable :: gsivars(:)
 character(len=20),allocatable :: usrvars(:)
 character(len=30),allocatable :: tbdvars(:)
@@ -107,7 +109,11 @@ self%mp_comm=comm%communicator()
 
 ! Convert datetime to string in ISO form "yyyy-mm-ddT00:00:00Z"
 ! -------------------------------------------------------------
-call datetime_to_string(valid_time, valid_time_string)
+allocate(nymd(ntimes),nhms(ntimes))
+do ii=1,ntimes
+  call datetime_to_string(valid_times(ii), valid_time_string)
+  call iso2geos_date_(valid_time_string,nymd(ii),nhms(ii))
+enddo
 
 ! Create the grid
 ! ---------------
@@ -126,6 +132,7 @@ if (.not. self%grid%noGSI) then
 ! --------------------------------
   call gsibec_init(self%cv,bkgmock=bkgmock,nmlfile=nml,befile=bef,&
                    layout=self%grid%layout,jouter=jouter,&
+                   inymd=nymd,inhms=nhms,&
                    comm=comm%communicator())
   if(jouter==1) call gsibec_init_guess()
 
@@ -143,42 +150,44 @@ if (.not. self%grid%noGSI) then
      allocate(tbdvars(ngsivars2d+ngsivars3d))
 
      ! Inquire about rank-2 vars in GSI met-guess
-     itbd=0
-     if (ngsivars2d>0) then
-         allocate(gsivars(ngsivars2d),usrvars(ngsivars2d))
-         call gsi_metguess_get('gsinames::2d',gsivars,ier)
-         call gsi_metguess_get('usrnames::2d',usrvars,ier)
-         do n=1,ngsivars2d
-            itbd=itbd+1
-            tbdvars(itbd) = 'unfilled-'//trim(gsivars(n))
-            call get_rank2_(rank2,firstguess,trim(usrvars(n)),ier)
-            if(ier==0) then
-               call bkg_set2_(trim(gsivars(n)))
-               tbdvars(itbd) = 'filled-'//trim(gsivars(n))
-            else
-               tbdvars(itbd) = trim(gsivars(n))
-            endif
-         enddo
-         deallocate(gsivars,usrvars)
-     endif
-     ! Inquire about rank-3 vars in GSI met-guess
-     if (ngsivars3d>0) then
-         allocate(gsivars(ngsivars3d),usrvars(ngsivars3d))
-         call gsi_metguess_get('gsinames::3d',gsivars,ier)
-         call gsi_metguess_get('usrnames::3d',usrvars,ier)
-         do n=1,ngsivars3d
-            itbd=itbd+1
-            tbdvars(itbd) = 'unfilled-'//trim(gsivars(n))
-            call get_rank2_(rank2,firstguess,trim(usrvars(n)),ier)
-            if(ier==0) then
-               call bkg_set3_(trim(gsivars(n)))
-               tbdvars(itbd) = 'filled-'//trim(gsivars(n))
-            else
-               tbdvars(itbd) = trim(gsivars(n))
-            endif
-         enddo
-         deallocate(gsivars,usrvars)
-     endif
+     do ii=1,ntimes
+       itbd=0
+       if (ngsivars2d>0) then
+           allocate(gsivars(ngsivars2d),usrvars(ngsivars2d))
+           call gsi_metguess_get('gsinames::2d',gsivars,ier)
+           call gsi_metguess_get('usrnames::2d',usrvars,ier)
+           do n=1,ngsivars2d
+              itbd=itbd+1
+              tbdvars(itbd) = 'unfilled-'//trim(gsivars(n))
+              call get_rank2_(rank2,firstguess(ii),trim(usrvars(n)),ier)
+              if(ier==0) then
+                 call bkg_set2_(trim(gsivars(n)),ii)
+                 tbdvars(itbd) = 'filled-'//trim(gsivars(n))
+              else
+                 tbdvars(itbd) = trim(gsivars(n))
+              endif
+           enddo
+           deallocate(gsivars,usrvars)
+       endif
+       ! Inquire about rank-3 vars in GSI met-guess
+       if (ngsivars3d>0) then
+           allocate(gsivars(ngsivars3d),usrvars(ngsivars3d))
+           call gsi_metguess_get('gsinames::3d',gsivars,ier)
+           call gsi_metguess_get('usrnames::3d',usrvars,ier)
+           do n=1,ngsivars3d
+              itbd=itbd+1
+              tbdvars(itbd) = 'unfilled-'//trim(gsivars(n))
+              call get_rank2_(rank2,firstguess(ii),trim(usrvars(n)),ier)
+              if(ier==0) then
+                 call bkg_set3_(trim(gsivars(n)),ii)
+                 tbdvars(itbd) = 'filled-'//trim(gsivars(n))
+              else
+                 tbdvars(itbd) = trim(gsivars(n))
+              endif
+           enddo
+           deallocate(gsivars,usrvars)
+       endif
+     enddo ! ntimes
 
 !    Auxiliar vars for GSI-B
 !    -----------------------
@@ -197,23 +206,26 @@ if (.not. self%grid%noGSI) then
   if(jouter==1) call rf_set()
 
 endif ! noGSI
+deallocate(nymd,nhms)
 
 contains
-  subroutine bkg_set2_(varname)
+  subroutine bkg_set2_(varname,islot)
 
   character(len=*), intent(in) :: varname
+  integer,intent(in) :: islot
   real(kind=kind_real), allocatable :: aux(:,:)
 
 ! print *, 'Atlas 2-dim: ', size(rank2,2), ' gsi-vec: ', self%grid%lat2,' ', self%grid%lon2
   allocate(aux(self%grid%lat2,self%grid%lon2))
   call addhalo_(rank2(1,:),aux)
-  call gsibec_set_guess(varname,aux)
+  call gsibec_set_guess(varname,islot,aux)
   deallocate(aux)
 
   end subroutine bkg_set2_
-  subroutine bkg_set3_(varname)
+  subroutine bkg_set3_(varname,islot)
 
   character(len=*), intent(in) :: varname
+  integer,intent(in) :: islot
   real(kind=kind_real), allocatable :: aux(:,:,:)
 
   integer k,npz
@@ -230,7 +242,7 @@ contains
         call addhalo_(rank2(k,:),aux(:,:,k))
      enddo
   endif
-  call gsibec_set_guess(varname,aux)
+  call gsibec_set_guess(varname,islot,aux)
   deallocate(aux)
 
   end subroutine bkg_set3_
@@ -335,11 +347,12 @@ end subroutine randomize
 
 ! --------------------------------------------------------------------------------------------------
 
-subroutine multiply(self, fields)
+subroutine multiply(self, ntimes, fields)
 
 ! Arguments
 class(gsi_covariance), intent(inout) :: self
-type(atlas_fieldset),  intent(inout) :: fields
+integer, intent(in) :: ntimes
+type(atlas_fieldset), dimension(ntimes), intent(inout) :: fields
 
 ! Locals
 character(len=*), parameter :: myname_=myname//'*multiply'
@@ -353,7 +366,7 @@ real(kind=kind_real), allocatable :: aux1(:)
 type(control_vector) :: gsicv
 type(gsi_bundle),allocatable :: gsisv(:)
 integer :: isc,iec,jsc,jec,npz
-integer :: iv,k,ier,itbd
+integer :: iv,k,ier,itbd,ii
 
 character(len=32),allocatable :: gvars2d(:),gvars3d(:)
 character(len=30),allocatable :: tbdvars(:),needvrs(:)
@@ -383,8 +396,10 @@ if (self%cv) then
 else
    allocate(gvars2d(size(svars2d)),gvars3d(size(svars3d)))
    gvars2d=svars2d; gvars3d=svars3d
-   allocate(gsisv(1))
-   call allocate_state(gsisv(1),'saber')
+   allocate(gsisv(ntimes))
+   do ii=1,ntimes
+      call allocate_state(gsisv(ii),'saber')
+   enddo
 endif
 allocate(tbdvars(size(gvars2d)+size(gvars3d)))
 allocate(needvrs(size(gvars2d)+size(gvars3d)))
@@ -401,63 +416,65 @@ enddo
 
 ! Convert Atlas fieldsets to GSI bundle fields
 ! --------------------------------------------
-itbd=0
-do iv=1,size(gvars2d)
-   itbd=itbd+1
-   if (self%cv) then
-      call gsi_bundlegetpointer (gsicv%step(1),gvars2d(iv),gsivar2d,ier)
-   else
-      call gsi_bundlegetpointer (     gsisv(1),gvars2d(iv),gsivar2d,ier)
-   endif
-   if (ier/=0) cycle
-   call get_rank2_(rank2,fields,trim(gvars2d(iv)),ier)
-   if (ier==0) then
-      tbdvars(itbd) = 'filled-'//trim(gvars2d(iv))
-   else
-      tbdvars(itbd) = trim(gvars2d(iv))
-      cycle
-   endif
-   allocate(aux(size(gsivar2d,1),size(gsivar2d,2)))
-   call addhalo_(rank2(1,:),aux)
-   gsivar2d=aux
-   deallocate(aux)
-enddo
-do iv=1,size(gvars3d)
-   itbd=itbd+1
-   if (self%cv) then
-      call gsi_bundlegetpointer (gsicv%step(1),gvars3d(iv),gsivar3d,ier)
-   else
-      call gsi_bundlegetpointer (     gsisv(1),gvars3d(iv),gsivar3d,ier)
-   endif
-   if (ier/=0) cycle
-   call get_rank2_(rank2,fields,trim(gvars3d(iv)),ier)
-   if (ier==0) then
-      tbdvars(itbd) = 'filled-'//trim(gvars3d(iv))
-   else
-      tbdvars(itbd) = trim(gvars3d(iv))
-      cycle
-   endif
-   allocate(aux(size(gsivar3d,1),size(gsivar3d,2)))
-   if (self%grid%vflip) then
-      do k=1,npz
-         call addhalo_(rank2(k,:),aux)
-         gsivar3d(:,:,npz-k+1)=aux
-      enddo
-   else
-      do k=1,npz
-         call addhalo_(rank2(k,:),aux)
-         gsivar3d(:,:,k)=aux
-      enddo
-   endif
-   deallocate(aux)
-enddo
+do ii=1,ntimes
+   itbd=0
+   do iv=1,size(gvars2d)
+     itbd=itbd+1
+     if (self%cv) then
+        call gsi_bundlegetpointer (gsicv%step(ii),gvars2d(iv),gsivar2d,ier)
+     else
+        call gsi_bundlegetpointer (     gsisv(ii),gvars2d(iv),gsivar2d,ier)
+     endif
+     if (ier/=0) cycle
+     call get_rank2_(rank2,fields(ii),trim(gvars2d(iv)),ier)
+     if (ier==0) then
+        tbdvars(itbd) = 'filled-'//trim(gvars2d(iv))
+     else
+        tbdvars(itbd) = trim(gvars2d(iv))
+        cycle
+     endif
+     allocate(aux(size(gsivar2d,1),size(gsivar2d,2)))
+     call addhalo_(rank2(1,:),aux)
+     gsivar2d=aux
+     deallocate(aux)
+   enddo
+   do iv=1,size(gvars3d)
+     itbd=itbd+1
+     if (self%cv) then
+        call gsi_bundlegetpointer (gsicv%step(ii),gvars3d(iv),gsivar3d,ier)
+     else
+        call gsi_bundlegetpointer (     gsisv(ii),gvars3d(iv),gsivar3d,ier)
+     endif
+     if (ier/=0) cycle
+     call get_rank2_(rank2,fields(ii),trim(gvars3d(iv)),ier)
+     if (ier==0) then
+        tbdvars(itbd) = 'filled-'//trim(gvars3d(iv))
+     else
+        tbdvars(itbd) = trim(gvars3d(iv))
+        cycle
+     endif
+     allocate(aux(size(gsivar3d,1),size(gsivar3d,2)))
+     if (self%grid%vflip) then
+        do k=1,npz
+           call addhalo_(rank2(k,:),aux)
+           gsivar3d(:,:,npz-k+1)=aux
+        enddo
+     else
+        do k=1,npz
+           call addhalo_(rank2(k,:),aux)
+           gsivar3d(:,:,k)=aux
+        enddo
+     endif
+     deallocate(aux)
+   enddo
+enddo ! ntimes
 needvrs=tbdvars
 
 ! fill in missing fields
 if (self%cv) then
-  call cvfix_(gsicv,fields,self%grid%vflip,needvrs,'adm')
+  call cvfix_(gsicv,fields,self%grid%vflip,needvrs,ntimes,'adm')
 else
-  call svfix_(gsisv(1),fields,self%grid%vflip,needvrs,'adm')
+  call svfix_(gsisv,fields,self%grid%vflip,needvrs,ntimes,'adm')
 endif
 ! check that all variables are consistently available
 if (any(needvrs(:)(1:6)/='filled')) then
@@ -477,50 +494,52 @@ endif
 
 ! Convert back to Atlas Fields
 ! ----------------------------
-do iv=1,size(gvars2d)
-   if (self%cv) then
-      call gsi_bundlegetpointer (gsicv%step(1),gvars2d(iv),gsivar2d,ier)
-   else
-      call gsi_bundlegetpointer (gsisv(1),gvars2d(iv),gsivar2d,ier)
-   endif
-   if (ier/=0) cycle
-   call get_rank2_(rank2,fields,trim(gvars2d(iv)),ier)
-   if (ier/=0) cycle
-   allocate(aux1(size(rank2,2)))
-   call remhalo_(gsivar2d,aux1)
-   rank2(1,:)=aux1
-   deallocate(aux1)
-enddo
-do iv=1,size(gvars3d)
-   if (self%cv) then
-      call gsi_bundlegetpointer (gsicv%step(1),gvars3d(iv),gsivar3d,ier)
-   else
-      call gsi_bundlegetpointer (gsisv(1),gvars3d(iv),gsivar3d,ier)
-   endif
-   if (ier/=0) cycle
-   call get_rank2_(rank2,fields,trim(gvars3d(iv)),ier)
-   if (ier/=0) cycle
-   allocate(aux1(size(rank2,2)))
-   if (self%grid%vflip) then
-      do k=1,npz
-         call remhalo_(gsivar3d(:,:,k),aux1)
-         rank2(npz-k+1,:)=aux1
-      enddo
-   else
-      do k=1,npz
-         call remhalo_(gsivar3d(:,:,k),aux1)
-         rank2(k,:)=aux1
-      enddo
-   endif
-   deallocate(aux1)
-enddo
+do ii=1,ntimes
+   do iv=1,size(gvars2d)
+     if (self%cv) then
+        call gsi_bundlegetpointer (gsicv%step(ii),gvars2d(iv),gsivar2d,ier)
+     else
+        call gsi_bundlegetpointer (gsisv(ii),gvars2d(iv),gsivar2d,ier)
+     endif
+     if (ier/=0) cycle
+     call get_rank2_(rank2,fields(ii),trim(gvars2d(iv)),ier)
+     if (ier/=0) cycle
+     allocate(aux1(size(rank2,2)))
+     call remhalo_(gsivar2d,aux1)
+     rank2(1,:)=aux1
+     deallocate(aux1)
+   enddo
+   do iv=1,size(gvars3d)
+     if (self%cv) then
+        call gsi_bundlegetpointer (gsicv%step(ii),gvars3d(iv),gsivar3d,ier)
+     else
+        call gsi_bundlegetpointer (gsisv(ii),gvars3d(iv),gsivar3d,ier)
+     endif
+     if (ier/=0) cycle
+     call get_rank2_(rank2,fields(ii),trim(gvars3d(iv)),ier)
+     if (ier/=0) cycle
+     allocate(aux1(size(rank2,2)))
+     if (self%grid%vflip) then
+        do k=1,npz
+           call remhalo_(gsivar3d(:,:,k),aux1)
+           rank2(npz-k+1,:)=aux1
+        enddo
+     else
+        do k=1,npz
+           call remhalo_(gsivar3d(:,:,k),aux1)
+           rank2(k,:)=aux1
+        enddo
+     endif
+     deallocate(aux1)
+   enddo
+enddo ! ntimes
 
 ! Fill in missing fields
 needvrs=tbdvars
 if (self%cv) then
-  call cvfix_(gsicv,fields,self%grid%vflip,needvrs,'tlm')
+  call cvfix_(gsicv,fields,self%grid%vflip,needvrs,ntimes,'tlm')
 else
-  call svfix_(gsisv(1),fields,self%grid%vflip,needvrs,'tlm')
+  call svfix_(gsisv,fields,self%grid%vflip,needvrs,ntimes,'tlm')
 endif
 ! Check that all variables are consistently available
 if (any(needvrs(:)(1:6)/='filled')) then
@@ -536,14 +555,15 @@ endif
 if (self%cv) then
    call deallocate_cv(gsicv)
 else
-   call deallocate_state(gsisv(1))
+   do ii=ntimes,1,-1
+     call deallocate_state(gsisv(ii))
+   enddo
    deallocate(gsisv)
 endif
 deallocate(needvrs)
 deallocate(tbdvars)
 deallocate(gvars2d,gvars3d)
 call afield%final()
-
 
 
 end subroutine multiply
@@ -569,9 +589,9 @@ end subroutine multiply
       call afield%data(rank2)
       ier=0
    endif
-   if (trim(vname) == 'sst') then
-      if (.not.fields%has('skin_surface_temperature')) return
-      afield = fields%field('skin_surface_temperature')
+   if (trim(vname) == 'ts' .or. trim(vname) == 'sst') then ! needs to be sorted out
+      if (.not.fields%has('sea_surface_temperature')) return ! should be skin-temperature
+      afield = fields%field('sea_surface_temperature')
       call afield%data(rank2)
       ier=0
    endif
@@ -675,6 +695,24 @@ end subroutine multiply
          ier=0
       end if
    endif
+   if (trim(vname) == 'frocean' ) then
+      if (.not.fields%has('fraction_of_ocean')) return
+       afield = fields%field('fraction_of_ocean')
+      call afield%data(rank2)
+      ier=0
+   endif
+   if (trim(vname) == 'frlake' ) then
+      if (.not.fields%has('fraction_of_lake')) return
+      afield = fields%field('fraction_of_lake')
+      call afield%data(rank2)
+      ier=0
+   endif
+   if (trim(vname) == 'frseaice' ) then
+      if (.not.fields%has('fraction_of_ice')) return
+      afield = fields%field('fraction_of_ice')
+      call afield%data(rank2)
+      ier=0
+   endif
    end subroutine get_rank2_
 
    subroutine addhalo_(rank,var)
@@ -711,7 +749,7 @@ end subroutine multiply
    enddo
    end subroutine remhalo_
 
-   subroutine cvfix_(gsicv,jedicv,vflip,need,which)
+   subroutine cvfix_(gsicv,jedicv,vflip,need,ntimes,which)
 
    use control_vectors, only: control_vector
    use gsi_bundlemod, only: gsi_bundlegetpointer
@@ -723,8 +761,9 @@ end subroutine multiply
    implicit none
 
    type(control_vector),intent(inout) :: gsicv
-   type(atlas_fieldset),intent(inout) :: jedicv
+   type(atlas_fieldset),intent(inout) :: jedicv(:)
    logical,intent(in) :: vflip
+   integer,intent(in) :: ntimes
    character(len=*),intent(inout) :: need(:)
    character(len=*),intent(in) :: which
 !
@@ -734,19 +773,21 @@ end subroutine multiply
    real(kind=kind_real), pointer ::     q(:,:,:)=>NULL()
    real(kind=kind_real), pointer ::  q_pt(:,:,:)=>NULL()
    real(kind=kind_real), pointer ::   rank2(:,:)=>NULL()
+   real(kind=kind_real), pointer ::     sst(:,:)=>NULL()
    real(kind=kind_real), allocatable :: aux1(:)
-   integer k,npz,ier
+   integer k,npz,ii,ier
 !
    if(size(need)<1) return
    if (any(need=='tv')) then
+     do ii=1,ntimes
       ! from first guess ...
-      call gsi_bundlegetpointer(gsi_metguess_bundle(1),'q' ,q ,ier)
-      call gsi_bundlegetpointer(gsi_metguess_bundle(1),'tv',tv,ier)
+      call gsi_bundlegetpointer(gsi_metguess_bundle(ii),'q' ,q ,ier)
+      call gsi_bundlegetpointer(gsi_metguess_bundle(ii),'tv',tv,ier)
       ! from GSI cv ...
-      call gsi_bundlegetpointer(gsicv%step(1),'q' ,q_pt ,ier)
-      call gsi_bundlegetpointer(gsicv%step(1),'tv',tv_pt,ier)
+      call gsi_bundlegetpointer(gsicv%step(ii),'q' ,q_pt ,ier)
+      call gsi_bundlegetpointer(gsicv%step(ii),'tv',tv_pt,ier)
       ! from JEDI cv ...
-      call get_rank2_(rank2,jedicv,'t',ier)
+      call get_rank2_(rank2,jedicv(ii),'t',ier)
       npz=size(q,3)
       allocate(t_pt(size(q,1),size(q,2),size(q,3)))
       if (vflip) then
@@ -786,10 +827,41 @@ end subroutine multiply
         endwhere
       endif
       deallocate(t_pt)
+     enddo
    endif
+!  SST GSI-way
+   if (any(need=='ts')) then
+     do ii=1,ntimes
+      ! from JEDI cv ...
+      call get_rank2_(rank2,jedicv(ii),'ts',ier)
+      ! from GSI cv ...
+      call gsi_bundlegetpointer(gsicv%step(ii),'sst' ,sst ,ier)
+      if(which=='tlm') then
+         allocate(aux1(size(rank2,2)))
+         call remhalo_(sst,aux1)
+         if (vflip) then
+            rank2(1,:)   = aux1
+         else
+            rank2(npz,:) = aux1
+         endif
+         deallocate(aux1)
+      endif
+      if(which=='adm') then
+         if (vflip) then
+            call addhalo_(rank2(1,:),sst)
+         else
+            call addhalo_(rank2(npz,:),sst)
+         endif
+      endif
+      where(need=='sst')
+        need='filled-'//need
+      endwhere
+     enddo
+   endif
+
    end subroutine cvfix_
 
-   subroutine svfix_(gsisv,jedicv,vflip,need,which)
+   subroutine svfix_(gsisv,jedicv,vflip,need,ntimes,which)
 
    use gsi_bundlemod, only: gsi_bundle
    use gsi_bundlemod, only: gsi_bundlegetpointer
@@ -800,9 +872,10 @@ end subroutine multiply
 
    implicit none
 
-   type(gsi_bundle),intent(inout) :: gsisv
-   type(atlas_fieldset),intent(inout) :: jedicv
+   type(gsi_bundle),intent(inout) :: gsisv(:)
+   type(atlas_fieldset),intent(inout) :: jedicv(:)
    logical,intent(in) :: vflip
+   integer,intent(in) :: ntimes
    character(len=*),intent(inout) :: need(:)
    character(len=*),intent(in) :: which
 !
@@ -813,7 +886,7 @@ end subroutine multiply
    real(kind=kind_real), pointer ::     q_pt(:,:,:)=>NULL()
    real(kind=kind_real), pointer ::      rank2(:,:)=>NULL()
    real(kind=kind_real), allocatable :: aux1(:)
-   integer k,npz,ier
+   integer k,npz,ii,ier
 !
    if(size(need)<1) return
 
@@ -823,15 +896,22 @@ end subroutine multiply
         endwhere
    endif
 
+   if (any(need=='sst')) then
+        where(need=='sst')   ! unclear way this is needed here
+           need='filled-'//need
+        endwhere
+   endif
+
    if (any(need=='tv')) then
+     do ii=1,ntimes
       ! from first guess ...
-      call gsi_bundlegetpointer(gsi_metguess_bundle(1),'q' ,q ,ier)
-      call gsi_bundlegetpointer(gsi_metguess_bundle(1),'tv',tv,ier)
+      call gsi_bundlegetpointer(gsi_metguess_bundle(ii),'q' ,q ,ier)
+      call gsi_bundlegetpointer(gsi_metguess_bundle(ii),'tv',tv,ier)
       ! from GSI cv ...
-      call gsi_bundlegetpointer(gsisv,'q' ,q_pt ,ier)
-      call gsi_bundlegetpointer(gsisv,'tv',tv_pt,ier)
+      call gsi_bundlegetpointer(gsisv(ii),'q' ,q_pt ,ier)
+      call gsi_bundlegetpointer(gsisv(ii),'tv',tv_pt,ier)
       ! from JEDI cv ...
-      call get_rank2_(rank2,jedicv,'t',ier)
+      call get_rank2_(rank2,jedicv(ii),'t',ier)
       npz=size(q,3)
       allocate(t_pt(size(q,1),size(q,2),size(q,3)))
       if (vflip) then
@@ -871,7 +951,24 @@ end subroutine multiply
         endwhere
       endif
       deallocate(t_pt)
+     enddo
    endif
    end subroutine svfix_
+
+   subroutine iso2geos_date_(str,nymd,nhms)
+   implicit none
+   character(len=*), intent(in) :: str
+   integer, intent(out) :: nymd,nhms
+   integer yyyy,mm,dd
+   integer hh,mn,ss
+   read(str(1: 4),*) yyyy
+   read(str(6: 7),*) mm
+   read(str(9:10),*) dd
+   nymd = 10000*yyyy + 100*mm + dd
+   read(str(12:13),*) hh
+   read(str(15:16),*) mn
+   read(str(18:19),*) ss
+   nhms = 10000*hh + 100*mn + ss
+   end subroutine iso2geos_date_
 
 end module gsi_covariance_mod

@@ -32,6 +32,7 @@ target_link_libraries( ${PROJECT_NAME} PUBLIC ${oops_LIBRARIES} )
 
 if( gsibec_FOUND )
     target_link_libraries( ${PROJECT_NAME} PUBLIC gsibec )
+    target_compile_definitions( ${PROJECT_NAME} PUBLIC GSIBEC_FOUND)
     if ( sp_FOUND )
         target_link_libraries( ${PROJECT_NAME} PUBLIC sp::sp_d )
     endif()

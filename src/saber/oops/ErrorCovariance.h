@@ -43,6 +43,8 @@ namespace saber {
 inline std::string parametricIfNotEnsemble(const std::string & blockName) {
   if (blockName == "Ensemble")
     return blockName;
+  else if (blockName == "gsi covariance")
+    return "GSI";
   else
     return "Parametric";
 }

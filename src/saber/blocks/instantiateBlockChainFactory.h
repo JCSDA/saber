@@ -10,6 +10,9 @@
 #include "saber/blocks/SaberBlockChainBase.h"
 #include "saber/blocks/SaberEnsembleBlockChain.h"
 #include "saber/blocks/SaberParametricBlockChain.h"
+#if defined(GSIBEC_FOUND)
+#include "saber/gsi/GSIBlockChain.h"
+#endif
 
 namespace saber {
 
@@ -20,6 +23,10 @@ template <typename MODEL> void instantiateBlockChainFactory() {
     makerEnsembleBlockChain_("Ensemble");
   static SaberBlockChainMaker<MODEL, SaberParametricBlockChain>
     makerParametricBlockChain_("Parametric");
+#if defined(GSIBEC_FOUND)
+  static SaberBlockChainMaker<MODEL, gsi::SaberGSIBlockChain>
+    makerGSIBlockChain_("GSI");
+#endif
 }
 
 // -----------------------------------------------------------------------------

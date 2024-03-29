@@ -53,7 +53,7 @@ find_package( oops 1.9.0 REQUIRED )
 
 # Optionals
 find_package( FFTW 3.3.8 QUIET )
-find_package( gsibec 1.1.3 QUIET )
+find_package( gsibec 1.2.1 QUIET )
 find_package( vader 1.6.0 QUIET )
 
 # Optional SABER blocks

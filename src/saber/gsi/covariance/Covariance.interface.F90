@@ -49,24 +49,26 @@ contains
 
 ! --------------------------------------------------------------------------------------------------
 
-subroutine gsi_covariance_create_cpp(c_self, c_comm, c_conf, c_bg, c_fg, c_valid_time) &
+subroutine gsi_covariance_create_cpp(c_self, c_comm, c_conf, c_ntimes, c_bg, c_fg, c_valid_times) &
            bind(c, name='gsi_covariance_create_f90')
 
 ! Arguments
 integer(c_int),     intent(inout) :: c_self
 type(c_ptr), value, intent(in)    :: c_conf
 type(c_ptr), value, intent(in)    :: c_comm
-type(c_ptr), value, intent(in)    :: c_bg
-type(c_ptr), value, intent(in)    :: c_fg
-type(c_ptr), value, intent(in)    :: c_valid_time
+integer(c_int),     intent(in)    :: c_ntimes
+type(c_ptr),        intent(in)    :: c_bg(c_ntimes)
+type(c_ptr),        intent(in)    :: c_fg(c_ntimes)
+type(c_ptr),        intent(in)    :: c_valid_times(c_ntimes)
 
 ! Locals
 type(gsi_covariance), pointer :: f_self
 type(fckit_mpi_comm)          :: f_comm
 type(fckit_configuration)     :: f_conf
-type(atlas_fieldset)          :: f_bg
-type(atlas_fieldset)          :: f_fg
-type(datetime)                :: f_valid_time
+type(atlas_fieldset), dimension(:), allocatable :: f_bg
+type(atlas_fieldset), dimension(:), allocatable :: f_fg
+type(datetime), dimension(:), allocatable       :: f_valid_times
+integer                       :: itime, ntimes
 
 ! LinkedList
 ! ----------
@@ -78,13 +80,20 @@ call gsi_covariance_registry%get(c_self, f_self)
 ! ------------
 f_conf = fckit_configuration(c_conf)
 f_comm = fckit_mpi_comm(c_comm)
-f_bg = atlas_fieldset(c_bg)
-f_fg = atlas_fieldset(c_fg)
-call c_f_datetime(c_valid_time, f_valid_time)
+
+ntimes = c_ntimes
+allocate(f_bg(ntimes), f_fg(ntimes), f_valid_times(ntimes))
+do itime = 1, ntimes
+  f_bg(itime) = atlas_fieldset(c_bg(itime))
+  f_fg(itime) = atlas_fieldset(c_fg(itime))
+  call c_f_datetime(c_valid_times(itime), f_valid_times(itime))
+enddo
 
 ! Call implementation
 ! -------------------
-call f_self%create(f_comm, f_conf, f_bg, f_fg, f_valid_time)
+call f_self%create(f_comm, f_conf, ntimes, f_bg, f_fg, f_valid_times)
+
+deallocate(f_bg, f_fg, f_valid_times)
 
 end subroutine gsi_covariance_create_cpp
 
@@ -143,17 +152,19 @@ end subroutine gsi_covariance_randomize_cpp
 
 ! --------------------------------------------------------------------------------------------------
 
-subroutine gsi_covariance_multiply_cpp(c_self, c_inc) &
+subroutine gsi_covariance_multiply_cpp(c_self, c_ntimes, c_inc) &
            bind(c,name='gsi_covariance_multiply_f90')
 
 implicit none
 
 !Arguments
 integer(c_int),     intent(in) :: c_self
-type(c_ptr), value, intent(in) :: c_inc
+integer(c_int),     intent(in) :: c_ntimes
+type(c_ptr),        intent(in) :: c_inc(c_ntimes)
 
 type(gsi_covariance), pointer :: f_self
-type(atlas_fieldset)          :: f_inc
+type(atlas_fieldset), dimension(:), allocatable :: f_inc
+integer :: ntimes, itime
 
 ! LinkedList
 ! ----------
@@ -161,11 +172,17 @@ call gsi_covariance_registry%get(c_self, f_self)
 
 ! Fortran APIs
 ! ------------
-f_inc = atlas_fieldset(c_inc)
+ntimes = c_ntimes
+allocate(f_inc(ntimes))
+do itime = 1, ntimes
+  f_inc(itime) = atlas_fieldset(c_inc(itime))
+enddo
 
 ! Call implementation
 ! -------------------
-call f_self%multiply(f_inc)
+call f_self%multiply(ntimes, f_inc)
+
+deallocate(f_inc)
 
 end subroutine gsi_covariance_multiply_cpp
 
