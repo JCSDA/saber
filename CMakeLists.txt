@@ -9,7 +9,7 @@
 
 cmake_minimum_required( VERSION 3.12 )
 
-project( saber VERSION 1.9.0 LANGUAGES CXX Fortran )
+project( saber VERSION 1.10.0 LANGUAGES CXX Fortran )
 
 option(OPENMP "Build saber with OpenMP support" ON)
 
@@ -49,12 +49,12 @@ else()
 endif()
 
 # OOPS
-find_package( oops 1.9.0 REQUIRED )
+find_package( oops 1.10.0 REQUIRED )
 
 # Optionals
 find_package( FFTW 3.3.8 QUIET )
 find_package( gsibec 1.2.1 QUIET )
-find_package( vader 1.6.0 QUIET )
+find_package( vader 1.7.0 QUIET )
 
 # Optional SABER blocks
 if( gsibec_FOUND )
