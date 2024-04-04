@@ -111,8 +111,8 @@ void SaberCentralBlockBase::adjointTest(const oops::GeometryData & geometryData,
   // Compute adjoint test
   const double dp1 = fset1.dot_product_with(fset2Save, vars);
   const double dp2 = fset2.dot_product_with(fset1Save, vars);
-  oops::Log::info() << std::setprecision(16) << "Info     : Adjoint test: y^t (Ax) = " << dp1
-                    << ": x^t (A^t y) = " << dp2 << " : adjoint tolerance = "
+  oops::Log::info() << std::setprecision(16) << "Info     : Adjoint test: (Ax)^t y = " << dp1
+                    << ": x^t (Ay) = " << dp2 << " : adjoint tolerance = "
                     << adjointTolerance << std::endl;
   oops::Log::test() << "Adjoint test for block " << this->blockName();
   if (std::abs(dp1-dp2)/std::abs(0.5*(dp1+dp2)) < adjointTolerance) {

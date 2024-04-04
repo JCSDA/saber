@@ -248,7 +248,7 @@ void VertLocInterp::multiply(oops::FieldSet3D & fset) const {
           atlas::option::levels(outerVars_.getLevels(fieldname)) |
           atlas::option::halo(1));
     atlas::array::make_view<double, 2>(field).assign(0.0);
-    field.haloExchange();
+    field.set_dirty(false);
     fsetOut.add(field);
   }
 
@@ -287,7 +287,7 @@ void VertLocInterp::multiplyAD(oops::FieldSet3D & fset) const {
          atlas::option::levels(innerVars_.getLevels(fieldname)) |
          atlas::option::halo(1));
     atlas::array::make_view<double, 2>(field).assign(0.0);
-    field.haloExchange();
+    field.set_dirty(false);
     fsetOut.add(field);
   }
 

@@ -128,8 +128,6 @@ atlas::FieldSet convertUVToFieldSet(const atlas::Field & uvField) {
       vView(jn, jl) = uvView(jn, jl, 1);
     }
   }
-  u.haloExchange();
-  v.haloExchange();
 
   uvfset.add(u);
   uvfset.add(v);
@@ -149,9 +147,6 @@ atlas::Field convertUVToFieldSetAD(const atlas::FieldSet & fset) {
   atlas::Field uvgp = sc.createField<double>(atlas::option::name("uv_gp") |
                                              atlas::option::variables(2) |
                                              atlas::option::levels(levels));
-
-  uField.adjointHaloExchange();
-  vField.adjointHaloExchange();
 
   const auto uView = atlas::array::make_view<double, 2>(uField);
   const auto vView = atlas::array::make_view<double, 2>(vField);
@@ -190,8 +185,6 @@ atlas::Field convertFieldSetToUV(const atlas::FieldSet & fset) {
       uvView(jn, jl, 1) = vView(jn, jl);
     }
   }
-
-  uvgp.haloExchange();
 
   return uvgp;
 }
@@ -386,7 +379,6 @@ void SpectralToGauss::multiplyScalarFields(const atlas::FieldSet & specFieldSet,
       atlas::Field gaussField =
         gaussFunctionSpace_.createField<double>(atlas::option::name(fieldname) |
                                    atlas::option::levels(specFieldSet[fieldname].shape(1)));
-      gaussField.haloExchange();
       atlas::array::make_view<double, 2>(gaussField).assign(0.0);
       gaussFieldSet.add(gaussField);
   }
@@ -397,9 +389,7 @@ void SpectralToGauss::multiplyScalarFields(const atlas::FieldSet & specFieldSet,
   //              Fix this so that next line is not needed.
   gaussFieldSet.set_dirty();
 
-  // Exchange halos
   for (const auto & fieldname : specFieldSet.field_names()) {
-    gaussFieldSet[fieldname].haloExchange();
     ASSERT(!outFieldSet.has(fieldname));
     outFieldSet.add(gaussFieldSet[fieldname]);
   }
@@ -420,12 +410,8 @@ void SpectralToGauss::multiplyScalarFieldsAD(const atlas::FieldSet & gaussFieldS
     specFieldSet.add(specField);
   }
 
-  // (Adjoint of:) Exchange halos
-  atlas::FieldSet tmpFieldSet = gaussFieldSet;
-  tmpFieldSet->adjointHaloExchange();
-
   // (Adjoint of:) Transform to Gaussian grid
-  trans_.invtrans_adj(tmpFieldSet, specFieldSet);
+  trans_.invtrans_adj(gaussFieldSet, specFieldSet);
 
   for (const auto & fieldname : gaussFieldSet.field_names()) {
     outFieldSet.add(specFieldSet[fieldname]);
@@ -517,6 +503,7 @@ void SpectralToGauss::multiply(oops::FieldSet3D & fieldSet) const {
   // Convert active scalar variables to Gaussian grid.
   if (!spectralFieldSet.empty()) {multiplyScalarFields(spectralFieldSet, newFields);}
 
+  newFields.set_dirty();
   fieldSet.fieldSet() = newFields;
 
   oops::Log::trace() << classname() << "::multiply done" << std::endl;

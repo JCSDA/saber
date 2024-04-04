@@ -189,7 +189,6 @@ atlas::Field createGpRegressionWeights(const atlas::FunctionSpace & functionSpac
       interWgtFldView(h, b) = tempWgt[b] * invWeightTot;
     }
   }
-  interWgtFld.haloExchange();
 
   return interWgtFld;
 }
@@ -217,7 +216,8 @@ void interpMuStats(atlas::FieldSet & augmentedStateFieldSet,
 
   auto index = [](const double normalisedField, const int muBins) {
     int i = static_cast<int>(normalisedField);
-    return (i >= muBins - 1 ? muBins - 2 : i);
+    // Restrict i to lie within [0, muBins-2] inclusive
+    return std::max(std::min(i, muBins - 2), 0);
   };
 
   auto weight = [](const double normalisedField, const int index) {

@@ -76,7 +76,6 @@ State & State::operator+=(const Increment & dx) {
 // -----------------------------------------------------------------------------
 void State::read(const eckit::Configuration & files) {
   fields_->read(files);
-  fields_->fields().haloExchange();
 }
 // -----------------------------------------------------------------------------
 void State::write(const eckit::Configuration & files) const {

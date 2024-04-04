@@ -113,8 +113,6 @@ HpToHexner::HpToHexner(const oops::GeometryData & outerGeometryData,
   mo::evalHydrostaticExnerLevels(augmentedStateFieldSet_);
   mo::evalHydrostaticPressureLevels(augmentedStateFieldSet_);
 
-  augmentedStateFieldSet_.haloExchange();
-
   oops::Log::trace() << classname() << "::HpToHexner done" << std::endl;
 }
 

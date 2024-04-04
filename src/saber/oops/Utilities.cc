@@ -92,8 +92,7 @@ void checkFieldsAreNotAllocated(const oops::FieldSet3D & fset,
 void allocateMissingFields(oops::FieldSet3D & fset,
                            const oops::Variables & varsToAllocate,
                            const oops::Variables & varsWithLevels,
-                           const atlas::FunctionSpace & functionSpace,
-                           const bool haloExchange) {
+                           const atlas::FunctionSpace & functionSpace) {
   oops::Log::trace() << "allocateMissingFields starting" << std::endl;
   for (const auto& var : varsToAllocate.variables()) {
     if (!fset.has(var)) {
@@ -102,9 +101,7 @@ void allocateMissingFields(oops::FieldSet3D & fset,
                 atlas::option::name(var) |
                 atlas::option::levels(varsWithLevels.getLevels(var)));
       atlas::array::make_view<double, 2>(field).assign(0.0);
-      if (haloExchange) {
-        field.haloExchange();
-      }
+      field.set_dirty(false);
       fset.add(field);
     }
   }

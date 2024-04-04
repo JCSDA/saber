@@ -133,7 +133,7 @@ void VertProj::multiply(oops::FieldSet3D & fieldSet) const {
           atlas::option::levels(outerVars_.getLevels(fieldname)) |
           atlas::option::halo(1));
     atlas::array::make_view<double, 2>(modelField).assign(0.0);
-    modelField.haloExchange();
+    modelField.set_dirty(false);
     modelFieldSet.add(modelField);
   }
 
@@ -180,7 +180,7 @@ void VertProj::multiplyAD(oops::FieldSet3D & fieldSet) const {
          atlas::option::levels(innerVars_.getLevels(fieldname)) |
          atlas::option::halo(1));
     atlas::array::make_view<double, 2>(vertField).assign(0.0);
-    vertField.haloExchange();
+    vertField.set_dirty(false);
     vertFieldSet.add(vertField);
   }
 
@@ -228,7 +228,7 @@ void VertProj::leftInverseMultiply(oops::FieldSet3D & fieldSet) const {
          atlas::option::levels(innerVars_.getLevels(fieldname)) |
          atlas::option::halo(1));
     atlas::array::make_view<double, 2>(vertField).assign(0.0);
-    vertField.haloExchange();
+    vertField.set_dirty(false);
     vertFieldSet.add(vertField);
   }
 

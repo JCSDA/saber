@@ -128,8 +128,6 @@ MoistureControl::MoistureControl(const oops::GeometryData & outerGeometryData,
   // populate "specific moisture control dependencies"
   mo::eval_moisture_control_traj(augmentedStateFieldSet_);
 
-  augmentedStateFieldSet_.haloExchange();
-
   oops::Log::trace() << classname() << "::MoistureControl done" << std::endl;
 }
 

@@ -17,7 +17,6 @@
 #include "eckit/exception/Exceptions.h"
 
 #include "mo/common_varchange.h"
-#include "mo/control2analysis_linearvarchange.h"
 #include "mo/eval_air_temperature.h"
 #include "mo/eval_cloud_ice_mixing_ratio.h"
 #include "mo/eval_cloud_liquid_mixing_ratio.h"
@@ -114,8 +113,6 @@ MoistIncrOp::MoistIncrOp(const oops::GeometryData & outerGeometryData,
   mo::eval_rain_mixing_ratio_wrt_moist_air_and_condensed_water_nl(augmentedStateFieldSet_);
   mo::eval_total_relative_humidity_nl(augmentedStateFieldSet_);
   mo::eval_mio_fields_nl(params.mio_file, augmentedStateFieldSet_);
-
-  augmentedStateFieldSet_.haloExchange();
 
   oops::Log::trace() << classname() << "::MoistIncrOp done" << std::endl;
 }

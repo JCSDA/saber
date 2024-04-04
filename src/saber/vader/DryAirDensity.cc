@@ -17,7 +17,6 @@
 #include "eckit/exception/Exceptions.h"
 
 #include "mo/common_varchange.h"
-#include "mo/control2analysis_linearvarchange.h"
 #include "mo/eval_air_pressure_levels.h"
 #include "mo/eval_dry_air_density.h"
 #include "mo/eval_virtual_potential_temperature.h"
@@ -102,8 +101,6 @@ DryAirDensity::DryAirDensity(const oops::GeometryData & outerGeometryData,
   mo::eval_virtual_potential_temperature_nl(augmentedStateFieldSet_);
   mo::eval_air_pressure_levels_nl(augmentedStateFieldSet_);
   mo::eval_dry_air_density_from_pressure_levels_nl(augmentedStateFieldSet_);
-
-  augmentedStateFieldSet_.haloExchange();
 
   oops::Log::trace() << classname() << "::DryAirDensity done" << std::endl;
 }

@@ -200,7 +200,7 @@ void AtlasInterpWrapper::execute(const atlas::Field & srcField,
   // Empty source field setup
   atlas::Field srcTmpField = srcField.functionspace().createField(srcField);
 
-  // Copy of source field
+  // Copy of source field (this includes halo points; these were updated before calling execute)
   const auto srcView = atlas::array::make_view<double, 2>(srcField);
   auto srcTmpView = atlas::array::make_view<double, 2>(srcTmpField);
   for (atlas::idx_t t = 0; t < srcField.shape(0); ++t) {
@@ -268,9 +268,6 @@ void AtlasInterpWrapper::execute(const atlas::Field & srcField,
 
     // Redistribution from target field to destination field
     redistr_.execute(targetField, dstField);
-
-    // Halo exchange
-    dstField.haloExchange();
   }
 }
 
@@ -301,9 +298,6 @@ void AtlasInterpWrapper::executeAdjoint(atlas::Field & srcField,
       }
     }
 
-    // Halo exchange
-    dstTmp.adjointHaloExchange();
-
     // Empty target field setup
     auto targetField = targetFunctionSpace_.createField<double>(
     atlas::option::name(dstField.name()) | atlas::option::levels(dstField.shape(1)));
@@ -330,6 +324,7 @@ void AtlasInterpWrapper::executeAdjoint(atlas::Field & srcField,
 
 void AtlasInterpWrapper::execute(const atlas::FieldSet & srcFieldSet,
                                  atlas::FieldSet & targetFieldSet) const {
+  srcFieldSet.haloExchange();
   for (auto & srcField : srcFieldSet) {
     execute(srcField, targetFieldSet[srcField.name()]);
   }
@@ -342,6 +337,8 @@ void AtlasInterpWrapper::executeAdjoint(atlas::FieldSet & srcFieldSet,
   for (auto & srcField : srcFieldSet) {
     executeAdjoint(srcField, targetFieldSet[srcField.name()]);
   }
+  srcFieldSet.adjointHaloExchange();
+  srcFieldSet.set_dirty();
 }
 
 // -----------------------------------------------------------------------------

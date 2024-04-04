@@ -137,9 +137,7 @@ void DuplicateVariables::multiply(oops::FieldSet3D & fset) const {
         innerGeometryData_.functionSpace()->createField<double>(
         atlas::option::name(component) | atlas::option::levels(nlev));
       atlas::array::make_view<double, 2>(field).assign(0.0);
-      if (innerGeometryData_.functionSpace()->type() != "Spectral") {
-        field.haloExchange();
-      }
+      field.set_dirty(false);
       fsetOut.add(field);
     }
   }
@@ -177,9 +175,7 @@ void DuplicateVariables::multiplyAD(oops::FieldSet3D & fset) const {
       innerGeometryData_.functionSpace()->createField<double>(
         atlas::option::name(key) | atlas::option::levels(nlev));
     atlas::array::make_view<double, 2>(field).assign(0.0);
-    if (innerGeometryData_.functionSpace()->type() != "Spectral") {
-      field.haloExchange();
-    }
+    field.set_dirty(false);
     fsetOut.add(field);
   }
 

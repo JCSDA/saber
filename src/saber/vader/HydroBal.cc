@@ -115,8 +115,6 @@ HydroBal::HydroBal(const oops::GeometryData & outerGeometryData,
   mo::evalHydrostaticExnerLevels(augmentedStateFieldSet_);
   mo::evalHydrostaticPressureLevels(augmentedStateFieldSet_);
 
-  augmentedStateFieldSet_.haloExchange();
-
   oops::Log::trace() << classname() << "::HydroBal done" << std::endl;
 }
 

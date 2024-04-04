@@ -328,7 +328,6 @@ void VertLoc::multiply(oops::FieldSet3D & fset) const {
       }
     }
 
-    outField.haloExchange();
     fsetOut.add(outField);
   }
 
@@ -369,7 +368,6 @@ void VertLoc::multiplyAD(oops::FieldSet3D & fset) const {
     outView.assign(0.0);
 
     // Apply U^t
-    fset[var].adjointHaloExchange();
     auto inView = atlas::array::make_view<double, 2>(fset[var]);  // nlevs_ levels
 
     for (atlas::idx_t jn = 0; jn < outField.shape(0); ++jn) {

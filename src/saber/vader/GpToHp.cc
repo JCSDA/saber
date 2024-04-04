@@ -134,8 +134,6 @@ GpToHp::GpToHp(const oops::GeometryData & outerGeometryData,
   mo::evalHydrostaticExnerLevels(augmentedStateFieldSet_);
   mo::evalHydrostaticPressureLevels(augmentedStateFieldSet_);
 
-  augmentedStateFieldSet_.haloExchange();
-
   // Need to setup derived state fields that we need.
   std::vector<std::string> requiredCovarianceVariables;
   if (covFieldSet_.has("interpolation_weights")) {
