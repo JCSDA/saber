@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2023 Met Office
+ * (C) Crown Copyright 2023-2024 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -98,11 +98,11 @@ WriteFields::WriteFields(const oops::GeometryData & outerGeometryData,
     innerGeometryData_(outerGeometryData),
     innerVars_(outerVars),
     params_(params),
-    count_xb_(0),
-    count_fg_(0),
-    count_multiply_(0),
-    count_multiplyad_(0),
-    count_leftinversemultiply_(0)
+    count_xb_(1),
+    count_fg_(1),
+    count_multiply_(1),
+    count_multiplyad_(1),
+    count_leftinversemultiply_(1)
 {
   oops::Log::trace() << classname() << "::WriteFields starting" << std::endl;
 

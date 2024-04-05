@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2023-2024 Met Office
+ * (C) Crown Copyright 2024 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -19,12 +19,12 @@
 #include "saber/blocks/SaberOuterBlockBase.h"
 
 namespace saber {
-namespace generic {
+namespace vader {
 
 // -----------------------------------------------------------------------------
 
-class WriteFieldsParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(WriteFieldsParameters, SaberBlockParametersBase)
+class WriteVariancesParameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(WriteVariancesParameters, SaberBlockParametersBase)
 
  public:
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
@@ -42,12 +42,6 @@ class WriteFieldsParameters : public SaberBlockParametersBase {
   /// FieldSet are written out.
   oops::Parameter<std::vector<std::string>> fieldNames{"field names", {}, this};
 
-  /// Write out fields, contained in xb, in the block's constructor with filename below
-  oops::OptionalParameter<std::string> XbFileName{"xb filename", this};
-
-  /// Write out fields, contained in fg, in the block's constructor with filename below
-  oops::OptionalParameter<std::string> FgFileName{"fg filename", this};
-
   /// Write out fields in the block's multiply() routine with filename below
   oops::OptionalParameter<std::string> multiplyFileName{"multiply fset filename", this};
 
@@ -59,21 +53,26 @@ class WriteFieldsParameters : public SaberBlockParametersBase {
 };
 
 // -----------------------------------------------------------------------------
+// Calculates the global-averaged variances for each model level and field,
+// It is to be used mainly as a diagnostic saber block.
+// It currently works for regular Gaussian and cubed-sphere dual grids.
+// In the future it will be extended to latitude bands and maybe grid-point variances
 
-class WriteFields : public SaberOuterBlockBase {
+
+class WriteVariances : public SaberOuterBlockBase {
  public:
-  static const std::string classname() {return "saber::generic::WriteFields";}
+  static const std::string classname() {return "saber::generic::WriteVariances";}
 
-  typedef WriteFieldsParameters Parameters_;
+  typedef WriteVariancesParameters Parameters_;
 
-  WriteFields(const oops::GeometryData &,
-              const oops::Variables &,
-              const eckit::Configuration &,
-              const Parameters_ &,
-              const oops::FieldSet3D &,
-              const oops::FieldSet3D &);
+  WriteVariances(const oops::GeometryData &,
+                 const oops::Variables &,
+                 const eckit::Configuration &,
+                 const Parameters_ &,
+                 const oops::FieldSet3D &,
+                 const oops::FieldSet3D &);
 
-  virtual ~WriteFields() = default;
+  virtual ~WriteVariances() = default;
 
   const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}
   const oops::Variables & innerVars() const override {return innerVars_;}
@@ -85,14 +84,16 @@ class WriteFields : public SaberOuterBlockBase {
  private:
   void print(std::ostream &) const override;
 
-  /// Write selected fields to a file.
-  void writeToFile(const oops::FieldSet3D &, const std::string &, size_t &) const;
+  void writeToFile(const eckit::mpi::Comm & comm,
+                   const atlas::FieldSet & fset,
+                   const std::string & description) const;
+
+  void diagnostics(const std::string & tag,
+                   const oops::FieldSet3D & fset) const;
 
   const oops::GeometryData & innerGeometryData_;
   oops::Variables innerVars_;
   const Parameters_ params_;
-  mutable size_t count_xb_;
-  mutable size_t count_fg_;
   mutable size_t count_multiply_;
   mutable size_t count_multiplyad_;
   mutable size_t count_leftinversemultiply_;
@@ -100,5 +101,5 @@ class WriteFields : public SaberOuterBlockBase {
 
 // -----------------------------------------------------------------------------
 
-}  // namespace generic
+}  // namespace vader
 }  // namespace saber

@@ -85,6 +85,7 @@ background error:
             - eastward_wind__mu__northward_wind__unbalanced_pressure_levels_minus_one
             function:
               horizontal daley length: 1000e3
+            normalize filter variance: true
           - saber block name: spectral to gauss
             active variables:
             - eastward_wind__mu__northward_wind__unbalanced_pressure_levels_minus_one

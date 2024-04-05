@@ -15,6 +15,7 @@
 
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
+#include "oops/util/parameters/OptionalParameter.h"
 
 #include "saber/blocks/SaberBlockParametersBase.h"
 #include "saber/blocks/SaberOuterBlockBase.h"
@@ -29,7 +30,12 @@ class SpectralAnalyticalFilterParameters : public SaberBlockParametersBase {
 
  public:
     /// Whether to normalize as a localization function
-    oops::Parameter<bool> normalize{"normalize filter variance", true, this};
+    oops::Parameter<bool> normalizeFilterVariance{"normalize filter variance", false, this};
+    /// Whether to preserve variance of processed increments
+    /// Should only be used when not normalizing filter variance.
+    oops::Parameter<bool> preservingVariance{"preserving variance", false, this};
+
+    oops::Parameter<bool> complementFilter{"complement filter", false, this};
     /// Filter specifications
     oops::Parameter<eckit::LocalConfiguration> function{"function",
                                                         eckit::LocalConfiguration(), this};

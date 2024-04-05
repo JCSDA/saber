@@ -35,6 +35,7 @@ background error:
   - saber block name: spectral analytical filter
     function:
       horizontal daley length: 5008e3  # For localization to be 0.5 on 1st diagnostic point in theory
+    normalize filter variance: true
   - saber block name: spectral to gauss
   - saber block name: mo_vertical_localization
     localization data:

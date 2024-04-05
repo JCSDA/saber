@@ -78,6 +78,13 @@ void rightAngleTriangleRectangleShape(std::vector<double> & wavenumbers,
   }
 }
 
+void rectangleShape(std::vector<double> & wavenumbers,
+    const double & bandmin, const double & amplitude, const double & bandmax) {
+  for (int w = 0; w < static_cast<int>(wavenumbers.size()); ++w) {
+    wavenumbers[w] = (w >= bandmin && w <= bandmax ? amplitude : 0.0);
+  }
+}
+
 // -----------------------------------------------------------------------------
 
 auto createSpectralFilter(const oops::GeometryData & geometryData,
@@ -127,14 +134,31 @@ auto createSpectralFilter(const oops::GeometryData & geometryData,
                         static_cast<double>(bandmin),
                         static_cast<double>(bandpeak),
                         static_cast<double>(bandmax))));
+  } else if (functionShape.compare("boxcar") == 0) {
+    if (!function.has("waveband min")) throw eckit::BadParameter(
+      "minimum wavenumber must be specified for boxcar functions");
+    if (!function.has("waveband max")) throw eckit::BadParameter(
+      "maximum wavenumber must be specified for boxcar functions");
+    if (!function.has("waveband amplitude")) throw eckit::BadParameter(
+      "waveband amplitude must be specified for boxcar functions");
+    const int bandmin = function.getInt("waveband min");
+    const int bandmax = function.getInt("waveband max");
+    const int amplitude = function.getInt("waveband amplitude");
+    rectangleShape(spectralFilter, bandmin, amplitude, bandmax);
   } else {
     throw eckit::BadParameter("function shape " + functionShape + " not implemented yet.",
                               Here());
   }
 
-  // 3) Normalize as a localization function if required
+  // 3) Normalize as a localization function if required or
+  //    preserve variance of increments.
   // ---------------------------------------------------
-  if (params.normalize.value()) {
+  if ( params.normalizeFilterVariance && params.preservingVariance ) {
+    throw eckit::BadParameter(
+    "normalize filter variance option incompatibile with preserving variance option");
+  }
+
+  if ( params.normalizeFilterVariance ) {
     // Compute total variance in spectral space before normalization.
     double totalVarianceSpectral = 0;
     const auto zonal_wavenumbers = specFunctionSpace.zonal_wavenumbers();
@@ -158,8 +182,18 @@ auto createSpectralFilter(const oops::GeometryData & geometryData,
                    [& normalization](auto & elem){return elem * normalization;});
   }
 
-  // 4) Take square root
-  // -------------------
+  if ( params.preservingVariance ) {
+    std::transform(spectralFilter.begin(), spectralFilter.end(),
+                   spectralFilter.begin(), [](auto & e){return std::sqrt(e);});
+  }
+
+  if ( params.complementFilter ) {
+    std::transform(spectralFilter.begin(), spectralFilter.end(),
+                   spectralFilter.begin(), [](auto & e){return 1.0 - e;});
+  }
+
+  // 4) Take square root (as this is an outer block)
+  // -----------------------------------------------
   std::transform(spectralFilter.begin(), spectralFilter.end(),
                  spectralFilter.begin(), [](auto & e){return std::sqrt(e);});
 
@@ -170,11 +204,11 @@ auto createSpectralFilter(const oops::GeometryData & geometryData,
 
 // -----------------------------------------------------------------------------
 SpectralAnalyticalFilter::SpectralAnalyticalFilter(const oops::GeometryData & geometryData,
-                                               const oops::Variables & outerVars,
-                                               const eckit::Configuration & covarConf,
-                                               const Parameters_ & params,
-                                               const oops::FieldSet3D & xb,
-                                               const oops::FieldSet3D & fg)
+                                                   const oops::Variables & outerVars,
+                                                   const eckit::Configuration & covarConf,
+                                                   const Parameters_ & params,
+                                                   const oops::FieldSet3D & xb,
+                                                   const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params, xb.validTime()), params_(params),
     activeVars_(getActiveVars(params, outerVars)),
     innerGeometryData_(geometryData),

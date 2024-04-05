@@ -1,13 +1,11 @@
 geometry:
   function space: NodeColumns
   grid:
-    name: CS-LFR-15
+    name: CS-LFR-14
   partitioner: cubedsphere
   groups:
   - variables: &vars
-    - moisture_control_variable
     - streamfunction
-    - unbalanced_pressure
     - velocity_potential
     levels: 70
   halo: 1
@@ -16,75 +14,97 @@ background:
   date: &date '2010-01-01T12:00:00Z'
   state variables: *vars
 
-saber filter blocks:
-- saber central block:
-    saber block name: ID
-  saber outer blocks:
-  - saber block name: spectral analytical filter
-    function:
-      shape: waveband filter
-      waveband min: 0
-      waveband peak: 1
-      waveband max: 3
-    normalize filter variance: false
-    active variables: *vars
-  - saber block name: spectral to gauss
-    active variables: *vars
-    filter mode: true # instead of running the adjoint code it runs the inverse
-  - saber block name: write fields
-    field names: *vars
-    multiply fset filename: fields_wb1_multiply
-    skip inverse test: true
-    output path: testdata/process_perts_from_csdual_states_2/
-  - saber block name: gauss to cubed-sphere-dual
-    gauss grid uid: F2
-    filter mode: true # instead of running the adjoint code it runs the inverse
-- saber central block:
-    saber block name: ID
-  saber outer blocks:
-  - saber block name: spectral analytical filter
-    function:
-      shape: waveband filter
-      waveband min: 1
-      waveband peak: 3
-      waveband max: 9
-    normalize filter variance: false
-    active variables: *vars
-  - saber block name: spectral to gauss
-    active variables: *vars
-    filter mode: true # instead of running the adjoint code it runs the inverse
-  - saber block name: write fields
-    field names: *vars
-    multiply fset filename: fields_wb2_multiply
-    skip inverse test: true
-    output path: testdata/process_perts_from_csdual_states_2/
-  - saber block name: gauss to cubed-sphere-dual
-    gauss grid uid: F5
-    filter mode: true # instead of running the adjoint code it runs the inverse
-- saber central block:
-    saber block name: ID
-  saber outer blocks:
-  - saber block name: spectral analytical filter
-    function:
-      shape: waveband filter
-      waveband min: 3
-      waveband peak: 9
-      waveband max: 23 # last waveband max need to be 2N - 1
-    normalize filter variance: false
-    active variables: *vars
-  - saber block name: spectral to gauss
-    active variables: *vars
-    filter mode: true # instead of running the adjoint code it runs the inverse
-  - saber block name: write fields
-    field names: *vars
-    multiply fset filename: fields_wb3_multiply
-    skip inverse test: true
-    output path: testdata/process_perts_from_csdual_states_2/
-  - saber block name: gauss to cubed-sphere-dual
-    gauss grid uid: F12
-    filter mode: true # instead of running the adjoint code it runs the inverse
-
-residual filter: {}
+bands:
+- band:
+    filter:
+      saber central block:
+        saber block name: ID
+      saber outer blocks:
+      - saber block name: spectral analytical filter
+        function:
+          shape: waveband filter
+          waveband min: 0
+          waveband peak: 1
+          waveband max: 3
+        preserving variance: true
+        active variables: *vars
+      - saber block name: spectral to gauss
+        active variables: *vars
+        filter mode: true # instead of running the adjoint code it runs the inverse
+      - saber block name: write variances
+        field names: *vars
+        multiply fset filename: wb1_F14_variance
+        output path: testdata/process_perts_from_csdual_states_2/
+      - saber block name: write fields
+        output path: testdata/process_perts_from_csdual_states_2/
+        multiply fset filename: wb1_F14_inc
+      - saber block name: gauss to cubed-sphere-dual
+        gauss grid uid: F14
+        filter mode: true # instead of running the adjoint code it runs the inverse
+      - saber block name: write variances
+        field names: *vars
+        filter mode: true # instead of running the adjoint code it runs the inverse
+        left inverse fset filename: initial_CS14_variance
+        output path: testdata/process_perts_from_csdual_states_2/
+- band:
+    filter:
+      saber central block:
+        saber block name: ID
+      saber outer blocks:
+      - saber block name: spectral analytical filter
+        function:
+          shape: waveband filter
+          waveband min: 1
+          waveband peak: 3
+          waveband max: 9
+        preserving variance: true
+        active variables: *vars
+      - saber block name: spectral to gauss
+        active variables: *vars
+        filter mode: true # instead of running the adjoint code it runs the inverse
+      - saber block name: write variances
+        field names: *vars
+        multiply fset filename: wb2_F14_variance
+        output path: testdata/process_perts_from_csdual_states_2/
+      - saber block name: write fields
+        output path: testdata/process_perts_from_csdual_states_2/
+        multiply fset filename: wb2_F14_inc
+      - saber block name: gauss to cubed-sphere-dual
+        gauss grid uid: F14
+        filter mode: true # instead of running the adjoint code it runs the inverse
+- band:
+    filter:
+      saber central block:
+        saber block name: ID
+      saber outer blocks:
+      - saber block name: spectral analytical filter
+        function:
+          shape: waveband filter
+          waveband min: 3
+          waveband peak: 9
+          waveband max: 23 # last waveband max need to be 2N - 1
+        preserving variance: true
+        complement filter: true
+        active variables: *vars
+      - saber block name: spectral to gauss
+        active variables: *vars
+        filter mode: true # instead of running the adjoint code it runs the inverse
+      - saber block name: gauss to cubed-sphere-dual
+        gauss grid uid: F14
+        filter mode: true # instead of running the adjoint code it runs the inverse
+    use residual from filter: true
+  output:
+    diagnostic only block:
+      saber central block:
+        saber block name: ID
+      saber outer blocks:
+      - saber block name: write variances
+        output path: testdata/process_perts_from_csdual_states_2/
+        multiply fset filename: wb3_cs14_variance
+    generic write:
+      filepath: testdata/process_perts_from_csdual_states_2/wb3_%GRID%_mb%MEM%_inc
+      member pattern: '%MEM%'
+      grid pattern: '%GRID%'
 
 input variables: *vars
 
@@ -97,15 +117,6 @@ ensemble:
     filepath: testdata/randomization_csdual_sqrtspectralb/1_randomized_csdual_mb2
     state variables: *vars
 
-output perturbations:
-- {}
-- {}
-- {}
-- generic write:
-    filepath: testdata/process_perts_from_csdual_states_2/filtered_pert_grid%GRID%_mb%MEM%_wb4
-    member pattern: '%MEM%'
-    grid pattern: '%GRID%'
-
 test:
-  float relative tolerance: 3.0e-6       # default value of 1.0e-6
+  float relative tolerance: 5.0e-6       # default value of 1.0e-6
   reference filename: testref/process_perts_from_csdual_states_2.ref

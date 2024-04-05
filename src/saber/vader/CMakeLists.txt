@@ -30,6 +30,8 @@ if ( vader_FOUND )
     SuperMoistIncrOp.cc
     SuperMoistIncrOp.h
     PressureParameters.h
+    WriteVariances.cc
+    WriteVariances.h
     )
 
     # Generic VADER blocks

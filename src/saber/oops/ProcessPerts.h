@@ -8,6 +8,7 @@
 #pragma once
 
 #include <algorithm>
+#include <map>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -31,10 +32,12 @@
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/Logger.h"
 #include "oops/util/parameters/OptionalParameter.h"
+#include "oops/util/parameters/Parameter.h"
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
 #include "saber/blocks/SaberParametricBlockChain.h"
+#include "saber/oops/ErrorCovarianceParameters.h"
 #include "saber/oops/Utilities.h"
 
 namespace saber {
@@ -75,15 +78,43 @@ void setConcatenatedString(const eckit::Configuration & fullConf,
   }
 }
 
+/// \brief Parameters for filtering a single perturbation
+template <typename MODEL> class FilterParameters :
+  public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(FilterParameters, oops::Parameters)
+
+ public:
+  typedef ErrorCovarianceParameters<MODEL>           ErrorCovarianceParameters_;
+  /// Note that the parameters here are not actually used in the code
+  /// They are here to express the intent of these variables.
+  /// Later on in the code we use eckit::LocalConfiguration and check whether
+  /// each key is in the configuration - if it is we use its value, otherwise
+  /// it is set to "false".
+  oops::Parameter<bool> residualFromFilter{
+    "use residual from filter", false, this};
+  oops::Parameter<bool> residualIncrementFromOtherBands{
+    "residual increment from previous bands", false, this};
+
+  // This will give the parameters associated with an ErrorCovariance model
+  // and can be used to provide a filtering operation.
+  oops::OptionalParameter<ErrorCovarianceParameters_> filter{"filter", this};
+};
+
 // -----------------------------------------------------------------------------
 
 /// \brief Write parameters for single filtered perturbation
-template <typename MODEL> class ModelOrGenericWriteParameters :
+template <typename MODEL> class OutputWriteParameters :
   public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(ModelOrGenericWriteParameters, oops::Parameters)
+  OOPS_CONCRETE_PARAMETERS(OutputWriteParameters, oops::Parameters)
 
  public:
   typedef typename oops::Increment<MODEL>::WriteParameters_  IncrementWriteParameters_;
+  typedef ErrorCovarianceParameters<MODEL>                   ErrorCovarianceParameters_;
+
+  // This is there to get ErrorCovarianceParameters and in particular
+  // saber blocks that can be used for diagnostic purposes.
+  oops::OptionalParameter<ErrorCovarianceParameters_> diagnosticOnlyBlock{
+    "diagnostic only block", this};
 
   /// Write parameters using generic oops::util::writeFieldSet writer
   oops::OptionalParameter<eckit::LocalConfiguration>
@@ -94,6 +125,19 @@ template <typename MODEL> class ModelOrGenericWriteParameters :
     modelWrite{"model write", this};
 };
 
+// -----------------------------------------------------------------------------
+
+template <typename MODEL> class BandParameters :
+  public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(BandParameters, oops::Parameters)
+
+ public:
+  typedef FilterParameters<MODEL>                   FilterParameters_;
+  typedef OutputWriteParameters<MODEL>              outputParameters_;
+
+  oops::RequiredParameter<FilterParameters_> band{"band", this};
+  oops::OptionalParameter<outputParameters_> output{"output", this};
+};
 
 // -----------------------------------------------------------------------------
 
@@ -105,9 +149,9 @@ template <typename MODEL> class ProcessPertsParameters :
  public:
   typedef oops::ModelSpaceCovarianceParametersWrapper<MODEL> CovarianceParameters_;
 
-  typedef typename oops::Geometry<MODEL>::Parameters_     GeometryParameters_;
-  typedef ErrorCovarianceParameters<MODEL>                ErrorCovarianceParameters_;
-  typedef ModelOrGenericWriteParameters<MODEL>            ModelOrGenericWriteParameters_;
+  typedef typename oops::Geometry<MODEL>::Parameters_    GeometryParameters_;
+  typedef BandParameters<MODEL>                          BandParameters_;
+
   /// Geometry parameters.
   oops::RequiredParameter<GeometryParameters_> geometry{"geometry", this};
 
@@ -116,19 +160,11 @@ template <typename MODEL> class ProcessPertsParameters :
 
   oops::RequiredParameter<oops::Variables> inputVariables{"input variables", this};
 
-  oops::RequiredParameter<std::vector<ErrorCovarianceParameters_>>
-   saberFilterCovarianceParams{"saber filter blocks", this};
+  oops::RequiredParameter<std::vector<BandParameters_>> bands{"bands", this};
 
   /// Where to read input ensemble: From states or perturbations
   oops::OptionalParameter<eckit::LocalConfiguration> ensemble{"ensemble", this};
   oops::OptionalParameter<eckit::LocalConfiguration> ensemblePert{"ensemble pert", this};
-
-  /// Optional residual filter
-  oops::OptionalParameter<eckit::LocalConfiguration> residualFilter{"residual filter", this};
-
-  /// Whether and where to write waveband perturbations
-  oops::RequiredParameter<std::vector<ModelOrGenericWriteParameters_>>
-    outputPerts{"output perturbations", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -175,10 +211,8 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
     // Setup time
     const util::DateTime time = xx[0].validTime();
 
-    std::vector<eckit::LocalConfiguration> filterCovarianceBlockConfs
-      = fullConfig.getSubConfigurations("saber filter blocks");
-
     oops::Variables incVars = params.inputVariables;
+
     // Initialize outer variables
     const std::vector<std::size_t> vlevs = geom.variableSizes(incVars);
     for (std::size_t i = 0; i < vlevs.size() ; ++i) {
@@ -222,39 +256,73 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
                                                    outputEnsConf);
     int nincrements = fsetEnsI.ens_size();
 
+    const std::size_t nbands = params.bands.value().size();
+    const std::vector<eckit::LocalConfiguration> bandsConfs
+      = fullConfig.getSubConfigurations("bands");
+
+    // need to create a vectors of saber block chains to use later
+    std::map<std::size_t, eckit::LocalConfiguration> diagBlockConfs;
+    std::map<std::size_t, eckit::LocalConfiguration> filterCovBlockConfs;
+    std::map<std::size_t, eckit::LocalConfiguration> genericWriteConfs;
+    std::map<std::size_t, eckit::LocalConfiguration> modelWriteConfs;
+    std::vector<bool> calcResidualIncrement;
+    std::vector<bool> calcComplement;
+
+    std::size_t b(0);
+    for (const auto & bandConf : bandsConfs) {
+      eckit::LocalConfiguration bConf = bandConf.getSubConfiguration("band");
+      if (bConf.has("filter")) {
+        eckit::LocalConfiguration fConf = bConf.getSubConfiguration("filter");
+        filterCovBlockConfs[b] = fConf;
+      }
+      calcResidualIncrement.push_back(
+        bConf.getBool("residual increment from previous bands", false) );
+      calcComplement.push_back(
+        bConf.getBool("use residual from filter", false) );
+
+      if (bandConf.has("output")) {
+        eckit::LocalConfiguration oConf = bandConf.getSubConfiguration("output");
+        if (oConf.has("diagnostic only block")) {
+          eckit::LocalConfiguration dConf = oConf.getSubConfiguration("diagnostic only block");
+          diagBlockConfs[b] = dConf;
+        }
+        if (oConf.has("generic write")) {
+          eckit::LocalConfiguration gConf = oConf.getSubConfiguration("generic write");
+          genericWriteConfs[b] = gConf;
+        }
+        if (oConf.has("model write")) {
+          eckit::LocalConfiguration mConf = oConf.getSubConfiguration("model write");
+          modelWriteConfs[b] = mConf;
+        }
+      }
+      b++;
+    }
+
     std::vector<std::unique_ptr<SaberParametricBlockChain>> saberFilterBlocks;
-    for (const auto & filterCovarianceBlockConf : filterCovarianceBlockConfs) {
+    for (const auto & [key, value] : filterCovBlockConfs) {
       saberFilterBlocks.push_back(
         std::make_unique<SaberParametricBlockChain>(geom, geom,
                                                     incVars, fsetXb, fsetFg,
                                                     fsetEns, dualResFsetEns,
                                                     covarConf,
-                                                    filterCovarianceBlockConf));
+                                                    value));
     }
 
-    // Number of standard wavebands
-    const std::size_t standardWavebands = filterCovarianceBlockConfs.size();
-
-    // Optional additional waveband
-    const auto & residualFilter = params.residualFilter.value();
-
-    // Check that there are as many output perturbations as wavebands
-    const std::size_t nOutputs = params.outputPerts.value().size();
-    const std::size_t nWavebands = (residualFilter == boost::none) ?
-                                    standardWavebands:
-                                    standardWavebands + 1;
-    if (nOutputs != nWavebands) {
-      oops::Log::error() << "Error: Asked for " << nWavebands << " wavebands but "
-                         << nOutputs << " output parameters were specified."
-                         << std::endl;
-      throw eckit::UserError("Number of wavebands and output perturbations inconsistent.",
-                             Here());
+    std::vector<std::unique_ptr<SaberParametricBlockChain>> saberDiagnosticBlocks;
+    for (const auto & [key, value] : diagBlockConfs) {
+      saberDiagnosticBlocks.push_back(
+        std::make_unique<SaberParametricBlockChain>(geom, geom,
+                                                    incVars, fsetXb, fsetFg,
+                                                    fsetEns, dualResFsetEns,
+                                                    covarConf,
+                                                    value));
     }
 
     //  Loop over perturbations
     for (int jm = 0; jm < nincrements; ++jm) {
       oops::FieldSet3D fsetI(fsetEnsI[jm]);
       oops::FieldSet4D fset4dDxI(fsetI);
+
       oops::Log::test() << "Norm of perturbation: "
                         << "member " << jm+1
                         << ": " << fsetI.norm(fsetI.variables()) << std::endl;
@@ -264,31 +332,55 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
       fsetSum.zero();
       oops::FieldSet4D fset4dDxSum(fsetSum);
 
-      for (std::size_t wb = 0; wb < standardWavebands; ++wb) {
+      for (std::size_t b = 0; b < nbands; ++b) {
         //  Copy perturbation
         oops::FieldSet3D fset(fsetI.validTime(), fsetI.commGeom());
         fset.deepCopy(fsetI.fieldSet());
+
         oops::FieldSet4D fset4dDx(fset);
 
         // Apply filter blocks
-        saberFilterBlocks[wb]->filter(fset4dDx);
+        if (auto it{filterCovBlockConfs.find(b)}; it != std::end(filterCovBlockConfs)) {
+          const std::size_t idx = std::distance(std::begin(filterCovBlockConfs), it);
+          saberFilterBlocks[idx]->filter(fset4dDx);
+          if (calcComplement[b]) {
+            fset4dDx[0] -= fset4dDxI[0];
+            fset4dDx[0] *= -1.0;
+          }
+        }
+
+        // residual increment
+        if (calcResidualIncrement[b]) {
+          fset4dDx[0] -= fset4dDxSum[0];
+        }
 
         fset4dDxSum += fset4dDx;
 
-        // Optionally, write out perturbation
-        auto localOutputPert = params.outputPerts.value()[wb];
+        oops::Log::test() << "Norm of band perturbation: "
+                          << "member " << jm+1 << ": band " << b+1
+                          << ": " << fset4dDx[0].norm(fset4dDx[0].variables())
+                          << std::endl;
 
-        if (localOutputPert.genericWrite.value() != boost::none) {
-          eckit::LocalConfiguration conf = localOutputPert.genericWrite.value().value();
-          util::setMember(conf, jm+1);
+
+        // Apply diagnostic blocks
+        if (auto it{diagBlockConfs.find(b)}; it != std::end(diagBlockConfs)) {
+          const std::size_t idx = std::distance(std::begin(diagBlockConfs), it);
+          saberDiagnosticBlocks[idx]->filter(fset4dDx);
+        }
+
+        if (auto it{genericWriteConfs.find(b)}; it != std::end(genericWriteConfs)) {
+          eckit::LocalConfiguration gconf = it->second;
+          util::setMember(gconf, jm+1);
           setConcatenatedString(fullConfig,
                                 std::vector<std::string>{"geometry", "grid"},
                                 "grid pattern",
-                                conf);
-          util::writeFieldSet(geom.getComm(), conf, fset4dDx[0].fieldSet());
+                                gconf);
+          util::writeFieldSet(geom.getComm(), gconf, fset4dDx[0].fieldSet());
         }
 
-        if (localOutputPert.modelWrite.value() != boost::none) {
+        if (auto it{modelWriteConfs.find(b)}; it != std::end(modelWriteConfs)) {
+          eckit::LocalConfiguration mconf = it->second;
+
           // Should be on the model geometry!
           auto pert = Increment_(geom,
                                  fset4dDx[0].variables(),
@@ -296,50 +388,11 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
           pert.zero();
           pert.fromFieldSet(fset4dDx[0].fieldSet());
 
-          IncrementWriteParameters_ writeParams = localOutputPert.modelWrite.value().value();
+          IncrementWriteParameters_ writeParams;
+          writeParams.deserialize(mconf);
           writeParams.setMember(jm+1);
           pert.write(writeParams);
         }
-
-        oops::Log::test() << "Norm of waveband perturbation: "
-                          << "member " << jm+1 << ": waveband " << wb+1
-                          << ": " << fset4dDx[0].norm(fset4dDx[0].variables()) << std::endl;
-      }
-
-      if (residualFilter != boost::none) {
-        const std::size_t wb = standardWavebands;
-
-        fset4dDxI[0] -= fset4dDxSum[0];
-
-        // Optionally, write out perturbation
-        auto localOutputPert = params.outputPerts.value()[wb];
-
-        if (localOutputPert.genericWrite.value() != boost::none) {
-          auto conf = localOutputPert.genericWrite.value().value();
-          util::setMember(conf, jm+1);
-          setConcatenatedString(fullConfig,
-                                std::vector<std::string>{"geometry", "grid"},
-                                "grid pattern",
-                                conf);
-          util::writeFieldSet(geom.getComm(), conf, fset4dDxI[0].fieldSet());
-        }
-
-        if (localOutputPert.modelWrite.value() != boost::none) {
-          // Should be on the model geometry!
-          auto pert = Increment_(geom,
-                                 fset4dDxI[0].variables(),
-                                 time);
-          pert.zero();
-          pert.fromFieldSet(fset4dDxI[0].fieldSet());
-
-          auto writeParams = localOutputPert.modelWrite.value().value();
-          writeParams.setMember(jm+1);
-          pert.write(writeParams);
-        }
-
-        oops::Log::test() << "Norm of waveband perturbation: "
-                          << "member " << jm+1 << ": waveband " << wb+1
-                          << ": " << fset4dDxI[0].norm(fset4dDxI[0].variables()) << std::endl;
       }
     }
 
