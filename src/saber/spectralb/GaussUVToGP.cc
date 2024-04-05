@@ -28,8 +28,9 @@
 #include "eckit/exception/Exceptions.h"
 
 #include "mo/common_varchange.h"
+#include "mo/eval_cloud_ice_mixing_ratio.h"
+#include "mo/eval_cloud_liquid_mixing_ratio.h"
 #include "mo/eval_dry_air_density.h"
-#include "mo/eval_virtual_potential_temperature.h"
 #include "mo/eval_water_vapor_mixing_ratio.h"
 #include "mo/model2geovals_varchange.h"
 
@@ -152,7 +153,8 @@ atlas::FieldSet populateFields(const atlas::FieldSet & geomfields,
     "m_t",
     "potential_temperature",
     "specific_humidity",
-    "virtual_potential_temperature"};
+    "mass_content_of_cloud_liquid_water_in_atmosphere_layer",
+    "mass_content_of_cloud_ice_in_atmosphere_layer"};
 
   const std::vector<std::string> requiredGeometryVariables{"height_levels",
                                                            "height"};
@@ -179,7 +181,10 @@ atlas::FieldSet populateFields(const atlas::FieldSet & geomfields,
 
   mo::evalTotalMassMoistAir(tempfields);
   mo::eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl(tempfields);
-  mo::eval_virtual_potential_temperature_nl(tempfields);
+  mo::eval_cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
+              tempfields);
+  mo::eval_cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
+              tempfields);
   mo::eval_dry_air_density_from_pressure_levels_minus_one_nl(tempfields);
 
   return atlas::FieldSet(tempfields[outputVariable]);

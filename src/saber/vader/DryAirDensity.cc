@@ -17,9 +17,9 @@
 #include "eckit/exception/Exceptions.h"
 
 #include "mo/common_varchange.h"
-#include "mo/eval_air_pressure_levels.h"
+#include "mo/eval_cloud_ice_mixing_ratio.h"
+#include "mo/eval_cloud_liquid_mixing_ratio.h"
 #include "mo/eval_dry_air_density.h"
-#include "mo/eval_virtual_potential_temperature.h"
 #include "mo/eval_water_vapor_mixing_ratio.h"
 #include "mo/model2geovals_varchange.h"
 
@@ -29,6 +29,9 @@
 
 #include "saber/blocks/SaberOuterBlockBase.h"
 #include "saber/oops/Utilities.h"
+
+using atlas::array::make_view;
+using atlas::idx_t;
 
 namespace saber {
 namespace vader {
@@ -50,15 +53,14 @@ DryAirDensity::DryAirDensity(const oops::GeometryData & outerGeometryData,
     innerVars_(getUnionOfInnerActiveAndOuterVars(params, outerVars)),
     activeOuterVars_(params.activeOuterVars(outerVars)),
     innerOnlyVars_(getInnerOnlyVars(params, outerVars)),
+    intermediateTempVars_(params.intermediateTempVars(outerVars)),
     augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::DryAirDensity starting" << std::endl;
 
   // Need to setup derived state fields that we need.
   std::vector<std::string> requiredStateVariables{
-      "air_pressure_levels",
       "air_pressure_levels_minus_one",  // Assumed already populated
-      "exner_levels_minus_one",         // Assumed already populated
       "dry_air_density_levels_minus_one",
       "height",
       "height_levels",
@@ -69,7 +71,8 @@ DryAirDensity::DryAirDensity(const oops::GeometryData & outerGeometryData,
       "m_t",
       "potential_temperature",          // Assumed already populated
       "specific_humidity",
-      "virtual_potential_temperature"};
+      "mass_content_of_cloud_liquid_water_in_atmosphere_layer",
+      "mass_content_of_cloud_ice_in_atmosphere_layer"};
 
 
   // Check that they are allocated (i.e. exist in the state fieldset)
@@ -98,9 +101,11 @@ DryAirDensity::DryAirDensity(const oops::GeometryData & outerGeometryData,
   mo::evalTotalMassMoistAir(augmentedStateFieldSet_);
   mo::eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
               augmentedStateFieldSet_);
-  mo::eval_virtual_potential_temperature_nl(augmentedStateFieldSet_);
-  mo::eval_air_pressure_levels_nl(augmentedStateFieldSet_);
-  mo::eval_dry_air_density_from_pressure_levels_nl(augmentedStateFieldSet_);
+  mo::eval_cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
+              augmentedStateFieldSet_);
+  mo::eval_cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
+              augmentedStateFieldSet_);
+  mo::eval_dry_air_density_from_pressure_levels_minus_one_nl(augmentedStateFieldSet_);
 
   oops::Log::trace() << classname() << "::DryAirDensity done" << std::endl;
 }
@@ -120,10 +125,22 @@ void DryAirDensity::multiply(oops::FieldSet3D & fset) const {
   // Allocate output fields if they are not already present, e.g when randomizing.
   allocateMissingFields(fset, activeOuterVars_, activeOuterVars_,
                         innerGeometryData_.functionSpace());
+  // Allocate temporary pressure_levels_minus_one field
+  allocateMissingFields(fset, intermediateTempVars_, intermediateTempVars_,
+                        innerGeometryData_.functionSpace());
+
+  // Populate pressure_levels_minus_one from pressure_levels, assumed already populated
+  const auto pIncView = make_view<const double, 2>(fset["air_pressure_levels"]);
+  auto pmoIncView = make_view<double, 2>(fset["air_pressure_levels_minus_one"]);
+
+  pmoIncView.assign(pIncView);
 
   // Populate output fields.
-  mo::eval_dry_air_density_from_pressure_levels_tl(fset.fieldSet(), augmentedStateFieldSet_);
+  mo::eval_dry_air_density_from_pressure_levels_minus_one_tl(fset.fieldSet(),
+                                                             augmentedStateFieldSet_);
 
+  // Remove temporary pressure_levels_minus_one field
+  fset.removeFields(intermediateTempVars_);
   // Remove inner-only variables
   fset.removeFields(innerOnlyVars_);
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
@@ -138,8 +155,33 @@ void DryAirDensity::multiplyAD(oops::FieldSet3D & fset) const {
   checkFieldsAreNotAllocated(fset, innerOnlyVars_);
   allocateMissingFields(fset, innerOnlyVars_, innerOnlyVars_,
                         innerGeometryData_.functionSpace());
+  // Allocate temporary pressure_levels_minus_one field
+  allocateMissingFields(fset, intermediateTempVars_, intermediateTempVars_,
+                        innerGeometryData_.functionSpace());
 
-  mo::eval_dry_air_density_from_pressure_levels_ad(fset.fieldSet(), augmentedStateFieldSet_);
+  mo::eval_dry_air_density_from_pressure_levels_minus_one_ad(fset.fieldSet(),
+                                                             augmentedStateFieldSet_);
+
+  // Populate pressure_levels from pressure_levels_minus_one.
+  // Note there is no update to pHatView(jn,top_jl),
+  // where top_jl = fset["air_pressure_levels_minus_one"].shape(1)
+  // is the uppermost air_pressure_levels value,
+  // as eval_dry_air_density_from_pressure_levels_minus_one_ad updates the adjoint
+  // of dry_air_density_from_pressure_levels_minus_one, which does not have this
+  // uppermost level
+  auto pHatView = make_view<double, 2>(fset["air_pressure_levels"]);
+  auto pmoHatView = make_view<double, 2>(fset["air_pressure_levels_minus_one"]);
+
+  for (idx_t jn = 0; jn < fset["air_pressure_levels_minus_one"].shape(0); ++jn) {
+    for (idx_t jl = 0; jl < fset["air_pressure_levels_minus_one"].shape(1); ++jl) {
+      pHatView(jn, jl) += pmoHatView(jn, jl);
+      pmoHatView(jn, jl) = 0.0;
+    }
+  }
+
+  // Remove temporary pressure_levels_minus_one field
+  fset.removeFields(intermediateTempVars_);
+
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 

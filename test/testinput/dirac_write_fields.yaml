@@ -103,6 +103,16 @@ background:
   - virtual_potential_temperature
   filepath: testdata/gauss_state
 
+increment variables:
+- dry_air_density_levels_minus_one
+- eastward_wind
+- exner_levels_minus_one
+- mass_content_of_cloud_ice_in_atmosphere_layer
+- mass_content_of_cloud_liquid_water_in_atmosphere_layer
+- northward_wind
+- potential_temperature
+- specific_humidity
+
 background error:
   covariance model: SABER
   inverse test: true
@@ -208,6 +218,7 @@ background error:
   - saber block name: mo_air_temperature
     skip inverse test: true
   - saber block name: mo_moistincrop
+    skip inverse test: true  # Tested within the mo_super_mio block
     inner variables to compare: [qt, air_temperature]
     moisture incrementing operator file: testdata/MIO_coefficients.nc
   - saber block name: mo_dry_air_density
