@@ -56,6 +56,7 @@ StdDev::StdDev(const oops::GeometryData & outerGeometryData,
                        activeVars_,
                        covarConf,
                        bumpParams_,
+                       params.fieldsMetaData.value(),
                        xb));
 
   // Read input ATLAS files

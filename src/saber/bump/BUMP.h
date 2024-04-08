@@ -36,6 +36,7 @@ class BUMP {
        const oops::Variables &,
        const eckit::Configuration &,
        const BUMPParameters &,
+       const eckit::LocalConfiguration &,
        const oops::FieldSet3D &);
 
   // Destructor

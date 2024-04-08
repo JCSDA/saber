@@ -46,6 +46,10 @@ class SaberBlockParametersBase : public oops::Parameters {
   // Flag to run the left inverse instead of the adjoint.
   oops::Parameter<bool> filterMode{"filter mode", false, this};
 
+  // Fields metadata (e.g. geographical mask name, vertical coordinate field name)
+  oops::Parameter<eckit::LocalConfiguration> fieldsMetaData{"fields metadata",
+    eckit::LocalConfiguration(), this};
+
   // OPTIONAL
   // Active variables
   oops::OptionalParameter<oops::Variables> activeVars{"active variables", this};

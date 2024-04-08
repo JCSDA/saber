@@ -34,6 +34,7 @@ BUMP::BUMP(const oops::GeometryData & geometryData,
            const oops::Variables & vars,
            const eckit::Configuration & covarConf,
            const BUMPParameters & params,
+           const eckit::LocalConfiguration & fieldsMetaData,
            const oops::FieldSet3D & xb)
   : keyBUMP_(), comm_(geometryData.comm()), fspace_(geometryData.functionSpace()), vars_(vars),
   validTime_(xb.validTime()), covarConf_(covarConf), bumpConf_(params.toConfiguration()),
@@ -165,10 +166,44 @@ BUMP::BUMP(const oops::GeometryData & geometryData,
     grid.set("model.2d variables", var2d);
 
     // Add level index for 2D fields
-    if (!grid.has("model.lev2d")) {
+    if (!grid.has("model.level for 2d variables")) {
       ModelDef def;
-      grid.set("model.lev2d", def.lev2d.second);
+      grid.set("model.level for 2d variables", def.lev2d.second);
     }
+
+    // Add vertical coordinate name
+    std::string vertCoordName;
+    for (const auto & var : vars_str) {
+      if (var2d.size() == vars_str.size() || vars_.getLevels(var) > 1) {
+        const std::string key = var + ".vert_coord";
+        if (vertCoordName.empty()) {
+          vertCoordName = fieldsMetaData.getString(key, "");
+        } else {
+          ASSERT(fieldsMetaData.getString(key, "vert_coord") == vertCoordName);
+        }
+      }
+    }
+    if (vertCoordName.empty() && geometryData.fieldSet().has("vert_coord")) {
+      vertCoordName = "vert_coord";
+    }
+    grid.set("external.vertical coordinate name", vertCoordName);
+
+    // Add geographical mask name
+    std::string gmaskName;
+    for (const auto & var : vars_str) {
+      if (var2d.size() == vars_str.size() || vars_.getLevels(var) > 1) {
+        const std::string key = var + ".gmask";
+        if (gmaskName.empty()) {
+          gmaskName = fieldsMetaData.getString(key, "");
+        } else {
+          ASSERT(fieldsMetaData.getString(key, "gmask") == gmaskName);
+        }
+      }
+    }
+    if (gmaskName.empty() && geometryData.fieldSet().has("gmask")) {
+      gmaskName = "gmask";
+    }
+    grid.set("external.geographical mask name", gmaskName);
 
     // Create BUMP instance
     oops::Log::info() << "Info     :"

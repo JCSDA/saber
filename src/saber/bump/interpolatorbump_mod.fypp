@@ -191,7 +191,7 @@ end if
 
 ! Unpack output grid from output functionspace
 bint%geom_out%nl0 = bint%bump%nam%nl0
-call bint%geom_out%from_atlas(bint%bump%mpl,bint%afunctionspace_out)
+call bint%geom_out%from_atlas(bint%bump%mpl,bint%bump%nam,bint%afunctionspace_out)
 bint%nouta = size(bint%geom_out%lon_mga)
 
 ! Run basic BUMP drivers

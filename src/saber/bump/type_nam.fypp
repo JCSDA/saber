@@ -212,6 +212,8 @@ type nam_type
 
    ! External section
    logical :: iterative_algo                                  !< Iterative algorithm (ensemble members loaded sequentially)
+   character(len=1024) :: vert_coord_name                     !< Vertical coordinate field name in geometry fields
+   character(len=1024) :: gmask_name                          !< Geographical mask name in geometry fields
 contains
    procedure :: init => nam_init
    procedure :: final => nam_final
@@ -951,6 +953,8 @@ end if
 ! External section
 if (conf%get('external',section)) then
    call nam%get(section,'iterative algorithm',nam%iterative_algo)
+   call nam%get(section,'vertical coordinate name',nam%vert_coord_name)
+   call nam%get(section,'geographical mask name',nam%gmask_name)
 end if
 
 ! Probe out

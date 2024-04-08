@@ -340,9 +340,9 @@ end do
 
 ! Copy function space pointer
 if (present(fieldset)) then
-   call geom%from_atlas(mpl,afunctionspace,fieldset)
+   call geom%from_atlas(mpl,nam,afunctionspace,fieldset)
 else
-   call geom%from_atlas(mpl,afunctionspace)
+   call geom%from_atlas(mpl,nam,afunctionspace)
 end if
 
 ! Setup subset Sc0
@@ -438,18 +438,19 @@ end subroutine geom_setup
 ! Subroutine: geom_from_atlas
 !> Set geometry from fieldset
 !----------------------------------------------------------------------
-subroutine geom_from_atlas(geom,mpl,afunctionspace,fieldset)
+subroutine geom_from_atlas(geom,mpl,nam,afunctionspace,fieldset)
 
 implicit none
 
 ! Passed variables
 class(geom_type),intent(inout) :: geom                 !< Geometry
 type(mpl_type),intent(inout) :: mpl                    !< MPI data
+type(nam_type),intent(in) :: nam                       !< Namelist
 type(atlas_functionspace),intent(in) :: afunctionspace !< ATLAS function space
 type(fieldset_type),intent(in),optional :: fieldset    !< Fieldset
 
 ! Local variables
-integer :: il0,imga
+integer :: il0,imga,ifield
 real(kind_real),allocatable :: area_mga(:,:)
 real(kind_real),pointer :: real_ptr(:,:)
 type(atlas_field) :: afield,afield_lonlat
@@ -509,15 +510,15 @@ if (present(fieldset)) then
    end if
 
    ! Get vertical coordinate
-   if (fieldset%has_field('vert_coord')) then
-      afield = fieldset%field('vert_coord')
+   if (nam%vert_coord_name /= "") then
+      afield = fieldset%field(nam%vert_coord_name)
       call field_to_array(afield,mpl,geom%vert_coord_mga)
       call afield%final()
    end if
 
    ! Get geometry mask
-   if (fieldset%has_field('gmask')) then
-      afield = fieldset%field('gmask')
+   if (nam%gmask_name /= "") then
+      afield = fieldset%field(nam%gmask_name)
       call field_to_array(afield,mpl,geom%gmask_mga)
       call afield%final()
    end if

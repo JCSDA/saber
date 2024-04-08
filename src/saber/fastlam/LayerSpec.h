@@ -33,13 +33,14 @@ class LayerSpec : public LayerBase {
 
   // Constructor
   LayerSpec(const FastLAMParametersBase & params,
+            const eckit::LocalConfiguration & fieldsMetaData,
             const oops::GeometryData & gdata,
             const std::string & myGroup,
             const std::vector<std::string> & myVars,
             const size_t & nx0,
             const size_t & ny0,
             const size_t & nz0) :
-    LayerBase(params, gdata, myGroup, myVars, nx0, ny0, nz0) {}
+    LayerBase(params, fieldsMetaData, gdata, myGroup, myVars, nx0, ny0, nz0) {}
     ~LayerSpec() = default;
 
   // Setups

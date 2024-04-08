@@ -27,6 +27,15 @@ background error:
     saber block name: ID
   saber outer blocks:
   - saber block name: BUMP_StdDev
+    fields metadata:
+      stream_function:
+        vert_coord: vert_coord_0
+      velocity_potential:
+        vert_coord: vert_coord_0
+      air_temperature:
+        vert_coord: vert_coord_0
+      surface_pressure:
+        vert_coord: vert_coord_1
     calibration:
       general:
         testing: true

@@ -130,9 +130,7 @@ class Geometry : public util::Printable,
   const atlas::grid::Partitioner partitioner() const {return partitioner_;}
   const atlas::Mesh mesh() const {return mesh_;}
   const atlas::FunctionSpace & functionSpace() const {return functionSpace_;}
-  const atlas::FieldSet & fields() const {return groups_[0].fields_;}
-  const atlas::FieldSet & fields(const size_t & groupIndex) const
-    {return groups_[groupIndex].fields_;}
+  const atlas::FieldSet & fields() const {return fields_;}
   size_t levels(const size_t & groupIndex) const {return groups_[groupIndex].levels_;}
   size_t levels(const std::string & var) const;
   size_t groups() const {return groups_.size();}
@@ -160,9 +158,9 @@ class Geometry : public util::Printable,
     size_t levels_;
     std::string lev2d_;
     std::vector<double> vert_coord_;
-    atlas::FieldSet fields_;
     double gmaskSize_;
   };
+  atlas::FieldSet fields_;
   std::vector<groupData> groups_;
 };
 // -----------------------------------------------------------------------------

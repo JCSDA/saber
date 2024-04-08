@@ -57,6 +57,7 @@ VerticalBalance::VerticalBalance(const oops::GeometryData & outerGeometryData,
                        activeVars_,
                        covarConf,
                        bumpParams_,
+                       params.fieldsMetaData.value(),
                        xb));
 
   oops::Log::trace() << classname() << "::VerticalBalance done" << std::endl;

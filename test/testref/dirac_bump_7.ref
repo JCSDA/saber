@@ -60,7 +60,7 @@ Adjoint test for block StdDev passed
           Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
-             Level   1 ~> -0.100E+01 vert. coord.
+             Level   1 ~>  0.100E+01 vert. coord.
 Adjoint test for block BUMP_NICAS passed
 Square-root test for block BUMP_NICAS passed
 Covariance(SABER) * Increment:

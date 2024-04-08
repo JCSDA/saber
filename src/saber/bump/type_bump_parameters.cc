@@ -333,6 +333,10 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   eckit::LocalConfiguration externalConf;
   // Iterative algorithm (ensemble members loaded sequentially)
   param(externalDef.iterative_algo, externalConf);
+  // Vertical coordinate field name in geometry fields
+  param(externalDef.vert_coord_name, externalConf);
+  // Geographical mask name in geometry fields
+  param(externalDef.gmask_name, externalConf);
 
   // General parameters
   config->set("general", generalConf);

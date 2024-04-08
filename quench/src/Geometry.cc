@@ -22,6 +22,7 @@
 
 #include "oops/generic/gc99.h"
 #include "oops/util/abor1_cpp.h"
+#include "oops/util/FieldSetHelpers.h"
 #include "oops/util/FunctionSpaceHelpers.h"
 #include "oops/util/Logger.h"
 
@@ -45,6 +46,56 @@ Geometry::Geometry(const eckit::Configuration & config, const eckit::mpi::Comm &
   gridType_ = params.grid.value().getString("type", "no_type");
   regionalGrid_ = (gridType_ == "regional");  // grid.type() does not report if grid is regional
 
+  // Setup geometry fields
+  fields_ = atlas::FieldSet();
+
+  // Add owned points mask -- this mask does not depend on the group so was precomputed
+  fields_->add(fieldsetOwnedMask.field("owned"));
+
+  if (regionalGrid_) {
+    // 2D indices
+    const atlas::functionspace::StructuredColumns fs(functionSpace_);
+    fields_->add(fs.index_i());
+    fields_->add(fs.index_j());
+
+    // Area
+    atlas::Field area = functionSpace_.createField<double>(
+      atlas::option::name("area") | atlas::option::levels(1));
+    auto areaView = atlas::array::make_view<double, 2>(area);
+    const atlas::StructuredGrid grid = fs.grid();
+    const auto view_i = atlas::array::make_view<int, 1>(fs.index_i());
+    const auto view_j = atlas::array::make_view<int, 1>(fs.index_j());
+    for (atlas::idx_t jnode = 0; jnode < area.shape(0); ++jnode) {
+      // Initialization
+      int i = view_i(jnode)-1;
+      int j = view_j(jnode)-1;
+      double dist_i = 0.0;
+      double dist_j = 0.0;
+
+      // i-direction component
+      if (i == 0) {
+        dist_i = atlas::util::Earth().distance(grid.lonlat(i, j), grid.lonlat(i+1, j));
+      } else if (i == grid.nx(j)-1) {
+        dist_i = atlas::util::Earth().distance(grid.lonlat(i-1, j), grid.lonlat(i, j));
+      } else {
+        dist_i = 0.5*atlas::util::Earth().distance(grid.lonlat(i-1, j), grid.lonlat(i+1, j));
+      }
+
+      // j-direction component
+      if (j == 0) {
+        dist_j = atlas::util::Earth().distance(grid.lonlat(i, j), grid.lonlat(i, j+1));
+      } else if (j == grid.ny()-1) {
+        dist_j = atlas::util::Earth().distance(grid.lonlat(i, j-1), grid.lonlat(i, j));
+      } else {
+        dist_j = 0.5*atlas::util::Earth().distance(grid.lonlat(i, j-1), grid.lonlat(i, j+1));
+     }
+
+      // Local scale
+      areaView(jnode, 0) = dist_i*dist_j;
+    }
+    fields_->add(area);
+  }
+
   // Groups
   size_t groupIndex = 0;
   for (const auto & groupParams : params.groups.value()) {
@@ -66,7 +117,7 @@ Geometry::Geometry(const eckit::Configuration & config, const eckit::mpi::Comm &
     // Corresponding level for 2D variables (first or last)
     group.lev2d_ = groupParams.lev2d.value();
 
-    // Vertical coordinate
+    // Average vertical coordinate
     const boost::optional<std::vector<double>> &vert_coordParams = groupParams.vert_coord.value();
     if (vert_coordParams != boost::none) {
       if (vert_coordParams->size() != group.levels_) {
@@ -81,75 +132,10 @@ Geometry::Geometry(const eckit::Configuration & config, const eckit::mpi::Comm &
       }
     }
 
-    // Default mask, set to 1 (true)
-    atlas::Field gmask = functionSpace_.createField<int>(
-      atlas::option::name("gmask") | atlas::option::levels(group.levels_));
-    auto maskView = atlas::array::make_view<int, 2>(gmask);
-    maskView.assign(1);
-
-    // Specific mask
-    if (groupParams.maskType.value() == "none") {
-      // No mask
-    } else if (groupParams.maskType.value() == "sea") {
-      // Read sea mask
-      readSeaMask(groupParams.maskPath.value(), group.levels_, group.lev2d_, gmask);
-    } else {
-      ABORT("Wrong mask type");
-    }
-
-    // Fill geometry fields
-    group.fields_ = atlas::FieldSet();
-
-    // Add owned points mask -- this mask does not depend on the group so was precomputed
-    group.fields_->add(fieldsetOwnedMask.field("owned"));
-
-    if (regionalGrid_) {
-      // 2D indices
-      const atlas::functionspace::StructuredColumns fs(functionSpace_);
-      group.fields_->add(fs.index_i());
-      group.fields_->add(fs.index_j());
-
-      // Area
-      atlas::Field area = functionSpace_.createField<double>(
-        atlas::option::name("area") | atlas::option::levels(1));
-      auto areaView = atlas::array::make_view<double, 2>(area);
-      const atlas::StructuredGrid grid = fs.grid();
-      const auto view_i = atlas::array::make_view<int, 1>(fs.index_i());
-      const auto view_j = atlas::array::make_view<int, 1>(fs.index_j());
-      for (atlas::idx_t jnode = 0; jnode < area.shape(0); ++jnode) {
-        // Initialization
-        int i = view_i(jnode)-1;
-        int j = view_j(jnode)-1;
-        double dist_i = 0.0;
-        double dist_j = 0.0;
-
-        // i-direction component
-        if (i == 0) {
-          dist_i = atlas::util::Earth().distance(grid.lonlat(i, j), grid.lonlat(i+1, j));
-        } else if (i == grid.nx(j)-1) {
-          dist_i = atlas::util::Earth().distance(grid.lonlat(i-1, j), grid.lonlat(i, j));
-        } else {
-          dist_i = 0.5*atlas::util::Earth().distance(grid.lonlat(i-1, j), grid.lonlat(i+1, j));
-        }
-
-        // j-direction component
-        if (j == 0) {
-          dist_j = atlas::util::Earth().distance(grid.lonlat(i, j), grid.lonlat(i, j+1));
-        } else if (j == grid.ny()-1) {
-          dist_j = atlas::util::Earth().distance(grid.lonlat(i, j-1), grid.lonlat(i, j));
-        } else {
-          dist_j = 0.5*atlas::util::Earth().distance(grid.lonlat(i, j-1), grid.lonlat(i, j+1));
-       }
-
-        // Local scale
-        areaView(jnode, 0) = dist_i*dist_j;
-      }
-      group.fields_->add(area);
-    }
-
-    // Vertical coordinate
+    // Vertical coordinate field
+    const std::string vert_coordName = "vert_coord_" + std::to_string(groupIndex);
     atlas::Field vert_coord = functionSpace_.createField<double>(
-      atlas::option::name("vert_coord") | atlas::option::levels(group.levels_));
+      atlas::option::name(vert_coordName) | atlas::option::levels(group.levels_));
     auto vert_coordView = atlas::array::make_view<double, 2>(vert_coord);
     for (atlas::idx_t jnode = 0; jnode < vert_coord.shape(0); ++jnode) {
       for (size_t jlevel = 0; jlevel < group.levels_; ++jlevel) {
@@ -174,13 +160,28 @@ Geometry::Geometry(const eckit::Configuration & config, const eckit::mpi::Comm &
           /orographyParams->meridionalLength.value();
         double distNorm = std::sqrt(dxNorm*dxNorm+dyNorm*dyNorm);
         double orography = delta*orographyParams->height.value()*oops::gc99(distNorm);
-        vert_coordView(jnode, group.vert_coord_[group.levels_-1]) += orography;
+        vert_coordView(jnode, group.levels_-1) += orography;
       }
     }
-    group.fields_->add(vert_coord);
+    fields_->add(vert_coord);
 
-    // Geographical mask
-    group.fields_->add(gmask);
+    // Default mask, set to 1 (true)
+    const std::string gmaskName = "gmask_" + std::to_string(groupIndex);
+    atlas::Field gmask = functionSpace_.createField<int>(
+      atlas::option::name(gmaskName) | atlas::option::levels(group.levels_));
+    auto maskView = atlas::array::make_view<int, 2>(gmask);
+    maskView.assign(1);
+
+    // Specific mask
+    if (groupParams.maskType.value() == "none") {
+      // No mask
+    } else if (groupParams.maskType.value() == "sea") {
+      // Read sea mask
+      readSeaMask(groupParams.maskPath.value(), group.levels_, group.lev2d_, gmask);
+    } else {
+      ABORT("Wrong mask type");
+    }
+    fields_->add(gmask);
 
     // Mask size
     group.gmaskSize_ = 0.0;
@@ -235,6 +236,9 @@ Geometry::Geometry(const Geometry & other) : comm_(other.comm_), halo_(other.hal
     ABORT(other.functionSpace_.type() + " function space not supported yet");
   }
 
+  // Copy geometry fields
+  fields_ = util::shareFields(other.fields_);
+
   // Copy groups
   for (size_t groupIndex = 0; groupIndex < other.groups_.size(); ++groupIndex) {
     // Define group
@@ -248,14 +252,6 @@ Geometry::Geometry(const Geometry & other) : comm_(other.comm_), halo_(other.hal
 
     // Copy vertical coordinate
     group.vert_coord_ = other.groups_[groupIndex].vert_coord_;
-
-    // Copy geometry fields
-    group.fields_ = atlas::FieldSet();
-    if (other.groups_[groupIndex].fields_.has("owned")) {
-      group.fields_->add(other.groups_[groupIndex].fields_["owned"]);
-    }
-    group.fields_->add(other.groups_[groupIndex].fields_["vert_coord"]);
-    group.fields_->add(other.groups_[groupIndex].fields_["gmask"]);
 
     // Copy mask size
     group.gmaskSize_ = other.groups_[groupIndex].gmaskSize_;

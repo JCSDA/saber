@@ -27,6 +27,9 @@ background error:
       zero padding: 6
   saber central block:
     saber block name: BUMP_NICAS
+    fields metadata:
+      stream_function:
+        vert_coord: vert_coord_0
     calibration:
       io:
         data directory: testdata

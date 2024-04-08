@@ -587,6 +587,14 @@ struct ExternalDef {
   // Iterative algorithm (ensemble members loaded sequentially)
   std::pair<const char *, bool> iterative_algo =
     std::make_pair("iterative algorithm", false);
+
+  // Vertical coordinate field name in geometry fields
+  std::pair<const char *, std::string> vert_coord_name =
+    std::make_pair("vertical coordinate name", "");
+
+  // Geographical mask name in geometry fields
+  std::pair<const char *, std::string> gmask_name =
+    std::make_pair("geographical mask name", "");
 };
 
 // -----------------------------------------------------------------------------

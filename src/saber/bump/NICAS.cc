@@ -53,6 +53,7 @@ NICAS::NICAS(const oops::GeometryData & geometryData,
                        activeVars_,
                        covarConf,
                        bumpParams_,
+                       params.fieldsMetaData.value(),
                        xb));
 
   // Read input ATLAS files

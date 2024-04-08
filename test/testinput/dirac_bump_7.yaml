@@ -27,6 +27,15 @@ background error:
   square-root test: true
   saber central block:
     saber block name: BUMP_NICAS
+    fields metadata:
+      stream_function:
+        vert_coord: vert_coord_0
+      velocity_potential:
+        vert_coord: vert_coord_0
+      air_temperature:
+        vert_coord: vert_coord_0
+      surface_pressure:
+        vert_coord: vert_coord_1
     read:
       general:
         testing: true
@@ -48,10 +57,28 @@ background error:
           - surface_pressure
   saber outer blocks:
   - saber block name: StdDev
+    fields metadata:
+      stream_function:
+        vert_coord: vert_coord_0
+      velocity_potential:
+        vert_coord: vert_coord_0
+      air_temperature:
+        vert_coord: vert_coord_0
+      surface_pressure:
+        vert_coord: vert_coord_1
     read:
       model file:
         filepath: testdata/error_covariance_training_bump_stddev_6/_MPI_-_OMP__stddev
   - saber block name: BUMP_VerticalBalance
+    fields metadata:
+      stream_function:
+        vert_coord: vert_coord_0
+      velocity_potential:
+        vert_coord: vert_coord_0
+      air_temperature:
+        vert_coord: vert_coord_0
+      surface_pressure:
+        vert_coord: vert_coord_1
     read:
       general:
         testing: true

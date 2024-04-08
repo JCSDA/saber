@@ -107,6 +107,7 @@ class FastLAM : public SaberCentralBlockBase {
 
   // Parameters
   FastLAMParametersBase params_;
+  const eckit::LocalConfiguration fieldsMetaData_;
 
   // Inputs
   std::unique_ptr<oops::FieldSet3D> rh_;

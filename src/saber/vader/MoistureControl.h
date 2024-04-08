@@ -111,7 +111,8 @@ class MoistureControl : public SaberOuterBlockBase {
 
 // -----------------------------------------------------------------------------
 
-atlas::FieldSet createMuStats(const atlas::FieldSet &,
+atlas::FieldSet createMuStats(const size_t &,
+                              const atlas::FieldSet &,
                               const MoistureControlCovarianceParameters &);
 
 // -----------------------------------------------------------------------------

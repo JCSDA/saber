@@ -23,6 +23,9 @@ background error:
   covariance model: SABER
   saber central block:
     saber block name: BUMP_NICAS
+    fields metadata:
+      snow_depth:
+        vert_coord: vert_coord_0
     calibration:
       general:
         testing: true

@@ -25,6 +25,15 @@ background error:
   covariance model: SABER
   saber central block:
     saber block name: BUMP_NICAS
+    fields metadata:
+      stream_function:
+        vert_coord: vert_coord_0
+      velocity_potential:
+        vert_coord: vert_coord_0
+      air_temperature:
+        vert_coord: vert_coord_0
+      surface_pressure:
+        vert_coord: vert_coord_1
     calibration:
       general:
         testing: true

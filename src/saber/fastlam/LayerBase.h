@@ -35,6 +35,7 @@ class LayerBase : public util::Printable,
 
   // Constructor
   LayerBase(const FastLAMParametersBase & params,
+            const eckit::LocalConfiguration & fieldsMetaData,
             const oops::GeometryData & gdata,
             const std::string & myGroup,
             const std::vector<std::string> & myVars,
@@ -42,6 +43,7 @@ class LayerBase : public util::Printable,
             const size_t & ny0,
             const size_t & nz0) :
     params_(params),
+    fieldsMetaData_(fieldsMetaData),
     gdata_(gdata),
     comm_(gdata_.comm()),
     myrank_(comm_.rank()),
@@ -107,6 +109,7 @@ class LayerBase : public util::Printable,
 
   // Parameters
   FastLAMParametersBase params_;
+  const eckit::LocalConfiguration fieldsMetaData_;
 
   // Model grid geometry data
   const oops::GeometryData & gdata_;
@@ -193,6 +196,7 @@ class LayerFactory;
 class LayerFactory {
  public:
   static std::unique_ptr<LayerBase> create(const FastLAMParametersBase &,
+                                           const eckit::LocalConfiguration &,
                                            const oops::GeometryData &,
                                            const std::string &,
                                            const std::vector<std::string> &,
@@ -207,6 +211,7 @@ class LayerFactory {
 
  private:
   virtual std::unique_ptr<LayerBase> make(const FastLAMParametersBase &,
+                                          const eckit::LocalConfiguration &,
                                           const oops::GeometryData &,
                                           const std::string &,
                                           const std::vector<std::string> &,
@@ -225,13 +230,14 @@ class LayerFactory {
 template<class T>
 class LayerMaker : public LayerFactory {
   std::unique_ptr<LayerBase> make(const FastLAMParametersBase & params,
+                                  const eckit::LocalConfiguration & fieldsMetaData,
                                   const oops::GeometryData & gdata,
                                   const std::string & myGroup,
                                   const std::vector<std::string> & myVars,
                                   const size_t & nx0,
                                   const size_t & ny0,
                                   const size_t & nz0) override {
-    return std::make_unique<T>(params, gdata, myGroup, myVars, nx0, ny0, nz0);
+    return std::make_unique<T>(params, fieldsMetaData, gdata, myGroup, myVars, nx0, ny0, nz0);
   }
 
  public:

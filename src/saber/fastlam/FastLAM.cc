@@ -47,7 +47,8 @@ FastLAM::FastLAM(const oops::GeometryData & gdata,
     comm_(gdata_.comm()),
     activeVars_(activeVars),
     params_(params.calibration.value() != boost::none ? *params.calibration.value()
-      : *params.read.value())
+      : *params.read.value()),
+    fieldsMetaData_(params.fieldsMetaData.value())
 {
   oops::Log::trace() << classname() << "::FastLAM starting" << std::endl;
 
@@ -665,8 +666,8 @@ void FastLAM::setReadFields(const std::vector<oops::FieldSet3D> & fsetVec) {
     for (size_t jg = 0; jg < groups_.size(); ++jg) {
       // Create layers
       for (size_t jBin = 0; jBin < nLayers; ++jBin) {
-        data_[jg].emplace_back(LayerFactory::create(params_, gdata_, groups_[jg].name_,
-          groups_[jg].variables_, nx0_, ny0_, groups_[jg].nz0_));
+        data_[jg].emplace_back(LayerFactory::create(params_, fieldsMetaData_, gdata_,
+          groups_[jg].name_, groups_[jg].variables_, nx0_, ny0_, groups_[jg].nz0_));
       }
     }
 
@@ -782,8 +783,8 @@ void FastLAM::directCalibration(const oops::FieldSets &) {
     // Create layers
     std::vector<std::unique_ptr<LayerBase>> layers;
     for (size_t jBin = 0; jBin < nLayers; ++jBin) {
-      data_[jg].emplace_back(LayerFactory::create(params_, gdata_, groups_[jg].name_,
-        groups_[jg].variables_, nx0_, ny0_, groups_[jg].nz0_));
+      data_[jg].emplace_back(LayerFactory::create(params_, fieldsMetaData_, gdata_,
+        groups_[jg].name_, groups_[jg].variables_, nx0_, ny0_, groups_[jg].nz0_));
     }
   }
   for (size_t jBin = 0; jBin < nLayers; ++jBin) {

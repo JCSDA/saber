@@ -35,6 +35,11 @@ background error:
       zero padding: 6
   saber central block:
     saber block name: BUMP_NICAS
+    fields metadata:
+      stream_function:
+        gmask: gmask_0
+      surface_pressure:
+        gmask: gmask_1
     calibration:
       general:
         testing: true

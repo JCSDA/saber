@@ -43,6 +43,7 @@ LayerFactory::LayerFactory(const std::string & name) {
 
 std::unique_ptr<LayerBase> LayerFactory::create(
   const FastLAMParametersBase & params,
+  const eckit::LocalConfiguration & fieldsMetaData,
   const oops::GeometryData & gdata,
   const std::string & myGroup,
   const std::vector<std::string> & myVars,
@@ -57,7 +58,7 @@ std::unique_ptr<LayerBase> LayerFactory::create(
     throw eckit::UserError("Element does not exist in saber::LayerFactory.", Here());
   }
   std::unique_ptr<LayerBase> ptr =
-    jsb->second->make(params, gdata, myGroup, myVars, nx0, ny0, nz0);
+    jsb->second->make(params, fieldsMetaData, gdata, myGroup, myVars, nx0, ny0, nz0);
   oops::Log::trace() << "LayerBase::create done" << std::endl;
   return ptr;
 }
@@ -84,12 +85,14 @@ void LayerBase::setupVerticalCoord(const atlas::Field & rvField,
     std::vector<double> wgt(nz0_, 0.0);
     const auto rvView = atlas::array::make_view<double, 2>(rvField);
     const auto wgtView = atlas::array::make_view<double, 2>(wgtField);
+    const std::string key = myGroup_ + ".vert_coord";
+    const std::string vertCoordName = fieldsMetaData_.getString(key, "vert_coord");
     for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
       if (ghostView(jnode0) == 0) {
         for (size_t k0 = 0; k0 < nz0_; ++k0) {
           double VC = static_cast<double>(k0+1);
-          if (gdata_.fieldSet().has("vert_coord")) {
-            const atlas::Field vertCoordField = gdata_.fieldSet()["vert_coord"];
+          if (gdata_.fieldSet().has(vertCoordName)) {
+            const atlas::Field vertCoordField = gdata_.fieldSet()[vertCoordName];
             const auto vertCoordView = atlas::array::make_view<double, 2>(vertCoordField);
             VC = vertCoordView(jnode0, k0);
           }
