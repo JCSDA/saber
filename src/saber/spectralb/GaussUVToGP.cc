@@ -31,8 +31,8 @@
 #include "mo/eval_cloud_ice_mixing_ratio.h"
 #include "mo/eval_cloud_liquid_mixing_ratio.h"
 #include "mo/eval_dry_air_density.h"
+#include "mo/eval_total_mixing_ratio.h"
 #include "mo/eval_water_vapor_mixing_ratio.h"
-#include "mo/model2geovals_varchange.h"
 
 #include "oops/base/FieldSet3D.h"
 #include "oops/base/Variables.h"
@@ -179,7 +179,7 @@ atlas::FieldSet populateFields(const atlas::FieldSet & geomfields,
     tempfields.add(geomfields[s]);
   }
 
-  mo::evalTotalMassMoistAir(tempfields);
+  mo::eval_total_mixing_ratio_nl(tempfields);
   mo::eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl(tempfields);
   mo::eval_cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
               tempfields);

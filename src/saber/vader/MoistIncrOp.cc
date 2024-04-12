@@ -24,10 +24,10 @@
 #include "mo/eval_moisture_incrementing_operator.h"
 #include "mo/eval_rain_mixing_ratio.h"
 #include "mo/eval_sat_vapour_pressure.h"
+#include "mo/eval_total_mixing_ratio.h"
 #include "mo/eval_total_relative_humidity.h"
 #include "mo/eval_water_vapor_mixing_ratio.h"
 #include "mo/functions.h"
-#include "mo/model2geovals_varchange.h"
 
 #include "oops/base/FieldSet3D.h"
 #include "oops/base/Variables.h"
@@ -67,7 +67,7 @@ MoistIncrOp::MoistIncrOp(const oops::GeometryData & outerGeometryData,
     "air_pressure",  // on theta levels from file ("air_pressure_levels_minus_one" is on rho levels)
     "air_temperature",  // to be populated in eval_air_temperature_nl
     "m_v", "m_ci", "m_cl", "m_r",  // mixing ratios from file
-    "m_t",  // to be populated in evalTotalMassMoistAir
+    "m_t",  // to be populated in eval_total_mixing_ratio_nl
     "svp",  //  to be populated in eval_sat_vapour_pressure_nl
     "dlsvpdT",  //  to be populated in eval_derivative_ln_svp_wrt_temperature_nl
     "qsat",  // to be populated in evalSatSpecificHumidity
@@ -100,7 +100,7 @@ MoistIncrOp::MoistIncrOp(const oops::GeometryData & outerGeometryData,
   }
 
   mo::eval_air_temperature_nl(augmentedStateFieldSet_);
-  mo::evalTotalMassMoistAir(augmentedStateFieldSet_);
+  mo::eval_total_mixing_ratio_nl(augmentedStateFieldSet_);
   mo::eval_sat_vapour_pressure_nl(augmentedStateFieldSet_);
   mo::eval_derivative_ln_svp_wrt_temperature_nl(augmentedStateFieldSet_);
   mo::evalSatSpecificHumidity(augmentedStateFieldSet_);
