@@ -16,6 +16,10 @@ DuplicateVariables.h
 Ensemble.h
 Ensemble.cc
 
+# Fake levels block
+FakeLevels.h
+FakeLevels.cc
+
 # Hybrid block
 Hybrid.h
 Hybrid.cc

@@ -2,30 +2,26 @@ geometry:
   function space: StructuredColumns
   grid:
     type: regular_lonlat
-    N: 30
+    N: 10
   groups:
   - variables:
-    - snow_depth
-    levels: 1
-    vert_coord: [0.0]
-    orography: 
-      top longitude: 180.0
-      top latitude: 0.0
-      zonal length: 6000.0e3
-      meridional length: 12000.0e3
-      height: 1.0
+    - stream_function
+    - velocity_potential
+    levels: 2
+  - variables:
+    - variable_at_interfaces
+    levels: 3
   halo: 1
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
-  - snow_depth
+  - stream_function
+  - velocity_potential
+  - variable_at_interfaces
 background error:
   covariance model: SABER
   saber central block:
     saber block name: BUMP_NICAS
-    fields metadata:
-      snow_depth:
-        vert_coord: vert_coord_0
     calibration:
       general:
         testing: true
@@ -38,28 +34,50 @@ background error:
         compute nicas: true
         adjoints test: true
         internal dirac test: true
+      ensemble sizes:
+        total ensemble size: 50
       nicas:
-        resolution: 10.0
+        resolution: 4.0
         explicit length-scales: true
         horizontal length-scale:
         - groups:
-          - snow_depth
-          value: 6000.0e3
+          - stream_function
+          value: 4000.0e3
+        - groups:
+          - velocity_potential
+          value: 5000.0e3
+        - groups:
+          - variable_at_interfaces
+          value: 3000.0e3
         vertical length-scale:
         - groups:
-          - snow_depth
-          value: 0.6
+          - stream_function
+          - velocity_potential
+          - variable_at_interfaces
+          value: 3.0
+      grids:
+      - model:
+          variables:
+          - stream_function
+          - velocity_potential
+      - model:
+          variables:
+          - variable_at_interfaces
       dirac:
-      - longitude: 180.0
+      - longitude: 0.0
         latitude: 0.0
         level: 1
-        variable: snow_depth
+        variable: stream_function
+      - longitude: 0.0
+        latitude: 0.0
+        level: 3
+        variable: variable_at_interfaces
       output model files:
-      - parameter: vert_coord
+      - parameter: cor_rh
         file:
-          filepath: testdata/error_covariance_training_bump_nicas_10/_MPI_-_OMP__vert_coord
-      - parameter: dirac_nicas
+          filepath: testdata/error_covariance_training_bump_nicas_10/_MPI_-_OMP__cor_rh
+      - parameter: cor_rv
         file:
-          filepath: testdata/error_covariance_training_bump_nicas_10/_MPI_-_OMP__dirac_nicas
+          filepath: testdata/error_covariance_training_bump_nicas_10/_MPI_-_OMP__cor_rv
 test:
   reference filename: testref/error_covariance_training_bump_nicas_10.ref

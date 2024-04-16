@@ -168,8 +168,6 @@ void Fields::zero() {
   oops::Log::trace() << "Fields::zero starting" << std::endl;
   for (const auto & var : vars_.variables()) {
     atlas::Field field = fset_[var];
-    const std::string gmaskName = "gmask_" + std::to_string(geom_->groupIndex(var));
-    const auto gmaskView = atlas::array::make_view<int, 2>(geom_->fields()[gmaskName]);
     if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
       view.assign(0.0);
@@ -391,6 +389,11 @@ void Fields::random() {
   oops::Log::trace() << "Fields::random starting" << std::endl;
   fset_.clear();
   for (size_t groupIndex = 0; groupIndex < geom_->groups(); ++groupIndex) {
+    // Mask and ghost points fields
+    const std::string gmaskName = "gmask_" + std::to_string(groupIndex);
+    const auto gmaskView = atlas::array::make_view<int, 2>(geom_->fields()[gmaskName]);
+    const auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
+
     // Total size
     size_t n = 0;
     std::vector<std::string> groupVars;
@@ -399,12 +402,8 @@ void Fields::random() {
         groupVars.push_back(var);
       }
     }
-
-    const auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
     for (const auto & var : groupVars) {
       atlas::Field field = fset_[var];
-      const std::string gmaskName = "gmask_" + std::to_string(groupIndex);
-      const auto gmaskView = atlas::array::make_view<int, 2>(geom_->fields()[gmaskName]);
       if (field.rank() == 2) {
         for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
           for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
@@ -417,25 +416,15 @@ void Fields::random() {
 
     // Local masks
     atlas::FieldSet localMasks;
-    for (const auto & var : groupVars) {
-      const std::string gmaskName = "gmask_" + std::to_string(groupIndex);
-      if (!localMasks.has(gmaskName)) {
-        localMasks.add(geom_->fields()[gmaskName]);
-      }
-    }
+    localMasks.add(geom_->fields()[gmaskName]);
     localMasks.add(geom_->functionSpace().ghost());
 
     // Global masks
     atlas::FieldSet globalMasks;
-    for (const auto & var : groupVars) {
-      const std::string gmaskName = "gmask_" + std::to_string(groupIndex);
-      if (!globalMasks.has(gmaskName)) {
-        atlas::Field gmaskGlobal = geom_->functionSpace().createField<int>(
-          atlas::option::name(gmaskName) | atlas::option::levels(geom_->levels(groupIndex))
-          | atlas::option::global());
-        globalMasks.add(gmaskGlobal);
-      }
-    }
+    atlas::Field gmaskGlobal = geom_->functionSpace().createField<int>(
+      atlas::option::name(gmaskName) | atlas::option::levels(geom_->levels(groupIndex))
+      | atlas::option::global());
+    globalMasks.add(gmaskGlobal);
     atlas::Field ghostGlobal = geom_->functionSpace().createField<int>(atlas::option::name("ghost")
      | atlas::option::global());
     globalMasks.add(ghostGlobal);

@@ -107,9 +107,9 @@ void SaberOuterBlockBase::adjointTest(const oops::GeometryData & outerGeometryDa
     auto ghostView = atlas::array::make_view<int, 1>(outerGeometryData.functionSpace().ghost());
     for (const auto & var : outerVars.variables()) {
       auto view = atlas::array::make_view<double, 2>(outerFset[var]);
-      for (size_t jn = 0; jn < view.shape(0); ++jn) {
+      for (int jn = 0; jn < view.shape(0); ++jn) {
         if (ghostView(jn) == 1) {
-          for (size_t jl = 0; jl < view.shape(1); ++jl) {
+          for (int jl = 0; jl < view.shape(1); ++jl) {
             view(jn, jl) = 0.0;
           }
         }
