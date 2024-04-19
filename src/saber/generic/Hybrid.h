@@ -39,9 +39,6 @@ class CovarianceParameters : public oops::Parameters {
   oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> saberOuterBlocksConf{
     "saber outer blocks", this};
 
-  // Geometry [optional]
-  oops::OptionalParameter<eckit::LocalConfiguration> hybridGeometry{"geometry", this};
-
   // Ensemble
   oops::Parameter<bool> iterativeEnsembleLoading{"iterative ensemble loading", false, this};
   oops::OptionalParameter<eckit::LocalConfiguration> ensemble{"ensemble", this};
@@ -81,6 +78,12 @@ class HybridParameters : public SaberBlockParametersBase {
  public:
   // Vector of components
   oops::RequiredParameter<std::vector<ComponentParameters>> components{"components", this};
+
+  // Geometry [optional]
+  oops::OptionalParameter<eckit::LocalConfiguration> hybridGeometry{"geometry", this};
+
+  // Switch to run components in parallel
+  oops::Parameter<bool> runInParallel{"run in parallel", false, this};
 
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };

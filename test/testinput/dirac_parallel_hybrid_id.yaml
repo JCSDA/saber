@@ -1,0 +1,55 @@
+geometry: &geom
+  function space: NodeColumns
+  grid:
+    name: CS-LFR-15
+  partitioner: cubedsphere
+  groups:
+  - variables: &vars
+    - unbalanced_pressure
+    - moisture_control_variable
+    levels: 2
+  halo: 1
+
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables: *vars
+
+background error:
+  covariance model: SABER
+  adjoint test: true
+  randomization size: 1
+  saber central block:
+    saber block name: Hybrid
+    run in parallel: true
+    geometry: *geom
+    components:
+    - covariance:
+        saber central block:
+          saber block name: ID
+      weight:
+        value: 1.0
+    - covariance:
+        saber central block:
+          saber block name: ID
+      weight:
+        value: 3.0
+
+dirac: &dirac
+  lon:
+  - 0.0
+  lat:
+  - 0.0
+  level:
+  - 1
+  variable:
+  - unbalanced_pressure
+
+diagnostic points: *dirac
+
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_parallel_hybrid_id/%MPI%_dirac_%id%
+
+test:
+  reference filename: testref/dirac_parallel_hybrid_id.ref
+

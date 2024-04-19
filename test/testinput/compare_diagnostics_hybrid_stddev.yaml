@@ -1,0 +1,5 @@
+# Compare point outputs of a simple StdDev covariance and a parallel Hybrid block
+# of StdDev covariances.
+file to compare 1: testref/dirac_stddev_1.ref
+file to compare 2: testref/dirac_parallel_hybrid_stddev.ref
+relative float tolerance: 1e-15

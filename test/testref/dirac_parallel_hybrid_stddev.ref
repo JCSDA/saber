@@ -17,9 +17,20 @@ Groups:
 Fields:
   stream_function: 1.0000000000000000e+00
   velocity_potential: 0.0000000000000000e+00
-Norm of input parameter StdDev: 5.7530746965415538e+01
+Did not write file testdata/dirac_parallel_hybrid_stddev/fields_in_multiply_1.nc
+Fields:
+  stream_function: 4.0127503126905729e+01
+  velocity_potential: 4.1873820575192191e+01
+
+Adjoint test for block write fields passed
+Norm of input parameter StdDev: 5.7530746965415531e+01
 Adjoint test for block StdDev passed
 Adjoint test for block ID passed
+Did not write file testdata/dirac_parallel_hybrid_stddev/fields_in_multiply_2.nc
+Fields:
+  stream_function: 1.0356656962519009e+00
+  velocity_potential: 0.0000000000000000e+00
+
 Covariance(SABER) diagnostics:
 - Variances at Dirac points:
   + Value for variable stream_function, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0356656962519009e+00
@@ -42,5 +53,5 @@ Groups:
   - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 1.0356656962519004e+00
+  stream_function: 1.0356656962519009e+00
   velocity_potential: 0.0000000000000000e+00

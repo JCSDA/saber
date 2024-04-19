@@ -24,7 +24,7 @@ background error:
     read:
       atlas file:
         filepath: testdata/error_covariance_training_stddev_1/_MPI_-_OMP__stddev
-dirac:
+dirac: &dirac
   lon:
   - 0.0
   lat:
@@ -33,8 +33,10 @@ dirac:
   - 1
   variable:
   - stream_function
+diagnostic points: *dirac
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_stddev_1/%MPI%_stddev_%id%
 test:
   reference filename: testref/dirac_stddev_1.ref
+

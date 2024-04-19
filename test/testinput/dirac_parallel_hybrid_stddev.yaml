@@ -1,0 +1,70 @@
+geometry: &geom
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 10
+  groups:
+  - variables: &vars
+    - stream_function
+    - velocity_potential
+    levels: 2
+  halo: 1
+
+background:
+  states:
+  - date: '2010-01-01T12:00:00Z'
+    state variables: *vars
+
+background error:
+  covariance model: SABER
+  adjoint test: true
+  saber central block:
+    saber block name: Hybrid
+    run in parallel: true
+    geometry: *geom
+    components:
+    - weight:
+        value: 0.5
+      covariance:
+        saber central block:
+          saber block name: ID
+        saber outer blocks:
+        - saber block name: StdDev
+          read:
+            model file:
+              filepath: testdata/error_covariance_training_stddev_1/2-_OMP__stddev
+    - weight:
+        value: 0.5
+      covariance:
+        saber central block:
+          saber block name: ID
+        saber outer blocks:
+        - saber block name: StdDev
+          read:
+            model file:
+              filepath: testdata/error_covariance_training_stddev_2/2-_OMP__stddev
+  saber outer blocks:
+  - saber block name: write fields
+    save netCDF file: false
+    output path: testdata/dirac_parallel_hybrid_stddev
+    multiply fset filename: fields_in_multiply
+
+dirac: &dirac
+  lon:
+  - 0.0
+  lat:
+  - 0.0
+  level:
+  - 1
+  variable:
+  - stream_function
+
+diagnostic points: *dirac
+
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_parallel_hybrid_stddev/%MPI%_dirac_%id%
+
+test:
+  reference filename: testref/dirac_parallel_hybrid_stddev.ref
+

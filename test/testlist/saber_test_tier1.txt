@@ -12,6 +12,7 @@ dirac_fakelevels_2
 dirac_fakelevels_3
 dirac_oops_ens_noloc_4d
 compare_diagnostics_ens_noloc
+compare_diagnostics_hybrid_stddev
 dirac_id
 dirac_id_4d
 dirac_id_4d_timecov
@@ -22,6 +23,8 @@ dirac_interpolation_3
 dirac_stddev_1
 dirac_stddev_2
 dirac_duplicate_variables
+dirac_parallel_hybrid_id
+dirac_parallel_hybrid_stddev
 error_covariance_training_bump_1
 error_covariance_training_bump_2
 error_covariance_training_bump_hdiag_1
