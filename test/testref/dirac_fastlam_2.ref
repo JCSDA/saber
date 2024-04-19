@@ -48,15 +48,15 @@ Fields:
     FastLAM interpolation adjoint test passed
     FastLAM redToRows test passed
     FastLAM rowsToCols test passed
-Norm of output parameter : 1.1644890209873171e+04
-Norm of output parameter : 8.7234826187710150e+03
-Norm of output parameter : 1.6165156190671878e+03
-Norm of output parameter : 9.0923150188455594e+01
-Norm of output parameter : 1.0144433228743708e+02
-Norm of output parameter : 8.3073295732831852e+01
-Norm of output parameter : 2.2516083858506283e+02
-Norm of output parameter : 2.3912664898492423e+02
-Norm of output parameter : 2.3882479326608160e+02
+Norm of output parameter index i: 1.1644890209873171e+04
+Norm of output parameter index j: 8.7234826187710150e+03
+Norm of output parameter normalized horizontal length-scale: 1.6165156190671878e+03
+Norm of output parameter weight - 0: 9.0923150188455594e+01
+Norm of output parameter weight - 1: 1.0144433228743708e+02
+Norm of output parameter weight - 2: 8.3073295732831852e+01
+Norm of output parameter normalization - 0: 2.2516083858506283e+02
+Norm of output parameter normalization - 1: 2.3912664898492423e+02
+Norm of output parameter normalization - 2: 2.3882479326608160e+02
 Adjoint test for block FastLAM passed
 Square-root test for block FastLAM passed
 Covariance(SABER) * Increment:

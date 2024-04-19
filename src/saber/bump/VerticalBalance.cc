@@ -34,32 +34,13 @@ VerticalBalance::VerticalBalance(const oops::GeometryData & outerGeometryData,
   : SaberOuterBlockBase(params, xb.validTime()),
     innerGeometryData_(outerGeometryData),
     innerVars_(outerVars),
-    bumpParams_(),
-    bump_(),
+    activeVars_(getActiveVars(params, outerVars)),
+    bumpParams_(params.calibrationParams.value() != boost::none ? *params.calibrationParams.value()
+      : *params.readParams.value()),
+    bump_(new BUMP(outerGeometryData, activeVars_, covarConf, bumpParams_,
+      params.fieldsMetaData.value(), xb)),
     memberIndex_(0) {
-  oops::Log::trace() << classname() << "::VerticalBalance starting"
-                     << std::endl;
-
-  // Get active variables
-  activeVars_ = getActiveVars(params, outerVars);
-
-  // Get BUMP parameters
-  if (params.doCalibration()) {
-    bumpParams_ = *params.calibrationParams.value();
-  } else if (params.doRead()) {
-    bumpParams_ = *params.readParams.value();
-  } else {
-    throw eckit::UserError("calibration or read required in BUMP", Here());
-  }
-
-  // Initialize BUMP
-  bump_.reset(new BUMP(outerGeometryData,
-                       activeVars_,
-                       covarConf,
-                       bumpParams_,
-                       params.fieldsMetaData.value(),
-                       xb));
-
+  oops::Log::trace() << classname() << "::VerticalBalance starting" << std::endl;
   oops::Log::trace() << classname() << "::VerticalBalance done" << std::endl;
 }
 

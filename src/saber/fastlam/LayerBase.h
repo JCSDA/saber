@@ -167,6 +167,7 @@ class LayerBase : public util::Printable,
   atlas::FieldSet fset_;
 
   // Reduced grid <=> model grid (interpolation)
+  bool noInterp_;
   size_t rSendSize_;
   size_t mRecvSize_;
   std::vector<int> rSendCounts_;

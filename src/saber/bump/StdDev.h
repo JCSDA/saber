@@ -81,8 +81,8 @@ class StdDev : public SaberOuterBlockBase {
   void print(std::ostream &) const override;
   const oops::GeometryData & innerGeometryData_;
   oops::Variables innerVars_;
-  BUMPParameters bumpParams_;
   oops::Variables activeVars_;
+  BUMPParameters bumpParams_;
   std::unique_ptr<BUMP> bump_;
   size_t memberIndex_;
 };

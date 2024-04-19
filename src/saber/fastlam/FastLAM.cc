@@ -1038,6 +1038,7 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
       }
 
       // Add pair
+      fset.name() = param;
       pairs.push_back(std::make_pair(file, fset));
     }
     if (param == "index j") {
@@ -1062,6 +1063,7 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
       }
 
       // Add pair
+      fset.name() = param;
       pairs.push_back(std::make_pair(file, fset));
     }
     if (param == "normalized horizontal length-scale") {
@@ -1088,6 +1090,7 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
       }
 
       // Add pair
+      fset.name() = param;
       pairs.push_back(std::make_pair(file, fset));
     }
     if (param == "weight") {
@@ -1125,6 +1128,7 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
         util::seekAndReplace(fileCmp, "%component%", jBin, 2);
 
         // Add pair
+        fset.name() = param + " - " + std::to_string(jBin);
         pairs.push_back(std::make_pair(fileCmp, fset));
       }
     }
@@ -1157,6 +1161,7 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
         util::seekAndReplace(fileCmp, "%component%", jBin, 2);
 
         // Add pair
+        fset.name() = param + " - " + std::to_string(jBin);
         pairs.push_back(std::make_pair(fileCmp, fset));
       }
     }
@@ -1189,6 +1194,7 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
         util::seekAndReplace(fileCmp, "%component%", jBin, 2);
 
         // Add pair
+        fset.name() = param + " - " + std::to_string(jBin);
         pairs.push_back(std::make_pair(fileCmp, fset));
       }
     }

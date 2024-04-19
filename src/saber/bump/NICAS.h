@@ -81,8 +81,8 @@ class NICAS : public SaberCentralBlockBase {
 
  private:
   void print(std::ostream &) const override;
-  BUMPParameters bumpParams_;
   oops::Variables activeVars_;
+  BUMPParameters bumpParams_;
   std::unique_ptr<BUMP> bump_;
   size_t memberIndex_;
 };

@@ -83,7 +83,7 @@ void WriteFields::writeToFile(const oops::FieldSet3D & fset,
     oops::Log::test() << "  " << field.name() << ": "
                       << util::normField(field, innerGeometryData_.comm()) << std::endl;
   }
-  oops::Log::test() << std::endl;
+  oops::Log::info() << std::endl;
 }
 
 // -----------------------------------------------------------------------------

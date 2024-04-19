@@ -31,30 +31,13 @@ NICAS::NICAS(const oops::GeometryData & geometryData,
              const oops::FieldSet3D & xb,
              const oops::FieldSet3D & fg)
   : SaberCentralBlockBase(params, xb.validTime()),
-    bumpParams_(),
-    bump_(),
+    activeVars_(getActiveVars(params, centralVars)),
+    bumpParams_(params.calibrationParams.value() != boost::none ? *params.calibrationParams.value()
+      : *params.readParams.value()),
+    bump_(new BUMP(geometryData, activeVars_, covarConf, bumpParams_,
+      params.fieldsMetaData.value(), xb)),
     memberIndex_(0) {
   oops::Log::trace() << classname() << "::NICAS starting" << std::endl;
-
-  // Get active variables
-  activeVars_ = getActiveVars(params, centralVars);
-
-  // Get BUMP parameters
-  if (params.doCalibration()) {
-    bumpParams_ = *params.calibrationParams.value();
-  } else if (params.doRead()) {
-    bumpParams_ = *params.readParams.value();
-  } else {
-    throw eckit::UserError("calibration or read required in BUMP", Here());
-  }
-
-  // Initialize BUMP
-  bump_.reset(new BUMP(geometryData,
-                       activeVars_,
-                       covarConf,
-                       bumpParams_,
-                       params.fieldsMetaData.value(),
-                       xb));
 
   // Read input ATLAS files
   bump_->readAtlasFiles();
