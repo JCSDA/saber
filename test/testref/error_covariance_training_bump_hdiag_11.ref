@@ -1,0 +1,72 @@
+       Independent levels:  1[2]
+          Subset Sc0 size:              762
+          Min. / max. longitudes: -171.0 /   180.0
+          Min. / max. latitudes:   -90.0 /    90.0
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+          Norm of stream_function:  0.36700228E+02
+          Norm of stream_function:  0.37644642E+02
+          Norm of stream_function:  0.35734364E+02
+          Norm of stream_function:  0.38114699E+02
+          Norm of stream_function:  0.37597046E+02
+          Norm of stream_function:  0.40731181E+02
+          Norm of stream_function:  0.36903096E+02
+          Norm of stream_function:  0.41763852E+02
+          Norm of stream_function:  0.38909547E+02
+          Norm of stream_function:  0.34730147E+02
+          Norm of stream_function:  0.38661535E+02
+          Norm of stream_function:  0.39192538E+02
+          Norm of stream_function:  0.39358963E+02
+          Norm of stream_function:  0.42523426E+02
+          Norm of stream_function:  0.39158719E+02
+          Norm of stream_function:  0.40000157E+02
+          Norm of stream_function:  0.40151620E+02
+          Norm of stream_function:  0.38297785E+02
+          Norm of stream_function:  0.35928874E+02
+          Norm of stream_function:  0.38587629E+02
+          Norm of stream_function:  0.33406744E+02
+          Norm of stream_function:  0.38024458E+02
+          Norm of stream_function:  0.38736793E+02
+          Norm of stream_function:  0.39699423E+02
+          Norm of stream_function:  0.39157311E+02
+          Level   1 ~> 100.0%
+          Level   2 ~> 100.0%
+          Decimate full grid, at least      500 points required,     762 valid points found
+          Subgrid hash:   -130003308
+             -90.00 deg.  ~>100-100-99-100-100-100-100-99-100-100 
+             -90.00 deg.  ~>100-100-99-100-100-100-100-99-100-100 
+          nc1 =      500
+          Independent levels:  1[2]
+          Independent levels for angular sector   1 / class   1:  1[2]
+          Independent levels for angular sector   1 / class   2:  1[2]
+          Independent levels for angular sector   1 / class   3:  1[2]
+          Independent levels for angular sector   1 / class   4:  1[2]
+          Independent levels for angular sector   1 / class   5:  1[2]
+          Independent levels for angular sector   1 / class   6:  1[2]
+          Independent levels for angular sector   1 / class   7:  1[2]
+          Independent levels for angular sector   1 / class   8:  1[2]
+          Independent levels for angular sector   1 / class   9:  1[2]
+          Independent levels for angular sector   1 / class  10:  1[2]
+                Level:   1 ~> cov. at class zero:  0.99E+00
+                Level:   2 ~> cov. at class zero:  0.10E+01
+             Block stream_function:  0.16743447E+00 for       40 diagnostic points
+                   Level:   1 ~> amplitude:        1.00
+                                 cor. hor. support:      3545.32 km
+                                 cor. ver. support:         3.21 vertical units
+                   Level:   2 ~> amplitude:        1.00
+                                 cor. hor. support:      3657.53 km
+                                 cor. ver. support:         3.21 vertical units
+             Block stream_function:  0.20289437E+00 for       40 diagnostic points
+                Level:   1 ~> loc. at class zero:       0.92
+                Level:   2 ~> loc. at class zero:       0.92
+                   Level:   1 ~> amplitude:        1.00
+                                 loc. hor. support:      4681.12 km
+                                 loc. ver. support:         6.50 vertical units
+                   Level:   2 ~> amplitude:        1.00
+                                 loc. hor. support:      4802.64 km
+                                 loc. ver. support:         6.50 vertical units
+Norm of output parameter loc_rh - 1: 1.9437518117365789e+08
+Norm of output parameter loc_rv - 1: 2.6648870270249807e+02

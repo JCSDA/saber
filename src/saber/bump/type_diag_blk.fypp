@@ -4,7 +4,7 @@
 !> Diagnostic block derived type
 ! Author: Benjamin Menetrier
 ! Licensing: this code is distributed under the CeCILL-C license
-! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE, IRIT and Meteorologisk Institutt
 !----------------------------------------------------------------------
 module type_diag_blk
 
@@ -13,7 +13,7 @@ use tools_const, only: zero,tenth,half,one,four,ten,pi
 use tools_fit, only: condmax,diag_iso,diag_tensor,tensor_d2h,tensor_d2r,tensor_check_cond,fast_fit
 use tools_func, only: vert_interp_size,vert_interp_setup,vert_interp
 use tools_kinds, only: kind_real,huge_real
-use tools_netcdf, only: define_grp,put_att,define_var,put_var
+use tools_netcdf, only: define_grp,define_dim,put_att,define_var,put_var
 use tools_repro, only: inf,supeq
 use tools_wrfda
 use type_avg_blk, only: avg_blk_type
@@ -62,6 +62,7 @@ contains
    procedure :: write => diag_blk_write
    procedure :: fitting => diag_blk_fitting
    procedure :: localization => diag_blk_localization
+   procedure :: localization_from_correlation => diag_blk_localization_from_correlation
    procedure :: hybridization => diag_blk_hybridization
 end type diag_blk_type
 
@@ -206,7 +207,7 @@ end subroutine diag_blk_dealloc
 ! Subroutine: diag_blk_write
 !> Write
 !----------------------------------------------------------------------
-subroutine diag_blk_write(diag_blk,mpl,nam,geom,ncid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id,ncmp_id)
+subroutine diag_blk_write(diag_blk,mpl,nam,geom,ncid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
 
 implicit none
 
@@ -221,10 +222,9 @@ integer,intent(in) :: nc4_id                   !< NetCDF ID
 integer,intent(in) :: nl0r_id                  !< NetCDF ID
 integer,intent(in) :: nl0_1_id                 !< NetCDF ID
 integer,intent(in) :: nl0_2_id                 !< NetCDF ID
-integer,intent(in) :: ncmp_id                  !< NetCDF ID
 
 ! Local variables
-integer :: grpid,raw_id,raw_hor_id,raw_zs_id,valid_id,l0rl0_to_l0_id
+integer :: grpid,ncmp_id,raw_id,raw_hor_id,raw_zs_id,valid_id,l0rl0_to_l0_id
 integer :: fit_id,fit_hor_id,fit_zs_id,fit_detail_id,fit_detail_hor_id,fit_detail_zs_id
 integer :: a_l0_id,rh_l0_id,D11_l0_id,D22_l0_id,D12_l0_id,rv_l0_id,hyb_coef_raw_id,hyb_coef_id
 integer :: il0,jl0r,jl0,jl0rz,icmp
@@ -253,7 +253,8 @@ if (mpl%msv%isanynot(diag_blk%fit)) then
    fit_id = define_var(mpl,grpid,'fit','real',(/nc3_id,nc4_id,nl0r_id,nl0_1_id/))
    fit_hor_id = define_var(mpl,grpid,'fit_hor','real',(/nc3_id,nc4_id,nl0_1_id/))
    fit_zs_id = define_var(mpl,grpid,'fit_zs','real',(/nl0_2_id,nl0_1_id/))
-   if (nam%write_hdiag_detail) then
+   if (diag_blk%ncmp>1) ncmp_id = define_dim(mpl,grpid,'ncmp',diag_blk%ncmp)
+   if ((diag_blk%ncmp>1).and.(nam%write_hdiag_detail)) then
       fit_detail_id = define_var(mpl,grpid,'fit_detail','real',(/nc3_id,nc4_id,nl0r_id,nl0_1_id,ncmp_id/))
       fit_detail_hor_id = define_var(mpl,grpid,'fit_detail_hor','real',(/nc3_id,nc4_id,nl0_1_id,ncmp_id/))
       fit_detail_zs_id = define_var(mpl,grpid,'fit_detail_zs','real',(/nl0_2_id,nl0_1_id,ncmp_id/))
@@ -308,7 +309,7 @@ if (mpl%msv%isanynot(diag_blk%fit)) then
          call put_var(mpl,grpid,fit_zs_id,diag_blk%fit(1,1,jl0r,il0),(/jl0,il0/))
       end do
    end do
-   if (nam%write_hdiag_detail) then
+   if ((diag_blk%ncmp>1).and.(nam%write_hdiag_detail)) then
       call put_var(mpl,grpid,fit_detail_id,diag_blk%fit_detail)
       do icmp=1,diag_blk%ncmp
          do il0=1,geom%nl0
@@ -729,10 +730,16 @@ do il1=1,nl1
 
                ! Get parameters, apply bounds
                scaling = max(minim%binf(1),min(minim%x(1),minim%bsup(1)))
-               if (icmp<diag_blk%ncmp) then
-                  a_l1(il1,icmp) = max(minim%binf(2),min(minim%x(2),minim%bsup(2)))
+               if ((icmp==1).and.(scaling<one)) then
+                  ! A single component is better
+                  scaling = one
+                  a_l1(il1,icmp) = one
                else
-                  a_l1(il1,icmp) = minim%a
+                 if (icmp<diag_blk%ncmp) then
+                    a_l1(il1,icmp) = max(minim%binf(2),min(minim%x(2),minim%bsup(2)))
+                 else
+                    a_l1(il1,icmp) = minim%a
+                 end if
                end if
 
                ! Scale length-scales/tensor
@@ -883,7 +890,7 @@ do il0=1,geom%nl0
       do jc4=1,nam%nc4
          do jc3=1,nam%nc3
             if (mpl%msv%isnot(avg_blk%m11asysq(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11sq(jc3,jc4,jl0r,il0))) then
-               ! Compute localization
+               ! Compute localization from asymptotic moments
                diag_blk%raw(jc3,jc4,jl0r,il0) = avg_blk%m11asysq(jc3,jc4,jl0r,il0)/avg_blk%m11sq(jc3,jc4,jl0r,il0)
                diag_blk%valid(jc3,jc4,jl0r,il0) = avg_blk%nc1a(jc3,jc4,jl0r,il0)
             else
@@ -904,6 +911,63 @@ diag_blk%hyb_coef = mpl%msv%valr
 @:probe_out()
 
 end subroutine diag_blk_localization
+
+!----------------------------------------------------------------------
+! Subroutine: diag_blk_localization_from_correlation
+!> Diag_blk localization from localization
+!----------------------------------------------------------------------
+subroutine diag_blk_localization_from_correlation(diag_blk,mpl,nam,geom,cor_blk,ne)
+
+implicit none
+
+! Passed variables
+class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block (localization)
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+type(nam_type),intent(in) :: nam               !< Namelist
+type(geom_type),intent(in) :: geom             !< Geometry
+type(diag_blk_type),intent(in) :: cor_blk      !< Correlation diagnostic block
+integer,intent(in) :: ne                       !< Ensemble size
+
+! Local variables
+integer :: il0,jl0r,jc3,jc4
+real(kind_real) :: P4
+
+! Set name
+@:set_name(diag_blk_localization_from_correlation)
+
+! Probe in
+@:probe_in()
+
+! Ensemble size-dependent coefficient
+P4 = one/real(ne-1,kind_real)
+
+!$omp parallel do schedule(static) private(il0,jl0r,jc3,jc4) shared(geom,diag_blk,cor_blk,ne)
+do il0=1,geom%nl0
+   do jl0r=1,nam%nl0r
+      do jc4=1,nam%nc4
+         do jc3=1,nam%nc3
+            if (mpl%msv%isnot(cor_blk%fit(jc3,jc4,jl0r,il0))) then
+               ! Compute localization from correlation
+               diag_blk%raw(jc3,jc4,jl0r,il0) = cor_blk%fit(jc3,jc4,jl0r,il0)**2/((1.0+P4)*cor_blk%fit(jc3,jc4,jl0r,il0)**2+P4)
+               diag_blk%valid(jc3,jc4,jl0r,il0) = cor_blk%valid(jc3,jc4,jl0r,il0)
+            else
+               ! Missing value
+               diag_blk%raw(jc3,jc4,jl0r,il0) = mpl%msv%valr
+               diag_blk%valid(jc3,jc4,jl0r,il0) = mpl%msv%valr
+            end if
+         end do
+      end do
+   end do
+end do
+!$omp end parallel do
+
+! Hybrid weight
+diag_blk%hyb_coef = mpl%msv%valr
+
+! Probe out
+@:probe_out()
+
+end subroutine diag_blk_localization_from_correlation
 
 !----------------------------------------------------------------------
 ! Subroutine: diag_blk_hybridization

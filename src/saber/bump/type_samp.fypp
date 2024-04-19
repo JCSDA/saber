@@ -2310,7 +2310,6 @@ else
          do ildwv=1,nam%nldwv
             iproc = samp%ldwv_to_proc(ildwv)
             if (iproc==mpl%myproc) then
-
                ic0a = samp%ldwv_to_c0a(ildwv)
                smask_hor_c0a(ic0a) = .false.
             end if

@@ -191,6 +191,7 @@ logical,intent(in),optional :: hyb_coef_only   !< Interpolate hybridization coef
 
 ! Local variables
 integer :: ig,il0,ic2a,icmp
+real(kind_real) :: a_tot
 real(kind_real),allocatable :: a_c2a(:,:,:),rh_c2a(:,:,:),D11_c2a(:,:,:),D22_c2a(:,:,:),D12_c2a(:,:,:),rv_c2a(:,:,:)
 real(kind_real),allocatable :: hyb_coef_c2a(:,:)
 logical :: lhyb_coef_only
@@ -343,6 +344,14 @@ if (nam%local_diag) then
                   end if
                   diag%blk(ic2a,ig)%rv_l0(il0,icmp) = rv_c2a(ic2a,il0,icmp)
                end do
+            end if
+         end do
+
+         ! Reset total amplitude to one
+         do ic2a=1,samp%nc2a
+            if (.not.lhyb_coef_only) then
+               a_tot = sum(diag%blk(ic2a,ig)%a_l0(il0,:))
+               if (a_tot>0.0) diag%blk(ic2a,ig)%a_l0(il0,:) = diag%blk(ic2a,ig)%a_l0(il0,:)/a_tot
             end if
          end do
       end do
@@ -708,14 +717,14 @@ if (nam%check_dirac) then
    call mpl%flush
 
    ! Allocation
-   allocate(a_dir(geom%ndir,nam%fit_ncmp))
-   allocate(rh_dir(geom%ndir,nam%fit_ncmp))
+   allocate(a_dir(geom%ndir,diag%blk(0,1)%ncmp))
+   allocate(rh_dir(geom%ndir,diag%blk(0,1)%ncmp))
    if (nam%nc4>1) then
-      allocate(H11_dir(geom%ndir,nam%fit_ncmp))
-      allocate(H22_dir(geom%ndir,nam%fit_ncmp))
-      allocate(H12_dir(geom%ndir,nam%fit_ncmp))
+      allocate(H11_dir(geom%ndir,diag%blk(0,1)%ncmp))
+      allocate(H22_dir(geom%ndir,diag%blk(0,1)%ncmp))
+      allocate(H12_dir(geom%ndir,diag%blk(0,1)%ncmp))
    end if
-   allocate(rv_dir(geom%ndir,nam%fit_ncmp))
+   allocate(rv_dir(geom%ndir,diag%blk(0,1)%ncmp))
 
    ! Initialization
    a_dir = zero
@@ -1001,7 +1010,7 @@ end subroutine diag_correlation
 ! Subroutine: diag_localization
 !> Compute diagnostic localization
 !----------------------------------------------------------------------
-subroutine diag_localization(diag,mpl,nam,geom,samp,avg,prefix)
+subroutine diag_localization(diag,mpl,nam,geom,samp,avg,cor,ne,prefix)
 
 implicit none
 
@@ -1012,6 +1021,8 @@ type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 type(samp_type),intent(in) :: samp     !< Sampling
 type(avg_type),intent(in) :: avg       !< Averaged statistics
+type(diag_type),intent(in) :: cor      !< Correlation diagnostic
+integer,intent(in) :: ne               !< Ensemble size
 character(len=*),intent(in) :: prefix  !< Block prefix
 
 ! Local variables
@@ -1075,7 +1086,11 @@ else
 
       do ic2a=0,diag%nc2a
          ! Compute localization
-         call diag%blk(ic2a,ig)%localization(mpl,nam,geom,avg%grp(ic2a,ig))
+         if (nam%loc_from_cor) then
+            call diag%blk(ic2a,ig)%localization_from_correlation(mpl,nam,geom,cor%blk(ic2a,ig),ne)
+         else
+            call diag%blk(ic2a,ig)%localization(mpl,nam,geom,avg%grp(ic2a,ig))
+         end if
 
          ! Fitting
          call diag%blk(ic2a,ig)%fitting(mpl,nam,geom)

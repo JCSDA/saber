@@ -221,6 +221,7 @@
 #:set subr_list = subr_list + ["diag_blk_write"]
 #:set subr_list = subr_list + ["diag_blk_fitting"]
 #:set subr_list = subr_list + ["diag_blk_localization"]
+#:set subr_list = subr_list + ["diag_blk_localization_from_correlation"]
 #:set subr_list = subr_list + ["diag_blk_hybridization"]
 #:set subr_list = subr_list + ["diag_alloc"]
 #:set subr_list = subr_list + ["diag_partial_dealloc"]

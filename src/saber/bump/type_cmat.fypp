@@ -228,7 +228,7 @@ if (present(scaling_factor)) lscaling_factor = scaling_factor
 
 if (.not.cmat%allocated) then
    ! Allocation
-   call cmat%alloc(nam,geom,nam%fit_ncmp)
+   call cmat%alloc(nam,geom,diag%blk(0,1)%ncmp)
 
    ! Initialization
    call cmat%init(mpl,nam)

@@ -233,6 +233,8 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   param(diagnosticsDef.ne_lr, diagnosticsConf);
   // Gaussian approximation for asymptotic quantities
   param(diagnosticsDef.gau_approx, diagnosticsConf);
+  // Compute localization from correlation
+  param(diagnosticsDef.loc_from_cor, diagnosticsConf);
   // Threshold on generalized kurtosis (3.0 = Gaussian distribution)
   param(diagnosticsDef.gen_kurt_th, diagnosticsConf);
   // Number of bins for averaged statistics histograms

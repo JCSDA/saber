@@ -132,7 +132,7 @@ type(geom_type),intent(in) :: geom(2)    !< Geometry
 type(samp_type),intent(in) :: samp(2)    !< Sampling
 
 ! Local variables
-integer :: ncid,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id,disth_id,as_id,vert_coord_id,ncmp_id
+integer :: ncid,grpid,nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id,disth_id,as_id,vert_coord_id
 integer :: ildwv,ig
 integer :: ic2a(0:nam%nldwv)
 character(len=1024),dimension(0:nam%nldwv) :: filename
@@ -171,11 +171,6 @@ do ildwv=0,nam%nldwv
          nl0r_id = define_dim(mpl,grpid,'nl0r',nam%nl0r)
          nl0_1_id = define_dim(mpl,grpid,'nl0_1',geom(1)%nl0)
          nl0_2_id = define_dim(mpl,grpid,'nl0_2',geom(1)%nl0)
-         if (nam%fit_ncmp>1) then
-            ncmp_id = define_dim(mpl,grpid,'ncmp',nam%fit_ncmp)
-         else
-            ncmp_id = mpl%msv%vali
-         end if
 
          ! Define coordinates
          disth_id = define_var(mpl,grpid,'disth','real',(/nc3_id/))
@@ -189,19 +184,19 @@ do ildwv=0,nam%nldwv
 
          ! Write ensemble 1 correlation
          if (nam%compute_cor1) call hdiag%cor(1)%blk(ic2a(ildwv),ig)%write(mpl,nam,geom(1),grpid,nc3_id,nc4_id,nl0r_id, &
- & nl0_1_id,nl0_2_id,ncmp_id)
+ & nl0_1_id,nl0_2_id)
 
          ! Write ensemble 2 correlation
          if (nam%compute_cor2) call hdiag%cor(2)%blk(ic2a(ildwv),ig)%write(mpl,nam,geom(2),grpid,nc3_id,nc4_id,nl0r_id, &
- & nl0_1_id,nl0_2_id,ncmp_id)
+ & nl0_1_id,nl0_2_id)
 
          ! Write ensemble 1 localization (and hybrid coefficient)
          if (nam%compute_loc1.or.nam%compute_hyb) call hdiag%loc(1)%blk(ic2a(ildwv),ig)%write(mpl,nam,geom(1),grpid, &
- & nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id,ncmp_id)
+ & nc3_id,nc4_id,nl0r_id,nl0_1_id,nl0_2_id)
 
          ! Write ensemble 2 localization (and hybrid coefficient)
          if (nam%compute_loc2) call hdiag%loc(2)%blk(ic2a(ildwv),ig)%write(mpl,nam,geom(2),grpid,nc3_id,nc4_id,nl0r_id, &
- & nl0_1_id,nl0_2_id,ncmp_id)
+ & nl0_1_id,nl0_2_id)
       end do
 
       ! Close file
@@ -319,14 +314,14 @@ if (nam%compute_loc1) then
    ! Ensemble 1
    write(mpl%info,'(a7,a)') '','Ensemble 1:'
    call mpl%flush
-   call hdiag%loc(1)%localization(mpl,nam,geom(1),samp(1),hdiag%avg(1),'loc1')
+   call hdiag%loc(1)%localization(mpl,nam,geom(1),samp(1),hdiag%avg(1),hdiag%cor(1),nam%ne,'loc1')
 end if
 
 if (nam%compute_loc2) then
    ! Ensemble 2
    write(mpl%info,'(a7,a)') '','Ensemble 2:'
    call mpl%flush
-   call hdiag%loc(2)%localization(mpl,nam,geom(2),samp(2),hdiag%avg(2),'loc2')
+   call hdiag%loc(2)%localization(mpl,nam,geom(2),samp(2),hdiag%avg(2),hdiag%cor(1),nam%ne_lr,'loc2')
 end if
 
 if (nam%compute_hyb) then

@@ -139,6 +139,7 @@ type nam_type
    integer :: ne                                              !< Ensemble size
    integer :: ne_lr                                           !< Ensemble size of the low-resolution term (ensemble 2)
    logical :: gau_approx                                      !< Gaussian approximation for asymptotic quantities
+   logical :: loc_from_cor                                    !< Compute localization from correlation                       
    real(kind_real) :: gen_kurt_th                             !< Threshold on generalized kurtosis (3.0 = Gaussian distribution)
    integer :: avg_nbins                                       !< Number of bins for averaged statistics histograms
    real(kind_real) :: lengths_scaling                         !< Support radius scaling in CMAT from HDIAG
@@ -636,6 +637,7 @@ if (conf%get('diagnostics',section)) then
    call nam%get(section,'target ensemble size',nam%ne)
    call nam%get(section,'target lowres ensemble size',nam%ne_lr)
    call nam%get(section,'gaussian approximation',nam%gau_approx)
+   call nam%get(section,'localization from correlation',nam%loc_from_cor)
    call nam%get(section,'generalized kurtosis threshold',nam%gen_kurt_th)
    call nam%get(section,'histogram bins',nam%avg_nbins)
    call nam%get(section,'diagnosed lengths scaling',nam%lengths_scaling)
@@ -1232,6 +1234,7 @@ if (nam%new_hdiag.or.nam%check_optimality) then
  & call mpl%abort('${subr}$','ne should be larger than 3')
    if (((.not.nam%from_gsi).and.(nam%compute_cov2.or.nam%compute_cor2.or.nam%compute_loc2)).and.(nam%ne_lr<=3)) &
  & call mpl%abort('${subr}$','ne_lr should be larger than 3')
+   if (nam%loc_from_cor.and.(.not.(nam%compute_cor1.or.nam%compute_cor2))) call mpl%abort('${subr}$','loc_from_cor requires compute_correlation')
    if (.not.(nam%gen_kurt_th>zero)) call mpl%abort('${subr}$','gen_kurt_th should be positive')
    if (.not.(nam%lengths_scaling>zero)) call mpl%abort('${subr}$','lengths_scaling should be positive')
 end if
