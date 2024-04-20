@@ -140,10 +140,10 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
   const std::string blockName() const {return blockName_;}
 
   // Return flag to skip inverse application
-  const bool skipInverse() const {return skipInverse_;}
+  bool skipInverse() const {return skipInverse_;}
 
   // Return flag to skip inverse application
-  const bool filterMode() const {return filterMode_;}
+  bool filterMode() const {return filterMode_;}
 
   // Return date/time
   const util::DateTime validTime() const {return validTime_;}

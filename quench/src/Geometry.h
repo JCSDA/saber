@@ -124,7 +124,7 @@ class Geometry : public util::Printable,
   Geometry(const Geometry &);
 
   const eckit::mpi::Comm & getComm() const {return comm_;}
-  const size_t halo() const {return halo_;}
+  size_t halo() const {return halo_;}
   const atlas::Grid grid() const {return grid_;}
   const std::string gridType() const {return gridType_;}
   const atlas::grid::Partitioner partitioner() const {return partitioner_;}
