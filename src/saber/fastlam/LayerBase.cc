@@ -1095,24 +1095,6 @@ void LayerBase::read(const int & id) {
   if ((retval = nc_inq_varid(id, "yNorm", &yNorm_id))) ERR(retval);
   if ((retval = nc_inq_varid(id, "zNorm", &zNorm_id))) ERR(retval);
 
-  // Create arrays
-  double normVertCoord[nz0_][1];
-  double xKernel[xKernelSize_][1];
-  double yKernel[yKernelSize_][1];
-  double zKernel[zKernelSize_][1];
-  double xNorm[xNormSize_][1];
-  double yNorm[yNormSize_][1];
-  double zNorm[zNormSize_][1];
-
-  // Read data
-  if ((retval = nc_get_var_double(id, normVertCoord_id, &normVertCoord[0][0]))) ERR(retval);
-  if ((retval = nc_get_var_double(id, xKernel_id, &xKernel[0][0]))) ERR(retval);
-  if ((retval = nc_get_var_double(id, yKernel_id, &yKernel[0][0]))) ERR(retval);
-  if ((retval = nc_get_var_double(id, zKernel_id, &zKernel[0][0]))) ERR(retval);
-  if ((retval = nc_get_var_double(id, xNorm_id, &xNorm[0][0]))) ERR(retval);
-  if ((retval = nc_get_var_double(id, yNorm_id, &yNorm[0][0]))) ERR(retval);
-  if ((retval = nc_get_var_double(id, zNorm_id, &zNorm[0][0]))) ERR(retval);
-
   // Resize vectors
   normVertCoord_.resize(nz0_);
   xKernel_.resize(xKernelSize_);
@@ -1122,28 +1104,14 @@ void LayerBase::read(const int & id) {
   yNorm_.resize(yNormSize_);
   zNorm_.resize(zNormSize_);
 
-  // Copy data
-  for (size_t k0 = 0; k0 < nz0_; ++k0) {
-    normVertCoord_[k0] = normVertCoord[k0][0];
-  }
-  for (size_t jk = 0; jk < xKernelSize_; ++jk) {
-    xKernel_[jk] = xKernel[jk][0];
-  }
-  for (size_t jk = 0; jk < yKernelSize_; ++jk) {
-    yKernel_[jk] = yKernel[jk][0];
-  }
-  for (size_t jk = 0; jk < zKernelSize_; ++jk) {
-    zKernel_[jk] = zKernel[jk][0];
-  }
-  for (size_t jn = 0; jn < xNormSize_; ++jn) {
-    xNorm_[jn] = xNorm[jn][0];
-  }
-  for (size_t jn = 0; jn < yNormSize_; ++jn) {
-    yNorm_[jn] = yNorm[jn][0];
-  }
-  for (size_t jn = 0; jn < zNormSize_; ++jn) {
-    zNorm_[jn] = zNorm[jn][0];
-  }
+  // Read data
+  if ((retval = nc_get_var_double(id, normVertCoord_id, normVertCoord_.data()))) ERR(retval);
+  if ((retval = nc_get_var_double(id, xKernel_id, xKernel_.data()))) ERR(retval);
+  if ((retval = nc_get_var_double(id, yKernel_id, yKernel_.data()))) ERR(retval);
+  if ((retval = nc_get_var_double(id, zKernel_id, zKernel_.data()))) ERR(retval);
+  if ((retval = nc_get_var_double(id, xNorm_id, xNorm_.data()))) ERR(retval);
+  if ((retval = nc_get_var_double(id, yNorm_id, yNorm_.data()))) ERR(retval);
+  if ((retval = nc_get_var_double(id, zNorm_id, zNorm_.data()))) ERR(retval);
 
   // Get rh_, rv_ and resol_ as attributes
   if ((retval = nc_get_att_double(id, NC_GLOBAL, "rh", &rh_))) ERR(retval);
@@ -1242,47 +1210,15 @@ std::vector<int> LayerBase::writeDef(const int & id) const {
 void LayerBase::writeData(const std::vector<int> & varIds) const {
   oops::Log::trace() << classname() << "::writeData starting" << std::endl;
 
-  // Create arrays
-  double normVertCoord[nz0_][1];
-  double xKernel[xKernelSize_][1];
-  double yKernel[yKernelSize_][1];
-  double zKernel[zKernelSize_][1];
-  double xNorm[xNormSize_][1];
-  double yNorm[yNormSize_][1];
-  double zNorm[zNormSize_][1];
-
-  // Copy data
-  for (size_t k0 = 0; k0 < nz0_; ++k0) {
-    normVertCoord[k0][0] = normVertCoord_[k0];
-  }
-  for (size_t jk = 0; jk < xKernelSize_; ++jk) {
-    xKernel[jk][0] = xKernel_[jk];
-  }
-  for (size_t jk = 0; jk < yKernelSize_; ++jk) {
-    yKernel[jk][0] = yKernel_[jk];
-  }
-  for (size_t jk = 0; jk < zKernelSize_; ++jk) {
-    zKernel[jk][0] = zKernel_[jk];
-  }
-  for (size_t jn = 0; jn < xNormSize_; ++jn) {
-    xNorm[jn][0] = xNorm_[jn];
-  }
-  for (size_t jn = 0; jn < yNormSize_; ++jn) {
-    yNorm[jn][0] = yNorm_[jn];
-  }
-  for (size_t jn = 0; jn < zNormSize_; ++jn) {
-    zNorm[jn][0] = zNorm_[jn];
-  }
-
   // Write data
   int retval;
-  if ((retval = nc_put_var_double(varIds[0], varIds[1], &normVertCoord[0][0]))) ERR(retval);
-  if ((retval = nc_put_var_double(varIds[0], varIds[2], &xKernel[0][0]))) ERR(retval);
-  if ((retval = nc_put_var_double(varIds[0], varIds[3], &yKernel[0][0]))) ERR(retval);
-  if ((retval = nc_put_var_double(varIds[0], varIds[4], &zKernel[0][0]))) ERR(retval);
-  if ((retval = nc_put_var_double(varIds[0], varIds[5], &xNorm[0][0]))) ERR(retval);
-  if ((retval = nc_put_var_double(varIds[0], varIds[6], &yNorm[0][0]))) ERR(retval);
-  if ((retval = nc_put_var_double(varIds[0], varIds[7], &zNorm[0][0]))) ERR(retval);
+  if ((retval = nc_put_var_double(varIds[0], varIds[1], normVertCoord_.data()))) ERR(retval);
+  if ((retval = nc_put_var_double(varIds[0], varIds[2], xKernel_.data()))) ERR(retval);
+  if ((retval = nc_put_var_double(varIds[0], varIds[3], yKernel_.data()))) ERR(retval);
+  if ((retval = nc_put_var_double(varIds[0], varIds[4], zKernel_.data()))) ERR(retval);
+  if ((retval = nc_put_var_double(varIds[0], varIds[5], xNorm_.data()))) ERR(retval);
+  if ((retval = nc_put_var_double(varIds[0], varIds[6], yNorm_.data()))) ERR(retval);
+  if ((retval = nc_put_var_double(varIds[0], varIds[7], zNorm_.data()))) ERR(retval);
 
   oops::Log::trace() << classname() << "::writeData done" << std::endl;
 }

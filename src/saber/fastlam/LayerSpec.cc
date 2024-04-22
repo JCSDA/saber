@@ -7,8 +7,6 @@
 
 #include "saber/fastlam/LayerSpec.h"
 
-#include <netcdf.h>
-
 #include <algorithm>
 #include <utility>
 

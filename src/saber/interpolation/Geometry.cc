@@ -7,8 +7,6 @@
 
 #include "saber/interpolation/Geometry.h"
 
-#include <netcdf.h>
-
 #include <cmath>
 #include <sstream>
 

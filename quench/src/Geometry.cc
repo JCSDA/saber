@@ -396,23 +396,23 @@ void Geometry::readSeaMask(const std::string & maskPath,
     if ((retval = nc_inq_varid(ncid, "LSMASK", &lsm_id))) ERR(retval);
 
     // Read data
-    float zlon[nlon][1];
-    float zlat[nlat][1];
-    uint8_t zlsm[nlat][nlon];
-    if ((retval = nc_get_var_float(ncid, lon_id, &zlon[0][0]))) ERR(retval);
-    if ((retval = nc_get_var_float(ncid, lat_id, &zlat[0][0]))) ERR(retval);
-    if ((retval = nc_get_var_ubyte(ncid, lsm_id, &zlsm[0][0]))) ERR(retval);
+    std::vector<float> zlon(nlon);
+    std::vector<float> zlat(nlat);
+    std::vector<uint8_t> zlsm(nlat*nlon);
+    if ((retval = nc_get_var_float(ncid, lon_id, zlon.data()))) ERR(retval);
+    if ((retval = nc_get_var_float(ncid, lat_id, zlat.data()))) ERR(retval);
+    if ((retval = nc_get_var_ubyte(ncid, lsm_id, zlsm.data()))) ERR(retval);
 
     // Copy data
     for (size_t ilon = 0; ilon < nlon; ++ilon) {
-      lon[ilon] = zlon[ilon][0];
+      lon[ilon] = static_cast<double>(zlon[ilon]);
     }
     for (size_t ilat = 0; ilat < nlat; ++ilat) {
-      lat[ilat] = zlat[ilat][0];
+      lat[ilat] = static_cast<double>(zlat[ilat]);
     }
     for (size_t ilat = 0; ilat < nlat; ++ilat) {
      for (size_t ilon = 0; ilon < nlon; ++ilon) {
-        lsm[ilat*nlon+ilon] = static_cast<int>(zlsm[ilat][ilon]);
+        lsm[ilat*nlon+ilon] = static_cast<int>(zlsm[ilat*nlon+ilon]);
       }
     }
 

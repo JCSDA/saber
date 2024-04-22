@@ -7,8 +7,6 @@
 
 #include "saber/fastlam/LayerRC.h"
 
-#include <netcdf.h>
-
 #include <algorithm>
 #include <utility>
 

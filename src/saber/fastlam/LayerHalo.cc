@@ -7,8 +7,6 @@
 
 #include "saber/fastlam/LayerHalo.h"
 
-#include <netcdf.h>
-
 #include <algorithm>
 #include <utility>
 

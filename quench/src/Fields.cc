@@ -7,8 +7,6 @@
 
 #include "src/Fields.h"
 
-#include <netcdf.h>
-
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -37,8 +35,6 @@
 #include "src/Geometry.h"
 
 #include "saber/interpolation/AtlasInterpWrapper.h"
-
-#define ERR(e) {ABORT(nc_strerror(e));}
 
 // -----------------------------------------------------------------------------
 namespace quench {
