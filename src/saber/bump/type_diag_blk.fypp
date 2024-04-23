@@ -14,7 +14,7 @@ use tools_fit, only: condmax,diag_iso,diag_tensor,tensor_d2h,tensor_d2r,tensor_c
 use tools_func, only: vert_interp_size,vert_interp_setup,vert_interp
 use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: define_grp,define_dim,put_att,define_var,put_var
-use tools_repro, only: inf,supeq
+use tools_repro, only: inf,infeq,supeq
 use tools_wrfda
 use type_avg_blk, only: avg_blk_type
 use type_geom, only: geom_type
@@ -730,7 +730,7 @@ do il1=1,nl1
 
                ! Get parameters, apply bounds
                scaling = max(minim%binf(1),min(minim%x(1),minim%bsup(1)))
-               if ((icmp==1).and.(scaling<one)) then
+               if ((icmp==1).and.infeq(scaling,one)) then
                   ! A single component is better
                   scaling = one
                   a_l1(il1,icmp) = one

@@ -14,12 +14,12 @@
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
-Norm of input parameter a - 1: 5.0427898985464530e+01
-Norm of input parameter a - 2: 1.4824339994999857e+01
+Norm of input parameter a - 1: 5.0419080737424800e+01
+Norm of input parameter a - 2: 1.4831352041415670e+01
 Norm of input parameter rh1 - 1: 2.6600928484758756e+08
-Norm of input parameter rh1 - 2: 2.1469866526507878e+08
+Norm of input parameter rh1 - 2: 2.1469901889690262e+08
 Norm of input parameter rh2 - 1: 2.8142686892415738e+08
-Norm of input parameter rh2 - 2: 2.3890982258173931e+08
+Norm of input parameter rh2 - 2: 2.3890998875146008e+08
 Norm of input parameter rhc - 1: 9.6404864228226437e+00
 Norm of input parameter rhc - 2: 9.6404864228226437e+00
 Norm of input parameter rv - 1: 2.0602447479815532e+02
@@ -59,7 +59,7 @@ Norm of input parameter rv - 2: 5.3394022282251328e+01
              nc1(  2) =                        762
              ns =                             1524
              v%n_s =                             2
-             c%n_s[global] =                 25268
+             c%n_s[global] =                 25272
              Effective levels:   1   2 
                 Horizontal support radius:    4041.73 km (   3452.48 km -    4415.02 km)
                 Estimated nc1 from horizontal support radius:      576
@@ -129,7 +129,7 @@ Norm of input parameter rv - 2: 5.3394022282251328e+01
           Component NICAS adjoint test result:             T
              0.0 /    0.0:  1.0000000
           Level   1:  0.0000000 -  1.0000000
-          Level   2:  0.0000000 -  0.6356868
+          Level   2:  0.0000000 -  0.6323336
              0.0 /    0.0:  0.0000000
           Level   1:  0.0000000 -  0.0000000
           Level   2:  0.0000000 -  0.0000000
