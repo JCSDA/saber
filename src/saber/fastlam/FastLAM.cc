@@ -1024,12 +1024,13 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
       atlas::Field fieldIndexI0 = gdata_.fieldSet()["index_i"];
       auto indexI0View = atlas::array::make_view<int, 1>(fieldIndexI0);
       for (const auto & var : activeVars_.variables()) {
+        const size_t nz0 = activeVars_.getLevels(var);
         atlas::Field field = gdata_.functionSpace().createField<double>(
-          atlas::option::name(var) | atlas::option::levels(activeVars_.getLevels(var)));
+          atlas::option::name(var) | atlas::option::levels(nz0));
         auto view = atlas::array::make_view<double, 2>(field);
         for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
           if (ghostView(jnode0) == 0) {
-            for (int k0 = 0; k0 < activeVars_.getLevels(var); ++k0) {
+            for (size_t k0 = 0; k0 < nz0; ++k0) {
               view(jnode0, k0) = static_cast<double>(indexI0View(jnode0));
             }
           }
@@ -1049,12 +1050,13 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
       atlas::Field fieldIndexJ0 = gdata_.fieldSet()["index_j"];
       auto indexJ0View = atlas::array::make_view<int, 1>(fieldIndexJ0);
       for (const auto & var : activeVars_.variables()) {
+        const size_t nz0 = activeVars_.getLevels(var);
         atlas::Field field = gdata_.functionSpace().createField<double>(
-          atlas::option::name(var) | atlas::option::levels(activeVars_.getLevels(var)));
+          atlas::option::name(var) | atlas::option::levels(nz0));
         auto view = atlas::array::make_view<double, 2>(field);
         for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
           if (ghostView(jnode0) == 0) {
-            for (int k0 = 0; k0 < activeVars_.getLevels(var); ++k0) {
+            for (size_t k0 = 0; k0 < nz0; ++k0) {
               view(jnode0, k0) = static_cast<double>(indexJ0View(jnode0));
             }
           }
@@ -1073,8 +1075,9 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
       // Copy fields
       for (const auto & var : activeVars_.variables()) {
         // Default: missing value
+        const size_t nz0 = activeVars_.getLevels(var);
         atlas::Field field = gdata_.functionSpace().createField<double>(
-          atlas::option::name(var) | atlas::option::levels(activeVars_.getLevels(var)));
+          atlas::option::name(var) | atlas::option::levels(nz0));
         auto view = atlas::array::make_view<double, 2>(field);
         view.assign(util::missingValue<double>());
         fset.add(field);
@@ -1101,8 +1104,9 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
         // Copy fields
         for (const auto & var : activeVars_.variables()) {
           // Default: missing value
+          const size_t nz0 = activeVars_.getLevels(var);
           atlas::Field field = gdata_.functionSpace().createField<double>(
-            atlas::option::name(var) | atlas::option::levels(activeVars_.getLevels(var)));
+            atlas::option::name(var) | atlas::option::levels(nz0));
           auto view = atlas::array::make_view<double, 2>(field);
           view.assign(util::missingValue<double>());
           fset.add(field);
@@ -1114,7 +1118,7 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
               const auto wgtSqrtView = atlas::array::make_view<double, 2>(wgtSqrtField);
               for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
                 if (ghostView(jnode0) == 0) {
-                  for (int k0 = 0; k0 < activeVars_.getLevels(var); ++k0) {
+                  for (size_t k0 = 0; k0 < nz0; ++k0) {
                     view(jnode0, k0) = wgtSqrtView(jnode0, k0)*wgtSqrtView(jnode0, k0);
                   }
                 }
@@ -1140,8 +1144,9 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
         // Copy fields
         for (const auto & var : activeVars_.variables()) {
           // Default: missing value
+          const size_t nz0 = activeVars_.getLevels(var);
           atlas::Field field = gdata_.functionSpace().createField<double>(
-            atlas::option::name(var) | atlas::option::levels(activeVars_.getLevels(var)));
+            atlas::option::name(var) | atlas::option::levels(nz0));
           auto view = atlas::array::make_view<double, 2>(field);
           view.assign(util::missingValue<double>());
           fset.add(field);
@@ -1173,8 +1178,9 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
         // Copy fields
         for (const auto & var : activeVars_.variables()) {
           // Default: missing value
+          const size_t nz0 = activeVars_.getLevels(var);
           atlas::Field field = gdata_.functionSpace().createField<double>(
-            atlas::option::name(var) | atlas::option::levels(activeVars_.getLevels(var)));
+            atlas::option::name(var) | atlas::option::levels(nz0));
           auto view = atlas::array::make_view<double, 2>(field);
           view.assign(util::missingValue<double>());
           fset.add(field);
