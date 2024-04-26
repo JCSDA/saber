@@ -313,7 +313,7 @@ void populateMuA(atlas::FieldSet & augmentedStateFieldSet,
     for (atlas::idx_t jn = 0; jn < RHtView.shape(0); ++jn) {
       double wgt = (std::max(rhTlow, std::min(rhThigh, RHtView(jn, jl))) - rhTlow) /
                     mo::constants::rHTBin;
-      int indx = std::min(static_cast<int>(wgt), static_cast<int>(RHtView.shape(0)) - 1);
+      int indx = std::min(static_cast<int>(wgt), static_cast<int>(invStatsFldView.shape(1)) - 1);
       wgt -= static_cast<double>(indx);
 
       if (indx == 0) {
