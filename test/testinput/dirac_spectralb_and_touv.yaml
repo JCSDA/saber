@@ -9,8 +9,8 @@ geometry:
     - northward_wind
     - streamfunction
     - velocity_potential
-    - unbalanced_pressure
-    - moisture_control_variable
+    - unbalanced_pressure_levels_minus_one
+    - mu
     levels: 70
   partitioner: ectrans
 background:
@@ -18,8 +18,8 @@ background:
   state variables:
   - eastward_wind
   - northward_wind
-  - unbalanced_pressure
-  - moisture_control_variable
+  - unbalanced_pressure_levels_minus_one
+  - mu
 background error:
   covariance model: SABER
   adjoint test: true
@@ -29,8 +29,8 @@ background error:
     active variables:
     - streamfunction
     - velocity_potential
-    - unbalanced_pressure
-    - moisture_control_variable
+    - unbalanced_pressure_levels_minus_one
+    - mu
     read:
       covariance_file: testdata/spectralcov.nc
       umatrix_netcdf_names:
@@ -41,8 +41,8 @@ background error:
   saber outer blocks:
   - saber block name: spectral to gauss
     active variables:
-    - unbalanced_pressure
-    - moisture_control_variable
+    - unbalanced_pressure_levels_minus_one
+    - mu
     - streamfunction
     - velocity_potential
     - eastward_wind
@@ -63,8 +63,8 @@ dirac:
   - 1
   variable:
   - eastward_wind
-  - unbalanced_pressure
-  - moisture_control_variable
+  - unbalanced_pressure_levels_minus_one
+  - mu
 diagnostic points:
   lon:
   - 20.0
@@ -80,8 +80,8 @@ diagnostic points:
   - 2
   variable:
   - eastward_wind
-  - unbalanced_pressure
-  - moisture_control_variable
+  - unbalanced_pressure_levels_minus_one
+  - mu
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_spectralb_and_touv/%MPI%_dirac_%id%

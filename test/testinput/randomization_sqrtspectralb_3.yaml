@@ -28,18 +28,8 @@ background error:
   saber outer blocks:
   - saber block name: square root of spectral covariance
     skip inverse test: true
-    active variables:
-    - mu
-    - streamfunction
-    - unbalanced_pressure_levels_minus_one
-    - velocity_potential
     read:
-      covariance_file: testdata/spectralcov.nc
-      umatrix_netcdf_names:
-      - MU_inc_Uv_matrix
-      - PSI_inc_Uv_matrix
-      - aP_inc_Uv_matrix
-      - CHI_inc_Uv_matrix
+      covariance_file: testdata/error_covariance_training_spectralb_1/spectralsabercov1.nc
   - saber block name: spectral to gauss
     active variables:
     - eastward_wind
@@ -50,9 +40,9 @@ background error:
     - velocity_potential
 output variance:  # This section is optional
   mpi pattern: '%MPI%'
-  filepath: testdata/randomization_sqrtspectralb_1/variance_%MPI%pes
+  filepath: testdata/randomization_sqrtspectralb_3/variance_%MPI%pes
 output perturbations:
   member pattern: '%MEM%'
-  filepath: testdata/randomization_sqrtspectralb_1/randomized_gauss_mb%MEM%
+  filepath: testdata/randomization_sqrtspectralb_3/randomized_gauss_mb%MEM%
 test:
-  reference filename: testref/randomization_sqrtspectralb_1.ref
+  reference filename: testref/randomization_sqrtspectralb_3.ref

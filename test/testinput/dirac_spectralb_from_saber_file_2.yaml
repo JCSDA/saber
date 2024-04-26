@@ -2,13 +2,13 @@ geometry:
   function space: StructuredColumns
   grid:
     type: regular_gaussian
-    N: 15
+    N: 12
   groups:
   - variables:
     - streamfunction
     - velocity_potential
-    - unbalanced_pressure
-    - moisture_control_variable
+    - unbalanced_pressure_levels_minus_one
+    - mu
     levels: 70
   partitioner: ectrans
 background:
@@ -16,17 +16,19 @@ background:
   state variables:
   - streamfunction
   - velocity_potential
-  - unbalanced_pressure
-  - moisture_control_variable
+  - unbalanced_pressure_levels_minus_one
+  - mu
 background error:
   covariance model: SABER
   adjoint test: true
   inverse test: true
   saber central block:
-    saber block name: spectral covariance
+    saber block name: ID
+  saber outer blocks:
+  - saber block name: square root of spectral covariance
+    skip inverse test: true
     read:
       covariance_file: testdata/error_covariance_training_spectralb_1/spectralsabercov1.nc
-  saber outer blocks:
   - saber block name: spectral to gauss
 dirac:
   lon:
@@ -47,8 +49,8 @@ dirac:
   variable:
   - streamfunction
   - velocity_potential
-  - unbalanced_pressure
-  - moisture_control_variable
+  - unbalanced_pressure_levels_minus_one
+  - mu
 diagnostic points:
   lon:
   - 20.0
@@ -68,10 +70,10 @@ diagnostic points:
   variable:
   - streamfunction
   - velocity_potential
-  - unbalanced_pressure
-  - moisture_control_variable
+  - unbalanced_pressure_levels_minus_one
+  - mu
 output dirac:
   mpi pattern: '%MPI%'
-  filepath: testdata/dirac_spectralb_from_saber_file/%MPI%_dirac_%id%
+  filepath: testdata/dirac_spectralb_from_saber_file_2/%MPI%_dirac_%id%
 test:
-  reference filename: testref/dirac_spectralb_from_saber_file.ref
+  reference filename: testref/dirac_spectralb_from_saber_file_2.ref

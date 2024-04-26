@@ -5,13 +5,13 @@ geometry:
   function space: StructuredColumns
   grid:
     type: regular_gaussian
-    N: 15
+    N: 12
   groups:
   - variables: &vars
     - streamfunction
     - velocity_potential
-    - unbalanced_pressure
-    - moisture_control_variable
+    - unbalanced_pressure_levels_minus_one
+    - mu
     levels: 70
   partitioner: ectrans
 background:

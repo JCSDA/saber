@@ -1,52 +1,48 @@
-Norm of perturbation: member 1: 2.8639068549893367e+08
-initial_CS14_variance_1 ; name = streamfunction ; bin index = 0 ; binned variance = 5.2561952355913904e+11
-initial_CS14_variance_1 ; name = velocity_potential ; bin index = 0 ; binned variance = 4.7129467516503839e+11
+Norm of perturbation: member 1: 3.0053678832504123e+08
+initial_CS14_variance_1 ; name = streamfunction ; bin index = 0 ; binned variance = 5.8224732773481140e+11
+initial_CS14_variance_1 ; name = velocity_potential ; bin index = 0 ; binned variance = 5.1236301683683673e+11
 Wrote file testdata/process_perts_from_csdual_states_2//initial_CS14_variance_1.nc
-wb1_F14_variance_1 ; name = streamfunction ; bin index = 0 ; binned variance = 2.0146263792279810e+11
-wb1_F14_variance_1 ; name = velocity_potential ; bin index = 0 ; binned variance = 2.0772150679715149e+11
+wb1_F14_variance_1 ; name = streamfunction ; bin index = 0 ; binned variance = 2.4358176821665100e+11
+wb1_F14_variance_1 ; name = velocity_potential ; bin index = 0 ; binned variance = 2.2664403774042255e+11
 Wrote file testdata/process_perts_from_csdual_states_2//wb1_F14_variance_1.nc
 Wrote file testdata/process_perts_from_csdual_states_2//wb1_F14_inc_1.nc
 Fields:
-  streamfunction: 1.4578730851090533e+08
-  velocity_potential: 1.4528977808688834e+08
-
-Norm of band perturbation: member 1: band 1: 1.8319974691277158e+08
-wb2_F14_variance_1 ; name = streamfunction ; bin index = 0 ; binned variance = 1.9570927482654800e+11
-wb2_F14_variance_1 ; name = velocity_potential ; bin index = 0 ; binned variance = 1.6315168776027368e+11
+  streamfunction: 1.5903689450841600e+08
+  velocity_potential: 1.5804587038977152e+08
+Norm of band perturbation: member 1: band 1: 1.9643101754434204e+08
+wb2_F14_variance_1 ; name = streamfunction ; bin index = 0 ; binned variance = 2.0375299273646210e+11
+wb2_F14_variance_1 ; name = velocity_potential ; bin index = 0 ; binned variance = 1.8997409133518994e+11
 Wrote file testdata/process_perts_from_csdual_states_2//wb2_F14_variance_1.nc
 Wrote file testdata/process_perts_from_csdual_states_2//wb2_F14_inc_1.nc
 Fields:
-  streamfunction: 1.4636030489615428e+08
-  velocity_potential: 1.3502866101912028e+08
-
-Norm of band perturbation: member 1: band 2: 1.6951400857822052e+08
-Norm of band perturbation: member 1: band 3: 1.2857572942064658e+08
-wb3_cs14_variance_1 ; name = streamfunction ; bin index = 0 ; binned variance = 1.1356626717889503e+11
-wb3_cs14_variance_1 ; name = velocity_potential ; bin index = 0 ; binned variance = 8.7587214404047501e+10
+  streamfunction: 1.4960422660857359e+08
+  velocity_potential: 1.4174734710356122e+08
+Norm of band perturbation: member 1: band 2: 1.7764024072749519e+08
+Norm of band perturbation: member 1: band 3: 1.2930271846571018e+08
+wb3_cs14_variance_1 ; name = streamfunction ; bin index = 0 ; binned variance = 1.2018794359469742e+11
+wb3_cs14_variance_1 ; name = velocity_potential ; bin index = 0 ; binned variance = 8.2758705741580231e+10
 Wrote file testdata/process_perts_from_csdual_states_2//wb3_cs14_variance_1.nc
-Norm of perturbation: member 2: 2.8639068549893367e+08
-initial_CS14_variance_2 ; name = streamfunction ; bin index = 0 ; binned variance = 5.2561952355913916e+11
-initial_CS14_variance_2 ; name = velocity_potential ; bin index = 0 ; binned variance = 4.7129467516503839e+11
+Norm of perturbation: member 2: 3.0053678832504123e+08
+initial_CS14_variance_2 ; name = streamfunction ; bin index = 0 ; binned variance = 5.8224732773481140e+11
+initial_CS14_variance_2 ; name = velocity_potential ; bin index = 0 ; binned variance = 5.1236301683683673e+11
 Wrote file testdata/process_perts_from_csdual_states_2//initial_CS14_variance_2.nc
-wb1_F14_variance_2 ; name = streamfunction ; bin index = 0 ; binned variance = 2.0146263792279810e+11
-wb1_F14_variance_2 ; name = velocity_potential ; bin index = 0 ; binned variance = 2.0772150679715149e+11
+wb1_F14_variance_2 ; name = streamfunction ; bin index = 0 ; binned variance = 2.4358176821665103e+11
+wb1_F14_variance_2 ; name = velocity_potential ; bin index = 0 ; binned variance = 2.2664403774042255e+11
 Wrote file testdata/process_perts_from_csdual_states_2//wb1_F14_variance_2.nc
 Wrote file testdata/process_perts_from_csdual_states_2//wb1_F14_inc_2.nc
 Fields:
-  streamfunction: 1.4578730851090536e+08
-  velocity_potential: 1.4528977808688834e+08
-
-Norm of band perturbation: member 2: band 1: 1.8319974691277158e+08
-wb2_F14_variance_2 ; name = streamfunction ; bin index = 0 ; binned variance = 1.9570927482654797e+11
-wb2_F14_variance_2 ; name = velocity_potential ; bin index = 0 ; binned variance = 1.6315168776027368e+11
+  streamfunction: 1.5903689450841600e+08
+  velocity_potential: 1.5804587038977152e+08
+Norm of band perturbation: member 2: band 1: 1.9643101754434207e+08
+wb2_F14_variance_2 ; name = streamfunction ; bin index = 0 ; binned variance = 2.0375299273646213e+11
+wb2_F14_variance_2 ; name = velocity_potential ; bin index = 0 ; binned variance = 1.8997409133518994e+11
 Wrote file testdata/process_perts_from_csdual_states_2//wb2_F14_variance_2.nc
 Wrote file testdata/process_perts_from_csdual_states_2//wb2_F14_inc_2.nc
 Fields:
-  streamfunction: 1.4636030489615428e+08
-  velocity_potential: 1.3502866101912028e+08
-
-Norm of band perturbation: member 2: band 2: 1.6951400857822052e+08
-Norm of band perturbation: member 2: band 3: 1.2857572942064658e+08
-wb3_cs14_variance_2 ; name = streamfunction ; bin index = 0 ; binned variance = 1.1356626717889503e+11
-wb3_cs14_variance_2 ; name = velocity_potential ; bin index = 0 ; binned variance = 8.7587214404047501e+10
+  streamfunction: 1.4960422660857359e+08
+  velocity_potential: 1.4174734710356122e+08
+Norm of band perturbation: member 2: band 2: 1.7764024072749516e+08
+Norm of band perturbation: member 2: band 3: 1.2930271846571016e+08
+wb3_cs14_variance_2 ; name = streamfunction ; bin index = 0 ; binned variance = 1.2018794359469742e+11
+wb3_cs14_variance_2 ; name = velocity_potential ; bin index = 0 ; binned variance = 8.2758705741580215e+10
 Wrote file testdata/process_perts_from_csdual_states_2//wb3_cs14_variance_2.nc

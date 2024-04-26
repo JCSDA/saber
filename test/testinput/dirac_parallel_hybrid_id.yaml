@@ -5,8 +5,8 @@ geometry: &geom
   partitioner: cubedsphere
   groups:
   - variables: &vars
-    - unbalanced_pressure
-    - moisture_control_variable
+    - unbalanced_pressure_levels_minus_one
+    - mu
     levels: 2
   halo: 1
 
@@ -42,7 +42,7 @@ dirac: &dirac
   level:
   - 1
   variable:
-  - unbalanced_pressure
+  - unbalanced_pressure_levels_minus_one
 
 diagnostic points: *dirac
 

@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2023 Met Office
+ * (C) Crown Copyright 2023-2024 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -85,11 +85,11 @@ void SqrtOfSpectralCorrelation::read() {
   oops::Log::trace() << classname() << "::read starting" << std::endl;
 
   const spectralbReadParameters readP = *params_.readParams.value();
-  const std::vector<std::size_t> nSpectralBinsFull = specutils::getNSpectralBinsFull(readP);
+  const std::vector<std::size_t> nSpectralBinsFull =
+    specutils::getNSpectralBinsFull(readP, activeVars_);
 
-  atlas::FieldSet spectralUMatrices = specutils::createUMatrices(activeVars_,
-                                                                 nSpectralBinsFull,
-                                                                 readP);
+  atlas::FieldSet spectralUMatrices =
+    specutils::createUMatrices(activeVars_, nSpectralBinsFull, readP);
 
   atlas::FieldSet spectralVerticalCovariances =
     specutils::createSpectralCovariances(activeVars_,
@@ -97,14 +97,13 @@ void SqrtOfSpectralCorrelation::read() {
                                          specFunctionSpace_.truncation() + 1,
                                          spectralUMatrices);
 
-  atlas::FieldSet verticalStdDevs = specutils::createVerticalSD(activeVars_,
-                                                                spectralVerticalCovariances);
+  atlas::FieldSet verticalStdDevs =
+    specutils::createVerticalSD(activeVars_, spectralVerticalCovariances);
 
   spectralCorrelUMatrices_.clear();
-  spectralCorrelUMatrices_ = specutils::createCorrelUMatrices(activeVars_,
-                                                              spectralVerticalCovariances,
-                                                              spectralUMatrices,
-                                                              verticalStdDevs);
+  spectralCorrelUMatrices_ =
+    specutils::createCorrelUMatrices(activeVars_,  spectralVerticalCovariances,
+                                     spectralUMatrices, verticalStdDevs);
 
   oops::Log::trace() << classname() << "::read done" << std::endl;
 }

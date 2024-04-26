@@ -15,14 +15,14 @@ Groups:
   - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  unbalanced_pressure: 1.0000000000000000e+00
-  moisture_control_variable: 0.0000000000000000e+00
+  unbalanced_pressure_levels_minus_one: 1.0000000000000000e+00
+  mu: 0.0000000000000000e+00
 Adjoint test for block ID passed
 Covariance(SABER) diagnostics:
 - Variances at Dirac points:
-  + Value for variable unbalanced_pressure, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 3.9999999999999996e+00
+  + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 3.9999999999999996e+00
 - Covariances at diagnostic points:
-  + Value for variable unbalanced_pressure, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 3.9999999999999996e+00
+  + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 3.9999999999999996e+00
 Covariance(SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -40,14 +40,14 @@ Groups:
   - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  unbalanced_pressure: 3.9999999999999996e+00
-  moisture_control_variable: 0.0000000000000000e+00
+  unbalanced_pressure_levels_minus_one: 3.9999999999999996e+00
+  mu: 0.0000000000000000e+00
 Adjoint test for block ID passed
 Covariance(SABER1_SABER) diagnostics:
 - Variances at Dirac points:
-  + Value for variable unbalanced_pressure, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0000000000000000e+00
+  + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0000000000000000e+00
 - Covariances at diagnostic points:
-  + Value for variable unbalanced_pressure, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0000000000000000e+00
+  + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0000000000000000e+00
 Covariance(SABER1_SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -65,14 +65,14 @@ Groups:
   - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  unbalanced_pressure: 1.0000000000000000e+00
-  moisture_control_variable: 0.0000000000000000e+00
+  unbalanced_pressure_levels_minus_one: 1.0000000000000000e+00
+  mu: 0.0000000000000000e+00
 Adjoint test for block ID passed
 Covariance(SABER2_SABER) diagnostics:
 - Variances at Dirac points:
-  + Value for variable unbalanced_pressure, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0000000000000000e+00
+  + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0000000000000000e+00
 - Covariances at diagnostic points:
-  + Value for variable unbalanced_pressure, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0000000000000000e+00
+  + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0000000000000000e+00
 Covariance(SABER2_SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -90,6 +90,6 @@ Groups:
   - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  unbalanced_pressure: 1.0000000000000000e+00
-  moisture_control_variable: 0.0000000000000000e+00
+  unbalanced_pressure_levels_minus_one: 1.0000000000000000e+00
+  mu: 0.0000000000000000e+00
 Adjoint test for block ID passed

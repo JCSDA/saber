@@ -1,8 +1,35 @@
-! * (C) Crown Copyright 2023 Met Office UK
+! * (C) Crown Copyright 2024 Met Office UK
 ! *
 ! * This software is licensed under the terms of the Apache Licence Version 2.0
 ! * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 !------------------------------------------------------------------------------
+
+subroutine c_calculatingSqrtB(N, inBoutU) &
+ & bind(c,name='calculatingSqrtB_f90')
+
+use fckit_log_module, only: fckit_log
+use iso_c_binding, only : c_int, c_double, c_char
+
+implicit none
+
+integer(c_int), intent(in) :: N
+real(kind=c_double), intent(inout):: inBoutU(N * N)
+integer :: info
+
+! the input inBoutU has the vertical covariance
+! the output contains a mixture of the vertical covariance
+! and the Cholesky decomposition matrix L such that B = L L^t
+! so if one wants just the matrix L one has to filter out
+! the upper non-diagonal triangular entries.
+! Note Fortran data ordering is throughout
+call dpotrf('L', N, inBoutU, N, info);
+
+if (info /= 0) then
+  call fckit_log%error('c_calculatingSqrtB LAPACK routine dpotrf failed')
+  call abor1_ftn('c_calculatingSqrtB LAPACK routine dpotrf failed')
+endif
+
+end subroutine c_calculatingSqrtB
 
 subroutine c_covSpectralBinsLevels(c_conf, &
  & varname_length, c_netcdfvarname, &
@@ -111,8 +138,6 @@ call cvt_nc_read_field_from_file(covariance_file, &
                                  final_index = final_index(:))
 
 bins = final_index(1) - start_index(1)
-
-
 
 end subroutine c_covSpectralBins
 

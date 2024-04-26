@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2022 Met Office
+ * (C) Crown Copyright 2022-2024 Met Office
  * 
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0. 
@@ -16,6 +16,10 @@ namespace saber {
 namespace spectralb {
 
 extern "C" {
+
+void calculatingSqrtB_f90(
+  const int &,
+  double &);
 
 void covSpectralBinsLevels_f90(
   const eckit::Configuration &,

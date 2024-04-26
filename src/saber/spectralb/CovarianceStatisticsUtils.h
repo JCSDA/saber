@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2017-2023 Met Office
+ * (C) Crown Copyright 2017-2024 Met Office
  * 
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0. 
@@ -43,6 +43,10 @@ void createSpectralCovarianceFromUMatrixFile(const std::string &,
                                              const spectralbReadParameters &,
                                              atlas::Field &);
 
+void createUMatrixFromSpectralCovarianceFile(const std::string &,
+                                             const spectralbReadParameters &,
+                                             atlas::Field &);
+
 atlas::FieldSet createSpectralCovariances(const oops::Variables &,
                                           const std::vector<std::size_t> &,
                                           const std::size_t,
@@ -59,7 +63,8 @@ void gatherSumSpectralFieldSet(const eckit::mpi::Comm &,
                                const std::size_t root,
                                atlas::FieldSet & spectralVerticalCovariances);
 
-std::vector<std::size_t> getNSpectralBinsFull(const spectralbReadParameters &);
+std::vector<std::size_t> getNSpectralBinsFull(const spectralbReadParameters &,
+                                              const oops::Variables &);
 
 void readSpectralCovarianceFromFile(const std::string &,
                                     const spectralbReadParameters &,

@@ -5,15 +5,15 @@ geometry:
   partitioner: cubedsphere
   groups:
   - variables:
-    - unbalanced_pressure
-    - moisture_control_variable
+    - unbalanced_pressure_levels_minus_one
+    - mu
     levels: 70
   halo: 1
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
-  - unbalanced_pressure
-  - moisture_control_variable
+  - unbalanced_pressure_levels_minus_one
+  - mu
 background error:
   covariance model: SABER
   adjoint test: true
@@ -21,8 +21,8 @@ background error:
   saber central block:
     saber block name: spectral covariance
     active variables:
-    - unbalanced_pressure
-    - moisture_control_variable
+    - unbalanced_pressure_levels_minus_one
+    - mu
     read:
       covariance_file: testdata/spectralcov.nc
       umatrix_netcdf_names:
@@ -32,15 +32,15 @@ background error:
   - saber block name: spectral to gauss
     skip inverse test: true
     active variables:
-    - unbalanced_pressure
-    - moisture_control_variable
+    - unbalanced_pressure_levels_minus_one
+    - mu
   - saber block name: gauss to cubed-sphere-dual
     inner inverse tolerance: 0.2
     outer inverse tolerance: 0.2
     gauss grid uid: F15
     active variables:
-    - unbalanced_pressure
-    - moisture_control_variable
+    - unbalanced_pressure_levels_minus_one
+    - mu
 dirac:
   lon:
   - 0.0
@@ -52,8 +52,8 @@ dirac:
   - 1
   - 1
   variable:
-  - unbalanced_pressure
-  - moisture_control_variable
+  - unbalanced_pressure_levels_minus_one
+  - mu
 diagnostic points:
   lon:
   - 20.0
@@ -71,10 +71,10 @@ diagnostic points:
   - 1
   - 1
   variable:
-  - unbalanced_pressure
-  - moisture_control_variable
-  - unbalanced_pressure
-  - moisture_control_variable
+  - unbalanced_pressure_levels_minus_one
+  - mu
+  - unbalanced_pressure_levels_minus_one
+  - mu
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_spectralb_from_CS/%MPI%_dirac_%id%

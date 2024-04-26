@@ -86,8 +86,10 @@ void SqrtOfSpectralCovariance::read() {
   // Note this is reading in the full spectral bins that exist in the cov file
   spectralUMatrices_.clear();
   const spectralbReadParameters readP = *params_.readParams.value();
-  const std::vector<std::size_t> nSpectralBinsFull = specutils::getNSpectralBinsFull(readP);
-  spectralUMatrices_ = specutils::createUMatrices(activeVars_, nSpectralBinsFull, readP);
+  const std::vector<std::size_t> nSpectralBinsFull =
+    specutils::getNSpectralBinsFull(readP, activeVars_);
+  spectralUMatrices_ =
+    specutils::createUMatrices(activeVars_, nSpectralBinsFull, readP);
 
   oops::Log::trace() << classname() << "::read done" << std::endl;
 }

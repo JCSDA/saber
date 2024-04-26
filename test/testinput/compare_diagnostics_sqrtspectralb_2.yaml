@@ -1,0 +1,4 @@
+# Compares Dirac outputs for sqrt of spectral covariance using original statistics or derived statistics.
+file to compare 1: testref/dirac_sqrtspectralb.ref
+file to compare 2: testref/dirac_spectralb_from_saber_file_2.ref
+relative float tolerance: 3e-15

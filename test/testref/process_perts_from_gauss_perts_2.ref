@@ -1,48 +1,48 @@
-Norm of perturbation: member 1: 3.2046740286457293e+03
-initial_increment_1 ; name = eastward_wind ; bin index = 0 ; binned variance = 1.2059116717275924e+00
+Norm of perturbation: member 1: 3.3015543458658226e+03
+initial_increment_1 ; name = eastward_wind ; bin index = 0 ; binned variance = 1.2059116717275926e+00
 initial_increment_1 ; name = northward_wind ; bin index = 0 ; binned variance = 1.2054314227722280e+00
-initial_increment_1 ; name = unbalanced_pressure_levels_minus_one ; bin index = 0 ; binned variance = 1.2117962473338515e+02
-initial_increment_1 ; name = mu ; bin index = 0 ; binned variance = 1.7341869673770546e-01
+initial_increment_1 ; name = unbalanced_pressure_levels_minus_one ; bin index = 0 ; binned variance = 1.3446603505495682e+02
+initial_increment_1 ; name = mu ; bin index = 0 ; binned variance = 1.6393576249293512e-01
 Wrote file testdata/process_perts_from_gauss_perts_2//initial_increment_1.nc
-multiply_wb1_1 ; name = eastward_wind ; bin index = 0 ; binned variance = 3.4071687646379162e-02
+multiply_wb1_1 ; name = eastward_wind ; bin index = 0 ; binned variance = 3.4071687646379169e-02
 multiply_wb1_1 ; name = northward_wind ; bin index = 0 ; binned variance = 3.4429237977754469e-02
-multiply_wb1_1 ; name = unbalanced_pressure_levels_minus_one ; bin index = 0 ; binned variance = 1.5580066255929268e+01
-multiply_wb1_1 ; name = mu ; bin index = 0 ; binned variance = 2.4314335961159332e-02
+multiply_wb1_1 ; name = unbalanced_pressure_levels_minus_one ; bin index = 0 ; binned variance = 1.3425095109066181e+01
+multiply_wb1_1 ; name = mu ; bin index = 0 ; binned variance = 1.9655132716740416e-02
 Wrote file testdata/process_perts_from_gauss_perts_2//multiply_wb1_1.nc
-Norm of band perturbation: member 1: band 1: 1.0528091564207118e+03
-multiply_wb2_1 ; name = eastward_wind ; bin index = 0 ; binned variance = 1.8998810119030507e-01
-multiply_wb2_1 ; name = northward_wind ; bin index = 0 ; binned variance = 1.8758323192395918e-01
-multiply_wb2_1 ; name = unbalanced_pressure_levels_minus_one ; bin index = 0 ; binned variance = 2.5908511105225251e+01
-multiply_wb2_1 ; name = mu ; bin index = 0 ; binned variance = 2.1431264122978164e-02
+Norm of band perturbation: member 1: band 1: 1.0245056327010921e+03
+multiply_wb2_1 ; name = eastward_wind ; bin index = 0 ; binned variance = 1.8998810119030510e-01
+multiply_wb2_1 ; name = northward_wind ; bin index = 0 ; binned variance = 1.8758323192395920e-01
+multiply_wb2_1 ; name = unbalanced_pressure_levels_minus_one ; bin index = 0 ; binned variance = 4.0942059059131836e+01
+multiply_wb2_1 ; name = mu ; bin index = 0 ; binned variance = 1.8906963099593940e-02
 Wrote file testdata/process_perts_from_gauss_perts_2//multiply_wb2_1.nc
-Norm of band perturbation: member 1: band 2: 1.5308789819103949e+03
+Norm of band perturbation: member 1: band 2: 1.7918247274584667e+03
 multiply_wb3_1 ; name = eastward_wind ; bin index = 0 ; binned variance = 9.7971357503208234e-01
 multiply_wb3_1 ; name = northward_wind ; bin index = 0 ; binned variance = 9.8555726072933680e-01
-multiply_wb3_1 ; name = unbalanced_pressure_levels_minus_one ; bin index = 0 ; binned variance = 7.9691047372230429e+01
-multiply_wb3_1 ; name = mu ; bin index = 0 ; binned variance = 1.2767309665356766e-01
+multiply_wb3_1 ; name = unbalanced_pressure_levels_minus_one ; bin index = 0 ; binned variance = 8.0098880886758522e+01
+multiply_wb3_1 ; name = mu ; bin index = 0 ; binned variance = 1.2537366667660055e-01
 Wrote file testdata/process_perts_from_gauss_perts_2//multiply_wb3_1.nc
-Norm of band perturbation: member 1: band 3: 2.5959425830591877e+03
-Norm of perturbation: member 2: 3.1408402754161416e+03
-initial_increment_2 ; name = eastward_wind ; bin index = 0 ; binned variance = 1.2064943011593330e+00
-initial_increment_2 ; name = northward_wind ; bin index = 0 ; binned variance = 1.2405199325720242e+00
-initial_increment_2 ; name = unbalanced_pressure_levels_minus_one ; bin index = 0 ; binned variance = 1.3527066887799995e+02
-initial_increment_2 ; name = mu ; bin index = 0 ; binned variance = 1.5698054454408980e-01
+Norm of band perturbation: member 1: band 3: 2.5696339647564087e+03
+Norm of perturbation: member 2: 3.1872410809746370e+03
+initial_increment_2 ; name = eastward_wind ; bin index = 0 ; binned variance = 1.2064943011593332e+00
+initial_increment_2 ; name = northward_wind ; bin index = 0 ; binned variance = 1.2405199325720240e+00
+initial_increment_2 ; name = unbalanced_pressure_levels_minus_one ; bin index = 0 ; binned variance = 1.2501275703448944e+02
+initial_increment_2 ; name = mu ; bin index = 0 ; binned variance = 1.5410399154369125e-01
 Wrote file testdata/process_perts_from_gauss_perts_2//initial_increment_2.nc
-multiply_wb1_2 ; name = eastward_wind ; bin index = 0 ; binned variance = 3.0500506731719501e-02
+multiply_wb1_2 ; name = eastward_wind ; bin index = 0 ; binned variance = 3.0500506731719508e-02
 multiply_wb1_2 ; name = northward_wind ; bin index = 0 ; binned variance = 3.1516682458317999e-02
-multiply_wb1_2 ; name = unbalanced_pressure_levels_minus_one ; bin index = 0 ; binned variance = 1.4669818199629123e+01
-multiply_wb1_2 ; name = mu ; bin index = 0 ; binned variance = 1.2972980601079329e-02
+multiply_wb1_2 ; name = unbalanced_pressure_levels_minus_one ; bin index = 0 ; binned variance = 1.4807952553493120e+01
+multiply_wb1_2 ; name = mu ; bin index = 0 ; binned variance = 5.5505068843277640e-03
 Wrote file testdata/process_perts_from_gauss_perts_2//multiply_wb1_2.nc
-Norm of band perturbation: member 2: band 1: 1.0357157780451957e+03
-multiply_wb2_2 ; name = eastward_wind ; bin index = 0 ; binned variance = 1.7586143499424081e-01
+Norm of band perturbation: member 2: band 1: 1.0287970238307378e+03
+multiply_wb2_2 ; name = eastward_wind ; bin index = 0 ; binned variance = 1.7586143499424084e-01
 multiply_wb2_2 ; name = northward_wind ; bin index = 0 ; binned variance = 1.8385154710374030e-01
-multiply_wb2_2 ; name = unbalanced_pressure_levels_minus_one ; bin index = 0 ; binned variance = 3.9486008049691947e+01
-multiply_wb2_2 ; name = mu ; bin index = 0 ; binned variance = 1.9307242519161921e-02
+multiply_wb2_2 ; name = unbalanced_pressure_levels_minus_one ; bin index = 0 ; binned variance = 3.0351400264853307e+01
+multiply_wb2_2 ; name = mu ; bin index = 0 ; binned variance = 2.0283907032514925e-02
 Wrote file testdata/process_perts_from_gauss_perts_2//multiply_wb2_2.nc
-Norm of band perturbation: member 2: band 2: 1.6654158138914352e+03
-multiply_wb3_2 ; name = eastward_wind ; bin index = 0 ; binned variance = 9.9631336139822058e-01
+Norm of band perturbation: member 2: band 2: 1.4928326362714070e+03
+multiply_wb3_2 ; name = eastward_wind ; bin index = 0 ; binned variance = 9.9631336139822047e-01
 multiply_wb3_2 ; name = northward_wind ; bin index = 0 ; binned variance = 1.0289707010451139e+00
-multiply_wb3_2 ; name = unbalanced_pressure_levels_minus_one ; bin index = 0 ; binned variance = 8.1114842628678772e+01
-multiply_wb3_2 ; name = mu ; bin index = 0 ; binned variance = 1.2470032142384826e-01
+multiply_wb3_2 ; name = unbalanced_pressure_levels_minus_one ; bin index = 0 ; binned variance = 7.9853404216142806e+01
+multiply_wb3_2 ; name = mu ; bin index = 0 ; binned variance = 1.2826957762684832e-01
 Wrote file testdata/process_perts_from_gauss_perts_2//multiply_wb3_2.nc
-Norm of band perturbation: member 2: band 3: 2.5076421014404227e+03
+Norm of band perturbation: member 2: band 3: 2.5999700437355027e+03

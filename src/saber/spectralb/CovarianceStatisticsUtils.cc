@@ -55,7 +55,7 @@ void copySpectralFieldSet(const atlas::FieldSet & otherFset,
     auto otherView = atlas::array::make_view<const double, 3>(otherFset[field.name()]);
     for (atlas::idx_t jn = 0; jn < field.shape(0); ++jn) {
       for (atlas::idx_t jl = 0; jl < field.shape(1); ++jl) {
-        for (atlas::idx_t jl2= 0; jl2 < field.shape(2); ++jl2) {
+        for (atlas::idx_t jl2 = 0; jl2 < field.shape(2); ++jl2) {
           view(jn, jl, jl2) = otherView(jn, jl, jl2);
         }
       }
@@ -230,6 +230,42 @@ void createSpectralCovarianceFromUMatrixFile(const std::string & var,
 }
 
 
+void createUMatrixFromSpectralCovarianceFile(const std::string & var,
+                                             const spectralbReadParameters & readparams,
+                                             atlas::Field & umatrix) {
+  auto spectralVertCov = atlas::Field(var, atlas::array::make_datatype<double>(),
+    atlas::array::make_shape(umatrix.shape(0), umatrix.shape(1), umatrix.shape(2)));
+
+  readSpectralCovarianceFromFile(var, readparams, spectralVertCov);
+
+  const int sizeVec = umatrix.shape(1) * umatrix.shape(2);
+  std::vector<double> spectralUMatrix1D(static_cast<std::size_t>(sizeVec), 0.0);
+  auto spectralVertCovView = atlas::array::make_view<double, 3>(spectralVertCov);
+  auto umatrixView = atlas::array::make_view<double, 3>(umatrix);
+  umatrixView.assign(0.0);
+
+  for (atlas::idx_t bin = 0; bin < static_cast<atlas::idx_t>(umatrix.shape(0)); ++bin) {
+    std::size_t jn(0);
+    for (atlas::idx_t k1 = 0; k1 < static_cast<atlas::idx_t>(umatrix.shape(1)); ++k1) {
+      for (atlas::idx_t k2 = 0; k2 < static_cast<atlas::idx_t>(umatrix.shape(2)); ++k2, ++jn) {
+        spectralUMatrix1D[jn] = spectralVertCovView(bin, k1, k2);
+      }
+    }
+
+    calculatingSqrtB_f90(umatrix.shape(1), spectralUMatrix1D[0]);
+
+    jn = 0;
+    for (atlas::idx_t k1 = 0; k1 < static_cast<atlas::idx_t>(umatrix.shape(1)); ++k1) {
+      for (atlas::idx_t k2 = 0; k2 < static_cast<atlas::idx_t>(umatrix.shape(2)); ++k2, ++jn) {
+        // index order here switched to k2, k1 because of square root being calculated in
+        // Fortran
+        umatrixView(bin, k2, k1) =  k1 > k2 ? 0.0  : spectralUMatrix1D[jn];
+      }
+    }
+  }
+}
+
+
 atlas::FieldSet createSpectralCovariances(const oops::Variables & activeVars,
                                           const std::vector<std::size_t> & nSpectralBinsFull,
                                           const std::size_t nSpectralBins,
@@ -271,54 +307,58 @@ atlas::FieldSet createSpectralCovariances(const oops::Variables & activeVars,
   return spectralVerticalCovariances;
 }
 
-atlas::FieldSet createUMatrices(const oops::Variables & activeVars,
-                                const std::vector<std::size_t> & nSpectralBinsFull,
-                                const spectralbReadParameters & params) {
+atlas::FieldSet createUMatrices(
+    const oops::Variables & activeVars,
+    const std::vector<std::size_t> & nSpectralBinsFull,
+    const spectralbReadParameters & params) {
   const auto & umatrixNetCDFParams = params.umatrixNetCDFNames.value();
-  if (umatrixNetCDFParams == boost::none) {
-    oops::Log::error() << "with this saber block we require"
-                       << " 'umatrix_netcdf_names' to be set in the yaml."
-                       << std::endl;
-    throw(eckit::UserError(
-          "need to set umatrix_netcdf_names in yaml.", Here()));
-  }
-
   atlas::FieldSet spectralUMatrices;
-  oops::Variables netCDFVars(umatrixNetCDFParams.value());
+
+  if (umatrixNetCDFParams == boost::none) {
+    for (std::size_t ivar = 0; ivar < activeVars.size(); ++ivar) {
+      const std::string var = activeVars[ivar];
+      const int modelLevels = activeVars.getLevels(var);
+      auto uMatrix = atlas::Field(var, atlas::array::make_datatype<double>(),
+        atlas::array::make_shape(nSpectralBinsFull[ivar], modelLevels, modelLevels));
+      createUMatrixFromSpectralCovarianceFile(activeVars[ivar],
+                                              params,
+                                              uMatrix);
+      spectralUMatrices.add(uMatrix);
+    }
+  } else {
+    oops::Variables netCDFVars(umatrixNetCDFParams.value());
+    for (std::size_t ivar = 0; ivar < activeVars.size(); ++ivar) {
+      std::string var = activeVars[ivar];
+      const int modelLevels = activeVars.getLevels(var);
+      std::string netCDFVar = netCDFVars[ivar];
+
+      auto uMatrix = atlas::Field(var, atlas::array::make_datatype<double>(),
+        atlas::array::make_shape(nSpectralBinsFull[ivar], modelLevels, modelLevels));
+
+      // vector size
+      const int sizeVec = modelLevels * modelLevels * static_cast<int>(nSpectralBinsFull[ivar]);
+
+      std::vector<float> spectralUMatrix1D(static_cast<std::size_t>(sizeVec), 0.0);
+
+      covSpectralUMatrix_f90(params.toConfiguration(),
+                             static_cast<int>(netCDFVar.size()),
+                             netCDFVar.c_str(),
+                             static_cast<int>(nSpectralBinsFull[ivar]),
+                             sizeVec,
+                             spectralUMatrix1D[0]);
 
 
-  for (std::size_t ivar = 0; ivar < activeVars.size(); ++ivar) {
-    std::string var = activeVars[ivar];
-    const int modelLevels = activeVars.getLevels(var);
-    std::string netCDFVar = netCDFVars[ivar];
-
-    auto uMatrix = atlas::Field(var, atlas::array::make_datatype<double>(),
-      atlas::array::make_shape(nSpectralBinsFull[ivar], modelLevels, modelLevels));
-
-    // vector size
-    const int sizeVec = modelLevels * modelLevels * static_cast<int>(nSpectralBinsFull[ivar]);
-
-    std::vector<float> spectralUMatrix1D(static_cast<std::size_t>(sizeVec), 0.0);
-
-    covSpectralUMatrix_f90(params.toConfiguration(),
-                           static_cast<int>(netCDFVar.size()),
-                           netCDFVar.c_str(),
-                           static_cast<int>(nSpectralBinsFull[ivar]),
-                           sizeVec,
-                           spectralUMatrix1D[0]);
-
-
-    auto uMatrixView = atlas::array::make_view<double, 3>(uMatrix);
-    std::size_t jn(0);
-    for (atlas::idx_t bin = 0; bin < static_cast<atlas::idx_t>(nSpectralBinsFull[ivar]); ++bin) {
-      for (atlas::idx_t k1 = 0; k1 < static_cast<atlas::idx_t>(modelLevels); ++k1) {
-        for (atlas::idx_t k2 = 0; k2 < static_cast<atlas::idx_t>(modelLevels); ++k2, ++jn) {
-          uMatrixView(bin, k1, k2) = spectralUMatrix1D[jn];
+      auto uMatrixView = atlas::array::make_view<double, 3>(uMatrix);
+      std::size_t jn(0);
+      for (atlas::idx_t bin = 0; bin < static_cast<atlas::idx_t>(nSpectralBinsFull[ivar]); ++bin) {
+        for (atlas::idx_t k1 = 0; k1 < static_cast<atlas::idx_t>(modelLevels); ++k1) {
+          for (atlas::idx_t k2 = 0; k2 < static_cast<atlas::idx_t>(modelLevels); ++k2, ++jn) {
+            uMatrixView(bin, k1, k2) = spectralUMatrix1D[jn];
+          }
         }
       }
+      spectralUMatrices.add(uMatrix);
     }
-
-    spectralUMatrices.add(uMatrix);
   }
 
   return spectralUMatrices;
@@ -363,31 +403,57 @@ void gatherSumSpectralFieldSet(const eckit::mpi::Comm & comm,
 }
 
 
-std::vector<std::size_t> getNSpectralBinsFull(const spectralbReadParameters & params) {
+std::vector<std::size_t> getNSpectralBinsFull(const spectralbReadParameters & params,
+                                              const oops::Variables & activeVars) {
   const auto & umatrixNetCDFParams = params.umatrixNetCDFNames.value();
+
+  std::vector<std::size_t> nSpectralBinsFull(activeVars.size());
+
   if (umatrixNetCDFParams == boost::none) {
-    oops::Log::error() << "with this saber block we require"
-                       << " 'umatrix_netcdf_names' to be set in the yaml."
-                       << std::endl;
-    throw(eckit::UserError(
-          "need to set umatrix_netcdf_names in yaml.", Here()));
-  }
-  const oops::Variables netCDFVars(umatrixNetCDFParams.value());
+    // Setup
+    const std::string filepath = params.covarianceFile;
+    std::vector<std::string> dimNames;
+    std::vector<atlas::idx_t> dimSizes;
+    std::vector<std::vector<std::string>> dimNamesForEveryVar;
+    std::vector<std::string> variableNames;
+    std::vector<int> netcdfGeneralIDs;
+    std::vector<int> netcdfDimIDs;
+    std::vector<int> netcdfVarIDs;
+    std::vector<std::vector<int>> netcdfDimVarIDs;
 
-  std::vector<std::size_t> nSpectralBinsFull(netCDFVars.size());
+    util::atlasArrayInquire(filepath,
+                            dimNames,
+                            dimSizes,
+                            variableNames,
+                            dimNamesForEveryVar,
+                            netcdfGeneralIDs,
+                            netcdfDimIDs,
+                            netcdfVarIDs,
+                            netcdfDimVarIDs);
 
-  for (std::size_t ivar = 0; ivar < netCDFVars.size(); ++ivar) {
-    std::string netCDFVar = netCDFVars[ivar];
+    // TODO(Marek) - extend so that multiple horizontal wavenumbers possible
+    std::string hwaveno("total wavenumber");
+    auto ind = std::find(dimNames.begin(),  dimNames.end(), hwaveno);
+    if (ind != dimNames.end()) {
+      for (std::size_t ivar = 0; ivar < activeVars.variables().size(); ++ivar) {
+        nSpectralBinsFull[ivar] = dimSizes[std::distance(dimNames.begin(), ind)];
+      }
+    }
+  } else {
+    const oops::Variables vars(umatrixNetCDFParams.value());
 
-    int nbins(0);
+    for (std::size_t ivar = 0; ivar < vars.size(); ++ivar) {
+      const std::string var = vars[ivar];
+      int nbins(0);
 
-    // get the number of spectral bins from the cov file
-    covSpectralBins_f90(params.toConfiguration(),
-                        static_cast<int>(netCDFVar.size()),
-                        netCDFVar.c_str(),
-                        nbins);
+      // get the number of spectral bins from the cov file
+      covSpectralBins_f90(params.toConfiguration(),
+                          static_cast<int>(var.size()),
+                          var.c_str(),
+                          nbins);
 
-    nSpectralBinsFull[ivar] = static_cast<std::size_t>(nbins);
+      nSpectralBinsFull[ivar] = static_cast<std::size_t>(nbins);
+    }
   }
 
   return nSpectralBinsFull;
@@ -434,6 +500,17 @@ void readSpectralCovarianceFromFile(const std::string & var,
       ASSERT(it2 != dimNames.end());
       std::size_t i2 = std::distance(dimNames.begin(), it2);
       dimSizesForVar.push_back(dimSizes.at(i2));
+    }
+
+    if ( (dimSizesForVar[0] != specvertview.shape(0)) ||
+         (dimSizesForVar[1] != specvertview.shape(1)) ||
+         (dimSizesForVar[2] != specvertview.shape(2)) ) {
+      oops::Log::error() <<
+        "Dimensions of spectral vertical covariances in file is inconsistent with" <<
+        " yaml setup for variable " <<  filevar << std::endl;
+      throw eckit::UserError(
+        "Inconsistency in dimension sizes of spectral vertical covariance "
+        " between file and assumed array shape", Here());
     }
 
     util::atlasArrayReadData(netcdfGeneralIDs,

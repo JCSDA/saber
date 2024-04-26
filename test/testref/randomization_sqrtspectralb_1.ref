@@ -16,9 +16,9 @@ Groups:
   Mask size: 100%
 Fields:
   eastward_wind: 3.1390575368669010e+02
-  northward_wind: 3.1173582902908782e+02
-  unbalanced_pressure_levels_minus_one: 3.1717931380731948e+03
-  mu: 1.1810110012265146e+02
+  mu: 1.1449042017057303e+02
+  northward_wind: 3.1173582902908777e+02
+  unbalanced_pressure_levels_minus_one: 3.2697762909863736e+03
 Member 1: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -37,9 +37,9 @@ Groups:
   Mask size: 100%
 Fields:
   eastward_wind: 3.1267382412208565e+02
-  northward_wind: 3.1974164276855606e+02
-  unbalanced_pressure_levels_minus_one: 3.1068219046544114e+03
-  mu: 1.1196271711698219e+02
+  mu: 1.1164023410753354e+02
+  northward_wind: 3.1974164276855612e+02
+  unbalanced_pressure_levels_minus_one: 3.1537346952413936e+03
 Randomized variance: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -58,6 +58,6 @@ Groups:
   Mask size: 100%
 Fields:
   eastward_wind: 8.7867140358167080e+02
+  mu: 8.0393884433444356e+01
   northward_wind: 9.3364003697513749e+02
-  unbalanced_pressure_levels_minus_one: 7.3499042334679005e+04
-  mu: 8.1880598977635287e+01
+  unbalanced_pressure_levels_minus_one: 7.3685489642178014e+04

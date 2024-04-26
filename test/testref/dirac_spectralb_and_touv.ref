@@ -17,8 +17,8 @@ Groups:
 Fields:
   eastward_wind: 1.0000000000000000e+00
   northward_wind: 0.0000000000000000e+00
-  unbalanced_pressure: 1.0000000000000000e+00
-  moisture_control_variable: 1.0000000000000000e+00
+  unbalanced_pressure_levels_minus_one: 1.0000000000000000e+00
+  mu: 1.0000000000000000e+00
 Adjoint test for block spectral to gauss passed
 Inner inverse test for block spectral to gauss passed: U Uinv (U x) == (U x)
 Outer inverse test for block spectral to gauss passed: Uinv U (Uinv x) == (Uinv x)
@@ -26,12 +26,12 @@ Adjoint test for block spectral covariance passed
 Covariance(SABER) diagnostics:
 - Variances at Dirac points:
   + Value for variable eastward_wind, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 1.2843501075304320e-01
-  + Value for variable unbalanced_pressure, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 5.5129549997972583e+02
-  + Value for variable moisture_control_variable, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 2.0062216828888657e-01
+  + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 5.5129549997972583e+02
+  + Value for variable mu, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 2.0062216828888657e-01
 - Covariances at diagnostic points:
   + Value for variable eastward_wind, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 3.1173377011171153e-03
-  + Value for variable unbalanced_pressure, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 6.1857159205407150e+01
-  + Value for variable moisture_control_variable, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 7.3882682789723321e-03
+  + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 6.1857159205407150e+01
+  + Value for variable mu, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 7.3882682789723321e-03
 Covariance(SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -51,5 +51,5 @@ Groups:
 Fields:
   eastward_wind: 6.9221465405261340e-01
   northward_wind: 2.2511716006873103e-01
-  unbalanced_pressure: 5.4773673943778185e+03
-  moisture_control_variable: 8.0295972259155324e-01
+  unbalanced_pressure_levels_minus_one: 5.4773673943778185e+03
+  mu: 8.0295972259155324e-01

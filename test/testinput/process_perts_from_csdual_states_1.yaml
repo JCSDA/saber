@@ -7,8 +7,8 @@ geometry:
   - variables: &vars
     - streamfunction
     - velocity_potential
-    - unbalanced_pressure
-    - moisture_control_variable
+    - unbalanced_pressure_levels_minus_one
+    - mu
     levels: 70
   halo: 1
 

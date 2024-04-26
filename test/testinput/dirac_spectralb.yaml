@@ -2,13 +2,13 @@ geometry:
   function space: StructuredColumns
   grid:
     type: regular_gaussian
-    N: 15
+    N: 12
   groups:
   - variables:
     - streamfunction
     - velocity_potential
-    - unbalanced_pressure
-    - moisture_control_variable
+    - unbalanced_pressure_levels_minus_one
+    - mu
     levels: 70
   partitioner: ectrans
 background:
@@ -16,8 +16,8 @@ background:
   state variables:
   - streamfunction
   - velocity_potential
-  - unbalanced_pressure
-  - moisture_control_variable
+  - unbalanced_pressure_levels_minus_one
+  - mu
 background error:
   covariance model: SABER
   adjoint test: true
@@ -62,8 +62,8 @@ dirac:
   variable:
   - streamfunction
   - velocity_potential
-  - unbalanced_pressure
-  - moisture_control_variable
+  - unbalanced_pressure_levels_minus_one
+  - mu
 diagnostic points:
   lon:
   - 20.0
@@ -83,8 +83,8 @@ diagnostic points:
   variable:
   - streamfunction
   - velocity_potential
-  - unbalanced_pressure
-  - moisture_control_variable
+  - unbalanced_pressure_levels_minus_one
+  - mu
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_spectralb/%MPI%_dirac_%id%
