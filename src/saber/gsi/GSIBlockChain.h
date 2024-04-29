@@ -184,12 +184,12 @@ SaberGSIBlockChain::SaberGSIBlockChain(const oops::Geometry<MODEL> & geom,
     oops::Log::info() << std::setprecision(16) << "Info     : Adjoint test: y^t (Ax) = " << dp1
                       << ": x^t (A^t y) = " << dp2 << " : adjoint tolerance = "
                       << localAdjointTolerance << std::endl;
-    oops::Log::test() << "Adjoint test for block gsi covariance";
+    oops::Log::test() << "Adjoint test for block gsi hybrid covariance";
     if (std::abs(dp1-dp2)/std::abs(0.5*(dp1+dp2)) < localAdjointTolerance) {
       oops::Log::test() << " passed" << std::endl;
     } else {
       oops::Log::test() << " failed" << std::endl;
-      throw eckit::Exception("Adjoint test failure for block gsi covariance", Here());
+      throw eckit::Exception("Adjoint test failure for block gsi hybrid covariance", Here());
     }
   }
 

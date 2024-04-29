@@ -2,7 +2,7 @@ background error:
   covariance model: SABER
   adjoint test: true
   saber central block:
-    saber block name: gsi covariance
+    saber block name: gsi static covariance
     read:
       gsi error covariance file: testdata/gsi-coeffs-global-l127x64y32.nc4
       gsi berror namelist file: testdata/dirac_gsi_gfs_global.nml

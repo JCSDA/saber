@@ -4,7 +4,7 @@ background error:
   adjoint test: true
   adjoint tolerance: 1e-11
   saber central block:
-    saber block name: gsi covariance
+    saber block name: gsi hybrid covariance  # note: it actually is a static covariance; hybrid is specified for testing purposes
     read:
       gsi error covariance file: testdata/gsi-coeffs-gmao-global-l72x72y46_opt2.nc4
       gsi berror namelist file: testdata/dirac_gsi_geos_global_opt_2.nml

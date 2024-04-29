@@ -23,7 +23,7 @@ Fields:
   stream_function: 2.2360679774997898e+00
   velocity_potential: 0.0000000000000000e+00
   surface_pressure: 0.0000000000000000e+00
-Adjoint test for block gsi covariance passed
+Adjoint test for block gsi static covariance passed
 Covariance(SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:

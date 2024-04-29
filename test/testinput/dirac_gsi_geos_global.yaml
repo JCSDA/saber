@@ -2,7 +2,7 @@ background error:
   covariance model: SABER
   adjoint test: true
   saber central block:
-    saber block name: gsi covariance
+    saber block name: gsi hybrid covariance # note: it actually is a static covariance; hybrid is specified for testing purpose
     read:
       gsi error covariance file: testdata/gsi-coeffs-gmao-global-l72x72y46.nc4
       gsi berror namelist file: testdata/dirac_gsi_geos_global.nml

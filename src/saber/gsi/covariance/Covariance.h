@@ -48,22 +48,64 @@ class CovarianceParameters : public SaberBlockParametersBase {
 };
 
 // -------------------------------------------------------------------------------------------------
+// Static GSI covariance block
+class StaticCovariance : public SaberCentralBlockBase {
+ public:
+  static const std::string classname() {return "saber::gsi::StaticCovariance";}
+
+  typedef CovarianceParameters Parameters_;
+
+  StaticCovariance(const oops::GeometryData &,
+                   const oops::Variables &,
+                   const eckit::Configuration &,
+                   const Parameters_ &,
+                   const oops::FieldSet3D &,
+                   const oops::FieldSet3D &);
+  virtual ~StaticCovariance();
+
+  void randomize(oops::FieldSet3D &) const override;
+  void multiply(oops::FieldSet3D &) const override;
+
+  void read() override;
+
+ private:
+  // Fortran LinkedList key
+  CovarianceKey keySelf_;
+  // Parameters
+  Parameters_ params_;
+  // Variables
+  std::vector<std::string> variables_;
+  // GSI grid FunctionSpace
+  atlas::FunctionSpace gsiGridFuncSpace_;
+  // Communicator
+  const eckit::mpi::Comm * comm_;
+  // Background
+  const oops::FieldSet3D xb_;
+  // First guess
+  const oops::FieldSet3D fg_;
+  // valid time
+  const util::DateTime validTime_;
+
+  void print(std::ostream &) const override;
+};
+
+
+// -------------------------------------------------------------------------------------------------
 // This block is currently a "fake" block and doesn't implement anything. It will be
 // removed.
-// For GSI covariance implementation see GSIBlockChain.
-class Covariance : public SaberCentralBlockBase {
+// For the hybrid GSI covariance implementation see GSIBlockChain.
+class HybridCovariance : public SaberCentralBlockBase {
  public:
   static const std::string classname() {return "saber::gsi::Covariance";}
 
   typedef CovarianceParameters Parameters_;
 
-  Covariance(const oops::GeometryData &,
-             const oops::Variables &,
-             const eckit::Configuration &,
-             const Parameters_ &,
-             const oops::FieldSet3D &,
-             const oops::FieldSet3D &);
-  virtual ~Covariance();
+  HybridCovariance(const oops::GeometryData &,
+                   const oops::Variables &,
+                   const eckit::Configuration &,
+                   const Parameters_ & params,
+                   const oops::FieldSet3D & xb,
+                   const oops::FieldSet3D &) : SaberCentralBlockBase(params, xb.validTime()) {}
 
   void randomize(oops::FieldSet3D &) const override {};
   void multiply(oops::FieldSet3D &) const override {};
