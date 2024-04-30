@@ -145,6 +145,7 @@ type nicas_cmp_type
    logical :: smoother                                  !< Smoother flag
    logical :: compute_norm                              !< Compute normalization
    integer :: nc0a                                      !< Number of points in subset Sc0, halo A
+   integer :: nl0                                       !< Number of levels in subset Sl0
 
    ! Number of processors
    integer :: nproc                                     !< Number of processors
@@ -788,14 +789,13 @@ end subroutine nicas_cmp_dealloc
 ! Subroutine: nicas_cmp_read_local
 !> Read local for global I/O
 !----------------------------------------------------------------------
-subroutine nicas_cmp_read_local(nicas_cmp,mpl,geom)
+subroutine nicas_cmp_read_local(nicas_cmp,mpl)
 
 implicit none
 
 ! Passed variables
 class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data
 type(mpl_type),intent(inout) :: mpl              !< MPI data
-type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
 integer :: il1
@@ -809,7 +809,7 @@ character(len=1024) :: levname
 @:probe_in()
 
 ! Read valid levels
-allocate(nicas_cmp%vlev(geom%nl0))
+allocate(nicas_cmp%vlev(nicas_cmp%nl0))
 vlev_id = inquire_var(mpl,nicas_cmp%cmpid,'vlev')
 call get_var(mpl,nicas_cmp%cmpid,vlev_id,nicas_cmp%vlev)
 
@@ -833,8 +833,8 @@ if (any(nicas_cmp%vlev)) then
    end do
 
    ! Allocation
-   if (.not.allocated(nicas_cmp%norm)) allocate(nicas_cmp%norm(nicas_cmp%nc0a,geom%nl0))
-   allocate(nicas_cmp%a(nicas_cmp%nc0a,geom%nl0))
+   if (.not.allocated(nicas_cmp%norm)) allocate(nicas_cmp%norm(nicas_cmp%nc0a,nicas_cmp%nl0))
+   allocate(nicas_cmp%a(nicas_cmp%nc0a,nicas_cmp%nl0))
    do il1=1,nicas_cmp%nl1
       allocate(nicas_cmp%hor(il1)%c1b_to_sb(nicas_cmp%hor(il1)%nc1b))
    end do
@@ -865,7 +865,7 @@ if (any(nicas_cmp%vlev)) then
       if (nicas_cmp%ncmp>1) then
          call get_var(mpl,nicas_cmp%cmpid,a_id,nicas_cmp%a)
       else
-          nicas_cmp%a = one
+         nicas_cmp%a = one
       end if
    end if
    do il1=1,nicas_cmp%nl1
@@ -1033,14 +1033,13 @@ end subroutine nicas_cmp_write_local_data
 ! Subroutine: nicas_cmp_buffer_size
 !> Buffer size
 !----------------------------------------------------------------------
-subroutine nicas_cmp_buffer_size(nicas_cmp,mpl,geom,nbufi,nbufr,nbufl)
+subroutine nicas_cmp_buffer_size(nicas_cmp,mpl,nbufi,nbufr,nbufl)
 
 implicit none
 
 ! Passed variables
 class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data component
 type(mpl_type),intent(inout) :: mpl           !< MPI data
-type(geom_type),intent(in) :: geom            !< Geometry
 integer,intent(inout) :: nbufi                !< Buffer size (integer)
 integer,intent(inout) :: nbufr                !< Buffer size (real)
 integer,intent(inout) :: nbufl                !< Buffer size (logical)
@@ -1055,15 +1054,18 @@ integer :: il1
 ! Probe in
 @:probe_in()
 
+! nl0
+nbufi = nbufi+1
+
 ! vlev
-nbufl = nbufl+geom%nl0
+nbufl = nbufl+nicas_cmp%nl0
 
 if (any(nicas_cmp%vlev)) then
    ! Dimensions
    nbufi = nbufi+5+nicas_cmp%nl1
 
    ! norm and a
-   nbufr = nbufr+2*nicas_cmp%nc0a*geom%nl0
+   nbufr = nbufr+2*nicas_cmp%nc0a*nicas_cmp%nl0
 
    ! c1b_to_sb
    do il1=1,nicas_cmp%nl1
@@ -1114,14 +1116,13 @@ end subroutine nicas_cmp_buffer_size
 ! Subroutine: nicas_cmp_serialize
 !> Serialize
 !----------------------------------------------------------------------
-subroutine nicas_cmp_serialize(nicas_cmp,mpl,geom,nbufi,nbufr,nbufl,ibufi,ibufr,ibufl,bufi,bufr,bufl)
+subroutine nicas_cmp_serialize(nicas_cmp,mpl,nbufi,nbufr,nbufl,ibufi,ibufr,ibufl,bufi,bufr,bufl)
 
 implicit none
 
 ! Passed variables
 class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data component
 type(mpl_type),intent(inout) :: mpl           !< MPI data
-type(geom_type),intent(in) :: geom            !< Geometry
 integer,intent(in) :: nbufi                   !< Buffer size (integer)
 integer,intent(in) :: nbufr                   !< Buffer size (real)
 integer,intent(in) :: nbufl                   !< Buffer size (logical)
@@ -1142,9 +1143,13 @@ integer :: il1
 ! Probe in
 @:probe_in()
 
+! nl0
+bufi(ibufi+1) = nicas_cmp%nl0
+ibufi = ibufi+1
+
 ! vlev
-bufl(ibufl+1:ibufl+geom%nl0) = nicas_cmp%vlev
-ibufl = ibufl+geom%nl0
+bufl(ibufl+1:ibufl+nicas_cmp%nl0) = nicas_cmp%vlev
+ibufl = ibufl+nicas_cmp%nl0
 
 if (any(nicas_cmp%vlev)) then
    ! nc0a
@@ -1175,10 +1180,10 @@ if (any(nicas_cmp%vlev)) then
 
    ! norm and a
    if (nicas_cmp%nc0a>0) then
-      bufr(ibufr+1:ibufr+nicas_cmp%nc0a*geom%nl0) = reshape(nicas_cmp%norm,(/nicas_cmp%nc0a*geom%nl0/))
-      ibufr = ibufr+nicas_cmp%nc0a*geom%nl0
-      bufr(ibufr+1:ibufr+nicas_cmp%nc0a*geom%nl0) = reshape(nicas_cmp%a,(/nicas_cmp%nc0a*geom%nl0/))
-      ibufr = ibufr+nicas_cmp%nc0a*geom%nl0
+      bufr(ibufr+1:ibufr+nicas_cmp%nc0a*nicas_cmp%nl0) = reshape(nicas_cmp%norm,(/nicas_cmp%nc0a*nicas_cmp%nl0/))
+      ibufr = ibufr+nicas_cmp%nc0a*nicas_cmp%nl0
+      bufr(ibufr+1:ibufr+nicas_cmp%nc0a*nicas_cmp%nl0) = reshape(nicas_cmp%a,(/nicas_cmp%nc0a*nicas_cmp%nl0/))
+      ibufr = ibufr+nicas_cmp%nc0a*nicas_cmp%nl0
    end if
 
    ! c1b_to_sb
@@ -1243,14 +1248,13 @@ end subroutine nicas_cmp_serialize
 ! Subroutine: nicas_cmp_deserialize
 !> Deserialize
 !----------------------------------------------------------------------
-subroutine nicas_cmp_deserialize(nicas_cmp,mpl,geom,nbufi,nbufr,nbufl,ibufi,ibufr,ibufl,bufi,bufr,bufl)
+subroutine nicas_cmp_deserialize(nicas_cmp,mpl,nbufi,nbufr,nbufl,ibufi,ibufr,ibufl,bufi,bufr,bufl)
 
 implicit none
 
 ! Passed variables
 class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data component
 type(mpl_type),intent(inout) :: mpl              !< MPI data
-type(geom_type),intent(in) :: geom               !< Geometry
 integer,intent(in) :: nbufi                      !< Buffer size (integer)
 integer,intent(in) :: nbufr                      !< Buffer size (real)
 integer,intent(in) :: nbufl                      !< Buffer size (logical)
@@ -1271,10 +1275,14 @@ integer :: il1
 ! Probe in
 @:probe_in()
 
+! nl0
+nicas_cmp%nl0 = bufi(ibufi+1)
+ibufi = ibufi+1
+
 ! vlev
-allocate(nicas_cmp%vlev(geom%nl0))
-nicas_cmp%vlev = bufl(ibufl+1:ibufl+geom%nl0)
-ibufl = ibufl+geom%nl0
+allocate(nicas_cmp%vlev(nicas_cmp%nl0))
+nicas_cmp%vlev = bufl(ibufl+1:ibufl+nicas_cmp%nl0)
+ibufl = ibufl+nicas_cmp%nl0
 
 if (any(nicas_cmp%vlev)) then
    ! nc0a
@@ -1307,8 +1315,8 @@ if (any(nicas_cmp%vlev)) then
    ibufi = ibufi+1
 
    ! Allocation
-   allocate(nicas_cmp%norm(nicas_cmp%nc0a,geom%nl0))
-   allocate(nicas_cmp%a(nicas_cmp%nc0a,geom%nl0))
+   allocate(nicas_cmp%norm(nicas_cmp%nc0a,nicas_cmp%nl0))
+   allocate(nicas_cmp%a(nicas_cmp%nc0a,nicas_cmp%nl0))
    do il1=1,nicas_cmp%nl1
       allocate(nicas_cmp%hor(il1)%c1b_to_sb(nicas_cmp%hor(il1)%nc1b))
    end do
@@ -1321,10 +1329,10 @@ if (any(nicas_cmp%vlev)) then
 
    ! norm and a
    if (nicas_cmp%nc0a>0) then
-      nicas_cmp%norm = reshape(bufr(ibufr+1:ibufr+nicas_cmp%nc0a*geom%nl0),(/nicas_cmp%nc0a,geom%nl0/))
-      ibufr = ibufr+nicas_cmp%nc0a*geom%nl0
-      nicas_cmp%a = reshape(bufr(ibufr+1:ibufr+nicas_cmp%nc0a*geom%nl0),(/nicas_cmp%nc0a,geom%nl0/))
-      ibufr = ibufr+nicas_cmp%nc0a*geom%nl0
+      nicas_cmp%norm = reshape(bufr(ibufr+1:ibufr+nicas_cmp%nc0a*nicas_cmp%nl0),(/nicas_cmp%nc0a,nicas_cmp%nl0/))
+      ibufr = ibufr+nicas_cmp%nc0a*nicas_cmp%nl0
+      nicas_cmp%a = reshape(bufr(ibufr+1:ibufr+nicas_cmp%nc0a*nicas_cmp%nl0),(/nicas_cmp%nc0a,nicas_cmp%nl0/))
+      ibufr = ibufr+nicas_cmp%nc0a*nicas_cmp%nl0
    end if
 
    ! c1b_to_sb
@@ -1442,7 +1450,7 @@ if (nicas_cmp%compute_norm) call mpl%warning('${subr}$','norm is recomputed, mak
 if (.not.allocated(nicas_cmp%a)) then
    if (nicas_cmp%ncmp==1) then
       ! Allocation
-      allocate(nicas_cmp%a(geom%nc0a,geom%nl0))
+      allocate(nicas_cmp%a(geom%nc0a,nicas_cmp%nl0))
 
       ! Amplitude set to one
       nicas_cmp%a = one
@@ -1461,7 +1469,7 @@ nicas_cmp%nl1 = inquire_dim_size(mpl,nicas_cmp%cmpid,'nl1')
 if (mpl%iobcast) call mpl%f_comm_iobcast%broadcast(nicas_cmp%nl1,mpl%rootproc-1)
 
 ! Valid levels
-allocate(nicas_cmp%vlev(geom%nl0))
+allocate(nicas_cmp%vlev(nicas_cmp%nl0))
 vlev_id = inquire_var(mpl,nicas_cmp%cmpid,'vlev')
 call get_var(mpl,nicas_cmp%cmpid,vlev_id,nicas_cmp%vlev)
 if (mpl%iobcast) call mpl%f_comm_iobcast%broadcast(nicas_cmp%vlev,mpl%rootproc-1)
@@ -2238,7 +2246,7 @@ if (any(nicas_cmp%vlev)) then
       call mpl%flush
       write(mpl%info,'(a13,a,i8)') '','nc0a =                       ',geom%nc0a
       call mpl%flush
-      write(mpl%info,'(a13,a,i8)') '','nl0 =                        ',geom%nl0
+      write(mpl%info,'(a13,a,i8)') '','nl0 =                        ',nicas_cmp%nl0
       call mpl%flush
       write(mpl%test,'(a13,a,i8)') '','nl1 =                        ',nicas_cmp%nl1
       do il1=1,nicas_cmp%nl1
@@ -2270,7 +2278,7 @@ if (any(nicas_cmp%vlev)) then
 else
    if (.not.nam%load_nicas_global) then
       ! Allocation
-      allocate(nicas_cmp%norm(geom%nc0a,geom%nl0))
+      allocate(nicas_cmp%norm(geom%nc0a,nicas_cmp%nl0))
    end if
 
    ! Initialization
@@ -2309,11 +2317,11 @@ real(kind_real),intent(in) :: rhflt              !< Horizontal support radius
 @:probe_in()
 
 ! Allocation
-allocate(nicas_cmp%rh(geom%nc0a,geom%nl0))
-allocate(nicas_cmp%rv(geom%nc0a,geom%nl0))
-allocate(nicas_cmp%as(geom%nc0a,geom%nl0))
-allocate(nicas_cmp%rhs(geom%nc0a,geom%nl0))
-allocate(nicas_cmp%rvs(geom%nc0a,geom%nl0))
+allocate(nicas_cmp%rh(geom%nc0a,nicas_cmp%nl0))
+allocate(nicas_cmp%rv(geom%nc0a,nicas_cmp%nl0))
+allocate(nicas_cmp%as(geom%nc0a,nicas_cmp%nl0))
+allocate(nicas_cmp%rhs(geom%nc0a,nicas_cmp%nl0))
+allocate(nicas_cmp%rvs(geom%nc0a,nicas_cmp%nl0))
 
 ! Initialization
 nicas_cmp%anisotropic = .false.
@@ -2347,9 +2355,9 @@ type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
 integer :: il0,il0first,il0last,il0_prev,il1,ic0a,il0inf,il0sup,jl0,jl1
-integer :: npos(geom%nl0),nmis(geom%nl0),l0_to_l1(geom%nl0)
+integer :: npos(nicas_cmp%nl0),nmis(nicas_cmp%nl0),l0_to_l1(nicas_cmp%nl0)
 real(kind_real) :: distnormmin,distnorm(geom%nc0a),rv
-logical :: slev(geom%nl0)
+logical :: slev(nicas_cmp%nl0)
 
 ! Set name
 @:set_name(nicas_cmp_compute_vertical)
@@ -2363,7 +2371,7 @@ if (.not.nam%load_nicas_global) then
    call mpl%flush(flush=nicas_cmp%verbosity)
 
    ! Get valid levels
-   do il0=1,geom%nl0
+   do il0=1,nicas_cmp%nl0
       npos(il0) = zss_count(((nicas_cmp%rhs(:,il0)>zero).or.(nicas_cmp%rvs(:,il0)>zero)).and.geom%gmask_c0a(:,il0))
       nmis(il0) = zss_count((mpl%msv%is(nicas_cmp%rhs(:,il0)).or.mpl%msv%is(nicas_cmp%rvs(:,il0))).and.geom%gmask_c0a(:,il0))
    end do
@@ -2375,10 +2383,10 @@ end if
 ! Initialization
 il0first = mpl%msv%vali
 il0last = mpl%msv%vali
-do il0=1,geom%nl0
+do il0=1,nicas_cmp%nl0
    if (nicas_cmp%vlev(il0).and.mpl%msv%is(il0first)) il0first = il0
 end do
-do il0=geom%nl0,1,-1
+do il0=nicas_cmp%nl0,1,-1
    if (nicas_cmp%vlev(il0).and.mpl%msv%is(il0last)) il0last = il0
 end do
 il0_prev = il0first
@@ -2393,7 +2401,7 @@ if (nam%load_nicas_global) then
 else
    ! Compute sampling levels
    slev = .false.
-   do il0=1,geom%nl0
+   do il0=1,nicas_cmp%nl0
       if (nicas_cmp%vlev(il0)) then
          ! Look for convolution levels
          if ((il0==il0first).or.(il0==il0last)) then
@@ -2424,7 +2432,7 @@ else
    write(mpl%test,'(a13,a)') '','Effective levels: '
    call mpl%flush(newl=.false.,flush=nicas_cmp%verbosity)
    il1 = 0
-   do il0=1,geom%nl0
+   do il0=1,nicas_cmp%nl0
       if (slev(il0)) then
          write(mpl%test,'(i4,a)') il0,' '
          call mpl%flush(newl=.false.,flush=nicas_cmp%verbosity)
@@ -2446,12 +2454,12 @@ end do
 ! Initialize vertical interpolation
 nicas_cmp%v%prefix = 'v'
 nicas_cmp%v%n_src = nicas_cmp%nl1
-nicas_cmp%v%n_dst = geom%nl0
+nicas_cmp%v%n_dst = nicas_cmp%nl0
 
 ! Count levels
 nicas_cmp%v%n_s = nicas_cmp%nl1
 il0inf = il0first
-do jl0=1,geom%nl0
+do jl0=1,nicas_cmp%nl0
    if (slev(jl0)) then
       il0sup = jl0
       do il0=il0inf+1,il0sup-1
@@ -2478,7 +2486,7 @@ nicas_cmp%v%n_s = nicas_cmp%nl1
 
 ! Compute linear interpolation for other levels
 il0inf = il0first
-do jl0=1,geom%nl0
+do jl0=1,nicas_cmp%nl0
    if (slev(jl0)) then
       il0sup = jl0
       do il0=il0inf+1,il0sup-1
@@ -2534,7 +2542,7 @@ integer :: nn_index(1)
 integer,allocatable :: c1_to_c0(:),order_c1(:),order_inv_c1(:),c0u_to_c0b(:),c0b_to_c0(:),c0own_to_c0(:),sb_to_s(:)
 integer,allocatable :: order_s(:),order_inv_s(:),order_inv_sa(:)
 real(kind_real) :: nc1_real,resol_eff,lon,lat,alon,alat
-real(kind_real) :: rhs_min(geom%nl0),rhs_max(geom%nl0),rhs_avg(geom%nl0),lonlat(2),g(3)
+real(kind_real) :: rhs_min(nicas_cmp%nl0),rhs_max(nicas_cmp%nl0),rhs_avg(nicas_cmp%nl0),lonlat(2),g(3)
 real(kind_real),allocatable :: lon_c1(:),lat_c1(:),lon_s(:),lat_s(:),interpolation_radius(:)
 real(kind_real),allocatable :: fld_src_c1a(:),fld_src_c1b(:),fld_src_c1(:)
 real(kind_real),allocatable :: grad_ref_c1a(:,:),grad_ssrf_c1a(:,:),grad_op_c1a(:,:),grad_op_c1(:,:)
@@ -2562,7 +2570,7 @@ if (nicas_cmp%interp_type=='si') allocate(interpolation_radius(geom%nc0a))
 
 if (.not.nam%load_nicas_global) then
    ! Compute averaged horizontal support radius
-   do il0=1,geom%nl0
+   do il0=1,nicas_cmp%nl0
       rhs_min(il0) = zss_minval(nicas_cmp%rhs(:,il0),mask=geom%gmask_c0a(:,il0))
       rhs_max(il0) = zss_maxval(nicas_cmp%rhs(:,il0),mask=geom%gmask_c0a(:,il0))
       rhs_avg(il0) = zss_sum(nicas_cmp%rhs(:,il0),mask=geom%gmask_c0a(:,il0))
@@ -2570,7 +2578,7 @@ if (.not.nam%load_nicas_global) then
    call mpl%f_comm%allreduce(rhs_min,fckit_mpi_min())
    call mpl%f_comm%allreduce(rhs_max,fckit_mpi_max())
    call mpl%f_comm%allreduce(rhs_avg,fckit_mpi_sum())
-   rhs_avg = rhs_avg/real(geom%nc0_gmask(1:geom%nl0),kind_real)
+   rhs_avg = rhs_avg/real(geom%nc0_gmask(1:nicas_cmp%nl0),kind_real)
 
    ! Mask initialization
    mask_hor_c0a = geom%gmask_hor_c0a
@@ -3089,10 +3097,10 @@ if (nam%interp_test.and.(nicas_cmp%interp_type=='c1')) then
    call mpl%flush(flush=nicas_cmp%verbosity)
 
    ! Allocation
-   allocate(nicas_cmp%fld_ref(geom%nc0a,geom%nl0))
-   allocate(nicas_cmp%fld_ssrf(geom%nc0a,geom%nl0))
-   allocate(nicas_cmp%fld_op(geom%nc0a,geom%nl0))
-   allocate(nicas_cmp%fld_ssrf_from_op(geom%nc0a,geom%nl0))
+   allocate(nicas_cmp%fld_ref(geom%nc0a,nicas_cmp%nl0))
+   allocate(nicas_cmp%fld_ssrf(geom%nc0a,nicas_cmp%nl0))
+   allocate(nicas_cmp%fld_op(geom%nc0a,nicas_cmp%nl0))
+   allocate(nicas_cmp%fld_ssrf_from_op(geom%nc0a,nicas_cmp%nl0))
 
    ! Initialization
    nicas_cmp%fld_ref = zero
@@ -3677,7 +3685,7 @@ type(geom_type),intent(in) :: geom               !< Geometry
 integer :: isu,ic1u,ic1b,jc1,jc1u,il1,il0,j,jl0,jl1,isb,nn
 integer,allocatable :: nn_index(:)
 real(kind_real) :: rv_th,distv,dx,dy,distv_min
-real(kind_real) :: rv_max(geom%nl0),vert_coord_min(nicas_cmp%nl1),vert_coord_max(nicas_cmp%nl1)
+real(kind_real) :: rv_max(nicas_cmp%nl0),vert_coord_min(nicas_cmp%nl1),vert_coord_max(nicas_cmp%nl1)
 real(kind_real),allocatable :: hnd(:),vnd(:),nn_dist(:)
 logical :: valid
 logical,allocatable :: mnd(:)
@@ -3689,7 +3697,7 @@ logical,allocatable :: mnd(:)
 @:probe_in()
 
 ! Find largest possible radius
-do il0=1,geom%nl0
+do il0=1,nicas_cmp%nl0
    rv_max(il0) = zss_maxval(nicas_cmp%rv(:,il0),mask=mpl%msv%isnot(nicas_cmp%rv(:,il0)))
 end do
 call mpl%f_comm%allreduce(rv_max,fckit_mpi_max())
@@ -3856,7 +3864,7 @@ type(linop_type) :: c(mpl%nthread)
 @:probe_in()
 
 ! Allocation
-n_s_max = 10*nint(real(geom%nc0u*geom%nl0)/real(mpl%nthread*mpl%nproc))
+n_s_max = 10*nint(real(geom%nc0u*nicas_cmp%nl0)/real(mpl%nthread*mpl%nproc))
 do ithread=1,mpl%nthread
    c(ithread)%n_s = n_s_max
    call c(ithread)%alloc
@@ -4028,15 +4036,15 @@ real(kind_real),allocatable :: list(:),S_list_interp(:),S_list_convol(:)
 @:probe_in()
 
 ! Compute vertical interpolation inverse mapping
-allocate(inev(geom%nl0))
+allocate(inev(nicas_cmp%nl0))
 inev = 0
 do i_s=1,nicas_cmp%v%n_s
    il0 = nicas_cmp%v%row(i_s)
    inev(il0) = inev(il0)+1
 end do
 inevmax = zss_maxval(inev)
-allocate(v_col(inevmax,geom%nl0))
-allocate(v_S(inevmax,geom%nc0a,geom%nl0))
+allocate(v_col(inevmax,nicas_cmp%nl0))
+allocate(v_S(inevmax,geom%nc0a,nicas_cmp%nl0))
 v_col = mpl%msv%vali
 v_S = mpl%msv%valr
 inev = 0
@@ -4164,11 +4172,11 @@ do isb=1,nicas_cmp%nsb
 end do
 
 ! Allocation
-allocate(nicas_cmp%norm(geom%nc0a,geom%nl0))
+allocate(nicas_cmp%norm(geom%nc0a,nicas_cmp%nl0))
 nicas_cmp%norm = mpl%msv%valr
 
 ! Compute normalization weights
-do il0=1,geom%nl0
+do il0=1,nicas_cmp%nl0
    if (nicas_cmp%vlev(il0)) then
       il0i = geom%l0_to_l0i(il0)
       write(mpl%info,'(a13,a,i3,a)') '','Level ',il0,': '
@@ -4303,7 +4311,7 @@ end do
 ! Randomization
 do ie=1,nam%norm_rand_size
   ! Create random control vector
-  call nicas_cmp%random_cv(mpl,rng,nam,cv_cmp)
+  call nicas_cmp%random_cv(mpl,rng,cv_cmp)
 
   ! Apply square-root
   call nicas_cmp%apply_sqrt(mpl,geom,cv_cmp,fld)
@@ -4343,7 +4351,7 @@ end subroutine nicas_cmp_randomize_normalization
 ! Subroutine: nicas_cmp_random_cv
 !> Generate a random control vector for a component
 !----------------------------------------------------------------------
-subroutine nicas_cmp_random_cv(nicas_cmp,mpl,rng,nam,cv_cmp)
+subroutine nicas_cmp_random_cv(nicas_cmp,mpl,rng,cv_cmp)
 
 implicit none
 
@@ -4351,7 +4359,6 @@ implicit none
 class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data component
 type(mpl_type),intent(inout) :: mpl           !< MPI data
 type(rng_type),intent(inout) :: rng           !< Random number generator
-type(nam_type),intent(in) :: nam              !< Namelist
 type(cv_cmp_type),intent(inout) :: cv_cmp     !< Control vector component
 
 ! Local variables
@@ -4499,40 +4506,75 @@ lsteps = .false.
 if (present(steps)) lsteps = steps
 
 if (any(nicas_cmp%vlev)) then
-   ! Check dimension
-   if (cv_cmp%n/=nicas_cmp%nsa) call mpl%abort('${subr}$','wrong control vector dimension')
+   if (nicas_cmp%nl0==geom%nl0) then
+      ! Full 3D NICAS
 
-   ! Initialization
-   alpha_a = cv_cmp%alpha
+      ! Check dimension
+      if (cv_cmp%n/=nicas_cmp%nsa) call mpl%abort('${subr}$','wrong control vector dimension')
 
-   ! Convolution square-root
-   call nicas_cmp%apply_convol_sqrt(mpl,alpha_a)
-   if (lsteps) call nicas_cmp%steps(5)%add(mpl,nicas_cmp%nsa,nicas_cmp%lon_sa,nicas_cmp%lat_sa,nicas_cmp%lev_sa,alpha_a)
+      ! Initialization
+      alpha_a = cv_cmp%alpha
 
-   ! Halo extension from zone A to zone B
-   call nicas_cmp%com_s_AB%ext(mpl,alpha_a,alpha_b)
+      ! Convolution square-root
+      call nicas_cmp%apply_convol_sqrt(mpl,alpha_a)
+      if (lsteps) call nicas_cmp%steps(5)%add(mpl,nicas_cmp%nsa,nicas_cmp%lon_sa,nicas_cmp%lat_sa,nicas_cmp%lev_sa,alpha_a)
 
-   ! Interpolation
-   call nicas_cmp%apply_interp(mpl,geom,alpha_b,fld)
-   if (lsteps) call nicas_cmp%steps(6)%add(mpl,geom,fld)
+      ! Halo extension from zone A to zone B
+      call nicas_cmp%com_s_AB%ext(mpl,alpha_a,alpha_b)
 
-   !$omp parallel do schedule(static) private(il0,ic0a)
-   do il0=1,geom%nl0
-      if (nicas_cmp%vlev(il0)) then
+      ! Interpolation
+      call nicas_cmp%apply_interp(mpl,alpha_b,fld)
+      if (lsteps) call nicas_cmp%steps(6)%add(mpl,geom,fld)
+
+      !$omp parallel do schedule(static) private(il0,ic0a)
+      do il0=1,nicas_cmp%nl0
+         if (nicas_cmp%vlev(il0)) then
+            do ic0a=1,geom%nc0a
+               if (geom%gmask_c0a(ic0a,il0)) then
+                  ! Apply normalization
+                  fld(ic0a,il0) = fld(ic0a,il0)*nicas_cmp%norm(ic0a,il0)
+
+                  ! Apply amplitude square-root
+                  fld(ic0a,il0) = fld(ic0a,il0)*sqrt(nicas_cmp%a(ic0a,il0))
+               end if
+            end do
+         end if
+      end do
+      !$omp end parallel do
+      if (lsteps) call nicas_cmp%steps(7)%add(mpl,geom,fld)
+   else
+      ! Same horizontal convolution for all levels, no vertical convolution
+
+      ! Check dimension
+      if (cv_cmp%n/=nicas_cmp%nsa*geom%nl0) call mpl%abort('${subr}$','wrong control vector dimension')
+
+      do il0=1,geom%nl0
+         ! Initialization
+         alpha_a = cv_cmp%alpha((il0-1)*nicas_cmp%nsa+1:il0*nicas_cmp%nsa)
+
+         ! Convolution square-root
+         call nicas_cmp%apply_convol_sqrt(mpl,alpha_a)
+
+         ! Halo extension from zone A to zone B
+         call nicas_cmp%com_s_AB%ext(mpl,alpha_a,alpha_b)
+
+         ! Interpolation
+         call nicas_cmp%apply_interp(mpl,alpha_b,fld(:,il0:il0))
+
+         !$omp parallel do schedule(static) private(ic0a)
          do ic0a=1,geom%nc0a
             if (geom%gmask_c0a(ic0a,il0)) then
                ! Apply normalization
-               fld(ic0a,il0) = fld(ic0a,il0)*nicas_cmp%norm(ic0a,il0)
+               fld(ic0a,il0) = fld(ic0a,il0)*nicas_cmp%norm(ic0a,1)
 
                ! Apply amplitude square-root
-               fld(ic0a,il0) = fld(ic0a,il0)*sqrt(nicas_cmp%a(ic0a,il0))
+               fld(ic0a,il0) = fld(ic0a,il0)*sqrt(nicas_cmp%a(ic0a,1))
             end if
          end do
-      end if
-   end do
-   !$omp end parallel do
+         !$omp end parallel do
+      end do
+   end if
 end if
-if (lsteps) call nicas_cmp%steps(7)%add(mpl,geom,fld)
 
 ! Probe out
 @:probe_out()
@@ -4557,7 +4599,7 @@ logical,intent(in),optional :: steps                  !< Steps flag
 
 ! Local variable
 integer :: ic0a,il0
-real(kind_real) :: fld_tmp(geom%nc0a,geom%nl0),alpha_b(nicas_cmp%nsb)
+real(kind_real) :: fld_tmp(geom%nc0a,nicas_cmp%nl0),alpha_b(nicas_cmp%nsb)
 logical :: lsteps
 
 ! Set name
@@ -4571,37 +4613,68 @@ lsteps = .false.
 if (present(steps)) lsteps = steps
 
 if (any(nicas_cmp%vlev)) then
-   ! Initialization
-   fld_tmp = fld
-   if (lsteps) call nicas_cmp%steps(1)%add(mpl,geom,fld_tmp)
+   if (nicas_cmp%nl0==geom%nl0) then
+      ! Full 3D NICAS
 
-   !$omp parallel do schedule(static) private(il0,ic0a)
-   do il0=1,geom%nl0
-      if (nicas_cmp%vlev(il0)) then
+      ! Initialization
+      fld_tmp = fld
+      if (lsteps) call nicas_cmp%steps(1)%add(mpl,geom,fld_tmp)
+
+      !$omp parallel do schedule(static) private(il0,ic0a)
+      do il0=1,nicas_cmp%nl0
+         if (nicas_cmp%vlev(il0)) then
+            do ic0a=1,geom%nc0a
+               if (geom%gmask_c0a(ic0a,il0)) then
+                  ! Apply amplitude square-root
+                  fld_tmp(ic0a,il0) = fld_tmp(ic0a,il0)*sqrt(nicas_cmp%a(ic0a,il0))
+
+                  ! Apply normalization
+                  fld_tmp(ic0a,il0) = fld_tmp(ic0a,il0)*nicas_cmp%norm(ic0a,il0)
+               end if
+            end do
+         end if
+      end do
+      !$omp end parallel do
+      if (lsteps) call nicas_cmp%steps(2)%add(mpl,geom,fld_tmp)
+
+      ! Adjoint interpolation
+      call nicas_cmp%apply_interp_ad(mpl,fld_tmp,alpha_b)
+
+      ! Halo reduction from zone B to zone A
+      call nicas_cmp%com_s_AB%red(mpl,alpha_b,cv_cmp%alpha)
+      if (lsteps) call nicas_cmp%steps(3)%add(mpl,nicas_cmp%nsa,nicas_cmp%lon_sa,nicas_cmp%lat_sa,nicas_cmp%lev_sa,cv_cmp%alpha)
+
+      ! Convolution square-root adjoint
+      call nicas_cmp%apply_convol_sqrt_ad(mpl,cv_cmp%alpha)
+      if (lsteps) call nicas_cmp%steps(4)%add(mpl,nicas_cmp%nsa,nicas_cmp%lon_sa,nicas_cmp%lat_sa,nicas_cmp%lev_sa,cv_cmp%alpha)
+   else
+      ! Same horizontal convolution for all levels, no vertical convolution
+      do il0=1,geom%nl0
+         ! Initialization
+         fld_tmp(:,1) = fld(:,il0)
+
+         !$omp parallel do schedule(static) private(ic0a)
          do ic0a=1,geom%nc0a
             if (geom%gmask_c0a(ic0a,il0)) then
                ! Apply amplitude square-root
-               fld_tmp(ic0a,il0) = fld_tmp(ic0a,il0)*sqrt(nicas_cmp%a(ic0a,il0))
+               fld_tmp(ic0a,1) = fld_tmp(ic0a,1)*sqrt(nicas_cmp%a(ic0a,1))
 
                ! Apply normalization
-               fld_tmp(ic0a,il0) = fld_tmp(ic0a,il0)*nicas_cmp%norm(ic0a,il0)
+               fld_tmp(ic0a,1) = fld_tmp(ic0a,1)*nicas_cmp%norm(ic0a,1)
             end if
          end do
-      end if
-   end do
-   !$omp end parallel do
-   if (lsteps) call nicas_cmp%steps(2)%add(mpl,geom,fld_tmp)
+         !$omp end parallel do
 
-   ! Adjoint interpolation
-   call nicas_cmp%apply_interp_ad(mpl,geom,fld_tmp,alpha_b)
+         ! Adjoint interpolation
+         call nicas_cmp%apply_interp_ad(mpl,fld_tmp,alpha_b)
 
-   ! Halo reduction from zone B to zone A
-   call nicas_cmp%com_s_AB%red(mpl,alpha_b,cv_cmp%alpha)
-   if (lsteps) call nicas_cmp%steps(3)%add(mpl,nicas_cmp%nsa,nicas_cmp%lon_sa,nicas_cmp%lat_sa,nicas_cmp%lev_sa,cv_cmp%alpha)
+         ! Halo reduction from zone B to zone A
+         call nicas_cmp%com_s_AB%red(mpl,alpha_b,cv_cmp%alpha((il0-1)*nicas_cmp%nsa+1:il0*nicas_cmp%nsa))
 
-   ! Convolution square-root adjoint
-   call nicas_cmp%apply_convol_sqrt_ad(mpl,cv_cmp%alpha)
-   if (lsteps) call nicas_cmp%steps(4)%add(mpl,nicas_cmp%nsa,nicas_cmp%lon_sa,nicas_cmp%lat_sa,nicas_cmp%lev_sa,cv_cmp%alpha)
+         ! Convolution square-root adjoint
+         call nicas_cmp%apply_convol_sqrt_ad(mpl,cv_cmp%alpha((il0-1)*nicas_cmp%nsa+1:il0*nicas_cmp%nsa))
+      end do
+   end if
 end if
 
 ! Probe out
@@ -4685,19 +4758,18 @@ end subroutine nicas_cmp_apply_convol_sqrt_ad
 ! Subroutine: nicas_cmp_apply_interp
 !> Apply interpolation
 !----------------------------------------------------------------------
-subroutine nicas_cmp_apply_interp(nicas_cmp,mpl,geom,alpha,fld)
+subroutine nicas_cmp_apply_interp(nicas_cmp,mpl,alpha,fld)
 
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp          !< NICAS data component
-type(mpl_type),intent(inout) :: mpl                    !< MPI data
-type(geom_type),intent(in) :: geom                     !< Geometry
-real(kind_real),intent(in) :: alpha(nicas_cmp%nsb)     !< Subgrid field
-real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0) !< Field
+class(nicas_cmp_type),intent(in) :: nicas_cmp                    !< NICAS data component
+type(mpl_type),intent(inout) :: mpl                              !< MPI data
+real(kind_real),intent(in) :: alpha(nicas_cmp%nsb)               !< Subgrid field
+real(kind_real),intent(out) :: fld(nicas_cmp%nc0a,nicas_cmp%nl0) !< Field
 
 ! Local variables
-real(kind_real) :: gamma(geom%nc0a,nicas_cmp%nl1)
+real(kind_real) :: gamma(nicas_cmp%nc0a,nicas_cmp%nl1)
 
 ! Set name
 @:set_name(nicas_cmp_apply_interp)
@@ -4706,10 +4778,10 @@ real(kind_real) :: gamma(geom%nc0a,nicas_cmp%nl1)
 @:probe_in()
 
 ! Horizontal interpolation
-call nicas_cmp%apply_interp_horizontal(mpl,geom,alpha,gamma)
+call nicas_cmp%apply_interp_horizontal(mpl,alpha,gamma)
 
 ! Vertical interpolation
-call nicas_cmp%apply_interp_vertical(mpl,geom,gamma,fld)
+call nicas_cmp%apply_interp_vertical(mpl,gamma,fld)
 
 ! Probe out
 @:probe_out()
@@ -4720,19 +4792,18 @@ end subroutine nicas_cmp_apply_interp
 ! Subroutine: nicas_cmp_apply_interp_ad
 !> Apply interpolation adjoint
 !----------------------------------------------------------------------
-subroutine nicas_cmp_apply_interp_ad(nicas_cmp,mpl,geom,fld,alpha)
+subroutine nicas_cmp_apply_interp_ad(nicas_cmp,mpl,fld,alpha)
 
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp         !< NICAS data component
-type(mpl_type),intent(inout) :: mpl                   !< MPI data
-type(geom_type),intent(in) :: geom                    !< Geometry
-real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0) !< Field
-real(kind_real),intent(out) :: alpha(nicas_cmp%nsb)   !< Subgrid field
+class(nicas_cmp_type),intent(in) :: nicas_cmp                   !< NICAS data component
+type(mpl_type),intent(inout) :: mpl                             !< MPI data
+real(kind_real),intent(in) :: fld(nicas_cmp%nc0a,nicas_cmp%nl0) !< Field
+real(kind_real),intent(out) :: alpha(nicas_cmp%nsb)             !< Subgrid field
 
 ! Local variables
-real(kind_real) :: gamma(geom%nc0a,nicas_cmp%nl1)
+real(kind_real) :: gamma(nicas_cmp%nc0a,nicas_cmp%nl1)
 
 ! Set name
 @:set_name(nicas_cmp_apply_interp_ad)
@@ -4741,10 +4812,10 @@ real(kind_real) :: gamma(geom%nc0a,nicas_cmp%nl1)
 @:probe_in()
 
 ! Vertical interpolation
-call nicas_cmp%apply_interp_vertical_ad(mpl,geom,fld,gamma)
+call nicas_cmp%apply_interp_vertical_ad(mpl,fld,gamma)
 
 ! Horizontal interpolation
-call nicas_cmp%apply_interp_horizontal_ad(mpl,geom,gamma,alpha)
+call nicas_cmp%apply_interp_horizontal_ad(mpl,gamma,alpha)
 
 ! Probe out
 @:probe_out()
@@ -4755,16 +4826,15 @@ end subroutine nicas_cmp_apply_interp_ad
 ! Subroutine: nicas_cmp_apply_interp_horizontal
 !> Apply subsampling interpolation
 !----------------------------------------------------------------------
-subroutine nicas_cmp_apply_interp_horizontal(nicas_cmp,mpl,geom,alpha,gamma)
+subroutine nicas_cmp_apply_interp_horizontal(nicas_cmp,mpl,alpha,gamma)
 
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp                 !< NICAS data component
-type(mpl_type),intent(inout) :: mpl                           !< MPI data
-type(geom_type),intent(in) :: geom                            !< Geometry
-real(kind_real),intent(in) :: alpha(nicas_cmp%nsb)            !< Subgrid field
-real(kind_real),intent(out) :: gamma(geom%nc0a,nicas_cmp%nl1) !< Subset Sc0 field, subset of levels
+class(nicas_cmp_type),intent(in) :: nicas_cmp                      !< NICAS data component
+type(mpl_type),intent(inout) :: mpl                                !< MPI data
+real(kind_real),intent(in) :: alpha(nicas_cmp%nsb)                 !< Subgrid field
+real(kind_real),intent(out) :: gamma(nicas_cmp%nc0a,nicas_cmp%nl1) !< Subset Sc0 field, subset of levels
 
 ! Local variables
 integer :: il1,ic1b,isb
@@ -4804,16 +4874,15 @@ end subroutine nicas_cmp_apply_interp_horizontal
 ! Subroutine: nicas_cmp_apply_interp_horizontal_ad
 !> Apply subsampling interpolation adjoint
 !----------------------------------------------------------------------
-subroutine nicas_cmp_apply_interp_horizontal_ad(nicas_cmp,mpl,geom,gamma,alpha)
+subroutine nicas_cmp_apply_interp_horizontal_ad(nicas_cmp,mpl,gamma,alpha)
 
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp                !< NICAS data component
-type(mpl_type),intent(inout) :: mpl                          !< MPI data
-type(geom_type),intent(in) :: geom                           !< Geometry
-real(kind_real),intent(in) :: gamma(geom%nc0a,nicas_cmp%nl1) !< Subset Sc0 field, subset of levels
-real(kind_real),intent(out) :: alpha(nicas_cmp%nsb)          !< Subgrid field
+class(nicas_cmp_type),intent(in) :: nicas_cmp                     !< NICAS data component
+type(mpl_type),intent(inout) :: mpl                               !< MPI data
+real(kind_real),intent(in) :: gamma(nicas_cmp%nc0a,nicas_cmp%nl1) !< Subset Sc0 field, subset of levels
+real(kind_real),intent(out) :: alpha(nicas_cmp%nsb)               !< Subgrid field
 
 ! Local variables
 integer :: il1,ic1b,isb
@@ -4853,16 +4922,15 @@ end subroutine nicas_cmp_apply_interp_horizontal_ad
 ! Subroutine: nicas_cmp_apply_interp_vertical
 !> Apply vertical interpolation
 !----------------------------------------------------------------------
-subroutine nicas_cmp_apply_interp_vertical(nicas_cmp,mpl,geom,gamma,fld)
+subroutine nicas_cmp_apply_interp_vertical(nicas_cmp,mpl,gamma,fld)
 
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp                !< NICAS data component
-type(mpl_type),intent(inout) :: mpl                          !< MPI data
-type(geom_type),intent(in) :: geom                           !< Geometry
-real(kind_real),intent(in) :: gamma(geom%nc0a,nicas_cmp%nl1) !< Subset Sc0 field, subset of levels
-real(kind_real),intent(out) :: fld(geom%nc0a,geom%nl0)       !< Field
+class(nicas_cmp_type),intent(in) :: nicas_cmp                     !< NICAS data component
+type(mpl_type),intent(inout) :: mpl                               !< MPI data
+real(kind_real),intent(in) :: gamma(nicas_cmp%nc0a,nicas_cmp%nl1) !< Subset Sc0 field, subset of levels
+real(kind_real),intent(out) :: fld(nicas_cmp%nc0a,nicas_cmp%nl0)  !< Field
 
 ! Local variables
 integer :: ic0a,il0
@@ -4879,10 +4947,10 @@ fld = zero
 
 ! Vertical interpolation
 !$omp parallel do schedule(static) private(ic0a,il0) firstprivate(gamma_tmp,fld_tmp)
-do ic0a=1,geom%nc0a
+do ic0a=1,nicas_cmp%nc0a
    ! Allocation
    allocate(gamma_tmp(nicas_cmp%nl1))
-   allocate(fld_tmp(geom%nl0))
+   allocate(fld_tmp(nicas_cmp%nl0))
 
    ! Copy data
    gamma_tmp = gamma(ic0a,:)
@@ -4891,7 +4959,7 @@ do ic0a=1,geom%nc0a
    call nicas_cmp%v%apply(mpl,gamma_tmp,fld_tmp,ivec=ic0a,msdst=.false.)
 
    ! Copy data
-   do il0=1,geom%nl0
+   do il0=1,nicas_cmp%nl0
       if (nicas_cmp%vlev(il0)) fld(ic0a,il0) = fld_tmp(il0)
    end do
 
@@ -4910,16 +4978,15 @@ end subroutine nicas_cmp_apply_interp_vertical
 ! Subroutine: nicas_cmp_apply_interp_vertical_ad
 !> Apply vertical interpolation adjoint
 !----------------------------------------------------------------------
-subroutine nicas_cmp_apply_interp_vertical_ad(nicas_cmp,mpl,geom,fld,gamma)
+subroutine nicas_cmp_apply_interp_vertical_ad(nicas_cmp,mpl,fld,gamma)
 
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp                 !< NICAS data component
-type(mpl_type),intent(inout) :: mpl                           !< MPI data
-type(geom_type),intent(in) :: geom                            !< Geometry
-real(kind_real),intent(in) :: fld(geom%nc0a,geom%nl0)         !< Field
-real(kind_real),intent(out) :: gamma(geom%nc0a,nicas_cmp%nl1) !< Subset Sc0 field, subset of levels
+class(nicas_cmp_type),intent(in) :: nicas_cmp                      !< NICAS data component
+type(mpl_type),intent(inout) :: mpl                                !< MPI data
+real(kind_real),intent(in) :: fld(nicas_cmp%nc0a,nicas_cmp%nl0)    !< Field
+real(kind_real),intent(out) :: gamma(nicas_cmp%nc0a,nicas_cmp%nl1) !< Subset Sc0 field, subset of levels
 
 ! Local variables
 integer :: ic0a
@@ -4933,10 +5000,10 @@ real(kind_real),allocatable :: gamma_tmp(:),fld_tmp(:)
 
 ! Vertical interpolation
 !$omp parallel do schedule(static) private(ic0a) firstprivate(gamma_tmp,fld_tmp)
-do ic0a=1,geom%nc0a
+do ic0a=1,nicas_cmp%nc0a
    ! Allocation
    allocate(gamma_tmp(nicas_cmp%nl1))
-   allocate(fld_tmp(geom%nl0))
+   allocate(fld_tmp(nicas_cmp%nl0))
 
    ! Copy data
    fld_tmp = fld(ic0a,:)
@@ -4962,7 +5029,7 @@ end subroutine nicas_cmp_apply_interp_vertical_ad
 ! Subroutine: nicas_cmp_test_adjoint
 !> Test NICAS adjoint accuracy
 !----------------------------------------------------------------------
-subroutine nicas_cmp_test_adjoint(nicas_cmp,mpl,rng,nam,geom)
+subroutine nicas_cmp_test_adjoint(nicas_cmp,mpl,rng,geom)
 
 implicit none
 
@@ -4970,14 +5037,13 @@ implicit none
 class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data component
 type(mpl_type),intent(inout) :: mpl              !< MPI data
 type(rng_type),intent(inout) :: rng              !< Random number generator
-type(nam_type),intent(in) :: nam                 !< Namelist
 type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
 real(kind_real) :: sum1,sum2
 real(kind_real) :: alpha(nicas_cmp%nsb),alpha_save(nicas_cmp%nsb),alpha_c(nicas_cmp%nsc)
 real(kind_real) :: gamma(geom%nc0a,nicas_cmp%nl1),gamma_save(geom%nc0a,nicas_cmp%nl1)
-real(kind_real) :: fld(geom%nc0a,geom%nl0),fld_save(geom%nc0a,geom%nl0)
+real(kind_real) :: fld(geom%nc0a,nicas_cmp%nl0),fld_save(geom%nc0a,nicas_cmp%nl0)
 real(kind_real) :: fld1(geom%nc0a,geom%nl0),fld2(geom%nc0a,geom%nl0)
 real(kind_real),allocatable :: alpha1(:),alpha1_save(:),alpha2(:),alpha2_save(:)
 type(cv_cmp_type) :: cv_cmp1,cv_cmp2
@@ -4998,8 +5064,8 @@ call rng%rand(zero,one,alpha_save)
 call rng%rand(zero,one,gamma_save)
 
 ! Adjoint test
-call nicas_cmp%apply_interp_horizontal(mpl,geom,alpha_save,gamma)
-call nicas_cmp%apply_interp_horizontal_ad(mpl,geom,gamma_save,alpha)
+call nicas_cmp%apply_interp_horizontal(mpl,alpha_save,gamma)
+call nicas_cmp%apply_interp_horizontal_ad(mpl,gamma_save,alpha)
 
 ! Print result
 call mpl%dot_prod(alpha,alpha_save,sum1)
@@ -5018,8 +5084,8 @@ call rng%rand(zero,one,gamma_save)
 call rng%rand(zero,one,fld_save)
 
 ! Adjoint test
-call nicas_cmp%apply_interp_vertical(mpl,geom,gamma_save,fld)
-call nicas_cmp%apply_interp_vertical_ad(mpl,geom,fld_save,gamma)
+call nicas_cmp%apply_interp_vertical(mpl,gamma_save,fld)
+call nicas_cmp%apply_interp_vertical_ad(mpl,fld_save,gamma)
 
 ! Print result
 call mpl%dot_prod(gamma,gamma_save,sum1)
@@ -5038,8 +5104,8 @@ call rng%rand(zero,one,alpha_save)
 call rng%rand(zero,one,fld_save)
 
 ! Adjoint test
-call nicas_cmp%apply_interp(mpl,geom,alpha_save,fld)
-call nicas_cmp%apply_interp_ad(mpl,geom,fld_save,alpha)
+call nicas_cmp%apply_interp(mpl,alpha_save,fld)
+call nicas_cmp%apply_interp_ad(mpl,fld_save,alpha)
 
 ! Print result
 call mpl%dot_prod(alpha,alpha_save,sum1)
@@ -5146,8 +5212,13 @@ deallocate(alpha2)
 deallocate(alpha2_save)
 
 ! Allocation
-call cv_cmp1%alloc(mpl,nicas_cmp%nsa)
-call cv_cmp2%alloc(mpl,nicas_cmp%nsa)
+if (nicas_cmp%nl0==geom%nl0) then
+   call cv_cmp1%alloc(mpl,nicas_cmp%nsa)
+   call cv_cmp2%alloc(mpl,nicas_cmp%nsa)
+else
+   call cv_cmp1%alloc(mpl,nicas_cmp%nsa*geom%nl0)
+   call cv_cmp2%alloc(mpl,nicas_cmp%nsa*geom%nl0)
+end if
 
 ! Initialization
 call rng%rand(zero,one,cv_cmp1%alpha)
@@ -5216,7 +5287,7 @@ real(kind_real) :: alpha(nicas_cmp%nsa),norm,val(nam%check_normalization)
 associate(ig=>nicas_cmp%ig)
 
 ! Get random levels
-if (mpl%main) call rng%rand(1,geom%nl0,il0)
+if (mpl%main) call rng%rand(1,nicas_cmp%nl0,il0)
 call mpl%f_comm%broadcast(il0,mpl%rootproc-1)
 
 ! Resynchronize random number generator

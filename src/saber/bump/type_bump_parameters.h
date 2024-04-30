@@ -565,6 +565,10 @@ struct NICASDef {
   // Overriding component in file
   std::pair<const char *, int> file_component =
     std::make_pair("overriding component in file", 0);
+
+  // Same horizontal convolution for all levels, no vertical convolution
+  std::pair<const char *, bool> same_horizontal =
+    std::make_pair("same horizontal convolution", 0);
 };
 
 // Psichitouv section

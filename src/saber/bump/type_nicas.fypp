@@ -253,7 +253,7 @@ do iproc=1,mpl%nproc
          end do
 
           ! Send data to task iproc
-         call nicas_tmp%send(mpl,nam,geom,iproc)
+         call nicas_tmp%send(mpl,nam,iproc)
 
          ! Release memory
          call nicas_tmp%dealloc
@@ -265,7 +265,7 @@ do iproc=1,mpl%nproc
       ! Receive data from task iprocio
       write(mpl%info,'(a10,a,i6,a,i6)') '','Receive NICAS data of task ',iproc,' from task ',iprocio
       call mpl%flush
-      call nicas%receive(mpl,nam,geom,iprocio)
+      call nicas%receive(mpl,nam,iprocio)
    end if
 end do
 
@@ -389,7 +389,7 @@ do iproc=1,mpl%nproc
          call nicas_tmp%alloc(nam)
 
          ! Receive data from task iproc
-         call nicas_tmp%receive(mpl,nam,geom,iproc)
+         call nicas_tmp%receive(mpl,nam,iproc)
 
          do ig=1,nam%ng
             ! Copy global ID
@@ -414,7 +414,7 @@ do iproc=1,mpl%nproc
       ! Send data to task iprocio
       write(mpl%info,'(a10,a,i6,a,i6)') '','Send NICAS data of task ',iproc,' to task ',iprocio
       call mpl%flush
-      call nicas%send(mpl,nam,geom,iprocio)
+      call nicas%send(mpl,nam,iprocio)
    end if
 end do
 
@@ -631,7 +631,7 @@ end subroutine nicas_write_steps
 ! Subroutine: nicas_send
 !> Send
 !----------------------------------------------------------------------
-subroutine nicas_send(nicas,mpl,nam,geom,iproc)
+subroutine nicas_send(nicas,mpl,nam,iproc)
 
 implicit none
 
@@ -639,7 +639,6 @@ implicit none
 class(nicas_type),intent(in) :: nicas !< NICAS data
 type(mpl_type),intent(inout) :: mpl   !< MPI data
 type(nam_type),intent(in) :: nam      !< Namelist
-type(geom_type),intent(in) :: geom    !< Geometry
 integer,intent(in) :: iproc           !< Destination task
 
 ! Local variables
@@ -659,7 +658,7 @@ nbufi = 0
 nbufr = 0
 nbufl = 0
 do ig=1,nam%ng
-   call nicas%blk(ig)%buffer_size(mpl,geom,nnbufi,nnbufr,nnbufl)
+   call nicas%blk(ig)%buffer_size(mpl,nnbufi,nnbufr,nnbufl)
    nbufi = nbufi+nnbufi
    nbufr = nbufr+nnbufr
    nbufl = nbufl+nnbufl
@@ -677,8 +676,8 @@ ibufl = 0
 
 ! Serialize
 do ig=1,nam%ng
-   call nicas%blk(ig)%buffer_size(mpl,geom,nnbufi,nnbufr,nnbufl)
-   call nicas%blk(ig)%serialize(mpl,geom,nnbufi,nnbufr,nnbufl,bufi(ibufi+1:ibufi+nnbufi),bufr(ibufr+1:ibufr+nnbufr), &
+   call nicas%blk(ig)%buffer_size(mpl,nnbufi,nnbufr,nnbufl)
+   call nicas%blk(ig)%serialize(mpl,nnbufi,nnbufr,nnbufl,bufi(ibufi+1:ibufi+nnbufi),bufr(ibufr+1:ibufr+nnbufr), &
  & bufl(ibufl+1:ibufl+nnbufl))
    ibufi = ibufi+nnbufi
    ibufr = ibufr+nnbufr
@@ -708,7 +707,7 @@ end subroutine nicas_send
 ! Subroutine: nicas_receive
 !> Receive
 !----------------------------------------------------------------------
-subroutine nicas_receive(nicas,mpl,nam,geom,iproc)
+subroutine nicas_receive(nicas,mpl,nam,iproc)
 
 implicit none
 
@@ -716,7 +715,6 @@ implicit none
 class(nicas_type),intent(inout) :: nicas !< NICAS data
 type(mpl_type),intent(inout) :: mpl      !< MPI data
 type(nam_type),intent(in) :: nam         !< Namelist
-type(geom_type),intent(in) :: geom       !< Geometry
 integer,intent(in) :: iproc              !< Source task
 
 ! Local variables
@@ -758,7 +756,7 @@ do ig=1,nam%ng
    nnbufi = bufi(ibufi+1)
    nnbufr = bufi(ibufi+2)
    nnbufl = bufi(ibufi+3)
-   call nicas%blk(ig)%deserialize(mpl,geom,nnbufi,nnbufr,nnbufl,bufi(ibufi+1:ibufi+nnbufi),bufr(ibufr+1:ibufr+nnbufr), &
+   call nicas%blk(ig)%deserialize(mpl,nnbufi,nnbufr,nnbufl,bufi(ibufi+1:ibufi+nnbufi),bufr(ibufr+1:ibufr+nnbufr), &
  & bufl(ibufl+1:ibufl+nnbufl))
    ibufi = ibufi+nnbufi
    ibufr = ibufr+nnbufr
@@ -927,7 +925,7 @@ if (nam%check_adjoints) then
       do icmp=1,nicas%blk(ig)%ncmp
          write(mpl%info,'(a7,a,i1)') '','Component: ',icmp
          call mpl%flush
-         call nicas%blk(ig)%cmp(icmp)%test_adjoint(mpl,rng,nam,geom)
+         call nicas%blk(ig)%cmp(icmp)%test_adjoint(mpl,rng,geom)
       end do
    end do
 end if
@@ -996,7 +994,7 @@ end subroutine nicas_run_nicas_tests
 ! Subroutine: nicas_alloc_cv
 !> Allocation
 !----------------------------------------------------------------------
-subroutine nicas_alloc_cv(nicas,mpl,nam,cv,getsizeonly)
+subroutine nicas_alloc_cv(nicas,mpl,nam,geom,cv,getsizeonly)
 
 implicit none
 
@@ -1004,11 +1002,12 @@ implicit none
 class(nicas_type),intent(in) :: nicas      !< NICAS data
 type(mpl_type),intent(inout) :: mpl        !< MPI data
 type(nam_type),intent(in) :: nam           !< Namelist
+type(geom_type),intent(in) :: geom         !< Geometry
 type(cv_type),intent(inout) :: cv          !< Control vector
 logical,intent(in),optional :: getsizeonly !< Flag to get the control variable size only (no allocation)
 
 ! Local variables
-integer :: ig,icmp,ib,iv
+integer :: ig,icmp,ib,iv,n
 logical :: lgetsizeonly
 
 ! Set name
@@ -1070,8 +1069,12 @@ do ib=1,cv%nb
    allocate(cv%blk(ib)%cmp(cv%blk(ib)%ncmp))
 
    do icmp=1,cv%blk(ib)%ncmp
+      ! CV size
+      n = nicas%blk(ig)%cmp(icmp)%nsa
+      if (nam%same_horizontal) n = n*geom%nl0
+
       ! Allocation and initialization
-      call cv%blk(ib)%cmp(icmp)%alloc(mpl,nicas%blk(ig)%cmp(icmp)%nsa,lgetsizeonly)
+      call cv%blk(ib)%cmp(icmp)%alloc(mpl,n,lgetsizeonly)
 
       ! Update total size
       cv%n = cv%n+cv%blk(ib)%cmp(icmp)%n
@@ -1087,7 +1090,7 @@ end subroutine nicas_alloc_cv
 ! Subroutine: nicas_random_cv
 !> Generate a random control vector
 !----------------------------------------------------------------------
-subroutine nicas_random_cv(nicas,mpl,rng,nam,cv)
+subroutine nicas_random_cv(nicas,mpl,rng,nam,geom,cv)
 
 implicit none
 
@@ -1096,6 +1099,7 @@ class(nicas_type),intent(inout) :: nicas !< NICAS data
 type(mpl_type),intent(inout) :: mpl      !< MPI data
 type(rng_type),intent(inout) :: rng      !< Random number generator
 type(nam_type),intent(in) :: nam         !< Namelist
+type(geom_type),intent(in) :: geom       !< Geometry
 type(cv_type),intent(out) :: cv          !< Control vector
 
 ! Local variables
@@ -1108,7 +1112,7 @@ integer :: ib,ig,icmp
 @:probe_in()
 
 ! Allocation
-call nicas%alloc_cv(mpl,nam,cv)
+call nicas%alloc_cv(mpl,nam,geom,cv)
 
 ! Random initialization
 do ib=1,cv%nb
@@ -1117,7 +1121,7 @@ do ib=1,cv%nb
 
    do icmp=1,cv%blk(ib)%ncmp
       ! Component work
-      call nicas%blk(ig)%cmp(icmp)%random_cv(mpl,rng,nam,cv%blk(ib)%cmp(icmp))
+      call nicas%blk(ig)%cmp(icmp)%random_cv(mpl,rng,cv%blk(ib)%cmp(icmp))
    end do
 end do
 
@@ -1304,7 +1308,7 @@ type(cv_type) :: cv_tmp
 @:probe_in()
 
 ! Allocation
-call nicas%alloc_cv(mpl,nam,cv)
+call nicas%alloc_cv(mpl,nam,geom,cv)
 
 select case (nam%strategy)
 case ('univariate')
@@ -1356,7 +1360,7 @@ case ('duplicated and weighted')
 case ('crossed')
    ! Allocation
    allocate(fld_3d(geom%nc0a,geom%nl0))
-   call nicas%alloc_cv(mpl,nam,cv_tmp)
+   call nicas%alloc_cv(mpl,nam,geom,cv_tmp)
 
    ! Initialization
    do icmp=1,cv%blk(1)%ncmp
@@ -1421,7 +1425,7 @@ call ens%alloc(ne,1)
 
 do ie=1,ne
    ! Generate random control vector
-   call nicas%random_cv(mpl,rng,nam,cv_ens(ie))
+   call nicas%random_cv(mpl,rng,nam,geom,cv_ens(ie))
 
    ! Apply square-root
    call nicas%apply_sqrt(mpl,nam,geom,cv_ens(ie),fld_c0a)

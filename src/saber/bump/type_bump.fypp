@@ -1365,7 +1365,7 @@ type(cv_type) :: cv
 @:probe_in()
 
 ! Allocate control variable
-call bump%nicas(1)%alloc_cv(bump%mpl,bump%nam,cv,getsizeonly=.true.)
+call bump%nicas(1)%alloc_cv(bump%mpl,bump%nam,bump%geom(1),cv,getsizeonly=.true.)
 
 ! Copy size
 n = cv%n
@@ -1404,7 +1404,7 @@ type(cv_type) :: cv
 @:probe_in()
 
 ! Allocation
-call bump%nicas(1)%alloc_cv(bump%mpl,bump%nam,cv)
+call bump%nicas(1)%alloc_cv(bump%mpl,bump%nam,bump%geom(1),cv)
 
 ! Unpack control variable
 call cv%unpack(acv,offset)
@@ -1502,7 +1502,7 @@ type(cv_type) :: cv
 @:probe_in()
 
 ! Generate random control vector
-call bump%nicas(1)%random_cv(bump%mpl,bump%rng,bump%nam,cv)
+call bump%nicas(1)%random_cv(bump%mpl,bump%rng,bump%nam,bump%geom(1),cv)
 
 ! Apply NICAS square-root
 call bump%nicas(1)%apply_sqrt(bump%mpl,bump%nam,bump%geom(1),cv,fld_c0a)

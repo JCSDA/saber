@@ -187,8 +187,10 @@ call mpl%flush
 ! Get group
 nicas_blk%blkid = inquire_grp(mpl,nicas_blk%ncid,blkname)
 
-! Check number of levels (TODO: first if condition should be removed at some point)
-if (mpl%msv%isnot(inquire_dim(mpl,nicas_blk%blkid,'nl0'))) then
+! Check number of levels
+if (nam%same_horizontal) then
+   if (.not.check_dim(mpl,nicas_blk%blkid,'nl0',1)) call mpl%abort('${subr}$','wrong size for dimension nl0 (should be 1)')
+else
    if (.not.check_dim(mpl,nicas_blk%blkid,'nl0',geom%nl0)) call mpl%abort('${subr}$','wrong size for dimension nl0')
 end if
 
@@ -227,8 +229,15 @@ do icmp=1,nicas_blk%ncmp
       call mpl%warning('${subr}$',message)
    end if
 
+   ! Set number of levels
+   if (nam%same_horizontal) then
+      nicas_blk%cmp(icmp)%nl0 = 1
+   else
+      nicas_blk%cmp(icmp)%nl0 = geom%nl0
+   end if
+
    ! Component work
-   call nicas_blk%cmp(icmp)%read_local(mpl,geom)
+   call nicas_blk%cmp(icmp)%read_local(mpl)
 end do
 
 ! End associate
@@ -278,7 +287,11 @@ nicas_blk%blkid = define_grp(mpl,nicas_blk%ncid,blkname)
 call put_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp)
 
 ! Define number of levels
-nl0_id = define_dim(mpl,nicas_blk%blkid,'nl0',geom%nl0)
+if (nam%same_horizontal) then
+   nl0_id = define_dim(mpl,nicas_blk%blkid,'nl0',1)
+else
+   nl0_id = define_dim(mpl,nicas_blk%blkid,'nl0',geom%nl0)
+end if
 
 do icmp=1,nicas_blk%ncmp
    ! Get component
@@ -342,14 +355,13 @@ end subroutine nicas_blk_write_local_data
 ! Subroutine: nicas_blk_buffer_size
 !> Buffer size
 !----------------------------------------------------------------------
-subroutine nicas_blk_buffer_size(nicas_blk,mpl,geom,nbufi,nbufr,nbufl)
+subroutine nicas_blk_buffer_size(nicas_blk,mpl,nbufi,nbufr,nbufl)
 
 implicit none
 
 ! Passed variables
 class(nicas_blk_type),intent(in) :: nicas_blk !< NICAS data block
 type(mpl_type),intent(inout) :: mpl           !< MPI data
-type(geom_type),intent(in) :: geom            !< Geometry
 integer,intent(out) :: nbufi                  !< Buffer size (integer)
 integer,intent(out) :: nbufr                  !< Buffer size (real)
 integer,intent(out) :: nbufl                  !< Buffer size (logical)
@@ -376,7 +388,7 @@ nbufi = nbufi+1
 
 do icmp=1,nicas_blk%ncmp
    ! Component work
-   call nicas_blk%cmp(icmp)%buffer_size(mpl,geom,nbufi,nbufr,nbufl)
+   call nicas_blk%cmp(icmp)%buffer_size(mpl,nbufi,nbufr,nbufl)
 end do
 
 ! Probe out
@@ -388,14 +400,13 @@ end subroutine nicas_blk_buffer_size
 ! Subroutine: nicas_blk_serialize
 !> Serialize
 !----------------------------------------------------------------------
-subroutine nicas_blk_serialize(nicas_blk,mpl,geom,nbufi,nbufr,nbufl,bufi,bufr,bufl)
+subroutine nicas_blk_serialize(nicas_blk,mpl,nbufi,nbufr,nbufl,bufi,bufr,bufl)
 
 implicit none
 
 ! Passed variables
 class(nicas_blk_type),intent(in) :: nicas_blk !< NICAS data block
 type(mpl_type),intent(inout) :: mpl           !< MPI data
-type(geom_type),intent(in) :: geom            !< Geometry
 integer,intent(in) :: nbufi                   !< Buffer size (integer)
 integer,intent(in) :: nbufr                   !< Buffer size (real)
 integer,intent(in) :: nbufl                   !< Buffer size (logical)
@@ -431,7 +442,7 @@ ibufi = ibufi+1
 
 do icmp=1,nicas_blk%ncmp
    ! Component work
-   call nicas_blk%cmp(icmp)%serialize(mpl,geom,nbufi,nbufr,nbufl,ibufi,ibufr,ibufl,bufi,bufr,bufl)
+   call nicas_blk%cmp(icmp)%serialize(mpl,nbufi,nbufr,nbufl,ibufi,ibufr,ibufl,bufi,bufr,bufl)
 end do
 
 ! Check sizes
@@ -448,14 +459,13 @@ end subroutine nicas_blk_serialize
 ! Subroutine: nicas_blk_deserialize
 !> Deserialize
 !----------------------------------------------------------------------
-subroutine nicas_blk_deserialize(nicas_blk,mpl,geom,nbufi,nbufr,nbufl,bufi,bufr,bufl)
+subroutine nicas_blk_deserialize(nicas_blk,mpl,nbufi,nbufr,nbufl,bufi,bufr,bufl)
 
 implicit none
 
 ! Passed variables
 class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data block
 type(mpl_type),intent(inout) :: mpl              !< MPI data
-type(geom_type),intent(in) :: geom               !< Geometry
 integer,intent(in) :: nbufi                      !< Buffer size (integer)
 integer,intent(in) :: nbufr                      !< Buffer size (real)
 integer,intent(in) :: nbufl                      !< Buffer size (logical)
@@ -504,7 +514,7 @@ do icmp=1,nicas_blk%ncmp
    nicas_blk%cmp(icmp)%compute_norm = (.not.allocated(nicas_blk%cmp(icmp)%norm))
 
    ! Component work
-   call nicas_blk%cmp(icmp)%deserialize(mpl,geom,nbufi,nbufr,nbufl,ibufi,ibufr,ibufl,bufi,bufr,bufl)
+   call nicas_blk%cmp(icmp)%deserialize(mpl,nbufi,nbufr,nbufl,ibufi,ibufr,ibufl,bufi,bufr,bufl)
 end do
 
 ! End associate
@@ -550,6 +560,13 @@ call mpl%flush
 ! Get group
 nicas_blk%blkid = inquire_grp(mpl,nicas_blk%ncid,blkname)
 
+! Check number of levels
+if (nam%same_horizontal) then
+   if (.not.check_dim(mpl,nicas_blk%blkid,'nl0',1)) call mpl%abort('${subr}$','wrong size for dimension nl0 (should be 1)')
+else
+   if (.not.check_dim(mpl,nicas_blk%blkid,'nl0',geom%nl0)) call mpl%abort('${subr}$','wrong size for dimension nl0')
+end if
+
 ! Get number of components
 call get_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp,1)
 if (mpl%iobcast) call mpl%f_comm_iobcast%broadcast(nicas_blk%ncmp,mpl%rootproc-1)
@@ -584,6 +601,13 @@ do icmp=1,nicas_blk%ncmp
       write(cmpname,'(a,i1)') 'cmp_',icmp
    end if
    nicas_blk%cmp(icmp)%cmpid = inquire_grp(mpl,nicas_blk%blkid,cmpname)
+
+   ! Set number of levels
+   if (nam%same_horizontal) then
+      nicas_blk%cmp(icmp)%nl0 = 1
+   else
+      nicas_blk%cmp(icmp)%nl0 = geom%nl0
+   end if
 
    ! Component work
    call nicas_blk%cmp(icmp)%read_global(mpl,geom)
@@ -636,7 +660,11 @@ nicas_blk%blkid = define_grp(mpl,nicas_blk%ncid,blkname)
 call put_att(mpl,nicas_blk%blkid,0,'ncmp',nicas_blk%ncmp)
 
 ! Define number of levels
-nl0_id = define_dim(mpl,nicas_blk%blkid,'nl0',geom%nl0)
+if (nam%same_horizontal) then
+   nl0_id = define_dim(mpl,nicas_blk%blkid,'nl0',1)
+else
+   nl0_id = define_dim(mpl,nicas_blk%blkid,'nl0',geom%nl0)
+end if
 
 do icmp=1,nicas_blk%ncmp
    ! Get component
@@ -928,6 +956,13 @@ do icmp=1,nicas_blk%ncmp
    nicas_blk%cmp(icmp)%smoother = .false.
    nicas_blk%cmp(icmp)%compute_norm = (.not.allocated(nicas_blk%cmp(icmp)%norm))
 
+   ! Set number of levels
+   if (nam%same_horizontal) then
+      nicas_blk%cmp(icmp)%nl0 = 1
+   else
+      nicas_blk%cmp(icmp)%nl0 = geom%nl0
+   end if
+
    ! Component work
    call nicas_blk%cmp(icmp)%compute_parameters(mpl,rng,nam,geom)
 end do
@@ -1059,7 +1094,6 @@ do il0i=1,nl0i
    geom%vert_coord_c0u(:,1) = vert_coord_c0u(:,il0)
    geom%gmask_c0u(:,1) = gmask_c0u(:,il0)
 
-
    ! NICAS block initialization
    nicas_blk%cmp(il0i)%ig = ig
    nicas_blk%cmp(il0i)%ncmp = 1
@@ -1071,6 +1105,9 @@ do il0i=1,nl0i
    nicas_blk%cmp(il0i)%interp_type = 'si'
    nicas_blk%cmp(il0i)%smoother = .true.
    nicas_blk%cmp(il0i)%compute_norm = .false.
+
+   ! Set number of levels
+   nicas_blk%cmp(il0i)%nl0 = geom%nl0
 
    ! Compute parameters
    call nicas_blk%cmp(il0i)%compute_parameters(mpl,rng,nam,geom,rhflt(il0))
@@ -1134,19 +1171,26 @@ do icmp=1,nicas_blk%ncmp
    ! Set anisotropic parameter
    nicas_blk%cmp(icmp)%anisotropic = allocated(cmat_blk%D11).and.allocated(cmat_blk%D22).and.allocated(cmat_blk%D12)
 
-   ! Allocation
-   allocate(nicas_blk%cmp(icmp)%vlev(geom%nl0))
-   allocate(nicas_blk%cmp(icmp)%a(geom%nc0a,geom%nl0))
-   allocate(nicas_blk%cmp(icmp)%rh(geom%nc0a,geom%nl0))
-   if (nicas_blk%cmp(icmp)%anisotropic) then
-      allocate(nicas_blk%cmp(icmp)%H11(geom%nc0a,geom%nl0))
-      allocate(nicas_blk%cmp(icmp)%H22(geom%nc0a,geom%nl0))
-      allocate(nicas_blk%cmp(icmp)%H12(geom%nc0a,geom%nl0))
+   ! Set number of levels
+   if (nam%same_horizontal) then
+     nicas_blk%cmp(icmp)%nl0 = 1
+   else
+     nicas_blk%cmp(icmp)%nl0 = geom%nl0
    end if
-   allocate(nicas_blk%cmp(icmp)%rv(geom%nc0a,geom%nl0))
-   allocate(nicas_blk%cmp(icmp)%as(geom%nc0a,geom%nl0))
-   allocate(nicas_blk%cmp(icmp)%rhs(geom%nc0a,geom%nl0))
-   allocate(nicas_blk%cmp(icmp)%rvs(geom%nc0a,geom%nl0))
+
+   ! Allocation
+   allocate(nicas_blk%cmp(icmp)%vlev(nicas_blk%cmp(icmp)%nl0))
+   allocate(nicas_blk%cmp(icmp)%a(geom%nc0a,nicas_blk%cmp(icmp)%nl0))
+   allocate(nicas_blk%cmp(icmp)%rh(geom%nc0a,nicas_blk%cmp(icmp)%nl0))
+   if (nicas_blk%cmp(icmp)%anisotropic) then
+      allocate(nicas_blk%cmp(icmp)%H11(geom%nc0a,nicas_blk%cmp(icmp)%nl0))
+      allocate(nicas_blk%cmp(icmp)%H22(geom%nc0a,nicas_blk%cmp(icmp)%nl0))
+      allocate(nicas_blk%cmp(icmp)%H12(geom%nc0a,nicas_blk%cmp(icmp)%nl0))
+   end if
+   allocate(nicas_blk%cmp(icmp)%rv(geom%nc0a,nicas_blk%cmp(icmp)%nl0))
+   allocate(nicas_blk%cmp(icmp)%as(geom%nc0a,nicas_blk%cmp(icmp)%nl0))
+   allocate(nicas_blk%cmp(icmp)%rhs(geom%nc0a,nicas_blk%cmp(icmp)%nl0))
+   allocate(nicas_blk%cmp(icmp)%rvs(geom%nc0a,nicas_blk%cmp(icmp)%nl0))
 
    ! Initialization
    nicas_blk%cmp(icmp)%a = zero
@@ -1162,7 +1206,7 @@ do icmp=1,nicas_blk%ncmp
    nicas_blk%cmp(icmp)%rvs = mpl%msv%valr
 
    ! Copy C matrix fields
-   do il0=1,geom%nl0
+   do il0=1,nicas_blk%cmp(icmp)%nl0
       ! Check the level status
       level_status = 0
       do ic0a=1,geom%nc0a
@@ -1371,8 +1415,13 @@ cv_blk2%ncmp = nicas_blk%ncmp
 allocate(cv_blk1%cmp(nicas_blk%ncmp))
 allocate(cv_blk2%cmp(nicas_blk%ncmp))
 do icmp=1,nicas_blk%ncmp
-   call cv_blk1%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%nsa)
-   call cv_blk2%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%nsa)
+   if (nam%same_horizontal) then
+      call cv_blk1%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%nsa*geom%nl0)
+      call cv_blk2%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%nsa*geom%nl0)
+   else
+      call cv_blk1%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%nsa)
+      call cv_blk2%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%nsa)
+   end if
 end do
 
 ! Initialization
@@ -1450,7 +1499,11 @@ allocate(cv_blk%cmp(cv_blk%ncmp))
 
 do icmp=1,cv_blk%ncmp
    ! Allocation and initialization
-   call cv_blk%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%nsa)
+   if (nam%same_horizontal) then
+      call cv_blk%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%nsa*geom%nl0)
+   else
+      call cv_blk%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%nsa)
+   end if
 end do
 
 ! Get random levels
@@ -1537,7 +1590,11 @@ allocate(cv_blk%cmp(cv_blk%ncmp))
 
 do icmp=1,cv_blk%ncmp
    ! Allocation and initialization
-   call cv_blk%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%nsa)
+   if (nam%same_horizontal) then
+      call cv_blk%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%nsa*geom%nl0)
+   else
+      call cv_blk%cmp(icmp)%alloc(mpl,nicas_blk%cmp(icmp)%nsa)
+   end if
 end do
 
 ! Initialization

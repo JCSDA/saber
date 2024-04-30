@@ -197,6 +197,7 @@ type nam_type
    logical :: pos_def_test                                    !< Positive-definiteness test
    logical :: interp_test                                     !< Horizontal NICAS interpolation test
    integer :: file_component                                  !< Overriding component in file
+   logical :: same_horizontal                                 !< Same horizontal convolution for all levels, no vertical convolution
 
    ! Psichitouv section
    integer :: wind_nlon                                       !< Number of longitudes for the regular grid
@@ -899,6 +900,7 @@ if (conf%get('nicas',section)) then
    call nam%get(section,'positive-definiteness test',nam%pos_def_test)
    call nam%get(section,'horizontal interpolation test',nam%interp_test)
    call nam%get(section,'overriding component in file',nam%file_component)
+   call nam%get(section,'same horizontal convolution',nam%same_horizontal)
 end if
 
 ! Psichitouv section
@@ -1357,6 +1359,7 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
          call mpl%abort('${subr}$','wrong nicas_interp_type')
       end select
    end do
+   if (nam%same_horizontal.and.nam%write_nicas_steps) call mpl%abort('${subr}$','NICAS steps not available with horizontal convolution')
 end if
 
 ! Dirac section
