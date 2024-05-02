@@ -8,10 +8,10 @@ geometry:
     N: 12
   groups:
   - variables: &vars
-    - streamfunction
-    - velocity_potential
-    - unbalanced_pressure_levels_minus_one
     - mu
+    - streamfunction
+    - unbalanced_pressure_levels_minus_one
+    - velocity_potential
     levels: 70
   partitioner: ectrans
 background:
@@ -26,10 +26,10 @@ background error:
       read:
         covariance_file: testdata/spectralcov.nc
         umatrix_netcdf_names:
-        - PSI_inc_Uv_matrix
-        - CHI_inc_Uv_matrix
-        - aP_inc_Uv_matrix
         - MU_inc_Uv_matrix
+        - PSI_inc_Uv_matrix
+        - aP_inc_Uv_matrix
+        - CHI_inc_Uv_matrix       
       write:
         mpi pattern: "_MPI_"
         file path: testdata/error_covariance_training_spectralb_1/spectralsabercov_MPI_.nc

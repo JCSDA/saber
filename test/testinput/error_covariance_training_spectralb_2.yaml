@@ -1,0 +1,53 @@
+# The idea of this test is to read ensemble perturbations generated via the
+# the randomize method and generate spectral vertical covariances.
+# These spectral vertical covariances should be similar to the original
+# spectral vertical covariances used by the randomization method.
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_gaussian
+    N: 12
+  groups:
+  - variables: &vars
+    - eastward_wind
+    - mu
+    - northward_wind
+    - streamfunction
+    - unbalanced_pressure_levels_minus_one
+    - velocity_potential
+    levels: 70
+  partitioner: ectrans
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables:
+  - eastward_wind
+  - mu
+  - northward_wind
+  - unbalanced_pressure_levels_minus_one
+background error:
+  covariance model: SABER
+  ensemble pert:
+    date: '2010-01-01T12:00:00Z'
+    members from template:
+      template:
+        date: '2010-01-01T12:00:00Z'
+        filepath: testdata/randomization_sqrtspectralb_3/randomized_gauss_mb%mem%
+      pattern: '%mem%'
+      nmembers: 10
+  saber central block:
+    saber block name: spectral covariance
+    active variables:
+    - mu
+    - streamfunction
+    - unbalanced_pressure_levels_minus_one
+    - velocity_potential
+    calibration:
+      write:
+        mpi pattern: "_MPI_"
+        file path: testdata/error_covariance_training_spectralb_2/spectralvertcov_MPI_.nc
+  saber outer blocks:
+  - saber block name: spectral to gauss
+    calibration: true
+    active variables: *vars
+test:
+  reference filename: testref/error_covariance_training_spectralb_2.ref

@@ -22,7 +22,7 @@ background:
   - unbalanced_pressure_levels_minus_one
 background error:
   covariance model: SABER
-  randomization size: 2
+  randomization size: 10
   saber central block:
     saber block name: ID
   saber outer blocks:
