@@ -1,0 +1,100 @@
+# Testing Ensemble block with ensemble perturbations that are not on the
+# MODEL geometry.
+#
+# The input perturbations have been generated in the test
+# `process_perts_from_csdual_states_2` and written to disk twice: on a Gaussian grid
+# (F14, perturbation x_gauss) and on a cubed-sphere dual grid (CS-LFR-14,
+# perturbation x_cs). The pairs of perturbations x_cs and x_gauss are related via
+# x_cs = U x_gauss, where U is the interpolation from F14 to CS-LFR-14.
+#
+# This Dirac test reads the perturbations on the Gaussian grid and applies the
+# gauss-to-cubed-sphere interpolation around unlocalized ensemble covariances:
+#
+#    B = U (X_gauss X_gauss^t) U^t
+#
+# The other test `dirac_ens_model_geom` reads the perturbations on the cubed-sphere
+# dual mesh (the model geometry), and computes the unlocalized ensemble covariances:
+#
+#    B = X_cs X_cs^t
+#
+# Both tests should yield the same results as X_cs = U X_gauss.
+#
+# The Dirac test outputs are compared in ctest `compare_diagnostics_ens_geom`.
+#
+
+background:
+  date: &date '2010-01-01T12:00:00Z'
+  state variables: &vars
+  - streamfunction
+  - velocity_potential
+
+geometry:
+  function space: NodeColumns
+  grid:
+    name: CS-LFR-14
+  partitioner: cubedsphere
+  groups: &var_groups
+  - variables: *vars
+    levels: 70
+  halo: 1
+
+background error:
+  covariance model: SABER
+  ensemble geometry:
+    function space: StructuredColumns
+    grid:
+      type: regular_gaussian
+      N: 14
+    halo: 1
+    groups: *var_groups
+  ensemble pert on other geometry:
+    date: *date
+    members from template:
+      pattern: '%MEM%'
+      nmembers: 2
+      template:
+        date: *date
+        filepath: testdata/process_perts_from_csdual_states_2/wb1_F14_inc_%MEM%
+        variables: *vars
+  saber central block:
+    saber block name: Ensemble
+    # FunctionSpace-specific localization, not on model Geometry.
+    localization:
+      saber central block:
+        saber block name: ID
+      saber outer blocks:
+      - saber block name: spectral analytical filter
+        # Equivalent to no localization level by level (but full inter-level and
+        # inter-variables localization), to allow comparison with other Dirac test
+        function:
+          shape: boxcar
+          waveband min: 0
+          waveband max: 0
+          waveband amplitude: 1.0
+        normalize filter variance: true
+      - saber block name: spectral to gauss
+  saber outer blocks:
+  - saber block name: gauss to cubed-sphere-dual
+    gauss grid uid: F14
+
+dirac: &dirac
+  lon:
+  - 180.0
+  lat:
+  - 3.672
+  level:
+  - 1
+  variable:
+  - streamfunction
+
+diagnostic points: *dirac
+
+increment variables: *vars
+
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_ens_other_geom/dirac_%id%_%MPI%
+
+test:
+  float relative tolerance: 8e-5  # Due to process_perts_from_csdual_states_2 outputs differing on 1/2 MPI tasks
+  reference filename: testref/dirac_ens_other_geom.ref

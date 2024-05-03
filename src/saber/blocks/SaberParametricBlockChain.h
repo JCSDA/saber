@@ -1,5 +1,6 @@
 /*
  * (C) Copyright 2023- UCAR
+ * (C) Crown Copyright 2024 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -8,6 +9,7 @@
 #pragma once
 
 #include <memory>
+#include <tuple>
 #include <vector>
 
 #include "atlas/field.h"
@@ -32,6 +34,7 @@ namespace saber {
 /// error covariance.
 class SaberParametricBlockChain : public SaberBlockChainBase {
  public:
+  /// @brief Standard constructor using MODEL geometry
   template<typename MODEL>
   SaberParametricBlockChain(const oops::Geometry<MODEL> & geom,
                             const oops::Geometry<MODEL> & dualResGeom,
@@ -40,6 +43,13 @@ class SaberParametricBlockChain : public SaberBlockChainBase {
                             const oops::FieldSet4D & fset4dFg,
                             oops::FieldSets & fsetEns,
                             oops::FieldSets & fsetDualResEns,
+                            const eckit::LocalConfiguration & covarConf,
+                            const eckit::Configuration & conf);
+  /// @brief Simpler, limited constructor using only generic GeometryData
+  SaberParametricBlockChain(const oops::GeometryData & outerGeometryData,
+                            const oops::Variables & outerVars,
+                            const oops::FieldSet4D & fset4dXb,
+                            const oops::FieldSet4D & fset4dFg,
                             const eckit::LocalConfiguration & covarConf,
                             const eckit::Configuration & conf);
   ~SaberParametricBlockChain() = default;
@@ -64,6 +74,22 @@ class SaberParametricBlockChain : public SaberBlockChainBase {
   const oops::Variables & outerVariables() const {return outerVariables_;}
 
  private:
+  /// @brief Initialize central block, central function space and central variables.
+  ///        Used in constructors.
+  std::tuple<oops::Variables, oops::Variables>
+      initCentralBlock(const oops::GeometryData & outerGeom,
+                       const eckit::Configuration & conf,
+                       const eckit::LocalConfiguration & covarConf,
+                       const SaberBlockParametersBase & saberCentralBlockParams,
+                       const oops::FieldSet4D & fset4dXb,
+                       const oops::FieldSet4D & fset4dFg);
+
+  /// @brief Run adjoint and square-root tests on central block. Used in constructors.
+  void testCentralBlock(const eckit::LocalConfiguration & covarConf,
+                        const SaberBlockParametersBase & saberCentralBlockParams,
+                        const oops::GeometryData & outerGeom,
+                        const oops::Variables & activeVars) const;
+
   /// @brief Outer function space
   const atlas::FunctionSpace outerFunctionSpace_;
   /// @brief Outer variables
@@ -109,9 +135,7 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
                           cmpOuterBlocksParams);
   }
 
-  // Set outer variables and geometry data for central block
-  const oops::Variables currentOuterVars = outerBlockChain_ ?
-                             outerBlockChain_->innerVars() : outerVariables_;
+  // Set outer geometry data for central block
   const oops::GeometryData & currentOuterGeom = outerBlockChain_ ?
                              outerBlockChain_->innerGeometryData() : geom.generic();
 
@@ -123,33 +147,19 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
   oops::Log::info() << "Info     : Creating central block: "
                     << saberCentralBlockParams.saberBlockName.value() << std::endl;
 
-  // Iterative ensemble loading flag
-  const bool iterativeEnsembleLoading = covarConf.getBool("iterative ensemble loading");
-
-  // Get active variables
-  oops::Variables activeVars = getActiveVars(saberCentralBlockParams, currentOuterVars);
-  // Check that active variables are present in variables
-  for (const auto & var : activeVars.variables()) {
-    if (!currentOuterVars.has(var)) {
-      throw eckit::UserError("Active variable " + var + " is not present in "
-                             "outer variables", Here());
-    }
-  }
-
-  // Create central block
-  centralBlock_ = SaberCentralBlockFactory::create(currentOuterGeom,
-                                                   activeVars,
-                                                   covarConf,
-                                                   saberCentralBlockParams,
-                                                   fset4dXb[0],
-                                                   fset4dFg[0]);
-
-  // Save central function space and variables
-  centralFunctionSpace_ = currentOuterGeom.functionSpace();
-  centralVars_ = activeVars;
+  const auto[currentOuterVars, activeVars]
+              = initCentralBlock(currentOuterGeom,
+                                 conf,
+                                 covarConf,
+                                 saberCentralBlockParams,
+                                 fset4dXb,
+                                 fset4dFg);
 
   // Read and add model fields
   centralBlock_->read(geom, currentOuterVars);
+
+  // Iterative ensemble loading flag
+  const bool iterativeEnsembleLoading = covarConf.getBool("iterative ensemble loading");
 
   // Ensemble configuration
   eckit::LocalConfiguration ensembleConf
@@ -322,31 +332,7 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
     }
   }
 
-  // Adjoint test
-  if (covarConf.getBool("adjoint test")) {
-    // Get tolerance
-    const double localAdjointTolerance =
-      saberCentralBlockParams.adjointTolerance.value().get_value_or(
-      covarConf.getDouble("adjoint tolerance"));
-
-    // Run test
-    centralBlock_->adjointTest(currentOuterGeom,
-                               activeVars,
-                               localAdjointTolerance);
-  }
-
-  // Square-root test
-  if (covarConf.getBool("square-root test")) {
-    // Get tolerance
-    const double localSqrtTolerance =
-      saberCentralBlockParams.sqrtTolerance.value().get_value_or(
-      covarConf.getDouble("square-root tolerance"));
-
-    // Run test
-    centralBlock_->sqrtTest(currentOuterGeom,
-                            activeVars,
-                            localSqrtTolerance);
-  }
+  testCentralBlock(covarConf, saberCentralBlockParams, currentOuterGeom, activeVars);
 
   oops::Log::trace() << "SaberParametricBlockChain ctor done" << std::endl;
 }

@@ -1,0 +1,55 @@
+# Reproducing results of dirac_ens_other_geom with ensemble perturbations on the
+# model geometry.
+# See explanatory comment in `dirac_ens_other_geom.yaml`.
+#
+background:
+  date: &date '2010-01-01T12:00:00Z'
+  state variables: &vars
+  - streamfunction
+  - velocity_potential
+
+geometry:
+  function space: NodeColumns
+  grid:
+    name: CS-LFR-14
+  partitioner: cubedsphere
+  groups:
+  - variables: *vars
+    levels: 70
+  halo: 1
+
+background error:
+  covariance model: SABER
+  ensemble pert:
+    date: *date
+    members from template:
+      pattern: '%MEM%'
+      nmembers: 2
+      template:
+        date: *date
+        filepath: testdata/process_perts_from_csdual_states_2/wb1_CS-LFR-14_mb%MEM%_inc
+        variables: *vars
+  saber central block:
+    saber block name: Ensemble
+
+dirac: &dirac
+  lon:
+  - 180.0
+  lat:
+  - 3.672
+  level:
+  - 1
+  variable:
+  - streamfunction
+
+diagnostic points: *dirac
+
+increment variables: *vars
+
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_ens_model_geom/dirac_%id%_%MPI%
+
+test:
+  float relative tolerance: 8e-5  # Due to process_perts_from_csdual_states_2 outputs differing on 1/2 MPI tasks
+  reference filename: testref/dirac_ens_model_geom.ref

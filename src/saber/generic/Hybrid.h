@@ -45,6 +45,12 @@ class CovarianceParameters : public oops::Parameters {
   oops::OptionalParameter<eckit::LocalConfiguration> ensemblePert{"ensemble pert", this};
   oops::OptionalParameter<eckit::LocalConfiguration> ensembleBase{"ensemble base", this};
   oops::OptionalParameter<eckit::LocalConfiguration> ensemblePairs{"ensemble pairs", this};
+
+  // Ensemble on non-MODEL geometry
+  oops::OptionalParameter<eckit::LocalConfiguration> ensemblePertOtherGeom{
+                                        "ensemble pert on other geometry", this};
+  oops::OptionalParameter<eckit::LocalConfiguration> ensembleGeom{
+                                        "ensemble geometry", this};
 };
 
 // -----------------------------------------------------------------------------

@@ -1,5 +1,6 @@
 /*
  * (C) Copyright 2023- UCAR
+ * (C) Crown Copyright 2024 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -8,6 +9,7 @@
 #pragma once
 
 #include <memory>
+#include <tuple>
 #include <vector>
 
 #include "atlas/field.h"
@@ -17,6 +19,7 @@
 #include "oops/base/FieldSet4D.h"
 #include "oops/base/FieldSets.h"
 #include "oops/base/Geometry.h"
+#include "oops/base/GeometryData.h"
 #include "oops/interface/ModelData.h"
 
 #include "saber/blocks/SaberBlockParametersBase.h"
@@ -30,6 +33,7 @@ namespace saber {
 /// covariances, ensemble transform for the ensemble covariance.
 class SaberOuterBlockChain {
  public:
+  /// @brief Standard constructor using MODEL geometry
   template<typename MODEL>
   SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
                        const oops::Variables & outerVars,
@@ -38,6 +42,14 @@ class SaberOuterBlockChain {
                        oops::FieldSets & fsetEns,
                        const eckit::LocalConfiguration & covarConf,
                        const std::vector<saber::SaberOuterBlockParametersWrapper> & params);
+  /// @brief Simpler, limited constructor using only generic GeometryData
+  SaberOuterBlockChain(const oops::GeometryData & outerGeometryData,
+                       const oops::Variables & outerVars,
+                       const oops::FieldSet4D & fset4dXb,
+                       const oops::FieldSet4D & fset4dFg,
+                       const eckit::LocalConfiguration & covarConf,
+                       const std::vector<saber::SaberOuterBlockParametersWrapper> & params);
+
   ~SaberOuterBlockChain() = default;
 
   // Accessors
@@ -101,6 +113,26 @@ class SaberOuterBlockChain {
   }
 
  private:
+  /// @brief Initialize outer block, and return tuple of current outer variables,
+  ///        saber block parameters and active variables
+  std::tuple<const SaberBlockParametersBase&,
+             oops::Variables,
+             oops::Variables>
+     initBlock(const SaberOuterBlockParametersWrapper & saberOuterBlockParamWrapper,
+               const eckit::LocalConfiguration & outerBlockConf,
+               const oops::GeometryData & outerGeometryData,
+               const oops::Variables & outerVars,
+               const oops::FieldSet4D & fset4dXb,
+               const oops::FieldSet4D & fset4dFg);
+
+  /// @brief Block calibration. Used in standard constructor.
+  template<typename MODEL>
+  void calibrateBlock(const eckit::LocalConfiguration & covarConf,
+                      const oops::FieldSet4D & fset4dXb,
+                      const oops::Geometry<MODEL> & geom,
+                      const oops::Variables & outerVars,
+                      oops::FieldSets & fsetEns);
+
   /// @brief Left inverse multiply (used in calibration) by all outer blocks
   ///        except the last one and the ones that haven't implemented inverse yet.
   void leftInverseMultiplyExceptLast(oops::FieldSet3D & fset) const {
@@ -114,6 +146,30 @@ class SaberOuterBlockChain {
       }
     }
   }
+
+  /// @brief Get inner geometry data and variables, and check consistency with
+  ///        active variables. Used in constructors.
+  std::tuple<const oops::GeometryData &, const oops::Variables &>
+        getInnerObjects(const oops::Variables & activeVars,
+                        const oops::Variables & outerVars) const;
+
+  /// @brief Interpolate fields in background and first guess if inner and outer
+  ///        geometryData are different. Used in constructors.
+  void interpolateStates(
+          const SaberBlockParametersBase & saberOuterBlockParams,
+          const oops::GeometryData & outerGeometryData,
+          const oops::GeometryData & innerGeometryData,
+          const oops::FieldSet4D & fset4dXb,
+          const oops::FieldSet4D & fset4dFg) const;
+
+  /// @brief Inverse and adjoint test for last outer block. Used in constructors.
+  void testLastOuterBlock(const eckit::LocalConfiguration & covarConf,
+                          const SaberBlockParametersBase & saberOuterBlockParams,
+                          const oops::GeometryData & outerGeometryData,
+                          const oops::Variables & outerVars,
+                          const oops::GeometryData & innerGeometryData,
+                          const oops::Variables & innerVars,
+                          const oops::Variables & activeVars) const;
 
   /// @brief Vector of all outer blocks.
   /// TODO(AS): Need to expand this to create different outer blocks for different
@@ -142,189 +198,131 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
   eckit::LocalConfiguration outerBlockConf{covarConf};
   outerBlockConf.set("vader", modelDataConf);
 
-  // Iterative ensemble loading flag
-  const bool iterativeEnsembleLoading = covarConf.getBool("iterative ensemble loading");
-
   // Loop in reverse order
   for (const SaberOuterBlockParametersWrapper & saberOuterBlockParamWrapper :
     boost::adaptors::reverse(params)) {
-    // Initialize current outer variables and outer geometry data
-    oops::Variables currentOuterVars = outerBlocks_.size() == 0 ?
-                                       outerVars : outerBlocks_.back()->innerVars();
+    // Initialize current outer geometry data
     const oops::GeometryData & currentOuterGeometryData = outerBlocks_.size() == 0 ?
                                        geom.generic() : outerBlocks_.back()->innerGeometryData();
 
-    // Get outer block parameters
-    const SaberBlockParametersBase & saberOuterBlockParams =
-      saberOuterBlockParamWrapper.saberOuterBlockParameters;
-    oops::Log::info() << "Info     : Creating outer block: "
-                      << saberOuterBlockParams.saberBlockName.value() << std::endl;
-
-    // Get active variables
-    oops::Variables activeVars = getActiveVars(saberOuterBlockParams, currentOuterVars);
-
-    // Create outer block
-    outerBlocks_.emplace_back(SaberOuterBlockFactory::create(
-                                                 currentOuterGeometryData,
-                                                 currentOuterVars,
-                                                 outerBlockConf,
-                                                 saberOuterBlockParams,
-                                                 fset4dXb[0],
-                                                 fset4dFg[0]));
+    // Initialize outer block
+    const auto[saberOuterBlockParams,
+               currentOuterVars,
+               activeVars]
+            = initBlock(saberOuterBlockParamWrapper,
+                          outerBlockConf,
+                          currentOuterGeometryData,
+                          outerVars,
+                          fset4dXb,
+                          fset4dFg);
 
     // Read and add model fields
     outerBlocks_.back()->read(geom, currentOuterVars);
 
     if (saberOuterBlockParams.doCalibration()) {
       // Block calibration
-
-      // Ensemble configuration
-      eckit::LocalConfiguration ensembleConf
-        = covarConf.getSubConfiguration("ensemble configuration");
-
-      if (iterativeEnsembleLoading) {
-        // Iterative calibration
-         oops::Log::info() << "Info     : Iterative calibration" << std::endl;
-
-        // Initialization
-        outerBlocks_.back()->iterativeCalibrationInit();
-
-        // Get ensemble size
-        const size_t nens = ensembleConf.getInt("ensemble size");
-
-        for (size_t ie = 0; ie < nens; ++ie) {
-          // Read ensemble member
-          oops::FieldSet3D fset(fset4dXb[0].validTime(), geom.getComm());
-          readEnsembleMember(geom,
-                             currentOuterVars,
-                             ensembleConf,
-                             ie,
-                             fset);
-          // Apply outer blocks inverse (except last)
-          this->leftInverseMultiplyExceptLast(fset);
-
-          // Use FieldSet in the central block
-          oops::Log::info() << "Info     : Use FieldSet in the central block" << std::endl;
-          outerBlocks_.back()->iterativeCalibrationUpdate(fset);
-        }
-        // Finalization
-        oops::Log::info() << "Info     : Finalization" << std::endl;
-        outerBlocks_.back()->iterativeCalibrationFinal();
-      } else {
-        // Direct calibration
-        oops::Log::info() << "Info     : Direct calibration" << std::endl;
-        outerBlocks_.back()->directCalibration(fsetEns);
-      }
-
-      // Write calibration data
-      oops::Log::info() << "Info     : Write calibration data" << std::endl;
-      outerBlocks_.back()->write(geom, currentOuterVars);
-      outerBlocks_.back()->write();
-
-      if (!iterativeEnsembleLoading) {
-        // Left inverse multiplication on ensemble members
-        oops::Log::info() << "Info     : Left inverse multiplication on ensemble members"
-                          << std::endl;
-        if (outerBlocks_.back()->skipInverse()) {
-            oops::Log::info()
-                    << "Info     : Warning: left inverse multiplication skipped for block "
-                    << outerBlocks_.back()->blockName() << std::endl;
-        } else {
-          for (size_t jj = 0; jj < fsetEns.size(); ++jj) {
-            outerBlocks_.back()->leftInverseMultiply(fsetEns[jj]);
-          }
-        }
-      }
+      calibrateBlock(covarConf,
+                     fset4dXb,
+                     geom,
+                     currentOuterVars,
+                     fsetEns);
     } else if (saberOuterBlockParams.doRead()) {
       // Read data
       oops::Log::info() << "Info     : Read data" << std::endl;
       outerBlocks_.back()->read();
     }
 
-    // Inner geometry data and variables
-    const oops::GeometryData & innerGeometryData =
-      outerBlocks_.back()->innerGeometryData();
-    const oops::Variables innerVars = outerBlocks_.back()->innerVars();
-
-    // Check that active variables are present in either inner or outer variables, or both
-    for (const auto & var : activeVars.variables()) {
-      if (!(innerVars.has(var) || currentOuterVars.has(var))) {
-        throw eckit::UserError("Active variable " + var + " is not present in inner "
-                               "or outer variables", Here());
-      }
-    }
-
-    // Get intersection of active variables and outer/inner variables
-    oops::Variables activeOuterVars = currentOuterVars;
-    activeOuterVars.intersection(activeVars);
-    oops::Variables activeInnerVars = innerVars;
-    activeInnerVars.intersection(activeVars);
+    // Inner geometry data and variables & consistency check with active variables
+    auto[innerGeometryData, innerVars] = getInnerObjects(activeVars, currentOuterVars);
 
     // Left inverse multiplication on xb and fg if inner and outer Geometry is different
-    if (util::getGridUid(innerGeometryData.functionSpace())
-      != util::getGridUid(currentOuterGeometryData.functionSpace())
-      && saberOuterBlockParams.inverseVars.value().size() > 0) {
-      oops::Log::info() << "Info     : Left inverse multiplication on xb and fg" << std::endl;
-      // Share fields pointers
-      oops::FieldSet3D fsetXbInv(fset4dXb[0].validTime(), geom.getComm());
-      oops::FieldSet3D fsetFgInv(fset4dXb[0].validTime(), geom.getComm());
-      for (const auto & var : saberOuterBlockParams.inverseVars.value().variables()) {
-        fsetXbInv.fieldSet().add(fset4dXb[0].fieldSet().field(var));
-        fsetFgInv.fieldSet().add(fset4dFg[0].fieldSet().field(var));
-      }
+    interpolateStates(saberOuterBlockParams,
+                      currentOuterGeometryData,
+                      innerGeometryData,
+                      fset4dXb,
+                      fset4dFg);
 
-      // Apply left inverse
-      outerBlocks_.back()->leftInverseMultiply(fsetXbInv);
-      outerBlocks_.back()->leftInverseMultiply(fsetFgInv);
-    }
-
-    // Adjoint test
-    if (covarConf.getBool("adjoint test")) {
-      // Get tolerance
-      const double localAdjointTolerance =
-        saberOuterBlockParams.adjointTolerance.value().get_value_or(
-        covarConf.getDouble("adjoint tolerance"));
-
-      // Run test
-      outerBlocks_.back()->adjointTest(currentOuterGeometryData,
-                                       activeOuterVars,
-                                       innerGeometryData,
-                                       activeInnerVars,
-                                       localAdjointTolerance);
-    }
-    // Inverse test
-    const bool skipInverseTest = saberOuterBlockParams.skipInverseTest.value();
-    if (covarConf.getBool("inverse test", false)) {
-      oops::Log::info() << "Info     : Inverse test" << std::endl;
-      if (skipInverseTest) {
-        oops::Log::test() << "skipping inverse test for block "
-                          << outerBlocks_.back()->blockName() << std::endl;
-      } else {
-        // Get inner and outer tolerances
-        const double innerInverseTolerance = saberOuterBlockParams.innerInverseTolerance.value()
-          .get_value_or(covarConf.getDouble("inverse tolerance"));
-        const double outerInverseTolerance = saberOuterBlockParams.outerInverseTolerance.value()
-          .get_value_or(covarConf.getDouble("inverse tolerance"));
-
-        // Get inner and outer variables to compare
-        oops::Variables innerVarsToCompare = saberOuterBlockParams.innerVariables.value()
-          .get_value_or(activeInnerVars);
-        oops::Variables outerVarsToCompare = saberOuterBlockParams.outerVariables.value()
-          .get_value_or(activeOuterVars);
-
-        // Run test
-        outerBlocks_.back()->inverseTest(innerGeometryData,
-                                         activeInnerVars,
-                                         currentOuterGeometryData,
-                                         activeOuterVars,
-                                         innerVarsToCompare,
-                                         outerVarsToCompare,
-                                         innerInverseTolerance,
-                                         outerInverseTolerance);
-      }
-    }
+    // Adjoint test and inverse test
+    testLastOuterBlock(covarConf,
+                       saberOuterBlockParams,
+                       currentOuterGeometryData,
+                       currentOuterVars,
+                       innerGeometryData,
+                       innerVars,
+                       activeVars);
   }
   oops::Log::trace() << "SaberOuterBlockChain ctor done" << std::endl;
 }
 
+// -----------------------------------------------------------------------------
+
+template<typename MODEL>
+void SaberOuterBlockChain::calibrateBlock(
+            const eckit::LocalConfiguration & covarConf,
+            const oops::FieldSet4D & fset4dXb,
+            const oops::Geometry<MODEL> & geom,
+            const oops::Variables & outerVars,
+            oops::FieldSets & fsetEns) {
+  // Iterative ensemble loading flag
+  const bool iterativeEnsembleLoading = covarConf.getBool("iterative ensemble loading");
+
+  // Ensemble configuration
+  eckit::LocalConfiguration ensembleConf
+    = covarConf.getSubConfiguration("ensemble configuration");
+
+  if (iterativeEnsembleLoading) {
+    // Iterative calibration
+     oops::Log::info() << "Info     : Iterative calibration" << std::endl;
+
+    // Initialization
+    outerBlocks_.back()->iterativeCalibrationInit();
+
+    // Get ensemble size
+    const size_t nens = ensembleConf.getInt("ensemble size");
+
+    for (size_t ie = 0; ie < nens; ++ie) {
+      // Read ensemble member
+      oops::FieldSet3D fset(fset4dXb[0].validTime(), geom.getComm());
+      readEnsembleMember(geom,
+                         outerVars,
+                         ensembleConf,
+                         ie,
+                         fset);
+      // Apply outer blocks inverse (except last)
+      this->leftInverseMultiplyExceptLast(fset);
+
+      // Use FieldSet in the central block
+      oops::Log::info() << "Info     : Use FieldSet in the central block" << std::endl;
+      outerBlocks_.back()->iterativeCalibrationUpdate(fset);
+    }
+    // Finalization
+    oops::Log::info() << "Info     : Finalization" << std::endl;
+    outerBlocks_.back()->iterativeCalibrationFinal();
+  } else {
+    // Direct calibration
+    oops::Log::info() << "Info     : Direct calibration" << std::endl;
+    outerBlocks_.back()->directCalibration(fsetEns);
+  }
+
+  // Write calibration data
+  oops::Log::info() << "Info     : Write calibration data" << std::endl;
+  outerBlocks_.back()->write(geom, outerVars);
+  outerBlocks_.back()->write();
+
+  if (!iterativeEnsembleLoading) {
+    // Left inverse multiplication on ensemble members
+    oops::Log::info() << "Info     : Left inverse multiplication on ensemble members"
+                      << std::endl;
+    if (outerBlocks_.back()->skipInverse()) {
+        oops::Log::info()
+                << "Info     : Warning: left inverse multiplication skipped for block "
+                << outerBlocks_.back()->blockName() << std::endl;
+    } else {
+      for (size_t jj = 0; jj < fsetEns.size(); ++jj) {
+        outerBlocks_.back()->leftInverseMultiply(fsetEns[jj]);
+      }
+    }
+  }
+}
+// -----------------------------------------------------------------------------
 }  // namespace saber

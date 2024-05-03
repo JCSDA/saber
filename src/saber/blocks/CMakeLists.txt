@@ -24,6 +24,7 @@ SaberEnsembleBlockChain.cc
 SaberEnsembleBlockChain.h
 
 # SABER outer block chain
+SaberOuterBlockChain.cc
 SaberOuterBlockChain.h
 
 # SABER parametric block chain

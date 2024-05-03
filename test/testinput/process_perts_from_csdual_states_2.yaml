@@ -46,6 +46,10 @@ bands:
         filter mode: true # instead of running the adjoint code it runs the inverse
         left inverse fset filename: initial_CS14_variance
         output path: testdata/process_perts_from_csdual_states_2/
+  output:
+    model write:
+      filepath: testdata/process_perts_from_csdual_states_2/wb1_CS-LFR-14_mb%MEM%_inc
+      member pattern: '%MEM%'
 - band:
     filter:
       saber central block:

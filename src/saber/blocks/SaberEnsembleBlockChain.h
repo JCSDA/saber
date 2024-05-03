@@ -20,6 +20,7 @@
 #include "oops/base/Geometry.h"
 #include "oops/base/Increment.h"
 #include "oops/interface/ModelData.h"
+#include "oops/util/FieldSetHelpers.h"
 #include "oops/util/Logger.h"
 #include "oops/util/Random.h"
 
@@ -147,6 +148,16 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
   // Ensemble configuration
   eckit::LocalConfiguration ensembleConf
     = covarConf.getSubConfiguration("ensemble configuration");
+
+  // Check consistency if ensemble was read on non-MODEL geometry
+  if (ensembleConf.has("ensemble pert on other geometry")) {
+    const auto & currentFspace = currentOuterGeom.functionSpace();
+    const auto & ensFspace = ensemble_[0].fieldSet()[0].functionspace();
+    ASSERT(ensFspace.type() == currentFspace.type());
+    ASSERT(util::getGridUid(ensFspace).compare(
+               util::getGridUid(currentFspace)) == 0);
+  }
+
   // Read inflation field
   eckit::LocalConfiguration centralBlockConf = conf.getSubConfiguration("saber central block");
   const double inflationValue = centralBlockConf.getDouble("inflation value", 1);
@@ -242,12 +253,46 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
     currentOuterVars = outerBlockChain_->innerVars();
   }
 
+  const oops::GeometryData & localizationOuterGeomData = outerBlockChain_ ?
+              outerBlockChain_->innerGeometryData() : geom.generic();
+
   // Localization
   const auto & locConf = saberCentralBlockParams.localization.value();
   if (locConf != boost::none) {
-    // Initialize localization blockchain
-    locBlockChain_ = std::make_unique<SaberParametricBlockChain>(geom, dualResGeom,
-      currentOuterVars, fset4dXb, fset4dFg, ensemble_, fsetDualResEns, covarConfUpdated, *locConf);
+    // The localization is a parametric block chain constructed with the same geometry
+    // as the ensemble block chain by default. If the outer blocks or transform block
+    // chain include a change of geometries, we need to use build the localization from
+    // the current geometryData, using a generic constructor of the parametric block chain.
+
+    // Check consistency of `geom` and the current geometry
+    const auto & currentFspace = localizationOuterGeomData.functionSpace();
+    if (util::getGridUid(geom.functionSpace()) != util::getGridUid(currentFspace)) {
+      oops::Log::info() << "Info     : Localization and ensemble are on different "
+                           "functionSpaces, building localization with generic "
+                           "constructor" << std::endl;
+      // Note QUENCH could just build another geometry here and use the standard
+      // constructor, but other models usually don't have this ability to create a
+      // Geometry on any mesh.
+      locBlockChain_ = std::make_unique<SaberParametricBlockChain>(localizationOuterGeomData,
+                                                                   currentOuterVars,
+                                                                   fset4dXb,
+                                                                   fset4dFg,
+                                                                   covarConfUpdated,
+                                                                   *locConf);
+    } else {
+      oops::Log::info() << "Info     : Localization and ensemble are on same "
+                           "functionSpaces, building localization with standard "
+                           "constructor" << std::endl;
+      locBlockChain_ = std::make_unique<SaberParametricBlockChain>(geom,
+                                                                   dualResGeom,
+                                                                   currentOuterVars,
+                                                                   fset4dXb,
+                                                                   fset4dFg,
+                                                                   ensemble_,
+                                                                   fsetDualResEns,
+                                                                   covarConfUpdated,
+                                                                   *locConf);
+    }
   }
   // Direct calibration
   oops::Log::info() << "Info     : Direct calibration" << std::endl;
