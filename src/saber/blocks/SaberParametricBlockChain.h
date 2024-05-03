@@ -238,7 +238,7 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
   // Write calibration data
   if (saberCentralBlockParams.doCalibration()) {
     oops::Log::info() << "Info     : Write calibration data" << std::endl;
-    centralBlock_->write(geom, currentOuterVars);
+    centralBlock_->write(geom);
     centralBlock_->write();
   }
 

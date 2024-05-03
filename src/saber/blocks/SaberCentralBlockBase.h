@@ -121,8 +121,7 @@ class SaberCentralBlockBase : public util::Printable, private boost::noncopyable
 
   // Write model fields
   template <typename MODEL>
-  void write(const oops::Geometry<MODEL> &,
-             const oops::Variables &) const;
+  void write(const oops::Geometry<MODEL> &) const;
 
   // Adjoint test
   void adjointTest(const oops::GeometryData &,
@@ -242,19 +241,16 @@ void SaberCentralBlockBase::read(const oops::Geometry<MODEL> & geom,
 // -----------------------------------------------------------------------------
 
 template <typename MODEL>
-void SaberCentralBlockBase::write(const oops::Geometry<MODEL> & geom,
-                                 const oops::Variables & vars) const {
+void SaberCentralBlockBase::write(const oops::Geometry<MODEL> & geom) const {
   oops::Log::trace() << "SaberCentralBlockBase::write starting" << std::endl;
 
   // Get vector of FieldSet/configuration pairs
   std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> outputs
     = this->fieldsToWrite();
 
-  // Create increment
-  oops::Increment<MODEL> dx(geom, vars, validTime_);
-
   // Write fieldsets as increments
   for (const auto & output : outputs) {
+    oops::Increment<MODEL> dx(geom, output.second.variables(), validTime_);
     dx.fromFieldSet(output.second.fieldSet());
     oops::Log::test() << "Norm of output parameter " << output.second.name()
                       << ": " << dx.norm() << std::endl;
