@@ -1148,7 +1148,7 @@ type(geom_type),intent(in) :: geom               !< Geometry
 type(cmat_blk_type),intent(in) :: cmat_blk       !< C matrix data block
 
 ! Local variables
-integer :: ic0a,il0,icmp,level_status,nover
+integer :: ic0a,il0,icmp,level_status,nover,nl0
 real(kind_real) :: rhs_max,rover,ratio
 character(len=1024) :: message
 
@@ -1276,8 +1276,11 @@ do icmp=1,nicas_blk%ncmp
    ! Check horizontal support radius vs. universe radius
    if (geom%nc0a>0) then
       rhs_max = zero
-      if (any(geom%gmask_c0a.and.mpl%msv%isnot(nicas_blk%cmp(icmp)%rhs))) rhs_max = zss_maxval(nicas_blk%cmp(icmp)%rhs, &
- & mask=(geom%gmask_c0a.and.mpl%msv%isnot(nicas_blk%cmp(icmp)%rhs)))
+      nl0 = nicas_blk%cmp(icmp)%nl0
+      if (any(geom%gmask_c0a(:,1:nl0).and.mpl%msv%isnot(nicas_blk%cmp(icmp)%rhs(:,1:nl0)))) then
+        rhs_max = zss_maxval(nicas_blk%cmp(icmp)%rhs(:,1:nl0), &
+ & mask=(geom%gmask_c0a(:,1:nl0).and.mpl%msv%isnot(nicas_blk%cmp(icmp)%rhs(:,1:nl0))))
+      end if
       if (rhs_max>nam%universe_radius) then
          write(message,'(a,f10.2,a,f10.2,a)') 'horizontal support radius (',rhs_max*reqkm,' km) larger than universe radius (', &
  & nam%universe_radius*reqkm,' km)'
