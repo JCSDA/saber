@@ -397,7 +397,11 @@ elseif (var%bump_m2_counter>0) then
 
    ! Copy normalized quantities
    var%m2 = var%bump_m2/real(var%bump_m2_counter,kind_real)
-   if (var%bump_m4_counter>0) var%m4 = var%bump_m4/real(var%bump_m4_counter,kind_real)
+   if (var%bump_m4_counter>0) then
+      var%m4 = var%bump_m4/real(var%bump_m4_counter,kind_real)
+   else
+      var%m4 = mpl%msv%valr
+   end if
 
    ! Release memory (partial)
    call var%partial_bump_dealloc
