@@ -43,42 +43,6 @@ Geometry::Geometry(const eckit::Configuration & config,
   this->print(oops::Log::info());
 }
 // -------------------------------------------------------------------------------------------------
-void Geometry::latlon(std::vector<double> & lats, std::vector<double> & lons,
-                      const bool includeHalo) const {
-  const auto lonlat = atlas::array::make_view<double, 2>(functionSpace_.lonlat());
-  const auto ghost = atlas::array::make_view<int, 1>(functionSpace_.ghost());
-
-  const size_t npts = functionSpace_.size();
-  const size_t nptsReturned = [&]() {
-    if (includeHalo && comm_.size() > 1) {
-      return npts;
-    } else {
-      size_t result = 0;
-      for (atlas::idx_t i = 0; i < ghost.shape(0); ++i) {
-        if (ghost(i) == 0) {
-          result++;
-        }
-      }
-      return result;
-    }
-  }();
-
-  lats.resize(nptsReturned);
-  lons.resize(nptsReturned);
-
-  size_t count = 0;
-  for (size_t jj = 0; jj < npts; ++jj) {
-    // copy owned points, i.e. points with ghost==?
-    if (ghost(jj) == 0 || (includeHalo && comm_.size() > 1)) {
-      lats[count] = lonlat(jj, 1);
-      lons[count] = lonlat(jj, 0);
-      if (lons[count] < 0.0) lons[count] += 360.0;
-      count++;
-    }
-  }
-  ASSERT(count == nptsReturned);
-}
-// -----------------------------------------------------------------------------
 void Geometry::print(std::ostream & os) const {
   std::string prefix;
   if (os.rdbuf() == oops::Log::info().rdbuf()) {

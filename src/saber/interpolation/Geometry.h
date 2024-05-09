@@ -42,8 +42,6 @@ class Geometry : public util::Printable,
   const atlas::FunctionSpace & functionSpace() const {return functionSpace_;}
   const atlas::FieldSet & fields() const {return fieldSet_;}
 
-  void latlon(std::vector<double> &, std::vector<double> &, const bool) const;
-
  private:
   void print(std::ostream &) const;
 

@@ -139,7 +139,6 @@ class Geometry : public util::Printable,
   size_t variableSize(const std::string &) const;
   size_t maskLevel(const std::string &, const size_t &) const;
   std::vector<size_t> variableSizes(const oops::Variables & vars) const;
-  void latlon(std::vector<double> &, std::vector<double> &, const bool) const;
   bool levelsAreTopDown() const {return true;}
 
  private:

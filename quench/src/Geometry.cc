@@ -283,52 +283,6 @@ std::vector<size_t> Geometry::variableSizes(const oops::Variables & vars) const 
   return sizes;
 }
 // -----------------------------------------------------------------------------
-void Geometry::latlon(std::vector<double> & lats, std::vector<double> & lons,
-                      const bool includeHaloForRealLife) const {
-  const auto lonlat = atlas::array::make_view<double, 2>(functionSpace_.lonlat());
-  const auto ghost = atlas::array::make_view<int, 1>(functionSpace_.ghost());
-
-  // TODO(Algo): Remove/fix the hack below when GeometryData local KD tree needs
-  // to be set up correctly (e.g. when UnstructuredInterpolator is used).
-  // For now never include halo in the latlon output because halo points from
-  // some atlas grids (e.g. gaussian) can have unrealistic latitudes (e.g. more
-  // than 90 degrees) and those latitudes can't be handled by KD trees.
-  // Global KD trees created in GeometryData are used for communication and
-  // don't need halo information.
-  // Local KD trees in GeometryData need halo information but aren't used unless
-  // UnstructuredInterpolator is used.
-  bool includeHalo = false;
-  const size_t npts = functionSpace_.size();
-  const size_t nptsReturned = [&]() {
-    if (includeHalo && comm_.size() > 1) {
-      return npts;
-    } else {
-      size_t result = 0;
-      for (atlas::idx_t i = 0; i < ghost.shape(0); ++i) {
-        if (ghost(i) == 0) {
-          result++;
-        }
-      }
-      return result;
-    }
-  }();
-
-  lats.resize(nptsReturned);
-  lons.resize(nptsReturned);
-
-  size_t count = 0;
-  for (size_t jj = 0; jj < npts; ++jj) {
-    // copy owned points, i.e. points with ghost==?
-    if (ghost(jj) == 0 || (includeHalo && comm_.size() > 1)) {
-      lats[count] = lonlat(jj, 1);
-      lons[count] = lonlat(jj, 0);
-      if (lons[count] < 0.0) lons[count] += 360.0;
-      count++;
-    }
-  }
-  ASSERT(count == nptsReturned);
-}
-// -----------------------------------------------------------------------------
 void Geometry::print(std::ostream & os) const {
   std::string prefix;
   if (os.rdbuf() == oops::Log::info().rdbuf()) {

@@ -35,10 +35,6 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
   Geometry geom(params.innerGeom, outerGeometryData.comm());
   innerGeomData_.reset(new oops::GeometryData(geom.functionSpace(), geom.fields(),
                                               true, outerGeometryData.comm()));
-  std::vector<double> lats;
-  std::vector<double> lons;
-  geom.latlon(lats, lons, false);
-  innerGeomData_->setGlobalTree(lats, lons);
 
   interp_.reset(new oops::GlobalInterpolator(
           params.localInterpConf.value(), *innerGeomData_,
