@@ -2071,10 +2071,8 @@ call fieldset%to_array(bump%mpl,fld_mga)
 select case (trim(param))
 case ('var')
    bump%var%bump_m2_counter = bump%var%bump_m2_counter+1
-   if (icmp/=bump%var%bump_m2_counter) call bump%mpl%abort('${subr}$','wrong component index for var')
 case ('m4')
    bump%var%bump_m4_counter = bump%var%bump_m4_counter+1
-   if (icmp/=bump%var%bump_m4_counter) call bump%mpl%abort('${subr}$','wrong component index for m4')
 end select
 
 do iv=1,bump%nam%nv
