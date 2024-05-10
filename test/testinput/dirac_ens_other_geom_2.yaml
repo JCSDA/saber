@@ -1,0 +1,162 @@
+# Reproducing the core of a waveband-localized ensemble B
+# with ensemble perturbations read on different geometries.
+
+background:
+  date: &date '2010-01-01T12:00:00Z'
+  state variables: &vars
+  - streamfunction
+  - velocity_potential
+
+geometry:
+  function space: NodeColumns
+  grid:
+    name: CS-LFR-14
+  partitioner: cubedsphere
+  groups: &var_groups
+  - variables: *vars
+    levels: 70
+  halo: 1
+
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: Hybrid
+    components:
+    ###########################################################################
+    # Waveband 1 - F14 grid
+    ###########################################################################
+    - weight:
+        value: 1.0
+      covariance:
+        ensemble geometry:
+          function space: StructuredColumns
+          grid:
+            type: regular_gaussian
+            N: 14
+          halo: 1
+          groups: *var_groups
+        ensemble pert on other geometry:
+          date: *date
+          members from template:
+            pattern: '%MEM%'
+            nmembers: 2
+            template:
+              date: *date
+              filepath: testdata/process_perts_from_csdual_states_2/wb1_F14_inc_%MEM%
+              variables: *vars
+        saber central block:
+          saber block name: Ensemble
+          # FunctionSpace-specific localization, not on model Geometry.
+          localization:
+            saber central block:
+              saber block name: ID
+            saber outer blocks:
+            - saber block name: spectral analytical filter
+              # full horizontal localization (infinitely small length-scales)
+              # (although full inter-level and inter-variables localization)
+              function:
+                shape: boxcar
+                waveband min: 0
+                waveband max: 14
+                waveband amplitude: 1.0
+              normalize filter variance: true
+            - saber block name: spectral to gauss
+        saber outer blocks:
+        - saber block name: gauss to cubed-sphere-dual
+          gauss grid uid: F14
+    ###########################################################################
+    # Waveband 2 - F14 grid
+    ###########################################################################
+    - weight:
+        value: 1.0
+      covariance:
+        ensemble geometry:
+          function space: StructuredColumns
+          grid:
+            type: regular_gaussian
+            N: 14
+          halo: 1
+          groups: *var_groups
+        ensemble pert on other geometry:
+          date: *date
+          members from template:
+            pattern: '%MEM%'
+            nmembers: 2
+            template:
+              date: *date
+              filepath: testdata/process_perts_from_csdual_states_2/wb2_F14_inc_%MEM%
+              variables: *vars
+        saber central block:
+          saber block name: Ensemble
+          # FunctionSpace-specific localization, not on model Geometry.
+          localization:
+            saber central block:
+              saber block name: ID
+            saber outer blocks:
+            - saber block name: spectral analytical filter
+            # Moderate horizontal localization
+            # (although full inter-level and inter-variables localization)
+              function:
+                horizontal daley length: 5000e3  # (in m)
+              normalize filter variance: true
+            - saber block name: spectral to gauss
+        saber outer blocks:
+        - saber block name: gauss to cubed-sphere-dual
+          gauss grid uid: F14
+
+    ###########################################################################
+    # Waveband 3 - CS-LFR-14 grid
+    ###########################################################################
+    - weight:
+        value: 1.0
+      covariance:
+        ensemble pert:
+          date: *date
+          members from template:
+            pattern: '%MEM%'
+            nmembers: 2
+            template:
+              date: *date
+              filepath: testdata/process_perts_from_csdual_states_2/wb3_CS-LFR-14_mb%MEM%_inc
+              variables: *vars
+        saber central block:
+          saber block name: Ensemble
+          # FunctionSpace-specific localization, on model Geometry.
+          localization:
+            saber central block:
+              saber block name: ID
+            saber outer blocks:
+            - saber block name: spectral analytical filter
+              # no horizontal localization (large length-scales)
+              # (although full inter-level and inter-variables localization)
+              function:
+                shape: boxcar
+                waveband min: 0
+                waveband max: 0
+                waveband amplitude: 1.0
+              normalize filter variance: true
+            - saber block name: spectral to gauss
+            - saber block name: gauss to cubed-sphere-dual
+              gauss grid uid: F14
+
+dirac: &dirac
+  lon:
+  - 180.0
+  lat:
+  - 3.672
+  level:
+  - 1
+  variable:
+  - streamfunction
+
+diagnostic points: *dirac
+
+increment variables: *vars
+
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_ens_other_geom_2/dirac_%id%_%MPI%
+
+test:
+  float relative tolerance: 1e-4  # Due to process_perts_from_csdual_states_2 outputs differing on 1/2 MPI tasks
+  reference filename: testref/dirac_ens_other_geom_2.ref

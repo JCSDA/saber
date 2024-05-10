@@ -1,6 +1,6 @@
-# Reproducing results of dirac_ens_other_geom with ensemble perturbations on the
+# Reproducing results of dirac_ens_other_geom_1 with ensemble perturbations on the
 # model geometry.
-# See explanatory comment in `dirac_ens_other_geom.yaml`.
+# See explanatory comment in `dirac_ens_other_geom_1.yaml`.
 #
 background:
   date: &date '2010-01-01T12:00:00Z'

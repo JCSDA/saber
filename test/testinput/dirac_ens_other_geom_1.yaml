@@ -93,8 +93,8 @@ increment variables: *vars
 
 output dirac:
   mpi pattern: '%MPI%'
-  filepath: testdata/dirac_ens_other_geom/dirac_%id%_%MPI%
+  filepath: testdata/dirac_ens_other_geom_1/dirac_%id%_%MPI%
 
 test:
   float relative tolerance: 8e-5  # Due to process_perts_from_csdual_states_2 outputs differing on 1/2 MPI tasks
-  reference filename: testref/dirac_ens_other_geom.ref
+  reference filename: testref/dirac_ens_other_geom_1.ref

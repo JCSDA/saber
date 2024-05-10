@@ -1,6 +1,10 @@
 compare_diagnostics_spectralb_write_read
 compare_diagnostics_sqrtspectralb_1
 compare_diagnostics_sqrtspectralb_2
+dirac_ens_both_geom
+dirac_ens_model_geom
+dirac_ens_other_geom_1
+dirac_ens_other_geom_2
 dirac_interpolation_1
 dirac_spectralb
 dirac_spectralb_and_touv
