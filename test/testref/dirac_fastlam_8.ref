@@ -38,8 +38,6 @@ Norm of input parameter rv: 1.1332077298912429e+03
     FastLAM interpolation adjoint test passed
     FastLAM interpolation accuracy test passed
     FastLAM interpolation adjoint test passed
-Norm of output parameter index i: 1.1644890209873171e+04
-Norm of output parameter index j: 8.7234826187710150e+03
 Norm of output parameter normalized horizontal length-scale: 1.6992922050928357e+03
 Norm of output parameter weight - 0: 5.1821246270964352e+01
 Norm of output parameter weight - 1: 1.3660485222955450e+02

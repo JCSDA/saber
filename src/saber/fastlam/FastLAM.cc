@@ -51,23 +51,26 @@ FastLAM::FastLAM(const oops::GeometryData & gdata,
     fieldsMetaData_(params.fieldsMetaData.value())
 {
   oops::Log::trace() << classname() << "::FastLAM starting" << std::endl;
+  // Check function space type
+  ASSERT(gdata_.functionSpace().type() == "StructuredColumns");
 
   // Check geometry fields
-  ASSERT(gdata_.fieldSet().has("index_i"));
-  ASSERT(gdata_.fieldSet().has("index_j"));
   ASSERT(gdata_.fieldSet().has("area"));
 
   // Ghost points
   const auto ghostView = atlas::array::make_view<int, 1>(gdata_.functionSpace().ghost());
 
+  // Index fields
+  const atlas::functionspace::StructuredColumns fs(gdata_.functionSpace());
+  atlas::Field fieldIndexI0 = fs.index_i();
+  atlas::Field fieldIndexJ0 = fs.index_j();
+  auto indexI0View = atlas::array::make_view<int, 1>(fieldIndexI0);
+  auto indexJ0View = atlas::array::make_view<int, 1>(fieldIndexJ0);
+
   // Get grid size
   nx0_ = 0;
   ny0_ = 0;
-  atlas::Field fieldIndexI0 = gdata_.fieldSet()["index_i"];
-  atlas::Field fieldIndexJ0 = gdata_.fieldSet()["index_j"];
   nodes0_ = fieldIndexI0.shape(0);
-  auto indexI0View = atlas::array::make_view<int, 1>(fieldIndexI0);
-  auto indexJ0View = atlas::array::make_view<int, 1>(fieldIndexJ0);
   for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
     if (ghostView(jnode0) == 0) {
       nx0_ = std::max(nx0_, static_cast<size_t>(indexI0View(jnode0)));
@@ -1016,58 +1019,6 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
     // Get parameter
     const std::string param = conf.getString("parameter");
 
-    if (param == "index i") {
-      // Create FieldSet3D
-      oops::FieldSet3D fset(validTime_, comm_);
-
-      // Copy field
-      atlas::Field fieldIndexI0 = gdata_.fieldSet()["index_i"];
-      auto indexI0View = atlas::array::make_view<int, 1>(fieldIndexI0);
-      for (const auto & var : activeVars_.variables()) {
-        const size_t nz0 = activeVars_.getLevels(var);
-        atlas::Field field = gdata_.functionSpace().createField<double>(
-          atlas::option::name(var) | atlas::option::levels(nz0));
-        auto view = atlas::array::make_view<double, 2>(field);
-        for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
-          if (ghostView(jnode0) == 0) {
-            for (size_t k0 = 0; k0 < nz0; ++k0) {
-              view(jnode0, k0) = static_cast<double>(indexI0View(jnode0));
-            }
-          }
-        }
-        fset.add(field);
-      }
-
-      // Add pair
-      fset.name() = param;
-      pairs.push_back(std::make_pair(file, fset));
-    }
-    if (param == "index j") {
-      // Create FieldSet3D
-      oops::FieldSet3D fset(validTime_, comm_);
-
-      // Copy field
-      atlas::Field fieldIndexJ0 = gdata_.fieldSet()["index_j"];
-      auto indexJ0View = atlas::array::make_view<int, 1>(fieldIndexJ0);
-      for (const auto & var : activeVars_.variables()) {
-        const size_t nz0 = activeVars_.getLevels(var);
-        atlas::Field field = gdata_.functionSpace().createField<double>(
-          atlas::option::name(var) | atlas::option::levels(nz0));
-        auto view = atlas::array::make_view<double, 2>(field);
-        for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
-          if (ghostView(jnode0) == 0) {
-            for (size_t k0 = 0; k0 < nz0; ++k0) {
-              view(jnode0, k0) = static_cast<double>(indexJ0View(jnode0));
-            }
-          }
-        }
-        fset.add(field);
-      }
-
-      // Add pair
-      fset.name() = param;
-      pairs.push_back(std::make_pair(file, fset));
-    }
     if (param == "normalized horizontal length-scale") {
       // Create FieldSet3D
       oops::FieldSet3D fset(validTime_, comm_);

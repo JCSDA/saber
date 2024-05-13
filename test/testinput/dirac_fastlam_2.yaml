@@ -60,12 +60,6 @@ background error:
       normalization accuracy stride: 3
       data file: testdata/dirac_fastlam_2/_MPI__data
       output model files:
-      - parameter: index i
-        file:
-          filepath: testdata/dirac_fastlam_2/_MPI__index_i
-      - parameter: index j
-        file:
-          filepath: testdata/dirac_fastlam_2/_MPI__index_j
       - parameter: normalized horizontal length-scale
         file:
           filepath: testdata/dirac_fastlam_2/_MPI__normalized_rh

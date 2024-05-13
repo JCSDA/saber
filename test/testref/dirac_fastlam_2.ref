@@ -48,8 +48,6 @@ Fields:
     FastLAM interpolation adjoint test passed
     FastLAM redToRows test passed
     FastLAM rowsToCols test passed
-Norm of output parameter index i: 1.1644890209873171e+04
-Norm of output parameter index j: 8.7234826187710150e+03
 Norm of output parameter normalized horizontal length-scale: 1.6165156190671878e+03
 Norm of output parameter weight - 0: 9.0923150188455594e+01
 Norm of output parameter weight - 1: 1.0144433228743708e+02

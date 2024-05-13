@@ -44,7 +44,6 @@ Geometry::Geometry(const eckit::Configuration & config, const eckit::mpi::Comm &
 
   halo_ = params.halo.value();
   gridType_ = params.grid.value().getString("type", "no_type");
-  regionalGrid_ = (gridType_ == "regional");  // grid.type() does not report if grid is regional
 
   // Setup geometry fields
   fields_ = atlas::FieldSet();
@@ -52,17 +51,13 @@ Geometry::Geometry(const eckit::Configuration & config, const eckit::mpi::Comm &
   // Add owned points mask -- this mask does not depend on the group so was precomputed
   fields_->add(fieldsetOwnedMask.field("owned"));
 
-  if (regionalGrid_) {
-    // 2D indices
-    const atlas::functionspace::StructuredColumns fs(functionSpace_);
-    fields_->add(fs.index_i());
-    fields_->add(fs.index_j());
-
+  if (!grid_.domain().global()) {
     // Area
     atlas::Field area = functionSpace_.createField<double>(
       atlas::option::name("area") | atlas::option::levels(1));
     auto areaView = atlas::array::make_view<double, 2>(area);
-    const atlas::StructuredGrid grid = fs.grid();
+    const atlas::StructuredGrid grid(grid_);
+    const atlas::functionspace::StructuredColumns fs(functionSpace_);
     const auto view_i = atlas::array::make_view<int, 1>(fs.index_i());
     const auto view_j = atlas::array::make_view<int, 1>(fs.index_j());
     for (atlas::idx_t jnode = 0; jnode < area.shape(0); ++jnode) {
@@ -215,8 +210,8 @@ Geometry::Geometry(const eckit::Configuration & config, const eckit::mpi::Comm &
 }
 // -----------------------------------------------------------------------------
 Geometry::Geometry(const Geometry & other) : comm_(other.comm_), halo_(other.halo_),
-  grid_(other.grid_), gridType_(other.gridType_), regionalGrid_(other.regionalGrid_),
-  partitioner_(other.partitioner_), mesh_(other.mesh_), groupIndex_(other.groupIndex_)  {
+  grid_(other.grid_), gridType_(other.gridType_), partitioner_(other.partitioner_),
+  mesh_(other.mesh_), groupIndex_(other.groupIndex_)  {
   // Copy function space
   if (other.functionSpace_.type() == "StructuredColumns") {
     // StructuredColumns
@@ -291,7 +286,7 @@ void Geometry::print(std::ostream & os) const {
   os << prefix <<  "Quench geometry grid:" << std::endl;
   os << prefix << "- name: " << grid_.name() << std::endl;
   os << prefix << "- size: " << grid_.size() << std::endl;
-  if (regionalGrid_) {
+  if (!grid_.domain().global()) {
     os << prefix << "Regional grid detected" << std::endl;
   }
   if (partitioner_) {

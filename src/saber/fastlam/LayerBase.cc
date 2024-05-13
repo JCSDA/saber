@@ -171,8 +171,9 @@ void LayerBase::setupInterpolation() {
   oops::Log::trace() << classname() << "::setupInterpolation starting" << std::endl;
 
   // Model grid indices
-  atlas::Field fieldIndexI0 = gdata_.fieldSet()["index_i"];
-  atlas::Field fieldIndexJ0 = gdata_.fieldSet()["index_j"];
+  const atlas::functionspace::StructuredColumns fs(gdata_.functionSpace());
+  atlas::Field fieldIndexI0 = fs.index_i();
+  atlas::Field fieldIndexJ0 = fs.index_j();
   auto indexIView0 = atlas::array::make_view<int, 1>(fieldIndexI0);
   auto indexJView0 = atlas::array::make_view<int, 1>(fieldIndexJ0);
 
@@ -985,8 +986,9 @@ void LayerBase::setupNormalization() {
     auto modelView = atlas::array::make_view<double, 2>(modelField);
 
     // Model grid indices
-    atlas::Field fieldIndexI0 = gdata_.fieldSet()["index_i"];
-    atlas::Field fieldIndexJ0 = gdata_.fieldSet()["index_j"];
+    const atlas::functionspace::StructuredColumns fs(gdata_.functionSpace());
+    atlas::Field fieldIndexI0 = fs.index_i();
+    atlas::Field fieldIndexJ0 = fs.index_j();
     auto indexIView0 = atlas::array::make_view<int, 1>(fieldIndexI0);
     auto indexJView0 = atlas::array::make_view<int, 1>(fieldIndexJ0);
 

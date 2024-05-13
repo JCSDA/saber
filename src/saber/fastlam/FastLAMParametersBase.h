@@ -38,19 +38,6 @@ class ValueOrProfileParameters : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
-// Alias elemental paramaters
-class AliasParameters : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(AliasParameters, oops::Parameters)
-
- public:
-  // In code
-  oops::RequiredParameter<std::string> inCode{"in code", this};
-  // In model file
-  oops::RequiredParameter<std::string> inModelFile{"in model file", this};
-};
-
-// -----------------------------------------------------------------------------
-
 class GroupParameters : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(GroupParameters, oops::Parameters)
 
@@ -119,9 +106,6 @@ class FastLAMParametersBase : public oops::Parameters {
 
   // Level for 2D variables ('first' or 'last')
   oops::Parameter<std::string> lev2d{"level for 2d variables", "first", this};
-
-  // Aliases for model files
-  oops::Parameter<std::vector<AliasParameters>> alias{"alias", {}, this};
 };
 
 // -----------------------------------------------------------------------------

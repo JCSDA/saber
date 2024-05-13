@@ -148,7 +148,6 @@ class Geometry : public util::Printable,
   size_t halo_;
   atlas::Grid grid_;
   std::string gridType_;
-  bool regionalGrid_;
   atlas::grid::Partitioner partitioner_;
   atlas::Mesh mesh_;
   atlas::FunctionSpace functionSpace_;
