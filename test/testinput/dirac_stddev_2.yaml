@@ -5,14 +5,17 @@ geometry:
     N: 10
   groups:
   - variables:
-    - stream_function
+    - stream_function_alias
     - velocity_potential
     levels: 2
   halo: 1
+  alias:
+  - in code: stream_function_alias
+    in file: stream_function
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
-  - stream_function
+  - stream_function_alias
   - velocity_potential
 background error:
   covariance model: SABER
@@ -32,7 +35,7 @@ dirac: &dirac
   level:
   - 1
   variable:
-  - stream_function
+  - stream_function_alias
 diagnostic points: *dirac
 output dirac:
   mpi pattern: '%MPI%'

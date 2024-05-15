@@ -33,7 +33,11 @@ class State : public util::Printable,
   State(const Geometry &, const oops::Variables &, const util::DateTime &);
   State(const Geometry &, const eckit::Configuration &);
   State(const Geometry &, const State &);
+  State(const oops::Variables &, const State &);
   State(const State &);
+
+/// Assignment
+  State & operator=(const State &);
 
 /// Interactions with Increment
   State & operator+=(const Increment &);
@@ -43,6 +47,7 @@ class State : public util::Printable,
   void write(const eckit::Configuration &) const;
   double norm() const {return fields_->norm();}
   const util::DateTime & validTime() const {return fields_->time();}
+  void updateTime(const util::Duration & dt) {fields_->time() += dt;}
 
 /// Access to fields
   Fields & fields() {return *fields_;}

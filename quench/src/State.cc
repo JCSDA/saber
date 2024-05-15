@@ -62,6 +62,20 @@ State::State(const State & other)
 {
   oops::Log::trace() << "State::State copied." << std::endl;
 }
+// -------------------------------------------------------------------------------------------------
+State::State(const oops::Variables &,
+             const State & other)
+  : fields_(new Fields(*other.fields_))
+{
+  oops::Log::trace() << "State::State copied." << std::endl;
+}
+// -----------------------------------------------------------------------------
+/// Assignment
+// -----------------------------------------------------------------------------
+State & State::operator=(const State & rhs) {
+  fields_.reset(new Fields(*rhs.fields_));
+  return *this;
+}
 // -----------------------------------------------------------------------------
 /// Interactions with Increments
 // -----------------------------------------------------------------------------

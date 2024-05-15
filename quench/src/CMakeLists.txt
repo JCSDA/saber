@@ -14,7 +14,6 @@ Increment.cc
 Increment.h
 LinearVariableChange.h
 LinearVariableChange.cc
-ModelData.cc
 ModelData.h
 State.cc
 State.h
@@ -29,7 +28,7 @@ ecbuild_add_library( TARGET   quench
                      INSTALL_HEADERS LISTED
                      LINKER_LANGUAGE CXX )
 
- target_link_libraries( quench PUBLIC NetCDF::NetCDF_Fortran NetCDF::NetCDF_C )
+target_link_libraries( quench PUBLIC NetCDF::NetCDF_Fortran NetCDF::NetCDF_C )
 
 #Configure include directory layout for build-tree to match install-tree
 set(QUENCH_BUILD_DIR_INCLUDE_PATH ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/include)

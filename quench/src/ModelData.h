@@ -10,10 +10,13 @@
 #include <ostream>
 #include <string>
 
+#include "eckit/config/LocalConfiguration.h"
+
 #include "oops/util/Printable.h"
 
+#include "src/Geometry.h"
+
 namespace quench {
-  class Geometry;
 
 // -------------------------------------------------------------------------------------------------
 
@@ -21,13 +24,14 @@ class ModelData : public util::Printable {
  public:
   static const std::string classname() {return "quench::ModelData";}
 
-  explicit ModelData(const Geometry &);
-  ~ModelData();
+  explicit ModelData(const Geometry & geometry) : modelData_(geometry.modelData()) {}
+  ~ModelData() {}
 
-  const eckit::LocalConfiguration modelData() const;
+  const eckit::LocalConfiguration modelData() const {return modelData_;}
 
  private:
-  void print(std::ostream &) const override;
+  void print(std::ostream & os) const {os << "quench::ModelData::modelData(): " << modelData();}
+  eckit::LocalConfiguration modelData_;
 };
 
 // -------------------------------------------------------------------------------------------------

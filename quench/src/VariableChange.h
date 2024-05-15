@@ -21,14 +21,13 @@ namespace quench {
   class State;
 
 // -----------------------------------------------------------------------------
-/// quench change of variable
 
 class VariableChange : public util::Printable {
  public:
   static const std::string classname() {return "quench::VariableChange";}
 
-  VariableChange(const eckit::Configuration &, const Geometry &)
-    {throw eckit::NotImplemented(Here());}
+  VariableChange(const eckit::Configuration &, const Geometry &) {}
+  ~VariableChange() {}
 
 /// Perform transforms
   void changeVar(State &, const oops::Variables &) const
@@ -39,6 +38,7 @@ class VariableChange : public util::Printable {
  private:
   void print(std::ostream & os) const override {os << "VariableChange";};
 };
+
 // -----------------------------------------------------------------------------
 
 }  // namespace quench

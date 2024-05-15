@@ -86,6 +86,19 @@ class GroupParameters : public oops::Parameters {
 };
 
 // -----------------------------------------------------------------------------
+/// Alias elemental paramaters
+
+class AliasParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(AliasParameters, oops::Parameters)
+
+ public:
+  // In code
+  oops::RequiredParameter<std::string> inCode{"in code", this};
+  // In model file
+  oops::RequiredParameter<std::string> inFile{"in file", this};
+};
+
+// -----------------------------------------------------------------------------
 /// Geometry parameters
 
 class GeometryParameters : public oops::Parameters {
@@ -109,6 +122,16 @@ class GeometryParameters : public oops::Parameters {
 
   /// No point on last task
   oops::Parameter<bool> noPointOnLastTask{"no point on last task", false, this};
+
+  /// Levels top-down
+  oops::Parameter<bool> levelsAreTopDown{"levels are top down", true, this};
+
+  /// Model data
+  oops::Parameter<eckit::LocalConfiguration> modelData{"model data", eckit::LocalConfiguration(),
+    this};
+
+  // Aliases for model files
+  oops::Parameter<std::vector<AliasParameters>> alias{"alias", {}, this};
 };
 
 // -----------------------------------------------------------------------------
@@ -139,7 +162,9 @@ class Geometry : public util::Printable,
   size_t variableSize(const std::string &) const;
   size_t maskLevel(const std::string &, const size_t &) const;
   std::vector<size_t> variableSizes(const oops::Variables & vars) const;
-  bool levelsAreTopDown() const {return true;}
+  bool levelsAreTopDown() const {return levelsAreTopDown_;}
+  const eckit::LocalConfiguration & modelData() const {return modelData_;}
+  const std::vector<eckit::LocalConfiguration> & alias() const {return alias_;}
 
  private:
   void print(std::ostream &) const;
@@ -160,6 +185,9 @@ class Geometry : public util::Printable,
   };
   atlas::FieldSet fields_;
   std::vector<groupData> groups_;
+  bool levelsAreTopDown_;
+  eckit::LocalConfiguration modelData_;
+  std::vector<eckit::LocalConfiguration> alias_;
 };
 // -----------------------------------------------------------------------------
 

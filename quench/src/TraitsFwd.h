@@ -15,9 +15,9 @@ class Covariance;
 class Geometry;
 class Increment;
 class LinearVariableChange;
+class ModelData;
 class State;
 class VariableChange;
-class ModelData;
 
 struct Traits {
   static std::string name() {return "quench";}
@@ -27,9 +27,9 @@ struct Traits {
   typedef quench::Geometry             Geometry;
   typedef quench::Increment            Increment;
   typedef quench::LinearVariableChange LinearVariableChange;
+  typedef quench::ModelData            ModelData;
   typedef quench::State                State;
   typedef quench::VariableChange       VariableChange;
-  typedef quench::ModelData            ModelData;
 };
 
 }  // namespace quench

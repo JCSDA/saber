@@ -23,10 +23,10 @@ class LinearVariableChangeParameters : public oops::LinearVariableChangeParamete
   OOPS_CONCRETE_PARAMETERS(LinearVariableChangeParameters, LinearVariableChangeParametersBase)
  public:
   /// Variables (input/output)
-  oops::RequiredParameter<oops::Variables> variables{"variables", this};
+  oops::OptionalParameter<oops::Variables> variables{"variables", this};
 
   /// ATLAS file
-  oops::RequiredParameter<eckit::LocalConfiguration> atlasFile{"atlas file", this};
+  oops::OptionalParameter<eckit::LocalConfiguration> atlasFile{"atlas file", this};
 };
 
 // -------------------------------------------------------------------------------------------------

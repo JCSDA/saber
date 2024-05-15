@@ -14,6 +14,7 @@ Groups:
   - number: 2
   - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
+Model data: LocalConfiguration[root={epsilon => 6.2195753499999995e-01}]
 Fields:
   virtual_temperature: 1.0000000000000000e+00
   specific_humidity: 1.0000000000000000e+00
@@ -35,6 +36,7 @@ Groups:
   - number: 2
   - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
+Model data: LocalConfiguration[root={epsilon => 6.2195753499999995e-01}]
 Fields:
   virtual_temperature: 1.0000000000000000e+00
   specific_humidity: 1.0000000000000000e+00

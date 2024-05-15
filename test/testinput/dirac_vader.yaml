@@ -9,6 +9,8 @@ geometry:
     - virtual_temperature
     - specific_humidity
     levels: 2
+  model data:
+    epsilon: 0.621957535
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:

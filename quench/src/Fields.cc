@@ -29,7 +29,6 @@
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/Logger.h"
-#include "oops/util/missingValues.h"
 #include "oops/util/Random.h"
 
 #include "src/Geometry.h"
@@ -639,6 +638,9 @@ void Fields::fromFieldSet(const atlas::FieldSet & fset) {
   fset_.clear();
   fset_ = util::shareFields(fset);
 
+  // Reset variables
+  vars_ = oops::Variables(fset_.field_names());
+
   if (geom_->gridType() == "regular_lonlat") {
     // Reset poles points
     for (auto field_internal : fset_) {
@@ -693,23 +695,53 @@ void Fields::read(const eckit::Configuration & config) {
     variableSizes.push_back(geom_->levels(var));
   }
 
-  // Copy configuration
-  eckit::LocalConfiguration conf(config);
+  // Update variables names
+  std::vector<std::string> variableNames;
+  for (const auto & var : vars_.variables()) {
+    std::string newVar = var;
+    for (const auto & item : geom_->alias()) {
+      if (item.getString("in code") == var) {
+        newVar = item.getString("in file");
+      }
+    }
+    variableNames.push_back(newVar);
+  }
 
   // Read fieldset
   util::readFieldSet(geom_->getComm(),
                      geom_->functionSpace(),
                      variableSizes,
-                     vars_.variables(),
-                     conf,
+                     variableNames,
+                     config,
                      fset_);
+
+  // Rename fields
+  for (auto & field : fset_) {
+    for (const auto & item : geom_->alias()) {
+      if (item.getString("in file") == field.name()) {
+        field.rename(item.getString("in code"));
+      }
+    }
+  }
 
   fset_.set_dirty();
 }
 // -----------------------------------------------------------------------------
 void Fields::write(const eckit::Configuration & config) const {
+  // Copy fieldset
+  atlas::FieldSet fset = util::copyFieldSet(fset_);
+
+  // Rename fields
+  for (auto & field : fset) {
+    for (const auto & item : geom_->alias()) {
+      if (item.getString("in code") == field.name()) {
+        field.rename(item.getString("in file"));
+      }
+    }
+  }
+
   // Write fieldset
-  util::writeFieldSet(geom_->getComm(), config, fset_);
+  util::writeFieldSet(geom_->getComm(), config, fset);
 
   if (geom_->mesh().generated() && config.getBool("write gmsh", false)) {
     // GMSH file path
@@ -725,7 +757,7 @@ void Fields::write(const eckit::Configuration & config) const {
 
      // Write GMSH
     gmsh.write(geom_->mesh());
-    gmsh.write(fset_, fset_[0].functionspace());
+    gmsh.write(fset, fset[0].functionspace());
   }
 }
 // -----------------------------------------------------------------------------

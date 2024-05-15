@@ -205,13 +205,54 @@ Geometry::Geometry(const eckit::Configuration & config, const eckit::mpi::Comm &
     groupIndex++;
   }
 
+  // Levels direction
+  levelsAreTopDown_ = params.levelsAreTopDown.value();
+
+  // Model data
+  modelData_ = params.modelData.value();
+
+  // Alias
+  for (const auto & item : params.alias.value()) {
+    eckit::LocalConfiguration confItem;
+    item.serialize(confItem);
+    alias_.push_back(confItem);
+  }
+
+  // Check alias consistency
+  std::vector<std::string> vars;
+  for (const auto & groupParams : params.groups.value()) {
+    const std::vector grpVars = groupParams.variables.value();
+    vars.insert(vars.end(), grpVars.begin(), grpVars.end());
+  }
+  for (const auto & item : alias_) {
+    const std::string codeVar = item.getString("in code");
+    if (std::find(vars.begin(), vars.end(), codeVar) == vars.end()) {
+      // Code variable not available in the list of variables anymore
+      ABORT("alias error: duplicated code variable");
+    } else {
+      // Remove code variable from the list of available variables
+      vars.erase(std::remove(vars.begin(), vars.end(), codeVar), vars.end());
+    }
+  }
+  for (const auto & item : alias_) {
+    const std::string fileVar = item.getString("in file");
+    if (std::find(vars.begin(), vars.end(), fileVar) == vars.end()) {
+      // Add file variable to the list of variables
+      vars.push_back(fileVar);
+    } else {
+      // File variable is already present in the list of variables
+      ABORT("alias error: duplicated file variable");
+    }
+  }
+
   // Print summary
   this->print(oops::Log::info());
 }
 // -----------------------------------------------------------------------------
 Geometry::Geometry(const Geometry & other) : comm_(other.comm_), halo_(other.halo_),
   grid_(other.grid_), gridType_(other.gridType_), partitioner_(other.partitioner_),
-  mesh_(other.mesh_), groupIndex_(other.groupIndex_)  {
+  mesh_(other.mesh_), groupIndex_(other.groupIndex_), levelsAreTopDown_(other.levelsAreTopDown_),
+  modelData_(other.modelData_), alias_(other.alias_) {
   // Copy function space
   if (other.functionSpace_.type() == "StructuredColumns") {
     // StructuredColumns
@@ -304,6 +345,9 @@ void Geometry::print(std::ostream & os) const {
     os << prefix << "  - vert_coord: " << groups_[groupIndex].vert_coord_ << std::endl;
     os << prefix << "  Mask size: " << static_cast<int>(groups_[groupIndex].gmaskSize_*100.0)
        << "%" << std::endl;
+  }
+  if (!modelData_.empty()) {
+    os << prefix << "Model data: " << modelData_ << std::endl;
   }
 }
 // -----------------------------------------------------------------------------
