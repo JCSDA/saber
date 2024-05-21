@@ -20,16 +20,22 @@ background error:
     saber block name: ID
   saber outer blocks:
   - saber block name: interpolation
-    skip inverse test: true # TODO: remove this when ATLAS interpolator is fixed
+    inner inverse tolerance: 0.08
+    outer inverse tolerance: 0.08
     inner geometry:
       function space: StructuredColumns
       grid:
         name: F15
       halo: 1
-    local interpolator:
+    forward interpolator:
       local interpolator type: atlas interpolator
       interpolation method:
         type: structured-linear2D
+        adjoint: true
+    inverse interpolator:
+      local interpolator type: atlas interpolator
+      interpolation method:
+        type: cubedsphere-bilinear
         adjoint: true
     active variables:
     - stream_function

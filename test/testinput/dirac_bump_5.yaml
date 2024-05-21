@@ -3,7 +3,7 @@ geometry:
   grid:
     type: regular_lonlat
     N: 10
-# TODO(Benjamin): switch to 12 when interpolator inverse is fixed
+# TODO(Nate): switch to 12 when interpolator inverse is fixed
 #    N: 12
   groups:
   - variables:
@@ -24,7 +24,7 @@ background error:
       template:
         date: '2010-01-01T12:00:00Z'
         filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_%mem%
-# TODO(Benjamin): switch to 12 when interpolator inverse is fixed
+# TODO(Nate): switch to 12 when interpolator inverse is fixed
 #        filepath: testdata/randomization_bump_nicas_L12L2/_MPI_-_OMP__member_%mem%
         state variables:
         - stream_function
@@ -54,7 +54,7 @@ background error:
         read:
           model file:
             filepath: testdata/error_covariance_training_bump_stddev_3/_MPI_-_OMP__stddev
-# TODO(Benjamin): uncomment interpolation and remove stddev when interpolator inverse is fixed
+# TODO(Nate): uncomment interpolation and remove stddev when interpolator inverse is fixed
 #      - saber block name: interpolation
 #        inner geometry:
 #          function space: StructuredColumns

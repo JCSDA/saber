@@ -37,7 +37,7 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
                                               true, outerGeometryData.comm()));
 
   interp_.reset(new oops::GlobalInterpolator(
-          params.localInterpConf.value(), *innerGeomData_,
+          params.forwardInterpConf.value(), *innerGeomData_,
           outerGeometryData.functionSpace(), outerGeometryData.comm()));
 
   oops::Log::trace() << classname() << "::Interpolation done" << std::endl;
@@ -126,7 +126,7 @@ void Interpolation::multiplyAD(oops::FieldSet3D & fieldSet) const {
 void Interpolation::leftInverseMultiply(oops::FieldSet3D & fieldSet) const {
   if (!inverseInterp_) {
     inverseInterp_.reset(new oops::GlobalInterpolator(
-          params_.localInterpConf.value(), outerGeomData_,
+          params_.inverseInterpConf.value(), outerGeomData_,
           innerGeomData_->functionSpace(), innerGeomData_->comm()));
   }
 

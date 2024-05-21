@@ -26,7 +26,12 @@ background error:
         name: CS-LFR-12
       partitioner: cubedsphere
       halo: 1
-    local interpolator:
+    forward interpolator:
+      local interpolator type: atlas interpolator
+      interpolation method:
+        type: cubedsphere-bilinear
+        adjoint: true
+    inverse interpolator:
       local interpolator type: atlas interpolator
       interpolation method:
         type: cubedsphere-bilinear

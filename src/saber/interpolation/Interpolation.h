@@ -34,7 +34,9 @@ class InterpolationParameters : public SaberBlockParametersBase {
 
  public:
   oops::RequiredParameter<eckit::LocalConfiguration> innerGeom{"inner geometry", this};
-  oops::Parameter<eckit::LocalConfiguration> localInterpConf{"local interpolator",
+  oops::Parameter<eckit::LocalConfiguration> forwardInterpConf{"forward interpolator",
+    eckit::LocalConfiguration(), this};
+  oops::Parameter<eckit::LocalConfiguration> inverseInterpConf{"inverse interpolator",
     eckit::LocalConfiguration(), this};
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };

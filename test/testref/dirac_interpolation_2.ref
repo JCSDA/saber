@@ -17,7 +17,8 @@ Groups:
 Fields:
   stream_function: 1.0000000000000000e+00
 Adjoint test for block interpolation passed
-skipping inverse test for block interpolation
+Inner inverse test for block interpolation passed: U Uinv (U x) == (U x)
+Outer inverse test for block interpolation passed: Uinv U (Uinv x) == (Uinv x)
 Adjoint test for block ID passed
 Covariance(SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z
@@ -36,4 +37,4 @@ Groups:
   - vert_coord: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 6.0558992597602279e-01
+  stream_function: 6.0558992597602312e-01
