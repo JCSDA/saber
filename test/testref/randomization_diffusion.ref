@@ -7,7 +7,7 @@ Partitioner:
 - type: cubedsphere
 Function space:
 - type: NodeColumns
-- halo: 1
+- halo: 0
 Groups: 
 - Group 0:
   Vertical levels: 
@@ -25,7 +25,7 @@ Partitioner:
 - type: cubedsphere
 Function space:
 - type: NodeColumns
-- halo: 1
+- halo: 0
 Groups: 
 - Group 0:
   Vertical levels: 
@@ -43,7 +43,7 @@ Partitioner:
 - type: cubedsphere
 Function space:
 - type: NodeColumns
-- halo: 1
+- halo: 0
 Groups: 
 - Group 0:
   Vertical levels: 
@@ -61,7 +61,7 @@ Partitioner:
 - type: cubedsphere
 Function space:
 - type: NodeColumns
-- halo: 1
+- halo: 0
 Groups: 
 - Group 0:
   Vertical levels: 
@@ -79,7 +79,7 @@ Partitioner:
 - type: cubedsphere
 Function space:
 - type: NodeColumns
-- halo: 1
+- halo: 0
 Groups: 
 - Group 0:
   Vertical levels: 
@@ -97,7 +97,7 @@ Partitioner:
 - type: cubedsphere
 Function space:
 - type: NodeColumns
-- halo: 1
+- halo: 0
 Groups: 
 - Group 0:
   Vertical levels: 
@@ -115,7 +115,7 @@ Partitioner:
 - type: cubedsphere
 Function space:
 - type: NodeColumns
-- halo: 1
+- halo: 0
 Groups: 
 - Group 0:
   Vertical levels: 
@@ -133,7 +133,7 @@ Partitioner:
 - type: cubedsphere
 Function space:
 - type: NodeColumns
-- halo: 1
+- halo: 0
 Groups: 
 - Group 0:
   Vertical levels: 
@@ -151,7 +151,7 @@ Partitioner:
 - type: cubedsphere
 Function space:
 - type: NodeColumns
-- halo: 1
+- halo: 0
 Groups: 
 - Group 0:
   Vertical levels: 
@@ -169,7 +169,7 @@ Partitioner:
 - type: cubedsphere
 Function space:
 - type: NodeColumns
-- halo: 1
+- halo: 0
 Groups: 
 - Group 0:
   Vertical levels: 

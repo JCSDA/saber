@@ -9,7 +9,8 @@ geometry:
     - stream_function
     - velocity_potential
     levels: &levels 10
-  halo: 1
+  # TODO: why does Diffusion only work when cubed-sphere halo is 0?
+  halo: 0
 
 background:
   states:
