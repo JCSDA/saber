@@ -1,0 +1,35 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_gaussian
+    N: 10
+  groups:
+  - variables: &vars
+    - stream_function
+    levels: &levels 10
+  halo: 1
+
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables: *vars
+
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: diffusion
+    calibration:
+      normalization:
+        iterations: 1000
+      groups:
+      - horizontal:
+          fixed value: 3000.0e3
+        write:
+          filepath: testdata/error_covariance_training_diffusion_2/hz-_MPI_-_OMP_
+      - vertical:
+          levels: *levels
+          fixed value: 1.0
+          as gaussian: true
+        write:
+          filepath: testdata/error_covariance_training_diffusion_2/vt-_MPI_-_OMP_
+test:
+  reference filename: testref/error_covariance_training_diffusion_2.ref

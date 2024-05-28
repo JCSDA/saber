@@ -70,6 +70,7 @@ Diffusion::Diffusion(
     const oops::FieldSet3D & fg)
   : saber::SaberCentralBlockBase(params, xb.validTime()),
     geom_(geometryData),
+    diffusionGeom_(oops::Diffusion::calculateDerivedGeom(geometryData)),
     params_(params),
     vars_(params.activeVars.value().get_value_or(centralVars))
 { }
@@ -255,7 +256,7 @@ void Diffusion::read() {
     oops::Log::info() << "\ngroup " << groupCount++ << " of " << groups.size() <<std::endl;
 
     Group & group = groups_.emplace_back();
-    group.diffusion.reset(new oops::Diffusion(geom_));  // TODO(Travis) create copy constructor
+    group.diffusion.reset(new oops::Diffusion(geom_, diffusionGeom_));
 
     // sanity check on input config
     if (groupConf.vertical.value() == boost::none && groupConf.horizontal.value() == boost::none) {
@@ -421,9 +422,7 @@ void Diffusion::directCalibration(const oops::FieldSets &) {
     // read in or generate the scales
     // ------------------------------------------------------------------------------------
     atlas::FieldSet scales;
-    group.diffusion.reset(new oops::Diffusion(geom_));  // TODO(Travis) create a Diffusion copy
-                                                  // constructor so we don't have to rebuild the
-                                                  // geometry each time
+    group.diffusion.reset(new oops::Diffusion(geom_, diffusionGeom_));
     // sanity check on input config
     if (groupConf.vertical.value() == boost::none &&
         groupConf.horizontal.value() == boost::none) {

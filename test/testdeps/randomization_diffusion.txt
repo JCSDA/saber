@@ -1,1 +1,0 @@
-error_covariance_training_diffusion

@@ -51,6 +51,7 @@ class Diffusion : public saber::SaberCentralBlockBase {
   void print(std::ostream &) const override {}
 
   const oops::GeometryData & geom_;
+  const std::shared_ptr<oops::Diffusion::DerivedGeom> diffusionGeom_;
   Parameters_ params_;
   oops::Variables vars_;
   std::queue<atlas::Field> calibrateReadFields_;

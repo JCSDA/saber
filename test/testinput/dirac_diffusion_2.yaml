@@ -1,16 +1,14 @@
 geometry:
-  # NOTE: diffusion does not work with StructuredColumns for now!
-  function space: NodeColumns
+  function space: StructuredColumns
   grid:
-    name: CS-LFR-12
-  partitioner: cubedsphere
+    type: regular_gaussian
+    N: 10
   groups:
   - variables: &vars
     - stream_function
     - velocity_potential
     levels: &levels 10
-  # TODO: why does Diffusion only work when cubed-sphere halo is 0?
-  halo: 0
+  halo: 1
 
 background:
   states:
@@ -26,20 +24,24 @@ background error:
       groups:
       - variables: *vars
         horizontal:
-          filepath: testdata/error_covariance_training_diffusion/hz-_MPI_-_OMP_
+          filepath: testdata/error_covariance_training_diffusion_2/hz-_MPI_-_OMP_
         vertical:
           levels: *levels
-          filepath: testdata/error_covariance_training_diffusion/vt-_MPI_-_OMP_
+          filepath: testdata/error_covariance_training_diffusion_2/vt-_MPI_-_OMP_
 dirac:
   lon:
   - 0.01
+  - 180.01
   lat:
   - 0.01
+  - 88.01
   level:
   - 1
-  variable: [stream_function]
+  - 1
+  variable: [stream_function, velocity_potential]
 output dirac:
   mpi pattern: '%MPI%'
-  filepath: testdata/dirac_diffusion/%MPI%_dirac_%id%
+  filepath: testdata/dirac_diffusion_2/%MPI%_dirac_%id%
+
 test:
-  reference filename: testref/dirac_diffusion.ref
+  reference filename: testref/dirac_diffusion_2.ref

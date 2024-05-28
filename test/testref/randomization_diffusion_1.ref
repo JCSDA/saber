@@ -1,0 +1,180 @@
+Member 0:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: CS-LFR-12
+- size: 864
+Partitioner:
+- type: cubedsphere
+Function space:
+- type: NodeColumns
+- halo: 0
+Groups:
+- Group 0:
+  Vertical levels:
+  - number: 10
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+  Mask size: 100%
+Fields:
+  stream_function: 7.2467476415951717e+00
+Member 1:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: CS-LFR-12
+- size: 864
+Partitioner:
+- type: cubedsphere
+Function space:
+- type: NodeColumns
+- halo: 0
+Groups:
+- Group 0:
+  Vertical levels:
+  - number: 10
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+  Mask size: 100%
+Fields:
+  stream_function: 6.7740508701264055e+00
+Member 2:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: CS-LFR-12
+- size: 864
+Partitioner:
+- type: cubedsphere
+Function space:
+- type: NodeColumns
+- halo: 0
+Groups:
+- Group 0:
+  Vertical levels:
+  - number: 10
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+  Mask size: 100%
+Fields:
+  stream_function: 6.6023568804527368e+00
+Member 3:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: CS-LFR-12
+- size: 864
+Partitioner:
+- type: cubedsphere
+Function space:
+- type: NodeColumns
+- halo: 0
+Groups:
+- Group 0:
+  Vertical levels:
+  - number: 10
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+  Mask size: 100%
+Fields:
+  stream_function: 6.5527234641019074e+00
+Member 4:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: CS-LFR-12
+- size: 864
+Partitioner:
+- type: cubedsphere
+Function space:
+- type: NodeColumns
+- halo: 0
+Groups:
+- Group 0:
+  Vertical levels:
+  - number: 10
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+  Mask size: 100%
+Fields:
+  stream_function: 7.0930050091783992e+00
+Member 5:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: CS-LFR-12
+- size: 864
+Partitioner:
+- type: cubedsphere
+Function space:
+- type: NodeColumns
+- halo: 0
+Groups:
+- Group 0:
+  Vertical levels:
+  - number: 10
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+  Mask size: 100%
+Fields:
+  stream_function: 6.7473872944232740e+00
+Member 6:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: CS-LFR-12
+- size: 864
+Partitioner:
+- type: cubedsphere
+Function space:
+- type: NodeColumns
+- halo: 0
+Groups:
+- Group 0:
+  Vertical levels:
+  - number: 10
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+  Mask size: 100%
+Fields:
+  stream_function: 6.7225034316482857e+00
+Member 7:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: CS-LFR-12
+- size: 864
+Partitioner:
+- type: cubedsphere
+Function space:
+- type: NodeColumns
+- halo: 0
+Groups:
+- Group 0:
+  Vertical levels:
+  - number: 10
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+  Mask size: 100%
+Fields:
+  stream_function: 6.3667971015633489e+00
+Member 8:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: CS-LFR-12
+- size: 864
+Partitioner:
+- type: cubedsphere
+Function space:
+- type: NodeColumns
+- halo: 0
+Groups:
+- Group 0:
+  Vertical levels:
+  - number: 10
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+  Mask size: 100%
+Fields:
+  stream_function: 7.6442341543325627e+00
+Member 9:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: CS-LFR-12
+- size: 864
+Partitioner:
+- type: cubedsphere
+Function space:
+- type: NodeColumns
+- halo: 0
+Groups:
+- Group 0:
+  Vertical levels:
+  - number: 10
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+  Mask size: 100%
+Fields:
+  stream_function: 6.3333498528071672e+00

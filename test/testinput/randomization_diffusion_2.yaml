@@ -1,0 +1,33 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    name: S10
+  groups:
+  - variables: &vars
+    - stream_function
+    levels: &levels 10
+  halo: 1
+
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables: *vars
+
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: diffusion
+    read:
+      groups:
+      - variables: *vars
+        horizontal:
+          filepath: testdata/error_covariance_training_diffusion_2/hz-_MPI_-_OMP_
+        vertical:
+          levels: *levels
+          filepath: testdata/error_covariance_training_diffusion_2/vt-_MPI_-_OMP_
+  randomization size: 10
+
+output perturbations:
+  filepath: testdata/randomization_diffusion_2/_MPI_-_OMP__member_pert
+
+test:
+  reference filename: testref/randomization_diffusion_2.ref

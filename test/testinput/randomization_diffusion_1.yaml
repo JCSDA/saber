@@ -1,5 +1,4 @@
 geometry:
-  # NOTE: diffusion does not work with StructuredColumns for now!
   function space: NodeColumns
   grid:
     name: CS-LFR-12
@@ -23,15 +22,14 @@ background error:
       groups:
       - variables: *vars
         horizontal:
-          filepath: testdata/error_covariance_training_diffusion/hz-_MPI_-_OMP_
+          filepath: testdata/error_covariance_training_diffusion_1/hz-_MPI_-_OMP_
         vertical:
           levels: *levels
-          filepath: testdata/error_covariance_training_diffusion/vt-_MPI_-_OMP_
+          filepath: testdata/error_covariance_training_diffusion_1/vt-_MPI_-_OMP_
   randomization size: 10
 
 output perturbations:
-  filepath: testdata/randomization_diffusion/_MPI_-_OMP__member_pert
+  filepath: testdata/randomization_diffusion_1/_MPI_-_OMP__member_pert
 
 test:
-  reference filename: testref/randomization_diffusion.ref
-
+  reference filename: testref/randomization_diffusion_1.ref
