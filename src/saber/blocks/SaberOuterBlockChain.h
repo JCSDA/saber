@@ -37,16 +37,16 @@ class SaberOuterBlockChain {
   template<typename MODEL>
   SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
                        const oops::Variables & outerVars,
-                       const oops::FieldSet4D & fset4dXb,
-                       const oops::FieldSet4D & fset4dFg,
+                       oops::FieldSet4D & fset4dXb,
+                       oops::FieldSet4D & fset4dFg,
                        oops::FieldSets & fsetEns,
                        const eckit::LocalConfiguration & covarConf,
                        const std::vector<saber::SaberOuterBlockParametersWrapper> & params);
   /// @brief Simpler, limited constructor using only generic GeometryData
   SaberOuterBlockChain(const oops::GeometryData & outerGeometryData,
                        const oops::Variables & outerVars,
-                       const oops::FieldSet4D & fset4dXb,
-                       const oops::FieldSet4D & fset4dFg,
+                       oops::FieldSet4D & fset4dXb,
+                       oops::FieldSet4D & fset4dFg,
                        const eckit::LocalConfiguration & covarConf,
                        const std::vector<saber::SaberOuterBlockParametersWrapper> & params);
 
@@ -159,8 +159,8 @@ class SaberOuterBlockChain {
           const SaberBlockParametersBase & saberOuterBlockParams,
           const oops::GeometryData & outerGeometryData,
           const oops::GeometryData & innerGeometryData,
-          const oops::FieldSet4D & fset4dXb,
-          const oops::FieldSet4D & fset4dFg) const;
+          oops::FieldSet4D & fset4dXb,
+          oops::FieldSet4D & fset4dFg) const;
 
   /// @brief Inverse and adjoint test for last outer block. Used in constructors.
   void testLastOuterBlock(const eckit::LocalConfiguration & covarConf,
@@ -182,8 +182,8 @@ class SaberOuterBlockChain {
 template<typename MODEL>
 SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
                        const oops::Variables & outerVars,
-                       const oops::FieldSet4D & fset4dXb,
-                       const oops::FieldSet4D & fset4dFg,
+                       oops::FieldSet4D & fset4dXb,
+                       oops::FieldSet4D & fset4dFg,
                        oops::FieldSets & fsetEns,
                        const eckit::LocalConfiguration & covarConf,
                        const std::vector<saber::SaberOuterBlockParametersWrapper> & params) {

@@ -19,8 +19,8 @@ namespace saber {
 SaberParametricBlockChain::SaberParametricBlockChain(
                           const oops::GeometryData & outerGeometryData,
                           const oops::Variables & outerVars,
-                          const oops::FieldSet4D & fset4dXb,
-                          const oops::FieldSet4D & fset4dFg,
+                          oops::FieldSet4D & fset4dXb,
+                          oops::FieldSet4D & fset4dFg,
                           const eckit::LocalConfiguration & covarConf,
                           const eckit::Configuration & conf)
   : outerFunctionSpace_(outerGeometryData.functionSpace()),

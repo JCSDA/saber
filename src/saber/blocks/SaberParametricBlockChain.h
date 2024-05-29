@@ -39,8 +39,8 @@ class SaberParametricBlockChain : public SaberBlockChainBase {
   SaberParametricBlockChain(const oops::Geometry<MODEL> & geom,
                             const oops::Geometry<MODEL> & dualResGeom,
                             const oops::Variables & outerVars,
-                            const oops::FieldSet4D & fset4dXb,
-                            const oops::FieldSet4D & fset4dFg,
+                            oops::FieldSet4D & fset4dXb,
+                            oops::FieldSet4D & fset4dFg,
                             oops::FieldSets & fsetEns,
                             oops::FieldSets & fsetDualResEns,
                             const eckit::LocalConfiguration & covarConf,
@@ -48,8 +48,8 @@ class SaberParametricBlockChain : public SaberBlockChainBase {
   /// @brief Simpler, limited constructor using only generic GeometryData
   SaberParametricBlockChain(const oops::GeometryData & outerGeometryData,
                             const oops::Variables & outerVars,
-                            const oops::FieldSet4D & fset4dXb,
-                            const oops::FieldSet4D & fset4dFg,
+                            oops::FieldSet4D & fset4dXb,
+                            oops::FieldSet4D & fset4dFg,
                             const eckit::LocalConfiguration & covarConf,
                             const eckit::Configuration & conf);
   ~SaberParametricBlockChain() = default;
@@ -109,8 +109,8 @@ template<typename MODEL>
 SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL> & geom,
                        const oops::Geometry<MODEL> & dualResGeom,
                        const oops::Variables & outerVars,
-                       const oops::FieldSet4D & fset4dXb,
-                       const oops::FieldSet4D & fset4dFg,
+                       oops::FieldSet4D & fset4dXb,
+                       oops::FieldSet4D & fset4dFg,
                        // TODO(AS): read inside the block so there is no need to pass
                        // as non-const
                        oops::FieldSets & fsetEns,
