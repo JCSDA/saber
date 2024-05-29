@@ -32,6 +32,8 @@ class SpectralCovarianceParameters : public SaberBlockParametersBase {
   oops::OptionalParameter<spectralbCalibrationVertCovParameters>
     calibrationParams{"calibration", this};
   oops::OptionalParameter<spectralbReadParameters> readParams{"read", this};
+  oops::Parameter<bool> skipVerticalConv{"skip vertical convolution",
+    "Flag to skip vertical convolutions", false, this};
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
 

@@ -1,0 +1,54 @@
+geometry:
+  function space: NodeColumns
+  grid:
+    name: CS-LFR-12
+  partitioner: cubedsphere
+  groups:
+  - variables:
+    - unbalanced_pressure_levels_minus_one
+    levels: 70
+  halo: 1
+
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables:
+  - unbalanced_pressure_levels_minus_one
+
+increment variables:
+- unbalanced_pressure_levels_minus_one
+
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: spectral correlation
+    active variables:
+    - unbalanced_pressure_levels_minus_one
+    read:
+      covariance_file: testdata/spectralcov.nc
+      umatrix_netcdf_names:
+      - aP_inc_Uv_matrix
+  saber outer blocks:
+  - saber block name: spectral to gauss
+  - saber block name: gauss to cubed-sphere-dual
+    gauss grid uid: F12
+
+dirac: &dirac
+  # At this location, Dirac should be 1 without cubed-sphere <-> Gauss grid interpolations.
+  # In practice, Dirac amplitude falls to 0.73 due to interpolation errors.
+  lon:
+  - 1
+  lat:
+  - 1.0
+  level:
+  - 1
+  variable:
+  - unbalanced_pressure_levels_minus_one
+
+diagnostic points: *dirac
+
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_spectralb_variance_loss/%MPI%_dirac_%id%
+
+test:
+  reference filename: testref/dirac_spectralb_variance_loss.ref

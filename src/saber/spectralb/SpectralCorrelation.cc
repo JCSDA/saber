@@ -70,7 +70,8 @@ void SpectralCorrelation::randomize(oops::FieldSet3D & fieldSet) const {
 void SpectralCorrelation::multiply(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
 
-  specutils::spectralVerticalConvolution(activeVars_,
+  specutils::spectralVerticalConvolution(params_.skipVerticalConv.value(),
+                                         activeVars_,
                                          specFunctionSpace_,
                                          spectralVerticalCorrelations_,
                                          fieldSet.fieldSet());

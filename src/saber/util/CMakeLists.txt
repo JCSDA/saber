@@ -4,6 +4,8 @@
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
 list(APPEND util_src_files_list
+FieldSetHelpers.cc
+FieldSetHelpers.h
 mo_cvtcoord_mod.F90
 mo_netcdf_mod.F90
 )
