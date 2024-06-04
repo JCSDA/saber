@@ -1447,7 +1447,7 @@ character(len=1024) :: message
 ! Check status
 if (info/=nf90_noerr) then
    write(output_unit,'(a,i6.6,a)') '!!! NetCDF error in '//trim(subr)//' on task #',mpl%myproc,': '//trim(nf90_strerror(info))
-   call flush(output_unit)
+   flush(output_unit)
    if (present(hint)) then
       if (present(hint_id)) then
          write(message,'(a,i6)') trim(hint)//' ID ',hint_id
@@ -1455,7 +1455,7 @@ if (info/=nf90_noerr) then
          message = trim(hint)
       end if
       write(output_unit,'(a)') '!!! Hint: '//trim(message)
-      call flush(output_unit)
+      flush(output_unit)
    end if
 
    ! Initialization
@@ -1489,7 +1489,7 @@ if (info/=nf90_noerr) then
 
       ! Print traceback
       write(output_unit,'('//trim(cindent)//',a,a)') '','|-> ',trim(registry%name(rid))
-      call flush(output_unit)
+      flush(output_unit)
 
       ! Get parent_id
       parent_id = registry%id(i,1)

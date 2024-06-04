@@ -104,7 +104,7 @@ end do
 ! Abort if pointer is not found
 if (.not.associated(ptr)) then
    write(output_unit,'(a)') '!!! ABORT in tools_linkedlist_implementation_get: pointer not found'
-   call flush(output_unit)
+   flush(output_unit)
    call self%f_comm%abort(1)
 end if
 

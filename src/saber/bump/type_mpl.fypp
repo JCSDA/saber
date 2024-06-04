@@ -361,7 +361,7 @@ character(len=*),intent(in) :: message !< Message
 
 ! Write standard output message
 write(output_unit,'(a,i6.6,a)') '!!! ABORT in '//trim(subr)//' on task #',mpl%myproc,': '//trim(message)
-call flush(output_unit)
+flush(output_unit)
 
 ! Print traceback
 @:probe_traceback(output_unit)

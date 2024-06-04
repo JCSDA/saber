@@ -246,7 +246,7 @@ logical :: test
 ! Check array size
 if (size(array)==0) then
    write(output_unit,'(a)') 'Error: empty array in ${subr}$'
-   call flush(output_unit)
+   flush(output_unit)
    error stop 6
 end if
 
@@ -286,7 +286,7 @@ logical :: test
 ! Check array size
 if (size(array)==0) then
    write(output_unit,'(a)') 'Error: empty array in ${subr}$'
-   call flush(output_unit)
+   flush(output_unit)
    error stop 7
 end if
 
@@ -326,7 +326,7 @@ logical :: test
 ! Check array size
 if (size(array)==0) then
    write(output_unit,'(a)') 'Error: empty array in ${subr}$'
-   call flush(output_unit)
+   flush(output_unit)
    error stop 8
 end if
 
@@ -366,7 +366,7 @@ logical :: test
 ! Check array size
 if (size(array)==0) then
    write(output_unit,'(a)') 'Error: empty array in ${subr}$'
-   call flush(output_unit)
+   flush(output_unit)
    error stop 7
 end if
 

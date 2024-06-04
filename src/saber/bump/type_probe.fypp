@@ -126,7 +126,7 @@ case ('soca')
    iinst = 5
 case default
    write(output_unit,'(a)') 'Error: wrong instance name in probe%get_instance ('//trim(cinst)//')'
-   call flush(output_unit)
+   flush(output_unit)
    error stop 1
 end select
 
@@ -176,7 +176,7 @@ if (omp_get_thread_num()==0) then
    ! Check instance
    if ((iinst<=0).or.(iinst>ninst)) then
       write(output_unit,'(a,i5,a)') 'Error: wrong instance in probe%in (',iinst,') called by '//trim(subr)
-      call flush(output_unit)
+      flush(output_unit)
       error stop 2
    end if
 
@@ -186,7 +186,7 @@ if (omp_get_thread_num()==0) then
    ! Check level
    if (probe%instance(iinst)%level>maxlevel) then
       write(output_unit,'(a,i4,a,i4)') 'Error: calling level is too high: ',probe%instance(iinst)%level,' > ',maxlevel
-      call flush(output_unit)
+      flush(output_unit)
       call probe%traceback(output_unit)
       error stop 3
    end if
@@ -250,7 +250,7 @@ if (omp_get_thread_num()==0) then
    ! Check instance
    if ((iinst<=0).or.(iinst>ninst)) then
       write(output_unit,'(a,i5,a)') 'Error: wrong instance in probe%out (',iinst,')'
-      call flush(output_unit)
+      flush(output_unit)
       error stop 4
    end if
 
@@ -325,7 +325,7 @@ if (omp_get_thread_num()==0) then
    ! Check instance
    if ((iinst<=0).or.(iinst>ninst)) then
       write(output_unit,'(a,i5,a)') 'Error: wrong instance probe%traceback (',iinst,')'
-      call flush(output_unit)
+      flush(output_unit)
       error stop 5
    end if
 
@@ -347,7 +347,7 @@ if (omp_get_thread_num()==0) then
    end do
 
    ! Flush
-   call flush(lunit)
+   flush(lunit)
 #ifdef _OPENMP
 end if
 #endif
