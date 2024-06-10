@@ -109,6 +109,7 @@ void Interpolation::multiplyAD(oops::FieldSet3D & fset) const {
 void Interpolation::leftInverseMultiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
   util::Timer timer(classname(), "leftInverseMultiply");
+  fset.fieldSet().haloExchange();
   inverseInterpolator_->apply(fset.fieldSet());
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }
