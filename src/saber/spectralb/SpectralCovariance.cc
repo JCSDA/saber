@@ -69,11 +69,17 @@ void SpectralCovariance::randomize(oops::FieldSet3D & fieldSet) const {
 void SpectralCovariance::multiply(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
 
-  specutils::spectralVerticalConvolution(params_.skipVerticalConv.value(),
-                                         activeVars_,
-                                         specFunctionSpace_,
-                                         spectralVerticalCovariances_,
-                                         fieldSet.fieldSet());
+  if (params_.skipVerticalConv.value()) {
+    specutils::spectralHorizontalFilter(activeVars_,
+                                        specFunctionSpace_,
+                                        spectralVerticalCovariances_,
+                                        fieldSet.fieldSet());
+  } else {
+    specutils::spectralVerticalConvolution(activeVars_,
+                                           specFunctionSpace_,
+                                           spectralVerticalCovariances_,
+                                           fieldSet.fieldSet());
+  }
 
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }

@@ -531,8 +531,7 @@ void readSpectralCovarianceFromFile(const std::string & var,
 }
 
 
-void spectralVerticalConvolution(const bool skipVerticalConv,
-                                 const oops::Variables & activeVars,
+void spectralVerticalConvolution(const oops::Variables & activeVars,
                                  const atlas::functionspace::Spectral & specFunctionSpace,
                                  const atlas::FieldSet & spectralVerticalStats,
                                  atlas::FieldSet & fieldSet) {
@@ -565,12 +564,8 @@ void spectralVerticalConvolution(const bool skipVerticalConv,
           const double norm = static_cast<double>((2 * n1 + 1) * vertCovView.shape(0));
           for (idx_t r = 0; r < levels; ++r) {
             col2[r] = 0;
-            if (skipVerticalConv) {
-              col2[r] = vertCovView(n1, r, r) * col[r] / norm;
-            } else {
-              for (idx_t c = 0; c < levels; ++c) {
-                col2[r] += vertCovView(n1, r, c) * col[c] / norm;
-              }
+            for (idx_t c = 0; c < levels; ++c) {
+              col2[r] += vertCovView(n1, r, c) * col[c] / norm;
             }
           }
           for  (idx_t jl = 0; jl < levels; ++jl) {
@@ -670,6 +665,38 @@ void spectralVerticalConvolutionSqrtAD(const oops::Variables & activeVars,
     }
   }
 }
+
+
+/// Same as spectralVerticalConvolution, without the vertical convolution
+void spectralHorizontalFilter(const oops::Variables & activeVars,
+                              const atlas::functionspace::Spectral & specFunctionSpace,
+                              const atlas::FieldSet & spectralVerticalStats,
+                              atlas::FieldSet & fieldSet) {
+  const size_t N = specFunctionSpace.truncation();
+  const auto zonal_wavenumbers = specFunctionSpace.zonal_wavenumbers();
+  const idx_t nb_zonal_wavenumbers = zonal_wavenumbers.size();
+
+  for (const auto & var : activeVars.variables()) {
+    const idx_t levels(fieldSet[var].shape(1));
+    auto vertCovView = make_view<const double, 3>(spectralVerticalStats[var]);
+    auto spfView = make_view<double, 2>(fieldSet[var]);
+
+    idx_t i = 0;
+    for (idx_t jm = 0; jm < nb_zonal_wavenumbers; ++jm) {
+      const idx_t m1 = zonal_wavenumbers(jm);
+      for (std::size_t n1 = m1; n1 <= N; ++n1) {
+        for (std::size_t img = 0; img < 2; ++img) {
+          const double norm = static_cast<double>((2 * n1 + 1) * vertCovView.shape(0));
+          for (idx_t jl = 0; jl < levels; ++jl) {
+            spfView(i, jl) *= vertCovView(n1, jl, jl) / norm;
+          }
+          ++i;
+        }
+      }
+    }
+  }
+}
+
 
 
 void updateSpectralVerticalCovariances(

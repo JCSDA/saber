@@ -70,8 +70,7 @@ void readSpectralCovarianceFromFile(const std::string &,
                                     const spectralbReadParameters &,
                                     atlas::Field &);
 
-void spectralVerticalConvolution(const bool skipVerticalConv,
-                                 const oops::Variables &,
+void spectralVerticalConvolution(const oops::Variables &,
                                  const atlas::functionspace::Spectral &,
                                  const atlas::FieldSet &,
                                  atlas::FieldSet &);
@@ -81,10 +80,17 @@ void spectralVerticalConvolutionSqrt(const oops::Variables &,
                                      const atlas::FieldSet &,
                                      atlas::FieldSet &);
 
+
 void spectralVerticalConvolutionSqrtAD(const oops::Variables &,
                                        const atlas::functionspace::Spectral &,
                                        const atlas::FieldSet &,
                                        atlas::FieldSet &);
+
+/// Same as spectralVerticalConvolution, without the vertical convolution
+void spectralHorizontalFilter(const oops::Variables &,
+                              const atlas::functionspace::Spectral &,
+                              const atlas::FieldSet &,
+                              atlas::FieldSet &);
 
 void updateSpectralVerticalCovariances(
   const oops::FieldSets & ensFieldSet,
