@@ -8,16 +8,14 @@
 !----------------------------------------------------------------------
 module type_mesh
 
-use atlas_module, only: atlas_unstructuredgrid,atlas_meshgenerator,atlas_mesh,atlas_build_edges, &
- & atlas_build_node_to_edge_connectivity,atlas_mesh_nodes,atlas_connectivity
 !$ use omp_lib
 use tools_const, only: zero,one,two,three,five,pi,req,rad2deg,reqkm
-use tools_func, only: fletcher32,lonlatmod,rad2short,sphere_dist,lonlat2xyz,xyz2lonlat,inside,vector_product,det,zss_maxval
+use tools_func, only: fletcher32,lonlatmod,rad2short,lonlat2xyz
 use tools_kinds, only: kind_short,kind_long,kind_real,huge_real
 use tools_qsort, only: qsort
 use tools_repro, only: repro_th,inf
 use tools_ssrfpack, only: aplyr,constr,fval,fval_op,gradl
-use tools_stripack, only: trfind,trmesh,bnodes
+use tools_stripack, only: trfind,trmesh
 use type_mpl, only: mpl_type
 @:use_probe()
 use type_rng, only: rng_type
@@ -39,7 +37,6 @@ type mesh_type
    ! Mesh structure
    integer :: n                            !< Number of points
    type(row_type),allocatable :: rows(:)   !< Connectivity table rows
-   integer :: maxcols                      !< Maximum number of columns
    integer,allocatable :: order(:)         !< Order of shuffled points
    integer,allocatable :: order_inv(:)     !< Inverse order of shuffled points
 
@@ -55,24 +52,13 @@ type mesh_type
    integer,allocatable :: lptr(:)          !< STRIPACK list pointer
    integer,allocatable :: lend(:)          !< STRIPACK list end
    integer :: lnew                         !< STRIPACK pointer to the first empty location in list
-
-   ! Boundary fields
-   real(kind_real),allocatable :: vbnd(:,:)       !< Hull boundary vertices
-   integer,allocatable :: nbnda(:)                !< Number of mask boundary arcs
-   real(kind_real),allocatable :: v1bnda(:,:,:)   !< Mask boundary arcs, first vector
-   real(kind_real),allocatable :: v2bnda(:,:,:)   !< Mask boundary arcs, second vector
-   real(kind_real),allocatable :: vabnda(:,:,:)   !< Mask boundary arcs, orthogonal vector
 contains
-   procedure :: alloc => mesh_alloc
    procedure :: init => mesh_init
    procedure :: dealloc => mesh_dealloc
    procedure :: barycentric => mesh_barycentric
    procedure :: compute_grad => mesh_compute_grad
    procedure :: compute_c1_interp => mesh_compute_c1_interp
    procedure :: compute_c1_interp_op => mesh_compute_c1_interp_op
-   procedure :: count_bnda => mesh_count_bnda
-   procedure :: get_bnda => mesh_get_bnda
-   procedure :: check_arc => mesh_check_arc
 end type mesh_type
 
 private
@@ -81,19 +67,31 @@ public :: mesh_type
 contains
 
 !----------------------------------------------------------------------
-! Subroutine: mesh_alloc
-!> Allocation
+! Subroutine: mesh_init
+!> Initialization
 !----------------------------------------------------------------------
-subroutine mesh_alloc(mesh,n)
+subroutine mesh_init(mesh,mpl,rng,n,lon,lat)
 
 implicit none
 
 ! Passed variables
 class(mesh_type),intent(inout) :: mesh !< Mesh
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(rng_type),intent(inout) :: rng    !< Random number generator
 integer,intent(in) :: n                !< Mesh size
+real(kind_real),intent(in) :: lon(n)   !< Longitudes
+real(kind_real),intent(in) :: lat(n)   !< Latitudes
+
+! Local variables
+integer :: i,j,k,hash
+integer,allocatable :: jtab(:),near(:),next(:)
+integer(kind_short) :: lon_short,lat_short
+integer(kind_long) :: hash_long
+real(kind_real),allocatable :: lon_pert(:),lat_pert(:),dist(:)
+logical :: init
 
 ! Set name
-@:set_name(mesh_alloc)
+@:set_name(mesh_init)
 
 ! Probe in
 @:probe_in()
@@ -102,6 +100,9 @@ integer,intent(in) :: n                !< Mesh size
 mesh%n = n
 
 ! Allocation
+allocate(jtab(mesh%n))
+allocate(lon_pert(mesh%n))
+allocate(lat_pert(mesh%n))
 allocate(mesh%order(mesh%n))
 allocate(mesh%order_inv(mesh%n))
 allocate(mesh%lon(mesh%n))
@@ -113,46 +114,9 @@ allocate(mesh%rows(mesh%n))
 allocate(mesh%list(6*(mesh%n-2)))
 allocate(mesh%lptr(6*(mesh%n-2)))
 allocate(mesh%lend(mesh%n))
-
-! Probe out
-@:probe_out()
-
-end subroutine mesh_alloc
-
-!----------------------------------------------------------------------
-! Subroutine: mesh_init
-!> Intialization
-!----------------------------------------------------------------------
-subroutine mesh_init(mesh,mpl,rng,lon,lat,hull_bnd)
-
-implicit none
-
-! Passed variables
-class(mesh_type),intent(inout) :: mesh    !< Mesh
-type(mpl_type),intent(inout) :: mpl       !< MPI data
-type(rng_type),intent(inout) :: rng       !< Random number generator
-real(kind_real),intent(in) :: lon(mesh%n) !< Longitudes
-real(kind_real),intent(in) :: lat(mesh%n) !< Latitudes
-logical,intent(in),optional :: hull_bnd   !< Flag to compute hull boundary vertices
-
-! Local variables
-integer :: i,j,k,jtab(mesh%n),nb,ib,hash
-integer,allocatable :: near(:),next(:),bnd(:)
-integer(kind_short) :: lon_short,lat_short
-integer(kind_long) :: hash_long
-real(kind_real) :: lon_pert(mesh%n),lat_pert(mesh%n)
-real(kind_real),allocatable :: dist(:)
-logical :: lhull_bnd,init
-
-! Set name
-@:set_name(mesh_init)
-
-! Probe in
-@:probe_in()
-
-! Local flag
-lhull_bnd = .false.
-if (present(hull_bnd)) lhull_bnd = hull_bnd
+allocate(near(mesh%n))
+allocate(next(mesh%n))
+allocate(dist(mesh%n))
 
 ! Copy lon/lat
 mesh%lon = lon
@@ -207,17 +171,10 @@ do i=1,mesh%n
    call lonlatmod(mesh%lon(i),mesh%lat(i))
 end do
 
-! Allocation
-allocate(near(mesh%n))
-allocate(next(mesh%n))
-allocate(dist(mesh%n))
-
 ! Create mesh
 mesh%list = 0
 mesh%lend = 0
 mesh%lnew = 0
-
-! Call TRMESH
 if (mesh%n>0) call trmesh(mpl,mesh%n,mesh%x,mesh%y,mesh%z,mesh%list,mesh%lptr,mesh%lend,mesh%lnew,near,next,dist)
 
 ! Count neighbors
@@ -246,17 +203,6 @@ do i=1,mesh%n
    end do
 end do
 
-! Release memory
-deallocate(near)
-deallocate(next)
-deallocate(dist)
-
-! Maximum number of columns
-mesh%maxcols = 0
-do i=1,mesh%n
-   mesh%maxcols = max(mesh%maxcols,mesh%rows(i)%cols)
-end do
-
 do i=1,mesh%n
    ! Unperturb grid coordinates
    mesh%lon(i) = mesh%lon(i)-lon_pert(i)
@@ -264,30 +210,18 @@ do i=1,mesh%n
 
    ! Apply bounds
    call lonlatmod(mesh%lon(i),mesh%lat(i))
+
+   ! Transform to cartesian coordinates
+   call lonlat2xyz(mpl,mesh%lon(i),mesh%lat(i),mesh%x(i),mesh%y(i),mesh%z(i))
 end do
 
-if (lhull_bnd) then
-   ! Allocation
-   allocate(bnd(mesh%n))
-
-   ! Get boundary nodes
-   if (mesh%n>0) then
-      call bnodes(mesh%n,mesh%list,mesh%lptr,mesh%lend,bnd,nb)
-   else
-      nb = 0
-   end if
-
-   ! Allocation
-   allocate(mesh%vbnd(3,nb))
-
-   ! Copy boundary vertices
-   do ib=1,nb
-      mesh%vbnd(:,ib) = (/mesh%x(bnd(ib)),mesh%y(bnd(ib)),mesh%z(bnd(ib))/)
-   end do
-
-   ! Release memory
-   deallocate(bnd)
-end if
+! Release memory
+deallocate(jtab)
+deallocate(lon_pert)
+deallocate(lat_pert)
+deallocate(near)
+deallocate(next)
+deallocate(dist)
 
 ! Probe out
 @:probe_out()
@@ -331,11 +265,6 @@ end if
 if (allocated(mesh%list)) deallocate(mesh%list)
 if (allocated(mesh%lptr)) deallocate(mesh%lptr)
 if (allocated(mesh%lend)) deallocate(mesh%lend)
-if (allocated(mesh%vbnd)) deallocate(mesh%vbnd)
-if (allocated(mesh%nbnda)) deallocate(mesh%nbnda)
-if (allocated(mesh%v1bnda)) deallocate(mesh%v1bnda)
-if (allocated(mesh%v2bnda)) deallocate(mesh%v2bnda)
-if (allocated(mesh%vabnda)) deallocate(mesh%vabnda)
 
 ! Probe out
 @:probe_out()
@@ -377,7 +306,7 @@ call lonlat2xyz(mpl,lon,lat,xyz(1),xyz(2),xyz(3))
 allocate(nn_index(1))
 
 ! Find the next nearest neighbor
-call tree%find_nearest_neighbors(lon,lat,1,nn_index)
+call tree%find_nearest_neighbors(mpl,lon,lat,1,nn_index)
 
 ! Compute barycentric coordinates
 b = zero
@@ -481,7 +410,7 @@ do i_dst=1,n_dst
    call lonlat2xyz(mpl,lon_dst(i_dst),lat_dst(i_dst),xyz(1),xyz(2),xyz(3))
 
    ! Find the next nearest neighbor
-   call tree_src%find_nearest_neighbors(lon_dst(i_dst),lat_dst(i_dst),1,nn_index)
+   call tree_src%find_nearest_neighbors(mpl,lon_dst(i_dst),lat_dst(i_dst),1,nn_index)
 
    ! Compute barycentric coordinates
    b = zero
@@ -558,187 +487,5 @@ ag(:,3) = v_mat(10:12)
 @:probe_out()
 
 end subroutine mesh_compute_c1_interp_op
-
-!----------------------------------------------------------------------
-! Subroutine: mesh_count_bnda
-!> Count boundary arcs
-!----------------------------------------------------------------------
-subroutine mesh_count_bnda(mesh,gmask,nbnda)
-
-implicit none
-
-! Passed variables
-class(mesh_type),intent(in) :: mesh !< Mesh
-logical,intent(in) :: gmask(mesh%n) !< Mask
-integer,intent(out) :: nbnda        !< Number of boundary nodes
-
-! Local variables
-integer :: i,ii,j,k,kk,knext,kknext
-
-! Set name
-@:set_name(mesh_count_bnda)
-
-! Probe in
-@:probe_in()
-
-! Initialiation
-nbnda = 0
-
-! Loop over points
-do i=1,mesh%n
-   ii = mesh%order(i)
-   if (.not.gmask(ii)) then
-      ! Loop over neigbors
-      do j=1,mesh%rows(i)%cols
-         k = mesh%rows(i)%nodes(j)
-         kk = mesh%order(k)
-         if (j<mesh%rows(i)%cols) then
-            knext = mesh%rows(i)%nodes(j+1)
-         else
-            knext = mesh%rows(i)%nodes(1)
-         end if
-         kknext = mesh%order(knext)
-         if (.not.gmask(kk).and.gmask(kknext)) nbnda = nbnda+1
-      end do
-   end if
-end do
-
-! Probe out
-@:probe_out()
-
-end subroutine mesh_count_bnda
-
-!----------------------------------------------------------------------
-! Subroutine: mesh_get_bnda
-!> Get boundary arcs
-!----------------------------------------------------------------------
-subroutine mesh_get_bnda(mesh,gmask,nbnda,bnda_index)
-
-implicit none
-
-! Passed variables
-class(mesh_type),intent(in) :: mesh        !< Mesh
-logical,intent(in) :: gmask(mesh%n)        !< Mask
-integer,intent(in) :: nbnda                !< Number of boundary nodes
-integer,intent(out) :: bnda_index(2,nbnda) !< Boundary node index
-
-! Local variables
-integer :: ibnda,i,ii,j,k,kk,knext,kknext
-
-! Set name
-@:set_name(mesh_get_bnda)
-
-! Probe in
-@:probe_in()
-
-! Initialiation
-ibnda = 0
-bnda_index = 0
-
-! Loop over points
-do i=1,mesh%n
-   ii = mesh%order(i)
-   if (.not.gmask(ii)) then
-      ! Loop over neigbors
-      do j=1,mesh%rows(i)%cols
-         k = mesh%rows(i)%nodes(j)
-         kk = mesh%order(k)
-         if (j<mesh%rows(i)%cols) then
-            knext = mesh%rows(i)%nodes(j+1)
-         else
-            knext = mesh%rows(i)%nodes(1)
-         end if
-         kknext = mesh%order(knext)
-         if (.not.gmask(kk).and.gmask(kknext)) then
-            ibnda = ibnda+1
-            bnda_index(1,ibnda) = ii
-            bnda_index(2,ibnda) = kk
-         end if
-      end do
-   end if
-end do
-
-! Probe out
-@:probe_out()
-
-end subroutine mesh_get_bnda
-
-!----------------------------------------------------------------------
-! Subroutine: mesh_check_arc
-!> Check if an arc is crossing mask boundaries
-!----------------------------------------------------------------------
-subroutine mesh_check_arc(mesh,mpl,lon_s,lat_s,lon_e,lat_e,il0,valid,prt)
-
-implicit none
-
-! Passed variables
-class(mesh_type),intent(in) :: mesh !< Mesh
-type(mpl_type),intent(inout) :: mpl !< MPI data
-real(kind_real),intent(in) :: lon_s !< First point longitude
-real(kind_real),intent(in) :: lat_s !< First point latitude
-real(kind_real),intent(in) :: lon_e !< Second point longitude
-real(kind_real),intent(in) :: lat_e !< Second point latitude
-integer,intent(in) :: il0           !< Level
-logical,intent(inout) :: valid      !< True for valid arcs
-logical,intent(in),optional :: prt  !< Print values (very useful for debugging)
-
-! Local variables
-integer :: ibnda
-real(kind_real) :: v1(3),v2(3),va(3),vp(3),t(4),tmin,tmax
-logical :: lprt
-
-! Set name
-@:set_name(mesh_check_arc)
-
-! Probe in
-@:probe_in()
-
-! Local flag
-lprt = .false.
-if (present(prt)) lprt = prt
-
-if (valid) then
-   ! Transform to cartesian coordinates
-   call lonlat2xyz(mpl,lon_s,lat_s,v1(1),v1(2),v1(3))
-   call lonlat2xyz(mpl,lon_e,lat_e,v2(1),v2(2),v2(3))
-
-   ! Compute arc orthogonal vector
-   call vector_product(v1,v2,va)
-
-   ! Check if arc is crossing boundary arcs
-   do ibnda=1,mesh%nbnda(il0)
-      if (valid) then
-         ! Compute factors
-         call vector_product(va,mesh%vabnda(:,ibnda,il0),vp)
-         call det(v1,va,vp,t(1))
-         call det(v2,va,vp,t(2))
-         call det(mesh%v1bnda(:,ibnda,il0),mesh%vabnda(:,ibnda,il0),vp,t(3))
-         call det(mesh%v2bnda(:,ibnda,il0),mesh%vabnda(:,ibnda,il0),vp,t(4))
-         t(1) = -t(1)
-         t(3) = -t(3)
-
-         ! Get min/max
-         tmin = minval(t)
-         tmax = maxval(t)
-
-         if ((abs(tmin)>repro_th).and.(abs(tmax)>repro_th)) then
-            valid = (tmin*tmax<zero)
-         else
-            valid = .true.
-         end if
-
-         ! Print results
-         if (lprt) then
-            write(mpl%info,'(a,i5,f12.8,f12.8,l2)') 'in mesh_arc test: ',ibnda,tmin,tmax,valid
-            call mpl%flush
-         end if
-      end if
-   end do
-end if
-
-! Probe out
-@:probe_out()
-
-end subroutine mesh_check_arc
 
 end module type_mesh

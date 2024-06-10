@@ -40,6 +40,14 @@ background error:
         component: 2
         file:
           filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_a_2
+      - parameter: rh
+        component: 1
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_rh_1
+      - parameter: rh
+        component: 2
+        file:
+          filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_rh_2
       - parameter: nicas_norm
         file:
           filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas_norm

@@ -154,14 +154,13 @@ contains
 ! Subroutine: mpl_init
 !> Initialize MPL object
 !----------------------------------------------------------------------
-subroutine mpl_init(mpl,f_comm,conf)
+subroutine mpl_init(mpl,f_comm)
 
 implicit none
 
 ! Passed variables
 class(mpl_type),intent(inout) :: mpl             !< MPI data
 type(fckit_mpi_comm),intent(in),target :: f_comm !< FCKIT MPI communicator wrapper
-type(fckit_configuration),intent(in) :: conf     !< Configuration
 
 ! Local variables
 type(fckit_mpi_comm) :: world_comm

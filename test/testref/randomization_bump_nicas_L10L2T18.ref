@@ -1,7 +1,5 @@
        Independent levels:  1[2]
           Subset Sc0 size:              762
-          Min. / max. longitudes: -171.0 /   180.0
-          Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
              Level   2 ~> 100.0%
@@ -9,8 +7,6 @@
              Level   2 ~>  0.200E+01 vert. coord.
        Independent levels:  1[1]
           Subset Sc0 size:              762
-          Min. / max. longitudes: -171.0 /   180.0
-          Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
@@ -21,6 +17,12 @@
                    Subgrid hash:  -1664571381
                 Final nc1:      465
                 Effective horizontal resolution:  4.00
+             nc1(  1) =                        465
+             nc1(  2) =                        465
+             ns =                              930
+             v%n_s =                             2
+             c%n_s[global] =                 26096
+             Effective levels:   1   2 
                 Horizontal support radius:    4500.00 km (   4500.00 km -    4500.00 km)
                 Estimated nc1 from horizontal support radius:      465
                    Decimate full grid, at least      465 points required,     762 valid points found
@@ -39,42 +41,12 @@
                    Subgrid hash:  -1664571381
                 Final nc1:      465
                 Effective horizontal resolution:  4.00
-                Horizontal support radius:    4500.00 km (   4500.00 km -    4500.00 km)
-                Estimated nc1 from horizontal support radius:      465
-                   Decimate full grid, at least      465 points required,     762 valid points found
-                   Subgrid hash:  -1664571381
-                Final nc1:      465
-                Effective horizontal resolution:  4.00
              nc1(  1) =                        465
              nc1(  2) =                        465
              ns =                              930
              v%n_s =                             2
              c%n_s[global] =                 26096
              Effective levels:   1   2 
-                Horizontal support radius:    4500.00 km (   4500.00 km -    4500.00 km)
-                Estimated nc1 from horizontal support radius:      465
-                   Decimate full grid, at least      465 points required,     762 valid points found
-                   Subgrid hash:  -1664571381
-                Final nc1:      465
-                Effective horizontal resolution:  4.00
-                Horizontal support radius:    4500.00 km (   4500.00 km -    4500.00 km)
-                Estimated nc1 from horizontal support radius:      465
-                   Decimate full grid, at least      465 points required,     762 valid points found
-                   Subgrid hash:  -1664571381
-                Final nc1:      465
-                Effective horizontal resolution:  4.00
-             nc1(  1) =                        465
-             nc1(  2) =                        465
-             ns =                              930
-             v%n_s =                             2
-             c%n_s[global] =                 26096
-             Effective levels:   1   2 
-                Horizontal support radius:    4500.00 km (   4500.00 km -    4500.00 km)
-                Estimated nc1 from horizontal support radius:      465
-                   Decimate full grid, at least      465 points required,     762 valid points found
-                   Subgrid hash:  -1664571381
-                Final nc1:      465
-                Effective horizontal resolution:  4.00
                 Horizontal support radius:    4500.00 km (   4500.00 km -    4500.00 km)
                 Estimated nc1 from horizontal support radius:      465
                    Decimate full grid, at least      465 points required,     762 valid points found
@@ -123,7 +95,7 @@ Fields:
   velocity_potential: 4.4386872413863216e+01
   eastward_wind: 4.2279683534741984e+01
   northward_wind: 4.0306058913498404e+01
-  surface_pressure: 3.0855963966239244e+01
+  surface_pressure: 3.0855963966239248e+01
 Member 1: 
 Valid time:2010-01-01T18:00:00Z
 Quench geometry grid:
@@ -146,7 +118,7 @@ Groups:
   - vert_coord: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 3.9672964881464040e+01
+  stream_function: 3.9672964881464033e+01
   velocity_potential: 3.8127531960421322e+01
   eastward_wind: 3.5160246255523539e+01
   northward_wind: 3.7923949905457491e+01
@@ -174,9 +146,9 @@ Groups:
   Mask size: 100%
 Fields:
   stream_function: 3.7027539070222772e+01
-  velocity_potential: 4.0441288653820529e+01
+  velocity_potential: 4.0441288653820543e+01
   eastward_wind: 4.3106573738363515e+01
-  northward_wind: 4.1168539757228459e+01
+  northward_wind: 4.1168539757228451e+01
   surface_pressure: 2.5495170849069915e+01
 Member 3: 
 Valid time:2010-01-01T18:00:00Z
@@ -200,10 +172,10 @@ Groups:
   - vert_coord: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 3.7427684129607599e+01
+  stream_function: 3.7427684129607606e+01
   velocity_potential: 4.1779851708061791e+01
   eastward_wind: 4.4615792503853058e+01
-  northward_wind: 3.8203078895610034e+01
+  northward_wind: 3.8203078895610041e+01
   surface_pressure: 2.4606500910051160e+01
 Member 4: 
 Valid time:2010-01-01T18:00:00Z
@@ -229,9 +201,9 @@ Groups:
 Fields:
   stream_function: 3.9397473046878098e+01
   velocity_potential: 3.3372375264729826e+01
-  eastward_wind: 4.1614065516746081e+01
+  eastward_wind: 4.1614065516746074e+01
   northward_wind: 4.2071989308663291e+01
-  surface_pressure: 3.2006331623572542e+01
+  surface_pressure: 3.2006331623572535e+01
 Member 5: 
 Valid time:2010-01-01T18:00:00Z
 Quench geometry grid:
@@ -254,11 +226,11 @@ Groups:
   - vert_coord: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 3.8842845590775312e+01
+  stream_function: 3.8842845590775305e+01
   velocity_potential: 3.7648042952800552e+01
   eastward_wind: 3.8605013614709357e+01
-  northward_wind: 3.7497711969254574e+01
-  surface_pressure: 2.8482725268803211e+01
+  northward_wind: 3.7497711969254560e+01
+  surface_pressure: 2.8482725268803208e+01
 Member 6: 
 Valid time:2010-01-01T18:00:00Z
 Quench geometry grid:
@@ -281,10 +253,10 @@ Groups:
   - vert_coord: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.6443837017162558e+01
-  velocity_potential: 4.2172484761382265e+01
-  eastward_wind: 4.3258240590114802e+01
-  northward_wind: 4.3803696732298739e+01
+  stream_function: 4.6443837017162551e+01
+  velocity_potential: 4.2172484761382272e+01
+  eastward_wind: 4.3258240590114795e+01
+  northward_wind: 4.3803696732298746e+01
   surface_pressure: 2.9865937511242496e+01
 Member 7: 
 Valid time:2010-01-01T18:00:00Z
@@ -309,8 +281,8 @@ Groups:
   Mask size: 100%
 Fields:
   stream_function: 3.8732717075683539e+01
-  velocity_potential: 4.0235678999880079e+01
-  eastward_wind: 4.1804785609604252e+01
+  velocity_potential: 4.0235678999880065e+01
+  eastward_wind: 4.1804785609604245e+01
   northward_wind: 3.5055474003128481e+01
   surface_pressure: 2.7782689702012362e+01
 Member 8: 
@@ -335,11 +307,11 @@ Groups:
   - vert_coord: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.2209334591210165e+01
+  stream_function: 4.2209334591210173e+01
   velocity_potential: 4.3381769750082718e+01
   eastward_wind: 3.7340624515845796e+01
   northward_wind: 3.8794359861209202e+01
-  surface_pressure: 2.7648616066052131e+01
+  surface_pressure: 2.7648616066052128e+01
 Member 9: 
 Valid time:2010-01-01T18:00:00Z
 Quench geometry grid:
@@ -362,11 +334,11 @@ Groups:
   - vert_coord: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.3684195891910939e+01
+  stream_function: 4.3684195891910946e+01
   velocity_potential: 4.3267662395820459e+01
   eastward_wind: 3.9823656260748947e+01
-  northward_wind: 3.9799525932007384e+01
-  surface_pressure: 2.9698619002180692e+01
+  northward_wind: 3.9799525932007377e+01
+  surface_pressure: 2.9698619002180696e+01
 Member 10: 
 Valid time:2010-01-01T18:00:00Z
 Quench geometry grid:
@@ -392,7 +364,7 @@ Fields:
   stream_function: 3.8682090043419628e+01
   velocity_potential: 5.1775889471610270e+01
   eastward_wind: 4.2424750779465796e+01
-  northward_wind: 4.0631287696320769e+01
+  northward_wind: 4.0631287696320776e+01
   surface_pressure: 3.1136784682848734e+01
 Member 11: 
 Valid time:2010-01-01T18:00:00Z
@@ -416,8 +388,8 @@ Groups:
   - vert_coord: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 3.7202231761468681e+01
-  velocity_potential: 3.6948594210363765e+01
+  stream_function: 3.7202231761468674e+01
+  velocity_potential: 3.6948594210363758e+01
   eastward_wind: 4.0536624803158439e+01
   northward_wind: 4.7654233239389931e+01
   surface_pressure: 2.7914185991569358e+01
@@ -443,11 +415,11 @@ Groups:
   - vert_coord: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.0112374031152029e+01
+  stream_function: 4.0112374031152022e+01
   velocity_potential: 3.7547318553106166e+01
   eastward_wind: 3.9244970277745409e+01
-  northward_wind: 3.8742146410756959e+01
-  surface_pressure: 2.7433810812321134e+01
+  northward_wind: 3.8742146410756966e+01
+  surface_pressure: 2.7433810812321131e+01
 Member 13: 
 Valid time:2010-01-01T18:00:00Z
 Quench geometry grid:
@@ -470,11 +442,11 @@ Groups:
   - vert_coord: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.0078155047693720e+01
-  velocity_potential: 4.0649967140520147e+01
-  eastward_wind: 3.4306676725339450e+01
-  northward_wind: 3.8287598066672267e+01
-  surface_pressure: 2.7638374640705536e+01
+  stream_function: 4.0078155047693727e+01
+  velocity_potential: 4.0649967140520154e+01
+  eastward_wind: 3.4306676725339443e+01
+  northward_wind: 3.8287598066672260e+01
+  surface_pressure: 2.7638374640705528e+01
 Member 14: 
 Valid time:2010-01-01T18:00:00Z
 Quench geometry grid:
@@ -524,11 +496,11 @@ Groups:
   - vert_coord: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.9141551526278903e+01
+  stream_function: 4.9141551526278896e+01
   velocity_potential: 4.0252861398065129e+01
   eastward_wind: 4.2491499280335056e+01
-  northward_wind: 3.6297063651990428e+01
-  surface_pressure: 2.9048032883056454e+01
+  northward_wind: 3.6297063651990420e+01
+  surface_pressure: 2.9048032883056457e+01
 Member 16: 
 Valid time:2010-01-01T18:00:00Z
 Quench geometry grid:
@@ -553,9 +525,9 @@ Groups:
 Fields:
   stream_function: 4.2779289279799016e+01
   velocity_potential: 4.7654889332505086e+01
-  eastward_wind: 4.3297819295455170e+01
+  eastward_wind: 4.3297819295455177e+01
   northward_wind: 4.1465680406226987e+01
-  surface_pressure: 2.3754562547976040e+01
+  surface_pressure: 2.3754562547976043e+01
 Member 17: 
 Valid time:2010-01-01T18:00:00Z
 Quench geometry grid:
@@ -578,11 +550,11 @@ Groups:
   - vert_coord: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 3.8596607350285737e+01
+  stream_function: 3.8596607350285730e+01
   velocity_potential: 3.7140964101282947e+01
   eastward_wind: 3.9795693351448307e+01
   northward_wind: 3.2862035052377628e+01
-  surface_pressure: 2.5698681164055031e+01
+  surface_pressure: 2.5698681164055028e+01
 Member 18: 
 Valid time:2010-01-01T18:00:00Z
 Quench geometry grid:
@@ -608,8 +580,8 @@ Fields:
   stream_function: 4.2523041571205908e+01
   velocity_potential: 3.9912308985732096e+01
   eastward_wind: 3.8590954728151019e+01
-  northward_wind: 4.0237357009940602e+01
-  surface_pressure: 2.5421883887033196e+01
+  northward_wind: 4.0237357009940595e+01
+  surface_pressure: 2.5421883887033193e+01
 Member 19: 
 Valid time:2010-01-01T18:00:00Z
 Quench geometry grid:
@@ -632,10 +604,10 @@ Groups:
   - vert_coord: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.3585699395880397e+01
+  stream_function: 4.3585699395880390e+01
   velocity_potential: 3.8536970427143437e+01
-  eastward_wind: 4.0174404795424437e+01
-  northward_wind: 3.9251279930765030e+01
+  eastward_wind: 4.0174404795424444e+01
+  northward_wind: 3.9251279930765037e+01
   surface_pressure: 2.7523829855072098e+01
 Member 20: 
 Valid time:2010-01-01T18:00:00Z
@@ -689,7 +661,7 @@ Fields:
   stream_function: 3.7785683245342838e+01
   velocity_potential: 3.7036076988945453e+01
   eastward_wind: 3.9282588010177513e+01
-  northward_wind: 4.4668397278295899e+01
+  northward_wind: 4.4668397278295906e+01
   surface_pressure: 3.3169388933116437e+01
 Member 22: 
 Valid time:2010-01-01T18:00:00Z
@@ -713,11 +685,11 @@ Groups:
   - vert_coord: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.5516981103340314e+01
+  stream_function: 4.5516981103340306e+01
   velocity_potential: 3.6689668735606787e+01
-  eastward_wind: 4.1370933903158502e+01
+  eastward_wind: 4.1370933903158495e+01
   northward_wind: 4.0336173915012843e+01
-  surface_pressure: 2.6634078609063600e+01
+  surface_pressure: 2.6634078609063604e+01
 Member 23: 
 Valid time:2010-01-01T18:00:00Z
 Quench geometry grid:
@@ -742,7 +714,7 @@ Groups:
 Fields:
   stream_function: 4.1774679968790863e+01
   velocity_potential: 4.0702540768756116e+01
-  eastward_wind: 4.0490572671329652e+01
+  eastward_wind: 4.0490572671329659e+01
   northward_wind: 4.0352453089709698e+01
   surface_pressure: 3.0581445146334588e+01
 Member 24: 
@@ -767,8 +739,8 @@ Groups:
   - vert_coord: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 4.1188415987226534e+01
+  stream_function: 4.1188415987226541e+01
   velocity_potential: 3.8479261786363267e+01
-  eastward_wind: 3.7912070339143966e+01
+  eastward_wind: 3.7912070339143959e+01
   northward_wind: 4.2790172365076415e+01
-  surface_pressure: 2.2582425529850429e+01
+  surface_pressure: 2.2582425529850433e+01

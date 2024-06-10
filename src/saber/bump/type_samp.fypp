@@ -13,7 +13,7 @@ use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max,fckit_mpi_
 !$ use omp_lib
 use tools_atlas, only: get_grid
 use tools_const, only: zero,quarter,half,one,four,hundred,pi,req,reqkm,deg2rad,rad2deg
-use tools_func, only: lonlatmod,independent_levels,sphere_bearing,sphere_dist,inside,cx_to_cxa,cx_to_proc,cx_to_cxu, &
+use tools_func, only: lonlatmod,independent_levels,sphere_bearing,sphere_dist,cx_to_cxa,cx_to_proc,cx_to_cxu, &
  & convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count
 use tools_gc99, only: fit_func
 use tools_kinds, only: kind_int,kind_real
@@ -94,7 +94,6 @@ type samp_type
    integer :: nc1e                                        !< Number of points in subset Sc1, halo E
    integer,allocatable :: c1e_to_c1u(:)                   !< Subset Sc1, halo E to universe
    type(tree_type) :: tree_c1u                            !< Tree on subset Sc1, universe
-   type(mesh_type) :: mesh_c1u                            !< Mesh on subset Sc1, universe
 
    ! Subset Sc2
    integer :: nc2                                         !< Number of points in subset Sc2, global
@@ -288,7 +287,6 @@ if (allocated(samp%smask_c1dc3)) deallocate(samp%smask_c1dc3)
 if (allocated(samp%c1d_to_c1u)) deallocate(samp%c1d_to_c1u)
 if (allocated(samp%c1e_to_c1u)) deallocate(samp%c1e_to_c1u)
 call samp%tree_c1u%dealloc
-call samp%mesh_c1u%dealloc
 if (allocated(samp%proc_to_nc2a)) deallocate(samp%proc_to_nc2a)
 if (allocated(samp%proc_to_c2_offset)) deallocate(samp%proc_to_c2_offset)
 if (allocated(samp%c2u_to_c2)) deallocate(samp%c2u_to_c2)
@@ -1880,7 +1878,7 @@ else
 end if
 
 ! Reset random seed if necessary
-call rng%reseed(mpl)
+call rng%reseed
 
 ! Probe out
 @:probe_out()
@@ -1912,7 +1910,7 @@ if (samp%sc1) then
    ! Compute MPI distribution, subset Sc1, halo A and universe
    write(mpl%info,'(a7,a)') '','Compute MPI distribution, subset Sc1, halo A and universe'
    call mpl%flush
-   call samp%compute_mpi_c1au(mpl,rng,geom)
+   call samp%compute_mpi_c1au(mpl,geom)
 end if
 
 if (samp%sc2) then
@@ -1931,7 +1929,7 @@ if (samp%sc1) then
    ! Compute MPI distribution, subset Sc0, halo B
    write(mpl%info,'(a7,a)') '','Compute MPI distribution, subset Sc0, halo B'
    call mpl%flush
-   call samp%compute_mpi_c0b(mpl,nam,geom)
+   call samp%compute_mpi_c0b(mpl,geom)
 end if
 
 if (samp%sc3) then
@@ -1956,7 +1954,7 @@ if (samp%sc1.and.nam%new_vbal) then
 end if
 
 ! Reset random seed if necessary
-call rng%reseed(mpl)
+call rng%reseed
 
 ! Probe out
 @:probe_out()
@@ -2332,7 +2330,7 @@ else
       write(mpl%info,'(a7,a,i1,a)') '','Compute horizontal subset Sc',subset,':'
       call mpl%flush
       call geom%initialize_sampling(mpl,rng,nam%sampling_method,geom%nc0a,geom%lon_c0a,geom%lat_c0a,smask_hor_c0a,rh_c0a, &
- & geom%c0a_to_c0,geom%nc0u,geom%c0u_to_c0a,geom%tree_c0u,geom%mesh_c0u,7,ncx_eff,cx_to_c0)
+ & geom%c0a_to_c0,geom%nc0u,geom%c0u_to_c0a,geom%tree_c0u,geom%hull_c0u,7,ncx_eff,cx_to_c0)
 
       ! Count Scx point in halo A
       ncxa = 0
@@ -2401,15 +2399,11 @@ else
             call lonlatmod(lonlat(1),lonlat(2))
 
             ! Check if the point is inside the universe
-            if (geom%mesh_c0u%n>0) then
-               call inside(mpl,geom%mesh_c0u%vbnd,lonlat(1),lonlat(2),valid)
-            else
-               valid = .false.
-            end if
+            call geom%hull_c0u%inside(mpl,lonlat(1),lonlat(2),valid)
 
             if (valid) then
                ! Find nearest neighbor in universe
-               call geom%tree_c0u%find_nearest_neighbors(lonlat(1),lonlat(2),1,nn_index)
+               call geom%tree_c0u%find_nearest_neighbors(mpl,lonlat(1),lonlat(2),1,nn_index)
 
                ! Check mask
                ic0u = nn_index(1)
@@ -2438,15 +2432,11 @@ else
             call lonlatmod(lonlat(1),lonlat(2))
 
             ! Check if the point is inside the universe
-            if (geom%mesh_c0u%n>0) then
-               call inside(mpl,geom%mesh_c0u%vbnd,lonlat(1),lonlat(2),valid)
-            else
-               valid = .false.
-            end if
+            call geom%hull_c0u%inside(mpl,lonlat(1),lonlat(2),valid)
 
             if (valid) then
                ! Find nearest neighbor in universe
-               call geom%tree_c0u%find_nearest_neighbors(lonlat(1),lonlat(2),1,nn_index)
+               call geom%tree_c0u%find_nearest_neighbors(mpl,lonlat(1),lonlat(2),1,nn_index)
 
                ! Check mask
                ic0u = nn_index(1)
@@ -2489,7 +2479,7 @@ allocate(cxa_to_cx(ncxa))
 
 ! Get vertical coordinate and sampling mask on nearest neighbor
 do icxa=1,ncxa
-   call geom%tree_c0u%find_nearest_neighbors(lon_cxa(icxa),lat_cxa(icxa),1,nn_index)
+   call geom%tree_c0u%find_nearest_neighbors(mpl,lon_cxa(icxa),lat_cxa(icxa),1,nn_index)
    ic0u = nn_index(1)
    vert_coord_cxa(icxa,:) = geom%vert_coord_c0u(ic0u,:)
    smask_cxa(icxa,:) = samp%smask_c0u(ic0u,:)
@@ -2716,7 +2706,7 @@ do ic1a=1,samp%nc1a
  & samp%smask_c3a(ic1a,jc3,jc4,il0)
 
                ! Check mask boundaries
-               if (nam%mask_check) call geom%mesh_c0u%check_arc(mpl,samp%lon_c1a(ic1a),samp%lat_c1a(ic1a), &
+               call geom%bnda_c0u%check_arc(mpl,samp%lon_c1a(ic1a),samp%lat_c1a(ic1a), &
  & samp%lon_c3a(ic1a,jc3,jc4),samp%lat_c3a(ic1a,jc3,jc4),il0,valid)
 
                ! Copy validity
@@ -2743,14 +2733,13 @@ end subroutine samp_compute_c3
 ! Subroutine: samp_compute_mpi_c1au
 !> Compute sampling MPI distribution, subset Sc1, halo A and U
 !----------------------------------------------------------------------
-subroutine samp_compute_mpi_c1au(samp,mpl,rng,geom)
+subroutine samp_compute_mpi_c1au(samp,mpl,geom)
 
 implicit none
 
 ! Passed variables
 class(samp_type),intent(inout) :: samp !< Sampling
 type(mpl_type),intent(inout) :: mpl    !< MPI data
-type(rng_type),intent(inout) :: rng    !< Random number generator
 type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
@@ -2797,15 +2786,8 @@ call samp%com_c1_AU%ext(mpl,samp%lon_c1a,samp%lon_c1u)
 call samp%com_c1_AU%ext(mpl,samp%lat_c1a,samp%lat_c1u)
 call samp%com_c1_AU%ext(mpl,samp%smask_c1a,samp%smask_c1u)
 
-if (samp%sc2) then
-   ! Setup tree
-   call samp%tree_c1u%alloc(mpl,samp%nc1u)
-   call samp%tree_c1u%init(samp%lon_c1u,samp%lat_c1u)
-
-   ! Setup mesh
-   call samp%mesh_c1u%alloc(samp%nc1u)
-   call samp%mesh_c1u%init(mpl,rng,samp%lon_c1u,samp%lat_c1u,hull_bnd=.true.)
-end if
+! Setup tree
+if (samp%sc2) call samp%tree_c1u%init(samp%nc1u,samp%lon_c1u,samp%lat_c1u)
 
 ! Print results
 write(mpl%test,'(a10,a,i8)') '','nc1 = ',samp%nc1
@@ -2897,14 +2879,13 @@ call mpl%flush
 allocate(samp%nn_c2a_index(samp%nc2u,samp%nc2a))
 allocate(samp%nn_c2a_dist(samp%nc2u,samp%nc2a))
 allocate(samp%ldwv_to_c2a(nam%nldwv))
-call tree%alloc(mpl,samp%nc2u)
 
-! Initialization
-call tree%init(samp%lon_c2u,samp%lat_c2u)
+! Setup tree
+call tree%init(samp%nc2u,samp%lon_c2u,samp%lat_c2u)
 
 ! Find nearest neighbors
 do ic2a=1,samp%nc2a
-   call tree%find_nearest_neighbors(samp%lon_c2a(ic2a),samp%lat_c2a(ic2a),samp%nc2u,samp%nn_c2a_index(:,ic2a), &
+   call tree%find_nearest_neighbors(mpl,samp%lon_c2a(ic2a),samp%lat_c2a(ic2a),samp%nc2u,samp%nn_c2a_index(:,ic2a), &
  & samp%nn_c2a_dist(:,ic2a))
 end do
 
@@ -2916,7 +2897,7 @@ do ildwv=1,nam%nldwv
    iproc = samp%ldwv_to_proc(ildwv)
    if (iproc==mpl%myproc) then
       ic0a = samp%ldwv_to_c0a(ildwv)
-      call tree%find_nearest_neighbors(geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),1,nn_index)
+      call tree%find_nearest_neighbors(mpl,geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),1,nn_index)
       ic2u = nn_index(1)
       do ic2a=1,samp%nc2a
          if (samp%nn_c2a_index(1,ic2a)==ic2u) then
@@ -2971,10 +2952,6 @@ allocate(lat_c2(samp%nc2))
 allocate(smask_c2a(samp%nc2a,geom%nl0i))
 allocate(smask_c2(samp%nc2,geom%nl0i))
 allocate(smask_hor_c2(samp%nc2))
-if (.not.samp%lat_bands) then
-   call mesh_c2%alloc(samp%nc2)
-   call tree_c2%alloc(mpl,samp%nc2)
-end if
 allocate(samp%interp_c2b_to_c0a(geom%nl0i))
 if (samp%compute_c2b_to_c1a) allocate(smask_hor_c1a(samp%nc1a))
 if (nam%samp_interp_type=='si') allocate(rh(geom%nc0a))
@@ -2995,8 +2972,8 @@ do ic2=1,samp%nc2
    smask_hor_c2(ic2) = any(smask_c2(ic2,:))
 end do
 if (.not.samp%lat_bands) then
-   call mesh_c2%init(mpl,rng,lon_c2,lat_c2)
-   call tree_c2%init(lon_c2,lat_c2)
+   call mesh_c2%init(mpl,rng,samp%nc2,lon_c2,lat_c2)
+   call tree_c2%init(samp%nc2,lon_c2,lat_c2)
 end if
 if (samp%compute_c2b_to_c1a) smask_hor_c1a = .true.
 
@@ -3009,15 +2986,15 @@ do il0i=1,geom%nl0i
    else
       select case (nam%samp_interp_type)
       case ('c0')
-         call samp%interp_c2b_to_c0a(il0i)%interp(mpl,nam,il0,samp%nc2,lon_c2,lat_c2,smask_c2(:,il0i), &
- & mesh_c2,tree_c2,geom%nc0a,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a(:,il0),geom%mesh_c0u,7,.false.)
+         call samp%interp_c2b_to_c0a(il0i)%interp(mpl,il0,samp%nc2,lon_c2,lat_c2,smask_c2(:,il0i), &
+ & mesh_c2,tree_c2,geom%nc0a,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a(:,il0),geom%bnda_c0u,7,.false.)
       case ('c1')
-         call samp%interp_c2b_to_c0a(il0i)%interp(mpl,nam,il0,samp%nc2,lon_c2,lat_c2,smask_c2(:,il0i), &
- & mesh_c2,tree_c2,geom%nc0a,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a(:,il0),geom%mesh_c0u,7,.true.)
+         call samp%interp_c2b_to_c0a(il0i)%interp(mpl,il0,samp%nc2,lon_c2,lat_c2,smask_c2(:,il0i), &
+ & mesh_c2,tree_c2,geom%nc0a,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a(:,il0),geom%bnda_c0u,7,.true.)
       case ('si')
          rh = nam%local_rad
-         call samp%interp_c2b_to_c0a(il0i)%interp(mpl,nam,il0,samp%nc2,lon_c2,lat_c2,smask_c2(:,il0i), &
- & tree_c2,geom%nc0a,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a(:,il0),geom%mesh_c0u,7,rh)
+         call samp%interp_c2b_to_c0a(il0i)%interp(mpl,il0,samp%nc2,lon_c2,lat_c2,smask_c2(:,il0i), &
+ & tree_c2,geom%nc0a,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a(:,il0),geom%bnda_c0u,7,rh)
       end select
    end if
 end do
@@ -3027,8 +3004,8 @@ if (samp%compute_c2b_to_c1a) then
    if (samp%lat_bands) then
       call samp%interp_c2b_to_c1a%interp(mpl,samp%nc2,lat_c2,samp%nc1a,samp%lat_c1a,smask_hor_c1a,7)
    else
-      call samp%interp_c2b_to_c1a%interp(mpl,nam,0,samp%nc2,lon_c2,lat_c2,smask_hor_c2, &
- & mesh_c2,tree_c2,samp%nc1a,samp%lon_c1a,samp%lat_c1a,smask_hor_c1a,geom%mesh_c0u,7)
+      call samp%interp_c2b_to_c1a%interp(mpl,0,samp%nc2,lon_c2,lat_c2,smask_hor_c2, &
+ & mesh_c2,tree_c2,samp%nc1a,samp%lon_c1a,samp%lat_c1a,smask_hor_c1a,geom%bnda_c0u,7)
    end if
 end if
 
@@ -3158,14 +3135,13 @@ end subroutine samp_compute_mpi_c2b
 ! Subroutine: samp_compute_mpi_c0b
 !> Compute MPI distribution, halo B, subset Sc0
 !----------------------------------------------------------------------
-subroutine samp_compute_mpi_c0b(samp,mpl,nam,geom)
+subroutine samp_compute_mpi_c0b(samp,mpl,geom)
 
 implicit none
 
 ! Passed variables
 class(samp_type),intent(inout) :: samp !< Sampling
 type(mpl_type),intent(inout) :: mpl    !< MPI data
-type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
@@ -3196,8 +3172,8 @@ allocate(samp%interp_c0b_to_c1a(samp%nl0ic1))
 do il0ic1=1,samp%nl0ic1
    il0 = samp%l0ic1_to_l0(il0ic1)
    write(samp%interp_c0b_to_c1a(il0ic1)%prefix,'(a,i3.3)') 'interp_c0b_to_c1a_',il0ic1
-   call samp%interp_c0b_to_c1a(il0ic1)%interp(mpl,nam,0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,geom%gmask_c0u(:,il0),geom%tree_c0u, &
- & samp%nc1a,samp%lon_c1a,samp%lat_c1a,samp%smask_c1a(:,il0),geom%mesh_c0u,7)
+   call samp%interp_c0b_to_c1a(il0ic1)%interp(mpl,0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,geom%gmask_c0u(:,il0),geom%tree_c0u, &
+ & samp%nc1a,samp%lon_c1a,samp%lat_c1a,samp%smask_c1a(:,il0),geom%bnda_c0u,7)
 end do
 
 ! Define halo B
@@ -3326,8 +3302,8 @@ do jc4=1,nam%nc4
       do il0ic3=1,samp%nl0ic3(jc3,jc4)
          il0 = samp%l0ic3_to_l0(il0ic3,jc3,jc4)
          write(samp%interp_c0c_to_c3a(jc3,jc4,il0ic3)%prefix,'(a,i3.3,a,i3.3,a,i3.3)') 'interp_c0c_to_c3a_',jc3,'-',jc4,'_',il0ic3
-         call samp%interp_c0c_to_c3a(jc3,jc4,il0ic3)%interp(mpl,nam,0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,geom%gmask_c0u(:,il0), &
- & geom%tree_c0u,samp%nc1a,samp%lon_c3a(:,jc3,jc4),samp%lat_c3a(:,jc3,jc4),samp%smask_c3a(:,jc3,jc4,il0),geom%mesh_c0u,7)
+         call samp%interp_c0c_to_c3a(jc3,jc4,il0ic3)%interp(mpl,0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,geom%gmask_c0u(:,il0), &
+ & geom%tree_c0u,samp%nc1a,samp%lon_c3a(:,jc3,jc4),samp%lat_c3a(:,jc3,jc4),samp%smask_c3a(:,jc3,jc4,il0),geom%bnda_c0u,7)
       end do
    end do
 end do
@@ -3442,7 +3418,9 @@ type(tree_type) :: tree
 
 ! Allocation
 allocate(samp%local_mask(samp%nc1u,samp%nc2a))
-call tree%alloc(mpl,samp%nc1u)
+
+! Setup tree
+call tree%init(samp%nc1u,samp%lon_c1u,samp%lat_c1u)
 
 ! Initialization
 samp%local_mask = .false.
@@ -3451,7 +3429,6 @@ do ic1a=1,samp%nc1a
    ic1u = samp%c1a_to_c1u(ic1a)
    lcheck_c1d(ic1u) = .true.
 end do
-call tree%init(samp%lon_c1u,samp%lat_c1u)
 
 ! Define masks
 do ic2a=1,samp%nc2a
@@ -3464,7 +3441,7 @@ do ic2a=1,samp%nc2a
       allocate(nn_index(nn))
 
       ! Find nearest neighbors
-      call tree%find_nearest_neighbors(samp%lon_c2a(ic2a),samp%lat_c2a(ic2a),nn,nn_index)
+      call tree%find_nearest_neighbors(mpl,samp%lon_c2a(ic2a),samp%lat_c2a(ic2a),nn,nn_index)
 
       ! Update masks
       do i=1,nn
@@ -3583,7 +3560,9 @@ type(tree_type) :: tree
 
 ! Allocation
 allocate(samp%vbal_mask(samp%nc1u,samp%nc2b))
-call tree%alloc(mpl,samp%nc1u)
+
+! Setup tree
+call tree%init(samp%nc1u,samp%lon_c1u,samp%lat_c1u)
 
 ! Initialization
 samp%vbal_mask = .false.
@@ -3592,7 +3571,6 @@ do ic1a=1,samp%nc1a
    ic1u = samp%c1a_to_c1u(ic1a)
    lcheck_c1e(ic1u) = .true.
 end do
-call tree%init(samp%lon_c1u,samp%lat_c1u)
 
 ! Halo E
 do ic2b=1,samp%nc2b
@@ -3607,7 +3585,7 @@ do ic2b=1,samp%nc2b
       allocate(nn_index(nn))
 
       ! Find nearest neighbors
-      call tree%find_nearest_neighbors(samp%lon_c2u(ic2u),samp%lat_c2u(ic2u),nn,nn_index)
+      call tree%find_nearest_neighbors(mpl,samp%lon_c2u(ic2u),samp%lat_c2u(ic2u),nn,nn_index)
 
       ! Update masks
       do i=1,nn

@@ -1,7 +1,5 @@
        Independent levels:  1[2]
           Subset Sc0 size:              762
-          Min. / max. longitudes: -171.0 /   180.0
-          Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
              Level   2 ~> 100.0%
@@ -52,21 +50,21 @@
           Independent levels for angular sector   1 / class  10:  1[2]
                 Level:   1 ~> cov. at class zero:  0.99E+00
                 Level:   2 ~> cov. at class zero:  0.10E+01
-             Block stream_function:  0.16743447E+00 for       40 diagnostic points
+             Block stream_function:  0.17950189E+00 for       40 diagnostic points
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      3545.32 km
+                                 cor. hor. support:      3568.25 km
                                  cor. ver. support:         3.21 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      3657.53 km
+                                 cor. hor. support:      3709.41 km
                                  cor. ver. support:         3.21 vertical units
-             Block stream_function:  0.20289437E+00 for       40 diagnostic points
+             Block stream_function:  0.20416625E+00 for       40 diagnostic points
                 Level:   1 ~> loc. at class zero:       0.92
                 Level:   2 ~> loc. at class zero:       0.92
                    Level:   1 ~> amplitude:        1.00
-                                 loc. hor. support:      4681.12 km
+                                 loc. hor. support:      4709.35 km
                                  loc. ver. support:         6.50 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 loc. hor. support:      4802.64 km
+                                 loc. hor. support:      4867.77 km
                                  loc. ver. support:         6.50 vertical units
-Norm of output parameter loc_rh - 1: 1.9437518117365789e+08
+Norm of output parameter loc_rh - 1: 1.9629942437372649e+08
 Norm of output parameter loc_rv - 1: 2.6648870270249807e+02

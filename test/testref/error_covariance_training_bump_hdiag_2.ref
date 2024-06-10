@@ -1,7 +1,5 @@
        Independent levels:  1[2]
           Subset Sc0 size:              762
-          Min. / max. longitudes: -171.0 /   180.0
-          Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
              Level   2 ~> 100.0%
@@ -53,35 +51,35 @@
                 Level:   1 ~> cov. at class zero:  0.99E+00
                 Level:   2 ~> cov. at class zero:  0.10E+01
                 Level:   1 ~> cov. at class zero:  0.97E+00
-             Block stream_function:  0.35263264E+00 for    37356 diagnostic points
-             Block surface_pressure:  0.35321006E+00 for     9339 diagnostic points
-                   Level:   1 ~> amplitude:        0.75
-                                 cor. hor. support:      4076.21 km
-                                 cor. ver. support:         4.12 vertical units
-                   Level:   2 ~> amplitude:        0.74
-                                 cor. hor. support:      4274.19 km
-                                 cor. ver. support:         4.36 vertical units
-                   Level:   1 ~> amplitude:        0.25
-                                 cor. hor. support:      2292.22 km
-                                 cor. ver. support:         0.41 vertical units
-                   Level:   2 ~> amplitude:        0.26
-                                 cor. hor. support:      2403.55 km
-                                 cor. ver. support:         0.44 vertical units
-                   Level:   1 ~> amplitude:        0.73
-                                 cor. hor. support:      3939.75 km
+             Block stream_function:  0.35222745E+00 for    37356 diagnostic points
+             Block surface_pressure:  0.35348172E+00 for     9339 diagnostic points
+                   Level:   1 ~> amplitude:        0.72
+                                 cor. hor. support:      4127.47 km
+                                 cor. ver. support:         4.94 vertical units
+                   Level:   2 ~> amplitude:        0.71
+                                 cor. hor. support:      4342.56 km
+                                 cor. ver. support:         5.22 vertical units
+                   Level:   1 ~> amplitude:        0.28
+                                 cor. hor. support:      2321.05 km
+                                 cor. ver. support:         0.49 vertical units
+                   Level:   2 ~> amplitude:        0.29
+                                 cor. hor. support:      2442.00 km
+                                 cor. ver. support:         0.52 vertical units
+                   Level:   1 ~> amplitude:        0.71
+                                 cor. hor. support:      4023.64 km
                                  cor. ver. support:         0.00 vertical units
-                   Level:   1 ~> amplitude:        0.27
-                                 cor. hor. support:      2215.49 km
+                   Level:   1 ~> amplitude:        0.29
+                                 cor. hor. support:      2262.66 km
                                  cor. ver. support:         0.00 vertical units
-Norm of output parameter cor_a - 1: 3.8770944457183809e+01
-Norm of output parameter cor_a - 2: 1.1788266986461052e+01
-Norm of output parameter cor_rh1 - 1: 2.0441952620901942e+08
-Norm of output parameter cor_rh1 - 2: 1.6651671443499693e+08
-Norm of output parameter cor_rh2 - 1: 2.1837060308251354e+08
-Norm of output parameter cor_rh2 - 2: 1.8578793421458143e+08
-Norm of output parameter cor_rhc - 1: 6.5732728479733300e+00
-Norm of output parameter cor_rhc - 2: 6.5732728479733300e+00
-Norm of output parameter cor_rh - 1: 2.0952112063387245e+08
-Norm of output parameter cor_rh - 2: 1.7450092299345303e+08
-Norm of output parameter cor_rv - 1: 1.4709470657569224e+02
-Norm of output parameter cor_rv - 2: 4.1170870413008117e+01
+Norm of output parameter cor_a - 1: 3.8548181106996935e+01
+Norm of output parameter cor_a - 2: 1.1992939671742633e+01
+Norm of output parameter cor_rh1 - 1: 2.0106035992606944e+08
+Norm of output parameter cor_rh1 - 2: 1.6761858757538724e+08
+Norm of output parameter cor_rh2 - 1: 2.2230415850906423e+08
+Norm of output parameter cor_rh2 - 2: 1.8690610992121246e+08
+Norm of output parameter cor_rhc - 1: 6.4866839757426842e+00
+Norm of output parameter cor_rhc - 2: 6.4866839757426842e+00
+Norm of output parameter cor_rh - 1: 2.0924249101784214e+08
+Norm of output parameter cor_rh - 2: 1.7563296377021605e+08
+Norm of output parameter cor_rv - 1: 1.4764691722737101e+02
+Norm of output parameter cor_rv - 2: 5.3046681141399375e+01

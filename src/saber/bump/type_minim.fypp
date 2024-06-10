@@ -189,7 +189,7 @@ call minim%hooke(mpl,minim%guess)
 call minim%cost(mpl,minim%x,minim%f_min)
 
 ! Check improvement
-if (minim%f_min>minim%f_guess) minim%x = minim%guess
+if (sup(minim%f_min,minim%f_guess)) minim%x = minim%guess
 
 ! Direct transform
 call minim%vt_dir(minim%x)
@@ -489,7 +489,7 @@ real(kind_real) :: delta(minim%nx),newx(minim%nx)
 newx = guess
 minim%x = guess
 do i=1,minim%nx
-   if (minim%bsup(i)>minim%binf(i)) then
+   if (sup(minim%bsup(i),minim%binf(i))) then
       if (sup(abs(guess(i)),repro_th)) then
          delta(i) = minim%hooke_rho*abs(guess(i))
       else
@@ -518,7 +518,7 @@ do while ((iters<minim%hooke_itermax).and.inf(minim%hooke_tol,steplength))
 
    do while (inf(newf,fbefore).and.(keep==1))
       do i=1,minim%nx
-         if (minim%bsup(i)>minim%binf(i)) then
+         if (sup(minim%bsup(i),minim%binf(i))) then
             ! Arrange the sign of delta
             if (sup(newx(i),minim%x(i))) then
                delta(i) = abs(delta(i))
@@ -546,7 +546,7 @@ do while ((iters<minim%hooke_itermax).and.inf(minim%hooke_tol,steplength))
       keep = 0
 
       do i=1,minim%nx
-         if (minim%bsup(i)>minim%binf(i)) then
+         if (sup(minim%bsup(i),minim%binf(i))) then
             if (inf(half*abs(delta(i)),abs(newx(i)-minim%x(i)))) then
                keep = 1
                exit
@@ -600,7 +600,7 @@ minf = prevbest
 z = point
 
 do i=1,minim%nx
-   if (minim%bsup(i)>minim%binf(i)) then
+   if (sup(minim%bsup(i),minim%binf(i))) then
       z(i) = point(i)+delta(i)
       call minim%cost(mpl,z,ftmp)
       funevals = funevals+1

@@ -129,16 +129,12 @@ end subroutine rng_init
 ! Subroutine: rng_reseed
 !> Re-seed the random number generator
 !----------------------------------------------------------------------
-subroutine rng_reseed(rng,mpl)
+subroutine rng_reseed(rng)
 
 implicit none
 
 ! Passed variable
 class(rng_type),intent(inout) :: rng !< Random number generator
-type(mpl_type),intent(inout) :: mpl  !< MPI data
-
-! Local variable
-integer :: seed
 
 ! Set name
 @:set_name(rng_reseed)

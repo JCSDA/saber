@@ -2085,7 +2085,7 @@ if (nam%check_adjoints) call vbal%test_adjoint(mpl,rng,nam,geom)
 if (nam%check_dirac) call vbal%test_dirac(mpl,nam,geom)
 
 ! Reset random seed if necessary
-call rng%reseed(mpl)
+call rng%reseed
 
 ! Probe out
 @:probe_out()

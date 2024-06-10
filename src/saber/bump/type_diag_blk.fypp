@@ -470,7 +470,7 @@ do il0=1,geom%nl0
    do jl0r=1,nam%nl0r
       do jc4=1,nam%nc4
          do jc3=1,nam%nc3
-            if (raw_copy(jc3,jc4,jl0r,il0) < nam%diag_raw_th) raw_copy(jc3,jc4,jl0r,il0) = mpl%msv%valr
+            if (inf(raw_copy(jc3,jc4,jl0r,il0),nam%diag_raw_th)) raw_copy(jc3,jc4,jl0r,il0) = mpl%msv%valr
          end do
       end do
    end do

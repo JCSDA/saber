@@ -66,9 +66,6 @@ end interface
 interface det
    module procedure func_det
 end interface
-interface inside
-   module procedure func_inside
-end interface
 interface add
    module procedure func_add
 end interface
@@ -148,7 +145,7 @@ end interface
 
 private
 public :: fletcher32,lonlatmod,rad2short,grid_hash,independent_levels,sphere_bearing,sphere_dist,cart_dist,lonlat2xyz,xyz2lonlat, &
- & vector_product,det,inside,add,divide,vert_interp_size,vert_interp_setup,vert_interp,cholesky,syminv,histogram, &
+ & vector_product,det,add,divide,vert_interp_size,vert_interp_setup,vert_interp,cholesky,syminv,histogram, &
  & cx_to_cxa,cx_to_proc,cx_to_cxu,convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count,global_average
 
 contains
@@ -585,6 +582,9 @@ real(kind_real),intent(in) :: z    !< Z coordinate
 real(kind_real),intent(out) :: lon !< Longitude [radians]
 real(kind_real),intent(out) :: lat !< Latitude [radians]
 
+! Local variables
+real(kind_real) :: r,xn,yn,zn
+
 ! Set name
 @:set_name(func_xyz2lonlat)
 
@@ -592,12 +592,24 @@ real(kind_real),intent(out) :: lat !< Latitude [radians]
 @:probe_in()
 
 if (mpl%msv%isnot(x).and.mpl%msv%isnot(y).and.mpl%msv%isnot(z)) then
-   ! Convert to lon/lat
-   call ageometry%xyz2lonlat(x,y,z,lon,lat)
+   ! Normalize x,y,z
+   r = sqrt(x**2+y**2+z**2)
+   if (r>zero) then
+      xn = x/r
+      yn = y/r
+      zn = z/r
 
-   ! Copy coordinates
-   lon = lon*deg2rad
-   lat = lat*deg2rad
+      ! Convert to lon/lat
+      call ageometry%xyz2lonlat(xn,yn,zn,lon,lat)
+
+      ! Copy coordinates
+      lon = lon*deg2rad
+      lat = lat*deg2rad
+   else
+      ! Missing values
+      lon = mpl%msv%valr
+      lat = mpl%msv%valr
+   end if
 else
    ! Missing values
    lon = mpl%msv%valr
@@ -687,65 +699,6 @@ p = sum(terms)
 @:probe_out()
 
 end subroutine func_det
-
-!----------------------------------------------------------------------
-! Subroutine: func_inside
-!> Find whether a point is inside the hull boundaries or not
-!----------------------------------------------------------------------
-subroutine func_inside(mpl,vbnd,lon,lat,inside_hull)
-
-implicit none
-
-! Passed variables
-type(mpl_type),intent(inout) :: mpl     !< MPI data
-real(kind_real),intent(in) :: vbnd(:,:) !< Boundary coordinates
-real(kind_real),intent(in) :: lon       !< Longitude
-real(kind_real),intent(in) :: lat       !< Latitude
-logical,intent(out) :: inside_hull      !< True if the point is inside the hull
-
-! Local variables
-integer :: i,inext
-real(kind_real) :: vp(3),v1(3),v2(3),cp(3),cd(3)
-
-! Set name
-@:set_name(func_inside)
-
-! Probe in
-@:probe_in()
-
-! Transform to cartesian coordinates
-call lonlat2xyz(mpl,lon,lat,vp(1),vp(2),vp(3))
-
-! Initialization
-inside_hull = .true.
-
-do i=1,size(vbnd,2)
-   ! Index
-   if (i<size(vbnd,2)) then
-      inext = i+1
-   else
-      inext = 1
-   end if
-
-   ! Cross-product
-   v1 = vbnd(:,inext)-vbnd(:,i)
-   v2 = vp-vbnd(:,i)
-   call vector_product(v1,v2,cp)
-
-   ! Centroid
-   cd = (vp+vbnd(:,i)+vbnd(:,inext))/three
-
-   ! Compare the directions
-   if (inf(sum(cp*cd),zero)) then
-      inside_hull = .false.
-      exit
-   end if
-end do
-
-! Probe out
-@:probe_out()
-
-end subroutine func_inside
 
 !----------------------------------------------------------------------
 ! Subroutine: func_add

@@ -322,7 +322,7 @@ if (ie==nam%ens1_ne) then
 end if
 
 ! Reset random seed if necessary
-call rng%reseed(mpl)
+call rng%reseed
 
 ! Probe out
 @:probe_out()
@@ -439,7 +439,7 @@ else
 end if
 
 ! Reset random seed if necessary
-call rng%reseed(mpl)
+call rng%reseed
 
 ! Probe out
 @:probe_out()

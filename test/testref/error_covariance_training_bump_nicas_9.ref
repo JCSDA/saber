@@ -1,7 +1,5 @@
        Independent levels:  1[2]
           Subset Sc0 size:              762
-          Min. / max. longitudes: -171.0 /   180.0
-          Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
              Level   2 ~> 100.0%
@@ -14,24 +12,12 @@
                    Subgrid hash:   1676590011
                 Final nc1:      589
                 Effective horizontal resolution:  4.00
-                Horizontal support radius:    4000.00 km (   4000.00 km -    4000.00 km)
-                Estimated nc1 from horizontal support radius:      589
-                   Decimate full grid, at least      589 points required,     762 valid points found
-                   Subgrid hash:   1676590011
-                Final nc1:      589
-                Effective horizontal resolution:  4.00
              nc1(  1) =                        589
              nc1(  2) =                        589
              ns =                             1178
              v%n_s =                             2
              c%n_s[global] =                 28804
              Effective levels:   1   2 
-                Horizontal support radius:    4000.00 km (   4000.00 km -    4000.00 km)
-                Estimated nc1 from horizontal support radius:      589
-                   Decimate full grid, at least      589 points required,     762 valid points found
-                   Subgrid hash:   1676590011
-                Final nc1:      589
-                Effective horizontal resolution:  4.00
                 Horizontal support radius:    4000.00 km (   4000.00 km -    4000.00 km)
                 Estimated nc1 from horizontal support radius:      589
                    Decimate full grid, at least      589 points required,     762 valid points found
@@ -61,12 +47,12 @@
           Convolution / communication adjoint test result: T
           Component NICAS adjoint test result:             T
              Min / max: 1.0000000 /  1.0000000 over     50 tests
-             Min / max: 0.7586249 /  1.3420904 over     50 tests
+             Min / max: 0.8073385 /  1.4670308 over     50 tests
              Min / max: 1.0000000 /  1.0000000 over     50 tests
-             Min / max: 0.7586249 /  1.3420904 over     50 tests
-             0.0 /    0.0:  0.8747900
-          Level   1:  0.0000000 -  0.8747900
-          Level   2:  0.0000000 -  0.5208351
+             Min / max: 0.8073385 /  1.4670308 over     50 tests
+             0.0 /    0.0:  1.1169505
+          Level   1:  0.0000000 -  1.1169505
+          Level   2:  0.0000000 -  0.6201234
              0.0 /    0.0:  0.0000000
           Level   1:  0.0000000 -  0.0000000
           Level   2:  0.0000000 -  0.0000000

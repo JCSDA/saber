@@ -1,0 +1,294 @@
+#:include 'instrumentation.fypp'
+!----------------------------------------------------------------------
+! Module: type_bnda
+!> Boundaries derived type
+! Author: Benjamin Menetrier
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+module type_bnda
+
+!$ use omp_lib
+use tools_const, only: zero,one
+use tools_func, only: lonlat2xyz,vector_product,det
+use tools_kinds, only: kind_real
+use tools_repro, only: repro_th,inf
+use type_mesh, only: mesh_type
+use type_mpl, only: mpl_type
+@:use_probe()
+
+implicit none
+
+! Horizontal boundaries derived type
+type bnda_hor_type
+   ! Boundaries structure
+   integer :: n                            !< Number of boundary points
+   real(kind_real),allocatable :: v1(:,:)  !< Mask boundary arcs, first vector
+   real(kind_real),allocatable :: v2(:,:)  !< Mask boundary arcs, second vector
+   real(kind_real),allocatable :: va(:,:)  !< Mask boundary arcs, orthogonal vector
+contains
+   procedure :: init => bnda_hor_init
+end type bnda_hor_type
+
+! Boundaries derived type
+type bnda_type
+   ! Set of horizontal boundaries
+   type(bnda_hor_type),allocatable :: hor(:) !< Set of horizontal boundaries
+contains
+   procedure :: init => bnda_init
+   procedure :: dealloc => bnda_dealloc
+   procedure :: check_arc => bnda_check_arc
+end type bnda_type
+
+private
+public :: bnda_type
+
+contains
+
+!----------------------------------------------------------------------
+! Subroutine: bnda_hor_init
+!> Initialization
+!----------------------------------------------------------------------
+subroutine bnda_hor_init(bnda_hor,mpl,mesh,gmask)
+
+implicit none
+
+! Passed variables
+class(bnda_hor_type),intent(inout) :: bnda_hor !< Horizontal boundaries
+type(mpl_type),intent(inout) :: mpl            !< MPI data
+type(mesh_type),intent(in) :: mesh             !< Mesh
+logical,intent(in) :: gmask(mesh%n)            !< Mask
+
+! Local variables
+integer :: i,ii,j,k,kk,knext,kknext,ibnda
+integer,allocatable :: bnda_to_grid(:,:)
+real(kind_real) :: lon_arc(2),lat_arc(2),xbnda(2),ybnda(2),zbnda(2)
+
+! Set name
+@:set_name(bnda_hor_init)
+
+! Probe in
+@:probe_in()
+
+! Count boundary nodes
+bnda_hor%n = 0
+do i=1,mesh%n
+   ii = mesh%order(i)
+   if (.not.gmask(ii)) then
+      ! Loop over neigbors
+      do j=1,mesh%rows(i)%cols
+         k = mesh%rows(i)%nodes(j)
+         kk = mesh%order(k)
+         if (j<mesh%rows(i)%cols) then
+            knext = mesh%rows(i)%nodes(j+1)
+         else
+            knext = mesh%rows(i)%nodes(1)
+         end if
+         kknext = mesh%order(knext)
+         if (.not.gmask(kk).and.gmask(kknext)) bnda_hor%n = bnda_hor%n+1
+      end do
+   end if
+end do
+
+! Allocation
+allocate(bnda_to_grid(2,bnda_hor%n))
+allocate(bnda_hor%v1(3,bnda_hor%n))
+allocate(bnda_hor%v2(3,bnda_hor%n))
+allocate(bnda_hor%va(3,bnda_hor%n))
+
+! Get boundary arcs
+ibnda = 0
+do i=1,mesh%n
+   ii = mesh%order(i)
+   if (.not.gmask(ii)) then
+      ! Loop over neigbors
+      do j=1,mesh%rows(i)%cols
+         k = mesh%rows(i)%nodes(j)
+         kk = mesh%order(k)
+         if (j<mesh%rows(i)%cols) then
+            knext = mesh%rows(i)%nodes(j+1)
+         else
+            knext = mesh%rows(i)%nodes(1)
+         end if
+         kknext = mesh%order(knext)
+         if (.not.gmask(kk).and.gmask(kknext)) then
+            ibnda = ibnda+1
+            bnda_to_grid(1,ibnda) = i
+            bnda_to_grid(2,ibnda) = k
+         end if
+      end do
+   end if
+end do
+
+! Compute boundary arcs coordinates
+do ibnda=1,bnda_hor%n
+   lon_arc = mesh%lon(bnda_to_grid(:,ibnda))
+   lat_arc = mesh%lat(bnda_to_grid(:,ibnda))
+   call lonlat2xyz(mpl,lon_arc(1),lat_arc(1),xbnda(1),ybnda(1),zbnda(1))
+   call lonlat2xyz(mpl,lon_arc(2),lat_arc(2),xbnda(2),ybnda(2),zbnda(2))
+   bnda_hor%v1(:,ibnda) = (/xbnda(1),ybnda(1),zbnda(1)/)
+   bnda_hor%v2(:,ibnda) = (/xbnda(2),ybnda(2),zbnda(2)/)
+   call vector_product(bnda_hor%v1(:,ibnda),bnda_hor%v2(:,ibnda),bnda_hor%va(:,ibnda))
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine bnda_hor_init
+
+!----------------------------------------------------------------------
+! Subroutine: bnda_init
+!> Initialization
+!----------------------------------------------------------------------
+subroutine bnda_init(bnda,mpl,n,nl0,gmask_hor,gmask,mesh)
+
+implicit none
+
+! Passed variables
+class(bnda_type),intent(inout) :: bnda !< Boundaries
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+integer,intent(in) :: n                !< Grid size
+integer,intent(in) :: nl0              !< Number of levels
+logical,intent(in) :: gmask_hor(n)     !< Horizontal mask
+logical,intent(in) :: gmask(n,nl0)     !< 3D mask
+type(mesh_type),intent(in) :: mesh     !< Mesh
+
+! Local variables
+integer :: il0
+
+! Set name
+@:set_name(bnda_init)
+
+! Probe in
+@:probe_in()
+
+! Allocation
+allocate(bnda%hor(0:nl0))
+
+! Loop over levels
+call bnda%hor(0)%init(mpl,mesh,gmask_hor)
+do il0=1,nl0
+   call bnda%hor(il0)%init(mpl,mesh,gmask(:,il0))
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine bnda_init
+
+!----------------------------------------------------------------------
+! Subroutine: bnda_dealloc
+!> Release memory
+!----------------------------------------------------------------------
+subroutine bnda_dealloc(bnda)
+
+implicit none
+
+! Passed variables
+class(bnda_type),intent(inout) :: bnda !< Boundaries
+
+! Local variables
+integer :: il0
+
+! Set name
+@:set_name(bnda_dealloc)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+if (allocated(bnda%hor)) then
+   do il0=0,size(bnda%hor)-1
+      if (allocated(bnda%hor(il0)%v1)) deallocate(bnda%hor(il0)%v1)
+      if (allocated(bnda%hor(il0)%v2)) deallocate(bnda%hor(il0)%v2)
+      if (allocated(bnda%hor(il0)%va)) deallocate(bnda%hor(il0)%va)
+   end do
+   deallocate(bnda%hor)
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine bnda_dealloc
+
+!----------------------------------------------------------------------
+! Subroutine: bnda_check_arc
+!> Check if an arc is crossing mask boundaries
+!----------------------------------------------------------------------
+subroutine bnda_check_arc(bnda,mpl,lon_s,lat_s,lon_e,lat_e,il0,valid,prt)
+
+implicit none
+
+! Passed variables
+class(bnda_type),intent(in) :: bnda !< Boundaries
+type(mpl_type),intent(inout) :: mpl !< MPI data
+real(kind_real),intent(in) :: lon_s !< First point longitude
+real(kind_real),intent(in) :: lat_s !< First point latitude
+real(kind_real),intent(in) :: lon_e !< Second point longitude
+real(kind_real),intent(in) :: lat_e !< Second point latitude
+integer,intent(in) :: il0           !< Level
+logical,intent(inout) :: valid      !< True for valid arcs
+logical,intent(in),optional :: prt  !< Print values (very useful for debugging)
+
+! Local variables
+integer :: ibnda
+real(kind_real) :: v1(3),v2(3),va(3),vp(3),t(4),tmin,tmax
+logical :: lprt
+
+! Set name
+@:set_name(bnda_check_arc)
+
+! Probe in
+@:probe_in()
+
+if (allocated(bnda%hor)) then
+   ! Local flag
+   lprt = .false.
+   if (present(prt)) lprt = prt
+
+   if (valid) then
+      ! Transform to cartesian coordinates
+      call lonlat2xyz(mpl,lon_s,lat_s,v1(1),v1(2),v1(3))
+      call lonlat2xyz(mpl,lon_e,lat_e,v2(1),v2(2),v2(3))
+
+      ! Compute arc orthogonal vector
+      call vector_product(v1,v2,va)
+
+      ! Check if arc is crossing boundary arcs
+      do ibnda=1,bnda%hor(il0)%n
+         if (valid) then
+            ! Compute factors
+            call vector_product(va,bnda%hor(il0)%va(:,ibnda),vp)
+            call det(v1,va,vp,t(1))
+            call det(v2,va,vp,t(2))
+            call det(bnda%hor(il0)%v1(:,ibnda),bnda%hor(il0)%va(:,ibnda),vp,t(3))
+            call det(bnda%hor(il0)%v2(:,ibnda),bnda%hor(il0)%va(:,ibnda),vp,t(4))
+            t(1) = -t(1)
+            t(3) = -t(3)
+
+            ! Get min/max
+            tmin = minval(t)
+            tmax = maxval(t)
+
+            if ((abs(tmin)>repro_th).and.(abs(tmax)>repro_th)) then
+               valid = (tmin*tmax<zero)
+            else
+               valid = .true.
+            end if
+
+            ! Print results
+            if (lprt) then
+               write(mpl%info,'(a,i5,f12.8,f12.8,l2)') 'in bnda_arc test: ',ibnda,tmin,tmax,valid
+               call mpl%flush
+            end if
+         end if
+      end do
+   end if
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine bnda_check_arc
+
+end module type_bnda

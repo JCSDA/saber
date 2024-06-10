@@ -37,6 +37,8 @@ background error:
         latitude: 0.0
         level: 1
         variable: stream_function
+      nicas:
+        interpolation in global file: true
       input model files:
       - parameter: nicas_a
         component: 1

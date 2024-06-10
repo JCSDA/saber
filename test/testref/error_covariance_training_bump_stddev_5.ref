@@ -1,14 +1,12 @@
        Independent levels:  1[2]
           Subset Sc0 size:              762
-          Min. / max. longitudes: -171.0 /   180.0
-          Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
 Norm of input parameter var - 1: 4.3289362578921313e+01
-Norm of input parameter m4 - 1: 1.3993375181143369e+02
+Norm of input parameter m4 - 1: 1.3993375181143315e+02
                 Level   1: rhflt =   40000.00 km, rel. diff. =  0.33902E-02
                 Level   2: rhflt =   40000.00 km, rel. diff. =  0.19375E-01
              Level   1 ~>  0.10169E+01 /  0.10169E+01

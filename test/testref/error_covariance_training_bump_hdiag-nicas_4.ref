@@ -1,7 +1,5 @@
        Independent levels:  1[4]
           Subset Sc0 size:             3170
-          Min. / max. longitudes: -175.0 /   180.0
-          Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
              Level   2 ~> 100.0%
@@ -13,8 +11,6 @@
              Level   4 ~> -0.110E+02 vert. coord.
        Independent levels:  1[1]
           Subset Sc0 size:             3170
-          Min. / max. longitudes: -175.0 /   180.0
-          Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
@@ -495,14 +491,14 @@
              Min / max: 1.0000000 /  1.0000000 over     10 tests
              Min / max: 1.0000000 /  1.0000000 over     10 tests
           Level   1: missing values
-Norm of output parameter dirac_diag_cor - 1: 2.2704826206090210e+00
-Norm of output parameter cor_a - 1: 9.3374728915291982e+01
-Norm of output parameter cor_a - 2: 6.2249819276863299e+01
+Norm of output parameter dirac_diag_cor - 1: 2.2704826206090196e+00
+Norm of output parameter cor_a - 1: 9.3374728915269699e+01
+Norm of output parameter cor_a - 2: 6.2249819276845237e+01
 Norm of output parameter cor_a - 3: 5.1874849397371747e+01
-Norm of output parameter cor_rh - 1: 9.4720567632165372e+08
-Norm of output parameter cor_rh - 2: 4.4556555014170951e+08
-Norm of output parameter cor_rh - 3: 2.7847846883856505e+08
-Norm of output parameter cor_rv - 1: 1.3396492944638560e+03
-Norm of output parameter cor_rv - 2: 1.3396492944638560e+03
-Norm of output parameter cor_rv - 3: 1.3396492944638560e+03
-Norm of output parameter dirac_nicas - 1: 1.6786706767358066e+00
+Norm of output parameter cor_rh - 1: 9.4720567632166815e+08
+Norm of output parameter cor_rh - 2: 4.4556555014170587e+08
+Norm of output parameter cor_rh - 3: 2.7847846883856916e+08
+Norm of output parameter cor_rv - 1: 1.3396492944638217e+03
+Norm of output parameter cor_rv - 2: 1.3396492944638217e+03
+Norm of output parameter cor_rv - 3: 1.3396492944638217e+03
+Norm of output parameter dirac_nicas - 1: 1.6786706767358059e+00

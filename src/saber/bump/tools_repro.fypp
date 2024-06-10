@@ -237,13 +237,14 @@ logical :: test
 ! Probe in
 @:probe_in()
 
-test = .false.
 if (repro_ops) then
    if ((abs(x)>zero).or.(abs(y)>zero)) then
       test = abs(x-y)<repro_th*(abs(x+y))
    else
       test = .true.
    end if
+else
+   test = .not.(abs(x-y)>zero)
 end if
 
 ! Probe out

@@ -32,7 +32,6 @@ type tree_type
     real(kind_real),allocatable :: lat(:)     !< Latitudes
     type(atlas_indexkdtree) :: kd             !< KDTree from ATLAS
 contains
-    procedure :: alloc => tree_alloc
     procedure :: init => tree_init
     procedure :: dealloc => tree_dealloc
     procedure :: find_nearest_neighbors => tree_find_nearest_neighbors
@@ -45,21 +44,27 @@ public :: tree_type
 contains
 
 !----------------------------------------------------------------------
-! Subroutine: tree_alloc
-!> Allocation
+! Subroutine: tree_init
+!> Initialization
 !----------------------------------------------------------------------
-subroutine tree_alloc(tree,mpl,n,mask)
+subroutine tree_init(tree,n,lon,lat,mask)
 
 implicit none
 
 ! Passed variables
 class(tree_type),intent(inout) :: tree !< Tree
-type(mpl_type),intent(inout) :: mpl    !< MPI data
 integer,intent(in) :: n                !< Number of points
+real(kind_real),intent(in) :: lon(n)   !< Points longitudes [in radians]
+real(kind_real),intent(in) :: lat(n)   !< Points latitudes [in radians]
 logical,intent(in),optional :: mask(n) !< Mask
 
+! Local variables
+integer :: i,ieff
+real(kind_real),allocatable :: lon_deg(:),lat_deg(:)
+type(atlas_geometry) :: ageometry
+
 ! Set name
-@:set_name(tree_alloc)
+@:set_name(tree_init)
 
 ! Probe in
 @:probe_in()
@@ -82,35 +87,8 @@ tree%neff = count(tree%mask)
 allocate(tree%lon(tree%neff))
 allocate(tree%lat(tree%neff))
 allocate(tree%from_eff(tree%neff))
-
-! Probe out
-@:probe_out()
-
-end subroutine tree_alloc
-
-!----------------------------------------------------------------------
-! Subroutine: tree_init
-!> Initialization
-!----------------------------------------------------------------------
-subroutine tree_init(tree,lon,lat)
-
-implicit none
-
-! Passed variables
-class(tree_type),intent(inout) :: tree    !< Tree
-real(kind_real),intent(in) :: lon(tree%n) !< Points longitudes [in radians]
-real(kind_real),intent(in) :: lat(tree%n) !< Points latitudes [in radians]
-
-! Local variable
-integer :: i,ieff
-real(kind_real) :: lon_deg(tree%neff),lat_deg(tree%neff)
-type(atlas_geometry) :: ageometry
-
-! Set name
-@:set_name(tree_init)
-
-! Probe in
-@:probe_in()
+allocate(lon_deg(tree%neff))
+allocate(lat_deg(tree%neff))
 
 ! Loop over points
 ieff = 0
@@ -137,6 +115,10 @@ lat_deg = tree%lat*rad2deg
 tree%kd = atlas_indexkdtree(ageometry)
 call tree%kd%reserve(tree%neff)
 call tree%kd%build(tree%neff,lon_deg,lat_deg)
+
+! Release memory
+deallocate(lon_deg)
+deallocate(lat_deg)
 
 ! Probe out
 @:probe_out()
@@ -180,12 +162,13 @@ end subroutine tree_dealloc
 ! Subroutine: tree_find_nearest_neighbors
 !> Find nearest neighbors using a KDTree
 !----------------------------------------------------------------------
-subroutine tree_find_nearest_neighbors(tree,lon,lat,nn,nn_index,nn_dist)
+subroutine tree_find_nearest_neighbors(tree,mpl,lon,lat,nn,nn_index,nn_dist)
 
 implicit none
 
 ! Passed variables
 class(tree_type),intent(in) :: tree                 !< Tree
+type(mpl_type),intent(inout) :: mpl                 !< MPI data
 real(kind_real),intent(in) :: lon                   !< Point longitude [in radians]
 real(kind_real),intent(in) :: lat                   !< Point latitude [in radians]
 integer,intent(in) :: nn                            !< Number of nearest neighbors to find
@@ -205,11 +188,14 @@ logical :: separate
 ! Probe in
 @:probe_in()
 
-if (nn>0) then
-   ! Initialization
-   separate = .false.
-   nn_tmp = min(nn+1,tree%neff)
+! Check nn
+if (nn<=0) call mpl%abort('${subr}$','number of nearest neighbors should be positive')
 
+! Initialization
+separate = .false.
+nn_tmp = min(nn+1,tree%neff)
+
+if (tree%neff>0) then
    do while (.not.separate)
       ! Allocation
       allocate(nn_index_tmp(nn_tmp))

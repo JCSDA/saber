@@ -1,0 +1,212 @@
+#:include 'instrumentation.fypp'
+!----------------------------------------------------------------------
+! Module: type_hull
+!> Hull derived type
+! Author: Benjamin Menetrier
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+module type_hull
+
+use tools_const, only: zero,two,three,pi
+use tools_func, only: lonlat2xyz,xyz2lonlat,sphere_dist,vector_product
+use tools_kinds, only: kind_real
+use tools_repro, only: inf,infeq
+use type_mpl, only: mpl_type
+@:use_probe()
+
+implicit none
+
+! Hull derived type
+type hull_type
+   ! Boundar points-based hull
+   integer :: nb                            !< Number of nodes
+   real(kind_real),allocatable :: vbnd(:,:) !< Hull vertices
+
+   ! Centroid/radius-based hull
+   real(kind_real) :: lon                   !< Centroid longitude
+   real(kind_real) :: lat                   !< Centroid latitude
+   real(kind_real) :: radius                !< Radius
+contains
+   procedure :: init => hull_init
+   procedure :: dealloc => hull_dealloc
+   procedure :: inside => hull_inside
+end type hull_type
+
+private
+public :: hull_type
+
+contains
+
+!----------------------------------------------------------------------
+! Subroutine: hull_init
+!> Allocation
+!----------------------------------------------------------------------
+subroutine hull_init(hull,mpl,n,lon,lat,min_radius)
+
+implicit none
+
+! Passed variables
+class(hull_type),intent(inout) :: hull   !< Hull
+type(mpl_type),intent(inout) :: mpl      !< MPI data
+integer,intent(in) :: n                  !< Size
+real(kind_real),intent(in) :: lon(n)     !< Longitudes
+real(kind_real),intent(in) :: lat(n)     !< Latitudes
+real(kind_real),intent(in) :: min_radius !< Minimum radius
+
+! Local variables
+integer :: i
+real(kind_real) :: dist
+real(kind_real) :: cd(3),v(3)
+
+! Set name
+@:set_name(hull_init)
+
+! Probe in
+@:probe_in()
+
+if (n>0) then
+   ! Compute centroid
+   cd = zero
+   do i=1,n
+      ! Transform to cartesian coordinates
+      call lonlat2xyz(mpl,lon(i),lat(i),v(1),v(2),v(3))
+
+      ! Accumulate
+      cd = cd+v
+   end do
+   if (sum(cd**2)>0) then
+      ! Convert centroid back to lon/lat
+      call xyz2lonlat(mpl,cd(1),cd(2),cd(3),hull%lon,hull%lat)
+
+      ! Compute hull radius
+      hull%radius = 0.0
+      do i=1,n
+         ! Compute distance to centroid
+         call sphere_dist(hull%lon,hull%lat,lon(i),lat(i),dist)
+
+         ! Update hull radius
+          if (dist>hull%radius) hull%radius = dist
+      end do
+   else
+      ! Dummy centroid, large radius
+      hull%lon = zero
+      hull%lat = zero
+      hull%radius = two*pi
+   end if
+
+   ! Enforce minimum radius
+   hull%radius = max(hull%radius,min_radius)
+else
+   ! Empty universe
+   hull%radius = zero
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine hull_init
+
+!----------------------------------------------------------------------
+! Subroutine: hull_dealloc
+!> Release memory
+!----------------------------------------------------------------------
+subroutine hull_dealloc(hull)
+
+implicit none
+
+! Passed variables
+class(hull_type),intent(inout) :: hull !< Hull
+
+! Set name
+@:set_name(hull_dealloc)
+
+! Probe in
+@:probe_in()
+
+! Release memory
+if (allocated(hull%vbnd)) deallocate(hull%vbnd)
+
+! Probe out
+@:probe_out()
+
+end subroutine hull_dealloc
+
+!----------------------------------------------------------------------
+! Subroutine: hull_inside
+!> Find whether a point is inside the hull boundaries or not
+!----------------------------------------------------------------------
+subroutine hull_inside(hull,mpl,lon,lat,inside_hull)
+
+implicit none
+
+! Passed variables
+class(hull_type),intent(in) :: hull !< Hull
+type(mpl_type),intent(inout) :: mpl !< MPI data
+real(kind_real),intent(in) :: lon   !< Longitude
+real(kind_real),intent(in) :: lat   !< Latitude
+logical,intent(out) :: inside_hull  !< True if the point is inside the hull
+
+! Local variables
+integer :: ib,ibnext
+real(kind_real) :: dist
+real(kind_real) :: vp(3),v1(3),v2(3),cp(3),cd(3)
+
+! Set name
+@:set_name(hull_inside)
+
+! Probe in
+@:probe_in()
+
+if (allocated(hull%vbnd)) then
+   ! Boundary points-based hull
+
+   ! Transform to cartesian coordinates
+   call lonlat2xyz(mpl,lon,lat,vp(1),vp(2),vp(3))
+
+   ! Initialization
+   inside_hull = .true.
+
+   do ib=1,hull%nb
+      ! Index
+      if (ib<hull%nb) then
+         ibnext = ib+1
+      else
+         ibnext = 1
+      end if
+
+      ! Cross-product
+      v1 = hull%vbnd(:,ibnext)-hull%vbnd(:,ib)
+      v2 = vp-hull%vbnd(:,ib)
+      call vector_product(v1,v2,cp)
+
+      ! Centroid
+      cd = (vp+hull%vbnd(:,ib)+hull%vbnd(:,ibnext))/three
+
+      ! Compare the directions
+      if (inf(sum(cp*cd),zero)) then
+         inside_hull = .false.
+         exit
+      end if
+   end do
+else
+   ! Centroid/radius-based hull
+   if (mpl%msv%is(hull%radius)) then
+      ! Undefined universe
+      inside_hull = .true.
+   else if (hull%radius>zero) then
+      ! Limited universe
+      call sphere_dist(hull%lon,hull%lat,lon,lat,dist)
+      inside_hull = infeq(dist,hull%radius)
+   else
+      ! Empty universe
+      inside_hull = .false.
+   end if
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine hull_inside
+
+end module type_hull

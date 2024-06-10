@@ -12,7 +12,7 @@ use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_status
 use tools_const, only: zero,one,two,ten,rad2deg,reqkm,pi
 use tools_func, only: fletcher32,sphere_dist,zss_sum
 use tools_kinds, only: kind_real,huge_real
-use tools_netcdf, only: create_file,open_file,define_grp,define_dim,inquire_dim,check_dim,define_var,put_var,close_file
+use tools_netcdf, only: create_file,open_file,define_dim,inquire_dim,check_dim,define_var,put_var,close_file
 use tools_qsort, only: qsort
 use tools_repro, only: repro_th
 use type_cmat, only: cmat_type
@@ -514,7 +514,7 @@ end do
 
 do ig=1,nam%ng
    ! Write global data (data mode)
-   call nicas%blk(ig)%write_global_data(mpl)
+   call nicas%blk(ig)%write_global_data(mpl,geom)
 end do
 
 ! Close file
@@ -809,28 +809,36 @@ if (nam%load_nicas_global) then
    call mpl%flush
    call nicas%read_global(mpl,nam,geom)
 
-   if (any(nam%nicas_interp_type=='si')) then
-      if (cmat%allocated) then
-         do ig=1,nam%ng
-            do icmp=1,nicas%blk(ig)%ncmp
-               ! Allocation
-               allocate(nicas%blk(ig)%cmp(icmp)%rhs(geom%nc0a,geom%nl0))
+   do ig=1,nam%ng
+      do icmp=1,nicas%blk(ig)%ncmp
+         if ((.not.nicas%blk(ig)%cmp(icmp)%interp_in_global_file).and.(nam%nicas_interp_type(ig)=='si')) then
+            ! Check whether cmat is allocated
+            if (.not.cmat%allocated) call mpl%abort('${subr}$', &
+ & 'rh should be specified in input fields for NICAS global reading with si interpolation (old global files)')
+            if (.not.allocated(cmat%blk(ig)%rhs)) call mpl%abort('${subr}$', &
+ & 'rh should be specified in input fields for NICAS global reading with si interpolation (old global files)')
 
-               ! Initialization
-               nicas%blk(ig)%cmp(icmp)%rhs = mpl%msv%valr
+            ! Check cmat content
+            if (geom%nc0a>0) then
+               if (mpl%msv%isall(cmat%blk(ig)%rhs(:,:,icmp))) call mpl%abort('${subr}$', &
+ & 'missing horizontal radius for si interpolation')
+            end if
 
-               ! Copy C matrix fields
-               do il0=1,geom%nl0
-                  do ic0a=1,geom%nc0a
-                    if (geom%gmask_c0a(ic0a,il0)) nicas%blk(ig)%cmp(icmp)%rhs(ic0a,il0) = cmat%blk(ig)%rhs(ic0a,il0,icmp)
-                  end do
+            ! Allocation
+            allocate(nicas%blk(ig)%cmp(icmp)%rhs(geom%nc0a,geom%nl0))
+
+            ! Initialization
+            nicas%blk(ig)%cmp(icmp)%rhs = mpl%msv%valr
+
+            ! Copy C matrix fields
+            do il0=1,geom%nl0
+               do ic0a=1,geom%nc0a
+                 if (geom%gmask_c0a(ic0a,il0)) nicas%blk(ig)%cmp(icmp)%rhs(ic0a,il0) = cmat%blk(ig)%rhs(ic0a,il0,icmp)
                end do
             end do
-         end do
-      else
-         call mpl%abort('${subr}$','rh should be specified in input fields for NICAS global reading with si interpolation')
-      end if
-   end if
+         end if
+      end do
+   end do
 else
    ! Copy and filter C matrix data
    write(mpl%info,'(a)') '-------------------------------------------------------------------'
@@ -878,7 +886,7 @@ end if
 call nicas%partial_dealloc
 
 ! Reset random seed if necessary
-call rng%reseed(mpl)
+call rng%reseed
 
 ! Probe out
 @:probe_out()
@@ -1441,7 +1449,7 @@ end do
 call ens%normalize(mpl,nam,geom)
 
 ! Reset random seed if necessary
-call rng%reseed(mpl)
+call rng%reseed
 
 ! Probe out
 @:probe_out()
@@ -1549,7 +1557,7 @@ write(mpl%test,'(a,l1)') '    Full NICAS adjoint test result:                   
 call mpl%flush
 
 ! Reset random seed if necessary
-call rng%reseed(mpl)
+call rng%reseed
 
 ! Probe out
 @:probe_out()
@@ -1736,7 +1744,7 @@ deallocate(fld_ref)
 deallocate(fld_save)
 
 ! Reset random seed if necessary
-call rng%reseed(mpl)
+call rng%reseed
 
 ! Probe out
 @:probe_out()

@@ -560,6 +560,7 @@ void  write_1d_covariances(const eckit::mpi::Comm & comm,
       // Print localization
       oops::Log::test() << "Localization(" << idL << ") diagnostics:" << std::endl;
       oops::Log::test() << "- Localization at zero separation:" << std::endl;
+
       print_value_at_positions(testConf.getSubConfiguration("dirac"), geom, dxo);
       if (testConf.has("diagnostic points")) {
         oops::Log::test() << "- Localization at diagnostic points:" << std::endl;

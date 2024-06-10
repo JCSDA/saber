@@ -568,7 +568,15 @@ struct NICASDef {
 
   // Same horizontal convolution for all levels, no vertical convolution
   std::pair<const char *, bool> same_horizontal =
-    std::make_pair("same horizontal convolution", 0);
+    std::make_pair("same horizontal convolution", false);
+
+  // Similar levels threshold (relative tolerance on horizontal length-scale)
+  std::pair<const char *, double> sim_levs_th =
+    std::make_pair("similar levels threshold", 0.0);
+
+  // Read/write interpolation in global file
+  std::pair<const char *, bool> interp_in_global_file =
+    std::make_pair("interpolation in global file", false);
 };
 
 // Psichitouv section

@@ -22,8 +22,8 @@ Groups:
   - vert_coord: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 1.9959499520373032e+02
-  velocity_potential: 2.8128536000142412e+02
+  stream_function: 1.9344707669529276e+02
+  velocity_potential: 2.3681673304282140e+02
   surface_pressure: 0.0000000000000000e+00
 Member 1: 
 Valid time:2010-01-01T12:00:00Z
@@ -48,6 +48,6 @@ Groups:
   - vert_coord: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 2.1973661972664479e+02
-  velocity_potential: 1.7248945936732758e+02
+  stream_function: 2.0629494512491718e+02
+  velocity_potential: 1.7272560666356097e+02
   surface_pressure: 0.0000000000000000e+00

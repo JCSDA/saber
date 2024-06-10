@@ -13,7 +13,7 @@ use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 !$ use omp_lib
 use tools_const, only: zero,hundredth,quarter,half,tenth,one,two,three,four,five,hundred,pi,req,reqkm,deg2rad,rad2deg
 use tools_fit, only: tensor_d2h
-use tools_func, only: lonlatmod,sphere_dist,inside,convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count
+use tools_func, only: lonlatmod,sphere_dist,convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count
 use tools_gc99, only: fit_func_sqrt
 use tools_kinds, only: kind_real
 use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim,check_dim
@@ -25,7 +25,6 @@ use type_cv_blk, only: cv_blk_type
 use type_geom, only: geom_type
 use type_io, only: io_type
 use type_linop, only: linop_type
-use type_mesh, only: mesh_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 use type_nicas_cmp, only: nicas_cmp_type
@@ -586,6 +585,7 @@ do icmp=1,nicas_blk%ncmp
    nicas_blk%cmp(icmp)%interp_type = nam%nicas_interp_type(ig)
    nicas_blk%cmp(icmp)%smoother = .false.
    nicas_blk%cmp(icmp)%compute_norm = (.not.allocated(nicas_blk%cmp(icmp)%norm))
+   nicas_blk%cmp(icmp)%interp_in_global_file = nam%interp_in_global_file
 
    ! Copy file ID
    nicas_blk%cmp(icmp)%ncid = nicas_blk%ncid
@@ -683,7 +683,7 @@ do icmp=1,nicas_blk%ncmp
    nicas_blk%cmp(icmp)%nl0_id = nl0_id
 
    ! Component work
-   call nicas_blk%cmp(icmp)%write_global_def(mpl)
+   call nicas_blk%cmp(icmp)%write_global_def(mpl,geom)
 end do
 
 ! End associate
@@ -698,13 +698,14 @@ end subroutine nicas_blk_write_global_def
 ! Subroutine: nicas_blk_write_global_data
 !> Write data for global I/O, data mode
 !----------------------------------------------------------------------
-subroutine nicas_blk_write_global_data(nicas_blk,mpl)
+subroutine nicas_blk_write_global_data(nicas_blk,mpl,geom)
 
 implicit none
 
 ! Passed variables
 class(nicas_blk_type),intent(inout) :: nicas_blk !< NICAS data
 type(mpl_type),intent(inout) :: mpl              !< MPI data
+type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
 integer :: icmp
@@ -717,7 +718,7 @@ integer :: icmp
 
 do icmp=1,nicas_blk%ncmp
    ! Component work
-   call nicas_blk%cmp(icmp)%write_global_data(mpl)
+   call nicas_blk%cmp(icmp)%write_global_data(mpl,geom)
 end do
 
 ! Probe out
@@ -937,7 +938,7 @@ if (.not.allocated(nicas_blk%cmp)) allocate(nicas_blk%cmp(nicas_blk%ncmp))
 
 if (.not.nam%load_nicas_global) then
    ! Reset random numbers seed
-   if (trim(nam%strategy)=='crossed') call rng%reseed(mpl)
+   if (trim(nam%strategy)=='crossed') call rng%reseed
 end if
 
 do icmp=1,nicas_blk%ncmp
@@ -1105,6 +1106,7 @@ do il0i=1,nl0i
    nicas_blk%cmp(il0i)%interp_type = 'si'
    nicas_blk%cmp(il0i)%smoother = .true.
    nicas_blk%cmp(il0i)%compute_norm = .false.
+   nicas_blk%cmp(il0i)%interp_in_global_file = .false.
 
    ! Set number of levels
    nicas_blk%cmp(il0i)%nl0 = geom%nl0
@@ -1170,6 +1172,9 @@ if (.not.allocated(nicas_blk%cmp)) allocate(nicas_blk%cmp(nicas_blk%ncmp))
 do icmp=1,nicas_blk%ncmp
    ! Set anisotropic parameter
    nicas_blk%cmp(icmp)%anisotropic = allocated(cmat_blk%D11).and.allocated(cmat_blk%D22).and.allocated(cmat_blk%D12)
+
+   ! Set interpolation computation flag
+   nicas_blk%cmp(icmp)%interp_in_global_file = nam%interp_in_global_file
 
    ! Set number of levels
    if (nam%same_horizontal) then
@@ -1460,7 +1465,7 @@ deallocate(cv_blk1%cmp)
 deallocate(cv_blk2%cmp)
 
 ! Reset random seed if necessary
-call rng%reseed(mpl)
+call rng%reseed
 
 ! Probe out
 @:probe_out()
@@ -1548,7 +1553,7 @@ write(mpl%test,'(a13,a,f10.7,a,f10.7,a,i6,a)') '','Min / max:',minval(val),' / '
 if (nicas_blk%verbosity) call mpl%flush
 
 ! Reset random seed if necessary
-call rng%reseed(mpl)
+call rng%reseed
 
 ! Probe out
 @:probe_out()

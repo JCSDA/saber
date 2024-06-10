@@ -32,6 +32,7 @@ tools_stripack.fypp
 tools_wrfda.fypp
 type_avg.fypp
 type_avg_blk.fypp
+type_bnda.fypp
 type_bump.h
 type_bump.fypp
 type_bump_interface.F90
@@ -50,6 +51,7 @@ type_fieldset.fypp
 type_geom.fypp
 type_gsi.fypp
 type_hdiag.fypp
+type_hull.fypp
 type_io.fypp
 type_linop.fypp
 type_mesh.fypp

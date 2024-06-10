@@ -1,7 +1,5 @@
        Independent levels:  1[2]
           Subset Sc0 size:             1106
-          Min. / max. longitudes: -172.5 /   180.0
-          Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
              Level   2 ~> 100.0%
@@ -19,8 +17,6 @@
           Norm of stream_function:  0.37543224E+02
        Independent levels:  1[2]
           Subset Sc0 size:              762
-          Min. / max. longitudes: -171.0 /   180.0
-          Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
              Level   2 ~> 100.0%
@@ -95,19 +91,19 @@
                 Level:   2 ~> cov. at class zero:  0.91E+00
                 Level:   1 ~> cov. at class zero:  0.10E+01
                 Level:   2 ~> cov. at class zero:  0.98E+00
-             Block stream_function:  0.15184402E+00 for       60 diagnostic points
+             Block stream_function:  0.14846263E+00 for       60 diagnostic points
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      3645.05 km
+                                 cor. hor. support:      3672.48 km
                                  cor. ver. support:         3.09 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      3787.87 km
+                                 cor. hor. support:      3769.01 km
                                  cor. ver. support:         3.09 vertical units
-             Block stream_function:  0.15270828E+00 for       60 diagnostic points
+             Block stream_function:  0.15964810E+00 for       60 diagnostic points
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      6947.41 km
+                                 cor. hor. support:      6940.69 km
                                  cor. ver. support:         1.27 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      6593.38 km
+                                 cor. hor. support:      6576.49 km
                                  cor. ver. support:         1.27 vertical units
              Block stream_function:  0.00000000E+00 for        0 diagnostic points
                    Level:   1 ~> amplitude:        1.00
@@ -120,5 +116,5 @@
                 Level:   2 ~> hybrid coefficients: 0.31 / 0.64
 Norm of output parameter loc_rh - 1: 4.8989794855663562e+08
 Norm of output parameter loc_rv - 1: 9.7979589711327122e+01
-Norm of output parameter hyb_coef_ens - 1: 1.8058337359365844e+01
-Norm of output parameter hyb_coef_sta - 1: 2.3721874592371822e+01
+Norm of output parameter hyb_coef_ens - 1: 1.8190635496140523e+01
+Norm of output parameter hyb_coef_sta - 1: 2.3595758402804162e+01

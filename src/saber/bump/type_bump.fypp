@@ -120,7 +120,7 @@ type(fckit_configuration),intent(in) :: conf           !< FCKIT configuration
 call initialize_constants
 
 ! Initialize MPL
-call bump%mpl%init(comm,conf)
+call bump%mpl%init(comm)
 
 ! Initialize parameters
 call bump%nam%init(bump%mpl)
@@ -1807,7 +1807,7 @@ do iv=1,bump%nam%nv
    case ('cor_rh','cor_rh_lr')
       if (bump%nam%forced_radii) then
          do il0=1,bump%geom(igeom)%nl0
-            if (bump%mpl%msv%isnot(bump%nam%rh(il0,iv))) fld_c0a(:,il0) = bump%nam%rh(il0,iv)*req
+            if (bump%mpl%msv%isnot(bump%nam%rh(il0,ig))) fld_c0a(:,il0) = bump%nam%rh(il0,ig)*req
          end do
       else
          if (.not.allocated(bump%hdiag%cor(iens)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
@@ -1855,7 +1855,7 @@ do iv=1,bump%nam%nv
    case ('cor_rv','cor_rv_lr')
       if (bump%nam%forced_radii) then
          do il0=1,bump%geom(igeom)%nl0
-            fld_c0a(:,il0) = bump%nam%rv(il0,iv)
+            fld_c0a(:,il0) = bump%nam%rv(il0,ig)
          end do
       else
          if (.not.allocated(bump%hdiag%cor(iens)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
@@ -1877,7 +1877,7 @@ do iv=1,bump%nam%nv
    case ('loc_rh','loc_rh_lr')
       if (bump%nam%forced_radii) then
          do il0=1,bump%geom(igeom)%nl0
-            if (bump%mpl%msv%isnot(bump%nam%rh(il0,iv))) fld_c0a(:,il0) = bump%nam%rh(il0,iv)*req
+            if (bump%mpl%msv%isnot(bump%nam%rh(il0,ig))) fld_c0a(:,il0) = bump%nam%rh(il0,ig)*req
          end do
       else
          if (.not.allocated(bump%hdiag%loc(iens)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
@@ -1925,7 +1925,7 @@ do iv=1,bump%nam%nv
    case ('loc_rv','loc_rv_lr')
       if (bump%nam%forced_radii) then
          do il0=1,bump%geom(igeom)%nl0
-            fld_c0a(:,il0) = bump%nam%rv(il0,iv)
+            fld_c0a(:,il0) = bump%nam%rv(il0,ig)
          end do
       else
          if (.not.allocated(bump%hdiag%loc(iens)%blk)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')

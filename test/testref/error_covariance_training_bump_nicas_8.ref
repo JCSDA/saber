@@ -1,43 +1,29 @@
        Independent levels:  1[2]
           Subset Sc0 size:              762
-          Min. / max. longitudes: -171.0 /   180.0
-          Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
              Effective levels:   1   2 
-                   Horizontal support radius:    2000.00 km (   2000.00 km -    2000.00 km)
-                   Estimated nc1 from horizontal support radius:     2356
-                      Decimate full grid, at least      762 points required,     762 valid points found
-                      Subgrid hash:   1550418632
-                   Final nc1:      762
-                   Effective horizontal resolution:  2.27
-                   Horizontal support radius:    2000.00 km (   2000.00 km -    2000.00 km)
-                   Estimated nc1 from horizontal support radius:     2356
-                      Decimate full grid, at least      762 points required,     762 valid points found
-                      Subgrid hash:   1550418632
-                   Final nc1:      762
-                   Effective horizontal resolution:  2.27
+                Horizontal support radius:    2000.00 km (   2000.00 km -    2000.00 km)
+                Estimated nc1 from horizontal support radius:     2356
+                   Decimate full grid, at least      762 points required,     762 valid points found
+                   Subgrid hash:   1550418632
+                Final nc1:      762
+                Effective horizontal resolution:  2.27
              nc1(  1) =                        762
              nc1(  2) =                        762
              ns =                             1524
              v%n_s =                             2
              c%n_s[global] =                 65128
              Effective levels:   1   2 
-                   Horizontal support radius:    2000.00 km (   2000.00 km -    2000.00 km)
-                   Estimated nc1 from horizontal support radius:     2356
-                      Decimate full grid, at least      762 points required,     762 valid points found
-                      Subgrid hash:   1550418632
-                   Final nc1:      762
-                   Effective horizontal resolution:  2.27
-                   Horizontal support radius:    2000.00 km (   2000.00 km -    2000.00 km)
-                   Estimated nc1 from horizontal support radius:     2356
-                      Decimate full grid, at least      762 points required,     762 valid points found
-                      Subgrid hash:   1550418632
-                   Final nc1:      762
-                   Effective horizontal resolution:  2.27
+                Horizontal support radius:    2000.00 km (   2000.00 km -    2000.00 km)
+                Estimated nc1 from horizontal support radius:     2356
+                   Decimate full grid, at least      762 points required,     762 valid points found
+                   Subgrid hash:   1550418632
+                Final nc1:      762
+                Effective horizontal resolution:  2.27
              nc1(  1) =                        762
              nc1(  2) =                        762
              ns =                             1524

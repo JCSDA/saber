@@ -15,14 +15,16 @@ use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max,fckit_mpi_
 !$ use omp_lib
 use tools_atlas, only: get_grid,field_to_array,get_atlas_functionspace_size
 use tools_const, only: zero,quarter,half,one,two,four,hundred,pi,req,deg2rad,rad2deg,reqkm
-use tools_func, only: fletcher32,lonlatmod,grid_hash,independent_levels,sphere_dist,lonlat2xyz,xyz2lonlat,cart_dist,inside, &
+use tools_func, only: fletcher32,lonlatmod,grid_hash,independent_levels,sphere_dist,lonlat2xyz,xyz2lonlat,cart_dist, &
  & vector_product,cx_to_cxa,cx_to_proc,cx_to_cxu,convert_l2i,convert_i2l,zss_maxval,zss_minval,zss_sum,zss_count
 use tools_kinds, only: kind_int,kind_real,huge_real,huge_int
 use tools_qsort, only: qsort
-use tools_repro, only: inf,sup,eq,infeq,indist,repro_th
+use tools_repro, only: inf,sup,eq,infeq,supeq,indist,repro_th
 use tools_stripack, only: area
+use type_bnda, only: bnda_type
 use type_com, only: com_type
 use type_fieldset, only: fieldset_type
+use type_hull, only: hull_type
 use type_io, only: io_type
 use type_linop, only: linop_type
 use type_mesh, only: mesh_type
@@ -126,8 +128,11 @@ type geom_type
    ! Tree
    type(tree_type) :: tree_c0u                        !< Tree on subset Sc0, universe
 
-   ! Mesh
-   type(mesh_type) :: mesh_c0u                        !< Mesh on subset Sc0, universe
+   ! Boundaries
+   type(bnda_type) :: bnda_c0u                        !< Boundaries on subset Sc0, universe
+
+   ! Hull
+   type(hull_type) :: hull_c0u                        !< Domain hull on subset Sc0, universe
 
    ! Dirac fields for variables
    integer :: ndir                                    !< Number of valid Dirac points
@@ -141,7 +146,6 @@ type geom_type
 
    ! I/O
    type(io_type) :: io                                !< Subset Sc0 I/O
-   logical :: io_initialized                          !< Flag to check if subset Sc0 I/O is initialized
 
    ! Allocation flag
    logical :: allocated                               !< Allocation flag
@@ -152,7 +156,6 @@ contains
    procedure :: from_atlas => geom_from_atlas
    procedure :: setup_universe => geom_setup_universe
    procedure :: setup_c0 => geom_setup_c0
-   procedure :: setup_mask_check => geom_setup_mask_check
    procedure :: geom_index_from_lonlat_r0
    procedure :: geom_index_from_lonlat_r1
    generic :: index_from_lonlat => geom_index_from_lonlat_r0,geom_index_from_lonlat_r1
@@ -244,7 +247,8 @@ if (allocated(geom%vert_coordavg)) deallocate(geom%vert_coordavg)
 if (allocated(geom%disth)) deallocate(geom%disth)
 if (allocated(geom%as)) deallocate(geom%as)
 call geom%tree_c0u%dealloc
-call geom%mesh_c0u%dealloc
+call geom%bnda_c0u%dealloc
+call geom%hull_c0u%dealloc
 if (allocated(geom%londir)) deallocate(geom%londir)
 if (allocated(geom%latdir)) deallocate(geom%latdir)
 if (allocated(geom%iprocdir)) deallocate(geom%iprocdir)
@@ -312,6 +316,9 @@ type(fieldset_type),intent(in),optional :: fieldset    !< Fieldset containing ge
 
 ! Local variables
 integer :: il0,jl0off,jl0r,jc3,jc4,iproc
+integer,allocatable :: order_c0(:),order_c0a(:)
+real(kind_real),allocatable :: lon_c0(:),lat_c0(:)
+type(mesh_type) :: mesh_c0u
 
 ! Set name
 @:set_name(geom_setup)
@@ -354,17 +361,24 @@ call geom%setup_universe(mpl,rng,nam)
 ! Setup tree
 write(mpl%info,'(a7,a)') '','Setup tree'
 call mpl%flush
-call geom%tree_c0u%alloc(mpl,geom%nc0u)
-call geom%tree_c0u%init(geom%lon_c0u,geom%lat_c0u)
+call geom%tree_c0u%init(geom%nc0u,geom%lon_c0u,geom%lat_c0u)
 
-! Setup mesh
-write(mpl%info,'(a7,a)') '','Setup mesh'
+! Setup hull
+write(mpl%info,'(a7,a)') '','Setup hull'
 call mpl%flush
-call geom%mesh_c0u%alloc(geom%nc0u)
-call geom%mesh_c0u%init(mpl,rng,geom%lon_c0u,geom%lat_c0u,hull_bnd=.true.)
+if (geom%global.and.all(geom%myuniverse)) then
+   geom%hull_c0u%radius = mpl%msv%valr
+else
+   call geom%hull_c0u%init(mpl,geom%nc0u,geom%lon_c0u,geom%lat_c0u,nam%universe_radius)
+end if
 
-! Setup mask boudaries checking fields
-call geom%setup_mask_check(mpl,nam)
+if (nam%mask_check) then
+   ! Setup boundaries
+   write(mpl%info,'(a7,a)') '','Setup boundaries'
+   call mpl%flush
+   call mesh_c0u%init(mpl,rng,geom%nc0u,geom%lon_c0u,geom%lat_c0u)
+   call geom%bnda_c0u%init(mpl,geom%nc0u,geom%nl0,geom%gmask_hor_c0u,geom%gmask_c0u,mesh_c0u)
+end if
 
 ! Setup horizontal distance
 write(mpl%info,'(a7,a)') '','Setup horizontal distance'
@@ -390,6 +404,37 @@ call geom%setup_dirac(mpl,nam)
 ! Set allocation flag
 geom%allocated = .true.
 
+if (((nam%new_nicas.or.nam%load_nicas_local).and.nam%write_nicas_global).or.nam%load_nicas_global) then
+   ! Allocation
+   if (mpl%main) then
+      allocate(lon_c0(geom%nc0))
+      allocate(lat_c0(geom%nc0))
+      allocate(order_c0(geom%nc0))
+   else
+      allocate(lon_c0(0))
+      allocate(lat_c0(0))
+      allocate(order_c0(0))
+   end if
+   allocate(order_c0a(geom%nc0a))
+
+   ! Communication
+   call mpl%loc_to_glb(geom%nc0a,geom%nc0,geom%c0a_to_c0,geom%lon_c0a,lon_c0)
+   call mpl%loc_to_glb(geom%nc0a,geom%nc0,geom%c0a_to_c0,geom%lat_c0a,lat_c0)
+
+   ! Compute global order
+   if (mpl%main) call qsort(geom%nc0,lon_c0,lat_c0,order_c0,.false.)
+   call mpl%glb_to_loc(geom%nc0a,geom%nc0,geom%c0a_to_c0,order_c0,order_c0a)
+
+   ! Setup fields output
+   call geom%io%init(mpl,7,'0',geom%nc0,geom%nc0a,geom%c0a_to_c0,geom%proc_to_c0_offset,order_c0a)
+
+   ! Release memory
+   deallocate(lon_c0)
+   deallocate(lat_c0)
+   deallocate(order_c0)
+   deallocate(order_c0a)
+end if
+
 ! Print summary
 write(mpl%info,'(a7,a)') '','Geometry summary:'
 call mpl%flush
@@ -399,10 +444,6 @@ write(mpl%test,'(a10,a,i8)') '','Subset Sc0 size:         ',geom%nc0
 call mpl%flush
 write(mpl%info,'(a10,a,i6,a,f6.2,a)') '','Number of duplicated points (halo):    ',(geom%nmg-geom%nc0), &
  & ' (',real(geom%nmg-geom%nc0,kind_real)/real(geom%nmg,kind_real)*hundred,'%)'
-call mpl%flush
-write(mpl%test,'(a10,a,f7.1,a,f7.1)') '','Min. / max. longitudes:',geom%lon_min*rad2deg,' / ',geom%lon_max*rad2deg
-call mpl%flush
-write(mpl%test,'(a10,a,f7.1,a,f7.1)') '','Min. / max. latitudes: ',geom%lat_min*rad2deg,' / ',geom%lat_max*rad2deg
 call mpl%flush
 write(mpl%test,'(a10,a,e10.3,a)') '','Domain area (% of Earth area):',hundred*geom%area_max_c0/(four*pi),'%'
 call mpl%flush
@@ -427,7 +468,7 @@ do iproc=1,mpl%nproc
 end do
 
 ! Reset random seed if necessary
-call rng%reseed(mpl)
+call rng%reseed
 
 ! Probe out
 @:probe_out()
@@ -450,7 +491,8 @@ type(atlas_functionspace),intent(in) :: afunctionspace !< ATLAS function space
 type(fieldset_type),intent(in),optional :: fieldset    !< Fieldset
 
 ! Local variables
-integer :: il0,imga,ifield
+integer :: il0,imga
+real(kind_real) :: lon0,lat0,dist,maxdist
 real(kind_real),allocatable :: area_mga(:,:)
 real(kind_real),pointer :: real_ptr(:,:)
 type(atlas_field) :: afield,afield_lonlat
@@ -569,15 +611,39 @@ do imga=1,geom%nmga
    if (geom%owned_mga(imga,1)) call lonlatmod(geom%lon_mga(imga),geom%lat_mga(imga))
 end do
 
+! Get domain type
+if (mpl%main) then
+   lon0 = geom%lon_mga(1)
+   lat0 = geom%lat_mga(1)
+end if
+call mpl%f_comm%broadcast(lon0, mpl%rootproc-1)
+call mpl%f_comm%broadcast(lat0, mpl%rootproc-1)
+maxdist = zero
+do imga=1,geom%nmga
+   if (maxdist<pi) then
+      call sphere_dist(lon0,lat0,geom%lon_mga(imga),geom%lat_mga(imga),dist)
+      if (dist>maxdist) maxdist = dist
+   end if
+end do
+call mpl%f_comm%allreduce(maxdist,fckit_mpi_max())
+geom%global = supeq(maxdist,half*pi)
+
 ! Get min/max lon/lat
-geom%lon_min = zss_minval(geom%lon_mga,geom%owned_mga(:,1))
-geom%lon_max = zss_maxval(geom%lon_mga,geom%owned_mga(:,1))
-geom%lat_min = zss_minval(geom%lat_mga,geom%owned_mga(:,1))
-geom%lat_max = zss_maxval(geom%lat_mga,geom%owned_mga(:,1))
-call mpl%f_comm%allreduce(geom%lon_min,fckit_mpi_min())
-call mpl%f_comm%allreduce(geom%lon_max,fckit_mpi_max())
-call mpl%f_comm%allreduce(geom%lat_min,fckit_mpi_min())
-call mpl%f_comm%allreduce(geom%lat_max,fckit_mpi_max())
+if (geom%global) then
+   geom%lon_min = -pi
+   geom%lon_max = pi
+   geom%lat_min = -half*pi
+   geom%lat_max = half*pi
+else
+   geom%lon_min = zss_minval(geom%lon_mga,geom%owned_mga(:,1))
+   geom%lon_max = zss_maxval(geom%lon_mga,geom%owned_mga(:,1))
+   geom%lat_min = zss_minval(geom%lat_mga,geom%owned_mga(:,1))
+   geom%lat_max = zss_maxval(geom%lat_mga,geom%owned_mga(:,1))
+   call mpl%f_comm%allreduce(geom%lon_min,fckit_mpi_min())
+   call mpl%f_comm%allreduce(geom%lon_max,fckit_mpi_max())
+   call mpl%f_comm%allreduce(geom%lat_min,fckit_mpi_min())
+   call mpl%f_comm%allreduce(geom%lat_max,fckit_mpi_max())
+end if
 geom%sin_lat_min = sin(geom%lat_min)
 geom%sin_lat_max = sin(geom%lat_max)
 
@@ -600,7 +666,7 @@ type(mpl_type),intent(inout) :: mpl    !< MPI data
 
 ! Local variables
 integer :: iproc,imga,ic0a,ic0,diff_grid,il0
-real(kind_real) :: xyz_ne(3),xyz_nw(3),xyz_se(3),xyz_sw(3),area_nw,area_se,area_total
+real(kind_real) :: xyz_ne(3),xyz_nw(3),xyz_se(3),xyz_sw(3),area_nw,area_se
 real(kind_real) :: norm_c0(geom%nl0),vert_coord_hor_c0(geom%nl0)
 
 ! Set name
@@ -656,8 +722,7 @@ allocate(geom%l0i_to_l0(geom%nl0))
 
 ! Default area
 if (.not.geom%area_provided) then
-   if ((geom%lon_min<-0.9_kind_real*pi).and.(geom%lon_max>0.9_kind_real*pi) &
- & .and.(geom%lat_min<-0.45_kind_real*pi).and.(geom%lat_max>0.45_kind_real*pi)) then
+   if (geom%global) then
       ! Full sphere, equally distributed
       geom%area_c0a = four*pi/real(geom%nc0,kind_real)
    else
@@ -749,9 +814,6 @@ do il0=1,geom%nl0
       geom%vert_coordavg(il0) = mpl%msv%valr
    end if
 end do
-area_total = zss_sum(geom%area_c0a)
-call mpl%f_comm%allreduce(area_total,fckit_mpi_sum())
-geom%global = (area_total>0.99_kind_real*four*pi)
 
 ! Compute independent levels
 write(mpl%test,'(a7,a)') '','Independent levels: '
@@ -778,10 +840,11 @@ type(rng_type),intent(inout) :: rng    !< Random number generator
 type(nam_type),intent(in) :: nam       !< Namelist
 
 ! Local variables
-integer :: iproc,ic0a,ic0u,ic0,notempty
+integer :: iproc,ic0a,ic0u,ic0
 integer :: proc_to_universe_size(mpl%nproc)
 integer,allocatable :: order(:)
-real(kind_real) :: dist,x,y,z,x_avg,y_avg,z_avg,n_avg,lon_avg,lat_avg,distmax,norm_c0u
+real(kind_real) :: dist,lon_avg,lat_avg,distmax,norm_c0u
+real(kind_real) :: xyz(3),xyz_avg(3)
 real(kind_real),allocatable :: proc_to_lon(:),proc_to_lat(:),proc_to_distmax(:)
 real(kind_real),allocatable :: area_c0u(:)
 
@@ -807,28 +870,17 @@ else
    allocate(proc_to_distmax(mpl%nproc))
 
    ! Initialization
-   x_avg = zero
-   y_avg = zero
-   z_avg = zero
-   n_avg = zero
+   xyz_avg = zero
    distmax = zero
 
    ! Convert to cartesian coordinates and average
    do ic0a=1,geom%nc0a
-      call lonlat2xyz(mpl,geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),x,y,z)
-      x_avg = x_avg+x
-      y_avg = y_avg+y
-      z_avg = z_avg+z
-      n_avg = n_avg+one
+      call lonlat2xyz(mpl,geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),xyz(1),xyz(2),xyz(3))
+      xyz_avg = xyz_avg+xyz
    end do
-   if (n_avg>zero) then
-      ! Normalization
-      x_avg = x_avg/n_avg
-      y_avg = y_avg/n_avg
-      z_avg = z_avg/n_avg
-
+   if (any(abs(xyz_avg)>zero)) then
       ! Convert average back to lon/lat
-      call xyz2lonlat(mpl,x_avg,y_avg,z_avg,lon_avg,lat_avg)
+      call xyz2lonlat(mpl,xyz_avg(1),xyz_avg(2),xyz_avg(3),lon_avg,lat_avg)
 
       ! Compute maximum distance to average
       do ic0a=1,geom%nc0a
@@ -879,7 +931,7 @@ do iproc=1,mpl%nproc
 end do
 
 ! Reset random seed if necessary
-call rng%reseed(mpl)
+call rng%reseed
 
 ! Communicate data from halo A to universe on subset Sc0
 write(mpl%info,'(a10,a)') '','Communicate data from halo A to universe on subset Sc0'
@@ -963,81 +1015,6 @@ deallocate(order)
 end subroutine geom_setup_universe
 
 !----------------------------------------------------------------------
-! Subroutine: geom_setup_mask_check
-!> Setup mask boundaries checking fields
-!----------------------------------------------------------------------
-subroutine geom_setup_mask_check(geom,mpl,nam)
-
-implicit none
-
-! Passed variables
-class(geom_type),intent(inout) :: geom !< Geometry
-type(mpl_type),intent(inout) :: mpl    !< MPI data
-type(nam_type),intent(in) :: nam       !< Namelist
-
-! Local variables
-integer :: il0,ibnda,nbndamax
-integer,allocatable :: bnda_to_c0u(:,:)
-real(kind_real) :: lon_arc(2),lat_arc(2),xbnda(2),ybnda(2),zbnda(2)
-
-! Set name
-@:set_name(geom_setup_mask_check)
-
-! Probe in
-@:probe_in()
-
-! Setup mask check
-if (nam%mask_check) then
-   write(mpl%info,'(a7,a)') '','Setup mask check'
-   call mpl%flush
-
-   ! Allocation
-   allocate(geom%mesh_c0u%nbnda(0:geom%nl0))
-
-   ! Count boundary arcs
-   do il0=0,geom%nl0
-      if (il0==0) then
-         call geom%mesh_c0u%count_bnda(geom%gmask_hor_c0u,geom%mesh_c0u%nbnda(il0))
-      else
-         call geom%mesh_c0u%count_bnda(geom%gmask_c0u(:,il0),geom%mesh_c0u%nbnda(il0))
-      end if
-   end do
-
-   ! Allocation
-   nbndamax = zss_maxval(geom%mesh_c0u%nbnda)
-   allocate(bnda_to_c0u(2,nbndamax))
-   allocate(geom%mesh_c0u%v1bnda(3,nbndamax,0:geom%nl0))
-   allocate(geom%mesh_c0u%v2bnda(3,nbndamax,0:geom%nl0))
-   allocate(geom%mesh_c0u%vabnda(3,nbndamax,0:geom%nl0))
-
-   do il0=0,geom%nl0
-      ! Get boundary arcs
-      if (il0==0) then
-         call geom%mesh_c0u%get_bnda(geom%gmask_hor_c0u,geom%mesh_c0u%nbnda(il0),bnda_to_c0u)
-      else
-         call geom%mesh_c0u%get_bnda(geom%gmask_c0u(:,il0),geom%mesh_c0u%nbnda(il0),bnda_to_c0u)
-      end if
-
-      ! Compute boundary arcs coordinates
-      do ibnda=1,geom%mesh_c0u%nbnda(il0)
-         lon_arc = geom%lon_c0u(bnda_to_c0u(:,ibnda))
-         lat_arc = geom%lat_c0u(bnda_to_c0u(:,ibnda))
-         call lonlat2xyz(mpl,lon_arc(1),lat_arc(1),xbnda(1),ybnda(1),zbnda(1))
-         call lonlat2xyz(mpl,lon_arc(2),lat_arc(2),xbnda(2),ybnda(2),zbnda(2))
-         geom%mesh_c0u%v1bnda(:,ibnda,il0) = (/xbnda(1),ybnda(1),zbnda(1)/)
-         geom%mesh_c0u%v2bnda(:,ibnda,il0) = (/xbnda(2),ybnda(2),zbnda(2)/)
-         call vector_product(geom%mesh_c0u%v1bnda(:,ibnda,il0),geom%mesh_c0u%v2bnda(:,ibnda,il0), &
- & geom%mesh_c0u%vabnda(:,ibnda,il0))
-      end do
-   end do
-end if
-
-! Probe out
-@:probe_out()
-
-end subroutine geom_setup_mask_check
-
-!----------------------------------------------------------------------
 ! Subroutine: geom_index_from_lonlat_r0
 !> Get nearest neighbor index from longitude/latitude/level, scalar
 !----------------------------------------------------------------------
@@ -1067,15 +1044,11 @@ logical :: valid
 @:probe_in()
 
 ! Check if the point is inside the universe
-if (geom%mesh_c0u%n>0) then
-   call inside(mpl,geom%mesh_c0u%vbnd,lon,lat,valid)
-else
-   valid = .false.
-end if
+call geom%hull_c0u%inside(mpl,lon,lat,valid)
 
-if (valid) then
+if (valid.and.(geom%nc0u>0)) then
    ! Find nearest neighbor
-   call geom%tree_c0u%find_nearest_neighbors(lon,lat,1,nn_index,nn_dist)
+   call geom%tree_c0u%find_nearest_neighbors(mpl,lon,lat,1,nn_index,nn_dist)
    ic0 = geom%c0u_to_c0(nn_index(1))
    nn_proc = geom%c0_to_proc(ic0)
 else
@@ -1159,15 +1132,11 @@ logical :: valid(n)
 
 do i=1,n
    ! Check if the point is inside the universe
-   if (geom%mesh_c0u%n>0) then
-      call inside(mpl,geom%mesh_c0u%vbnd,lon(i),lat(i),valid(i))
-   else
-      valid(i) = .false.
-   end if
+   call geom%hull_c0u%inside(mpl,lon(i),lat(i),valid(i))
 
-   if (valid(i)) then
+   if (valid(i).and.(geom%nc0u>0)) then
       ! Find nearest neighbor
-      call geom%tree_c0u%find_nearest_neighbors(lon(i),lat(i),1,nn_index(i:i),nn_dist(i:i))
+      call geom%tree_c0u%find_nearest_neighbors(mpl,lon(i),lat(i),1,nn_index(i:i),nn_dist(i:i))
       ic0 = geom%c0u_to_c0(nn_index(i))
       nn_proc(i) = geom%c0_to_proc(ic0)
    else
@@ -1243,8 +1212,8 @@ type(nam_type),intent(in) :: nam       !< Namelist
 ! Local variables
 integer :: idir,il0,ic0a,idir_2d,ndir_2d,jl0
 integer :: il0dir(nam%ndir),iprocdir(nam%ndir),ic0adir(nam%ndir)
-integer,allocatable :: nn_index(:),distv(:),order(:,:),inbdir(:),idir_2dto3d(:)
-real(kind_real),allocatable :: londir_2d(:),latdir_2d(:)
+integer,allocatable :: nn_index(:),order(:,:),inbdir(:),idir_2dto3d(:)
+real(kind_real),allocatable :: distv(:),londir_2d(:),latdir_2d(:)
 logical :: valid(nam%ndir)
 type(tree_type) :: tree_dirac
 
@@ -1334,13 +1303,12 @@ if (nam%check_dirac.and.(nam%ndir>0)) then
             end if
          end do
 
-         ! Create tree
-         call tree_dirac%alloc(mpl,ndir_2d)
-         call tree_dirac%init(londir_2d,latdir_2d)
+         ! Setup tree
+         call tree_dirac%init(ndir_2d,londir_2d,latdir_2d)
 
          ! Affect each horizontal point to a dirac point
          do ic0a=1,geom%nc0a
-            call tree_dirac%find_nearest_neighbors(geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),ndir_2d,nn_index)
+            call tree_dirac%find_nearest_neighbors(mpl,geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),ndir_2d,nn_index)
             geom%inbdir(ic0a,il0) = idir_2dto3d(nn_index(1))
          end do
 
@@ -1601,8 +1569,7 @@ else
    call fieldset%to_array(mpl,fld_mga)
 
    ! Model grid to subset Sc0
-   call geom_copy_mga_to_c0a_real_all(geom,mpl,nam,fld_c0a,fld_mga)
-   ! TODO: BUG, should be call geom%copy_mga_to_c0a(mpl,nam,fld_c0a,fld_mga)
+   call geom%copy_mga_to_c0a(mpl,nam,fld_c0a,fld_mga)
 end if
 
 ! Probe out
@@ -1715,7 +1682,7 @@ end subroutine geom_rand_point
 !> Intialize sampling
 !----------------------------------------------------------------------
 subroutine geom_initialize_sampling(geom,mpl,rng,method,ncxa,lon_cxa,lat_cxa,mask_cxa,rh_cxa,cxa_to_cx,ncxu,cxu_to_cxa,tree_cxu, &
- & mesh_cxu,ifmt,ns,s_to_cx)
+ & hull_cxu,ifmt,ns,s_to_cx)
 
 implicit none
 
@@ -1733,7 +1700,7 @@ integer,intent(in) :: cxa_to_cx(ncxa)       !< Local to global index
 integer,intent(in) :: ncxu                  !< Number of points (universe)
 integer,intent(in) :: cxu_to_cxa(ncxu)      !< Universe to local index
 type(tree_type),intent(in) :: tree_cxu      !< Universe KD-tree
-type(mesh_type),intent(in) :: mesh_cxu      !< Universe mesh
+type(hull_type),intent(in) :: hull_cxu      !< Universe hull
 integer,intent(in) :: ifmt                  !< Format indentation
 integer,intent(in) :: ns                    !< Number of samplings points (global)
 integer,intent(out) :: s_to_cx(ns)          !< Horizontal sampling index (global)
@@ -1746,13 +1713,13 @@ integer,allocatable :: proc_to_icxmin(:),ssa_to_cx(:),ssa_to_node(:),s_to_ssa(:)
 integer,allocatable :: proc_to_nodemin(:),sa_to_s(:),order_s(:),cxa_to_node(:)
 integer,allocatable :: proc_to_nssa(:),ssa_to_ss(:),ss_to_cxa(:),ss_to_cx(:),ss_to_node(:)
 real(kind_real) :: nss_real,lonlat(2),valmin,xmin,ymin,zmin,chmin,dist,x_start,y_start,z_start,distmax,d,nn_dist(2),distmin
-!real(kind_real) :: lon_start,lat_start
+real(kind_real) :: lon_start,lat_start
 real(kind_real),allocatable :: proc_to_xmin(:),proc_to_ymin(:),proc_to_zmin(:),proc_to_chmin(:)
 real(kind_real),allocatable :: x_ssa(:),y_ssa(:),z_ssa(:),ch_ssa(:),potential(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:)
 real(kind_real),allocatable :: lon_ssa(:),lat_ssa(:),rh_ssa(:),lon_rep(:),lat_rep(:),rh_rep(:),dist_rep(:)
 real(kind_real),allocatable :: x_ss(:),y_ss(:),z_ss(:),ch_ss(:),lon_ss(:),lat_ss(:),rh_ss(:)
 logical :: retry,valid
-logical,allocatable :: lmask_cxa(:),lmask_ssa(:),indist_ssa(:),gmask_s(:),lmask_ss(:),rmask(:)
+logical,allocatable :: lmask_cxa(:),lmask_ssa(:),indist_ssa(:),gmask_s(:),rmask(:)
 character(len=1024) :: cfmt
 type(atlas_structuredgrid) :: agrid
 type(tree_type) :: tree
@@ -1829,11 +1796,11 @@ else
                call lonlatmod(lonlat(1),lonlat(2))
 
                ! Check if point is inside the hull
-               call inside(mpl,mesh_cxu%vbnd,lonlat(1),lonlat(2),valid)
+               call hull_cxu%inside(mpl,lonlat(1),lonlat(2),valid)
 
                if (valid) then
                   ! Find nearest neighbor in universe
-                  call tree_cxu%find_nearest_neighbors(lonlat(1),lonlat(2),1,nn_index(1:1))
+                  call tree_cxu%find_nearest_neighbors(mpl,lonlat(1),lonlat(2),1,nn_index(1:1))
                   icxa = cxu_to_cxa(nn_index(1))
 
                   ! Keep valid points on each processor
@@ -2048,19 +2015,15 @@ else
          end if
 
          ! Define starting point
-         ! TODO: this is not correct, should be replaced later with the commented section
-         x_start = zero
-         y_start = zero
-         z_start = zero
-!         if (geom%global) then
-!            x_start = zero
-!            y_start = zero
-!            z_start = one
-!         else
-!            lon_start = half*(geom%lon_min+geom%lon_max)
-!            lat_start = half*(geom%lat_min+geom%lat_max)
-!            call lonlat2xyz(mpl,lon_start,lat_start,x_start,y_start,z_start)
-!         end if
+         if (geom%global) then
+            x_start = zero
+            y_start = zero
+            z_start = one
+         else
+            lon_start = half*(geom%lon_min+geom%lon_max)
+            lat_start = half*(geom%lat_min+geom%lat_max)
+            call lonlat2xyz(mpl,lon_start,lat_start,x_start,y_start,z_start)
+         end if
 
          ! Compute distance to the starting point
          is = 1
@@ -2078,6 +2041,7 @@ else
          do issa=1,nssa
             indist_ssa(issa) = indist(potential(issa),valmin)
          end do
+         if (count(indist_ssa)<1) call mpl%abort('${subr}$','cannot find minimum')
          nodemin = mpl%msv%vali
          xmin = mpl%msv%valr
          ymin = mpl%msv%valr
@@ -2273,13 +2237,8 @@ else
 
          ! Define sampling with a KD-tree
          do is=1,ns+nrep
-            if (is>2) then
-               ! Allocation
-               call tree%alloc(mpl,nssa,mask=lmask_ssa)
-
-               ! Initialization
-               call tree%init(lon_ssa,lat_ssa)
-            end if
+            ! Setup tree
+            if (is>2) call tree%init(nssa,lon_ssa,lat_ssa,lmask_ssa)
 
             ! Initialization
             distmax = zero
@@ -2305,7 +2264,7 @@ else
                      call sphere_dist(lon_ssa(ir),lat_ssa(ir),lon_ssa(nn_index(1)),lat_ssa(nn_index(1)),nn_dist(1))
                   else
                      ! Find nearest neighbor distance
-                     call tree%find_nearest_neighbors(lon_ssa(ir),lat_ssa(ir),1,nn_index(1:1),nn_dist(1:1))
+                     call tree%find_nearest_neighbors(mpl,lon_ssa(ir),lat_ssa(ir),1,nn_index(1:1),nn_dist(1:1))
                   end if
                   d = nn_dist(1)**2/(rh_ssa(ir)**2+rh_ssa(nn_index(1))**2)
 
@@ -2368,17 +2327,14 @@ else
 
             ! Remove closest points
             do irep=1,nrep
-               ! Allocation
-               call tree%alloc(mpl,ns+nrep,mask=rmask)
-
-               ! Initialization
-               call tree%init(lon_rep,lat_rep)
+               ! Setup tree
+               call tree%init(ns+nrep,lon_rep,lat_rep,rmask)
 
                ! Get minimum distance
                do is=1,ns+nrep
                   if (rmask(is)) then
                      ! Find nearest neighbor distance
-                     call tree%find_nearest_neighbors(lon_rep(is),lat_rep(is),2,nn_index,nn_dist)
+                     call tree%find_nearest_neighbors(mpl,lon_rep(is),lat_rep(is),2,nn_index,nn_dist)
                      if (nn_index(1)==is) then
                         dist_rep(is) = nn_dist(2)
                      elseif (nn_index(2)==is) then
@@ -2561,7 +2517,7 @@ end do
 call rng%desync(mpl)
 
 ! Reset random seed if necessary
-call rng%reseed(mpl)
+call rng%reseed
 
 ! Probe out
 @:probe_out()

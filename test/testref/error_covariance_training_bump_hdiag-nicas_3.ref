@@ -1,7 +1,5 @@
        Independent levels:  1[2]
           Subset Sc0 size:             1106
-          Min. / max. longitudes: -172.5 /   180.0
-          Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
              Level   2 ~> 100.0%
@@ -9,8 +7,6 @@
              Level   2 ~>  0.200E+01 vert. coord.
        Independent levels:  1[2]
           Subset Sc0 size:              762
-          Min. / max. longitudes: -171.0 /   180.0
-          Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
              Level   2 ~> 100.0%
@@ -54,76 +50,76 @@
                 Level:   2 ~> cov. at class zero:  0.91E+00
                 Level:   1 ~> cov. at class zero:  0.10E+01
                 Level:   2 ~> cov. at class zero:  0.99E+00
-             Block stream_function:  0.15184402E+00 for       60 diagnostic points
+             Block stream_function:  0.14846263E+00 for       60 diagnostic points
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      3645.05 km
+                                 cor. hor. support:      3672.48 km
                                  cor. ver. support:         3.09 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      3787.87 km
+                                 cor. hor. support:      3769.01 km
                                  cor. ver. support:         3.09 vertical units
-             Block stream_function:  0.17246196E+00 for       60 diagnostic points
+             Block stream_function:  0.18141370E+00 for       60 diagnostic points
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      3508.85 km
+                                 cor. hor. support:      3495.00 km
                                  cor. ver. support:         3.24 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      3585.72 km
+                                 cor. hor. support:      3595.96 km
                                  cor. ver. support:         3.24 vertical units
-             Block stream_function:  0.23630391E+00 for       40 diagnostic points
+             Block stream_function:  0.24300529E+00 for       33 diagnostic points
                 Level:   1 ~> loc. at class zero:       0.83
                 Level:   2 ~> loc. at class zero:       0.82
                    Level:   1 ~> amplitude:        1.00
-                                 loc. hor. support:      4639.25 km
+                                 loc. hor. support:      4546.53 km
                                  loc. ver. support:         4.09 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 loc. hor. support:      4214.09 km
+                                 loc. hor. support:      4277.69 km
                                  loc. ver. support:         4.09 vertical units
-             Block stream_function:  0.27508840E+00 for       38 diagnostic points
+             Block stream_function:  0.26462522E+00 for       40 diagnostic points
                 Level:   1 ~> loc. at class zero:       0.92
                 Level:   2 ~> loc. at class zero:       0.92
                    Level:   1 ~> amplitude:        1.00
-                                 loc. hor. support:      5554.25 km
+                                 loc. hor. support:      5526.51 km
                                  loc. ver. support:         6.02 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 loc. hor. support:      5998.77 km
+                                 loc. hor. support:      5662.04 km
                                  loc. ver. support:         6.02 vertical units
-                Level:   1 ~> hybrid coefficients: 0.56 / 0.42
-                Level:   2 ~> hybrid coefficients: 0.53 / 0.43
+                Level:   1 ~> hybrid coefficients: 0.57 / 0.41
+                Level:   2 ~> hybrid coefficients: 0.49 / 0.46
              Effective levels:   1   2 
-                Horizontal support radius:    4639.25 km (   4639.25 km -    4639.25 km)
-                Estimated nc1 from horizontal support radius:      437
-                   Decimate full grid, at least      437 points required,    1082 valid points found
-                   Subgrid hash:   -706992417
-                Final nc1:      437
+                Horizontal support radius:    4546.53 km (   4546.53 km -    4546.53 km)
+                Estimated nc1 from horizontal support radius:      455
+                   Decimate full grid, at least      455 points required,    1082 valid points found
+                   Subgrid hash:   -423031737
+                Final nc1:      455
                 Effective horizontal resolution:  4.00
-                Horizontal support radius:    4214.09 km (   4214.09 km -    4214.09 km)
-                Estimated nc1 from horizontal support radius:      530
-                   Decimate full grid, at least      530 points required,    1090 valid points found
-                   Subgrid hash:  -1943090031
-                Final nc1:      530
+                Horizontal support radius:    4277.69 km (   4277.69 km -    4277.69 km)
+                Estimated nc1 from horizontal support radius:      515
+                   Decimate full grid, at least      515 points required,    1090 valid points found
+                   Subgrid hash:   2067310378
+                Final nc1:      515
                 Effective horizontal resolution:  4.00
-             nc1(  1) =                        437
-             nc1(  2) =                        530
-             ns =                              967
+             nc1(  1) =                        455
+             nc1(  2) =                        515
+             ns =                              970
              v%n_s =                             2
-             c%n_s[global] =                 26567
+             c%n_s[global] =                 26356
              Effective levels:   1   2 
-                Horizontal support radius:    5554.25 km (   5554.25 km -    5554.25 km)
-                Estimated nc1 from horizontal support radius:      305
-                   Decimate full grid, at least      305 points required,     762 valid points found
-                   Subgrid hash:    618298028
-                Final nc1:      305
+                Horizontal support radius:    5526.51 km (   5526.51 km -    5526.51 km)
+                Estimated nc1 from horizontal support radius:      308
+                   Decimate full grid, at least      308 points required,     762 valid points found
+                   Subgrid hash:   -298630887
+                Final nc1:      308
                 Effective horizontal resolution:  4.00
-                Horizontal support radius:    5998.77 km (   5998.77 km -    5998.77 km)
-                Estimated nc1 from horizontal support radius:      261
-                   Decimate full grid, at least      261 points required,     762 valid points found
-                   Subgrid hash:   -216098172
-                Final nc1:      261
+                Horizontal support radius:    5662.04 km (   5662.04 km -    5662.04 km)
+                Estimated nc1 from horizontal support radius:      293
+                   Decimate full grid, at least      293 points required,     762 valid points found
+                   Subgrid hash:    -19644150
+                Final nc1:      293
                 Effective horizontal resolution:  3.99
-             nc1(  1) =                        305
-             nc1(  2) =                        261
-             ns =                              566
+             nc1(  1) =                        308
+             nc1(  2) =                        293
+             ns =                              601
              v%n_s =                             2
-             c%n_s[global] =                 14959
+             c%n_s[global] =                 15877
     Full NICAS adjoint test result:                        T
        Block NICAS adjoint test result:                    T
           Interpolation adjoint test (horizontal) result:  T
@@ -137,7 +133,7 @@
              Min / max: 1.0000000 /  1.0000000 over     10 tests
              0.0 /    0.0:  1.0000000
           Level   1:  0.0000000 -  1.0000000
-          Level   2:  0.0000000 -  0.8081698
+          Level   2:  0.0000000 -  0.8088537
     Full NICAS adjoint test result:                        T
        Block NICAS adjoint test result:                    T
           Interpolation adjoint test (horizontal) result:  T
@@ -151,10 +147,10 @@
              Min / max: 1.0000000 /  1.0000000 over     10 tests
              0.0 /    0.0:  1.0000000
           Level   1:  0.0000000 -  1.0000000
-          Level   2:  0.0000000 -  0.9227963
-Norm of output parameter loc_rh - 1: 2.1711165838792601e+08
-Norm of output parameter loc_rv - 1: 2.0044142458539670e+02
-Norm of output parameter hyb_coef_ens - 1: 2.6732620444699819e+01
-Norm of output parameter hyb_coef_ens_lr - 1: 2.0822510714431008e+01
-Norm of output parameter loc_rh_lr - 1: 2.3694160476838183e+08
+          Level   2:  0.0000000 -  0.9240882
+Norm of output parameter loc_rh - 1: 2.1624863849022570e+08
+Norm of output parameter loc_rv - 1: 2.0044142458539636e+02
+Norm of output parameter hyb_coef_ens - 1: 2.6210695670062506e+01
+Norm of output parameter hyb_coef_ens_lr - 1: 2.1387868664257379e+01
+Norm of output parameter loc_rh_lr - 1: 2.2931386529722533e+08
 Norm of output parameter loc_rv_lr - 1: 2.4681360916537037e+02

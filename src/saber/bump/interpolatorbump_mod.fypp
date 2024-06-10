@@ -22,7 +22,7 @@ use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_min,fckit_mpi
 use iso_c_binding, only: c_char
 use tools_atlas, only: field_from_array,field_to_array
 use tools_const, only: initialize_constants,zero,three,hundred,pi,deg2rad,rad2deg
-use tools_func, only: lonlatmod,sphere_dist,inside,zss_count
+use tools_func, only: lonlatmod,sphere_dist,zss_count
 use tools_kinds, only: kind_int,kind_real
 use tools_repro, only: repro_th
 use type_bump, only: bump_type
@@ -126,7 +126,7 @@ contains
 !> Initialize interpolation object
 !! The input and output fields are ATLAS_FieldSet objects that are assumed
 !! to be created from ATLAS functionspaces. So, they have the grid and
-!! mesh information built in.
+!! hull information built in.
 !----------------------------------------------------------------------
 subroutine bint_init(bint,comm,afunctionspace_in,afunctionspace_out,nl0)
 
@@ -160,7 +160,7 @@ call conf%set('model.variables',(/'var'/))
 call conf%set('model.var2d',(/0/))
 
 ! Initialize MPL
-call bint%bump%mpl%init(comm,conf)
+call bint%bump%mpl%init(comm)
 
 ! Initialize constants
 call initialize_constants
@@ -202,7 +202,7 @@ if (bint%bump%mpl%main) then
    call fckit_log%info('Info     : -------------------------------------------------------------------')
    call fckit_log%info('Info     : --- Run bump_interpolation driver')
 end if
-call bint%driver(bint%bump%mpl,bint%bump%nam,bint%bump%geom(1))
+call bint%driver(bint%bump%mpl,bint%bump%geom(1))
 
 ! Release memory (partial)
 if (bint%bump%mpl%main) then
@@ -221,14 +221,13 @@ end subroutine bint_init
 ! Subroutine: bint_driver
 !> Initialize BUMP to perform interpolation
 !----------------------------------------------------------------------
-subroutine bint_driver(bint,mpl,nam,geom)
+subroutine bint_driver(bint,mpl,geom)
 
 implicit none
 
 ! Passed variables
 class(bump_interpolator),intent(inout) :: bint !< BUMP interpolator
 type(mpl_type),intent(inout) :: mpl            !< MPI data
-type(nam_type),intent(in) :: nam               !< Namelist
 type(geom_type),intent(in) :: geom             !< Geometry
 
 ! Local variables
@@ -239,6 +238,7 @@ integer,allocatable :: c0b_to_c0(:)
 real(kind_real) :: nn_dist(1),N_max,C_max
 real(kind_real),allocatable :: maxweight(:)
 logical :: maskouta(bint%nouta),lcheck_nc0b(geom%nc0)
+type(mesh_type) :: mesh_c0u
 
 ! Set name
 @:set_name(bint_driver)
@@ -255,14 +255,10 @@ if (any(.not.geom%myuniverse)) call mpl%abort('${subr}$','universe should be glo
 ! Check whether output grid points are inside the hull boundaries
 if (bint%nouta > 0) then
    do iouta=1,bint%nouta
-      if (bint%bump%geom(1)%mesh_c0u%n>0) then
-         call inside(mpl,bint%bump%geom(1)%mesh_c0u%vbnd,bint%geom_out%lon_mga(iouta),bint%geom_out%lat_mga(iouta),maskouta(iouta))
-      else
-         maskouta(iouta) = .false.
-      end if
+      call bint%bump%geom(1)%hull_c0u%inside(mpl,bint%geom_out%lon_mga(iouta),bint%geom_out%lat_mga(iouta),maskouta(iouta))
       if (.not.maskouta(iouta)) then
          ! Check for very close points
-         call geom%tree_c0u%find_nearest_neighbors(bint%geom_out%lon_mga(iouta),bint%geom_out%lat_mga(iouta), &
+         call geom%tree_c0u%find_nearest_neighbors(mpl,bint%geom_out%lon_mga(iouta),bint%geom_out%lat_mga(iouta), &
  & 1,nn_index,nn_dist)
          if (nn_dist(1)<repro_th) maskouta(iouta) = .true.
       end if
@@ -288,12 +284,15 @@ end do
 write(mpl%info,'(a10,a,i8,a,i8)') '','Total   : ',bint%nout,' / ',nout_eff
 call mpl%flush
 
+! Setup mesh
+call mesh_c0u%init(mpl,bint%bump%rng,geom%nc0u,geom%lon_c0u,geom%lat_c0u)
+
 ! Compute interpolation
 bint%h%prefix = 'o'
 write(mpl%info,'(a7,a)') '','Single level:'
 call mpl%flush
-call bint%h%interp(mpl,nam,0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,geom%gmask_hor_c0u,geom%mesh_c0u,geom%tree_c0u, &
- & bint%nouta,bint%geom_out%lon_mga,bint%geom_out%lat_mga,maskouta,geom%mesh_c0u,10)
+call bint%h%interp(mpl,0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,geom%gmask_hor_c0u,mesh_c0u,geom%tree_c0u, &
+ & bint%nouta,bint%geom_out%lon_mga,bint%geom_out%lat_mga,maskouta,geom%bnda_c0u,10)
 
 ! Define halo B
 lcheck_nc0b = .false.

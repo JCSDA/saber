@@ -198,6 +198,8 @@ type nam_type
    logical :: interp_test                                     !< Horizontal NICAS interpolation test
    integer :: file_component                                  !< Overriding component in file
    logical :: same_horizontal                                 !< Same horizontal convolution for all levels, no vertical convolution
+   real(kind_real) :: sim_levs_th                             !< Similar levels threshold (relative tolerance on horizontal length-scale)
+   logical :: interp_in_global_file                           !< Read/write interpolation in global file
 
    ! Psichitouv section
    integer :: wind_nlon                                       !< Number of longitudes for the regular grid
@@ -901,6 +903,8 @@ if (conf%get('nicas',section)) then
    call nam%get(section,'horizontal interpolation test',nam%interp_test)
    call nam%get(section,'overriding component in file',nam%file_component)
    call nam%get(section,'same horizontal convolution',nam%same_horizontal)
+   call nam%get(section,'similar levels threshold',nam%sim_levs_th)
+   call nam%get(section,'interpolation in global file',nam%interp_in_global_file)
 end if
 
 ! Psichitouv section
@@ -1360,6 +1364,9 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
       end select
    end do
    if (nam%same_horizontal.and.nam%write_nicas_steps) call mpl%abort('${subr}$','NICAS steps not available with horizontal convolution')
+   if (nam%sim_levs_th<zero) call mpl%abort('${subr}$','similar levels threshold should not be negative')
+   if (nam%interp_in_global_file.and.(.not.(nam%load_nicas_global.or.nam%write_nicas_global))) &
+ & call mpl%abort('${subr}$','interp_in_global_file useless without global read/write')
 end if
 
 ! Dirac section

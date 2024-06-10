@@ -24,8 +24,6 @@ Fields:
 Norm of input parameter weight: 8.5556998544817148e+01
        Independent levels:  1[11]
           Subset Sc0 size:             7082
-          Min. / max. longitudes: -177.0 /   180.0
-          Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
              Level   2 ~> 100.0%

@@ -11,7 +11,7 @@ module type_ens
 use atlas_module, only: atlas_fieldset
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_max
 use tools_const, only: zero,one,deg2rad,rad2deg,req
-use tools_func, only: sphere_dist,lonlat2xyz,xyz2lonlat,zss_count
+use tools_func, only: zss_count
 use tools_kinds, only: kind_real
 use tools_netcdf, only: create_file,define_grp,define_dim,define_var,put_var,close_file
 use tools_qsort, only: qsort

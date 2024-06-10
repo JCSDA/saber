@@ -744,8 +744,8 @@ if (nam%new_wind) then
    ! Nearest neighbor interpolation from subset Sc0 to regular grid
    write(mpl%info,'(a7,a)') '','Nearest neighbor interpolation from subset Sc0 to regular grid'
    call mpl%flush
-   call wind%interp_c0b_to_llw%interp(mpl,nam,0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,geom%gmask_hor_c0u,geom%tree_c0u, &
- & wind%nllw,lon_llw,lat_llw,gmask_llw,geom%mesh_c0u,7)
+   call wind%interp_c0b_to_llw%interp(mpl,0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,geom%gmask_hor_c0u,geom%tree_c0u, &
+ & wind%nllw,lon_llw,lat_llw,gmask_llw,geom%bnda_c0u,7)
    wind%interp_c0b_to_llw%prefix = 'interp_c0b_to_llw'
 
    ! Define halo B, compute conversions and communications for subset Sc0

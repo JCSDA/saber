@@ -1,7 +1,5 @@
        Independent levels:  1[2]
           Subset Sc0 size:              762
-          Min. / max. longitudes: -171.0 /   180.0
-          Min. / max. latitudes:   -90.0 /    90.0
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
              Level   2 ~> 100.0%
@@ -44,13 +42,13 @@
        Vertical balance direct adjoint test results:  T
        Vertical balance inverse adjoint test results: T
 Norm of output parameter dirac_vbal - 1: 1.0000000000000000e+00
-Norm of ensemble member 0: 5.1161780676050277e+01
-Norm of ensemble member 1: 5.5841616845306170e+01
-Norm of ensemble member 2: 5.2470629242607956e+01
-Norm of ensemble member 3: 5.3432761286856426e+01
-Norm of ensemble member 4: 5.0848143148158606e+01
-Norm of ensemble member 5: 5.6307669817862781e+01
-Norm of ensemble member 6: 5.3466177087131690e+01
-Norm of ensemble member 7: 5.6185246734444945e+01
-Norm of ensemble member 8: 6.1588845477575937e+01
-Norm of ensemble member 9: 5.3624002917842930e+01
+Norm of ensemble member 0: 5.1161780676050121e+01
+Norm of ensemble member 1: 5.5841616845306199e+01
+Norm of ensemble member 2: 5.2470629242608140e+01
+Norm of ensemble member 3: 5.3432761286856341e+01
+Norm of ensemble member 4: 5.0848143148158705e+01
+Norm of ensemble member 5: 5.6307669817862866e+01
+Norm of ensemble member 6: 5.3466177087131818e+01
+Norm of ensemble member 7: 5.6185246734445066e+01
+Norm of ensemble member 8: 6.1588845477575887e+01
+Norm of ensemble member 9: 5.3624002917842937e+01

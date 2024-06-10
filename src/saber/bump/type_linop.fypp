@@ -18,9 +18,9 @@ use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquir
 use tools_qsort, only: qsort
 use tools_repro, only: repro_th,inf,eq,infeq,sup
 use tools_ssrfpack, only: constr,aplyr
+use type_bnda, only: bnda_type
 use type_mesh, only: mesh_type
 use type_mpl, only: mpl_type
-use type_nam, only: nam_type
 @:use_probe()
 use type_tree, only: tree_type
 
@@ -817,15 +817,14 @@ end subroutine linop_gather
 ! Subroutine: linop_interp
 !> Compute horizontal interpolation
 !----------------------------------------------------------------------
-subroutine linop_interp(linop,mpl,nam,il0,n_src,lon_src,lat_src,mask_src,mesh_src,tree_src, &
- & n_dst,lon_dst,lat_dst,mask_dst,mesh_mask,ifmt,c1_interp)
+subroutine linop_interp(linop,mpl,il0,n_src,lon_src,lat_src,mask_src,mesh_src,tree_src, &
+ & n_dst,lon_dst,lat_dst,mask_dst,bnda,ifmt,c1_interp)
 
 implicit none
 
 ! Passed variables
 class(linop_type),intent(inout) :: linop     !< Linear operator
 type(mpl_type),intent(inout) :: mpl          !< MPI data
-type(nam_type),intent(in) :: nam             !< Namelist
 integer,intent(in) :: il0                    !< Level
 integer,intent(in) :: n_src                  !< Source size
 real(kind_real),intent(in) :: lon_src(n_src) !< Source longitudes
@@ -837,7 +836,7 @@ integer,intent(in) :: n_dst                  !< Destination size
 real(kind_real),intent(in) :: lon_dst(n_dst) !< Destination longitudes
 real(kind_real),intent(in) :: lat_dst(n_dst) !< Destination latitudes
 logical,intent(in) :: mask_dst(n_dst)        !< Destination mask
-type(mesh_type),intent(in) :: mesh_mask      !< Mask checking mesh
+type(bnda_type),intent(in) :: bnda           !< Boundaries
 integer,intent(in) :: ifmt                   !< Format indentation
 logical,intent(in),optional :: c1_interp     !< C1 interpolation flag
 
@@ -902,7 +901,7 @@ n_s = 0
 do i_dst=1,n_dst
    if (mask_dst(i_dst)) then
       ! Find nearest neighbor
-      call tree_src%find_nearest_neighbors(lon_dst(i_dst),lat_dst(i_dst),1,nn_index,nn_dist)
+      call tree_src%find_nearest_neighbors(mpl,lon_dst(i_dst),lat_dst(i_dst),1,nn_index,nn_dist)
 
       if (sup(nn_dist(1),1.0e-10_kind_real).or.(.not.mask_src(nn_index(1)))) then
          ! Compute barycentric coordinates
@@ -918,9 +917,9 @@ do i_dst=1,n_dst
          end if
 
          ! Check arcs
-         if (valid.and.nam%mask_check) then
+         if (valid) then
             do i=1,3
-               if (b(i)>repro_th) call mesh_mask%check_arc(mpl,lon_src(ib(i)),lat_src(ib(i)),lon_dst(i_dst),lat_dst(i_dst),il0, &
+               if (b(i)>repro_th) call bnda%check_arc(mpl,lon_src(ib(i)),lat_src(ib(i)),lon_dst(i_dst),lat_dst(i_dst),il0, &
  & valid)
             end do
          end if
@@ -1043,7 +1042,7 @@ do i_dst=1,n_dst
                allocate(nn_index_ext(next))
 
                ! Find nearest neighors
-               call tree_src%find_nearest_neighbors(lon_dst(i_dst),lat_dst(i_dst),next,nn_index_ext)
+               call tree_src%find_nearest_neighbors(mpl,lon_dst(i_dst),lat_dst(i_dst),next,nn_index_ext)
 
                ! Check mask
                if (mask_src(nn_index_ext(next))) then
@@ -1231,7 +1230,7 @@ end subroutine linop_interp_lat
 ! Subroutine: linop_interp_nn
 !> Compute horizontal interpolation (nearest valid neighbor)
 !----------------------------------------------------------------------
-subroutine linop_interp_nn(linop,mpl,nam,il0,n_src,lon_src,lat_src,mask_src,tree_src,n_dst,lon_dst,lat_dst,mask_dst,mesh_mask, &
+subroutine linop_interp_nn(linop,mpl,il0,n_src,lon_src,lat_src,mask_src,tree_src,n_dst,lon_dst,lat_dst,mask_dst,bnda, &
  & ifmt,rh)
 
 implicit none
@@ -1239,7 +1238,6 @@ implicit none
 ! Passed variables
 class(linop_type),intent(inout) :: linop         !< Linear operator
 type(mpl_type),intent(inout) :: mpl              !< MPI data
-type(nam_type),intent(in) :: nam                 !< Namelist
 integer,intent(in) :: il0                        !< Level
 integer,intent(in) :: n_src                      !< Source size
 real(kind_real),intent(in) :: lon_src(n_src)     !< Source longitudes
@@ -1250,7 +1248,7 @@ integer,intent(in) :: n_dst                      !< Destination size
 real(kind_real),intent(in) :: lon_dst(n_dst)     !< Destination longitudes
 real(kind_real),intent(in) :: lat_dst(n_dst)     !< Destination latitudes
 logical,intent(in) :: mask_dst(n_dst)            !< Destination mask
-type(mesh_type),intent(in) :: mesh_mask          !< Mask checking mesh
+type(bnda_type),intent(in) :: bnda               !< Boundaries
 integer,intent(in) :: ifmt                       !< Format indentation
 real(kind_real),intent(in),optional :: rh(n_dst) !< Interpolation radius
 
@@ -1312,7 +1310,7 @@ do i_dst=1,n_dst
       allocate(nn_valid(n))
 
       ! Find nearest neighors
-      call tree_src%find_nearest_neighbors(lon_dst(i_dst),lat_dst(i_dst),n,nn_index,nn_dist)
+      call tree_src%find_nearest_neighbors(mpl,lon_dst(i_dst),lat_dst(i_dst),n,nn_index,nn_dist)
 
       ! Check if neighbors are masked
       do i=1,n
@@ -1320,12 +1318,10 @@ do i_dst=1,n_dst
       end do
 
       ! Check arcs
-      if (nam%mask_check) then
-         do i=1,n
-            if (nn_valid(i)) call mesh_mask%check_arc(mpl,lon_src(nn_index(i)),lat_src(nn_index(i)), &
+      do i=1,n
+         if (nn_valid(i)) call bnda%check_arc(mpl,lon_src(nn_index(i)),lat_src(nn_index(i)), &
  & lon_dst(i_dst),lat_dst(i_dst),il0,nn_valid(i))
-         end do
-      end if
+      end do
 
       ! Check validity
       found = .true.
@@ -1377,7 +1373,7 @@ do i_dst=1,n_dst
             allocate(nn_index(n))
 
             ! Find nearest neighors
-            call tree_src%find_nearest_neighbors(lon_dst(i_dst),lat_dst(i_dst),n,nn_index)
+            call tree_src%find_nearest_neighbors(mpl,lon_dst(i_dst),lat_dst(i_dst),n,nn_index)
 
             ! Check if last neighbor is masked
             if (mask_src(nn_index(n))) then
@@ -1470,7 +1466,7 @@ if (.false.) then
    allocate(zp(nn_grad+1))
 
    ! Get nearest neighbors
-   call tree%find_nearest_neighbors(mesh%lon(im),mesh%lat(im),nn_grad+1,nn_index)
+   call tree%find_nearest_neighbors(mpl,mesh%lon(im),mesh%lat(im),nn_grad+1,nn_index)
    
    ! Loop over neigbors
    do j=1,nn_grad+1
