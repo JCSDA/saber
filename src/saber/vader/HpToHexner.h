@@ -38,8 +38,9 @@ class HpToHexnerParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(HpToHexnerParameters, SaberBlockParametersBase)
  public:
   oops::Variables mandatoryActiveVars() const override {return oops::Variables({
+    std::vector<std::string>{
     "hydrostatic_exner_levels",
-    "hydrostatic_pressure_levels"});}
+    "hydrostatic_pressure_levels"}});}
 };
 
 // -----------------------------------------------------------------------------

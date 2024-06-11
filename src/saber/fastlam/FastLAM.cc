@@ -83,8 +83,8 @@ FastLAM::FastLAM(const oops::GeometryData & gdata,
 
   // Define 2d active variables
   active2dVars_ = oops::Variables();
-  for (const auto & var : activeVars_.variables()) {
-    if (activeVars_.getLevels(var) == 1) {
+  for (const auto & var : activeVars_) {
+    if (var.getLevels() == 1) {
       active2dVars_.push_back(var);
     }
   }
@@ -92,13 +92,14 @@ FastLAM::FastLAM(const oops::GeometryData & gdata,
   // Create groups
   if (params_.groups.value() == boost::none) {
     // No group specified, each variable is its own group
-    for (const auto & var : activeVars_.variables()) {
+    for (const auto & var : activeVars_) {
       // Define group properties
       Group group;
-      group.name_ = var;
-      group.nz0_ = activeVars_.getLevels(var);
-      group.varInModelFile_ = var;
-      group.variables_ = {var};
+      // TODO(AS): I think name_, nz0_ can be removed if variables_ are oops::Variables
+      group.name_ = var.name();
+      group.nz0_ = var.getLevels();
+      group.varInModelFile_ = var.name();
+      group.variables_ = {var.name()};
 
       // Add group
       groups_.push_back(group);
@@ -114,10 +115,10 @@ FastLAM::FastLAM(const oops::GeometryData & gdata,
         if (!active2dVars_.has(var)) {
           if (group.nz0_ == 1) {
             // Assign number of levels
-            group.nz0_ = static_cast<size_t>(activeVars_.getLevels(var));
+            group.nz0_ = static_cast<size_t>(activeVars_[var].getLevels());
           } else {
             // Check number of levels
-            ASSERT(static_cast<int>(group.nz0_) == activeVars_.getLevels(var));
+            ASSERT(static_cast<int>(group.nz0_) == activeVars_[var].getLevels());
           }
         }
       }
@@ -270,7 +271,7 @@ void FastLAM::multiplySqrt(const atlas::Field & cv,
         // Loop over variables
         for (const auto & var : groups_[jg].variables_) {
           // Variable properties
-          const size_t varNz0 = activeVars_.getLevels(var);
+          const size_t varNz0 = activeVars_[var].getLevels();
           const size_t k0Offset = getK0Offset(var);
 
           // Layer multiplication
@@ -326,7 +327,7 @@ void FastLAM::multiplySqrt(const atlas::Field & cv,
         // Copy result on all variables of the group
         for (const auto & var : groups_[jg].variables_) {
           // Variable properties
-          const size_t varNz0 = activeVars_.getLevels(var);
+          const size_t varNz0 = activeVars_[var].getLevels();
           const size_t k0Offset = getK0Offset(var);
 
           // Copy group field
@@ -367,7 +368,7 @@ void FastLAM::multiplySqrt(const atlas::Field & cv,
         // Copy result on all variables of the group
         for (const auto & var : groups_[jg].variables_) {
           // Variable properties
-          const size_t varNz0 = activeVars_.getLevels(var);
+          const size_t varNz0 = activeVars_[var].getLevels();
           const size_t k0Offset = getK0Offset(var);
 
           // Copy group field
@@ -430,7 +431,7 @@ void FastLAM::multiplySqrtAD(const oops::FieldSet3D & fset,
         // Loop over variables
         for (const auto & var : groups_[jg].variables_) {
           // Variable properties
-          const size_t varNz0 = activeVars_.getLevels(var);
+          const size_t varNz0 = activeVars_[var].getLevels();
           const size_t k0Offset = getK0Offset(var);
 
           // Apply weight square-root and normalization
@@ -468,7 +469,7 @@ void FastLAM::multiplySqrtAD(const oops::FieldSet3D & fset,
         // Sum all variables of the group
         for (const auto & var : groups_[jg].variables_) {
           // Variable properties
-          const size_t varNz0 = activeVars_.getLevels(var);
+          const size_t varNz0 = activeVars_[var].getLevels();
           const size_t k0Offset = getK0Offset(var);
 
           // Add variable field
@@ -520,7 +521,7 @@ void FastLAM::multiplySqrtAD(const oops::FieldSet3D & fset,
         // Sum all variables of the group
         for (const auto & var : groups_[jg].variables_) {
           // Variable properties
-          const size_t varNz0 = activeVars_.getLevels(var);
+          const size_t varNz0 = activeVars_[var].getLevels();
           const size_t k0Offset = getK0Offset(var);
 
           // Add variable field
@@ -1024,18 +1025,18 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
       oops::FieldSet3D fset(validTime_, comm_);
 
       // Copy fields
-      for (const auto & var : activeVars_.variables()) {
+      for (const auto & var : activeVars_) {
         // Default: missing value
-        const size_t nz0 = activeVars_.getLevels(var);
+        const size_t nz0 = var.getLevels();
         atlas::Field field = gdata_.functionSpace().createField<double>(
-          atlas::option::name(var) | atlas::option::levels(nz0));
+          atlas::option::name(var.name()) | atlas::option::levels(nz0));
         auto view = atlas::array::make_view<double, 2>(field);
         view.assign(util::missingValue<double>());
         fset.add(field);
 
         for (size_t jg = 0; jg < groups_.size(); ++jg) {
           // Copy field
-          if (groups_[jg].varInModelFile_ == var) {
+          if (groups_[jg].varInModelFile_ == var.name()) {
             const atlas::Field rhField = (*rh_)[groups_[jg].name_];
             const auto rhView = atlas::array::make_view<double, 2>(rhField);
             view.assign(rhView);
@@ -1053,18 +1054,18 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
         oops::FieldSet3D fset(validTime_, comm_);
 
         // Copy fields
-        for (const auto & var : activeVars_.variables()) {
+        for (const auto & var : activeVars_) {
           // Default: missing value
-          const size_t nz0 = activeVars_.getLevels(var);
+          const size_t nz0 = var.getLevels();
           atlas::Field field = gdata_.functionSpace().createField<double>(
-            atlas::option::name(var) | atlas::option::levels(nz0));
+            atlas::option::name(var.name()) | atlas::option::levels(nz0));
           auto view = atlas::array::make_view<double, 2>(field);
           view.assign(util::missingValue<double>());
           fset.add(field);
 
           for (size_t jg = 0; jg < groups_.size(); ++jg) {
             // Copy field
-            if (groups_[jg].varInModelFile_ == var) {
+            if (groups_[jg].varInModelFile_ == var.name()) {
               const atlas::Field wgtSqrtField = (*weight_[jBin])[groups_[jg].name_];
               const auto wgtSqrtView = atlas::array::make_view<double, 2>(wgtSqrtField);
               for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
@@ -1093,18 +1094,18 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
         oops::FieldSet3D fset(validTime_, comm_);
 
         // Copy fields
-        for (const auto & var : activeVars_.variables()) {
+        for (const auto & var : activeVars_) {
           // Default: missing value
-          const size_t nz0 = activeVars_.getLevels(var);
+          const size_t nz0 = var.getLevels();
           atlas::Field field = gdata_.functionSpace().createField<double>(
-            atlas::option::name(var) | atlas::option::levels(nz0));
+            atlas::option::name(var.name()) | atlas::option::levels(nz0));
           auto view = atlas::array::make_view<double, 2>(field);
           view.assign(util::missingValue<double>());
           fset.add(field);
 
           for (size_t jg = 0; jg < groups_.size(); ++jg) {
             // Copy field
-            if (groups_[jg].varInModelFile_ == var) {
+            if (groups_[jg].varInModelFile_ == var.name()) {
               const atlas::Field normField = (*normalization_[jBin])[groups_[jg].name_];
               const auto normView = atlas::array::make_view<double, 2>(normField);
               view.assign(normView);
@@ -1127,18 +1128,18 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
         oops::FieldSet3D fset(validTime_, comm_);
 
         // Copy fields
-        for (const auto & var : activeVars_.variables()) {
+        for (const auto & var : activeVars_) {
           // Default: missing value
-          const size_t nz0 = activeVars_.getLevels(var);
+          const size_t nz0 = var.getLevels();
           atlas::Field field = gdata_.functionSpace().createField<double>(
-            atlas::option::name(var) | atlas::option::levels(nz0));
+            atlas::option::name(var.name()) | atlas::option::levels(nz0));
           auto view = atlas::array::make_view<double, 2>(field);
           view.assign(util::missingValue<double>());
           fset.add(field);
 
           for (size_t jg = 0; jg < groups_.size(); ++jg) {
             // Copy field
-            if (groups_[jg].varInModelFile_ == var) {
+            if (groups_[jg].varInModelFile_ == var.name()) {
               const atlas::Field normField = data_[jg][jBin]->normAcc()[groups_[jg].name_];
               const auto normView = atlas::array::make_view<double, 2>(normField);
               view.assign(normView);
@@ -1512,8 +1513,7 @@ size_t FastLAM::getK0Offset(const std::string & var) const {
   // Default value
   size_t k0Offset = 0;
 
-  if (std::find(active2dVars_.variables().begin(), active2dVars_.variables().end(), var)
-    != active2dVars_.variables().end()) {
+  if (active2dVars_.has(var)) {
     // This is a 2d variable
     if (params_.lev2d.value() == "last") {
       // Use the last level of the group

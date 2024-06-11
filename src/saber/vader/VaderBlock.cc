@@ -31,8 +31,8 @@ oops::Variables createInnerVars(
   // has the same number of model levels
   oops::Variables innerActiveVarsWithMeta(innerActiveVarsWithoutMeta);
   std::vector<int> modelLevels;
-  for (const std::string & var : outerVars.variables()) {
-    modelLevels.push_back(outerVars.getLevels(var));
+  for (const auto & var : outerVars) {
+    modelLevels.push_back(var.getLevels());
   }
 
   if (outerVars.size() > 1) {
@@ -40,8 +40,8 @@ oops::Variables createInnerVars(
                        modelLevels.begin()));
   }
 
-  for (const std::string & var : innerActiveVarsWithoutMeta.variables()) {
-    innerActiveVarsWithMeta.addMetaData(var, "levels", modelLevels[0]);
+  for (auto & var : innerActiveVarsWithMeta) {
+    var.setLevels(modelLevels[0]);
   }
 
   return innerActiveVarsWithMeta;
@@ -81,8 +81,8 @@ VaderBlock::VaderBlock(const oops::GeometryData & outerGeometryData,
   // Pass only inner variables to the vader TL/AD execution plan
   // (xb_inner has both outer and inner variables after calling vader::changeVar)
   atlas::FieldSet xb_outer;
-  for (const std::string & innerVar : innerVars_.variables()) {
-    xb_outer.add(xb_inner[innerVar]);
+  for (const auto & innerVar : innerVars_) {
+    xb_outer.add(xb_inner[innerVar.name()]);
   }
   // Set trajectory and create a vader plan for going from inner to outer
   // variables.
@@ -102,8 +102,8 @@ void VaderBlock::multiply(oops::FieldSet3D & fset) const {
   // copy only outer variables to the output fieldset (vader leaves both
   // output and input variables in the fieldset)
   atlas::FieldSet fset_out;
-  for (const auto & fieldname : outerVars_.variables()) {
-    fset_out.add(fset[fieldname]);
+  for (const auto & outerVar : outerVars_) {
+    fset_out.add(fset[outerVar.name()]);
   }
   fset.fieldSet() = fset_out;
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
@@ -118,8 +118,8 @@ void VaderBlock::multiplyAD(oops::FieldSet3D & fset) const {
   // copy only inner variables to the output fieldset (vader leaves both
   // output and input variables in the fieldset)
   atlas::FieldSet fset_out;
-  for (const auto & fieldname : innerVars_.variables()) {
-    fset_out.add(fset[fieldname]);
+  for (const auto & innerVar : innerVars_) {
+    fset_out.add(fset[innerVar.name()]);
   }
   fset.fieldSet() = fset_out;
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;

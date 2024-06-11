@@ -313,8 +313,8 @@ size_t Geometry::groupIndex(const std::string & var) const {
 // -----------------------------------------------------------------------------
 std::vector<size_t> Geometry::variableSizes(const oops::Variables & vars) const {
   std::vector<size_t> sizes;
-  for (const auto & var : vars.variables()) {
-    sizes.push_back(levels(var));
+  for (const auto & var : vars) {
+    sizes.push_back(levels(var.name()));
   }
   return sizes;
 }

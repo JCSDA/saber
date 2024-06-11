@@ -30,11 +30,11 @@ atlas::Field allocateGaussUVField(const atlas::FunctionSpace & gaussFS,
                                   const oops::Variables & innerVariables) {
   std::array<size_t, 2> lvls{{0, 0}};
   if (innerVariables.has("vorticity") && innerVariables.has("divergence")) {
-    lvls[0] = innerVariables.getLevels("vorticity");
-    lvls[1] = innerVariables.getLevels("divergence");
+    lvls[0] = innerVariables["vorticity"].getLevels();
+    lvls[1] = innerVariables["divergence"].getLevels();
   } else if (innerVariables.has("streamfunction") && innerVariables.has("velocity_potential")) {
-    lvls[0] = innerVariables.getLevels("streamfunction");
-    lvls[1] = innerVariables.getLevels("velocity_potential");
+    lvls[0] = innerVariables["streamfunction"].getLevels();
+    lvls[1] = innerVariables["velocity_potential"].getLevels();
   } else {
     // error trap
     oops::Log::error() << "ERROR - either vorticity and divergence "
@@ -67,11 +67,11 @@ atlas::FieldSet allocateSpectralVortDiv(
     const oops::Variables & innerVariables) {
   std::array<size_t, 2> lvls{{0, 0}};
   if (innerVariables.has("vorticity") && innerVariables.has("divergence")) {
-    lvls[0] = innerVariables.getLevels("vorticity");
-    lvls[1] = innerVariables.getLevels("divergence");
+    lvls[0] = innerVariables["vorticity"].getLevels();
+    lvls[1] = innerVariables["divergence"].getLevels();
   } else if (innerVariables.has("streamfunction") && innerVariables.has("velocity_potential")) {
-    lvls[0] = innerVariables.getLevels("streamfunction");
-    lvls[1] = innerVariables.getLevels("velocity_potential");
+    lvls[0] = innerVariables["streamfunction"].getLevels();
+    lvls[1] = innerVariables["velocity_potential"].getLevels();
   } else {
     // error trap
     oops::Log::error() << "ERROR - either vorticity and divergence "
@@ -197,22 +197,20 @@ oops::Variables createInnerVars(const oops::Variables & outerVars,
                                 const bool & useWindTransform) {
   oops::Variables innerVars(outerVars);
   if (useWindTransform) {
-    const int levels = innerVars.getLevels("eastward_wind");
+    const int levels = innerVars["eastward_wind"].getLevels();
+    eckit::LocalConfiguration conf;
+    conf.set("levels", levels);
 
     if (activeVars.has("streamfunction") && activeVars.has("velocity_potential")) {
-      innerVars.push_back("streamfunction");
-      innerVars.push_back("velocity_potential");
-      innerVars.addMetaData("streamfunction", "levels", levels);
-      innerVars.addMetaData("velocity_potential", "levels", levels);
+      innerVars.push_back({"streamfunction", conf});
+      innerVars.push_back({"velocity_potential", conf});
     }
     if (activeVars.has("divergence") && activeVars.has("vorticity")) {
-      innerVars.push_back("divergence");
-      innerVars.push_back("vorticity");
-      innerVars.addMetaData("divergence", "levels", levels);
-      innerVars.addMetaData("vorticity", "levels", levels);
+      innerVars.push_back({"divergence", conf});
+      innerVars.push_back({"vorticity", conf});
     }
-    innerVars -= "eastward_wind";
-    innerVars -= "northward_wind";
+    innerVars -= innerVars["eastward_wind"];
+    innerVars -= innerVars["northward_wind"];
   }
   return innerVars;
 }
@@ -239,8 +237,8 @@ void applyNtimesNplus1SpectralScaling(const oops::Variables & innerNames,
   const double earthRadius = atlas::util::Earth::radius();
   const double squaredEarthRadius = earthRadius * earthRadius;
   atlas::FieldSet fsetScaled;
-  for (std::size_t var = 0; var < innerNames.variables().size(); ++var) {
-    atlas::Field scaledFld = fSet[innerNames[var]];
+  for (std::size_t var = 0; var < innerNames.size(); ++var) {
+    atlas::Field scaledFld = fSet[innerNames[var].name()];
     auto fldView = atlas::array::make_view<double, 2>(scaledFld);
 
     int i(0);
@@ -248,7 +246,7 @@ void applyNtimesNplus1SpectralScaling(const oops::Variables & innerNames,
       const int m1 = zonal_wavenumbers(jm);
       for (std::size_t n1 = m1; n1 <= static_cast<std::size_t>(totalWavenumber); ++n1) {
         for (std::size_t img = 0; img < 2; ++img, ++i) {
-          for (atlas::idx_t jl = 0; jl < fSet[innerNames[var]].shape(1); ++jl) {
+          for (atlas::idx_t jl = 0; jl < fSet[innerNames[var].name()].shape(1); ++jl) {
             if (inverse) {
               if (n1 != 0) {
                 fldView(i, jl) /=  n1 * (n1 + 1) / squaredEarthRadius;
@@ -262,7 +260,7 @@ void applyNtimesNplus1SpectralScaling(const oops::Variables & innerNames,
         }
       }
     }
-    scaledFld.rename(outerNames[var]);
+    scaledFld.rename(outerNames[var].name());
     fsetScaled.add(scaledFld);
   }
 
@@ -315,9 +313,10 @@ void SpectralToGauss::multiplyVectorFields(atlas::FieldSet & spectralWindFieldSe
       spectralWindFieldSet.has("velocity_potential")) {
     ASSERT(innerVars_.has("streamfunction") && innerVars_.has("velocity_potential"));
     const int N = specFunctionSpace_.truncation();
-    applyNtimesNplus1SpectralScaling(oops::Variables({"streamfunction", "velocity_potential"}),
-                                     oops::Variables({"vorticity", "divergence"}),
-                                     specFunctionSpace_, N, spectralWindFieldSet);
+    applyNtimesNplus1SpectralScaling(
+         oops::Variables(std::vector<std::string>{"streamfunction", "velocity_potential"}),
+         oops::Variables(std::vector<std::string>{"vorticity", "divergence"}),
+         specFunctionSpace_, N, spectralWindFieldSet);
   }
 
   // 2- Convert divergence and vorticity to eastward and northward wind.
@@ -358,9 +357,10 @@ void SpectralToGauss::multiplyVectorFieldsAD(atlas::FieldSet & windFieldSet,
 
   if (innerVars_.has("streamfunction") && innerVars_.has("velocity_potential")) {
     const int N = specFunctionSpace_.truncation();
-    applyNtimesNplus1SpectralScaling(oops::Variables({"vorticity", "divergence"}),
-                                     oops::Variables({"streamfunction", "velocity_potential"}),
-                                     specFunctionSpace_, N, spectralWindFieldSet);
+    applyNtimesNplus1SpectralScaling(
+         oops::Variables(std::vector<std::string>{"vorticity", "divergence"}),
+         oops::Variables(std::vector<std::string>{"streamfunction", "velocity_potential"}),
+         specFunctionSpace_, N, spectralWindFieldSet);
   }
 
   outFieldSet.add(spectralWindFieldSet[0]);
@@ -459,10 +459,10 @@ void SpectralToGauss::invertMultiplyVectorFields(const atlas::FieldSet & gaussFi
   if (innerVars_.has("streamfunction") && innerVars_.has("velocity_potential")) {
     const int N = specFunctionSpace_.truncation();
     const bool inverse = true;
-    applyNtimesNplus1SpectralScaling(oops::Variables({"vorticity", "divergence"}),
-                                     oops::Variables({"streamfunction", "velocity_potential"}),
-                                     specFunctionSpace_, N, spectralWindFieldSet,
-                                     inverse);
+    applyNtimesNplus1SpectralScaling(
+         oops::Variables(std::vector<std::string>{"vorticity", "divergence"}),
+         oops::Variables(std::vector<std::string>{"streamfunction", "velocity_potential"}),
+         specFunctionSpace_, N, spectralWindFieldSet, inverse);
   }
 
   outFieldSet.add(spectralWindFieldSet[0]);

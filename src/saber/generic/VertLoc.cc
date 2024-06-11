@@ -38,8 +38,8 @@ auto setInnerVars(const oops::Variables & outerVars,
   // Return variables which are a copy of outerVars, except for activeVars
   // which should have levels changed to nmods
   oops::Variables innerVars(outerVars);
-  for (auto & var : activeVars.variables()) {
-    innerVars.addMetaData(var, "levels", nmods);
+  for (auto & var : activeVars) {
+    innerVars[var.name()].setLevels(nmods);
   }
   return innerVars;
 }
@@ -64,7 +64,7 @@ VertLoc::VertLoc(const oops::GeometryData & outerGeometryData,
   : SaberOuterBlockBase(params, xb.validTime()),
     innerGeometryData_(outerGeometryData),
     activeVars_(getActiveVars(params, outerVars)),
-    nlevs_(activeVars_.getLevels(activeVars_.variables()[0])),
+    nlevs_(activeVars_[0].getLevels()),
     nmods_(params.truncation.value()),
     innerVars_(setInnerVars(outerVars, activeVars_, nmods_)),
     ncfilepath_(params.VertLocParams.value().covStatFileName.value().get_value_or("")),
@@ -76,13 +76,13 @@ VertLoc::VertLoc(const oops::GeometryData & outerGeometryData,
   oops::Log::trace() << classname() << "::VertLoc starting" << std::endl;
 
   // Check all active variables have same number of levels
-  for (const auto & var : activeVars_.variables()) {
-    if (activeVars_.getLevels(var) != nlevs_) {
+  for (const auto & var : activeVars_) {
+    if (var.getLevels() != nlevs_) {
       oops::Log::error() << "Error    : Cannot deal with multiple vertical resolutions."
                          << std::endl;
       oops::Log::error() << "Error    : Vertical localization matrix has "
                          << nlevs_ << " levels, but variable " << var << " has "
-                         << activeVars_.getLevels(var) << " levels." << std::endl;
+                         << var.getLevels() << " levels." << std::endl;
       throw eckit::Exception("Inconsistent number of levels in VertLoc", Here());
     }
   }
@@ -303,23 +303,23 @@ void VertLoc::multiply(oops::FieldSet3D & fset) const {
   }
 
   // Active variables
-  for (const auto & var : activeVars_.variables()) {
+  for (const auto & var : activeVars_) {
     if (fset[var].shape(1) != nmods_) {
-      oops::Log::error() << "Error    : Field " << var << " has " << fset[var].shape(1)
+      oops::Log::error() << "Error    : Field " << var << " has " << fset[var.name()].shape(1)
                          << ", expected " << nmods_ << ". " << std::endl;
-      throw eckit::UserError("Wrong number of vertical levels in field " + var, Here());
+      throw eckit::UserError("Wrong number of vertical levels in field " + var.name(), Here());
     }
 
     // Create new field with nlevs_ levels
     atlas::Field outField =
       innerGeometryData_.functionSpace().createField<double>
-        (atlas::option::name(var) |
+        (atlas::option::name(var.name()) |
          atlas::option::levels(nlevs_));
     auto outView = atlas::array::make_view<double, 2>(outField);
     outView.assign(0.0);
 
     // Apply U matrix
-    auto inView = atlas::array::make_view<double, 2>(fset[var]);  // nmods_ levels
+    auto inView = atlas::array::make_view<double, 2>(fset[var.name()]);  // nmods_ levels
     atlas_omp_parallel_for(atlas::idx_t jn = 0; jn < outField.shape(0); ++jn) {
       for (atlas::idx_t jl = 0; jl < nlevs_; ++jl) {
         for (atlas::idx_t jm = 0; jm < nmods_; ++jm) {
@@ -351,24 +351,24 @@ void VertLoc::multiplyAD(oops::FieldSet3D & fset) const {
   }
 
   // Active variables
-  for (const auto & var : activeVars_.variables()) {
-    if (fset[var].shape(1) != nlevs_) {
-      oops::Log::error() << "Error    : Field " << var << " has " << fset[var].shape(1)
+  for (const auto & var : activeVars_) {
+    if (fset[var.name()].shape(1) != nlevs_) {
+      oops::Log::error() << "Error    : Field " << var << " has " << fset[var.name()].shape(1)
                          << ", expected " << nlevs_ << ". " << std::endl;
-      throw eckit::UserError("Wrong number of vertical levels in field " + var, Here());
+      throw eckit::UserError("Wrong number of vertical levels in field " + var.name(), Here());
     }
 
     // Create new field with nmods_ levels
     atlas::Field outField =
       innerGeometryData_.functionSpace().createField<double>
-        (atlas::option::name(var) |
+        (atlas::option::name(var.name()) |
          atlas::option::levels(nmods_));
     auto outView = atlas::array::make_view<double, 2>(outField);
 
     outView.assign(0.0);
 
     // Apply U^t
-    auto inView = atlas::array::make_view<double, 2>(fset[var]);  // nlevs_ levels
+    auto inView = atlas::array::make_view<double, 2>(fset[var.name()]);  // nlevs_ levels
 
     for (atlas::idx_t jn = 0; jn < outField.shape(0); ++jn) {
       for (atlas::idx_t jl = 0; jl < nmods_; ++jl) {

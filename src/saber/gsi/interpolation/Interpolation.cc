@@ -55,8 +55,8 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
   // Active variables
   const oops::Variables activeVars = getActiveVars(params, outerVars);
   std::vector<size_t> activeVariableSizes;
-  for (const std::string & var : activeVars.variables()) {
-    activeVariableSizes.push_back(activeVars.getLevels(var));
+  for (const auto & var : activeVars) {
+    activeVariableSizes.push_back(var.getLevels());
   }
 
   // Create the interpolator

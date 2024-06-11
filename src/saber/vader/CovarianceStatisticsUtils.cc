@@ -355,8 +355,7 @@ atlas::FieldSet createGpRegressionStats(const atlas::FunctionSpace & functionSpa
   // number of latitudes that existed in the generation of the covariance file
   const std::size_t covGlobalNLats(static_cast<std::size_t>(params.covariance_nlat));
   // number of model levels
-  const std::size_t modelLevels = variables.getLevels(
-                            "unbalanced_pressure_levels_minus_one");
+  const std::size_t modelLevels = variables["unbalanced_pressure_levels_minus_one"].getLevels();
   // geostrophic pressure vertical regression statistics are grouped
   // into overlapping bins based on latitude;
   // number of bins associated with the gP vertical regression

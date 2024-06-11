@@ -146,9 +146,9 @@ std::tuple<const oops::GeometryData &, const oops::Variables &>
   const oops::GeometryData & innerGeometryData = outerBlocks_.back()->innerGeometryData();
 
   // Check that active variables are present in either inner or outer variables, or both
-  for (const auto & var : activeVars.variables()) {
+  for (const auto & var : activeVars) {
     if (!(innerVars.has(var) || outerVars.has(var))) {
-      throw eckit::UserError("Active variable " + var + " is not present in inner "
+      throw eckit::UserError("Active variable " + var.name() + " is not present in inner "
                              "or outer variables", Here());
     }
   }

@@ -47,7 +47,7 @@ StaticCovariance::StaticCovariance(const oops::GeometryData & geometryData,
                        const oops::FieldSet3D & xb,
                        const oops::FieldSet3D & fg)
   : SaberCentralBlockBase(params, xb.validTime()),
-    params_(params), variables_(params.activeVars.value().get_value_or(centralVars).variables()),
+    params_(params), variables_(params.activeVars.value().get_value_or(centralVars)),
     gsiGridFuncSpace_(geometryData.functionSpace()), comm_(&geometryData.comm()),
     xb_(xb), fg_(fg), validTime_(xb.validTime())
 {
@@ -77,7 +77,7 @@ void StaticCovariance::randomize(oops::FieldSet3D & fset) const {
   // Loop over saber (model) fields and create corresponding fields on gsi grid
   for (const auto & sabField : fset) {
       // Ensure that the field name is in the variables list
-      if (std::find(variables_.begin(), variables_.end(), sabField.name()) == variables_.end()) {
+      if (!variables_.has(sabField.name())) {
         throw eckit::Exception("Field " + sabField.name() + " not found in the " + classname() +
           " variables.", Here());
       }

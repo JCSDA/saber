@@ -28,8 +28,8 @@ oops::Variables createInnerVars(
     const oops::Variables & activeVars,
     const oops::Variables & outerVars) {
   oops::Variables innerVars(outerVars);
-  for (const std::string & s : activeVars.variables()) {
-    innerVars.addMetaData(s, "levels", innerVerticalLevels);
+  for (auto & var : activeVars) {
+    innerVars[var.name()].setLevels(innerVerticalLevels);
   }
   return innerVars;
 }
@@ -42,11 +42,11 @@ void verticalInterpolationFromFullLevels(const oops::Variables & activeVars,
   oops::Variables windnames(std::vector<std::string>{"eastward_wind", "northward_wind"});
 
   // inner stagger is full-levels
-  for (const std::string & v : activeVars.variables()) {
-    auto fldInView = atlas::array::make_view<const double, 2>(fsetIn[v]);
-    auto fldOutView = atlas::array::make_view<double, 2>(fsetOut[v]);
+  for (const auto & v : activeVars) {
+    auto fldInView = atlas::array::make_view<const double, 2>(fsetIn[v.name()]);
+    auto fldOutView = atlas::array::make_view<double, 2>(fsetOut[v.name()]);
 
-    if (((v.find("_levels_minus_one")) != std::string::npos) ||
+    if (((v.name().find("_levels_minus_one")) != std::string::npos) ||
         windnames.has(v)) {
       for (atlas::idx_t jn = 0; jn < fldInView.shape()[0]; ++jn) {
         fldOutView(jn, 0) = fldInView(jn, 0);
@@ -54,7 +54,7 @@ void verticalInterpolationFromFullLevels(const oops::Variables & activeVars,
           fldOutView(jn, jl+1) = 0.5 * (fldInView(jn, jl) + fldInView(jn, jl+1));
         }
       }
-    } else if ((v.find("_levels")) != std::string::npos) {
+    } else if ((v.name().find("_levels")) != std::string::npos) {
       for (atlas::idx_t jn = 0; jn < fldInView.shape()[0]; ++jn) {
         fldOutView(jn, 0) = fldInView(jn, 0);
         for (atlas::idx_t jl = 0; jl < fldInView.shape()[1]-1; ++jl) {
@@ -81,14 +81,14 @@ void mo_buggy_verticalInterpolationFromHalfLevels(const oops::Variables & active
   // going from full levels to half levels, when in fact we are wanting to interpolate
   // from half-levels.  This is not an issue if the vertical staggering is uniform.
   // However in practice it is not.
-  for (const std::string & v : activeVars.variables()) {
-    auto fldInView = atlas::array::make_view<const double, 2>(fsetIn[v]);
-    auto fldOutView = atlas::array::make_view<double, 2>(fsetOut[v]);
+  for (const auto & v : activeVars) {
+    auto fldInView = atlas::array::make_view<const double, 2>(fsetIn[v.name()]);
+    auto fldOutView = atlas::array::make_view<double, 2>(fsetOut[v.name()]);
 
-    if (((v.find("_levels_minus_one")) != std::string::npos) ||
+    if (((v.name().find("_levels_minus_one")) != std::string::npos) ||
         windnames.has(v)) {
       fldOutView.assign(fldInView);
-    } else if ((v.find("_levels")) != std::string::npos) {
+    } else if ((v.name().find("_levels")) != std::string::npos) {
       for (atlas::idx_t jn = 0; jn < fldInView.shape()[0]; ++jn) {
         for (atlas::idx_t jl = 0; jl < fldInView.shape()[1]; ++jl) {
           fldOutView(jn, jl) = fldInView(jn, jl);
@@ -116,11 +116,11 @@ void verticalInterpolationFromFullLevelsAD(const oops::Variables & activeVars,
   // winds are on half-levels
   oops::Variables windnames(std::vector<std::string>{"eastward_wind", "northward_wind"});
 
-  for (const std::string & v : activeVars.variables()) {
-    auto fldInView = atlas::array::make_view<double, 2>(fsetIn[v]);
-    auto fldOutView = atlas::array::make_view<double, 2>(fsetOut[v]);
+  for (const auto & v : activeVars) {
+    auto fldInView = atlas::array::make_view<double, 2>(fsetIn[v.name()]);
+    auto fldOutView = atlas::array::make_view<double, 2>(fsetOut[v.name()]);
 
-    if ((v.find("_levels_minus_one")) != std::string::npos ||
+    if ((v.name().find("_levels_minus_one")) != std::string::npos ||
         windnames.has(v)) {
       for (atlas::idx_t jn = 0; jn < fldInView.shape()[0]; ++jn) {
         for (atlas::idx_t jl = fldInView.shape()[1]-2; jl > -1; --jl) {
@@ -131,7 +131,7 @@ void verticalInterpolationFromFullLevelsAD(const oops::Variables & activeVars,
         fldInView(jn, 0) += fldOutView(jn, 0);
         fldOutView(jn, 0) = 0.0;
       }
-    } else if ((v.find("_levels")) != std::string::npos) {
+    } else if ((v.name().find("_levels")) != std::string::npos) {
       for (atlas::idx_t jn = 0; jn < fldInView.shape()[0]; ++jn) {
         fldInView(jn, fldInView.shape()[1]-1) +=
           fldOutView(jn, fldOutView.shape()[1]-1);
@@ -163,11 +163,11 @@ void mo_buggy_verticalInterpolationFromHalfLevelsAD(const oops::Variables & acti
   // winds are on half-levels
   oops::Variables windnames(std::vector<std::string>{"eastward_wind", "northward_wind"});
 
-  for (const std::string & v : activeVars.variables()) {
-    auto fldInView = atlas::array::make_view<double, 2>(fsetIn[v]);
-    auto fldOutView = atlas::array::make_view<double, 2>(fsetOut[v]);
+  for (const auto & v : activeVars) {
+    auto fldInView = atlas::array::make_view<double, 2>(fsetIn[v.name()]);
+    auto fldOutView = atlas::array::make_view<double, 2>(fsetOut[v.name()]);
 
-    if ((v.find("_levels_minus_one")) != std::string::npos ||
+    if ((v.name().find("_levels_minus_one")) != std::string::npos ||
         windnames.has(v)) {
       for (atlas::idx_t jn = 0; jn < fldInView.shape()[0]; ++jn) {
         for (atlas::idx_t jl = 0; jl < fldInView.shape()[1]; ++jl) {
@@ -175,7 +175,7 @@ void mo_buggy_verticalInterpolationFromHalfLevelsAD(const oops::Variables & acti
           fldOutView(jn, jl) = 0.0;
         }
       }
-    } else if ((v.find("_levels")) != std::string::npos) {
+    } else if ((v.name().find("_levels")) != std::string::npos) {
       for (atlas::idx_t jn = 0; jn < fldInView.shape()[0]; ++jn) {
         fldInView(jn, fldInView.shape()[1]-1) +=
           fldOutView(jn, fldOutView.shape()[1]-1);
@@ -241,11 +241,12 @@ void VertLocInterp::multiply(oops::FieldSet3D & fset) const {
 
   // Create fieldset on functionspace
   atlas::FieldSet fsetOut;
-  for (const auto & fieldname : activeVars_.variables()) {
+  for (const auto & var : activeVars_) {
+    // get levels from outer vars (active vars ambiguous)
     atlas::Field field =
       outerGeometryData_.functionSpace().createField<double>(
-          atlas::option::name(fieldname) |
-          atlas::option::levels(outerVars_.getLevels(fieldname)) |
+          atlas::option::name(var.name()) |
+          atlas::option::levels(outerVars_[var.name()].getLevels()) |
           atlas::option::halo(1));
     atlas::array::make_view<double, 2>(field).assign(0.0);
     field.set_dirty(false);
@@ -280,11 +281,12 @@ void VertLocInterp::multiplyAD(oops::FieldSet3D & fset) const {
 
   // Create fields that are all on half-levels
   atlas::FieldSet fsetOut;
-  for (const auto & fieldname : activeVars_.variables()) {
+  for (const auto & var : activeVars_) {
+    // get levels from inner vars (active vars ambiguous)
     atlas::Field field =
       outerGeometryData_.functionSpace().createField<double>
-        (atlas::option::name(fieldname) |
-         atlas::option::levels(innerVars_.getLevels(fieldname)) |
+        (atlas::option::name(var.name()) |
+         atlas::option::levels(innerVars_[var.name()].getLevels()) |
          atlas::option::halo(1));
     atlas::array::make_view<double, 2>(field).assign(0.0);
     field.set_dirty(false);

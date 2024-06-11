@@ -67,7 +67,7 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
   const std::vector<std::size_t> vlevs = geom.variableSizes(incVarsNoMeta);
   oops::Variables incVars(incVarsNoMeta);
   for (std::size_t i = 0; i < vlevs.size() ; ++i) {
-    incVars.addMetaData(incVars[i], "levels", vlevs[i]);
+    incVars[i].setLevels(vlevs[i]);
   }
 
   // Create dummy xb and fg

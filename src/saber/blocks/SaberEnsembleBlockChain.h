@@ -138,9 +138,9 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
   const oops::Variables activeVars = getActiveVars(saberCentralBlockParams, currentOuterVars);
   vars_ += activeVars;
   // Check that active variables are present in variables
-  for (const auto & var : activeVars.variables()) {
+  for (const auto & var : activeVars) {
     if (!currentOuterVars.has(var)) {
-      throw eckit::UserError("Active variable " + var + " is not present in "
+      throw eckit::UserError("Active variable " + var.name() + " is not present in "
                              "outer variables", Here());
     }
   }

@@ -77,7 +77,7 @@ atlas::FieldSet createCorrelUMatrices(const oops::Variables & activeVars,
   atlas::FieldSet spectralCorrelUMatrices;
 
   for (std::size_t i = 0; i < activeVars.size(); ++i) {
-    std::string var = activeVars[i];
+    std::string var = activeVars[i].name();
 
     const auto uMatrixView = make_view<double, 3>(spectralUMatrices[var]);
     const auto verticalSDView = make_view<const double, 1>(verticalSDs[var]);
@@ -112,20 +112,20 @@ atlas::FieldSet createSpectralCorrelations(const oops::Variables & activeVars,
                                            const atlas::FieldSet & verticalSDs) {
   atlas::FieldSet spectralCorrelations;
 
-  for (std::string var : activeVars.variables()) {
-    const int modelLevels = activeVars.getLevels(var);
+  for (const auto & var : activeVars) {
+    const int modelLevels = var.getLevels();
     auto spectralVertCovView =
-      make_view<const double, 3>(spectralVerticalCovariances[var]);
+      make_view<const double, 3>(spectralVerticalCovariances[var.name()]);
 
     auto verticalSDView =
-      make_view<const double, 1>(verticalSDs[var]);
+      make_view<const double, 1>(verticalSDs[var.name()]);
 
-    auto spectralVertCorrel = atlas::Field(var, atlas::array::make_datatype<double>(),
+    auto spectralVertCorrel = atlas::Field(var.name(), atlas::array::make_datatype<double>(),
       atlas::array::make_shape(spectralVertCovView.shape(0),
                                spectralVertCovView.shape(1),
                                spectralVertCovView.shape(2)));
 
-    auto correlationScaling = atlas::Field(var, atlas::array::make_datatype<double>(),
+    auto correlationScaling = atlas::Field(var.name(), atlas::array::make_datatype<double>(),
       atlas::array::make_shape(modelLevels, modelLevels));
 
     auto spectralVertCorrelView =
@@ -134,7 +134,7 @@ atlas::FieldSet createSpectralCorrelations(const oops::Variables & activeVars,
     auto correlationScalingView =
       make_view<double, 2>(correlationScaling);
 
-    const idx_t nSpectralBins = spectralVerticalCovariances[var].shape(0);
+    const idx_t nSpectralBins = spectralVerticalCovariances[var.name()].shape(0);
 
     for (int k1 = 0; k1 < modelLevels; ++k1) {
       for (int k2 = 0; k2 < modelLevels; ++k2) {
@@ -278,8 +278,8 @@ atlas::FieldSet createSpectralCovariances(const oops::Variables & activeVars,
   atlas::FieldSet spectralVerticalCovariances;
 
   for (std::size_t ivar = 0; ivar < activeVars.size(); ++ivar) {
-    const std::string var = activeVars[ivar];
-    const int modelLevels = activeVars.getLevels(var);
+    const std::string var = activeVars[ivar].name();
+    const int modelLevels = activeVars[ivar].getLevels();
     ASSERT(static_cast<std::size_t>(nSpectralBins) <= nSpectralBinsFull[ivar]);
 
     auto spectralVertCov = atlas::Field(var, atlas::array::make_datatype<double>(),
@@ -320,11 +320,11 @@ atlas::FieldSet createUMatrices(
 
   if (umatrixNetCDFParams == boost::none) {
     for (std::size_t ivar = 0; ivar < activeVars.size(); ++ivar) {
-      const std::string var = activeVars[ivar];
-      const int modelLevels = activeVars.getLevels(var);
+      const std::string var = activeVars[ivar].name();
+      const int modelLevels = activeVars[ivar].getLevels();
       auto uMatrix = atlas::Field(var, atlas::array::make_datatype<double>(),
         atlas::array::make_shape(nSpectralBinsFull[ivar], modelLevels, modelLevels));
-      createUMatrixFromSpectralCovarianceFile(activeVars[ivar],
+      createUMatrixFromSpectralCovarianceFile(var,
                                               params,
                                               uMatrix);
       spectralUMatrices.add(uMatrix);
@@ -332,9 +332,9 @@ atlas::FieldSet createUMatrices(
   } else {
     oops::Variables netCDFVars(umatrixNetCDFParams.value());
     for (std::size_t ivar = 0; ivar < activeVars.size(); ++ivar) {
-      std::string var = activeVars[ivar];
-      const int modelLevels = activeVars.getLevels(var);
-      std::string netCDFVar = netCDFVars[ivar];
+      std::string var = activeVars[ivar].name();
+      const int modelLevels = activeVars[ivar].getLevels();
+      std::string netCDFVar = netCDFVars[ivar].name();
 
       auto uMatrix = atlas::Field(var, atlas::array::make_datatype<double>(),
         atlas::array::make_shape(nSpectralBinsFull[ivar], modelLevels, modelLevels));
@@ -373,12 +373,12 @@ atlas::FieldSet createVerticalSD(const oops::Variables & activeVars,
                                  const atlas::FieldSet & spectralVerticalCovariances) {
   atlas::FieldSet verticalSDs;
 
-  for (std::string var : activeVars.variables()) {
-    const int modelLevels = activeVars.getLevels(var);
+  for (const auto & var : activeVars) {
+    const int modelLevels = var.getLevels();
     auto spectralVertCovView =
-      make_view<const double, 3>(spectralVerticalCovariances[var]);
+      make_view<const double, 3>(spectralVerticalCovariances[var.name()]);
 
-    auto verticalSD = atlas::Field(var, atlas::array::make_datatype<double>(),
+    auto verticalSD = atlas::Field(var.name(), atlas::array::make_datatype<double>(),
       atlas::array::make_shape(modelLevels));
 
     auto verticalSDView = make_view<double, 1>(verticalSD);
@@ -439,7 +439,7 @@ std::vector<std::size_t> getNSpectralBinsFull(const spectralbReadParameters & pa
     std::string hwaveno("total wavenumber");
     auto ind = std::find(dimNames.begin(),  dimNames.end(), hwaveno);
     if (ind != dimNames.end()) {
-      for (std::size_t ivar = 0; ivar < activeVars.variables().size(); ++ivar) {
+      for (std::size_t ivar = 0; ivar < activeVars.size(); ++ivar) {
         nSpectralBinsFull[ivar] = dimSizes[std::distance(dimNames.begin(), ind)];
       }
     }
@@ -447,7 +447,7 @@ std::vector<std::size_t> getNSpectralBinsFull(const spectralbReadParameters & pa
     const oops::Variables vars(umatrixNetCDFParams.value());
 
     for (std::size_t ivar = 0; ivar < vars.size(); ++ivar) {
-      const std::string var = vars[ivar];
+      const std::string var = vars[ivar].name();
       int nbins(0);
 
       // get the number of spectral bins from the cov file
@@ -541,11 +541,11 @@ void spectralVerticalConvolution(const oops::Variables & activeVars,
   const idx_t nb_zonal_wavenumbers = zonal_wavenumbers.size();
 
   // Only update the fields that were specified in the active variables
-  for (const auto & var : activeVars.variables()) {
+  for (const auto & var : activeVars) {
     idx_t i = 0;
-    idx_t levels(fieldSet[var].shape(1));
-    auto vertCovView = make_view<const double, 3>(spectralVerticalStats[var]);
-    auto spfView = make_view<double, 2>(fieldSet[var]);
+    idx_t levels(fieldSet[var.name()].shape(1));
+    auto vertCovView = make_view<const double, 3>(spectralVerticalStats[var.name()]);
+    auto spfView = make_view<double, 2>(fieldSet[var.name()]);
 
     std::vector<double> col(levels), col2(levels);
     // For each total wavenumber n1, perform a 1D convolution with vertical covariances.
@@ -589,11 +589,11 @@ void spectralVerticalConvolutionSqrt(const oops::Variables & activeVars,
   const idx_t nb_zonal_wavenumbers = zonal_wavenumbers.size();
 
   // Only update the fields that were specified in the active variables
-  for (const auto & var : activeVars.variables()) {
-    idx_t levels(fieldSet[var].shape(1));
-    auto UMatrixView = make_view<const double, 3>(spectralVerticalStatsSqrt[var]);
-    auto spfView = make_view<double, 2>(fieldSet[var]);
-    const int nSpectralBinsFull = spectralVerticalStatsSqrt[var].shape(0);
+  for (const auto & var : activeVars) {
+    idx_t levels(fieldSet[var.name()].shape(1));
+    auto UMatrixView = make_view<const double, 3>(spectralVerticalStatsSqrt[var.name()]);
+    auto spfView = make_view<double, 2>(fieldSet[var.name()]);
+    const int nSpectralBinsFull = spectralVerticalStatsSqrt[var.name()].shape(0);
 
     idx_t i = 0;
     std::vector<double> col(levels), col2(levels);
@@ -633,11 +633,11 @@ void spectralVerticalConvolutionSqrtAD(const oops::Variables & activeVars,
   const idx_t nb_zonal_wavenumbers = zonal_wavenumbers.size();
 
   // Only update the fields that were specified in the active variables
-  for (const auto & var : activeVars.variables()) {
-    idx_t levels(fieldSet[var].shape(1));
-    auto UMatrixView = make_view<const double, 3>(spectralVerticalStatsSqrt[var]);
-    auto spfView = make_view<double, 2>(fieldSet[var]);
-    const int nSpectralBinsFull = spectralVerticalStatsSqrt[var].shape(0);
+  for (const auto & var : activeVars) {
+    idx_t levels(fieldSet[var.name()].shape(1));
+    auto UMatrixView = make_view<const double, 3>(spectralVerticalStatsSqrt[var.name()]);
+    auto spfView = make_view<double, 2>(fieldSet[var.name()]);
+    const int nSpectralBinsFull = spectralVerticalStatsSqrt[var.name()].shape(0);
 
     idx_t i = 0;
     std::vector<double> col(levels), col2(levels);
@@ -676,10 +676,10 @@ void spectralHorizontalFilter(const oops::Variables & activeVars,
   const auto zonal_wavenumbers = specFunctionSpace.zonal_wavenumbers();
   const idx_t nb_zonal_wavenumbers = zonal_wavenumbers.size();
 
-  for (const auto & var : activeVars.variables()) {
-    const idx_t levels(fieldSet[var].shape(1));
-    auto vertCovView = make_view<const double, 3>(spectralVerticalStats[var]);
-    auto spfView = make_view<double, 2>(fieldSet[var]);
+  for (const auto & var : activeVars) {
+    const idx_t levels(fieldSet[var.name()].shape(1));
+    auto vertCovView = make_view<const double, 3>(spectralVerticalStats[var.name()]);
+    auto spfView = make_view<double, 2>(fieldSet[var.name()]);
 
     idx_t i = 0;
     for (idx_t jm = 0; jm < nb_zonal_wavenumbers; ++jm) {

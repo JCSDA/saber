@@ -229,9 +229,9 @@ void SpectralAnalyticalFilter::multiply(oops::FieldSet3D & fieldSet) const {
   const int truncation = specFunctionSpace_.truncation();
   const int max_zonal_wavenumber = zonal_wavenumbers.size();
 
-  for (const auto & var : activeVars_.variables()) {
-    auto view = atlas::array::make_view<double, 2>(fieldSet[var]);
-    const atlas::idx_t levels = fieldSet[var].shape(1);
+  for (const auto & var : activeVars_) {
+    auto view = atlas::array::make_view<double, 2>(fieldSet[var.name()]);
+    const atlas::idx_t levels = fieldSet[var.name()].shape(1);
 
     // Element-wise multiplication
     atlas::idx_t jnode = 0;
@@ -279,9 +279,9 @@ void SpectralAnalyticalFilter::leftInverseMultiply(oops::FieldSet3D & fieldSet) 
   std::transform(spectralFilter_.begin(), spectralFilter_.end(),
                  filterInverse.begin(), [&](auto & x){return x != 0.0 ? 1.0 / x : 0.0;});
 
-  for (const auto & var : activeVars_.variables()) {
-    auto view = atlas::array::make_view<double, 2>(fieldSet[var]);
-    const atlas::idx_t levels = fieldSet[var].shape(1);
+  for (const auto & var : activeVars_) {
+    auto view = atlas::array::make_view<double, 2>(fieldSet[var.name()]);
+    const atlas::idx_t levels = fieldSet[var.name()].shape(1);
 
     // Element-wise multiplication
     atlas::idx_t jnode = 0;

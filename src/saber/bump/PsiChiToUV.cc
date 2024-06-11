@@ -31,9 +31,9 @@ namespace {
 oops::Variables createInnerVars(const oops::Variables & outerVars) {
   oops::Variables innerVars(std::vector<std::string>(
     {"stream_function", "velocity_potential"}));
-  const int modelLevels(outerVars.getLevels("eastward_wind"));
-  innerVars.addMetaData("stream_function", "levels", modelLevels);
-  innerVars.addMetaData("velocity_potential", "levels", modelLevels);
+  const int modelLevels(outerVars["eastward_wind"].getLevels());
+  innerVars["stream_function"].setLevels(modelLevels);
+  innerVars["velocity_potential"].setLevels(modelLevels);
   return innerVars;
 }
 

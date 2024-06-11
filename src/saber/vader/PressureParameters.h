@@ -8,6 +8,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "oops/base/Variables.h"
 #include "oops/util/parameters/OptionalParameter.h"
@@ -28,24 +29,23 @@ class GaussUVToGPParameters : public SaberBlockParametersBase {
   oops::OptionalParameter<std::string> modelGridName{"model grid name", this};
   oops::OptionalParameter<std::string> gaussState{"gauss state", this};
   oops::Variables mandatoryActiveVars() const override {return oops::Variables({
+    std::vector<std::string>{
     "eastward_wind",
     "geostrophic_pressure_levels_minus_one",
-    "northward_wind"});}
+    "northward_wind"}});}
 
   oops::Variables activeInnerVars(const oops::Variables& outerVars) const override {
-    oops::Variables vars({"eastward_wind",
-                          "northward_wind"});
-    const int modelLevels = outerVars.getLevels("geostrophic_pressure_levels_minus_one");
-    vars.addMetaData("eastward_wind", "levels", modelLevels);
-    vars.addMetaData("northward_wind", "levels", modelLevels);
+    const int modelLevels = outerVars["geostrophic_pressure_levels_minus_one"].getLevels();
+    eckit::LocalConfiguration conf;
+    conf.set("levels", modelLevels);
+    oops::Variables vars;
+    vars.push_back(oops::Variable{"eastward_wind", conf});
+    vars.push_back(oops::Variable{"northward_wind", conf});
     return vars;
   }
 
   oops::Variables activeOuterVars(const oops::Variables& outerVars) const override {
-    oops::Variables vars({"geostrophic_pressure_levels_minus_one"});
-    for (const auto & var : vars.variables()) {
-      vars.addMetaData(var, "levels", outerVars.getLevels(var));
-    }
+    oops::Variables vars{{outerVars["geostrophic_pressure_levels_minus_one"]}};
     return vars;
   }
 };
@@ -70,24 +70,23 @@ class GpToHpParameters : public SaberBlockParametersBase {
   oops::RequiredParameter<GpToHpCovarianceParameters>
     gptohpcovarianceparams{"covariance data", this};
   oops::Variables mandatoryActiveVars() const override {return oops::Variables({
+    std::vector<std::string>{
     "geostrophic_pressure_levels_minus_one",
     "hydrostatic_pressure_levels",
-    "unbalanced_pressure_levels_minus_one"});}
+    "unbalanced_pressure_levels_minus_one"}});}
 
   oops::Variables activeInnerVars(const oops::Variables& outerVars) const override {
-    oops::Variables vars({"geostrophic_pressure_levels_minus_one",
-                          "unbalanced_pressure_levels_minus_one"});
-    const int modelLevels = outerVars.getLevels("hydrostatic_pressure_levels") - 1;
-    vars.addMetaData("geostrophic_pressure_levels_minus_one", "levels", modelLevels);
-    vars.addMetaData("unbalanced_pressure_levels_minus_one", "levels", modelLevels);
+    const int modelLevels = outerVars["hydrostatic_pressure_levels"].getLevels() - 1;
+    eckit::LocalConfiguration conf;
+    conf.set("levels", modelLevels);
+    oops::Variables vars;
+    vars.push_back(oops::Variable{"geostrophic_pressure_levels_minus_one", conf});
+    vars.push_back(oops::Variable{"unbalanced_pressure_levels_minus_one", conf});
     return vars;
   }
 
   oops::Variables activeOuterVars(const oops::Variables& outerVars) const override {
-    oops::Variables vars({"hydrostatic_pressure_levels"});
-    for (const auto & var : vars.variables()) {
-      vars.addMetaData(var, "levels", outerVars.getLevels(var));
-    }
+    oops::Variables vars({outerVars["hydrostatic_pressure_levels"]});
     return vars;
   }
 };
@@ -101,19 +100,19 @@ class HydrostaticPressureParameters : public SaberBlockParametersBase {
   GaussUVToGPParameters gaussUVToGp{this};
   GpToHpParameters gpToHp{this};
   oops::Variables mandatoryActiveVars() const override {return oops::Variables({
-    "eastward_wind",
+    std::vector<std::string>{"eastward_wind",
     "hydrostatic_pressure_levels",
     "northward_wind",
-    "unbalanced_pressure_levels_minus_one"});}
+    "unbalanced_pressure_levels_minus_one"}});}
 
   oops::Variables activeInnerVars(const oops::Variables& outerVars) const override {
-    oops::Variables vars({"eastward_wind",
-                          "northward_wind",
-                          "unbalanced_pressure_levels_minus_one"});
-    const int modelLevels = outerVars.getLevels("hydrostatic_pressure_levels") - 1;
-    vars.addMetaData("eastward_wind", "levels", modelLevels);
-    vars.addMetaData("northward_wind", "levels", modelLevels);
-    vars.addMetaData("unbalanced_pressure_levels_minus_one", "levels", modelLevels);
+    const int modelLevels = outerVars["hydrostatic_pressure_levels"].getLevels() - 1;
+    eckit::LocalConfiguration conf;
+    conf.set("levels", modelLevels);
+    oops::Variables vars;
+    vars.push_back(oops::Variable{"eastward_wind", conf});
+    vars.push_back(oops::Variable{"northward_wind", conf});
+    vars.push_back(oops::Variable{"unbalanced_pressure_levels_minus_one", conf});
     return vars;
   }
 
@@ -121,15 +120,17 @@ class HydrostaticPressureParameters : public SaberBlockParametersBase {
   // It would have contained "hydrostatic_pressure_levels".
 
   oops::Variables intermediateTempVars(const oops::Variables& outerVars) const {
-    oops::Variables tempVars({"geostrophic_pressure_levels_minus_one"});
     if (outerVars.has("geostrophic_pressure_levels_minus_one")) {
       throw eckit::UserError("geostrophic_pressure_levels_minus_one is a "
                              "temporary variable of mo_hydrostatic_pressure "
                              " and should not be an outer variable of this block.",
                              Here());
     }
-    const int modelLevels = outerVars.getLevels("hydrostatic_pressure_levels") - 1;
-    tempVars.addMetaData("geostrophic_pressure_levels_minus_one", "levels", modelLevels);
+    const int modelLevels = outerVars["hydrostatic_pressure_levels"].getLevels() - 1;
+    eckit::LocalConfiguration conf;
+    conf.set("levels", modelLevels);
+    oops::Variables tempVars;
+    tempVars.push_back(oops::Variable{"geostrophic_pressure_levels_minus_one", conf});
     return tempVars;
   }
 };

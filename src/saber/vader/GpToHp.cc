@@ -42,7 +42,7 @@ namespace {
 
 oops::Variables removeOuterOnlyVar(const oops::Variables & vars) {
   oops::Variables innerVars(vars);
-  innerVars -= "hydrostatic_pressure_levels";
+  innerVars -= innerVars["hydrostatic_pressure_levels"];
   return innerVars;
 }
 
@@ -70,15 +70,11 @@ GpToHp::GpToHp(const oops::GeometryData & outerGeometryData,
     augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::GpToHp starting" << std::endl;
-  oops::Variables activeVars = activeOuterVars_;
-  activeVars += innerOnlyVars_;
-
   // Covariance FieldSet
   covFieldSet_ = createGpRegressionStats(outerGeometryData.functionSpace(),
                                          outerGeometryData.fieldSet(),
-                                         activeVars,
+                                         innerVars_,
                                          params.gptohpcovarianceparams.value());
-
   std::vector<std::string> requiredStateVariables{
     "air_temperature",
     "air_pressure_levels_minus_one",
@@ -134,7 +130,6 @@ GpToHp::GpToHp(const oops::GeometryData & outerGeometryData,
   mo::eval_virtual_potential_temperature_nl(augmentedStateFieldSet_);
   mo::evalHydrostaticExnerLevels(augmentedStateFieldSet_);
   mo::evalHydrostaticPressureLevels(augmentedStateFieldSet_);
-
   // Need to setup derived state fields that we need.
   std::vector<std::string> requiredCovarianceVariables;
   if (covFieldSet_.has("interpolation_weights")) {
@@ -200,7 +195,7 @@ void GpToHp::leftInverseMultiply(oops::FieldSet3D & fset) const {
   }
   //   Allocate inner-only variables except air temperature
   oops::Variables innerOnlyVarsForInversion(innerOnlyVars_);
-  innerOnlyVarsForInversion -= "geostrophic_pressure_levels_minus_one";
+  innerOnlyVarsForInversion -= innerOnlyVarsForInversion["geostrophic_pressure_levels_minus_one"];
   checkFieldsAreNotAllocated(fset, innerOnlyVarsForInversion);
   allocateMissingFields(fset, innerOnlyVarsForInversion, innerOnlyVarsForInversion,
                         innerGeometryData_.functionSpace());

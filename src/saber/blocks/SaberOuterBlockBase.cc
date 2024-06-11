@@ -105,7 +105,7 @@ void SaberOuterBlockBase::adjointTest(const oops::GeometryData & outerGeometryDa
   // Set its halos to zero, as they should be coming in to the block
   if (outerGeometryData.functionSpace().type() != "Spectral") {
     auto ghostView = atlas::array::make_view<int, 1>(outerGeometryData.functionSpace().ghost());
-    for (const auto & var : outerVars.variables()) {
+    for (const auto & var : outerVars) {
       auto view = atlas::array::make_view<double, 2>(outerFset[var]);
       for (int jn = 0; jn < view.shape(0); ++jn) {
         if (ghostView(jn) == 1) {

@@ -248,24 +248,23 @@ oops::FieldSets readEnsemble(const oops::Geometry<MODEL> & geom,
           const int levels = group.getInt("levels");
           for (const auto & var : group.getStringVector("variables")) {
             if (vars.has(var)) {
-              vars.addMetaData(var, "levels", levels);
+              vars[var].setLevels(levels);
             }
           }
         }
         // Check all variables have been populated with level information
-        const auto & metaData = vars.variablesMetaData();
-        for (const auto & var : vars.variables()) {
-          if (!metaData.getSubConfiguration(var).has("levels")) {
+        for (const auto & var : vars) {
+          if (var.getLevels() < 0) {
             std::stringstream ss;
-            ss << "Could not find vertical level information for variable "
+            ss << "Invalid vertical level information for variable "
                << var << " in `ensemble geometry: groups`.";
             throw eckit::UserError(ss.str(), Here());
           }
         }
       } else {
         // Use level information from the model variables
-        for (const auto & var : vars.variables()) {
-          vars.addMetaData(var, "levels", modelvars.getLevels(var));
+        for (auto & var : vars) {
+          var.setLevels(modelvars[var.name()].getLevels());
         }
       }
 

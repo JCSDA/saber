@@ -108,22 +108,22 @@ void SpectralCovariance::read() {
   const int nSpectralBins = specFunctionSpace_.truncation() + 1;  // 2N
   spectralVerticalCovariances_.clear();
 
-  for (std::size_t i = 0; i < activeVars_.variables().size(); ++i) {
+  for (std::size_t i = 0; i < activeVars_.size(); ++i) {
     //  allocate vert cov field based on activeVars and spectralfunctionspace_
     auto spectralVertCov =
-      atlas::Field(activeVars_[i],
+      atlas::Field(activeVars_[i].name(),
                    atlas::array::make_datatype<double>(),
                    atlas::array::make_shape(nSpectralBins,
-                                            activeVars_.getLevels(activeVars_[i]),
-                                            activeVars_.getLevels(activeVars_[i])));
+                                            activeVars_[i].getLevels(),
+                                            activeVars_[i].getLevels()));
     if (umatrixNetCDFParams != boost::none) {
       const oops::Variables netCDFVars(umatrixNetCDFParams.value());
-      specutils::createSpectralCovarianceFromUMatrixFile(activeVars_[i],
-                                                         netCDFVars[i],
+      specutils::createSpectralCovarianceFromUMatrixFile(activeVars_[i].name(),
+                                                         netCDFVars[i].name(),
                                                          sparams,
                                                          spectralVertCov);
     } else {
-      specutils::readSpectralCovarianceFromFile(activeVars_[i],
+      specutils::readSpectralCovarianceFromFile(activeVars_[i].name(),
                                                 sparams,
                                                 spectralVertCov);
     }
@@ -149,10 +149,11 @@ void SpectralCovariance::directCalibration(const oops::FieldSets &
     spectralVerticalCovariances_.clear();
     const int nSpectralBins = specFunctionSpace_.truncation() + 1;  // 2N
     for (std::size_t i = 0; i < activeVars_.size(); ++i) {
-      auto spectralVertCov = atlas::Field(activeVars_[i], atlas::array::make_datatype<double>(),
+      auto spectralVertCov = atlas::Field(activeVars_[i].name(),
+                                          atlas::array::make_datatype<double>(),
         atlas::array::make_shape(nSpectralBins,
-                                 activeVars_.getLevels(activeVars_[i]),
-                                 activeVars_.getLevels(activeVars_[i])));
+                                 activeVars_[i].getLevels(),
+                                 activeVars_[i].getLevels()));
 
       auto spectralVertCovView = atlas::array::make_view<double, 3>(spectralVertCov);
       spectralVertCovView.assign(0.0);

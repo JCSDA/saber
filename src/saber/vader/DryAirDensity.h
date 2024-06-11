@@ -36,47 +36,45 @@ class DryAirDensityParameters : public SaberBlockParametersBase {
 
  public:
   oops::Variables mandatoryActiveVars() const override {return oops::Variables({
+    std::vector<std::string>{
     "dry_air_density_levels_minus_one",
     "air_pressure_levels",
     "potential_temperature",
     "specific_humidity",
     "mass_content_of_cloud_liquid_water_in_atmosphere_layer",
-    "mass_content_of_cloud_ice_in_atmosphere_layer"});}
+    "mass_content_of_cloud_ice_in_atmosphere_layer"}});}
 
   oops::Variables activeInnerVars(const oops::Variables& outerVars) const override {
-    oops::Variables vars({"air_pressure_levels",
-                          "potential_temperature",
-                          "specific_humidity",
-                          "mass_content_of_cloud_liquid_water_in_atmosphere_layer",
-                          "mass_content_of_cloud_ice_in_atmosphere_layer"});
-    const int modelLevels = outerVars.getLevels("dry_air_density_levels_minus_one");
-    vars.addMetaData("air_pressure_levels", "levels", modelLevels + 1);
-    vars.addMetaData("potential_temperature", "levels", modelLevels);
-    vars.addMetaData("specific_humidity", "levels", modelLevels);
-    vars.addMetaData("mass_content_of_cloud_liquid_water_in_atmosphere_layer", "levels",
-                     modelLevels);
-    vars.addMetaData("mass_content_of_cloud_ice_in_atmosphere_layer", "levels", modelLevels);
+    const int modelLevels = outerVars["dry_air_density_levels_minus_one"].getLevels();
+    oops::Variables vars;
+    eckit::LocalConfiguration conf;
+    conf.set("levels", modelLevels + 1);
+    vars.push_back({"air_pressure_levels", conf});
+    conf.set("levels", modelLevels);
+    vars.push_back({"potential_temperature", conf});
+    vars.push_back({"specific_humidity", conf});
+    vars.push_back({"mass_content_of_cloud_liquid_water_in_atmosphere_layer", conf});
+    vars.push_back({"mass_content_of_cloud_ice_in_atmosphere_layer", conf});
     return vars;
   }
 
   oops::Variables activeOuterVars(const oops::Variables& outerVars) const override {
-    oops::Variables vars({"dry_air_density_levels_minus_one"});
-    for (const auto & var : vars.variables()) {
-      vars.addMetaData(var, "levels", outerVars.getLevels(var));
-    }
+    oops::Variables vars({outerVars["dry_air_density_levels_minus_one"]});
     return vars;
   }
 
   oops::Variables intermediateTempVars(const oops::Variables& outerVars) const {
-    oops::Variables tempVars({"air_pressure_levels_minus_one"});
     if (outerVars.has("air_pressure_levels_minus_one")) {
       throw eckit::UserError("air_pressure_levels_minus_one is a "
                              "temporary variable of mo_dry_air_density "
                              " and should not be an outer variable of this block.",
                              Here());
     }
-    const int modelLevels = outerVars.getLevels("dry_air_density_levels_minus_one");
-    tempVars.addMetaData("air_pressure_levels_minus_one", "levels", modelLevels);
+    const int modelLevels = outerVars["dry_air_density_levels_minus_one"].getLevels();
+    eckit::LocalConfiguration conf;
+    conf.set("levels", modelLevels);
+    oops::Variables tempVars;
+    tempVars.push_back({"air_pressure_levels_minus_one", conf});
     return tempVars;
   }
 };

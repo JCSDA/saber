@@ -50,28 +50,26 @@ class MoistureControlParameters : public SaberBlockParametersBase {
   oops::RequiredParameter<MoistureControlCovarianceParameters>
     moistureControlParams{"covariance data", this};
   oops::Variables mandatoryActiveVars() const override {
-    return oops::Variables({
+    return oops::Variables({std::vector<std::string>{
         "qt",
         "mu",
         "potential_temperature",
-        "virtual_potential_temperature"});
+        "virtual_potential_temperature"}});
   }
 
   oops::Variables activeInnerVars(const oops::Variables& outerVars) const override {
-    oops::Variables vars({"virtual_potential_temperature",
-                          "mu"});
-    const int modelLevels = outerVars.getLevels("qt");
-    vars.addMetaData("virtual_potential_temperature", "levels", modelLevels);
-    vars.addMetaData("mu", "levels", modelLevels);
+    const int modelLevels = outerVars["qt"].getLevels();
+    eckit::LocalConfiguration conf;
+    conf.set("levels", modelLevels);
+    oops::Variables vars;
+    vars.push_back({"virtual_potential_temperature", conf});
+    vars.push_back({"mu", conf});
     return vars;
   }
 
   oops::Variables activeOuterVars(const oops::Variables& outerVars) const override {
-    oops::Variables vars({"potential_temperature",
-                          "qt"});
-    for (const auto & var : vars.variables()) {
-      vars.addMetaData(var, "levels", outerVars.getLevels(var));
-    }
+    oops::Variables vars({outerVars["potential_temperature"],
+                          outerVars["qt"]});
     return vars;
   }
 };

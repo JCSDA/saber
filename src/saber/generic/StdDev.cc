@@ -174,13 +174,13 @@ void StdDev::directCalibration(const oops::FieldSets & fsetEns) {
   // Initialize
   oops::FieldSet3D mean(this->validTime(), innerGeometryData_.comm());
   oops::FieldSet3D var(this->validTime(), innerGeometryData_.comm());
-  for (size_t jvar = 0; jvar < innerVars_.size(); ++jvar) {
+  for (const auto & innerVar : innerVars_) {
     mean.fieldSet().add(innerGeometryData_.functionSpace().createField<double>(
-             atlas::option::name(innerVars_[jvar]) |
-             atlas::option::levels(innerVars_.getLevels(innerVars_[jvar]))));
+             atlas::option::name(innerVar.name()) |
+             atlas::option::levels(innerVar.getLevels())));
     var.fieldSet().add(innerGeometryData_.functionSpace().createField<double>(
-            atlas::option::name(innerVars_[jvar]) |
-            atlas::option::levels(innerVars_.getLevels(innerVars_[jvar]))));
+            atlas::option::name(innerVar.name()) |
+            atlas::option::levels(innerVar.getLevels())));
   }
   mean.zero();
   var.zero();
@@ -220,13 +220,13 @@ void StdDev::iterativeCalibrationInit() {
   iterativeN_ = 0;
   iterativeMean_.reset(new oops::FieldSet3D(this->validTime(), innerGeometryData_.comm()));
   iterativeVar_.reset(new oops::FieldSet3D(this->validTime(), innerGeometryData_.comm()));
-  for (size_t jvar = 0; jvar < innerVars_.size(); ++jvar) {
+  for (const auto & innerVar : innerVars_) {
     iterativeMean_->fieldSet().add(innerGeometryData_.functionSpace().createField<double>(
-                       atlas::option::name(innerVars_[jvar]) |
-                       atlas::option::levels(innerVars_.getLevels(innerVars_[jvar]))));
+                       atlas::option::name(innerVar.name()) |
+                       atlas::option::levels(innerVar.getLevels())));
     iterativeVar_->fieldSet().add(innerGeometryData_.functionSpace().createField<double>(
-                      atlas::option::name(innerVars_[jvar]) |
-                      atlas::option::levels(innerVars_.getLevels(innerVars_[jvar]))));
+                      atlas::option::name(innerVar.name()) |
+                      atlas::option::levels(innerVar.getLevels())));
   }
   iterativeMean_->zero();
   iterativeVar_->zero();

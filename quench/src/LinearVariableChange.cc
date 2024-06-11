@@ -46,6 +46,7 @@ LinearVariableChange::LinearVariableChange(const Geometry & geom,
     util::seekAndReplace(conf, "_OMP_", omp);
 
     // Read fieldset
+    // TODO(AS): replace with setting up variables correctly
     util::readFieldSet(geom.getComm(),
                        geom.functionSpace(),
                        geom.variableSizes(*params.variables.value()),

@@ -41,26 +41,25 @@ class HpHexnerToPExnerParameters : public SaberBlockParametersBase {
 
  public:
   oops::Variables mandatoryActiveVars() const override {return oops::Variables({
+    std::vector<std::string>{
     "air_pressure_levels",
     "exner_levels_minus_one",
     "hydrostatic_exner_levels",
-    "hydrostatic_pressure_levels"});}
+    "hydrostatic_pressure_levels"}});}
 
   oops::Variables activeInnerVars(const oops::Variables& outerVars) const override {
-    oops::Variables vars({"hydrostatic_exner_levels",
-                          "hydrostatic_pressure_levels"});
-    const int modelLevels = outerVars.getLevels("air_pressure_levels");
-    vars.addMetaData("hydrostatic_exner_levels", "levels", modelLevels);
-    vars.addMetaData("hydrostatic_pressure_levels", "levels", modelLevels);
+    const int modelLevels = outerVars["air_pressure_levels"].getLevels();
+    eckit::LocalConfiguration conf;
+    conf.set("levels", modelLevels);
+    oops::Variables vars;
+    vars.push_back({"hydrostatic_exner_levels", conf});
+    vars.push_back({"hydrostatic_pressure_levels", conf});
     return vars;
   }
 
   oops::Variables activeOuterVars(const oops::Variables& outerVars) const override {
-    oops::Variables vars({"air_pressure_levels",
-                          "exner_levels_minus_one"});
-    for (const auto & var : vars.variables()) {
-      vars.addMetaData(var, "levels", outerVars.getLevels(var));
-    }
+    oops::Variables vars({outerVars["air_pressure_levels"],
+                          outerVars["exner_levels_minus_one"]});
     return vars;
   }
 };

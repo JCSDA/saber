@@ -413,7 +413,7 @@ atlas::FieldSet allocateSpectralVortDiv(
 
 oops::Variables removeOuterOnlyVar(const oops::Variables & vars) {
   oops::Variables innerVars(vars);
-  innerVars -= "geostrophic_pressure_levels_minus_one";
+  innerVars -= innerVars["geostrophic_pressure_levels_minus_one"];
   return innerVars;
 }
 
@@ -436,8 +436,8 @@ void applyRecipNtimesNplus1SpectralScaling(const oops::Variables & innerNames,
   }
 
   atlas::FieldSet fsetScaled;
-  for (std::size_t var = 0; var < innerNames.variables().size(); ++var) {
-    atlas::Field scaledFld = fSet[innerNames[var]];
+  for (std::size_t var = 0; var < innerNames.size(); ++var) {
+    atlas::Field scaledFld = fSet[innerNames[var].name()];
     auto fldView = atlas::array::make_view<double, 2>(scaledFld);
 
     double earthRadius = atlas::util::Earth::radius();  // radius of earth;
@@ -447,7 +447,7 @@ void applyRecipNtimesNplus1SpectralScaling(const oops::Variables & innerNames,
       const int m1 = zonal_wavenumbers(jm);
       for (std::size_t n1 = m1; n1 <= static_cast<std::size_t>(totalWavenumber); ++n1) {
         for (std::size_t img = 0; img < 2; ++img, ++i) {
-          for (atlas::idx_t jl = 0; jl < fSet[innerNames[var]].shape(1); ++jl) {
+          for (atlas::idx_t jl = 0; jl < fSet[innerNames[var].name()].shape(1); ++jl) {
             if (n1 != 0) {
               fldView(i, jl) *= squaredEarthRadius / (n1 * (n1 + 1));
             } else {
@@ -457,7 +457,7 @@ void applyRecipNtimesNplus1SpectralScaling(const oops::Variables & innerNames,
         }
       }
     }
-    scaledFld.rename(outerNames[var]);
+    scaledFld.rename(outerNames[var].name());
     fsetScaled.add(scaledFld);
   }
 

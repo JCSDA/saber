@@ -19,23 +19,24 @@ namespace saber {
 oops::Variables getActiveVars(const SaberBlockParametersBase & params,
                               const oops::Variables & defaultVars) {
   oops::Log::trace() << "getActiveVars starting" << std::endl;
-  oops::Variables activeVars;
+  oops::Variables activeVars_nomd;
   if (params.mandatoryActiveVars().size() == 0) {
     // No mandatory active variables for this block
-    activeVars = params.activeVars.value().get_value_or(defaultVars);
+    activeVars_nomd = params.activeVars.value().get_value_or(defaultVars);
   } else {
     // Block with mandatory active variables
-    activeVars = params.activeVars.value().get_value_or(params.mandatoryActiveVars());
-    ASSERT(params.mandatoryActiveVars() <= activeVars);
+    activeVars_nomd = params.activeVars.value().get_value_or(params.mandatoryActiveVars());
+    ASSERT(params.mandatoryActiveVars() <= activeVars_nomd);
   }
-  if (activeVars.variablesMetaData().empty()) {
-    atlas::util::Config defvarsconf(defaultVars.variablesMetaData());
-    atlas::util::Config varsconf;
-    std::vector<std::string> varsStrings(activeVars.variables());
-    for (const std::string & var : activeVars.variables()) {
-      varsconf = varsconf | atlas::util::Config(var, defvarsconf.getSubConfiguration(var));
+  // Copy the variables that exist in defaultVars from defaultVars (they have metadata
+  // associated with them)
+  oops::Variables activeVars;
+  for (auto & var : activeVars_nomd) {
+    if (defaultVars.has(var.name())) {
+      activeVars.push_back(defaultVars[var.name()]);
+    } else {
+      activeVars.push_back(var);
     }
-    activeVars = oops::Variables(varsconf, varsStrings);
   }
   return activeVars;
 }
@@ -79,9 +80,9 @@ void setMPI(eckit::LocalConfiguration & conf,
 
 void checkFieldsAreNotAllocated(const oops::FieldSet3D & fset,
                                 const oops::Variables & vars) {
-  for (const auto& var : vars.variables()) {
-    if (fset.has(var)) {
-      throw eckit::UserError("Variable " + var + " is already allocated in FieldSet.",
+  for (const auto& var : vars) {
+    if (fset.has(var.name())) {
+      throw eckit::UserError("Variable " + var.name() + " is already allocated in FieldSet.",
                              Here());
     }
   }
@@ -94,12 +95,12 @@ void allocateMissingFields(oops::FieldSet3D & fset,
                            const oops::Variables & varsWithLevels,
                            const atlas::FunctionSpace & functionSpace) {
   oops::Log::trace() << "allocateMissingFields starting" << std::endl;
-  for (const auto& var : varsToAllocate.variables()) {
-    if (!fset.has(var)) {
-      oops::Log::info() << "Info     : Allocating " << var << std::endl;
+  for (const auto& var : varsToAllocate) {
+    if (!fset.has(var.name())) {
+      oops::Log::info() << "Info     : Allocating " << var.name() << std::endl;
       auto field = functionSpace.createField<double>(
-                atlas::option::name(var) |
-                atlas::option::levels(varsWithLevels.getLevels(var)));
+                atlas::option::name(var.name()) |
+                atlas::option::levels(varsWithLevels[var.name()].getLevels()));
       atlas::array::make_view<double, 2>(field).assign(0.0);
       field.set_dirty(false);
       fset.add(field);

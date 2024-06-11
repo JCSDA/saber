@@ -36,8 +36,8 @@ IDCentral::IDCentral(const oops::GeometryData & geometryData,
 
   // Compute total number of levels
   size_t nlev = 0;
-  for (const std::string & var : activeVars.variables()) {
-    nlev += activeVars.getLevels(var);
+  for (const auto & var : activeVars) {
+    nlev += var.getLevels();
   }
 
   // Compute control vector size
@@ -59,8 +59,8 @@ void IDCentral::randomize(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::randomize starting" << std::endl;
 
   // Consistency check
-  for (const auto & var : activeVars_.variables()) {
-      ASSERT(fset.has(var));
+  for (const auto & var : activeVars_) {
+      ASSERT(fset.has(var.name()));
   }
 
   // Random initialization

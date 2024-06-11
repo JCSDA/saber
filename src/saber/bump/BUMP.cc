@@ -139,9 +139,9 @@ BUMP::BUMP(const oops::GeometryData & geometryData,
     for (const auto & var : vars_str) {
       bool varFound = false;
       for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-        if (var == vars_[jvar]) {
+        if (var == vars_[jvar].name()) {
           varFound = true;
-          int nl0_tmp = static_cast<int>(vars_.getLevels(var));
+          int nl0_tmp = static_cast<int>(vars_[var].getLevels());
           if (nl0 > 1) {
             // Check that nl0_tmp is either 1 or nl0
             if ((nl0_tmp != 1) && (nl0_tmp != nl0)) {
@@ -174,7 +174,7 @@ BUMP::BUMP(const oops::GeometryData & geometryData,
     // Add vertical coordinate name
     std::string vertCoordName;
     for (const auto & var : vars_str) {
-      if (var2d.size() == vars_str.size() || vars_.getLevels(var) > 1) {
+      if (var2d.size() == vars_str.size() || vars_[var].getLevels() > 1) {
         const std::string key = var + ".vert_coord";
         if (vertCoordName.empty()) {
           vertCoordName = fieldsMetaData.getString(key, "");
@@ -191,7 +191,7 @@ BUMP::BUMP(const oops::GeometryData & geometryData,
     // Add geographical mask name
     std::string gmaskName;
     for (const auto & var : vars_str) {
-      if (var2d.size() == vars_str.size() || vars_.getLevels(var) > 1) {
+      if (var2d.size() == vars_str.size() || vars_[var].getLevels() > 1) {
         const std::string key = var + ".gmask";
         if (gmaskName.empty()) {
           gmaskName = fieldsMetaData.getString(key, "");

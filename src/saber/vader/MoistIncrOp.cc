@@ -167,7 +167,7 @@ void MoistIncrOp::leftInverseMultiply(oops::FieldSet3D & fset) const {
   }
   //   Allocate inner-only variables except air temperature
   oops::Variables innerOnlyVarsForInversion(innerOnlyVars_);
-  innerOnlyVarsForInversion -= "air_temperature";
+  innerOnlyVarsForInversion -= innerOnlyVarsForInversion["air_temperature"];
   checkFieldsAreNotAllocated(fset, innerOnlyVarsForInversion);
   allocateMissingFields(fset, innerOnlyVarsForInversion, innerOnlyVarsForInversion,
                         innerGeometryData_.functionSpace());

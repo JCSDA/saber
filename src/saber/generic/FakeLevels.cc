@@ -64,14 +64,13 @@ FakeLevels::FakeLevels(const oops::GeometryData & outerGeometryData,
   ASSERT(nz_ > 1);
 
   // Create inner variables
-  for (const std::string & varName : outerVars.variables()) {
-    if (activeVars_.has(varName)) {
-      const std::string newVarName = varName + suffix_;
-      innerVars_.push_back(newVarName);
-      innerVars_.addMetaData(newVarName, "levels", nz_);
+  for (const auto & var : outerVars) {
+    if (activeVars_.has(var)) {
+      eckit::LocalConfiguration conf;
+      conf.set("levels", nz_);
+      innerVars_.push_back(oops::Variable(var.name() + suffix_, conf));
     } else {
-      innerVars_.push_back(varName);
-      innerVars_.addMetaData(varName, "levels", innerVars_.getLevels(varName));
+      innerVars_.push_back(outerVars[var.name()]);
     }
   }
 
@@ -89,16 +88,16 @@ void FakeLevels::multiply(oops::FieldSet3D & fset) const {
   // Create fieldset
   atlas::FieldSet outerFset;
 
-  for (const auto & outerVar : activeVars_.variables()) {
+  for (const auto & outerVar : activeVars_) {
     // Get inner variable name
-    const std::string innerVar = outerVar + suffix_;
+    const std::string innerVar = outerVar.name() + suffix_;
 
     // Get inner field
     const auto innerView = atlas::array::make_view<double, 2>(fset[innerVar]);
 
     // Create outer field
     atlas::Field outerField = gdata_.functionSpace().createField<double>(
-      atlas::option::name(outerVar) | atlas::option::levels(1) | atlas::option::halo(1));
+      atlas::option::name(outerVar.name()) | atlas::option::levels(1) | atlas::option::halo(1));
     auto outerView = atlas::array::make_view<double, 2>(outerField);
 
     // Get weight
@@ -136,13 +135,13 @@ void FakeLevels::multiplyAD(oops::FieldSet3D & fset) const {
   // Create fieldset
   atlas::FieldSet innerFset;
 
-  for (const auto & outerVar : activeVars_.variables()) {
+  for (const auto & outerVar : activeVars_) {
     // Get inner variable name
-    const std::string innerVar = outerVar + suffix_;
+    const std::string innerVar = outerVar.name() + suffix_;
 
     // Get outer field
-    const auto outerView = atlas::array::make_view<double, 2>(fset[outerVar]);
-    ASSERT(fset[outerVar].shape(1) == 1);
+    const auto outerView = atlas::array::make_view<double, 2>(fset[outerVar.name()]);
+    ASSERT(fset[outerVar.name()].shape(1) == 1);
 
     // Create inner field
     atlas::Field innerField = gdata_.functionSpace().createField<double>(
@@ -204,15 +203,15 @@ void FakeLevels::setReadFields(const std::vector<oops::FieldSet3D> & fsetVec) {
   for (size_t ji = 0; ji < fsetVec.size(); ++ji) {
     if (fsetVec[ji].name() == "rv") {
       rv_.reset(new oops::FieldSet3D(validTime_, comm_));
-      for (const auto & outerVar : activeVars_.variables()) {
+      for (const auto & outerVar : activeVars_) {
         // Save field
-        rv_->add(fsetVec[ji][outerVar]);
+        rv_->add(fsetVec[ji][outerVar.name()]);
       }
     } else if (fsetVec[ji].name() == "weight") {
       weight_.reset(new oops::FieldSet3D(validTime_, comm_));
-      for (const auto & outerVar : activeVars_.variables()) {
+      for (const auto & outerVar : activeVars_) {
         // Get inner variable name
-        const std::string innerVar = outerVar + suffix_;
+        const std::string innerVar = outerVar.name() + suffix_;
 
         // Save field
         weight_->add(fsetVec[ji][innerVar]);
@@ -237,9 +236,9 @@ void FakeLevels::directCalibration(const oops::FieldSets &) {
   if (!rv_) {
     ASSERT(params_.rvFromYaml.value() != boost::none);
     rv_.reset(new oops::FieldSet3D(validTime_, comm_));
-    for (const auto & outerVar : activeVars_.variables()) {
+    for (const auto & outerVar : activeVars_) {
       atlas::Field rvField = gdata_.functionSpace().createField<double>(
-        atlas::option::name(outerVar) | atlas::option::levels(1));
+        atlas::option::name(outerVar.name()) | atlas::option::levels(1));
       auto rvView = atlas::array::make_view<double, 2>(rvField);
       for (int jnode = 0; jnode < rvField.shape(0); ++jnode) {
         if (ghostView(jnode) == 0) {
@@ -268,21 +267,21 @@ void FakeLevels::directCalibration(const oops::FieldSets &) {
   // Prepare weight
   ASSERT(!weight_);
   weight_.reset(new oops::FieldSet3D(validTime_, comm_));
-  for (const auto & outerVar : activeVars_.variables()) {
+  for (const auto & outerVar : activeVars_) {
     // Check number of levels of outer variables
-    ASSERT(outerVars_.getLevels(outerVar) == 1);
+    ASSERT(outerVar.getLevels() == 1);
 
     // Get inner variable name
-    const std::string innerVar = outerVar + suffix_;
+    const std::string innerVar = outerVar.name() + suffix_;
 
     // Get vertical coordinate
-    const std::string key = outerVar + ".vert_coord";
+    const std::string key = outerVar.name() + ".vert_coord";
     const std::string vertCoordName = fieldsMetaData_.getString(key, "vert_coord");
     const atlas::Field vertCoordField = gdata_.fieldSet()[vertCoordName];
     const auto vertCoordView = atlas::array::make_view<double, 2>(vertCoordField);
 
     // Get vertical support
-    const auto rvView = atlas::array::make_view<double, 2>((*rv_)[outerVar]);
+    const auto rvView = atlas::array::make_view<double, 2>((*rv_)[outerVar.name()]);
 
     // Create weight field
     atlas::Field field = gdata_.functionSpace().createField<double>(
@@ -351,9 +350,9 @@ void FakeLevels::read() {
 
   ASSERT(!rv_);
   ASSERT(weight_);
-  for (const auto & outerVar : activeVars_.variables()) {
+  for (const auto & outerVar : activeVars_) {
     // Get inner variable name
-    const std::string innerVar = outerVar + suffix_;
+    const std::string innerVar = outerVar.name() + suffix_;
 
     // Check number of levels
     ASSERT((*weight_)[innerVar].levels() == static_cast<int>(nz_));
