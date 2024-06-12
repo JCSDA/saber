@@ -1,6 +1,7 @@
 /*
  * (C) Copyright 2021-2023 UCAR
  * (C) Copyright 2023 Meteorologisk Institutt
+ * (C) Crown Copyright 2024 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -8,6 +9,7 @@
 
 #pragma once
 
+#include <netcdf.h>
 #include <omp.h>
 
 #include <limits>
@@ -374,29 +376,37 @@ void  write_1d_covariances(const eckit::mpi::Comm & comm,
     size_t nProfiles = distances.size();
     std::vector<std::string> dimNames(nProfiles);
     std::vector<atlas::idx_t> dimSizes(nProfiles);
-    std::vector<std::string> variableNames(2 * nProfiles);
+    oops::Variables vars;
     std::vector<std::vector<std::string>> dimNamesForEveryVar(2 * nProfiles);
     std::vector<std::vector<atlas::idx_t>> dimSizesForEveryVar(2 * nProfiles);
     size_t ivar = 0;
+    eckit::LocalConfiguration netcdfMetaData;
+
     for (size_t iProfile = 0; iProfile < nProfiles; iProfile++) {
       // Dimension
       dimNames[iProfile] = "nx" + std::to_string(iProfile);;
       dimSizes[iProfile] = distances[iProfile].size();
 
       // Distance variable
-      variableNames[ivar] = names[fieldIndex[iProfile]]
-                               + "_lev" + std::to_string(levs[iProfile])
-                               + "_distances";
+      vars.push_back(names[fieldIndex[iProfile]]
+                     + "_lev" + std::to_string(levs[iProfile])
+                     + "_distances");
       dimNamesForEveryVar[ivar] = {dimNames.back()};
       dimSizesForEveryVar[ivar] = {dimSizes.back()};
+      util::setAttribute<std::string>(
+        netcdfMetaData, vars[ivar].name(), "binning type", "string",
+        "horizontal separation distance");
       ivar++;
 
       // Covariance variable
-      variableNames[ivar] = names[fieldIndex[iProfile]]
-                              + "_lev" + std::to_string(levs[iProfile])
-                              + "_covariances";
+      vars.push_back(names[fieldIndex[iProfile]]
+                     + "_lev" + std::to_string(levs[iProfile])
+                     + "_covariances");
       dimNamesForEveryVar[ivar] = {dimNames.back()};
       dimSizesForEveryVar[ivar] = {dimSizes.back()};
+      util::setAttribute<std::string>(
+        netcdfMetaData, vars[ivar].name(), "statistics type", "string",
+        "1D horizontal covariance");
       ivar++;
     }
 
@@ -408,8 +418,9 @@ void  write_1d_covariances(const eckit::mpi::Comm & comm,
     util::atlasArrayWriteHeader(filePath,
                                 dimNames,
                                 dimSizes,
-                                variableNames,
+                                vars,
                                 dimNamesForEveryVar,
+                                netcdfMetaData,
                                 netcdfGeneralIDs,
                                 netcdfDimIDs,
                                 netcdfVarIDs,

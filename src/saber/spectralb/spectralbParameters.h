@@ -28,7 +28,7 @@ class spectralbReadParameters : public oops::Parameters {
  public:
   // required
   oops::RequiredParameter<std::string> covarianceFile{"covariance_file",
-  "Covariance file", this};
+    "Covariance file", this};
   oops::OptionalParameter<std::vector<std::string>> umatrixNetCDFNames{
     "umatrix_netcdf_names", "umatrix netcdf names", this};
   oops::Parameter<int> levelOffset{"level offset",
@@ -39,8 +39,10 @@ class spectralbCalibrationWriteParameters : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(spectralbCalibrationWriteParameters, oops::Parameters)
 
  public:
+  oops::RequiredParameter<std::string> covName{"covariance name",
+    "covariance name global attribute", this};
   oops::RequiredParameter<std::string> mpiPattern{"mpi pattern",
-      "mpi pattern", this};
+    "mpi pattern", this};
   oops::RequiredParameter<std::string> filePath{"file path",
     "Path to written file", this};
 };

@@ -419,8 +419,9 @@ std::vector<std::size_t> getNSpectralBinsFull(const spectralbReadParameters & pa
     std::vector<std::string> dimNames;
     std::vector<idx_t> dimSizes;
     std::vector<std::vector<std::string>> dimNamesForEveryVar;
-    std::vector<std::string> variableNames;
+    oops::Variables vars;
     std::vector<int> netcdfGeneralIDs;
+    eckit::LocalConfiguration netcdfMetaData;
     std::vector<int> netcdfDimIDs;
     std::vector<int> netcdfVarIDs;
     std::vector<std::vector<int>> netcdfDimVarIDs;
@@ -428,8 +429,9 @@ std::vector<std::size_t> getNSpectralBinsFull(const spectralbReadParameters & pa
     util::atlasArrayInquire(filepath,
                             dimNames,
                             dimSizes,
-                            variableNames,
+                            vars,
                             dimNamesForEveryVar,
+                            netcdfMetaData,
                             netcdfGeneralIDs,
                             netcdfDimIDs,
                             netcdfVarIDs,
@@ -470,9 +472,10 @@ void readSpectralCovarianceFromFile(const std::string & var,
   std::string ncfilepath = readparams.covarianceFile;
   std::vector<std::string> dimNames;
   std::vector<idx_t> dimSizes;
-  std::vector<std::string> variableNames;
+  oops::Variables vars;
   std::vector<std::vector<std::string>> dimNamesForEveryVar;
   std::vector<int> netcdfGeneralIDs;
+  eckit::LocalConfiguration netcdfMetaData;
   std::vector<int> netcdfDimIDs;
   std::vector<int> netcdfVarIDs;
   std::vector<std::vector<int>> netcdfDimVarIDs;
@@ -483,21 +486,25 @@ void readSpectralCovarianceFromFile(const std::string & var,
      util::atlasArrayInquire(ncfilepath,
                              dimNames,
                              dimSizes,
-                             variableNames,
+                             vars,
                              dimNamesForEveryVar,
+                             netcdfMetaData,
                              netcdfGeneralIDs,
                              netcdfDimIDs,
                              netcdfVarIDs,
                              netcdfDimVarIDs);
   }
   // read file
-  const std::string filevar = var + " spectral vertical covariance";
+  const std::string filevar = var;
+
+  // TO DO(Marek) ASSERT THAT FILE HAS SPECTRAL VERTICAL COVARIANCES
+
   auto specvertview = make_view<double, 3>(spectralVertCov);
   specvertview.assign(0.0);
 
   if (eckit::mpi::comm().rank() == root) {
-    auto it = std::find(variableNames.begin(), variableNames.end(), filevar);
-    std::size_t i = std::distance(variableNames.begin(), it);
+    const std::size_t i = vars.find(filevar);
+
     std::vector<idx_t> dimSizesForVar;
     for (const auto & dimName : dimNamesForEveryVar[i]) {
       auto it2 = std::find(dimNames.begin(), dimNames.end(), dimName);

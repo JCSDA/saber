@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2023 Met Office
+ * (C) Crown Copyright 2023-2024 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -198,11 +198,16 @@ void SpectralCorrelation::write() const {
   const std::vector<atlas::idx_t> dim_sizes{spectralVertCovToWrite[0].shape()[0],
                                             spectralVertCovToWrite[0].shape()[1],
                                             spectralVertCovToWrite[0].shape()[2]};
-  std::vector<std::string> field_names(activeVars_.variables());
+  oops::Variables fsetVars(activeVars_);
   std::vector<std::vector<std::string>> dim_names_for_every_var;
-  for (auto & field : field_names) {
-    field.append(" spectral vertical correlation");
+
+  eckit::LocalConfiguration netcdfMetaData;
+  util::setAttribute<std::string>(
+    netcdfMetaData, "global metadata", "covariance name", "string", writeParams.covName);
+  for (const oops::Variable & var : fsetVars) {
     dim_names_for_every_var.push_back(dim_names);
+    util::setAttribute<std::string>(
+      netcdfMetaData, var.name(), "statistics type", "string", "spectral vertical correlation");
   }
 
   std::vector<int> netcdf_general_ids;
@@ -214,8 +219,9 @@ void SpectralCorrelation::write() const {
     ::util::atlasArrayWriteHeader(ncfilepath,
                                   dim_names,
                                   dim_sizes,
-                                  field_names,
+                                  fsetVars,
                                   dim_names_for_every_var,
+                                  netcdfMetaData,
                                   netcdf_general_ids,
                                   netcdf_dim_ids,
                                   netcdf_var_ids,

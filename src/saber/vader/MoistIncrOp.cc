@@ -111,8 +111,9 @@ void writeOutputMIOToNetcdf(std::vector<std::vector<double>> qclIncRegrArr,
                             const std::string ncfilepath) {
   const std::vector<std::string> dimNames{"bin", "level"};
   const std::vector<atlas::idx_t> dimSizes{mo::constants::mioBins, mo::constants::mioLevs};
-  const std::vector<std::string> variableNames{"qcl_coef", "qcf_coef",
-                                               "num_qcl_data", "num_qcf_data"};
+
+  const oops::Variables vars(std::vector<std::string>{"qcl_coef", "qcf_coef",
+                                                      "num_qcl_data", "num_qcf_data"});
   const std::vector<std::vector<std::string>> dimNamesForEveryVar{{"bin", "level"},
                                                                   {"bin", "level"},
                                                                   {"bin", "level"},
@@ -129,21 +130,21 @@ void writeOutputMIOToNetcdf(std::vector<std::vector<double>> qclIncRegrArr,
   // in MIO_coefficients.nc file, as the latter is then read by the Fortran netcdf library,
   // i.e. in column-major rather than in row-major format.
   atlas::FieldSet miocoef_fset;
-  for (const std::string & var : variableNames) {
-    auto Fld = atlas::Field(std::string(var),
+  for (const oops::Variable & var : vars) {
+    auto Fld = atlas::Field(var.name(),
                             atlas::array::make_datatype<double>(),
                             atlas::array::make_shape({dimSizes[0],
                                                       dimSizes[1]}));
     auto fview = atlas::array::make_view<double, 2>(Fld);
     for (std::size_t ibin = 0; ibin < mo::constants::mioBins; ibin++) {
       for (std::size_t jl = 0; jl < mo::constants::mioLevs; ++jl) {
-        if (var == "qcl_coef") {
+        if (var.name() == "qcl_coef") {
           fview(ibin, jl) = qclIncRegrArr[jl][ibin];
-        } else if (var == "qcf_coef") {
+        } else if (var.name() == "qcf_coef") {
           fview(ibin, jl) = qcfIncRegrArr[jl][ibin];
-        } else if (var == "num_qcl_data") {
+        } else if (var.name() == "num_qcl_data") {
           fview(ibin, jl) = static_cast<double>(numQclIncArr[jl][ibin]);
-        } else if (var == "num_qcf_data") {
+        } else if (var.name() == "num_qcf_data") {
           fview(ibin, jl) = numQcfIncArr[jl][ibin];
         }
       }
@@ -151,11 +152,18 @@ void writeOutputMIOToNetcdf(std::vector<std::vector<double>> qclIncRegrArr,
     miocoef_fset.add(Fld);
   }
 
+  eckit::LocalConfiguration netcdfMetaData;
+  for (const oops::Variable & var : vars) {
+    util::setAttribute<std::string>(
+      netcdfMetaData, var.name(), "statistics type", "string", "moisture incrementing operator");
+  }
+
   util::atlasArrayWriteHeader(ncfilepath,
                               dimNames,
                               dimSizes,
-                              variableNames,
+                              vars,
                               dimNamesForEveryVar,
+                              netcdfMetaData,
                               netcdfGeneralIDs,
                               netcdfDimIDs,
                               netcdfVarIDs,
@@ -170,7 +178,7 @@ void writeOutputMIOToNetcdf(std::vector<std::vector<double>> qclIncRegrArr,
   }
 
   if (nc_close(netcdfGeneralIDs[0])) throw eckit::Exception("NetCDF closing error",
-                                                                       Here());
+                                                            Here());
 }
 
 }  // namespace
@@ -534,10 +542,10 @@ void MoistIncrOp::directCalibration(const oops::FieldSets & fsets) {
 
     // write netcdf array
     writeOutputMIOToNetcdf(qclIncMIOLevBinRegrCoefArr,
-                         qcfIncMIOLevBinRegrCoefArr,
-                         numQclIncArr,
-                         numQcfIncArr,
-                         mio_calib_output_file);
+                           qcfIncMIOLevBinRegrCoefArr,
+                           numQclIncArr,
+                           numQcfIncArr,
+                           mio_calib_output_file);
   }
 
   oops::Log::trace() << classname() << "::directCalibration done" << std::endl;

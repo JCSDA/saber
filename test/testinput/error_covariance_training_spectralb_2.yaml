@@ -43,6 +43,7 @@ background error:
     - velocity_potential
     calibration:
       write:
+        covariance name: "specvertcov2"
         mpi pattern: "_MPI_"
         file path: testdata/error_covariance_training_spectralb_2/spectralvertcov_MPI_.nc
   saber outer blocks:

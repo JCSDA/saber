@@ -281,12 +281,15 @@ void WriteVariances::writeToFile(const eckit::mpi::Comm & comm,
                                              "model levels"};
     const std::vector<atlas::idx_t> dim_sizes{fsetWrite[0].shape()[0],
                                               fsetWrite[0].shape()[1]};
-    std::vector<std::string> field_names = fsetWrite.field_names();
+    oops::Variables fsetVars(variablesToWrite);
 
     std::vector<std::vector<std::string>> dim_names_for_every_var;
-    for (auto & field : field_names) {
-      field.append(" horizontally-averaged variance");
+
+    eckit::LocalConfiguration netcdfMetaData;
+    for (const oops::Variable & var : fsetVars) {
       dim_names_for_every_var.push_back(dim_names);
+      util::setAttribute<std::string>(
+        netcdfMetaData, var.name(), "statistics type", "string", "horizontally-averaged variance");
     }
 
     std::vector<int> netcdf_general_ids;
@@ -298,8 +301,9 @@ void WriteVariances::writeToFile(const eckit::mpi::Comm & comm,
       ::util::atlasArrayWriteHeader(filepathnc,
                                     dim_names,
                                     dim_sizes,
-                                    field_names,
+                                    fsetVars,
                                     dim_names_for_every_var,
+                                    netcdfMetaData,
                                     netcdf_general_ids,
                                     netcdf_dim_ids,
                                     netcdf_var_ids,
