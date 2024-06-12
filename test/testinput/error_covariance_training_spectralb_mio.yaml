@@ -1,0 +1,126 @@
+# Calibration of the Moisture Incrementing Operator
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_gaussian
+    N: 12
+  groups:
+  - variables:
+    - air_pressure
+    - air_pressure_levels_minus_one
+    - air_temperature
+    - cfeff
+    - cleff
+    - dlsvpdT
+    - exner
+    - exner_levels_minus_one
+    - height
+    - ice_cloud_volume_fraction_in_atmosphere_layer
+    - liquid_cloud_volume_fraction_in_atmosphere_layer
+    - mass_content_of_cloud_liquid_water_in_atmosphere_layer
+    - mass_content_of_cloud_ice_in_atmosphere_layer
+    - mu
+    - muA
+    - muH1
+    - muRecipDeterminant
+    - muRow1Column1
+    - muRow1Column2
+    - muRow2Column1
+    - muRow2Column2
+    - m_ci
+    - m_cl
+    - m_r
+    - m_t
+    - m_v
+    - potential_temperature
+    - qrain
+    - qsat
+    - qt
+    - rht
+    - specific_humidity
+    - svp
+    levels: 70
+  - variables:
+    - air_pressure_levels
+    - height_levels
+    - hydrostatic_exner_levels
+    - hydrostatic_pressure_levels
+    levels: 71
+  partitioner: ectrans
+  halo: 1
+
+increment variables: &inc_vars
+- exner_levels_minus_one
+- mass_content_of_cloud_ice_in_atmosphere_layer
+- mass_content_of_cloud_liquid_water_in_atmosphere_layer
+- potential_temperature
+- specific_humidity
+
+background error:
+  covariance model: SABER
+  ensemble pert:
+    date: &date 2016-01-01T16:00:00Z
+    members from template:
+      pattern: '%MEM%'
+      nmembers: 1
+      template:
+        date: *date
+        filepath: testdata/randomization_sqrtspectralb_2/randomized_gauss_mb%MEM%
+        variables: *inc_vars
+  saber central block:
+    saber block name: ID
+    active variables:
+    - exner_levels_minus_one
+    - mass_content_of_cloud_ice_in_atmosphere_layer
+    - mass_content_of_cloud_liquid_water_in_atmosphere_layer
+    - potential_temperature
+    - qt
+    - specific_humidity
+  saber outer blocks:
+  - saber block name: mo_super_mio
+    moisture incrementing operator file: testdata/MIO_coefficients.nc
+    calibration:
+      coefficient filling value: median
+      output file: testdata/error_covariance_training_spectralb_mio/MIO_coefficients_new.nc
+
+background:
+  date: *date
+  state variables:
+  - air_pressure
+  - air_pressure_levels_minus_one
+  - air_temperature
+  - cfeff
+  - cleff
+  - dlsvpdT
+  - exner
+  - exner_levels_minus_one
+  - height
+  - height_levels
+  - ice_cloud_volume_fraction_in_atmosphere_layer
+  - liquid_cloud_volume_fraction_in_atmosphere_layer
+  - mass_content_of_cloud_liquid_water_in_atmosphere_layer
+  - mass_content_of_cloud_ice_in_atmosphere_layer
+  - mu
+  - muA
+  - muH1
+  - muRecipDeterminant
+  - muRow1Column1
+  - muRow1Column2
+  - muRow2Column1
+  - muRow2Column2
+  - m_ci
+  - m_cl
+  - m_r
+  - m_t
+  - m_v
+  - potential_temperature
+  - qrain
+  - qsat
+  - qt
+  - rht
+  - specific_humidity
+  - svp
+  filepath: testdata/gauss_state
+
+test:
+  reference filename: testref/error_covariance_training_spectralb_mio.ref

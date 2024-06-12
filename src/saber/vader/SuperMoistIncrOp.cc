@@ -99,6 +99,23 @@ void SuperMoistIncrOp::leftInverseMultiply(oops::FieldSet3D & fset) const {
 
 // -----------------------------------------------------------------------------
 
+void SuperMoistIncrOp::directCalibration(const oops::FieldSets & fsets) {
+  oops::Log::trace() << classname() << "::directCalibration starting" << std::endl;
+
+  // Derive air temperature and total water perturbations first
+  oops::FieldSets fsets_copy(fsets);
+  for (size_t fset_index = 0; fset_index < fsets.ens_size(); fset_index++) {
+    auto & fset = fsets_copy[fset_index];
+    exnerThetaToTemp_->multiply(fset);
+    MIO_->leftInverseMultiply(fset);
+  }
+
+  // Direct calibration of MIO block
+  MIO_->directCalibration(fsets_copy);
+
+  oops::Log::trace() << classname() << "::directCalibration done" << std::endl;
+}
+
 void SuperMoistIncrOp::print(std::ostream & os) const {
   os << classname();
 }

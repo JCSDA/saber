@@ -7,3 +7,4 @@ dirac_write_fields
 compare_diagnostics_gauss_vader
 compare_diagnostics_outer_vars
 randomization_sqrtspectralb_2
+error_covariance_training_spectralb_mio
