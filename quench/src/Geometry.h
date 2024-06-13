@@ -159,7 +159,6 @@ class Geometry : public util::Printable,
   size_t groups() const {return groups_.size();}
   size_t groupIndex(const std::string & var) const;
 
-  size_t variableSize(const std::string &) const;
   size_t maskLevel(const std::string &, const size_t &) const;
   std::vector<size_t> variableSizes(const oops::Variables & vars) const;
   bool levelsAreTopDown() const {return levelsAreTopDown_;}

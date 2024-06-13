@@ -57,6 +57,8 @@ class Fields : public util::Printable,
 // ATLAS FieldSet
   void toFieldSet(atlas::FieldSet &) const;
   void fromFieldSet(const atlas::FieldSet &);
+  const atlas::FieldSet & fieldSet() const {return fset_;}
+  atlas::FieldSet & fieldSet() {return fset_;}
 
 // Utilities
   void read(const eckit::Configuration &);
@@ -72,8 +74,6 @@ class Fields : public util::Printable,
   size_t serialSize() const override;
   void serialize(std::vector<double> &) const override;
   void deserialize(const std::vector<double> &, size_t &) override;
-
-  atlas::FieldSet & fields() {return fset_;}
 
  private:
   void print(std::ostream &) const override;
