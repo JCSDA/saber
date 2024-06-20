@@ -86,7 +86,7 @@ class FastLAMParametersBase : public oops::Parameters {
   oops::Parameter<double> accuracyTolerance{"interpolation accuracy tolerance", 0.05, this};
 
   // Interpolation adjoint tolerance
-  oops::Parameter<double> adjointTolerance{"interpolation adjoint tolerance", 1.0e-12, this};
+  oops::Parameter<double> adjointTolerance{"interpolation adjoint tolerance", 5.0e-12, this};
 
   // Data file (input / output)
   oops::OptionalParameter<std::string> dataFile{"data file", this};

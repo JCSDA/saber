@@ -9,18 +9,20 @@
 !----------------------------------------------------------------------
 module type_geom
 
-use atlas_module, only: atlas_field,atlas_functionspace,atlas_functionspace_nodecolumns,atlas_functionspace_pointcloud, &
- & atlas_functionspace_structuredcolumns,atlas_mesh_nodes,atlas_structuredgrid
+use atlas_module, only: atlas_config,atlas_connectivity,atlas_field,atlas_functionspace, &
+ & atlas_functionspace_nodecolumns,atlas_functionspace_pointcloud,atlas_functionspace_structuredcolumns,atlas_json,atlas_mesh, &
+ & atlas_mesh_nodes,atlas_projection,atlas_structuredgrid
+! TODO(Benjamin): This should be removed once spack-stack uses the ATLAS version where this interface is merged
+use atlas_buildnode2cellconnectivity, only: atlas_build_node_to_cell_connectivity
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max,fckit_mpi_status
 !$ use omp_lib
 use tools_atlas, only: get_grid,field_to_array,get_atlas_functionspace_size
-use tools_const, only: zero,quarter,half,one,two,four,hundred,pi,req,deg2rad,rad2deg,reqkm
+use tools_const, only: zero,quarter,half,one,two,three,four,hundred,pi,req,deg2rad,rad2deg,reqkm
 use tools_func, only: fletcher32,lonlatmod,grid_hash,independent_levels,sphere_dist,lonlat2xyz,xyz2lonlat,cart_dist, &
- & vector_product,cx_to_cxa,cx_to_proc,cx_to_cxu,convert_l2i,convert_i2l,zss_maxval,zss_minval,zss_sum,zss_count
+ & vector_product,area,cx_to_cxa,cx_to_proc,cx_to_cxu,convert_l2i,convert_i2l,zss_maxval,zss_minval,zss_sum,zss_count
 use tools_kinds, only: kind_int,kind_real,huge_real,huge_int
 use tools_qsort, only: qsort
 use tools_repro, only: inf,sup,eq,infeq,supeq,indist,repro_th
-use tools_stripack, only: area
 use type_bnda, only: bnda_type
 use type_com, only: com_type
 use type_fieldset, only: fieldset_type
@@ -43,14 +45,24 @@ type geom_type
 
    ! Input metadata
    logical,allocatable :: owned_mga(:,:)              !< Owned vs Halo/BC
-   logical :: area_provided                           !< Activated if areas are provided
-   logical :: global                                  !< Global grid (regional if false)
+
+   ! Domain type
+   logical :: global                                  !< Global grid flag (regional if false)
+
+   ! Regional work grid
+   type(atlas_config) :: aconfig_work_grid            !< Work grid configuration
+   type(atlas_projection) :: aproj_work               !< Work grid projection
+   real(kind_real) :: lon_center                      !< Work grid center longitude
+   real(kind_real) :: lat_center                      !< Work grid center latitude
+   real(kind_real) :: xmin                            !< Computational work grid minimum x value
+   real(kind_real) :: xmax                            !< Computational work grid maximum x value
+   real(kind_real) :: ymin                            !< Computational work grid minimum y value
+   real(kind_real) :: ymax                            !< Computational work grid maximum y value
 
    ! Geometry data on model grid, halo A
    integer :: nmga                                    !< Halo A size for model grid
    real(kind_real),allocatable :: lon_mga(:)          !< Longitudes
    real(kind_real),allocatable :: lat_mga(:)          !< Latitudes
-   real(kind_real),allocatable :: area_mga(:)         !< Areas
    real(kind_real),allocatable :: vert_coord_mga(:,:) !< Generalized vertical coordinate
    logical,allocatable :: gmask_mga(:,:)              !< Geometry mask
    type(atlas_functionspace) :: afunctionspace_mg     !< ATLAS function space of model grid
@@ -70,7 +82,6 @@ type geom_type
    logical :: same_grid                               !< Same grid and distribution flag
    real(kind_real),allocatable :: lon_c0a(:)          !< Longitudes
    real(kind_real),allocatable :: lat_c0a(:)          !< Latitudes
-   real(kind_real),allocatable :: area_c0a(:)         !< Area
    real(kind_real),allocatable :: vert_coord_c0a(:,:) !< Generalized vertical coordinate
    logical,allocatable :: gmask_c0a(:,:)              !< Geometry mask
    logical,allocatable :: gmask_hor_c0a(:)            !< Union of horizontal geometry masks
@@ -85,18 +96,12 @@ type geom_type
    logical,allocatable :: gmask_c0u(:,:)              !< Geometry mask
    logical,allocatable :: gmask_hor_c0u(:)            !< Union of horizontal geometry masks
    real(kind_real),allocatable :: mdist_c0u(:,:)      !< Minimum distance to mask
-   real(kind_real) :: area_max_c0u                    !< Area maximum on universe
 
    ! Geometry data on subset Sc0, global
    integer :: nc0                                     !< Number of subset Sc0 points
    integer,allocatable :: proc_to_c0_offset(:)        !< Processor to offset on subset Sc0
-   real(kind_real) :: lon_min                         !< Minimum longitude
-   real(kind_real) :: lon_max                         !< Maximum longitude
-   real(kind_real) :: lat_min                         !< Minimum latitude
-   real(kind_real) :: lat_max                         !< Maximum latitude
-   real(kind_real) :: sin_lat_min                     !< Minimum latitude sinus
-   real(kind_real) :: sin_lat_max                     !< Maximum latitude sinus
    integer,allocatable :: nc0_gmask(:)                !< Horizontal mask size on subset Sc0
+   real(kind_real) :: area                            !< Domain area
    real(kind_real),allocatable :: area_ver_c0(:)      !< Area profile on subset Sc0
    real(kind_real) :: area_max_c0                     !< Area maximum on subset Sc0
 
@@ -188,6 +193,8 @@ contains
    procedure :: c0_to_c0u => geom_c0_to_c0u
 end type geom_type
 
+integer,parameter :: nzoom = 10          !< Number of zoom iteration to compute the work grid
+integer,parameter :: ntest = 10         !< Number of test values to compute the work grid
 integer,parameter :: nfacmin = 4        !< Minimum size factor for the first subsampling
 integer,parameter :: nsmax = 1000000    !< Maximum sampling size
 logical,parameter :: parallel = .false. !< Parallel sampling (can be slow because of communications)
@@ -221,7 +228,6 @@ if (allocated(geom%l0rl0_to_l0)) deallocate(geom%l0rl0_to_l0)
 if (allocated(geom%il0rz)) deallocate(geom%il0rz)
 if (allocated(geom%lon_mga)) deallocate(geom%lon_mga)
 if (allocated(geom%lat_mga)) deallocate(geom%lat_mga)
-if (allocated(geom%area_mga)) deallocate(geom%area_mga)
 if (allocated(geom%vert_coord_mga)) deallocate(geom%vert_coord_mga)
 if (allocated(geom%myuniverse)) deallocate(geom%myuniverse)
 if (allocated(geom%proc_to_nc0a)) deallocate(geom%proc_to_nc0a)
@@ -286,7 +292,6 @@ if (allocated(geom%gmask_mga)) deallocate(geom%gmask_mga)
 if (allocated(geom%c0a_to_mga)) deallocate(geom%c0a_to_mga)
 if (allocated(geom%lon_c0a)) deallocate(geom%lon_c0a)
 if (allocated(geom%lat_c0a)) deallocate(geom%lat_c0a)
-if (allocated(geom%area_c0a)) deallocate(geom%area_c0a)
 if (allocated(geom%vert_coord_c0a)) deallocate(geom%vert_coord_c0a)
 if (allocated(geom%gmask_c0a)) deallocate(geom%gmask_c0a)
 if (allocated(geom%l0_to_l0i)) deallocate(geom%l0_to_l0i)
@@ -491,15 +496,27 @@ type(atlas_functionspace),intent(in) :: afunctionspace !< ATLAS function space
 type(fieldset_type),intent(in),optional :: fieldset    !< Fieldset
 
 ! Local variables
-integer :: il0,imga
-real(kind_real) :: lon0,lat0,dist,maxdist
-real(kind_real),allocatable :: area_mga(:,:)
+integer :: il0,imga,ny,nx_inf,nx_sup,ib,ix,iy,jb,ncorner,iproc
+integer :: imga_bnd(4),proc_to_ncorner(mpl%nproc),opposite_index(1)
+integer :: izoom,isplon,isplat,irota,idir,istart
+integer,pointer :: ghost(:)
+real(kind_real) :: lon0,lat0,dist,maxdist,xcen,ycen,area_124,area_234,dist_12,dist_23,dist_34,dist_41
+real(kind_real) :: lonlat(2),lonlat_bnd(2,4),vbnd(3,4),vp(3),v1(3),v2(3),cp(3),cd(3),v_tmp(3),vbnd_cen(3),dist_with_1(3)
+real(kind_real) :: lonlat_bnd_tmp(2),lonlat_bnd_test(2,4),lonlat_bnd_opt(2,4),delta_lon_work,delta_lat_work
+real(kind_real) :: splon_min,splon_max,splon_delta,splon,splon_opt,splat_min,splat_max,splat_delta,splat,splat_opt
+real(kind_real) :: rota_min,rota_max,rota_delta,rota,rota_opt,dist_maxmin,dist_max,dist_test
+real(kind_real) :: north,south,east,west,east_sym,west_sym,east_pos,west_pos,delta_sym,delta_pos
 real(kind_real),pointer :: real_ptr(:,:)
-type(atlas_field) :: afield,afield_lonlat
+type(atlas_config) :: aconfig_grid,aconfig_domain,aconfig_proj,aconfig_work_grid,aconfig_work_proj
+type(atlas_field) :: afield,afield_lonlat,afield_ghost
 type(atlas_functionspace_nodecolumns) :: afunctionspace_nc
 type(atlas_functionspace_pointcloud) :: afunctionspace_pc
 type(atlas_functionspace_structuredcolumns) :: afunctionspace_sc
+type(atlas_structuredgrid) :: agrid_sc,agrid_work
+type(atlas_mesh) :: amesh
 type(atlas_mesh_nodes) :: anodes
+type(atlas_connectivity) :: aconnectivity
+character(len=:),allocatable :: domain_type
 
 ! Set name
 @:set_name(geom_from_atlas)
@@ -525,7 +542,6 @@ allocate(geom%lat_mga(geom%nmga))
 
 ! Default values
 geom%owned_mga = .true.
-geom%area_provided = .false.
 do il0=1,geom%nl0
    geom%vert_coord_mga(:,il0) = real(il0,kind_real)
 end do
@@ -539,27 +555,15 @@ if (present(fieldset)) then
       call afield%final()
    end if
 
-   ! Get area
-   if (fieldset%has_field('area')) then
-      afield = fieldset%field('area')
-      allocate(area_mga(geom%nmga,1))
-      call field_to_array(afield,mpl,area_mga)
-      allocate(geom%area_mga(geom%nmga))
-      geom%area_mga = area_mga(:,1)/req**2
-      deallocate(area_mga)
-      call afield%final()
-      geom%area_provided = .true.
-   end if
-
    ! Get vertical coordinate
-   if (nam%vert_coord_name /= "") then
+   if (nam%vert_coord_name /= '') then
       afield = fieldset%field(nam%vert_coord_name)
       call field_to_array(afield,mpl,geom%vert_coord_mga)
       call afield%final()
    end if
 
    ! Get geometry mask
-   if (nam%gmask_name /= "") then
+   if (nam%gmask_name /= '') then
       afield = fieldset%field(nam%gmask_name)
       call field_to_array(afield,mpl,geom%gmask_mga)
       call afield%final()
@@ -570,7 +574,7 @@ end if
 select case (afunctionspace%name())
 case ('NodeColumns')
    ! Get node columns function space
-   afunctionspace_nc = atlas_functionspace_nodecolumns(afunctionspace%c_ptr())
+   afunctionspace_nc = afunctionspace
 
    ! Get lon/lat field
    anodes = afunctionspace_nc%nodes()
@@ -582,7 +586,7 @@ case ('NodeColumns')
    end if
 case ('PointCloud')
    ! Get point cloud function space
-   afunctionspace_pc = atlas_functionspace_pointcloud(afunctionspace%c_ptr())
+   afunctionspace_pc = afunctionspace
 
    ! Get lon/lat field
    afield_lonlat = afunctionspace_pc%lonlat()
@@ -593,7 +597,7 @@ case ('PointCloud')
    end if
 case ('StructuredColumns')
    ! Get structured columns function space
-   afunctionspace_sc = atlas_functionspace_structuredcolumns(afunctionspace%c_ptr())
+   afunctionspace_sc = afunctionspace
 
    ! Get lon/lat
    afield_lonlat = afunctionspace_sc%xy()
@@ -611,7 +615,7 @@ do imga=1,geom%nmga
    if (geom%owned_mga(imga,1)) call lonlatmod(geom%lon_mga(imga),geom%lat_mga(imga))
 end do
 
-! Get domain type
+! Get other grid properties
 if (mpl%main) then
    lon0 = geom%lon_mga(1)
    lat0 = geom%lat_mga(1)
@@ -626,26 +630,316 @@ do imga=1,geom%nmga
    end if
 end do
 call mpl%f_comm%allreduce(maxdist,fckit_mpi_max())
-geom%global = supeq(maxdist,half*pi)
-
-! Get min/max lon/lat
-if (geom%global) then
-   geom%lon_min = -pi
-   geom%lon_max = pi
-   geom%lat_min = -half*pi
-   geom%lat_max = half*pi
+if (supeq(maxdist,half*pi)) then
+   ! Global domain
+   geom%global = .true.
+   geom%area = four*pi
 else
-   geom%lon_min = zss_minval(geom%lon_mga,geom%owned_mga(:,1))
-   geom%lon_max = zss_maxval(geom%lon_mga,geom%owned_mga(:,1))
-   geom%lat_min = zss_minval(geom%lat_mga,geom%owned_mga(:,1))
-   geom%lat_max = zss_maxval(geom%lat_mga,geom%owned_mga(:,1))
-   call mpl%f_comm%allreduce(geom%lon_min,fckit_mpi_min())
-   call mpl%f_comm%allreduce(geom%lon_max,fckit_mpi_max())
-   call mpl%f_comm%allreduce(geom%lat_min,fckit_mpi_min())
-   call mpl%f_comm%allreduce(geom%lat_max,fckit_mpi_max())
+   ! Regional domain
+   geom%global = .false.
+
+   select case (afunctionspace%name())
+   case ('StructuredColumns')
+      ! Get structured columns function space
+      afunctionspace_sc = afunctionspace
+
+      ! Get structured grid
+      agrid_sc = afunctionspace_sc%grid()
+      ny = agrid_sc%ny()
+      nx_inf = agrid_sc%nx(1)
+      nx_sup = agrid_sc%nx(ny)
+      if (nx_inf/=nx_sup) call mpl%abort('${subr}$','unexpected grid shape')
+
+      ! Get corners coordinates
+      lonlat_bnd(:,1) = agrid_sc%lonlat(1,1)*deg2rad
+      lonlat_bnd(:,2) = agrid_sc%lonlat(nx_inf,1)*deg2rad
+      lonlat_bnd(:,3) = agrid_sc%lonlat(nx_sup,ny)*deg2rad
+      lonlat_bnd(:,4) = agrid_sc%lonlat(1,ny)*deg2rad
+   case ('NodeColumns')
+      ! Get node columns function space
+      afunctionspace_nc = afunctionspace
+
+      ! Get mesh
+      amesh = afunctionspace_nc%mesh()
+
+      ! Create node to cell connectivity
+      call atlas_build_node_to_cell_connectivity(amesh)
+
+      ! Get connectivity
+      aconnectivity = anodes%cell_connectivity()
+
+      ! Get ghost field
+      afield_ghost = anodes%ghost()
+      call afield_ghost%data(ghost)
+
+      ! Loop over nodes to find corners
+      ncorner = 0
+      imga_bnd = mpl%msv%vali
+      do imga=1,aconnectivity%rows()
+         if ((ghost(imga)==0).and.(aconnectivity%cols(imga)==1)) then
+            ncorner = ncorner+1
+            imga_bnd(ncorner) = imga
+         end if
+      end do
+
+      ! Communication
+      call mpl%f_comm%allgather(ncorner,proc_to_ncorner)
+
+      if (sum(proc_to_ncorner)==4) then
+         ! Define corners coordinates
+         jb = 1
+         lonlat_bnd = zero
+         do iproc=1,mpl%nproc
+            do ib=1,proc_to_ncorner(iproc)
+               if (iproc==mpl%myproc) then
+                  lonlat_bnd(1,jb) = geom%lon_mga(imga_bnd(ib))
+                  lonlat_bnd(2,jb) = geom%lat_mga(imga_bnd(ib))
+               end if
+               jb = jb+1
+            end do
+         end do
+         call mpl%f_comm%allreduce(lonlat_bnd,fckit_mpi_sum())
+      else
+         ! Assuming a non-rotated domain, not over pole
+         call mpl%warning('${subr}$','cannot find corners, assuming a non-rotated domain, not over pole')
+
+         ! Get bounds
+         north = maxval(geom%lat_mga)
+         south = minval(geom%lat_mga)
+         east_sym = maxval(geom%lon_mga)
+         west_sym = minval(geom%lon_mga)
+         east_pos = maxval(geom%lon_mga+pi)
+         west_pos = minval(geom%lon_mga+pi)
+
+         ! Communication
+         call mpl%f_comm%allreduce(north,fckit_mpi_max())
+         call mpl%f_comm%allreduce(south,fckit_mpi_min())
+         call mpl%f_comm%allreduce(east_sym,fckit_mpi_max())
+         call mpl%f_comm%allreduce(west_sym,fckit_mpi_min())
+         call mpl%f_comm%allreduce(east_pos,fckit_mpi_max())
+         call mpl%f_comm%allreduce(west_pos,fckit_mpi_min())
+
+         ! Deal with periodicity
+         delta_sym = east_sym-west_sym
+         delta_pos = east_pos-west_pos
+         if (infeq(delta_sym,delta_pos)) then
+            east = east_sym
+            west = west_sym
+         else
+            east = east_pos
+            west = west_pos
+         end if
+
+         ! Set corners
+         lonlat_bnd(:,1) = (/west,south/)
+         lonlat_bnd(:,2) = (/east,south/)
+         lonlat_bnd(:,3) = (/east,north/)
+         lonlat_bnd(:,4) = (/west,north/)
+      end if
+   case default
+      call mpl%abort('${subr}$','wrong function space: '//afunctionspace%name())
+   end select
+
+   ! Enforce proper bounds
+   do ib=1,4
+      call lonlatmod(lonlat_bnd(1,ib),lonlat_bnd(2,ib))
+   end do
+
+   ! Transform to cartesian coordinates
+   do ib=1,4
+      call lonlat2xyz(mpl,lonlat_bnd(1,ib),lonlat_bnd(2,ib),vbnd(1,ib),vbnd(2,ib),vbnd(3,ib))
+   end do
+
+   ! Re-order corners to ensure the order of corners is circular
+   call sphere_dist(lonlat_bnd(1,1),lonlat_bnd(2,1),lonlat_bnd(1,2),lonlat_bnd(2,2),dist_with_1(1))
+   call sphere_dist(lonlat_bnd(1,1),lonlat_bnd(2,1),lonlat_bnd(1,3),lonlat_bnd(2,3),dist_with_1(2))
+   call sphere_dist(lonlat_bnd(1,1),lonlat_bnd(2,1),lonlat_bnd(1,4),lonlat_bnd(2,4),dist_with_1(3))
+   opposite_index = maxloc(dist_with_1)+1
+   if (opposite_index(1)/=3) then
+      ! Make sure oppsite corner is number 3
+      v_tmp = vbnd(:,opposite_index(1))
+      vbnd(:,opposite_index(1)) = vbnd(:,3)
+      vbnd(:,3) = v_tmp
+   end if
+   
+   ! Re-order corners to ensure the order of corners is positive
+   v1 = vbnd(:,2)-vbnd(:,1)
+   v2 = vbnd(:,3)-vbnd(:,1)
+   call vector_product(v1,v2,cp)
+   cd = (vbnd(:,1)+vbnd(:,2)+vbnd(:,3))/three
+   if (inf(sum(cp*cd),zero)) then
+      ! Switch corners 2 and 4
+      v_tmp = vbnd(:,2)
+      vbnd(:,2) = vbnd(:,4)
+      vbnd(:,4) = v_tmp
+   end if
+
+   ! Transform back to spherical coordinates
+   do ib=1,4
+      call xyz2lonlat(mpl,vbnd(1,ib),vbnd(2,ib),vbnd(3,ib),lonlat_bnd(1,ib),lonlat_bnd(2,ib))
+   end do
+
+   ! Get domain center
+   vbnd_cen = quarter*sum(vbnd,dim=2)
+   vbnd_cen = vbnd_cen/sqrt(sum(vbnd_cen**2))
+   call xyz2lonlat(mpl,vbnd_cen(1),vbnd_cen(2),vbnd_cen(3),geom%lon_center,geom%lat_center)
+
+   ! Compute area as the sum of two spherical triangles
+   call area(vbnd(:,1),vbnd(:,2),vbnd(:,4),area_124)
+   call area(vbnd(:,2),vbnd(:,3),vbnd(:,4),area_234)
+   geom%area = area_124+area_234
+
+   ! Compute work grid
+
+   ! Compute distance betweeen corner
+   call sphere_dist(lonlat_bnd(1,1),lonlat_bnd(2,1),lonlat_bnd(1,2),lonlat_bnd(2,2),dist_12)
+   call sphere_dist(lonlat_bnd(1,2),lonlat_bnd(2,2),lonlat_bnd(1,3),lonlat_bnd(2,3),dist_23)
+   call sphere_dist(lonlat_bnd(1,3),lonlat_bnd(2,3),lonlat_bnd(1,4),lonlat_bnd(2,4),dist_34)
+   call sphere_dist(lonlat_bnd(1,4),lonlat_bnd(2,4),lonlat_bnd(1,1),lonlat_bnd(2,1),dist_41)
+   dist_12 = max(dist_12,dist_34)
+   dist_23 = max(dist_23,dist_41)
+
+   ! Initialization
+   aconfig_work_grid = atlas_config()
+   call aconfig_work_grid%set('type','regional')
+   call aconfig_work_grid%set('nx',100)
+   call aconfig_work_grid%set('ny',100)
+   aconfig_work_proj = atlas_config()
+   call aconfig_work_proj%set('type','rotated_lonlat')
+   splon_min = -pi
+   splon_max = pi
+   splat_min = -half*pi
+   splat_max = half*pi
+   rota_min = -pi
+   rota_max = pi
+
+   ! Loop over zoom values
+   dist_maxmin = huge_real
+   do izoom=1,nzoom
+      ! Zoom initialization 
+      splon_delta = (splon_max-splon_min)/real(ntest-1,kind_real)
+      splat_delta = (splat_max-splat_min)/real(ntest-1,kind_real)
+      rota_delta = (rota_max-rota_min)/real(ntest-1,kind_real)
+
+      do isplon=1,ntest
+         ! Define test south pole longitude
+         splon = splon_min+real(isplon-1,kind_real)*splon_delta
+
+         do isplat=1,ntest
+            ! Define test south pole latitude
+            splat = splat_min+real(isplat-1,kind_real)*splat_delta
+
+            do irota=1,ntest
+               ! Define test rotation angle
+               rota = rota_min+real(irota-1,kind_real)*rota_delta
+
+               ! Reset projection configuration
+               call aconfig_work_proj%set('south_pole',(/splon*rad2deg,splat*rad2deg/))
+               call aconfig_work_proj%set('rotation_angle',rota*rad2deg)
+               call aconfig_work_grid%set('projection',aconfig_work_proj)
+
+               ! Loop over direction choices
+               do idir=1,2
+                  if (idir==1) then
+                     delta_lon_work = half*dist_12
+                     delta_lat_work = half*dist_23
+                  else
+                     delta_lon_work = half*dist_23
+                     delta_lat_work = half*dist_12
+                  end if
+                  call aconfig_work_grid%set('north',delta_lat_work*rad2deg)
+                  call aconfig_work_grid%set('south',-delta_lat_work*rad2deg)
+                  call aconfig_work_grid%set('east',delta_lon_work*rad2deg)
+                  call aconfig_work_grid%set('west',-delta_lon_work*rad2deg)
+
+                  ! Create work grid
+                  agrid_work = atlas_structuredgrid(aconfig_work_grid)
+
+                  ! Loop over starting point
+                  do istart=1,4
+                     ! Find max distance between model and work grid for this starting corner
+                     dist_max = 0.0
+                     do ib=1,4
+                        ! Get work grid corners
+                        if (mod((ib+istart+1)/2,2)==0) then
+                           ix = 1
+                        else
+                           ix = 100
+                        end if
+                        if (mod((ib+istart)/2,2)==0) then
+                           iy = 1
+                        else
+                           iy = 100
+                        end if
+                        lonlat_bnd_test(:,ib) = agrid_work%lonlat(ix,iy)*deg2rad
+
+                        ! Enforce proper bounds
+                        call lonlatmod(lonlat_bnd_test(1,ib),lonlat_bnd_test(2,ib))
+
+                        ! Compute distance
+                        call sphere_dist(lonlat_bnd(1,ib),lonlat_bnd(2,ib),lonlat_bnd_test(1,ib),lonlat_bnd_test(2,ib),dist_test)
+                        if (sup(dist_test,dist_max)) dist_max = dist_test
+                     end do  
+
+                     ! Check work grid accuracy
+                     if (inf(dist_max,dist_maxmin)) then
+                        dist_maxmin = dist_max
+                        geom%aconfig_work_grid = atlas_config(atlas_json(aconfig_work_grid%json()))
+                        geom%aproj_work = atlas_projection(aconfig_work_proj)
+                        splon_opt = splon
+                        splat_opt = splat
+                        rota_opt = rota
+                        lonlat_bnd_opt = lonlat_bnd_test
+                     end if
+                  end do
+               end do
+            end do
+         end do
+      end do
+
+      ! Update search parameters
+      splon_min = max(splon_min,splon_opt-two*splon_delta)
+      splon_max = min(splon_max,splon_opt+two*splon_delta)
+      splat_min = max(splat_min,splat_opt-two*splat_delta)
+      splat_max = min(splat_max,splat_opt+two*splat_delta)
+      rota_min = max(rota_min,rota_opt-two*rota_delta)
+      rota_max = min(rota_max,rota_opt+two*rota_delta)
+   end do
+
+   ! Print results
+   write(mpl%info,'(a7,a,e10.3,a)') '','Work regional grid accuracy: ',dist_maxmin*reqkm,' km'
+   call mpl%flush
+   do ib=1,4
+      write(mpl%info,'(a10,a,i1.1,a,e10.3,a,e10.3,a,e10.3,a,e10.3,a)') '','Corner #',ib,': ', lonlat_bnd(1,ib)*rad2deg,' (', &
+ & lonlat_bnd_opt(1,ib)*rad2deg,')  / ',lonlat_bnd(2,ib)*rad2deg,' (',lonlat_bnd_opt(2,ib)*rad2deg,')'
+      call mpl%flush
+   end do
+
+   ! Extend work grid to make sure all points are included
+   if (.not.geom%aconfig_work_grid%get('north',north)) call mpl%abort('${subr}$','missing north')
+   if (.not.geom%aconfig_work_grid%get('south',south)) call mpl%abort('${subr}$','missing south')
+   if (.not.geom%aconfig_work_grid%get('east',east)) call mpl%abort('${subr}$','missing east')
+   if (.not.geom%aconfig_work_grid%get('west',west)) call mpl%abort('${subr}$','missing west')
+   call geom%aconfig_work_grid%set('north',north+dist_maxmin*rad2deg)
+   call geom%aconfig_work_grid%set('south',south-dist_maxmin*rad2deg)
+   call geom%aconfig_work_grid%set('east',east+dist_maxmin*rad2deg)
+   call geom%aconfig_work_grid%set('west',west-dist_maxmin*rad2deg)
+
+   ! Get work grid domain
+   agrid_work = atlas_structuredgrid(geom%aconfig_work_grid)
+   aconfig_work_grid = agrid_work%spec()
+   if (.not.aconfig_work_grid%get('domain',aconfig_domain)) call mpl%abort('${subr}$','missing domain')
+   if (.not.aconfig_domain%get('type',domain_type)) call mpl%abort('${subr}$','missing domain type')
+   if (trim(domain_type)/='rectangular') call mpl%abort('${subr}$','only rectangular domains allowed')
+   if (.not.aconfig_domain%get('xmin',geom%xmin)) call mpl%abort('${subr}$','missing domain xmin')
+   if (.not.aconfig_domain%get('xmax',geom%xmax)) call mpl%abort('${subr}$','missing domain xmax')
+   if (.not.aconfig_domain%get('ymin',geom%ymin)) call mpl%abort('${subr}$','missing domain ymin')
+   if (.not.aconfig_domain%get('ymax',geom%ymax)) call mpl%abort('${subr}$','missing domain ymax')
+   geom%xmin = geom%xmin*deg2rad
+   geom%xmax = geom%xmax*deg2rad
+   geom%ymin = geom%ymin*deg2rad
+   geom%ymax = geom%ymax*deg2rad
 end if
-geom%sin_lat_min = sin(geom%lat_min)
-geom%sin_lat_max = sin(geom%lat_max)
 
 ! Probe out
 @:probe_out()
@@ -666,7 +960,6 @@ type(mpl_type),intent(inout) :: mpl    !< MPI data
 
 ! Local variables
 integer :: iproc,imga,ic0a,ic0,diff_grid,il0
-real(kind_real) :: xyz_ne(3),xyz_nw(3),xyz_se(3),xyz_sw(3),area_nw,area_se
 real(kind_real) :: norm_c0(geom%nl0),vert_coord_hor_c0(geom%nl0)
 
 ! Set name
@@ -710,7 +1003,6 @@ allocate(geom%c0a_to_c0(geom%nc0a))
 allocate(geom%c0a_to_mga(geom%nc0a))
 allocate(geom%lon_c0a(geom%nc0a))
 allocate(geom%lat_c0a(geom%nc0a))
-allocate(geom%area_c0a(geom%nc0a))
 allocate(geom%vert_coord_c0a(geom%nc0a,geom%nl0))
 allocate(geom%gmask_c0a(geom%nc0a,geom%nl0))
 allocate(geom%gmask_hor_c0a(geom%nc0a))
@@ -719,23 +1011,6 @@ allocate(geom%area_ver_c0(geom%nl0))
 allocate(geom%vert_coordavg(geom%nl0))
 allocate(geom%l0_to_l0i(geom%nl0))
 allocate(geom%l0i_to_l0(geom%nl0))
-
-! Default area
-if (.not.geom%area_provided) then
-   if (geom%global) then
-      ! Full sphere, equally distributed
-      geom%area_c0a = four*pi/real(geom%nc0,kind_real)
-   else
-      ! Limited Area Model, equally distributed
-      call lonlat2xyz(mpl,geom%lon_min,geom%lat_min,xyz_sw(1),xyz_sw(2),xyz_sw(3))
-      call lonlat2xyz(mpl,geom%lon_min,geom%lat_max,xyz_nw(1),xyz_nw(2),xyz_nw(3))
-      call lonlat2xyz(mpl,geom%lon_max,geom%lat_min,xyz_se(1),xyz_se(2),xyz_se(3))
-      call lonlat2xyz(mpl,geom%lon_max,geom%lat_max,xyz_ne(1),xyz_ne(2),xyz_ne(3))
-      call area(xyz_sw,xyz_nw,xyz_ne,area_nw)
-      call area(xyz_sw,xyz_ne,xyz_se,area_se)
-      geom%area_c0a = (area_nw+area_se)/real(geom%nc0,kind_real)
-   end if
-end if
 
 ! Subset Sc0 offset for halo A
 geom%proc_to_c0_offset(1) = 0
@@ -760,7 +1035,6 @@ if (geom%same_grid) then
    ! Copy fields
    geom%lon_c0a = geom%lon_mga
    geom%lat_c0a = geom%lat_mga
-   if (geom%area_provided) geom%area_c0a = geom%area_mga
    geom%vert_coord_c0a = geom%vert_coord_mga
    geom%gmask_c0a = geom%gmask_mga
 else
@@ -769,7 +1043,6 @@ else
       imga = geom%c0a_to_mga(ic0a)
       geom%lon_c0a(ic0a) = geom%lon_mga(imga)
       geom%lat_c0a(ic0a) = geom%lat_mga(imga)
-      if (geom%area_provided) geom%area_c0a(ic0a) = geom%area_mga(imga)
       geom%vert_coord_c0a(ic0a,:) = geom%vert_coord_mga(imga,:)
       geom%gmask_c0a(ic0a,:) = geom%gmask_mga(imga,:)
    end do
@@ -778,7 +1051,6 @@ end if
 ! Release memory
 deallocate(geom%lon_mga)
 deallocate(geom%lat_mga)
-if (geom%area_provided) deallocate(geom%area_mga)
 deallocate(geom%vert_coord_mga)
 
 ! Related fields
@@ -789,14 +1061,14 @@ do il0=1,geom%nl0
 end do
 call mpl%f_comm%allreduce(geom%nc0_gmask,fckit_mpi_sum())
 if (geom%nc0_gmask(0)>0) then
-   geom%area_max_c0 = zss_sum(geom%area_c0a,mask=geom%gmask_hor_c0a)
+   geom%area_max_c0 = geom%area*real(count(geom%gmask_hor_c0a),kind_real)/real(geom%nc0,kind_real)
 else
    geom%area_max_c0 = zero
 end if
 do il0=1,geom%nl0
    norm_c0(il0) = zss_count(geom%gmask_c0a(:,il0))
    if (norm_c0(il0)>0) then
-      geom%area_ver_c0(il0) = zss_sum(geom%area_c0a,mask=geom%gmask_c0a(:,il0))
+      geom%area_ver_c0(il0) = geom%area*real(count(geom%gmask_c0a(:,il0)),kind_real)/real(geom%nc0,kind_real)
       vert_coord_hor_c0(il0) = zss_sum(geom%vert_coord_c0a(:,il0),mask=geom%gmask_c0a(:,il0))
    else
       geom%area_ver_c0(il0) = zero
@@ -843,10 +1115,9 @@ type(nam_type),intent(in) :: nam       !< Namelist
 integer :: iproc,ic0a,ic0u,ic0
 integer :: proc_to_universe_size(mpl%nproc)
 integer,allocatable :: order(:)
-real(kind_real) :: dist,lon_avg,lat_avg,distmax,norm_c0u
+real(kind_real) :: dist,lon_avg,lat_avg,dist_max
 real(kind_real) :: xyz(3),xyz_avg(3)
-real(kind_real),allocatable :: proc_to_lon(:),proc_to_lat(:),proc_to_distmax(:)
-real(kind_real),allocatable :: area_c0u(:)
+real(kind_real),allocatable :: proc_to_lon(:),proc_to_lat(:),proc_to_dist_max(:)
 
 ! Set name
 @:set_name(geom_setup_universe)
@@ -867,11 +1138,11 @@ else
    ! Allocation
    allocate(proc_to_lon(mpl%nproc))
    allocate(proc_to_lat(mpl%nproc))
-   allocate(proc_to_distmax(mpl%nproc))
+   allocate(proc_to_dist_max(mpl%nproc))
 
    ! Initialization
    xyz_avg = zero
-   distmax = zero
+   dist_max = zero
 
    ! Convert to cartesian coordinates and average
    do ic0a=1,geom%nc0a
@@ -886,7 +1157,7 @@ else
       do ic0a=1,geom%nc0a
          if (any(geom%gmask_c0a(ic0a,:))) then
             call sphere_dist(lon_avg,lat_avg,geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),dist)
-            if (sup(dist,distmax)) distmax = dist
+            if (sup(dist,dist_max)) dist_max = dist
          end if
       end do
    else
@@ -898,7 +1169,7 @@ else
    ! Communication
    call mpl%f_comm%allgather(lon_avg,proc_to_lon)
    call mpl%f_comm%allgather(lat_avg,proc_to_lat)
-   call mpl%f_comm%allgather(distmax,proc_to_distmax)
+   call mpl%f_comm%allgather(dist_max,proc_to_dist_max)
 
    ! Compute distances from sampling points to my processor to other sampling points
    geom%myuniverse = .false.
@@ -909,14 +1180,14 @@ else
          call sphere_dist(lon_avg,lat_avg,proc_to_lon(iproc),proc_to_lat(iproc),dist)
 
          ! Check distance
-         if (inf(dist,distmax+proc_to_distmax(iproc)+nam%universe_radius)) geom%myuniverse(iproc) = .true.
+         if (inf(dist,dist_max+proc_to_dist_max(iproc)+nam%universe_radius)) geom%myuniverse(iproc) = .true.
       end if
    end do
 
    ! Release memory
    deallocate(proc_to_lon)
    deallocate(proc_to_lat)
-   deallocate(proc_to_distmax)
+   deallocate(proc_to_dist_max)
 end if
 
 ! Share universe size
@@ -956,7 +1227,6 @@ allocate(geom%c0u_to_c0a(geom%nc0u))
 allocate(geom%c0u_to_c0(geom%nc0u))
 allocate(geom%lon_c0u(geom%nc0u))
 allocate(geom%lat_c0u(geom%nc0u))
-allocate(area_c0u(geom%nc0u))
 allocate(geom%vert_coord_c0u(geom%nc0u,geom%nl0))
 allocate(geom%gmask_c0u(geom%nc0u,geom%nl0))
 allocate(geom%gmask_hor_c0u(geom%nc0u))
@@ -984,18 +1254,9 @@ call geom%com_AU%setup(mpl,'com_AU',geom%nc0a,geom%nc0u,geom%nc0,geom%c0a_to_c0,
 ! Extend fields from halo A to universe on subset Sc0
 call geom%com_AU%ext(mpl,geom%lon_c0a,geom%lon_c0u)
 call geom%com_AU%ext(mpl,geom%lat_c0a,geom%lat_c0u)
-call geom%com_AU%ext(mpl,geom%area_c0a,area_c0u)
 call geom%com_AU%ext(mpl,geom%vert_coord_c0a,geom%vert_coord_c0u)
 call geom%com_AU%ext(mpl,geom%gmask_c0a,geom%gmask_c0u)
 if (geom%nc0u>0) geom%gmask_hor_c0u = any(geom%gmask_c0u,dim=2)
-
-! Related fields
-norm_c0u = zss_count(geom%gmask_hor_c0u)
-if (norm_c0u>0) then
-   geom%area_max_c0u = zss_sum(area_c0u,mask=geom%gmask_hor_c0u)
-else
-   geom%area_max_c0u = zero
-end if
 
 ! Check that Sc0 points in universe are not duplicated
 write(mpl%info,'(a7,a)') '','Check that Sc0 points in universe are not duplicated'
@@ -1034,7 +1295,7 @@ logical,intent(out) :: gmask        !< Local mask
 
 ! Local variables
 integer :: nn_index(1),ic0,nn_proc,proc_to_nn_proc(mpl%nproc),jproc,ic0u
-real(kind_real) :: nn_dist(1),proc_to_nn_dist(mpl%nproc),distmin
+real(kind_real) :: nn_dist(1),proc_to_nn_dist(mpl%nproc),dist_min
 logical :: valid
 
 ! Set name
@@ -1062,10 +1323,10 @@ call mpl%f_comm%allgather(nn_proc,proc_to_nn_proc)
 
 if (mpl%msv%isanynot(proc_to_nn_proc)) then
    ! The correct processor should handle its own nearest neighbor, with the minimum distance
-   distmin = minval(proc_to_nn_dist)
+   dist_min = minval(proc_to_nn_dist)
    iproc = mpl%msv%vali
    do jproc=1,mpl%nproc
-      if ((proc_to_nn_proc(jproc)==jproc).and.eq(proc_to_nn_dist(jproc),distmin)) iproc = jproc
+      if ((proc_to_nn_proc(jproc)==jproc).and.eq(proc_to_nn_dist(jproc),dist_min)) iproc = jproc
    end do
    if (mpl%msv%is(iproc)) call mpl%abort('${subr}$','cannot find root processor: did you make sure rng is synchronized?')
 
@@ -1121,7 +1382,7 @@ logical,intent(out) :: gmask(n)      !< Local mask
 
 ! Local variables
 integer :: i,nn_index(n),ic0,nn_proc(n),proc_to_nn_proc(n,mpl%nproc),jproc,ic0u,imask(n)
-real(kind_real) :: nn_dist(n),proc_to_nn_dist(n,mpl%nproc),distmin
+real(kind_real) :: nn_dist(n),proc_to_nn_dist(n,mpl%nproc),dist_min
 logical :: valid(n)
 
 ! Set name
@@ -1157,9 +1418,9 @@ imask = 0
 do i=1,n
    if (mpl%msv%isanynot(proc_to_nn_proc(i,:))) then
       ! The correct processor should handle its own nearest neighbor, with the minimum distance
-      distmin = minval(proc_to_nn_dist(i,:))
+      dist_min = minval(proc_to_nn_dist(i,:))
       do jproc=1,mpl%nproc
-         if ((proc_to_nn_proc(i,jproc)==jproc).and.eq(proc_to_nn_dist(i,jproc),distmin)) iproc(i) = jproc
+         if ((proc_to_nn_proc(i,jproc)==jproc).and.eq(proc_to_nn_dist(i,jproc),dist_min)) iproc(i) = jproc
       end do
       if (mpl%msv%is(iproc(i))) call mpl%abort('${subr}$','cannot find root processor')
 
@@ -1642,7 +1903,7 @@ integer,intent(out),optional :: nr  !< Number of random tries
 
 ! Local variables
 integer :: lnr
-real(kind_real) :: lon,lat
+real(kind_real) :: lon,lat,x,y
 logical :: valid
 
 ! Set name
@@ -1658,9 +1919,19 @@ lnr = 0
 ! Loop
 do while (.not.valid)
    ! Generate random lon/lat
-   call rng%rand(geom%lon_min,geom%lon_max,lon)
-   call rng%rand(geom%sin_lat_min,geom%sin_lat_max,lat)
-   lat = asin(lat)
+   if (geom%global) then
+      call rng%rand(-pi,pi,lon)
+      call rng%rand(-one,one,lat)
+      lat = asin(lat)
+   else
+      call rng%rand(zero,one,x)
+      call rng%rand(zero,one,y)
+      x = geom%xmin+x*(geom%xmax-geom%xmin)
+      y = geom%ymin+y*(geom%ymax-geom%ymin)
+      call geom%aproj_work%xy2lonlat(x*rad2deg,y*rad2deg,lon,lat)
+      lon = lon*deg2rad
+      lat = lat*deg2rad
+   end if
 
    ! Get index from lon/lat
    call geom%index_from_lonlat(mpl,lon,lat,il0,iproc,ic0a,valid)
@@ -1712,9 +1983,8 @@ integer :: nn_index(2),proc_to_ncxa(mpl%nproc),proc_to_cx_offset(mpl%nproc)
 integer,allocatable :: proc_to_icxmin(:),ssa_to_cx(:),ssa_to_node(:),s_to_ssa(:),to_valid(:),order(:)
 integer,allocatable :: proc_to_nodemin(:),sa_to_s(:),order_s(:),cxa_to_node(:)
 integer,allocatable :: proc_to_nssa(:),ssa_to_ss(:),ss_to_cxa(:),ss_to_cx(:),ss_to_node(:)
-real(kind_real) :: nss_real,lonlat(2),valmin,xmin,ymin,zmin,chmin,dist,x_start,y_start,z_start,distmax,d,nn_dist(2),distmin
-real(kind_real) :: lon_start,lat_start
-real(kind_real),allocatable :: proc_to_xmin(:),proc_to_ymin(:),proc_to_zmin(:),proc_to_chmin(:)
+real(kind_real) :: lonlat(2),valmin,xmin,ymin,zmin,chmin,dist,x_start,y_start,z_start,dist_max,d,nn_dist(2),dist_min,x,y,distx,disty
+real(kind_real),allocatable :: rhc_cxa(:),proc_to_xmin(:),proc_to_ymin(:),proc_to_zmin(:),proc_to_chmin(:)
 real(kind_real),allocatable :: x_ssa(:),y_ssa(:),z_ssa(:),ch_ssa(:),potential(:),lon_sa(:),lat_sa(:),lon_s(:),lat_s(:)
 real(kind_real),allocatable :: lon_ssa(:),lat_ssa(:),rh_ssa(:),lon_rep(:),lat_rep(:),rh_rep(:),dist_rep(:)
 real(kind_real),allocatable :: x_ss(:),y_ss(:),z_ss(:),ch_ss(:),lon_ss(:),lat_ss(:),rh_ss(:)
@@ -1754,6 +2024,7 @@ else
    ! Allocation
    allocate(lmask_cxa(ncxa))
    allocate(cxa_to_node(ncxa))
+   allocate(rhc_cxa(ncxa))
 
    ! First step: decimate the grid
 
@@ -1764,6 +2035,24 @@ else
    write(mpl%test,trim(cfmt)) '','Decimate full grid, at least ',ns,' points required, '
    if (ifmt>0) call mpl%flush(newl=.false.)
 
+   ! Compute corrected length-scale
+   if (geom%global) then
+      rhc_cxa = rh_cxa
+   else
+      do icxa=1,ncxa
+         ! Compute distances to the boundaries
+         call geom%aproj_work%lonlat2xy(lon_cxa(icxa)*rad2deg,lat_cxa(icxa)*rad2deg,x,y)
+         x = x*deg2rad
+         y = y*deg2rad
+         call lonlatmod(x,y)
+         distx = two*min(abs(x-geom%xmin),abs(x-geom%xmax))/(geom%xmax-geom%xmin)
+         disty = two*min(abs(y-geom%ymin),abs(y-geom%ymax))/(geom%ymax-geom%ymin)
+
+         ! Apply empirical factor
+         rhc_cxa(icxa) = rh_cxa(icxa)*(one-half*distx*disty)*(one+exp(-hundred*distx*disty))
+      end do
+   end if
+
    do while (retry)
       if (ncxa > 0) then
          ! Initialization
@@ -1773,15 +2062,12 @@ else
          ! Update nfac
          nfac = 2*nfac
 
-         ! Number of required points at global scale
-         nss_real = real(nfac*ns,kind_real)*four*pi/geom%area_max_c0*(one+repro_th)
-
          if (geom%global) then
-            ! Global grid
-            call get_grid(mpl,floor(nss_real),agrid,nss)
+            ! Global grid or regional grid with NodeColumns function space (sub-optimal)
+            call get_grid(mpl,floor(real(nfac*ns,kind_real)*four*pi/geom%area_max_c0*(one+repro_th)),agrid,nss)
          else
             ! Regional grid
-            call get_grid(mpl,nfac*ns,geom%lon_min,geom%lon_max,geom%lat_min,geom%lat_max,agrid,nss)
+            call get_grid(mpl,nfac*ns,geom%aconfig_work_grid,geom%aproj_work,geom%xmin,geom%xmax,geom%ymin,geom%ymax,agrid,nss)
          end if
 
          ! Loop over grid points
@@ -1795,7 +2081,7 @@ else
                lonlat = agrid%lonlat(ix,iy)*deg2rad
                call lonlatmod(lonlat(1),lonlat(2))
 
-               ! Check if point is inside the hull
+               ! Check if point is inside the universe hull
                call hull_cxu%inside(mpl,lonlat(1),lonlat(2),valid)
 
                if (valid) then
@@ -1857,11 +2143,11 @@ else
          ssa_to_node(issa) = cxa_to_node(icxa)
          if (method=='potential') then
             call lonlat2xyz(mpl,lon_cxa(icxa),lat_cxa(icxa),x_ssa(issa),y_ssa(issa),z_ssa(issa))
-            ch_ssa(issa) = two*sin(half*min(rh_cxa(icxa),pi))
+            ch_ssa(issa) = two*sin(half*min(rhc_cxa(icxa),pi))
          elseif (method=='maxrandom') then
             lon_ssa(issa) = lon_cxa(icxa)
             lat_ssa(issa) = lat_cxa(icxa)
-            rh_ssa(issa) = rh_cxa(icxa)
+            rh_ssa(issa) = rhc_cxa(icxa)
          end if
       end if
    end do
@@ -2016,13 +2302,13 @@ else
 
          ! Define starting point
          if (geom%global) then
+            ! Global grid
             x_start = zero
             y_start = zero
             z_start = one
          else
-            lon_start = half*(geom%lon_min+geom%lon_max)
-            lat_start = half*(geom%lat_min+geom%lat_max)
-            call lonlat2xyz(mpl,lon_start,lat_start,x_start,y_start,z_start)
+            ! Regional grid
+            call lonlat2xyz(mpl,geom%lon_center,geom%lat_center,x_start,y_start,z_start)
          end if
 
          ! Compute distance to the starting point
@@ -2241,7 +2527,7 @@ else
             if (is>2) call tree%init(nssa,lon_ssa,lat_ssa,lmask_ssa)
 
             ! Initialization
-            distmax = zero
+            dist_max = zero
             irmax = 0
             irvalmax = 0
             itry = 1
@@ -2269,8 +2555,8 @@ else
                   d = nn_dist(1)**2/(rh_ssa(ir)**2+rh_ssa(nn_index(1))**2)
 
                   ! Check distance
-                  if (sup(d,distmax)) then
-                     distmax = d
+                  if (sup(d,dist_max)) then
+                     dist_max = d
                      irvalmax = irval
                      irmax = ir
                   end if
@@ -2350,13 +2636,13 @@ else
                call tree%dealloc
 
                ! Remove worst point
-               distmin = huge_real
+               dist_min = huge_real
                is_min = mpl%msv%vali
                do is=1,ns+nrep
                   if (rmask(is)) then
-                     if (inf(dist_rep(is),distmin)) then
+                     if (inf(dist_rep(is),dist_min)) then
                         is_min = is
-                        distmin = dist_rep(is)
+                        dist_min = dist_rep(is)
                      end if
                   end if
                end do
@@ -2396,6 +2682,7 @@ else
    end if
 
    ! Release memory
+   deallocate(rhc_cxa)
    deallocate(lmask_cxa)
    deallocate(cxa_to_node)
    deallocate(ssa_to_cx)

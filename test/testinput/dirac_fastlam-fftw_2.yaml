@@ -49,13 +49,13 @@ background error:
       - parameter: weight
         number of components: 3
         file:
-          filepath: testdata/dirac_fastlam_10/_MPI__weight_%component%
+          filepath: testdata/dirac_fastlam-fftw_1/_MPI__weight_%component%
       - parameter: normalization
         number of components: 3
         file:
-          filepath: testdata/dirac_fastlam_10/_MPI__norm_%component%
+          filepath: testdata/dirac_fastlam-fftw_1/_MPI__norm_%component%
       parallelization: halo
-      data file: testdata/dirac_fastlam_10/_MPI__data
+      data file: testdata/dirac_fastlam-fftw_1/_MPI__data
 dirac:
   lon:
   - 10.04
@@ -135,9 +135,9 @@ dirac:
   - surface_pressure
 output dirac:
   mpi pattern: '%MPI%'
-  filepath: testdata/dirac_fastlam_11/%MPI%_dirac_%id%
+  filepath: testdata/dirac_fastlam-fftw_2/%MPI%_dirac_%id%
 output variance:
   mpi pattern: '%MPI%'
-  filepath: testdata/dirac_fastlam_11/%MPI%_variance
+  filepath: testdata/dirac_fastlam-fftw_2/%MPI%_variance
 test:
-  reference filename: testref/dirac_fastlam_11.ref
+  reference filename: testref/dirac_fastlam-fftw_2.ref

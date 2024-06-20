@@ -1728,12 +1728,6 @@ do iv=1,bump%nam%nv
          fld_c0a(:,il0) = bump%geom(igeom)%lat_c0a*rad2deg
       end do
       found = .true.
-   case ('area')
-      if (.not.allocated(bump%geom(igeom)%area_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
-      do il0=1,bump%geom(igeom)%nl0
-         fld_c0a(:,il0) = bump%geom(igeom)%area_c0a*req**2
-      end do
-      found = .true.
    case ('vert_coord')
       if (.not.allocated(bump%geom(igeom)%vert_coord_c0a)) call bump%mpl%abort('${subr}$',trim(param)//' is not allocated')
       fld_c0a = bump%geom(igeom)%vert_coord_c0a

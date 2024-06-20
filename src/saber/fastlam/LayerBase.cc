@@ -716,12 +716,13 @@ void LayerBase::setupInterpolation() {
     comm_.allReduceInPlace(dp2, eckit::mpi::sum());
 
     // Print result
+    const double diff = std::abs(dp1-dp2)/std::abs(0.5*(dp1+dp2));
     oops::Log::info() << std::setprecision(16)
       << "Info     :     FastLAM interpolation adjoint test: y^t (Ax) = "
-      << dp1 << ": x^t (A^t y) = " << dp2 << " : adjoint tolerance = "
+      << dp1 << ": x^t (A^t y) = " << dp2 << " : diff = " << diff << ", adjoint tolerance = "
       << params_.adjointTolerance.value() << std::endl;
     oops::Log::test() << "    FastLAM interpolation adjoint test";
-    if (std::abs(dp1-dp2)/std::abs(0.5*(dp1+dp2)) < params_.adjointTolerance.value()) {
+    if (diff < params_.adjointTolerance.value()) {
       oops::Log::test() << " passed" << std::endl;
     } else {
       oops::Log::test() << " failed" << std::endl;

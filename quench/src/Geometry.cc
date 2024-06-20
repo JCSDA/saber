@@ -51,46 +51,6 @@ Geometry::Geometry(const eckit::Configuration & config, const eckit::mpi::Comm &
   // Add owned points mask -- this mask does not depend on the group so was precomputed
   fields_->add(fieldsetOwnedMask.field("owned"));
 
-  if (!grid_.domain().global()) {
-    // Area
-    atlas::Field area = functionSpace_.createField<double>(
-      atlas::option::name("area") | atlas::option::levels(1));
-    auto areaView = atlas::array::make_view<double, 2>(area);
-    const atlas::StructuredGrid grid(grid_);
-    const atlas::functionspace::StructuredColumns fs(functionSpace_);
-    const auto view_i = atlas::array::make_view<int, 1>(fs.index_i());
-    const auto view_j = atlas::array::make_view<int, 1>(fs.index_j());
-    for (atlas::idx_t jnode = 0; jnode < area.shape(0); ++jnode) {
-      // Initialization
-      int i = view_i(jnode)-1;
-      int j = view_j(jnode)-1;
-      double dist_i = 0.0;
-      double dist_j = 0.0;
-
-      // i-direction component
-      if (i == 0) {
-        dist_i = atlas::util::Earth().distance(grid.lonlat(i, j), grid.lonlat(i+1, j));
-      } else if (i == grid.nx(j)-1) {
-        dist_i = atlas::util::Earth().distance(grid.lonlat(i-1, j), grid.lonlat(i, j));
-      } else {
-        dist_i = 0.5*atlas::util::Earth().distance(grid.lonlat(i-1, j), grid.lonlat(i+1, j));
-      }
-
-      // j-direction component
-      if (j == 0) {
-        dist_j = atlas::util::Earth().distance(grid.lonlat(i, j), grid.lonlat(i, j+1));
-      } else if (j == grid.ny()-1) {
-        dist_j = atlas::util::Earth().distance(grid.lonlat(i, j-1), grid.lonlat(i, j));
-      } else {
-        dist_j = 0.5*atlas::util::Earth().distance(grid.lonlat(i, j-1), grid.lonlat(i, j+1));
-     }
-
-      // Local scale
-      areaView(jnode, 0) = dist_i*dist_j;
-    }
-    fields_->add(area);
-  }
-
   // Groups
   size_t groupIndex = 0;
   for (const auto & groupParams : params.groups.value()) {

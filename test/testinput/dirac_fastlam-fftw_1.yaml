@@ -56,17 +56,17 @@ background error:
       resolution: 5
       parallelization: spectral
       normalization accuracy stride: 3
-      data file: testdata/dirac_fastlam_10/_MPI__data
+      data file: testdata/dirac_fastlam-fftw_1/_MPI__data
       output model files:
       - parameter: normalized horizontal length-scale
         file:
-          filepath: testdata/dirac_fastlam_10/_MPI__normalized_rh
+          filepath: testdata/dirac_fastlam-fftw_1/_MPI__normalized_rh
       - parameter: weight
         file:
-          filepath: testdata/dirac_fastlam_10/_MPI__weight_%component%
+          filepath: testdata/dirac_fastlam-fftw_1/_MPI__weight_%component%
       - parameter: normalization
         file:
-          filepath: testdata/dirac_fastlam_10/_MPI__norm_%component%
+          filepath: testdata/dirac_fastlam-fftw_1/_MPI__norm_%component%
 dirac:
   lon:
   - 10.04
@@ -146,9 +146,9 @@ dirac:
   - surface_pressure
 output dirac:
   mpi pattern: '%MPI%'
-  filepath: testdata/dirac_fastlam_10/%MPI%_dirac_%id%
+  filepath: testdata/dirac_fastlam-fftw_1/%MPI%_dirac_%id%
 output variance:
   mpi pattern: '%MPI%'
-  filepath: testdata/dirac_fastlam_10/%MPI%_variance
+  filepath: testdata/dirac_fastlam-fftw_1/%MPI%_variance
 test:
-  reference filename: testref/dirac_fastlam_10.ref
+  reference filename: testref/dirac_fastlam-fftw_1.ref

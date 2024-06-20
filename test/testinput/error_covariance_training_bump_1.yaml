@@ -30,9 +30,6 @@ background error:
       - parameter: lat
         file:
           filepath: testdata/error_covariance_training_bump_1/_MPI_-_OMP__lat
-      - parameter: area
-        file:
-          filepath: testdata/error_covariance_training_bump_1/_MPI_-_OMP__area
       - parameter: vert_coord
         file:
           filepath: testdata/error_covariance_training_bump_1/_MPI_-_OMP__vert_coord

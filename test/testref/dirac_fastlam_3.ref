@@ -24,8 +24,8 @@ Fields:
   stream_function: 3.0000000000000000e+00
   velocity_potential: 0.0000000000000000e+00
   surface_pressure: 3.0000000000000000e+00
-Norm of input parameter rh: 6.1586040761947175e+06
-Norm of input parameter rv: 1.1091263219284176e+03
+Norm of input parameter rh: 6.2992830762096532e+06
+Norm of input parameter rv: 1.1246827297585962e+03
     FastLAM interpolation accuracy test passed
     FastLAM interpolation adjoint test passed
     FastLAM redToRows test passed
@@ -50,13 +50,13 @@ Norm of input parameter rv: 1.1091263219284176e+03
     FastLAM interpolation adjoint test passed
     FastLAM redToRows test passed
     FastLAM rowsToCols test passed
-Norm of output parameter normalized horizontal length-scale: 1.6218435004312269e+03
-Norm of output parameter weight - 0: 6.8764635381395237e+01
-Norm of output parameter weight - 1: 1.2773159137166465e+02
-Norm of output parameter weight - 2: 5.2978007299339701e+01
-Norm of output parameter normalization - 0: 2.1619695742242578e+02
-Norm of output parameter normalization - 1: 2.3187033509524204e+02
-Norm of output parameter normalization - 2: 2.3335111946935496e+02
+Norm of output parameter normalized horizontal length-scale: 1.7079546491152591e+03
+Norm of output parameter weight - 0: 6.1404897710958835e+01
+Norm of output parameter weight - 1: 1.2979965674431190e+02
+Norm of output parameter weight - 2: 5.4065780710068147e+01
+Norm of output parameter normalization - 0: 2.1493386685914317e+02
+Norm of output parameter normalization - 1: 2.2813988356867020e+02
+Norm of output parameter normalization - 2: 2.2757330234715550e+02
 Adjoint test for block FastLAM passed
 Square-root test for block FastLAM passed
 Covariance(SABER) * Increment:
@@ -82,6 +82,6 @@ Groups:
   - vert_coord: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 1.3010616562174024e+01
+  stream_function: 1.2713172826301447e+01
   velocity_potential: 0.0000000000000000e+00
-  surface_pressure: 1.1786909546010444e+01
+  surface_pressure: 1.1692025327574040e+01

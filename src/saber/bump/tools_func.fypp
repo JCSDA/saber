@@ -66,6 +66,9 @@ end interface
 interface det
    module procedure func_det
 end interface
+interface area
+   module procedure func_area
+end interface
 interface add
    module procedure func_add
 end interface
@@ -145,7 +148,7 @@ end interface
 
 private
 public :: fletcher32,lonlatmod,rad2short,grid_hash,independent_levels,sphere_bearing,sphere_dist,cart_dist,lonlat2xyz,xyz2lonlat, &
- & vector_product,det,add,divide,vert_interp_size,vert_interp_setup,vert_interp,cholesky,syminv,histogram, &
+ & vector_product,det,area,add,divide,vert_interp_size,vert_interp_setup,vert_interp,cholesky,syminv,histogram, &
  & cx_to_cxa,cx_to_proc,cx_to_cxu,convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count,global_average
 
 contains
@@ -699,6 +702,92 @@ p = sum(terms)
 @:probe_out()
 
 end subroutine func_det
+
+!----------------------------------------------------------------------
+! Subroutine: func_area
+!> Compute the area of a spherical triangle
+! Source: https://people.sc.fsu.edu/~jburkardt/f_src/stripack/stripack.html
+! Author: Robert Renka
+! Original licensing: none
+! Modified by Benjamin Menetrier for BUMP
+! Licensing: this code is distributed under the CeCILL-C license
+! Copyright 2015-... UCAR, CERFACS, METEO-FRANCE and IRIT
+!----------------------------------------------------------------------
+subroutine func_area(v1,v2,v3,area)
+
+implicit none
+
+! Passed variables
+real(kind_real),intent(in) :: v1(3) !< First point cartesian coordinates
+real(kind_real),intent(in) :: v2(3) !< Second point cartesian coordinates
+real(kind_real),intent(in) :: v3(3) !< Third point cartesian coordinates
+real(kind_real),intent(out) :: area !< Area on the unit sphere
+
+! Local variables
+real(kind_real) :: a1,a2,a3,ca1,ca2,ca3,s12,s23,s31
+real(kind_real) :: dv1(3),dv2(3),dv3(3),u12(3),u23(3),u31(3)
+
+! Set name
+@:set_name(func_area)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+dv1 = v1
+dv2 = v2
+dv3 = v3
+
+! Compute cross products Uij = Vi X Vj
+u12(1) = dv1(2)*dv2(3)-dv1(3)*dv2(2)
+u12(2) = dv1(3)*dv2(1)-dv1(1)*dv2(3)
+u12(3) = dv1(1)*dv2(2)-dv1(2)*dv2(1)
+u23(1) = dv2(2)*dv3(3)-dv2(3)*dv3(2)
+u23(2) = dv2(3)*dv3(1)-dv2(1)*dv3(3)
+u23(3) = dv2(1)*dv3(2)-dv2(2)*dv3(1)
+u31(1) = dv3(2)*dv1(3)-dv3(3)*dv1(2)
+u31(2) = dv3(3)*dv1(1)-dv3(1)*dv1(3)
+u31(3) = dv3(1)*dv1(2)-dv3(2)*dv1(1)
+
+! Normalize Uij to unit vectors
+s12 = dot_product(u12,u12)
+s23 = dot_product(u23,u23)
+s31 = dot_product(u31,u31)
+
+! Test for a degenerate triangle associated with collinear vertices
+if ((.not.(abs(s12)>zero)).or.(.not.(abs(s23)>zero)).or.(.not.(abs(s31)>zero))) then
+   area = zero
+else
+   s12 = sqrt(s12)
+   s23 = sqrt(s23)
+   s31 = sqrt(s31)
+   u12 = u12/s12
+   u23 = u23/s23
+   u31 = u31/s31
+
+   ! Compute interior angles Ai as the dihedral angles between planes
+   ca1 = -dot_product(u12,u31)
+   ca2 = -dot_product(u23,u12)
+   ca3 = -dot_product(u31,u23)
+   ca1 = max(ca1,-one)
+   ca1 = min(ca1,+one)
+   ca2 = max(ca2,-one)
+   ca2 = min(ca2,+one)
+   ca3 = max(ca3,-one)
+   ca3 = min(ca3,+one)
+   a1 = acos(ca1)
+   a2 = acos(ca2)
+   a3 = acos(ca3)
+
+   ! Compute area = a1 + a2 + a3 - pi
+   area = a1+a2+a3-pi
+   if (area<zero) area = zero
+end if
+
+! Probe out
+@:probe_out()
+
+end subroutine func_area
 
 !----------------------------------------------------------------------
 ! Subroutine: func_add

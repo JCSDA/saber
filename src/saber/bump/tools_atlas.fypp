@@ -10,7 +10,8 @@
 module tools_atlas
 
 use atlas_module, only: atlas_structuredgrid,atlas_regionalgrid,atlas_field,atlas_integer,atlas_real,atlas_functionspace, &
- & atlas_functionspace_nodecolumns,atlas_functionspace_pointcloud,atlas_functionspace_structuredcolumns
+ & atlas_functionspace_nodecolumns,atlas_functionspace_pointcloud,atlas_functionspace_structuredcolumns, &
+ & atlas_projection,atlas_config,atlas_json
 use tools_const, only: zero,quarter,half,rad2deg
 use tools_kinds, only: kind_int,kind_real
 use tools_func, only: sphere_dist,convert_i2l,convert_l2i
@@ -94,43 +95,52 @@ end subroutine atlas_get_global_grid
 ! Subroutine: atlas_get_regional_grid
 !> Define regional ATLAS grid from minimum number of points
 !----------------------------------------------------------------------
-subroutine atlas_get_regional_grid(mpl,nmin,lon_min,lon_max,lat_min,lat_max,agrid,n)
+subroutine atlas_get_regional_grid(mpl,nmin,aconfig_grid,aproj,xmin,xmax,ymin,ymax,agrid,n)
 
 implicit none
 
 ! Passed variables
 type(mpl_type),intent(inout) :: mpl               !< MPI data
 integer,intent(in) :: nmin                        !< Minimum number of points
-real(kind_real),intent(in) :: lon_min             !< Minimum longitude
-real(kind_real),intent(in) :: lon_max             !< Maximum longitude
-real(kind_real),intent(in) :: lat_min             !< Minimum latitude
-real(kind_real),intent(in) :: lat_max             !< Maximum latitude
+type(atlas_config),intent(in) :: aconfig_grid     !< ATLAS grid configuration
+type(atlas_projection),intent(in) :: aproj        !< ATLAS projection
+real(kind_real),intent(in) :: xmin                !< Computational grid minimum x value
+real(kind_real),intent(in) :: xmax                !< Computational grid maximum x value
+real(kind_real),intent(in) :: ymin                !< Computational grid minimum y value
+real(kind_real),intent(in) :: ymax                !< Computational grid maximum y value
 type(atlas_structuredgrid),intent(inout) :: agrid !< ATLAS grid
 integer,intent(out),optional :: n                 !< Grid size
 
 ! Local variables
 integer :: nx,ny
-real(kind_real) :: lat_mid,dx,dy,alpha
+real(kind_real) :: alpha,dx,dy
+type(atlas_config) :: aconfig_grid_out
 
 ! Set name
-@:set_name(atlas_get_global_grid)
+@:set_name(atlas_get_regional_grid)
 
 ! Probe in
 @:probe_in()
 
+! Deep copy of the grid configuration
+aconfig_grid_out = atlas_config(atlas_json(aconfig_grid%json()))
+
 ! Check number of points
 if (nmin<3) call mpl%abort('${subr}$','minimum number of points is too small')
 
-! Shape ratio
-lat_mid = half*(lat_min+lat_max)
-call sphere_dist(lon_min,lat_mid,lon_max,lat_mid,dx)
-call sphere_dist(zero,lat_min,zero,lat_max,dy)
-alpha = dy/dx
+! Compute new grid size
+alpha = (ymax-ymin)/(xmax-xmin)
 nx = ceiling(sqrt(real(nmin,kind_real)/alpha))
 ny = ceiling(alpha*real(nx,kind_real))
+if (nx<2) call mpl%abort('${subr}$','nx is too small')
+if (ny<2) call mpl%abort('${subr}$','ny is too small')
 
-! Regional grid
-agrid = atlas_regionalgrid(nx,ny,lat_max*rad2deg,lon_min*rad2deg,lat_min*rad2deg,lon_max*rad2deg)
+! Set new grid size
+call aconfig_grid_out%set('nx',nx)
+call aconfig_grid_out%set('ny',ny)
+
+! Define output grid
+agrid = atlas_structuredgrid(aconfig_grid_out)
 
 ! Define number of points
 if (present(n)) n = nx*ny
