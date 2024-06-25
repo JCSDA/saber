@@ -88,8 +88,6 @@ class BUMP {
  private:
   std::vector<int> keyBUMP_;
   const eckit::mpi::Comm & comm_;
-  eckit::Channel * infoChannel_;
-  eckit::Channel * testChannel_;
   atlas::FunctionSpace fspace_;
   const oops::Variables vars_;
   const util::DateTime validTime_;

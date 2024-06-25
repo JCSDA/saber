@@ -257,11 +257,11 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
                         << " MPI tasks." << std::endl;
 
       // Create communicators for same component, for communications in space
-      const auto spaceCommName = ("comm_space_" + std::to_string(myComponent_)).c_str();
-      if (eckit::mpi::hasComm(spaceCommName)) {
-        eckit::mpi::deleteComm(spaceCommName);
+      const auto spaceCommName = ("comm_space_" + std::to_string(myComponent_));
+      if (eckit::mpi::hasComm(spaceCommName.c_str())) {
+        eckit::mpi::deleteComm(spaceCommName.c_str());
       }
-      const auto & localSpaceComm = globalSpaceComm.split(myComponent_, spaceCommName);
+      const auto & localSpaceComm = globalSpaceComm.split(myComponent_, spaceCommName.c_str());
 
       // Create block geometry (needed for ensemble reading and local geometries)
       if (!hybridConf.has("geometry")) {
