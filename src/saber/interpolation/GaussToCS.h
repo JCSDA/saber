@@ -16,12 +16,15 @@
 #include "atlas/functionspace.h"
 #include "atlas/grid.h"
 
+#include "eckit/config/LocalConfiguration.h"
+
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
 #include "saber/blocks/SaberBlockParametersBase.h"
 #include "saber/blocks/SaberOuterBlockBase.h"
 #include "saber/interpolation/AtlasInterpWrapper.h"
+#include "saber/interpolation/Rescaling.h"
 
 namespace saber {
 namespace interpolation {
@@ -38,6 +41,8 @@ class GaussToCSParameters : public SaberBlockParametersBase {
     "Gauss Grid UID", this};
   oops::Parameter<bool> initializeInverseInterpolation{"initialize inverse interpolator",
     true, this};
+  oops::OptionalParameter<eckit::LocalConfiguration> interpolationRescaling{
+    "rescaling", this};
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
 
@@ -110,6 +115,9 @@ class GaussToCS : public SaberOuterBlockBase {
 
   /// Wrapper for inverse interpolation objects
   const CS2Gauss inverseInterpolation_;
+
+  /// Optional rescaling weights
+  const saber::interpolation::Rescaling rescaling_;
 
   const oops::GeometryData innerGeometryData_;
 };

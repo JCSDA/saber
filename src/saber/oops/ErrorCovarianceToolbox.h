@@ -9,16 +9,18 @@
 
 #pragma once
 
+#include <math.h>
 #include <netcdf.h>
 #include <omp.h>
 
+#include <algorithm>
 #include <limits>
 #include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
-
-#include "atlas/array.h"
+#include "atlas/functionspace.h"
+#include "atlas/util/Earth.h"
 
 #include "eckit/config/Configuration.h"
 #include "eckit/exception/Exceptions.h"
@@ -37,7 +39,6 @@
 #include "oops/base/Variables.h"
 #include "oops/mpi/mpi.h"
 #include "oops/runs/Application.h"
-#include "oops/util/AtlasArrayUtil.h"
 #include "oops/util/ConfigFunctions.h"
 #include "oops/util/ConfigHelpers.h"
 #include "oops/util/DateTime.h"
@@ -49,7 +50,7 @@
 #include "oops/util/parameters/RequiredParameter.h"
 
 #include "saber/oops/Utilities.h"
-#include "saber/util/FieldSetHelpers.h"
+#include "saber/util/HorizontalProfiles.h"
 
 namespace saber {
 
@@ -315,16 +316,40 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
   Increment4D_ diracPoints(data);
   diracPoints.dirac(diracConf);
 
-  // Read maximum length input
-  const double maxLength = profileConf.getDouble("maximum distance",
-                                            std::numeric_limits<double>::infinity());
+  // Define maximum length of horizontal profile
+  double maxLength = std::numeric_limits<double>::infinity();
+  if (profileConf.has("maximum distance")) {
+    oops::Log::info() << "Info     : Reading user-provided maximum distance:" << std::endl;
+    maxLength = profileConf.getDouble("maximum distance");
+  } else {
+    // If no maximum length input is given, try to compute a default value from the grid
+    const auto & fspace = geom.generic().functionSpace();
+    if (fspace.type() == "StructuredColumns") {
+      const atlas::functionspace::StructuredColumns fs(fspace);
+      if (fs.grid().name().compare(0, 1, "F") == 0) {
+        oops::Log::info() << "Info     : maximum distance computed as twice the cell "
+                             "length at the Equator:" << std::endl;
+        const int n = std::stoi(fs.grid().name().substr(1, std::string::npos));
+        maxLength = atlas::util::Earth().radius() * M_PI / n;
+      }
+    } else if (fspace.type() == "NodeColumns") {
+      const atlas::functionspace::NodeColumns fs(fspace);
+      if (fs.mesh().grid().name().compare(0, 7, "CS-LFR-") == 0) {
+        oops::Log::info() << "Info     : maximum distance computed as twice the cell "
+                             "length at the Equator:" << std::endl;
+        const int n = std::stoi(fs.mesh().grid().name().substr(7, std::string::npos));
+        maxLength = atlas::util::Earth().radius() * M_PI / n;
+      }
+    }
+  }
+  oops::Log::info() << "Info     : maximum distance is " << maxLength << " m." << std::endl;
 
   // Boolean flag to remove duplicate points (is isotropy for instance)
-  const bool removeDuplicates = profileConf.getBool("remove duplicates distances",
+  const bool removeDuplicates = profileConf.getBool("remove duplicate distances",
                                                     false);
 
   // Get values as a function of separation distance
-  auto[distances, covariances, levs, fieldIndex] =
+  auto[distances, covariances, lons, lats, levs, fieldIndexes] =
       util::sortBySeparationDistance(geom.getComm(),
                                      geom.functionSpace(),
                                      data[0].fieldSet().fieldSet(),
@@ -337,123 +362,29 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
   if (profileConf.has("output filepath")) {
     // Write to file
     const auto outputPath = profileConf.getString("output filepath");
-    write_1d_covariances(geom.getComm(),
-                         distances,
-                         covariances,
-                         levs,
-                         fieldIndex,
-                         names,
-                         outputPath);
-  } else {
-    // Output to test log
-    for (size_t i=0; i < distances.size(); i++) {
-        oops::Log::test() << "Covariance profile for variable " << names[fieldIndex[i]]
-                          << ", at level " << levs[i] << ": " << std::endl;
-        oops::Log::test() << "Separation distance: " << distances[i] << std::endl;
-        oops::Log::test() << "Covariance: " << covariances[i] << std::endl;
-    }
+    util::write_1d_covariances(geom.getComm(),
+                               distances,
+                               covariances,
+                               lons,
+                               lats,
+                               levs,
+                               fieldIndexes,
+                               names,
+                               outputPath);
+  }
+  // Output first 10 values of first 10  profiles to test log
+  const int numProfiles = std::min(10, static_cast<int>(distances.size()));
+  for (int i=0; i < numProfiles; i++) {
+    oops::Log::test() << "Covariance profile for variable " << names[fieldIndexes[i]]
+                      << ", at level " << levs[i] << ": " << std::endl;
+    const int numValues = std::min(10, static_cast<int>(distances[i].size()));
+    const std::vector<double> subDist(distances[i].begin(), distances[i].begin() + numValues);
+    const std::vector<double> subCovs(covariances[i].begin(), covariances[i].begin() + numValues);
+    oops::Log::test() << "Separation distance: " << subDist << std::endl;
+    oops::Log::test() << "Covariance: " << subCovs << std::endl;
   }
 
   oops::Log::trace() << appname() << "::extract_1d_covariances done" << std::endl;
-}
-// -----------------------------------------------------------------------------
-void  write_1d_covariances(const eckit::mpi::Comm & comm,
-                           const std::vector<std::vector<double>> & distances,
-                           const std::vector<std::vector<double>> & covariances,
-                           const std::vector<size_t> & levs,
-                           const std::vector<size_t> & fieldIndex,
-                           const std::vector<std::string> & names,
-                           const std::string & filePath) const {
-  oops::Log::trace() << appname() << "::write_1d_covariances starting" << std::endl;
-
-  // This function assumes everything has already been gathered on root PE.
-
-  // There is no guarantee that the vectors in `distances` or `covariances` have
-  // common dimensions. We need to define an independent dimension for each of them.
-
-  if (comm.rank() == 0) {
-    // Define variables and dimensions
-    size_t nProfiles = distances.size();
-    std::vector<std::string> dimNames(nProfiles);
-    std::vector<atlas::idx_t> dimSizes(nProfiles);
-    oops::Variables vars;
-    std::vector<std::vector<std::string>> dimNamesForEveryVar(2 * nProfiles);
-    std::vector<std::vector<atlas::idx_t>> dimSizesForEveryVar(2 * nProfiles);
-    size_t ivar = 0;
-    eckit::LocalConfiguration netcdfMetaData;
-
-    for (size_t iProfile = 0; iProfile < nProfiles; iProfile++) {
-      // Dimension
-      dimNames[iProfile] = "nx" + std::to_string(iProfile);;
-      dimSizes[iProfile] = distances[iProfile].size();
-
-      // Distance variable
-      vars.push_back(names[fieldIndex[iProfile]]
-                     + "_lev" + std::to_string(levs[iProfile])
-                     + "_distances");
-      dimNamesForEveryVar[ivar] = {dimNames.back()};
-      dimSizesForEveryVar[ivar] = {dimSizes.back()};
-      util::setAttribute<std::string>(
-        netcdfMetaData, vars[ivar].name(), "binning type", "string",
-        "horizontal separation distance");
-      ivar++;
-
-      // Covariance variable
-      vars.push_back(names[fieldIndex[iProfile]]
-                     + "_lev" + std::to_string(levs[iProfile])
-                     + "_covariances");
-      dimNamesForEveryVar[ivar] = {dimNames.back()};
-      dimSizesForEveryVar[ivar] = {dimSizes.back()};
-      util::setAttribute<std::string>(
-        netcdfMetaData, vars[ivar].name(), "statistics type", "string",
-        "1D horizontal covariance");
-      ivar++;
-    }
-
-    // Write Header
-    std::vector<int> netcdfGeneralIDs;
-    std::vector<int> netcdfDimIDs;
-    std::vector<int> netcdfVarIDs;
-    std::vector<std::vector<int>> netcdfDimVarIDs;
-    util::atlasArrayWriteHeader(filePath,
-                                dimNames,
-                                dimSizes,
-                                vars,
-                                dimNamesForEveryVar,
-                                netcdfMetaData,
-                                netcdfGeneralIDs,
-                                netcdfDimIDs,
-                                netcdfVarIDs,
-                                netcdfDimVarIDs);
-
-    // Write Data
-    ivar = 0;
-    for (size_t iProfile = 0; iProfile < nProfiles; iProfile++) {
-      auto array = atlas::array::Array::create<double>(distances[iProfile].size());
-      auto view = atlas::array::make_view<double, 1>(*array);
-
-      for (atlas::idx_t jnode = 0; jnode < view.shape(0); jnode++) {
-        view(jnode) = distances[iProfile][jnode];
-      }
-      auto cview = atlas::array::make_view<const double, 1>(*array);
-      util::atlasArrayWriteData(netcdfGeneralIDs, netcdfVarIDs[ivar++], cview);
-
-      for (atlas::idx_t jnode = 0; jnode < view.shape(0); jnode++) {
-        view(jnode) = covariances[iProfile][jnode];
-      }
-      util::atlasArrayWriteData(netcdfGeneralIDs, netcdfVarIDs[ivar++], cview);
-    }
-
-    oops::Log::info() << "Info     : covariance profiles written to file "
-                      << filePath << std::endl;
-
-    int retval;
-    if ((retval = nc_close(netcdfGeneralIDs[0]))) {
-      throw eckit::Exception("NetCDF closing error", Here());
-    }
-  }
-
-  oops::Log::trace() << appname() << "::write_1d_covariances done" << std::endl;
 }
 // -----------------------------------------------------------------------------
 // The passed geometry/variables should be consistent with the passed increment

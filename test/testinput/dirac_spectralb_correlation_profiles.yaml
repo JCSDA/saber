@@ -1,20 +1,23 @@
 geometry:
-  function space: NodeColumns
+  function space: StructuredColumns
   grid:
-    name: CS-LFR-12
-  partitioner: cubedsphere
+    type: regular_gaussian
+    N: 12
   groups:
   - variables:
+    - mu
     - unbalanced_pressure_levels_minus_one
-    levels: 70
-  halo: 1
+    levels: 2
+  partitioner: ectrans
 
 background:
   date: '2010-01-01T12:00:00Z'
   state variables:
+  - mu
   - unbalanced_pressure_levels_minus_one
 
 increment variables:
+- mu
 - unbalanced_pressure_levels_minus_one
 
 background error:
@@ -22,33 +25,46 @@ background error:
   saber central block:
     saber block name: spectral correlation
     active variables:
+    - mu
     - unbalanced_pressure_levels_minus_one
     read:
       covariance_file: testdata/spectralcov.nc
       umatrix_netcdf_names:
+      - MU_inc_Uv_matrix
       - aP_inc_Uv_matrix
+    skip vertical convolution: true
   saber outer blocks:
   - saber block name: spectral to gauss
-  - saber block name: gauss to cubed-sphere-dual
-    gauss grid uid: F12
 
-dirac: &dirac
-  # At this location, Dirac should be 1 without cubed-sphere <-> Gauss grid interpolations.
-  # In practice, Dirac amplitude falls to 0.73 due to interpolation errors.
+dirac:
   lon:
-  - 1
+  - 125.0
+  - 125.0
+  - 60.0
+  - 60.0
   lat:
-  - 1.0
+  - -89.99
+  - -89.99
+  - 75
+  - 75
   level:
   - 1
+  - 2
+  - 1
+  - 2
   variable:
+  - mu
+  - mu
   - unbalanced_pressure_levels_minus_one
-
-diagnostic points: *dirac
+  - unbalanced_pressure_levels_minus_one
 
 output dirac:
   mpi pattern: '%MPI%'
-  filepath: testdata/dirac_spectralb_variance_loss/%MPI%_dirac_%id%
+  filepath: testdata/dirac_spectralb_correlation_profiles/%MPI%_dirac_%id%
+
+covariance profile:
+  # Relevant for isotropic covariance models, or to quantify isotropy
+  output filepath: testdata/dirac_spectralb_correlation_profiles/_MPI__covariance_profiles.nc
 
 test:
-  reference filename: testref/dirac_spectralb_variance_loss.ref
+  reference filename: testref/dirac_spectralb_correlation_profiles.ref

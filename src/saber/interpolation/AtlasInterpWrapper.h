@@ -27,6 +27,8 @@
 #include "atlas/util/PolygonLocator.h"
 #include "atlas/util/PolygonXY.h"
 
+#include "eckit/linalg/SparseMatrix.h"
+
 #include "oops/util/Logger.h"
 #include "oops/util/ObjectCounter.h"
 
@@ -58,6 +60,18 @@ class AtlasInterpWrapper {
   void execute(const atlas::FieldSet &, atlas::FieldSet &) const;
 
   void executeAdjoint(atlas::FieldSet &, const atlas::FieldSet &) const;
+
+  eckit::linalg::SparseMatrix getInterpolationMatrix() const {
+    return atlas::interpolation::MatrixCache(interp_).matrix();
+  }
+
+  const atlas::FunctionSpace & getIntermediateFunctionSpace() const {
+    return targetFunctionSpace_;
+  }
+
+  const atlas::Redistribution & getRedistribution() const {
+    return redistr_;
+  }
 
  private:
   atlas::FunctionSpace localDstFunctionSpace_;

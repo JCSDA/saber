@@ -1,0 +1,45 @@
+Input Dirac increment:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: CS-LFR-12
+- size: 864
+Partitioner:
+- type: cubedsphere
+Function space:
+- type: NodeColumns
+- halo: 1
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+Fields:
+  mu: 1.0000000000000000e+00
+  unbalanced_pressure_levels_minus_one: 1.0000000000000000e+00
+Covariance(SABER) diagnostics:
+- Variances at Dirac points:
+  + Value for variable mu, subwindow 0, at (longitude, latitude, vertical index) point (3.75000, 3.74199, 1): 9.9994371682610883e-01
+  + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (3.75000, 3.74199, 1): 9.9996815812908879e-01
+- Covariances at diagnostic points:
+  + Value for variable mu, subwindow 0, at (longitude, latitude, vertical index) point (3.75000, 3.74199, 1): 9.9994371682610883e-01
+  + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (3.75000, 3.74199, 1): 9.9996815812908879e-01
+Covariance(SABER) * Increment:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: CS-LFR-12
+- size: 864
+Partitioner:
+- type: cubedsphere
+Function space:
+- type: NodeColumns
+- halo: 1
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+Fields:
+  mu: 2.4105195312800092e+00
+  unbalanced_pressure_levels_minus_one: 4.0962528072680726e+00

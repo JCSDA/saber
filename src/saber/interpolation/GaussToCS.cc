@@ -5,6 +5,7 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
+#include "atlas/field.h"
 #include "atlas/grid/detail/partitioner/MatchingMeshPartitionerCubedSphere.h"
 #include "atlas/grid/detail/partitioner/TransPartitioner.h"
 #include "atlas/parallel/mpi/mpi.h"
@@ -13,6 +14,7 @@
 #include "oops/util/Logger.h"
 
 #include "saber/interpolation/GaussToCS.h"
+#include "saber/interpolation/Rescaling.h"
 
 using atlas::grid::detail::partitioner::TransPartitioner;
 using atlas::grid::detail::partitioner::MatchingMeshPartitionerCubedSphere;
@@ -170,6 +172,38 @@ void inverseInterpolateSinglePE(
   }
 }
 
+// -----------------------------------------------------------------------------
+
+Rescaling initRescaling(const GaussToCSParameters & params,
+                        const eckit::mpi::Comm & comm,
+                        const oops::Variables & activeVars,
+                        const atlas::FunctionSpace & innerFspace,
+                        const atlas::FunctionSpace & outerFspace,
+                        const saber::interpolation::AtlasInterpWrapper & interp) {
+  if (params.interpolationRescaling.value().is_initialized()) {
+    const auto & conf = params.interpolationRescaling.value().value();
+    if (conf.has("horizontal covariance profile file path")) {
+      return Rescaling(comm,
+                       conf,
+                       activeVars,
+                       innerFspace,
+                       outerFspace,
+                       interp);
+    } else if (conf.has("input file path")) {
+      eckit::LocalConfiguration readConf;
+      readConf.set("filepath", conf.getString("input file path"));
+      return Rescaling(comm,
+                       readConf,
+                       activeVars,
+                       outerFspace);
+    } else {
+      throw eckit::UserError("Missing parameters to initialize a relevant Rescaling object",
+                             Here());
+    }
+  } else {
+    return Rescaling();
+  }
+}
 }  // namespace
 
 // -----------------------------------------------------------------------------
@@ -201,6 +235,12 @@ GaussToCS::GaussToCS(const oops::GeometryData & outerGeometryData,
                               outerGeometryData.comm().size() == 1,
                               CSFunctionSpace_, gaussGrid_,
                               gaussPartitioner_)),
+    rescaling_(initRescaling(params,
+                             outerGeometryData.comm(),
+                             activeVars_,
+                             gaussFunctionSpace_,
+                             CSFunctionSpace_,
+                             interp_)),
     innerGeometryData_(gaussFunctionSpace_, outerGeometryData.fieldSet(),
                        outerGeometryData.levelsAreTopDown(),
                        outerGeometryData.comm())
@@ -254,6 +294,9 @@ void GaussToCS::multiply(oops::FieldSet3D & fieldSet) const {
 
   fieldSet.fieldSet() = newFields;
 
+  // Apply optional rescaling
+  rescaling_.execute(fieldSet);
+
   oops::Log::trace() << classname() << "::multiply done"
                      << fieldSet.field_names() << std::endl;
 }
@@ -264,7 +307,10 @@ void GaussToCS::multiplyAD(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname()
                      << "::multiplyAD starting" << std::endl;
 
-  // On input: fieldset on gaussian grid
+  // Apply optional rescaling
+  rescaling_.execute(fieldSet);
+
+  // Create empty fieldSets
   atlas::FieldSet newFields = atlas::FieldSet();
   atlas::FieldSet csFieldSet = atlas::FieldSet();
 

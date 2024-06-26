@@ -7,7 +7,7 @@ geometry:
   - variables:
     - mu
     - unbalanced_pressure_levels_minus_one
-    levels: 70
+    levels: 2
   partitioner: ectrans
 
 background:
@@ -23,7 +23,7 @@ increment variables:
 background error:
   covariance model: SABER
   saber central block:
-    saber block name: spectral correlation
+    saber block name: spectral covariance
     active variables:
     - mu
     - unbalanced_pressure_levels_minus_one
@@ -53,21 +53,20 @@ dirac:
   - 1
   - 2
   variable:
-  - unbalanced_pressure_levels_minus_one
-  - unbalanced_pressure_levels_minus_one
   - mu
   - mu
+  - unbalanced_pressure_levels_minus_one
+  - unbalanced_pressure_levels_minus_one
 
 output dirac:
   mpi pattern: '%MPI%'
-  filepath: testdata/dirac_spectralb_pole_F12/%MPI%_dirac_%id%
+  filepath: testdata/dirac_spectralb_covariance_profiles/%MPI%_dirac_%id%
 
 covariance profile:
   # Relevant for isotropic covariance models, or to quantify isotropy
-  maximum distance: 1700e3  # (im m) Twice the cell width at the Equator on a F12 grid
-  output filepath: testdata/dirac_spectralb_pole_F12/_MPI__covariance_profiles.nc
+  maximum distance: 1700e3  # (im m)
   remove duplicate distances: true
+  output filepath: testdata/dirac_spectralb_covariance_profiles/_MPI__covariance_profiles.nc
 
 test:
-  reference filename: testref/dirac_spectralb_pole_F12.ref
-
+  reference filename: testref/dirac_spectralb_covariance_profiles.ref

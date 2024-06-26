@@ -1,0 +1,58 @@
+geometry:
+  function space: NodeColumns
+  grid:
+    name: CS-LFR-12
+  partitioner: cubedsphere
+  groups:
+  - variables: &vars
+    - mu
+    - unbalanced_pressure_levels_minus_one
+    levels: 2
+  halo: 1
+
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables: *vars
+
+increment variables: *vars
+
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: spectral covariance
+    active variables: *vars
+    read:
+      covariance_file: testdata/spectralcov.nc
+      umatrix_netcdf_names:
+      - MU_inc_Uv_matrix
+      - aP_inc_Uv_matrix
+  saber outer blocks:
+  - saber block name: spectral to gauss
+  - saber block name: gauss to cubed-sphere-dual
+    gauss grid uid: F12
+    rescaling:
+      input file path: testdata/dirac_spectralb_covariance_rescaling_1/rescaling_coeffs
+      active variables: *vars
+
+dirac: &dirac
+  lon:
+  - 1
+  - 1
+  lat:
+  - 1.0
+  - 1.0
+  level:
+  - 1
+  - 1
+  variable:
+  - mu
+  - unbalanced_pressure_levels_minus_one
+
+diagnostic points: *dirac
+
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_spectralb_covariance_rescaling_2/%MPI%_dirac_%id%
+
+test:
+  reference filename: testref/dirac_spectralb_covariance_rescaling_1.ref
