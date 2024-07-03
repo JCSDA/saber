@@ -61,13 +61,13 @@ DryAirDensity::DryAirDensity(const oops::GeometryData & outerGeometryData,
   // Need to setup derived state fields that we need.
   std::vector<std::string> requiredStateVariables{
       "air_pressure_levels_minus_one",  // Assumed already populated
-      "dry_air_density_levels_minus_one",
-      "height",
-      "height_levels",
-      "m_ci",
-      "m_cl",
-      "m_r",
-      "m_v",
+      "dry_air_density_levels_minus_one",  // Assumed already populated
+      "height",  // Assumed already populated
+      "height_levels",  // Assumed already populated
+      "m_ci",  // Assumed already populated
+      "m_cl",  // Assumed already populated
+      "m_r",  // Assumed already populated
+      "m_v",  // Assumed already populated
       "m_t",
       "potential_temperature",          // Assumed already populated
       "specific_humidity",
@@ -105,7 +105,6 @@ DryAirDensity::DryAirDensity(const oops::GeometryData & outerGeometryData,
               augmentedStateFieldSet_);
   mo::eval_cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
               augmentedStateFieldSet_);
-  mo::eval_dry_air_density_from_pressure_levels_minus_one_nl(augmentedStateFieldSet_);
 
   oops::Log::trace() << classname() << "::DryAirDensity done" << std::endl;
 }
