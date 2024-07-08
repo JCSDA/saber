@@ -1,0 +1,40 @@
+Input Dirac increment:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: CS-LFR-15
+- size: 1350
+Partitioner:
+- type: cubedsphere
+Function space:
+- type: NodeColumns
+- halo: 1
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 1
+  - vert_coord: [1.0000000000000000e+00]
+  Mask size: 100%
+Fields:
+  stream_function: 1.0000000000000000e+00
+Adjoint test for block interpolation passed
+Inner inverse test for block interpolation passed: U Uinv (U x) == (U x)
+Outer inverse test for block interpolation passed: Uinv U (Uinv x) == (Uinv x)
+Adjoint test for block ID passed
+Covariance(SABER) * Increment:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: CS-LFR-15
+- size: 1350
+Partitioner:
+- type: cubedsphere
+Function space:
+- type: NodeColumns
+- halo: 1
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 1
+  - vert_coord: [1.0000000000000000e+00]
+  Mask size: 100%
+Fields:
+  stream_function: 6.0559584596259197e-01

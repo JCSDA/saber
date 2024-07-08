@@ -1,0 +1,49 @@
+geometry:
+  function space: NodeColumns
+  grid:
+    name: CS-LFR-15
+  partitioner: cubedsphere
+  groups:
+  - variables:
+    - stream_function
+    levels: 1
+  halo: 1
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables:
+  - stream_function
+background error:
+  covariance model: SABER
+  adjoint test: true
+  inverse test: true
+  saber central block:
+    saber block name: ID
+  saber outer blocks:
+  - saber block name: interpolation
+    inner inverse tolerance: 0.04
+    outer inverse tolerance: 0.04
+    inner geometry:
+      function space: StructuredColumns
+      grid:
+        name: F15
+      halo: 1
+    forward interpolator:
+      local interpolator type: oops unstructured grid interpolator
+    inverse interpolator:
+      local interpolator type: oops unstructured grid interpolator
+    active variables:
+    - stream_function
+dirac:
+  lon:
+  - 0.0
+  lat:
+  - 0.0
+  level:
+  - 1
+  variable:
+  - stream_function
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_interpolation_4/dirac_%id%_%MPI%
+test:
+  reference filename: testref/dirac_interpolation_4.ref

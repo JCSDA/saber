@@ -24,6 +24,8 @@ dirac_id_seq4d
 dirac_id_seq4d_timecov
 dirac_interpolation_2
 dirac_interpolation_3
+dirac_interpolation_4
+dirac_interpolation_5
 dirac_stddev_1
 dirac_stddev_2
 dirac_duplicate_variables
