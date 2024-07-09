@@ -19,6 +19,7 @@ background error:
     saber block name: ID
   saber outer blocks:
   - saber block name: interpolation
+    adjoint tolerance: 1e-11
     inner inverse tolerance: 0.04
     outer inverse tolerance: 0.04
     inner geometry:
