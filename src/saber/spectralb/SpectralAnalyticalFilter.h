@@ -31,12 +31,15 @@ class SpectralAnalyticalFilterParameters : public SaberBlockParametersBase {
  public:
     /// Whether to normalize as a localization function
     oops::Parameter<bool> normalizeFilterVariance{"normalize filter variance", false, this};
+
     /// Whether to preserve variance of processed increments
-    /// Should only be used when not normalizing filter variance.
+    /// Should only be used when "normalize filter variance" == false.
     oops::Parameter<bool> preservingVariance{"preserving variance", false, this};
 
+    /// Define filter as the complement of the function
     oops::Parameter<bool> complementFilter{"complement filter", false, this};
-    /// Filter specifications
+
+    /// Filter specifications (Gaussian, boxcar function, triangle...)
     oops::Parameter<eckit::LocalConfiguration> function{"function",
                                                         eckit::LocalConfiguration(), this};
 
@@ -67,9 +70,11 @@ class SpectralAnalyticalFilter : public SaberOuterBlockBase {
   void multiplyAD(oops::FieldSet3D &) const override;
   void leftInverseMultiply(oops::FieldSet3D &) const override;
 
+  // For inverse tests
   oops::FieldSet3D generateInnerFieldSet(const oops::GeometryData & innerGeometryData,
                                          const oops::Variables & innerVars) const override;
 
+  // For inverse tests
   oops::FieldSet3D generateOuterFieldSet(const oops::GeometryData & outerGeometryData,
                                          const oops::Variables & outerVars) const override;
 

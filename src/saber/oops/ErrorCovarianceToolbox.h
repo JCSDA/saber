@@ -424,8 +424,13 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
     if (testConf.has("covariance profile")) {
       oops::Log::test() << "Extracting covariances as a function of separation distance"
                         << std::endl;
+      eckit::LocalConfiguration covProfileConf(testConf.getSubConfiguration("covariance profile"));
+
+      // Seek and replace %id% with id, recursively
+      util::seekAndReplace(covProfileConf, "%id%", id);
+
       extract_1d_covariances(testConf.getSubConfiguration("dirac"),
-                             testConf.getSubConfiguration("covariance profile"),
+                             covProfileConf,
                              geom,
                              dxo);
     }
