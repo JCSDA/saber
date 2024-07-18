@@ -69,7 +69,6 @@ class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
 
   // Block left inverse multiplication
   virtual void leftInverseMultiply(oops::FieldSet3D &) const
-
     {throw eckit::NotImplemented("leftInverseMultiply not implemented yet for the block "
       + blockName_, Here());}
 

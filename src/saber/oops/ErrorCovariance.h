@@ -33,7 +33,6 @@
 
 #include "saber/blocks/SaberBlockChainBase.h"
 #include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberEnsembleBlockChain.h"
 #include "saber/blocks/SaberOuterBlockChain.h"
 #include "saber/blocks/SaberParametricBlockChain.h"
 #include "saber/oops/ErrorCovarianceParameters.h"

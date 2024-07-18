@@ -1,5 +1,6 @@
 /*
  * (C) Copyright 2022 UCAR.
+ * (C) Copyright 2023-2024 Meteorologisk Institutt
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -23,48 +24,67 @@
 #include "atlas/util/Point.h"
 
 #include "eckit/config/Configuration.h"
+#include "eckit/exception/Exceptions.h"
 #include "eckit/mpi/Comm.h"
 
-#include "oops/util/abor1_cpp.h"
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/Logger.h"
 #include "oops/util/Random.h"
 
+#include "src/FieldsIOBase.h"
 #include "src/Geometry.h"
 
-#include "saber/interpolation/AtlasInterpWrapper.h"
+namespace quench {
 
 // -----------------------------------------------------------------------------
-namespace quench {
+
+static std::vector<quench::Interpolation> interpolationsVector;
+
 // -----------------------------------------------------------------------------
-Fields::Fields(const Geometry & geom, const oops::Variables & vars,
-               const util::DateTime & time):
-  geom_(new Geometry(geom)), vars_(vars), time_(time)
-{
-  oops::Log::trace() << "Fields::Fields starting" << std::endl;
+
+std::vector<quench::Interpolation>& Fields::interpolations() {
+  return interpolationsVector;
+}
+
+// -----------------------------------------------------------------------------
+
+Fields::Fields(const Geometry & geom,
+               const oops::Variables & vars,
+               const util::DateTime & time)
+  : geom_(new Geometry(geom)), vars_(vars), time_(time) {
+  oops::Log::trace() << classname() << "::Fields starting" << std::endl;
 
   // Reset ATLAS fieldset
   fset_ = atlas::FieldSet();
 
   for (auto & var : vars_) {
+    // Set number of levels
     var.setLevels(geom_->levels(var.name()));
+
     // Create field
     atlas::Field field = geom_->functionSpace().createField<double>(
       atlas::option::name(var.name()) | atlas::option::levels(var.getLevels()));
     fset_.add(field);
   }
 
+  // Set interpolation type
+  for (auto field : fset_) {
+    field.metadata().set("interp_type", "default");
+  }
+
   // Set fields to zero
   this->zero();
 
-  oops::Log::trace() << "Fields::Fields done" << std::endl;
+  oops::Log::trace() << classname() << "::Fields done" << std::endl;
 }
+
 // -----------------------------------------------------------------------------
-Fields::Fields(const Fields & other, const Geometry & geom):
-  geom_(new Geometry(geom)), vars_(other.vars_), time_(other.time_)
-{
-  oops::Log::trace() << "Fields::Fields starting" << std::endl;
+
+Fields::Fields(const Fields & other,
+               const Geometry & geom)
+  : geom_(new Geometry(geom)), vars_(other.vars_), time_(other.time_) {
+  oops::Log::trace() << classname() << "::Fields starting" << std::endl;
 
   // Reset ATLAS fieldset
   fset_ = atlas::FieldSet();
@@ -72,7 +92,8 @@ Fields::Fields(const Fields & other, const Geometry & geom):
   // Check number of levels
   for (const auto & var : vars_) {
     if (geom_->levels(var.name()) != geom.levels(var.name())) {
-      ABORT("different number of levels for variable " + var.name() + ", cannot interpolate");
+      throw eckit::Exception("Different number of levels for variable " + var.name()
+        + ", cannot interpolate", Here());
     }
   }
 
@@ -80,6 +101,9 @@ Fields::Fields(const Fields & other, const Geometry & geom):
     // Copy fieldset
     fset_ = util::copyFieldSet(other.fset_);
   } else {
+    // Setup interpolation
+    const auto & interpolation = setupGridInterpolation(*other.geom_);
+
     // Create fieldset
     for (const auto & var : vars_) {
       atlas::Field field = geom_->functionSpace().createField<double>(
@@ -87,19 +111,24 @@ Fields::Fields(const Fields & other, const Geometry & geom):
       fset_.add(field);
     }
 
-    // Interpolate
-    saber::interpolation::AtlasInterpWrapper interp(other.geom_->partitioner(),
-      other.geom_->functionSpace(), geom.grid(), geom.functionSpace());
-    interp.execute(other.fset_, fset_);
+    // Set interpolation type
+    for (auto field : fset_) {
+      field.metadata().set("interp_type", "default");
+    }
+
+    // Horizontal interpolation
+    interpolation->execute(other.fset_, fset_);
   }
 
-  oops::Log::trace() << "Fields::Fields done" << std::endl;
+  oops::Log::trace() << classname() << "::Fields done" << std::endl;
 }
+
 // -----------------------------------------------------------------------------
-Fields::Fields(const Fields & other, const bool copy):
-  geom_(other.geom_), vars_(other.vars_), time_(other.time_)
-{
-  oops::Log::trace() << "Fields::Fields starting" << std::endl;
+
+Fields::Fields(const Fields & other,
+               const bool copy)
+  : geom_(other.geom_), vars_(other.vars_), time_(other.time_) {
+  oops::Log::trace() << classname() << "::Fields starting" << std::endl;
 
   // Reset ATLAS fieldset
   fset_ = atlas::FieldSet();
@@ -109,6 +138,11 @@ Fields::Fields(const Fields & other, const bool copy):
     atlas::Field field = geom_->functionSpace().createField<double>(
       atlas::option::name(var.name()) | atlas::option::levels(var.getLevels()));
     fset_.add(field);
+  }
+
+  // Set interpolation type
+  for (auto field : fset_) {
+    field.metadata().set("interp_type", "default");
   }
 
   // Set fields to zero
@@ -118,7 +152,7 @@ Fields::Fields(const Fields & other, const bool copy):
   if (copy) {
     for (const auto & var : vars_) {
       atlas::Field field = fset_[var.name()];
-      atlas::Field fieldOther = other.fset_[var.name()];
+      const atlas::Field fieldOther = other.fset_[var.name()];
       if (field.rank() == 2) {
         auto view = atlas::array::make_view<double, 2>(field);
         auto viewOther = atlas::array::make_view<double, 2>(fieldOther);
@@ -130,13 +164,16 @@ Fields::Fields(const Fields & other, const bool copy):
       }
     }
   }
-  oops::Log::trace() << "Fields::Fields done" << std::endl;
+
+  oops::Log::trace() << classname() << "::Fields done" << std::endl;
 }
+
 // -----------------------------------------------------------------------------
-Fields::Fields(const Fields & other):
-  geom_(other.geom_), vars_(other.vars_), time_(other.time_)
-{
-  oops::Log::trace() << "Fields::Fields(const Fields & other) starting" << std::endl;
+
+Fields::Fields(const Fields & other)
+  : geom_(other.geom_), vars_(other.vars_), time_(other.time_) {
+  oops::Log::trace() << classname() << "::Fields starting" << std::endl;
+
   // Reset ATLAS fieldset
   fset_ = atlas::FieldSet();
 
@@ -145,7 +182,7 @@ Fields::Fields(const Fields & other):
     // Create field
     atlas::Field field = geom_->functionSpace().createField<double>(
       atlas::option::name(var.name()) | atlas::option::levels(var.getLevels()));
-    atlas::Field fieldOther = other.fset_[var.name()];
+    const atlas::Field fieldOther = other.fset_[var.name()];
     if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
       auto viewOther = atlas::array::make_view<double, 2>(fieldOther);
@@ -157,11 +194,20 @@ Fields::Fields(const Fields & other):
     }
     fset_.add(field);
   }
-  oops::Log::trace() << "Fields::Fields(const Fields & other) done" << std::endl;
+
+  // Set interpolation type
+  for (auto field : fset_) {
+    field.metadata().set("interp_type", "default");
+  }
+
+  oops::Log::trace() << classname() << "::Fields done" << std::endl;
 }
+
 // -----------------------------------------------------------------------------
+
 void Fields::zero() {
-  oops::Log::trace() << "Fields::zero starting" << std::endl;
+  oops::Log::trace() << classname() << "::zero starting" << std::endl;
+
   for (const auto & var : vars_) {
     atlas::Field field = fset_[var.name()];
     if (field.rank() == 2) {
@@ -170,11 +216,15 @@ void Fields::zero() {
     }
   }
   fset_.set_dirty(false);
+
   oops::Log::trace() << "Fields::zero end" << std::endl;
 }
+
 // -----------------------------------------------------------------------------
+
 void Fields::constantValue(const double & value) {
-  oops::Log::trace() << "Fields::constantValue starting" << std::endl;
+  oops::Log::trace() << classname() << "::constantValue starting" << std::endl;
+
   for (const auto & var : vars_) {
     atlas::Field field = fset_[var.name()];
     const std::string gmaskName = "gmask_" + std::to_string(geom_->groupIndex(var.name()));
@@ -190,9 +240,12 @@ void Fields::constantValue(const double & value) {
     }
   }
   fset_.set_dirty(false);
-  oops::Log::trace() << "Fields::constantValue end" << std::endl;
+
+  oops::Log::trace() << classname() << "::constantValue end" << std::endl;
 }
+
 // -----------------------------------------------------------------------------
+
 void Fields::constantValue(const eckit::Configuration & config) {
   oops::Log::trace() << "Fields::constantValue starting" << std::endl;
   for (const auto & group : config.getSubConfigurations("constant group-specific value")) {
@@ -216,14 +269,18 @@ void Fields::constantValue(const eckit::Configuration & config) {
     }
   }
   fset_.set_dirty(false);
-  oops::Log::trace() << "Fields::constantValue end" << std::endl;
+
+  oops::Log::trace() << classname() << "::constantValue end" << std::endl;
 }
+
 // -----------------------------------------------------------------------------
+
 Fields & Fields::operator=(const Fields & rhs) {
-  oops::Log::trace() << "Fields::operator=(const Fields & rhs) starting" << std::endl;
-  for (const auto & var : vars_) {
-    atlas::Field field = fset_[var.name()];
-    atlas::Field fieldRhs = rhs.fset_[var.name()];
+  oops::Log::trace() << classname() << "::operator= starting" << std::endl;
+
+  for (const auto & var : vars_.variables()) {
+    atlas::Field field = fset_[var];
+    atlas::Field fieldRhs = rhs.fset_[var];
     if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
       auto viewRhs = atlas::array::make_view<double, 2>(fieldRhs);
@@ -236,17 +293,34 @@ Fields & Fields::operator=(const Fields & rhs) {
     }
   }
   time_ = rhs.time_;
-  oops::Log::trace() << "Fields::operator=(const Fields & rhs) end" << std::endl;
+
+  oops::Log::trace() << classname() << "::operator= end" << std::endl;
   return *this;
 }
+
 // -----------------------------------------------------------------------------
+
 Fields & Fields::operator+=(const Fields & rhs) {
-  oops::Log::trace() << "Fields::operator+=(const Fields & rhs) starting" << std::endl;
+  oops::Log::trace() << classname() << "::operator+= starting" << std::endl;
+
+  // Right-hand side fieldset
+  atlas::FieldSet fsetRhs;
+  if (geom_->grid() == rhs.geom_->grid() && geom_->halo() == rhs.geom_->halo()) {
+    // Same geometry
+    fsetRhs = util::shareFields(rhs.fset_);
+  } else {
+    // Interpolate
+    const Fields rhsInterp(rhs, *geom_);
+
+    // Copy fieldset
+    fsetRhs = util::copyFieldSet(rhsInterp.fset_);
+  }
+
   for (const auto & var : vars_) {
     atlas::Field field = fset_[var.name()];
     const std::string gmaskName = "gmask_" + std::to_string(geom_->groupIndex(var.name()));
     const auto gmaskView = atlas::array::make_view<int, 2>(geom_->fields()[gmaskName]);
-    atlas::Field fieldRhs = rhs.fset_[var.name()];
+    atlas::Field fieldRhs = fsetRhs[var.name()];
     if (field.rank() == 2) {
       auto view = atlas::array::make_view<double, 2>(field);
       auto viewRhs = atlas::array::make_view<double, 2>(fieldRhs);
@@ -260,12 +334,16 @@ Fields & Fields::operator+=(const Fields & rhs) {
       field.set_dirty(field.dirty() || fieldRhs.dirty());
     }
   }
-  oops::Log::trace() << "Fields::operator+=(const Fields & rhs) done" << std::endl;
+
+  oops::Log::trace() << classname() << "::operator+= done" << std::endl;
   return *this;
 }
+
 // -----------------------------------------------------------------------------
+
 Fields & Fields::operator-=(const Fields & rhs) {
-  oops::Log::trace() << "Fields::operator-=(const Fields & rhs) starting" << std::endl;
+  oops::Log::trace() << classname() << "::operator-= starting" << std::endl;
+
   for (const auto & var : vars_) {
     atlas::Field field = fset_[var.name()];
     const std::string gmaskName = "gmask_" + std::to_string(geom_->groupIndex(var.name()));
@@ -284,12 +362,16 @@ Fields & Fields::operator-=(const Fields & rhs) {
       field.set_dirty(field.dirty() || fieldRhs.dirty());
     }
   }
-  oops::Log::trace() << "Fields::operator-=(const Fields & rhs) done" << std::endl;
+
+  oops::Log::trace() << classname() << "::operator-= done" << std::endl;
   return *this;
 }
+
 // -----------------------------------------------------------------------------
+
 Fields & Fields::operator*=(const double & zz) {
-  oops::Log::trace() << "Fields::operator*=(const Fields & rhs) starting" << std::endl;
+  oops::Log::trace() << classname() << "::operator*= starting" << std::endl;
+
   for (const auto & var : vars_) {
     atlas::Field field = fset_[var.name()];
     const std::string gmaskName = "gmask_" + std::to_string(geom_->groupIndex(var.name()));
@@ -305,12 +387,17 @@ Fields & Fields::operator*=(const double & zz) {
       }
     }
   }
-  oops::Log::trace() << "Fields::operator*=(const Fields & rhs) done" << std::endl;
+
+  oops::Log::trace() << classname() << "::operator*= done" << std::endl;
   return *this;
 }
+
 // -----------------------------------------------------------------------------
-void Fields::axpy(const double & zz, const Fields & rhs) {
-  oops::Log::trace() << "Fields::axpy starting" << std::endl;
+
+void Fields::axpy(const double & zz,
+                  const Fields & rhs) {
+  oops::Log::trace() << classname() << "::axpy starting" << std::endl;
+
   for (const auto & var : vars_) {
     atlas::Field field = fset_[var.name()];
     const std::string gmaskName = "gmask_" + std::to_string(geom_->groupIndex(var.name()));
@@ -329,11 +416,15 @@ void Fields::axpy(const double & zz, const Fields & rhs) {
       field.set_dirty(field.dirty() || fieldRhs.dirty());
     }
   }
-  oops::Log::trace() << "Fields::axpy done" << std::endl;
+
+  oops::Log::trace() << classname() << "::axpy done" << std::endl;
 }
+
 // -----------------------------------------------------------------------------
+
 double Fields::dot_product_with(const Fields & fld2) const {
-  oops::Log::trace() << "Fields::dot_product_with starting" << std::endl;
+  oops::Log::trace() << classname() << "::dot_product_with starting" << std::endl;
+
   double zz = 0;
   const auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
   for (const auto & var : vars_) {
@@ -354,12 +445,15 @@ double Fields::dot_product_with(const Fields & fld2) const {
     }
   }
   geom_->getComm().allReduceInPlace(zz, eckit::mpi::sum());
-  oops::Log::trace() << "Fields::dot_product_with done" << std::endl;
+  oops::Log::trace() << classname() << "::dot_product_with done" << std::endl;
   return zz;
 }
+
 // -----------------------------------------------------------------------------
+
 void Fields::schur_product_with(const Fields & dx) {
-  oops::Log::trace() << "Fields::schur_product_with starting" << std::endl;
+  oops::Log::trace() << classname() << "::schur_product_with starting" << std::endl;
+
   for (const auto & var : vars_) {
     atlas::Field field = fset_[var.name()];
     const std::string gmaskName = "gmask_" + std::to_string(geom_->groupIndex(var.name()));
@@ -378,11 +472,15 @@ void Fields::schur_product_with(const Fields & dx) {
       field.set_dirty(field.dirty() || fieldDx.dirty());
     }
   }
-  oops::Log::trace() << "Fields::schur_product_with done" << std::endl;
+
+  oops::Log::trace() << classname() << "::schur_product_with done" << std::endl;
 }
+
 // -----------------------------------------------------------------------------
+
 void Fields::random() {
-  oops::Log::trace() << "Fields::random starting" << std::endl;
+  oops::Log::trace() << classname() << "::random starting" << std::endl;
+
   fset_.clear();
   for (size_t groupIndex = 0; groupIndex < geom_->groups(); ++groupIndex) {
     // Mask and ghost points fields
@@ -453,7 +551,8 @@ void Fields::random() {
         fs.gather(localMasks, globalMasks);
       }
     } else {
-      ABORT(geom_->functionSpace().type() + " function space not supported yet");
+      throw eckit::NotImplemented(geom_->functionSpace().type() +
+        " function space not supported yet", Here());
     }
 
     if (geom_->getComm().rank() == 0) {
@@ -510,7 +609,8 @@ void Fields::random() {
         fs.scatter(globalData, localData);
       }
     } else {
-      ABORT(geom_->functionSpace().type() + " function space not supported yet");
+      throw eckit::NotImplemented(geom_->functionSpace().type() +
+        " function space not supported yet", Here());
     }
 
     // Copy data
@@ -525,9 +625,12 @@ void Fields::random() {
 
   oops::Log::trace() << "Fields::random done" << std::endl;
 }
+
 // -----------------------------------------------------------------------------
+
 void Fields::dirac(const eckit::Configuration & config) {
-  oops::Log::trace() << "Fields::dirac starting" << std::endl;
+  oops::Log::trace() << classname() << "::dirac starting" << std::endl;
+
   // Get dirac specifications
   std::vector<double> lon = config.getDoubleVector("lon");
   std::vector<double> lat = config.getDoubleVector("lat");
@@ -535,9 +638,12 @@ void Fields::dirac(const eckit::Configuration & config) {
   std::vector<std::string> variable = config.getStringVector("variable");
 
   // Check sizes
-  if (lon.size() != lat.size()) ABORT("Inconsistent dirac specification size");
-  if (lon.size() != level.size()) ABORT("Inconsistent dirac specification size");
-  if (lon.size() != variable.size()) ABORT("Inconsistent dirac specification size");
+  if (lon.size() != lat.size()) throw eckit::UserError("Inconsistent dirac specification size",
+    Here());
+  if (lon.size() != level.size()) throw eckit::UserError("Inconsistent dirac specification size",
+    Here());
+  if (lon.size() != variable.size()) throw eckit::UserError("Inconsistent dirac specification size",
+    Here());
 
   // Build KDTree for each MPI task
   atlas::util::IndexKDTree search;
@@ -594,11 +700,16 @@ void Fields::dirac(const eckit::Configuration & config) {
       }
     }
   }
-  oops::Log::trace() << "Fields::dirac done" << std::endl;
+
+  oops::Log::trace() << classname() << "::dirac done" << std::endl;
 }
+
 // -----------------------------------------------------------------------------
-void Fields::diff(const Fields & x1, const Fields & x2) {
-  oops::Log::trace() << "Fields::diff starting" << std::endl;
+
+void Fields::diff(const Fields & x1,
+                  const Fields & x2) {
+  oops::Log::trace() << classname() << "::diff starting" << std::endl;
+
   for (const auto & var : vars_) {
     atlas::Field field = fset_[var.name()];
     const std::string gmaskName = "gmask_" + std::to_string(geom_->groupIndex(var.name()));
@@ -612,29 +723,40 @@ void Fields::diff(const Fields & x1, const Fields & x2) {
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
           if (gmaskView(jnode, jlevel) == 1) {
-            view(jnode, jlevel) = viewx1(jnode, jlevel) - viewx2(jnode, jlevel);
+            view(jnode, jlevel) = viewx1(jnode, jlevel)-viewx2(jnode, jlevel);
           }
         }
       }
       field.set_dirty(fieldx1.dirty() || fieldx2.dirty());
     }
   }
-  oops::Log::trace() << "Fields::diff done" << std::endl;
+
+  oops::Log::trace() << classname() << "::diff done" << std::endl;
 }
+
 // -----------------------------------------------------------------------------
+
 void Fields::toFieldSet(atlas::FieldSet & fset) const {
-  oops::Log::trace() << "Fields::toFieldSet starting" << std::endl;
+  oops::Log::trace() << classname() << "::toFieldSet starting" << std::endl;
+
   // Share internal fieldset
   fset.clear();
   fset = util::shareFields(fset_);
-  for (auto field_external : fset) {
-    field_external.metadata().set("interp_type", "default");
+  for (auto field : fset) {
+    field.metadata().set("interp_type", "default");
+    field.set_dirty(fset_[field.name()].dirty());
   }
-  oops::Log::trace() << "Fields::toFieldSet done" << std::endl;
+
+  oops::Log::trace() << classname() << "::toFieldSet done" << std::endl;
 }
+
 // -----------------------------------------------------------------------------
+
 void Fields::fromFieldSet(const atlas::FieldSet & fset) {
-  oops::Log::trace() << "Fields::fromFieldSet starting" << std::endl;
+  oops::Log::trace() << classname() << "::fromFieldSet starting" << std::endl;
+
+  // Check input fieldset
+  ASSERT(!fset.empty());
 
   // Reset internal fieldset
   fset_.clear();
@@ -690,10 +812,21 @@ void Fields::fromFieldSet(const atlas::FieldSet & fset) {
       }
     }
   }
-  oops::Log::trace() << "Fields::fromFieldSet done" << std::endl;
+
+  oops::Log::trace() << classname() << "::fromFieldSet done" << std::endl;
 }
+
 // -----------------------------------------------------------------------------
+
 void Fields::read(const eckit::Configuration & config) {
+  oops::Log::trace() << classname() << "::read starting" << std::endl;
+
+  // Get IO format
+  const std::string ioFormat = config.getString("format", "default");
+
+  // Set FieldsIO
+  std::unique_ptr<FieldsIOBase> fieldsIO(FieldsIOFactory::create(ioFormat));
+
   // Update variables names
   oops::Variables vars_in_file;
   for (const auto & var : vars_) {
@@ -707,11 +840,7 @@ void Fields::read(const eckit::Configuration & config) {
   }
 
   // Read fieldset
-  util::readFieldSet(geom_->getComm(),
-                     geom_->functionSpace(),
-                     vars_in_file,
-                     config,
-                     fset_);
+  fieldsIO->read(*geom_, vars_in_file, config, fset_);
 
   // Rename fields
   for (auto & field : fset_) {
@@ -722,10 +851,27 @@ void Fields::read(const eckit::Configuration & config) {
     }
   }
 
+  // Set interpolation type
+  for (auto field : fset_) {
+    field.metadata().set("interp_type", "default");
+  }
+
   fset_.set_dirty();
+
+  oops::Log::trace() << classname() << "::read done" << std::endl;
 }
+
 // -----------------------------------------------------------------------------
+
 void Fields::write(const eckit::Configuration & config) const {
+  oops::Log::trace() << classname() << "::write starting" << std::endl;
+
+  // Get IO format
+  const std::string ioFormat = config.getString("format", "default");
+
+  // Set FieldsIO
+  std::unique_ptr<FieldsIOBase> fieldsIO(FieldsIOFactory::create(ioFormat));
+
   // Copy fieldset
   atlas::FieldSet fset = util::copyFieldSet(fset_);
 
@@ -738,8 +884,8 @@ void Fields::write(const eckit::Configuration & config) const {
     }
   }
 
-  // Write fieldset
-  util::writeFieldSet(geom_->getComm(), config, fset);
+  // Write fields
+  fieldsIO->write(*geom_, config, fset);
 
   if (geom_->mesh().generated() && config.getBool("write gmsh", false)) {
     // GMSH file path
@@ -757,13 +903,22 @@ void Fields::write(const eckit::Configuration & config) const {
     gmsh.write(geom_->mesh());
     gmsh.write(fset, fset[0].functionspace());
   }
+
+  oops::Log::trace() << classname() << "::write done" << std::endl;
 }
+
 // -----------------------------------------------------------------------------
+
 double Fields::norm() const {
+  oops::Log::trace() << classname() << "::norm" << std::endl;
   return util::normFieldSet(fset_, vars_.variables(), geom_->getComm());
 }
+
 // -----------------------------------------------------------------------------
+
 void Fields::print(std::ostream & os) const {
+  oops::Log::trace() << classname() << "::print starting" << std::endl;
+
   os << std::endl;
   os << *geom_;
   std::string prefix;
@@ -792,9 +947,15 @@ void Fields::print(std::ostream & os) const {
     zz = sqrt(zz);
     os << prefix << "  " << var.name() << ": " << zz;
   }
+
+  oops::Log::trace() << classname() << "::print done" << std::endl;
 }
+
 // -----------------------------------------------------------------------------
+
 size_t Fields::serialSize() const {
+  oops::Log::trace() << classname() << "::serialSize starting" << std::endl;
+
   size_t nn = 0;
   for (const auto & var : vars_) {
     atlas::Field field = fset_[var.name()];
@@ -802,14 +963,20 @@ size_t Fields::serialSize() const {
       nn += field.shape(0)*field.shape(1);
     }
   }
+
+  oops::Log::trace() << classname() << "::serialSize done" << std::endl;
   return nn;
 }
+
 // -----------------------------------------------------------------------------
+
 void Fields::serialize(std::vector<double> & vect)  const {
+  oops::Log::trace() << classname() << "::serialize starting" << std::endl;
+
   for (const auto & var : vars_) {
     const atlas::Field field = fset_[var.name()];
     if (field.rank() == 2) {
-      const auto view = atlas::array::make_view<double, 2>(field);
+      auto view = atlas::array::make_view<double, 2>(field);
       for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
         for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
           vect.push_back(view(jnode, jlevel));
@@ -817,9 +984,16 @@ void Fields::serialize(std::vector<double> & vect)  const {
       }
     }
   }
+
+  oops::Log::trace() << classname() << "::serialize done" << std::endl;
 }
+
 // -----------------------------------------------------------------------------
-void Fields::deserialize(const std::vector<double> & vect, size_t & index) {
+
+void Fields::deserialize(const std::vector<double> & vect,
+                         size_t & index) {
+  oops::Log::trace() << classname() << "::deserialize starting" << std::endl;
+
   for (const auto & var : vars_) {
     atlas::Field field = fset_[var.name()];
     if (field.rank() == 2) {
@@ -832,6 +1006,45 @@ void Fields::deserialize(const std::vector<double> & vect, size_t & index) {
       }
     }
   }
+
+  oops::Log::trace() << classname() << "::deserialize done" << std::endl;
 }
+
 // -----------------------------------------------------------------------------
+
+std::vector<Interpolation>::iterator Fields::setupGridInterpolation(const Geometry & srcGeom)
+  const {
+  oops::Log::trace() << classname() << "::setupGridInterpolation starting" << std::endl;
+
+  // Get geometry UIDs (grid + "_" + paritioner)
+  const std::string srcGeomUid = srcGeom.grid().uid() + "_" + srcGeom.partitioner().type();
+  const std::string geomUid = geom_->grid().uid() + "_" + geom_->partitioner().type();
+
+  // Compare with existing UIDs
+  for (auto it = interpolations().begin(); it != interpolations().end(); ++it) {
+    if ((it->srcUid() == srcGeomUid) && (it->dstUid() == geomUid)) {
+      oops::Log::trace() << classname() << "::setupGridInterpolation done" << std::endl;
+      return it;
+    }
+  }
+
+  // Create interpolation
+  Interpolation interpolation(geom_->interpolation(),
+                              geom_->getComm(),
+                              srcGeom.partitioner(),
+                              srcGeom.functionSpace(),
+                              srcGeomUid,
+                              geom_->grid(),
+                              geom_->functionSpace(),
+                              geomUid);
+
+  // Insert new interpolation
+  interpolations().push_back(interpolation);
+
+  oops::Log::trace() << classname() << "::setupGridInterpolation done" << std::endl;
+  return std::prev(interpolations().end());
+}
+
+// -----------------------------------------------------------------------------
+
 }  // namespace quench
