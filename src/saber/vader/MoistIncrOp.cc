@@ -205,58 +205,22 @@ MoistIncrOp::MoistIncrOp(const oops::GeometryData & outerGeometryData,
 {
   oops::Log::trace() << classname() << "::MoistIncrOp starting" << std::endl;
 
-  // Need to setup derived state fields that we need.
-  std::vector<std::string> requiredStateVariables{
-    "potential_temperature",  // from file
-    "exner",  // on theta levels from file ("exner_levels_minus_one" is on rho levels)
-    "air_pressure",  // on theta levels from file ("air_pressure_levels_minus_one" is on rho levels)
-    "air_temperature",  // to be populated in eval_air_temperature_nl
-    "m_v", "m_ci", "m_cl", "m_r",  // mixing ratios from file
-    "m_t",  // to be populated in eval_total_mixing_ratio_nl
-    "svp",  //  to be populated in eval_sat_vapour_pressure_nl
-    "dlsvpdT",  //  to be populated in eval_derivative_ln_svp_wrt_temperature_nl
-    "qsat",  // to be populated in evalSatSpecificHumidity
-    "specific_humidity",
-      // to be populated in eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl
-    "mass_content_of_cloud_liquid_water_in_atmosphere_layer",
-      // to be populated in
-      // eval_cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water_nl
-    "mass_content_of_cloud_ice_in_atmosphere_layer",
-      // to be populated in eval_cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water_nl
-    "qrain",  // to be populated in eval_rain_mixing_ratio_wrt_moist_air_and_condensed_water_nl
-    "rht",  // to be populated in eval_total_relative_humidity_nl
-    "liquid_cloud_volume_fraction_in_atmosphere_layer",  // from file
-    "ice_cloud_volume_fraction_in_atmosphere_layer",  // from file
-    "cleff", "cfeff"  // to be populated in eval_mio_fields_nl
-  };
-
-  // Check that they are allocated (i.e. exist in the state fieldset)
-  // Use meta data to see if they are populated with actual data.
-  for (auto & s : requiredStateVariables) {
-    if (!xb.fieldSet().has(s)) {
-      oops::Log::info() << "MoistIncrOp variable " << s <<
-                           " is not part of state object." << std::endl;
-    }
-  }
-
+  const oops::Variables stateVariables = params.mandatoryStateVars();
   augmentedStateFieldSet_.clear();
-  for (const auto & s : requiredStateVariables) {
+  for (const auto & s : stateVariables.variables()) {
     augmentedStateFieldSet_.add(xb.fieldSet()[s]);
   }
+  // create fields for temporary variables required here (populated in
+  // eval_mio_fields_nl)
+  const oops::Variables extraStateVariables({oops::Variable{"cleff"},
+                                             oops::Variable{"cfeff"}});
+  const size_t nlev = xb["qsat"].levels();
+  for (const auto & s : extraStateVariables.variables()) {
+    atlas::Field field = outerGeometryData.functionSpace()->createField<double>(
+                         atlas::option::name(s) | atlas::option::levels(nlev));
+    augmentedStateFieldSet_.add(field);
+  }
 
-  mo::eval_air_temperature_nl(augmentedStateFieldSet_);
-  mo::eval_total_mixing_ratio_nl(augmentedStateFieldSet_);
-  mo::eval_sat_vapour_pressure_nl(augmentedStateFieldSet_);
-  mo::eval_derivative_ln_svp_wrt_temperature_nl(augmentedStateFieldSet_);
-  mo::evalSatSpecificHumidity(augmentedStateFieldSet_);
-  mo::eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
-              augmentedStateFieldSet_);
-  mo::eval_cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
-              augmentedStateFieldSet_);
-  mo::eval_cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
-              augmentedStateFieldSet_);
-  mo::eval_rain_mixing_ratio_wrt_moist_air_and_condensed_water_nl(augmentedStateFieldSet_);
-  mo::eval_total_relative_humidity_nl(augmentedStateFieldSet_);
   mo::eval_mio_fields_nl(params.mio_file, augmentedStateFieldSet_);
 
   oops::Log::trace() << classname() << "::MoistIncrOp done" << std::endl;

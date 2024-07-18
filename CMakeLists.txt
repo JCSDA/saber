@@ -48,13 +48,13 @@ else()
     find_package( LAPACK REQUIRED )
 endif()
 
-# OOPS
+# Required
 find_package( oops 1.10.0 REQUIRED )
+find_package( vader 1.7.0 REQUIRED )
 
 # Optionals
 find_package( FFTW 3.3.8 QUIET )
 find_package( gsibec 1.2.1 QUIET )
-find_package( vader 1.7.0 QUIET )
 
 # Optional SABER blocks
 if( gsibec_FOUND )
@@ -72,11 +72,6 @@ if( atlas_TRANS_FOUND OR atlas_ECTRANS_FOUND )
     message( STATUS "SABER block SPECTRALB is enabled" )
 else()
     message( STATUS "SABER block SPECTRALB is NOT enabled" )
-endif()
-if( vader_FOUND )
-    message( STATUS "SABER blocks based on VADER are enabled" )
-else()
-    message( STATUS "SABER blocks based on VADER are NOT enabled" )
 endif()
 
 ## SABER instrumentation

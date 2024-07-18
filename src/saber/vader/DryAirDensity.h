@@ -44,6 +44,14 @@ class DryAirDensityParameters : public SaberBlockParametersBase {
     "mass_content_of_cloud_liquid_water_in_atmosphere_layer",
     "mass_content_of_cloud_ice_in_atmosphere_layer"}});}
 
+  const oops::Variables mandatoryStateVars() const override {return oops::Variables({
+    "dry_air_density_levels_minus_one",
+    "air_pressure_levels_minus_one",
+    "potential_temperature",
+    "specific_humidity",
+    "mass_content_of_cloud_liquid_water_in_atmosphere_layer",
+    "mass_content_of_cloud_ice_in_atmosphere_layer"});}
+
   oops::Variables activeInnerVars(const oops::Variables& outerVars) const override {
     const int modelLevels = outerVars["dry_air_density_levels_minus_one"].getLevels();
     oops::Variables vars;
@@ -108,7 +116,7 @@ class DryAirDensity : public SaberOuterBlockBase {
   const oops::Variables activeOuterVars_;
   const oops::Variables innerOnlyVars_;
   const oops::Variables intermediateTempVars_;
-  atlas::FieldSet augmentedStateFieldSet_;
+  const oops::FieldSet3D xb_;
 };
 
 // -----------------------------------------------------------------------------

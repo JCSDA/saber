@@ -198,13 +198,7 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
     // Setup variables
     oops::Variables tmpVars = xx.variables();
     if (params.incrementVars.value() != boost::none) {
-      const auto & incrementVars = params.incrementVars.value().value();
-      if (incrementVars <= tmpVars) {
-        tmpVars.intersection(incrementVars);
-      } else {
-        throw eckit::UserError("Increment variables should be a subset of background variables",
-                               Here());
-      }
+      tmpVars = params.incrementVars.value().value();
     }
     const oops::Variables vars = tmpVars;
 

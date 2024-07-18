@@ -58,7 +58,7 @@ class AirTemperature : public SaberOuterBlockBase {
   const oops::Variables innerVars_;
   const oops::Variables activeOuterVars_;
   const oops::Variables innerOnlyVars_;
-  atlas::FieldSet augmentedStateFieldSet_;
+  const oops::FieldSet3D xb_;
 };
 
 // -----------------------------------------------------------------------------

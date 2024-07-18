@@ -62,70 +62,34 @@ MoistureControl::MoistureControl(const oops::GeometryData & outerGeometryData,
 {
   oops::Log::trace() << classname() << "::MoistureControl starting" << std::endl;
 
+  const size_t nlev = xb["air_temperature"].levels();
   // Covariance FieldSet
-  covFieldSet_ = createMuStats(xb["air_temperature"].levels(),
+  covFieldSet_ = createMuStats(nlev,
                                outerGeometryData.fieldSet(),
                                params.moistureControlParams.value());
 
-  std::vector<std::string> requiredStateVariables{
-    "air_temperature",
-    "air_pressure",
-    "potential_temperature",   // from file
-    "exner",  // from file on theta levels ("exner_levels_minus_one" is on rho levels)
-    "m_v", "m_ci", "m_cl", "m_r",  // mixing ratios from file
-    "m_t",  //  to be populated in eval_total_mixing_ratio_nl
-    "svp",  //  to be populated in eval_sat_vapour_pressure_nl
-    "dlsvpdT",  //  to be populated in eval_derivative_ln_svp_wrt_temperature_nl
-    "qsat",  // to be populated in evalSatSpecificHumidity
-    "specific_humidity",
-      //  to be populated in eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl
-    "mass_content_of_cloud_liquid_water_in_atmosphere_layer",
-      // to be populated in
-      // eval_cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water_nl
-    "mass_content_of_cloud_ice_in_atmosphere_layer",
-      // to be populated in eval_cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water_nl
-    "qrain",  // to be populated in eval_rain_mixing_ratio_wrt_moist_air_and_condensed_water_nl
-    "qt",  // to be populated in eval_total_water
-    "rht",  // to be populated in eval_total_relative_humidity_nl
+  std::vector<std::string> additionalStateVariables{
     "muA", "muH1",  // to be populated in function call from CovarianceStatisticsUtils.h
     "muRow1Column1", "muRow1Column2",  // to be populated in eval_moisture_control_traj
     "muRow2Column1", "muRow2Column2",  //   ""
     "muRecipDeterminant"  //   ""
   };
 
-  // Check that they are allocated (i.e. exist in the state fieldset)
-  // Use meta data to see if they are populated with actual data.
-  for (auto & s : requiredStateVariables) {
-    if (!xb.fieldSet().has(s)) {
-      oops::Log::info() << "MoistureControl variable " << s <<
-                           " is not part of state object." << std::endl;
-    }
-  }
-
+  // copy all required variables from the background fieldset
+  const oops::Variables mandatoryStateVariables = params.mandatoryStateVars();
   augmentedStateFieldSet_.clear();
-  for (const auto & s : requiredStateVariables) {
+  for (const auto & s : mandatoryStateVariables.variables()) {
     augmentedStateFieldSet_.add(xb.fieldSet()[s]);
   }
-
-  mo::eval_air_temperature_nl(augmentedStateFieldSet_);
-  mo::eval_total_mixing_ratio_nl(augmentedStateFieldSet_);
-  mo::eval_sat_vapour_pressure_nl(augmentedStateFieldSet_);
-  mo::eval_derivative_ln_svp_wrt_temperature_nl(augmentedStateFieldSet_);
-  mo::evalSatSpecificHumidity(augmentedStateFieldSet_);
-  mo::eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
-              augmentedStateFieldSet_);
-  mo::eval_cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
-              augmentedStateFieldSet_);
-  mo::eval_cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
-              augmentedStateFieldSet_);
-  mo::eval_rain_mixing_ratio_wrt_moist_air_and_condensed_water_nl(augmentedStateFieldSet_);
-  mo::eval_total_water(augmentedStateFieldSet_);
-  mo::eval_total_relative_humidity_nl(augmentedStateFieldSet_);
-
+  // create fields for temporary variables required here
+  for (const auto & s : additionalStateVariables) {
+    atlas::Field field = outerGeometryData.functionSpace()->createField<double>(
+        atlas::option::name(s) | atlas::option::levels(nlev));
+    augmentedStateFieldSet_.add(field);
+  }
   // populate "muA" and "muH1"
   interpMuStats(augmentedStateFieldSet_, covFieldSet_["muH1Stats"]);
   populateMuA(augmentedStateFieldSet_, covFieldSet_["muAStats"]);
-
   // populate "specific moisture control dependencies"
   mo::eval_moisture_control_traj(augmentedStateFieldSet_);
 

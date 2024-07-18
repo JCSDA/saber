@@ -54,58 +54,8 @@ DryAirDensity::DryAirDensity(const oops::GeometryData & outerGeometryData,
     activeOuterVars_(params.activeOuterVars(outerVars)),
     innerOnlyVars_(getInnerOnlyVars(params, outerVars)),
     intermediateTempVars_(params.intermediateTempVars(outerVars)),
-    augmentedStateFieldSet_()
+    xb_(xb)
 {
-  oops::Log::trace() << classname() << "::DryAirDensity starting" << std::endl;
-
-  // Need to setup derived state fields that we need.
-  std::vector<std::string> requiredStateVariables{
-      "air_pressure_levels_minus_one",  // Assumed already populated
-      "dry_air_density_levels_minus_one",  // Assumed already populated
-      "height",  // Assumed already populated
-      "height_levels",  // Assumed already populated
-      "m_ci",  // Assumed already populated
-      "m_cl",  // Assumed already populated
-      "m_r",  // Assumed already populated
-      "m_v",  // Assumed already populated
-      "m_t",
-      "potential_temperature",          // Assumed already populated
-      "specific_humidity",
-      "mass_content_of_cloud_liquid_water_in_atmosphere_layer",
-      "mass_content_of_cloud_ice_in_atmosphere_layer"};
-
-
-  // Check that they are allocated (i.e. exist in the state fieldset)
-  for (auto & s : requiredStateVariables) {
-    if (!xb.fieldSet().has(s)) {
-      oops::Log::error() << "::DryAirDensity variable " << s <<
-                            "is not part of state object." << std::endl;
-    }
-  }
-
-  augmentedStateFieldSet_.clear();
-  for (const auto & s : requiredStateVariables) {
-    augmentedStateFieldSet_.add(xb.fieldSet()[s]);
-  }
-
-  std::vector<std::string> requiredGeometryVariables{"height_levels",
-                                                     "height"};
-  for (const auto & s : requiredGeometryVariables) {
-    if (outerGeometryData.fieldSet().has(s)) {
-      augmentedStateFieldSet_.add(outerGeometryData.fieldSet()[s]);
-    } else {
-      augmentedStateFieldSet_.add(xb.fieldSet()[s]);
-    }
-  }
-
-  mo::eval_total_mixing_ratio_nl(augmentedStateFieldSet_);
-  mo::eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
-              augmentedStateFieldSet_);
-  mo::eval_cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
-              augmentedStateFieldSet_);
-  mo::eval_cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
-              augmentedStateFieldSet_);
-
   oops::Log::trace() << classname() << "::DryAirDensity done" << std::endl;
 }
 
@@ -136,7 +86,7 @@ void DryAirDensity::multiply(oops::FieldSet3D & fset) const {
 
   // Populate output fields.
   mo::eval_dry_air_density_from_pressure_levels_minus_one_tl(fset.fieldSet(),
-                                                             augmentedStateFieldSet_);
+                                                             xb_.fieldSet());
 
   // Remove temporary pressure_levels_minus_one field
   fset.removeFields(intermediateTempVars_);
@@ -159,7 +109,7 @@ void DryAirDensity::multiplyAD(oops::FieldSet3D & fset) const {
                         innerGeometryData_.functionSpace());
 
   mo::eval_dry_air_density_from_pressure_levels_minus_one_ad(fset.fieldSet(),
-                                                             augmentedStateFieldSet_);
+                                                             xb_.fieldSet());
 
   // Populate pressure_levels from pressure_levels_minus_one.
   // Note there is no update to pHatView(jn,top_jl),

@@ -24,16 +24,11 @@ if( atlas_TRANS_FOUND OR atlas_ECTRANS_FOUND )
     SqrtOfSpectralCorrelation.h
     SqrtOfSpectralCovariance.cc
     SqrtOfSpectralCovariance.h
+    GaussUVToGP.cc
+    GaussUVToGP.h
+    HydrostaticPressure.cc
+    HydrostaticPressure.h
     )
-
-    if( vader_FOUND )
-          list(APPEND spectralb_src_files_list
-          GaussUVToGP.cc
-          GaussUVToGP.h
-          HydrostaticPressure.cc
-          HydrostaticPressure.h
-          )
-    endif()
 endif()
 
 set( spectralb_src_files ${spectralb_src_files_list} PARENT_SCOPE )

@@ -106,6 +106,10 @@ class SaberBlockParametersBase : public oops::Parameters {
   virtual oops::Variables activeOuterVars(const oops::Variables & outerVars) const {
     return oops::Variables();
   }
+
+  virtual const oops::Variables mandatoryStateVars() const {
+    return oops::Variables();
+  }
 };
 
 // -----------------------------------------------------------------------------

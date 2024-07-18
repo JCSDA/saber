@@ -108,8 +108,8 @@ std::tuple<const SaberBlockParametersBase&, oops::Variables, oops::Variables>
             const eckit::LocalConfiguration & outerBlockConf,
             const oops::GeometryData & outerGeometryData,
             const oops::Variables & outerVars,
-            const oops::FieldSet4D & fset4dXb,
-            const oops::FieldSet4D & fset4dFg) {
+            oops::FieldSet4D & fset4dXb,
+            oops::FieldSet4D & fset4dFg) {
   // Initialize current outer variables and outer geometry data
   const oops::Variables & currentOuterVars = outerBlocks_.size() == 0 ?
                                    outerVars : outerBlocks_.back()->innerVars();
@@ -122,6 +122,42 @@ std::tuple<const SaberBlockParametersBase&, oops::Variables, oops::Variables>
 
   // Get active variables
   const oops::Variables activeVars = getActiveVars(saberOuterBlockParams, currentOuterVars);
+
+  // Get required variables in xb, fg if needed
+  const oops::Variables mandatoryStateVars = saberOuterBlockParams.mandatoryStateVars();
+  if (!(mandatoryStateVars <= fset4dXb.variables())) {
+    oops::Log::info() << "Info     : Calling vader to populate trajectory variables for the "
+                      << saberOuterBlockParams.saberBlockName.value() << std::endl;
+    eckit::LocalConfiguration vaderCookbookConfig, vaderConfig;
+    for (const auto & entry : saberDefaultCookbook) {
+      vaderCookbookConfig.set(entry.first.name(), entry.second);
+    }
+    vaderConfig.set(vader::configCookbookKey, vaderCookbookConfig);
+    vader::VaderParameters vaderParams;
+    vader::Vader vader(vaderParams, vaderConfig);
+    oops::Variables varsToPopulateXb(mandatoryStateVars);
+    oops::Variables varsPopulatedXb = vader.changeVar(fset4dXb[0].fieldSet(),
+                                                      varsToPopulateXb);
+    if (varsToPopulateXb.size() != 0) {
+      std::stringstream errorMsg;
+      errorMsg << "Vader could not produce the requested variables "
+               << varsToPopulateXb.variables()
+               << " in block " << saberOuterBlockParams.saberBlockName.value()
+               << std::endl;
+      throw eckit::Exception(errorMsg.str(), Here());
+    }
+    oops::Variables varsToPopulateFg(mandatoryStateVars);
+    oops::Variables varsPopulatedFg = vader.changeVar(fset4dFg[0].fieldSet(),
+                                                      varsToPopulateFg);
+    if (varsToPopulateFg.size() != 0) {
+      std::stringstream errorMsg;
+      errorMsg << "Vader could not produce the requested variables "
+               << varsToPopulateFg.variables()
+               << " in block " << saberOuterBlockParams.saberBlockName.value()
+               << std::endl;
+      throw eckit::Exception(errorMsg.str(), Here());
+    }
+  }
 
   // Create outer block
   outerBlocks_.emplace_back(SaberOuterBlockFactory::create(

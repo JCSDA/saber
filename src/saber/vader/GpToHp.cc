@@ -75,70 +75,16 @@ GpToHp::GpToHp(const oops::GeometryData & outerGeometryData,
                                          outerGeometryData.fieldSet(),
                                          innerVars_,
                                          params.gptohpcovarianceparams.value());
-  std::vector<std::string> requiredStateVariables{
-    "air_temperature",
-    "air_pressure_levels_minus_one",
-    "exner_levels_minus_one",
-    "exner",
-    "potential_temperature",
-    "air_pressure_levels",
-    "air_pressure",
-    "m_v", "m_ci", "m_cl", "m_r",  // mixing ratios from file
-    "m_t",  //  to be populated in eval_total_mixing_ratio_nl
-    "svp",  //  to be populated in eval_sat_vapour_pressure_nl
-    "dlsvpdT",  //  to be populated in eval_derivative_ln_svp_wrt_temperature_nl
-    "qsat",  // to be populated in evalSatSpecificHumidity
-    "specific_humidity",
-      //  to be populated in eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl
-    "virtual_potential_temperature",
-    "hydrostatic_exner_levels", "hydrostatic_pressure_levels"
-     };
-
-  // Check that they are allocated (i.e. exist in the state fieldset)
-  // Use meta data to see if they are populated with actual data.
-  for (auto & s : requiredStateVariables) {
-    if (!xb.fieldSet().has(s)) {
-      oops::Log::info() << "HydrostaticExner variable " << s <<
-                           " is not part of state object." << std::endl;
-    }
-  }
-
+  // copy variables from background that are required
+  const oops::Variables stateVariables = params.mandatoryStateVars();
   augmentedStateFieldSet_.clear();
-  for (const auto & s : requiredStateVariables) {
-    augmentedStateFieldSet_.add(xb.fieldSet()[s]);
+  for (const auto & s : stateVariables) {
+    augmentedStateFieldSet_.add(xb.fieldSet()[s.name()]);
   }
-
-
-  std::vector<std::string> requiredGeometryVariables{"height_levels"};
-  for (const auto & s : requiredGeometryVariables) {
-    if (outerGeometryData.fieldSet().has(s)) {
-      augmentedStateFieldSet_.add(outerGeometryData.fieldSet()[s]);
-    } else {
-      augmentedStateFieldSet_.add(xb.fieldSet()[s]);
-    }
-  }
-
-  // we will need geometry here for height variables.
-  mo::eval_air_pressure_levels_nl(augmentedStateFieldSet_);
-  mo::eval_air_temperature_nl(augmentedStateFieldSet_);
-  mo::eval_total_mixing_ratio_nl(augmentedStateFieldSet_);
-  mo::eval_sat_vapour_pressure_nl(augmentedStateFieldSet_);
-  mo::eval_derivative_ln_svp_wrt_temperature_nl(augmentedStateFieldSet_);
-  mo::evalSatSpecificHumidity(augmentedStateFieldSet_);
-  mo::eval_water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water_nl(
-              augmentedStateFieldSet_);
-  mo::eval_virtual_potential_temperature_nl(augmentedStateFieldSet_);
-  mo::evalHydrostaticExnerLevels(augmentedStateFieldSet_);
-  mo::evalHydrostaticPressureLevels(augmentedStateFieldSet_);
-  // Need to setup derived state fields that we need.
-  std::vector<std::string> requiredCovarianceVariables;
+  // also copy variables from covariance fieldset if required
   if (covFieldSet_.has("interpolation_weights")) {
-    requiredCovarianceVariables.push_back("vertical_regression_matrices");
-    requiredCovarianceVariables.push_back("interpolation_weights");
-  }
-
-  for (const auto & s : requiredCovarianceVariables) {
-    augmentedStateFieldSet_.add(covFieldSet_[s]);
+    augmentedStateFieldSet_.add(covFieldSet_["vertical_regression_matrices"]);
+    augmentedStateFieldSet_.add(covFieldSet_["interpolation_weights"]);
   }
 
   oops::Log::trace() << classname() << "::GpToHp done" << std::endl;

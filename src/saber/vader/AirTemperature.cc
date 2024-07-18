@@ -45,38 +45,8 @@ AirTemperature::AirTemperature(const oops::GeometryData & outerGeometryData,
     innerVars_(getUnionOfInnerActiveAndOuterVars(params, outerVars)),
     activeOuterVars_(params.activeOuterVars(outerVars)),
     innerOnlyVars_(getInnerOnlyVars(params, outerVars)),
-    augmentedStateFieldSet_()
+    xb_(xb)
 {
-  oops::Log::trace() << classname() << "::AirTemperature starting" << std::endl;
-
-  // Need to setup derived state fields that we need.
-  std::vector<std::string> requiredStateVariables{"exner_levels_minus_one",
-                                                  "potential_temperature"};
-
-  // Check that they are allocated (i.e. exist in the state fieldset)
-  // Use meta data to see if they are populated with actual data.
-  for (auto & s : requiredStateVariables) {
-    if (!xb.fieldSet().has(s)) {
-      oops::Log::info() << "AirTemperature variable " << s <<
-                           " is not part of state object." << std::endl;
-    }
-  }
-
-  augmentedStateFieldSet_.clear();
-  for (const auto & s : requiredStateVariables) {
-    augmentedStateFieldSet_.add(xb.fieldSet()[s]);
-  }
-
-  std::vector<std::string> requiredGeometryVariables{"height_levels",
-                                                     "height"};
-  for (const auto & s : requiredGeometryVariables) {
-    if (outerGeometryData.fieldSet().has(s)) {
-      augmentedStateFieldSet_.add(outerGeometryData.fieldSet()[s]);
-    } else {
-      augmentedStateFieldSet_.add(xb.fieldSet()[s]);
-    }
-  }
-
   oops::Log::trace() << classname() << "::AirTemperature done" << std::endl;
 }
 
@@ -97,7 +67,7 @@ void AirTemperature::multiply(oops::FieldSet3D & fset) const {
                         innerGeometryData_.functionSpace());
 
   // Populate output fields.
-  mo::eval_air_temperature_tl(fset.fieldSet(), augmentedStateFieldSet_);
+  mo::eval_air_temperature_tl(fset.fieldSet(), xb_.fieldSet());
 
   // Remove inner-only variables
   fset.removeFields(innerOnlyVars_);
@@ -113,7 +83,7 @@ void AirTemperature::multiplyAD(oops::FieldSet3D & fset) const {
   allocateMissingFields(fset, innerOnlyVars_, innerOnlyVars_,
                         innerGeometryData_.functionSpace());
 
-  mo::eval_air_temperature_ad(fset.fieldSet(), augmentedStateFieldSet_);
+  mo::eval_air_temperature_ad(fset.fieldSet(), xb_.fieldSet());
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 

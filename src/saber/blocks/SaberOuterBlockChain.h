@@ -8,7 +8,9 @@
 
 #pragma once
 
+#include <iostream>
 #include <memory>
+#include <sstream>
 #include <tuple>
 #include <vector>
 
@@ -25,6 +27,9 @@
 #include "saber/blocks/SaberBlockParametersBase.h"
 #include "saber/blocks/SaberOuterBlockBase.h"
 #include "saber/oops/Utilities.h"
+#include "saber/vader/DefaultCookbook.h"
+
+#include "vader/vader.h"
 
 namespace saber {
 
@@ -122,8 +127,8 @@ class SaberOuterBlockChain {
                const eckit::LocalConfiguration & outerBlockConf,
                const oops::GeometryData & outerGeometryData,
                const oops::Variables & outerVars,
-               const oops::FieldSet4D & fset4dXb,
-               const oops::FieldSet4D & fset4dFg);
+               oops::FieldSet4D & fset4dXb,
+               oops::FieldSet4D & fset4dFg);
 
   /// @brief Block calibration. Used in standard constructor.
   template<typename MODEL>

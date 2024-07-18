@@ -126,9 +126,6 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
   oops::FieldSet4D fset4dXb = oops::copyFieldSet4D(fset4dXbTmp);
   oops::FieldSet4D fset4dFg = oops::copyFieldSet4D(fset4dFgTmp);
 
-  // Extend background and first guess with geometry fields
-  // TODO(Benjamin, Marek, Mayeul, ?)
-
   // Initialize outer variables
   const std::vector<std::size_t> vlevs = geom.variableSizes(incVars);
   oops::Variables outerVars(incVars);

@@ -57,6 +57,12 @@ class MoistureControlParameters : public SaberBlockParametersBase {
         "virtual_potential_temperature"}});
   }
 
+  const oops::Variables mandatoryStateVars() const override {
+    return oops::Variables({"qt", "specific_humidity",
+                            "potential_temperature", "exner",
+                            "dlsvpdT", "qsat", "rht"});
+  }
+
   oops::Variables activeInnerVars(const oops::Variables& outerVars) const override {
     const int modelLevels = outerVars["qt"].getLevels();
     eckit::LocalConfiguration conf;
