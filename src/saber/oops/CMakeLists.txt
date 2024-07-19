@@ -11,7 +11,7 @@ ErrorCovarianceParameters.h
 ErrorCovariance.h
 Localization.h
 
-# Applications
+# Application
 ErrorCovarianceToolbox.h
 ProcessPerts.h
 

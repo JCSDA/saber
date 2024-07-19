@@ -1,6 +1,5 @@
 /*
  * (C) Copyright 2017-2021 UCAR.
- * (C) Copyright 2023-2024 Meteorologisk Institutt
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -25,25 +24,19 @@ namespace quench {
 
 class VariableChange : public util::Printable {
  public:
-  static const std::string classname()
-    {return "quench::VariableChange";}
+  static const std::string classname() {return "quench::VariableChange";}
 
-  // Constructor/destructor
   VariableChange(const eckit::Configuration &, const Geometry &) {}
   ~VariableChange() {}
 
-  // Variable changes: direct and inverse
-  void changeVar(State &,
-                 const oops::Variables &) const
+/// Perform transforms
+  void changeVar(State &, const oops::Variables &) const
     {throw eckit::NotImplemented(Here());}
-  void changeVarInverse(State &,
-                        const oops::Variables &) const
+  void changeVarInverse(State &, const oops::Variables &) const
     {throw eckit::NotImplemented(Here());}
 
  private:
-  // Print
-  void print(std::ostream & os) const override
-    {os << "VariableChange";};
+  void print(std::ostream & os) const override {os << "VariableChange";};
 };
 
 // -----------------------------------------------------------------------------

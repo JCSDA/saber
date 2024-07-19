@@ -1,6 +1,5 @@
 /*
  * (C) Copyright 2023  UCAR.
- * (C) Copyright 2023-2024 Meteorologisk Institutt
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -24,38 +23,26 @@
 namespace quench {
 
 // -----------------------------------------------------------------------------
-/// LinearVariableChange class
+/// quench linear change of variable (simple pointwise multiplication with a
+/// field loaded from file)
 
 class LinearVariableChange: public util::Printable {
  public:
-  static const std::string classname()
-    {return "quench::LinearVariableChange";}
+  static const std::string classname() {return "quench::LinearVariableChange";}
 
-  // Constructor/destructor
-  LinearVariableChange(const Geometry &,
-                       const eckit::Configuration &);
+  LinearVariableChange(const Geometry &, const eckit::Configuration &);
   ~LinearVariableChange();
 
-  // Linear variable changes: TL, inverseTL, AD and inverseAD
-  void changeVarTL(Increment &,
-                   const oops::Variables &) const;
-  void changeVarInverseTL(Increment &,
-                          const oops::Variables &) const;
-  void changeVarAD(Increment &,
-                   const oops::Variables &) const;
-  void changeVarInverseAD(Increment &,
-                          const oops::Variables &) const;
+/// Perform linear transforms
+  void changeVarTL(Increment &, const oops::Variables &) const;
+  void changeVarInverseTL(Increment &, const oops::Variables &) const;
+  void changeVarAD(Increment &, const oops::Variables &) const;
+  void changeVarInverseAD(Increment &, const oops::Variables &) const;
 
-  // Trajectory setup
-  void changeVarTraj(const State &,
-                     const oops::Variables &) {}
+  void changeVarTraj(const State &, const oops::Variables &) {}
 
  private:
-  // Print
-  void print(std::ostream & os) const override
-    {os << "LinearVariableChange";};
-
-  // Multiplicative factor
+  void print(std::ostream & os) const override {os << "LinearVariableChange";};
   atlas::FieldSet fset_;
 };
 // -----------------------------------------------------------------------------

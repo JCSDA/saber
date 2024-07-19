@@ -1,6 +1,5 @@
 /*
  * (C) Copyright 2022 UCAR.
- * (C) Copyright 2023-2024 Meteorologisk Institutt
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -12,137 +11,140 @@
 
 #include "atlas/field.h"
 
+#include "oops/util/abor1_cpp.h"
 #include "oops/util/Logger.h"
+
+#include "src/Fields.h"
 
 namespace quench {
 
 // -----------------------------------------------------------------------------
-
-Increment::Increment(const Geometry & resol,
-                     const oops::Variables & vars,
+/// Constructor, destructor
+// -----------------------------------------------------------------------------
+Increment::Increment(const Geometry & resol, const oops::Variables & vars,
                      const util::DateTime & vt)
-  : fields_(new Fields(resol, vars, vt)) {
-  oops::Log::trace() << classname() << "::Increment starting" << std::endl;
-
+  : fields_(new Fields(resol, vars, vt))
+{
   fields_->zero();
-
-  oops::Log::trace() << classname() << "::Increment done" << std::endl;
+  oops::Log::trace() << "Increment constructed." << std::endl;
 }
-
 // -----------------------------------------------------------------------------
-
-Increment::Increment(const Geometry & resol,
-                     const Increment & other)
-  : fields_(new Fields(*other.fields_, resol)) {
-  oops::Log::trace() << classname() << "::Increment starting" << std::endl;
-
-  fields_->zero();
-
-  oops::Log::trace() << classname() << "::Increment done" << std::endl;
+Increment::Increment(const Geometry & resol, const Increment & other)
+  : fields_(new Fields(*other.fields_, resol))
+{
+  oops::Log::trace() << "Increment constructed from other." << std::endl;
 }
-
 // -----------------------------------------------------------------------------
-
-Increment::Increment(const Increment & other,
-                     const bool copy)
-  : fields_(new Fields(*other.fields_, copy)) {
-  oops::Log::trace() << classname() << "::Increment" << std::endl;
+Increment::Increment(const Increment & other, const bool copy)
+  : fields_(new Fields(*other.fields_, copy))
+{
+  oops::Log::trace() << "Increment copy-created." << std::endl;
 }
-
 // -----------------------------------------------------------------------------
-
-void Increment::diff(const State & x1,
-                     const State & x2) {
-  oops::Log::trace() << classname() << "::diff starting" << std::endl;
-
+/// Basic operators
+// -----------------------------------------------------------------------------
+void Increment::diff(const State & x1, const State & x2) {
   ASSERT(this->validTime() == x1.validTime());
   ASSERT(this->validTime() == x2.validTime());
   fields_->diff(x1.fields(), x2.fields());
-
-  oops::Log::trace() << classname() << "::diff done" << std::endl;
 }
-
 // -----------------------------------------------------------------------------
-
 Increment & Increment::operator=(const Increment & rhs) {
-  oops::Log::trace() << classname() << "::operator= starting" << std::endl;
-
   *fields_ = *rhs.fields_;
-
-  oops::Log::trace() << classname() << "::operator= done" << std::endl;
   return *this;
 }
-
 // -----------------------------------------------------------------------------
-
 Increment & Increment::operator+=(const Increment & dx) {
-  oops::Log::trace() << classname() << "::operator+= starting" << std::endl;
-
   ASSERT(this->validTime() == dx.validTime());
   *fields_ += *dx.fields_;
-
-  oops::Log::trace() << classname() << "::operator+= done" << std::endl;
   return *this;
 }
-
 // -----------------------------------------------------------------------------
-
 Increment & Increment::operator-=(const Increment & dx) {
-  oops::Log::trace() << classname() << "::operator-= starting" << std::endl;
-
   ASSERT(this->validTime() == dx.validTime());
   *fields_ -= *dx.fields_;
-
-  oops::Log::trace() << classname() << "::operator-= done" << std::endl;
   return *this;
 }
-
 // -----------------------------------------------------------------------------
-
 Increment & Increment::operator*=(const double & zz) {
-  oops::Log::trace() << classname() << "::operator*= starting" << std::endl;
-
   *fields_ *= zz;
-
-  oops::Log::trace() << classname() << "::operator*= done" << std::endl;
   return *this;
 }
-
 // -----------------------------------------------------------------------------
-
+void Increment::zero() {
+  fields_->zero();
+}
+// -----------------------------------------------------------------------------
 void Increment::zero(const util::DateTime & vt) {
-  oops::Log::trace() << classname() << "::zero starting" << std::endl;
-
   fields_->zero();
   fields_->time() = vt;
-
-  oops::Log::trace() << classname() << "::zero done" << std::endl;
 }
-
 // -----------------------------------------------------------------------------
-
-void Increment::axpy(const double & zz,
-                     const Increment & dx,
+void Increment::axpy(const double & zz, const Increment & dx,
                      const bool check) {
-  oops::Log::trace() << classname() << "::axpy starting" << std::endl;
-
   ASSERT(!check || this->validTime() == dx.validTime());
   fields_->axpy(zz, *dx.fields_);
-
-  oops::Log::trace() << classname() << "::axpy done" << std::endl;
 }
-
 // -----------------------------------------------------------------------------
-
+void Increment::accumul(const double & zz, const State & xx) {
+  fields_->axpy(zz, xx.fields());
+}
+// -----------------------------------------------------------------------------
+void Increment::schur_product_with(const Increment & dx) {
+  fields_->schur_product_with(*dx.fields_);
+}
+// -----------------------------------------------------------------------------
+double Increment::dot_product_with(const Increment & other) const {
+  return fields_->dot_product_with(*other.fields_);
+}
+// -----------------------------------------------------------------------------
+void Increment::random() {
+  fields_->random();
+}
+// -----------------------------------------------------------------------------
+void Increment::dirac(const eckit::Configuration & config) {
+  fields_->dirac(config);
+}
+// -----------------------------------------------------------------------------
+/// ATLAS FieldSet accessor
+// -----------------------------------------------------------------------------
+void Increment::toFieldSet(atlas::FieldSet & fset) const {
+  fields_->toFieldSet(fset);
+}
+// -----------------------------------------------------------------------------
+void Increment::fromFieldSet(const atlas::FieldSet & fset) {
+  fields_->fromFieldSet(fset);
+}
+// -----------------------------------------------------------------------------
+/// I/O and diagnostics
+// -----------------------------------------------------------------------------
+void Increment::read(const eckit::Configuration & files) {
+  fields_->read(files);
+}
+// -----------------------------------------------------------------------------
+void Increment::write(const eckit::Configuration & files) const {
+  fields_->write(files);
+}
+// -----------------------------------------------------------------------------
+/// Serialization
+// -----------------------------------------------------------------------------
+size_t Increment::serialSize() const {
+  size_t nn = fields_->serialSize();
+  return nn;
+}
+// -----------------------------------------------------------------------------
+void Increment::serialize(std::vector<double> & vect) const {
+  fields_->serialize(vect);
+}
+// -----------------------------------------------------------------------------
+void Increment::deserialize(const std::vector<double> & vect, size_t & index) {
+  fields_->deserialize(vect, index);
+}
+// -----------------------------------------------------------------------------
 void Increment::print(std::ostream & os) const {
-  oops::Log::trace() << classname() << "::print starting" << std::endl;
-
   os << std::endl << "Valid time:" << this->validTime();
   os << *fields_;
-
-  oops::Log::trace() << classname() << "::print done" << std::endl;
 }
-
 // -----------------------------------------------------------------------------
 
 }  // namespace quench

@@ -317,7 +317,7 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
     maxLength = profileConf.getDouble("maximum distance");
   } else {
     // If no maximum length input is given, try to compute a default value from the grid
-    const auto & fspace = geom.functionSpace();
+    const auto & fspace = geom.generic().functionSpace();
     if (fspace.type() == "StructuredColumns") {
       const atlas::functionspace::StructuredColumns fs(fspace);
       if (fs.grid().name().compare(0, 1, "F") == 0) {

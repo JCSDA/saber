@@ -212,8 +212,8 @@ foreach( mpi omp IN ZIP_LISTS mpi_list omp_list )
                 endif()
 
                 # Special check for 4D tests
-                string( FIND ${test} "_4d" found_result )
-                if( found_result EQUAL -1 OR ( found_result GREATER_EQUAL 0 AND ${mpi} GREATER 1 ) )
+                string( FIND ${test} "_4d" fourd_result )
+                if( fourd_result EQUAL -1 OR ( fourd_result GREATER_EQUAL 0 AND ${mpi} GREATER 1 ) )
                     set( 4dCheck true CACHE BOOL "" FORCE )
                 else()
                     set( 4dCheck false CACHE BOOL "" FORCE )
