@@ -17,31 +17,48 @@
 
 #include "saber/blocks/SaberBlockParametersBase.h"
 #include "saber/blocks/SaberOuterBlockBase.h"
+#include "saber/util/Calibration.h"
+#include "saber/vader/VarianceAccumulationUtils.h"
 
 namespace saber {
 namespace vader {
 
-// -----------------------------------------------------------------------------
-
-class WriteVariancesParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(WriteVariancesParameters, SaberBlockParametersBase)
+class calibrationVariancesParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(calibrationVariancesParameters, oops::Parameters)
 
  public:
-  oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
+  oops::RequiredParameter<util::calibrationWriteParameters> writeParams{"write", this};
+};
 
-  /// Path of output file.
-  oops::RequiredParameter<std::string> outputPath{"output path", this};
+class binningParameters: public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(binningParameters, oops::Parameters)
+ public:
+  oops::RequiredParameter<std::string> type{"type", this};
 
-  /// Save fields to netCDF files.
-  /// Whatever the value of this parameter, some basic information about each field is written
-  /// to the test output stream.
-  oops::Parameter<bool> saveNetCDFFile{"save netCDF file", true, this};
+  // optional parameters needed for writing file
+  oops::OptionalParameter<std::string> mpiRankPattern{"mpi rank pattern", this};
 
-  /// List of fields to write out.
-  /// If this parameter is empty (the default) then all fields contained in the
-  /// FieldSet are written out.
-  oops::Parameter<std::vector<std::string>> fieldNames{"field names", {}, this};
+  oops::Parameter<bool> oneFilePerTask{"one file per task", true, this};
 
+  oops::OptionalParameter<std::string> filePath{"file path", this};
+
+  // optional parameters needed for latitude band binning
+  oops::OptionalParameter<std::vector<double>> lowerBounds{"lower bounds", this};
+
+  oops::OptionalParameter<std::vector<double>> upperBounds{"upper bounds", this};
+
+  oops::Parameter<bool> includeLowerBound{"include lower bound", false, this};
+
+  oops::Parameter<bool> includeUpperBound{"include upper bound", true, this};
+
+  oops::Parameter<bool> includeOuterBound{"include outer bound", true, this};
+
+  oops::OptionalParameter<std::string> stateFieldName{"state field name", this};
+};
+
+class varianceInstantaneousParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(varianceInstantaneousParameters, oops::Parameters)
+ public:
   /// Write out fields in the block's multiply() routine with filename below
   oops::OptionalParameter<std::string> multiplyFileName{"multiply fset filename", this};
 
@@ -50,6 +67,42 @@ class WriteVariancesParameters : public SaberBlockParametersBase {
 
   /// Write out fields in the block's leftInverseMultiply() routine with filename below
   oops::OptionalParameter<std::string> leftInverseFileName{"left inverse fset filename", this};
+
+  oops::RequiredParameter<std::string> outputPath{"output path", this};
+};
+
+class WriteVariancesParameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(WriteVariancesParameters, SaberBlockParametersBase)
+
+ public:
+  oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
+
+  oops::OptionalParameter<calibrationVariancesParameters>
+    calibrationParams{"calibration", this};
+
+  /// Save fields to netCDF files.
+  /// Whatever the value of this parameter, some basic information about each field is written
+  /// to the test output stream.
+  oops::Parameter<bool> saveNetCDFFile{"save netCDF file", true, this};
+
+  oops::Parameter<std::string> statisticsType{"statistics type",
+                                              "variance", this};
+
+  /// List of field names to specify fields to write to file
+  /// When used with instantanous statistics - if empty all Fields contained in fieldset
+  /// considered.
+  /// When used in calibration mode - lists all fields that involve variances
+  /// / vertical covariances with same field names ... inter-variable cross covariances are
+  /// separately determined.
+  oops::Parameter<std::vector<std::string>> fieldNames{"field names", {}, this};
+
+  oops::RequiredParameter<binningParameters> binning{"binning", this};
+
+  oops::OptionalParameter<varianceInstantaneousParameters>
+    instantaneousParams{"instantaneous statistics", this};
+
+  oops::OptionalParameter<std::vector<eckit::LocalConfiguration>>
+    crosscovParams{"additional cross covariances", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -75,18 +128,21 @@ class WriteVariances : public SaberOuterBlockBase {
   virtual ~WriteVariances() = default;
 
   const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}
+
   const oops::Variables & innerVars() const override {return innerVars_;}
 
   void multiply(oops::FieldSet3D &) const override;
   void multiplyAD(oops::FieldSet3D &) const override;
   void leftInverseMultiply(oops::FieldSet3D &) const override;
+  void directCalibration(const oops::FieldSets &) override;
+  void write() const override;
 
  private:
   void print(std::ostream &) const override;
 
-  void writeToFile(const eckit::mpi::Comm & comm,
-                   const atlas::FieldSet & fset,
-                   const std::string & description) const;
+  void writeInstantVariances(const eckit::mpi::Comm & comm,
+                             const atlas::FieldSet & fset,
+                             const std::string & description) const;
 
   void diagnostics(const std::string & tag,
                    const oops::FieldSet3D & fset) const;
@@ -94,9 +150,20 @@ class WriteVariances : public SaberOuterBlockBase {
   const oops::GeometryData & innerGeometryData_;
   oops::Variables innerVars_;
   const Parameters_ params_;
-  mutable size_t count_multiply_;
-  mutable size_t count_multiplyad_;
-  mutable size_t count_leftinversemultiply_;
+  std::string binType_;
+  eckit::LocalConfiguration netCDFConf_;
+  std::size_t sizeOwned_;
+  atlas::FieldSet binningData_;   // holds the latitude, longitude and
+                                  // binning area-weights and index information
+  std::size_t totalBins_;
+  std::vector<std::size_t> totalPtsPerGlobalBin_;
+  atlas::FieldSet ensembleStats_;  // in calibration mode
+                                   // has the statistics
+  const util::DateTime datetime_;
+  mutable std::size_t count_multiply_;
+  mutable std::size_t count_multiplyad_;
+  mutable std::size_t count_leftinversemultiply_;
+  std::size_t sample_size_;
 };
 
 // -----------------------------------------------------------------------------

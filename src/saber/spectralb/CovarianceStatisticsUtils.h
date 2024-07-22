@@ -59,14 +59,11 @@ atlas::FieldSet createUMatrices(const oops::Variables &,
 atlas::FieldSet createVerticalSD(const oops::Variables &,
                                  const atlas::FieldSet &);
 
-void gatherSumSpectralFieldSet(const eckit::mpi::Comm &,
-                               const std::size_t root,
-                               atlas::FieldSet & spectralVerticalCovariances);
-
 std::vector<std::size_t> getNSpectralBinsFull(const spectralbReadParameters &,
                                               const oops::Variables &);
 
 void readSpectralCovarianceFromFile(const std::string &,
+                                    const std::string &,
                                     const spectralbReadParameters &,
                                     atlas::Field &);
 
@@ -92,9 +89,9 @@ void spectralHorizontalFilter(const oops::Variables &,
                               const atlas::FieldSet &,
                               atlas::FieldSet &);
 
-void updateSpectralVerticalCovariances(
+std::size_t updateSpectralVerticalCovariances(
   const oops::FieldSets & ensFieldSet,
-  int & priorSampleSize,
+  const std::size_t priorSampleSize,
   atlas::FieldSet & spectralVerticalCovariances);
 
 }  // namespace specutils

@@ -52,10 +52,13 @@ bands:
         - velocity_potential
         filter mode: true # instead of running the adjoint code it runs the inverse
       - saber block name: write variances
-        output path: "testdata/process_perts_from_gauss_perts_2/"
-        multiply fset filename: "multiply_wb1"
-        left inverse fset filename: "initial_increment"
+        binning:
+          type: "horizontal global average"
         filter mode: true # instead of running the adjoint code it runs the inverse
+        instantaneous statistics:
+          multiply fset filename: "multiply_wb1"
+          left inverse fset filename: "initial_increment"
+          output path: "testdata/process_perts_from_gauss_perts_2/"
   output:
     model write:
       filepath: testdata/process_perts_from_gauss_perts_2/filtered_pert_mb%MEM%_wb1
@@ -87,8 +90,11 @@ bands:
         - velocity_potential
         filter mode: true # instead of running the adjoint code it runs the inverse
       - saber block name: write variances
-        output path: "testdata/process_perts_from_gauss_perts_2/"
-        multiply fset filename: "multiply_wb2"
+        binning:
+          type: "horizontal global average"
+        instantaneous statistics:
+          multiply fset filename: "multiply_wb2"
+          output path: "testdata/process_perts_from_gauss_perts_2/"
   output:
     model write:
       filepath: testdata/process_perts_from_gauss_perts_2/filtered_pert_mb%MEM%_wb2
@@ -120,8 +126,11 @@ bands:
         - velocity_potential
         filter mode: true # instead of running the adjoint code it runs the inverse
       - saber block name: write variances
-        output path: "testdata/process_perts_from_gauss_perts_2/"
-        multiply fset filename: "multiply_wb3"
+        binning:
+          type: "horizontal global average"
+        instantaneous statistics:
+          multiply fset filename: "multiply_wb3"
+          output path: "testdata/process_perts_from_gauss_perts_2/"
   output:
     model write:
       filepath: testdata/process_perts_from_gauss_perts_2/filtered_pert_mb%MEM%_wb3

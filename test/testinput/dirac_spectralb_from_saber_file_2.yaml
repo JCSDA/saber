@@ -28,7 +28,7 @@ background error:
   - saber block name: square root of spectral covariance
     skip inverse test: true
     read:
-      covariance_file: testdata/error_covariance_training_spectralb_1/spectralsabercov1.nc
+      covariance_file: testdata/error_covariance_training_spectralb_1/spectralsabercov_1.nc
   - saber block name: spectral to gauss
 dirac:
   lon:

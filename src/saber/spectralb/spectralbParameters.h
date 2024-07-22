@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2022-2023 Met Office
+ * (C) Crown Copyright 2022-2024 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -16,6 +16,8 @@
 #include "oops/util/parameters/OptionalParameter.h"
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
+
+#include "saber/util/Calibration.h"
 
 namespace saber {
 
@@ -35,24 +37,14 @@ class spectralbReadParameters : public oops::Parameters {
                                    "level offset", 0, this};
 };
 
-class spectralbCalibrationWriteParameters : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(spectralbCalibrationWriteParameters, oops::Parameters)
 
- public:
-  oops::RequiredParameter<std::string> covName{"covariance name",
-    "covariance name global attribute", this};
-  oops::RequiredParameter<std::string> mpiPattern{"mpi pattern",
-    "mpi pattern", this};
-  oops::RequiredParameter<std::string> filePath{"file path",
-    "Path to written file", this};
-};
 
 class spectralbCalibrationVertCovParameters : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(spectralbCalibrationVertCovParameters, oops::Parameters)
 
  public:
   oops::OptionalParameter<spectralbReadParameters> calibrationReadParams{"read", this};
-  oops::RequiredParameter<spectralbCalibrationWriteParameters> writeParams{"write", this};
+  oops::RequiredParameter<util::calibrationWriteParameters> writeParams{"write", this};
 };
 
 

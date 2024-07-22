@@ -22,11 +22,31 @@
 
 #include "saber/oops/Utilities.h"
 #include "saber/spectralb/CovarianceStatisticsUtils.h"
+#include "saber/util/BinnedFieldSetHelpers.h"
+#include "saber/util/Calibration.h"
 
 // -----------------------------------------------------------------------------
 
 namespace saber {
 namespace spectralb {
+
+namespace {
+eckit::LocalConfiguration createNetCDFHeaderInput(
+    const SpectralCorrelationParameters & params,
+    const oops::Variables & activeVars) {
+  const std::string statsType = "spectral vertical correlation";
+  const std::string binType = "total horizontal wavenumber";
+  bool doingCalibration(params.calibrationParams.value() != boost::none);
+  const eckit::LocalConfiguration conf = params.toConfiguration();
+  eckit::LocalConfiguration netCDFConf;
+
+  util::createCalibrationNetCDFHeaderInput(conf, statsType, binType,
+                                           activeVars, doingCalibration,
+                                           netCDFConf);
+  return netCDFConf;
+}
+
+}  // namespace
 
 // -----------------------------------------------------------------------------
 
@@ -42,6 +62,7 @@ SpectralCorrelation::SpectralCorrelation(const oops::GeometryData & geometryData
                                          const oops::FieldSet3D & fg)
   : SaberCentralBlockBase(params, xb.validTime()), params_(params),
     activeVars_(getActiveVars(params, centralVars)),
+    netCDFConf_(createNetCDFHeaderInput(params, activeVars_)),
     spectralVerticalCorrelations_(),
     geometryData_(geometryData),
     specFunctionSpace_(geometryData_.functionSpace())
@@ -128,6 +149,7 @@ void SpectralCorrelation::read() {
 
     } else {
       specutils::readSpectralCovarianceFromFile(activeVars_[i].name(),
+                                                activeVars_[i].name(),
                                                 sparams,
                                                 spectralVertCov);
     }
@@ -149,15 +171,29 @@ void SpectralCorrelation::read() {
 
 void SpectralCorrelation::directCalibration(const oops::FieldSets &
                                             MOSpectralCovariancesEns) {
-  oops::Log::trace() << classname() << "::directCalibration starting" << std::endl;
+  oops::Log::trace() << classname() << "::directCalibration starting " << std::endl;
 
-  oops::Log::error() << "directCalibration with spectral correlation saber block"
-                     << " is not supported. Instead please use 'spectral covariance"
-                     << " central block."
-                     << std::endl;
-  throw(eckit::FunctionalityNotSupported(
-        "use spectral covariance central block instead.", Here()));
+  const auto & calibparams = params_.calibrationParams.value();
+  ASSERT(calibparams != boost::none);
 
+  if (MOSpectralCovariancesEns.ens_size() > 0) {
+    oops::Log::error() << "directCalibration with spectral correlation saber block"
+                       << " is not supported. Instead please use 'spectral covariance"
+                       << " central block."
+                       << std::endl;
+    throw(eckit::FunctionalityNotSupported(
+          "use spectral covariance central block instead.", Here()));
+  } else {
+    const auto & calibrationReadParams = calibparams->calibrationReadParams.value();
+    if (calibrationReadParams != boost::none) {
+      oops::Log::info()
+        << "reading covariance file (possibly old style) so as to dump a "
+        << "correlation covariance file" << std::endl;
+      SpectralCorrelation::read();
+    } else {
+      throw eckit::UserError("Need reading of calibration of cov file", Here());
+    }
+  }
   oops::Log::trace() << classname() << "::directCalibration done" << std::endl;
 }
 
@@ -166,7 +202,7 @@ void SpectralCorrelation::write() const {
   // TO DO(MW): Put common code from this method and that of Spectral Covariance
   //            in common function call.
 
-  spectralbCalibrationWriteParameters writeParams =
+  util::calibrationWriteParameters writeParams =
     (params_.calibrationParams.value())->writeParams.value();
   eckit::LocalConfiguration writeConfig;
   writeParams.serialize(writeConfig);
@@ -182,32 +218,35 @@ void SpectralCorrelation::write() const {
 
   // The spectralVerticalCovariances that we write should be a gathered version of
   // the one in memory  ... it should not affect the internal version.
-  atlas::FieldSet spectralVertCovToWrite;
-  specutils::copySpectralFieldSet(spectralVerticalCorrelations_,
-                                  spectralVertCovToWrite);
-
   // gather and sum on pe 0
   const std::size_t root(0);
-  specutils::gatherSumSpectralFieldSet(geometryData_.comm(),
-                                       root,
-                                       spectralVertCovToWrite);
-
+  atlas::FieldSet spectralVertCovToWrite = util::gatherSumFieldSet(geometryData_.comm(),
+                                                                   root,
+                                                                   spectralVerticalCorrelations_);
   const std::vector<std::string> dim_names{"total wavenumber",
                                            "model levels 1",
                                            "model levels 2"};
   const std::vector<atlas::idx_t> dim_sizes{spectralVertCovToWrite[0].shape()[0],
                                             spectralVertCovToWrite[0].shape()[1],
                                             spectralVertCovToWrite[0].shape()[2]};
-  oops::Variables fsetVars(activeVars_);
+  oops::Variables fsetVars;
   std::vector<std::vector<std::string>> dim_names_for_every_var;
-
-  eckit::LocalConfiguration netcdfMetaData;
-  util::setAttribute<std::string>(
-    netcdfMetaData, "global metadata", "covariance name", "string", writeParams.covName);
-  for (const oops::Variable & var : fsetVars) {
+  for (const std::string & name : netCDFConf_.keys()) {
+    const auto varname1 =
+      util::getAttributeValue<std::string>(netCDFConf_, name, "variable name 1");
+    const auto varname2 =
+      util::getAttributeValue<std::string>(netCDFConf_, name, "variable name 2");
+    ASSERT(varname1 == varname2);
+    fsetVars.push_back(oops::Variable{name, oops::VariableMetaData(),
+                                      activeVars_[varname1].getLevels()});
+    spectralVertCovToWrite[varname1].rename(name);
     dim_names_for_every_var.push_back(dim_names);
+  }
+
+  eckit::LocalConfiguration netCDFConf = netCDFConf_;
+  if (!netCDFConf.has("global metadata")) {
     util::setAttribute<std::string>(
-      netcdfMetaData, var.name(), "statistics type", "string", "spectral vertical correlation");
+      netCDFConf, "global metadata", "covariance name", "string", writeParams.covName);
   }
 
   std::vector<int> netcdf_general_ids;
@@ -221,7 +260,7 @@ void SpectralCorrelation::write() const {
                                   dim_sizes,
                                   fsetVars,
                                   dim_names_for_every_var,
-                                  netcdfMetaData,
+                                  netCDFConf,
                                   netcdf_general_ids,
                                   netcdf_dim_ids,
                                   netcdf_var_ids,

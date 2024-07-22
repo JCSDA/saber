@@ -21,6 +21,7 @@
 #include "atlas/functionspace.h"
 
 #include "eckit/exception/Exceptions.h"
+#include "eckit/mpi/Comm.h"
 
 #include "oops/base/FieldSet3D.h"
 #include "oops/base/Variables.h"
@@ -240,7 +241,7 @@ void createUMatrixFromSpectralCovarianceFile(const std::string & var,
   auto spectralVertCov = atlas::Field(var, atlas::array::make_datatype<double>(),
     atlas::array::make_shape(umatrix.shape(0), umatrix.shape(1), umatrix.shape(2)));
 
-  readSpectralCovarianceFromFile(var, readparams, spectralVertCov);
+  readSpectralCovarianceFromFile(var, var, readparams, spectralVertCov);
 
   const int sizeVec = umatrix.shape(1) * umatrix.shape(2);
   std::vector<double> spectralUMatrix1D(static_cast<std::size_t>(sizeVec), 0.0);
@@ -396,17 +397,6 @@ atlas::FieldSet createVerticalSD(const oops::Variables & activeVars,
   return verticalSDs;
 }
 
-
-void gatherSumSpectralFieldSet(const eckit::mpi::Comm & comm,
-                               const std::size_t root,
-                               atlas::FieldSet & fset)  {
-  for (atlas::Field & field : fset) {
-    auto view = make_view<double, 3>(field);
-    util::gatherSum(comm, root, view);
-  }
-}
-
-
 std::vector<std::size_t> getNSpectralBinsFull(const spectralbReadParameters & params,
                                               const oops::Variables & activeVars) {
   const auto & umatrixNetCDFParams = params.umatrixNetCDFNames.value();
@@ -466,7 +456,8 @@ std::vector<std::size_t> getNSpectralBinsFull(const spectralbReadParameters & pa
 }
 
 
-void readSpectralCovarianceFromFile(const std::string & var,
+void readSpectralCovarianceFromFile(const std::string & varname1,
+                                    const std::string & varname2,
                                     const spectralbReadParameters & readparams,
                                     atlas::Field & spectralVertCov) {
   std::string ncfilepath = readparams.covarianceFile;
@@ -475,35 +466,43 @@ void readSpectralCovarianceFromFile(const std::string & var,
   oops::Variables vars;
   std::vector<std::vector<std::string>> dimNamesForEveryVar;
   std::vector<int> netcdfGeneralIDs;
-  eckit::LocalConfiguration netcdfMetaData;
+  eckit::LocalConfiguration netCDFConf;
   std::vector<int> netcdfDimIDs;
   std::vector<int> netcdfVarIDs;
   std::vector<std::vector<int>> netcdfDimVarIDs;
 
   // read from header file on root PE.
-  std::size_t root = 0;
+  const std::size_t root = 0;
+  std::string filevarname("");
   if (eckit::mpi::comm().rank() == root) {
      util::atlasArrayInquire(ncfilepath,
                              dimNames,
                              dimSizes,
                              vars,
                              dimNamesForEveryVar,
-                             netcdfMetaData,
+                             netCDFConf,
                              netcdfGeneralIDs,
                              netcdfDimIDs,
                              netcdfVarIDs,
                              netcdfDimVarIDs);
+    for (const oops::Variable & var : vars) {
+      const std::string var1 =
+        util::getAttributeValue<std::string>(netCDFConf, var.name(),
+                                             "variable name 1");
+      const std::string var2 =
+        util::getAttributeValue<std::string>(netCDFConf, var.name(),
+                                             "variable name 2");
+      if ((var1 == varname1) && (var2 == varname2)) {
+        filevarname = var.name();
+      }
+    }
   }
-  // read file
-  const std::string filevar = var;
-
-  // TO DO(Marek) ASSERT THAT FILE HAS SPECTRAL VERTICAL COVARIANCES
 
   auto specvertview = make_view<double, 3>(spectralVertCov);
   specvertview.assign(0.0);
 
   if (eckit::mpi::comm().rank() == root) {
-    const std::size_t i = vars.find(filevar);
+    const std::size_t i = vars.find(filevarname);
 
     std::vector<idx_t> dimSizesForVar;
     for (const auto & dimName : dimNamesForEveryVar[i]) {
@@ -518,7 +517,7 @@ void readSpectralCovarianceFromFile(const std::string & var,
          (dimSizesForVar[2] != specvertview.shape(2)) ) {
       oops::Log::error() <<
         "Dimensions of spectral vertical covariances in file is inconsistent with" <<
-        " yaml setup for variable " <<  filevar << std::endl;
+        " yaml setup for variable " <<  filevarname << std::endl;
       throw eckit::UserError(
         "Inconsistency in dimension sizes of spectral vertical covariance "
         " between file and assumed array shape", Here());
@@ -706,9 +705,9 @@ void spectralHorizontalFilter(const oops::Variables & activeVars,
 
 
 
-void updateSpectralVerticalCovariances(
+std::size_t updateSpectralVerticalCovariances(
     const oops::FieldSets & ensFieldSet,
-    int & priorSampleSize,
+    const std::size_t priorSampleSize,
     atlas::FieldSet & spectralVerticalCovariances) {
 
   // assuming that the fields in each fieldset are consistent across the
@@ -784,9 +783,9 @@ void updateSpectralVerticalCovariances(
     }
   }
 
-  priorSampleSize += ensFieldSet.size();
+  const std::size_t updatedSampleSize = priorSampleSize + ensFieldSet.size();
 
-  const double recipPriorSampleSize = 1.0/static_cast<double>(priorSampleSize);
+  const double recipPriorSampleSize = 1.0/static_cast<double>(updatedSampleSize);
   for (atlas::Field & vertcov : spectralVerticalCovariances) {
     auto vertCovView = make_view<double, 3>(vertcov);
     for (idx_t i = 0; i < vertcov.shape()[0]; ++i) {
@@ -797,6 +796,7 @@ void updateSpectralVerticalCovariances(
       }
     }
   }
+  return  updatedSampleSize;
 }
 
 }  // namespace specutils

@@ -1,5 +1,6 @@
 # The idea of this test is to read ensemble perturbations generated via the
-# the randomize method and generate spectral vertical covariances.
+# the randomize method and generate spectral vertical covariances and
+# variances / vertical covariances in grid point space.
 # These spectral vertical covariances should be similar to the original
 # spectral vertical covariances used by the randomization method.
 geometry:
@@ -19,7 +20,7 @@ geometry:
   partitioner: ectrans
 background:
   date: '2010-01-01T12:00:00Z'
-  state variables:
+  state variables: &inputvars
   - eastward_wind
   - mu
   - northward_wind
@@ -44,11 +45,62 @@ background error:
     calibration:
       write:
         covariance name: "specvertcov2"
-        mpi pattern: "_MPI_"
-        file path: testdata/error_covariance_training_spectralb_2/spectralvertcov_MPI_.nc
+        mpi pattern: '%MPI%'
+        file path: testdata/error_covariance_training_spectralb_2/spectralvertcov_%MPI%.nc
   saber outer blocks:
   - saber block name: spectral to gauss
     calibration: true
     active variables: *vars
+  - saber block name: write variances
+    additional cross covariances:
+    - variable 1: eastward_wind
+      variable 2: northward_wind
+    - variable 1: eastward_wind
+      variable 2: mu
+    - variable 1: northward_wind
+      variable 2: mu
+    binning:
+      type: "horizontal global average"
+    calibration:
+      write:
+        covariance name: "randomization with F12 mesh"
+        mpi pattern: '%MPI%'
+        file path: testdata/error_covariance_training_spectralb_2/variances_1_%MPI%.nc
+    field names: *inputvars
+    save NetCDF file: true
+    statistics type:  "variance"
+  - saber block name: write variances
+    field names: *inputvars
+    binning:
+      type: "horizontal grid point"
+      mpi rank pattern: '%MPI%'
+      file path: testdata/error_covariance_training_spectralb_2/hor_gri_ave_%MPI%.nc
+    calibration:
+      write:
+        covariance name: "randomization with F12 mesh"
+        mpi pattern: '%MPI%'
+        file path: testdata/error_covariance_training_spectralb_2/variances_2_%MPI%.nc
+    save NetCDF file: true
+    statistics type:  "variance"
+  - saber block name: write variances
+    additional cross covariances:
+    - variable 1: eastward_wind
+      variable 2: northward_wind
+    - variable 1: eastward_wind
+      variable 2: mu
+    - variable 1: northward_wind
+      variable 2: mu
+    binning:
+      type: "horizontal global average"
+      mpi rank pattern: '%MPI%'
+      file path: testdata/error_covariance_training_spectralb_2/hor_glo_ave_%MPI%.nc
+    calibration:
+      write:
+        covariance name: "randomization with F12 mesh"
+        mpi pattern: '%MPI%'
+        file path: testdata/error_covariance_training_spectralb_2/vertcov_1_%MPI%.nc
+    field names: *inputvars
+    save NetCDF file: true
+    statistics type:  "vertical covariance"
 test:
   reference filename: testref/error_covariance_training_spectralb_2.ref

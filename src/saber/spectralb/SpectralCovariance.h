@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2022-2023 Met Office
+ * (C) Crown Copyright 2022-2024 Met Office
  * (C) Copyright 2022- UCAR
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
@@ -68,14 +68,30 @@ class SpectralCovariance : public SaberCentralBlockBase {
 
   /// Parameters
   Parameters_ params_;
+
   /// Active variables
   const oops::Variables activeVars_;
+
+  /// netCDF configuration created for setting the netCDF header
+  /// currently :: used in calibration mode
+  /// TODO (Marek) extend to covariance reading to check yaml
+  ///              covariance file consistency.
+  eckit::LocalConfiguration netCDFConf_;
+
   /// Vertical Spectral Covariances
   atlas::FieldSet spectralVerticalCovariances_;
+
   /// Geometry data
   const oops::GeometryData & geometryData_;
+
   /// Spectral FunctionSpace
   const atlas::functionspace::Spectral specFunctionSpace_;
+
+  /// Latest date time in sample data :: used in calibration mode
+  const util::DateTime datetime_;
+
+  /// Number of samples :: used in calibration
+  std::size_t sample_size_;
 };
 
 }  // namespace spectralb

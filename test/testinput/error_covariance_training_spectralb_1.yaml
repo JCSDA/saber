@@ -32,8 +32,8 @@ background error:
         - CHI_inc_Uv_matrix       
       write:
         covariance name: "specvertcov1"
-        mpi pattern: "_MPI_"
-        file path: testdata/error_covariance_training_spectralb_1/spectralsabercov_MPI_.nc
+        mpi pattern: '%MPI%'
+        file path: testdata/error_covariance_training_spectralb_1/spectralsabercov_%MPI%.nc
   saber outer blocks:
   - saber block name: spectral to gauss
     calibration: true

@@ -30,6 +30,8 @@ movader_covstats_interface.h
 SuperMoistIncrOp.cc
 SuperMoistIncrOp.h
 PressureParameters.h
+VarianceAccumulationUtils.cc
+VarianceAccumulationUtils.h
 WriteVariances.cc
 WriteVariances.h
 # Generic VADER blocks

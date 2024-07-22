@@ -32,9 +32,12 @@ bands:
         active variables: *vars
         filter mode: true # instead of running the adjoint code it runs the inverse
       - saber block name: write variances
+        binning:
+          type: "horizontal global average"
         field names: *vars
-        multiply fset filename: wb1_F14_variance
-        output path: testdata/process_perts_from_csdual_states_2/
+        instantaneous statistics:
+          multiply fset filename: wb1_F14_variance
+          output path: testdata/process_perts_from_csdual_states_2/
       - saber block name: write fields
         output path: testdata/process_perts_from_csdual_states_2/
         multiply fset filename: wb1_F14_inc
@@ -42,10 +45,13 @@ bands:
         gauss grid uid: F14
         filter mode: true # instead of running the adjoint code it runs the inverse
       - saber block name: write variances
+        binning:
+          type: "horizontal global average"
         field names: *vars
         filter mode: true # instead of running the adjoint code it runs the inverse
-        left inverse fset filename: initial_CS14_variance
-        output path: testdata/process_perts_from_csdual_states_2/
+        instantaneous statistics:
+          left inverse fset filename: initial_CS14_variance
+          output path: testdata/process_perts_from_csdual_states_2/
   output:
     model write:
       filepath: testdata/process_perts_from_csdual_states_2/wb1_CS-LFR-14_mb%MEM%_inc
@@ -67,9 +73,12 @@ bands:
         active variables: *vars
         filter mode: true # instead of running the adjoint code it runs the inverse
       - saber block name: write variances
+        binning:
+          type: "horizontal global average"
         field names: *vars
-        multiply fset filename: wb2_F14_variance
-        output path: testdata/process_perts_from_csdual_states_2/
+        instantaneous statistics:
+          multiply fset filename: wb2_F14_variance
+          output path: testdata/process_perts_from_csdual_states_2/
       - saber block name: write fields
         output path: testdata/process_perts_from_csdual_states_2/
         multiply fset filename: wb2_F14_inc
@@ -103,8 +112,11 @@ bands:
         saber block name: ID
       saber outer blocks:
       - saber block name: write variances
-        output path: testdata/process_perts_from_csdual_states_2/
-        multiply fset filename: wb3_cs14_variance
+        binning:
+          type: "horizontal global average"
+        instantaneous statistics:
+          multiply fset filename: wb3_cs14_variance
+          output path: testdata/process_perts_from_csdual_states_2/
     generic write:
       filepath: testdata/process_perts_from_csdual_states_2/wb3_%GRID%_mb%MEM%_inc
       member pattern: '%MEM%'

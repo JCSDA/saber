@@ -67,12 +67,21 @@ class SpectralCorrelation : public SaberCentralBlockBase {
 
   /// Parameters
   Parameters_ params_;
+
   /// Active variables
   const oops::Variables activeVars_;
+
+  /// netCDF configuration created for setting the netCDF header
+  /// currently used when writing NetCDF correlation file in
+  /// calibration mode
+  eckit::LocalConfiguration netCDFConf_;
+
   /// Vertical Spectral Correlations
   atlas::FieldSet spectralVerticalCorrelations_;
+
   /// Geometry data
   const oops::GeometryData & geometryData_;
+
   /// Spectral FunctionSpace
   const atlas::functionspace::Spectral specFunctionSpace_;
 };

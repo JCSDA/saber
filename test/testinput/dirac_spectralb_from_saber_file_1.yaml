@@ -25,7 +25,7 @@ background error:
   saber central block:
     saber block name: spectral covariance
     read:
-      covariance_file: testdata/error_covariance_training_spectralb_1/spectralsabercov1.nc
+      covariance_file: testdata/error_covariance_training_spectralb_1/spectralsabercov_1.nc
   saber outer blocks:
   - saber block name: spectral to gauss
 dirac:
