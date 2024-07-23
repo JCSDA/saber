@@ -380,6 +380,7 @@ void SpectralToGauss::multiplyScalarFields(const atlas::FieldSet & specFieldSet,
         gaussFunctionSpace_.createField<double>(atlas::option::name(fieldname) |
                                    atlas::option::levels(specFieldSet[fieldname].shape(1)));
       atlas::array::make_view<double, 2>(gaussField).assign(0.0);
+      gaussField.metadata() = specFieldSet[fieldname].metadata();
       gaussFieldSet.add(gaussField);
   }
 
@@ -407,6 +408,7 @@ void SpectralToGauss::multiplyScalarFieldsAD(const atlas::FieldSet & gaussFieldS
     atlas::Field specField =
       specFunctionSpace_.createField<double>(atlas::option::name(fieldname) |
                                  atlas::option::levels(gaussFieldSet[fieldname].shape(1)));
+    specField.metadata() = gaussFieldSet[fieldname].metadata();
     specFieldSet.add(specField);
   }
 
