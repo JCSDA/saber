@@ -1,0 +1,39 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 10
+  groups:
+  - variables:
+    - stream_function
+    - velocity_potential
+    levels: 2
+  halo: 1
+background:
+  date: '2010-01-01T12:00:00Z'
+  state variables:
+  - stream_function
+  - velocity_potential
+background error:
+  covariance model: SABER
+  adjoint test: true
+  saber central block:
+    saber block name: ID
+  saber outer blocks:
+  - saber block name: StdDev
+    stddev scale factor: 2.0
+dirac: &dirac
+  lon:
+  - 0.0
+  lat:
+  - 0.0
+  level:
+  - 1
+  variable:
+  - stream_function
+diagnostic points: *dirac
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_stddev_3/%MPI%_stddev_%id%
+test:
+  reference filename: testref/dirac_stddev_3.ref
