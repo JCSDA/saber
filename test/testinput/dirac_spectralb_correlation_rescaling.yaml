@@ -33,7 +33,7 @@ background error:
     rescaling:
       horizontal covariance profile file path: testdata/dirac_spectralb_correlation_profiles/1_covariance_profiles.nc
       active variables: *vars
-      output file path: testdata/dirac_spectralb_correlation_rescaling/rescaling_coeffs
+      multiplicative coefficients output file path: testdata/dirac_spectralb_correlation_rescaling/rescaling_coeffs
 
 dirac: &dirac
   lon:

@@ -183,15 +183,16 @@ Rescaling initRescaling(const GaussToCSParameters & params,
   if (params.interpolationRescaling.value().is_initialized()) {
     const auto & conf = params.interpolationRescaling.value().value();
     if (conf.has("horizontal covariance profile file path")) {
+      // Compute rescaling fields from input covariance profile
       return Rescaling(comm,
                        conf,
                        activeVars,
                        innerFspace,
                        outerFspace,
                        interp);
-    } else if (conf.has("input file path")) {
-      eckit::LocalConfiguration readConf;
-      readConf.set("filepath", conf.getString("input file path"));
+    } else if (conf.has("input atlas file")) {
+      // Read rescaling field from atlas file
+      const auto readConf = conf.getSubConfiguration("input atlas file");
       return Rescaling(comm,
                        readConf,
                        activeVars,

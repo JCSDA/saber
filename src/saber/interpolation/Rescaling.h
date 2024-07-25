@@ -52,7 +52,8 @@ class Rescaling{
   void execute(oops::FieldSet3D & fieldSet) const;
 
  private:
-  const atlas::FieldSet rescalingCoeffs_;
+  /// Multiplicative coefficients, diagonal of D in C -> D C D^t
+  const atlas::FieldSet multiplicativeRescalingCoeffs_;
 
   std::string classname() const {return "Rescaling";}
 };

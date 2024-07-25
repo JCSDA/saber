@@ -17,13 +17,21 @@ Groups:
 Fields:
   mu: 1.0000000000000000e+00
   unbalanced_pressure_levels_minus_one: 1.0000000000000000e+00
+Norm of input parameter StdDev: 3.0173782708371942e+02
 Covariance(SABER) diagnostics:
 - Variances at Dirac points:
-  + Value for variable mu, subwindow 0, at (longitude, latitude, vertical index) point (3.75000, 3.74199, 1): 8.3549841789449714e-02
-  + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (3.75000, 3.74199, 1): 4.4838105187482694e+02
+  + Value for variable mu, subwindow 0, at (longitude, latitude, vertical index) point (3.75000, 3.74199, 1): 8.3550740883785293e-02
+  + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (3.75000, 3.74199, 1): 4.4838220520003659e+02
 - Covariances at diagnostic points:
-  + Value for variable mu, subwindow 0, at (longitude, latitude, vertical index) point (3.75000, 3.74199, 1): 8.3549841789449714e-02
-  + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (3.75000, 3.74199, 1): 4.4838105187482694e+02
+  + Value for variable mu, subwindow 0, at (longitude, latitude, vertical index) point (3.75000, 3.74199, 1): 8.3550740883785293e-02
+  + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (3.75000, 3.74199, 1): 4.4838220520003659e+02
+Extracting covariances as a function of separation distance
+Covariance profile for variable mu, at level 0: 
+Separation distance: [0.0000000000000000e+00,8.3221136388141837e+05,8.3221136388141941e+05,8.3227184637634188e+05,8.3227184637634200e+05,1.1582236281931419e+06,1.1727653030251574e+06,1.1727653030251588e+06,1.1777643219598092e+06,1.6644832102577591e+06]
+Covariance: [8.3550740883785293e-02,3.9696810123377092e-02,1.4935408263202119e-02,1.5464007018990799e-02,3.9814815791737339e-02,7.4169128106321511e-03,7.2821943500874396e-03,6.9997033380312683e-03,6.9571305577556912e-03,5.5607309983458728e-03]
+Covariance profile for variable unbalanced_pressure_levels_minus_one, at level 0: 
+Separation distance: [0.0000000000000000e+00,8.3221136388141837e+05,8.3221136388141941e+05,8.3227184637634188e+05,8.3227184637634200e+05,1.1582236281931419e+06,1.1727653030251574e+06,1.1727653030251588e+06,1.1777643219598092e+06,1.6644832102577591e+06]
+Covariance: [4.4838220520003659e+02,2.9744804717498954e+02,2.2892814528737711e+02,2.3058493610908556e+02,2.9777605152204086e+02,1.8960123051586788e+02,1.8884395766721718e+02,1.8767943907573573e+02,1.8743320971538051e+02,1.5366692389862399e+02]
 Covariance(SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -41,5 +49,72 @@ Groups:
   - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  mu: 2.0329627619492396e-01
-  unbalanced_pressure_levels_minus_one: 1.8318865073421980e+03
+  mu: 1.7116209367746260e-01
+  unbalanced_pressure_levels_minus_one: 1.6270264143739714e+03
+Covariance(SABER1_SABER) diagnostics:
+- Variances at Dirac points:
+  + Value for variable mu, subwindow 0, at (longitude, latitude, vertical index) point (3.75000, 3.74199, 1): 6.7962722524159844e-02
+  + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (3.75000, 3.74199, 1): 3.9575274883071518e+02
+- Covariances at diagnostic points:
+  + Value for variable mu, subwindow 0, at (longitude, latitude, vertical index) point (3.75000, 3.74199, 1): 6.7962722524159844e-02
+  + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (3.75000, 3.74199, 1): 3.9575274883071518e+02
+Extracting covariances as a function of separation distance
+Covariance profile for variable mu, at level 0: 
+Separation distance: [0.0000000000000000e+00,8.3221136388141837e+05,8.3221136388141941e+05,8.3227184637634188e+05,8.3227184637634200e+05,1.1582236281931419e+06,1.1727653030251574e+06,1.1727653030251588e+06,1.1777643219598092e+06,1.6644832102577591e+06]
+Covariance: [6.7962722524159844e-02,3.9696810123377092e-02,1.4935408263202119e-02,1.5464007018990799e-02,3.9814815791737339e-02,7.4169128106321511e-03,7.2821943500874396e-03,6.9997033380312683e-03,6.9571305577556912e-03,5.5607309983458728e-03]
+Covariance profile for variable unbalanced_pressure_levels_minus_one, at level 0: 
+Separation distance: [0.0000000000000000e+00,8.3221136388141837e+05,8.3221136388141941e+05,8.3227184637634188e+05,8.3227184637634200e+05,1.1582236281931419e+06,1.1727653030251574e+06,1.1727653030251588e+06,1.1777643219598092e+06,1.6644832102577591e+06]
+Covariance: [3.9575274883071518e+02,2.9744804717498954e+02,2.2892814528737711e+02,2.3058493610908556e+02,2.9777605152204086e+02,1.8960123051586788e+02,1.8884395766721718e+02,1.8767943907573573e+02,1.8743320971538051e+02,1.5366692389862399e+02]
+Covariance(SABER1_SABER) * Increment:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: CS-LFR-12
+- size: 864
+Partitioner:
+- type: cubedsphere
+Function space:
+- type: NodeColumns
+- halo: 1
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+Fields:
+  mu: 1.6411784687449138e-01
+  unbalanced_pressure_levels_minus_one: 1.6133160227734807e+03
+Norm of input parameter StdDev: 3.0173782708371942e+02
+Covariance(SABER2_SABER) diagnostics:
+- Variances at Dirac points:
+  + Value for variable mu, subwindow 0, at (longitude, latitude, vertical index) point (3.75000, 3.74199, 1): 1.5588018359625451e-02
+  + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (3.75000, 3.74199, 1): 5.2629456369321417e+01
+- Covariances at diagnostic points:
+  + Value for variable mu, subwindow 0, at (longitude, latitude, vertical index) point (3.75000, 3.74199, 1): 1.5588018359625451e-02
+  + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (3.75000, 3.74199, 1): 5.2629456369321417e+01
+Extracting covariances as a function of separation distance
+Covariance profile for variable mu, at level 0: 
+Separation distance: [0.0000000000000000e+00,8.3221136388141837e+05,8.3221136388141941e+05,8.3227184637634188e+05,8.3227184637634200e+05,1.1582236281931419e+06,1.1727653030251574e+06,1.1727653030251588e+06,1.1777643219598092e+06,1.6644832102577591e+06]
+Covariance: [1.5588018359625451e-02,0.0000000000000000e+00,0.0000000000000000e+00,0.0000000000000000e+00,0.0000000000000000e+00,0.0000000000000000e+00,0.0000000000000000e+00,0.0000000000000000e+00,0.0000000000000000e+00,0.0000000000000000e+00]
+Covariance profile for variable unbalanced_pressure_levels_minus_one, at level 0: 
+Separation distance: [0.0000000000000000e+00,8.3221136388141837e+05,8.3221136388141941e+05,8.3227184637634188e+05,8.3227184637634200e+05,1.1582236281931419e+06,1.1727653030251574e+06,1.1727653030251588e+06,1.1777643219598092e+06,1.6644832102577591e+06]
+Covariance: [5.2629456369321417e+01,0.0000000000000000e+00,0.0000000000000000e+00,0.0000000000000000e+00,0.0000000000000000e+00,0.0000000000000000e+00,0.0000000000000000e+00,0.0000000000000000e+00,0.0000000000000000e+00,0.0000000000000000e+00]
+Covariance(SABER2_SABER) * Increment:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: CS-LFR-12
+- size: 864
+Partitioner:
+- type: cubedsphere
+Function space:
+- type: NodeColumns
+- halo: 1
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 2
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
+  Mask size: 100%
+Fields:
+  mu: 1.5588018359625451e-02
+  unbalanced_pressure_levels_minus_one: 5.2629456369321417e+01

@@ -31,7 +31,9 @@ background error:
   - saber block name: gauss to cubed-sphere-dual
     gauss grid uid: F12
     rescaling:
-      input file path: testdata/dirac_spectralb_covariance_rescaling_1/rescaling_coeffs
+      # Reading input file from other test
+      input atlas file:
+        filepath: testdata/dirac_spectralb_covariance_rescaling_1/multiplicative_rescaling_coeffs
       active variables: *vars
 
 dirac: &dirac
@@ -55,4 +57,4 @@ output dirac:
   filepath: testdata/dirac_spectralb_covariance_rescaling_2/%MPI%_dirac_%id%
 
 test:
-  reference filename: testref/dirac_spectralb_covariance_rescaling_1.ref
+  reference filename: testref/dirac_spectralb_covariance_rescaling_2.ref

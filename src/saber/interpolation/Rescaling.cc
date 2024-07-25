@@ -10,6 +10,7 @@
 #include <cmath>
 #include <sstream>
 #include <string>
+#include <tuple>
 #include <unordered_map>
 #include <utility>  // for std::pair
 #include <vector>
@@ -179,13 +180,16 @@ double lookUpCovarianceAtDistance(const std::vector<double> & xx,
 
 // -----------------------------------------------------------------------------
 
-atlas::FieldSet computeRescalingCoeffs(
+std::tuple<atlas::FieldSet, atlas::FieldSet>
+computeRescalingCoeffs(
         const oops::Variables & activeVars,
         const atlas::FunctionSpace & innerFspace,
         const saber::interpolation::AtlasInterpWrapper & interp,
         const std::unordered_map<std::string, std::vector<double>> & binnedDistances,
-        const atlas::FieldSet & covariances) {
+        const atlas::FieldSet & covariances,
+        const std::vector<double> & alphas) {
   oops::Log::trace() << "computeRescalingCoeffs starting" << std::endl;
+
   const auto & interpMatrix = interp.getInterpolationMatrix();
   // matData is the array of all non-zero matrix coefficients
   // matInner is the array of column indexes of all non-zero matrix coefficients
@@ -196,23 +200,31 @@ atlas::FieldSet computeRescalingCoeffs(
 
   const auto & matchingOuterFspace = interp.getIntermediateFunctionSpace();
 
-  atlas::FieldSet fset;
+  atlas::FieldSet multFset;
+  atlas::FieldSet addFset;
+  int ivar = 0;
   for (const auto & var : activeVars) {
     const auto binnedDistance = binnedDistances.at(var.name());
     const auto covView = atlas::array::make_view<double, 2>(covariances[var.name()]);
 
     const size_t levels = var.getLevels();
 
-    auto field = matchingOuterFspace.createField<double>(
+    auto targetVarField = matchingOuterFspace.createField<double>(
                 atlas::option::levels(levels) |
                 atlas::option::name(var.name()) |
                 atlas::option::halo(0));
-    auto view = atlas::array::make_view<double, 2>(field);
+    auto targetVarView = atlas::array::make_view<double, 2>(targetVarField);
+
+    auto actualVarField = matchingOuterFspace.createField<double>(
+                atlas::option::levels(levels) |
+                atlas::option::name(var.name()) |
+                atlas::option::halo(0));
+    auto actualVarView = atlas::array::make_view<double, 2>(actualVarField);
 
     const auto lonlatView = atlas::array::make_view<double, 2>(innerFspace.lonlat());
 
     int matIndex = 0;
-    for (atlas::idx_t jnode = 0; jnode < view.shape(0); jnode++) {
+    for (atlas::idx_t jnode = 0; jnode < targetVarView.shape(0); jnode++) {
       // Extract jnode-th compressed row of the interpolationMatrix
       const size_t points = matOuter[jnode+1] - matOuter[jnode];
       std::vector<double> weights;
@@ -281,6 +293,7 @@ atlas::FieldSet computeRescalingCoeffs(
         // Where v is the vector of variances and w the interpolation weights
         const double targetInterpolatedVariance = std::inner_product(
                     weights.cbegin(), weights.cend(), variances.cbegin(), 0.0);
+        targetVarView(jnode, lev) = targetInterpolatedVariance;
 
         // Compute variance of interpolated value: w^T C w
         // where C is the covariance matrix and w the interpolation weights
@@ -291,18 +304,52 @@ atlas::FieldSet computeRescalingCoeffs(
         }
         const double varianceOfInterpolatedValue = std::inner_product(
                     weights.cbegin(), weights.cend(), Cw.cbegin(), 0.0);
-
-        // Compute correction
-        const double amplitude_loss = varianceOfInterpolatedValue / targetInterpolatedVariance;
-        const double correction = 1.0 / std::sqrt(amplitude_loss);
-        view(jnode, lev) = correction;
+        actualVarView(jnode, lev) = varianceOfInterpolatedValue;
       }
     }
-    fset.add(field);
+
+    const double alpha = alphas[ivar];
+    if (alpha > 0.0) {
+      // Compute multiplicative correction
+      auto field = matchingOuterFspace.createField<double>(
+                    atlas::option::levels(levels) |
+                    atlas::option::name(var.name()) |
+                    atlas::option::halo(0));
+      atlas::field::for_each_value(targetVarField,
+                                   actualVarField,
+                                   field,
+                                   [&](const double target,
+                                       const double actual,
+                                       double & v){
+               const double multTarget = alpha * target + (1 - alpha) * actual;
+               v = std::sqrt(multTarget / actual);
+                                   });
+      multFset.add(field);
+    }
+
+    if (alpha != 1.0) {
+      // Compute remaining additive correction
+      auto field = matchingOuterFspace.createField<double>(
+                    atlas::option::levels(levels) |
+                    atlas::option::name(var.name()) |
+                    atlas::option::halo(0));
+      atlas::field::for_each_value(targetVarField,
+                                   actualVarField,
+                                   field,
+                                   [&](const double target,
+                                       const double actual,
+                                       double & v){
+               const double multTarget = alpha * target + (1 - alpha) * actual;
+               v = std::sqrt(target - multTarget);
+                                   });
+      addFset.add(field);
+    }
+
+    ivar++;
   }
 
   oops::Log::trace() << "computeRescalingCoeffs about to exit..." << std::endl;
-  return fset;
+  return std::make_tuple(multFset, addFset);
 }
 
 // -----------------------------------------------------------------------------
@@ -320,7 +367,26 @@ atlas::FieldSet createRescalingCoeffs(
   oops::Variables activeVars(vars);
   if (conf.has("active variables")) {
     const auto & confVars = oops::Variables(conf.getStringVector("active variables"));
+    ASSERT(confVars <= activeVars);
     activeVars.intersection(confVars);
+  }
+
+  // Check which fraction of the rescaling is applied multiplicatively
+  const auto defaultAlpha = conf.getDouble("fraction of lost variance to restore multiplicatively",
+                                           1.0);
+  std::vector<double> alphas(activeVars.size(), defaultAlpha);
+
+  // Optionally, the default value of alpha can be overwritten variable by variable
+  const auto key = "list of fractions of lost variance to restore multiplicatively";
+  if (conf.has(key)) {
+    const auto alphaConf = conf.getSubConfiguration(key);
+    int ivar = 0;
+    for (const auto & var : activeVars) {
+      if (alphaConf.has(var.name())) {
+        alphas[ivar] = alphaConf.getDouble(var.name());
+      }
+      ivar++;
+    }
   }
 
   // Read covariance profiles from files
@@ -331,21 +397,34 @@ atlas::FieldSet createRescalingCoeffs(
   const auto[distances, covariances] = readCovarianceProfiles(filePath, activeVars);
 
   // Create fields of rescaling factors
-  atlas::FieldSet fset = computeRescalingCoeffs(activeVars, innerFspace, interp,
-                                                distances, covariances);
+  auto[multFset, addFset] = computeRescalingCoeffs(activeVars, innerFspace, interp,
+                                                   distances, covariances,
+                                                   alphas);
 
   // Redistribute to outer functionSpace
-  atlas::FieldSet outFset;
-  for (const auto & field : fset) {
-    outFset.add(outerFspace.createField<double>(atlas::option::name(field.name()) |
-                                                atlas::option::levels(field.levels())));
+  auto redistribute = [&](atlas::FieldSet & fset) {
+    atlas::FieldSet outFset;
+    for (const auto & field : fset) {
+      outFset.add(outerFspace.createField<double>(atlas::option::name(field.name()) |
+                                                  atlas::option::levels(field.levels())));
+    }
+    const auto & redistr = interp.getRedistribution();
+    redistr.execute(fset, outFset);
+    fset = outFset;
+  };
+  redistribute(multFset);
+  redistribute(addFset);
+
+  // Optionally, write additive rescaling coefficients
+  if (conf.has("additive coefficients atlas file")) {
+    const auto writeConf = conf.getSubConfiguration("additive coefficients atlas file");
+    oops::Log::info() << "Writing additive coefficients to "
+                      << writeConf.getString("filepath") << ".nc" << std::endl;
+    util::writeFieldSet(comm, writeConf, addFset);
   }
-  const auto & redistr = interp.getRedistribution();
-  redistr.execute(fset, outFset);
-  fset = outFset;
 
   oops::Log::trace() << "createRescalingCoeffs about to exit..." << std::endl;
-  return fset;
+  return multFset;
 }
 
 // -----------------------------------------------------------------------------
@@ -385,17 +464,17 @@ Rescaling::Rescaling(const eckit::mpi::Comm & comm,
                      const atlas::FunctionSpace & innerFspace,
                      const atlas::FunctionSpace & outerFspace,
                      const saber::interpolation::AtlasInterpWrapper & interp) :
-  rescalingCoeffs_(createRescalingCoeffs(comm, conf, vars,
+  multiplicativeRescalingCoeffs_(createRescalingCoeffs(comm, conf, vars,
                                          innerFspace, outerFspace, interp)) {
   oops::Log::trace() << classname() << "Rescaling starting" << std::endl;
 
   // Optionally, write rescaling fields to file
-  if (conf.has("output file path")) {
-    eckit::LocalConfiguration writeConf;
-    writeConf.set("filepath", conf.getString("output file path"));
-    util::writeFieldSet(comm, writeConf, rescalingCoeffs_);
+  if (conf.has("multiplicative coefficients atlas file")) {
+    const auto writeConf = conf.getSubConfiguration("multiplicative coefficients atlas file");
+    oops::Log::info() << "Writing multiplicative coefficients to "
+                      << writeConf.getString("filepath") << ".nc" << std::endl;
+    util::writeFieldSet(comm, writeConf, multiplicativeRescalingCoeffs_);
   }
-
   oops::Log::trace() << classname() << "Rescaling done" << std::endl;
 }
 
@@ -405,7 +484,7 @@ Rescaling::Rescaling(const eckit::mpi::Comm & comm,
                      const eckit::LocalConfiguration & conf,
                      const oops::Variables & vars,
                      const atlas::FunctionSpace & outerFspace) :
-    rescalingCoeffs_(readRescalingCoeffs(comm, conf, vars, outerFspace)) {
+    multiplicativeRescalingCoeffs_(readRescalingCoeffs(comm, conf, vars, outerFspace)) {
   oops::Log::trace() << classname() << "Rescaling done, from input file" << std::endl;
 }
 
@@ -413,7 +492,7 @@ Rescaling::Rescaling(const eckit::mpi::Comm & comm,
 
 void Rescaling::execute(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::execute starting" << std::endl;
-  for (const auto & wField : rescalingCoeffs_) {
+  for (const auto & wField : multiplicativeRescalingCoeffs_) {
     const auto & field = fieldSet.fieldSet()[wField.name()];
     const auto & ghost = field.functionspace().ghost();
     atlas::field::for_each_value_masked(ghost,
