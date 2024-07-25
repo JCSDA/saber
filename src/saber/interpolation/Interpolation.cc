@@ -48,17 +48,6 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
 void Interpolation::multiply(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
 
-  // Temporary FieldSet of active variables for interpolation target
-  atlas::FieldSet targetFieldSet;
-  for (const auto & var : activeVars_) {
-    const auto & f = fieldSet[var.name()];
-    const size_t nlev = f.shape(1);
-    atlas::Field field = outerGeomData_.functionSpace()->createField<double>(
-        atlas::option::name(var.name()) | atlas::option::levels(nlev));
-    field.metadata() = f.metadata();
-    targetFieldSet.add(field);
-  }
-
   // Temporary FieldSet of active variables for interpolation source
   atlas::FieldSet sourceFieldSet;
   for (const auto & var : activeVars_) {
@@ -66,6 +55,7 @@ void Interpolation::multiply(oops::FieldSet3D & fieldSet) const {
   }
 
   // Interpolate to target/outer grid
+  atlas::FieldSet targetFieldSet;
   interp_->apply(sourceFieldSet, targetFieldSet);
 
   // Add passive variables
@@ -86,27 +76,14 @@ void Interpolation::multiply(oops::FieldSet3D & fieldSet) const {
 void Interpolation::multiplyAD(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
 
-  // Temporary FieldSet of active variables for interpolation source
-  atlas::FieldSet sourceFieldSet;
-  for (const auto & var : activeVars_) {
-    const auto & f = fieldSet[var.name()];
-    const size_t nlev = f.shape(1);
-    atlas::Field field = innerGeomData_->functionSpace()->createField<double>(
-        atlas::option::name(var.name()) | atlas::option::levels(nlev));
-    field.metadata() = f.metadata();
-    sourceFieldSet.add(field);
-  }
-
   // Temporary FieldSet of active variables for interpolation target
   atlas::FieldSet targetFieldSet;
   for (const auto & var : activeVars_) {
     targetFieldSet.add(fieldSet[var.name()]);
   }
 
-  // Zero field
-  util::zeroFieldSet(sourceFieldSet);
-
   // (Adjoint of:) Interpolate to target/outer grid
+  atlas::FieldSet sourceFieldSet;
   interp_->applyAD(sourceFieldSet, targetFieldSet);
 
   // Copy passive variables
@@ -130,17 +107,6 @@ void Interpolation::leftInverseMultiply(oops::FieldSet3D & fieldSet) const {
           innerGeomData_->functionSpace(), innerGeomData_->comm()));
   }
 
-  // Temporary FieldSet of active variables for interpolation target
-  atlas::FieldSet targetFieldSet;
-  for (const auto & var : activeVars_) {
-    const auto & f = fieldSet[var.name()];
-    const size_t nlev = f.shape(1);
-    atlas::Field field = innerGeomData_->functionSpace()->createField<double>(
-        atlas::option::name(var.name()) | atlas::option::levels(nlev));
-    field.metadata() = f.metadata();
-    targetFieldSet.add(field);
-  }
-
   // Temporary FieldSet of active variables for interpolation source
   atlas::FieldSet sourceFieldSet;
   for (const auto & var : activeVars_) {
@@ -148,6 +114,7 @@ void Interpolation::leftInverseMultiply(oops::FieldSet3D & fieldSet) const {
   }
 
   // Interpolate to target/inner grid
+  atlas::FieldSet targetFieldSet;
   inverseInterp_->apply(sourceFieldSet, targetFieldSet);
 
   // Add passive variables
