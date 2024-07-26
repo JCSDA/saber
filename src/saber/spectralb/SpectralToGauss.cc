@@ -113,10 +113,12 @@ atlas::FieldSet convertUVToFieldSet(const atlas::Field & uvField) {
   atlas::Field u = uvField.functionspace().createField<double>
       (atlas::option::name("eastward_wind") |
        atlas::option::levels(uvField.shape(1)));
+  u.metadata().set("interp_type", "default");
 
   atlas::Field v = uvField.functionspace().createField<double>
       (atlas::option::name("northward_wind") |
        atlas::option::levels(uvField.shape(1)));
+  v.metadata().set("interp_type", "default");
 
   auto uView = atlas::array::make_view<double, 2>(u);
   auto vView = atlas::array::make_view<double, 2>(v);
