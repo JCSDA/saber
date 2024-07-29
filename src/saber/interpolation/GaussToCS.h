@@ -39,6 +39,8 @@ class GaussToCSParameters : public SaberBlockParametersBase {
   // to use the one different from the one inferred from the gaussian grid
   oops::RequiredParameter<std::string> gaussGridUid{"gauss grid uid",
     "Gauss Grid UID", this};
+  // Interpolation type, defaults to "structured-bilinear" or "unstructured-bilinear-lonlat"
+  oops::Parameter<std::string> interpType{"interpolation type", "", this};
   oops::Parameter<bool> initializeInverseInterpolation{"initialize inverse interpolator",
     true, this};
   oops::OptionalParameter<eckit::LocalConfiguration> interpolationRescaling{

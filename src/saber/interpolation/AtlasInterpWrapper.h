@@ -50,7 +50,8 @@ class AtlasInterpWrapper {
   AtlasInterpWrapper(const atlas::grid::Partitioner &,
                      const atlas::FunctionSpace &,
                      const atlas::Grid &,
-                     const atlas::FunctionSpace &);
+                     const atlas::FunctionSpace &,
+                     const std::string & interpType = "");
   ~AtlasInterpWrapper() {}
 
   void execute(const atlas::Field &, atlas::Field &) const;

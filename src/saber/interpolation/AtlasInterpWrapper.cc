@@ -72,16 +72,19 @@ atlas::FunctionSpace createTargetFunctionSpace(
 // -----------------------------------------------------------------------------
 
 atlas::Interpolation createAtlasInterpolation(const atlas::FunctionSpace & srcFunctionSpace,
-                                              const atlas::FunctionSpace & matchingFunctionSpace) {
+                                              const atlas::FunctionSpace & matchingFunctionSpace,
+                                              const std::string & interpType) {
   oops::Log::trace() << "createAtlasInterpolation starting" << std::endl;
 
   atlas::util::Config interpConfig;
   if (srcFunctionSpace.type() == "StructuredColumns") {
     // StructuredColumns
-    interpConfig.set("type", "structured-linear2D");
+    interpConfig.set("type",
+                     interpType == "" ? "structured-bilinear" : interpType);
   } else if (srcFunctionSpace.type() == "NodeColumns") {
     // NodeColumns
-    interpConfig.set("type", "unstructured-bilinear-lonlat");
+    interpConfig.set("type",
+                     interpType == "" ? "unstructured-bilinear-lonlat" : interpType);
   } else {
     throw eckit::FunctionalityNotSupported(srcFunctionSpace.type()
       + " source function space type not supported yet", Here());
@@ -127,7 +130,8 @@ namespace interpolation {
 AtlasInterpWrapper::AtlasInterpWrapper(const atlas::grid::Partitioner & srcPartitioner,
                                        const atlas::FunctionSpace & srcFunctionSpace,
                                        const atlas::Grid & dstGrid,
-                                       const atlas::FunctionSpace & dstFunctionSpace) :
+                                       const atlas::FunctionSpace & dstFunctionSpace,
+                                       const std::string & interpType) :
   localDstFunctionSpace_(), targetFunctionSpace_(), interp_(), redistr_(), inverseRedistr_() {
   oops::Log::trace() << "AtlasInterpWrapper::AtlasInterpWrapper starting" << std::endl;
 
@@ -169,7 +173,7 @@ AtlasInterpWrapper::AtlasInterpWrapper(const atlas::grid::Partitioner & srcParti
 
     // Interpolation setup
     if (localDstFunctionSpace_.size() > 0) {
-      interp_ = createAtlasInterpolation(srcFunctionSpace, localDstFunctionSpace_);
+      interp_ = createAtlasInterpolation(srcFunctionSpace, localDstFunctionSpace_, interpType);
     }
 
   } else {
@@ -180,7 +184,7 @@ AtlasInterpWrapper::AtlasInterpWrapper(const atlas::grid::Partitioner & srcParti
       dstGrid, dstFunctionSpace.type());
 
     // Interpolation
-    interp_ = createAtlasInterpolation(srcFunctionSpace, targetFunctionSpace_);
+    interp_ = createAtlasInterpolation(srcFunctionSpace, targetFunctionSpace_, interpType);
 
     // Redistribution
     redistr_ = createAtlasRedistribution(targetFunctionSpace_, dstFunctionSpace);

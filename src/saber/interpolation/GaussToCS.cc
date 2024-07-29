@@ -24,12 +24,22 @@ namespace interpolation {
 
 namespace {
 
+int getHalo(const std::string & interpType) {
+  // Assumes that only interpolation types with "cubic" in their name require a halo of 2.
+  const std::string pattern = "cubic";
+  if (interpType.find(pattern) != interpType.npos) {
+    return 2;
+  }
+  return 1;
+}
+
 atlas::functionspace::StructuredColumns
-    createGaussFunctionSpace(const atlas::StructuredGrid & gaussGrid) {
+    createGaussFunctionSpace(const atlas::StructuredGrid & gaussGrid,
+                             const int halo) {
   return atlas::functionspace::StructuredColumns(
     gaussGrid,
     atlas::grid::Partitioner(new TransPartitioner()),
-    atlas::option::halo(1));
+    atlas::option::halo(halo));
 }
 
 // -----------------------------------------------------------------------------
@@ -227,10 +237,12 @@ GaussToCS::GaussToCS(const oops::GeometryData & outerGeometryData,
     activeVars_(params.activeVariables.value().get_value_or(innerVars_)),
     CSFunctionSpace_(outerGeometryData.functionSpace()),
     gaussGrid_(params.gaussGridUid.value()),
-    gaussFunctionSpace_(createGaussFunctionSpace(gaussGrid_)),
+    gaussFunctionSpace_(createGaussFunctionSpace(gaussGrid_,
+                                                 getHalo(params.interpType.value()))),
     gaussPartitioner_(new TransPartitioner()),
     csgrid_(CSFunctionSpace_.mesh().grid()),
-    interp_(gaussPartitioner_, gaussFunctionSpace_, csgrid_, CSFunctionSpace_),
+    interp_(gaussPartitioner_, gaussFunctionSpace_, csgrid_, CSFunctionSpace_,
+            params.interpType.value()),
     inverseInterpolation_(createInverseInterpolation(
                               params.initializeInverseInterpolation.value(),
                               outerGeometryData.comm().size() == 1,
