@@ -54,8 +54,9 @@ HpToHexner::HpToHexner(const oops::GeometryData & outerGeometryData,
   : SaberOuterBlockBase(params, xb.validTime()),
     innerGeometryData_(outerGeometryData), innerVars_(outerVars),
     activeVars_(getActiveVars(params, outerVars)),
-    xb_(xb)
+    xb_(xb.validTime(), xb.commGeom())
 {
+  xb_.shallowCopy(xb);
   oops::Log::trace() << classname() << "::HpToHexner done" << std::endl;
 }
 

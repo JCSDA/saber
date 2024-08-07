@@ -80,9 +80,9 @@ class StaticCovariance : public SaberCentralBlockBase {
   // Communicator
   const eckit::mpi::Comm * comm_;
   // Background
-  const oops::FieldSet3D xb_;
+  oops::FieldSet3D xb_;
   // First guess
-  const oops::FieldSet3D fg_;
+  oops::FieldSet3D fg_;
   // valid time
   const util::DateTime validTime_;
 

@@ -78,7 +78,7 @@ class HpToHexner : public SaberOuterBlockBase {
   const oops::GeometryData & innerGeometryData_;
   oops::Variables innerVars_;
   oops::Variables activeVars_;
-  const oops::FieldSet3D xb_;
+  oops::FieldSet3D xb_;
 };
 
 // -----------------------------------------------------------------------------

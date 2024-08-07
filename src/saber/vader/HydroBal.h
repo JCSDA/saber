@@ -96,7 +96,7 @@ class HydroBal : public SaberOuterBlockBase {
   const oops::Variables innerVars_;
   const oops::Variables activeOuterVars_;
   const oops::Variables innerOnlyVars_;
-  const oops::FieldSet3D xb_;
+  oops::FieldSet3D xb_;
 };
 
 // -----------------------------------------------------------------------------

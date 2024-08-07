@@ -49,9 +49,12 @@ StaticCovariance::StaticCovariance(const oops::GeometryData & geometryData,
   : SaberCentralBlockBase(params, xb.validTime()),
     params_(params), variables_(params.activeVars.value().get_value_or(centralVars)),
     gsiGridFuncSpace_(geometryData.functionSpace()), comm_(&geometryData.comm()),
-    xb_(xb), fg_(fg), validTime_(xb.validTime())
+    xb_(xb.validTime(), xb.commGeom()), fg_(fg.validTime(), fg.commGeom()),
+    validTime_(xb.validTime())
 {
   oops::Log::trace() << classname() << "::StaticCovariance starting" << std::endl;
+  xb_.shallowCopy(xb);
+  fg_.shallowCopy(fg);
   oops::Log::trace() << classname() << "::StaticCovariance done" << std::endl;
 }
 

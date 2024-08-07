@@ -55,8 +55,9 @@ HydroBal::HydroBal(const oops::GeometryData & outerGeometryData,
     innerVars_(getUnionOfInnerActiveAndOuterVars(params, outerVars)),
     activeOuterVars_(params.activeOuterVars(outerVars)),
     innerOnlyVars_(getInnerOnlyVars(params, outerVars)),
-    xb_(xb)
+    xb_(xb.validTime(), xb.commGeom())
 {
+  xb_.shallowCopy(xb);
   oops::Log::trace() << classname() << "::HydroBal done" << std::endl;
 }
 

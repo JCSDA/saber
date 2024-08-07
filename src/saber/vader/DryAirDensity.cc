@@ -54,8 +54,9 @@ DryAirDensity::DryAirDensity(const oops::GeometryData & outerGeometryData,
     activeOuterVars_(params.activeOuterVars(outerVars)),
     innerOnlyVars_(getInnerOnlyVars(params, outerVars)),
     intermediateTempVars_(params.intermediateTempVars(outerVars)),
-    xb_(xb)
+    xb_(xb.validTime(), xb.commGeom())
 {
+  xb_.shallowCopy(xb);
   oops::Log::trace() << classname() << "::DryAirDensity done" << std::endl;
 }
 
