@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
-# (C) Crown Copyright 2023, the Met Office. All rights reserved.
+# (C) Crown Copyright 2024, the Met Office. All rights reserved.
 #
 #
 # shellcheck disable=SC2317

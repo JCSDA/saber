@@ -5,11 +5,11 @@
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 #
 #
-# MetOffice-JEDI Integration Test against UFO
+# MetOffice-JEDI Integration Test
 #
 
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
-project(ufo-ci VERSION 1.0.0 LANGUAGES C CXX Fortran)
+project(mo-integration VERSION 1.0.0 LANGUAGES C CXX Fortran)
 
 set( CMAKE_CXX_STANDARD 17 )
 set( CMAKE_CXX_STANDARD_REQUIRED ON )
