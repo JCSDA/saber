@@ -337,13 +337,13 @@ void MoistIncrOp::directCalibration(const oops::FieldSets & fsets) {
       mo::eval_moisture_incrementing_operator_tl(fset_copy, augmentedStateFieldSet_);
 
       const auto qclIncMIOView = atlas::array::make_view<const double, 2>
-                        (fset_copy["mass_content_of_cloud_liquid_water_in_atmosphere_layer"]);
+                  (fset_copy["cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water"]);
       const auto qclIncView = atlas::array::make_view<const double, 2>
-                        (fset["mass_content_of_cloud_liquid_water_in_atmosphere_layer"]);
+                  (fset["cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water"]);
       const auto qcfIncMIOView = atlas::array::make_view<const double, 2>
-                        (fset_copy["mass_content_of_cloud_ice_in_atmosphere_layer"]);
+                  (fset_copy["cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water"]);
       const auto qcfIncView = atlas::array::make_view<const double, 2>
-                        (fset["mass_content_of_cloud_ice_in_atmosphere_layer"]);
+                  (fset["cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water"]);
 
       for (atlas::idx_t jn = 0; jn < augmentedStateFieldSet_["rht"].shape(0); ++jn) {
         // Ternary false branch has std::max inside the static_cast to make sure a small negative

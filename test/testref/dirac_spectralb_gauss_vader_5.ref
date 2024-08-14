@@ -23,8 +23,8 @@ Fields:
   dry_air_density_levels_minus_one: 1.0000000000000000e+00
   eastward_wind: 0.0000000000000000e+00
   exner_levels_minus_one: 0.0000000000000000e+00
-  mass_content_of_cloud_ice_in_atmosphere_layer: 0.0000000000000000e+00
-  mass_content_of_cloud_liquid_water_in_atmosphere_layer: 0.0000000000000000e+00
+  cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water: 0.0000000000000000e+00
+  cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water: 0.0000000000000000e+00
   northward_wind: 0.0000000000000000e+00
   potential_temperature: 0.0000000000000000e+00
   specific_humidity: 0.0000000000000000e+00
@@ -60,8 +60,8 @@ Fields:
   dry_air_density_levels_minus_one: 5.2409347267295594e-05
   eastward_wind: 1.6278549106331548e-02
   exner_levels_minus_one: 2.0537909519223694e-06
-  mass_content_of_cloud_ice_in_atmosphere_layer: 5.6644337433868221e-08
-  mass_content_of_cloud_liquid_water_in_atmosphere_layer: 3.1141644212832348e-08
+  cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water: 5.6644337433868221e-08
+  cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water: 3.1141644212832348e-08
   northward_wind: 1.5375683561088758e-02
   potential_temperature: 4.2568428178347946e-02
   specific_humidity: 7.6565649679296756e-06

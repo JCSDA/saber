@@ -36,8 +36,8 @@ namespace vader {
 
 // -----------------------------------------------------------------------------
 /// \brief a super saber block that splits total water ("qt") into
-///        specific_humidity, mass_content_of_cloud_ice_in_atmosphere_layer
-///        and mass_content_of_cloud_liquid_water_in_atmosphere_layer. To do this
+///        specific_humidity, cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water
+///        and cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water. To do this
 ///        separation, the MoistIncrOp saber block requires the air_temperature increment.
 ///        The calibration also requires the air_temperature increment as input.
 ///        To make sure that the order of saber blocks is unaffected, this super

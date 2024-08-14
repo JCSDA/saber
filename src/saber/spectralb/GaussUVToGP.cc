@@ -153,8 +153,8 @@ atlas::FieldSet populateFields(const atlas::FieldSet & geomfields,
     "m_t",
     "potential_temperature",
     "specific_humidity",
-    "mass_content_of_cloud_liquid_water_in_atmosphere_layer",
-    "mass_content_of_cloud_ice_in_atmosphere_layer"};
+    "cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water",
+    "cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water"};
 
   const std::vector<std::string> requiredGeometryVariables{"height_levels",
                                                            "height"};
