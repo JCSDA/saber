@@ -48,10 +48,13 @@ std::size_t getSizeOwned(const atlas::FunctionSpace & fs) {
     sizeOwned = atlas::functionspace::StructuredColumns(fs).sizeOwned();
     fsViable = true;
   } else if (fs.type() == "NodeColumns") {
-    std::string s = atlas::functionspace::NodeColumns(fs).mesh().grid().name();
-    if (s.substr(0, 6) == "CS-LFR") {
-      sizeOwned = atlas::functionspace::CubedSphereNodeColumns(fs).sizeOwned();
-      fsViable = true;
+    const atlas::Grid & grid = atlas::functionspace::NodeColumns(fs).mesh().grid();
+    if (grid) {
+       const std::string & gridname = grid.name();
+       if (gridname.substr(0, 6) == "CS-LFR") {
+         sizeOwned = atlas::functionspace::CubedSphereNodeColumns(fs).sizeOwned();
+         fsViable = true;
+       }
     }
   }
   ASSERT(fsViable);
