@@ -57,6 +57,10 @@ class ErrorCovarianceParameters : public oops::ModelSpaceCovarianceParametersBas
   oops::Parameter<std::string> timeCovariance{"time covariance", "multivariate duplicated",
                                               this};
 
+  // Option to change resolution of the background to the increment geometry
+  oops::Parameter<bool> changeBackgroundResolution{"change background resolution",
+                        false, this};
+
   // Ensemble
   oops::Parameter<bool> iterativeEnsembleLoading{"iterative ensemble loading", false, this};
   oops::OptionalParameter<eckit::LocalConfiguration> ensemble{"ensemble", this};

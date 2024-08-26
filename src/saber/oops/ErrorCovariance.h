@@ -120,11 +120,23 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
   params.deserialize(config);
 
   // Local copy of background and first guess that can undergo interpolation
-  const oops::FieldSet4D fset4dXbTmp(xb);
-  const oops::FieldSet4D fset4dFgTmp(fg);
+  std::unique_ptr<oops::FieldSet4D> fset4dXb;
+  std::unique_ptr<oops::FieldSet4D> fset4dFg;
 
-  oops::FieldSet4D fset4dXb = oops::copyFieldSet4D(fset4dXbTmp);
-  oops::FieldSet4D fset4dFg = oops::copyFieldSet4D(fset4dFgTmp);
+  // Change resolution if needed
+  if (params.changeBackgroundResolution) {
+    const State4D_ xb_lowres(geom, xb);
+    const State4D_ fg_lowres(geom, fg);
+    const oops::FieldSet4D fset4dXbTmp(xb_lowres);
+    const oops::FieldSet4D fset4dFgTmp(fg_lowres);
+    fset4dXb = std::make_unique<oops::FieldSet4D>(oops::copyFieldSet4D(fset4dXbTmp));
+    fset4dFg = std::make_unique<oops::FieldSet4D>(oops::copyFieldSet4D(fset4dFgTmp));
+  } else {
+    const oops::FieldSet4D fset4dXbTmp(xb);
+    const oops::FieldSet4D fset4dFgTmp(fg);
+    fset4dXb = std::make_unique<oops::FieldSet4D>(oops::copyFieldSet4D(fset4dXbTmp));
+    fset4dFg = std::make_unique<oops::FieldSet4D>(oops::copyFieldSet4D(fset4dFgTmp));
+  }
 
   // Initialize outer variables
   const std::vector<std::size_t> vlevs = geom.variableSizes(incVars);
@@ -207,8 +219,8 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
     if (saberOuterBlocksParams != boost::none) {
       outerBlockChain_ = std::make_unique<SaberOuterBlockChain>(geom,
                        outerVars,
-                       fset4dXb,
-                       fset4dFg,
+                       *fset4dXb,
+                       *fset4dFg,
                        fsetEns,
                        covarConf,
                        *saberOuterBlocksParams);
@@ -437,8 +449,8 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
             *hybridGeom,
             *dualResGeom,
             cmpOuterVars,
-            fset4dXb,
-            fset4dFg,
+            *fset4dXb,
+            *fset4dFg,
             fset4dCmpEns,
             *fsetDualResEns,
             cmpCovarConf,
@@ -454,8 +466,8 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
         geom,
         *dualResGeom,
         outerVars,
-        fset4dXb,
-        fset4dFg,
+        *fset4dXb,
+        *fset4dFg,
         fsetEns,
         *fsetDualResEns,
         covarConf,
