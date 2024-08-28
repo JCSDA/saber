@@ -9,7 +9,7 @@ geometry:
     levels: 1
   halo: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
   - stream_function
 background error:
@@ -19,7 +19,7 @@ background error:
     calibration:
       io:
         data directory: testdata
-        files prefix: error_covariance_training_tutorial_5/1-1
+        files prefix: error_covariance_training_tutorial_5/_MPI_-_OMP_
       drivers:
         multivariate strategy: univariate
         compute nicas: true
@@ -79,27 +79,27 @@ background error:
       - parameter: a
         component: 1
         file:
-          filepath: testdata/error_covariance_training_doc_9/cor_a_1
+          filepath: testdata/error_covariance_training_doc_9/_MPI_-_OMP__cor_a_1
       - parameter: a
         component: 2
         file:
-          filepath: testdata/error_covariance_training_doc_9/cor_a_2
+          filepath: testdata/error_covariance_training_doc_9/_MPI_-_OMP__cor_a_2
       - parameter: rh
         component: 1
         file:
-          filepath: testdata/error_covariance_training_doc_9/cor_rh_1
+          filepath: testdata/error_covariance_training_doc_9/_MPI_-_OMP__cor_rh_1
       - parameter: rh
         component: 2
         file:
-          filepath: testdata/error_covariance_training_doc_9/cor_rh_2
+          filepath: testdata/error_covariance_training_doc_9/_MPI_-_OMP__cor_rh_2
       - parameter: rv
         component: 1
         file:
-          filepath: testdata/error_covariance_training_doc_9/cor_rv_1
+          filepath: testdata/error_covariance_training_doc_9/_MPI_-_OMP__cor_rv_1
       - parameter: rv
         component: 2
         file:
-          filepath: testdata/error_covariance_training_doc_9/cor_rv_2
+          filepath: testdata/error_covariance_training_doc_9/_MPI_-_OMP__cor_rv_2
       output model files:
       - parameter: dirac_nicas
         file:

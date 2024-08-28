@@ -10,17 +10,17 @@ geometry:
     levels: 2
   halo: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
   - stream_function
   - velocity_potential
 background error:
   covariance model: SABER
   ensemble pert:
-    date: '2010-01-01T12:00:00Z'
+    date: 2010-01-01T12:00:00Z
     members from template:
       template:
-        date: '2010-01-01T12:00:00Z'
+        date: 2010-01-01T12:00:00Z
         filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_pert_%mem%
       pattern: '%mem%'
       nmembers: 25

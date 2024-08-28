@@ -24,7 +24,7 @@ input geometry: &geom
 output geometry: *geom
 states:
 - input:
-    date: '2010-01-01T12:00:00Z'
+    date: 2010-01-01T12:00:00Z
     state variables:
     - stream_function
     - velocity_potential
@@ -33,7 +33,7 @@ states:
   output:
     filepath: testdata/convertstate_lam/rh_avg
 - input:
-    date: '2010-01-01T12:00:00Z'
+    date: 2010-01-01T12:00:00Z
     state variables:
     - stream_function
     - velocity_potential
@@ -42,7 +42,7 @@ states:
   output:
     filepath: testdata/convertstate_lam/rh_pert
 - input:
-    date: '2010-01-01T12:00:00Z'
+    date: 2010-01-01T12:00:00Z
     state variables:
     - stream_function
     - velocity_potential
@@ -58,7 +58,7 @@ states:
   output:
     filepath: testdata/convertstate_lam/rv_avg
 - input:
-    date: '2010-01-01T12:00:00Z'
+    date: 2010-01-01T12:00:00Z
     state variables:
     - stream_function
     - velocity_potential

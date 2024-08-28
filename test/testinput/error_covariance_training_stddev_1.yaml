@@ -10,7 +10,7 @@ geometry:
     levels: 2
   halo: 0
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
   - stream_function
   - velocity_potential
@@ -19,7 +19,7 @@ background error:
   ensemble:
     members from template:
       template:
-        date: '2010-01-01T12:00:00Z'
+        date: 2010-01-01T12:00:00Z
         filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_%mem%
         state variables:
         - stream_function

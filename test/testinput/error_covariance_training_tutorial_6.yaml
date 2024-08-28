@@ -9,7 +9,7 @@ geometry:
     levels: 1
   halo: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
   - stream_function
 background error:
@@ -17,7 +17,7 @@ background error:
   ensemble:
     members from template:
       template:
-        date: '2010-01-01T12:00:00Z'
+        date: 2010-01-01T12:00:00Z
         filepath: testdata/randomization_doc_5/_MPI_-_OMP__member_%mem%
         state variables:
         - stream_function
@@ -29,7 +29,7 @@ background error:
     calibration:
       io:
         data directory: testdata
-        files prefix: error_covariance_training_tutorial_6/1-1
+        files prefix: error_covariance_training_tutorial_6/_MPI_-_OMP_
       drivers:
         compute covariance: true
         compute correlation: true

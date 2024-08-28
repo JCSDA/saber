@@ -9,7 +9,7 @@ geometry:
     levels: 1
   halo: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
   - stream_function
 background error:
@@ -17,7 +17,7 @@ background error:
   ensemble:
     members from template:
       template:
-        date: '2010-01-01T12:00:00Z'
+        date: 2010-01-01T12:00:00Z
         filepath: testdata/randomization_doc_5/_MPI_-_OMP__member_%mem%
         state variables:
         - stream_function
@@ -29,7 +29,7 @@ background error:
     calibration:
       io:
         data directory: testdata
-        files prefix: error_covariance_training_doc_7/1-1
+        files prefix: error_covariance_training_doc_7/_MPI_-_OMP_
       drivers:
         compute covariance: true
         compute correlation: true
@@ -117,25 +117,25 @@ background error:
       output model files:
       - parameter: dirac_mom
         file:
-          filepath: testdata/error_covariance_training_doc_7/dirac_mom
+          filepath: testdata/error_covariance_training_doc_7/_MPI_-_OMP__dirac_mom
       - parameter: dirac_diag_cor
         file:
-          filepath: testdata/error_covariance_training_doc_7/dirac_cor
+          filepath: testdata/error_covariance_training_doc_7/_MPI_-_OMP__dirac_cor
       - parameter: cor_rh
         file:
-          filepath: testdata/error_covariance_training_doc_7/cor_rh
+          filepath: testdata/error_covariance_training_doc_7/_MPI_-_OMP__cor_rh
       - parameter: cor_rh1
         file:
-          filepath: testdata/error_covariance_training_doc_7/cor_rh1
+          filepath: testdata/error_covariance_training_doc_7/_MPI_-_OMP__cor_rh1
       - parameter: cor_rh2
         file:
-          filepath: testdata/error_covariance_training_doc_7/cor_rh2
+          filepath: testdata/error_covariance_training_doc_7/_MPI_-_OMP__cor_rh2
       - parameter: cor_rhc
         file:
-          filepath: testdata/error_covariance_training_doc_7/cor_rhc
+          filepath: testdata/error_covariance_training_doc_7/_MPI_-_OMP__cor_rhc
       - parameter: cor_rv
         file:
-          filepath: testdata/error_covariance_training_doc_7/cor_rv
+          filepath: testdata/error_covariance_training_doc_7/_MPI_-_OMP__cor_rv
       - parameter: dirac_nicas
         file:
-          filepath: testdata/error_covariance_training_doc_7/dirac_nicas
+          filepath: testdata/error_covariance_training_doc_7/_MPI_-_OMP__dirac_nicas

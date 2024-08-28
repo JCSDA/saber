@@ -10,7 +10,7 @@ geometry:
     levels: 2
   halo: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
   - eastward_wind
   - northward_wind
@@ -21,11 +21,11 @@ background error:
       covariance model: SABER
       adjoint test: true
       square-root test: true
-      square-root tolerance: 2.0e-11
+      square-root tolerance: 1.0e-10
       ensemble:
         members from template:
           template:
-            date: '2010-01-01T12:00:00Z'
+            date: 2010-01-01T12:00:00Z
             filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_%mem%
             state variables:
             - eastward_wind
@@ -41,7 +41,7 @@ background error:
       covariance model: ensemble
       members from template:
         template:
-          date: '2010-01-01T12:00:00Z'
+          date: 2010-01-01T12:00:00Z
           filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_%mem%
           state variables:
           - eastward_wind

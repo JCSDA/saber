@@ -64,8 +64,8 @@ Adjoint test for block BUMP_StdDev passed
              Level   2 ~>  0.200E+01 vert. coord.
 Adjoint test for block BUMP_NICAS passed
 Square-root test for block BUMP_NICAS passed
-Norm of input parameter inflation: 5.7319844819175621e+01
-Norm of input parameter StdDev: 5.3046693215269400e+01
+Norm of input parameter inflation: 6.9558608381710329e+01
+Norm of input parameter StdDev: 1.7389652095427326e+02
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -93,8 +93,8 @@ Groups:
   - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  eastward_wind: 3.1482958994333637e-01
-  northward_wind: 1.2907788283736379e-01
+  eastward_wind: 1.5885846717173091e+00
+  northward_wind: 5.0803567566777863e-01
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -161,8 +161,8 @@ Groups:
 Fields:
   eastward_wind: 8.9637016223071983e-14
   northward_wind: 2.6916848772841084e-14
-Norm of input parameter inflation: 5.7319844819175621e+01
-Norm of input parameter StdDev: 5.3046693215269400e+01
+Norm of input parameter inflation: 6.9558608381710329e+01
+Norm of input parameter StdDev: 1.7389652095427326e+02
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -190,5 +190,5 @@ Groups:
   - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  eastward_wind: 6.2965917988665343e-01
-  northward_wind: 2.5815576567472753e-01
+  eastward_wind: 3.1771693434345925e+00
+  northward_wind: 1.0160713513355568e+00

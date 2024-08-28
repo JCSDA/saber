@@ -19,7 +19,7 @@ geometry:
     - velocity_potential
     levels: 10
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
   - stream_function
   - velocity_potential
@@ -53,17 +53,17 @@ background error:
       number of layers: 3
       resolution: 5
       normalization accuracy stride: 3
-      data file: testdata/dirac_fastlam_7/_MPI__data
+      data file: testdata/dirac_fastlam_7/_MPI_-_OMP__data
       output model files:
       - parameter: normalized horizontal length-scale
         file:
-          filepath: testdata/dirac_fastlam_7/_MPI__normalized_rh
+          filepath: testdata/dirac_fastlam_7/_MPI_-_OMP__normalized_rh
       - parameter: weight
         file:
-          filepath: testdata/dirac_fastlam_7/_MPI__weight_%component%
+          filepath: testdata/dirac_fastlam_7/_MPI_-_OMP__weight_%component%
       - parameter: normalization
         file:
-          filepath: testdata/dirac_fastlam_7/_MPI__norm_%component%
+          filepath: testdata/dirac_fastlam_7/_MPI_-_OMP__norm_%component%
 dirac:
   lon:
   - 10.04

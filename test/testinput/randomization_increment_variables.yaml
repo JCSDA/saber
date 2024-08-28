@@ -9,7 +9,7 @@ geometry:
     - air_pressure_levels_minus_one
     levels: 2
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
   - air_pressure
   - air_pressure_levels_minus_one

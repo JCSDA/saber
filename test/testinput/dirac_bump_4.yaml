@@ -12,7 +12,7 @@ geometry:
     levels: 2
   halo: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
   - eastward_wind
   - northward_wind
@@ -31,7 +31,7 @@ background error:
               testing: true
             io:
               data directory: testdata
-              files prefix: dirac_bump_2/_MPI_-_OMP_
+              files prefix: dirac_bump_4/_MPI_-_OMP_
               io tasks: 1
               overriding universe radius file: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__universe_radius
               overriding nicas file: error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__nicas
@@ -41,12 +41,12 @@ background error:
               read local nicas: true
       weight:
         file:
-          filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_rv_2 # Does not make sense scientifically, just for technical testing
+          filepath: testdata/convertstate_constant/static_weight
     - covariance:
         ensemble:
           members from template:
             template:
-              date: '2010-01-01T12:00:00Z'
+              date: 2010-01-01T12:00:00Z
               filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_%mem%
               state variables:
               - stream_function
@@ -75,7 +75,7 @@ background error:
                   read local nicas: true
       weight:
         file:
-          filepath: testdata/error_covariance_training_bump_hdiag-nicas_1/_MPI_-_OMP__cor_rv_1 # Does not make sense scientifically, just for technical testing
+          filepath: testdata/convertstate_constant/ensemble_weight
   saber outer blocks:
   - saber block name: StdDev
     read:

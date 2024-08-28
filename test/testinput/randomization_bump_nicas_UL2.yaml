@@ -356,7 +356,7 @@ geometry:
     - stream_function
     levels: 2
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
   - stream_function
 background error:
@@ -386,8 +386,8 @@ background error:
           value: 3.0
   randomization size: 25
 output states:
-  filepath: testdata/randomization_bump_nicas_UL2/member
+  filepath: testdata/randomization_bump_nicas_UL2/_MPI_-_OMP__member
 output perturbations:
-  filepath: testdata/randomization_bump_nicas_UL2/member_pert
+  filepath: testdata/randomization_bump_nicas_UL2/_MPI_-_OMP__member_pert
 test:
   reference filename: testref/randomization_bump_nicas_UL2.ref

@@ -9,7 +9,7 @@ geometry:
     levels: 1
   halo: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
   - stream_function
 background error:
@@ -19,8 +19,8 @@ background error:
     read:
       io:
         data directory: testdata
-        files prefix: error_covariance_training_tutorial_1/1-1
-        overriding nicas file: error_covariance_training_doc_6/1-1_nicas
+        files prefix: error_covariance_training_tutorial_1/_MPI_-_OMP_
+        overriding nicas file: error_covariance_training_doc_6/_MPI_-_OMP__nicas
       drivers:
         multivariate strategy: univariate
         read local nicas: true

@@ -8,7 +8,7 @@ geometry:
     - stream_function
     levels: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
   - stream_function
 background error:
@@ -18,7 +18,7 @@ background error:
     calibration:
       io:
         data directory: testdata
-        files prefix: randomization_doc_4/1-1
+        files prefix: randomization_doc_4/_MPI_-_OMP_
       drivers:
         multivariate strategy: univariate
         compute nicas: true
@@ -37,7 +37,7 @@ background error:
   - saber block name: StdDev
     read:
       model file:
-        filepath: testdata/convertstate_doc_1/rhc_pert
+        filepath: testdata/convertstate_doc_1/_MPI_-_OMP__rhc_pert
   randomization size: 3
 output states:
-  filepath: testdata/randomization_doc_4/rhc
+  filepath: testdata/randomization_doc_4/_MPI_-_OMP__rhc

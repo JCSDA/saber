@@ -2,7 +2,7 @@
 # with ensemble perturbations read on different geometries.
 
 background:
-  date: &date '2010-01-01T12:00:00Z'
+  date: &date 2010-01-01T12:00:00Z
   state variables: &vars
   - streamfunction
   - velocity_potential
@@ -141,9 +141,9 @@ background error:
 
 dirac: &dirac
   lon:
-  - 180.0
+  - 176.786
   lat:
-  - 3.672
+  - 3.20924
   level:
   - 1
   variable:

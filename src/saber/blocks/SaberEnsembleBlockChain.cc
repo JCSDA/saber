@@ -74,12 +74,16 @@ void SaberEnsembleBlockChain::multiply(oops::FieldSet4D & fset4d) const {
 
 void SaberEnsembleBlockChain::randomize(oops::FieldSet4D & fset4d) const {
   // Central block: randomization with ensemble covariance
+  fset4d.deepCopy(ensemble_, 0);
   fset4d.zero();
   std::unique_ptr<util::NormalDistribution<double>> normalDist;
 
   for (unsigned int ie = 0; ie < ensemble_.ens_size(); ++ie) {
     // Create empty FieldSet4D
     oops::FieldSet4D fset4dMem(fset4d.times(), fset4d.commTime(), fset4d[0].commGeom());
+
+    // Copy ensemble member
+    fset4dMem.deepCopy(ensemble_, ie);
 
     if (locBlockChain_) {
       // With localization
@@ -94,11 +98,9 @@ void SaberEnsembleBlockChain::randomize(oops::FieldSet4D & fset4d) const {
     } else {
       // No localization
       if (!normalDist) {
-        normalDist.reset(new util::NormalDistribution<double>(ensemble_.ens_size(),
-                                                              0.0, 1.0, seed_));
+        normalDist.reset(new util::NormalDistribution<double>(ensemble_.ens_size(), 0.0, 1.0,
+          seed_));
       }
-      // Copy ensemble member
-      fset4dMem.deepCopy(ensemble_, ie);
 
       // Apply weight
       fset4dMem *= (*normalDist)[ie];

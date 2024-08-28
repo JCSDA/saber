@@ -22,7 +22,7 @@ geometry:
     - surface_pressure
     levels: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
   - stream_function
   - velocity_potential
@@ -48,25 +48,25 @@ background error:
       input model files:
       - parameter: rh
         file:
-          filepath: testdata/randomization_bump_nicas_lam_1/rh_000001
+          filepath: testdata/randomization_bump_nicas_lam_1/_MPI_-_OMP__rh_000001
       - parameter: rv
         file:
-          filepath: testdata/randomization_bump_nicas_lam_2/rv_000002
+          filepath: testdata/randomization_bump_nicas_lam_2/_MPI_-_OMP__rv_000002
       number of layers: 3
       resolution: 5
       parallelization: halo
       normalization accuracy stride: 3
-      data file: testdata/dirac_fastlam_8/_MPI__data
+      data file: testdata/dirac_fastlam_8/_MPI_-_OMP__data
       output model files:
       - parameter: normalized horizontal length-scale
         file:
-          filepath: testdata/dirac_fastlam_8/_MPI__normalized_rh
+          filepath: testdata/dirac_fastlam_8/_MPI_-_OMP__normalized_rh
       - parameter: weight
         file:
-          filepath: testdata/dirac_fastlam_8/_MPI__weight_%component%
+          filepath: testdata/dirac_fastlam_8/_MPI_-_OMP__weight_%component%
       - parameter: normalization
         file:
-          filepath: testdata/dirac_fastlam_8/_MPI__norm_%component%
+          filepath: testdata/dirac_fastlam_8/_MPI_-_OMP__norm_%component%
 dirac:
   lon:
   - 10.04

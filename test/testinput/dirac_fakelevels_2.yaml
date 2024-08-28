@@ -19,7 +19,7 @@ geometry:
     levels: 11
   halo: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
   - snow_depth
 background error:
@@ -50,15 +50,15 @@ background error:
       input model files:
       - parameter: rv
         file:
-          filepath: testdata/dirac_fakelevels_1/_MPI__rv
+          filepath: testdata/dirac_fakelevels_1/_MPI_-_OMP__rv
       output model files:
       - parameter: rv
         file:
-          filepath: testdata/dirac_fakelevels_2/_MPI__rv
+          filepath: testdata/dirac_fakelevels_2/_MPI_-_OMP__rv
       - parameter: weight
         file:
           overriding variables: [snow_depth_fakeLevels]
-          filepath: testdata/dirac_fakelevels_2/_MPI__weight
+          filepath: testdata/dirac_fakelevels_2/_MPI_-_OMP__weight
 dirac:
   lon:
   - 180.0

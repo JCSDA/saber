@@ -22,7 +22,7 @@ geometry:
     - surface_pressure
     levels: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
   - stream_function
   - velocity_potential
@@ -49,12 +49,12 @@ background error:
       - parameter: weight
         number of components: 3
         file:
-          filepath: testdata/dirac_fastlam_3/_MPI__weight_%component%
+          filepath: testdata/dirac_fastlam_3/_MPI_-_OMP__weight_%component%
       - parameter: normalization
         number of components: 3
         file:
-          filepath: testdata/dirac_fastlam_3/_MPI__norm_%component%
-      data file: testdata/dirac_fastlam_3/_MPI__data
+          filepath: testdata/dirac_fastlam_3/_MPI_-_OMP__norm_%component%
+      data file: testdata/dirac_fastlam_3/_MPI_-_OMP__data
 dirac:
   lon:
   - 10.04

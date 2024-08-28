@@ -13,11 +13,11 @@ geometry:
   halo: 1
 background:
   states:
-  - date: '2010-01-01T12:00:00Z'
+  - date: 2010-01-01T12:00:00Z
     state variables:
     - eastward_wind
     - northward_wind
-  - date: '2010-01-01T18:00:00Z'
+  - date: 2010-01-01T18:00:00Z
     state variables:
     - eastward_wind
     - northward_wind
@@ -115,12 +115,12 @@ background error:
         members from template:
           template:
             states:
-            - date: '2010-01-01T12:00:00Z'
+            - date: 2010-01-01T12:00:00Z
               filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_%mem%
               state variables:
               - eastward_wind
               - northward_wind
-            - date: '2010-01-01T18:00:00Z'
+            - date: 2010-01-01T18:00:00Z
               filepath: testdata/randomization_bump_nicas_L10L2T18/_MPI_-_OMP__member_%mem%
               state variables:
               - eastward_wind
@@ -133,14 +133,14 @@ background error:
         inflation value: 1.2
         inflation field:
           model file:
-            filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000001 # Does not make sense scientifically, just for technical testing
+            filepath: testdata/convertstate_constant/inflation
         ensemble transform:
           saber outer blocks:
           - saber block name: ID
           - saber block name: StdDev
             read:
               model file:
-                filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000002 # Does not make sense scientifically, just for technical testing
+                filepath: testdata/convertstate_constant/ensemble_transform
         localization:
           saber central block:
             saber block name: BUMP_NICAS
@@ -164,7 +164,7 @@ background error:
     - eastward_wind
     - northward_wind
     atlas file:
-      filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_000003 # Does not make sense scientifically, just for technical testing
+      filepath: testdata/convertstate_constant/linear_variable_change
 dirac:
 - lon:
   - 0.0

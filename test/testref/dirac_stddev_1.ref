@@ -22,9 +22,9 @@ Adjoint test for block StdDev passed
 Adjoint test for block ID passed
 Covariance(SABER) diagnostics:
 - Variances at Dirac points:
-  + Value for variable stream_function, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0356656962519009e+00
+  + Value for variable stream_function, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0356656962519004e+00
 - Covariances at diagnostic points:
-  + Value for variable stream_function, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0356656962519009e+00
+  + Value for variable stream_function, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0356656962519004e+00
 Covariance(SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:

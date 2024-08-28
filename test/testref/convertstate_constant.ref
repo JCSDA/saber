@@ -1,0 +1,69 @@
+       Independent levels:  1[2]
+          Subset Sc0 size:              762
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+             Effective levels:   1   2 
+                Horizontal support radius:    4000.00 km (   4000.00 km -    4000.00 km)
+                Estimated nc1 from horizontal support radius:      589
+                   Decimate full grid, at least      589 points required,     762 valid points found
+                   Subgrid hash:   1676590011
+                Final nc1:      589
+                Effective horizontal resolution:  4.00
+             nc1(  1) =                        589
+             nc1(  2) =                        589
+             ns =                             1178
+             v%n_s =                             2
+             c%n_s[global] =                 28804
+             Effective levels:   1   2 
+                Horizontal support radius:    4000.00 km (   4000.00 km -    4000.00 km)
+                Estimated nc1 from horizontal support radius:      589
+                   Decimate full grid, at least      589 points required,     762 valid points found
+                   Subgrid hash:   1676590011
+                Final nc1:      589
+                Effective horizontal resolution:  4.00
+             nc1(  1) =                        589
+             nc1(  2) =                        589
+             ns =                             1178
+             v%n_s =                             2
+             c%n_s[global] =                 28804
+    Full NICAS adjoint test result:                        T
+       Block NICAS adjoint test result:                    T
+          Interpolation adjoint test (horizontal) result:  T
+          Interpolation adjoint test (vertical) result:    T
+          Interpolation adjoint test (total) result:       T
+          Communication AB adjoint test result:            T
+          Communication AC adjoint test result:            T
+          Convolution / communication adjoint test result: T
+          Component NICAS adjoint test result:             T
+       Block NICAS adjoint test result:                    T
+          Interpolation adjoint test (horizontal) result:  T
+          Interpolation adjoint test (vertical) result:    T
+          Interpolation adjoint test (total) result:       T
+          Communication AB adjoint test result:            T
+          Communication AC adjoint test result:            T
+          Convolution / communication adjoint test result: T
+          Component NICAS adjoint test result:             T
+             Min / max: 1.0000000 /  1.0000000 over     50 tests
+             Min / max: 1.0000000 /  1.0000000 over     50 tests
+             Min / max: 1.0000000 /  1.0000000 over     50 tests
+             Min / max: 1.0000000 /  1.0000000 over     50 tests
+             0.0 /    0.0:  1.0000000
+          Level   1:  0.0000000 -  1.0000000
+          Level   2:  0.0000000 -  0.6000000
+             0.0 /    0.0:  0.0000000
+          Level   1:  0.0000000 -  0.0000000
+          Level   2:  0.0000000 -  0.0000000
+          MSE (exp. / th. / ratio):  0.75269518E+03 /  0.76594153E+03 / 0.983
+          MSE (exp. / th. / ratio):  0.31003811E+03 /  0.30637661E+03 / 1.012
+          MSE (exp. / th. / ratio):  0.20497538E+03 /  0.20425107E+03 / 1.004
+          MSE (exp. / th. / ratio):  0.14691746E+03 /  0.14589362E+03 / 1.007
+          MSE (exp. / th. / ratio):  0.11700860E+03 /  0.11783716E+03 / 0.993
+          MSE (exp. / th. / ratio):  0.97004885E+02 /  0.95742691E+02 / 1.013
+          MSE (exp. / th. / ratio):  0.85182813E+02 /  0.82804489E+02 / 1.029
+          MSE (exp. / th. / ratio):  0.73327469E+02 /  0.71250375E+02 / 1.029
+          MSE (exp. / th. / ratio):  0.64240210E+02 /  0.62525839E+02 / 1.027
+Norm of output parameter cor_rh - 1: 2.2083477986947617e+08
+Norm of output parameter cor_rv - 1: 1.6562608490210712e+02

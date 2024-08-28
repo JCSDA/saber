@@ -74,5 +74,5 @@ Groups:
   - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  eastward_wind: 2.5089292731859036e-13
-  northward_wind: 2.4429824613335415e-13
+  eastward_wind: 4.6812802897699229e-14
+  northward_wind: 4.2976491930423595e-14

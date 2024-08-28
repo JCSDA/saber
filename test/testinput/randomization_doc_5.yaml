@@ -8,7 +8,7 @@ geometry:
     - stream_function
     levels: 1
 background:
-  date: '2010-01-01T12:00:00Z'
+  date: 2010-01-01T12:00:00Z
   state variables:
   - stream_function
 background error:
@@ -18,7 +18,7 @@ background error:
     read:
       io:
         data directory: testdata
-        files prefix: randomization_doc_5/1-1
+        files prefix: randomization_doc_5/_MPI_-_OMP_
       drivers:
         multivariate strategy: univariate
         compute nicas: true
@@ -33,20 +33,20 @@ background error:
       input model files:
       - parameter: rh1
         file:
-          filepath: testdata/randomization_doc_2/rh1_000001
+          filepath: testdata/randomization_doc_2/_MPI_-_OMP__rh1_000001
       - parameter: rh2
         file:
-          filepath: testdata/randomization_doc_3/rh2_000001
+          filepath: testdata/randomization_doc_3/_MPI_-_OMP__rh2_000001
       - parameter: rhc
         file:
-          filepath: testdata/randomization_doc_4/rhc_000003
+          filepath: testdata/randomization_doc_4/_MPI_-_OMP__rhc_000003
       - parameter: rv
         file:
-          filepath: testdata/convertstate_doc_1/rv
+          filepath: testdata/convertstate_doc_1/_MPI_-_OMP__rv
       output model files:
       - parameter: dirac_nicas
         file:
-          filepath: testdata/randomization_doc_5/dirac_nicas
+          filepath: testdata/randomization_doc_5/_MPI_-_OMP__dirac_nicas
   randomization size: 50
 output states:
   filepath: testdata/randomization_doc_5/_MPI_-_OMP__member

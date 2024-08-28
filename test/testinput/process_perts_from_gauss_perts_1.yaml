@@ -16,7 +16,7 @@ geometry:
   halo: 1
 
 background:
-  date: &date '2010-01-01T12:00:00Z'
+  date: &date 2010-01-01T12:00:00Z
   state variables: &vars
   - eastward_wind
   - northward_wind
