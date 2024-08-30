@@ -155,7 +155,7 @@ void writeOutputMIOToNetcdf(std::vector<std::vector<double>> qclIncRegrArr,
   eckit::LocalConfiguration netcdfMetaData;
   for (const oops::Variable & var : vars) {
     util::setAttribute<std::string>(
-      netcdfMetaData, var.name(), "statistics type", "string", "moisture incrementing operator");
+      netcdfMetaData, var.name(), "statistics_type", "string", "moisture incrementing operator");
   }
 
   util::atlasArrayWriteHeader(ncfilepath,

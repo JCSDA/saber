@@ -591,7 +591,7 @@ void VertLoc::writeLocalization(
   eckit::LocalConfiguration netcdfMetaData;
   for (const oops::Variable & var : vars) {
     util::setAttribute<std::string>(
-      netcdfMetaData, var.name(), "statistics type", "string", "vertical localization");
+      netcdfMetaData, var.name(), "statistics_type", "string", "vertical localization");
   }
 
   // Write Header

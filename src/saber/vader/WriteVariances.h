@@ -32,6 +32,7 @@ class calibrationVariancesParameters : public oops::Parameters {
 
 class binningParameters: public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(binningParameters, oops::Parameters)
+
  public:
   oops::RequiredParameter<std::string> type{"type", this};
 
@@ -43,6 +44,8 @@ class binningParameters: public oops::Parameters {
   oops::OptionalParameter<std::string> filePath{"file path", this};
 
   // optional parameters needed for latitude band binning
+  oops::OptionalParameter<std::size_t> noOfBins{"no of bins", this};
+
   oops::OptionalParameter<std::vector<double>> lowerBounds{"lower bounds", this};
 
   oops::OptionalParameter<std::vector<double>> upperBounds{"upper bounds", this};
@@ -58,6 +61,7 @@ class binningParameters: public oops::Parameters {
 
 class varianceInstantaneousParameters : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(varianceInstantaneousParameters, oops::Parameters)
+
  public:
   /// Write out fields in the block's multiply() routine with filename below
   oops::OptionalParameter<std::string> multiplyFileName{"multiply fset filename", this};
@@ -153,10 +157,9 @@ class WriteVariances : public SaberOuterBlockBase {
   std::string binType_;
   eckit::LocalConfiguration netCDFConf_;
   std::size_t sizeOwned_;
+  std::size_t totalBins_;
   atlas::FieldSet binningData_;   // holds the latitude, longitude and
                                   // binning area-weights and index information
-  std::size_t totalBins_;
-  std::vector<std::size_t> totalPtsPerGlobalBin_;
   atlas::FieldSet ensembleStats_;  // in calibration mode
                                    // has the statistics
   const util::DateTime datetime_;

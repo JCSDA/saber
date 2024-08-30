@@ -291,13 +291,13 @@ void  write_1d_covariances(const eckit::mpi::Comm & comm,
         dimNamesForEveryVar.push_back({dimNames[2*iField]});
         dimSizesForEveryVar.push_back({dimSizes[2*iField]});
         util::setAttribute<std::string>(
-          netcdfMetaData, vars[3*iField].name(), "binning type", "string",
+          netcdfMetaData, vars[3*iField].name(), "binning_type", "string",
           "horizontal separation distance");
         util::setAttribute<double>(
-          netcdfMetaData, vars[3*iField].name(), "longitude of reference point",
+          netcdfMetaData, vars[3*iField].name(), "longitude_of_reference_point",
           "real64", lons[iProfile]);
         util::setAttribute<double>(
-          netcdfMetaData, vars[3*iField].name(), "latitude of reference point",
+          netcdfMetaData, vars[3*iField].name(), "latitude_of_reference_point",
           "real64", lats[iProfile]);
 
         // Create new levels variables of size [levels]
@@ -312,13 +312,13 @@ void  write_1d_covariances(const eckit::mpi::Comm & comm,
         dimNamesForEveryVar.push_back({dimNames[2*iField], dimNames[2*iField+1]});
         dimSizesForEveryVar.push_back({dimSizes[2*iField], dimSizes[2*iField+1]});
         util::setAttribute<std::string>(
-          netcdfMetaData, vars[3*iField+2].name(), "statistics type", "string",
+          netcdfMetaData, vars[3*iField+2].name(), "statistics_type", "string",
           "1D horizontal covariance");
         util::setAttribute<double>(
-          netcdfMetaData, vars[3*iField+2].name(), "longitude of reference point",
+          netcdfMetaData, vars[3*iField+2].name(), "longitude_of_reference_point",
           "real64", lons[iProfile]);
         util::setAttribute<double>(
-          netcdfMetaData, vars[3*iField+2].name(), "latitude of reference point",
+          netcdfMetaData, vars[3*iField+2].name(), "latitude_of_reference_point",
           "real64", lats[iProfile]);
       } else {
         // Augment level dimensions by 1

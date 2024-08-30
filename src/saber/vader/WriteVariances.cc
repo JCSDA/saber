@@ -10,6 +10,8 @@
 #include <netcdf.h>
 #include <sys/stat.h>
 
+#include <algorithm>
+#include <set>
 #include <sstream>
 #include <utility>
 #include <vector>
@@ -67,7 +69,6 @@ std::string getBinType(const WriteVariancesParameters & params) {
   return binType;
 }
 
-
 eckit::LocalConfiguration createNetCDFHeaderInput(const std::string & binType,
                                                   const WriteVariancesParameters & params,
                                                   const oops::Variables & vars) {
@@ -94,12 +95,12 @@ eckit::LocalConfiguration createNetCDFHeaderInput(const std::string & binType,
   std::string binWeights = binType + " weights";
   util::setAttribute<std::string>(netCDFConf, binWeights, "long_name",
                                   "string", binWeights);
-  util::setAttribute<std::string>(netCDFConf, binWeights, "binning type",
+  util::setAttribute<std::string>(netCDFConf, binWeights, "binning_type",
                                   "string", binType);
   std::string binIndices = binType + " indices";
   util::setAttribute<std::string>(netCDFConf, binIndices, "long_name",
                                   "string", binIndices);
-  util::setAttribute<std::string>(netCDFConf, binIndices, "binning type",
+  util::setAttribute<std::string>(netCDFConf, binIndices, "binning_type",
                                   "string", binType);
 
   util::createCalibrationNetCDFHeaderInput(conf, statsType, binType, fvars,
@@ -123,21 +124,28 @@ atlas::FieldSet createHorizontalGridPointWeights(const std::string & binType,
   atlas::Field binGlobalIdx =
     atlas::Field(binTypeGlIdx, atlas::array::make_datatype<std::int32_t>(),
                  atlas::array::make_shape(sizeOwned));
+  const std::string binTypeHExtent = binType + " horizontal extent";
+  atlas::Field binHorizExtent =
+    atlas::Field(binTypeHExtent, atlas::array::make_datatype<std::int32_t>(),
+                 atlas::array::make_shape(sizeOwned));
 
   auto gridAreaWgtView = atlas::array::make_view<double, 2>(gridAreaWgt);
   auto gridAreaIdxView = atlas::array::make_view<std::int32_t, 2>(gridAreaIdx);
   auto globalIdxView = atlas::array::make_view<atlas::gidx_t, 1>(fs.global_index());
   auto binGlobalIdxView = atlas::array::make_view<std::int32_t, 1>(binGlobalIdx);
+  auto binHorizExtentView = atlas::array::make_view<std::int32_t, 1>(binHorizExtent);
 
   for (std::size_t jn = 0; jn < sizeOwned; jn++) {
     gridAreaWgtView(jn, 0) = 1.0;
     gridAreaIdxView(jn, 0) = static_cast<std::int32_t>(jn);
     binGlobalIdxView(jn) = static_cast<std::int32_t>(globalIdxView(jn)-1);
+    binHorizExtentView(jn) = 1.0;
   }
   atlas::FieldSet binningData;
   binningData.add(gridAreaWgt);
   binningData.add(gridAreaIdx);
   binningData.add(binGlobalIdx);
+  binningData.add(binHorizExtent);
 
   return binningData;
 }
@@ -156,6 +164,10 @@ atlas::FieldSet createGlobalHorizontalAverageWeights(const eckit::mpi::Comm & lo
   const std::string binTypeGIdx = binType + " global bins";
   atlas::Field binGlobalIdx =
     atlas::Field(binTypeGIdx, atlas::array::make_datatype<std::int32_t>(),
+                 atlas::array::make_shape(1));
+  const std::string binTypeHExtent = binType + " horizontal extent";
+  atlas::Field binHorizExtent =
+    atlas::Field(binTypeHExtent, atlas::array::make_datatype<std::int32_t>(),
                  atlas::array::make_shape(1));
 
   atlas::Field weights;
@@ -180,17 +192,153 @@ atlas::FieldSet createGlobalHorizontalAverageWeights(const eckit::mpi::Comm & lo
   }
   auto binGlobalIdxView = atlas::array::make_view<std::int32_t, 1>(binGlobalIdx);
   binGlobalIdxView(0) = 0;
+  auto binHorizExtentView = atlas::array::make_view<std::int32_t, 1>(binHorizExtent);
+  binHorizExtentView(0) = sizeOwned;
 
   atlas::FieldSet binningData;
   binningData.add(gridAreaWgt);
   binningData.add(gridAreaIdx);
   binningData.add(binGlobalIdx);
+  binningData.add(binHorizExtent);
+
+  return binningData;
+}
+
+// Idea here is to initially
+atlas::FieldSet createOverlappingLatitudeWeights(const eckit::mpi::Comm & localComm,
+                                                 const std::string & binType,
+                                                 const std::size_t sizeOwned,
+                                                 const std::size_t totalBins,
+                                                 const atlas::FunctionSpace & fs) {
+  atlas::FieldSet globalAverageWeights =
+    createGlobalHorizontalAverageWeights(localComm,
+                                         std::string{"horizontal global average"},
+                                         sizeOwned, fs);
+  atlas::idx_t asizeOwned = sizeOwned;
+  std::vector<double> latMin(totalBins, 0.0);
+  std::vector<double> latMax(totalBins, 0.0);
+  std::vector<double> latPeak(totalBins, 0.0);
+  double deltaLat = 180.0 / static_cast<double>(totalBins);
+  for (std::size_t b = 0; b < totalBins; ++b) {
+    latPeak[b] = -90.0 + (b + 0.5) * deltaLat;
+    latMin[b] = -90.0 + (b - 0.5) * deltaLat;
+    latMax[b] = -90.0 + (b + 1.5) * deltaLat;
+  }
+  latMin[0] = -90.0;
+  latMin[1] = latPeak[0];
+  latMax[totalBins-1] = 90.0;
+  latMax[totalBins-2] = latPeak[totalBins-1];
+
+  const atlas::Field lonlat = fs.lonlat();
+  auto lonlatView = atlas::array::make_view<const double, 2>(lonlat);
+
+  // need ideally to have no of local bins on each pe.
+  // need no of local horizontal pts on each pe for each bin.
+  std::set<std::size_t> globalBins;
+  for (atlas::idx_t jn = 0; jn < asizeOwned; ++jn) {
+    for (std::size_t b = 0; b < totalBins; ++b) {
+      if (lonlatView(jn, atlas::LAT) >= latMin[b] && lonlatView(jn, atlas::LAT) <= latMax[b]) {
+        globalBins.insert(b);
+      }
+    }
+  }
+
+  std::vector<std::size_t> horizontalIndexExtent(globalBins.size());
+
+  // total weight should be for all the bins
+  std::vector<double> totalweights(totalBins, 0.0);
+
+
+  auto weightsGAverageView = atlas::array::make_view<double, 2>(
+    globalAverageWeights[std::string{"horizontal global average weights"}]);
+
+  std::size_t localBinIndx(0);
+  for (std::size_t b : globalBins) {
+    std::size_t extent(0);
+    for (atlas::idx_t jn = 0; jn < asizeOwned; ++jn) {
+      if (lonlatView(jn, atlas::LAT) >= latMin[b] && lonlatView(jn, atlas::LAT) <= latMax[b]) {
+        double latweight(0.0);
+        if (((b == 0) && (lonlatView(jn, atlas::LAT) <= latPeak[b])) ||
+            ((b == totalBins - 1) && (lonlatView(jn, atlas::LAT) >= latPeak[b]))) {
+          latweight = 1.0;
+        } else {
+          latweight = 1.0 - std::abs(lonlatView(jn, atlas::LAT) - latPeak[b]) / deltaLat;
+        }
+        ASSERT(latweight >= 0);
+        totalweights[b] += weightsGAverageView(0, jn) * latweight;
+        ++extent;
+      }
+    }
+    horizontalIndexExtent[localBinIndx] = extent;
+    localBinIndx++;
+  }
+  // need a sum totalweights across PEs
+  localComm.allReduceInPlace(totalweights.begin(), totalweights.end(), eckit::mpi::sum());
+
+  auto maxElement = std::max_element(horizontalIndexExtent.begin(), horizontalIndexExtent.end());
+  std::size_t maxExtent = *maxElement;
+
+  atlas::Field gridAreaWgt =
+    atlas::Field(binType + " weights",  atlas::array::make_datatype<double>(),
+                 atlas::array::make_shape(globalBins.size(), maxExtent));
+  const std::string binTypeIdx = binType + " local indices";
+  atlas::Field gridAreaIdx =
+    atlas::Field(binTypeIdx, atlas::array::make_datatype<std::int32_t>(),
+                 atlas::array::make_shape(globalBins.size(), maxExtent));
+  const std::string binTypeGIdx = binType + " global bins";
+  atlas::Field binGlobalIdx =
+    atlas::Field(binTypeGIdx, atlas::array::make_datatype<std::int32_t>(),
+                 atlas::array::make_shape(globalBins.size()));
+  const std::string binTypeHExtent = binType + " horizontal extent";
+  atlas::Field binHorizExtent =
+    atlas::Field(binTypeHExtent, atlas::array::make_datatype<std::int32_t>(),
+                 atlas::array::make_shape(globalBins.size()));
+
+  auto gridAreaWgtView = atlas::array::make_view<double, 2>(gridAreaWgt);
+  auto gridAreaIdxView = atlas::array::make_view<std::int32_t, 2>(gridAreaIdx);
+  auto binGlobalIdxView = atlas::array::make_view<std::int32_t, 1>(binGlobalIdx);
+  auto binHorizExtentView = atlas::array::make_view<std::int32_t, 1>(binHorizExtent);
+  gridAreaWgtView.assign(0.0);
+  gridAreaIdxView.assign(0.0);
+  binGlobalIdxView.assign(0.0);
+  binHorizExtentView.assign(0.0);
+
+  localBinIndx = 0;
+  for (std::size_t b : globalBins) {
+    binGlobalIdxView(localBinIndx) = b;
+    binHorizExtentView(localBinIndx) = horizontalIndexExtent[localBinIndx];
+
+    std::size_t indx(0);
+    for (atlas::idx_t jn = 0; jn < asizeOwned; ++jn) {
+      if (lonlatView(jn, atlas::LAT) >= latMin[b] && lonlatView(jn, atlas::LAT) <= latMax[b]) {
+        double latweight(0.0);
+        if (((b == 0) && (lonlatView(jn, atlas::LAT) <= latPeak[b])) ||
+            ((b == totalBins - 1) && (lonlatView(jn, atlas::LAT) >= latPeak[b]))) {
+          latweight = 1.0;
+        } else {
+          latweight = 1.0 - std::abs(lonlatView(jn, atlas::LAT) - latPeak[b]) / deltaLat;
+        }
+
+        gridAreaIdxView(localBinIndx, indx) = jn;
+        gridAreaWgtView(localBinIndx, indx) =
+          weightsGAverageView(0, jn) * latweight / totalweights[b];
+        ++indx;
+      }
+    }
+    localBinIndx++;
+  }
+  atlas::FieldSet binningData;
+  binningData.add(gridAreaWgt);
+  binningData.add(gridAreaIdx);
+  binningData.add(binGlobalIdx);
+  binningData.add(binHorizExtent);
 
   return binningData;
 }
 
 atlas::FieldSet createBinningData(const std::string & binType,
                                   const std::size_t sizeOwned,
+                                  const std::size_t noOfBins,
                                   const oops::GeometryData & geomData) {
   atlas::FieldSet binningData;
   atlas::FunctionSpace fs = geomData.functionSpace();
@@ -202,6 +350,9 @@ atlas::FieldSet createBinningData(const std::string & binType,
                                                       sizeOwned, fs);
   } else if (binType.compare("horizontal grid point") == 0) {
     weightFlds = createHorizontalGridPointWeights(binType, sizeOwned, fs);
+  } else if (binType.compare("overlapping area-weighted latitude bands") == 0) {
+    weightFlds = createOverlappingLatitudeWeights(geomData.comm(), binType,
+                                                  sizeOwned, noOfBins, fs);
   } else {
     throw eckit::UserError(binType + " not accounted for when setting Binning Data", Here());
   }
@@ -234,44 +385,22 @@ atlas::FieldSet createBinningData(const std::string & binType,
 
 std::size_t getTotalBins(const eckit::mpi::Comm & localComm,
                          const std::string & binType,
-                         const std::size_t sizeOwned) {
+                         const std::size_t sizeOwned,
+                         const binningParameters & bparams) {
   std::size_t totalBins(0);
   if (binType.compare("horizontal global average") == 0) {
     totalBins = 1;
   } else if (binType.compare("horizontal grid point") == 0) {
     localComm.allReduce(sizeOwned, totalBins, eckit::mpi::sum());
+  } else if (binType.compare("overlapping area-weighted latitude bands") == 0) {
+    if (bparams.noOfBins.value() == ::boost::none) {
+      throw eckit::UserError("no of bins needs to be set for when using " + binType , Here());
+    }
+    totalBins = bparams.noOfBins.value().value();
   } else {
     throw eckit::UserError(binType + " not accounted for it getting TotalBins", Here());
   }
   return totalBins;
-}
-
-std::vector<std::size_t> getTotalPtsPerGlobalBin(const eckit::mpi::Comm & localComm,
-                                                 const std::string & binType,
-                                                 const atlas::FieldSet & binningData,
-                                                 const std::size_t & totalBins) {
-  std::vector<std::size_t> totalPtsPerGlobalBinLocal(totalBins, 0);
-  std::vector<std::size_t> totalPtsPerGlobalBin(totalBins, 0);
-
-  // access local indices
-  std::string binTypeIdx = binType + " local indices";
-  std::string binTypeGIdx = binType + " global bins";
-  auto gridAreaIdxView = atlas::array::make_view<std::int32_t, 2>(binningData[binTypeIdx]);
-  auto binGlobalIdxView = atlas::array::make_view<std::int32_t, 1>(binningData[binTypeGIdx]);
-
-  for (atlas::idx_t b = 0; b < gridAreaIdxView.shape()[0]; b++) {
-    // TODO(Marek) Note that in the general case this will not work
-    // ... where the number of indices on each PE for each valid bin is not the same.
-    // In that case we either extend code to use zero-padding and an addtional
-    // binning field that states the maximum size for each bin OR
-    // we extend the number of binning fields so that there is a separate array of each local bin
-    // on each PE.
-    totalPtsPerGlobalBinLocal[binGlobalIdxView(b)] = gridAreaIdxView.shape()[1];
-  }
-
-  localComm.allReduce(totalPtsPerGlobalBinLocal, totalPtsPerGlobalBin, eckit::mpi::sum());
-
-  return totalPtsPerGlobalBin;
 }
 
 // If the calibration is switched on
@@ -290,23 +419,28 @@ atlas::FieldSet createEnsembleStatsFSet(const std::string & binType,
     if (conf.has("additional cross covariances")) {
        noOfStats += conf.getSubConfigurations("additional cross covariances").size();
     }
+    std::cout << "netCDFConf = " << netCDFConf << std::endl;
+
     const std::string statsType = params.statisticsType;
     for (std::size_t s = 0; s < noOfStats; ++s) {
       atlas::Field fld;
-      const std::string name = statsType + " " + std::to_string(s);
+      std::string netCDFShortName = statsType;
+      std::replace(netCDFShortName.begin(), netCDFShortName.end(), ' ', '_');
+      netCDFShortName.append("_" + std::to_string(s));
+
       const std::int32_t levels1 =
-        util::getAttributeValue<std::int32_t>(netCDFConf, name, "levels 1");
+        util::getAttributeValue<std::int32_t>(netCDFConf, netCDFShortName, "levels_1");
       const std::int32_t levels2 =
-        util::getAttributeValue<std::int32_t>(netCDFConf, name, "levels 2");
+        util::getAttributeValue<std::int32_t>(netCDFConf, netCDFShortName, "levels_2");
       const std::size_t bins = binningData[binType + " weights"].shape(0);
       if (statsType == "variance") {
         ASSERT(levels1 == levels2);
-        fld = atlas::Field(name, atlas::array::make_datatype<double>(),
+        fld = atlas::Field(netCDFShortName, atlas::array::make_datatype<double>(),
                            atlas::array::make_shape(bins, levels1));
         atlas::array::make_view<double, 2>(fld).assign(0.0);
         ensembleStats.add(fld);
       } else if (statsType == "vertical covariance") {
-        fld = atlas::Field(name, atlas::array::make_datatype<double>(),
+        fld = atlas::Field(netCDFShortName, atlas::array::make_datatype<double>(),
                            atlas::array::make_shape(bins, levels1, levels2));
         atlas::array::make_view<double, 3>(fld).assign(0.0);
         ensembleStats.add(fld);
@@ -372,8 +506,8 @@ void WriteVariances::writeInstantVariances(const eckit::mpi::Comm & comm,
     }
 
     // Write fsetWrite to file.
-    const std::vector<std::string> dim_names{"bin index",
-                                             "model levels"};
+    const std::vector<std::string> dim_names{"bin_index",
+                                             "model_levels"};
     const std::vector<atlas::idx_t> dim_sizes{fsetWrite[0].shape()[0],
                                               fsetWrite[0].shape()[1]};
     oops::Variables fsetVars(variablesToWrite);
@@ -384,7 +518,7 @@ void WriteVariances::writeInstantVariances(const eckit::mpi::Comm & comm,
     for (const oops::Variable & var : fsetVars) {
       dim_names_for_every_var.push_back(dim_names);
       util::setAttribute<std::string>(
-        netcdfMetaData, var.name(), "statistics type", "string",
+        netcdfMetaData, var.name(), "statistics_type", "string",
         "horizontally-averaged variance");
     }
 
@@ -456,11 +590,8 @@ WriteVariances::WriteVariances(const oops::GeometryData & outerGeometryData,
     binType_(getBinType(params_)),
     netCDFConf_(createNetCDFHeaderInput(binType_, params, outerVars)),
     sizeOwned_(getSizeOwned(innerGeometryData_.functionSpace())),
-    binningData_(createBinningData(binType_, sizeOwned_, innerGeometryData_)),
-    totalBins_(getTotalBins(innerGeometryData_.comm(), binType_, sizeOwned_)),
-    totalPtsPerGlobalBin_(
-      getTotalPtsPerGlobalBin(innerGeometryData_.comm(), binType_,
-                              binningData_, totalBins_)),
+    totalBins_(getTotalBins(innerGeometryData_.comm(), binType_, sizeOwned_, params_.binning)),
+    binningData_(createBinningData(binType_, sizeOwned_, totalBins_, innerGeometryData_)),
     ensembleStats_(
       createEnsembleStatsFSet(binType_, params_, netCDFConf_, binningData_)),
     datetime_(xb.validTime()),
@@ -469,7 +600,7 @@ WriteVariances::WriteVariances(const oops::GeometryData & outerGeometryData,
     count_leftinversemultiply_(1),
     sample_size_(0)
 {
-  oops::Log::trace() << classname() << "::WriteVariances starting" << std::endl;
+  oops::Log::info() << classname() << "::WriteVariances starting" << std::endl;
 
   const binningParameters bparams = params.binning;
   // By setting binning filePath and binning mpiRankPattern we can
@@ -488,13 +619,14 @@ WriteVariances::WriteVariances(const oops::GeometryData & outerGeometryData,
 
     // TODO(Marek) extend to addtional bin types and dump a bin file for each rank
     if (((binType_ == "horizontal global average") ||
-        (binType_ == "horizontal grid point")) &&
+        (binType_ == "horizontal grid point") ||
+        (binType_ == "overlapping area-weighted latitude bands")) &&
          bparams.oneFilePerTask) {
       processedBinnedData.add(binningData_["longitude"]);
       processedBinnedData.add(binningData_["latitude"]);
       processedBinnedData.add(binningData_[binType_ + " weights"]);
       processedBinnedData.add(binningData_[binType_ + " global bins"]);
-
+      processedBinnedData.add(binningData_[binType_ + " horizontal extent"]);
 
       // write to file
       const std::string gBinTypeIdx = "global PE bin index";
@@ -509,9 +641,9 @@ WriteVariances::WriteVariances(const oops::GeometryData & outerGeometryData,
       // adding global header
       eckit::LocalConfiguration netCDFConf = netCDFConf_;
       util::setAttribute<std::string>(
-        netCDFConf, "global metadata", "date time", "string", datetime_.toString());
+        netCDFConf, "global metadata", "date_time", "string", datetime_.toString());
       util::setAttribute<std::string>(
-        netCDFConf, "global metadata", "binning type", "string", binType_);
+        netCDFConf, "global metadata", "binning_type", "string", binType_);
 
       oops::Variables fsetVars;
       for (const std::string & name : processedBinnedData.field_names()) {
@@ -529,7 +661,9 @@ WriteVariances::WriteVariances(const oops::GeometryData & outerGeometryData,
       std::vector<std::vector<std::string>>
           dim_names_for_every_var;
       for (auto & f : fsetVars) {
-        if (f.name() == binType_ + " global bins") {
+        if ((f.name() == binType_ + " global bins") ||
+            (f.name() == binType_ + " horizontal extent"))
+        {
           dim_names_for_every_var.push_back(
             std::vector<std::string>{dim_names[0]});
         } else {
@@ -572,7 +706,7 @@ WriteVariances::WriteVariances(const oops::GeometryData & outerGeometryData,
       }
     }
   }
-  oops::Log::trace() << classname() << "::WriteVariances done" << std::endl;
+  oops::Log::info() << classname() << "::WriteVariances done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
@@ -667,7 +801,7 @@ void WriteVariances::write() const {
   const std::string binType =
     util::getAttributeValue<std::string>(netCDFConf_,
                                          ensembleStats_[0].name(),
-                                         "binning type");
+                                         "binning_type");
   atlas::FieldSet ensembleStatsToWrite =
     util::gatherSumFieldSet(innerGeometryData_.comm(),
                             root,
@@ -675,9 +809,9 @@ void WriteVariances::write() const {
                             binningData_[binType + " global bins"],
                             ensembleStats_);
 
-  const std::string binTypeIdx = binType + " index";
-  const std::string levelsIdx1 = "levels index 1";
-  const std::string levelsIdx2 = "levels index 2";
+  const std::string binTypeIdx = "binning_index";
+  const std::string levelsIdx1 = "levels_index_1";
+  const std::string levelsIdx2 = "levels_index_2";
 
   std::vector<std::string> dim_names{binTypeIdx, levelsIdx1};
   std::vector<idx_t> dim_sizes{ensembleStatsToWrite[0].shape()[0],
@@ -690,11 +824,11 @@ void WriteVariances::write() const {
   // adding global header
   eckit::LocalConfiguration netCDFConf = netCDFConf_;
   util::setAttribute<std::string>(
-    netCDFConf, "global metadata", "covariance name", "string", writeParams.covName);
+    netCDFConf, "global metadata", "covariance_name", "string", writeParams.covName);
   util::setAttribute<std::string>(
-    netCDFConf, "global metadata", "date time", "string", datetime_.toString());
+    netCDFConf, "global metadata", "date_time", "string", datetime_.toString());
   util::setAttribute<std::int32_t>(
-    netCDFConf, "global metadata", "no of samples", "int32",
+    netCDFConf, "global metadata", "no_of_samples", "int32",
     static_cast<std::int32_t>(sample_size_));
 
   // Note will need to change fsetVars to allow for lat, lon index and weight

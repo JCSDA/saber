@@ -249,7 +249,7 @@ std::size_t updateVerticalCovariances(const eckit::LocalConfiguration & netCDFCo
   if (priorSampleSize > 0) {
     // assuming read done before and multiplying by number of prior samples
     for (atlas::Field & vertcov : ensembleStats) {
-      if (vertcov.name().compare(0, 19, "vertical covariance") == 0) {
+      if (vertcov.name().compare(0, 19, "vertical_covariance") == 0) {
         auto vertCovView = make_view<double, 3>(vertcov);
         for (idx_t i = 0; i < vertcov.shape()[0]; ++i) {
           for (idx_t j = 0; j < vertcov.shape()[1]; ++j) {
@@ -263,20 +263,22 @@ std::size_t updateVerticalCovariances(const eckit::LocalConfiguration & netCDFCo
   }
 
   for (atlas::Field & vertcov : ensembleStats) {
-    if (vertcov.name().compare(0, 19, "vertical covariance") == 0) {
+    if (vertcov.name().compare(0, 19, "vertical_covariance") == 0) {
       const std::string var1 =
         util::getAttributeValue<std::string>(netCDFConf, vertcov.name(),
-                                             "variable name 1");
+                                             "variable_name_1");
       const std::string var2 =
         util::getAttributeValue<std::string>(netCDFConf, vertcov.name(),
-                                             "variable name 2");
+                                             "variable_name_2");
       std::string bintype =
         util::getAttributeValue<std::string>(netCDFConf, vertcov.name(),
-                                             "binning type");
+                                             "binning_type");
 
       std::string binindx = bintype + " local indices";
+      std::string binHorizExtent = bintype + " horizontal extent";
       auto wgtView = make_view<double, 2>(binningData[bintype + " weights"]);
       auto indxView = make_view<std::int32_t, 2>(binningData[binindx]);
+      auto hExtentView = make_view<std::int32_t, 1>(binningData[binHorizExtent]);
       auto vertCovView = make_view<double, 3>(vertcov);
 
       for (size_t jj = 0; jj < ensFieldSet.size(); ++jj) {
@@ -285,7 +287,7 @@ std::size_t updateVerticalCovariances(const eckit::LocalConfiguration & netCDFCo
         auto var2View = make_view<const double, 2>(fs[var2]);
 
         for (idx_t b = 0; b < vertcov.shape()[0]; ++b) {
-          for (idx_t i = 0; i < binningData[binindx].shape()[1]; ++i) {
+          for (idx_t i = 0; i < hExtentView(b); ++i) {
             for (idx_t j = 0; j < vertcov.shape()[1]; ++j) {
               for (idx_t k = 0; k < vertcov.shape()[2]; ++k) {
                 std::int32_t l = indxView(b, i);
@@ -303,7 +305,7 @@ std::size_t updateVerticalCovariances(const eckit::LocalConfiguration & netCDFCo
 
   const double recipPriorSampleSize = 1.0/static_cast<double>(updatedSampleSize);
   for (atlas::Field & vertcov : ensembleStats) {
-    if (vertcov.name().compare(0, 19, "vertical covariance") == 0) {
+    if (vertcov.name().compare(0, 19, "vertical_covariance") == 0) {
       auto vertCovView = make_view<double, 3>(vertcov);
       for (idx_t i = 0; i < vertcov.shape()[0]; ++i) {
         for (idx_t j = 0; j < vertcov.shape()[1]; ++j) {
@@ -340,16 +342,18 @@ std::size_t updateVariances(const eckit::LocalConfiguration & netCDFConf,
     if (variance.name().compare(0, 8, "variance") == 0) {
       const std::string var1 =
         util::getAttributeValue<std::string>(netCDFConf, variance.name(),
-                                             "variable name 1");
+                                             "variable_name_1");
       const std::string var2 =
         util::getAttributeValue<std::string>(netCDFConf, variance.name(),
-                                             "variable name 2");
+                                             "variable_name_2");
       std::string bintype =
         util::getAttributeValue<std::string>(netCDFConf, variance.name(),
-                                             "binning type");
+                                             "binning_type");
       std::string binindx = bintype + " local indices";
+      std::string binHorizExtent = bintype + " horizontal extent";
       auto wgtView = make_view<double, 2>(binningData[bintype + " weights"]);
       auto indxView = make_view<std::int32_t, 2>(binningData[binindx]);
+      auto hExtentView = make_view<std::int32_t, 1>(binningData[binHorizExtent]);
       auto varianceView = make_view<double, 2>(variance);
 
       for (size_t jj = 0; jj < ensFieldSet.size(); ++jj) {
@@ -358,7 +362,7 @@ std::size_t updateVariances(const eckit::LocalConfiguration & netCDFConf,
         auto var2View = make_view<const double, 2>(fs[var2]);
 
         for (idx_t b = 0; b < variance.shape()[0]; ++b) {
-          for (idx_t i = 0; i < binningData[binindx].shape()[1]; ++i) {
+          for (idx_t i = 0; i < hExtentView(b); ++i) {
             for (idx_t j = 0; j < variance.shape()[1]; ++j) {
               std::int32_t l = indxView(b, i);
               varianceView(b, j) += var1View(l, j) * var2View(l, j)

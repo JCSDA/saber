@@ -36,7 +36,7 @@ eckit::LocalConfiguration createNetCDFHeaderInput(
     const SpectralCovarianceParameters & params,
     const oops::Variables & activeVars) {
   const std::string statsType = "spectral vertical covariance";
-  const std::string binType = "total horizontal wavenumber";
+  const std::string binType = "total wavenumber";
   bool doingCalibration(params.calibrationParams.value() != boost::none);
   const eckit::LocalConfiguration conf = params.toConfiguration();
   eckit::LocalConfiguration netCDFConf;
@@ -218,9 +218,9 @@ void SpectralCovariance::write() const {
   atlas::FieldSet spectralVertCovToWrite = util::gatherSumFieldSet(geometryData_.comm(),
                                                                    root,
                                                                    spectralVerticalCovariances_);
-  const std::vector<std::string> dim_names{"total wavenumber",
-                                           "model levels 1",
-                                           "model levels 2"};
+  const std::vector<std::string> dim_names{"binning_index",
+                                           "levels_index_1",
+                                           "levels_index_2"};
   const std::vector<atlas::idx_t> dim_sizes{spectralVertCovToWrite[0].shape()[0],
                                             spectralVertCovToWrite[0].shape()[1],
                                             spectralVertCovToWrite[0].shape()[2]};
@@ -228,9 +228,9 @@ void SpectralCovariance::write() const {
   std::vector<std::vector<std::string>> dim_names_for_every_var;
   for (const std::string & name : netCDFConf_.keys()) {
     const auto varname1 =
-      util::getAttributeValue<std::string>(netCDFConf_, name, "variable name 1");
+      util::getAttributeValue<std::string>(netCDFConf_, name, "variable_name_1");
     const auto varname2 =
-      util::getAttributeValue<std::string>(netCDFConf_, name, "variable name 2");
+      util::getAttributeValue<std::string>(netCDFConf_, name, "variable_name_2");
     ASSERT(varname1 == varname2);
     fsetVars.push_back(oops::Variable{name, oops::VariableMetaData(),
                                       activeVars_[varname1].getLevels()});
@@ -240,11 +240,11 @@ void SpectralCovariance::write() const {
 
   eckit::LocalConfiguration netCDFConf = netCDFConf_;
   util::setAttribute<std::string>(
-    netCDFConf, "global metadata", "covariance name", "string", writeParams.covName);
+    netCDFConf, "global metadata", "covariance_name", "string", writeParams.covName);
   util::setAttribute<std::string>(
-    netCDFConf, "global metadata", "date time", "string", datetime_.toString());
+    netCDFConf, "global metadata", "date_time", "string", datetime_.toString());
   util::setAttribute<std::int32_t>(
-    netCDFConf, "global metadata", "no of samples", "int32",
+    netCDFConf, "global metadata", "no_of_samples", "int32",
     static_cast<std::int32_t>(sample_size_));
 
   std::vector<int> netcdf_general_ids;

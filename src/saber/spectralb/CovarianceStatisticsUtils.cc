@@ -428,7 +428,7 @@ std::vector<std::size_t> getNSpectralBinsFull(const spectralbReadParameters & pa
                             netcdfDimVarIDs);
 
     // TODO(Marek) - extend so that multiple horizontal wavenumbers possible
-    std::string hwaveno("total wavenumber");
+    std::string hwaveno("binning_index");
     auto ind = std::find(dimNames.begin(),  dimNames.end(), hwaveno);
     if (ind != dimNames.end()) {
       for (std::size_t ivar = 0; ivar < activeVars.size(); ++ivar) {
@@ -488,10 +488,10 @@ void readSpectralCovarianceFromFile(const std::string & varname1,
     for (const oops::Variable & var : vars) {
       const std::string var1 =
         util::getAttributeValue<std::string>(netCDFConf, var.name(),
-                                             "variable name 1");
+                                             "variable_name_1");
       const std::string var2 =
         util::getAttributeValue<std::string>(netCDFConf, var.name(),
-                                             "variable name 2");
+                                             "variable_name_2");
       if ((var1 == varname1) && (var2 == varname2)) {
         filevarname = var.name();
       }

@@ -7,6 +7,7 @@
 
 #include "saber/util/Calibration.h"
 
+#include <algorithm>
 #include <vector>
 
 #include "oops/util/AtlasArrayUtil.h"
@@ -24,22 +25,25 @@ void createCalibrationNetCDFHeaderInput(const eckit::LocalConfiguration & conf,
     for (const auto & var : vars) {
       const std::string varName = var.name();
       const std::int32_t modellevels = var.getLevels();
-      const std::string netCDFShortName = statsType + " " + std::to_string(fldindx);
+      // replacing spaces for underscores in name
+      std::string netCDFShortName = statsType;
+      std::replace(netCDFShortName.begin(), netCDFShortName.end(), ' ', '_');
+      netCDFShortName.append("_" + std::to_string(fldindx));
       const std::string longname = statsType + " of " + varName + " and " + varName;
 
       util::setAttribute<std::string>(netCDFConf, netCDFShortName, "long_name",
                                       "string", longname);
-      util::setAttribute<std::string>(netCDFConf, netCDFShortName, "statistics type",
+      util::setAttribute<std::string>(netCDFConf, netCDFShortName, "statistics_type",
                                       "string", statsType);
-      util::setAttribute<std::string>(netCDFConf, netCDFShortName, "binning type",
+      util::setAttribute<std::string>(netCDFConf, netCDFShortName, "binning_type",
                                       "string", binType);
-      util::setAttribute<std::string>(netCDFConf, netCDFShortName, "variable name 1",
+      util::setAttribute<std::string>(netCDFConf, netCDFShortName, "variable_name_1",
                                       "string", varName);
-      util::setAttribute<std::string>(netCDFConf, netCDFShortName, "variable name 2",
+      util::setAttribute<std::string>(netCDFConf, netCDFShortName, "variable_name_2",
                                       "string", varName);
-      util::setAttribute<std::int32_t>(netCDFConf, netCDFShortName, "levels 1",
+      util::setAttribute<std::int32_t>(netCDFConf, netCDFShortName, "levels_1",
                                       "int32", modellevels);
-      util::setAttribute<std::int32_t>(netCDFConf, netCDFShortName, "levels 2",
+      util::setAttribute<std::int32_t>(netCDFConf, netCDFShortName, "levels_2",
                                       "int32", modellevels);
       ++fldindx;
     }
@@ -54,22 +58,25 @@ void createCalibrationNetCDFHeaderInput(const eckit::LocalConfiguration & conf,
         // check that var1 and var2 are included in innerVars
         const std::int32_t levels1 = vars[var1].getLevels();
         const std::int32_t levels2 = vars[var2].getLevels();
-        const std::string netCDFShortName = statsType + " " + std::to_string(fldindx);
+        std::string netCDFShortName = statsType;
+        std::replace(netCDFShortName.begin(), netCDFShortName.end(), ' ', '_');
+        netCDFShortName.append("_" + std::to_string(fldindx));
+
         const std::string longname = statsType + " of " + var1 + " and " + var2;
 
         util::setAttribute<std::string>(netCDFConf, netCDFShortName, "long_name",
                                         "string", longname);
-        util::setAttribute<std::string>(netCDFConf, netCDFShortName, "statistics type",
+        util::setAttribute<std::string>(netCDFConf, netCDFShortName, "statistics_type",
                                         "string", statsType);
-        util::setAttribute<std::string>(netCDFConf, netCDFShortName, "binning type",
+        util::setAttribute<std::string>(netCDFConf, netCDFShortName, "binning_type",
                                         "string", binType);
-        util::setAttribute<std::string>(netCDFConf, netCDFShortName, "variable name 1",
+        util::setAttribute<std::string>(netCDFConf, netCDFShortName, "variable_name_1",
                                         "string", var1);
-        util::setAttribute<std::string>(netCDFConf, netCDFShortName, "variable name 2",
+        util::setAttribute<std::string>(netCDFConf, netCDFShortName, "variable_name_2",
                                         "string", var2);
-        util::setAttribute<std::int32_t>(netCDFConf, netCDFShortName, "levels 1",
+        util::setAttribute<std::int32_t>(netCDFConf, netCDFShortName, "levels_1",
                                         "int32", levels1);
-        util::setAttribute<std::int32_t>(netCDFConf, netCDFShortName, "levels 2",
+        util::setAttribute<std::int32_t>(netCDFConf, netCDFShortName, "levels_2",
                                         "int32", levels2);
         ++fldindx;
       }

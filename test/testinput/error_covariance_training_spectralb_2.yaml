@@ -102,5 +102,26 @@ background error:
     field names: *inputvars
     save NetCDF file: true
     statistics type:  "vertical covariance"
+  - saber block name: write variances
+    additional cross covariances:
+    - variable 1: eastward_wind
+      variable 2: northward_wind
+    - variable 1: eastward_wind
+      variable 2: mu
+    - variable 1: northward_wind
+      variable 2: mu
+    binning:
+      type: "overlapping area-weighted latitude bands"
+      no of bins: 7
+      mpi rank pattern: '%MPI%'
+      file path: testdata/error_covariance_training_spectralb_2/lat_overlap_%MPI%.nc
+    calibration:
+      write:
+        covariance name: "randomization with F12 mesh"
+        mpi pattern: '%MPI%'
+        file path: testdata/error_covariance_training_spectralb_2/lat_overlap_vertcov_1_%MPI%.nc
+    field names: *inputvars
+    save NetCDF file: true
+    statistics type:  "vertical covariance"
 test:
   reference filename: testref/error_covariance_training_spectralb_2.ref
