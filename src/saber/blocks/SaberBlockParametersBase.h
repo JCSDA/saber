@@ -41,9 +41,6 @@ class SaberBlockParametersBase : public oops::Parameters {
   // Flag to skip inverse test
   oops::Parameter<bool> skipInverseTest{"skip inverse test", false, this};
 
-  // Flag to skip square-root test
-  oops::Parameter<bool> skipSqrtTest{"skip square-root test", false, this};
-
   // Flag to run the left inverse instead of the adjoint.
   oops::Parameter<bool> filterMode{"filter mode", false, this};
 
