@@ -201,12 +201,12 @@ void LayerRC::setupParallelization() {
   }
 
   // Communicate indices
-  std::vector<int> xIndex_i;
-  std::vector<int> xIndex_j;
+  std::vector<int> xIndex_i(nx_*nyPerTask_[myrank_]);
+  std::vector<int> xIndex_j(nx_*nyPerTask_[myrank_]);
   for (size_t i = 0; i < nx_; ++i) {
     for (size_t j = 0; j < nyPerTask_[myrank_]; ++j) {
-      xIndex_i.push_back(i);
-      xIndex_j.push_back(j+nyStart_[myrank_]);
+      xIndex_i[i*nyPerTask_[myrank_]+j] = i;
+      xIndex_j[i*nyPerTask_[myrank_]+j] = j+nyStart_[myrank_];
     }
   }
   yIndex_i_.resize(ySendSize_);

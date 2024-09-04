@@ -21,7 +21,6 @@
 #include "oops/base/GeometryData.h"
 
 #include "saber/fastlam/FastLAMParametersBase.h"
-#include "saber/fastlam/InterpElement.h"
 
 namespace saber {
 namespace fastlam {
@@ -78,14 +77,15 @@ class LayerBase : public util::Printable,
   void setupVerticalCoord(const atlas::Field &,
                           const atlas::Field &);
   void setupInterpolation();
+  void testInterpolation(const std::vector<double> &) const;
   void setupKernels();
   void setupNormalization();
 
   // I/O
   void read(const int &);
   void broadcast();
-  std::vector<int> writeDef(const int &) const;
-  void writeData(const std::vector<int> &) const;
+  std::array<int, 8> writeDef(const int &) const;
+  void writeData(const std::array<int, 8> &) const;
 
   // Accessors
   double & rh() {return rh_;}
@@ -175,8 +175,16 @@ class LayerBase : public util::Printable,
   std::vector<int> mRecvCounts_;
   std::vector<int> mRecvDispls_;
   std::vector<size_t> rSendMapping_;
-  std::vector<InterpElement> horInterp_;
-  std::vector<InterpElement> verInterp_;
+  std::vector<std::string> horType_;
+  std::vector<std::array<size_t, 4>> horStencil_;
+  std::vector<std::array<double, 4>> horWeights_;
+  std::vector<size_t> horStencilSize_;
+  std::vector<size_t> horIndexI_;
+  std::vector<size_t> horIndexJ_;
+  std::vector<std::array<size_t, 2>> verStencil_;
+  std::vector<std::array<double, 2>> verWeights_;
+  std::vector<size_t> verStencilSize_;
+  std::vector<size_t> verIndex_;
 
  private:
   // Parallelization mode

@@ -204,21 +204,22 @@ void LayerBase::setupInterpolation() {
   noInterp_ = !(xRedFac_ > 1.0 || yRedFac_ > 1.0 || zRedFac_ > 1.0);
 
   // Reduced grid coordinates
-  std::vector<double> xCoord;
+  std::vector<double> xCoord(nx_);
   const double dxCoord = static_cast<double>(nx0_-1)/static_cast<double>(nx_-1);
   for (size_t i = 0; i < nx_; ++i) {
-    xCoord.push_back(static_cast<double>(i)*dxCoord);
+    xCoord[i] = static_cast<double>(i)*dxCoord;
   }
-  std::vector<double> yCoord;
+  std::vector<double> yCoord(ny_);
   const double dyCoord = static_cast<double>(ny0_-1)/static_cast<double>(ny_-1);
   for (size_t j = 0; j < ny_; ++j) {
-    yCoord.push_back(static_cast<double>(j)*dyCoord);
+    yCoord[j] = static_cast<double>(j)*dyCoord;
   }
   std::vector<double> zCoord;
   if (nz_ > 1) {
+    zCoord.resize(nz_);
     const double dz = static_cast<double>(nz0_-1)/static_cast<double>(nz_-1);
     for (size_t k = 0; k < nz_; ++k) {
-      zCoord.push_back(static_cast<double>(k)*dz);
+      zCoord[k] = static_cast<double>(k)*dz;
     }
   } else {
     zCoord.push_back(0.0);
@@ -482,13 +483,17 @@ void LayerBase::setupInterpolation() {
       {return mRecvPointsListOrdered[i1] < mRecvPointsListOrdered[i2];});
 
     // Compute horizontal interpolation
+    horType_.resize(mSize_);
+    horStencil_.resize(mSize_);
+    horWeights_.resize(mSize_);
+    horStencilSize_.resize(mSize_);
+    horIndexI_.resize(mSize_);
+    horIndexJ_.resize(mSize_);
     for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
       if (ghostView(jnode0) == 0) {
         // Interpolation element default values
-        std::string interpType = "n";
         size_t indexI = nx_;
         size_t indexJ = ny_;
-        std::vector<std::pair<size_t, double>> operations;
 
         // Model grid indices
         const size_t i0 = indexIView0(jnode0)-1;
@@ -503,10 +508,11 @@ void LayerBase::setupInterpolation() {
         const double alphaJ = dj-static_cast<double>(indexJ);
 
         // Points to find
-        std::vector<bool> toFind = {true, !colocatedI, !colocatedJ, !colocatedI && !colocatedJ};
-        std::vector<size_t> valueToFind = {indexI*ny_+indexJ, (indexI+1)*ny_+indexJ,
+        std::array<bool, 4> toFind = {true, !colocatedI, !colocatedJ, !colocatedI && !colocatedJ};
+        std::array<size_t, 4> valueToFind = {indexI*ny_+indexJ, (indexI+1)*ny_+indexJ,
           indexI*ny_+(indexJ+1), (indexI+1)*ny_+(indexJ+1)};
-        std::vector<int> foundIndex(4, -1);
+        std::array<int, 4> foundIndex;
+        foundIndex.fill(-1);
 
         // Binary search for each point
         for (size_t jj = 0; jj < 4; ++jj) {
@@ -520,44 +526,67 @@ void LayerBase::setupInterpolation() {
         // Create interpolation operations
         if (colocatedI && colocatedJ) {
           // Colocated point
-          interpType = "c";
-          operations.push_back(std::make_pair(foundIndex[0], 1.0));
+          horType_[jnode0] = "c";
+          horStencil_[jnode0][0] = foundIndex[0];
+          horWeights_[jnode0][0] = 1.0;
+          horStencilSize_[jnode0] = 1;
         } else if (colocatedJ) {
           // Linear interpolation along x
-          interpType = "x";
-          operations.push_back(std::make_pair(foundIndex[0], 1.0-alphaI));
-          operations.push_back(std::make_pair(foundIndex[1], alphaI));
+          horType_[jnode0] = "x";
+          horStencil_[jnode0][0] = foundIndex[0];
+          horWeights_[jnode0][0] = 1.0-alphaI;
+          horStencil_[jnode0][1] = foundIndex[1];
+          horWeights_[jnode0][1] = alphaI;
+          horStencilSize_[jnode0] = 2;
         } else if (colocatedI) {
           // Linear interpolation along y
-          interpType = "y";
-          operations.push_back(std::make_pair(foundIndex[0], 1.0-alphaJ));
-          operations.push_back(std::make_pair(foundIndex[2], alphaJ));
+          horType_[jnode0] = "y";
+          horStencil_[jnode0][0] = foundIndex[0];
+          horWeights_[jnode0][0] = 1.0-alphaJ;
+          horStencil_[jnode0][1] = foundIndex[2];
+          horWeights_[jnode0][1] = alphaJ;
+          horStencilSize_[jnode0] = 2;
         } else {
           // Bilinear interpolation
-          interpType = "b";
-          operations.push_back(std::make_pair(foundIndex[0], (1.0-alphaI)*(1.0-alphaJ)));
-          operations.push_back(std::make_pair(foundIndex[1], alphaI*(1.0-alphaJ)));
-          operations.push_back(std::make_pair(foundIndex[2], (1.0-alphaI)*alphaJ));
-          operations.push_back(std::make_pair(foundIndex[3], alphaI*alphaJ));
+          horType_[jnode0] = "b";
+          horStencil_[jnode0][0] = foundIndex[0];
+          horWeights_[jnode0][0] = (1.0-alphaI)*(1.0-alphaJ);
+          horStencil_[jnode0][1] = foundIndex[1];
+          horWeights_[jnode0][1] = alphaI*(1.0-alphaJ);
+          horStencil_[jnode0][2] = foundIndex[2];
+          horWeights_[jnode0][2] = (1.0-alphaI)*alphaJ;
+          horStencil_[jnode0][3] = foundIndex[3];
+          horWeights_[jnode0][3] = alphaI*alphaJ;
+          horStencilSize_[jnode0] = 4;
         }
-        horInterp_.push_back(InterpElement(interpType, indexI, indexJ, operations));
+        horIndexI_[jnode0] = indexI;
+        horIndexJ_[jnode0] = indexJ;
+      } else {
+        // No interpolation
+        horStencilSize_[jnode0] = 0;
       }
     }
   }
 
   // Compute vertical interpolation
+  verStencil_.resize(nz0_);
+  verWeights_.resize(nz0_);
+  verStencilSize_.resize(nz0_);
+  verIndex_.resize(nz0_);
   for (size_t k0 = 0; k0 < nz0_; ++k0) {
-    size_t index1 = nz_;
-    std::vector<std::pair<size_t, double>> operations;
     if (rv_ > 0.0) {
       if (k0 == 0) {
         // First level
-        index1 = 0;
-        operations.push_back(std::make_pair(0, 1.0));
+        verStencil_[k0][0] = 0;
+        verWeights_[k0][0] = 1.0;
+        verStencilSize_[k0] = 1;
+        verIndex_[k0] = 0;
       } else if (k0 == nz0_-1) {
         // Last level
-        index1 = nz_-1;
-        operations.push_back(std::make_pair(nz_-1, 1.0));
+        verStencil_[k0][0] = nz_-1;
+        verWeights_[k0][0] = 1.0;
+        verStencilSize_[k0] = 1;
+        verIndex_[k0] = nz_-1;
       } else {
         // Other levels
         bool found = false;
@@ -565,8 +594,10 @@ void LayerBase::setupInterpolation() {
         while ((!found) && (k < nz_-1)) {
           if (std::abs(normVertCoord_[k0]-zCoord[k]) < 1.0e-12) {
             // Colocated point
-            index1 = k;
-            operations.push_back(std::make_pair(k, 1.0));
+            verStencil_[k0][0] = k;
+            verWeights_[k0][0] = 1.0;
+            verStencilSize_[k0] = 1;
+            verIndex_[k0] = k;
             found = true;
           }
           ++k;
@@ -575,10 +606,13 @@ void LayerBase::setupInterpolation() {
         while ((!found) && (k < nz_-1)) {
           if (zCoord[k] < normVertCoord_[k0] && normVertCoord_[k0] < zCoord[k+1]) {
             // Linear interpolation
-            index1 = k;
             const double alphaK = normVertCoord_[k0]-zCoord[k];
-            operations.push_back(std::make_pair(k, 1.0-alphaK));
-            operations.push_back(std::make_pair(k+1, alphaK));
+            verStencil_[k0][0] = k;
+            verWeights_[k0][0] = 1.0-alphaK;
+            verStencil_[k0][1] = k+1;
+            verWeights_[k0][1] = alphaK;
+            verStencilSize_[k0] = 2;
+            verIndex_[k0] = k;
             found = true;
           }
           ++k;
@@ -587,150 +621,171 @@ void LayerBase::setupInterpolation() {
       }
     } else {
       // No interpolation
-      index1 = k0;
-      operations.push_back(std::make_pair(k0, 1.0));
+      verStencil_[k0][0] = k0;
+      verWeights_[k0][0] = 1.0;
+      verStencilSize_[k0] = 1;
+      verIndex_[k0] = k0;
     }
-    verInterp_.push_back(InterpElement(index1, operations));
   }
 
   if (!params_.skipTests.value()) {
-    // Get indices
-    const auto indexIView = atlas::array::make_view<int, 1>(fset_["index_i"]);
-    const auto indexJView = atlas::array::make_view<int, 1>(fset_["index_j"]);
-
-    // Check interpolation accuracy
-    atlas::Field redField = fspace_.createField<double>(
-      atlas::option::name("dummy") | atlas::option::levels(nz_));
-    atlas::Field modelField = gdata_.functionSpace().createField<double>(
-      atlas::option::name("dummy") | atlas::option::levels(nz0_));
-    auto redView = atlas::array::make_view<double, 2>(redField);
-    for (size_t jnode = 0; jnode < rSize_; ++jnode) {
-      const double x = static_cast<double>(indexIView(jnode)-1)/static_cast<double>(nx_-1);
-      const double y = static_cast<double>(indexJView(jnode)-1)/static_cast<double>(ny_-1);
-      for (size_t k = 0; k < nz_; ++k) {
-        const double z = zCoord[k]/static_cast<double>(nz0_-1);
-        redView(jnode, k) = 0.5*(std::sin(2.0*M_PI*x)*std::sin(2.0*M_PI*y)
-          *std::cos(2.0*M_PI*z)+1.0);
-      }
-    }
-    interpolationTL(redField, modelField);
-    double accuracy = 0.0;
-    double maxVal = 0.0;
-    double maxRefVal = 0.0;
-    std::vector<double> locMax(3, 0.0);
-    const auto modelView = atlas::array::make_view<double, 2>(modelField);
-    for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
-      if (ghostView(jnode0) == 0) {
-        const double x = static_cast<double>(indexIView0(jnode0)-1)/static_cast<double>(nx0_-1);
-        const double y = static_cast<double>(indexJView0(jnode0)-1)/static_cast<double>(ny0_-1);
-        for (size_t k0 = 0; k0 < nz0_; ++k0) {
-          const double z = normVertCoord_[k0]/static_cast<double>(nz0_-1);
-          const double refVal = 0.5*(std::sin(2.0*M_PI*x)*std::sin(2.0*M_PI*y)
-            *std::cos(2.0*M_PI*z)+1.0);
-          const double diff = std::abs(modelView(jnode0, k0)-refVal);
-          if (diff > accuracy) {
-            accuracy = diff;
-            maxVal = modelView(jnode0, k0);
-            maxRefVal = refVal;
-            const auto lonLatView = atlas::array::make_view<double, 2>(
-              gdata_.functionSpace().lonlat());
-            locMax = {lonLatView(jnode0, 0), lonLatView(jnode0, 1), z};
-          }
-        }
-      }
-    }
-    std::vector<double> accuracyPerTask(comm_.size());
-    comm_.allGather(accuracy, accuracyPerTask.begin(), accuracyPerTask.end());
-    size_t maxTask = std::distance(accuracyPerTask.begin(), std::max_element(
-      accuracyPerTask.begin(), accuracyPerTask.end()));
-    comm_.broadcast(maxVal, maxTask);
-    comm_.broadcast(maxRefVal, maxTask);
-    comm_.broadcast(locMax, maxTask);
-    oops::Log::info() << std::setprecision(16)<< "Info     :     Interpolation test accuracy: "
-      << accuracy << " (tolerance = " << params_.accuracyTolerance.value()
-      << "), at " << locMax << " : " << maxVal << " != " << maxRefVal << std::endl;
-    oops::Log::test() << "    FastLAM interpolation accuracy test";
-    if (accuracy < params_.accuracyTolerance.value()) {
-      oops::Log::test() << " passed" << std::endl;
-    } else {
-      oops::Log::test() << " failed" << std::endl;
-      throw eckit::Exception("interpolation accuracy test failed for block FastLAM", Here());
-    }
-
-    // Check interpolation adjoint
-
-    // Create fields
-    atlas::Field redFieldTL = fspace_.createField<double>(
-      atlas::option::name("dummy") | atlas::option::levels(nz_));
-    atlas::Field modelFieldTL = gdata_.functionSpace().createField<double>(
-      atlas::option::name("dummy") | atlas::option::levels(nz0_));
-    atlas::Field modelFieldAD = gdata_.functionSpace().createField<double>(
-      atlas::option::name("dummy") | atlas::option::levels(nz0_));
-    atlas::Field redFieldAD = fspace_.createField<double>(
-      atlas::option::name("dummy") | atlas::option::levels(nz_));
-    auto redViewTL = atlas::array::make_view<double, 2>(redFieldTL);
-    auto modelViewTL = atlas::array::make_view<double, 2>(modelFieldTL);
-    auto modelViewAD = atlas::array::make_view<double, 2>(modelFieldAD);
-    auto redViewAD = atlas::array::make_view<double, 2>(redFieldAD);
-
-    // Generate random fields
-    size_t seed = 7;  // To avoid impact on future random generator calls
-    util::NormalDistribution<double> dist(rSize_*nz_+mSize_*nz0_, 0.0, 1.0, seed);
-    size_t jj = 0;
-    for (size_t jnode = 0; jnode < rSize_; ++jnode) {
-      for (size_t k = 0; k < nz_; ++k) {
-        redViewTL(jnode, k) = dist[jj];
-        ++jj;
-      }
-    }
-    modelViewAD.assign(0.0);
-    for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
-      if (ghostView(jnode0) == 0) {
-        for (size_t k0 = 0; k0 < nz0_; ++k0) {
-          modelViewAD(jnode0, k0) = dist[jj];
-          ++jj;
-        }
-      }
-    }
-
-    // Interpolation TL/AD
-    interpolationTL(redFieldTL, modelFieldTL);
-    interpolationAD(modelFieldAD, redFieldAD);
-
-    // Adjoint test
-    double dp1 = 0.0;
-    for (size_t jnode = 0; jnode < rSize_; ++jnode) {
-      for (size_t k = 0; k < nz_; ++k) {
-        dp1 += redViewTL(jnode, k)*redViewAD(jnode, k);
-      }
-    }
-    comm_.allReduceInPlace(dp1, eckit::mpi::sum());
-    double dp2 = 0.0;
-    for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
-      if (ghostView(jnode0) == 0) {
-        for (size_t k0 = 0; k0 < nz0_; ++k0) {
-          dp2 += modelViewTL(jnode0, k0)*modelViewAD(jnode0, k0);
-        }
-      }
-    }
-    comm_.allReduceInPlace(dp2, eckit::mpi::sum());
-
-    // Print result
-    const double diff = std::abs(dp1-dp2)/std::abs(0.5*(dp1+dp2));
-    oops::Log::info() << std::setprecision(16)
-      << "Info     :     FastLAM interpolation adjoint test: y^t (Ax) = "
-      << dp1 << ": x^t (A^t y) = " << dp2 << " : diff = " << diff << ", adjoint tolerance = "
-      << params_.adjointTolerance.value() << std::endl;
-    oops::Log::test() << "    FastLAM interpolation adjoint test";
-    if (diff < params_.adjointTolerance.value()) {
-      oops::Log::test() << " passed" << std::endl;
-    } else {
-      oops::Log::test() << " failed" << std::endl;
-      throw eckit::Exception("interpolation adjoint test failed for block FastLAM", Here());
-    }
+    // Test interpolation
+    testInterpolation(zCoord);
   }
 
   oops::Log::trace() << classname() << "::setupInterpolation done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void LayerBase::testInterpolation(const std::vector<double> & zCoord) const {
+  oops::Log::trace() << classname() << "::testInterpolation starting" << std::endl;
+
+  // Get indices
+  const atlas::functionspace::StructuredColumns fs(gdata_.functionSpace());
+  atlas::Field fieldIndexI0 = fs.index_i();
+  atlas::Field fieldIndexJ0 = fs.index_j();
+  const auto indexIView = atlas::array::make_view<int, 1>(fset_["index_i"]);
+  const auto indexJView = atlas::array::make_view<int, 1>(fset_["index_j"]);
+  auto indexIView0 = atlas::array::make_view<int, 1>(fieldIndexI0);
+  auto indexJView0 = atlas::array::make_view<int, 1>(fieldIndexJ0);
+
+  // Ghost points
+  const auto ghostView = atlas::array::make_view<int, 1>(gdata_.functionSpace().ghost());
+
+  // Check interpolation accuracy
+  atlas::Field redField = fspace_.createField<double>(
+    atlas::option::name("dummy") | atlas::option::levels(nz_));
+  atlas::Field modelField = gdata_.functionSpace().createField<double>(
+    atlas::option::name("dummy") | atlas::option::levels(nz0_));
+  auto redView = atlas::array::make_view<double, 2>(redField);
+  for (size_t jnode = 0; jnode < rSize_; ++jnode) {
+    const double x = static_cast<double>(indexIView(jnode)-1)/static_cast<double>(nx_-1);
+    const double y = static_cast<double>(indexJView(jnode)-1)/static_cast<double>(ny_-1);
+    for (size_t k = 0; k < nz_; ++k) {
+      const double z = zCoord[k]/static_cast<double>(nz0_-1);
+      redView(jnode, k) = 0.5*(std::sin(2.0*M_PI*x)*std::sin(2.0*M_PI*y)
+        *std::cos(2.0*M_PI*z)+1.0);
+    }
+  }
+  interpolationTL(redField, modelField);
+  double accuracy = 0.0;
+  double maxVal = 0.0;
+  double maxRefVal = 0.0;
+  std::array<double, 3> locMax;
+  locMax.fill(0.0);
+  const auto modelView = atlas::array::make_view<double, 2>(modelField);
+  for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
+    if (ghostView(jnode0) == 0) {
+      const double x = static_cast<double>(indexIView0(jnode0)-1)/static_cast<double>(nx0_-1);
+      const double y = static_cast<double>(indexJView0(jnode0)-1)/static_cast<double>(ny0_-1);
+      for (size_t k0 = 0; k0 < nz0_; ++k0) {
+        const double z = normVertCoord_[k0]/static_cast<double>(nz0_-1);
+        const double refVal = 0.5*(std::sin(2.0*M_PI*x)*std::sin(2.0*M_PI*y)
+          *std::cos(2.0*M_PI*z)+1.0);
+        const double diff = std::abs(modelView(jnode0, k0)-refVal);
+        if (diff > accuracy) {
+          accuracy = diff;
+          maxVal = modelView(jnode0, k0);
+          maxRefVal = refVal;
+          const auto lonLatView = atlas::array::make_view<double, 2>(
+            gdata_.functionSpace().lonlat());
+          locMax = {lonLatView(jnode0, 0), lonLatView(jnode0, 1), z};
+        }
+      }
+    }
+  }
+  std::vector<double> accuracyPerTask(comm_.size());
+  comm_.allGather(accuracy, accuracyPerTask.begin(), accuracyPerTask.end());
+  size_t maxTask = std::distance(accuracyPerTask.begin(), std::max_element(
+    accuracyPerTask.begin(), accuracyPerTask.end()));
+  comm_.broadcast(maxVal, maxTask);
+  comm_.broadcast(maxRefVal, maxTask);
+  comm_.broadcast(locMax.begin(), locMax.end(), maxTask);
+  oops::Log::info() << std::setprecision(16)<< "Info     :     Interpolation test accuracy: "
+    << accuracy << " (tolerance = " << params_.accuracyTolerance.value()
+    << "), at " << locMax << " : " << maxVal << " != " << maxRefVal << std::endl;
+  oops::Log::test() << "    FastLAM interpolation accuracy test";
+  if (accuracy < params_.accuracyTolerance.value()) {
+    oops::Log::test() << " passed" << std::endl;
+  } else {
+    oops::Log::test() << " failed" << std::endl;
+    throw eckit::Exception("interpolation accuracy test failed for block FastLAM", Here());
+  }
+
+  // Check interpolation adjoint
+
+  // Create fields
+  atlas::Field redFieldTL = fspace_.createField<double>(
+    atlas::option::name("dummy") | atlas::option::levels(nz_));
+  atlas::Field modelFieldTL = gdata_.functionSpace().createField<double>(
+    atlas::option::name("dummy") | atlas::option::levels(nz0_));
+  atlas::Field modelFieldAD = gdata_.functionSpace().createField<double>(
+    atlas::option::name("dummy") | atlas::option::levels(nz0_));
+  atlas::Field redFieldAD = fspace_.createField<double>(
+    atlas::option::name("dummy") | atlas::option::levels(nz_));
+  auto redViewTL = atlas::array::make_view<double, 2>(redFieldTL);
+  auto modelViewTL = atlas::array::make_view<double, 2>(modelFieldTL);
+  auto modelViewAD = atlas::array::make_view<double, 2>(modelFieldAD);
+  auto redViewAD = atlas::array::make_view<double, 2>(redFieldAD);
+
+  // Generate random fields
+  size_t seed = 7;  // To avoid impact on future random generator calls
+  util::NormalDistribution<double> dist(rSize_*nz_+mSize_*nz0_, 0.0, 1.0, seed);
+  size_t jj = 0;
+  for (size_t jnode = 0; jnode < rSize_; ++jnode) {
+    for (size_t k = 0; k < nz_; ++k) {
+      redViewTL(jnode, k) = dist[jj];
+      ++jj;
+    }
+  }
+  modelViewAD.assign(0.0);
+  for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
+    if (ghostView(jnode0) == 0) {
+      for (size_t k0 = 0; k0 < nz0_; ++k0) {
+        modelViewAD(jnode0, k0) = dist[jj];
+        ++jj;
+      }
+    }
+  }
+
+  // Interpolation TL/AD
+  interpolationTL(redFieldTL, modelFieldTL);
+  interpolationAD(modelFieldAD, redFieldAD);
+
+  // Adjoint test
+  double dp1 = 0.0;
+  for (size_t jnode = 0; jnode < rSize_; ++jnode) {
+    for (size_t k = 0; k < nz_; ++k) {
+      dp1 += redViewTL(jnode, k)*redViewAD(jnode, k);
+    }
+  }
+  comm_.allReduceInPlace(dp1, eckit::mpi::sum());
+  double dp2 = 0.0;
+  for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
+    if (ghostView(jnode0) == 0) {
+      for (size_t k0 = 0; k0 < nz0_; ++k0) {
+        dp2 += modelViewTL(jnode0, k0)*modelViewAD(jnode0, k0);
+      }
+    }
+  }
+  comm_.allReduceInPlace(dp2, eckit::mpi::sum());
+
+  // Print result
+  const double diff = std::abs(dp1-dp2)/std::abs(0.5*(dp1+dp2));
+  oops::Log::info() << std::setprecision(16)
+    << "Info     :     FastLAM interpolation adjoint test: y^t (Ax) = "
+    << dp1 << ": x^t (A^t y) = " << dp2 << " : diff = " << diff << ", adjoint tolerance = "
+    << params_.adjointTolerance.value() << std::endl;
+  oops::Log::test() << "    FastLAM interpolation adjoint test";
+  if (diff < params_.adjointTolerance.value()) {
+    oops::Log::test() << " passed" << std::endl;
+  } else {
+    oops::Log::test() << " failed" << std::endl;
+    throw eckit::Exception("interpolation adjoint test failed for block FastLAM", Here());
+  }
+
+  oops::Log::trace() << classname() << "::testInterpolation done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
@@ -874,55 +929,53 @@ void LayerBase::setupNormalization() {
     for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
       if (ghostView(jnode0) == 0) {
         // Define offset
-        size_t offsetI = std::min(std::min(horInterp_[jnode0].index1(),
-          nx_-2-horInterp_[jnode0].index1()), nxHalf-1);
-        size_t offsetJ = std::min(std::min(horInterp_[jnode0].index2(),
-          ny_-2-horInterp_[jnode0].index2()), nyHalf-1);
+        size_t offsetI = std::min(std::min(horIndexI_[jnode0], nx_-2-horIndexI_[jnode0]), nxHalf-1);
+        size_t offsetJ = std::min(std::min(horIndexJ_[jnode0], ny_-2-horIndexJ_[jnode0]), nyHalf-1);
         size_t horOffset = 4*(offsetI*nyHalf+offsetJ);
 
-        if (horInterp_[jnode0].interpType() == "c") {
+        if (horType_[jnode0] == "c") {
           // Colocated point, no normalization needed
           normView(jnode0, 0) = 1.0;
-        } else if (horInterp_[jnode0].interpType() == "x") {
+        } else if (horType_[jnode0] == "x") {
           // Linear interpolation along x
-          double xW = horConv[horOffset+0]*horInterp_[jnode0].operations()[0].second
-            +horConv[horOffset+1]*horInterp_[jnode0].operations()[1].second;
-          double xE = horConv[horOffset+1]*horInterp_[jnode0].operations()[0].second
-            +horConv[horOffset+0]*horInterp_[jnode0].operations()[1].second;
-          normView(jnode0, 0) = horInterp_[jnode0].operations()[0].second*xW
-            +horInterp_[jnode0].operations()[1].second*xE;
-        } else if (horInterp_[jnode0].interpType() == "y") {
+          double xW = horConv[horOffset+0]*horWeights_[jnode0][0]
+            +horConv[horOffset+1]*horWeights_[jnode0][1];
+          double xE = horConv[horOffset+1]*horWeights_[jnode0][0]
+            +horConv[horOffset+0]*horWeights_[jnode0][1];
+          normView(jnode0, 0) = horWeights_[jnode0][0]*xW
+            +horWeights_[jnode0][1]*xE;
+        } else if (horType_[jnode0] == "y") {
           // Linear interpolation along y
-          double xS = horConv[horOffset+0]*horInterp_[jnode0].operations()[0].second
-            +horConv[horOffset+2]*horInterp_[jnode0].operations()[1].second;
-          double xN = horConv[horOffset+2]*horInterp_[jnode0].operations()[0].second
-            +horConv[horOffset+0]*horInterp_[jnode0].operations()[1].second;
-          normView(jnode0, 0) = horInterp_[jnode0].operations()[0].second*xS
-            +horInterp_[jnode0].operations()[1].second*xN;
-        } else if (horInterp_[jnode0].interpType() == "b") {
+          double xS = horConv[horOffset+0]*horWeights_[jnode0][0]
+            +horConv[horOffset+2]*horWeights_[jnode0][1];
+          double xN = horConv[horOffset+2]*horWeights_[jnode0][0]
+            +horConv[horOffset+0]*horWeights_[jnode0][1];
+          normView(jnode0, 0) = horWeights_[jnode0][0]*xS
+            +horWeights_[jnode0][1]*xN;
+        } else if (horType_[jnode0] == "b") {
           // Bilinear interpolation
-          double xSW = horConv[horOffset+0]*horInterp_[jnode0].operations()[0].second
-            +horConv[horOffset+1]*horInterp_[jnode0].operations()[1].second
-            +horConv[horOffset+2]*horInterp_[jnode0].operations()[2].second
-            +horConv[horOffset+3]*horInterp_[jnode0].operations()[3].second;
-          double xSE = horConv[horOffset+1]*horInterp_[jnode0].operations()[0].second
-            +horConv[horOffset+0]*horInterp_[jnode0].operations()[1].second
-            +horConv[horOffset+3]*horInterp_[jnode0].operations()[2].second
-            +horConv[horOffset+2]*horInterp_[jnode0].operations()[3].second;
-          double xNW = horConv[horOffset+2]*horInterp_[jnode0].operations()[0].second
-            +horConv[horOffset+3]*horInterp_[jnode0].operations()[1].second
-            +horConv[horOffset+0]*horInterp_[jnode0].operations()[2].second
-            +horConv[horOffset+1]*horInterp_[jnode0].operations()[3].second;
-          double xNE = horConv[horOffset+3]*horInterp_[jnode0].operations()[0].second
-            +horConv[horOffset+2]*horInterp_[jnode0].operations()[1].second
-            +horConv[horOffset+1]*horInterp_[jnode0].operations()[2].second
-            +horConv[horOffset+0]*horInterp_[jnode0].operations()[3].second;
-          normView(jnode0, 0) = horInterp_[jnode0].operations()[0].second*xSW
-            +horInterp_[jnode0].operations()[1].second*xSE
-            +horInterp_[jnode0].operations()[2].second*xNW
-            +horInterp_[jnode0].operations()[3].second*xNE;
+          double xSW = horConv[horOffset+0]*horWeights_[jnode0][0]
+            +horConv[horOffset+1]*horWeights_[jnode0][1]
+            +horConv[horOffset+2]*horWeights_[jnode0][2]
+            +horConv[horOffset+3]*horWeights_[jnode0][3];
+          double xSE = horConv[horOffset+1]*horWeights_[jnode0][0]
+            +horConv[horOffset+0]*horWeights_[jnode0][1]
+            +horConv[horOffset+3]*horWeights_[jnode0][2]
+            +horConv[horOffset+2]*horWeights_[jnode0][3];
+          double xNW = horConv[horOffset+2]*horWeights_[jnode0][0]
+            +horConv[horOffset+3]*horWeights_[jnode0][1]
+            +horConv[horOffset+0]*horWeights_[jnode0][2]
+            +horConv[horOffset+1]*horWeights_[jnode0][3];
+          double xNE = horConv[horOffset+3]*horWeights_[jnode0][0]
+            +horConv[horOffset+2]*horWeights_[jnode0][1]
+            +horConv[horOffset+1]*horWeights_[jnode0][2]
+            +horConv[horOffset+0]*horWeights_[jnode0][3];
+          normView(jnode0, 0) = horWeights_[jnode0][0]*xSW
+            +horWeights_[jnode0][1]*xSE
+            +horWeights_[jnode0][2]*xNW
+            +horWeights_[jnode0][3]*xNE;
         } else {
-          throw eckit::Exception("wrong interpolation type: " + horInterp_[jnode0].interpType(),
+          throw eckit::Exception("wrong interpolation type: " + horType_[jnode0],
             Here());
         }
       }
@@ -935,14 +988,13 @@ void LayerBase::setupNormalization() {
     verNorm[0] = 1.0;
     verNorm[nz0_-1] = 1.0;
     for (size_t k0 = 1; k0 < nz0_-1; ++k0) {
-      if (verInterp_[k0].operations().size() > 1) {
-        size_t verOffset = 2*verInterp_[k0].index1();
-        double xB = verConv[verOffset+0]*verInterp_[k0].operations()[0].second
-          +verConv[verOffset+1]*verInterp_[k0].operations()[1].second;
-        double xT = verConv[verOffset+1]*verInterp_[k0].operations()[0].second
-          +verConv[verOffset+0]*verInterp_[k0].operations()[1].second;
-        verNorm[k0] = verInterp_[k0].operations()[0].second*xB
-          +verInterp_[k0].operations()[1].second*xT;
+      if (verStencilSize_[k0] > 1) {
+        size_t verOffset = 2*verIndex_[k0];
+        double xB = verConv[verOffset+0]*verWeights_[k0][0]
+          +verConv[verOffset+1]*verWeights_[k0][1];
+        double xT = verConv[verOffset+1]*verWeights_[k0][0]
+          +verConv[verOffset+0]*verWeights_[k0][1];
+        verNorm[k0] = verWeights_[k0][0]*xB+verWeights_[k0][1]*xT;
       }
     }
   }
@@ -1002,9 +1054,9 @@ void LayerBase::setupNormalization() {
     double normAccMax = 0.0;;
 
     // Sort indices
-    std::vector<int> gij0;
+    std::vector<int> gij0(mSize_);
     for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
-      gij0.push_back((indexIView0(jnode0)-1)*ny0_+indexJView0(jnode0)-1);
+      gij0[jnode0] = (indexIView0(jnode0)-1)*ny0_+indexJView0(jnode0)-1;
     }
     std::vector<size_t> gidx(mSize_);
     std::iota(gidx.begin(), gidx.end(), 0);
@@ -1168,11 +1220,11 @@ void LayerBase::broadcast() {
 
 // -----------------------------------------------------------------------------
 
-std::vector<int> LayerBase::writeDef(const int & id) const {
+std::array<int, 8> LayerBase::writeDef(const int & id) const {
   oops::Log::trace() << classname() << "::writeDef starting" << std::endl;
 
   // Vector of ids
-  std::vector<int> varIds(8);
+  std::array<int, 8> varIds;
 
   // Copy group id
   varIds[0] = id;
@@ -1210,7 +1262,7 @@ std::vector<int> LayerBase::writeDef(const int & id) const {
 
 // -----------------------------------------------------------------------------
 
-void LayerBase::writeData(const std::vector<int> & varIds) const {
+void LayerBase::writeData(const std::array<int, 8> & varIds) const {
   oops::Log::trace() << classname() << "::writeData starting" << std::endl;
 
   // Write data
@@ -1241,12 +1293,12 @@ void LayerBase::interpolationTL(const atlas::Field & redField,
   const auto ghostView = atlas::array::make_view<int, 1>(gdata_.functionSpace().ghost());
 
   if (noInterp_) {
-    // No interpolation
+    // No horizontal interpolation
     for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
       if (ghostView(jnode0) == 0) {
         for (size_t k0 = 0; k0 < nz0_; ++k0) {
-          for (const auto & verOperation : verInterp_[k0].operations()) {
-            modelView(jnode0, k0) += verOperation.second*redView(jnode0, verOperation.first);
+          for (size_t jv = 0; jv < verStencilSize_[k0]; ++jv) {
+            modelView(jnode0, k0) += verWeights_[k0][jv]*redView(jnode0, verStencil_[k0][jv]);
           }
         }
       }
@@ -1280,13 +1332,11 @@ void LayerBase::interpolationTL(const atlas::Field & redField,
 
     // Interpolation
     for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
-      if (ghostView(jnode0) == 0) {
-        for (const auto & horOperation : horInterp_[jnode0].operations()) {
-          for (size_t k0 = 0; k0 < nz0_; ++k0) {
-            for (const auto & verOperation : verInterp_[k0].operations()) {
-              const size_t mIndex = horOperation.first*nz_+verOperation.first;
-              modelView(jnode0, k0) += horOperation.second*verOperation.second*mRecvVec[mIndex];
-            }
+      for (size_t jh = 0; jh < horStencilSize_[jnode0]; ++jh) {
+        for (size_t k0 = 0; k0 < nz0_; ++k0) {
+          for (size_t jv = 0; jv < verStencilSize_[k0]; ++jv) {
+            const size_t mIndex = horStencil_[jnode0][jh]*nz_+verStencil_[k0][jv];
+            modelView(jnode0, k0) += horWeights_[jnode0][jh]*verWeights_[k0][jv]*mRecvVec[mIndex];
           }
         }
       }
@@ -1315,8 +1365,8 @@ void LayerBase::interpolationAD(const atlas::Field & modelField,
     for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
       if (ghostView(jnode0) == 0) {
         for (size_t k0 = 0; k0 < nz0_; ++k0) {
-          for (const auto & verOperation : verInterp_[k0].operations()) {
-            redView(jnode0, verOperation.first) += verOperation.second*modelView(jnode0, k0);
+          for (size_t jv = 0; jv < verStencilSize_[k0]; ++jv) {
+            redView(jnode0, verStencil_[k0][jv]) += verWeights_[k0][jv]*modelView(jnode0, k0);
           }
         }
       }
@@ -1337,13 +1387,11 @@ void LayerBase::interpolationAD(const atlas::Field & modelField,
     // Interpolation adjoint
     std::vector<double> mRecvVec(mRecvSize_*nz_, 0.0);
     for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
-      if (ghostView(jnode0) == 0) {
-        for (const auto & horOperation : horInterp_[jnode0].operations()) {
-          for (size_t k0 = 0; k0 < nz0_; ++k0) {
-            for (const auto & verOperation : verInterp_[k0].operations()) {
-              const size_t mIndex = horOperation.first*nz_+verOperation.first;
-              mRecvVec[mIndex] += horOperation.second*verOperation.second*modelView(jnode0, k0);
-            }
+      for (size_t jh = 0; jh < horStencilSize_[jnode0]; ++jh) {
+        for (size_t k0 = 0; k0 < nz0_; ++k0) {
+          for (size_t jv = 0; jv < verStencilSize_[k0]; ++jv) {
+            const size_t mIndex = horStencil_[jnode0][jh]*nz_+verStencil_[k0][jv];
+            mRecvVec[mIndex] += horWeights_[jnode0][jh]*verWeights_[k0][jv]*modelView(jnode0, k0);
           }
         }
       }

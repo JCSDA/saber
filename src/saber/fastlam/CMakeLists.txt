@@ -8,7 +8,6 @@ list(APPEND fastlam_src_files_list
 FastLAM.cc
 FastLAM.h
 FastLAMParametersBase.h
-InterpElement.h
 LayerBase.cc
 LayerBase.h
 LayerHalo.cc
