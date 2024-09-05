@@ -10,8 +10,9 @@ module type_diag_blk
 
 !$ use omp_lib
 use tools_const, only: zero,tenth,half,one,four,ten,pi
+use tools_cor_var, only: eval
 use tools_fit, only: condmax,diag_iso,diag_tensor,tensor_d2h,tensor_d2r,tensor_check_cond,fast_fit
-use tools_func, only: vert_interp_size,vert_interp_setup,vert_interp
+use tools_func, only: vert_interp_size,vert_interp_setup,vert_interp,zss_sum
 use tools_kinds, only: kind_real,huge_real
 use tools_netcdf, only: define_grp,define_dim,put_att,define_var,put_var
 use tools_repro, only: inf,infeq,supeq
@@ -30,6 +31,8 @@ implicit none
 type diag_blk_type
    integer :: ic2a                                      !< Local index
    character(len=1024) :: prefix                        !< Prefix
+
+   real(kind_real),allocatable :: frob_wgt(:,:,:,:)     !< Weight to approximate the Frobenius norm
 
    real(kind_real),allocatable :: raw(:,:,:,:)          !< Raw diagnostic
    real(kind_real),allocatable :: valid(:,:,:,:)        !< Number of valid couples
@@ -62,10 +65,10 @@ contains
    procedure :: write => diag_blk_write
    procedure :: fitting => diag_blk_fitting
    procedure :: localization => diag_blk_localization
-   procedure :: localization_from_correlation => diag_blk_localization_from_correlation
    procedure :: hybridization => diag_blk_hybridization
 end type diag_blk_type
 
+integer,parameter :: nalpha = 15                    !< Number of iterations for the NICE optimization
 real(kind_real),parameter :: D12max = 0.9_kind_real !< Maximum (absolute) value of the D12 tensor coefficient
 
 private
@@ -90,6 +93,9 @@ type(samp_type),intent(in) :: samp             !< Sampling
 integer,intent(in) :: ic2a                     !< Local index
 character(len=*),intent(in) :: prefix          !< Block prefix
 
+! Local variables
+integer :: jc3
+
 ! Set name
 @:set_name(diag_blk_alloc)
 
@@ -105,6 +111,7 @@ diag_blk%ncmp = nam%fit_ncmp
 
 ! Allocation
 if ((ic2a==0).or.nam%local_diag) then
+   allocate(diag_blk%frob_wgt(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
    allocate(diag_blk%raw(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
    allocate(diag_blk%valid(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
    allocate(diag_blk%vert_coord(geom%nl0))
@@ -121,6 +128,12 @@ if ((ic2a==0).or.nam%local_diag) then
    diag_blk%hyb_coef_raw = mpl%msv%valr
    diag_blk%hyb_coef = mpl%msv%valr
 end if
+
+! Define weight to approximate the Frobenius norm
+do jc3=1,nam%nc3
+   diag_blk%frob_wgt(jc3,:,:,:) = pi*(geom%disth(jc3)+half*nam%dc)**2
+   if (jc3>1) diag_blk%frob_wgt(jc3,:,:,:) = diag_blk%frob_wgt(jc3,:,:,:)-sum(diag_blk%frob_wgt(1:jc3-1,1,1,1))
+end do
 
 ! Vertical coordinate and distance
 if ((ic2a==0).or.nam%local_diag) then
@@ -154,6 +167,7 @@ class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block
 @:probe_in()
 
 ! Release memory
+if (allocated(diag_blk%frob_wgt)) deallocate(diag_blk%frob_wgt)
 if (allocated(diag_blk%raw)) deallocate(diag_blk%raw)
 if (allocated(diag_blk%valid)) deallocate(diag_blk%valid)
 if (allocated(diag_blk%vert_coord)) deallocate(diag_blk%vert_coord)
@@ -864,7 +878,7 @@ end subroutine diag_blk_fitting
 ! Subroutine: diag_blk_localization
 !> Diag_blk localization
 !----------------------------------------------------------------------
-subroutine diag_blk_localization(diag_blk,mpl,nam,geom,avg_blk)
+subroutine diag_blk_localization(diag_blk,mpl,nam,geom,avg_blk,cor_blk,ne)
 
 implicit none
 
@@ -874,9 +888,12 @@ type(mpl_type),intent(inout) :: mpl            !< MPI data
 type(nam_type),intent(in) :: nam               !< Namelist
 type(geom_type),intent(in) :: geom             !< Geometry
 type(avg_blk_type),intent(in) :: avg_blk       !< Averaged statistics block
+type(diag_blk_type),intent(in) :: cor_blk      !< Correlation diagnostic block
+integer,intent(in) :: ne                       !< Ensemble size
 
 ! Local variables
-integer :: il0,jl0r,jc3,jc4
+integer :: il0,jl0r,jc3,jc4,gamma_star,gamma,ialpha
+real(kind_real) :: P4,S_rho,norm,alpha,dalpha,alpha_star
 
 ! Set name
 @:set_name(diag_blk_localization)
@@ -884,25 +901,135 @@ integer :: il0,jl0r,jc3,jc4
 ! Probe in
 @:probe_in()
 
-!$omp parallel do schedule(static) private(il0,jl0r,jc3,jc4) shared(geom,diag_blk,avg_blk)
-do il0=1,geom%nl0
-   do jl0r=1,nam%nl0r
-      do jc4=1,nam%nc4
-         do jc3=1,nam%nc3
-            if (mpl%msv%isnot(avg_blk%m11asysq(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11sq(jc3,jc4,jl0r,il0))) then
-               ! Compute localization from asymptotic moments
-               diag_blk%raw(jc3,jc4,jl0r,il0) = avg_blk%m11asysq(jc3,jc4,jl0r,il0)/avg_blk%m11sq(jc3,jc4,jl0r,il0)
-               diag_blk%valid(jc3,jc4,jl0r,il0) = avg_blk%nc1a(jc3,jc4,jl0r,il0)
-            else
-               ! Missing value
-               diag_blk%raw(jc3,jc4,jl0r,il0) = mpl%msv%valr
-               diag_blk%valid(jc3,jc4,jl0r,il0) = mpl%msv%valr
-            end if
+! Compute noise level for the NICE metho
+if (nam%loc_option=='nice_with_table') then
+   ! Use look-up table
+   S_rho = zero
+   do il0=1,geom%nl0
+      do jl0r=1,nam%nl0r
+         do jc4=1,nam%nc4
+            do jc3=1,nam%nc3
+               if (mpl%msv%isnot(cor_blk%raw(jc3,jc4,jl0r,il0))) S_rho = S_rho+diag_blk%frob_wgt(jc3,jc4,jl0r,il0)* &
+ & eval(mpl,cor_blk%fit(jc3,jc4,jl0r,il0),ne)
+            end do
          end do
       end do
    end do
-end do
-!$omp end parallel do
+else if (nam%loc_option=='nice_without_table') then
+   ! Use ergodicity assumption
+   S_rho = zss_sum(diag_blk%frob_wgt*avg_blk%cor_var,mask=mpl%msv%isnot(avg_blk%cor_var))
+end if
+
+if (nam%loc_option=='from_squared_correlation') then
+   ! Ensemble size-dependent coefficient
+   P4 = one/real(ne-1,kind_real)
+
+   !$omp parallel do schedule(static) private(il0,jl0r,jc3,jc4) shared(geom,diag_blk,cor_blk,P4)
+   do il0=1,geom%nl0
+      do jl0r=1,nam%nl0r
+         do jc4=1,nam%nc4
+            do jc3=1,nam%nc3
+               if (mpl%msv%isnot(cor_blk%fit(jc3,jc4,jl0r,il0))) then
+                  ! Compute localization from correlation
+                  diag_blk%raw(jc3,jc4,jl0r,il0) = cor_blk%fit(jc3,jc4,jl0r,il0)**2/((1.0+P4)*cor_blk%fit(jc3,jc4,jl0r,il0)**2+P4)
+                  diag_blk%valid(jc3,jc4,jl0r,il0) = cor_blk%valid(jc3,jc4,jl0r,il0)
+               else
+                  ! Missing value
+                  diag_blk%raw(jc3,jc4,jl0r,il0) = mpl%msv%valr
+                  diag_blk%valid(jc3,jc4,jl0r,il0) = mpl%msv%valr
+               end if
+            end do
+         end do
+      end do
+   end do
+   !$omp end parallel do
+else if ((nam%loc_option=='nice_with_table').or.(nam%loc_option=='nice_without_table')) then
+   ! Determine smallest positive, even integer gamma that violates de discrepancy principle
+   gamma_star = 0
+   do gamma=2,10,2
+      norm = zss_sum(diag_blk%frob_wgt*cor_blk%raw*(one-cor_blk%fit**gamma),mask=mpl%msv%isnot(cor_blk%raw) &
+ & .and.mpl%msv%isnot(cor_blk%fit))
+      if (norm > S_rho) then
+         gamma_star = gamma
+         exit
+      end if
+   end do
+   if (gamma_star>0) then
+      ! Linear interpolation (bisection method)
+      alpha = half
+      dalpha = half
+      alpha_star = mpl%msv%valr
+      norm = zss_sum(diag_blk%frob_wgt*cor_blk%raw*(one-(alpha*cor_blk%fit**gamma_star &
+ & +(one-alpha)*cor_blk%fit**(gamma_star-2))),mask=mpl%msv%isnot(cor_blk%raw).and.mpl%msv%isnot(cor_blk%fit))
+      if (norm < S_rho) then
+         dalpha = half*abs(dalpha)
+      else
+         dalpha = -half*abs(dalpha)
+      end if
+      do ialpha=1,nalpha
+         alpha = alpha+dalpha
+         norm = zss_sum(diag_blk%frob_wgt*cor_blk%raw*(one-(alpha*cor_blk%fit**gamma_star &
+ & +(one-alpha)*cor_blk%fit**(gamma_star-2))),mask=mpl%msv%isnot(cor_blk%raw).and.mpl%msv%isnot(cor_blk%fit))
+         if (norm < S_rho) then
+            dalpha = half*abs(dalpha)
+            alpha_star = alpha
+         else
+            dalpha = -half*abs(dalpha)
+         end if
+      end do
+      if (mpl%msv%isnot(alpha_star)) then
+         ! Build localization
+         !$omp parallel do schedule(static) private(il0,jl0r,jc3,jc4) shared(geom,diag_blk,avg_blk,cor_blk,alpha_star,gamma_star)
+         do il0=1,geom%nl0
+            do jl0r=1,nam%nl0r
+               do jc4=1,nam%nc4
+                  do jc3=1,nam%nc3
+                     if (mpl%msv%isnot(cor_blk%fit(jc3,jc4,jl0r,il0))) then
+                        ! NICE localization
+                        diag_blk%raw(jc3,jc4,jl0r,il0) = alpha_star*cor_blk%fit(jc3,jc4,jl0r,il0)**gamma_star &
+ & +(one-alpha_star)*cor_blk%fit(jc3,jc4,jl0r,il0)**(gamma_star-2)
+                        diag_blk%valid(jc3,jc4,jl0r,il0) = avg_blk%nc1a_cor(jc3,jc4,jl0r,il0)
+                     else
+                        ! Missing value
+                        diag_blk%raw(jc3,jc4,jl0r,il0) = mpl%msv%valr
+                        diag_blk%valid(jc3,jc4,jl0r,il0) = mpl%msv%valr
+                     end if
+                  end do
+               end do
+            end do
+         end do
+         !$omp end parallel do
+      else
+         ! Missing value
+         call mpl%warning('${subr}$','impossible to find a suitable alpha_star')
+         diag_blk%raw = mpl%msv%valr
+      end if
+   else
+      ! Missing value
+      call mpl%warning('${subr}$','impossible to find a positive gamma_star')
+      diag_blk%raw = mpl%msv%valr
+   end if
+else if (nam%loc_option=='default') then
+   !$omp parallel do schedule(static) private(il0,jl0r,jc3,jc4) shared(geom,diag_blk,avg_blk)
+   do il0=1,geom%nl0
+      do jl0r=1,nam%nl0r
+         do jc4=1,nam%nc4
+            do jc3=1,nam%nc3
+               if (mpl%msv%isnot(avg_blk%m11asysq(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg_blk%m11sq(jc3,jc4,jl0r,il0))) then
+                  ! Compute localization from asymptotic moments
+                  diag_blk%raw(jc3,jc4,jl0r,il0) = avg_blk%m11asysq(jc3,jc4,jl0r,il0)/avg_blk%m11sq(jc3,jc4,jl0r,il0)
+                  diag_blk%valid(jc3,jc4,jl0r,il0) = avg_blk%nc1a(jc3,jc4,jl0r,il0)
+               else
+                  ! Missing value
+                  diag_blk%raw(jc3,jc4,jl0r,il0) = mpl%msv%valr
+                  diag_blk%valid(jc3,jc4,jl0r,il0) = mpl%msv%valr
+               end if
+            end do
+         end do
+      end do
+   end do
+   !$omp end parallel do
+end if
 
 ! Hybrid weight
 diag_blk%hyb_coef = mpl%msv%valr
@@ -911,63 +1038,6 @@ diag_blk%hyb_coef = mpl%msv%valr
 @:probe_out()
 
 end subroutine diag_blk_localization
-
-!----------------------------------------------------------------------
-! Subroutine: diag_blk_localization_from_correlation
-!> Diag_blk localization from localization
-!----------------------------------------------------------------------
-subroutine diag_blk_localization_from_correlation(diag_blk,mpl,nam,geom,cor_blk,ne)
-
-implicit none
-
-! Passed variables
-class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block (localization)
-type(mpl_type),intent(inout) :: mpl            !< MPI data
-type(nam_type),intent(in) :: nam               !< Namelist
-type(geom_type),intent(in) :: geom             !< Geometry
-type(diag_blk_type),intent(in) :: cor_blk      !< Correlation diagnostic block
-integer,intent(in) :: ne                       !< Ensemble size
-
-! Local variables
-integer :: il0,jl0r,jc3,jc4
-real(kind_real) :: P4
-
-! Set name
-@:set_name(diag_blk_localization_from_correlation)
-
-! Probe in
-@:probe_in()
-
-! Ensemble size-dependent coefficient
-P4 = one/real(ne-1,kind_real)
-
-!$omp parallel do schedule(static) private(il0,jl0r,jc3,jc4) shared(geom,diag_blk,cor_blk,ne)
-do il0=1,geom%nl0
-   do jl0r=1,nam%nl0r
-      do jc4=1,nam%nc4
-         do jc3=1,nam%nc3
-            if (mpl%msv%isnot(cor_blk%fit(jc3,jc4,jl0r,il0))) then
-               ! Compute localization from correlation
-               diag_blk%raw(jc3,jc4,jl0r,il0) = cor_blk%fit(jc3,jc4,jl0r,il0)**2/((1.0+P4)*cor_blk%fit(jc3,jc4,jl0r,il0)**2+P4)
-               diag_blk%valid(jc3,jc4,jl0r,il0) = cor_blk%valid(jc3,jc4,jl0r,il0)
-            else
-               ! Missing value
-               diag_blk%raw(jc3,jc4,jl0r,il0) = mpl%msv%valr
-               diag_blk%valid(jc3,jc4,jl0r,il0) = mpl%msv%valr
-            end if
-         end do
-      end do
-   end do
-end do
-!$omp end parallel do
-
-! Hybrid weight
-diag_blk%hyb_coef = mpl%msv%valr
-
-! Probe out
-@:probe_out()
-
-end subroutine diag_blk_localization_from_correlation
 
 !----------------------------------------------------------------------
 ! Subroutine: diag_blk_hybridization
@@ -988,7 +1058,7 @@ type(diag_blk_type),intent(inout) :: loc1_blk  !< Localization block for ensembl
 
 ! Local variables
 integer :: il0,jl0r,jl0,jc3,jc4
-real(kind_real) :: wgt,a,bc,d,e,f,num,num_1,num_2,den
+real(kind_real) :: a,bc,d,e,f,num,num_1,num_2,den,wgt
 
 ! Set name
 @:set_name(diag_blk_hybridization)
@@ -1010,7 +1080,7 @@ do il0=1,geom(2)%nl0
             if (mpl%msv%isnot(loc1_blk%fit(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg1_blk%m11sq(jc3,jc4,jl0r,il0)) &
  & .and.mpl%msv%isnot(avg1_blk%m11(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg2_blk%m11(jc3,jc4,jl0r,il0)) &
  & .and.mpl%msv%isnot(avg2_blk%m11sq(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg1_blk%m11asysq(jc3,jc4,jl0r,il0))) then
-               wgt = one ! TODO: test different kinds of weights
+               wgt = one ! TODO(Benjamin): should be diag_blk%frob_wgt(jc3,jc4,jl0r,il0)
                a = a+wgt*loc1_blk%fit(jc3,jc4,jl0r,il0)**2*avg1_blk%m11sq(jc3,jc4,jl0r,il0)
                bc = bc+wgt*loc1_blk%fit(jc3,jc4,jl0r,il0)*avg1_blk%m11(jc3,jc4,jl0r,il0)*avg2_blk%m11(jc3,jc4,jl0r,il0)
                select case (nam%hybrid_source)

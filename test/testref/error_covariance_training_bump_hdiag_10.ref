@@ -103,7 +103,7 @@ Norm of input parameter sampling_mask_field - 1: 8.6550514186807519e+01
                 Level:   8 ~> cov. at class zero:  0.11E+01
                 Level:   9 ~> cov. at class zero:  0.12E+01
                 Level:  10 ~> cov. at class zero:  0.12E+01
-             Block stream_function:  0.47314540E+19 for     1579 diagnostic points
+             Block stream_function:  0.30212995E+00 for     1473 diagnostic points
                    Level:   1 ~> amplitude:        1.00
                                  cor. hor. support:      3565.46 km
                                  cor. ver. support:         6.73 vertical units

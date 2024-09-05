@@ -36,6 +36,7 @@ type avg_blk_type
    real(kind_real),allocatable :: m22(:,:,:,:,:)           !< Fourth-order centered moment average
    real(kind_real),allocatable :: nc1a_cor(:,:,:,:)        !< Number of points in subset Sc1 on halo A with valid correlations
    real(kind_real),allocatable :: cor(:,:,:,:)             !< Correlation average
+   real(kind_real),allocatable :: cor_var(:,:,:,:)         !< Correlation variance
    real(kind_real),allocatable :: m11asysq(:,:,:,:)        !< Squared asymptotic covariance average
    real(kind_real),allocatable :: m2m2asy(:,:,:,:)         !< Product of asymptotic variances average
    real(kind_real),allocatable :: m22asy(:,:,:,:)          !< Asymptotic fourth-order centered moment average
@@ -105,6 +106,7 @@ if (.not.allocated(avg_blk%nc1a)) then
       allocate(avg_blk%m22(nam%nc3,nam%nc4,nam%nl0r,geom%nl0,avg_blk%nsub))
       allocate(avg_blk%nc1a_cor(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
       allocate(avg_blk%cor(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+      allocate(avg_blk%cor_var(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
       allocate(avg_blk%m11asysq(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
       allocate(avg_blk%m2m2asy(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
       allocate(avg_blk%m22asy(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
@@ -162,6 +164,7 @@ if (.not.allocated(avg_blk%nc1a)) then
       allocate(avg_blk%m11(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
       allocate(avg_blk%nc1a_cor(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
       allocate(avg_blk%cor(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
+      allocate(avg_blk%cor_var(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
       allocate(avg_blk%m11asysq(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
       allocate(avg_blk%m11sq(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
    end if
@@ -196,6 +199,7 @@ if (allocated(avg_blk%m11m11)) deallocate(avg_blk%m11m11)
 if (allocated(avg_blk%m2m2)) deallocate(avg_blk%m2m2)
 if (allocated(avg_blk%nc1a_cor)) deallocate(avg_blk%nc1a_cor)
 if (allocated(avg_blk%cor)) deallocate(avg_blk%cor)
+if (allocated(avg_blk%cor_var)) deallocate(avg_blk%cor_var)
 if (allocated(avg_blk%m11asysq)) deallocate(avg_blk%m11asysq)
 if (allocated(avg_blk%m2m2asy)) deallocate(avg_blk%m2m2asy)
 if (allocated(avg_blk%m11sq)) deallocate(avg_blk%m11sq)
@@ -321,7 +325,7 @@ integer :: il0,jl0,jl0r,jc3,jc4,isub,jsub,ic1a,nc1a,nc1a_cor,n1,n2,npack,offset,
 real(kind_real) :: m2_1,m2_2
 real(kind_real) :: min_m11,max_m11,min_m11m11,max_m11m11,min_m2m2,max_m2m2,min_m22,max_m22,min_cor,max_cor
 real(kind_real) :: norm,den,gen_kurt
-real(kind_real),allocatable :: list_m11(:),list_m11m11(:,:,:),list_m2m2(:,:,:),list_m22(:,:),list_cor(:)
+real(kind_real),allocatable :: list_m11(:),list_m11m11(:,:,:),list_m2m2(:,:,:),list_m22(:,:),list_cor(:),list_cor_save(:,:,:,:,:)
 real(kind_real),allocatable :: list1(:),list2(:)
 real(kind_real),allocatable :: sbuf(:),rbuf(:)
 logical :: valid
@@ -338,12 +342,12 @@ allocate(list_m11m11(samp%nc1a,avg_blk%nsub,avg_blk%nsub))
 allocate(list_m2m2(samp%nc1a,avg_blk%nsub,avg_blk%nsub))
 allocate(list_m22(samp%nc1a,avg_blk%nsub))
 allocate(list_cor(samp%nc1a))
+if (nam%loc_option=='nice_without_table') allocate(list_cor_save(samp%nc1a,nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
 
 ! Average
 do il0=1,geom%nl0
    do jl0r=1,nam%nl0r
       jl0 = geom%l0rl0_to_l0(jl0r,il0)
-
       do jc4=1,nam%nc4
          do jc3=1,nam%nc3
             ! Fill lists
@@ -507,6 +511,9 @@ do il0=1,geom%nl0
                deallocate(list1)
                deallocate(list2)
             end if
+
+            ! Save correlation to compute variance later
+            if (nam%loc_option=='nice_without_table') list_cor_save(:,jc3,jc4,jl0r,il0) = list_cor
          end do
       end do
    end do
@@ -522,7 +529,7 @@ deallocate(list_cor)
 if (mpl%nproc>1) then
    ! Get packing size
    ntmp = nam%nc3*nam%nc4*nam%nl0r*geom%nl0
-   npack = (4+avg_blk%nsub+2*avg_blk%nsub**2)*ntmp
+   npack = (5+avg_blk%nsub+2*avg_blk%nsub**2)*ntmp
    if (nam%avg_nbins>0) npack = npack+5*nam%avg_nbins*ntmp
 
    ! Allocation
@@ -653,6 +660,76 @@ do il0=1,geom%nl0
 end do
 !$omp end parallel do
 
+if (nam%loc_option=='nice_without_table') then
+   ! Correlation variance
+   do il0=1,geom%nl0
+      do jl0r=1,nam%nl0r
+         do jc4=1,nam%nc4
+            do jc3=1,nam%nc3
+               ! Count valid points 
+               nc1a_cor = zss_count(mpl%msv%isnot(list_cor_save(:,jc3,jc4,jl0r,il0)))
+
+               ! Remove mean
+               do ic1a=1,samp%nc1a
+                  if (mpl%msv%isnot(list_cor_save(ic1a,jc3,jc4,jl0r,il0))) list_cor_save(ic1a,jc3,jc4,jl0r,il0) =  &
+ & list_cor_save(ic1a,jc3,jc4,jl0r,il0)-avg_blk%cor(jc3,jc4,jl0r,il0)
+               end do
+
+               if (nc1a_cor>0) then
+                  ! Save squared perturbation
+                  avg_blk%cor_var(jc3,jc4,jl0r,il0) = zss_sum(list_cor_save(:,jc3,jc4,jl0r,il0)**2, &
+ & mask=mpl%msv%isnot(list_cor_save(:,jc3,jc4,jl0r,il0)))
+               else
+                  avg_blk%cor_var(jc3,jc4,jl0r,il0) = zero
+               end if
+            end do
+         end do
+      end do
+   end do
+
+   if (mpl%nproc>1) then
+      ! Allocation
+      allocate(sbuf(ntmp))
+      allocate(rbuf(ntmp))
+
+      ! Pack data
+      sbuf = reshape(avg_blk%cor_var,(/ntmp/))
+
+      ! Reduce data
+      call mpl%f_comm%allreduce(sbuf,rbuf,fckit_mpi_sum())
+
+      ! Unpack data
+      avg_blk%cor_var = reshape(rbuf,(/nam%nc3,nam%nc4,nam%nl0r,geom%nl0/))
+
+      ! Release memory
+      deallocate(sbuf)
+      deallocate(rbuf)
+   end if
+
+   ! Normalize
+   !$omp parallel do schedule(static) private(il0,jl0r,jl0,jc3,jc4) shared(geom,avg_blk)
+   do il0=1,geom%nl0
+      do jl0r=1,nam%nl0r
+         do jc4=1,nam%nc4
+            do jc3=1,nam%nc3
+               if (avg_blk%nc1a_cor(jc3,jc4,jl0r,il0)>one) then
+                  avg_blk%cor_var(jc3,jc4,jl0r,il0) = avg_blk%cor_var(jc3,jc4,jl0r,il0)/(avg_blk%nc1a_cor(jc3,jc4,jl0r,il0)-one)
+               else
+                  avg_blk%cor_var(jc3,jc4,jl0r,il0) = mpl%msv%valr
+               end if
+            end do
+         end do
+      end do
+   end do
+   !$omp end parallel do
+
+   ! Release memory
+   deallocate(list_cor_save)
+else
+   ! Missing value
+   avg_blk%cor_var = mpl%msv%valr
+end if
+
 ! Probe out
 @:probe_out()
 
@@ -676,8 +753,8 @@ type(mom_blk_type),intent(in) :: mom_blk     !< Moments
 
 ! Local variables
 integer :: il0,jl0,jl0r,jc3,jc4,isub,jsub,nc1max,ic1d,ic1u,i,nc1a,nc1a_cor
-real(kind_real) :: m2_1,m2_2,norm,den,gen_kurt
-real(kind_real),allocatable :: list_m11(:),list_m11m11(:,:,:),list_m2m2(:,:,:),list_m22(:,:),list_cor(:)
+real(kind_real) :: m2_1,m2_2,norm,den,gen_kurt,mean_cor
+real(kind_real),allocatable :: list_m11(:),list_m11m11(:,:,:),list_m2m2(:,:,:),list_m22(:,:),list_cor(:),list_cor_save(:,:,:,:,:)
 logical :: valid
 
 ! Set name
@@ -696,6 +773,7 @@ allocate(list_m11m11(nc1max,avg_blk%nsub,avg_blk%nsub))
 allocate(list_m2m2(nc1max,avg_blk%nsub,avg_blk%nsub))
 allocate(list_m22(nc1max,avg_blk%nsub))
 allocate(list_cor(nc1max))
+if (nam%loc_option=='nice_without_table') allocate(list_cor_save(nc1max,nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
 
 ! Average
 do il0=1,geom%nl0
@@ -789,6 +867,9 @@ do il0=1,geom%nl0
              else
                avg_blk%cor(jc3,jc4,jl0r,il0) = zero
             end if
+
+            ! Save correlation to compute variance later
+            if (nam%loc_option=='nice_without_table') list_cor_save(:,jc3,jc4,jl0r,il0) = list_cor
          end do
       end do
    end do
@@ -837,6 +918,58 @@ do il0=1,geom%nl0
    end do
 end do
 !$omp end parallel do
+
+
+if (nam%loc_option=='nice_without_table') then
+   ! Correlation variance
+   do il0=1,geom%nl0
+      do jl0r=1,nam%nl0r
+         do jc4=1,nam%nc4
+            do jc3=1,nam%nc3
+               ! Count valid points 
+               nc1a_cor = zss_count(mpl%msv%isnot(list_cor_save(:,jc3,jc4,jl0r,il0)))
+
+               ! Remove mean
+               do i=1,nc1max
+                  if (mpl%msv%isnot(list_cor_save(i,jc3,jc4,jl0r,il0))) list_cor_save(i,jc3,jc4,jl0r,il0) =  &
+ & list_cor_save(i,jc3,jc4,jl0r,il0)-avg_blk%cor(jc3,jc4,jl0r,il0)
+               end do
+
+               if (nc1a_cor>0) then
+                  ! Save squared perturbation
+                  avg_blk%cor_var(jc3,jc4,jl0r,il0) = zss_sum(list_cor_save(:,jc3,jc4,jl0r,il0)**2, &
+ & mask=mpl%msv%isnot(list_cor_save(:,jc3,jc4,jl0r,il0)))
+               else
+                  avg_blk%cor_var(jc3,jc4,jl0r,il0) = zero
+               end if
+            end do
+         end do
+      end do
+   end do
+
+   ! Normalize
+   !$omp parallel do schedule(static) private(il0,jl0r,jl0,jc3,jc4) shared(geom,avg_blk)
+   do il0=1,geom%nl0
+      do jl0r=1,nam%nl0r
+         do jc4=1,nam%nc4
+            do jc3=1,nam%nc3
+               if (avg_blk%nc1a_cor(jc3,jc4,jl0r,il0)>one) then
+                  avg_blk%cor_var(jc3,jc4,jl0r,il0) = avg_blk%cor_var(jc3,jc4,jl0r,il0)/(avg_blk%nc1a_cor(jc3,jc4,jl0r,il0)-one)
+               else
+                  avg_blk%cor_var(jc3,jc4,jl0r,il0) = mpl%msv%valr
+               end if
+            end do
+         end do
+      end do
+   end do
+   !$omp end parallel do
+
+   ! Release memory
+   deallocate(list_cor_save)
+else
+   ! Missing value
+   avg_blk%cor_var = mpl%msv%valr
+end if
 
 ! End associate
 end associate

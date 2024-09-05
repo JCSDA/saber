@@ -408,9 +408,10 @@ struct DiagnosticsDef {
   std::pair<const char *, bool> gau_approx =
     std::make_pair("gaussian approximation", false);
 
-  // Compute localization from correlation
-  std::pair<const char *, bool> loc_from_cor =
-    std::make_pair("localization from correlation", false);
+  // Localization option ('default', 'from_squared_correlation', 'nice_with_table' and
+  // 'nice_without_table')
+  std::pair<const char *, std::string> loc_option =
+    std::make_pair("localization option", "default");
 
   // Threshold on generalized kurtosis (3.0 = Gaussian distribution)
   std::pair<const char *, double> gen_kurt_th =

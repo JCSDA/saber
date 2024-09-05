@@ -462,8 +462,9 @@ class DiagnosticsSection : public oops::Parameters {
   oops::Parameter<int> ne_lr = param(def.ne_lr, this);
   // Gaussian approximation for asymptotic quantities
   oops::Parameter<bool> gau_approx = param(def.gau_approx, this);
-  // Compute localization from correlation
-  oops::Parameter<bool> loc_from_cor = param(def.loc_from_cor, this);
+  // Localization option ('default', 'from_squared_correlation', 'nice_with_table' and
+  // 'nice_without_table')
+  oops::Parameter<std::string> loc_option = param(def.loc_option, this);
   // Threshold on generalized kurtosis (3.0 = Gaussian distribution)
   oops::Parameter<double> gen_kurt_th = param(def.gen_kurt_th, this);
   // Number of bins for averaged statistics histograms

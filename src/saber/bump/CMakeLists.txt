@@ -17,6 +17,7 @@ StdDev.h
 tools_asa007.fypp
 tools_atlas.fypp
 tools_const.fypp
+tools_cor_var.fypp
 tools_fit.fypp
 tools_func.c
 tools_func.fypp

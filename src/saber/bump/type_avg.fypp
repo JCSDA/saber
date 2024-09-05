@@ -197,6 +197,7 @@ integer :: iv,ig,ic2a,il0,jl0r,jc3,jc4
 real(kind_real) :: wgt
 real(kind_real) :: m11asysq(nam%nc3,nam%nc4,nam%nl0r,geom%nl0),m11(nam%nc3,nam%nc4,nam%nl0r,geom%nl0)
 real(kind_real) :: nc1a_cor(nam%nc3,nam%nc4,nam%nl0r,geom%nl0),cor(nam%nc3,nam%nc4,nam%nl0r,geom%nl0)
+real(kind_real) :: cor_var(nam%nc3,nam%nc4,nam%nl0r,geom%nl0)
 real(kind_real) :: m11sq(nam%nc3,nam%nc4,nam%nl0r,geom%nl0),nc1a(nam%nc3,nam%nc4,nam%nl0r,geom%nl0)
 type(mom_blk_type) :: mom_blk
 
@@ -284,6 +285,8 @@ do ig=1,nam%ng
          nc1a_cor = zero
          avg%grp(ic2a,ig)%cor = zero
          cor = zero
+         avg%grp(ic2a,ig)%cor_var = zero
+         cor_var = zero
          avg%grp(ic2a,ig)%m11asysq = zero
          m11asysq = zero
          avg%grp(ic2a,ig)%m11sq = zero
@@ -313,6 +316,8 @@ do ig=1,nam%ng
  & avg%grp(ic2a,ig)%nc1a_cor(jc3,jc4,jl0r,il0),nc1a_cor(jc3,jc4,jl0r,il0))
                            call add(mpl,avg%blk(ic2a,iv)%cor(jc3,jc4,jl0r,il0),avg%grp(ic2a,ig)%cor(jc3,jc4,jl0r,il0), &
  & cor(jc3,jc4,jl0r,il0))
+                           call add(mpl,avg%blk(ic2a,iv)%cor_var(jc3,jc4,jl0r,il0),avg%grp(ic2a,ig)%cor_var(jc3,jc4,jl0r,il0), &
+ & cor_var(jc3,jc4,jl0r,il0))
                            call add(mpl,avg%blk(ic2a,iv)%m11asysq(jc3,jc4,jl0r,il0), &
  & avg%grp(ic2a,ig)%m11asysq(jc3,jc4,jl0r,il0),m11asysq(jc3,jc4,jl0r,il0),wgt)
                            call add(mpl,avg%blk(ic2a,iv)%m11sq(jc3,jc4,jl0r,il0),avg%grp(ic2a,ig)%m11sq(jc3,jc4,jl0r,il0), &
@@ -335,9 +340,9 @@ do ig=1,nam%ng
                      call divide(mpl,avg%grp(ic2a,ig)%m11(jc3,jc4,jl0r,il0),m11(jc3,jc4,jl0r,il0))
                      call divide(mpl,avg%grp(ic2a,ig)%nc1a_cor(jc3,jc4,jl0r,il0),nc1a_cor(jc3,jc4,jl0r,il0))
                      call divide(mpl,avg%grp(ic2a,ig)%cor(jc3,jc4,jl0r,il0),cor(jc3,jc4,jl0r,il0))
+                     call divide(mpl,avg%grp(ic2a,ig)%cor_var(jc3,jc4,jl0r,il0),cor_var(jc3,jc4,jl0r,il0))
                      call divide(mpl,avg%grp(ic2a,ig)%m11asysq(jc3,jc4,jl0r,il0),m11asysq(jc3,jc4,jl0r,il0))
                      call divide(mpl,avg%grp(ic2a,ig)%m11sq(jc3,jc4,jl0r,il0),m11sq(jc3,jc4,jl0r,il0))
-
                   end do
                end do
             end do
@@ -349,6 +354,7 @@ do ig=1,nam%ng
          avg%grp(ic2a,ig)%m11 = mpl%msv%valr
          avg%grp(ic2a,ig)%nc1a_cor = mpl%msv%valr
          avg%grp(ic2a,ig)%cor = mpl%msv%valr
+         avg%grp(ic2a,ig)%cor_var = mpl%msv%valr
          avg%grp(ic2a,ig)%m11asysq = mpl%msv%valr
          avg%grp(ic2a,ig)%m11sq = mpl%msv%valr
       end if

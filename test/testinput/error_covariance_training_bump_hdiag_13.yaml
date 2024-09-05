@@ -9,7 +9,7 @@ geometry:
     levels: 2
   halo: 1
 background:
-  date: 2010-01-01T12:00:00Z
+  date: '2010-01-01T12:00:00Z'
   state variables:
   - stream_function
 background error:
@@ -17,7 +17,7 @@ background error:
   ensemble:
     members from template:
       template:
-        date: 2010-01-01T12:00:00Z
+        date: '2010-01-01T12:00:00Z'
         filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_%mem%
         state variables:
         - stream_function
@@ -31,7 +31,7 @@ background error:
         testing: true
       io:
         data directory: testdata
-        files prefix: error_covariance_training_bump_hdiag_11/_MPI_-_OMP_
+        files prefix: error_covariance_training_bump_hdiag_13/_MPI_-_OMP_
       drivers:
         compute covariance: true
         compute correlation: true
@@ -43,16 +43,16 @@ background error:
         computation grid size: 500
         distance classes: 10
         distance class width: 800.0e3
-        reduced levels: 2
+        reduced levels: 1
       diagnostics:
         target ensemble size: 25
-        localization option: from_squared_correlation
+        localization option: nice_without_table
       output model files:
       - parameter: loc_rh
         file:
-          filepath: testdata/error_covariance_training_bump_hdiag_11/_MPI_-_OMP__loc_rh
+          filepath: testdata/error_covariance_training_bump_hdiag_13/_MPI_-_OMP__loc_rh
       - parameter: loc_rv
         file:
-          filepath: testdata/error_covariance_training_bump_hdiag_11/_MPI_-_OMP__loc_rv
+          filepath: testdata/error_covariance_training_bump_hdiag_13/_MPI_-_OMP__loc_rv
 test:
-  reference filename: testref/error_covariance_training_bump_hdiag_11.ref
+  reference filename: testref/error_covariance_training_bump_hdiag_13.ref

@@ -11,7 +11,7 @@ module type_diag
 use fckit_mpi_module, only: fckit_mpi_sum
 use tools_const, only: zero,half,one,two,five,reqkm,rad2deg,pi
 use tools_fit, only: diag_iso_full,diag_tensor_full,tensor_d2h,tensor_d2r,ver_smooth
-use tools_func, only: lonlatmod,sphere_dist
+use tools_func, only: lonlatmod,sphere_dist,zss_sum,zss_count
 use tools_gc99, only: fit_func
 use tools_kinds, only: kind_real,huge_real
 use type_avg, only: avg_type
@@ -454,15 +454,17 @@ do ig=1,nam%ng
    ! Compute RMSE
    if (mpl%main) then
       ic2a = 0
-      rmse = sum(abs(diag%blk(ic2a,ig)%fit-diag%blk(ic2a,ig)%raw),mask=mpl%msv%isnot(diag%blk(ic2a,ig)%raw))
-      norm = count(mpl%msv%isnot(diag%blk(ic2a,ig)%raw))
+      rmse = zss_sum(abs(diag%blk(ic2a,ig)%fit-diag%blk(ic2a,ig)%raw),mask=mpl%msv%isnot(diag%blk(ic2a,ig)%raw) &
+ & .and.mpl%msv%isnot(diag%blk(ic2a,ig)%fit))
+      norm = zss_count(mpl%msv%isnot(diag%blk(ic2a,ig)%raw).and.mpl%msv%isnot(diag%blk(ic2a,ig)%fit))
    else
       rmse = zero
       norm = 0
    end if
    do ic2a=1,diag%nc2a
-      rmse = rmse+sum(abs(diag%blk(ic2a,ig)%fit-diag%blk(ic2a,ig)%raw),mask=mpl%msv%isnot(diag%blk(ic2a,ig)%raw))
-      norm = norm+count(mpl%msv%isnot(diag%blk(ic2a,ig)%raw))
+      rmse = rmse+zss_sum(abs(diag%blk(ic2a,ig)%fit-diag%blk(ic2a,ig)%raw),mask=(mpl%msv%isnot(diag%blk(ic2a,ig)%raw) &
+ & .and.mpl%msv%isnot(diag%blk(ic2a,ig)%fit)))
+      norm = norm+zss_count(mpl%msv%isnot(diag%blk(ic2a,ig)%raw).and.mpl%msv%isnot(diag%blk(ic2a,ig)%fit))
    end do
    call mpl%f_comm%allreduce(rmse,fckit_mpi_sum())
    call mpl%f_comm%allreduce(norm,fckit_mpi_sum())
@@ -1086,11 +1088,7 @@ else
 
       do ic2a=0,diag%nc2a
          ! Compute localization
-         if (nam%loc_from_cor) then
-            call diag%blk(ic2a,ig)%localization_from_correlation(mpl,nam,geom,cor%blk(ic2a,ig),ne)
-         else
-            call diag%blk(ic2a,ig)%localization(mpl,nam,geom,avg%grp(ic2a,ig))
-         end if
+         call diag%blk(ic2a,ig)%localization(mpl,nam,geom,avg%grp(ic2a,ig),cor%blk(ic2a,ig),ne)
 
          ! Fitting
          call diag%blk(ic2a,ig)%fitting(mpl,nam,geom)
