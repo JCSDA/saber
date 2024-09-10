@@ -368,7 +368,7 @@ background error:
         testing: true
       io:
         data directory: testdata
-        files prefix: randomization_bump_nicas_UL2/_MPI_-_OMP_
+        files prefix: randomization_bump_nicas_unstructured_global/_MPI_-_OMP_
       drivers:
         multivariate strategy: univariate
         compute nicas: true
@@ -386,8 +386,8 @@ background error:
           value: 3.0
   randomization size: 25
 output states:
-  filepath: testdata/randomization_bump_nicas_UL2/_MPI_-_OMP__member
+  filepath: testdata/randomization_bump_nicas_unstructured_global/_MPI_-_OMP__member
 output perturbations:
-  filepath: testdata/randomization_bump_nicas_UL2/_MPI_-_OMP__member_pert
+  filepath: testdata/randomization_bump_nicas_unstructured_global/_MPI_-_OMP__member_pert
 test:
-  reference filename: testref/randomization_bump_nicas_UL2.ref
+  reference filename: testref/randomization_bump_nicas_unstructured_global.ref

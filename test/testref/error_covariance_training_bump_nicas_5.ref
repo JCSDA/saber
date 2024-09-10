@@ -1,22 +1,22 @@
        Independent levels:  1[2]
           Subset Sc0 size:              875
-          Domain area (% of Earth area): 0.591E+01%
+          Domain area (% of Earth area): 0.625E+01%
              Level   1 ~> 100.0%
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
              Effective levels:   1   2 
                 Horizontal support radius:    1000.00 km (   1000.00 km -    1000.00 km)
-                Estimated nc1 from horizontal support radius:      556
-                   Decimate full grid, at least      556 points required,     875 valid points found
-                   Subgrid hash:    351862122
-                Final nc1:      556
+                Estimated nc1 from horizontal support radius:      589
+                   Decimate full grid, at least      589 points required,     828 valid points found
+                   Subgrid hash:  -1230494418
+                Final nc1:      589
                 Effective horizontal resolution:  4.00
-             nc1(  1) =                        556
-             nc1(  2) =                        556
-             ns =                             1112
+             nc1(  1) =                        589
+             nc1(  2) =                        589
+             ns =                             1178
              v%n_s =                             2
-             c%n_s[global] =                 35944
+             c%n_s[global] =                 39324
     Full NICAS adjoint test result:                        T
        Block NICAS adjoint test result:                    T
           Interpolation adjoint test (horizontal) result:  T

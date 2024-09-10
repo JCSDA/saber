@@ -8,7 +8,9 @@
 !----------------------------------------------------------------------
 module tools_fit
 
-use tools_const, only: zero,tenth,quarter,half,one,two,thousand
+use atlas_module, only: atlas_config,atlas_json,atlas_structuredgrid
+use tools_const, only: zero,tenth,quarter,half,one,two,thousand,deg2rad,rad2deg
+use tools_func, only: sphere_dist,lonlatmod 
 use tools_gc99, only: naxis_inv,axis_inv,axis_invmax,func_inv_hor,func_inv_ver,fit_func,fit_func_sqrt
 use tools_kinds, only: kind_real,huge_real
 use tools_repro, only: inf,sup,infeq
@@ -49,10 +51,13 @@ end interface
 interface ver_smooth
    module procedure fit_ver_smooth
 end interface
+interface work_grid
+   module procedure fit_work_grid
+end interface
 
 private
 public :: condmax
-public :: diag_iso,diag_tensor,diag_ver,diag_iso_full,diag_tensor_full,tensor_d2h,tensor_d2r,tensor_check_cond
+public :: diag_iso,diag_tensor,diag_ver,diag_iso_full,diag_tensor_full,tensor_d2h,tensor_d2r,tensor_check_cond,work_grid
 public :: fast_fit,ver_smooth
 
 contains
@@ -783,5 +788,116 @@ end if
 @:probe_out()
 
 end subroutine fit_ver_smooth
+
+!----------------------------------------------------------------------
+! Subroutine: fit_work_grid
+!> Compute work grid from South pole and rotation
+!----------------------------------------------------------------------
+subroutine fit_work_grid(splon,splat,rota,lonlat_bnd,f,lonlat_bnd_opt,aconfig_work_grid_opt)
+
+implicit none
+
+! Passed variables
+real(kind_real),intent(in) :: splon                                !< South pole longitude
+real(kind_real),intent(in) :: splat                                !< South pole latitude
+real(kind_real),intent(in) :: rota                                 !< Rotation angle
+real(kind_real),intent(in) :: lonlat_bnd(2,4)                      !< Input grid corners
+real(kind_real),intent(out) :: f                                   !< Cost
+real(kind_real),intent(out),optional :: lonlat_bnd_opt(2,4)        !< Optimal work grid corners
+type(atlas_config),intent(inout),optional :: aconfig_work_grid_opt !< Optimal work grid configuration
+
+! Local variables
+integer :: idir,istart,ib,ix,iy
+real(kind_real) :: dist_12,dist_23,dist_34,dist_41,delta_lon_work,delta_lat_work,dist_tot,dist_test
+real(kind_real) :: lonlat_bnd_test(2,4)
+type(atlas_structuredgrid) :: agrid_work
+type(atlas_config) :: aconfig_work_grid,aconfig_work_proj
+
+! Set name
+@:set_name(fit_work_grid)
+
+! Probe in
+@:probe_in()
+
+! Initialize cost function
+f = huge_real
+
+! Setup configurations
+aconfig_work_grid = atlas_config()
+call aconfig_work_grid%set('type','regional')
+call aconfig_work_grid%set('nx',100)
+call aconfig_work_grid%set('ny',100)
+aconfig_work_proj = atlas_config()
+call aconfig_work_proj%set('type','rotated_lonlat')
+
+! Reset projection configuration
+call aconfig_work_proj%set('south_pole',(/splon*rad2deg,splat*rad2deg/))
+call aconfig_work_proj%set('rotation_angle',rota*rad2deg)
+call aconfig_work_grid%set('projection',aconfig_work_proj)
+
+! Compute distance betweeen corners
+call sphere_dist(lonlat_bnd(1,1),lonlat_bnd(2,1),lonlat_bnd(1,2),lonlat_bnd(2,2),dist_12)
+call sphere_dist(lonlat_bnd(1,2),lonlat_bnd(2,2),lonlat_bnd(1,3),lonlat_bnd(2,3),dist_23)
+call sphere_dist(lonlat_bnd(1,3),lonlat_bnd(2,3),lonlat_bnd(1,4),lonlat_bnd(2,4),dist_34)
+call sphere_dist(lonlat_bnd(1,4),lonlat_bnd(2,4),lonlat_bnd(1,1),lonlat_bnd(2,1),dist_41)
+dist_12 = max(dist_12,dist_34)
+dist_23 = max(dist_23,dist_41)
+
+! Loop over direction choices
+do idir=1,2
+   if (idir==1) then
+      delta_lon_work = half*dist_12
+      delta_lat_work = half*dist_23
+   else
+      delta_lon_work = half*dist_23
+      delta_lat_work = half*dist_12
+   end if
+   call aconfig_work_grid%set('north',delta_lat_work*rad2deg)
+   call aconfig_work_grid%set('south',-delta_lat_work*rad2deg)
+   call aconfig_work_grid%set('east',delta_lon_work*rad2deg)
+   call aconfig_work_grid%set('west',-delta_lon_work*rad2deg)
+
+   ! Create work grid
+   agrid_work = atlas_structuredgrid(aconfig_work_grid)
+
+   ! Loop over starting point
+   do istart=1,4
+      ! Find max distance between model and work grid for this starting corner
+      dist_tot = 0.0
+      do ib=1,4
+         ! Get work grid corners
+         if (mod((ib+istart+1)/2,2)==0) then
+            ix = 1
+         else
+            ix = 100
+         end if
+         if (mod((ib+istart)/2,2)==0) then
+            iy = 1
+         else
+            iy = 100
+         end if
+         lonlat_bnd_test(:,ib) = agrid_work%lonlat(ix,iy)*deg2rad
+
+         ! Enforce proper bounds
+         call lonlatmod(lonlat_bnd_test(1,ib),lonlat_bnd_test(2,ib))
+
+         ! Compute distance
+         call sphere_dist(lonlat_bnd(1,ib),lonlat_bnd(2,ib),lonlat_bnd_test(1,ib),lonlat_bnd_test(2,ib),dist_test)
+         dist_tot = dist_tot+dist_test
+      end do
+
+      ! Check work grid accuracy
+      if (inf(dist_tot,f)) then
+         f = dist_tot
+         if (present(lonlat_bnd_opt)) lonlat_bnd_opt = lonlat_bnd_test
+         if (present(aconfig_work_grid_opt)) aconfig_work_grid_opt = atlas_config(atlas_json(aconfig_work_grid%json()))
+      end if
+   end do
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine fit_work_grid
 
 end module tools_fit

@@ -9,7 +9,7 @@
 module type_minim
 
 use tools_const, only: zero,hundredth,tenth,half,one,two,ten,hundred
-use tools_fit, only: diag_tensor,diag_iso
+use tools_fit, only: diag_tensor,diag_iso,work_grid
 use tools_kinds, only: kind_real
 use tools_repro, only: repro_th,eq,inf,infeq,sup
 use type_mpl, only: mpl_type
@@ -59,6 +59,7 @@ contains
    procedure :: cost_tensor => minim_cost_tensor
    procedure :: cost_rv => minim_cost_rv
    procedure :: cost_component => minim_cost_component
+   procedure :: cost_work_grid => minim_cost_work_grid
    procedure :: hooke => minim_hooke
    procedure :: best_nearby => minim_best_nearby
    procedure :: vt_dir => minim_vt_dir
@@ -228,6 +229,8 @@ case ('rv')
    call minim%cost_rv(mpl,x,f)
 case ('component')
    call minim%cost_component(mpl,x,f)
+case ('work_grid')
+   call minim%cost_work_grid(x,f)
 case default
    call mpl%abort('${subr}$','wrong cost function')
 end select
@@ -459,6 +462,49 @@ end do
 @:probe_out()
 
 end subroutine minim_cost_component
+
+!----------------------------------------------------------------------
+! Function: minim_cost_work_grid
+!> Work grid optimization cost function
+!----------------------------------------------------------------------
+subroutine minim_cost_work_grid(minim,x,f)
+
+implicit none
+
+! Passed variables
+class(minim_type),intent(in) :: minim     !< Minimization data
+real(kind_real),intent(in) :: x(minim%nx) !< Control vector
+real(kind_real),intent(out) :: f          !< Cost function value
+
+! Local variables
+real(kind_real) :: splon,splat,rota
+real(kind_real) :: xtmp(minim%nx),lonlat_bnd(2,4)
+
+! Set name
+@:set_name(minim_cost_work_grid)
+
+! Probe in
+@:probe_in()
+
+! Renormalize
+xtmp = x
+call minim%vt_dir(xtmp)
+
+! Parameters
+splon = xtmp(1)
+splat = xtmp(2)
+rota = xtmp(3)
+
+! Observations
+lonlat_bnd = reshape(minim%obs,(/2,4/))
+
+! Compute work grid corners and cost
+call work_grid(splon,splat,rota,lonlat_bnd,f)
+
+! Probe out
+@:probe_out()
+
+end subroutine minim_cost_work_grid
 
 !----------------------------------------------------------------------
 ! Subroutine: minim_hooke

@@ -95,7 +95,7 @@ end subroutine atlas_get_global_grid
 ! Subroutine: atlas_get_regional_grid
 !> Define regional ATLAS grid from minimum number of points
 !----------------------------------------------------------------------
-subroutine atlas_get_regional_grid(mpl,nmin,aconfig_grid,aproj,xmin,xmax,ymin,ymax,agrid,n)
+subroutine atlas_get_regional_grid(mpl,nmin,aconfig_grid,xmin,xmax,ymin,ymax,agrid,n)
 
 implicit none
 
@@ -103,7 +103,6 @@ implicit none
 type(mpl_type),intent(inout) :: mpl               !< MPI data
 integer,intent(in) :: nmin                        !< Minimum number of points
 type(atlas_config),intent(in) :: aconfig_grid     !< ATLAS grid configuration
-type(atlas_projection),intent(in) :: aproj        !< ATLAS projection
 real(kind_real),intent(in) :: xmin                !< Computational grid minimum x value
 real(kind_real),intent(in) :: xmax                !< Computational grid maximum x value
 real(kind_real),intent(in) :: ymin                !< Computational grid minimum y value
@@ -113,7 +112,7 @@ integer,intent(out),optional :: n                 !< Grid size
 
 ! Local variables
 integer :: nx,ny
-real(kind_real) :: alpha,dx,dy
+real(kind_real) :: alpha
 type(atlas_config) :: aconfig_grid_out
 
 ! Set name
@@ -432,3 +431,4 @@ nmga = get_atlas_functionspace_size(mpl,afunctionspace)
 end function atlas_get_atlas_field_size
 
 end module tools_atlas
+

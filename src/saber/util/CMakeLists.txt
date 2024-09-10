@@ -13,9 +13,6 @@ HorizontalProfiles.cc
 HorizontalProfiles.h
 mo_cvtcoord_mod.F90
 mo_netcdf_mod.F90
-
-# This should be removed once spack-stack uses the ATLAS version where this interface is merged
-atlas_buildnode2cellconnectivity.F90
 )
 
 set( util_src_files ${util_src_files_list} PARENT_SCOPE )

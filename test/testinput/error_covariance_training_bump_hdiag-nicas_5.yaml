@@ -366,7 +366,7 @@ background error:
     members from template:
       template:
         date: 2010-01-01T12:00:00Z
-        filepath: testdata/randomization_bump_nicas_UL2/_MPI_-_OMP__member_pert_%mem%
+        filepath: testdata/randomization_bump_nicas_unstructured_global/_MPI_-_OMP__member_pert_%mem%
       pattern: '%mem%'
       nmembers: 25
       zero padding: 6

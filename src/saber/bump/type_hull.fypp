@@ -11,7 +11,7 @@ module type_hull
 use tools_const, only: zero,two,three,pi
 use tools_func, only: lonlat2xyz,xyz2lonlat,sphere_dist,vector_product
 use tools_kinds, only: kind_real
-use tools_repro, only: inf,infeq
+use tools_repro, only: inf,infeq,sup,repro_th
 use type_mpl, only: mpl_type
 @:use_probe()
 
@@ -123,9 +123,6 @@ type(mpl_type),intent(inout) :: mpl     !< MPI data
 integer,intent(in) :: n                 !< Size
 real(kind_real),intent(in) :: vbnd(3,n) !< Boundary nodes
 
-! Local variables
-integer :: ib
-
 ! Set name
 @:set_name(hull_init_boundary_nodes)
 
@@ -216,18 +213,26 @@ if (allocated(hull%vbnd)) then
          ibnext = 1
       end if
 
-      ! Cross-product
-      v1 = hull%vbnd(:,ibnext)-hull%vbnd(:,ib)
-      v2 = vp-hull%vbnd(:,ib)
-      call vector_product(v1,v2,cp)
+      ! Check whether points are aligned
+      call vector_product(hull%vbnd(:,ib),hull%vbnd(:,ibnext),cp)
+      cp = cp/sqrt(sum(cp**2))
 
-      ! Centroid
-      cd = (vp+hull%vbnd(:,ib)+hull%vbnd(:,ibnext))/three
+      if (sup(abs(sum(vp*cp)),repro_th)) then
+         ! Points are not aligned (aligned or almost aligned points are considered inside the hull)
 
-      ! Compare the directions
-      if (inf(sum(cp*cd),zero)) then
-         inside_hull = .false.
-         exit
+         ! Cross-product
+         v1 = hull%vbnd(:,ibnext)-hull%vbnd(:,ib)
+         v2 = vp-hull%vbnd(:,ib)
+         call vector_product(v1,v2,cp)
+
+         ! Centroid
+         cd = (vp+hull%vbnd(:,ib)+hull%vbnd(:,ibnext))/three
+
+         ! Compare the directions
+         if (sum(cp*cd)<zero) then
+            inside_hull = .false.
+            exit
+         end if
       end if
    end do
 else
@@ -251,3 +256,4 @@ end if
 end subroutine hull_inside
 
 end module type_hull
+
