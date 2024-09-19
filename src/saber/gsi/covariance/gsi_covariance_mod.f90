@@ -650,14 +650,26 @@ end subroutine multiply
       ier=0
    endif
    if (trim(vname) == 'qr') then
-      if (.not.fields%has('cloud_liquid_rain')) return
-      afield = fields%field('cloud_liquid_rain')
+      if (.not.fields%has('rain_water')) return
+      afield = fields%field('rain_water')
       call afield%data(rank2)
       ier=0
    endif
    if (trim(vname) == 'qs') then
-      if (.not.fields%has('cloud_liquid_snow')) return
-      afield = fields%field('cloud_liquid_snow')
+      if (.not.fields%has('snow_water')) return
+      afield = fields%field('snow_water')
+      call afield%data(rank2)
+      ier=0
+   endif
+   if (trim(vname) == 'qg') then
+      if (.not.fields%has('graupel')) return
+      afield = fields%field('graupel')
+      call afield%data(rank2)
+      ier=0
+   endif
+   if (trim(vname) == 'qh') then
+      if (.not.fields%has('hail')) return
+      afield = fields%field('hail')
       call afield%data(rank2)
       ier=0
    endif
