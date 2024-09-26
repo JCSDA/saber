@@ -15,7 +15,7 @@ geometry:
       meridional length: 12000.0e3
       height: 1.0
   - variables:
-    - snow_depth_fakeLevels
+    - snow_depth_shadowLevels
     levels: 11
   halo: 1
 background:
@@ -32,33 +32,21 @@ background error:
         universe length-scale: 10000.0e3
       io:
         data directory: testdata
-        files prefix: dirac_fakelevels_2/_MPI_-_OMP_
-        overriding nicas file: dirac_fakelevels_1/_MPI_-_OMP__nicas
+        files prefix: dirac_shadowlevels_3/_MPI_-_OMP_
+        overriding nicas file: dirac_shadowlevels_1/_MPI_-_OMP__nicas
       drivers:
         multivariate strategy: univariate
         read local nicas: true
         adjoints test: true
   saber outer blocks:
-  - saber block name: FakeLevels
-    fields metadata:
-      snow_depth:
-        vert_coord: vert_coord_0
-    calibration:
-      number of fake levels: 11
-      lowest fake level: 0.0
-      highest fake level: 1.0
+  - saber block name: ShadowLevels
+    read:
+      number of shadow levels: 11
       input model files:
-      - parameter: rv
-        file:
-          filepath: testdata/dirac_fakelevels_1/_MPI_-_OMP__rv
-      output model files:
-      - parameter: rv
-        file:
-          filepath: testdata/dirac_fakelevels_2/_MPI_-_OMP__rv
       - parameter: weight
         file:
-          overriding variables: [snow_depth_fakeLevels]
-          filepath: testdata/dirac_fakelevels_2/_MPI_-_OMP__weight
+          overriding variables: [snow_depth_shadowLevels]
+          filepath: testdata/dirac_shadowlevels_1/_MPI_-_OMP__weight
 dirac:
   lon:
   - 180.0
@@ -70,6 +58,6 @@ dirac:
   - snow_depth
 output dirac:
   mpi pattern: '%MPI%'
-  filepath: testdata/dirac_fakelevels_2/%MPI%_dirac_%id%
+  filepath: testdata/dirac_shadowlevels_3/%MPI%_dirac_%id%
 test:
-  reference filename: testref/dirac_fakelevels_2.ref
+  reference filename: testref/dirac_shadowlevels_3.ref

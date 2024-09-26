@@ -340,6 +340,7 @@
 #:set subr_list = subr_list + ["linop_alloc"]
 #:set subr_list = subr_list + ["linop_dealloc"]
 #:set subr_list = subr_list + ["linop_copy"]
+#:set subr_list = subr_list + ["linop_trim"]
 #:set subr_list = subr_list + ["linop_read"]
 #:set subr_list = subr_list + ["linop_write_def"]
 #:set subr_list = subr_list + ["linop_write_data"]

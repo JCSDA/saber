@@ -46,7 +46,7 @@ class SaberCentralBlockBase : public util::Printable, private boost::noncopyable
  public:
   explicit SaberCentralBlockBase(const SaberBlockParametersBase & params,
                                  const util::DateTime & validTime)
-    : blockName_(params.saberBlockName), validTime_(validTime) {}
+    : validTime_(validTime), blockName_(params.saberBlockName) {}
   virtual ~SaberCentralBlockBase() {}
 
   // Application methods
@@ -133,9 +133,11 @@ class SaberCentralBlockBase : public util::Printable, private boost::noncopyable
                 const oops::Variables &,
                 const double &) const;
 
+ protected:
+  const util::DateTime validTime_;
+
  private:
   std::string blockName_;
-  const util::DateTime validTime_;
   virtual void print(std::ostream &) const = 0;
 };
 

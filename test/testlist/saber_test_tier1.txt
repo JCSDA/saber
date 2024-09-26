@@ -10,11 +10,6 @@ dirac_bump_8
 dirac_diffusion_1
 dirac_diffusion_2
 dirac_ens_noloc_4d
-dirac_fakelevels_1
-dirac_fakelevels_2
-dirac_fakelevels_3
-dirac_fakelevels_4
-dirac_fakelevels_5
 dirac_oops_ens_noloc_4d
 compare_diagnostics_ens_noloc
 compare_diagnostics_hybrid_stddev
@@ -27,6 +22,11 @@ dirac_interpolation_2
 dirac_interpolation_3
 dirac_interpolation_4
 dirac_interpolation_5
+dirac_shadowlevels_1
+dirac_shadowlevels_2
+dirac_shadowlevels_3
+dirac_shadowlevels_4
+dirac_shadowlevels_5
 dirac_stddev_1
 dirac_stddev_2
 dirac_stddev_3

@@ -30,21 +30,21 @@ namespace generic {
 
 // -----------------------------------------------------------------------------
 
-class FakeLevelsParametersBase : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(FakeLevelsParametersBase, oops::Parameters)
+class ShadowLevelsParametersBase : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(ShadowLevelsParametersBase, oops::Parameters)
 
  public:
-  // Number of fake levels
-  oops::OptionalParameter<size_t> nz{"number of fake levels", this};
+  // Number of shadow levels
+  oops::OptionalParameter<size_t> nz{"number of shadow levels", this};
 
-  // Lowest fake level
-  oops::OptionalParameter<double> lowestFakeLevel{"lowest fake level", this};
+  // Lowest shadow level
+  oops::OptionalParameter<double> lowestShadowLevel{"lowest shadow level", this};
 
-  // Highest fake level
-  oops::OptionalParameter<double> highestFakeLevel{"highest fake level", this};
+  // Highest shadow level
+  oops::OptionalParameter<double> highestShadowLevel{"highest shadow level", this};
 
-  // Explicit fake levels
-  oops::OptionalParameter<std::vector<double>> fakeLevels{"fake levels", this};
+  // Explicit shadow levels
+  oops::OptionalParameter<std::vector<double>> shadowLevels{"shadow levels", this};
 
   // Input model files
   oops::OptionalParameter<std::vector<eckit::LocalConfiguration>> inputModelFilesConf{
@@ -60,33 +60,33 @@ class FakeLevelsParametersBase : public oops::Parameters {
 
 // -----------------------------------------------------------------------------
 
-class FakeLevelsParameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(FakeLevelsParameters, SaberBlockParametersBase)
+class ShadowLevelsParameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(ShadowLevelsParameters, SaberBlockParametersBase)
 
  public:
-  oops::OptionalParameter<FakeLevelsParametersBase> read{"read", this};
-  oops::OptionalParameter<FakeLevelsParametersBase> calibration{"calibration", this};
+  oops::OptionalParameter<ShadowLevelsParametersBase> read{"read", this};
+  oops::OptionalParameter<ShadowLevelsParametersBase> calibration{"calibration", this};
 
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
 
 // -----------------------------------------------------------------------------
 
-class FakeLevels : public SaberOuterBlockBase {
+class ShadowLevels : public SaberOuterBlockBase {
  public:
   static const std::string classname()
-    {return "saber::generic::FakeLevels";}
+    {return "saber::generic::ShadowLevels";}
 
-  typedef FakeLevelsParameters     Parameters_;
-  typedef FakeLevelsParametersBase ParametersBase_;
+  typedef ShadowLevelsParameters     Parameters_;
+  typedef ShadowLevelsParametersBase ParametersBase_;
 
-  FakeLevels(const oops::GeometryData &,
-             const oops::Variables &,
-             const eckit::Configuration &,
-             const Parameters_ &,
-             const oops::FieldSet3D &,
-             const oops::FieldSet3D &);
-  virtual ~FakeLevels() = default;
+  ShadowLevels(const oops::GeometryData &,
+               const oops::Variables &,
+               const eckit::Configuration &,
+               const Parameters_ &,
+               const oops::FieldSet3D &,
+               const oops::FieldSet3D &);
+  virtual ~ShadowLevels() = default;
 
   const oops::GeometryData & innerGeometryData() const override
     {return gdata_;}
@@ -107,7 +107,6 @@ class FakeLevels : public SaberOuterBlockBase {
     override;
 
  private:
-  const util::DateTime validTime_;
   const oops::GeometryData & gdata_;
   const eckit::mpi::Comm & comm_;
   oops::Variables outerVars_;

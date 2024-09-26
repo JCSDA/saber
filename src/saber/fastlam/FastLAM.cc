@@ -41,7 +41,6 @@ FastLAM::FastLAM(const oops::GeometryData & gdata,
                  const oops::FieldSet3D & xb,
                  const oops::FieldSet3D & fg) :
     SaberCentralBlockBase(params, xb.validTime()),
-    validTime_(xb.validTime()),
     gdata_(gdata),
     comm_(gdata_.comm()),
     activeVars_(activeVars),

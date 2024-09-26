@@ -388,13 +388,13 @@ void BUMP::addEnsemble(const oops::FieldSets & fsetEns) {
     if (dualResolutionGridUid_ == "") {
       igeom = 0;
       if (fsetEns[jj].getGridUid() != gridUid_) {
-        oops::Log::info() << "BUMP::iterativeUpdate: wrong grid UID" << std::endl;
+        oops::Log::info() << "BUMP::addEnsemble: wrong grid UID" << std::endl;
         std::abort();
       }
     } else {
       igeom = 1;
       if (fsetEns[jj].getGridUid() != dualResolutionGridUid_) {
-        oops::Log::info() << "BUMP::iterativeUpdate: wrong dual resolution grid UID" << std::endl;
+        oops::Log::info() << "BUMP::addEnsemble: wrong dual resolution grid UID" << std::endl;
         std::abort();
       }
     }

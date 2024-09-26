@@ -81,9 +81,6 @@ class FastLAM : public SaberCentralBlockBase {
     override;
 
  private:
-  // Valid date/time
-  const util::DateTime validTime_;
-
   // Model grid geometry data
   const oops::GeometryData & gdata_;
 

@@ -16,13 +16,13 @@ DuplicateVariables.h
 Ensemble.h
 Ensemble.cc
 
-# Fake levels block
-FakeLevels.h
-FakeLevels.cc
-
 # Hybrid block
 Hybrid.h
 Hybrid.cc
+
+# Shadow levels block
+ShadowLevels.h
+ShadowLevels.cc
 
 # StdDev block
 StdDev.h

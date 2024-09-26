@@ -10,7 +10,7 @@
 #include <algorithm>
 #include <string>
 
-#include "saber/generic/FakeLevels.h"
+#include "saber/generic/ShadowLevels.h"
 
 #include "eckit/config/LocalConfiguration.h"
 #include "eckit/exception/Exceptions.h"
@@ -28,38 +28,37 @@ namespace generic {
 
 // -----------------------------------------------------------------------------
 
-static SaberOuterBlockMaker<FakeLevels> makerFakeLevels_("FakeLevels");
+static SaberOuterBlockMaker<ShadowLevels> makerShadowLevels_("ShadowLevels");
 
 // -----------------------------------------------------------------------------
 
-FakeLevels::FakeLevels(const oops::GeometryData & outerGeometryData,
-                       const oops::Variables & outerVars,
-                       const eckit::Configuration & covarConf,
-                       const Parameters_ & params,
-                       const oops::FieldSet3D & xb,
-                       const oops::FieldSet3D & fg)
+ShadowLevels::ShadowLevels(const oops::GeometryData & outerGeometryData,
+                           const oops::Variables & outerVars,
+                           const eckit::Configuration & covarConf,
+                           const Parameters_ & params,
+                           const oops::FieldSet3D & xb,
+                           const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params, xb.validTime()),
-    validTime_(xb.validTime()),
     gdata_(outerGeometryData),
     comm_(gdata_.comm()),
     outerVars_(outerVars),
     activeVars_(params.activeVars.value().get_value_or(outerVars_)),
-    suffix_("_fakeLevels"),
+    suffix_("_shadowLevels"),
     params_(params.calibration.value() != boost::none ? *params.calibration.value()
       : *params.read.value()),
     fieldsMetaData_(params.fieldsMetaData.value()) {
-  oops::Log::trace() << classname() << "::FakeLevels starting" << std::endl;
+  oops::Log::trace() << classname() << "::ShadowLevels starting" << std::endl;
 
-  // Set number of fake levels
-  if (params_.fakeLevels.value() != boost::none) {
-    nz_ = params_.fakeLevels.value()->size();
+  // Set number of shadow levels
+  if (params_.shadowLevels.value() != boost::none) {
+    nz_ = params_.shadowLevels.value()->size();
     if (params_.nz.value() != boost::none) {
       ASSERT(nz_ = *params_.nz.value());
     }
   } else if (params_.nz.value() != boost::none) {
     nz_ = *params_.nz.value();
   } else {
-    throw eckit::UserError("number of fake levels is missing", Here());
+    throw eckit::UserError("number of shadow levels is missing", Here());
   }
   ASSERT(nz_ > 1);
 
@@ -74,12 +73,12 @@ FakeLevels::FakeLevels(const oops::GeometryData & outerGeometryData,
     }
   }
 
-  oops::Log::trace() << classname() << "::FakeLevels done" << std::endl;
+  oops::Log::trace() << classname() << "::ShadowLevels done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void FakeLevels::multiply(oops::FieldSet3D & fset) const {
+void ShadowLevels::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting " << std::endl;
 
   // Ghost points
@@ -125,7 +124,7 @@ void FakeLevels::multiply(oops::FieldSet3D & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void FakeLevels::multiplyAD(oops::FieldSet3D & fset) const {
+void ShadowLevels::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname()
                      << "::multiplyAD starting" << std::endl;
 
@@ -173,7 +172,7 @@ void FakeLevels::multiplyAD(oops::FieldSet3D & fset) const {
 
 // -----------------------------------------------------------------------------
 
-std::vector<std::pair<std::string, eckit::LocalConfiguration>> FakeLevels::getReadConfs() const {
+std::vector<std::pair<std::string, eckit::LocalConfiguration>> ShadowLevels::getReadConfs() const {
   oops::Log::trace() << classname() << "::getReadConfs starting" << std::endl;
 
   std::vector<std::pair<std::string, eckit::LocalConfiguration>> inputs;
@@ -196,7 +195,7 @@ std::vector<std::pair<std::string, eckit::LocalConfiguration>> FakeLevels::getRe
 
 // -----------------------------------------------------------------------------
 
-void FakeLevels::setReadFields(const std::vector<oops::FieldSet3D> & fsetVec) {
+void ShadowLevels::setReadFields(const std::vector<oops::FieldSet3D> & fsetVec) {
   oops::Log::trace() << classname() << "::setReadFields starting" << std::endl;
 
   // Get rv from input files if present
@@ -226,7 +225,7 @@ void FakeLevels::setReadFields(const std::vector<oops::FieldSet3D> & fsetVec) {
 
 // -----------------------------------------------------------------------------
 
-void FakeLevels::directCalibration(const oops::FieldSets &) {
+void ShadowLevels::directCalibration(const oops::FieldSets &) {
   oops::Log::trace() << classname() << "::calibration starting" << std::endl;
 
   // Ghost points
@@ -249,18 +248,18 @@ void FakeLevels::directCalibration(const oops::FieldSets &) {
     }
   }
 
-  // Define fake levels
-  std::vector<double> fakeLevels;
-  if (params_.fakeLevels.value() != boost::none) {
-    fakeLevels = *params_.fakeLevels.value();
+  // Define shadow levels
+  std::vector<double> shadowLevels;
+  if (params_.shadowLevels.value() != boost::none) {
+    shadowLevels = *params_.shadowLevels.value();
   } else {
-    ASSERT(params_.lowestFakeLevel.value() != boost::none);
-    ASSERT(params_.highestFakeLevel.value() != boost::none);
-    ASSERT(*params_.lowestFakeLevel.value() < *params_.highestFakeLevel.value());
-    const double delta = (*params_.highestFakeLevel.value()-*params_.lowestFakeLevel.value())
+    ASSERT(params_.lowestShadowLevel.value() != boost::none);
+    ASSERT(params_.highestShadowLevel.value() != boost::none);
+    ASSERT(*params_.lowestShadowLevel.value() < *params_.highestShadowLevel.value());
+    const double delta = (*params_.highestShadowLevel.value()-*params_.lowestShadowLevel.value())
       /(nz_-1);
     for (size_t k = 0; k < nz_; ++k) {
-      fakeLevels.push_back(*params_.lowestFakeLevel.value()+static_cast<double>(k)*delta);
+      shadowLevels.push_back(*params_.lowestShadowLevel.value()+static_cast<double>(k)*delta);
     }
   }
 
@@ -295,15 +294,16 @@ void FakeLevels::directCalibration(const oops::FieldSets &) {
     std::vector<double> wgt(nz_);
     for (int jnode = 0; jnode < field.shape(0); ++jnode) {
       if (ghostView(jnode) == 0) {
-        // Check fake levels extrema
-        ASSERT(vertCoordView(jnode, 0) >= fakeLevels[0]);
-        ASSERT(vertCoordView(jnode, 0) <= fakeLevels[nz_-1]);
+        // Check shadow levels extrema
+        ASSERT(vertCoordView(jnode, 0) >= shadowLevels[0]);
+        ASSERT(vertCoordView(jnode, 0) <= shadowLevels[nz_-1]);
 
         // Compute raw weight
         double wgtSum = 0.0;
         for (size_t k = 0; k < nz_; ++k) {
-          const double normDist = std::abs(vertCoordView(jnode, 0)-fakeLevels[k])/rvView(jnode, 0);
-          if ((fakeLevels[k] < vertCoordView(jnode, 0)) && (normDist > 1.0e-12)) {
+          const double normDist = std::abs(vertCoordView(jnode, 0)-shadowLevels[k])
+            /rvView(jnode, 0);
+          if ((shadowLevels[k] < vertCoordView(jnode, 0)) && (normDist > 1.0e-12)) {
             // Under ground
             wgt[k] = 0.0;
           } else {
@@ -320,7 +320,7 @@ void FakeLevels::directCalibration(const oops::FieldSets &) {
             wgt[k] /= wgtSum;
           }
         } else {
-          throw eckit::UserError("fake levels are too far apart", Here());
+          throw eckit::UserError("shadow levels are too far apart", Here());
         }
 
         // Weight square-roots
@@ -345,7 +345,7 @@ void FakeLevels::directCalibration(const oops::FieldSets &) {
 
 // -----------------------------------------------------------------------------
 
-void FakeLevels::read() {
+void ShadowLevels::read() {
   oops::Log::trace() << classname() << "::read starting" << std::endl;
 
   ASSERT(!rv_);
@@ -363,7 +363,7 @@ void FakeLevels::read() {
 
 // -----------------------------------------------------------------------------
 
-std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FakeLevels::fieldsToWrite()
+std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> ShadowLevels::fieldsToWrite()
   const {
   oops::Log::trace() << classname() << "::fieldsToWrite starting" << std::endl;
 
@@ -399,14 +399,14 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FakeLevels::
 
 // -----------------------------------------------------------------------------
 
-void FakeLevels::print(std::ostream & os) const {
+void ShadowLevels::print(std::ostream & os) const {
   os << classname();
 }
 
 // -----------------------------------------------------------------------------
 
-eckit::LocalConfiguration FakeLevels::getFileConf(const eckit::mpi::Comm & comm,
-                                                  const eckit::Configuration & conf) const {
+eckit::LocalConfiguration ShadowLevels::getFileConf(const eckit::mpi::Comm & comm,
+                                                    const eckit::Configuration & conf) const {
   oops::Log::trace() << classname() << "::getFileConf starting" << std::endl;
 
   // Get number of MPI tasks and OpenMP threads

@@ -663,8 +663,8 @@ end if
 end subroutine ssrfpack_givens
 
 !----------------------------------------------------------------------
-! Subroutine: ssrfpack_givens
-!> Construct the Givens plane rotation
+! Subroutine: ssrfpack_gradl
+!> Compute estimated gradients at the nodes
 !----------------------------------------------------------------------
 subroutine ssrfpack_gradl(mpl,n,k,x,y,z,w,list,lptr,lend,g)
 
@@ -794,7 +794,7 @@ end do
 
 ! Test the linear portion of the stabilized system for ill-conditioning
 dmin = min(abs(a(4,4)),abs(a(5,5)) )
-IF (dmin<dtol) call mpl%abort('${subr}$','No unique solution due to collinear nodes')
+if (dmin<dtol) call mpl%abort('${subr}$','No unique solution due to collinear nodes')
 
 ! Solve the 2 by 2 triangular system for the estimated partial derivatives
 12 dy = a(6,5)/a(5,5)

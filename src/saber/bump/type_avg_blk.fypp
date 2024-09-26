@@ -753,7 +753,7 @@ type(mom_blk_type),intent(in) :: mom_blk     !< Moments
 
 ! Local variables
 integer :: il0,jl0,jl0r,jc3,jc4,isub,jsub,nc1max,ic1d,ic1u,i,nc1a,nc1a_cor
-real(kind_real) :: m2_1,m2_2,norm,den,gen_kurt,mean_cor
+real(kind_real) :: m2_1,m2_2,norm,den,gen_kurt
 real(kind_real),allocatable :: list_m11(:),list_m11m11(:,:,:),list_m2m2(:,:,:),list_m22(:,:),list_cor(:),list_cor_save(:,:,:,:,:)
 logical :: valid
 

@@ -15,7 +15,7 @@ geometry:
       meridional length: 12000.0e3
       height: 1.0
   - variables:
-    - snow_depth_fakeLevels
+    - snow_depth_shadowLevels
     levels: 11
   halo: 1
 background:
@@ -27,7 +27,7 @@ background error:
   saber central block:
     saber block name: BUMP_NICAS
     fields metadata:
-      snow_depth_fakeLevels:
+      snow_depth_shadowLevels:
         vert_coord: vert_coord_1
     calibration:
       general:
@@ -35,7 +35,7 @@ background error:
         universe length-scale: 10000.0e3
       io:
         data directory: testdata
-        files prefix: dirac_fakelevels_1/_MPI_-_OMP_
+        files prefix: dirac_shadowlevels_1/_MPI_-_OMP_
       drivers:
         multivariate strategy: univariate
         compute nicas: true
@@ -46,28 +46,28 @@ background error:
         explicit length-scales: true
         horizontal length-scale:
         - groups:
-          - snow_depth_fakeLevels
+          - snow_depth_shadowLevels
           value: 6000.0e3
         vertical length-scale:
         - groups:
-          - snow_depth_fakeLevels
+          - snow_depth_shadowLevels
           value: 0.0
   saber outer blocks:
-  - saber block name: FakeLevels
+  - saber block name: ShadowLevels
     fields metadata:
       snow_depth:
         vert_coord: vert_coord_0
     calibration:
-      fake levels: [0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
+      shadow levels: [0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
       vertical length-scale: 0.6
       output model files:
       - parameter: rv
         file:
-          filepath: testdata/dirac_fakelevels_1/_MPI_-_OMP__rv
+          filepath: testdata/dirac_shadowlevels_1/_MPI_-_OMP__rv
       - parameter: weight
         file:
-          overriding variables: [snow_depth_fakeLevels]
-          filepath: testdata/dirac_fakelevels_1/_MPI_-_OMP__weight
+          overriding variables: [snow_depth_shadowLevels]
+          filepath: testdata/dirac_shadowlevels_1/_MPI_-_OMP__weight
 dirac:
   lon:
   - 180.0
@@ -79,6 +79,6 @@ dirac:
   - snow_depth
 output dirac:
   mpi pattern: '%MPI%'
-  filepath: testdata/dirac_fakelevels_1/%MPI%_dirac_%id%
+  filepath: testdata/dirac_shadowlevels_1/%MPI%_dirac_%id%
 test:
-  reference filename: testref/dirac_fakelevels_1.ref
+  reference filename: testref/dirac_shadowlevels_1.ref
