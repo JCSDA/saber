@@ -38,6 +38,15 @@ find_package( NetCDF REQUIRED COMPONENTS C Fortran )
 find_package( eckit 1.24.4 REQUIRED COMPONENTS MPI )
 find_package( fckit 0.11.0 REQUIRED )
 find_package( atlas 0.35.0 REQUIRED COMPONENTS OMP_Fortran TESSELATION)
+# TODO(Benjamin): check when ATLAS PR #215 is merged into a tagged version to update the version number
+if( atlas_VERSION VERSION_GREATER "0.38.1" )
+    set( ATLAS_REGIONAL_INTERP ON )
+else()
+    set( ATLAS_REGIONAL_INTERP OFF )
+endif()
+if( DEFINED ENV{ATLAS_REGIONAL_INTERP} )
+    set( ATLAS_REGIONAL_INTERP $ENV{ATLAS_REGIONAL_INTERP} )
+endif()
 
 if( ENABLE_MKL )
     find_package( MKL )
@@ -55,6 +64,11 @@ find_package( vader 1.7.0 REQUIRED )
 # Optionals
 find_package( FFTW 3.3.8 QUIET )
 find_package( gsibec 1.2.1 QUIET )
+find_package( eccodes 2.24 QUIET )
+if( eccodes_FOUND )
+    set( ECCODES_LIBRARIES eccodes )
+    add_definitions(-DECCODES_FOUND=1)
+endif()
 
 # Optional SABER blocks
 if( gsibec_FOUND )

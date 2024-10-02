@@ -1,0 +1,45 @@
+Input Dirac increment:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: structured
+- size: 14805
+Regional grid detected
+Partitioner:
+- type: checkerboard
+Function space:
+- type: StructuredColumns
+- halo: 0
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 10
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+  Mask size: 100%
+Fields:
+  stream_function: 3.0000000000000000e+00
+Adjoint test for block interpolation passed
+    FastLAM interpolation accuracy test passed
+    FastLAM interpolation adjoint test passed
+    FastLAM redToRows test passed
+    FastLAM rowsToCols test passed
+Adjoint test for block FastLAM passed
+Square-root test for block FastLAM passed
+Covariance(SABER) * Increment:
+Valid time:2010-01-01T12:00:00Z
+Quench geometry grid:
+- name: structured
+- size: 14805
+Regional grid detected
+Partitioner:
+- type: checkerboard
+Function space:
+- type: StructuredColumns
+- halo: 0
+Groups: 
+- Group 0:
+  Vertical levels: 
+  - number: 10
+  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
+  Mask size: 100%
+Fields:
+  stream_function: 2.9109113568372120e+01

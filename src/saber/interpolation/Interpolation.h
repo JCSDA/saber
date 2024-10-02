@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "atlas/field.h"
+#include "atlas/interpolation.h"
 
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
@@ -29,10 +30,12 @@ namespace saber {
 namespace interpolation {
 
 // -----------------------------------------------------------------------------
+
 class InterpolationParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(InterpolationParameters, SaberBlockParametersBase)
 
  public:
+  oops::Parameter<std::string> interpType{"interpolation type", "global", this};
   oops::RequiredParameter<eckit::LocalConfiguration> innerGeom{"inner geometry", this};
   oops::Parameter<eckit::LocalConfiguration> forwardInterpConf{"forward interpolator",
     eckit::LocalConfiguration(), this};
@@ -79,8 +82,10 @@ class Interpolation : public SaberOuterBlockBase {
   const oops::Variables activeVars_;
   // pointers for delayed initialization
   std::unique_ptr<oops::GeometryData> innerGeomData_;
-  std::unique_ptr<oops::GlobalInterpolator> interp_;
-  mutable std::unique_ptr<oops::GlobalInterpolator> inverseInterp_;
+  std::unique_ptr<oops::GlobalInterpolator> globalInterp_;
+  std::unique_ptr<atlas::Interpolation> regionalInterp_;
+  mutable std::unique_ptr<oops::GlobalInterpolator> inverseGlobalInterp_;
+  mutable std::unique_ptr<atlas::Interpolation> inverseRegionalInterp_;
 };
 
 }  // namespace interpolation

@@ -1,5 +1,6 @@
 /*
  * (C) Copyright 2023  UCAR.
+ * (C) Copyright 2023-2024 Meteorologisk Institutt
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -22,6 +23,8 @@ namespace quench {
 
 LinearVariableChange::LinearVariableChange(const Geometry & geom,
                                            const eckit::Configuration & config) {
+  oops::Log::trace() << classname() << "::LinearVariableChange starting" << std::endl;
+
   // Local configuration
   LinearVariableChangeParameters params;
   params.deserialize(config);
@@ -54,6 +57,8 @@ LinearVariableChange::LinearVariableChange(const Geometry & geom,
                        conf,
                        fset_);
   }
+
+  oops::Log::trace() << classname() << "::LinearVariableChange done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
@@ -62,46 +67,66 @@ LinearVariableChange::~LinearVariableChange() {}
 
 // -----------------------------------------------------------------------------
 
-void LinearVariableChange::changeVarTL(Increment & dx, const oops::Variables & vars) const {
+void LinearVariableChange::changeVarTL(Increment & dx,
+                                       const oops::Variables & vars) const {
+  oops::Log::trace() << classname() << "::changeVarTL starting" << std::endl;
+
   if (!fset_.empty()) {
     atlas::FieldSet fset;
     dx.toFieldSet(fset);
     util::multiplyFieldSets(fset, fset_);
     dx.fromFieldSet(fset);
   }
+
+  oops::Log::trace() << classname() << "::changeVarTL done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void LinearVariableChange::changeVarInverseTL(Increment & dx, const oops::Variables & vars) const {
+void LinearVariableChange::changeVarInverseTL(Increment & dx,
+                                              const oops::Variables & vars) const {
+  oops::Log::trace() << classname() << "::changeVarInverseTL starting" << std::endl;
+
   if (!fset_.empty()) {
     atlas::FieldSet fset;
     dx.toFieldSet(fset);
     util::divideFieldSets(fset, fset_);
     dx.fromFieldSet(fset);
   }
+
+  oops::Log::trace() << classname() << "::changeVarInverseTL done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void LinearVariableChange::changeVarAD(Increment & dx, const oops::Variables & vars) const {
+void LinearVariableChange::changeVarAD(Increment & dx,
+                                       const oops::Variables & vars) const {
+  oops::Log::trace() << classname() << "::changeVarAD starting" << std::endl;
+
   if (!fset_.empty()) {
     atlas::FieldSet fset;
     dx.toFieldSet(fset);
     util::multiplyFieldSets(fset, fset_);
     dx.fromFieldSet(fset);
   }
+
+  oops::Log::trace() << classname() << "::changeVarAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void LinearVariableChange::changeVarInverseAD(Increment & dx, const oops::Variables & vars) const {
+void LinearVariableChange::changeVarInverseAD(Increment & dx,
+                                              const oops::Variables & vars) const {
+  oops::Log::trace() << classname() << "::changeVarInverseAD starting" << std::endl;
+
   if (!fset_.empty()) {
     atlas::FieldSet fset;
     dx.toFieldSet(fset);
     util::divideFieldSets(fset, fset_);
     dx.fromFieldSet(fset);
   }
+
+  oops::Log::trace() << classname() << "::changeVarInverseAD done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

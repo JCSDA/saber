@@ -1,4 +1,5 @@
 # (C) Copyright 2022 UCAR.
+# (C) Copyright 2023-2024 Meteorologisk Institutt
 #
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -12,6 +13,8 @@ Geometry.cc
 Geometry.h
 Increment.cc
 Increment.h
+Interpolation.cc
+Interpolation.h
 LinearVariableChange.h
 LinearVariableChange.cc
 ModelData.h
@@ -29,6 +32,9 @@ ecbuild_add_library( TARGET   quench
                      LINKER_LANGUAGE CXX )
 
 target_link_libraries( quench PUBLIC NetCDF::NetCDF_Fortran NetCDF::NetCDF_C )
+if( eccodes_FOUND )
+    target_link_libraries( quench PUBLIC eccodes )
+endif()
 
 #Configure include directory layout for build-tree to match install-tree
 set(QUENCH_BUILD_DIR_INCLUDE_PATH ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/include)
