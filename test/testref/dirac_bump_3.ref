@@ -24,6 +24,22 @@ Fields:
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
+       Accuracy tests:
+          Wavenumber:  1
+             - psi/chi to u:  89.76376%
+             - psi/chi to v:  89.76376%
+          Wavenumber:  2
+             - psi/chi to u:  75.59054%
+             - psi/chi to v:  75.59054%
+          Wavenumber:  3
+             - psi/chi to u:  89.76377%
+             - psi/chi to v:  89.76377%
+          Wavenumber:  4
+             - psi/chi to u:  67.19160%
+             - psi/chi to v:  83.98950%
+          Wavenumber:  5
+             - psi/chi to u:  39.37007%
+             - psi/chi to v:  39.37007%
 Adjoint test for block BUMP_PsiChiToUV passed
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -93,8 +109,8 @@ Groups:
   - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  eastward_wind: 1.5885846717173091e+00
-  northward_wind: 5.0803567566777863e-01
+  eastward_wind: 1.5885846717183989e+00
+  northward_wind: 5.0803567566774221e-01
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -102,6 +118,22 @@ Fields:
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
+       Accuracy tests:
+          Wavenumber:  1
+             - psi/chi to u:  89.76376%
+             - psi/chi to v:  89.76376%
+          Wavenumber:  2
+             - psi/chi to u:  75.59054%
+             - psi/chi to v:  75.59054%
+          Wavenumber:  3
+             - psi/chi to u:  89.76377%
+             - psi/chi to v:  89.76377%
+          Wavenumber:  4
+             - psi/chi to u:  67.19160%
+             - psi/chi to v:  83.98950%
+          Wavenumber:  5
+             - psi/chi to u:  39.37007%
+             - psi/chi to v:  39.37007%
 Adjoint test for block BUMP_PsiChiToUV passed
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -159,8 +191,8 @@ Groups:
   - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  eastward_wind: 8.9637016223071983e-14
-  northward_wind: 2.6916848772841084e-14
+  eastward_wind: 3.7259415926535306e-12
+  northward_wind: 1.3202009593235781e-12
 Norm of input parameter inflation: 6.9558608381710329e+01
 Norm of input parameter StdDev: 1.7389652095427326e+02
        Independent levels:  1[2]

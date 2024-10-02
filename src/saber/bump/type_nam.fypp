@@ -88,7 +88,9 @@ type nam_type
    logical :: write_nicas_steps                               !< Write NICAS steps
    logical :: new_wind                                        !< Compute wind transform
    logical :: load_wind_local                                 !< Read local wind transform
+   logical :: load_wind_global                                !< Read global wind transform
    logical :: write_wind_local                                !< Write local wind transform
+   logical :: write_wind_global                               !< Write global wind transform
    logical :: check_vbal                                      !< Test vertical balance inverse
    logical :: check_adjoints                                  !< Test adjoints
    integer :: check_normalization                             !< Test NICAS normalization (number of tests)
@@ -193,6 +195,7 @@ type nam_type
    real(kind_real),allocatable :: rv(:,:)                     !< Forced vertical support radius
    real(kind_real),allocatable :: loc_wgt_sqrt(:,:)           !< Weights square-root for the 'block_weighted' strategy
    character(len=2),allocatable :: nicas_interp_type(:)       !< NICAS C1B to C0A interpolation type ('c0': C0 mesh-based, 'c1': C1 mesh-based or 'si': smooth interpolation)
+   real(kind_real) :: nicas_si_factor                         !< Factor to get interpolation radius from convolution radius if nicas_interp_type = 'si'
    integer :: norm_rand_size                                  !< Normalization randomization size (default is 0, which means exact normalization)
    logical :: pos_def_test                                    !< Positive-definiteness test
    logical :: interp_test                                     !< Horizontal NICAS interpolation test
@@ -202,10 +205,7 @@ type nam_type
    logical :: interp_in_global_file                           !< Read/write interpolation in global file
 
    ! Psichitouv section
-   integer :: wind_nlon                                       !< Number of longitudes for the regular grid
-   integer :: wind_nlat                                       !< Number of latitudes for the regular grid
-   integer :: wind_nsg                                        !< Half-width of the Savitzky-Golay to compute derivatives
-   real(kind_real) :: wind_inflation                          !< Wind inflation to compensate the Savitzky-Golay smoothing
+   logical :: wind_dipole_test                                !< Dipole test (bypass the adjoint)
 
    ! Dirac section
    integer :: ndir                                            !< Number of Diracs
@@ -492,7 +492,9 @@ if (conf%get('drivers',section)) then
    call nam%get(section,'write nicas steps',nam%write_nicas_steps)
    call nam%get(section,'compute psichitouv',nam%new_wind)
    call nam%get(section,'read local psichitouv',nam%load_wind_local)
+   call nam%get(section,'read global psichitouv',nam%load_wind_global)
    call nam%get(section,'write local psichitouv',nam%write_wind_local)
+   call nam%get(section,'write global psichitouv',nam%write_wind_global)
    call nam%get(section,'vertical balance inverse test',nam%check_vbal)
    call nam%get(section,'adjoints test',nam%check_adjoints)
    call nam%get(section,'normalization test',nam%check_normalization)
@@ -898,6 +900,7 @@ if (conf%get('nicas',section)) then
          end do
       end if
    end if
+   call nam%get(section,'smooth interpolation factor',nam%nicas_si_factor)
    call nam%get(section,'normalization randomization size',nam%norm_rand_size)
    call nam%get(section,'positive-definiteness test',nam%pos_def_test)
    call nam%get(section,'horizontal interpolation test',nam%interp_test)
@@ -910,10 +913,7 @@ end if
 ! Psichitouv section
 if (conf%get('psichitouv',section)) then
    if (lverbose) call print_section(mpl,section,'Psichitouv')
-   call nam%get(section,'longitudes',nam%wind_nlon)
-   call nam%get(section,'latitudes',nam%wind_nlat)
-   call nam%get(section,'savitzky-golay half width',nam%wind_nsg)
-   call nam%get(section,'wind inflation',nam%wind_inflation)
+   call nam%get(section,'dipole test',nam%wind_dipole_test)
 end if
 
 ! Dirac section
@@ -1365,6 +1365,8 @@ if (nam%new_nicas.or.nam%load_nicas_local.or.nam%load_nicas_global) then
          call mpl%abort('${subr}$','wrong nicas_interp_type')
       end select
    end do
+   if ((nam%nicas_si_factor<0.1).or.(nam%nicas_si_factor>1.5)) &
+ & call mpl%abort('${subr}$','NICAS smooth interpolation factor out of range')
    if (nam%same_horizontal.and.nam%write_nicas_steps) call mpl%abort('${subr}$','NICAS steps not available with horizontal convolution')
    if (nam%sim_levs_th<zero) call mpl%abort('${subr}$','similar levels threshold should not be negative')
    if (nam%interp_in_global_file.and.(.not.(nam%load_nicas_global.or.nam%write_nicas_global))) &
@@ -1381,12 +1383,8 @@ if (nam%check_dirac) then
 end if
 
 ! Wind section
-if (nam%new_wind) then
-   if (nam%wind_nlon<3) call mpl%abort('${subr}$','wind_nlon should be larger than 3')
-   if (nam%wind_nlat<3) call mpl%abort('${subr}$','wind_nlat should be larger than 3')
-   if (nam%wind_nsg<1) call mpl%abort('${subr}$','wind_nsg should be positive')
-   if (nam%wind_inflation<one) call mpl%abort('${subr}$','wind_inflation should be larger than 1')
-end if
+if (nam%new_wind.and.(nam%load_wind_local.or.nam%load_wind_global)) &
+ & call mpl%abort('${subr}$','new_wind and load_wind_local/load_wind_global are exclusive')
 
 ! Probe out
 @:probe_out()

@@ -13,6 +13,7 @@ use tools_const, only: zero,one,rad2deg,reqkm,req
 use tools_fit, only: tensor_d2r
 use tools_func, only: convert_l2i,convert_i2l,zss_sum,zss_maxval
 use tools_kinds, only: kind_real,huge_real
+use tools_repro, only: infeq,supeq
 use type_cmat_blk, only: cmat_blk_type
 use type_diag, only: diag_type
 use type_geom, only: geom_type
@@ -41,6 +42,11 @@ contains
    procedure :: setup_sampling => cmat_setup_sampling
    procedure :: write_universe_radius => cmat_write_universe_radius
 end type cmat_type
+
+integer,parameter :: nsi = 15                                                                                               !< Size of scaling look-up table
+real(kind_real),parameter :: si_factor(nsi) = (/0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.1,1.2,1.3,1.4,1.5/)               !< Smooth interpolation axis
+real(kind_real),parameter :: si_scaling(nsi) = (/0.995,1.034,1.071,1.122,1.188,1.261,1.348,1.443,1.545,1.649,1.763,1.879, & !< Scaling look-up table (empirical, obtained with the "internal consistency check" option)
+ & 1.996,2.121,2.245/)
 
 private
 public :: cmat_type
@@ -406,7 +412,7 @@ type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
-integer :: ig,il0,ic0a,ncmpmax,icmp
+integer :: ig,il0,ic0a,ncmpmax,icmp,isi
 integer,allocatable :: igmin(:)
 real(kind_real),allocatable :: rhmin(:)
 
@@ -486,6 +492,33 @@ else
       cmat%blk(ig)%rvs = cmat%blk(ig)%rv
    end do
 end if
+
+do ig=1,nam%ng
+   write(mpl%info,'(a7,a,a,a)') '','Group ',trim(nam%group_names(ig)),':'
+   call mpl%flush
+
+   if (nam%nicas_interp_type(ig)=='si') then
+      ! Interpolate scaling linearly
+      cmat%blk(ig)%scaling = mpl%msv%valr
+      do isi=1,nsi-1
+         if (infeq(si_factor(isi),nam%nicas_si_factor).and.infeq(nam%nicas_si_factor,si_factor(isi+1))) then
+            cmat%blk(ig)%scaling = (si_factor(isi+1)-nam%nicas_si_factor)/(si_factor(isi+1)-si_factor(isi))*si_scaling(isi) &
+ & + (nam%nicas_si_factor-si_factor(isi))/(si_factor(isi+1)-si_factor(isi))*si_scaling(isi+1)
+            exit
+         end if
+      end do
+      if (mpl%msv%is(cmat%blk(ig)%scaling)) call mpl%abort('${subr}$','cannot find smooth interpolation scaling')
+   else
+      ! No scaling
+      cmat%blk(ig)%scaling = one
+   end if
+
+   ! TODO: this scaling gives more accurate results, but it will change the results... not activated so far
+   cmat%blk(ig)%scaling = one
+
+   write(mpl%info,'(a10,a,f5.3,a,f5.3)') '','Factor: ',nam%nicas_si_factor,' - scaling: ',cmat%blk(ig)%scaling
+   call mpl%flush
+end do
 
 ! Probe out
 @:probe_out()

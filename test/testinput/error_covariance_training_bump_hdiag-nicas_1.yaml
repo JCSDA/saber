@@ -51,7 +51,6 @@ background error:
         internal dirac test: true
       sampling:
         computation grid size: 500
-        diagnostic grid size: 250
         distance classes: 10
         angular sectors: 4
         distance class width: 800.0e3

@@ -100,8 +100,7 @@ background error:
           io:
             data directory: testdata
             files prefix: dirac_bump_1/_MPI_-_OMP_
-            io tasks: 1
-            overriding psichitouv file: error_covariance_training_bump_wind/_MPI_-_OMP__wind
+            overriding psichitouv file: error_covariance_training_bump_wind_1/_MPI_-_OMP__wind
           drivers:
             read local psichitouv: true
     weight:

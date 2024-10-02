@@ -7,6 +7,7 @@ dirac_bump_5
 dirac_bump_6
 dirac_bump_7
 dirac_bump_8
+dirac_bump_9
 dirac_diffusion_1
 dirac_diffusion_2
 dirac_ens_noloc_4d
@@ -77,7 +78,8 @@ error_covariance_training_bump_vbal_4
 error_covariance_training_bump_vbal_5
 error_covariance_training_bump_vbal_6
 error_covariance_training_bump_vbal_7
-error_covariance_training_bump_wind
+error_covariance_training_bump_wind_1
+error_covariance_training_bump_wind_2
 error_covariance_training_diffusion_1
 error_covariance_training_diffusion_2
 error_covariance_training_stddev_1

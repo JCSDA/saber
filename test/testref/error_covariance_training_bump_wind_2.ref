@@ -1,0 +1,23 @@
+       Independent levels:  1[2]
+          Subset Sc0 size:             3763
+          Domain area (% of Earth area): 0.449E-02%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+       Accuracy tests:
+          Wavenumber:  1
+             - psi/chi to u:  99.99998%
+             - psi/chi to v:  99.99998%
+          Wavenumber:  2
+             - psi/chi to u:  99.99998%
+             - psi/chi to v:  99.99998%
+          Wavenumber:  3
+             - psi/chi to u:  99.99998%
+             - psi/chi to v:  99.99998%
+          Wavenumber:  4
+             - psi/chi to u:  99.99998%
+             - psi/chi to v:  99.99998%
+          Wavenumber:  5
+             - psi/chi to u:  99.99998%
+             - psi/chi to v:  99.99998%

@@ -8,37 +8,47 @@
 !----------------------------------------------------------------------
 module type_wind
 
-use fckit_mpi_module, only: fckit_mpi_status
+use fckit_mpi_module, only: fckit_mpi_status,fckit_mpi_sum,fckit_mpi_max
 !$ use omp_lib
-use tools_const, only: zero,half,one,two,eight,ten,twelve,pi,req
-use tools_func, only: sphere_dist,zss_count
+use tools_const, only: zero,quarter,half,one,two,eight,ten,twelve,hundred,pi,req,rad2deg
+use tools_func, only: sphere_dist,zss_count,zss_maxval
 use tools_kinds, only: kind_real,huge_real
-use tools_netcdf, only: create_file,open_file,put_att,get_att,close_file
+use tools_netcdf, only: create_file,open_file,define_dim,define_var,inquire_dim_size,inquire_var,put_att,get_att,close_file
+use tools_qsort, only: qsort
 use type_com, only: com_type
 use type_geom, only: geom_type
 use type_linop, only: linop_type
+use type_mesh, only: mesh_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 @:use_probe()
 use type_rng, only: rng_type
+use type_tree, only: tree_type
 
 implicit none
 
 ! Wind derived type
 type wind_type
-   integer :: nlla                       !< Size of halo A on regular grid
-   integer :: nllb                       !< Size of halo B on regular grid
-   integer :: nllw                       !< Size of halo W on regular grid
-   integer :: nc0b                       !< Size of halo B on subset Sc0
-   type(com_type) :: com_c0_AB           !< Communication on subset Sc0, halo A to halo B
-   type(com_type) :: com_ll_AB           !< Communication on regular grid, halo A to halo B
-   type(linop_type) :: interp_c0b_to_llw !< Interpolation from subset Sc0, halo B, to regular grid, halo W
-   type(linop_type) :: interp_llb_to_c0a !< Interpolation from regular grid, halo B, to subset Sc0, halo A
-   type(linop_type) :: transform         !< psi/chi to u/v transform
+   ! Dipole test
+   logical :: dipole_test              !< Dipole test (bypass the adjoint)
+
+   ! Transform
+   integer :: nc0b                     !< Size of halo B on subset Sc0
+   integer,allocatable :: c0b_to_c0(:) !< Subset Sc0, halo B to full domain
+   type(com_type) :: com_c0_AB         !< Communication on subset Sc0, halo A to halo B
+   type(linop_type) :: transform       !< psi/chi to u/v transform
+
+   ! Missing points interpolation
+   integer :: nc0m                     !< Size of halo M on subset Sc0
+   integer,allocatable :: c0m_to_c0(:) !< Subset Sc0, halo M to full domain
+   type(com_type) :: com_c0_AM         !< Communication on subset Sc0, halo A to halo M
+   type(linop_type) :: missing         !< Interpolate missing points
 contains
    procedure :: dealloc => wind_dealloc
    procedure :: read_local => wind_read_local
+   procedure :: read_global => wind_read_global
    procedure :: write_local => wind_write_local
+   procedure :: write_global => wind_write_global
    procedure :: send => wind_send
    procedure :: receive => wind_receive
    procedure :: buffer_size => wind_buffer_size
@@ -47,6 +57,7 @@ contains
    procedure :: setup => wind_setup
    procedure :: psichi_to_uv => wind_psichi_to_uv
    procedure :: psichi_to_uv_ad => wind_psichi_to_uv_ad
+   procedure :: test_accuracy => wind_test_accuracy
 end type wind_type
 
 private
@@ -72,11 +83,12 @@ class(wind_type),intent(inout) :: wind !< Wind
 @:probe_in()
 
 ! Release memory
+if (allocated(wind%c0b_to_c0)) deallocate(wind%c0b_to_c0)
 call wind%com_c0_AB%dealloc
-call wind%com_ll_AB%dealloc
-call wind%interp_c0b_to_llw%dealloc
-call wind%interp_llb_to_c0a%dealloc
 call wind%transform%dealloc
+if (allocated(wind%c0m_to_c0)) deallocate(wind%c0m_to_c0)
+call wind%com_c0_AM%dealloc
+call wind%missing%dealloc
 
 ! Probe out
 @:probe_out()
@@ -121,40 +133,32 @@ do iproc=1,mpl%nproc
 
       if (iproc==iprocio) then
          ! Read attributes
-         call get_att(mpl,ncid,0,'nlla',wind%nlla)
-         call get_att(mpl,ncid,0,'nllb',wind%nllb)
-         call get_att(mpl,ncid,0,'nllw',wind%nllw)
          call get_att(mpl,ncid,0,'nc0b',wind%nc0b)
+         call get_att(mpl,ncid,0,'nc0m',wind%nc0m)
 
          ! Read data
          wind%com_c0_AB%prefix = 'com_c0_AB'
          call wind%com_c0_AB%read(mpl,ncid)
-         wind%com_ll_AB%prefix = 'com_ll_AB'
-         call wind%com_ll_AB%read(mpl,ncid)
-         wind%interp_c0b_to_llw%prefix = 'interp_c0b_to_llw'
-         call wind%interp_c0b_to_llw%read(mpl,ncid)
-         wind%interp_llb_to_c0a%prefix = 'interp_llb_to_c0a'
-         call wind%interp_llb_to_c0a%read(mpl,ncid)
+         wind%com_c0_AM%prefix = 'com_c0_AM'
+         call wind%com_c0_AM%read(mpl,ncid)
          wind%transform%prefix = 'transform'
          call wind%transform%read(mpl,ncid)
+         wind%missing%prefix = 'missing'
+         call wind%missing%read(mpl,ncid)
       else
          ! Read attributes
-         call get_att(mpl,ncid,0,'nlla',wind_tmp%nlla)
-         call get_att(mpl,ncid,0,'nllb',wind_tmp%nllb)
-         call get_att(mpl,ncid,0,'nllw',wind_tmp%nllw)
          call get_att(mpl,ncid,0,'nc0b',wind_tmp%nc0b)
+         call get_att(mpl,ncid,0,'nc0m',wind_tmp%nc0m)
 
          ! Read data
          wind_tmp%com_c0_AB%prefix = 'com_c0_AB'
          call wind_tmp%com_c0_AB%read(mpl,ncid)
-         wind_tmp%com_ll_AB%prefix = 'com_ll_AB'
-         call wind_tmp%com_ll_AB%read(mpl,ncid)
-         wind_tmp%interp_c0b_to_llw%prefix = 'interp_c0b_to_llw'
-         call wind_tmp%interp_c0b_to_llw%read(mpl,ncid)
-         wind_tmp%interp_llb_to_c0a%prefix = 'interp_llb_to_c0a'
-         call wind_tmp%interp_llb_to_c0a%read(mpl,ncid)
+         wind_tmp%com_c0_AM%prefix = 'com_c0_AM'
+         call wind_tmp%com_c0_AM%read(mpl,ncid)
          wind_tmp%transform%prefix = 'transform'
          call wind_tmp%transform%read(mpl,ncid)
+         wind_tmp%missing%prefix = 'missing'
+         call wind_tmp%missing%read(mpl,ncid)
 
          ! Send data to task iproc
          call wind_tmp%send(mpl,iproc)
@@ -180,6 +184,220 @@ call mpl%update_tag(4)
 @:probe_out()
 
 end subroutine wind_read_local
+
+!----------------------------------------------------------------------
+! Subroutine: wind_read_global
+!> Read
+!----------------------------------------------------------------------
+subroutine wind_read_global(wind,mpl,nam,geom)
+
+implicit none
+
+! Passed variables
+class(wind_type),intent(inout) :: wind !< Wind data
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
+
+! Local variables
+integer :: ncid,transform_col_id,transform_Svec_id,missing_col_id,missing_S_id
+integer :: ic0a,ic0u,ic0b,ic0m,ic0,i_s,iop,jc0,jc0u,jc0b,jc0m,jproc,i,transform_nopmax,transform_nop,missing_nopmax,missing_nop
+integer,allocatable :: transform_col_c0a(:,:),c0u_to_c0b(:),missing_col_c0a(:,:),c0u_to_c0m(:)
+real(kind_real),allocatable :: transform_Svec_c0a(:,:,:),missing_S_c0a(:,:)
+logical :: lcheck_c0b(geom%nc0u),lcheck_c0m(geom%nc0u)
+
+! Set name
+@:set_name(wind_read_global)
+
+! Probe in
+@:probe_in()
+
+! Open file
+ncid = open_file(mpl,nam%fname_wind)
+
+! Get dimension
+transform_nopmax = inquire_dim_size(mpl,ncid,'transform_nopmax',0)
+if (mpl%iobcast) call mpl%f_comm_iobcast%broadcast(transform_nopmax,mpl%rootproc-1)
+missing_nopmax = inquire_dim_size(mpl,ncid,'missing_nopmax',0)
+if (mpl%iobcast) call mpl%f_comm_iobcast%broadcast(missing_nopmax,mpl%rootproc-1)
+
+! Allocation
+allocate(transform_col_c0a(geom%nc0a,transform_nopmax))
+allocate(transform_Svec_c0a(geom%nc0a,transform_nopmax,4))
+allocate(missing_col_c0a(geom%nc0a,missing_nopmax))
+allocate(missing_S_c0a(geom%nc0a,missing_nopmax))
+
+! Inquire variables
+transform_col_id = inquire_var(mpl,ncid,'transform_col_c0')
+transform_Svec_id = inquire_var(mpl,ncid,'transform_Svec_c0')
+missing_col_id = inquire_var(mpl,ncid,'missing_col_c0')
+missing_S_id = inquire_var(mpl,ncid,'missing_S_c0')
+
+! Read convolution data
+call geom%io%fld_read(mpl,ncid,transform_col_id,transform_col_c0a)
+call geom%io%fld_read(mpl,ncid,transform_Svec_id,transform_Svec_c0a)
+call geom%io%fld_read(mpl,ncid,missing_col_id,missing_col_c0a)
+call geom%io%fld_read(mpl,ncid,missing_S_id,missing_S_c0a)
+
+! Allocation
+wind%transform%prefix = 'transform'
+wind%transform%n_dst = geom%nc0a
+wind%transform%n_s = 0
+do ic0a=1,geom%nc0a
+   transform_nop = zss_count(mpl%msv%isnot(transform_col_c0a(ic0a,:)))
+   wind%transform%n_s = wind%transform%n_s+transform_nop
+end do
+call wind%transform%alloc(4)
+wind%missing%prefix = 'missing'
+wind%missing%n_dst = geom%nc0a
+wind%missing%n_s = 0
+do ic0a=1,geom%nc0a
+   missing_nop = zss_count(mpl%msv%isnot(missing_col_c0a(ic0a,:)))
+   wind%missing%n_s = wind%missing%n_s+missing_nop
+end do
+call wind%missing%alloc
+
+! Reshape data
+i_s = 0
+do ic0a=1,geom%nc0a
+   transform_nop = zss_count(mpl%msv%isnot(transform_col_c0a(ic0a,:)))
+   do iop=1,transform_nop
+      i_s = i_s+1
+      jc0 = geom%order_c0(transform_col_c0a(ic0a,iop))
+      wind%transform%row(i_s) = ic0a
+      wind%transform%col(i_s) = jc0
+      do i=1,4
+         wind%transform%Svec(i_s,i) = transform_Svec_c0a(ic0a,iop,i)
+      end do
+   end do
+end do
+i_s = 0
+do ic0a=1,geom%nc0a
+   missing_nop = zss_count(mpl%msv%isnot(missing_col_c0a(ic0a,:)))
+   do iop=1,missing_nop
+      i_s = i_s+1
+      jc0 = geom%order_c0(missing_col_c0a(ic0a,iop))
+      wind%missing%row(i_s) = ic0a
+      wind%missing%col(i_s) = jc0
+      wind%missing%S(i_s) = missing_S_c0a(ic0a,iop)
+   end do
+end do
+
+! Release memory
+deallocate(transform_col_c0a)
+deallocate(transform_Svec_c0a)
+deallocate(missing_col_c0a)
+deallocate(missing_S_c0a)
+
+! Close files
+call close_file(mpl,ncid)
+
+! Define halo B for subset Sc0
+lcheck_c0b = .false.
+do ic0a=1,geom%nc0a
+   ic0u = geom%c0a_to_c0u(ic0a)
+   lcheck_c0b(ic0u) = .true.
+end do
+do i_s=1,wind%transform%n_s
+   jc0 = wind%transform%col(i_s)
+   jproc = geom%c0_to_proc(jc0)
+   if (geom%myuniverse(jproc)) then
+      jc0u = geom%c0_to_c0u(jc0)
+      lcheck_c0b(jc0u) = .true.
+   else
+      call mpl%abort('${subr}$','point of halo B out of universe (increase universe_radius)')
+   end if
+end do
+wind%nc0b = zss_count(lcheck_c0b)
+
+! Define halo M for subset Sc0
+lcheck_c0m = .false.
+do ic0a=1,geom%nc0a
+   ic0u = geom%c0a_to_c0u(ic0a)
+   lcheck_c0m(ic0u) = .true.
+end do
+do i_s=1,wind%missing%n_s
+   jc0 = wind%missing%col(i_s)
+   jproc = geom%c0_to_proc(jc0)
+   if (geom%myuniverse(jproc)) then
+      jc0u = geom%c0_to_c0u(jc0)
+      lcheck_c0m(jc0u) = .true.
+   else
+      call mpl%abort('${subr}$','point of halo M out of universe (increase universe_radius)')
+   end if
+end do
+wind%nc0m = zss_count(lcheck_c0m)
+
+! Allocation
+allocate(wind%c0b_to_c0(wind%nc0b))
+allocate(c0u_to_c0b(geom%nc0u))
+allocate(wind%c0m_to_c0(wind%nc0m))
+allocate(c0u_to_c0m(geom%nc0u))
+
+! Conversions
+c0u_to_c0b = mpl%msv%vali
+ic0b = 0
+do ic0u=1,geom%nc0u
+   if (lcheck_c0b(ic0u)) then
+      ic0b = ic0b+1
+      ic0 = geom%c0u_to_c0(ic0u)
+      wind%c0b_to_c0(ic0b) = ic0
+      c0u_to_c0b(ic0u) = ic0b
+   end if
+end do
+c0u_to_c0m = mpl%msv%vali
+ic0m = 0
+do ic0u=1,geom%nc0u
+   if (lcheck_c0m(ic0u)) then
+      ic0m = ic0m+1
+      ic0 = geom%c0u_to_c0(ic0u)
+      wind%c0m_to_c0(ic0m) = ic0
+      c0u_to_c0m(ic0u) = ic0m
+   end if
+end do
+
+! Local source
+wind%transform%n_src = wind%nc0b
+do i_s=1,wind%transform%n_s
+   jc0 = wind%transform%col(i_s)
+   jproc = geom%c0_to_proc(jc0)
+   if (geom%myuniverse(jproc)) then
+      jc0u = geom%c0_to_c0u(jc0)
+      jc0b = c0u_to_c0b(jc0u)
+      if (mpl%msv%isnot(jc0b)) then
+         wind%transform%col(i_s) = jc0b
+      else
+         call mpl%abort('${subr}$','wrong local source for transform')
+      end if
+   end if
+end do
+wind%missing%n_src = wind%nc0m
+do i_s=1,wind%missing%n_s
+   jc0 = wind%missing%col(i_s)
+   jproc = geom%c0_to_proc(jc0)
+   if (geom%myuniverse(jproc)) then
+      jc0u = geom%c0_to_c0u(jc0)
+      jc0m = c0u_to_c0m(jc0u)
+      if (mpl%msv%isnot(jc0m)) then
+         wind%missing%col(i_s) = jc0m
+      else
+         call mpl%abort('${subr}$','wrong local source for missing')
+      end if
+   end if
+end do
+
+! Setup communications
+call wind%com_c0_AB%setup(mpl,'com_c0_AB',geom%nc0a,wind%nc0b,geom%nc0,geom%c0a_to_c0,wind%c0b_to_c0)
+call wind%com_c0_AM%setup(mpl,'com_c0_AM',geom%nc0a,wind%nc0m,geom%nc0,geom%c0a_to_c0,wind%c0m_to_c0)
+
+! Release memory
+deallocate(c0u_to_c0b)
+deallocate(c0u_to_c0m)
+
+! Probe out
+@:probe_out()
+
+end subroutine wind_read_global
 
 !----------------------------------------------------------------------
 ! Subroutine: wind_write_local
@@ -218,47 +436,39 @@ do iproc=1,mpl%nproc
       ncid = create_file(mpl,nam%fname_wind,iproc)
       if (iproc==iprocio) then
          ! Write attributes
-         call put_att(mpl,ncid,0,'nlla',wind%nlla)
-         call put_att(mpl,ncid,0,'nllb',wind%nllb)
-         call put_att(mpl,ncid,0,'nllw',wind%nllw)
          call put_att(mpl,ncid,0,'nc0b',wind%nc0b)
+         call put_att(mpl,ncid,0,'nc0m',wind%nc0m)
 
          ! Write data (definition mode)
          call wind%com_c0_AB%write_def(mpl,ncid)
-         call wind%com_ll_AB%write_def(mpl,ncid)
-         call wind%interp_c0b_to_llw%write_def(mpl,ncid)
-         call wind%interp_llb_to_c0a%write_def(mpl,ncid)
+         call wind%com_c0_AM%write_def(mpl,ncid)
          call wind%transform%write_def(mpl,ncid)
+         call wind%missing%write_def(mpl,ncid)
 
          ! Write data (data mode)
          call wind%com_c0_AB%write_data(mpl)
-         call wind%com_ll_AB%write_data(mpl)
-         call wind%interp_c0b_to_llw%write_data(mpl)
-         call wind%interp_llb_to_c0a%write_data(mpl)
+         call wind%com_c0_AM%write_data(mpl)
          call wind%transform%write_data(mpl)
+         call wind%missing%write_data(mpl)
       else
          ! Receive data from task iproc
          call wind_tmp%receive(mpl,iproc)
 
          ! Write attributes (definition mode)
-         call put_att(mpl,ncid,0,'nlla',wind_tmp%nlla)
-         call put_att(mpl,ncid,0,'nllb',wind_tmp%nllb)
-         call put_att(mpl,ncid,0,'nllw',wind_tmp%nllw)
          call put_att(mpl,ncid,0,'nc0b',wind_tmp%nc0b)
+         call put_att(mpl,ncid,0,'nc0m',wind_tmp%nc0m)
+
+         ! Write data (definition mode)
+         call wind_tmp%com_c0_AB%write_def(mpl,ncid)
+         call wind_tmp%com_c0_AM%write_def(mpl,ncid)
+         call wind_tmp%transform%write_def(mpl,ncid)
+         call wind_tmp%missing%write_def(mpl,ncid)
 
          ! Write data (data mode)
-         call wind_tmp%com_c0_AB%write_def(mpl,ncid)
-         call wind_tmp%com_ll_AB%write_def(mpl,ncid)
-         call wind_tmp%interp_c0b_to_llw%write_def(mpl,ncid)
-         call wind_tmp%interp_llb_to_c0a%write_def(mpl,ncid)
-         call wind_tmp%transform%write_def(mpl,ncid)
-
-         ! Write data
          call wind_tmp%com_c0_AB%write_data(mpl)
-         call wind_tmp%com_ll_AB%write_data(mpl)
-         call wind_tmp%interp_c0b_to_llw%write_data(mpl)
-         call wind_tmp%interp_llb_to_c0a%write_data(mpl)
+         call wind_tmp%com_c0_AM%write_data(mpl)
          call wind_tmp%transform%write_data(mpl)
+         call wind_tmp%missing%write_data(mpl)
 
          ! Release memory
          call wind_tmp%dealloc
@@ -410,28 +620,23 @@ nbufr = 0
 nbufi = nbufi+2
 
 ! Dimensions
-nbufi = nbufi+4
+nbufi = nbufi+2
 
 ! com_c0_AB
 call wind%com_c0_AB%buffer_size(mpl,nnbufi)
 nbufi = nbufi+nnbufi
 
-! com_ll_AB
-call wind%com_ll_AB%buffer_size(mpl,nnbufi)
+! com_c0_AM
+call wind%com_c0_AM%buffer_size(mpl,nnbufi)
 nbufi = nbufi+nnbufi
-
-! interp_c0b_to_llw
-call wind%interp_c0b_to_llw%buffer_size(nnbufi,nnbufr)
-nbufi = nbufi+nnbufi
-nbufr = nbufr+nnbufr
-
-! interp_llb_to_c0a
-call wind%interp_llb_to_c0a%buffer_size(nnbufi,nnbufr)
-nbufi = nbufi+nnbufi
-nbufr = nbufr+nnbufr
 
 ! transform
 call wind%transform%buffer_size(nnbufi,nnbufr)
+nbufi = nbufi+nnbufi
+nbufr = nbufr+nnbufr
+
+! missing
+call wind%missing%buffer_size(nnbufi,nnbufr)
 nbufi = nbufi+nnbufi
 nbufr = nbufr+nnbufr
 
@@ -449,12 +654,12 @@ subroutine wind_serialize(wind,mpl,nbufi,nbufr,bufi,bufr)
 implicit none
 
 ! Passed variables
-class(wind_type),intent(in) :: wind           !< Wind data block
-type(mpl_type),intent(inout) :: mpl           !< MPI data
-integer,intent(in) :: nbufi                   !< Buffer size (integer)
-integer,intent(in) :: nbufr                   !< Buffer size (real)
-integer,intent(out) :: bufi(nbufi)            !< Buffer (integer)
-real(kind_real),intent(out) :: bufr(nbufr)    !< Buffer (real)
+class(wind_type),intent(in) :: wind        !< Wind data block
+type(mpl_type),intent(inout) :: mpl        !< MPI data
+integer,intent(in) :: nbufi                !< Buffer size (integer)
+integer,intent(in) :: nbufr                !< Buffer size (real)
+integer,intent(out) :: bufi(nbufi)         !< Buffer (integer)
+real(kind_real),intent(out) :: bufr(nbufr) !< Buffer (real)
 
 ! Local variables
 integer :: ibufi,ibufr,nnbufi,nnbufr
@@ -475,20 +680,12 @@ ibufi = ibufi+1
 bufi(ibufi+1) = nbufr
 ibufi = ibufi+1
 
-! nlla
-bufi(ibufi+1) = wind%nlla
-ibufi = ibufi+1
-
-! nllb
-bufi(ibufi+1) = wind%nllb
-ibufi = ibufi+1
-
-! nllw
-bufi(ibufi+1) = wind%nllw
-ibufi = ibufi+1
-
 ! nc0b
 bufi(ibufi+1) = wind%nc0b
+ibufi = ibufi+1
+
+! nc0m
+bufi(ibufi+1) = wind%nc0m
 ibufi = ibufi+1
 
 ! com_c0_AB
@@ -496,26 +693,20 @@ call wind%com_c0_AB%buffer_size(mpl,nnbufi)
 call wind%com_c0_AB%serialize(mpl,nnbufi,bufi(ibufi+1:ibufi+nnbufi))
 ibufi = ibufi+nnbufi
 
-! com_ll_AB
-call wind%com_ll_AB%buffer_size(mpl,nnbufi)
-call wind%com_ll_AB%serialize(mpl,nnbufi,bufi(ibufi+1:ibufi+nnbufi))
+! com_c0_AM
+call wind%com_c0_AM%buffer_size(mpl,nnbufi)
+call wind%com_c0_AM%serialize(mpl,nnbufi,bufi(ibufi+1:ibufi+nnbufi))
 ibufi = ibufi+nnbufi
-
-! interp_c0b_to_llw
-call wind%interp_c0b_to_llw%buffer_size(nnbufi,nnbufr)
-call wind%interp_c0b_to_llw%serialize(mpl,nnbufi,nnbufr,bufi(ibufi+1:ibufi+nnbufi),bufr(ibufr+1:ibufr+nnbufr))
-ibufi = ibufi+nnbufi
-ibufr = ibufr+nnbufr
-
-! interp_llb_to_c0a
-call wind%interp_llb_to_c0a%buffer_size(nnbufi,nnbufr)
-call wind%interp_llb_to_c0a%serialize(mpl,nnbufi,nnbufr,bufi(ibufi+1:ibufi+nnbufi),bufr(ibufr+1:ibufr+nnbufr))
-ibufi = ibufi+nnbufi
-ibufr = ibufr+nnbufr
 
 ! transform
 call wind%transform%buffer_size(nnbufi,nnbufr)
 call wind%transform%serialize(mpl,nnbufi,nnbufr,bufi(ibufi+1:ibufi+nnbufi),bufr(ibufr+1:ibufr+nnbufr))
+ibufi = ibufi+nnbufi
+ibufr = ibufr+nnbufr
+
+! missing
+call wind%missing%buffer_size(nnbufi,nnbufr)
+call wind%missing%serialize(mpl,nnbufi,nnbufr,bufi(ibufi+1:ibufi+nnbufi),bufr(ibufr+1:ibufr+nnbufr))
 ibufi = ibufi+nnbufi
 ibufr = ibufr+nnbufr
 
@@ -563,20 +754,12 @@ ibufi = ibufi+1
 if (bufi(ibufi+1)/=nbufr) call mpl%abort('${subr}$','inconsistent initial value/buffer size (real)')
 ibufi = ibufi+1
 
-! nlla
-wind%nlla = bufi(ibufi+1)
-ibufi = ibufi+1
-
-! nllb
-wind%nllb = bufi(ibufi+1)
-ibufi = ibufi+1
-
-! nllw
-wind%nllw = bufi(ibufi+1)
-ibufi = ibufi+1
-
 ! nc0b
 wind%nc0b = bufi(ibufi+1)
+ibufi = ibufi+1
+
+! nc0m
+wind%nc0m = bufi(ibufi+1)
 ibufi = ibufi+1
 
 ! com_c0_AB
@@ -585,27 +768,11 @@ nnbufi = bufi(ibufi+1)
 call wind%com_c0_AB%deserialize(mpl,nnbufi,bufi(ibufi+1:ibufi+nnbufi))
 ibufi = ibufi+nnbufi
 
-! com_ll_AB
-wind%com_ll_AB%prefix = 'com_ll_AB'
+! com_c0_AM
+wind%com_c0_AM%prefix = 'com_c0_AM'
 nnbufi = bufi(ibufi+1)
-call wind%com_ll_AB%deserialize(mpl,nnbufi,bufi(ibufi+1:ibufi+nnbufi))
+call wind%com_c0_AM%deserialize(mpl,nnbufi,bufi(ibufi+1:ibufi+nnbufi))
 ibufi = ibufi+nnbufi
-
-! interp_c0b_to_llw
-wind%interp_c0b_to_llw%prefix = 'interp_c0b_to_llw'
-nnbufi = bufi(ibufi+1)
-nnbufr = bufi(ibufi+2)
-call wind%interp_c0b_to_llw%deserialize(mpl,nnbufi,nnbufr,bufi(ibufi+1:ibufi+nnbufi),bufr(ibufr+1:ibufr+nnbufr))
-ibufi = ibufi+nnbufi
-ibufr = ibufr+nnbufr
-
-! interp_llb_to_c0a
-wind%interp_llb_to_c0a%prefix = 'interp_llb_to_c0a'
-nnbufi = bufi(ibufi+1)
-nnbufr = bufi(ibufi+2)
-call wind%interp_llb_to_c0a%deserialize(mpl,nnbufi,nnbufr,bufi(ibufi+1:ibufi+nnbufi),bufr(ibufr+1:ibufr+nnbufr))
-ibufi = ibufi+nnbufi
-ibufr = ibufr+nnbufr
 
 ! transform
 wind%transform%prefix = 'transform'
@@ -615,10 +782,188 @@ call wind%transform%deserialize(mpl,nnbufi,nnbufr,bufi(ibufi+1:ibufi+nnbufi),buf
 ibufi = ibufi+nnbufi
 ibufr = ibufr+nnbufr
 
+! missing
+wind%missing%prefix = 'missing'
+nnbufi = bufi(ibufi+1)
+nnbufr = bufi(ibufi+2)
+call wind%missing%deserialize(mpl,nnbufi,nnbufr,bufi(ibufi+1:ibufi+nnbufi),bufr(ibufr+1:ibufr+nnbufr))
+ibufi = ibufi+nnbufi
+ibufr = ibufr+nnbufr
+
 ! Probe out
 @:probe_out()
 
 end subroutine wind_deserialize
+
+!----------------------------------------------------------------------
+! Subroutine: wind_write_global
+!> Write
+!----------------------------------------------------------------------
+subroutine wind_write_global(wind,mpl,nam,geom)
+
+implicit none
+
+! Passed variables
+class(wind_type),intent(inout) :: wind !< Wind data
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
+
+! Local variables
+integer :: ncid,nc0_id,ncmp_id,transform_nopmax_id,missing_nopmax_id,transform_col_id,transform_Svec_id,missing_col_id,missing_S_id
+integer :: i_s,i,ic0a,ic0,jc0b,jc0m,jc0,transform_nopmax,missing_nopmax
+integer :: order_inv_c0(geom%nc0)
+integer,allocatable :: transform_nop(:),missing_nop(:),list(:),order(:)
+integer,allocatable :: transform_col_c0a(:,:),missing_col_c0a(:,:)
+real(kind_real),allocatable :: transform_Svec_c0a(:,:,:),missing_S_c0a(:,:)
+
+! Set name
+@:set_name(wind_write_global)
+
+! Probe in
+@:probe_in()
+
+! Write global wind data
+write(mpl%info,'(a7,a,i6)') '','Write global wind data'
+call mpl%flush
+
+! Open file
+ncid = create_file(mpl,nam%fname_wind)
+
+! Allocation
+allocate(transform_nop(geom%nc0a))
+allocate(missing_nop(geom%nc0a))
+
+! Count transform operations
+transform_nop = 0
+do i_s=1,wind%transform%n_s
+   ic0a = wind%transform%row(i_s)
+   transform_nop(ic0a) = transform_nop(ic0a)+1
+end do
+transform_nopmax = zss_maxval(transform_nop)
+call mpl%f_comm%allreduce(transform_nopmax,fckit_mpi_max())
+
+! Count missing operations
+missing_nop = 0
+do i_s=1,wind%missing%n_s
+   ic0a = wind%missing%row(i_s)
+   missing_nop(ic0a) = missing_nop(ic0a)+1
+end do
+missing_nopmax = zss_maxval(missing_nop)
+call mpl%f_comm%allreduce(missing_nopmax,fckit_mpi_max())
+
+! Define dimensions
+nc0_id = define_dim(mpl,ncid,'nc0',geom%nc0)
+ncmp_id = define_dim(mpl,ncid,'ncmp',4)
+transform_nopmax_id = define_dim(mpl,ncid,'transform_nopmax',transform_nopmax)
+missing_nopmax_id = define_dim(mpl,ncid,'missing_nopmax',missing_nopmax)
+
+! Define variables
+transform_col_id = define_var(mpl,ncid,'transform_col_c0','int',(/nc0_id,transform_nopmax_id/))
+transform_Svec_id = define_var(mpl,ncid,'transform_Svec_c0','real',(/nc0_id,transform_nopmax_id,ncmp_id/))
+missing_col_id = define_var(mpl,ncid,'missing_col_c0','int',(/nc0_id,missing_nopmax_id/))
+missing_S_id = define_var(mpl,ncid,'missing_S_c0','real',(/nc0_id,missing_nopmax_id/))
+
+! Allocation
+allocate(transform_col_c0a(geom%nc0a,transform_nopmax))
+allocate(transform_Svec_c0a(geom%nc0a,transform_nopmax,4))
+allocate(missing_col_c0a(geom%nc0a,missing_nopmax))
+allocate(missing_S_c0a(geom%nc0a,missing_nopmax))
+
+! Inverse order
+do ic0=1,geom%nc0
+   order_inv_c0(geom%order_c0(ic0)) = ic0
+end do
+
+! Reshape transform data
+transform_nop = 0
+transform_col_c0a = mpl%msv%vali
+transform_Svec_c0a = mpl%msv%valr
+do i_s=1,wind%transform%n_s
+   ic0a = wind%transform%row(i_s)
+   jc0b = wind%transform%col(i_s)
+   jc0 = wind%c0b_to_c0(jc0b)
+   transform_nop(ic0a) = transform_nop(ic0a)+1
+   transform_col_c0a(ic0a,transform_nop(ic0a)) = order_inv_c0(jc0)
+   do i=1,4
+      transform_Svec_c0a(ic0a,transform_nop(ic0a),i) = wind%transform%Svec(i_s,i)
+   end do
+end do
+
+! Reshape missing data
+missing_nop = 0
+missing_col_c0a = mpl%msv%vali
+missing_S_c0a = mpl%msv%valr
+do i_s=1,wind%missing%n_s
+   ic0a = wind%missing%row(i_s)
+   jc0m = wind%missing%col(i_s)
+   jc0 = wind%c0m_to_c0(jc0m)
+   missing_nop(ic0a) = missing_nop(ic0a)+1
+   missing_col_c0a(ic0a,missing_nop(ic0a)) = order_inv_c0(jc0)
+   missing_S_c0a(ic0a,missing_nop(ic0a)) = wind%missing%S(i_s)
+end do
+
+! Reorder transform data
+do ic0a=1,geom%nc0a
+   ! Allocation
+   allocate(list(transform_nop(ic0a)))
+   allocate(order(transform_nop(ic0a)))
+
+   ! Sort column
+   list = transform_col_c0a(ic0a,1:transform_nop(ic0a))
+   call qsort(transform_nop(ic0a),list,order)
+
+   ! Reorder column and weight
+   transform_col_c0a(ic0a,1:transform_nop(ic0a)) = transform_col_c0a(ic0a,order)
+   do i=1,4
+      transform_Svec_c0a(ic0a,1:transform_nop(ic0a),i) = transform_Svec_c0a(ic0a,order,i)
+   end do
+
+   ! Release memory
+   deallocate(list)
+   deallocate(order)
+end do
+
+! Reorder missing data
+do ic0a=1,geom%nc0a
+   ! Allocation
+   allocate(list(missing_nop(ic0a)))
+   allocate(order(missing_nop(ic0a)))
+
+   ! Sort column
+   list = missing_col_c0a(ic0a,1:missing_nop(ic0a))
+   call qsort(missing_nop(ic0a),list,order)
+
+   ! Reorder column and weight
+   missing_col_c0a(ic0a,1:missing_nop(ic0a)) = missing_col_c0a(ic0a,order)
+   missing_S_c0a(ic0a,1:missing_nop(ic0a)) = missing_S_c0a(ic0a,order)
+
+   ! Release memory
+   deallocate(list)
+   deallocate(order)
+end do
+
+! Write variables
+call geom%io%fld_write(mpl,ncid,transform_col_id,transform_col_c0a)
+call geom%io%fld_write(mpl,ncid,transform_Svec_id,transform_Svec_c0a)
+call geom%io%fld_write(mpl,ncid,missing_col_id,missing_col_c0a)
+call geom%io%fld_write(mpl,ncid,missing_S_id,missing_S_c0a)
+
+! Close file
+call close_file(mpl,ncid)
+
+! Release memory
+deallocate(transform_nop)
+deallocate(transform_col_c0a)
+deallocate(transform_Svec_c0a)
+deallocate(missing_nop)
+deallocate(missing_col_c0a)
+deallocate(missing_S_c0a)
+
+! Probe out
+@:probe_out()
+
+end subroutine wind_write_global
 
 !----------------------------------------------------------------------
 ! Subroutine: wind_setup
@@ -636,17 +981,16 @@ type(nam_type),intent(in) :: nam       !< Namelist
 type(geom_type),intent(in) :: geom     !< Geometry
 
 ! Local variables
-integer :: ilon,ilat,ic0a,illw,i_s,jc0u,ic0b,ic0u,ic0,jc0b,illa,iproc,nll,ill,jll,illb,jllb,isg
-integer :: ilonp,ilonm,ilatp,ilatm
-integer :: illw_lonp(nam%wind_nsg),illw_lonm(nam%wind_nsg),illw_latp(nam%wind_nsg),illw_latm(nam%wind_nsg)
-integer,allocatable :: lonlat_to_proc(:,:),lonlat_to_llw(:,:),c0u_to_c0b(:),c0b_to_c0(:),lla_to_ll(:),ll_to_llb(:),llb_to_ll(:)
-integer,allocatable :: lonlat_to_ll(:,:)
-real(kind_real) :: sgnorm,dlat,dlon,ff,ldlat,ldlon,rlonm,rlonp,rlatm,rlatp,sum_psi,sum_chi,sum_u,sum_v,sum1,sum2
+integer :: ic0a,i_s,i_sg,jc0u,ic0b,ic0m,ic0u,ic0,jc0b
+integer :: nn_index(1)
+integer,allocatable :: c0u_to_c0m(:),c0u_to_c0b(:)
+real(kind_real) :: sum_psi,sum_chi,sum_u,sum_v,sum1,sum2
 real(kind_real) :: psi(geom%nc0a,geom%nl0),psi_save(geom%nc0a,geom%nl0),chi(geom%nc0a,geom%nl0),chi_save(geom%nc0a,geom%nl0)
 real(kind_real) :: u(geom%nc0a,geom%nl0),u_save(geom%nc0a,geom%nl0),v(geom%nc0a,geom%nl0),v_save(geom%nc0a,geom%nl0)
-real(kind_real),allocatable :: lon1d(:),lat1d(:),lon_llw(:),lat_llw(:),dist(:),wgt(:)
-logical :: gmask
-logical,allocatable :: lcheck_lonlat(:,:),gmask_llw(:),lcheck_c0b(:),lcheck_llb(:)
+logical,allocatable :: lcheck_c0b(:),lcheck_c0m(:),valid_c0a(:),valid_c0u(:)
+type(linop_type),allocatable :: grad_c0a(:)
+type(mesh_type) :: mesh_c0u
+type(tree_type) :: tree
 
 ! Set name
 @:set_name(wind_setup)
@@ -655,102 +999,28 @@ logical,allocatable :: lcheck_lonlat(:,:),gmask_llw(:),lcheck_c0b(:),lcheck_llb(
 @:probe_in()
 
 if (nam%new_wind) then
-   ! Define regular grid
-   write(mpl%info,'(a7,a)') '','Define regular grid: '
-   call mpl%flush(newl=.false.)
+   ! Check mask
+   if (any(.not.geom%gmask_c0a)) call mpl%abort('${subr}$','psichi_to_uv not ready for masks')
+
+   ! Setup mesh
+   write(mpl%info,'(a7,a)') '','Setup mesh'
+   call mpl%flush
+
+   ! Create mesh
+   call mesh_c0u%init(mpl,rng,geom%nc0u,geom%lon_c0u,geom%lat_c0u)
+
+   ! Compute gradient operator
+   write(mpl%info,'(a7,a)') '','Setup gradient operator'
+   call mpl%flush
 
    ! Allocation
-   nll = nam%wind_nlon*nam%wind_nlat
-   allocate(lon1d(nam%wind_nlon))
-   allocate(lat1d(nam%wind_nlat))
-   allocate(lonlat_to_proc(nam%wind_nlon,nam%wind_nlat))
-   allocate(lcheck_lonlat(nam%wind_nlon,nam%wind_nlat))
+   allocate(grad_c0a(geom%nc0a))
 
-   ! Define regular grid
-   dlon = two*pi/real(nam%wind_nlon,kind_real)
-   do ilon=1,nam%wind_nlon
-      lon1d(ilon) = -pi+half*dlon+real(ilon-1,kind_real)*dlon
+   ! Compute gradient
+   do ic0a=1,geom%nc0a
+      ic0u = geom%c0a_to_c0u(ic0a)
+      call grad_c0a(ic0a)%compute_grad(mpl,ic0u,mesh_c0u,.true.)
    end do
-   dlat = pi/real(nam%wind_nlat,kind_real)
-   do ilat=1,nam%wind_nlat
-      lat1d(ilat) = -half*pi+half*dlat+real(ilat-1,kind_real)*dlat
-   end do
-
-   ! Split among processors
-   lcheck_lonlat = .false.
-   call mpl%prog_init(nll)
-   ill = 0
-   do ilat=1,nam%wind_nlat
-      do ilon=1,nam%wind_nlon
-         call geom%index_from_lonlat(mpl,lon1d(ilon),lat1d(ilat),0,lonlat_to_proc(ilon,ilat),ic0a,gmask)
-         if (lonlat_to_proc(ilon,ilat)==mpl%myproc) then
-            ! Add this point and its neighbors
-            lcheck_lonlat(ilon,ilat) = .true.
-
-            do isg=1,nam%wind_nsg
-               ! Longitude + isg
-               ilonp = ilon+isg
-               if (ilonp>nam%wind_nlon) ilonp = ilonp-nam%wind_nlon
-               lcheck_lonlat(ilonp,ilat) = .true.
-
-               ! Longitude - isg
-               ilonm = ilon-isg
-               if (ilonm<1) ilonm = ilonm+nam%wind_nlon
-               lcheck_lonlat(ilonm,ilat) = .true.
-            end do
-
-            do isg=1,nam%wind_nsg
-               ! Latitude + isg
-               ilatp = ilat+isg
-               if (ilatp<=nam%wind_nlat) lcheck_lonlat(ilon,ilatp) = .true.
-
-
-               ! Latitude - isg
-               ilatm = ilat-isg
-               if (ilatm>0) lcheck_lonlat(ilon,ilatm) = .true.
-            end do
-         end if
-         ill = ill+1
-         call mpl%prog_print(ill)
-      end do
-   end do
-   call mpl%prog_final
-
-   ! Count points
-   wind%nlla = count(lonlat_to_proc==mpl%myproc)
-   wind%nllw = count(lcheck_lonlat)
-
-   ! Allocation
-   allocate(lonlat_to_llw(nam%wind_nlon,nam%wind_nlat))
-   allocate(lon_llw(wind%nllw))
-   allocate(lat_llw(wind%nllw))
-   allocate(gmask_llw(wind%nllw))
-
-   ! Regular grid on halo W
-   lonlat_to_llw = mpl%msv%vali
-   illw = 0
-   do ilat=1,nam%wind_nlat
-      do ilon=1,nam%wind_nlon
-         if (lcheck_lonlat(ilon,ilat)) then
-            illw = illw+1
-            lonlat_to_llw(ilon,ilat) = illw
-            lon_llw(illw) = lon1d(ilon)
-            lat_llw(illw) = lat1d(ilat)
-         end if
-      end do
-   end do
-   gmask_llw = .true.
-
-   ! Nearest neighbor interpolation from subset Sc0 to regular grid
-   write(mpl%info,'(a7,a)') '','Nearest neighbor interpolation from subset Sc0 to regular grid'
-   call mpl%flush
-   call wind%interp_c0b_to_llw%interp(mpl,0,geom%nc0u,geom%lon_c0u,geom%lat_c0u,geom%gmask_hor_c0u,geom%tree_c0u, &
- & wind%nllw,lon_llw,lat_llw,gmask_llw,geom%bnda_c0u,7)
-   wind%interp_c0b_to_llw%prefix = 'interp_c0b_to_llw'
-
-   ! Define halo B, compute conversions and communications for subset Sc0
-   write(mpl%info,'(a7,a)') '','Define halo B, compute conversions and communications for subset Sc0'
-   call mpl%flush
 
    ! Allocation
    allocate(lcheck_c0b(geom%nc0u))
@@ -761,15 +1031,17 @@ if (nam%new_wind) then
       ic0u = geom%c0a_to_c0u(ic0a)
       lcheck_c0b(ic0u) = .true.
    end do
-   do i_s=1,wind%interp_c0b_to_llw%n_s
-      jc0u = wind%interp_c0b_to_llw%col(i_s)
-      lcheck_c0b(jc0u) = .true.
+   do ic0a=1,geom%nc0a
+      do i_s=1,grad_c0a(ic0a)%n_s
+         jc0u = grad_c0a(ic0a)%col(i_s)
+         lcheck_c0b(jc0u) = .true.
+      end do
    end do
 
    ! Allocation
    wind%nc0b = zss_count(lcheck_c0b)
    allocate(c0u_to_c0b(geom%nc0u))
-   allocate(c0b_to_c0(wind%nc0b))
+   allocate(wind%c0b_to_c0(wind%nc0b))
 
    ! Conversions
    c0u_to_c0b = mpl%msv%vali
@@ -779,325 +1051,153 @@ if (nam%new_wind) then
          ic0b = ic0b+1
          c0u_to_c0b(ic0u) = ic0b
          ic0 = geom%c0u_to_c0(ic0u)
-         c0b_to_c0(ic0b) = ic0
-      end if
-   end do
-
-   ! Local interpolation source
-   wind%interp_c0b_to_llw%n_src = wind%nc0b
-   do i_s=1,wind%interp_c0b_to_llw%n_s
-      jc0u = wind%interp_c0b_to_llw%col(i_s)
-      jc0b = c0u_to_c0b(jc0u)
-      if (mpl%msv%isnot(jc0b)) then
-         wind%interp_c0b_to_llw%col(i_s) = jc0b
-      else
-         call mpl%abort('${subr}$','wrong local source for inter_c0b_to_rg')
+         wind%c0b_to_c0(ic0b) = ic0
       end if
    end do
 
    ! Setup communications
-   call wind%com_c0_AB%setup(mpl,'com_c0_AB',geom%nc0a,wind%nc0b,geom%nc0,geom%c0a_to_c0,c0b_to_c0)
-
-   ! Release memory
-   deallocate(lon_llw)
-   deallocate(lat_llw)
-   deallocate(lcheck_lonlat)
-   deallocate(gmask_llw)
-   deallocate(lcheck_c0b)
-   deallocate(c0u_to_c0b)
-   deallocate(c0b_to_c0)
-
-   ! Conversion from psi/chi to u/v on regular grid, halo A
-   write(mpl%info,'(a7,a)') '','Conversion from psi/chi to u/v on regular grid, halo A'
-   call mpl%flush
+   call wind%com_c0_AB%setup(mpl,'com_c0_AB',geom%nc0a,wind%nc0b,geom%nc0,geom%c0a_to_c0,wind%c0b_to_c0)
 
    ! Allocation
    wind%transform%prefix = 'transform'
-   wind%transform%n_src = 2*wind%nllw
-   wind%transform%n_dst = 2*wind%nlla
-   wind%transform%n_s = 8*nam%wind_nsg*wind%nlla
-   call wind%transform%alloc
+   wind%transform%n_src = wind%nc0b
+   wind%transform%n_dst = geom%nc0a
+   wind%transform%n_s = 0
+   do ic0a=1,geom%nc0a
+      wind%transform%n_s = wind%transform%n_s+grad_c0a(ic0a)%n_s
+   end do
+   call wind%transform%alloc(4)
 
-   ! Compute derivatives using Savitzky-Golay filters
-   sgnorm = one/real((2*nam%wind_nsg+1)*((2*nam%wind_nsg+1)**2-1)/12,kind_real)
-   illa = 0
+   ! Compute operations for psi/chi to u/v
+   write(mpl%info,'(a7,a)') '','Compute operations for psi/chi to u/v'
+   call mpl%flush
    i_s = 0
-   do ilat=1,nam%wind_nlat
-      do ilon=1,nam%wind_nlon
-         iproc = lonlat_to_proc(ilon,ilat)
-         if (iproc==mpl%myproc) then
-            ! Update indices
-            illa = illa+1
-            illw = lonlat_to_llw(ilon,ilat)
+   do ic0a=1,geom%nc0a
+      do i_sg=1,grad_c0a(ic0a)%n_s
+         ! Indices
+         jc0u = grad_c0a(ic0a)%col(i_sg)
+         jc0b = c0u_to_c0b(jc0u)
+         if (mpl%msv%is(jc0b)) call mpl%abort('${subr}$','wrong local source for transform')
 
-            do isg=1,nam%wind_nsg
-               ! Longitude + isg
-               ilonp = ilon+isg
-               if (ilonp>nam%wind_nlon) ilonp = ilonp-nam%wind_nlon
-               illw_lonp(isg) = lonlat_to_llw(ilonp,ilat)
+         ! psi to u, lat derivative
+         i_s = i_s+1
+         wind%transform%row(i_s) = ic0a
+         wind%transform%col(i_s) = jc0b
+         wind%transform%Svec(i_s,1) = -grad_c0a(ic0a)%Svec(i_sg,2)
 
-               ! Longitude - isg
-               ilonm = ilon-isg
-               if (ilonm<1) ilonm = ilonm+nam%wind_nlon
-               illw_lonm(isg) = lonlat_to_llw(ilonm,ilat)
-            end do
+         ! chi to u, lon derivative
+         wind%transform%Svec(i_s,2) = one/cos(geom%lat_c0a(ic0a))*grad_c0a(ic0a)%Svec(i_sg,1)
 
-            do isg=1,nam%wind_nsg
-               ! Latitude + isg
-               ilatp = min(ilat+isg,nam%wind_nlat)
-               illw_latp(isg) = lonlat_to_llw(ilon,ilatp)
+         ! psi to v, lon derivative
+         wind%transform%Svec(i_s,3) = one/cos(geom%lat_c0a(ic0a))*grad_c0a(ic0a)%Svec(i_sg,1)
 
-               ! Latitude - isg
-               ilatm = max(ilat-isg,1)
-               illw_latm(isg) = lonlat_to_llw(ilon,ilatm)
-            end do
-
-            ! Local factors
-            ldlon = one/(req*dlon*cos(lat1d(ilat)))
-            ldlat = one/(req*dlat)
-
-            do isg=1,nam%wind_nsg
-               ! Filter factor
-               ff = real(isg,kind_real)*sgnorm
-
-               ! psi to u
-               i_s = i_s+1
-               wind%transform%col(i_s) = illw_latp(isg)
-               wind%transform%row(i_s) = illa
-               wind%transform%S(i_s) = -ff*ldlat
-               i_s = i_s+1
-               wind%transform%col(i_s) = illw_latm(isg)
-               wind%transform%row(i_s) = illa
-               wind%transform%S(i_s) = ff*ldlat
-
-               ! chi to u
-               i_s = i_s+1
-               wind%transform%col(i_s) = wind%nllw+illw_lonp(isg)
-               wind%transform%row(i_s) = illa
-               wind%transform%S(i_s) = ff*ldlon
-               i_s = i_s+1
-               wind%transform%col(i_s) = wind%nllw+illw_lonm(isg)
-               wind%transform%row(i_s) = illa
-               wind%transform%S(i_s) = -ff*ldlon
-
-               ! psi to v
-               i_s = i_s+1
-               wind%transform%col(i_s) = illw_lonp(isg)
-               wind%transform%row(i_s) = wind%nlla+illa
-               wind%transform%S(i_s) = ff*ldlon
-               i_s = i_s+1
-               wind%transform%col(i_s) = illw_lonm(isg)
-               wind%transform%row(i_s) = wind%nlla+illa
-               wind%transform%S(i_s) = -ff*ldlon
-
-               ! chi to v
-               i_s = i_s+1
-               wind%transform%col(i_s) = wind%nllw+illw_latp(isg)
-               wind%transform%row(i_s) = wind%nlla+illa
-               wind%transform%S(i_s) = ff*ldlat
-               i_s = i_s+1
-               wind%transform%col(i_s) = wind%nllw+illw_latm(isg)
-               wind%transform%row(i_s) = wind%nlla+illa
-               wind%transform%S(i_s) = -ff*ldlat
-            end do
-         end if
+         ! chi to u, lat derivative
+         wind%transform%Svec(i_s,4) = grad_c0a(ic0a)%Svec(i_sg,2)
       end do
    end do
+   wind%transform%Svec = wind%transform%Svec/req
+   if (i_s/=wind%transform%n_s) call mpl%abort('${subr}$','wrong number of operations for transform')
 
-   ! Apply inflation
-   wind%transform%S = nam%wind_inflation*wind%transform%S
+   ! Prepare missing points interpolation
+   write(mpl%info,'(a7,a)') '','Prepare missing points interpolation'
+   call mpl%flush
 
-   ! Count interpolation operations
-   wind%interp_llb_to_c0a%n_s = 0
+   ! Allocation
+   wind%missing%prefix = 'missing'
+   wind%missing%n_dst = geom%nc0a
+   wind%missing%n_s = geom%nc0a
+   call wind%missing%alloc
+   allocate(valid_c0a(geom%nc0a))
+   allocate(valid_c0u(geom%nc0u))
+
+   ! Non-missing points mask
    do ic0a=1,geom%nc0a
-      ! Get regular grid inferior indices
-      ilatm = floor((geom%lat_c0a(ic0a)-half*dlat+half*pi)/dlat)+1
+      valid_c0a(ic0a) = (grad_c0a(ic0a)%n_s>0) 
+   end do
+   call geom%com_AU%ext(mpl,valid_c0a,valid_c0u)
 
-      if ((ilatm>0).and.(ilatm<nam%wind_nlat)) then
-         ! Define bilinear interpolation weights
-         wind%interp_llb_to_c0a%n_s = wind%interp_llb_to_c0a%n_s+4
+   ! Tree of non-missing points
+   call tree%init(geom%nc0u,geom%lon_c0u,geom%lat_c0u,valid_c0u)
+
+   ! Find non-missing nearest neighbor
+   do ic0a=1,geom%nc0a
+      wind%missing%row(ic0a) = ic0a
+      if (grad_c0a(ic0a)%n_s==0) then
+         call tree%find_nearest_neighbors(mpl,geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),1,nn_index)
+         wind%missing%col(ic0a) = nn_index(1)
+         wind%missing%S(ic0a) = one
       else
-         ! Poles
-         wind%interp_llb_to_c0a%n_s = wind%interp_llb_to_c0a%n_s+nam%wind_nlon
+         ic0u = geom%c0a_to_c0u(ic0a)
+         wind%missing%col(ic0a) = ic0u
+         wind%missing%S(ic0a) = one
       end if
    end do
 
    ! Allocation
-   allocate(lla_to_ll(wind%nlla))
-   allocate(lonlat_to_ll(nam%wind_nlon,nam%wind_nlat))
-   allocate(dist(nam%wind_nlon))
-   allocate(wgt(nam%wind_nlon))
+   allocate(lcheck_c0m(geom%nc0u))
 
-   ! Conversion
-   ill = 0
-   illa = 0
-   do ilat=1,nam%wind_nlat
-      do ilon=1,nam%wind_nlon
-         ill = ill+1
-         lonlat_to_ll(ilon,ilat) = ill
-         iproc = lonlat_to_proc(ilon,ilat)
-         if (iproc==mpl%myproc) then
-            illa = illa+1
-            lla_to_ll(illa) = ill
-         end if
-      end do
-   end do
-
-   ! Interpolation from regular grid to subset Sc0
-   write(mpl%info,'(a7,a)') '','Interpolation from regular grid to subset Sc0'
-   call mpl%flush
-   wind%interp_llb_to_c0a%prefix = 'interp_llb_to_c0a'
-   wind%interp_llb_to_c0a%n_dst = geom%nc0a
-   call wind%interp_llb_to_c0a%alloc
-   i_s = 0
+   ! Define halo M for subset Sc0
+   lcheck_c0m = .false.
    do ic0a=1,geom%nc0a
-      ! Get regular grid inferior indices
-      ilonm = floor((geom%lon_c0a(ic0a)-half*dlon+pi)/dlon)+1
-      ilatm = floor((geom%lat_c0a(ic0a)-half*dlat+half*pi)/dlat)+1
-
-      if ((ilatm>0).and.(ilatm<nam%wind_nlat)) then
-         ! Define bilinear interpolation weights
-
-         ! Longitude direction
-         ilonp = ilonm+1
-         if (ilonm==0) then
-            ilonm = nam%wind_nlon
-            rlonm = (lon1d(1)-geom%lon_c0a(ic0a))/dlon
-            rlonp = (geom%lon_c0a(ic0a)-lon1d(nam%wind_nlon)+two*pi)/dlon
-         elseif (ilonp==nam%wind_nlon+1) then
-            ilonp = 1
-            rlonm = (lon1d(1)-geom%lon_c0a(ic0a)+two*pi)/dlon
-            rlonp = (geom%lon_c0a(ic0a)-lon1d(nam%wind_nlon))/dlon
-         else
-            rlonm = (lon1d(ilonp)-geom%lon_c0a(ic0a))/dlon
-            rlonp = (geom%lon_c0a(ic0a)-lon1d(ilonm))/dlon
-         end if
-
-         ! Latitude direction
-         ilatp = ilatm+1
-         rlatm = (lat1d(ilatp)-geom%lat_c0a(ic0a))/dlat
-         rlatp = (geom%lat_c0a(ic0a)-lat1d(ilatm))/dlat
-
-         ! Copy weights
-         i_s = i_s+1
-         wind%interp_llb_to_c0a%row(i_s) = ic0a
-         wind%interp_llb_to_c0a%col(i_s) = lonlat_to_ll(ilonm,ilatm)
-         wind%interp_llb_to_c0a%S(i_s) = rlonm*rlatm
-         i_s = i_s+1
-         wind%interp_llb_to_c0a%row(i_s) = ic0a
-         wind%interp_llb_to_c0a%col(i_s) = lonlat_to_ll(ilonp,ilatm)
-         wind%interp_llb_to_c0a%S(i_s) = rlonp*rlatm
-         i_s = i_s+1
-         wind%interp_llb_to_c0a%row(i_s) = ic0a
-         wind%interp_llb_to_c0a%col(i_s) = lonlat_to_ll(ilonm,ilatp)
-         wind%interp_llb_to_c0a%S(i_s) = rlonm*rlatp
-         i_s = i_s+1
-         wind%interp_llb_to_c0a%row(i_s) = ic0a
-         wind%interp_llb_to_c0a%col(i_s) = lonlat_to_ll(ilonp,ilatp)
-         wind%interp_llb_to_c0a%S(i_s) = rlonp*rlatp
-      else
-         ! Poles
-         
-         ! Latitude indices
-         if (ilatm==0) ilat = 1
-         if (ilatm==nam%wind_nlat) ilat = nam%wind_nlat
-
-         ! Get distances
-         do ilon=1,nam%wind_nlon
-            call sphere_dist(geom%lon_c0a(ic0a),geom%lat_c0a(ic0a),lon1d(ilon),lat1d(ilat),dist(ilon))
-         end do
-     
-         ! Check for colocated point
-         wgt = zero
-         do ilon=1,nam%wind_nlon
-            if (.not.(dist(ilon)>zero)) wgt(ilon) = one
-         end do
-
-         ! Get averaged weight if not colocated
-         if (.not.any(wgt>zero)) then
-            do ilon=1,nam%wind_nlon
-               wgt(ilon) = one/dist(ilon)
-            end do
-            wgt = wgt/sum(wgt)
-         end if
-
-         ! Fill interpolation 
-         do ilon=1,nam%wind_nlon
-            i_s = i_s+1
-            wind%interp_llb_to_c0a%row(i_s) = ic0a
-            wind%interp_llb_to_c0a%col(i_s) = lonlat_to_ll(ilon,ilat)
-            wind%interp_llb_to_c0a%S(i_s) = wgt(ilon)
-         end do
-      end if
+      ic0u = geom%c0a_to_c0u(ic0a)
+      lcheck_c0m(ic0u) = .true.
    end do
-
-   ! Define halo B, compute conversions and communications for regular grid
-   write(mpl%info,'(a7,a)') '','Define halo B, compute conversions and communications for regular grid'
-   call mpl%flush
-
-   ! Allocation
-   allocate(lcheck_llb(nll))
-
-   ! Define halo B for regular grid
-   lcheck_llb = .false.
-   ill = 0
-   do ilat=1,nam%wind_nlat
-      do ilon=1,nam%wind_nlon
-         ill = ill+1
-         iproc = lonlat_to_proc(ilon,ilat)
-         if (iproc==mpl%myproc) lcheck_llb(ill) = .true.
-      end do
-   end do
-   do i_s=1,wind%interp_llb_to_c0a%n_s
-      jll = wind%interp_llb_to_c0a%col(i_s)
-      lcheck_llb(jll) = .true.
+   do i_s=1,wind%missing%n_s
+      jc0u = wind%missing%col(i_s)
+      lcheck_c0m(jc0u) = .true.
    end do
 
    ! Allocation
-   wind%nllb = zss_count(lcheck_llb)
-   allocate(ll_to_llb(nll))
-   allocate(llb_to_ll(wind%nllb))
+   wind%nc0m = zss_count(lcheck_c0m)
+   allocate(c0u_to_c0m(geom%nc0u))
+   allocate(wind%c0m_to_c0(wind%nc0m))
 
    ! Conversions
-   illb = 0
-   do ill=1,nll
-      if (lcheck_llb(ill)) then
-         illb = illb+1
-         ll_to_llb(ill) = illb
-         llb_to_ll(illb) = ill
+   c0u_to_c0m = mpl%msv%vali
+   ic0m = 0
+   do ic0u=1,geom%nc0u
+      if (lcheck_c0m(ic0u)) then
+         ic0m = ic0m+1
+         c0u_to_c0m(ic0u) = ic0m
+         ic0 = geom%c0u_to_c0(ic0u)
+         wind%c0m_to_c0(ic0m) = ic0
       end if
    end do
 
-   ! Local interpolation source
-   wind%interp_llb_to_c0a%n_src = wind%nllb
-   do i_s=1,wind%interp_llb_to_c0a%n_s
-      jll = wind%interp_llb_to_c0a%col(i_s)
-      jllb = ll_to_llb(jll)
-      if (mpl%msv%isnot(jllb)) then
-         wind%interp_llb_to_c0a%col(i_s) = jllb
-      else
-         call mpl%abort('${subr}$','wrong local source for inter_llb_to_rg')
-      end if
+   ! Interpolation source in halo M
+   wind%missing%n_src = wind%nc0m
+   do i_s=1,wind%missing%n_s
+      wind%missing%col(i_s) = c0u_to_c0m(wind%missing%col(i_s))
    end do
 
    ! Setup communications
-   call wind%com_ll_AB%setup(mpl,'com_ll_AB',wind%nlla,wind%nllb,nll,lla_to_ll,llb_to_ll)
+   call wind%com_c0_AM%setup(mpl,'com_c0_AM',geom%nc0a,wind%nc0m,geom%nc0,geom%c0a_to_c0,wind%c0m_to_c0)
 
    ! Release memory
-   deallocate(lonlat_to_proc)
-   deallocate(lla_to_ll)
-   deallocate(lonlat_to_ll)
-   deallocate(wgt)
-   deallocate(lcheck_llb)
-   deallocate(ll_to_llb)
-   deallocate(llb_to_ll)
+   call mesh_c0u%dealloc
+   deallocate(lcheck_c0b)
+   deallocate(c0u_to_c0b)
+   deallocate(valid_c0a)
+   deallocate(valid_c0u)
+   deallocate(lcheck_c0m)
+   deallocate(c0u_to_c0m)
+   do ic0a=1,geom%nc0a
+      call grad_c0a(ic0a)%dealloc
+   end do
+   deallocate(grad_c0a)
 elseif (nam%load_wind_local) then
    ! Read local wind
    call wind%read_local(mpl,nam)
+elseif (nam%load_wind_global) then
+   ! Read global wind
+   call wind%read_global(mpl,nam,geom)
 end if
 
+! Dipole test flag
+wind%dipole_test = nam%wind_dipole_test
+
 ! Test adjoint
-if (nam%check_adjoints) then
+if (nam%check_adjoints.and.(.not.wind%dipole_test)) then
    ! Initialization
    call rng%rand(zero,one,psi_save)
    call rng%rand(zero,one,chi_save)
@@ -1119,8 +1219,14 @@ if (nam%check_adjoints) then
    call mpl%flush
 end if
 
+! Test accuracy
+call wind%test_accuracy(mpl,geom)
+
 ! Write local wind
 if (nam%write_wind_local) call wind%write_local(mpl,nam)
+
+! Write global wind
+if (nam%write_wind_global) call wind%write_global(mpl,nam,geom)
 
 ! Probe out
 @:probe_out()
@@ -1147,9 +1253,8 @@ real(kind_real),intent(out) :: v(geom%nc0a,geom%nl0)  !< Merdional wind
 ! Local variables
 integer :: il0
 real(kind_real) :: psi_c0b(wind%nc0b,geom%nl0),chi_c0b(wind%nc0b,geom%nl0)
-real(kind_real) :: psi_llw(wind%nllw,geom%nl0),chi_llw(wind%nllw,geom%nl0),psichi_llw(2*wind%nllw)
-real(kind_real) :: u_lla(wind%nlla,geom%nl0),v_lla(wind%nlla,geom%nl0),uv_lla(2*wind%nlla)
-real(kind_real) :: u_llb(wind%nllb,geom%nl0),v_llb(wind%nllb,geom%nl0)
+real(kind_real) :: tmp_c0a(geom%nc0a)
+real(kind_real) :: u_c0m(wind%nc0m,geom%nl0),v_c0m(wind%nc0m,geom%nl0)
 
 ! Set name
 @:set_name(wind_psichi_to_uv)
@@ -1161,34 +1266,26 @@ real(kind_real) :: u_llb(wind%nllb,geom%nl0),v_llb(wind%nllb,geom%nl0)
 call wind%com_c0_AB%ext(mpl,psi,psi_c0b)
 call wind%com_c0_AB%ext(mpl,chi,chi_c0b)
 
-! Interpolation
-do il0=1,geom%nl0
-   call wind%interp_c0b_to_llw%apply(mpl,psi_c0b(:,il0),psi_llw(:,il0))
-   call wind%interp_c0b_to_llw%apply(mpl,chi_c0b(:,il0),chi_llw(:,il0))
-end do
-
 ! psi/chi to u/v transform
 do il0=1,geom%nl0
-   ! Concatenate psi/chi
-   psichi_llw(1:wind%nllw) = psi_llw(:,il0)
-   psichi_llw(wind%nllw+1:2*wind%nllw) = chi_llw(:,il0)
-
-   ! Apply transform
-   call wind%transform%apply(mpl,psichi_llw,uv_lla)
-
-   ! Deconcatenate u/v
-   u_lla(:,il0) = uv_lla(1:wind%nlla)
-   v_lla(:,il0) = uv_lla(wind%nlla+1:2*wind%nlla)
+   call wind%transform%apply(mpl,psi_c0b(:,il0),tmp_c0a,1)
+   u(:,il0) = tmp_c0a
+   call wind%transform%apply(mpl,chi_c0b(:,il0),tmp_c0a,2)
+   u(:,il0) = u(:,il0)+tmp_c0a
+   call wind%transform%apply(mpl,psi_c0b(:,il0),tmp_c0a,3)
+   v(:,il0) = tmp_c0a
+   call wind%transform%apply(mpl,chi_c0b(:,il0),tmp_c0a,4)
+   v(:,il0) = v(:,il0)+tmp_c0a
 end do
 
 ! Halo extension
-call wind%com_ll_AB%ext(mpl,u_lla,u_llb)
-call wind%com_ll_AB%ext(mpl,v_lla,v_llb)
+call wind%com_c0_AM%ext(mpl,u,u_c0m)
+call wind%com_c0_AM%ext(mpl,v,v_c0m)
 
-! Interpolation
+! Deal with missing points
 do il0=1,geom%nl0
-   call wind%interp_llb_to_c0a%apply(mpl,u_llb(:,il0),u(:,il0))
-   call wind%interp_llb_to_c0a%apply(mpl,v_llb(:,il0),v(:,il0))
+   call wind%missing%apply(mpl,u_c0m(:,il0),u(:,il0))
+   call wind%missing%apply(mpl,v_c0m(:,il0),v(:,il0))
 end do
 
 ! Probe out
@@ -1216,9 +1313,9 @@ real(kind_real),intent(inout) :: chi(geom%nc0a,geom%nl0) !< Velocity potential
 ! Local variables
 integer :: il0
 real(kind_real) :: psi_c0b(wind%nc0b,geom%nl0),chi_c0b(wind%nc0b,geom%nl0)
-real(kind_real) :: psi_llw(wind%nllw,geom%nl0),chi_llw(wind%nllw,geom%nl0),psichi_llw(2*wind%nllw)
-real(kind_real) :: u_lla(wind%nlla,geom%nl0),v_lla(wind%nlla,geom%nl0),uv_lla(2*wind%nlla)
-real(kind_real) :: u_llb(wind%nllb,geom%nl0),v_llb(wind%nllb,geom%nl0)
+real(kind_real) :: tmp_c0b(wind%nc0b)
+real(kind_real) :: u_c0a(geom%nc0a,geom%nl0),v_c0a(geom%nc0a,geom%nl0)
+real(kind_real) :: u_c0m(wind%nc0m,geom%nl0),v_c0m(wind%nc0m,geom%nl0)
 
 ! Set name
 @:set_name(wind_psichi_to_uv_ad)
@@ -1226,43 +1323,122 @@ real(kind_real) :: u_llb(wind%nllb,geom%nl0),v_llb(wind%nllb,geom%nl0)
 ! Probe in
 @:probe_in()
 
-! Interpolation
-do il0=1,geom%nl0
-   call wind%interp_llb_to_c0a%apply_ad(mpl,u(:,il0),u_llb(:,il0))
-   call wind%interp_llb_to_c0a%apply_ad(mpl,v(:,il0),v_llb(:,il0))
-end do
+if (wind%dipole_test) then
+   ! Set output psi/chi to input u/v
+   psi = u
+   chi = v
+else
+   ! Deal with missing points, adjoint
+   do il0=1,geom%nl0
+      call wind%missing%apply_ad(mpl,u(:,il0),u_c0m(:,il0))
+      call wind%missing%apply_ad(mpl,v(:,il0),v_c0m(:,il0))
+   end do
 
-! Communication
-call wind%com_ll_AB%red(mpl,u_llb,u_lla)
-call wind%com_ll_AB%red(mpl,v_llb,v_lla)
+   ! Halo reduction
+   call wind%com_c0_AM%red(mpl,u_c0m,u_c0a)
+   call wind%com_c0_AM%red(mpl,v_c0m,v_c0a)
 
-! psi/chi to u/v transform
-do il0=1,geom%nl0
-   ! Concatenate u/v
-   uv_lla(1:wind%nlla) = u_lla(:,il0)
-   uv_lla(wind%nlla+1:2*wind%nlla) = v_lla(:,il0)
+   ! psi/chi to u/v transform adjoint
+   do il0=1,geom%nl0
+      call wind%transform%apply_ad(mpl,u_c0a(:,il0),tmp_c0b,1)
+      psi_c0b(:,il0) = tmp_c0b
+      call wind%transform%apply_ad(mpl,u_c0a(:,il0),tmp_c0b,2)
+      chi_c0b(:,il0) = tmp_c0b
+      call wind%transform%apply_ad(mpl,v_c0a(:,il0),tmp_c0b,3)
+      psi_c0b(:,il0) = psi_c0b(:,il0)+tmp_c0b
+      call wind%transform%apply_ad(mpl,v_c0a(:,il0),tmp_c0b,4)
+      chi_c0b(:,il0) = chi_c0b(:,il0)+tmp_c0b
+   end do
 
-   ! Apply transform
-   call wind%transform%apply_ad(mpl,uv_lla,psichi_llw)
-
-   ! Deconcatenate psi/chi
-   psi_llw(:,il0) = psichi_llw(1:wind%nllw)
-   chi_llw(:,il0) = psichi_llw(wind%nllw+1:2*wind%nllw)
-end do
-
-! Interpolation
-do il0=1,geom%nl0
-   call wind%interp_c0b_to_llw%apply_ad(mpl,psi_llw(:,il0),psi_c0b(:,il0))
-   call wind%interp_c0b_to_llw%apply_ad(mpl,chi_llw(:,il0),chi_c0b(:,il0))
-end do
-
-! Communication
-call wind%com_c0_AB%red(mpl,psi_c0b,psi)
-call wind%com_c0_AB%red(mpl,chi_c0b,chi)
+   ! Halo reduction
+   call wind%com_c0_AB%red(mpl,psi_c0b,psi)
+   call wind%com_c0_AB%red(mpl,chi_c0b,chi)
+end if
 
 ! Probe out
 @:probe_out()
 
 end subroutine wind_psichi_to_uv_ad
+
+!----------------------------------------------------------------------
+! Subroutine: wind_test_accuracy
+!> Test operators accuracy
+!----------------------------------------------------------------------
+subroutine wind_test_accuracy(wind,mpl,geom)
+
+implicit none
+
+! Passed variables
+class(wind_type),intent(in) :: wind !< Wind
+type(mpl_type),intent(inout) :: mpl !< MPI data
+type(geom_type),intent(in) :: geom  !< Geometry
+
+! Local variables
+integer,parameter :: nm = 5
+integer :: ic0a,im
+real(kind_real) :: lambda,phi,k
+real(kind_real) :: psi_th(geom%nc0a,geom%nl0),chi_th(geom%nc0a,geom%nl0)
+real(kind_real) :: u_th(geom%nc0a,geom%nl0),v_th(geom%nc0a,geom%nl0)
+real(kind_real) :: u(geom%nc0a,geom%nl0),v(geom%nc0a,geom%nl0)
+real(kind_real) :: re(geom%nc0a,2),re_avg(2)
+
+! Set name
+@:set_name(wind_test_accuracy)
+
+! Probe in
+@:probe_in()
+
+write(mpl%test,'(a7,a)') '','Accuracy tests:'
+call mpl%flush
+
+do im=1,nm
+   write(mpl%test,'(a10,a,i2)') '','Wavenumber: ',im
+   call mpl%flush
+   k = real(im,kind_real)
+
+   ! Test function
+   do ic0a=1,geom%nc0a 
+      ! Aliases
+      lambda = geom%lon_c0a(ic0a)
+      phi = geom%lat_c0a(ic0a)
+   
+      ! Psi/chi
+      psi_th(ic0a,:) = cos(phi)**2*(one-cos(4.0*k*phi))*sin(k*lambda)
+      chi_th(ic0a,:) = cos(phi)**2*(one-cos(4.0*k*phi))*cos(k*lambda)
+
+      ! U/v
+      u_th(ic0a,:) = -sin(k*lambda)*cos(phi)*(2.0*sin(phi)*cos(4.0*k*phi)-2.0*sin(phi) &
+ & +4.0*cos(phi)*k*sin(4.0*k*phi)-cos(4.0*k*phi)*k+k)
+      v_th(ic0a,:) = cos(k*lambda)*cos(phi)*(2.0*sin(phi)*cos(4.0*k*phi)-2.0*sin(phi) &
+ & +4.0*cos(phi)*k*sin(4.0*k*phi)-cos(4.0*k*phi)*k+k)
+   end do
+
+   ! Apply psichi_to_uv
+   call wind%psichi_to_uv(mpl,geom,psi_th,chi_th,u,v)
+
+   ! Compute relative errors
+   re = zero
+   do ic0a=1,geom%nc0a
+      if (abs(geom%lat_c0a(ic0a))<75.0_kind_real) then
+         ! Psi/chi to u/v
+         if (abs(u_th(ic0a,1))>1.0e-3) re(ic0a,1) = abs(u(ic0a,1)-u_th(ic0a,1))/abs(u_th(ic0a,1))
+         if (abs(v_th(ic0a,1))>1.0e-3) re(ic0a,2) = abs(v(ic0a,1)-v_th(ic0a,1))/abs(v_th(ic0a,1))
+      end if
+   end do
+
+   ! Print average relative error
+   re_avg = sum(re,dim=1)
+   call mpl%f_comm%allreduce(re_avg,fckit_mpi_sum())
+   re_avg = re_avg/real(geom%nc0,kind_real)*hundred
+   write(mpl%test,'(a13,a,f9.5,a)') '','- psi/chi to u: ',re_avg(1),'%'
+   call mpl%flush
+   write(mpl%test,'(a13,a,f9.5,a)') '','- psi/chi to v: ',re_avg(2),'%'
+   call mpl%flush
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine wind_test_accuracy
 
 end module type_wind

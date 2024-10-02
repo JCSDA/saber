@@ -228,6 +228,7 @@ type nicas_cmp_type
    type(com_type) :: com_s_AB                           !< Communication between halos A and B on subgrid
    type(com_type) :: com_s_AC                           !< Communication between halos A and C on subgrid
    type(com_type) :: com_s_AU                           !< Communication between halo A and universe on subgrid
+   real(kind_real) :: scaling                           !< Length-scales scaling to account for smooth interpolation effect
 
    ! Convolution
    type(balldata_type),allocatable :: ball(:,:)         !< Ball data
@@ -1473,7 +1474,7 @@ type(geom_type),intent(in) :: geom               !< Geometry
 integer :: vlev_id,l1_to_l0_id,lon_c1_id,lat_c1_id,c1b_to_c0a_col_c0_id,c1b_to_c0a_S_c0_id,c_col_s_id,c_S_s_id,inorm_s_id
 integer :: il1,il1s,ic1,ic1a,ic0a,iproc,is,isa,jc1,jsu,nop,js,i_s,iop
 integer,allocatable :: lev_c1(:),c1_to_proc(:),c1_to_c0a(:),c1b_to_c0a_col_c0a(:,:)
-integer,allocatable :: order_c1(:),order_s(:),order_inv_s(:),order_inv_sa(:),c_col_sa(:,:)
+integer,allocatable :: order_c1(:),order_s(:),c_col_sa(:,:)
 real(kind_real),allocatable :: lon_c1(:),lat_c1(:),c1b_to_c0a_S_c0a(:,:),lon_s(:),lat_s(:),lon_sa(:),lat_sa(:),c_S_sa(:,:)
 logical,allocatable :: gmask_c1(:)
 character(len=1024) :: levname
@@ -1570,7 +1571,7 @@ if (any(nicas_cmp%vlev)) then
          ! Check that interpolation is available in global file
          if (nicas_cmp%interp_in_global_file) then
             if (mpl%msv%is(inquire_dim(mpl,nicas_cmp%hor(il1s)%levid,'c1b_to_c0a_nopmax'))) &
- & call mpl%abort('${subr}$','subset Sc1 point is out of the domain')
+ & call mpl%abort('${subr}$','interpolation not available in global file')
          end if
 
          ! Get dimension
@@ -1727,15 +1728,12 @@ if (any(nicas_cmp%vlev)) then
    if (mpl%main) then
       allocate(lon_s(nicas_cmp%ns))
       allocate(lat_s(nicas_cmp%ns))
-      allocate(order_inv_s(nicas_cmp%ns))
    else
       allocate(lon_s(0))
       allocate(lat_s(0))
-      allocate(order_inv_s(0))
    end if
    allocate(order_s(nicas_cmp%ns))
    allocate(nicas_cmp%order_sa(nicas_cmp%nsa))
-   allocate(order_inv_sa(nicas_cmp%nsa))
 
    ! Communication
    call mpl%f_comm%allgather(nicas_cmp%nsa,nicas_cmp%proc_to_nsa)
@@ -1789,20 +1787,11 @@ if (any(nicas_cmp%vlev)) then
    call mpl%loc_to_glb(nicas_cmp%nsa,nicas_cmp%ns,nicas_cmp%sa_to_s,lon_sa,lon_s)
    call mpl%loc_to_glb(nicas_cmp%nsa,nicas_cmp%ns,nicas_cmp%sa_to_s,lat_sa,lat_s)
 
-   ! Get subgrid order and inverse order
-   if (mpl%main) then
-      ! Sort lon/lat
-      call qsort(nicas_cmp%ns,lon_s,lat_s,order_s)
-
-      ! Inverse order
-      do is=1,nicas_cmp%ns
-         order_inv_s(order_s(is)) = is
-      end do
-   end if
+   ! Get subgrid order
+   if (mpl%main) call qsort(nicas_cmp%ns,lon_s,lat_s,order_s)
 
    ! Communication
    call mpl%glb_to_loc(nicas_cmp%nsa,nicas_cmp%ns,nicas_cmp%sa_to_s,order_s,nicas_cmp%order_sa)
-   call mpl%glb_to_loc(nicas_cmp%nsa,nicas_cmp%ns,nicas_cmp%sa_to_s,order_inv_s,order_inv_sa)
 
     ! Setup fields output
    call io_s%init(mpl,16,'s',nicas_cmp%ns,nicas_cmp%nsa,nicas_cmp%sa_to_s,nicas_cmp%proc_to_s_offset,nicas_cmp%order_sa)
@@ -1812,8 +1801,6 @@ if (any(nicas_cmp%vlev)) then
    deallocate(lat_sa)
    deallocate(lon_s)
    deallocate(lat_s)
-   deallocate(order_inv_s)
-   deallocate(order_inv_sa)
 
    ! Read convolution
    write(mpl%info,'(a16,a)') '','Read convolution'
@@ -2030,7 +2017,7 @@ integer :: il1,il1s,i_s,jc1u,jc1,ic0a,jc1b,jsu,isa,jsc
 integer,allocatable :: c1b_to_c0a_col_c0a(:,:),c1b_to_c0a_nop(:),c_col_sa(:,:),c_nop(:),list(:),order(:)
 real(kind_real),allocatable :: c1b_to_c0a_S_c0a(:,:),c_S_sa(:,:)
 character(len=1024) :: levname
-type(io_type) :: io_c1,io_c0,io_s
+type(io_type) :: io_c1,io_s
 
 ! Set name
 @:set_name(nicas_cmp_write_global_data)
@@ -2116,7 +2103,6 @@ if (any(nicas_cmp%vlev)) then
             call geom%io%fld_write(mpl,nicas_cmp%hor(il1s)%levid,nicas_cmp%hor(il1s)%c1b_to_c0a_S_c0_id,c1b_to_c0a_S_c0a)
 
             ! Release memory
-            call io_c0%dealloc
             deallocate(c1b_to_c0a_nop)
             deallocate(c1b_to_c0a_col_c0a)
             deallocate(c1b_to_c0a_S_c0a)
@@ -2558,6 +2544,7 @@ nicas_cmp%rv = zero
 nicas_cmp%as = one
 nicas_cmp%rhs(:,1) = rhflt
 nicas_cmp%rvs = zero
+nicas_cmp%scaling = one
 
 ! Compute parameters
 call nicas_cmp%compute_parameters(mpl,rng,nam,geom)
@@ -3167,12 +3154,13 @@ do il1=1,nicas_cmp%nl1
  & geom%nc0a,geom%lon_c0a,geom%lat_c0a,geom%gmask_c0a(:,il0s),geom%bnda_c0u,ifmt,.true.)
          case ('si')
             allocate(interpolation_radius(geom%nc0a))
-            interpolation_radius = nicas_cmp%rhs(:,il0s)
+            interpolation_radius = nicas_cmp%rhs(:,il0s)*nicas_cmp%scaling
             do ic0a=1,geom%nc0a
-               if (mpl%msv%isnot(interpolation_radius(ic0a))) interpolation_radius(ic0a) = interpolation_radius(ic0a)/four
+               if (mpl%msv%isnot(interpolation_radius(ic0a))) interpolation_radius(ic0a) = interpolation_radius(ic0a) &
+ & *nam%nicas_si_factor
             end do
             if (any((interpolation_radius>nam%universe_radius).and.geom%gmask_c0a(:,il0s))) then
-               call mpl%warning('${subr}$','universe radius smaller than rhs for si interpolation')
+               call mpl%warning('${subr}$','universe radius smaller than rh for si interpolation')
                interpolation_radius = min(interpolation_radius,nam%universe_radius)
             end if
             call nicas_cmp%hor(il1s)%interp_c1b_to_c0a%interp(mpl,il0s,nicas_cmp%hor(il1s)%nc1,lon_c1,lat_c1,gmask_c1, &
@@ -3269,7 +3257,7 @@ do il1=1,nicas_cmp%nl1
          if (geom%myuniverse(jproc)) then
             jc1u = nicas_cmp%c1_to_c1u(jc1,il1s)
             jc1b = nicas_cmp%hor(il1s)%c1u_to_c1b(jc1u)
-            if (mpl%msv%isnot(ic1b)) then
+            if (mpl%msv%isnot(jc1b)) then
                nicas_cmp%hor(il1s)%interp_c1b_to_c0a%col(i_s) = jc1b
             else
                call mpl%abort('${subr}$','wrong local source for interp_c1b_to_c0a')
@@ -3438,7 +3426,7 @@ if (nam%interp_test.and.(nicas_cmp%interp_type=='c1').and.compute_interp) then
          ! Compute gradient operator
          do ic1a=1,nicas_cmp%hor(il1s)%nc1a
             ic1 = nicas_cmp%hor(il1s)%c1a_to_c1(ic1a)
-            call grad(ic1a)%compute_grad(mpl,ic1,nicas_cmp%hor(il1s)%mesh_c1,nicas_cmp%hor(il1s)%tree_c1)
+            call grad(ic1a)%compute_grad(mpl,ic1,nicas_cmp%hor(il1s)%mesh_c1)
          end do
    
          ! Apply operator
@@ -3772,12 +3760,12 @@ if (.not.nam%load_nicas_global) then
       call mpl%flush(flush=nicas_cmp%verbosity)
 
       ! Halo extension
-      call nicas_cmp%hor(il1s)%com_c0_AB%ext(mpl,nicas_cmp%rh(:,il0),rh_c0b)
-      if (.not.nicas_cmp%smoother) call nicas_cmp%hor(il1s)%com_c0_AB%ext(mpl,nicas_cmp%rv(:,il0),rv_c0b)
+      call nicas_cmp%hor(il1s)%com_c0_AB%ext(mpl,nicas_cmp%rh(:,il0)/nicas_cmp%scaling,rh_c0b)
+      if (.not.nicas_cmp%smoother) call nicas_cmp%hor(il1s)%com_c0_AB%ext(mpl,nicas_cmp%rv(:,il0)/nicas_cmp%scaling,rv_c0b)
       if (nicas_cmp%anisotropic) then
-         call nicas_cmp%hor(il1s)%com_c0_AB%ext(mpl,nicas_cmp%H11(:,il0),H11_c0b)
-         call nicas_cmp%hor(il1s)%com_c0_AB%ext(mpl,nicas_cmp%H22(:,il0),H22_c0b)
-         call nicas_cmp%hor(il1s)%com_c0_AB%ext(mpl,nicas_cmp%H12(:,il0),H12_c0b)
+         call nicas_cmp%hor(il1s)%com_c0_AB%ext(mpl,nicas_cmp%H11(:,il0)*nicas_cmp%scaling**2,H11_c0b)
+         call nicas_cmp%hor(il1s)%com_c0_AB%ext(mpl,nicas_cmp%H22(:,il0)*nicas_cmp%scaling**2,H22_c0b)
+         call nicas_cmp%hor(il1s)%com_c0_AB%ext(mpl,nicas_cmp%H12(:,il0)*nicas_cmp%scaling**2,H12_c0b)
       end if
 
       ! Interpolate fields
@@ -3980,7 +3968,7 @@ logical,allocatable :: mnd(:)
 
 ! Find largest possible radius
 do il0=1,nicas_cmp%nl0
-   rv_max(il0) = zss_maxval(nicas_cmp%rv(:,il0),mask=mpl%msv%isnot(nicas_cmp%rv(:,il0)))
+   rv_max(il0) = zss_maxval(nicas_cmp%rv(:,il0)/nicas_cmp%scaling,mask=mpl%msv%isnot(nicas_cmp%rv(:,il0)))
 end do
 call mpl%f_comm%allreduce(rv_max,fckit_mpi_max())
 

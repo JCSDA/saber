@@ -1,0 +1,37 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 10
+  groups:
+  - variables:
+    - eastward_wind
+    - northward_wind
+    - stream_function
+    - velocity_potential
+    levels: 2
+  halo: 1
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables:
+  - eastward_wind
+  - northward_wind
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: ID
+  saber outer blocks:
+  - saber block name: BUMP_PsiChiToUV
+    read:
+      general:
+        testing: true
+      io:
+        data directory: testdata
+        files prefix: error_covariance_training_bump_wind_1/_MPI_-_OMP_
+        io tasks: 1
+      drivers:
+        compute psichitouv: true
+        write local psichitouv: true
+        write global psichitouv: true
+test:
+  reference filename: testref/error_covariance_training_bump_wind_1.ref

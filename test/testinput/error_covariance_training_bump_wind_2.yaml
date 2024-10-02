@@ -1,8 +1,18 @@
 geometry:
   function space: StructuredColumns
   grid:
-    type: regular_lonlat
-    N: 10
+    type : regional
+    nx : 71
+    ny : 53
+    dx : 2.5e3
+    dy : 2.5e3
+    lonlat(centre) : [9.9, 56.3]
+    projection :  
+      type : lambert_conformal_conic
+      latitude0  : 56.3
+      longitude0 : 0.0
+    y_numbering: 1
+  partitioner: checkerboard
   groups:
   - variables:
     - eastward_wind
@@ -27,15 +37,11 @@ background error:
         testing: true
       io:
         data directory: testdata
-        files prefix: error_covariance_training_bump_wind/_MPI_-_OMP_
+        files prefix: error_covariance_training_bump_wind_2/_MPI_-_OMP_
         io tasks: 1
       drivers:
         compute psichitouv: true
         write local psichitouv: true
-      psichitouv:
-        longitudes: 10
-        latitudes: 5
-        savitzky-golay half width: 3
-        wind inflation: 1.1
+        write global psichitouv: true
 test:
-  reference filename: testref/error_covariance_training_bump_wind.ref
+  reference filename: testref/error_covariance_training_bump_wind_2.ref

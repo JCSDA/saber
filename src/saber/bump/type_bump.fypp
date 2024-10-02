@@ -902,7 +902,7 @@ if (bump%nam%new_nicas.or.bump%nam%load_nicas_local.or.bump%nam%load_nicas_globa
    end if
 end if
 
-if (bump%nam%new_wind.or.bump%nam%load_wind_local) then
+if (bump%nam%new_wind.or.bump%nam%load_wind_local.or.bump%nam%load_wind_global) then
    ! Run psi/chi to u/v driver
    write(bump%mpl%info,'(a)') '-------------------------------------------------------------------'
    call bump%mpl%flush

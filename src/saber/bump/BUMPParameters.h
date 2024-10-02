@@ -325,8 +325,12 @@ class DriversSection : public oops::Parameters {
   oops::Parameter<bool> new_wind = param(def.new_wind, this);
   // Read local wind transform
   oops::Parameter<bool> load_wind_local = param(def.load_wind_local, this);
+  // Read global wind transform
+  oops::Parameter<bool> load_wind_global = param(def.load_wind_global, this);
   // Write local wind transform
   oops::Parameter<bool> write_wind_local = param(def.write_wind_local, this);
+  // Write global wind transform
+  oops::Parameter<bool> write_wind_global = param(def.write_wind_global, this);
   // Test vertical balance inverse
   oops::Parameter<bool> check_vbal = param(def.check_vbal, this);
   // Test adjoints
@@ -619,6 +623,8 @@ class NICASSection : public oops::Parameters {
   // or 'si': smooth interpolation)
   oops::Parameter<std::vector<GroupsTypeParameters>> interp_type{"interpolation type", {},
     this};
+  // Factor to get interpolation radius from convolution radius if nicas_interp_type = 'si'
+  oops::Parameter<double> nicas_si_factor = param(def.nicas_si_factor, this);
   // Normalization randomization size
   oops::Parameter<int> norm_rand_size = param(def.norm_rand_size, this);
   // Positive-definiteness test
@@ -645,14 +651,8 @@ class PsichitouvSection : public oops::Parameters {
   PsichitouvDef def;
 
  public:
-  // Number of longitudes for the regular grid
-  oops::Parameter<int> wind_nlon = param(def.wind_nlon, this);
-  // Number of latitudes for the regular grid
-  oops::Parameter<int> wind_nlat = param(def.wind_nlat, this);
-  // Half-width of the Savitzky-Golay to compute derivatives
-  oops::Parameter<int> wind_nsg = param(def.wind_nsg, this);
-  // Wind inflation to compensate the Savitzky-Golay smoothing
-  oops::Parameter<double> wind_inflation = param(def.wind_inflation, this);
+  // Dipole test (bypass the adjoint)
+  oops::Parameter<bool> wind_dipole_test = param(def.wind_dipole_test, this);
 };
 
 // -----------------------------------------------------------------------------

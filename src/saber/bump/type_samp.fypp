@@ -655,7 +655,7 @@ else
 end if
 
 ! Close file
-call close_file(mpl,ncid) 
+call close_file(mpl,ncid)
 
 ! Probe out
 @:probe_out()

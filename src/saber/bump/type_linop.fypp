@@ -10,7 +10,7 @@ module type_linop
 
 use ieee_arithmetic
 !$ use omp_lib
-use tools_const, only: zero,one,two,rad2deg
+use tools_const, only: zero,half,one,two,rad2deg,pi
 use tools_func, only: sphere_dist,zss_maxval,zss_minval
 use tools_gc99, only: fit_func
 use tools_kinds, only: kind_real,huge_real
@@ -935,7 +935,7 @@ if (lc1_interp) then
    ! Compute gradient operator
    do i_src=1,n_src
       if (mask_src(i_src)) then
-         call grad(i_src)%compute_grad(mpl,i_src,mesh_src,tree_src)
+         call grad(i_src)%compute_grad(mpl,i_src,mesh_src)
       else
          call mpl%abort('${subr}$','source mask not implemented for C1 interpolation')
       end if
@@ -1474,7 +1474,7 @@ end subroutine linop_interp_nn
 ! Subroutine: linop_compute_grad
 !> Compute gradient
 !----------------------------------------------------------------------
-subroutine linop_compute_grad(linop,mpl,i,mesh,tree)
+subroutine linop_compute_grad(linop,mpl,i,mesh,spherical)
 
 implicit none
 
@@ -1483,15 +1483,15 @@ class(linop_type),intent(inout) :: linop !< Linear operator
 type(mpl_type),intent(inout) :: mpl      !< MPI data
 integer,intent(in) :: i                  !< Index
 type(mesh_type),intent(in) :: mesh       !< Mesh
-type(tree_type),intent(in) :: tree       !< Tree
+logical,intent(in),optional :: spherical !< Output gradient in spherical coordinates (default is cartesian coordinates)
 
 ! Local variables
-integer,parameter :: nn_grad = 8
-integer :: j,j_next,km_next,i_s,im
-integer,allocatable :: km(:),nn_index(:)
-real(kind_real) :: cx,sx,cy,sy,gamma,wgt,wgt_sum
+integer :: jj,j,j_next,km_next,i_s,im
+integer,allocatable :: km(:),col(:)
+real(kind_real) :: a,b,c,s,ar,dist,cx,sx,cy,sy,gamma,wgt,wgt_sum
 real(kind_real),allocatable :: xp(:),yp(:),zp(:)
-real(kind_real),allocatable :: Svec_tmp(:,:)
+real(kind_real),allocatable :: Svec_tmp(:,:),Svec_x(:),Svec_y(:),Svec_z(:)
+logical :: lspherical,valid
 
 ! Set name
 @:set_name(linop_compute_grad)
@@ -1499,121 +1499,77 @@ real(kind_real),allocatable :: Svec_tmp(:,:)
 ! Probe in
 @:probe_in()
 
+! Local flags
+lspherical = .false.
+if (present(spherical)) lspherical = spherical
+
 ! Inverse order
 im = mesh%order_inv(i)
 
 ! Construct the rotation
 call constr(mesh%x(im),mesh%y(im),mesh%z(im),cx,sx,cy,sy)
 
-if (.false.) then
-   ! Allocation
-   linop%n_s = nn_grad+1
-   call linop%alloc(3)
-   allocate(Svec_tmp(linop%n_s,2))
-   allocate(nn_index(nn_grad+1))
-   allocate(km(nn_grad+1))
-   allocate(xp(nn_grad+1))
-   allocate(yp(nn_grad+1))
-   allocate(zp(nn_grad+1))
+! Allocation
+allocate(km(mesh%rows(im)%cols))
+allocate(xp(mesh%rows(im)%cols))
+allocate(yp(mesh%rows(im)%cols))
+allocate(zp(mesh%rows(im)%cols))
+allocate(col(mesh%rows(im)%cols+1))
+allocate(Svec_tmp(mesh%rows(im)%cols+1,2))
 
-   ! Get nearest neighbors
-   call tree%find_nearest_neighbors(mpl,mesh%lon(im),mesh%lat(im),nn_grad+1,nn_index)
-   
-   ! Loop over neigbors
-   do j=1,nn_grad+1
-      ! Inverse order
-      km(j) = mesh%order_inv(nn_index(j))
+! Loop over neigbors
+do j=1,mesh%rows(im)%cols
+   ! Get index
+   km(j) = mesh%rows(im)%nodes(j)
 
-      ! Get rotated coordinates
-      call aplyr(mpl,mesh%x(km(j)),mesh%y(km(j)),mesh%z(km(j)),cx,sx,cy,sy,xp(j),yp(j),zp(j))
-   end do
+   ! Get rotated coordinates
+   call aplyr(mpl,mesh%x(km(j)),mesh%y(km(j)),mesh%z(km(j)),cx,sx,cy,sy,xp(j),yp(j),zp(j))
+end do
 
-   ! Initialization
-   wgt_sum = zero
-   linop%col = nn_index
-   Svec_tmp = zero
+! Initialization
+wgt_sum = zero
+col(1) = im
+do jj=2,mesh%rows(im)%cols+1
+   col(jj) = km(jj-1)
+end do
 
-   ! Loop over neigbors
-   do j=2,nn_grad+1
-      if ((xp(j)>zero).and.(yp(j)>zero)) then
-         ! Weight
-         wgt = one/(xp(j)**2+yp(j)**2)
-         wgt_sum = wgt_sum+wgt
-
-         ! Add contribution
-         do i_s=1,linop%n_s
-            if (linop%col(i_s)==nn_index(1)) then
-               Svec_tmp(i_s,1) = Svec_tmp(i_s,1)-wgt/xp(j)
-               Svec_tmp(i_s,2) = Svec_tmp(i_s,2)-wgt/yp(j)
-            end if
-            if (linop%col(i_s)==nn_index(j)) then
-               Svec_tmp(i_s,1) = Svec_tmp(i_s,1)+wgt/xp(j)
-               Svec_tmp(i_s,2) = Svec_tmp(i_s,2)+wgt/yp(j)
-            end if
-         end do
-      end if
-   end do
-
-   ! Averaged gradient
-   if (wgt_sum>zero) then
-      Svec_tmp = Svec_tmp/wgt_sum
+! Loop over triangles
+Svec_tmp = zero
+do j=1,mesh%rows(im)%cols
+   ! Get next neighbor
+   if (j<mesh%rows(im)%cols) then
+      j_next = j+1
    else
-      call mpl%abort('${subr}$','zero weight sum')
+      j_next = 1
+   end if
+   km_next = km(j_next)
+
+   ! Is it a valid triangle?
+   valid = .true.
+
+   ! Remove polar triangles
+   if (lspherical) then
+      valid = valid.and.(abs(abs(mesh%lat(im))-half*pi)>zero)
+      valid = valid.and.(abs(abs(mesh%lat(km(j)))-half*pi)>zero)
+      valid = valid.and.(abs(abs(mesh%lat(km_next))-half*pi)>zero)
+      ! TODO: add case where a pole is inside the triangle
+   end if
+   
+   ! Remove weird triangles (suspiciously high aspect ratio)
+   call sphere_dist(mesh%lon(im),mesh%lat(im),mesh%lon(km(j)),mesh%lat(km(j)),a)
+   call sphere_dist(mesh%lon(km(j)),mesh%lat(km(j)),mesh%lon(km_next),mesh%lat(km_next),b)
+   call sphere_dist(mesh%lon(km_next),mesh%lat(km_next),mesh%lon(im),mesh%lat(im),c)
+   s = half*(a+b+c)
+   if ((abs(s-a)>zero).and.(abs(s-b)>zero).and.(abs(s-c)>zero)) then
+      ar = a*b*c/(8.0_kind_real*(s-a)*(s-b)*(s-c))
+      valid = (abs(ar)<10.0_kind_real)
+   else
+      valid = .false.
    end if
 
-   ! Apply inverse rotation
-   linop%Svec(1:linop%n_s,1) = cy*Svec_tmp(:,1)
-   linop%Svec(1:linop%n_s,2) = cx*Svec_tmp(:,2)-sx*sy*Svec_tmp(:,1)
-   linop%Svec(1:linop%n_s,3) = -sx*Svec_tmp(:,2)-cx*sy*Svec_tmp(:,1)
-
-   ! Release memory
-   deallocate(Svec_tmp)
-   deallocate(nn_index)
-   deallocate(km)
-   deallocate(xp)
-   deallocate(yp)
-   deallocate(zp)
-else
-   ! Allocation
-   linop%n_s = mesh%rows(im)%cols+1
-   call linop%alloc(3)
-   allocate(Svec_tmp(linop%n_s,2))
-   allocate(km(mesh%rows(im)%cols))
-   allocate(xp(mesh%rows(im)%cols))
-   allocate(yp(mesh%rows(im)%cols))
-   allocate(zp(mesh%rows(im)%cols))
-   
-   ! Loop over neigbors
-   do j=1,mesh%rows(im)%cols
-      ! Get index
-      km(j) = mesh%rows(im)%nodes(j)
-   
-      ! Get rotated coordinates
-      call aplyr(mpl,mesh%x(km(j)),mesh%y(km(j)),mesh%z(km(j)),cx,sx,cy,sy,xp(j),yp(j),zp(j))
-   end do
-   
-   ! Initialization
-   wgt_sum = zero
-   i_s = 1
-   linop%col(i_s) = im
-   do j=1,mesh%rows(im)%cols
-      i_s = i_s+1
-      linop%col(i_s) = km(j)
-   end do
-   Svec_tmp = zero
-   
-   ! Loop over triangles
-   do j=1,mesh%rows(im)%cols
-      ! Get next neighbor
-      if (j<mesh%rows(im)%cols) then
-         j_next = j+1
-      else
-         j_next = 1
-      end if
-      km_next = km(j_next)
-   
+   if (valid) then
       ! Compute plane's normal vector components
-      ! See Goodman et al., 1995: Local Derivative Estimation for Scattered Data Interpolation, section 3
+      ! Use Goodman et al., 1995: Local Derivative Estimation for Scattered Data Interpolation, section 3
       ! Warning: in second equation of (8) for beta, "y"s should be "x"s
       gamma = xp(j)*yp(j_next)-xp(j_next)*yp(j)
       if (abs(gamma)>zero) then
@@ -1621,50 +1577,80 @@ else
          wgt = two/abs(gamma)
          wgt_sum = wgt_sum+wgt
 
-         ! Add contribution
-         do i_s=1,linop%n_s
-            if (linop%col(i_s)==im) then
-               Svec_tmp(i_s,1) = Svec_tmp(i_s,1)+wgt*(yp(j)-yp(j_next))/gamma
-               Svec_tmp(i_s,2) = Svec_tmp(i_s,2)+wgt*(xp(j_next)-xp(j))/gamma
+         ! Add contributions
+         do jj=1,mesh%rows(im)%cols+1
+            if (col(jj)==im) then
+               Svec_tmp(jj,1) = Svec_tmp(jj,1)+wgt*(yp(j)-yp(j_next))/gamma
+               Svec_tmp(jj,2) = Svec_tmp(jj,2)+wgt*(xp(j_next)-xp(j))/gamma
             end if
-            if (linop%col(i_s)==km(j)) then
-               Svec_tmp(i_s,1) = Svec_tmp(i_s,1)+wgt*yp(j_next)/gamma
-               Svec_tmp(i_s,2) = Svec_tmp(i_s,2)-wgt*xp(j_next)/gamma
+            if (col(jj)==km(j)) then
+               Svec_tmp(jj,1) = Svec_tmp(jj,1)+wgt*yp(j_next)/gamma
+               Svec_tmp(jj,2) = Svec_tmp(jj,2)-wgt*xp(j_next)/gamma
             end if
-            if (linop%col(i_s)==km_next) then
-               Svec_tmp(i_s,1) = Svec_tmp(i_s,1)-wgt*yp(j)/gamma
-               Svec_tmp(i_s,2) = Svec_tmp(i_s,2)+wgt*xp(j)/gamma
+            if (col(jj)==km_next) then
+               Svec_tmp(jj,1) = Svec_tmp(jj,1)-wgt*yp(j)/gamma
+               Svec_tmp(jj,2) = Svec_tmp(jj,2)+wgt*xp(j)/gamma
             end if
          end do
       else
          call mpl%abort('${subr}$','gamma should not be zero')
       end if
-   end do
-   
-   ! Averaged gradient
-   if (wgt_sum>zero) then
-      Svec_tmp = Svec_tmp/wgt_sum
-   else
-      call mpl%abort('${subr}$','zero weight sum')
    end if
-   
-   ! Grid indices
-   do i_s=1,linop%n_s
-      linop%col(i_s) = mesh%order(linop%col(i_s))
-   end do
-   
-   ! Apply inverse rotation
-   linop%Svec(1:linop%n_s,1) = cy*Svec_tmp(:,1)
-   linop%Svec(1:linop%n_s,2) = cx*Svec_tmp(:,2)-sx*sy*Svec_tmp(:,1)
-   linop%Svec(1:linop%n_s,3) = -sx*Svec_tmp(:,2)-cx*sy*Svec_tmp(:,1)
-   
-   ! Release memory
-   deallocate(Svec_tmp)
-   deallocate(km)
-   deallocate(xp)
-   deallocate(yp)
-   deallocate(zp)
+end do
+
+! Count contributing points
+linop%n_s = 0
+do jj=1,mesh%rows(im)%cols+1
+   if ((abs(Svec_tmp(jj,1))>zero).or.(abs(Svec_tmp(jj,2))>zero)) linop%n_s = linop%n_s+1
+end do
+
+! Allocation
+if (lspherical) then
+   call linop%alloc(2)
+else
+   call linop%alloc(3)
 end if
+allocate(Svec_x(linop%n_s))
+allocate(Svec_y(linop%n_s))
+allocate(Svec_z(linop%n_s))
+
+! Copy contributing points
+i_s = 0
+do jj=1,mesh%rows(im)%cols+1
+   if ((abs(Svec_tmp(jj,1))>zero).or.(abs(Svec_tmp(jj,2))>zero)) then
+      i_s = i_s+1
+      linop%col(i_s) = mesh%order(col(jj))
+      linop%Svec(i_s,1) = Svec_tmp(jj,1)/wgt_sum
+      linop%Svec(i_s,2) = Svec_tmp(jj,2)/wgt_sum
+   end if
+end do
+
+! Apply inverse rotation
+Svec_x = cy*linop%Svec(:,1)
+Svec_y = cx*linop%Svec(:,2)-sx*sy*linop%Svec(:,1)
+Svec_z = -sx*linop%Svec(:,2)-cx*sy*linop%Svec(:,1)
+
+if (lspherical) then
+   ! Spherical coordinates
+   linop%Svec(:,1) = cos(mesh%lat(im))*(-sin(mesh%lon(im))*Svec_x+cos(mesh%lon(im))*Svec_y)
+   linop%Svec(:,2) = (-sin(mesh%lat(im))*cos(mesh%lon(im))*Svec_x-sin(mesh%lat(im))*sin(mesh%lon(im))*Svec_y &
+ & +cos(mesh%lat(im))*Svec_z)
+else
+   ! Cartesian coordinates
+   linop%Svec(:,1) = Svec_x
+   linop%Svec(:,2) = Svec_y
+   linop%Svec(:,3) = Svec_z
+end if
+
+! Release memory
+deallocate(Svec_tmp)
+deallocate(Svec_x)
+deallocate(Svec_y)
+deallocate(Svec_z)
+deallocate(km)
+deallocate(xp)
+deallocate(yp)
+deallocate(zp)
 
 ! Probe out
 @:probe_out()

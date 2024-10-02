@@ -836,6 +836,9 @@ if (nam%load_nicas_global) then
                  if (geom%gmask_c0a(ic0a,il0)) nicas%blk(ig)%cmp(icmp)%rhs(ic0a,il0) = cmat%blk(ig)%rhs(ic0a,il0,icmp)
                end do
             end do
+
+            ! Copy C matrix scaling
+            nicas%blk(ig)%cmp(icmp)%scaling = cmat%blk(ig)%scaling
          end if
       end do
    end do

@@ -1292,6 +1292,9 @@ do icmp=1,nicas_blk%ncmp
          call mpl%warning('${subr}$',message)
       end if
    end if
+
+   ! Copy C matrix scaling
+   nicas_blk%cmp(icmp)%scaling = cmat_blk%scaling
 end do
 
 ! End associate

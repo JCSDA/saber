@@ -43,6 +43,9 @@ type cmat_blk_type
    real(kind_real),allocatable :: bump_D22(:,:,:)    !< Horizontal direct tensor, component 22
    real(kind_real),allocatable :: bump_D12(:,:,:)    !< Horizontal direct tensor, component 12 (normalized)
    real(kind_real),allocatable :: bump_rv(:,:,:)     !< Vertical support radius
+
+   ! Scaling
+   real(kind_real) :: scaling                        !< Length-scales scaling to account for smooth interpolation effect
 contains
    procedure :: alloc => cmat_blk_alloc
    procedure :: init => cmat_blk_init

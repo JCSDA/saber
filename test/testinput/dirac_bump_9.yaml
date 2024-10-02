@@ -1,0 +1,78 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_lonlat
+    N: 10
+  groups:
+  - variables:
+    - stream_function
+    - velocity_potential
+    - eastward_wind
+    - northward_wind
+    levels: 2
+  halo: 1
+background:
+  states:
+  - date: 2010-01-01T12:00:00Z
+    state variables:
+    - eastward_wind
+    - northward_wind
+  - date: 2010-01-01T18:00:00Z
+    state variables:
+    - eastward_wind
+    - northward_wind
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: BUMP_NICAS
+    calibration:
+      io:
+        files prefix: ../data/dirac_bump_9
+      drivers:
+        multivariate strategy: univariate
+        compute nicas: true
+      nicas:
+        resolution: 4.0
+        explicit length-scales: true
+        horizontal length-scale:
+        - groups:
+          - stream_function
+          value: 3000.0e3
+        - groups:
+          - velocity_potential
+          value: 3000.0e3
+        vertical length-scale:
+        - groups:
+          - stream_function
+          - velocity_potential
+          value: 0.0
+        smooth interpolation factor: 1.0
+  saber outer blocks:
+  - saber block name: BUMP_PsiChiToUV
+    read:
+      general:
+        testing: true
+      io:
+        data directory: testdata
+        files prefix: dirac_bump_9/_MPI_-_OMP_
+        io tasks: 1
+        overriding psichitouv file: error_covariance_training_bump_wind_1/_MPI_-_OMP__wind
+      drivers:
+        read global psichitouv: true
+      psichitouv:
+        dipole test: true
+dirac:
+- lon:
+  - 0.0
+  lat:
+  - 0.0
+  level:
+  - 1
+  variable:
+  - eastward_wind
+- {}
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_bump_9/%MPI%_dirac_%id%
+test:
+  reference filename: testref/dirac_bump_9.ref
