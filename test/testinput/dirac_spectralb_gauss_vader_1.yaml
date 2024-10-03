@@ -31,11 +31,11 @@ geometry:
     - muRow1Column2
     - muRow2Column1
     - muRow2Column2
-    - m_ci
-    - m_cl
-    - m_r
-    - m_t
-    - m_v
+    - cloud_ice_mixing_ratio_wrt_dry_air
+    - cloud_liquid_water_mixing_ratio_wrt_dry_air
+    - rain_mixing_ratio_wrt_dry_air
+    - total_water_mixing_ratio_wrt_dry_air
+    - water_vapor_mixing_ratio_wrt_dry_air
     - northward_wind
     - potential_temperature
     - qrain
@@ -165,10 +165,10 @@ background:
   - height_levels  # state variable in quench only, for dry_air_density block
   - ice_cloud_volume_fraction_in_atmosphere_layer  # for moistincrop block
   - liquid_cloud_volume_fraction_in_atmosphere_layer  # for moistincrop block
-  - m_ci  # for dry_air_density block
-  - m_cl  # for dry_air_density block
-  - m_r  # for dry_air_density block
-  - m_v  # for dry_air_density block
+  - cloud_ice_mixing_ratio_wrt_dry_air  # for dry_air_density block
+  - cloud_liquid_water_mixing_ratio_wrt_dry_air  # for dry_air_density block
+  - rain_mixing_ratio_wrt_dry_air  # for dry_air_density block
+  - water_vapor_mixing_ratio_wrt_dry_air  # for dry_air_density block
   - potential_temperature  # for dry_air_density block
   filepath: testdata/gauss_state
 

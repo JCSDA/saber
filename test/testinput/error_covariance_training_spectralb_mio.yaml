@@ -27,11 +27,11 @@ geometry:
     - muRow1Column2
     - muRow2Column1
     - muRow2Column2
-    - m_ci
-    - m_cl
-    - m_r
-    - m_t
-    - m_v
+    - cloud_ice_mixing_ratio_wrt_dry_air
+    - cloud_liquid_water_mixing_ratio_wrt_dry_air
+    - rain_mixing_ratio_wrt_dry_air
+    - total_water_mixing_ratio_wrt_dry_air
+    - water_vapor_mixing_ratio_wrt_dry_air
     - potential_temperature
     - qrain
     - qsat
@@ -108,11 +108,11 @@ background:
   - muRow1Column2
   - muRow2Column1
   - muRow2Column2
-  - m_ci
-  - m_cl
-  - m_r
-  - m_t
-  - m_v
+  - cloud_ice_mixing_ratio_wrt_dry_air
+  - cloud_liquid_water_mixing_ratio_wrt_dry_air
+  - rain_mixing_ratio_wrt_dry_air
+  - total_water_mixing_ratio_wrt_dry_air
+  - water_vapor_mixing_ratio_wrt_dry_air
   - potential_temperature
   - qrain
   - qsat

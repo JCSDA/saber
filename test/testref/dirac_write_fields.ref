@@ -50,13 +50,13 @@ Fields:
   height_levels: 7.2007557895805426e+06
   ice_cloud_volume_fraction_in_atmosphere_layer: 5.4369022443949412e+01
   liquid_cloud_volume_fraction_in_atmosphere_layer: 2.2228695426981115e+01
-  m_ci: 3.3266757770325809e-03
-  m_cl: 5.2364188648319982e-03
-  m_r: 8.9711756812605988e-04
-  m_v: 1.1411051460072104e+00
+  cloud_ice_mixing_ratio_wrt_dry_air: 3.3266757770325809e-03
+  cloud_liquid_water_mixing_ratio_wrt_dry_air: 5.2364188648319982e-03
+  rain_mixing_ratio_wrt_dry_air: 8.9711756812605988e-04
+  water_vapor_mixing_ratio_wrt_dry_air: 1.1411051460072104e+00
   northward_wind: 2.6855538642475080e+03
   potential_temperature: 3.3246175252039719e+05
-  m_t: 2.8446253965335012e+02
+  total_water_mixing_ratio_wrt_dry_air: 2.8446253965335012e+02
   cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water: 5.2050502512631909e-03
   cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water: 3.3189423131903895e-03
   specific_humidity: 1.1270323267062516e+00
@@ -79,13 +79,13 @@ Fields:
   height_levels: 7.2007557895805426e+06
   ice_cloud_volume_fraction_in_atmosphere_layer: 5.4369022443949412e+01
   liquid_cloud_volume_fraction_in_atmosphere_layer: 2.2228695426981115e+01
-  m_ci: 3.3266757770325809e-03
-  m_cl: 5.2364188648319982e-03
-  m_r: 8.9711756812605988e-04
-  m_v: 1.1411051460072104e+00
+  cloud_ice_mixing_ratio_wrt_dry_air: 3.3266757770325809e-03
+  cloud_liquid_water_mixing_ratio_wrt_dry_air: 5.2364188648319982e-03
+  rain_mixing_ratio_wrt_dry_air: 8.9711756812605988e-04
+  water_vapor_mixing_ratio_wrt_dry_air: 1.1411051460072104e+00
   northward_wind: 2.6855538642475080e+03
   potential_temperature: 3.3246175252039719e+05
-  m_t: 2.8446253965335012e+02
+  total_water_mixing_ratio_wrt_dry_air: 2.8446253965335012e+02
   cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water: 5.2050502512631909e-03
   cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water: 3.3189423131903895e-03
   specific_humidity: 1.1270323267062516e+00
