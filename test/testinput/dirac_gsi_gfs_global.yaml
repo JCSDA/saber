@@ -35,7 +35,7 @@ geometry:
     - air_temperature
     levels: 127
   - variables:
-    - surface_pressure
+    - air_pressure_at_surface
     levels: 1
 background:
   date: 2010-01-01T12:00:00Z
@@ -43,7 +43,7 @@ background:
   - stream_function
   - velocity_potential
   - air_temperature
-  - surface_pressure
+  - air_pressure_at_surface
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_gsi_gfs_global/%MPI%_dirac_%id%

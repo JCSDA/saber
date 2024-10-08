@@ -19,14 +19,14 @@ geometry:
     - velocity_potential
     levels: 10
   - variables:
-    - surface_pressure
+    - air_pressure_at_surface
     levels: 1
 background:
   date: 2010-01-01T12:00:00Z
   state variables:
   - stream_function
   - velocity_potential
-  - surface_pressure
+  - air_pressure_at_surface
 background error:
   covariance model: SABER
   adjoint test: true
@@ -42,9 +42,9 @@ background error:
         - stream_function
         - velocity_potential
       - group name: var2d
-        variable in model file: surface_pressure
+        variable in model file: air_pressure_at_surface
         variables:
-        - surface_pressure
+        - air_pressure_at_surface
       input model files:
       - parameter: rh
         file:
@@ -135,15 +135,15 @@ dirac:
   - stream_function
   - stream_function
   - stream_function
-  - surface_pressure
-  - surface_pressure
-  - surface_pressure
-  - surface_pressure
-  - surface_pressure
-  - surface_pressure
-  - surface_pressure
-  - surface_pressure
-  - surface_pressure
+  - air_pressure_at_surface
+  - air_pressure_at_surface
+  - air_pressure_at_surface
+  - air_pressure_at_surface
+  - air_pressure_at_surface
+  - air_pressure_at_surface
+  - air_pressure_at_surface
+  - air_pressure_at_surface
+  - air_pressure_at_surface
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_fastlam_8/%MPI%_dirac_%id%

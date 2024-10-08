@@ -24,4 +24,4 @@ Groups:
 Fields:
   stream_function: 1.1926829301035954e+06
   velocity_potential: 1.2764155598969914e+06
-  surface_pressure: 3.8148523882078181e+05
+  air_pressure_at_surface: 3.8148523882078181e+05

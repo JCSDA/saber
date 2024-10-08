@@ -19,7 +19,7 @@ input geometry: &geom
     - velocity_potential
     levels: 10
   - variables:
-    - surface_pressure
+    - air_pressure_at_surface
     levels: 1
 output geometry: *geom
 states:
@@ -28,7 +28,7 @@ states:
     state variables:
     - stream_function
     - velocity_potential
-    - surface_pressure
+    - air_pressure_at_surface
     constant value: 20.0e3
   output:
     filepath: testdata/convertstate_lam/rh_avg
@@ -37,7 +37,7 @@ states:
     state variables:
     - stream_function
     - velocity_potential
-    - surface_pressure
+    - air_pressure_at_surface
     constant value: 5.0e3
   output:
     filepath: testdata/convertstate_lam/rh_pert
@@ -46,14 +46,14 @@ states:
     state variables:
     - stream_function
     - velocity_potential
-    - surface_pressure
+    - air_pressure_at_surface
     constant group-specific value:
     - variables:
       - stream_function
       - velocity_potential
       constant value: 4.0
     - variables:
-      - surface_pressure
+      - air_pressure_at_surface
       constant value: 0.0
   output:
     filepath: testdata/convertstate_lam/rv_avg
@@ -62,14 +62,14 @@ states:
     state variables:
     - stream_function
     - velocity_potential
-    - surface_pressure
+    - air_pressure_at_surface
     constant group-specific value:
     - variables:
       - stream_function
       - velocity_potential
       constant value: 1.0
     - variables:
-      - surface_pressure
+      - air_pressure_at_surface
       constant value: 0.0
   output:
     filepath: testdata/convertstate_lam/rv_pert

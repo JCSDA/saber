@@ -23,7 +23,7 @@ Groups:
 Fields:
   stream_function: 3.0000000000000000e+00
   velocity_potential: 0.0000000000000000e+00
-  surface_pressure: 3.0000000000000000e+00
+  air_pressure_at_surface: 3.0000000000000000e+00
 Norm of input parameter rh: 6.3308838310007071e+06
 Norm of input parameter rv: 1.0775159836059709e+03
     FastLAM interpolation accuracy test passed
@@ -84,4 +84,4 @@ Groups:
 Fields:
   stream_function: 1.2482398052101333e+01
   velocity_potential: 0.0000000000000000e+00
-  surface_pressure: 1.1624320858138159e+01
+  air_pressure_at_surface: 1.1624320858138159e+01

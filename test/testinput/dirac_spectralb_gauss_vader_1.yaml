@@ -20,7 +20,7 @@ geometry:
     - exner
     - exner_levels_minus_one
     - geostrophic_pressure_levels_minus_one
-    - height
+    - height_above_mean_sea_level
     - ice_cloud_volume_fraction_in_atmosphere_layer
     - liquid_cloud_volume_fraction_in_atmosphere_layer
     - mu
@@ -51,7 +51,7 @@ geometry:
     levels: 70
   - variables:
     - air_pressure_levels
-    - height_levels
+    - height_above_mean_sea_level_levels
     - hydrostatic_exner_levels
     - hydrostatic_pressure_levels
     levels: 71
@@ -161,8 +161,8 @@ background:
   - air_pressure_levels_minus_one  # for dry_air_density block
   - exner # for moisture_control block
   - exner_levels_minus_one  # for air_temperature block
-  - height  # state variable in quench only, for dry_air_density block
-  - height_levels  # state variable in quench only, for dry_air_density block
+  - height_above_mean_sea_level  # state variable in quench only, for dry_air_density block
+  - height_above_mean_sea_level_levels  # state variable in quench only, for dry_air_density block
   - ice_cloud_volume_fraction_in_atmosphere_layer  # for moistincrop block
   - liquid_cloud_volume_fraction_in_atmosphere_layer  # for moistincrop block
   - cloud_ice_mixing_ratio_wrt_dry_air  # for dry_air_density block

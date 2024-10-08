@@ -162,8 +162,8 @@ atlas::FieldSet createMuStats(const size_t & modelLevelsDefault,
   std::string covFileName(params.covariance_file_path);
   // number of model levels
   std::size_t modelLevels;
-  if (fields.has("height")) {
-    modelLevels = fields["height"].shape(1);
+  if (fields.has("height_above_mean_sea_level")) {
+    modelLevels = fields["height_above_mean_sea_level"].shape(1);
   } else {
     modelLevels = modelLevelsDefault;
   }

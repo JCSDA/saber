@@ -18,7 +18,7 @@ geometry:
     - exner
     - exner_levels_minus_one
     - geostrophic_pressure_levels_minus_one
-    - height
+    - height_above_mean_sea_level
     - ice_cloud_volume_fraction_in_atmosphere_layer
     - liquid_cloud_volume_fraction_in_atmosphere_layer
     - mu
@@ -49,7 +49,7 @@ geometry:
     levels: 70
   - variables:
     - air_pressure_levels
-    - height_levels
+    - height_above_mean_sea_level_levels
     - hydrostatic_exner_levels
     - hydrostatic_pressure_levels
     levels: 71
@@ -122,8 +122,8 @@ background:
   - air_pressure_levels_minus_one
   - exner
   - exner_levels_minus_one
-  - height
-  - height_levels
+  - height_above_mean_sea_level
+  - height_above_mean_sea_level_levels
   - ice_cloud_volume_fraction_in_atmosphere_layer
   - liquid_cloud_volume_fraction_in_atmosphere_layer
   - cloud_ice_mixing_ratio_wrt_dry_air

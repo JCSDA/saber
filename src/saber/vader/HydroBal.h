@@ -48,7 +48,7 @@ class HydroBalParameters : public SaberBlockParametersBase {
         "air_pressure_levels",
         "hydrostatic_exner_levels",
         "virtual_potential_temperature",
-        "height_levels"});
+        "height_above_mean_sea_level_levels"});
   }
 
   oops::Variables activeInnerVars(const oops::Variables& outerVars) const override {

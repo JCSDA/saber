@@ -35,7 +35,8 @@ class AirTemperatureParameters : public SaberBlockParametersBase {
 
   const oops::Variables mandatoryStateVars() const override {
     return oops::Variables({
-       "height", "height_levels",
+       "height_above_mean_sea_level",
+       "height_above_mean_sea_level_levels",
        "exner_levels_minus_one",
        "potential_temperature"});
   }
@@ -115,7 +116,8 @@ class SuperMoistIncrOpParameters : public SaberBlockParametersBase {
   // combined variables for AirTemperature and MoistIncrOp
   const oops::Variables mandatoryStateVars() const override {
     return oops::Variables({
-       "height", "height_levels",
+       "height_above_mean_sea_level",
+       "height_above_mean_sea_level_levels",
        "exner_levels_minus_one",
        "potential_temperature",
        "liquid_cloud_volume_fraction_in_atmosphere_layer",

@@ -46,8 +46,8 @@ Fields:
   eastward_wind: 4.3110191105979111e+03
   exner: 2.0080918049764489e+02
   exner_levels_minus_one: 2.0217968465805600e+02
-  height: 6.8355985801366093e+06
-  height_levels: 7.2007557895805426e+06
+  height_above_mean_sea_level: 6.8355985801366093e+06
+  height_above_mean_sea_level_levels: 7.2007557895805426e+06
   ice_cloud_volume_fraction_in_atmosphere_layer: 5.4369022443949412e+01
   liquid_cloud_volume_fraction_in_atmosphere_layer: 2.2228695426981115e+01
   cloud_ice_mixing_ratio_wrt_dry_air: 3.3266757770325809e-03
@@ -75,8 +75,8 @@ Fields:
   eastward_wind: 4.3110191105979111e+03
   exner: 2.0080918049764489e+02
   exner_levels_minus_one: 2.0217968465805600e+02
-  height: 6.8355985801366093e+06
-  height_levels: 7.2007557895805426e+06
+  height_above_mean_sea_level: 6.8355985801366093e+06
+  height_above_mean_sea_level_levels: 7.2007557895805426e+06
   ice_cloud_volume_fraction_in_atmosphere_layer: 5.4369022443949412e+01
   liquid_cloud_volume_fraction_in_atmosphere_layer: 2.2228695426981115e+01
   cloud_ice_mixing_ratio_wrt_dry_air: 3.3266757770325809e-03

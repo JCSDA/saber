@@ -144,8 +144,8 @@ atlas::FieldSet populateFields(const atlas::FieldSet & geomfields,
   const std::vector<std::string> requiredStateVariables{
     "air_pressure_levels_minus_one",
     "dry_air_density_levels_minus_one",
-    "height",
-    "height_levels",
+    "height_above_mean_sea_level",
+    "height_above_mean_sea_level_levels",
     "cloud_ice_mixing_ratio_wrt_dry_air",
     "cloud_liquid_water_mixing_ratio_wrt_dry_air",
     "rain_mixing_ratio_wrt_dry_air",
@@ -156,8 +156,8 @@ atlas::FieldSet populateFields(const atlas::FieldSet & geomfields,
     "cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water",
     "cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water"};
 
-  const std::vector<std::string> requiredGeometryVariables{"height_levels",
-                                                           "height"};
+  const std::vector<std::string> requiredGeometryVariables{"height_above_mean_sea_level_levels",
+                                                           "height_above_mean_sea_level"};
 
   const std::string outputVariable{"dry_air_density_levels_minus_one"};
 

@@ -250,7 +250,7 @@ if (mpl%main) then
          gsivar = 'ql'
       case ('ozone_mass_mixing_ratio')
          gsivar = 'oz'
-      case ('surface_pressure')
+      case ('air_pressure_at_surface')
          gsivar = 'ps'
          gsi%var2d(iv) = .true.
       case default
@@ -371,7 +371,7 @@ if (mpl%main) then
          case ('oz')
             bumpvar = 'ozone_mass_mixing_ratio'
          case ('ps')
-            bumpvar = 'surface_pressure'
+            bumpvar = 'air_pressure_at_surface'
          case default
             call mpl%abort('${subr}$','cannot find BUMP variable name')
          end select

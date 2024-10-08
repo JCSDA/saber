@@ -2021,7 +2021,7 @@ do iv=1,nam%nv
                   end do
                end do
             end do
-         else if ((nam%variables(iv)=='surface_pressure').and.(nam%variables(jv)=='stream_function')) then
+         else if ((nam%variables(iv)=='air_pressure_at_surface').and.(nam%variables(jv)=='stream_function')) then
             ! Stream function / surface pressure regression
             do ic2b=1,samp%nc2b
                vbal%blk(iv,jv)%reg_c2b(:,:,ic2b) = zero

@@ -19,14 +19,14 @@ geometry:
     - velocity_potential
     levels: 10
   - variables:
-    - surface_pressure
+    - air_pressure_at_surface
     levels: 1
 background:
   date: 2010-01-01T12:00:00Z
   state variables:
   - stream_function
   - velocity_potential
-  - surface_pressure
+  - air_pressure_at_surface
 background error:
   covariance model: SABER
   adjoint test: true
@@ -42,9 +42,9 @@ background error:
         - stream_function
         - velocity_potential
       - group name: var2d
-        variable in model file: surface_pressure
+        variable in model file: air_pressure_at_surface
         variables:
-        - surface_pressure
+        - air_pressure_at_surface
       horizontal length-scale:
       - group: var3d
         profile: [10.0e3, 12.0e3, 14.0e3, 16.0e3, 18.0e3, 20.0e3, 22.0e3, 24.0e3, 26.0e3, 28.0e3]

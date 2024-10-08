@@ -52,7 +52,7 @@
                 Level:   2 ~> cov. at class zero:  0.10E+01
                 Level:   1 ~> cov. at class zero:  0.97E+00
              Block stream_function:  0.35222745E+00 for    37356 diagnostic points
-             Block surface_pressure:  0.35348172E+00 for     9339 diagnostic points
+             Block air_pressure_at_surface:  0.35348172E+00 for     9339 diagnostic points
                    Level:   1 ~> amplitude:        0.72
                                  cor. hor. support:      4127.47 km
                                  cor. ver. support:         4.94 vertical units

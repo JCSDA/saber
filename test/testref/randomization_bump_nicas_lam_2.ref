@@ -24,7 +24,7 @@ Groups:
 Fields:
   stream_function: 2.3853658602071701e+02
   velocity_potential: 2.5528311197939723e+02
-  surface_pressure: 0.0000000000000000e+00
+  air_pressure_at_surface: 0.0000000000000000e+00
 Member 1: 
 Valid time:2010-01-01T12:00:00Z
 Quench geometry grid:
@@ -50,4 +50,4 @@ Groups:
 Fields:
   stream_function: 2.0415167680481744e+02
   velocity_potential: 1.7390166978994861e+02
-  surface_pressure: 0.0000000000000000e+00
+  air_pressure_at_surface: 0.0000000000000000e+00

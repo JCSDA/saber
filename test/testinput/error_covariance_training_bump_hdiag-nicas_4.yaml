@@ -12,7 +12,7 @@ geometry:
     levels: 4
     vert_coord: [-1.0,-5.0,-9.0,-11.0]
   - variables:
-    - surface_pressure
+    - air_pressure_at_surface
     levels: 1
 background:
   date: 2010-01-01T12:00:00Z
@@ -20,7 +20,7 @@ background:
   - stream_function
   - velocity_potential
   - air_temperature
-  - surface_pressure
+  - air_pressure_at_surface
 background error:
   covariance model: SABER
   saber central block:
@@ -32,7 +32,7 @@ background error:
         vert_coord: vert_coord_0
       air_temperature:
         vert_coord: vert_coord_0
-      surface_pressure:
+      air_pressure_at_surface:
         vert_coord: vert_coord_1
     calibration:
       general:
@@ -72,7 +72,7 @@ background error:
           - air_temperature
       - model:
           variables:
-          - surface_pressure
+          - air_pressure_at_surface
       output model files:
       - parameter: dirac_diag_cor
         file:

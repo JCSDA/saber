@@ -23,7 +23,7 @@ Groups:
 Fields:
   stream_function: 3.0000000000000000e+00
   velocity_potential: 0.0000000000000000e+00
-  surface_pressure: 3.0000000000000000e+00
+  air_pressure_at_surface: 3.0000000000000000e+00
 Norm of input parameter weight_0: 5.3790456634123437e+01
 Norm of input parameter weight_1: 1.3057380787119047e+02
 Norm of input parameter weight_2: 6.3154842282495004e+01
@@ -81,4 +81,4 @@ Groups:
 Fields:
   stream_function: 1.2482398052101333e+01
   velocity_potential: 0.0000000000000000e+00
-  surface_pressure: 1.1624320858138159e+01
+  air_pressure_at_surface: 1.1624320858138159e+01

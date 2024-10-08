@@ -23,7 +23,7 @@ Groups:
 Fields:
   stream_function: 4.2426406871192848e+00
   velocity_potential: 0.0000000000000000e+00
-  surface_pressure: 0.0000000000000000e+00
+  air_pressure_at_surface: 0.0000000000000000e+00
     FastLAM interpolation accuracy test passed
     FastLAM interpolation adjoint test passed
     FastLAM redToRows test passed
@@ -82,4 +82,4 @@ Groups:
 Fields:
   stream_function: 2.1429746447581998e+01
   velocity_potential: 0.0000000000000000e+00
-  surface_pressure: 0.0000000000000000e+00
+  air_pressure_at_surface: 0.0000000000000000e+00

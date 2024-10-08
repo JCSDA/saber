@@ -308,8 +308,8 @@ if (fields%has('air_temperature')) then
   call afield%data(t)
 endif
 
-if (fields%has('surface_pressure')) then
-  afield = fields%field('surface_pressure')
+if (fields%has('air_pressure_at_surface')) then
+  afield = fields%field('air_pressure_at_surface')
   call afield%data(ps)
 endif
 
@@ -371,7 +371,7 @@ integer :: iv,k,ier,itbd,ii
 character(len=32),allocatable :: gvars2d(:),gvars3d(:)
 character(len=30),allocatable :: tbdvars(:),needvrs(:)
 
-! afield = fields%field('surface_pressure')
+! afield = fields%field('air_pressure_at_surface')
 ! call afield%data(rank2)
 ! rank2 = 0.0_kind_real
 ! rank2(1,int(size(rank1)/2)) = 1.0_kind_real
@@ -578,8 +578,8 @@ end subroutine multiply
    integer,intent(out):: ier
    ier=-1
    if (trim(vname) == 'ps') then
-      if (.not.fields%has('surface_pressure')) return
-      afield = fields%field('surface_pressure')
+      if (.not.fields%has('air_pressure_at_surface')) return
+      afield = fields%field('air_pressure_at_surface')
       call afield%data(rank2)
       ier=0
    endif
@@ -692,9 +692,9 @@ end subroutine multiply
       ier=0
    endif
    if (trim(vname) == 'phis' ) then
-      if (.not.fields%has('sfc_geopotential_height_times_grav')) then
-         if (fields%has('surface_geopotential_height')) then
-            afield = fields%field('surface_geopotential_height')
+      if (.not.fields%has('geopotential_height_times_gravity_at_surface')) then
+         if (fields%has('geopotential_height_at_surface')) then
+            afield = fields%field('geopotential_height_at_surface')
             call afield%data(rank2)
             rank2 = grav*rank2
             ier=0
@@ -702,7 +702,7 @@ end subroutine multiply
             return
          endif
       else
-         afield = fields%field('sfc_geopotential_height_times_grav')
+         afield = fields%field('geopotential_height_times_gravity_at_surface')
          call afield%data(rank2)
          ier=0
       end if

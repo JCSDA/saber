@@ -7,79 +7,79 @@
              Level   2 ~>  0.200E+01 vert. coord.
           Norm of stream_function:  0.36700228E+02
           Norm of velocity_potential:  0.35353147E+02
-          Norm of surface_pressure:  0.27281000E+02
+          Norm of air_pressure_at_surface:  0.27281000E+02
           Norm of stream_function:  0.37644642E+02
           Norm of velocity_potential:  0.37381124E+02
-          Norm of surface_pressure:  0.25731042E+02
+          Norm of air_pressure_at_surface:  0.25731042E+02
           Norm of stream_function:  0.35734364E+02
           Norm of velocity_potential:  0.37185775E+02
-          Norm of surface_pressure:  0.26375987E+02
+          Norm of air_pressure_at_surface:  0.26375987E+02
           Norm of stream_function:  0.38114699E+02
           Norm of velocity_potential:  0.36980118E+02
-          Norm of surface_pressure:  0.27871170E+02
+          Norm of air_pressure_at_surface:  0.27871170E+02
           Norm of stream_function:  0.37597046E+02
           Norm of velocity_potential:  0.35291264E+02
-          Norm of surface_pressure:  0.24572890E+02
+          Norm of air_pressure_at_surface:  0.24572890E+02
           Norm of stream_function:  0.40731181E+02
           Norm of velocity_potential:  0.40443048E+02
-          Norm of surface_pressure:  0.23602596E+02
+          Norm of air_pressure_at_surface:  0.23602596E+02
           Norm of stream_function:  0.36903096E+02
           Norm of velocity_potential:  0.36253200E+02
-          Norm of surface_pressure:  0.27485076E+02
+          Norm of air_pressure_at_surface:  0.27485076E+02
           Norm of stream_function:  0.41763852E+02
           Norm of velocity_potential:  0.37787495E+02
-          Norm of surface_pressure:  0.30811979E+02
+          Norm of air_pressure_at_surface:  0.30811979E+02
           Norm of stream_function:  0.38909547E+02
           Norm of velocity_potential:  0.43195848E+02
-          Norm of surface_pressure:  0.25551308E+02
+          Norm of air_pressure_at_surface:  0.25551308E+02
           Norm of stream_function:  0.34730147E+02
           Norm of velocity_potential:  0.38276016E+02
-          Norm of surface_pressure:  0.25098790E+02
+          Norm of air_pressure_at_surface:  0.25098790E+02
           Norm of stream_function:  0.38661535E+02
           Norm of velocity_potential:  0.37981886E+02
-          Norm of surface_pressure:  0.26868750E+02
+          Norm of air_pressure_at_surface:  0.26868750E+02
           Norm of stream_function:  0.39192538E+02
           Norm of velocity_potential:  0.42395867E+02
-          Norm of surface_pressure:  0.25788059E+02
+          Norm of air_pressure_at_surface:  0.25788059E+02
           Norm of stream_function:  0.39358963E+02
           Norm of velocity_potential:  0.42576643E+02
-          Norm of surface_pressure:  0.26847952E+02
+          Norm of air_pressure_at_surface:  0.26847952E+02
           Norm of stream_function:  0.42523426E+02
           Norm of velocity_potential:  0.35248938E+02
-          Norm of surface_pressure:  0.23413912E+02
+          Norm of air_pressure_at_surface:  0.23413912E+02
           Norm of stream_function:  0.39158719E+02
           Norm of velocity_potential:  0.38750002E+02
-          Norm of surface_pressure:  0.25705328E+02
+          Norm of air_pressure_at_surface:  0.25705328E+02
           Norm of stream_function:  0.40000157E+02
           Norm of velocity_potential:  0.36719844E+02
-          Norm of surface_pressure:  0.25839527E+02
+          Norm of air_pressure_at_surface:  0.25839527E+02
           Norm of stream_function:  0.40151620E+02
           Norm of velocity_potential:  0.39539321E+02
-          Norm of surface_pressure:  0.24796585E+02
+          Norm of air_pressure_at_surface:  0.24796585E+02
           Norm of stream_function:  0.38297785E+02
           Norm of velocity_potential:  0.38710471E+02
-          Norm of surface_pressure:  0.29153580E+02
+          Norm of air_pressure_at_surface:  0.29153580E+02
           Norm of stream_function:  0.35928874E+02
           Norm of velocity_potential:  0.34006160E+02
-          Norm of surface_pressure:  0.27873824E+02
+          Norm of air_pressure_at_surface:  0.27873824E+02
           Norm of stream_function:  0.38587629E+02
           Norm of velocity_potential:  0.34331953E+02
-          Norm of surface_pressure:  0.23931515E+02
+          Norm of air_pressure_at_surface:  0.23931515E+02
           Norm of stream_function:  0.33406744E+02
           Norm of velocity_potential:  0.37961691E+02
-          Norm of surface_pressure:  0.25984677E+02
+          Norm of air_pressure_at_surface:  0.25984677E+02
           Norm of stream_function:  0.38024458E+02
           Norm of velocity_potential:  0.38811186E+02
-          Norm of surface_pressure:  0.26578555E+02
+          Norm of air_pressure_at_surface:  0.26578555E+02
           Norm of stream_function:  0.38736793E+02
           Norm of velocity_potential:  0.39079484E+02
-          Norm of surface_pressure:  0.28975321E+02
+          Norm of air_pressure_at_surface:  0.28975321E+02
           Norm of stream_function:  0.39699423E+02
           Norm of velocity_potential:  0.35954315E+02
-          Norm of surface_pressure:  0.26515219E+02
+          Norm of air_pressure_at_surface:  0.26515219E+02
           Norm of stream_function:  0.39157311E+02
           Norm of velocity_potential:  0.35991108E+02
-          Norm of surface_pressure:  0.27732166E+02
+          Norm of air_pressure_at_surface:  0.27732166E+02
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
           Decimate full grid, at least      500 points required,     762 valid points found

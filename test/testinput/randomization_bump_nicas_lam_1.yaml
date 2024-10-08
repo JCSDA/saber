@@ -19,14 +19,14 @@ geometry:
     - velocity_potential
     levels: 10
   - variables:
-    - surface_pressure
+    - air_pressure_at_surface
     levels: 1
 background:
   date: 2010-01-01T12:00:00Z
   state variables:
   - stream_function
   - velocity_potential
-  - surface_pressure
+  - air_pressure_at_surface
   filepath: testdata/convertstate_lam/rh_avg
 background error:
   covariance model: SABER
@@ -47,14 +47,14 @@ background error:
           - stream_function
           value: 150.0e3
         - groups:
-          - surface_pressure
+          - air_pressure_at_surface
           value: 150.0e3
         vertical length-scale:
         - groups:
           - stream_function
           value: 5.0
         - groups:
-          - surface_pressure
+          - air_pressure_at_surface
           value: 0.0
       grids:
       - model:
@@ -68,7 +68,7 @@ background error:
             - velocity_potential
       - model:
           variables:
-          - surface_pressure
+          - air_pressure_at_surface
   saber outer blocks:
   - saber block name: StdDev
     read:

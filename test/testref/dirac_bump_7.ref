@@ -23,7 +23,7 @@ Fields:
   stream_function: 1.0000000000000000e+00
   velocity_potential: 0.0000000000000000e+00
   air_temperature: 0.0000000000000000e+00
-  surface_pressure: 0.0000000000000000e+00
+  air_pressure_at_surface: 0.0000000000000000e+00
        Independent levels:  1[4]
           Subset Sc0 size:             3170
           Domain area (% of Earth area): 0.100E+03%
@@ -82,4 +82,4 @@ Fields:
   stream_function: 3.7655513961834265e+11
   velocity_potential: 3.5951161232672333e+10
   air_temperature: 5.1332249310555289e+03
-  surface_pressure: 1.6043416473327619e+02
+  air_pressure_at_surface: 1.6043416473327619e+02
