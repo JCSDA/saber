@@ -576,6 +576,7 @@ end subroutine multiply
    real(kind=kind_real), pointer :: rank2(:,:)
    type(atlas_field) :: afield
    integer,intent(out):: ier
+   integer,save :: icount = 0
    ier=-1
    if (trim(vname) == 'ps') then
       if (.not.fields%has('air_pressure_at_surface')) return
@@ -583,16 +584,17 @@ end subroutine multiply
       call afield%data(rank2)
       ier=0
    endif
-   if (trim(vname) == 'air_pressure_thickness') then
-      if (.not.fields%has('air_pressure_thickness')) return
-      afield = fields%field('air_pressure_thickness')
+!  if (trim(vname) == 'air_pressure_thickness') then
+!     if (.not.fields%has('air_pressure_thickness')) return
+!     afield = fields%field('air_pressure_thickness')
+!     call afield%data(rank2)
+!     ier=0
+!  endif
+   if (trim(vname) == 'ts' .or. trim(vname) == 'sst') then !  ts=gsi background name
+      if (.not.fields%has('skin_temperature')) return      ! sst=gsi S/CV name
+      afield = fields%field('skin_temperature')
       call afield%data(rank2)
-      ier=0
-   endif
-   if (trim(vname) == 'ts' .or. trim(vname) == 'sst') then ! needs to be sorted out
-      if (.not.fields%has('sea_surface_temperature')) return ! should be skin-temperature
-      afield = fields%field('sea_surface_temperature')
-      call afield%data(rank2)
+      icount = icount + 1
       ier=0
    endif
    if (trim(vname) == 'u' .or. trim(vname) == 'ua' ) then
@@ -884,6 +886,7 @@ end subroutine multiply
 
    implicit none
 
+   character, parameter :: myname_ = myname//'*svfix_'
    type(gsi_bundle),intent(inout) :: gsisv(:)
    type(atlas_fieldset),intent(inout) :: jedicv(:)
    logical,intent(in) :: vflip
@@ -903,15 +906,9 @@ end subroutine multiply
    if(size(need)<1) return
 
    if (any(need=='prse')) then
-        where(need=='prse')  ! gsi will take care of this
-           need='filled-'//need
-        endwhere
-   endif
-
-   if (any(need=='sst')) then
-        where(need=='sst')   ! unclear way this is needed here
-           need='filled-'//need
-        endwhere
+       where(need=='prse')  ! gsi will take care of this
+          need='filled-'//need
+       endwhere
    endif
 
    if (any(need=='tv')) then
