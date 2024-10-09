@@ -647,10 +647,14 @@ WriteVariances::WriteVariances(const oops::GeometryData & outerGeometryData,
 
       oops::Variables fsetVars;
       for (const std::string & name : processedBinnedData.field_names()) {
-        oops::VariableMetaData varMeta =
-          name == binType_ + " global bins" ?
-          oops::VariableMetaData(oops::VerticalStagger::CENTER, oops::ModelDataType::Int32) :
-          oops::VariableMetaData(oops::VerticalStagger::CENTER, oops::ModelDataType::Real64);
+        oops::VariableMetaData varMeta;
+        if ( name == binType_ + " global bins" ) {
+          varMeta =
+            oops::VariableMetaData(oops::VerticalStagger::CENTER, oops::ModelDataType::Int32);
+        } else {
+          varMeta =
+            oops::VariableMetaData(oops::VerticalStagger::CENTER, oops::ModelDataType::Real64);
+        }
         fsetVars.push_back(oops::Variable(name, varMeta));
       }
 
