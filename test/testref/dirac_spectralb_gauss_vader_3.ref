@@ -22,11 +22,11 @@ Groups:
 Fields:
   dry_air_density_levels_minus_one: 1.0000000000000000e+00
   eastward_wind: 0.0000000000000000e+00
-  exner_levels_minus_one: 0.0000000000000000e+00
+  dimensionless_exner_function_levels_minus_one: 0.0000000000000000e+00
   cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water: 0.0000000000000000e+00
   cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water: 0.0000000000000000e+00
   northward_wind: 0.0000000000000000e+00
-  potential_temperature: 0.0000000000000000e+00
+  air_potential_temperature: 0.0000000000000000e+00
   specific_humidity: 0.0000000000000000e+00
 Covariance(hybrid) diagnostics:
 - Variances at Dirac points:
@@ -59,11 +59,11 @@ Groups:
 Fields:
   dry_air_density_levels_minus_one: 7.6228120558211705e-05
   eastward_wind: 3.7032096572165954e-02
-  exner_levels_minus_one: 3.5283817797070095e-06
+  dimensionless_exner_function_levels_minus_one: 3.5283817797070095e-06
   cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water: 8.0092320059694074e-08
   cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water: 3.6146518401610340e-08
   northward_wind: 3.5599583013638476e-02
-  potential_temperature: 9.9622801659892971e-02
+  air_potential_temperature: 9.9622801659892971e-02
   specific_humidity: 1.5137127287830572e-05
 Covariance(hybrid1_SABER) diagnostics:
 - Variances at Dirac points:
@@ -96,9 +96,9 @@ Groups:
 Fields:
   dry_air_density_levels_minus_one: 7.6228120558211705e-05
   eastward_wind: 3.7032096572165954e-02
-  exner_levels_minus_one: 3.5283817797070095e-06
+  dimensionless_exner_function_levels_minus_one: 3.5283817797070095e-06
   cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water: 8.0092320059694074e-08
   cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water: 3.6146518401610340e-08
   northward_wind: 3.5599583013638476e-02
-  potential_temperature: 9.9622801659892971e-02
+  air_potential_temperature: 9.9622801659892971e-02
   specific_humidity: 1.5137127287830572e-05

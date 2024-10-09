@@ -9,7 +9,7 @@ geometry:
     - q_cl
     - q_cf
     - air_temperature
-    - exner
+    - dimensionless_exner_function
     - air_pressure
     levels: 2
   partitioner: ectrans
@@ -32,7 +32,7 @@ background error:
     - group variable name: exner_air_temperature
       group components:
       - air_temperature
-      - exner
+      - dimensionless_exner_function
   - saber block name: spectral to gauss
 dirac:
   lon:
@@ -72,7 +72,7 @@ diagnostic points:
   - 2
   variable:
   - specific_humidity
-  - exner
+  - dimensionless_exner_function
   - air_pressure
 output dirac:
   mpi pattern: '%MPI%'

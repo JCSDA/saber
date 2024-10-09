@@ -43,7 +43,7 @@ class HpHexnerToPExnerParameters : public SaberBlockParametersBase {
   oops::Variables mandatoryActiveVars() const override {return oops::Variables({
     std::vector<std::string>{
     "air_pressure_levels",
-    "exner_levels_minus_one",
+    "dimensionless_exner_function_levels_minus_one",
     "hydrostatic_exner_levels",
     "hydrostatic_pressure_levels"}});}
 
@@ -59,14 +59,14 @@ class HpHexnerToPExnerParameters : public SaberBlockParametersBase {
 
   oops::Variables activeOuterVars(const oops::Variables& outerVars) const override {
     oops::Variables vars({outerVars["air_pressure_levels"],
-                          outerVars["exner_levels_minus_one"]});
+                          outerVars["dimensionless_exner_function_levels_minus_one"]});
     return vars;
   }
 };
 
 // -----------------------------------------------------------------------------
 /// \brief This saber block is here to copy hydrostatic_exner_levels into
-///        exner_levels_minus_one and hydrostatic_pressure_levels into
+///        dimensionless_exner_function_levels_minus_one and hydrostatic_pressure_levels into
 ///        air_pressure_levels
 
 class HpHexnerToPExner : public SaberOuterBlockBase {

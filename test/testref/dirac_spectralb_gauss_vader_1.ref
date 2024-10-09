@@ -22,11 +22,11 @@ Groups:
 Fields:
   dry_air_density_levels_minus_one: 1.0000000000000000e+00
   eastward_wind: 0.0000000000000000e+00
-  exner_levels_minus_one: 0.0000000000000000e+00
+  dimensionless_exner_function_levels_minus_one: 0.0000000000000000e+00
   cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water: 0.0000000000000000e+00
   cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water: 0.0000000000000000e+00
   northward_wind: 0.0000000000000000e+00
-  potential_temperature: 0.0000000000000000e+00
+  air_potential_temperature: 0.0000000000000000e+00
   specific_humidity: 0.0000000000000000e+00
 Adjoint test for block mo_dry_air_density passed
 skipping inverse test for block mo_dry_air_density
@@ -85,9 +85,9 @@ Groups:
 Fields:
   dry_air_density_levels_minus_one: 8.5624612951112439e-06
   eastward_wind: 1.6070029931910919e-04
-  exner_levels_minus_one: 2.2644255213694937e-07
+  dimensionless_exner_function_levels_minus_one: 2.2644255213694937e-07
   cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water: 2.0050584258864638e-09
   cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water: 8.7112060460344611e-09
   northward_wind: 1.4447783451829513e-04
-  potential_temperature: 2.9219542481581724e-03
+  air_potential_temperature: 2.9219542481581724e-03
   specific_humidity: 4.8219870434737920e-07

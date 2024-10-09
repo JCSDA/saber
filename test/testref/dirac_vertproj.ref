@@ -16,8 +16,8 @@ Groups:
   Mask size: 100%
 Fields:
   dry_air_density_levels_minus_one: 1.0000000000000000e+00
-  exner_levels_minus_one: 0.0000000000000000e+00
-  potential_temperature: 0.0000000000000000e+00
+  dimensionless_exner_function_levels_minus_one: 0.0000000000000000e+00
+  air_potential_temperature: 0.0000000000000000e+00
   eastward_wind: 0.0000000000000000e+00
 Adjoint test for block simple vertical projection passed
 Inner inverse test for block simple vertical projection passed: U Uinv (U x) == (U x)
@@ -41,6 +41,6 @@ Groups:
   Mask size: 100%
 Fields:
   dry_air_density_levels_minus_one: 4.2426406871192848e+00
-  exner_levels_minus_one: 0.0000000000000000e+00
-  potential_temperature: 0.0000000000000000e+00
+  dimensionless_exner_function_levels_minus_one: 0.0000000000000000e+00
+  air_potential_temperature: 0.0000000000000000e+00
   eastward_wind: 0.0000000000000000e+00

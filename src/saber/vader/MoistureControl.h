@@ -53,13 +53,13 @@ class MoistureControlParameters : public SaberBlockParametersBase {
     return oops::Variables({std::vector<std::string>{
         "qt",
         "mu",
-        "potential_temperature",
+        "air_potential_temperature",
         "virtual_potential_temperature"}});
   }
 
   const oops::Variables mandatoryStateVars() const override {
     return oops::Variables({"qt", "specific_humidity",
-                            "potential_temperature", "exner",
+                            "air_potential_temperature", "dimensionless_exner_function",
                             "dlsvpdT", "qsat", "rht"});
   }
 
@@ -74,7 +74,7 @@ class MoistureControlParameters : public SaberBlockParametersBase {
   }
 
   oops::Variables activeOuterVars(const oops::Variables& outerVars) const override {
-    oops::Variables vars({outerVars["potential_temperature"],
+    oops::Variables vars({outerVars["air_potential_temperature"],
                           outerVars["qt"]});
     return vars;
   }

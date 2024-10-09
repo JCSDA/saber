@@ -15,8 +15,8 @@ geometry:
     - dlsvpdT
     - dry_air_density_levels_minus_one
     - eastward_wind
-    - exner
-    - exner_levels_minus_one
+    - dimensionless_exner_function
+    - dimensionless_exner_function_levels_minus_one
     - geostrophic_pressure_levels_minus_one
     - height_above_mean_sea_level
     - ice_cloud_volume_fraction_in_atmosphere_layer
@@ -35,7 +35,7 @@ geometry:
     - total_water_mixing_ratio_wrt_dry_air
     - water_vapor_mixing_ratio_wrt_dry_air
     - northward_wind
-    - potential_temperature
+    - air_potential_temperature
     - qrain
     - qsat
     - qt
@@ -59,11 +59,11 @@ geometry:
 increment variables:
 - dry_air_density_levels_minus_one
 - eastward_wind
-- exner_levels_minus_one
+- dimensionless_exner_function_levels_minus_one
 - cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water
 - cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water
 - northward_wind
-- potential_temperature
+- air_potential_temperature
 - specific_humidity
 
 background error:
@@ -120,8 +120,8 @@ background:
   state variables:
   - air_pressure
   - air_pressure_levels_minus_one
-  - exner
-  - exner_levels_minus_one
+  - dimensionless_exner_function
+  - dimensionless_exner_function_levels_minus_one
   - height_above_mean_sea_level
   - height_above_mean_sea_level_levels
   - ice_cloud_volume_fraction_in_atmosphere_layer
@@ -130,7 +130,7 @@ background:
   - cloud_liquid_water_mixing_ratio_wrt_dry_air
   - rain_mixing_ratio_wrt_dry_air
   - water_vapor_mixing_ratio_wrt_dry_air
-  - potential_temperature
+  - air_potential_temperature
   filepath: testdata/gauss_state
 
 output perturbations:

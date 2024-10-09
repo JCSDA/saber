@@ -19,7 +19,7 @@ Fields:
   q_cl: 1.0000000000000000e+00
   q_cf: 1.0000000000000000e+00
   air_temperature: 1.0000000000000000e+00
-  exner: 1.0000000000000000e+00
+  dimensionless_exner_function: 1.0000000000000000e+00
   air_pressure: 1.0000000000000000e+00
 Adjoint test for block spectral to gauss passed
 Adjoint test for block duplicate variables passed
@@ -30,11 +30,11 @@ Covariance(SABER) diagnostics:
   + Value for variable q_cl, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 2.7000000000000000e+03
   + Value for variable q_cf, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 2.7000000000000000e+03
   + Value for variable air_temperature, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 1.8000000000000000e+03
-  + Value for variable exner, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 1.8000000000000000e+03
+  + Value for variable dimensionless_exner_function, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 1.8000000000000000e+03
   + Value for variable air_pressure, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 9.0000000000000000e+02
 - Covariances at diagnostic points:
   + Value for variable specific_humidity, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 0.0000000000000000e+00
-  + Value for variable exner, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 0.0000000000000000e+00
+  + Value for variable dimensionless_exner_function, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 0.0000000000000000e+00
   + Value for variable air_pressure, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 0.0000000000000000e+00
 Covariance(SABER) * Increment:
 Valid time:2010-01-01T12:00:00Z
@@ -57,5 +57,5 @@ Fields:
   q_cl: 3.1003077258821704e+03
   q_cf: 3.1003077258821704e+03
   air_temperature: 2.0668718172547774e+03
-  exner: 2.0668718172547774e+03
+  dimensionless_exner_function: 2.0668718172547774e+03
   air_pressure: 1.0334359086273887e+03

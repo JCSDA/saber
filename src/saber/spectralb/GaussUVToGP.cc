@@ -151,7 +151,7 @@ atlas::FieldSet populateFields(const atlas::FieldSet & geomfields,
     "rain_mixing_ratio_wrt_dry_air",
     "water_vapor_mixing_ratio_wrt_dry_air",
     "total_water_mixing_ratio_wrt_dry_air",
-    "potential_temperature",
+    "air_potential_temperature",
     "specific_humidity",
     "cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water",
     "cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water"};

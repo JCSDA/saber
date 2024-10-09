@@ -29,16 +29,16 @@ class AirTemperatureParameters : public SaberBlockParametersBase {
   oops::Variables mandatoryActiveVars() const override {
     return oops::Variables({std::vector<std::string>{
        "air_temperature",
-       "exner_levels_minus_one",
-       "potential_temperature"}});
+       "dimensionless_exner_function_levels_minus_one",
+       "air_potential_temperature"}});
   }
 
   const oops::Variables mandatoryStateVars() const override {
     return oops::Variables({
        "height_above_mean_sea_level",
        "height_above_mean_sea_level_levels",
-       "exner_levels_minus_one",
-       "potential_temperature"});
+       "dimensionless_exner_function_levels_minus_one",
+       "air_potential_temperature"});
   }
 
   oops::Variables activeInnerVars(const oops::Variables& outerVars) const override {
@@ -46,8 +46,8 @@ class AirTemperatureParameters : public SaberBlockParametersBase {
     eckit::LocalConfiguration conf;
     conf.set("levels", modelLevels);
     oops::Variables vars;
-    vars.push_back({"potential_temperature", conf});
-    vars.push_back({"exner_levels_minus_one", conf});
+    vars.push_back({"air_potential_temperature", conf});
+    vars.push_back({"dimensionless_exner_function_levels_minus_one", conf});
     return vars;
   }
 
@@ -106,8 +106,8 @@ class SuperMoistIncrOpParameters : public SaberBlockParametersBase {
   MoistIncrOpParameters moistIncrOp{this};
   oops::Variables mandatoryActiveVars() const override {return oops::Variables({
     std::vector<std::string>{
-    "exner_levels_minus_one",
-    "potential_temperature",
+    "dimensionless_exner_function_levels_minus_one",
+    "air_potential_temperature",
     "cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water",
     "cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water",
     "qt",
@@ -118,8 +118,8 @@ class SuperMoistIncrOpParameters : public SaberBlockParametersBase {
     return oops::Variables({
        "height_above_mean_sea_level",
        "height_above_mean_sea_level_levels",
-       "exner_levels_minus_one",
-       "potential_temperature",
+       "dimensionless_exner_function_levels_minus_one",
+       "air_potential_temperature",
        "liquid_cloud_volume_fraction_in_atmosphere_layer",
        "ice_cloud_volume_fraction_in_atmosphere_layer",
        "qsat", "dlsvpdT", "rht"});}
@@ -129,8 +129,8 @@ class SuperMoistIncrOpParameters : public SaberBlockParametersBase {
     eckit::LocalConfiguration conf;
     conf.set("levels", modelLevels);
     oops::Variables vars;
-    vars.push_back({"exner_levels_minus_one", conf});
-    vars.push_back({"potential_temperature", conf});
+    vars.push_back({"dimensionless_exner_function_levels_minus_one", conf});
+    vars.push_back({"air_potential_temperature", conf});
     vars.push_back({"qt", conf});
     return vars;
   }
