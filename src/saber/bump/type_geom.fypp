@@ -409,9 +409,7 @@ call geom%setup_dirac(mpl,nam)
 ! Set allocation flag
 geom%allocated = .true.
 
-!if ((((nam%new_nicas.or.nam%load_nicas_local).and.nam%write_nicas_global).or.nam%load_nicas_global) &
-! & .or.(((nam%new_wind.or.nam%load_wind_local).and.nam%write_wind_global).or.nam%load_wind_global)) then
-if (.true.) then
+if ((nam%write_nicas_global.or.nam%load_nicas_global).or.(nam%write_wind_global.or.nam%load_wind_global)) then
    ! Allocation
    if (mpl%main) then
       allocate(lon_c0(geom%nc0))
@@ -420,7 +418,7 @@ if (.true.) then
       allocate(lon_c0(0))
       allocate(lat_c0(0))
    end if
-   if (mpl%main.or.nam%load_wind_global.or..true.) then
+   if (mpl%main.or.(nam%write_wind_global.or.nam%load_wind_global)) then
       allocate(geom%order_c0(geom%nc0))
    else
       allocate(geom%order_c0(0))
@@ -436,7 +434,7 @@ if (.true.) then
    call mpl%glb_to_loc(geom%nc0a,geom%nc0,geom%c0a_to_c0,geom%order_c0,order_c0a)
 
    ! Broadcast global order
-   if (nam%load_wind_global.or..true.) call mpl%f_comm%broadcast(geom%order_c0, mpl%rootproc-1)
+   if (nam%write_wind_global.or.nam%load_wind_global) call mpl%f_comm%broadcast(geom%order_c0, mpl%rootproc-1)
 
    ! Setup fields output
    call geom%io%init(mpl,7,'0',geom%nc0,geom%nc0a,geom%c0a_to_c0,geom%proc_to_c0_offset,order_c0a)
@@ -444,7 +442,7 @@ if (.true.) then
    ! Release memory
    deallocate(lon_c0)
    deallocate(lat_c0)
-   if (.not.(nam%load_wind_global.or..true.)) deallocate(geom%order_c0)
+   if (.not.(nam%write_wind_global.or.nam%load_wind_global)) deallocate(geom%order_c0)
    deallocate(order_c0a)
 end if
 
