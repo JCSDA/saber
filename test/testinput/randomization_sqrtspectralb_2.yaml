@@ -101,14 +101,14 @@ background error:
     - velocity_potential
   - saber block name: gauss winds to geostrophic pressure
   - saber block name: mo_hydrostatic_pressure_from_geostrophic_pressure
-    covariance data:
+    read:
       covariance file path: testdata/FPstats.nc
       number of covariance latitude rings: 481
   - saber block name: mo_hydrostatic_pressure_to_hydrostatic_exner
   - saber block name: mo_hydrostatic_pressure_hydrostatic_exner_to_pressure_exner
   - saber block name: mo_hydro_bal
   - saber block name: mo_moisture_control
-    covariance data:
+    read:
       covariance file path: testdata/MUstats.nc
   - saber block name: mo_hydrostatic_pressure_hydrostatic_exner_to_pressure_exner
   - saber block name: mo_super_mio

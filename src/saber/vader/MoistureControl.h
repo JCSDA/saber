@@ -34,8 +34,8 @@ namespace vader {
 
 // -----------------------------------------------------------------------------
 
-class MoistureControlCovarianceParameters : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(MoistureControlCovarianceParameters, oops::Parameters)
+class MoistureControlReadParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(MoistureControlReadParameters, oops::Parameters)
  public:
   oops::RequiredParameter<std::string> covariance_file_path{"covariance file path", this};
   oops::Parameter<int> mu_bins{"rht bins", "relative humidity bins", 30, this};
@@ -47,8 +47,9 @@ class MoistureControlParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(MoistureControlParameters, SaberBlockParametersBase)
 
  public:
-  oops::RequiredParameter<MoistureControlCovarianceParameters>
-    moistureControlParams{"covariance data", this};
+  // Read parameters
+  oops::OptionalParameter<MoistureControlReadParameters> readParams{"read", this};
+
   oops::Variables mandatoryActiveVars() const override {
     return oops::Variables({std::vector<std::string>{
         "qt",
@@ -102,6 +103,9 @@ class MoistureControl : public SaberOuterBlockBase {
   void multiply(oops::FieldSet3D &) const override;
   void multiplyAD(oops::FieldSet3D &) const override;
   void leftInverseMultiply(oops::FieldSet3D & fset) const override;
+  void read() override;
+  void directCalibration(const oops::FieldSets & fset) override;
+  void write() const override;
 
  private:
   void print(std::ostream &) const override;
@@ -109,6 +113,8 @@ class MoistureControl : public SaberOuterBlockBase {
   const oops::Variables innerVars_;
   const oops::Variables activeOuterVars_;
   const oops::Variables innerOnlyVars_;
+  const std::size_t nlevs_;
+  Parameters_ params_;
   atlas::FieldSet covFieldSet_;
   atlas::FieldSet augmentedStateFieldSet_;
 };
@@ -117,7 +123,7 @@ class MoistureControl : public SaberOuterBlockBase {
 
 atlas::FieldSet createMuStats(const size_t &,
                               const atlas::FieldSet &,
-                              const MoistureControlCovarianceParameters &);
+                              const MoistureControlReadParameters &);
 
 // -----------------------------------------------------------------------------
 

@@ -23,7 +23,6 @@ background:
   - unbalanced_pressure_levels_minus_one
   - mu
 
-
 bands:
 - band:
     filter:

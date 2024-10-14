@@ -45,7 +45,7 @@ void populateMuA(atlas::FieldSet &,
 atlas::FieldSet createGpRegressionStats(const atlas::FunctionSpace &,
                                         const atlas::FieldSet &,
                                         const oops::Variables &,
-                                        const GpToHpCovarianceParameters &);
+                                        const GpToHpReadParameters &);
 
 }  // namespace vader
 }  // namespace saber

@@ -59,6 +59,9 @@ class GpToHp : public SaberOuterBlockBase {
   void multiply(oops::FieldSet3D &) const override;
   void multiplyAD(oops::FieldSet3D &) const override;
   void leftInverseMultiply(oops::FieldSet3D &) const override;
+  void read() override;
+  void directCalibration(const oops::FieldSets & fset) override;
+  void write() const override;
 
  private:
   void print(std::ostream &) const override;
@@ -66,6 +69,7 @@ class GpToHp : public SaberOuterBlockBase {
   const oops::Variables innerVars_;
   const oops::Variables activeOuterVars_;
   const oops::Variables innerOnlyVars_;
+  Parameters_ params_;
   atlas::FieldSet covFieldSet_;
   atlas::FieldSet augmentedStateFieldSet_;
 };

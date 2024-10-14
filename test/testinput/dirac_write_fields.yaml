@@ -143,7 +143,7 @@ background error:
     inner variables to compare:
     - unbalanced_pressure_levels_minus_one
     - geostrophic_pressure_levels_minus_one
-    covariance data:
+    read:
       covariance file path: testdata/FPstats.nc
       number of covariance latitude rings: 481
       gp regression bins: 18
@@ -186,7 +186,7 @@ background error:
     inner variables to compare:
       - mu
       - virtual_potential_temperature
-    covariance data:
+    read:
       covariance file path: testdata/MUstats.nc
   - saber block name: mo_air_temperature
     skip inverse test: true

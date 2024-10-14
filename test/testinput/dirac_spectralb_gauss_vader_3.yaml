@@ -116,14 +116,14 @@ background error:
             - unbalanced_pressure_levels_minus_one
       saber outer blocks:
       - saber block name: mo_hydrostatic_pressure
-        covariance data:
+        read:
           covariance file path: testdata/FPstats.nc
           number of covariance latitude rings: 481
           gp regression bins: 18
       - saber block name: mo_hydrostatic_pressure_to_hydrostatic_exner
       - saber block name: mo_hydro_bal
       - saber block name: mo_moisture_control
-        covariance data:
+        read:
           covariance file path: testdata/MUstats.nc
       - saber block name: mo_hydrostatic_pressure_hydrostatic_exner_to_pressure_exner
       - saber block name: mo_super_mio

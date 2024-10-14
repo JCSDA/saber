@@ -26,6 +26,8 @@ namespace interpolation {
 namespace {
 
 int getHalo(const std::string & interpType) {
+  oops::Log::trace()  << "::GaussToCS::getHalo" << std::endl;
+
   // Assumes that only interpolation types with "cubic" in their name require a halo of 2.
   const std::string pattern = "cubic";
   if (interpType.find(pattern) != interpType.npos) {
@@ -37,6 +39,7 @@ int getHalo(const std::string & interpType) {
 atlas::functionspace::StructuredColumns
     createGaussFunctionSpace(const atlas::StructuredGrid & gaussGrid,
                              const int halo) {
+  oops::Log::trace() << "::GaussToCS::createGaussFunctionSpace" << std::endl;
   return atlas::functionspace::StructuredColumns(
     gaussGrid,
     atlas::grid::Partitioner(new TransPartitioner()),
@@ -47,6 +50,7 @@ atlas::functionspace::StructuredColumns
 
 auto createPointCloud(const atlas::Grid& grid,
                       const atlas::grid::Partitioner& partitioner) {
+    oops::Log::trace()  << "::GaussToCS::createPointCloud" << std::endl;
     const auto distribution = atlas::grid::Distribution(grid, partitioner);
 
     auto lonLats = std::vector<atlas::PointXY>{};
@@ -67,6 +71,7 @@ auto createInverseInterpolation(const bool initializeInverseInterpolation,
                                 const atlas::functionspace::NodeColumns & csFunctionSpace,
                                 const atlas::Grid & gaussGrid,
                                 const atlas::grid::Partitioner & gaussPartitioner) {
+  oops::Log::trace()  << "::GaussToCS::createInverseInterpolation" << std::endl;
   CS2Gauss inverseInterpolation;
 
   if (!initializeInverseInterpolation || hasSinglePE) {
@@ -110,6 +115,7 @@ void inverseInterpolateMultiplePEs(
         const atlas::functionspace::StructuredColumns & gaussFunctionSpace,
         const atlas::FieldSet & srcFieldSet,
         atlas::FieldSet & newFieldSet) {
+  oops::Log::trace()  << "::GaussToCS::createInverseInterpolateMultiplePEs" << std::endl;
   // Interpolate from source to matching PointCloud
   atlas::FieldSet matchingPtcldFset;
   for (const auto & var : variables) {
@@ -153,6 +159,7 @@ void inverseInterpolateSinglePE(
         const atlas::Grid & gaussGrid,
         const atlas::FieldSet & srcFieldSet,
         atlas::FieldSet & newFieldSet) {
+  oops::Log::trace() << "::GaussToCS::createInverseInterpolateSinglePE" << std::endl;
   const auto targetMesh = atlas::MeshGenerator("structured").generate(gaussGrid);
   const auto hybridFunctionSpace = atlas::functionspace::NodeColumns(targetMesh);
   const auto scheme = atlas::util::Config("type", "cubedsphere-bilinear") |
@@ -191,6 +198,7 @@ Rescaling initRescaling(const GaussToCSParameters & params,
                         const atlas::FunctionSpace & innerFspace,
                         const atlas::FunctionSpace & outerFspace,
                         const saber::interpolation::AtlasInterpWrapper & interp) {
+  oops::Log::trace() << "::GaussToCS::initRescaling" << std::endl;
   if (params.interpolationRescaling.value().is_initialized()) {
     const auto & conf = params.interpolationRescaling.value().value();
     if (conf.has("horizontal covariance profile file path")) {

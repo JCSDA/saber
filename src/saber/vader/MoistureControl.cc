@@ -58,22 +58,12 @@ MoistureControl::MoistureControl(const oops::GeometryData & outerGeometryData,
     innerVars_(getUnionOfInnerActiveAndOuterVars(params, outerVars)),
     activeOuterVars_(params.activeOuterVars(outerVars)),
     innerOnlyVars_(getInnerOnlyVars(params, outerVars)),
+    nlevs_(xb["air_temperature"].levels()),
+    params_(params),
+    covFieldSet_(),
     augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::MoistureControl starting" << std::endl;
-
-  const size_t nlev = xb["air_temperature"].levels();
-  // Covariance FieldSet
-  covFieldSet_ = createMuStats(nlev,
-                               outerGeometryData.fieldSet(),
-                               params.moistureControlParams.value());
-
-  std::vector<std::string> additionalStateVariables{
-    "muA", "muH1",  // to be populated in function call from CovarianceStatisticsUtils.h
-    "muRow1Column1", "muRow1Column2",  // to be populated in eval_moisture_control_traj
-    "muRow2Column1", "muRow2Column2",  //   ""
-    "muRecipDeterminant"  //   ""
-  };
 
   // copy all required variables from the background fieldset
   const oops::Variables mandatoryStateVariables = params.mandatoryStateVars();
@@ -81,17 +71,7 @@ MoistureControl::MoistureControl(const oops::GeometryData & outerGeometryData,
   for (const auto & s : mandatoryStateVariables.variables()) {
     augmentedStateFieldSet_.add(xb.fieldSet()[s]);
   }
-  // create fields for temporary variables required here
-  for (const auto & s : additionalStateVariables) {
-    atlas::Field field = outerGeometryData.functionSpace()->createField<double>(
-        atlas::option::name(s) | atlas::option::levels(nlev));
-    augmentedStateFieldSet_.add(field);
-  }
-  // populate "muA" and "muH1"
-  interpMuStats(augmentedStateFieldSet_, covFieldSet_["muH1Stats"]);
-  populateMuA(augmentedStateFieldSet_, covFieldSet_["muAStats"]);
-  // populate "specific moisture control dependencies"
-  mo::eval_moisture_control_traj(augmentedStateFieldSet_);
+
 
   oops::Log::trace() << classname() << "::MoistureControl done" << std::endl;
 }
@@ -148,6 +128,57 @@ void MoistureControl::leftInverseMultiply(oops::FieldSet3D & fset) const {
 
 // -----------------------------------------------------------------------------
 
+void MoistureControl::read() {
+  oops::Log::trace() << classname() << "::read start " <<  std::endl;
+  const auto & readParams = params_.readParams.value();
+  if (readParams != boost::none) {
+    // Covariance FieldSet
+    covFieldSet_ = createMuStats(nlevs_,
+                                 innerGeometryData_.fieldSet(),
+                                 readParams.value());
+
+    std::vector<std::string> additionalStateVariables{
+      "muA", "muH1",  // to be populated in function call from CovarianceStatisticsUtils.h
+      "muRow1Column1", "muRow1Column2",  // to be populated in eval_moisture_control_traj
+      "muRow2Column1", "muRow2Column2",  //   ""
+      "muRecipDeterminant"  //   ""
+    };
+
+    // create fields for temporary variables required here
+    for (const auto & s : additionalStateVariables) {
+      atlas::Field field = innerGeometryData_.functionSpace()->createField<double>(
+          atlas::option::name(s) | atlas::option::levels(nlevs_));
+      augmentedStateFieldSet_.add(field);
+    }
+
+    // populate "muA" and "muH1"
+    interpMuStats(augmentedStateFieldSet_, covFieldSet_["muH1Stats"]);
+    populateMuA(augmentedStateFieldSet_, covFieldSet_["muAStats"]);
+    // populate "specific moisture control dependencies"
+    mo::eval_moisture_control_traj(augmentedStateFieldSet_);
+  }
+  oops::Log::trace() << classname() << "::read done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void MoistureControl::directCalibration(const oops::FieldSets & fset) {
+  oops::Log::trace() << classname() << "::directCalibration start" << std::endl;
+
+  oops::Log::trace() << classname() << "::directCalibration end" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void MoistureControl::write() const {
+  oops::Log::trace() << classname() << "::write start" << std::endl;
+
+  oops::Log::trace() << classname() << "::write end" << std::endl;
+}
+
+
+// -----------------------------------------------------------------------------
+
 void MoistureControl::print(std::ostream & os) const {
   os << classname();
 }
@@ -156,7 +187,7 @@ void MoistureControl::print(std::ostream & os) const {
 
 atlas::FieldSet createMuStats(const size_t & modelLevelsDefault,
                               const atlas::FieldSet & fields,
-                              const MoistureControlCovarianceParameters & params) {
+                              const MoistureControlReadParameters & params) {
   // Get necessary parameters
   // path to covariance file with gp covariance parameters.
   std::string covFileName(params.covariance_file_path);

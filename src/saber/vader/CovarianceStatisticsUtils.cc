@@ -348,7 +348,7 @@ void populateMuA(atlas::FieldSet & augmentedStateFieldSet,
 atlas::FieldSet createGpRegressionStats(const atlas::FunctionSpace & functionSpace,
                                         const atlas::FieldSet & fields,
                                         const oops::Variables & variables,
-                                        const GpToHpCovarianceParameters & params) {
+                                        const GpToHpReadParameters & params) {
   // Get necessary parameters
   // path to covariance file with gp covariance parameters.
   const std::string covFileName(params.covariance_file_path);

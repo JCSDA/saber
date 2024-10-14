@@ -52,13 +52,19 @@ class GaussUVToGPParameters : public SaberBlockParametersBase {
 
 // -----------------------------------------------------------------------------
 
-class GpToHpCovarianceParameters : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(GpToHpCovarianceParameters, oops::Parameters)
+class GpToHpReadParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(GpToHpReadParameters, oops::Parameters)
 
  public:
   oops::RequiredParameter<std::string> covariance_file_path{"covariance file path", this};
   oops::RequiredParameter<int> covariance_nlat{"number of covariance latitude rings", this};
   oops::Parameter<int> gp_regression_bins{"gp regression bins", "gP regression bins", 18, this};
+};
+
+class GpToHpWriteParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(GpToHpWriteParameters, oops::Parameters)
+
+ public:
 };
 
 // -----------------------------------------------------------------------------
@@ -67,8 +73,12 @@ class GpToHpParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(GpToHpParameters, SaberBlockParametersBase)
 
  public:
-  oops::RequiredParameter<GpToHpCovarianceParameters>
-    gptohpcovarianceparams{"covariance data", this};
+  // Read parameters
+  oops::OptionalParameter<GpToHpReadParameters> readParams{"read", this};
+
+  // Calibration of block parameters
+  oops::OptionalParameter<GpToHpWriteParameters> calibrationParams{"calibration", this};
+
   oops::Variables mandatoryActiveVars() const override {return oops::Variables({
     std::vector<std::string>{
     "geostrophic_pressure_levels_minus_one",

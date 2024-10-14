@@ -102,7 +102,7 @@ background error:
     skip inverse test: true  # Tested within mo_hydrostatic_pressure block
   - saber block name: mo_hydrostatic_pressure_from_geostrophic_pressure
     skip inverse test: true  # Tested within mo_hydrostatic_pressure block
-    covariance data:
+    read:
       covariance file path: testdata/FPstats.nc
       number of covariance latitude rings: 481
       gp regression bins: 18
@@ -115,7 +115,7 @@ background error:
     inner variables to compare:
       - mu
       - virtual_potential_temperature
-    covariance data:
+    read:
       covariance file path: testdata/MUstats.nc
   - saber block name: mo_hydrostatic_pressure_hydrostatic_exner_to_pressure_exner
   - saber block name: mo_air_temperature

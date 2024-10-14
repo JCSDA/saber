@@ -6,30 +6,51 @@ geometry:
   groups:
   - variables:
     - eastward_wind
+    - dry_air_density_levels_minus_one
+    - geostrophic_pressure_levels_minus_one
     - mu
     - northward_wind
     - streamfunction
     - unbalanced_pressure_levels_minus_one
     - velocity_potential
     levels: 70
+  - variables:
+    - air_pressure_levels
+    - hydrostatic_pressure_levels
+    levels: 71
   partitioner: ectrans
 background:
   date: 2010-01-01T12:00:00Z
   state variables:
+  - air_pressure_levels
   - eastward_wind
+  - dry_air_density_levels_minus_one
+  - geostrophic_pressure_levels_minus_one
+  - hydrostatic_pressure_levels
   - mu
   - northward_wind
   - unbalanced_pressure_levels_minus_one
+  filepath: testdata/gauss_state
 background error:
   covariance model: SABER
   randomization size: 10
   saber central block:
     saber block name: ID
+    active variables:
+    - mu
+    - streamfunction
+    - unbalanced_pressure_levels_minus_one
+    - velocity_potential
   saber outer blocks:
   - saber block name: square root of spectral covariance
     skip inverse test: true
     read:
       covariance_file: testdata/error_covariance_training_spectralb_1/spectralsabercov_1.nc
+    active variables:
+    - mu
+    - streamfunction
+    - unbalanced_pressure_levels_minus_one
+    - velocity_potential
   - saber block name: spectral to gauss
     active variables:
     - eastward_wind
@@ -38,6 +59,14 @@ background error:
     - streamfunction
     - unbalanced_pressure_levels_minus_one
     - velocity_potential
+  - saber block name: gauss winds to geostrophic pressure
+    skip inverse test: true  # Tested within mo_hydrostatic_pressure block
+  - saber block name: mo_hydrostatic_pressure_from_geostrophic_pressure
+    skip inverse test: true  # Tested within mo_hydrostatic_pressure block
+    read:
+      covariance file path: testdata/FPstats.nc
+      number of covariance latitude rings: 481
+      gp regression bins: 18
 output variance:  # This section is optional
   mpi pattern: '%MPI%'
   filepath: testdata/randomization_sqrtspectralb_3/variance_%MPI%pes

@@ -419,7 +419,6 @@ atlas::FieldSet createEnsembleStatsFSet(const std::string & binType,
     if (conf.has("additional cross covariances")) {
        noOfStats += conf.getSubConfigurations("additional cross covariances").size();
     }
-    std::cout << "netCDFConf = " << netCDFConf << std::endl;
 
     const std::string statsType = params.statisticsType;
     for (std::size_t s = 0; s < noOfStats; ++s) {

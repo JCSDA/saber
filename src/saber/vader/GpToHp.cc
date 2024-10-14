@@ -67,24 +67,15 @@ GpToHp::GpToHp(const oops::GeometryData & outerGeometryData,
     innerVars_(removeOuterOnlyVar(getUnionOfInnerActiveAndOuterVars(params, outerVars))),
     activeOuterVars_(params.activeOuterVars(outerVars)),
     innerOnlyVars_(getInnerOnlyVars(params, outerVars)),
+    params_(params),
+    covFieldSet_(),
     augmentedStateFieldSet_()
 {
   oops::Log::trace() << classname() << "::GpToHp starting" << std::endl;
-  // Covariance FieldSet
-  covFieldSet_ = createGpRegressionStats(outerGeometryData.functionSpace(),
-                                         outerGeometryData.fieldSet(),
-                                         innerVars_,
-                                         params.gptohpcovarianceparams.value());
-  // copy variables from background that are required
   const oops::Variables stateVariables = params.mandatoryStateVars();
   augmentedStateFieldSet_.clear();
   for (const auto & s : stateVariables) {
     augmentedStateFieldSet_.add(xb.fieldSet()[s.name()]);
-  }
-  // also copy variables from covariance fieldset if required
-  if (covFieldSet_.has("interpolation_weights")) {
-    augmentedStateFieldSet_.add(covFieldSet_["vertical_regression_matrices"]);
-    augmentedStateFieldSet_.add(covFieldSet_["interpolation_weights"]);
   }
 
   oops::Log::trace() << classname() << "::GpToHp done" << std::endl;
@@ -149,6 +140,41 @@ void GpToHp::leftInverseMultiply(oops::FieldSet3D & fset) const {
   // Retrieve unbalanced pressure from hydrostatic pressure and geostrophic pressure.
   mo::eval_hydrostatic_pressure_levels_tl_inv(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
+}
+
+void GpToHp::read() {
+  oops::Log::trace() << classname() << "::read start " << params_ <<  std::endl;
+  const auto & readParams = params_.readParams.value();
+  if (readParams != boost::none) {
+    // Covariance FieldSet
+    covFieldSet_ = createGpRegressionStats(innerGeometryData_.functionSpace(),
+                                           innerGeometryData_.fieldSet(),
+                                           innerVars_,
+                                           readParams.value());
+    // also copy variables from covariance fieldset if required
+    if (covFieldSet_.has("interpolation_weights")) {
+      augmentedStateFieldSet_.add(covFieldSet_["vertical_regression_matrices"]);
+      augmentedStateFieldSet_.add(covFieldSet_["interpolation_weights"]);
+    }
+  }
+  oops::Log::trace() << classname() << "::read done" << std::endl;
+}
+
+void GpToHp::directCalibration(const oops::FieldSets & fset) {
+  oops::Log::trace() << classname() << "::directCalibration start" << std::endl;
+  // read in Gp x Gp vertical covariance and Hp x Gp covariance.
+
+  // calculate an approximation to the inverse of Gp xGp.
+  // by first calculating the eigenvalues and eigenvectors.
+
+  // calculate vertical regression statistics for each band.
+  oops::Log::trace() << classname() << "::directCalibration end" << std::endl;
+}
+
+void GpToHp::write() const {
+  oops::Log::trace() << classname() << "::write start" << std::endl;
+  // write regression matrix to file.
+  oops::Log::trace() << classname() << "::write end" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
