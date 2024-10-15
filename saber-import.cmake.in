@@ -46,9 +46,17 @@ else()
     endif()
 endif()
 
-if(@oops_FOUND@) # oops_FOUND
+if(NOT oops_FOUND)
     find_dependency(oops)
-    set(saber_oops_FOUND True) #COMPONENT 'oops'
+endif()
+
+if(NOT vader_FOUND)
+    find_dependency(vader)
+endif()
+
+if(@FFTW_FOUND@) # FFTW_FOUND
+   find_dependency(FFTW)
+   set(saber_FFTW_FOUND True) #COMPONENT 'FFTW'
 endif()
 
 if(@gsibec_FOUND@) # gsibec_FOUND
@@ -60,14 +68,9 @@ if(@gsibec_FOUND@) # gsibec_FOUND
     endif()
 endif()
 
-if(@vader_FOUND@) # vader_FOUND
-    find_dependency(vader)
-    set(saber_vader_FOUND True) #COMPONENT 'vader'
-endif()
-
-if(@FFTW_FOUND@) # FFTW_FOUND
-   find_dependency(FFTW)
-   set(saber_FFTW_FOUND True) #COMPONENT 'FFTW'
+if(@eccodes_FOUND@) # eccodes_FOUND
+   find_dependency(eccodes)
+   set(saber_eccodes_FOUND True) #COMPONENT 'eccodes'
 endif()
 
 #Export Fortran compiler version for checking module compatibility
