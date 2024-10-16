@@ -25,6 +25,7 @@ option( ENABLE_SABER_INSTRUMENTATION "Enable SABER instrumentation" OFF )
 option( ENABLE_OFFLINE_CODECOV "Enable SABER offline code coverage" OFF )
 option( ENABLE_SABER_DOC "Enable SABER documentation" OFF )
 option( ENABLE_MKL "Use MKL for LAPACK implementation (if available)" ON )
+option( ENABLE_QUENCH "Compile QUENCH and run QUENCH-based tests" ON )
 include( ${PROJECT_NAME}_compiler_flags )
 
 ## Dependencies
@@ -109,7 +110,9 @@ else()
 endif()
 
 ## Sources
-add_subdirectory( quench )
+if( ENABLE_QUENCH )
+  add_subdirectory( quench )
+endif()
 add_subdirectory( src/saber )
 add_subdirectory( tools )
 add_subdirectory( test )
