@@ -55,7 +55,7 @@ static const vader::cookbookConfigType saberDefaultCookbook = {
                                    {vader::TotalMixingRatio_A::Name}},
         {oops::Variable{"qt"},     {vader::TotalWater_A::Name}},
         {oops::Variable{"rht"},    {vader::TotalRelativeHumidity_A::Name}},
-        {oops::Variable{"specific_humidity"},
+        {oops::Variable{"water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water"},
                        {vader::WaterVaporMixingRatioWrtMoistAirAndCondensedWater_A::Name}},
         {oops::Variable{"svp"},    {vader::SaturationVaporPressure_A::Name}},
         {oops::Variable{"virtual_potential_temperature"},

@@ -5,7 +5,7 @@ geometry:
     N: 15
   groups:
   - variables: &vars
-    - specific_humidity
+    - water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water
     - q_cl
     - q_cf
     - eastward_wind
@@ -25,7 +25,7 @@ background error:
     variable groupings:
     - group variable name: specific_humidity__q_cl__q_cf
       group components:
-      - specific_humidity
+      - water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water
       - q_cl
       - q_cf
     - group variable name: eastward_wind__northward_wind
@@ -69,7 +69,7 @@ diagnostic points:
   - 2
   - 2
   variable:
-  - specific_humidity
+  - water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water
   - eastward_wind
   - air_pressure
 output dirac:

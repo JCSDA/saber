@@ -59,7 +59,7 @@ Fields:
   total_water_mixing_ratio_wrt_dry_air: 2.8446253965335075e+02
   cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water: 5.2050502512631875e-03
   cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water: 3.3189423131903847e-03
-  specific_humidity: 1.1270323267062499e+00
+  water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water: 1.1270323267062499e+00
   dry_air_density_levels_minus_one: 1.9430579330816423e+02
   air_temperature: 6.9613178551411635e+04
   svp: 2.2710223314057884e+05
@@ -88,7 +88,7 @@ Fields:
   total_water_mixing_ratio_wrt_dry_air: 2.8446253965335075e+02
   cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water: 5.2050502512631875e-03
   cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water: 3.3189423131903847e-03
-  specific_humidity: 1.1270323267062499e+00
+  water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water: 1.1270323267062499e+00
   dry_air_density_levels_minus_one: 1.9430579330816423e+02
   air_temperature: 6.9613178551411635e+04
   svp: 2.2710223314057884e+05
@@ -112,8 +112,8 @@ Fields:
   mu: 2.8253530930613277e+02
   northward_wind: 2.8358621578056369e+02
   qt: 2.8276483099352197e+02
-  specific_humidity: 2.8403987562173347e+02
-  virtual_potential_temperature: 2.8427381623375203e+02
+  virtual_potential_temperature: 2.8403987562173347e+02
+  water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water: 2.8427381623375203e+02
 Wrote file testdata/dirac_write_fields/fields_after_mo_moisture_control_leftinverse_1.nc
 Fields:
   air_potential_temperature: 2.8490381308795736e+02
@@ -129,8 +129,8 @@ Fields:
   mu: 2.8253530930613277e+02
   northward_wind: 2.8358621578056369e+02
   qt: 2.8276483099352197e+02
-  specific_humidity: 2.8403987562173347e+02
-  virtual_potential_temperature: 2.8427381623375203e+02
+  virtual_potential_temperature: 2.8403987562173347e+02
+  water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water: 2.8427381623375203e+02
 Wrote file testdata/dirac_write_fields/fields_after_mo_moisture_control_multiply_2.nc
 Fields:
   air_potential_temperature: 2.8490381308795736e+02
@@ -146,8 +146,8 @@ Fields:
   mu: 2.8253530930613277e+02
   northward_wind: 2.8358621578056369e+02
   qt: 2.8276483099352197e+02
-  specific_humidity: 2.8403987562173347e+02
-  virtual_potential_temperature: 2.8427381623375203e+02
+  virtual_potential_temperature: 2.8403987562173347e+02
+  water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water: 2.8427381623375203e+02
 Inner inverse test for block write fields passed: U Uinv (U x) == (U x)
 Wrote file testdata/dirac_write_fields/fields_after_mo_moisture_control_leftinverse_2.nc
 Fields:
@@ -164,8 +164,8 @@ Fields:
   mu: 2.8395562075699979e+02
   northward_wind: 2.8500027218126434e+02
   qt: 2.8366178629122220e+02
-  specific_humidity: 2.8450437809381418e+02
-  virtual_potential_temperature: 2.8298144363311962e+02
+  virtual_potential_temperature: 2.8450437809381418e+02
+  water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water: 2.8298144363311962e+02
 Wrote file testdata/dirac_write_fields/fields_after_mo_moisture_control_multiply_3.nc
 Fields:
   air_potential_temperature: 2.8219381759375477e+02
@@ -181,8 +181,8 @@ Fields:
   mu: 2.8395562075699979e+02
   northward_wind: 2.8500027218126434e+02
   qt: 2.8366178629122220e+02
-  specific_humidity: 2.8450437809381418e+02
-  virtual_potential_temperature: 2.8298144363311962e+02
+  virtual_potential_temperature: 2.8450437809381418e+02
+  water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water: 2.8298144363311962e+02
 Wrote file testdata/dirac_write_fields/fields_after_mo_moisture_control_leftinverse_3.nc
 Fields:
   air_potential_temperature: 2.8219381759375477e+02
@@ -198,8 +198,8 @@ Fields:
   mu: 2.8395562075699979e+02
   northward_wind: 2.8500027218126434e+02
   qt: 2.8366178629122220e+02
-  specific_humidity: 2.8450437809381418e+02
-  virtual_potential_temperature: 2.8298144363311962e+02
+  virtual_potential_temperature: 2.8450437809381418e+02
+  water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water: 2.8298144363311962e+02
 Outer inverse test for block write fields passed: Uinv U (Uinv x) == (Uinv x)
 Inner inverse test for block mo_hydro_bal passed: U Uinv (U x) == (U x)
 Outer inverse test for block mo_hydro_bal passed: Uinv U (Uinv x) == (Uinv x)
@@ -263,21 +263,21 @@ Inner inverse test for block spectral to gauss passed: U Uinv (U x) == (U x)
 Outer inverse test for block spectral to gauss passed: Uinv U (Uinv x) == (Uinv x)
 Did not write file testdata/dirac_write_fields/fields_final_multiply_1.nc
 Fields:
-  streamfunction: 2.0096449948370395e+02
+  streamfunction: 2.0132111960602580e+02
 Did not write file testdata/dirac_write_fields/fields_final_leftinverse_1.nc
 Fields:
-  streamfunction: 2.0096449948370395e+02
+  streamfunction: 2.0132111960602580e+02
 Did not write file testdata/dirac_write_fields/fields_final_multiply_2.nc
 Fields:
-  streamfunction: 2.0096449948370395e+02
+  streamfunction: 2.0132111960602580e+02
 Inner inverse test for block write fields passed: U Uinv (U x) == (U x)
 Did not write file testdata/dirac_write_fields/fields_final_leftinverse_2.nc
 Fields:
-  streamfunction: 2.0033468834878587e+02
+  streamfunction: 2.0124138256140810e+02
 Did not write file testdata/dirac_write_fields/fields_final_multiply_3.nc
 Fields:
-  streamfunction: 2.0033468834878587e+02
+  streamfunction: 2.0124138256140810e+02
 Did not write file testdata/dirac_write_fields/fields_final_leftinverse_3.nc
 Fields:
-  streamfunction: 2.0033468834878587e+02
+  streamfunction: 2.0124138256140810e+02
 Outer inverse test for block write fields passed: Uinv U (Uinv x) == (Uinv x)

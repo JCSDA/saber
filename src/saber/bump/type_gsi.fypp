@@ -242,7 +242,7 @@ if (mpl%main) then
          gsivar = 'vp'
       case ('air_temperature')
          gsivar = 't'
-      case ('specific_humidity')
+      case ('water_vapor_mixing_ratio_wrt_moist_air')
          gsivar = 'q'
       case ('cloud_liquid_ice')
          gsivar = 'qi'
@@ -363,7 +363,7 @@ if (mpl%main) then
          case ('t')
             bumpvar = 'air_temperature'
          case ('q')
-            bumpvar = 'specific_humidity'
+            bumpvar = 'water_vapor_mixing_ratio_wrt_moist_air'
          case ('qi')
             bumpvar = 'cloud_liquid_ice'
          case ('ql')

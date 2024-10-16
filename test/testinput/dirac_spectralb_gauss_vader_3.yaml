@@ -40,7 +40,7 @@ geometry:
     - qsat
     - qt
     - rht
-    - specific_humidity
+    - water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water
     - streamfunction
     - svp
     - unbalanced_pressure_levels_minus_one
@@ -183,7 +183,7 @@ increment variables:
 - cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water
 - northward_wind
 - air_potential_temperature
-- specific_humidity
+- water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water
 
 output dirac:
   mpi pattern: '%MPI%'

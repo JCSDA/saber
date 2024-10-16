@@ -27,7 +27,7 @@ Fields:
   cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water: 0.0000000000000000e+00
   northward_wind: 0.0000000000000000e+00
   air_potential_temperature: 0.0000000000000000e+00
-  specific_humidity: 0.0000000000000000e+00
+  water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water: 0.0000000000000000e+00
 Adjoint test for block mo_dry_air_density passed
 skipping inverse test for block mo_dry_air_density
 Adjoint test for block mo_moistincrop passed
@@ -90,4 +90,4 @@ Fields:
   cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water: 8.7112060460344611e-09
   northward_wind: 1.4447783451829513e-04
   air_potential_temperature: 2.9219542481581724e-03
-  specific_humidity: 4.8219870434737920e-07
+  water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water: 4.8219870434737920e-07

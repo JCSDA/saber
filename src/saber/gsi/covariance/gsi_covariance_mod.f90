@@ -313,8 +313,8 @@ if (fields%has('air_pressure_at_surface')) then
   call afield%data(ps)
 endif
 
-if (fields%has('specific_humidity')) then
-  afield = fields%field('specific_humidity')
+if (fields%has('water_vapor_mixing_ratio_wrt_moist_air')) then
+  afield = fields%field('water_vapor_mixing_ratio_wrt_moist_air')
   call afield%data(q)
 endif
 
@@ -634,8 +634,8 @@ end subroutine multiply
       ier=0
    endif
    if (trim(vname) == 'q' .or. trim(vname) == 'sphum' ) then
-      if (.not.fields%has('specific_humidity')) return
-      afield = fields%field('specific_humidity')
+      if (.not.fields%has('water_vapor_mixing_ratio_wrt_moist_air')) return
+      afield = fields%field('water_vapor_mixing_ratio_wrt_moist_air')
       call afield%data(rank2)
       ier=0
    endif

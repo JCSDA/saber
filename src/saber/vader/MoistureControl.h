@@ -59,7 +59,7 @@ class MoistureControlParameters : public SaberBlockParametersBase {
   }
 
   const oops::Variables mandatoryStateVars() const override {
-    return oops::Variables({"qt", "specific_humidity",
+    return oops::Variables({"qt", "water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water",
                             "air_potential_temperature", "dimensionless_exner_function",
                             "dlsvpdT", "qsat", "rht"});
   }

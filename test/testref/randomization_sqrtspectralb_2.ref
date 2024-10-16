@@ -27,4 +27,4 @@ Fields:
   cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water: 7.4817947626589008e-04
   northward_wind: 3.1247128217649026e+02
   air_potential_temperature: 1.2417540162483870e+03
-  specific_humidity: 3.7368460579405426e-02
+  water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water: 3.7368460579405426e-02

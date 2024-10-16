@@ -7,7 +7,7 @@ geometry:
   - variables:
     - air_temperature
     - virtual_temperature
-    - specific_humidity
+    - water_vapor_mixing_ratio_wrt_moist_air
     levels: 2
   model data:
     epsilon: 0.621957535
@@ -15,7 +15,7 @@ background:
   date: 2010-01-01T12:00:00Z
   state variables:
   - virtual_temperature
-  - specific_humidity
+  - water_vapor_mixing_ratio_wrt_moist_air
 background error:
   covariance model: SABER
   adjoint test: true
@@ -25,10 +25,10 @@ background error:
   - saber block name: vader variable change
     inner variables:
     - air_temperature
-    - specific_humidity
+    - water_vapor_mixing_ratio_wrt_moist_air
     active variables:
     - air_temperature
-    - specific_humidity
+    - water_vapor_mixing_ratio_wrt_moist_air
     - virtual_temperature
 dirac:
   lon:
@@ -42,7 +42,7 @@ dirac:
   - 1
   variable:
   - virtual_temperature
-  - specific_humidity
+  - water_vapor_mixing_ratio_wrt_moist_air
 output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_vader/%MPI%_dirac_%id%

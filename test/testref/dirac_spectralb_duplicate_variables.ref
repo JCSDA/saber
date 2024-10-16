@@ -15,7 +15,7 @@ Groups:
   - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  specific_humidity: 1.0000000000000000e+00
+  water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water: 1.0000000000000000e+00
   q_cl: 1.0000000000000000e+00
   q_cf: 1.0000000000000000e+00
   air_temperature: 1.0000000000000000e+00
@@ -26,14 +26,14 @@ Adjoint test for block duplicate variables passed
 Adjoint test for block ID passed
 Covariance(SABER) diagnostics:
 - Variances at Dirac points:
-  + Value for variable specific_humidity, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 2.7000000000000000e+03
+  + Value for variable water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 2.7000000000000000e+03
   + Value for variable q_cl, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 2.7000000000000000e+03
   + Value for variable q_cf, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 2.7000000000000000e+03
   + Value for variable air_temperature, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 1.8000000000000000e+03
   + Value for variable dimensionless_exner_function, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 1.8000000000000000e+03
   + Value for variable air_pressure, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 9.0000000000000000e+02
 - Covariances at diagnostic points:
-  + Value for variable specific_humidity, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 0.0000000000000000e+00
+  + Value for variable water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 0.0000000000000000e+00
   + Value for variable dimensionless_exner_function, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 0.0000000000000000e+00
   + Value for variable air_pressure, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 0.0000000000000000e+00
 Covariance(SABER) * Increment:
@@ -53,7 +53,7 @@ Groups:
   - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  specific_humidity: 3.1003077258821704e+03
+  water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water: 3.1003077258821704e+03
   q_cl: 3.1003077258821704e+03
   q_cf: 3.1003077258821704e+03
   air_temperature: 2.0668718172547774e+03

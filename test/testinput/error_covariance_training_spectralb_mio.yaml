@@ -37,7 +37,7 @@ geometry:
     - qsat
     - qt
     - rht
-    - specific_humidity
+    - water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water
     - svp
     levels: 70
   - variables:
@@ -54,7 +54,7 @@ increment variables: &inc_vars
 - cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water
 - cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water
 - air_potential_temperature
-- specific_humidity
+- water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water
 
 background error:
   covariance model: SABER
@@ -75,7 +75,7 @@ background error:
     - cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water
     - air_potential_temperature
     - qt
-    - specific_humidity
+    - water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water
   saber outer blocks:
   - saber block name: mo_super_mio
     moisture incrementing operator file: testdata/MIO_coefficients.nc
@@ -118,7 +118,7 @@ background:
   - qsat
   - qt
   - rht
-  - specific_humidity
+  - water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water
   - svp
   filepath: testdata/gauss_state
 
