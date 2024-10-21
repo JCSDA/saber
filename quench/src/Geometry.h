@@ -149,6 +149,9 @@ class GeometryParameters : public oops::Parameters {
   // Aliases for model files
   oops::Parameter<std::vector<AliasParameters>> alias{"alias", {}, this};
 
+  // Latitudes from south to north in files
+  oops::Parameter<bool> latSouthToNorth{"latitude south to north", true, this};
+
   // Interpolation parameters
   oops::OptionalParameter<InterpolationParameters> interpolation{"interpolation", this};
 };
@@ -203,6 +206,8 @@ class Geometry : public util::Printable,
     {return modelData_;}
   const std::vector<eckit::LocalConfiguration> & alias() const
     {return alias_;}
+  const bool & latSouthToNorth() const
+    {return latSouthToNorth_;}
   const eckit::LocalConfiguration & interpolation() const
     {return interpolation_;}
   const bool & duplicatePoints() const
@@ -265,6 +270,9 @@ class Geometry : public util::Printable,
 
   // Aliases
   std::vector<eckit::LocalConfiguration> alias_;
+
+  // Latitudes from south to north in files
+  bool latSouthToNorth_;
 
   // Interpolation configuration
   eckit::LocalConfiguration interpolation_;

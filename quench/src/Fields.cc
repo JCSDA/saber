@@ -875,12 +875,18 @@ void Fields::read(const eckit::Configuration & config) {
       variableSizes.push_back(var.getLevels());
     }
 
+    // Update configuration
+    eckit::LocalConfiguration conf(config);
+    if (!conf.has("latitude south to north")) {
+      conf.set("latitude south to north", geom_->latSouthToNorth());
+    }
+
     // Read fieldset
     util::readFieldSet(geom_->getComm(),
                        geom_->functionSpace(),
                        variableSizes,
                        vars_in_file.variables(),
-                       config,
+                       conf,
                        fset_);
   } else if (ioFormat == "grib") {
 #ifdef ECCODES_FOUND
@@ -1168,8 +1174,14 @@ void Fields::write(const eckit::Configuration & config) const {
 
   // Write with specified IO format
   if (ioFormat == "default") {
+    // Update configuration
+    eckit::LocalConfiguration conf(config);
+    if (!conf.has("latitude south to north")) {
+      conf.set("latitude south to north", geom_->latSouthToNorth());
+    }
+
     // Default OOPS writer
-    util::writeFieldSet(geom_->getComm(), config, fset);
+    util::writeFieldSet(geom_->getComm(), conf, fset);
   } else if (ioFormat == "grib") {
     // GRIB format
     throw eckit::NotImplemented("GRIB output not implemented yet", Here());

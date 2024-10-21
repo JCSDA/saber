@@ -253,6 +253,9 @@ Geometry::Geometry(const eckit::Configuration & config,
     }
   }
 
+  // Latitudes from south to north in files
+  latSouthToNorth_ = params.latSouthToNorth.value();
+
   // Interpolation
   const boost::optional<InterpolationParameters> &interpParams = params.interpolation.value();
   if (interpParams != boost::none) {
@@ -291,7 +294,8 @@ Geometry::Geometry(const Geometry & other)
   : comm_(other.comm_), halo_(other.halo_), grid_(other.grid_), gridType_(other.gridType_),
   partitioner_(other.partitioner_), mesh_(other.mesh_), groupIndex_(other.groupIndex_),
   levelsAreTopDown_(other.levelsAreTopDown_), modelData_(other.modelData_), alias_(other.alias_),
-  interpolation_(other.interpolation_), duplicatePoints_(other.duplicatePoints_) {
+  latSouthToNorth_(other.latSouthToNorth_), interpolation_(other.interpolation_),
+  duplicatePoints_(other.duplicatePoints_) {
   oops::Log::trace() << classname() << "::Geometry starting" << std::endl;
 
   // Copy function space

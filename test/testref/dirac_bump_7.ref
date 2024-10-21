@@ -79,7 +79,7 @@ Groups:
   - vert_coord: [1.0000000000000000e+00]
   Mask size: 100%
 Fields:
-  stream_function: 3.7655513961834265e+11
-  velocity_potential: 3.5951161232672333e+10
-  air_temperature: 5.1332249310555289e+03
-  air_pressure_at_surface: 1.6043416473327619e+02
+  stream_function: 3.6738259144564355e+11
+  velocity_potential: 3.4330582222709686e+10
+  air_temperature: 5.1462394702503952e+03
+  air_pressure_at_surface: 1.6780108751963473e+02
