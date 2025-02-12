@@ -1,61 +1,22 @@
 Input Dirac increment:
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: F10
-- size: 800
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.0000000000000000e+00
-  air_horizontal_velocity_potential: 0.0000000000000000e+00
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: F10 [800]
+  Fields:
+    air_horizontal_streamfunction: 1.0000000000000000e+00
+    air_horizontal_velocity_potential: 0.0000000000000000e+00
 Adjoint test for block ID passed
 Square-root test for block ID passed
 Covariance(SABER) * Increment:
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: F10
-- size: 800
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.0000000000000000e+00
-  air_horizontal_velocity_potential: 0.0000000000000000e+00
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: F10 [800]
+  Fields:
+    air_horizontal_streamfunction: 1.0000000000000000e+00
+    air_horizontal_velocity_potential: 0.0000000000000000e+00
 Adjoint test for block ID passed
 Square-root test for block ID passed
 Randomized variance: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: F10
-- size: 800
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 4.0913457556747154e+01
-  air_horizontal_velocity_potential: 4.0661973152712200e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: F10 [800]
+  Fields:
+    air_horizontal_streamfunction: 4.0913457556747154e+01
+    air_horizontal_velocity_potential: 4.0661973152712200e+01

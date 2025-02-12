@@ -18,452 +18,127 @@
              v%n_s =                             2
              c%n_s[global] =                  3248
 Member 0: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: unstructured.a3ac36d
-- size: 173
-Partitioner:
-- type: equal_regions
-Function space:
-- type: NodeColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.9409090605192684e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: unstructured.a3ac36d [173]
+  Fields:
+    air_horizontal_streamfunction: 1.9409090605192684e+01
 Member 1: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: unstructured.a3ac36d
-- size: 173
-Partitioner:
-- type: equal_regions
-Function space:
-- type: NodeColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.7279189846503005e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: unstructured.a3ac36d [173]
+  Fields:
+    air_horizontal_streamfunction: 1.7279189846503005e+01
 Member 2: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: unstructured.a3ac36d
-- size: 173
-Partitioner:
-- type: equal_regions
-Function space:
-- type: NodeColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.8487635393899723e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: unstructured.a3ac36d [173]
+  Fields:
+    air_horizontal_streamfunction: 1.8487635393899723e+01
 Member 3: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: unstructured.a3ac36d
-- size: 173
-Partitioner:
-- type: equal_regions
-Function space:
-- type: NodeColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.8760229852002769e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: unstructured.a3ac36d [173]
+  Fields:
+    air_horizontal_streamfunction: 1.8760229852002769e+01
 Member 4: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: unstructured.a3ac36d
-- size: 173
-Partitioner:
-- type: equal_regions
-Function space:
-- type: NodeColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.8957922295917673e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: unstructured.a3ac36d [173]
+  Fields:
+    air_horizontal_streamfunction: 1.8957922295917673e+01
 Member 5: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: unstructured.a3ac36d
-- size: 173
-Partitioner:
-- type: equal_regions
-Function space:
-- type: NodeColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.9838407692660411e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: unstructured.a3ac36d [173]
+  Fields:
+    air_horizontal_streamfunction: 1.9838407692660411e+01
 Member 6: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: unstructured.a3ac36d
-- size: 173
-Partitioner:
-- type: equal_regions
-Function space:
-- type: NodeColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.9982854662333885e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: unstructured.a3ac36d [173]
+  Fields:
+    air_horizontal_streamfunction: 1.9982854662333885e+01
 Member 7: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: unstructured.a3ac36d
-- size: 173
-Partitioner:
-- type: equal_regions
-Function space:
-- type: NodeColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.8948965173076584e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: unstructured.a3ac36d [173]
+  Fields:
+    air_horizontal_streamfunction: 1.8948965173076584e+01
 Member 8: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: unstructured.a3ac36d
-- size: 173
-Partitioner:
-- type: equal_regions
-Function space:
-- type: NodeColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.8752762772675400e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: unstructured.a3ac36d [173]
+  Fields:
+    air_horizontal_streamfunction: 1.8752762772675400e+01
 Member 9: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: unstructured.a3ac36d
-- size: 173
-Partitioner:
-- type: equal_regions
-Function space:
-- type: NodeColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.8785221714451538e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: unstructured.a3ac36d [173]
+  Fields:
+    air_horizontal_streamfunction: 1.8785221714451538e+01
 Member 10: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: unstructured.a3ac36d
-- size: 173
-Partitioner:
-- type: equal_regions
-Function space:
-- type: NodeColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.8961091104981346e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: unstructured.a3ac36d [173]
+  Fields:
+    air_horizontal_streamfunction: 1.8961091104981346e+01
 Member 11: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: unstructured.a3ac36d
-- size: 173
-Partitioner:
-- type: equal_regions
-Function space:
-- type: NodeColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.7123303352162470e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: unstructured.a3ac36d [173]
+  Fields:
+    air_horizontal_streamfunction: 1.7123303352162470e+01
 Member 12: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: unstructured.a3ac36d
-- size: 173
-Partitioner:
-- type: equal_regions
-Function space:
-- type: NodeColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.6553430757688503e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: unstructured.a3ac36d [173]
+  Fields:
+    air_horizontal_streamfunction: 1.6553430757688503e+01
 Member 13: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: unstructured.a3ac36d
-- size: 173
-Partitioner:
-- type: equal_regions
-Function space:
-- type: NodeColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 2.0843990885193779e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: unstructured.a3ac36d [173]
+  Fields:
+    air_horizontal_streamfunction: 2.0843990885193779e+01
 Member 14: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: unstructured.a3ac36d
-- size: 173
-Partitioner:
-- type: equal_regions
-Function space:
-- type: NodeColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.9208116235569641e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: unstructured.a3ac36d [173]
+  Fields:
+    air_horizontal_streamfunction: 1.9208116235569641e+01
 Member 15: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: unstructured.a3ac36d
-- size: 173
-Partitioner:
-- type: equal_regions
-Function space:
-- type: NodeColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.8954059335104482e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: unstructured.a3ac36d [173]
+  Fields:
+    air_horizontal_streamfunction: 1.8954059335104482e+01
 Member 16: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: unstructured.a3ac36d
-- size: 173
-Partitioner:
-- type: equal_regions
-Function space:
-- type: NodeColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.7648701856428719e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: unstructured.a3ac36d [173]
+  Fields:
+    air_horizontal_streamfunction: 1.7648701856428719e+01
 Member 17: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: unstructured.a3ac36d
-- size: 173
-Partitioner:
-- type: equal_regions
-Function space:
-- type: NodeColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.6810908561297580e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: unstructured.a3ac36d [173]
+  Fields:
+    air_horizontal_streamfunction: 1.6810908561297580e+01
 Member 18: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: unstructured.a3ac36d
-- size: 173
-Partitioner:
-- type: equal_regions
-Function space:
-- type: NodeColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.5210781203387414e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: unstructured.a3ac36d [173]
+  Fields:
+    air_horizontal_streamfunction: 1.5210781203387414e+01
 Member 19: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: unstructured.a3ac36d
-- size: 173
-Partitioner:
-- type: equal_regions
-Function space:
-- type: NodeColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.8522531897376549e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: unstructured.a3ac36d [173]
+  Fields:
+    air_horizontal_streamfunction: 1.8522531897376549e+01
 Member 20: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: unstructured.a3ac36d
-- size: 173
-Partitioner:
-- type: equal_regions
-Function space:
-- type: NodeColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.8768681409124145e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: unstructured.a3ac36d [173]
+  Fields:
+    air_horizontal_streamfunction: 1.8768681409124145e+01
 Member 21: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: unstructured.a3ac36d
-- size: 173
-Partitioner:
-- type: equal_regions
-Function space:
-- type: NodeColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.7925961238779166e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: unstructured.a3ac36d [173]
+  Fields:
+    air_horizontal_streamfunction: 1.7925961238779166e+01
 Member 22: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: unstructured.a3ac36d
-- size: 173
-Partitioner:
-- type: equal_regions
-Function space:
-- type: NodeColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.7021249560838740e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: unstructured.a3ac36d [173]
+  Fields:
+    air_horizontal_streamfunction: 1.7021249560838740e+01
 Member 23: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: unstructured.a3ac36d
-- size: 173
-Partitioner:
-- type: equal_regions
-Function space:
-- type: NodeColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.7660929366278832e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: unstructured.a3ac36d [173]
+  Fields:
+    air_horizontal_streamfunction: 1.7660929366278832e+01
 Member 24: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: unstructured.a3ac36d
-- size: 173
-Partitioner:
-- type: equal_regions
-Function space:
-- type: NodeColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.7078781467743379e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: unstructured.a3ac36d [173]
+  Fields:
+    air_horizontal_streamfunction: 1.7078781467743379e+01

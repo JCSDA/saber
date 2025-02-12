@@ -1,40 +1,14 @@
 Input Dirac increment:
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: L40x21
-- size: 840
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 1
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  eastward_wind: 1.0000000000000000e+00
-  northward_wind: 0.0000000000000000e+00
-Valid time: 2010-01-01T18:00:00Z
-Quench geometry grid:
-- name: L40x21
-- size: 840
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 1
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  eastward_wind: 0.0000000000000000e+00
-  northward_wind: 0.0000000000000000e+00
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    eastward_wind: 1.0000000000000000e+00
+    northward_wind: 0.0000000000000000e+00
+- Valid time: 2010-01-01T18:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    eastward_wind: 0.0000000000000000e+00
+    northward_wind: 0.0000000000000000e+00
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -59,39 +33,13 @@ Fields:
              - psi/chi to u:  39.37007%
              - psi/chi to v:  39.37007%
 Covariance(SABER) * Increment:
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: L40x21
-- size: 840
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 1
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  eastward_wind: 1.1090895070752702e-06
-  northward_wind: 1.1135691197637208e-06
-Valid time: 2010-01-01T18:00:00Z
-Quench geometry grid:
-- name: L40x21
-- size: 840
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 1
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  eastward_wind: 1.1090895070752702e-06
-  northward_wind: 1.1135691197637208e-06
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    eastward_wind: 1.1090895070752702e-06
+    northward_wind: 1.1135691197637208e-06
+- Valid time: 2010-01-01T18:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    eastward_wind: 1.1090895070752702e-06
+    northward_wind: 1.1135691197637208e-06

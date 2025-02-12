@@ -1,29 +1,10 @@
 Input Dirac increment:
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: structured
-- size: 3763
-Regional grid detected
-Partitioner:
-- type: checkerboard
-Function space:
-- type: StructuredColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 10
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-  Mask size: 100%
-- Group 1:
-  Vertical levels: 
-  - number: 1
-  - vert_coord: [1.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 3.0000000000000000e+00
-  air_horizontal_velocity_potential: 0.0000000000000000e+00
-  air_pressure_at_surface: 3.0000000000000000e+00
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: structured [3763]
+  Fields:
+    air_horizontal_streamfunction: 3.0000000000000000e+00
+    air_horizontal_velocity_potential: 0.0000000000000000e+00
+    air_pressure_at_surface: 3.0000000000000000e+00
 Norm of input parameter weight_0: 5.3790456634123437e+01
 Norm of input parameter weight_1: 1.3057380787119047e+02
 Norm of input parameter weight_2: 6.3154842282495004e+01
@@ -45,28 +26,9 @@ Norm of input parameter normalization_2: 2.3222849902864127e+02
 Adjoint test for block FastLAM passed
 Square-root test for block FastLAM passed
 Covariance(SABER) * Increment:
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: structured
-- size: 3763
-Regional grid detected
-Partitioner:
-- type: checkerboard
-Function space:
-- type: StructuredColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 10
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-  Mask size: 100%
-- Group 1:
-  Vertical levels: 
-  - number: 1
-  - vert_coord: [1.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.2629637447098006e+01
-  air_horizontal_velocity_potential: 1.2629637447098006e+01
-  air_pressure_at_surface: 1.1739083152435390e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: structured [3763]
+  Fields:
+    air_horizontal_streamfunction: 1.2629637447098006e+01
+    air_horizontal_velocity_potential: 1.2629637447098006e+01
+    air_pressure_at_surface: 1.1739083152435390e+01

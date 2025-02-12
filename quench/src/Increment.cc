@@ -137,7 +137,7 @@ void Increment::axpy(const double & zz,
 void Increment::print(std::ostream & os) const {
   oops::Log::trace() << classname() << "::print starting" << std::endl;
 
-  os << std::endl << "Valid time: " << this->validTime();
+  os << std::endl << "- Valid time: " << this->validTime();
   os << *fields_;
 
   oops::Log::trace() << classname() << "::print done" << std::endl;

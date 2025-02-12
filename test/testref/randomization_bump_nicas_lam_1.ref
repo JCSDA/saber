@@ -1,27 +1,8 @@
 Norm of input parameter StdDev: 1.4055514931869269e+06
 Member 0: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: structured
-- size: 3763
-Regional grid detected
-Partitioner:
-- type: checkerboard
-Function space:
-- type: StructuredColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 10
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00,3.0000000000000000e+00,4.0000000000000000e+00,5.0000000000000000e+00,6.0000000000000000e+00,7.0000000000000000e+00,8.0000000000000000e+00,9.0000000000000000e+00,1.0000000000000000e+01]
-  Mask size: 100%
-- Group 1:
-  Vertical levels: 
-  - number: 1
-  - vert_coord: [1.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.1926829301035954e+06
-  air_horizontal_velocity_potential: 1.2764155598969914e+06
-  air_pressure_at_surface: 3.8148523882078181e+05
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: structured [3763]
+  Fields:
+    air_horizontal_streamfunction: 1.1926829301035954e+06
+    air_horizontal_velocity_potential: 1.2764155598969914e+06
+    air_pressure_at_surface: 3.8148523882078181e+05

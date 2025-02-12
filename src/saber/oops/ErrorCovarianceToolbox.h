@@ -29,7 +29,6 @@
 #include "oops/base/Geometry.h"
 #include "oops/base/Increment.h"
 #include "oops/base/Increment4D.h"
-#include "oops/base/IncrementEnsemble.h"
 #include "oops/base/instantiateCovarFactory.h"
 #include "oops/base/ModelSpaceCovarianceBase.h"
 #include "oops/base/PostProcessor.h"

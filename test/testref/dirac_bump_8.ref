@@ -1,21 +1,8 @@
 Input Dirac increment:
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: L120x61
-- size: 7320
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 1
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 1
-  - vert_coord: [0.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  snow_depth: 1.0000000000000000e+00
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L120x61 [7320]
+  Fields:
+    snow_depth: 1.0000000000000000e+00
        Independent levels:  1[1]
           Subset Sc0 size:             7082
           Domain area (% of Earth area): 0.100E+03%
@@ -43,20 +30,7 @@ Fields:
           Component NICAS adjoint test result:             T
 Norm of output parameter vert_coord - 1: 1.2831019118921313e+01
 Covariance(SABER) * Increment:
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: L120x61
-- size: 7320
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 1
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 1
-  - vert_coord: [0.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  snow_depth: 7.5991033784244966e+00
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L120x61 [7320]
+  Fields:
+    snow_depth: 7.5991033784244966e+00

@@ -1,27 +1,13 @@
 Input Dirac increment:
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: L40x21
-- size: 840
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 1
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.0000000000000000e+00
-  air_horizontal_velocity_potential: 0.0000000000000000e+00
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    air_horizontal_streamfunction: 1.0000000000000000e+00
+    air_horizontal_velocity_potential: 0.0000000000000000e+00
 Did not write file testdata/dirac_parallel_hybrid_stddev/fields_in_multiply_1.nc
 Fields:
   air_horizontal_streamfunction: 4.0127503126905729e+01
   air_horizontal_velocity_potential: 4.1873820575192191e+01
-
 Adjoint test for block write fields passed
 Norm of input parameter StdDev: 5.7530746965415531e+01
 Adjoint test for block StdDev passed
@@ -30,28 +16,14 @@ Did not write file testdata/dirac_parallel_hybrid_stddev/fields_in_multiply_2.nc
 Fields:
   air_horizontal_streamfunction: 1.0356656962519009e+00
   air_horizontal_velocity_potential: 0.0000000000000000e+00
-
 Covariance(SABER) diagnostics:
 - Variances at Dirac points:
   + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0356656962519009e+00
 - Covariances at diagnostic points:
   + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0356656962519009e+00
 Covariance(SABER) * Increment:
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: L40x21
-- size: 840
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 1
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.0356656962519009e+00
-  air_horizontal_velocity_potential: 0.0000000000000000e+00
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    air_horizontal_streamfunction: 1.0356656962519009e+00
+    air_horizontal_velocity_potential: 0.0000000000000000e+00

@@ -1,22 +1,9 @@
 Input Dirac increment:
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: F12
-- size: 1152
-Partitioner:
-- type: ectrans
-Function space:
-- type: StructuredColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  mu: 1.4142135623730951e+00
-  unbalanced_pressure_levels_minus_one: 1.4142135623730951e+00
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: F12 [1152]
+  Fields:
+    mu: 1.4142135623730951e+00
+    unbalanced_pressure_levels_minus_one: 1.4142135623730951e+00
 Extracting covariances as a function of separation distance
 Covariance profile for variable mu, at level 0: 
 Separation distance: [0.0000000000000000e+00,8.1666612934366814e+04,8.1666612934366814e+04,1.6298684535475873e+05,1.6298684535475873e+05,2.4361567328772260e+05,2.4361567328772260e+05,3.2321078477560845e+05,3.2321078477560845e+05,4.0143393305675755e+05]
@@ -31,21 +18,8 @@ Covariance profile for variable unbalanced_pressure_levels_minus_one, at level 1
 Separation distance: [0.0000000000000000e+00,1.8618124221923648e+05,1.8618124221923648e+05,3.7160467786825256e+05,3.7160467786825256e+05,5.5551430317523866e+05,5.5551430317523866e+05,7.3715776020899101e+05,7.3715776020899101e+05,8.1006540762131859e+05]
 Covariance: [9.9999999999999967e-01,9.6854198877604891e-01,9.6854198877604891e-01,8.8094186252122975e-01,8.8094186252122963e-01,7.5534085928546935e-01,7.5534085928546946e-01,6.1561011787890108e-01,6.1561011787890108e-01,5.6025520842293397e-01]
 Covariance(SABER) * Increment:
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: F12
-- size: 1152
-Partitioner:
-- type: ectrans
-Function space:
-- type: StructuredColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  mu: 5.2209614504245083e+00
-  unbalanced_pressure_levels_minus_one: 6.2209645121811663e+00
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: F12 [1152]
+  Fields:
+    mu: 5.2209614504245083e+00
+    unbalanced_pressure_levels_minus_one: 6.2209645121811663e+00

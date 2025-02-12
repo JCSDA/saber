@@ -1,198 +1,68 @@
 Input state: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: L40x21
-- size: 840
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 1
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 4.9185363676606798e+01
-  air_horizontal_velocity_potential: 4.9185363676606798e+01
-  eastward_wind: 4.9185363676606798e+01
-  northward_wind: 4.9185363676606798e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    air_horizontal_streamfunction: 4.9185363676606798e+01
+    air_horizontal_velocity_potential: 4.9185363676606798e+01
+    eastward_wind: 4.9185363676606798e+01
+    northward_wind: 4.9185363676606798e+01
 Output state: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: L40x21
-- size: 840
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 1
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 4.9185363676606798e+01
-  air_horizontal_velocity_potential: 4.9185363676606798e+01
-  eastward_wind: 4.9185363676606798e+01
-  northward_wind: 4.9185363676606798e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    air_horizontal_streamfunction: 4.9185363676606798e+01
+    air_horizontal_velocity_potential: 4.9185363676606798e+01
+    eastward_wind: 4.9185363676606798e+01
+    northward_wind: 4.9185363676606798e+01
 Input state: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: L40x21
-- size: 840
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 1
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction_transformed: 1.2296340919151518e+02
-  air_horizontal_velocity_potential_transformed: 1.2296340919151518e+02
-  eastward_wind: 1.2296340919151518e+02
-  northward_wind: 1.2296340919151518e+02
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    air_horizontal_streamfunction_transformed: 1.2296340919151518e+02
+    air_horizontal_velocity_potential_transformed: 1.2296340919151518e+02
+    eastward_wind: 1.2296340919151518e+02
+    northward_wind: 1.2296340919151518e+02
 Output state: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: L40x21
-- size: 840
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 1
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction_transformed: 1.2296340919151518e+02
-  air_horizontal_velocity_potential_transformed: 1.2296340919151518e+02
-  eastward_wind: 1.2296340919151518e+02
-  northward_wind: 1.2296340919151518e+02
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    air_horizontal_streamfunction_transformed: 1.2296340919151518e+02
+    air_horizontal_velocity_potential_transformed: 1.2296340919151518e+02
+    eastward_wind: 1.2296340919151518e+02
+    northward_wind: 1.2296340919151518e+02
 Input state: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: L40x21
-- size: 840
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 1
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.0246950765959599e+02
-  air_horizontal_velocity_potential: 1.0246950765959599e+02
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    air_horizontal_streamfunction: 1.0246950765959599e+02
+    air_horizontal_velocity_potential: 1.0246950765959599e+02
 Output state: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: L40x21
-- size: 840
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 1
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.0246950765959599e+02
-  air_horizontal_velocity_potential: 1.0246950765959599e+02
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    air_horizontal_streamfunction: 1.0246950765959599e+02
+    air_horizontal_velocity_potential: 1.0246950765959599e+02
 Input state: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: L40x21
-- size: 840
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 1
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.2296340919151699e+01
-  air_horizontal_velocity_potential: 1.2296340919151699e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    air_horizontal_streamfunction: 1.2296340919151699e+01
+    air_horizontal_velocity_potential: 1.2296340919151699e+01
 Output state: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: L40x21
-- size: 840
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 1
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 1.2296340919151699e+01
-  air_horizontal_velocity_potential: 1.2296340919151699e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    air_horizontal_streamfunction: 1.2296340919151699e+01
+    air_horizontal_velocity_potential: 1.2296340919151699e+01
 Input state: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: L40x21
-- size: 840
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 1
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 2.8691462144687090e+01
-  air_horizontal_velocity_potential: 2.8691462144687090e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    air_horizontal_streamfunction: 2.8691462144687090e+01
+    air_horizontal_velocity_potential: 2.8691462144687090e+01
 Output state: 
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: L40x21
-- size: 840
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 1
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  air_horizontal_streamfunction: 2.8691462144687090e+01
-  air_horizontal_velocity_potential: 2.8691462144687090e+01
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    air_horizontal_streamfunction: 2.8691462144687090e+01
+    air_horizontal_velocity_potential: 2.8691462144687090e+01

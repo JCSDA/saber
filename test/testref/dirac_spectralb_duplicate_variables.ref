@@ -1,26 +1,13 @@
 Input Dirac increment:
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: F15
-- size: 1800
-Partitioner:
-- type: ectrans
-Function space:
-- type: StructuredColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  var1: 1.0000000000000000e+00
-  var2: 1.0000000000000000e+00
-  var3: 1.0000000000000000e+00
-  var4: 1.0000000000000000e+00
-  var5: 1.0000000000000000e+00
-  var6: 1.0000000000000000e+00
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: F15 [1800]
+  Fields:
+    var1: 1.0000000000000000e+00
+    var2: 1.0000000000000000e+00
+    var3: 1.0000000000000000e+00
+    var4: 1.0000000000000000e+00
+    var5: 1.0000000000000000e+00
+    var6: 1.0000000000000000e+00
 Adjoint test for block spectral to gauss passed
 Adjoint test for block duplicate variables passed
 Adjoint test for block ID passed
@@ -37,25 +24,12 @@ Covariance(SABER) diagnostics:
   + Value for variable var4, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 0.0000000000000000e+00
   + Value for variable var6, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 0.0000000000000000e+00
 Covariance(SABER) * Increment:
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: F15
-- size: 1800
-Partitioner:
-- type: ectrans
-Function space:
-- type: StructuredColumns
-- halo: 0
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  var1: 3.1003077258821704e+03
-  var2: 3.1003077258821704e+03
-  var3: 3.1003077258821704e+03
-  var4: 2.0668718172547779e+03
-  var5: 2.0668718172547779e+03
-  var6: 1.0334359086273889e+03
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: F15 [1800]
+  Fields:
+    var1: 3.1003077258821704e+03
+    var2: 3.1003077258821704e+03
+    var3: 3.1003077258821704e+03
+    var4: 2.0668718172547769e+03
+    var5: 2.0668718172547769e+03
+    var6: 1.0334359086273885e+03

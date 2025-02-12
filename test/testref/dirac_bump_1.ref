@@ -1,40 +1,14 @@
 Input Dirac increment:
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: L40x21
-- size: 840
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 1
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  eastward_wind: 1.0000000000000000e+00
-  northward_wind: 0.0000000000000000e+00
-Valid time: 2010-01-01T18:00:00Z
-Quench geometry grid:
-- name: L40x21
-- size: 840
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 1
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  eastward_wind: 0.0000000000000000e+00
-  northward_wind: 0.0000000000000000e+00
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    eastward_wind: 1.0000000000000000e+00
+    northward_wind: 0.0000000000000000e+00
+- Valid time: 2010-01-01T18:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    eastward_wind: 0.0000000000000000e+00
+    northward_wind: 0.0000000000000000e+00
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -106,42 +80,16 @@ Square-root test for block BUMP_NICAS passed
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
 Covariance(hybrid) * Increment:
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: L40x21
-- size: 840
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 1
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  eastward_wind: 1.3541398063751613e+01
-  northward_wind: 4.0498383512132081e+00
-Valid time: 2010-01-01T18:00:00Z
-Quench geometry grid:
-- name: L40x21
-- size: 840
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 1
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  eastward_wind: 1.9040437974069926e+00
-  northward_wind: 3.0954077987719022e+00
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    eastward_wind: 1.3541398063751613e+01
+    northward_wind: 4.0498383512132081e+00
+- Valid time: 2010-01-01T18:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    eastward_wind: 1.9040437974069926e+00
+    northward_wind: 3.0954077987719022e+00
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -206,42 +154,16 @@ Adjoint test for block BUMP_StdDev passed
 Adjoint test for block BUMP_NICAS passed
 Square-root test for block BUMP_NICAS passed
 Covariance(hybrid1_SABER) * Increment:
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: L40x21
-- size: 840
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 1
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  eastward_wind: 3.7259415926535306e-12
-  northward_wind: 1.3202009593235781e-12
-Valid time: 2010-01-01T18:00:00Z
-Quench geometry grid:
-- name: L40x21
-- size: 840
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 1
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  eastward_wind: 3.7259415926535306e-12
-  northward_wind: 1.3202009593235781e-12
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    eastward_wind: 3.7259415926535306e-12
+    northward_wind: 1.3202009593235781e-12
+- Valid time: 2010-01-01T18:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    eastward_wind: 3.7259415926535306e-12
+    northward_wind: 1.3202009593235781e-12
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -250,42 +172,16 @@ Fields:
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
 Covariance(hybrid2_ensemble) * Increment:
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: L40x21
-- size: 840
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 1
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  eastward_wind: 2.7082796127500622e+01
-  northward_wind: 8.0996767024264411e+00
-Valid time: 2010-01-01T18:00:00Z
-Quench geometry grid:
-- name: L40x21
-- size: 840
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 1
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  eastward_wind: 3.8080875948143298e+00
-  northward_wind: 6.1908155975435024e+00
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    eastward_wind: 2.7082796127500622e+01
+    northward_wind: 8.0996767024264411e+00
+- Valid time: 2010-01-01T18:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    eastward_wind: 3.8080875948143298e+00
+    northward_wind: 6.1908155975435024e+00
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -297,39 +193,13 @@ Localization(hybrid2_ensemble_localization) diagnostics:
 - Localization at zero separation:
   + Value for variable eastward_wind, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0000000000000000e+00
 Localization(hybrid2_ensemble) * Increment:
-Valid time: 2010-01-01T12:00:00Z
-Quench geometry grid:
-- name: L40x21
-- size: 840
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 1
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  eastward_wind: 2.2517366841554374e+00
-  northward_wind: 2.2517366841554374e+00
-Valid time: 2010-01-01T18:00:00Z
-Quench geometry grid:
-- name: L40x21
-- size: 840
-Partitioner:
-- type: equal_regions
-Function space:
-- type: StructuredColumns
-- halo: 1
-Groups: 
-- Group 0:
-  Vertical levels: 
-  - number: 2
-  - vert_coord: [1.0000000000000000e+00,2.0000000000000000e+00]
-  Mask size: 100%
-Fields:
-  eastward_wind: 2.2517366841554374e+00
-  northward_wind: 2.2517366841554374e+00
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    eastward_wind: 2.2517366841554374e+00
+    northward_wind: 2.2517366841554374e+00
+- Valid time: 2010-01-01T18:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+    eastward_wind: 2.2517366841554374e+00
+    northward_wind: 2.2517366841554374e+00
