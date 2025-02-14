@@ -16,6 +16,7 @@
 
 #include "eckit/exception/Exceptions.h"
 
+// note below routine this is also used in H(x), so we keep it in vader
 #include "mo/eval_air_temperature.h"
 
 #include "oops/base/FieldSet3D.h"

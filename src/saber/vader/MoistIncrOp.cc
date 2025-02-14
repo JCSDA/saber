@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2022-2024 Met Office
+ * (C) Crown Copyright 2022-2025 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -19,19 +19,7 @@
 
 #include "eckit/exception/Exceptions.h"
 
-#include "mo/common_varchange.h"
 #include "mo/constants.h"
-#include "mo/eval_air_temperature.h"
-#include "mo/eval_cloud_ice_mixing_ratio.h"
-#include "mo/eval_cloud_liquid_mixing_ratio.h"
-#include "mo/eval_mio_fields.h"
-#include "mo/eval_moisture_incrementing_operator.h"
-#include "mo/eval_rain_mixing_ratio.h"
-#include "mo/eval_sat_vapour_pressure.h"
-#include "mo/eval_total_mixing_ratio.h"
-#include "mo/eval_total_relative_humidity.h"
-#include "mo/eval_water_vapor_mixing_ratio.h"
-#include "mo/functions.h"
 
 #include "oops/base/FieldSet3D.h"
 #include "oops/base/Variables.h"
@@ -43,11 +31,16 @@
 
 #include "saber/blocks/SaberOuterBlockBase.h"
 #include "saber/oops/Utilities.h"
+#include "saber/vader/movader_covstats_interface.h"
 
 namespace saber {
 namespace vader {
 
 namespace {
+
+using atlas::array::make_view;
+using atlas::idx_t;
+
 
 auto calcMedian(std::vector<double> x) {
   // Sort the vector
@@ -181,6 +174,197 @@ void writeOutputMIOToNetcdf(std::vector<std::vector<double>> qclIncRegrArr,
                                                             Here());
 }
 
+Eigen::MatrixXd createMIOCoeff(const std::string mioFileName,
+                               const std::string s) {
+  oops::Log::trace() << "[createMIOCoeff] starting ..." << std::endl;
+  Eigen::MatrixXd mioCoeff(static_cast<std::size_t>(::mo::constants::mioLevs),
+                           static_cast<std::size_t>(::mo::constants::mioBins));
+
+  std::vector<double> valuesvec(::mo::constants::mioLookUpLength, 0);
+
+  oldCovMIOStats_f90(static_cast<int>(mioFileName.size()),
+                    mioFileName.c_str(),
+                    static_cast<int>(s.size()),
+                    s.c_str(),
+                    static_cast<int>(::mo::constants::mioBins),
+                    static_cast<int>(::mo::constants::mioLevs),
+                    valuesvec[0]);
+
+  for (int j = 0; j < static_cast<int>(::mo::constants::mioLevs); ++j) {
+    for (int i = 0; i < static_cast<int>(::mo::constants::mioBins); ++i) {
+      // Fortran returns column major order, but C++ needs row major
+      mioCoeff(j, i) = valuesvec[i * ::mo::constants::mioLevs+j];
+    }
+  }
+  oops::Log::trace() << "[createMIOCoeff] ... exit" << std::endl;
+  return mioCoeff;
+}
+
+
+void eval_mio_fields_nl(const std::string & mio_path, atlas::FieldSet & augStateFlds) {
+  oops::Log::trace() << "[eval_mio_fields_nl()] starting ..." << std::endl;
+  const auto rhtView = make_view<const double, 2>(augStateFlds["rht"]);
+  const auto clView = make_view<const double, 2>
+                (augStateFlds["liquid_cloud_volume_fraction_in_atmosphere_layer"]);
+  const auto cfView = make_view<const double, 2>
+                (augStateFlds["ice_cloud_volume_fraction_in_atmosphere_layer"]);
+
+  auto cleffView = make_view<double, 2>(augStateFlds["cleff"]);
+  auto cfeffView = make_view<double, 2>(augStateFlds["cfeff"]);
+
+  const atlas::idx_t numLevels = augStateFlds["rht"].shape(1);
+  const atlas::idx_t sizeOwned = util::getSizeOwned(augStateFlds["rht"].functionspace());
+
+  Eigen::MatrixXd mioCoeffCl = createMIOCoeff(mio_path, "qcl_coef");
+  Eigen::MatrixXd mioCoeffCf = createMIOCoeff(mio_path, "qcf_coef");
+
+  for  (atlas::idx_t jn = 0; jn < sizeOwned; ++jn) {
+    for (int jl = 0; jl < numLevels; ++jl) {
+      if (jl < ::mo::constants::mioLevs) {
+        // Ternary false branch has std::max inside the static_cast to make sure a small negative
+        // integer does not underflow to a giant positive size_t.
+        const std::size_t ibin = (rhtView(jn, jl) > ::mo::constants::rHTLastBinLowerLimit) ?
+                                 ::mo::constants::mioBins - 1 :
+                                 static_cast<std::size_t>(std::max(floor(rhtView(jn, jl) /
+                                 ::mo::constants::rHTBin), 0.0));
+
+        double ceffdenom = (1.0 -  clView(jn, jl) * cfView(jn, jl) );
+        if (ceffdenom > ::mo::constants::tol) {
+          std::double_t clcf = clView(jn, jl) * cfView(jn, jl);
+          cleffView(jn, jl) = mioCoeffCl(jl, ibin) * (clView(jn, jl) - clcf) / ceffdenom;
+          cfeffView(jn, jl) = mioCoeffCf(jl, ibin) * (cfView(jn, jl) - clcf) / ceffdenom;
+        } else {
+          cleffView(jn, jl) = 0.5;
+          cfeffView(jn, jl) = 0.5;
+        }
+      } else {
+        cleffView(jn, jl) = 0.0;
+        cfeffView(jn, jl) = 0.0;
+      }
+    }
+  }
+  augStateFlds["cleff"].set_dirty();
+  augStateFlds["cfeff"].set_dirty();
+
+  oops::Log::trace() << "[eval_mio_fields_nl()] ... exit" << std::endl;
+}
+
+const char specific_humidity_mo[] = "water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water";
+
+// ------------------------------------------------------------------------------------------------
+void eval_moisture_incrementing_operator_tl(atlas::FieldSet & incFlds,
+                                            const atlas::FieldSet & augStateFlds) {
+  oops::Log::trace() << "[eval_moisture_incrementing_operator_tl()] starting ..."
+                     << std::endl;
+  auto qsatView = make_view<const double, 2>(augStateFlds["qsat"]);
+  auto dlsvpdTView = make_view<const double, 2>(augStateFlds["dlsvpdT"]);
+  auto cleffView = make_view<const double, 2>(augStateFlds["cleff"]);
+  auto cfeffView = make_view<const double, 2>(augStateFlds["cfeff"]);
+  auto qtIncView = make_view<const double, 2>(incFlds["qt"]);
+  auto temperIncView = make_view<const double, 2>(incFlds["air_temperature"]);
+
+  auto qclIncView = make_view<double, 2>
+                    (incFlds["cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water"]);
+  auto qcfIncView = make_view<double, 2>
+                    (incFlds["cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water"]);
+  auto qIncView = make_view<double, 2>(incFlds[specific_humidity_mo]);
+  const idx_t numLevels = incFlds["qt"].shape(1);
+  const idx_t sizeOwned =
+        util::getSizeOwned(incFlds["qt"].functionspace());
+
+  double maxCldInc;
+  for (idx_t jn = 0; jn < sizeOwned; ++jn) {
+    for (idx_t jl = 0; jl < numLevels; ++jl) {
+      maxCldInc = qtIncView(jn, jl) - qsatView(jn, jl) *
+                  dlsvpdTView(jn, jl) * temperIncView(jn, jl);
+      qclIncView(jn, jl) = cleffView(jn, jl) * maxCldInc;
+      qcfIncView(jn, jl) = cfeffView(jn, jl) * maxCldInc;
+      qIncView(jn, jl) = qtIncView(jn, jl) - qclIncView(jn, jl) - qcfIncView(jn, jl);
+    }
+  }
+  incFlds["cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water"].set_dirty();
+  incFlds["cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water"].set_dirty();
+  incFlds[specific_humidity_mo].set_dirty();
+
+  oops::Log::trace() << "[eval_moisture_incrementing_operator_tl()] ... done"
+                     << std::endl;
+}
+
+// ------------------------------------------------------------------------------------------------
+void eval_moisture_incrementing_operator_ad(atlas::FieldSet & hatFlds,
+                             const atlas::FieldSet & augStateFlds) {
+  oops::Log::trace() << "[eval_moisture_incrementing_operator_ad()] starting ..."
+                     << std::endl;
+  auto qsatView = make_view<const double, 2>(augStateFlds["qsat"]);
+  auto dlsvpdTView = make_view<const double, 2>(augStateFlds["dlsvpdT"]);
+  auto cleffView = make_view<const double, 2>(augStateFlds["cleff"]);
+  auto cfeffView = make_view<const double, 2>(augStateFlds["cfeff"]);
+
+  auto temperHatView = make_view<double, 2>(hatFlds["air_temperature"]);
+  auto qtHatView = make_view<double, 2>(hatFlds["qt"]);
+  auto qHatView = make_view<double, 2>(hatFlds[specific_humidity_mo]);
+  auto qclHatView = make_view<double, 2>
+                    (hatFlds["cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water"]);
+  auto qcfHatView = make_view<double, 2>
+                    (hatFlds["cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water"]);
+  const idx_t numLevels = hatFlds["qt"].shape(1);
+  const idx_t sizeOwned =
+        util::getSizeOwned(hatFlds["qt"].functionspace());
+
+  double qsatdlsvpdT;
+  for (idx_t jn = 0; jn < sizeOwned; ++jn) {
+    for (idx_t jl = 0; jl < numLevels; ++jl) {
+      qsatdlsvpdT = qsatView(jn, jl) * dlsvpdTView(jn, jl);
+      temperHatView(jn, jl) += ((cleffView(jn, jl) + cfeffView(jn, jl)) * qHatView(jn, jl)
+                                - cleffView(jn, jl) * qclHatView(jn, jl)
+                                - cfeffView(jn, jl) * qcfHatView(jn, jl)) * qsatdlsvpdT;
+      qtHatView(jn, jl) += cleffView(jn, jl) * qclHatView(jn, jl)
+              + cfeffView(jn, jl) * qcfHatView(jn, jl)
+              + (1.0 - cleffView(jn, jl) - cfeffView(jn, jl))
+              * qHatView(jn, jl);
+      qHatView(jn, jl) = 0.0;
+      qclHatView(jn, jl) = 0.0;
+      qcfHatView(jn, jl) = 0.0;
+    }
+  }
+  hatFlds["air_temperature"].set_dirty();
+  hatFlds[specific_humidity_mo].set_dirty();
+  hatFlds["qt"].set_dirty();
+  hatFlds["cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water"].set_dirty();
+  hatFlds["cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water"].set_dirty();
+
+  oops::Log::trace() << "[eval_moisture_incrementing_operator_ad()] ... done"
+                     << std::endl;
+}
+
+// ------------------------------------------------------------------------------------------------
+void eval_total_water_tl(atlas::FieldSet & incFlds,
+                         const atlas::FieldSet & augStateFlds) {
+  oops::Log::trace() << "[eval_total_water_tl()] starting ..." << std::endl;
+
+  auto qIncView = make_view<const double, 2>(incFlds[specific_humidity_mo]);
+  auto qclIncView = make_view<const double, 2>
+                    (incFlds["cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water"]);
+  auto qcfIncView = make_view<const double, 2>
+                      (incFlds["cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water"]);
+
+  auto qtIncView = make_view<double, 2>(incFlds["qt"]);
+  const idx_t numLevels = incFlds["qt"].shape(1);
+  const idx_t sizeOwned =
+        util::getSizeOwned(incFlds["qt"].functionspace());
+
+  for (idx_t jnode = 0; jnode < sizeOwned; jnode++) {
+    for (idx_t jlev = 0; jlev < numLevels; jlev++) {
+      qtIncView(jnode, jlev) = qIncView(jnode, jlev)
+                             + qclIncView(jnode, jlev)
+                             + qcfIncView(jnode, jlev);
+    }
+  }
+  incFlds["qt"].set_dirty();
+
+  oops::Log::trace() << "[eval_total_water_tl()] ... done" << std::endl;
+}
+
 }  // namespace
 
 // -----------------------------------------------------------------------------
@@ -221,7 +405,7 @@ MoistIncrOp::MoistIncrOp(const oops::GeometryData & outerGeometryData,
     augmentedStateFieldSet_.add(field);
   }
 
-  mo::eval_mio_fields_nl(params.mio_file, augmentedStateFieldSet_);
+  eval_mio_fields_nl(params.mio_file, augmentedStateFieldSet_);
 
   oops::Log::trace() << classname() << "::MoistIncrOp done" << std::endl;
 }
@@ -243,7 +427,7 @@ void MoistIncrOp::multiply(oops::FieldSet3D & fset) const {
                         innerGeometryData_.functionSpace());
 
   // Populate output fields.
-  mo::eval_moisture_incrementing_operator_tl(fset.fieldSet(), augmentedStateFieldSet_);
+  eval_moisture_incrementing_operator_tl(fset.fieldSet(), augmentedStateFieldSet_);
 
   // Remove inner-only variables
   fset.removeFields(innerOnlyVars_);
@@ -259,7 +443,7 @@ void MoistIncrOp::multiplyAD(oops::FieldSet3D & fset) const {
   allocateMissingFields(fset, innerOnlyVars_, innerOnlyVars_,
                         innerGeometryData_.functionSpace());
 
-  mo::eval_moisture_incrementing_operator_ad(fset.fieldSet(), augmentedStateFieldSet_);
+  eval_moisture_incrementing_operator_ad(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
 
@@ -281,7 +465,7 @@ void MoistIncrOp::leftInverseMultiply(oops::FieldSet3D & fset) const {
   allocateMissingFields(fset, innerOnlyVarsForInversion, innerOnlyVarsForInversion,
                         innerGeometryData_.functionSpace());
 
-  mo::eval_total_water_tl(fset.fieldSet(), augmentedStateFieldSet_);
+  eval_total_water_tl(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }
 
@@ -309,8 +493,8 @@ void MoistIncrOp::directCalibration(const oops::FieldSets & fsets) {
   const auto rhtView = atlas::array::make_view<const double, 2>(augmentedStateFieldSet_["rht"]);
 
   // MIO coefficients (already included in cleff and cfeff)
-  Eigen::MatrixXd mioCoeffCl = mo::functions::createMIOCoeff(blockparams_.mio_file, "qcl_coef");
-  Eigen::MatrixXd mioCoeffCf = mo::functions::createMIOCoeff(blockparams_.mio_file, "qcf_coef");
+  Eigen::MatrixXd mioCoeffCl = createMIOCoeff(blockparams_.mio_file, "qcl_coef");
+  Eigen::MatrixXd mioCoeffCf = createMIOCoeff(blockparams_.mio_file, "qcf_coef");
 
   for (atlas::idx_t jl = 0; jl < static_cast<atlas::idx_t>(mo::constants::mioLevs); ++jl) {
     // vector of mioBins rows and variable number of columns
@@ -334,7 +518,7 @@ void MoistIncrOp::directCalibration(const oops::FieldSets & fsets) {
       atlas::FieldSet fset_copy = util::copyFieldSet(fset);
 
       // I need to create a new qcl_inc Atlas field from qt_inc and t_inc according to the MIO TL
-      mo::eval_moisture_incrementing_operator_tl(fset_copy, augmentedStateFieldSet_);
+      eval_moisture_incrementing_operator_tl(fset_copy, augmentedStateFieldSet_);
 
       const auto qclIncMIOView = atlas::array::make_view<const double, 2>
                   (fset_copy["cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water"]);
