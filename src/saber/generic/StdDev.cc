@@ -7,6 +7,7 @@
 
 #include "saber/generic/StdDev.h"
 
+#include <algorithm>
 #include <cmath>
 #include <memory>
 #include <string>
@@ -93,6 +94,13 @@ StdDev::StdDev(const oops::GeometryData & outerGeometryData,
     }
   }
 
+  const eckit::LocalConfiguration & scaling = params_.scaling.value();
+  std::vector<eckit::LocalConfiguration> scales = scaling.getSubConfigurations();
+  for (const eckit::LocalConfiguration & scale : scales) {
+    const std::string var = scale.getString("variable");
+    scaling_[var] = scale.getDouble("stddev");
+  }
+
   oops::Log::trace() << classname() << "::StdDev done" << std::endl;
 }
 
@@ -103,7 +111,18 @@ void StdDev::multiply(oops::FieldSet3D & fset) const {
   if (stdDevFset_) {
     fset *= *stdDevFset_;
   } else {
-    fset *= this->scaleFactor_;
+    for (auto & field : fset) {
+      const std::string var = field.name();
+      if (scaling_.find(var) != scaling_.end()) {
+        const double fact = scaling_.at(var);
+        auto view = atlas::array::make_view<double, 2>(field);
+        for (int jnode = 0; jnode < field.shape(0); ++jnode) {
+          for (int jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+            view(jnode, jlevel) *= fact;
+          }
+        }
+      }
+    }
   }
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
 }
@@ -115,7 +134,18 @@ void StdDev::multiplyAD(oops::FieldSet3D & fset) const {
   if (stdDevFset_) {
     fset *= *stdDevFset_;
   } else {
-    fset *= this->scaleFactor_;
+    for (auto & field : fset) {
+      const std::string var = field.name();
+      if (scaling_.find(var) != scaling_.end()) {
+        const double fact = scaling_.at(var);
+        auto view = atlas::array::make_view<double, 2>(field);
+        for (int jnode = 0; jnode < field.shape(0); ++jnode) {
+          for (int jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+            view(jnode, jlevel) *= fact;
+          }
+        }
+      }
+    }
   }
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }
@@ -127,7 +157,18 @@ void StdDev::leftInverseMultiply(oops::FieldSet3D & fset) const {
   if (stdDevFset_) {
     fset /= *stdDevFset_;
   } else {
-    fset *= 1/this->scaleFactor_;
+    for (auto & field : fset) {
+      const std::string var = field.name();
+      if (scaling_.find(var) != scaling_.end()) {
+        const double fact = 1.0 / scaling_.at(var);
+        auto view = atlas::array::make_view<double, 2>(field);
+        for (int jnode = 0; jnode < field.shape(0); ++jnode) {
+          for (int jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+            view(jnode, jlevel) *= fact;
+          }
+        }
+      }
+    }
   }
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }

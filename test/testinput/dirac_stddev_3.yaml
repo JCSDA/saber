@@ -21,7 +21,11 @@ background error:
     saber block name: ID
   saber outer blocks:
   - saber block name: StdDev
-    stddev scale factor: 2.0
+    standard deviations:
+    - variable: air_horizontal_streamfunction
+      stddev: 2.0
+    - variable: air_horizontal_velocity_potential
+      stddev: 5.0
 dirac: &dirac
   lon:
   - 0.0
