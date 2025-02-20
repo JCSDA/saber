@@ -35,10 +35,14 @@ VertLoc.h
 # Interpolated vertical localization
 VertLocInterp.cc
 VertLocInterp.h
-
-# Write selected fields to a netCDF file
-WriteFields.h
-WriteFields.cc
 )
+
+# Write selected fields to a netCDF file (depends of ECTRANS)
+if( atlas_TRANS_FOUND OR atlas_ECTRANS_FOUND )
+  list(APPEND generic_src_files_list
+    WriteFields.h
+    WriteFields.cc
+  )
+endif()
 
 set( generic_src_files ${generic_src_files_list} PARENT_SCOPE )
