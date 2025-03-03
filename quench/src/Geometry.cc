@@ -456,7 +456,7 @@ void Geometry::readSeaMask(const std::string & maskPath,
     std::vector<float> zlat(nlat);
     std::vector<uint8_t> zlsm(nlat*nlon);
     if ((retval = nc_get_var_float(ncid, lon_id, zlon.data()))) ERR(retval, "lon");
-    if ((retval = nc_get_var_float(ncid, lat_id, zlat.data()))) ERR(retval, "lon");
+    if ((retval = nc_get_var_float(ncid, lat_id, zlat.data()))) ERR(retval, "lat");
     if ((retval = nc_get_var_ubyte(ncid, lsm_id, zlsm.data()))) ERR(retval, "LMASK");
 
     // Copy data

@@ -41,5 +41,5 @@ output dirac:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_stddev_2/%MPI%_stddev_%id%
 test:
-  reference filename: testref/dirac_stddev_1.ref
+  reference filename: testref/dirac_stddev_2.ref
 
