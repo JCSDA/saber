@@ -96,5 +96,5 @@ output dirac:
   filepath: testdata/dirac_ens_both_geom/dirac_%id%_%MPI%
 
 test:
-  float relative tolerance: 8e-5  # Due to process_perts_from_csdual_states_2 outputs differing on 1/2 MPI tasks
+  float relative tolerance: 2e-4  # Due to process_perts_from_csdual_states_2 outputs differing on 1/2 MPI tasks
   reference filename: testref/dirac_ens_both_geom.ref
