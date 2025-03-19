@@ -19,7 +19,11 @@
 #include "atlas/interpolation.h"
 #include "atlas/redistribution/Redistribution.h"
 
+#ifdef ATLAS_MAKE_SPARSE
+#include "atlas/linalg/sparse.h"
+#else
 #include "eckit/linalg/SparseMatrix.h"
+#endif
 
 #include "oops/util/Logger.h"
 #include "oops/util/ObjectCounter.h"
@@ -56,7 +60,12 @@ class AtlasInterpWrapper {
                       const atlas::FieldSet &) const;
 
   eckit::linalg::SparseMatrix getInterpolationMatrix() const {
+#ifdef ATLAS_MAKE_SPARSE
+    return atlas::linalg::make_eckit_sparse_matrix(
+                          atlas::interpolation::MatrixCache(interp_).matrix());
+#else
     return atlas::interpolation::MatrixCache(interp_).matrix();
+#endif
   }
 
   const atlas::FunctionSpace & getIntermediateFunctionSpace() const {

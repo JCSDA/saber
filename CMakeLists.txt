@@ -49,6 +49,10 @@ if( DEFINED ENV{ATLAS_REGIONAL_INTERP} )
     set( ATLAS_REGIONAL_INTERP $ENV{ATLAS_REGIONAL_INTERP} )
 endif()
 
+if( atlas_VERSION VERSION_GREATER "0.41" )
+    add_definitions(-DATLAS_MAKE_SPARSE)
+endif()
+
 if( ENABLE_MKL )
     find_package( MKL )
 endif()
