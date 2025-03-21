@@ -111,12 +111,14 @@ sortBySeparationDistance(const eckit::mpi::Comm & comm,
   comm.broadcast(levs, 0);
   comm.broadcast(fieldIndex, 0);
 
-  // Loop over fields to save (distance, value) pairs
+  // Loop over fields to save (distance, value, global_index) tuples
   const auto & ghost = fspace.ghost();
   const auto ghview  = atlas::array::make_view<int, 1>(ghost);
+  const auto gidxview = atlas::array::make_view<atlas::gidx_t, 1>(fspace.global_index());
   const auto lonlatView = atlas::array::make_view<double, 2>(fspace.lonlat());
   std::vector<std::vector<double>> locDistances(lons.size());
   std::vector<std::vector<double>> locValues(lons.size());
+  std::vector<std::vector<atlas::gidx_t>> locGlobalIndices(lons.size());
   for (const auto & name : names) {
     ASSERT(dataFset[name].rank() == 2);
     const auto view = atlas::array::make_view<double, 2>(dataFset[name]);
@@ -131,6 +133,7 @@ sortBySeparationDistance(const eckit::mpi::Comm & comm,
               const double value = view(jnode, levs[iDirac]);
               locDistances[iDirac].push_back(dist);
               locValues[iDirac].push_back(value);
+              locGlobalIndices[iDirac].push_back(gidxview(jnode));
             }
           }
         }
@@ -138,9 +141,10 @@ sortBySeparationDistance(const eckit::mpi::Comm & comm,
     }
   }
 
-  // Gather distances and values onto root MPI task for sorting
+  // Gather distances, values, and global_indices onto root MPI task for sorting
   std::vector<std::vector<double>> distances(nDiracs);
   std::vector<std::vector<double>> values(nDiracs);
+  std::vector<std::vector<atlas::gidx_t>> globalIndices(nDiracs);
   for (size_t iDirac = 0; iDirac < nDiracs; iDirac++) {
     // Gather sizes
     const int dSize = locDistances[iDirac].size();
@@ -161,8 +165,10 @@ sortBySeparationDistance(const eckit::mpi::Comm & comm,
     const size_t dRecvsize = std::accumulate(dRecvcounts.begin(), dRecvcounts.end(), 0);
     distances[iDirac].resize(dRecvsize);
     values[iDirac].resize(dRecvsize);
+    globalIndices[iDirac].resize(dRecvsize);
     comm.gatherv(locDistances[iDirac], distances[iDirac], dRecvcounts, dDispls, 0);
     comm.gatherv(locValues[iDirac], values[iDirac], dRecvcounts, dDispls, 0);
+    comm.gatherv(locGlobalIndices[iDirac], globalIndices[iDirac], dRecvcounts, dDispls, 0);
   }
 
   // Sort by increasing separation distance
@@ -171,8 +177,25 @@ sortBySeparationDistance(const eckit::mpi::Comm & comm,
       // Get sorting order
       std::vector<size_t> indexes(distances[iDirac].size());
       std::iota(indexes.begin(), indexes.end(), 0);
+
+      // Apply a fuzzy sort:
+      // - if distances are more different than tolerance, sort by distance
+      // - if distances are essentially equal, sort by atlas grid index
+      // This makes the sort more robust against floating-point error
       std::sort(indexes.begin(), indexes.end(),
-                [&](size_t i1, size_t i2){return distances[iDirac][i1] <= distances[iDirac][i2];});
+                [&](size_t i1, size_t i2) {
+                  const double d1 = distances[iDirac][i1];
+                  const double d2 = distances[iDirac][i2];
+                  if (abs(d1 - d2) > 1e-13 * (d1 + d2)) {
+                    // sufficiently different
+                    return d1 <= d2;
+                  } else {
+                    // essentially equidistant points, fall back to grid structure
+                    const atlas::gidx_t gidx1 = globalIndices[iDirac][i1];
+                    const atlas::gidx_t gidx2 = globalIndices[iDirac][i2];
+                    return gidx1 <= gidx2;
+                  }
+                });
 
       // Apply sorting order to both distances and values
       applyIndexingDouble(indexes, distances[iDirac]);

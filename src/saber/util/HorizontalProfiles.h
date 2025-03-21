@@ -20,6 +20,9 @@ namespace util {
 /// Return Field values as a function of distance to specific points.
 /// Mostly relevant if the field is invariant by rotation around the point,
 /// e.g., for Dirac tests of isotropic operators.
+/// Note the sorting by distance includes a tolerance to obtain portable
+/// behavior -- however this means the sorted points may not be in strictly
+/// monotonically-increasing distance (at the 1e-13 level).
 std::tuple<std::vector<std::vector<double>>,
            std::vector<std::vector<double>>,
            std::vector<double>,
