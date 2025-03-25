@@ -101,8 +101,8 @@ auto readCovarianceProfiles(const std::string & filePath,
     const int nDist = dimSizes[netcdfDimVarIDs[pos][0]];
     dimFldSizes.clear();
     dimFldSizes.push_back(nDist);
-    auto distArray = atlas::array::Array::create<int>(nDist);
-    auto distView = atlas::array::make_view<int, 1>(*distArray);
+    auto distArray = atlas::array::Array::create<double>(nDist);
+    auto distView = atlas::array::make_view<double, 1>(*distArray);
     util::atlasArrayReadData(netcdfGeneralIDs,
                              dimFldSizes,
                              netcdfVarIDs[pos],

@@ -325,7 +325,9 @@ void  write_1d_covariances(const eckit::mpi::Comm & comm,
 
         // Create new levels variables of size [levels]
         // Variable index in vars et al. will be 3*iField+1
-        vars.push_back(fieldVarSuffix + "_levels");
+        vars.push_back(oops::Variable(
+          fieldVarSuffix + "_levels",
+          oops::VariableMetaData(oops::defaultVerticalStagger, oops::ModelDataType::Int32)));
         dimNamesForEveryVar.push_back({dimNames[2*iField+1]});
         dimSizesForEveryVar.push_back({dimSizes[2*iField+1]});
 
