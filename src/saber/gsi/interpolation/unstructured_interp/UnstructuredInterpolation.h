@@ -40,7 +40,6 @@ class UnstructuredInterpolation : private util::ObjectCounter<UnstructuredInterp
                             const eckit::Configuration &,
                             const atlas::FunctionSpace &,
                             const atlas::FunctionSpace &,
-                            const std::vector<size_t> &,
                             const oops::Variables &);
   ~UnstructuredInterpolation();
 
@@ -56,7 +55,6 @@ class UnstructuredInterpolation : private util::ObjectCounter<UnstructuredInterp
   int keyUnstructuredInterpolator_;
   const atlas::FunctionSpace innerFuncSpace_;
   const atlas::FunctionSpace outerFuncSpace_;
-  std::vector<size_t> activeVariableSizes_;
   oops::Variables activeVars_;
   void print(std::ostream &) const;
 };

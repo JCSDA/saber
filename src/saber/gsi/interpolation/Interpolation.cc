@@ -54,26 +54,30 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
 
   // Active variables
   const oops::Variables activeVars = getActiveVars(params, outerVars);
-  std::vector<size_t> activeVariableSizes;
-  for (const auto & var : activeVars) {
-    activeVariableSizes.push_back(var.getLevels());
-  }
 
   // Create the interpolator
   interpolator_.reset(new UnstructuredInterpolation(outerGeometryData.comm(),
                                                     params.toConfiguration(),
                                                     innerGeometryData_->functionSpace(),
                                                     outerGeometryData.functionSpace(),
-                                                    activeVariableSizes,
                                                     activeVars));
 
-  // Create the interpolator
+  // Inverse variables for leftInverseMultiply
+  // As the GSI covariance reads the first guess, it will only work if the first guess has
+  // been interpolated to the GSI grid, which only occurs if the key "state variables to inverse"
+  // indicates a non-zero list of variables. Check this directly here:
+  if (params.inverseVars.value().size() == 0) {
+    throw eckit::BadParameter(
+        "Must specify `state variables to inverse` for block `gsi interpolation to model grid`");
+  }
+  const oops::Variables invVars = params.inverseVars.value();
+
+  // Create the inverse interpolator for leftInverseMultiply
   inverseInterpolator_.reset(new UnstructuredInterpolation(outerGeometryData.comm(),
                                                            params.toConfiguration(),
                                                            outerGeometryData.functionSpace(),
                                                            innerGeometryData_->functionSpace(),
-                                                           activeVariableSizes,
-                                                           activeVars));
+                                                           invVars));
 
   oops::Log::trace() << classname() << "::Interpolation done" << std::endl;
 }

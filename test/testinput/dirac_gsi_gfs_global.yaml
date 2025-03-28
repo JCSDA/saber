@@ -14,6 +14,10 @@ background error:
     gsi berror namelist file: testdata/dirac_gsi_gfs_global.nml
     gsi akbk: /dev/null
     debugging mode: false
+    state variables to inverse:
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    - air_pressure_at_surface
 dirac:
   lon:
   - 0.0

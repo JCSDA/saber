@@ -29,7 +29,8 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
                              const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params, xb.validTime()),
     params_(params), outerGeomData_(outerGeometryData), innerVars_(outerVars),
-    activeVars_(params.activeVars.value().get_value_or(outerVars))
+    activeVars_(params.activeVars.value().get_value_or(outerVars)),
+    invVars_(params.inverseVars.value())
 {
   oops::Log::trace() << classname() << "::Interpolation starting" << std::endl;
 
@@ -139,6 +140,14 @@ void Interpolation::multiplyAD(oops::FieldSet3D & fieldSet) const {
 // -----------------------------------------------------------------------------
 
 void Interpolation::leftInverseMultiply(oops::FieldSet3D & fieldSet) const {
+  // If specific `state variables to inverse` were requested in the yaml, apply the (inverse)
+  // interpolator to those variables only. Otherwise, apply the (inverse) interpolator to the
+  // whole fieldset.
+  // NOTE that in a SaberOuterBlockChain, the logic to call Interpolation::leftInverseMultiply
+  // includes checking for the existence of the `state variables to inverse` key. Thus, omitting
+  // the yaml key is likely to skip the leftInverseMultiply completely.
+  const oops::Variables invVars = (invVars_.size() > 0 ? invVars_ : fieldSet.variables());
+
   // Prepare inverse interpolator
   if (!inverseGlobalInterp_ && globalInterp_) {
     inverseGlobalInterp_.reset(new oops::GlobalInterpolator(
@@ -153,7 +162,7 @@ void Interpolation::leftInverseMultiply(oops::FieldSet3D & fieldSet) const {
 
   // Temporary FieldSet of active variables for interpolation source
   atlas::FieldSet sourceFieldSet;
-  for (const auto & var : activeVars_) {
+  for (const auto & var : invVars) {
     sourceFieldSet.add(fieldSet[var.name()]);
   }
 
@@ -163,7 +172,7 @@ void Interpolation::leftInverseMultiply(oops::FieldSet3D & fieldSet) const {
     inverseGlobalInterp_->apply(sourceFieldSet, targetFieldSet);
   }
   if (inverseRegionalInterp_) {
-    for (const auto & var : activeVars_) {
+    for (const auto & var : invVars) {
       const atlas::Field sourceField = sourceFieldSet[var.name()];
       atlas::Field targetField = outerGeomData_.functionSpace().createField<double>(
           atlas::option::name(var.name()) | atlas::option::levels(sourceField.levels()));
@@ -173,13 +182,6 @@ void Interpolation::leftInverseMultiply(oops::FieldSet3D & fieldSet) const {
       targetFieldSet.add(targetField);
     }
     inverseRegionalInterp_->execute(sourceFieldSet, targetFieldSet);
-  }
-
-  // Add passive variables
-  for (const auto & f : fieldSet) {
-    if (!activeVars_.has(f.name())) {
-      targetFieldSet.add(f);
-    }
   }
 
   // Reset

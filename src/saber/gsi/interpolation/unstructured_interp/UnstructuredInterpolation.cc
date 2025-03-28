@@ -28,10 +28,9 @@ UnstructuredInterpolation::UnstructuredInterpolation(
   const eckit::Configuration & config,
   const atlas::FunctionSpace & innerFuncSpace,
   const atlas::FunctionSpace & outerFuncSpace,
-  const std::vector<size_t> & activeVariableSizes,
   const oops::Variables & activeVars)
   : innerFuncSpace_(innerFuncSpace), outerFuncSpace_(outerFuncSpace),
-    activeVariableSizes_(activeVariableSizes), activeVars_(activeVars)
+    activeVars_(activeVars)
 {
   saber_unstrc_create_f90(keyUnstructuredInterpolator_, &comm,
                           innerFuncSpace_.lonlat().get(), outerFuncSpace_.lonlat().get(), config);
@@ -61,11 +60,10 @@ void UnstructuredInterpolation::applyAD(const atlas::Field & outerField,
 
 // -----------------------------------------------------------------------------
 void UnstructuredInterpolation::apply(atlas::FieldSet & fset) {
-  // TODO(Someone): check if we can get rid of activeVariableSizes everywhere
-  // and use Variables levels instead.
   for (size_t i = 0; i < activeVars_.size(); ++i) {
+    const size_t levels = fset[activeVars_[i].name()].levels();
     atlas::Field outerField = outerFuncSpace_.createField<double>(
-      atlas::option::name(activeVars_[i].name()) | atlas::option::levels(activeVariableSizes_[i]));
+      atlas::option::name(activeVars_[i].name()) | atlas::option::levels(levels));
     this->apply(fset[activeVars_[i].name()], outerField);
     util::removeFieldsFromFieldSet(fset, {activeVars_[i].name()});
     fset.add(outerField);
@@ -75,8 +73,9 @@ void UnstructuredInterpolation::apply(atlas::FieldSet & fset) {
 // -----------------------------------------------------------------------------
 void UnstructuredInterpolation::applyAD(atlas::FieldSet & fset) {
   for (size_t i = 0; i < activeVars_.size(); ++i) {
+    const size_t levels = fset[activeVars_[i].name()].levels();
     atlas::Field innerField = innerFuncSpace_.createField<double>(
-      atlas::option::name(activeVars_[i].name()) | atlas::option::levels(activeVariableSizes_[i]));
+      atlas::option::name(activeVars_[i].name()) | atlas::option::levels(levels));
     this->applyAD(fset[activeVars_[i].name()], innerField);
     util::removeFieldsFromFieldSet(fset, {activeVars_[i].name()});
     fset.add(innerField);
