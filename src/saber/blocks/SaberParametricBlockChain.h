@@ -202,6 +202,13 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
     // Read data
     oops::Log::info() << "Info     : Read data" << std::endl;
     centralBlock_->read();
+
+    if (saberCentralBlockParams.forceWrite.value()) {
+      // Write data
+      oops::Log::info() << "Info     : Write data" << std::endl;
+      centralBlock_->write(geom);
+      centralBlock_->write();
+    }
   }
 
   // Dual resolution ensemble

@@ -90,6 +90,12 @@ SaberParametricBlockChain::SaberParametricBlockChain(
     // Read data
     oops::Log::info() << "Info     : Read data" << std::endl;
     centralBlock_->read();
+
+    if (saberCentralBlockParams.forceWrite.value()) {
+      // Write data
+      oops::Log::info() << "Info     : Write data" << std::endl;
+      centralBlock_->write();
+    }
   }
 
   testCentralBlock(covarConf, saberCentralBlockParams, currentOuterGeom, activeVars);

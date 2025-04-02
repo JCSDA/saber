@@ -73,9 +73,15 @@ SaberOuterBlockChain::SaberOuterBlockChain(
     }
 
     if (saberOuterBlockParams.doRead()) {
-        // Read data
-        oops::Log::info() << "Info     : Read data" << std::endl;
-        outerBlocks_.back()->read();
+      // Read data
+      oops::Log::info() << "Info     : Read data" << std::endl;
+      outerBlocks_.back()->read();
+
+      if (saberOuterBlockParams.forceWrite.value()) {
+        // Write data
+        oops::Log::info() << "Info     : Write data" << std::endl;
+        outerBlocks_.back()->write();
+      }
     }
 
 

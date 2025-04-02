@@ -82,6 +82,9 @@ class SaberBlockParametersBase : public oops::Parameters {
   // Tolerance for square-root test (U U^t x) == B x)
   oops::OptionalParameter<double> sqrtTolerance{"square-root tolerance", this};
 
+  // Force calling write() even in "read" mode
+  oops::Parameter<bool> forceWrite{"force write", false, this};
+
   // METHODS
   // Find out whether calibration is needed
   bool doCalibration() const;

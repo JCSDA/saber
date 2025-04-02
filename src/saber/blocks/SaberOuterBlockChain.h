@@ -235,6 +235,13 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
       // Read data
       oops::Log::info() << "Info     : Read data" << std::endl;
       outerBlocks_.back()->read();
+
+      if (saberOuterBlockParams.forceWrite.value()) {
+        // Write data
+        oops::Log::info() << "Info     : Write data" << std::endl;
+        outerBlocks_.back()->write(geom, outerVars);
+        outerBlocks_.back()->write();
+      }
     }
 
     // Inner geometry data and variables & consistency check with active variables
