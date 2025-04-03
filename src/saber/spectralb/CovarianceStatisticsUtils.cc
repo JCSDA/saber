@@ -525,7 +525,6 @@ void readSpectralCovarianceFromFile(const std::string & varname1,
     }
 
     util::atlasArrayReadData(netcdfGeneralIDs,
-                             dimSizesForVar,
                              netcdfVarIDs[i],
                              specvertview);
   }

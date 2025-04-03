@@ -440,7 +440,6 @@ void VertLoc::readLocMat(const std::string & filepath,
       + std::to_string(nlevs_) + " levels", Here());
 
     util::atlasArrayReadData(netcdfGeneralIDs,
-                             dimFldSizes,
                              netcdfVarID,
                              fview);
 
@@ -500,7 +499,6 @@ void VertLoc::readPressVec(const std::string & filepath,
         std::to_string(nlevs_+1) + " levels", Here());
 
         util::atlasArrayReadData(netcdfGeneralIDs,
-                                 dimFldSizes,
                                  netcdfVarID,
                                  fview);
       }

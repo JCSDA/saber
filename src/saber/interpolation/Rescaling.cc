@@ -82,11 +82,9 @@ auto readCovarianceProfiles(const std::string & filePath,
     ASSERT(netcdfDimVarIDs[pos].size() == 1);
     const int nLevs = dimSizes[netcdfDimVarIDs[pos][0]];
     ASSERT(nLevs == var.getLevels());
-    std::vector<atlas::idx_t> dimFldSizes({nLevs});
     auto levArray = atlas::array::Array::create<int>(nLevs);
     auto levView = atlas::array::make_view<int, 1>(*levArray);
     util::atlasArrayReadData(netcdfGeneralIDs,
-                             dimFldSizes,
                              netcdfVarIDs[pos],
                              levView);
     int lev(0);
@@ -99,12 +97,9 @@ auto readCovarianceProfiles(const std::string & filePath,
     pos = vars.find(distVarName);
     ASSERT(netcdfDimVarIDs[pos].size() == 1);
     const int nDist = dimSizes[netcdfDimVarIDs[pos][0]];
-    dimFldSizes.clear();
-    dimFldSizes.push_back(nDist);
     auto distArray = atlas::array::Array::create<double>(nDist);
     auto distView = atlas::array::make_view<double, 1>(*distArray);
     util::atlasArrayReadData(netcdfGeneralIDs,
-                             dimFldSizes,
                              netcdfVarIDs[pos],
                              distView);
     // Initialize and fill distance vector
@@ -121,14 +116,11 @@ auto readCovarianceProfiles(const std::string & filePath,
     ASSERT(netcdfDimVarIDs[pos].size() == 2);
     ASSERT(dimSizes[netcdfDimVarIDs[pos][0]] == nDist);
     ASSERT(dimSizes[netcdfDimVarIDs[pos][1]] == nLevs);
-    dimFldSizes.clear();
-    dimFldSizes = {nDist, nLevs};
     auto covField = atlas::Field(var.name(),
                                  atlas::array::make_datatype<double>(),
                                  atlas::array::make_shape(nDist, nLevs));
     auto covView = atlas::array::make_view<double, 2>(covField);
     util::atlasArrayReadData(netcdfGeneralIDs,
-                             dimFldSizes,
                              netcdfVarIDs[pos],
                              covView);
     covariances.add(covField);
