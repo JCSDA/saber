@@ -68,27 +68,29 @@ VaderBlock::VaderBlock(const oops::GeometryData & outerGeometryData,
     innerVars_(createInnerVars(outerVars, params.innerVars)),
     vader_(params.vader, outerBlockConf.getSubConfiguration("vader"))
 {
-  oops::Log::trace() << classname() << "::VaderBlock starting" << std::endl;
+  // In the following code, "inner" and "outer" are used to refer to the two sets of variables,
+  // according to how close they are to the center of the linear operator chain. These are the
+  // least ambiguous names.
+  // However, when maintaining this code, sometimes regular humans may find it helpful to think of
+  // them with other names (which might not always be completely accurate):
+  // "inner" ~ "control" ~ "B-matrix" ~ "from" ~ "ingredients"
+  // "outer" ~ "increment" ~ "analysis" ~ "background" ~ "to" ~ "products"
 
+  oops::Log::trace() << classname() << "::VaderBlock starting" << std::endl;
   // Change variables in the background to inner variables
   // TODO(someone): perhaps this code will happen in the ErrorCovariance ctor?
-  oops::Variables neededVars = innerVars_;
-  atlas::FieldSet xb_inner = xb.fieldSet();
+  oops::Variables neededVars = outerVars_;
+  atlas::FieldSet xb_outer = xb.fieldSet();
+  oops::Variables ingredientVars = innerVars_;
 
-  oops::Variables varsVaderPopulates = vader_.changeVar(xb_inner, neededVars);
-  ASSERT_MSG(varsVaderPopulates == innerVars_, "VADER can not populate all "
-             "inner variables for SABER block.");
-  // Pass only inner variables to the vader TL/AD execution plan
-  // (xb_inner has both outer and inner variables after calling vader::changeVar)
-  atlas::FieldSet xb_outer;
-  for (const auto & innerVar : innerVars_) {
-    xb_outer.add(xb_inner[innerVar.name()]);
-  }
-  // Set trajectory and create a vader plan for going from inner to outer
-  // variables.
-  neededVars = outerVars_;
-  varsVaderPopulates = vader_.changeVarTraj(xb_outer, neededVars);
-  ASSERT(varsVaderPopulates == outerVars_);
+  // We pass xb_outer to Vader to store in its trajectory, even though the trajectory "should"
+  // contain inner variables. However, in initTLAD, Vader will attempt to produce any (inner)
+  // trajectory variables that are required by its linear recipes, so there's no need for us
+  // to try to create them in advance here.
+  vader_.changeVarTraj(xb_outer, neededVars);
+  const oops::Variables varsProduced = vader_.initTLAD(ingredientVars);
+  neededVars -= varsProduced;
+  ASSERT_MSG(neededVars.size() == 0, "Vader could not produce all outer variables");
 
   oops::Log::trace() << classname() << "::VaderBlock done" << std::endl;
 }
@@ -97,8 +99,7 @@ VaderBlock::VaderBlock(const oops::GeometryData & outerGeometryData,
 
 void VaderBlock::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-  oops::Variables vars = outerVars_;
-  vader_.changeVarTL(fset.fieldSet(), vars);
+  vader_.changeVarTL(fset.fieldSet());
   // copy only outer variables to the output fieldset (vader leaves both
   // output and input variables in the fieldset)
   atlas::FieldSet fset_out;
@@ -113,8 +114,7 @@ void VaderBlock::multiply(oops::FieldSet3D & fset) const {
 
 void VaderBlock::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
-  oops::Variables vars = outerVars_;
-  vader_.changeVarAD(fset.fieldSet(), vars);
+  vader_.changeVarAD(fset.fieldSet());
   // copy only inner variables to the output fieldset (vader leaves both
   // output and input variables in the fieldset)
   atlas::FieldSet fset_out;
