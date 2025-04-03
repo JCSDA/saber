@@ -28,10 +28,10 @@ void LayerRC::setupParallelization() {
   oops::Log::trace() << classname() << "::setupParallelization starting" << std::endl;
 
   // Get index fields
-  atlas::Field fieldIndexI = fset_["index_i"];
-  atlas::Field fieldIndexJ = fset_["index_j"];
-  auto indexIView = atlas::array::make_view<int, 1>(fieldIndexI);
-  auto indexJView = atlas::array::make_view<int, 1>(fieldIndexJ);
+  atlas::Field indexXField = fset_["indexX"];
+  atlas::Field indexYField = fset_["indexY"];
+  auto indexXView = atlas::array::make_view<int, 1>(indexXField);
+  auto indexYView = atlas::array::make_view<int, 1>(indexYField);
 
   // Sizes per task
   nxPerTask_.resize(comm_.size());
@@ -66,17 +66,17 @@ void LayerRC::setupParallelization() {
   // Rows <=> reduced grid
 
   // Define destination task
-  xTask_.resize(rSize_);
-  xOffset_.resize(rSize_);
-  std::vector<int> xOffsetPerTask(comm_.size(), 0);
+  xSendTask_.resize(rSize_);
+  xSendOffset_.resize(rSize_);
+  std::vector<int> xSendOffsetPerTask(comm_.size(), 0);
   for (size_t jnode = 0; jnode < rSize_; ++jnode) {
     bool found = false;
     for (size_t jt = 0; jt < comm_.size(); ++jt) {
-      if (static_cast<size_t>(indexJView(jnode))-1 >= nyStart_[jt] &&
-        static_cast<size_t>(indexJView(jnode))-1 <= nyEnd_[jt]) {
-        xTask_[jnode] = jt;
-        xOffset_[jnode] = xOffsetPerTask[jt];
-        ++xOffsetPerTask[jt];
+      if (static_cast<size_t>(indexYView(jnode))-1 >= nyStart_[jt] &&
+        static_cast<size_t>(indexYView(jnode))-1 <= nyEnd_[jt]) {
+        xSendTask_[jnode] = jt;
+        xSendOffset_[jnode] = xSendOffsetPerTask[jt];
+        ++xSendOffsetPerTask[jt];
         ASSERT(!found);
         found = true;
       }
@@ -88,7 +88,7 @@ void LayerRC::setupParallelization() {
   rRecvCounts_.resize(comm_.size());
   std::fill(rRecvCounts_.begin(), rRecvCounts_.end(), 0);
   for (size_t jnode = 0; jnode < rSize_; ++jnode) {
-    ++rRecvCounts_[xTask_[jnode]];
+    ++rRecvCounts_[xSendTask_[jnode]];
   }
 
   // Buffer size
@@ -122,37 +122,33 @@ void LayerRC::setupParallelization() {
   }
 
   // Communicate indices
-  std::vector<int> redIndex_i(rSize_);
-  std::vector<int> redIndex_j(rSize_);
+  std::vector<int> redIndex_x(rSize_);
+  std::vector<int> redIndex_y(rSize_);
   for (size_t jnode = 0; jnode < rSize_; ++jnode) {
-    redIndex_i[jnode] = indexIView(jnode)-1;
-    redIndex_j[jnode] = indexJView(jnode)-1;
+    redIndex_x[jnode] = indexXView(jnode)-1;
+    redIndex_y[jnode] = indexYView(jnode)-1;
   }
-  xIndex_i_.resize(xSendSize_);
-  xIndex_j_.resize(xSendSize_);
-  comm_.allToAllv(redIndex_i.data(), rRecvCounts_.data(), rRecvDispls_.data(),
-    xIndex_i_.data(), xSendCounts_.data(), xSendDispls_.data());
-  comm_.allToAllv(redIndex_j.data(), rRecvCounts_.data(), rRecvDispls_.data(),
-    xIndex_j_.data(), xSendCounts_.data(), xSendDispls_.data());
+  xSendIndex_x_.resize(xSendSize_);
+  xSendIndex_y_.resize(xSendSize_);
+  comm_.allToAllv(redIndex_x.data(), rRecvCounts_.data(), rRecvDispls_.data(),
+    xSendIndex_x_.data(), xSendCounts_.data(), xSendDispls_.data());
+  comm_.allToAllv(redIndex_y.data(), rRecvCounts_.data(), rRecvDispls_.data(),
+    xSendIndex_y_.data(), xSendCounts_.data(), xSendDispls_.data());
 
   // Columns <=> rows
 
   // Define destination task
-  yTask_.resize(nyPerTask_[myrank_]);
-  yOffset_.resize(nyPerTask_[myrank_]);
-  for (size_t j = 0; j < nyPerTask_[myrank_]; ++j) {
-    yTask_[j].resize(nx_);
-    yOffset_[j].resize(nx_);
-  }
-  std::vector<int> yOffsetPerTask(comm_.size(), 0);
-  for (size_t i = 0; i < nx_; ++i) {
-    for (size_t j = 0; j < nyPerTask_[myrank_]; ++j) {
+  ySendTask_.resize(nx_*nyPerTask_[myrank_]);
+  ySendOffset_.resize(nx_*nyPerTask_[myrank_]);
+  std::vector<int> ySendOffsetPerTask(comm_.size(), 0);
+  for (size_t jx = 0; jx < nx_; ++jx) {
+    for (size_t jy = 0; jy < nyPerTask_[myrank_]; ++jy) {
       bool found = false;
       for (size_t jt = 0; jt < comm_.size(); ++jt) {
-        if (i >= nxStart_[jt] && i <= nxEnd_[jt]) {
-          yTask_[j][i] = jt;
-          yOffset_[j][i] = yOffsetPerTask[jt];
-          ++yOffsetPerTask[jt];
+        if (jx >= nxStart_[jt] && jx <= nxEnd_[jt]) {
+          ySendTask_[jx*nyPerTask_[myrank_]+jy] = jt;
+          ySendOffset_[jx*nyPerTask_[myrank_]+jy] = ySendOffsetPerTask[jt];
+          ++ySendOffsetPerTask[jt];
           ASSERT(!found);
           found = true;
         }
@@ -164,9 +160,9 @@ void LayerRC::setupParallelization() {
   // RecvCounts
   xRecvCounts_.resize(comm_.size());
   std::fill(xRecvCounts_.begin(), xRecvCounts_.end(), 0);
-  for (size_t i = 0; i < nx_; ++i) {
-    for (size_t j = 0; j < nyPerTask_[myrank_]; ++j) {
-      ++xRecvCounts_[yTask_[j][i]];
+  for (size_t jx = 0; jx < nx_; ++jx) {
+    for (size_t jy = 0; jy < nyPerTask_[myrank_]; ++jy) {
+      ++xRecvCounts_[ySendTask_[jx*nyPerTask_[myrank_]+jy]];
     }
   }
 
@@ -201,20 +197,20 @@ void LayerRC::setupParallelization() {
   }
 
   // Communicate indices
-  std::vector<int> xIndex_i(nx_*nyPerTask_[myrank_]);
-  std::vector<int> xIndex_j(nx_*nyPerTask_[myrank_]);
-  for (size_t i = 0; i < nx_; ++i) {
-    for (size_t j = 0; j < nyPerTask_[myrank_]; ++j) {
-      xIndex_i[i*nyPerTask_[myrank_]+j] = i;
-      xIndex_j[i*nyPerTask_[myrank_]+j] = j+nyStart_[myrank_];
+  std::vector<int> xRecvIndex_x(nx_*nyPerTask_[myrank_]);
+  std::vector<int> xRecvIndex_y(nx_*nyPerTask_[myrank_]);
+  for (size_t jx = 0; jx < nx_; ++jx) {
+    for (size_t jy = 0; jy < nyPerTask_[myrank_]; ++jy) {
+      xRecvIndex_x[jx*nyPerTask_[myrank_]+jy] = jx;
+      xRecvIndex_y[jx*nyPerTask_[myrank_]+jy] = jy+nyStart_[myrank_];
     }
   }
-  yIndex_i_.resize(ySendSize_);
-  yIndex_j_.resize(ySendSize_);
-  comm_.allToAllv(xIndex_i.data(), xRecvCounts_.data(), xRecvDispls_.data(),
-    yIndex_i_.data(), ySendCounts_.data(), ySendDispls_.data());
-  comm_.allToAllv(xIndex_j.data(), xRecvCounts_.data(), xRecvDispls_.data(),
-    yIndex_j_.data(), ySendCounts_.data(), ySendDispls_.data());
+  ySendIndex_x_.resize(ySendSize_);
+  ySendIndex_y_.resize(ySendSize_);
+  comm_.allToAllv(xRecvIndex_x.data(), xRecvCounts_.data(), xRecvDispls_.data(),
+    ySendIndex_x_.data(), ySendCounts_.data(), ySendDispls_.data());
+  comm_.allToAllv(xRecvIndex_y.data(), xRecvCounts_.data(), xRecvDispls_.data(),
+    ySendIndex_y_.data(), ySendCounts_.data(), ySendDispls_.data());
 
   if (!params_.skipTests.value()) {
     // Tests
@@ -232,8 +228,8 @@ void LayerRC::setupParallelization() {
 
     // Fill field with global horizontal index
     for (size_t jnode = 0; jnode < rSize_; ++jnode) {
-      for (size_t k = 0; k < nz_; ++k) {
-        redView(jnode, k) = static_cast<double>(redIndex_i[jnode]*ny_+redIndex_j[jnode]);
+      for (size_t jz = 0; jz < nz_; ++jz) {
+        redView(jnode, jz) = static_cast<double>(redIndex_x[jnode]*ny_+redIndex_y[jnode]);
       }
     }
 
@@ -243,10 +239,10 @@ void LayerRC::setupParallelization() {
 
     // Print result
     oops::Log::test() << "    FastLAM redToRows test";
-    for (size_t i = 0; i < nx_; ++i) {
-      for (size_t j = 0; j < nyPerTask_[myrank_]; ++j) {
-        for (size_t k = 0; k < nz_; ++k) {
-          if (rowsView(i, j, k) != static_cast<double>(i*ny_+(j+nyStart_[myrank_]))) {
+    for (size_t jx = 0; jx < nx_; ++jx) {
+      for (size_t jy = 0; jy < nyPerTask_[myrank_]; ++jy) {
+        for (size_t jz = 0; jz < nz_; ++jz) {
+          if (rowsView(jx, jy, jz) != static_cast<double>(jx*ny_+(jy+nyStart_[myrank_]))) {
             oops::Log::test() << " failed" << std::endl;
             throw eckit::Exception("redToRows test failed for block FastLAM", Here());
           }
@@ -254,8 +250,8 @@ void LayerRC::setupParallelization() {
       }
     }
     for (size_t jnode = 0; jnode < rSize_; ++jnode) {
-      for (size_t k = 0; k < nz_; ++k) {
-        if (redView(jnode, k) != static_cast<double>(redIndex_i[jnode]*ny_+redIndex_j[jnode])) {
+      for (size_t jz = 0; jz < nz_; ++jz) {
+        if (redView(jnode, jz) != static_cast<double>(redIndex_x[jnode]*ny_+redIndex_y[jnode])) {
           oops::Log::test() << " failed" << std::endl;
           throw eckit::Exception("redToRows test failed for block FastLAM", Here());
         }
@@ -269,20 +265,20 @@ void LayerRC::setupParallelization() {
 
     // Print result
     oops::Log::test() << "    FastLAM rowsToCols test";
-    for (size_t i = 0; i < nxPerTask_[myrank_]; ++i) {
-      for (size_t j = 0; j < ny_; ++j) {
-        for (size_t k = 0; k < nz_; ++k) {
-          if (colsView(i, j, k) != static_cast<double>((i+nxStart_[myrank_])*ny_+j)) {
+    for (size_t jx = 0; jx < nxPerTask_[myrank_]; ++jx) {
+      for (size_t jy = 0; jy < ny_; ++jy) {
+        for (size_t jz = 0; jz < nz_; ++jz) {
+          if (colsView(jx, jy, jz) != static_cast<double>((jx+nxStart_[myrank_])*ny_+jy)) {
             oops::Log::test() << " failed" << std::endl;
             throw eckit::Exception("rowsToCols test failed for block FastLAM", Here());
           }
         }
       }
     }
-    for (size_t i = 0; i < nx_; ++i) {
-      for (size_t j = 0; j < nyPerTask_[myrank_]; ++j) {
-        for (size_t k = 0; k < nz_; ++k) {
-          if (rowsView(i, j, k) != static_cast<double>(i*ny_+(j+nyStart_[myrank_]))) {
+    for (size_t jx = 0; jx < nx_; ++jx) {
+      for (size_t jy = 0; jy < nyPerTask_[myrank_]; ++jy) {
+        for (size_t jz = 0; jz < nz_; ++jz) {
+          if (rowsView(jx, jy, jz) != static_cast<double>(jx*ny_+(jy+nyStart_[myrank_]))) {
             oops::Log::test() << " failed" << std::endl;
             throw eckit::Exception("rowsToCols test failed for block FastLAM", Here());
           }
@@ -304,10 +300,10 @@ void LayerRC::extractConvolution(const size_t & nxHalf,
   oops::Log::trace() << classname() << "::extractConvolution starting" << std::endl;
 
   // Reduced grid indices
-  atlas::Field fieldIndexI = fset_["index_i"];
-  atlas::Field fieldIndexJ = fset_["index_j"];
-  auto indexIView = atlas::array::make_view<int, 1>(fieldIndexI);
-  auto indexJView = atlas::array::make_view<int, 1>(fieldIndexJ);
+  atlas::Field indexXField = fset_["indexX"];
+  atlas::Field indexYField = fset_["indexY"];
+  auto indexXView = atlas::array::make_view<int, 1>(indexXField);
+  auto indexYView = atlas::array::make_view<int, 1>(indexYField);
 
   // One level only
   const size_t nzSave = nz_;
@@ -319,13 +315,13 @@ void LayerRC::extractConvolution(const size_t & nxHalf,
   atlas::Field colsFieldHor("dummy", atlas::array::make_datatype<double>(),
     atlas::array::make_shape(nxPerTask_[myrank_], ny_, nz_));
   auto redViewHor = atlas::array::make_view<double, 2>(redFieldHor);
-  for (size_t i = 0; i < nxHalf; ++i) {
-    for (size_t j = 0; j < nyHalf; ++j) {
+  for (size_t jx = 0; jx < nxHalf; ++jx) {
+    for (size_t jy = 0; jy < nyHalf; ++jy) {
       // Setup dirac point
       redViewHor.assign(0.0);
       for (size_t jnode = 0; jnode < rSize_; ++jnode) {
-        if (indexIView(jnode)-1 == static_cast<int>(i)
-          && indexJView(jnode)-1 == static_cast<int>(j)) {
+        if (indexXView(jnode)-1 == static_cast<int>(jx)
+          && indexYView(jnode)-1 == static_cast<int>(jy)) {
           redViewHor(jnode, 0) = 1.0;
         }
       }
@@ -337,21 +333,21 @@ void LayerRC::extractConvolution(const size_t & nxHalf,
       // Gather horizontal convolution data
       redViewHor = atlas::array::make_view<double, 2>(redFieldHor);
       for (size_t jnode = 0; jnode < rSize_; ++jnode) {
-        if (indexIView(jnode)-1 == static_cast<int>(i)
-          && indexJView(jnode)-1 == static_cast<int>(j)) {
-          horConv[4*(i*nyHalf+j)+0] = redViewHor(jnode, 0);
+        if (indexXView(jnode)-1 == static_cast<int>(jx)
+          && indexYView(jnode)-1 == static_cast<int>(jy)) {
+          horConv[4*(jx*nyHalf+jy)+0] = redViewHor(jnode, 0);
         }
-        if (indexIView(jnode)-1 == static_cast<int>(i+1)
-          && indexJView(jnode)-1 == static_cast<int>(j)) {
-          horConv[4*(i*nyHalf+j)+1] = redViewHor(jnode, 0);
+        if (indexXView(jnode)-1 == static_cast<int>(jx+1)
+          && indexYView(jnode)-1 == static_cast<int>(jy)) {
+          horConv[4*(jx*nyHalf+jy)+1] = redViewHor(jnode, 0);
         }
-        if (indexIView(jnode)-1 == static_cast<int>(i)
-          && indexJView(jnode)-1 == static_cast<int>(j+1)) {
-          horConv[4*(i*nyHalf+j)+2] = redViewHor(jnode, 0);
+        if (indexXView(jnode)-1 == static_cast<int>(jx)
+          && indexYView(jnode)-1 == static_cast<int>(jy+1)) {
+          horConv[4*(jx*nyHalf+jy)+2] = redViewHor(jnode, 0);
         }
-        if (indexIView(jnode)-1 == static_cast<int>(i+1)
-          && indexJView(jnode)-1 == static_cast<int>(j+1)) {
-          horConv[4*(i*nyHalf+j)+3] = redViewHor(jnode, 0);
+        if (indexXView(jnode)-1 == static_cast<int>(jx+1)
+          && indexYView(jnode)-1 == static_cast<int>(jy+1)) {
+          horConv[4*(jx*nyHalf+jy)+3] = redViewHor(jnode, 0);
         }
       }
     }
@@ -371,10 +367,10 @@ void LayerRC::extractConvolution(const size_t & nxHalf,
   atlas::Field colsVerField("dummy", atlas::array::make_datatype<double>(),
     atlas::array::make_shape(nxPerTask_[myrank_], ny_, nz_));
   auto colsVerView = atlas::array::make_view<double, 3>(colsVerField);
-  for (size_t k = 0; k < nz_-1; ++k) {
+  for (size_t jz = 0; jz < nz_-1; ++jz) {
     // Setup dirac point
     colsVerView.assign(0.0);
-    colsVerView(0, 0, k) = 1.0;
+    colsVerView(0, 0, jz) = 1.0;
 
     // Apply vertical normalization
     vertNormalization(colsVerField);
@@ -387,8 +383,8 @@ void LayerRC::extractConvolution(const size_t & nxHalf,
     vertNormalization(colsVerField);
 
     // Gather horizontal convolution data
-    verConv[2*k+0] = colsVerView(0, 0, k);
-    verConv[2*k+1] = colsVerView(0, 0, k+1);
+    verConv[2*jz+0] = colsVerView(0, 0, jz);
+    verConv[2*jz+1] = colsVerView(0, 0, jz+1);
   }
 
   // Reset number of grid points
@@ -413,10 +409,10 @@ void LayerRC::multiplySqrt(const atlas::Field & cv,
   const auto cvView = atlas::array::make_view<double, 1>(cv);
   auto colsView = atlas::array::make_view<double, 3>(colsField);
   size_t index = offset;
-  for (size_t i = 0; i < nxPerTask_[myrank_]; ++i) {
-    for (size_t j = 0; j < ny_; ++j) {
-      for (size_t k = 0; k < nz_; ++k) {
-        colsView(i, j, k) = cvView(index);
+  for (size_t jx = 0; jx < nxPerTask_[myrank_]; ++jx) {
+    for (size_t jy = 0; jy < ny_; ++jy) {
+      for (size_t jz = 0; jz < nz_; ++jz) {
+        colsView(jx, jy, jz) = cvView(index);
         ++index;
       }
     }
@@ -460,10 +456,10 @@ void LayerRC::multiplySqrtTrans(const atlas::Field & modelField,
   const auto colsView = atlas::array::make_view<double, 3>(colsField);
   auto cvView = atlas::array::make_view<double, 1>(cv);
   size_t index = offset;
-  for (size_t i = 0; i < nxPerTask_[myrank_]; ++i) {
-    for (size_t j = 0; j < ny_; ++j) {
-      for (size_t k = 0; k < nz_; ++k) {
-        cvView(index) = colsView(i, j, k);
+  for (size_t jx = 0; jx < nxPerTask_[myrank_]; ++jx) {
+    for (size_t jy = 0; jy < ny_; ++jy) {
+      for (size_t jz = 0; jz < nz_; ++jz) {
+        cvView(index) = colsView(jx, jy, jz);
         ++index;
       }
     }
@@ -500,9 +496,9 @@ void LayerRC::redToRows(const atlas::Field & redField,
   std::vector<double> rRecvVec(rRecvSize_*nz_);
   const auto redView = atlas::array::make_view<double, 2>(redField);
   for (size_t jnode = 0; jnode < rSize_; ++jnode) {
-    for (size_t k = 0; k < nz_; ++k) {
-      const size_t jv = rRecvDispls3D[xTask_[jnode]] + xOffset_[jnode]*nz_ + k;
-      rRecvVec[jv] = redView(jnode, k);
+    for (size_t jz = 0; jz < nz_; ++jz) {
+      const size_t jv = rRecvDispls3D[xSendTask_[jnode]] + xSendOffset_[jnode]*nz_ + jz;
+      rRecvVec[jv] = redView(jnode, jz);
     }
   }
 
@@ -513,12 +509,12 @@ void LayerRC::redToRows(const atlas::Field & redField,
 
   // Deserialize
   auto rowsView = atlas::array::make_view<double, 3>(rowsField);
-  for (size_t jx = 0; jx < xSendSize_; ++jx) {
-    const size_t i = xIndex_i_[jx];
-    const size_t j = xIndex_j_[jx]-nyStart_[myrank_];
-    for (size_t k = 0; k < nz_; ++k) {
-      const size_t jv = jx*nz_ + k;
-      rowsView(i, j, k) = xSendVec[jv];
+  for (size_t js = 0; js < xSendSize_; ++js) {
+    const size_t jx = xSendIndex_x_[js];
+    const size_t jy = xSendIndex_y_[js]-nyStart_[myrank_];
+    for (size_t jz = 0; jz < nz_; ++jz) {
+      const size_t jv = js*nz_ + jz;
+      rowsView(jx, jy, jz) = xSendVec[jv];
     }
   }
 
@@ -546,12 +542,12 @@ void LayerRC::rowsToRed(const atlas::Field & rowsField,
   // Serialize
   const auto rowsView = atlas::array::make_view<double, 3>(rowsField);
   std::vector<double> xSendVec(xSendSize_*nz_);
-  for (size_t jx = 0; jx < xSendSize_; ++jx) {
-    const size_t i = xIndex_i_[jx];
-    const size_t j = xIndex_j_[jx]-nyStart_[myrank_];
-    for (size_t k = 0; k < nz_; ++k) {
-      const size_t jv = jx*nz_ + k;
-      xSendVec[jv] = rowsView(i, j, k);
+  for (size_t js = 0; js < xSendSize_; ++js) {
+    const size_t jx = xSendIndex_x_[js];
+    const size_t jy = xSendIndex_y_[js]-nyStart_[myrank_];
+    for (size_t jz = 0; jz < nz_; ++jz) {
+      const size_t jv = js*nz_ + jz;
+      xSendVec[jv] = rowsView(jx, jy, jz);
     }
   }
 
@@ -563,9 +559,9 @@ void LayerRC::rowsToRed(const atlas::Field & rowsField,
   // Deserialize
   auto redView = atlas::array::make_view<double, 2>(redField);
   for (size_t jnode = 0; jnode < rSize_; ++jnode) {
-    for (size_t k = 0; k < nz_; ++k) {
-      const size_t jv = rRecvDispls3D[xTask_[jnode]] + xOffset_[jnode]*nz_ + k;
-      redView(jnode, k) = rRecvVec[jv];
+    for (size_t jz = 0; jz < nz_; ++jz) {
+      const size_t jv = rRecvDispls3D[xSendTask_[jnode]] + xSendOffset_[jnode]*nz_ + jz;
+      redView(jnode, jz) = rRecvVec[jv];
     }
   }
 
@@ -584,13 +580,13 @@ void LayerRC::rowsConvolution(atlas::Field & field) const {
   // Apply kernel
   auto view = atlas::array::make_view<double, 3>(field);
   view.assign(0.0);
-  for (size_t j = 0; j < nyPerTask_[myrank_]; ++j) {
-    for (size_t i = 0; i < nx_; ++i) {
-      for (size_t jk = 0; jk < xKernelSize_; ++jk) {
-        const size_t ii = i-jk+(xKernelSize_-1)/2;
+  for (size_t jy = 0; jy < nyPerTask_[myrank_]; ++jy) {
+    for (size_t jx = 0; jx < nx_; ++jx) {
+      for (size_t jkx = 0; jkx < xKernelSize_; ++jkx) {
+        const size_t ii = jx-jkx+(xKernelSize_-1)/2;
         if (ii >= 0 && ii < nx_) {
-          for (size_t k = 0; k < nz_; ++k) {
-            view(i, j, k) += copyView(ii, j, k)*xKernel_[jk];
+          for (size_t jz = 0; jz < nz_; ++jz) {
+            view(jx, jy, jz) += copyView(ii, jy, jz)*xKernel_[jkx];
           }
         }
       }
@@ -607,11 +603,11 @@ void LayerRC::rowsNormalization(atlas::Field & field) const {
 
   // Apply normalization
   auto view = atlas::array::make_view<double, 3>(field);
-  for (size_t j = 0; j < nyPerTask_[myrank_]; ++j) {
-    for (size_t i = 0; i < xNormSize_; ++i) {
-      for (size_t k = 0; k < nz_; ++k) {
-        view(i, j, k) *= xNorm_[i];
-        view(nx_-1-i, j, k) *= xNorm_[i];
+  for (size_t jy = 0; jy < nyPerTask_[myrank_]; ++jy) {
+    for (size_t jx = 0; jx < xNormSize_; ++jx) {
+      for (size_t jz = 0; jz < nz_; ++jz) {
+        view(jx, jy, jz) *= xNorm_[jx];
+        view(nx_-1-jx, jy, jz) *= xNorm_[jx];
       }
     }
   }
@@ -640,11 +636,12 @@ void LayerRC::rowsToCols(const atlas::Field & rowsField,
   // Serialize
   std::vector<double> xRecvVec(xRecvSize_*nz_);
   const auto rowsView = atlas::array::make_view<double, 3>(rowsField);
-  for (size_t i = 0; i < nx_; ++i) {
-    for (size_t j = 0; j < nyPerTask_[myrank_]; ++j) {
-      for (size_t k = 0; k < nz_; ++k) {
-        const size_t jv = xRecvDispls3D[yTask_[j][i]] + yOffset_[j][i]*nz_ + k;
-        xRecvVec[jv] = rowsView(i, j, k);
+  for (size_t jx = 0; jx < nx_; ++jx) {
+    for (size_t jy = 0; jy < nyPerTask_[myrank_]; ++jy) {
+      for (size_t jz = 0; jz < nz_; ++jz) {
+        const size_t jv = xRecvDispls3D[ySendTask_[jx*nyPerTask_[myrank_]+jy]]
+          + ySendOffset_[jx*nyPerTask_[myrank_]+jy]*nz_ + jz;
+        xRecvVec[jv] = rowsView(jx, jy, jz);
       }
     }
   }
@@ -656,12 +653,12 @@ void LayerRC::rowsToCols(const atlas::Field & rowsField,
 
   // Deserialize
   auto colsView = atlas::array::make_view<double, 3>(colsField);
-  for (size_t jy = 0; jy < ySendSize_; ++jy) {
-    const size_t i = yIndex_i_[jy]-nxStart_[myrank_];
-    const size_t j = yIndex_j_[jy];
-    for (size_t k = 0; k < nz_; ++k) {
-      const size_t jv = jy*nz_ + k;
-      colsView(i, j, k) = ySendVec[jv];
+  for (size_t js = 0; js < ySendSize_; ++js) {
+    const size_t jx = ySendIndex_x_[js]-nxStart_[myrank_];
+    const size_t jy = ySendIndex_y_[js];
+    for (size_t jz = 0; jz < nz_; ++jz) {
+      const size_t jv = js*nz_ + jz;
+      colsView(jx, jy, jz) = ySendVec[jv];
     }
   }
 
@@ -689,12 +686,12 @@ void LayerRC::colsToRows(const atlas::Field & colsField,
   // Serialize
   const auto colsView = atlas::array::make_view<double, 3>(colsField);
   std::vector<double> ySendVec(ySendSize_*nz_);
-  for (size_t jy = 0; jy < ySendSize_; ++jy) {
-    size_t i = yIndex_i_[jy]-nxStart_[myrank_];
-    size_t j = yIndex_j_[jy];
-    for (size_t k = 0; k < nz_; ++k) {
-      const size_t jv = jy*nz_ + k;
-      ySendVec[jv] = colsView(i, j, k);
+  for (size_t js = 0; js < ySendSize_; ++js) {
+    size_t jx = ySendIndex_x_[js]-nxStart_[myrank_];
+    size_t jy = ySendIndex_y_[js];
+    for (size_t jz = 0; jz < nz_; ++jz) {
+      const size_t jv = js*nz_ + jz;
+      ySendVec[jv] = colsView(jx, jy, jz);
     }
   }
 
@@ -705,11 +702,12 @@ void LayerRC::colsToRows(const atlas::Field & colsField,
 
   // Deserialize
   auto rowsView = atlas::array::make_view<double, 3>(rowsField);
-  for (size_t i = 0; i < nx_; ++i) {
-    for (size_t j = 0; j < nyPerTask_[myrank_]; ++j) {
-      for (size_t k = 0; k < nz_; ++k) {
-        const size_t jv = xRecvDispls3D[yTask_[j][i]] + yOffset_[j][i]*nz_ + k;
-        rowsView(i, j, k) = xRecvVec[jv];
+  for (size_t jx = 0; jx < nx_; ++jx) {
+    for (size_t jy = 0; jy < nyPerTask_[myrank_]; ++jy) {
+      for (size_t jz = 0; jz < nz_; ++jz) {
+        const size_t jv = xRecvDispls3D[ySendTask_[jx*nyPerTask_[myrank_]+jy]]
+          + ySendOffset_[jx*nyPerTask_[myrank_]+jy]*nz_ + jz;
+        rowsView(jx, jy, jz) = xRecvVec[jv];
       }
     }
   }
@@ -729,13 +727,13 @@ void LayerRC::colsConvolution(atlas::Field & field) const {
   // Apply kernel
   auto view = atlas::array::make_view<double, 3>(field);
   view.assign(0.0);
-  for (size_t i = 0; i < nxPerTask_[myrank_]; ++i) {
-    for (size_t j = 0; j < ny_; ++j) {
-      for (size_t jk = 0; jk < yKernelSize_; ++jk) {
-        const size_t jj = j-jk+(yKernelSize_-1)/2;
+  for (size_t jx = 0; jx < nxPerTask_[myrank_]; ++jx) {
+    for (size_t jy = 0; jy < ny_; ++jy) {
+      for (size_t jky = 0; jky < yKernelSize_; ++jky) {
+        const size_t jj = jy-jky+(yKernelSize_-1)/2;
         if (jj >= 0 && jj < ny_) {
-          for (size_t k = 0; k < nz_; ++k) {
-            view(i, j, k) += copyView(i, jj, k)*yKernel_[jk];
+          for (size_t jz = 0; jz < nz_; ++jz) {
+            view(jx, jy, jz) += copyView(jx, jj, jz)*yKernel_[jky];
           }
         }
       }
@@ -752,11 +750,11 @@ void LayerRC::colsNormalization(atlas::Field & field) const {
 
   // Apply normalization
   auto view = atlas::array::make_view<double, 3>(field);
-  for (size_t i = 0; i < nxPerTask_[myrank_]; ++i) {
-    for (size_t j = 0; j < yNormSize_; ++j) {
-      for (size_t k = 0; k < nz_; ++k) {
-        view(i, j, k) *= yNorm_[j];
-        view(i, ny_-1-j, k) *= yNorm_[j];
+  for (size_t jx = 0; jx < nxPerTask_[myrank_]; ++jx) {
+    for (size_t jy = 0; jy < yNormSize_; ++jy) {
+      for (size_t jz = 0; jz < nz_; ++jz) {
+        view(jx, jy, jz) *= yNorm_[jy];
+        view(jx, ny_-1-jy, jz) *= yNorm_[jy];
       }
     }
   }
@@ -776,13 +774,13 @@ void LayerRC::vertConvolution(atlas::Field & field) const {
   // Apply kernel
   auto view = atlas::array::make_view<double, 3>(field);
   view.assign(0.0);
-  for (size_t i = 0; i < nxPerTask_[myrank_]; ++i) {
-    for (size_t j = 0; j < ny_; ++j) {
-      for (size_t k = 0; k < nz_; ++k) {
-        for (size_t jk = 0; jk < zKernelSize_; ++jk) {
-          const size_t kk = k-jk+(zKernelSize_-1)/2;
-          if (kk >= 0 && kk < nz_) {
-            view(i, j, k) += copyView(i, j, kk)*zKernel_[jk];
+  for (size_t jx = 0; jx < nxPerTask_[myrank_]; ++jx) {
+    for (size_t jy = 0; jy < ny_; ++jy) {
+      for (size_t jz = 0; jz < nz_; ++jz) {
+        for (size_t jkz = 0; jkz < zKernelSize_; ++jkz) {
+          const size_t jzz = jz-jkz+(zKernelSize_-1)/2;
+          if (jzz >= 0 && jzz < nz_) {
+            view(jx, jy, jz) += copyView(jx, jy, jzz)*zKernel_[jkz];
           }
         }
       }
@@ -799,11 +797,11 @@ void LayerRC::vertNormalization(atlas::Field & field) const {
 
   // Apply normalization
   auto view = atlas::array::make_view<double, 3>(field);
-  for (size_t i = 0; i < nxPerTask_[myrank_]; ++i) {
-    for (size_t j = 0; j < ny_; ++j) {
-      for (size_t k = 0; k < zNormSize_; ++k) {
-        view(i, j, k) *= zNorm_[k];
-        view(i, j, nz_-1-k) *= zNorm_[k];
+  for (size_t jx = 0; jx < nxPerTask_[myrank_]; ++jx) {
+    for (size_t jy = 0; jy < ny_; ++jy) {
+      for (size_t jnz = 0; jnz < zNormSize_; ++jnz) {
+        view(jx, jy, jnz) *= zNorm_[jnz];
+        view(jx, jy, nz_-1-jnz) *= zNorm_[jnz];
       }
     }
   }

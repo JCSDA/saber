@@ -179,8 +179,8 @@ class LayerBase : public util::Printable,
   std::vector<std::array<size_t, 4>> horStencil_;
   std::vector<std::array<double, 4>> horWeights_;
   std::vector<size_t> horStencilSize_;
-  std::vector<size_t> horIndexI_;
-  std::vector<size_t> horIndexJ_;
+  std::vector<size_t> horIndexX_;
+  std::vector<size_t> horIndexY_;
   std::vector<std::array<size_t, 2>> verStencil_;
   std::vector<std::array<double, 2>> verWeights_;
   std::vector<size_t> verStencilSize_;

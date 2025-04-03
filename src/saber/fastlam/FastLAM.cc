@@ -57,8 +57,8 @@ FastLAM::FastLAM(const oops::GeometryData & gdata,
 
   // Index fields
   const atlas::functionspace::StructuredColumns fs(gdata_.functionSpace());
-  const auto indexI0View = atlas::array::make_view<int, 1>(fs.index_i());
-  const auto indexJ0View = atlas::array::make_view<int, 1>(fs.index_j());
+  const auto indexX0View = atlas::array::make_view<int, 1>(fs.index_i());
+  const auto indexY0View = atlas::array::make_view<int, 1>(fs.index_j());
 
   // Get grid size
   nx0_ = 0;
@@ -66,8 +66,8 @@ FastLAM::FastLAM(const oops::GeometryData & gdata,
   nodes0_ = fs.size();
   for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
     if (ghostView(jnode0) == 0) {
-      nx0_ = std::max(nx0_, static_cast<size_t>(indexI0View(jnode0)));
-      ny0_ = std::max(ny0_, static_cast<size_t>(indexJ0View(jnode0)));
+      nx0_ = std::max(nx0_, static_cast<size_t>(indexX0View(jnode0)));
+      ny0_ = std::max(ny0_, static_cast<size_t>(indexY0View(jnode0)));
     }
   }
   comm_.allReduceInPlace(nx0_, eckit::mpi::max());
@@ -160,8 +160,8 @@ void FastLAM::randomize(oops::FieldSet3D & fset) const {
   if (comm_.rank() == 0) {
     util::NormalDistributionField dist(ctlVecSizeGlb, 0.0, 1.0);
     rand_vec_glb.resize(ctlVecSizeGlb);
-    for (size_t i = 0; i < ctlVecSizeGlb; ++i) {
-      rand_vec_glb[i] = dist[i];
+    for (size_t jcv = 0; jcv < ctlVecSizeGlb; ++jcv) {
+      rand_vec_glb[jcv] = dist[jcv];
     }
   }
 
@@ -265,7 +265,7 @@ void FastLAM::multiplySqrt(const atlas::Field & cv,
         for (const auto & var : groups_[jg].variables_) {
           // Variable properties
           const size_t varNz0 = activeVars_[var].getLevels();
-          const size_t k0Offset = getK0Offset(var);
+          const size_t z0Offset = getZ0Offset(var);
 
           // Layer multiplication
           atlas::Field binField = fsetBin[var];
@@ -282,9 +282,9 @@ void FastLAM::multiplySqrt(const atlas::Field & cv,
           const auto normView = atlas::array::make_view<double, 2>(normField);
           for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
             if (ghostView(jnode0) == 0) {
-              for (size_t k0 = 0; k0 < varNz0; ++k0) {
-                binView(jnode0, k0) *= wgtSqrtView(jnode0, k0Offset+k0)
-                  *normView(jnode0, k0Offset+k0);
+              for (size_t jz0 = 0; jz0 < varNz0; ++jz0) {
+                binView(jnode0, jz0) *= wgtSqrtView(jnode0, z0Offset+jz0)
+                  *normView(jnode0, z0Offset+jz0);
               }
             }
           }
@@ -311,8 +311,8 @@ void FastLAM::multiplySqrt(const atlas::Field & cv,
         const auto normView = atlas::array::make_view<double, 2>(normField);
         for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
           if (ghostView(jnode0) == 0) {
-            for (size_t k0 = 0; k0 < groups_[jg].nz0_; ++k0) {
-              grpView(jnode0, k0) *= wgtSqrtView(jnode0, k0)*normView(jnode0, k0);
+            for (size_t jz0 = 0; jz0 < groups_[jg].nz0_; ++jz0) {
+              grpView(jnode0, jz0) *= wgtSqrtView(jnode0, jz0)*normView(jnode0, jz0);
             }
           }
         }
@@ -321,15 +321,15 @@ void FastLAM::multiplySqrt(const atlas::Field & cv,
         for (const auto & var : groups_[jg].variables_) {
           // Variable properties
           const size_t varNz0 = activeVars_[var].getLevels();
-          const size_t k0Offset = getK0Offset(var);
+          const size_t z0Offset = getZ0Offset(var);
 
           // Copy group field
           atlas::Field binField = fsetBin[var];
           auto binView = atlas::array::make_view<double, 2>(binField);
           for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
             if (ghostView(jnode0) == 0) {
-              for (size_t k0 = 0; k0 < varNz0; ++k0) {
-                binView(jnode0, k0) = grpView(jnode0, k0Offset+k0);
+              for (size_t jz0 = 0; jz0 < varNz0; ++jz0) {
+                binView(jnode0, jz0) = grpView(jnode0, z0Offset+jz0);
               }
             }
           }
@@ -352,8 +352,8 @@ void FastLAM::multiplySqrt(const atlas::Field & cv,
         const auto normView = atlas::array::make_view<double, 2>(normField);
         for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
           if (ghostView(jnode0) == 0) {
-            for (size_t k0 = 0; k0 < groups_[jg].nz0_; ++k0) {
-              grpView(jnode0, k0) *= wgtSqrtView(jnode0, k0)*normView(jnode0, k0);
+            for (size_t jz0 = 0; jz0 < groups_[jg].nz0_; ++jz0) {
+              grpView(jnode0, jz0) *= wgtSqrtView(jnode0, jz0)*normView(jnode0, jz0);
             }
           }
         }
@@ -362,15 +362,15 @@ void FastLAM::multiplySqrt(const atlas::Field & cv,
         for (const auto & var : groups_[jg].variables_) {
           // Variable properties
           const size_t varNz0 = activeVars_[var].getLevels();
-          const size_t k0Offset = getK0Offset(var);
+          const size_t z0Offset = getZ0Offset(var);
 
           // Copy group field
           atlas::Field binField = fsetBin[var];
           auto binView = atlas::array::make_view<double, 2>(binField);
           for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
             if (ghostView(jnode0) == 0) {
-              for (size_t k0 = 0; k0 < varNz0; ++k0) {
-                binView(jnode0, k0) = grpView(jnode0, k0Offset+k0);
+              for (size_t jz0 = 0; jz0 < varNz0; ++jz0) {
+                binView(jnode0, jz0) = grpView(jnode0, z0Offset+jz0);
               }
             }
           }
@@ -425,7 +425,7 @@ void FastLAM::multiplySqrtAD(const oops::FieldSet3D & fset,
         for (const auto & var : groups_[jg].variables_) {
           // Variable properties
           const size_t varNz0 = activeVars_[var].getLevels();
-          const size_t k0Offset = getK0Offset(var);
+          const size_t z0Offset = getZ0Offset(var);
 
           // Apply weight square-root and normalization
           atlas::Field binField = fsetBin[var];
@@ -436,9 +436,9 @@ void FastLAM::multiplySqrtAD(const oops::FieldSet3D & fset,
           const auto normView = atlas::array::make_view<double, 2>(normField);
           for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
             if (ghostView(jnode0) == 0) {
-              for (size_t k0 = 0; k0 < varNz0; ++k0) {
-                binView(jnode0, k0) *= wgtSqrtView(jnode0, k0Offset+k0)
-                  *normView(jnode0, k0Offset+k0);
+              for (size_t jz0 = 0; jz0 < varNz0; ++jz0) {
+                binView(jnode0, jz0) *= wgtSqrtView(jnode0, z0Offset+jz0)
+                  *normView(jnode0, z0Offset+jz0);
               }
             }
           }
@@ -463,15 +463,15 @@ void FastLAM::multiplySqrtAD(const oops::FieldSet3D & fset,
         for (const auto & var : groups_[jg].variables_) {
           // Variable properties
           const size_t varNz0 = activeVars_[var].getLevels();
-          const size_t k0Offset = getK0Offset(var);
+          const size_t z0Offset = getZ0Offset(var);
 
           // Add variable field
           const atlas::Field binField = fsetBin[var];
           const auto binView = atlas::array::make_view<double, 2>(binField);
           for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
             if (ghostView(jnode0) == 0) {
-              for (size_t k0 = 0; k0 < varNz0; ++k0) {
-                grpView(jnode0, k0Offset+k0) += binView(jnode0, k0);
+              for (size_t jz0 = 0; jz0 < varNz0; ++jz0) {
+                grpView(jnode0, z0Offset+jz0) += binView(jnode0, jz0);
               }
             }
           }
@@ -484,8 +484,8 @@ void FastLAM::multiplySqrtAD(const oops::FieldSet3D & fset,
         const auto normView = atlas::array::make_view<double, 2>(normField);
         for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
           if (ghostView(jnode0) == 0) {
-            for (size_t k0 = 0; k0 < groups_[jg].nz0_; ++k0) {
-              grpView(jnode0, k0) *= wgtSqrtView(jnode0, k0)*normView(jnode0, k0);
+            for (size_t jz0 = 0; jz0 < groups_[jg].nz0_; ++jz0) {
+              grpView(jnode0, jz0) *= wgtSqrtView(jnode0, jz0)*normView(jnode0, jz0);
             }
           }
         }
@@ -515,15 +515,15 @@ void FastLAM::multiplySqrtAD(const oops::FieldSet3D & fset,
         for (const auto & var : groups_[jg].variables_) {
           // Variable properties
           const size_t varNz0 = activeVars_[var].getLevels();
-          const size_t k0Offset = getK0Offset(var);
+          const size_t z0Offset = getZ0Offset(var);
 
           // Add variable field
           const atlas::Field binField = fsetBin[var];
           const auto binView = atlas::array::make_view<double, 2>(binField);
           for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
             if (ghostView(jnode0) == 0) {
-              for (size_t k0 = 0; k0 < varNz0; ++k0) {
-                grpView(jnode0, k0Offset+k0) += binView(jnode0, k0);
+              for (size_t jz0 = 0; jz0 < varNz0; ++jz0) {
+                grpView(jnode0, z0Offset+jz0) += binView(jnode0, jz0);
               }
             }
           }
@@ -536,8 +536,8 @@ void FastLAM::multiplySqrtAD(const oops::FieldSet3D & fset,
         const auto normView = atlas::array::make_view<double, 2>(normField);
         for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
           if (ghostView(jnode0) == 0) {
-            for (size_t k0 = 0; k0 < groups_[jg].nz0_; ++k0) {
-              grpView(jnode0, k0) *= wgtSqrtView(jnode0, k0)*normView(jnode0, k0);
+            for (size_t jz0 = 0; jz0 < groups_[jg].nz0_; ++jz0) {
+              grpView(jnode0, jz0) *= wgtSqrtView(jnode0, jz0)*normView(jnode0, jz0);
             }
           }
         }
@@ -547,8 +547,8 @@ void FastLAM::multiplySqrtAD(const oops::FieldSet3D & fset,
 
         // Add contribution
         auto cvView = atlas::array::make_view<double, 1>(cv);
-        for (size_t jj = 0; jj < data_[jg][jBin]->ctlVecSize(); ++jj) {
-          cvView(index+jj) += cvBinView(jj);
+        for (size_t jcv = 0; jcv < data_[jg][jBin]->ctlVecSize(); ++jcv) {
+          cvView(index+jcv) += cvBinView(jcv);
         }
       }
 
@@ -823,8 +823,8 @@ void FastLAM::directCalibration(const oops::FieldSets &) {
 
       // Print normalized vertical coordinate
       oops::Log::info() << "Info     :     Normalized vertical coordinate: ";
-      for (size_t k0 = 0; k0 < groups_[jg].nz0_-1; ++k0) {
-        oops::Log::info() << data_[jg][jBin]->normVertCoord()[k0] << " < ";
+      for (size_t jz0 = 0; jz0 < groups_[jg].nz0_-1; ++jz0) {
+        oops::Log::info() << data_[jg][jBin]->normVertCoord()[jz0] << " < ";
       }
       oops::Log::info() << data_[jg][jBin]->normVertCoord()[groups_[jg].nz0_-1] << std::endl;
 
@@ -1063,8 +1063,8 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
               const auto wgtSqrtView = atlas::array::make_view<double, 2>(wgtSqrtField);
               for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
                 if (ghostView(jnode0) == 0) {
-                  for (size_t k0 = 0; k0 < nz0; ++k0) {
-                    view(jnode0, k0) = wgtSqrtView(jnode0, k0)*wgtSqrtView(jnode0, k0);
+                  for (size_t jz0 = 0; jz0 < nz0; ++jz0) {
+                    view(jnode0, jz0) = wgtSqrtView(jnode0, jz0)*wgtSqrtView(jnode0, jz0);
                   }
                 }
               }
@@ -1208,8 +1208,8 @@ void FastLAM::setupLengthScales() {
       auto rhView = atlas::array::make_view<double, 2>(rhField);
       for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
         if (ghostView(jnode0) == 0) {
-          for (size_t k0 = 0; k0 < groups_[jg].nz0_; ++k0) {
-            rhView(jnode0, k0) = profile[k0];
+          for (size_t jz0 = 0; jz0 < groups_[jg].nz0_; ++jz0) {
+            rhView(jnode0, jz0) = profile[jz0];
           }
         }
       }
@@ -1255,8 +1255,8 @@ void FastLAM::setupLengthScales() {
       auto rvView = atlas::array::make_view<double, 2>(rvField);
       for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
         if (ghostView(jnode0) == 0) {
-          for (size_t k0 = 0; k0 < groups_[jg].nz0_; ++k0) {
-            rvView(jnode0, k0) = profile[k0];
+          for (size_t jz0 = 0; jz0 < groups_[jg].nz0_; ++jz0) {
+            rvView(jnode0, jz0) = profile[jz0];
           }
         }
       }
@@ -1278,9 +1278,9 @@ void FastLAM::setupLengthScales() {
     double rvMean = 0.0;
     for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
       if (ghostView(jnode0) == 0) {
-        for (size_t k0 = 0; k0 < groups_[jg].nz0_; ++k0) {
-          rhMean += rhView(jnode0, k0);
-          rvMean += rvView(jnode0, k0);
+        for (size_t jz0 = 0; jz0 < groups_[jg].nz0_; ++jz0) {
+          rhMean += rhView(jnode0, jz0);
+          rvMean += rvView(jnode0, jz0);
         }
       }
     }
@@ -1295,10 +1295,10 @@ void FastLAM::setupLengthScales() {
     double cov = 0.0;
     for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
       if (ghostView(jnode0) == 0) {
-        for (size_t k0 = 0; k0 < groups_[jg].nz0_; ++k0) {
-          rhVar += (rhView(jnode0, k0)-rhMean)*(rhView(jnode0, k0)-rhMean);
-          rvVar += (rvView(jnode0, k0)-rvMean)*(rvView(jnode0, k0)-rvMean);
-          cov += (rhView(jnode0, k0)-rhMean)*(rvView(jnode0, k0)-rvMean);
+        for (size_t jz0 = 0; jz0 < groups_[jg].nz0_; ++jz0) {
+          rhVar += (rhView(jnode0, jz0)-rhMean)*(rhView(jnode0, jz0)-rhMean);
+          rvVar += (rvView(jnode0, jz0)-rvMean)*(rvView(jnode0, jz0)-rvMean);
+          cov += (rhView(jnode0, jz0)-rhMean)*(rvView(jnode0, jz0)-rvMean);
         }
       }
     }
@@ -1332,8 +1332,8 @@ void FastLAM::setupWeight() {
   const atlas::StructuredGrid grid(fs.grid());
 
   // Index fields
-  const auto indexI0View = atlas::array::make_view<int, 1>(fs.index_i());
-  const auto indexJ0View = atlas::array::make_view<int, 1>(fs.index_j());
+  const auto indexX0View = atlas::array::make_view<int, 1>(fs.index_i());
+  const auto indexY0View = atlas::array::make_view<int, 1>(fs.index_j());
 
   // Normalize rh
   for (size_t jg = 0; jg < groups_.size(); ++jg) {
@@ -1343,8 +1343,8 @@ void FastLAM::setupWeight() {
     for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
       if (ghostView(jnode0) == 0) {
         // Cell area
-        const int i0 = indexI0View(jnode0)-1;
-        const int j0 = indexJ0View(jnode0)-1;
+        const int i0 = indexX0View(jnode0)-1;
+        const int j0 = indexY0View(jnode0)-1;
         const int im = std::min(std::max(i0-1, 0), static_cast<int>(nx0_-1));
         const int ip = std::min(std::max(i0+1, 0), static_cast<int>(nx0_-1));
         const int jm = std::min(std::max(j0-1, 0), static_cast<int>(ny0_-1));
@@ -1355,8 +1355,8 @@ void FastLAM::setupWeight() {
           /static_cast<double>(jp-jm);
 
         // Normalize rh with cell area square-root
-        for (size_t k0 = 0; k0 < groups_[jg].nz0_; ++k0) {
-          rhView(jnode0, k0) = rhView(jnode0, k0)/std::sqrt(dx*dy);
+        for (size_t jz0 = 0; jz0 < groups_[jg].nz0_; ++jz0) {
+          rhView(jnode0, jz0) = rhView(jnode0, jz0)/std::sqrt(dx*dy);
         }
       }
     }
@@ -1376,9 +1376,9 @@ void FastLAM::setupWeight() {
     double maxRh = std::numeric_limits<double>::min();
     for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
       if (ghostView(jnode0) == 0) {
-        for (size_t k0 = 0; k0 < groups_[jg].nz0_; ++k0) {
-          minRh = std::min(minRh, rhView(jnode0, k0));
-          maxRh = std::max(maxRh, rhView(jnode0, k0));
+        for (size_t jz0 = 0; jz0 < groups_[jg].nz0_; ++jz0) {
+          minRh = std::min(minRh, rhView(jnode0, jz0));
+          maxRh = std::max(maxRh, rhView(jnode0, jz0));
         }
       }
     }
@@ -1396,24 +1396,24 @@ void FastLAM::setupWeight() {
         // Compute weight
         for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
           if (ghostView(jnode0) == 0) {
-            for (size_t k0 = 0; k0 < groups_[jg].nz0_; ++k0) {
+            for (size_t jz0 = 0; jz0 < groups_[jg].nz0_; ++jz0) {
               // Raw weight (difference-based)
               std::vector<double> weight(weight_.size());
               double wgtSum = 0.0;
               for (size_t jBin = 0; jBin < weight_.size(); ++jBin) {
                 atlas::Field fieldWgt = (*weight_[jBin])[groups_[jg].name_];
                 auto wgtView = atlas::array::make_view<double, 2>(fieldWgt);
-                const double diff = std::abs(rhView(jnode0, k0)-data_[jg][jBin]->rh())
+                const double diff = std::abs(rhView(jnode0, jz0)-data_[jg][jBin]->rh())
                   /(maxRh-minRh);
-                wgtView(jnode0, k0) = std::exp(-4.6*diff);  // Factor 4.6 => minimum weight ~0.01
-                wgtSum += wgtView(jnode0, k0);
+                wgtView(jnode0, jz0) = std::exp(-4.6*diff);  // Factor 4.6 => minimum weight ~0.01
+                wgtSum += wgtView(jnode0, jz0);
               }
 
               // Normalize weight
               for (size_t jBin = 0; jBin < weight_.size(); ++jBin) {
                 atlas::Field fieldWgt = (*weight_[jBin])[groups_[jg].name_];
                 auto wgtView = atlas::array::make_view<double, 2>(fieldWgt);
-                wgtView(jnode0, k0) /= wgtSum;
+                wgtView(jnode0, jz0) /= wgtSum;
               }
             }
           }
@@ -1531,22 +1531,22 @@ size_t FastLAM::getGroupIndex(const std::string & var) const {
 
 // -----------------------------------------------------------------------------
 
-size_t FastLAM::getK0Offset(const std::string & var) const {
-  oops::Log::trace() << classname() << "::getK0Offset starting" << std::endl;
+size_t FastLAM::getZ0Offset(const std::string & var) const {
+  oops::Log::trace() << classname() << "::getZ0Offset starting" << std::endl;
 
   // Default value
-  size_t k0Offset = 0;
+  size_t z0Offset = 0;
 
   if (active2dVars_.has(var)) {
     // This is a 2d variable
     if (params_.lev2d.value() == "last") {
       // Use the last level of the group
-      k0Offset = groups_[getGroupIndex(var)].nz0_-1;
+      z0Offset = groups_[getGroupIndex(var)].nz0_-1;
     }
   }
 
-  oops::Log::trace() << classname() << "::getK0Offset starting" << std::endl;
-  return k0Offset;
+  oops::Log::trace() << classname() << "::getZ0Offset starting" << std::endl;
+  return z0Offset;
 }
 
 // -----------------------------------------------------------------------------

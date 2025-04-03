@@ -137,7 +137,7 @@ class FastLAM : public SaberCentralBlockBase {
 
   // Utilities
   size_t getGroupIndex(const std::string &) const;
-  size_t getK0Offset(const std::string &) const;
+  size_t getZ0Offset(const std::string &) const;
   eckit::LocalConfiguration getFileConf(const eckit::mpi::Comm &,
                                         const eckit::Configuration &) const;
   void print(std::ostream &) const override;
