@@ -678,6 +678,14 @@ void Fields::random() {
 
 // -----------------------------------------------------------------------------
 
+void Fields::sqrt() {
+  oops::Log::trace() << classname() << "::sqrt starting" << std::endl;
+  util::sqrtFieldSet(fset_);
+  oops::Log::trace() << classname() << "::sqrt done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
 void Fields::dirac(const eckit::Configuration & config) {
   oops::Log::trace() << classname() << "::dirac starting" << std::endl;
 
@@ -1276,7 +1284,7 @@ void Fields::print(std::ostream & os) const {
       }
     }
     geom_->getComm().allReduceInPlace(zz, eckit::mpi::sum());
-    zz = sqrt(zz);
+    zz = std::sqrt(zz);
     os << prefix << "    " << var.name() << ": " << zz;
   }
 

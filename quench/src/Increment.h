@@ -68,6 +68,8 @@ class Increment : public util::Printable,
     {fields_->schur_product_with(*dx.fields_);}
   void random()
     {fields_->random();}
+  void sqrt()
+    {fields_->sqrt();}
 
   // I/O and diagnostics
   void read(const eckit::Configuration & config)
