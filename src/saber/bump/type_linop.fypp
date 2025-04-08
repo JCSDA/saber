@@ -1272,6 +1272,11 @@ if (ifmt>0) call mpl%prog_final
 ! Trim operator
 call linop%trim
 
+! Apply a sorted order
+if (linop%n_s>0) then
+   linop%col = order(linop%col(1:linop%n_s))
+end if
+
 ! Probe out
 @:probe_out()
 
