@@ -141,7 +141,7 @@ void Localization<MODEL>::multiply(Increment_ & dx) const {
   loc_->multiply(fset4d);
 
   // ATLAS fieldset to Increment_
-  dx.synchronizeFields();
+  dx.fromFieldSet(fset4d[0].fieldSet());
 
   oops::Log::trace() << "Localization:multiply done" << std::endl;
 }
