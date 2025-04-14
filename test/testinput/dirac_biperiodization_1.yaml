@@ -1,0 +1,59 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type : regional
+    nx : 71
+    ny : 53
+    dx : 2.5e3
+    dy : 2.5e3
+    lonlat(centre) : [9.9, 56.3]
+    projection :  
+      type : lambert_conformal_conic
+      latitude0  : 56.3
+      longitude0 : 0.0
+    y_numbering: 1
+  partitioner: checkerboard
+  groups:
+  - variables:
+    - air_horizontal_streamfunction
+    levels: 2
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables:
+  - air_horizontal_streamfunction
+background error:
+  covariance model: SABER
+  adjoint test: true
+  square-root test: true
+  inverse test: true
+  saber central block:
+    saber block name: ID
+  saber outer blocks:
+  - saber block name: Biperiodization
+    biperiodization:
+      x inner extension: 7
+      y inner extension: 5
+      x outer extension: 7
+      y outer extension: 5
+    read:
+      input test file:
+        filepath: testdata/randomization_fastlam/_MPI_-_OMP__member_000001
+      output inner test file:
+        filepath: testdata/dirac_biperiodization_1/_MPI_-_OMP__inner
+      output outer test file:
+        filepath: testdata/dirac_biperiodization_1/_MPI_-_OMP__outer
+    force write: true
+dirac:
+  lon:
+  - 9.9058
+  lat:
+  - 56.3223
+  level:
+  - 1
+  variable:
+  - air_horizontal_streamfunction
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_biperiodization_1/%MPI%_dirac_%id%
+test:
+  reference filename: testref/dirac_biperiodization_1.ref

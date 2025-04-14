@@ -4,10 +4,6 @@
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
 list(APPEND generic_src_files_list
-# ID block
-ID.h
-ID.cc
-
 # Duplicate Variables
 DuplicateVariables.cc
 DuplicateVariables.h
@@ -19,6 +15,10 @@ Ensemble.cc
 # Hybrid block
 Hybrid.h
 Hybrid.cc
+
+# ID block
+ID.h
+ID.cc
 
 # Shadow levels block
 ShadowLevels.h
