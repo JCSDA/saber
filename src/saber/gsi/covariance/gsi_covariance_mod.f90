@@ -79,7 +79,7 @@ contains
 
 ! --------------------------------------------------------------------------------------------------
 
-subroutine create(self, comm, config, ntimes, background, firstguess, valid_times)
+subroutine create(self, comm, config, ntimes, background, firstguess, valid_times, nchecks, checks)
 
 ! Arguments
 class(gsi_covariance),     intent(inout) :: self
@@ -89,6 +89,8 @@ integer,                   intent(in)    :: ntimes
 type(atlas_fieldset), dimension(ntimes), intent(in)    :: background
 type(atlas_fieldset), dimension(ntimes), intent(in)    :: firstguess
 type(datetime), dimension(ntimes),       intent(in)    :: valid_times
+integer,                   intent(in)    :: nchecks
+real(kind=kind_real), dimension(nchecks), intent(in) :: checks
 
 ! Locals
 character(len=*), parameter :: myname_=myname//'*create'
@@ -102,6 +104,9 @@ character(len=20),allocatable :: gsivars(:)
 character(len=20),allocatable :: usrvars(:)
 character(len=30),allocatable :: tbdvars(:)
 character(len=20) :: valid_time_string
+logical :: gsi_jedi_grid_error
+integer :: ix, iy, gsi_nx, gsi_ny, jedi_nx, jedi_ny
+real(kind=kind_real) :: gsi_lon, gsi_lat, jedi_lon, jedi_lat
 
 ! Hold communicator
 ! -----------------
@@ -119,6 +124,48 @@ enddo
 ! ---------------
 call self%grid%create(config, comm)
 self%rank = comm%rank()
+
+! Sanity-check the GSI grid (specified from gsibec namelists) matches SABER grid (from JEDI yaml)
+! -----------------------------------------------------------------------------------------------
+
+if (nchecks .gt. 0) then  ! only run checks if data was passed in from JEDI
+  gsi_jedi_grid_error = .false.
+  gsi_nx = self%grid%iec - self%grid%isc + 1
+  jedi_nx = nint(checks(1))
+  if (gsi_nx .ne. jedi_nx) then
+    write (*,*) 'ERROR connecting GSI-block to JEDI -- inconsistent nx with gsi, atlas = ', gsi_nx, jedi_nx
+    gsi_jedi_grid_error = .true.
+  endif
+
+  gsi_ny = self%grid%jec - self%grid%jsc + 1
+  jedi_ny = nint(checks(2))
+  if (gsi_ny .ne. jedi_ny) then
+    write (*,*) 'ERROR connecting GSI-block to JEDI -- inconsistent ny with gsi, atlas = ', gsi_ny, jedi_ny
+    gsi_jedi_grid_error = .true.
+  endif
+
+  do ix = 1, gsi_nx
+    gsi_lon = self%grid%lons(self%grid%isc-1 + ix)
+    jedi_lon = checks(2+ix)
+    if (abs(gsi_lon - jedi_lon) > 1e-8) then
+      write (*,*) 'ERROR connecting GSI-block to JEDI -- inconsistent lon with gsi, atlas = ', gsi_lon, jedi_lon
+      gsi_jedi_grid_error = .true.
+    endif
+  enddo
+
+  do iy = 1, gsi_ny
+    gsi_lat = self%grid%lats(self%grid%jsc-1 + iy)
+    jedi_lat = checks(2+gsi_nx+iy)
+    if (abs(gsi_lat - jedi_lat) > 1e-8) then
+      write (*,*) 'ERROR connecting GSI-block to JEDI -- inconsistent lat with gsi, atlas = ', gsi_lat, jedi_lat
+      gsi_jedi_grid_error = .true.
+    endif
+  enddo
+
+  if (gsi_jedi_grid_error) then
+    call abor1_ftn(myname_ // ': GSI and JEDI grids are inconsistent!')
+  endif
+endif
 
 if (.not. self%grid%noGSI) then
   call config%get_or_die("debugging deep bypass gsi B error", self%bypassGSIbe)

@@ -13,11 +13,20 @@ background error:
   # ordering (north-to-south) instead of GSI's ordering (south-to-north). We use an interpolation
   # block to reorder the grid points to match GSI order. This is not very efficient, but is fine
   # for a ctest.
-  - saber block name: gsi interpolation to model grid
-    gsi error covariance file: testdata/gsi-coeffs-gmao-global-l72x72y46.nc4
-    gsi berror namelist file: testdata/dirac_gsi_geos_global.nml
-    gsi akbk: /dev/null
-    debugging mode: false
+  - saber block name: interpolation
+    inner geometry:
+      function space: StructuredColumns
+      custom grid matching gsi:
+        type: latlon
+        lats: 46
+        lons: 72
+      custom partitioner matching gsi:
+        bands: _MPI_  # matches GSI partition for 1 or 2 MPI tasks, but too simplistic in general
+      halo: 1
+    forward interpolator:
+      local interpolator type: oops unstructured grid interpolator
+    inverse interpolator:
+      local interpolator type: oops unstructured grid interpolator
     state variables to inverse:  # Make sure to also re-order the state passed to GSI-B constructor
     - air_horizontal_streamfunction
     - air_horizontal_velocity_potential

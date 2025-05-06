@@ -5,7 +5,7 @@ Input Dirac increment:
     air_horizontal_streamfunction: 1.0000000000000000e+00
     air_horizontal_velocity_potential: 0.0000000000000000e+00
     air_pressure_at_surface: 0.0000000000000000e+00
-Adjoint test for block gsi interpolation to model grid passed
+Adjoint test for block interpolation passed
 Adjoint test for block gsi hybrid covariance passed
 Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
