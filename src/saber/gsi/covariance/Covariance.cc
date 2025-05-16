@@ -117,6 +117,8 @@ void StaticCovariance::read() {
   std::vector<const atlas::field::FieldSetImpl*> fsetXbptrs(1);
   std::vector<const atlas::field::FieldSetImpl*> fsetFgptrs(1);
   std::vector<const util::DateTime *> timesptrs(1);
+  xb_.fieldSet().haloExchange();  // update halos before reading from Fortran
+  fg_.fieldSet().haloExchange();  // update halos before reading from Fortran
   fsetXbptrs[0] = xb_.get();
   fsetFgptrs[0] = fg_.get();
   timesptrs[0]  = &validTime_;

@@ -17,6 +17,7 @@ use fckit_configuration_module,     only: fckit_configuration
 use kinds,                          only: kind_real
 use random_mod
 use datetime_mod
+use missing_values_mod,             only: missing_value
 
 ! saber
 use gsi_grid_mod,                   only: gsi_grid
@@ -264,7 +265,7 @@ contains
 
 ! print *, 'Atlas 2-dim: ', size(rank2,2), ' gsi-vec: ', self%grid%lat2,' ', self%grid%lon2
   allocate(aux(self%grid%lat2,self%grid%lon2))
-  call addhalo_(rank2(1,:),aux)
+  call atlas_to_gsi_(rank2(1,:),aux)
   call gsibec_set_guess(varname,islot,aux)
   deallocate(aux)
 
@@ -282,11 +283,11 @@ contains
   allocate(aux(self%grid%lat2,self%grid%lon2,npz))
   if (self%grid%vflip) then
      do k=1,npz
-        call addhalo_(rank2(k,:),aux(:,:,npz-k+1))
+        call atlas_to_gsi_(rank2(k,:),aux(:,:,npz-k+1))
      enddo
   else
      do k=1,npz
-        call addhalo_(rank2(k,:),aux(:,:,k))
+        call atlas_to_gsi_(rank2(k,:),aux(:,:,k))
      enddo
   endif
   call gsibec_set_guess(varname,islot,aux)
@@ -390,6 +391,8 @@ if (associated(u)) then
   call normal_distribution(u, 0.0_kind_real, 1.0_kind_real, rseed)
 endif
 
+! Randomization leaves atlas halos out of date, so set dirty flag
+call fields%set_dirty(.true.)
 
 end subroutine randomize
 
@@ -482,7 +485,7 @@ do ii=1,ntimes
         cycle
      endif
      allocate(aux(size(gsivar2d,1),size(gsivar2d,2)))
-     call addhalo_(rank2(1,:),aux)
+     call atlas_to_gsi_(rank2(1,:),aux)
      gsivar2d=aux
      deallocate(aux)
    enddo
@@ -504,12 +507,12 @@ do ii=1,ntimes
      allocate(aux(size(gsivar3d,1),size(gsivar3d,2)))
      if (self%grid%vflip) then
         do k=1,npz
-           call addhalo_(rank2(k,:),aux)
+           call atlas_to_gsi_(rank2(k,:),aux)
            gsivar3d(:,:,npz-k+1)=aux
         enddo
      else
         do k=1,npz
-           call addhalo_(rank2(k,:),aux)
+           call atlas_to_gsi_(rank2(k,:),aux)
            gsivar3d(:,:,k)=aux
         enddo
      endif
@@ -553,7 +556,7 @@ do ii=1,ntimes
      call get_rank2_(rank2,fields(ii),trim(gvars2d(iv)),ier)
      if (ier/=0) cycle
      allocate(aux1(size(rank2,2)))
-     call remhalo_(gsivar2d,aux1)
+     call gsi_to_atlas_(gsivar2d,aux1)
      rank2(1,:)=aux1
      deallocate(aux1)
    enddo
@@ -569,12 +572,12 @@ do ii=1,ntimes
      allocate(aux1(size(rank2,2)))
      if (self%grid%vflip) then
         do k=1,npz
-           call remhalo_(gsivar3d(:,:,k),aux1)
+           call gsi_to_atlas_(gsivar3d(:,:,k),aux1)
            rank2(npz-k+1,:)=aux1
         enddo
      else
         do k=1,npz
-           call remhalo_(gsivar3d(:,:,k),aux1)
+           call gsi_to_atlas_(gsivar3d(:,:,k),aux1)
            rank2(k,:)=aux1
         enddo
      endif
@@ -613,6 +616,11 @@ deallocate(tbdvars)
 deallocate(gvars2d,gvars3d)
 call afield%final()
 
+! GSI covariance leaves atlas halos out of date, so set dirty flag
+! ----------------------------------------------------------------
+do ii=1,ntimes
+  call fields(ii)%set_dirty(.true.)
+enddo
 
 end subroutine multiply
 
@@ -777,25 +785,48 @@ end subroutine multiply
    endif
    end subroutine get_rank2_
 
-   subroutine addhalo_(rank,var)
+   ! copy atlas array into GSI array
+   ! the atlas halos are copied as well, so it is assumed the atlas halos are up-to-date
+   subroutine atlas_to_gsi_(rank,var)
    real(kind=kind_real),intent(in) :: rank(:)
    real(kind=kind_real),intent(inout):: var(:,:)
    integer ii,jj,jnode
-   integer mylat2,mylon2,ndim
+   integer mylat2,mylon2
    mylat2 = size(var,1)
    mylon2 = size(var,2)
-   ndim = (mylat2-2)*(mylon2-2)
    jnode=1
-   var = sum(rank(jnode:ndim))/ndim ! RT_TBD: hack to fill in halo
+   var = missing_value(1.0_kind_real)  ! debug: this should be overwritten with physical values
    do jj=2,mylat2-1
       do ii=2,mylon2-1
          var(jj,ii) = rank(jnode)
          jnode = jnode + 1
       enddo
    enddo
-   end subroutine addhalo_
+   ! fill in halos
+   ! atlas inserts halos in this order:
+   ! - all x @ ymin
+   ! - pairs of (xmin, xmax) @ each y from (ymin+1, ymax-1)
+   ! - all x @ ymax
+   do ii=1,mylon2
+       var(1,ii) = rank(jnode)
+       jnode = jnode + 1
+   enddo
+   do jj=2,mylat2-1
+       var(jj,1) = rank(jnode)
+       jnode = jnode + 1
+       var(jj,mylon2) = rank(jnode)
+       jnode = jnode + 1
+   enddo
+   do ii=1,mylon2
+       var(mylat2,ii) = rank(jnode)
+       jnode = jnode + 1
+   enddo
+   end subroutine atlas_to_gsi_
 
-   subroutine remhalo_(var,rank)
+   ! copy GSI array into atlas array
+   ! the halos are NOT copied, an atlas halo-exchange should be called later
+   ! the halos are flagged with missing values to make sure they're not accidentally used
+   subroutine gsi_to_atlas_(var,rank)
    real(kind=kind_real),intent(in) :: var(:,:)
    real(kind=kind_real),intent(out):: rank(:)
    integer ii,jj,jnode
@@ -809,7 +840,8 @@ end subroutine multiply
          jnode = jnode + 1
       enddo
    enddo
-   end subroutine remhalo_
+   rank(jnode:) = missing_value(1.0_kind_real)
+   end subroutine gsi_to_atlas_
 
    subroutine cvfix_(gsicv,jedicv,vflip,need,ntimes,which)
 
@@ -854,11 +886,11 @@ end subroutine multiply
       allocate(t_pt(size(q,1),size(q,2),size(q,3)))
       if (vflip) then
          do k=1,npz
-            call addhalo_(rank2(k,:),t_pt(:,:,npz-k+1))
+            call atlas_to_gsi_(rank2(k,:),t_pt(:,:,npz-k+1))
          enddo
       else
          do k=1,npz
-            call addhalo_(rank2(k,:),t_pt(:,:,k))
+            call atlas_to_gsi_(rank2(k,:),t_pt(:,:,k))
          enddo
       endif
       ! retrieve missing field
@@ -868,12 +900,12 @@ end subroutine multiply
         allocate(aux1(size(rank2,2)))
         if (vflip) then
            do k=1,npz
-              call remhalo_(t_pt(:,:,k),aux1)
+              call gsi_to_atlas_(t_pt(:,:,k),aux1)
               rank2(npz-k+1,:)=aux1
            enddo
         else
            do k=1,npz
-              call remhalo_(t_pt(:,:,k),aux1)
+              call gsi_to_atlas_(t_pt(:,:,k),aux1)
               rank2(k,:)=aux1
            enddo
         endif
@@ -900,7 +932,7 @@ end subroutine multiply
       call gsi_bundlegetpointer(gsicv%step(ii),'sst' ,sst ,ier)
       if(which=='tlm') then
          allocate(aux1(size(rank2,2)))
-         call remhalo_(sst,aux1)
+         call gsi_to_atlas_(sst,aux1)
          if (vflip) then
             rank2(1,:)   = aux1
          else
@@ -910,9 +942,9 @@ end subroutine multiply
       endif
       if(which=='adm') then
          if (vflip) then
-            call addhalo_(rank2(1,:),sst)
+            call atlas_to_gsi_(rank2(1,:),sst)
          else
-            call addhalo_(rank2(npz,:),sst)
+            call atlas_to_gsi_(rank2(npz,:),sst)
          endif
       endif
       where(need=='sst')
@@ -973,11 +1005,11 @@ end subroutine multiply
       allocate(t_pt(size(q,1),size(q,2),size(q,3)))
       if (vflip) then
          do k=1,npz
-            call addhalo_(rank2(k,:),t_pt(:,:,npz-k+1))
+            call atlas_to_gsi_(rank2(k,:),t_pt(:,:,npz-k+1))
          enddo
       else
          do k=1,npz
-            call addhalo_(rank2(k,:),t_pt(:,:,k))
+            call atlas_to_gsi_(rank2(k,:),t_pt(:,:,k))
          enddo
       endif
       ! retrieve missing field
@@ -990,12 +1022,12 @@ end subroutine multiply
         allocate(aux1(size(rank2,2)))
         if (vflip) then
            do k=1,npz
-              call remhalo_(t_pt(:,:,k),aux1)
+              call gsi_to_atlas_(t_pt(:,:,k),aux1)
               rank2(npz-k+1,:)=aux1
            enddo
         else
            do k=1,npz
-              call remhalo_(t_pt(:,:,k),aux1)
+              call gsi_to_atlas_(t_pt(:,:,k),aux1)
               rank2(k,:)=aux1
            enddo
         endif

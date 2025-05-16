@@ -141,6 +141,8 @@ SaberGSIBlockChain::SaberGSIBlockChain(const oops::Geometry<MODEL> & geom,
   std::vector<const util::DateTime *> timesptrs(fset4dXb.size());
   const std::vector<util::DateTime> & times = fset4dXb.times();
   for (size_t itime = 0; itime < fset4dXb.size(); ++itime) {
+    fset4dXb[itime].fieldSet().haloExchange();  // update halos before reading from Fortran
+    fset4dFg[itime].fieldSet().haloExchange();  // update halos before reading from Fortran
     fset4dXbptrs[itime] = fset4dXb[itime].get();
     fset4dFgptrs[itime] = fset4dFg[itime].get();
     timesptrs[itime]    = &times[itime];
