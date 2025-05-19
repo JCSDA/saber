@@ -12,8 +12,6 @@
 #include <string>
 #include <vector>
 
-#include <boost/noncopyable.hpp>
-
 #include "eckit/exception/Exceptions.h"
 
 #include "oops/base/GeometryData.h"

@@ -122,6 +122,15 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
   timeComm_(fset4dXb.commTime()), size4D_(fset4dXb.size()) {
   oops::Log::trace() << "SaberParametricBlockChain ctor starting" << std::endl;
 
+  // Get central block parameters
+  SaberCentralBlockParametersWrapper saberCentralBlockParamsWrapper;
+  saberCentralBlockParamsWrapper.deserialize(conf.getSubConfiguration("saber central block"));
+
+  const SaberBlockParametersBase & saberCentralBlockParams =
+    saberCentralBlockParamsWrapper.saberCentralBlockParameters;
+
+  const bool centralDirectCalibration = saberCentralBlockParams.doCalibration();
+
   // If needed create outer block chain
   if (conf.has("saber outer blocks")) {
     std::vector<SaberOuterBlockParametersWrapper> cmpOuterBlocksParams;
@@ -132,18 +141,15 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
     }
     outerBlockChain_ = std::make_unique<SaberOuterBlockChain>(geom, outerVariables_,
                           fset4dXb, fset4dFg, fsetEns, covarConf,
-                          cmpOuterBlocksParams);
+                          cmpOuterBlocksParams, centralDirectCalibration);
   }
 
   // Set outer geometry data for central block
   const oops::GeometryData & currentOuterGeom = outerBlockChain_ ?
                              outerBlockChain_->innerGeometryData() : geom.generic();
 
-  SaberCentralBlockParametersWrapper saberCentralBlockParamsWrapper;
-  saberCentralBlockParamsWrapper.deserialize(conf.getSubConfiguration("saber central block"));
 
-  const SaberBlockParametersBase & saberCentralBlockParams =
-    saberCentralBlockParamsWrapper.saberCentralBlockParameters;
+  // Create central block
   oops::Log::info() << "Info     : Creating central block: "
                     << saberCentralBlockParams.saberBlockName.value() << std::endl;
 
@@ -202,13 +208,13 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
     // Read data
     oops::Log::info() << "Info     : Read data" << std::endl;
     centralBlock_->read();
+  }
 
-    if (saberCentralBlockParams.forceWrite.value()) {
-      // Write data
-      oops::Log::info() << "Info     : Write data" << std::endl;
-      centralBlock_->write(geom);
-      centralBlock_->write();
-    }
+  if (saberCentralBlockParams.forceWrite.value()) {
+    // Write data
+    oops::Log::info() << "Info     : Write data" << std::endl;
+    centralBlock_->write(geom);
+    centralBlock_->write();
   }
 
   // Dual resolution ensemble

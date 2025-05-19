@@ -36,7 +36,6 @@ background error:
         file path: testdata/error_covariance_training_spectralb_1/spectralsabercov_%MPI%.nc
   saber outer blocks:
   - saber block name: spectral to gauss
-    calibration: true
     active variables: *vars
 test:
   reference filename: testref/error_covariance_training_spectralb_1.ref

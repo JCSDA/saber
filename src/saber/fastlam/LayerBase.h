@@ -12,6 +12,8 @@
 #include <string>
 #include <vector>
 
+#include "eckit/memory/NonCopyable.h"
+
 #include "atlas/field.h"
 #include "atlas/functionspace.h"
 
@@ -28,7 +30,7 @@ namespace fastlam {
 // -----------------------------------------------------------------------------
 
 class LayerBase : public util::Printable,
-                  private boost::noncopyable {
+                  private eckit::NonCopyable {
  public:
   static const std::string classname() {return "saber::fastlam::Layer";}
 

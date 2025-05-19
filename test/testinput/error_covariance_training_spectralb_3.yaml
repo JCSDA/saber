@@ -114,7 +114,6 @@ background error:
         file path: testdata/error_covariance_training_spectralb_3/spectralvertcov_%MPI%.nc
   saber outer blocks:
   - saber block name: spectral to gauss
-    calibration: true
     active variables:
     - air_horizontal_streamfunction
     - air_horizontal_velocity_potential

@@ -15,10 +15,8 @@
 
 #include "atlas/field.h"
 
-#include <boost/noncopyable.hpp>
-#include <boost/ptr_container/ptr_vector.hpp>
-
 #include "eckit/exception/Exceptions.h"
+#include "eckit/memory/NonCopyable.h"
 
 #include "oops/base/FieldSet3D.h"
 #include "oops/base/GeometryData.h"
@@ -42,7 +40,8 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-class SaberCentralBlockBase : public util::Printable, private boost::noncopyable {
+class SaberCentralBlockBase : public util::Printable,
+                              private eckit::NonCopyable {
  public:
   explicit SaberCentralBlockBase(const SaberBlockParametersBase & params,
                                  const util::DateTime & validTime)
@@ -113,6 +112,9 @@ class SaberCentralBlockBase : public util::Printable, private boost::noncopyable
 
   // Return block name
   std::string blockName() const {return blockName_;}
+
+  // Return date/time
+  const util::DateTime validTime() const {return validTime_;}
 
   // Read model fields
   template <typename MODEL>

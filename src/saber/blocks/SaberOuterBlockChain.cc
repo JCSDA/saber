@@ -43,8 +43,7 @@ SaberOuterBlockChain::SaberOuterBlockChain(
   const eckit::LocalConfiguration outerBlockConf{covarConf};
 
   // Loop in reverse order
-  for (const SaberOuterBlockParametersWrapper & saberOuterBlockParamWrapper :
-    boost::adaptors::reverse(params)) {
+  for (int jb = params.size()-1; jb >= 0; --jb) {
     // Initialize current outer geometry data
     const oops::GeometryData & currentOuterGeometryData = outerBlocks_.size() == 0 ?
                                      outerGeometryData : outerBlocks_.back()->innerGeometryData();
@@ -53,7 +52,7 @@ SaberOuterBlockChain::SaberOuterBlockChain(
     const auto[saberOuterBlockParams,
                currentOuterVars,
                activeVars]
-            = initBlock(saberOuterBlockParamWrapper,
+            = initBlock(params[jb],
                           outerBlockConf,
                           currentOuterGeometryData,
                           outerVars,
@@ -76,14 +75,13 @@ SaberOuterBlockChain::SaberOuterBlockChain(
       // Read data
       oops::Log::info() << "Info     : Read data" << std::endl;
       outerBlocks_.back()->read();
-
-      if (saberOuterBlockParams.forceWrite.value()) {
-        // Write data
-        oops::Log::info() << "Info     : Write data" << std::endl;
-        outerBlocks_.back()->write();
-      }
     }
 
+    if (saberOuterBlockParams.forceWrite.value()) {
+      // Write data
+      oops::Log::info() << "Info     : Write data" << std::endl;
+      outerBlocks_.back()->write();
+    }
 
     // Inner geometry data and variables & consistency check with active variables
     auto[innerGeometryData, innerVars] = getInnerObjects(activeVars, currentOuterVars);

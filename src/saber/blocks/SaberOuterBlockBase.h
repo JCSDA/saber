@@ -13,9 +13,8 @@
 #include <utility>
 #include <vector>
 
-#include <boost/noncopyable.hpp>
-
 #include "eckit/exception/Exceptions.h"
+#include "eckit/memory/NonCopyable.h"
 
 #include "oops/base/FieldSets.h"
 #include "oops/base/Geometry.h"
@@ -43,7 +42,8 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-class SaberOuterBlockBase : public util::Printable, private boost::noncopyable {
+class SaberOuterBlockBase : public util::Printable,
+                            private eckit::NonCopyable {
  public:
   explicit SaberOuterBlockBase(const SaberBlockParametersBase & params,
                                const util::DateTime & validTime)

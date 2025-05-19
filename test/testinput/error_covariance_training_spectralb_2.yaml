@@ -49,7 +49,6 @@ background error:
         file path: testdata/error_covariance_training_spectralb_2/spectralvertcov_%MPI%.nc
   saber outer blocks:
   - saber block name: spectral to gauss
-    calibration: true
     active variables: *vars
   - saber block name: write variances
     additional cross covariances:

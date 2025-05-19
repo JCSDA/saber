@@ -14,8 +14,6 @@
 #include <utility>
 #include <vector>
 
-#include <boost/range/adaptor/reversed.hpp>
-
 #include "atlas/field.h"
 #include "atlas/grid.h"
 
