@@ -7,7 +7,8 @@ geometry:
   - variables:
     - snow_depth
     levels: 1
-    vert_coord: [0.0]
+    vertical coordinate:
+      profile: [0.0]
     orography: 
       top longitude: 180.0
       top latitude: 0.0

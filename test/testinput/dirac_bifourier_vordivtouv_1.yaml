@@ -1,0 +1,66 @@
+# Dirac test for the BifourierVorDivToRedWind (forward and backward) and RedWindToGeoWind blocks
+geometry:
+  function space: StructuredColumns
+  grid:
+    type : regional
+    nx : 73
+    ny : 51
+    dx : 2.5e3
+    dy : 2.5e3
+    lonlat(centre) : [9.9, 56.3]
+    projection :  
+      type : lambert_conformal_conic
+      latitude0  : 56.3
+      longitude0 : 0.0
+    y_numbering: 1
+  partitioner: checkerboard
+  groups:
+  - variables:
+    - air_upward_absolute_vorticity
+    - air_horizontal_divergence
+    - reduced_x_wind
+    - reduced_y_wind
+    - geographical_x_wind
+    - geographical_y_wind
+    levels: 10
+  latitude south to north: false
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables:
+  - geographical_x_wind
+  - geographical_y_wind
+background error:
+  covariance model: SABER
+  adjoint test: false
+  square-root test: false
+  inverse test: false
+  saber central block:
+    saber block name: BifourierID
+  saber outer blocks:
+  - saber block name: BifourierVorDivToRedWind
+    backward mode: true
+  - saber block name: BifourierVorDivToRedWind
+  - saber block name: BifourierSpectralToGrid
+  - saber block name: RedWindToGeoWind
+    biperiodization:
+      x inner extension: 7
+      y inner extension: 5
+      x outer extension: 7
+      y outer extension: 5
+    output file:
+      filepath: testdata/dirac_bifourier_vordivtouv_1/_MPI_-_OMP__red_wind_to_geo_wind
+    force write: true
+dirac:
+  lon:
+  - 9.9058
+  lat:
+  - 56.3223
+  level:
+  - 1
+  variable:
+  - geographical_x_wind
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_bifourier_vordivtouv_1/%MPI%_dirac_%id%
+test:
+  reference filename: testref/dirac_bifourier_vordivtouv_1.ref

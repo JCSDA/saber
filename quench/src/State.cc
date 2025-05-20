@@ -21,10 +21,10 @@ namespace quench {
 
 // -----------------------------------------------------------------------------
 
-State::State(const Geometry & resol,
+State::State(const Geometry & geom,
              const oops::Variables & vars,
              const util::DateTime & vt)
-  : fields_(new Fields(resol, vars, vt)) {
+  : fields_(new Fields(geom, vars, vt)) {
   oops::Log::trace() << classname() << "::State starting" << std::endl;
 
   fields_->zero();
@@ -34,7 +34,7 @@ State::State(const Geometry & resol,
 
 // -----------------------------------------------------------------------------
 
-State::State(const Geometry & resol,
+State::State(const Geometry & geom,
              const eckit::Configuration & file)
   : fields_() {
   oops::Log::trace() << classname() << "::State starting" << std::endl;
@@ -42,7 +42,7 @@ State::State(const Geometry & resol,
   const std::vector<std::string> varNames = file.has("state variables") ?
     file.getStringVector("state variables") : file.getStringVector("variables");
   const oops::Variables vars(varNames);
-  fields_.reset(new Fields(resol, vars, util::DateTime()));
+  fields_.reset(new Fields(geom, vars, util::DateTime()));
   if (file.has("filepath")) {
     oops::Log::info() << "Info     : Create state from file" << std::endl;
     fields_->read(file);

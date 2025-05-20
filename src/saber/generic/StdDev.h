@@ -31,8 +31,12 @@ class StdDevReadParameters : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(StdDevReadParameters, Parameters)
 
  public:
+  // Standard-deviation profile configuration
+  oops::OptionalParameter<eckit::LocalConfiguration> profileFileConf{"profile file", this};
+
   // ATLAS standard-deviation file
   oops::OptionalParameter<eckit::LocalConfiguration> atlasFileConf{"atlas file", this};
+
   // Model standard-deviation file
   oops::OptionalParameter<eckit::LocalConfiguration> modelFileConf{"model file", this};
 };
@@ -45,6 +49,7 @@ class StdDevWriteParameters : public oops::Parameters {
  public:
   // ATLAS standard-deviation file
   oops::OptionalParameter<eckit::LocalConfiguration> atlasFileConf{"write to atlas file", this};
+
   // Model standard-deviation file
   oops::OptionalParameter<eckit::LocalConfiguration> modelFileConf{"write to model file", this};
 };
@@ -64,8 +69,7 @@ class StdDevParameters : public SaberBlockParametersBase {
   // Scaling parameter
   oops::Parameter<double> scaleFactorParam{"stddev scale factor",
                                            "multiplicative factor applied to StdDev block",
-                                           1.0, this,
-                                          {oops::exclusiveMinConstraint(0.)}};
+                                           1.0, this, {oops::exclusiveMinConstraint(0.)}};
 
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 
@@ -117,6 +121,7 @@ class StdDev : public SaberOuterBlockBase {
   const oops::GeometryData & innerGeometryData_;
   oops::Variables innerVars_;
   Parameters_ params_;
+  bool readFromProfile_;
   bool readFromAtlas_;
   bool readFromModel_;
   double scaleFactor_;

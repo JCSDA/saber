@@ -1,0 +1,104 @@
+/*
+ * (C) Copyright 2025 Meteorologisk Institutt
+ *
+ */
+
+#include "saber/bifourier/BifourierSpectralToGrid.h"
+
+using atlas::array::make_view;
+
+namespace saber {
+namespace bifourier {
+
+// -----------------------------------------------------------------------------
+
+static SaberOuterBlockMaker<BifourierSpectralToGrid>
+  makerBifourierSpectralToGrid_("BifourierSpectralToGrid");
+
+// -----------------------------------------------------------------------------
+
+BifourierSpectralToGrid::BifourierSpectralToGrid(const oops::GeometryData & outerGeometryData,
+                                                 const oops::Variables & outerVars,
+                                                 const eckit::Configuration & covarConfig,
+                                                 const Parameters_ & params,
+                                                 const oops::FieldSet3D & xb,
+                                                 const oops::FieldSet3D & fg)
+  : SaberOuterBlockBase(params, xb.validTime()),
+    innerVars_(outerVars)
+{
+  oops::Log::trace() << classname() << "::BifourierSpectralToGrid starting" << std::endl;
+
+  // Create spectral transform
+  trans_ = transStore_.setupTransform(outerGeometryData, innerVars_, params.toConfiguration());
+
+  // Create inner GeometryData
+  innerGeometryData_.reset(new oops::GeometryData(trans_->spFspace(), outerGeometryData.fieldSet(),
+    outerGeometryData.levelsAreTopDown(), outerGeometryData.comm()));
+
+  oops::Log::trace() << classname() << "::BifourierSpectralToGrid done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void BifourierSpectralToGrid::multiply(oops::FieldSet3D & fset) const {
+  oops::Log::trace() << classname() << "::multiply starting" << std::endl;
+
+  // Copy FieldSet
+  atlas::FieldSet fsetTmp;
+  trans_->copyFieldSet(fset.fieldSet(), fsetTmp, innerVars_);
+
+  // Remove variables
+  util::removeFieldsFromFieldSet(fset.fieldSet(), innerVars_.variables());
+
+  // Inverse spectral transform
+  trans_->sp2gp(fsetTmp, fset.fieldSet(), innerVars_);
+
+  oops::Log::trace() << classname() << "::multiply done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void BifourierSpectralToGrid::multiplyAD(oops::FieldSet3D & fset) const {
+  oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
+
+  // Direct spectral transform
+  atlas::FieldSet fsetTmp;
+  trans_->gp2sp(fset.fieldSet(), fsetTmp, innerVars_);
+
+  // Remove outer variables
+  util::removeFieldsFromFieldSet(fset.fieldSet(), innerVars_.variables());
+
+  // Copy FieldSet
+  trans_->copyFieldSet(fsetTmp, fset.fieldSet(), innerVars_);
+
+  oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void BifourierSpectralToGrid::leftInverseMultiply(oops::FieldSet3D & fset) const {
+  oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
+
+  // Direct spectral transform
+  atlas::FieldSet fsetTmp;
+  trans_->gp2sp(fset.fieldSet(), fsetTmp, innerVars_);
+
+  // Remove outer variables
+  util::removeFieldsFromFieldSet(fset.fieldSet(), innerVars_.variables());
+
+  // Copy FieldSet
+  trans_->copyFieldSet(fsetTmp, fset.fieldSet(), innerVars_);
+
+  oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void BifourierSpectralToGrid::print(std::ostream & os) const {
+  os << classname();
+}
+
+// -----------------------------------------------------------------------------
+
+}  // namespace bifourier
+}  // namespace saber

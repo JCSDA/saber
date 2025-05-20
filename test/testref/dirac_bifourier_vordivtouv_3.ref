@@ -1,0 +1,39 @@
+Input Dirac increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: structured [3723]
+  Fields:
+    eastward_wind: 1.0000000000000000e+00
+    northward_wind: 0.0000000000000000e+00
+- xspace: LocalConfiguration[root={type => linear , start => 5.1870971254055749e+05 , end => 6.9870971254055749e+05 , N => 73 , endpoint => true}]
+- yspace: LocalConfiguration[root={type => linear , start => -1.8673080099392682e+04 , end => 1.0632691990060732e+05 , N => 51 , endpoint => true}]
+Outer grid size: 3723
+Norm of output parameter : 1.0568360561474846e+02
+Adjoint test for block RedWindToGeoWind passed
+Inner inverse test for block RedWindToGeoWind passed: U Uinv (U x) == (U x)
+Outer inverse test for block RedWindToGeoWind passed: Uinv U (Uinv x) == (Uinv x)
+- Regional grid size: 73x51
+- Cell sizes: 2.5000000000000000e+00 km x 2.5000000000000000e+00 km
+- Mean latitude: 5.6289831946322792e+01 deg
+- Spectral sizes: 37x26
+- Truncation parameters MxN: 35x24
+- Maximum total wave number: 35
+- Spectral array global size: 2627
+- Direct-inverse test passed
+- Inverse-direct test passed
+- Parseval identity test passed
+- Adjoint test passed
+- Derivatives / direct Laplacian consistency test passed
+Adjoint test for block BifourierSpectralToGrid passed
+Inner inverse test for block BifourierSpectralToGrid passed: U Uinv (U x) == (U x)
+Outer inverse test for block BifourierSpectralToGrid passed: Uinv U (Uinv x) == (Uinv x)
+Adjoint test for block BifourierVorDivToRedWind passed
+Inner inverse test for block BifourierVorDivToRedWind passed: U Uinv (U x) == (U x)
+Outer inverse test for block BifourierVorDivToRedWind passed: Uinv U (Uinv x) == (Uinv x)
+Adjoint test for block BifourierID passed
+Square-root test for block BifourierID passed
+Covariance(SABER) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: structured [3723]
+  Fields:
+    eastward_wind: 2.5692942745506451e+07
+    northward_wind: 2.1952606841640401e+05

@@ -1,0 +1,49 @@
+Input Dirac increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: structured [3723]
+  Fields:
+    air_upward_absolute_vorticity: 1.0000000000000000e+00
+    air_horizontal_divergence: 1.0000000000000000e+00
+    air_temperature_and_log_of_air_pressure_at_surface: 1.0000000000000000e+00
+    water_vapor_mixing_ratio_wrt_moist_air: 1.0000000000000000e+00
+- Regional grid size: 73x51
+- Cell sizes: 2.5000000000000000e+00 km x 2.5000000000000000e+00 km
+- Mean latitude: 5.6289831946322792e+01 deg
+- Spectral sizes: 37x26
+- Truncation parameters MxN: 35x24
+- Maximum total wave number: 35
+- Spectral array global size: 2627
+- Direct-inverse test passed
+- Inverse-direct test passed
+- Parseval identity test passed
+- Adjoint test passed
+- Derivatives / direct Laplacian consistency test passed
+Adjoint test for block BifourierSpectralToGrid passed
+Inner inverse test for block BifourierSpectralToGrid passed: U Uinv (U x) == (U x)
+Outer inverse test for block BifourierSpectralToGrid passed: Uinv U (Uinv x) == (Uinv x)
+- fact1: 6.5983727636454675e+14
+Adjoint test for block BifourierVorToPb passed
+Inner inverse test for block BifourierVorToPb passed: U Uinv (U x) == (U x)
+Outer inverse test for block BifourierVorToPb passed: Uinv U (Uinv x) == (Uinv x)
+- sDivPb: 3.7798086736114888e-07
+- sTpsPb: 1.5771660299936311e+01
+- sTpsDivu: 2.1302804955546161e+11
+- sQPb: 7.4235169905734771e-06
+- sQDivu: 1.1935285089118731e+05
+- sQTpsu: 1.5500808683521104e+03
+Adjoint test for block BifourierBalance passed
+Inner inverse test for block BifourierBalance passed: U Uinv (U x) == (U x)
+Outer inverse test for block BifourierBalance passed: Uinv U (Uinv x) == (Uinv x)
+Adjoint test for block BifourierVorToPb passed
+Inner inverse test for block BifourierVorToPb passed: U Uinv (U x) == (U x)
+Outer inverse test for block BifourierVorToPb passed: Uinv U (Uinv x) == (Uinv x)
+Adjoint test for block BifourierID passed
+Square-root test for block BifourierID passed
+Covariance(SABER) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: structured [3723]
+  Fields:
+    air_upward_absolute_vorticity: 7.7169104615958828e+00
+    air_horizontal_divergence: 1.7803989499467360e+01
+    air_temperature_and_log_of_air_pressure_at_surface: 8.0830209761022218e+05
+    water_vapor_mixing_ratio_wrt_moist_air: 2.0183910520905283e+03

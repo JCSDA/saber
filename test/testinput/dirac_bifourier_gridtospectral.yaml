@@ -1,0 +1,52 @@
+# Dirac test for the BifourierGridToSpectral block
+geometry:
+  function space: StructuredColumns
+  grid:
+    type : regional
+    nx : 73
+    ny : 51
+    dx : 2.5e3
+    dy : 2.5e3
+    lonlat(centre) : [9.9, 56.3]
+    projection :  
+      type : lambert_conformal_conic
+      latitude0  : 56.3
+      longitude0 : 0.0
+    y_numbering: 1
+  partitioner: checkerboard
+  groups:
+  - variables:
+    - air_upward_absolute_vorticity
+    - air_horizontal_divergence
+    levels: 10
+  latitude south to north: false
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables:
+  - air_upward_absolute_vorticity
+  - air_horizontal_divergence
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: ID
+  saber outer blocks:
+  - saber block name: BifourierGridToSpectral
+  - saber block name: BifourierSpectralToGrid
+dirac:
+  lon:
+  - 9.9058
+  - 9.9058
+  lat:
+  - 56.3223
+  - 56.3223
+  level:
+  - 1
+  - 10
+  variable:
+  - air_upward_absolute_vorticity
+  - air_horizontal_divergence
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_bifourier_gridtospectral/%MPI%_dirac_%id%
+test:
+  reference filename: testref/dirac_bifourier_gridtospectral.ref

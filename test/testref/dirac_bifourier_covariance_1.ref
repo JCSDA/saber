@@ -1,0 +1,31 @@
+Input Dirac increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: structured [3723]
+  Fields:
+    air_upward_absolute_vorticity: 1.0000000000000000e+00
+    air_horizontal_divergence: 1.0000000000000000e+00
+    air_temperature_and_log_of_air_pressure_at_surface: 1.0000000000000000e+00
+    water_vapor_mixing_ratio_wrt_moist_air: 1.0000000000000000e+00
+- Regional grid size: 73x51
+- Cell sizes: 2.5000000000000000e+00 km x 2.5000000000000000e+00 km
+- Mean latitude: 5.6289831946322792e+01 deg
+- Spectral sizes: 37x26
+- Truncation parameters MxN: 35x24
+- Maximum total wave number: 35
+- Spectral array global size: 2627
+- Direct-inverse test passed
+- Inverse-direct test passed
+- Parseval identity test passed
+- Adjoint test passed
+- Derivatives / direct Laplacian consistency test passed
+Adjoint test for block BifourierSpectralToGrid passed
+Adjoint test for block BifourierCovariance passed
+Square-root test for block BifourierCovariance passed
+Covariance(SABER) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: structured [3723]
+  Fields:
+    air_upward_absolute_vorticity: 2.4865122111895205e-09
+    air_horizontal_divergence: 1.1424213316060814e-09
+    air_temperature_and_log_of_air_pressure_at_surface: 6.9614040344810596e-05
+    water_vapor_mixing_ratio_wrt_moist_air: 4.5084676079494327e-07

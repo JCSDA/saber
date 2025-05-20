@@ -1,0 +1,36 @@
+Input Dirac increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: structured [3723]
+  Fields:
+    geographical_x_wind: 0.0000000000000000e+00
+    geographical_y_wind: 0.0000000000000000e+00
+    air_temperature: 1.0000000000000000e+00
+    log_of_air_pressure_at_surface: 0.0000000000000000e+00
+    water_vapor_mixing_ratio_wrt_moist_air: 0.0000000000000000e+00
+- xspace: LocalConfiguration[root={type => linear , start => 5.1870971254055749e+05 , end => 6.9870971254055749e+05 , N => 73 , endpoint => true}]
+- yspace: LocalConfiguration[root={type => linear , start => -1.8673080099392682e+04 , end => 1.0632691990060732e+05 , N => 51 , endpoint => true}]
+Outer grid size: 3723
+- xspace: LocalConfiguration[root={type => linear , start => 5.1870971254055749e+05 , end => 6.9870971254055749e+05 , N => 73 , endpoint => true}]
+- yspace: LocalConfiguration[root={type => linear , start => -1.8673080099392682e+04 , end => 1.0632691990060732e+05 , N => 51 , endpoint => true}]
+Outer grid size: 3723
+- Regional grid size: 73x51
+- Cell sizes: 2.5000000000000000e+00 km x 2.5000000000000000e+00 km
+- Mean latitude: 5.6289831946322792e+01 deg
+- Spectral sizes: 37x26
+- Truncation parameters MxN: 35x24
+- Maximum total wave number: 35
+- Spectral array global size: 2627
+- Direct-inverse test passed
+- Inverse-direct test passed
+- Parseval identity test passed
+- Adjoint test passed
+- Derivatives / direct Laplacian consistency test passed
+Covariance(SABER) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: structured [3723]
+  Fields:
+    geographical_x_wind: 2.1016647501286866e-02
+    geographical_y_wind: 2.1620400391443497e-02
+    air_temperature: 4.2370263899613614e-01
+    log_of_air_pressure_at_surface: 3.6120266683457699e-05
+    water_vapor_mixing_ratio_wrt_moist_air: 1.6754720934268746e-04

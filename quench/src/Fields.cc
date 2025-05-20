@@ -1376,7 +1376,7 @@ std::vector<Interpolation>::iterator Fields::setupGridInterpolation(const Geomet
                               geomUid);
 
   // Insert new interpolation
-  interpolations().push_back(interpolation);
+  interpolations().emplace_back(interpolation);
 
   oops::Log::trace() << classname() << "::setupGridInterpolation done" << std::endl;
   return std::prev(interpolations().end());

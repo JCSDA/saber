@@ -1,0 +1,86 @@
+# Same as dirac_bifourier_balance_1, with an additional biperiodization block
+geometry:
+  function space: StructuredColumns
+  grid:
+    type : regional
+    nx : 52
+    ny : 36
+    dx : 2.5e3
+    dy : 2.5e3
+    lonlat(centre) : [9.9, 56.3]
+    projection :  
+      type : lambert_conformal_conic
+      latitude0  : 56.3
+      longitude0 : 0.0
+    y_numbering: 1
+  partitioner: checkerboard
+  groups:
+  - variables:
+    - air_upward_absolute_vorticity
+    - air_horizontal_divergence
+    - water_vapor_mixing_ratio_wrt_moist_air
+    levels: 10
+  - variables:
+    - air_temperature_and_log_of_air_pressure_at_surface
+    levels: 11
+  latitude south to north: false
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables:
+  - air_upward_absolute_vorticity
+  - air_horizontal_divergence
+  - air_temperature_and_log_of_air_pressure_at_surface
+  - water_vapor_mixing_ratio_wrt_moist_air
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: BifourierID
+  saber outer blocks:
+  - saber block name: BifourierVorToPb
+  - saber block name: BifourierBalance
+    read:
+      input file: testdata/convertcov_bifourier_balance/_MPI_-_OMP__balance.nc
+    rows:
+    - output variable: balanced_air_pressure
+    - output variable: air_horizontal_divergence
+      input variables: [balanced_air_pressure]
+    - output variable: air_temperature_and_log_of_air_pressure_at_surface
+      input variables: [balanced_air_pressure, air_horizontal_divergence]
+    - output variable: water_vapor_mixing_ratio_wrt_moist_air
+      input variables: [balanced_air_pressure, air_horizontal_divergence, air_temperature_and_log_of_air_pressure_at_surface]
+  - saber block name: BifourierVorToPb
+    backward mode: true
+  - saber block name: BifourierSpectralToGrid
+  - saber block name: Biperiodization
+    biperiodization:
+      x inner extension: 28
+      y inner extension: 20
+      x outer extension: 7
+      y outer extension: 5
+    skip tests: true
+dirac:
+  lon:
+  - 9.9058
+  - 9.9058
+  - 9.9058
+  - 9.9058
+  lat:
+  - 56.3223
+  - 56.3223
+  - 56.3223
+  - 56.3223
+  level:
+  - 1
+  - 1
+  - 11
+  - 1
+  variable:
+  - air_upward_absolute_vorticity
+  - air_horizontal_divergence
+  - air_temperature_and_log_of_air_pressure_at_surface
+  - water_vapor_mixing_ratio_wrt_moist_air
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_bifourier_balance_2/%MPI%_dirac_%id%
+test:
+  reference filename: testref/dirac_bifourier_balance_2.ref

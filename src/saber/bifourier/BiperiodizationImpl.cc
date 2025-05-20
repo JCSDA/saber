@@ -69,7 +69,7 @@ BiperiodizationImpl::BiperiodizationImpl(const oops::GeometryData & outerGeometr
   if (innerExtNx == outerExtNx && innerExtNy == outerExtNy) {
     // Copy grid
     innerGrid_ = outerGrid;
-    oops::Log::info() << "Inner grid = outer grid" << std::endl;
+    oops::Log::info() << "Info     : Inner grid = outer grid" << std::endl;
   } else {
     // Define inner grid
     const size_t innerNx = physicalNx + innerExtNx;
@@ -88,7 +88,7 @@ BiperiodizationImpl::BiperiodizationImpl(const oops::GeometryData & outerGeometr
     atlas::grid::detail::grid::Structured::XSpace innerXSpace(xspec);
     atlas::grid::detail::grid::Structured::YSpace innerYSpace(yspec);
     innerGrid_ = atlas::StructuredGrid(innerXSpace, innerYSpace, outerFs.grid().projection());
-    oops::Log::test() << "Inner grid size: " << innerGrid_.size() << std::endl;
+    oops::Log::test() << "Info     : Inner grid size: " << innerGrid_.size() << std::endl;
   }
 
   // Allocate inner partition
@@ -96,12 +96,12 @@ BiperiodizationImpl::BiperiodizationImpl(const oops::GeometryData & outerGeometr
 
   // Get outer Partitioner name
   const std::string outerPartitionerName = outerFs.distribution();
-  oops::Log::info() << "Outer partitioner: " << outerPartitionerName << std::endl;
+  oops::Log::info() << "Info     : Outer partitioner: " << outerPartitionerName << std::endl;
 
   if (outerPartitionerName == "custom") {
     // Get inner Partitioner
     const std::string innerPartitionerName = params_.innerPartitioner.value();
-    oops::Log::info() << "Inner partitioner: " << innerPartitionerName << std::endl;
+    oops::Log::info() << "Info     : Inner partitioner: " << innerPartitionerName << std::endl;
     const auto innerPartitioner =  atlas::grid::Partitioner(innerPartitionerName);
 
     // Generate inner partition
@@ -109,7 +109,7 @@ BiperiodizationImpl::BiperiodizationImpl(const oops::GeometryData & outerGeometr
   } else {
     // Get outer Partitioner
     const auto outerPartitioner =  atlas::grid::Partitioner(outerPartitionerName);
-    oops::Log::info() << "Inner partitioner = outer partitioner ("
+    oops::Log::info() << "Info     : Inner partitioner = outer partitioner ("
        << outerFs.distribution() << ")" << std::endl;
 
     // Generate inner partition

@@ -78,12 +78,9 @@ class GroupParameters : public oops::Parameters {
   // Orography
   oops::OptionalParameter<OrographyParameters> orography{"orography", this};
 
-  // Vertical coordinate
-  oops::OptionalParameter<std::vector<double>> vert_coord{"vert_coord", this};
-
-  // Vertical coordinate from file
-  oops::OptionalParameter<eckit::LocalConfiguration> vert_coordFromFile{"vert_coord from file",
-    this};
+  // Vertical coordinate configuration
+  oops::OptionalParameter<eckit::LocalConfiguration> vertCoordConf{
+    "vertical coordinate", this};
 
   // Mask type
   oops::Parameter<std::string> maskType{"mask type", "none", this};
@@ -148,11 +145,14 @@ class GeometryParameters : public oops::Parameters {
   oops::Parameter<eckit::LocalConfiguration> modelData{"model data", eckit::LocalConfiguration(),
     this};
 
-  // Aliases for model files
+  // Variables name alias for model files
   oops::Parameter<std::vector<AliasParameters>> alias{"alias", {}, this};
 
   // Latitudes from south to north in files
   oops::Parameter<bool> latSouthToNorth{"latitude south to north", true, this};
+
+  // Check longitudes/latitudes from file
+  oops::OptionalParameter<eckit::LocalConfiguration> checkLonLat{"check lon/lat from file", this};
 
   // Interpolation parameters
   oops::OptionalParameter<InterpolationParameters> interpolation{"interpolation", this};
@@ -199,11 +199,10 @@ class Geometry : public util::Printable,
   size_t levels(const size_t & groupIndex) const
     {return groups_[groupIndex].levels_;}
   size_t levels(const std::string & var) const
-    {return groups_[groupIndex_.at(var)].levels_;}
+    {return groups_[groupIndex(var)].levels_;}
   size_t groups() const
     {return groups_.size();}
-  size_t groupIndex(const std::string & var) const
-    {return groupIndex_.at(var);}
+  size_t groupIndex(const std::string & var) const;
   const eckit::LocalConfiguration & modelData() const
     {return modelData_;}
   const std::vector<eckit::LocalConfiguration> & alias() const
@@ -218,15 +217,6 @@ class Geometry : public util::Printable,
     {return *geomData_;}
 
  private:
-  // Print
-  void print(std::ostream &) const;
-
-  // Read land-sea mask
-  void readSeaMask(const std::string &,
-                   const size_t &,
-                   const std::string &,
-                   atlas::Field &) const;
-
   // Communicator
   const eckit::mpi::Comm & comm_;
 
@@ -253,10 +243,12 @@ class Geometry : public util::Printable,
 
   // Group data structure
   struct groupData {
+    GroupParameters params_;
+    size_t index_;
     size_t levels_;
     std::string lev2d_;
-    atlas::Field vert_coord_;
-    std::vector<double> vert_coord_avg_;
+    atlas::Field vertCoord_;
+    std::vector<double> vertCoordAvg_;
     double gmaskSize_;
   };
 
@@ -272,7 +264,7 @@ class Geometry : public util::Printable,
   // Model data configuration
   eckit::LocalConfiguration modelData_;
 
-  // Aliases
+  // Variables name alias
   std::vector<eckit::LocalConfiguration> alias_;
 
   // Latitudes from south to north in files
@@ -286,6 +278,23 @@ class Geometry : public util::Printable,
 
   // Geometry data structure
   std::unique_ptr<oops::GeometryData> geomData_;
+
+  // Private methods
+
+  // Print
+  void print(std::ostream &) const;
+
+  // Setup alias
+  void setupAlias(const GeometryParameters &);
+
+  // Setup group vertical coordinate
+  void setupVertCoord(groupData &);
+
+  // Setup group mask
+  void setupMask(groupData &);
+
+  // Check longitudes/latitudes from file
+  void checkLonLat(const eckit::Configuration &);
 };
 
 // -----------------------------------------------------------------------------

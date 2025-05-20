@@ -1,0 +1,28 @@
+Input Dirac increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: structured [3723]
+  Fields:
+    geographical_x_wind: 1.0000000000000000e+00
+    geographical_y_wind: 0.0000000000000000e+00
+- xspace: LocalConfiguration[root={type => linear , start => 5.1870971254055749e+05 , end => 6.9870971254055749e+05 , N => 73 , endpoint => true}]
+- yspace: LocalConfiguration[root={type => linear , start => -1.8673080099392682e+04 , end => 1.0632691990060732e+05 , N => 51 , endpoint => true}]
+Outer grid size: 3723
+Norm of output parameter : 6.1017419610202452e+01
+- Regional grid size: 73x51
+- Cell sizes: 2.5000000000000000e+00 km x 2.5000000000000000e+00 km
+- Mean latitude: 5.6289831946322792e+01 deg
+- Spectral sizes: 37x26
+- Truncation parameters MxN: 35x24
+- Maximum total wave number: 35
+- Spectral array global size: 2627
+- Direct-inverse test passed
+- Inverse-direct test passed
+- Parseval identity test passed
+- Adjoint test passed
+- Derivatives / direct Laplacian consistency test passed
+Covariance(SABER) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: structured [3723]
+  Fields:
+    geographical_x_wind: 8.4000863146588189e-01
+    geographical_y_wind: 5.5780708222038470e-17
