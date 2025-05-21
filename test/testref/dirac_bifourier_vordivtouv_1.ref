@@ -3,7 +3,7 @@ Input Dirac increment:
   Geometry: structured [3723]
   Fields:
     geographical_x_wind: 1.0000000000000000e+00
-    geographical_y_wind: 0.0000000000000000e+00
+    geographical_y_wind: 1.0000000000000000e+00
 - xspace: LocalConfiguration[root={type => linear , start => 5.1870971254055749e+05 , end => 6.9870971254055749e+05 , N => 73 , endpoint => true}]
 - yspace: LocalConfiguration[root={type => linear , start => -1.8673080099392682e+04 , end => 1.0632691990060732e+05 , N => 51 , endpoint => true}]
 Outer grid size: 3723
@@ -25,4 +25,4 @@ Covariance(SABER) * Increment:
   Geometry: structured [3723]
   Fields:
     geographical_x_wind: 8.4000863146588189e-01
-    geographical_y_wind: 5.5780708222038470e-17
+    geographical_y_wind: 8.4000863146588201e-01
