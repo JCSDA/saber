@@ -85,6 +85,8 @@ void WriteFields::writeToFile(const oops::FieldSet3D & fset,
   }
   for (const auto & field : fset) {
     if (variablesToWrite.has(field.name())) {
+      ASSERT(fset[variablesToWrite[0]].functionspace().type() == field.functionspace().type());
+      ASSERT(fset[variablesToWrite[0]].functionspace().size() == field.functionspace().size());
       fsetWrite.add(field);
     }
   }
