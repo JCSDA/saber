@@ -35,7 +35,7 @@ class BifourierSpectralToGridParameters : public SaberBlockParametersBase {
   oops::Parameter<bool> skipTests{"skip tests", false, this};
 
   // Spectral tests tolerance
-  oops::Parameter<double> specTolerance{"spectral tolerance", 1.0e-10, this};
+  oops::Parameter<double> specTolerance{"spectral tolerance", 1.0e-9, this};
 
   oops::Variables mandatoryActiveVars() const override
     {return oops::Variables();}

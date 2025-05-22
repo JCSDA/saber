@@ -115,11 +115,16 @@ BifourierTransform::BifourierTransform(const oops::GeometryData & gdata,
       const auto spFieldTest = spFsetTest[var.name()];
       const auto spView = make_view<double, 2>(spField);
       const auto spViewTest = make_view<double, 2>(spFieldTest);
+      int wrongValues = 0;
       for (size_t js = 0; js < ns_; ++js) {
         for (size_t jz = 0; jz < nz; ++jz) {
-          ASSERT(oops::is_close_relative(spView(js, jz), spViewTest(js, jz), tolerance));
+          if (!oops::is_close_relative(spView(js, jz), spViewTest(js, jz), tolerance)) {
+            ++wrongValues;
+          }
         }
       }
+      comm_.allReduceInPlace(wrongValues, eckit::mpi::sum());
+      ASSERT(wrongValues == 0);
     }
     oops::Log::test() << "- Inverse-direct test passed" << std::endl;
 
@@ -163,12 +168,17 @@ BifourierTransform::BifourierTransform(const oops::GeometryData & gdata,
       const auto spDx2View = make_view<double, 2>(spDx2Field);
       const auto spDy2View = make_view<double, 2>(spDy2Field);
       const auto spLapDirView = make_view<double, 2>(spLapDirField);
+      int wrongValues = 0;
       for (size_t js = 0; js < ns_; ++js) {
         for (size_t jz = 0; jz < nz; ++jz) {
-          ASSERT(oops::is_close_relative(spLapDirView(js, jz),
-            spDx2View(js, jz) + spDy2View(js, jz), tolerance));
+          if (!oops::is_close_relative(spLapDirView(js, jz), spDx2View(js, jz) + spDy2View(js, jz),
+            tolerance)) {
+            ++wrongValues;
+          }
         }
       }
+      comm_.allReduceInPlace(wrongValues, eckit::mpi::sum());
+      ASSERT(wrongValues == 0);
     }
     oops::Log::test() << "- Derivatives / direct Laplacian consistency test passed" << std::endl;
   }
