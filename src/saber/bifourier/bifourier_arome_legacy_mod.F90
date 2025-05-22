@@ -68,7 +68,7 @@ read(iultmp)
 read(iultmp)
 if (itypmat/=0) call abor1_ftn('no model geometry description')
 if ((idim1/=1).or.(idim2/=13).or.(ipar1/=50).or.(ipar2/=0).or.(itypdi1/=0).or.(itypdi2/=0)) &
- & call abor1('nonexpected parameters for model geometry description')
+ & call abor1_ftn('nonexpected parameters for model geometry description')
 read(iultmp) zlon1,zlat1,zlon2,zlat2,zlon0,zlat0,idgl,idlon,idgux,idlux,ksmax,kmsmax,kflevg,ichkwd
 if (ichkwd/=3141592) call abor1_ftn('bad gsa control word')
 write(*,'(a,f12.8,a,f12.8)') 'Info     : - File geometry : zlat1 =',zlat1,' / zlat2 =',zlat2
@@ -152,7 +152,7 @@ read(iultmp)
 read(iultmp)
 if (itypmat/=0) call abor1_ftn('no model geometry description')
 if ((idim1/=1).or.(idim2/=13).or.(ipar1/=50).or.(ipar2/=0).or.(itypdi1/=0).or.(itypdi2/=0)) &
- & call abor1('nonexpected parameters for model geometry description')
+ & call abor1_ftn('nonexpected parameters for model geometry description')
 read(iultmp) zlon1,zlat1,zlon2,zlat2,zlon0,zlat0,idgl,idlon,idgux,idlux,ksmax,kmsmax,kflevg,ichkwd
 if (ichkwd/=3141592) call abor1_ftn('bad gsa control word')
 write(*,'(a,i5,a,i3)') 'Info     : - File geometry : nsmax =',ksmax,' / nflev =',kflevg
@@ -332,7 +332,7 @@ read(iultmp)
 read(iultmp)
 if (itypmat/=0) call abor1_ftn('no model geometry description')
 if ((idim1/=1).or.(idim2/=13).or.(ipar1/=50).or.(ipar2/=0).or.(itypdi1/=0).or.(itypdi2/=0)) &
- & call abor1('nonexpected parameters for model geometry description')
+ & call abor1_ftn('nonexpected parameters for model geometry description')
 read(iultmp) zlon1,zlat1,zlon2,zlat2,zlon0,zlat0,idgl,idlon,idgux,idlux,ksmax,kmsmax,kflevg,ichkwd
 if (ichkwd/=3141592) call abor1_ftn('bad gsa control word')
 write(*,'(a,i5,a,i3)') 'Info     : - File geometry : nsmax =',ksmax,' / nflev =',kflevg
@@ -347,11 +347,11 @@ read(iultmp) inbmat,iweight,itypmat,isetdist,ilendef
 read(iultmp) idim1,idim2,ipar1,ipar2,itypdi1,itypdi2
 read(iultmp)
 read(iultmp)
-if ((idim1/=idim2).or.(ipar1/=ipar2).or.(itypdi1/=itypdi2)) call abor1('nonsymmetric matrix')
-if (idim1<=0) call abor1('bad matrix dimensions')
-if (idim1/=kflevg) call abor1('code/data dim mismatch')
-if (itypdi1/=1) call abor1('matrix not on pressure levels')
-if (ipar1/=4) call abor1('not vorticity in gsa set 1')
+if ((idim1/=idim2).or.(ipar1/=ipar2).or.(itypdi1/=itypdi2)) call abor1_ftn('nonsymmetric matrix')
+if (idim1<=0) call abor1_ftn('bad matrix dimensions')
+if (idim1/=kflevg) call abor1_ftn('code/data dim mismatch')
+if (itypdi1/=1) call abor1_ftn('matrix not on pressure levels')
+if (ipar1/=4) call abor1_ftn('not vorticity in gsa set 1')
 
 ! Read gsa set 1: vorCov
 do jn=1,ksmax+1
@@ -366,7 +366,7 @@ read(iultmp)
 read(iultmp) idim1,idim2,ipar1,ipar2,itypdi1,itypdi2
 read(iultmp)
 read(iultmp)
-if (ipar1/=12) call abor1('not unbal div in gsa set 2')
+if (ipar1/=12) call abor1_ftn('not unbal div in gsa set 2')
 
 ! Read gsa set 2: divuCov
 do jn=1,ksmax+1
@@ -381,8 +381,8 @@ read(iultmp)
 read(iultmp) idim1,idim2,ipar1,ipar2,itypdi1,itypdi2
 read(iultmp) (zpdat(jj),jj=1,idim1)
 read(iultmp)
-if (ipar1/=14) call abor1('not unbal t,lnps in gsa set 3')
-if (idim1/=kflevg+1) call abor1('code/data dim mismatch')
+if (ipar1/=14) call abor1_ftn('not unbal t,lnps in gsa set 3')
+if (idim1/=kflevg+1) call abor1_ftn('code/data dim mismatch')
 
 ! Read gsa set 3: tPsuCov
 do jn=1,ksmax+1
@@ -397,7 +397,7 @@ read(iultmp)
 read(iultmp) idim1,idim2,ipar1,ipar2,itypdi1,itypdi2
 read(iultmp)
 read(iultmp)
-if (ipar1/=17) call abor1('not unbal q in gsa set 4')
+if (ipar1/=17) call abor1_ftn('not unbal q in gsa set 4')
 
 ! Read gsa set 4: quCov
 do jn=1,ksmax+1

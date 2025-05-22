@@ -1634,7 +1634,7 @@ void BifourierTransform::setupLocalSpectralSpace() {
   atlas::Field ghostField("ghost", make_datatype<int>(), make_shape(ns_));
   atlas::Field remoteIndexField("remote_index", make_datatype<int>(), make_shape(ns_));
   atlas::Field partitionField("partition", make_datatype<int>(), make_shape(ns_));
-  atlas::Field globalIndexField("global_index", make_datatype<int64_t>(), make_shape(ns_));
+  atlas::Field globalIndexField("global_index", make_datatype<atlas::gidx_t>(), make_shape(ns_));
   flds.add(lonlatField);
   flds.add(ghostField);
   flds.add(remoteIndexField);
@@ -1644,7 +1644,7 @@ void BifourierTransform::setupLocalSpectralSpace() {
   auto ghostView = make_view<int, 1>(ghostField);
   auto remoteIndexView = make_view<int, 1>(remoteIndexField);
   auto partitionView = make_view<int, 1>(partitionField);
-  auto globalIndexView = make_view<int64_t, 1>(globalIndexField);
+  auto globalIndexView = make_view<atlas::gidx_t, 1>(globalIndexField);
 
   for (size_t js = 0; js < ns_; ++js) {
     // Get global index
@@ -1671,7 +1671,7 @@ void BifourierTransform::setupLocalSpectralSpace() {
     partitionView(js) = myrank_;
 
     // Define global index field
-    globalIndexView(js) = static_cast<int64_t>(jsGlb);
+    globalIndexView(js) = static_cast<atlas::gidx_t>(jsGlb);
   }
   spFspace_.reset(new atlas::functionspace::PointCloud(flds));
 
