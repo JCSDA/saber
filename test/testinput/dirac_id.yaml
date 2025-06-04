@@ -36,5 +36,6 @@ output dirac:
 output variance:
   mpi pattern: '%MPI%'
   filepath: testdata/dirac_id/%MPI%_variance
+  formats: [default, gmsh]
 test:
   reference filename: testref/dirac_id.ref

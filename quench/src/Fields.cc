@@ -8,13 +8,6 @@
 
 #include "src/Fields.h"
 
-#ifdef ECCODES_FOUND
-#include <eccodes.h>
-#include <stdio.h>
-#include <stdlib.h>
-#endif
-#include <netcdf.h>
-
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -25,8 +18,6 @@
 
 #include "atlas/field.h"
 #include "atlas/functionspace.h"
-#include "atlas/output/Gmsh.h"
-#include "atlas/util/Config.h"
 #include "atlas/util/KDTree.h"
 #include "atlas/util/Point.h"
 
@@ -40,10 +31,8 @@
 #include "oops/util/Logger.h"
 #include "oops/util/Random.h"
 
+#include "src/FieldsIO/FieldsIOBase.h"
 #include "src/Geometry.h"
-
-#define ERR(e, msg) {std::string s(nc_strerror(e)); \
-  throw eckit::Exception(s + " : " + msg, Here());}
 
 namespace quench {
 
@@ -896,278 +885,14 @@ void Fields::read(const eckit::Configuration & config) {
     vars_in_file.push_back({newVar, var.metaData(), var.getLevels()});
   }
 
-  // Get IO format
+  // Get input format
   const std::string ioFormat = config.getString("format", "default");
 
-  // Read with specified IO format
-  if (ioFormat == "default") {
-    // Default OOPS writer
+  // Set FieldsIO
+  std::unique_ptr<FieldsIOBase> fieldsIO(FieldsIOFactory::create(ioFormat));
 
-    // Create variableSizes
-    std::vector<size_t> variableSizes;
-    for (const auto & var : vars_in_file) {
-      variableSizes.push_back(var.getLevels());
-    }
-
-    // Update configuration
-    eckit::LocalConfiguration conf(config);
-    if (!conf.has("latitude south to north")) {
-      conf.set("latitude south to north", geom_->latSouthToNorth());
-    }
-
-    // Read fieldset
-    util::readFieldSet(geom_->getComm(),
-                       geom_->functionSpace(),
-                       variableSizes,
-                       vars_in_file.variables(),
-                       conf,
-                       fset_);
-  } else if (ioFormat == "grib") {
-#ifdef ECCODES_FOUND
-    // GRIB format
-
-    // Build filepath
-    std::string filepath = config.getString("filepath");
-    if (config.has("member")) {
-      std::ostringstream out;
-      out << std::setfill('0') << std::setw(6) << config.getInt("member");
-      filepath.append("_");
-      filepath.append(out.str());
-    }
-
-    // Grib file path
-    std::string gribfilepath = filepath;
-    gribfilepath.append(".");
-    gribfilepath.append(config.getString("grib extension", "grib2"));
-
-    // Get levels
-    std::vector<size_t> levels;
-    if (!config.get("levels", levels)) {
-      size_t levelMax = 0;
-      for (const auto & var : vars_in_file) {
-        levelMax = std::max(levelMax, geom_->levels(var.name()));
-      }
-      for (size_t k = 0; k < levelMax; ++k) {
-        levels.push_back(k+1);
-      }
-    }
-
-    // Clear local fieldset
-    fset_.clear();
-
-    // Create local fieldset
-    for (const auto & var : vars_in_file) {
-      atlas::Field field = geom_->functionSpace().createField<double>(
-        atlas::option::name(var.name()) | atlas::option::levels(geom_->levels(var.name())));
-      fset_.add(field);
-    }
-
-    // Initialize local fieldset
-    for (auto & field : fset_) {
-      auto view = atlas::array::make_view<double, 2>(field);
-      view.assign(0.0);
-    }
-
-    // Global data
-    atlas::FieldSet globalData;
-    for (const auto & var : vars_in_file) {
-      atlas::Field field = geom_->functionSpace().createField<double>(
-        atlas::option::name(var.name())
-        | atlas::option::levels(geom_->levels(var.name())) | atlas::option::global());
-      globalData.add(field);
-    }
-
-    // Grib input
-    if (geom_->getComm().rank() == 0) {
-      oops::Log::info() << "Info     : Reading file: " << gribfilepath << std::endl;
-
-      // Initialization
-      int ret;
-      codes_index* index;
-      codes_handle* h;
-
-      // Create index of file contents for cfVarName, typeOfLevel and level
-      index = codes_index_new_from_file(0, gribfilepath.c_str(), "cfVarName,typeOfLevel,level",
-        &ret);
-      CODES_CHECK(ret, 0);
-
-      for (const auto & var : vars_in_file) {
-        // Get field view
-        auto varView = atlas::array::make_view<double, 2>(globalData[var.name()]);
-
-        // Select variable and type of level
-        CODES_CHECK(codes_index_select_string(index, "cfVarName", var.name().c_str()), 0);
-        CODES_CHECK(codes_index_select_string(index, "typeOfLevel", "hybrid"), 0);
-
-        for (size_t k = 0; k < geom_->levels(var.name()); ++k) {
-          // Select level
-          CODES_CHECK(codes_index_select_long(index, "level", levels[k]), 0);
-
-          // Create handle
-          h = codes_handle_new_from_index(index, &ret);
-          CODES_CHECK(ret, 0);
-
-          // Print all available keys
-          codes_keys_iterator *kit = codes_keys_iterator_new(h, 0, NULL);
-          while (codes_keys_iterator_next(kit) == 1) {
-            oops::Log::debug() << "Key: " << codes_keys_iterator_get_name(kit) << std::endl;
-          }
-
-          // Get the data size
-          size_t values_len = 0;
-          CODES_CHECK(codes_get_size(h, "values", &values_len), 0);
-
-          // Allocate data
-          std::vector<double> values;
-          values.resize(values_len);
-
-          // Get data
-          CODES_CHECK(codes_get_double_array(h, "values", values.data(), &values_len), 0);
-
-          // Copy data to FieldSet
-          for (size_t jnode = 0; jnode < values_len; ++jnode) {
-            varView(jnode, k) = values[jnode];
-          }
-
-          // Delete handle
-          CODES_CHECK(codes_handle_delete(h), 0);
-        }
-      }
-
-      // Check number of levels
-      h = codes_handle_new_from_index(index, &ret);
-      if (ret == 0) {
-        throw eckit::Exception("Mismatch between level numbers in file and geometry", Here());
-      }
-
-      // Delete index
-      codes_index_delete(index);
-    }
-
-    // Scatter data from main processor
-    if (geom_->functionSpace().type() == "StructuredColumns") {
-      // StructuredColumns
-      atlas::functionspace::StructuredColumns fs(geom_->functionSpace());
-      fs.scatter(globalData, fset_);
-    } else if (geom_->functionSpace().type() == "NodeColumns") {
-      // NodeColumns
-      atlas::functionspace::NodeColumns fs(geom_->functionSpace());
-      fs.scatter(globalData, fset_);
-    }
-
-    fset_.set_dirty();  // code is too complicated, mark dirty to be safe
-#else
-    throw eckit::UserError("ECCODES not available", Here());
-#endif
-  } else if (ioFormat == "arome") {
-    // AROME data at NetCDF format (converted from epygram)
-
-    // Build filepath
-    std::string filepath = config.getString("filepath");
-    if (config.has("member")) {
-      std::ostringstream out;
-      out << std::setfill('0') << std::setw(6) << config.getInt("member");
-      filepath.append("_");
-      filepath.append(out.str());
-    }
-
-    // NetCDF file path
-    std::string ncFilePath = filepath + ".nc";
-
-    // Clear local fieldset
-    fset_.clear();
-
-    // Create local fieldset
-    for (size_t jvar = 0; jvar < vars_in_file.size(); ++jvar) {
-      atlas::Field field = geom_->functionSpace().createField<double>(
-        atlas::option::name(vars_in_file[jvar].name()) |
-        atlas::option::levels(vars_in_file[jvar].getLevels()));
-      fset_.add(field);
-    }
-
-    // Initialize local fieldset
-    for (auto & field : fset_) {
-      auto view = atlas::array::make_view<double, 2>(field);
-      view.assign(0.0);
-    }
-
-    // NetCDF IDs
-    size_t nVarLev = 0;
-    std::vector<std::string> varLevName;
-    for (size_t jvar = 0; jvar < vars_in_file.size(); ++jvar) {
-      for (int k = 0; k < vars_in_file[jvar].getLevels(); ++k) {
-        const std::string level = std::to_string(k+40);
-        varLevName.push_back("S" + std::string(3-level.length(), '0') + level
-          + vars_in_file[jvar].name());
-        ++nVarLev;
-      }
-    }
-    int ncid, retval, var_id[nVarLev];
-
-    // Global data
-    atlas::FieldSet globalData;
-    for (size_t jvar = 0; jvar < vars_in_file.size(); ++jvar) {
-      atlas::Field field = geom_->functionSpace().createField<double>(
-        atlas::option::name(vars_in_file[jvar].name())
-        | atlas::option::levels(vars_in_file[jvar].getLevels()) | atlas::option::global());
-      globalData.add(field);
-    }
-
-    // StructuredColumns
-    atlas::functionspace::StructuredColumns fs(geom_->functionSpace());
-
-    if (geom_->getComm().rank() == 0) {
-      // Get grid
-      atlas::StructuredGrid grid = fs.grid();
-
-      // Get sizes
-      atlas::idx_t nx = grid.nxmax();
-      atlas::idx_t ny = grid.ny();
-
-      oops::Log::info() << "Info     : Reading file: " << ncFilePath << std::endl;
-
-      // Open NetCDF file
-      if ((retval = nc_open(ncFilePath.c_str(), NC_NOWRITE, &ncid))) ERR(retval, ncFilePath);
-
-      // Get variables
-      for (size_t jVarLev = 0; jVarLev < nVarLev; ++jVarLev) {
-        if ((retval = nc_inq_varid(ncid, varLevName[jVarLev].c_str(), &var_id[jVarLev]))) {
-          ERR(retval, varLevName[jVarLev]);
-        }
-      }
-
-      size_t iVarLev = 0;
-      for (size_t jvar = 0; jvar < vars_in_file.size(); ++jvar) {
-        auto varView = atlas::array::make_view<double, 2>(globalData[vars_in_file[jvar].name()]);
-        for (int k = 0; k < vars_in_file[jvar].getLevels(); ++k) {
-          // Read data
-          std::vector<double> zvar(ny * nx);
-          if ((retval = nc_get_var_double(ncid, var_id[iVarLev], zvar.data()))) {
-            ERR(retval, varLevName[iVarLev]);
-          }
-          ++iVarLev;
-
-          // Copy data
-          for (atlas::idx_t j = 0; j < ny; ++j) {
-            for (atlas::idx_t i = 0; i < grid.nx(ny-1-j); ++i) {
-              atlas::gidx_t gidx = grid.index(i, ny-1-j);
-              varView(gidx, k) = zvar[j*nx + i];
-            }
-          }
-        }
-      }
-
-      // Close file
-      if ((retval = nc_close(ncid))) ERR(retval, ncFilePath);
-    }
-
-    // Scatter data from main processor
-    fs.scatter(globalData, fset_);
-
-    fset_.set_dirty();  // code is too complicated, mark dirty to be safe
-  } else {
-    throw eckit::UserError("Unknown I/O format", Here());
-  }
+  // Read fieldset
+  fieldsIO->read(*geom_, vars_in_file, config, fset_);
 
   // Rename fields
   for (auto & field : fset_) {
@@ -1203,44 +928,16 @@ void Fields::write(const eckit::Configuration & config) const {
     }
   }
 
-  // Get IO format
-  const std::string ioFormat = config.getString("format", "default");
+  // Get output formats
+  const std::vector<std::string> ioFormats =
+    config.getStringVector("formats", std::vector<std::string>({"default"}));
 
-  // Write with specified IO format
-  if (ioFormat == "default") {
-    // Update configuration
-    eckit::LocalConfiguration conf(config);
-    if (!conf.has("latitude south to north")) {
-      conf.set("latitude south to north", geom_->latSouthToNorth());
-    }
+  for (const auto & ioFormat : ioFormats) {
+    // Set FieldsIO list
+    std::unique_ptr<FieldsIOBase> fieldsIO(FieldsIOFactory::create(ioFormat));
 
-    // Default OOPS writer
-    util::writeFieldSet(geom_->getComm(), conf, fset);
-  } else if (ioFormat == "grib") {
-    // GRIB format
-    throw eckit::NotImplemented("GRIB output not implemented yet", Here());
-  } else if (ioFormat == "arome") {
-    // Default OOPS writer
-    util::writeFieldSet(geom_->getComm(), config, fset);
-  } else {
-    throw eckit::UserError("Unknown I/O format", Here());
-  }
-
-  if (geom_->mesh().generated() && config.getBool("write gmsh", false)) {
-    // GMSH file path
-    std::string gmshfilepath = config.getString("filepath");;
-    gmshfilepath.append(".msh");
-    oops::Log::info() << "Info     : Writing file: " << gmshfilepath << std::endl;
-
-    // GMSH configuration
-    const auto gmshConfig =
-    atlas::util::Config("coordinates", "xyz") | atlas::util::Config("ghost", true) |
-    atlas::util::Config("info", true);
-    atlas::output::Gmsh gmsh(gmshfilepath, gmshConfig);
-
-     // Write GMSH
-    gmsh.write(geom_->mesh());
-    gmsh.write(fset, fset[0].functionspace());
+    // Write fields
+    fieldsIO->write(*geom_, config, fset);
   }
 
   oops::Log::trace() << classname() << "::write done" << std::endl;

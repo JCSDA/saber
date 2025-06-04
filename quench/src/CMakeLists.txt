@@ -1,5 +1,5 @@
 # (C) Copyright 2022 UCAR.
-# (C) Copyright 2023-2024 Meteorologisk Institutt
+# (C) Copyright 2025 Meteorologisk Institutt
 #
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -23,6 +23,13 @@ State.cc
 State.h
 VariableChange.h
 VariableChange.cc
+
+FieldsIO/FieldsIOBase.cc
+FieldsIO/FieldsIOBase.h
+FieldsIO/FieldsIODefault.cc
+FieldsIO/FieldsIODefault.h
+FieldsIO/FieldsIOGmsh.cc
+FieldsIO/FieldsIOGmsh.h
 
 )
 
