@@ -17,8 +17,9 @@
 #include "atlas/mesh.h"
 #include "atlas/meshgenerator.h"
 
-#include "eckit/exception/Exceptions.h"
+#include "oops/util/FieldSetHelpers.h"
 
+#include "eckit/exception/Exceptions.h"
 // -----------------------------------------------------------------------------
 
 namespace saber {
@@ -30,8 +31,10 @@ AtlasInterpWrapper::AtlasInterpWrapper(const atlas::grid::Partitioner & srcParti
                                        const atlas::FunctionSpace & srcFspace,
                                        const atlas::Grid & dstGrid,
                                        const atlas::FunctionSpace & dstFspace,
-                                       const std::string & interpType)
-  : targetFspace_(), interp_(), redistr_(), inverseRedistr_() {
+                                       const std::string & interpType,
+                                       const bool includingVectorInterpolation)
+  : targetFspace_(), interp_(), redistr_(), inverseRedistr_(),
+    includingVectorInterpolation_(includingVectorInterpolation) {
   oops::Log::trace() << classname() << "::AtlasInterpWrapper starting" << std::endl;
 
   // Get or compute source mesh
@@ -74,20 +77,37 @@ AtlasInterpWrapper::AtlasInterpWrapper(const atlas::grid::Partitioner & srcParti
   }
 
   // Interpolation
-  atlas::util::Config interpConfig;
+  atlas::util::Config interpScalarConfig;
   if (srcFspace.type() == "StructuredColumns") {
     // StructuredColumns
-    interpConfig.set("type",
+    interpScalarConfig.set("type",
                      interpType == "" ? "structured-bilinear" : interpType);
+    interpScalarConfig.set("halo",
+                     interpType.find("cubic") != interpType.npos ? 2 : 1);
   } else if (srcFspace.type() == "NodeColumns") {
     // NodeColumns
-    interpConfig.set("type",
+    interpScalarConfig.set("type",
                      interpType == "" ? "unstructured-bilinear-lonlat" : interpType);
+    interpScalarConfig.set("halo", 1);
   } else {
     throw eckit::NotImplemented(srcFspace.type()
       + " source function space type not supported yet", Here());
   }
-  interpConfig.set("adjoint", "true");
+
+  interpScalarConfig.set("adjoint", "true");
+
+  atlas::util::Config interpConfig;
+  if (includingVectorInterpolation_) {
+    static const auto sphericalVector =
+      atlas::option::type("spherical-vector") | atlas::util::Config("adjoint", true);
+    interpConfig = sphericalVector | atlas::util::Config("scheme", interpScalarConfig);
+
+  } else {
+    interpConfig = interpScalarConfig;
+  }
+
+  oops::Log::info() << "interpConfig is: " << interpConfig << std::endl;
+
   interp_ = atlas::Interpolation(interpConfig, srcFspace, targetFspace_);
 
   // Redistribution
@@ -96,94 +116,52 @@ AtlasInterpWrapper::AtlasInterpWrapper(const atlas::grid::Partitioner & srcParti
   // Inverse redistribution
   inverseRedistr_ = atlas::Redistribution(dstFspace, targetFspace_);
 
-
   oops::Log::trace() << classname() << "::AtlasInterpWrapper done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-void AtlasInterpWrapper::execute(const atlas::Field & srcField,
-                                 atlas::Field & dstField) const {
-  oops::Log::trace() << classname() << "::execute starting" << std::endl;
-
-  // Empty source field setup
-  atlas::Field srcTmpField = srcField.functionspace().createField(srcField);
-
-  // Copy of source field (this includes halo points; these were updated before calling execute)
-  const auto srcView = atlas::array::make_view<double, 2>(srcField);
-  auto srcTmpView = atlas::array::make_view<double, 2>(srcTmpField);
-  for (atlas::idx_t t = 0; t < srcField.shape(0); ++t) {
-    for (atlas::idx_t k = 0; k < srcField.shape(1); ++k) {
-      srcTmpView(t, k) = srcView(t, k);
-    }
-  }
-
-  // Empty target field setup
-  auto targetField = targetFspace_.createField<double>(
-    atlas::option::name(dstField.name()) | atlas::option::levels(srcField.shape(1)));
-
-  // Target field initialization
-  auto targetView = atlas::array::make_view<double, 2>(targetField);
-  targetView.assign(0.0);
-
-  // Interpolation from source field to target field
-  interp_.execute(srcTmpField, targetField);
-
-  // Redistribution from target field to destination field
-  redistr_.execute(targetField, dstField);
-
-  oops::Log::trace() << classname() << "::execute done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-void AtlasInterpWrapper::executeAdjoint(atlas::Field & srcField,
-                                        const atlas::Field & dstField) const {
-  oops::Log::trace() << classname() << "::executeAdjoint starting" << std::endl;
-
-  // Empty destination field setup
-  atlas::Field dstTmp = dstField.functionspace().createField(dstField);
-
-  // Copy of destination field
-  const auto dstView = atlas::array::make_view<double, 2>(dstField);
-  auto dstTmpView = atlas::array::make_view<double, 2>(dstTmp);
-  for (atlas::idx_t t = 0; t < dstField.shape(0); ++t) {
-    for (atlas::idx_t k = 0; k < dstField.shape(1); ++k) {
-      dstTmpView(t, k) = dstView(t, k);
-    }
-  }
-
-  // Empty target field setup
-  auto targetField = targetFspace_.createField<double>(
-  atlas::option::name(dstField.name()) | atlas::option::levels(dstField.shape(1)));
-
-  // Target field initialization
-  auto targetView = atlas::array::make_view<double, 2>(targetField);
-  targetView.assign(0.0);
-
-  // Redistribution from destination field to target field
-  inverseRedistr_.execute(dstTmp, targetField);
-
-  // Source field initialization
-  auto srcView = atlas::array::make_view<double, 2>(srcField);
-  srcView.assign(0.0);
-
-  // Adjoint interpolation target field to source field
-  interp_.execute_adjoint(srcField, targetField);
-
-  oops::Log::trace() << classname() << "::executeAdjoint done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
 void AtlasInterpWrapper::execute(const atlas::FieldSet & srcFieldSet,
-                                 atlas::FieldSet & targetFieldSet) const {
+                                 atlas::FieldSet & dstFieldSet) const {
   oops::Log::trace() << classname() << "::execute starting" << std::endl;
 
   srcFieldSet.haloExchange();
-  for (auto & srcField : srcFieldSet) {
-    execute(srcField, targetFieldSet[srcField.name()]);
+
+  atlas::FieldSet tmpSrcFieldSet = atlas::FieldSet{};
+  std::vector<size_t> variableSizes;
+
+  for (auto& srcField : srcFieldSet) {
+    atlas::Field srcTmpField =
+      srcField.functionspace().createField<double>(
+                                 atlas::option::name(srcField.name()) |
+                                 atlas::option::levels(srcField.shape(1)));
+
+    tmpSrcFieldSet.add(srcTmpField);
+
+    const auto srcView = atlas::array::make_view<double, 2>(srcField);
+    auto srcTmpView = atlas::array::make_view<double, 2>(srcTmpField);
+    for (atlas::idx_t t = 0; t < srcField.shape(0); ++t) {
+      for (atlas::idx_t k = 0; k < srcField.shape(1); ++k) {
+        srcTmpView(t, k) = srcView(t, k);
+        }
+      }
+
+    variableSizes.push_back(srcField.levels());
   }
+
+  atlas::FieldSet targetFieldSet = util::createFieldSet(targetFspace_, variableSizes,
+                                             dstFieldSet.field_names(), 0.0);
+
+  if (includingVectorInterpolation_) {
+    tmpSrcFieldSet["eastward_wind"].metadata().set("vector_field_name", "wind");
+    tmpSrcFieldSet["northward_wind"].metadata().set("vector_field_name", "wind");
+    targetFieldSet["eastward_wind"].metadata().set("vector_field_name", "wind");
+    targetFieldSet["northward_wind"].metadata().set("vector_field_name", "wind");
+  }
+
+  interp_.execute(tmpSrcFieldSet, targetFieldSet);
+
+  redistr_.execute(targetFieldSet, dstFieldSet);
 
   oops::Log::trace() << classname() << "::execute done" << std::endl;
 }
@@ -191,18 +169,52 @@ void AtlasInterpWrapper::execute(const atlas::FieldSet & srcFieldSet,
 // -----------------------------------------------------------------------------
 
 void AtlasInterpWrapper::executeAdjoint(atlas::FieldSet & srcFieldSet,
-                                        const atlas::FieldSet & targetFieldSet) const {
-  oops::Log::trace() << classname() << "::executeAdjoint starting" << std::endl;
+                                        const atlas::FieldSet & dstFieldSet) const {
+    oops::Log::trace() << classname() << "::executeAdjoint starting" << std::endl;
 
-  for (auto & srcField : srcFieldSet) {
-    executeAdjoint(srcField, targetFieldSet[srcField.name()]);
-  }
-  srcFieldSet.adjointHaloExchange();
-  srcFieldSet.set_dirty();
+    atlas::FieldSet tmpDstFieldSet = atlas::FieldSet{};
+    std::vector<size_t> variableSizes;
 
-  oops::Log::trace() << classname() << "::executeAdjoint done" << std::endl;
+    for (auto& dstField : dstFieldSet) {
+      atlas::Field tmpDstField =
+        dstField.functionspace().createField<double>(
+                                   atlas::option::name(dstField.name()) |
+                                   atlas::option::levels(dstField.shape(1)));
+      tmpDstFieldSet.add(tmpDstField);
+
+      const auto dstView = atlas::array::make_view<double, 2>(dstField);
+      auto dstTmpView = atlas::array::make_view<double, 2>(tmpDstField);
+      for (atlas::idx_t t = 0; t < dstField.shape(0); ++t) {
+        for (atlas::idx_t k = 0; k < dstField.shape(1); ++k) {
+          dstTmpView(t, k) = dstView(t, k);
+          }
+        }
+
+      variableSizes.push_back(dstField.levels());
+
+      auto srcView = atlas::array::make_view<double, 2>(srcFieldSet[dstField.name()]);
+      srcView.assign(0.0);
+    }
+
+    atlas::FieldSet targetFieldSet = util::createFieldSet(targetFspace_, variableSizes,
+                                               dstFieldSet.field_names(), 0.0);
+
+    if (includingVectorInterpolation_) {
+      srcFieldSet["eastward_wind"].metadata().set("vector_field_name", "wind");
+      srcFieldSet["northward_wind"].metadata().set("vector_field_name", "wind");
+      targetFieldSet["eastward_wind"].metadata().set("vector_field_name", "wind");
+      targetFieldSet["northward_wind"].metadata().set("vector_field_name", "wind");
+    }
+
+    inverseRedistr_.execute(tmpDstFieldSet, targetFieldSet);
+
+    interp_.execute_adjoint(srcFieldSet, targetFieldSet);
+
+    srcFieldSet.adjointHaloExchange();
+    srcFieldSet.set_dirty();
+
+    oops::Log::trace() << classname() << "::executeAdjoint done" << std::endl;
 }
-
 // -----------------------------------------------------------------------------
 
 }  // namespace interpolation

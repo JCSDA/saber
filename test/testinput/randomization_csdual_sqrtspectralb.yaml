@@ -9,7 +9,7 @@ geometry:
     - air_horizontal_streamfunction
     - air_horizontal_velocity_potential
     - mu
-    - unbalanced_pressure_levels_minus_one   
+    - unbalanced_pressure_levels_minus_one
     levels: 70
   halo: 1
 background:

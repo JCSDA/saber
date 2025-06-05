@@ -45,6 +45,9 @@ class GaussToCSParameters : public SaberBlockParametersBase {
     true, this};
   oops::OptionalParameter<eckit::LocalConfiguration> interpolationRescaling{
     "rescaling", this};
+  // switch to treat winds as scalars, defaults to false
+  oops::Parameter<bool> skipVectorInterpolation{"skip vector wind interpolation",
+                                                       false, this};
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
 
@@ -104,6 +107,9 @@ class GaussToCS : public SaberOuterBlockBase {
   /// Gaussian (grid)
   const atlas::StructuredGrid gaussGrid_;
 
+  /// Interpolation type
+  std::string interpType_;
+
   /// Gaussian (inner) functionspace
   const atlas::functionspace::StructuredColumns gaussFunctionSpace_;
 
@@ -112,6 +118,9 @@ class GaussToCS : public SaberOuterBlockBase {
 
   /// Cubed-sphere grid (destination grid)
   const atlas::Grid csgrid_;
+
+  /// Switch to vector wind interpolation
+  const bool includingVectorInterpolation_;
 
   /// Interpolation Wrapper
   saber::interpolation::AtlasInterpWrapper interp_;

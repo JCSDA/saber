@@ -10,7 +10,7 @@ geometry:
     - eastward_wind
     - mu
     - northward_wind
-    - unbalanced_pressure_levels_minus_one  
+    - unbalanced_pressure_levels_minus_one
     levels: 70
   halo: 1
 background:
@@ -30,14 +30,14 @@ background error:
     - air_horizontal_streamfunction
     - air_horizontal_velocity_potential
     - mu
-    - unbalanced_pressure_levels_minus_one  
+    - unbalanced_pressure_levels_minus_one
     read:
       covariance_file: testdata/spectralcov.nc
       umatrix_netcdf_names:
       - PSI_inc_Uv_matrix
       - CHI_inc_Uv_matrix
-      - MU_inc_Uv_matrix    
-      - aP_inc_Uv_matrix     
+      - MU_inc_Uv_matrix
+      - aP_inc_Uv_matrix
   saber outer blocks:
   - saber block name: spectral to gauss
     skip inverse test: true

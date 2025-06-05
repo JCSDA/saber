@@ -51,7 +51,8 @@ class AtlasInterpWrapper {
                      const atlas::FunctionSpace &,
                      const atlas::Grid &,
                      const atlas::FunctionSpace &,
-                     const std::string & interpType = "");
+                     const std::string & interpType = "",
+                     const bool includingVectorInterpolation = false);
   ~AtlasInterpWrapper() {}
 
   void execute(const atlas::FieldSet &,
@@ -77,15 +78,11 @@ class AtlasInterpWrapper {
   }
 
  private:
-  void execute(const atlas::Field &,
-               atlas::Field &) const;
-  void executeAdjoint(atlas::Field &,
-                      const atlas::Field &) const;
-
   atlas::FunctionSpace targetFspace_;
   atlas::Interpolation interp_;
   atlas::Redistribution redistr_;
   atlas::Redistribution inverseRedistr_;
+  const bool includingVectorInterpolation_;
 };
 
 }  // namespace interpolation

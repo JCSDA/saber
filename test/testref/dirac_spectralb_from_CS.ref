@@ -14,19 +14,19 @@ skipping inverse test for block spectral to gauss
 Adjoint test for block spectral covariance passed
 Covariance(SABER) diagnostics:
 - Variances at Dirac points:
-  + Value for variable eastward_wind, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 90.00000, 1): 1.0837293541259500e-01
+  + Value for variable eastward_wind, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 90.00000, 1): 7.9373653823595625e-02
   + Value for variable mu, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 90.00000, 1): 1.4030796869864148e-01
   + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 90.00000, 1): 4.4332690778329822e+02
 - Covariances at diagnostic points:
-  + Value for variable mu, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 17.17204, 2): 2.6908484543329699e-05
+  + Value for variable mu, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 17.17204, 2): 2.6908484543329807e-05
   + Value for variable mu, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 90.00000, 1): 1.4030796869864148e-01
-  + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 17.17204, 2): -9.7301429943129438e+00
+  + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 17.17204, 2): -9.7301429943129421e+00
   + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 90.00000, 1): 4.4332690778329822e+02
 Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-15 [1350]
   Fields:
-    eastward_wind: 7.1484400224484868e-01
-    mu: 6.9045853833977611e-01
-    northward_wind: 1.8977671340064092e-01
-    unbalanced_pressure_levels_minus_one: 5.2946877836782714e+03
+    eastward_wind: 4.8504304435178336e-01
+    mu: 6.9045853833977733e-01
+    northward_wind: 2.3243241536367598e-01
+    unbalanced_pressure_levels_minus_one: 5.2946877836782696e+03
