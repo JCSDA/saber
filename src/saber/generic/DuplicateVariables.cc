@@ -7,6 +7,7 @@
 
 #include "saber/generic/DuplicateVariables.h"
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -28,13 +29,17 @@ oops::Variables createActiveVars(const std::vector<VariableGroupParameters> & gp
     // v is read from yaml, and does not have levels metadata; copy variables
     // from outerVars that have relevant metadata.
     oops::Variables v = gp.groupComponents.value();
+    ASSERT(v.size() > 0);
+    std::vector<int> lvls;
     for (const auto & var : v) {
       activeVars.push_back(outerVars[var.name()]);
+      lvls.push_back(outerVars[var.name()].getLevels());
     }
+    auto max_level = std::max_element(lvls.begin(), lvls.end());
     // add the group variable name and assign the same levels as in other vars
     std::string key = gp.groupVariableName.value();
     eckit::LocalConfiguration conf;
-    conf.set("levels", activeVars[0].getLevels());
+    conf.set("levels", *max_level);
     activeVars.push_back({key, conf});
   }
 
@@ -59,60 +64,110 @@ oops::Variables createInnerVars(const oops::Variables & outerVars,
 
   return innerVars;
 }
-
-// copy groupVars fields (assuming all activeFields are allocated)
+/**
+* @brief Broadcasts (copies) the grouped field from the
+  *      INNER fieldset to all individual fields in group.
+  *      Used in forward multiply() which takes INNER -> OUTER
+  *      (assumes all activeFields are allocated)
+  *
+  * @param gps vector of configurations prescribing fields to be grouped
+  * @param fsetInput the input fieldset of saber INNER variables
+  * @param fsetOutput the output fields set with saber OUTER variable
+  */
 void copyFields(const std::vector<VariableGroupParameters> & gps,
-                const atlas::FieldSet & fsetIn,
-                atlas::FieldSet & fsetOut) {
+                const atlas::FieldSet & fsetInput,
+                atlas::FieldSet & fsetOutput,
+                bool levelsAreTopDown) {
   for (const VariableGroupParameters & gp : gps) {
     std::string key = gp.groupVariableName.value();
     oops::Variables v = gp.groupComponents.value();
     // copy metadata in to re-expanded fields
     std::string interpType;
-    if (fsetIn[key].metadata().has("interp_type")) {
-      interpType = fsetIn[key].metadata().get<std::string>("interp_type");
+    if (fsetInput[key].metadata().has("interp_type")) {
+      interpType = fsetInput[key].metadata().get<std::string>("interp_type");
     }
-    auto otherView = atlas::array::make_view<double, 2>(fsetIn[key]);
+    auto innerView = atlas::array::make_view<double, 2>(fsetInput[key]);
     for (const auto & component : v) {
-      auto view = atlas::array::make_view<double, 2>(fsetOut[component.name()]);
-      view.assign(otherView);
+      auto outerView = atlas::array::make_view<double, 2>(fsetOutput[component.name()]);
+      if (levelsAreTopDown && outerView.shape(1) == 1) {
+        // jn is horizontal index
+        for (atlas::idx_t jn = 0; jn < outerView.shape(0); ++jn) {
+          // copy FROM last index of inner field
+          outerView(jn, 0) = innerView(jn, innerView.shape(1)-1);
+        }
+      } else {
+        // jn is horizontal index
+        for (atlas::idx_t jn = 0; jn < outerView.shape(0); ++jn) {
+          // loop over vertical levels that exist in OUTER field
+          for (atlas::idx_t jl = 0; jl < outerView.shape(1); ++jl) {
+            // copy in place
+            outerView(jn, jl) = innerView(jn, jl);
+          }
+        }
+      }
       if (!interpType.empty()) {
-        fsetOut[component.name()].metadata().set("interp_type", interpType);
+        fsetOutput[component.name()].metadata().set("interp_type", interpType);
       }
     }
   }
 }
 
-// gather
+/**
+ * @brief Gathers (+='s) prescribed groups of fields into a
+ *        single field with name set by the string 'key'.
+ *        Used in adjoint direction, i.e. multiplyAD()
+ *        which takes OUTER -> INNER
+ *
+ * @param gps vector of configurations prescribing fields to be grouped
+ * @param fsetInput the input fieldset of saber OUTER variables
+ * @param fsetOutput the output fields set with saber INNER variable
+ */
 void gatherFields(const std::vector<VariableGroupParameters> & gps,
-                  atlas::FieldSet & fsetIn,
-                  atlas::FieldSet & fsetOut) {
+                  atlas::FieldSet & fsetInput,
+                  atlas::FieldSet & fsetOutput,
+                  bool levelsAreTopDown) {
   for (const VariableGroupParameters & gp : gps) {
     std::string key = gp.groupVariableName.value();
     oops::Variables v = gp.groupComponents.value();
     std::string interpType;
 
     // copy metadata from 0th variable, if present
-    if (fsetIn[v[0].name()].metadata().has("interp_type")) {
-      interpType = fsetIn[v[0].name()].metadata().get<std::string>("interp_type");
+    if (fsetInput[v[0].name()].metadata().has("interp_type")) {
+      interpType = fsetInput[v[0].name()].metadata().get<std::string>("interp_type");
     }
-    auto otherView = atlas::array::make_view<double, 2>(fsetOut[key]);
+    auto innerView = atlas::array::make_view<double, 2>(fsetOutput[key]);
     for (const auto & component : v) {
       if (!interpType.empty()) {
         // check other fields have same 'interp_type' as component0
-        ASSERT(fsetIn[component.name()].metadata().has("interp_type"));
-        ASSERT(fsetIn[component.name()].metadata().get<std::string>("interp_type") == interpType);
+        ASSERT(fsetInput[component.name()].metadata().has("interp_type"));
+        ASSERT(fsetInput[component.name()].metadata().get<std::string>("interp_type")
+                                                                      == interpType);
       }
-      auto view = atlas::array::make_view<double, 2>(fsetIn[component.name()]);
-      for (atlas::idx_t jn = 0; jn < fsetOut[key].shape(0); ++jn) {
-        for (atlas::idx_t jl = 0; jl < fsetOut[key].shape(1); ++jl) {
-          otherView(jn, jl) += view(jn, jl);
-          view(jn, jl) = 0.0;
+      auto outerView = atlas::array::make_view<double, 2>(fsetInput[component.name()]);
+      // assert same horizontal size for inner and outer fields
+      ASSERT(outerView.shape(0) == innerView.shape(0));
+      // assert same vertical size OR outer Field has one level (i.e., is a surface field)
+      ASSERT(outerView.shape(1) == innerView.shape(1) || outerView.shape(1) == 1);
+      if (levelsAreTopDown && outerView.shape(1) == 1) {
+        // candidate for openMP parallel for??
+        for (atlas::idx_t jn = 0; jn < outerView.shape(0); ++jn) {
+          // gather to end of array
+          innerView(jn, innerView.shape(1)-1) += outerView(jn, 0);
+          outerView(jn, 0) = 0.0;
+        }
+      } else {
+        // candidate for openMP parallel for??
+        for (atlas::idx_t jn = 0; jn < outerView.shape(0); ++jn) {
+          // only loop over levels that exist in incoming field
+          for (atlas::idx_t jl = 0; jl < outerView.shape(1); ++jl) {
+            innerView(jn, jl) += outerView(jn, jl);
+            outerView(jn, jl) = 0.0;
+          }
         }
       }
     }
     if (!interpType.empty()) {
-      fsetOut[key].metadata().set("interp_type", interpType);
+      fsetOutput[key].metadata().set("interp_type", interpType);
     }
   }
 }
@@ -166,7 +221,7 @@ void DuplicateVariables::multiply(oops::FieldSet3D & fset) const {
   }
 
   // copy group fields into component fields
-  copyFields(groups_, fset.fieldSet(), fsetOut);
+  copyFields(groups_, fset.fieldSet(), fsetOut, innerGeometryData_.levelsAreTopDown());
 
   // keep passive vars
   for (auto & fld : fset) {
@@ -203,7 +258,7 @@ void DuplicateVariables::multiplyAD(oops::FieldSet3D & fset) const {
   }
 
   // sum component fields into group fields
-  gatherFields(groups_, fset.fieldSet(), fsetOut);
+  gatherFields(groups_, fset.fieldSet(), fsetOut, innerGeometryData_.levelsAreTopDown());
 
   // keep passive vars
   for (auto & fld : fset) {
