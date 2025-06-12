@@ -640,12 +640,12 @@ end subroutine multiply
       call afield%data(rank2)
       ier=0
    endif
-!  if (trim(vname) == 'air_pressure_thickness') then
-!     if (.not.fields%has('air_pressure_thickness')) return
-!     afield = fields%field('air_pressure_thickness')
-!     call afield%data(rank2)
-!     ier=0
-!  endif
+   if (trim(vname) == 'prse' .or. trim(vname) == 'air_pressure_levels') then
+      if (.not.fields%has('air_pressure_levels')) return
+      afield = fields%field('air_pressure_levels')
+      call afield%data(rank2)
+      ier=0
+   endif
    if (trim(vname) == 'ts' .or. trim(vname) == 'sst') then !  ts=gsi background name
       if (.not.fields%has('skin_temperature_at_surface')) return      ! sst=gsi S/CV name
       afield = fields%field('skin_temperature_at_surface')
