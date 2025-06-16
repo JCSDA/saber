@@ -26,7 +26,7 @@ END_TESTSUITE_FINALIZE
 
 ! -----------------------------------------------------------------------------
 
-TEST( test_interpolatorbump )
+TEST( test_nicas_sqrt )
   use atlas_module, only: atlas_real,atlas_fieldset,atlas_field, &
  & atlas_structuredgrid,atlas_functionspace,atlas_functionspace_structuredcolumns
   use fckit_configuration_module, only: fckit_configuration

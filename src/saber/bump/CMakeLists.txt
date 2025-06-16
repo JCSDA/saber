@@ -7,7 +7,6 @@ list(APPEND bump_src_files_list
 BUMP.cc
 BUMP.h
 BUMPParameters.h
-interpolatorbump_mod.fypp
 NICAS.cc
 NICAS.h
 PsiChiToUV.cc
