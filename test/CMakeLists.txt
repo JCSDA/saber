@@ -33,6 +33,10 @@ if( ENABLE_QUENCH )
   set( SABER_TEST_VALGRIND 0 )
   set( SABER_TEST_FASTLAM 1 )
   set( SABER_TEST_BIFOURIER 1 )
+  set( SABER_TEST_BUMP 0 )
+  if( ENABLE_BUMP )
+      set( SABER_TEST_BUMP 1 )
+  endif()
   set( SABER_TEST_GSI_GEOS 0 )
   if( gsibec_FOUND )
       set( SABER_TEST_GSI_GEOS 1 )
@@ -63,6 +67,11 @@ if( ENABLE_QUENCH )
   if( DEFINED ENV{SABER_TEST_BIFOURIER} )
       set( SABER_TEST_BIFOURIER $ENV{SABER_TEST_BIFOURIER} )
   endif()
+  if( ENABLE_BUMP )
+      if( DEFINED ENV{SABER_TEST_BUMP} )
+          set( SABER_TEST_BUMP $ENV{SABER_TEST_BUMP} )
+      endif()
+  endif()
   if( gsibec_FOUND )
       if( DEFINED ENV{SABER_TEST_GSI_GEOS} )
           set( SABER_TEST_GSI_GEOS $ENV{SABER_TEST_GSI_GEOS} )
@@ -80,6 +89,11 @@ if( ENABLE_QUENCH )
   endif()
   if( DEFINED ENV{SABER_TEST_VADER} )
       set( SABER_TEST_VADER $ENV{SABER_TEST_VADER} )
+  endif()
+
+  # BUMP needed for FASTLAM tests
+  if( NOT SABER_TEST_BUMP )
+      set( SABER_TEST_FASTLAM 0 )
   endif()
 
   # TIER 1
@@ -105,6 +119,11 @@ if( ENABLE_QUENCH )
       file( STRINGS testlist/saber_test_tier1-bifourier.txt saber_test )
       list( APPEND saber_test_full ${saber_test} )
   endif()
+  if( SABER_TEST_BUMP )
+      message( STATUS "  - TIER 1 BUMP-specific" )
+      file( STRINGS testlist/saber_test_tier1-bump.txt saber_test )
+      list( APPEND saber_test_full ${saber_test} )
+  endif()
   if( SABER_TEST_GSI_GEOS )
       message( STATUS "  - TIER 1 GSI-GEOS-specific" )
       file( STRINGS testlist/saber_test_tier1-gsi-geos.txt saber_test )
@@ -119,6 +138,10 @@ if( ENABLE_QUENCH )
       message( STATUS "  - TIER 1 SPECTRALB-specific" )
       file( STRINGS testlist/saber_test_tier1-spectralb.txt saber_test )
       list( APPEND saber_test_full ${saber_test} )
+      if( SABER_TEST_BUMP )
+          file( STRINGS testlist/saber_test_tier1-bump-spectralb.txt saber_test )
+          list( APPEND saber_test_full ${saber_test} )
+      endif()
   endif()
   if( SABER_TEST_VADER )
       message( STATUS "  - TIER 1 VADER-specific" )
@@ -289,30 +312,32 @@ if( ENABLE_QUENCH )
           endforeach()
       endforeach()
 
-      # GSI scaling optimization for HDIAG
-      foreach( test ${saber_test_full} )
-          string( FIND ${test} "optimization_bump_hdiag_gsi" result )
-          if( result MATCHES 0 AND ${mpi} LESS_EQUAL 2 )
-              # Get dependencies
-              file( STRINGS testdeps/${test}.txt deps )
-              set( deps_list "" )
-              list( APPEND deps_list ${deps} )
-              list( LENGTH deps_list deps_length )
-              if( ${deps_length} GREATER 0 )
-                  list( TRANSFORM deps_list PREPEND saber_test_ )
-                  list( TRANSFORM deps_list APPEND _${mpi}-${omp} )
-              endif()
+      if( SABER_TEST_BUMP )
+          # GSI scaling optimization for HDIAG
+          foreach( test ${saber_test_full} )
+              string( FIND ${test} "optimization_bump_hdiag_gsi" result )
+              if( result MATCHES 0 AND ${mpi} LESS_EQUAL 2 )
+                  # Get dependencies
+                  file( STRINGS testdeps/${test}.txt deps )
+                  set( deps_list "" )
+                  list( APPEND deps_list ${deps} )
+                  list( LENGTH deps_list deps_length )
+                  if( ${deps_length} GREATER 0 )
+                      list( TRANSFORM deps_list PREPEND saber_test_ )
+                      list( TRANSFORM deps_list APPEND _${mpi}-${omp} )
+                  endif()
 
-              # Add test
-              ecbuild_add_test( TARGET saber_test_${test}_${mpi}-${omp}
-                                MPI ${mpi}
-                                OMP ${omp}
-                                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
-                                ARGS testinput/${yaml_prefix}${test}.yaml
-                                DEPENDS saber_quench_error_covariance_toolbox.x
-                                TEST_DEPENDS ${deps_list} )
-          endif()
-      endforeach()
+                  # Add test
+                  ecbuild_add_test( TARGET saber_test_${test}_${mpi}-${omp}
+                                    MPI ${mpi}
+                                    OMP ${omp}
+                                    COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                                    ARGS testinput/${yaml_prefix}${test}.yaml
+                                    DEPENDS saber_quench_error_covariance_toolbox.x
+                                    TEST_DEPENDS ${deps_list} )
+              endif()
+          endforeach()
+      endif()
 
       # Compare diagnostics
       foreach( test ${saber_test_full} )
@@ -333,12 +358,14 @@ else()
   message( STATUS "SABER-QUENCH tests deactivated" )
 endif()
 
-# NICAS square-root test
-set( mpi 2 )
-set( omp 1 )
-add_fctest( TARGET          saber_test_nicas_sqrt
-            MPI             ${mpi}
-            OMP             ${omp}
-            LINKER_LANGUAGE Fortran
-            SOURCES         fctest/fctest_nicas_sqrt.F90
-            LIBS            saber )
+if( SABER_TEST_BUMP )
+    # NICAS square-root test
+    set( mpi 2 )
+    set( omp 1 )
+    add_fctest( TARGET          saber_test_nicas_sqrt
+                MPI             ${mpi}
+                OMP             ${omp}
+                LINKER_LANGUAGE Fortran
+                SOURCES         fctest/fctest_nicas_sqrt.F90
+                LIBS            saber )
+endif()

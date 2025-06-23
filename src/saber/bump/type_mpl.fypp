@@ -20,14 +20,14 @@ use tools_kinds, only: kind_int,kind_float,kind_double,kind_real
 use tools_log, only: write_log
 use tools_qsort, only: qsort
 use type_msv, only: msv_type
-#:if getvar('ENABLE_SABER_INSTRUMENTATION', 0)
+#:if getvar('ENABLE_BUMP_INSTRUMENTATION', 0)
 use type_probe, only: iinst,cinst,probe
 #:endif
 
 implicit none
 
 integer,parameter :: ddis = 5                !< Progression display step
-#:if getvar('ENABLE_SABER_INSTRUMENTATION', 0)
+#:if getvar('ENABLE_BUMP_INSTRUMENTATION', 0)
    real(kind_real) :: min_total_timing = one !< Minimum total timing to print
    integer :: max_calls = 10                 !< Number of timing to print with maximum calls
 #:endif
@@ -126,7 +126,7 @@ contains
    procedure :: prog_init => mpl_prog_init
    procedure :: prog_print => mpl_prog_print
    procedure :: prog_final => mpl_prog_final
-   #:if getvar('ENABLE_SABER_INSTRUMENTATION', 0)
+   #:if getvar('ENABLE_BUMP_INSTRUMENTATION', 0)
       procedure :: print_instance => mpl_print_instance
       procedure :: timings => mpl_timings
    #:endif
@@ -1040,7 +1040,7 @@ deallocate(mpl%done)
 
 end subroutine mpl_prog_final
 
-#:if getvar('ENABLE_SABER_INSTRUMENTATION', 0)
+#:if getvar('ENABLE_BUMP_INSTRUMENTATION', 0)
 !----------------------------------------------------------------------
 ! Subroutine: mpl_print_instance
 !> Print instance

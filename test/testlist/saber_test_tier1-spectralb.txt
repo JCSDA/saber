@@ -39,4 +39,3 @@ randomization_csdual_sqrtspectralb
 randomization_sqrtspectralb_1
 randomization_sqrtspectralb_3
 randomization_sqrtspectralb_4
-dirac_parallel_hybrid_stddev
