@@ -37,7 +37,7 @@ void FieldsIODefault::read(const Geometry & geom,
   // Update configuration
   eckit::LocalConfiguration updatedConf(conf);
   if (!updatedConf.has("latitude south to north")) {
-    updatedConf.set("latitude south to north", geom.latSouthToNorth());
+    updatedConf.set("latitude south to north", geom.io().getBool("latitude south to north", true));
   }
 
   // Read fieldset
@@ -61,7 +61,7 @@ void FieldsIODefault::write(const Geometry & geom,
   // Update configuration
   eckit::LocalConfiguration updatedConf(conf);
   if (!updatedConf.has("latitude south to north")) {
-    updatedConf.set("latitude south to north", geom.latSouthToNorth());
+    updatedConf.set("latitude south to north", geom.io().getBool("latitude south to north", true));
   }
 
   // Write fieldset

@@ -64,11 +64,11 @@ Geometry::Geometry(const eckit::Configuration & config,
   // Model data
   modelData_ = params.modelData.value();
 
-  // Latitudes from south to north in files
-  latSouthToNorth_ = params.latSouthToNorth.value();
-
   // Variable name alias
   setupAlias(params);
+
+  // IO parameters
+  io_ = params.io.value();
 
   // Interpolation
   const auto &interpParams = params.interpolation.value();
@@ -160,7 +160,7 @@ Geometry::Geometry(const Geometry & other)
   : comm_(other.comm_), halo_(other.halo_), grid_(other.grid_), gridType_(other.gridType_),
   partitioner_(other.partitioner_), mesh_(other.mesh_), groupIndex_(other.groupIndex_),
   levelsAreTopDown_(other.levelsAreTopDown_), modelData_(other.modelData_), alias_(other.alias_),
-  latSouthToNorth_(other.latSouthToNorth_), interpolation_(other.interpolation_),
+  io_(other.io_), interpolation_(other.interpolation_),
   duplicatePoints_(other.duplicatePoints_) {
   oops::Log::trace() << classname() << "::Geometry starting" << std::endl;
 
