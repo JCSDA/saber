@@ -15,12 +15,16 @@
 
 #include "oops/base/Variables.h"
 #include "oops/util/FieldSetHelpers.h"
+#include "oops/util/for_each.h"
 #include "oops/util/Logger.h"
 
 namespace saber {
 namespace generic {
 
 namespace {
+
+using View = atlas::array::LocalView<double, 1>;
+using ConstView = atlas::array::LocalView<const double, 1>;
 
 oops::Variables createActiveVars(const std::vector<VariableGroupParameters> & gps,
                                  const oops::Variables & outerVars)  {
@@ -86,24 +90,25 @@ void copyFields(const std::vector<VariableGroupParameters> & gps,
     if (fsetInput[key].metadata().has("interp_type")) {
       interpType = fsetInput[key].metadata().get<std::string>("interp_type");
     }
-    auto innerView = atlas::array::make_view<double, 2>(fsetInput[key]);
     for (const auto & component : v) {
-      auto outerView = atlas::array::make_view<double, 2>(fsetOutput[component.name()]);
-      if (levelsAreTopDown && outerView.shape(1) == 1) {
-        // jn is horizontal index
-        for (atlas::idx_t jn = 0; jn < outerView.shape(0); ++jn) {
-          // copy FROM last index of inner field
-          outerView(jn, 0) = innerView(jn, innerView.shape(1)-1);
-        }
+      if (levelsAreTopDown && fsetOutput[component.name()].shape(1) == 1) {
+        // surface variable is at end of array
+        util::for_each_column(
+          util::IndexRange::include_halo,  // TODO(NC): when upgrade to atlas0.43 delete this line
+          // copy surface FROM last index of inner field
+          [](ConstView inner, View outer) {
+            const atlas::idx_t surfLevel = inner.shape(0)-1;
+            outer(0) = inner(surfLevel);
+          },
+          fsetInput[key], fsetOutput[component.name()]);
       } else {
-        // jn is horizontal index
-        for (atlas::idx_t jn = 0; jn < outerView.shape(0); ++jn) {
-          // loop over vertical levels that exist in OUTER field
-          for (atlas::idx_t jl = 0; jl < outerView.shape(1); ++jl) {
-            // copy in place
-            outerView(jn, jl) = innerView(jn, jl);
-          }
-        }
+        // only copy values up to max level in OUTER field
+        util::for_each_column(
+          util::IndexRange::include_halo,  // TODO(NC): when upgrade to atlas0.43 delete this line
+          [](ConstView inner, View outer) {
+            for (atlas::idx_t jl = 0; jl < outer.shape(0); ++jl){ outer(jl) = inner(jl); }
+          },
+            fsetInput[key], fsetOutput[component.name()]);
       }
       if (!interpType.empty()) {
         fsetOutput[component.name()].metadata().set("interp_type", interpType);
@@ -135,7 +140,6 @@ void gatherFields(const std::vector<VariableGroupParameters> & gps,
     if (fsetInput[v[0].name()].metadata().has("interp_type")) {
       interpType = fsetInput[v[0].name()].metadata().get<std::string>("interp_type");
     }
-    auto innerView = atlas::array::make_view<double, 2>(fsetOutput[key]);
     for (const auto & component : v) {
       if (!interpType.empty()) {
         // check other fields have same 'interp_type' as component0
@@ -143,27 +147,32 @@ void gatherFields(const std::vector<VariableGroupParameters> & gps,
         ASSERT(fsetInput[component.name()].metadata().get<std::string>("interp_type")
                                                                       == interpType);
       }
-      auto outerView = atlas::array::make_view<double, 2>(fsetInput[component.name()]);
       // assert same horizontal size for inner and outer fields
-      ASSERT(outerView.shape(0) == innerView.shape(0));
+      ASSERT(fsetInput[component.name()].shape(0) == fsetOutput[key].shape(0));
       // assert same vertical size OR outer Field has one level (i.e., is a surface field)
-      ASSERT(outerView.shape(1) == innerView.shape(1) || outerView.shape(1) == 1);
-      if (levelsAreTopDown && outerView.shape(1) == 1) {
-        // candidate for openMP parallel for??
-        for (atlas::idx_t jn = 0; jn < outerView.shape(0); ++jn) {
+      ASSERT(fsetInput[component.name()].shape(1) == fsetOutput[key].shape(1)
+             || fsetInput[component.name()].shape(1) == 1);
+      if (levelsAreTopDown && fsetInput[component.name()].shape(1) == 1) {
+        // surface variable is at end of array
+        util::for_each_column(
+          util::IndexRange::include_halo,  // TODO(NC): when upgrade to atlas0.43 delete this line
           // gather to end of array
-          innerView(jn, innerView.shape(1)-1) += outerView(jn, 0);
-          outerView(jn, 0) = 0.0;
-        }
+          [](View inner, View outer) {
+            inner(inner.shape(0)-1) += outer(0);
+            outer.assign(0);
+          },
+          fsetOutput[key], fsetInput[component.name()]);
       } else {
-        // candidate for openMP parallel for??
-        for (atlas::idx_t jn = 0; jn < outerView.shape(0); ++jn) {
-          // only loop over levels that exist in incoming field
-          for (atlas::idx_t jl = 0; jl < outerView.shape(1); ++jl) {
-            innerView(jn, jl) += outerView(jn, jl);
-            outerView(jn, jl) = 0.0;
-          }
-        }
+        using View = atlas::array::LocalView<double, 1>;
+        util::for_each_column(
+          util::IndexRange::include_halo,  // TODO(NC): when upgrade to atlas0.43 delete this line
+          [](View inner, View outer) {
+            // only gather values from OUTER field up to max level in Input/Outer field
+            for (atlas::idx_t jl = 0; jl < outer.shape(0); ++jl){
+              inner(jl) += outer(jl);
+              outer(jl) = 0; }
+          },
+          fsetOutput[key], fsetInput[component.name()]);
       }
     }
     if (!interpType.empty()) {
