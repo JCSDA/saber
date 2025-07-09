@@ -12,7 +12,6 @@
 #include <vector>
 
 #include "atlas/array.h"
-#include "atlas/array/MakeView.h"
 #include "atlas/field.h"
 #include "atlas/field/FieldSet.h"
 
@@ -23,22 +22,21 @@
 
 #include "oops/base/FieldSet3D.h"
 #include "oops/base/Variables.h"
+#include "oops/util/for_each.h"
 #include "oops/util/FunctionSpaceHelpers.h"
 #include "oops/util/Timer.h"
 
 #include "saber/blocks/SaberOuterBlockBase.h"
 #include "saber/oops/Utilities.h"
 
-using atlas::array::make_view;
-using atlas::idx_t;
 
 namespace saber {
 namespace vader {
 
 namespace {
 
-using atlas::array::make_view;
-using atlas::idx_t;
+using View = atlas::array::LocalView<double, 1>;
+using ConstView = atlas::array::LocalView<const double, 1>;
 
 const char specific_humidity_mo[] = "water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water";
 
@@ -48,97 +46,102 @@ void eval_dry_air_density_from_exner_levels_minus_one_tl(atlas::FieldSet & incFl
                                                          const atlas::FieldSet & stateFlds) {
   oops::Log::trace() << "[eval_dry_air_density_from_pressure_levels_minus_one_tl()] starting ..."
                      << std::endl;
-  // State Fields
-  auto dryrhoView = make_view<const double, 2>(stateFlds["dry_air_density_levels_minus_one"]);
-  auto exnerView = make_view<const double, 2>(
-    stateFlds["dimensionless_exner_function_levels_minus_one"]);
-  auto hlView = make_view<const double, 2>(stateFlds["height_above_mean_sea_level_levels"]);
-  auto hView = make_view<const double, 2>(stateFlds["height_above_mean_sea_level"]);
-  auto ptView = make_view<const double, 2>(stateFlds["air_potential_temperature"]);
-  auto qView = make_view<const double, 2>(stateFlds[specific_humidity_mo]);
-  auto qclView = make_view<const double, 2>(
-    stateFlds["cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water"]);
-  auto qcfView = make_view<const double, 2>(
-    stateFlds["cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water"]);
 
-  // Increment Fields
-  auto exnerIncView = make_view<const double, 2>(
-    incFlds["dimensionless_exner_function_levels_minus_one"]);
-  auto ptIncView = make_view<const double, 2>(incFlds["air_potential_temperature"]);
-  auto qIncView = make_view<const double, 2>(incFlds[specific_humidity_mo]);
-  auto qclIncView = make_view<const double, 2>(
-    incFlds["cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water"]);
-  auto qcfIncView = make_view<const double, 2>(
-    incFlds["cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water"]);
-  auto dryrhoIncView = make_view<double, 2>(incFlds["dry_air_density_levels_minus_one"]);
-  const idx_t numLevels = incFlds["dry_air_density_levels_minus_one"].shape(1);
-  const idx_t sizeOwned =
-    util::getSizeOwned(incFlds["dry_air_density_levels_minus_one"].functionspace());
+  util::for_each_column(
+      [=](ConstView dryrho,
+          ConstView exner,
+          ConstView hl,
+          ConstView h,
+          ConstView pt,
+          ConstView q,
+          ConstView qcl,
+          ConstView qcf,
+          ConstView exnerInc,
+          ConstView ptInc,
+          ConstView qInc,
+          ConstView qclInc,
+          ConstView qcfInc,
+          View dryrhoInc) {
+        double h_minus_hl;
+        double hl_minus_hm1;
+        double vptdrydens;
+        double vptdrydensInc;
+        double vptdrydens_jlm1;
+        double vptdrydensInc_jlm1;
+        double vptdrydens_intp_times_h_minus_hm1;
+        double vptdrydensInc_intp_times_h_minus_hm1;
 
-  double h_minus_hl;
-  double hl_minus_hm1;
-  double vptdrydens;
-  double vptdrydensInc;
-  double vptdrydens_jlm1;
-  double vptdrydensInc_jlm1;
-  double vptdrydens_intp_times_h_minus_hm1;
-  double vptdrydensInc_intp_times_h_minus_hm1;
+        vptdrydens = pt(0) * (1.0 + ::mo::constants::c_virtual * q(0)
+                     - qcl(0) - qcf(0)) / (1.0 - q(0)
+                     - qcl(0) - qcf(0));
+        vptdrydensInc = ((1.0 + ::mo::constants::c_virtual * q(0)
+                          - qcl(0) - qcf(0)) * ptInc(0)
+                         + ((1.0 + ::mo::constants::c_virtual) * qInc(0)
+                            * (1.0 - qcl(0) - qcf(0)) * pt(0)
+                            / (1.0 - q(0) - qcl(0) - qcf(0)))
+                         + (qclInc(0) *  q(0)
+                           * (1.0 + ::mo::constants::c_virtual) * pt(0))
+                           / (1.0 - q(0) - qcl(0) - qcf(0))
+                         + (qcfInc(0) *  q(0)
+                           * (1.0 + ::mo::constants::c_virtual) * pt(0))
+                           / (1.0 - q(0) - qcl(0) - qcf(0)))
+                        / (1.0 - q(0) - qcl(0) - qcf(0));
 
-  for (idx_t jn = 0; jn < sizeOwned; ++jn) {
-    vptdrydens = ptView(jn, 0) * (1.0 + ::mo::constants::c_virtual * qView(jn, 0)
-                 - qclView(jn, 0) - qcfView(jn, 0)) / (1.0 - qView(jn, 0)
-                 - qclView(jn, 0) - qcfView(jn, 0));
-    vptdrydensInc = ((1.0 + ::mo::constants::c_virtual * qView(jn, 0)
-                      - qclView(jn, 0) - qcfView(jn, 0)) * ptIncView(jn, 0)
-                     + ((1.0 + ::mo::constants::c_virtual) * qIncView(jn, 0)
-                        * (1.0 - qclView(jn, 0) - qcfView(jn, 0)) * ptView(jn, 0)
-                        / (1.0 - qView(jn, 0) - qclView(jn, 0) - qcfView(jn, 0)))
-                     + (qclIncView(jn, 0) *  qView(jn, 0)
-                       * (1.0 + ::mo::constants::c_virtual) * ptView(jn, 0))
-                       / (1.0 - qView(jn, 0) - qclView(jn, 0) - qcfView(jn, 0))
-                     + (qcfIncView(jn, 0) *  qView(jn, 0)
-                       * (1.0 + ::mo::constants::c_virtual) * ptView(jn, 0))
-                       / (1.0 - qView(jn, 0) - qclView(jn, 0) - qcfView(jn, 0)))
-                    / (1.0 - qView(jn, 0) - qclView(jn, 0) - qcfView(jn, 0));
+        dryrhoInc(0) = dryrho(0) * (
+          (1.0 - ::mo::constants::rd_over_cp)  * exnerInc(0) /
+          (exner(0) * ::mo::constants::rd_over_cp) -
+          vptdrydensInc / vptdrydens);
 
-    dryrhoIncView(jn, 0) = dryrhoView(jn, 0) * (
-      (1.0 - ::mo::constants::rd_over_cp)  * exnerIncView(jn, 0) /
-      (exnerView(jn, 0) * ::mo::constants::rd_over_cp) -
-      vptdrydensInc / vptdrydens);
+        const atlas::idx_t nb_levels = dryrho.shape(0);  // in this scope, dryrho is a column view
+        for (atlas::idx_t jl = 1; jl < nb_levels; ++jl) {
+          h_minus_hl = h(jl) - hl(jl);
+          hl_minus_hm1 = hl(jl) - h(jl-1);
+          vptdrydens_jlm1 = vptdrydens;
+          vptdrydens = pt(jl) * (1.0 + ::mo::constants::c_virtual * q(jl)
+                       - qcl(jl) - qcf(jl)) / (1.0 - q(jl)
+                       - qcl(jl) - qcf(jl));
+          vptdrydensInc_jlm1 = vptdrydensInc;
+          vptdrydensInc = ((1.0 + ::mo::constants::c_virtual * q(jl)
+                            - qcl(jl) - qcf(jl)) * ptInc(jl)
+                           + ((1.0 + ::mo::constants::c_virtual) * qInc(jl)
+                              * (1.0 - qcl(jl) - qcf(jl)) * pt(jl)
+                              / (1.0 - q(jl) - qcl(jl) - qcf(jl)))
+                           + (qclInc(jl) *  q(jl)
+                              * (1.0 + ::mo::constants::c_virtual) * pt(jl))
+                              / (1.0 - q(jl) - qcl(jl) - qcf(jl))
+                           + (qcfInc(jl) *  q(jl)
+                              * (1.0 + ::mo::constants::c_virtual) * pt(jl))
+                              / (1.0 - q(jl) - qcl(jl) - qcf(jl)))
+                          / (1.0 - q(jl) - qcl(jl) - qcf(jl));
+          vptdrydens_intp_times_h_minus_hm1 = h_minus_hl * vptdrydens_jlm1 +
+                                               hl_minus_hm1 * vptdrydens;
+          vptdrydensInc_intp_times_h_minus_hm1 = hl_minus_hm1 * vptdrydensInc +
+                                                 h_minus_hl * vptdrydensInc_jlm1;
 
-    for (idx_t jl = 1; jl < numLevels; ++jl) {
-      h_minus_hl = hView(jn, jl) - hlView(jn, jl);
-      hl_minus_hm1 = hlView(jn, jl) - hView(jn, jl-1);
-      vptdrydens_jlm1 = vptdrydens;
-      vptdrydens = ptView(jn, jl) * (1.0 + ::mo::constants::c_virtual * qView(jn, jl)
-                   - qclView(jn, jl) - qcfView(jn, jl)) / (1.0 - qView(jn, jl)
-                   - qclView(jn, jl) - qcfView(jn, jl));
-      vptdrydensInc_jlm1 = vptdrydensInc;
-      vptdrydensInc = ((1.0 + ::mo::constants::c_virtual * qView(jn, jl)
-                        - qclView(jn, jl) - qcfView(jn, jl)) * ptIncView(jn, jl)
-                       + ((1.0 + ::mo::constants::c_virtual) * qIncView(jn, jl)
-                          * (1.0 - qclView(jn, jl) - qcfView(jn, jl)) * ptView(jn, jl)
-                          / (1.0 - qView(jn, jl) - qclView(jn, jl) - qcfView(jn, jl)))
-                       + (qclIncView(jn, jl) *  qView(jn, jl)
-                          * (1.0 + ::mo::constants::c_virtual) * ptView(jn, jl))
-                          / (1.0 - qView(jn, jl) - qclView(jn, jl) - qcfView(jn, jl))
-                       + (qcfIncView(jn, jl) *  qView(jn, jl)
-                          * (1.0 + ::mo::constants::c_virtual) * ptView(jn, jl))
-                          / (1.0 - qView(jn, jl) - qclView(jn, jl) - qcfView(jn, jl)))
-                      / (1.0 - qView(jn, jl) - qclView(jn, jl) - qcfView(jn, jl));
-      vptdrydens_intp_times_h_minus_hm1 = h_minus_hl * vptdrydens_jlm1 +
-                                           hl_minus_hm1 * vptdrydens;
-      vptdrydensInc_intp_times_h_minus_hm1 = hl_minus_hm1 * vptdrydensInc +
-                                             h_minus_hl * vptdrydensInc_jlm1;
+          dryrhoInc(jl) = dryrho(jl) * (
+            (1.0 - ::mo::constants::rd_over_cp) *
+            (exnerInc(jl) /
+            (exner(jl) * ::mo::constants::rd_over_cp)) -
+            vptdrydensInc_intp_times_h_minus_hm1 / vptdrydens_intp_times_h_minus_hm1);
+        }
+      },
+      stateFlds["dry_air_density_levels_minus_one"],
+      stateFlds["dimensionless_exner_function_levels_minus_one"],
+      stateFlds["height_above_mean_sea_level_levels"],
+      stateFlds["height_above_mean_sea_level"],
+      stateFlds["air_potential_temperature"],
+      stateFlds[specific_humidity_mo],
+      stateFlds["cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water"],
+      stateFlds["cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water"],
+      incFlds["dimensionless_exner_function_levels_minus_one"],
+      incFlds["air_potential_temperature"],
+      incFlds[specific_humidity_mo],
+      incFlds["cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water"],
+      incFlds["cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water"],
+      incFlds["dry_air_density_levels_minus_one"]);
 
-      dryrhoIncView(jn, jl) = dryrhoView(jn, jl) * (
-        (1.0 - ::mo::constants::rd_over_cp) *
-        (exnerIncView(jn, jl) /
-        (exnerView(jn, jl) * ::mo::constants::rd_over_cp)) -
-        vptdrydensInc_intp_times_h_minus_hm1 / vptdrydens_intp_times_h_minus_hm1);
-    }
-  }
   incFlds["dry_air_density_levels_minus_one"].set_dirty();
+
   oops::Log::trace() << "[eval_dry_air_density_from_exner_levels_minus_one_tl()] ... exit"
                      << std::endl;
 }
@@ -149,129 +152,132 @@ void eval_dry_air_density_from_exner_levels_minus_one_ad(atlas::FieldSet & hatFl
                                             const atlas::FieldSet & stateFlds) {
   oops::Log::trace() << "[eval_dry_air_density_from_exner_levels_minus_one_ad()] starting ..."
                      << std::endl;
-  // State fields
-  auto dryrhoView = make_view<const double, 2>(stateFlds["dry_air_density_levels_minus_one"]);
-  auto exnerView = make_view<const double, 2>(
-    stateFlds["dimensionless_exner_function_levels_minus_one"]);
-  auto hlView = make_view<const double, 2>(stateFlds["height_above_mean_sea_level_levels"]);
-  auto hView = make_view<const double, 2>(stateFlds["height_above_mean_sea_level"]);
-  auto ptView = make_view<const double, 2>(stateFlds["air_potential_temperature"]);
-  auto qView = make_view<const double, 2>(stateFlds[specific_humidity_mo]);
-  auto qclView = make_view<const double, 2>(
-    stateFlds["cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water"]);
-  auto qcfView = make_view<const double, 2>(
-    stateFlds["cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water"]);
 
-  // Increment (adjoint) fields
-  auto exnerHatView = make_view<double, 2>(
-    hatFlds["dimensionless_exner_function_levels_minus_one"]);
-  auto ptHatView = make_view<double, 2>(
-    hatFlds["air_potential_temperature"]);
-  auto qHatView = make_view<double, 2>(hatFlds[specific_humidity_mo]);
-  auto qclHatView = make_view<double, 2>(
-    hatFlds["cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water"]);
-  auto qcfHatView = make_view<double, 2>(
-    hatFlds["cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water"]);
-  auto dryrhoHatView = make_view<double, 2>(hatFlds["dry_air_density_levels_minus_one"]);
 
-  double h_minus_hl;
-  double hl_minus_hm1;
-  double vptdrydens;
-  double vptdrydens_intp_times_h_minus_hm1;
-  double vptdrydensHat;
-  double vptdrydens_jlm1;
-  double vptdrydensHat_jlm1;
+  util::for_each_column(
+      [=](ConstView dryrho,
+          ConstView exner,
+          ConstView hl,
+          ConstView h,
+          ConstView pt,
+          ConstView q,
+          ConstView qcl,
+          ConstView qcf,
+          View exnerHat,
+          View ptHat,
+          View qHat,
+          View qclHat,
+          View qcfHat,
+          View dryrhoHat) {
+        double h_minus_hl;
+        double hl_minus_hm1;
+        double vptdrydens;
+        double vptdrydens_intp_times_h_minus_hm1;
+        double vptdrydensHat;
+        double vptdrydens_jlm1;
+        double vptdrydensHat_jlm1;
 
-  const idx_t numLevels = hatFlds["dry_air_density_levels_minus_one"].shape(1);
-  const idx_t sizeOwned =
-    util::getSizeOwned(hatFlds["dry_air_density_levels_minus_one"].functionspace());
+        const atlas::idx_t nb_levels = dryrho.shape(0);
+        for (atlas::idx_t jl = nb_levels-1; jl >= 1; --jl) {
+          // Passive fields.
+          h_minus_hl = h(jl) - hl(jl);
+          hl_minus_hm1 = hl(jl) - h(jl-1);
+          vptdrydens = pt(jl) * (1.0 + ::mo::constants::c_virtual * q(jl)
+                       - qcl(jl) - qcf(jl)) / (1.0 - q(jl)
+                       - qcl(jl) - qcf(jl));
 
-  for (idx_t jn = 0; jn < sizeOwned; ++jn) {
-    for (idx_t jl = numLevels-1; jl >= 1; --jl) {
-      // Passive fields.
-      h_minus_hl = hView(jn, jl) - hlView(jn, jl);
-      hl_minus_hm1 = hlView(jn, jl) - hView(jn, jl-1);
-      vptdrydens = ptView(jn, jl) * (1.0 + ::mo::constants::c_virtual * qView(jn, jl)
-                   - qclView(jn, jl) - qcfView(jn, jl)) / (1.0 - qView(jn, jl)
-                   - qclView(jn, jl) - qcfView(jn, jl));
+          exnerHat(jl) += dryrho(jl) *
+            (1.0 - ::mo::constants::rd_over_cp)  * dryrhoHat(jl) /
+            (exner(jl) * ::mo::constants::rd_over_cp);
 
-      exnerHatView(jn, jl) += dryrhoView(jn, jl) *
-        (1.0 - ::mo::constants::rd_over_cp)  * dryrhoHatView(jn, jl) /
-        (exnerView(jn, jl) * ::mo::constants::rd_over_cp);
+          vptdrydens_jlm1 = pt(jl-1) * (1.0 + ::mo::constants::c_virtual * q(jl-1)
+                            - qcl(jl-1) - qcf(jl-1)) / (1.0 - q(jl-1)
+                            - qcl(jl-1) - qcf(jl-1));
+          vptdrydens_intp_times_h_minus_hm1 = h_minus_hl * vptdrydens_jlm1 +
+                                               hl_minus_hm1 * vptdrydens;
+          vptdrydensHat = - dryrho(jl) * dryrhoHat(jl) * hl_minus_hm1
+                          / vptdrydens_intp_times_h_minus_hm1;
+          vptdrydensHat_jlm1 = - dryrho(jl) * dryrhoHat(jl) * h_minus_hl /
+                               vptdrydens_intp_times_h_minus_hm1;
+          ptHat(jl) += (1.0 + ::mo::constants::c_virtual * q(jl)
+                                - qcl(jl) - qcf(jl))
+                               / (1.0 - q(jl) - qcl(jl) - qcf(jl))
+                               * vptdrydensHat;
+          qHat(jl) += (1.0 + ::mo::constants::c_virtual) * pt(jl)
+                               * (1.0 - qcl(jl) - qcf(jl))
+                               / ((1.0 - q(jl) - qcl(jl) - qcf(jl))
+                                   * (1.0 - q(jl) - qcl(jl) - qcf(jl)))
+                               * vptdrydensHat;
+          qclHat(jl) += pt(jl) *  q(jl) * (1.0 + ::mo::constants::c_virtual)
+                                / ((1.0 - q(jl) - qcl(jl) - qcf(jl))
+                                    * (1.0 - q(jl) - qcl(jl) - qcf(jl)))
+                                * vptdrydensHat;
+          qcfHat(jl) += pt(jl) *  q(jl) * (1.0 + ::mo::constants::c_virtual)
+                                / ((1.0 - q(jl) - qcl(jl) - qcf(jl))
+                                    * (1.0 - q(jl) - qcl(jl) - qcf(jl)))
+                                * vptdrydensHat;
+          ptHat(jl-1) += (1.0 + ::mo::constants::c_virtual * q(jl-1)
+                                  - qcl(jl-1) - qcf(jl-1))
+                                 / (1.0 - q(jl-1) - qcl(jl-1) - qcf(jl-1))
+                                 * vptdrydensHat_jlm1;
+          qHat(jl-1) += (1.0 + ::mo::constants::c_virtual) * pt(jl-1)
+                                * (1.0 - qcl(jl-1) - qcf(jl-1))
+                                / ((1.0 - q(jl-1) - qcl(jl-1) - qcf(jl-1))
+                                    * (1.0 - q(jl-1) - qcl(jl-1) - qcf(jl-1)))
+                                * vptdrydensHat_jlm1;
+          qclHat(jl-1) += pt(jl-1) *  q(jl-1)
+                                  * (1.0 + ::mo::constants::c_virtual)
+                                  / ((1.0 - q(jl-1) - qcl(jl-1) - qcf(jl-1))
+                                      * (1.0 - q(jl-1) - qcl(jl-1)
+                                         - qcf(jl-1)))
+                                  * vptdrydensHat_jlm1;
+          qcfHat(jl-1) += pt(jl-1) *  q(jl-1)
+                                  * (1.0 + ::mo::constants::c_virtual)
+                                  / ((1.0 - q(jl-1) - qcl(jl-1) - qcf(jl-1))
+                                      * (1.0 - q(jl-1) - qcl(jl-1)
+                                         - qcf(jl-1)))
+                                  * vptdrydensHat_jlm1;
+          dryrhoHat(jl) = 0.0;
+        }
 
-      vptdrydens_jlm1 = ptView(jn, jl-1) * (1.0 + ::mo::constants::c_virtual * qView(jn, jl-1)
-                        - qclView(jn, jl-1) - qcfView(jn, jl-1)) / (1.0 - qView(jn, jl-1)
-                        - qclView(jn, jl-1) - qcfView(jn, jl-1));
-      vptdrydens_intp_times_h_minus_hm1 = h_minus_hl * vptdrydens_jlm1 +
-                                           hl_minus_hm1 * vptdrydens;
-      vptdrydensHat = - dryrhoView(jn, jl) * dryrhoHatView(jn, jl) * hl_minus_hm1
-                      / vptdrydens_intp_times_h_minus_hm1;
-      vptdrydensHat_jlm1 = - dryrhoView(jn, jl) * dryrhoHatView(jn, jl) * h_minus_hl /
-                           vptdrydens_intp_times_h_minus_hm1;
-      ptHatView(jn, jl) += (1.0 + ::mo::constants::c_virtual * qView(jn, jl)
-                            - qclView(jn, jl) - qcfView(jn, jl))
-                           / (1.0 - qView(jn, jl) - qclView(jn, jl) - qcfView(jn, jl))
-                           * vptdrydensHat;
-      qHatView(jn, jl) += (1.0 + ::mo::constants::c_virtual) * ptView(jn, jl)
-                           * (1.0 - qclView(jn, jl) - qcfView(jn, jl))
-                           / ((1.0 - qView(jn, jl) - qclView(jn, jl) - qcfView(jn, jl))
-                               * (1.0 - qView(jn, jl) - qclView(jn, jl) - qcfView(jn, jl)))
-                           * vptdrydensHat;
-      qclHatView(jn, jl) += ptView(jn, jl) *  qView(jn, jl) * (1.0 + ::mo::constants::c_virtual)
-                            / ((1.0 - qView(jn, jl) - qclView(jn, jl) - qcfView(jn, jl))
-                                * (1.0 - qView(jn, jl) - qclView(jn, jl) - qcfView(jn, jl)))
-                            * vptdrydensHat;
-      qcfHatView(jn, jl) += ptView(jn, jl) *  qView(jn, jl) * (1.0 + ::mo::constants::c_virtual)
-                            / ((1.0 - qView(jn, jl) - qclView(jn, jl) - qcfView(jn, jl))
-                                * (1.0 - qView(jn, jl) - qclView(jn, jl) - qcfView(jn, jl)))
-                            * vptdrydensHat;
-      ptHatView(jn, jl-1) += (1.0 + ::mo::constants::c_virtual * qView(jn, jl-1)
-                              - qclView(jn, jl-1) - qcfView(jn, jl-1))
-                             / (1.0 - qView(jn, jl-1) - qclView(jn, jl-1) - qcfView(jn, jl-1))
-                             * vptdrydensHat_jlm1;
-      qHatView(jn, jl-1) += (1.0 + ::mo::constants::c_virtual) * ptView(jn, jl-1)
-                            * (1.0 - qclView(jn, jl-1) - qcfView(jn, jl-1))
-                            / ((1.0 - qView(jn, jl-1) - qclView(jn, jl-1) - qcfView(jn, jl-1))
-                                * (1.0 - qView(jn, jl-1) - qclView(jn, jl-1) - qcfView(jn, jl-1)))
-                            * vptdrydensHat_jlm1;
-      qclHatView(jn, jl-1) += ptView(jn, jl-1) *  qView(jn, jl-1)
-                              * (1.0 + ::mo::constants::c_virtual)
-                              / ((1.0 - qView(jn, jl-1) - qclView(jn, jl-1) - qcfView(jn, jl-1))
-                                  * (1.0 - qView(jn, jl-1) - qclView(jn, jl-1)
-                                     - qcfView(jn, jl-1)))
-                              * vptdrydensHat_jlm1;
-      qcfHatView(jn, jl-1) += ptView(jn, jl-1) *  qView(jn, jl-1)
-                              * (1.0 + ::mo::constants::c_virtual)
-                              / ((1.0 - qView(jn, jl-1) - qclView(jn, jl-1) - qcfView(jn, jl-1))
-                                  * (1.0 - qView(jn, jl-1) - qclView(jn, jl-1)
-                                     - qcfView(jn, jl-1)))
-                              * vptdrydensHat_jlm1;
-      dryrhoHatView(jn, jl) = 0.0;
-    }
+        exnerHat(0) += dryrho(0) *
+          (1.0 - ::mo::constants::rd_over_cp) * dryrhoHat(0) /
+          (exner(0) * ::mo::constants::rd_over_cp);
 
-    exnerHatView(jn, 0) += dryrhoView(jn, 0) *
-      (1.0 - ::mo::constants::rd_over_cp) * dryrhoHatView(jn, 0) /
-      (exnerView(jn, 0) * ::mo::constants::rd_over_cp);
+        vptdrydens = pt(0) *
+          (1.0 + ::mo::constants::c_virtual * q(0) - qcl(0) - qcf(0)) /
+          (1.0 - q(0) - qcl(0) - qcf(0));
+        vptdrydensHat = - dryrho(0) * dryrhoHat(0) / vptdrydens;
+        ptHat(0) += (1.0 + ::mo::constants::c_virtual * q(0)
+                             - qcl(0) - qcf(0))
+                            / (1.0 - q(0) - qcl(0) - qcf(0)) * vptdrydensHat;
+        qHat(0) += (1.0 + ::mo::constants::c_virtual) * pt(0)
+                           * (1.0 - qcl(0) - qcf(0))
+                           / ((1.0 - q(0) - qcl(0) - qcf(0))
+                           * (1.0 - q(0) - qcl(0) - qcf(0))) * vptdrydensHat;
+        qclHat(0) += pt(0) *  q(0) * (1.0 + ::mo::constants::c_virtual)
+                             / ((1.0 - q(0) - qcl(0) - qcf(0))
+                             * (1.0 - q(0) - qcl(0) - qcf(0))) * vptdrydensHat;
+        qcfHat(0) += pt(0) *  q(0) * (1.0 + ::mo::constants::c_virtual)
+                             / ((1.0 - q(0) - qcl(0) - qcf(0))
+                             * (1.0 - q(0) - qcl(0) - qcf(0))) * vptdrydensHat;
+        dryrhoHat(0) = 0.0;
+      },
+      stateFlds["dry_air_density_levels_minus_one"],
+      stateFlds["dimensionless_exner_function_levels_minus_one"],
+      stateFlds["height_above_mean_sea_level_levels"],
+      stateFlds["height_above_mean_sea_level"],
+      stateFlds["air_potential_temperature"],
+      stateFlds[specific_humidity_mo],
+      stateFlds["cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water"],
+      stateFlds["cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water"],
+      hatFlds["dimensionless_exner_function_levels_minus_one"],
+      hatFlds["air_potential_temperature"],
+      hatFlds[specific_humidity_mo],
+      hatFlds["cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water"],
+      hatFlds["cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water"],
+      hatFlds["dry_air_density_levels_minus_one"]);
 
-    vptdrydens = ptView(jn, 0) *
-      (1.0 + ::mo::constants::c_virtual * qView(jn, 0) - qclView(jn, 0) - qcfView(jn, 0)) /
-      (1.0 - qView(jn, 0) - qclView(jn, 0) - qcfView(jn, 0));
-    vptdrydensHat = - dryrhoView(jn, 0) * dryrhoHatView(jn, 0) / vptdrydens;
-    ptHatView(jn, 0) += (1.0 + ::mo::constants::c_virtual * qView(jn, 0)
-                         - qclView(jn, 0) - qcfView(jn, 0))
-                        / (1.0 - qView(jn, 0) - qclView(jn, 0) - qcfView(jn, 0)) * vptdrydensHat;
-    qHatView(jn, 0) += (1.0 + ::mo::constants::c_virtual) * ptView(jn, 0)
-                       * (1.0 - qclView(jn, 0) - qcfView(jn, 0))
-                       / ((1.0 - qView(jn, 0) - qclView(jn, 0) - qcfView(jn, 0))
-                       * (1.0 - qView(jn, 0) - qclView(jn, 0) - qcfView(jn, 0))) * vptdrydensHat;
-    qclHatView(jn, 0) += ptView(jn, 0) *  qView(jn, 0) * (1.0 + ::mo::constants::c_virtual)
-                         / ((1.0 - qView(jn, 0) - qclView(jn, 0) - qcfView(jn, 0))
-                         * (1.0 - qView(jn, 0) - qclView(jn, 0) - qcfView(jn, 0))) * vptdrydensHat;
-    qcfHatView(jn, 0) += ptView(jn, 0) *  qView(jn, 0) * (1.0 + ::mo::constants::c_virtual)
-                         / ((1.0 - qView(jn, 0) - qclView(jn, 0) - qcfView(jn, 0))
-                         * (1.0 - qView(jn, 0) - qclView(jn, 0) - qcfView(jn, 0))) * vptdrydensHat;
-    dryrhoHatView(jn, 0) = 0.0;
-  }
   hatFlds["dimensionless_exner_function_levels_minus_one"].set_dirty();
   hatFlds["air_potential_temperature"].set_dirty();
   hatFlds[specific_humidity_mo].set_dirty();
