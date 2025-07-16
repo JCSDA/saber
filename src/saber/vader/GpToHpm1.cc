@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2023-2024 Met Office
+ * (C) Crown Copyright 2023-2025 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -13,11 +13,13 @@
 
 #include "atlas/array.h"
 #include "atlas/field.h"
+#include "atlas/util/Config.h"
 
 #include "eckit/exception/Exceptions.h"
 
 #include "oops/base/FieldSet3D.h"
 #include "oops/base/Variables.h"
+#include "oops/util/for_each.h"
 #include "oops/util/Timer.h"
 
 #include "saber/blocks/SaberOuterBlockBase.h"
@@ -44,21 +46,21 @@ void eval_hydrostatic_pressure_levels_minus_one_tl(atlas::FieldSet & incFlds,
                                                    const atlas::FieldSet & augStateFlds) {
   oops::Log::trace()
     << "[eval_hydrostatic_pressure_levels_minus_one_tl()] starting ..." << std::endl;
-  const auto gPIncView = make_view<const double, 2>(
-    incFlds["geostrophic_pressure_levels_minus_one"]);
-  const auto uPIncView = make_view<const double, 2>(
-    incFlds["unbalanced_pressure_levels_minus_one"]);
-  auto hPIncView = make_view<double, 2>(incFlds["hydrostatic_pressure_levels_minus_one"]);
 
-  const idx_t sizeOwned =
-    util::getSizeOwned(incFlds["geostrophic_pressure_levels_minus_one"].functionspace());
   const idx_t levels = incFlds["geostrophic_pressure_levels_minus_one"].shape(1);
 
-  for (idx_t jn = 0; jn < sizeOwned; ++jn) {
-    for (idx_t jl = 0; jl < levels; ++jl) {
-      hPIncView(jn, jl) = uPIncView(jn, jl);
-    }
-  }
+  using View = atlas::array::LocalView<double, 1>;
+  using ConstView = atlas::array::LocalView<const double, 1>;
+
+  // Loop over columns because fields have different numbers of levels
+  util::for_each_column(
+    [=](ConstView uPIncViewCol, View hPIncViewCol) {
+      for (idx_t jl = 0; jl < levels; ++jl) {
+        hPIncViewCol(jl) = uPIncViewCol(jl);
+      }
+    },
+    incFlds["unbalanced_pressure_levels_minus_one"],
+    incFlds["hydrostatic_pressure_levels_minus_one"]);
 
   if (augStateFlds.has("interpolation_weights")) {
     // Bins Vertical regression matrix stored in one field
@@ -67,26 +69,35 @@ void eval_hydrostatic_pressure_levels_minus_one_tl(atlas::FieldSet & incFlds,
     //     (          ...                   )
     //     (vertical regression matrix bin_m)
     // Since each matrix is square we can easily infer the bin index from the row index
+    //
     // First index of vertRegView is bin_index * number of levels + level index,
     // the second is number of levels associated with matrix column.
+    //
+    // First index of interpolation_weights is horizontal index, the second is bin index here
+
     const auto vertRegView = make_view<const double, 2>(
       augStateFlds["vertical_regression_matrices"]);
-    const auto interpWeightView = make_view<const double, 2>(
-      augStateFlds["interpolation_weights"]);
-    // First index of interpWeightView is horizontal index, the second is bin index here
+
     const idx_t nBins = augStateFlds["interpolation_weights"].shape(1);
 
-    for (idx_t jn = 0; jn < sizeOwned; ++jn) {
-      for (idx_t jl = 0; jl < levels; ++jl) {
-        for (idx_t b = 0; b < nBins; ++b) {
-          for (idx_t jl2 = 0; jl2 < levels; ++jl2) {
-            hPIncView(jn, jl) += interpWeightView(jn, b) *
-                                 vertRegView(b * levels + jl, jl2) *
-                                 gPIncView(jn, jl2);
+    using View = atlas::array::LocalView<double, 1>;
+    using ConstView = atlas::array::LocalView<const double, 1>;
+
+    util::for_each_column(
+      [=](ConstView interpWeightViewCol, ConstView gPIncViewCol, View hPIncViewCol) {
+        for (idx_t jl = 0; jl < levels; ++jl) {
+          for (idx_t b = 0; b < nBins; ++b) {
+            for (idx_t jl2 = 0; jl2 < levels; ++jl2) {
+               hPIncViewCol(jl) += interpWeightViewCol(b) *
+                                   vertRegView(b * levels + jl, jl2) *
+                                   gPIncViewCol(jl2);
+            }
           }
         }
-      }
-    }
+      },
+      augStateFlds["interpolation_weights"],
+      incFlds["geostrophic_pressure_levels_minus_one"],
+      incFlds["hydrostatic_pressure_levels_minus_one"]);
   }
 
   incFlds["hydrostatic_pressure_levels_minus_one"].set_dirty();
@@ -101,13 +112,8 @@ void eval_hydrostatic_pressure_levels_minus_one_ad(atlas::FieldSet & hatFlds,
                                                    const atlas::FieldSet & augStateFlds) {
   oops::Log::trace()
     << "[eval_hydrostatic_pressure_levels_minus_one_ad()] starting ..." << std::endl;
-  auto gPHatView = make_view<double, 2>(hatFlds["geostrophic_pressure_levels_minus_one"]);
-  auto uPHatView = make_view<double, 2>(hatFlds["unbalanced_pressure_levels_minus_one"]);
-  auto hPHatView = make_view<double, 2>(hatFlds["hydrostatic_pressure_levels_minus_one"]);
 
   const idx_t levels = hatFlds["geostrophic_pressure_levels_minus_one"].shape(1);
-  const idx_t sizeOwned =
-        util::getSizeOwned(hatFlds["geostrophic_pressure_levels_minus_one"].functionspace());
 
   if (augStateFlds.has("interpolation_weights")) {
     // Bins Vertical regression matrix stored in one field
@@ -116,35 +122,49 @@ void eval_hydrostatic_pressure_levels_minus_one_ad(atlas::FieldSet & hatFlds,
     //     (          ...                   )
     //     (vertical regression matrix bin_m)
     // Since each matrix is square we can easily infer the bin index from the row index
+    //
     // First index of vertRegView is bin_index * number of levels + level index,
     //     the second is level index
+
     const auto vertRegView = make_view<const double, 2>(
       augStateFlds["vertical_regression_matrices"]);
-    const auto interpWeightView = make_view<const double, 2>(
-      augStateFlds["interpolation_weights"]);
+
     const idx_t nBins = augStateFlds["interpolation_weights"].shape(1);
 
-    for (idx_t jn = 0; jn < sizeOwned; ++jn) {
-      for (idx_t jl = levels - 1; jl >= 0; --jl) {
-        for (idx_t b = nBins -1; b >= 0; --b) {
-          for (idx_t jl2 = levels - 1; jl2 >= 0; --jl2) {
-            gPHatView(jn, jl2) += interpWeightView(jn, b) *
-                                  vertRegView(b * levels + jl, jl2) *
-                                  hPHatView(jn, jl);
+    using View = atlas::array::LocalView<double, 1>;
+    using ConstView = atlas::array::LocalView<const double, 1>;
+
+    util::for_each_column(
+      [=](ConstView interpWeightViewCol,
+          ConstView hPHatViewCol,
+          View gPHatViewCol) {
+        for (idx_t jl = levels - 1; jl >= 0; --jl) {
+          for (idx_t b = nBins -1; b >= 0; --b) {
+            for (idx_t jl2 = levels - 1; jl2 >= 0; --jl2) {
+               gPHatViewCol(jl2) += interpWeightViewCol(b) *
+                                    vertRegView(b * levels + jl, jl2) *
+                                    hPHatViewCol(jl);
+            }
           }
         }
-        uPHatView(jn, jl) += hPHatView(jn, jl);
-        hPHatView(jn, jl) = 0.0;
-      }
-    }
+      },
+      augStateFlds["interpolation_weights"],
+      hatFlds["hydrostatic_pressure_levels_minus_one"],
+      hatFlds["geostrophic_pressure_levels_minus_one"]);
   }
 
-  for (idx_t jn = 0; jn < sizeOwned; ++jn) {
-    for (idx_t jl = levels - 1; jl >= 0; --jl) {
-      uPHatView(jn, jl) += hPHatView(jn, jl);
-      hPHatView(jn, jl) = 0.0;
-    }
-  }
+  using View = atlas::array::LocalView<double, 1>;
+
+  // Loop over columns because fields have different numbers of levels
+  util::for_each_column(
+    [=](View uPHatViewCol, View hPHatViewCol) {
+      for (idx_t jl = levels - 1; jl >= 0; --jl) {
+        uPHatViewCol(jl) += hPHatViewCol(jl);
+        hPHatViewCol(jl) = 0.0;
+      }
+    },
+    hatFlds["unbalanced_pressure_levels_minus_one"],
+    hatFlds["hydrostatic_pressure_levels_minus_one"]);
 
   hatFlds["geostrophic_pressure_levels_minus_one"].set_dirty();
   hatFlds["unbalanced_pressure_levels_minus_one"].set_dirty();
@@ -159,22 +179,21 @@ void eval_hydrostatic_pressure_levels_minus_one_tl_inv(atlas::FieldSet & incFlds
                                                        const atlas::FieldSet & augStateFlds) {
   oops::Log::trace()
     << "[eval_hydrostatic_pressure_levels_minus_one_tl_inv()] starting ..." << std::endl;
-  const auto gPIncView =
-    make_view<const double, 2>(incFlds["geostrophic_pressure_levels_minus_one"]);
-  const auto hPIncView =
-    make_view<const double, 2>(incFlds["hydrostatic_pressure_levels_minus_one"]);
-  auto uPIncView =
-    make_view<double, 2>(incFlds["unbalanced_pressure_levels_minus_one"]);
 
   const idx_t levels = incFlds["unbalanced_pressure_levels_minus_one"].shape(1);
-  const idx_t sizeOwned =
-    util::getSizeOwned(incFlds["unbalanced_pressure_levels_minus_one"].functionspace());
 
-  for (idx_t jn = 0; jn < sizeOwned; ++jn) {
-    for (idx_t jl = 0; jl < levels; ++jl) {
-      uPIncView(jn, jl) = hPIncView(jn, jl);
-    }
-  }
+  using View = atlas::array::LocalView<double, 1>;
+  using ConstView = atlas::array::LocalView<const double, 1>;
+
+  // Loop over columns because fields have different numbers of levels
+  util::for_each_column(
+    [=](ConstView hPIncViewCol, View uPIncViewCol) {
+      for (idx_t jl = 0; jl < levels; ++jl) {
+        uPIncViewCol(jl) = hPIncViewCol(jl);
+      }
+    },
+    incFlds["hydrostatic_pressure_levels_minus_one"],
+    incFlds["unbalanced_pressure_levels_minus_one"]);
 
   if (augStateFlds.has("interpolation_weights")) {
     // Bins Vertical regression matrix stored in one field
@@ -183,26 +202,35 @@ void eval_hydrostatic_pressure_levels_minus_one_tl_inv(atlas::FieldSet & incFlds
     //     (          ...                   )
     //     (vertical regression matrix bin_m)
     // Since each matrix is square we can easily infer the bin index from the row index
+    //
     // First index of vertRegView is bin_index * number of levels + level index,
     // the second is number of levels associated with matrix column.
+    //
+    // First index of interpolation_weights is horizontal index, the second is bin index here
+
     const auto vertRegView = make_view<const double, 2>(
       augStateFlds["vertical_regression_matrices"]);
-    const auto interpWeightView = make_view<const double, 2>(
-      augStateFlds["interpolation_weights"]);
-    // First index of interpWeightView is horizontal index, the second is bin index here
+
     const idx_t nBins = augStateFlds["interpolation_weights"].shape(1);
 
-    for (idx_t jn = 0; jn < sizeOwned; ++jn) {
-      for (idx_t jl = 0; jl < levels; ++jl) {
-        for (idx_t b = 0; b < nBins; ++b) {
-          for (idx_t jl2 = 0; jl2 < levels; ++jl2) {
-            uPIncView(jn, jl) -= interpWeightView(jn, b) *
-                                 vertRegView(b * levels + jl, jl2) *
-                                 gPIncView(jn, jl2);
+    using View = atlas::array::LocalView<double, 1>;
+    using ConstView = atlas::array::LocalView<const double, 1>;
+
+    util::for_each_column(
+      [=](ConstView interpWeightViewCol, ConstView gPIncViewCol, View uPIncViewCol) {
+        for (idx_t jl = 0; jl < levels; ++jl) {
+          for (idx_t b = 0; b < nBins; ++b) {
+            for (idx_t jl2 = 0; jl2 < levels; ++jl2) {
+               uPIncViewCol(jl) -= interpWeightViewCol(b) *
+                                   vertRegView(b * levels + jl, jl2) *
+                                   gPIncViewCol(jl2);
+            }
           }
         }
-      }
-    }
+      },
+      augStateFlds["interpolation_weights"],
+      incFlds["geostrophic_pressure_levels_minus_one"],
+      incFlds["unbalanced_pressure_levels_minus_one"]);
   }
 
   incFlds["unbalanced_pressure_levels_minus_one"].set_dirty();
