@@ -991,6 +991,14 @@ end subroutine multiply
        endwhere
    endif
 
+   if (any(need=='tsen')) then
+       if (any(need=='filled-tv')) then ! when TV is available; it should not need tsen
+         where(need=='tsen')  ! gsi will take care of this
+            need='filled-'//need
+         endwhere
+       endif
+   endif
+
    if (any(need=='tv')) then
      do ii=1,ntimes
       ! from first guess ...
