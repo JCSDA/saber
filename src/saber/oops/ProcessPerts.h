@@ -142,8 +142,8 @@ template <typename MODEL> class BandParameters :
 
 /// \brief Top-level options taken by the ProcessPerts application.
 template <typename MODEL> class ProcessPertsParameters :
-  public oops::ApplicationParameters {
-  OOPS_CONCRETE_PARAMETERS(ProcessPertsParameters, oops::ApplicationParameters)
+  public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(ProcessPertsParameters, oops::Parameters)
 
  public:
   typedef BandParameters<MODEL>                          BandParameters_;

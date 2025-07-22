@@ -58,8 +58,8 @@ namespace saber {
 
 /// \brief Top-level options taken by the ErrorCovarianceToolbox application.
 template <typename MODEL> class ErrorCovarianceToolboxParameters :
-  public oops::ApplicationParameters {
-  OOPS_CONCRETE_PARAMETERS(ErrorCovarianceToolboxParameters, oops::ApplicationParameters)
+  public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(ErrorCovarianceToolboxParameters, oops::Parameters)
 
  public:
   /// Geometry parameters.
