@@ -26,6 +26,7 @@
 #include "oops/util/AtlasArrayUtil.h"
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/FieldSetOperations.h"
+#include "oops/util/for_each.h"
 #include "oops/util/missingValues.h"
 #include "oops/util/Timer.h"
 
@@ -37,10 +38,6 @@ namespace saber {
 namespace vader {
 
 namespace {
-
-using atlas::array::make_view;
-using atlas::idx_t;
-
 
 auto calcMedian(std::vector<double> x) {
   // Sort the vector
@@ -203,46 +200,58 @@ Eigen::MatrixXd createMIOCoeff(const std::string mioFileName,
 
 void eval_mio_fields_nl(const std::string & mio_path, atlas::FieldSet & augStateFlds) {
   oops::Log::trace() << "[eval_mio_fields_nl()] starting ..." << std::endl;
-  const auto rhtView = make_view<const double, 2>(augStateFlds["rht"]);
-  const auto clView = make_view<const double, 2>
-                (augStateFlds["liquid_cloud_volume_fraction_in_atmosphere_layer"]);
-  const auto cfView = make_view<const double, 2>
-                (augStateFlds["ice_cloud_volume_fraction_in_atmosphere_layer"]);
 
-  auto cleffView = make_view<double, 2>(augStateFlds["cleff"]);
-  auto cfeffView = make_view<double, 2>(augStateFlds["cfeff"]);
-
+  using View = atlas::array::LocalView<double, 1>;
+  using ConstView = atlas::array::LocalView<const double, 1>;
   const atlas::idx_t numLevels = augStateFlds["rht"].shape(1);
-  const atlas::idx_t sizeOwned = util::getSizeOwned(augStateFlds["rht"].functionspace());
 
   Eigen::MatrixXd mioCoeffCl = createMIOCoeff(mio_path, "qcl_coef");
   Eigen::MatrixXd mioCoeffCf = createMIOCoeff(mio_path, "qcf_coef");
 
-  for  (atlas::idx_t jn = 0; jn < sizeOwned; ++jn) {
-    for (int jl = 0; jl < numLevels; ++jl) {
-      if (jl < ::mo::constants::mioLevs) {
-        // Ternary false branch has std::max inside the static_cast to make sure a small negative
-        // integer does not underflow to a giant positive size_t.
-        const std::size_t ibin = (rhtView(jn, jl) > ::mo::constants::rHTLastBinLowerLimit) ?
+  // Note:
+  // - We use for_each_column so that we can explicitly loop over the column and
+  //   use the vertical index into the Eigen matrices; if more parallelism is
+  //   necessary, this could be rewritten in terms of for_each_index
+  // - We capture the Eigen matrices by reference as they are large objects; if
+  //   capture-by-value becomes required (GPU offloading, for example), then we
+  //   could wrap the Eigen matrices in an atlas::Array and capture the ArrayView
+  //   by value in the functor
+  util::for_each_column(
+      [=, &mioCoeffCl, &mioCoeffCf](ConstView rht,
+                                    ConstView cl,
+                                    ConstView cf,
+                                    View cleff,
+                                    View cfeff) {
+        for (int jl = 0; jl < numLevels; ++jl) {
+          if (jl < static_cast<int>(::mo::constants::mioLevs)) {
+            // Ternary false branch has std::max inside the static_cast to make sure a small
+            // negative integer does not underflow to a giant positive size_t.
+            const size_t ibin = (rht(jl) > ::mo::constants::rHTLastBinLowerLimit) ?
                                  ::mo::constants::mioBins - 1 :
-                                 static_cast<std::size_t>(std::max(floor(rhtView(jn, jl) /
-                                 ::mo::constants::rHTBin), 0.0));
+                                 static_cast<size_t>(std::max(
+                                       floor(rht(jl) / ::mo::constants::rHTBin), 0.0));
+            const double ceffdenom = (1.0 - cl(jl) * cf(jl));
 
-        double ceffdenom = (1.0 -  clView(jn, jl) * cfView(jn, jl) );
-        if (ceffdenom > ::mo::constants::tol) {
-          std::double_t clcf = clView(jn, jl) * cfView(jn, jl);
-          cleffView(jn, jl) = mioCoeffCl(jl, ibin) * (clView(jn, jl) - clcf) / ceffdenom;
-          cfeffView(jn, jl) = mioCoeffCf(jl, ibin) * (cfView(jn, jl) - clcf) / ceffdenom;
-        } else {
-          cleffView(jn, jl) = 0.5;
-          cfeffView(jn, jl) = 0.5;
+            if (ceffdenom > ::mo::constants::tol) {
+              const double clcf = cl(jl) * cf(jl);
+              cleff(jl) = mioCoeffCl(jl, ibin) * (cl(jl) - clcf) / ceffdenom;
+              cfeff(jl) = mioCoeffCf(jl, ibin) * (cf(jl) - clcf) / ceffdenom;
+            } else {
+              cleff(jl) = 0.5;
+              cfeff(jl) = 0.5;
+            }
+          } else {
+            cleff(jl) = 0.0;
+            cfeff(jl) = 0.0;
+          }
         }
-      } else {
-        cleffView(jn, jl) = 0.0;
-        cfeffView(jn, jl) = 0.0;
-      }
-    }
-  }
+      },
+      augStateFlds["rht"],
+      augStateFlds["liquid_cloud_volume_fraction_in_atmosphere_layer"],
+      augStateFlds["ice_cloud_volume_fraction_in_atmosphere_layer"],
+      augStateFlds["cleff"],
+      augStateFlds["cfeff"]);
+
   augStateFlds["cleff"].set_dirty();
   augStateFlds["cfeff"].set_dirty();
 
@@ -256,32 +265,32 @@ void eval_moisture_incrementing_operator_tl(atlas::FieldSet & incFlds,
                                             const atlas::FieldSet & augStateFlds) {
   oops::Log::trace() << "[eval_moisture_incrementing_operator_tl()] starting ..."
                      << std::endl;
-  auto qsatView = make_view<const double, 2>(augStateFlds["qsat"]);
-  auto dlsvpdTView = make_view<const double, 2>(augStateFlds["dlsvpdT"]);
-  auto cleffView = make_view<const double, 2>(augStateFlds["cleff"]);
-  auto cfeffView = make_view<const double, 2>(augStateFlds["cfeff"]);
-  auto qtIncView = make_view<const double, 2>(incFlds["qt"]);
-  auto temperIncView = make_view<const double, 2>(incFlds["air_temperature"]);
 
-  auto qclIncView = make_view<double, 2>
-                    (incFlds["cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water"]);
-  auto qcfIncView = make_view<double, 2>
-                    (incFlds["cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water"]);
-  auto qIncView = make_view<double, 2>(incFlds[specific_humidity_mo]);
-  const idx_t numLevels = incFlds["qt"].shape(1);
-  const idx_t sizeOwned =
-        util::getSizeOwned(incFlds["qt"].functionspace());
+  util::for_each_value(
+      [](const double qsat,
+         const double dlsvpdT,
+         const double cleff,
+         const double cfeff,
+         const double qtInc,
+         const double temperInc,
+         double & qclInc,
+         double & qcfInc,
+         double & qInc) {
+        const double maxCldInc = qtInc - qsat * dlsvpdT * temperInc;
+        qclInc = cleff * maxCldInc;
+        qcfInc = cfeff * maxCldInc;
+        qInc = qtInc - qclInc - qcfInc;
+      },
+      augStateFlds["qsat"],
+      augStateFlds["dlsvpdT"],
+      augStateFlds["cleff"],
+      augStateFlds["cfeff"],
+      incFlds["qt"],
+      incFlds["air_temperature"],
+      incFlds["cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water"],
+      incFlds["cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water"],
+      incFlds[specific_humidity_mo]);
 
-  double maxCldInc;
-  for (idx_t jn = 0; jn < sizeOwned; ++jn) {
-    for (idx_t jl = 0; jl < numLevels; ++jl) {
-      maxCldInc = qtIncView(jn, jl) - qsatView(jn, jl) *
-                  dlsvpdTView(jn, jl) * temperIncView(jn, jl);
-      qclIncView(jn, jl) = cleffView(jn, jl) * maxCldInc;
-      qcfIncView(jn, jl) = cfeffView(jn, jl) * maxCldInc;
-      qIncView(jn, jl) = qtIncView(jn, jl) - qclIncView(jn, jl) - qcfIncView(jn, jl);
-    }
-  }
   incFlds["cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water"].set_dirty();
   incFlds["cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water"].set_dirty();
   incFlds[specific_humidity_mo].set_dirty();
@@ -295,38 +304,34 @@ void eval_moisture_incrementing_operator_ad(atlas::FieldSet & hatFlds,
                              const atlas::FieldSet & augStateFlds) {
   oops::Log::trace() << "[eval_moisture_incrementing_operator_ad()] starting ..."
                      << std::endl;
-  auto qsatView = make_view<const double, 2>(augStateFlds["qsat"]);
-  auto dlsvpdTView = make_view<const double, 2>(augStateFlds["dlsvpdT"]);
-  auto cleffView = make_view<const double, 2>(augStateFlds["cleff"]);
-  auto cfeffView = make_view<const double, 2>(augStateFlds["cfeff"]);
 
-  auto temperHatView = make_view<double, 2>(hatFlds["air_temperature"]);
-  auto qtHatView = make_view<double, 2>(hatFlds["qt"]);
-  auto qHatView = make_view<double, 2>(hatFlds[specific_humidity_mo]);
-  auto qclHatView = make_view<double, 2>
-                    (hatFlds["cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water"]);
-  auto qcfHatView = make_view<double, 2>
-                    (hatFlds["cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water"]);
-  const idx_t numLevels = hatFlds["qt"].shape(1);
-  const idx_t sizeOwned =
-        util::getSizeOwned(hatFlds["qt"].functionspace());
+  util::for_each_value(
+      [](const double qsat,
+         const double dlsvpdT,
+         const double cleff,
+         const double cfeff,
+         double & temperHat,
+         double & qtHat,
+         double & qHat,
+         double & qclHat,
+         double & qcfHat) {
+        const double qsatdlsvpdT = qsat * dlsvpdT;
+        temperHat += ((cleff + cfeff) * qHat - cleff * qclHat - cfeff * qcfHat) * qsatdlsvpdT;
+        qtHat += cleff * qclHat + cfeff * qcfHat + (1.0 - cleff - cfeff) * qHat;
+        qHat = 0.0;
+        qclHat = 0.0;
+        qcfHat = 0.0;
+      },
+      augStateFlds["qsat"],
+      augStateFlds["dlsvpdT"],
+      augStateFlds["cleff"],
+      augStateFlds["cfeff"],
+      hatFlds["air_temperature"],
+      hatFlds["qt"],
+      hatFlds[specific_humidity_mo],
+      hatFlds["cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water"],
+      hatFlds["cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water"]);
 
-  double qsatdlsvpdT;
-  for (idx_t jn = 0; jn < sizeOwned; ++jn) {
-    for (idx_t jl = 0; jl < numLevels; ++jl) {
-      qsatdlsvpdT = qsatView(jn, jl) * dlsvpdTView(jn, jl);
-      temperHatView(jn, jl) += ((cleffView(jn, jl) + cfeffView(jn, jl)) * qHatView(jn, jl)
-                                - cleffView(jn, jl) * qclHatView(jn, jl)
-                                - cfeffView(jn, jl) * qcfHatView(jn, jl)) * qsatdlsvpdT;
-      qtHatView(jn, jl) += cleffView(jn, jl) * qclHatView(jn, jl)
-              + cfeffView(jn, jl) * qcfHatView(jn, jl)
-              + (1.0 - cleffView(jn, jl) - cfeffView(jn, jl))
-              * qHatView(jn, jl);
-      qHatView(jn, jl) = 0.0;
-      qclHatView(jn, jl) = 0.0;
-      qcfHatView(jn, jl) = 0.0;
-    }
-  }
   hatFlds["air_temperature"].set_dirty();
   hatFlds[specific_humidity_mo].set_dirty();
   hatFlds["qt"].set_dirty();
@@ -342,24 +347,18 @@ void eval_total_water_tl(atlas::FieldSet & incFlds,
                          const atlas::FieldSet & augStateFlds) {
   oops::Log::trace() << "[eval_total_water_tl()] starting ..." << std::endl;
 
-  auto qIncView = make_view<const double, 2>(incFlds[specific_humidity_mo]);
-  auto qclIncView = make_view<const double, 2>
-                    (incFlds["cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water"]);
-  auto qcfIncView = make_view<const double, 2>
-                      (incFlds["cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water"]);
+  util::for_each_value(
+      [](const double qInc,
+         const double qclInc,
+         const double qcfInc,
+         double & qtInc) {
+        qtInc = qInc + qclInc + qcfInc;
+      },
+      incFlds[specific_humidity_mo],
+      incFlds["cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water"],
+      incFlds["cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water"],
+      incFlds["qt"]);
 
-  auto qtIncView = make_view<double, 2>(incFlds["qt"]);
-  const idx_t numLevels = incFlds["qt"].shape(1);
-  const idx_t sizeOwned =
-        util::getSizeOwned(incFlds["qt"].functionspace());
-
-  for (idx_t jnode = 0; jnode < sizeOwned; jnode++) {
-    for (idx_t jlev = 0; jlev < numLevels; jlev++) {
-      qtIncView(jnode, jlev) = qIncView(jnode, jlev)
-                             + qclIncView(jnode, jlev)
-                             + qcfIncView(jnode, jlev);
-    }
-  }
   incFlds["qt"].set_dirty();
 
   oops::Log::trace() << "[eval_total_water_tl()] ... done" << std::endl;
