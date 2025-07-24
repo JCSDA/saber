@@ -20,6 +20,7 @@
 #include "mo/constants.h"
 
 #include "oops/base/Variables.h"
+#include "oops/util/for_each.h"
 #include "oops/util/Timer.h"
 
 #include "saber/blocks/SaberOuterBlockBase.h"
@@ -27,6 +28,9 @@
 
 using atlas::array::make_view;
 using atlas::idx_t;
+
+using View = atlas::array::LocalView<double, 1>;
+using ConstView = atlas::array::LocalView<const double, 1>;
 
 namespace saber {
 namespace vader {
@@ -72,39 +76,38 @@ void Hpm1ToHexnerExnerm1::multiply(oops::FieldSet3D & fset) const {
   allocateMissingFields(fset, activeOuterVars_, activeOuterVars_,
                         innerGeometryData_.functionSpace());
 
-  // State fields
-  auto exnerView =
-    make_view<const double, 2>(xb_.fieldSet()["dimensionless_exner_function_levels_minus_one"]);
-  auto hexnerView = make_view<const double, 2>(xb_.fieldSet()["hydrostatic_exner_levels"]);
-  auto hpView = make_view<const double, 2>(xb_.fieldSet()["hydrostatic_pressure_levels"]);
-  auto pView = make_view<const double, 2>(xb_.fieldSet()["air_pressure_levels"]);
+  // State fields:
+  // - dimensionless_exner_function_levels_minus_one
+  // - hydrostatic_exner_levels
+  // - hydrostatic_pressure_levels
+  // - air_pressure_levels
+  // Input increments:
+  // - hydrostatic_pressure_levels_minus_one
+  // Populate output fields:
+  // - hydrostatic_exner_levels
+  // - dimensionless_exner_function_levels_minus_one
 
-  // Input increments
-  const auto hpIncView = atlas::array::make_view<const double, 2>(
-    fset["hydrostatic_pressure_levels_minus_one"]);
-
-  // Populate output fields.
-  auto hExnerIncView = atlas::array::make_view<double, 2>(
-    fset["hydrostatic_exner_levels"]);
-  auto exnerIncView = atlas::array::make_view<double, 2>(
-    fset["dimensionless_exner_function_levels_minus_one"]);
-
-  const atlas::idx_t sizeOwned =
-    util::getSizeOwned(fset["hydrostatic_pressure_levels_minus_one"].functionspace());
   const atlas::idx_t lvls =
     fset["hydrostatic_pressure_levels_minus_one"].shape(1);
 
-  for (atlas::idx_t jn = 0; jn < sizeOwned; ++jn) {
-    for (atlas::idx_t jl = 0; jl < lvls; ++jl) {
-      hExnerIncView(jn, jl) = hpIncView(jn, jl) *
-        (mo::constants::rd_over_cp * hexnerView(jn, jl)) / hpView(jn, jl);
-      exnerIncView(jn, jl) = hpIncView(jn, jl) *
-        (mo::constants::rd_over_cp * exnerView(jn, jl)) / pView(jn, jl);
-    }
-    hExnerIncView(jn, lvls) = hpIncView(jn, lvls-1) *
-      std::pow(pView(jn, lvls-1)/pView(jn, lvls), mo::constants::rd_over_cp - 1.0) *
-      (mo::constants::rd_over_cp * hexnerView(jn, lvls)) / hpView(jn, lvls);
-  }
+  util::for_each_column(
+    [=] (ConstView hexner, ConstView exner, ConstView hp, ConstView p,
+         View hExnerInc, View exnerInc, ConstView hpInc) {
+      for (atlas::idx_t jl = 0; jl < lvls; ++jl) {
+        hExnerInc(jl) = hpInc(jl) * (mo::constants::rd_over_cp * hexner(jl)) / hp(jl);
+        exnerInc(jl) = hpInc(jl) * (mo::constants::rd_over_cp * exner(jl)) / p(jl);
+      }
+      hExnerInc(lvls) = hpInc(lvls-1) *
+        std::pow(p(lvls-1)/p(lvls), mo::constants::rd_over_cp - 1.0) *
+        (mo::constants::rd_over_cp * hexner(lvls)) / hp(lvls);
+    },
+    xb_.fieldSet()["hydrostatic_exner_levels"],
+    xb_.fieldSet()["dimensionless_exner_function_levels_minus_one"],
+    xb_.fieldSet()["hydrostatic_pressure_levels"],
+    xb_.fieldSet()["air_pressure_levels"],
+    fset["hydrostatic_exner_levels"],
+    fset["dimensionless_exner_function_levels_minus_one"],
+    fset["hydrostatic_pressure_levels_minus_one"]);
 
   fset["dimensionless_exner_function_levels_minus_one"].set_dirty();
   fset["hydrostatic_exner_levels"].set_dirty();
@@ -123,43 +126,46 @@ void Hpm1ToHexnerExnerm1::multiplyAD(oops::FieldSet3D & fset) const {
   allocateMissingFields(fset, innerOnlyVars_, innerOnlyVars_,
                         innerGeometryData_.functionSpace());
 
-  // State fields
-  auto exnerView =
-    make_view<const double, 2>(xb_.fieldSet()["dimensionless_exner_function_levels_minus_one"]);
-  auto hexnerView = make_view<const double, 2>(xb_.fieldSet()["hydrostatic_exner_levels"]);
-  auto hpView = make_view<const double, 2>(xb_.fieldSet()["hydrostatic_pressure_levels"]);
-  auto pView = make_view<const double, 2>(xb_.fieldSet()["air_pressure_levels"]);
+  // State fields:
+  // - dimensionless_exner_function_levels_minus_one
+  // - hydrostatic_exner_levels
+  // - hydrostatic_pressure_levels
+  // - air_pressure_levels
+  // Input increments:
+  // - hydrostatic_pressure_levels_minus_one
+  // Populate output fields:
+  // - hydrostatic_exner_levels
+  // - dimensionless_exner_function_levels_minus_one
 
-  // Input increments
-  auto hpIncView = atlas::array::make_view<double, 2>(
-    fset["hydrostatic_pressure_levels_minus_one"]);
-
-  // Populate output fields.
-  auto hExnerIncView = atlas::array::make_view<double, 2>(
-    fset["hydrostatic_exner_levels"]);
-  auto exnerIncView = atlas::array::make_view<double, 2>(
-    fset["dimensionless_exner_function_levels_minus_one"]);
-
-  const atlas::idx_t sizeOwned =
-    util::getSizeOwned(fset["hydrostatic_pressure_levels_minus_one"].functionspace());
   const atlas::idx_t lvls =
     fset["hydrostatic_pressure_levels_minus_one"].shape(1);
 
-  for (atlas::idx_t jn = 0; jn < sizeOwned; ++jn) {
-    hpIncView(jn, lvls-1) += hExnerIncView(jn, lvls) *
-      std::pow(pView(jn, lvls-1)/pView(jn, lvls), mo::constants::rd_over_cp - 1.0) *
-      (mo::constants::rd_over_cp * hexnerView(jn, lvls)) / hpView(jn, lvls);
-    hExnerIncView(jn, lvls) = 0.0;
+  util::for_each_column(
+    [=] (ConstView hexner, ConstView exner, ConstView hp, ConstView p,
+         View hExnerInc, View exnerInc, View hpInc) {
+      hpInc(lvls-1) += hExnerInc(lvls) *
+        std::pow(p(lvls-1)/p(lvls), mo::constants::rd_over_cp - 1.0) *
+        (mo::constants::rd_over_cp * hexner(lvls)) / hp(lvls);
 
-    for (atlas::idx_t jl = 0; jl < lvls; ++jl) {
-      hpIncView(jn, jl) += hExnerIncView(jn, jl) *
-        (mo::constants::rd_over_cp * hexnerView(jn, jl)) / hpView(jn, jl);
-      hpIncView(jn, jl) += exnerIncView(jn, jl) *
-        (mo::constants::rd_over_cp * exnerView(jn, jl)) / pView(jn, jl);
-      hExnerIncView(jn, jl) = 0.0;
-      exnerIncView(jn, jl) = 0.0;
-    }
-  }
+      hExnerInc(lvls) = 0.0;
+
+      for (atlas::idx_t jl = 0; jl < lvls; ++jl) {
+        hpInc(jl) += hExnerInc(jl) *
+          (mo::constants::rd_over_cp * hexner(jl)) / hp(jl);
+        hpInc(jl) += exnerInc(jl) *
+          (mo::constants::rd_over_cp * exner(jl)) / p(jl);
+        hExnerInc(jl) = 0.0;
+        exnerInc(jl) = 0.0;
+      }
+    },
+    xb_.fieldSet()["hydrostatic_exner_levels"],
+    xb_.fieldSet()["dimensionless_exner_function_levels_minus_one"],
+    xb_.fieldSet()["hydrostatic_pressure_levels"],
+    xb_.fieldSet()["air_pressure_levels"],
+    fset["hydrostatic_exner_levels"],
+    fset["dimensionless_exner_function_levels_minus_one"],
+    fset["hydrostatic_pressure_levels_minus_one"]);
+
 
   fset["dimensionless_exner_function_levels_minus_one"].set_dirty();
   fset["hydrostatic_exner_levels"].set_dirty();
@@ -177,29 +183,28 @@ void Hpm1ToHexnerExnerm1::leftInverseMultiply(oops::FieldSet3D & fset) const {
   allocateMissingFields(fset, innerOnlyVars_, innerOnlyVars_,
                         innerGeometryData_.functionSpace());
 
-  // State fields
-  auto hexnerView = make_view<const double, 2>(xb_.fieldSet()["hydrostatic_exner_levels"]);
-  auto hpView = make_view<const double, 2>(xb_.fieldSet()["hydrostatic_pressure_levels"]);
+  // State fields:
+  // - hydrostatic_exner_levels
+  // - hydrostatic_pressure_levels
+  // Input increments:
+  // - hydrostatic_exner_levels
+  // Populate output fields:
+  // - hydrostatic_pressure_levels_minus_one
 
-  // Input increments
-  auto hExnerIncView = atlas::array::make_view<const double, 2>(
-    fset["hydrostatic_exner_levels"]);
-
-  // Populate output fields.
-  auto hpIncView = atlas::array::make_view<double, 2>(
-    fset["hydrostatic_pressure_levels_minus_one"]);
-
-  const atlas::idx_t sizeOwned =
-    util::getSizeOwned(fset["hydrostatic_pressure_levels_minus_one"].functionspace());
   const atlas::idx_t lvls =
     fset["hydrostatic_pressure_levels_minus_one"].shape(1);
 
-  for (atlas::idx_t jn = 0; jn < sizeOwned; ++jn) {
-    for (atlas::idx_t jl = 0; jl < lvls; ++jl) {
-      hpIncView(jn, jl) = hExnerIncView(jn, jl) / (
-        (mo::constants::rd_over_cp * hexnerView(jn, jl)) / hpView(jn, jl));
-    }
-  }
+  util::for_each_column(
+    [=] (ConstView hexner, ConstView hp, ConstView hExnerInc, View hpInc) {
+      for (atlas::idx_t jl = 0; jl < lvls; ++jl) {
+        hpInc(jl) = hExnerInc(jl) / ((mo::constants::rd_over_cp * hexner(jl)) / hp(jl));
+      }
+    },
+    xb_.fieldSet()["hydrostatic_exner_levels"],
+    xb_.fieldSet()["hydrostatic_pressure_levels"],
+    fset["hydrostatic_exner_levels"],
+    fset["hydrostatic_pressure_levels_minus_one"]);
+
   fset["hydrostatic_pressure_levels_minus_one"].set_dirty();
 
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
