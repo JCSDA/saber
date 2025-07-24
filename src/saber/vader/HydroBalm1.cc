@@ -19,6 +19,7 @@
 
 #include "oops/base/FieldSet3D.h"
 #include "oops/base/Variables.h"
+#include "oops/util/for_each.h"
 #include "oops/util/FunctionSpaceHelpers.h"
 #include "oops/util/Logger.h"
 #include "oops/util/Timer.h"
@@ -36,26 +37,29 @@ namespace {
 using atlas::array::make_view;
 using atlas::idx_t;
 
+using View = atlas::array::LocalView<double, 1>;
+using ConstView = atlas::array::LocalView<const double, 1>;
+
 void eval_hydrobalm1_virtual_potential_temperature_tl(atlas::FieldSet & incFlds,
                                                       const atlas::FieldSet & augStateFlds) {
   oops::Log::trace() <<
     "[eval_hydrobalm1_virtual_potential_temperature_tl()] starting ..." << std::endl;
-  auto hlView = make_view<const double, 2>(augStateFlds["height_above_mean_sea_level_levels"]);
-  auto thetavView = make_view<const double, 2>(augStateFlds["virtual_potential_temperature"]);
-  auto hexnerIncView = make_view<const double, 2>(incFlds["hydrostatic_exner_levels"]);
-  auto thetavIncView = make_view<double, 2>(incFlds["virtual_potential_temperature"]);
 
   const idx_t n_levels = incFlds["virtual_potential_temperature"].shape(1);
-  const idx_t sizeOwned =
-    util::getSizeOwned(incFlds["virtual_potential_temperature"].functionspace());
-  for (idx_t ih = 0; ih < sizeOwned; ++ih) {
-    for (idx_t ilev = 0; ilev < n_levels; ++ilev) {
-      thetavIncView(ih, ilev) =
-        (hexnerIncView(ih, ilev+1) - hexnerIncView(ih, ilev)) *
-        (::mo::constants::cp * thetavView(ih, ilev) * thetavView(ih, ilev)) /
-        (::mo::constants::grav * (hlView(ih, ilev+1) - hlView(ih, ilev)));
-    }
-  }
+  util::for_each_column(
+    [=](ConstView thetav, ConstView hl, ConstView hexnerInc, View thetavInc) {
+      for (idx_t ilev = 0; ilev < n_levels; ++ilev) {
+        thetavInc(ilev) =
+          (hexnerInc(ilev+1) - hexnerInc(ilev)) *
+          (::mo::constants::cp * thetav(ilev) * thetav(ilev)) /
+          (::mo::constants::grav * (hl(ilev+1) - hl(ilev)));
+      }
+    },
+    augStateFlds["virtual_potential_temperature"],
+    augStateFlds["height_above_mean_sea_level_levels"],
+    incFlds["hydrostatic_exner_levels"],
+    incFlds["virtual_potential_temperature"]);
+
   incFlds["virtual_potential_temperature"].set_dirty();
   oops::Log::trace()
     << "[eval_hydrobalm1_virtual_potential_temperature_tl()] ... done" << std::endl;
@@ -66,26 +70,25 @@ void eval_hydrobalm1_virtual_potential_temperature_ad(atlas::FieldSet & hatFlds,
   oops::Log::trace() <<
     "[eval_hydrobalm1_virtual_potential_temperature_ad] starting ..." << std::endl;
 
-  auto hlView = make_view<const double, 2>(augStateFlds["height_above_mean_sea_level_levels"]);
-  auto thetavView = make_view<const double, 2>(augStateFlds["virtual_potential_temperature"]);
-  auto thetavHatView = make_view<double, 2>(hatFlds["virtual_potential_temperature"]);
-  auto hexnerHatView = make_view<double, 2>(hatFlds["hydrostatic_exner_levels"]);
-
   const idx_t tlev = hatFlds["virtual_potential_temperature"].shape(1);
-  const idx_t sizeOwned =
-        util::getSizeOwned(hatFlds["virtual_potential_temperature"].functionspace());
 
-  atlas_omp_parallel_for(idx_t ih = 0; ih < sizeOwned; ++ih) {
-    for (idx_t ilev = tlev-1; ilev > -1; --ilev) {
-      hexnerHatView(ih, ilev+1) += thetavHatView(ih, ilev) *
-        (::mo::constants::cp * thetavView(ih, ilev) * thetavView(ih, ilev)) /
-        (::mo::constants::grav * (hlView(ih, ilev+1) - hlView(ih, ilev)) );
-      hexnerHatView(ih, ilev) -= thetavHatView(ih, ilev) *
-        (::mo::constants::cp * thetavView(ih, ilev) * thetavView(ih, ilev)) /
-        (::mo::constants::grav * (hlView(ih, ilev+1) - hlView(ih, ilev)));
-      thetavHatView(ih, ilev) = 0.0;
-    }
-  }
+  util::for_each_column(
+    [=](ConstView thetav, ConstView hl, View hexnerHat, View thetavHat) {
+      for (idx_t ilev = tlev-1; ilev > -1; --ilev) {
+        hexnerHat(ilev+1) += thetavHat(ilev) *
+          (::mo::constants::cp * thetav(ilev) * thetav(ilev)) /
+          (::mo::constants::grav * (hl(ilev+1) - hl(ilev)) );
+        hexnerHat(ilev) -= thetavHat(ilev) *
+          (::mo::constants::cp * thetav(ilev) * thetav(ilev)) /
+          (::mo::constants::grav * (hl(ilev+1) - hl(ilev)));
+        thetavHat(ilev) = 0.0;
+      }
+    },
+    augStateFlds["virtual_potential_temperature"],
+    augStateFlds["height_above_mean_sea_level_levels"],
+    hatFlds["hydrostatic_exner_levels"],
+    hatFlds["virtual_potential_temperature"]);
+
   hatFlds["hydrostatic_exner_levels"].set_dirty();
   hatFlds["virtual_potential_temperature"].set_dirty();
 
@@ -96,26 +99,24 @@ void eval_hydrobalm1_hydrostatic_exner_levels_tl(atlas::FieldSet & incFlds,
                                                  const atlas::FieldSet & augStateFlds) {
   oops::Log::trace() << "[eval_hydrobalm1_hydrostatic_exner_levels_tl()] ... starting" << std::endl;
 
-  auto hlView = make_view<const double, 2>(augStateFlds["height_above_mean_sea_level_levels"]);
-  auto thetavView = make_view<const double, 2>(augStateFlds["virtual_potential_temperature"]);
-  auto thetavIncView = make_view<const double, 2>(incFlds["virtual_potential_temperature"]);
-  auto exnerIncView = make_view<const double, 2>(
-    incFlds["dimensionless_exner_function_levels_minus_one"]);
-  auto hexnerIncView = make_view<double, 2>(incFlds["hydrostatic_exner_levels"]);
-
   const idx_t n_levels = incFlds["dimensionless_exner_function_levels_minus_one"].shape(1);
-  const idx_t sizeOwned =
-    util::getSizeOwned(incFlds["dimensionless_exner_function_levels_minus_one"].functionspace());
 
-  for (idx_t ih = 0; ih < sizeOwned; ++ih) {
-    hexnerIncView(ih, 0) = exnerIncView(ih, 0);
-    for (idx_t ilev = 0; ilev < n_levels; ++ilev) {
-      hexnerIncView(ih, ilev+1) = hexnerIncView(ih, ilev) +
-        ((::mo::constants::grav * thetavIncView(ih, ilev) *
-          (hlView(ih, ilev+1) - hlView(ih, ilev))) /
-         (::mo::constants::cp * thetavView(ih, ilev) * thetavView(ih, ilev)));
-    }
-  }
+  util::for_each_column(
+    [=](ConstView thetav, ConstView hl, ConstView exnerInc, ConstView thetavInc, View hexnerInc) {
+      hexnerInc(0) = exnerInc(0);
+      for (idx_t ilev = 0; ilev < n_levels; ++ilev) {
+        hexnerInc(ilev+1) = hexnerInc(ilev) +
+          ((::mo::constants::grav * thetavInc(ilev) *
+            (hl(ilev+1) - hl(ilev))) /
+           (::mo::constants::cp * thetav(ilev) * thetav(ilev)));
+      }
+    },
+    augStateFlds["virtual_potential_temperature"],
+    augStateFlds["height_above_mean_sea_level_levels"],
+    incFlds["dimensionless_exner_function_levels_minus_one"],
+    incFlds["virtual_potential_temperature"],
+    incFlds["hydrostatic_exner_levels"]);
+
   incFlds["hydrostatic_exner_levels"].set_dirty();
   oops::Log::trace() << "[eval_hydrobalm1_hydrostatic_exner_levels_tl()] ... done" << std::endl;
 }
