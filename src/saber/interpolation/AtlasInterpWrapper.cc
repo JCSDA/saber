@@ -18,6 +18,7 @@
 #include "atlas/meshgenerator.h"
 
 #include "oops/util/FieldSetHelpers.h"
+#include "oops/util/for_each.h"
 
 #include "eckit/exception/Exceptions.h"
 // -----------------------------------------------------------------------------
@@ -136,15 +137,12 @@ void AtlasInterpWrapper::execute(const atlas::FieldSet & srcFieldSet,
                                  atlas::option::name(srcField.name()) |
                                  atlas::option::levels(srcField.shape(1)));
 
-    tmpSrcFieldSet.add(srcTmpField);
+    util::for_each_value([](const double rhs, double & lhs) { lhs = rhs; },
+                         srcField,
+                         srcTmpField);
+    srcTmpField.set_dirty();
 
-    const auto srcView = atlas::array::make_view<double, 2>(srcField);
-    auto srcTmpView = atlas::array::make_view<double, 2>(srcTmpField);
-    for (atlas::idx_t t = 0; t < srcField.shape(0); ++t) {
-      for (atlas::idx_t k = 0; k < srcField.shape(1); ++k) {
-        srcTmpView(t, k) = srcView(t, k);
-        }
-      }
+    tmpSrcFieldSet.add(srcTmpField);
 
     variableSizes.push_back(srcField.levels());
   }
@@ -180,15 +178,13 @@ void AtlasInterpWrapper::executeAdjoint(atlas::FieldSet & srcFieldSet,
         dstField.functionspace().createField<double>(
                                    atlas::option::name(dstField.name()) |
                                    atlas::option::levels(dstField.shape(1)));
-      tmpDstFieldSet.add(tmpDstField);
 
-      const auto dstView = atlas::array::make_view<double, 2>(dstField);
-      auto dstTmpView = atlas::array::make_view<double, 2>(tmpDstField);
-      for (atlas::idx_t t = 0; t < dstField.shape(0); ++t) {
-        for (atlas::idx_t k = 0; k < dstField.shape(1); ++k) {
-          dstTmpView(t, k) = dstView(t, k);
-          }
-        }
+      util::for_each_value([](const double rhs, double & lhs) { lhs = rhs; },
+                           dstField,
+                           tmpDstField);
+      tmpDstField.set_dirty();
+
+      tmpDstFieldSet.add(tmpDstField);
 
       variableSizes.push_back(dstField.levels());
 

@@ -17,7 +17,6 @@
 
 #include "atlas/array.h"
 #include "atlas/field.h"
-#include "atlas/field/for_each.h"
 #include "atlas/functionspace.h"
 #include "atlas/util/CoordinateEnums.h"
 
@@ -29,6 +28,7 @@
 #include "oops/base/Variables.h"
 #include "oops/util/AtlasArrayUtil.h"
 #include "oops/util/FieldSetHelpers.h"
+#include "oops/util/for_each.h"
 
 #include "saber/interpolation/AtlasInterpWrapper.h"
 #include "saber/interpolation/Rescaling.h"
@@ -307,15 +307,16 @@ computeRescalingCoeffs(
                     atlas::option::levels(levels) |
                     atlas::option::name(var.name()) |
                     atlas::option::halo(0));
-      atlas::field::for_each_value(targetVarField,
-                                   actualVarField,
-                                   field,
-                                   [&](const double target,
-                                       const double actual,
-                                       double & v){
-               const double multTarget = alpha * target + (1 - alpha) * actual;
-               v = std::sqrt(multTarget / actual);
-                                   });
+      util::for_each_value(
+        [=](const double target,
+            const double actual,
+            double & v) {
+          const double multTarget = alpha * target + (1 - alpha) * actual;
+          v = std::sqrt(multTarget / actual);
+        },
+        targetVarField,
+        actualVarField,
+        field);
       multFset.add(field);
     }
 
@@ -325,15 +326,16 @@ computeRescalingCoeffs(
                     atlas::option::levels(levels) |
                     atlas::option::name(var.name()) |
                     atlas::option::halo(0));
-      atlas::field::for_each_value(targetVarField,
-                                   actualVarField,
-                                   field,
-                                   [&](const double target,
-                                       const double actual,
-                                       double & v){
-               const double multTarget = alpha * target + (1 - alpha) * actual;
-               v = std::sqrt(target - multTarget);
-                                   });
+      util::for_each_value(
+        [=](const double target,
+            const double actual,
+            double & v) {
+          const double multTarget = alpha * target + (1 - alpha) * actual;
+          v = std::sqrt(target - multTarget);
+        },
+        targetVarField,
+        actualVarField,
+        field);
       addFset.add(field);
     }
 
@@ -484,13 +486,11 @@ Rescaling::Rescaling(const eckit::mpi::Comm & comm,
 
 void Rescaling::execute(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::execute starting" << std::endl;
-  for (const auto & wField : multiplicativeRescalingCoeffs_) {
-    const auto & field = fieldSet.fieldSet()[wField.name()];
-    const auto & ghost = field.functionspace().ghost();
-    atlas::field::for_each_value_masked(ghost,
-                                        wField,
-                                        field,
-                                        [&](const double w, double & v){v *= w;});
+  for (const auto & weightField : multiplicativeRescalingCoeffs_) {
+    auto & field = fieldSet.fieldSet()[weightField.name()];
+    util::for_each_value([](const double weight, double & value) { value *= weight; },
+                         weightField,
+                         field);
     field.set_dirty();
   }
   oops::Log::trace() << classname() << "::execute done" << std::endl;
