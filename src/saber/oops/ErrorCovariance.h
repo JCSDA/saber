@@ -115,6 +115,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
     myComponent_(-1)
 {
   oops::Log::trace() << "ErrorCovariance::ErrorCovariance starting" << std::endl;
+  util::Timer timer(classname(), "ErrorCovariance");
   ErrorCovarianceParameters<MODEL> params;
   params.deserialize(config);
 
