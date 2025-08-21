@@ -36,6 +36,7 @@
 
 #include "oops/base/FieldSet3D.h"
 #include "oops/base/Variables.h"
+#include "oops/util/for_each.h"
 #include "oops/util/FunctionSpaceHelpers.h"
 #include "oops/util/Logger.h"
 #include "oops/util/Timer.h"
@@ -96,15 +97,14 @@ void populateRHSVec(const atlas::Field & rhoState,
   auto coriolisView = atlas::array::make_view<const double, 2>(coriolis);
   auto rhsvecView = atlas::array::make_view<double, 3>(rhsvec);
 
-  const atlas::idx_t sizeOwned = util::getSizeOwned(rhoState.functionspace());
-  for (atlas::idx_t jn = 0; jn < sizeOwned; ++jn) {
-    for (atlas::idx_t jl = 0; jl < rhsvecView.shape()[1]; ++jl) {
+  util::for_each_index(
+    util::make_index_space_2d(util::IndexRange::exclude_halo, rhoState),
+    [=](const atlas::idx_t jn, const atlas::idx_t jl) mutable {
       rhsvecView(jn, jl, atlas::LON) =
         - coriolisView(jn, 0) * rhoStateView(jn, jl) * vView(jn, jl);
       rhsvecView(jn, jl, atlas::LAT) =
         coriolisView(jn, 0) * rhoStateView(jn, jl) * uView(jn, jl);
-    }
-  }
+    });
   rhsvec.set_dirty();
 }
 
@@ -120,17 +120,16 @@ void populateRHSVecAdj(const atlas::Field & rhoState,
   auto coriolisView = atlas::array::make_view<const double, 2>(coriolis);
   auto rhsvecView = atlas::array::make_view<double, 3>(rhsvec);
 
-  const atlas::idx_t sizeOwned = util::getSizeOwned(rhoState.functionspace());
-  for (atlas::idx_t jn = 0; jn < sizeOwned; ++jn) {
-    for (atlas::idx_t jl = 0; jl < rhsvecView.shape()[1]; ++jl) {
+  util::for_each_index(
+    util::make_index_space_2d(util::IndexRange::exclude_halo, rhoState),
+    [=](const atlas::idx_t jn, const atlas::idx_t jl) mutable {
       vView(jn, jl) += - coriolisView(jn, 0) * rhoStateView(jn, jl)
                        * rhsvecView(jn, jl, atlas::LON);
       uView(jn, jl) += coriolisView(jn, 0) * rhoStateView(jn, jl)
                        * rhsvecView(jn, jl, atlas::LAT);
       rhsvecView(jn, jl, atlas::LON) = 0.0;
       rhsvecView(jn, jl, atlas::LAT) = 0.0;
-    }
-  }
+    });
   rhsvec.set_dirty();
   fset["eastward_wind"].set_dirty();
   fset["northward_wind"].set_dirty();
@@ -315,10 +314,10 @@ atlas::Field createCoriolis(const atlas::Field & scstate) {
 
   auto coriolisView = atlas::array::make_view<double, 2>(coriolis);
   auto sc = atlas::functionspace::StructuredColumns(scstate.functionspace());
-  atlas::idx_t jn(0);
-  for (atlas::idx_t j = sc.j_begin(); j < sc.j_end(); ++j) {
+
+  atlas_omp_parallel_for(atlas::idx_t j = sc.j_begin(); j < sc.j_end(); ++j) {
     for (atlas::idx_t i = sc.i_begin(j); i < sc.i_end(j); ++i) {
-      jn = sc.index(i, j);
+      auto jn = sc.index(i, j);
       coriolisView(jn, 0) = twoOmega * sin(atlas::util::Constants::degreesToRadians() *
                                            sc.grid().lonlat(i, j).lat());
     }
@@ -424,9 +423,6 @@ void applyRecipNtimesNplus1SpectralScaling(const oops::Variables & innerNames,
                                            const atlas::functionspace::Spectral & specFS,
                                            const atlas::idx_t & totalWavenumber,
                                            atlas::FieldSet & fSet) {
-  const auto zonal_wavenumbers = specFS.zonal_wavenumbers();
-  const int nb_zonal_wavenumbers = zonal_wavenumbers.size();
-
   // copy fields that are not associated with innerNames
   atlas::FieldSet fsetTemp;
   for (atlas::Field & f : fSet) {
@@ -438,25 +434,23 @@ void applyRecipNtimesNplus1SpectralScaling(const oops::Variables & innerNames,
   atlas::FieldSet fsetScaled;
   for (std::size_t var = 0; var < innerNames.size(); ++var) {
     atlas::Field scaledFld = fSet[innerNames[var].name()];
+    const auto levels = scaledFld.shape(1);
     auto fldView = atlas::array::make_view<double, 2>(scaledFld);
 
     double earthRadius = atlas::util::Earth::radius();  // radius of earth;
     const double squaredEarthRadius = earthRadius * earthRadius;
-    int i(0);
-    for (int jm = 0; jm < nb_zonal_wavenumbers; ++jm) {
-      const int m1 = zonal_wavenumbers(jm);
-      for (std::size_t n1 = m1; n1 <= static_cast<std::size_t>(totalWavenumber); ++n1) {
-        for (std::size_t img = 0; img < 2; ++img, ++i) {
-          for (atlas::idx_t jl = 0; jl < fSet[innerNames[var].name()].shape(1); ++jl) {
-            if (n1 != 0) {
-              fldView(i, jl) *= squaredEarthRadius / (n1 * (n1 + 1));
-            } else {
-              fldView(i, jl) = 0.0;
-            }
+    util::for_each_index(
+      util::make_index_space_spectral_1d(scaledFld),
+      [=] (atlas::idx_t i, atlas::idx_t n1, atlas::idx_t m1) mutable {
+        for (atlas::idx_t jl = 0; jl < levels; ++jl) {
+          if (n1 != 0) {
+            fldView(i, jl) *= squaredEarthRadius / (n1 * (n1 + 1));
+          } else {
+            fldView(i, jl) = 0.0;
           }
         }
-      }
-    }
+      });
+
     scaledFld.rename(outerNames[var].name());
     fsetScaled.add(scaledFld);
   }
