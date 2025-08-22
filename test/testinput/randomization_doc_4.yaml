@@ -37,7 +37,7 @@ background error:
   - saber block name: StdDev
     read:
       model file:
-        filepath: testdata/convertstate_doc_1/_MPI_-_OMP__rhc_pert
+        filepath: testdata/convertstate_doc_1/rhc_pert
   randomization size: 3
 output states:
   filepath: testdata/randomization_doc_4/_MPI_-_OMP__rhc

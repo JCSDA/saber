@@ -42,7 +42,7 @@ background error:
           filepath: testdata/randomization_doc_4/_MPI_-_OMP__rhc_000003
       - parameter: rv
         file:
-          filepath: testdata/convertstate_doc_1/_MPI_-_OMP__rv
+          filepath: testdata/convertstate_doc_1/rv
       output model files:
       - parameter: dirac_nicas
         file:

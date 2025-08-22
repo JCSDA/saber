@@ -11,7 +11,7 @@ background:
   date: 2010-01-01T12:00:00Z
   state variables:
   - air_horizontal_streamfunction
-  filepath: testdata/convertstate_doc_1/_MPI_-_OMP__rh1_avg
+  filepath: testdata/convertstate_doc_1/rh1_avg
 background error:
   covariance model: SABER
   saber central block:
@@ -38,7 +38,7 @@ background error:
   - saber block name: StdDev
     read:
       model file:
-        filepath: testdata/convertstate_doc_1/_MPI_-_OMP__rh1_pert
+        filepath: testdata/convertstate_doc_1/rh1_pert
   randomization size: 1
 output states:
   filepath: testdata/randomization_doc_2/_MPI_-_OMP__rh1
