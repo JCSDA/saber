@@ -27,12 +27,80 @@
 #include "oops/base/Variables.h"
 #include "oops/mpi/mpi.h"
 #include "oops/util/AtlasArrayUtil.h"
+#include "oops/util/for_each.h"
 #include "oops/util/Logger.h"
 
 #include "saber/spectralb/spectralb_covstats_interface.h"
 #include "saber/spectralb/spectralbParameters.h"
 
 #define ERR(e) {throw eckit::Exception(nc_strerror(e), Here());}
+
+namespace {
+atlas::array::ArrayT<double> setupInplaceGEMVBuffer(
+  const oops::Variables & activeVars,
+  const atlas::FieldSet & fieldSet,
+  util::ExecutionPattern pattern = util::details::getDefaultForEachExecutionPattern()) {
+  atlas::idx_t max_levels = fieldSet[activeVars[0].name()].shape(1);
+  for (const auto & var : activeVars) {
+    atlas::idx_t levels = fieldSet[var.name()].shape(1);
+    if (levels > max_levels) {
+      max_levels = levels;
+    }
+  }
+  if (pattern == util::ExecutionPattern::parallel) {
+    return atlas::array::ArrayT<double>(
+      static_cast<atlas::idx_t>(atlas_omp_get_max_threads()), max_levels);
+  } else {
+    return atlas::array::ArrayT<double>(1, {max_levels});
+  }
+}
+
+// x = alpha * A * x
+void inplaceGEMV(
+  double alpha,
+  atlas::array::LocalView<const double, 2> A,
+  atlas::array::LocalView<double, 1> x,
+  atlas::array::ArrayView<double, 2> buffer
+) {
+  assert(A.shape(1) == A.shape(0));
+  assert(A.shape(1) == x.shape(0));
+  auto levels = A.shape(0);
+  auto y = buffer.slice(
+    atlas_omp_get_thread_num(), atlas::array::Range(0, levels));
+  for (atlas::idx_t r = 0; r < levels; ++r) {
+    y(r) = 0;
+    for (atlas::idx_t c = 0; c < levels; ++c) {
+      y(r) += A(r, c) * x(c);
+    }
+  }
+  for (atlas::idx_t jl = 0; jl < levels; ++jl) {
+    x(jl) = alpha * y(jl);
+  }
+}
+
+// x = alpha * A^T * x
+void inplaceTransposeGEMV(
+  double alpha,
+  atlas::array::LocalView<const double, 2> A,
+  atlas::array::LocalView<double, 1> x,
+  atlas::array::ArrayView<double, 2> buffer
+) {
+  assert(A.shape(1) == A.shape(0));
+  assert(A.shape(1) == x.shape(0));
+  auto levels = A.shape(0);
+  auto y = buffer.slice(
+    atlas_omp_get_thread_num(), atlas::array::Range(0, levels));
+  for (atlas::idx_t r = 0; r < levels; ++r) {
+    y(r) = 0;
+    for (atlas::idx_t c = 0; c < levels; ++c) {
+      y(r) += A(c, r) * x(c);
+    }
+  }
+  for (atlas::idx_t jl = 0; jl < levels; ++jl) {
+    x(jl) = alpha * y(jl);
+  }
+}
+}  // namespace
 
 namespace saber {
 namespace spectralb {
@@ -58,13 +126,14 @@ void copySpectralFieldSet(const atlas::FieldSet & otherFset,
   for (atlas::Field & field : fset) {
     auto view = make_view<double, 3>(field);
     auto otherView = make_view<const double, 3>(otherFset[field.name()]);
-    for (idx_t jn = 0; jn < field.shape(0); ++jn) {
-      for (idx_t jl = 0; jl < field.shape(1); ++jl) {
-        for (idx_t jl2 = 0; jl2 < field.shape(2); ++jl2) {
-          view(jn, jl, jl2) = otherView(jn, jl, jl2);
-        }
-      }
-    }
+
+    util::for_each_index(
+      util::IndexSpace3D{0, field.shape(0),
+                         0, field.shape(1),
+                         0, field.shape(2)},
+      [=](idx_t jn, idx_t jl, idx_t jl2) mutable {
+        view(jn, jl, jl2) = otherView(jn, jl, jl2);
+      });
     // Copy metadata
     field.metadata() = otherFset[field.name()].metadata();
   }
@@ -92,14 +161,14 @@ atlas::FieldSet createCorrelUMatrices(const oops::Variables & activeVars,
                                                                uMatrixView.shape(2)));
     auto correlUMatrixView = make_view<double, 3>(correlUMatrix);
 
-    for (idx_t bin = 0; bin < uMatrixView.shape(0); ++bin) {
-      for (idx_t k1 = 0; k1 < uMatrixView.shape(1); ++k1) {
-        for (idx_t k2 = 0; k2 < uMatrixView.shape(2); ++k2) {
-          correlUMatrixView(bin, k1, k2) = uMatrixView(bin, k1, k2)
-                                           * sqrtNSpectralBins / verticalSDView(k1);
-        }
-      }
-    }
+    util::for_each_index(
+      util::IndexSpace3D{0, uMatrixView.shape(0),
+                         0, uMatrixView.shape(1),
+                         0, uMatrixView.shape(2)},
+      [=](idx_t bin, idx_t k1, idx_t k2) mutable {
+        correlUMatrixView(bin, k1, k2) = uMatrixView(bin, k1, k2)
+                                  * sqrtNSpectralBins / verticalSDView(k1);
+      });
 
     spectralCorrelUMatrices.add(correlUMatrix);
   }
@@ -146,14 +215,14 @@ atlas::FieldSet createSpectralCorrelations(const oops::Variables & activeVars,
       }
     }
 
-    for (idx_t bin = 0; bin < spectralVertCorrel.shape(0); ++bin) {
-      for (idx_t k1 = 0; k1 < spectralVertCorrel.shape(1); ++k1) {
-        for (idx_t k2 = 0; k2 < spectralVertCorrel.shape(2); ++k2) {
-          spectralVertCorrelView(bin, k1, k2) = spectralVertCovView(bin, k1, k2) *
+    util::for_each_index(
+      util::IndexSpace3D{0, spectralVertCorrel.shape(0),
+                         0, spectralVertCorrel.shape(1),
+                         0, spectralVertCorrel.shape(2)},
+      [=](idx_t bin, idx_t k1, idx_t k2) mutable {
+        spectralVertCorrelView(bin, k1, k2) = spectralVertCovView(bin, k1, k2) *
             correlationScalingView(k1, k2);
-        }
-      }
-    }
+      });
 
     spectralCorrelations.add(spectralVertCorrel);
   }
@@ -194,44 +263,44 @@ void createSpectralCovarianceFromUMatrixFile(const std::string & var,
   const int loff = readparams.levelOffset;  // starting from 0
 
   auto uMatrixView = make_view<double, 3>(uMatrix);
-  std::size_t jn(0);
-  for (idx_t bin = 0; bin < static_cast<idx_t>(vertcov.shape(0)); ++bin) {
-    for (idx_t k1 = 0; k1 < static_cast<idx_t>(covlevels); ++k1) {
-      for (idx_t k2 = 0; k2 < static_cast<idx_t>(covlevels); ++k2, ++jn) {
-        if ((k1 >= loff) && (k2 >= loff) &&
-            (k1 < loff + vertcov.shape(1)) && (k2 < loff + vertcov.shape(2))) {
-          uMatrixView(bin, k1 - loff, k2 - loff) = spectralUMatrix1D[jn];
-        }
+
+  util::for_each_index(
+    util::IndexSpace3D{0, vertcov.shape(0), 0, covlevels, 0, covlevels},
+    [=](idx_t bin, idx_t k1, idx_t k2) mutable {
+      if ((k1 >= loff) &&
+          (k2 >= loff) &&
+          (k1 < loff + vertcov.shape(1)) &&
+          (k2 < loff + vertcov.shape(2))) {
+        const idx_t jn = bin * (covlevels * covlevels) + k1 * covlevels + k2;
+        uMatrixView(bin, k1 - loff, k2 - loff) = spectralUMatrix1D[jn];
       }
-    }
-  }
+    });
 
   // calculate vertical covariances
   auto spectralVertCovView = make_view<double, 3>(vertcov);
 
-  double val;
-  for (idx_t bin = 0; bin < spectralVertCovView.shape(0); ++bin) {
-    for (idx_t k1 = 0; k1 < spectralVertCovView.shape(1); ++k1) {
-      for (idx_t k2 = 0; k2 < spectralVertCovView.shape(2); ++k2) {
-        val = 0.0;
-        for (idx_t k3 = 0; k3 < uMatrixView.shape(2); ++k3) {
-          val += uMatrixView(bin, k1, k3) * uMatrixView(bin, k2, k3);
-        }
-        // Currently the true vertical covariances and power spectra are
-        // multiplied by the number of spectral bins.
-        // covbins holds the number of spectral bins that are in the cov file.
-        // spectralVertCovView.shape(0) is the number of spectral bins that we
-        // use, that is consistent with the Gaussian resolution employed.
-        // So we rescale the covariances to be consistent with this reduced
-        // number of covariance bins (and this contract).
-        // TODO(MW) - Investigate whether we can remove this scaling throughout
-        //            the code.
-        spectralVertCovView(bin, k1, k2) = val *
+  util::for_each_index(
+    util::IndexSpace3D{0, spectralVertCovView.shape(0),
+                       0, spectralVertCovView.shape(1),
+                       0, spectralVertCovView.shape(2)},
+    [=](atlas::idx_t bin, atlas::idx_t k1, atlas::idx_t k2) mutable {
+      double val = 0.0;
+      for (atlas::idx_t k3 = 0; k3 < uMatrixView.shape(2); ++k3) {
+        val += uMatrixView(bin, k1, k3) * uMatrixView(bin, k2, k3);
+      }
+      // Currently the true vertical covariances and power spectra are
+      // multiplied by the number of spectral bins.
+      // covbins holds the number of spectral bins that are in the cov file.
+      // spectralVertCovView.shape(0) is the number of spectral bins that we
+      // use, that is consistent with the Gaussian resolution employed.
+      // So we rescale the covariances to be consistent with this reduced
+      // number of covariance bins (and this contract).
+      // TODO(MW) - Investigate whether we can remove this scaling throughout
+      //            the code.
+      spectralVertCovView(bin, k1, k2) = val *
             static_cast<double>(spectralVertCovView.shape(0)) /
             static_cast<double>(covbins);
-      }
-    }
-  }
+    });
 }
 
 
@@ -244,29 +313,31 @@ void createUMatrixFromSpectralCovarianceFile(const std::string & var,
   readSpectralCovarianceFromFile(var, var, readparams, spectralVertCov);
 
   const int sizeVec = umatrix.shape(1) * umatrix.shape(2);
-  std::vector<double> spectralUMatrix1D(static_cast<std::size_t>(sizeVec), 0.0);
+  atlas::array::ArrayT<double> spectralUMatrix1D(sizeVec);
+  auto spectralUMatrix1DView = make_view<double, 1>(spectralUMatrix1D);
+  spectralUMatrix1DView.assign(0.0);
   auto spectralVertCovView = make_view<double, 3>(spectralVertCov);
   auto umatrixView = make_view<double, 3>(umatrix);
   umatrixView.assign(0.0);
 
   for (idx_t bin = 0; bin < static_cast<idx_t>(umatrix.shape(0)); ++bin) {
-    std::size_t jn(0);
-    for (idx_t k1 = 0; k1 < static_cast<idx_t>(umatrix.shape(1)); ++k1) {
-      for (idx_t k2 = 0; k2 < static_cast<idx_t>(umatrix.shape(2)); ++k2, ++jn) {
-        spectralUMatrix1D[jn] = spectralVertCovView(bin, k1, k2);
-      }
-    }
+    util::for_each_index(
+      util::IndexSpace2D{0, umatrix.shape(1), 0, umatrix.shape(2)},
+      [=](idx_t k1, idx_t k2) mutable {
+        const idx_t jn = (k1 * umatrix.shape(2)) + k2;
+        spectralUMatrix1DView(jn) = spectralVertCovView(bin, k1, k2);
+      });
 
-    calculatingSqrtB_f90(umatrix.shape(1), spectralUMatrix1D[0]);
+    calculatingSqrtB_f90(umatrix.shape(1), spectralUMatrix1DView(0));
 
-    jn = 0;
-    for (idx_t k1 = 0; k1 < static_cast<idx_t>(umatrix.shape(1)); ++k1) {
-      for (idx_t k2 = 0; k2 < static_cast<idx_t>(umatrix.shape(2)); ++k2, ++jn) {
+    util::for_each_index(
+      util::IndexSpace2D{0, umatrix.shape(1), 0, umatrix.shape(2)},
+      [=](idx_t k1, idx_t k2) mutable {
         // index order here switched to k2, k1 because of square root being calculated in
         // Fortran
-        umatrixView(bin, k2, k1) =  k1 > k2 ? 0.0  : spectralUMatrix1D[jn];
-      }
-    }
+        const idx_t jn = (k1 * umatrix.shape(2)) + k2;
+        umatrixView(bin, k2, k1) =  k1 > k2 ? 0.0  : spectralUMatrix1DView(jn);
+      });
   }
 }
 
@@ -290,22 +361,22 @@ atlas::FieldSet createSpectralCovariances(const oops::Variables & activeVars,
       make_view<double, 3>(spectralVertCov);
     auto uMatrixView = make_view<double, 3>(spectralUMatrices[var]);
 
-    double val;
-    for (idx_t bin = 0; bin < spectralVertCovView.shape(0); ++bin) {
-      for (idx_t k1 = 0; k1 < spectralVertCovView.shape(1); ++k1) {
-        for (idx_t k2 = 0; k2 < spectralVertCovView.shape(2); ++k2) {
-          val = 0.0;
-          for (idx_t k3 = 0; k3 < uMatrixView.shape(2); ++k3) {
-            val += uMatrixView(bin, k1, k3) * uMatrixView(bin, k2, k3);
-          }
-          // There is a loss of variance here when nSpectralBins is less than nSpectralBinsFull,
-          // as we only keep nSpectralBins out of
-          // nSpectralBinsFull[ivar].A crude renormalization is applied, assuming
-          // the variance is equally distributed across bins:
-          spectralVertCovView(bin, k1, k2) = val * nSpectralBins / (nSpectralBinsFull[ivar]);
+    util::for_each_index(
+      util::IndexSpace3D{0, spectralVertCovView.shape(0),
+                         0, spectralVertCovView.shape(1),
+                         0, spectralVertCovView.shape(2)},
+      [=](atlas::idx_t bin, atlas::idx_t k1, atlas::idx_t k2) mutable {
+        double val = 0.0;
+        for (atlas::idx_t k3 = 0; k3 < uMatrixView.shape(2); ++k3) {
+          val += uMatrixView(bin, k1, k3) * uMatrixView(bin, k2, k3);
         }
-      }
-    }
+        // There is a loss of variance here when nSpectralBins is less than nSpectralBinsFull,
+        // as we only keep nSpectralBins out of
+        // nSpectralBinsFull[ivar].A crude renormalization is applied, assuming
+        // the variance is equally distributed across bins:
+        spectralVertCovView(bin, k1, k2) = val *
+              nSpectralBins / (nSpectralBinsFull[ivar]);
+      });
 
     spectralVerticalCovariances.add(spectralVertCov);
   }
@@ -355,14 +426,16 @@ atlas::FieldSet createUMatrices(
 
 
       auto uMatrixView = make_view<double, 3>(uMatrix);
-      std::size_t jn(0);
-      for (idx_t bin = 0; bin < static_cast<idx_t>(nSpectralBinsFull[ivar]); ++bin) {
-        for (idx_t k1 = 0; k1 < static_cast<idx_t>(modelLevels); ++k1) {
-          for (idx_t k2 = 0; k2 < static_cast<idx_t>(modelLevels); ++k2, ++jn) {
-            uMatrixView(bin, k1, k2) = spectralUMatrix1D[jn];
-          }
-        }
-      }
+
+      util::for_each_index(
+        util::IndexSpace3D{0, static_cast<idx_t>(nSpectralBinsFull[ivar]),
+                           0, modelLevels,
+                           0, modelLevels},
+        [=](idx_t bin, idx_t k1, idx_t k2) mutable {
+          const idx_t jn = bin * modelLevels * modelLevels + k1 * modelLevels + k2;
+          uMatrixView(bin, k1, k2) = spectralUMatrix1D[jn];
+        });
+
       spectralUMatrices.add(uMatrix);
     }
   }
@@ -385,13 +458,16 @@ atlas::FieldSet createVerticalSD(const oops::Variables & activeVars,
 
     auto verticalSDView = make_view<double, 1>(verticalSD);
 
-    for (int k = 0; k < modelLevels; ++k) {
-      verticalSDView(k) = 0.0;
-      for (idx_t bin = 0; bin < spectralVertCovView.shape(0); ++bin) {
-        verticalSDView(k) += spectralVertCovView(bin, k, k);
-      }
-      verticalSDView(k) = std::sqrt(verticalSDView(k));
-    }
+    util::for_each_index(
+      util::IndexSpace1D{0, modelLevels},
+      [=](idx_t k) mutable{
+        verticalSDView(k) = 0.0;
+        for (idx_t bin = 0; bin < spectralVertCovView.shape(0); ++bin) {
+          verticalSDView(k) += spectralVertCovView(bin, k, k);
+        }
+        verticalSDView(k) = std::sqrt(verticalSDView(k));
+      });
+
     verticalSDs.add(verticalSD);
   }
 
@@ -543,83 +619,55 @@ void spectralVerticalConvolution(const oops::Variables & activeVars,
                                  atlas::FieldSet & fieldSet) {
   const size_t N = specFunctionSpace.truncation();
 
-  const auto zonal_wavenumbers = specFunctionSpace.zonal_wavenumbers();
-  const idx_t nb_zonal_wavenumbers = zonal_wavenumbers.size();
+  auto buffer = setupInplaceGEMVBuffer(activeVars, fieldSet);
+  auto bufferView = make_view<double, 2>(buffer);
 
   // Only update the fields that were specified in the active variables
   for (const auto & var : activeVars) {
-    idx_t i = 0;
-    idx_t levels(fieldSet[var.name()].shape(1));
-    auto spfView = make_view<double, 2>(fieldSet[var.name()]);
+    auto spf = fieldSet[var.name()];
+    auto spfView = make_view<double, 2>(spf);
+    idx_t levels(spf.shape(1));
     auto vertCovView = make_view<const double, 3>(spectralVerticalStats[var.name()]);
     const size_t Ncov = vertCovView.shape()[0] - 1;
 
-    std::vector<double> col(levels), col2(levels);
-
     if (N > Ncov) {
+      idx_t levels(spf.shape(1));
+
       // For each total wavenumber n1, perform a 1D convolution with vertical covariances.
-      for (idx_t jm = 0; jm < nb_zonal_wavenumbers; ++jm) {
-        const idx_t m1 = zonal_wavenumbers(jm);
-        for (std::size_t n1 = m1; n1 <= N; ++n1) {
-          // Note that img stands for imaginary component and are the
-          // odd indices in the first index of the spectral fields.
-          for (std::size_t img = 0; img < 2; ++img) {
-            // Pre-fill vertical column to be convolved.
-            if (n1 <= Ncov) {
-              for (idx_t jl = 0; jl < levels; ++jl) {
-                col[jl] = spfView(i, jl);
-              }
-              // The 2*n1+1 factor is there to equally distribute the covariance across
-              // the spectral coefficients associated to this total wavenumber.
-              const double norm = static_cast<double>((2 * n1 + 1) * vertCovView.shape(0));
-              for (idx_t r = 0; r < levels; ++r) {
-                col2[r] = 0;
-                for (idx_t c = 0; c < levels; ++c) {
-                  col2[r] += vertCovView(n1, r, c) * col[c] / norm;
-                }
-              }
-              for  (idx_t jl = 0; jl < levels; ++jl) {
-                spfView(i, jl) = col2[jl];
-              }
-            } else {
-              // we are outside specified statistics so we truncate.
-              // we may want to do something different later here
-              for (idx_t jl = 0; jl < levels; ++jl) {
-                spfView(i, jl) = 0.0;
-              }
+      util::for_each_index(
+        util::make_index_space_spectral_1d(spf),
+        [=](idx_t i, idx_t n, idx_t m) mutable {
+          // The 2*n1+1 factor is there to equally distribute the covariance across
+          // the spectral coefficients associated to this total wavenumber.
+          const double norm = static_cast<double>((2 * n + 1) * vertCovView.shape(0));
+          auto col = spfView.slice(i, atlas::array::Range::all());
+          auto vertCovMat = vertCovView.slice(
+            n, atlas::array::Range(0, levels), atlas::array::Range(0, levels));
+
+          if (static_cast<size_t>(n) <= Ncov) {
+            inplaceGEMV(1.0 / norm, vertCovMat, col, bufferView);
+          } else {
+            // we are outside specified statistics so we truncate.
+            // we may want to do something different later here
+            for (idx_t jl = 0; jl < levels; ++jl) {
+              col(jl) = 0.0;
             }
-            ++i;
           }
-        }
-      }
+        });
     } else {
       // For each total wavenumber n1, perform a 1D convolution with vertical covariances.
-      for (idx_t jm = 0; jm < nb_zonal_wavenumbers; ++jm) {
-        const idx_t m1 = zonal_wavenumbers(jm);
-        for (std::size_t n1 = m1; n1 <= N; ++n1) {
-          // Note that img stands for imaginary component and are the
-          // odd indices in the first index of the spectral fields.
-          for (std::size_t img = 0; img < 2; ++img) {
-            // Pre-fill vertical column to be convolved.
-            for (idx_t jl = 0; jl < levels; ++jl) {
-              col[jl] = spfView(i, jl);
-            }
-            // The 2*n1+1 factor is there to equally distribute the covariance across
-            // the spectral coefficients associated to this total wavenumber.
-            const double norm = static_cast<double>((2 * n1 + 1) * vertCovView.shape(0));
-            for (idx_t r = 0; r < levels; ++r) {
-              col2[r] = 0;
-              for (idx_t c = 0; c < levels; ++c) {
-                col2[r] += vertCovView(n1, r, c) * col[c] / norm;
-              }
-            }
-            for  (idx_t jl = 0; jl < levels; ++jl) {
-              spfView(i, jl) = col2[jl];
-            }
-            ++i;
-          }
-        }
-      }
+      util::for_each_index(
+        util::make_index_space_spectral_1d(spf),
+        [=](idx_t i, idx_t n, idx_t m) mutable {
+          // The 2*n1+1 factor is there to equally distribute the covariance across
+          // the spectral coefficients associated to this total wavenumber.
+          const double norm = static_cast<double>((2 * n + 1) * vertCovView.shape(0));
+          auto vertCovMat = vertCovView.slice(
+            n, atlas::array::Range(0, levels), atlas::array::Range(0, levels));
+          auto col = spfView.slice(i, atlas::array::Range::all());
+
+          inplaceGEMV(1.0 / norm, vertCovMat, col, bufferView);
+        });
     }
   }
 }
@@ -629,42 +677,27 @@ void spectralVerticalConvolutionSqrt(const oops::Variables & activeVars,
                                      const atlas::functionspace::Spectral & specFunctionSpace,
                                      const atlas::FieldSet & spectralVerticalStatsSqrt,
                                      atlas::FieldSet & fieldSet) {
-  const size_t N = specFunctionSpace.truncation();
-
-  const auto zonal_wavenumbers = specFunctionSpace.zonal_wavenumbers();
-  const idx_t nb_zonal_wavenumbers = zonal_wavenumbers.size();
+  auto buffer = setupInplaceGEMVBuffer(activeVars, fieldSet);
+  auto bufferView = make_view<double, 2>(buffer);
 
   // Only update the fields that were specified in the active variables
   for (const auto & var : activeVars) {
-    idx_t levels(fieldSet[var.name()].shape(1));
+    auto& spf = fieldSet[var.name()];
+    auto spfView = make_view<double, 2>(spf);
+    idx_t levels(spf.shape(1));
     auto UMatrixView = make_view<const double, 3>(spectralVerticalStatsSqrt[var.name()]);
-    auto spfView = make_view<double, 2>(fieldSet[var.name()]);
     const int nSpectralBinsFull = spectralVerticalStatsSqrt[var.name()].shape(0);
 
-    idx_t i = 0;
-    std::vector<double> col(levels), col2(levels);
-    for (idx_t jm1 = 0; jm1 < nb_zonal_wavenumbers; ++jm1) {
-      const idx_t m1 = zonal_wavenumbers(jm1);
-      for (std::size_t n1 = m1; n1 <= N; ++n1) {
-        // note that img stands for imaginary component are the
-        // odd indices in the first index of the spectral fields.
-        for (std::size_t img = 0; img < 2; ++img, ++i) {
-          for (idx_t jl = 0; jl < levels; ++jl) {
-            col[jl] = spfView(i, jl);
-          }
-          for (idx_t r = 0; r < levels; ++r) {
-            col2[r] = 0;
-            for (idx_t c = 0; c < levels; ++c) {
-              col2[r] += UMatrixView(n1, r, c) * col[c];
-            }
-          }
-          const double norm = std::sqrt(static_cast<double>((2 * n1 + 1) * nSpectralBinsFull));
-          for  (idx_t jl = 0; jl < levels; ++jl) {
-            spfView(i, jl) = col2[jl] / norm;
-          }
-        }
-      }
-    }
+    util::for_each_index(
+      util::make_index_space_spectral_1d(spf),
+      [=](idx_t i, idx_t n, idx_t m) mutable {
+        const double norm = std::sqrt(static_cast<double>((2 * n + 1) * nSpectralBinsFull));
+        auto UMatrix = UMatrixView.slice(
+          n, atlas::array::Range(0, levels), atlas::array::Range(0, levels));
+        auto col = spfView.slice(i, atlas::array::Range::all());
+
+        inplaceGEMV(1.0 / norm, UMatrix, col, bufferView);
+      });
   }
 }
 
@@ -673,42 +706,27 @@ void spectralVerticalConvolutionSqrtAD(const oops::Variables & activeVars,
                                        const atlas::functionspace::Spectral & specFunctionSpace,
                                        const atlas::FieldSet & spectralVerticalStatsSqrt,
                                        atlas::FieldSet & fieldSet) {
-  const size_t N = specFunctionSpace.truncation();
-
-  const auto zonal_wavenumbers = specFunctionSpace.zonal_wavenumbers();
-  const idx_t nb_zonal_wavenumbers = zonal_wavenumbers.size();
+  auto buffer = setupInplaceGEMVBuffer(activeVars, fieldSet);
+  auto bufferView = make_view<double, 2>(buffer);
 
   // Only update the fields that were specified in the active variables
   for (const auto & var : activeVars) {
-    idx_t levels(fieldSet[var.name()].shape(1));
-    auto UMatrixView = make_view<const double, 3>(spectralVerticalStatsSqrt[var.name()]);
+    auto& spf = fieldSet[var.name()];
     auto spfView = make_view<double, 2>(fieldSet[var.name()]);
+    idx_t levels(spf.shape(1));
+    auto UMatrixView = make_view<const double, 3>(spectralVerticalStatsSqrt[var.name()]);
     const int nSpectralBinsFull = spectralVerticalStatsSqrt[var.name()].shape(0);
 
-    idx_t i = 0;
-    std::vector<double> col(levels), col2(levels);
-    for (idx_t jm1 = 0; jm1 < nb_zonal_wavenumbers; ++jm1) {
-      const idx_t m1 = zonal_wavenumbers(jm1);
-      for (std::size_t n1 = m1; n1 <= N; ++n1) {
-        // note that img stands for imaginary component are the
-        // odd indices in the first index of the spectral fields.
-        for (std::size_t img = 0; img < 2; ++img, ++i) {
-          for (idx_t jl = 0; jl < levels; ++jl) {
-            col[jl] = spfView(i, jl);
-          }
-          for (idx_t r = 0; r < levels; ++r) {
-            col2[r] = 0;
-            for (idx_t c = 0; c < levels; ++c) {
-              col2[r] += UMatrixView(n1, c, r) * col[c];
-            }
-          }
-          const double norm = std::sqrt(static_cast<double>((2 * n1 + 1) * nSpectralBinsFull));
-          for  (idx_t jl = 0; jl < levels; ++jl) {
-            spfView(i, jl) = col2[jl] / norm;
-          }
-        }
-      }
-    }
+    util::for_each_index(
+      util::make_index_space_spectral_1d(spf),
+      [=](idx_t i, idx_t n, idx_t m) mutable {
+        const double norm = std::sqrt(static_cast<double>((2 * n + 1) * nSpectralBinsFull));
+        auto UMatrix = UMatrixView.slice(
+          n, atlas::array::Range(0, levels), atlas::array::Range(0, levels));
+        auto col = spfView.slice(i, atlas::array::Range::all());
+
+        inplaceTransposeGEMV(1.0 / norm, UMatrix, col, bufferView);
+      });
   }
 }
 
@@ -718,28 +736,19 @@ void spectralHorizontalFilter(const oops::Variables & activeVars,
                               const atlas::functionspace::Spectral & specFunctionSpace,
                               const atlas::FieldSet & spectralVerticalStats,
                               atlas::FieldSet & fieldSet) {
-  const size_t N = specFunctionSpace.truncation();
-  const auto zonal_wavenumbers = specFunctionSpace.zonal_wavenumbers();
-  const idx_t nb_zonal_wavenumbers = zonal_wavenumbers.size();
-
   for (const auto & var : activeVars) {
     const idx_t levels(fieldSet[var.name()].shape(1));
     auto vertCovView = make_view<const double, 3>(spectralVerticalStats[var.name()]);
     auto spfView = make_view<double, 2>(fieldSet[var.name()]);
 
-    idx_t i = 0;
-    for (idx_t jm = 0; jm < nb_zonal_wavenumbers; ++jm) {
-      const idx_t m1 = zonal_wavenumbers(jm);
-      for (std::size_t n1 = m1; n1 <= N; ++n1) {
-        for (std::size_t img = 0; img < 2; ++img) {
-          const double norm = static_cast<double>((2 * n1 + 1) * vertCovView.shape(0));
-          for (idx_t jl = 0; jl < levels; ++jl) {
-            spfView(i, jl) *= vertCovView(n1, jl, jl) / norm;
-          }
-          ++i;
+    util::for_each_index(
+      util::make_index_space_spectral_1d(fieldSet[var.name()]),
+      [=](idx_t i, idx_t n, idx_t m) mutable {
+        const double norm = static_cast<double>((2 * n + 1) * vertCovView.shape(0));
+        for (idx_t jl = 0; jl < levels; ++jl) {
+          spfView(i, jl) *= vertCovView(n, jl, jl) / norm;
         }
-      }
-    }
+      });
   }
 }
 
@@ -764,13 +773,13 @@ std::size_t updateSpectralVerticalCovariances(
     // assuming read done before and multiplying by number of prior samples
     for (atlas::Field & vertcov : spectralVerticalCovariances) {
       auto vertCovView = make_view<double, 3>(vertcov);
-      for (idx_t i = 0; i < vertcov.shape()[0]; ++i) {
-        for (idx_t j = 0; j < vertcov.shape()[1]; ++j) {
+      util::for_each_index(
+        util::IndexSpace2D{0, vertcov.shape()[0], 0, vertcov.shape()[1]},
+        [=](idx_t i, idx_t j) mutable {
           for (idx_t k = 0; k < vertcov.shape()[2]; ++k) {
             vertCovView(i, j, k) *= static_cast<double>(priorSampleSize);
           }
-        }
-      }
+        });
     }
   }
 
@@ -780,46 +789,30 @@ std::size_t updateSpectralVerticalCovariances(
     auto vertCovView = make_view<double, 3>(vertcov);
     int levels = vertcov.shape()[2];
     std::string name(vertcov.name());
-    const auto zonal_wavenumbers =
-      atlas::functionspace::Spectral(
-        ensFieldSet[0].fieldSet()[name].functionspace()).zonal_wavenumbers();
-    const size_t N =
-      atlas::functionspace::Spectral(ensFieldSet[0].fieldSet()[name].functionspace()).truncation();
-    const idx_t nb_zonal_wavenumbers = zonal_wavenumbers.size();
 
     for (size_t jj = 0; jj < ensFieldSet.size(); ++jj) {
       const auto & fs = ensFieldSet[jj];
       auto spfView = make_view<const double, 2>(fs[name]);
 
-      idx_t i = 0;  // i is the spectral coefficient index
-                           // for a given level.
-      // For each total wavenumber n1, perform a 1D convolution with vertical covariances.
-      // We are assuming that the mean has been removed from the perturbations.
-      for (idx_t jm = 0; jm < nb_zonal_wavenumbers; ++jm) {
-        const idx_t m1 = zonal_wavenumbers(jm);
-        for (std::size_t n1 = m1; n1 <= N; ++n1) {
-          // Note 1: that img stands for imaginary component and are the
-          // odd indices in the first index of the spectral fields.
-          // In the MetOffice system the scaling was 2 * (n_1+1) * n_bins
-          // Here the scaling is different ... we scale by n_bins and
-          // double count the entries for m/=0 to take account of the
-          // implicit complex conjugate spectral coefficients.
+      // In the MetOffice system the scaling was 2 * (n_1+1) * n_bins
+      // Here the scaling is different ... we scale by n_bins and
+      // double count the entries for m/=0 to take account of the
+      // implicit complex conjugate spectral coefficients.
+      const double scaling = static_cast<double>(vertcov.shape()[0]);
 
-          const double scaling = static_cast<double>(vertcov.shape()[0]);
-          for (std::size_t img = 0; img < 2; ++img) {
-            for (idx_t r = 0; r < levels; ++r) {
-              for (idx_t c = 0; c < levels; ++c) {
-                if (m1 == 0) {
-                  vertCovView(n1, r, c) += spfView(i, r) * spfView(i, c) * scaling;
-                } else {
-                  vertCovView(n1, r, c) += 2.0 * spfView(i, r) * spfView(i, c) * scaling;
-                }
+      util::for_each_index(
+        util::make_index_space_spectral_1d(ensFieldSet[0].fieldSet()[name]),
+        [=](idx_t i, idx_t n, idx_t m) mutable {
+          for (idx_t r = 0; r < levels; ++r) {
+            for (idx_t c = 0; c < levels; ++c) {
+              if (m == 0) {
+                vertCovView(n, r, c) += spfView(i, r) * spfView(i, c) * scaling;
+              } else {
+                vertCovView(n, r, c) += 2.0 * spfView(i, r) * spfView(i, c) * scaling;
               }
             }
-            ++i;
           }
-        }
-      }
+        });
     }
   }
 
@@ -828,13 +821,13 @@ std::size_t updateSpectralVerticalCovariances(
   const double recipPriorSampleSize = 1.0/static_cast<double>(updatedSampleSize);
   for (atlas::Field & vertcov : spectralVerticalCovariances) {
     auto vertCovView = make_view<double, 3>(vertcov);
-    for (idx_t i = 0; i < vertcov.shape()[0]; ++i) {
-      for (idx_t j = 0; j < vertcov.shape()[1]; ++j) {
+    util::for_each_index(
+      util::IndexSpace2D{0, vertcov.shape()[0], 0, vertcov.shape()[1]},
+      [=](idx_t i, idx_t j) mutable {
         for (idx_t k = 0; k < vertcov.shape()[2]; ++k) {
           vertCovView(i, j, k) *= recipPriorSampleSize;
         }
-      }
-    }
+      });
   }
   return  updatedSampleSize;
 }
