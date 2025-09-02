@@ -41,7 +41,7 @@ jobs:
         uses: JCSDA-internal/jedi-ci@develop
         with:
           container_version: 'latest'
-          unittest_tag: 'vader'
+          unittest_tag: saber
           unittest_dependencies: oops vader
           test_script: run_tests.sh
           target_repo_dir: target_repository
