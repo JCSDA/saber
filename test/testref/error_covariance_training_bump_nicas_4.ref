@@ -5,48 +5,48 @@
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
-Norm of input parameter a - 1: 4.2308916537728386e+01
-Norm of input parameter a - 2: 1.5687046448381214e+01
-Norm of input parameter rh - 1: 2.4242588064726251e+08
-Norm of input parameter rh - 2: 1.3632609098375362e+08
-Norm of input parameter rv - 1: 2.7699435475800004e+02
-Norm of input parameter rv - 2: 2.7699435475909940e+01
+Norm of input parameter a - 1: 4.4765456876087761e+01
+Norm of input parameter a - 2: 1.3215106980456639e+01
+Norm of input parameter rh - 1: 2.3099540741414040e+08
+Norm of input parameter rh - 2: 1.2989826351828027e+08
+Norm of input parameter rv - 1: 2.6030254068196069e+02
+Norm of input parameter rv - 2: 2.6030254068299271e+01
              Effective levels:   1   2 
-                Horizontal support radius:    4169.81 km (   4169.81 km -    4169.81 km)
-                Estimated nc1 from horizontal support radius:      542
-                   Decimate full grid, at least      542 points required,     762 valid points found
-                   Subgrid hash:    423880792
-                Final nc1:      542
+                Horizontal support radius:    4179.25 km (   4179.25 km -    4179.25 km)
+                Estimated nc1 from horizontal support radius:      539
+                   Decimate full grid, at least      539 points required,     762 valid points found
+                   Subgrid hash:  -1393709384
+                Final nc1:      539
                 Effective horizontal resolution:  4.00
-                Horizontal support radius:    4084.55 km (   4084.55 km -    4084.55 km)
-                Estimated nc1 from horizontal support radius:      564
-                   Decimate full grid, at least      564 points required,     762 valid points found
-                   Subgrid hash:   1692448058
-                Final nc1:      564
+                Horizontal support radius:    3837.05 km (   3837.05 km -    3837.05 km)
+                Estimated nc1 from horizontal support radius:      640
+                   Decimate full grid, at least      640 points required,     762 valid points found
+                   Subgrid hash:   1613205282
+                Final nc1:      640
                 Effective horizontal resolution:  4.00
-             nc1(  1) =                        542
-             nc1(  2) =                        564
-             ns =                             1106
+             nc1(  1) =                        539
+             nc1(  2) =                        640
+             ns =                             1179
              v%n_s =                             2
-             c%n_s[global] =                 30412
+             c%n_s[global] =                 30940
              Effective levels:   1   2 
-                Horizontal support radius:    2344.85 km (   2344.85 km -    2344.85 km)
-                Estimated nc1 from horizontal support radius:     1714
+                Horizontal support radius:    2350.17 km (   2350.17 km -    2350.17 km)
+                Estimated nc1 from horizontal support radius:     1706
                    Decimate full grid, at least      762 points required,     762 valid points found
                    Subgrid hash:   1550418632
                 Final nc1:      762
                 Effective horizontal resolution:  2.67
-                Horizontal support radius:    2296.91 km (   2296.91 km -    2296.91 km)
-                Estimated nc1 from horizontal support radius:     1786
+                Horizontal support radius:    2157.73 km (   2157.73 km -    2157.73 km)
+                Estimated nc1 from horizontal support radius:     2024
                    Decimate full grid, at least      762 points required,     762 valid points found
                    Subgrid hash:   1550418632
                 Final nc1:      762
-                Effective horizontal resolution:  2.61
+                Effective horizontal resolution:  2.45
              nc1(  1) =                        762
              nc1(  2) =                        762
              ns =                             1524
              v%n_s =                             2
-             c%n_s[global] =                 13204
+             c%n_s[global] =                 12244
     Full NICAS adjoint test result:                        T
        Block NICAS adjoint test result:                    T
           Interpolation adjoint test (horizontal) result:  T
@@ -65,4 +65,4 @@ Norm of input parameter rv - 2: 2.7699435475909940e+01
           Component NICAS adjoint test result:             T
              0.0 /    0.0:  1.0000000
           Level   1:  0.0000000 -  1.0000000
-          Level   2:  0.0000000 -  0.6263012
+          Level   2:  0.0000000 -  0.6472837

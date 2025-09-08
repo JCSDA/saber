@@ -23,42 +23,42 @@
           Independent levels for angular sector   1 / class   8:  1[2]
           Independent levels for angular sector   1 / class   9:  1[2]
           Independent levels for angular sector   1 / class  10:  1[1]  2[1]
-                Level:   1 ~> cov. at class zero:  0.99E+00
-                Level:   2 ~> cov. at class zero:  0.98E+00
-             Block common:  0.17586749E+00 for       40 diagnostic points
+                Level:   1 ~> cov. at class zero:  0.10E+01
+                Level:   2 ~> cov. at class zero:  0.97E+00
+             Block common:  0.14423083E+00 for       40 diagnostic points
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      3551.66 km
-                                 cor. ver. support:         3.18 vertical units
+                                 cor. hor. support:      3757.50 km
+                                 cor. ver. support:         3.16 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      3616.91 km
-                                 cor. ver. support:         3.18 vertical units
-             Block common:  0.26906441E+00 for       26 diagnostic points
+                                 cor. hor. support:      3801.46 km
+                                 cor. ver. support:         3.16 vertical units
+             Block common:  0.28707492E+00 for       25 diagnostic points
                 Level:   1 ~> loc. at class zero:       0.92
                 Level:   2 ~> loc. at class zero:       0.92
                    Level:   1 ~> amplitude:        1.00
-                                 loc. hor. support:      5521.29 km
-                                 loc. ver. support:         5.87 vertical units
+                                 loc. hor. support:      5256.58 km
+                                 loc. ver. support:         5.84 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 loc. hor. support:      6577.04 km
-                                 loc. ver. support:         5.87 vertical units
+                                 loc. hor. support:      5589.86 km
+                                 loc. ver. support:         5.84 vertical units
              Effective levels:   1   2 
-                Horizontal support radius:    5521.29 km (   5521.29 km -    5521.29 km)
-                Estimated nc1 from horizontal support radius:      204
-                   Decimate full grid, at least      204 points required,     503 valid points found
-                   Subgrid hash:   2018341896
-                Final nc1:      204
+                Horizontal support radius:    5256.58 km (   5256.58 km -    5256.58 km)
+                Estimated nc1 from horizontal support radius:      225
+                   Decimate full grid, at least      225 points required,     503 valid points found
+                   Subgrid hash:   -516241586
+                Final nc1:      225
                 Effective horizontal resolution:  4.00
-                Horizontal support radius:    6577.04 km (   6577.04 km -    6577.04 km)
-                Estimated nc1 from horizontal support radius:      143
-                   Decimate full grid, at least      143 points required,     486 valid points found
-                   Subgrid hash:   1880355778
-                Final nc1:      143
+                Horizontal support radius:    5589.86 km (   5589.86 km -    5589.86 km)
+                Estimated nc1 from horizontal support radius:      198
+                   Decimate full grid, at least      198 points required,     503 valid points found
+                   Subgrid hash:    958963916
+                Final nc1:      198
                 Effective horizontal resolution:  3.99
-             nc1(  1) =                        204
-             nc1(  2) =                        143
-             ns =                              347
+             nc1(  1) =                        225
+             nc1(  2) =                        198
+             ns =                              423
              v%n_s =                             2
-             c%n_s[global] =                  6216
+             c%n_s[global] =                  7773
     Full NICAS adjoint test result:                        T
        Block NICAS adjoint test result:                    T
           Interpolation adjoint test (horizontal) result:  T
@@ -72,11 +72,11 @@
              Min / max: 1.0000000 /  1.0000000 over     10 tests
              0.0 /    0.0:  1.0000000
           Level   1:  0.0000000 -  1.0000000
-          Level   2:  0.0000000 -  0.8226855
-Norm of output parameter dirac_mom - 1: 7.6031933250648365e+00
-Norm of output parameter dirac_diag_loc - 1: 2.8598407545512212e+00
-Norm of output parameter cor_rh - 1: 1.4488510959768248e+08
-Norm of output parameter cor_rv - 1: 1.2834046182974191e+02
-Norm of output parameter loc_rh - 1: 2.5164899583477381e+08
-Norm of output parameter loc_rv - 1: 2.3645305135106170e+02
-Norm of output parameter nicas_norm - 1: 4.1865914288153412e+01
+          Level   2:  0.0000000 -  0.9169997
+Norm of output parameter dirac_mom - 1: 7.8068320851523580e+00
+Norm of output parameter dirac_diag_loc - 1: 2.7348452994402712e+00
+Norm of output parameter cor_rh - 1: 1.5260566264218614e+08
+Norm of output parameter cor_rv - 1: 1.2751131380366614e+02
+Norm of output parameter loc_rh - 1: 2.2087340516392386e+08
+Norm of output parameter loc_rv - 1: 2.3544350104096006e+02
+Norm of output parameter nicas_norm - 1: 4.2233599148489091e+01

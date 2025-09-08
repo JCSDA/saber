@@ -73,224 +73,224 @@ Member 0:
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    air_horizontal_streamfunction: 4.1371601273708947e+01
-    air_horizontal_velocity_potential: 4.4386872413863216e+01
-    eastward_wind: 4.2279683534741984e+01
-    northward_wind: 4.0306058913498404e+01
-    air_pressure_at_surface: 3.0855963966239248e+01
+    air_horizontal_streamfunction: 4.1161787877039039e+01
+    air_horizontal_velocity_potential: 4.4319974647253311e+01
+    eastward_wind: 4.2563155529318330e+01
+    northward_wind: 4.0228776908180556e+01
+    air_pressure_at_surface: 3.0884327946048334e+01
 Member 1: 
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    air_horizontal_streamfunction: 3.9672964881464033e+01
-    air_horizontal_velocity_potential: 3.8127531960421322e+01
-    eastward_wind: 3.5160246255523539e+01
-    northward_wind: 3.7923949905457491e+01
-    air_pressure_at_surface: 3.4231556639897917e+01
+    air_horizontal_streamfunction: 3.9632007147234972e+01
+    air_horizontal_velocity_potential: 3.8007462041843908e+01
+    eastward_wind: 3.5294021033155239e+01
+    northward_wind: 3.7828480145045461e+01
+    air_pressure_at_surface: 3.4495963398996885e+01
 Member 2: 
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    air_horizontal_streamfunction: 3.7027539070222772e+01
-    air_horizontal_velocity_potential: 4.0441288653820543e+01
-    eastward_wind: 4.3106573738363515e+01
-    northward_wind: 4.1168539757228451e+01
-    air_pressure_at_surface: 2.5495170849069915e+01
+    air_horizontal_streamfunction: 3.6889724808740134e+01
+    air_horizontal_velocity_potential: 4.0090741401159129e+01
+    eastward_wind: 4.3060481166649801e+01
+    northward_wind: 4.1023685474668461e+01
+    air_pressure_at_surface: 2.5088028267649221e+01
 Member 3: 
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    air_horizontal_streamfunction: 3.7427684129607606e+01
-    air_horizontal_velocity_potential: 4.1779851708061791e+01
-    eastward_wind: 4.4615792503853058e+01
-    northward_wind: 3.8203078895610041e+01
-    air_pressure_at_surface: 2.4606500910051160e+01
+    air_horizontal_streamfunction: 3.7327810215621135e+01
+    air_horizontal_velocity_potential: 4.1452065356557760e+01
+    eastward_wind: 4.4732323150991803e+01
+    northward_wind: 3.8322255502583637e+01
+    air_pressure_at_surface: 2.4713412343743371e+01
 Member 4: 
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    air_horizontal_streamfunction: 3.9397473046878098e+01
-    air_horizontal_velocity_potential: 3.3372375264729826e+01
-    eastward_wind: 4.1614065516746074e+01
-    northward_wind: 4.2071989308663291e+01
-    air_pressure_at_surface: 3.2006331623572535e+01
+    air_horizontal_streamfunction: 3.9415615431655816e+01
+    air_horizontal_velocity_potential: 3.3350797061503613e+01
+    eastward_wind: 4.1467096588922097e+01
+    northward_wind: 4.2306734744007159e+01
+    air_pressure_at_surface: 3.1762488279901987e+01
 Member 5: 
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    air_horizontal_streamfunction: 3.8842845590775305e+01
-    air_horizontal_velocity_potential: 3.7648042952800552e+01
-    eastward_wind: 3.8605013614709357e+01
-    northward_wind: 3.7497711969254560e+01
-    air_pressure_at_surface: 2.8482725268803208e+01
+    air_horizontal_streamfunction: 3.9079509153304301e+01
+    air_horizontal_velocity_potential: 3.7550303218562270e+01
+    eastward_wind: 3.8614574108062371e+01
+    northward_wind: 3.7414280190066563e+01
+    air_pressure_at_surface: 2.8595967187291642e+01
 Member 6: 
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    air_horizontal_streamfunction: 4.6443837017162551e+01
-    air_horizontal_velocity_potential: 4.2172484761382272e+01
-    eastward_wind: 4.3258240590114795e+01
-    northward_wind: 4.3803696732298746e+01
-    air_pressure_at_surface: 2.9865937511242496e+01
+    air_horizontal_streamfunction: 4.6233916100259847e+01
+    air_horizontal_velocity_potential: 4.1994035367047744e+01
+    eastward_wind: 4.3323405661094363e+01
+    northward_wind: 4.3277058513142698e+01
+    air_pressure_at_surface: 3.0035343715908795e+01
 Member 7: 
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    air_horizontal_streamfunction: 3.8732717075683539e+01
-    air_horizontal_velocity_potential: 4.0235678999880065e+01
-    eastward_wind: 4.1804785609604245e+01
-    northward_wind: 3.5055474003128481e+01
-    air_pressure_at_surface: 2.7782689702012362e+01
+    air_horizontal_streamfunction: 3.8546601960115282e+01
+    air_horizontal_velocity_potential: 4.0189864375614569e+01
+    eastward_wind: 4.1880233658563640e+01
+    northward_wind: 3.5192167616008909e+01
+    air_pressure_at_surface: 2.7969810915667235e+01
 Member 8: 
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    air_horizontal_streamfunction: 4.2209334591210173e+01
-    air_horizontal_velocity_potential: 4.3381769750082718e+01
-    eastward_wind: 3.7340624515845796e+01
-    northward_wind: 3.8794359861209202e+01
-    air_pressure_at_surface: 2.7648616066052128e+01
+    air_horizontal_streamfunction: 4.2171037239207941e+01
+    air_horizontal_velocity_potential: 4.3140322759382023e+01
+    eastward_wind: 3.7265039869422843e+01
+    northward_wind: 3.9202322905084635e+01
+    air_pressure_at_surface: 2.7617526787401804e+01
 Member 9: 
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    air_horizontal_streamfunction: 4.3684195891910946e+01
-    air_horizontal_velocity_potential: 4.3267662395820459e+01
-    eastward_wind: 3.9823656260748947e+01
-    northward_wind: 3.9799525932007377e+01
-    air_pressure_at_surface: 2.9698619002180696e+01
+    air_horizontal_streamfunction: 4.3628734052616934e+01
+    air_horizontal_velocity_potential: 4.2757149244989414e+01
+    eastward_wind: 3.9842078068229000e+01
+    northward_wind: 3.9930974214940768e+01
+    air_pressure_at_surface: 2.9883055347541234e+01
 Member 10: 
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    air_horizontal_streamfunction: 3.8682090043419628e+01
-    air_horizontal_velocity_potential: 5.1775889471610270e+01
-    eastward_wind: 4.2424750779465796e+01
-    northward_wind: 4.0631287696320776e+01
-    air_pressure_at_surface: 3.1136784682848734e+01
+    air_horizontal_streamfunction: 3.8683349908364548e+01
+    air_horizontal_velocity_potential: 5.1650170802117621e+01
+    eastward_wind: 4.2122082262759591e+01
+    northward_wind: 4.0741254865110626e+01
+    air_pressure_at_surface: 3.1044387065859937e+01
 Member 11: 
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    air_horizontal_streamfunction: 3.7202231761468674e+01
-    air_horizontal_velocity_potential: 3.6948594210363758e+01
-    eastward_wind: 4.0536624803158439e+01
-    northward_wind: 4.7654233239389931e+01
-    air_pressure_at_surface: 2.7914185991569358e+01
+    air_horizontal_streamfunction: 3.7214771627620891e+01
+    air_horizontal_velocity_potential: 3.6998613307448920e+01
+    eastward_wind: 4.0689924251588167e+01
+    northward_wind: 4.7603133336090870e+01
+    air_pressure_at_surface: 2.7957310886134039e+01
 Member 12: 
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    air_horizontal_streamfunction: 4.0112374031152022e+01
-    air_horizontal_velocity_potential: 3.7547318553106166e+01
-    eastward_wind: 3.9244970277745409e+01
-    northward_wind: 3.8742146410756966e+01
-    air_pressure_at_surface: 2.7433810812321131e+01
+    air_horizontal_streamfunction: 3.9808357167185314e+01
+    air_horizontal_velocity_potential: 3.7764833040836081e+01
+    eastward_wind: 3.9275907554950876e+01
+    northward_wind: 3.8641061087446694e+01
+    air_pressure_at_surface: 2.7396011933209024e+01
 Member 13: 
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    air_horizontal_streamfunction: 4.0078155047693727e+01
-    air_horizontal_velocity_potential: 4.0649967140520154e+01
-    eastward_wind: 3.4306676725339443e+01
-    northward_wind: 3.8287598066672260e+01
-    air_pressure_at_surface: 2.7638374640705528e+01
+    air_horizontal_streamfunction: 3.9965280477784788e+01
+    air_horizontal_velocity_potential: 4.1039049179180573e+01
+    eastward_wind: 3.4378857644669530e+01
+    northward_wind: 3.8221598202536910e+01
+    air_pressure_at_surface: 2.7263582869381949e+01
 Member 14: 
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    air_horizontal_streamfunction: 3.9390663316096116e+01
-    air_horizontal_velocity_potential: 4.0761512557519659e+01
-    eastward_wind: 4.0536854184156894e+01
-    northward_wind: 4.2108053584449799e+01
-    air_pressure_at_surface: 2.8901373136238099e+01
+    air_horizontal_streamfunction: 3.9101670834644338e+01
+    air_horizontal_velocity_potential: 4.0750817825700899e+01
+    eastward_wind: 4.0283541589241644e+01
+    northward_wind: 4.2497191619820470e+01
+    air_pressure_at_surface: 2.9009966038929711e+01
 Member 15: 
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    air_horizontal_streamfunction: 4.9141551526278896e+01
-    air_horizontal_velocity_potential: 4.0252861398065129e+01
-    eastward_wind: 4.2491499280335056e+01
-    northward_wind: 3.6297063651990420e+01
-    air_pressure_at_surface: 2.9048032883056457e+01
+    air_horizontal_streamfunction: 4.9132222608509423e+01
+    air_horizontal_velocity_potential: 4.0300631363740955e+01
+    eastward_wind: 4.2154113983311539e+01
+    northward_wind: 3.6487658744829126e+01
+    air_pressure_at_surface: 2.8933839463731175e+01
 Member 16: 
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    air_horizontal_streamfunction: 4.2779289279799016e+01
-    air_horizontal_velocity_potential: 4.7654889332505086e+01
-    eastward_wind: 4.3297819295455177e+01
-    northward_wind: 4.1465680406226987e+01
-    air_pressure_at_surface: 2.3754562547976043e+01
+    air_horizontal_streamfunction: 4.2916363148070822e+01
+    air_horizontal_velocity_potential: 4.7639110528782510e+01
+    eastward_wind: 4.3212698724648462e+01
+    northward_wind: 4.1718458564391689e+01
+    air_pressure_at_surface: 2.3677398799567779e+01
 Member 17: 
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    air_horizontal_streamfunction: 3.8596607350285730e+01
-    air_horizontal_velocity_potential: 3.7140964101282947e+01
-    eastward_wind: 3.9795693351448307e+01
-    northward_wind: 3.2862035052377628e+01
-    air_pressure_at_surface: 2.5698681164055028e+01
+    air_horizontal_streamfunction: 3.8431261126136533e+01
+    air_horizontal_velocity_potential: 3.7281510823821385e+01
+    eastward_wind: 3.9444204351855582e+01
+    northward_wind: 3.3232449443648974e+01
+    air_pressure_at_surface: 2.5637928243231158e+01
 Member 18: 
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    air_horizontal_streamfunction: 4.2523041571205908e+01
-    air_horizontal_velocity_potential: 3.9912308985732096e+01
-    eastward_wind: 3.8590954728151019e+01
-    northward_wind: 4.0237357009940595e+01
-    air_pressure_at_surface: 2.5421883887033193e+01
+    air_horizontal_streamfunction: 4.2760353050614611e+01
+    air_horizontal_velocity_potential: 4.0135414705883697e+01
+    eastward_wind: 3.8360746924382148e+01
+    northward_wind: 4.0345921242346861e+01
+    air_pressure_at_surface: 2.5428855297738892e+01
 Member 19: 
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    air_horizontal_streamfunction: 4.3585699395880390e+01
-    air_horizontal_velocity_potential: 3.8536970427143437e+01
-    eastward_wind: 4.0174404795424444e+01
-    northward_wind: 3.9251279930765037e+01
-    air_pressure_at_surface: 2.7523829855072098e+01
+    air_horizontal_streamfunction: 4.3661580082362619e+01
+    air_horizontal_velocity_potential: 3.8648672388998015e+01
+    eastward_wind: 4.0129566304721422e+01
+    northward_wind: 3.9331850475427906e+01
+    air_pressure_at_surface: 2.7498916383153482e+01
 Member 20: 
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    air_horizontal_streamfunction: 4.1523489279765727e+01
-    air_horizontal_velocity_potential: 4.9621877445981859e+01
-    eastward_wind: 4.9760874015699308e+01
-    northward_wind: 4.3366982041641229e+01
-    air_pressure_at_surface: 2.6721730213488460e+01
+    air_horizontal_streamfunction: 4.1595630176031747e+01
+    air_horizontal_velocity_potential: 4.9032434848064838e+01
+    eastward_wind: 4.9622077331921098e+01
+    northward_wind: 4.3342016404697517e+01
+    air_pressure_at_surface: 2.6505126134149386e+01
 Member 21: 
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    air_horizontal_streamfunction: 3.7785683245342838e+01
-    air_horizontal_velocity_potential: 3.7036076988945453e+01
-    eastward_wind: 3.9282588010177513e+01
-    northward_wind: 4.4668397278295906e+01
-    air_pressure_at_surface: 3.3169388933116437e+01
+    air_horizontal_streamfunction: 3.7761451464447944e+01
+    air_horizontal_velocity_potential: 3.6799451870548793e+01
+    eastward_wind: 3.9367770490372109e+01
+    northward_wind: 4.4627573308081963e+01
+    air_pressure_at_surface: 3.3031692643607862e+01
 Member 22: 
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    air_horizontal_streamfunction: 4.5516981103340306e+01
-    air_horizontal_velocity_potential: 3.6689668735606787e+01
-    eastward_wind: 4.1370933903158495e+01
-    northward_wind: 4.0336173915012843e+01
-    air_pressure_at_surface: 2.6634078609063604e+01
+    air_horizontal_streamfunction: 4.5717127117614346e+01
+    air_horizontal_velocity_potential: 3.6600864961088099e+01
+    eastward_wind: 4.1380031008662094e+01
+    northward_wind: 4.0399064973870487e+01
+    air_pressure_at_surface: 2.6720118228534147e+01
 Member 23: 
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    air_horizontal_streamfunction: 4.1774679968790863e+01
-    air_horizontal_velocity_potential: 4.0702540768756116e+01
-    eastward_wind: 4.0490572671329659e+01
-    northward_wind: 4.0352453089709698e+01
-    air_pressure_at_surface: 3.0581445146334588e+01
+    air_horizontal_streamfunction: 4.2192100064427031e+01
+    air_horizontal_velocity_potential: 4.0631158947704201e+01
+    eastward_wind: 4.0380647900612260e+01
+    northward_wind: 4.0174072826134541e+01
+    air_pressure_at_surface: 3.0411206099803177e+01
 Member 24: 
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    air_horizontal_streamfunction: 4.1188415987226541e+01
-    air_horizontal_velocity_potential: 3.8479261786363267e+01
-    eastward_wind: 3.7912070339143959e+01
-    northward_wind: 4.2790172365076415e+01
-    air_pressure_at_surface: 2.2582425529850433e+01
+    air_horizontal_streamfunction: 4.1284017561150300e+01
+    air_horizontal_velocity_potential: 3.8401070209522743e+01
+    eastward_wind: 3.7662446074239789e+01
+    northward_wind: 4.2597325735435120e+01
+    air_pressure_at_surface: 2.2794293891300217e+01

@@ -19,7 +19,7 @@ Input Dirac increment:
              Level   4 ~> -0.110E+02 vert. coord.
           nc2 =       89
 Adjoint test for block BUMP_VerticalBalance passed
-Norm of input parameter StdDev: 3.2367672341787118e+08
+Norm of input parameter StdDev: 3.2367672341787326e+08
 Adjoint test for block StdDev passed
        Independent levels:  1[4]
           Subset Sc0 size:             3170
@@ -43,7 +43,7 @@ Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L72x46 [3312]
   Fields:
-    air_horizontal_streamfunction: 3.6738259144564355e+11
-    air_horizontal_velocity_potential: 3.4330582222709686e+10
-    air_temperature: 5.1462394702503952e+03
-    air_pressure_at_surface: 1.6780108751963473e+02
+    air_horizontal_streamfunction: 3.9020717938523547e+11
+    air_horizontal_velocity_potential: 3.7651701714604294e+10
+    air_temperature: 4.8638532283023178e+03
+    air_pressure_at_surface: 1.2648423880990251e+02

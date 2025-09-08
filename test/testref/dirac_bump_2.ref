@@ -44,7 +44,7 @@ Adjoint test for block BUMP_PsiChiToUV passed
           nc2 =      250
           Independent levels:  1[2]
 Adjoint test for block BUMP_VerticalBalance passed
-Norm of input parameter StdDev: 5.7539391781678255e+01
+Norm of input parameter StdDev: 5.7680980822377037e+01
 Adjoint test for block StdDev passed
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -61,7 +61,7 @@ Adjoint test for block BUMP_StdDev passed
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
-Norm of input parameter stddev - 1: 5.7539391781678255e+01
+Norm of input parameter stddev - 1: 5.7680980822377037e+01
 Adjoint test for block BUMP_StdDev passed
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -88,13 +88,13 @@ Covariance(hybrid) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    eastward_wind: 1.5885846717183985e+00
-    northward_wind: 5.0803567566774199e-01
+    eastward_wind: 1.3534438622356435e+00
+    northward_wind: 3.2935299625183095e-01
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    eastward_wind: 3.6332544284472684e-01
-    northward_wind: 2.8798332323318876e-01
+    eastward_wind: 3.7468960719388023e-01
+    northward_wind: 4.4009033084133498e-01
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -130,7 +130,7 @@ Adjoint test for block BUMP_PsiChiToUV passed
           nc2 =      250
           Independent levels:  1[2]
 Adjoint test for block BUMP_VerticalBalance passed
-Norm of input parameter StdDev: 5.7539391781678255e+01
+Norm of input parameter StdDev: 5.7680980822377037e+01
 Adjoint test for block StdDev passed
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -147,7 +147,7 @@ Adjoint test for block BUMP_StdDev passed
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
-Norm of input parameter stddev - 1: 5.7539391781678255e+01
+Norm of input parameter stddev - 1: 5.7680980822377037e+01
 Adjoint test for block BUMP_StdDev passed
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -162,13 +162,13 @@ Covariance(hybrid1_SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    eastward_wind: 3.7259415926535306e-12
-    northward_wind: 1.3202009593235781e-12
+    eastward_wind: 3.2060791845238190e-12
+    northward_wind: 1.2827077503413443e-12
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    eastward_wind: 3.7259415926535306e-12
-    northward_wind: 1.3202009593235781e-12
+    eastward_wind: 3.2060791845238190e-12
+    northward_wind: 1.2827077503413443e-12
 Norm of input parameter inflation: 6.9558608381710329e+01
 Norm of input parameter StdDev: 1.7389652095427326e+02
        Independent levels:  1[2]
@@ -185,10 +185,10 @@ Covariance(hybrid2_SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    eastward_wind: 3.1771693434345925e+00
-    northward_wind: 1.0160713513355568e+00
+    eastward_wind: 2.7068877244687641e+00
+    northward_wind: 6.5870599250363715e-01
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    eastward_wind: 7.2665088568883618e-01
-    northward_wind: 5.7596664646668794e-01
+    eastward_wind: 7.4937921438718480e-01
+    northward_wind: 8.8018066168260023e-01

@@ -5,16 +5,16 @@
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
-          Norm of air_horizontal_streamfunction:  0.46680050E+02
-          Norm of air_horizontal_streamfunction:  0.49509623E+02
-          Norm of air_horizontal_streamfunction:  0.46890758E+02
-          Norm of air_horizontal_streamfunction:  0.43790685E+02
-          Norm of air_horizontal_streamfunction:  0.42963382E+02
-          Norm of air_horizontal_streamfunction:  0.37817869E+02
-          Norm of air_horizontal_streamfunction:  0.42621639E+02
-          Norm of air_horizontal_streamfunction:  0.43967414E+02
-          Norm of air_horizontal_streamfunction:  0.45670608E+02
-          Norm of air_horizontal_streamfunction:  0.37543224E+02
+          Norm of air_horizontal_streamfunction:  0.46774069E+02
+          Norm of air_horizontal_streamfunction:  0.49473350E+02
+          Norm of air_horizontal_streamfunction:  0.46803110E+02
+          Norm of air_horizontal_streamfunction:  0.43951618E+02
+          Norm of air_horizontal_streamfunction:  0.43045885E+02
+          Norm of air_horizontal_streamfunction:  0.37535957E+02
+          Norm of air_horizontal_streamfunction:  0.42717053E+02
+          Norm of air_horizontal_streamfunction:  0.43655893E+02
+          Norm of air_horizontal_streamfunction:  0.45349584E+02
+          Norm of air_horizontal_streamfunction:  0.37776353E+02
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -22,31 +22,31 @@
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
-          Norm of air_horizontal_streamfunction:  0.36700228E+02
-          Norm of air_horizontal_streamfunction:  0.37644642E+02
-          Norm of air_horizontal_streamfunction:  0.35734364E+02
-          Norm of air_horizontal_streamfunction:  0.38114699E+02
-          Norm of air_horizontal_streamfunction:  0.37597046E+02
-          Norm of air_horizontal_streamfunction:  0.40731181E+02
-          Norm of air_horizontal_streamfunction:  0.36903096E+02
-          Norm of air_horizontal_streamfunction:  0.41763852E+02
-          Norm of air_horizontal_streamfunction:  0.38909547E+02
-          Norm of air_horizontal_streamfunction:  0.34730147E+02
-          Norm of air_horizontal_streamfunction:  0.38661535E+02
-          Norm of air_horizontal_streamfunction:  0.39192538E+02
-          Norm of air_horizontal_streamfunction:  0.39358963E+02
-          Norm of air_horizontal_streamfunction:  0.42523426E+02
-          Norm of air_horizontal_streamfunction:  0.39158719E+02
-          Norm of air_horizontal_streamfunction:  0.40000157E+02
-          Norm of air_horizontal_streamfunction:  0.40151620E+02
-          Norm of air_horizontal_streamfunction:  0.38297785E+02
-          Norm of air_horizontal_streamfunction:  0.35928874E+02
-          Norm of air_horizontal_streamfunction:  0.38587629E+02
-          Norm of air_horizontal_streamfunction:  0.33406744E+02
-          Norm of air_horizontal_streamfunction:  0.38024458E+02
-          Norm of air_horizontal_streamfunction:  0.38736793E+02
-          Norm of air_horizontal_streamfunction:  0.39699423E+02
-          Norm of air_horizontal_streamfunction:  0.39157311E+02
+          Norm of air_horizontal_streamfunction:  0.37605821E+02
+          Norm of air_horizontal_streamfunction:  0.37200863E+02
+          Norm of air_horizontal_streamfunction:  0.35077753E+02
+          Norm of air_horizontal_streamfunction:  0.38494491E+02
+          Norm of air_horizontal_streamfunction:  0.37170797E+02
+          Norm of air_horizontal_streamfunction:  0.40512855E+02
+          Norm of air_horizontal_streamfunction:  0.36281219E+02
+          Norm of air_horizontal_streamfunction:  0.42116391E+02
+          Norm of air_horizontal_streamfunction:  0.40079268E+02
+          Norm of air_horizontal_streamfunction:  0.35628690E+02
+          Norm of air_horizontal_streamfunction:  0.38098718E+02
+          Norm of air_horizontal_streamfunction:  0.39391517E+02
+          Norm of air_horizontal_streamfunction:  0.39894646E+02
+          Norm of air_horizontal_streamfunction:  0.42481674E+02
+          Norm of air_horizontal_streamfunction:  0.36783160E+02
+          Norm of air_horizontal_streamfunction:  0.38989116E+02
+          Norm of air_horizontal_streamfunction:  0.41006634E+02
+          Norm of air_horizontal_streamfunction:  0.38921431E+02
+          Norm of air_horizontal_streamfunction:  0.36785924E+02
+          Norm of air_horizontal_streamfunction:  0.38937257E+02
+          Norm of air_horizontal_streamfunction:  0.34273483E+02
+          Norm of air_horizontal_streamfunction:  0.38175683E+02
+          Norm of air_horizontal_streamfunction:  0.39062532E+02
+          Norm of air_horizontal_streamfunction:  0.40025048E+02
+          Norm of air_horizontal_streamfunction:  0.38887402E+02
           Level   1 ~> 100.0%
           Level   2 ~> 100.0%
           Decimate full grid, at least      500 points required,    1090 valid points found
@@ -91,43 +91,43 @@
                 Level:   2 ~> cov. at class zero:  0.91E+00
                 Level:   1 ~> cov. at class zero:  0.10E+01
                 Level:   2 ~> cov. at class zero:  0.99E+00
-             Block air_horizontal_streamfunction:  0.14846263E+00 for       60 diagnostic points
+             Block air_horizontal_streamfunction:  0.13646608E+00 for       60 diagnostic points
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      3672.48 km
-                                 cor. ver. support:         3.09 vertical units
+                                 cor. hor. support:      3722.94 km
+                                 cor. ver. support:         3.10 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      3769.01 km
-                                 cor. ver. support:         3.09 vertical units
-             Block air_horizontal_streamfunction:  0.18141370E+00 for       60 diagnostic points
+                                 cor. hor. support:      3817.09 km
+                                 cor. ver. support:         3.10 vertical units
+             Block air_horizontal_streamfunction:  0.15267547E+00 for       60 diagnostic points
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      3495.00 km
-                                 cor. ver. support:         3.24 vertical units
+                                 cor. hor. support:      3607.14 km
+                                 cor. ver. support:         3.22 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      3595.96 km
-                                 cor. ver. support:         3.24 vertical units
-             Block air_horizontal_streamfunction:  0.24300529E+00 for       33 diagnostic points
+                                 cor. hor. support:      3694.74 km
+                                 cor. ver. support:         3.22 vertical units
+             Block air_horizontal_streamfunction:  0.23629308E+00 for       30 diagnostic points
                 Level:   1 ~> loc. at class zero:       0.83
                 Level:   2 ~> loc. at class zero:       0.82
                    Level:   1 ~> amplitude:        1.00
-                                 loc. hor. support:      4546.53 km
-                                 loc. ver. support:         4.09 vertical units
+                                 loc. hor. support:      4484.40 km
+                                 loc. ver. support:         4.10 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 loc. hor. support:      4277.69 km
-                                 loc. ver. support:         4.09 vertical units
-             Block air_horizontal_streamfunction:  0.26462522E+00 for       40 diagnostic points
+                                 loc. hor. support:      4344.81 km
+                                 loc. ver. support:         4.10 vertical units
+             Block air_horizontal_streamfunction:  0.25563407E+00 for       41 diagnostic points
                 Level:   1 ~> loc. at class zero:       0.92
                 Level:   2 ~> loc. at class zero:       0.92
                    Level:   1 ~> amplitude:        1.00
-                                 loc. hor. support:      5526.51 km
-                                 loc. ver. support:         6.02 vertical units
+                                 loc. hor. support:      5436.12 km
+                                 loc. ver. support:         6.03 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 loc. hor. support:      5662.04 km
-                                 loc. ver. support:         6.02 vertical units
-                Level:   1 ~> hybrid coefficients: 0.57 / 0.41
-                Level:   2 ~> hybrid coefficients: 0.49 / 0.46
-Norm of output parameter loc_rh - 1: 2.1624863849022570e+08
-Norm of output parameter loc_rv - 1: 2.0044142458539636e+02
-Norm of output parameter hyb_coef_ens - 1: 2.6210695670062506e+01
-Norm of output parameter hyb_coef_ens_lr - 1: 2.1387868664257379e+01
-Norm of output parameter loc_rh_lr - 1: 2.2931386529722533e+08
-Norm of output parameter loc_rv_lr - 1: 2.4681360916537037e+02
+                                 loc. hor. support:      5378.97 km
+                                 loc. ver. support:         6.04 vertical units
+                Level:   1 ~> hybrid coefficients: 0.50 / 0.47
+                Level:   2 ~> hybrid coefficients: 0.43 / 0.52
+Norm of output parameter loc_rh - 1: 2.1629752432907832e+08
+Norm of output parameter loc_rv - 1: 2.0069781305357549e+02
+Norm of output parameter hyb_coef_ens - 1: 2.2874214054211610e+01
+Norm of output parameter hyb_coef_ens_lr - 1: 2.4476774687110016e+01
+Norm of output parameter loc_rh_lr - 1: 2.2164649563253525e+08
+Norm of output parameter loc_rv_lr - 1: 2.4741780353859116e+02

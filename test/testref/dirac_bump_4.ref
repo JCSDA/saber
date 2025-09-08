@@ -39,7 +39,7 @@ Adjoint test for block BUMP_PsiChiToUV passed
           nc2 =      250
           Independent levels:  1[2]
 Adjoint test for block BUMP_VerticalBalance passed
-Norm of input parameter StdDev: 5.7539391781678255e+01
+Norm of input parameter StdDev: 5.7680980822377037e+01
 Adjoint test for block StdDev passed
        Independent levels:  1[2]
           Subset Sc0 size:              762
@@ -64,5 +64,5 @@ Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    eastward_wind: 8.0745722807009164e-13
-    northward_wind: 1.9192204276641528e-13
+    eastward_wind: 8.6849238475919806e-13
+    northward_wind: 2.8991823978138880e-13

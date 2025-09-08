@@ -21,124 +21,124 @@ Member 0:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.0c9f9d7 [197]
   Fields:
-    air_horizontal_streamfunction: 1.9245450384747397e+01
+    air_horizontal_streamfunction: 2.0812785120858997e+01
 Member 1: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.0c9f9d7 [197]
   Fields:
-    air_horizontal_streamfunction: 2.0932020624668024e+01
+    air_horizontal_streamfunction: 2.0772957394285537e+01
 Member 2: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.0c9f9d7 [197]
   Fields:
-    air_horizontal_streamfunction: 1.9357951865153414e+01
+    air_horizontal_streamfunction: 1.9378591947363912e+01
 Member 3: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.0c9f9d7 [197]
   Fields:
-    air_horizontal_streamfunction: 2.0736610744317723e+01
+    air_horizontal_streamfunction: 2.0950182200459530e+01
 Member 4: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.0c9f9d7 [197]
   Fields:
-    air_horizontal_streamfunction: 1.8840262303920042e+01
+    air_horizontal_streamfunction: 1.9269539938342326e+01
 Member 5: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.0c9f9d7 [197]
   Fields:
-    air_horizontal_streamfunction: 1.6247710305740249e+01
+    air_horizontal_streamfunction: 1.6668915387033362e+01
 Member 6: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.0c9f9d7 [197]
   Fields:
-    air_horizontal_streamfunction: 2.4211097501539214e+01
+    air_horizontal_streamfunction: 2.3135675279016866e+01
 Member 7: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.0c9f9d7 [197]
   Fields:
-    air_horizontal_streamfunction: 1.8433010112320105e+01
+    air_horizontal_streamfunction: 1.8316877431737566e+01
 Member 8: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.0c9f9d7 [197]
   Fields:
-    air_horizontal_streamfunction: 2.1837387859762757e+01
+    air_horizontal_streamfunction: 2.1388389973854729e+01
 Member 9: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.0c9f9d7 [197]
   Fields:
-    air_horizontal_streamfunction: 2.4963894115740160e+01
+    air_horizontal_streamfunction: 2.3885067122886653e+01
 Member 10: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.0c9f9d7 [197]
   Fields:
-    air_horizontal_streamfunction: 1.8067386024228558e+01
+    air_horizontal_streamfunction: 1.7732773633366822e+01
 Member 11: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.0c9f9d7 [197]
   Fields:
-    air_horizontal_streamfunction: 3.0144535559187815e+01
+    air_horizontal_streamfunction: 2.9306387355187503e+01
 Member 12: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.0c9f9d7 [197]
   Fields:
-    air_horizontal_streamfunction: 1.8316440670699908e+01
+    air_horizontal_streamfunction: 1.7434254594480599e+01
 Member 13: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.0c9f9d7 [197]
   Fields:
-    air_horizontal_streamfunction: 2.1205466923594052e+01
+    air_horizontal_streamfunction: 2.1568910136494953e+01
 Member 14: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.0c9f9d7 [197]
   Fields:
-    air_horizontal_streamfunction: 1.8936206281094901e+01
+    air_horizontal_streamfunction: 1.9304995842753705e+01
 Member 15: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.0c9f9d7 [197]
   Fields:
-    air_horizontal_streamfunction: 1.7689580242338995e+01
+    air_horizontal_streamfunction: 1.8429631016873905e+01
 Member 16: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.0c9f9d7 [197]
   Fields:
-    air_horizontal_streamfunction: 1.8794374835916280e+01
+    air_horizontal_streamfunction: 1.8910326528178008e+01
 Member 17: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.0c9f9d7 [197]
   Fields:
-    air_horizontal_streamfunction: 2.1478739685154647e+01
+    air_horizontal_streamfunction: 2.0679861585299317e+01
 Member 18: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.0c9f9d7 [197]
   Fields:
-    air_horizontal_streamfunction: 1.9328314649426378e+01
+    air_horizontal_streamfunction: 1.9909521879653408e+01
 Member 19: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.0c9f9d7 [197]
   Fields:
-    air_horizontal_streamfunction: 1.6118597202331809e+01
+    air_horizontal_streamfunction: 1.7110219306022739e+01
 Member 20: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.0c9f9d7 [197]
   Fields:
-    air_horizontal_streamfunction: 1.9200917314829269e+01
+    air_horizontal_streamfunction: 1.9758139896660484e+01
 Member 21: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.0c9f9d7 [197]
   Fields:
-    air_horizontal_streamfunction: 1.9124612164862615e+01
+    air_horizontal_streamfunction: 1.9396540665475612e+01
 Member 22: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.0c9f9d7 [197]
   Fields:
-    air_horizontal_streamfunction: 1.5793481816882162e+01
+    air_horizontal_streamfunction: 1.5588256741348223e+01
 Member 23: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.0c9f9d7 [197]
   Fields:
-    air_horizontal_streamfunction: 2.2323991226496300e+01
+    air_horizontal_streamfunction: 2.1901755953694796e+01
 Member 24: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: unstructured.0c9f9d7 [197]
   Fields:
-    air_horizontal_streamfunction: 1.9013656773608741e+01
+    air_horizontal_streamfunction: 1.9528995581539547e+01

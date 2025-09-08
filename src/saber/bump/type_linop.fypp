@@ -28,7 +28,6 @@ implicit none
 
 logical,parameter :: check_data = .false.             !< Activate data check for all linear operations
 real(kind_real),parameter :: S_inf = 1.0e-2_kind_real !< Minimum interpolation coefficient
-integer,parameter :: nmin = 3                         !< Minimum number of neighbors for the smooth interpolation
 
 ! Linear operator derived type
 type linop_type
@@ -1352,39 +1351,35 @@ do i_dst=1,n_dst
       ! Find nearest valid neighbors
       ithread = 1
 !$    ithread = omp_get_thread_num()+1
+      n = 0
+      found = .false.
       if (lrh(i_dst)>zero) then
          ! Count number of required neighbors
          call tree_src%count_nearest_neighbors(lon_dst(i_dst),lat_dst(i_dst),lrh(i_dst),n)
-         n = max(n,1)
-      else
-         n = 1
       end if
 
-      ! Allocation
-      allocate(nn_index(n))
-      allocate(nn_dist(n))
-      allocate(nn_valid(n))
+      if (n>0) then
+         ! Allocation
+         allocate(nn_index(n))
+         allocate(nn_dist(n))
+         allocate(nn_valid(n))
 
-      ! Find nearest neighors
-      call tree_src%find_nearest_neighbors(mpl,lon_dst(i_dst),lat_dst(i_dst),n,nn_index,nn_dist)
+         ! Find nearest neighors
+         call tree_src%find_nearest_neighbors(mpl,lon_dst(i_dst),lat_dst(i_dst),n,nn_index,nn_dist)
 
-      ! Check if neighbors are masked
-      do i=1,n
-         nn_valid(i) = mask_src(nn_index(i))
-      end do
+         ! Check if neighbors are masked
+         do i=1,n
+            nn_valid(i) = mask_src(nn_index(i))
+         end do
 
-      ! Check arcs
-      do i=1,n
-         if (nn_valid(i)) call bnda%check_arc(mpl,lon_src(nn_index(i)),lat_src(nn_index(i)), &
- & lon_dst(i_dst),lat_dst(i_dst),il0,nn_valid(i))
-      end do
+         ! Check arcs
+         do i=1,n
+            if (nn_valid(i)) call bnda%check_arc(mpl,lon_src(nn_index(i)),lat_src(nn_index(i)),lon_dst(i_dst),lat_dst(i_dst), &
+ & il0,nn_valid(i))
+         end do
 
-      ! Check validity
-      found = .true.
-      if (lrh(i_dst)>zero) then
-         if (count(nn_valid(1:n))<nmin) found = .false.
-      else
-         if (.not.nn_valid(1)) found = .false.
+         ! Check validity
+         found = (count(nn_valid(1:n))>0)
       end if
 
       if (found) then
@@ -1418,12 +1413,12 @@ do i_dst=1,n_dst
          end if
       else
          ! Fallback to nearest non-masked neighbor
-         n = n+1
+         n = 1
          do while (.not.found)
             if (n>n_src) call mpl%abort('${subr}$','cannot find valid nearest neighbor')
 
             ! Release memory
-            deallocate(nn_index)
+            if (allocated(nn_index)) deallocate(nn_index)
 
             ! Allocation
             allocate(nn_index(n))
@@ -1442,9 +1437,9 @@ do i_dst=1,n_dst
       end if
 
       ! Release memory
-      deallocate(nn_index)
-      deallocate(nn_dist)
-      deallocate(nn_valid)
+      if (allocated(nn_index)) deallocate(nn_index)
+      if (allocated(nn_dist)) deallocate(nn_dist)
+      if (allocated(nn_valid)) deallocate(nn_valid)
    end if
 
    ! Update

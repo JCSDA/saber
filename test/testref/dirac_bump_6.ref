@@ -10,19 +10,19 @@ Covariance(hybrid) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    eastward_wind: 9.5069162749111804e+00
-    northward_wind: 1.0248748436398657e+01
+    eastward_wind: 8.0381707627961649e+00
+    northward_wind: 7.8870950958892827e+00
 Adjoint test for block Ensemble passed
 Square-root test for block Ensemble passed
 Covariance(hybrid1_SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    eastward_wind: 9.5069162749111804e+00
-    northward_wind: 1.0248748436398657e+01
+    eastward_wind: 8.0381707627961649e+00
+    northward_wind: 7.8870950958892827e+00
 Covariance(hybrid2_ensemble) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    eastward_wind: 9.5069162749111804e+00
-    northward_wind: 1.0248748436398657e+01
+    eastward_wind: 8.0381707627961649e+00
+    northward_wind: 7.8870950958892827e+00

@@ -3,7 +3,7 @@ Input Dirac increment:
   Geometry: L40x21 [840]
   Fields:
     air_horizontal_streamfunction: 1.0000000000000000e+00
-Norm of input parameter StdDev: 4.0693857173965277e+01
+Norm of input parameter StdDev: 4.0927842008386371e+01
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -18,4 +18,4 @@ Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    air_horizontal_streamfunction: 2.0497754116476830e+00
+    air_horizontal_streamfunction: 1.8010203045532513e+00

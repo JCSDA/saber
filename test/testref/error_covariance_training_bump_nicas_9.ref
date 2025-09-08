@@ -47,12 +47,12 @@
           Convolution / communication adjoint test result: T
           Component NICAS adjoint test result:             T
              Min / max: 1.0000000 /  1.0000000 over     50 tests
-             Min / max: 0.8073385 /  1.4670308 over     50 tests
+             Min / max: 0.8073385 /  1.4045746 over     50 tests
              Min / max: 1.0000000 /  1.0000000 over     50 tests
-             Min / max: 0.8073385 /  1.4670308 over     50 tests
-             0.0 /    0.0:  1.1169505
-          Level   1:  0.0000000 -  1.1169505
-          Level   2:  0.0000000 -  0.6201234
+             Min / max: 0.8073385 /  1.4045746 over     50 tests
+             0.0 /    0.0:  0.8612920
+          Level   1:  0.0000000 -  0.8612920
+          Level   2:  0.0000000 -  0.5811945
              0.0 /    0.0:  0.0000000
           Level   1:  0.0000000 -  0.0000000
           Level   2:  0.0000000 -  0.0000000
