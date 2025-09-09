@@ -394,6 +394,9 @@ endif
 ! Randomization leaves atlas halos out of date, so set dirty flag
 call fields%set_dirty(.true.)
 
+! Release memory
+call afield%final()
+
 end subroutine randomize
 
 ! --------------------------------------------------------------------------------------------------
@@ -614,13 +617,16 @@ endif
 deallocate(needvrs)
 deallocate(tbdvars)
 deallocate(gvars2d,gvars3d)
-call afield%final()
 
 ! GSI covariance leaves atlas halos out of date, so set dirty flag
 ! ----------------------------------------------------------------
 do ii=1,ntimes
   call fields(ii)%set_dirty(.true.)
 enddo
+
+! Release memory
+! --------------
+call afield%final()
 
 end subroutine multiply
 
@@ -783,6 +789,7 @@ end subroutine multiply
       call afield%data(rank2)
       ier=0
    endif
+   call afield%final()
    end subroutine get_rank2_
 
    ! copy atlas array into GSI array

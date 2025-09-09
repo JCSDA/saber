@@ -2539,6 +2539,7 @@ deallocate(lat_cxa)
 deallocate(vert_coord_cxa)
 deallocate(smask_cxa)
 deallocate(cxa_to_cx)
+call agrid%final()
 
 ! Probe out
 @:probe_out()

@@ -101,6 +101,12 @@ f_checks(:) = c_checks(:)
 ! -------------------
 call f_self%create(f_comm, f_conf, ntimes, f_bg, f_fg, f_valid_times, nchecks, f_checks)
 
+! Release memory
+! --------------
+do itime = 1, ntimes
+  call f_bg(itime)%final()
+  call f_fg(itime)%final()
+enddo
 deallocate(f_bg, f_fg, f_valid_times)
 
 end subroutine gsi_covariance_create_cpp
@@ -156,6 +162,10 @@ f_inc = atlas_fieldset(c_inc)
 ! -------------------
 call f_self%randomize(f_inc)
 
+! Release memory
+! --------------
+call f_inc%final()
+
 end subroutine gsi_covariance_randomize_cpp
 
 ! --------------------------------------------------------------------------------------------------
@@ -190,6 +200,11 @@ enddo
 ! -------------------
 call f_self%multiply(ntimes, f_inc)
 
+! Release memory
+! --------------
+do itime = 1, ntimes
+  call f_inc(itime)%final
+enddo
 deallocate(f_inc)
 
 end subroutine gsi_covariance_multiply_cpp

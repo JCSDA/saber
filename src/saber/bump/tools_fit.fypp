@@ -895,6 +895,11 @@ do idir=1,2
    end do
 end do
 
+! Release memory
+call agrid_work%final()
+call aconfig_work_grid%final()
+call aconfig_work_proj%final()
+
 ! Probe out
 @:probe_out()
 

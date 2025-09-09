@@ -142,6 +142,16 @@ TEST( test_nicas_sqrt )
   FCTEST_CHECK_CLOSE(dp_in,dp_out,repro_th)
 
   ! Release memory
+  call cv_1%final()
+  call cv_2%final()
+  call grid_out%final()
+  call fspace_out%final()
+  call fspace_out_sc%final()
+  call fset%final()
+  call fset_out_1%final()
+  call fset_out_2%final()
+
+  ! Release memory
   call bump%dealloc()
 END_TEST
 

@@ -301,6 +301,9 @@ if (allocated(geom%gmask_c0a)) deallocate(geom%gmask_c0a)
 if (allocated(geom%l0_to_l0i)) deallocate(geom%l0_to_l0i)
 if (allocated(geom%grp2d)) deallocate(geom%grp2d)
 call geom%io%dealloc
+call geom%aconfig_work_grid%final()
+call geom%aproj_work%final()
+call geom%afunctionspace_mg%final()
 geom%allocated = .false.
 
 ! Probe out
@@ -576,21 +579,18 @@ if (present(fieldset)) then
    if (fieldset%has_field('owned')) then
       afield = fieldset%field('owned')
       call field_to_array(afield,mpl,geom%owned_mga)
-      call afield%final()
    end if
 
    ! Get vertical coordinate
    if (nam%vert_coord_name /= '') then
       afield = fieldset%field(nam%vert_coord_name)
       call field_to_array(afield,mpl,geom%vert_coord_mga)
-      call afield%final()
    end if
 
    ! Get geometry mask
    if (nam%gmask_name /= '') then
       afield = fieldset%field(nam%gmask_name)
       call field_to_array(afield,mpl,geom%gmask_mga)
-      call afield%final()
    end if
 end if
 
@@ -929,6 +929,18 @@ else
    geom%ymin = geom%ymin*deg2rad
    geom%ymax = geom%ymax*deg2rad
 end if
+
+! Release memory
+call aconfig_domain%final()
+call aconfig_work_grid%final()
+call aconfig_work_proj%final()
+call afield%final()
+call afield_lonlat%final()
+call afunctionspace_nc%final()
+call afunctionspace_pc%final()
+call afunctionspace_sc%final()
+call agrid_work%final()
+call anodes%final()
 
 ! Probe out
 @:probe_out()
@@ -2094,9 +2106,6 @@ else
             end do
          end do
 
-         ! Release memory
-         call agrid%final()
-
          ! Local number of valid points
          nssa = zss_count(lmask_cxa)
       else
@@ -2742,6 +2751,7 @@ deallocate(lon_s)
 deallocate(lat_s)
 deallocate(order_s)
 deallocate(gmask_s)
+call agrid%final()
 
 ! Probe out
 @:probe_out()

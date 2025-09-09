@@ -407,6 +407,9 @@ real_ptr(2,:) = reshape(self%grid_lats(self%isc:self%iec, &
 ! Add field to fieldset
 call grid_fieldset%add(lonlat_field)
 
+! Release memory
+call lonlat_field%final()
+
 end subroutine set_atlas_lonlat
 
 ! --------------------------------------------------------------------------------------------------

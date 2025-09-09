@@ -3708,6 +3708,9 @@ if (.not.nam%load_nicas_global) then
    end if
 end if
 
+! Release memory
+call agrid%final()
+
 ! Probe out
 @:probe_out()
 

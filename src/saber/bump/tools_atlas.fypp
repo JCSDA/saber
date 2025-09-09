@@ -144,6 +144,9 @@ agrid = atlas_structuredgrid(aconfig_grid_out)
 ! Define number of points
 if (present(n)) n = nx*ny
 
+! Release memory
+call aconfig_grid_out%final()
+
 ! Probe out
 @:probe_out()
 
@@ -390,6 +393,11 @@ case default
    call mpl%abort('${subr}$','wrong function space '//afunctionspace%name())
 end select
 
+! Release memory
+call afunctionspace_nc%final()
+call afunctionspace_pc%final()
+call afunctionspace_sc%final()
+
 ! Probe out
 @:probe_out()
 
@@ -424,6 +432,9 @@ afunctionspace = afield%functionspace()
 
 ! Get function space size
 nmga = get_atlas_functionspace_size(mpl,afunctionspace)
+
+! Release memory
+call afunctionspace%final()
 
 ! Probe out
 @:probe_out()

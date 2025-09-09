@@ -1581,6 +1581,9 @@ call bump%wind%psichi_to_uv(bump%mpl,bump%geom(1),fld_c0a(:,:,iv_psi),fld_c0a(:,
 ! Fortran array on subset Sc0 to fieldset
 call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
 
+! Release memory
+call afield%final()
+
 ! Probe out
 @:probe_out()
 
@@ -1648,6 +1651,9 @@ call bump%wind%psichi_to_uv_ad(bump%mpl,bump%geom(1),fld_c0a(:,:,iv_ua),fld_c0a(
 
 ! Fortran array on subset Sc0 to fieldset
 call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
+
+! Release memory
+call afield%final()
 
 ! Probe out
 @:probe_out()

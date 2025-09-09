@@ -123,14 +123,14 @@ do iv=1,fieldset%nv
 
       ! Add field
       call fieldset%add(afield)
-
-      ! Release pointer
-      call afield%final()
    end if
 end do
 
 ! Check fieldset
 call fieldset%check(mpl)
+
+! Release memory
+call afield%final()
 
 ! Probe out
 @:probe_out()
@@ -262,14 +262,13 @@ do iv=1,fieldset_out%nv
             call mpl%abort('${subr}$','wrong field rank')
          end select
       end if
-
-      ! Release pointer
-      call afield_out%final()
    end if
-
-   ! Release pointer
-   call afield_in%final()
 end do
+
+! Release memory
+call afield_in%final()
+call afield_out%final()
+call afunctionspace%final()
 
 ! Check fieldset
 call fieldset_out%check(mpl)
@@ -383,10 +382,10 @@ do iv=1,fieldset%nv
    ! Print norm
    write(mpl%test,'(a10,a,e15.8)') '','Norm of '//trim(afield%name())//': ',norm
    call mpl%flush
-
-   ! Release pointer
-   call afield%final()
 end do
+
+! Release memory
+call afield%final()
 
 ! Probe out
 @:probe_out()
@@ -432,13 +431,13 @@ do iv=1,fieldset%nv
    case default
       call mpl%abort('${subr}$','wrong field rank')
    end select
-
-   ! Release pointer
-   call afield%final()
 end do
 
 ! Apply mask
 call fieldset%apply_mask(mpl)
+
+! Release memory
+call afield%final()
 
 ! Probe out
 @:probe_out()
@@ -487,14 +486,14 @@ do iv=1,fieldset_out%nv
    case default
       call mpl%abort('${subr}$','wrong field rank')
    end select
-
-   ! Release pointers
-   call afield_in%final()
-   call afield_out%final()
 end do
 
 ! Apply mask
 call fieldset_out%apply_mask(mpl)
+
+! Release memory
+call afield_in%final()
+call afield_out%final()
 
 ! Probe out
 @:probe_out()
@@ -543,14 +542,14 @@ do iv=1,fieldset_out%nv
    case default
       call mpl%abort('${subr}$','wrong field rank')
    end select
-
-   ! Release pointers
-   call afield_in%final()
-   call afield_out%final()
 end do
 
 ! Apply mask
 call fieldset_out%apply_mask(mpl)
+
+! Release memory
+call afield_in%final()
+call afield_out%final()
 
 ! Probe out
 @:probe_out()
@@ -597,13 +596,13 @@ do iv=1,fieldset%nv
    case default
       call mpl%abort('${subr}$','wrong field rank')
    end select
-
-   ! Release pointer
-   call afield%final()
 end do
 
 ! Apply mask
 call fieldset%apply_mask(mpl)
+
+! Release memory
+call afield%final()
 
 ! Probe out
 @:probe_out()
@@ -659,14 +658,14 @@ do iv=1,fieldset_out%nv
    case default
       call mpl%abort('${subr}$','wrong field rank')
    end select
-
-   ! Release pointers
-   call afield_in%final()
-   call afield_out%final()
 end do
 
 ! Apply mask
 call fieldset_out%apply_mask(mpl)
+
+! Release memory
+call afield_in%final()
+call afield_out%final()
 
 ! Probe out
 @:probe_out()
@@ -712,13 +711,13 @@ do iv=1,fieldset%nv
    case default
       call mpl%abort('${subr}$','wrong field rank')
    end select
-
-   ! Release pointer
-   call afield%final()
 end do
 
 ! Apply mask
 call fieldset%apply_mask(mpl)
+
+! Release memory
+call afield%final()
 
 ! Probe out
 @:probe_out()
@@ -767,13 +766,13 @@ do iv=1,fieldset%nv
    case default
       call mpl%abort('${subr}$','wrong field rank')
    end select
-
-   ! Release pointer
-   call afield%final()
 end do
 
 ! Apply mask
 call fieldset%apply_mask(mpl)
+
+! Release memory
+call afield%final()
 
 ! Probe out
 @:probe_out()
@@ -819,6 +818,9 @@ do iv=1,fieldset%nv
    if (get_atlas_field_size(mpl,afield)/=fieldset%nmga) call mpl%abort('${subr}$','wrong horizontal size')
    if ((afield%levels()/=1).and.(afield%levels()/=fieldset%nl0)) call mpl%abort('${subr}$','wrong number of levels')
 end do
+
+! Release memory
+call afield%final()
 
 ! Probe out
 @:probe_out()
@@ -870,11 +872,11 @@ do iv=1,fieldset_in%nv
    shp_in = afield_in%shape()
    shp_out = afield_in%shape()
    if (any(shp_in/=shp_out)) call mpl%abort('${subr}$','inconsistent shapes')
-
-   ! Release pointers
-   call afield_in%final()
-   call afield_out%final()
 end do
+
+! Release memory
+call afield_in%final()
+call afield_out%final()
 
 ! Probe out
 @:probe_out()
@@ -990,7 +992,7 @@ afield = fieldset%field(fieldset%variables(iv))
 ! ATLAS field to Fortran array
 call field_to_array(afield,mpl,fld,fieldset%lev2d)
 
-! Release pointer
+! Release memory
 call afield%final()
 
 ! Probe out
@@ -1071,7 +1073,7 @@ afield = fieldset%field(fieldset%variables(iv))
 ! Fortran array to ATLAS field
 call field_from_array(afield,mpl,fld,fieldset%lev2d)
 
-! Release pointer
+! Release memory
 call afield%final()
 
 ! Probe out

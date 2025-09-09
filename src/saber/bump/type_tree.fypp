@@ -119,6 +119,7 @@ call tree%kd%build(tree%neff,lon_deg,lat_deg)
 ! Release memory
 deallocate(lon_deg)
 deallocate(lat_deg)
+call ageometry%final()
 
 ! Probe out
 @:probe_out()
@@ -148,10 +149,10 @@ if (allocated(tree%from_eff)) then
    deallocate(tree%from_eff)
    deallocate(tree%lon)
    deallocate(tree%lat)
-
-   ! Destroy KDTree
-   call tree%kd%final()
 end if
+
+! Destroy KDTree
+call tree%kd%final()
 
 ! Probe out
 @:probe_out()
