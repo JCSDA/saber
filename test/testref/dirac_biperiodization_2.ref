@@ -2,13 +2,17 @@ Input Dirac increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: structured [3763]
   Fields:
-    air_horizontal_streamfunction: 1.0000000000000000e+00
+  - air_horizontal_streamfunction (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 1.3287270794578793e-04
+    + stddev = 1.1527042463086886e-02
 - xspace: LocalConfiguration[root={type => linear , start => 5.2120971254055749e+05 , end => 6.9620971254055749e+05 , N => 71 , endpoint => true}]
 - yspace: LocalConfiguration[root={type => linear , start => -2.1173080099392682e+04 , end => 1.0882691990060732e+05 , N => 53 , endpoint => true}]
 Outer grid size: 3763
 - xspace: LocalConfiguration[root={type => linear , start => 5.2120971254055749e+05 , end => 7.1370971254055749e+05 , N => 78 , endpoint => true}]
 - yspace: LocalConfiguration[root={type => linear , start => -2.1173080099392682e+04 , end => 1.2132691990060732e+05 , N => 58 , endpoint => true}]
-Inner grid size: 4524
+Info     : Inner grid size: 4524
 Norm of input parameter inputTestFile: 8.1488556410001294e+01
 Norm of output parameter outputInnerTestFile: 7.1928660692813907e+01
 Norm of output parameter outputOuterTestFile: 8.0177487529753819e+01
@@ -21,4 +25,8 @@ Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: structured [3763]
   Fields:
-    air_horizontal_streamfunction: 1.0000000000000000e+00
+  - air_horizontal_streamfunction (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 1.3287270794578793e-04
+    + stddev = 1.1527042463086886e-02

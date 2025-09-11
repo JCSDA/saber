@@ -2,7 +2,11 @@ Input Dirac increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-12 [864]
   Fields:
-    air_horizontal_streamfunction: 1.0000000000000000e+00
+  - air_horizontal_streamfunction (1 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 1.1574074074074073e-03
+    + stddev = 3.4020690871988765e-02
 Adjoint test for block gauss to cubed-sphere-dual passed
 Inner inverse test for block gauss to cubed-sphere-dual passed: U Uinv (U x) == (U x)
 Outer inverse test for block gauss to cubed-sphere-dual passed: Uinv U (Uinv x) == (Uinv x)
@@ -11,4 +15,8 @@ Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-12 [864]
   Fields:
-    air_horizontal_streamfunction: 4.2853661038684654e-01
+  - air_horizontal_streamfunction (1 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 4.0784012766927408e-01
+    + mean   = 7.3707903934032448e-04
+    + stddev = 1.4568900819965307e-02

@@ -2,8 +2,14 @@ Input Dirac increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    eastward_wind: 1.0000000000000000e+00
-    northward_wind: 0.0000000000000000e+00
+  - eastward_wind (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 5.9523809523809529e-04
+    + stddev = 2.4397501823713856e-02
+  - northward_wind (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -83,8 +89,16 @@ Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    eastward_wind: 1.3534438622356439e+00
-    northward_wind: 3.2935299625183101e-01
+  - eastward_wind (2 levels):
+    + min    = -4.9205422200514701e-02
+    + max    = 9.3332292735982358e-01
+    + mean   = 2.6937821895193898e-03
+    + stddev = 3.2920387220210678e-02
+  - northward_wind (2 levels):
+    + min    = -1.6996745503541394e-01
+    + max    = 1.2139154453781746e-01
+    + mean   = -3.6169630717027457e-04
+    + stddev = 8.0296358255301115e-03
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -152,8 +166,16 @@ Covariance(SABER1_SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    eastward_wind: 3.2060791845238190e-12
-    northward_wind: 1.2827077503413443e-12
+  - eastward_wind (2 levels):
+    + min    = -3.5362039973425105e-13
+    + max    = 1.3478032211140141e-12
+    + mean   = -4.5912057011016145e-17
+    + stddev = 7.8243599529061234e-14
+  - northward_wind (2 levels):
+    + min    = -3.2889066103205936e-13
+    + max    = 3.2622646484939685e-13
+    + mean   = -1.6387923157531297e-17
+    + stddev = 3.1304178493999455e-14
 Norm of input parameter inflation: 6.9558608381710329e+01
 Norm of input parameter StdDev: 1.7389652095427326e+02
        Independent levels:  1[2]
@@ -170,5 +192,13 @@ Covariance(SABER2_SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
   Fields:
-    eastward_wind: 2.7068877244687641e+00
-    northward_wind: 6.5870599250363715e-01
+  - eastward_wind (2 levels):
+    + min    = -9.8410844401244119e-02
+    + max    = 1.8666458547182987e+00
+    + mean   = 5.3875643790388195e-03
+    + stddev = 6.5840774440359615e-02
+  - northward_wind (2 levels):
+    + min    = -3.3993491007083354e-01
+    + max    = 2.4278308907565277e-01
+    + mean   = -7.2339261434053331e-04
+    + stddev = 1.6059271651059630e-02

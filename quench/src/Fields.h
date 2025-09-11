@@ -39,7 +39,8 @@ class Fields : public util::Printable,
   // Constructors/destructor
   Fields(const Geometry &,
          const oops::Variables &,
-         const util::DateTime &);
+         const util::DateTime &,
+         const bool &);
   Fields(const Fields &,
          const Geometry &);
   Fields(const Fields &,
@@ -47,6 +48,10 @@ class Fields : public util::Printable,
   Fields(const Fields &);
   ~Fields()
     {}
+
+  // State flag accessor
+  const bool & isState() const
+    {return isState_;}
 
   // Basic operators
   void zero();
@@ -99,15 +104,18 @@ class Fields : public util::Printable,
   // Grid interpolations
   static std::vector<quench::Interpolation>& interpolations();
 
-  // Duplicate points
-  void resetDuplicatePoints();
-
  private:
   // Print
   void print(std::ostream &) const;
 
   // Return grid interpolation
   std::vector<quench::Interpolation>::iterator setupGridInterpolation(const Geometry &) const;
+
+  // Duplicate points
+  void resetDuplicatePoints();
+
+  // Check that fields are compatible
+  bool checkFieldsCompatible(const Fields &) const;
 
   // Geometry
   std::shared_ptr<const Geometry> geom_;
@@ -120,6 +128,9 @@ class Fields : public util::Printable,
 
   // Fieldset
   mutable atlas::FieldSet fset_;
+
+  // State flag (false if Increment)
+  const bool isState_;
 };
 
 // -----------------------------------------------------------------------------

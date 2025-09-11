@@ -38,15 +38,15 @@ void FieldsIOGmsh::write(const Geometry & geom,
   }
 
   // GMSH file path
-  std::string gmshfilepath = conf.getString("filepath");;
-  gmshfilepath.append(".msh");
-  oops::Log::info() << "Info     : Writing file: " << gmshfilepath << std::endl;
+  std::string filePath = conf.getString("filepath");;
+  filePath.append(".msh");
+  oops::Log::info() << "Info     : Writing file: " << filePath << std::endl;
 
   // GMSH configuration
   const auto gmshConfig =
   atlas::util::Config("coordinates", "xyz") | atlas::util::Config("ghost", true) |
   atlas::util::Config("info", true);
-  atlas::output::Gmsh gmsh(gmshfilepath, gmshConfig);
+  atlas::output::Gmsh gmsh(filePath, gmshConfig);
 
   // Write GMSH
   gmsh.write(geom.mesh());

@@ -2,49 +2,89 @@ Member 0:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: S40x20 [800]
   Fields:
-    air_horizontal_streamfunction: 2.6620275517839023e+01
+  - air_horizontal_streamfunction (10 levels):
+    + min    = -1.7677650225544357e+00
+    + max    = 1.6991019921466621e+00
+    + mean   = 2.7136763895269319e-03
+    + stddev = 2.9762995899307881e-01
 Member 1: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: S40x20 [800]
   Fields:
-    air_horizontal_streamfunction: 2.5901045342933084e+01
+  - air_horizontal_streamfunction (10 levels):
+    + min    = -1.1988676906226075e+00
+    + max    = 1.3079357737374560e+00
+    + mean   = -1.1182118799841659e-02
+    + stddev = 2.8938460028496943e-01
 Member 2: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: S40x20 [800]
   Fields:
-    air_horizontal_streamfunction: 2.6612747644701319e+01
+  - air_horizontal_streamfunction (10 levels):
+    + min    = -1.4100586451168056e+00
+    + max    = 1.5282376896078040e+00
+    + mean   = 1.7984722967178759e-02
+    + stddev = 2.9701408899410120e-01
 Member 3: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: S40x20 [800]
   Fields:
-    air_horizontal_streamfunction: 2.7047739909863619e+01
+  - air_horizontal_streamfunction (10 levels):
+    + min    = -1.2867548822943358e+00
+    + max    = 1.5040756153624175e+00
+    + mean   = -6.8936752641995938e-03
+    + stddev = 3.0234323698310916e-01
 Member 4: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: S40x20 [800]
   Fields:
-    air_horizontal_streamfunction: 2.5136978335707322e+01
+  - air_horizontal_streamfunction (10 levels):
+    + min    = -1.4847004853170682e+00
+    + max    = 1.2666782705920208e+00
+    + mean   = 7.1075268290909897e-03
+    + stddev = 2.8096763318034196e-01
 Member 5: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: S40x20 [800]
   Fields:
-    air_horizontal_streamfunction: 2.6082829876439501e+01
+  - air_horizontal_streamfunction (10 levels):
+    + min    = -1.5975611532537377e+00
+    + max    = 1.3849550953633218e+00
+    + mean   = -2.9774045037316881e-02
+    + stddev = 2.9010908025660409e-01
 Member 6: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: S40x20 [800]
   Fields:
-    air_horizontal_streamfunction: 2.6084244785571979e+01
+  - air_horizontal_streamfunction (10 levels):
+    + min    = -1.2389702232887332e+00
+    + max    = 1.2444108964753458e+00
+    + mean   = 1.6673410242147378e-02
+    + stddev = 2.9117189644480074e-01
 Member 7: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: S40x20 [800]
   Fields:
-    air_horizontal_streamfunction: 2.6303874077850853e+01
+  - air_horizontal_streamfunction (10 levels):
+    + min    = -1.2340248726656342e+00
+    + max    = 1.4483049976715032e+00
+    + mean   = 6.4366706657698891e-03
+    + stddev = 2.9403418206255783e-01
 Member 8: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: S40x20 [800]
   Fields:
-    air_horizontal_streamfunction: 2.6548800011881312e+01
+  - air_horizontal_streamfunction (10 levels):
+    + min    = -1.5875255252801372e+00
+    + max    = 1.5672133804238635e+00
+    + mean   = 3.1131493890283892e-04
+    + stddev = 2.9684299774886319e-01
 Member 9: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: S40x20 [800]
   Fields:
-    air_horizontal_streamfunction: 2.6377642368615327e+01
+  - air_horizontal_streamfunction (10 levels):
+    + min    = -1.1487368333088719e+00
+    + max    = 1.2445463955059672e+00
+    + mean   = -1.2818076394361977e-02
+    + stddev = 2.9465072783686830e-01

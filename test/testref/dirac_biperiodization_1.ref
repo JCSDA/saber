@@ -2,7 +2,11 @@ Input Dirac increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: structured [3763]
   Fields:
-    air_horizontal_streamfunction: 1.0000000000000000e+00
+  - air_horizontal_streamfunction (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 1.3287270794578793e-04
+    + stddev = 1.1527042463086886e-02
 - xspace: LocalConfiguration[root={type => linear , start => 5.2120971254055749e+05 , end => 6.9620971254055749e+05 , N => 71 , endpoint => true}]
 - yspace: LocalConfiguration[root={type => linear , start => -2.1173080099392682e+04 , end => 1.0882691990060732e+05 , N => 53 , endpoint => true}]
 Outer grid size: 3763
@@ -18,4 +22,8 @@ Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: structured [3763]
   Fields:
-    air_horizontal_streamfunction: 1.0000000000000000e+00
+  - air_horizontal_streamfunction (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 1.3287270794578793e-04
+    + stddev = 1.1527042463086886e-02

@@ -37,8 +37,8 @@ LinearVariableChange::LinearVariableChange(const Geometry & geom,
     // Define output to input variables map
     ASSERT(params.inputVariables.value()->size() == params.outputVariables.value()->size());
     for (size_t jj = 0; jj < params.outputVariables.value()->size(); ++jj) {
-      map_[(*params.outputVariables.value())[jj].name()] =
-        (*params.inputVariables.value())[jj].name();
+      map_[(*params.outputVariables.value())[jj]] =
+        (*params.inputVariables.value())[jj];
     }
 
     // Read multiplicative factor
@@ -63,7 +63,7 @@ LinearVariableChange::LinearVariableChange(const Geometry & geom,
     util::readFieldSet(geom.getComm(),
                        geom.functionSpace(),
                        geom.variableSizes(*params.inputVariables.value()),
-                       params.inputVariables.value()->variables(),
+                       *params.inputVariables.value(),
                        conf,
                        multiplierFset_);
   }

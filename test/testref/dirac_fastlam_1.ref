@@ -2,9 +2,19 @@ Input Dirac increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: structured [3763]
   Fields:
-    air_horizontal_streamfunction: 3.0000000000000000e+00
-    air_horizontal_velocity_potential: 0.0000000000000000e+00
-    air_pressure_at_surface: 3.0000000000000000e+00
+  - air_horizontal_streamfunction (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 2.3917087430241828e-04
+    + stddev = 1.5463506268000035e-02
+  - air_horizontal_velocity_potential (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - air_pressure_at_surface (1 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 2.3917087430241827e-03
+    + stddev = 4.8853072639868877e-02
     FastLAM interpolation accuracy test passed
     FastLAM interpolation adjoint test passed
     FastLAM redToRows test passed
@@ -13,15 +23,25 @@ Input Dirac increment:
     FastLAM interpolation adjoint test passed
     FastLAM redToRows test passed
     FastLAM rowsToCols test passed
-Norm of output parameter normalized horizontal length-scale: 1.6276513347796993e+03
+Norm of output parameter normalized horizontal length-scale: 1.6276513347797022e+03
 Norm of output parameter weight - 0: 2.0345269720502603e+02
-Norm of output parameter normalization - 0: 2.1747388285958212e+02
+Norm of output parameter normalization - 0: 2.1747388285958215e+02
 Adjoint test for block FastLAM passed
 Square-root test for block FastLAM passed
 Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: structured [3763]
   Fields:
-    air_horizontal_streamfunction: 1.5028933807604522e+01
-    air_horizontal_velocity_potential: 0.0000000000000000e+00
-    air_pressure_at_surface: 1.3000673361229014e+01
+  - air_horizontal_streamfunction (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000002e+00
+    + mean   = 1.2934250502251787e-02
+    + stddev = 7.6388620993744494e-02
+  - air_horizontal_velocity_potential (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - air_pressure_at_surface (1 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000002e+00
+    + mean   = 7.7570263813595206e-02
+    + stddev = 1.9725319244128525e-01

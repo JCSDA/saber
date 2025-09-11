@@ -1,1 +1,0 @@
-dirac_parallel_hybrid_stddev

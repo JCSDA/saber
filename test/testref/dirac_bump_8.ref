@@ -2,7 +2,11 @@ Input Dirac increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L120x61 [7320]
   Fields:
-    snow_depth: 1.0000000000000000e+00
+  - snow_depth (1 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 1.3661202185792350e-04
+    + stddev = 1.1688114555304096e-02
        Independent levels:  1[1]
           Subset Sc0 size:             7082
           Domain area (% of Earth area): 0.100E+03%
@@ -33,4 +37,8 @@ Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L120x61 [7320]
   Fields:
-    snow_depth: 7.5991033784244966e+00
+  - snow_depth (1 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000004e+00
+    + mean   = 1.2785311518591958e-02
+    + stddev = 8.7900170586582671e-02

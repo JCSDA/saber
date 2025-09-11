@@ -2,15 +2,47 @@ Member 0:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-14 [1176]
   Fields:
-    air_horizontal_streamfunction: 3.0406446715119565e+08
-    air_horizontal_velocity_potential: 2.8303058889608413e+08
-    mu: 9.0483049143251108e+01
-    unbalanced_pressure_levels_minus_one: 3.0962663795198118e+03
+  - air_horizontal_streamfunction (70 levels):
+    + min    = -7.8159180931721656e+06
+    + max    = 7.8108617745707743e+06
+    + mean   = -4.2119239779231623e+02
+    + stddev = 1.0597796949649977e+06
+  - air_horizontal_velocity_potential (70 levels):
+    + min    = -1.0586417015005315e+07
+    + max    = 8.2714083146555219e+06
+    + mean   = 6.8533549080165437e+02
+    + stddev = 9.8646851201695413e+05
+  - mu (70 levels):
+    + min    = -2.5015106961290439e+00
+    + max    = 2.0168491426640345e+00
+    + mean   = -9.7260747562242823e-03
+    + stddev = 3.1521766505294946e-01
+  - unbalanced_pressure_levels_minus_one (70 levels):
+    + min    = -6.0248821964057996e+01
+    + max    = 6.0386564875907894e+01
+    + mean   = -5.3768102129805473e-01
+    + stddev = 1.0778257366887523e+01
 Member 1: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-14 [1176]
   Fields:
-    air_horizontal_streamfunction: 2.9042050170791298e+08
-    air_horizontal_velocity_potential: 2.6842726591625845e+08
-    mu: 9.3900526079653105e+01
-    unbalanced_pressure_levels_minus_one: 2.8163065009395741e+03
+  - air_horizontal_streamfunction (70 levels):
+    + min    = -7.5836756931625567e+06
+    + max    = 8.9715573766505383e+06
+    + mean   = -2.2083280968403442e+03
+    + stddev = 1.0122229849165132e+06
+  - air_horizontal_velocity_potential (70 levels):
+    + min    = -1.2527637942144975e+07
+    + max    = 1.0127803275699027e+07
+    + mean   = -4.2224036368919798e+01
+    + stddev = 9.3557064012007881e+05
+  - mu (70 levels):
+    + min    = -2.3745472989711383e+00
+    + max    = 2.3553816673154993e+00
+    + mean   = -3.8980524626356094e-02
+    + stddev = 3.2494917538928786e-01
+  - unbalanced_pressure_levels_minus_one (70 levels):
+    + min    = -5.7427609853768189e+01
+    + max    = 5.8304182055929864e+01
+    + mean   = 4.5118244194751767e-01
+    + stddev = 9.8055195427524211e+00

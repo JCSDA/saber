@@ -2,38 +2,66 @@ Input Dirac increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-14 [1176]
   Fields:
-    air_horizontal_streamfunction: 1.0000000000000000e+00
-    air_horizontal_velocity_potential: 0.0000000000000000e+00
+  - air_horizontal_streamfunction (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 1.2147716229348883e-05
+    + stddev = 3.4853574033833993e-03
+  - air_horizontal_velocity_potential (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
 Covariance(SABER) diagnostics:
 - Variances at Dirac points:
-  + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (176.78571, 3.20924, 1): 4.4639777062866986e+08
+  + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (176.78571, 3.20924, 1): 4.4638148389652103e+08
 - Covariances at diagnostic points:
-  + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (176.78571, 3.20924, 1): 4.4639777062866986e+08
+  + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (176.78571, 3.20924, 1): 4.4638148389652103e+08
 Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-14 [1176]
   Fields:
-    air_horizontal_streamfunction: 1.9195219125307974e+12
-    air_horizontal_velocity_potential: 1.9514272900043906e+12
+  - air_horizontal_streamfunction (70 levels):
+    + min    = -3.3350261870500179e+10
+    + max    = 5.4103672336589134e+10
+    + mean   = -5.4866569440997997e+06
+    + stddev = 6.6901376399418812e+09
+  - air_horizontal_velocity_potential (70 levels):
+    + min    = -5.1240922609356407e+10
+    + max    = 3.9893773664606133e+10
+    + mean   = 1.0729779900882090e+06
+    + stddev = 6.8013426609311209e+09
 Covariance(SABER1_SABER) diagnostics:
 - Variances at Dirac points:
-  + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (176.78571, 3.20924, 1): 4.4639777062866974e+08
+  + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (176.78571, 3.20924, 1): 4.4638148389652103e+08
 - Covariances at diagnostic points:
-  + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (176.78571, 3.20924, 1): 4.4639777062866974e+08
+  + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (176.78571, 3.20924, 1): 4.4638148389652103e+08
 Covariance(SABER1_SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-14 [1176]
   Fields:
-    air_horizontal_streamfunction: 3.8382107243092798e+12
-    air_horizontal_velocity_potential: 3.9028545800087812e+12
+  - air_horizontal_streamfunction (70 levels):
+    + min    = -6.6700523741000359e+10
+    + max    = 1.0820734467317825e+11
+    + mean   = -1.1006791933382787e+07
+    + stddev = 1.3377371624763128e+10
+  - air_horizontal_velocity_potential (70 levels):
+    + min    = -1.0248184521871280e+11
+    + max    = 7.9787547329212250e+10
+    + mean   = 2.1459559801762956e+06
+    + stddev = 1.3602685321862242e+10
 Covariance(SABER2_SABER) diagnostics:
 - Variances at Dirac points:
-  + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (176.78571, 3.20924, 1): 4.4639777062866986e+08
+  + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (176.78571, 3.20924, 1): 4.4638148389652103e+08
 - Covariances at diagnostic points:
-  + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (176.78571, 3.20924, 1): 4.4639777062866986e+08
+  + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (176.78571, 3.20924, 1): 4.4638148389652103e+08
 Covariance(SABER2_SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-14 [1176]
   Fields:
-    air_horizontal_streamfunction: 4.6173320365750053e+10
-    air_horizontal_velocity_potential: 0.0000000000000000e+00
+  - air_horizontal_streamfunction (70 levels):
+    + min    = -2.2626440109950285e+09
+    + max    = 2.7583788801962690e+09
+    + mean   = 3.3478045183489266e+04
+    + stddev = 1.6092880333462965e+08
+  - air_horizontal_velocity_potential (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00

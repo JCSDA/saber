@@ -31,8 +31,8 @@ class FieldsIOBase : private eckit::NonCopyable {
     {return "quench::FieldsIOBase";}
 
   // Constructor/destructor
-  explicit FieldsIOBase(const std::string &)
-    {}
+  explicit FieldsIOBase(const std::string & ioFormat)
+    : ioFormat_(ioFormat) {}
 
   // Read
   virtual void read(const Geometry &,
@@ -46,6 +46,9 @@ class FieldsIOBase : private eckit::NonCopyable {
                      const eckit::Configuration &,
                      const atlas::FieldSet &) const
     {throw eckit::Exception("read not implemented for this format", Here());}
+
+ protected:
+  const std::string ioFormat_;
 };
 
 // -----------------------------------------------------------------------------

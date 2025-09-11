@@ -423,7 +423,7 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
     util::seekAndReplace(outputBConf, "%id%", id);
 
     // Write output increment
-    dxo[0].write(outputBConf);
+    dxo.write(outputBConf);
     oops::Log::test() << "Covariance(" << id << ") * Increment:" << dxo << std::endl;
 
     // Look for hybrid or ensemble covariance models
@@ -502,7 +502,8 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
       util::seekAndReplace(outputLConf, "%id%", idL);
 
       // Write output increment
-      dxo[0].write(outputLConf);
+      dxo.write(outputLConf);
+
       oops::Log::test() << "Localization(" << id << ") * Increment:" << dxo << std::endl;
     }
   }
@@ -526,9 +527,6 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
       // Initialize variance
       variance.zero();
 
-      // Create empty ensemble
-      std::vector<Increment_> ens;
-
       // Output options
       const auto & outputPerturbations = params.outputPerturbations.value();
       const auto & outputStates = params.outputStates.value();
@@ -536,12 +534,36 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
 
       for (size_t jm = 0; jm < Bmat->randomizationSize(); ++jm) {
         // Generate member
-        oops::Log::info() << "Info     : Member " << jm << std::endl;
         Bmat->randomize(dx);
 
         if ((outputPerturbations != boost::none) || (outputStates != boost::none)) {
-          // Save member
-          ens.push_back(dx[0]);
+          oops::Log::test() << "Member " << jm << ": " << dx[0] << std::endl;
+
+          if (outputPerturbations != boost::none) {
+            // Update config
+            auto outputPerturbationsUpdated = *outputPerturbations;
+            util::setMember(outputPerturbationsUpdated, jm+1);
+            setMPI(outputPerturbationsUpdated, ntasks);
+
+            // Write perturbation
+            dx.write(outputPerturbationsUpdated);
+          }
+
+          if (outputStates != boost::none) {
+            // Update config
+            auto outputStatesUpdated = *outputStates;
+            util::setMember(outputStatesUpdated, jm+1);
+            setMPI(outputStatesUpdated, ntasks);
+
+            // Add background state to perturbation
+            State4D_ xp(xx);
+            xp += dx;
+
+            // Write state
+            xp.write(outputStatesUpdated);
+          }
+
+          oops::Log::info() << "Info     : " << std::endl;
         }
 
         // Square perturbation
@@ -552,41 +574,6 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
         variance += dxsq;
       }
       oops::Log::info() << "Info     : " << std::endl;
-
-      if ((outputPerturbations != boost::none) || (outputStates != boost::none)) {
-        oops::Log::info() << "Info     : Write states and/or perturbations:" << std::endl;
-        oops::Log::info() << "Info     : ----------------------------------" << std::endl;
-        oops::Log::info() << "Info     : " << std::endl;
-        for (size_t jm = 0; jm < Bmat->randomizationSize(); ++jm) {
-          oops::Log::test() << "Member " << jm << ": " << ens[jm] << std::endl;
-
-          if (outputPerturbations != boost::none) {
-            // Update config
-            auto outputPerturbationsUpdated = *outputPerturbations;
-            util::setMember(outputPerturbationsUpdated, jm+1);
-            setMPI(outputPerturbationsUpdated, ntasks);
-
-            // Write perturbation
-            ens[jm].write(outputPerturbationsUpdated);
-          }
-
-          if (outputStates != boost::none) {
-            // Update config
-            auto outputStatesUpdated = *outputStates;
-            util::setMember(outputStatesUpdated, jm+1);
-            setMPI(outputStatesUpdated, ntasks);
-
-            // Add background state to perturbation
-            State_ xp(xx[0]);
-            xp += ens[jm];
-
-            // Write state
-            xp.write(outputStatesUpdated);
-          }
-
-          oops::Log::info() << "Info     : " << std::endl;
-        }
-      }
 
       if (outputVariance != boost::none) {
         oops::Log::info() << "Info     : Write randomized variance:" << std::endl;
@@ -603,7 +590,7 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
         setMPI(outputVarianceUpdated, ntasks);
 
         // Write variance
-        variance[0].write(outputVarianceUpdated);
+        variance.write(outputVarianceUpdated);
         oops::Log::test() << "Randomized variance: " << variance << std::endl;
       }
     }

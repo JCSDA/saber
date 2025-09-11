@@ -2,9 +2,19 @@ Input Dirac increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: structured [3763]
   Fields:
-    air_horizontal_streamfunction: 3.0000000000000000e+00
-    air_horizontal_velocity_potential: 0.0000000000000000e+00
-    air_pressure_at_surface: 3.0000000000000000e+00
+  - air_horizontal_streamfunction (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 2.3917087430241828e-04
+    + stddev = 1.5463506268000035e-02
+  - air_horizontal_velocity_potential (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - air_pressure_at_surface (1 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 2.3917087430241827e-03
+    + stddev = 4.8853072639868877e-02
 Norm of input parameter rh: 6.3308838310007071e+06
 Norm of input parameter rv: 1.0775159836059709e+03
     FastLAM interpolation accuracy test passed
@@ -44,6 +54,16 @@ Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: structured [3763]
   Fields:
-    air_horizontal_streamfunction: 1.2268798178664296e+01
-    air_horizontal_velocity_potential: 0.0000000000000000e+00
-    air_pressure_at_surface: 1.1456179726661745e+01
+  - air_horizontal_streamfunction (10 levels):
+    + min    ~ 0
+    + max    = 1.0000000000000004e+00
+    + mean   = 1.1313485764003144e-02
+    + stddev = 6.2226991954513054e-02
+  - air_horizontal_velocity_potential (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - air_pressure_at_surface (1 levels):
+    + min    ~ 0
+    + max    = 1.0000000000000004e+00
+    + mean   = 7.0330510023547260e-02
+    + stddev = 1.7302913404462233e-01

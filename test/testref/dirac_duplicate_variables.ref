@@ -2,12 +2,36 @@ Input Dirac increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: F15 [1800]
   Fields:
-    water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water: 1.0000000000000000e+00
-    q_cl: 1.0000000000000000e+00
-    q_cf: 1.0000000000000000e+00
-    eastward_wind: 1.0000000000000000e+00
-    northward_wind: 1.0000000000000000e+00
-    air_pressure: 1.0000000000000000e+00
+  - water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 7.9365079365079362e-06
+    + stddev = 2.8171808490961210e-03
+  - q_cl (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 7.9365079365079362e-06
+    + stddev = 2.8171808490961210e-03
+  - q_cf (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 7.9365079365079362e-06
+    + stddev = 2.8171808490961210e-03
+  - eastward_wind (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 7.9365079365079362e-06
+    + stddev = 2.8171808490961210e-03
+  - northward_wind (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 7.9365079365079362e-06
+    + stddev = 2.8171808490961210e-03
+  - air_pressure (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 7.9365079365079362e-06
+    + stddev = 2.8171808490961210e-03
 Adjoint test for block duplicate variables passed
 Adjoint test for block ID passed
 Covariance(SABER) diagnostics:
@@ -26,9 +50,33 @@ Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: F15 [1800]
   Fields:
-    water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water: 3.0000000000000000e+00
-    q_cl: 3.0000000000000000e+00
-    q_cf: 3.0000000000000000e+00
-    eastward_wind: 2.0000000000000000e+00
-    northward_wind: 2.0000000000000000e+00
-    air_pressure: 1.0000000000000000e+00
+  - water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 3.0000000000000000e+00
+    + mean   = 2.3809523809523810e-05
+    + stddev = 8.4515425473047825e-03
+  - q_cl (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 3.0000000000000000e+00
+    + mean   = 2.3809523809523810e-05
+    + stddev = 8.4515425473047825e-03
+  - q_cf (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 3.0000000000000000e+00
+    + mean   = 2.3809523809523810e-05
+    + stddev = 8.4515425473047825e-03
+  - eastward_wind (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 2.0000000000000000e+00
+    + mean   = 1.5873015873015872e-05
+    + stddev = 5.6343616981922419e-03
+  - northward_wind (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 2.0000000000000000e+00
+    + mean   = 1.5873015873015872e-05
+    + stddev = 5.6343616981922419e-03
+  - air_pressure (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 7.9365079365079362e-06
+    + stddev = 2.8171808490961210e-03

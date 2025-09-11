@@ -2,55 +2,103 @@ Input state:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: structured [3763]
   Fields:
-    air_horizontal_streamfunction: 3.8796907093220716e+06
-    air_horizontal_velocity_potential: 3.8796907093220716e+06
-    air_pressure_at_surface: 1.2268659258452002e+06
+  - air_horizontal_streamfunction (10 levels):
+    + min    = 2.0000000000000000e+04
+    + max    = 2.0000000000000000e+04
+  - air_horizontal_velocity_potential (10 levels):
+    + min    = 2.0000000000000000e+04
+    + max    = 2.0000000000000000e+04
+  - air_pressure_at_surface (1 levels):
+    + min    = 2.0000000000000000e+04
+    + max    = 2.0000000000000000e+04
 Output state: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: structured [3763]
   Fields:
-    air_horizontal_streamfunction: 3.8796907093220716e+06
-    air_horizontal_velocity_potential: 3.8796907093220716e+06
-    air_pressure_at_surface: 1.2268659258452002e+06
+  - air_horizontal_streamfunction (10 levels):
+    + min    = 2.0000000000000000e+04
+    + max    = 2.0000000000000000e+04
+  - air_horizontal_velocity_potential (10 levels):
+    + min    = 2.0000000000000000e+04
+    + max    = 2.0000000000000000e+04
+  - air_pressure_at_surface (1 levels):
+    + min    = 2.0000000000000000e+04
+    + max    = 2.0000000000000000e+04
 Input state: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: structured [3763]
   Fields:
-    air_horizontal_streamfunction: 9.6992267733051791e+05
-    air_horizontal_velocity_potential: 9.6992267733051791e+05
-    air_pressure_at_surface: 3.0671648146130005e+05
+  - air_horizontal_streamfunction (10 levels):
+    + min    = 5.0000000000000000e+03
+    + max    = 5.0000000000000000e+03
+  - air_horizontal_velocity_potential (10 levels):
+    + min    = 5.0000000000000000e+03
+    + max    = 5.0000000000000000e+03
+  - air_pressure_at_surface (1 levels):
+    + min    = 5.0000000000000000e+03
+    + max    = 5.0000000000000000e+03
 Output state: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: structured [3763]
   Fields:
-    air_horizontal_streamfunction: 9.6992267733051791e+05
-    air_horizontal_velocity_potential: 9.6992267733051791e+05
-    air_pressure_at_surface: 3.0671648146130005e+05
+  - air_horizontal_streamfunction (10 levels):
+    + min    = 5.0000000000000000e+03
+    + max    = 5.0000000000000000e+03
+  - air_horizontal_velocity_potential (10 levels):
+    + min    = 5.0000000000000000e+03
+    + max    = 5.0000000000000000e+03
+  - air_pressure_at_surface (1 levels):
+    + min    = 5.0000000000000000e+03
+    + max    = 5.0000000000000000e+03
 Input state: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: structured [3763]
   Fields:
-    air_horizontal_streamfunction: 7.7593814186441432e+02
-    air_horizontal_velocity_potential: 7.7593814186441432e+02
-    air_pressure_at_surface: 0.0000000000000000e+00
+  - air_horizontal_streamfunction (10 levels):
+    + min    = 4.0000000000000000e+00
+    + max    = 4.0000000000000000e+00
+  - air_horizontal_velocity_potential (10 levels):
+    + min    = 4.0000000000000000e+00
+    + max    = 4.0000000000000000e+00
+  - air_pressure_at_surface (1 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
 Output state: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: structured [3763]
   Fields:
-    air_horizontal_streamfunction: 7.7593814186441432e+02
-    air_horizontal_velocity_potential: 7.7593814186441432e+02
-    air_pressure_at_surface: 0.0000000000000000e+00
+  - air_horizontal_streamfunction (10 levels):
+    + min    = 4.0000000000000000e+00
+    + max    = 4.0000000000000000e+00
+  - air_horizontal_velocity_potential (10 levels):
+    + min    = 4.0000000000000000e+00
+    + max    = 4.0000000000000000e+00
+  - air_pressure_at_surface (1 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
 Input state: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: structured [3763]
   Fields:
-    air_horizontal_streamfunction: 1.9398453546610358e+02
-    air_horizontal_velocity_potential: 1.9398453546610358e+02
-    air_pressure_at_surface: 0.0000000000000000e+00
+  - air_horizontal_streamfunction (10 levels):
+    + min    = 1.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+  - air_horizontal_velocity_potential (10 levels):
+    + min    = 1.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+  - air_pressure_at_surface (1 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
 Output state: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: structured [3763]
   Fields:
-    air_horizontal_streamfunction: 1.9398453546610358e+02
-    air_horizontal_velocity_potential: 1.9398453546610358e+02
-    air_pressure_at_surface: 0.0000000000000000e+00
+  - air_horizontal_streamfunction (10 levels):
+    + min    = 1.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+  - air_horizontal_velocity_potential (10 levels):
+    + min    = 1.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+  - air_pressure_at_surface (1 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00

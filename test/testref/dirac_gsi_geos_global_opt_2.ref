@@ -2,15 +2,31 @@ Input Dirac increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L72x46 [3312]
   Fields:
-    air_horizontal_streamfunction: 2.2360679774997898e+00
-    air_horizontal_velocity_potential: 0.0000000000000000e+00
-    air_pressure_at_surface: 0.0000000000000000e+00
+  - air_horizontal_streamfunction (72 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 2.0967525496511005e-05
+    + stddev = 4.5789926605260215e-03
+  - air_horizontal_velocity_potential (72 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - air_pressure_at_surface (1 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
 Adjoint test for block interpolation passed
 Adjoint test for block gsi hybrid covariance passed
 Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L72x46 [3312]
   Fields:
-    air_horizontal_streamfunction: 2.8285238362553752e+01
-    air_horizontal_velocity_potential: 0.0000000000000000e+00
-    air_pressure_at_surface: 0.0000000000000000e+00
+  - air_horizontal_streamfunction (72 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 9.9998888073528969e-01
+    + mean   = 1.3368074587592572e-02
+    + stddev = 5.6359040132774554e-02
+  - air_horizontal_velocity_potential (72 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - air_pressure_at_surface (1 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00

@@ -61,6 +61,9 @@ Geometry::Geometry(const eckit::Configuration & config,
   // Levels direction
   levelsAreTopDown_ = params.levelsAreTopDown.value();
 
+  // Levels counter origin
+  levelsCountFrom_ = params.levelsCountFrom.value();
+
   // Model data
   modelData_ = params.modelData.value();
 
@@ -159,7 +162,8 @@ Geometry::Geometry(const eckit::Configuration & config,
 Geometry::Geometry(const Geometry & other)
   : comm_(other.comm_), halo_(other.halo_), grid_(other.grid_), gridType_(other.gridType_),
   partitioner_(other.partitioner_), mesh_(other.mesh_), groupIndex_(other.groupIndex_),
-  levelsAreTopDown_(other.levelsAreTopDown_), modelData_(other.modelData_), alias_(other.alias_),
+  levelsAreTopDown_(other.levelsAreTopDown_), levelsCountFrom_(other.levelsCountFrom_),
+  modelData_(other.modelData_), alias_(other.alias_),
   io_(other.io_), interpolation_(other.interpolation_),
   duplicatePoints_(other.duplicatePoints_) {
   oops::Log::trace() << classname() << "::Geometry starting" << std::endl;
@@ -246,6 +250,18 @@ std::vector<size_t> Geometry::variableSizes(const oops::Variables & vars) const 
 
   oops::Log::trace() << classname() << "::variableSizes done" << std::endl;
   return sizes;
+}
+
+// -----------------------------------------------------------------------------
+
+std::vector<size_t> Geometry::variableSizes(const std::vector<std::string> & varNames) const {
+  oops::Log::trace() << classname() << "::variableSizes starting" << std::endl;
+
+  // Create variables
+  const oops::Variables vars(varNames);
+
+  oops::Log::trace() << classname() << "::variableSizes done" << std::endl;
+  return variableSizes(vars);
 }
 
 // -----------------------------------------------------------------------------
@@ -377,7 +393,7 @@ void Geometry::setupVertCoord(groupData & group) {
       groupIndex_[varName] = group.index_;
 
       // Create field
-      Fields field(*this, vertCoordVars, util::DateTime());
+      Fields field(*this, vertCoordVars, util::DateTime(), false);
 
       // Read field
       field.read(*vertCoordConf);
@@ -396,7 +412,7 @@ void Geometry::setupVertCoord(groupData & group) {
     // From level index (default)
     for (atlas::idx_t jnode = 0; jnode < group.vertCoord_.shape(0); ++jnode) {
       for (size_t jlevel = 0; jlevel < group.levels_; ++jlevel) {
-        vertCoordView(jnode, jlevel) = static_cast<double>(jlevel+1);
+        vertCoordView(jnode, jlevel) = static_cast<double>(jlevel+levelsCountFrom_);
       }
     }
   }
@@ -663,7 +679,7 @@ void Geometry::checkLonLat(const eckit::Configuration & checkLonLatConf) {
   groups_.push_back(coordGroup);
 
   // Create field
-  Fields field(*this, lonLatVars, util::DateTime());
+  Fields field(*this, lonLatVars, util::DateTime(), false);
 
   // Read field
   field.read(checkLonLatConf);

@@ -2,13 +2,23 @@ Input Dirac increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: F10 [800]
   Fields:
-    air_horizontal_streamfunction: 1.0000000000000000e+00
-    air_horizontal_velocity_potential: 0.0000000000000000e+00
+  - air_horizontal_streamfunction (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 6.2500000000000001e-04
+    + stddev = 2.5000000000000130e-02
+  - air_horizontal_velocity_potential (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: F10 [800]
   Fields:
-    air_horizontal_streamfunction: 0.0000000000000000e+00
-    air_horizontal_velocity_potential: 0.0000000000000000e+00
+  - air_horizontal_streamfunction (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - air_horizontal_velocity_potential (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
 Covariance(SABER) diagnostics:
 - Variances at Dirac points:
   + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -4.38894, 1): 1.0000000000000000e+00
@@ -20,21 +30,47 @@ Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: F10 [800]
   Fields:
-    air_horizontal_streamfunction: 1.0000000000000000e+00
-    air_horizontal_velocity_potential: 0.0000000000000000e+00
+  - air_horizontal_streamfunction (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 6.2500000000000001e-04
+    + stddev = 2.5000000000000130e-02
+  - air_horizontal_velocity_potential (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: F10 [800]
   Fields:
-    air_horizontal_streamfunction: 0.0000000000000000e+00
-    air_horizontal_velocity_potential: 0.0000000000000000e+00
+  - air_horizontal_streamfunction (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - air_horizontal_velocity_potential (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
 Randomized variance: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: F10 [800]
   Fields:
-    air_horizontal_streamfunction: 4.0556782622390266e+01
-    air_horizontal_velocity_potential: 4.0694714395579275e+01
+  - air_horizontal_streamfunction (2 levels):
+    + min    = 4.2328142708578009e-01
+    + max    = 1.6428824512214386e+00
+    + mean   = 9.9466055355475713e-01
+    + stddev = 1.9674211747874451e-01
+  - air_horizontal_velocity_potential (2 levels):
+    + min    = 4.0760974479162010e-01
+    + max    = 1.8115110615000563e+00
+    + mean   = 9.9736755755786999e-01
+    + stddev = 2.0079969569392198e-01
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: F10 [800]
   Fields:
-    air_horizontal_streamfunction: 4.1171796762738779e+01
-    air_horizontal_velocity_potential: 4.1080595109727270e+01
+  - air_horizontal_streamfunction (2 levels):
+    + min    = 4.5337554388034379e-01
+    + max    = 1.6936155612243513e+00
+    + mean   = 1.0097630983692576e+00
+    + stddev = 1.9962821126054997e-01
+  - air_horizontal_velocity_potential (2 levels):
+    + min    = 5.5902201113651639e-01
+    + max    = 1.9701557389973594e+00
+    + mean   = 1.0067236558439350e+00
+    + stddev = 2.0320641697545735e-01

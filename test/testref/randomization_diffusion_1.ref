@@ -2,49 +2,89 @@ Member 0:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-12 [864]
   Fields:
-    air_horizontal_streamfunction: 7.2467476415951682e+00
+  - air_horizontal_streamfunction (10 levels):
+    + min    = -2.5809571499675532e-01
+    + max    = 2.9285597913011041e-01
+    + mean   = 7.7017353307956404e-03
+    + stddev = 7.7585730960401944e-02
 Member 1: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-12 [864]
   Fields:
-    air_horizontal_streamfunction: 6.7740508701264082e+00
+  - air_horizontal_streamfunction (10 levels):
+    + min    = -2.3698180409392672e-01
+    + max    = 2.2356919314231466e-01
+    + mean   = -1.2950430851040627e-02
+    + stddev = 7.1721444779902305e-02
 Member 2: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-12 [864]
   Fields:
-    air_horizontal_streamfunction: 6.6023568804527235e+00
+  - air_horizontal_streamfunction (10 levels):
+    + min    = -2.2478378397416876e-01
+    + max    = 2.5655132077071902e-01
+    + mean   = 6.1153378541536655e-03
+    + stddev = 7.0770406413029424e-02
 Member 3: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-12 [864]
   Fields:
-    air_horizontal_streamfunction: 6.5527234641019065e+00
+  - air_horizontal_streamfunction (10 levels):
+    + min    = -2.7004405654255798e-01
+    + max    = 2.3252648319683000e-01
+    + mean   = 2.3377899560824999e-03
+    + stddev = 7.0461384339161132e-02
 Member 4: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-12 [864]
   Fields:
-    air_horizontal_streamfunction: 7.0930050091784009e+00
+  - air_horizontal_streamfunction (10 levels):
+    + min    = -2.3637560947348760e-01
+    + max    = 3.0719087448804849e-01
+    + mean   = 3.2229750622964591e-03
+    + stddev = 7.6244903256955335e-02
 Member 5: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-12 [864]
   Fields:
-    air_horizontal_streamfunction: 6.7473872944232687e+00
+  - air_horizontal_streamfunction (10 levels):
+    + min    = -2.4306477002280674e-01
+    + max    = 2.2465137532667875e-01
+    + mean   = -1.9221395587832178e-02
+    + stddev = 7.0003293295814686e-02
 Member 6: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-12 [864]
   Fields:
-    air_horizontal_streamfunction: 6.7225034316482946e+00
+  - air_horizontal_streamfunction (10 levels):
+    + min    = -2.3233525155782833e-01
+    + max    = 2.6705861150323507e-01
+    + mean   = 9.0628550711783738e-03
+    + stddev = 7.1756687692839119e-02
 Member 7: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-12 [864]
   Fields:
-    air_horizontal_streamfunction: 6.3667971015633587e+00
+  - air_horizontal_streamfunction (10 levels):
+    + min    = -2.3001309397175917e-01
+    + max    = 2.3997659792630666e-01
+    + mean   = 7.0239213648682118e-03
+    + stddev = 6.8138687667459077e-02
 Member 8: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-12 [864]
   Fields:
-    air_horizontal_streamfunction: 7.6442341543325796e+00
+  - air_horizontal_streamfunction (10 levels):
+    + min    = -3.0988400607633315e-01
+    + max    = 2.6735759344011994e-01
+    + mean   = -1.1365790996296272e-02
+    + stddev = 8.1454390365654203e-02
 Member 9: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-12 [864]
   Fields:
-    air_horizontal_streamfunction: 6.3333498528071637e+00
+  - air_horizontal_streamfunction (10 levels):
+    + min    = -2.3239353583339473e-01
+    + max    = 2.3736782657780267e-01
+    + mean   = -7.0633275945660937e-03
+    + stddev = 6.7772818657468259e-02

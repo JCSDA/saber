@@ -50,8 +50,9 @@ std::vector<quench::Interpolation>& Fields::interpolations() {
 
 Fields::Fields(const Geometry & geom,
                const oops::Variables & vars,
-               const util::DateTime & time)
-  : geom_(new Geometry(geom)), vars_(vars), time_(time) {
+               const util::DateTime & time,
+               const bool & isState)
+  : geom_(new Geometry(geom)), vars_(vars), time_(time), isState_(isState) {
   oops::Log::trace() << classname() << "::Fields starting" << std::endl;
 
   // Reset ATLAS fieldset
@@ -82,7 +83,7 @@ Fields::Fields(const Geometry & geom,
 
 Fields::Fields(const Fields & other,
                const Geometry & geom)
-  : geom_(new Geometry(geom)), vars_(other.vars_), time_(other.time_) {
+  : geom_(new Geometry(geom)), vars_(other.vars_), time_(other.time_), isState_(other.isState_) {
   oops::Log::trace() << classname() << "::Fields starting" << std::endl;
 
   // Reset ATLAS fieldset
@@ -132,7 +133,7 @@ Fields::Fields(const Fields & other,
 
 Fields::Fields(const Fields & other,
                const bool copy)
-  : geom_(other.geom_), vars_(other.vars_), time_(other.time_) {
+  : geom_(other.geom_), vars_(other.vars_), time_(other.time_), isState_(other.isState_) {
   oops::Log::trace() << classname() << "::Fields starting" << std::endl;
 
   // Reset ATLAS fieldset
@@ -179,7 +180,7 @@ Fields::Fields(const Fields & other,
 // -----------------------------------------------------------------------------
 
 Fields::Fields(const Fields & other)
-  : geom_(other.geom_), vars_(other.vars_), time_(other.time_) {
+  : geom_(other.geom_), vars_(other.vars_), time_(other.time_), isState_(other.isState_) {
   oops::Log::trace() << classname() << "::Fields starting" << std::endl;
 
   // Reset ATLAS fieldset
@@ -314,6 +315,9 @@ void Fields::constantValue(const eckit::Configuration & config) {
 Fields & Fields::operator=(const Fields & rhs) {
   oops::Log::trace() << classname() << "::operator= starting" << std::endl;
 
+  // Check that fields are compatible
+  ASSERT(checkFieldsCompatible(rhs));
+
   for (const auto & var : vars_.variables()) {
     atlas::Field field = fset_[var];
     const atlas::Field fieldRhs = rhs.fset_[var];
@@ -339,6 +343,9 @@ Fields & Fields::operator=(const Fields & rhs) {
 Fields & Fields::operator+=(const Fields & rhs) {
   oops::Log::trace() << classname() << "::operator+= starting" << std::endl;
 
+  // Check that fields are compatible
+  ASSERT(checkFieldsCompatible(rhs));
+
   // Right-hand side fieldset
   atlas::FieldSet fsetRhs;
   if (geom_->grid() == rhs.geom_->grid() && geom_->halo() == rhs.geom_->halo()) {
@@ -354,20 +361,26 @@ Fields & Fields::operator+=(const Fields & rhs) {
 
   for (const auto & var : vars_) {
     atlas::Field field = fset_[var.name()];
-    const std::string gmaskName = "gmask_" + std::to_string(geom_->groupIndex(var.name()));
-    const auto gmaskView = atlas::array::make_view<int, 2>(geom_->fields()[gmaskName]);
-    const atlas::Field fieldRhs = fsetRhs[var.name()];
-    if (field.rank() == 2) {
-      auto view = atlas::array::make_view<double, 2>(field);
-      const auto viewRhs = atlas::array::make_view<double, 2>(fieldRhs);
-      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-        for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          if (gmaskView(jnode, jlevel) == 1) {
-            view(jnode, jlevel) += viewRhs(jnode, jlevel);
+    if (fsetRhs.has(var.name())) {
+      const std::string gmaskName = "gmask_" + std::to_string(geom_->groupIndex(var.name()));
+      const auto gmaskView = atlas::array::make_view<int, 2>(geom_->fields()[gmaskName]);
+      const atlas::Field fieldRhs = fsetRhs[var.name()];
+      if (field.rank() == 2) {
+        auto view = atlas::array::make_view<double, 2>(field);
+        const auto viewRhs = atlas::array::make_view<double, 2>(fieldRhs);
+        for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+          for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+            if (gmaskView(jnode, jlevel) == 1) {
+              view(jnode, jlevel) += viewRhs(jnode, jlevel);
+            }
           }
         }
+        field.set_dirty(field.dirty() || fieldRhs.dirty());
       }
-      field.set_dirty(field.dirty() || fieldRhs.dirty());
+    }  else {
+      if (rhs.isState()) {
+        throw eckit::Exception("Field " + var.name() + " not in rhs fieldset", Here());
+      }
     }
   }
 
@@ -380,22 +393,31 @@ Fields & Fields::operator+=(const Fields & rhs) {
 Fields & Fields::operator-=(const Fields & rhs) {
   oops::Log::trace() << classname() << "::operator-= starting" << std::endl;
 
+  // Check that fields are compatible
+  ASSERT(checkFieldsCompatible(rhs));
+
   for (const auto & var : vars_) {
     atlas::Field field = fset_[var.name()];
-    const std::string gmaskName = "gmask_" + std::to_string(geom_->groupIndex(var.name()));
-    const auto gmaskView = atlas::array::make_view<int, 2>(geom_->fields()[gmaskName]);
-    const atlas::Field fieldRhs = rhs.fset_[var.name()];
-    if (field.rank() == 2) {
-      auto view = atlas::array::make_view<double, 2>(field);
-      const auto viewRhs = atlas::array::make_view<double, 2>(fieldRhs);
-      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-        for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          if (gmaskView(jnode, jlevel) == 1) {
-            view(jnode, jlevel) -= viewRhs(jnode, jlevel);
+    if (rhs.fset_.has(var.name())) {
+      const std::string gmaskName = "gmask_" + std::to_string(geom_->groupIndex(var.name()));
+      const auto gmaskView = atlas::array::make_view<int, 2>(geom_->fields()[gmaskName]);
+      const atlas::Field fieldRhs = rhs.fset_[var.name()];
+      if (field.rank() == 2) {
+        auto view = atlas::array::make_view<double, 2>(field);
+        const auto viewRhs = atlas::array::make_view<double, 2>(fieldRhs);
+        for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+          for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+            if (gmaskView(jnode, jlevel) == 1) {
+              view(jnode, jlevel) -= viewRhs(jnode, jlevel);
+            }
           }
         }
+        field.set_dirty(field.dirty() || fieldRhs.dirty());
       }
-      field.set_dirty(field.dirty() || fieldRhs.dirty());
+    } else {
+      if (rhs.isState()) {
+        throw eckit::Exception("Field " + var.name() + " not in rhs fieldset", Here());
+      }
     }
   }
 
@@ -434,6 +456,9 @@ void Fields::axpy(const double & zz,
                   const Fields & rhs) {
   oops::Log::trace() << classname() << "::axpy starting" << std::endl;
 
+  // Check that fields are compatible
+  ASSERT(checkFieldsCompatible(rhs));
+
   for (const auto & var : vars_) {
     atlas::Field field = fset_[var.name()];
     const std::string gmaskName = "gmask_" + std::to_string(geom_->groupIndex(var.name()));
@@ -460,6 +485,9 @@ void Fields::axpy(const double & zz,
 
 double Fields::dot_product_with(const Fields & fld2) const {
   oops::Log::trace() << classname() << "::dot_product_with starting" << std::endl;
+
+  // Check that fields are compatible
+  ASSERT(checkFieldsCompatible(fld2));
 
   double zz = 0;
   const auto ownedView = atlas::array::make_view<int, 2>(geom_->fields().field("owned"));
@@ -490,6 +518,9 @@ double Fields::dot_product_with(const Fields & fld2) const {
 void Fields::schur_product_with(const Fields & fld2) {
   oops::Log::trace() << classname() << "::schur_product_with starting" << std::endl;
 
+  // Check that fields are compatible
+  ASSERT(checkFieldsCompatible(fld2));
+
   for (const auto & var : vars_) {
     atlas::Field field = fset_[var.name()];
     const std::string gmaskName = "gmask_" + std::to_string(geom_->groupIndex(var.name()));
@@ -517,7 +548,6 @@ void Fields::schur_product_with(const Fields & fld2) {
 void Fields::random() {
   oops::Log::trace() << classname() << "::random starting" << std::endl;
 
-  fset_.clear();
   for (size_t groupIndex = 0; groupIndex < geom_->groups(); ++groupIndex) {
     // Mask and ghost points fields
     const std::string gmaskName = "gmask_" + std::to_string(groupIndex);
@@ -526,14 +556,14 @@ void Fields::random() {
 
     // Total size
     size_t n = 0;
-    std::vector<std::string> groupVars;
+    oops::Variables groupVars;
     for (const auto & var : vars_) {
       if (geom_->groupIndex(var.name()) == groupIndex) {
-        groupVars.push_back(var.name());
+        groupVars.push_back(var);
       }
     }
     for (const auto & var : groupVars) {
-      const atlas::Field field = fset_[var];
+      const atlas::Field field = fset_[var.name()];
       if (field.rank() == 2) {
         for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
           for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
@@ -561,13 +591,11 @@ void Fields::random() {
 
     // Global data
     atlas::FieldSet globalData;
-    for (const auto & var : vars_) {
-      if (geom_->groupIndex(var.name()) == groupIndex) {
-        atlas::Field field = geom_->functionSpace().createField<double>(
-          atlas::option::name(var.name())
-          | atlas::option::levels(geom_->levels(var.name())) | atlas::option::global());
-        globalData.add(field);
-      }
+    for (const auto & var : groupVars) {
+      atlas::Field field = geom_->functionSpace().createField<double>(
+        atlas::option::name(var.name())
+        | atlas::option::levels(geom_->levels(var.name())) | atlas::option::global());
+      globalData.add(field);
     }
 
     // Gather masks on main processor
@@ -598,19 +626,17 @@ void Fields::random() {
       // Copy random values
       n = 0;
       const auto ghostView = atlas::array::make_view<int, 1>(globalMasks["ghost"]);
-      for (const auto & var : vars_) {
-        if (geom_->groupIndex(var.name()) == groupIndex) {
-          atlas::Field field = globalData[var.name()];
-          const std::string gmaskName = "gmask_" + std::to_string(groupIndex);
-          const auto gmaskView = atlas::array::make_view<int, 2>(globalMasks[gmaskName]);
-          if (field.rank() == 2) {
-            auto view = atlas::array::make_view<double, 2>(field);
-            for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-              for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-                if (gmaskView(jnode, jlevel) == 1 && ghostView(jnode) == 0) {
-                  view(jnode, jlevel) = rand_vec[n];
-                  ++n;
-                }
+      for (const auto & var : groupVars) {
+        atlas::Field field = globalData[var.name()];
+        const std::string gmaskName = "gmask_" + std::to_string(groupIndex);
+        const auto gmaskView = atlas::array::make_view<int, 2>(globalMasks[gmaskName]);
+        if (field.rank() == 2) {
+          auto view = atlas::array::make_view<double, 2>(field);
+          for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+            for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+              if (gmaskView(jnode, jlevel) == 1 && ghostView(jnode) == 0) {
+                view(jnode, jlevel) = rand_vec[n];
+                ++n;
               }
             }
           }
@@ -620,12 +646,10 @@ void Fields::random() {
 
     // Local data
     atlas::FieldSet localData;
-    for (const auto & var : vars_) {
-      if (geom_->groupIndex(var.name()) == groupIndex) {
-        atlas::Field field = geom_->functionSpace().createField<double>(
-          atlas::option::name(var.name()) | atlas::option::levels(var.getLevels()));
-        localData.add(field);
-      }
+    for (const auto & var : groupVars) {
+      atlas::Field field = geom_->functionSpace().createField<double>(
+        atlas::option::name(var.name()) | atlas::option::levels(var.getLevels()));
+      localData.add(field);
     }
 
     // Scatter data from main processor
@@ -649,15 +673,17 @@ void Fields::random() {
         " function space not supported yet", Here());
     }
 
+    // Remove fields for this group
+    util::removeFieldsFromFieldSet(fset_, groupVars.variables());
+
     // Copy data
-    for (const auto & var : vars_) {
-      if (geom_->groupIndex(var.name()) == groupIndex) {
-        fset_.add(localData[var.name()]);
-      }
+    for (const auto & var : groupVars) {
+      fset_.add(localData[var.name()]);
     }
   }
 
-  fset_.set_dirty();  // code is too complicated, mark dirty to be safe
+  // Code is too complicated, mark dirty to be safe
+  fset_.set_dirty();
 
   // Set duplicate points to the same value
   resetDuplicatePoints();
@@ -686,16 +712,39 @@ void Fields::dirac(const eckit::Configuration & config) {
     // Get dirac specifications
     std::vector<double> lon = config.getDoubleVector("lon");
     std::vector<double> lat = config.getDoubleVector("lat");
-    std::vector<atlas::idx_t> level = config.getIntVector("level");
+    if (lat.size() != lon.size()) throw eckit::UserError("Inconsistent dirac specification size",
+      Here());
     std::vector<std::string> vars = config.getStringVector("variable");
-
-    // Check sizes
-    if (lon.size() != lat.size()) throw eckit::UserError("Inconsistent dirac specification size",
+    if (vars.size() != lon.size()) throw eckit::UserError("Inconsistent dirac specification size",
       Here());
-    if (lon.size() != level.size()) throw eckit::UserError("Inconsistent dirac specification size",
-      Here());
-    if (lon.size() != vars.size()) throw eckit::UserError("Inconsistent dirac specification size",
-      Here());
+    std::vector<int> level;
+    if (config.has("level")) {
+      // Copy levels and add an offset to start from 0 instead of 1
+      level = config.getIntVector("level");
+      if (level.size() != lon.size()) throw eckit::UserError(
+        "Inconsistent dirac specification size", Here());
+      for (auto & item : level) {
+        item -= 1;
+      }
+    } else if (config.has("vertical coordinate")) {
+      // Find levels from verticals coordinates
+      const std::vector<double> vertCoord = config.getDoubleVector("vertical coordinate");
+      if (vertCoord.size() != lon.size()) throw eckit::UserError(
+        "Inconsistent dirac specification size", Here());
+      const double vertCoordTol = config.getDouble("vertical coordinate tolerance", 0.0);
+      for (size_t jdir = 0; jdir < vertCoord.size(); ++jdir) {
+        level[jdir] = -1;
+        for (size_t jlev = 0; jlev < geom_->vertCoordAvg(vars[jdir]).size(); ++jlev) {
+          if (std::abs(geom_->vertCoordAvg(vars[jdir])[jlev]-vertCoord[jdir]) < vertCoordTol) {
+            ASSERT(level[jdir] == -1);
+            level[jdir] = jlev;
+          }
+        }
+        ASSERT(level[jdir] > -1);
+      }
+    } else {
+      throw eckit::UserError("level or vertical coordinate missing in dirac configuration", Here());
+    }
 
     // Build KDTree for each MPI task
     const auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
@@ -771,7 +820,7 @@ void Fields::dirac(const eckit::Configuration & config) {
         // Add Dirac impulse
         if (field.rank() == 2) {
           auto view = atlas::array::make_view<double, 2>(field);
-          view(index, level[jdir]-1) = 1.0;
+          view(index, level[jdir]) = 1.0;
         }
       }
 
@@ -800,6 +849,10 @@ void Fields::dirac(const eckit::Configuration & config) {
 void Fields::diff(const Fields & x1,
                   const Fields & x2) {
   oops::Log::trace() << classname() << "::diff starting" << std::endl;
+
+  // Check that fields are compatible
+  ASSERT(checkFieldsCompatible(x1));
+  ASSERT(checkFieldsCompatible(x2));
 
   for (const auto & var : vars_) {
     atlas::Field field = fset_[var.name()];
@@ -873,6 +926,15 @@ void Fields::fromFieldSet(const atlas::FieldSet & fset) {
 void Fields::read(const eckit::Configuration & config) {
   oops::Log::trace() << classname() << "::read starting" << std::endl;
 
+  // Prepare updated configuration
+  eckit::LocalConfiguration updatedConfig(config);
+
+  // Check date if present
+  if (config.has("date")) {
+    const util::DateTime dateTime(config.getString("date"));
+    ASSERT(dateTime == time_);
+  }
+
   // Update variables names
   oops::Variables vars_in_file;
   for (const auto & var : vars_) {
@@ -891,8 +953,13 @@ void Fields::read(const eckit::Configuration & config) {
   // Set FieldsIO
   std::unique_ptr<FieldsIOBase> fieldsIO(FieldsIOFactory::create(ioFormat));
 
+  // Set State or Increment flag
+  if (!updatedConfig.has("is state")) {
+    updatedConfig.set("is state", this->isState());
+  }
+
   // Read fieldset
-  fieldsIO->read(*geom_, vars_in_file, config, fset_);
+  fieldsIO->read(*geom_, vars_in_file, updatedConfig, fset_);
 
   // Rename fields
   for (auto & field : fset_) {
@@ -916,6 +983,27 @@ void Fields::read(const eckit::Configuration & config) {
 void Fields::write(const eckit::Configuration & config) const {
   oops::Log::trace() << classname() << "::write starting" << std::endl;
 
+  // Prepare updated configuration
+  eckit::LocalConfiguration updatedConfig(config);
+
+  if (config.has("states")) {
+    for (const auto & confItem : config.getSubConfigurations("states")) {
+      // Get date
+      const util::DateTime dateTime(confItem.getString("date"));
+
+      // Copy configuration
+      if (dateTime == time_) {
+        updatedConfig = confItem;
+      }
+    }
+  } else {
+    // Check date if present
+    if (config.has("date")) {
+      const util::DateTime dateTime(config.getString("date"));
+      ASSERT(dateTime == time_);
+    }
+  }
+
   // Copy fieldset
   atlas::FieldSet fset = util::copyFieldSet(fset_);
 
@@ -930,14 +1018,19 @@ void Fields::write(const eckit::Configuration & config) const {
 
   // Get output formats
   const std::vector<std::string> ioFormats =
-    config.getStringVector("formats", std::vector<std::string>({"default"}));
+    updatedConfig.getStringVector("formats", std::vector<std::string>({"default"}));
+
+  // Set State or Increment flag
+  if (!updatedConfig.has("is state")) {
+    updatedConfig.set("is state", this->isState());
+  }
 
   for (const auto & ioFormat : ioFormats) {
     // Set FieldsIO list
     std::unique_ptr<FieldsIOBase> fieldsIO(FieldsIOFactory::create(ioFormat));
 
     // Write fields
-    fieldsIO->write(*geom_, config, fset);
+    fieldsIO->write(*geom_, updatedConfig, fset);
   }
 
   oops::Log::trace() << classname() << "::write done" << std::endl;
@@ -952,44 +1045,6 @@ double Fields::norm() const {
 
 // -----------------------------------------------------------------------------
 
-void Fields::print(std::ostream & os) const {
-  oops::Log::trace() << classname() << "::print starting" << std::endl;
-
-  os << std::endl;
-  std::string prefix;
-  if (os.rdbuf() == oops::Log::info().rdbuf()) {
-    prefix = "Info     : ";
-  }
-  os << prefix << "  Geometry: " << geom_->grid().name() << " [" << geom_->grid().size() << "]"
-    << std::endl;
-  os << prefix << "  Fields:";
-  const auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
-  for (const auto & var : vars_) {
-    os << std::endl;
-    double zz = 0.0;
-    atlas::Field field = fset_[var.name()];
-    const std::string gmaskName = "gmask_" + std::to_string(geom_->groupIndex(var.name()));
-    const auto gmaskView = atlas::array::make_view<int, 2>(geom_->fields()[gmaskName]);
-    if (field.rank() == 2) {
-      auto view = atlas::array::make_view<double, 2>(field);
-      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
-        for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-          if (gmaskView(jnode, jlevel) == 1 && ghostView(jnode) == 0) {
-            zz += view(jnode, jlevel)*view(jnode, jlevel);
-          }
-        }
-      }
-    }
-    geom_->getComm().allReduceInPlace(zz, eckit::mpi::sum());
-    zz = std::sqrt(zz);
-    os << prefix << "    " << var.name() << ": " << zz;
-  }
-
-  oops::Log::trace() << classname() << "::print done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
 size_t Fields::serialSize() const {
   oops::Log::trace() << classname() << "::serialSize starting" << std::endl;
 
@@ -1000,6 +1055,7 @@ size_t Fields::serialSize() const {
       nn += field.shape(0)*field.shape(1);
     }
   }
+  nn += time_.serialSize();
 
   oops::Log::trace() << classname() << "::serialSize done" << std::endl;
   return nn;
@@ -1021,6 +1077,7 @@ void Fields::serialize(std::vector<double> & vect)  const {
       }
     }
   }
+  time_.serialize(vect);
 
   oops::Log::trace() << classname() << "::serialize done" << std::endl;
 }
@@ -1043,8 +1100,88 @@ void Fields::deserialize(const std::vector<double> & vect,
       }
     }
   }
+  time_.deserialize(vect, index);
 
   oops::Log::trace() << classname() << "::deserialize done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void Fields::print(std::ostream & os) const {
+  oops::Log::trace() << classname() << "::print starting" << std::endl;
+
+  os << std::endl;
+  std::string prefix;
+  if (os.rdbuf() == oops::Log::info().rdbuf()) {
+    prefix = "Info     : ";
+  }
+  os << prefix << "  Geometry: " << geom_->grid().name() << " [" << geom_->grid().size() << "]"
+    << std::endl;
+  os << prefix << "  Fields:";
+  const auto ghostView = atlas::array::make_view<int, 1>(geom_->functionSpace().ghost());
+  for (const auto & var : vars_) {
+    os << std::endl;
+    double zzmin = std::numeric_limits<double>::max();
+    double zzmax = -std::numeric_limits<double>::max();
+    double zzave = 0.0;
+    double zzstd = 0.0;
+    atlas::Field field = fset_[var.name()];
+    const std::string gmaskName = "gmask_" + std::to_string(geom_->groupIndex(var.name()));
+    const auto gmaskView = atlas::array::make_view<int, 2>(geom_->fields()[gmaskName]);
+    if (field.rank() == 2) {
+      auto view = atlas::array::make_view<double, 2>(field);
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+          if (gmaskView(jnode, jlevel) == 1 && ghostView(jnode) == 0) {
+            zzmin = (view(jnode, jlevel) < zzmin) ? view(jnode, jlevel) : zzmin;
+            zzmax = (view(jnode, jlevel) > zzmax) ? view(jnode, jlevel) : zzmax;
+            zzave += view(jnode, jlevel);
+          }
+        }
+      }
+      geom_->getComm().allReduceInPlace(zzmin, eckit::mpi::min());
+      geom_->getComm().allReduceInPlace(zzmax, eckit::mpi::max());
+      geom_->getComm().allReduceInPlace(zzave, eckit::mpi::sum());
+      zzave /= (geom_->grid().size()*field.shape(1));
+      for (atlas::idx_t jnode = 0; jnode < field.shape(0); ++jnode) {
+        for (atlas::idx_t jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+          if (gmaskView(jnode, jlevel) == 1 && ghostView(jnode) == 0) {
+            zzstd += (view(jnode, jlevel)-zzave)*(view(jnode, jlevel)-zzave);
+          }
+        }
+      }
+      geom_->getComm().allReduceInPlace(zzstd, eckit::mpi::sum());
+      zzstd /= (geom_->grid().size()*field.shape(1)-1);
+      zzstd = std::sqrt(zzstd);
+      const double tiny = 1.0e-12*std::max({std::abs(zzmin), std::abs(zzmax), std::abs(zzave),
+        std::abs(zzstd)});
+      os << prefix << "  - " << var.name() << " (" << field.shape(1) << " levels):" << std::endl;
+      if ((std::abs(zzmin) > 0.0) && (std::abs(zzmin) < tiny)) {
+        os << prefix << "    + min    ~ 0" << std::endl;
+      } else {
+        os << prefix << "    + min    = " << zzmin << std::endl;
+      }
+      if ((std::abs(zzmax) > 0.0) && (std::abs(zzmax) < tiny)) {
+        os << prefix << "    + max    ~ 0" << std::endl;
+      } else {
+        os << prefix << "    + max    = " << zzmax << std::endl;
+      }
+      if (zzmin != zzmax) {
+        if ((std::abs(zzave) > 0.0) && (std::abs(zzave) < tiny)) {
+          os << prefix << "    + mean   ~ 0" << std::endl;
+        } else {
+          os << prefix << "    + mean   = " << zzave << std::endl;
+        }
+        if ((std::abs(zzstd) > 0.0) && (std::abs(zzstd) < tiny)) {
+          os << prefix << "    + stddev ~ 0" << std::endl;
+        } else {
+          os << prefix << "    + stddev = " << zzstd << std::endl;
+        }
+      }
+    }
+  }
+
+  oops::Log::trace() << classname() << "::print done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
@@ -1141,6 +1278,48 @@ void Fields::resetDuplicatePoints() {
   }
 
   oops::Log::trace() << classname() << "::resetDuplicatePoints done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+bool Fields::checkFieldsCompatible(const Fields & other) const {
+  // Number of fields check
+  if (fset_.size() < other.fset_.size()) {
+    oops::Log::warning() << "checkFieldsCompatible: Fields 1 is not a superset of Fields 2"
+      << std::endl;
+    return false;
+  }
+
+  for (const auto & otherField : other.fset_) {
+    // Variables check
+    if (!fset_.has(otherField.name())) {
+      oops::Log::warning() << "checkFieldsCompatible: Fields do not contain the same variables"
+        << std::endl;
+      return false;
+    }
+
+    // Levels check
+    const auto field = fset_[otherField.name()];
+    if (field.shape(1) != otherField.shape(1)) {
+      oops::Log::warning() << "checkFieldsCompatible: Fields have differing levels" << std::endl;
+      return false;
+    }
+
+    // Functionspace checks
+    const auto fs = field.functionspace();
+    const auto otherFs = otherField.functionspace();
+    if (fs.type() != otherFs.type()) {
+      oops::Log::warning() << "checkFieldsCompatible: FunctionSpace types differ" << std::endl;
+      return false;
+    }
+    if (fs.size() != otherFs.size()) {
+      std::cout << "TOTO: " << fs.size() << " " << otherFs.size() << std::endl;
+      oops::Log::warning() << "checkFieldsCompatible: FunctionSpace sizes differ" << std::endl;
+      return false;
+    }
+  }
+
+  return true;
 }
 
 // -----------------------------------------------------------------------------

@@ -4,6 +4,11 @@
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
+message( STATUS "Found quench I/O formats:" )
+message( STATUS "- Default (NetCDF)" )
+message( STATUS "- GMSH" )
+
+# Common sources, not obs-related
 list( APPEND quench_src_files
 
 Covariance.h

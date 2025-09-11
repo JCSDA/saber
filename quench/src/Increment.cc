@@ -21,7 +21,7 @@ namespace quench {
 Increment::Increment(const Geometry & geom,
                      const oops::Variables & vars,
                      const util::DateTime & vt)
-  : fields_(new Fields(geom, vars, vt)) {
+  : fields_(new Fields(geom, vars, vt, false)) {
   oops::Log::trace() << classname() << "::Increment starting" << std::endl;
 
   fields_->zero();

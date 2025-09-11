@@ -2,8 +2,14 @@ Input Dirac increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-15 [1350]
   Fields:
-    unbalanced_pressure_levels_minus_one: 1.0000000000000000e+00
-    mu: 0.0000000000000000e+00
+  - unbalanced_pressure_levels_minus_one (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 3.7037037037037035e-04
+    + stddev = 1.9245008972987449e-02
+  - mu (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
 Adjoint test for block ID passed
 Covariance(SABER) diagnostics:
 - Variances at Dirac points:
@@ -14,8 +20,14 @@ Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-15 [1350]
   Fields:
-    unbalanced_pressure_levels_minus_one: 3.9999999999999996e+00
-    mu: 0.0000000000000000e+00
+  - unbalanced_pressure_levels_minus_one (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 3.9999999999999996e+00
+    + mean   = 1.4814814814814814e-03
+    + stddev = 7.6980035891949780e-02
+  - mu (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
 Adjoint test for block ID passed
 Covariance(SABER1_SABER) diagnostics:
 - Variances at Dirac points:
@@ -26,8 +38,14 @@ Covariance(SABER1_SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-15 [1350]
   Fields:
-    unbalanced_pressure_levels_minus_one: 1.0000000000000000e+00
-    mu: 0.0000000000000000e+00
+  - unbalanced_pressure_levels_minus_one (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 3.7037037037037035e-04
+    + stddev = 1.9245008972987449e-02
+  - mu (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
 Adjoint test for block ID passed
 Covariance(SABER2_SABER) diagnostics:
 - Variances at Dirac points:
@@ -38,6 +56,12 @@ Covariance(SABER2_SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: CS-LFR-15 [1350]
   Fields:
-    unbalanced_pressure_levels_minus_one: 1.0000000000000000e+00
-    mu: 0.0000000000000000e+00
+  - unbalanced_pressure_levels_minus_one (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 3.7037037037037035e-04
+    + stddev = 1.9245008972987449e-02
+  - mu (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
 Adjoint test for block ID passed

@@ -100,6 +100,13 @@ class AliasParameters : public oops::Parameters {
   oops::RequiredParameter<std::string> inCode{"in code", this};
   // In model file
   oops::RequiredParameter<std::string> inFile{"in file", this};
+  // Optional parameters for States transformations
+  // Scaling factor (e.g. for units conversion)
+  oops::OptionalParameter<double> scalingFactor{"scaling factor", this};
+  // Toggle log10 transformation
+  oops::OptionalParameter<bool> logTransf{"log transform", this};
+  // Additive constant (prior to log10 transformation)
+  oops::OptionalParameter<double> addConst{"additive constant", this};
 };
 
 // -----------------------------------------------------------------------------
@@ -141,6 +148,9 @@ class GeometryParameters : public oops::Parameters {
   // Levels top-down
   oops::Parameter<bool> levelsAreTopDown{"levels are top down", true, this};
 
+  // Levels counter origin
+  oops::Parameter<size_t> levelsCountFrom{"levels count from", 1, this};
+
   // Model data
   oops::Parameter<eckit::LocalConfiguration> modelData{"model data", eckit::LocalConfiguration(),
     this};
@@ -173,11 +183,16 @@ class Geometry : public util::Printable,
   Geometry(const Geometry &);
 
   // Variables sizes
-  std::vector<size_t> variableSizes(const oops::Variables & vars) const;
+  std::vector<size_t> variableSizes(const oops::Variables &) const;
+  std::vector<size_t> variableSizes(const std::vector<std::string> &) const;
 
   // Levels direction
-  bool levelsAreTopDown() const
+  const bool levelsAreTopDown() const
     {return levelsAreTopDown_;}
+
+  // Levels counter origin
+  const bool levelsCountFrom() const
+    {return levelsCountFrom_;}
 
   // Accessors
   const eckit::mpi::Comm & getComm() const
@@ -213,6 +228,8 @@ class Geometry : public util::Printable,
     {return interpolation_;}
   bool duplicatePoints() const
     {return duplicatePoints_;}
+  const std::vector<double> & vertCoordAvg(const std::string & var) const
+    {return groups_[groupIndex(var)].vertCoordAvg_;}
   const oops::GeometryData & generic() const
     {return *geomData_;}
 
@@ -260,6 +277,9 @@ class Geometry : public util::Printable,
 
   // Levels direction
   bool levelsAreTopDown_;
+
+  // Levels counter origin
+  size_t levelsCountFrom_;
 
   // Model data configuration
   eckit::LocalConfiguration modelData_;

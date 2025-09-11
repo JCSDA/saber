@@ -2,8 +2,14 @@ Input Dirac increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: F15 [1800]
   Fields:
-    eastward_wind: 1.0000000000000000e+00
-    northward_wind: 0.0000000000000000e+00
+  - eastward_wind (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 7.9365079365079362e-06
+    + stddev = 2.8171808490961210e-03
+  - northward_wind (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
 Adjoint test for block spectral to gauss passed
 Adjoint test for block spectral covariance passed
 Covariance(SABER) diagnostics:
@@ -16,5 +22,13 @@ Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: F15 [1800]
   Fields:
-    eastward_wind: 6.9221465405261329e-01
-    northward_wind: 2.2511716006873311e-01
+  - eastward_wind (70 levels):
+    + min    = -1.8969655108327339e-02
+    + max    = 1.5686394915552215e-01
+    + mean   = 1.9163284863163266e-05
+    + stddev = 1.9500074453396529e-03
+  - northward_wind (70 levels):
+    + min    = -2.1219231756330587e-02
+    + max    = 2.1219231756330583e-02
+    + mean   ~ 0
+    + stddev = 6.3419826881309124e-04

@@ -2,7 +2,11 @@ Input Dirac increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: F15 [1800]
   Fields:
-    air_horizontal_streamfunction: 1.0000000000000000e+00
+  - air_horizontal_streamfunction (1 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 5.5555555555555556e-04
+    + stddev = 2.3570226039551608e-02
 Adjoint test for block interpolation passed
 Inner inverse test for block interpolation passed: U Uinv (U x) == (U x)
 Outer inverse test for block interpolation passed: Uinv U (Uinv x) == (Uinv x)
@@ -11,4 +15,8 @@ Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: F15 [1800]
   Fields:
-    air_horizontal_streamfunction: 6.1923977519774420e-01
+  - air_horizontal_streamfunction (1 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 5.0013629881408850e-01
+    + mean   = 5.6472847193203936e-04
+    + stddev = 1.4588745240196448e-02

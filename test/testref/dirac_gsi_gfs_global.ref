@@ -2,17 +2,37 @@ Input Dirac increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: F15 [1800]
   Fields:
-    air_horizontal_streamfunction: 1.0000000000000000e+00
-    air_horizontal_velocity_potential: 0.0000000000000000e+00
-    air_temperature: 0.0000000000000000e+00
-    air_pressure_at_surface: 0.0000000000000000e+00
+  - air_horizontal_streamfunction (127 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 4.3744531933508310e-06
+    + stddev = 2.0915193504558506e-03
+  - air_horizontal_velocity_potential (127 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - air_temperature (127 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - air_pressure_at_surface (1 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
 Adjoint test for block interpolation passed
 Adjoint test for block gsi static covariance passed
 Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: F15 [1800]
   Fields:
-    air_horizontal_streamfunction: 8.6542011718983801e+11
-    air_horizontal_velocity_potential: 0.0000000000000000e+00
-    air_temperature: 0.0000000000000000e+00
-    air_pressure_at_surface: 0.0000000000000000e+00
+  - air_horizontal_streamfunction (127 levels):
+    + min    = -4.2938779078984977e+05
+    + max    = 8.7482067298462662e+10
+    + mean   = 1.0549219121648486e+08
+    + stddev = 1.8069701320242174e+09
+  - air_horizontal_velocity_potential (127 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - air_temperature (127 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - air_pressure_at_surface (1 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00

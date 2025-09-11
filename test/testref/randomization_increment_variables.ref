@@ -2,4 +2,8 @@ Member 0:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L8x5 [40]
   Fields:
-    air_pressure: 9.7036420295944552e+00
+  - air_pressure (2 levels):
+    + min    = -2.6992226243292614e+00
+    + max    = 2.2849294606911874e+00
+    + mean   = 6.5718832969267907e-02
+    + stddev = 1.0897401353101939e+00

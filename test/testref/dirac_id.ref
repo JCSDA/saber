@@ -2,21 +2,41 @@ Input Dirac increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: F10 [800]
   Fields:
-    air_horizontal_streamfunction: 1.0000000000000000e+00
-    air_horizontal_velocity_potential: 0.0000000000000000e+00
+  - air_horizontal_streamfunction (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 6.2500000000000001e-04
+    + stddev = 2.5000000000000130e-02
+  - air_horizontal_velocity_potential (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
 Adjoint test for block ID passed
 Square-root test for block ID passed
 Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: F10 [800]
   Fields:
-    air_horizontal_streamfunction: 1.0000000000000000e+00
-    air_horizontal_velocity_potential: 0.0000000000000000e+00
+  - air_horizontal_streamfunction (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 6.2500000000000001e-04
+    + stddev = 2.5000000000000130e-02
+  - air_horizontal_velocity_potential (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
 Adjoint test for block ID passed
 Square-root test for block ID passed
 Randomized variance: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: F10 [800]
   Fields:
-    air_horizontal_streamfunction: 4.0913457556747154e+01
-    air_horizontal_velocity_potential: 4.0661973152712200e+01
+  - air_horizontal_streamfunction (2 levels):
+    + min    = 4.4988841210638408e-01
+    + max    = 1.7488688521639726e+00
+    + mean   = 1.0035322517815179e+00
+    + stddev = 1.9784302888708197e-01
+  - air_horizontal_velocity_potential (2 levels):
+    + min    = 4.8530608930408137e-01
+    + max    = 1.7476579590689543e+00
+    + mean   = 9.9731329516370737e-01
+    + stddev = 1.9688310251815921e-01

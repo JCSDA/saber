@@ -2,10 +2,26 @@ Input Dirac increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: structured [3723]
   Fields:
-    air_upward_absolute_vorticity: 1.0000000000000000e+00
-    air_horizontal_divergence: 1.0000000000000000e+00
-    air_temperature_and_log_of_air_pressure_at_surface: 1.0000000000000000e+00
-    water_vapor_mixing_ratio_wrt_moist_air: 1.0000000000000000e+00
+  - air_upward_absolute_vorticity (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 2.6860059092130003e-05
+    + stddev = 5.1826691088793144e-03
+  - air_horizontal_divergence (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 2.6860059092130003e-05
+    + stddev = 5.1826691088793144e-03
+  - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 2.4418235538300004e-05
+    + stddev = 4.9414811077572087e-03
+  - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 2.6860059092130003e-05
+    + stddev = 5.1826691088793144e-03
 - Regional grid size: 73x51
 - Cell sizes: 2.5000000000000000e+00 km x 2.5000000000000000e+00 km
 - Mean latitude: 5.6289831946322792e+01 deg
@@ -36,7 +52,23 @@ Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: structured [3723]
   Fields:
-    air_upward_absolute_vorticity: 7.7169104615540318e+00
-    air_horizontal_divergence: 1.7803989499311740e+01
-    air_temperature_and_log_of_air_pressure_at_surface: 8.0830209759943013e+05
-    water_vapor_mixing_ratio_wrt_moist_air: 2.0183910520805466e+03
+  - air_upward_absolute_vorticity (10 levels):
+    + min    = -1.1267022184890865e+00
+    + max    = 1.5423921212612668e+00
+    + mean   = 2.6860059092133795e-05
+    + stddev = 3.9994721579386758e-02
+  - air_horizontal_divergence (10 levels):
+    + min    = -9.2005338897735311e-01
+    + max    = 2.2612563153249150e+00
+    + mean   = 2.6860059092177674e-05
+    + stddev = 9.2273421726565663e-02
+  - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
+    + min    = -2.4545959036098633e+04
+    + max    = 9.7848814895902888e+03
+    + mean   = 2.4418232969080431e-05
+    + stddev = 3.9942583113142005e+03
+  - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
+    + min    = -2.3806796808866082e+01
+    + max    = 1.1276214139675341e+02
+    + mean   = 2.6860059102208049e-05
+    + stddev = 1.0460793444929793e+01

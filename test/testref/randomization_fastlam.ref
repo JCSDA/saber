@@ -6,9 +6,17 @@ Member 0:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: structured [3763]
   Fields:
-    air_horizontal_streamfunction: 8.1488556410001294e+01
+  - air_horizontal_streamfunction (2 levels):
+    + min    = -2.7747575351877503e+00
+    + max    = 2.7100054583351225e+00
+    + mean   = -1.6967500339708796e-02
+    + stddev = 9.3923119192827653e-01
 Member 1: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: structured [3763]
   Fields:
-    air_horizontal_streamfunction: 9.1289067615923543e+01
+  - air_horizontal_streamfunction (2 levels):
+    + min    = -3.8851302334967994e+00
+    + max    = 3.6195934854878598e+00
+    + mean   = 4.2318554896948593e-02
+    + stddev = 1.0515115431304702e+00

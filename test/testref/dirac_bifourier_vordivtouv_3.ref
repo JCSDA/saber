@@ -2,8 +2,14 @@ Input Dirac increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: structured [3723]
   Fields:
-    eastward_wind: 1.0000000000000000e+00
-    northward_wind: 0.0000000000000000e+00
+  - eastward_wind (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 2.6860059092130003e-05
+    + stddev = 5.1826691088793144e-03
+  - northward_wind (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
 - xspace: LocalConfiguration[root={type => linear , start => 5.1870971254055749e+05 , end => 6.9870971254055749e+05 , N => 73 , endpoint => true}]
 - yspace: LocalConfiguration[root={type => linear , start => -1.8673080099392682e+04 , end => 1.0632691990060732e+05 , N => 51 , endpoint => true}]
 Outer grid size: 3723
@@ -35,5 +41,13 @@ Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: structured [3723]
   Fields:
-    eastward_wind: 2.5692942745506451e+07
-    northward_wind: 2.1952606841640401e+05
+  - eastward_wind (10 levels):
+    + min    = -3.9438479402583261e+05
+    + max    = 3.7986544906090382e+06
+    + mean   = 1.7819229608784877e+00
+    + stddev = 1.3315980902354096e+05
+  - northward_wind (10 levels):
+    + min    = -9.2218007641997756e+03
+    + max    = 6.8693321138288738e+03
+    + mean   = -8.0549546089857145e+01
+    + stddev = 1.1348912430587532e+03

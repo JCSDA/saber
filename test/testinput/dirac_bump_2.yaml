@@ -170,7 +170,10 @@ dirac:
   - eastward_wind
 - {}
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_bump_2/%MPI%_dirac_%id%
+  states:
+  - mpi pattern: '%MPI%'
+    filepath: testdata/dirac_bump_2/%MPI%_dirac_%id%_12
+  - mpi pattern: '%MPI%'
+    filepath: testdata/dirac_bump_2/%MPI%_dirac_%id%_18
 test:
   reference filename: testref/dirac_bump_2.ref

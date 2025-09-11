@@ -2,13 +2,41 @@ Input Dirac increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: F12 [1152]
   Fields:
-    var1: 1.0000000000000000e+00
-    var2: 1.0000000000000000e+00
-    var1_levels_minus_one: 1.0000000000000000e+00
-    var2_levels_minus_one: 1.0000000000000000e+00
-    var1_levels: 1.0000000000000000e+00
-    var2_levels: 1.0000000000000000e+00
-    var3_levels: 1.0000000000000000e+00
+  - var1 (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 1.2400793650793651e-05
+    + stddev = 3.5214760613650267e-03
+  - var2 (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 1.2400793650793651e-05
+    + stddev = 3.5214760613654136e-03
+  - var1_levels_minus_one (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 1.2400793650793651e-05
+    + stddev = 3.5214760613661352e-03
+  - var2_levels_minus_one (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 1.2400793650793651e-05
+    + stddev = 3.5214760613667484e-03
+  - var1_levels (71 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 1.2226134585289515e-05
+    + stddev = 3.4965889928981241e-03
+  - var2_levels (71 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 1.2226134585289515e-05
+    + stddev = 3.4965889928992083e-03
+  - var3_levels (71 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 1.2226134585289515e-05
+    + stddev = 3.4965889928992807e-03
 Adjoint test for block mo vertical interpolation for localization passed
 Adjoint test for block mo_vertical_localization passed
 Adjoint test for block spectral to gauss passed
@@ -16,26 +44,54 @@ Adjoint test for block spectral analytical filter passed
 Adjoint test for block ID passed
 Covariance(SABER) diagnostics:
 - Variances at Dirac points:
-  + Value for variable var1, subwindow 0, at (longitude, latitude, vertical index) point (240.00000, 84.37646, 65): 9.8944852830821295e-01
-  + Value for variable var2, subwindow 0, at (longitude, latitude, vertical index) point (15.00000, 62.42622, 70): 8.8888889551162742e-01
-  + Value for variable var1_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (180.00000, 33.05347, 1): 9.9999999999999978e-01
-  + Value for variable var2_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (90.00000, 3.67270, 65): 9.9999999999999978e-01
-  + Value for variable var1_levels, subwindow 0, at (longitude, latitude, vertical index) point (180.00000, 33.05347, 1): 9.9999999999999978e-01
-  + Value for variable var2_levels, subwindow 0, at (longitude, latitude, vertical index) point (90.00000, 3.67270, 65): 9.9999999999999978e-01
-  + Value for variable var3_levels, subwindow 0, at (longitude, latitude, vertical index) point (180.00000, 3.67270, 71): 8.8888889551162742e-01
+  + Value for variable var1, subwindow 0, at (longitude, latitude, vertical index) point (240.00000, 84.37646, 65): 9.8944853351932038e-01
+  + Value for variable var2, subwindow 0, at (longitude, latitude, vertical index) point (15.00000, 62.42622, 70): 8.8888889999999976e-01
+  + Value for variable var1_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (180.00000, 33.05347, 1): 1.0000000000000004e+00
+  + Value for variable var2_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (90.00000, 3.67270, 65): 1.0000000000000000e+00
+  + Value for variable var1_levels, subwindow 0, at (longitude, latitude, vertical index) point (180.00000, 33.05347, 1): 1.0000000000000004e+00
+  + Value for variable var2_levels, subwindow 0, at (longitude, latitude, vertical index) point (90.00000, 3.67270, 65): 1.0000000000000000e+00
+  + Value for variable var3_levels, subwindow 0, at (longitude, latitude, vertical index) point (180.00000, 3.67270, 71): 8.8888889999999954e-01
 - Covariances at diagnostic points:
-  + Value for variable var1, subwindow 0, at (longitude, latitude, vertical index) point (240.00000, 33.05347, 1): 9.1894454445485024e-02
-  + Value for variable var2, subwindow 0, at (longitude, latitude, vertical index) point (60.00000, 3.67270, 2): 7.4280068260058674e-02
-  + Value for variable var1_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (195.00000, 69.76378, 1): 6.5681021199141243e-01
-  + Value for variable var1_levels, subwindow 0, at (longitude, latitude, vertical index) point (90.00000, 33.05347, 1): 1.8667751207191521e-01
+  + Value for variable var1, subwindow 0, at (longitude, latitude, vertical index) point (240.00000, 33.05347, 1): 9.1894484211141408e-02
+  + Value for variable var2, subwindow 0, at (longitude, latitude, vertical index) point (60.00000, 3.67270, 2): 7.4280081609715554e-02
+  + Value for variable var1_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (195.00000, 69.76378, 1): 6.5681021199141287e-01
+  + Value for variable var1_levels, subwindow 0, at (longitude, latitude, vertical index) point (90.00000, 33.05347, 1): 1.8667751207191532e-01
 Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: F12 [1152]
   Fields:
-    var1: 5.1073264688446301e+01
-    var2: 4.8856692135931290e+01
-    var1_levels_minus_one: 6.4055853300087605e+01
-    var2_levels_minus_one: 3.2577391742383945e+01
-    var1_levels: 6.4145733484542077e+01
-    var2_levels: 3.3673361590624296e+01
-    var3_levels: 3.6192790442815692e+01
+  - var1 (70 levels):
+    + min    = -2.7326224386361696e-02
+    + max    = 9.8944853351932038e-01
+    + mean   = 8.0794138238725485e-02
+    + stddev = 1.6068550550673452e-01
+  - var2 (70 levels):
+    + min    = -2.5432494359325607e-02
+    + max    = 9.2086048039124591e-01
+    + mean   = 8.9179663589831926e-02
+    + stddev = 1.4713142660110237e-01
+  - var1_levels_minus_one (70 levels):
+    + min    = -2.7618273345949060e-02
+    + max    = 1.0000000000000004e+00
+    + mean   = 1.1353389568501258e-01
+    + stddev = 1.9491760013807072e-01
+  - var2_levels_minus_one (70 levels):
+    + min    = -2.7618128785984547e-02
+    + max    = 1.0000000000000000e+00
+    + mean   = 4.5277471885331877e-02
+    + stddev = 1.0540817507116364e-01
+  - var1_levels (71 levels):
+    + min    = -2.7618273345949060e-02
+    + max    = 1.0000000000000004e+00
+    + mean   = 1.1274872055215536e-01
+    + stddev = 1.9389367494257848e-01
+  - var2_levels (71 levels):
+    + min    = -2.7618128785984547e-02
+    + max    = 1.0000000000000000e+00
+    + mean   = 4.6593002274678559e-02
+    + stddev = 1.0813136457552605e-01
+  - var3_levels (71 levels):
+    + min    = -2.5647240162669886e-02
+    + max    = 9.2863786541849724e-01
+    + mean   = 6.0950463692955884e-02
+    + stddev = 1.1090728431076589e-01

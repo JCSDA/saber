@@ -56,10 +56,20 @@ diagnostic points:
     - air_horizontal_streamfunction
     - air_horizontal_streamfunction
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_id_4d/%MPI%_dirac_%id%
+  states:
+  - date: 2010-01-01T12:00:00Z
+    mpi pattern: '%MPI%'
+    filepath: testdata/dirac_id_4d/%MPI%_dirac_%id%
+  - date: 2010-01-01T18:00:00Z
+    mpi pattern: '%MPI%'
+    filepath: testdata/dirac_id_4d/%MPI%_dirac_%id%
 output variance:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_id_4d/%MPI%_variance
+  states:
+  - date: 2010-01-01T12:00:00Z
+    mpi pattern: '%MPI%'
+    filepath: testdata/dirac_id_4d/%MPI%_variance_%id%
+  - date: 2010-01-01T18:00:00Z
+    mpi pattern: '%MPI%'
+    filepath: testdata/dirac_id_4d/%MPI%_variance_%id%
 test:
   reference filename: testref/dirac_id_4d.ref

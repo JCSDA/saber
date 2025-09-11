@@ -2,10 +2,26 @@ Input Dirac increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: F15 [1800]
   Fields:
-    air_horizontal_streamfunction: 1.0000000000000000e+00
-    air_horizontal_velocity_potential: 1.0000000000000000e+00
-    mu: 1.0000000000000000e+00
-    unbalanced_pressure_levels_minus_one: 1.0000000000000000e+00
+  - air_horizontal_streamfunction (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 7.9365079365079362e-06
+    + stddev = 2.8171808490961210e-03
+  - air_horizontal_velocity_potential (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 7.9365079365079362e-06
+    + stddev = 2.8171808490961210e-03
+  - mu (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 7.9365079365079362e-06
+    + stddev = 2.8171808490961210e-03
+  - unbalanced_pressure_levels_minus_one (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 7.9365079365079362e-06
+    + stddev = 2.8171808490961210e-03
 Adjoint test for block spectral to gauss passed
 Inner inverse test for block spectral to gauss passed: U Uinv (U x) == (U x)
 Outer inverse test for block spectral to gauss passed: Uinv U (Uinv x) == (Uinv x)
@@ -16,18 +32,34 @@ Covariance(SABER) diagnostics:
 - Variances at Dirac points:
   + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 1.0000000000000000e+00
   + Value for variable air_horizontal_velocity_potential, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 9.9999999999999967e-01
-  + Value for variable mu, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 1.0000000000000004e+00
+  + Value for variable mu, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 1.0000000000000007e+00
   + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, -2.95042, 1): 9.9999999999999978e-01
 - Covariances at diagnostic points:
   + Value for variable air_horizontal_streamfunction, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 2.2906665881770127e-01
   + Value for variable air_horizontal_velocity_potential, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 2.5770388320595827e-01
   + Value for variable mu, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 3.7451747481547469e-02
-  + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 1.1314209610838316e-01
+  + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (18.00000, 20.65284, 2): 1.1314209610838319e-01
 Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: F15 [1800]
   Fields:
-    air_horizontal_streamfunction: 1.5534525177102072e+01
-    air_horizontal_velocity_potential: 1.8304710777937345e+01
-    mu: 4.2684246888615789e+00
-    unbalanced_pressure_levels_minus_one: 1.2867321328037148e+01
+  - air_horizontal_streamfunction (70 levels):
+    + min    = -1.4774789599447130e-01
+    + max    = 1.0000000000000000e+00
+    + mean   = -2.0307513223949232e-03
+    + stddev = 4.3716598660278633e-02
+  - air_horizontal_velocity_potential (70 levels):
+    + min    = -1.4549081446906692e-01
+    + max    = 9.9999999999999967e-01
+    + mean   = -2.6189642059240392e-03
+    + stddev = 5.1501337506842153e-02
+  - mu (70 levels):
+    + min    = -1.1769271032985109e-02
+    + max    = 1.0000000000000007e+00
+    + mean   = 4.7029593179440266e-03
+    + stddev = 1.1067156359936874e-02
+  - unbalanced_pressure_levels_minus_one (70 levels):
+    + min    = -1.5620462213969732e-01
+    + max    = 9.9999999999999978e-01
+    + mean   = -4.0524981606981005e-03
+    + stddev = 3.6022478692905549e-02

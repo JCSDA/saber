@@ -1,5 +1,4 @@
 compare_diagnostics_ens_noloc
-compare_diagnostics_hybrid_stddev
 dirac_biperiodization_1
 dirac_biperiodization_2
 dirac_bump_1

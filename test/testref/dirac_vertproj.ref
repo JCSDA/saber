@@ -2,10 +2,20 @@ Input Dirac increment:
 - Valid time: 2016-01-01T16:00:00Z
   Geometry: F12 [1152]
   Fields:
-    air_potential_temperature: 0.0000000000000000e+00
-    dimensionless_exner_function_levels_minus_one: 0.0000000000000000e+00
-    dry_air_density_levels_minus_one: 1.0000000000000000e+00
-    eastward_wind: 0.0000000000000000e+00
+  - air_potential_temperature (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - dimensionless_exner_function_levels_minus_one (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - dry_air_density_levels_minus_one (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 1.2400793650793651e-05
+    + stddev = 3.5214760613667046e-03
+  - eastward_wind (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
 Adjoint test for block simple vertical projection passed
 Inner inverse test for block simple vertical projection passed: U Uinv (U x) == (U x)
 Outer inverse test for block simple vertical projection passed: Uinv U (Uinv x) == (Uinv x)
@@ -14,7 +24,17 @@ Covariance(SABER) * Increment:
 - Valid time: 2016-01-01T16:00:00Z
   Geometry: F12 [1152]
   Fields:
-    air_potential_temperature: 0.0000000000000000e+00
-    dimensionless_exner_function_levels_minus_one: 0.0000000000000000e+00
-    dry_air_density_levels_minus_one: 4.2426406871192848e+00
-    eastward_wind: 0.0000000000000000e+00
+  - air_potential_temperature (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - dimensionless_exner_function_levels_minus_one (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - dry_air_density_levels_minus_one (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 2.2321428571428571e-04
+    + stddev = 1.4938782699660485e-02
+  - eastward_wind (70 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00

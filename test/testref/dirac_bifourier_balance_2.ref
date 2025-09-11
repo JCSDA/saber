@@ -2,10 +2,26 @@ Input Dirac increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: structured [1872]
   Fields:
-    air_upward_absolute_vorticity: 1.0000000000000000e+00
-    air_horizontal_divergence: 1.0000000000000000e+00
-    air_temperature_and_log_of_air_pressure_at_surface: 1.0000000000000000e+00
-    water_vapor_mixing_ratio_wrt_moist_air: 1.0000000000000000e+00
+  - air_upward_absolute_vorticity (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 5.3418803418803419e-05
+    + stddev = 7.3088168275599876e-03
+  - air_horizontal_divergence (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 5.3418803418803419e-05
+    + stddev = 7.3088168275599876e-03
+  - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 4.8562548562548563e-05
+    + stddev = 6.9686834167248047e-03
+  - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 5.3418803418803419e-05
+    + stddev = 7.3088168275599876e-03
 - xspace: LocalConfiguration[root={type => linear , start => 5.4495971254055749e+05 , end => 6.7245971254055749e+05 , N => 52 , endpoint => true}]
 - yspace: LocalConfiguration[root={type => linear , start => 7.6919900607317686e+01 , end => 8.7576919900607318e+04 , N => 36 , endpoint => true}]
 Outer grid size: 1872
@@ -28,7 +44,23 @@ Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: structured [1872]
   Fields:
-    air_upward_absolute_vorticity: 8.3599835351973306e-01
-    air_horizontal_divergence: 6.8530908094816443e+00
-    air_temperature_and_log_of_air_pressure_at_surface: 5.2211555537350691e+05
-    water_vapor_mixing_ratio_wrt_moist_air: 8.8840265326342660e+02
+  - air_upward_absolute_vorticity (10 levels):
+    + min    = -7.3164065198568162e-02
+    + max    = 7.0069765993590338e-01
+    + mean   = 5.1472057751694653e-05
+    + stddev = 6.1101052289613345e-03
+  - air_horizontal_divergence (10 levels):
+    + min    = -3.3855047469424016e-01
+    + max    = 9.3059319267751239e-01
+    + mean   = 2.6291156404978440e-03
+    + stddev = 5.0020272796363487e-02
+  - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
+    + min    = -2.4724453343443245e+04
+    + max    = 4.8940571866904747e+03
+    + mean   = -1.7233937277218424e+03
+    + stddev = 3.2044951935428708e+03
+  - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
+    + min    = -9.2775154379568416e+00
+    + max    = 6.0464452634813185e+01
+    + mean   = 3.6224752923744488e+00
+    + stddev = 5.3889247616845752e+00

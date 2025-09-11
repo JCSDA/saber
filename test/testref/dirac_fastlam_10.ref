@@ -2,7 +2,11 @@ Input Dirac increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: structured [14805]
   Fields:
-    air_horizontal_streamfunction: 3.0000000000000000e+00
+  - air_horizontal_streamfunction (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 6.0790273556231004e-05
+    + stddev = 7.7966010981065986e-03
 Adjoint test for block interpolation passed
     FastLAM interpolation accuracy test passed
     FastLAM interpolation adjoint test passed
@@ -14,4 +18,8 @@ Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: structured [14805]
   Fields:
-    air_horizontal_streamfunction: 2.9109113568372120e+01
+  - air_horizontal_streamfunction (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000002e+00
+    + mean   = 1.2541522695121770e-02
+    + stddev = 7.4606218529344223e-02
