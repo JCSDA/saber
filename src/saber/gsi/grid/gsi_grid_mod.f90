@@ -317,6 +317,7 @@ deallocate(self%lons)
 deallocate(self%lats)
 deallocate(self%grid_lons)
 deallocate(self%grid_lats)
+call self%comm%final()
 
 ! Set grid to zero
 self%npx = 0

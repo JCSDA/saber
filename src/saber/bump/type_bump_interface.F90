@@ -76,8 +76,10 @@ call bump%mpl%test_channel%reset_c_ptr(c_test_channel)
 call bump%create(f_comm,f_afunctionspace,f_fieldset,f_conf)
 
 ! Release memory
+call f_comm%final()
 call f_afunctionspace%final()
 call f_fieldset%final()
+call f_conf%final()
 
 end subroutine bump_create_c
 

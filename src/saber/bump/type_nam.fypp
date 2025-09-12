@@ -292,6 +292,9 @@ nam%nldwv = 0
 nam%ndir = 0
 call nam%from_conf(mpl,conf,.false.)
 
+! Release memory
+call conf%final()
+
 ! Probe out
 @:probe_out()
 
@@ -973,6 +976,15 @@ if (conf%get('external',section)) then
    call nam%get(section,'geographical mask name',nam%gmask_name)
 end if
 
+! Release memory
+call section%final()
+if (allocated(confs)) then
+  do iconf=1,size(confs)
+    call confs(iconf)%final()
+  enddo
+  deallocate(confs)
+endif
+
 ! Probe out
 @:probe_out()
 
@@ -1624,6 +1636,14 @@ if (conf%has(key).and.(nam%ng>0)) then
    end do
 end if
 
+! Release memory
+if (allocated(confs)) then
+  do iconf=1,size(confs)
+    call confs(iconf)%final()
+  enddo
+  deallocate(confs)
+endif
+
 ! Probe out
 @:probe_out()
 
@@ -1703,6 +1723,14 @@ if (conf%has(key).and.(nam%nl0>0).and.(nam%ng>0)) then
       end if
    end do
 end if
+
+! Release memory
+if (allocated(confs)) then
+  do iconf=1,size(confs)
+    call confs(iconf)%final()
+  enddo
+  deallocate(confs)
+endif
 
 ! Probe out
 @:probe_out()

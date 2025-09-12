@@ -108,6 +108,9 @@ do itime = 1, ntimes
   call f_fg(itime)%final()
 enddo
 deallocate(f_bg, f_fg, f_valid_times)
+call f_conf%final()
+call f_comm%final()
+deallocate(f_checks)
 
 end subroutine gsi_covariance_create_cpp
 

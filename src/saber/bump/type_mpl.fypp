@@ -228,6 +228,9 @@ write(mpl%info,'(a,i3,a,i2,a)') '--- Parallelization with ',mpl%nproc,' MPI task
  & mpl%nthread,' OpenMP threads'
 call mpl%flush
 
+! Release memory
+call world_comm%final()
+
 ! Probe out
 @:probe_out()
 
@@ -253,6 +256,11 @@ class(mpl_type),intent(inout) :: mpl !< MPI data
 ! Release memory
 if (allocated(mpl%pioproc)) deallocate(mpl%pioproc)
 if (allocated(mpl%done)) deallocate(mpl%done)
+call mpl%f_comm%final()
+call mpl%f_comm_io%final()
+call mpl%f_comm_iobcast%final()
+call mpl%info_channel%final()
+call mpl%test_channel%final()
 
 ! Probe out
 @:probe_out()
