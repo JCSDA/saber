@@ -7,16 +7,21 @@
 add_subdirectory( src )
 add_subdirectory( mains )
 
-# Coding norms
-ecbuild_add_test( TARGET saber_coding_norms_quench
-                  TYPE SCRIPT
-                  COMMAND ${CMAKE_BINARY_DIR}/bin/${PROJECT_NAME}_cpplint.py
-                  ARGS --quiet --recursive ${CMAKE_CURRENT_SOURCE_DIR} )
+if( BUILD_TESTING AND jedi-model-data_FOUND)
+  # Coding norms
+  ecbuild_add_test( TARGET saber_coding_norms_quench
+                    TYPE SCRIPT
+                    COMMAND ${CMAKE_BINARY_DIR}/bin/${PROJECT_NAME}_cpplint.py
+                    ARGS --quiet --recursive ${CMAKE_CURRENT_SOURCE_DIR} )
 
-# Setup QUENCH data links
-message( STATUS "Setup QUENCH data links" )
-file( REMOVE_RECURSE ${CMAKE_CURRENT_BINARY_DIR}/data )
-file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data )
-execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
-                 ${CMAKE_CURRENT_SOURCE_DIR}/data/landsea.nc
-                 ${CMAKE_CURRENT_BINARY_DIR}/data/landsea.nc )
+  # Path to the saber test files
+  set (jedi_model_data_tier_1_saber "${CMAKE_SOURCE_DIR}/jedi-model-data/testinput_tier_1/saber")
+
+  # Setup QUENCH data links
+  message( STATUS "Setup QUENCH data links" )
+  file( REMOVE_RECURSE ${CMAKE_CURRENT_BINARY_DIR}/data )
+  file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data )
+  execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
+                   ${jedi_model_data_tier_1_saber}/landsea.nc
+                   ${CMAKE_CURRENT_BINARY_DIR}/data/landsea.nc )
+endif()

@@ -203,10 +203,14 @@ if( ENABLE_QUENCH )
                            ${CMAKE_CURRENT_BINARY_DIR}/testref/${test}.ref )
       endif()
   endforeach()
+
+  # Path to the saber test files
+  set (jedi_model_data_tier_1_saber "${CMAKE_SOURCE_DIR}/jedi-model-data/testinput_tier_1/saber")
+
   foreach( data ${saber_data} )
       # Link to input data file
       execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
-                       ${CMAKE_CURRENT_SOURCE_DIR}/testdata/${data}
+                       ${jedi_model_data_tier_1_saber}/${data}
                        ${CMAKE_CURRENT_BINARY_DIR}/testdata/${data} )
   endforeach()
 
