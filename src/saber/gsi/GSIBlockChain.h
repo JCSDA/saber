@@ -101,7 +101,7 @@ SaberGSIBlockChain::SaberGSIBlockChain(const oops::Geometry<MODEL> & geom,
   // (currently not supported)
   if (fset4dXb.commTime().size() > 1) {
     throw eckit::NotImplemented("SABER GSI covariance block chain currently does not support "
-                                "4DEnVar with parallel decomposition in time");
+                                "4DEnVar with parallel decomposition in time", Here());
   }
 
   // If needed create outer block chain
