@@ -172,10 +172,8 @@ void LayerBase::setupInterpolation() {
 
   // Model grid indices
   const atlas::functionspace::StructuredColumns fs(gdata_.functionSpace());
-  atlas::Field indexX0Field = fs.index_i();
-  atlas::Field indexY0Field = fs.index_j();
-  auto indexX0View = atlas::array::make_view<int, 1>(indexX0Field);
-  auto indexY0View = atlas::array::make_view<int, 1>(indexY0Field);
+  auto indexX0View = atlas::array::make_indexview<int, 1>(fs.index_i());
+  auto indexY0View = atlas::array::make_indexview<int, 1>(fs.index_j());
 
   // Ghost points
   const auto ghostView = atlas::array::make_view<int, 1>(gdata_.functionSpace().ghost());
@@ -232,8 +230,8 @@ void LayerBase::setupInterpolation() {
       std::vector<int> mpiMask(nx_*ny_, 0);
       for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
         if (ghostView(jnode0) == 0) {
-          const int srcX = indexX0View(jnode0)-1;
-          const int srcY = indexY0View(jnode0)-1;
+          const int srcX = indexX0View(jnode0);
+          const int srcY = indexY0View(jnode0);
           mpiTask_[srcX*ny_+srcY] = myrank_;
           mpiMask[srcX*ny_+srcY] = 1;
         }
@@ -263,8 +261,8 @@ void LayerBase::setupInterpolation() {
     for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
       if (ghostView(jnode0) == 0) {
         // Fake coordinate in [0,1]
-        const size_t jx = indexX0View(jnode0)-1;
-        const size_t jy = indexY0View(jnode0)-1;
+        const size_t jx = indexX0View(jnode0);
+        const size_t jy = indexY0View(jnode0);
         atlas::PointXY p({xCoord[jx]/static_cast<double>(nx0_-1),
           yCoord[jy]/static_cast<double>(ny0_-1)});
         v.push_back(p);
@@ -294,14 +292,14 @@ void LayerBase::setupInterpolation() {
       if (ghostView(jnode0) == 0) {
         int srcX = -1;
         for (size_t jx = 0; jx < nx_; ++jx) {
-          if (indexX0View(jnode0)-1 == std::round(xCoord[jx])) {
+          if (indexX0View(jnode0) == std::round(xCoord[jx])) {
             srcX = jx;
             break;
           }
         }
         int srcY = -1;
         for (size_t jy = 0; jy < ny_; ++jy) {
-          if (indexY0View(jnode0)-1 == std::round(yCoord[jy])) {
+          if (indexY0View(jnode0) == std::round(yCoord[jy])) {
             srcY = jy;
             break;
           }
@@ -355,8 +353,8 @@ void LayerBase::setupInterpolation() {
     for (size_t jy = 0; jy < ny_; ++jy) {
       for (size_t jx = 0; jx < nx_; ++jx) {
         if (static_cast<size_t>(mpiTask_[jx*ny_+jy]) == myrank_) {
-          indexXView(jnode) = jx+1;
-          indexYView(jnode) = jy+1;
+          indexXView(jnode) = jx;
+          indexYView(jnode) = jy;
           ++jnode;
         }
       }
@@ -368,8 +366,8 @@ void LayerBase::setupInterpolation() {
     std::vector<atlas::Point3> points0(mSize_);
     std::vector<size_t> indices0(mSize_);
     for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
-      const double x0 = static_cast<double>(indexX0View(jnode0)-1);
-      const double y0 = static_cast<double>(indexY0View(jnode0)-1);
+      const double x0 = static_cast<double>(indexX0View(jnode0));
+      const double y0 = static_cast<double>(indexY0View(jnode0));
       points0[jnode0] = atlas::Point3(x0, y0, 0.0);
       indices0[jnode0] = jnode0;
     }
@@ -393,10 +391,10 @@ void LayerBase::setupInterpolation() {
         for (const auto & item : list) {
           const size_t jnode0 = item.payload();
           if (ghostView(jnode0) == 0) {
-            if (iMin <= static_cast<double>(indexX0View(jnode0)-1) &&
-              static_cast<double>(indexX0View(jnode0)-1) <= iMax &&
-              jMin <= static_cast<double>(indexY0View(jnode0)-1) &&
-              static_cast<double>(indexY0View(jnode0)-1) <= jMax) {
+            if (iMin <= static_cast<double>(indexX0View(jnode0)) &&
+              static_cast<double>(indexX0View(jnode0)) <= iMax &&
+              jMin <= static_cast<double>(indexY0View(jnode0)) &&
+              static_cast<double>(indexY0View(jnode0)) <= jMax) {
               pointsNeeded = true;
               break;
             }
@@ -454,7 +452,7 @@ void LayerBase::setupInterpolation() {
     // Sort indices
     std::vector<size_t> gij;
     for (size_t jnode = 0; jnode < rSize_; ++jnode) {
-      gij.push_back((indexXView(jnode)-1)*ny_+indexYView(jnode)-1);
+      gij.push_back(indexXView(jnode)*ny_+indexYView(jnode));
     }
     std::vector<size_t> gidx(rSize_);
     std::iota(gidx.begin(), gidx.end(), 0);
@@ -492,8 +490,8 @@ void LayerBase::setupInterpolation() {
     for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
       if (ghostView(jnode0) == 0) {
         // Model grid indices
-        const size_t jx0 = indexX0View(jnode0)-1;
-        const size_t jy0 = indexY0View(jnode0)-1;
+        const size_t jx0 = indexX0View(jnode0);
+        const size_t jy0 = indexY0View(jnode0);
         const double dX = static_cast<double>(jx0)/xRedFac_;
         const double dY = static_cast<double>(jy0)/yRedFac_;
         const size_t indexX = static_cast<size_t>(dX);
@@ -639,12 +637,10 @@ void LayerBase::testInterpolation(const std::vector<double> & zCoord) const {
 
   // Get indices
   const atlas::functionspace::StructuredColumns fs(gdata_.functionSpace());
-  atlas::Field indexX0Field = fs.index_i();
-  atlas::Field indexY0Field = fs.index_j();
   const auto indexXView = atlas::array::make_view<int, 1>(fset_["indexX"]);
   const auto indexYView = atlas::array::make_view<int, 1>(fset_["indexY"]);
-  auto indexX0View = atlas::array::make_view<int, 1>(indexX0Field);
-  auto indexY0View = atlas::array::make_view<int, 1>(indexY0Field);
+  auto indexX0View = atlas::array::make_indexview<int, 1>(fs.index_i());
+  auto indexY0View = atlas::array::make_indexview<int, 1>(fs.index_j());
 
   // Ghost points
   const auto ghostView = atlas::array::make_view<int, 1>(gdata_.functionSpace().ghost());
@@ -656,8 +652,8 @@ void LayerBase::testInterpolation(const std::vector<double> & zCoord) const {
     atlas::option::name("dummy") | atlas::option::levels(nz0_));
   auto redView = atlas::array::make_view<double, 2>(redField);
   for (size_t jnode = 0; jnode < rSize_; ++jnode) {
-    const double x = static_cast<double>(indexXView(jnode)-1)/static_cast<double>(nx_-1);
-    const double y = static_cast<double>(indexYView(jnode)-1)/static_cast<double>(ny_-1);
+    const double x = static_cast<double>(indexXView(jnode))/static_cast<double>(nx_-1);
+    const double y = static_cast<double>(indexYView(jnode))/static_cast<double>(ny_-1);
     for (size_t jz = 0; jz < nz_; ++jz) {
       const double z = zCoord[jz]/static_cast<double>(nz0_-1);
       redView(jnode, jz) = 0.5*(std::sin(2.0*M_PI*x)*std::sin(2.0*M_PI*y)
@@ -673,8 +669,8 @@ void LayerBase::testInterpolation(const std::vector<double> & zCoord) const {
   const auto modelView = atlas::array::make_view<double, 2>(modelField);
   for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
     if (ghostView(jnode0) == 0) {
-      const double x = static_cast<double>(indexX0View(jnode0)-1)/static_cast<double>(nx0_-1);
-      const double y = static_cast<double>(indexY0View(jnode0)-1)/static_cast<double>(ny0_-1);
+      const double x = static_cast<double>(indexX0View(jnode0))/static_cast<double>(nx0_-1);
+      const double y = static_cast<double>(indexY0View(jnode0))/static_cast<double>(ny0_-1);
       for (size_t jz0 = 0; jz0 < nz0_; ++jz0) {
         const double z = normVertCoord_[jz0]/static_cast<double>(nz0_-1);
         const double refVal = 0.5*(std::sin(2.0*M_PI*x)*std::sin(2.0*M_PI*y)
@@ -1037,10 +1033,8 @@ void LayerBase::setupNormalization() {
 
     // Model grid indices
     const atlas::functionspace::StructuredColumns fs(gdata_.functionSpace());
-    atlas::Field indexX0Field = fs.index_i();
-    atlas::Field indexY0Field = fs.index_j();
-    auto indexX0View = atlas::array::make_view<int, 1>(indexX0Field);
-    auto indexY0View = atlas::array::make_view<int, 1>(indexY0Field);
+    auto indexX0View = atlas::array::make_indexview<int, 1>(fs.index_i());
+    auto indexY0View = atlas::array::make_indexview<int, 1>(fs.index_j());
 
     // Compute normalization accuracy
     oops::Log::info() << "Info     :     Compute exact normalization" << std::endl;
@@ -1053,7 +1047,7 @@ void LayerBase::setupNormalization() {
     // Sort indices
     std::vector<int> gij0(mSize_);
     for (size_t jnode0 = 0; jnode0 < mSize_; ++jnode0) {
-      gij0[jnode0] = (indexX0View(jnode0)-1)*ny0_+indexY0View(jnode0)-1;
+      gij0[jnode0] = indexX0View(jnode0)*ny0_+indexY0View(jnode0);
     }
     std::vector<size_t> gidx(mSize_);
     std::iota(gidx.begin(), gidx.end(), 0);

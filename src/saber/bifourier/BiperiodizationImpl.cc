@@ -11,6 +11,7 @@
 
 #include "oops/util/FloatCompare.h"
 
+using atlas::array::make_indexview;
 using atlas::array::make_view;
 
 namespace saber {
@@ -176,8 +177,8 @@ BiperiodizationImpl::BiperiodizationImpl(const oops::GeometryData & outerGeometr
   const auto ghostView = make_view<int, 1>(outerFs.ghost());
 
   // Index fields views
-  const auto indexIView = make_view<int, 1>(outerFs.index_i());
-  const auto indexJView = make_view<int, 1>(outerFs.index_j());
+  const auto indexIView = make_indexview<int, 1>(outerFs.index_i());
+  const auto indexJView = make_indexview<int, 1>(outerFs.index_j());
 
   // Loop over local biperiodization operations
   int jx, jy;
@@ -187,8 +188,8 @@ BiperiodizationImpl::BiperiodizationImpl(const oops::GeometryData & outerGeometr
   for (int outerJnode = 0; outerJnode < outerFs.size(); ++outerJnode) {
     if (ghostView(outerJnode) == 0) {
       // Grid indices
-      jx = indexIView(outerJnode)-1;
-      jy = indexJView(outerJnode)-1;
+      jx = indexIView(outerJnode);
+      jy = indexJView(outerJnode);
 
       if (jx < static_cast<int>(physicalNx) && jy < static_cast<int>(physicalNy)) {
         // Physical zone

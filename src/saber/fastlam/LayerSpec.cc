@@ -80,8 +80,8 @@ void LayerSpec::setupParallelization() {
   for (size_t jnode = 0; jnode < rSize_; ++jnode) {
     bool found = false;
     for (size_t jt = 0; jt < comm_.size(); ++jt) {
-      if (static_cast<size_t>(indexYView(jnode))-1 >= nyStart_[jt] &&
-        static_cast<size_t>(indexYView(jnode))-1 <= nyEnd_[jt]) {
+      if (static_cast<size_t>(indexYView(jnode)) >= nyStart_[jt] &&
+        static_cast<size_t>(indexYView(jnode)) <= nyEnd_[jt]) {
         xSendTask_[jnode] = jt;
         xSendOffset_[jnode] = xSendOffsetPerTask[jt];
         ++xSendOffsetPerTask[jt];
@@ -133,8 +133,8 @@ void LayerSpec::setupParallelization() {
   std::vector<int> redIndex_x(rSize_);
   std::vector<int> redIndex_y(rSize_);
   for (size_t jnode = 0; jnode < rSize_; ++jnode) {
-    redIndex_x[jnode] = indexXView(jnode)-1;
-    redIndex_y[jnode] = indexYView(jnode)-1;
+    redIndex_x[jnode] = indexXView(jnode);
+    redIndex_y[jnode] = indexYView(jnode);
   }
   xSendIndex_x_.resize(xSendSize_);
   xSendIndex_y_.resize(xSendSize_);
@@ -408,8 +408,8 @@ void LayerSpec::extractConvolution(const size_t & nxHalf,
       // Setup dirac point
       redViewHor.assign(0.0);
       for (size_t jnode = 0; jnode < rSize_; ++jnode) {
-        if (indexXView(jnode)-1 == static_cast<int>(jx)
-          && indexYView(jnode)-1 == static_cast<int>(jy)) {
+        if (indexXView(jnode) == static_cast<int>(jx)
+          && indexYView(jnode) == static_cast<int>(jy)) {
           redViewHor(jnode, 0) = 1.0;
         }
       }
@@ -421,20 +421,20 @@ void LayerSpec::extractConvolution(const size_t & nxHalf,
       // Gather horizontal convolution data
       redViewHor = atlas::array::make_view<double, 2>(redFieldHor);
       for (size_t jnode = 0; jnode < rSize_; ++jnode) {
-        if (indexXView(jnode)-1 == static_cast<int>(jx)
-          && indexYView(jnode)-1 == static_cast<int>(jy)) {
+        if (indexXView(jnode) == static_cast<int>(jx)
+          && indexYView(jnode) == static_cast<int>(jy)) {
           horConv[4*(jx*nyHalf+jy)+0] = redViewHor(jnode, 0);
         }
-        if (indexXView(jnode)-1 == static_cast<int>(jx+1)
-          && indexYView(jnode)-1 == static_cast<int>(jy)) {
+        if (indexXView(jnode) == static_cast<int>(jx+1)
+          && indexYView(jnode) == static_cast<int>(jy)) {
           horConv[4*(jx*nyHalf+jy)+1] = redViewHor(jnode, 0);
         }
-        if (indexXView(jnode)-1 == static_cast<int>(jx)
-          && indexYView(jnode)-1 == static_cast<int>(jy+1)) {
+        if (indexXView(jnode) == static_cast<int>(jx)
+          && indexYView(jnode) == static_cast<int>(jy+1)) {
           horConv[4*(jx*nyHalf+jy)+2] = redViewHor(jnode, 0);
         }
-        if (indexXView(jnode)-1 == static_cast<int>(jx+1)
-          && indexYView(jnode)-1 == static_cast<int>(jy+1)) {
+        if (indexXView(jnode) == static_cast<int>(jx+1)
+          && indexYView(jnode) == static_cast<int>(jy+1)) {
           horConv[4*(jx*nyHalf+jy)+3] = redViewHor(jnode, 0);
         }
       }

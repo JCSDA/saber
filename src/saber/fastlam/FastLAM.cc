@@ -57,8 +57,8 @@ FastLAM::FastLAM(const oops::GeometryData & gdata,
 
   // Index fields
   const atlas::functionspace::StructuredColumns fs(gdata_.functionSpace());
-  const auto indexX0View = atlas::array::make_view<int, 1>(fs.index_i());
-  const auto indexY0View = atlas::array::make_view<int, 1>(fs.index_j());
+  const auto indexX0View = atlas::array::make_indexview<int, 1>(fs.index_i());
+  const auto indexY0View = atlas::array::make_indexview<int, 1>(fs.index_j());
 
   // Get grid size
   nx0_ = 0;
@@ -66,8 +66,8 @@ FastLAM::FastLAM(const oops::GeometryData & gdata,
   nodes0_ = fs.size();
   for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
     if (ghostView(jnode0) == 0) {
-      nx0_ = std::max(nx0_, static_cast<size_t>(indexX0View(jnode0)));
-      ny0_ = std::max(ny0_, static_cast<size_t>(indexY0View(jnode0)));
+      nx0_ = std::max(nx0_, static_cast<size_t>(indexX0View(jnode0))+1);
+      ny0_ = std::max(ny0_, static_cast<size_t>(indexY0View(jnode0))+1);
     }
   }
   comm_.allReduceInPlace(nx0_, eckit::mpi::max());
@@ -1332,8 +1332,8 @@ void FastLAM::setupWeight() {
   const atlas::StructuredGrid grid(fs.grid());
 
   // Index fields
-  const auto indexX0View = atlas::array::make_view<int, 1>(fs.index_i());
-  const auto indexY0View = atlas::array::make_view<int, 1>(fs.index_j());
+  const auto indexX0View = atlas::array::make_indexview<int, 1>(fs.index_i());
+  const auto indexY0View = atlas::array::make_indexview<int, 1>(fs.index_j());
 
   // Normalize rh
   for (size_t jg = 0; jg < groups_.size(); ++jg) {
@@ -1343,8 +1343,8 @@ void FastLAM::setupWeight() {
     for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
       if (ghostView(jnode0) == 0) {
         // Cell area
-        const int i0 = indexX0View(jnode0)-1;
-        const int j0 = indexY0View(jnode0)-1;
+        const int i0 = indexX0View(jnode0);
+        const int j0 = indexY0View(jnode0);
         const int im = std::min(std::max(i0-1, 0), static_cast<int>(nx0_-1));
         const int ip = std::min(std::max(i0+1, 0), static_cast<int>(nx0_-1));
         const int jm = std::min(std::max(j0-1, 0), static_cast<int>(ny0_-1));

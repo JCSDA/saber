@@ -19,6 +19,7 @@
 #include "saber/bifourier/BifourierUtilities.h"
 
 using atlas::array::make_datatype;
+using atlas::array::make_indexview;
 using atlas::array::make_shape;
 using atlas::array::make_view;
 
@@ -1283,8 +1284,8 @@ void BifourierTransform::setupParallelization() {
 
   // Index fields views
   const atlas::functionspace::StructuredColumns fs(gdata_.functionSpace());
-  const auto indexIView = make_view<int, 1>(fs.index_i());
-  const auto indexJView = make_view<int, 1>(fs.index_j());
+  const auto indexIView = make_indexview<int, 1>(fs.index_i());
+  const auto indexJView = make_indexview<int, 1>(fs.index_j());
 
   // Number of values on each destination task
   gridRecvSize_ = 0;
@@ -1302,8 +1303,8 @@ void BifourierTransform::setupParallelization() {
   for (size_t jnode = 0; jnode < nodes_; ++jnode) {
     if (ghostView(jnode) == 0) {
       for (size_t jt = 0; jt < comm_.size(); ++jt) {
-        if (static_cast<size_t>(indexJView(jnode))-1 >= nyStart[jt] &&
-          static_cast<size_t>(indexJView(jnode))-1 <= nyEnd[jt]) {
+        if (static_cast<size_t>(indexJView(jnode)) >= nyStart[jt] &&
+          static_cast<size_t>(indexJView(jnode)) <= nyEnd[jt]) {
           rowsSendTask[jgr] = jt;
           rowsSendOffset[jgr] = rowsSendOffsetPerTask[jt];
           ++rowsSendOffsetPerTask[jt];
@@ -1352,8 +1353,8 @@ void BifourierTransform::setupParallelization() {
   jgr = 0;
   for (size_t jnode = 0; jnode < nodes_; ++jnode) {
     if (ghostView(jnode) == 0) {
-      gridRecvIndex_x[jgr] = indexIView(jnode)-1;
-      gridRecvIndex_y[jgr] = indexJView(jnode)-1;
+      gridRecvIndex_x[jgr] = indexIView(jnode);
+      gridRecvIndex_y[jgr] = indexJView(jnode);
       ++jgr;
     }
   }

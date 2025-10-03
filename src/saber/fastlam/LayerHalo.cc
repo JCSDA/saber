@@ -41,8 +41,8 @@ void LayerHalo::setupParallelization() {
   auto xcPointsView = atlas::array::make_view<int, 2>(xcPoints);
   xcPointsView.assign(-2);
   for (size_t jnode = 0; jnode < rSize_; ++jnode) {
-    const int jx = indexXView(jnode)-1;
-    const int jy = indexYView(jnode)-1;
+    const int jx = indexXView(jnode);
+    const int jy = indexYView(jnode);
     for (size_t jkx = 0; jkx < xKernelSize_; ++jkx) {
       size_t ii = jx-jkx+(xKernelSize_-1)/2;
       if (ii >= 0 && ii < nx_) {
@@ -125,8 +125,7 @@ void LayerHalo::setupParallelization() {
   for (size_t js = 0; js < xcSendSize_; ++js) {
     bool found = false;
     for (size_t jnode = 0; jnode < rSize_; ++jnode) {
-      if (static_cast<size_t>(xcSendPointsList[js]) ==
-        (indexXView(jnode)-1)*ny_+indexYView(jnode)-1) {
+      if (static_cast<size_t>(xcSendPointsList[js]) == indexXView(jnode)*ny_+indexYView(jnode)) {
         ASSERT(!found);
         xcSendMapping_[js] = jnode;
         found = true;
@@ -137,8 +136,8 @@ void LayerHalo::setupParallelization() {
 
   // Convolution operations
   for (size_t jnode = 0; jnode < rSize_; ++jnode) {
-    const int jx = indexXView(jnode)-1;
-    const int jy = indexYView(jnode)-1;
+    const int jx = indexXView(jnode);
+    const int jy = indexYView(jnode);
     for (size_t jkx = 0; jkx < xKernelSize_; ++jkx) {
       const size_t ii = jx-jkx+(xKernelSize_-1)/2;
       if (ii >= 0 && ii < nx_) {
@@ -159,8 +158,8 @@ void LayerHalo::setupParallelization() {
   auto ycPointsView = atlas::array::make_view<int, 2>(ycPoints);
   ycPointsView.assign(-2);
   for (size_t jnode = 0; jnode < rSize_; ++jnode) {
-    const int jx = indexXView(jnode)-1;
-    const int jy = indexYView(jnode)-1;
+    const int jx = indexXView(jnode);
+    const int jy = indexYView(jnode);
     for (size_t jky = 0; jky < yKernelSize_; ++jky) {
       const size_t jj = jy-jky+(yKernelSize_-1)/2;
       if (jj >= 0 && jj < ny_) {
@@ -243,8 +242,7 @@ void LayerHalo::setupParallelization() {
   for (size_t js = 0; js < ycSendSize_; ++js) {
     bool found = false;
     for (size_t jnode = 0; jnode < rSize_; ++jnode) {
-      if (static_cast<size_t>(ycSendPointsList[js]) ==
-        (indexXView(jnode)-1)*ny_+indexYView(jnode)-1) {
+      if (static_cast<size_t>(ycSendPointsList[js]) == indexXView(jnode)*ny_+indexYView(jnode)) {
         ASSERT(!found);
         ycSendMapping_[js] = jnode;
         found = true;
@@ -255,8 +253,8 @@ void LayerHalo::setupParallelization() {
 
   // Convolution operations
   for (size_t jnode = 0; jnode < rSize_; ++jnode) {
-    const int jx = indexXView(jnode)-1;
-    const int jy = indexYView(jnode)-1;
+    const int jx = indexXView(jnode);
+    const int jy = indexYView(jnode);
     for (size_t jky = 0; jky < yKernelSize_; ++jky) {
       const size_t jj = jy-jky+(yKernelSize_-1)/2;
       if (jj >= 0 && jj < ny_) {
@@ -299,8 +297,8 @@ void LayerHalo::extractConvolution(const size_t & nxHalf,
       // Setup dirac point
       redViewHor.assign(0.0);
       for (size_t jnode = 0; jnode < rSize_; ++jnode) {
-        if (indexXView(jnode)-1 == static_cast<int>(jx)
-          && indexYView(jnode)-1 == static_cast<int>(jy)) {
+        if (indexXView(jnode) == static_cast<int>(jx)
+          && indexYView(jnode) == static_cast<int>(jy)) {
           redViewHor(jnode, 0) = 1.0;
         }
       }
@@ -312,20 +310,20 @@ void LayerHalo::extractConvolution(const size_t & nxHalf,
       // Gather horizontal convolution data
       redViewHor = atlas::array::make_view<double, 2>(redFieldHor);
       for (size_t jnode = 0; jnode < rSize_; ++jnode) {
-        if (indexXView(jnode)-1 == static_cast<int>(jx)
-          && indexYView(jnode)-1 == static_cast<int>(jy)) {
+        if (indexXView(jnode) == static_cast<int>(jx)
+          && indexYView(jnode) == static_cast<int>(jy)) {
           horConv[4*(jx*nyHalf+jy)+0] = redViewHor(jnode, 0);
         }
-        if (indexXView(jnode)-1 == static_cast<int>(jx+1)
-          && indexYView(jnode)-1 == static_cast<int>(jy)) {
+        if (indexXView(jnode) == static_cast<int>(jx+1)
+          && indexYView(jnode) == static_cast<int>(jy)) {
           horConv[4*(jx*nyHalf+jy)+1] = redViewHor(jnode, 0);
         }
-        if (indexXView(jnode)-1 == static_cast<int>(jx)
-          && indexYView(jnode)-1 == static_cast<int>(jy+1)) {
+        if (indexXView(jnode) == static_cast<int>(jx)
+          && indexYView(jnode) == static_cast<int>(jy+1)) {
           horConv[4*(jx*nyHalf+jy)+2] = redViewHor(jnode, 0);
         }
-        if (indexXView(jnode)-1 == static_cast<int>(jx+1)
-          && indexYView(jnode)-1 == static_cast<int>(jy+1)) {
+        if (indexXView(jnode) == static_cast<int>(jx+1)
+          && indexYView(jnode) == static_cast<int>(jy+1)) {
           horConv[4*(jx*nyHalf+jy)+3] = redViewHor(jnode, 0);
         }
       }
@@ -536,7 +534,7 @@ void LayerHalo::rowsNormalization(atlas::Field & field) const {
   // Apply normalization
   auto view = atlas::array::make_view<double, 2>(field);
   for (size_t jnode = 0; jnode < rSize_; ++jnode) {
-    const int jx = indexXView(jnode)-1;
+    const int jx = indexXView(jnode);
     if (jx < static_cast<int>(xNormSize_)) {
       for (size_t jz = 0; jz < nz_; ++jz) {
         view(jnode, jz) *= xNorm_[jx];
@@ -650,7 +648,7 @@ void LayerHalo::colsNormalization(atlas::Field & field) const {
   // Apply normalization
   auto view = atlas::array::make_view<double, 2>(field);
   for (size_t jnode = 0; jnode < rSize_; ++jnode) {
-    const int jy = indexYView(jnode)-1;
+    const int jy = indexYView(jnode);
     if (jy < static_cast<int>(yNormSize_)) {
       for (size_t jz = 0; jz < nz_; ++jz) {
         view(jnode, jz) *= yNorm_[jy];

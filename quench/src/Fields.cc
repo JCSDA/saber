@@ -1229,20 +1229,20 @@ void Fields::resetDuplicatePoints() {
         atlas::functionspace::StructuredColumns fs(field_internal.functionspace());
         atlas::StructuredGrid grid = fs.grid();
         auto view = atlas::array::make_view<double, 2>(field_internal);
-        auto view_i = atlas::array::make_view<int, 1>(fs.index_i());
-        auto view_j = atlas::array::make_view<int, 1>(fs.index_j());
+        auto view_i = atlas::array::make_indexview<int, 1>(fs.index_i());
+        auto view_j = atlas::array::make_indexview<int, 1>(fs.index_j());
         std::vector<double> north(field_internal.shape(1), 0.0);
         std::vector<double> south(field_internal.shape(1), 0.0);
         for (atlas::idx_t j = fs.j_begin(); j < fs.j_end(); ++j) {
           for (atlas::idx_t i = fs.i_begin(j); i < fs.i_end(j); ++i) {
             atlas::idx_t jnode = fs.index(i, j);
-            if (view_i(jnode) == 1) {
-              if (view_j(jnode) == 1) {
+            if (view_i(jnode) == 0) {
+              if (view_j(jnode) == 0) {
                 for (atlas::idx_t jlevel = 0; jlevel < field_internal.shape(1); ++jlevel) {
                   north[jlevel] = view(jnode, jlevel);
                 }
               }
-              if (view_j(jnode) == grid.ny()) {
+              if (view_j(jnode) == grid.ny()-1) {
                 for (atlas::idx_t jlevel = 0; jlevel < field_internal.shape(1); ++jlevel) {
                   south[jlevel] = view(jnode, jlevel);
                 }
@@ -1259,12 +1259,12 @@ void Fields::resetDuplicatePoints() {
         for (atlas::idx_t j = fs.j_begin_halo(); j < fs.j_end_halo(); ++j) {
           for (atlas::idx_t i = fs.i_begin_halo(j); i < fs.i_end_halo(j); ++i) {
             atlas::idx_t jnode = fs.index(i, j);
-            if (view_j(jnode) == 1) {
+            if (view_j(jnode) == 0) {
               for (atlas::idx_t jlevel = 0; jlevel < field_internal.shape(1); ++jlevel) {
                 view(jnode, jlevel) = north[jlevel];
               }
             }
-            if (view_j(jnode) == grid.ny()) {
+            if (view_j(jnode) == grid.ny()-1) {
               for (atlas::idx_t jlevel = 0; jlevel < field_internal.shape(1); ++jlevel) {
                 view(jnode, jlevel) = south[jlevel];
               }
