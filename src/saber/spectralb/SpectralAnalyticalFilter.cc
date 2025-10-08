@@ -160,17 +160,19 @@ auto createSpectralFilter(const oops::GeometryData & geometryData,
 
   if ( params.normalizeFilterVariance ) {
     // Compute total variance in spectral space before normalization.
+    std::vector<double> spectralFilterPrefixSum(spectralFilter.size(), 0.0);
+    std::partial_sum(spectralFilter.begin(), spectralFilter.end(), spectralFilterPrefixSum.begin());
+
     double totalVarianceSpectral = 0;
     const auto zonal_wavenumbers = specFunctionSpace.zonal_wavenumbers();
     for (int jm = 0; jm < zonal_wavenumbers.size(); ++jm) {
       const int m = zonal_wavenumbers(jm);
-      for (int n = m; n <= truncation; ++n) {
-        if (m == 0) {
-          totalVarianceSpectral += spectralFilter[n];
-        } else {
-          // both real and imaginary components
-          totalVarianceSpectral += 2 * spectralFilter[n];
-        }
+      if (m == 0) {
+        totalVarianceSpectral += spectralFilterPrefixSum[truncation];
+      } else if (m <= truncation) {
+        // both real and imaginary components
+        totalVarianceSpectral += 2 * (spectralFilterPrefixSum[truncation]
+                                  - spectralFilterPrefixSum[m-1]);
       }
     }
     geometryData.comm().allReduceInPlace(totalVarianceSpectral, eckit::mpi::sum());
