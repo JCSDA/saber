@@ -181,6 +181,7 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
 
     // Replace patterns in full configuration and deserialize parameters
     eckit::LocalConfiguration fullConfigUpdated(fullConfig);
+
     util::seekAndReplace(fullConfigUpdated, "_MPI_", std::to_string(ntasks));
     util::seekAndReplace(fullConfigUpdated, "_OMP_", std::to_string(nthreads));
     params.deserialize(fullConfigUpdated);

@@ -1,0 +1,45 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_gaussian
+    N: 12
+  groups:
+  - variables: &vars
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    - eastward_wind
+    - northward_wind
+    levels: 70
+  partitioner: ectrans
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables: &winds
+  - eastward_wind
+  - northward_wind
+background error:
+  covariance model: SABER
+  randomization size: 2
+  saber central block:
+    saber block name: ID
+  saber outer blocks:
+  - saber block name: square root of spectral covariance
+    skip inverse test: true
+    active variables:
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    read:
+      covariance_file: testdata/spectralcov.nc
+      umatrix_netcdf_names:
+      - PSI_inc_Uv_matrix
+      - CHI_inc_Uv_matrix
+  - saber block name: spectral to gauss
+    active variables: *vars
+
+output variance:  # This section is optional
+  mpi pattern: '%MPI%'
+  filepath: testdata/randomization_sqrtspectralb_5/variance_%MPI%pes
+output perturbations:
+  member pattern: '%MEM%'
+  filepath: testdata/randomization_sqrtspectralb_5/randomized_gauss_mb%MEM%
+test:
+  reference filename: testref/randomization_sqrtspectralb_5.ref

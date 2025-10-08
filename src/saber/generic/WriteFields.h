@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2023-2024 Met Office
+ * (C) Crown Copyright 2023-2025 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -14,6 +14,7 @@
 #include "atlas/field.h"
 
 #include "oops/base/GeometryData.h"
+#include "oops/util/ParallelFieldSetIO.h"
 
 #include "saber/blocks/SaberBlockParametersBase.h"
 #include "saber/blocks/SaberOuterBlockBase.h"
@@ -36,6 +37,8 @@ class WriteFieldsParameters : public SaberBlockParametersBase {
   /// Whatever the value of this parameter, some basic information about each field is written
   /// to the test output stream.
   oops::Parameter<bool> saveNetCDFFile{"save netCDF file", true, this};
+
+  oops::Parameter<bool> saveParallelIONetCDFFile{"parallel IO", false, this};
 
   /// Save fields to GMSH files.
   oops::Parameter<bool> saveGMSHFile{"save GMSH file", false, this};
@@ -94,6 +97,7 @@ class WriteFields : public SaberOuterBlockBase {
   const oops::GeometryData & innerGeometryData_;
   oops::Variables innerVars_;
   const Parameters_ params_;
+  std::unique_ptr<const util::ParallelFieldSetIO> io_;
   mutable size_t count_xb_;
   mutable size_t count_fg_;
   mutable size_t count_multiply_;

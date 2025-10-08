@@ -8,7 +8,6 @@
 #include "saber/generic/WriteFields.h"
 
 #include <sys/stat.h>
-
 #include <sstream>
 
 #include "atlas/functionspace.h"
@@ -24,6 +23,7 @@
 #include "oops/mpi/mpi.h"
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/Logger.h"
+#include "oops/util/ParallelFieldSetIO.h"
 
 namespace saber {
 namespace generic {
@@ -57,7 +57,8 @@ void makeLocalGmshOutput(const std::string& fileName,
                         << std::endl;
     }
   } else {
-    std::cout << fs.type() <<std::endl;
+    oops::Log::info() << "functionspace type = " << fs.type()
+                      << " not Implemented " << std::endl;
     throw eckit::NotImplemented(
       "functionspace type", Here());
   }
@@ -106,6 +107,7 @@ void WriteFields::writeToFile(const oops::FieldSet3D & fset,
   if (params_.saveNetCDFFile) {
     eckit::LocalConfiguration conf;
     conf.set("filepath", filepath.str());
+    conf.set("filename", filepathnc);
 
     // todo: replace the use of `stat` with `std::filesystem::exists`
     // when compilers have been upgraded.
@@ -114,8 +116,7 @@ void WriteFields::writeToFile(const oops::FieldSet3D & fset,
       oops::Log::warning() << "File " << filepathnc << " already exists. Overwriting." << std::endl;
     }
 
-    // Write field set to file.
-    fsetWrite.write(conf);
+    params_.saveParallelIONetCDFFile ? fsetWrite.write(conf, *io_) : fsetWrite.write(conf);
 
     // Output filename to test stream.
     oops::Log::test() << "Wrote file " << filepathnc << std::endl;
@@ -152,6 +153,7 @@ WriteFields::WriteFields(const oops::GeometryData & outerGeometryData,
     innerGeometryData_(outerGeometryData),
     innerVars_(outerVars),
     params_(params),
+    io_(),
     count_xb_(1),
     count_fg_(1),
     count_multiply_(1),
@@ -159,6 +161,22 @@ WriteFields::WriteFields(const oops::GeometryData & outerGeometryData,
     count_leftinversemultiply_(1)
 {
   oops::Log::trace() << classname() << "::WriteFields starting" << std::endl;
+
+  if (params_.saveParallelIONetCDFFile && params_.saveNetCDFFile) {
+    // TODO(tom-j-h): once is Atlas #264 available, use outerGeometryData.functionSpace() rather
+    // than casting to the underlying functionspace and extend to NodeColumns option
+    // See oops issue #2963
+    auto fsType = outerGeometryData.functionSpace().type();
+    if (fsType == "StructuredColumns") {
+      auto fs = atlas::functionspace::StructuredColumns(outerGeometryData.functionSpace());
+      io_.reset(new util::ParallelFieldSetIO(fs, fs.grid().name(),
+                                             util::ParallelFieldSetIO::Mode::Write));
+    } else {
+      // Error Trap
+      throw eckit::NotImplemented("parallel IO only supporting StructuredColumns for now",
+                                  Here());
+    }
+  }
 
   if (params_.XbFileName.value() != ::boost::none) {
     oops::FieldSet3D fset(xb.validTime(), outerGeometryData.comm());

@@ -1,0 +1,48 @@
+Member 0: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: F12 [1152]
+  Fields:
+  - eastward_wind (70 levels):
+    + min    = -1.2047893968802644e+01
+    + max    = 1.1431898540227008e+01
+    + mean   = -3.1921303127476840e-02
+    + stddev = 1.0993362079405748e+00
+
+  - northward_wind (70 levels):
+    + min    = -1.3345307808331590e+01
+    + max    = 1.1018027418831338e+01
+    + mean   = 9.5317236547587027e-03
+    + stddev = 1.1007052802955595e+00
+
+Member 1: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: F12 [1152]
+  Fields:
+  - eastward_wind (70 levels):
+    + min    = -1.2045814317746363e+01
+    + max    = 1.0497781719203115e+01
+    + mean   = 2.4907355440126986e-03
+    + stddev = 1.1054156450793562e+00
+
+  - northward_wind (70 levels):
+    + min    = -1.2459302765239489e+01
+    + max    = 1.3287901169232759e+01
+    + mean   = -7.1297204474497838e-03
+    + stddev = 1.0977539128822866e+00
+
+Randomized variance: 
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: F12 [1152]
+  Fields:
+  - eastward_wind (70 levels):
+    + min    = 3.9280394327329904e-06
+    + max    = 9.0809465995997726e+01
+    + mean   = 1.2157394399518302e+00
+    + stddev = 2.8871009563376089e+00
+
+  - northward_wind (70 levels):
+    + min    = 8.0250086115902857e-06
+    + max    = 9.3246192707750225e+01
+    + mean   = 1.2083637430174687e+00
+    + stddev = 2.7673083765907078e+00
+

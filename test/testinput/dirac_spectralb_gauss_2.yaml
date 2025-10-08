@@ -1,0 +1,302 @@
+# Testing waveband localization implemented with Hybrid block
+background:
+  date: 2016-01-01T16:00:00Z
+  state variables:
+  - eastward_wind
+  - northward_wind
+
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_gaussian
+    N: 12
+  groups:
+  - variables:
+    - air_pressure
+    - air_pressure_levels_minus_one
+    - air_temperature
+    - cfeff
+    - cleff
+    - cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water
+    - cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water
+    - dlsvpdT
+    - dry_air_density_levels_minus_one
+    - eastward_wind
+    - dimensionless_exner_function
+    - dimensionless_exner_function_levels_minus_one
+    - geostrophic_pressure_levels_minus_one
+    - height_above_mean_sea_level
+    - ice_cloud_volume_fraction_in_atmosphere_layer
+    - liquid_cloud_volume_fraction_in_atmosphere_layer
+    - mu
+    - muA
+    - muH1
+    - muRecipDeterminant
+    - muRow1Column1
+    - muRow1Column2
+    - muRow2Column1
+    - muRow2Column2
+    - cloud_ice_mixing_ratio_wrt_dry_air
+    - cloud_liquid_water_mixing_ratio_wrt_dry_air
+    - rain_mixing_ratio_wrt_dry_air
+    - total_water_mixing_ratio_wrt_dry_air
+    - water_vapor_mixing_ratio_wrt_dry_air
+    - northward_wind
+    - air_potential_temperature
+    - qrain
+    - qsat
+    - qt
+    - rht
+    - water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water
+    - air_horizontal_streamfunction
+    - svp
+    - unbalanced_pressure_levels_minus_one
+    - air_horizontal_velocity_potential
+    - virtual_potential_temperature
+    levels: 70
+  - variables:
+    - air_pressure_levels
+    - height_above_mean_sea_level_levels
+    - hydrostatic_exner_levels
+    - hydrostatic_pressure_levels
+    levels: 71
+  partitioner: ectrans
+  halo: 1
+
+background error:
+  covariance model: SABER
+  adjoint test: false
+  saber central block:
+    saber block name: Hybrid
+    components:
+    # ===========================================================
+    # Waveband 1
+    # ===========================================================
+    - covariance:
+        ensemble geometry:
+          function space: StructuredColumns
+          grid:
+            type: regular_gaussian
+            N: 12
+          halo: 1
+          groups:
+          - levels: 70
+            variables:
+            - eastward_wind
+            - northward_wind
+        ensemble pert on other geometry:
+          date: 2016-01-01T16:00:00Z
+          members from template:
+            pattern: '%MEM%'
+            nmembers: 2
+            template:
+              date: 2016-01-01T16:00:00Z
+              filepath: testdata/process_perts_from_gauss_perts_5/wb1_F12_inc_%MEM%
+              variables:
+              - eastward_wind
+              - northward_wind
+        saber central block:
+          saber block name: Ensemble
+          localization:
+            saber central block:
+              saber block name: ID
+            saber outer blocks:
+            - saber block name: spectral analytical filter
+              active variables:
+              - summed_variables
+              function:
+                horizontal daley length: 6000e3  # Possibly larger localization
+              normalize filter variance: true
+            - saber block name: spectral to gauss
+              active variables:
+              - summed_variables
+            - saber block name: mo_vertical_localization  # Possibly different localization
+              localization data:
+                localization matrix file name: testdata/Lv.nc
+                localization field name in file: Lv
+                pressure file name: testdata/Prho_bar_Mean.nc
+                pressure field name in pressure file: Prho_bar_Mean
+              number of vertical modes: 10
+              reproduce bug non-unit diagonal: true  # To reproduce VAR behaviour
+              active variables:
+              - summed_variables
+            - saber block name: duplicate variables
+              variable groupings:
+              - group variable name: summed_variables
+                group components:
+                - eastward_wind
+                - northward_wind
+            - saber block name: mo vertical interpolation for localization
+              inner vertical levels: 70
+              active variables:
+              - eastward_wind
+              - northward_wind
+      weight:
+        value: 1.0
+    # ===========================================================
+    # Waveband 2
+    # ===========================================================
+    - covariance:
+        ensemble geometry:
+          function space: StructuredColumns
+          grid:
+            type: regular_gaussian
+            N: 12
+          halo: 1
+          groups:
+          - levels: 70
+            variables:
+            - eastward_wind
+            - northward_wind
+        ensemble pert on other geometry:
+          date: 2016-01-01T16:00:00Z
+          members from template:
+            pattern: '%MEM%'
+            nmembers: 2
+            template:
+              date: 2016-01-01T16:00:00Z
+              filepath: testdata/process_perts_from_gauss_perts_5/wb2_F12_inc_%MEM%
+              variables:
+              - eastward_wind
+              - northward_wind
+        saber central block:
+          saber block name: Ensemble
+          localization:
+            saber central block:
+              saber block name: ID
+            saber outer blocks:
+            - saber block name: spectral analytical filter
+              active variables:
+              - summed_variables
+              function:
+                horizontal daley length: 6000e3  # Possibly larger localization
+              normalize filter variance: true
+            - saber block name: spectral to gauss
+              active variables:
+              - summed_variables
+            - saber block name: mo_vertical_localization  # Possibly different localization
+              localization data:
+                localization matrix file name: testdata/Lv.nc
+                localization field name in file: Lv
+                pressure file name: testdata/Prho_bar_Mean.nc
+                pressure field name in pressure file: Prho_bar_Mean
+              number of vertical modes: 10
+              reproduce bug non-unit diagonal: true  # To reproduce VAR behaviour
+              active variables:
+              - summed_variables
+            - saber block name: duplicate variables
+              variable groupings:
+              - group variable name: summed_variables
+                group components:
+                - eastward_wind
+                - northward_wind
+            - saber block name: mo vertical interpolation for localization
+              inner vertical levels: 70
+              active variables:
+              - eastward_wind
+              - northward_wind
+      weight:
+        value: 1.0
+    # ===========================================================
+    # Waveband 3
+    # ===========================================================
+    - covariance:
+        ensemble geometry:
+          function space: StructuredColumns
+          grid:
+            type: regular_gaussian
+            N: 12
+          halo: 1
+          groups:
+          - levels: 70
+            variables:
+            - eastward_wind
+            - northward_wind
+        ensemble pert on other geometry:
+          date: 2016-01-01T16:00:00Z
+          members from template:
+            pattern: '%MEM%'
+            nmembers: 2
+            template:
+              date: 2016-01-01T16:00:00Z
+              filepath: testdata/process_perts_from_gauss_perts_5/wb3_F12_inc_%MEM%
+              variables:
+              - eastward_wind
+              - northward_wind
+        saber central block:
+          saber block name: Ensemble
+          localization:
+            saber central block:
+              saber block name: ID
+            saber outer blocks:
+            - saber block name: spectral analytical filter
+              active variables:
+              - summed_variables
+              function:
+                horizontal daley length: 6000e3  # Possibly larger localization
+              normalize filter variance: true
+            - saber block name: spectral to gauss
+              active variables:
+              - summed_variables
+            - saber block name: mo_vertical_localization  # Possibly different localization
+              localization data:
+                localization matrix file name: testdata/Lv.nc
+                localization field name in file: Lv
+                pressure file name: testdata/Prho_bar_Mean.nc
+                pressure field name in pressure file: Prho_bar_Mean
+              number of vertical modes: 10
+              reproduce bug non-unit diagonal: true  # To reproduce VAR behaviour
+              active variables:
+              - summed_variables
+            - saber block name: duplicate variables
+              variable groupings:
+              - group variable name: summed_variables
+                group components:
+                - eastward_wind
+                - northward_wind
+            - saber block name: mo vertical interpolation for localization
+              inner vertical levels: 70
+              active variables:
+              - eastward_wind
+              - northward_wind
+      weight:
+        value: 1.0
+
+dirac:
+  lon:
+  - 180.0
+  lat:
+  - 3.672
+  level:
+  - 1
+  variable:
+  - eastward_wind
+
+diagnostic points:
+  lon:
+  - 180.0
+  - 0.0
+  - 0.0
+  lat:
+  - 3.672
+  - 84.37
+  - 3.672
+  level:
+  - 1
+  - 1
+  - 70
+  variable:
+  - eastward_wind
+  - northward_wind
+  - eastward_wind
+
+increment variables:
+- eastward_wind
+- northward_wind
+
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_spectralb_gauss_2/dirac_%id%_%MPI%
+
+test:
+  reference filename: testref/dirac_spectralb_gauss_2.ref
