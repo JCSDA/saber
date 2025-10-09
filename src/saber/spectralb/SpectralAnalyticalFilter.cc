@@ -20,6 +20,7 @@
 #include "eckit/exception/Exceptions.h"
 #include "eckit/mpi/Operation.h"
 
+#include "oops/util/for_each.h"
 #include "oops/util/Logger.h"
 
 #include "saber/oops/Utilities.h"
@@ -227,31 +228,17 @@ SpectralAnalyticalFilter::SpectralAnalyticalFilter(const oops::GeometryData & ge
 void SpectralAnalyticalFilter::multiply(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
 
-  const auto zonal_wavenumbers = specFunctionSpace_.zonal_wavenumbers();
-  const int truncation = specFunctionSpace_.truncation();
-  const int max_zonal_wavenumber = zonal_wavenumbers.size();
-
   for (const auto & var : activeVars_) {
     auto view = atlas::array::make_view<double, 2>(fieldSet[var.name()]);
-    const atlas::idx_t levels = fieldSet[var.name()].shape(1);
 
     // Element-wise multiplication
-    atlas::idx_t jnode = 0;
-    for (int jm = 0; jm < max_zonal_wavenumber; ++jm) {
-      int m = zonal_wavenumbers(jm);
-      for (int n = m; n <= truncation; ++n) {
-        // Real component
-        for (atlas::idx_t jlev = 0; jlev < levels; jlev++) {
-          view(jnode, jlev) *= spectralFilter_[n];
+    util::for_each_index(
+      util::make_index_space_spectral_1d(fieldSet[var.name()]),
+      [&](atlas::idx_t i_part, atlas::idx_t n, atlas::idx_t m) mutable {
+        for (int l = 0; l < view.shape(1); ++l) {
+          view(i_part, l) *= spectralFilter_[n];
         }
-        jnode++;
-        // Imaginary component
-        for (atlas::idx_t jlev = 0; jlev < levels; jlev++) {
-          view(jnode, jlev) *= spectralFilter_[n];
-        }
-        jnode++;
-      }
-    }
+      });
   }
 
   oops::Log::trace() << classname() << "::multiply done" << std::endl;
@@ -273,35 +260,21 @@ void SpectralAnalyticalFilter::multiplyAD(oops::FieldSet3D & fieldSet) const {
 void SpectralAnalyticalFilter::leftInverseMultiply(oops::FieldSet3D & fieldSet) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
 
-  const auto zonal_wavenumbers = specFunctionSpace_.zonal_wavenumbers();
-  const int truncation = specFunctionSpace_.truncation();
-  const int max_zonal_wavenumber = zonal_wavenumbers.size();
-
   std::vector<double> filterInverse(spectralFilter_.size());
   std::transform(spectralFilter_.begin(), spectralFilter_.end(),
                  filterInverse.begin(), [&](auto & x){return x != 0.0 ? 1.0 / x : 0.0;});
 
   for (const auto & var : activeVars_) {
     auto view = atlas::array::make_view<double, 2>(fieldSet[var.name()]);
-    const atlas::idx_t levels = fieldSet[var.name()].shape(1);
 
     // Element-wise multiplication
-    atlas::idx_t jnode = 0;
-    for (int jm = 0; jm < max_zonal_wavenumber; ++jm) {
-      int m = zonal_wavenumbers(jm);
-      for (int n = m; n <= truncation; ++n) {
-        // Real component
-        for (atlas::idx_t jlev = 0; jlev < levels; jlev++) {
-          view(jnode, jlev) *= filterInverse[n];
+    util::for_each_index(
+      util::make_index_space_spectral_1d(fieldSet[var.name()]),
+      [&](atlas::idx_t i_part, atlas::idx_t n, atlas::idx_t m) mutable {
+        for (int l = 0; l < view.shape(1); ++l) {
+          view(i_part, l) *= filterInverse[n];
         }
-        jnode++;
-        // Imaginary component
-        for (atlas::idx_t jlev = 0; jlev < levels; jlev++) {
-          view(jnode, jlev) *= filterInverse[n];
-        }
-        jnode++;
-      }
-    }
+      });
   }
 
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
