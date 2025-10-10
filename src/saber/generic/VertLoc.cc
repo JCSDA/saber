@@ -18,12 +18,12 @@
 
 #include "atlas/array.h"
 #include "atlas/field.h"
-#include "atlas/parallel/omp/omp.h"
 
 #include "eckit/exception/Exceptions.h"
 
 #include "oops/base/Variables.h"
 #include "oops/util/AtlasArrayUtil.h"
+#include "oops/util/for_each.h"
 #include "oops/util/Logger.h"
 #include "oops/util/Timer.h"
 
@@ -50,6 +50,9 @@ auto setInnerVars(const oops::Variables & outerVars,
 
 namespace saber {
 namespace vader {
+
+using View = atlas::array::LocalView<double, 1>;
+using ConstView = atlas::array::LocalView<const double, 1>;
 
 // -----------------------------------------------------------------------------
 
@@ -320,14 +323,17 @@ void VertLoc::multiply(oops::FieldSet3D & fset) const {
     outView.assign(0.0);
 
     // Apply U matrix
-    auto inView = atlas::array::make_view<double, 2>(fset[var.name()]);  // nmods_ levels
-    atlas_omp_parallel_for(atlas::idx_t jn = 0; jn < outField.shape(0); ++jn) {
-      for (atlas::idx_t jl = 0; jl < nlevs_; ++jl) {
-        for (atlas::idx_t jm = 0; jm < nmods_; ++jm) {
-          outView(jn, jl) += Umatrix_(jl, jm) * inView(jn, jm);
+    util::for_each_column(
+      util::IndexRange::include_halo,
+      [this](ConstView inColView, View outColView) {
+        // loop over levels
+        for (atlas::idx_t jl = 0; jl < outColView.shape(0); ++jl) {
+          // loop over modes
+          for (atlas::idx_t jm = 0; jm < inColView.shape(0); ++jm) {
+            outColView(jl) += Umatrix_(jl, jm) * inColView(jm);
+          }
         }
-      }
-    }
+      }, fset[var.name()], outField);
 
     fsetOut.add(outField);
   }
@@ -360,25 +366,26 @@ void VertLoc::multiplyAD(oops::FieldSet3D & fset) const {
     }
 
     // Create new field with nmods_ levels
+    // outField is the OUTPUT field, not the OUTER field
     atlas::Field outField =
       innerGeometryData_.functionSpace().createField<double>
         (atlas::option::name(var.name()) |
          atlas::option::levels(nmods_));
     auto outView = atlas::array::make_view<double, 2>(outField);
-
     outView.assign(0.0);
 
     // Apply U^t
-    auto inView = atlas::array::make_view<double, 2>(fset[var.name()]);  // nlevs_ levels
-
-    for (atlas::idx_t jn = 0; jn < outField.shape(0); ++jn) {
-      for (atlas::idx_t jl = 0; jl < nmods_; ++jl) {
-        for (atlas::idx_t jm = 0; jm < nlevs_; ++jm) {
-          outView(jn, jl) += Umatrix_(jm, jl) * inView(jn, jm);
+    util::for_each_column(
+      util::IndexRange::include_halo,
+      [this](ConstView inColView, View outColView) {
+        // loop over modes
+        for (atlas::idx_t jm = 0; jm < outColView.shape(0); ++jm) {
+          // loop over levels
+          for (atlas::idx_t jl = 0; jl < inColView.shape(0); ++jl) {
+            outColView(jm) += Umatrix_(jl, jm) * inColView(jl);
+          }
         }
-      }
-    }
-
+      }, fset[var.name()], outField);
 
     fsetOut.add(outField);
   }
