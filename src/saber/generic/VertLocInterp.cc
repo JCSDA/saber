@@ -15,6 +15,7 @@
 
 #include "oops/base/Variables.h"
 #include "oops/util/FieldSetHelpers.h"
+#include "oops/util/for_each.h"
 #include "oops/util/Logger.h"
 
 namespace saber {
@@ -22,6 +23,8 @@ namespace vader {
 
 namespace {
 
+using View = atlas::array::LocalView<double, 1>;
+using ConstView = atlas::array::LocalView<const double, 1>;
 
 oops::Variables createInnerVars(
     const atlas::idx_t & innerVerticalLevels,
@@ -43,28 +46,30 @@ void verticalInterpolationFromFullLevels(const oops::Variables & activeVars,
 
   // inner stagger is full-levels
   for (const auto & v : activeVars) {
-    auto fldInView = atlas::array::make_view<const double, 2>(fsetIn[v.name()]);
-    auto fldOutView = atlas::array::make_view<double, 2>(fsetOut[v.name()]);
-
     if (((v.name().find("_levels_minus_one")) != std::string::npos) ||
         windnames.has(v)) {
-      for (atlas::idx_t jn = 0; jn < fldInView.shape()[0]; ++jn) {
-        fldOutView(jn, 0) = fldInView(jn, 0);
-        for (atlas::idx_t jl = 0; jl < fldInView.shape()[1]-1; ++jl) {
-          fldOutView(jn, jl+1) = 0.5 * (fldInView(jn, jl) + fldInView(jn, jl+1));
-        }
-      }
+      util::for_each_column(
+        util::IndexRange::include_halo,
+        [](ConstView inColView, View outColView){
+          outColView(0) = inColView(0);
+          for (atlas::idx_t jl = 0; jl < inColView.shape(0)-1; ++jl) {
+            outColView(jl+1) = 0.5 * (inColView(jl) + inColView(jl+1));
+          }
+        }, fsetIn[v.name()], fsetOut[v.name()]);
     } else if ((v.name().find("_levels")) != std::string::npos) {
-      for (atlas::idx_t jn = 0; jn < fldInView.shape()[0]; ++jn) {
-        fldOutView(jn, 0) = fldInView(jn, 0);
-        for (atlas::idx_t jl = 0; jl < fldInView.shape()[1]-1; ++jl) {
-          fldOutView(jn, jl+1) = 0.5 * (fldInView(jn, jl) + fldInView(jn, jl+1));
-        }
-        fldOutView(jn, fldOutView.shape()[1]-1) =
-          fldInView(jn, fldInView.shape()[1]-1);
-      }
+      util::for_each_column(
+        util::IndexRange::include_halo,
+        [](ConstView inColView, View outColView){
+          outColView(0) = inColView(0);
+          for (atlas::idx_t jl = 0; jl < inColView.shape(0)-1; ++jl) {
+            outColView(jl+1) = 0.5 * (inColView(jl) + inColView(jl+1));
+          }
+          outColView(outColView.shape(0)-1) = inColView(inColView.shape(0)-1);
+        }, fsetIn[v.name()], fsetOut[v.name()]);
     } else {
       // full levels
+      auto fldInView = atlas::array::make_view<const double, 2>(fsetIn[v.name()]);
+      auto fldOutView = atlas::array::make_view<double, 2>(fsetOut[v.name()]);
       fldOutView.assign(fldInView);
     }
   }
@@ -82,29 +87,30 @@ void mo_buggy_verticalInterpolationFromHalfLevels(const oops::Variables & active
   // from half-levels.  This is not an issue if the vertical staggering is uniform.
   // However in practice it is not.
   for (const auto & v : activeVars) {
-    auto fldInView = atlas::array::make_view<const double, 2>(fsetIn[v.name()]);
-    auto fldOutView = atlas::array::make_view<double, 2>(fsetOut[v.name()]);
-
     if (((v.name().find("_levels_minus_one")) != std::string::npos) ||
         windnames.has(v)) {
+      auto fldInView = atlas::array::make_view<const double, 2>(fsetIn[v.name()]);
+      auto fldOutView = atlas::array::make_view<double, 2>(fsetOut[v.name()]);
       fldOutView.assign(fldInView);
     } else if ((v.name().find("_levels")) != std::string::npos) {
-      for (atlas::idx_t jn = 0; jn < fldInView.shape()[0]; ++jn) {
-        for (atlas::idx_t jl = 0; jl < fldInView.shape()[1]; ++jl) {
-          fldOutView(jn, jl) = fldInView(jn, jl);
-        }
-        fldOutView(jn, fldOutView.shape()[1]-1) =
-          fldInView(jn, fldInView.shape()[1]-1);
-      }
+      util::for_each_column(
+        util::IndexRange::include_halo,
+        [](ConstView inColView, View outColView){
+          for (atlas::idx_t jl = 0; jl < inColView.shape(0); ++jl) {
+            outColView(jl) = inColView(jl);
+          }
+          outColView(outColView.shape(0)-1) = inColView(inColView.shape(0)-1);
+        }, fsetIn[v.name()], fsetOut[v.name()]);
     } else {
       // full levels
-      for (atlas::idx_t jn = 0; jn < fldInView.shape()[0]; ++jn) {
-        for (atlas::idx_t jl = 0; jl < fldInView.shape()[1]-1; ++jl) {
-          fldOutView(jn, jl) = 0.5 * (fldInView(jn, jl) + fldInView(jn, jl+1));
-        }
-        fldOutView(jn, fldOutView.shape()[1]-1) =
-          fldInView(jn, fldInView.shape()[1]-1);
-      }
+      util::for_each_column(
+        util::IndexRange::include_halo,
+        [](ConstView inColView, View outColView){
+          for (atlas::idx_t jl = 0; jl < inColView.shape(0)-1; ++jl) {
+            outColView(jl) = 0.5 * (inColView(jl) + inColView(jl+1));
+          }
+          outColView(outColView.shape(0)-1) = inColView(inColView.shape(0)-1);
+        }, fsetIn[v.name()], fsetOut[v.name()]);
     }
   }
 }
@@ -117,41 +123,43 @@ void verticalInterpolationFromFullLevelsAD(const oops::Variables & activeVars,
   oops::Variables windnames(std::vector<std::string>{"eastward_wind", "northward_wind"});
 
   for (const auto & v : activeVars) {
-    auto fldInView = atlas::array::make_view<double, 2>(fsetIn[v.name()]);
-    auto fldOutView = atlas::array::make_view<double, 2>(fsetOut[v.name()]);
-
     if ((v.name().find("_levels_minus_one")) != std::string::npos ||
         windnames.has(v)) {
-      for (atlas::idx_t jn = 0; jn < fldInView.shape()[0]; ++jn) {
-        for (atlas::idx_t jl = fldInView.shape()[1]-2; jl > -1; --jl) {
-          fldInView(jn, jl+1) += 0.5 * fldOutView(jn, jl+1);
-          fldInView(jn, jl) += 0.5 * fldOutView(jn, jl+1);
-          fldOutView(jn, jl+1) = 0.0;
-        }
-        fldInView(jn, 0) += fldOutView(jn, 0);
-        fldOutView(jn, 0) = 0.0;
-      }
+      util::for_each_column(
+        util::IndexRange::include_halo,
+        [](View inColView, View outColView){
+          for (atlas::idx_t jl = inColView.shape(0)-2; jl > -1; --jl) {
+            inColView(jl+1) += 0.5 * outColView(jl+1);
+            inColView(jl) += 0.5 * outColView(jl+1);
+            outColView(jl+1) = 0.0;
+          }
+          inColView(0) += outColView(0);
+          outColView(0) = 0.0;
+        }, fsetIn[v.name()], fsetOut[v.name()]);
     } else if ((v.name().find("_levels")) != std::string::npos) {
-      for (atlas::idx_t jn = 0; jn < fldInView.shape()[0]; ++jn) {
-        fldInView(jn, fldInView.shape()[1]-1) +=
-          fldOutView(jn, fldOutView.shape()[1]-1);
-        fldOutView(jn, fldOutView.shape()[1]-1) = 0.0;
-        for (atlas::idx_t jl = fldInView.shape()[1]-2; jl > -1; --jl) {
-          fldInView(jn, jl+1) += 0.5 * fldOutView(jn, jl+1);
-          fldInView(jn, jl) += 0.5 * fldOutView(jn, jl+1);
-          fldOutView(jn, jl+1) = 0.0;
-        }
-        fldInView(jn, 0) += fldOutView(jn, 0);
-        fldOutView(jn, 0) = 0.0;
-      }
+      util::for_each_column(
+        util::IndexRange::include_halo,
+        [](View inColView, View outColView){
+          inColView(inColView.shape(0)-1) += outColView(outColView.shape(0)-1);
+          outColView(outColView.shape(0)-1) = 0.0;
+          for (atlas::idx_t jl = inColView.shape(0)-2; jl > -1; --jl) {
+            inColView(jl+1) += 0.5 * outColView(jl+1);
+            inColView(jl) += 0.5 * outColView(jl+1);
+            outColView(jl+1) = 0.0;
+          }
+          inColView(0) += outColView(0);
+          outColView(0) = 0.0;
+        }, fsetIn[v.name()], fsetOut[v.name()]);
     } else {
       // full levels
-      for (atlas::idx_t jn = 0; jn < fldInView.shape()[0]; ++jn) {
-        for (atlas::idx_t jl = 0; jl < fldInView.shape()[1]; ++jl) {
-          fldInView(jn, jl) += fldOutView(jn, jl);
-          fldOutView(jn, jl) = 0.0;
-        }
-      }
+      util::for_each_column(
+        util::IndexRange::include_halo,
+        [](View inColView, View outColView){
+          for (atlas::idx_t jl = 0; jl < inColView.shape(0); ++jl) {
+            inColView(jl) += outColView(jl);
+            outColView(jl) = 0.0;
+          }
+        }, fsetIn[v.name()], fsetOut[v.name()]);
     }
   }
 }
@@ -164,39 +172,40 @@ void mo_buggy_verticalInterpolationFromHalfLevelsAD(const oops::Variables & acti
   oops::Variables windnames(std::vector<std::string>{"eastward_wind", "northward_wind"});
 
   for (const auto & v : activeVars) {
-    auto fldInView = atlas::array::make_view<double, 2>(fsetIn[v.name()]);
-    auto fldOutView = atlas::array::make_view<double, 2>(fsetOut[v.name()]);
-
     if ((v.name().find("_levels_minus_one")) != std::string::npos ||
         windnames.has(v)) {
-      for (atlas::idx_t jn = 0; jn < fldInView.shape()[0]; ++jn) {
-        for (atlas::idx_t jl = 0; jl < fldInView.shape()[1]; ++jl) {
-          fldInView(jn, jl) += fldOutView(jn, jl);
-          fldOutView(jn, jl) = 0.0;
-        }
-      }
+      util::for_each_column(
+        util::IndexRange::include_halo,
+        [](View inColView, View outColView){
+          for (atlas::idx_t jl = 0; jl < inColView.shape(0); ++jl) {
+            inColView(jl) += outColView(jl);
+            outColView(jl) = 0.0;
+          }
+        }, fsetIn[v.name()], fsetOut[v.name()]);
     } else if ((v.name().find("_levels")) != std::string::npos) {
-      for (atlas::idx_t jn = 0; jn < fldInView.shape()[0]; ++jn) {
-        fldInView(jn, fldInView.shape()[1]-1) +=
-          fldOutView(jn, fldOutView.shape()[1]-1);
-        fldOutView(jn, fldOutView.shape()[1]-1) = 0.0;
-        for (atlas::idx_t jl = 0; jl < fldInView.shape()[1]; ++jl) {
-          fldInView(jn, jl) += fldOutView(jn, jl);
-          fldOutView(jn, jl) = 0.0;
-        }
-      }
+      util::for_each_column(
+        util::IndexRange::include_halo,
+        [](View inColView, View outColView){
+          inColView(inColView.shape(0)-1) += outColView(outColView.shape(0)-1);
+          outColView(outColView.shape(0)-1) = 0.0;
+          for (atlas::idx_t jl = 0; jl < inColView.shape(0); ++jl) {
+            inColView(jl) += outColView(jl);
+            outColView(jl) = 0.0;
+          }
+        }, fsetIn[v.name()], fsetOut[v.name()]);
     } else {
       // full levels
-      for (atlas::idx_t jn = 0; jn < fldInView.shape()[0]; ++jn) {
-        fldInView(jn, fldInView.shape()[1]-1) +=
-          fldOutView(jn, fldOutView.shape()[1]-1);
-        fldOutView(jn, fldOutView.shape()[1]-1) = 0.0;
-        for (atlas::idx_t jl = fldInView.shape()[1]-2; jl > -1; --jl) {
-          fldInView(jn, jl+1) += 0.5 * fldOutView(jn, jl);
-          fldInView(jn, jl) += 0.5 * fldOutView(jn, jl);
-          fldOutView(jn, jl) = 0.0;
-        }
-      }
+      util::for_each_column(
+        util::IndexRange::include_halo,
+        [](View inColView, View outColView){
+          inColView(inColView.shape(0)-1) += outColView(outColView.shape(0)-1);
+          outColView(outColView.shape(0)-1) = 0.0;
+          for (atlas::idx_t jl = inColView.shape(0)-2; jl > -1; --jl) {
+            inColView(jl+1) += 0.5 * outColView(jl);
+            inColView(jl) += 0.5 * outColView(jl);
+            outColView(jl) = 0.0;
+          }
+        }, fsetIn[v.name()], fsetOut[v.name()]);
     }
   }
 }
