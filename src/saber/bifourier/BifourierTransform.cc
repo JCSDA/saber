@@ -1643,9 +1643,9 @@ void BifourierTransform::setupLocalSpectralSpace() {
   flds.add(globalIndexField);
   auto lonlatView = make_view<double, 2>(lonlatField);
   auto ghostView = make_view<int, 1>(ghostField);
-  auto remoteIndexView = make_view<int, 1>(remoteIndexField);
+  auto remoteIndexView = make_indexview<int, 1>(remoteIndexField);
   auto partitionView = make_view<int, 1>(partitionField);
-  auto globalIndexView = make_view<atlas::gidx_t, 1>(globalIndexField);
+  auto globalIndexView = make_indexview<atlas::gidx_t, 1>(globalIndexField);
 
   for (size_t js = 0; js < ns_; ++js) {
     // Get global index
