@@ -41,7 +41,7 @@ class LayerSpec : public LayerBase {
             const size_t & ny0,
             const size_t & nz0) :
     LayerBase(params, fieldsMetaData, gdata, myGroup, myVars, nx0, ny0, nz0) {}
-    ~LayerSpec() = default;
+    ~LayerSpec();
 
   // Setups
   void setupParallelization() override;
@@ -120,8 +120,8 @@ class LayerSpec : public LayerBase {
   size_t nk_;
   fftw_plan xPlan_r2c_;
   fftw_plan xPlan_c2r_;
-  double *xBufR_;
-  fftw_complex *xBufC_;
+  double *xBufR_ = nullptr;
+  fftw_complex *xBufC_ = nullptr;
   double xNormFFT_;
   std::vector<double> xSpecStdDev_;
 
@@ -129,8 +129,8 @@ class LayerSpec : public LayerBase {
   size_t nl_;
   fftw_plan yPlan_r2c_;
   fftw_plan yPlan_c2r_;
-  double *yBufR_;
-  fftw_complex *yBufC_;
+  double *yBufR_ = nullptr;
+  fftw_complex *yBufC_ = nullptr;
   double yNormFFT_;
   std::vector<double> ySpecStdDev_;
 };

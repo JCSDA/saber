@@ -38,8 +38,7 @@ class BifourierTransform : public util::Printable {
                      const eckit::Configuration &);
 
   // Destructor
-  ~BifourierTransform()
-    {}
+  ~BifourierTransform();
 
   // Accessors
 
@@ -354,14 +353,14 @@ class BifourierTransform : public util::Printable {
   // Rows FFT
   fftw_plan rowsPlan_r2c_;
   fftw_plan rowsPlan_c2r_;
-  double *rowsBufR_;
-  fftw_complex *rowsBufC_;
+  double *rowsBufR_ = nullptr;
+  fftw_complex *rowsBufC_ = nullptr;
 
   // Columns FFT
   fftw_plan colsPlan_r2c_;
   fftw_plan colsPlan_c2r_;
-  double *colsBufR_;
-  fftw_complex *colsBufC_;
+  double *colsBufR_ = nullptr;
+  fftw_complex *colsBufC_ = nullptr;
 
   // Private methods
 
@@ -379,6 +378,7 @@ class BifourierTransform : public util::Printable {
 
   // Setup FFT
   void setupFFT();
+  void cleanupFFT();
 
   // Add spectral coefficient
   void addSpectralCoefficient(const size_t &,

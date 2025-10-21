@@ -24,6 +24,24 @@ static LayerMaker<LayerSpec> makerSpec_("spectral");
 
 // -----------------------------------------------------------------------------
 
+LayerSpec::~LayerSpec() {
+  oops::Log::trace() << classname() << "::~LayerSpec starting" << std::endl;
+
+  // Delete FFTW-related data
+  fftw_destroy_plan(xPlan_r2c_);
+  fftw_destroy_plan(xPlan_c2r_);
+  fftw_destroy_plan(yPlan_r2c_);
+  fftw_destroy_plan(yPlan_c2r_);
+  fftw_free(xBufR_);
+  fftw_free(xBufC_);
+  fftw_free(yBufR_);
+  fftw_free(yBufC_);
+
+  oops::Log::trace() << classname() << "::~LayerSpec done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
 void LayerSpec::setupParallelization() {
   oops::Log::trace() << classname() << "::setupParallelization starting" << std::endl;
 
