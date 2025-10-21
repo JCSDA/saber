@@ -22,12 +22,10 @@ class BifourierTransformStore {
     {return "saber::bifourier::BifourierTransform";}
 
   // Constructor
-  BifourierTransformStore()
-    {}
+  BifourierTransformStore();
 
   // Destructor
-  ~BifourierTransformStore()
-    {}
+  ~BifourierTransformStore();
 
   // Accessors
 

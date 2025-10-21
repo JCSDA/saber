@@ -16,12 +16,28 @@ namespace bifourier {
 
 // -----------------------------------------------------------------------------
 
+static int stores_in_use = 0;
 static std::vector<std::shared_ptr<BifourierTransform>> transformsVector;
 
 // -----------------------------------------------------------------------------
 
 std::vector<std::shared_ptr<BifourierTransform>> & BifourierTransformStore::transforms() {
   return transformsVector;
+}
+
+// -----------------------------------------------------------------------------
+
+BifourierTransformStore::BifourierTransformStore() {
+  ++stores_in_use;
+}
+
+// -----------------------------------------------------------------------------
+
+BifourierTransformStore::~BifourierTransformStore() {
+  --stores_in_use;
+  if (stores_in_use == 0) {
+    transforms().clear();
+  }
 }
 
 // -----------------------------------------------------------------------------
