@@ -52,11 +52,51 @@ Geometry::Geometry(const eckit::Configuration & config,
   halo_ = params.halo.value();
   gridType_ = params.grid.value().getString("type", "no_type");
 
+  // Deal with poles for structured grids
+  if (((gridType_ == "structured") || (gridType_ == "regular_lonlat")) && grid_.domain().global()) {
+    // Get structured function space and grid
+    const atlas::functionspace::StructuredColumns fs(functionSpace_);
+    const atlas::StructuredGrid & grid = fs.grid();
+
+    // Check whether the grid has duplicated points at the poles
+    bool duplicated = false;
+    int j = 0;
+    if (grid.nx(j) > 1) {
+      double lonlatPoint[] = {0, 0};
+      grid.lonlat(0, j, lonlatPoint);
+      double latRef = lonlatPoint[1];
+      for (int i = 1; i < grid.nx(j); ++i) {
+        grid.lonlat(i, j, lonlatPoint);
+        duplicated = duplicated || (lonlatPoint[1] == latRef);
+      }
+    }
+    j = grid.ny()-1;
+    if (grid.nx(j) > 1) {
+      double lonlatPoint[] = {0, 0};
+      grid.lonlat(0, j, lonlatPoint);
+      double latRef = lonlatPoint[1];
+      for (int i = 1; i < grid.nx(j); ++i) {
+        grid.lonlat(i, j, lonlatPoint);
+        duplicated = duplicated || (lonlatPoint[1] == latRef);
+      }
+    }
+
+    // Only keep the first of duplicated points in the owned mask
+    const auto view_i = atlas::array::make_indexview<int, 1>(fs.index_i());
+    const auto view_j = atlas::array::make_indexview<int, 1>(fs.index_j());
+    auto ownedView = atlas::array::make_view<int, 2>(fieldsetOwnedMask["owned"]);
+    for (int jnode = 0; jnode < fs.size(); ++jnode) {
+      if (((view_j(jnode) == 0) || (view_j(jnode) == grid.ny()-1)) && (view_i(jnode) > 0)) {
+        ownedView(jnode, 0) = 0;
+      }
+    }
+  }
+
   // Setup geometry fields
   fields_ = atlas::FieldSet();
 
   // Add owned points mask -- this mask does not depend on the group so was precomputed
-  fields_->add(fieldsetOwnedMask.field("owned"));
+  fields_->add(fieldsetOwnedMask["owned"]);
 
   // Levels direction
   levelsAreTopDown_ = params.levelsAreTopDown.value();
@@ -82,16 +122,11 @@ Geometry::Geometry(const eckit::Configuration & config,
     interpolation_.set("interpolation type", "unstructured");
   }
 
-  // GeometryData
-  if (interpolation_.getString("interpolation type") == "unstructured") {
-    geomData_.reset(new oops::GeometryData(functionSpace_, fields_, levelsAreTopDown_, comm_));
-  }
-
   // Check for duplicate points
   const auto ghostView = atlas::array::make_view<int, 1>(functionSpace_.ghost());
-  const auto ownedView = atlas::array::make_view<int, 2>(fields_.field("owned"));
+  const auto ownedView = atlas::array::make_view<int, 2>(fields_["owned"]);
   size_t duplicatedPointsCount = 0;
-  for (atlas::idx_t jnode = 0; jnode < fields_.field("owned").shape(0); ++jnode) {
+  for (atlas::idx_t jnode = 0; jnode < fields_["owned"].shape(0); ++jnode) {
     // Duplicate point = owned==0 and ghost==0 (see util::setupFunctionSpace in oops)
     if (ghostView(jnode) == 0 && ownedView(jnode, 0) == 0) {
       ++duplicatedPointsCount;
@@ -152,74 +187,7 @@ Geometry::Geometry(const eckit::Configuration & config,
   }
 
   // Print summary
-  this->print(oops::Log::info());
-
-  oops::Log::trace() << classname() << "::Geometry done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-Geometry::Geometry(const Geometry & other)
-  : comm_(other.comm_), halo_(other.halo_), grid_(other.grid_), gridType_(other.gridType_),
-  partitioner_(other.partitioner_), mesh_(other.mesh_), groupIndex_(other.groupIndex_),
-  levelsAreTopDown_(other.levelsAreTopDown_), levelsCountFrom_(other.levelsCountFrom_),
-  modelData_(other.modelData_), alias_(other.alias_),
-  io_(other.io_), interpolation_(other.interpolation_),
-  duplicatePoints_(other.duplicatePoints_) {
-  oops::Log::trace() << classname() << "::Geometry starting" << std::endl;
-
-  // Copy function space
-  if (other.functionSpace_.type() == "StructuredColumns") {
-    // StructuredColumns
-    functionSpace_ = atlas::functionspace::StructuredColumns(other.functionSpace_);
-  } else if (other.functionSpace_.type() == "NodeColumns") {
-    // NodeColumns
-    if (grid_.name().compare(0, 2, std::string{"CS"}) == 0) {
-      // CubedSphere
-      functionSpace_ = atlas::functionspace::CubedSphereNodeColumns(other.functionSpace_);
-    } else {
-      // Other NodeColumns
-      functionSpace_ = atlas::functionspace::NodeColumns(other.functionSpace_);
-    }
-  } else if (other.functionSpace_.type() == "PointCloud") {
-    throw eckit::NotImplemented(other.functionSpace_.type() + " function space not supported",
-      Here());
-  } else {
-    throw eckit::NotImplemented(other.functionSpace_.type() + " function space not supported yet",
-      Here());
-  }
-
-  // Copy geometry fields
-  fields_ = util::shareFields(other.fields_);
-
-  // Copy groups
-  for (size_t groupIndex = 0; groupIndex < other.groups_.size(); ++groupIndex) {
-    // Define group
-    groupData group;
-
-    // Copy number of levels
-    group.levels_ = other.groups_[groupIndex].levels_;
-
-    // Copy corresponding level for 2D variables (first or last)
-    group.lev2d_ = other.groups_[groupIndex].lev2d_;
-
-    // Copy vertical coordinate
-    group.vertCoord_ = other.groups_[groupIndex].vertCoord_;
-
-    // Copy averaged vertical coordinate
-    group.vertCoordAvg_ = other.groups_[groupIndex].vertCoordAvg_;
-
-    // Copy mask size
-    group.gmaskSize_ = other.groups_[groupIndex].gmaskSize_;
-
-    // Save group
-    groups_.push_back(group);
-  }
-
-  // Geometry data
-  if (interpolation_.getString("interpolation type") == "unstructured") {
-    geomData_.reset(new oops::GeometryData(functionSpace_, fields_, levelsAreTopDown_, comm_));
-  }
+  print(oops::Log::info());
 
   oops::Log::trace() << classname() << "::Geometry done" << std::endl;
 }
@@ -266,6 +234,49 @@ std::vector<size_t> Geometry::variableSizes(const std::vector<std::string> & var
 
 // -----------------------------------------------------------------------------
 
+Interpolation & Geometry::getInterpolation(const Geometry & tgtGeom) const {
+  oops::Log::trace() << classname() << "::getInterpolation starting" << std::endl;
+
+  // Get target geometry UID (grid + "_" + paritioner + "@" + interpolation type)
+  const std::string interpolationType = tgtGeom.interpolation().getString("interpolation type");
+  const std::string tgtGeomUid = tgtGeom.grid().uid() + "_" + tgtGeom.partitioner().type()
+    + "@" + interpolationType;
+
+  // Look for this UID in the existing interpolations
+  const auto it = interpolations_.find(tgtGeomUid);
+
+  if (it != interpolations_.end()) {
+    // Found existing interpolation
+    oops::Log::info() << "Info     : Found existing interpolation for UID: " << tgtGeomUid
+      << std::endl;
+
+    // Return interpolation
+    oops::Log::trace() << classname() << "::getInterpolation done" << std::endl;
+    return *(it->second);
+  } else {
+    // Create GeometryData if needed
+    if ((interpolationType == "unstructured") && !geomData_) {
+      geomData_.reset(new oops::GeometryData(functionSpace_, fields_, levelsAreTopDown_, comm_));
+    }
+
+    // Create new interpolation
+    std::shared_ptr<Interpolation> interpolation(new Interpolation(*this, tgtGeom));
+
+    // Print interpolation type
+    oops::Log::info() << "Info     : New interpolation created for UID: " << tgtGeomUid
+      << std::endl;
+
+    // Store interpolation
+    interpolations_.insert({tgtGeomUid, interpolation});
+
+    // Return interpolation
+    oops::Log::trace() << classname() << "::getInterpolation done" << std::endl;
+    return *interpolation;
+  }
+}
+
+// -----------------------------------------------------------------------------
+
 void Geometry::print(std::ostream & os) const {
   oops::Log::trace() << classname() << "::print starting" << std::endl;
 
@@ -278,6 +289,9 @@ void Geometry::print(std::ostream & os) const {
   os << prefix << "- size: " << grid_.size() << std::endl;
   if (!grid_.domain().global()) {
     os << prefix << "Regional grid detected" << std::endl;
+  }
+  if (duplicatePoints_) {
+    os << prefix << "Duplicated points detected" << std::endl;
   }
   if (partitioner_) {
     os << prefix << "Partitioner:" << std::endl;
@@ -417,9 +431,8 @@ void Geometry::setupVertCoord(groupData & group) {
     }
   }
 
-  // Get ghost and owned views
-  const auto ghostView = atlas::array::make_view<int, 1>(functionSpace_.ghost());
-  const auto ownedView = atlas::array::make_view<int, 2>(fields_.field("owned"));
+  // Get owned view
+  const auto ownedView = atlas::array::make_view<int, 2>(fields_["owned"]);
 
   // Average vertical coordinate
   for (size_t jlevel = 0; jlevel < group.levels_; ++jlevel) {
@@ -429,7 +442,7 @@ void Geometry::setupVertCoord(groupData & group) {
 
     // Loop over owned points
     for (atlas::idx_t jnode = 0; jnode < group.vertCoord_.shape(0); ++jnode) {
-      if (ghostView(jnode) == 0 && ownedView(jnode, 0) == 1) {
+      if (ownedView(jnode, 0) == 1) {
         avg += vertCoordView(jnode, jlevel);
         counter += 1.0;
       }
@@ -501,8 +514,8 @@ void Geometry::setupMask(groupData & group) {
   auto maskView = atlas::array::make_view<int, 2>(gmask);
   maskView.assign(1);
 
-  // Ghost view
-  auto ghostView = atlas::array::make_view<int, 1>(functionSpace_.ghost());
+  // Owned view
+  auto ownedView = atlas::array::make_view<int, 2>(fields_["owned"]);
 
   // Specific mask
   if (group.params_.maskType.value() == "none") {
@@ -578,7 +591,7 @@ void Geometry::setupMask(groupData & group) {
     comm_.broadcast(lsm.begin(), lsm.end(), 0);
 
     // Build KD-tree
-    atlas::Geometry geometry(atlas::util::Earth::radius());
+    const atlas::Geometry geometry(atlas::util::Earth::radius());
     atlas::util::IndexKDTree2D search(geometry);
     search.reserve(nlat*nlon);
     std::vector<double> lon2d;
@@ -597,11 +610,11 @@ void Geometry::setupMask(groupData & group) {
 
     if (functionSpace_.type() == "StructuredColumns") {
       // StructuredColumns
-      atlas::functionspace::StructuredColumns fs(functionSpace_);
-      auto lonlatView = atlas::array::make_view<double, 2>(fs.xy());
+      const atlas::functionspace::StructuredColumns fs(functionSpace_);
+      const auto lonlatView = atlas::array::make_view<double, 2>(fs.xy());
       auto maskView = atlas::array::make_view<int, 2>(gmask);
       for (atlas::idx_t jnode = 0; jnode < fs.xy().shape(0); ++jnode) {
-        if (ghostView(jnode) == 0) {
+        if (ownedView(jnode, 0) == 1) {
           // Find nearest neighbor
           size_t nn = search.closestPoint(atlas::PointLonLat{lonlatView(jnode, 0),
             lonlatView(jnode, 1)}).payload();
@@ -639,7 +652,7 @@ void Geometry::setupMask(groupData & group) {
   size_t domainSize = 0.0;
   for (atlas::idx_t jnode = 0; jnode < gmask.shape(0); ++jnode) {
     for (atlas::idx_t jlevel = 0; jlevel < gmask.shape(1); ++jlevel) {
-      if (ghostView(jnode) == 0) {
+      if (ownedView(jnode, 0) == 1) {
         if (maskView(jnode, jlevel) == 1) {
           group.gmaskSize_ += 1.0;
         }

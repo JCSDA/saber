@@ -14,7 +14,10 @@
 #include "oops/util/ConfigFunctions.h"
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/FieldSetOperations.h"
+#include "oops/util/Logger.h"
 
+#include "src/Geometry.h"
+#include "src/Increment.h"
 #include "src/LinearVariableChangeParameters.h"
 
 namespace quench {
@@ -66,6 +69,9 @@ LinearVariableChange::LinearVariableChange(const Geometry & geom,
                        *params.inputVariables.value(),
                        conf,
                        multiplierFset_);
+
+    // Update halo
+    multiplierFset_.haloExchange();
   }
 
   oops::Log::trace() << classname() << "::LinearVariableChange done" << std::endl;

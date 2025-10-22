@@ -116,7 +116,7 @@
                                  loc. ver. support:         4.10 vertical units
                 Level:   1 ~> hybrid coefficients: 0.44 / 0.53
                 Level:   2 ~> hybrid coefficients: 0.35 / 0.60
-Norm of output parameter loc_rh - 1: 2.1629752432907832e+08
-Norm of output parameter loc_rv - 1: 2.0069781305357549e+02
-Norm of output parameter hyb_coef_ens - 1: 1.9483759285911951e+01
-Norm of output parameter hyb_coef_sta - 1: 2.2655268342954784e+01
+Norm of output parameter loc_rh - 1: 2.0765313355080462e+08
+Norm of output parameter loc_rv - 1: 1.9267686907947714e+02
+Norm of output parameter hyb_coef_ens - 1: 1.8705085421661085e+01
+Norm of output parameter hyb_coef_sta - 1: 2.2109787911488581e+01

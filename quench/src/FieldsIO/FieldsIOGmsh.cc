@@ -17,6 +17,7 @@
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/Logger.h"
 
+#include "src/Fields.h"
 #include "src/Geometry.h"
 
 namespace quench {
@@ -27,10 +28,12 @@ static FieldsIOMaker<FieldsIOGmsh> makerGmsh_("gmsh");
 
 // -----------------------------------------------------------------------------
 
-void FieldsIOGmsh::write(const Geometry & geom,
-                         const eckit::Configuration & conf,
-                         const atlas::FieldSet & fset) const {
+void FieldsIOGmsh::write(const eckit::Configuration & conf,
+                         const Fields & fields) const {
   oops::Log::trace() << classname() << "::write starting" << std::endl;
+
+  // Get geometry
+  const Geometry & geom(fields.geometry());
 
   if (!geom.mesh().generated()) {
     const atlas::MeshGenerator gen("delaunay");
@@ -50,7 +53,7 @@ void FieldsIOGmsh::write(const Geometry & geom,
 
   // Write GMSH
   gmsh.write(geom.mesh());
-  gmsh.write(fset, geom.functionSpace());
+  gmsh.write(fields.fieldSet(), geom.functionSpace());
 
   oops::Log::trace() << classname() << "::write done" << std::endl;
 }

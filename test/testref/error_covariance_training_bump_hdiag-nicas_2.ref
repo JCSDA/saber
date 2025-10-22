@@ -73,10 +73,10 @@
              0.0 /    0.0:  1.0000000
           Level   1:  0.0000000 -  1.0000000
           Level   2:  0.0000000 -  0.9169997
-Norm of output parameter dirac_mom - 1: 7.8068320851523580e+00
+Norm of output parameter dirac_mom - 1: 7.6878267329584924e+00
 Norm of output parameter dirac_diag_loc - 1: 2.7348452994402712e+00
-Norm of output parameter cor_rh - 1: 1.5260566264218614e+08
-Norm of output parameter cor_rv - 1: 1.2751131380366614e+02
-Norm of output parameter loc_rh - 1: 2.2087340516392386e+08
-Norm of output parameter loc_rv - 1: 2.3544350104096006e+02
-Norm of output parameter nicas_norm - 1: 4.2233599148489091e+01
+Norm of output parameter cor_rh - 1: 1.4700567559989282e+08
+Norm of output parameter cor_rv - 1: 1.2283222935748260e+02
+Norm of output parameter loc_rh - 1: 2.1276794919251037e+08
+Norm of output parameter loc_rv - 1: 2.2680379054766320e+02
+Norm of output parameter nicas_norm - 1: 4.0784027590857036e+01

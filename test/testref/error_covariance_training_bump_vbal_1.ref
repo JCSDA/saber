@@ -42,13 +42,13 @@
        Vertical balance direct adjoint test results:  T
        Vertical balance inverse adjoint test results: T
 Norm of output parameter dirac_vbal - 1: 1.0000000000000000e+00
-Norm of ensemble member 0: 5.0884761954672321e+01
-Norm of ensemble member 1: 5.5348888297491357e+01
-Norm of ensemble member 2: 5.1467356070440331e+01
-Norm of ensemble member 3: 5.3790996370429518e+01
-Norm of ensemble member 4: 5.1836602211869689e+01
-Norm of ensemble member 5: 5.7009162346403954e+01
-Norm of ensemble member 6: 5.2883179634558687e+01
-Norm of ensemble member 7: 5.8332860845365794e+01
-Norm of ensemble member 8: 6.1250251625331821e+01
-Norm of ensemble member 9: 5.2539642505675275e+01
+Norm of ensemble member 0: 4.8853077487352046e+01
+Norm of ensemble member 1: 5.1961174518855337e+01
+Norm of ensemble member 2: 5.0351716963317699e+01
+Norm of ensemble member 3: 5.1365841717526337e+01
+Norm of ensemble member 4: 4.9116172744273776e+01
+Norm of ensemble member 5: 5.4106175048723358e+01
+Norm of ensemble member 6: 5.0115447450157063e+01
+Norm of ensemble member 7: 5.5586448648836665e+01
+Norm of ensemble member 8: 5.6895013498248318e+01
+Norm of ensemble member 9: 5.2032820759491671e+01

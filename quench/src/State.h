@@ -13,9 +13,13 @@
 #include <string>
 #include <vector>
 
+#include "eckit/exception/Exceptions.h"
+
+#include "oops/base/Variables.h"
 #include "oops/util/DateTime.h"
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"
+#include "oops/util/Serializable.h"
 
 #include "src/Fields.h"
 
@@ -31,6 +35,7 @@ namespace quench {
 /// State class
 
 class State : public util::Printable,
+              public util::Serializable,
               private util::ObjectCounter<State> {
  public:
   static const std::string classname()
@@ -42,9 +47,9 @@ class State : public util::Printable,
         const util::DateTime &);
   State(const Geometry &,
         const eckit::Configuration &);
-  State(const Geometry & resol,
+  State(const Geometry & geom,
         const State & other)
-    : fields_(new Fields(*other.fields_, resol)) {}
+    : fields_(new Fields(*other.fields_, geom)) {}
   State(const oops::Variables & vars,
         const State & other)
     : fields_(new Fields(*other.fields_)) {}
@@ -65,32 +70,38 @@ class State : public util::Printable,
   double norm() const
     {return fields_->norm();}
   const util::DateTime & validTime() const
-    {return fields_->time();}
-  util::DateTime & validTime()
-    {return fields_->time();}
+    {return fields_->validTime();}
   void updateTime(const util::Duration & dt)
-    {fields_->time() += dt;}
+    {fields_->updateTime(dt);}
 
-  // Access to fields
-  Fields & fields()
-    {return *fields_;}
-  const Fields & fields() const
-    {return *fields_;}
-  std::shared_ptr<const Geometry> geometry() const
-    {return fields_->geometry();}
+  // ATLAS FieldSet accessors
+  const atlas::FieldSet & fieldSet() const
+    {return fields_->fieldSet();}
+  atlas::FieldSet & fieldSet()
+    {return fields_->fieldSet();}
 
-  // ATLAS FieldSet accessor
+  // ATLAS FieldSet
   void toFieldSet(atlas::FieldSet & fset) const
     {fields_->toFieldSet(fset);}
   void fromFieldSet(const atlas::FieldSet & fset)
     {fields_->fromFieldSet(fset);}
+  void synchronizeFields()
+    {fields_->synchronizeFields();}
 
-  // Other
+  // Access to fields
+  const Fields & fields() const
+    {return *fields_;}
+
+  // Accumulation
   void zero()
     {fields_->zero();}
   void accumul(const double & zz,
                const State & xx)
-    {fields_->axpy(zz, xx.fields());}
+    {fields_->axpy(zz, *xx.fields_);}
+
+  // Geometry and variables accessors
+  const Geometry & geometry() const
+    {return fields_->geometry();}
   const oops::Variables & variables() const
     {return fields_->variables();}
 
@@ -102,6 +113,11 @@ class State : public util::Printable,
   void deserialize(const std::vector<double> & vect,
                    size_t & index)
     {fields_->deserialize(vect, index);}
+  void transpose(const State &,
+                 const eckit::mpi::Comm &,
+                 const int,
+                 const int)
+    {throw eckit::Exception("not implemented yet", Here());}
 
  private:
   // Print

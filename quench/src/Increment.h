@@ -15,8 +15,7 @@
 
 #include "atlas/field.h"
 
-#include "eckit/exception/Exceptions.h"
-
+#include "oops/base/Variables.h"
 #include "oops/util/DateTime.h"
 #include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"
@@ -45,7 +44,7 @@ class Increment : public util::Printable,
   Increment(const Geometry &,
             const Increment &);
   Increment(const Increment &,
-            const bool);
+            const bool & copy = true);
 
   // Basic operators
   void diff(const State &,
@@ -53,6 +52,8 @@ class Increment : public util::Printable,
   void zero()
     {fields_->zero();}
   void zero(const util::DateTime &);
+  void ones()
+    {fields_->constantValue(1.0);}
   void dirac(const eckit::Configuration & config)
     {fields_->dirac(config);}
   Increment & operator =(const Increment &);
@@ -79,28 +80,36 @@ class Increment : public util::Printable,
   double norm() const
     {return fields_->norm();}
   const util::DateTime & validTime() const
-    {return fields_->time();}
+    {return fields_->validTime();}
   void updateTime(const util::Duration & dt)
-    {fields_->time() += dt;}
+    {fields_->updateTime(dt);}
 
-  // ATLAS FieldSet accessor
+  // ATLAS FieldSet accessors
+  const atlas::FieldSet & fieldSet() const
+    {return fields_->fieldSet();}
+  atlas::FieldSet & fieldSet()
+    {return fields_->fieldSet();}
+
+  // ATLAS FieldSet
   void toFieldSet(atlas::FieldSet & fset) const
     {fields_->toFieldSet(fset);}
   void fromFieldSet(const atlas::FieldSet & fset)
     {fields_->fromFieldSet(fset);}
+  void synchronizeFields()
+    {fields_->synchronizeFields();}
 
   // Access to fields
-  Fields & fields()
-    {return *fields_;}
   const Fields & fields() const
     {return *fields_;}
-  std::shared_ptr<const Geometry> geometry() const
-    {return fields_->geometry();}
 
-  // Other
+  // Accumulation
   void accumul(const double & zz,
                const State & xx)
     {fields_->axpy(zz, xx.fields());}
+
+  // Geometry and variables accessors
+  const Geometry & geometry() const
+    {return fields_->geometry();}
   const oops::Variables & variables() const
     {return fields_->variables();}
 

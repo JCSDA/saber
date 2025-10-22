@@ -5,8 +5,8 @@ Input Dirac increment:
   - air_horizontal_streamfunction (72 levels):
     + min    = 0.0000000000000000e+00
     + max    = 1.0000000000000000e+00
-    + mean   = 4.1935050993022007e-06
-    + stddev = 2.0478049465962522e-03
+    + mean   = 4.3813529617946025e-06
+    + stddev = 2.0931681637571804e-03
   - air_horizontal_velocity_potential (72 levels):
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00
@@ -22,8 +22,8 @@ Covariance(SABER) * Increment:
   - air_horizontal_streamfunction (72 levels):
     + min    = -4.4475385881989490e+05
     + max    = 8.1777385772281357e+10
-    + mean   = 1.3587249629828656e+07
-    + stddev = 5.3746442623348880e+08
+    + mean   = 1.4195889834067037e+07
+    + stddev = 5.4936258950443614e+08
   - air_horizontal_velocity_potential (72 levels):
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00

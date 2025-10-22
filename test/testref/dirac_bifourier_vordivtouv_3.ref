@@ -13,7 +13,7 @@ Input Dirac increment:
 - xspace: LocalConfiguration[root={type => linear , start => 5.1870971254055749e+05 , end => 6.9870971254055749e+05 , N => 73 , endpoint => true}]
 - yspace: LocalConfiguration[root={type => linear , start => -1.8673080099392682e+04 , end => 1.0632691990060732e+05 , N => 51 , endpoint => true}]
 Outer grid size: 3723
-Norm of output parameter : 1.0568360561474846e+02
+Norm of output parameter : 1.0568360561474853e+02
 Adjoint test for block RedWindToGeoWind passed
 Inner inverse test for block RedWindToGeoWind passed: U Uinv (U x) == (U x)
 Outer inverse test for block RedWindToGeoWind passed: Uinv U (Uinv x) == (Uinv x)

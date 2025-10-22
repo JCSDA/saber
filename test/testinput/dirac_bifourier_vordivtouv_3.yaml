@@ -23,6 +23,13 @@ geometry:
     - eastward_wind
     - northward_wind
     levels: 10
+  - variables:
+    - map_factor
+    - dxDlon
+    - dxDlat
+    - dyDlon
+    - dyDlat
+    levels: 1
   latitude south to north: false
 background:
   date: 2010-01-01T12:00:00Z

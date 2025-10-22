@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include <iomanip>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -16,15 +15,11 @@
 #include "atlas/functionspace.h"
 #include "atlas/interpolation.h"
 
-#include "eckit/config/Configuration.h"
-
 #include "oops/generic/UnstructuredInterpolator.h"
-#include "oops/util/Logger.h"
 #include "oops/util/ObjectCounter.h"
+#include "oops/util/Printable.h"
 
 #include "saber/interpolation/AtlasInterpWrapper.h"
-
-#include "src/Geometry.h"
 
 namespace atlas {
   class Field;
@@ -35,21 +30,22 @@ namespace atlas {
 }
 
 namespace quench {
+  class Geometry;
 
 // -----------------------------------------------------------------------------
+/// Interpolation class
 
-class Interpolation {
+class Interpolation : public util::Printable,
+                      private util::ObjectCounter<Interpolation> {
  public:
   static const std::string classname()
     {return "quench::Interpolation";}
 
   // Constructor/destructor
   Interpolation(const Geometry &,
-                const std::string &,
-                const atlas::Grid &,
-                const atlas::FunctionSpace &,
-                const std::string &);
-  ~Interpolation() {}
+                const Geometry &);
+  ~Interpolation()
+    {}
 
   // Horizontal interpolation and adjoint
   void execute(const atlas::FieldSet &,
@@ -67,18 +63,9 @@ class Interpolation {
   void executeVerticalAdjoint(atlas::FieldSet &,
                               const atlas::FieldSet &) const;
 
-  // Accessors
-  const std::string & srcUid() const
-    {return srcUid_;}
-  const std::string & tgtUid() const
-    {return tgtUid_;}
-  const atlas::FunctionSpace & tgtFspace() const
-    {return tgtFspace_;}
-
  private:
-  // Grids UID
-  std::string srcUid_;
-  std::string tgtUid_;
+  // Print
+  void print(std::ostream &) const;
 
   // Destination function space
   atlas::FunctionSpace tgtFspace_;

@@ -5,8 +5,8 @@ Input Dirac increment:
   - eastward_wind (2 levels):
     + min    = 0.0000000000000000e+00
     + max    = 1.0000000000000000e+00
-    + mean   = 5.9523809523809529e-04
-    + stddev = 2.4397501823713856e-02
+    + mean   = 6.5616797900262466e-04
+    + stddev = 2.5615775978927613e-02
   - northward_wind (2 levels):
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00
@@ -19,13 +19,13 @@ Covariance(hybrid) * Increment:
   - eastward_wind (2 levels):
     + min    = -6.0918753181843444e-01
     + max    = 9.0019572469053788e-01
-    + mean   = 5.4334171450821429e-02
-    + stddev = 1.8849027087357473e-01
+    + mean   = 4.9944483467209110e-02
+    + stddev = 1.9720463112584824e-01
   - northward_wind (2 levels):
     + min    = -5.9337315609450869e-01
     + max    = 5.9924954825054466e-01
-    + mean   = -3.0873698112460064e-02
-    + stddev = 1.8998905622939607e-01
+    + mean   = -1.5150635424641333e-02
+    + stddev = 1.9061663485918223e-01
 Adjoint test for block Ensemble passed
 Square-root test for block Ensemble passed
 Covariance(hybrid1_SABER) * Increment:
@@ -35,13 +35,13 @@ Covariance(hybrid1_SABER) * Increment:
   - eastward_wind (2 levels):
     + min    = -6.0918753181843444e-01
     + max    = 9.0019572469053788e-01
-    + mean   = 5.4334171450821429e-02
-    + stddev = 1.8849027087357473e-01
+    + mean   = 4.9944483467209110e-02
+    + stddev = 1.9720463112584824e-01
   - northward_wind (2 levels):
     + min    = -5.9337315609450869e-01
     + max    = 5.9924954825054466e-01
-    + mean   = -3.0873698112460064e-02
-    + stddev = 1.8998905622939607e-01
+    + mean   = -1.5150635424641333e-02
+    + stddev = 1.9061663485918223e-01
 Covariance(hybrid2_ensemble) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
@@ -49,10 +49,10 @@ Covariance(hybrid2_ensemble) * Increment:
   - eastward_wind (2 levels):
     + min    = -6.0918753181843444e-01
     + max    = 9.0019572469053788e-01
-    + mean   = 5.4334171450821429e-02
-    + stddev = 1.8849027087357473e-01
+    + mean   = 4.9944483467209110e-02
+    + stddev = 1.9720463112584824e-01
   - northward_wind (2 levels):
     + min    = -5.9337315609450869e-01
     + max    = 5.9924954825054466e-01
-    + mean   = -3.0873698112460064e-02
-    + stddev = 1.8998905622939607e-01
+    + mean   = -1.5150635424641333e-02
+    + stddev = 1.9061663485918223e-01

@@ -1027,14 +1027,11 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
         view.assign(util::missingValue<double>());
         fset.add(field);
 
-        for (size_t jg = 0; jg < groups_.size(); ++jg) {
-          // Copy field
-          if (groups_[jg].varInModelFile_ == var.name()) {
-            const atlas::Field rhField = (*rh_)[groups_[jg].name_];
-            const auto rhView = atlas::array::make_view<double, 2>(rhField);
-            view.assign(rhView);
-          }
-        }
+        // Copy field
+        size_t jg = getGroupIndex(var.name());
+        const atlas::Field rhField = (*rh_)[groups_[jg].name_];
+        const auto rhView = atlas::array::make_view<double, 2>(rhField);
+        view.assign(rhView);
       }
 
       // Add pair
@@ -1056,17 +1053,14 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
           view.assign(util::missingValue<double>());
           fset.add(field);
 
-          for (size_t jg = 0; jg < groups_.size(); ++jg) {
-            // Copy field
-            if (groups_[jg].varInModelFile_ == var.name()) {
-              const atlas::Field wgtSqrtField = (*weight_[jBin])[groups_[jg].name_];
-              const auto wgtSqrtView = atlas::array::make_view<double, 2>(wgtSqrtField);
-              for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
-                if (ghostView(jnode0) == 0) {
-                  for (size_t jz0 = 0; jz0 < nz0; ++jz0) {
-                    view(jnode0, jz0) = wgtSqrtView(jnode0, jz0)*wgtSqrtView(jnode0, jz0);
-                  }
-                }
+          // Copy field
+          size_t jg = getGroupIndex(var.name());
+          const atlas::Field wgtSqrtField = (*weight_[jBin])[groups_[jg].name_];
+          const auto wgtSqrtView = atlas::array::make_view<double, 2>(wgtSqrtField);
+          for (size_t jnode0 = 0; jnode0 < nodes0_; ++jnode0) {
+            if (ghostView(jnode0) == 0) {
+              for (size_t jz0 = 0; jz0 < nz0; ++jz0) {
+                view(jnode0, jz0) = wgtSqrtView(jnode0, jz0)*wgtSqrtView(jnode0, jz0);
               }
             }
           }
@@ -1096,14 +1090,11 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
           view.assign(util::missingValue<double>());
           fset.add(field);
 
-          for (size_t jg = 0; jg < groups_.size(); ++jg) {
-            // Copy field
-            if (groups_[jg].varInModelFile_ == var.name()) {
-              const atlas::Field normField = (*normalization_[jBin])[groups_[jg].name_];
-              const auto normView = atlas::array::make_view<double, 2>(normField);
-              view.assign(normView);
-            }
-          }
+          // Copy field
+          size_t jg = getGroupIndex(var.name());
+          const atlas::Field normField = (*normalization_[jBin])[groups_[jg].name_];
+          const auto normView = atlas::array::make_view<double, 2>(normField);
+          view.assign(normView);
         }
 
         // Update configuration
@@ -1130,14 +1121,11 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> FastLAM::fie
           view.assign(util::missingValue<double>());
           fset.add(field);
 
-          for (size_t jg = 0; jg < groups_.size(); ++jg) {
-            // Copy field
-            if (groups_[jg].varInModelFile_ == var.name()) {
-              const atlas::Field normField = data_[jg][jBin]->normAcc()[groups_[jg].name_];
-              const auto normView = atlas::array::make_view<double, 2>(normField);
-              view.assign(normView);
-            }
-          }
+          // Copy field
+          size_t jg = getGroupIndex(var.name());
+          const atlas::Field normField = data_[jg][jBin]->normAcc()[groups_[jg].name_];
+          const auto normView = atlas::array::make_view<double, 2>(normField);
+          view.assign(normView);
         }
 
         // Update configuration

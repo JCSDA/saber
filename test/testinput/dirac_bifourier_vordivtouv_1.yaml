@@ -23,6 +23,9 @@ geometry:
     - geographical_x_wind
     - geographical_y_wind
     levels: 10
+  - variables:
+    - map_factor
+    levels: 1
   latitude south to north: false
 background:
   date: 2010-01-01T12:00:00Z

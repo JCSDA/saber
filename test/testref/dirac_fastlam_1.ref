@@ -23,9 +23,9 @@ Input Dirac increment:
     FastLAM interpolation adjoint test passed
     FastLAM redToRows test passed
     FastLAM rowsToCols test passed
-Norm of output parameter normalized horizontal length-scale: 1.6276513347797022e+03
-Norm of output parameter weight - 0: 2.0345269720502603e+02
-Norm of output parameter normalization - 0: 2.1747388285958215e+02
+Norm of output parameter normalized horizontal length-scale: 2.2489235044958818e+03
+Norm of output parameter weight - 0: 2.8111029863738537e+02
+Norm of output parameter normalization - 0: 3.0048335065758755e+02
 Adjoint test for block FastLAM passed
 Square-root test for block FastLAM passed
 Covariance(SABER) * Increment:

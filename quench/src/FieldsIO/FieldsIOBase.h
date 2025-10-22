@@ -12,39 +12,41 @@
 #include <string>
 #include <vector>
 
-#include "atlas/field.h"
-
-#include "eckit/config/Configuration.h"
 #include "eckit/exception/Exceptions.h"
 #include "eckit/memory/NonCopyable.h"
 
-#include "oops/base/Variables.h"
+namespace eckit {
+  class Configuration;
+}
+
+namespace oops {
+  class Variables;
+}
 
 namespace quench {
-  class Geometry;
+  class Fields;
 
 // -----------------------------------------------------------------------------
+/// FieldsIOBase class
 
 class FieldsIOBase : private eckit::NonCopyable {
  public:
   static const std::string classname()
     {return "quench::FieldsIOBase";}
 
-  // Constructor/destructor
+  // Constructor
   explicit FieldsIOBase(const std::string & ioFormat)
     : ioFormat_(ioFormat) {}
 
   // Read
-  virtual void read(const Geometry &,
-                    const oops::Variables &,
+  virtual void read(const oops::Variables &,
                     const eckit::Configuration &,
-                    atlas::FieldSet &) const
+                    Fields &) const
     {throw eckit::Exception("read not implemented for this format", Here());}
 
   // Write
-  virtual void write(const Geometry &,
-                     const eckit::Configuration &,
-                     const atlas::FieldSet &) const
+  virtual void write(const eckit::Configuration &,
+                     const Fields &) const
     {throw eckit::Exception("read not implemented for this format", Here());}
 
  protected:
@@ -52,10 +54,7 @@ class FieldsIOBase : private eckit::NonCopyable {
 };
 
 // -----------------------------------------------------------------------------
-
-class FieldsIOFactory;
-
-// -----------------------------------------------------------------------------
+/// FieldsIOFactory class
 
 class FieldsIOFactory {
  public:
@@ -79,6 +78,7 @@ class FieldsIOFactory {
 };
 
 // -----------------------------------------------------------------------------
+/// FieldsIOMaker class
 
 template<class T>
 class FieldsIOMaker : public FieldsIOFactory {

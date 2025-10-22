@@ -9,18 +9,13 @@
 
 #include <string>
 
-#include "atlas/field.h"
-
-#include "eckit/config/Configuration.h"
-
-#include "oops/base/Variables.h"
-
 #include "src/FieldsIO/FieldsIOBase.h"
 
 namespace quench {
-  class Geometry;
+  class Fields;
 
 // -----------------------------------------------------------------------------
+/// FieldsIOGmsh class
 
 class FieldsIOGmsh : public FieldsIOBase {
  public:
@@ -33,9 +28,8 @@ class FieldsIOGmsh : public FieldsIOBase {
   ~FieldsIOGmsh() = default;
 
   // Write
-  void write(const Geometry &,
-             const eckit::Configuration &,
-             const atlas::FieldSet &) const override;
+  void write(const eckit::Configuration &,
+             const Fields &) const override;
 };
 
 // -----------------------------------------------------------------------------

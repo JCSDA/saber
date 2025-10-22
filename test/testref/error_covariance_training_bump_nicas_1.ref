@@ -65,5 +65,5 @@
           MSE (exp. / th. / ratio):  0.85530401E+02 /  0.82812138E+02 / 1.033
           MSE (exp. / th. / ratio):  0.73471868E+02 /  0.71256956E+02 / 1.031
           MSE (exp. / th. / ratio):  0.64300540E+02 /  0.62531614E+02 / 1.028
-Norm of output parameter cor_rh - 1: 2.3186202793903100e+08
-Norm of output parameter cor_rv - 1: 1.7389652095427326e+02
+Norm of output parameter cor_rh - 1: 2.2083477986947617e+08
+Norm of output parameter cor_rv - 1: 1.6562608490210712e+02

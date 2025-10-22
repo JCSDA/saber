@@ -13,6 +13,7 @@
 
 #include "eckit/config/LocalConfiguration.h"
 
+#include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"
 
 #include "src/Geometry.h"
@@ -20,8 +21,10 @@
 namespace quench {
 
 // -------------------------------------------------------------------------------------------------
+/// ModelData class
 
-class ModelData : public util::Printable {
+class ModelData : public util::Printable,
+                  private util::ObjectCounter<ModelData> {
  public:
   static const std::string classname()
     {return "quench::ModelData";}

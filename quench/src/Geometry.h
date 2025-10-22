@@ -21,152 +21,22 @@
 #include "eckit/mpi/Comm.h"
 
 #include "oops/base/GeometryData.h"
-#include "oops/base/Variables.h"
 #include "oops/mpi/mpi.h"
 #include "oops/util/ObjectCounter.h"
-#include "oops/util/parameters/OptionalParameter.h"
-#include "oops/util/parameters/Parameter.h"
-#include "oops/util/parameters/Parameters.h"
-#include "oops/util/parameters/RequiredParameter.h"
 #include "oops/util/Printable.h"
+
+#include "src/GeometryParameters.h"
+#include "src/Interpolation.h"
 
 namespace eckit {
   class Configuration;
 }
 
+namespace oops {
+  class Variables;
+}
+
 namespace quench {
-
-// -----------------------------------------------------------------------------
-/// Orography parameters
-
-class OrographyParameters : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(OrographyParameters, Parameters)
-
- public:
-  // Top longitude [degrees]
-  oops::RequiredParameter<double> topLon{"top longitude", this};
-
-  // Top latitude [degrees]
-  oops::RequiredParameter<double> topLat{"top latitude", this};
-
-  // Zonal length [m]
-  oops::RequiredParameter<double> zonalLength{"zonal length", this};
-
-  // Meridional length [m]
-  oops::RequiredParameter<double> meridionalLength{"meridional length", this};
-
-  // Height (% of the bottom layer thickness, or absolute value if one level only)
-  oops::RequiredParameter<double> height{"height", this};
-};
-
-// -----------------------------------------------------------------------------
-/// Group parameters
-
-class GroupParameters : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(GroupParameters, Parameters)
-
- public:
-  // Variables
-  oops::RequiredParameter<std::vector<std::string>> variables{"variables", this};
-
-  // Number of levels
-  oops::Parameter<size_t> levels{"levels", 1, this};
-
-  // Corresponding level for 2D variables (first or last)
-  oops::Parameter<std::string> lev2d{"lev2d", "first", this};
-
-  // Orography
-  oops::OptionalParameter<OrographyParameters> orography{"orography", this};
-
-  // Vertical coordinate configuration
-  oops::OptionalParameter<eckit::LocalConfiguration> vertCoordConf{
-    "vertical coordinate", this};
-
-  // Mask type
-  oops::Parameter<std::string> maskType{"mask type", "none", this};
-
-  // Mask path
-  oops::OptionalParameter<std::string> maskPath{"mask path", this};
-};
-
-// -----------------------------------------------------------------------------
-/// Alias elemental paramaters
-
-class AliasParameters : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(AliasParameters, oops::Parameters)
-
- public:
-  // In code
-  oops::RequiredParameter<std::string> inCode{"in code", this};
-  // In model file
-  oops::RequiredParameter<std::string> inFile{"in file", this};
-  // Optional parameters for States transformations
-  // Scaling factor (e.g. for units conversion)
-  oops::OptionalParameter<double> scalingFactor{"scaling factor", this};
-  // Toggle log10 transformation
-  oops::OptionalParameter<bool> logTransf{"log transform", this};
-  // Additive constant (prior to log10 transformation)
-  oops::OptionalParameter<double> addConst{"additive constant", this};
-};
-
-// -----------------------------------------------------------------------------
-/// Interpolation paramaters
-
-class InterpolationParameters : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(InterpolationParameters, oops::Parameters)
-
- public:
-  // Interpolation type
-  oops::RequiredParameter<std::string> interpType{"interpolation type", this};
-};
-
-// -----------------------------------------------------------------------------
-/// Geometry parameters
-
-class GeometryParameters : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(GeometryParameters, Parameters)
-
- public:
-  // Function space
-  oops::RequiredParameter<std::string> functionSpace{"function space", this};
-
-  // Grid
-  oops::RequiredParameter<eckit::LocalConfiguration> grid{"grid", this};
-
-  // Partitioner
-  oops::Parameter<std::string> partitioner{"partitioner", "equal_regions", this};
-
-  // Variables groups
-  oops::RequiredParameter<std::vector<GroupParameters>> groups{"groups", this};
-
-  // Halo size
-  oops::Parameter<size_t> halo{"halo", 0, this};
-
-  // No point on last task
-  oops::Parameter<bool> noPointOnLastTask{"no point on last task", false, this};
-
-  // Levels top-down
-  oops::Parameter<bool> levelsAreTopDown{"levels are top down", true, this};
-
-  // Levels counter origin
-  oops::Parameter<size_t> levelsCountFrom{"levels count from", 1, this};
-
-  // Model data
-  oops::Parameter<eckit::LocalConfiguration> modelData{"model data", eckit::LocalConfiguration(),
-    this};
-
-  // Variables name alias for model files
-  oops::Parameter<std::vector<AliasParameters>> alias{"alias", {}, this};
-
-  // Check longitudes/latitudes from file
-  oops::OptionalParameter<eckit::LocalConfiguration> checkLonLat{"check lon/lat from file", this};
-
-  // IO parameters
-  oops::Parameter<eckit::LocalConfiguration> io{"io", eckit::LocalConfiguration(), this};
-
-  // Interpolation parameters
-  oops::OptionalParameter<InterpolationParameters> interpolation{"interpolation", this};
-};
 
 // -----------------------------------------------------------------------------
 /// Geometry class
@@ -180,7 +50,6 @@ class Geometry : public util::Printable,
   // Constructors
   Geometry(const eckit::Configuration &,
            const eckit::mpi::Comm & comm = oops::mpi::world());
-  Geometry(const Geometry &);
 
   // Variables sizes
   std::vector<size_t> variableSizes(const oops::Variables &) const;
@@ -217,7 +86,7 @@ class Geometry : public util::Printable,
     {return groups_[groupIndex(var)].levels_;}
   size_t groups() const
     {return groups_.size();}
-  size_t groupIndex(const std::string & var) const;
+  size_t groupIndex(const std::string &) const;
   const eckit::LocalConfiguration & modelData() const
     {return modelData_;}
   const std::vector<eckit::LocalConfiguration> & alias() const
@@ -232,6 +101,9 @@ class Geometry : public util::Printable,
     {return groups_[groupIndex(var)].vertCoordAvg_;}
   const oops::GeometryData & generic() const
     {return *geomData_;}
+
+  // Interpolation
+  Interpolation & getInterpolation(const Geometry &) const;
 
  private:
   // Communicator
@@ -297,7 +169,10 @@ class Geometry : public util::Printable,
   bool duplicatePoints_;
 
   // Geometry data structure
-  std::unique_ptr<oops::GeometryData> geomData_;
+  mutable std::unique_ptr<oops::GeometryData> geomData_;
+
+  // Interpolations vector
+  mutable std::unordered_map<std::string, std::shared_ptr<Interpolation>> interpolations_;
 
   // Private methods
 

@@ -5,8 +5,8 @@ Input Dirac increment:
   - air_horizontal_streamfunction (2 levels):
     + min    = 0.0000000000000000e+00
     + max    = 1.0000000000000000e+00
-    + mean   = 5.9523809523809529e-04
-    + stddev = 2.4397501823713856e-02
+    + mean   = 6.5616797900262466e-04
+    + stddev = 2.5615775978927613e-02
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
@@ -27,13 +27,13 @@ Covariance(SABER) * Increment:
   - air_horizontal_streamfunction (2 levels):
     + min    = -6.8765396272687607e-01
     + max    = 1.2673127220262925e+00
-    + mean   = 4.6285344144401741e-03
-    + stddev = 2.0707655532132521e-01
+    + mean   = 6.1515759052519995e-03
+    + stddev = 2.1202602661901951e-01
 - Valid time: 2010-01-01T18:00:00Z
   Geometry: L40x21 [840]
   Fields:
   - air_horizontal_streamfunction (2 levels):
     + min    = -6.3223223183946753e-01
     + max    = 8.5701257601057379e-01
-    + mean   = 8.9370595963012375e-02
-    + stddev = 2.0431101227838760e-01
+    + mean   = 8.4958279386268182e-02
+    + stddev = 2.1336016670123578e-01

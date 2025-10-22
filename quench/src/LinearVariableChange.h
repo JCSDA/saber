@@ -8,25 +8,33 @@
 
 #pragma once
 
-#include <map>
 #include <ostream>
 #include <string>
-
-#include "eckit/config/Configuration.h"
+#include <unordered_map>
 
 #include "atlas/field.h"
 
+#include "oops/util/ObjectCounter.h"
 #include "oops/util/Printable.h"
 
-#include "src/Geometry.h"
-#include "src/Increment.h"
-#include "src/State.h"
+namespace eckit {
+  class Configuration;
+}
+
+namespace oops {
+  class Variables;
+}
 
 namespace quench {
+  class Geometry;
+  class Increment;
+  class State;
 
 // -----------------------------------------------------------------------------
+/// LinearVariableChange class
 
-class LinearVariableChange: public util::Printable {
+class LinearVariableChange: public util::Printable,
+                            private util::ObjectCounter<LinearVariableChange> {
  public:
   static const std::string classname()
     {return "quench::LinearVariableChange";}
@@ -58,7 +66,7 @@ class LinearVariableChange: public util::Printable {
     {os << "LinearVariableChange";}
 
   // Map from output to input variables
-  std::map<std::string, std::string> map_;
+  std::unordered_map<std::string, std::string> map_;
 
   // Multiplicative factor
   atlas::FieldSet multiplierFset_;

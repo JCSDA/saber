@@ -8,11 +8,36 @@
 
 #pragma once
 
+#include <string>
+
+#include "oops/generic/AtlasInterpolator.h"
 #include "src/Covariance.h"
 #include "src/Geometry.h"
 #include "src/Increment.h"
 #include "src/LinearVariableChange.h"
 #include "src/ModelData.h"
 #include "src/State.h"
-#include "src/TraitsFwd.h"
 #include "src/VariableChange.h"
+
+namespace oops {
+class AtlasInterpolator;
+}  // namespace oops
+
+namespace quench {
+
+struct Traits {
+  static std::string name()
+    {return "quench";}
+  static std::string nameCovar()
+    {return "quenchCovariance";}
+
+  typedef quench::Covariance           Covariance;
+  typedef quench::Geometry             Geometry;
+  typedef quench::Increment            Increment;
+  typedef quench::LinearVariableChange LinearVariableChange;
+  typedef quench::ModelData            ModelData;
+  typedef quench::State                State;
+  typedef quench::VariableChange       VariableChange;
+};
+
+}  // namespace quench

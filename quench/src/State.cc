@@ -57,6 +57,10 @@ State::State(const Geometry & geom,
     oops::Log::info() << "Info     : Create state with a constant group-specific value"
                       << std::endl;
     fields_->constantValue(file);
+  } else if (file.has("random sigma")) {
+    oops::Log::info() << "Info     : Create a random state" << std::endl;
+    fields_->random();
+    *fields_ *= file.getDouble("random sigma");
   } else {
     oops::Log::info() << "Info     : Create empty state" << std::endl;
     fields_->zero();
@@ -81,9 +85,9 @@ State & State::operator=(const State & rhs) {
 State & State::operator+=(const Increment & dx) {
   oops::Log::trace() << classname() << "::operator+= starting" << std::endl;
 
-  ASSERT(this->validTime() == dx.validTime());
+  ASSERT(validTime() == dx.validTime());
   ASSERT(fields_);
-  *fields_+=dx.fields();
+  *fields_ += dx.fields();
 
   oops::Log::trace() << classname() << "::operator+= done" << std::endl;
   return *this;
@@ -94,7 +98,7 @@ State & State::operator+=(const Increment & dx) {
 void State::print(std::ostream & os) const {
   oops::Log::trace() << classname() << "::print starting" << std::endl;
 
-  os << std::endl << "- Valid time: " << this->validTime();
+  os << std::endl << "- Valid time: " << validTime();
   os << *fields_;
 
   oops::Log::trace() << classname() << "::print done" << std::endl;

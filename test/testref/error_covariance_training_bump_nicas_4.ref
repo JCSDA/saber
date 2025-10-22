@@ -5,12 +5,12 @@
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
-Norm of input parameter a - 1: 4.4765456876087761e+01
-Norm of input parameter a - 2: 1.3215106980456639e+01
-Norm of input parameter rh - 1: 2.3099540741414040e+08
-Norm of input parameter rh - 2: 1.2989826351828027e+08
-Norm of input parameter rv - 1: 2.6030254068196069e+02
-Norm of input parameter rv - 2: 2.6030254068299271e+01
+Norm of input parameter a - 1: 4.2636432980682187e+01
+Norm of input parameter a - 2: 1.2586602760794237e+01
+Norm of input parameter rh - 1: 2.2000937540568423e+08
+Norm of input parameter rh - 2: 1.2372036372005615e+08
+Norm of input parameter rv - 1: 2.4792267531655389e+02
+Norm of input parameter rv - 2: 2.4792267531753673e+01
              Effective levels:   1   2 
                 Horizontal support radius:    4179.25 km (   4179.25 km -    4179.25 km)
                 Estimated nc1 from horizontal support radius:      539

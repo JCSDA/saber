@@ -10,16 +10,16 @@
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
-Norm of input parameter a - 1: 5.2697854449896354e+01
-Norm of input parameter a - 2: 1.2479353895019516e+01
-Norm of input parameter rh1 - 1: 2.6801283878373799e+08
-Norm of input parameter rh1 - 2: 2.3656076996689144e+08
-Norm of input parameter rh2 - 1: 2.6207219546233454e+08
-Norm of input parameter rh2 - 2: 2.1754805093985686e+08
-Norm of input parameter rhc - 1: 6.8468082398742682e+00
-Norm of input parameter rhc - 2: 6.8468082398742682e+00
-Norm of input parameter rv - 1: 2.0132187653859617e+02
-Norm of input parameter rv - 2: 5.1733570676955885e+01
+Norm of input parameter a - 1: 5.0218339249789111e+01
+Norm of input parameter a - 2: 1.1849155871116496e+01
+Norm of input parameter rh1 - 1: 2.5455700279515421e+08
+Norm of input parameter rh1 - 2: 2.2474155045620644e+08
+Norm of input parameter rh2 - 1: 2.5091913683524990e+08
+Norm of input parameter rh2 - 2: 2.0872229410022640e+08
+Norm of input parameter rhc - 1: 6.7220454101676053e+00
+Norm of input parameter rhc - 2: 6.7220454101676053e+00
+Norm of input parameter rv - 1: 1.9171192455497220e+02
+Norm of input parameter rv - 2: 4.9665743067363408e+01
              Effective levels:   1   2 
                 Horizontal support radius:    3957.02 km (   3558.57 km -    4344.25 km)
                 Estimated nc1 from horizontal support radius:      601

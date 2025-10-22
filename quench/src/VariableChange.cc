@@ -8,11 +8,14 @@
 
 #include "src/VariableChange.h"
 
+#include "oops/base/Variables.h"
 #include "oops/util/ConfigFunctions.h"
 #include "oops/util/FieldSetHelpers.h"
 #include "oops/util/FieldSetOperations.h"
+#include "oops/util/Logger.h"
 
 #include "src/Geometry.h"
+#include "src/State.h"
 
 namespace quench {
 

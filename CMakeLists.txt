@@ -31,9 +31,11 @@ include( ${PROJECT_NAME}_compiler_flags )
 
 ## Dependencies
 # Required
-find_package( jedicmake REQUIRED )  # Prefer find modules from jedi-cmake
+if( ENABLE_QUENCH )
+    find_package( jedicmake REQUIRED )  # Prefer find modules from jedi-cmake
+endif()
 if(OPENMP)
-  find_package( OpenMP REQUIRED COMPONENTS CXX Fortran )
+    find_package( OpenMP REQUIRED COMPONENTS CXX Fortran )
 endif()
 find_package( MPI REQUIRED COMPONENTS Fortran )
 find_package( NetCDF REQUIRED COMPONENTS C Fortran )
@@ -70,11 +72,6 @@ find_package( vader 1.7.0 REQUIRED )
 # Optionals
 find_package( FFTW 3.3.8 QUIET )
 find_package( gsibec 1.2.1 QUIET )
-find_package( eccodes 2.24 QUIET )
-if( eccodes_FOUND )
-    set( ECCODES_LIBRARIES eccodes )
-    add_definitions(-DECCODES_FOUND=1)
-endif()
 
 # Optional SABER blocks
 if( gsibec_FOUND )

@@ -4,10 +4,6 @@
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
-message( STATUS "Found quench I/O formats:" )
-message( STATUS "- Default (NetCDF)" )
-message( STATUS "- GMSH" )
-
 # Common sources, not obs-related
 list( APPEND quench_src_files
 
@@ -16,12 +12,13 @@ Fields.cc
 Fields.h
 Geometry.cc
 Geometry.h
+GeometryParameters.h
 Increment.cc
 Increment.h
 Interpolation.cc
 Interpolation.h
-LinearVariableChange.h
 LinearVariableChange.cc
+LinearVariableChange.h
 LinearVariableChangeParameters.h
 ModelData.h
 State.cc
@@ -38,6 +35,10 @@ FieldsIO/FieldsIOGmsh.h
 
 )
 
+message( STATUS "Found quench I/O formats:" )
+message( STATUS "- Default (NetCDF)" )
+message( STATUS "- GMSH" )
+
 ecbuild_add_library( TARGET   quench
                      SOURCES  ${quench_src_files}
                      PUBLIC_LIBS  oops saber
@@ -46,9 +47,6 @@ ecbuild_add_library( TARGET   quench
                      LINKER_LANGUAGE CXX )
 
 target_link_libraries( quench PUBLIC NetCDF::NetCDF_Fortran NetCDF::NetCDF_C )
-if( eccodes_FOUND )
-    target_link_libraries( quench PUBLIC eccodes )
-endif()
 
 #Configure include directory layout for build-tree to match install-tree
 set(QUENCH_BUILD_DIR_INCLUDE_PATH ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/include)

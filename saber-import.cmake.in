@@ -68,11 +68,6 @@ if(@gsibec_FOUND@) # gsibec_FOUND
     endif()
 endif()
 
-if(@eccodes_FOUND@) # eccodes_FOUND
-   find_dependency(eccodes)
-   set(saber_eccodes_FOUND True) #COMPONENT 'eccodes'
-endif()
-
 #Export Fortran compiler version for checking module compatibility
 set(@PROJECT_NAME@_MODULES_Fortran_COMPILER_ID @CMAKE_Fortran_COMPILER_ID@)
 set(@PROJECT_NAME@_MODULES_Fortran_COMPILER_VERSION @CMAKE_Fortran_COMPILER_VERSION@)

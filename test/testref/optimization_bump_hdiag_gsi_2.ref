@@ -163,4 +163,4 @@ Norm of input parameter gsi_ref - 1: 2.8285238362553752e+01
        Factor 1.60, horizontal MSE:  0.23831582E+03 / vertical MSE:  0.14162720E+02 
        Factor 1.70, horizontal MSE:  0.31556975E+03 / vertical MSE:  0.18082475E+02 
        Factor 1.80, horizontal MSE:  0.40200216E+03 / vertical MSE:  0.22245501E+02 
-Norm of output parameter dirac_diag_cor - 1: 2.9371366052993590e+01
+Norm of output parameter dirac_diag_cor - 1: 2.9370843809358977e+01

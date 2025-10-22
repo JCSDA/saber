@@ -8,7 +8,7 @@ geometry:
     - air_horizontal_streamfunction
     - air_horizontal_velocity_potential
     levels: 2
-  halo: 0
+  halo: 1
 background:
   date: 2010-01-01T12:00:00Z
   state variables:

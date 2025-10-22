@@ -24,8 +24,8 @@ Member 0:
   - air_horizontal_streamfunction (2 levels):
     + min    = -2.4222901357895501e+00
     + max    = 2.6389764187991602e+00
-    + mean   = -4.0379053950830468e-02
-    + stddev = 9.7289498148833964e-01
+    + mean   = 7.9406554734290358e-04
+    + stddev = 9.8987887974314592e-01
 Member 1: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
@@ -33,8 +33,8 @@ Member 1:
   - air_horizontal_streamfunction (2 levels):
     + min    = -3.4835907781572373e+00
     + max    = 2.2435794051115088e+00
-    + mean   = -5.0172052167144499e-01
-    + stddev = 1.0573639354017268e+00
+    + mean   = -4.8743538807699471e-01
+    + stddev = 1.0332089056017772e+00
 Member 2: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
@@ -42,8 +42,8 @@ Member 2:
   - air_horizontal_streamfunction (2 levels):
     + min    = -3.4142992736043514e+00
     + max    = 3.3675805040956437e+00
-    + mean   = 2.5235984748747214e-01
-    + stddev = 9.4226155130922407e-01
+    + mean   = 2.4722608462463574e-01
+    + stddev = 9.7674893840143506e-01
 Member 3: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
@@ -51,8 +51,8 @@ Member 3:
   - air_horizontal_streamfunction (2 levels):
     + min    = -2.3508789799403553e+00
     + max    = 2.4077319529951726e+00
-    + mean   = -4.3662621285003304e-02
-    + stddev = 1.1329882784849208e+00
+    + mean   = -2.2390989129883583e-02
+    + stddev = 1.0584528992659328e+00
 Member 4: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
@@ -60,8 +60,8 @@ Member 4:
   - air_horizontal_streamfunction (2 levels):
     + min    = -2.9659560614204810e+00
     + max    = 3.2831730149877068e+00
-    + mean   = 3.2547768981510961e-01
-    + stddev = 1.0338399421256230e+00
+    + mean   = 2.6856484898177846e-01
+    + stddev = 1.0065125101168204e+00
 Member 5: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
@@ -69,8 +69,8 @@ Member 5:
   - air_horizontal_streamfunction (2 levels):
     + min    = -2.6984827817514323e+00
     + max    = 2.8532675951309048e+00
-    + mean   = 2.6281134238043335e-01
-    + stddev = 9.0998921123443921e-01
+    + mean   = 2.7285008497878777e-01
+    + stddev = 9.5161864006951269e-01
 Member 6: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
@@ -78,8 +78,8 @@ Member 6:
   - air_horizontal_streamfunction (2 levels):
     + min    = -1.9432958573258776e+00
     + max    = 2.3484888511715956e+00
-    + mean   = 3.1420744203254847e-01
-    + stddev = 7.4695169542564988e-01
+    + mean   = 2.9336525370660782e-01
+    + stddev = 7.6154407738646601e-01
 Member 7: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
@@ -87,8 +87,8 @@ Member 7:
   - air_horizontal_streamfunction (2 levels):
     + min    = -3.1603870300139945e+00
     + max    = 2.6228905346040334e+00
-    + mean   = 1.5526762160976562e-01
-    + stddev = 9.8822545331354483e-01
+    + mean   = 1.2871887733805593e-01
+    + stddev = 9.7260344381123731e-01
 Member 8: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
@@ -96,8 +96,8 @@ Member 8:
   - air_horizontal_streamfunction (2 levels):
     + min    = -2.2927462660774447e+00
     + max    = 2.9974719931338480e+00
-    + mean   = 2.5053561586122886e-01
-    + stddev = 9.5011723266508086e-01
+    + mean   = 2.1690404811609737e-01
+    + stddev = 9.6351979976894120e-01
 Member 9: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
@@ -105,8 +105,8 @@ Member 9:
   - air_horizontal_streamfunction (2 levels):
     + min    = -3.3580004753423056e+00
     + max    = 2.8532418321127229e+00
-    + mean   = 1.2323099092162361e-01
-    + stddev = 1.1991643949429995e+00
+    + mean   = 8.4114361348857178e-02
+    + stddev = 1.1568500343822670e+00
 Member 10: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
@@ -114,8 +114,8 @@ Member 10:
   - air_horizontal_streamfunction (2 levels):
     + min    = -3.3446235017343033e+00
     + max    = 3.2166262270158135e+00
-    + mean   = 6.5005190226063506e-02
-    + stddev = 1.0545322091860316e+00
+    + mean   = 1.9542461495009468e-02
+    + stddev = 1.0523116382876279e+00
 Member 11: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
@@ -123,8 +123,8 @@ Member 11:
   - air_horizontal_streamfunction (2 levels):
     + min    = -2.8666644090680093e+00
     + max    = 2.7301049414788960e+00
-    + mean   = -6.8384052020814781e-02
-    + stddev = 9.6309707075921658e-01
+    + mean   = -6.6886446622472812e-02
+    + stddev = 9.6273411684374910e-01
 Member 12: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
@@ -132,8 +132,8 @@ Member 12:
   - air_horizontal_streamfunction (2 levels):
     + min    = -2.6680194056717617e+00
     + max    = 2.5226911961491747e+00
-    + mean   = -4.9229806052351427e-01
-    + stddev = 1.0182463650049642e+00
+    + mean   = -4.1589794589992640e-01
+    + stddev = 1.0382268193346884e+00
 Member 13: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
@@ -141,8 +141,8 @@ Member 13:
   - air_horizontal_streamfunction (2 levels):
     + min    = -3.3600495566426107e+00
     + max    = 3.0703086610810746e+00
-    + mean   = 3.4479839729361583e-01
-    + stddev = 9.7964566252221574e-01
+    + mean   = 2.9316012042664219e-01
+    + stddev = 1.0027490862473141e+00
 Member 14: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
@@ -150,8 +150,8 @@ Member 14:
   - air_horizontal_streamfunction (2 levels):
     + min    = -2.2285021635986557e+00
     + max    = 3.3752830727558907e+00
-    + mean   = 3.9452583523568029e-02
-    + stddev = 8.2939468334334288e-01
+    + mean   = 2.9904118235644948e-02
+    + stddev = 8.6699114543788258e-01
 Member 15: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
@@ -159,8 +159,8 @@ Member 15:
   - air_horizontal_streamfunction (2 levels):
     + min    = -3.0322956400002097e+00
     + max    = 2.4224919235818918e+00
-    + mean   = -2.1600119203352930e-01
-    + stddev = 9.7167818669387018e-01
+    + mean   = -1.8411402897643919e-01
+    + stddev = 9.9722526025247338e-01
 Member 16: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
@@ -168,8 +168,8 @@ Member 16:
   - air_horizontal_streamfunction (2 levels):
     + min    = -3.5148009169440551e+00
     + max    = 2.7177592951664677e+00
-    + mean   = 2.9774014743785182e-01
-    + stddev = 9.8063473026201275e-01
+    + mean   = 2.9610045479745417e-01
+    + stddev = 9.6768139317919055e-01
 Member 17: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
@@ -177,8 +177,8 @@ Member 17:
   - air_horizontal_streamfunction (2 levels):
     + min    = -2.5056883514989785e+00
     + max    = 2.9988220138306376e+00
-    + mean   = -1.6189373030737197e-01
-    + stddev = 9.1194188363633899e-01
+    + mean   = -1.1587148613007309e-01
+    + stddev = 9.1247266338464117e-01
 Member 18: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
@@ -186,8 +186,8 @@ Member 18:
   - air_horizontal_streamfunction (2 levels):
     + min    = -3.4294131971262236e+00
     + max    = 2.8495486282421325e+00
-    + mean   = -7.1748119168508526e-02
-    + stddev = 1.0548897074712256e+00
+    + mean   = -3.6385431464444104e-02
+    + stddev = 1.0925657497584891e+00
 Member 19: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
@@ -195,8 +195,8 @@ Member 19:
   - air_horizontal_streamfunction (2 levels):
     + min    = -2.7131880687474688e+00
     + max    = 3.3725886060106283e+00
-    + mean   = 1.5669245474651657e-02
-    + stddev = 9.6134284343058674e-01
+    + mean   = 5.7577526814263959e-03
+    + stddev = 9.8710821477582489e-01
 Member 20: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
@@ -204,8 +204,8 @@ Member 20:
   - air_horizontal_streamfunction (2 levels):
     + min    = -3.2206511355673668e+00
     + max    = 2.6596996437567162e+00
-    + mean   = -5.4172442372352581e-02
-    + stddev = 8.9671267598314830e-01
+    + mean   = -3.7839440956920857e-02
+    + stddev = 9.2267833553478085e-01
 Member 21: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
@@ -213,8 +213,8 @@ Member 21:
   - air_horizontal_streamfunction (2 levels):
     + min    = -3.6187278649627275e+00
     + max    = 2.5531008255476531e+00
-    + mean   = 2.5049070383204480e-01
-    + stddev = 8.6557151634140950e-01
+    + mean   = 2.1150339894336473e-01
+    + stddev = 8.9022142270471771e-01
 Member 22: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
@@ -222,8 +222,8 @@ Member 22:
   - air_horizontal_streamfunction (2 levels):
     + min    = -2.6781692872844638e+00
     + max    = 2.1502679476108275e+00
-    + mean   = -2.8102171122928882e-01
-    + stddev = 1.0138315452682869e+00
+    + mean   = -2.4712860641087853e-01
+    + stddev = 9.8632068334076428e-01
 Member 23: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
@@ -231,8 +231,8 @@ Member 23:
   - air_horizontal_streamfunction (2 levels):
     + min    = -2.7137539052569744e+00
     + max    = 2.8927488013644420e+00
-    + mean   = 1.2830641410286114e-01
-    + stddev = 1.0622282167710571e+00
+    + mean   = 9.7588075003754673e-02
+    + stddev = 1.0123420720665233e+00
 Member 24: 
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L40x21 [840]
@@ -240,5 +240,5 @@ Member 24:
   - air_horizontal_streamfunction (2 levels):
     + min    = -2.5249076876879513e+00
     + max    = 2.7463526011677488e+00
-    + mean   = -9.6587291881318871e-02
-    + stddev = 1.0556592532126781e+00
+    + mean   = -6.6042253981313234e-02
+    + stddev = 1.0544179606903359e+00

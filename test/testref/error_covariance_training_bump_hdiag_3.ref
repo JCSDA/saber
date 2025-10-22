@@ -90,15 +90,15 @@
                    Level:   2 ~> amplitude:        0.00
                                  loc. hor. support:      5382.10 km
                                  loc. ver. support:         6.05 vertical units
-Norm of output parameter loc_a - 1: 5.7965506984757752e+01
+Norm of output parameter loc_a - 1: 5.5208694967369041e+01
 Norm of output parameter loc_a - 2: 0.0000000000000000e+00
-Norm of output parameter loc_rh1 - 1: 3.7223169496152741e+08
-Norm of output parameter loc_rh1 - 2: 3.5661743729671073e+08
-Norm of output parameter loc_rh2 - 1: 3.5174328525968367e+08
-Norm of output parameter loc_rh2 - 2: 3.3975339849065048e+08
-Norm of output parameter loc_rhc - 1: 1.0498589248437069e+01
-Norm of output parameter loc_rhc - 2: 1.0498589248437069e+01
-Norm of output parameter loc_rh - 1: 3.5396976920451140e+08
-Norm of output parameter loc_rh - 2: 3.4158324786085582e+08
-Norm of output parameter loc_rv - 1: 3.5609973483845113e+02
-Norm of output parameter loc_rv - 2: 3.3453969181853876e+02
+Norm of output parameter loc_rh1 - 1: 3.4518572695765907e+08
+Norm of output parameter loc_rh1 - 2: 3.3659879110409868e+08
+Norm of output parameter loc_rh2 - 1: 3.2503878505542541e+08
+Norm of output parameter loc_rh2 - 2: 3.1915453315735161e+08
+Norm of output parameter loc_rhc - 1: 7.9941219719818193e+00
+Norm of output parameter loc_rhc - 2: 7.9941219719818193e+00
+Norm of output parameter loc_rh - 1: 3.3017036623692876e+08
+Norm of output parameter loc_rh - 2: 3.2313220498183447e+08
+Norm of output parameter loc_rv - 1: 3.3832337555722393e+02
+Norm of output parameter loc_rv - 2: 3.2416042474428275e+02

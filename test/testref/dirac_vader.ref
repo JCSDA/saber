@@ -5,13 +5,13 @@ Input Dirac increment:
   - virtual_temperature (2 levels):
     + min    = 0.0000000000000000e+00
     + max    = 1.0000000000000000e+00
-    + mean   = 5.9523809523809529e-04
-    + stddev = 2.4397501823713832e-02
+    + mean   = 6.5616797900262466e-04
+    + stddev = 2.5615775978927634e-02
   - water_vapor_mixing_ratio_wrt_moist_air (2 levels):
     + min    = 0.0000000000000000e+00
     + max    = 1.0000000000000000e+00
-    + mean   = 5.9523809523809529e-04
-    + stddev = 2.4397501823713832e-02
+    + mean   = 6.5616797900262466e-04
+    + stddev = 2.5615775978927634e-02
 Adjoint test for block vader variable change passed
 Adjoint test for block ID passed
 Covariance(SABER) * Increment:
@@ -21,10 +21,10 @@ Covariance(SABER) * Increment:
   - virtual_temperature (2 levels):
     + min    = 0.0000000000000000e+00
     + max    = 1.0000000000000000e+00
-    + mean   = 5.9523809523809529e-04
-    + stddev = 2.4397501823713832e-02
+    + mean   = 6.5616797900262466e-04
+    + stddev = 2.5615775978927634e-02
   - water_vapor_mixing_ratio_wrt_moist_air (2 levels):
     + min    = 0.0000000000000000e+00
     + max    = 1.0000000000000000e+00
-    + mean   = 5.9523809523809529e-04
-    + stddev = 2.4397501823713832e-02
+    + mean   = 6.5616797900262466e-04
+    + stddev = 2.5615775978927634e-02

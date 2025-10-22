@@ -17,9 +17,13 @@
 #include "oops/util/Printable.h"
 
 #include "src/Geometry.h"
-#include "src/State.h"
+
+namespace oops {
+  class Variables;
+}
 
 namespace quench {
+  class State;
 
 // -----------------------------------------------------------------------------
 
