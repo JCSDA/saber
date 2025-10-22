@@ -14,7 +14,6 @@ use fckit_mpi_module, only: fckit_mpi_status
 use tools_kinds, only: kind_int,kind_real
 use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim_size,define_var,inquire_var,put_var,get_var
 use tools_qsort, only: qsort
-use tools_repro, only: eq
 use type_mpl, only: mpl_type
 @:use_probe()
 

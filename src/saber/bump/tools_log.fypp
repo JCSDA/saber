@@ -10,7 +10,7 @@ module tools_log
 
 use fckit_c_interop_module, only : c_str_right_trim
 use fckit_log_module, only: fckit_log,fckit_logchannel
-use iso_c_binding, only: c_char,c_int32_t
+use iso_c_binding, only: c_int32_t
 @:use_probe()
 
 implicit none

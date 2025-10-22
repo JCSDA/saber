@@ -12,15 +12,14 @@ use atlas_module, only: atlas_structuredgrid
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 !$ use omp_lib
 use tools_atlas, only: get_grid
-use tools_const, only: zero,quarter,half,tenth,one,two,three,four,five,hundred,pi,req,reqkm,deg2rad,rad2deg
-use tools_fit, only: tensor_d2h
-use tools_func, only: lonlatmod,sphere_dist,convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count
+use tools_const, only: zero,half,one,two,three,four,pi,reqkm,deg2rad,rad2deg
+use tools_func, only: lonlatmod,zss_maxval,zss_minval,zss_sum,zss_count
 use tools_gc99, only: fit_func_sqrt
-use tools_kinds, only: kind_int,kind_real,kind_long,huge_int,huge_real
-use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim,inquire_dim_size,check_dim,define_var, &
+use tools_kinds, only: kind_int,kind_real,huge_int,huge_real
+use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim,inquire_dim_size,define_var, &
  & inquire_var,put_var,get_var
 use tools_qsort, only: qsort
-use tools_repro, only: supeq,sup,inf,infeq,eq,indist,repro_th
+use tools_repro, only: sup,inf,infeq,repro_th
 use type_com, only: com_type
 use type_cv_cmp, only: cv_cmp_type
 use type_geom, only: geom_type

@@ -12,11 +12,9 @@ module tools_func
 use fckit_mpi_module, only: fckit_mpi_sum
 use iso_c_binding
 use tools_asa007, only: cholesky,syminv
-use tools_const, only: zero,hundredth,tenth,half,one,two,three,four,five,eight,ten,pi,deg2rad,rad2deg,ageometry
+use tools_const, only: zero,half,one,two,pi,deg2rad,rad2deg,ageometry
 use tools_kinds, only: kind_int,kind_short,kind_real,huge_int,huge_short,huge_real
-use tools_qsort, only: qsort
-use tools_repro, only: repro_th,inf,sup,infeq,small,eq
-use tools_wrfda, only: da_eof_decomposition
+use tools_repro, only: repro_th,inf,sup,infeq
 use type_mpl, only: mpl_type
 @:use_probe()
 

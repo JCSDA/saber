@@ -10,8 +10,8 @@ subroutine c_covRegressionMatrices(filename_length, &
  & model_level, bins, values_size, values) &
  & bind(c,name='covRegressionMatrices_f90')
 
-use iso_c_binding, only : c_ptr, c_int, c_float, c_char
-use mo_netcdf_mod, only : cvt_nc_read_field_from_file, cvt_nc_err_rpt
+use iso_c_binding, only : c_int, c_float, c_char
+use mo_netcdf_mod, only : cvt_nc_read_field_from_file
 use netcdf, only: nf90_max_name
 use string_f_c_mod
 
@@ -26,8 +26,6 @@ real(c_float),   intent(inout) :: values(values_size)
 
 character(len=nf90_max_name) :: covariance_file
 character(len=nf90_max_name) :: short_name
-
-character(len=:), allocatable :: str
 
 integer(kind=c_int)  :: start_index(3)
 integer(kind=c_int)  :: final_index(3)
@@ -67,9 +65,9 @@ subroutine c_covRegressionWeights(filename_length, c_filename, &
  & startVec, lenVec, covLatitudesVec, regressionWeights1D) &
  & bind(c,name='covRegressionWeights_f90')
 
-use iso_c_binding, only: c_ptr, c_int, c_float, c_char
+use iso_c_binding, only: c_int, c_float, c_char
 use mo_cvtcoord_mod, only: cvt_coordinate_type, cvt_initialiseadjustordealloccoord, cvt_create3dcoordinate
-use mo_netcdf_mod, only: cvt_nc_read_field_from_file, cvt_nc_err_rpt
+use mo_netcdf_mod, only: cvt_nc_read_field_from_file
 use netcdf, only: nf90_max_name
 use string_f_c_mod
 
@@ -88,8 +86,6 @@ real(kind=c_float), intent(inout) :: regressionWeights1D(weightSize)
 character(len=nf90_max_name) :: covariance_file
 character(len=nf90_max_name) :: short_name
 
-character(len=:), allocatable :: str
-
 integer(kind=c_int)   :: start_index(3)
 integer(kind=c_int)   :: final_index(3)
 real(kind=c_float), allocatable :: Field3D(:,:,:)
@@ -101,8 +97,6 @@ type(cvt_coordinate_type) :: coord3
 
 integer :: i,j,k,n ! loop variables
 integer :: tally
-
-integer :: sh(3)
 
 ! read filename for config
 covariance_file  = ""
@@ -168,7 +162,7 @@ subroutine c_covMuStats(filename_length, &
  & modelLevels, muBins, sizeVec, mustats) &
  & bind(c,name='covMuStats_f90')
 
-use iso_c_binding, only: c_ptr, c_int, c_float, c_char
+use iso_c_binding, only: c_int, c_float, c_char
 use mo_netcdf_mod, only : cvt_nc_read_field_from_file
 use netcdf, only: nf90_max_name
 use string_f_c_mod

@@ -10,7 +10,7 @@ module type_linop
 
 use ieee_arithmetic
 !$ use omp_lib
-use tools_const, only: zero,half,one,two,rad2deg,pi
+use tools_const, only: zero,half,one,two,pi
 use tools_func, only: sphere_dist,zss_maxval,zss_minval
 use tools_gc99, only: fit_func
 use tools_kinds, only: kind_real,huge_real
@@ -1488,7 +1488,7 @@ logical,intent(in),optional :: spherical !< Output gradient in spherical coordin
 ! Local variables
 integer :: jj,j,j_next,km_next,i_s,im
 integer,allocatable :: km(:),col(:)
-real(kind_real) :: a,b,c,s,ar,dist,cx,sx,cy,sy,gamma,wgt,wgt_sum
+real(kind_real) :: a,b,c,s,ar,cx,sx,cy,sy,gamma,wgt,wgt_sum
 real(kind_real),allocatable :: xp(:),yp(:),zp(:)
 real(kind_real),allocatable :: Svec_tmp(:,:),Svec_x(:),Svec_y(:),Svec_z(:)
 logical :: lspherical,valid

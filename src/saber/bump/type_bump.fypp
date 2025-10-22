@@ -8,12 +8,12 @@
 !----------------------------------------------------------------------
 module type_bump
 
-use atlas_module, only: atlas_field,atlas_fieldset,atlas_integer,atlas_real,atlas_functionspace
+use atlas_module, only: atlas_field,atlas_real,atlas_functionspace
 use fckit_configuration_module, only: fckit_configuration
-use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_min
-use tools_const, only: initialize_constants,finalize_constants,zero,half,one,thousand,req,reqkm,deg2rad,rad2deg
-use tools_func, only: fletcher32,rad2short,sphere_dist,zss_minval,zss_sum
-use tools_kinds,only: kind_short,kind_real
+use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum
+use tools_const, only: initialize_constants,finalize_constants,zero,one,req,reqkm,rad2deg
+use tools_func, only: zss_sum
+use tools_kinds,only: kind_real
 use tools_netcdf, only: registry
 use tools_repro,only: repro_ops,repro_th
 use type_cmat, only: cmat_type

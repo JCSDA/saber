@@ -9,9 +9,8 @@ module type_bump_interface
 
 use atlas_module, only: atlas_functionspace,atlas_fieldset,atlas_field
 use fckit_configuration_module, only: fckit_configuration
-use fckit_log_module, only: fckit_logchannel
 use fckit_mpi_module, only: fckit_mpi_comm
-use iso_c_binding, only: c_int,c_ptr,c_double,c_char
+use iso_c_binding, only: c_int,c_ptr,c_char
 use type_bump, only: bump_type
 use type_fieldset, only: fieldset_type
 

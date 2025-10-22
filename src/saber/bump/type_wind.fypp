@@ -10,9 +10,9 @@ module type_wind
 
 use fckit_mpi_module, only: fckit_mpi_status,fckit_mpi_sum,fckit_mpi_max
 !$ use omp_lib
-use tools_const, only: zero,quarter,half,one,two,eight,ten,twelve,hundred,pi,req,rad2deg
-use tools_func, only: sphere_dist,zss_count,zss_maxval
-use tools_kinds, only: kind_real,huge_real
+use tools_const, only: zero,one,two,hundred,req
+use tools_func, only: zss_count,zss_maxval
+use tools_kinds, only: kind_real
 use tools_netcdf, only: create_file,open_file,define_dim,define_var,inquire_dim_size,inquire_var,put_att,get_att,close_file
 use tools_qsort, only: qsort
 use type_com, only: com_type

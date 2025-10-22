@@ -10,10 +10,9 @@ module type_var
 
 use fckit_mpi_module, only: fckit_mpi_sum
 !$ use omp_lib
-use tools_const, only: zero,half,one,two,three,four,six,rad2deg,reqkm
-use tools_func, only: zss_sum,zss_count,global_average
-use tools_kinds, only: kind_real,huge_real
-use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,put_att,get_att,define_dim,inquire_var,define_var,close_file
+use tools_const, only: zero,half,one,two,three,four,six,reqkm
+use tools_func, only: zss_sum,global_average
+use tools_kinds, only: kind_real
 use type_ens, only: ens_type
 use type_geom, only: geom_type
 use type_gsi, only: gsi_type
@@ -523,7 +522,7 @@ integer :: iv,il0,il0i,iter,ipass,ipass_min(geom%nl0)
 real(kind_real) :: P9,P20,P21,diff,diff_abs_min(geom%nl0),m2avg
 real(kind_real) :: m2avg_init(geom%nl0,nam%nv),m2sq(geom%nl0),m4(geom%nl0),m2sqasy(geom%nl0)
 real(kind_real) :: rhflt(geom%nl0),drhflt(geom%nl0),m2prod(geom%nl0),m2_ini(geom%nc0a,geom%nl0),m2(geom%nc0a,geom%nl0)
-logical :: dichotomy(geom%nl0),convergence(geom%nl0)
+logical :: dichotomy(geom%nl0)
 type(nicas_blk_type) :: nicas_blk
 
 ! Set name
@@ -585,7 +584,6 @@ else
 
       if (nam%var_niter>0) then
          ! Dichotomy initialization
-         convergence = .true.
          dichotomy = .false.
          rhflt = nam%var_rhflt(1:geom%nl0,iv)
          drhflt = rhflt
@@ -638,14 +636,10 @@ else
                         drhflt(il0) = half*drhflt(il0)
                         rhflt(il0) = rhflt(il0)+drhflt(il0)
                      else
-                        convergence(il0) = .false.
                         rhflt(il0) = rhflt(il0)+drhflt(il0)
                         drhflt(il0) = two*drhflt(il0)
                     end if
                   else
-                     ! Convergence
-                     convergence(il0) = .true.
-
                      ! Change dichotomy status
                      dichotomy(il0) = .true.
 

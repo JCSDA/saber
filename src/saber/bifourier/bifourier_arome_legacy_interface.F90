@@ -6,9 +6,7 @@
 !----------------------------------------------------------------------
 module bifourier_arome_legacy_interface
 
-use atlas_module, only: atlas_fieldset
 use fckit_configuration_module, only: fckit_configuration
-use fckit_mpi_module, only: fckit_mpi_comm
 use iso_c_binding, only: c_ptr, c_int, c_double
 use bifourier_arome_legacy_mod, only: bifourier_arome_legacy_vortopb, bifourier_arome_legacy_balance, &
  & bifourier_arome_legacy_covariance

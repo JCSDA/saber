@@ -9,12 +9,12 @@
 module type_diag_blk
 
 !$ use omp_lib
-use tools_const, only: zero,tenth,half,one,four,ten,pi
+use tools_const, only: zero,tenth,half,one,ten,pi
 use tools_cor_var, only: eval
-use tools_fit, only: condmax,diag_iso,diag_tensor,tensor_d2h,tensor_d2r,tensor_check_cond,fast_fit
+use tools_fit, only: condmax,diag_iso,diag_tensor,tensor_d2r,tensor_check_cond,fast_fit
 use tools_func, only: vert_interp_size,vert_interp_setup,vert_interp,zss_sum
-use tools_kinds, only: kind_real,huge_real
-use tools_netcdf, only: define_grp,define_dim,put_att,define_var,put_var
+use tools_kinds, only: kind_real
+use tools_netcdf, only: define_grp,define_dim,define_var,put_var
 use tools_repro, only: inf,infeq,supeq
 use tools_wrfda
 use type_avg_blk, only: avg_blk_type

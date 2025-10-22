@@ -11,7 +11,7 @@ module type_hull
 use tools_const, only: zero,two,three,pi
 use tools_func, only: lonlat2xyz,xyz2lonlat,sphere_dist,vector_product
 use tools_kinds, only: kind_real
-use tools_repro, only: inf,infeq,sup,repro_th
+use tools_repro, only: infeq,sup,repro_th
 use type_mpl, only: mpl_type
 @:use_probe()
 

@@ -8,29 +8,22 @@
 !----------------------------------------------------------------------
 module type_nicas_blk
 
-use atlas_module, only: atlas_structuredgrid
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 !$ use omp_lib
-use tools_const, only: zero,hundredth,quarter,half,tenth,one,two,three,four,five,hundred,pi,req,reqkm,deg2rad,rad2deg
+use tools_const, only: zero,one,two,hundred,reqkm,rad2deg
 use tools_fit, only: tensor_d2h
-use tools_func, only: lonlatmod,sphere_dist,convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count
-use tools_gc99, only: fit_func_sqrt
+use tools_func, only: zss_maxval,zss_minval
 use tools_kinds, only: kind_real
-use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim,check_dim
-use tools_qsort, only: qsort
-use tools_repro, only: supeq,sup,inf,infeq,eq,indist,repro_th
+use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,check_dim
+use tools_repro, only: repro_th
 use type_cmat_blk, only: cmat_blk_type
-use type_com, only: com_type
 use type_cv_blk, only: cv_blk_type
 use type_geom, only: geom_type
-use type_io, only: io_type
-use type_linop, only: linop_type
 use type_mpl, only: mpl_type
 use type_nam, only: nam_type
 use type_nicas_cmp, only: nicas_cmp_type
 @:use_probe()
 use type_rng, only: rng_type
-use type_tree, only: tree_type
 
 implicit none
 

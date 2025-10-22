@@ -7,7 +7,6 @@
 !----------------------------------------------------------------------
 module bifourier_arome_legacy_mod
 
-use atlas_module, only: atlas_fieldset,atlas_field,atlas_real
 use fckit_configuration_module, only: fckit_configuration
 use kinds, only: kind_int, kind_real
 

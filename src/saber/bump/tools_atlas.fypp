@@ -9,12 +9,12 @@
 !----------------------------------------------------------------------
 module tools_atlas
 
-use atlas_module, only: atlas_structuredgrid,atlas_regionalgrid,atlas_field,atlas_integer,atlas_real,atlas_functionspace, &
+use atlas_module, only: atlas_structuredgrid,atlas_field,atlas_integer,atlas_real,atlas_functionspace, &
  & atlas_functionspace_nodecolumns,atlas_functionspace_pointcloud,atlas_functionspace_structuredcolumns, &
- & atlas_projection,atlas_config,atlas_json
-use tools_const, only: zero,quarter,half,rad2deg
+ & atlas_config,atlas_json
+use tools_const, only: zero,quarter
 use tools_kinds, only: kind_int,kind_real
-use tools_func, only: sphere_dist,convert_i2l,convert_l2i
+use tools_func, only: convert_i2l
 use type_mpl, only: mpl_type
 @:use_probe()
 

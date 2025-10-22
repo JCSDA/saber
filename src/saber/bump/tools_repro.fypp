@@ -9,7 +9,7 @@
 !----------------------------------------------------------------------
 module tools_repro
 
-use tools_const, only: zero,one,pi
+use tools_const, only: zero
 use tools_kinds, only: kind_int,kind_real
 @:use_probe()
 

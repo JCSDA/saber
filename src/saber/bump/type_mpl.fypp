@@ -9,14 +9,12 @@
 !----------------------------------------------------------------------
 module type_mpl
 
-use fckit_configuration_module, only: fckit_configuration
 use fckit_log_module, only: fckit_logchannel
 use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_status
-use iso_c_binding, only: c_ptr,c_null_ptr,c_associated
 use iso_fortran_env, only: output_unit
 !$ use omp_lib
-use tools_const, only: zero,one,ten,hundred
-use tools_kinds, only: kind_int,kind_float,kind_double,kind_real
+use tools_const, only: zero,hundred
+use tools_kinds, only: kind_int,kind_real
 use tools_log, only: write_log
 use tools_qsort, only: qsort
 use type_msv, only: msv_type
@@ -131,19 +129,6 @@ contains
       procedure :: timings => mpl_timings
    #:endif
 end type mpl_type
-
-interface
-
-subroutine c_tools_log(channel,msg,newl,flush) bind(c,name='tools_log_f')
-  use,intrinsic :: iso_c_binding
-  implicit none
-  type(c_ptr),value :: channel
-  character(kind=c_char),dimension(*) :: msg
-  integer(c_int32_t),value :: newl
-  integer(c_int32_t),value :: flush
-end subroutine c_tools_log
-
-end interface
 
 private
 public :: mpl_type

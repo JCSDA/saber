@@ -9,25 +9,24 @@
 !----------------------------------------------------------------------
 module type_geom
 
-use atlas_module, only: atlas_config,atlas_connectivity,atlas_field,atlas_functionspace, &
- & atlas_functionspace_nodecolumns,atlas_functionspace_pointcloud,atlas_functionspace_structuredcolumns,atlas_json,atlas_mesh, &
+use atlas_module, only: atlas_config,atlas_field,atlas_functionspace, &
+ & atlas_functionspace_nodecolumns,atlas_functionspace_pointcloud,atlas_functionspace_structuredcolumns, &
  & atlas_mesh_nodes,atlas_projection,atlas_structuredgrid
-use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max,fckit_mpi_status
+use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 !$ use omp_lib
 use tools_atlas, only: get_grid,field_to_array,get_atlas_functionspace_size
-use tools_const, only: zero,quarter,half,one,two,three,four,hundred,pi,req,deg2rad,rad2deg,reqkm
+use tools_const, only: zero,half,one,two,three,four,hundred,pi,deg2rad,rad2deg,reqkm
 use tools_fit, only: work_grid
-use tools_func, only: fletcher32,lonlatmod,grid_hash,independent_levels,sphere_dist,lonlat2xyz,xyz2lonlat,cart_dist, &
- & vector_product,area,cx_to_cxa,cx_to_proc,cx_to_cxu,convert_l2i,convert_i2l,zss_maxval,zss_minval,zss_sum,zss_count
-use tools_kinds, only: kind_int,kind_real,huge_real,huge_int
+use tools_func, only: lonlatmod,grid_hash,independent_levels,sphere_dist,lonlat2xyz,xyz2lonlat,cart_dist, &
+ & vector_product,area,cx_to_cxa,cx_to_proc,cx_to_cxu,convert_l2i,convert_i2l,zss_minval,zss_sum,zss_count
+use tools_kinds, only: kind_int,kind_real,huge_real
 use tools_qsort, only: qsort
-use tools_repro, only: inf,sup,eq,infeq,supeq,indist,repro_th
+use tools_repro, only: inf,sup,eq,supeq,indist,repro_th
 use type_bnda, only: bnda_type
 use type_com, only: com_type
 use type_fieldset, only: fieldset_type
 use type_hull, only: hull_type
 use type_io, only: io_type
-use type_linop, only: linop_type
 use type_mesh, only: mesh_type
 use type_minim, only: minim_type
 use type_mpl, only: mpl_type

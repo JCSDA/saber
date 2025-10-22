@@ -9,12 +9,11 @@
 module type_mesh
 
 !$ use omp_lib
-use tools_const, only: zero,one,two,three,five,pi,req,rad2deg,reqkm
+use tools_const, only: zero,one,two
 use tools_func, only: fletcher32,lonlatmod,rad2short,lonlat2xyz
-use tools_kinds, only: kind_short,kind_long,kind_real,huge_real
+use tools_kinds, only: kind_short,kind_long,kind_real
 use tools_qsort, only: qsort
-use tools_repro, only: repro_th,inf
-use tools_ssrfpack, only: aplyr,constr,fval,fval_op,gradl
+use tools_ssrfpack, only: fval,fval_op,gradl
 use tools_stripack, only: trfind,trmesh
 use type_mpl, only: mpl_type
 @:use_probe()

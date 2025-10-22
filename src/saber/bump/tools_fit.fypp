@@ -11,7 +11,7 @@ module tools_fit
 use atlas_module, only: atlas_config,atlas_json,atlas_structuredgrid
 use tools_const, only: zero,tenth,quarter,half,one,two,thousand,deg2rad,rad2deg
 use tools_func, only: sphere_dist,lonlatmod 
-use tools_gc99, only: naxis_inv,axis_inv,axis_invmax,func_inv_hor,func_inv_ver,fit_func,fit_func_sqrt
+use tools_gc99, only: naxis_inv,axis_inv,func_inv_hor,func_inv_ver,fit_func,fit_func_sqrt
 use tools_kinds, only: kind_real,huge_real
 use tools_repro, only: inf,sup,infeq
 use type_mpl, only: mpl_type

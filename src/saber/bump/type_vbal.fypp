@@ -10,12 +10,12 @@ module type_vbal
 
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_status
 !$ use omp_lib
-use tools_const, only: zero,one,two,rad2deg
+use tools_const, only: zero,one,two
 use tools_func, only: zss_maxval,zss_sum
 use tools_kinds, only: kind_real
 use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,define_dim,define_var,inquire_dim_size,inquire_var,put_var, &
  & get_var,close_file
-use tools_repro, only: infeq,repro_th
+use tools_repro, only: repro_th
 use type_ens, only: ens_type
 use type_geom, only: geom_type
 use type_gsi, only: gsi_type

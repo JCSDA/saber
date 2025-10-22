@@ -8,10 +8,10 @@
 !----------------------------------------------------------------------
 module type_minim
 
-use tools_const, only: zero,hundredth,tenth,half,one,two,ten,hundred
+use tools_const, only: zero,half,one,two,ten
 use tools_fit, only: diag_tensor,diag_iso,work_grid
 use tools_kinds, only: kind_real
-use tools_repro, only: repro_th,eq,inf,infeq,sup
+use tools_repro, only: repro_th,inf,infeq,sup
 use type_mpl, only: mpl_type
 @:use_probe()
 

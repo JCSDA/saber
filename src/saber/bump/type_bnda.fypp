@@ -9,10 +9,10 @@
 module type_bnda
 
 !$ use omp_lib
-use tools_const, only: zero,one
+use tools_const, only: zero
 use tools_func, only: lonlat2xyz,vector_product,det
 use tools_kinds, only: kind_real
-use tools_repro, only: repro_th,inf
+use tools_repro, only: repro_th
 use type_mesh, only: mesh_type
 use type_mpl, only: mpl_type
 @:use_probe()

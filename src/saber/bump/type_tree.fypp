@@ -9,12 +9,11 @@
 module type_tree
 
 use atlas_module, only: atlas_geometry,atlas_indexkdtree
-use iso_c_binding, only: c_ptr
-use tools_const, only: zero,half,two,pi,rad2deg
-use tools_func, only: lonlat2xyz,sphere_dist
+use tools_const, only: half,two,pi,rad2deg
+use tools_func, only: sphere_dist
 use tools_kinds, only: kind_real
 use tools_qsort, only: qsort
-use tools_repro, only: repro_ops,sup,indist
+use tools_repro, only: repro_ops,indist
 use type_mpl, only: mpl_type
 @:use_probe()
 

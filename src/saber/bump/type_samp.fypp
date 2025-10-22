@@ -12,9 +12,9 @@ use atlas_module, only: atlas_structuredgrid
 use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max,fckit_mpi_status
 !$ use omp_lib
 use tools_atlas, only: get_grid
-use tools_const, only: zero,quarter,half,one,four,hundred,pi,req,reqkm,deg2rad,rad2deg
+use tools_const, only: zero,half,one,four,hundred,pi,reqkm,deg2rad,rad2deg
 use tools_func, only: lonlatmod,independent_levels,sphere_bearing,sphere_dist,cx_to_cxa,cx_to_proc,cx_to_cxu, &
- & convert_i2l,convert_l2i,zss_maxval,zss_minval,zss_sum,zss_count
+ & zss_maxval,zss_minval,zss_sum,zss_count
 use tools_gc99, only: fit_func
 use tools_kinds, only: kind_int,kind_real
 use tools_netcdf, only: create_file,open_file,put_att,get_att,define_dim,inquire_dim,inquire_dim_size,define_var,inquire_var, &
@@ -1162,7 +1162,6 @@ type(geom_type),intent(in) :: geom  !< Geometry
 integer :: il0,jc3,jc4,ic1a,ic2u,ic2a,ic2b,jc1u,jc1d,jc1e,ic0a,j,nc1max
 integer :: ncid,nl0_id,nc1a_id,nc3_id,nc4_id,nc2a_id,nc2b_id,nc1max_id
 integer :: lon_id,lat_id,lon_local_id,lat_local_id,lon_vbal_id,lat_vbal_id
-integer :: igmask_c0a(geom%nc0a,geom%nl0)
 real(kind_real),allocatable :: lon(:,:,:,:),lat(:,:,:,:)
 real(kind_real),allocatable :: lon_local(:,:,:),lat_local(:,:,:)
 real(kind_real),allocatable :: lon_vbal(:,:,:),lat_vbal(:,:,:)
@@ -1219,15 +1218,6 @@ if (samp%sc1.and.nam%new_vbal) then
 end if
 
 ! Convert data
-do il0=1,geom%nl0
-   do ic0a=1,geom%nc0a
-      if (geom%gmask_c0a(ic0a,il0)) then
-         igmask_c0a(ic0a,il0) = 1
-      else
-         igmask_c0a(ic0a,il0) = 0
-      end if
-   end do
-end do
 if (samp%sc3) then
    ! Allocation
    allocate(lon(samp%nc1a,nam%nc3,nam%nc4,geom%nl0))

@@ -11,10 +11,10 @@ module tools_netcdf
 
 use iso_fortran_env, only: output_unit
 use netcdf, only: nf90_clobber,nf90_create,nf90_close,nf90_def_dim,nf90_def_grp,nf90_def_var,nf90_ebaddim,nf90_get_att, &
- & nf90_get_var,nf90_global,nf90_inq_dimid,nf90_inq_grp_ncid,nf90_inquire_dimension,nf90_inquire_variable,nf90_inq_varid, &
+ & nf90_get_var,nf90_global,nf90_inq_dimid,nf90_inq_grp_ncid,nf90_inquire_dimension,nf90_inq_varid, &
  & nf90_mpiio,nf90_netcdf4,nf90_noerr,nf90_nowrite,nf90_write,nf90_open,nf90_put_att,nf90_put_var,nf90_strerror,nf90_write
 use tools_func, only: convert_i2l,convert_l2i
-use tools_kinds, only: kind_signed_char,kind_int,kind_float,kind_double,kind_real,nc_kind_int,nc_kind_real
+use tools_kinds, only: kind_signed_char,kind_int,kind_float,kind_real,nc_kind_int,nc_kind_real
 use type_mpl, only: mpl_type
 @:use_probe()
 

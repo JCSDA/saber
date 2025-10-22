@@ -9,11 +9,10 @@
 !----------------------------------------------------------------------
 module type_io
 
-use fckit_mpi_module, only: fckit_mpi_comm,fckit_mpi_sum,fckit_mpi_status
-use tools_const, only: pi,deg2rad,rad2deg,reqkm
-use tools_func, only: cx_to_proc,cx_to_cxa,convert_i2l,convert_l2i
+use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_status
+use tools_func, only: cx_to_proc,cx_to_cxa
 use tools_kinds, only: kind_int,kind_real
-use tools_netcdf, only: put_att,define_dim,check_dim,define_var,inquire_var,put_var,get_var
+use tools_netcdf, only: put_var,get_var
 use tools_qsort, only: qsort
 use type_com, only: com_type
 use type_mpl, only: mpl_type

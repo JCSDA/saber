@@ -8,13 +8,10 @@
 !----------------------------------------------------------------------
 module type_avg
 
-use fckit_mpi_module, only: fckit_mpi_sum
 !$ use omp_lib
 use tools_const, only: zero,one
 use tools_func, only: add,divide
 use tools_kinds, only: kind_real
-use tools_netcdf, only: define_dim,define_var,put_var
-use tools_wrfda, only: da_eof_decomposition
 use type_avg_blk, only: avg_blk_type
 use type_geom, only: geom_type
 use type_mom, only: mom_type

@@ -9,7 +9,7 @@
 module type_diag
 
 use fckit_mpi_module, only: fckit_mpi_sum
-use tools_const, only: zero,half,one,two,five,reqkm,rad2deg,pi
+use tools_const, only: zero,half,one,two,five,reqkm
 use tools_fit, only: diag_iso_full,diag_tensor_full,tensor_d2h,tensor_d2r,ver_smooth
 use tools_func, only: lonlatmod,sphere_dist,zss_sum,zss_count
 use tools_gc99, only: fit_func

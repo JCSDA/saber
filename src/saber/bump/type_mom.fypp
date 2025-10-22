@@ -12,9 +12,8 @@ use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_status
 !$ use omp_lib
 use tools_const, only: zero,one,two,four
 use tools_kinds, only: kind_real
-use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,define_dim,check_dim,inquire_dim_size,define_var, &
+use tools_netcdf, only: create_file,open_file,define_grp,inquire_grp,define_dim,inquire_dim_size,define_var, &
  & inquire_var,put_var,get_var,close_file
-use tools_repro, only: eq
 use type_ens, only: ens_type
 use type_geom, only: geom_type
 use type_mom_blk, only: mom_blk_type

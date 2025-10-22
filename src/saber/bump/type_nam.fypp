@@ -10,10 +10,9 @@
 module type_nam
 
 use fckit_configuration_module, only: fckit_configuration
-use tools_const, only: zero,hundredth,half,one,ten,hundred,pi,req,deg2rad,rad2deg
-use tools_kinds, only: kind_real,kind_int,huge_real
-use tools_func, only: cholesky,convert_i2l,zss_minval
-use tools_repro, only: eq
+use tools_const, only: zero,half,one,pi,req,deg2rad
+use tools_kinds, only: kind_real,kind_int
+use tools_func, only: cholesky,zss_minval
 use type_mpl, only: mpl_type
 @:use_probe()
 

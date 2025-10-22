@@ -11,7 +11,7 @@
 !----------------------------------------------------------------------
 module tools_stripack
 
-use tools_const, only: zero,one,two,four,hundred,pi
+use tools_const, only: zero,one,two,four,hundred
 use tools_kinds, only: kind_real
 use tools_repro, only: eq,inf,sup,supeq,small
 use type_mpl, only: mpl_type
@@ -271,7 +271,7 @@ integer,intent(out) :: nodes(n)     !< Ordered sequence of NB boundary node inde
 integer,intent(out) :: nb           !< Number of boundary nodes.
 
 ! Local variables
-integer :: i,k,lp,n0,na,nn,nst,nt
+integer :: i,k,lp,n0,nn,nst,nt
 
 ! Set name
 @:set_name(stripack_bnodes)
@@ -295,7 +295,6 @@ end do
 ! The triangulation contains no boundary nodes
 if (nst==0) then
    nb = 0
-   na = 3*(nn-2)
    nt = 2*(nn-2)
 @:probe_out()
    return
@@ -322,7 +321,6 @@ end do
 ! Store the counts
 nb = k
 nt = 2*n-nb-2
-na = nt+n-1
 
 ! Probe out
 @:probe_out()
