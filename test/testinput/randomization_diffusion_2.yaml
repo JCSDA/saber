@@ -27,7 +27,8 @@ background error:
   randomization size: 10
 
 output perturbations:
-  filepath: testdata/randomization_diffusion_2/_MPI_-_OMP__member_pert
+  member pattern: '%MEM%'
+  filepath: testdata/randomization_diffusion_2/_MPI_-_OMP__member_pert_%MEM%
 
 test:
   reference filename: testref/randomization_diffusion_2.ref

@@ -50,11 +50,16 @@ class SaberCentralBlockBase : public util::Printable,
 
   // Application methods
 
-  // Block multiplication
+  // Block randomization
   virtual void randomize(oops::FieldSet3D &) const = 0;
 
-  // Block randomization
+  // Block multiplication
   virtual void multiply(oops::FieldSet3D &) const = 0;
+
+  // Block filtering; by default calls multiply
+  virtual void filter(oops::FieldSet3D & fset) const {
+    this->multiply(fset);
+  }
 
   // Setup / calibration methods
 

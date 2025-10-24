@@ -244,6 +244,31 @@ void Diffusion::multiply(oops::FieldSet3D & fset) const {
 
 // --------------------------------------------------------------------------------------
 
+void Diffusion::filter(oops::FieldSet3D & fset) const {
+  const atlas::FunctionSpace & fs = geom_.functionSpace();
+
+  // iterate through the list of groups
+  for (const auto & group : groups_) {
+    // get the subset of fields, or create a common field if doing duplicated variable
+    // strategy
+    atlas::FieldSet fieldSubset;
+    for (const auto & var : group.vars.variables()) {
+      // TODO(Travis) make sure the variables in the active var list
+      fieldSubset.add(fset[var]);
+    }
+    // Do the diffusion for each field
+    for (auto & field : fieldSubset) {
+      atlas::FieldSet fset;
+      fset.add(field);
+      group.diffusion->multiplySqrtAD(fset);
+      group.diffusion->multiplySqrtTL(fset);
+    }
+    // end of group loop
+  }
+}
+
+// --------------------------------------------------------------------------------------
+
 void Diffusion::read() {
   oops::Log::info()
     << "\n==================================================================================\n"

@@ -41,6 +41,7 @@ class Diffusion : public saber::SaberCentralBlockBase {
 
   void randomize(oops::FieldSet3D &) const override;
   void multiply(oops::FieldSet3D &) const override;
+  void filter(oops::FieldSet3D &) const override;
 
   void read() override;
   std::vector<std::pair<std::string, eckit::LocalConfiguration>> getReadConfs() const override;

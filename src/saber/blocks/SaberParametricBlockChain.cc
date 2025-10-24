@@ -192,7 +192,7 @@ void SaberParametricBlockChain::filter(oops::FieldSet4D & fset4d) const {
   // No cross-time covariances: apply central block to each of the
   // time slots.
   for (size_t jtime = 0; jtime < fset4d.size(); ++jtime) {
-    centralBlock_->multiply(fset4d[jtime]);
+    centralBlock_->filter(fset4d[jtime]);
   }
 
   // Outer blocks forward multiplication
