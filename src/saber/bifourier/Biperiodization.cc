@@ -29,23 +29,41 @@ Biperiodization::Biperiodization(const oops::GeometryData & outerGeometryData,
                                  const oops::FieldSet3D & xb,
                                  const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params, xb.validTime()),
-    comm_(outerGeometryData.comm()),
+    outerGeometryData_(outerGeometryData),
+    comm_(outerGeometryData_.comm()),
     innerVars_(outerVars),
     params_(params)
 {
   oops::Log::trace() << classname() << "::Biperiodization starting" << std::endl;
 
   // Setup biperiodization implementation
-  biper_.reset(new BiperiodizationImpl(outerGeometryData, outerVars, params_.biperParams.value()));
+  biper_.reset(new BiperiodizationImpl(outerGeometryData_, outerVars, params_.biperParams.value()));
 
   // Empty inner FieldSet
   atlas::FieldSet innerFset;
 
-  // Generate inner GeometryData
-  innerGeometryData_.reset(new oops::GeometryData(biper_->innerFunctionSpace(), innerFset,
-    outerGeometryData.levelsAreTopDown(), comm_));
+  if (!biper_->sameGrid()) {
+    // Generate inner GeometryData
+    innerGeometryData_.reset(new oops::GeometryData(biper_->innerFunctionSpace(), innerFset,
+      outerGeometryData_.levelsAreTopDown(), comm_));
+  }
+
+  if (params_.read.value() != boost::none) {
+    // Create input test fieldset
+    inputTestFset_.reset(new oops::FieldSet3D(xb.validTime(), outerGeometryData_.comm()));
+  }
 
   oops::Log::trace() << classname() << "::Biperiodization done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+const oops::GeometryData & Biperiodization::innerGeometryData() const {
+  if (innerGeometryData_) {
+    return *innerGeometryData_;
+  } else {
+    return outerGeometryData_;
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -81,66 +99,15 @@ void Biperiodization::leftInverseMultiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
 }
 
-
-// -----------------------------------------------------------------------------
-
-std::vector<std::pair<std::string, eckit::LocalConfiguration>> Biperiodization::getReadConfs()
-  const {
-  oops::Log::trace() << classname() << "::getReadConfs starting" << std::endl;
-
-  std::vector<std::pair<std::string, eckit::LocalConfiguration>> pairs;
-  const auto & paramsRead = params_.read.value();
-  if (paramsRead != boost::none) {
-    pairs.push_back(std::pair<std::string, eckit::LocalConfiguration>("inputTestFile",
-      paramsRead->inputTestFile.value()));
-  }
-
-  oops::Log::trace() << classname() << "::getReadConfs done" << std::endl;
-  return pairs;
-}
-
-// -----------------------------------------------------------------------------
-
-void Biperiodization::setReadFields(const std::vector<oops::FieldSet3D> & fsetVec) {
-  oops::Log::trace() << classname() << "::setReadFields starting" << std::endl;
-
-  if (fsetVec.size() == 1) {
-    // Copy input test file
-    inputTestFset_.reset(new oops::FieldSet3D(fsetVec[0]));
-  } else if (fsetVec.size() > 1) {
-    // Unexpected
-    throw eckit::Exception("wrong number of fields to read", Here());
-  }
-
-  oops::Log::trace() << classname() << "::setReadFields done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> Biperiodization::fieldsToWrite()
-  const {
-  oops::Log::trace() << classname() << "::fieldsToWrite starting" << std::endl;
-
-  std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> pairs;
-  const auto & paramsRead = params_.read.value();
-  if (paramsRead != boost::none) {
-    pairs.push_back(std::pair<eckit::LocalConfiguration, oops::FieldSet3D>(
-      paramsRead->outputInnerTestFile.value(), *outputInnerTestFset_));
-    pairs.push_back(std::pair<eckit::LocalConfiguration, oops::FieldSet3D>(
-      paramsRead->outputOuterTestFile.value(), *outputOuterTestFset_));
-  }
-
-  oops::Log::trace() << classname() << "::fieldsToWrite done" << std::endl;
-  return pairs;
-}
-
 // -----------------------------------------------------------------------------
 
 void Biperiodization::read() {
   oops::Log::trace() << classname() << "::read starting" << std::endl;
 
-  // Check that the input test file has been read
-  ASSERT(inputTestFset_);
+  // Read input test file
+  inputTestFset_->read(outerGeometryData_.functionSpace(),
+                       innerVars_,
+                       params_.read.value()->inputTestFile.value());
 
   // LeftInverseMultiply on input test file
   outputInnerTestFset_.reset(new oops::FieldSet3D(*inputTestFset_));
@@ -153,6 +120,23 @@ void Biperiodization::read() {
   multiply(*outputOuterTestFset_);
 
   oops::Log::trace() << classname() << "::read done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void Biperiodization::write() const {
+  oops::Log::trace() << classname() << "::write starting" << std::endl;
+
+  const auto & paramsRead = params_.read.value();
+  if (paramsRead != boost::none) {
+    // Write output inner test file
+    outputInnerTestFset_->write(paramsRead->outputInnerTestFile.value());
+
+    // Write output outer file
+    outputOuterTestFset_->write(paramsRead->outputOuterTestFile.value());
+  }
+
+  oops::Log::trace() << classname() << "::write done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

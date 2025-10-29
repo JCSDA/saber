@@ -73,8 +73,7 @@ class Biperiodization : public SaberOuterBlockBase {
                   const oops::FieldSet3D &);
   virtual ~Biperiodization() = default;
 
-  const oops::GeometryData & innerGeometryData() const override
-    {return *innerGeometryData_;}
+  const oops::GeometryData & innerGeometryData() const override;
   const oops::Variables & innerVars() const override
     {return innerVars_;}
 
@@ -84,11 +83,7 @@ class Biperiodization : public SaberOuterBlockBase {
 
   void read() override;
 
-  std::vector<std::pair<std::string, eckit::LocalConfiguration>> getReadConfs() const override;
-  void setReadFields(const std::vector<oops::FieldSet3D> &) override;
-
-  std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> fieldsToWrite() const
-    override;
+  void write() const override;
 
  private:
   // Inner grid
@@ -102,6 +97,9 @@ class Biperiodization : public SaberOuterBlockBase {
 
   // Inner geometry data
   std::unique_ptr<oops::GeometryData> innerGeometryData_;
+
+  // Outer geometry data
+  const oops::GeometryData & outerGeometryData_;
 
   // Communicator
   const eckit::mpi::Comm & comm_;

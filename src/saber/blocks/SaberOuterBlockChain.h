@@ -136,6 +136,7 @@ class SaberOuterBlockChain {
   void calibrateBlock(const eckit::LocalConfiguration & covarConf,
                       const oops::FieldSet4D & fset4dXb,
                       const oops::Geometry<MODEL> & geom,
+                      const bool & validModelGeom,
                       const oops::Variables & outerVars,
                       oops::FieldSets & fsetEns);
 
@@ -208,6 +209,9 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
   // Copy vector of parameters
   std::vector<SaberOuterBlockParametersWrapper> innerParams = params;
 
+  // Flag to check if the MODEL geometry is still valid
+  bool validModelGeom = true;
+
   // Loop in reverse order
   for (int jb = params.size()-1; jb >= 0; --jb) {
     // Initialize current outer geometry data
@@ -225,8 +229,13 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
                           fset4dXb,
                           fset4dFg);
 
+    // Update MODEL geometry validity, by checking whether the inner geometry data returned by
+    // the last outer block shares the same reference as its own outer geometry data
+    validModelGeom = validModelGeom &&
+      (&(outerBlocks_.back()->innerGeometryData()) == &currentOuterGeometryData);
+
     // Read and add model fields
-    outerBlocks_.back()->read(geom, currentOuterVars);
+    outerBlocks_.back()->read(geom, validModelGeom, currentOuterVars);
 
     // Remove element from inner parameters
     innerParams.pop_back();
@@ -236,6 +245,7 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
       calibrateBlock(covarConf,
                      fset4dXb,
                      geom,
+                     validModelGeom,
                      currentOuterVars,
                      fsetEns);
     } else if (saberOuterBlockParams.doRead()) {
@@ -247,7 +257,7 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
     if (saberOuterBlockParams.forceWrite.value()) {
       // Write data
       oops::Log::info() << "Info     : Write data" << std::endl;
-      outerBlocks_.back()->write(geom, outerVars);
+      outerBlocks_.back()->write(geom, validModelGeom, outerVars);
       outerBlocks_.back()->write();
     }
 
@@ -308,6 +318,7 @@ void SaberOuterBlockChain::calibrateBlock(
             const eckit::LocalConfiguration & covarConf,
             const oops::FieldSet4D & fset4dXb,
             const oops::Geometry<MODEL> & geom,
+            const bool & validModelGeom,
             const oops::Variables & outerVars,
             oops::FieldSets & fsetEns) {
   oops::Log::trace() << "calibrateBlock starting" << std::endl;
@@ -325,6 +336,9 @@ void SaberOuterBlockChain::calibrateBlock(
 
     // Get ensemble size
     const size_t nens = ensembleConf.getInt("ensemble size");
+
+    // Cannot read ensemble members without a valid MODEL geometry
+    ASSERT(validModelGeom || (nens == 0));
 
     for (size_t ie = 0; ie < nens; ++ie) {
       // Read ensemble member
@@ -353,7 +367,7 @@ void SaberOuterBlockChain::calibrateBlock(
 
   // Write calibration data
   oops::Log::info() << "Info     : Write calibration data" << std::endl;
-  outerBlocks_.back()->write(geom, outerVars);
+  outerBlocks_.back()->write(geom, validModelGeom, outerVars);
   outerBlocks_.back()->write();
 
   oops::Log::trace() << "calibrateBlock done" << std::endl;

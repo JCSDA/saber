@@ -74,9 +74,13 @@ class BiperiodizationImpl {
   void multiplyAD(atlas::FieldSet &) const;
   void leftInverseMultiply(atlas::FieldSet &) const;
 
+  const bool sameGrid() const
+    {return sameGrid_;}
+
  private:
   // Inner grid
   atlas::StructuredGrid innerGrid_;
+  bool sameGrid_;
 
   // Inner partition
   std::vector<int> innerPartition_;

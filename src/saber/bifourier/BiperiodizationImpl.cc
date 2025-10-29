@@ -68,10 +68,16 @@ BiperiodizationImpl::BiperiodizationImpl(const oops::GeometryData & outerGeometr
   const size_t physicalNy = outerNy - outerExtNy;
 
   if (innerExtNx == outerExtNx && innerExtNy == outerExtNy) {
+    // Same grid
+    sameGrid_ = true;
+
     // Copy grid
     innerGrid_ = outerGrid;
     oops::Log::info() << "Info     : Inner grid = outer grid" << std::endl;
   } else {
+    // Different grid
+    sameGrid_ = false;
+
     // Define inner grid
     const size_t innerNx = physicalNx + innerExtNx;
     const size_t innerNy = physicalNy + innerExtNy;

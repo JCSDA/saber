@@ -13,9 +13,6 @@ Outer grid size: 3763
 - xspace: LocalConfiguration[root={type => linear , start => 5.2120971254055749e+05 , end => 7.1370971254055749e+05 , N => 78 , endpoint => true}]
 - yspace: LocalConfiguration[root={type => linear , start => -2.1173080099392682e+04 , end => 1.2132691990060732e+05 , N => 58 , endpoint => true}]
 Info     : Inner grid size: 4524
-Norm of input parameter inputTestFile: 8.1488556410001294e+01
-Norm of output parameter outputInnerTestFile: 7.1928660692813907e+01
-Norm of output parameter outputOuterTestFile: 8.0177487529753819e+01
 Adjoint test for block Biperiodization passed
 Inner inverse test for block Biperiodization passed: U Uinv (U x) == (U x)
 Outer inverse test for block Biperiodization passed: Uinv U (Uinv x) == (Uinv x)
