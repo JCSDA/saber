@@ -369,7 +369,7 @@ if( SABER_TEST_BUMP )
     add_fctest( TARGET          saber_test_nicas_sqrt
                 MPI             ${mpi}
                 OMP             ${omp}
-                LINKER_LANGUAGE Fortran
+                LINKER_LANGUAGE ${FORTRAN_LINKER_LANGUAGE}
                 SOURCES         fctest/fctest_nicas_sqrt.F90
                 LIBS            saber )
 endif()
