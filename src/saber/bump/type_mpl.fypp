@@ -818,62 +818,66 @@ if (mpl%main) then
    do iproc=1,mpl%nproc
       ! Allocation
       n_loc_tmp = count(glb_to_proc==iproc)
-      allocate(rbuf(n_loc_tmp*nl))
+      if (n_loc_tmp>0) then
+         allocate(rbuf(n_loc_tmp*nl))
 
-      if (iproc==mpl%rootproc) then
-         ! Copy data
-         #:if rank == 1
-            rbuf = loc
-         #:else
-            do il=1,nl
-               do i_loc=1,n_loc
-                  rbuf((il-1)*n_loc+i_loc) = loc(i_loc,il)
-               end do
-            end do
-         #:endif
-      else
-          ! Receive data from iproc
-          call mpl%f_comm%receive(rbuf,iproc-1,mpl%tag,status)
-      end if
-
-      ! Add data to glb
-      do i_glb=1,n_glb
-         jproc = glb_to_proc(i_glb)
-         if (iproc==jproc) then
-            i_loc = glb_to_loc(i_glb)
+         if (iproc==mpl%rootproc) then
+            ! Copy data
             #:if rank == 1
-               glb(i_glb) = rbuf(i_loc)
+               rbuf = loc
             #:else
                do il=1,nl
-                  glb(i_glb,il) = rbuf((il-1)*n_loc_tmp+i_loc)
+                  do i_loc=1,n_loc
+                     rbuf((il-1)*n_loc+i_loc) = loc(i_loc,il)
+                  end do
                end do
             #:endif
+         else
+             ! Receive data from iproc
+             call mpl%f_comm%receive(rbuf,iproc-1,mpl%tag,status)
          end if
-      end do
 
-      ! Release memory
-      deallocate(rbuf)
+         ! Add data to glb
+         do i_glb=1,n_glb
+            jproc = glb_to_proc(i_glb)
+            if (iproc==jproc) then
+               i_loc = glb_to_loc(i_glb)
+               #:if rank == 1
+                  glb(i_glb) = rbuf(i_loc)
+               #:else
+                  do il=1,nl
+                     glb(i_glb,il) = rbuf((il-1)*n_loc_tmp+i_loc)
+                  end do
+               #:endif
+            end if
+         end do
+
+         ! Release memory
+         deallocate(rbuf)
+      end if
    end do
 else
-   ! Allocation
-   allocate(sbuf(n_loc*nl))
+   if (n_loc>0) then
+      ! Allocation
+      allocate(sbuf(n_loc*nl))
 
-   ! Copy data
-   #:if rank == 1
-      sbuf = loc
-   #:else
-      do il=1,nl
-         do i_loc=1,n_loc
-            sbuf((il-1)*n_loc+i_loc) = loc(i_loc,il)
+      ! Copy data
+      #:if rank == 1
+         sbuf = loc
+      #:else
+         do il=1,nl
+            do i_loc=1,n_loc
+               sbuf((il-1)*n_loc+i_loc) = loc(i_loc,il)
+            end do
          end do
-      end do
-   #:endif
+      #:endif
 
-   ! Send data to rootproc
-   call mpl%f_comm%send(sbuf,mpl%rootproc-1,mpl%tag)
+      ! Send data to rootproc
+      call mpl%f_comm%send(sbuf,mpl%rootproc-1,mpl%tag)
 
-   ! Release memory
-   deallocate(sbuf)
+      ! Release memory
+      deallocate(sbuf)
+   end if
 end if
 call mpl%update_tag(1)
 
