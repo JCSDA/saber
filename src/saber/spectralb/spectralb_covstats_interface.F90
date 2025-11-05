@@ -88,6 +88,8 @@ print*, "index 1", start_index(1), final_index(1)
 bins = final_index(1) - start_index(1)
 levels = final_index(2) - start_index(2) + 1
 
+call f_conf%final()
+
 end subroutine c_covSpectralBinsLevels
 
 
@@ -138,6 +140,8 @@ call cvt_nc_read_field_from_file(covariance_file, &
                                  final_index = final_index(:))
 
 bins = final_index(1) - start_index(1)
+
+call f_conf%final()
 
 end subroutine c_covSpectralBins
 
@@ -206,5 +210,7 @@ do b = 0, bins -1
     end do
   end do
 end do
+
+call f_conf%final()
 
 end subroutine c_covSpectralUMatrix

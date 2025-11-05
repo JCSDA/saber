@@ -276,6 +276,11 @@ void LayerSpec::setupParallelization() {
     xSpecStdDev_.push_back(xBufC1d[jk][0]);
   }
 
+  // Delete FFTW-related data
+  fftw_destroy_plan(xPlan_r2c1d);
+  fftw_free(xBufR1d);
+  fftw_free(xBufC1d);
+
   // Columns FFTW setup
   int yRank = 1;
   int yN[] = {static_cast<int>(nyExt_)};
@@ -313,6 +318,11 @@ void LayerSpec::setupParallelization() {
   for (size_t jl = 0; jl < nl_; ++jl) {
     ySpecStdDev_.push_back(yBufC1d[jl][0]);
   }
+
+  // Delete FFTW-related data
+  fftw_destroy_plan(yPlan_r2c1d);
+  fftw_free(yBufR1d);
+  fftw_free(yBufC1d);
 
   if (!params_.skipTests.value()) {
     // Tests

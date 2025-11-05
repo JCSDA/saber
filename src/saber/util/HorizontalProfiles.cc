@@ -8,6 +8,7 @@
 #include <netcdf.h>
 
 #include <algorithm>
+#include <memory>
 
 #include "atlas/array.h"
 #include "atlas/util/Earth.h"
@@ -402,7 +403,7 @@ void  write_1d_covariances(const eckit::mpi::Comm & comm,
                                           profilesToFieldIndex.cend(),
                                           iField);
       const size_t iFirstProfile = iProfileIter - profilesToFieldIndex.cbegin();
-      auto distArray = atlas::array::Array::create<double>(ndist);
+      std::unique_ptr<atlas::array::Array> distArray(atlas::array::Array::create<double>(ndist));
       auto distView = atlas::array::make_view<double, 1>(*distArray);
       for (size_t jnode = 0; jnode < ndist; jnode++) {
         distView(jnode) = distances[iFirstProfile][jnode];

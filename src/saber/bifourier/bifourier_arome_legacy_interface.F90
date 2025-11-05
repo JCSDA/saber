@@ -37,6 +37,9 @@ f_conf = fckit_configuration(c_conf)
 ! Call Fortran
 call bifourier_arome_legacy_vortopb(f_conf,nial,fact1)
 
+! Release memory
+call f_conf%final()
+
 end subroutine bifourier_arome_legacy_vortopb_c
 
 !----------------------------------------------------------------------
@@ -65,6 +68,9 @@ f_conf = fckit_configuration(c_conf)
 ! Call Fortran
 call bifourier_arome_legacy_balance(f_conf,nwglb,nflev,sdivpb,stpspb,stpsdivu,sqpb,sqdivu,sqtpsu)
 
+! Release memory
+call f_conf%final()
+
 end subroutine bifourier_arome_legacy_balance_c
 
 !----------------------------------------------------------------------
@@ -91,6 +97,9 @@ f_conf = fckit_configuration(c_conf)
 
 ! Call Fortran
 call bifourier_arome_legacy_covariance(f_conf,nwglb,nflev,vorcov,divucov,tpsucov,qucov)
+
+! Release memory
+call f_conf%final()
 
 end subroutine bifourier_arome_legacy_covariance_c
 

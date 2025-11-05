@@ -290,7 +290,6 @@ class(geom_type),intent(inout) :: geom !< Geometry
 
 ! Release memory
 call geom%partial_dealloc
-call geom%afunctionspace_mg%final()
 if (allocated(geom%gmask_mga)) deallocate(geom%gmask_mga)
 if (allocated(geom%c0a_to_mga)) deallocate(geom%c0a_to_mga)
 if (allocated(geom%lon_c0a)) deallocate(geom%lon_c0a)

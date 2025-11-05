@@ -1174,6 +1174,7 @@ if (nam%new_wind) then
    call wind%com_c0_AM%setup(mpl,'com_c0_AM',geom%nc0a,wind%nc0m,geom%nc0,geom%c0a_to_c0,wind%c0m_to_c0)
 
    ! Release memory
+   call tree%dealloc()
    call mesh_c0u%dealloc
    deallocate(lcheck_c0b)
    deallocate(c0u_to_c0b)

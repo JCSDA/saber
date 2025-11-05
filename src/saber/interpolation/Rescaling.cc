@@ -8,6 +8,7 @@
 #include <netcdf.h>
 
 #include <cmath>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <tuple>
@@ -82,7 +83,7 @@ auto readCovarianceProfiles(const std::string & filePath,
     ASSERT(netcdfDimVarIDs[pos].size() == 1);
     const int nLevs = dimSizes[netcdfDimVarIDs[pos][0]];
     ASSERT(nLevs == var.getLevels());
-    auto levArray = atlas::array::Array::create<int>(nLevs);
+    std::unique_ptr<atlas::array::Array> levArray(atlas::array::Array::create<int>(nLevs));
     auto levView = atlas::array::make_view<int, 1>(*levArray);
     util::atlasArrayReadData(netcdfGeneralIDs,
                              netcdfVarIDs[pos],
@@ -97,7 +98,7 @@ auto readCovarianceProfiles(const std::string & filePath,
     pos = vars.find(distVarName);
     ASSERT(netcdfDimVarIDs[pos].size() == 1);
     const int nDist = dimSizes[netcdfDimVarIDs[pos][0]];
-    auto distArray = atlas::array::Array::create<double>(nDist);
+    std::unique_ptr<atlas::array::Array> distArray(atlas::array::Array::create<double>(nDist));
     auto distView = atlas::array::make_view<double, 1>(*distArray);
     util::atlasArrayReadData(netcdfGeneralIDs,
                              netcdfVarIDs[pos],

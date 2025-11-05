@@ -172,13 +172,15 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
   covarConf.set("ensemble configuration", ensembleConf);
   // Read dual resolution ensemble if needed
   const auto & dualResParams = params.dualResParams.value();
-  const Geometry_ * dualResGeom = &geom;
+  std::unique_ptr<const Geometry_> dualResGeometry{};  // the owning pointer
+  const Geometry_ * dualResGeom = &geom;               // the algorithm-facing handle
   std::unique_ptr<oops::FieldSets> fsetDualResEns;
   if (dualResParams != boost::none) {
     const auto & dualResGeomConf = dualResParams->geometry.value();
     if (dualResGeomConf != boost::none) {
       // Create dualRes geometry
-      dualResGeom = new Geometry_(*dualResGeomConf, geom.getComm());
+      dualResGeometry = std::make_unique<Geometry_>(*dualResGeomConf, geom.getComm());
+      dualResGeom = dualResGeometry.get();
     }
     // Background and first guess at dual resolution geometry
     const State4D_ xbDualRes(*dualResGeom, xb);

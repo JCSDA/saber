@@ -150,6 +150,9 @@ TEST( test_nicas_sqrt )
   call fset%final()
   call fset_out_1%final()
   call fset_out_2%final()
+  call conf%final()
+  call rh(1)%final()
+  call rv(1)%final()
 
   ! Release memory
   call bump%dealloc()
