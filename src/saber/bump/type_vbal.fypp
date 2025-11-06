@@ -2030,12 +2030,12 @@ do iv=1,nam%nv
                ic2u = samp%c2b_to_c2u(ic2b)
                call gsi%interp_lat(mpl,samp%lat_c2u(ic2u),ilatm,ilatp,rlatm,rlatp)
                do il0=1,geom%nl0
-                  if (il0==gsi%ilev2d) then
+                  if (il0==nam%ilev2d) then
                      ! Copy fist level as is
-                     vbal%blk(iv,jv)%reg_c2b(gsi%ilev2d,il0,ic2b) = rlatm*gsi%pscon(ilatm,1)+rlatp*gsi%pscon(ilatp,1)
+                     vbal%blk(iv,jv)%reg_c2b(nam%ilev2d,il0,ic2b) = rlatm*gsi%pscon(ilatm,1)+rlatp*gsi%pscon(ilatp,1)
                   else
                      ! Other levels
-                     vbal%blk(iv,jv)%reg_c2b(gsi%ilev2d,il0,ic2b) = &
+                     vbal%blk(iv,jv)%reg_c2b(nam%ilev2d,il0,ic2b) = &
  &  rlatm*gsi%rlevm(il0)*gsi%pscon(ilatm,gsi%l0_to_levm(il0)) &
  & +rlatm*gsi%rlevp(il0)*gsi%pscon(ilatm,gsi%l0_to_levp(il0)) &
  & +rlatp*gsi%rlevm(il0)*gsi%pscon(ilatp,gsi%l0_to_levm(il0)) &

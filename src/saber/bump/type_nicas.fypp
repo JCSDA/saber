@@ -331,7 +331,7 @@ if (nam%strategy=='crossed') then
 
          ! Control variable section starting and end indices
          if (geom%grp2d(ig)) then
-            if (geom%nl2d==1) then
+            if (nam%ilev2d==1) then
                ! First level only
                nicas%blk(ig)%cmp(icmp)%ias = 1
                nicas%blk(ig)%cmp(icmp)%iae = nicas%blk(ig)%cmp(icmp)%nsa
@@ -927,7 +927,7 @@ if (nam%strategy=='crossed') then
 
          ! Control variable section starting and end indices
          if (geom%grp2d(ig)) then
-            if (geom%nl2d==1) then
+            if (nam%ilev2d==1) then
                ! First level only
                nicas%blk(ig)%cmp(icmp)%ias = 1
                nicas%blk(ig)%cmp(icmp)%iae = nicas%blk(ig)%cmp(icmp)%nsa
@@ -1539,7 +1539,7 @@ do ie=1,ne
    call nicas%apply_sqrt(mpl,nam,geom,cv_ens(ie),fld_c0a)
 
    ! Set metadata
-   call ens%mem(ie)%init(mpl,geom%afunctionspace_mg,geom%gmask_mga,nam%variables(1:nam%nv),nam%lev2d,nam%var2d)
+   call ens%mem(ie)%init(mpl,geom%afunctionspace_mg,geom%gmask_mga,nam%variables(1:nam%nv),nam%ilev2d,nam%var2d)
 
    ! Set member from subset Sc0
    call ens%set_c0(mpl,nam,geom,'member',ie,fld_c0a)

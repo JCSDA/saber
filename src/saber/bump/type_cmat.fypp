@@ -438,7 +438,7 @@ if (trim(nam%strategy)=='crossed') then
             igmin = 1
             rhmin = huge_real
             do ig=1,nam%ng
-               if ((.not.geom%grp2d(ig)).or.(geom%nl2d==il0)) then
+               if ((.not.geom%grp2d(ig)).or.(nam%ilev2d==il0)) then
                   do icmp=1,cmat%blk(ig)%ncmp
                      if (mpl%msv%isnot(cmat%blk(ig)%rh(ic0a,il0,icmp)).and.(igmin(icmp)>0)) then
                         if (cmat%blk(ig)%rh(ic0a,il0,icmp)<rhmin(icmp)) then

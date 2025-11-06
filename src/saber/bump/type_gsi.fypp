@@ -53,7 +53,6 @@ type gsi_type
 
    ! 2D variables
    logical,allocatable :: var2d(:)              !< 2D variables flag
-   integer :: ilev2d                            !< 3D level for 2D variables
 contains
    procedure :: dealloc => gsi_dealloc
    procedure :: setup => gsi_setup
@@ -407,13 +406,6 @@ call mpl%f_comm%broadcast(gsi%stddev,mpl%rootproc-1)
 call mpl%f_comm%broadcast(gsi%a,mpl%rootproc-1)
 call mpl%f_comm%broadcast(gsi%rh,mpl%rootproc-1)
 call mpl%f_comm%broadcast(gsi%rv,mpl%rootproc-1)
-
-! Level for 2D variables
-if (nam%lev2d=='first') then
-   gsi%ilev2d = 1
-else if (nam%lev2d=='last') then
-   gsi%ilev2d = geom%nl0
-end if
 
 ! Update status
 gsi%initialized = .true.

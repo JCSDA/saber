@@ -480,7 +480,7 @@ do iv=1,nam%nv
       var%m2(:,:,iv) = mpl%msv%valr
       do ic0a=1,geom%nc0a
          call gsi%interp_lat(mpl,geom%lat_c0a(ic0a),ilatm,ilatp,rlatm,rlatp)
-         var%m2(ic0a,gsi%ilev2d,iv) = (rlatm*gsi%stddev(ilatm,1,iv)+rlatp*gsi%stddev(ilatp,1,iv))**2
+         var%m2(ic0a,nam%ilev2d,iv) = (rlatm*gsi%stddev(ilatm,1,iv)+rlatp*gsi%stddev(ilatp,1,iv))**2
       end do
    else
       ! 3D variable

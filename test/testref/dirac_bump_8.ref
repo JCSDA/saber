@@ -11,7 +11,7 @@ Input Dirac increment:
           Subset Sc0 size:             7082
           Domain area (% of Earth area): 0.100E+03%
              Level   1 ~> 100.0%
-             Level   1 ~>  0.444E-01 vert. coord.
+             Level   1 ~>  0.100E+01 vert. coord.
              Effective levels:   1 
                 Horizontal support radius:    6000.00 km (   6000.00 km -    6000.00 km)
                 Estimated nc1 from horizontal support radius:     1636
@@ -22,7 +22,7 @@ Input Dirac increment:
              nc1(  1) =                       1636
              ns =                             1636
              v%n_s =                             1
-             c%n_s[global] =                132856
+             c%n_s[global] =                141244
     Full NICAS adjoint test result:                        T
        Block NICAS adjoint test result:                    T
           Interpolation adjoint test (horizontal) result:  T
@@ -32,13 +32,13 @@ Input Dirac increment:
           Communication AC adjoint test result:            T
           Convolution / communication adjoint test result: T
           Component NICAS adjoint test result:             T
-Norm of output parameter vert_coord - 1: 1.2831019118921313e+01
+Norm of output parameter vert_coord - 1: 8.4154619599876980e+01
 Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: L120x61 [7320]
   Fields:
   - snow_depth (1 levels):
     + min    = 0.0000000000000000e+00
-    + max    = 1.0000000000000004e+00
-    + mean   = 1.3214978864175818e-02
-    + stddev = 8.9333392817362800e-02
+    + max    = 1.0000000000000002e+00
+    + mean   = 2.7083884586849495e-02
+    + stddev = 1.1558741608103873e-01

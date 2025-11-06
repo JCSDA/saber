@@ -157,31 +157,25 @@ end subroutine atlas_get_regional_grid
 ! Subroutine: atlas_field_to_array_${dtype}$
 !> Convert ATLAS field to field
 !----------------------------------------------------------------------
-subroutine atlas_field_to_array_${dtype}$(afield,mpl,array,lev2d)
+subroutine atlas_field_to_array_${dtype}$(afield,mpl,array,ilev2d)
 
 implicit none
 
 ! Passed variables
-type(atlas_field),intent(in) :: afield        !< ATLAS field
-type(mpl_type),intent(inout) :: mpl           !< MPI data
-${ftype[dtype]}$,intent(out) :: array(:,:)    !< Array
-character(len=*),intent(in),optional :: lev2d !< Level for 2D variables
+type(atlas_field),intent(in) :: afield     !< ATLAS field
+type(mpl_type),intent(inout) :: mpl        !< MPI data
+${ftype[dtype]}$,intent(out) :: array(:,:) !< Array
+integer,intent(in) :: ilev2d               !< Level for 2D variables
 
 ! Local variables
-integer :: nmga,nnodes,nl0,nl2d,il0
+integer :: nmga,nnodes,nl0,il0
 ${ftype[dtype]}$,pointer :: ptr(:,:)
-character(len=1024) :: llev2d
 
 ! Set name
 @:set_name(atlas_field_to_array_${dtype}$)
 
 ! Probe in
 @:probe_in()
-
-! Local lev2d
-llev2d = 'first'
-if (present(lev2d)) llev2d = lev2d
-if (.not.((trim(llev2d)=='first').or.(trim(llev2d)=='last'))) call mpl%abort('${subr}$','wrong lev2d')
 
 ! Check kind
 if (afield%kind()/=${atlas_kind[dtype]}$) call mpl%abort('${subr}$','wrong kind for field '//afield%name())
@@ -200,17 +194,9 @@ if (nmga/=nnodes) call mpl%abort('${subr}$','wrong number of nodes for field '//
 array = ${zero[dtype]}$
 
 ! Copy data
-! For the 2D case (afield%levels()==1), the field is copied:
-! - at the first level of array if (lev2d=='first')
-! - at the last level of array if (lev2d=='last')
 call afield%data(ptr)
 if (afield%levels()==1) then
-   if (trim(llev2d)=='first') then
-      nl2d = 1
-   else if (trim(llev2d)=='last') then
-      nl2d = nl0
-   end if
-   if (nmga>0) array(:,nl2d) = ptr(1,1:nmga)
+   if (nmga>0) array(:,ilev2d) = ptr(1,1:nmga)
 else
    if (nl0>afield%levels()) call mpl%abort('${subr}$','not enough levels in ATLAS field')
    if (nmga>0) then
@@ -230,19 +216,18 @@ end subroutine atlas_field_to_array_${dtype}$
 ! Subroutine: atlas_field_to_array_logical
 !> Convert ATLAS field to field
 !----------------------------------------------------------------------
-subroutine atlas_field_to_array_logical(afield,mpl,array,lev2d)
+subroutine atlas_field_to_array_logical(afield,mpl,array,ilev2d)
 
 implicit none
 
 ! Passed variables
-type(atlas_field),intent(in) :: afield        !< ATLAS field
-type(mpl_type),intent(inout) :: mpl           !< MPI data
-logical,intent(out) :: array(:,:)             !< Array
-character(len=*),intent(in),optional :: lev2d !< Level for 2D variables
+type(atlas_field),intent(in) :: afield !< ATLAS field
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+logical,intent(out) :: array(:,:)      !< Array
+integer,intent(in) :: ilev2d           !< Level for 2D variables
 
 ! Local variables
 integer,allocatable :: array_int(:,:)
-character(len=1024) :: llev2d
 
 ! Set name
 @:set_name(atlas_field_to_array_logical)
@@ -250,16 +235,11 @@ character(len=1024) :: llev2d
 ! Probe in
 @:probe_in()
 
-! Local lev2d
-llev2d = 'first'
-if (present(lev2d)) llev2d = lev2d
-if (.not.((trim(llev2d)=='first').or.(trim(llev2d)=='last'))) call mpl%abort('${subr}$','wrong lev2d')
-
 ! Allocation
 allocate(array_int(size(array,1),size(array,2)))
 
 ! Get integer array
-call field_to_array(afield,mpl,array_int,lev2d)
+call field_to_array(afield,mpl,array_int,ilev2d)
 
 ! Convert integer to logical
 call convert_i2l(mpl,array_int,array)
@@ -277,31 +257,25 @@ end subroutine atlas_field_to_array_logical
 ! Subroutine: atlas_field_from_array_${dtype}$
 !> Convert field to ATLAS field
 !----------------------------------------------------------------------
-subroutine atlas_field_from_array_${dtype}$(afield,mpl,array,lev2d)
+subroutine atlas_field_from_array_${dtype}$(afield,mpl,array,ilev2d)
 
 implicit none
 
 ! Passed variables
-type(atlas_field),intent(inout) :: afield     !< ATLAS field
-type(mpl_type),intent(inout) :: mpl           !< MPI data
-${ftype[dtype]}$,intent(in) :: array(:,:)     !< Array
-character(len=*),intent(in),optional :: lev2d !< Level for 2D variables
+type(atlas_field),intent(inout) :: afield !< ATLAS field
+type(mpl_type),intent(inout) :: mpl       !< MPI data
+${ftype[dtype]}$,intent(in) :: array(:,:) !< Array
+integer,intent(in) :: ilev2d              !< Level for 2D variables
 
 ! Local variables
-integer :: nmga,nnodes,nl0,nl2d,il0
+integer :: nmga,nnodes,nl0,il0
 ${ftype[dtype]}$,pointer :: ptr(:,:)
-character(len=1024) :: llev2d
 
 ! Set name
 @:set_name(atlas_field_from_array_${dtype}$)
 
 ! Probe in
 @:probe_in()
-
-! Local lev2d
-llev2d = 'first'
-if (present(lev2d)) llev2d = lev2d
-if (.not.((trim(llev2d)=='first').or.(trim(llev2d)=='last'))) call mpl%abort('${subr}$','wrong lev2d')
 
 ! Check kind
 if (afield%kind()/=${atlas_kind[dtype]}$) call mpl%abort('${subr}$','wrong kind for field '//afield%name())
@@ -317,18 +291,10 @@ nl0 = size(array,2)
 if (nmga/=nnodes) call mpl%abort('${subr}$','wrong number of nodes for field '//afield%name())
 
 ! Copy data
-! For the 2D case (afield%levels()==1), the field is copied:
-! - at the first level of array if (lev2d=='first')
-! - at the last level of array if (lev2d=='last')
 call afield%data(ptr)
 ptr(:,:) = ${zero[dtype]}$
 if (afield%levels()==1) then
-   if (trim(llev2d)=='first') then
-      nl2d = 1
-   else if (trim(llev2d)=='last') then
-      nl2d = nl0
-   end if
-   if (nmga>0) ptr(1,1:nmga) = array(:,nl2d)
+   if (nmga>0) ptr(1,1:nmga) = array(:,ilev2d)
 else
    if (nl0>afield%levels()) call mpl%abort('${subr}$','not enough levels in ATLAS field')
    if (nmga>0) then

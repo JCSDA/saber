@@ -323,7 +323,7 @@ type(mpl_type),intent(inout) :: mpl                    !< MPI data
 type(rng_type),intent(inout) :: rng                    !< Random number generator
 type(nam_type),intent(in) :: nam                       !< Namelist
 type(atlas_functionspace),intent(in) :: afunctionspace !< ATLAS function space
-type(fieldset_type),intent(in),optional :: fieldset    !< Fieldset containing geometry elements
+type(fieldset_type),intent(in) :: fieldset             !< Fieldset containing geometry elements
 
 ! Local variables
 integer :: il0,jl0off,jl0r,jc3,jc4,iproc,iv,ig
@@ -363,18 +363,9 @@ do iv=1,nam%nv
   ig = nam%group_index(iv)
   if (.not.nam%var2d(iv)) geom%grp2d(ig) = .false.
 end do
-if (trim(nam%lev2d)=='first') then
-   geom%nl2d = 1
-else if (trim(nam%lev2d)=='last') then
-   geom%nl2d = geom%nl0
-end if
 
-! Copy function space pointer
-if (present(fieldset)) then
-   call geom%from_atlas(mpl,rng,nam,afunctionspace,fieldset)
-else
-   call geom%from_atlas(mpl,rng,nam,afunctionspace)
-end if
+! Setup geometry from atlas function space and
+call geom%from_atlas(mpl,rng,nam,afunctionspace,fieldset)
 
 ! Setup subset Sc0
 call geom%setup_c0(mpl)
@@ -519,7 +510,7 @@ type(mpl_type),intent(inout) :: mpl                    !< MPI data
 type(rng_type),intent(inout) :: rng                    !< Random number generator
 type(nam_type),intent(in) :: nam                       !< Namelist
 type(atlas_functionspace),intent(in) :: afunctionspace !< ATLAS function space
-type(fieldset_type),intent(in),optional :: fieldset    !< Fieldset
+type(fieldset_type),intent(in) :: fieldset             !< Fieldset
 
 ! Local variables
 integer :: il0,imga,ib,iprocmax,icorner,ib_1,ib_2,ib_3,nmg_owned,nmg_inside,iter,i,iproc
@@ -572,24 +563,22 @@ do il0=1,geom%nl0
 end do
 geom%gmask_mga = .true.
 
-if (present(fieldset)) then
-   ! Get owned vs halo/BC field
-   if (fieldset%has_field('owned')) then
-      afield = fieldset%field('owned')
-      call field_to_array(afield,mpl,geom%owned_mga)
-   end if
+! Get owned vs halo/BC field
+if (fieldset%has_field('owned')) then
+   afield = fieldset%field('owned')
+   call field_to_array(afield,mpl,geom%owned_mga,1)
+end if
 
-   ! Get vertical coordinate
-   if (nam%vert_coord_name /= '') then
-      afield = fieldset%field(nam%vert_coord_name)
-      call field_to_array(afield,mpl,geom%vert_coord_mga)
-   end if
+! Get vertical coordinate
+if ((nam%vert_coord_name/='').and.(fieldset%has_field(nam%vert_coord_name))) then
+   afield = fieldset%field(nam%vert_coord_name)
+   call field_to_array(afield,mpl,geom%vert_coord_mga,nam%ilev2d)
+end if
 
-   ! Get geometry mask
-   if (nam%gmask_name /= '') then
-      afield = fieldset%field(nam%gmask_name)
-      call field_to_array(afield,mpl,geom%gmask_mga)
-   end if
+! Get geometry mask
+if ((nam%gmask_name/='').and.(fieldset%has_field(nam%gmask_name))) then
+   afield = fieldset%field(nam%gmask_name)
+   call field_to_array(afield,mpl,geom%gmask_mga,nam%ilev2d)
 end if
 
 ! Get lon/lat
@@ -2104,6 +2093,9 @@ else
             end do
          end do
 
+         ! Release memory
+         call agrid%final()
+
          ! Local number of valid points
          nssa = zss_count(lmask_cxa)
       else
@@ -2749,7 +2741,6 @@ deallocate(lon_s)
 deallocate(lat_s)
 deallocate(order_s)
 deallocate(gmask_s)
-call agrid%final()
 
 ! Probe out
 @:probe_out()

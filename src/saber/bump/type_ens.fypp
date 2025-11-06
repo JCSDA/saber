@@ -223,19 +223,19 @@ integer :: ie,isub
 if (allocated(ens_in%mem)) then
    do ie=1,ens_in%ne
       if (.not.ens_in%mem(ie)%is_null()) call ens_out%mem(ie)%init(mpl,ens_in%mem(ie),geom%gmask_mga, &
- & nam%variables(1:nam%nv),nam%lev2d,copy=.true.)
+ & nam%variables(1:nam%nv),nam%ilev2d,copy=.true.)
    end do
 end if
 if (allocated(ens_in%mean)) then
    do isub=1,ens_in%nsub
       if (.not.ens_in%mean(isub)%is_null()) call ens_out%mean(isub)%init(mpl,ens_in%mean(isub),geom%gmask_mga, &
- & nam%variables(1:nam%nv),nam%lev2d,copy=.true.)
+ & nam%variables(1:nam%nv),nam%ilev2d,copy=.true.)
    end do
 end if
 if (.not.ens_in%m2%is_null()) call ens_out%m2%init(mpl,ens_in%m2,geom%gmask_mga, &
- & nam%variables(1:nam%nv),nam%lev2d,copy=.true.)
+ & nam%variables(1:nam%nv),nam%ilev2d,copy=.true.)
 if (.not.ens_in%m4%is_null()) call ens_out%m4%init(mpl,ens_in%m4,geom%gmask_mga, &
- & nam%variables(1:nam%nv),nam%lev2d,copy=.true.)
+ & nam%variables(1:nam%nv),nam%ilev2d,copy=.true.)
 
 ! Probe out
 @:probe_out()
@@ -267,7 +267,7 @@ integer :: isub,ie_sub,ie
 
 do isub=1,ens%nsub
    ! Initialization
-   call ens%mean(isub)%init(mpl,ens%mem(1),geom%gmask_mga,nam%variables(1:nam%nv),nam%lev2d)
+   call ens%mean(isub)%init(mpl,ens%mem(1),geom%gmask_mga,nam%variables(1:nam%nv),nam%ilev2d)
 
    ! Set fields at zero
    call ens%mean(isub)%zero_fields(mpl)
@@ -310,8 +310,8 @@ type(fieldset_type) :: pert
 @:probe_in()
 
 ! Initialization
-call ens%m2%init(mpl,ens%mem(1),geom%gmask_mga,nam%variables(1:nam%nv),nam%lev2d)
-call ens%m4%init(mpl,ens%mem(1),geom%gmask_mga,nam%variables(1:nam%nv),nam%lev2d)
+call ens%m2%init(mpl,ens%mem(1),geom%gmask_mga,nam%variables(1:nam%nv),nam%ilev2d)
+call ens%m4%init(mpl,ens%mem(1),geom%gmask_mga,nam%variables(1:nam%nv),nam%ilev2d)
 
 ! Set fields at zero
 call ens%m2%zero_fields(mpl)
@@ -321,7 +321,7 @@ do isub=1,ens%nsub
    do ie_sub=1,ens%ne/ens%nsub
       ! Compute perturbation
       ie = ie_sub+(isub-1)*ens%ne/ens%nsub
-      call pert%init(mpl,ens%mem(ie),geom%gmask_mga,nam%variables(1:nam%nv),nam%lev2d,copy=.true.)
+      call pert%init(mpl,ens%mem(ie),geom%gmask_mga,nam%variables(1:nam%nv),nam%ilev2d,copy=.true.)
       call pert%sub_fields(mpl,ens%mean(isub))
 
       ! Square

@@ -180,8 +180,6 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   // Model section
   ModelDef modelDef;
   eckit::LocalConfiguration modelConf;
-  // Level for 2D variables ('first' or 'last')
-  param(modelDef.lev2d, modelConf);
   // Check that sampling couples and interpolations do not cross mask boundaries
   param(modelDef.mask_check, modelConf);
 

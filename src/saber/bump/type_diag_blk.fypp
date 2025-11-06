@@ -405,10 +405,8 @@ do il0=1,geom%nl0
    ! Get value at zero separation
    m2(il0) = diag_blk%raw(1,1,jl0rz,il0)
 end do
-if ((count(m2>zero)==1).and.(trim(nam%lev2d)=='first').and.(m2(1)>zero)) then
-   ilev2d = 1
-elseif ((count(m2>zero)==1).and.(trim(nam%lev2d)=='last').and.(m2(geom%nl0)>zero)) then
-   ilev2d = geom%nl0
+if ((count(m2>zero)==1).and.(m2(nam%ilev2d)>zero)) then
+   ilev2d = nam%ilev2d
 else
    ilev2d = mpl%msv%vali
 end if

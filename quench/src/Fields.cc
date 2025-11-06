@@ -61,9 +61,12 @@ Fields::Fields(const Geometry & geom,
     fset_.add(field);
   }
 
-  // Set interpolation type
+  // Set fields metadata
   for (auto field : fset_) {
     field.metadata().set("interp_type", "default");
+    if (field.levels() == 1) {
+      field.metadata().set("nearest 3d level", "bottom");
+    }
   }
 
   // Set fields to zero
@@ -104,11 +107,14 @@ Fields::Fields(const Fields & other,
       fset_.add(field);
     }
 
-    // Set interpolation type
+    // Set fields metadata
     for (auto field : fset_) {
       field.metadata() = other.fset_[field.name()].metadata();
       if (!field.metadata().has("interp_type")) {
         field.metadata().set("interp_type", "default");
+      }
+      if (!field.metadata().has("nearest 3d level") && (field.levels() == 1)) {
+        field.metadata().set("nearest 3d level", "bottom");
       }
     }
 
@@ -139,11 +145,14 @@ Fields::Fields(const Fields & other,
     fset_.add(field);
   }
 
-  // Set interpolation type
+  // Set fields metadata
   for (auto field : fset_) {
     field.metadata() = other.fset_[field.name()].metadata();
     if (!field.metadata().has("interp_type")) {
       field.metadata().set("interp_type", "default");
+    }
+    if (!field.metadata().has("nearest 3d level") && (field.levels() == 1)) {
+      field.metadata().set("nearest 3d level", "bottom");
     }
   }
 
@@ -197,11 +206,14 @@ Fields::Fields(const Fields & other)
     fset_.add(field);
   }
 
-  // Set interpolation type
+  // Set fields metadata
   for (auto field : fset_) {
     field.metadata() = other.fset_[field.name()].metadata();
     if (!field.metadata().has("interp_type")) {
       field.metadata().set("interp_type", "default");
+    }
+    if (!field.metadata().has("nearest 3d level") && (field.levels() == 1)) {
+      field.metadata().set("nearest 3d level", "bottom");
     }
   }
 
@@ -881,10 +893,15 @@ void Fields::toFieldSet(atlas::FieldSet & fset) const {
   // Share internal fieldset
   fset.clear();
   fset = util::shareFields(fset_);
+
+  // Set fields metadata
   for (auto field : fset) {
     field.metadata() = fset_[field.name()].metadata();
     if (!field.metadata().has("interp_type")) {
       field.metadata().set("interp_type", "default");
+    }
+    if (!field.metadata().has("nearest 3d level") && (field.levels() == 1)) {
+      field.metadata().set("nearest 3d level", "bottom");
     }
     field.set_dirty(fset_[field.name()].dirty());
   }
@@ -969,9 +986,12 @@ void Fields::read(const eckit::Configuration & config) {
     }
   }
 
-  // Set interpolation type
+  // Set fields metadata
   for (auto field : fset_) {
     field.metadata().set("interp_type", "default");
+    if (field.levels() == 1) {
+      field.metadata().set("nearest 3d level", "bottom");
+    }
   }
 
   oops::Log::trace() << classname() << "::read done" << std::endl;

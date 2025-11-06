@@ -133,53 +133,63 @@ BUMP::BUMP(const oops::GeometryData & geometryData,
       grid.set("model.variables", vars_str);
     }
 
-    // Get the number of levels and the 2D variables
+    // Get the number of levels and potential 2D variables
     int nl0 = 0;
     std::vector<std::string> var2d;
     for (const auto & var : vars_str) {
-      bool varFound = false;
-      for (size_t jvar = 0; jvar < vars_.size(); ++jvar) {
-        if (var == vars_[jvar].name()) {
-          varFound = true;
-          int nl0_tmp = static_cast<int>(vars_[var].getLevels());
-          if (nl0 > 1) {
-            // Check that nl0_tmp is either 1 or nl0
-            if ((nl0_tmp != 1) && (nl0_tmp != nl0)) {
-             oops::Log::info() << "BUMP::BUMP: inconsistent number of levels in BUMP" << std::endl;
-              std::abort();
-            }
-          }
-          nl0 = std::max(nl0, nl0_tmp);
-
-          // 2D variable flag
-          if (nl0_tmp == 1) {
-            var2d.push_back(var);
-          }
+      ASSERT(vars_.has(var));
+      int nl0_tmp = static_cast<int>(vars_[var].getLevels());
+      if (nl0 > 1) {
+        // Check that nl0_tmp is either 1 or nl0
+        if ((nl0_tmp != 1) && (nl0_tmp != nl0)) {
+         oops::Log::info() << "BUMP::BUMP: inconsistent number of levels in BUMP" << std::endl;
+          std::abort();
         }
       }
-      if (!varFound) {
-        oops::Log::info() << "BUMP: inconsistent variable names" << std::endl;
-        std::abort();
+      nl0 = std::max(nl0, nl0_tmp);
+
+      if (nl0_tmp == 1) {
+        // Potential 2D variable
+        var2d.push_back(var);
       }
     }
     grid.set("model.nl0", nl0);
+
+    // 2D variables are meaningful if 3D variables are present only
+    if (nl0 == 1) {
+      var2d.clear();
+    }
     grid.set("model.2d variables", var2d);
 
-    // Add level index for 2D fields
-    if (!grid.has("model.level for 2d variables")) {
-      ModelDef def;
-      grid.set("model.level for 2d variables", def.lev2d.second);
+    // Add nearest 3D level for 2D fields
+    std::string nearest3dLevel;
+    for (const auto & var : var2d) {
+      if (xb[var].metadata().has("nearest 3d level")) {
+        const std::string value = xb[var].metadata().getString("nearest 3d level");
+        if (nearest3dLevel.empty()) {
+          nearest3dLevel = value;
+        } else {
+          ASSERT(value == nearest3dLevel);
+        }
+      }
     }
+    grid.set("model.nearest 3d level", nearest3dLevel);
+
+    // Add levels direction
+    grid.set("model.levels direction", geometryData.levelsAreTopDown());
 
     // Add vertical coordinate name
     std::string vertCoordName;
     for (const auto & var : vars_str) {
       if (var2d.size() == vars_str.size() || vars_[var].getLevels() > 1) {
         const std::string key = var + ".vert_coord";
-        if (vertCoordName.empty()) {
-          vertCoordName = fieldsMetaData.getString(key, "");
-        } else {
-          ASSERT(fieldsMetaData.getString(key, "vert_coord") == vertCoordName);
+        if (fieldsMetaData.has(key)) {
+          const std::string value = fieldsMetaData.getString(key);
+          if (vertCoordName.empty()) {
+            vertCoordName = value;
+          } else {
+            ASSERT(value == vertCoordName);
+          }
         }
       }
     }
@@ -193,10 +203,13 @@ BUMP::BUMP(const oops::GeometryData & geometryData,
     for (const auto & var : vars_str) {
       if (var2d.size() == vars_str.size() || vars_[var].getLevels() > 1) {
         const std::string key = var + ".gmask";
-        if (gmaskName.empty()) {
-          gmaskName = fieldsMetaData.getString(key, "");
-        } else {
-          ASSERT(fieldsMetaData.getString(key, "gmask") == gmaskName);
+        if (fieldsMetaData.has(key)) {
+          const std::string value = fieldsMetaData.getString(key);
+          if (gmaskName.empty()) {
+            gmaskName = value;
+          } else {
+            ASSERT(value == gmaskName);
+          }
         }
       }
     }

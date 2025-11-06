@@ -135,7 +135,6 @@ class Geometry : public util::Printable,
     GroupParameters params_;
     size_t index_;
     size_t levels_;
-    std::string lev2d_;
     atlas::Field vertCoord_;
     std::vector<double> vertCoordAvg_;
     double gmaskSize_;

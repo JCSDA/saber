@@ -148,9 +148,9 @@ subroutine bump_setup(bump,afunctionspace,fieldset)
 implicit none
 
 ! Passed variables
-class(bump_type),intent(inout) :: bump                     !< BUMP
-type(atlas_functionspace),intent(in) :: afunctionspace     !< Functionspace
-type(fieldset_type),intent(in),optional :: fieldset        !< SABER geometry fields
+class(bump_type),intent(inout) :: bump                 !< BUMP
+type(atlas_functionspace),intent(in) :: afunctionspace !< Functionspace
+type(fieldset_type),intent(in) :: fieldset             !< SABER geometry fields
 
 ! Local variables
 integer :: color,sc
@@ -169,7 +169,7 @@ character(len=1024) :: cname
 @:print_bump_instance()
 
 if (bump%nam%load_universe_radius) then
-   ! Read universe radius   
+   ! Read universe radius
    call bump%nam%read_universe_radius(bump%mpl)
 
    ! Print result
@@ -261,11 +261,7 @@ write(bump%mpl%info,'(a)') '----------------------------------------------------
 call bump%mpl%flush
 write(bump%mpl%info,'(a)') '--- Initialize geometry'
 call bump%mpl%flush
-if (present(fieldset)) then
-   call bump%geom(1)%setup(bump%mpl,bump%rng,bump%nam,afunctionspace,fieldset)
-else
-   call bump%geom(1)%setup(bump%mpl,bump%rng,bump%nam,afunctionspace)
-end if
+call bump%geom(1)%setup(bump%mpl,bump%rng,bump%nam,afunctionspace,fieldset)
 
 if (bump%nam%ens1_ne>0) then
    ! Initialize ensemble 1
@@ -377,7 +373,7 @@ if (.not.bump%ens(igeom)%loaded) call bump%ens(igeom)%alloc(ne,nsub)
 bump%ens(igeom)%loaded = .true.
 
 ! Pass fields
-call bump%ens(igeom)%mem(ie)%init(bump%mpl,fieldset,bump%geom(igeom)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d, &
+call bump%ens(igeom)%mem(ie)%init(bump%mpl,fieldset,bump%geom(igeom)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%ilev2d, &
  & bump%nam%var2d,pass=.true.)
 
 ! Print norm
@@ -426,7 +422,7 @@ if (ie==1) then
 end if
 
 ! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d,bump%nam%var2d)
+call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%ilev2d,bump%nam%var2d)
 
 ! Fieldset to Fortran on subset Sc0
 call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
@@ -465,7 +461,7 @@ real(kind_real) :: fld_c0a(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
 @:probe_in()
 
 ! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d,bump%nam%var2d)
+call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%ilev2d,bump%nam%var2d)
 
 ! Fieldset to Fortran on subset Sc0
 call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
@@ -524,7 +520,7 @@ if (ie==1) then
 end if
 
 ! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(igeom)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d,bump%nam%var2d)
+call fieldset%set_metadata(bump%mpl,bump%geom(igeom)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%ilev2d,bump%nam%var2d)
 
 ! Fieldset to Fortran on subset Sc0
 call bump%geom(igeom)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
@@ -1119,7 +1115,7 @@ real(kind_real) :: fld_c0a(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
 @:probe_in()
 
 ! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d,bump%nam%var2d)
+call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%ilev2d,bump%nam%var2d)
 
 ! Fieldset to Fortran on subset Sc0
 call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
@@ -1160,7 +1156,7 @@ real(kind_real) :: fld_c0a(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
 @:probe_in()
 
 ! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d,bump%nam%var2d)
+call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%ilev2d,bump%nam%var2d)
 
 ! Fieldset to Fortran on subset Sc0
 call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
@@ -1201,7 +1197,7 @@ real(kind_real) :: fld_c0a(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
 @:probe_in()
 
 ! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d,bump%nam%var2d)
+call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%ilev2d,bump%nam%var2d)
 
 ! Fieldset to Fortran on subset Sc0
 call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
@@ -1242,7 +1238,7 @@ real(kind_real) :: fld_c0a(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
 @:probe_in()
 
 ! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d,bump%nam%var2d)
+call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%ilev2d,bump%nam%var2d)
 
 ! Fieldset to Fortran on subset Sc0
 call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
@@ -1283,7 +1279,7 @@ real(kind_real) :: fld_c0a(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
 @:probe_in()
 
 ! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d,bump%nam%var2d)
+call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%ilev2d,bump%nam%var2d)
 
 ! Fieldset to Fortran on subset Sc0
 call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
@@ -1324,7 +1320,7 @@ real(kind_real) :: fld_c0a(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
 @:probe_in()
 
 ! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d,bump%nam%var2d)
+call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%ilev2d,bump%nam%var2d)
 
 ! Fieldset to Fortran on subset Sc0
 call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
@@ -1422,7 +1418,7 @@ do iv=1,bump%nam%nv
 end do
 
 ! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d,bump%nam%var2d)
+call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%ilev2d,bump%nam%var2d)
 
 ! Fortran array on subset Sc0 to fieldset
 call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
@@ -1460,7 +1456,7 @@ type(cv_type) :: cv
 @:probe_in()
 
 ! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d,bump%nam%var2d)
+call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%ilev2d,bump%nam%var2d)
 
 ! Fieldset to Fortran on subset Sc0
 call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
@@ -1508,7 +1504,7 @@ call bump%nicas(1)%random_cv(bump%mpl,bump%rng,bump%nam,bump%geom(1),cv)
 call bump%nicas(1)%apply_sqrt(bump%mpl,bump%nam,bump%geom(1),cv,fld_c0a)
 
 ! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d,bump%nam%var2d)
+call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%ilev2d,bump%nam%var2d)
 
 ! Fortran array on subset Sc0 to fieldset
 call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
@@ -1561,7 +1557,7 @@ else
 end if
 
 ! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d,bump%nam%var2d)
+call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%ilev2d,bump%nam%var2d)
 
 ! Fieldset to Fortran on subset Sc0
 call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
@@ -1632,7 +1628,7 @@ else
 end if
 
 ! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d,bump%nam%var2d)
+call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%ilev2d,bump%nam%var2d)
 
 ! Fieldset to Fortran on subset Sc0
 call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
@@ -1970,7 +1966,7 @@ end do
 
 ! Create fieldset
 call fieldset%init(bump%mpl,bump%geom(igeom)%afunctionspace_mg,bump%geom(igeom)%gmask_mga,bump%nam%variables(1:bump%nam%nv), &
- & bump%nam%lev2d,bump%nam%var2d)
+ & bump%nam%ilev2d,bump%nam%var2d)
 
 ! Fortran array to fieldset
 call fieldset%from_array(bump%mpl,fld_mga)
@@ -2062,7 +2058,7 @@ write(bump%mpl%info,'(a7,a,a)') '','Set ',trim(param)
 call bump%mpl%flush
 
 ! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%lev2d,bump%nam%var2d)
+call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%ilev2d,bump%nam%var2d)
 
 ! Fieldset to Fortran array
 call fieldset%to_array(bump%mpl,fld_mga)

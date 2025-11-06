@@ -20,12 +20,12 @@ use type_mpl, only: mpl_type
 implicit none
 
 type,extends(atlas_fieldset) :: fieldset_type
-   integer :: nmga                                 ! Model grid on model grid, halo A
-   integer :: nl0                                  ! Number of levels
-   integer :: nv                                   ! Number of variables
-   logical,allocatable :: mask3d(:,:)              ! 3D mask
-   character(len=1024),allocatable :: variables(:) ! Variables names
-   character(len=1024) :: lev2d                    ! Level for 2D variables
+   integer :: nmga                                 !< Model grid on model grid, halo A
+   integer :: nl0                                  !< Number of levels
+   integer :: nv                                   !< Number of variables
+   logical,allocatable :: mask3d(:,:)              !< 3D mask
+   character(len=1024),allocatable :: variables(:) !< Variables names
+   integer :: ilev2d                               !< Level for 2D variables
    logical,allocatable :: var2d(:)                 !< 2D variable flag
 contains
    procedure :: fieldset_init_from_functionspace
@@ -61,7 +61,7 @@ contains
 ! Subroutine: fieldset_init_from_functionspace
 !> Initialize fieldset from function space
 !----------------------------------------------------------------------
-subroutine fieldset_init_from_functionspace(fieldset,mpl,afunctionspace,gmask,variables,lev2d,var2d)
+subroutine fieldset_init_from_functionspace(fieldset,mpl,afunctionspace,gmask,variables,ilev2d,var2d)
 
 implicit none
 
@@ -71,7 +71,7 @@ type(mpl_type),intent(inout) :: mpl                    !< MPI data
 type(atlas_functionspace),intent(in) :: afunctionspace !< Function space
 logical,intent(in) :: gmask(:,:)                       !< Geographical mask
 character(len=*),intent(in) :: variables(:)            !< Variables names
-character(len=*),intent(in) :: lev2d                   !< Level for 2D variables
+integer,intent(in) :: ilev2d                           !< Level for 2D variables
 logical,intent(in) :: var2d(:)                         !< 2D variable flag
 
 ! Local variables
@@ -101,12 +101,12 @@ if (.not.allocated(fieldset%mask3d)) allocate(fieldset%mask3d(fieldset%nmga,fiel
 if (.not.allocated(fieldset%variables)) allocate(fieldset%variables(fieldset%nv))
 if (.not.allocated(fieldset%var2d)) allocate(fieldset%var2d(fieldset%nv))
 
-! Copy mask, variables, lev2d and var2d
+! Copy mask, variables, ilev2d and var2d
 fieldset%mask3d = gmask
 do iv=1,fieldset%nv
    fieldset%variables(iv) = variables(iv)
 end do
-fieldset%lev2d = lev2d
+fieldset%ilev2d = ilev2d
 fieldset%var2d = var2d
 
 ! Create fields if necessary
@@ -140,7 +140,7 @@ end subroutine fieldset_init_from_functionspace
 ! Subroutine: fieldset_init_from_fieldset
 !> Initialize fieldset from another fieldset
 !----------------------------------------------------------------------
-subroutine fieldset_init_from_fieldset(fieldset_out,mpl,fieldset_in,gmask,variables,lev2d,var2d,copy,pass)
+subroutine fieldset_init_from_fieldset(fieldset_out,mpl,fieldset_in,gmask,variables,ilev2d,var2d,copy,pass)
 
 implicit none
 
@@ -150,7 +150,7 @@ type(mpl_type),intent(inout) :: mpl                  !< MPI data
 type(fieldset_type),intent(in) :: fieldset_in        !< Input fieldset
 logical,intent(in),optional :: gmask(:,:)            !< Geographical mask
 character(len=*),intent(in),optional :: variables(:) !< Variables names
-character(len=*),intent(in),optional :: lev2d        !< Level for 2D variables
+integer,intent(in),optional :: ilev2d                !< Level for 2D variables
 logical,intent(in),optional :: var2d(:)              !< 2D variable flag
 logical,intent(in),optional :: copy                  !< Copy fields data
 logical,intent(in),optional :: pass                  !< Pass fields pointers
@@ -177,7 +177,7 @@ if (present(pass)) lpass = pass
 ! Initialization
 if (fieldset_out%is_null()) fieldset_out = atlas_fieldset()
 
-if (present(gmask).and.present(variables).and.present(lev2d).and.present(var2d)) then
+if (present(gmask).and.present(variables).and.present(ilev2d).and.present(var2d)) then
    ! Get number of nodes
    fieldset_out%nmga = size(gmask,1)
 
@@ -197,7 +197,7 @@ if (present(gmask).and.present(variables).and.present(lev2d).and.present(var2d))
    do iv=1,fieldset_out%nv
       fieldset_out%variables(iv) = variables(iv)
    end do
-   fieldset_out%lev2d = lev2d
+   fieldset_out%ilev2d = ilev2d
    fieldset_out%var2d = var2d
 elseif (allocated(fieldset_in%mask3d).and.allocated(fieldset_in%variables).and.allocated(fieldset_in%var2d)) then
    ! Get number of nodes
@@ -214,11 +214,11 @@ elseif (allocated(fieldset_in%mask3d).and.allocated(fieldset_in%variables).and.a
    if (.not.allocated(fieldset_out%variables)) allocate(fieldset_out%variables(fieldset_out%nv))
    if (.not.allocated(fieldset_out%var2d)) allocate(fieldset_out%var2d(fieldset_out%nv))
 
-   ! Copy mask, variables and lev2d
+   ! Copy mask, variables and ilev2d
    fieldset_out%mask3d = fieldset_in%mask3d
    fieldset_out%variables = fieldset_in%variables
    fieldset_out%var2d = fieldset_in%var2d
-   fieldset_out%lev2d = fieldset_in%lev2d
+   fieldset_out%ilev2d = fieldset_in%ilev2d
 else
    call mpl%abort('${subr}$','inconsistent optional arguments')
 end if
@@ -281,7 +281,7 @@ end subroutine fieldset_init_from_fieldset
 ! Subroutine: fieldset_set_metadata
 !> Set metadata
 !----------------------------------------------------------------------
-subroutine fieldset_set_metadata(fieldset,mpl,gmask,variables,lev2d,var2d)
+subroutine fieldset_set_metadata(fieldset,mpl,gmask,variables,ilev2d,var2d)
 
 implicit none
 
@@ -290,7 +290,7 @@ class(fieldset_type),intent(inout) :: fieldset !< Fieldset
 type(mpl_type),intent(inout) :: mpl            !< MPI data
 logical,intent(in) :: gmask(:,:)               !< Geographical mask
 character(len=*),intent(in) :: variables(:)    !< Variables names
-character(len=*),intent(in) :: lev2d           !< Level for 2D variables
+integer,intent(in) :: ilev2d                   !< Level for 2D variables
 logical,intent(in) :: var2d(:)                 !< 2D variable flag
 
 ! Local variables
@@ -321,7 +321,7 @@ fieldset%mask3d = gmask
 do iv=1,fieldset%nv
    fieldset%variables(iv) = variables(iv)
 end do
-fieldset%lev2d = lev2d
+fieldset%ilev2d = ilev2d
 fieldset%var2d = var2d
 
 ! Check fieldset
@@ -366,7 +366,7 @@ do iv=1,fieldset%nv
    afield = fieldset%field(fieldset%variables(iv))
 
    ! Array
-   call field_to_array(afield,mpl,array)
+   call field_to_array(afield,mpl,array,fieldset%ilev2d)
 
    ! Compute global norm
    norm = zero
@@ -804,9 +804,6 @@ type(atlas_field) :: afield
 if (.not.allocated(fieldset%mask3d)) call mpl%abort('${subr}$','mask is not allocated')
 if (.not.allocated(fieldset%variables)) call mpl%abort('${subr}$','variables is not allocated')
 
-! Check lev2d
-if (.not.((trim(fieldset%lev2d)=='first').or.(trim(fieldset%lev2d)=='last'))) call mpl%abort('${subr}$','wrong lev2d')
-
 do iv=1,fieldset%nv
    ! Check that all variables are present
    if (.not.fieldset%has_field(fieldset%variables(iv))) call mpl%abort('${subr}$', &
@@ -816,6 +813,11 @@ do iv=1,fieldset%nv
    afield = fieldset%field(fieldset%variables(iv))
    if (get_atlas_field_size(mpl,afield)/=fieldset%nmga) call mpl%abort('${subr}$','wrong horizontal size')
    if ((afield%levels()/=1).and.(afield%levels()/=fieldset%nl0)) call mpl%abort('${subr}$','wrong number of levels')
+
+   ! Check ilev2d
+   if (afield%levels()/=1) then
+     if ((fieldset%ilev2d/=1).and.(fieldset%ilev2d/=afield%levels())) call mpl%abort('${subr}$','wrong ilev2d')
+   end if
 end do
 
 ! Release memory
@@ -854,12 +856,12 @@ type(atlas_field) :: afield_in,afield_out
 call fieldset_in%check(mpl)
 call fieldset_out%check(mpl)
 
-! Check mask, variables and lev2d consistency
+! Check mask, variables and ilev2d consistency
 if ((size(fieldset_in%mask3d)>0).and.(size(fieldset_in%mask3d)>0)) then
    if (any(fieldset_in%mask3d.neqv.fieldset_out%mask3d)) call mpl%abort('${subr}$','inconsistent masks')
 end if
 if (any(fieldset_in%variables/=fieldset_out%variables)) call mpl%abort('${subr}$','inconsistent variables')
-if (fieldset_in%lev2d/=fieldset_out%lev2d) call mpl%abort('${subr}$','inconsistent lev2d')
+if (fieldset_in%ilev2d/=fieldset_out%ilev2d) call mpl%abort('${subr}$','inconsistent ilev2d')
 
 ! Check shapes consistency
 do iv=1,fieldset_in%nv
@@ -924,17 +926,12 @@ if (size(fieldset%mask3d)>0) then
       ! Apply missing value to mask points
       do iv=1,fieldset%nv
          if (fieldset%var2d(iv)) then
-            if (fieldset%lev2d=='first') then
-               do imga=1,fieldset%nmga
-                  if (.not.fieldset%mask3d(imga,1)) fld(imga,1,iv) = lmsvalr
-               end do
-               fld(:,2:fieldset%nl0,iv) = lmsvalr
-            elseif (fieldset%lev2d=='last') then
-               fld(:,1:fieldset%nl0-1,iv) = lmsvalr
-               do imga=1,fieldset%nmga
-                  if (.not.fieldset%mask3d(imga,fieldset%nl0)) fld(imga,fieldset%nl0,iv) = lmsvalr
-               end do
-            end if
+            do il0=1,fieldset%nl0
+               if (il0/=fieldset%ilev2d) fld(:,il0,iv) = lmsvalr
+            end do
+            do imga=1,fieldset%nmga
+               if (.not.fieldset%mask3d(imga,fieldset%ilev2d)) fld(imga,fieldset%ilev2d,iv) = lmsvalr
+            end do
          else
             do il0=1,fieldset%nl0
                do imga=1,fieldset%nmga
@@ -989,7 +986,7 @@ if (size(fieldset%variables)<iv) call mpl%abort('${subr}$','inconsistency in num
 afield = fieldset%field(fieldset%variables(iv))
 
 ! ATLAS field to Fortran array
-call field_to_array(afield,mpl,fld,fieldset%lev2d)
+call field_to_array(afield,mpl,fld,fieldset%ilev2d)
 
 ! Release memory
 call afield%final()
@@ -1070,7 +1067,7 @@ if (size(fieldset%variables)<iv) call mpl%abort('${subr}$','inconsistency in num
 afield = fieldset%field(fieldset%variables(iv))
 
 ! Fortran array to ATLAS field
-call field_from_array(afield,mpl,fld,fieldset%lev2d)
+call field_from_array(afield,mpl,fld,fieldset%ilev2d)
 
 ! Release memory
 call afield%final()

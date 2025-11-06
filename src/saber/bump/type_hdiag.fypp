@@ -403,8 +403,8 @@ do ig=1,nam%ng
          hdiag%cor(1)%blk(0,ig)%rv_c0a(:,:,icmp) = mpl%msv%valr
          do ic0a=1,geom%nc0a
             call gsi%interp_lat(mpl,geom%lat_c0a(ic0a),ilatm,ilatp,rlatm,rlatp)
-            hdiag%cor(1)%blk(0,ig)%rh_c0a(ic0a,gsi%ilev2d,icmp) = rlatm*gsi%rh(ilatm,1,icmp,iv)+rlatp*gsi%rh(ilatp,1,icmp,iv)
-            hdiag%cor(1)%blk(0,ig)%rv_c0a(ic0a,gsi%ilev2d,icmp) = zero
+            hdiag%cor(1)%blk(0,ig)%rh_c0a(ic0a,nam%ilev2d,icmp) = rlatm*gsi%rh(ilatm,1,icmp,iv)+rlatp*gsi%rh(ilatp,1,icmp,iv)
+            hdiag%cor(1)%blk(0,ig)%rv_c0a(ic0a,nam%ilev2d,icmp) = zero
          end do
       else
          ! 3D variable
@@ -428,8 +428,8 @@ do ig=1,nam%ng
       ! Amplitude and scaling
       if (gsi%var2d(iv)) then
          hdiag%cor(1)%blk(0,ig)%a_c0a(:,:,icmp) = mpl%msv%valr
-         hdiag%cor(1)%blk(0,ig)%a_c0a(:,gsi%ilev2d,icmp) = gsi%a(icmp)
-         hdiag%cor(1)%blk(0,ig)%rh_c0a(:,gsi%ilev2d,icmp) = hdiag%cor(1)%blk(0,ig)%rh_c0a(:,gsi%ilev2d,icmp)/req
+         hdiag%cor(1)%blk(0,ig)%a_c0a(:,nam%ilev2d,icmp) = gsi%a(icmp)
+         hdiag%cor(1)%blk(0,ig)%rh_c0a(:,nam%ilev2d,icmp) = hdiag%cor(1)%blk(0,ig)%rh_c0a(:,nam%ilev2d,icmp)/req
       else
          hdiag%cor(1)%blk(0,ig)%a_c0a(:,:,icmp) = gsi%a(icmp)
          hdiag%cor(1)%blk(0,ig)%rh_c0a(:,:,icmp) = hdiag%cor(1)%blk(0,ig)%rh_c0a(:,:,icmp)/req
@@ -478,8 +478,8 @@ if (nam%check_dirac.and.allocated(hdiag%gsi_ref)) then
          do icmp=1,cor_tmp%blk(0,ig)%ncmp
             ! Copy and multiply length-scales
             if (gsi%var2d(iv)) then
-               cor_tmp%blk(0,ig)%rh_c0a(:,gsi%ilev2d,icmp) = hdiag%cor(1)%blk(0,ig)%rh_c0a(:,gsi%ilev2d,icmp)*fac(ifac)
-               cor_tmp%blk(0,ig)%rv_c0a(:,gsi%ilev2d,icmp) = hdiag%cor(1)%blk(0,ig)%rv_c0a(:,gsi%ilev2d,icmp)*fac(ifac)
+               cor_tmp%blk(0,ig)%rh_c0a(:,nam%ilev2d,icmp) = hdiag%cor(1)%blk(0,ig)%rh_c0a(:,nam%ilev2d,icmp)*fac(ifac)
+               cor_tmp%blk(0,ig)%rv_c0a(:,nam%ilev2d,icmp) = hdiag%cor(1)%blk(0,ig)%rv_c0a(:,nam%ilev2d,icmp)*fac(ifac)
             else
                cor_tmp%blk(0,ig)%rh_c0a(:,:,icmp) = hdiag%cor(1)%blk(0,ig)%rh_c0a(:,:,icmp)*fac(ifac)
                cor_tmp%blk(0,ig)%rv_c0a(:,:,icmp) = hdiag%cor(1)%blk(0,ig)%rv_c0a(:,:,icmp)*fac(ifac)

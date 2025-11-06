@@ -101,10 +101,10 @@ type nam_type
 
    ! Model section
    integer :: nl0                                             !< Number of levels
-   character(len=1024) :: lev2d                               !< Level for 2D variables ('first' or 'last')
    integer :: nv                                              !< Number of variables
    character(len=1024),allocatable :: variables(:)            !< Variables names
    logical,allocatable :: var2d(:)                            !< 2D variable flag
+   integer :: ilev2d                                          !< Level for 2D variables
    integer :: ng                                              !< Number of groups of variables
    character(len=1024),allocatable :: group_names(:)          !< Group of variables names
    integer,allocatable :: group_index(:)                      !< Variables group index
@@ -318,7 +318,8 @@ integer :: iv,jv,iconf,rank,itest,it,ivv,jvv,ig
 integer,allocatable :: vbal_order(:)
 real(kind_real) :: real_scalar
 real(kind_real),allocatable :: loc_wgt(:,:)
-logical :: lverbose,color_log,found,valid
+logical :: lverbose,color_log,found,valid,topdown
+character(len=1024) :: lev2d
 character(len=:),allocatable :: str,str_bal,str_unbal
 character(len=:),allocatable :: str_array(:),str_array_row(:),str_array_col(:)
 type(fckit_configuration) :: section
@@ -511,7 +512,6 @@ end if
 if (conf%get('model',section)) then
    if (lverbose) call print_section(mpl,section,'Model')
    call nam%get(section,'nl0',nam%nl0)
-   call nam%get(section,'level for 2d variables',nam%lev2d)
    if (section%get('variables',str_array)) then
       nam%nv = size(str_array)
       if (nam%nv>0) then
@@ -536,7 +536,7 @@ if (conf%get('model',section)) then
                end do
             end do
          end if
-         
+
          ! Groups
          allocate(nam%group_index(nam%nv))
          if (section%get('groups',confs)) then
@@ -573,6 +573,30 @@ if (conf%get('model',section)) then
                   nam%group_index(iv) = iv
                end do
             end select
+         end if
+      end if
+   end if
+   nam%ilev2d = 1
+   if (nam%nv>0) then
+      if (any(nam%var2d)) then
+         call nam%get(section,'nearest 3d level', lev2d)
+         call nam%get(section,'levels direction', topdown)
+         if (lev2d=='bottom') then
+            if (topdown) then
+               nam%ilev2d = nam%nl0
+            else
+               nam%ilev2d = 1
+            end if
+         else if (lev2d=='top') then
+            if (topdown) then
+               nam%ilev2d = 1
+            else
+               nam%ilev2d = nam%nl0
+            end if
+         else if (lev2d=='') then
+            call mpl%abort('${subr}$','level for 2d variables not specified but 2d variables present')
+         else
+            call mpl%abort('${subr}$','wrong level for 2d variables: '//trim(lev2d)//', should be bottom or top')
          end if
       end if
    end if
@@ -954,11 +978,7 @@ if (conf%get('dirac',confs)) then
                call confs(iconf)%get_or_die('longitude',nam%londir(nam%ndir))
                call confs(iconf)%get_or_die('latitude',nam%latdir(nam%ndir))
                if (nam%var2d(iv)) then
-                  if (nam%lev2d=='first') then
-                     nam%levdir(nam%ndir) = 1
-                  else
-                     nam%levdir(nam%ndir) = nam%nl0
-                  end if
+                  nam%levdir(nam%ndir) = nam%ilev2d
                else
                   call confs(iconf)%get_or_die('level',nam%levdir(nam%ndir))
                end if
@@ -1165,11 +1185,11 @@ end if
 
 ! Model section
 if (nam%nl0<=0) call mpl%abort('${subr}$','nl0 should be positive')
-if ((nam%lev2d/='first').and.(nam%lev2d/='last')) call mpl%abort('${subr}$','wrong lev2d value')
 if (nam%nv<=0) call mpl%abort('${subr}$','no variables')
 do iv=1,nam%nv
    if (nam%variables(iv)=='') call mpl%abort('${subr}$','empty variable name')
 end do
+if ((nam%ilev2d/=1).and.(nam%ilev2d/=nam%nl0)) call mpl%abort('${subr}$','wrong ilev2d value')
 if (nam%ng<=0) call mpl%abort('${subr}$','no group')
 if (any(nam%group_index<1).or.any(nam%group_index>nam%ng)) call mpl%abort('${subr}$','wrong group index')
 do ig=1,nam%ng

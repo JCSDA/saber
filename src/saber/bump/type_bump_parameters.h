@@ -303,10 +303,6 @@ struct DriversDef {
 
 // Model section
 struct ModelDef {
-  // Level for 2D variables ('first' or 'last')
-  std::pair<const char *, std::string> lev2d =
-    std::make_pair("level for 2d variables", "first");
-
   // Check that sampling couples and interpolations do not cross mask boundaries
   std::pair<const char *, bool> mask_check =
     std::make_pair("do not cross mask boundaries", false);

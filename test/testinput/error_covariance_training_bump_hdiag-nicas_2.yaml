@@ -12,7 +12,6 @@ geometry:
   - variables:
     - air_pressure_at_surface
     levels: 1
-    lev2d: last
     mask type: sea
     mask path: ../quench/data/landsea.nc
   halo: 1
@@ -40,8 +39,6 @@ background error:
     fields metadata:
       air_horizontal_streamfunction:
         gmask: gmask_0
-      air_pressure_at_surface:
-        gmask: gmask_1
     calibration:
       general:
         testing: true
@@ -62,7 +59,6 @@ background error:
         normalization test: 10
         internal dirac test: true
       model:
-        level for 2d variables: last
         do not cross mask boundaries: true
       sampling:
         computation grid size: 500

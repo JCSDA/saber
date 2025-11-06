@@ -33,8 +33,6 @@ background error:
         adjoints test: true
         internal dirac test: true
         normalization test: 50
-      model:
-        level for 2d variables: last
       nicas:
         resolution: 6.0
         explicit length-scales: true

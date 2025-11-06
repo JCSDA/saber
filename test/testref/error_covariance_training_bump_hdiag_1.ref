@@ -144,7 +144,7 @@
                 Level:   2 ~> cov. at class zero:  0.10E+01
                 Level:   1 ~> cov. at class zero:  0.97E+00
                 Level:   2 ~> cov. at class zero:  0.10E+01
-                Level:   1 ~> cov. at class zero:  0.97E+00
+                Level:   2 ~> cov. at class zero:  0.97E+00
              Block air_horizontal_streamfunction:  0.34331194E+00 for    37356 diagnostic points
              Block air_horizontal_velocity_potential:  0.34699286E+00 for    37356 diagnostic points
              Block air_pressure_at_surface:  0.33754527E+00 for     9339 diagnostic points
@@ -172,10 +172,10 @@
                    Level:   2 ~> amplitude:        0.22
                                  cor. hor. support:      2157.73 km
                                  cor. ver. support:         0.43 vertical units
-                   Level:   1 ~> amplitude:        0.78
+                   Level:   2 ~> amplitude:        0.78
                                  cor. hor. support:      3648.91 km
                                  cor. ver. support:         0.00 vertical units
-                   Level:   1 ~> amplitude:        0.22
+                   Level:   2 ~> amplitude:        0.22
                                  cor. hor. support:      2051.93 km
                                  cor. ver. support:         0.00 vertical units
 Norm of output parameter cor_a - 1: 5.0218339249789111e+01

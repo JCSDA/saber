@@ -134,17 +134,17 @@
           Independent levels for angular sector   4 / class   8:  1[2]
           Independent levels for angular sector   4 / class   9:  1[2]
           Independent levels for angular sector   4 / class  10:  1[2]
-                Level:   1 ~> cov. at class zero:  0.98E+00
-                Level:   2 ~> cov. at class zero:  0.10E+01
+                Level:   1 ~> cov. at class zero:  0.99E+00
+                Level:   2 ~> cov. at class zero:  0.99E+00
                 Level:   1 ~> cov. at class zero:  0.97E+00
                 Level:   2 ~> cov. at class zero:  0.10E+01
-             Block group 1:  0.17205228E+00 for      160 diagnostic points
+             Block group 1:  0.17278351E+00 for      160 diagnostic points
              Block group 2:  0.18673672E+00 for      160 diagnostic points
                    Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      3539.02 km
+                                 cor. hor. support:      3547.46 km
                                  cor. ver. support:         3.21 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      3690.36 km
+                                 cor. hor. support:      3604.82 km
                                  cor. ver. support:         3.21 vertical units
                    Level:   1 ~> amplitude:        1.00
                                  cor. hor. support:      3827.42 km
@@ -152,15 +152,15 @@
                    Level:   2 ~> amplitude:        1.00
                                  cor. hor. support:      3555.25 km
                                  cor. ver. support:         3.16 vertical units
-             Block group 1:  0.26350707E+00 for      111 diagnostic points
+             Block group 1:  0.26083760E+00 for      107 diagnostic points
              Block group 2:  0.27845780E+00 for      125 diagnostic points
                 Level:   1 ~> loc. at class zero:       0.92
                 Level:   2 ~> loc. at class zero:       0.92
                    Level:   1 ~> amplitude:        1.00
-                                 loc. hor. support:      5260.40 km
-                                 loc. ver. support:         6.04 vertical units
+                                 loc. hor. support:      5198.82 km
+                                 loc. ver. support:         6.03 vertical units
                    Level:   2 ~> amplitude:        1.00
-                                 loc. hor. support:      5500.12 km
+                                 loc. hor. support:      5457.83 km
                                  loc. ver. support:         6.03 vertical units
                 Level:   1 ~> loc. at class zero:       0.92
                 Level:   2 ~> loc. at class zero:       0.92
@@ -170,5 +170,5 @@
                    Level:   2 ~> amplitude:        1.00
                                  loc. hor. support:      5283.11 km
                                  loc. ver. support:         6.06 vertical units
-Norm of output parameter loc_rh - 1: 3.3645318224198335e+08
-Norm of output parameter loc_rv - 1: 3.7311179621345985e+02
+Norm of output parameter loc_rh - 1: 3.3759349177248305e+08
+Norm of output parameter loc_rv - 1: 3.7296954375408131e+02
