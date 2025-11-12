@@ -138,6 +138,7 @@ class SaberOuterBlockChain {
                       const oops::Geometry<MODEL> & geom,
                       const bool & validModelGeom,
                       const oops::Variables & outerVars,
+                      const oops::Variables & currentOuterVars,
                       oops::FieldSets & fsetEns);
 
   /// @brief Left inverse multiply (used in calibration) by all outer blocks
@@ -246,6 +247,7 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
                      fset4dXb,
                      geom,
                      validModelGeom,
+                     outerVars,
                      currentOuterVars,
                      fsetEns);
     } else if (saberOuterBlockParams.doRead()) {
@@ -257,7 +259,7 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
     if (saberOuterBlockParams.forceWrite.value()) {
       // Write data
       oops::Log::info() << "Info     : Write data" << std::endl;
-      outerBlocks_.back()->write(geom, validModelGeom, outerVars);
+      outerBlocks_.back()->write(geom, validModelGeom, currentOuterVars);
       outerBlocks_.back()->write();
     }
 
@@ -320,6 +322,7 @@ void SaberOuterBlockChain::calibrateBlock(
             const oops::Geometry<MODEL> & geom,
             const bool & validModelGeom,
             const oops::Variables & outerVars,
+            const oops::Variables & currentOuterVars,
             oops::FieldSets & fsetEns) {
   oops::Log::trace() << "calibrateBlock starting" << std::endl;
 
@@ -337,9 +340,6 @@ void SaberOuterBlockChain::calibrateBlock(
     // Get ensemble size
     const size_t nens = ensembleConf.getInt("ensemble size");
 
-    // Cannot read ensemble members without a valid MODEL geometry
-    ASSERT(validModelGeom || (nens == 0));
-
     for (size_t ie = 0; ie < nens; ++ie) {
       // Read ensemble member
       oops::FieldSet3D fset(fset4dXb[0].validTime(), geom.getComm());
@@ -348,6 +348,7 @@ void SaberOuterBlockChain::calibrateBlock(
                          ensembleConf,
                          ie,
                          fset);
+
       // Apply outer blocks inverse (except last)
       this->leftInverseMultiplyExceptLast(fset);
 
@@ -367,7 +368,7 @@ void SaberOuterBlockChain::calibrateBlock(
 
   // Write calibration data
   oops::Log::info() << "Info     : Write calibration data" << std::endl;
-  outerBlocks_.back()->write(geom, validModelGeom, outerVars);
+  outerBlocks_.back()->write(geom, validModelGeom, currentOuterVars);
   outerBlocks_.back()->write();
 
   oops::Log::trace() << "calibrateBlock done" << std::endl;
