@@ -363,6 +363,8 @@ class ModelSection : public oops::Parameters {
   oops::Parameter<std::vector<std::string>> variables{"variables", {}, this};
   // 2D variables names
   oops::Parameter<std::vector<std::string>> var2d{"2d variables", {}, this};
+  // Nearest 3D level
+  oops::OptionalParameter<std::string> nearest3dLevel{"nearest 3d level", this};
   // Groups of variables
   oops::OptionalParameter<std::vector<GroupParameters>> groups{"groups", this};
   // Check that sampling couples and interpolations do not cross mask boundaries

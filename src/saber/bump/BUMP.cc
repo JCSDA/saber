@@ -17,6 +17,8 @@
 #include <utility>
 #include <vector>
 
+#include "eckit/exception/Exceptions.h"
+
 #include "oops/base/FieldSets.h"
 #include "oops/util/ConfigFunctions.h"
 #include "oops/util/FieldSetHelpers.h"
@@ -104,8 +106,7 @@ BUMP::BUMP(const oops::GeometryData & geometryData,
 
   // Check grids number
   if (grids.size() == 0) {
-    oops::Log::info() << "BUMP: grid size is zero" << std::endl;
-    std::abort();
+    throw eckit::Exception("BUMP: grid size is zero", Here());
   }
 
   // Loop over grids
@@ -142,8 +143,7 @@ BUMP::BUMP(const oops::GeometryData & geometryData,
       if (nl0 > 1) {
         // Check that nl0_tmp is either 1 or nl0
         if ((nl0_tmp != 1) && (nl0_tmp != nl0)) {
-         oops::Log::info() << "BUMP::BUMP: inconsistent number of levels in BUMP" << std::endl;
-          std::abort();
+          throw eckit::Exception("BUMP::BUMP: inconsistent number of levels in BUMP", Here());
         }
       }
       nl0 = std::max(nl0, nl0_tmp);
@@ -163,16 +163,22 @@ BUMP::BUMP(const oops::GeometryData & geometryData,
 
     // Add nearest 3D level for 2D fields
     std::string nearest3dLevel;
+    if (grid.has("model.nearest 3d level")) {
+      nearest3dLevel = grid.getString("model.nearest 3d level");
+    }
     for (const auto & var : var2d) {
-      if (xb[var].metadata().has("nearest 3d level")) {
-        const std::string value = xb[var].metadata().getString("nearest 3d level");
-        if (nearest3dLevel.empty()) {
-          nearest3dLevel = value;
-        } else {
-          ASSERT(value == nearest3dLevel);
+      if (xb.has(var)) {
+        if (xb[var].metadata().has("nearest 3d level")) {
+          const std::string value = xb[var].metadata().getString("nearest 3d level");
+          if (nearest3dLevel.empty()) {
+            nearest3dLevel = value;
+          } else {
+            ASSERT(value == nearest3dLevel);
+          }
         }
       }
     }
+    ASSERT(nearest3dLevel == "" || nearest3dLevel == "bottom" || nearest3dLevel == "top");
     grid.set("model.nearest 3d level", nearest3dLevel);
 
     // Add levels direction
@@ -363,8 +369,7 @@ void BUMP::addField(const oops::FieldSet3D & fset) {
   // Check fset grid UID
   if (fset.size() > 0) {
     if (fset.getGridUid() != gridUid_) {
-      oops::Log::info() << "BUMP: wrong grid UID" << std::endl;
-      std::abort();
+      throw eckit::Exception("BUMP: wrong grid UID", Here());
     }
   }
 
@@ -401,14 +406,12 @@ void BUMP::addEnsemble(const oops::FieldSets & fsetEns) {
     if (dualResolutionGridUid_ == "") {
       igeom = 0;
       if (fsetEns[jj].getGridUid() != gridUid_) {
-        oops::Log::info() << "BUMP::addEnsemble: wrong grid UID" << std::endl;
-        std::abort();
+        throw eckit::Exception("BUMP::addEnsemble: wrong grid UID", Here());
       }
     } else {
       igeom = 1;
       if (fsetEns[jj].getGridUid() != dualResolutionGridUid_) {
-        oops::Log::info() << "BUMP::addEnsemble: wrong dual resolution grid UID" << std::endl;
-        std::abort();
+        throw eckit::Exception("BUMP::addEnsemble: wrong dual resolution grid UID", Here());
       }
     }
 
@@ -463,14 +466,12 @@ void BUMP::iterativeUpdate(const oops::FieldSet3D & fset,
   if (dualResolutionGridUid_ == "") {
     igeom = 0;
     if (fset.getGridUid() != gridUid_) {
-      oops::Log::info() << "BUMP::iterativeUpdate: wrong grid UID" << std::endl;
-      std::abort();
+      throw eckit::Exception("BUMP::iterativeUpdate: wrong grid UID", Here());
     }
   } else {
     igeom = 1;
     if (fset.getGridUid() != dualResolutionGridUid_) {
-      oops::Log::info() << "BUMP::iterativeUpdate: wrong dual resolution grid UID" << std::endl;
-      std::abort();
+      throw eckit::Exception("BUMP::iterativeUpdate: wrong dual resolution grid UID", Here());
     }
   }
 
