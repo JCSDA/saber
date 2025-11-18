@@ -6,6 +6,7 @@
  */
 
 #include <algorithm>
+
 #include "atlas/field.h"
 #include "atlas/grid/detail/partitioner/MatchingMeshPartitionerCubedSphere.h"
 #include "atlas/grid/detail/partitioner/TransPartitioner.h"
@@ -17,6 +18,7 @@
 
 #include "saber/interpolation/GaussToCS.h"
 #include "saber/interpolation/Rescaling.h"
+#include "saber/interpolation/VectorFieldMetadata.h"
 
 using atlas::grid::detail::partitioner::TransPartitioner;
 using atlas::grid::detail::partitioner::MatchingMeshPartitionerCubedSphere;
@@ -114,6 +116,25 @@ auto createInverseInterpolation(const bool initializeInverseInterpolation,
 
 // -----------------------------------------------------------------------------
 
+namespace {
+
+  // Util for gathering a subset of field configurations, when creating fields for interpolation.
+  std::vector<atlas::util::Config> gatherInterpFieldConfigs(const atlas::FieldSet& fset,
+                                                            const oops::Variables& variables) {
+    std::vector<atlas::util::Config> out;
+    for (auto& fieldname : fset.field_names()) {
+      if (variables.has(fieldname)) {
+        out.emplace_back(atlas::option::name(fieldname) |
+                         atlas::option::levels(fset[fieldname].shape(1)));
+      }
+    }
+    return out;
+  }
+
+}  // namespace
+
+// -----------------------------------------------------------------------------
+
 /* Direct interpolation from NodeColumn cubed-sphere FunctionSpace to
  * StructuredColumns is not possible on multiple PEs.
  * Here, the interpolation is done following this route:
@@ -133,76 +154,63 @@ void inverseInterpolateMultiplePEs(
 
   srcFieldSet.haloExchange();
 
-  // extract copy of field names and apply sorting algorithm
-  auto sortedFieldNames = srcFieldSet.field_names();
-  std::sort(sortedFieldNames.begin(), sortedFieldNames.end());
-
   // Interpolate from source to matching PointCloud and create srcFieldSet copy.
   atlas::FieldSet tmpSrcFieldSet;
   atlas::FieldSet matchingPtcldFset;
 
-  for (auto & fieldname : sortedFieldNames) {
-    if (variables.has(fieldname)) {
-      auto matchingPtcldField =
-        inverseInterpolation.matchingPtcldFspace->createField<double>(
-                               atlas::option::name(fieldname) |
-                               atlas::option::levels(srcFieldSet[fieldname].shape(1)));
+  // Gather field configurations for fields to interpolate, filtering
+  // those that are not in `variables`.
+  const std::vector<atlas::util::Config> interpedFieldConfigs =
+      gatherInterpFieldConfigs(srcFieldSet, variables);
 
-      auto tmpSrcField =
-        srcFieldSet[fieldname].functionspace().createField<double>(
-                                 atlas::option::name(fieldname) |
-                                 atlas::option::levels(srcFieldSet[fieldname].shape(1)));
+  for (auto& fieldConfig : interpedFieldConfigs) {
+    const auto fieldname = fieldConfig.getString("name");
 
-      atlas::array::make_view<double, 2>(matchingPtcldField).assign(0.0);
+    auto matchingPtcldField =
+        inverseInterpolation.matchingPtcldFspace->createField<double>(fieldConfig);
+    auto tmpSrcField = srcFieldSet[fieldname].functionspace().createField<double>(fieldConfig);
 
-      const auto srcView = atlas::array::make_view<double, 2>(srcFieldSet[fieldname]);
-      auto srcTmpView = atlas::array::make_view<double, 2>(tmpSrcField);
-      for (atlas::idx_t t = 0; t < srcFieldSet[fieldname].shape(0); ++t) {
-        for (atlas::idx_t k = 0; k < srcFieldSet[fieldname].shape(1); ++k) {
-          srcTmpView(t, k) = srcView(t, k);
-        }
+    atlas::array::make_view<double, 2>(matchingPtcldField).assign(0.0);
+
+    const auto srcView = atlas::array::make_view<double, 2>(srcFieldSet[fieldname]);
+    auto srcTmpView = atlas::array::make_view<double, 2>(tmpSrcField);
+    for (atlas::idx_t t = 0; t < srcFieldSet[fieldname].shape(0); ++t) {
+      for (atlas::idx_t k = 0; k < srcFieldSet[fieldname].shape(1); ++k) {
+        srcTmpView(t, k) = srcView(t, k);
       }
-
-      matchingPtcldFset.add(matchingPtcldField);
-      tmpSrcFieldSet.add(tmpSrcField);
     }
+
+    matchingPtcldFset.add(matchingPtcldField);
+    tmpSrcFieldSet.add(tmpSrcField);
   }
 
   if (includingVectorInterpolation) {
-    tmpSrcFieldSet["eastward_wind"].metadata().set("vector_field_name", "wind");
-    tmpSrcFieldSet["northward_wind"].metadata().set("vector_field_name", "wind");
-    matchingPtcldFset["eastward_wind"].metadata().set("vector_field_name", "wind");
-    matchingPtcldFset["northward_wind"].metadata().set("vector_field_name", "wind");
+    appendVectorFieldMeta(tmpSrcFieldSet);
+    appendVectorFieldMeta(matchingPtcldFset);
   }
 
   inverseInterpolation.interpolation.execute(tmpSrcFieldSet, matchingPtcldFset);
 
   // Redistribute from matching PointCloud to target PointCloud
   atlas::FieldSet targetPtcldFset;
-  for (auto & fieldname : sortedFieldNames) {
-    if (variables.has(fieldname)) {
-      auto targetPtcldField =
-        inverseInterpolation.targetPtcldFspace->createField<double>(
-                               atlas::option::name(fieldname) |
-                               atlas::option::levels(srcFieldSet[fieldname].shape(1)));
-      targetPtcldFset.add(targetPtcldField);
-    }
+
+  for (auto& fieldConfig : interpedFieldConfigs) {
+    auto targetPtcldField =
+      inverseInterpolation.targetPtcldFspace->createField<double>(fieldConfig);
+    targetPtcldFset.add(targetPtcldField);
   }
 
   inverseInterpolation.redistribution.execute(matchingPtcldFset, targetPtcldFset);
 
   // Copy from target PointCloud to gauss StructuredColumns
-  for (auto & fieldname : sortedFieldNames) {
-    if (variables.has(fieldname)) {
-      atlas::Field gaussField =
-        gaussFunctionSpace.createField<double>(
-                             atlas::option::name(fieldname) |
-                             atlas::option::levels(srcFieldSet[fieldname].shape(1)));
-      atlas::array::make_view<double, 2>(gaussField).assign(
-        atlas::array::make_view<const double, 2>(targetPtcldFset[fieldname]));
-      gaussField.set_dirty();  // atlas interpolation/redistribution above produces dirty halos
-      newFieldSet.add(gaussField);
-    }
+  for (auto& fieldConfig : interpedFieldConfigs) {
+    const auto fieldname = fieldConfig.getString("name");
+
+    atlas::Field gaussField = gaussFunctionSpace.createField<double>(fieldConfig);
+    atlas::array::make_view<double, 2>(gaussField).assign(
+      atlas::array::make_view<const double, 2>(targetPtcldFset[fieldname]));
+    gaussField.set_dirty();  // atlas interpolation/redistribution above produces dirty halos
+    newFieldSet.add(gaussField);
   }
 }
 
@@ -240,60 +248,47 @@ void inverseInterpolateSinglePE(
   oops::Log::info() << "CSFunctionSpace.type() is: " << CSFunctionSpace.type() << std::endl;
 
   const auto interp = atlas::Interpolation(interpConfig, CSFunctionSpace, hybridFunctionSpace);
-
-  // extract copy of field names and apply sorting algorithm
-  auto sortedFieldNames = srcFieldSet.field_names();
-  std::sort(sortedFieldNames.begin(), sortedFieldNames.end());
+  const std::vector<atlas::util::Config> interpedFieldConfigs =
+      gatherInterpFieldConfigs(srcFieldSet, variables);
 
   atlas::FieldSet tmpSrcFieldSet;
   atlas::FieldSet hybridFieldSet;
-  for (auto & fieldname : sortedFieldNames) {
-    if (variables.has(fieldname)) {
-      atlas::Field hybridField =
-        hybridFunctionSpace.createField<double>(
-                              atlas::option::name(fieldname) |
-                              atlas::option::levels(srcFieldSet[fieldname].shape(1)));
-      atlas::Field tmpSrcField =
-        srcFieldSet[fieldname].functionspace().createField<double>(
-                                 atlas::option::name(fieldname) |
-                                 atlas::option::levels(srcFieldSet[fieldname].shape(1)));
-      atlas::array::make_view<double, 2>(hybridField).assign(0.0);
 
-      const auto srcView = atlas::array::make_view<double, 2>(srcFieldSet[fieldname]);
-      auto srcTmpView = atlas::array::make_view<double, 2>(tmpSrcField);
-      for (atlas::idx_t t = 0; t < srcFieldSet[fieldname].shape(0); ++t) {
-        for (atlas::idx_t k = 0; k < srcFieldSet[fieldname].shape(1); ++k) {
-          srcTmpView(t, k) = srcView(t, k);
-        }
+  for (auto& fieldConfig : interpedFieldConfigs) {
+    const auto fieldname = fieldConfig.getString("name");
+
+    atlas::Field hybridField = hybridFunctionSpace.createField<double>(fieldConfig);
+    atlas::Field tmpSrcField =
+        srcFieldSet[fieldname].functionspace().createField<double>(fieldConfig);
+    atlas::array::make_view<double, 2>(hybridField).assign(0.0);
+
+    const auto srcView = atlas::array::make_view<double, 2>(srcFieldSet[fieldname]);
+    auto srcTmpView = atlas::array::make_view<double, 2>(tmpSrcField);
+    for (atlas::idx_t t = 0; t < srcFieldSet[fieldname].shape(0); ++t) {
+      for (atlas::idx_t k = 0; k < srcFieldSet[fieldname].shape(1); ++k) {
+        srcTmpView(t, k) = srcView(t, k);
       }
-
-      hybridFieldSet.add(hybridField);
-      tmpSrcFieldSet.add(tmpSrcField);
     }
+
+    hybridFieldSet.add(hybridField);
+    tmpSrcFieldSet.add(tmpSrcField);
   }
 
   if (includingVectorInterpolation) {
-    tmpSrcFieldSet["eastward_wind"].metadata().set("vector_field_name", "wind");
-    tmpSrcFieldSet["northward_wind"].metadata().set("vector_field_name", "wind");
-    hybridFieldSet["eastward_wind"].metadata().set("vector_field_name", "wind");
-    hybridFieldSet["northward_wind"].metadata().set("vector_field_name", "wind");
+    appendVectorFieldMeta(tmpSrcFieldSet);
+    appendVectorFieldMeta(hybridFieldSet);
   }
-
 
   interp.execute(tmpSrcFieldSet, hybridFieldSet);
 
   // Copy into StructuredColumns
-  for (auto & fieldname : sortedFieldNames) {
-    if (variables.has(fieldname)) {
-      atlas::Field gaussField =
-        gaussFunctionSpace.createField<double>(
-                             atlas::option::name(fieldname) |
-                             atlas::option::levels(srcFieldSet[fieldname].shape(1)));
-      atlas::array::make_view<double, 2>(gaussField).assign(
-        atlas::array::make_view<const double, 2>(hybridFieldSet[fieldname]));
-      gaussField.set_dirty();  // atlas interpolation above produces dirty halos
-      newFieldSet.add(gaussField);
-    }
+  for (auto& fieldConfig : interpedFieldConfigs) {
+    const auto fieldname = fieldConfig.getString("name");
+    atlas::Field gaussField = gaussFunctionSpace.createField<double>(fieldConfig);
+    atlas::array::make_view<double, 2>(gaussField).assign(
+      atlas::array::make_view<const double, 2>(hybridFieldSet[fieldname]));
+    gaussField.set_dirty();  // atlas interpolation above produces dirty halos
+    newFieldSet.add(gaussField);
   }
 }
 
@@ -358,9 +353,7 @@ GaussToCS::GaussToCS(const oops::GeometryData & outerGeometryData,
                                                  getHalo(params.interpType.value()))),
     gaussPartitioner_(new TransPartitioner()),
     csgrid_(CSFunctionSpace_.mesh().grid()),
-    includingVectorInterpolation_(
-         activeVars_.has("eastward_wind") && activeVars_.has("northward_wind")
-         && params.skipVectorInterpolation == false ? true:false),
+    includingVectorInterpolation_(params.skipVectorInterpolation == false),
     interp_(gaussPartitioner_, gaussFunctionSpace_, csgrid_, CSFunctionSpace_,
             params.interpType.value(), includingVectorInterpolation_),
     inverseInterpolation_(createInverseInterpolation(
@@ -518,10 +511,12 @@ void GaussToCS::leftInverseMultiply(oops::FieldSet3D & fieldSet) const {
   }
 
   if (innerGeometryData_.comm().size() >= 2) {
-    inverseInterpolateMultiplePEs(activeVars_, inverseInterpolation_,
+    inverseInterpolateMultiplePEs(activeVars_,
+                                  inverseInterpolation_,
                                   gaussFunctionSpace_,
                                   includingVectorInterpolation_,
-                                  srcFieldSet, newFieldSet);
+                                  srcFieldSet,
+                                  newFieldSet);
   } else {
     // A faster and more direct route is possible on a single PE
     inverseInterpolateSinglePE(activeVars_,

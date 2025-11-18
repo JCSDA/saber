@@ -7,6 +7,7 @@
  */
 
 #include "saber/interpolation/AtlasInterpWrapper.h"
+#include "saber/interpolation/VectorFieldMetadata.h"
 
 #include "atlas/array.h"
 #include "atlas/field.h"
@@ -148,13 +149,11 @@ void AtlasInterpWrapper::execute(const atlas::FieldSet & srcFieldSet,
   }
 
   atlas::FieldSet targetFieldSet = util::createFieldSet(targetFspace_, variableSizes,
-                                             dstFieldSet.field_names(), 0.0);
+                                                        dstFieldSet.field_names(), 0.0);
 
   if (includingVectorInterpolation_) {
-    tmpSrcFieldSet["eastward_wind"].metadata().set("vector_field_name", "wind");
-    tmpSrcFieldSet["northward_wind"].metadata().set("vector_field_name", "wind");
-    targetFieldSet["eastward_wind"].metadata().set("vector_field_name", "wind");
-    targetFieldSet["northward_wind"].metadata().set("vector_field_name", "wind");
+    appendVectorFieldMeta(tmpSrcFieldSet);
+    appendVectorFieldMeta(targetFieldSet);
   }
 
   interp_.execute(tmpSrcFieldSet, targetFieldSet);
@@ -193,13 +192,11 @@ void AtlasInterpWrapper::executeAdjoint(atlas::FieldSet & srcFieldSet,
     }
 
     atlas::FieldSet targetFieldSet = util::createFieldSet(targetFspace_, variableSizes,
-                                               dstFieldSet.field_names(), 0.0);
+                                                          dstFieldSet.field_names(), 0.0);
 
     if (includingVectorInterpolation_) {
-      srcFieldSet["eastward_wind"].metadata().set("vector_field_name", "wind");
-      srcFieldSet["northward_wind"].metadata().set("vector_field_name", "wind");
-      targetFieldSet["eastward_wind"].metadata().set("vector_field_name", "wind");
-      targetFieldSet["northward_wind"].metadata().set("vector_field_name", "wind");
+      appendVectorFieldMeta(srcFieldSet);
+      appendVectorFieldMeta(targetFieldSet);
     }
 
     inverseRedistr_.execute(tmpDstFieldSet, targetFieldSet);

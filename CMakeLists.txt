@@ -60,6 +60,11 @@ if( atlas_VERSION VERSION_GREATER "0.41" )
     add_definitions(-DATLAS_MAKE_SPARSE)
 endif()
 
+# Flag to signify Atlas supports spherical vector interpolation.
+if( atlas_VERSION VERSION_GREATER_EQUAL "0.44.0" )
+    add_definitions(-DATLAS_SUPPORTS_SPHERICAL_VECTOR_INTERP_META)
+endif()
+
 if( ENABLE_MKL )
     find_package( MKL )
 endif()

@@ -21,6 +21,10 @@ Interpolation.h
 # VertProj block
 VertProj.cc
 VertProj.h
+
+# Vector field utils
+VectorFieldMetadata.cc
+VectorFieldMetadata.h
 )
 
 if( atlas_TRANS_FOUND OR atlas_ECTRANS_FOUND )
