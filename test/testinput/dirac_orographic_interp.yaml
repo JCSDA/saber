@@ -1,0 +1,73 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type : regional
+    nx : 73
+    ny : 51
+    dx : 2.5e3
+    dy : 2.5e3
+    lonlat(centre) : [9.9, 56.3]
+    projection :  
+      type : lambert_conformal_conic
+      latitude0  : 56.3
+      longitude0 : 0.0
+    y_numbering: 1
+  partitioner: checkerboard
+  groups:
+  - variables:
+    - air_temperature_1
+    - air_temperature_2
+    levels: 10
+    vertical coordinate:
+      name: air_pressure
+      variable: air_pressure
+      filepath: testdata/orographic_interp
+  latitude south to north: false
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables:
+  - air_temperature_1
+  - air_temperature_2
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: FastLAM
+    calibration:
+      multivariate strategy: univariate
+      groups:
+      - group name: var3d
+        variables: [air_temperature_1,air_temperature_2]
+      horizontal length-scale:
+      - group: var3d
+        value: 200.0e3
+      vertical length-scale:
+      - group: var3d
+        value: 3.0
+      number of layers: 1
+      resolution: 8
+      skip tests: true
+  saber outer blocks:
+  - saber block name: OrographicInterp
+    fields metadata:
+      air_temperature_1:
+        vert_coord: air_pressure
+      air_temperature_2:
+        vert_coord: air_pressure
+dirac:
+  lon:
+  - 8.5
+  - 11.0
+  lat:
+  - 56.0
+  - 56.5
+  level:
+  - 10
+  - 10
+  variable:
+  - air_temperature_1
+  - air_temperature_2
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_orographic_interp/%MPI%_dirac_%id%
+test:
+  reference filename: testref/dirac_orographic_interp.ref

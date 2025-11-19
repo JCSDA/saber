@@ -19,3 +19,4 @@ ptheta_bar_mean.nc
 Prho_bar_Mean.nc
 bifourier_balance.nc
 bifourier_covariance.nc
+orographic_interp.nc

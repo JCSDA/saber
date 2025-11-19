@@ -20,6 +20,10 @@ Hybrid.cc
 ID.h
 ID.cc
 
+# Orographic interpolation block
+OrographicInterp.h
+OrographicInterp.cc
+
 # Shadow levels block
 ShadowLevels.h
 ShadowLevels.cc
