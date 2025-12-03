@@ -18,11 +18,11 @@
 namespace saber {
 namespace interpolation {
 
+#ifdef ATLAS_SUPPORTS_SPHERICAL_VECTOR_INTERP_META
 namespace {
 
 // Retrieves the vector field configuration for a given variable name, if there is one.
 atlas::util::Config getVectorFieldOpt(const std::string_view varName) {
-#ifdef ATLAS_SUPPORTS_SPHERICAL_VECTOR_INTERP_META
   constexpr size_t xComponent = 0;
   constexpr size_t yComponent = 1;
 
@@ -36,13 +36,12 @@ atlas::util::Config getVectorFieldOpt(const std::string_view varName) {
     return atlas::option::vector_component("wind_at_10m", yComponent);
   }
 
-#endif  // ATLAS_SUPPORTS_SPHERICAL_VECTOR_INTERP_META
-
   // Empty config - don't add any vector config to this field.
   return atlas::util::Config();
 }
 
 }  // namespace
+#endif  // ATLAS_SUPPORTS_SPHERICAL_VECTOR_INTERP_META
 
 // ------------------------------------------------------------------------------------------------
 
