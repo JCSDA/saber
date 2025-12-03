@@ -17,11 +17,11 @@ namespace bifourier {
 // -----------------------------------------------------------------------------
 
 static int stores_in_use = 0;
-static std::vector<std::shared_ptr<BifourierTransform>> transformsVector;
+static std::vector<std::shared_ptr<BifourierTransformBase>> transformsVector;
 
 // -----------------------------------------------------------------------------
 
-std::vector<std::shared_ptr<BifourierTransform>> & BifourierTransformStore::transforms() {
+std::vector<std::shared_ptr<BifourierTransformBase>> & BifourierTransformStore::transforms() {
   return transformsVector;
 }
 
@@ -42,10 +42,10 @@ BifourierTransformStore::~BifourierTransformStore() {
 
 // -----------------------------------------------------------------------------
 
-std::shared_ptr<BifourierTransform> BifourierTransformStore::setupTransform(
+std::shared_ptr<BifourierTransformBase> BifourierTransformStore::setupTransform(
   const oops::GeometryData & gdata,
   const oops::Variables & vars,
-  const eckit::Configuration & conf) const {
+  const BifourierTransformParameters & params) const {
   oops::Log::trace() << classname() << "::setupTransform starting" << std::endl;
 
   // Check function space type
@@ -66,8 +66,13 @@ std::shared_ptr<BifourierTransform> BifourierTransformStore::setupTransform(
   }
 
   // Create transform
-  std::shared_ptr<BifourierTransform> transform;
-  transform.reset(new BifourierTransform(gdata, gridUid, vars, conf));
+  std::shared_ptr<BifourierTransformBase> transform =
+    BifourierTransformFactory::create(gdata, gridUid, vars, params);
+
+  if (!params.skipTests.value()) {
+    // Test tranform
+    transform->test(vars);
+  }
 
   // Insert new transform
   transforms().push_back(transform);
@@ -78,7 +83,7 @@ std::shared_ptr<BifourierTransform> BifourierTransformStore::setupTransform(
 
 // -----------------------------------------------------------------------------
 
-std::shared_ptr<BifourierTransform> BifourierTransformStore::retrieveTransform(
+std::shared_ptr<BifourierTransformBase> BifourierTransformStore::retrieveTransform(
   const oops::GeometryData & gdata) const {
   oops::Log::trace() << classname() << "::retrieveTransform starting" << std::endl;
 

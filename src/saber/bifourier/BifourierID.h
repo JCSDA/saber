@@ -15,8 +15,8 @@
 #include "eckit/mpi/Comm.h"
 
 #include "oops/base/GeometryData.h"
-#include "oops/util/DateTime.h"
 
+#include "saber/bifourier/BifourierTransformBase.h"
 #include "saber/bifourier/BifourierTransformStore.h"
 #include "saber/blocks/SaberBlockParametersBase.h"
 #include "saber/blocks/SaberCentralBlockBase.h"
@@ -79,7 +79,7 @@ class BifourierID : public SaberCentralBlockBase {
 
   // Spectral transform
   const BifourierTransformStore transStore_;
-  std::shared_ptr<BifourierTransform> trans_;
+  const std::shared_ptr<BifourierTransformBase> trans_;
 
   // Private methods
 

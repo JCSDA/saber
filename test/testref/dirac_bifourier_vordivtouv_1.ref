@@ -12,33 +12,41 @@ Input Dirac increment:
     + max    = 1.0000000000000000e+00
     + mean   = 2.6860059092130003e-05
     + stddev = 5.1826691088793144e-03
-- xspace: LocalConfiguration[root={type => linear , start => 5.1870971254055749e+05 , end => 6.9870971254055749e+05 , N => 73 , endpoint => true}]
-- yspace: LocalConfiguration[root={type => linear , start => -1.8673080099392682e+04 , end => 1.0632691990060732e+05 , N => 51 , endpoint => true}]
-Outer grid size: 3723
-Norm of output parameter : 6.1017419610202452e+01
 - Regional grid size: 73x51
 - Cell sizes: 2.5000000000000000e+00 km x 2.5000000000000000e+00 km
 - Mean latitude: 5.6289831946322792e+01 deg
 - Spectral sizes: 37x26
-- Truncation parameters MxN: 35x24
-- Maximum total wave number: 35
-- Spectral array global size: 2627
+- Truncation parameters MxN: 36x25
+- Maximum total wave number: 36
+- Spectral array global size: 2815
 - Direct-inverse test passed
 - Inverse-direct test passed
 - Parseval identity test passed
-- Adjoint test passed
+- Adjoint test (forward) passed
+- Adjoint test (inverse) passed
 - Derivatives / direct Laplacian consistency test passed
+- xspace: LocalConfiguration[root={type => linear , start => 5.1870971254055749e+05 , end => 6.9870971254055749e+05 , N => 73 , endpoint => true}]
+- yspace: LocalConfiguration[root={type => linear , start => -1.8673080099392682e+04 , end => 1.0632691990060732e+05 , N => 51 , endpoint => true}]
+Outer grid size: 3723
+Adjoint test for block BifourierSpectralVorDivToGridWind passed
+Inner inverse test for block BifourierSpectralVorDivToGridWind passed: U Uinv (U x) == (U x)
+Outer inverse test for block BifourierSpectralVorDivToGridWind passed: Uinv U (Uinv x) == (Uinv x)
+Adjoint test for block BifourierSpectralVorDivToGridWind passed
+Inner inverse test for block BifourierSpectralVorDivToGridWind passed: U Uinv (U x) == (U x)
+Outer inverse test for block BifourierSpectralVorDivToGridWind passed: Uinv U (Uinv x) == (Uinv x)
+Adjoint test for block ID passed
+Square-root test for block ID passed
 Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: structured [3723]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = -7.4201371134311744e-02
-    + max    = 7.0561385878272243e-01
-    + mean   = 2.6860063042975873e-05
-    + stddev = 4.3534623918608127e-03
+    + min    = -6.5537549086463073e-02
+    + max    = 7.5584151543655453e-01
+    + mean   = -4.5069384212612013e-10
+    + stddev = 4.5058287817629503e-03
   - geographical_y_wind (10 levels):
-    + min    = -7.4201371134311744e-02
-    + max    = 7.0561385878272243e-01
-    + mean   = 2.6860063042975873e-05
-    + stddev = 4.3534623918608118e-03
+    + min    = -6.5537549086463073e-02
+    + max    = 7.5584151543655453e-01
+    + mean   = -4.5069384211670216e-10
+    + stddev = 4.5058287817629503e-03

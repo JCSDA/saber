@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-#include "saber/bifourier/BifourierTransform.h"
+#include "saber/bifourier/BifourierTransformBase.h"
 
 namespace saber {
 namespace bifourier {
@@ -19,7 +19,7 @@ namespace bifourier {
 class BifourierTransformStore {
  public:
   static const std::string classname()
-    {return "saber::bifourier::BifourierTransform";}
+    {return "saber::bifourier::BifourierTransformStore";}
 
   // Constructor
   BifourierTransformStore();
@@ -30,16 +30,16 @@ class BifourierTransformStore {
   // Accessors
 
   // Store
-  static std::vector<std::shared_ptr<BifourierTransform>> & transforms();
+  static std::vector<std::shared_ptr<BifourierTransformBase>> & transforms();
 
   // Return or create spectral transform from a grid-point function space (StructuredColumns)
-  std::shared_ptr<BifourierTransform> setupTransform(
+  std::shared_ptr<BifourierTransformBase> setupTransform(
     const oops::GeometryData &,
     const oops::Variables &,
-    const eckit::Configuration &) const;
+    const BifourierTransformParameters &) const;
 
   // Retrieve an existing spectral transform from a spectral function space (PointCloud)
-  std::shared_ptr<BifourierTransform> retrieveTransform(
+  std::shared_ptr<BifourierTransformBase> retrieveTransform(
     const oops::GeometryData &) const;
 };
 

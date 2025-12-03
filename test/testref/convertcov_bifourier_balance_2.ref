@@ -1,0 +1,84 @@
+Input Dirac increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: structured [3723]
+  Fields:
+  - air_upward_absolute_vorticity (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 2.6860059092130003e-05
+    + stddev = 5.1826691088793144e-03
+  - air_horizontal_divergence (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 2.6860059092130003e-05
+    + stddev = 5.1826691088793144e-03
+  - air_temperature (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - log_of_air_pressure_at_surface (1 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 2.6860059092130003e-04
+    + stddev = 1.6389038743052555e-02
+  - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 2.6860059092130003e-05
+    + stddev = 5.1826691088793144e-03
+- Regional grid size: 73x51
+- Cell sizes: 2.5000000000000000e+00 km x 2.5000000000000000e+00 km
+- Mean latitude: 5.6289831946322792e+01 deg
+- Spectral sizes: 37x26
+- Truncation parameters MxN: 36x25
+- Maximum total wave number: 36
+- Spectral array global size: 2815
+- Direct-inverse test passed
+- Inverse-direct test passed
+- Parseval identity test passed
+- Adjoint test (forward) passed
+- Adjoint test (inverse) passed
+- Derivatives / direct Laplacian consistency test passed
+Adjoint test for block BifourierSpectralToGrid passed
+Inner inverse test for block BifourierSpectralToGrid passed: U Uinv (U x) == (U x)
+Outer inverse test for block BifourierSpectralToGrid passed: Uinv U (Uinv x) == (Uinv x)
+Regression norms: 
+- air_horizontal_divergence from balanced_air_pressure: 2.1918086032475726e-04
+- air_temperature_and_log_of_air_pressure_at_surface from balanced_air_pressure: 1.5654598599293770e+00
+- air_temperature_and_log_of_air_pressure_at_surface from air_horizontal_divergence: 1.2814560072106249e+06
+- water_vapor_mixing_ratio_wrt_moist_air from balanced_air_pressure: 5.8990054088852079e-04
+- water_vapor_mixing_ratio_wrt_moist_air from air_horizontal_divergence: 4.7681841513515462e+02
+- water_vapor_mixing_ratio_wrt_moist_air from air_temperature_and_log_of_air_pressure_at_surface: 7.9170837364445719e+00
+Adjoint test for block BifourierAromeBalance passed
+Inner inverse test for block BifourierAromeBalance passed: U Uinv (U x) == (U x)
+Outer inverse test for block BifourierAromeBalance passed: Uinv U (Uinv x) == (Uinv x)
+Adjoint test for block BifourierID passed
+Square-root test for block BifourierID passed
+Covariance(SABER) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: structured [3723]
+  Fields:
+  - air_upward_absolute_vorticity (10 levels):
+    + min    = -1.4508261826054790e+04
+    + max    = 1.4038995439242774e+04
+    + mean   = 9.9999999999907468e-02
+    + stddev = 2.3489559471196440e+03
+  - air_horizontal_divergence (10 levels):
+    + min    = -2.0201757991444223e+05
+    + max    = 1.0053003032753203e+05
+    + mean   = 1.0000000002853121e-01
+    + stddev = 4.6333332574651715e+04
+  - air_temperature (10 levels):
+    + min    = -1.2357841483690619e+10
+    + max    = 1.1035868802069090e+10
+    + mean   ~ 0
+    + stddev = 3.0235128985460033e+09
+  - log_of_air_pressure_at_surface (1 levels):
+    + min    = -1.1649819520862186e+07
+    + max    = 2.6881556074599214e+07
+    + mean   = 9.9999999341645240e-01
+    + stddev = 8.9234801080148462e+06
+  - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
+    + min    = -8.0192165069745528e+06
+    + max    = 3.7689297459882582e+06
+    + mean   = 1.0000000104940768e-01
+    + stddev = 1.3386463103391572e+06

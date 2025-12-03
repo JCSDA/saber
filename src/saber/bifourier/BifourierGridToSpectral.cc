@@ -62,8 +62,8 @@ void BifourierGridToSpectral::multiplyAD(oops::FieldSet3D & fset) const {
   // Remove variables
   util::removeFieldsFromFieldSet(fset.fieldSet(), innerVars_.variables());
 
-  // Inverse spectral transform
-  trans_->sp2gp(fsetTmp, fset.fieldSet(), innerVars_);
+  // Direct spectral transform, adjoint
+  trans_->gp2spAdj(fsetTmp, fset.fieldSet(), innerVars_);
 
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
 }

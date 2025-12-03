@@ -15,6 +15,7 @@
 #include "oops/base/GeometryData.h"
 #include "oops/util/parameters/Parameters.h"
 
+#include "saber/bifourier/BifourierTransformBase.h"
 #include "saber/bifourier/BifourierTransformStore.h"
 #include "saber/blocks/SaberBlockParametersBase.h"
 #include "saber/blocks/SaberOuterBlockBase.h"
@@ -30,9 +31,47 @@ class BifourierBalanceReadParameters : public oops::Parameters {
  public:
   // Input file
   oops::RequiredParameter<std::string> inputFile{"input file", this};
+};
 
-  // Input file format ("netcdf", "arome legacy binary" or "arome legacy netcdf")
-  oops::Parameter<std::string> inputFileFormat{"input file format", "netcdf", this};
+// -----------------------------------------------------------------------------
+
+class BifourierBalanceCalibrationParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(BifourierBalanceCalibrationParameters, oops::Parameters)
+
+ public:
+  // Use full recursive inverse formula to compute the regression
+  oops::Parameter<bool> fullRecursiveInverse{"full recursive inverse", false, this};
+
+  // Filtering scale (in total wavenumber unit)
+  oops::Parameter<double> filteringScale{"filtering scale", 0.0, this};
+
+  // Remaining variance fraction (between 0 and 1) in the auto-covariance inversion
+  oops::Parameter<double> remainingVar{"remaining variance fraction", 1.0, this};
+
+  // Old covariance input file
+  oops::OptionalParameter<std::string> oldCovInputFile{"old covariance input file", this};
+
+  // Half life
+  oops::OptionalParameter<double> halfLife{"half life", this};
+
+  // Cycle index
+  oops::OptionalParameter<size_t> cycleIndex{"cycle index", this};
+
+  // Sub-ensembles size
+  oops::Parameter<size_t> subEnsSize{"sub-ensembles size", 0, this};
+};
+
+// -----------------------------------------------------------------------------
+
+class BifourierBalanceWriteParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(BifourierBalanceWriteParameters, oops::Parameters)
+
+ public:
+  // Output file
+  oops::RequiredParameter<std::string> outputFile{"output file", this};
+
+  // Write covariance flag
+  oops::Parameter<bool> writeCovariance{"write covariance", false, this};
 };
 
 // -----------------------------------------------------------------------------
@@ -57,8 +96,11 @@ class BifourierBalanceParameters : public SaberBlockParametersBase {
   // Read parameters
   oops::OptionalParameter<BifourierBalanceReadParameters> read{"read", this};
 
-  // Output file
-  oops::OptionalParameter<std::string> outputFile{"output file", this};
+  // Calibration parameters
+  oops::OptionalParameter<BifourierBalanceCalibrationParameters> calibration{"calibration", this};
+
+  // Write parameters
+  oops::OptionalParameter<BifourierBalanceWriteParameters> write{"write", this};
 
   // Rows
   oops::RequiredParameter<std::vector<BifourierBalanceRowParameters>>
@@ -96,9 +138,15 @@ class BifourierBalance : public SaberOuterBlockBase {
 
   void read() override;
 
+  void directCalibration(const oops::FieldSets &) override;
+
+  void iterativeCalibrationInit() override;
+  void iterativeCalibrationUpdate(const oops::FieldSet3D &) override;
+  void iterativeCalibrationFinal() override;
+
   void write() const override;
 
- private:
+ protected:
   // Inner geometry data
   const oops::GeometryData & innerGeometryData_;
 
@@ -106,14 +154,17 @@ class BifourierBalance : public SaberOuterBlockBase {
   const eckit::mpi::Comm & comm_;
 
   // Inner variables
-  const oops::Variables & innerVars_;
+  oops::Variables innerVars_;
 
   // Parameters
-  BifourierBalanceParameters params_;
+  Parameters_ params_;
+
+  // Filtering length-scale
+  const double Lf_;
 
   // Spectral transform
   const BifourierTransformStore transStore_;
-  std::shared_ptr<BifourierTransform> trans_;
+  const std::shared_ptr<BifourierTransformBase> trans_;
 
   // Ordered variables
   oops::Variables balVars_;
@@ -124,7 +175,20 @@ class BifourierBalance : public SaberOuterBlockBase {
   // Data
   atlas::FieldSet data_;
 
+  // Interative counter
+  size_t iterativeN_;
+
   // Private methods
+
+  // Read covariance
+  void readCovariance();
+
+  // Compute regression
+  void computeRegression(const std::vector<std::string> &,
+                         const oops::Variable &);
+
+  // Compute regressions from covariances
+  void computeRegressionsFromCovariances();
 
   // Print
   void print(std::ostream &) const override;

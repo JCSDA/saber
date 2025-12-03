@@ -1,0 +1,86 @@
+Input Dirac increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: structured [1872]
+  Fields:
+  - air_upward_absolute_vorticity (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 5.3418803418803419e-05
+    + stddev = 7.3088168275599876e-03
+  - air_horizontal_divergence (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 5.3418803418803419e-05
+    + stddev = 7.3088168275599876e-03
+  - air_temperature (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - log_of_air_pressure_at_surface (1 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 5.3418803418803424e-04
+    + stddev = 2.3112508176051736e-02
+  - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 5.3418803418803419e-05
+    + stddev = 7.3088168275599876e-03
+- xspace: LocalConfiguration[root={type => linear , start => 5.4495971254055749e+05 , end => 6.7245971254055749e+05 , N => 52 , endpoint => true}]
+- yspace: LocalConfiguration[root={type => linear , start => 7.6919900607317686e+01 , end => 8.7576919900607318e+04 , N => 36 , endpoint => true}]
+Outer grid size: 1872
+- xspace: LocalConfiguration[root={type => linear , start => 5.4495971254055749e+05 , end => 7.2495971254055749e+05 , N => 73 , endpoint => true}]
+- yspace: LocalConfiguration[root={type => linear , start => 7.6919900607317686e+01 , end => 1.2507691990060732e+05 , N => 51 , endpoint => true}]
+Info     : Inner grid size: 3723
+Adjoint test for block Biperiodization passed
+Inner inverse test for block Biperiodization passed: U Uinv (U x) == (U x)
+Outer inverse test for block Biperiodization passed: Uinv U (Uinv x) == (Uinv x)
+- Regional grid size: 73x51
+- Cell sizes: 2.5000000000000000e+00 km x 2.5000000000000000e+00 km
+- Mean latitude: 5.6421911446117591e+01 deg
+- Spectral sizes: 37x26
+- Truncation parameters MxN: 36x25
+- Maximum total wave number: 36
+- Spectral array global size: 2815
+- Direct-inverse test passed
+- Inverse-direct test passed
+- Parseval identity test passed
+- Adjoint test (forward) passed
+- Adjoint test (inverse) passed
+- Derivatives / direct Laplacian consistency test passed
+Adjoint test for block BifourierSpectralToGrid passed
+Inner inverse test for block BifourierSpectralToGrid passed: U Uinv (U x) == (U x)
+Outer inverse test for block BifourierSpectralToGrid passed: Uinv U (Uinv x) == (Uinv x)
+Adjoint test for block BifourierAromeBalance passed
+Inner inverse test for block BifourierAromeBalance passed: U Uinv (U x) == (U x)
+Outer inverse test for block BifourierAromeBalance passed: Uinv U (Uinv x) == (Uinv x)
+Adjoint test for block BifourierID passed
+Square-root test for block BifourierID passed
+Covariance(SABER) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: structured [1872]
+  Fields:
+  - air_upward_absolute_vorticity (10 levels):
+    + min    = -9.9302490880956179e+02
+    + max    = 1.1018852192599121e+04
+    + mean   = 8.0898653248138497e-01
+    + stddev = 9.3536414093170436e+01
+  - air_horizontal_divergence (10 levels):
+    + min    = -8.1144396798071093e+03
+    + max    = 9.7725977588141104e+03
+    + mean   = 3.7109095705565437e+01
+    + stddev = 1.4447876889688850e+03
+  - air_temperature (10 levels):
+    + min    = -6.9905190432577908e+08
+    + max    = 2.5338088054928975e+09
+    + mean   = 3.1440075357906771e+08
+    + stddev = 5.0724552738395780e+08
+  - log_of_air_pressure_at_surface (1 levels):
+    + min    = -9.1857900938669581e+05
+    + max    = 4.5103070484552290e+06
+    + mean   = 5.7856308384850260e+05
+    + stddev = 1.1625441442490732e+06
+  - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
+    + min    = -8.9648407231480745e+05
+    + max    = 3.9599421567466407e+05
+    + mean   = -2.3825165462862456e+04
+    + stddev = 1.8311672281413534e+05

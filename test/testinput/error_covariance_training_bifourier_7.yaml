@@ -1,0 +1,116 @@
+# Iterative calibration of a full bifourier error covariance matrix, with a spectral filtering of covariances
+geometry:
+  function space: StructuredColumns
+  grid:
+    type : regional
+    nx : 73
+    ny : 51
+    dx : 2.5e3
+    dy : 2.5e3
+    lonlat(centre) : [9.9, 56.3]
+    projection :  
+      type : lambert_conformal_conic
+      latitude0  : 56.3
+      longitude0 : 0.0
+    y_numbering: 1
+  partitioner: checkerboard
+  groups:
+  - variables:
+    - air_upward_absolute_vorticity
+    - air_horizontal_divergence
+    - geographical_x_wind
+    - geographical_y_wind
+    - air_temperature
+    - water_vapor_mixing_ratio_wrt_moist_air
+    levels: 10
+  - variables:
+    - log_of_air_pressure_at_surface
+    levels: 1
+  - variables:
+    - air_temperature_and_log_of_air_pressure_at_surface
+    levels: 11
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables:
+  - geographical_x_wind
+  - geographical_y_wind
+  - air_temperature
+  - log_of_air_pressure_at_surface
+  - water_vapor_mixing_ratio_wrt_moist_air
+background error:
+  covariance model: SABER
+  iterative ensemble loading: true
+  ensemble:
+    members from template:
+      template:
+        date: 2010-01-01T12:00:00Z
+        filepath: testdata/randomization_bifourier/_MPI_-_OMP__member_%mem%
+        state variables:
+        - geographical_x_wind
+        - geographical_y_wind
+        - air_temperature
+        - log_of_air_pressure_at_surface
+        - water_vapor_mixing_ratio_wrt_moist_air
+      pattern: '%mem%'
+      nmembers: 25
+      zero padding: 6
+  adjoint test: true
+  square-root test: true
+  inverse test: true
+  saber central block:
+    saber block name: BifourierCovariance
+    calibration:
+      filtering scale: 4.0
+    write:
+      output file: testdata/error_covariance_training_bifourier_6/_MPI_-_OMP__covariance.nc
+      write covariance: true
+  saber outer blocks:
+  - saber block name: BifourierAromeBalance
+    calibration:
+      filtering scale: 4.0
+    write:
+      output file: testdata/error_covariance_training_bifourier_6/_MPI_-_OMP__balance.nc
+    rows:
+    - output variable: balanced_air_pressure
+    - output variable: air_horizontal_divergence
+      input variables: [balanced_air_pressure]
+    - output variable: air_temperature_and_log_of_air_pressure_at_surface
+      input variables: [balanced_air_pressure, air_horizontal_divergence]
+    - output variable: water_vapor_mixing_ratio_wrt_moist_air
+      input variables: [balanced_air_pressure, air_horizontal_divergence, air_temperature_and_log_of_air_pressure_at_surface]
+    balanced air pressure parameters from grid: true
+    active variables:
+    - air_upward_absolute_vorticity
+    - air_horizontal_divergence
+    - air_temperature
+    - log_of_air_pressure_at_surface
+    - air_temperature_and_log_of_air_pressure_at_surface
+    - water_vapor_mixing_ratio_wrt_moist_air
+  - saber block name: BifourierSpectralVorDivToGridWind
+    active variables:
+    - air_upward_absolute_vorticity
+    - air_horizontal_divergence
+    - geographical_x_wind
+    - geographical_y_wind
+    - air_temperature
+    - log_of_air_pressure_at_surface
+    - water_vapor_mixing_ratio_wrt_moist_air
+    biperiodization:
+      x inner extension: 7
+      y inner extension: 5
+      x outer extension: 7
+      y outer extension: 5
+dirac:
+  lon:
+  - 9.9058
+  lat:
+  - 56.3223
+  level:
+  - 4
+  variable:
+  - air_temperature
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/error_covariance_training_bifourier_7/%MPI%_dirac_%id%
+test:
+  reference filename: testref/error_covariance_training_bifourier_7.ref

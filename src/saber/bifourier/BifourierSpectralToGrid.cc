@@ -24,12 +24,10 @@ BifourierSpectralToGrid::BifourierSpectralToGrid(const oops::GeometryData & oute
                                                  const oops::FieldSet3D & xb,
                                                  const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params, xb.validTime()),
-    innerVars_(outerVars)
+    innerVars_(outerVars),
+    trans_(transStore_.setupTransform(outerGeometryData, innerVars_, params.transform.value()))
 {
   oops::Log::trace() << classname() << "::BifourierSpectralToGrid starting" << std::endl;
-
-  // Create spectral transform
-  trans_ = transStore_.setupTransform(outerGeometryData, innerVars_, params.toConfiguration());
 
   // Create inner GeometryData
   innerGeometryData_.reset(new oops::GeometryData(trans_->spFspace(), outerGeometryData.fieldSet(),
@@ -61,9 +59,9 @@ void BifourierSpectralToGrid::multiply(oops::FieldSet3D & fset) const {
 void BifourierSpectralToGrid::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
 
-  // Direct spectral transform
+  // Inverse spectral transform, adjoint
   atlas::FieldSet fsetTmp;
-  trans_->gp2sp(fset.fieldSet(), fsetTmp, innerVars_);
+  trans_->sp2gpAdj(fset.fieldSet(), fsetTmp, innerVars_);
 
   // Remove outer variables
   util::removeFieldsFromFieldSet(fset.fieldSet(), innerVars_.variables());

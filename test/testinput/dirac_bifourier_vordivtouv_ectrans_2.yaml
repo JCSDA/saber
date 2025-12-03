@@ -1,0 +1,70 @@
+# Dirac test of the BifourierSpectralVorDivToGridWind block, with the dipole mode activated, using ECTRANS backend
+geometry:
+  function space: StructuredColumns
+  grid:
+    type : regional
+    nx : 73
+    ny : 51
+    dx : 2.5e3
+    dy : 2.5e3
+    lonlat(centre) : [9.9, 56.3]
+    projection :  
+      type : lambert_conformal_conic
+      latitude0  : 56.3
+      longitude0 : 0.0
+    y_numbering: 1
+  partitioner: checkerboard
+  groups:
+  - variables:
+    - air_upward_absolute_vorticity
+    - air_horizontal_divergence
+    - geographical_x_wind
+    - geographical_y_wind
+    levels: 10
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables:
+  - geographical_x_wind
+  - geographical_y_wind
+background error:
+  covariance model: SABER
+  adjoint test: false
+  square-root test: true
+  inverse test: true
+  saber central block:
+    saber block name: FastLAM
+    calibration:
+      multivariate strategy: univariate
+      groups:
+      - group name: vars
+        variables:
+        - air_upward_absolute_vorticity
+        - air_horizontal_divergence
+      horizontal length-scale:
+      - group: vars
+        value: 15.0e3
+      vertical length-scale:
+      - group: vars
+        value: 3.0
+      number of layers: 1
+      resolution: 5
+  saber outer blocks:
+  - saber block name: BifourierGridToSpectral
+  - saber block name: BifourierSpectralVorDivToGridWind
+    dipole test: true
+    transform:
+      fft backend: ectrans
+dirac:
+  lon:
+  - 9.9058
+  lat:
+  - 56.3223
+  level:
+  - 1
+  variable:
+  - geographical_x_wind
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_bifourier_vordivtouv_ectrans_2/%MPI%_dirac_%id%
+test:
+  reference filename: testref/dirac_bifourier_vordivtouv_ectrans_2.ref

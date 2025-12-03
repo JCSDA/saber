@@ -1,2 +1,0 @@
-dirac_bifourier_balance_1
-dirac_bifourier_covariance_1

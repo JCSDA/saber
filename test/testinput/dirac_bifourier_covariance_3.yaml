@@ -23,7 +23,6 @@ geometry:
   - variables:
     - air_temperature_and_log_of_air_pressure_at_surface
     levels: 11
-  latitude south to north: false
 background:
   date: 2010-01-01T12:00:00Z
   state variables:
@@ -33,10 +32,13 @@ background:
   - water_vapor_mixing_ratio_wrt_moist_air
 background error:
   covariance model: SABER
+  adjoint test: true
+  square-root test: true
+  inverse test: true
   saber central block:
     saber block name: BifourierCovariance
     read:
-      input file: testdata/convertcov_bifourier_covariance/_MPI_-_OMP__covariance.nc
+      input file: testdata/bifourier_covariance.nc
   saber outer blocks:
   - saber block name: BifourierSpectralToGrid
   - saber block name: Biperiodization

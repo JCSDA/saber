@@ -1,0 +1,62 @@
+# Randomization with a partial bifourier error covariance matrix
+geometry:
+  function space: StructuredColumns
+  grid:
+    type : regional
+    nx : 73
+    ny : 51
+    dx : 2.5e3
+    dy : 2.5e3
+    lonlat(centre) : [9.9, 56.3]
+    projection :  
+      type : lambert_conformal_conic
+      latitude0  : 56.3
+      longitude0 : 0.0
+    y_numbering: 1
+  partitioner: checkerboard
+  groups:
+  - variables:
+    - air_upward_absolute_vorticity
+    - air_horizontal_divergence
+    - geographical_x_wind
+    - geographical_y_wind
+    - water_vapor_mixing_ratio_wrt_moist_air
+    levels: 10
+  - variables:
+    - air_temperature_and_log_of_air_pressure_at_surface
+    levels: 11
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables:
+  - geographical_x_wind
+  - geographical_y_wind
+  - air_temperature_and_log_of_air_pressure_at_surface
+  - water_vapor_mixing_ratio_wrt_moist_air
+background error:
+  covariance model: SABER
+  adjoint test: true
+  square-root test: true
+  inverse test: true
+  saber central block:
+    saber block name: BifourierAromeCovariance
+    read:
+      input file: testdata/bifourier_covariance.nc
+  saber outer blocks:
+  - saber block name: BifourierSpectralVorDivToGridWind
+    active variables:
+    - air_upward_absolute_vorticity
+    - air_horizontal_divergence
+    - geographical_x_wind
+    - geographical_y_wind
+    - air_temperature_and_log_of_air_pressure_at_surface
+    - water_vapor_mixing_ratio_wrt_moist_air
+    biperiodization:
+      x inner extension: 7
+      y inner extension: 5
+      x outer extension: 7
+      y outer extension: 5
+  randomization size: 25
+output states:
+  filepath: testdata/randomization_bifourier_covariance/_MPI_-_OMP__member
+test:
+  reference filename: testref/randomization_bifourier_covariance.ref

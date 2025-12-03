@@ -15,6 +15,7 @@
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
+#include "saber/bifourier/BifourierTransformBase.h"
 #include "saber/bifourier/BifourierTransformStore.h"
 #include "saber/blocks/SaberBlockParametersBase.h"
 #include "saber/blocks/SaberOuterBlockBase.h"
@@ -66,7 +67,7 @@ class BifourierGridToSpectral : public SaberOuterBlockBase {
 
   // Spectral transform
   const BifourierTransformStore transStore_;
-  std::shared_ptr<BifourierTransform> trans_;
+  const std::shared_ptr<BifourierTransformBase> trans_;
 
   // Inner geometry data
   const oops::GeometryData & innerGeometryData_;

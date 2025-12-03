@@ -28,39 +28,48 @@ Outer grid size: 1872
 - xspace: LocalConfiguration[root={type => linear , start => 5.4495971254055749e+05 , end => 7.2495971254055749e+05 , N => 73 , endpoint => true}]
 - yspace: LocalConfiguration[root={type => linear , start => 7.6919900607317686e+01 , end => 1.2507691990060732e+05 , N => 51 , endpoint => true}]
 Info     : Inner grid size: 3723
+Adjoint test for block Biperiodization passed
+Inner inverse test for block Biperiodization passed: U Uinv (U x) == (U x)
+Outer inverse test for block Biperiodization passed: Uinv U (Uinv x) == (Uinv x)
 - Regional grid size: 73x51
 - Cell sizes: 2.5000000000000000e+00 km x 2.5000000000000000e+00 km
 - Mean latitude: 5.6421911446117591e+01 deg
 - Spectral sizes: 37x26
-- Truncation parameters MxN: 35x24
-- Maximum total wave number: 35
-- Spectral array global size: 2627
+- Truncation parameters MxN: 36x25
+- Maximum total wave number: 36
+- Spectral array global size: 2815
 - Direct-inverse test passed
 - Inverse-direct test passed
 - Parseval identity test passed
-- Adjoint test passed
+- Adjoint test (forward) passed
+- Adjoint test (inverse) passed
 - Derivatives / direct Laplacian consistency test passed
+Adjoint test for block BifourierSpectralToGrid passed
+Inner inverse test for block BifourierSpectralToGrid passed: U Uinv (U x) == (U x)
+Outer inverse test for block BifourierSpectralToGrid passed: Uinv U (Uinv x) == (Uinv x)
+Adjoint test for block BifourierCovariance passed
+Square-root test for block BifourierCovariance passed
 Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: structured [1872]
   Fields:
   - air_upward_absolute_vorticity (10 levels):
-    + min    = -6.8104850345376183e-11
-    + max    = 1.0355880483436711e-09
-    + mean   = 8.5730142683384615e-14
-    + stddev = 1.8116380590147095e-11
+    + min    = -3.9997053364313221e-11
+    + max    = 5.5329603214293053e-10
+    + mean   = 6.1260224913053795e-14
+    + stddev = 9.1669324071505505e-12
   - air_horizontal_divergence (10 levels):
-    + min    = -4.0819833615634788e-11
-    + max    = 4.9896228579636911e-10
-    + mean   = 7.0383219256487351e-14
-    + stddev = 8.3193222184629522e-12
+    + min    = -2.8488458312699551e-11
+    + max    = 3.2305862921761325e-10
+    + mean   = 3.5650422827084458e-14
+    + stddev = 5.2211228062170574e-12
   - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
-    + min    = -6.9272889504143470e-06
-    + max    = 4.7427003702465581e-07
-    + mean   = -1.0560690316493778e-07
-    + stddev = 4.6077545769342089e-07
+    + min    = -8.5375673983992540e-06
+    + max    = 6.3892158810947953e-07
+    + mean   = 3.3119368055067728e-08
+    + stddev = 4.4359298669738382e-07
   - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
-    + min    = -3.5249796308867758e-09
-    + max    = 7.9003792552401030e-08
-    + mean   = 5.1854503378407329e-10
-    + stddev = 3.2011745031465903e-09
+    + min    = -1.4228820253838980e-09
+    + max    = 3.6863836528339586e-08
+    + mean   = 1.1363201592461813e-10
+    + stddev = 1.1169946743835887e-09

@@ -19,7 +19,6 @@ geometry:
     - air_upward_absolute_vorticity
     - air_horizontal_divergence
     levels: 10
-  latitude south to north: false
 background:
   date: 2010-01-01T12:00:00Z
   state variables:
@@ -27,6 +26,9 @@ background:
   - air_horizontal_divergence
 background error:
   covariance model: SABER
+  adjoint test: true
+  square-root test: true
+  inverse test: true
   saber central block:
     saber block name: ID
   saber outer blocks:
