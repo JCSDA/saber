@@ -16,6 +16,7 @@ background:
   - northward_wind
 background error:
   covariance model: hybrid
+  run components recursively: true
   components:
   - covariance:
       covariance model: SABER

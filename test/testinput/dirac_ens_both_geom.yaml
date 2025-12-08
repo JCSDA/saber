@@ -22,6 +22,7 @@ background error:
   covariance model: SABER
   saber central block:
     saber block name: Hybrid
+    run components recursively: true
     components:
     - weight:
         value: 0.5

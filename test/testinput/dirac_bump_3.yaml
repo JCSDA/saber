@@ -22,6 +22,7 @@ background error:
   square-root test: true
   saber central block:
     saber block name: Hybrid
+    run components recursively: true
     components:
     - covariance:
         saber central block:

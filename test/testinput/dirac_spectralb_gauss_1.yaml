@@ -68,6 +68,8 @@ background error:
   adjoint test: false
   saber central block:
     saber block name: Hybrid
+    run components recursively: true
+    run in parallel: false
     components:
     # ===========================================================
     # Waveband 1

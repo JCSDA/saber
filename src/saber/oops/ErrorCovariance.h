@@ -8,7 +8,9 @@
 
 #pragma once
 
+#include <cmath>
 #include <memory>
+#include <numeric>
 #include <string>
 #include <vector>
 
@@ -231,20 +233,53 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
     eckit::LocalConfiguration hybridConf = saberCentralBlockParams.toConfiguration();
 
     parallelHybrid_ = hybridConf.getBool("run in parallel");
-
+    const eckit::mpi::Comm & defaultSpaceComm = geom.getComm();
+    const size_t ntasks = defaultSpaceComm.size();
     const size_t nComponents = hybridConf.getSubConfigurations("components").size();
-    const eckit::mpi::Comm & globalSpaceComm = geom.getComm();
-    const size_t ntasks = globalSpaceComm.size();
 
-    if (parallelHybrid_ && ntasks % nComponents != 0) {
-      oops::Log::warning() << "Warning  : Number of MPI tasks not divisible "
-                              "by number of Hybrid block components, running serially."
-                           << std::endl;
-      parallelHybrid_ = false;
-    }
+    std::vector<double> parallelCovRelativeCpuWeight =
+      hybridConf.has("parallel covariance relative cpu weight") ?
+      hybridConf.getDoubleVector("parallel covariance relative cpu weight") :
+      std::vector<double>(nComponents,
+                          1.0 / static_cast<double>(nComponents));
+
+    std::vector<size_t> ntasksPerComponent(nComponents, 0);
+    std::vector<size_t> globalTaskOffsetPerComponent(nComponents+1, 0);
 
     if (parallelHybrid_) {
       oops::Log::info() << "Info     : Creating Hybrid block in parallel" << std::endl;
+      // checks
+      ASSERT(nComponents == parallelCovRelativeCpuWeight.size());
+
+      // need to check to ensure that the total sum of PEs over components is consistent
+      // with the MPI size on the default communicator and that each component
+      // has a minimum MPI size of 1.
+      for (size_t component = 0; component < nComponents; ++component) {
+        ntasksPerComponent[component] =
+          std::round(parallelCovRelativeCpuWeight[component] * ntasks);
+        ASSERT(ntasksPerComponent[component] > 0);
+      }
+      int discrepencyPE =
+        std::accumulate(ntasksPerComponent.begin(), ntasksPerComponent.end(), 0) - ntasks;
+
+      for (size_t component = 0; component < nComponents && discrepencyPE != 0; ++component) {
+        if (discrepencyPE > 0 && ntasksPerComponent[component] >= 2) {
+          ntasksPerComponent[component] -= 1;
+          discrepencyPE -= 1;
+        } else if (discrepencyPE < 0) {
+          ntasksPerComponent[component] += 1;
+          discrepencyPE += 1;
+        }
+      }
+
+      ASSERT(std::accumulate(ntasksPerComponent.begin(),
+                             ntasksPerComponent.end(), 0) - ntasks == 0);
+
+      for (size_t component = 1; component < nComponents; ++component) {
+        globalTaskOffsetPerComponent[component] =
+          globalTaskOffsetPerComponent[component-1] + ntasksPerComponent[component-1];
+      }
+      globalTaskOffsetPerComponent[nComponents] = ntasks;
 
       if (dualResParams != boost::none) {
         throw eckit::NotImplemented("Parallel Hybrid not compatible "
@@ -253,12 +288,20 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
       }
 
       const eckit::mpi::Comm & initialDefaultComm = eckit::mpi::comm();
-      ASSERT(initialDefaultComm.name() == globalSpaceComm.name());
+      ASSERT(initialDefaultComm.name() == defaultSpaceComm.name());
 
       // We split the space communicators only, the time parallelization is untouched
-      const size_t myTask = globalSpaceComm.rank();
-      const size_t tasksPerComponent = ntasks / nComponents;
-      myComponent_ = myTask / tasksPerComponent;
+      const size_t myTask = defaultSpaceComm.rank();
+
+      // Set myComponent_  tasksPerComponent
+      size_t tasksPerComponent;
+      for (size_t component = 0; component < nComponents; ++component) {
+        if ((myTask >= globalTaskOffsetPerComponent[component]) &&
+            (myTask < globalTaskOffsetPerComponent[component+1])) {
+          myComponent_ = component;
+          tasksPerComponent = ntasksPerComponent[component];
+        }
+      }
 
       oops::Log::info() << "Info     : Creating component " << myComponent_ + 1
                         << "/" << nComponents
@@ -270,7 +313,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
       if (eckit::mpi::hasComm(spaceCommName.c_str())) {
         eckit::mpi::deleteComm(spaceCommName.c_str());
       }
-      const auto & localSpaceComm = globalSpaceComm.split(myComponent_, spaceCommName.c_str());
+      const auto & localSpaceComm = defaultSpaceComm.split(myComponent_, spaceCommName.c_str());
 
       // Set up default MPI communicator for atlas
       eckit::mpi::setCommDefault(localSpaceComm.name().c_str());
@@ -292,18 +335,18 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
       for (size_t jtime = 0; jtime < xb.size(); jtime++) {
         util::redistributeToSubcommunicator(xb[jtime].fieldSet().fieldSet(),
                                             localXb[jtime].fieldSet().fieldSet(),
-                                            globalSpaceComm,
+                                            defaultSpaceComm,
                                             localSpaceComm,
                                             geom.functionSpace(),
                                             localHybridGeom_->functionSpace());
         util::redistributeToSubcommunicator(fg[jtime].fieldSet().fieldSet(),
                                             localFg[jtime].fieldSet().fieldSet(),
-                                            globalSpaceComm,
+                                            defaultSpaceComm,
                                             localSpaceComm,
                                             geom.functionSpace(),
                                             localHybridGeom_->functionSpace());
       }
-      globalSpaceComm.barrier();
+      defaultSpaceComm.barrier();
 
       const oops::FieldSet4D localFset4dXbTmp(localXb);
       const oops::FieldSet4D localFset4dFgTmp(localFg);
@@ -381,7 +424,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
       ASSERT(hybridBlockChain_.size() > 0);
 
       // Restore previous default MPI communicator for atlas
-      eckit::mpi::setCommDefault(globalSpaceComm.name().c_str());
+      eckit::mpi::setCommDefault(defaultSpaceComm.name().c_str());
     } else {
       oops::Log::info() << "Info     : Creating Hybrid block serially" << std::endl;
       // Create block geometry (needed for ensemble reading)
@@ -514,11 +557,11 @@ void ErrorCovariance<MODEL>::doRandomize(Increment4D_ & dx) const {
     ASSERT(hybridBlockChain_.size() == 1);
 
     // global communicator and functionSpace
-    const auto & globalSpaceComm = dx.geometry().getComm();
+    const auto & defaultSpaceComm = dx.geometry().getComm();
     const auto & globalFunctionSpace = dx.geometry().functionSpace();
 
     // check global communicator is the default one for atlas MPI
-    ASSERT(eckit::mpi::comm().name() == globalSpaceComm.name());
+    ASSERT(eckit::mpi::comm().name() == defaultSpaceComm.name());
 
     // subcommunicator within this component
     const auto spaceCommName = "comm_space_" + std::to_string(myComponent_);
@@ -543,20 +586,20 @@ void ErrorCovariance<MODEL>::doRandomize(Increment4D_ & dx) const {
     }
 
     // Add components
-    globalSpaceComm.barrier();
+    defaultSpaceComm.barrier();
 
     for (size_t jtime = 0; jtime < fset4dCmp.size(); jtime++) {
       // Redistribute to global communicator and sum
        util::gatherAndSumFromSubcommunicator(fset4dCmp[jtime].fieldSet(),
                                              fset4dSum[jtime].fieldSet(),
                                              localSpaceComm,
-                                             globalSpaceComm,
+                                             defaultSpaceComm,
                                              localHybridGeom_->functionSpace(),
                                              globalFunctionSpace);
     }
 
     // Restore atlas MPI to previous
-    eckit::mpi::setCommDefault(globalSpaceComm.name().c_str());
+    eckit::mpi::setCommDefault(defaultSpaceComm.name().c_str());
 
     fset4dSum += fset4dCmp;
   } else {
@@ -619,9 +662,9 @@ void ErrorCovariance<MODEL>::doMultiply(const Increment4D_ & dxi,
     ASSERT(hybridFieldWeightSqrt_.size() == 1);
 
     // Global communicator
-    const auto & globalSpaceComm = dxi.geometry().getComm();
+    const auto & defaultSpaceComm = dxi.geometry().getComm();
     const auto & globalFunctionSpace = dxi.geometry().functionSpace();
-    ASSERT(globalSpaceComm.name() == eckit::mpi::comm().name());
+    ASSERT(defaultSpaceComm.name() == eckit::mpi::comm().name());
 
     // Subcommunicator within component
     const std::string spaceCommName = "comm_space_" + std::to_string(myComponent_);
@@ -632,7 +675,7 @@ void ErrorCovariance<MODEL>::doMultiply(const Increment4D_ & dxi,
     for (size_t jtime = 0; jtime < fset4dCmp.size(); jtime++) {
       util::redistributeToSubcommunicator(fset4dInit[jtime].fieldSet(),
                                           fset4dCmp[jtime].fieldSet(),
-                                          globalSpaceComm,
+                                          defaultSpaceComm,
                                           localSpaceComm,
                                           globalFunctionSpace,
                                           localHybridGeom_->functionSpace());
@@ -665,20 +708,20 @@ void ErrorCovariance<MODEL>::doMultiply(const Increment4D_ & dxi,
     }
 
     // Wait for all components to have finished multiplying
-    globalSpaceComm.barrier();
+    defaultSpaceComm.barrier();
 
     // Gather and sum data across components
     for (size_t jtime = 0; jtime < fset4dCmp.size(); jtime++) {
       util::gatherAndSumFromSubcommunicator(fset4dCmp[jtime].fieldSet(),
                                             fset4dSum[jtime].fieldSet(),
                                             localSpaceComm,
-                                            globalSpaceComm,
+                                            defaultSpaceComm,
                                             localHybridGeom_->functionSpace(),
                                             globalFunctionSpace);
     }
 
     // Set back default MPI communicator
-    eckit::mpi::setCommDefault(globalSpaceComm.name().c_str());
+    eckit::mpi::setCommDefault(defaultSpaceComm.name().c_str());
 
   } else {
     if (hybridBlockChain_.size() > 1) {

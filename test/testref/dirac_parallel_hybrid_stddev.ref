@@ -5,17 +5,19 @@ Input Dirac increment:
   - air_horizontal_streamfunction (2 levels):
     + min    = 0.0000000000000000e+00
     + max    = 1.0000000000000000e+00
-    + mean   = 5.9523809523809529e-04
-    + stddev = 2.4397501823713353e-02
+    + mean   = 6.5616797900262466e-04
+    + stddev = 2.5615775978927884e-02
+
   - air_horizontal_velocity_potential (2 levels):
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00
+
 Did not write file testdata/dirac_parallel_hybrid_stddev/fields_in_multiply_1.nc
 Fields:
-  air_horizontal_streamfunction: 4.0127503126905729e+01
-  air_horizontal_velocity_potential: 4.1873820575192191e+01
+  air_horizontal_streamfunction: 4.0127503126905715e+01
+  air_horizontal_velocity_potential: 4.1873820575192198e+01
 Adjoint test for block write fields passed
-Norm of input parameter StdDev: 5.7581328949717772e+01
+Norm of input parameter StdDev: 5.4937700734311058e+01
 Adjoint test for block StdDev passed
 Adjoint test for block ID passed
 Did not write file testdata/dirac_parallel_hybrid_stddev/fields_in_multiply_2.nc
@@ -34,8 +36,10 @@ Covariance(SABER) * Increment:
   - air_horizontal_streamfunction (2 levels):
     + min    = 0.0000000000000000e+00
     + max    = 1.2944134874642319e+00
-    + mean   = 7.7048421872870951e-04
-    + stddev = 3.1580455421047732e-02
+    + mean   = 8.4935268206314429e-04
+    + stddev = 3.3157405918986436e-02
+
   - air_horizontal_velocity_potential (2 levels):
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00
+

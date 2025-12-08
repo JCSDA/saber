@@ -91,6 +91,13 @@ class HybridParameters : public SaberBlockParametersBase {
   // Switch to run components in parallel
   oops::Parameter<bool> runInParallel{"run in parallel", false, this};
 
+  // Switch to run components recursively (for diagnostics)
+  oops::Parameter<bool> runComponentsRecursively{"run components recursively", false, this};
+
+  // Resource weighting for each hybrid component.
+  oops::OptionalParameter<std::vector<double>> parallelCovarRelativeCPUWeight{
+      "parallel covariance relative cpu weight", this};
+
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
 

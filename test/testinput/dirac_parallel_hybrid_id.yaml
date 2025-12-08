@@ -17,7 +17,6 @@ background:
 background error:
   covariance model: SABER
   adjoint test: true
-  randomization size: 1
   saber central block:
     saber block name: Hybrid
     run in parallel: true

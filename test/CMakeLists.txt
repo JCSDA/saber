@@ -381,3 +381,12 @@ if( SABER_TEST_BUMP )
                 SOURCES         fctest/fctest_nicas_sqrt.F90
                 LIBS            saber )
 endif()
+
+# A bespoke test for parallel B
+set( mpi 5 )
+set( omp 1 )
+ecbuild_add_test( TARGET saber_test_dirac_parallel_hybrid_ratio_stddev_5-1
+                  MPI ${mpi}
+                  OMP ${omp}
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_parallel_hybrid_ratio_stddev.yaml)

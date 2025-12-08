@@ -429,25 +429,40 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
 
     // Look for hybrid or ensemble covariance models
     const std::string covarianceModel(covarConf.getString("covariance model"));
-    if (covarianceModel == "hybrid") {
-      std::vector<eckit::LocalConfiguration> confs;
-      covarConf.get("components", confs);
-      size_t componentIndex(1);
-      for (const auto & conf : confs) {
-        std::string idC(id + std::to_string(componentIndex));
-        const eckit::LocalConfiguration componentConfig(conf, "covariance");
-        dirac(componentConfig, testConf, idC, geom, vars, xx, dxi);
-        ++componentIndex;
+    bool runComponentsRecursively =
+      covarConf.has("run components recursively") ?
+      covarConf.getBool("run components recursively") : false;
+
+    oops::Log::info() << "Covariance Configuration : Running components recursively : "
+      << covarConf << " " <<  covarConf.has("run components recursively") << " "
+      << runComponentsRecursively << std::endl;
+
+    if (runComponentsRecursively) {
+      if (covarianceModel == "hybrid") {
+        std::vector<eckit::LocalConfiguration> confs;
+        covarConf.get("components", confs);
+        size_t componentIndex(1);
+        for (const auto & conf : confs) {
+          std::string idC(id + std::to_string(componentIndex));
+          const eckit::LocalConfiguration componentConfig(conf, "covariance");
+          dirac(componentConfig, testConf, idC, geom, vars, xx, dxi);
+          ++componentIndex;
+        }
       }
     }
     if (covarianceModel == "SABER") {
       const std::string saberCentralBlockName =
         covarConf.getString("saber central block.saber block name");
+      bool runComponentsRecursively =
+        covarConf.has("saber central block.run components recursively") ?
+        covarConf.getBool("saber central block.run components recursively") :
+        false;
       if (saberCentralBlockName == "Hybrid") {
         // Check for outer blocks (can't pass the correct geometry/variables in that case)
-        if (!covarConf.has("saber outer blocks")) {
+        if (!covarConf.has("saber outer blocks") && (runComponentsRecursively)) {
           std::vector<eckit::LocalConfiguration> confs;
           covarConf.get("saber central block.components", confs);
+
           size_t componentIndex(1);
           for (const auto & conf : confs) {
             std::string idC(id + std::to_string(componentIndex));

@@ -21,6 +21,7 @@ background error:
   covariance model: SABER
   saber central block:
     saber block name: Hybrid
+    run components recursively: true
     components:
     ###########################################################################
     # Waveband 1 - F14 grid
