@@ -190,31 +190,6 @@ void StdDev::multiplyAD(oops::FieldSet3D & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void StdDev::leftInverseMultiply(oops::FieldSet3D & fset) const {
-  oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
-  if (stdDevFset_) {
-    // Apply 3D standard-deviation
-    fset /= *stdDevFset_;
-  } else {
-    // Apply scaling
-    for (auto & field : fset) {
-      const std::string var = field.name();
-      if (scaling_.find(var) != scaling_.end()) {
-        const double fact = 1.0 / scaling_.at(var);
-        auto view = atlas::array::make_view<double, 2>(field);
-        for (int jnode = 0; jnode < field.shape(0); ++jnode) {
-          for (int jlevel = 0; jlevel < field.shape(1); ++jlevel) {
-            view(jnode, jlevel) *= fact;
-          }
-        }
-      }
-    }
-  }
-  oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
 std::vector<std::pair<std::string, eckit::LocalConfiguration>> StdDev::getReadConfs() const {
   oops::Log::trace() << classname() << "::getReadConfs starting" << std::endl;
 
@@ -485,6 +460,31 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> StdDev::fiel
 
 void StdDev::print(std::ostream & os) const {
   os << classname();
+}
+
+// -----------------------------------------------------------------------------
+
+void StdDev::inverseMultiply(oops::FieldSet3D & fset) const {
+  oops::Log::trace() << classname() << "::inverseMultiply starting" << std::endl;
+  if (stdDevFset_) {
+    // Apply 3D standard-deviation
+    fset /= *stdDevFset_;
+  } else {
+    // Apply scaling
+    for (auto & field : fset) {
+      const std::string var = field.name();
+      if (scaling_.find(var) != scaling_.end()) {
+        const double fact = 1.0 / scaling_.at(var);
+        auto view = atlas::array::make_view<double, 2>(field);
+        for (int jnode = 0; jnode < field.shape(0); ++jnode) {
+          for (int jlevel = 0; jlevel < field.shape(1); ++jlevel) {
+            view(jnode, jlevel) *= fact;
+          }
+        }
+      }
+    }
+  }
+  oops::Log::trace() << classname() << "::inverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

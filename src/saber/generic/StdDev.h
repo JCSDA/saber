@@ -98,7 +98,10 @@ class StdDev : public SaberOuterBlockBase {
 
   void multiply(oops::FieldSet3D &) const override;
   void multiplyAD(oops::FieldSet3D &) const override;
-  void leftInverseMultiply(oops::FieldSet3D &) const override;
+  void leftInverseMultiply(oops::FieldSet3D & fset) const override
+    {inverseMultiply(fset);}
+  void rightInverseMultiply(oops::FieldSet3D & fset) const override
+    {inverseMultiply(fset);}
 
   std::vector<std::pair<std::string, eckit::LocalConfiguration>> getReadConfs() const override;
   void setReadFields(const std::vector<oops::FieldSet3D> &) override;
@@ -118,6 +121,7 @@ class StdDev : public SaberOuterBlockBase {
 
  private:
   void print(std::ostream &) const override;
+  void inverseMultiply(oops::FieldSet3D &) const;
   const oops::GeometryData & innerGeometryData_;
   oops::Variables innerVars_;
   Parameters_ params_;

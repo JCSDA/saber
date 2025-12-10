@@ -118,6 +118,19 @@ class SaberOuterBlockChain {
     }
   }
 
+  /// @brief Right inverse multiply (used in ensemble transform) by all outer blocks
+  ///        except the ones that haven't implemented inverse yet.
+  void rightInverseMultiply(oops::FieldSet3D & fset) const {
+    for (auto it = outerBlocks_.begin(); it != outerBlocks_.end(); ++it) {
+      if (it->get()->skipInverse()) {
+        oops::Log::info() << "Warning: right inverse multiplication skipped for block "
+                          << it->get()->blockName() << std::endl;
+      } else {
+        it->get()->rightInverseMultiply(fset);
+      }
+    }
+  }
+
  private:
   /// @brief Initialize outer block, and return tuple of current outer variables,
   ///        saber block parameters and active variables

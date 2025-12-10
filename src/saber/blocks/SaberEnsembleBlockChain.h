@@ -225,12 +225,12 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
              currentOuterVars, fset4dXb, fset4dFg, ensemble_,
              covarConfUpdated, ensTransOuterBlocksParams);
 
-    // Left inverse of ensemble transform on ensemble members
-    oops::Log::info() << "Info     : Left inverse of ensemble transform on ensemble members"
+    // Right inverse of ensemble transform on ensemble members
+    oops::Log::info() << "Info     : Right inverse of ensemble transform on ensemble members"
                       << std::endl;
     for (size_t itime = 0; itime < ensemble_.local_time_size(); ++itime) {
       for (size_t iens = 0; iens < ensemble_.local_ens_size(); ++iens) {
-        ensTransBlockChain->leftInverseMultiply(ensemble_(itime, iens));
+        ensTransBlockChain->rightInverseMultiply(ensemble_(itime, iens));
       }
     }
 

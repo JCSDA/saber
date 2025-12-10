@@ -72,6 +72,11 @@ class SaberOuterBlockBase : public util::Printable,
     {throw eckit::NotImplemented("leftInverseMultiply not implemented yet for the block "
       + blockName_, Here());}
 
+  // Block right inverse multiplication
+  virtual void rightInverseMultiply(oops::FieldSet3D &) const
+    {throw eckit::NotImplemented("rightInverseMultiply not implemented yet for the block "
+      + blockName_, Here());}
+
   // Setup / calibration methods
 
   // Read block data

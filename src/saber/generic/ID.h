@@ -84,6 +84,7 @@ class IDOuter : public SaberOuterBlockBase {
   void multiply(oops::FieldSet3D &) const override;
   void multiplyAD(oops::FieldSet3D &) const override;
   void leftInverseMultiply(oops::FieldSet3D &) const override;
+  void rightInverseMultiply(oops::FieldSet3D &) const override;
 
  private:
   void print(std::ostream &) const override;
