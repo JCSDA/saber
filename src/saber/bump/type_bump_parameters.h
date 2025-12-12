@@ -481,18 +481,6 @@ struct VarianceDef {
   // Number of passes for the variance filtering (0 for uniform variance)
   std::pair<const char *, int> var_npass =
     std::make_pair("filtering passes", -1);
-
-  // Resolution for the NICAS smoother
-  std::pair<const char *, double> smoother_resol =
-    std::make_pair("smoother resolution", 5.0);
-
-  // Maximum size of the Sc1 subset for the NICAS smoother
-  std::pair<const char *, int> smoother_nc1max =
-    std::make_pair("smoother max horizontal grid size", 50000);
-
-  // Minimum effective resolution for the NICAS smoother
-  std::pair<const char *, double> smoother_resol_eff_min =
-    std::make_pair("smoother min effective resolution", 2.0);
 };
 
 // Optimality test section
@@ -546,6 +534,22 @@ struct NICASDef {
   // Minimum effective resolution
   std::pair<const char *, double> resol_eff_min =
     std::make_pair("min effective resolution", 3.0);
+
+  // Filter mode
+  std::pair<const char *, bool> filter_mode =
+    std::make_pair("filter mode", false);
+
+  // Resolution for the NICAS filter
+  std::pair<const char *, double> filter_resol =
+    std::make_pair("filter resolution", 5.0);
+
+  // Maximum size of the Sc1 subset for the NICAS filter
+  std::pair<const char *, int> filter_nc1max =
+    std::make_pair("filter max horizontal grid size", 50000);
+
+  // Minimum effective resolution for the NICAS filter
+  std::pair<const char *, double> filter_resol_eff_min =
+    std::make_pair("filter min effective resolution", 2.0);
 
   // NICAS draw type ('random' or 'octahedral')
   std::pair<const char *, std::string> nicas_draw_type =

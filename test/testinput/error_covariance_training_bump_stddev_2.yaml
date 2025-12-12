@@ -6,12 +6,14 @@ geometry:
   groups:
   - variables:
     - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
     levels: 2
   halo: 1
 background:
   date: 2010-01-01T12:00:00Z
   state variables:
   - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
 background error:
   covariance model: SABER
   iterative ensemble loading: true
@@ -22,6 +24,7 @@ background error:
         filepath: testdata/randomization_bump_nicas_L10L2/_MPI_-_OMP__member_%mem%
         state variables:
         - air_horizontal_streamfunction
+        - air_horizontal_velocity_potential
       pattern: '%mem%'
       nmembers: 20
       zero padding: 6
@@ -44,14 +47,18 @@ background error:
         compute variance: true
       diagnostics:
         target ensemble size: 20
+      nicas:
+        filter min effective resolution: 1.1
       variance:
         objective filtering: true
         filtering passes: 3
-        smoother min effective resolution: 1.2
         initial length-scale:
         - variables:
           - air_horizontal_streamfunction
           value: 1000.0e3
+        - variables:
+          - air_horizontal_velocity_potential
+          value: 1200.0e3
       output model files:
       - parameter: stddev
         file:

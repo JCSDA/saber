@@ -268,12 +268,6 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   param(varianceDef.var_niter, varianceConf);
   // Number of passes for the variance filtering (0 for uniform variance)
   param(varianceDef.var_npass, varianceConf);
-  // Resolution for the NICAS smoother
-  param(varianceDef.smoother_resol, varianceConf);
-  // Maximum size of the Sc1 subset for the NICAS smoother
-  param(varianceDef.smoother_nc1max, varianceConf);
-  // Minimum effective resolution for the NICAS smoother
-  param(varianceDef.smoother_resol_eff_min, varianceConf);
 
   // Optimality test section
   OptimalityTestDef optimalityTestDef;
@@ -308,6 +302,14 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   param(nicasDef.nc1max, nicasConf);
   // Minimum effective resolution
   param(nicasDef.resol_eff_min, nicasConf);
+  // Filter mode
+  param(nicasDef.filter_mode, nicasConf);
+  // Resolution for the NICAS filter
+  param(nicasDef.filter_resol, nicasConf);
+  // Maximum size of the Sc1 subset for the NICAS filter
+  param(nicasDef.filter_nc1max, nicasConf);
+  // Minimum effective resolution for the NICAS filter
+  param(nicasDef.filter_resol_eff_min, nicasConf);
   // NICAS draw type ('random' or 'octahedral')
   param(nicasDef.nicas_draw_type, nicasConf);
   // Force specific support radii

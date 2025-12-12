@@ -423,6 +423,34 @@ call f_fieldset%final()
 end subroutine bump_apply_nicas_c
 
 !----------------------------------------------------------------------
+! Subroutine: bump_apply_nicas_filter_c
+!> NICAS application
+!----------------------------------------------------------------------
+subroutine bump_apply_nicas_filter_c(key_bump,c_afieldset) bind(c,name='bump_apply_nicas_filter_f90')
+
+implicit none
+
+! Passed variables
+integer(c_int),intent(in) :: key_bump       !< BUMP
+type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
+
+! Local variables
+type(bump_type),pointer :: bump
+type(fieldset_type) :: f_fieldset
+
+! Interface
+call bump_registry%get(key_bump,bump)
+f_fieldset = atlas_fieldset(c_afieldset)
+
+! Call Fortran
+call bump%apply_nicas_filter(f_fieldset)
+
+! Release memory
+call f_fieldset%final()
+
+end subroutine bump_apply_nicas_filter_c
+
+!----------------------------------------------------------------------
 ! Subroutine: bump_get_cv_size_c
 !> Get control variable size
 !----------------------------------------------------------------------

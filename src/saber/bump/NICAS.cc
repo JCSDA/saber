@@ -71,6 +71,14 @@ void NICAS::multiply(oops::FieldSet3D & fset) const {
 
 // -----------------------------------------------------------------------------
 
+void NICAS::filter(oops::FieldSet3D & fset) const {
+  oops::Log::trace() << classname() << "::filter starting" << std::endl;
+  bump_->filterNicas(fset);
+  oops::Log::trace() << classname() << "::filter done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
 std::vector<std::pair<std::string, eckit::LocalConfiguration>> NICAS::getReadConfs() const {
   oops::Log::trace() << classname() << "::getReadConfs starting" << std::endl;
   std::vector<eckit::LocalConfiguration> inputModelFilesConf

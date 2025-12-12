@@ -73,6 +73,7 @@ contains
    procedure :: apply_stddev => bump_apply_stddev
    procedure :: apply_stddev_inv => bump_apply_stddev_inv
    procedure :: apply_nicas => bump_apply_nicas
+   procedure :: apply_nicas_filter => bump_apply_nicas_filter
    procedure :: get_cv_size => bump_get_cv_size
    procedure :: apply_nicas_sqrt => bump_apply_nicas_sqrt
    procedure :: apply_nicas_sqrt_ad => bump_apply_nicas_sqrt_ad
@@ -1335,6 +1336,47 @@ call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
 @:probe_out()
 
 end subroutine bump_apply_nicas
+
+!----------------------------------------------------------------------
+! Subroutine: bump_apply_nicas_filter
+!> NICAS application
+!----------------------------------------------------------------------
+subroutine bump_apply_nicas_filter(bump,fieldset)
+
+implicit none
+
+! Passed variables
+class(bump_type),intent(inout) :: bump        !< BUMP
+type(fieldset_type),intent(inout) :: fieldset !< Fieldset
+
+! Local variable
+real(kind_real) :: fld_c0a(bump%geom(1)%nc0a,bump%geom(1)%nl0,bump%nam%nv)
+
+! Set name
+@:set_name(bump_apply_nicas_filter)
+
+! Get instance
+@:get_instance(bump)
+
+! Probe in
+@:probe_in()
+
+! Set fieldset metadata
+call fieldset%set_metadata(bump%mpl,bump%geom(1)%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%ilev2d,bump%nam%var2d)
+
+! Fieldset to Fortran on subset Sc0
+call bump%geom(1)%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
+
+! Apply NICAS
+call bump%nicas(1)%apply_filter(bump%mpl,bump%nam,bump%geom(1),fld_c0a)
+
+! Fortran array on subset Sc0 to fieldset
+call bump%geom(1)%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
+
+! Probe out
+@:probe_out()
+
+end subroutine bump_apply_nicas_filter
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_get_cv_size

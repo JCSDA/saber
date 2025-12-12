@@ -542,12 +542,6 @@ class VarianceSection : public oops::Parameters {
   // Variance initial filtering support radius [in meters]
   oops::Parameter<std::vector<VarsValueOrProfileParameters>> var_rhflt{"initial length-scale", {},
     this};
-  // Resolution for the NICAS smoother
-  oops::Parameter<double> smoother_resol = param(def.smoother_resol, this);
-  // Maximum size of the Sc1 subset for the NICAS smoother
-  oops::Parameter<int> smoother_nc1max = param(def.smoother_nc1max, this);
-  // Minimum effective resolution for the NICAS smoother
-  oops::Parameter<double> smoother_resol_eff_min = param(def.smoother_resol_eff_min, this);
 };
 
 // -----------------------------------------------------------------------------
@@ -606,6 +600,14 @@ class NICASSection : public oops::Parameters {
   oops::Parameter<int> nc1max = param(def.nc1max, this);
   // Minimum effective resolution
   oops::Parameter<double> resol_eff_min = param(def.resol_eff_min, this);
+  // Filter mode
+  oops::Parameter<bool> filter_mode = param(def.filter_mode, this);
+  // Resolution for the NICAS filter
+  oops::Parameter<double> filter_resol = param(def.filter_resol, this);
+  // Maximum size of the Sc1 subset for the NICAS filter
+  oops::Parameter<int> filter_nc1max = param(def.filter_nc1max, this);
+  // Minimum effective resolution for the NICAS filter
+  oops::Parameter<double> filter_resol_eff_min = param(def.filter_resol_eff_min, this);
   // NICAS draw type ('random' or 'octahedral')
   oops::Parameter<std::string> nicas_draw_type = param(def.nicas_draw_type, this);
   // Force specific support radii

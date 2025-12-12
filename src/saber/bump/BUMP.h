@@ -79,6 +79,7 @@ class BUMP {
   void inverseMultiplyStdDev(oops::FieldSet3D &) const;
   void randomizeNicas(oops::FieldSet3D &) const;
   void multiplyNicas(oops::FieldSet3D &) const;
+  void filterNicas(oops::FieldSet3D &) const;
   void multiplyPsiChiToUV(oops::FieldSet3D &) const;
   void multiplyPsiChiToUVAd(oops::FieldSet3D &) const;
   size_t getCvSize() const;

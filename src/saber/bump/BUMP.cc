@@ -693,6 +693,18 @@ void BUMP::multiplyNicas(oops::FieldSet3D & fset) const {
 
 // -----------------------------------------------------------------------------
 
+void BUMP::filterNicas(oops::FieldSet3D & fset) const {
+  oops::Log::trace() << classname() << "::filterNicas starting" << std::endl;
+
+  for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+    bump_apply_nicas_filter_f90(keyBUMP_[jgrid], fset.get());
+  }
+
+  oops::Log::trace() << classname() << "::filterNicas done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
 void BUMP::multiplyPsiChiToUV(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyPsiChiToUV starting" << std::endl;
 
