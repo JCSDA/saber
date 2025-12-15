@@ -610,14 +610,8 @@ else
       deallocate(m4)
    end if
 
-   ! Initial values without filtering
+   ! Initial m2
    m2_ini = var%m2
-   do iv=1,nam%nv
-      do il0=1,geom%nl0
-         diff = m2prod(il0,iv)-m2sqasy(il0,iv)
-         diff_abs_min(il0,iv) = abs(diff)
-      end do
-   end do
    var%m2flt = m2_ini
 
    ! Initial global product
@@ -627,6 +621,14 @@ else
       end do
    end do
    call mpl%f_comm%allreduce(m2prod,fckit_mpi_sum())
+
+   ! Initial values without filtering
+   do iv=1,nam%nv
+      do il0=1,geom%nl0
+         diff = m2prod(il0,iv)-m2sqasy(il0,iv)
+         diff_abs_min(il0,iv) = abs(diff)
+      end do
+   end do
 
    if (nam%var_niter>0) then
       ! Allocation
