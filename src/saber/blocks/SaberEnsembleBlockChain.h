@@ -37,12 +37,10 @@ class SaberEnsembleBlockChain : public SaberBlockChainBase {
  public:
   template<typename MODEL>
   SaberEnsembleBlockChain(const oops::Geometry<MODEL> & geom,
-                          const oops::Geometry<MODEL> & dualResGeom,
                           const oops::Variables & outerVars,
                           oops::FieldSet4D & fset4dXb,
                           oops::FieldSet4D & fset4dFg,
                           oops::FieldSets & fsetEns,
-                          oops::FieldSets & fsetDualResEns,
                           const eckit::LocalConfiguration & covarConf,
                           const eckit::Configuration & conf);
   ~SaberEnsembleBlockChain() = default;
@@ -86,16 +84,12 @@ class SaberEnsembleBlockChain : public SaberBlockChainBase {
 
 template<typename MODEL>
 SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & geom,
-                       const oops::Geometry<MODEL> & dualResGeom,
                        const oops::Variables & outerVars,
                        oops::FieldSet4D & fset4dXb,
                        oops::FieldSet4D & fset4dFg,
                        // TODO(AS): remove as argument: this should be read inside the
                        // block.
                        oops::FieldSets & fsetEns,
-                       // TODO(AS): remove as argument: this is currently not used (and
-                       // when used should be read inside the block.
-                       oops::FieldSets & fsetDualResEns,
                        const eckit::LocalConfiguration & covarConf,
                        const eckit::Configuration & conf)
   : outerFunctionSpace_(geom.functionSpace()), outerVariables_(outerVars),
@@ -284,12 +278,10 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
                            "functionSpaces, building localization with standard "
                            "constructor" << std::endl;
       locBlockChain_ = std::make_unique<SaberParametricBlockChain>(geom,
-                                                                   dualResGeom,
                                                                    currentOuterVars,
                                                                    fset4dXb,
                                                                    fset4dFg,
                                                                    ensemble_,
-                                                                   fsetDualResEns,
                                                                    covarConfUpdated,
                                                                    *locConf);
     }

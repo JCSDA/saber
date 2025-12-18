@@ -81,6 +81,10 @@ struct IODef {
   std::pair<const char *, std::string> fname_vbal =
     std::make_pair("overriding vertical balance file", "");
 
+  // Averaged statistics file
+  std::pair<const char *, std::string> fname_avg =
+    std::make_pair("overriding averaged statistics file", "");
+
   // Universe radius file
   std::pair<const char *, std::string> fname_universe_radius =
     std::make_pair("overriding universe radius file", "");
@@ -104,29 +108,17 @@ struct IODef {
 
 // Drivers section
 struct DriversDef {
-  // Compute covariance, ensemble 1
-  std::pair<const char *, bool> compute_cov1 =
+  // Compute covariance
+  std::pair<const char *, bool> compute_cov =
     std::make_pair("compute covariance", false);
 
-  // Compute covariance, ensemble 2
-  std::pair<const char *, bool> compute_cov2 =
-    std::make_pair("compute lowres covariance", false);
-
-  // Compute correlation, ensemble 1
-  std::pair<const char *, bool> compute_cor1 =
+  // Compute correlation
+  std::pair<const char *, bool> compute_cor =
     std::make_pair("compute correlation", false);
 
-  // Compute correlation, ensemble 2
-  std::pair<const char *, bool> compute_cor2 =
-    std::make_pair("compute lowres correlation", false);
-
-  // Compute localization, ensemble 1
-  std::pair<const char *, bool> compute_loc1 =
+  // Compute localization
+  std::pair<const char *, bool> compute_loc =
     std::make_pair("compute localization", false);
-
-  // Compute localization, ensemble 2
-  std::pair<const char *, bool> compute_loc2 =
-    std::make_pair("compute lowres localization", false);
 
   // Compute hybrid weights
   std::pair<const char *, bool> compute_hyb =
@@ -203,6 +195,10 @@ struct DriversDef {
   // Write sampling moments
   std::pair<const char *, bool> write_mom =
     std::make_pair("write moments", false);
+
+  // Write averaged statistics
+  std::pair<const char *, bool> write_avg =
+    std::make_pair("write averaged statistics", false);
 
   // Write HDIAG diagnostics
   std::pair<const char *, bool> write_hdiag =
@@ -310,21 +306,13 @@ struct ModelDef {
 
 // Ensemble sizes section
 struct EnsembleSizesDef {
-  // Ensemble 1 size
-  std::pair<const char *, int> ens1_ne =
+  // Ensemble size
+  std::pair<const char *, int> ens_ne =
     std::make_pair("total ensemble size", 0);
 
-  // Ensemble 1 sub-ensembles number
-  std::pair<const char *, int> ens1_nsub =
+  // Ensemble sub-ensembles number
+  std::pair<const char *, int> ens_nsub =
     std::make_pair("sub-ensembles", 1);
-
-  // Ensemble 2 size
-  std::pair<const char *, int> ens2_ne =
-    std::make_pair("total lowres ensemble size", 0);
-
-  // Ensemble 2 sub-ensembles number
-  std::pair<const char *, int> ens2_nsub =
-    std::make_pair("lowres sub-ensembles", 1);
 };
 
 // Mask parameters
@@ -403,10 +391,6 @@ struct DiagnosticsDef {
   // Ensemble size
   std::pair<const char *, int> ne =
     std::make_pair("target ensemble size", 0);
-
-  // Ensemble size of the hybrid term
-  std::pair<const char *, int> ne_lr =
-    std::make_pair("target lowres ensemble size", 0);
 
   // Gaussian approximation for asymptotic quantities
   std::pair<const char *, bool> gau_approx =

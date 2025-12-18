@@ -40,8 +40,7 @@ BUMP::BUMP(const oops::GeometryData & geometryData,
            const oops::FieldSet3D & xb)
   : keyBUMP_(), comm_(geometryData.comm()), fspace_(geometryData.functionSpace()), vars_(vars),
   validTime_(xb.validTime()), covarConf_(covarConf), bumpConf_(params.toConfiguration()),
-  nens_(), waitForDualResolution_(false), gridUid_(util::getGridUid(geometryData.functionSpace())),
-  dualResolutionGridUid_("") {
+  nens_(), gridUid_(util::getGridUid(geometryData.functionSpace())) {
   oops::Log::trace() << classname() << "::BUMP starting" << std::endl;
 
   // Get number of MPI tasks and OpenMP threads
@@ -60,33 +59,21 @@ BUMP::BUMP(const oops::GeometryData & geometryData,
   oops::Log::info() << "Info     : +++ OpenMP threads: " << omp << std::endl;
 
   // Initialization
-  nens_.reserve(2);
-  nens_[0] = 0;
+  nens_ = 0;
   if (covarConf_.has("ensemble configuration")) {
-    nens_[0] = covarConf_.getSubConfiguration("ensemble configuration").getInt("ensemble size");
-  }
-  nens_[1] = 0;
-  if (covarConf_.has("dual resolution ensemble configuration")) {
-    nens_[1] = covarConf_.getSubConfiguration("dual resolution ensemble configuration")
-      .getInt("ensemble size");
-    waitForDualResolution_ = true;
+    nens_ = covarConf_.getSubConfiguration("ensemble configuration").getInt("ensemble size");
   }
   iterativeEnsembleLoading_ = covarConf_.getBool("iterative ensemble loading", false);
 
   // Case where size are specified in the BUMP configuration
   // TODO(Benjamin): when is this necessary?
-  if ((nens_[0] == 0) && bumpConf_.has("ensemble sizes.total ensemble size")) {
-    // Ensemble 1 size from configuration
-    nens_[0] = bumpConf_.getInt("ensemble sizes.total ensemble size");
-  }
-  if ((nens_[1] == 0) && bumpConf_.has("ensemble sizes.total lowres ensemble size")) {
-    // Ensemble 1 size from configuration
-    nens_[1] = bumpConf_.getInt("ensemble sizes.total lowres ensemble size");
+  if ((nens_ == 0) && bumpConf_.has("ensemble sizes.total ensemble size")) {
+    // Ensemble  size from configuration
+    nens_ = bumpConf_.getInt("ensemble sizes.total ensemble size");
   }
 
   // Update ensemble sizes
-  bumpConf_.set("ensemble sizes.total ensemble size", nens_[0]);
-  bumpConf_.set("ensemble sizes.total lowres ensemble size", nens_[1]);
+  bumpConf_.set("ensemble sizes.total ensemble size", nens_);
 
   // Set iterative ensemble loading flag
   bumpConf_.set("external.iterative algorithm", iterativeEnsembleLoading_);
@@ -400,19 +387,9 @@ void BUMP::addEnsemble(const oops::FieldSets & fsetEns) {
   // Initialize ensemble index
   size_t ie = 0;
   for (size_t jj = 0; jj < fsetEns.ens_size(); ++jj) {
-    // Get geometry index (iterative update should be done after for the dual resolution part)
-    // and check grid UID
-    size_t igeom;
-    if (dualResolutionGridUid_ == "") {
-      igeom = 0;
-      if (fsetEns[jj].getGridUid() != gridUid_) {
-        throw eckit::Exception("BUMP::addEnsemble: wrong grid UID", Here());
-      }
-    } else {
-      igeom = 1;
-      if (fsetEns[jj].getGridUid() != dualResolutionGridUid_) {
-        throw eckit::Exception("BUMP::addEnsemble: wrong dual resolution grid UID", Here());
-      }
+    // Get geometry index and check grid UID
+    if (fsetEns[jj].getGridUid() != gridUid_) {
+      throw eckit::Exception("BUMP::addEnsemble: wrong grid UID", Here());
     }
 
     for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
@@ -421,13 +398,12 @@ void BUMP::addEnsemble(const oops::FieldSets & fsetEns) {
         oops::Log::info() << "Info     :"
                       << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                       << std::endl;
-        oops::Log::info() << "Info     : +++ Add members of ensemble " << (igeom+1) << std::endl;
+        oops::Log::info() << "Info     : +++ Add ensemble members" << std::endl;
       }
 
       // Add member
-      oops::Log::info() << "Info     :        Member " << ie+1 << " / " << nens_[igeom]
-        << std::endl;
-      bump_add_member_f90(keyBUMP_[jgrid], fsetEns[jj].fieldSet().get(), ie+1, igeom+1);
+      oops::Log::info() << "Info     :        Member " << ie+1 << std::endl;
+      bump_add_member_f90(keyBUMP_[jgrid], fsetEns[jj].fieldSet().get(), ie+1);
     }
 
     // Update member index
@@ -439,39 +415,37 @@ void BUMP::addEnsemble(const oops::FieldSets & fsetEns) {
 
 // -----------------------------------------------------------------------------
 
-void BUMP::dualResolutionSetup(const atlas::FunctionSpace & fspace,
-                               const atlas::FieldSet & fields) {
-  oops::Log::trace() << classname() << "::dualResolutionSetup starting" << std::endl;
-
-  // Set dual resolution grid UID
-  dualResolutionGridUid_ = util::getGridUid(fspace);
-
-  // Dual resolution setup
-  for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    bump_dual_resolution_setup_f90(keyBUMP_[jgrid], fspace.get(), fields.get());
-  }
-
-  oops::Log::trace() << classname() << "::dualResolutionSetup done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
 void BUMP::iterativeUpdate(const oops::FieldSet3D & fset,
                            const size_t & ie) {
   oops::Log::trace() << classname() << "::iterativeUpdate starting" << std::endl;
 
-  // Get geometry index (iterative update should be done after for the dual resolution part)
-  // and check grid UID
-  size_t igeom;
-  if (dualResolutionGridUid_ == "") {
-    igeom = 0;
-    if (fset.getGridUid() != gridUid_) {
-      throw eckit::Exception("BUMP::iterativeUpdate: wrong grid UID", Here());
+  // Get geometry index and check grid UID
+  if (fset.getGridUid() != gridUid_) {
+    throw eckit::Exception("BUMP::iterativeUpdate: wrong grid UID", Here());
+  }
+
+  // Print info
+  oops::Log::info() << "Info     :"
+                << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+                << std::endl;
+  oops::Log::info() << "Info     : +++ Load member " << ie+1 << std::endl;
+
+  // Get driver keys
+  bool new_vbal_cov = bumpConf_.getBool("drivers.compute vertical covariance", false);
+  bool new_var = bumpConf_.getBool("drivers.compute variance", false);
+  bool new_mom = bumpConf_.getBool("drivers.compute moments", false);
+  for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+    if (new_vbal_cov) {
+      // Update vertical covariance
+      bump_update_vbal_cov_f90(keyBUMP_[jgrid], fset.get(), ie+1);
     }
-  } else {
-    igeom = 1;
-    if (fset.getGridUid() != dualResolutionGridUid_) {
-      throw eckit::Exception("BUMP::iterativeUpdate: wrong dual resolution grid UID", Here());
+    if (new_var) {
+      // Update variance
+      bump_update_var_f90(keyBUMP_[jgrid], fset.get(), ie+1);
+    }
+    if (new_mom) {
+      // Update moments
+      bump_update_mom_f90(keyBUMP_[jgrid], fset.get(), ie+1);
     }
   }
 
@@ -479,39 +453,10 @@ void BUMP::iterativeUpdate(const oops::FieldSet3D & fset,
   oops::Log::info() << "Info     :"
                 << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                 << std::endl;
-  oops::Log::info() << "Info     : +++ Load member " << ie+1 << " / " << nens_[igeom] << std::endl;
-
-  // Get driver keys
-  bool new_vbal_cov = bumpConf_.getBool("drivers.compute vertical covariance", false);
-  bool new_var = bumpConf_.getBool("drivers.compute variance", false);
-  bool new_mom = bumpConf_.getBool("drivers.compute moments", false);
-  for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-    if (igeom == 0) {
-      if (new_vbal_cov) {
-        // Update vertical covariance
-        bump_update_vbal_cov_f90(keyBUMP_[jgrid], fset.get(), ie+1);
-      }
-      if (new_var) {
-        // Update variance
-        bump_update_var_f90(keyBUMP_[jgrid], fset.get(), ie+1);
-      }
-    }
-    if (new_mom) {
-      // Update moments
-      bump_update_mom_f90(keyBUMP_[jgrid], fset.get(), ie+1, igeom+1);
-    }
-  }
-
-  // Print info
-  if (ie+1 == nens_[igeom]) {
-    oops::Log::info() << "Info     :"
-                  << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-                  << std::endl;
-    oops::Log::info() << "Info     : +++ End of iterative update" << std::endl;
-    oops::Log::info() << "Info     :"
-                  << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-                  << std::endl;
-  }
+  oops::Log::info() << "Info     : +++ End of iterative update" << std::endl;
+  oops::Log::info() << "Info     :"
+                << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+                << std::endl;
 
   oops::Log::trace() << classname() << "::iterativeUpdate done" << std::endl;
 }
@@ -583,26 +528,22 @@ std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> BUMP::fields
 void BUMP::runDrivers() {
   oops::Log::trace() << classname() << "::runDrivers starting" << std::endl;
 
-  if (waitForDualResolution_) {
-    waitForDualResolution_ = false;
-  } else {
-    for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
-      oops::Log::info() << "Info     :"
+  for (size_t jgrid = 0; jgrid < keyBUMP_.size(); ++jgrid) {
+    oops::Log::info() << "Info     :"
+                      << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+                      << std::endl;
+    oops::Log::info() << "Info     : +++ Run drivers for BUMP instance " << (jgrid+1)
+                      << " / " << keyBUMP_.size() << std::endl;
+    bump_run_drivers_f90(keyBUMP_[jgrid]);
+    bump_partial_dealloc_f90(keyBUMP_[jgrid]);
+  }
+  oops::Log::info() << "Info     :"
                     << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
                     << std::endl;
-      oops::Log::info() << "Info     : +++ Run drivers for BUMP instance " << (jgrid+1)
-                    << " / " << keyBUMP_.size() << std::endl;
-      bump_run_drivers_f90(keyBUMP_[jgrid]);
-      bump_partial_dealloc_f90(keyBUMP_[jgrid]);
-    }
-    oops::Log::info() << "Info     :"
-                  << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-                  << std::endl;
-    oops::Log::info() << "Info     : +++ End of BUMP drivers" << std::endl;
-    oops::Log::info() << "Info     :"
-                  << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-                  << std::endl;
-  }
+  oops::Log::info() << "Info     : +++ End of BUMP drivers" << std::endl;
+  oops::Log::info() << "Info     :"
+                    << " +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+                    << std::endl;
 
   oops::Log::trace() << classname() << "::runDrivers done" << std::endl;
 }

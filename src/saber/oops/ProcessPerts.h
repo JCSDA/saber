@@ -215,8 +215,6 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
     std::vector<util::DateTime> dates;
     std::vector<int> ensmems;
     oops::FieldSets fsetEns(dates, oops::mpi::myself(), ensmems, oops::mpi::myself());
-    oops::FieldSets dualResFsetEns(dates, oops::mpi::myself(),
-                                            ensmems, oops::mpi::myself());
     eckit::LocalConfiguration covarConf;
     covarConf.set("iterative ensemble loading", false);
     covarConf.set("inverse test", false);
@@ -294,9 +292,9 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
     std::vector<std::unique_ptr<SaberParametricBlockChain>> saberFilterBlocks;
     for (const auto & [key, value] : filterCovBlockConfs) {
       saberFilterBlocks.push_back(
-        std::make_unique<SaberParametricBlockChain>(geom, geom,
+        std::make_unique<SaberParametricBlockChain>(geom,
                                                     incVars, fsetXb, fsetFg,
-                                                    fsetEns, dualResFsetEns,
+                                                    fsetEns,
                                                     covarConf,
                                                     value));
     }
@@ -304,9 +302,9 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
     std::vector<std::unique_ptr<SaberParametricBlockChain>> saberDiagnosticBlocks;
     for (const auto & [key, value] : diagBlockConfs) {
       saberDiagnosticBlocks.push_back(
-        std::make_unique<SaberParametricBlockChain>(geom, geom,
+        std::make_unique<SaberParametricBlockChain>(geom,
                                                     incVars, fsetXb, fsetFg,
-                                                    fsetEns, dualResFsetEns,
+                                                    fsetEns,
                                                     covarConf,
                                                     value));
     }

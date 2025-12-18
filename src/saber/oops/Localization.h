@@ -101,9 +101,9 @@ Localization<MODEL>::Localization(const Geometry_ & geom,
   // so this parameter can be anything.
   covarConf.set("time covariance", "univariate");
   // Initialize localization blockchain
-  loc_ = std::make_unique<SaberParametricBlockChain>(geom, geom,
+  loc_ = std::make_unique<SaberParametricBlockChain>(geom,
               incVars, xb4d, fg4d,
-              emptyFsetEns, emptyFsetEns, covarConf, conf);
+              emptyFsetEns, covarConf, conf);
 
   oops::Log::trace() << "Localization:Localization done" << std::endl;
 }

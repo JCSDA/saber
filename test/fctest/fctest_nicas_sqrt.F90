@@ -107,14 +107,14 @@ TEST( test_nicas_sqrt )
   ! Create output fieldset
   fspace_out_sc = atlas_functionspace_structuredcolumns(fspace_out%c_ptr())
   nmga_out = fspace_out_sc%size_owned()
-  allocate(gmask_out(nmga_out,bump%geom(1)%nl0))
+  allocate(gmask_out(nmga_out,bump%geom%nl0))
   gmask_out = .true.
   call fset_out_1%init(bump%mpl,fspace_out,gmask_out,bump%nam%variables,bump%nam%ilev2d,bump%nam%var2d)
   call fset_out_2%init(bump%mpl,fspace_out,gmask_out,bump%nam%variables,bump%nam%ilev2d,bump%nam%var2d)
 
   ! Initialize output fieldset
-  allocate(array_out_1(nmga_out,bump%geom(1)%nl0,bump%nam%nv))
-  allocate(array_out_2(nmga_out,bump%geom(1)%nl0,bump%nam%nv))
+  allocate(array_out_1(nmga_out,bump%geom%nl0,bump%nam%nv))
+  allocate(array_out_2(nmga_out,bump%geom%nl0,bump%nam%nv))
   call bump%rng%rand_gau(array_out_1)
   array_out_2 = array_out_1
   call fset_out_1%from_array(bump%mpl,array_out_1)

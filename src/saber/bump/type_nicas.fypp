@@ -1766,7 +1766,7 @@ type(nam_type),intent(inout) :: nam      !< Namelist variables
 type(geom_type),intent(in) :: geom       !< Geometry
 
 ! Local variables
-integer :: ifac,itest,nefac(nfac_rnd),ens1_ne
+integer :: ifac,itest,nefac(nfac_rnd),ens_ne
 integer :: ncid,ntest_id,nfac_id,nefac_id,mse_id,mse_th_id
 real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv),mse(ntest,nfac_rnd),mse_th(ntest,nfac_rnd),mse_avg,mse_th_avg
 real(kind_real),allocatable :: fld_ref(:,:,:,:),fld_save(:,:,:,:)
@@ -1802,14 +1802,14 @@ end do
 call mpl%prog_final
 
 ! Save namelist variables
-ens1_ne = nam%ens1_ne
+ens_ne = nam%ens_ne
 
 write(mpl%info,'(a4,a)') '','Test randomization for various ensemble sizes:'
 call mpl%flush
 do ifac=1,nfac_rnd
    ! Ensemble size
-   nefac(ifac) = max(int(real(ifac,kind_real)/real(nfac_rnd,kind_real)*real(ens1_ne,kind_real)),3)
-   nam%ens1_ne = nefac(ifac)
+   nefac(ifac) = max(int(real(ifac,kind_real)/real(nfac_rnd,kind_real)*real(ens_ne,kind_real)),3)
+   nam%ens_ne = nefac(ifac)
    write(mpl%info,'(a7,a,i6,a)') '','Ensemble sizes: ',nefac(ifac),' members'
    call mpl%flush
 
@@ -1831,7 +1831,7 @@ do ifac=1,nfac_rnd
       fld = fld-fld_ref(:,:,:,itest)
       call mpl%dot_prod(fld,fld,mse(itest,ifac))
       call mpl%dot_prod(fld_ref(:,:,:,itest),fld_ref(:,:,:,itest),mse_th(itest,ifac))
-      mse_th(itest,ifac) = one/real(nam%ens1_ne-1,kind_real)*(mse_th(itest,ifac)+real(geom%nc0*geom%nl0*nam%nv,kind_real))
+      mse_th(itest,ifac) = one/real(nam%ens_ne-1,kind_real)*(mse_th(itest,ifac)+real(geom%nc0*geom%nl0*nam%nv,kind_real))
 
       ! Update
       call mpl%prog_print(itest)
@@ -1849,7 +1849,7 @@ do ifac=1,nfac_rnd
 end do
 
 ! Reset namelist variables
-nam%ens1_ne = ens1_ne
+nam%ens_ne = ens_ne
 
 if (mpl%main) then
    ! Create file

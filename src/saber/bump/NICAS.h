@@ -70,8 +70,6 @@ class NICAS : public SaberCentralBlockBase {
   void iterativeCalibrationUpdate(const oops::FieldSet3D &) override;
   void iterativeCalibrationFinal() override;
 
-  void dualResolutionSetup(const oops::GeometryData &) override;
-
   void write() const override;
   std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> fieldsToWrite() const
     override;

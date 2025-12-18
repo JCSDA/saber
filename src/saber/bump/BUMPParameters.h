@@ -225,8 +225,8 @@ class IOSection : public oops::Parameters {
   oops::Parameter<std::string> fname_vbal = param(def.fname_vbal, this);
   // Ensemble 1 moments files
   oops::Parameter<std::vector<std::string>> fname_mom{"overriding moments file", {}, this};
-  // Ensemble 2 moments files
-  oops::Parameter<std::vector<std::string>> fname_mom2{"overriding lowres moments file", {}, this};
+  // Averaged statistics file
+  oops::Parameter<std::string> fname_avg = param(def.fname_avg, this);
   // Universe radius file
   oops::Parameter<std::string> fname_universe_radius = param(def.fname_universe_radius, this);
   // NICAS file
@@ -249,18 +249,12 @@ class DriversSection : public oops::Parameters {
   DriversDef def;
 
  public:
-  // Compute covariance, ensemble 1
-  oops::Parameter<bool> compute_cov1 = param(def.compute_cov1, this);
-  // Compute covariance, ensemble 2
-  oops::Parameter<bool> compute_cov2 = param(def.compute_cov2, this);
-  // Compute correlation, ensemble 1
-  oops::Parameter<bool> compute_cor1 = param(def.compute_cor1, this);
-  // Compute correlation, ensemble 2
-  oops::Parameter<bool> compute_cor2 = param(def.compute_cor2, this);
-  // Compute localization, ensemble 1
-  oops::Parameter<bool> compute_loc1 = param(def.compute_loc1, this);
-  // Compute localization, ensemble 2
-  oops::Parameter<bool> compute_loc2 = param(def.compute_loc2, this);
+  // Compute covariance
+  oops::Parameter<bool> compute_cov = param(def.compute_cov, this);
+  // Compute correlation
+  oops::Parameter<bool> compute_cor = param(def.compute_cor, this);
+  // Compute localization
+  oops::Parameter<bool> compute_loc = param(def.compute_loc, this);
   // Compute hybrid weights
   oops::Parameter<bool> compute_hyb = param(def.compute_hyb, this);
   // Hybrid term source ('randomized static' or 'lowres ensemble')
@@ -299,6 +293,8 @@ class DriversSection : public oops::Parameters {
   oops::Parameter<bool> load_mom = param(def.load_mom, this);
   // Write sampling moments
   oops::Parameter<bool> write_mom = param(def.write_mom, this);
+  // Write averaged statistics
+  oops::Parameter<bool> write_avg = param(def.write_avg, this);
   // Write HDIAG diagnostics
   oops::Parameter<bool> write_hdiag = param(def.write_hdiag, this);
   // Write HDIAG components detail
@@ -381,14 +377,10 @@ class EnsembleSizesSection : public oops::Parameters {
   EnsembleSizesDef def;
 
  public:
-  // Ensemble 1 size
-  oops::Parameter<int> ens1_ne = param(def.ens1_ne, this);
-  // Ensemble 1 sub-ensembles number
-  oops::Parameter<int> ens1_nsub = param(def.ens1_nsub, this);
-  // Ensemble 2 size
-  oops::Parameter<int> ens2_ne = param(def.ens2_ne, this);
-  // Ensemble 2 sub-ensembles number
-  oops::Parameter<int> ens2_nsub = param(def.ens2_nsub, this);
+  // Ensemble size
+  oops::Parameter<int> ens_ne = param(def.ens_ne, this);
+  // Ensemble sub-ensembles number
+  oops::Parameter<int> ens_nsub = param(def.ens_nsub, this);
 };
 
 // -----------------------------------------------------------------------------
@@ -462,8 +454,6 @@ class DiagnosticsSection : public oops::Parameters {
  public:
   // Ensemble size
   oops::Parameter<int> ne = param(def.ne, this);
-  // Ensemble size of the hybrid term
-  oops::Parameter<int> ne_lr = param(def.ne_lr, this);
   // Gaussian approximation for asymptotic quantities
   oops::Parameter<bool> gau_approx = param(def.gau_approx, this);
   // Localization option ('default', 'from_squared_correlation', 'nice_with_table' and

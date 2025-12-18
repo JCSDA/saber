@@ -170,41 +170,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
                                          params.toConfiguration(),
                                          iterativeEnsembleLoading,
                                          ensembleConf);
-
   covarConf.set("ensemble configuration", ensembleConf);
-  // Read dual resolution ensemble if needed
-  const auto & dualResParams = params.dualResParams.value();
-  std::unique_ptr<const Geometry_> dualResGeometry{};  // the owning pointer
-  const Geometry_ * dualResGeom = &geom;               // the algorithm-facing handle
-  std::unique_ptr<oops::FieldSets> fsetDualResEns;
-  if (dualResParams != boost::none) {
-    const auto & dualResGeomConf = dualResParams->geometry.value();
-    if (dualResGeomConf != boost::none) {
-      // Create dualRes geometry
-      dualResGeometry = std::make_unique<Geometry_>(*dualResGeomConf, geom.getComm());
-      dualResGeom = dualResGeometry.get();
-    }
-    // Background and first guess at dual resolution geometry
-    const State4D_ xbDualRes(*dualResGeom, xb);
-    const State4D_ fgDualRes(*dualResGeom, fg);
-    // Read dual resolution ensemble
-    eckit::LocalConfiguration dualResEnsembleConf;
-    fsetDualResEns = std::make_unique<oops::FieldSets>(readEnsemble(*dualResGeom,
-                     outerVars,
-                     xbDualRes,
-                     fgDualRes,
-                     dualResParams->toConfiguration(),
-                     iterativeEnsembleLoading,
-                     dualResEnsembleConf));
-    // Add dual resolution ensemble configuration
-    covarConf.set("dual resolution ensemble configuration", dualResEnsembleConf);
-  }
-  if (!fsetDualResEns) {
-    std::vector<util::DateTime> dates;
-    std::vector<int> ensmems;
-    fsetDualResEns = std::make_unique<oops::FieldSets>(dates,
-                                      xb.commTime(), ensmems, xb.commEns());
-  }
 
   // Add ensemble output
   const auto & outputEnsemble = params.outputEnsemble.value();
@@ -280,12 +246,6 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
           globalTaskOffsetPerComponent[component-1] + ntasksPerComponent[component-1];
       }
       globalTaskOffsetPerComponent[nComponents] = ntasks;
-
-      if (dualResParams != boost::none) {
-        throw eckit::NotImplemented("Parallel Hybrid not compatible "
-                                    "with dual resolution ensemble yet",
-                                    Here());
-      }
 
       const eckit::mpi::Comm & initialDefaultComm = eckit::mpi::comm();
       ASSERT(initialDefaultComm.name() == defaultSpaceComm.name());
@@ -412,12 +372,10 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
         SaberBlockChainFactory<MODEL>::create
          (parametricIfNotEnsemble(centralBlockParams.saberBlockName.value()),
           *localHybridGeom_,
-          *dualResGeom,
           cmpOuterVars,
           localFset4dXb,
           localFset4dFg,
           localFset4dCmpEns,
-          *fsetDualResEns,
           cmpCovarConf,
           cmpConf));
 
@@ -490,12 +448,10 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
           (SaberBlockChainFactory<MODEL>::create
            (parametricIfNotEnsemble(centralBlockParams.saberBlockName.value()),
             *hybridGeom,
-            *dualResGeom,
             cmpOuterVars,
             *fset4dXb,
             *fset4dFg,
             fset4dCmpEns,
-            *fsetDualResEns,
             cmpCovarConf,
             cmpConf));
       }
@@ -507,12 +463,10 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
       (SaberBlockChainFactory<MODEL>::create
        (parametricIfNotEnsemble(saberCentralBlockParams.saberBlockName.value()),
         geom,
-        *dualResGeom,
         outerVars,
         *fset4dXb,
         *fset4dFg,
         fsetEns,
-        *fsetDualResEns,
         covarConf,
         params.toConfiguration()));
 

@@ -24,21 +24,6 @@ namespace saber {
 
 // -------------------------------------------------------------------------------------------------
 
-class DualResCalibrationParameters : public oops::Parameters {
-  OOPS_CONCRETE_PARAMETERS(DualResCalibrationParameters, oops::Parameters)
- public:
-  // Geometry
-  oops::OptionalParameter<eckit::LocalConfiguration> geometry{"geometry", this};
-
-  // Ensemble
-  oops::OptionalParameter<eckit::LocalConfiguration> ensemble{"ensemble", this};
-  oops::OptionalParameter<eckit::LocalConfiguration> ensemblePert{"ensemble pert", this};
-  oops::OptionalParameter<eckit::LocalConfiguration> ensembleBase{"ensemble base", this};
-  oops::OptionalParameter<eckit::LocalConfiguration> ensemblePairs{"ensemble pairs", this};
-};
-
-// -------------------------------------------------------------------------------------------------
-
 template <typename MODEL>
 class ModelSpaceCovarianceParametersBase : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(ModelSpaceCovarianceParametersBase, oops::Parameters)
@@ -84,11 +69,6 @@ class ErrorCovarianceParameters : public ModelSpaceCovarianceParametersBase<MODE
                         "ensemble pert on other geometry", this};
   oops::OptionalParameter<eckit::LocalConfiguration> ensembleGeom{
                         "ensemble geometry", this};
-
-
-  // Dual resolution calibration
-  oops::OptionalParameter<DualResCalibrationParameters> dualResParams{
-    "dual resolution calibration", this};
 
   // Output ensemble
   oops::OptionalParameter<eckit::LocalConfiguration> outputEnsemble{"output ensemble", this};

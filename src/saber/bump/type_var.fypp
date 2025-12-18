@@ -220,8 +220,8 @@ write(mpl%info,'(a)') '--- Update variance'
 call mpl%flush
 
 ! Indices
-isub = (ie-1)/(nam%ens1_ne/nam%ens1_nsub)+1
-ie_sub = ie-(isub-1)*nam%ens1_ne/nam%ens1_nsub
+isub = (ie-1)/(nam%ens_ne/nam%ens_nsub)+1
+ie_sub = ie-(isub-1)*nam%ens_ne/nam%ens_nsub
 
 ! Computation factors
 fac1 = one/real(ie_sub,kind_real)
@@ -235,7 +235,7 @@ if (ie==1) then
    call var%alloc(nam,geom)
 
    ! Initialization
-   var%ne = nam%ens1_ne
+   var%ne = nam%ens_ne
    var%m2 = zero
    var%m4 = zero
 end if
@@ -263,15 +263,15 @@ var%seq_m2 = var%seq_m2+fac5*pert_c0a**2
 var%seq_m1 = var%seq_m1+fac1*pert_c0a
 
 ! Average variance and fourth-order centered moment
-if (ie_sub==nam%ens1_ne/nam%ens1_nsub) then
+if (ie_sub==nam%ens_ne/nam%ens_nsub) then
    var%m2 = var%m2+var%seq_m2
    var%m4 = var%m4+var%seq_m4
 end if
 
-if (ie==nam%ens1_ne) then
+if (ie==nam%ens_ne) then
    ! Normalization
-   fac_norm_m2 = one/real(nam%ens1_ne-nam%ens1_nsub,kind_real)
-   fac_norm_m4 = one/real(nam%ens1_ne,kind_real)
+   fac_norm_m2 = one/real(nam%ens_ne-nam%ens_nsub,kind_real)
+   fac_norm_m4 = one/real(nam%ens_ne,kind_real)
    !$omp parallel do schedule(static) private(iv,il0,ic0a)
    do iv=1,nam%nv
       do il0=1,geom%nl0

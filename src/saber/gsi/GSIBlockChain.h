@@ -34,12 +34,10 @@ class SaberGSIBlockChain : public SaberBlockChainBase {
  public:
   template<typename MODEL>
   SaberGSIBlockChain(const oops::Geometry<MODEL> & geom,
-                     const oops::Geometry<MODEL> & dualResGeom,
                      const oops::Variables & outerVars,
                      oops::FieldSet4D & fset4dXb,
                      oops::FieldSet4D & fset4dFg,
                      oops::FieldSets & fsetEns,
-                     oops::FieldSets & fsetDualResEns,
                      const eckit::LocalConfiguration & covarConf,
                      const eckit::Configuration & conf);
   ~SaberGSIBlockChain();
@@ -86,12 +84,10 @@ class SaberGSIBlockChain : public SaberBlockChainBase {
 
 template<typename MODEL>
 SaberGSIBlockChain::SaberGSIBlockChain(const oops::Geometry<MODEL> & geom,
-                       const oops::Geometry<MODEL> & dualResGeom,
                        const oops::Variables & outerVars,
                        oops::FieldSet4D & fset4dXb,
                        oops::FieldSet4D & fset4dFg,
                        oops::FieldSets & fsetEns,
-                       oops::FieldSets & fsetDualResEns,
                        const eckit::LocalConfiguration & covarConf,
                        const eckit::Configuration & conf)
   : outerFunctionSpace_(geom.functionSpace()), outerVariables_(outerVars) {

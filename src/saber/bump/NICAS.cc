@@ -141,15 +141,6 @@ void NICAS::iterativeCalibrationFinal() {
 
 // -----------------------------------------------------------------------------
 
-void NICAS::dualResolutionSetup(const oops::GeometryData & geometryData) {
-  oops::Log::trace() << classname() << "::dualResolutionSetup starting" << std::endl;
-  bump_->dualResolutionSetup(geometryData.functionSpace(),
-                             geometryData.fieldSet());
-  oops::Log::trace() << classname() << "::dualResolutionSetup done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
 void NICAS::multiplySqrt(const atlas::Field & cv,
                          oops::FieldSet3D & fset,
                          const size_t & offset) const {

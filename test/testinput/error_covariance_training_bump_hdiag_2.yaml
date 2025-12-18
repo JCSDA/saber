@@ -29,7 +29,7 @@ background error:
         parallel netcdf: false
         overriding sampling file: error_covariance_training_bump_hdiag_1/_MPI_-_OMP__sampling
         overriding moments file:
-        - error_covariance_training_bump_hdiag_1/_MPI_-_OMP__mom_000001_1
+        - error_covariance_training_bump_hdiag_1/_MPI_-_OMP__mom_000001
       drivers:
         compute covariance: true
         compute correlation: true

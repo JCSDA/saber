@@ -39,8 +39,8 @@ type nam_type
    character(len=1024),allocatable :: fname_vbal_cov(:)       !< Vertical covariance files
    character(len=1024) :: fname_vbal                          !< Vertical balance file
    character(len=1024) :: fname_mom_default                   !< Moments files default base
-   character(len=1024),allocatable :: fname_mom1(:)           !< Moments files, ensemble 1
-   character(len=1024),allocatable :: fname_mom2(:)           !< Moments files, ensemble 2
+   character(len=1024),allocatable :: fname_mom(:)            !< Moments files
+   character(len=1024) :: fname_avg                           !< Averaged statistics files
    character(len=1024) :: fname_universe_radius               !< Universe radius file
    character(len=1024) :: fname_nicas                         !< NICAS file
    character(len=1024) :: fname_wind                          !< Wind transform file
@@ -48,12 +48,9 @@ type nam_type
    character(len=1024) :: fname_gsi_nam                       !< GSI namelist
 
    ! Drivers section
-   logical :: compute_cov1                                    !< Compute covariance, ensemble 1
-   logical :: compute_cov2                                    !< Compute covariance, ensemble 2
-   logical :: compute_cor1                                    !< Compute correlation, ensemble 1
-   logical :: compute_cor2                                    !< Compute correlation, ensemble 2
-   logical :: compute_loc1                                    !< Compute localization, ensemble 1
-   logical :: compute_loc2                                    !< Compute localization, ensemble 2
+   logical :: compute_cov                                     !< Compute covariance
+   logical :: compute_cor                                     !< Compute correlation
+   logical :: compute_loc                                     !< Compute localization
    logical :: compute_hyb                                     !< Compute hybrid weights
    logical :: new_hdiag                                       !< Compute diagnostics
    character(len=1024) :: hybrid_source                       !< Hybrid term source ('randomized static' or 'lowres ensemble')
@@ -74,6 +71,7 @@ type nam_type
    logical :: new_mom                                         !< Compute moments
    logical :: load_mom                                        !< Read sampling moments
    logical :: write_mom                                       !< Write sampling moments
+   logical :: write_avg                                       !< Write averaged statistics
    logical :: write_hdiag                                     !< Write diagnostics
    logical :: write_hdiag_detail                              !< Write components detail
    logical :: load_universe_radius                            !< Read universe radius
@@ -111,10 +109,8 @@ type nam_type
    logical :: mask_check                                      !< Check that sampling couples and interpolations do not cross mask boundaries
 
    ! Ensemble sizes
-   integer :: ens1_ne                                         !< Ensemble 1 size
-   integer :: ens1_nsub                                       !< Ensemble 1 sub-ensembles number
-   integer :: ens2_ne                                         !< Ensemble 2 size
-   integer :: ens2_nsub                                       !< Ensemble 2 sub-ensembles number
+   integer :: ens_ne                                          !< Ensemble size
+   integer :: ens_nsub                                        !< Ensemble sub-ensembles number
 
    ! Sampling section
    integer :: nc1                                             !< Computation grid size
@@ -138,7 +134,6 @@ type nam_type
 
    ! Diagnostics section
    integer :: ne                                              !< Ensemble size
-   integer :: ne_lr                                           !< Ensemble size of the low-resolution term (ensemble 2)
    logical :: gau_approx                                      !< Gaussian approximation for asymptotic quantities
    character(len=1024) :: loc_option                          !< Localization option ('default', 'from_squared_correlation', 'nice_with_table' and 'nice_without_table')
    real(kind_real) :: gen_kurt_th                             !< Threshold on generalized kurtosis (3.0 = Gaussian distribution)
@@ -425,27 +420,16 @@ if (conf%get('io',section)) then
    if (section%get('overriding moments file',str_array)) then
       if (size(str_array)>0) then
          ! Release memory
-         if (allocated(nam%fname_mom1)) deallocate(nam%fname_mom1)
+         if (allocated(nam%fname_mom)) deallocate(nam%fname_mom)
 
          ! Allocation
-         allocate(nam%fname_mom1(size(str_array)))
+         allocate(nam%fname_mom(size(str_array)))
 
          ! Copy
-         nam%fname_mom1 = str_array
+         nam%fname_mom = str_array
       end if
    end if
-   if (section%get('overriding lowres moments file',str_array)) then
-      if (size(str_array)>0) then
-         ! Release memory
-         if (allocated(nam%fname_mom2)) deallocate(nam%fname_mom2)
-
-         ! Allocation
-         allocate(nam%fname_mom2(size(str_array)))
-
-         ! Copy
-         nam%fname_mom2 = str_array
-      end if
-   end if
+   call nam%get(section,'overriding averaged statistics file',nam%fname_avg)
    call nam%get(section,'overriding universe radius file',nam%fname_universe_radius)
    call nam%get(section,'overriding nicas file',nam%fname_nicas)
    call nam%get(section,'overriding psichitouv file',nam%fname_wind)
@@ -456,15 +440,11 @@ end if
 ! Drivers section
 if (conf%get('drivers',section)) then
    if (lverbose) call print_section(mpl,section,'Drivers')
-   call nam%get(section,'compute covariance',nam%compute_cov1)
-   call nam%get(section,'compute lowres covariance',nam%compute_cov2)
-   call nam%get(section,'compute correlation',nam%compute_cor1)
-   call nam%get(section,'compute lowres correlation',nam%compute_cor2)
-   call nam%get(section,'compute localization',nam%compute_loc1)
-   call nam%get(section,'compute lowres localization',nam%compute_loc2)
+   call nam%get(section,'compute covariance',nam%compute_cov)
+   call nam%get(section,'compute correlation',nam%compute_cor)
+   call nam%get(section,'compute localization',nam%compute_loc)
    call nam%get(section,'compute hybrid weights',nam%compute_hyb)
-   nam%new_hdiag = nam%compute_cov1.or.nam%compute_cor1.or.nam%compute_loc1.or. &
- & nam%compute_cov2.or.nam%compute_cor2.or.nam%compute_loc2.or.nam%compute_hyb
+   nam%new_hdiag = nam%compute_cov.or.nam%compute_cor.or.nam%compute_loc.or.nam%compute_hyb
    call nam%get(section,'hybrid source',nam%hybrid_source)
    call nam%get(section,'multivariate strategy',nam%strategy)
    call nam%get(section,'compute normality',nam%new_normality)
@@ -483,6 +463,7 @@ if (conf%get('drivers',section)) then
    call nam%get(section,'compute moments',nam%new_mom)
    call nam%get(section,'read moments',nam%load_mom)
    call nam%get(section,'write moments',nam%write_mom)
+   call nam%get(section,'write averaged statistics',nam%write_avg)
    call nam%get(section,'write diagnostics',nam%write_hdiag)
    call nam%get(section,'write diagnostics detail',nam%write_hdiag_detail)
    call nam%get(section,'read universe radius',nam%load_universe_radius)
@@ -607,10 +588,8 @@ end if
 ! Ensemble sizes
 if (conf%get('ensemble sizes',section)) then
    if (lverbose) call print_section(mpl,section,'Ensemble sizes')
-   call nam%get(section,'total ensemble size',nam%ens1_ne)
-   call nam%get(section,'sub-ensembles',nam%ens1_nsub)
-   call nam%get(section,'total lowres ensemble size',nam%ens2_ne)
-   call nam%get(section,'lowres sub-ensembles',nam%ens2_nsub)
+   call nam%get(section,'total ensemble size',nam%ens_ne)
+   call nam%get(section,'sub-ensembles',nam%ens_nsub)
 end if
 
 ! Sampling section
@@ -667,7 +646,6 @@ end if
 if (conf%get('diagnostics',section)) then
    if (lverbose) call print_section(mpl,section,'diagnostics')
    call nam%get(section,'target ensemble size',nam%ne)
-   call nam%get(section,'target lowres ensemble size',nam%ne_lr)
    call nam%get(section,'gaussian approximation',nam%gau_approx)
    call nam%get(section,'localization option',nam%loc_option)
    call nam%get(section,'generalized kurtosis threshold',nam%gen_kurt_th)
@@ -1052,7 +1030,7 @@ if (nam%forced_radii) then
 end if
 
 ! Required parameters
-if (nam%ne==0) nam%ne = nam%ens1_ne
+if (nam%ne==0) nam%ne = nam%ens_ne
 if (.not.allocated(nam%nicas_interp_type)) then
    allocate(nam%nicas_interp_type(nam%ng))
    nam%nicas_interp_type = 'si'
@@ -1103,16 +1081,14 @@ if (nam%nprocio<1) call mpl%abort('${subr}$','number of I/O tasks should be posi
 if (nam%fname_samp=='') nam%fname_samp = trim(nam%prefix)//'sampling'
 nam%fname_vbal_cov_default = trim(nam%prefix)//'vbal_cov'
 if (allocated(nam%fname_vbal_cov)) then
-   if (size(nam%fname_vbal_cov)<nam%ens1_nsub) call mpl%abort('${subr}$','not enough fname_vbal_cov items')
+   if (size(nam%fname_vbal_cov)<nam%ens_nsub) call mpl%abort('${subr}$','not enough fname_vbal_cov items')
 end if
 if (nam%fname_vbal=='') nam%fname_vbal = trim(nam%prefix)//'vbal'
 nam%fname_mom_default = trim(nam%prefix)//'mom'
-if (allocated(nam%fname_mom1)) then
-   if (size(nam%fname_mom1)<nam%ens1_nsub) call mpl%abort('${subr}$','not enough fname_mom1 items')
+if (allocated(nam%fname_mom)) then
+   if (size(nam%fname_mom)<nam%ens_nsub) call mpl%abort('${subr}$','not enough fname_mom items')
 end if
-if (allocated(nam%fname_mom2)) then
-   if (size(nam%fname_mom2)<nam%ens2_nsub) call mpl%abort('${subr}$','not enough fname_mom2 items')
-end if
+if (nam%fname_avg=='') nam%fname_avg = trim(nam%prefix)//'avg'
 if (nam%fname_universe_radius=='') nam%fname_universe_radius = trim(nam%prefix)//'universe_radius'
 if (nam%fname_nicas=='') nam%fname_nicas = trim(nam%prefix)//'nicas'
 if (nam%fname_wind=='') nam%fname_wind = trim(nam%prefix)//'wind'
@@ -1177,11 +1153,11 @@ if (nam%check_randomization) then
    if (.not.nam%new_nicas) call mpl%abort('${subr}$','new_nicas required for check_randomization')
 end if
 if (nam%check_consistency) then
-   if (.not.nam%compute_cor1) call mpl%abort('${subr}$','cor method required for check_consistency')
+   if (.not.nam%compute_cor) call mpl%abort('${subr}$','cor method required for check_consistency')
    if (nam%new_nicas) call mpl%abort('${subr}$','new_nicas forbidden for check_consistency')
 end if
 if (nam%check_optimality) then
-   if (.not.nam%compute_loc1) call mpl%abort('${subr}$','loc method required for check_optimality')
+   if (.not.nam%compute_loc) call mpl%abort('${subr}$','loc method required for check_optimality')
    if (nam%new_nicas) call mpl%abort('${subr}$','new_nicas forbidden for check_optimality')
 end if
 
@@ -1201,21 +1177,14 @@ end do
 ! Ensemble sizes section
 if (((nam%new_normality.or.nam%new_vbal_cov.or.(nam%new_vbal.and.(.not.nam%load_vbal_cov)) &
  & .or.(nam%new_var.and.(.not.nam%forced_var)).or.nam%new_mom &
- & .or.nam%check_randomization.or.nam%check_optimality).and.(nam%compute_cov1.or.nam%compute_cor1.or.nam%compute_loc1)) &
+ & .or.nam%check_randomization.or.nam%check_optimality).and.(nam%compute_cov.or.nam%compute_cor.or.nam%compute_loc)) &
  & .and.(.not.nam%from_gsi)) then
-   if (nam%ens1_nsub<1) call mpl%abort('${subr}$','ens1_nsub should be positive')
-   if (mod(nam%ens1_ne,nam%ens1_nsub)/=0) call mpl%abort('${subr}$','ens1_nsub should be a divider of ens1_ne')
-   if (nam%ens1_ne/nam%ens1_nsub<=3) call mpl%abort('${subr}$','ens1_ne/ens1_nsub should be larger than 3')
+   if (nam%ens_nsub<1) call mpl%abort('${subr}$','ens_nsub should be positive')
+   if (mod(nam%ens_ne,nam%ens_nsub)/=0) call mpl%abort('${subr}$','ens_nsub should be a divider of ens_ne')
+   if (nam%ens_ne/nam%ens_nsub<=3) call mpl%abort('${subr}$','ens_ne/ens_nsub should be larger than 3')
 end if
-if (nam%new_mom.and.(nam%compute_cov2.or.nam%compute_cor2.or.nam%compute_loc2)) then
-   if (nam%ens2_nsub<1) call mpl%abort('${subr}$','ens1_nsub should be positive')
-   if (mod(nam%ens2_ne,nam%ens2_nsub)/=0) call mpl%abort('${subr}$','ens2_nsub should be a divider of ens2_ne')
-   if (nam%ens2_ne/nam%ens2_nsub<=3) call mpl%abort('${subr}$','ens2_ne/ens2_nsub should be larger than 3')
-end if
-if (nam%compute_loc1.and.(nam%ne>nam%ens1_ne)) call mpl%warning('${subr}$', &
- & 'ensemble size larger than ens1_ne (might enhance sampling noise)')
-if (nam%compute_loc2.and.(nam%ne_lr>nam%ens2_ne)) call mpl%warning('${subr}$', &
- & 'ensemble size larger than ens2_ne (might enhance sampling noise)')
+if (nam%compute_loc.and.(nam%ne>nam%ens_ne)) call mpl%warning('${subr}$', &
+ & 'ensemble size larger than ens_ne (might enhance sampling noise)')
 
 ! Sampling section
 if (nam%new_vbal_cov.or.nam%new_vbal.or.(nam%new_hdiag.and.(.not.nam%from_gsi)).or.nam%check_optimality) then
@@ -1277,12 +1246,10 @@ end do
 
 ! Diagnostics section
 if (nam%new_hdiag.or.nam%check_optimality) then
-   if (((.not.nam%from_gsi).and.(nam%compute_cov1.or.nam%compute_cor1.or.nam%compute_loc1)).and.(nam%ne<=3)) &
+   if (((.not.nam%from_gsi).and.(nam%compute_cov.or.nam%compute_cor.or.nam%compute_loc)).and.(nam%ne<=3)) &
  & call mpl%abort('${subr}$','ne should be larger than 3')
-   if (((.not.nam%from_gsi).and.(nam%compute_cov2.or.nam%compute_cor2.or.nam%compute_loc2)).and.(nam%ne_lr<=3)) &
- & call mpl%abort('${subr}$','ne_lr should be larger than 3')
    if (((nam%loc_option=='from_squared_correlation').or.(nam%loc_option=='nice_with_table').or. &
- & (nam%loc_option=='nice_without_table')).and.(.not.(nam%compute_cor1.or.nam%compute_cor2))) &
+ & (nam%loc_option=='nice_without_table')).and.(.not.nam%compute_cor)) &
  & call mpl%abort('${subr}$','locoption requires compute_correlation')
    if (.not.(nam%gen_kurt_th>zero)) call mpl%abort('${subr}$','gen_kurt_th should be positive')
    if (.not.(nam%lengths_scaling>zero)) call mpl%abort('${subr}$','lengths_scaling should be positive')
