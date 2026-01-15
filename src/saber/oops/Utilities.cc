@@ -111,5 +111,50 @@ void allocateMissingFields(oops::FieldSet3D & fset,
 
 // -----------------------------------------------------------------------------
 
+size_t getNensFromConfig(const eckit::LocalConfiguration & conf) {
+  // expecting either `members` (list) or `members from template` (object with nmembers/template).
+  size_t nens = 0;
+  ASSERT(conf.has("members from template") || conf.has("members"));
+  ASSERT(!(conf.has("members from template") && conf.has("members")));
+  if (conf.has("members")) {
+    const auto members = conf.getSubConfigurations("members");
+    nens = members.size();
+  } else {
+    const auto members = conf.getSubConfiguration("members from template");
+    ASSERT(members.has("nmembers"));
+    ASSERT(members.has("pattern"));
+    ASSERT(members.has("template"));
+    nens = members.getInt("nmembers");
+  }
+  return nens;
+}
+
+// -----------------------------------------------------------------------------
+
+eckit::LocalConfiguration getEnsSubconfig(const eckit::LocalConfiguration & conf, size_t iens) {
+  // expecting either `members` (list) or `members from template` (object with nmembers/template).
+  eckit::LocalConfiguration memConf;
+  if (conf.has("members")) {
+    const auto members = conf.getSubConfigurations("members");
+    if (!members.empty()) memConf = members[iens];
+  } else {
+    eckit::LocalConfiguration members = conf.getSubConfiguration("members from template");
+    memConf = members.getSubConfiguration("template");
+    const std::string pattern = members.getString("pattern");
+    const int zpad = members.getInt("zero padding", 0);
+    const std::vector<size_t> except = members.getUnsignedVector("except", {});
+    size_t index = members.getUnsigned("start", 1);
+    for (size_t jj = 0; jj <= iens; ++jj) {
+      // Check for excluded members
+      while (std::count(except.begin(), except.end(), index)) {
+        index++;
+      }
+      // Update counter
+      if (jj < iens) index++;
+    }
+    util::seekAndReplace(memConf, pattern, index, zpad);
+  }
+  return memConf;
+}
 
 }  // namespace saber

@@ -23,10 +23,8 @@
 #include "oops/base/FieldSets.h"
 #include "oops/base/Geometry.h"
 #include "oops/base/Increment.h"
-#include "oops/base/IncrementEnsemble.h"
 #include "oops/base/IncrementSet.h"
 #include "oops/base/State4D.h"
-#include "oops/base/StateEnsemble.h"
 #include "oops/base/StateSet.h"
 #include "oops/base/Variables.h"
 #include "oops/interface/ModelData.h"
@@ -83,6 +81,14 @@ void allocateMissingFields(oops::FieldSet3D & fset,
 
 // -----------------------------------------------------------------------------
 
+size_t getNensFromConfig(const eckit::LocalConfiguration & conf);
+
+// -----------------------------------------------------------------------------
+
+eckit::LocalConfiguration getEnsSubconfig(const eckit::LocalConfiguration & conf, size_t iens);
+
+// -----------------------------------------------------------------------------
+
 template<typename MODEL>
 oops::FieldSets readEnsemble(const oops::Geometry<MODEL> & geom,
                              const oops::Variables & modelvars,
@@ -102,40 +108,31 @@ oops::FieldSets readEnsemble(const oops::Geometry<MODEL> & geom,
   eckit::LocalConfiguration varConf;
 
   // Ensemble of states, perturbation using the mean
-  oops::IncrementEnsembleFromStatesParameters<MODEL> ensembleParams;
   eckit::LocalConfiguration ensembleConf = inputConf.getSubConfiguration("ensemble");
   if (inputConf.has("ensemble")) {
-    ensembleParams.deserialize(ensembleConf);
-    nens = ensembleParams.states.size();
+    nens = getNensFromConfig(ensembleConf);
+    varConf = getEnsSubconfig(ensembleConf, 0);
     outputConf.set("ensemble", ensembleConf);
-    varConf = ensembleParams.states.getStateConfig(0, 0);
     ++ensembleFound;
   }
 
   // Increment ensemble from increments on disk
-  oops::IncrementEnsembleParameters<MODEL> ensemblePertParams;
-  eckit::LocalConfiguration ensemblePert;
+  eckit::LocalConfiguration ensemblePert = inputConf.getSubConfiguration("ensemble pert");
   if (inputConf.has("ensemble pert")) {
-    ensemblePert = inputConf.getSubConfiguration("ensemble pert");
-    ensemblePertParams.deserialize(ensemblePert);
-    nens = ensemblePertParams.size();
+    nens = getNensFromConfig(ensemblePert);
+    varConf = getEnsSubconfig(ensemblePert, 0);
     outputConf.set("ensemble pert", ensemblePert);
-    varConf = ensemblePertParams.getIncrementParameters(0);
     ++ensembleFound;
   }
 
   // Increment ensemble from difference of two states
-  oops::StateEnsembleParameters<MODEL> ensembleBaseParams;
-  oops::StateEnsembleParameters<MODEL> ensemblePairsParams;
   eckit::LocalConfiguration ensembleBase;
   eckit::LocalConfiguration ensemblePairs;
   if (inputConf.has("ensemble base") && inputConf.has("ensemble pairs")) {
     ensembleBase = inputConf.getSubConfiguration("ensemble base");
     ensemblePairs = inputConf.getSubConfiguration("ensemble pairs");
-    ensembleBaseParams.deserialize(ensembleBase);
-    ensemblePairsParams.deserialize(ensemblePairs);
-    nens = ensembleBaseParams.size();
-    varConf = ensembleBaseParams.getStateConfig(0, 0);
+    nens = getNensFromConfig(ensembleBase);
+    varConf = getEnsSubconfig(ensembleBase, 0);
     outputConf.set("ensemble base", ensembleBase);
     outputConf.set("ensemble pairs", ensemblePairs);
     ++ensembleFound;
@@ -146,29 +143,8 @@ oops::FieldSets readEnsemble(const oops::Geometry<MODEL> & geom,
   if (inputConf.has("ensemble pert on other geometry")
           && inputConf.has("ensemble geometry")) {
     ensemblePertOtherGeom = inputConf.getSubConfiguration("ensemble pert on other geometry");
-
-    // Bespoke validation, mimicking oops::IncrementEnsembleParameters<MODEL>
-    ASSERT(ensemblePertOtherGeom.has("date"));
-    ASSERT(ensemblePertOtherGeom.has("members from template")
-           || ensemblePertOtherGeom.has("members"));
-    ASSERT(!(ensemblePertOtherGeom.has("members from template")
-           && ensemblePertOtherGeom.has("members")));
-
-    if (ensemblePertOtherGeom.has("members")) {
-      const auto members = ensemblePertOtherGeom.getSubConfigurations("members");
-      nens = members.size();
-      varConf = members[0];
-    }
-
-    if (ensemblePertOtherGeom.has("members from template")) {
-      const auto members = ensemblePertOtherGeom.getSubConfiguration("members from template");
-      ASSERT(members.has("nmembers"));
-      ASSERT(members.has("pattern"));
-      ASSERT(members.has("template"));
-      nens = members.getInt("nmembers");
-      varConf = members.getSubConfiguration("template");
-    }
-
+    nens = getNensFromConfig(ensemblePertOtherGeom);
+    varConf = getEnsSubconfig(ensemblePertOtherGeom, 0);
     outputConf.set("ensemble pert on other geometry", ensemblePertOtherGeom);
     outputConf.set("ensemble geometry",
                    inputConf.getSubConfiguration("ensemble geometry"));
@@ -204,7 +180,7 @@ oops::FieldSets readEnsemble(const oops::Geometry<MODEL> & geom,
     if (!ensemblePert.empty()) {
       oops::Log::info() << "Info     : Increment ensemble from increments on disk" << std::endl;
       oops::IncrementSet<MODEL> ensemble(geom, vars, xb.times(),
-                                         ensemblePertParams.toConfiguration(), xb.commTime());
+                                         ensemblePert, xb.commTime());
       oops::FieldSets fsetEns(ensemble);
       return fsetEns;
     }
@@ -213,8 +189,8 @@ oops::FieldSets readEnsemble(const oops::Geometry<MODEL> & geom,
     if (!ensembleBase.empty() && !ensemblePairs.empty()) {
       oops::Log::info() << "Info     : Increment ensemble from difference of two states"
                         << std::endl;
-      oops::StateSet<MODEL> states1(geom, ensembleBaseParams.toConfiguration(), xb.commTime());
-      oops::StateSet<MODEL> states2(geom, ensemblePairsParams.toConfiguration(), xb.commTime());
+      oops::StateSet<MODEL> states1(geom, ensembleBase, xb.commTime());
+      oops::StateSet<MODEL> states2(geom, ensemblePairs, xb.commTime());
       oops::IncrementSet<MODEL> ensemble(geom, vars, states1.times(), states1.commTime(),
                                          states1.members(), states1.commEns());
       ensemble.diff(states1, states2);
@@ -337,12 +313,10 @@ void readEnsembleMember(const oops::Geometry<MODEL> & geom,
   const size_t myrank = geom.timeComm().rank();
 
   if (conf.has("ensemble")) {
-    // Ensemble of states passed as increments
-    oops::StateEnsembleParameters<MODEL> states;
-    states.deserialize(conf.getSubConfiguration("ensemble"));
-
     // Read state
-    oops::State<MODEL> xx(geom, states.getStateConfig(ie, myrank));
+    eckit::LocalConfiguration memConf = getEnsSubconfig(
+      conf.getSubConfiguration("ensemble"), ie);
+    oops::State<MODEL> xx(geom, memConf);
 
     // Copy FieldSet
     fset.deepCopy(xx.fieldSet());
@@ -352,12 +326,11 @@ void readEnsembleMember(const oops::Geometry<MODEL> & geom,
 
   if (conf.has("ensemble pert")) {
     // Increment ensemble from increments on disk
-    oops::IncrementEnsembleParameters<MODEL> ensemblePertParams;
-    ensemblePertParams.deserialize(conf.getSubConfiguration("ensemble pert"));
-
+    eckit::LocalConfiguration memConf = getEnsSubconfig(
+      conf.getSubConfiguration("ensemble pert"), ie);
     // Read Increment
     oops::Increment<MODEL> dx(geom, vars, fset.validTime());
-    dx.read(ensemblePertParams.getIncrementParameters(ie));
+    dx.read(memConf);
 
     // Get FieldSet
     fset.deepCopy(dx.fieldSet());
@@ -367,15 +340,14 @@ void readEnsembleMember(const oops::Geometry<MODEL> & geom,
 
   if (conf.has("ensemble base") && conf.has("ensemble pairs")) {
     // Increment ensemble from difference of two states
-    oops::StateEnsembleParameters<MODEL> ensembleBaseParams;
-    ensembleBaseParams.deserialize(conf.getSubConfiguration("ensemble base"));
-    oops::StateEnsembleParameters<MODEL> ensemblePairsParams;
-    ensemblePairsParams.deserialize(conf.getSubConfiguration("ensemble pairs"));
+    eckit::LocalConfiguration memConfBase = getEnsSubconfig(
+      conf.getSubConfiguration("ensemble base"), ie);
+    eckit::LocalConfiguration memConfPairs = getEnsSubconfig(
+      conf.getSubConfiguration("ensemble pairs"), ie);
 
     // Read states
-    oops::State<MODEL> xxBase(geom, ensembleBaseParams.getStateConfig(ie, myrank));
-    oops::State<MODEL> xxPairs(geom, ensemblePairsParams.getStateConfig(ie, myrank));
-
+    oops::State<MODEL> xxBase(geom, memConfBase);
+    oops::State<MODEL> xxPairs(geom, memConfPairs);
     // Compute difference
     oops::Increment<MODEL> dx(geom, vars, fset.validTime());
     dx.diff(xxPairs, xxBase);
