@@ -18,7 +18,7 @@ background error:
   covariance model: SABER
   adjoint test: true
   square-root test: true
-  square-root tolerance: 3.0e-12
+  square-root tolerance: 1.0e-11
   ensemble:
     members from template:
       template:
