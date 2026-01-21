@@ -310,8 +310,6 @@ void readEnsembleMember(const oops::Geometry<MODEL> & geom,
   // Fill FieldSet
   size_t ensembleFound = 0;
 
-  const size_t myrank = geom.timeComm().rank();
-
   if (conf.has("ensemble")) {
     // Read state
     eckit::LocalConfiguration memConf = getEnsSubconfig(
