@@ -34,12 +34,12 @@ bands:
     model write:
       filepath: testdata/process_perts_from_csdual_states_1/filtered_pert_mb%MEM%_wb1
       member pattern: '%MEM%'
-- band:
-    residual increment from previous bands: true
-  output:
+- output:
     model write:
       filepath: testdata/process_perts_from_csdual_states_1/filtered_pert_mb%MEM%_wb2
       member pattern: '%MEM%'
+
+recursive filters: true
 
 ensemble:
   members:
