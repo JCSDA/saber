@@ -11,12 +11,13 @@
 #include <string>
 #include <vector>
 
+#include "oops/util/parameters/ConfigurationParameter.h"
 #include "oops/util/parameters/OptionalParameter.h"
 #include "oops/util/parameters/Parameter.h"
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
-#include "saber/blocks/SaberBlockParametersBase.h"
+#include "saber/blocks/SaberBlockChainBase.h"
 #include "saber/blocks/SaberCentralBlockBase.h"
 #include "saber/blocks/SaberOuterBlockBase.h"
 
@@ -44,11 +45,7 @@ class ErrorCovarianceParameters : public ModelSpaceCovarianceParametersBase<MODE
                            ModelSpaceCovarianceParametersBase<MODEL>)
 
  public:
-  // Central and outer blocks
-  oops::RequiredParameter<SaberCentralBlockParametersWrapper>
-    saberCentralBlockParams{"saber central block", this};
-  oops::OptionalParameter<std::vector<SaberOuterBlockParametersWrapper>>
-    saberOuterBlocksParams{"saber outer blocks", this};
+  oops::ConfigurationParameter blockChainParams{this};
 
   // Time covariance mode (by default duplicated multivariate)
   // Options: univariate, duplicated multivariate.

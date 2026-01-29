@@ -29,30 +29,24 @@ SaberParametricBlockChain::SaberParametricBlockChain(
     timeComm_(fset4dXb.commTime()),
     size4D_(fset4dXb.size()) {
   oops::Log::trace() << "SaberParametricBlockChain generic ctor starting" << std::endl;
-
+  SaberParametricBlockChainParameters params;
+  params.deserialize(conf);
   // If needed create generic outer block chain
-  if (conf.has("saber outer blocks")) {
-    std::vector<SaberOuterBlockParametersWrapper> cmpOuterBlocksParams;
-    for (const auto & cmpOuterBlockConf : conf.getSubConfigurations("saber outer blocks")) {
-      SaberOuterBlockParametersWrapper cmpOuterBlockParamsWrapper;
-      cmpOuterBlockParamsWrapper.deserialize(cmpOuterBlockConf);
-      cmpOuterBlocksParams.push_back(cmpOuterBlockParamsWrapper);
-    }
+  if (params.saberOuterBlocksParams.value()) {
     outerBlockChain_ = std::make_unique<SaberOuterBlockChain>(outerGeometryData,
-                                                              outerVariables_,
-                                                              fset4dXb,
-                                                              fset4dFg,
-                                                              covarConf,
-                                                              cmpOuterBlocksParams);
+        outerVariables_,
+        fset4dXb,
+        fset4dFg,
+        covarConf,
+        *params.saberOuterBlocksParams.value());
   }
 
   // Set outer geometry data for central block
   const oops::GeometryData & currentOuterGeom = outerBlockChain_ ?
                              outerBlockChain_->innerGeometryData() : outerGeometryData;
 
-  SaberCentralBlockParametersWrapper saberCentralBlockParamsWrapper;
-  saberCentralBlockParamsWrapper.deserialize(conf.getSubConfiguration("saber central block"));
-
+  SaberCentralBlockParametersWrapper saberCentralBlockParamsWrapper
+    = params.saberCentralBlockParams;
   const SaberBlockParametersBase & saberCentralBlockParams =
     saberCentralBlockParamsWrapper.saberCentralBlockParameters;
   oops::Log::info() << "Info     : Creating central block: "
@@ -60,7 +54,6 @@ SaberParametricBlockChain::SaberParametricBlockChain(
 
   const auto[currentOuterVars, activeVars]
               = initCentralBlock(currentOuterGeom,
-                                 conf,
                                  covarConf,
                                  saberCentralBlockParams,
                                  fset4dXb,
@@ -108,7 +101,6 @@ SaberParametricBlockChain::SaberParametricBlockChain(
 std::tuple<oops::Variables, oops::Variables>
     SaberParametricBlockChain::initCentralBlock(
         const oops::GeometryData & outerGeom,
-        const eckit::Configuration & conf,
         const eckit::LocalConfiguration & covarConf,
         const SaberBlockParametersBase & saberCentralBlockParams,
         const oops::FieldSet4D & fset4dXb,

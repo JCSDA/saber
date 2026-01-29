@@ -21,12 +21,24 @@
 #include "saber/blocks/SaberBlockParametersBase.h"
 #include "saber/blocks/SaberOuterBlockChain.h"
 
+#include "saber/gsi/covariance/Covariance.h"
 #include "saber/gsi/covariance/Covariance.interface.h"
 #include "saber/gsi/utils/GridCheckHelper.h"
 
 namespace saber {
 
 namespace gsi {
+
+class SaberGSIBlockChainParameters: public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(SaberGSIBlockChainParameters, Parameters)
+
+ public:
+  // Central and outer blocks
+  oops::RequiredParameter<gsi::CovarianceParameters>
+    saberCentralBlockParams{"saber central block", this};
+  oops::OptionalParameter<std::vector<SaberOuterBlockParametersWrapper>>
+    saberOuterBlocksParams{"saber outer blocks", this};
+};
 
 /// GSI covariance block chain with interpolation (optional). Elevated to block
 /// chain status because it handles ensemble covariance within.
@@ -92,6 +104,8 @@ SaberGSIBlockChain::SaberGSIBlockChain(const oops::Geometry<MODEL> & geom,
                        const eckit::Configuration & conf)
   : outerFunctionSpace_(geom.functionSpace()), outerVariables_(outerVars) {
   oops::Log::trace() << "SaberGSIBlockChain ctor starting" << std::endl;
+  SaberGSIBlockChainParameters params;
+  params.deserialize(conf);
 
   // Check that parallel time decomposition is not used for 4D covariances
   // (currently not supported)
@@ -101,16 +115,10 @@ SaberGSIBlockChain::SaberGSIBlockChain(const oops::Geometry<MODEL> & geom,
   }
 
   // If needed create outer block chain
-  if (conf.has("saber outer blocks")) {
-    std::vector<SaberOuterBlockParametersWrapper> cmpOuterBlocksParams;
-    for (const auto & cmpOuterBlockConf : conf.getSubConfigurations("saber outer blocks")) {
-      SaberOuterBlockParametersWrapper cmpOuterBlockParamsWrapper;
-      cmpOuterBlockParamsWrapper.deserialize(cmpOuterBlockConf);
-      cmpOuterBlocksParams.push_back(cmpOuterBlockParamsWrapper);
-    }
+  if (params.saberOuterBlocksParams.value()) {
     outerBlockChain_ = std::make_unique<SaberOuterBlockChain>(geom, outerVariables_,
                           fset4dXb, fset4dFg, fsetEns, covarConf,
-                          cmpOuterBlocksParams);
+                          *params.saberOuterBlocksParams.value());
   }
 
   // Set outer variables and geometry data for central block (GSI covariance)
@@ -118,14 +126,6 @@ SaberGSIBlockChain::SaberGSIBlockChain(const oops::Geometry<MODEL> & geom,
                              outerBlockChain_->innerVars() : outerVariables_;
   const oops::GeometryData & currentOuterGeom = outerBlockChain_ ?
                              outerBlockChain_->innerGeometryData() : geom.generic();
-
-  SaberCentralBlockParametersWrapper saberCentralBlockParamsWrapper;
-  saberCentralBlockParamsWrapper.deserialize(conf.getSubConfiguration("saber central block"));
-
-  const SaberBlockParametersBase & saberCentralBlockParams =
-    saberCentralBlockParamsWrapper.saberCentralBlockParameters;
-  oops::Log::info() << "Info     : Creating central block: "
-                    << saberCentralBlockParams.saberBlockName.value() << std::endl;
 
   // Save central function space and variables
   centralFunctionSpace_ = currentOuterGeom.functionSpace();
@@ -147,9 +147,9 @@ SaberGSIBlockChain::SaberGSIBlockChain(const oops::Geometry<MODEL> & geom,
   const std::vector<double> gridChecks = functionspaceToGridChecks(centralFunctionSpace_);
 
   gsi_covariance_create_f90(keySelf_, currentOuterGeom.comm(),
-                            saberCentralBlockParams.readParams.value().value(),
-                            fset4dXbptrs.size(), fset4dXbptrs.data(), fset4dFgptrs.data(),
-                            timesptrs.data(), gridChecks.size(), gridChecks.data());
+                      params.saberCentralBlockParams.value().readParams.value().toConfiguration(),
+                      fset4dXbptrs.size(), fset4dXbptrs.data(), fset4dFgptrs.data(),
+                      timesptrs.data(), gridChecks.size(), gridChecks.data());
 
   // Adjoint test
   // TODO(Anna): this code is similar to the code in CentralBlock::adjoint;
@@ -157,7 +157,7 @@ SaberGSIBlockChain::SaberGSIBlockChain(const oops::Geometry<MODEL> & geom,
   if (covarConf.getBool("adjoint test")) {
     // Get tolerance
     const double localAdjointTolerance =
-      saberCentralBlockParams.adjointTolerance.value().get_value_or(
+      params.saberCentralBlockParams.value().adjointTolerance.value().get_value_or(
       covarConf.getDouble("adjoint tolerance"));
 
     // Run test

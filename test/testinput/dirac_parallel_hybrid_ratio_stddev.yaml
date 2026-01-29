@@ -17,15 +17,14 @@ background:
 
 background error:
   covariance model: SABER
+  covariance type: hybrid
+  run in parallel: true
   adjoint test: true
-  saber central block:
-    saber block name: Hybrid
-    run in parallel: true
-    parallel covariance relative cpu weight:
-    - 0.6
-    - 0.4
-    geometry: *geom
-    components:
+  parallel covariance relative cpu weight:
+  - 0.6
+  - 0.4
+  geometry: *geom
+  components:
     - weight:
         value: 0.5
       covariance:

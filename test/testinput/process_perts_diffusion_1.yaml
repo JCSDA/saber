@@ -49,4 +49,3 @@ input variables: *vars
 
 test:
   reference filename: testref/process_perts_diffusion_1.ref
-  test output filename: testref/process_perts_diffusion_1.test.out

@@ -8,9 +8,7 @@
 
 #pragma once
 
-#include <cmath>
 #include <memory>
-#include <numeric>
 #include <string>
 #include <vector>
 
@@ -44,17 +42,6 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-inline std::string parametricIfNotEnsemble(const std::string & blockName) {
-  if (blockName == "Ensemble")
-    return blockName;
-  else if (blockName == "gsi hybrid covariance")
-    return "GSI";
-  else
-    return "Parametric";
-}
-
-// -----------------------------------------------------------------------------
-
 template <typename MODEL>
 class ErrorCovariance : public oops::ModelSpaceCovarianceBase<MODEL>,
                         public util::Printable,
@@ -84,24 +71,8 @@ class ErrorCovariance : public oops::ModelSpaceCovarianceBase<MODEL>,
 
   void print(std::ostream &) const override;
 
-  /// Chain of outer blocks applied to all components of hybrid covariances.
-  /// Not initialized for non-hybrid covariances.
-  std::unique_ptr<SaberOuterBlockChain> outerBlockChain_;
-  /// Vector of hybrid B components (one element for non-hybrid case).
-  std::vector<std::unique_ptr<SaberBlockChainBase>> hybridBlockChain_;
-  /// Vector of scalar weights for hybrid B components (one element, equal to
-  /// 1.0 for non-hybrid case).
-  std::vector<double> hybridScalarWeightSqrt_;
-  /// Vector of field weights for hybrid B components (one element, empty
-  /// fieldset for non-hybrid case).
-  std::vector<oops::FieldSet3D> hybridFieldWeightSqrt_;
-
-  /// Whether to run Hybrid in parallel
-  bool parallelHybrid_;
-  /// Index of component if running Hybrid in parallel
-  size_t myComponent_;  // This is not strictly necessary
-  /// local geometry just out of parallel Hybrid block
-  std::shared_ptr<Geometry_> localHybridGeom_;
+  /// Chain of blocks (hybrid or ensemble or parametric)
+  std::unique_ptr<SaberBlockChainBase> blockChain_;
 };
 
 // -----------------------------------------------------------------------------
@@ -112,9 +83,7 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
                                         const eckit::Configuration & config,
                                         const State4D_ & xb,
                                         const State4D_ & fg)
-  : oops::ModelSpaceCovarianceBase<MODEL>(geom, config, xb, fg),
-    parallelHybrid_(false),
-    myComponent_(-1)
+  : oops::ModelSpaceCovarianceBase<MODEL>(geom, config, xb, fg)
 {
   oops::Log::trace() << "ErrorCovariance::ErrorCovariance starting" << std::endl;
   util::Timer timer(classname(), "ErrorCovariance");
@@ -165,11 +134,11 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
   eckit::LocalConfiguration ensembleConf;
   oops::FieldSets fsetEns = readEnsemble(geom,
                                          outerVars,
-                                         xb,
-                                         fg,
+                                         xb.times(), xb.commTime(), xb.commEns(),
                                          params.toConfiguration(),
                                          iterativeEnsembleLoading,
                                          ensembleConf);
+
   covarConf.set("ensemble configuration", ensembleConf);
 
   // Add ensemble output
@@ -178,304 +147,14 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
     covarConf.set("output ensemble", *outputEnsemble);
   }
 
-  const SaberBlockParametersBase & saberCentralBlockParams =
-    params.saberCentralBlockParams.value().saberCentralBlockParameters;
-  // Build covariance blocks: hybrid covariance case
-  if (saberCentralBlockParams.saberBlockName.value() == "Hybrid") {
-    // Build common (for all hybrid components) outer blocks if they exist
-    const auto & saberOuterBlocksParams = params.saberOuterBlocksParams.value();
-    if (saberOuterBlocksParams != boost::none) {
-      outerBlockChain_ = std::make_unique<SaberOuterBlockChain>(geom,
-                       outerVars,
-                       *fset4dXb,
-                       *fset4dFg,
-                       fsetEns,
-                       covarConf,
-                       *saberOuterBlocksParams);
-      outerVars = outerBlockChain_->innerVars();
-    }
-
-    // Hybrid central block
-    eckit::LocalConfiguration hybridConf = saberCentralBlockParams.toConfiguration();
-
-    parallelHybrid_ = hybridConf.getBool("run in parallel");
-    const eckit::mpi::Comm & defaultSpaceComm = geom.getComm();
-    const size_t ntasks = defaultSpaceComm.size();
-    const size_t nComponents = hybridConf.getSubConfigurations("components").size();
-
-    std::vector<double> parallelCovRelativeCpuWeight =
-      hybridConf.has("parallel covariance relative cpu weight") ?
-      hybridConf.getDoubleVector("parallel covariance relative cpu weight") :
-      std::vector<double>(nComponents,
-                          1.0 / static_cast<double>(nComponents));
-
-    std::vector<size_t> ntasksPerComponent(nComponents, 0);
-    std::vector<size_t> globalTaskOffsetPerComponent(nComponents+1, 0);
-
-    if (parallelHybrid_) {
-      oops::Log::info() << "Info     : Creating Hybrid block in parallel" << std::endl;
-      // checks
-      ASSERT(nComponents == parallelCovRelativeCpuWeight.size());
-
-      // need to check to ensure that the total sum of PEs over components is consistent
-      // with the MPI size on the default communicator and that each component
-      // has a minimum MPI size of 1.
-      for (size_t component = 0; component < nComponents; ++component) {
-        ntasksPerComponent[component] =
-          std::round(parallelCovRelativeCpuWeight[component] * ntasks);
-        ASSERT(ntasksPerComponent[component] > 0);
-      }
-      int discrepencyPE =
-        std::accumulate(ntasksPerComponent.begin(), ntasksPerComponent.end(), 0) - ntasks;
-
-      for (size_t component = 0; component < nComponents && discrepencyPE != 0; ++component) {
-        if (discrepencyPE > 0 && ntasksPerComponent[component] >= 2) {
-          ntasksPerComponent[component] -= 1;
-          discrepencyPE -= 1;
-        } else if (discrepencyPE < 0) {
-          ntasksPerComponent[component] += 1;
-          discrepencyPE += 1;
-        }
-      }
-
-      ASSERT(std::accumulate(ntasksPerComponent.begin(),
-                             ntasksPerComponent.end(), 0) - ntasks == 0);
-
-      for (size_t component = 1; component < nComponents; ++component) {
-        globalTaskOffsetPerComponent[component] =
-          globalTaskOffsetPerComponent[component-1] + ntasksPerComponent[component-1];
-      }
-      globalTaskOffsetPerComponent[nComponents] = ntasks;
-
-      const eckit::mpi::Comm & initialDefaultComm = eckit::mpi::comm();
-      ASSERT(initialDefaultComm.name() == defaultSpaceComm.name());
-
-      // We split the space communicators only, the time parallelization is untouched
-      const size_t myTask = defaultSpaceComm.rank();
-
-      // Set myComponent_  tasksPerComponent
-      size_t tasksPerComponent;
-      for (size_t component = 0; component < nComponents; ++component) {
-        if ((myTask >= globalTaskOffsetPerComponent[component]) &&
-            (myTask < globalTaskOffsetPerComponent[component+1])) {
-          myComponent_ = component;
-          tasksPerComponent = ntasksPerComponent[component];
-        }
-      }
-
-      oops::Log::info() << "Info     : Creating component " << myComponent_ + 1
-                        << "/" << nComponents
-                        << " of Hybrid block using " << tasksPerComponent
-                        << " MPI tasks." << std::endl;
-
-      // Create communicators for same component, for communications in space
-      const auto spaceCommName = ("comm_space_" + std::to_string(myComponent_));
-      if (eckit::mpi::hasComm(spaceCommName.c_str())) {
-        eckit::mpi::deleteComm(spaceCommName.c_str());
-      }
-      const auto & localSpaceComm = defaultSpaceComm.split(myComponent_, spaceCommName.c_str());
-
-      // Set up default MPI communicator for atlas
-      eckit::mpi::setCommDefault(localSpaceComm.name().c_str());
-
-      // Create block geometry (needed for ensemble reading and local geometries)
-      if (!hybridConf.has("geometry")) {
-        throw eckit::UserError("Parallel hybrid block requires geometry key", Here());
-      }
-      const auto geomConf = hybridConf.getSubConfiguration("geometry");
-      // The hybrid Geometry is stored as a class member to ensure it doesn't go
-      // out of scope after construction, as it is directly used (not copied) by
-      // the hybrid Block Chains.
-      localHybridGeom_.reset(new Geometry_(geomConf, localSpaceComm, geom.timeComm()));
-
-      // Copy and redistribute the background and first guess
-      State4D_ localXb(*localHybridGeom_, xb.variables(), xb.times(), xb.commTime());
-      State4D_ localFg(*localHybridGeom_, fg.variables(), fg.times(), fg.commTime());
-
-      for (size_t jtime = 0; jtime < xb.size(); jtime++) {
-        util::redistributeToSubcommunicator(xb[jtime].fieldSet().fieldSet(),
-                                            localXb[jtime].fieldSet().fieldSet(),
-                                            defaultSpaceComm,
-                                            localSpaceComm,
-                                            geom.functionSpace(),
-                                            localHybridGeom_->functionSpace());
-        util::redistributeToSubcommunicator(fg[jtime].fieldSet().fieldSet(),
-                                            localFg[jtime].fieldSet().fieldSet(),
-                                            defaultSpaceComm,
-                                            localSpaceComm,
-                                            geom.functionSpace(),
-                                            localHybridGeom_->functionSpace());
-      }
-      defaultSpaceComm.barrier();
-
-      const oops::FieldSet4D localFset4dXbTmp(localXb);
-      const oops::FieldSet4D localFset4dFgTmp(localFg);
-
-      oops::FieldSet4D localFset4dXb = oops::copyFieldSet4D(localFset4dXbTmp);
-      oops::FieldSet4D localFset4dFg = oops::copyFieldSet4D(localFset4dFgTmp);
-
-      const auto cmp = hybridConf.getSubConfigurations("components")[myComponent_];
-
-      // Initialize component outer variables
-      const oops::Variables cmpOuterVars(outerVars);
-
-      // Set weight
-      eckit::LocalConfiguration weightConf = cmp.getSubConfiguration("weight");
-      // Scalar weight
-      hybridScalarWeightSqrt_.push_back(std::sqrt(weightConf.getDouble("value", 1.0)));
-
-      // File-base weight
-      oops::FieldSet3D fsetWeight(localXb[0].validTime(), localSpaceComm);
-      if (weightConf.has("file")) {
-        // File-base weight
-        readHybridWeight(*localHybridGeom_,
-                         outerVars,
-                         localXb[0].validTime(),
-                         weightConf.getSubConfiguration("file"),
-                         fsetWeight);
-        fsetWeight.sqrt();
-      }
-      hybridFieldWeightSqrt_.push_back(fsetWeight);
-
-      // Set covariance
-      eckit::LocalConfiguration cmpConf = cmp.getSubConfiguration("covariance");
-
-      // Read ensemble
-      eckit::LocalConfiguration cmpEnsembleConf;
-      oops::FieldSets localFset4dCmpEns
-         = readEnsemble(*localHybridGeom_,
-                        cmpOuterVars,
-                        localXb,
-                        localFg,
-                        cmpConf,
-                        params.iterativeEnsembleLoading.value(),
-                        cmpEnsembleConf);
-
-      // Create internal configuration
-      eckit::LocalConfiguration cmpCovarConf;
-      cmpCovarConf.set("ensemble configuration", cmpEnsembleConf);
-      cmpCovarConf.set("adjoint test", params.adjointTest.value());
-      cmpCovarConf.set("adjoint tolerance", params.adjointTolerance.value());
-      cmpCovarConf.set("inverse test", params.inverseTest.value());
-      cmpCovarConf.set("inverse tolerance", params.inverseTolerance.value());
-      cmpCovarConf.set("square-root test", params.sqrtTest.value());
-      cmpCovarConf.set("square-root tolerance", params.sqrtTolerance.value());
-      cmpCovarConf.set("iterative ensemble loading", params.iterativeEnsembleLoading.value());
-      cmpCovarConf.set("time covariance", params.timeCovariance.value());
-
-      SaberCentralBlockParametersWrapper cmpCentralBlockParamsWrapper;
-      cmpCentralBlockParamsWrapper.deserialize(cmpConf.getSubConfiguration("saber central block"));
-      const auto & centralBlockParams =
-                   cmpCentralBlockParamsWrapper.saberCentralBlockParameters.value();
-
-      hybridBlockChain_.push_back(
-        SaberBlockChainFactory<MODEL>::create
-         (parametricIfNotEnsemble(centralBlockParams.saberBlockName.value()),
-          *localHybridGeom_,
-          cmpOuterVars,
-          localFset4dXb,
-          localFset4dFg,
-          localFset4dCmpEns,
-          cmpCovarConf,
-          cmpConf));
-
-      ASSERT(hybridBlockChain_.size() > 0);
-
-      // Restore previous default MPI communicator for atlas
-      eckit::mpi::setCommDefault(defaultSpaceComm.name().c_str());
-    } else {
-      oops::Log::info() << "Info     : Creating Hybrid block serially" << std::endl;
-      // Create block geometry (needed for ensemble reading)
-      const Geometry_ * hybridGeom = &geom;
-      if (hybridConf.has("geometry")) {
-        hybridGeom = new Geometry_(hybridConf.getSubConfiguration("geometry"),
-          geom.getComm());
-      }
-      for (const auto & cmp : hybridConf.getSubConfigurations("components")) {
-        // Initialize component outer variables
-        const oops::Variables cmpOuterVars(outerVars);
-
-        // Set weight
-        eckit::LocalConfiguration weightConf = cmp.getSubConfiguration("weight");
-        // Scalar weight
-        hybridScalarWeightSqrt_.push_back(std::sqrt(weightConf.getDouble("value", 1.0)));
-        // File-base weight
-        oops::FieldSet3D fsetWeight(xb[0].validTime(), geom.getComm());
-        if (weightConf.has("file")) {
-          // File-base weight
-          readHybridWeight(*hybridGeom,
-                           outerVars,
-                           xb[0].validTime(),
-                           weightConf.getSubConfiguration("file"),
-                           fsetWeight);
-          fsetWeight.sqrt();
-        }
-        hybridFieldWeightSqrt_.push_back(fsetWeight);
-
-        // Set covariance
-        eckit::LocalConfiguration cmpConf = cmp.getSubConfiguration("covariance");
-
-        // Read ensemble
-        eckit::LocalConfiguration cmpEnsembleConf;
-        oops::FieldSets fset4dCmpEns
-           = readEnsemble(*hybridGeom,
-                          cmpOuterVars,
-                          xb,
-                          fg,
-                          cmpConf,
-                          params.iterativeEnsembleLoading.value(),
-                          cmpEnsembleConf);
-
-        // Create internal configuration
-        eckit::LocalConfiguration cmpCovarConf;
-        cmpCovarConf.set("ensemble configuration", cmpEnsembleConf);
-        cmpCovarConf.set("adjoint test", params.adjointTest.value());
-        cmpCovarConf.set("adjoint tolerance", params.adjointTolerance.value());
-        cmpCovarConf.set("inverse test", params.inverseTest.value());
-        cmpCovarConf.set("inverse tolerance", params.inverseTolerance.value());
-        cmpCovarConf.set("square-root test", params.sqrtTest.value());
-        cmpCovarConf.set("square-root tolerance", params.sqrtTolerance.value());
-        cmpCovarConf.set("iterative ensemble loading", params.iterativeEnsembleLoading.value());
-        cmpCovarConf.set("time covariance", params.timeCovariance.value());
-
-        SaberCentralBlockParametersWrapper cmpCentralBlockParamsWrapper;
-        cmpCentralBlockParamsWrapper.deserialize(
-                    cmpConf.getSubConfiguration("saber central block"));
-        const auto & centralBlockParams =
-                     cmpCentralBlockParamsWrapper.saberCentralBlockParameters.value();
-
-        hybridBlockChain_.push_back
-          (SaberBlockChainFactory<MODEL>::create
-           (parametricIfNotEnsemble(centralBlockParams.saberBlockName.value()),
-            *hybridGeom,
-            cmpOuterVars,
-            *fset4dXb,
-            *fset4dFg,
-            fset4dCmpEns,
-            cmpCovarConf,
-            cmpConf));
-      }
-      ASSERT(hybridBlockChain_.size() > 0);
-    }
-  } else {
-    // Non-hybrid covariance: single block chain
-    hybridBlockChain_.push_back
-      (SaberBlockChainFactory<MODEL>::create
-       (parametricIfNotEnsemble(saberCentralBlockParams.saberBlockName.value()),
+  blockChain_ = SaberBlockChainFactory<MODEL>::create(
         geom,
         outerVars,
         *fset4dXb,
         *fset4dFg,
         fsetEns,
         covarConf,
-        params.toConfiguration()));
-
-    // Set weights
-    hybridScalarWeightSqrt_.push_back(1.0);
-    // File-base weight
-    oops::FieldSet3D fsetWeight(xb[0].validTime(), geom.getComm());
-    hybridFieldWeightSqrt_.push_back(fsetWeight);
-  }
+        params.blockChainParams.value());
 
   oops::Log::trace() << "ErrorCovariance::ErrorCovariance done" << std::endl;
 }
@@ -489,98 +168,33 @@ ErrorCovariance<MODEL>::~ErrorCovariance() {
   oops::Log::trace() << "ErrorCovariance<MODEL>::~ErrorCovariance done" << std::endl;
 }
 
-// -----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
 template<typename MODEL>
 void ErrorCovariance<MODEL>::doRandomize(Increment4D_ & dx) const {
   oops::Log::trace() << "ErrorCovariance<MODEL>::doRandomize starting" << std::endl;
   util::Timer timer(classname(), "doRandomize");
 
-  // Create FieldSet4D, set to zero
+  // This extra fieldset is only needed for backward compatibility in tests:
+  // this allows the fields in the final fieldset to be in the same order as
+  // blockChain_->outerVariables()
   oops::FieldSet4D fset4dSum(dx.times(), dx.commTime(), dx.geometry().getComm());
   for (size_t jtime = 0; jtime < fset4dSum.size(); ++jtime) {
-    fset4dSum[jtime].init(hybridBlockChain_[0]->outerFunctionSpace(),
-                          hybridBlockChain_[0]->outerVariables(),
+    fset4dSum[jtime].init(blockChain_->outerFunctionSpace(),
+                          blockChain_->outerVariables(),
                           0.0);
   }
 
-  if (parallelHybrid_) {
-    // Run components of the central block in parallel
-    oops::Log::debug() << "Parallel execution of doRandomize in Hybrid" << std::endl;
-    oops::Log::debug() << "Running Hybrid component " << myComponent_ + 1 << std::endl;
-    ASSERT(hybridBlockChain_.size() == 1);
+  // Create FieldSet4D, run randomize on it
+  oops::FieldSet4D fset4d(dx.times(), dx.commTime(), dx.geometry().getComm());
 
-    // global communicator and functionSpace
-    const auto & defaultSpaceComm = dx.geometry().getComm();
-    const auto & globalFunctionSpace = dx.geometry().functionSpace();
+  // Draw a random sample from the covariance
+  blockChain_->randomize(fset4d);
 
-    // check global communicator is the default one for atlas MPI
-    ASSERT(eckit::mpi::comm().name() == defaultSpaceComm.name());
+  // For backward compatibility in tests
+  fset4dSum += fset4d;
 
-    // subcommunicator within this component
-    const auto spaceCommName = "comm_space_" + std::to_string(myComponent_);
-    const auto & localSpaceComm = eckit::mpi::comm(spaceCommName.c_str());
-
-    // Set up atlas MPI
-    eckit::mpi::setCommDefault(localSpaceComm.name().c_str());
-
-    // Create temporary FieldSet on subcommunicator
-    oops::FieldSet4D fset4dCmp(dx.times(), dx.commTime(), localSpaceComm);
-
-    hybridBlockChain_[0]->randomize(fset4dCmp);
-
-    // Weight square-root multiplication
-    if (hybridScalarWeightSqrt_[0] != 1.0) {
-      // Scalar weight
-      fset4dCmp *= hybridScalarWeightSqrt_[0];
-    }
-    if (!hybridFieldWeightSqrt_[0].empty()) {
-      // File-based weight
-      fset4dCmp *= hybridFieldWeightSqrt_[0];
-    }
-
-    // Add components
-    defaultSpaceComm.barrier();
-
-    for (size_t jtime = 0; jtime < fset4dCmp.size(); jtime++) {
-      // Redistribute to global communicator and sum
-       util::gatherAndSumFromSubcommunicator(fset4dCmp[jtime].fieldSet(),
-                                             fset4dSum[jtime].fieldSet(),
-                                             localSpaceComm,
-                                             defaultSpaceComm,
-                                             localHybridGeom_->functionSpace(),
-                                             globalFunctionSpace);
-    }
-
-    // Restore atlas MPI to previous
-    eckit::mpi::setCommDefault(defaultSpaceComm.name().c_str());
-
-    fset4dSum += fset4dCmp;
-  } else {
-    // Loop over components for the central block
-    for (size_t jj = 0; jj < hybridBlockChain_.size(); ++jj) {
-      // Randomize covariance
-      oops::FieldSet4D fset4dCmp(dx.times(), dx.commTime(), dx.geometry().getComm());
-      hybridBlockChain_[jj]->randomize(fset4dCmp);
-
-      // Weight square-root multiplication
-      if (hybridScalarWeightSqrt_[jj] != 1.0) {
-        // Scalar weight
-        fset4dCmp *= hybridScalarWeightSqrt_[jj];
-      }
-      if (!hybridFieldWeightSqrt_[jj].empty()) {
-        // File-based weight
-        fset4dCmp *= hybridFieldWeightSqrt_[jj];
-      }
-
-      // Add component
-      fset4dSum += fset4dCmp;
-    }
-  }
-
-  if (outerBlockChain_) outerBlockChain_->applyOuterBlocks(fset4dSum);
-
-  // ATLAS fieldset to Increment_
+  // ATLAS fieldset to Increment
   for (size_t jtime = 0; jtime < dx.size(); ++jtime) {
     dx[jtime].fromFieldSet(fset4dSum[jtime].fieldSet());
   }
@@ -596,127 +210,22 @@ void ErrorCovariance<MODEL>::doMultiply(const Increment4D_ & dxi,
   oops::Log::trace() << "ErrorCovariance<MODEL>::doMultiply starting" << std::endl;
   util::Timer timer(classname(), "doMultiply");
 
-  // Copy input
   dxo = dxi;
-  oops::FieldSet4D fset4dInit(dxi);
+  oops::FieldSet4D fset4d(dxo);
 
-  // Apply outer blocks adjoint
-  if (outerBlockChain_) outerBlockChain_->applyOuterBlocksAD(fset4dInit);
-
-  // Initialize sum to zero
-  oops::FieldSet4D fset4dSum = oops::copyFieldSet4D(fset4dInit);
+  // Extra fieldset only needed for backward compatibility in tests
+  // that allows the fields in the final fieldset to be in the same order as
+  // blockChain_->outerVariables()
+  oops::FieldSet4D fset4dSum = oops::copyFieldSet4D(fset4d);
   fset4dSum.zero();
 
-  // Loop over B components
-  if (parallelHybrid_) {
-    oops::Log::debug() << "Parallel execution of Hybrid::multiply, component "
-                       << myComponent_ + 1 << std::endl;
-    ASSERT(hybridBlockChain_.size() == 1);
-    ASSERT(hybridScalarWeightSqrt_.size() == 1);
-    ASSERT(hybridFieldWeightSqrt_.size() == 1);
+  // Apply covariance multiplication
+  blockChain_->multiply(fset4d);
 
-    // Global communicator
-    const auto & defaultSpaceComm = dxi.geometry().getComm();
-    const auto & globalFunctionSpace = dxi.geometry().functionSpace();
-    ASSERT(defaultSpaceComm.name() == eckit::mpi::comm().name());
+  // For backward compatibility in tests
+  fset4dSum += fset4d;
 
-    // Subcommunicator within component
-    const std::string spaceCommName = "comm_space_" + std::to_string(myComponent_);
-    const auto & localSpaceComm = eckit::mpi::comm(spaceCommName.c_str());
-
-    // Create temporary FieldSet copy on communicator of this component
-    oops::FieldSet4D fset4dCmp(fset4dInit.times(), fset4dInit.commTime(), localSpaceComm);
-    for (size_t jtime = 0; jtime < fset4dCmp.size(); jtime++) {
-      util::redistributeToSubcommunicator(fset4dInit[jtime].fieldSet(),
-                                          fset4dCmp[jtime].fieldSet(),
-                                          defaultSpaceComm,
-                                          localSpaceComm,
-                                          globalFunctionSpace,
-                                          localHybridGeom_->functionSpace());
-    }
-
-    // Set up atlas MPI
-    eckit::mpi::setCommDefault(localSpaceComm.name().c_str());
-
-    // Apply weight
-    if (hybridScalarWeightSqrt_[0] != 1.0) {
-      // Scalar weight
-      fset4dCmp *= hybridScalarWeightSqrt_[0];
-    }
-    if (!hybridFieldWeightSqrt_[0].empty()) {
-      // File-based weight
-      fset4dCmp *= hybridFieldWeightSqrt_[0];
-    }
-
-    // Apply covariance
-    hybridBlockChain_[0]->multiply(fset4dCmp);
-
-    // Apply weight
-    if (hybridScalarWeightSqrt_[0] != 1.0) {
-      // Scalar weight
-      fset4dCmp *= hybridScalarWeightSqrt_[0];
-    }
-    if (!hybridFieldWeightSqrt_[0].empty()) {
-      // File-based weight
-      fset4dCmp *= hybridFieldWeightSqrt_[0];
-    }
-
-    // Wait for all components to have finished multiplying
-    defaultSpaceComm.barrier();
-
-    // Gather and sum data across components
-    for (size_t jtime = 0; jtime < fset4dCmp.size(); jtime++) {
-      util::gatherAndSumFromSubcommunicator(fset4dCmp[jtime].fieldSet(),
-                                            fset4dSum[jtime].fieldSet(),
-                                            localSpaceComm,
-                                            defaultSpaceComm,
-                                            localHybridGeom_->functionSpace(),
-                                            globalFunctionSpace);
-    }
-
-    // Set back default MPI communicator
-    eckit::mpi::setCommDefault(defaultSpaceComm.name().c_str());
-
-  } else {
-    if (hybridBlockChain_.size() > 1) {
-        oops::Log::debug() << "Serial execution of Hybrid::multiply" << std::endl;
-    }
-    for (size_t jj = 0; jj < hybridBlockChain_.size(); ++jj) {
-      // Create temporary FieldSet
-      oops::FieldSet4D fset4dCmp = oops::copyFieldSet4D(fset4dInit);
-
-      // Apply weight
-      if (hybridScalarWeightSqrt_[jj] != 1.0) {
-        // Scalar weight
-        fset4dCmp *= hybridScalarWeightSqrt_[jj];
-      }
-      if (!hybridFieldWeightSqrt_[jj].empty()) {
-        // File-based weight
-        fset4dCmp *= hybridFieldWeightSqrt_[jj];
-      }
-
-      // Apply covariance
-      hybridBlockChain_[jj]->multiply(fset4dCmp);
-
-      // Apply weight
-      if (hybridScalarWeightSqrt_[jj] != 1.0) {
-        // Scalar weight
-        fset4dCmp *= hybridScalarWeightSqrt_[jj];
-      }
-      if (!hybridFieldWeightSqrt_[jj].empty()) {
-        // File-based weight
-        fset4dCmp *= hybridFieldWeightSqrt_[jj];
-      }
-
-      // Add component
-      fset4dSum += fset4dCmp;
-    }
-  }
-
-  // Apply outer blocks forward
-  if (outerBlockChain_) outerBlockChain_->applyOuterBlocks(fset4dSum);
-
-  // ATLAS fieldset to Increment_
+  // ATLAS fieldset to Increment
   for (size_t jtime = 0; jtime < dxo.size(); ++jtime) {
     dxo[jtime].fromFieldSet(fset4dSum[jtime].fieldSet());
   }
@@ -744,8 +253,7 @@ void ErrorCovariance<MODEL>::doInverseMultiply(const Increment4D_ & dxi, Increme
 template<typename MODEL>
 void ErrorCovariance<MODEL>::print(std::ostream & os) const {
   oops::Log::trace() << "ErrorCovariance<MODEL>::print starting" << std::endl;
-  util::Timer timer(classname(), "print");
-  os << "ErrorCovariance<MODEL>::print not implemented";
+  os << "SABER ErrorCovariance";
   oops::Log::trace() << "ErrorCovariance<MODEL>::print done" << std::endl;
 }
 

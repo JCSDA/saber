@@ -32,6 +32,46 @@
 
 namespace saber {
 
+class InflationFieldParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(InflationFieldParameters, Parameters)
+
+ public:
+  // ATLAS inflation file
+  oops::OptionalParameter<eckit::LocalConfiguration> atlasFileConf{"atlas file", this};
+  // Model inflation file
+  oops::OptionalParameter<eckit::LocalConfiguration> modelFileConf{"model file", this};
+};
+
+// -----------------------------------------------------------------------------
+
+class SaberEnsembleBlockChainParameters: public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(SaberEnsembleBlockChainParameters,
+                           oops::Parameters)
+
+ public:
+  // Outer blocks
+  oops::OptionalParameter<std::vector<SaberOuterBlockParametersWrapper>>
+    saberOuterBlocksParams{"saber outer blocks", this};
+
+  // Localization parameters for the Ensemble block
+  oops::OptionalParameter<eckit::LocalConfiguration>
+    localization{"localization", this};
+
+  // Ensemble transform parameters for the Ensemble block
+  oops::OptionalParameter<std::vector<SaberOuterBlockParametersWrapper>>
+    ensembleTransform{"ensemble transform", this};
+
+  // Inflation fields
+  oops::OptionalParameter<InflationFieldParameters> inflationField{"inflation field", this};
+  // Inflation value
+  oops::Parameter<double> inflationValue{"inflation value", 1.0, this};
+
+  // Adjoint tolerance
+  oops::OptionalParameter<double> adjointTolerance{"adjoint tolerance", this};
+  // Tolerance for square-root test (U U^t x) == B x)
+  oops::OptionalParameter<double> sqrtTolerance{"square-root tolerance", this};
+};
+
 /// Chain of outer (optional) and an ensemble "block".
 class SaberEnsembleBlockChain : public SaberBlockChainBase {
  public:
@@ -95,6 +135,8 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
   : outerFunctionSpace_(geom.functionSpace()), outerVariables_(outerVars),
     ensemble_(fsetEns), ctlVecSize_(0) {
   oops::Log::trace() << "SaberEnsembleBlockChain ctor starting" << std::endl;
+  SaberEnsembleBlockChainParameters params;
+  params.deserialize(conf);
 
   // Check that there is an ensemble of at least 2 members.
   if (ensemble_.ens_size() < 2) {
@@ -102,16 +144,10 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
                               " two members.", Here());
   }
   // Create outer blocks if needed
-  if (conf.has("saber outer blocks")) {
-    std::vector<SaberOuterBlockParametersWrapper> cmpOuterBlocksParams;
-    for (const auto & cmpOuterBlockConf : conf.getSubConfigurations("saber outer blocks")) {
-      SaberOuterBlockParametersWrapper cmpOuterBlockParamsWrapper;
-      cmpOuterBlockParamsWrapper.deserialize(cmpOuterBlockConf);
-      cmpOuterBlocksParams.push_back(cmpOuterBlockParamsWrapper);
-    }
+  if (params.saberOuterBlocksParams.value()) {
     outerBlockChain_ = std::make_unique<SaberOuterBlockChain>(geom, outerVars,
                           fset4dXb, fset4dFg, ensemble_, covarConf,
-                          cmpOuterBlocksParams);
+                          *params.saberOuterBlocksParams.value());
   }
 
   // Outer variables and geometry for the ensemble covariance
@@ -120,16 +156,8 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
   const oops::GeometryData & currentOuterGeom = outerBlockChain_ ?
                                      outerBlockChain_->innerGeometryData() : geom.generic();
 
-  // Get parameters:
-  SaberCentralBlockParametersWrapper saberCentralBlockParamsWrapper;
-  saberCentralBlockParamsWrapper.deserialize(conf.getSubConfiguration("saber central block"));
-  const SaberBlockParametersBase & saberCentralBlockParams =
-    saberCentralBlockParamsWrapper.saberCentralBlockParameters;
-  oops::Log::info() << "Info     : Creating central block: "
-                    << saberCentralBlockParams.saberBlockName.value() << std::endl;
-
   // Get active variables
-  const oops::Variables activeVars = getActiveVars(saberCentralBlockParams, currentOuterVars);
+  const oops::Variables activeVars = currentOuterVars;
   vars_ += activeVars;
   // Check that active variables are present in variables
   for (const auto & var : activeVars) {
@@ -153,37 +181,37 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
   }
 
   // Read inflation field
-  eckit::LocalConfiguration centralBlockConf = conf.getSubConfiguration("saber central block");
-  const double inflationValue = centralBlockConf.getDouble("inflation value", 1);
+  const double inflationValue = params.inflationValue;
   oops::Log::info() << "Info     : Read inflation field" << std::endl;
   oops::FieldSet3D inflationField(fset4dXb[0].validTime(), geom.getComm());
-  // Read ATLAS inflation file
-  if (centralBlockConf.has("inflation field.atlas file")) {
-    eckit::LocalConfiguration inflationConf =
-                              centralBlockConf.getSubConfiguration("inflation field.atlas file");
-    // Read file
-    inflationField.read(currentOuterGeom.functionSpace(),
-                        activeVars,
-                        inflationConf);
-    // Set name
-    inflationField.name() = "inflation";
+  if (params.inflationField.value()) {
+    const auto & inflationParams = *params.inflationField.value();
+    // Read ATLAS inflation file
+    if (inflationParams.atlasFileConf.value()) {
+      eckit::LocalConfiguration inflationConf = *inflationParams.atlasFileConf.value();
+      // Read file
+      inflationField.read(currentOuterGeom.functionSpace(),
+                          activeVars,
+                          inflationConf);
+      // Set name
+      inflationField.name() = "inflation";
 
-    // Print FieldSet norm
-    oops::Log::test() << "Norm of input parameter inflation: "
-                      << inflationField.norm(activeVars) << std::endl;
-  }
-  // Use model inflation file
-  if (centralBlockConf.has("inflation field.model file")) {
-    eckit::LocalConfiguration inflationConf =
-                              centralBlockConf.getSubConfiguration("inflation field.model file");
-    // Copy file
-    // Read fieldsets as increments
-    // Create increment
-    oops::Increment<MODEL> dx(geom, activeVars, fset4dXb[0].validTime());
-    dx.read(inflationConf);
-    oops::Log::test() << "Norm of input parameter inflation"
-                      << ": " << dx.norm() << std::endl;
-    inflationField.deepCopy(dx.fieldSet());
+      // Print FieldSet norm
+      oops::Log::test() << "Norm of input parameter inflation: "
+                        << inflationField.norm(activeVars) << std::endl;
+    }
+    // Use model inflation file
+    if (inflationParams.modelFileConf.value()) {
+      eckit::LocalConfiguration inflationConf = *inflationParams.modelFileConf.value();
+      // Copy file
+      // Read fieldsets as increments
+      // Create increment
+      oops::Increment<MODEL> dx(geom, activeVars, fset4dXb[0].validTime());
+      dx.read(inflationConf);
+      oops::Log::test() << "Norm of input parameter inflation"
+                        << ": " << dx.norm() << std::endl;
+      inflationField.deepCopy(dx.fieldSet());
+    }
   }
 
   // Apply inflation on ensemble members
@@ -203,21 +231,13 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
   // Turn off adjoint test for backwards compatibility.
   // TODO(AS): revisit once the way parameters are passed around is refactored.
   covarConfUpdated.set("adjoint test", false);
-  const auto & ensTransConf = saberCentralBlockParams.ensembleTransform.value();
-  if (ensTransConf != boost::none) {
-    oops::Log::info() << "Info     : Found ensemble transform: " << *ensTransConf << std::endl;
-    // Initialize ensemble transform blockchain
-    std::vector<SaberOuterBlockParametersWrapper> ensTransOuterBlocksParams;
-    for (const auto & ensTransOuterBlockConf :
-                      ensTransConf->getSubConfigurations("saber outer blocks")) {
-      SaberOuterBlockParametersWrapper ensTransOuterBlockParamsWrapper;
-      ensTransOuterBlockParamsWrapper.deserialize(ensTransOuterBlockConf);
-      ensTransOuterBlocksParams.push_back(ensTransOuterBlockParamsWrapper);
-    }
+  if (params.ensembleTransform.value()) {
+    const auto ensTransParams = *params.ensembleTransform.value();
+    oops::Log::info() << "Info     : Found ensemble transform " << std::endl;
     std::unique_ptr<SaberOuterBlockChain> ensTransBlockChain =
            std::make_unique<SaberOuterBlockChain>(geom,
              currentOuterVars, fset4dXb, fset4dFg, ensemble_,
-             covarConfUpdated, ensTransOuterBlocksParams);
+             covarConfUpdated, ensTransParams);
 
     // Right inverse of ensemble transform on ensemble members
     oops::Log::info() << "Info     : Right inverse of ensemble transform on ensemble members"
@@ -251,8 +271,7 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
               outerBlockChain_->innerGeometryData() : geom.generic();
 
   // Localization
-  const auto & locConf = saberCentralBlockParams.localization.value();
-  if (locConf != boost::none) {
+  if (params.localization.value() != boost::none) {
     // The localization is a parametric block chain constructed with the same geometry
     // as the ensemble block chain by default. If the outer blocks or transform block
     // chain include a change of geometries, we need to use build the localization from
@@ -272,7 +291,7 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
                                                                    fset4dXb,
                                                                    fset4dFg,
                                                                    covarConfUpdated,
-                                                                   *locConf);
+                                                                   *params.localization.value());
     } else {
       oops::Log::info() << "Info     : Localization and ensemble are on same "
                            "functionSpaces, building localization with standard "
@@ -283,7 +302,7 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
                                                                    fset4dFg,
                                                                    ensemble_,
                                                                    covarConfUpdated,
-                                                                   *locConf);
+                                                                   *params.localization.value());
     }
   }
   // Direct calibration
@@ -304,7 +323,7 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
   if (covarConf.getBool("adjoint test")) {
     // Get tolerance
     const double localAdjointTolerance =
-      saberCentralBlockParams.adjointTolerance.value().get_value_or(
+      params.adjointTolerance.value().get_value_or(
       covarConf.getDouble("adjoint tolerance"));
 
     // Create random FieldSets
@@ -344,7 +363,7 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
   if (covarConf.getBool("square-root test")) {
     // Get tolerance
     const double localSqrtTolerance =
-      saberCentralBlockParams.sqrtTolerance.value().get_value_or(
+      params.sqrtTolerance.value().get_value_or(
       covarConf.getDouble("square-root tolerance"));
 
     // Create FieldSet

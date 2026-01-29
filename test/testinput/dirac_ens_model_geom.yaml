@@ -20,6 +20,7 @@ geometry:
 
 background error:
   covariance model: SABER
+  covariance type: ensemble
   ensemble pert:
     date: *date
     members from template:
@@ -29,8 +30,6 @@ background error:
         date: *date
         filepath: testdata/process_perts_from_csdual_states_2/wb1_CS-LFR-14_mb%MEM%_inc
         variables: *vars
-  saber central block:
-    saber block name: Ensemble
 
 dirac: &dirac
   lon:

@@ -19,16 +19,16 @@ geometry:
 
 background error:
   covariance model: SABER
-  saber central block:
-    saber block name: Hybrid
-    run components recursively: true
-    components:
+  covariance type: hybrid
+  run components recursively: true
+  components:
     ###########################################################################
     # Waveband 1 - F14 grid
     ###########################################################################
     - weight:
         value: 1.0
       covariance:
+        covariance type: ensemble
         ensemble geometry:
           function space: StructuredColumns
           grid:
@@ -45,10 +45,8 @@ background error:
               date: *date
               filepath: testdata/process_perts_from_csdual_states_2/wb1_F14_inc_%MEM%
               variables: *vars
-        saber central block:
-          saber block name: Ensemble
-          # FunctionSpace-specific localization, not on model Geometry.
-          localization:
+        # FunctionSpace-specific localization, not on model Geometry.
+        localization:
             saber central block:
               saber block name: ID
             saber outer blocks:
@@ -71,6 +69,7 @@ background error:
     - weight:
         value: 1.0
       covariance:
+        covariance type: ensemble
         ensemble geometry:
           function space: StructuredColumns
           grid:
@@ -87,10 +86,8 @@ background error:
               date: *date
               filepath: testdata/process_perts_from_csdual_states_2/wb2_F14_inc_%MEM%
               variables: *vars
-        saber central block:
-          saber block name: Ensemble
-          # FunctionSpace-specific localization, not on model Geometry.
-          localization:
+        # FunctionSpace-specific localization, not on model Geometry.
+        localization:
             saber central block:
               saber block name: ID
             saber outer blocks:
@@ -111,6 +108,7 @@ background error:
     - weight:
         value: 1.0
       covariance:
+        covariance type: ensemble
         ensemble pert:
           date: *date
           members from template:
@@ -120,10 +118,8 @@ background error:
               date: *date
               filepath: testdata/process_perts_from_csdual_states_2/wb3_CS-LFR-14_mb%MEM%_inc
               variables: *vars
-        saber central block:
-          saber block name: Ensemble
-          # FunctionSpace-specific localization, on model Geometry.
-          localization:
+        # FunctionSpace-specific localization, on model Geometry.
+        localization:
             saber central block:
               saber block name: ID
             saber outer blocks:

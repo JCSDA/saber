@@ -40,6 +40,7 @@ geometry:
 
 background error:
   covariance model: SABER
+  covariance type: ensemble
   ensemble geometry:
     function space: StructuredColumns
     grid:
@@ -56,10 +57,8 @@ background error:
         date: *date
         filepath: testdata/process_perts_from_csdual_states_2/wb1_F14_inc_%MEM%
         variables: *vars
-  saber central block:
-    saber block name: Ensemble
-    # FunctionSpace-specific localization, not on model Geometry.
-    localization:
+  # FunctionSpace-specific localization, not on model Geometry.
+  localization:
       saber central block:
         saber block name: ID
       saber outer blocks:

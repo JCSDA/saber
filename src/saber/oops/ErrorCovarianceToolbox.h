@@ -451,18 +451,17 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
       }
     }
     if (covarianceModel == "SABER") {
-      const std::string saberCentralBlockName =
-        covarConf.getString("saber central block.saber block name");
-      bool runComponentsRecursively =
-        covarConf.has("saber central block.run components recursively") ?
-        covarConf.getBool("saber central block.run components recursively") :
-        false;
-      if (saberCentralBlockName == "Hybrid") {
+      const std::string covarianceType =
+        covarConf.getString("covariance type", "parametric");
+      if (covarianceType == "hybrid") {
+        bool runComponentsRecursively =
+          covarConf.has("run components recursively") ?
+          covarConf.getBool("run components recursively") :
+          false;
         // Check for outer blocks (can't pass the correct geometry/variables in that case)
         if (!covarConf.has("saber outer blocks") && (runComponentsRecursively)) {
           std::vector<eckit::LocalConfiguration> confs;
-          covarConf.get("saber central block.components", confs);
-
+          covarConf.get("components", confs);
           size_t componentIndex(1);
           for (const auto & conf : confs) {
             std::string idC(id + std::to_string(componentIndex));

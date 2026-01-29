@@ -8,14 +8,6 @@ list(APPEND generic_src_files_list
 DuplicateVariables.cc
 DuplicateVariables.h
 
-# Ensemble block
-Ensemble.h
-Ensemble.cc
-
-# Hybrid block
-Hybrid.h
-Hybrid.cc
-
 # ID block
 ID.h
 ID.cc

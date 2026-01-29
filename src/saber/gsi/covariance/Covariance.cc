@@ -36,7 +36,6 @@ namespace gsi {
 // -------------------------------------------------------------------------------------------------
 
 static SaberCentralBlockMaker<StaticCovariance> makerStaticCovariance_("gsi static covariance");
-static SaberCentralBlockMaker<HybridCovariance> makerHybridCovariance_("gsi hybrid covariance");
 
 // -------------------------------------------------------------------------------------------------
 
@@ -125,7 +124,7 @@ void StaticCovariance::read() {
 
   const std::vector<double> gridChecks = functionspaceToGridChecks(gsiGridFuncSpace_);
 
-  gsi_covariance_create_f90(keySelf_, *comm_, params_.readParams.value()->toConfiguration(),
+  gsi_covariance_create_f90(keySelf_, *comm_, params_.readParams.value().toConfiguration(),
                             fsetXbptrs.size(), fsetXbptrs.data(), fsetFgptrs.data(),
                             timesptrs.data(), gridChecks.size(), gridChecks.data());
 

@@ -52,8 +52,7 @@ class SaberBlockChainFactory {
  public:
   typedef oops::Geometry<MODEL> Geometry_;
 
-  static std::unique_ptr<SaberBlockChainBase> create(const std::string &,
-                                                     const Geometry_ &,
+  static std::unique_ptr<SaberBlockChainBase> create(const Geometry_ &,
                                                      const oops::Variables &,
                                                      oops::FieldSet4D &,
                                                      oops::FieldSet4D &,
@@ -114,8 +113,7 @@ SaberBlockChainFactory<MODEL>::SaberBlockChainFactory(const std::string & name) 
 
 template <typename MODEL>
 std::unique_ptr<SaberBlockChainBase>
-SaberBlockChainFactory<MODEL>::create(const std::string & name,
-                                      const Geometry_ & geom,
+SaberBlockChainFactory<MODEL>::create(const Geometry_ & geom,
                                       const oops::Variables & outerVars,
                                       oops::FieldSet4D & fset4dXb,
                                       oops::FieldSet4D & fset4dFg,
@@ -123,6 +121,10 @@ SaberBlockChainFactory<MODEL>::create(const std::string & name,
                                       const eckit::LocalConfiguration & covarConf,
                                       const eckit::Configuration & conf) {
   oops::Log::trace() << "SaberBlockChainFactory<MODEL>::create starting" << std::endl;
+  std::string name = "parametric";
+  if (conf.has("covariance type")) {
+    name = conf.getString("covariance type");
+  }
   typename std::map<std::string, SaberBlockChainFactory<MODEL>*>::iterator jbc =
     getMakers().find(name);
   if (jbc == getMakers().end()) {
