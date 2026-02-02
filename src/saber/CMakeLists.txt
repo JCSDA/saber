@@ -4,7 +4,7 @@
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
 # Build list of subdirs with files to add
-set( _subdirs bifourier blocks bump diffusion fastlam generic gsi interpolation oops spectralb util vader )
+set( _subdirs bifourier blocks bump diffusion fastlam generic gsi interpolation oops spectralb util vader mgbf)
 foreach( _subdir IN LISTS _subdirs )
     add_subdirectory( ${_subdir} )
     list( TRANSFORM ${_subdir}_src_files PREPEND ${_subdir}/ )
@@ -37,6 +37,10 @@ if( gsibec_FOUND )
     if ( sp_FOUND )
         target_link_libraries( ${PROJECT_NAME} PUBLIC sp::sp_d )
     endif()
+endif()
+if( MGBFLIB_FOUND EQUAL 9999 )
+    target_link_libraries( ${PROJECT_NAME} PUBLIC mgbf_lib )
+    target_compile_definitions( ${PROJECT_NAME} PUBLIC MGBF_FOUND)
 endif()
 if( FFTW_FOUND )
     target_link_libraries( ${PROJECT_NAME} PUBLIC FFTW::fftw3 )

@@ -75,15 +75,25 @@ std::vector<int> computeS2NCheckerboardPartition(const atlas::RegularGrid & rg,
   return partition;
 }
 
+constexpr double deg2rad(double deg) { return deg * M_PI / 180.0; }
+constexpr double rad2deg(double rad) { return rad * 180.0 / M_PI; }
+
 void setupGsiMatchingGrid(const eckit::Configuration & config,
                           const eckit::mpi::Comm & comm,
                           atlas::Grid & grid,
                           atlas::FunctionSpace & functionSpace,
                           atlas::FieldSet & fieldSet) {
   const std::string grid_type = config.getString(GsiGridKey + ".type");
-  ASSERT(grid_type == "gaussian" || grid_type == "latlon");
+  ASSERT(grid_type == "gaussian" || grid_type == "latlon" || grid_type == "rotated_lonlat");
   const int nlats = config.getInt(GsiGridKey + ".lats");  // pole to pole
   const int nlons = config.getInt(GsiGridKey + ".lons");
+  const double lat_start = config.has(GsiGridKey + ".lat_start") ? config.getDouble(GsiGridKey + ".lat_start") : 0.0;
+  const double lat_end = config.has(GsiGridKey + ".lat_end") ? config.getDouble(GsiGridKey + ".lat_end") : 0.0;
+  const double lon_start = config.has(GsiGridKey + ".lon_start") ? config.getDouble(GsiGridKey + ".lon_start") : 0.0;
+  const double lon_end = config.has(GsiGridKey + ".lon_end") ? config.getDouble(GsiGridKey + ".lon_end") : 0.0;
+  const double north_pole_lat = config.has(GsiGridKey + ".north_pole_lat") ? config.getDouble(GsiGridKey + ".north_pole_lat") : 0.0;
+  const double north_pole_lon = config.has(GsiGridKey + ".north_pole_lon") ? config.getDouble(GsiGridKey + ".north_pole_lon") : 0.0;
+
 
   const auto gsi_gaussian_points = [](const int N) -> std::vector<double> {
     ASSERT(N % 2 == 0);  // code below would need verification, probably fixing, in odd case
@@ -99,18 +109,30 @@ void setupGsiMatchingGrid(const eckit::Configuration & config,
     return result;
   };
 
-  const auto build_xspace_config = [&]() -> eckit::LocalConfiguration {
+  const auto build_xspace_config = [&](const std::string & grid_type) -> eckit::LocalConfiguration {
     eckit::LocalConfiguration lc{};
-    lc.set("type", "linear");
-    lc.set("N", nlons);
-    lc.set("interval", std::vector<double>{{0.0, 360.0}});
-    lc.set("endpoint", false);
+    if (grid_type == "rotated_lonlat") {
+      lc.set("type", "linear");
+      lc.set("N", nlons);
+      lc.set("start", lon_start);
+      lc.set("end", lon_end);
+    } else {
+      lc.set("type", "linear");
+      lc.set("N", nlons);
+      lc.set("interval", std::vector<double>{{0.0, 360.0}});
+      lc.set("endpoint", false);
+    }
     return lc;
   };
 
   const auto build_yspace_config = [&](const std::string & grid_type) -> eckit::LocalConfiguration {
     eckit::LocalConfiguration lc{};
-    if (grid_type == "gaussian") {
+    if (grid_type == "rotated_lonlat") {
+      lc.set("type", "linear");
+      lc.set("N", nlats);
+      lc.set("start", lat_start);
+      lc.set("end", lat_end);
+    } else if (grid_type == "gaussian") {
       lc.set("type", "custom");
       lc.set("N", nlats);
       lc.set("values", gsi_gaussian_points(nlats));
@@ -122,10 +144,18 @@ void setupGsiMatchingGrid(const eckit::Configuration & config,
     return lc;
   };
 
+  const auto build_projection_config = [&](const std::string & grid_type) -> eckit::LocalConfiguration {
+    eckit::LocalConfiguration lc{};
+    lc.set("type", "rotated_lonlat");
+    lc.set("north_pole", std::vector<double>{{north_pole_lon, north_pole_lat}});
+    return lc;
+  };
+
   eckit::LocalConfiguration testconfig{};
   testconfig.set("type", "structured");
-  testconfig.set("xspace", build_xspace_config());
+  testconfig.set("xspace", build_xspace_config(grid_type));
   testconfig.set("yspace", build_yspace_config(grid_type));
+  if (grid_type == "rotated_lonlat") testconfig.set("projection", build_projection_config(grid_type));
   grid = atlas::Grid{testconfig};
 
   const atlas::RegularGrid rg{grid};
@@ -140,6 +170,34 @@ void setupGsiMatchingGrid(const eckit::Configuration & config,
   const unsigned halo = config.getUnsigned("halo", 1);
   functionSpace = atlas::functionspace::StructuredColumns(grid, distribution,
                                                           atlas::option::halo(halo));
+
+  // Get rotated_lonlat on the Earth coordinate
+  //if (grid_type == "rotated_lonlat") {
+  //  atlas::Field lonlatField = functionSpace.lonlat();
+  //  auto lonlatView = atlas::array::make_view<double, 2>(lonlatField);
+  //  for (int j = 0; j < lonlatView.shape(0); ++j) {
+  //    double rlon = lonlatView(j, 0);
+  //    double rlat = lonlatView(j, 1);
+  //    double rlon0 = north_pole_lon - 180.0;
+  //    double rlat0 = 90.0 - north_pole_lat;
+
+  //    double xtt = std::cos(deg2rad(rlat)) * std::cos(deg2rad(rlon));
+  //    double ytt = std::cos(deg2rad(rlat)) * std::sin(deg2rad(rlon));
+  //    double ztt = std::sin(deg2rad(rlat));
+
+  //    double  xt = xtt*std::cos(deg2rad(rlat0)) - ztt*std::sin(deg2rad(rlat0));
+  //    double  yt = ytt;
+  //    double  zt = xtt*std::sin(deg2rad(rlat0)) + ztt*std::cos(deg2rad(rlat0));
+
+  //    double   x = xt*std::cos(deg2rad(rlon0)) - yt*std::sin(deg2rad(rlon0));
+  //    double   y = xt*std::sin(deg2rad(rlon0)) + yt*std::cos(deg2rad(rlon0));
+  //    double   z = zt;
+
+  //    lonlatView(j, 0) = rad2deg(std::atan2(y,x));
+  //    lonlatView(j, 1) = rad2deg(std::asin(z));
+  //  }
+  //  lonlatField.set_dirty();
+  //}
 
   // Using atlas::mpi::Scope in the call to atlas::functionspace::StructuredColumns
   // may have reverted the default communicator to the world communicator.

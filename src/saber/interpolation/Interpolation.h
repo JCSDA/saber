@@ -41,6 +41,7 @@ class InterpolationParameters : public SaberBlockParametersBase {
     eckit::LocalConfiguration(), this};
   oops::Parameter<eckit::LocalConfiguration> inverseInterpConf{"inverse interpolator",
     eckit::LocalConfiguration(), this};
+  oops::Parameter<bool> fillMissingValues{"fill state missing values", false, this};
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
 };
 

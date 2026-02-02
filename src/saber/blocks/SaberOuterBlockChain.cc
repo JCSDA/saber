@@ -87,6 +87,7 @@ SaberOuterBlockChain::SaberOuterBlockChain(
     auto[innerGeometryData, innerVars] = getInnerObjects(activeVars, currentOuterVars);
 
     // Left inverse multiplication on xb and fg if inner and outer Geometry are different
+    std::cout<<"thinkdeb before interpolateStates" <<std::endl;
     interpolateStates(saberOuterBlockParams,
                       currentOuterGeometryData,
                       innerGeometryData,
@@ -206,12 +207,14 @@ void SaberOuterBlockChain::interpolateStates(
         oops::FieldSet4D & fset4dXb,
         oops::FieldSet4D & fset4dFg) const {
   // Left inverse multiplication on xb and fg if inner and outer Geometry are different
+   std::cout<<"thinkdeb888 in interpolateState"<<std::endl;
   if (util::getGridUid(innerGeometryData.functionSpace())
     != util::getGridUid(outerGeometryData.functionSpace())
     && saberOuterBlockParams.inverseVars.value().size() > 0) {
     oops::Log::info() << "Info     : Left inverse multiplication on xb and fg" << std::endl;
 
     // Apply left inverse
+   std::cout<<"thinkdeb888 in interpolateState invoked"<<std::endl;
     for (size_t itime = 0; itime < fset4dXb.size(); ++itime) {
       outerBlocks_.back()->leftInverseMultiply(fset4dXb[itime]);
       outerBlocks_.back()->leftInverseMultiply(fset4dFg[itime]);

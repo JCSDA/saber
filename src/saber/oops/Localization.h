@@ -144,9 +144,17 @@ void Localization<MODEL>::multiply(Increment_ & dx) const {
   // SABER block chain multiplication
   oops::FieldSet4D fset4d({dx.validTime(), dx.geometry().getComm()});
   fset4d[0].shallowCopy(dx.fieldSet());
-  loc_->multiply(fset4d);
+  auto & src_fset = dx.fieldSet().fieldSet();
+  auto & dst_fset = fset4d[0].fieldSet();
+  if (src_fset.metadata().has("ensemble member index")) {
+  oops::Log::trace() << "Localization:multiply starting 2 999yes" << std::endl;
+    dst_fset.metadata().template set<int>("ensemble member index", src_fset.metadata().template get<int>("ensemble member index"));
+}
+  if (dst_fset.metadata().has("ensemble member index")) {
+  oops::Log::trace() << "Localization:multiply startign 3 999 yes" << std::endl; }
 
-  // ATLAS fieldset to Increment_
+  oops::Log::trace()<<dx << std::endl;
+  loc_->multiply(fset4d);
   dx.fromFieldSet(fset4d[0].fieldSet());
 
   oops::Log::trace() << "Localization:multiply done" << std::endl;
