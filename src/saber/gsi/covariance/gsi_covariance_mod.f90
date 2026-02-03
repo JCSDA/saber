@@ -52,6 +52,7 @@ use state_vectors,                  only: svars2d,svars3d
 use state_vectors,                  only: deallocate_state
 
 use constants,                      only: grav
+use atlas_module,    only: atlas_functionspace_StructuredColumns
 
 implicit none
 private
@@ -108,6 +109,13 @@ character(len=20) :: valid_time_string
 logical :: gsi_jedi_grid_error
 integer :: ix, iy, gsi_nx, gsi_ny, jedi_nx, jedi_ny
 real(kind=kind_real) :: gsi_lon, gsi_lat, jedi_lon, jedi_lat
+type(atlas_field) :: afield
+type(atlas_functionspace_StructuredColumns) :: fs
+integer:: n_owned_size
+afield=firstguess(1)%field(1)
+fs=afield%functionspace()
+n_owned_size=fs%size_owned()
+write(6,*)'thinkdeb self_owned points are ',n_owned_size
 
 ! Hold communicator
 ! -----------------
@@ -120,6 +128,7 @@ do ii=1,ntimes
   call datetime_to_string(valid_times(ii), valid_time_string)
   call iso2geos_date_(valid_time_string,nymd(ii),nhms(ii))
 enddo
+
 
 ! Create the grid
 ! ---------------
