@@ -225,8 +225,11 @@ if (.not. self%grid%noGSI) then
            do n=1,ngsivars2d
               itbd=itbd+1
               tbdvars(itbd) = 'unfilled-'//trim(gsivars(n))
+              write(6,*)'thinkdeb666 before get_rank2_',trim(gsivars(n))
               call get_rank2_(rank2,firstguess(ii),trim(usrvars(n)),ier)
+              write(6,*)'thinkdeb666 after get_rank2_'
               if(ier==0) then
+              write(6,*)'thinkdeb666 before bkg_set2_ ',trim(gsivars(n))
                  call bkg_set2_(trim(gsivars(n)),ii)
                  tbdvars(itbd) = 'filled-'//trim(gsivars(n))
               else
@@ -286,7 +289,7 @@ contains
   allocate(aux(self%grid%lat2,self%grid%lon2))
    expected_size = self%grid%lat2 * self%grid%lon2
   if (size(rank2,2) < expected_size) then
-     print *, 'rank', self%rank, 'bkg_set2_ size mismatch for ', trim(varname), &
+     print *, 'deb666rank', self%rank, 'bkg_set2_ size mismatch for ', trim(varname), &
               ': size(rank2,2)=', size(rank2,2), ' expected=', expected_size, &
               ' lat2=', self%grid%lat2, ' lon2=', self%grid%lon2
   endif
@@ -295,6 +298,9 @@ contains
 
 
   call atlas_to_gsi_(rank2(1,:),aux,self%rank,self%grid%layout)
+   write(6,*)'thinkdeb77rank2 dim = ',size(rank2,1), size(rank2,2)
+   write(6,*)'thinkdeb77aux dim = ',size(aux,1), size(aux,2)
+   write(6,*)'thinkdeb77aux imin/max val = ',minval(aux), maxval(aux)
   call gsibec_set_guess(varname,islot,aux)
   deallocate(aux)
 
@@ -676,9 +682,12 @@ end subroutine multiply
    integer,save :: icount = 0
    ier=-1
    if (trim(vname) == 'ps') then
+      write(6,*)'thinkdeb666 ps  in get_rank2_ 1'
       if (.not.fields%has('air_pressure_at_surface')) return
+      write(6,*)'thinkdeb666 ps  in get_rank2_ 2'
       afield = fields%field('air_pressure_at_surface')
       call afield%data(rank2)
+      rank2=1000
       ier=0
    endif
    if (trim(vname) == 'prse' .or. trim(vname) == 'air_pressure_levels') then
@@ -830,16 +839,21 @@ end subroutine multiply
    ! copy atlas array into GSI array
    ! the atlas halos are copied as well, so it is assumed the atlas halos are up-to-date
    subroutine atlas_to_gsi_(rank,var,pe,layout)
-   real(kind=kind_real),intent(in) :: rank(:)
+!cltorg   real(kind=kind_real),intent(in) :: rank(:)
+   real(kind=kind_real),intent(inout) :: rank(:)
    real(kind=kind_real),intent(inout):: var(:,:)
    integer, intent(in), optional :: pe
    integer, intent(in), optional :: layout(2)
    integer ii,jj,jnode
-   integer mylat2,mylon2,mype,nxpe,nype
+   integer mylat2,mylon2,mype,nxpe,nype,sizeofrank
+   sizeofrank=size(rank)
    mylat2 = size(var,1)
    mylon2 = size(var,2)
    jnode=1
+   write(6,*)'thinkdeb in atlas_to_gsi mylat/lon = ',mylat2,mylon2, sizeofrank
    var = missing_value(1.0_kind_real)  ! debug: this should be overwritten with physical values
+   var=1000.0
+   rank=1000.0 
    do jj=2,mylat2-1
       do ii=2,mylon2-1
          var(jj,ii) = rank(jnode)
@@ -851,8 +865,42 @@ end subroutine multiply
    ! - all x @ ymin
    ! - pairs of (xmin, xmax) @ each y from (ymin+1, ymax-1)
    ! - all x @ ymax
- 
-   if(present(pe).and.present(layout)) then
+   if(mylon2*mylat2.le.sizeofrank) then  !in global domain, or regional, the subdomains are of the laterary boundaries
+                                         ! and the halo points are not "complete"/absent along the laterary boundies of the whole
+                                         ! domain
+                                         !for simplicity, in that situation, the halo points would be defined by adjacent inner
+                                         !points
+      do ii=1,mylon2
+          var(1,ii) = rank(jnode)
+          jnode = jnode + 1
+      enddo
+      do jj=2,mylat2-1
+          var(jj,1) = rank(jnode)
+          jnode = jnode + 1
+          var(jj,mylon2) = rank(jnode)
+          jnode = jnode + 1
+      enddo
+      do ii=1,mylon2
+          var(mylat2,ii) = rank(jnode)
+          jnode = jnode + 1
+      enddo
+   else
+      write(6,*)'thinkdeb in atlas_to_gsi 2'
+      do ii=1,mylon2
+         var(1,ii) = var(2,ii) 
+     enddo
+     do jj=2,mylat2-1
+         var(jj,1) = var(jj,2)
+         var(jj,mylon2) = var(jj,mylon2-1)
+     enddo
+     do ii=1,mylon2
+         var(mylat2,ii) = var(mylat2-1,ii)
+     enddo
+   endif
+   write(6,*)'thinkdeb77atlas_to_gsimin/max val = ',minval(var), maxval(var)
+   write(6,*)'thinkdeb77atlas_to_gsisize val = ',size(var,1),size(var,2)
+   if(present(pe).and.present(layout).and.1 > 2) then
+            write(6,*)'thinkdeb666 10 using layout for halo points'
      mype = pe
      nxpe = layout(1)
      nype = layout(2)
@@ -985,6 +1033,7 @@ end subroutine multiply
    integer mylat2,mylon2
    mylat2 = size(var,1)
    mylon2 = size(var,2)
+   write(6,*)'thinkdeb in atlas_to_gsi, mylat2/lon2 =',mylat2,mylon2
    jnode=1
    do jj=2,mylat2-1
       do ii=2,mylon2-1
