@@ -305,10 +305,10 @@ contains
     write(6,*) 'thinkdeb77 rbuf min/max = ', minval(rbuf), maxval(rbuf)
     write(6,*) 'thinkdeb77 rbuf zeros = ', count(rbuf == 0.0_kind_real)
     call atlas_to_gsi_(rbuf,aux,call_id,self%grid%layout)
-    deallocate(rbuf)
      write(6,*)'thinkdeb77rank2 dim = ',size(rank2,1), size(rank2,2)
      write(6,*)'thinkdeb77aux dim = ',size(aux,1), size(aux,2)
      write(6,*)'thinkdeb77aux call_id = ',call_id,' imin/max val = ',minval(aux), maxval(aux)
+    deallocate(rbuf)
   call gsibec_set_guess(varname,islot,aux)
   deallocate(aux)
 
