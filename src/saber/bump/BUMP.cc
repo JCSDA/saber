@@ -26,6 +26,7 @@
 #include "oops/util/Logger.h"
 
 #include "saber/bump/type_bump_parameters.h"
+#include "saber/oops/Utilities.h"
 
 namespace saber {
 namespace bump {
@@ -59,10 +60,7 @@ BUMP::BUMP(const oops::GeometryData & geometryData,
   oops::Log::info() << "Info     : +++ OpenMP threads: " << omp << std::endl;
 
   // Initialization
-  nens_ = 0;
-  if (covarConf_.has("ensemble configuration")) {
-    nens_ = covarConf_.getSubConfiguration("ensemble configuration").getInt("ensemble size");
-  }
+  nens_ = getNensFromConfig(covarConf_);
   iterativeEnsembleLoading_ = covarConf_.getBool("iterative ensemble loading", false);
 
   // Case where size are specified in the BUMP configuration

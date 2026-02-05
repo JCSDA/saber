@@ -63,6 +63,7 @@ Square-root test for block BUMP_NICAS passed
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
+Adjoint test for block BUMP_NICAS passed
 Square-root test for block BUMP_NICAS passed
 Adjoint test for block Ensemble passed
 Square-root test for block Ensemble passed

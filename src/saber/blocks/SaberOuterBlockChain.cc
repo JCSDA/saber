@@ -31,7 +31,7 @@ SaberOuterBlockChain::SaberOuterBlockChain(
                      const oops::Variables & outerVars,
                      oops::FieldSet4D & fset4dXb,
                      oops::FieldSet4D & fset4dFg,
-                     const eckit::LocalConfiguration & covarConf,
+                     const eckit::Configuration & conf,
                      const std::vector<SaberOuterBlockParametersWrapper> & params) {
   oops::Log::trace() << "SaberOuterBlockChain generic ctor starting" << std::endl;
   oops::Log::info() << "Info     : Creating outer blocks" << std::endl;
@@ -39,8 +39,8 @@ SaberOuterBlockChain::SaberOuterBlockChain(
   // Note model data information is not passed to vader.
   // This could cause issues for blocks which depend on it.
 
-  // TODO(AS): check whether covarConf needs to be passed to the blocks (ideally not)
-  const eckit::LocalConfiguration outerBlockConf{covarConf};
+  // TODO(AS): check whether conf needs to be passed to the blocks (ideally not)
+  const eckit::LocalConfiguration outerBlockConf{conf};
 
   // Loop in reverse order
   for (int jb = params.size()-1; jb >= 0; --jb) {
@@ -94,7 +94,7 @@ SaberOuterBlockChain::SaberOuterBlockChain(
                       fset4dFg);
 
     // Adjoint and inverse tests
-    testLastOuterBlock(covarConf,
+    testLastOuterBlock(conf,
                        saberOuterBlockParams,
                        currentOuterGeometryData,
                        currentOuterVars,
@@ -109,7 +109,7 @@ SaberOuterBlockChain::SaberOuterBlockChain(
 std::tuple<const SaberBlockParametersBase&, oops::Variables, oops::Variables>
     SaberOuterBlockChain::initBlock(
             const SaberOuterBlockParametersWrapper & saberOuterBlockParamWrapper,
-            const eckit::LocalConfiguration & outerBlockConf,
+            const eckit::Configuration & outerBlockConf,
             const oops::GeometryData & outerGeometryData,
             const oops::Variables & outerVars,
             oops::FieldSet4D & fset4dXb,
@@ -222,7 +222,7 @@ void SaberOuterBlockChain::interpolateStates(
 // -----------------------------------------------------------------------------
 
 void SaberOuterBlockChain::testLastOuterBlock(
-                        const eckit::LocalConfiguration & covarConf,
+                        const eckit::Configuration & conf,
                         const SaberBlockParametersBase & saberOuterBlockParams,
                         const oops::GeometryData & outerGeometryData,
                         const oops::Variables & outerVars,
@@ -236,11 +236,11 @@ void SaberOuterBlockChain::testLastOuterBlock(
   activeInnerVars.intersection(activeVars);
 
   // Adjoint test
-  if (covarConf.getBool("adjoint test")) {
+  if (conf.getBool("adjoint test")) {
     // Get tolerance
     const double localAdjointTolerance =
       saberOuterBlockParams.adjointTolerance.value().get_value_or(
-      covarConf.getDouble("adjoint tolerance"));
+      conf.getDouble("adjoint tolerance"));
 
     // Run test
     outerBlocks_.back()->adjointTest(outerGeometryData,
@@ -252,7 +252,7 @@ void SaberOuterBlockChain::testLastOuterBlock(
 
   // Inverse test
   const bool skipInverseTest = saberOuterBlockParams.skipInverseTest.value();
-  if (covarConf.getBool("inverse test", false)) {
+  if (conf.getBool("inverse test")) {
     oops::Log::info() << "Info     : Inverse test" << std::endl;
     if (skipInverseTest) {
       oops::Log::test() << "skipping inverse test for block "
@@ -260,9 +260,9 @@ void SaberOuterBlockChain::testLastOuterBlock(
     } else {
       // Get inner and outer tolerances
       const double innerInverseTolerance = saberOuterBlockParams.innerInverseTolerance.value()
-        .get_value_or(covarConf.getDouble("inverse tolerance"));
+        .get_value_or(conf.getDouble("inverse tolerance"));
       const double outerInverseTolerance = saberOuterBlockParams.outerInverseTolerance.value()
-        .get_value_or(covarConf.getDouble("inverse tolerance"));
+        .get_value_or(conf.getDouble("inverse tolerance"));
 
       // Get inner and outer variables to compare
       oops::Variables innerVarsToCompare = saberOuterBlockParams.innerVariables.value()

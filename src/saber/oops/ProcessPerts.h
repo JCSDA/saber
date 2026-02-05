@@ -84,7 +84,7 @@ template <typename MODEL> class FilterParameters :
   OOPS_CONCRETE_PARAMETERS(FilterParameters, oops::Parameters)
 
  public:
-  typedef ErrorCovarianceParameters<MODEL>           ErrorCovarianceParameters_;
+  typedef ErrorCovarianceParameters ErrorCovarianceParameters_;
   /// Note that the parameters here are not actually used in the code
   /// They are here to express the intent of these variables.
   /// Later on in the code we use eckit::LocalConfiguration and check whether
@@ -106,7 +106,7 @@ template <typename MODEL> class OutputWriteParameters :
   OOPS_CONCRETE_PARAMETERS(OutputWriteParameters, oops::Parameters)
 
  public:
-  typedef ErrorCovarianceParameters<MODEL>                   ErrorCovarianceParameters_;
+  typedef ErrorCovarianceParameters ErrorCovarianceParameters_;
 
   // This is there to get ErrorCovarianceParameters and in particular
   // saber blocks that can be used for diagnostic purposes.
@@ -212,17 +212,6 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
       incVars[i].setLevels(vlevs[i]);
     }
 
-    std::vector<util::DateTime> dates;
-    std::vector<int> ensmems;
-    oops::FieldSets fsetEns(dates, oops::mpi::myself(), ensmems, oops::mpi::myself());
-    eckit::LocalConfiguration covarConf;
-    covarConf.set("iterative ensemble loading", false);
-    covarConf.set("inverse test", false);
-    covarConf.set("adjoint test", false);
-    covarConf.set("square-root test", false);
-    covarConf.set("covariance model", "SABER");
-    covarConf.set("time covariance", "");
-
     // Yaml validation
     // TODO(Mayeul): Move this do an override of deserialize
     if (((params.ensemble.value() == boost::none) &&
@@ -236,15 +225,10 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
     }
 
     // Read input ensemble
-    const bool iterativeEnsembleLoading = false;
-    eckit::LocalConfiguration ensembleConf(fullConfig);
-    eckit::LocalConfiguration outputEnsConf;
     oops::FieldSets fsetEnsI = readEnsemble<MODEL>(geom,
                                                    incVars,
                                                    xx.times(), xx.commTime(), xx.commEns(),
-                                                   ensembleConf,
-                                                   iterativeEnsembleLoading,
-                                                   outputEnsConf);
+                                                   fullConfig);
     int nincrements = fsetEnsI.ens_size();
 
     const std::size_t nbands = params.bands.value().size();
@@ -293,22 +277,24 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
 
     std::vector<std::unique_ptr<SaberParametricBlockChain>> saberFilterBlocks;
     for (const auto & [key, value] : filterCovBlockConfs) {
+      eckit::LocalConfiguration conf(value);
+      conf.set("covariance model", "SABER");
+      conf.set("time covariance", "");
       saberFilterBlocks.push_back(
         std::make_unique<SaberParametricBlockChain>(geom,
                                                     incVars, fsetXb, fsetFg,
-                                                    fsetEns,
-                                                    covarConf,
-                                                    value));
+                                                    conf));
     }
 
     std::vector<std::unique_ptr<SaberParametricBlockChain>> saberDiagnosticBlocks;
     for (const auto & [key, value] : diagBlockConfs) {
+      eckit::LocalConfiguration conf(value);
+      conf.set("covariance model", "SABER");
+      conf.set("time covariance", "");
       saberDiagnosticBlocks.push_back(
         std::make_unique<SaberParametricBlockChain>(geom,
                                                     incVars, fsetXb, fsetFg,
-                                                    fsetEns,
-                                                    covarConf,
-                                                    value));
+                                                    conf));
     }
 
     //  Loop over perturbations

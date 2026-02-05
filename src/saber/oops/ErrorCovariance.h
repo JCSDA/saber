@@ -32,9 +32,6 @@
 #include "oops/util/Timer.h"
 
 #include "saber/blocks/SaberBlockChainBase.h"
-#include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberOuterBlockChain.h"
-#include "saber/blocks/SaberParametricBlockChain.h"
 #include "saber/oops/ErrorCovarianceParameters.h"
 #include "saber/oops/Utilities.h"
 
@@ -87,7 +84,9 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
 {
   oops::Log::trace() << "ErrorCovariance::ErrorCovariance starting" << std::endl;
   util::Timer timer(classname(), "ErrorCovariance");
-  ErrorCovarianceParameters<MODEL> params;
+
+  // Deserialize parameters
+  ErrorCovarianceParameters params;
   params.deserialize(config);
 
   // Local copy of background and first guess that can undergo interpolation
@@ -116,45 +115,13 @@ ErrorCovariance<MODEL>::ErrorCovariance(const Geometry_ & geom,
     outerVars[i].setLevels(vlevs[i]);
   }
 
-  // Create covariance configuration
-  eckit::LocalConfiguration covarConf;
-  covarConf.set("adjoint test", params.adjointTest.value());
-  covarConf.set("adjoint tolerance", params.adjointTolerance.value());
-  covarConf.set("inverse test", params.inverseTest.value());
-  covarConf.set("inverse tolerance", params.inverseTolerance.value());
-  covarConf.set("square-root test", params.sqrtTest.value());
-  covarConf.set("square-root tolerance", params.sqrtTolerance.value());
-  covarConf.set("iterative ensemble loading", params.iterativeEnsembleLoading.value());
-  covarConf.set("time covariance", params.timeCovariance.value());
-
-  // Iterative ensemble loading flag
-  const bool iterativeEnsembleLoading = params.iterativeEnsembleLoading.value();
-
-  // Read ensemble (for non-iterative ensemble loading)
-  eckit::LocalConfiguration ensembleConf;
-  oops::FieldSets fsetEns = readEnsemble(geom,
-                                         outerVars,
-                                         xb.times(), xb.commTime(), xb.commEns(),
-                                         params.toConfiguration(),
-                                         iterativeEnsembleLoading,
-                                         ensembleConf);
-
-  covarConf.set("ensemble configuration", ensembleConf);
-
-  // Add ensemble output
-  const auto & outputEnsemble = params.outputEnsemble.value();
-  if (outputEnsemble != boost::none) {
-    covarConf.set("output ensemble", *outputEnsemble);
-  }
-
+  // Create blockchain
   blockChain_ = SaberBlockChainFactory<MODEL>::create(
         geom,
         outerVars,
         *fset4dXb,
         *fset4dFg,
-        fsetEns,
-        covarConf,
-        params.blockChainParams.value());
+        config);
 
   oops::Log::trace() << "ErrorCovariance::ErrorCovariance done" << std::endl;
 }
