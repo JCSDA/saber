@@ -285,6 +285,7 @@ contains
     real(kind=kind_real), allocatable :: aux(:,:)
     integer :: expected_size
     integer, save :: call_id = 0
+    real(kind=kind_real), allocatable :: rbuf(:)
 
 ! print *, 'Atlas 2-dim: ', size(rank2,2), ' gsi-vec: ', self%grid%lat2,' ', self%grid%lon2
   allocate(aux(self%grid%lat2,self%grid%lon2))
@@ -299,7 +300,10 @@ contains
 
 
     call_id = call_id + 1
-    call atlas_to_gsi_(rank2(1,:),aux,call_id,self%grid%layout)
+    allocate(rbuf(size(rank2,2)))
+    rbuf = rank2(1,:)   ! ensure contiguous buffer for atlas_to_gsi_
+    call atlas_to_gsi_(rbuf,aux,call_id,self%grid%layout)
+    deallocate(rbuf)
      write(6,*)'thinkdeb77rank2 dim = ',size(rank2,1), size(rank2,2)
      write(6,*)'thinkdeb77aux dim = ',size(aux,1), size(aux,2)
      write(6,*)'thinkdeb77aux call_id = ',call_id,' imin/max val = ',minval(aux), maxval(aux)
