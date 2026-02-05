@@ -670,7 +670,6 @@ enddo
 ! Release memory
 ! --------------
 call afield%final()
-
 end subroutine multiply
 
 ! --------------------------------------------------------------------------------------------------
@@ -835,14 +834,14 @@ end subroutine multiply
       call afield%data(rank2)
       ier=0
    endif
-   call afield%final()
+!cltorgthink   call afield%final()
    end subroutine get_rank2_
 
    ! copy atlas array into GSI array
    ! the atlas halos are copied as well, so it is assumed the atlas halos are up-to-date
    subroutine atlas_to_gsi_(rank,var,pe,layout)
 !cltorg   real(kind=kind_real),intent(in) :: rank(:)
-   real(kind=kind_real),intent(inout) :: rank(:)
+   real(kind=kind_real),intent(in) :: rank(:)
    real(kind=kind_real),intent(inout):: var(:,:)
    integer, intent(in), optional :: pe
    integer, intent(in), optional :: layout(2)
@@ -858,7 +857,11 @@ end subroutine multiply
      endif
    var = missing_value(1.0_kind_real)  ! debug: this should be overwritten with physical values
    var=1000.0
-   rank=1000.0 
+           if (sizeofrank < (mylat2-2)*(mylon2-2)) then
+  write(6,*) 'rank too small for interior: ', sizeofrank
+  call abor1_ftn('rank too small')
+endif
+
    do jj=2,mylat2-1
       do ii=2,mylon2-1
          var(jj,ii) = rank(jnode)
