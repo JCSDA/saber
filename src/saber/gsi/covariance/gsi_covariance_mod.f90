@@ -280,10 +280,11 @@ deallocate(nymd,nhms)
 contains
   subroutine bkg_set2_(varname,islot)
 
-  character(len=*), intent(in) :: varname
-  integer,intent(in) :: islot
-  real(kind=kind_real), allocatable :: aux(:,:)
-  integer :: expected_size
+    character(len=*), intent(in) :: varname
+    integer,intent(in) :: islot
+    real(kind=kind_real), allocatable :: aux(:,:)
+    integer :: expected_size
+    integer, save :: call_id = 0
 
 ! print *, 'Atlas 2-dim: ', size(rank2,2), ' gsi-vec: ', self%grid%lat2,' ', self%grid%lon2
   allocate(aux(self%grid%lat2,self%grid%lon2))
@@ -297,7 +298,8 @@ contains
 
 
 
-  call atlas_to_gsi_(rank2(1,:),aux,self%rank,self%grid%layout)
+    call_id = call_id + 1
+    call atlas_to_gsi_(rank2(1,:),aux,call_id,self%grid%layout)
    write(6,*)'thinkdeb77rank2 dim = ',size(rank2,1), size(rank2,2)
    write(6,*)'thinkdeb77aux dim = ',size(aux,1), size(aux,2)
    write(6,*)'thinkdeb77aux imin/max val = ',minval(aux), maxval(aux)
@@ -849,8 +851,11 @@ end subroutine multiply
    sizeofrank=size(rank)
    mylat2 = size(var,1)
    mylon2 = size(var,2)
-   jnode=1
-   write(6,*)'thinkdeb in atlas_to_gsi mylat/lon = ',mylat2,mylon2, sizeofrank
+     jnode=1
+     write(6,*)'thinkdeb in atlas_to_gsi mylat/lon = ',mylat2,mylon2, sizeofrank
+     if (present(pe)) then
+        write(6,*)'thinkdeb atlas_to_gsi call_id =', pe
+     endif
    var = missing_value(1.0_kind_real)  ! debug: this should be overwritten with physical values
    var=1000.0
    rank=1000.0 
