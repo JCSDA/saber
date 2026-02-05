@@ -300,9 +300,9 @@ contains
 
     call_id = call_id + 1
     call atlas_to_gsi_(rank2(1,:),aux,call_id,self%grid%layout)
-   write(6,*)'thinkdeb77rank2 dim = ',size(rank2,1), size(rank2,2)
-   write(6,*)'thinkdeb77aux dim = ',size(aux,1), size(aux,2)
-   write(6,*)'thinkdeb77aux imin/max val = ',minval(aux), maxval(aux)
+     write(6,*)'thinkdeb77rank2 dim = ',size(rank2,1), size(rank2,2)
+     write(6,*)'thinkdeb77aux dim = ',size(aux,1), size(aux,2)
+     write(6,*)'thinkdeb77aux call_id = ',call_id,' imin/max val = ',minval(aux), maxval(aux)
   call gsibec_set_guess(varname,islot,aux)
   deallocate(aux)
 
