@@ -115,7 +115,6 @@ integer:: n_owned_size
 afield=firstguess(1)%field(1)
 fs=afield%functionspace()
 n_owned_size=fs%size_owned()
-write(6,*)'thinkdeb self_owned points are ',n_owned_size
 
 ! Hold communicator
 ! -----------------
@@ -225,11 +224,8 @@ if (.not. self%grid%noGSI) then
            do n=1,ngsivars2d
               itbd=itbd+1
               tbdvars(itbd) = 'unfilled-'//trim(gsivars(n))
-              write(6,*)'thinkdeb666 before get_rank2_',trim(gsivars(n))
               call get_rank2_(rank2,firstguess(ii),trim(usrvars(n)),ier)
-              write(6,*)'thinkdeb666 after get_rank2_'
               if(ier==0) then
-              write(6,*)'thinkdeb666 before bkg_set2_ ',trim(gsivars(n))
                  call bkg_set2_(trim(gsivars(n)),ii)
                  tbdvars(itbd) = 'filled-'//trim(gsivars(n))
               else
@@ -283,32 +279,10 @@ contains
     character(len=*), intent(in) :: varname
     integer,intent(in) :: islot
     real(kind=kind_real), allocatable :: aux(:,:)
-    integer :: expected_size
-    integer, save :: call_id = 0
-    real(kind=kind_real), allocatable :: rbuf(:)
 
 ! print *, 'Atlas 2-dim: ', size(rank2,2), ' gsi-vec: ', self%grid%lat2,' ', self%grid%lon2
   allocate(aux(self%grid%lat2,self%grid%lon2))
-   expected_size = self%grid%lat2 * self%grid%lon2
-  if (size(rank2,2) < expected_size) then
-     print *, 'deb666rank', self%rank, 'bkg_set2_ size mismatch for ', trim(varname), &
-              ': size(rank2,2)=', size(rank2,2), ' expected=', expected_size, &
-              ' lat2=', self%grid%lat2, ' lon2=', self%grid%lon2
-  endif
-
-
-
-
-    call_id = call_id + 1
-    allocate(rbuf(size(rank2,2)))
-    rbuf = rank2(1,:)   ! ensure contiguous buffer for atlas_to_gsi_
-    write(6,*) 'thinkdeb77 rbuf min/max = ', minval(rbuf), maxval(rbuf)
-    write(6,*) 'thinkdeb77 rbuf zeros = ', count(rbuf == 0.0_kind_real)
-    call atlas_to_gsi_(rbuf,aux,call_id,self%grid%layout)
-     write(6,*)'thinkdeb77rank2 dim = ',size(rank2,1), size(rank2,2)
-     write(6,*)'thinkdeb77aux dim = ',size(aux,1), size(aux,2)
-     write(6,*)'thinkdeb77aux call_id = ',call_id,' imin/max val = ',minval(aux), maxval(aux)
-    deallocate(rbuf)
+    call atlas_to_gsi_(rank2(1,:),aux,self%rank,self%grid%layout)
   call gsibec_set_guess(varname,islot,aux)
   deallocate(aux)
 
@@ -319,16 +293,9 @@ contains
   integer,intent(in) :: islot
   real(kind=kind_real), allocatable :: aux(:,:,:)
 
-   integer :: expected_size
   integer k,npz
 
 ! print *, 'Atlas 3-dim: ', size(rank2,2), ' gsi-vec: ', self%grid%lat2,' ', self%grid%lon2
-  expected_size = self%grid%lat2 * self%grid%lon2
-  if (size(rank2,2) /= expected_size) then
-     print *, 'rank', self%rank, 'bkg_set3_ size mismatch for ', trim(varname), &
-              ': size(rank2,2)=', size(rank2,2), ' expected=', expected_size, &
-              ' lat2=', self%grid%lat2, ' lon2=', self%grid%lon2
-  endif
   npz=size(rank2,1)
   allocate(aux(self%grid%lat2,self%grid%lon2,npz))
   if (self%grid%vflip) then
@@ -689,12 +656,9 @@ end subroutine multiply
    integer,save :: icount = 0
    ier=-1
    if (trim(vname) == 'ps') then
-      write(6,*)'thinkdeb666 ps  in get_rank2_ 1'
       if (.not.fields%has('air_pressure_at_surface')) return
-      write(6,*)'thinkdeb666 ps  in get_rank2_ 2'
       afield = fields%field('air_pressure_at_surface')
       call afield%data(rank2)
-      rank2=1000
       ier=0
    endif
    if (trim(vname) == 'prse' .or. trim(vname) == 'air_pressure_levels') then
@@ -840,7 +804,7 @@ end subroutine multiply
       call afield%data(rank2)
       ier=0
    endif
-!cltorgthink   call afield%final()
+  call afield%final()
    end subroutine get_rank2_
 
    ! copy atlas array into GSI array
@@ -857,13 +821,8 @@ end subroutine multiply
    mylat2 = size(var,1)
    mylon2 = size(var,2)
      jnode=1
-     write(6,*)'thinkdeb in atlas_to_gsi mylat/lon = ',mylat2,mylon2, sizeofrank
-     if (present(pe)) then
-        write(6,*)'thinkdeb atlas_to_gsi call_id =', pe
-     endif
    var = missing_value(1.0_kind_real)  ! debug: this should be overwritten with physical values
-   var=1000.0
-           if (sizeofrank < (mylat2-2)*(mylon2-2)) then
+  if (sizeofrank < (mylat2-2)*(mylon2-2)) then
   write(6,*) 'rank too small for interior: ', sizeofrank
   call abor1_ftn('rank too small')
 endif
@@ -899,142 +858,21 @@ endif
           jnode = jnode + 1
       enddo
    else
-      write(6,*)'thinkdeb in atlas_to_gsi 2'
-      do ii=1,mylon2
-         var(1,ii) = var(2,ii) 
-     enddo
-     do jj=2,mylat2-1
-         var(jj,1) = var(jj,2)
-         var(jj,mylon2) = var(jj,mylon2-1)
-     enddo
-     do ii=1,mylon2
-         var(mylat2,ii) = var(mylat2-1,ii)
-     enddo
+      do ii=2,mylon2-1
+          var(1,ii) = var(2,ii)
+          var(mylat2,ii) = var(mylat2-1,ii)
+      enddo
+      do jj=2,mylat2-1
+          var(jj,1) = var(jj,2)
+          var(jj,mylon2) = var(jj,mylon2-1)
+      enddo
+      var(1,1)=var(2,2);var(1,mylon2)=var(2,mylon2-1)
+      var(mylat2,1)=var(mylat2-1,2)
+      var(mylat2,mylon2)=var(mylat2-1,mylon2-1)
    endif
-   write(6,*)'thinkdeb77atlas_to_gsimin/max val = ',minval(var), maxval(var)
-   write(6,*)'thinkdeb77atlas_to_gsi zeros = ', count(var == 0.0_kind_real)
-   write(6,*)'thinkdeb77atlas_to_gsisize val = ',size(var,1),size(var,2)
-   if(present(pe).and.present(layout).and.1 > 2) then
-            write(6,*)'thinkdeb666 10 using layout for halo points'
-     mype = pe
-     nxpe = layout(1)
-     nype = layout(2)
-     if(mype == 0) then
-       do jj=2,mylat2-1
-           var(jj,mylon2) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-       do ii=2,mylon2
-           var(mylat2,ii) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-     else if(mype == nxpe-1) then
-       do jj=2,mylat2-1
-           var(jj,1) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-       do ii=1,mylon2-1
-           var(mylat2,ii) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-     else if(mype == nxpe*(nype-1)) then
-       do ii=2,mylon2
-           var(1,ii) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-       do jj=2,mylat2-1
-           var(jj,mylon2) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-     else if(mype == nxpe*nype-1) then
-       do ii=1,mylon2-1
-           var(1,ii) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-       do jj=2,mylat2-1
-           var(jj,1) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-     else if(mype>0 .and. mype<nxpe-1) then
-       do jj=2,mylat2-1
-           var(jj,1) = rank(jnode)
-           jnode = jnode + 1
-           var(jj,mylon2) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-       do ii=1,mylon2
-           var(mylat2,ii) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-     else if(mype>nxpe*(nype-1) .and. mype<nxpe*nype-1) then
-       do ii=1,mylon2
-           var(1,ii) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-       do jj=2,mylat2-1
-           var(jj,1) = rank(jnode)
-           jnode = jnode + 1
-           var(jj,mylon2) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-     else if(mod(mype,nxpe)==0 .and. mype>0 .and. mype<nxpe*(nype-1)) then
-       do ii=2,mylon2
-           var(1,ii) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-       do jj=2,mylat2-1
-           var(jj,mylon2) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-       do ii=2,mylon2
-           var(mylat2,ii) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-     else if(mod(mype,nxpe)==nxpe-1 .and. mype>nxpe-1 .and. mype<nxpe*nype-1) then
-       do ii=1,mylon2-1
-           var(1,ii) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-       do jj=2,mylat2-1
-           var(jj,1) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-       do ii=1,mylon2-1
-           var(mylat2,ii) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-     else
-       do ii=1,mylon2
-           var(1,ii) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-       do jj=2,mylat2-1
-           var(jj,1) = rank(jnode)
-           jnode = jnode + 1
-           var(jj,mylon2) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-       do ii=1,mylon2
-           var(mylat2,ii) = rank(jnode)
-           jnode = jnode + 1
-       enddo
-     endif
-   else
-     do ii=1,mylon2
-         var(1,ii) = rank(jnode)
-         jnode = jnode + 1
-     enddo
-     do jj=2,mylat2-1
-         var(jj,1) = rank(jnode)
-         jnode = jnode + 1
-         var(jj,mylon2) = rank(jnode)
-         jnode = jnode + 1
-     enddo
-     do ii=1,mylon2
-         var(mylat2,ii) = rank(jnode)
-         jnode = jnode + 1
-     enddo
-   endif
+   write(6,*)'thinkdeb88 mylat/lon sizeofrank =',mylat2,mylon2,sizeofrank
+   write(6,*)'thinkdeb88 max rank =',minval(rank),maxval(rank)
+   write(6,*)'thinkdeb88 max var =',minval(var),maxval(var)
 
    end subroutine atlas_to_gsi_
 
@@ -1048,7 +886,6 @@ endif
    integer mylat2,mylon2
    mylat2 = size(var,1)
    mylon2 = size(var,2)
-   write(6,*)'thinkdeb in atlas_to_gsi, mylat2/lon2 =',mylat2,mylon2
    jnode=1
    do jj=2,mylat2-1
       do ii=2,mylon2-1
