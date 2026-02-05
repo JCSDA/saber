@@ -302,6 +302,8 @@ contains
     call_id = call_id + 1
     allocate(rbuf(size(rank2,2)))
     rbuf = rank2(1,:)   ! ensure contiguous buffer for atlas_to_gsi_
+    write(6,*) 'thinkdeb77 rbuf min/max = ', minval(rbuf), maxval(rbuf)
+    write(6,*) 'thinkdeb77 rbuf zeros = ', count(rbuf == 0.0_kind_real)
     call atlas_to_gsi_(rbuf,aux,call_id,self%grid%layout)
     deallocate(rbuf)
      write(6,*)'thinkdeb77rank2 dim = ',size(rank2,1), size(rank2,2)
@@ -910,6 +912,7 @@ endif
      enddo
    endif
    write(6,*)'thinkdeb77atlas_to_gsimin/max val = ',minval(var), maxval(var)
+   write(6,*)'thinkdeb77atlas_to_gsi zeros = ', count(var == 0.0_kind_real)
    write(6,*)'thinkdeb77atlas_to_gsisize val = ',size(var,1),size(var,2)
    if(present(pe).and.present(layout).and.1 > 2) then
             write(6,*)'thinkdeb666 10 using layout for halo points'
