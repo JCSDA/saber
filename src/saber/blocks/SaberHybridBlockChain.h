@@ -234,7 +234,7 @@ SaberHybridBlockChain<MODEL>::SaberHybridBlockChain(const oops::Geometry<MODEL> 
     const size_t myTask = defaultSpaceComm.rank();
 
     // Set myComponent_  tasksPerComponent
-    size_t tasksPerComponent;
+    size_t tasksPerComponent = 0;
     for (size_t component = 0; component < nComponents; ++component) {
       if ((myTask >= globalTaskOffsetPerComponent[component]) &&
           (myTask < globalTaskOffsetPerComponent[component+1])) {
