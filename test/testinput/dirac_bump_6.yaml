@@ -16,9 +16,11 @@ background:
   - northward_wind
 background error:
   covariance model: hybrid
+  run components recursively: true
   components:
   - covariance:
       covariance model: SABER
+      covariance type: ensemble
       adjoint test: true
       square-root test: true
       square-root tolerance: 1.0e-10
@@ -33,8 +35,6 @@ background error:
           pattern: '%mem%'
           nmembers: 25
           zero padding: 6
-      saber central block:
-        saber block name: Ensemble
     weight:
       value: 0.5
   - covariance:

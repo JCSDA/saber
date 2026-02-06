@@ -83,42 +83,10 @@ call f_conf%final()
 end subroutine bump_create_c
 
 !----------------------------------------------------------------------
-! Subroutine: bump_dual_resolution_setup_c
-!> Second geometry
-!----------------------------------------------------------------------
-subroutine bump_dual_resolution_setup_c(key_bump,c_afunctionspace,c_afieldset) bind(c,name='bump_dual_resolution_setup_f90')
-
-implicit none
-
-! Passed variables
-integer(c_int),intent(inout) :: key_bump         !< BUMP
-type(c_ptr),intent(in),value :: c_afunctionspace !< ATLAS function space
-type(c_ptr),intent(in),value :: c_afieldset      !< ATLAS fieldset containing geometry elements
-
-! Local variables
-type(bump_type),pointer :: bump
-type(atlas_functionspace) :: f_afunctionspace
-type(fieldset_type) :: f_fieldset
-
-! Interface
-call bump_registry%get(key_bump,bump)
-f_afunctionspace = atlas_functionspace(c_afunctionspace)
-f_fieldset = atlas_fieldset(c_afieldset)
-
-! Call Fortran
-call bump%dual_resolution_setup(f_afunctionspace,f_fieldset)
-
-! Release memory
-call f_afunctionspace%final()
-call f_fieldset%final()
-
-end subroutine bump_dual_resolution_setup_c
-
-!----------------------------------------------------------------------
 ! Subroutine: bump_add_member_c
-!> Add member into bump%ens[1,2]
+!> Add member into bump%ens
 !----------------------------------------------------------------------
-subroutine bump_add_member_c(key_bump,c_afieldset,ie,iens) bind(c,name='bump_add_member_f90')
+subroutine bump_add_member_c(key_bump,c_afieldset,ie) bind(c,name='bump_add_member_f90')
 
 implicit none
 
@@ -126,7 +94,6 @@ implicit none
 integer(c_int),intent(in) :: key_bump       !< BUMP
 type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
 integer(c_int),intent(in) :: ie             !< Member index
-integer(c_int),intent(in) :: iens           !< Ensemble index
 
 ! Local variables
 type(bump_type),pointer :: bump
@@ -137,7 +104,7 @@ call bump_registry%get(key_bump,bump)
 f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
-call bump%add_member(f_fieldset,ie,iens)
+call bump%add_member(f_fieldset,ie)
 
 ! Release memory
 call f_fieldset%final()
@@ -206,7 +173,7 @@ end subroutine bump_update_var_c
 ! Subroutine: bump_update_mom_c
 !> Update moments, one member at a time
 !----------------------------------------------------------------------
-subroutine bump_update_mom_c(key_bump,c_afieldset,ie,iens) bind(c,name='bump_update_mom_f90')
+subroutine bump_update_mom_c(key_bump,c_afieldset,ie) bind(c,name='bump_update_mom_f90')
 
 implicit none
 
@@ -214,7 +181,6 @@ implicit none
 integer(c_int),intent(in) :: key_bump       !< BUMP
 type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
 integer(c_int),intent(in) :: ie             !< Member index
-integer(c_int),intent(in) :: iens           !< Ensemble index
 
 ! Local variables
 type(bump_type),pointer :: bump
@@ -225,7 +191,7 @@ call bump_registry%get(key_bump,bump)
 f_fieldset = atlas_fieldset(c_afieldset)
 
 ! Call Fortran
-call bump%update_mom(f_fieldset,ie,iens)
+call bump%update_mom(f_fieldset,ie)
 
 ! Release memory
 call f_fieldset%final()
@@ -421,6 +387,34 @@ call bump%apply_nicas(f_fieldset)
 call f_fieldset%final()
 
 end subroutine bump_apply_nicas_c
+
+!----------------------------------------------------------------------
+! Subroutine: bump_apply_nicas_filter_c
+!> NICAS application
+!----------------------------------------------------------------------
+subroutine bump_apply_nicas_filter_c(key_bump,c_afieldset) bind(c,name='bump_apply_nicas_filter_f90')
+
+implicit none
+
+! Passed variables
+integer(c_int),intent(in) :: key_bump       !< BUMP
+type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
+
+! Local variables
+type(bump_type),pointer :: bump
+type(fieldset_type) :: f_fieldset
+
+! Interface
+call bump_registry%get(key_bump,bump)
+f_fieldset = atlas_fieldset(c_afieldset)
+
+! Call Fortran
+call bump%apply_nicas_filter(f_fieldset)
+
+! Release memory
+call f_fieldset%final()
+
+end subroutine bump_apply_nicas_filter_c
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_get_cv_size_c

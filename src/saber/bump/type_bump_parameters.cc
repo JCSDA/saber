@@ -66,6 +66,8 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   param(ioDef.fname_samp, ioConf);
   // Vertical balance file
   param(ioDef.fname_vbal, ioConf);
+  // Averaged statistics file
+  param(ioDef.fname_avg, ioConf);
   // NICAS file
   param(ioDef.fname_nicas, ioConf);
   // Psichitouv transform file
@@ -78,18 +80,12 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   // Drivers section
   DriversDef driversDef;
   eckit::LocalConfiguration driversConf;
-  // Compute covariance, ensemble 1
-  param(driversDef.compute_cov1, driversConf);
-  // Compute covariance, ensemble 2
-  param(driversDef.compute_cov2, driversConf);
-  // Compute correlation, ensemble 1
-  param(driversDef.compute_cor1, driversConf);
-  // Compute correlation, ensemble 2
-  param(driversDef.compute_cor2, driversConf);
-  // Compute localization, ensemble 1
-  param(driversDef.compute_loc1, driversConf);
-  // Compute localization, ensemble 2
-  param(driversDef.compute_loc2, driversConf);
+  // Compute covariance
+  param(driversDef.compute_cov, driversConf);
+  // Compute correlation
+  param(driversDef.compute_cor, driversConf);
+  // Compute localization
+  param(driversDef.compute_loc, driversConf);
   // Compute hybrid weights
   param(driversDef.compute_hyb, driversConf);
   // Hybrid term source ('randomized static' or 'lowres ensemble')
@@ -128,6 +124,8 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   param(driversDef.load_mom, driversConf);
   // Write sampling moments
   param(driversDef.write_mom, driversConf);
+  // Write averaged statistics
+  param(driversDef.write_avg, driversConf);
   // Write HDIAG diagnostics
   param(driversDef.write_hdiag, driversConf);
   // Write HDIAG components detail
@@ -186,14 +184,10 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   // Ensemble sizes section
   EnsembleSizesDef ensembleSizesDef;
   eckit::LocalConfiguration ensembleSizesConf;
-  // Ensemble 1 size
-  param(ensembleSizesDef.ens1_ne, ensembleSizesConf);
-  // Ensemble 1 sub-ensembles number
-  param(ensembleSizesDef.ens1_nsub, ensembleSizesConf);
-  // Ensemble 2 size
-  param(ensembleSizesDef.ens2_ne, ensembleSizesConf);
-  // Ensemble 2 sub-ensembles number
-  param(ensembleSizesDef.ens2_nsub, ensembleSizesConf);
+  // Ensemble size
+  param(ensembleSizesDef.ens_ne, ensembleSizesConf);
+  // Ensemble sub-ensembles number
+  param(ensembleSizesDef.ens_nsub, ensembleSizesConf);
 
   // Sampling section
   SamplingDef samplingDef;
@@ -231,8 +225,6 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   eckit::LocalConfiguration diagnosticsConf;
   // Ensemble size
   param(diagnosticsDef.ne, diagnosticsConf);
-  // Ensemble size of the hybrid term
-  param(diagnosticsDef.ne_lr, diagnosticsConf);
   // Gaussian approximation for asymptotic quantities
   param(diagnosticsDef.gau_approx, diagnosticsConf);
   // Localization option ('default', 'from_squared_correlation', 'nice_with_table' and
@@ -268,12 +260,6 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   param(varianceDef.var_niter, varianceConf);
   // Number of passes for the variance filtering (0 for uniform variance)
   param(varianceDef.var_npass, varianceConf);
-  // Resolution for the NICAS smoother
-  param(varianceDef.smoother_resol, varianceConf);
-  // Maximum size of the Sc1 subset for the NICAS smoother
-  param(varianceDef.smoother_nc1max, varianceConf);
-  // Minimum effective resolution for the NICAS smoother
-  param(varianceDef.smoother_resol_eff_min, varianceConf);
 
   // Optimality test section
   OptimalityTestDef optimalityTestDef;
@@ -308,6 +294,14 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   param(nicasDef.nc1max, nicasConf);
   // Minimum effective resolution
   param(nicasDef.resol_eff_min, nicasConf);
+  // Filter mode
+  param(nicasDef.filter_mode, nicasConf);
+  // Resolution for the NICAS filter
+  param(nicasDef.filter_resol, nicasConf);
+  // Maximum size of the Sc1 subset for the NICAS filter
+  param(nicasDef.filter_nc1max, nicasConf);
+  // Minimum effective resolution for the NICAS filter
+  param(nicasDef.filter_resol_eff_min, nicasConf);
   // NICAS draw type ('random' or 'octahedral')
   param(nicasDef.nicas_draw_type, nicasConf);
   // Force specific support radii

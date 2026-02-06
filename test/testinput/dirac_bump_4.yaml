@@ -18,11 +18,11 @@ background:
   - northward_wind
 background error:
   covariance model: SABER
+  covariance type: hybrid
+  run components recursively: true
   adjoint test: true
   square-root test: true
-  saber central block:
-    saber block name: Hybrid
-    components:
+  components:
     - covariance:
         saber central block:
           saber block name: BUMP_NICAS
@@ -43,6 +43,7 @@ background error:
         file:
           filepath: testdata/convertstate_constant/static_weight
     - covariance:
+        covariance type: ensemble
         ensemble:
           members from template:
             template:
@@ -54,10 +55,8 @@ background error:
             pattern: '%mem%'
             nmembers: 25
             zero padding: 6
-        saber central block:
-          saber block name: Ensemble
-          square-root tolerance: 1.0e-11
-          localization:
+        square-root tolerance: 1.0e-11
+        localization:
             saber central block:
               saber block name: BUMP_NICAS
               read:

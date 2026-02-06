@@ -176,6 +176,13 @@ void IDOuter::leftInverseMultiply(oops::FieldSet3D & fset) const {
 
 // -----------------------------------------------------------------------------
 
+void IDOuter::rightInverseMultiply(oops::FieldSet3D & fset) const {
+  oops::Log::trace() << classname() << "::rightInverseMultiply starting" << std::endl;
+  oops::Log::trace() << classname() << "::rightInverseMultiply done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
 void IDOuter::print(std::ostream & os) const {
   os << classname();
 }

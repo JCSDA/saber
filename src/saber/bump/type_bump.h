@@ -25,17 +25,14 @@ extern "C" {
                        const atlas::field::FieldSetImpl *,
                        const eckit::Configuration &,
                        eckit::Channel *, eckit::Channel *);
-  void bump_dual_resolution_setup_f90(int &,
-                             const atlas::functionspace::FunctionSpaceImpl *,
-                             const atlas::field::FieldSetImpl *);
   void bump_add_member_f90(const int &, const atlas::field::FieldSetImpl *,
-                           const int &, const int &);
+                           const int &);
   void bump_update_vbal_cov_f90(const int &, const atlas::field::FieldSetImpl *,
                                 const int &);
   void bump_update_var_f90(const int &, const atlas::field::FieldSetImpl *,
                            const int &);
   void bump_update_mom_f90(const int &, const atlas::field::FieldSetImpl *,
-                           const int &, const int &);
+                           const int &);
   void bump_run_drivers_f90(const int &);
   void bump_apply_vbal_f90(const int &, const atlas::field::FieldSetImpl *);
   void bump_apply_vbal_inv_f90(const int &, const atlas::field::FieldSetImpl *);
@@ -43,6 +40,7 @@ extern "C" {
   void bump_apply_stddev_f90(const int &, const atlas::field::FieldSetImpl *);
   void bump_apply_stddev_inv_f90(const int &, const atlas::field::FieldSetImpl *);
   void bump_apply_nicas_f90(const int &, const atlas::field::FieldSetImpl *);
+  void bump_apply_nicas_filter_f90(const int &, const atlas::field::FieldSetImpl *);
   void bump_get_cv_size_f90(const int &, int &);
   void bump_apply_nicas_sqrt_f90(const int &, const atlas::field::FieldImpl *,
                                  const atlas::field::FieldSetImpl *, const int &);

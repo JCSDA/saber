@@ -58,17 +58,11 @@ class SaberBlockParametersBase : public oops::Parameters {
   // Calibration of block parameters
   oops::OptionalParameter<eckit::LocalConfiguration> calibrationParams{"calibration", this};
 
-  // Ensemble transform parameters for the Ensemble block
-  oops::OptionalParameter<eckit::LocalConfiguration> ensembleTransform{"ensemble transform", this};
-
   // Tolerance for inner inverse test (U Uinv (U x) == (U x))
   oops::OptionalParameter<double> innerInverseTolerance{"inner inverse tolerance", this};
 
   // Inner variables to compare in outer inverse test, default is all inner active variables.
   oops::OptionalParameter<oops::Variables> innerVariables{"inner variables to compare", this};
-
-  // Localization parameters for the Ensemble block
-  oops::OptionalParameter<eckit::LocalConfiguration> localization{"localization", this};
 
   // Tolerance for outer inverse test (Uinv U (Uinv x) == (Uinv x))
   oops::OptionalParameter<double> outerInverseTolerance{"outer inverse tolerance", this};

@@ -28,34 +28,8 @@
           Independent levels for angular sector   1 / class  13:  1[2]
           Independent levels for angular sector   1 / class  14:  1[2]
           Independent levels for angular sector   1 / class  15:  1[2]
-       Independent levels:  1[2]
-          Subset Sc0 size:              762
-          Domain area (% of Earth area): 0.100E+03%
-             Level   1 ~> 100.0%
-             Level   2 ~> 100.0%
-             Level   1 ~>  0.100E+01 vert. coord.
-             Level   2 ~>  0.200E+01 vert. coord.
-          nc1 =      500
-          Independent levels:  1[2]
-          Independent levels for angular sector   1 / class   1:  1[2]
-          Independent levels for angular sector   1 / class   2:  1[2]
-          Independent levels for angular sector   1 / class   3:  1[2]
-          Independent levels for angular sector   1 / class   4:  1[2]
-          Independent levels for angular sector   1 / class   5:  1[2]
-          Independent levels for angular sector   1 / class   6:  1[2]
-          Independent levels for angular sector   1 / class   7:  1[2]
-          Independent levels for angular sector   1 / class   8:  1[2]
-          Independent levels for angular sector   1 / class   9:  1[2]
-          Independent levels for angular sector   1 / class  10:  1[2]
-          Independent levels for angular sector   1 / class  11:  1[2]
-          Independent levels for angular sector   1 / class  12:  1[2]
-          Independent levels for angular sector   1 / class  13:  1[2]
-          Independent levels for angular sector   1 / class  14:  1[2]
-          Independent levels for angular sector   1 / class  15:  1[2]
                 Level:   1 ~> cov. at class zero:  0.96E+00
                 Level:   2 ~> cov. at class zero:  0.91E+00
-                Level:   1 ~> cov. at class zero:  0.10E+01
-                Level:   2 ~> cov. at class zero:  0.99E+00
              Block air_horizontal_streamfunction:  0.13646608E+00 for       60 diagnostic points
                    Level:   1 ~> amplitude:        1.00
                                  cor. hor. support:      3722.94 km
@@ -63,13 +37,6 @@
                    Level:   2 ~> amplitude:        1.00
                                  cor. hor. support:      3817.09 km
                                  cor. ver. support:         3.10 vertical units
-             Block air_horizontal_streamfunction:  0.15267547E+00 for       60 diagnostic points
-                   Level:   1 ~> amplitude:        1.00
-                                 cor. hor. support:      3607.14 km
-                                 cor. ver. support:         3.22 vertical units
-                   Level:   2 ~> amplitude:        1.00
-                                 cor. hor. support:      3694.74 km
-                                 cor. ver. support:         3.22 vertical units
              Block air_horizontal_streamfunction:  0.23629308E+00 for       30 diagnostic points
                 Level:   1 ~> loc. at class zero:       0.83
                 Level:   2 ~> loc. at class zero:       0.82
@@ -79,20 +46,9 @@
                    Level:   2 ~> amplitude:        1.00
                                  loc. hor. support:      4344.81 km
                                  loc. ver. support:         4.10 vertical units
-             Block air_horizontal_streamfunction:  0.25563407E+00 for       41 diagnostic points
-                Level:   1 ~> loc. at class zero:       0.92
-                Level:   2 ~> loc. at class zero:       0.92
-                   Level:   1 ~> amplitude:        1.00
-                                 loc. hor. support:      5436.12 km
-                                 loc. ver. support:         6.03 vertical units
-                   Level:   2 ~> amplitude:        1.00
-                                 loc. hor. support:      5378.97 km
-                                 loc. ver. support:         6.04 vertical units
-                Level:   1 ~> hybrid coefficients: 0.50 / 0.47
-                Level:   2 ~> hybrid coefficients: 0.43 / 0.52
+                Level:   1 ~> hybrid coefficients: 0.57 / 0.41
+                Level:   2 ~> hybrid coefficients: 0.63 / 0.34
 Norm of output parameter loc_rh - 1: 2.0765313355080462e+08
 Norm of output parameter loc_rv - 1: 1.9267686907947714e+02
-Norm of output parameter hyb_coef_ens - 1: 2.1960039721223744e+01
-Norm of output parameter hyb_coef_ens_lr - 1: 2.3498553572266275e+01
-Norm of output parameter loc_rh_lr - 1: 2.1589887876004183e+08
-Norm of output parameter loc_rv_lr - 1: 2.4100189906820731e+02
+Norm of output parameter hyb_coef_1 - 1: 2.8347533387493492e+01
+Norm of output parameter hyb_coef_2 - 1: 1.7701062128658712e+01

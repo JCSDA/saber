@@ -15,6 +15,7 @@
 #include "oops/base/GeometryData.h"
 #include "oops/base/Variables.h"
 
+#include "saber/bifourier/BifourierTransformBase.h"
 #include "saber/bifourier/BifourierTransformStore.h"
 #include "saber/blocks/SaberBlockParametersBase.h"
 #include "saber/blocks/SaberOuterBlockBase.h"
@@ -28,14 +29,9 @@ class BifourierSpectralToGridParameters : public SaberBlockParametersBase {
   OOPS_CONCRETE_PARAMETERS(BifourierSpectralToGridParameters, SaberBlockParametersBase)
 
  public:
-  // Truncation type
-  oops::Parameter<std::string> truncationType{"truncation type", "arome", this};
-
-  // Skip tests
-  oops::Parameter<bool> skipTests{"skip tests", false, this};
-
-  // Spectral tests tolerance
-  oops::Parameter<double> specTolerance{"spectral tolerance", 1.0e-9, this};
+  // Transform parameters
+  oops::Parameter<BifourierTransformParameters> transform{"transform",
+    BifourierTransformParameters(), this};
 
   oops::Variables mandatoryActiveVars() const override
     {return oops::Variables();}
@@ -79,7 +75,7 @@ class BifourierSpectralToGrid : public SaberOuterBlockBase {
 
   // Spectral transform
   const BifourierTransformStore transStore_;
-  std::shared_ptr<BifourierTransform> trans_;
+  const std::shared_ptr<BifourierTransformBase> trans_;
 
   // Private methods
 

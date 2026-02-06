@@ -24,27 +24,6 @@ background error:
       pattern: '%mem%'
       nmembers: 10
       zero padding: 6
-  dual resolution calibration:
-    geometry:
-      function space: StructuredColumns
-      grid:
-        type: regular_lonlat
-        N: 10
-      groups:
-      - variables:
-        - air_horizontal_streamfunction
-        levels: 2
-      halo: 1
-    ensemble:
-      members from template:
-        template:
-          date: 2010-01-01T12:00:00Z
-          filepath: testdata/randomization_bump_nicas_L10L2_static/_MPI_-_OMP__member_pert_%mem%
-          state variables:
-          - air_horizontal_streamfunction
-        pattern: '%mem%'
-        nmembers: 25
-        zero padding: 6
   saber central block:
     saber block name: BUMP_NICAS
     calibration:
@@ -53,11 +32,11 @@ background error:
       io:
         data directory: testdata
         files prefix: error_covariance_training_bump_hdiag_9/_MPI_-_OMP_
+        overriding sampling file: error_covariance_training_bump_hdiag_5/_MPI_-_OMP__sampling
+        overriding averaged statistics file: error_covariance_training_bump_hdiag_5/_MPI_-_OMP__avg
       drivers:
         compute covariance: true
-        compute lowres covariance: true
         compute correlation: true
-        compute lowres correlation: true
         compute localization: true
         compute hybrid weights: true
         hybrid source: randomized static
@@ -73,7 +52,6 @@ background error:
         reduced levels: 2
       diagnostics:
         target ensemble size: 10
-        target lowres ensemble size: 25
       nicas:
         explicit length-scales: true
         horizontal length-scale:
@@ -91,11 +69,11 @@ background error:
       - parameter: loc_rv
         file:
           filepath: testdata/error_covariance_training_bump_hdiag_9/_MPI_-_OMP__loc_rv
-      - parameter: hyb_coef_ens
+      - parameter: hyb_coef_1
         file:
-          filepath: testdata/error_covariance_training_bump_hdiag_9/_MPI_-_OMP__hyb_coef_ens
-      - parameter: hyb_coef_sta
+          filepath: testdata/error_covariance_training_bump_hdiag_9/_MPI_-_OMP__hyb_coef_1
+      - parameter: hyb_coef_2
         file:
-          filepath: testdata/error_covariance_training_bump_hdiag_9/_MPI_-_OMP__hyb_coef_sta
+          filepath: testdata/error_covariance_training_bump_hdiag_9/_MPI_-_OMP__hyb_coef_2
 test:
   reference filename: testref/error_covariance_training_bump_hdiag_9.ref

@@ -54,9 +54,6 @@ class IDCentral : public SaberCentralBlockBase {
   void multiplySqrt(const atlas::Field &, oops::FieldSet3D &, const size_t &) const override;
   void multiplySqrtAD(const oops::FieldSet3D &, atlas::Field &, const size_t &) const override;
 
-  void directCalibration(const oops::FieldSets &) override
-    {}
-
  private:
   const oops::GeometryData & geometryData_;
   const oops::Variables activeVars_;
@@ -87,6 +84,7 @@ class IDOuter : public SaberOuterBlockBase {
   void multiply(oops::FieldSet3D &) const override;
   void multiplyAD(oops::FieldSet3D &) const override;
   void leftInverseMultiply(oops::FieldSet3D &) const override;
+  void rightInverseMultiply(oops::FieldSet3D &) const override;
 
  private:
   void print(std::ostream &) const override;

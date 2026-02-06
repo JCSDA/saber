@@ -9,6 +9,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <tuple>
 #include <vector>
 
@@ -29,6 +30,37 @@
 
 namespace saber {
 
+class SaberParametricBlockChainParameters: public ErrorCovarianceParametersBase {
+  OOPS_CONCRETE_PARAMETERS(SaberParametricBlockChainParameters,
+                           ErrorCovarianceParametersBase)
+
+ public:
+  // Central and outer blocks
+  oops::RequiredParameter<SaberCentralBlockParametersWrapper>
+    saberCentralBlockParams{"saber central block", this};
+  oops::OptionalParameter<std::vector<SaberOuterBlockParametersWrapper>>
+    saberOuterBlocksParams{"saber outer blocks", this};
+
+  // Time covariance mode (by default duplicated multivariate)
+  // Options: univariate, duplicated multivariate.
+  oops::Parameter<std::string> timeCovariance{"time covariance", "multivariate duplicated",
+                                              this};
+
+  // Ensemble
+  oops::Parameter<bool> iterativeEnsembleLoading{"iterative ensemble loading", false, this};
+  oops::OptionalParameter<eckit::LocalConfiguration> ensemble{"ensemble", this};
+  oops::OptionalParameter<eckit::LocalConfiguration> ensemblePert{"ensemble pert", this};
+  oops::OptionalParameter<eckit::LocalConfiguration> ensembleBase{"ensemble base", this};
+  oops::OptionalParameter<eckit::LocalConfiguration> ensemblePairs{"ensemble pairs", this};
+  oops::OptionalParameter<eckit::LocalConfiguration> ensemblePertOtherGeom{
+                        "ensemble pert on other geometry", this};
+  oops::OptionalParameter<eckit::LocalConfiguration> ensembleGeom{
+                        "ensemble geometry", this};
+
+  // Output ensemble
+  oops::OptionalParameter<eckit::LocalConfiguration> outputEnsemble{"output ensemble", this};
+};
+
 /// Chain of outer (optional) and not-ensemble central block. Can be used
 /// as static error covariance component and as localization for ensemble
 /// error covariance.
@@ -37,20 +69,15 @@ class SaberParametricBlockChain : public SaberBlockChainBase {
   /// @brief Standard constructor using MODEL geometry
   template<typename MODEL>
   SaberParametricBlockChain(const oops::Geometry<MODEL> & geom,
-                            const oops::Geometry<MODEL> & dualResGeom,
                             const oops::Variables & outerVars,
                             oops::FieldSet4D & fset4dXb,
                             oops::FieldSet4D & fset4dFg,
-                            oops::FieldSets & fsetEns,
-                            oops::FieldSets & fsetDualResEns,
-                            const eckit::LocalConfiguration & covarConf,
                             const eckit::Configuration & conf);
   /// @brief Simpler, limited constructor using only generic GeometryData
   SaberParametricBlockChain(const oops::GeometryData & outerGeometryData,
                             const oops::Variables & outerVars,
                             oops::FieldSet4D & fset4dXb,
                             oops::FieldSet4D & fset4dFg,
-                            const eckit::LocalConfiguration & covarConf,
                             const eckit::Configuration & conf);
   ~SaberParametricBlockChain() = default;
 
@@ -79,13 +106,12 @@ class SaberParametricBlockChain : public SaberBlockChainBase {
   std::tuple<oops::Variables, oops::Variables>
       initCentralBlock(const oops::GeometryData & outerGeom,
                        const eckit::Configuration & conf,
-                       const eckit::LocalConfiguration & covarConf,
                        const SaberBlockParametersBase & saberCentralBlockParams,
                        const oops::FieldSet4D & fset4dXb,
                        const oops::FieldSet4D & fset4dFg);
 
   /// @brief Run adjoint and square-root tests on central block. Used in constructors.
-  void testCentralBlock(const eckit::LocalConfiguration & covarConf,
+  void testCentralBlock(const eckit::Configuration & conf,
                         const SaberBlockParametersBase & saberCentralBlockParams,
                         const oops::GeometryData & outerGeom,
                         const oops::Variables & activeVars) const;
@@ -95,7 +121,7 @@ class SaberParametricBlockChain : public SaberBlockChainBase {
   /// @brief Outer variables
   const oops::Variables outerVariables_;
   std::unique_ptr<SaberOuterBlockChain> outerBlockChain_;
-  const bool crossTimeCov_;
+  bool crossTimeCov_;
   std::unique_ptr<SaberCentralBlockBase> centralBlock_;
   const eckit::mpi::Comm & timeComm_;
   size_t size4D_;
@@ -107,41 +133,43 @@ class SaberParametricBlockChain : public SaberBlockChainBase {
 
 template<typename MODEL>
 SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL> & geom,
-                       const oops::Geometry<MODEL> & dualResGeom,
                        const oops::Variables & outerVars,
                        oops::FieldSet4D & fset4dXb,
                        oops::FieldSet4D & fset4dFg,
-                       // TODO(AS): read inside the block so there is no need to pass
-                       // as non-const
-                       oops::FieldSets & fsetEns,
-                       oops::FieldSets & fsetDualResEns,
-                       const eckit::LocalConfiguration & covarConf,
                        const eckit::Configuration & conf)
   : outerFunctionSpace_(geom.functionSpace()), outerVariables_(outerVars),
-  crossTimeCov_(covarConf.getString("time covariance") == "multivariate duplicated"),
   timeComm_(fset4dXb.commTime()), size4D_(fset4dXb.size()) {
   oops::Log::trace() << "SaberParametricBlockChain ctor starting" << std::endl;
 
-  // Get central block parameters
-  SaberCentralBlockParametersWrapper saberCentralBlockParamsWrapper;
-  saberCentralBlockParamsWrapper.deserialize(conf.getSubConfiguration("saber central block"));
+  // Deserialize parameters and fill configuration with missing values
+  SaberParametricBlockChainParameters params;
+  params.deserialize(conf);
+  eckit::LocalConfiguration fullConf;
+  params.serialize(fullConf);
 
+  // Set cross-time covariance flag
+  crossTimeCov_ = (params.timeCovariance.value() == "multivariate duplicated");
+
+  // Get central block parameters
+  SaberCentralBlockParametersWrapper saberCentralBlockParamsWrapper
+    = params.saberCentralBlockParams;
   const SaberBlockParametersBase & saberCentralBlockParams =
     saberCentralBlockParamsWrapper.saberCentralBlockParameters;
 
   const bool centralDirectCalibration = saberCentralBlockParams.doCalibration();
 
+  // Read ensemble (for non-iterative ensemble loading)
+  std::shared_ptr<oops::FieldSets> fsetEns = std::make_shared<oops::FieldSets>(readEnsemble(geom,
+                                         outerVars,
+                                         fset4dXb.times(), fset4dXb.commTime(), fset4dXb.commEns(),
+                                         fullConf));
+
   // If needed create outer block chain
-  if (conf.has("saber outer blocks")) {
-    std::vector<SaberOuterBlockParametersWrapper> cmpOuterBlocksParams;
-    for (const auto & cmpOuterBlockConf : conf.getSubConfigurations("saber outer blocks")) {
-      SaberOuterBlockParametersWrapper cmpOuterBlockParamsWrapper;
-      cmpOuterBlockParamsWrapper.deserialize(cmpOuterBlockConf);
-      cmpOuterBlocksParams.push_back(cmpOuterBlockParamsWrapper);
-    }
+  if (params.saberOuterBlocksParams.value()) {
     outerBlockChain_ = std::make_unique<SaberOuterBlockChain>(geom, outerVariables_,
-                          fset4dXb, fset4dFg, fsetEns, covarConf,
-                          cmpOuterBlocksParams, centralDirectCalibration);
+                          fset4dXb, fset4dFg, fullConf,
+                          *params.saberOuterBlocksParams.value(),
+                          fsetEns, centralDirectCalibration);
   }
 
   // Set outer geometry data for central block
@@ -155,8 +183,7 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
 
   const auto[currentOuterVars, activeVars]
               = initCentralBlock(currentOuterGeom,
-                                 conf,
-                                 covarConf,
+                                 fullConf,
                                  saberCentralBlockParams,
                                  fset4dXb,
                                  fset4dFg);
@@ -165,11 +192,9 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
   centralBlock_->read(geom, currentOuterVars);
 
   // Iterative ensemble loading flag
-  const bool iterativeEnsembleLoading = covarConf.getBool("iterative ensemble loading");
+  const bool iterativeEnsembleLoading = fullConf.getBool("iterative ensemble loading");
 
   // Ensemble configuration
-  eckit::LocalConfiguration ensembleConf
-         = covarConf.getSubConfiguration("ensemble configuration");
   if (saberCentralBlockParams.doCalibration()) {
     // Block calibration
     if (iterativeEnsembleLoading) {
@@ -180,12 +205,12 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
       centralBlock_->iterativeCalibrationInit();
 
       // Get ensemble size
-      size_t nens = ensembleConf.getInt("ensemble size");
+      size_t nens = getNensFromConfig(fullConf);
 
       for (size_t ie = 0; ie < nens; ++ie) {
         // Read ensemble member
         oops::FieldSet3D fset(fset4dXb[0].validTime(), geom.getComm());
-        readEnsembleMember(geom, outerVariables_, ensembleConf, ie, fset);
+        readEnsembleMember(geom, outerVariables_, fullConf, ie, fset);
 
         // Apply outer blocks inverse (all of them)
         oops::Log::info() << "Info     : Apply outer blocks inverse (all of them)" << std::endl;
@@ -202,7 +227,7 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
     } else {
       // Direct calibration
       oops::Log::info() << "Info     : Direct calibration" << std::endl;
-      centralBlock_->directCalibration(fsetEns);
+      centralBlock_->directCalibration(*fsetEns);
     }
   } else if (saberCentralBlockParams.doRead()) {
     // Read data
@@ -210,72 +235,24 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
     centralBlock_->read();
   }
 
-  if (saberCentralBlockParams.forceWrite.value()) {
+  if (saberCentralBlockParams.forceWrite.value() || saberCentralBlockParams.doCalibration()) {
     // Write data
     oops::Log::info() << "Info     : Write data" << std::endl;
     centralBlock_->write(geom);
     centralBlock_->write();
   }
 
-  // Dual resolution ensemble
-  if (covarConf.has("dual resolution ensemble configuration")) {
-    oops::Log::info() << "Info     : Dual resolution setup" << std::endl;
-
-    // Dual resolution setup
-    centralBlock_->dualResolutionSetup(dualResGeom.generic());
-
-    // Ensemble configuration
-    eckit::LocalConfiguration dualResEnsembleConf
-      = covarConf.getSubConfiguration("dual resolution ensemble configuration");
-
-    if (iterativeEnsembleLoading) {
-      // Iterative calibration
-      oops::Log::info() << "Info     : Iterative calibration" << std::endl;
-
-      // Initialization
-      centralBlock_->iterativeCalibrationInit();
-
-      // Get dual resolution ensemble size
-      const size_t dualResNens = dualResEnsembleConf.getInt("ensemble size");
-
-      for (size_t ie = 0; ie < dualResNens; ++ie) {
-        // Read ensemble member
-        oops::FieldSet3D fset(fset4dXb[0].validTime(), dualResGeom.getComm());
-        readEnsembleMember(dualResGeom, outerVariables_, dualResEnsembleConf, ie, fset);
-
-        // Use FieldSet in the central block
-        oops::Log::info() << "Info     : Use FieldSet in the central block" << std::endl;
-        centralBlock_->iterativeCalibrationUpdate(fset);
-     }
-
-      // Finalization
-      oops::Log::info() << "Info     : Finalization" << std::endl;
-      centralBlock_->iterativeCalibrationFinal();
-    } else {
-      // Direct calibration
-      oops::Log::info() << "Info     : Direct calibration" << std::endl;
-      centralBlock_->directCalibration(fsetDualResEns);
-    }
-  }
-
-  // Write calibration data
-  if (saberCentralBlockParams.doCalibration()) {
-    oops::Log::info() << "Info     : Write calibration data" << std::endl;
-    centralBlock_->write(geom);
-    centralBlock_->write();
-  }
-
   // Write final ensemble
-  if (covarConf.has("output ensemble")) {
+  if (fullConf.has("output ensemble")) {
     // Get output parameters configuration
-    const eckit::LocalConfiguration outputEnsembleConf(covarConf, "output ensemble");
+    const eckit::LocalConfiguration outputEnsembleConf(fullConf, "output ensemble");
 
     // Check whether geometry grid is similar to the last outer block inner geometry
     const bool useModelWriter = (util::getGridUid(geom.functionSpace())
       == util::getGridUid(currentOuterGeom.functionSpace()));
 
     // Get ensemble size
-    size_t ensembleSize = ensembleConf.getInt("ensemble size");
+    size_t ensembleSize = getNensFromConfig(fullConf);
 
     // Estimate mean
     oops::FieldSet3D fsetMean(fset4dXb[0].validTime(), geom.getComm());
@@ -283,7 +260,7 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
       for (size_t ie = 0; ie < ensembleSize; ++ie) {
         // Read member
         oops::FieldSet3D fsetMem(fset4dXb[0].validTime(), geom.getComm());
-        readEnsembleMember(geom, activeVars, ensembleConf, ie, fsetMem);
+        readEnsembleMember(geom, activeVars, fullConf, ie, fsetMem);
 
         // Update mean
         if (ie == 0) {
@@ -313,7 +290,7 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
       if (iterativeEnsembleLoading) {
         // Read ensemble member
         oops::FieldSet3D fset(fset4dXb[0].validTime(), geom.getComm());
-        readEnsembleMember(geom, activeVars, ensembleConf, ie, fset);
+        readEnsembleMember(geom, activeVars, fullConf, ie, fset);
 
         // Remove mean
         fset -= fsetMean;
@@ -325,7 +302,7 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
         dx.fromFieldSet(fset.fieldSet());
       } else {
         // ATLAS fieldset to Increment_
-        dx.fromFieldSet(fsetEns[ie].fieldSet());
+        dx.fromFieldSet((*fsetEns)[ie].fieldSet());
       }
 
       if (useModelWriter) {
@@ -345,7 +322,7 @@ SaberParametricBlockChain::SaberParametricBlockChain(const oops::Geometry<MODEL>
     }
   }
 
-  testCentralBlock(covarConf, saberCentralBlockParams, currentOuterGeom, activeVars);
+  testCentralBlock(fullConf, saberCentralBlockParams, currentOuterGeom, activeVars);
 
   oops::Log::trace() << "SaberParametricBlockChain ctor done" << std::endl;
 }

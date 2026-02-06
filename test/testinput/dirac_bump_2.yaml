@@ -23,6 +23,7 @@ background:
     - northward_wind
 background error:
   covariance model: hybrid
+  run components recursively: true
   components:
   - covariance:
       covariance model: SABER
@@ -108,6 +109,7 @@ background error:
       value: 0.5
   - covariance:
       covariance model: SABER
+      covariance type: ensemble
       adjoint test: true
       square-root test: true
       square-root tolerance: 1.0e-10
@@ -128,20 +130,17 @@ background error:
           pattern: '%mem%'
           nmembers: 25
           zero padding: 6
-      saber central block:
-        saber block name: Ensemble
-        inflation value: 1.2
-        inflation field:
+      inflation value: 1.2
+      inflation field:
           model file:
             filepath: testdata/convertstate_constant/inflation
-        ensemble transform:
-          saber outer blocks:
+      ensemble transform:
           - saber block name: ID
           - saber block name: StdDev
             read:
               model file:
                 filepath: testdata/convertstate_constant/ensemble_transform
-        localization:
+      localization:
           saber central block:
             saber block name: BUMP_NICAS
             read:

@@ -8,10 +8,13 @@
 !----------------------------------------------------------------------
 module type_avg
 
+use fckit_mpi_module, only: fckit_mpi_status
 !$ use omp_lib
 use tools_const, only: zero,one
 use tools_func, only: add,divide
 use tools_kinds, only: kind_real
+use tools_netcdf, only: create_file,open_file,get_att,put_att,define_grp,inquire_grp,define_dim,define_var, &
+ & inquire_var,put_var,get_var,close_file
 use type_avg_blk, only: avg_blk_type
 use type_geom, only: geom_type
 use type_mom, only: mom_type
@@ -30,10 +33,21 @@ type avg_type
    integer :: nsub                            !< Number of sub-ensembles
    type(avg_blk_type),allocatable :: blk(:,:) !< Averaged statistics blocks
    type(avg_blk_type),allocatable :: grp(:,:) !< Group statistics
+
+   ! Dimensions for local I/O
+   integer :: nc2a                            !< Number of points in subset Sc2, halo A
 contains
    procedure :: alloc => avg_alloc
    procedure :: dealloc => avg_dealloc
-   procedure :: write => avg_write
+   procedure :: avg_read
+   procedure :: avg_read_single
+   generic :: read => avg_read,avg_read_single
+   procedure :: avg_write
+   procedure :: avg_write_single
+   generic :: write => avg_write,avg_write_single
+   procedure :: send => avg_send
+   procedure :: receive => avg_receive
+   procedure :: write_hist => avg_write_hist
    procedure :: compute => avg_compute
 end type avg_type
 
@@ -136,10 +150,438 @@ end if
 end subroutine avg_dealloc
 
 !----------------------------------------------------------------------
+! Subroutine: avg_read
+!> Read
+!----------------------------------------------------------------------
+subroutine avg_read(avg,mpl,nam,geom,samp)
+
+implicit none
+
+! Passed variables
+class(avg_type),intent(inout) :: avg !< Averaged statistics
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+type(nam_type),intent(in) :: nam     !< Namelist
+type(geom_type),intent(in) :: geom   !< Geometry
+type(samp_type),intent(in) :: samp   !< Sampling
+
+! Local variables
+integer :: iproc,iprocio
+type(avg_type) :: avg_tmp
+
+! Set name
+@:set_name(avg_read)
+
+! Probe in
+@:probe_in()
+
+do iproc=1,mpl%nproc
+   ! Reading task
+   iprocio = mod(iproc,mpl%nprocio)
+   if (iprocio==0) iprocio = mpl%nprocio
+
+   if (mpl%myproc==iprocio) then
+      write(mpl%info,'(a10,a,i6,a,i6)') '','Read averaged statistics of task ',iproc,' from task ',iprocio
+      call mpl%flush
+
+      if (iproc==iprocio) then
+         ! Read data
+         call avg%read(mpl,nam,geom,iproc)
+         if (avg%nc2a/=samp%nc2a) call mpl%abort('${subr}$','avg%nc2a is not equal to samp%nc2a')
+      else
+         ! Read data
+         call avg_tmp%read(mpl,nam,geom,iproc)
+
+         ! Send data to task iproc
+         call avg_tmp%send(mpl,nam,geom,iproc)
+
+         ! Release memory
+         call avg_tmp%dealloc
+      end if
+   elseif (mpl%myproc==iproc) then
+      ! Receive data from task iprocio
+      write(mpl%info,'(a10,a,i6,a,i6)') '','Receive averaged statistics of task ',iproc,' from task ',iprocio
+      call mpl%flush
+      call avg%receive(mpl,nam,geom,iprocio)
+      if (avg%nc2a/=samp%nc2a) call mpl%abort('${subr}$','avg%nc2a is not equal to samp%nc2a')
+   end if
+end do
+
+! Update tag
+call mpl%update_tag(3)
+
+! Probe out
+@:probe_out()
+
+end subroutine avg_read
+
+!----------------------------------------------------------------------
+! Subroutine: avg_read_single
+!> Read, single task
+!----------------------------------------------------------------------
+subroutine avg_read_single(avg,mpl,nam,geom,iproc)
+
+implicit none
+
+! Passed variables
+class(avg_type),intent(inout) :: avg !< Averaged statistics
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+type(nam_type),intent(in) :: nam     !< Namelist
+type(geom_type),intent(in) :: geom   !< Geometry
+integer,intent(in) :: iproc          !< Task index
+
+! Local variables
+integer :: ig,ic2a
+integer :: ncid,grpid,m11_id,m11sq_id
+character(len=1024) :: grpname
+
+! Set name
+@:set_name(avg_read_single)
+
+! Probe in
+@:probe_in()
+
+! Open file
+ncid = open_file(mpl,nam%fname_avg,iproc)
+
+! Get attribute
+call get_att(mpl,ncid,0,'nc2a',avg%nc2a)
+
+! Allocation
+allocate(avg%grp(0:avg%nc2a,nam%ng))
+do ig=1,nam%ng
+   do ic2a=0,avg%nc2a
+      call avg%grp(ic2a,ig)%alloc(nam,geom,ic2a)
+   end do
+end do
+
+do ig=1,nam%ng
+   do ic2a=0,avg%nc2a
+      ! Get group name
+      write(grpname,'(a,a,i6.6)') trim(nam%group_names(ig)),'_',ic2a
+
+      ! Get group
+      grpid = inquire_grp(mpl,ncid,grpname)
+
+      ! Get variables
+      m11_id = inquire_var(mpl,grpid,'m11')
+      m11sq_id = inquire_var(mpl,grpid,'m11sq')
+
+      ! Read data
+      call get_var(mpl,grpid,m11_id,avg%grp(ic2a,ig)%m11)
+      call get_var(mpl,grpid,m11sq_id,avg%grp(ic2a,ig)%m11sq)
+   end do
+end do
+
+! Close file
+call close_file(mpl,ncid)
+
+! Probe out
+@:probe_out()
+
+end subroutine avg_read_single
+
+!----------------------------------------------------------------------
 ! Subroutine: avg_write
 !> Write
 !----------------------------------------------------------------------
-subroutine avg_write(avg,mpl,nam,geom)
+subroutine avg_write(avg,mpl,nam,geom,samp)
+
+implicit none
+
+! Passed variables
+class(avg_type),intent(inout) :: avg !< Averaged statistics
+type(mpl_type),intent(inout) :: mpl  !< MPI data
+type(nam_type),intent(in) :: nam     !< Namelist
+type(geom_type),intent(in) :: geom   !< Geometry
+type(samp_type),intent(in) :: samp   !< Sampling
+
+! Local variables
+integer :: iproc,iprocio
+type(avg_type) :: avg_tmp
+
+! Set name
+@:set_name(avg_write)
+
+! Probe in
+@:probe_in()
+
+do iproc=1,mpl%nproc
+   ! Writing task
+   iprocio = mod(iproc,mpl%nprocio)
+   if (iprocio==0) iprocio = mpl%nprocio
+
+   if (mpl%myproc==iprocio) then
+      write(mpl%info,'(a10,a,i6,a,i6)') '','Write averaged statistics of task ',iproc,' from task ',iprocio
+      call mpl%flush
+
+      if (iproc==iprocio) then
+         ! Write data
+         avg%nc2a = samp%nc2a
+         call avg%write(mpl,nam,geom,iproc)
+      else
+         ! Receive data from task iproc
+         call avg_tmp%receive(mpl,nam,geom,iproc)
+
+         ! Write data
+         call avg_tmp%write(mpl,nam,geom,iproc)
+
+         ! Release memory
+         call avg_tmp%dealloc
+      end if
+   elseif (mpl%myproc==iproc) then
+      ! Send data to task iprocio
+      write(mpl%info,'(a10,a,i6,a,i6)') '','Send averaged statistics of task ',iproc,' to task ',iprocio
+      call mpl%flush
+      avg%nc2a = samp%nc2a
+      call avg%send(mpl,nam,geom,iprocio)
+   end if
+end do
+
+! Update tag
+call mpl%update_tag(3)
+
+! Probe out
+@:probe_out()
+
+end subroutine avg_write
+
+!----------------------------------------------------------------------
+! Subroutine: avg_write_single
+!> Write, single task
+!----------------------------------------------------------------------
+subroutine avg_write_single(avg,mpl,nam,geom,iproc)
+
+implicit none
+
+! Passed variables
+class(avg_type),intent(in) :: avg   !< Averaged statistics
+type(mpl_type),intent(inout) :: mpl !< MPI data
+type(nam_type),intent(in) :: nam    !< Namelist
+type(geom_type),intent(in) :: geom  !< Geometry
+integer,intent(in) :: iproc         !< Task index
+
+! Local variables
+integer :: ig,ic2a
+integer :: ncid,grpid,nc3_id,nc4_id,nl0r_id,nl0_id,m11_id,m11sq_id
+character(len=1024) :: grpname
+
+! Set name
+@:set_name(avg_write_single)
+
+! Probe in
+@:probe_in()
+
+! Create file
+ncid = create_file(mpl,nam%fname_avg,iproc)
+
+! Put attribute
+call put_att(mpl,ncid,0,'nc2a',avg%nc2a)
+
+! Define or get dimensions
+nc3_id = define_dim(mpl,ncid,'nc3',nam%nc3)
+nc4_id = define_dim(mpl,ncid,'nc4',nam%nc4)
+nl0r_id = define_dim(mpl,ncid,'nl0r',nam%nl0r)
+nl0_id = define_dim(mpl,ncid,'nl0',geom%nl0)
+
+do ig=1,nam%ng
+   do ic2a=0,avg%nc2a
+      ! Get group name
+      write(grpname,'(a,a,i6.6)') trim(nam%group_names(ig)),'_',ic2a
+
+      ! Define group
+      grpid = define_grp(mpl,ncid,grpname)
+
+      ! Define or get variables
+      m11_id = define_var(mpl,grpid,'m11','real',(/nc3_id,nc4_id,nl0r_id,nl0_id/))
+      m11sq_id = define_var(mpl,grpid,'m11sq','real',(/nc3_id,nc4_id,nl0r_id,nl0_id/))
+
+      ! Write variables
+      call put_var(mpl,grpid,m11_id,avg%grp(ic2a,ig)%m11)
+      call put_var(mpl,grpid,m11sq_id,avg%grp(ic2a,ig)%m11sq)
+   end do
+end do
+
+! Close file
+call close_file(mpl,ncid)
+
+! Probe out
+@:probe_out()
+
+end subroutine avg_write_single
+
+!----------------------------------------------------------------------
+! Subroutine: avg_send
+!> Send
+!----------------------------------------------------------------------
+subroutine avg_send(avg,mpl,nam,geom,iproc)
+
+implicit none
+
+! Passed variables
+class(avg_type),intent(in) :: avg  !< Averaged statistics
+type(mpl_type),intent(inout) :: mpl !< MPI data
+type(nam_type),intent(in) :: nam    !< Namelist
+type(geom_type),intent(in) :: geom  !< Geometry
+integer,intent(in) :: iproc         !< Destination task
+
+! Local variables
+integer :: nbufi,nbufr,ibufi,ibufr,ig,ic2a,bufs(2)
+integer,allocatable :: bufi(:)
+real(kind_real),allocatable :: bufr(:)
+
+! Set name
+@:set_name(avg_send)
+
+! Probe in
+@:probe_in()
+
+! Initialization
+nbufi = 0
+nbufr = 0
+
+! nc2a
+nbufi = nbufi+1
+
+! m11
+nbufr = nbufr+nam%ng*avg%nc2a*nam%nc3*nam%nc4*nam%nl0r*geom%nl0
+
+! m11sq
+nbufr = nbufr+nam%ng*avg%nc2a*nam%nc3*nam%nc4*nam%nl0r*geom%nl0
+
+! Allocation
+allocate(bufi(nbufi))
+allocate(bufr(nbufr))
+
+! Initialization
+ibufi = 0
+ibufr = 0
+
+! nc2a
+bufi(ibufi+1) = avg%nc2a
+ibufi = ibufi+1
+
+do ig=1,nam%ng
+   do ic2a=0,avg%nc2a
+      ! m11
+      bufr(ibufr+1:ibufr+nam%nc3*nam%nc4*nam%nl0r*geom%nl0) = reshape(avg%grp(ic2a,ig)%m11, &
+ & (/nam%nc3*nam%nc4*nam%nl0r*geom%nl0/))
+      ibufr = ibufr+nam%nc3*nam%nc4*nam%nl0r*geom%nl0
+
+      ! m11sq
+      bufr(ibufr+1:ibufr+nam%nc3*nam%nc4*nam%nl0r*geom%nl0) = reshape(avg%grp(ic2a,ig)%m11sq, &
+ & (/nam%nc3*nam%nc4*nam%nl0r*geom%nl0/))
+      ibufr = ibufr+nam%nc3*nam%nc4*nam%nl0r*geom%nl0
+   end do
+end do
+
+! Check sizes
+if (ibufi/=nbufi) call mpl%abort('${subr}$','wrong final index ibufi')
+if (ibufr/=nbufr) call mpl%abort('${subr}$','wrong final index ibufr')
+
+! Send buffer size
+bufs = (/nbufi,nbufr/)
+call mpl%f_comm%send(bufs,iproc-1,mpl%tag)
+
+! Send data
+call mpl%f_comm%send(bufi,iproc-1,mpl%tag+1)
+call mpl%f_comm%send(bufr,iproc-1,mpl%tag+2)
+
+! Release memory
+deallocate(bufi)
+deallocate(bufr)
+
+! Probe out
+@:probe_out()
+
+end subroutine avg_send
+
+!----------------------------------------------------------------------
+! Subroutine: avg_receive
+!> Receive
+!----------------------------------------------------------------------
+subroutine avg_receive(avg,mpl,nam,geom,iproc)
+
+implicit none
+
+! Passed variables
+class(avg_type),intent(inout) :: avg !< Averaged statistics
+type(mpl_type),intent(inout) :: mpl    !< MPI data
+type(nam_type),intent(in) :: nam       !< Namelist
+type(geom_type),intent(in) :: geom     !< Geometry
+integer,intent(in) :: iproc            !< Source task
+
+! Local variables
+integer :: nbufi,nbufr,ibufi,ibufr,ig,ic2a,bufs(2)
+integer,allocatable :: bufi(:)
+real(kind_real),allocatable :: bufr(:)
+type(fckit_mpi_status) :: status
+
+! Set name
+@:set_name(avg_receive)
+
+! Probe in
+@:probe_in()
+
+! Receive buffer size
+call mpl%f_comm%receive(bufs,iproc-1,mpl%tag,status)
+nbufi = bufs(1)
+nbufr = bufs(2)
+
+! Allocation
+allocate(bufi(nbufi))
+allocate(bufr(nbufr))
+
+! Receive data
+call mpl%f_comm%receive(bufi,iproc-1,mpl%tag+1,status)
+call mpl%f_comm%receive(bufr,iproc-1,mpl%tag+2,status)
+
+! Initialization
+ibufi = 0
+ibufr = 0
+
+! nc2a
+avg%nc2a = bufi(ibufi+1)
+ibufi = ibufi+1
+
+! Allocation
+allocate(avg%grp(0:avg%nc2a,nam%ng))
+do ig=1,nam%ng
+   do ic2a=0,avg%nc2a
+      call avg%grp(ic2a,ig)%alloc(nam,geom,ic2a)
+   end do
+end do
+
+do ig=1,nam%ng
+   do ic2a=0,avg%nc2a
+      ! m11
+      avg%grp(ic2a,ig)%m11 = reshape(bufr(ibufr+1:ibufr+nam%nc3*nam%nc4*nam%nl0r*geom%nl0), &
+ & (/nam%nc3,nam%nc4,nam%nl0r,geom%nl0/))
+      ibufr = ibufr+nam%nc3*nam%nc4*nam%nl0r*geom%nl0
+
+      ! m11sq
+      avg%grp(ic2a,ig)%m11sq = reshape(bufr(ibufr+1:ibufr+nam%nc3*nam%nc4*nam%nl0r*geom%nl0), &
+ & (/nam%nc3,nam%nc4,nam%nl0r,geom%nl0/))
+      ibufr = ibufr+nam%nc3*nam%nc4*nam%nl0r*geom%nl0
+   end do
+end do
+
+! Check sizes
+if (ibufi/=nbufi) call mpl%abort('${subr}$','wrong final index ibufi')
+if (ibufr/=nbufr) call mpl%abort('${subr}$','wrong final index ibufr')
+
+! Release memory
+deallocate(bufr)
+
+! Probe out
+@:probe_out()
+
+end subroutine avg_receive
+
+!----------------------------------------------------------------------
+! Subroutine: avg_write_hist
+!> Write histograms
+!----------------------------------------------------------------------
+subroutine avg_write_hist(avg,mpl,nam,geom)
 
 implicit none
 
@@ -154,7 +596,7 @@ integer :: iv
 character(len=1024) :: filename
 
 ! Set name
-@:set_name(avg_write)
+@:set_name(avg_write_hist)
 
 ! Probe in
 @:probe_in()
@@ -162,14 +604,14 @@ character(len=1024) :: filename
 if (mpl%main) then
    filename = trim(nam%prefix)//trim(avg%prefix)
    do iv=1,nam%nv
-      call avg%blk(0,iv)%write(mpl,nam,geom,filename)
+      call avg%blk(0,iv)%write_hist(mpl,nam,geom,filename)
    end do
 end if
 
 ! Probe out
 @:probe_out()
 
-end subroutine avg_write
+end subroutine avg_write_hist
 
 !----------------------------------------------------------------------
 ! Subroutine: avg_compute
@@ -237,11 +679,11 @@ do iv=1,nam%nv
    end if
 end do
 
-if (mpl%main.and.(nam%avg_nbins>0)) then
+if (nam%avg_nbins>0) then
    ! Write histograms
    write(mpl%info,'(a10,a)') '','Write histograms'
    call mpl%flush
-   call avg%write(mpl,nam,geom)
+   call avg%write_hist(mpl,nam,geom)
 end if
 
 ! Compute asymptotic statistics

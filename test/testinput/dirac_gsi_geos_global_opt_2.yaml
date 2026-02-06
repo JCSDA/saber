@@ -1,6 +1,7 @@
 # Dirac test to generate a reference for BUMP scaling check (optimization_bump_hdiag_gsi_2.yaml), with homogeneous length-scales and rescaling in the namelist
 background error:
   covariance model: SABER
+  covariance type: gsi hybrid covariance
   adjoint test: true
   adjoint tolerance: 1e-11
   saber central block:

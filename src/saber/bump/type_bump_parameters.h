@@ -81,6 +81,10 @@ struct IODef {
   std::pair<const char *, std::string> fname_vbal =
     std::make_pair("overriding vertical balance file", "");
 
+  // Averaged statistics file
+  std::pair<const char *, std::string> fname_avg =
+    std::make_pair("overriding averaged statistics file", "");
+
   // Universe radius file
   std::pair<const char *, std::string> fname_universe_radius =
     std::make_pair("overriding universe radius file", "");
@@ -104,29 +108,17 @@ struct IODef {
 
 // Drivers section
 struct DriversDef {
-  // Compute covariance, ensemble 1
-  std::pair<const char *, bool> compute_cov1 =
+  // Compute covariance
+  std::pair<const char *, bool> compute_cov =
     std::make_pair("compute covariance", false);
 
-  // Compute covariance, ensemble 2
-  std::pair<const char *, bool> compute_cov2 =
-    std::make_pair("compute lowres covariance", false);
-
-  // Compute correlation, ensemble 1
-  std::pair<const char *, bool> compute_cor1 =
+  // Compute correlation
+  std::pair<const char *, bool> compute_cor =
     std::make_pair("compute correlation", false);
 
-  // Compute correlation, ensemble 2
-  std::pair<const char *, bool> compute_cor2 =
-    std::make_pair("compute lowres correlation", false);
-
-  // Compute localization, ensemble 1
-  std::pair<const char *, bool> compute_loc1 =
+  // Compute localization
+  std::pair<const char *, bool> compute_loc =
     std::make_pair("compute localization", false);
-
-  // Compute localization, ensemble 2
-  std::pair<const char *, bool> compute_loc2 =
-    std::make_pair("compute lowres localization", false);
 
   // Compute hybrid weights
   std::pair<const char *, bool> compute_hyb =
@@ -203,6 +195,10 @@ struct DriversDef {
   // Write sampling moments
   std::pair<const char *, bool> write_mom =
     std::make_pair("write moments", false);
+
+  // Write averaged statistics
+  std::pair<const char *, bool> write_avg =
+    std::make_pair("write averaged statistics", false);
 
   // Write HDIAG diagnostics
   std::pair<const char *, bool> write_hdiag =
@@ -310,21 +306,13 @@ struct ModelDef {
 
 // Ensemble sizes section
 struct EnsembleSizesDef {
-  // Ensemble 1 size
-  std::pair<const char *, int> ens1_ne =
+  // Ensemble size
+  std::pair<const char *, int> ens_ne =
     std::make_pair("total ensemble size", 0);
 
-  // Ensemble 1 sub-ensembles number
-  std::pair<const char *, int> ens1_nsub =
+  // Ensemble sub-ensembles number
+  std::pair<const char *, int> ens_nsub =
     std::make_pair("sub-ensembles", 1);
-
-  // Ensemble 2 size
-  std::pair<const char *, int> ens2_ne =
-    std::make_pair("total lowres ensemble size", 0);
-
-  // Ensemble 2 sub-ensembles number
-  std::pair<const char *, int> ens2_nsub =
-    std::make_pair("lowres sub-ensembles", 1);
 };
 
 // Mask parameters
@@ -404,10 +392,6 @@ struct DiagnosticsDef {
   std::pair<const char *, int> ne =
     std::make_pair("target ensemble size", 0);
 
-  // Ensemble size of the hybrid term
-  std::pair<const char *, int> ne_lr =
-    std::make_pair("target lowres ensemble size", 0);
-
   // Gaussian approximation for asymptotic quantities
   std::pair<const char *, bool> gau_approx =
     std::make_pair("gaussian approximation", false);
@@ -481,18 +465,6 @@ struct VarianceDef {
   // Number of passes for the variance filtering (0 for uniform variance)
   std::pair<const char *, int> var_npass =
     std::make_pair("filtering passes", -1);
-
-  // Resolution for the NICAS smoother
-  std::pair<const char *, double> smoother_resol =
-    std::make_pair("smoother resolution", 5.0);
-
-  // Maximum size of the Sc1 subset for the NICAS smoother
-  std::pair<const char *, int> smoother_nc1max =
-    std::make_pair("smoother max horizontal grid size", 50000);
-
-  // Minimum effective resolution for the NICAS smoother
-  std::pair<const char *, double> smoother_resol_eff_min =
-    std::make_pair("smoother min effective resolution", 2.0);
 };
 
 // Optimality test section
@@ -546,6 +518,22 @@ struct NICASDef {
   // Minimum effective resolution
   std::pair<const char *, double> resol_eff_min =
     std::make_pair("min effective resolution", 3.0);
+
+  // Filter mode
+  std::pair<const char *, bool> filter_mode =
+    std::make_pair("filter mode", false);
+
+  // Resolution for the NICAS filter
+  std::pair<const char *, double> filter_resol =
+    std::make_pair("filter resolution", 5.0);
+
+  // Maximum size of the Sc1 subset for the NICAS filter
+  std::pair<const char *, int> filter_nc1max =
+    std::make_pair("filter max horizontal grid size", 50000);
+
+  // Minimum effective resolution for the NICAS filter
+  std::pair<const char *, double> filter_resol_eff_min =
+    std::make_pair("filter min effective resolution", 2.0);
 
   // NICAS draw type ('random' or 'octahedral')
   std::pair<const char *, std::string> nicas_draw_type =

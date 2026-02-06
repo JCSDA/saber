@@ -1,0 +1,55 @@
+# Dirac test for the BifourierSpectralVorDivToGridRedWind (forward and backward) and RedWindToGeoWind blocks, using ECTRANS backend
+geometry:
+  function space: StructuredColumns
+  grid:
+    type : regional
+    nx : 73
+    ny : 51
+    dx : 2.5e3
+    dy : 2.5e3
+    lonlat(centre) : [9.9, 56.3]
+    projection :  
+      type : lambert_conformal_conic
+      latitude0  : 56.3
+      longitude0 : 0.0
+    y_numbering: 1
+  partitioner: checkerboard
+  groups:
+  - variables:
+    - air_upward_absolute_vorticity
+    - air_horizontal_divergence
+    - geographical_x_wind
+    - geographical_y_wind
+    levels: 10
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables:
+  - geographical_x_wind
+  - geographical_y_wind
+background error:
+  covariance model: SABER
+  adjoint test: true
+  square-root test: true
+  inverse test: true
+  saber central block:
+    saber block name: ID
+  saber outer blocks:
+  - saber block name: BifourierSpectralVorDivToGridWind
+    backward mode: true
+  - saber block name: BifourierSpectralVorDivToGridWind
+    transform:
+      fft backend: ectrans
+dirac:
+  lon:
+  - 9.9058
+  lat:
+  - 56.3223
+  level:
+  - 1
+  variable:
+  - geographical_x_wind
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_bifourier_vordivtouv_ectrans_1/%MPI%_dirac_%id%
+test:
+  reference filename: testref/dirac_bifourier_vordivtouv_ectrans_1.ref

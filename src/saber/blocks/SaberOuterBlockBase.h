@@ -72,6 +72,11 @@ class SaberOuterBlockBase : public util::Printable,
     {throw eckit::NotImplemented("leftInverseMultiply not implemented yet for the block "
       + blockName_, Here());}
 
+  // Block right inverse multiplication
+  virtual void rightInverseMultiply(oops::FieldSet3D &) const
+    {throw eckit::NotImplemented("rightInverseMultiply not implemented yet for the block "
+      + blockName_, Here());}
+
   // Setup / calibration methods
 
   // Read block data
@@ -98,11 +103,6 @@ class SaberOuterBlockBase : public util::Printable,
       + this->blockName(), Here());}
   virtual void iterativeCalibrationFinal()
     {throw eckit::NotImplemented("iterativeCalibrationUpdate not implemented yet for the block "
-      + this->blockName(), Here());}
-
-  // Dual resolution setup
-  virtual void dualResolutionSetup(const oops::GeometryData &)
-    {throw eckit::NotImplemented("dualResolutionSetup not implemented yet for the block "
       + this->blockName(), Here());}
 
   // Write block data

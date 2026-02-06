@@ -57,6 +57,7 @@ contains
    procedure :: alloc_cv => nicas_alloc_cv
    procedure :: random_cv => nicas_random_cv
    procedure :: apply => nicas_apply
+   procedure :: apply_filter => nicas_apply_filter
    procedure :: apply_sqrt => nicas_apply_sqrt
    procedure :: apply_sqrt_ad => nicas_apply_sqrt_ad
    procedure :: gen_ens_pert => nicas_gen_ens_pert
@@ -1045,11 +1046,7 @@ if (nam%check_normalization>0) then
       do icmp=1,nicas%blk(ig)%ncmp
          write(mpl%info,'(a7,a,i1)') '','Component: ',icmp
          call mpl%flush
-         if (nicas%blk(ig)%cmp(icmp)%smoother) then
-            call nicas%blk(ig)%cmp(icmp)%test_normalization(mpl,rng,nam,geom,icmp)
-         else
-            call nicas%blk(ig)%cmp(icmp)%test_normalization(mpl,rng,nam,geom)
-         end if
+         call nicas%blk(ig)%cmp(icmp)%test_normalization(mpl,rng,nam,geom)
       end do
       write(mpl%info,'(a7,a)') '','All components:'
       call mpl%flush
@@ -1240,7 +1237,7 @@ end subroutine nicas_random_cv
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_apply
-!> Apply NICAS (non smoother case)
+!> Apply NICAS (correlation mode)
 !----------------------------------------------------------------------
 subroutine nicas_apply(nicas,mpl,nam,geom,fld)
 
@@ -1290,6 +1287,43 @@ end if
 @:probe_out()
 
 end subroutine nicas_apply
+
+!----------------------------------------------------------------------
+! Subroutine: nicas_apply_filter
+!> Apply NICAS filter (filter mode)
+!----------------------------------------------------------------------
+subroutine nicas_apply_filter(nicas,mpl,nam,geom,fld)
+
+implicit none
+
+! Passed variables
+class(nicas_type),intent(inout) :: nicas                        !< NICAS data
+type(mpl_type),intent(inout) :: mpl                             !< MPI data
+type(nam_type),intent(in) :: nam                                !< Namelist
+type(geom_type),intent(in) :: geom                              !< Geometry
+real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0,nam%nv) !< Field
+
+! Local variable
+integer :: ig,iv
+
+! Set name
+@:set_name(nicas_apply_filter)
+
+! Probe in
+@:probe_in()
+
+do iv=1,nam%nv
+   ! Group index
+   ig = nam%group_index(iv)
+
+   ! Apply NICAS
+   call nicas%blk(ig)%apply_filter(mpl,geom,fld(:,:,iv))
+end do
+
+! Probe out
+@:probe_out()
+
+end subroutine nicas_apply_filter
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_apply_sqrt
@@ -1732,7 +1766,7 @@ type(nam_type),intent(inout) :: nam      !< Namelist variables
 type(geom_type),intent(in) :: geom       !< Geometry
 
 ! Local variables
-integer :: ifac,itest,nefac(nfac_rnd),ens1_ne
+integer :: ifac,itest,nefac(nfac_rnd),ens_ne
 integer :: ncid,ntest_id,nfac_id,nefac_id,mse_id,mse_th_id
 real(kind_real) :: fld(geom%nc0a,geom%nl0,nam%nv),mse(ntest,nfac_rnd),mse_th(ntest,nfac_rnd),mse_avg,mse_th_avg
 real(kind_real),allocatable :: fld_ref(:,:,:,:),fld_save(:,:,:,:)
@@ -1768,14 +1802,14 @@ end do
 call mpl%prog_final
 
 ! Save namelist variables
-ens1_ne = nam%ens1_ne
+ens_ne = nam%ens_ne
 
 write(mpl%info,'(a4,a)') '','Test randomization for various ensemble sizes:'
 call mpl%flush
 do ifac=1,nfac_rnd
    ! Ensemble size
-   nefac(ifac) = max(int(real(ifac,kind_real)/real(nfac_rnd,kind_real)*real(ens1_ne,kind_real)),3)
-   nam%ens1_ne = nefac(ifac)
+   nefac(ifac) = max(int(real(ifac,kind_real)/real(nfac_rnd,kind_real)*real(ens_ne,kind_real)),3)
+   nam%ens_ne = nefac(ifac)
    write(mpl%info,'(a7,a,i6,a)') '','Ensemble sizes: ',nefac(ifac),' members'
    call mpl%flush
 
@@ -1797,7 +1831,7 @@ do ifac=1,nfac_rnd
       fld = fld-fld_ref(:,:,:,itest)
       call mpl%dot_prod(fld,fld,mse(itest,ifac))
       call mpl%dot_prod(fld_ref(:,:,:,itest),fld_ref(:,:,:,itest),mse_th(itest,ifac))
-      mse_th(itest,ifac) = one/real(nam%ens1_ne-1,kind_real)*(mse_th(itest,ifac)+real(geom%nc0*geom%nl0*nam%nv,kind_real))
+      mse_th(itest,ifac) = one/real(nam%ens_ne-1,kind_real)*(mse_th(itest,ifac)+real(geom%nc0*geom%nl0*nam%nv,kind_real))
 
       ! Update
       call mpl%prog_print(itest)
@@ -1815,7 +1849,7 @@ do ifac=1,nfac_rnd
 end do
 
 ! Reset namelist variables
-nam%ens1_ne = ens1_ne
+nam%ens_ne = ens_ne
 
 if (mpl%main) then
    ! Create file

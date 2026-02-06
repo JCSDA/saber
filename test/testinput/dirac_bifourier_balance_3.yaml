@@ -1,0 +1,95 @@
+# Same as dirac_bifourier_balance_1, balanced air pressure parameters from grid and an additional biperiodization block
+geometry:
+  function space: StructuredColumns
+  grid:
+    type : regional
+    nx : 52
+    ny : 36
+    dx : 2.5e3
+    dy : 2.5e3
+    lonlat(centre) : [9.9, 56.3]
+    projection :  
+      type : lambert_conformal_conic
+      latitude0  : 56.3
+      longitude0 : 0.0
+    y_numbering: 1
+  partitioner: checkerboard
+  groups:
+  - variables:
+    - air_upward_absolute_vorticity
+    - air_horizontal_divergence
+    - air_temperature
+    - water_vapor_mixing_ratio_wrt_moist_air
+    levels: 10
+  - variables:
+    - log_of_air_pressure_at_surface
+    levels: 1
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables:
+  - air_upward_absolute_vorticity
+  - air_horizontal_divergence
+  - air_temperature
+  - log_of_air_pressure_at_surface
+  - water_vapor_mixing_ratio_wrt_moist_air
+background error:
+  covariance model: SABER
+  adjoint test: true
+  square-root test: true
+  inverse test: true
+  saber central block:
+    saber block name: BifourierID
+  saber outer blocks:
+  - saber block name: BifourierAromeBalance
+    read:
+      input file: testdata/bifourier_balance.nc
+    rows:
+    - output variable: balanced_air_pressure
+    - output variable: air_horizontal_divergence
+      input variables: [balanced_air_pressure]
+    - output variable: air_temperature_and_log_of_air_pressure_at_surface
+      input variables: [balanced_air_pressure, air_horizontal_divergence]
+    - output variable: water_vapor_mixing_ratio_wrt_moist_air
+      input variables: [balanced_air_pressure, air_horizontal_divergence, air_temperature_and_log_of_air_pressure_at_surface]
+    balanced air pressure parameters from grid: true
+    active variables:
+    - air_upward_absolute_vorticity
+    - air_horizontal_divergence
+    - air_temperature
+    - log_of_air_pressure_at_surface
+    - air_temperature_and_log_of_air_pressure_at_surface
+    - water_vapor_mixing_ratio_wrt_moist_air
+  - saber block name: BifourierSpectralToGrid
+  - saber block name: Biperiodization
+    biperiodization:
+      x inner extension: 28
+      y inner extension: 20
+      x outer extension: 7
+      y outer extension: 5
+    skip tests: true
+dirac:
+  lon:
+  - 9.9058
+  - 9.9058
+  - 9.9058
+  - 9.9058
+  lat:
+  - 56.3223
+  - 56.3223
+  - 56.3223
+  - 56.3223
+  level:
+  - 1
+  - 1
+  - 1
+  - 1
+  variable:
+  - air_upward_absolute_vorticity
+  - air_horizontal_divergence
+  - log_of_air_pressure_at_surface
+  - water_vapor_mixing_ratio_wrt_moist_air
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_bifourier_balance_3/%MPI%_dirac_%id%
+test:
+  reference filename: testref/dirac_bifourier_balance_3.ref

@@ -84,6 +84,8 @@ Adjoint test for block BUMP_NICAS passed
 Square-root test for block BUMP_NICAS passed
 Norm of input parameter inflation: 6.6250433960843253e+01
 Norm of input parameter StdDev: 1.6562608490210712e+02
+Adjoint test for block StdDev passed
+Adjoint test for block ID passed
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -91,6 +93,7 @@ Norm of input parameter StdDev: 1.6562608490210712e+02
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
+Adjoint test for block BUMP_NICAS passed
 Square-root test for block BUMP_NICAS passed
 Adjoint test for block Ensemble passed
 Square-root test for block Ensemble passed
@@ -213,6 +216,8 @@ Covariance(hybrid1_SABER) * Increment:
     + stddev = 3.2868334756832761e-14
 Norm of input parameter inflation: 6.6250433960843253e+01
 Norm of input parameter StdDev: 1.6562608490210712e+02
+Adjoint test for block StdDev passed
+Adjoint test for block ID passed
        Independent levels:  1[2]
           Subset Sc0 size:              762
           Domain area (% of Earth area): 0.100E+03%
@@ -220,6 +225,7 @@ Norm of input parameter StdDev: 1.6562608490210712e+02
              Level   2 ~> 100.0%
              Level   1 ~>  0.100E+01 vert. coord.
              Level   2 ~>  0.200E+01 vert. coord.
+Adjoint test for block BUMP_NICAS passed
 Square-root test for block BUMP_NICAS passed
 Adjoint test for block Ensemble passed
 Square-root test for block Ensemble passed

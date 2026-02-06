@@ -16,9 +16,10 @@ background:
   - air_horizontal_streamfunction
 background error:
   covariance model: SABER
+  covariance type: ensemble
   adjoint test: true
   square-root test: true
-  square-root tolerance: 3.0e-12
+  square-root tolerance: 1.0e-11
   ensemble:
     members from template:
       template:
@@ -31,9 +32,7 @@ background error:
       pattern: '%mem%'
       nmembers: 25
       zero padding: 6
-  saber central block:
-    saber block name: Ensemble
-    localization:
+  localization:
       saber central block:
         saber block name: BUMP_NICAS
         read:

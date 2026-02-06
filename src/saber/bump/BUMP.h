@@ -56,10 +56,6 @@ class BUMP {
   // Add ensemble
   void addEnsemble(const oops::FieldSets &);
 
-  // Dual resolution setup
-  void dualResolutionSetup(const atlas::FunctionSpace &,
-                           const atlas::FieldSet &);
-
   // Iterative update
   void iterativeUpdate(const oops::FieldSet3D &, const size_t &);
 
@@ -79,6 +75,7 @@ class BUMP {
   void inverseMultiplyStdDev(oops::FieldSet3D &) const;
   void randomizeNicas(oops::FieldSet3D &) const;
   void multiplyNicas(oops::FieldSet3D &) const;
+  void filterNicas(oops::FieldSet3D &) const;
   void multiplyPsiChiToUV(oops::FieldSet3D &) const;
   void multiplyPsiChiToUVAd(oops::FieldSet3D &) const;
   size_t getCvSize() const;
@@ -93,11 +90,9 @@ class BUMP {
   const util::DateTime validTime_;
   eckit::LocalConfiguration covarConf_;
   eckit::LocalConfiguration bumpConf_;
-  std::vector<size_t> nens_;
+  size_t nens_;
   bool iterativeEnsembleLoading_;
-  bool waitForDualResolution_;
   std::string gridUid_;
-  std::string dualResolutionGridUid_;
 
   eckit::LocalConfiguration getFileConf(const eckit::mpi::Comm &,
                                         const eckit::Configuration &) const;

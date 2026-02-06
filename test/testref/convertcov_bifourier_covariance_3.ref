@@ -1,0 +1,77 @@
+Input Dirac increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: structured [3723]
+  Fields:
+  - air_upward_absolute_vorticity (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 2.6860059092130003e-05
+    + stddev = 5.1826691088793144e-03
+  - air_horizontal_divergence (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 2.6860059092130003e-05
+    + stddev = 5.1826691088793144e-03
+  - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 2.4418235538300004e-05
+    + stddev = 4.9414811077572087e-03
+  - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 2.6860059092130003e-05
+    + stddev = 5.1826691088793144e-03
+- Regional grid size: 73x51
+- Cell sizes: 2.5000000000000000e+00 km x 2.5000000000000000e+00 km
+- Mean latitude: 5.6289831946322792e+01 deg
+- Spectral sizes: 37x26
+- Truncation parameters MxN: 36x25
+- Maximum total wave number: 36
+- Spectral array global size: 2815
+- Direct-inverse test passed
+- Inverse-direct test passed
+- Parseval identity test passed
+- Adjoint test (forward) passed
+- Adjoint test (inverse) passed
+- Derivatives / direct Laplacian consistency test passed
+Adjoint test for block BifourierSpectralToGrid passed
+Covariance norms: 
+- air_upward_absolute_vorticity: 
+  + correlation square-root: 1.9202692301777843e-01
+  + standard-deviation:      6.5009836490167796e-05
+- air_horizontal_divergence: 
+  + correlation square-root: 1.8312571043873863e-01
+  + standard-deviation:      5.6990166440000530e-05
+- air_temperature_and_log_of_air_pressure_at_surface: 
+  + correlation square-root: 4.6909265752786694e-01
+  + standard-deviation:      8.6202056358169210e-01
+- water_vapor_mixing_ratio_wrt_moist_air: 
+  + correlation square-root: 3.2538968703821552e-01
+  + standard-deviation:      5.1329425500907036e-04
+Adjoint test for block BifourierAromeCovariance passed
+Square-root test for block BifourierAromeCovariance passed
+Covariance(SABER) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: structured [3723]
+  Fields:
+  - air_upward_absolute_vorticity (10 levels):
+    + min    = -3.9997053364313298e-11
+    + max    = 5.5329603214293125e-10
+    + mean   ~ 0
+    + stddev = 6.5281126673378786e-12
+  - air_horizontal_divergence (10 levels):
+    + min    = -2.8488458312699661e-11
+    + max    = 3.2305862921761382e-10
+    + mean   ~ 0
+    + stddev = 3.7174077522049751e-12
+  - air_temperature_and_log_of_air_pressure_at_surface (11 levels):
+    + min    = -8.5375673983992743e-06
+    + max    = 6.3892158810947985e-07
+    + mean   = 5.7469798126267995e-08
+    + stddev = 3.2134350144332152e-07
+  - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
+    + min    = -1.4228820253838984e-09
+    + max    = 3.6863836528339639e-08
+    + mean   = 4.3367304218866945e-11
+    + stddev = 8.0479983797995180e-10

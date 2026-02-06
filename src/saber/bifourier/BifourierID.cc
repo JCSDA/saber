@@ -26,13 +26,10 @@ BifourierID::BifourierID(const oops::GeometryData & gdata,
     SaberCentralBlockBase(params, xb.validTime()),
     gdata_(gdata),
     comm_(gdata_.comm()),
-    activeVars_(activeVars)
+    activeVars_(activeVars),
+    trans_(transStore_.retrieveTransform(gdata))
 {
   oops::Log::trace() << classname() << "::BifourierID starting" << std::endl;
-
-  // Retrieve spectral transform
-  trans_ = transStore_.retrieveTransform(gdata);
-
   oops::Log::trace() << classname() << "::BifourierID done" << std::endl;
 }
 
@@ -49,7 +46,7 @@ void BifourierID::randomize(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::randomize starting" << std::endl;
 
   // Create random spectral vector
-  trans_->createRandomSpectralFieldSet(fset.fieldSet(), activeVars_);
+  trans_->createRandomFieldSet(fset.fieldSet(), activeVars_);
 
   oops::Log::trace() << classname() << "::randomize done" << std::endl;
 }

@@ -877,7 +877,7 @@ write(mpl%info,'(a)') '--- Update vertical covariance'
 call mpl%flush
 
 ! Allocation
-if (ie==1) call vbal%alloc(mpl,nam,geom,samp,nam%ens1_nsub)
+if (ie==1) call vbal%alloc(mpl,nam,geom,samp,nam%ens_nsub)
 
 ! Update vertical covariance
 do iv=1,nam%nv
@@ -887,7 +887,7 @@ do iv=1,nam%nv
 end do
 
 ! Write vertical covariance
-if ((ie==nam%ens1_ne).and.nam%write_vbal) then
+if ((ie==nam%ens_ne).and.nam%write_vbal) then
    if (nam%load_samp_local.or.nam%write_samp_local) call vbal%cov_write_local(mpl,nam,geom,samp)
    if (nam%load_samp_global.or.nam%write_samp_global) call vbal%cov_write_global(mpl,nam,geom,samp)
 end if

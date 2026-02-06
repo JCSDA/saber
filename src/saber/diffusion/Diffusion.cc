@@ -245,8 +245,6 @@ void Diffusion::multiply(oops::FieldSet3D & fset) const {
 // --------------------------------------------------------------------------------------
 
 void Diffusion::filter(oops::FieldSet3D & fset) const {
-  const atlas::FunctionSpace & fs = geom_.functionSpace();
-
   // iterate through the list of groups
   for (const auto & group : groups_) {
     // get the subset of fields, or create a common field if doing duplicated variable

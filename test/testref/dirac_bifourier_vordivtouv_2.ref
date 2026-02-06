@@ -10,36 +10,42 @@ Input Dirac increment:
   - geographical_y_wind (10 levels):
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00
-- xspace: LocalConfiguration[root={type => linear , start => 5.1870971254055749e+05 , end => 6.9870971254055749e+05 , N => 73 , endpoint => true}]
-- yspace: LocalConfiguration[root={type => linear , start => -1.8673080099392682e+04 , end => 1.0632691990060732e+05 , N => 51 , endpoint => true}]
-Outer grid size: 3723
 - Regional grid size: 73x51
 - Cell sizes: 2.5000000000000000e+00 km x 2.5000000000000000e+00 km
 - Mean latitude: 5.6289831946322792e+01 deg
 - Spectral sizes: 37x26
-- Truncation parameters MxN: 35x24
-- Maximum total wave number: 35
-- Spectral array global size: 2627
+- Truncation parameters MxN: 36x25
+- Maximum total wave number: 36
+- Spectral array global size: 2815
 - Direct-inverse test passed
 - Inverse-direct test passed
 - Parseval identity test passed
-- Adjoint test passed
+- Adjoint test (forward) passed
+- Adjoint test (inverse) passed
 - Derivatives / direct Laplacian consistency test passed
+- xspace: LocalConfiguration[root={type => linear , start => 5.1870971254055749e+05 , end => 6.9870971254055749e+05 , N => 73 , endpoint => true}]
+- yspace: LocalConfiguration[root={type => linear , start => -1.8673080099392682e+04 , end => 1.0632691990060732e+05 , N => 51 , endpoint => true}]
+Outer grid size: 3723
+Inner inverse test for block BifourierSpectralVorDivToGridWind passed: U Uinv (U x) == (U x)
+Outer inverse test for block BifourierSpectralVorDivToGridWind passed: Uinv U (Uinv x) == (Uinv x)
+Inner inverse test for block BifourierGridToSpectral passed: U Uinv (U x) == (U x)
+Outer inverse test for block BifourierGridToSpectral passed: Uinv U (Uinv x) == (Uinv x)
     FastLAM interpolation accuracy test passed
     FastLAM interpolation adjoint test passed
     FastLAM redToRows test passed
     FastLAM rowsToCols test passed
+Square-root test for block FastLAM passed
 Covariance(SABER) * Increment:
 - Valid time: 2010-01-01T12:00:00Z
   Geometry: structured [3723]
   Fields:
   - geographical_x_wind (10 levels):
-    + min    = -2.1343051349092116e+03
-    + max    = 2.0906119791328451e+03
-    + mean   = -4.1341902275466312e-05
-    + stddev = 1.1921190567106957e+02
+    + min    = -2.1348106301150806e+03
+    + max    = 2.0898006483377430e+03
+    + mean   = -4.1557379994899284e-05
+    + stddev = 1.1920809568604234e+02
   - geographical_y_wind (10 levels):
-    + min    = -2.1443925475165092e+03
-    + max    = 2.1443922671377277e+03
-    + mean   = 1.1469726009252675e-05
-    + stddev = 1.3659732343996504e+02
+    + min    = -2.1452821986739773e+03
+    + max    = 2.1452819181788741e+03
+    + mean   = 1.1561889218461781e-05
+    + stddev = 1.3665546894420132e+02

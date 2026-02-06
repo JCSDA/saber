@@ -48,8 +48,10 @@ type diag_blk_type
    real(kind_real),allocatable :: D22_l0(:,:)           !< Horizontal direct tensor, coefficient 22, profiles
    real(kind_real),allocatable :: D12_l0(:,:)           !< Horizontal direct tensor, coefficient 12 (normalized), profiles
    real(kind_real),allocatable :: rv_l0(:,:)            !< Vertical support radius, profiles
-   real(kind_real),allocatable :: hyb_coef_raw(:)       !< Raw hybrid coefficient
-   real(kind_real),allocatable :: hyb_coef(:)           !< Hybrid coefficient
+   real(kind_real),allocatable :: hyb_coef_1_raw(:)     !< Raw hybrid coefficient 1
+   real(kind_real),allocatable :: hyb_coef_1(:)         !< Hybrid coefficient 1
+   real(kind_real),allocatable :: hyb_coef_2_raw(:)     !< Raw hybrid coefficient 2
+   real(kind_real),allocatable :: hyb_coef_2(:)         !< Hybrid coefficient 2
 
    real(kind_real),allocatable :: a_c0a(:,:,:)          !< Amplitudes, subset Sc0, halo A
    real(kind_real),allocatable :: rh_c0a(:,:,:)         !< Horizontal support radius, subset Sc0, halo A
@@ -57,7 +59,8 @@ type diag_blk_type
    real(kind_real),allocatable :: D22_c0a(:,:,:)        !< Horizontal direct tensor, component 22, subset Sc0, halo A
    real(kind_real),allocatable :: D12_c0a(:,:,:)        !< Horizontal direct tensor, component 12 (normalized), subset Sc0, halo A
    real(kind_real),allocatable :: rv_c0a(:,:,:)         !< Vertical support radius, subset Sc0, halo A
-   real(kind_real),allocatable :: hyb_coef_c0a(:,:)     !< Hybrid coefficient, subset Sc0, halo A
+   real(kind_real),allocatable :: hyb_coef_1_c0a(:,:)   !< Hybrid coefficient 1, subset Sc0, halo A
+   real(kind_real),allocatable :: hyb_coef_2_c0a(:,:)   !< Hybrid coefficient 2, subset Sc0, halo A
 contains
    procedure :: alloc => diag_blk_alloc
    procedure :: partial_dealloc => diag_blk_partial_dealloc
@@ -116,8 +119,10 @@ if ((ic2a==0).or.nam%local_diag) then
    allocate(diag_blk%valid(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
    allocate(diag_blk%vert_coord(geom%nl0))
    allocate(diag_blk%fit(nam%nc3,nam%nc4,nam%nl0r,geom%nl0))
-   allocate(diag_blk%hyb_coef_raw(geom%nl0))
-   allocate(diag_blk%hyb_coef(geom%nl0))
+   allocate(diag_blk%hyb_coef_1_raw(geom%nl0))
+   allocate(diag_blk%hyb_coef_1(geom%nl0))
+   allocate(diag_blk%hyb_coef_2_raw(geom%nl0))
+   allocate(diag_blk%hyb_coef_2(geom%nl0))
 end if
 
 ! Initialization
@@ -125,8 +130,10 @@ if ((ic2a==0).or.nam%local_diag) then
    diag_blk%raw = mpl%msv%valr
    diag_blk%valid = mpl%msv%valr
    diag_blk%fit = mpl%msv%valr
-   diag_blk%hyb_coef_raw = mpl%msv%valr
-   diag_blk%hyb_coef = mpl%msv%valr
+   diag_blk%hyb_coef_1_raw = mpl%msv%valr
+   diag_blk%hyb_coef_1 = mpl%msv%valr
+   diag_blk%hyb_coef_2_raw = mpl%msv%valr
+   diag_blk%hyb_coef_2 = mpl%msv%valr
 end if
 
 ! Define weight to approximate the Frobenius norm
@@ -178,8 +185,10 @@ if (allocated(diag_blk%D11_l0)) deallocate(diag_blk%D11_l0)
 if (allocated(diag_blk%D22_l0)) deallocate(diag_blk%D22_l0)
 if (allocated(diag_blk%D12_l0)) deallocate(diag_blk%D12_l0)
 if (allocated(diag_blk%rv_l0)) deallocate(diag_blk%rv_l0)
-if (allocated(diag_blk%hyb_coef_raw)) deallocate(diag_blk%hyb_coef_raw)
-if (allocated(diag_blk%hyb_coef)) deallocate(diag_blk%hyb_coef)
+if (allocated(diag_blk%hyb_coef_1_raw)) deallocate(diag_blk%hyb_coef_1_raw)
+if (allocated(diag_blk%hyb_coef_1)) deallocate(diag_blk%hyb_coef_1)
+if (allocated(diag_blk%hyb_coef_2_raw)) deallocate(diag_blk%hyb_coef_2_raw)
+if (allocated(diag_blk%hyb_coef_2)) deallocate(diag_blk%hyb_coef_2)
 
 ! Probe out
 @:probe_out()
@@ -210,7 +219,8 @@ if (allocated(diag_blk%D11_c0a)) deallocate(diag_blk%D11_c0a)
 if (allocated(diag_blk%D22_c0a)) deallocate(diag_blk%D22_c0a)
 if (allocated(diag_blk%D12_c0a)) deallocate(diag_blk%D12_c0a)
 if (allocated(diag_blk%rv_c0a)) deallocate(diag_blk%rv_c0a)
-if (allocated(diag_blk%hyb_coef_c0a)) deallocate(diag_blk%hyb_coef_c0a)
+if (allocated(diag_blk%hyb_coef_1_c0a)) deallocate(diag_blk%hyb_coef_1_c0a)
+if (allocated(diag_blk%hyb_coef_2_c0a)) deallocate(diag_blk%hyb_coef_2_c0a)
 
 ! Probe out
 @:probe_out()
@@ -240,7 +250,7 @@ integer,intent(in) :: nl0_2_id                 !< NetCDF ID
 ! Local variables
 integer :: grpid,ncmp_id,raw_id,raw_hor_id,raw_zs_id,valid_id,l0rl0_to_l0_id
 integer :: fit_id,fit_hor_id,fit_zs_id,fit_detail_id,fit_detail_hor_id,fit_detail_zs_id
-integer :: a_l0_id,rh_l0_id,D11_l0_id,D22_l0_id,D12_l0_id,rv_l0_id,hyb_coef_raw_id,hyb_coef_id
+integer :: a_l0_id,rh_l0_id,D11_l0_id,D22_l0_id,D12_l0_id,rv_l0_id,hyb_coef_1_raw_id,hyb_coef_1_id,hyb_coef_2_raw_id,hyb_coef_2_id
 integer :: il0,jl0r,jl0,jl0rz,icmp
 
 ! Set name
@@ -292,8 +302,10 @@ if (mpl%msv%isanynot(diag_blk%fit)) then
       rv_l0_id = define_var(mpl,grpid,'rv_l0','real',(/nl0_1_id,ncmp_id/))
    end if
 end if
-if (mpl%msv%isanynot(diag_blk%hyb_coef_raw)) hyb_coef_raw_id = define_var(mpl,grpid,'hyb_coef_raw','real',(/nl0_1_id/))
-if (mpl%msv%isanynot(diag_blk%hyb_coef)) hyb_coef_id = define_var(mpl,grpid,'hyb_coef','real',(/nl0_1_id/))
+if (mpl%msv%isanynot(diag_blk%hyb_coef_1_raw)) hyb_coef_1_raw_id = define_var(mpl,grpid,'hyb_coef_1_raw','real',(/nl0_1_id/))
+if (mpl%msv%isanynot(diag_blk%hyb_coef_1)) hyb_coef_1_id = define_var(mpl,grpid,'hyb_coef_1','real',(/nl0_1_id/))
+if (mpl%msv%isanynot(diag_blk%hyb_coef_2_raw)) hyb_coef_2_raw_id = define_var(mpl,grpid,'hyb_coef_2_raw','real',(/nl0_1_id/))
+if (mpl%msv%isanynot(diag_blk%hyb_coef_2)) hyb_coef_2_id = define_var(mpl,grpid,'hyb_coef_2','real',(/nl0_1_id/))
 
 ! Write variables
 if (mpl%msv%isanynot(diag_blk%raw)) then
@@ -357,8 +369,10 @@ if (mpl%msv%isanynot(diag_blk%fit)) then
       call put_var(mpl,grpid,rv_l0_id,diag_blk%rv_l0)
    end if
 end if
-if (mpl%msv%isanynot(diag_blk%hyb_coef_raw)) call put_var(mpl,grpid,hyb_coef_raw_id,diag_blk%hyb_coef_raw)
-if (mpl%msv%isanynot(diag_blk%hyb_coef)) call put_var(mpl,grpid,hyb_coef_id,diag_blk%hyb_coef)
+if (mpl%msv%isanynot(diag_blk%hyb_coef_1_raw)) call put_var(mpl,grpid,hyb_coef_1_raw_id,diag_blk%hyb_coef_1_raw)
+if (mpl%msv%isanynot(diag_blk%hyb_coef_1)) call put_var(mpl,grpid,hyb_coef_1_id,diag_blk%hyb_coef_1)
+if (mpl%msv%isanynot(diag_blk%hyb_coef_2_raw)) call put_var(mpl,grpid,hyb_coef_2_raw_id,diag_blk%hyb_coef_2_raw)
+if (mpl%msv%isanynot(diag_blk%hyb_coef_2)) call put_var(mpl,grpid,hyb_coef_2_id,diag_blk%hyb_coef_2)
 
 ! End associate
 end associate
@@ -1029,8 +1043,9 @@ else if (nam%loc_option=='default') then
    !$omp end parallel do
 end if
 
-! Hybrid weight
-diag_blk%hyb_coef = mpl%msv%valr
+! Hybrid weights
+diag_blk%hyb_coef_1 = mpl%msv%valr
+diag_blk%hyb_coef_2 = mpl%msv%valr
 
 ! Probe out
 @:probe_out()
@@ -1041,7 +1056,7 @@ end subroutine diag_blk_localization
 ! Subroutine: diag_blk_hybridization
 !> Diag_blk hybridization
 !----------------------------------------------------------------------
-subroutine diag_blk_hybridization(diag_blk,mpl,nam,geom,avg1_blk,avg2_blk,loc1_blk)
+subroutine diag_blk_hybridization(diag_blk,mpl,nam,geom,avg1_blk,avg2_blk)
 
 implicit none
 
@@ -1049,10 +1064,9 @@ implicit none
 class(diag_blk_type),intent(inout) :: diag_blk !< Diagnostic block (hybridization)
 type(mpl_type),intent(inout) :: mpl            !< MPI data
 type(nam_type),intent(in) :: nam               !< Namelist
-type(geom_type),intent(in) :: geom(2)          !< Geometry
+type(geom_type),intent(in) :: geom             !< Geometry
 type(avg_blk_type),intent(in) :: avg1_blk      !< Averaged statistics block for ensemble 1
 type(avg_blk_type),intent(in) :: avg2_blk      !< Averaged statistics block for ensemble 2
-type(diag_blk_type),intent(inout) :: loc1_blk  !< Localization block for ensemble 1
 
 ! Local variables
 integer :: il0,jl0r,jl0,jc3,jc4
@@ -1064,7 +1078,7 @@ real(kind_real) :: a,bc,d,e,f,num,num_1,num_2,den,wgt
 ! Probe in
 @:probe_in()
 
-do il0=1,geom(2)%nl0
+do il0=1,geom%nl0
    ! Compute hybrid weights terms
    a = zero
    bc = zero
@@ -1072,22 +1086,22 @@ do il0=1,geom(2)%nl0
    e = zero
    f = zero
    do jl0r=1,nam%nl0r
-      jl0 = geom(2)%l0rl0_to_l0(jl0r,il0)
+      jl0 = geom%l0rl0_to_l0(jl0r,il0)
       do jc4=1,nam%nc4
          do jc3=1,nam%nc3
-            if (mpl%msv%isnot(loc1_blk%fit(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg1_blk%m11sq(jc3,jc4,jl0r,il0)) &
+            if (mpl%msv%isnot(diag_blk%fit(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg1_blk%m11sq(jc3,jc4,jl0r,il0)) &
  & .and.mpl%msv%isnot(avg1_blk%m11(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg2_blk%m11(jc3,jc4,jl0r,il0)) &
  & .and.mpl%msv%isnot(avg2_blk%m11sq(jc3,jc4,jl0r,il0)).and.mpl%msv%isnot(avg1_blk%m11asysq(jc3,jc4,jl0r,il0))) then
                wgt = one ! TODO(Benjamin): should be diag_blk%frob_wgt(jc3,jc4,jl0r,il0)
-               a = a+wgt*loc1_blk%fit(jc3,jc4,jl0r,il0)**2*avg1_blk%m11sq(jc3,jc4,jl0r,il0)
-               bc = bc+wgt*loc1_blk%fit(jc3,jc4,jl0r,il0)*avg1_blk%m11(jc3,jc4,jl0r,il0)*avg2_blk%m11(jc3,jc4,jl0r,il0)
+               a = a+wgt*diag_blk%fit(jc3,jc4,jl0r,il0)**2*avg1_blk%m11sq(jc3,jc4,jl0r,il0)
+               bc = bc+wgt*diag_blk%fit(jc3,jc4,jl0r,il0)*avg1_blk%m11(jc3,jc4,jl0r,il0)*avg2_blk%m11(jc3,jc4,jl0r,il0)
                select case (nam%hybrid_source)
                case ('randomized static')
                   d = d+wgt*avg2_blk%m11(jc3,jc4,jl0r,il0)**2
                case ('lowres ensemble')
                   d = d+wgt*avg2_blk%m11sq(jc3,jc4,jl0r,il0)
                end select
-               e = e+wgt*loc1_blk%fit(jc3,jc4,jl0r,il0)*avg1_blk%m11asysq(jc3,jc4,jl0r,il0)
+               e = e+wgt*diag_blk%fit(jc3,jc4,jl0r,il0)*avg1_blk%m11asysq(jc3,jc4,jl0r,il0)
                f = f+wgt*avg1_blk%m11(jc3,jc4,jl0r,il0)*avg2_blk%m11(jc3,jc4,jl0r,il0)
             end if
          end do
@@ -1101,28 +1115,28 @@ do il0=1,geom(2)%nl0
 
    if (den>zero) then
       ! Raw hybrid weights
-      loc1_blk%hyb_coef_raw(il0) = num_1/den
-      diag_blk%hyb_coef_raw(il0) = num_2/den
+      diag_blk%hyb_coef_1_raw(il0) = num_1/den
+      diag_blk%hyb_coef_2_raw(il0) = num_2/den
 
       ! Normalization (to keep a correct variance)
-      num = avg1_blk%m11(1,1,geom(2)%il0rz(il0),il0)
-      den = loc1_blk%hyb_coef_raw(il0)*avg1_blk%m11(1,1,geom(2)%il0rz(il0),il0) &
- & +diag_blk%hyb_coef_raw(il0)*avg2_blk%m11(1,1,geom(2)%il0rz(il0),il0)
+      num = avg1_blk%m11(1,1,geom%il0rz(il0),il0)
+      den = diag_blk%hyb_coef_1_raw(il0)*avg1_blk%m11(1,1,geom%il0rz(il0),il0) &
+ & +diag_blk%hyb_coef_2_raw(il0)*avg2_blk%m11(1,1,geom%il0rz(il0),il0)
       if (den>zero) then
          ! Hybrid weights
-         loc1_blk%hyb_coef(il0) = loc1_blk%hyb_coef_raw(il0)*num/den
-         diag_blk%hyb_coef(il0) = diag_blk%hyb_coef_raw(il0)*num/den
+         diag_blk%hyb_coef_1(il0) = diag_blk%hyb_coef_1_raw(il0)*num/den
+         diag_blk%hyb_coef_2(il0) = diag_blk%hyb_coef_2_raw(il0)*num/den
       else
          ! Missing values
-         loc1_blk%hyb_coef(il0) = mpl%msv%valr
-         diag_blk%hyb_coef(il0) = mpl%msv%valr
+         diag_blk%hyb_coef_1(il0) = mpl%msv%valr
+         diag_blk%hyb_coef_2(il0) = mpl%msv%valr
       end if
    else
       ! Missing values
-      loc1_blk%hyb_coef_raw(il0) = mpl%msv%valr
-      diag_blk%hyb_coef_raw(il0) = mpl%msv%valr
-      loc1_blk%hyb_coef(il0) = mpl%msv%valr
-      diag_blk%hyb_coef(il0) = mpl%msv%valr
+      diag_blk%hyb_coef_1_raw(il0) = mpl%msv%valr
+      diag_blk%hyb_coef_1(il0) = mpl%msv%valr
+      diag_blk%hyb_coef_2_raw(il0) = mpl%msv%valr
+      diag_blk%hyb_coef_2(il0) = mpl%msv%valr
    end if
 end do
 

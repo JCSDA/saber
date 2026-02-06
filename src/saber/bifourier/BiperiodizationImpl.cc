@@ -317,8 +317,7 @@ BiperiodizationImpl::BiperiodizationImpl(const oops::GeometryData & outerGeometr
   }
 
   // RecvCounts
-  recvCounts_.resize(comm_.size());
-  std::fill(recvCounts_.begin(), recvCounts_.end(), 0);
+  recvCounts_.resize(comm_.size(), 0);
   for (size_t jjRed = 0; jjRed < recvSize_; ++jjRed) {
     const size_t jt = redInnerTask[jjRed];
     ++recvCounts_[jt];

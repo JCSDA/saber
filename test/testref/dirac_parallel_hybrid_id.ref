@@ -6,10 +6,12 @@ Input Dirac increment:
     + min    = 0.0000000000000000e+00
     + max    = 1.0000000000000000e+00
     + mean   = 3.7037037037037035e-04
-    + stddev = 1.9245008972987449e-02
+    + stddev = 1.9245008972987445e-02
+
   - mu (2 levels):
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00
+
 Adjoint test for block ID passed
 Covariance(SABER) diagnostics:
 - Variances at Dirac points:
@@ -25,43 +27,8 @@ Covariance(SABER) * Increment:
     + max    = 3.9999999999999996e+00
     + mean   = 1.4814814814814814e-03
     + stddev = 7.6980035891949780e-02
+
   - mu (2 levels):
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00
-Adjoint test for block ID passed
-Covariance(SABER1_SABER) diagnostics:
-- Variances at Dirac points:
-  + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0000000000000000e+00
-- Covariances at diagnostic points:
-  + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0000000000000000e+00
-Covariance(SABER1_SABER) * Increment:
-- Valid time: 2010-01-01T12:00:00Z
-  Geometry: CS-LFR-15 [1350]
-  Fields:
-  - unbalanced_pressure_levels_minus_one (2 levels):
-    + min    = 0.0000000000000000e+00
-    + max    = 1.0000000000000000e+00
-    + mean   = 3.7037037037037035e-04
-    + stddev = 1.9245008972987449e-02
-  - mu (2 levels):
-    + min    = 0.0000000000000000e+00
-    + max    = 0.0000000000000000e+00
-Adjoint test for block ID passed
-Covariance(SABER2_SABER) diagnostics:
-- Variances at Dirac points:
-  + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0000000000000000e+00
-- Covariances at diagnostic points:
-  + Value for variable unbalanced_pressure_levels_minus_one, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0000000000000000e+00
-Covariance(SABER2_SABER) * Increment:
-- Valid time: 2010-01-01T12:00:00Z
-  Geometry: CS-LFR-15 [1350]
-  Fields:
-  - unbalanced_pressure_levels_minus_one (2 levels):
-    + min    = 0.0000000000000000e+00
-    + max    = 1.0000000000000000e+00
-    + mean   = 3.7037037037037035e-04
-    + stddev = 1.9245008972987449e-02
-  - mu (2 levels):
-    + min    = 0.0000000000000000e+00
-    + max    = 0.0000000000000000e+00
-Adjoint test for block ID passed
+

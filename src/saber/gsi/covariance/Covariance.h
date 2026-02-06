@@ -41,7 +41,7 @@ class CovarianceParameters : public SaberBlockParametersBase {
 
  public:
   // File containing grid and coefficients
-  oops::OptionalParameter<GSIParameters> readParams{"read", this};
+  oops::RequiredParameter<GSIParameters> readParams{"read", this};
 
   // Mandatory active variables
   oops::Variables mandatoryActiveVars() const override {return oops::Variables();}
@@ -88,33 +88,6 @@ class StaticCovariance : public SaberCentralBlockBase {
 
   void print(std::ostream &) const override;
 };
-
-
-// -------------------------------------------------------------------------------------------------
-// This block is currently a "fake" block and doesn't implement anything. It will be
-// removed.
-// For the hybrid GSI covariance implementation see GSIBlockChain.
-class HybridCovariance : public SaberCentralBlockBase {
- public:
-  static const std::string classname() {return "saber::gsi::Covariance";}
-
-  typedef CovarianceParameters Parameters_;
-
-  HybridCovariance(const oops::GeometryData &,
-                   const oops::Variables &,
-                   const eckit::Configuration &,
-                   const Parameters_ & params,
-                   const oops::FieldSet3D & xb,
-                   const oops::FieldSet3D &) : SaberCentralBlockBase(params, xb.validTime()) {}
-
-  void randomize(oops::FieldSet3D &) const override {};
-  void multiply(oops::FieldSet3D &) const override {};
-
- private:
-  void print(std::ostream &) const override {};
-};
-
-// -------------------------------------------------------------------------------------------------
 
 }  // namespace gsi
 }  // namespace saber

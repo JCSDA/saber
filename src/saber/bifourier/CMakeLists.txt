@@ -7,18 +7,20 @@ Biperiodization.h
 Biperiodization.cc
 BiperiodizationImpl.h
 BiperiodizationImpl.cc
-
-# Reduced wind to geographical wind
-RedWindToGeoWind.cc
-RedWindToGeoWind.h
 )
 
-if( FFTW_FOUND )
+if( FFTW_FOUND OR ( ECTRANS_FOUND AND ectrans_HAVE_ETRANS AND ectrans_HAVE_TRANSI ) )
     list(APPEND bifourier_src_files_list
+    # Bi-Fourier AROME balance block
+    BifourierAromeBalance.cc
+    BifourierAromeBalance.h
+
+    # Bi-Fourier AROME covariance block
+    BifourierAromeCovariance.cc
+    BifourierAromeCovariance.h
+
     # Bi-Fourier AROME legacy file format reading
     bifourier_arome_legacy.h
-    BifourierAromeLegacy.cc
-    BifourierAromeLegacy.h
     bifourier_arome_legacy_interface.F90
     bifourier_arome_legacy_mod.F90
 
@@ -42,13 +44,13 @@ if( FFTW_FOUND )
     BifourierSpectralToGrid.cc
     BifourierSpectralToGrid.h
 
-    # Bi-Fourier temperature/surface pressure split block
-    BifourierSplitTPs.cc
-    BifourierSplitTPs.h
+    # Bi-Fourier spectral vorticity/divergence to grid wind
+    BifourierSpectralVorDivToGridWind.cc
+    BifourierSpectralVorDivToGridWind.h
 
-    # Bi-Fourier spectral transform object
-    BifourierTransform.cc
-    BifourierTransform.h
+    # Bi-Fourier spectral transform object, base class
+    BifourierTransformBase.cc
+    BifourierTransformBase.h
 
     # Bi-Fourier spectral transforms store
     BifourierTransformStore.cc
@@ -57,14 +59,25 @@ if( FFTW_FOUND )
     # Bi-Fourier utilities
     BifourierUtilities.cc
     BifourierUtilities.h
+    )
+endif()
 
-    # Bi-Fourier vorticity/divergence to reduced wind
-    BifourierVorDivToRedWind.cc
-    BifourierVorDivToRedWind.h
-
-    # Bi-Fourier vorticity to balance pressure
-    BifourierVorToPb.cc
-    BifourierVorToPb.h
+# Add FFT backends
+message(STATUS "Available FFT backends in BifourierTransform:")
+if( FFTW_FOUND )
+    # FFTW backend
+    message(STATUS "- fftw")
+    list(APPEND bifourier_src_files_list
+    BifourierTransformFFTW.cc
+    BifourierTransformFFTW.h
+    )
+endif()
+if( ECTRANS_FOUND AND ectrans_HAVE_ETRANS AND ectrans_HAVE_TRANSI )
+    # ECTRANS backend
+    message(STATUS "- ectrans")
+    list(APPEND bifourier_src_files_list
+    BifourierTransformECTRANS.cc
+    BifourierTransformECTRANS.h
     )
 endif()
 

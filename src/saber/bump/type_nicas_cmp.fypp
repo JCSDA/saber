@@ -14,7 +14,7 @@ use fckit_mpi_module, only: fckit_mpi_sum,fckit_mpi_min,fckit_mpi_max
 use tools_atlas, only: get_grid
 use tools_const, only: zero,half,one,two,three,four,pi,reqkm,deg2rad,rad2deg
 use tools_func, only: lonlatmod,zss_maxval,zss_minval,zss_sum,zss_count
-use tools_gc99, only: fit_func_sqrt
+use tools_gc99, only: fit_func,fit_func_sqrt
 use tools_kinds, only: kind_int,kind_real,huge_int,huge_real
 use tools_netcdf, only: define_grp,inquire_grp,put_att,get_att,define_dim,inquire_dim,inquire_dim_size,define_var, &
  & inquire_var,put_var,get_var
@@ -158,12 +158,12 @@ type nicas_cmp_type
    integer :: ncmp                                      !< Number of components in the same block
    logical :: anisotropic                               !< Anisotropic tensor flag
    logical :: verbosity                                 !< Verbosity flag
+   logical :: filter_mode                               !< Filter mode
    real(kind_real) :: resol                             !< Resolution
    integer :: nc1max                                    !< Maximum size of the Sc1 subset
    real(kind_real) :: resol_eff_min                     !< Minimum effective resolution
    character(len=1024) :: draw_type                     !< Draw type
    character(len=2) :: interp_type                      !< Interpolation type
-   logical :: smoother                                  !< Smoother flag
    logical :: compute_norm                              !< Compute normalization
    logical :: interp_in_global_file                     !< Read/write interpolation in global file
    integer :: nc0a                                      !< Number of points in subset Sc0, halo A
@@ -239,7 +239,7 @@ type nicas_cmp_type
    real(kind_real),allocatable :: norm(:,:)             !< Normalization factor
    real(kind_real),allocatable :: inorm(:)              !< Internal normalization factor on halo A
    real(kind_real),allocatable :: inorm_sb(:)           !< Internal normalization factor on halo B
-   real(kind_real),allocatable :: smoother_norm(:)      !< Smoother normalization
+   real(kind_real),allocatable :: filter_norm_row_a(:)  !< Filter normalization, rows side on halo A
 
    ! I/O IDs
    integer :: ncid                                      !< main ID
@@ -294,9 +294,7 @@ contains
    procedure :: write_grids_data => nicas_cmp_write_grids_data
    procedure :: write_steps_def => nicas_cmp_write_steps_def
    procedure :: write_steps_data => nicas_cmp_write_steps_data
-   procedure :: nicas_cmp_compute_parameters
-   procedure :: nicas_cmp_compute_parameters_horizontal_smoother
-   generic :: compute_parameters => nicas_cmp_compute_parameters,nicas_cmp_compute_parameters_horizontal_smoother
+   procedure :: compute_parameters => nicas_cmp_compute_parameters
    procedure :: compute_vertical => nicas_cmp_compute_vertical
    procedure :: compute_horizontal => nicas_cmp_compute_horizontal
    procedure :: compute_convol => nicas_cmp_compute_convol
@@ -306,7 +304,7 @@ contains
    procedure :: compute_normalization => nicas_cmp_compute_normalization
    procedure :: randomize_normalization => nicas_cmp_randomize_normalization
    procedure :: random_cv => nicas_cmp_random_cv
-   procedure :: apply_horizontal_smoother => nicas_cmp_apply_horizontal_smoother
+   procedure :: apply_filter => nicas_cmp_apply_filter
    procedure :: apply_sqrt => nicas_cmp_apply_sqrt
    procedure :: apply_sqrt_ad => nicas_cmp_apply_sqrt_ad
    procedure :: apply_convol_sqrt => nicas_cmp_apply_convol_sqrt
@@ -318,9 +316,7 @@ contains
    procedure :: apply_interp_vertical => nicas_cmp_apply_interp_vertical
    procedure :: apply_interp_vertical_ad => nicas_cmp_apply_interp_vertical_ad
    procedure :: test_adjoint => nicas_cmp_test_adjoint
-   procedure :: nicas_cmp_test_normalization
-   procedure :: nicas_cmp_test_normalization_horizontal_smoother
-   generic :: test_normalization => nicas_cmp_test_normalization,nicas_cmp_test_normalization_horizontal_smoother
+   procedure :: test_normalization => nicas_cmp_test_normalization
    procedure :: c1_to_c1a => nicas_cmp_c1_to_c1a
    procedure :: c1_to_proc => nicas_cmp_c1_to_proc
    procedure :: c1_to_c1u => nicas_cmp_c1_to_c1u
@@ -720,7 +716,7 @@ if (allocated(nicas_cmp%ball)) then
    deallocate(nicas_cmp%ball)
 end if
 if (allocated(nicas_cmp%inorm_sb)) deallocate(nicas_cmp%inorm_sb)
-if (allocated(nicas_cmp%smoother_norm)) deallocate(nicas_cmp%smoother_norm)
+if (allocated(nicas_cmp%filter_norm_row_a)) deallocate(nicas_cmp%filter_norm_row_a)
 
 ! Probe out
 @:probe_out()
@@ -804,6 +800,9 @@ character(len=1024) :: levname
 
 ! Probe in
 @:probe_in()
+
+! Read filter mode
+call get_att(mpl,nicas_cmp%cmpid,0,'filter_mode',nicas_cmp%filter_mode,.false.)
 
 ! Read valid levels
 allocate(nicas_cmp%vlev(nicas_cmp%nl0))
@@ -934,6 +933,9 @@ character(len=1024) :: levname
 
 ! Probe in
 @:probe_in()
+
+! Define filter mode
+call put_att(mpl,nicas_cmp%cmpid,0,'filter_mode',nicas_cmp%filter_mode)
 
 ! Define valid levels
 nicas_cmp%vlev_id = define_var(mpl,nicas_cmp%cmpid,'vlev','int',(/nicas_cmp%nl0_id/))
@@ -1073,6 +1075,9 @@ integer :: il1,il1s
 ! Probe in
 @:probe_in()
 
+! filter_mode
+nbufl = nbufl+1
+
 ! nl0
 nbufi = nbufi+1
 
@@ -1174,6 +1179,10 @@ integer :: il1,il1s
 
 ! Probe in
 @:probe_in()
+
+! filter_mode
+bufl(ibufl+1) = nicas_cmp%filter_mode
+ibufl = ibufl+1
 
 ! nl0
 bufi(ibufi+1) = nicas_cmp%nl0
@@ -1320,6 +1329,10 @@ integer :: il1,il1s
 
 ! Probe in
 @:probe_in()
+
+! filter_mode
+nicas_cmp%filter_mode = bufl(ibufl+1)
+ibufl = ibufl+1
 
 ! nl0
 nicas_cmp%nl0 = bufi(ibufi+1)
@@ -1501,7 +1514,8 @@ nicas_cmp%myuniverse = geom%myuniverse
 
 ! Set flags
 nicas_cmp%verbosity = .true.
-nicas_cmp%smoother = .false.
+call get_att(mpl,nicas_cmp%cmpid,0,'filter_mode',nicas_cmp%filter_mode,.false.)
+if (mpl%iobcast) call mpl%f_comm_iobcast%broadcast(nicas_cmp%filter_mode,mpl%rootproc-1)
 
 ! Check norm input
 nicas_cmp%compute_norm = .not.allocated(nicas_cmp%norm)
@@ -1898,6 +1912,9 @@ character(len=1024) :: levname
 
 ! Probe in
 @:probe_in()
+
+! Define filter mode
+call put_att(mpl,nicas_cmp%cmpid,0,'filter_mode',nicas_cmp%filter_mode)
 
 ! Define vertical sampling
 write(mpl%info,'(a16,a)') '','Define vertical sampling'
@@ -2418,6 +2435,12 @@ if (.not.nam%load_nicas_global) then
    nicas_cmp%myuniverse = geom%myuniverse
 end if
 
+if (nicas_cmp%filter_mode) then
+   ! Print filter mode
+   write(mpl%info,'(a10,a)') '','Filter mode activated'
+   call mpl%flush(flush=nicas_cmp%verbosity)
+end if
+
 ! Compute adaptive sampling, vertical
 write(mpl%info,'(a10,a)') '','Compute adaptive sampling, vertical'
 call mpl%flush(flush=nicas_cmp%verbosity)
@@ -2434,7 +2457,15 @@ if (any(nicas_cmp%vlev)) then
    call mpl%flush(flush=nicas_cmp%verbosity)
    call nicas_cmp%compute_convol(mpl,nam,geom)
 
-   if (.not.nicas_cmp%smoother) then
+   if (nicas_cmp%filter_mode) then
+      ! Allocation
+      allocate(nicas_cmp%inorm(nicas_cmp%nsa))
+      allocate(nicas_cmp%norm(geom%nc0a,nicas_cmp%nl0))
+
+      ! No normalization in filter mode
+      nicas_cmp%inorm = one
+      nicas_cmp%norm = one
+   else
       ! Compute internal normalization
       write(mpl%info,'(a10,a)') '','Compute internal normalization'
       call mpl%flush(flush=nicas_cmp%verbosity)
@@ -2511,52 +2542,6 @@ end if
 @:probe_out()
 
 end subroutine nicas_cmp_compute_parameters
-
-!----------------------------------------------------------------------
-! Subroutine: nicas_cmp_compute_parameters_horizontal_smoother
-!> Compute NICAS parameters for a horizontal smoother
-!----------------------------------------------------------------------
-subroutine nicas_cmp_compute_parameters_horizontal_smoother(nicas_cmp,mpl,rng,nam,geom,rhflt)
-
-implicit none
-
-! Passed variables
-class(nicas_cmp_type),intent(inout) :: nicas_cmp !< NICAS data component
-type(mpl_type),intent(inout) :: mpl              !< MPI data
-type(rng_type),intent(inout) :: rng              !< Random number generator
-type(nam_type),intent(in) :: nam                 !< Namelist
-type(geom_type),intent(in) :: geom               !< Geometry
-real(kind_real),intent(in) :: rhflt              !< Horizontal support radius
-
-! Set name
-@:set_name(nicas_cmp_compute_parameters_horizontal_smoother)
-
-! Probe in
-@:probe_in()
-
-! Allocation
-allocate(nicas_cmp%rh(geom%nc0a,nicas_cmp%nl0))
-allocate(nicas_cmp%rv(geom%nc0a,nicas_cmp%nl0))
-allocate(nicas_cmp%as(geom%nc0a,nicas_cmp%nl0))
-allocate(nicas_cmp%rhs(geom%nc0a,nicas_cmp%nl0))
-allocate(nicas_cmp%rvs(geom%nc0a,nicas_cmp%nl0))
-
-! Initialization
-nicas_cmp%anisotropic = .false.
-nicas_cmp%rh(:,1) = rhflt
-nicas_cmp%rv = zero
-nicas_cmp%as = one
-nicas_cmp%rhs(:,1) = rhflt
-nicas_cmp%rvs = zero
-nicas_cmp%scaling = one
-
-! Compute parameters
-call nicas_cmp%compute_parameters(mpl,rng,nam,geom)
-
-! Probe out
-@:probe_out()
-
-end subroutine nicas_cmp_compute_parameters_horizontal_smoother
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_cmp_compute_vertical
@@ -3730,10 +3715,11 @@ type(nam_type),intent(in) :: nam                 !< Namelist
 type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
-integer :: isu,il1,il1s,il0,isa,isb,isc,jl1,i_s,is,jsu
+integer :: isu,il1,il1s,il0,isa,isb,isc,jl1,i_s,is,jsc,jsu
 integer,allocatable :: su_to_sc(:)
 real(kind_real),allocatable :: rh_c0b(:),H11_c0b(:),H22_c0b(:),H12_c0b(:),rv_c0b(:)
 real(kind_real),allocatable :: rh_c1a(:),H11_c1a(:),H22_c1a(:),H12_c1a(:),rv_c1a(:)
+real(kind_real),allocatable :: fld_one(:,:),alpha_b(:),filter_norm_col(:),filter_norm_row_c(:)
 logical,allocatable :: lcheck_sc(:)
 
 ! Set name
@@ -3764,11 +3750,9 @@ if (.not.nam%load_nicas_global) then
       allocate(rh_c0b(nicas_cmp%hor(il1s)%nc0b))
       allocate(rh_c1a(nicas_cmp%hor(il1s)%nc1a))
       allocate(nicas_cmp%hor(il1)%rh_c1b(nicas_cmp%hor(il1s)%nc1b))
-      if (.not.nicas_cmp%smoother) then
-         allocate(rv_c0b(nicas_cmp%hor(il1s)%nc0b))
-         allocate(rv_c1a(nicas_cmp%hor(il1s)%nc1a))
-         allocate(nicas_cmp%hor(il1)%rv_c1b(nicas_cmp%hor(il1s)%nc1b))
-      end if
+      allocate(rv_c0b(nicas_cmp%hor(il1s)%nc0b))
+      allocate(rv_c1a(nicas_cmp%hor(il1s)%nc1a))
+      allocate(nicas_cmp%hor(il1)%rv_c1b(nicas_cmp%hor(il1s)%nc1b))
       if (nicas_cmp%anisotropic) then
          allocate(H11_c0b(nicas_cmp%hor(il1s)%nc0b))
          allocate(H11_c1a(nicas_cmp%hor(il1s)%nc1a))
@@ -3787,7 +3771,7 @@ if (.not.nam%load_nicas_global) then
 
       ! Halo extension
       call nicas_cmp%hor(il1s)%com_c0_AB%ext(mpl,nicas_cmp%rh(:,il0)/nicas_cmp%scaling,rh_c0b)
-      if (.not.nicas_cmp%smoother) call nicas_cmp%hor(il1s)%com_c0_AB%ext(mpl,nicas_cmp%rv(:,il0)/nicas_cmp%scaling,rv_c0b)
+      call nicas_cmp%hor(il1s)%com_c0_AB%ext(mpl,nicas_cmp%rv(:,il0)/nicas_cmp%scaling,rv_c0b)
       if (nicas_cmp%anisotropic) then
          call nicas_cmp%hor(il1s)%com_c0_AB%ext(mpl,nicas_cmp%H11(:,il0)*nicas_cmp%scaling**2,H11_c0b)
          call nicas_cmp%hor(il1s)%com_c0_AB%ext(mpl,nicas_cmp%H22(:,il0)*nicas_cmp%scaling**2,H22_c0b)
@@ -3796,7 +3780,7 @@ if (.not.nam%load_nicas_global) then
 
       ! Interpolate fields
       call nicas_cmp%hor(il1s)%interp_c0b_to_c1a%apply(mpl,rh_c0b,rh_c1a)
-      if (.not.nicas_cmp%smoother) call nicas_cmp%hor(il1s)%interp_c0b_to_c1a%apply(mpl,rv_c0b,rv_c1a)
+      call nicas_cmp%hor(il1s)%interp_c0b_to_c1a%apply(mpl,rv_c0b,rv_c1a)
       if (nicas_cmp%anisotropic) then
          call nicas_cmp%hor(il1s)%interp_c0b_to_c1a%apply(mpl,H11_c0b,H11_c1a)
          call nicas_cmp%hor(il1s)%interp_c0b_to_c1a%apply(mpl,H22_c0b,H22_c1a)
@@ -3807,7 +3791,7 @@ if (.not.nam%load_nicas_global) then
       write(mpl%info,'(a19,a)') '','Communication field on halo B'
       call mpl%flush(flush=nicas_cmp%verbosity)
       call nicas_cmp%hor(il1s)%com_c1_AB%ext(mpl,rh_c1a,nicas_cmp%hor(il1)%rh_c1b)
-      if (.not.nicas_cmp%smoother) call nicas_cmp%hor(il1s)%com_c1_AB%ext(mpl,rv_c1a,nicas_cmp%hor(il1)%rv_c1b)
+      call nicas_cmp%hor(il1s)%com_c1_AB%ext(mpl,rv_c1a,nicas_cmp%hor(il1)%rv_c1b)
       if (nicas_cmp%anisotropic) then
          call nicas_cmp%hor(il1s)%com_c1_AB%ext(mpl,H11_c1a,nicas_cmp%hor(il1)%H11_c1b)
          call nicas_cmp%hor(il1s)%com_c1_AB%ext(mpl,H22_c1a,nicas_cmp%hor(il1)%H22_c1b)
@@ -3817,10 +3801,8 @@ if (.not.nam%load_nicas_global) then
       ! Release memory
       deallocate(rh_c0b)
       deallocate(rh_c1a)
-      if (.not.nicas_cmp%smoother) then
-         deallocate(rv_c0b)
-         deallocate(rv_c1a)
-      end if
+      deallocate(rv_c0b)
+      deallocate(rv_c1a)
       if (nicas_cmp%anisotropic) then
          deallocate(H11_c0b)
          deallocate(H11_c1a)
@@ -3840,16 +3822,13 @@ if (.not.nam%load_nicas_global) then
    ! Release memory
    do il1=1,nicas_cmp%nl1
       deallocate(nicas_cmp%hor(il1)%rh_c1b)
-      if (.not.nicas_cmp%smoother) deallocate(nicas_cmp%hor(il1)%rv_c1b)
+      deallocate(nicas_cmp%hor(il1)%rv_c1b)
       if (nicas_cmp%anisotropic) then
          deallocate(nicas_cmp%hor(il1)%H11_c1b)
          deallocate(nicas_cmp%hor(il1)%H22_c1b)
          deallocate(nicas_cmp%hor(il1)%H12_c1b)
       end if
    end do
-
-   ! Allocation
-   if (nicas_cmp%smoother) allocate(nicas_cmp%smoother_norm(nicas_cmp%nsb))
 
    ! Compute weights
    call nicas_cmp%compute_convol_weights(mpl,geom)
@@ -3915,34 +3894,13 @@ do isb=1,nicas_cmp%nsb
    nicas_cmp%sb_to_sc(isb) = isc
 end do
 
-! Smoother normalization
-if (nicas_cmp%smoother) then
-   do i_s=1,nicas_cmp%c%n_s
-      isu = nicas_cmp%c%row(i_s)
-      isb = nicas_cmp%su_to_sb(isu)
-      if (nicas_cmp%smoother_norm(isb)>zero) then
-         nicas_cmp%c%S(i_s) = nicas_cmp%c%S(i_s)/nicas_cmp%smoother_norm(isb)
-      else
-        if (nicas_cmp%c%S(i_s)>zero) call mpl%abort('${subr}$','error in smoother_norm')
-      end if
-   end do
-end if
-
 ! Local convolutions source and destination
 nicas_cmp%c%n_src = nicas_cmp%nsc
-if (nicas_cmp%smoother) then
-   nicas_cmp%c%n_dst = nicas_cmp%nsb
-else
-   nicas_cmp%c%n_dst = nicas_cmp%nsa
-end if
+nicas_cmp%c%n_dst = nicas_cmp%nsa
 do i_s=1,nicas_cmp%c%n_s
    if (.not.nam%load_nicas_global) then
       isu = nicas_cmp%c%row(i_s)
-      if (nicas_cmp%smoother) then
-         nicas_cmp%c%row(i_s) = nicas_cmp%su_to_sb(isu)
-      else
-         nicas_cmp%c%row(i_s) = nicas_cmp%su_to_sa(isu)
-      end if
+      nicas_cmp%c%row(i_s) = nicas_cmp%su_to_sa(isu)
    end if
    jsu = nicas_cmp%c%col(i_s)
    nicas_cmp%c%col(i_s) = su_to_sc(jsu)
@@ -3950,6 +3908,47 @@ end do
 
 ! Setup communication
 call nicas_cmp%com_s_AC%setup(mpl,'com_s_AC',nicas_cmp%nsa,nicas_cmp%nsc,nicas_cmp%ns,nicas_cmp%sa_to_s,nicas_cmp%sc_to_s)
+
+! Filter normalization
+if (nicas_cmp%filter_mode) then
+   ! Allocation
+   allocate(fld_one(geom%nc0a,nicas_cmp%nl0))
+   allocate(alpha_b(nicas_cmp%nsb))
+   allocate(filter_norm_col(nicas_cmp%nsa))
+   allocate(filter_norm_row_c(nicas_cmp%nsc))
+
+   ! Extension
+   call nicas_cmp%com_s_AC%ext(mpl,nicas_cmp%filter_norm_row_a,filter_norm_row_c)
+
+   ! Compute normalization, columns side
+   fld_one = one
+   call nicas_cmp%apply_interp_ad(mpl,fld_one,alpha_b)
+   call nicas_cmp%com_s_AB%red(mpl,alpha_b,filter_norm_col)
+
+   do i_s=1,nicas_cmp%c%n_s
+      ! Rows side (but columns of nicas_cmp%c, since we apply its adjoint)
+      jsc = nicas_cmp%c%col(i_s)
+      if (filter_norm_row_c(jsc)>zero) then
+         nicas_cmp%c%S(i_s) = nicas_cmp%c%S(i_s)/filter_norm_row_c(jsc)
+      else
+        if (nicas_cmp%c%S(i_s)>zero) call mpl%abort('${subr}$','error in filter_norm_row_c')
+      end if
+
+      ! Columns side (but rows of nicas_cmp%c, since we apply its adjoint)
+      isa = nicas_cmp%c%row(i_s)
+      if (filter_norm_col(isa)>zero) then
+         nicas_cmp%c%S(i_s) = nicas_cmp%c%S(i_s)/filter_norm_col(isa)
+      else
+         if (nicas_cmp%c%S(i_s)>zero) call mpl%abort('${subr}$','error in filter_norm_col')
+      end if
+   end do
+
+   ! Release memory
+   deallocate(fld_one)
+   deallocate(alpha_b)
+   deallocate(filter_norm_col)
+   deallocate(filter_norm_row_c)
+end if
 
 ! Release memory
 deallocate(lcheck_sc)
@@ -4087,26 +4086,18 @@ do isb=1,nicas_cmp%nsb
                            mnd(jc1u) = .true.
                         end if
                      end if
-                     if (nicas_cmp%smoother) then
-                        if (il0==jl0) then
-                           vnd(jc1u) = zero
-                        else
-                           mnd(jc1u) = .false.
-                        end if
+                     if (nam%from_gsi) then
+                        distv = real(abs(il0-jl0),kind_real)
                      else
-                        if (nam%from_gsi) then
-                           distv = real(abs(il0-jl0),kind_real)
-                        else
-                           distv = abs(nicas_cmp%hor(il1)%vert_coord_c1u(ic1u)-nicas_cmp%hor(jl1)%vert_coord_c1u(jc1u))
-                        end if
-                        if (nicas_cmp%hor(il1)%rv_c1b(ic1b)>zero) then
-                           vnd(jc1u) = distv/nicas_cmp%hor(il1)%rv_c1b(ic1b)
-                           mnd(jc1u) = mnd(jc1u).and.inf(vnd(jc1u),half)
-                        elseif (distv>zero) then
-                           mnd(jc1u) = .false.
-                        else
-                           vnd(jc1u) = zero
-                        end if
+                        distv = abs(nicas_cmp%hor(il1)%vert_coord_c1u(ic1u)-nicas_cmp%hor(jl1)%vert_coord_c1u(jc1u))
+                     end if
+                     if (nicas_cmp%hor(il1)%rv_c1b(ic1b)>zero) then
+                        vnd(jc1u) = distv/nicas_cmp%hor(il1)%rv_c1b(ic1b)
+                        mnd(jc1u) = mnd(jc1u).and.inf(vnd(jc1u),half)
+                     elseif (distv>zero) then
+                        mnd(jc1u) = .false.
+                     else
+                        vnd(jc1u) = zero
                      end if
                   end if
                end if
@@ -4152,9 +4143,9 @@ type(mpl_type),intent(inout) :: mpl              !< MPI data
 type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
-integer :: n_s_max,ithread,isu,isb,jc1u,jl1,jbd,jsu
+integer :: n_s_max,ithread,isu,isa,isb,jc1u,jl1,jbd,jsu
 integer :: c_n_s(mpl%nthread)
-real(kind_real) :: S,S_tot(nicas_cmp%nsb,mpl%nthread)
+real(kind_real) :: S,S_tot(nicas_cmp%nsa,mpl%nthread)
 type(linop_type) :: c(mpl%nthread)
 
 ! Set name
@@ -4190,20 +4181,28 @@ do isb=1,nicas_cmp%nsb
          jc1u = nicas_cmp%ball(jl1,isb)%bd_to_c1u(jbd)
          jsu = nicas_cmp%hor(jl1)%c1u_to_su(jc1u)
 
-         ! Horizontal component
-         S = fit_func_sqrt(mpl,nicas_cmp%ball(jl1,isb)%hnd(jbd))
+         if (nicas_cmp%filter_mode) then
+            ! Horizontal component
+            S = fit_func(mpl,'hor',nicas_cmp%ball(jl1,isb)%hnd(jbd))
 
-         ! Vertical component
-         if (.not.nicas_cmp%smoother) S = S*fit_func_sqrt(mpl,nicas_cmp%ball(jl1,isb)%vnd(jbd))
+            ! Vertical component
+            S = S*fit_func(mpl,'ver',nicas_cmp%ball(jl1,isb)%vnd(jbd))
+         else
+            ! Horizontal component
+            S = fit_func_sqrt(mpl,nicas_cmp%ball(jl1,isb)%hnd(jbd))
 
-         if (sup(abs(S),S_inf)) then
-            if (nicas_cmp%smoother) then
-               ! Store coefficient for convolution
-               call c(ithread)%add_op(c_n_s(ithread),isu,jsu,S)
-               S_tot(isb,ithread) = S_tot(isb,ithread)+S
-            else
-               ! Store coefficient for convolution
-               if (nicas_cmp%lcheck_sa(isu)) call c(ithread)%add_op(c_n_s(ithread),isu,jsu,S)
+            ! Vertical component
+            S = S*fit_func_sqrt(mpl,nicas_cmp%ball(jl1,isb)%vnd(jbd))
+         end if
+
+         if (sup(abs(S),S_inf).and.nicas_cmp%lcheck_sa(isu)) then
+            ! Store coefficient for convolution
+            call c(ithread)%add_op(c_n_s(ithread),isu,jsu,S)
+
+            ! Accumulate for filter normalization
+            if (nicas_cmp%filter_mode) then
+               isa = nicas_cmp%su_to_sa(isu)
+               S_tot(isa,ithread) = S_tot(isa,ithread)+S
             end if
          end if
       end do
@@ -4217,9 +4216,14 @@ if (nicas_cmp%verbosity) call mpl%prog_final
 
 ! Gather data from threads
 call nicas_cmp%c%gather(mpl,c_n_s,c)
-if (nicas_cmp%smoother) then
-   do isb=1,nicas_cmp%nsb
-      nicas_cmp%smoother_norm(isb) = sum(S_tot(isb,:))
+
+if (nicas_cmp%filter_mode) then
+   ! Allocation
+   allocate(nicas_cmp%filter_norm_row_a(nicas_cmp%nsa))
+
+   ! Compute filter normalization, rows side
+   do isa=1,nicas_cmp%nsa
+      nicas_cmp%filter_norm_row_a(isa) = sum(S_tot(isa,:))
    end do
 end if
 
@@ -4321,7 +4325,7 @@ type(mpl_type),intent(inout) :: mpl              !< MPI data
 type(geom_type),intent(in) :: geom               !< Geometry
 
 ! Local variables
-integer :: il0i,i_s,ic1b,jc1b,jsb,jsc,ih,ic0a,il0,il1,il1s,jv,nlr,ilr,ic,isb_add,isa,isb,jsu,js,jproc,inecmax
+integer :: i_s,ic1b,jc1b,jsb,jsc,ih,ic0a,il0,il1,il1s,jv,nlr,ilr,ic,isb_add,isa,isb,jsu,js,jproc,inecmax
 integer,allocatable :: order(:),isb_list(:),inec_sa(:),inec_sb(:)
 integer,allocatable :: c_ind_sa(:,:),c_ind_sb(:,:)
 real(kind_real) :: S_add
@@ -4506,7 +4510,6 @@ nicas_cmp%norm = mpl%msv%valr
 ! Compute normalization weights
 do il0=1,nicas_cmp%nl0
    if (nicas_cmp%vlev(il0)) then
-      il0i = geom%l0_to_l0i(il0)
       write(mpl%info,'(a13,a,i3,a)') '','Level ',il0,': '
       call mpl%flush(newl=.false.,flush=nicas_cmp%verbosity)
       if (nicas_cmp%verbosity) call mpl%prog_init(geom%nc0a)
@@ -4746,75 +4749,111 @@ deallocate(alpha)
 end subroutine nicas_cmp_random_cv
 
 !----------------------------------------------------------------------
-! Subroutine: nicas_cmp_apply_horizontal_smoother
-!> Apply NICAS method for a horizontal smoother
+! Subroutine: nicas_cmp_apply_filter
+!> Apply NICAS method, filter mode
 !----------------------------------------------------------------------
-subroutine nicas_cmp_apply_horizontal_smoother(nicas_cmp,mpl,geom,il0,fld)
+subroutine nicas_cmp_apply_filter(nicas_cmp,mpl,geom,fld)
 
 implicit none
 
 ! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp   !< NICAS data component
-type(mpl_type),intent(inout) :: mpl             !< MPI data
-type(geom_type),intent(in) :: geom              !< Geometry
-integer,intent(in) :: il0                       !< Level index
-real(kind_real),intent(inout) :: fld(geom%nc0a) !< Field
+class(nicas_cmp_type),intent(in) :: nicas_cmp            !< NICAS data component
+type(mpl_type),intent(inout) :: mpl                      !< MPI data
+type(geom_type),intent(in) :: geom                       !< Geometry
+real(kind_real),intent(inout) :: fld(geom%nc0a,geom%nl0) !< Field
 
 ! Local variables
-integer :: ic1b,isb
+integer :: il0,ic0a
 real(kind_real) :: sums,sume
-real(kind_real) :: beta(nicas_cmp%hor(1)%nc1b)
 real(kind_real) :: alpha_a(nicas_cmp%nsa),alpha_b(nicas_cmp%nsb),alpha_c(nicas_cmp%nsc)
 
 ! Set name
-@:set_name(nicas_cmp_apply_horizontal_smoother)
+@:set_name(nicas_cmp_apply_filter)
 
 ! Probe in
 @:probe_in()
 
-! Check that it is a smoother
-if (.not.nicas_cmp%smoother) call mpl%abort('${subr}$','apply is only for smoothers')
+! Check that filter mode is activated
+if (.not.nicas_cmp%filter_mode) call mpl%abort('${subr}$','apply_filter requires filter mode')
 
-! Save global sum
-sums = zss_sum(fld,mask=geom%gmask_c0a(:,il0))
-call mpl%f_comm%allreduce(sums,fckit_mpi_sum())
+if (any(nicas_cmp%vlev)) then
+   if (nicas_cmp%nl0==geom%nl0) then
+      ! Full 3D NICAS
 
-! Adjoint horizontal interpolation
-call nicas_cmp%hor(1)%interp_c1b_to_c0a%apply_ad(mpl,fld,beta)
+      ! Save global sum
+      sums = zss_sum(fld,mask=geom%gmask_c0a)
+      call mpl%f_comm%allreduce(sums,fckit_mpi_sum())
+      sums = sums/sum(geom%nc0_gmask(1:geom%nl0))
 
-! Copy
-do ic1b=1,nicas_cmp%hor(1)%nc1b
-   isb = nicas_cmp%hor(1)%c1b_to_sb(ic1b)
-   alpha_b(isb) = beta(ic1b)
-end do
+      ! Adjoint interpolation
+      call nicas_cmp%apply_interp_ad(mpl,fld,alpha_b)
 
-! Apply adjoint linear operator
-call nicas_cmp%c%apply_ad(mpl,alpha_b,alpha_c)
+      ! Halo reduction from zone B to zone A
+      call nicas_cmp%com_s_AB%red(mpl,alpha_b,alpha_a)
 
-! Halo reduction from zone C to zone A
-call nicas_cmp%com_s_AC%red(mpl,alpha_c,alpha_a)
+      ! Apply linear operator
+      call nicas_cmp%c%apply_ad(mpl,alpha_a,alpha_c)
 
-! Halo extension from zone A to zone B
-call nicas_cmp%com_s_AB%ext(mpl,alpha_a,alpha_b)
+      ! Halo reduction from zone C to zone A
+      call nicas_cmp%com_s_AC%red(mpl,alpha_c,alpha_a)
 
-! Copy
-do ic1b=1,nicas_cmp%hor(1)%nc1b
-   isb = nicas_cmp%hor(1)%c1b_to_sb(ic1b)
-   beta(ic1b) = alpha_b(isb)
-end do
+      ! Halo extension from zone A to zone B
+      call nicas_cmp%com_s_AB%ext(mpl,alpha_a,alpha_b)
 
-! Horizontal interpolation
-call nicas_cmp%hor(1)%interp_c1b_to_c0a%apply(mpl,beta,fld,msdst=.false.)
+      ! Interpolation
+      call nicas_cmp%apply_interp(mpl,alpha_b,fld)
 
-! Reset global sum
-sume = zss_sum(fld,mask=geom%gmask_c0a(:,il0))
-call mpl%f_comm%allreduce(sume,fckit_mpi_sum())
-fld = fld*sums/sume
+      ! Reset global sum
+      sume = zss_sum(fld,mask=geom%gmask_c0a)
+      call mpl%f_comm%allreduce(sume,fckit_mpi_sum())
+      sume = sume/sum(geom%nc0_gmask(1:geom%nl0))
+      do il0=1,geom%nl0
+         do ic0a=1,geom%nc0a
+            if (geom%gmask_c0a(ic0a,il0)) fld(ic0a,il0) = fld(ic0a,il0)+sums-sume
+         end do
+      end do
+   else
+      ! Same horizontal convolution for all levels, no vertical convolution
+
+      do il0=1,geom%nl0
+         ! Save global sum 
+         sums = zss_sum(fld(:,il0),mask=geom%gmask_c0a(:,il0))
+         call mpl%f_comm%allreduce(sums,fckit_mpi_sum())
+         sums = sums/geom%nc0_gmask(il0)
+
+         ! Adjoint interpolation
+         call nicas_cmp%apply_interp_ad(mpl,fld(:,il0:il0),alpha_b)
+
+         ! Halo reduction from zone B to zone A
+         call nicas_cmp%com_s_AB%red(mpl,alpha_b,alpha_a)
+
+         ! Apply linear operator
+         call nicas_cmp%c%apply_ad(mpl,alpha_a,alpha_c)
+
+         ! Halo reduction from zone C to zone A
+         call nicas_cmp%com_s_AC%red(mpl,alpha_c,alpha_a)
+
+         ! Halo extension from zone A to zone B
+         call nicas_cmp%com_s_AB%ext(mpl,alpha_a,alpha_b)
+
+         ! Interpolation
+         call nicas_cmp%apply_interp(mpl,alpha_b,fld(:,il0:il0))
+
+         ! Reset global sum
+         sume = zss_sum(fld(:,il0),mask=geom%gmask_c0a(:,il0))
+         call mpl%f_comm%allreduce(sume,fckit_mpi_sum())
+         sume = sume/geom%nc0_gmask(il0)
+         do ic0a=1,geom%nc0a
+            if (geom%gmask_c0a(ic0a,il0)) fld(ic0a,il0) = fld(ic0a,il0)+sums-sume
+         end do
+      end do
+   end if
+end if
 
 ! Probe out
 @:probe_out()
 
-end subroutine nicas_cmp_apply_horizontal_smoother
+end subroutine nicas_cmp_apply_filter
 
 !----------------------------------------------------------------------
 ! Subroutine: nicas_cmp_apply_sqrt
@@ -4842,6 +4881,9 @@ logical :: lsteps
 
 ! Probe in
 @:probe_in()
+
+! Check that filter mode is not activated
+if (nicas_cmp%filter_mode) call mpl%abort('${subr}$','apply_sqrt_ad inconsistent with filter mode')
 
 ! Local flag
 lsteps = .false.
@@ -4946,6 +4988,9 @@ logical :: lsteps
 
 ! Probe in
 @:probe_in()
+
+! Check that filter mode is not activated
+if (nicas_cmp%filter_mode) call mpl%abort('${subr}$','apply_sqrt_ad inconsistent with filter mode')
 
 ! Local flag
 lsteps = .false.
@@ -5623,7 +5668,9 @@ type(geom_type),intent(in) :: geom            !< Geometry
 ! Local variables
 integer :: itest,isa
 integer :: il0(nam%check_normalization),iproc(nam%check_normalization),ic0a(nam%check_normalization)
-real(kind_real) :: alpha(nicas_cmp%nsa),norm,val(nam%check_normalization)
+real(kind_real) :: norm
+real(kind_real) :: val(nam%check_normalization)
+real(kind_real),allocatable :: fld(:,:),alpha(:)
 
 ! Set name
 @:set_name(nicas_cmp_test_normalization)
@@ -5649,32 +5696,68 @@ end do
 ! Desynchronize random number generator
 call rng%desync(mpl)
 
-! Check internal normalization
-write(mpl%info,'(a10,a)') '','Check internal normalization'
-call mpl%flush(flush=nicas_cmp%verbosity)
-do itest=1,nam%check_normalization
-   ! Initialization
-   alpha = zero
-   if (mpl%myproc==iproc(itest)) then
-      ! Get random point
-      call rng%rand(1,nicas_cmp%nsa,isa)
-      alpha(isa) = one
-   end if
+if (nicas_cmp%filter_mode) then
+   ! Check filter integral
+   write(mpl%info,'(a10,a)') '','Check filter integral'
+   call mpl%flush(flush=nicas_cmp%verbosity)
 
-   ! Apply convolution square-root adjoint
-   call nicas_cmp%apply_convol_sqrt_ad(mpl,alpha)
+   ! Allocation
+   allocate(fld(geom%nc0a,geom%nl0))
 
-   ! Apply convolution square-root
-   call nicas_cmp%apply_convol_sqrt(mpl,alpha)
+   do itest=1,nam%check_normalization
+      ! Initialization
+      fld = zero
+      if (mpl%myproc==iproc(itest)) fld(ic0a(itest),il0(itest)) = one
 
-   ! Broadcast normalization value
-   if (mpl%myproc==iproc(itest)) norm = alpha(isa)
-   call mpl%f_comm%broadcast(norm,iproc(itest)-1)
-   val(itest) = norm
-end do
-write(mpl%test,'(a13,a,f10.7,a,f10.7,a,i6,a)') '','Min / max:',minval(val),' / ',maxval(val),' over ', &
+      ! Apply NICAS filter
+      call nicas_cmp%apply_filter(mpl,geom,fld)
+
+      ! Get sum
+      norm = zss_sum(fld,mask=geom%gmask_c0a)
+      call mpl%f_comm%allreduce(norm,fckit_mpi_sum())
+      val(itest) = norm
+   end do
+   write(mpl%test,'(a13,a,f10.7,a,f10.7,a,i6,a)') '','Min / max:',minval(val),' / ',maxval(val),' over ', &
  & nam%check_normalization,' tests'
-call mpl%flush(flush=nicas_cmp%verbosity)
+   call mpl%flush(flush=nicas_cmp%verbosity)
+
+   ! Release memory
+   deallocate(fld)
+else
+   ! Check internal normalization
+   write(mpl%info,'(a10,a)') '','Check internal normalization'
+   call mpl%flush(flush=nicas_cmp%verbosity)
+
+   ! Allocation
+   allocate(alpha(nicas_cmp%nsa))
+
+   do itest=1,nam%check_normalization
+      ! Initialization
+      alpha = zero
+      if (mpl%myproc==iproc(itest)) then
+         ! Get random point
+         call rng%rand(1,nicas_cmp%nsa,isa)
+         alpha(isa) = one
+      end if
+
+      ! Apply convolution square-root adjoint
+      call nicas_cmp%apply_convol_sqrt_ad(mpl,alpha)
+
+      ! Apply convolution square-root
+      call nicas_cmp%apply_convol_sqrt(mpl,alpha)
+
+      ! Broadcast normalization value
+      if (mpl%myproc==iproc(itest)) norm = alpha(isa)
+      call mpl%f_comm%broadcast(norm,iproc(itest)-1)
+      val(itest) = norm
+   end do
+   write(mpl%test,'(a13,a,f10.7,a,f10.7,a,i6,a)') '','Min / max:',minval(val),' / ',maxval(val),' over ', &
+ & nam%check_normalization,' tests'
+   call mpl%flush(flush=nicas_cmp%verbosity)
+
+   ! Release memory
+   deallocate(alpha)
+end if
 
 ! Reset random seed if necessary
 call rng%reseed
@@ -5686,75 +5769,6 @@ end associate
 @:probe_out()
 
 end subroutine nicas_cmp_test_normalization
-
-!----------------------------------------------------------------------
-! Subroutine: nicas_cmp_test_normalization_horizontal_smoother
-!> Test NICAS normalization for horizontal smoother
-!----------------------------------------------------------------------
-subroutine nicas_cmp_test_normalization_horizontal_smoother(nicas_cmp,mpl,rng,nam,geom,il0)
-
-implicit none
-
-! Passed variables
-class(nicas_cmp_type),intent(in) :: nicas_cmp !< NICAS data component
-type(mpl_type),intent(inout) :: mpl           !< MPI data
-type(rng_type),intent(inout) :: rng           !< Random number generator
-type(nam_type),intent(in) :: nam              !< Namelist
-type(geom_type),intent(in) :: geom            !< Geometry
-integer,intent(in) :: il0                     !< Level index
-
-! Local variables
-integer :: itest
-integer :: iproc(nam%check_normalization),ic0a(nam%check_normalization)
-real(kind_real) :: fld(geom%nc0a),norm,val(nam%check_normalization)
-
-! Set name
-@:set_name(nicas_cmp_test_normalization)
-
-! Probe in
-@:probe_in()
-
-! Associate
-associate(ig=>nicas_cmp%ig)
-
-! Resynchronize random number generator
-call rng%resync(mpl)
-
-! Get random points
-do itest=1,nam%check_normalization
-   call geom%rand_point(mpl,rng,il0,iproc(itest),ic0a(itest))
-end do
-
-! Desynchronize random number generator
-call rng%desync(mpl)
-
-! Check smoother integral
-write(mpl%info,'(a10,a)') '','Check smoother integral'
-call mpl%flush(flush=nicas_cmp%verbosity)
-do itest=1,nam%check_normalization
-   ! Initialization
-   fld = zero
-   if (mpl%myproc==iproc(itest)) fld(ic0a(itest)) = one
-
-   ! Apply NICAS smoother
-   call nicas_cmp%apply_horizontal_smoother(mpl,geom,il0,fld)
-
-   ! Get sum
-   norm = zss_sum(fld,mask=geom%gmask_c0a(:,il0))
-   call mpl%f_comm%allreduce(norm,fckit_mpi_sum())
-   val(itest) = norm
-end do
-write(mpl%test,'(a13,a,f10.7,a,f10.7,a,i6,a)') '','Min / max:',minval(val),' / ',maxval(val),' over ', &
- & nam%check_normalization,' tests'
-call mpl%flush(flush=nicas_cmp%verbosity)
-
-! End associate
-end associate
-
-! Probe out
-@:probe_out()
-
-end subroutine nicas_cmp_test_normalization_horizontal_smoother
 
 !----------------------------------------------------------------------
 ! Function: nicas_cmp_c1_to_c1a

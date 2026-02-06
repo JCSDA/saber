@@ -57,6 +57,7 @@ class NICAS : public SaberCentralBlockBase {
 
   void randomize(oops::FieldSet3D &) const override;
   void multiply(oops::FieldSet3D &) const override;
+  void filter(oops::FieldSet3D &) const override;
 
   std::vector<std::pair<std::string, eckit::LocalConfiguration>> getReadConfs() const override;
   void setReadFields(const std::vector<oops::FieldSet3D> &) override;
@@ -68,8 +69,6 @@ class NICAS : public SaberCentralBlockBase {
   void iterativeCalibrationInit() override;
   void iterativeCalibrationUpdate(const oops::FieldSet3D &) override;
   void iterativeCalibrationFinal() override;
-
-  void dualResolutionSetup(const oops::GeometryData &) override;
 
   void write() const override;
   std::vector<std::pair<eckit::LocalConfiguration, oops::FieldSet3D>> fieldsToWrite() const

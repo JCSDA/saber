@@ -57,7 +57,7 @@ namespace saber {
 // -----------------------------------------------------------------------------
 
 /// \brief Top-level options taken by the ErrorCovarianceToolbox application.
-template <typename MODEL> class ErrorCovarianceToolboxParameters :
+class ErrorCovarianceToolboxParameters :
   public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(ErrorCovarianceToolboxParameters, oops::Parameters)
 
@@ -69,7 +69,7 @@ template <typename MODEL> class ErrorCovarianceToolboxParameters :
   oops::RequiredParameter<eckit::LocalConfiguration> background{"background", this};
 
   /// Background error covariance model.
-  oops::RequiredParameter<eckit::LocalConfiguration> backgroundError{"background error", this};
+  oops::RequiredParameter<ErrorCovarianceParameters> backgroundError{"background error", this};
 
   /// Geometry parameters.
   oops::Parameter<bool> parallel{"parallel subwindows", true, this};
@@ -106,14 +106,12 @@ template <typename MODEL> class ErrorCovarianceToolboxParameters :
 template <typename MODEL> class ErrorCovarianceToolbox : public oops::Application {
   typedef oops::ModelSpaceCovarianceBase<MODEL>           CovarianceBase_;
   typedef oops::CovarianceFactory<MODEL>                  CovarianceFactory_;
-  typedef ModelSpaceCovarianceParametersBase<MODEL>       CovarianceParametersBase_;
   typedef oops::Geometry<MODEL>                           Geometry_;
   typedef oops::Increment<MODEL>                          Increment_;
   typedef oops::Increment4D<MODEL>                        Increment4D_;
   typedef oops::State<MODEL>                              State_;
   typedef oops::State4D<MODEL>                            State4D_;
   typedef oops::Localization<MODEL>                       Localization_;
-  typedef ErrorCovarianceToolboxParameters<MODEL>         ErrorCovarianceToolboxParameters_;
 
  public:
 // -----------------------------------------------------------------------------
@@ -126,7 +124,7 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
 // -----------------------------------------------------------------------------
   int execute(const eckit::Configuration & fullConfig) const override {
     // Deserialize parameters
-    ErrorCovarianceToolboxParameters_ params;
+    ErrorCovarianceToolboxParameters params;
     params.deserialize(fullConfig);
 
     // Define number of subwindows
@@ -199,10 +197,8 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
     }
     const oops::Variables vars = tmpVars;
 
-    // Setup time
-    util::DateTime time = xx[0].validTime();
-
-    const eckit::LocalConfiguration covarConf(fullConfigUpdated, "background error");
+    // Covariance parameters
+    const eckit::LocalConfiguration covarConf = params.backgroundError.value().toConfiguration();
 
     // Dirac test
     const auto & diracParams = params.dirac.value();
@@ -240,17 +236,16 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
       dirac(covarConf, testConf, id, geom, vars, xx, dxi);
     }
 
-    // Background error covariance parameters
-    CovarianceParametersBase_ covarParams;
-    covarParams.deserialize(covarConf);
-    const auto & randomizationSize = covarParams.randomizationSize.value();
-    if ((diracParams == boost::none) || (randomizationSize != boost::none)) {
+    // Background error covariance base parameters
+    if ((!diracParams) || (params.backgroundError.value().randomizationSize.value())) {
       // Background error covariance training
       std::unique_ptr<CovarianceBase_> Bmat(CovarianceFactory_::create(
                                             geom, vars, covarConf, xx, xx));
 
       // Randomization
-      randomization(params, geom, vars, xx, Bmat, ntasks);
+      if (params.backgroundError.value().randomizationSize.value()) {
+        randomization(params, geom, vars, xx, Bmat, ntasks);
+      }
     }
 
     return 0;
@@ -429,39 +424,60 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
 
     // Look for hybrid or ensemble covariance models
     const std::string covarianceModel(covarConf.getString("covariance model"));
-    if (covarianceModel == "hybrid") {
-      std::vector<eckit::LocalConfiguration> confs;
-      covarConf.get("components", confs);
-      size_t componentIndex(1);
-      for (const auto & conf : confs) {
-        std::string idC(id + std::to_string(componentIndex));
-        const eckit::LocalConfiguration componentConfig(conf, "covariance");
-        dirac(componentConfig, testConf, idC, geom, vars, xx, dxi);
-        ++componentIndex;
+    bool runComponentsRecursively =
+      covarConf.has("run components recursively") ?
+      covarConf.getBool("run components recursively") : false;
+
+    oops::Log::info() << "Covariance Configuration : Running components recursively : "
+      << covarConf << " " <<  covarConf.has("run components recursively") << " "
+      << runComponentsRecursively << std::endl;
+
+    if (runComponentsRecursively) {
+      if (covarianceModel == "hybrid") {
+        std::vector<eckit::LocalConfiguration> confs;
+        covarConf.get("components", confs);
+        size_t componentIndex(1);
+        for (const auto & conf : confs) {
+          std::string idC(id + std::to_string(componentIndex));
+          const eckit::LocalConfiguration componentConfig(conf, "covariance");
+          dirac(componentConfig, testConf, idC, geom, vars, xx, dxi);
+          ++componentIndex;
+        }
       }
     }
     if (covarianceModel == "SABER") {
-      const std::string saberCentralBlockName =
-        covarConf.getString("saber central block.saber block name");
-      if (saberCentralBlockName == "Hybrid") {
+      const std::string covarianceType =
+        covarConf.getString("covariance type", "parametric");
+      if (covarianceType == "hybrid") {
+        bool runComponentsRecursively =
+          covarConf.has("run components recursively") ?
+          covarConf.getBool("run components recursively") :
+          false;
         // Check for outer blocks (can't pass the correct geometry/variables in that case)
-        if (!covarConf.has("saber outer blocks")) {
+        if (!covarConf.has("saber outer blocks") && (runComponentsRecursively)) {
+          // Deserialize base parameters
+          ErrorCovarianceParametersBase paramsBase;
+          paramsBase.deserialize(covarConf);
+
+          // Get components configurations list
           std::vector<eckit::LocalConfiguration> confs;
-          covarConf.get("saber central block.components", confs);
+          covarConf.get("components", confs);
+
+          // Initialize component index
           size_t componentIndex(1);
+
           for (const auto & conf : confs) {
-            std::string idC(id + std::to_string(componentIndex));
+            // Prepare sub-covariance configuration
             eckit::LocalConfiguration componentConfig(conf, "covariance");
             componentConfig.set("covariance model", "SABER");
-            if (covarConf.has("adjoint test")) {
-              componentConfig.set("adjoint test", covarConf.getBool("adjoint test"));
-            }
-            if (covarConf.has("inverse test")) {
-              componentConfig.set("inverse test", covarConf.getBool("inverse test"));
-            }
-            if (covarConf.has("square-root test")) {
-              componentConfig.set("square-root test", covarConf.getBool("square-root test"));
-            }
+
+            // Merge configuration with full configuration (order of arguments matters!)
+            componentConfig = util::mergeConfigs(componentConfig, paramsBase.toConfiguration());
+
+            // Update ID
+            std::string idC(id + std::to_string(componentIndex));
+
+            // Call dirac function
             dirac(componentConfig, testConf, idC, geom, vars, xx, dxi);
             ++componentIndex;
           }
@@ -509,13 +525,17 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
     }
   }
 // -----------------------------------------------------------------------------
-  void randomization(const ErrorCovarianceToolboxParameters_ & params,
+  void randomization(const ErrorCovarianceToolboxParameters & params,
                      const Geometry_ & geom,
                      const oops::Variables & vars,
                      const State4D_ & xx,
                      const std::unique_ptr<CovarianceBase_> & Bmat,
                      const size_t & ntasks) const {
-    if (Bmat->randomizationSize() > 0) {
+    // Get randomization size
+    ASSERT(params.backgroundError.value().randomizationSize.value());
+    const size_t randomizationSize = *params.backgroundError.value().randomizationSize.value();
+
+    if (randomizationSize > 0) {
       oops::Log::info() << "Info     : " << std::endl;
       oops::Log::info() << "Info     : Generate perturbations:" << std::endl;
       oops::Log::info() << "Info     : -----------------------" << std::endl;
@@ -533,7 +553,7 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
       const auto & outputStates = params.outputStates.value();
       const auto & outputVariance = params.outputVariance.value();
 
-      for (size_t jm = 0; jm < Bmat->randomizationSize(); ++jm) {
+      for (size_t jm = 0; jm < randomizationSize; ++jm) {
         // Generate member
         Bmat->randomize(dx);
 
@@ -580,9 +600,9 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
         oops::Log::info() << "Info     : Write randomized variance:" << std::endl;
         oops::Log::info() << "Info     : --------------------------" << std::endl;
         oops::Log::info() << "Info     : " << std::endl;
-        if (Bmat->randomizationSize() > 1) {
+        if (randomizationSize > 1) {
           // Normalize variance
-          double rk_norm = 1.0/static_cast<double>(Bmat->randomizationSize());
+          double rk_norm = 1.0/static_cast<double>(randomizationSize);
           variance *= rk_norm;
         }
 

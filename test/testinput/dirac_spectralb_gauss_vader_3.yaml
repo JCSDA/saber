@@ -57,9 +57,11 @@ geometry:
   halo: 1
 background error:
   covariance model: hybrid
+  run components recursively: true
   components:
   - covariance:
       covariance model: SABER
+      covariance type: ensemble
       adjoint test: false
       ensemble pert:
         date: 2016-01-01T16:00:00Z
@@ -74,9 +76,7 @@ background error:
             - mu
             - northward_wind
             - unbalanced_pressure_levels_minus_one
-      saber central block:
-        saber block name: Ensemble
-        localization:
+      localization:
           saber central block:
             saber block name: ID
           saber outer blocks:

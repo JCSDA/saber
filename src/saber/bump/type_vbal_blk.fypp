@@ -203,8 +203,8 @@ real(kind_real) :: fld_c1a_1(samp%nc1a,geom%nl0),fld_c1a_2(samp%nc1a,geom%nl0)
 @:probe_in()
 
 ! Indices
-isub = (ie-1)/(nam%ens1_ne/nam%ens1_nsub)+1
-ie_sub = ie-(isub-1)*nam%ens1_ne/nam%ens1_nsub
+isub = (ie-1)/(nam%ens_ne/nam%ens_nsub)+1
+ie_sub = ie-(isub-1)*nam%ens_ne/nam%ens_nsub
 
 ! Computation factors
 fac1 = real(ie_sub-1,kind_real)/real(ie_sub,kind_real)
@@ -251,11 +251,11 @@ vbal_blk%seq_avg_c1a_1 = vbal_blk%seq_avg_c1a_1+fac2*fld_c1a_1
 vbal_blk%seq_avg_c1a_2 = vbal_blk%seq_avg_c1a_2+fac2*fld_c1a_2
 
 ! Average covariances
-if (ie_sub==nam%ens1_ne/nam%ens1_nsub) vbal_blk%full_cov_c1a = vbal_blk%full_cov_c1a+vbal_blk%seq_cov_c1a
+if (ie_sub==nam%ens_ne/nam%ens_nsub) vbal_blk%full_cov_c1a = vbal_blk%full_cov_c1a+vbal_blk%seq_cov_c1a
 
-if (ie==nam%ens1_ne) then
+if (ie==nam%ens_ne) then
    ! Normalization
-   fac_norm = one/real(nam%ens1_ne-nam%ens1_nsub,kind_real)
+   fac_norm = one/real(nam%ens_ne-nam%ens_nsub,kind_real)
    !$omp parallel do schedule(static) private(il0,jl0,ic1a)
    do il0=1,geom%nl0
       do jl0=1,geom%nl0
@@ -280,7 +280,7 @@ end subroutine vbal_blk_cov_update
 ! Subroutine: vbal_blk_compute_covariance
 !> Compute covariance
 !----------------------------------------------------------------------
-subroutine vbal_blk_compute_covariance(vbal_blk,mpl,nam,geom,samp,ens1,ens2)
+subroutine vbal_blk_compute_covariance(vbal_blk,mpl,nam,geom,samp,ens,ensu)
 
 implicit none
 
@@ -290,8 +290,8 @@ type(mpl_type),intent(inout) :: mpl            !< MPI data
 type(nam_type), intent(in) :: nam              !< Namelist
 type(geom_type),intent(in) :: geom             !< Geometry
 type(samp_type), intent(in) :: samp            !< Sampling
-type(ens_type), intent(in) :: ens1             !< Ensemble 1
-type(ens_type), intent(in),optional :: ens2    !< Ensemble 2 (if present, fill cov_c1a; if not, fill full_cov_c1a)
+type(ens_type), intent(in) :: ens              !< Ensemble 1
+type(ens_type), intent(in),optional :: ensu    !< Ensemble 2 (if present, fill cov_c1a; if not, fill full_cov_c1a)
 
 ! Local variables
 integer :: isub,ie_sub,ie,il0,il0ic1,jl0,ic1a
@@ -321,19 +321,19 @@ do isub=1,vbal_blk%nsub
    end if
 
    ! Compute centered moments
-   do ie_sub=1,ens1%ne/vbal_blk%nsub
+   do ie_sub=1,ens%ne/vbal_blk%nsub
       write(mpl%info,'(i6)') ie_sub
       call mpl%flush(newl=.false.)
 
       ! Full ensemble index
-      ie = ie_sub+(isub-1)*ens1%ne/vbal_blk%nsub
+      ie = ie_sub+(isub-1)*ens%ne/vbal_blk%nsub
 
       ! Get perturbation on subset Sc0
-      call ens1%get_c0(mpl,vbal_blk%iv,geom,'pert',ie,fld_c0a_1)
-      if (present(ens2)) then
-         call ens2%get_c0(mpl,vbal_blk%jv,geom,'pert',ie,fld_c0a_2)
+      call ens%get_c0(mpl,vbal_blk%iv,geom,'pert',ie,fld_c0a_1)
+      if (present(ensu)) then
+         call ensu%get_c0(mpl,vbal_blk%jv,geom,'pert',ie,fld_c0a_2)
       else
-         call ens1%get_c0(mpl,vbal_blk%jv,geom,'pert',ie,fld_c0a_2)
+         call ens%get_c0(mpl,vbal_blk%jv,geom,'pert',ie,fld_c0a_2)
       end if
 
       ! Halo extension
@@ -368,7 +368,7 @@ do isub=1,vbal_blk%nsub
 end do
 
 ! Normalization
-fac_norm = real(ens1%nsub,kind_real)/real(ens1%ne-ens1%nsub,kind_real)
+fac_norm = real(ens%nsub,kind_real)/real(ens%ne-ens%nsub,kind_real)
 !$omp parallel do schedule(static) private(il0,jl0,ic1a)
 do il0=1,geom%nl0
    do jl0=1,geom%nl0

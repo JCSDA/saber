@@ -1,4 +1,4 @@
-# Dirac test of the BifourierVorDivToRedWind block, with the dipole mode activated
+# Dirac test of the BifourierVorDivToWind block, with the dipole mode activated
 geometry:
   function space: StructuredColumns
   grid:
@@ -18,12 +18,9 @@ geometry:
   - variables:
     - air_upward_absolute_vorticity
     - air_horizontal_divergence
-    - reduced_x_wind
-    - reduced_y_wind
     - geographical_x_wind
     - geographical_y_wind
     levels: 10
-  latitude south to north: false
 background:
   date: 2010-01-01T12:00:00Z
   state variables:
@@ -32,8 +29,8 @@ background:
 background error:
   covariance model: SABER
   adjoint test: false
-  square-root test: false
-  inverse test: false
+  square-root test: true
+  inverse test: true
   saber central block:
     saber block name: FastLAM
     calibration:
@@ -53,10 +50,8 @@ background error:
       resolution: 5
   saber outer blocks:
   - saber block name: BifourierGridToSpectral
-  - saber block name: BifourierVorDivToRedWind
+  - saber block name: BifourierSpectralVorDivToGridWind
     dipole test: true
-  - saber block name: BifourierSpectralToGrid
-  - saber block name: RedWindToGeoWind
     biperiodization:
       x inner extension: 7
       y inner extension: 5

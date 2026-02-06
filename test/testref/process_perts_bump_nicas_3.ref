@@ -1,0 +1,40 @@
+       Independent levels:  1[10]
+          Subset Sc0 size:              800
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   3 ~> 100.0%
+             Level   4 ~> 100.0%
+             Level   5 ~> 100.0%
+             Level   6 ~> 100.0%
+             Level   7 ~> 100.0%
+             Level   8 ~> 100.0%
+             Level   9 ~> 100.0%
+             Level  10 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+             Level   3 ~>  0.300E+01 vert. coord.
+             Level   4 ~>  0.400E+01 vert. coord.
+             Level   5 ~>  0.500E+01 vert. coord.
+             Level   6 ~>  0.600E+01 vert. coord.
+             Level   7 ~>  0.700E+01 vert. coord.
+             Level   8 ~>  0.800E+01 vert. coord.
+             Level   9 ~>  0.900E+01 vert. coord.
+             Level  10 ~>  0.100E+02 vert. coord.
+             Effective levels:   1 
+                Horizontal support radius:    4000.00 km (   4000.00 km -    4000.00 km)
+                Estimated nc1 from horizontal support radius:      589
+                   Decimate full grid, at least      589 points required,     790 valid points found
+                   Subgrid hash:  -1358924416
+                Final nc1:      589
+                Effective horizontal resolution:  4.00
+             nc1(  1) =                        589
+             ns =                              589
+             v%n_s =                             1
+             c%n_s[global] =                  7405
+Norm of perturbation: member 1: 2.6620275517839023e+01
+Norm of band perturbation: member 1: band 1: 1.2499346409334429e+01
+Norm of band perturbation: member 1: band 2: 2.0091601768023054e+01
+Norm of perturbation: member 2: 2.5901045342933084e+01
+Norm of band perturbation: member 2: band 1: 1.2737645373666396e+01
+Norm of band perturbation: member 2: band 2: 1.9002522754871798e+01

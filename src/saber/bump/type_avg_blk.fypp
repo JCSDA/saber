@@ -56,7 +56,7 @@ contains
    procedure :: avg_blk_alloc_grp
    generic :: alloc => avg_blk_alloc_blk,avg_blk_alloc_grp
    procedure :: dealloc => avg_blk_dealloc
-   procedure :: write => avg_blk_write
+   procedure :: write_hist => avg_blk_write_hist
    procedure :: compute_global => avg_blk_compute_global
    procedure :: compute_local => avg_blk_compute_local
    procedure :: compute_asy => avg_blk_compute_asy
@@ -220,10 +220,10 @@ if (allocated(avg_blk%cor_hist)) deallocate(avg_blk%cor_hist)
 end subroutine avg_blk_dealloc
 
 !----------------------------------------------------------------------
-! Subroutine: avg_blk_write
-!> Write
+! Subroutine: avg_blk_write_hist
+!> Write histograms
 !----------------------------------------------------------------------
-subroutine avg_blk_write(avg_blk,mpl,nam,geom,filename)
+subroutine avg_blk_write_hist(avg_blk,mpl,nam,geom,filename)
 
 implicit none
 
@@ -241,7 +241,7 @@ integer :: cor_bins_id,cor_hist_id
 character(len=1024) :: grpname
 
 ! Set name
-@:set_name(avg_blk_write)
+@:set_name(avg_blk_write_hist)
 
 ! Probe in
 @:probe_in()
@@ -302,7 +302,7 @@ call close_file(mpl,ncid)
 ! Probe out
 @:probe_out()
 
-end subroutine avg_blk_write
+end subroutine avg_blk_write_hist
 
 !----------------------------------------------------------------------
 ! Subroutine: avg_blk_compute_global
