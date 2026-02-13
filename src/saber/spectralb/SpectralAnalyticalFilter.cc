@@ -213,7 +213,7 @@ SpectralAnalyticalFilter::SpectralAnalyticalFilter(const oops::GeometryData & ge
                                                    const oops::FieldSet3D & xb,
                                                    const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params, xb.validTime()), params_(params),
-    activeVars_(getActiveVars(params, outerVars)),
+    activeVars_(params.getActiveVars(outerVars)),
     innerGeometryData_(geometryData),
     innerVars_(outerVars),
     specFunctionSpace_(geometryData.functionSpace()),

@@ -16,33 +16,6 @@ namespace saber {
 
 // -----------------------------------------------------------------------------
 
-oops::Variables getActiveVars(const SaberBlockParametersBase & params,
-                              const oops::Variables & defaultVars) {
-  oops::Log::trace() << "getActiveVars starting" << std::endl;
-  oops::Variables activeVars_nomd;
-  if (params.mandatoryActiveVars().size() == 0) {
-    // No mandatory active variables for this block
-    activeVars_nomd = params.activeVars.value().get_value_or(defaultVars);
-  } else {
-    // Block with mandatory active variables
-    activeVars_nomd = params.activeVars.value().get_value_or(params.mandatoryActiveVars());
-    ASSERT(params.mandatoryActiveVars() <= activeVars_nomd);
-  }
-  // Copy the variables that exist in defaultVars from defaultVars (they have metadata
-  // associated with them)
-  oops::Variables activeVars;
-  for (auto & var : activeVars_nomd) {
-    if (defaultVars.has(var.name())) {
-      activeVars.push_back(defaultVars[var.name()]);
-    } else {
-      activeVars.push_back(var);
-    }
-  }
-  return activeVars;
-}
-
-// -----------------------------------------------------------------------------
-
 // Return inner variables as outer variables + inner active variables
 // Can be used to help define innerVars_ member in SABER outer blocks
 oops::Variables getUnionOfInnerActiveAndOuterVars(const SaberBlockParametersBase & params,

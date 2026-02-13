@@ -68,8 +68,7 @@ Diffusion::Diffusion(
     const Parameters_ & params,
     const oops::FieldSet3D & xb,
     const oops::FieldSet3D & fg)
-  : saber::SaberCentralBlockBase(params, xb.validTime()),
-    geom_(geometryData),
+  : saber::SaberCentralBlockBase(params, xb.validTime(), geometryData, centralVars),
     diffusionGeom_(oops::Diffusion::calculateDerivedGeom(geometryData)),
     params_(params),
     vars_(params.activeVars.value().get_value_or(centralVars))
@@ -80,7 +79,7 @@ Diffusion::Diffusion(
     nlevs += var.getLevels();
   }
   // Compute control vector size
-  ctlVecSize_ = nlevs*geom_.functionSpace().size();
+  ctlVecSize_ = nlevs*geometryData.functionSpace().size();
 }
 
 // --------------------------------------------------------------------------------------
@@ -93,7 +92,7 @@ void Diffusion::randomize(oops::FieldSet3D & fset) const {
       // create random field
       const size_t levels = fset[var].shape(1);
       atlas::FieldSet rand = util::createRandomFieldSet(
-        geom_.comm(), geom_.functionSpace(),
+        geometryData().comm(), geometryData().functionSpace(),
         std::vector<size_t>{levels}, std::vector<std::string>{var});
       fset[var] = rand[var];
 
@@ -106,7 +105,7 @@ void Diffusion::randomize(oops::FieldSet3D & fset) const {
 // --------------------------------------------------------------------------------------
 
 void Diffusion::multiply(oops::FieldSet3D & fset) const {
-  const atlas::FunctionSpace & fs = geom_.functionSpace();
+  const atlas::FunctionSpace & fs = geometryData().functionSpace();
 
   // iterate through the list of groups
   for (const auto & group : groups_) {
@@ -164,7 +163,7 @@ void Diffusion::multiply(oops::FieldSet3D & fset) const {
       }
 
       // create a new 3d field that is a summation of all the variable in this group
-      atlas::Field common = geom_.functionSpace().createField<double>(
+      atlas::Field common = geometryData().functionSpace().createField<double>(
         atlas::option::levels(levels) | atlas::option::name("COMMON"));
       fieldSubset.add(common);
       auto v_common = atlas::array::make_view<double, 2>(common);
@@ -273,7 +272,7 @@ void Diffusion::read() {
     << " saber::Diffusion read\n"
     << "----------------------------------------------------------------------------------\n";
 
-  const atlas::FunctionSpace & fs = geom_.functionSpace();
+  const atlas::FunctionSpace & fs = geometryData().functionSpace();
   const DiffusionParameters::Read & readParams = *params_.read.value();
   const std::vector<DiffusionParameters::Group> & groups = readParams.groups.value();
 
@@ -287,7 +286,7 @@ void Diffusion::read() {
     oops::Log::info() << "\ngroup " << groupCount++ << " of " << groups.size() <<std::endl;
 
     Group & group = groups_.emplace_back();
-    group.diffusion.reset(new oops::Diffusion(geom_, diffusionGeom_));
+    group.diffusion.reset(new oops::Diffusion(geometryData(), diffusionGeom_));
 
     // sanity check on input config
     if (groupConf.vertical.value() == boost::none && groupConf.horizontal.value() == boost::none) {
@@ -324,7 +323,7 @@ void Diffusion::read() {
 
       atlas::FieldSet hzParams;
       oops::Log::info() << "  ";
-      util::readFieldSet(geom_.comm(), fs,
+      util::readFieldSet(geometryData().comm(), fs,
         std::vector<size_t>{levels, levels},
         std::vector<std::string>{"hzScales", "hzNorm"},
         hzConf,
@@ -333,9 +332,11 @@ void Diffusion::read() {
       util::shareFields(hzParams, diffusionParams);
       group.normalization.add(hzParams["hzNorm"]);
 
-      oops::Log::info() << "  hzScales:  " << FieldStats(hzParams["hzScales"], geom_.comm())
+      oops::Log::info() << "  hzScales:  "
+                        << FieldStats(hzParams["hzScales"], geometryData().comm())
                         << std::endl;
-      oops::Log::info() << "  hzNorm:    " << FieldStats(hzParams["hzNorm"], geom_.comm())
+      oops::Log::info() << "  hzNorm:    "
+                        << FieldStats(hzParams["hzNorm"], geometryData().comm())
                         << std::endl;
     }
 
@@ -354,7 +355,7 @@ void Diffusion::read() {
       if (!group.vtDuplicated) {
         atlas::FieldSet vtParams;
         oops::Log::info() << "  ";
-        util::readFieldSet(geom_.comm(), fs,
+        util::readFieldSet(geometryData().comm(), fs,
           std::vector<size_t>{levels, levels},
           std::vector<std::string>{"vtScales", "vtNorm"},
           *groupConf.vertical.value(),
@@ -363,9 +364,11 @@ void Diffusion::read() {
         util::shareFields(vtParams, diffusionParams);
         group.normalization.add(diffusionParams["vtNorm"]);
 
-        oops::Log::info() << "  vtScales:  " << FieldStats(vtParams["vtScales"], geom_.comm())
+        oops::Log::info() << "  vtScales:  "
+                          << FieldStats(vtParams["vtScales"], geometryData().comm())
                           << std::endl;
-        oops::Log::info() << "  vtNorm:    " << FieldStats(vtParams["vtNorm"], geom_.comm())
+        oops::Log::info() << "  vtNorm:    "
+                          << FieldStats(vtParams["vtNorm"], geometryData().comm())
                           << std::endl;
       }
     }
@@ -426,7 +429,7 @@ void Diffusion::directCalibration(const oops::FieldSets &) {
     << " saber::Diffusion calibration\n"
     << "----------------------------------------------------------------------------------\n";
 
-  const atlas::FunctionSpace & fs = geom_.functionSpace();
+  const atlas::FunctionSpace & fs = geometryData().functionSpace();
 
   // get relevant configuration
   const DiffusionParameters::Calibration & calibrationParams = *params_.calibration.value();
@@ -453,7 +456,7 @@ void Diffusion::directCalibration(const oops::FieldSets &) {
     // read in or generate the scales
     // ------------------------------------------------------------------------------------
     atlas::FieldSet scales;
-    group.diffusion.reset(new oops::Diffusion(geom_, diffusionGeom_));
+    group.diffusion.reset(new oops::Diffusion(geometryData(), diffusionGeom_));
     // sanity check on input config
     if (groupConf.vertical.value() == boost::none &&
         groupConf.horizontal.value() == boost::none) {
@@ -472,7 +475,7 @@ void Diffusion::directCalibration(const oops::FieldSets &) {
       atlas::Field localScales;
       if (conf.has("fixed value")) {
         // generate scales from a fixed value
-        localScales = geom_.functionSpace().createField<double>(
+        localScales = geometryData().functionSpace().createField<double>(
           atlas::option::levels(levels) | atlas::option::name(scaleName));
         auto v_localScales = atlas::array::make_view<double, 2>(localScales);
         const double val = conf.getDouble("fixed value");
@@ -495,7 +498,7 @@ void Diffusion::directCalibration(const oops::FieldSets &) {
       const std::string maskName = conf.getString("mask", "");
       oops::Log::info() << "  mask: " << (maskName == "" ? "NONE" : maskName) << std::endl;
       if (maskName != "") {
-        const auto & v_mask = atlas::array::make_view<double, 2>(geom_.getField(maskName));
+        const auto & v_mask = atlas::array::make_view<double, 2>(geometryData().getField(maskName));
         auto v_field = atlas::array::make_view<double, 2>(localScales);
         for (atlas::idx_t i = 0; i < localScales.shape(0); i++) {
           if (!v_mask(i, 0)) {
@@ -528,7 +531,7 @@ void Diffusion::directCalibration(const oops::FieldSets &) {
       oops::Log::info() << "Generating horizontal scales" << std::endl;
       const eckit::LocalConfiguration & hzConf = *groupConf.horizontal.value();
       createScales("hzScales", hzConf);
-      oops::Log::info() << "  hzScales:  " << FieldStats(scales["hzScales"], geom_.comm())
+      oops::Log::info() << "  hzScales:  " << FieldStats(scales["hzScales"], geometryData().comm())
                         << std::endl;
     }
 
@@ -538,7 +541,7 @@ void Diffusion::directCalibration(const oops::FieldSets &) {
       const eckit::LocalConfiguration & vtConf = *groupConf.vertical.value();
       createScales("vtScales", vtConf);
       ASSERT(scales["vtScales"].shape(1) > 1);
-      oops::Log::info() << "  vtScales:  " << FieldStats(scales["vtScales"], geom_.comm())
+      oops::Log::info() << "  vtScales:  " << FieldStats(scales["vtScales"], geometryData().comm())
                         << std::endl;
     }
 
@@ -583,7 +586,7 @@ void Diffusion::directCalibration(const oops::FieldSets &) {
         }
 
         // generate random vector
-        atlas::FieldSet rand = util::createRandomFieldSet(geom_.comm(), fs,
+        atlas::FieldSet rand = util::createRandomFieldSet(geometryData().comm(), fs,
           std::vector<size_t>{levels}, std::vector<std::string>{"rand"});
 
         // apply sqrt of horizontal diffusion
@@ -663,7 +666,7 @@ void Diffusion::directCalibration(const oops::FieldSets &) {
     if (groupConf.write.value() != boost::none) {
       atlas::FieldSet writeFields = util::shareFields(scales);
       util::shareFields(group.normalization, writeFields);
-      util::writeFieldSet(geom_.comm(), *groupConf.write.value(), writeFields);
+      util::writeFieldSet(geometryData().comm(), *groupConf.write.value(), writeFields);
     }
   }
   oops::Log::info()

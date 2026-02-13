@@ -79,9 +79,6 @@ class SpectralCorrelation : public SaberCentralBlockBase {
   /// Vertical Spectral Correlations
   atlas::FieldSet spectralVerticalCorrelations_;
 
-  /// Geometry data
-  const oops::GeometryData & geometryData_;
-
   /// Spectral FunctionSpace
   const atlas::functionspace::Spectral specFunctionSpace_;
 };

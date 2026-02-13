@@ -36,13 +36,13 @@ void BifourierAromeCovariance::read() {
   // Read data
   if (params_.read.value()->inputFileFormat.value() == "arome legacy binary"
     || params_.read.value()->inputFileFormat.value() == "arome legacy netcdf") {
-    for (const auto & var : activeVars_) {
+    for (const auto & var : centralVars()) {
       // Create covariance field
       createField3D("cov", trans_->nw(), var, data_);
     }
 
     // Get number of levels
-    const size_t nz = activeVars_["air_upward_absolute_vorticity"].getLevels();
+    const size_t nz = centralVars()["air_upward_absolute_vorticity"].getLevels();
 
     // Define global vectors
     std::vector<double> vorCovGlb;
@@ -99,7 +99,7 @@ void BifourierAromeCovariance::read() {
     }
 
     // Scatter data
-    for (const auto & var : activeVars_) {
+    for (const auto & var : centralVars()) {
       // Get covariance field
       auto covField = getField("cov", var, data_);
 
@@ -119,7 +119,7 @@ void BifourierAromeCovariance::read() {
     }
 
     // Rescale covariance from AROME to block standard
-    for (const auto & var : activeVars_) {
+    for (const auto & var : centralVars()) {
       // Get number of levels
       const size_t nz = var.getLevels();
 
@@ -174,7 +174,7 @@ void BifourierAromeCovariance::write() const {
       std::vector<double> quCovGlb;
 
 
-      for (const auto & var : activeVars_) {
+      for (const auto & var : centralVars()) {
         // Get number of levels
         const size_t nz = var.getLevels();
 
@@ -201,7 +201,7 @@ void BifourierAromeCovariance::write() const {
       }
 
       // Write AROME covariances
-      for (const auto & var : activeVars_) {
+      for (const auto & var : centralVars()) {
         // Get covariance field
         const auto aromeCovField = getField("aromeCov", var, aromeCovData);
 
@@ -222,7 +222,7 @@ void BifourierAromeCovariance::write() const {
 
       if (comm_.rank() == 0) {
         // Get number of levels
-        const size_t nz = activeVars_["air_upward_absolute_vorticity"].getLevels();
+        const size_t nz = centralVars()["air_upward_absolute_vorticity"].getLevels();
 
         if (params_.write.value()->outputFileFormat.value() == "arome legacy binary") {
           // Write Fortran unformatted file (from ewgsacov.F90)

@@ -31,19 +31,18 @@ static SaberCentralBlockMaker<BifourierCovariance> makerBifourierCovariance_("Bi
 
 // -----------------------------------------------------------------------------
 
-BifourierCovariance::BifourierCovariance(const oops::GeometryData & gdata,
-                                         const oops::Variables & activeVars,
+BifourierCovariance::BifourierCovariance(const oops::GeometryData & geometryData,
+                                         const oops::Variables & centralVars,
                                          const eckit::Configuration & covarConf,
                                          const Parameters_ & params,
                                          const oops::FieldSet3D & xb,
                                          const oops::FieldSet3D & fg)
-  : SaberCentralBlockBase(params, xb.validTime()),
-    comm_(gdata.comm()),
-    activeVars_(activeVars),
+  : SaberCentralBlockBase(params, xb.validTime(), geometryData, centralVars),
+    comm_(geometryData.comm()),
     params_(params),
     Lf_(params_.calibration.value() != boost::none ?
       params_.calibration.value()->filteringScale.value() : 0),
-    trans_(transStore_.retrieveTransform(gdata))
+    trans_(transStore_.retrieveTransform(geometryData))
 {
   oops::Log::trace() << classname() << "::BifourierCovariance starting" << std::endl;
   oops::Log::trace() << classname() << "::BifourierCovariance done" << std::endl;
@@ -62,7 +61,7 @@ void BifourierCovariance::randomize(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::randomize starting" << std::endl;
 
   // Create random spectral vector
-  trans_->createRandomFieldSet(fset.fieldSet(), activeVars_);
+  trans_->createRandomFieldSet(fset.fieldSet(), centralVars());
 
   // Define control vector
   atlas::Field cv("cv", make_datatype<double>(), make_shape(ctlVecSize()));
@@ -71,7 +70,7 @@ void BifourierCovariance::randomize(oops::FieldSet3D & fset) const {
   const size_t offset = 0;
 
   // Convert spectral FieldSet to control vector
-  trans_->fset2cv(fset.fieldSet(), cv, activeVars_, offset);
+  trans_->fset2cv(fset.fieldSet(), cv, centralVars(), offset);
 
   // Square-root multiply
   multiplySqrt(cv, fset, offset);
@@ -107,9 +106,9 @@ void BifourierCovariance::multiplySqrt(const atlas::Field & cv,
   oops::Log::trace() << classname() << "::multiplySqrt starting" << std::endl;
 
   // Convert control vector to spectral FieldSet
-  trans_->cv2fset(cv, fset.fieldSet(), activeVars_, offset);
+  trans_->cv2fset(cv, fset.fieldSet(), centralVars(), offset);
 
-  for (const auto & var : activeVars_) {
+  for (const auto & var : centralVars()) {
     // Get number of levels
     const size_t nz = var.getLevels();
 
@@ -163,9 +162,9 @@ void BifourierCovariance::multiplySqrtAD(const oops::FieldSet3D & fset,
   oops::FieldSet3D fsetTmp(fset);
 
   // Copy FieldSet
-  trans_->copyFieldSet(fset.fieldSet(), fsetTmp.fieldSet(), activeVars_);
+  trans_->copyFieldSet(fset.fieldSet(), fsetTmp.fieldSet(), centralVars());
 
-  for (const auto & var : activeVars_) {
+  for (const auto & var : centralVars()) {
     // Get number of levels
     const size_t nz = var.getLevels();
 
@@ -206,7 +205,7 @@ void BifourierCovariance::multiplySqrtAD(const oops::FieldSet3D & fset,
   }
 
   // Convert spectral FieldSet to control vector
-  trans_->fset2cv(fsetTmp.fieldSet(), cv, activeVars_, offset);
+  trans_->fset2cv(fsetTmp.fieldSet(), cv, centralVars(), offset);
 
   oops::Log::trace() << classname() << "::multiplySqrtAD done" << std::endl;
 }
@@ -216,7 +215,7 @@ void BifourierCovariance::multiplySqrtAD(const oops::FieldSet3D & fset,
 void BifourierCovariance::read() {
   oops::Log::trace() << classname() << "::read starting" << std::endl;
 
-  for (const auto & var : activeVars_) {
+  for (const auto & var : centralVars()) {
     // Create correlation square-root field
     createField3D("corSqrt", trans_->nw(), var, data_);
 
@@ -236,7 +235,7 @@ void BifourierCovariance::read() {
     if ((retval = nc_open(ncFilePath.c_str(), NC_NOWRITE, &ncId))) ERR(retval, ncFilePath);
   }
 
-  for (const auto & var : activeVars_) {
+  for (const auto & var : centralVars()) {
     // Get number of levels
     const size_t nz = var.getLevels();
 
@@ -326,7 +325,7 @@ void BifourierCovariance::directCalibration(const oops::FieldSets & fsetEns) {
     atlas::FieldSet horCorGpFset;
     atlas::FieldSet horCorSpFset;
 
-    for (const auto & var : activeVars_) {
+    for (const auto & var : centralVars()) {
       // Get number of levels
       const size_t nz = var.getLevels();
 
@@ -374,9 +373,9 @@ void BifourierCovariance::directCalibration(const oops::FieldSets & fsetEns) {
     }
 
     // Direct spectral transform of the horizontal grid-point correlation
-    trans_->gp2sp(horCorGpFset, horCorSpFset, activeVars_);
+    trans_->gp2sp(horCorGpFset, horCorSpFset, centralVars());
 
-    for (const auto & var : activeVars_) {
+    for (const auto & var : centralVars()) {
       // Get number of levels
       const size_t nz = var.getLevels();
 
@@ -476,7 +475,7 @@ void BifourierCovariance::directCalibration(const oops::FieldSets & fsetEns) {
     // Ensemble-based calibration
     ASSERT(ne > 2);
 
-    for (const auto & var : activeVars_) {
+    for (const auto & var : centralVars()) {
       // Get number of levels
       const size_t nz = var.getLevels();
 
@@ -531,7 +530,7 @@ void BifourierCovariance::directCalibration(const oops::FieldSets & fsetEns) {
 
   if (ne == 0) {
     // Update the standard-deviation
-    for (const auto & var : activeVars_) {
+    for (const auto & var : centralVars()) {
       // Get number of levels
       const size_t nz = var.getLevels();
 
@@ -569,7 +568,7 @@ void BifourierCovariance::iterativeCalibrationInit() {
   // Initialize iterative counters with zeroes
   iterativeN_ = 0;
 
-  for (const auto & var : activeVars_) {
+  for (const auto & var : centralVars()) {
     // Create perturbation field
     createField2D("pert", trans_->ns(), var, data_);
 
@@ -595,7 +594,7 @@ void BifourierCovariance::iterativeCalibrationUpdate(const oops::FieldSet3D & fs
   const size_t ie = (params_.calibration.value()->subEnsSize.value() > 0) ?
     ((iterativeN_-1)%params_.calibration.value()->subEnsSize.value())+1 : iterativeN_;
 
-  for (const auto & var : activeVars_) {
+  for (const auto & var : centralVars()) {
     // Get number of output levels
     const size_t nz = var.getLevels();
 
@@ -667,7 +666,7 @@ void BifourierCovariance::iterativeCalibrationFinal() {
     nSubEns = iterativeN_/params_.calibration.value()->subEnsSize.value();
   }
 
-  for (const auto & var : activeVars_) {
+  for (const auto & var : centralVars()) {
     // Get covariance field
     auto covField = getField("cov", var, data_);
 
@@ -703,7 +702,7 @@ void BifourierCovariance::write() const {
 
     // NetCDF IDs
     int retval, ncId, nwId, nzIId, nzJId, dCorSqrtId[3], dStdDevId[1], dCovId[3],
-      corSqrtId[activeVars_.size()], stdDevId[activeVars_.size()], covId[activeVars_.size()];
+      corSqrtId[centralVars().size()], stdDevId[centralVars().size()], covId[centralVars().size()];
 
     // NetCDF file path
     const std::string ncFilePath = params_.write.value()->outputFile.value();
@@ -724,7 +723,7 @@ void BifourierCovariance::write() const {
       dCorSqrtId[0] = nwId;
       dCovId[0] = nwId;
 
-      for (const auto & var : activeVars_) {
+      for (const auto & var : centralVars()) {
         // Get number of levels
         const size_t nz = var.getLevels();
 
@@ -771,7 +770,7 @@ void BifourierCovariance::write() const {
     // Data mode
     jvar = 0;
 
-    for (const auto & var : activeVars_) {
+    for (const auto & var : centralVars()) {
       // Get number of levels
       const size_t nz = var.getLevels();
 
@@ -831,7 +830,7 @@ void BifourierCovariance::write() const {
 void BifourierCovariance::readCovariance() {
   oops::Log::trace() << classname() << "::readCovariance starting" << std::endl;
 
-  for (const auto & var : activeVars_) {
+  for (const auto & var : centralVars()) {
     // Create covariance field
     createField3D("oldCov", trans_->nw(), var, data_);
   }
@@ -848,7 +847,7 @@ void BifourierCovariance::readCovariance() {
     if ((retval = nc_open(ncFilePath.c_str(), NC_NOWRITE, &ncId))) ERR(retval, ncFilePath);
   }
 
-  for (const auto & var : activeVars_) {
+  for (const auto & var : centralVars()) {
     // Get number of levels
     const size_t nz = var.getLevels();
 
@@ -923,7 +922,7 @@ void BifourierCovariance::computeSquareRoot() {
         updateFactor /= 1.0-std::pow(1.0-alphaInf, static_cast<double>(cycleIndex+1));
       }
 
-      for (const auto & var : activeVars_) {
+      for (const auto & var : centralVars()) {
         // Get number of levels
         const size_t nz = var.getLevels();
 
@@ -946,7 +945,7 @@ void BifourierCovariance::computeSquareRoot() {
     }
   }
 
-  for (const auto & var : activeVars_) {
+  for (const auto & var : centralVars()) {
     // Get number of levels
     const size_t nz = var.getLevels();
 
@@ -1091,7 +1090,7 @@ void BifourierCovariance::computeSquareRoot() {
 void BifourierCovariance::computeCovariance(atlas::FieldSet & covData) const {
   oops::Log::trace() << classname() << "::computeCovariance starting" << std::endl;
 
-  for (const auto & var : activeVars_) {
+  for (const auto & var : centralVars()) {
     // Get covariance field name
     const auto covFieldName = fieldName("cov", var);
 
@@ -1139,7 +1138,7 @@ void BifourierCovariance::computeCovariance(atlas::FieldSet & covData) const {
 void BifourierCovariance::print(std::ostream & os) const {
   // Print norms
   os << "Covariance norms: " << std::endl;
-  for (const auto & var : activeVars_) {
+  for (const auto & var : centralVars()) {
     // Get number of levels
     const size_t nz = var.getLevels();
 

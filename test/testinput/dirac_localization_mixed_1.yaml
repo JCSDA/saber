@@ -1,0 +1,108 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_gaussian
+    N: 12
+  groups:
+  - variables:
+    - eastward_wind
+    - northward_wind
+    - air_horizontal_streamfunction
+    levels: 2
+  - variables:
+    - air_pressure_at_surface
+    levels: 1
+  halo: 1
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables:
+  - eastward_wind
+  - northward_wind
+  - air_horizontal_streamfunction
+  - air_pressure_at_surface
+background error:
+  covariance model: ensemble
+  members from template:
+    template:
+      date: 2010-01-01T12:00:00Z
+      filepath: testdata/randomization_bump_nicas_F12L2/_MPI_-_OMP__member_%mem%
+      state variables:
+      - eastward_wind
+      - northward_wind
+      - air_horizontal_streamfunction
+      - air_pressure_at_surface
+    pattern: '%mem%'
+    nmembers: 25
+    zero padding: 6
+  localization:
+    localization method: SABER
+    saber central block:
+      multivariate strategy: duplicated
+      groups:
+      - group name: group1
+        variables:
+        - eastward_wind
+        - northward_wind
+        saber central block:
+          saber block name: BUMP_NICAS
+          calibration:
+            general:
+              testing: true
+              universe length-scale: 10000.0e3
+            io:
+              data directory: testdata
+              files prefix: dirac_localization_mixed_1/_MPI_-_OMP__group1
+            drivers:
+              multivariate strategy: univariate
+              compute nicas: true
+            ensemble sizes:
+              total ensemble size: 25
+            nicas:
+              resolution: 4.0
+              explicit length-scales: true
+              horizontal length-scale:
+              - groups:
+                - group1
+                value: 4000.0e3
+              vertical length-scale:
+              - groups:
+                - group1
+                value: 3.0
+      - group name: group2
+        variables:
+        - air_horizontal_streamfunction
+        - air_pressure_at_surface
+        saber central block:
+          saber block name: diffusion
+          calibration:
+            normalization:
+              iterations: 100
+            groups:
+            - horizontal:
+                fixed value: 500.0e3
+              write:
+                filepath: testdata/dirac_localization_mixed_1/hz-_MPI_-_OMP_
+            - vertical:
+                levels: 2
+                fixed value: 2.5
+                as gaussian: true
+              write:
+                filepath: testdata/dirac_localization_mixed_1/vt-_MPI_-_OMP_
+dirac:
+  lon:
+  - 0.01
+  - 180.01
+  lat:
+  - 0.01
+  - 88.01
+  level:
+  - 1
+  - 2
+  variable:
+  - eastward_wind
+  - air_horizontal_streamfunction
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_localization_mixed_1/%MPI%_dirac_%id%
+test:
+  reference filename: testref/dirac_localization_mixed_1.ref

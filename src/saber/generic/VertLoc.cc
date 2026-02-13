@@ -68,7 +68,7 @@ VertLoc::VertLoc(const oops::GeometryData & outerGeometryData,
                  const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params, xb.validTime()),
     innerGeometryData_(outerGeometryData),
-    activeVars_(getActiveVars(params, outerVars)),
+    activeVars_(params.getActiveVars(outerVars)),
     nlevs_(activeVars_[0].getLevels()),
     nmods_(params.truncation.value()),
     innerVars_(setInnerVars(outerVars, activeVars_, nmods_)),

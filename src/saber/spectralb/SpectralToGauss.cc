@@ -291,7 +291,7 @@ SpectralToGauss::SpectralToGauss(const oops::GeometryData & outerGeometryData,
                                  const oops::FieldSet3D & xb,
                                  const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params, xb.validTime()),
-    activeVars_(getActiveVars(params, outerVars)),
+    activeVars_(params.getActiveVars(outerVars)),
     outerVars_(outerVars),
     useWindTransform_(outerVars_.has("eastward_wind") && outerVars_.has("northward_wind")),
     innerVars_(createInnerVars(outerVars, activeVars_, useWindTransform_)),

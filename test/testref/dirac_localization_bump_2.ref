@@ -1,0 +1,397 @@
+Input Dirac increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+  - eastward_wind (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 6.5616797900262466e-04
+    + stddev = 2.5615775978927613e-02
+  - northward_wind (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - air_pressure_at_surface (1 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 1.3123359580052493e-03
+    + stddev = 3.6226177800110629e-02
+  - air_horizontal_streamfunction (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+       Independent levels:  1[2]
+          Subset Sc0 size:              762
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+             Effective levels:   1   2 
+                Horizontal support radius:    6000.00 km (   6000.00 km -    6000.00 km)
+                Estimated nc1 from horizontal support radius:      261
+                   Decimate full grid, at least      261 points required,     762 valid points found
+                   Subgrid hash:   -216098172
+                Final nc1:      261
+                Effective horizontal resolution:  3.99
+             nc1(  1) =                        261
+             nc1(  2) =                        261
+             ns =                              522
+             v%n_s =                             2
+             c%n_s[global] =                 13688
+             Effective levels:   1   2 
+                Horizontal support radius:    4000.00 km (   4000.00 km -    4000.00 km)
+                Estimated nc1 from horizontal support radius:      589
+                   Decimate full grid, at least      589 points required,     762 valid points found
+                   Subgrid hash:   1676590011
+                Final nc1:      589
+                Effective horizontal resolution:  4.00
+             nc1(  1) =                        589
+             nc1(  2) =                        589
+             ns =                             1178
+             v%n_s =                             2
+             c%n_s[global] =                 28436
+       Independent levels:  1[2]
+          Subset Sc0 size:              762
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+       Independent levels:  1[2]
+          Subset Sc0 size:              762
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+       Independent levels:  1[2]
+          Subset Sc0 size:              762
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+Adjoint test for block BUMP_NICAS passed
+Square-root test for block BUMP_NICAS passed
+Adjoint test for block Ensemble passed
+Square-root test for block Ensemble passed
+       Independent levels:  1[2]
+          Subset Sc0 size:              762
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+       Independent levels:  1[2]
+          Subset Sc0 size:              762
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+Adjoint test for block BUMP_NICAS passed
+Adjoint test for block BUMP_NICAS passed
+Adjoint test for the multivariate central block passed
+Square-root test for block BUMP_NICAS passed
+Square-root test for block BUMP_NICAS passed
+Square-root test for the multivariate central block passed
+Adjoint test for block Ensemble passed
+Square-root test for block Ensemble passed
+Covariance(hybrid) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+  - eastward_wind (2 levels):
+    + min    = -9.7228078292052600e-02
+    + max    = 9.0019572469053744e-01
+    + mean   = 4.4010331747801907e-03
+    + stddev = 4.3130606527148806e-02
+  - northward_wind (2 levels):
+    + min    = -2.0185722069438308e-01
+    + max    = 1.8736316179694826e-01
+    + mean   = -6.1372417115990023e-04
+    + stddev = 1.7066504097910880e-02
+  - air_pressure_at_surface (1 levels):
+    + min    = -3.6069948330935041e-02
+    + max    = 9.9359027193131055e-01
+    + mean   = 4.6588207400540208e-03
+    + stddev = 4.9405128744139687e-02
+  - air_horizontal_streamfunction (2 levels):
+    + min    = -2.4250702024960247e-01
+    + max    = 9.6787761560894470e-02
+    + mean   = -1.0726862325236167e-03
+    + stddev = 1.4401543213280127e-02
+       Independent levels:  1[2]
+          Subset Sc0 size:              762
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+             Effective levels:   1   2 
+                Horizontal support radius:    6000.00 km (   6000.00 km -    6000.00 km)
+                Estimated nc1 from horizontal support radius:      261
+                   Decimate full grid, at least      261 points required,     762 valid points found
+                   Subgrid hash:   -216098172
+                Final nc1:      261
+                Effective horizontal resolution:  3.99
+             nc1(  1) =                        261
+             nc1(  2) =                        261
+             ns =                              522
+             v%n_s =                             2
+             c%n_s[global] =                 13688
+             Effective levels:   1   2 
+                Horizontal support radius:    4000.00 km (   4000.00 km -    4000.00 km)
+                Estimated nc1 from horizontal support radius:      589
+                   Decimate full grid, at least      589 points required,     762 valid points found
+                   Subgrid hash:   1676590011
+                Final nc1:      589
+                Effective horizontal resolution:  4.00
+             nc1(  1) =                        589
+             nc1(  2) =                        589
+             ns =                             1178
+             v%n_s =                             2
+             c%n_s[global] =                 28436
+Covariance(hybrid1_ensemble) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+  - eastward_wind (2 levels):
+    + min    = -9.7228078292052600e-02
+    + max    = 9.0019572469053744e-01
+    + mean   = 4.4010331747801907e-03
+    + stddev = 4.3130606527148806e-02
+  - northward_wind (2 levels):
+    + min    = -2.0185722069438308e-01
+    + max    = 1.8736316179694826e-01
+    + mean   = -6.1372417115990023e-04
+    + stddev = 1.7066504097910880e-02
+  - air_pressure_at_surface (1 levels):
+    + min    = -3.6069948330935041e-02
+    + max    = 9.9359027193131055e-01
+    + mean   = 4.6588207400540208e-03
+    + stddev = 4.9405128744139687e-02
+  - air_horizontal_streamfunction (2 levels):
+    + min    = -2.4250702024960247e-01
+    + max    = 9.6787761560894470e-02
+    + mean   = -1.0726862325236167e-03
+    + stddev = 1.4401543213280127e-02
+       Independent levels:  1[2]
+          Subset Sc0 size:              762
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+             Effective levels:   1   2 
+                Horizontal support radius:    6000.00 km (   6000.00 km -    6000.00 km)
+                Estimated nc1 from horizontal support radius:      261
+                   Decimate full grid, at least      261 points required,     762 valid points found
+                   Subgrid hash:   -216098172
+                Final nc1:      261
+                Effective horizontal resolution:  3.99
+             nc1(  1) =                        261
+             nc1(  2) =                        261
+             ns =                              522
+             v%n_s =                             2
+             c%n_s[global] =                 13688
+             Effective levels:   1   2 
+                Horizontal support radius:    4000.00 km (   4000.00 km -    4000.00 km)
+                Estimated nc1 from horizontal support radius:      589
+                   Decimate full grid, at least      589 points required,     762 valid points found
+                   Subgrid hash:   1676590011
+                Final nc1:      589
+                Effective horizontal resolution:  4.00
+             nc1(  1) =                        589
+             nc1(  2) =                        589
+             ns =                             1178
+             v%n_s =                             2
+             c%n_s[global] =                 28436
+Localization(hybrid1_ensemble_localization) diagnostics:
+- Localization at zero separation:
+  + Value for variable eastward_wind, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 9.9999999999999956e-01
+  + Value for variable air_pressure_at_surface, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0000000000000011e+00
+Localization(hybrid1_ensemble) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+  - eastward_wind (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 9.9999999999999956e-01
+    + mean   = 2.3360110528429061e-02
+    + stddev = 9.8541774629410106e-02
+  - northward_wind (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 9.9999999999999956e-01
+    + mean   = 2.3360110528429061e-02
+    + stddev = 9.8541774629410106e-02
+  - air_pressure_at_surface (1 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000011e+00
+    + mean   = 9.7663830730988169e-03
+    + stddev = 7.1391149998578263e-02
+  - air_horizontal_streamfunction (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000011e+00
+    + mean   = 6.7588404393921263e-03
+    + stddev = 5.4149030644156750e-02
+       Independent levels:  1[2]
+          Subset Sc0 size:              762
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+       Independent levels:  1[2]
+          Subset Sc0 size:              762
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+Covariance(hybrid2_ensemble) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+  - eastward_wind (2 levels):
+    + min    = -9.7228078292052600e-02
+    + max    = 9.0019572469053744e-01
+    + mean   = 4.4010331747801907e-03
+    + stddev = 4.3130606527148806e-02
+  - northward_wind (2 levels):
+    + min    = -2.0185722069438308e-01
+    + max    = 1.8736316179694826e-01
+    + mean   = -6.1372417115990023e-04
+    + stddev = 1.7066504097910880e-02
+  - air_pressure_at_surface (1 levels):
+    + min    = -3.6069948330935041e-02
+    + max    = 9.9359027193131055e-01
+    + mean   = 4.6588207400540208e-03
+    + stddev = 4.9405128744139687e-02
+  - air_horizontal_streamfunction (2 levels):
+    + min    = -2.4250702024960247e-01
+    + max    = 9.6787761560894470e-02
+    + mean   = -1.0726862325236167e-03
+    + stddev = 1.4401543213280127e-02
+       Independent levels:  1[2]
+          Subset Sc0 size:              762
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+       Independent levels:  1[2]
+          Subset Sc0 size:              762
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+Localization(hybrid2_ensemble_localization) diagnostics:
+- Localization at zero separation:
+  + Value for variable eastward_wind, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 9.9999999999999956e-01
+  + Value for variable air_pressure_at_surface, subwindow 0, at (longitude, latitude, vertical index) point (0.00000, 0.00000, 1): 1.0000000000000011e+00
+Localization(hybrid2_ensemble) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+  - eastward_wind (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 9.9999999999999956e-01
+    + mean   = 2.3360110528429061e-02
+    + stddev = 9.8541774629410106e-02
+  - northward_wind (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 9.9999999999999956e-01
+    + mean   = 2.3360110528429061e-02
+    + stddev = 9.8541774629410106e-02
+  - air_pressure_at_surface (1 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000011e+00
+    + mean   = 9.7663830730988169e-03
+    + stddev = 7.1391149998578263e-02
+  - air_horizontal_streamfunction (2 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000011e+00
+    + mean   = 6.7588404393921263e-03
+    + stddev = 5.4149030644156750e-02
+       Independent levels:  1[2]
+          Subset Sc0 size:              762
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+Adjoint test for block BUMP_NICAS passed
+Square-root test for block BUMP_NICAS passed
+Adjoint test for block Ensemble passed
+Square-root test for block Ensemble passed
+Covariance(hybrid3_SABER) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+  - eastward_wind (2 levels):
+    + min    = -9.7228078292052600e-02
+    + max    = 9.0019572469053744e-01
+    + mean   = 4.4010331747801907e-03
+    + stddev = 4.3130606527148806e-02
+  - northward_wind (2 levels):
+    + min    = -2.0185722069438308e-01
+    + max    = 1.8736316179694826e-01
+    + mean   = -6.1372417115990023e-04
+    + stddev = 1.7066504097910880e-02
+  - air_pressure_at_surface (1 levels):
+    + min    = -3.6069948330935041e-02
+    + max    = 9.9359027193131055e-01
+    + mean   = 4.6588207400540208e-03
+    + stddev = 4.9405128744139687e-02
+  - air_horizontal_streamfunction (2 levels):
+    + min    = -2.4250702024960247e-01
+    + max    = 9.6787761560894470e-02
+    + mean   = -1.0726862325236167e-03
+    + stddev = 1.4401543213280127e-02
+       Independent levels:  1[2]
+          Subset Sc0 size:              762
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+       Independent levels:  1[2]
+          Subset Sc0 size:              762
+          Domain area (% of Earth area): 0.100E+03%
+             Level   1 ~> 100.0%
+             Level   2 ~> 100.0%
+             Level   1 ~>  0.100E+01 vert. coord.
+             Level   2 ~>  0.200E+01 vert. coord.
+Adjoint test for block BUMP_NICAS passed
+Adjoint test for block BUMP_NICAS passed
+Adjoint test for the multivariate central block passed
+Square-root test for block BUMP_NICAS passed
+Square-root test for block BUMP_NICAS passed
+Square-root test for the multivariate central block passed
+Adjoint test for block Ensemble passed
+Square-root test for block Ensemble passed
+Covariance(hybrid4_SABER) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: L40x21 [840]
+  Fields:
+  - eastward_wind (2 levels):
+    + min    = -9.7228078292052600e-02
+    + max    = 9.0019572469053744e-01
+    + mean   = 4.4010331747801907e-03
+    + stddev = 4.3130606527148806e-02
+  - northward_wind (2 levels):
+    + min    = -2.0185722069438308e-01
+    + max    = 1.8736316179694826e-01
+    + mean   = -6.1372417115990023e-04
+    + stddev = 1.7066504097910880e-02
+  - air_pressure_at_surface (1 levels):
+    + min    = -3.6069948330935041e-02
+    + max    = 9.9359027193131055e-01
+    + mean   = 4.6588207400540208e-03
+    + stddev = 4.9405128744139687e-02
+  - air_horizontal_streamfunction (2 levels):
+    + min    = -2.4250702024960247e-01
+    + max    = 9.6787761560894470e-02
+    + mean   = -1.0726862325236167e-03
+    + stddev = 1.4401543213280127e-02

@@ -81,9 +81,6 @@ class SpectralCovariance : public SaberCentralBlockBase {
   /// Vertical Spectral Covariances
   atlas::FieldSet spectralVerticalCovariances_;
 
-  /// Geometry data
-  const oops::GeometryData & geometryData_;
-
   /// Spectral FunctionSpace
   const atlas::functionspace::Spectral specFunctionSpace_;
 

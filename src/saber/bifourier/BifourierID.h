@@ -68,14 +68,8 @@ class BifourierID : public SaberCentralBlockBase {
     {}
 
  private:
-  // Model grid geometry data
-  const oops::GeometryData & gdata_;
-
   // Communicator
   const eckit::mpi::Comm & comm_;
-
-  // Active variables
-  const oops::Variables activeVars_;
 
   // Spectral transform
   const BifourierTransformStore transStore_;

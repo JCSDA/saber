@@ -53,7 +53,6 @@ class Diffusion : public saber::SaberCentralBlockBase {
  private:
   void print(std::ostream &) const override {}
 
-  const oops::GeometryData & geom_;
   const std::shared_ptr<oops::Diffusion::DerivedGeom> diffusionGeom_;
   size_t ctlVecSize_;
   Parameters_ params_;

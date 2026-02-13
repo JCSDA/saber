@@ -1,0 +1,67 @@
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_gaussian
+    N: 12
+  groups:
+  - variables:
+    - air_horizontal_streamfunction
+    - eastward_wind
+    - northward_wind
+    levels: 2
+  - variables:
+    - air_pressure_at_surface
+    levels: 1
+  halo: 1
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables:
+  - air_horizontal_streamfunction
+  - eastward_wind
+  - northward_wind
+  - air_pressure_at_surface
+background error:
+  covariance model: SABER
+  saber central block:
+    saber block name: BUMP_NICAS
+    calibration:
+      general:
+        testing: true
+      io:
+        data directory: testdata
+        files prefix: randomization_bump_nicas_F12L2/_MPI_-_OMP_
+      drivers:
+        multivariate strategy: univariate
+        compute nicas: true
+      nicas:
+        resolution: 4.0
+        explicit length-scales: true
+        horizontal length-scale:
+        - groups:
+          - air_horizontal_streamfunction
+          - eastward_wind
+          - northward_wind
+          - air_pressure_at_surface
+          value: 4.0e6
+        vertical length-scale:
+        - groups:
+          - air_horizontal_streamfunction
+          - eastward_wind
+          - northward_wind
+          value: 3.0
+      grids:
+      - model:
+          variables:
+          - air_horizontal_streamfunction
+          - eastward_wind
+          - northward_wind
+      - model:
+          variables:
+          - air_pressure_at_surface
+  randomization size: 25
+output states:
+  filepath: testdata/randomization_bump_nicas_F12L2/_MPI_-_OMP__member
+output perturbations:
+  filepath: testdata/randomization_bump_nicas_F12L2/_MPI_-_OMP__member_pert
+test:
+  reference filename: testref/randomization_bump_nicas_F12L2.ref

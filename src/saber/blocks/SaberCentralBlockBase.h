@@ -13,8 +13,6 @@
 #include <utility>
 #include <vector>
 
-#include "atlas/field.h"
-
 #include "eckit/exception/Exceptions.h"
 #include "eckit/memory/NonCopyable.h"
 
@@ -44,8 +42,13 @@ class SaberCentralBlockBase : public util::Printable,
                               private eckit::NonCopyable {
  public:
   explicit SaberCentralBlockBase(const SaberBlockParametersBase & params,
-                                 const util::DateTime & validTime)
-    : validTime_(validTime), blockName_(params.saberBlockName) {}
+                                 const util::DateTime & validTime,
+                                 const oops::GeometryData & geometryData,
+                                 const oops::Variables & centralVars)
+    : validTime_(validTime),
+      blockName_(params.saberBlockName),
+      geometryData_(geometryData),
+      centralVars_(centralVars) {}
   virtual ~SaberCentralBlockBase() {}
 
   // Application methods
@@ -116,6 +119,12 @@ class SaberCentralBlockBase : public util::Printable,
   // Return date/time
   const util::DateTime validTime() const {return validTime_;}
 
+  // Return geometry data
+  const oops::GeometryData & geometryData() const {return geometryData_;}
+
+  // Return central variables
+  const oops::Variables & centralVars() const {return centralVars_;}
+
   // Read model fields
   template <typename MODEL>
   void read(const oops::Geometry<MODEL> &,
@@ -125,21 +134,14 @@ class SaberCentralBlockBase : public util::Printable,
   template <typename MODEL>
   void write(const oops::Geometry<MODEL> &) const;
 
-  // Adjoint test
-  void adjointTest(const oops::GeometryData &,
-                   const oops::Variables &,
-                   const double &) const;
-
-  // Square-root test
-  void sqrtTest(const oops::GeometryData &,
-                const oops::Variables &,
-                const double &) const;
-
  protected:
   const util::DateTime validTime_;
 
  private:
   std::string blockName_;
+  const oops::GeometryData & geometryData_;
+  const oops::Variables centralVars_;
+
   virtual void print(std::ostream &) const = 0;
 };
 
@@ -154,6 +156,10 @@ class SaberCentralBlockParametersWrapper : public oops::Parameters {
  public:
   oops::RequiredPolymorphicParameter<SaberBlockParametersBase, SaberCentralBlockFactory>
     saberCentralBlockParameters{"saber block name", this};
+
+  const SaberBlockParametersBase & blockParams() const
+    {return this->saberCentralBlockParameters;
+  }
 };
 
 // -----------------------------------------------------------------------------

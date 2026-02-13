@@ -169,9 +169,6 @@ class BifourierCovariance : public SaberCentralBlockBase {
   // Communicator
   const eckit::mpi::Comm & comm_;
 
-  // Active variables
-  const oops::Variables activeVars_;
-
   // Parameters
   Parameters_ params_;
 

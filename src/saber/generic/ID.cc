@@ -23,26 +23,24 @@ static SaberCentralBlockMaker<IDCentral> makerIDCentral_("ID");
 // -----------------------------------------------------------------------------
 
 IDCentral::IDCentral(const oops::GeometryData & geometryData,
-                     const oops::Variables & activeVars,
+                     const oops::Variables & centralVars,
                      const eckit::Configuration & covarConf,
                      const Parameters_ & params,
                      const oops::FieldSet3D & xb,
                      const oops::FieldSet3D & fg) :
-    SaberCentralBlockBase(params, xb.validTime()),
-    geometryData_(geometryData),
-    activeVars_(activeVars),
+    SaberCentralBlockBase(params, xb.validTime(), geometryData, centralVars),
     ctlVecSize_(0)
 {
   oops::Log::trace() << classname() << "::IDCentral starting" << std::endl;
 
   // Compute total number of levels
   size_t nlev = 0;
-  for (const auto & var : activeVars) {
+  for (const auto & var : centralVars) {
     nlev += var.getLevels();
   }
 
   // Compute control vector size
-  ctlVecSize_ = nlev*geometryData_.functionSpace().size();
+  ctlVecSize_ = nlev*geometryData.functionSpace().size();
 
   oops::Log::trace() << classname() << "::IDCentral done" << std::endl;
 }
@@ -60,12 +58,12 @@ void IDCentral::randomize(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::randomize starting" << std::endl;
 
   // Consistency check
-  for (const auto & var : activeVars_) {
+  for (const auto & var : centralVars()) {
       ASSERT(fset.has(var.name()));
   }
 
   // Random initialization
-  fset.randomInit(geometryData_.functionSpace(), activeVars_);
+  fset.randomInit(geometryData().functionSpace(), centralVars());
 
   oops::Log::trace() << classname() << "::randomize done" << std::endl;
 }

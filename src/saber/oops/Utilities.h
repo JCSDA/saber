@@ -37,9 +37,6 @@
 #include "oops/util/ParallelFieldSetIO.h"
 
 #include "saber/blocks/SaberBlockParametersBase.h"
-#include "saber/blocks/SaberCentralBlockBase.h"
-#include "saber/blocks/SaberOuterBlockBase.h"
-#include "saber/oops/ErrorCovarianceParameters.h"
 
 namespace oops {
   class FieldSet3D;

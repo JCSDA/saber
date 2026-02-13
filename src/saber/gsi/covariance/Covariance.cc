@@ -45,7 +45,7 @@ StaticCovariance::StaticCovariance(const oops::GeometryData & geometryData,
                        const Parameters_ & params,
                        const oops::FieldSet3D & xb,
                        const oops::FieldSet3D & fg)
-  : SaberCentralBlockBase(params, xb.validTime()),
+  : SaberCentralBlockBase(params, xb.validTime(), geometryData, centralVars),
     params_(params), variables_(params.activeVars.value().get_value_or(centralVars)),
     gsiGridFuncSpace_(geometryData.functionSpace()), comm_(&geometryData.comm()),
     xb_(xb.validTime(), xb.commGeom()), fg_(fg.validTime(), fg.commGeom()),

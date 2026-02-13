@@ -125,7 +125,7 @@ std::tuple<const SaberBlockParametersBase&, oops::Variables, oops::Variables>
                     << saberOuterBlockParams.saberBlockName.value() << std::endl;
 
   // Get active variables
-  const oops::Variables activeVars = getActiveVars(saberOuterBlockParams, currentOuterVars);
+  const oops::Variables activeVars = saberOuterBlockParams.getActiveVars(currentOuterVars);
 
   // Get required variables in xb, fg if needed
   const oops::Variables mandatoryStateVars = saberOuterBlockParams.mandatoryStateVars();

@@ -39,7 +39,7 @@ SaberParametricBlockChain::SaberParametricBlockChain(
 
   // If needed create generic outer block chain
   if (params.saberOuterBlocksParams.value()) {
-    outerBlockChain_ = std::make_unique<SaberOuterBlockChain>(outerGeometryData,
+    outerBlockChain_ = std::make_shared<SaberOuterBlockChain>(outerGeometryData,
         outerVariables_,
         fset4dXb,
         fset4dFg,
@@ -51,64 +51,50 @@ SaberParametricBlockChain::SaberParametricBlockChain(
   const oops::GeometryData & currentOuterGeom = outerBlockChain_ ?
                              outerBlockChain_->innerGeometryData() : outerGeometryData;
 
-  SaberCentralBlockParametersWrapper saberCentralBlockParamsWrapper
-    = params.saberCentralBlockParams;
-  const SaberBlockParametersBase & saberCentralBlockParams =
-    saberCentralBlockParamsWrapper.saberCentralBlockParameters;
-  oops::Log::info() << "Info     : Creating central block: "
-                    << saberCentralBlockParams.saberBlockName.value() << std::endl;
+  SaberCentralBlockParameters saberCentralBlockParams;
+  saberCentralBlockParams.deserialize(conf.getSubConfiguration("saber central block"));
 
-  const auto[currentOuterVars, activeVars]
-              = initCentralBlock(currentOuterGeom,
-                                 fullConf,
-                                 saberCentralBlockParams,
-                                 fset4dXb,
-                                 fset4dFg);
+  oops::Log::info() << "Info     : Creating central block: " << std::endl;
 
-  // Check block doesn't expect model fields to be read as this is a generic ctor
-  if (centralBlock_->getReadConfs().size() != 0) {
-    throw eckit::UserError("The generic constructor of the SABER parametric block chain "
-                           "does not allow to read MODEL fields.", Here());
-  }
+  const auto currentOuterVars = initCentralBlock(currentOuterGeom,
+                                                 fullConf,
+                                                 saberCentralBlockParams,
+                                                 fset4dXb,
+                                                 fset4dFg);
 
   // Check block doesn't expect calibration, as this could be done with the standard ctor
-  if (saberCentralBlockParams.doCalibration()) {
+  if (centralBlock_->doCalibration()) {
     throw eckit::UserError("The generic constructor of the SABER parametric block chain "
                            "does not allow covariance calibration.", Here());
-  }
-  if (fullConf.has("dual resolution ensemble configuration")) {
-    throw eckit::UserError("The generic constructor of the SABER parametric block chain "
-                           "does not allow dual resolution ensemble.", Here());
   }
   if (fullConf.has("output ensemble")) {
     throw eckit::UserError("The generic constructor of the SABER parametric block chain "
                            "does not allow ensemble output.", Here());
   }
 
-  if (saberCentralBlockParams.doRead()) {
+  if (centralBlock_->doRead()) {
     // Read data
     oops::Log::info() << "Info     : Read data" << std::endl;
     centralBlock_->read();
   }
 
-  if (saberCentralBlockParams.forceWrite.value()) {
+  if (centralBlock_->forceWrite()) {
     // Write data
     oops::Log::info() << "Info     : Write data" << std::endl;
     centralBlock_->write();
   }
 
-  testCentralBlock(fullConf, saberCentralBlockParams, currentOuterGeom, activeVars);
+  testCentralBlock(fullConf);
 
   oops::Log::trace() << "SaberParametricBlockChain generic ctor done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
-std::tuple<oops::Variables, oops::Variables>
-    SaberParametricBlockChain::initCentralBlock(
+oops::Variables SaberParametricBlockChain::initCentralBlock(
         const oops::GeometryData & outerGeom,
         const eckit::Configuration & conf,
-        const SaberBlockParametersBase & saberCentralBlockParams,
+        const SaberCentralBlockParameters & saberCentralBlockParams,
         const oops::FieldSet4D & fset4dXb,
         const oops::FieldSet4D & fset4dFg) {
   oops::Log::trace() << "SaberParametricBlockChain::initCentralBlock starting" << std::endl;
@@ -117,7 +103,8 @@ std::tuple<oops::Variables, oops::Variables>
                              outerBlockChain_->innerVars() : outerVariables_;
 
   // Get active variables
-  oops::Variables activeVars = getActiveVars(saberCentralBlockParams, currentOuterVars);
+  oops::Variables activeVars = saberCentralBlockParams.getActiveVars(currentOuterVars);
+
   // Check that active variables are present in variables
   for (const auto & var : activeVars) {
     if (!currentOuterVars.has(var)) {
@@ -127,55 +114,40 @@ std::tuple<oops::Variables, oops::Variables>
   }
 
   // Create central block
-  centralBlock_ = SaberCentralBlockFactory::create(outerGeom,
-                                                   activeVars,
-                                                   conf,
-                                                   saberCentralBlockParams,
-                                                   fset4dXb[0],
-                                                   fset4dFg[0]);
+  centralBlock_ = std::make_unique<SaberCentralBlock>(outerGeom,
+                                                      activeVars,
+                                                      conf,
+                                                      saberCentralBlockParams,
+                                                      fset4dXb[0],
+                                                      fset4dFg[0]);
 
   // Save central function space and variables
   centralFunctionSpace_ = outerGeom.functionSpace();
   centralVars_ = activeVars;
 
-  auto out = std::tuple<oops::Variables, oops::Variables>(currentOuterVars, activeVars);
-  oops::Log::trace() << "SaberParametricBlockChain::initCentralBlock exiting..."
-                     << std::endl;
-  return out;
+  oops::Log::trace() << "SaberParametricBlockChain::initCentralBlock exiting..." << std::endl;
+  return currentOuterVars;
 }
 
 // -----------------------------------------------------------------------------
 
 void SaberParametricBlockChain::testCentralBlock(
-        const eckit::Configuration & conf,
-        const SaberBlockParametersBase & saberCentralBlockParams,
-        const oops::GeometryData & outerGeom,
-        const oops::Variables & activeVars) const {
+        const eckit::Configuration & conf) const {
   oops::Log::trace() << "SaberParametricBlockChain::testCentralBlock starting" << std::endl;
   // Adjoint test
   if (conf.getBool("adjoint test")) {
-    // Get tolerance
-    const double localAdjointTolerance =
-      saberCentralBlockParams.adjointTolerance.value().get_value_or(
-      conf.getDouble("adjoint tolerance"));
-
+    // Get tolerance (can be overridden from central block parameters)
+    const double adjointTolerance = conf.getDouble("adjoint tolerance");
     // Run test
-    centralBlock_->adjointTest(outerGeom,
-                               activeVars,
-                               localAdjointTolerance);
+    centralBlock_->adjointTest(adjointTolerance);
   }
 
   // Square-root test
   if (conf.getBool("square-root test")) {
-    // Get tolerance
-    const double localSqrtTolerance =
-      saberCentralBlockParams.sqrtTolerance.value().get_value_or(
-      conf.getDouble("square-root tolerance"));
-
+    // Get tolerance (can be overridden from central block parameters)
+    const double sqrtTolerance = conf.getDouble("square-root tolerance");
     // Run test
-    centralBlock_->sqrtTest(outerGeom,
-                            activeVars,
-                            localSqrtTolerance);
+    centralBlock_->sqrtTest(sqrtTolerance);
   }
   oops::Log::trace() << "SaberParametricBlockChain::testCentralBlock done" << std::endl;
 }

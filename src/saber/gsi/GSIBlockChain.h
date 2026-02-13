@@ -20,6 +20,7 @@
 #include "saber/blocks/SaberBlockChainBase.h"
 #include "saber/blocks/SaberBlockParametersBase.h"
 #include "saber/blocks/SaberOuterBlockChain.h"
+#include "saber/oops/ErrorCovarianceParameters.h"
 
 #include "saber/gsi/covariance/Covariance.h"
 #include "saber/gsi/covariance/Covariance.interface.h"

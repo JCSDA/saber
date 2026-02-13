@@ -86,6 +86,9 @@ class SaberBlockParametersBase : public oops::Parameters {
   // Find out whether read is needed
   bool doRead() const;
 
+  // Get active variables
+  oops::Variables getActiveVars(const oops::Variables &) const;
+
   // VIRTUAL METHODS
   // Mandatory active variables
   virtual oops::Variables mandatoryActiveVars() const = 0;

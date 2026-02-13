@@ -62,12 +62,11 @@ SpectralCovariance::SpectralCovariance(const oops::GeometryData & geometryData,
                                        const Parameters_ & params,
                                        const oops::FieldSet3D & xb,
                                        const oops::FieldSet3D & fg)
-  : SaberCentralBlockBase(params, xb.validTime()), params_(params),
-    activeVars_(getActiveVars(params, centralVars)),
+  : SaberCentralBlockBase(params, xb.validTime(), geometryData, centralVars), params_(params),
+    activeVars_(params.getActiveVars(centralVars)),
     netCDFConf_(createNetCDFHeaderInput(params, activeVars_)),
     spectralVerticalCovariances_(),
-    geometryData_(geometryData),
-    specFunctionSpace_(geometryData_.functionSpace()),
+    specFunctionSpace_(geometryData.functionSpace()),
     datetime_(xb.validTime()),
     sample_size_(0)
 {
@@ -232,7 +231,7 @@ void SpectralCovariance::write() const {
   // the one in memory  ... it should not affect the internal version.
   // gather and sum on pe 0
   const std::size_t root(0);
-  atlas::FieldSet spectralVertCovToWrite = util::gatherSumFieldSet(geometryData_.comm(),
+  atlas::FieldSet spectralVertCovToWrite = util::gatherSumFieldSet(geometryData().comm(),
                                                                    root,
                                                                    spectralVerticalCovariances_);
   const std::vector<std::string> dim_names{"binning_index",

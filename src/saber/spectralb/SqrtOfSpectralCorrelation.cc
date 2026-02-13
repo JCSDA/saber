@@ -41,7 +41,7 @@ SqrtOfSpectralCorrelation::SqrtOfSpectralCorrelation(
     const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params, xb.validTime()),
     params_(params),
-    activeVars_(getActiveVars(params, outerVars)),
+    activeVars_(params.getActiveVars(outerVars)),
     outerVars_(outerVars),
     specFunctionSpace_(outerGeometryData.functionSpace()),
     innerGeometryData_(outerGeometryData)

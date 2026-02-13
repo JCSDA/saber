@@ -1,0 +1,76 @@
+Input Dirac increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: structured [3723]
+  Fields:
+  - geographical_x_wind (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - geographical_y_wind (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - air_temperature (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 2.6860059092130003e-05
+    + stddev = 5.1826691088793144e-03
+  - log_of_air_pressure_at_surface (1 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+  - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 0.0000000000000000e+00
+- Regional grid size: 73x51
+- Cell sizes: 2.5000000000000000e+00 km x 2.5000000000000000e+00 km
+- Mean latitude: 5.6289831946322792e+01 deg
+- Spectral sizes: 37x26
+- Truncation parameters MxN: 36x25
+- Maximum total wave number: 36
+- Spectral array global size: 2815
+- Direct-inverse test passed
+- Inverse-direct test passed
+- Parseval identity test passed
+- Adjoint test (forward) passed
+- Adjoint test (inverse) passed
+- Derivatives / direct Laplacian consistency test passed
+Adjoint test for block BifourierSpectralToGrid passed
+Inner inverse test for block BifourierSpectralToGrid passed: U Uinv (U x) == (U x)
+Outer inverse test for block BifourierSpectralToGrid passed: Uinv U (Uinv x) == (Uinv x)
+Covariance norms: 
+- allVars: 
+  + correlation square-root: 7.7277331216893563e-01
+  + standard-deviation:      3.3166247903553998e+00
+Adjoint test for block BifourierCovariance passed
+Adjoint test for the multivariate central block passed
+Square-root test for block BifourierCovariance passed
+Square-root test for the multivariate central block passed
+Adjoint test for block Ensemble passed
+Square-root test for block Ensemble passed
+Covariance(SABER) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: structured [3723]
+  Fields:
+  - geographical_x_wind (10 levels):
+    + min    = -6.2977961411984484e-03
+    + max    = 1.6678324040515975e-04
+    + mean   = -2.5729603792255968e-06
+    + stddev = 7.2549421138315680e-05
+  - geographical_y_wind (10 levels):
+    + min    = -9.3949111542450793e-04
+    + max    = 3.2037407231095346e-03
+    + mean   = 5.3418054697119491e-07
+    + stddev = 3.7020056578011415e-05
+  - air_temperature (10 levels):
+    + min    = -2.0690911244902058e-03
+    + max    = 1.2125447284214583e-01
+    + mean   = 3.8208786353116998e-05
+    + stddev = 1.2636749151594296e-03
+  - log_of_air_pressure_at_surface (1 levels):
+    + min    = -1.5433524326923420e-06
+    + max    = 6.4501386286210973e-06
+    + mean   = 4.9440996920711444e-08
+    + stddev = 3.7994010838946683e-07
+  - water_vapor_mixing_ratio_wrt_moist_air (10 levels):
+    + min    = -9.5729114603355978e-06
+    + max    = 6.4264087963110112e-06
+    + mean   = -2.1910583037652169e-09
+    + stddev = 1.4915171865958405e-07

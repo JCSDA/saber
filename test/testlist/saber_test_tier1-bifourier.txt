@@ -21,6 +21,7 @@ dirac_bifourier_covariance_1
 dirac_bifourier_covariance_2
 dirac_bifourier_covariance_3
 dirac_bifourier
+dirac_bifourier_ens
 dirac_bifourier_gridtospectral
 dirac_bifourier_vordivtouv_1
 dirac_bifourier_vordivtouv_2

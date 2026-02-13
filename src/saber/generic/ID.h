@@ -55,8 +55,6 @@ class IDCentral : public SaberCentralBlockBase {
   void multiplySqrtAD(const oops::FieldSet3D &, atlas::Field &, const size_t &) const override;
 
  private:
-  const oops::GeometryData & geometryData_;
-  const oops::Variables activeVars_;
   size_t ctlVecSize_;
   void print(std::ostream &) const override;
 };
