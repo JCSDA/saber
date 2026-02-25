@@ -62,9 +62,9 @@ endif()
 if(@gsibec_FOUND@) # gsibec_FOUND
     find_dependency(gsibec)
     set(saber_gsibec_FOUND True) #COMPONENT 'gsibec'
-    if(@sp_FOUND@) # sp_FOUND
-       find_dependency(sp)
-       set(sp_FOUND True) #COMPONENT 'sp'
+    if(@ip_FOUND@) # ip_FOUND
+       find_dependency(ip)
+       set(ip_FOUND True) #COMPONENT 'ip'
     endif()
 endif()
 

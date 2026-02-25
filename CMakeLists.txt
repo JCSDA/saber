@@ -81,7 +81,7 @@ find_package( vader 1.7.0 REQUIRED )
 # Optionals
 find_package( ECTRANS 1.6.0 COMPONENTS transi double QUIET ) # TODO(Benjamin): update tag once the ectrans PR is merged and a new tag is created
 find_package( FFTW 3.3.8 QUIET )
-find_package( gsibec 1.2.1 QUIET )
+find_package( gsibec 1.4.2 QUIET )
 
 # Optional SABER blocks
 if( FFTW_FOUND OR ( ECTRANS_FOUND AND ectrans_HAVE_ETRANS AND ectrans_HAVE_TRANSI ) )
