@@ -4,7 +4,7 @@
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
 # Build list of subdirs with files to add
-set( _subdirs bifourier blocks bump diffusion fastlam generic gsi interpolation oops spectralb util vader )
+set( _subdirs bifourier blocks bump diffusion fastlam generic gsi interpolation oops spectralb torchbalance util vader )
 foreach( _subdir IN LISTS _subdirs )
     add_subdirectory( ${_subdir} )
     list( TRANSFORM ${_subdir}_src_files PREPEND ${_subdir}/ )
@@ -46,6 +46,28 @@ if( gsibec_FOUND )
 endif()
 if ( ENABLE_OFFLINE_CODECOV )
     target_link_libraries( ${PROJECT_NAME} PUBLIC gcov )
+endif()
+
+# Link Torch libraries if found
+if( Torch_FOUND )
+    target_link_libraries( ${PROJECT_NAME} PUBLIC ${TORCH_LIBRARIES} )
+    # Add RPATH so the runtime linker can find Torch libraries
+    get_target_property(EXISTING_RPATH ${PROJECT_NAME} BUILD_RPATH)
+    if(EXISTING_RPATH)
+        set_target_properties( ${PROJECT_NAME} PROPERTIES
+            BUILD_RPATH "${EXISTING_RPATH};${Torch_ROOT}/lib" )
+    else()
+        set_target_properties( ${PROJECT_NAME} PROPERTIES
+            BUILD_RPATH "${Torch_ROOT}/lib" )
+    endif()
+    get_target_property(EXISTING_INSTALL_RPATH ${PROJECT_NAME} INSTALL_RPATH)
+    if(EXISTING_INSTALL_RPATH)
+        set_target_properties( ${PROJECT_NAME} PROPERTIES
+            INSTALL_RPATH "${EXISTING_INSTALL_RPATH};${Torch_ROOT}/lib" )
+    else()
+        set_target_properties( ${PROJECT_NAME} PROPERTIES
+            INSTALL_RPATH "${Torch_ROOT}/lib" )
+    endif()
 endif()
 
 # Enable including of local header Fortran file templates

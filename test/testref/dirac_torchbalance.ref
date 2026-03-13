@@ -1,0 +1,40 @@
+Input Dirac increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: CS-LFR-15 [1350]
+  Fields:
+  - sea_water_potential_temperature (4 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 1.8518518518518518e-04
+    + stddev = 1.3608276348794180e-02
+  - air_temperature (4 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 1.8518518518518518e-04
+    + stddev = 1.3608276348794180e-02
+  - water_vapor_mixing_ratio_wrt_moist_air (4 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 1.8518518518518518e-04
+    + stddev = 1.3608276348794180e-02
+Adjoint test for block TorchBalance passed
+Adjoint test for block ID passed
+Covariance(SABER) * Increment:
+- Valid time: 2010-01-01T12:00:00Z
+  Geometry: CS-LFR-15 [1350]
+  Fields:
+  - sea_water_potential_temperature (4 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.1700000050663948e+00
+    + mean   = 2.1666666760488792e-04
+    + stddev = 1.5921683397033370e-02
+  - air_temperature (4 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 3.1851852194026662e-04
+    + stddev = 1.6767104647149141e-02
+  - water_vapor_mixing_ratio_wrt_moist_air (4 levels):
+    + min    = 0.0000000000000000e+00
+    + max    = 1.0000000000000000e+00
+    + mean   = 2.0370370397965114e-04
+    + stddev = 1.3675897671130468e-02

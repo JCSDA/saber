@@ -1,0 +1,64 @@
+geometry:
+  function space: NodeColumns
+  grid:
+    name: CS-LFR-15
+  partitioner: cubedsphere
+  halo: 1
+  groups:
+  - variables:
+    - sea_water_potential_temperature
+    - air_temperature
+    - water_vapor_mixing_ratio_wrt_moist_air
+    levels: 4
+
+background:
+  date: 2010-01-01T12:00:00Z
+  state variables:
+  - sea_water_potential_temperature
+  - air_temperature
+  - water_vapor_mixing_ratio_wrt_moist_air
+
+background error:
+  covariance model: SABER
+  adjoint test: true
+  saber outer blocks:
+  - saber block name: TorchBalance
+    save jacobians: true
+    surface emulators:
+    - name: sea_water_potential_temperature
+      path: ./testdata/sst_emulator.ts
+      jacobian wrt:
+      - air_temperature
+      - water_vapor_mixing_ratio_wrt_moist_air
+    - name: air_temperature
+      path: ./testdata/air_temperature_emulator.ts
+      jacobian wrt:
+      - sea_water_potential_temperature
+      - water_vapor_mixing_ratio_wrt_moist_air
+  saber central block:
+    saber block name: ID
+
+dirac:
+  lon:
+  - 0.0
+  - 0.0
+  - 0.0
+  lat:
+  - -4.38894
+  - -4.38894
+  - -4.38894
+  level:
+  - 1
+  - 4
+  - 4
+  variable:
+  - sea_water_potential_temperature
+  - air_temperature
+  - water_vapor_mixing_ratio_wrt_moist_air
+
+output dirac:
+  mpi pattern: '%MPI%'
+  filepath: testdata/dirac_torchbalance/%MPI%_dirac_%id%
+
+test:
+  reference filename: testref/dirac_torchbalance.ref

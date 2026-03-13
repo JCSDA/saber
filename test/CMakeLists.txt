@@ -53,6 +53,10 @@ if( ENABLE_QUENCH )
       set( SABER_TEST_SPECTRALB 1 )
   endif()
   set( SABER_TEST_VADER 1 )
+  set( SABER_TEST_TORCHBALANCE 0 )
+  if( Torch_FOUND )
+      set( SABER_TEST_TORCHBALANCE 1 )
+  endif()
 
   # Override test selection variables using environment variables
   if( DEFINED ENV{SABER_TEST_MPI} )
@@ -164,6 +168,11 @@ if( ENABLE_QUENCH )
          list( APPEND saber_test_full ${saber_test} )
       endif()
   endif()
+  if( SABER_TEST_TORCHBALANCE )
+      message( STATUS "  - TIER 1 TorchBalance-specific" )
+      file( STRINGS testlist/saber_test_tier1-torchbalance.txt saber_test )
+      list( APPEND saber_test_full ${saber_test} )
+  endif()
 
   # TIER > 1
   if( SABER_TEST_TIER GREATER 1 )
@@ -174,6 +183,44 @@ if( ENABLE_QUENCH )
 
   # Input data
   file( STRINGS testlist/saber_data.txt saber_data )
+
+  # Setup virtual environment for TorchBalance test emulator generation
+  if( SABER_TEST_TORCHBALANCE )
+      # Find Python3 for venv creation
+      if(NOT Python3_EXECUTABLE)
+          find_package(Python3 COMPONENTS Interpreter REQUIRED)
+      endif()
+
+      # Create virtual environment only during CMake configuration
+      set(VENV_DIR ${CMAKE_CURRENT_BINARY_DIR}/torchbalance_venv)
+      set(VENV_PYTHON ${VENV_DIR}/bin/python)
+
+      if(NOT EXISTS ${VENV_PYTHON})
+          message( STATUS "Creating virtual environment for TorchBalance tests..." )
+          execute_process(
+              COMMAND ${Python3_EXECUTABLE} -m venv ${VENV_DIR}
+              RESULT_VARIABLE VENV_RESULT
+          )
+          if(NOT VENV_RESULT EQUAL 0)
+              message( FATAL_ERROR "Failed to create virtual environment" )
+          endif()
+
+          execute_process(
+              COMMAND ${VENV_DIR}/bin/pip install torch
+              RESULT_VARIABLE PIP_RESULT
+          )
+          if(NOT PIP_RESULT EQUAL 0)
+              message( FATAL_ERROR "Failed to install PyTorch in virtual environment" )
+          endif()
+      endif()
+
+      # Add test to generate emulator (runs before torchbalance tests)
+      ecbuild_add_test( TARGET generate_torchbalance_test_emulator
+                        TYPE SCRIPT
+                        COMMAND ${VENV_PYTHON}
+                        ARGS ${CMAKE_SOURCE_DIR}/saber/src/saber/torchbalance/create_test_emulator.py
+                             ${CMAKE_CURRENT_BINARY_DIR}/testdata/air_temperature_emulator.ts )
+  endif()
 
   # Setup SABER directories and links
   message( STATUS "Setup SABER directories and links" )
@@ -309,6 +356,12 @@ if( ENABLE_QUENCH )
                               list( TRANSFORM deps_list_1 APPEND _1-1 )
                               list( APPEND deps_list ${deps_list_1} )
                           endif()
+                      endif()
+
+                      # Add emulator generation dependency for torchbalance tests
+                      string( FIND ${test} "torchbalance" torchbalance_result )
+                      if( torchbalance_result GREATER_EQUAL 0 )
+                          list( APPEND deps_list generate_torchbalance_test_emulator )
                       endif()
 
                       # Add test

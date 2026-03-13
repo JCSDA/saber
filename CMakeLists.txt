@@ -20,6 +20,14 @@ ecbuild_declare_project()
 list( APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake )
 set( CMAKE_DIRECTORY_LABELS ${PROJECT_NAME} )
 
+## RPATH settings - ensure executables can find shared libraries during build and install
+set( CMAKE_SKIP_BUILD_RPATH FALSE )
+set( CMAKE_BUILD_WITH_INSTALL_RPATH FALSE )
+set( CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE )
+# Add build lib directory to RPATH
+set( CMAKE_BUILD_RPATH "${CMAKE_BINARY_DIR}/lib" )
+list( APPEND CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib" )
+
 ## Configuration options
 option( ENABLE_OFFLINE_CODECOV "Enable SABER offline code coverage" OFF )
 option( ENABLE_SABER_DOC "Enable SABER documentation" OFF )
@@ -83,6 +91,20 @@ find_package( ECTRANS 1.6.0 COMPONENTS transi double QUIET ) # TODO(Benjamin): u
 find_package( FFTW 3.3.8 QUIET )
 find_package( ip 5 QUIET )
 find_package( gsibec 1.4.2 QUIET )
+
+# Torch
+set(Torch_FOUND FALSE CACHE BOOL "Torch not found")
+if(DEFINED Torch_ROOT AND NOT Torch_ROOT STREQUAL "")
+  set(Torch_FOUND TRUE CACHE BOOL "Torch found" FORCE)
+  # Temporary fix until Torch is properly installed as a cmake package
+  include_directories("${Torch_ROOT}/include")
+  include_directories("${Torch_ROOT}/include/torch/csrc/api/include")
+  # Use full paths to libraries instead of link_directories
+  set(TORCH_LIBRARIES
+      "${Torch_ROOT}/lib/libtorch.so"
+      "${Torch_ROOT}/lib/libtorch_cpu.so"
+      "${Torch_ROOT}/lib/libc10.so")
+endif()
 
 # Optional SABER blocks
 if( FFTW_FOUND OR ( ECTRANS_FOUND AND ectrans_HAVE_ETRANS AND ectrans_HAVE_TRANSI ) )
