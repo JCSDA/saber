@@ -46,7 +46,7 @@ SaberOuterBlockChain::SaberOuterBlockChain(
   for (int jb = params.size()-1; jb >= 0; --jb) {
     // Initialize current outer geometry data
     const oops::GeometryData & currentOuterGeometryData = outerBlocks_.size() == 0 ?
-                                     outerGeometryData : outerBlocks_.back()->innerGeometryData();
+                                     outerGeometryData : innerGeometryData();
 
     // Initialize outer block
     const auto[saberOuterBlockParams,
@@ -60,7 +60,7 @@ SaberOuterBlockChain::SaberOuterBlockChain(
                           fset4dFg);
 
     // Check block doesn't expect model fields to be read as this is a generic ctor
-    if (outerBlocks_.back()->getReadConfs().size() != 0) {
+    if (outerBlocks_.back().first->getReadConfs().size() != 0) {
       throw eckit::UserError("The generic constructor of the SABER outer block chain "
                              "does not allow to read MODEL fields.", Here());
     }
@@ -74,22 +74,18 @@ SaberOuterBlockChain::SaberOuterBlockChain(
     if (saberOuterBlockParams.doRead()) {
       // Read data
       oops::Log::info() << "Info     : Read data" << std::endl;
-      outerBlocks_.back()->read();
+      outerBlocks_.back().first->read();
     }
 
     if (saberOuterBlockParams.forceWrite.value()) {
       // Write data
       oops::Log::info() << "Info     : Write data" << std::endl;
-      outerBlocks_.back()->write();
+      outerBlocks_.back().first->write();
     }
-
-    // Inner geometry data and variables & consistency check with active variables
-    auto[innerGeometryData, innerVars] = getInnerObjects(activeVars, currentOuterVars);
 
     // Left inverse multiplication on xb and fg if inner and outer Geometry are different
     interpolateStates(saberOuterBlockParams,
                       currentOuterGeometryData,
-                      innerGeometryData,
                       fset4dXb,
                       fset4dFg);
 
@@ -98,8 +94,6 @@ SaberOuterBlockChain::SaberOuterBlockChain(
                        saberOuterBlockParams,
                        currentOuterGeometryData,
                        currentOuterVars,
-                       innerGeometryData,
-                       innerVars,
                        activeVars);
   }
   oops::Log::trace() << "SaberOuterBlockChain generic ctor done" << std::endl;
@@ -114,63 +108,93 @@ std::tuple<const SaberBlockParametersBase&, oops::Variables, oops::Variables>
             const oops::Variables & outerVars,
             oops::FieldSet4D & fset4dXb,
             oops::FieldSet4D & fset4dFg) {
-  // Initialize current outer variables and outer geometry data
-  const oops::Variables & currentOuterVars = outerBlocks_.size() == 0 ?
-                                   outerVars : outerBlocks_.back()->innerVars();
-
   // Get outer block parameters
   const SaberBlockParametersBase & saberOuterBlockParams =
     saberOuterBlockParamWrapper.saberOuterBlockParameters;
-  oops::Log::info() << "Info     : Creating outer block: "
-                    << saberOuterBlockParams.saberBlockName.value() << std::endl;
+
+  // Initialize current outer variables and outer geometry data
+  const oops::Variables & currentOuterVars = outerBlocks_.size() == 0 ?
+                                   outerVars : innerVars();
 
   // Get active variables
   const oops::Variables activeVars = saberOuterBlockParams.getActiveVars(currentOuterVars);
 
-  // Get required variables in xb, fg if needed
-  const oops::Variables mandatoryStateVars = saberOuterBlockParams.mandatoryStateVars();
-  if (!(mandatoryStateVars <= fset4dXb.variables())) {
-    oops::Log::info() << "Info     : Calling vader to populate trajectory variables for the "
+  if (saberOuterBlockParams.reuseBlock.value()) {
+    // Reuse an already created block
+    oops::Log::info() << "Info     : Reuse an already created block: "
                       << saberOuterBlockParams.saberBlockName.value() << std::endl;
-    eckit::LocalConfiguration vaderCookbookConfig, vaderConfig;
-    for (const auto & entry : saberDefaultCookbook) {
-      vaderCookbookConfig.set(entry.first.name(), entry.second);
-    }
-    vaderConfig.set(vader::configCookbookKey, vaderCookbookConfig);
-    vader::VaderParameters vaderParams;
-    vader::Vader vader(vaderParams, vaderConfig);
-    oops::Variables varsToPopulateXb(mandatoryStateVars);
-    oops::Variables varsPopulatedXb = vader.changeVar(fset4dXb[0].fieldSet(),
-                                                      varsToPopulateXb);
-    if (varsToPopulateXb.size() != 0) {
-      std::stringstream errorMsg;
-      errorMsg << "Vader could not produce the requested variables "
-               << varsToPopulateXb.variables()
-               << " in block " << saberOuterBlockParams.saberBlockName.value()
-               << std::endl;
-      throw eckit::Exception(errorMsg.str(), Here());
-    }
-    oops::Variables varsToPopulateFg(mandatoryStateVars);
-    oops::Variables varsPopulatedFg = vader.changeVar(fset4dFg[0].fieldSet(),
-                                                      varsToPopulateFg);
-    if (varsToPopulateFg.size() != 0) {
-      std::stringstream errorMsg;
-      errorMsg << "Vader could not produce the requested variables "
-               << varsToPopulateFg.variables()
-               << " in block " << saberOuterBlockParams.saberBlockName.value()
-               << std::endl;
-      throw eckit::Exception(errorMsg.str(), Here());
-    }
-  }
 
-  // Create outer block
-  outerBlocks_.emplace_back(SaberOuterBlockFactory::create(
+    // Find the target block, while checking for its unicity
+    std::shared_ptr<SaberOuterBlockBase> targetBlock;
+    bool found = false;
+    for (auto it = outerBlocks_.begin(); it != outerBlocks_.end(); ++it) {
+      if (it->first->blockName() == saberOuterBlockParams.saberBlockName.value()) {
+        // Check for block unicity
+        ASSERT(!found);
+        found = true;
+
+        // Save block pointer
+        targetBlock = it->first;
+      }
+    }
+
+    // Check target block actual existence
+    ASSERT(found);
+
+    // Share pointer of target block
+    outerBlocks_.emplace_back(std::make_pair(targetBlock,
+                                             saberOuterBlockParams.rightInverse.value()));
+  } else {
+    // Creating outer block
+    oops::Log::info() << "Info     : Creating outer block: "
+                    << saberOuterBlockParams.saberBlockName.value() << std::endl;
+
+    // Get required variables in xb, fg if needed
+    const oops::Variables mandatoryStateVars = saberOuterBlockParams.mandatoryStateVars();
+    if (!(mandatoryStateVars <= fset4dXb.variables())) {
+      oops::Log::info() << "Info     : Calling vader to populate trajectory variables for the "
+                        << saberOuterBlockParams.saberBlockName.value() << std::endl;
+      eckit::LocalConfiguration vaderCookbookConfig, vaderConfig;
+      for (const auto & entry : saberDefaultCookbook) {
+        vaderCookbookConfig.set(entry.first.name(), entry.second);
+      }
+      vaderConfig.set(vader::configCookbookKey, vaderCookbookConfig);
+      vader::VaderParameters vaderParams;
+      vader::Vader vader(vaderParams, vaderConfig);
+      oops::Variables varsToPopulateXb(mandatoryStateVars);
+      oops::Variables varsPopulatedXb = vader.changeVar(fset4dXb[0].fieldSet(),
+                                                        varsToPopulateXb);
+      if (varsToPopulateXb.size() != 0) {
+        std::stringstream errorMsg;
+        errorMsg << "Vader could not produce the requested variables "
+                 << varsToPopulateXb.variables()
+                 << " in block " << saberOuterBlockParams.saberBlockName.value()
+                 << std::endl;
+        throw eckit::Exception(errorMsg.str(), Here());
+      }
+      oops::Variables varsToPopulateFg(mandatoryStateVars);
+      oops::Variables varsPopulatedFg = vader.changeVar(fset4dFg[0].fieldSet(),
+                                                        varsToPopulateFg);
+      if (varsToPopulateFg.size() != 0) {
+        std::stringstream errorMsg;
+        errorMsg << "Vader could not produce the requested variables "
+                 << varsToPopulateFg.variables()
+                 << " in block " << saberOuterBlockParams.saberBlockName.value()
+                 << std::endl;
+        throw eckit::Exception(errorMsg.str(), Here());
+      }
+    }
+
+    // Create outer block
+    outerBlocks_.emplace_back(std::make_pair(SaberOuterBlockFactory::create(
                                                outerGeometryData,
                                                currentOuterVars,
                                                outerBlockConf,
                                                saberOuterBlockParams,
                                                fset4dXb[0],
-                                               fset4dFg[0]));
+                                               fset4dFg[0]),
+                                             saberOuterBlockParams.rightInverse.value()));
+  }
 
   return std::tuple<const SaberBlockParametersBase&, oops::Variables, oops::Variables>(
               saberOuterBlockParams, currentOuterVars, activeVars);
@@ -178,43 +202,21 @@ std::tuple<const SaberBlockParametersBase&, oops::Variables, oops::Variables>
 
 // -----------------------------------------------------------------------------
 
-std::tuple<const oops::GeometryData &, const oops::Variables &>
-    SaberOuterBlockChain::getInnerObjects(const oops::Variables & activeVars,
-                                          const oops::Variables & outerVars) const {
-  // Inner variables and inner geometry data
-  const oops::Variables & innerVars = outerBlocks_.back()->innerVars();
-  const oops::GeometryData & innerGeometryData = outerBlocks_.back()->innerGeometryData();
-
-  // Check that active variables are present in either inner or outer variables, or both
-  for (const auto & var : activeVars) {
-    if (!(innerVars.has(var) || outerVars.has(var))) {
-      throw eckit::UserError("Active variable " + var.name() + " is not present in inner "
-                             "or outer variables", Here());
-    }
-  }
-
-  return std::tuple<const oops::GeometryData &, const oops::Variables &>(
-              innerGeometryData, innerVars);
-}
-
-// -----------------------------------------------------------------------------
-
 void SaberOuterBlockChain::interpolateStates(
         const SaberBlockParametersBase & saberOuterBlockParams,
         const oops::GeometryData & outerGeometryData,
-        const oops::GeometryData & innerGeometryData,
         oops::FieldSet4D & fset4dXb,
         oops::FieldSet4D & fset4dFg) const {
   // Left inverse multiplication on xb and fg if inner and outer Geometry are different
-  if (util::getGridUid(innerGeometryData.functionSpace())
+  if (util::getGridUid(innerGeometryData().functionSpace())
     != util::getGridUid(outerGeometryData.functionSpace())
     && saberOuterBlockParams.inverseVars.value().size() > 0) {
     oops::Log::info() << "Info     : Left inverse multiplication on xb and fg" << std::endl;
 
     // Apply left inverse
     for (size_t itime = 0; itime < fset4dXb.size(); ++itime) {
-      outerBlocks_.back()->leftInverseMultiply(fset4dXb[itime]);
-      outerBlocks_.back()->leftInverseMultiply(fset4dFg[itime]);
+      outerBlocks_.back().first->leftInverseMultiply(fset4dXb[itime]);
+      outerBlocks_.back().first->leftInverseMultiply(fset4dFg[itime]);
     }
   }
 }
@@ -226,13 +228,11 @@ void SaberOuterBlockChain::testLastOuterBlock(
                         const SaberBlockParametersBase & saberOuterBlockParams,
                         const oops::GeometryData & outerGeometryData,
                         const oops::Variables & outerVars,
-                        const oops::GeometryData & innerGeometryData,
-                        const oops::Variables & innerVars,
                         const oops::Variables & activeVars) const {
   // Get intersection of active variables and outer/inner variables
   oops::Variables activeOuterVars = outerVars;
   activeOuterVars.intersection(activeVars);
-  oops::Variables activeInnerVars = innerVars;
+  oops::Variables activeInnerVars = innerVars();
   activeInnerVars.intersection(activeVars);
 
   // Adjoint test
@@ -243,9 +243,9 @@ void SaberOuterBlockChain::testLastOuterBlock(
       conf.getDouble("adjoint tolerance"));
 
     // Run test
-    outerBlocks_.back()->adjointTest(outerGeometryData,
+    outerBlocks_.back().first->adjointTest(outerGeometryData,
                                      activeOuterVars,
-                                     innerGeometryData,
+                                     innerGeometryData(),
                                      activeInnerVars,
                                      localAdjointTolerance);
   }
@@ -255,8 +255,8 @@ void SaberOuterBlockChain::testLastOuterBlock(
   if (conf.getBool("inverse test")) {
     oops::Log::info() << "Info     : Inverse test" << std::endl;
     if (skipInverseTest) {
-      oops::Log::test() << "skipping inverse test for block "
-                        << outerBlocks_.back()->blockName() << std::endl;
+      oops::Log::test() << "Skipping inverse test for block "
+                        << outerBlocks_.back().first->blockName() << std::endl;
     } else {
       // Get inner and outer tolerances
       const double innerInverseTolerance = saberOuterBlockParams.innerInverseTolerance.value()
@@ -271,7 +271,7 @@ void SaberOuterBlockChain::testLastOuterBlock(
         .get_value_or(activeOuterVars);
 
       // Run test
-      outerBlocks_.back()->inverseTest(innerGeometryData,
+      outerBlocks_.back().first->inverseTest(innerGeometryData(),
                                        activeInnerVars,
                                        outerGeometryData,
                                        activeOuterVars,

@@ -197,11 +197,10 @@ DuplicateVariables::DuplicateVariables(const oops::GeometryData & outerGeometryD
                                        const Parameters_ & params,
                                        const oops::FieldSet3D & xb,
                                        const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime()),
+  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     groups_(params.variableGroupParameters.value()),
-    outerVars_(outerVars),
-    activeVars_(createActiveVars(groups_, outerVars_)),
-    innerVars_(createInnerVars(outerVars_, activeVars_, groups_)),
+    activeVars_(createActiveVars(groups_, outerVars)),
+    innerVars_(createInnerVars(outerVars, activeVars_, groups_)),
     innerGeometryData_(outerGeometryData)
 {
   oops::Log::trace() << classname() << "::DuplicateVariables starting" << std::endl;

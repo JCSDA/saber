@@ -10,6 +10,8 @@ if( ENABLE_BUMP )
     BUMPParameters.h
     NICAS.cc
     NICAS.h
+    NICASFilter.cc
+    NICASFilter.h
     PsiChiToUV.cc
     PsiChiToUV.h
     StdDev.cc

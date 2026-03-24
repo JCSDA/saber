@@ -64,8 +64,6 @@ class SqrtOfSpectralCovariance : public SaberOuterBlockBase {
   Parameters_ params_;
   /// Active variables
   const oops::Variables activeVars_;
-  /// Outer variables
-  oops::Variables outerVars_;
 
   /// Covariance statistics
   atlas::FieldSet spectralUMatrices_;

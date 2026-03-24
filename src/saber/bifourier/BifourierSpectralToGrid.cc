@@ -23,7 +23,7 @@ BifourierSpectralToGrid::BifourierSpectralToGrid(const oops::GeometryData & oute
                                                  const Parameters_ & params,
                                                  const oops::FieldSet3D & xb,
                                                  const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime()),
+  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerVars_(outerVars),
     trans_(transStore_.setupTransform(outerGeometryData, innerVars_, params.transform.value()))
 {

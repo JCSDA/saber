@@ -16,107 +16,112 @@ background:
 
 bands:
 - band:
+    gauss to cubed-sphere-dual block: &GaussToCSDual # To avoid a copy in right inverse and direct blocks
+      saber block name: gauss to cubed-sphere-dual
+      gauss grid uid: F14
     filter:
-      saber central block:
-        saber block name: ID
-      saber outer blocks:
-      - saber block name: spectral analytical filter
-        function:
-          shape: waveband filter
-          waveband min: 0
-          waveband peak: 1
-          waveband max: 3
-        preserving variance: true
-        active variables: *vars
-      - saber block name: spectral to gauss
-        active variables: *vars
-        filter mode: true # instead of running the adjoint code it runs the inverse
-      - saber block name: write variances
-        binning:
-          type: "horizontal global average"
-        field names: *vars
-        instantaneous statistics:
-          multiply fset filename: wb1_F14_variance
-          output path: testdata/process_perts_from_csdual_states_2/
-      - saber block name: write fields
+    - saber block name: write variances
+      binning:
+        type: "horizontal global average"
+      field names: *vars
+      instantaneous statistics:
+        multiply fset filename: initial_CS14_variance
         output path: testdata/process_perts_from_csdual_states_2/
-        multiply fset filename: wb1_F14_inc
-      - saber block name: gauss to cubed-sphere-dual
-        gauss grid uid: F14
-        filter mode: true # instead of running the adjoint code it runs the inverse
-      - saber block name: write variances
-        binning:
-          type: "horizontal global average"
-        field names: *vars
-        filter mode: true # instead of running the adjoint code it runs the inverse
-        instantaneous statistics:
-          left inverse fset filename: initial_CS14_variance
-          output path: testdata/process_perts_from_csdual_states_2/
+    - <<: *GaussToCSDual
+      right inverse: true
+      reuse already created block: true
+    - saber block name: spectral to gauss
+      right inverse: true
+      reuse already created block: true
+    - saber block name: spectral analytical filter
+      function:
+        shape: waveband filter
+        waveband min: 0
+        waveband peak: 1
+        waveband max: 3
+      preserving variance: true
+      active variables: *vars
+    - saber block name: spectral to gauss
+      active variables: *vars
+    - saber block name: write variances
+      binning:
+        type: "horizontal global average"
+      field names: *vars
+      instantaneous statistics:
+        multiply fset filename: wb1_F14_variance
+        output path: testdata/process_perts_from_csdual_states_2/
+    - saber block name: write fields
+      output path: testdata/process_perts_from_csdual_states_2/
+      multiply fset filename: wb1_F14_inc
+    - <<: *GaussToCSDual
   output:
     model write:
       filepath: testdata/process_perts_from_csdual_states_2/wb1_CS-LFR-14_mb%MEM%_inc
       member pattern: '%MEM%'
 - band:
+    gauss to cubed-sphere-dual block: &GaussToCSDual # To avoid a copy in right inverse and direct blocks
+      saber block name: gauss to cubed-sphere-dual
+      gauss grid uid: F14
     filter:
-      saber central block:
-        saber block name: ID
-      saber outer blocks:
-      - saber block name: spectral analytical filter
-        function:
-          shape: waveband filter
-          waveband min: 1
-          waveband peak: 3
-          waveband max: 9
-        preserving variance: true
-        active variables: *vars
-      - saber block name: spectral to gauss
-        active variables: *vars
-        filter mode: true # instead of running the adjoint code it runs the inverse
-      - saber block name: write variances
-        binning:
-          type: "horizontal global average"
-        field names: *vars
-        instantaneous statistics:
-          multiply fset filename: wb2_F14_variance
-          output path: testdata/process_perts_from_csdual_states_2/
-      - saber block name: write fields
+    - <<: *GaussToCSDual
+      right inverse: true
+      reuse already created block: true
+    - saber block name: spectral to gauss
+      right inverse: true
+      reuse already created block: true
+    - saber block name: spectral analytical filter
+      function:
+        shape: waveband filter
+        waveband min: 1
+        waveband peak: 3
+        waveband max: 9
+      preserving variance: true
+      active variables: *vars
+    - saber block name: spectral to gauss
+      active variables: *vars
+    - saber block name: write variances
+      binning:
+        type: "horizontal global average"
+      field names: *vars
+      instantaneous statistics:
+        multiply fset filename: wb2_F14_variance
         output path: testdata/process_perts_from_csdual_states_2/
-        multiply fset filename: wb2_F14_inc
-      - saber block name: gauss to cubed-sphere-dual
-        gauss grid uid: F14
-        filter mode: true # instead of running the adjoint code it runs the inverse
+    - saber block name: write fields
+      output path: testdata/process_perts_from_csdual_states_2/
+      multiply fset filename: wb2_F14_inc
+    - <<: *GaussToCSDual
 - band:
+    gauss to cubed-sphere-dual block: &GaussToCSDual # To avoid a copy in right inverse and direct blocks
+      saber block name: gauss to cubed-sphere-dual
+      gauss grid uid: F14
     filter:
-      saber central block:
-        saber block name: ID
-      saber outer blocks:
-      - saber block name: spectral analytical filter
-        function:
-          shape: waveband filter
-          waveband min: 3
-          waveband peak: 9
-          waveband max: 23 # last waveband max need to be 2N - 1
-        preserving variance: true
-        complement filter: true
-        active variables: *vars
-      - saber block name: spectral to gauss
-        active variables: *vars
-        filter mode: true # instead of running the adjoint code it runs the inverse
-      - saber block name: gauss to cubed-sphere-dual
-        gauss grid uid: F14
-        filter mode: true # instead of running the adjoint code it runs the inverse
+    - <<: *GaussToCSDual
+      right inverse: true
+      reuse already created block: true
+    - saber block name: spectral to gauss
+      right inverse: true
+      reuse already created block: true
+    - saber block name: spectral analytical filter
+      function:
+        shape: waveband filter
+        waveband min: 3
+        waveband peak: 9
+        waveband max: 23 # last waveband max need to be 2N - 1
+      preserving variance: true
+      complement filter: true
+      active variables: *vars
+    - saber block name: spectral to gauss
+      active variables: *vars
+    - <<: *GaussToCSDual
     use residual from filter: true
   output:
     diagnostic only block:
-      saber central block:
-        saber block name: ID
-      saber outer blocks:
-      - saber block name: write variances
-        binning:
-          type: "horizontal global average"
-        instantaneous statistics:
-          multiply fset filename: wb3_cs14_variance
-          output path: testdata/process_perts_from_csdual_states_2/
+    - saber block name: write variances
+      binning:
+        type: "horizontal global average"
+      instantaneous statistics:
+        multiply fset filename: wb3_cs14_variance
+        output path: testdata/process_perts_from_csdual_states_2/
     generic write:
       filepath: testdata/process_perts_from_csdual_states_2/wb3_%GRID%_mb%MEM%_inc
       member pattern: '%MEM%'

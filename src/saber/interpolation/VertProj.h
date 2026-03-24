@@ -65,8 +65,6 @@ class VertProj : public SaberOuterBlockBase {
  private:
   void print(std::ostream &) const override;
 
-  const oops::GeometryData & outerGeometryData_;
-  oops::Variables outerVars_;
   oops::Variables activeVars_;
   oops::Variables innerVars_;
 };

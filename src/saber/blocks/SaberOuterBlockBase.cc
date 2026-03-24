@@ -44,7 +44,7 @@ SaberOuterBlockFactory::SaberOuterBlockFactory(const std::string & name) {
 
 // -----------------------------------------------------------------------------
 
-std::unique_ptr<SaberOuterBlockBase> SaberOuterBlockFactory::create(
+std::shared_ptr<SaberOuterBlockBase> SaberOuterBlockFactory::create(
   const oops::GeometryData & outerGeometryData,
   const oops::Variables & outerVars,
   const eckit::Configuration & covarConfig,
@@ -58,7 +58,7 @@ std::unique_ptr<SaberOuterBlockBase> SaberOuterBlockFactory::create(
     oops::Log::error() << id << " does not exist in saber::SaberOuterBlockFactory." << std::endl;
     throw eckit::UserError("Element does not exist in saber::SaberOuterBlockFactory.", Here());
   }
-  std::unique_ptr<SaberOuterBlockBase> ptr =
+  std::shared_ptr<SaberOuterBlockBase> ptr =
     jsb->second->make(outerGeometryData, outerVars, covarConfig, params, xb, fg);
   oops::Log::trace() << "SaberOuterBlockBase::create done" << std::endl;
   return ptr;
@@ -128,12 +128,12 @@ void SaberOuterBlockBase::adjointTest(const oops::GeometryData & outerGeometryDa
   oops::Log::info() << std::setprecision(16) << "Info     : Adjoint test: y^t (Ax) = " << dp1
                     << ": x^t (A^t y) = " << dp2 << " : adjoint tolerance = "
                     << adjointTolerance << std::endl;
-  oops::Log::test() << "Adjoint test for block " << this->blockName();
+  oops::Log::test() << "Adjoint test for block " << blockName_;
   if (std::abs(dp1-dp2)/std::abs(0.5*(dp1+dp2)) < adjointTolerance) {
     oops::Log::test() << " passed" << std::endl;
   } else {
     oops::Log::test() << " failed" << std::endl;
-    throw eckit::Exception("Adjoint test failure for block " + this->blockName(), Here());
+    throw eckit::Exception("Adjoint test failure for block " + blockName_, Here());
   }
 
   oops::Log::trace() << "SaberOuterBlockBase::adjointTest done" << std::endl;
@@ -174,7 +174,7 @@ void SaberOuterBlockBase::inverseTest(const oops::GeometryData & innerGeometryDa
   auto innerFieldNamesSave = oops::Variables(innerFsetSave.field_names());
 
   if (innerFieldNames != innerFieldNamesSave) {
-    throw eckit::Exception("Inner inverse test for block " + this->blockName()
+    throw eckit::Exception("Inner inverse test for block " + blockName_
       + ": fieldsets content does not match", Here());
   }
 
@@ -187,12 +187,12 @@ void SaberOuterBlockBase::inverseTest(const oops::GeometryData & innerGeometryDa
   const bool outerComparison = this->compareFieldSets(innerFset,
                                                       innerFsetSave,
                                                       innerInverseTolerance);
-  oops::Log::test() << "Inner inverse test for block " << this->blockName();
+  oops::Log::test() << "Inner inverse test for block " << blockName_;
   if (outerComparison) {
     oops::Log::test() << " passed: U Uinv (U x) == (U x)" << std::endl;
   } else {
     oops::Log::test() << " failed: U Uinv (U x) != (U x)" << std::endl;
-    throw eckit::Exception("Inner inverse test failure for block " + this->blockName(), Here());
+    throw eckit::Exception("Inner inverse test failure for block " + blockName_, Here());
   }
 
   // Outer inverse test
@@ -217,7 +217,7 @@ void SaberOuterBlockBase::inverseTest(const oops::GeometryData & innerGeometryDa
   auto outerFieldNames = oops::Variables(outerFset.field_names());
   auto outerFieldNamesSave = oops::Variables(outerFsetSave.field_names());
   if (outerFieldNames != outerFieldNamesSave) {
-    throw eckit::Exception("Outer inverse test for block " + this->blockName()
+    throw eckit::Exception("Outer inverse test for block " + blockName_
       + ": fieldsets content does not match", Here());
   }
 
@@ -229,12 +229,12 @@ void SaberOuterBlockBase::inverseTest(const oops::GeometryData & innerGeometryDa
   const bool innerComparison = this->compareFieldSets(outerFset,
                                                       outerFsetSave,
                                                       outerInverseTolerance);
-  oops::Log::test() << "Outer inverse test for block " << this->blockName();
+  oops::Log::test() << "Outer inverse test for block " << blockName_;
   if (innerComparison) {
     oops::Log::test() << " passed: Uinv U (Uinv x) == (Uinv x)" << std::endl;
   } else {
     oops::Log::test() << " failed: Uinv U (Uinv x) != (Uinv x)" << std::endl;
-    throw eckit::Exception("Outer inverse test failure for block " + this->blockName(), Here());
+    throw eckit::Exception("Outer inverse test failure for block " + blockName_, Here());
   }
 
   oops::Log::trace() << "SaberOuterBlockBase::inverseTest done" << std::endl;

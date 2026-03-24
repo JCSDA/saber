@@ -41,9 +41,6 @@ class SaberBlockParametersBase : public oops::Parameters {
   // Flag to skip inverse test
   oops::Parameter<bool> skipInverseTest{"skip inverse test", false, this};
 
-  // Flag to run the left inverse instead of the adjoint.
-  oops::Parameter<bool> filterMode{"filter mode", false, this};
-
   // Fields metadata (e.g. geographical mask name, vertical coordinate field name)
   oops::Parameter<eckit::LocalConfiguration> fieldsMetaData{"fields metadata",
     eckit::LocalConfiguration(), this};
@@ -78,6 +75,12 @@ class SaberBlockParametersBase : public oops::Parameters {
 
   // Force calling write()
   oops::Parameter<bool> forceWrite{"force write", false, this};
+
+  // Right-inverse mode: only for filters, some methods like multiplyAD are not available.
+  oops::Parameter<bool> rightInverse{"right inverse", false, this};
+
+  // Reuse already created block
+  oops::Parameter<bool> reuseBlock{"reuse already created block", false, this};
 
   // METHODS
   // Find out whether calibration is needed

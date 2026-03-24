@@ -24,16 +24,16 @@ Wrote file testdata/dirac_write_fields/outer_fields_CS_space_leftinverse_3.gmsh
 Fields:
   dry_air_density_levels_minus_one: 3.0656265186966141e+02
 Outer inverse test for block write fields passed: Uinv U (Uinv x) == (Uinv x)
-skipping inverse test for block mo_dry_air_density
-skipping inverse test for block mo_moistincrop
-skipping inverse test for block mo_air_temperature
+Skipping inverse test for block mo_dry_air_density
+Skipping inverse test for block mo_moistincrop
+Skipping inverse test for block mo_air_temperature
 Inner inverse test for block mo_moisture_control passed: U Uinv (U x) == (U x)
 Outer inverse test for block mo_moisture_control passed: Uinv U (Uinv x) == (Uinv x)
 Inner inverse test for block mo_hydrostatic_pressure_hydrostatic_exner_to_pressure_exner passed: U Uinv (U x) == (U x)
 Outer inverse test for block mo_hydrostatic_pressure_hydrostatic_exner_to_pressure_exner passed: Uinv U (Uinv x) == (Uinv x)
-skipping inverse test for block mo_hydro_bal
-skipping inverse test for block mo_hydrostatic_pressure_to_hydrostatic_exner
-skipping inverse test for block mo_hydrostatic_pressure_from_geostrophic_pressure
+Skipping inverse test for block mo_hydro_bal
+Skipping inverse test for block mo_hydrostatic_pressure_to_hydrostatic_exner
+Skipping inverse test for block mo_hydrostatic_pressure_from_geostrophic_pressure
 Wrote file testdata/dirac_write_fields/inner_fields_CS_space_multiply_1.nc
 Fields:
   geostrophic_pressure_levels_minus_one: 3.0688894251380310e+02
@@ -94,7 +94,7 @@ Fields:
   eastward_wind: 3.5592147312454722e+02
   northward_wind: 3.5460781485291449e+02
 Outer inverse test for block write fields passed: Uinv U (Uinv x) == (Uinv x)
-skipping inverse test for block gauss winds to geostrophic pressure
+Skipping inverse test for block gauss winds to geostrophic pressure
 Inner inverse test for block spectral to gauss passed: U Uinv (U x) == (U x)
 Outer inverse test for block spectral to gauss passed: Uinv U (Uinv x) == (Uinv x)
 Did not write file testdata/dirac_write_fields/fields_Spectral_space_final_xb_1.nc

@@ -29,7 +29,7 @@ TorchBalance::TorchBalance(
     const Parameters_ & params,
     const oops::FieldSet3D & xb,
     const oops::FieldSet3D & fg)
-  : saber::SaberOuterBlockBase(params, xb.validTime()),
+  : saber::SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerVars_(outerVars),
     innerGeometryData_(outerGeometryData),
     jac_(nullptr)

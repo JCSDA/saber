@@ -12,6 +12,7 @@
 #include <memory>
 #include <sstream>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 #include "atlas/field.h"
@@ -59,42 +60,55 @@ class SaberOuterBlockChain {
   ~SaberOuterBlockChain() = default;
 
   // Accessors
-  const std::vector<std::unique_ptr<SaberOuterBlockBase>> & outerBlocks() const
-    {return outerBlocks_;}
-  // TODO(AS): remove non-const accessor (currently used to add ens transform blocks
+  // TODO(AS): this should be const (currently used to add ens transform blocks
   // to the outer blocks in SaberEnsembleBlockChain)
-  std::vector<std::unique_ptr<SaberOuterBlockBase>> & outerBlocks() {return outerBlocks_;}
+  std::vector<std::pair<std::shared_ptr<SaberOuterBlockBase>, bool>> & outerBlocks()
+    {return outerBlocks_;}
+
+  /// @brief Returns inner-most geometry data.
+  const oops::GeometryData & innerGeometryData() const {
+    if (outerBlocks_.back().second) {
+      // Right-inverse mode
+      return outerBlocks_.back().first->outerGeometryData();
+    } else {
+      // Direct mode
+      return outerBlocks_.back().first->innerGeometryData();
+    }
+  }
 
   /// @brief Returns inner-most variables.
   const oops::Variables & innerVars() const {
-    return outerBlocks_.back()->innerVars();
-  }
-  /// @brief Returns inner-most geometry data.
-  const oops::GeometryData & innerGeometryData() const {
-    return outerBlocks_.back()->innerGeometryData();
+    if (outerBlocks_.back().second) {
+      // Right-inverse mode
+      return outerBlocks_.back().first->outerVars();
+    } else {
+      // Direct modes
+      return outerBlocks_.back().first->innerVars();
+    }
   }
 
   /// @brief Forward multiplication by all outer blocks, 3D.
   void applyOuterBlocks(oops::FieldSet3D & fset3d) const {
     for (auto it = outerBlocks_.rbegin(); it != outerBlocks_.rend(); ++it) {
-      it->get()->multiply(fset3d);
+      if (it->second) {
+        // Right-inverse mode
+        it->first.get()->rightInverseMultiply(fset3d);
+      } else {
+        // Direct mode
+        it->first.get()->multiply(fset3d);
+      }
     }
   }
 
   /// @brief Adjoint multiplication by all outer blocks, 3D.
   void applyOuterBlocksAD(oops::FieldSet3D & fset3d) const {
     for (auto it = outerBlocks_.begin(); it != outerBlocks_.end(); ++it) {
-      it->get()->multiplyAD(fset3d);
-    }
-  }
-
-  /// @brief Adjoint multiplication or filter to outer blocks, 3D.
-  void applyOuterBlocksFilter(oops::FieldSet3D & fset3d) const {
-    for (const auto & outerBlocks : outerBlocks_) {
-      if (outerBlocks->filterMode()) {
-        outerBlocks->leftInverseMultiply(fset3d);
+      if (it->second) {
+        // Right-inverse mode
+        throw eckit::Exception("not implemented yet, but it should be", Here());
       } else {
-        outerBlocks->multiplyAD(fset3d);
+        // Direct mode
+        it->first.get()->multiplyAD(fset3d);
       }
     }
   }
@@ -113,22 +127,21 @@ class SaberOuterBlockChain {
     }
   }
 
-  /// @brief Adjoint multiplication or filter to outer blocks, 4D.
-  void applyOuterBlocksFilter(oops::FieldSet4D & fset4d) const {
-    for (size_t jtime = 0; jtime < fset4d.size(); ++jtime) {
-      this->applyOuterBlocksFilter(fset4d[jtime]);
-    }
-  }
-
   /// @brief Left inverse multiply (used in calibration) by all outer blocks
   ///        except the ones that haven't implemented inverse yet.
   void leftInverseMultiply(oops::FieldSet3D & fset) const {
     for (auto it = outerBlocks_.begin(); it != outerBlocks_.end(); ++it) {
-      if (it->get()->skipInverse()) {
+      if (it->first.get()->skipInverse()) {
         oops::Log::info() << "Warning: left inverse multiplication skipped for block "
-                          << it->get()->blockName() << std::endl;
+                          << it->first.get()->blockName() << std::endl;
       } else {
-        it->get()->leftInverseMultiply(fset);
+        if (it->second) {
+          // Right-inverse mode
+          it->first.get()->multiply(fset);
+        } else {
+          // Direct mode
+          it->first->leftInverseMultiply(fset);
+        }
       }
     }
   }
@@ -137,11 +150,17 @@ class SaberOuterBlockChain {
   ///        except the ones that haven't implemented inverse yet.
   void rightInverseMultiply(oops::FieldSet3D & fset) const {
     for (auto it = outerBlocks_.begin(); it != outerBlocks_.end(); ++it) {
-      if (it->get()->skipInverse()) {
+      if (it->first.get()->skipInverse()) {
         oops::Log::info() << "Warning: right inverse multiplication skipped for block "
-                          << it->get()->blockName() << std::endl;
+                          << it->first.get()->blockName() << std::endl;
       } else {
-        it->get()->rightInverseMultiply(fset);
+        if (it->second) {
+          // Right-inverse mode
+          throw eckit::Exception("no right inverse available in right inverse mode", Here());
+        } else {
+          // Direct mode
+          it->first.get()->rightInverseMultiply(fset);
+        }
       }
     }
   }
@@ -174,27 +193,26 @@ class SaberOuterBlockChain {
   void leftInverseMultiplyExceptLast(oops::FieldSet3D & fset) const {
     // Outer blocks left inverse multiplication
     for (auto it = outerBlocks_.begin(); it != std::prev(outerBlocks_.end()); ++it) {
-      if (it->get()->skipInverse()) {
+      if (it->first.get()->skipInverse()) {
         oops::Log::info() << "Warning: left inverse multiplication skipped for block "
-                          << it->get()->blockName() << std::endl;
+                          << it->first.get()->blockName() << std::endl;
       } else {
-        it->get()->leftInverseMultiply(fset);
+        if (it->second) {
+          // Right-inverse mode
+          it->first.get()->multiply(fset);
+        } else {
+          // Direct mode
+          it->first.get()->leftInverseMultiply(fset);
+        }
       }
     }
   }
-
-  /// @brief Get inner geometry data and variables, and check consistency with
-  ///        active variables. Used in constructors.
-  std::tuple<const oops::GeometryData &, const oops::Variables &>
-        getInnerObjects(const oops::Variables & activeVars,
-                        const oops::Variables & outerVars) const;
 
   /// @brief Interpolate fields in background and first guess if inner and outer
   ///        geometryData are different. Used in constructors.
   void interpolateStates(
           const SaberBlockParametersBase & saberOuterBlockParams,
           const oops::GeometryData & outerGeometryData,
-          const oops::GeometryData & innerGeometryData,
           oops::FieldSet4D & fset4dXb,
           oops::FieldSet4D & fset4dFg) const;
 
@@ -203,14 +221,14 @@ class SaberOuterBlockChain {
                           const SaberBlockParametersBase & saberOuterBlockParams,
                           const oops::GeometryData & outerGeometryData,
                           const oops::Variables & outerVars,
-                          const oops::GeometryData & innerGeometryData,
-                          const oops::Variables & innerVars,
                           const oops::Variables & activeVars) const;
 
-  /// @brief Vector of all outer blocks.
+  /// @brief Vector of all outer blocks, paired with a boolean to indicate the application mode:
+  /// - true: right inverse mode
+  /// - false: direct mode
   /// TODO(AS): Need to expand this to create different outer blocks for different
   /// times for the 4D with multiple times on one MPI task.
-  std::vector<std::unique_ptr<SaberOuterBlockBase>> outerBlocks_;
+  std::vector<std::pair<std::shared_ptr<SaberOuterBlockBase>, bool>> outerBlocks_;
 };
 
 // -----------------------------------------------------------------------------
@@ -245,7 +263,7 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
   for (int jb = params.size()-1; jb >= 0; --jb) {
     // Initialize current outer geometry data
     const oops::GeometryData & currentOuterGeometryData = outerBlocks_.size() == 0 ?
-                                       geom.generic() : outerBlocks_.back()->innerGeometryData();
+      geom.generic() : innerGeometryData();
 
     // Initialize outer block
     const auto[saberOuterBlockParams,
@@ -261,10 +279,10 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
     // Update MODEL geometry validity, by checking whether the inner geometry data returned by
     // the last outer block shares the same reference as its own outer geometry data
     validModelGeom = validModelGeom &&
-      (&(outerBlocks_.back()->innerGeometryData()) == &currentOuterGeometryData);
+      (&(innerGeometryData()) == &currentOuterGeometryData);
 
     // Read and add model fields
-    outerBlocks_.back()->read(geom, validModelGeom, currentOuterVars);
+    outerBlocks_.back().first->read(geom, validModelGeom, currentOuterVars);
 
     // Remove element from inner parameters
     innerParams.pop_back();
@@ -281,14 +299,14 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
     } else if (saberOuterBlockParams.doRead()) {
       // Read data
       oops::Log::info() << "Info     : Read data" << std::endl;
-      outerBlocks_.back()->read();
+      outerBlocks_.back().first->read();
     }
 
     if (saberOuterBlockParams.forceWrite.value()) {
       // Write data
       oops::Log::info() << "Info     : Write data" << std::endl;
-      outerBlocks_.back()->write(geom, validModelGeom, currentOuterVars);
-      outerBlocks_.back()->write();
+      outerBlocks_.back().first->write(geom, validModelGeom, currentOuterVars);
+      outerBlocks_.back().first->write();
     }
 
     if (!conf.getBool("iterative ensemble loading", false)) {
@@ -307,25 +325,21 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
         // Left inverse multiplication on ensemble members
         oops::Log::info() << "Info     : Left inverse multiplication on ensemble members"
                         << std::endl;
-        if (outerBlocks_.back()->skipInverse()) {
+        if (outerBlocks_.back().first->skipInverse()) {
             oops::Log::info()
                     << "Info     : Warning: left inverse multiplication skipped for block "
-                    << outerBlocks_.back()->blockName() << std::endl;
+                    << outerBlocks_.back().first->blockName() << std::endl;
         } else if (fsetEns) {
           for (size_t jj = 0; jj < fsetEns->size(); ++jj) {
-            outerBlocks_.back()->leftInverseMultiply((*fsetEns)[jj]);
+            outerBlocks_.back().first->leftInverseMultiply((*fsetEns)[jj]);
           }
         }
       }
     }
 
-    // Inner geometry data and variables & consistency check with active variables
-    auto[innerGeometryData, innerVars] = getInnerObjects(activeVars, currentOuterVars);
-
     // Left inverse multiplication on xb and fg if inner and outer Geometry is different
     interpolateStates(saberOuterBlockParams,
                       currentOuterGeometryData,
-                      innerGeometryData,
                       fset4dXb,
                       fset4dFg);
 
@@ -334,8 +348,6 @@ SaberOuterBlockChain::SaberOuterBlockChain(const oops::Geometry<MODEL> & geom,
                        saberOuterBlockParams,
                        currentOuterGeometryData,
                        currentOuterVars,
-                       innerGeometryData,
-                       innerVars,
                        activeVars);
   }
   oops::Log::trace() << "SaberOuterBlockChain ctor done" << std::endl;
@@ -359,7 +371,7 @@ void SaberOuterBlockChain::calibrateBlock(
     oops::Log::info() << "Info     : Iterative calibration" << std::endl;
 
     // Initialization
-    outerBlocks_.back()->iterativeCalibrationInit();
+    outerBlocks_.back().first->iterativeCalibrationInit();
 
     // Get ensemble size
     const size_t nens = getNensFromConfig(conf);
@@ -378,24 +390,26 @@ void SaberOuterBlockChain::calibrateBlock(
 
       // Use FieldSet in the central block
       oops::Log::info() << "Info     : Use FieldSet in the central block" << std::endl;
-      outerBlocks_.back()->iterativeCalibrationUpdate(fset);
+      outerBlocks_.back().first->iterativeCalibrationUpdate(fset);
     }
 
     // Finalization
     oops::Log::info() << "Info     : Finalization" << std::endl;
-    outerBlocks_.back()->iterativeCalibrationFinal();
+    outerBlocks_.back().first->iterativeCalibrationFinal();
   } else {
     // Direct calibration
     oops::Log::info() << "Info     : Direct calibration" << std::endl;
-    outerBlocks_.back()->directCalibration(fsetEns);
+    outerBlocks_.back().first->directCalibration(fsetEns);
   }
 
   // Write calibration data
   oops::Log::info() << "Info     : Write calibration data" << std::endl;
-  outerBlocks_.back()->write(geom, validModelGeom, currentOuterVars);
-  outerBlocks_.back()->write();
+  outerBlocks_.back().first->write(geom, validModelGeom, currentOuterVars);
+  outerBlocks_.back().first->write();
 
   oops::Log::trace() << "calibrateBlock done" << std::endl;
 }
+
 // -----------------------------------------------------------------------------
+
 }  // namespace saber

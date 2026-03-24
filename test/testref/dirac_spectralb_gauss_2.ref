@@ -7,11 +7,9 @@ Input Dirac increment:
     + max    = 1.0000000000000000e+00
     + mean   = 1.2400793650793651e-05
     + stddev = 3.5214760613667857e-03
-
   - northward_wind (70 levels):
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00
-
 Covariance(SABER) diagnostics:
 - Variances at Dirac points:
   + Value for variable eastward_wind, subwindow 0, at (longitude, latitude, vertical index) point (180.00000, 3.67270, 1): 2.7559914744362236e-02
@@ -28,13 +26,11 @@ Covariance(SABER) * Increment:
     + max    = 2.5057002486461000e-01
     + mean   = -1.8640115086053960e-04
     + stddev = 1.2456180353216989e-02
-
   - northward_wind (70 levels):
     + min    = -1.4440853283813354e-01
     + max    = 2.0509840868964346e-01
     + mean   = -1.6337417289272172e-04
     + stddev = 1.1466576541323683e-02
-
 Covariance(SABER1_SABER) diagnostics:
 - Variances at Dirac points:
   + Value for variable eastward_wind, subwindow 0, at (longitude, latitude, vertical index) point (180.00000, 3.67270, 1): 7.6839273046207441e-04
@@ -51,13 +47,11 @@ Covariance(SABER1_SABER) * Increment:
     + max    = 1.1929208585877088e-02
     + mean   = -1.1155031470326002e-05
     + stddev = 7.5451262468764692e-04
-
   - northward_wind (70 levels):
     + min    = -7.2275321615881787e-03
     + max    = 5.8464305185313399e-03
     + mean   = 4.2784689703527931e-06
     + stddev = 6.1977841590212955e-04
-
 Covariance(SABER2_SABER) diagnostics:
 - Variances at Dirac points:
   + Value for variable eastward_wind, subwindow 0, at (longitude, latitude, vertical index) point (180.00000, 3.67270, 1): 1.4718740378137626e-02
@@ -74,13 +68,11 @@ Covariance(SABER2_SABER) * Increment:
     + max    = 1.3613974633802667e-01
     + mean   = -2.5507617138879115e-04
     + stddev = 7.4173080802602820e-03
-
   - northward_wind (70 levels):
     + min    = -9.0197374916792403e-02
     + max    = 1.1808324552875978e-01
     + mean   = 2.9607023176549255e-05
     + stddev = 6.8665428201692422e-03
-
 Covariance(SABER3_SABER) diagnostics:
 - Variances at Dirac points:
   + Value for variable eastward_wind, subwindow 0, at (longitude, latitude, vertical index) point (180.00000, 3.67270, 1): 1.2072781635762538e-02
@@ -97,7 +89,6 @@ Covariance(SABER3_SABER) * Increment:
     + max    = 1.0283883500836843e-01
     + mean   = 7.9830051998578660e-05
     + stddev = 5.3454045379432869e-03
-
   - northward_wind (70 levels):
     + min    = -6.4781710086777466e-02
     + max    = 8.6322222774967539e-02

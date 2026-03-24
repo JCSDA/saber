@@ -7,8 +7,12 @@ if( atlas_TRANS_FOUND OR atlas_ECTRANS_FOUND )
     list(APPEND spectralb_src_files_list
     CovarianceStatisticsUtils.cc
     CovarianceStatisticsUtils.h
+    SpectralAnalyticalCorrelation.cc
+    SpectralAnalyticalCorrelation.h
     SpectralAnalyticalFilter.cc
     SpectralAnalyticalFilter.h
+    SpectralAnalyticalImpl.cc
+    SpectralAnalyticalImpl.h
     spectralb_covstats_interface.h
     spectralb_covstats_interface.F90
     spectralbParameters.h

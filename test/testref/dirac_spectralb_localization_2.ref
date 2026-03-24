@@ -41,7 +41,6 @@ Adjoint test for block mo vertical interpolation for localization passed
 Adjoint test for block mo_vertical_localization passed
 Adjoint test for block spectral to gauss passed
 Adjoint test for block spectral analytical filter passed
-Adjoint test for block ID passed
 Covariance(SABER) diagnostics:
 - Variances at Dirac points:
   + Value for variable var1, subwindow 0, at (longitude, latitude, vertical index) point (240.00000, 84.37646, 65): 9.8944853351932038e-01

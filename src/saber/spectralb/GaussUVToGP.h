@@ -56,7 +56,6 @@ class GaussUVToGP : public SaberOuterBlockBase {
   void print(std::ostream &) const override;
 
   Parameters_ params_;
-  const oops::Variables outerVars_;
   const oops::Variables innerVars_;
   const oops::Variables activeOuterVars_;
   const oops::Variables innerOnlyVars_;

@@ -94,9 +94,7 @@ VertProj::VertProj(const oops::GeometryData & outerGeometryData,
                    const Parameters_ & params,
                    const oops::FieldSet3D & xb,
                    const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime()),
-    outerGeometryData_(outerGeometryData),
-    outerVars_(outerVars),
+  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     activeVars_(params.activeVars.value().get_value_or(outerVars)),
     innerVars_(createInnerVars(params.innerVerticalLevels, activeVars_, outerVars))
 {

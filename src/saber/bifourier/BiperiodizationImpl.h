@@ -74,7 +74,7 @@ class BiperiodizationImpl {
   void multiplyAD(atlas::FieldSet &) const;
   void leftInverseMultiply(atlas::FieldSet &) const;
 
-  const bool sameGrid() const
+  bool sameGrid() const
     {return sameGrid_;}
 
  private:

@@ -47,7 +47,7 @@ StdDev::StdDev(const oops::GeometryData & outerGeometryData,
                const Parameters_ & params,
                const oops::FieldSet3D & xb,
                const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime()),
+  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     innerVars_(outerVars),
     params_(params),
@@ -299,8 +299,8 @@ void StdDev::directCalibration(const oops::FieldSets & fsetEns) {
   oops::Log::trace() << classname() << "::directCalibration starting" << std::endl;
 
   // Initialize
-  oops::FieldSet3D mean(this->validTime(), innerGeometryData_.comm());
-  oops::FieldSet3D var(this->validTime(), innerGeometryData_.comm());
+  oops::FieldSet3D mean(validTime_, innerGeometryData_.comm());
+  oops::FieldSet3D var(validTime_, innerGeometryData_.comm());
   for (const auto & innerVar : innerVars_) {
     mean.fieldSet().add(innerGeometryData_.functionSpace().createField<double>(
              atlas::option::name(innerVar.name()) |
@@ -351,8 +351,8 @@ void StdDev::iterativeCalibrationInit() {
   iterativeN_ = 0;
 
   // Create mean and variance fieldsets
-  iterativeMean_.reset(new oops::FieldSet3D(this->validTime(), innerGeometryData_.comm()));
-  iterativeVar_.reset(new oops::FieldSet3D(this->validTime(), innerGeometryData_.comm()));
+  iterativeMean_.reset(new oops::FieldSet3D(validTime_, innerGeometryData_.comm()));
+  iterativeVar_.reset(new oops::FieldSet3D(validTime_, innerGeometryData_.comm()));
   for (const auto & innerVar : innerVars_) {
     iterativeMean_->fieldSet().add(innerGeometryData_.functionSpace().createField<double>(
                        atlas::option::name(innerVar.name()) |

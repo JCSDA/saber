@@ -119,9 +119,6 @@ class SaberCentralBlock : public util::Printable {
   // Block multiplication
   void multiply(oops::FieldSet3D &) const;
 
-  // Block filtering; by default calls multiply
-  void filter(oops::FieldSet3D & fset) const;
-
   // Setup / calibration methods
 
   // Read block data

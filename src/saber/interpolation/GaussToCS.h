@@ -86,7 +86,10 @@ class GaussToCS : public SaberOuterBlockBase {
 
   void multiply(oops::FieldSet3D &) const override;
   void multiplyAD(oops::FieldSet3D &) const override;
-  void leftInverseMultiply(oops::FieldSet3D &) const override;
+  void leftInverseMultiply(oops::FieldSet3D & fset) const override
+    {inverseMultiply(fset);}
+  void rightInverseMultiply(oops::FieldSet3D & fset) const override
+    {inverseMultiply(fset);}
   void directCalibration(const oops::FieldSets &) override;
 
   oops::FieldSet3D generateInnerFieldSet(const oops::GeometryData & innerGeometryData,
@@ -97,6 +100,7 @@ class GaussToCS : public SaberOuterBlockBase {
 
  private:
   void print(std::ostream &) const override;
+  void inverseMultiply(oops::FieldSet3D &) const;
 
   oops::Variables innerVars_;
   oops::Variables activeVars_;

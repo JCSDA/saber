@@ -79,9 +79,6 @@ class SaberParametricBlockChain : public SaberBlockChainBase {
                             const eckit::Configuration & conf);
   ~SaberParametricBlockChain() = default;
 
-  /// @brief Filter the increment
-  void filter(oops::FieldSet4D &) const;
-
   /// @brief Randomize the increment according to this B matrix.
   void randomize(oops::FieldSet4D &) const;
   /// @brief Multiply the increment by this B matrix.

@@ -29,7 +29,7 @@ Input Dirac increment:
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00
 Adjoint test for block mo_dry_air_density_from_exnerm1 passed
-skipping inverse test for block mo_dry_air_density_from_exnerm1
+Skipping inverse test for block mo_dry_air_density_from_exnerm1
 Adjoint test for block mo_super_mio passed
 Inner inverse test for block mo_super_mio passed: U Uinv (U x) == (U x)
 Outer inverse test for block mo_super_mio passed: Uinv U (Uinv x) == (Uinv x)
@@ -46,7 +46,7 @@ Adjoint test for block mo_hydrostatic_pressure_levels_minus_one passed
 Inner inverse test for block mo_hydrostatic_pressure_levels_minus_one passed: U Uinv (U x) == (U x)
 Outer inverse test for block mo_hydrostatic_pressure_levels_minus_one passed: Uinv U (Uinv x) == (Uinv x)
 Adjoint test for block spectral to gauss passed
-skipping inverse test for block spectral to gauss
+Skipping inverse test for block spectral to gauss
 Adjoint test for block spectral covariance passed
 Covariance(SABER) diagnostics:
 - Variances at Dirac points:

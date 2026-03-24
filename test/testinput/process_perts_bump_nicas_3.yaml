@@ -13,28 +13,27 @@ background:
 bands:
 - band:
     filter:
-      saber central block:
-        saber block name: BUMP_NICAS
-        calibration:
-          general:
-            testing: true
-            universe length-scale: 10000.0e3
-          io:
-            data directory: testdata
-            files prefix: process_perts_bump_nicas_3/_MPI_-_OMP_
-          drivers:
-            multivariate strategy: univariate
-            compute nicas: true
-            write local nicas: true
-          nicas:
-            filter mode: true
-            filter resolution: 4.0
-            explicit length-scales: true
-            horizontal length-scale:
-            - groups:
-              - air_horizontal_streamfunction
-              value: 4000.0e3
-            same horizontal convolution: true
+    - saber block name: BUMP_NICASFilter
+      read:
+        general:
+          testing: true
+          universe length-scale: 10000.0e3
+        io:
+          data directory: testdata
+          files prefix: process_perts_bump_nicas_3/_MPI_-_OMP_
+        drivers:
+          multivariate strategy: univariate
+          compute nicas: true
+          write local nicas: true
+        nicas:
+          filter mode: true
+          filter resolution: 4.0
+          explicit length-scales: true
+          horizontal length-scale:
+          - groups:
+            - air_horizontal_streamfunction
+            value: 4000.0e3
+          same horizontal convolution: true
   output:
     model write:
       filepath: testdata/process_perts_bump_nicas_3/filtered_pert_mb%MEM%_wb1

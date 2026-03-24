@@ -61,11 +61,10 @@ PsiChiToUV::PsiChiToUV(const oops::GeometryData & outerGeometryData,
                        const Parameters_ & params,
                        const oops::FieldSet3D & xb,
                        const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime()),
+  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     innerVars_(createInnerVars(outerVars)),
-    outerVars_(outerVars),
-    activeVars_(createActiveVars(innerVars_, outerVars_)),
+    activeVars_(createActiveVars(innerVars_, outerVars)),
     bumpParams_(params.calibrationParams.value() != boost::none ? *params.calibrationParams.value()
       : *params.readParams.value()),
     bump_(new BUMP(outerGeometryData, activeVars_, covarConf, bumpParams_,

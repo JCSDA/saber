@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "oops/base/FieldSet3D.h"
+#include "oops/util/for_each.h"
 
 #include "saber/oops/Utilities.h"
 
@@ -136,5 +137,53 @@ eckit::LocalConfiguration getEnsSubconfig(const eckit::Configuration & conf, siz
   }
   return memConf;
 }
+
+// -----------------------------------------------------------------------------
+
+void cvToFset(const atlas::Field & cv,
+              oops::FieldSet3D & fset,
+              const size_t & offset,
+              const oops::Variables & vars) {
+  // Copy from control vector to fieldset
+  size_t fld_offset = offset;
+  const auto cvView = atlas::array::make_view<double, 1>(cv);
+  for (const auto & var : vars) {
+    auto & field = fset[var.name()];
+    size_t vt_nodes = field.shape(1);
+    auto view = atlas::array::make_view<double, 2>(field);
+    util::for_each_index(
+      util::make_index_space_2d(util::IndexRange::include_halo, field),
+      [=](atlas::idx_t hz_index, atlas::idx_t vt_index) mutable {
+        size_t index = fld_offset + vt_index + hz_index*vt_nodes;
+        view(hz_index, vt_index) = cvView(index);
+      });
+    fld_offset += field.size();
+  }
+}
+
+// -----------------------------------------------------------------------------
+
+void fsetToCv(const oops::FieldSet3D & fset,
+              atlas::Field & cv,
+              const size_t & offset,
+              const oops::Variables & vars) {
+  // Copy from fieldset to control vector
+  size_t fld_offset = offset;
+  auto cvView = atlas::array::make_view<double, 1>(cv);
+  for (const auto & var : vars) {
+    const auto & field = fset[var.name()];
+    const auto view = atlas::array::make_view<double, 2>(field);
+    size_t vt_nodes = field.shape(1);
+    util::for_each_index(
+      util::make_index_space_2d(util::IndexRange::include_halo, field),
+      [=](atlas::idx_t hz_index, atlas::idx_t vt_index) mutable {
+        size_t index = fld_offset + vt_index + hz_index*vt_nodes;
+        cvView(index) = view(hz_index, vt_index);
+      });
+    fld_offset += field.size();
+  }
+}
+
+// -----------------------------------------------------------------------------
 
 }  // namespace saber

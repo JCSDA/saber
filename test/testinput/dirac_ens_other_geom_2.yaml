@@ -48,9 +48,7 @@ background error:
         # FunctionSpace-specific localization, not on model Geometry.
         localization:
             saber central block:
-              saber block name: ID
-            saber outer blocks:
-            - saber block name: spectral analytical filter
+              saber block name: spectral analytical filter
               # full horizontal localization (infinitely small length-scales)
               # (although full inter-level and inter-variables localization)
               function:
@@ -58,7 +56,7 @@ background error:
                 waveband min: 0
                 waveband max: 14
                 waveband amplitude: 1.0
-              normalize filter variance: true
+            saber outer blocks:
             - saber block name: spectral to gauss
         saber outer blocks:
         - saber block name: gauss to cubed-sphere-dual
@@ -89,14 +87,12 @@ background error:
         # FunctionSpace-specific localization, not on model Geometry.
         localization:
             saber central block:
-              saber block name: ID
-            saber outer blocks:
-            - saber block name: spectral analytical filter
+              saber block name: spectral analytical filter
             # Moderate horizontal localization
             # (although full inter-level and inter-variables localization)
               function:
                 horizontal daley length: 5000e3  # (in m)
-              normalize filter variance: true
+            saber outer blocks:
             - saber block name: spectral to gauss
         saber outer blocks:
         - saber block name: gauss to cubed-sphere-dual
@@ -121,9 +117,7 @@ background error:
         # FunctionSpace-specific localization, on model Geometry.
         localization:
             saber central block:
-              saber block name: ID
-            saber outer blocks:
-            - saber block name: spectral analytical filter
+              saber block name: spectral analytical filter
               # no horizontal localization (large length-scales)
               # (although full inter-level and inter-variables localization)
               function:
@@ -131,7 +125,7 @@ background error:
                 waveband min: 0
                 waveband max: 0
                 waveband amplitude: 1.0
-              normalize filter variance: true
+            saber outer blocks:
             - saber block name: spectral to gauss
             - saber block name: gauss to cubed-sphere-dual
               gauss grid uid: F14

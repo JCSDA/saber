@@ -98,9 +98,6 @@ class Biperiodization : public SaberOuterBlockBase {
   // Inner geometry data
   std::unique_ptr<oops::GeometryData> innerGeometryData_;
 
-  // Outer geometry data
-  const oops::GeometryData & outerGeometryData_;
-
   // Communicator
   const eckit::mpi::Comm & comm_;
 

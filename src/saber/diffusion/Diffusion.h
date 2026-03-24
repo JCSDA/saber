@@ -4,9 +4,9 @@
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
+
 #pragma once
 
-#include <memory>
 #include <queue>
 #include <string>
 #include <utility>
@@ -15,6 +15,7 @@
 #include "atlas/field.h"
 
 #include "saber/blocks/SaberCentralBlockBase.h"
+#include "saber/diffusion/DiffusionImpl.h"
 #include "saber/diffusion/DiffusionParameters.h"
 
 // forward declarations
@@ -23,6 +24,8 @@ namespace oops {
 }
 
 namespace saber {
+
+// -----------------------------------------------------------------------------
 
 /// The diffusion based correlation/localization saber central block. Diffusion (explicit
 /// diffusion in this case) is best for small correlation lengths. If you have large
@@ -39,33 +42,33 @@ class Diffusion : public saber::SaberCentralBlockBase {
             const oops::FieldSet3D &,
             const oops::FieldSet3D &);
 
-  void randomize(oops::FieldSet3D &) const override;
-  void multiply(oops::FieldSet3D &) const override;
-  void filter(oops::FieldSet3D &) const override;
+  void randomize(oops::FieldSet3D & fset) const override
+    {diffusion::randomize(geometryData(), groups_, fset);}
+  void multiply(oops::FieldSet3D & fset) const override
+    {diffusion::multiply(geometryData(), groups_, fset);}
 
-  void read() override;
-  std::vector<std::pair<std::string, eckit::LocalConfiguration>> getReadConfs() const override;
-  void setReadFields(const std::vector<oops::FieldSet3D> &) override;
-  void directCalibration(const oops::FieldSets &) override;
+  void read() override
+    {diffusion::read(geometryData(), groups_, params_);}
+  std::vector<std::pair<std::string, eckit::LocalConfiguration>> getReadConfs() const override
+    {return diffusion::getReadConfs(params_);}
+  void setReadFields(const std::vector<oops::FieldSet3D> & fvec) override
+    {return diffusion::setReadFields(fvec, calibrateReadFields_);}
+  void directCalibration(const oops::FieldSets &) override
+    {return diffusion::directCalibration(geometryData(), groups_, calibrateReadFields_, params_);}
 
-  size_t ctlVecSize() const override {return ctlVecSize_;}
+  size_t ctlVecSize() const override
+    {return ctlVecSize_;}
 
  private:
   void print(std::ostream &) const override {}
 
-  const std::shared_ptr<oops::Diffusion::DerivedGeom> diffusionGeom_;
   size_t ctlVecSize_;
   Parameters_ params_;
-  oops::Variables vars_;
   std::queue<atlas::Field> calibrateReadFields_;
 
-  struct Group {
-    oops::Variables vars;
-    atlas::FieldSet normalization;
-    std::unique_ptr<oops::Diffusion> diffusion;
-    bool vtDuplicated = false;
-    bool varDuplicated = false;
-  };
-  std::vector<Group> groups_;
+  std::vector<diffusion::Group> groups_;
 };
+
+// -----------------------------------------------------------------------------
+
 }  // namespace saber

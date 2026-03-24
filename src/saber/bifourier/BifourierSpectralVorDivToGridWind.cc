@@ -24,9 +24,8 @@ BifourierSpectralVorDivToGridWind::BifourierSpectralVorDivToGridWind(
   const Parameters_ & params,
   const oops::FieldSet3D & xb,
   const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime()),
+  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     comm_(outerGeometryData.comm()),
-    outerVars_(outerVars),
     params_(params),
     fftBackend_(params_.transform.value().fftBackend.value()),
     data_(xb.validTime(), comm_)

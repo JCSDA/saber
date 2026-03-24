@@ -28,16 +28,15 @@ Biperiodization::Biperiodization(const oops::GeometryData & outerGeometryData,
                                  const Parameters_ & params,
                                  const oops::FieldSet3D & xb,
                                  const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime()),
-    outerGeometryData_(outerGeometryData),
-    comm_(outerGeometryData_.comm()),
+  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+    comm_(outerGeometryData.comm()),
     innerVars_(outerVars),
     params_(params)
 {
   oops::Log::trace() << classname() << "::Biperiodization starting" << std::endl;
 
   // Setup biperiodization implementation
-  biper_.reset(new BiperiodizationImpl(outerGeometryData_, outerVars, params_.biperParams.value()));
+  biper_.reset(new BiperiodizationImpl(outerGeometryData, outerVars, params_.biperParams.value()));
 
   // Empty inner FieldSet
   atlas::FieldSet innerFset;
@@ -45,12 +44,12 @@ Biperiodization::Biperiodization(const oops::GeometryData & outerGeometryData,
   if (!biper_->sameGrid()) {
     // Generate inner GeometryData
     innerGeometryData_.reset(new oops::GeometryData(biper_->innerFunctionSpace(), innerFset,
-      outerGeometryData_.levelsAreTopDown(), comm_));
+      outerGeometryData.levelsAreTopDown(), comm_));
   }
 
   if (params_.read.value() != boost::none) {
     // Create input test fieldset
-    inputTestFset_.reset(new oops::FieldSet3D(xb.validTime(), outerGeometryData_.comm()));
+    inputTestFset_.reset(new oops::FieldSet3D(xb.validTime(), outerGeometryData.comm()));
   }
 
   oops::Log::trace() << classname() << "::Biperiodization done" << std::endl;

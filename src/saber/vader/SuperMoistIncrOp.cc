@@ -39,7 +39,7 @@ SuperMoistIncrOp::SuperMoistIncrOp(const oops::GeometryData & outerGeometryData,
                                    const Parameters_ & params,
                                    const oops::FieldSet3D & xb,
                                    const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime()),
+  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     innerVars_(getUnionOfInnerActiveAndOuterVars(params, outerVars)),
     intermediateTempVars_(params.intermediateTempVars(outerVars)),

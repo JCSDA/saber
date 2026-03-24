@@ -27,8 +27,8 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
                              const Parameters_ & params,
                              const oops::FieldSet3D & xb,
                              const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime()),
-    params_(params), outerGeomData_(outerGeometryData), innerVars_(outerVars),
+  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
+    params_(params), innerVars_(outerVars),
     activeVars_(params.activeVars.value().get_value_or(outerVars)),
     invVars_(params.inverseVars.value())
 {
@@ -46,7 +46,7 @@ Interpolation::Interpolation(const oops::GeometryData & outerGeometryData,
   } else if (params.interpType.value() == "regional") {
     regionalInterp_.reset(new atlas::Interpolation(
        atlas::util::Config("type", "regional-linear-2d"),
-       innerGeomData_->functionSpace(), outerGeomData_.functionSpace()));
+       innerGeomData_->functionSpace(), outerGeometryData.functionSpace()));
   } else {
     throw eckit::UserError("wrong interpolator type: " + params.interpType.value(), Here());
   }
@@ -73,7 +73,7 @@ void Interpolation::multiply(oops::FieldSet3D & fieldSet) const {
   if (regionalInterp_) {
     for (const auto & var : activeVars_) {
       const atlas::Field sourceField = sourceFieldSet[var.name()];
-      atlas::Field targetField = outerGeomData_.functionSpace().createField<double>(
+      atlas::Field targetField = outerGeometryData_.functionSpace().createField<double>(
           atlas::option::name(var.name()) | atlas::option::levels(sourceField.levels()));
       targetField.metadata() = sourceField.metadata();
       auto targetView = atlas::array::make_view<double, 2>(targetField);
@@ -139,25 +139,25 @@ void Interpolation::multiplyAD(oops::FieldSet3D & fieldSet) const {
 
 // -----------------------------------------------------------------------------
 
-void Interpolation::leftInverseMultiply(oops::FieldSet3D & fieldSet) const {
+void Interpolation::inverseMultiply(oops::FieldSet3D & fieldSet) const {
   // If specific `state variables to inverse` were requested in the yaml, apply the (inverse)
   // interpolator to those variables only. Otherwise, apply the (inverse) interpolator to the
   // whole fieldset.
-  // NOTE that in a SaberOuterBlockChain, the logic to call Interpolation::leftInverseMultiply
+  // NOTE that in a SaberOuterBlockChain, the logic to call Interpolation::inverseMultiply
   // includes checking for the existence of the `state variables to inverse` key. Thus, omitting
-  // the yaml key is likely to skip the leftInverseMultiply completely.
+  // the yaml key is likely to skip the inverseMultiply completely.
   const oops::Variables invVars = (invVars_.size() > 0 ? invVars_ : fieldSet.variables());
 
   // Prepare inverse interpolator
   if (!inverseGlobalInterp_ && globalInterp_) {
     inverseGlobalInterp_.reset(new oops::GlobalInterpolator(
-      params_.inverseInterpConf.value(), outerGeomData_,
+      params_.inverseInterpConf.value(), outerGeometryData_,
       innerGeomData_->functionSpace(), innerGeomData_->comm()));
   }
   if (!inverseRegionalInterp_ && regionalInterp_) {
     inverseRegionalInterp_.reset(new atlas::Interpolation(
        atlas::util::Config("type", "regional-linear-2d"),
-       outerGeomData_.functionSpace(), innerGeomData_->functionSpace()));
+       outerGeometryData_.functionSpace(), innerGeomData_->functionSpace()));
   }
 
   // Temporary FieldSet of active variables for interpolation source
@@ -174,7 +174,7 @@ void Interpolation::leftInverseMultiply(oops::FieldSet3D & fieldSet) const {
   if (inverseRegionalInterp_) {
     for (const auto & var : invVars) {
       const atlas::Field sourceField = sourceFieldSet[var.name()];
-      atlas::Field targetField = outerGeomData_.functionSpace().createField<double>(
+      atlas::Field targetField = outerGeometryData_.functionSpace().createField<double>(
           atlas::option::name(var.name()) | atlas::option::levels(sourceField.levels()));
       targetField.metadata() = sourceField.metadata();
       auto targetView = atlas::array::make_view<double, 2>(targetField);
@@ -187,14 +187,14 @@ void Interpolation::leftInverseMultiply(oops::FieldSet3D & fieldSet) const {
   // Reset
   fieldSet.fieldSet() = targetFieldSet;
 
-  oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
+  oops::Log::trace() << classname() << "::inverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
 
 oops::FieldSet3D Interpolation::generateInnerFieldSet(const oops::GeometryData & innerGeometryData,
                                                       const oops::Variables & innerVars) const {
-  oops::FieldSet3D fset(this->validTime(), innerGeometryData.comm());
+  oops::FieldSet3D fset(validTime_, innerGeometryData.comm());
   fset.deepCopy(util::createSmoothFieldSet(innerGeometryData.comm(),
                                            innerGeometryData.functionSpace(),
                                            innerVars));
@@ -205,7 +205,7 @@ oops::FieldSet3D Interpolation::generateInnerFieldSet(const oops::GeometryData &
 
 oops::FieldSet3D Interpolation::generateOuterFieldSet(const oops::GeometryData & outerGeometryData,
                                                       const oops::Variables & outerVars) const {
-  oops::FieldSet3D fset(this->validTime(), outerGeometryData.comm());
+  oops::FieldSet3D fset(validTime_, outerGeometryData.comm());
   fset.deepCopy(util::createSmoothFieldSet(outerGeometryData.comm(),
                                            outerGeometryData.functionSpace(),
                                            outerVars));

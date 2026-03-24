@@ -29,7 +29,7 @@ Input Dirac increment:
     + min    = 0.0000000000000000e+00
     + max    = 0.0000000000000000e+00
 Adjoint test for block mo_dry_air_density passed
-skipping inverse test for block mo_dry_air_density
+Skipping inverse test for block mo_dry_air_density
 Adjoint test for block mo_super_mio passed
 Inner inverse test for block mo_super_mio passed: U Uinv (U x) == (U x)
 Outer inverse test for block mo_super_mio passed: Uinv U (Uinv x) == (Uinv x)

@@ -109,7 +109,6 @@ class ShadowLevels : public SaberOuterBlockBase {
  private:
   const oops::GeometryData & gdata_;
   const eckit::mpi::Comm & comm_;
-  oops::Variables outerVars_;
   oops::Variables activeVars_;
   const std::string suffix_;
   ParametersBase_ params_;

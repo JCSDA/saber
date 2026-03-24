@@ -355,4 +355,18 @@ void readEnsembleMember(const oops::Geometry<MODEL> & geom,
 
 // -----------------------------------------------------------------------------
 
+void cvToFset(const atlas::Field & cv,
+              oops::FieldSet3D & fset,
+              const size_t & offset,
+              const oops::Variables & vars);
+
+// -----------------------------------------------------------------------------
+
+void fsetToCv(const oops::FieldSet3D & fset,
+              atlas::Field & cv,
+              const size_t & offset,
+              const oops::Variables & vars);
+
+// -----------------------------------------------------------------------------
+
 }  // namespace saber

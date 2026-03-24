@@ -26,27 +26,25 @@ background:
 bands:
 - band:
     filter:
-      saber central block:
-        saber block name: ID
-      saber outer blocks:
-      - saber block name: spectral analytical filter
-        function:
-          horizontal daley length: 5008e3
-        normalize filter variance: false
-        active variables:
-        - air_horizontal_streamfunction
-        - air_horizontal_velocity_potential
-        - mu
-        - unbalanced_pressure_levels_minus_one   
-      - saber block name: spectral to gauss
-        active variables:
-        - air_horizontal_streamfunction
-        - air_horizontal_velocity_potential
-        - eastward_wind
-        - mu
-        - northward_wind
-        - unbalanced_pressure_levels_minus_one
-        filter mode: true # instead of running the adjoint code it runs the inverse
+    - saber block name: spectral to gauss
+      right inverse: true
+      reuse already created block: true
+    - saber block name: spectral analytical filter
+      function:
+        horizontal daley length: 5008e3
+      active variables:
+      - air_horizontal_streamfunction
+      - air_horizontal_velocity_potential
+      - mu
+      - unbalanced_pressure_levels_minus_one   
+    - saber block name: spectral to gauss
+      active variables:
+      - air_horizontal_streamfunction
+      - air_horizontal_velocity_potential
+      - eastward_wind
+      - mu
+      - northward_wind
+      - unbalanced_pressure_levels_minus_one
 - output:
     generic write:
       filepath: testdata/process_perts_from_gauss_perts_1/filtered_pert_grid_%GRID%_mb%MEM%_wb2

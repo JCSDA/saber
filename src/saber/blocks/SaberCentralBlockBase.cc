@@ -65,7 +65,6 @@ SaberCentralBlockFactory::createParameters(const std::string &name) {
   return it->second->makeParameters();
 }
 
-
 // -----------------------------------------------------------------------------
 
 }  // namespace saber

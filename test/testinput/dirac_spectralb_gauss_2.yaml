@@ -98,14 +98,12 @@ background error:
               - northward_wind
         localization:
             saber central block:
-              saber block name: ID
-            saber outer blocks:
-            - saber block name: spectral analytical filter
+              saber block name: spectral analytical filter
               active variables:
               - summed_variables
               function:
                 horizontal daley length: 6000e3  # Possibly larger localization
-              normalize filter variance: true
+            saber outer blocks:
             - saber block name: spectral to gauss
               active variables:
               - summed_variables
@@ -161,14 +159,12 @@ background error:
               - northward_wind
         localization:
             saber central block:
-              saber block name: ID
-            saber outer blocks:
-            - saber block name: spectral analytical filter
+              saber block name: spectral analytical filter
               active variables:
               - summed_variables
               function:
                 horizontal daley length: 6000e3  # Possibly larger localization
-              normalize filter variance: true
+            saber outer blocks:
             - saber block name: spectral to gauss
               active variables:
               - summed_variables
@@ -224,14 +220,12 @@ background error:
               - northward_wind
         localization:
             saber central block:
-              saber block name: ID
-            saber outer blocks:
-            - saber block name: spectral analytical filter
+              saber block name: spectral analytical filter
               active variables:
               - summed_variables
               function:
                 horizontal daley length: 6000e3  # Possibly larger localization
-              normalize filter variance: true
+            saber outer blocks:
             - saber block name: spectral to gauss
               active variables:
               - summed_variables

@@ -372,17 +372,6 @@ SaberCentralBlock::SaberCentralBlock(const oops::GeometryData & outerGeom,
 
 // -----------------------------------------------------------------------------
 
-void SaberCentralBlock::filter(oops::FieldSet3D & fset3d) const {
-  if (strategy_ == "deprecated") {
-    // Deprecated mode
-    groupCentralBlocks_[0]->filter(fset3d);
-  } else {
-    throw eckit::Exception("Filter mode should disappear soon, no need to implement it.", Here());
-  }
-}
-
-// -----------------------------------------------------------------------------
-
 void SaberCentralBlock::multiply(oops::FieldSet3D & fset3d) const {
   oops::Log::trace() << "SaberCentralBlock::multiply starting" << std::endl;
 
@@ -691,7 +680,7 @@ void SaberCentralBlock::directCalibration(const oops::FieldSets & fsets) {
   for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
     if (doCalibration_[igroup]) {
       if (groupAuxOuterBlockChains_[igroup]) {
-        // Applying the left-inverse of the auxiliary outer block chain would require a deep-copy
+        // Applying the left inverse of the auxiliary outer block chain would require a deep-copy
         // of the ensemble, not allowed here. If needed, ensemble-based calibration should be done
         // outside of the multivariate central block framework.
         ASSERT(fsets.size() == 0);

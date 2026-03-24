@@ -26,7 +26,7 @@ SpectralToSpectral::SpectralToSpectral(const oops::GeometryData & outerGeometryD
                                        const SpectralToSpectralParameters & params,
                                        const oops::FieldSet3D & xb,
                                        const oops::FieldSet3D & fg) :
-    SaberOuterBlockBase(params, xb.validTime()),
+    SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerFunctionSpace_(2 * params.inputTruncation.value() - 1),
     outerFunctionSpace_(outerGeometryData.functionSpace()),
     innerGeometryData_(innerFunctionSpace_,

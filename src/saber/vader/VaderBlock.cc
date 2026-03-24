@@ -62,8 +62,7 @@ VaderBlock::VaderBlock(const oops::GeometryData & outerGeometryData,
                        const Parameters_ & params,
                        const oops::FieldSet3D & xb,
                        const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime()),
-    outerVars_(outerVars),
+  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     innerVars_(createInnerVars(outerVars, params.innerVars)),
     vader_(params.vader, outerBlockConf.getSubConfiguration("vader"))
@@ -79,7 +78,7 @@ VaderBlock::VaderBlock(const oops::GeometryData & outerGeometryData,
   oops::Log::trace() << classname() << "::VaderBlock starting" << std::endl;
   // Change variables in the background to inner variables
   // TODO(someone): perhaps this code will happen in the ErrorCovariance ctor?
-  oops::Variables neededVars = outerVars_;
+  oops::Variables neededVars = outerVars;
   atlas::FieldSet xb_outer = xb.fieldSet();
   oops::Variables ingredientVars = innerVars_;
 

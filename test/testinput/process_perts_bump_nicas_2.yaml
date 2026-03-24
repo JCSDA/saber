@@ -13,19 +13,18 @@ background:
 bands:
 - band:
     filter:
-      saber central block:
-        saber block name: BUMP_NICAS
-        read:
-          general:
-            testing: true
-            universe length-scale: 10000.0e3
-          io:
-            data directory: testdata
-            files prefix: process_perts_bump_nicas_2/_MPI_-_OMP_
-            overriding nicas file: process_perts_bump_nicas_1/_MPI_-_OMP__nicas
-          drivers:
-            multivariate strategy: univariate
-            read local nicas: true
+    - saber block name: BUMP_NICASFilter
+      read:
+        general:
+          testing: true
+          universe length-scale: 10000.0e3
+        io:
+          data directory: testdata
+          files prefix: process_perts_bump_nicas_2/_MPI_-_OMP_
+          overriding nicas file: process_perts_bump_nicas_1/_MPI_-_OMP__nicas
+        drivers:
+          multivariate strategy: univariate
+          read local nicas: true
   output:
     model write:
       filepath: testdata/process_perts_bump_nicas_2/filtered_pert_mb%MEM%_wb1

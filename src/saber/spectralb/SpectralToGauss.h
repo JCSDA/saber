@@ -57,7 +57,10 @@ class SpectralToGauss : public SaberOuterBlockBase {
 
   void multiply(oops::FieldSet3D &) const override;
   void multiplyAD(oops::FieldSet3D &) const override;
-  void leftInverseMultiply(oops::FieldSet3D &) const override;
+  void leftInverseMultiply(oops::FieldSet3D & fset) const override
+    {inverseMultiply(fset);}
+  void rightInverseMultiply(oops::FieldSet3D & fset) const override
+    {inverseMultiply(fset);}
 
   oops::FieldSet3D generateInnerFieldSet(const oops::GeometryData & innerGeometryData,
                                          const oops::Variables & innerVars) const override;
@@ -67,6 +70,7 @@ class SpectralToGauss : public SaberOuterBlockBase {
 
  private:
   void print(std::ostream &) const override;
+  void inverseMultiply(oops::FieldSet3D &) const;
   void multiplyVectorFields(atlas::FieldSet &, atlas::FieldSet &) const;
   void multiplyVectorFieldsAD(atlas::FieldSet &, atlas::FieldSet &) const;
   void multiplyScalarFields(const atlas::FieldSet &, atlas::FieldSet &) const;
@@ -75,7 +79,6 @@ class SpectralToGauss : public SaberOuterBlockBase {
   void invertMultiplyVectorFields(const atlas::FieldSet &, atlas::FieldSet &) const;
 
   oops::Variables activeVars_;
-  oops::Variables outerVars_;
   /// Whether to convert to and from u/v.
   const bool useWindTransform_;
   oops::Variables innerVars_;

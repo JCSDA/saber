@@ -153,25 +153,6 @@ void SaberParametricBlockChain::testCentralBlock(
 }
 
 // -----------------------------------------------------------------------------
-void SaberParametricBlockChain::filter(oops::FieldSet4D & fset4d) const {
-  // Outer blocks for adjoint multiplication or left inverse (acting as filter)
-  if (outerBlockChain_) {
-    outerBlockChain_->applyOuterBlocksFilter(fset4d);
-  }
-
-  // No cross-time covariances: apply central block to each of the
-  // time slots.
-  for (size_t jtime = 0; jtime < fset4d.size(); ++jtime) {
-    centralBlock_->filter(fset4d[jtime]);
-  }
-
-  // Outer blocks forward multiplication
-  if (outerBlockChain_) {
-    outerBlockChain_->applyOuterBlocks(fset4d);
-  }
-}
-
-// -----------------------------------------------------------------------------
 
 void SaberParametricBlockChain::multiply(oops::FieldSet4D & fset4d) const {
   // Outer blocks adjoint multiplication

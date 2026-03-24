@@ -48,7 +48,7 @@ Hpm1ToHexnerExnerm1::Hpm1ToHexnerExnerm1(const oops::GeometryData & outerGeometr
                                          const Parameters_ & params,
                                          const oops::FieldSet3D & xb,
                                          const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime()),
+  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     innerVars_(getUnionOfInnerActiveAndOuterVars(params, outerVars)),
     activeOuterVars_(params.activeOuterVars(outerVars)),

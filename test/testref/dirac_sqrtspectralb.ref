@@ -26,7 +26,7 @@ Adjoint test for block spectral to gauss passed
 Inner inverse test for block spectral to gauss passed: U Uinv (U x) == (U x)
 Outer inverse test for block spectral to gauss passed: Uinv U (Uinv x) == (Uinv x)
 Adjoint test for block square root of spectral covariance passed
-skipping inverse test for block square root of spectral covariance
+Skipping inverse test for block square root of spectral covariance
 Adjoint test for block ID passed
 Covariance(SABER) diagnostics:
 - Variances at Dirac points:

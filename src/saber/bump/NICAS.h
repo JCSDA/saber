@@ -57,7 +57,6 @@ class NICAS : public SaberCentralBlockBase {
 
   void randomize(oops::FieldSet3D &) const override;
   void multiply(oops::FieldSet3D &) const override;
-  void filter(oops::FieldSet3D &) const override;
 
   std::vector<std::pair<std::string, eckit::LocalConfiguration>> getReadConfs() const override;
   void setReadFields(const std::vector<oops::FieldSet3D> &) override;

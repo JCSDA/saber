@@ -60,9 +60,7 @@ background error:
   # FunctionSpace-specific localization, not on model Geometry.
   localization:
       saber central block:
-        saber block name: ID
-      saber outer blocks:
-      - saber block name: spectral analytical filter
+        saber block name: spectral analytical filter
         # Equivalent to no localization level by level (but full inter-level and
         # inter-variables localization), to allow comparison with other Dirac test
         function:
@@ -70,7 +68,7 @@ background error:
           waveband min: 0
           waveband max: 0
           waveband amplitude: 1.0
-        normalize filter variance: true
+      saber outer blocks:
       - saber block name: spectral to gauss
   saber outer blocks:
   - saber block name: gauss to cubed-sphere-dual

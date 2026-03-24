@@ -6,6 +6,10 @@
 list( APPEND diffusion_src_files_list
 Diffusion.cc
 Diffusion.h
+DiffusionFilter.cc
+DiffusionFilter.h
+DiffusionImpl.cc
+DiffusionImpl.h
 DiffusionParameters.h
 )
 

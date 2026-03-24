@@ -10,8 +10,9 @@
 #include <vector>
 
 #include "oops/util/FieldSetHelpers.h"
-#include "oops/util/for_each.h"
 #include "oops/util/Logger.h"
+
+#include "saber/oops/Utilities.h"
 
 namespace saber {
 namespace generic {
@@ -76,19 +77,7 @@ void IDCentral::multiplySqrt(const atlas::Field & cv,
   oops::Log::trace() << classname() << "::multiplySqrt starting" << std::endl;
 
   // Copy from control vector to fieldset
-  size_t fld_offset = offset;
-  const auto cvView = atlas::array::make_view<double, 1>(cv);
-  for (auto & field : fset) {
-    size_t vt_nodes = field.shape(1);
-    auto view = atlas::array::make_view<double, 2>(field);
-    util::for_each_index(
-      util::make_index_space_2d(util::IndexRange::include_halo, field),
-      [=](atlas::idx_t hz_index, atlas::idx_t vt_index) mutable {
-        size_t index = fld_offset + vt_index + hz_index*vt_nodes;
-        view(hz_index, vt_index) = cvView(index);
-      });
-    fld_offset+=field.size();
-  }
+  cvToFset(cv, fset, offset, centralVars());
 
   oops::Log::trace() << classname() << "::multiplySqrt done" << std::endl;
 }
@@ -101,19 +90,7 @@ void IDCentral::multiplySqrtAD(const oops::FieldSet3D & fset,
   oops::Log::trace() << classname() << "::multiplySqrtAD starting" << std::endl;
 
   // Copy from fieldset to control vector
-  size_t fld_offset = offset;
-  auto cvView = atlas::array::make_view<double, 1>(cv);
-  for (const auto & field : fset) {
-    const auto view = atlas::array::make_view<double, 2>(field);
-    size_t vt_nodes = field.shape(1);
-    util::for_each_index(
-      util::make_index_space_2d(util::IndexRange::include_halo, field),
-      [=](atlas::idx_t hz_index, atlas::idx_t vt_index) mutable {
-        size_t index = fld_offset + vt_index + hz_index*vt_nodes;
-        cvView(index) = view(hz_index, vt_index);
-      });
-    fld_offset+=field.size();
-  }
+  fsetToCv(fset, cv, offset, centralVars());
 
   oops::Log::trace() << classname() << "::multiplySqrtAD done" << std::endl;
 }
@@ -143,7 +120,7 @@ IDOuter::IDOuter(const oops::GeometryData & outerGeometryData,
                  const Parameters_ & params,
                  const oops::FieldSet3D & xb,
                  const oops::FieldSet3D & fg)
-  : SaberOuterBlockBase(params, xb.validTime()),
+  : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
     innerVars_(outerVars)
 {
