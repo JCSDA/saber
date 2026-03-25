@@ -230,19 +230,8 @@ if( ENABLE_QUENCH )
   file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testdata )
   file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testinput )
   file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testref )
+  
   foreach( test ${saber_test_full} )
-
-      # Hack to disable certain interpolation tests.
-      # Remove as soon at Atlas version is upgraded to >= 0.38.0
-      if ((${test} MATCHES "dirac_interpolation_[23]") AND (atlas_VERSION VERSION_LESS 0.38.0))
-        message(WARNING "Atlas version is ${atlas_VERSION}. "
-                "Some interpolation features are not supported. "
-                "Use 0.38.0 or greater to enable these features and the following test: "
-                "${test}")
-        list(REMOVE_ITEM saber_test_full ${test})
-        continue()
-      endif()
-
       # Make test-specific data directory
       file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testdata/${test} )
 
