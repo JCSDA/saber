@@ -347,12 +347,12 @@ if( ENABLE_QUENCH )
                       list( APPEND deps_list ${deps} )
                       list( LENGTH deps_list deps_length )
                       if( ${deps_length} GREATER 0 )
-                          list( TRANSFORM deps_list PREPEND saber_test_ )
+                          list( TRANSFORM deps_list PREPEND saber_ )
                           list( TRANSFORM deps_list APPEND _${mpi}-${omp} )
                           if( ${mpi} GREATER 1 )
                               set( deps_list_1 "" )
                               list( APPEND deps_list_1 ${deps} )
-                              list( TRANSFORM deps_list_1 PREPEND saber_test_ )
+                              list( TRANSFORM deps_list_1 PREPEND saber_ )
                               list( TRANSFORM deps_list_1 APPEND _1-1 )
                               list( APPEND deps_list ${deps_list_1} )
                           endif()
@@ -365,7 +365,7 @@ if( ENABLE_QUENCH )
                       endif()
 
                       # Add test
-                      ecbuild_add_test( TARGET saber_test_${test}_${mpi}-${omp}
+                      ecbuild_add_test( TARGET saber_${test}_${mpi}-${omp}
                                         MPI ${mpi}
                                         OMP ${omp}
                                         COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_${exename}.x
@@ -388,12 +388,12 @@ if( ENABLE_QUENCH )
                   list( APPEND deps_list ${deps} )
                   list( LENGTH deps_list deps_length )
                   if( ${deps_length} GREATER 0 )
-                      list( TRANSFORM deps_list PREPEND saber_test_ )
+                      list( TRANSFORM deps_list PREPEND saber_ )
                       list( TRANSFORM deps_list APPEND _${mpi}-${omp} )
                   endif()
 
                   # Add test
-                  ecbuild_add_test( TARGET saber_test_${test}_${mpi}-${omp}
+                  ecbuild_add_test( TARGET saber_${test}_${mpi}-${omp}
                                     MPI ${mpi}
                                     OMP ${omp}
                                     COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
@@ -410,7 +410,7 @@ if( ENABLE_QUENCH )
           if( result MATCHES 0 )
               if ( ${mpi} EQUAL 1 AND ${omp} EQUAL 1 )
                   # Add test
-                  ecbuild_add_test( TARGET saber_test_${test}
+                  ecbuild_add_test( TARGET saber_${test}
                                     TYPE SCRIPT
                                     COMMAND ${CMAKE_BINARY_DIR}/bin/saber_compare_dirac_diagnostics.py
                                     ARGS testinput/${test}.yaml )
@@ -427,7 +427,7 @@ if( SABER_TEST_BUMP )
     # NICAS square-root test
     set( mpi 2 )
     set( omp 1 )
-    add_fctest( TARGET          saber_test_nicas_sqrt
+    add_fctest( TARGET          saber_nicas_sqrt
                 MPI             ${mpi}
                 OMP             ${omp}
                 LINKER_LANGUAGE ${FORTRAN_LINKER_LANGUAGE}
@@ -438,7 +438,7 @@ endif()
 # A bespoke test for parallel B
 set( mpi 5 )
 set( omp 1 )
-ecbuild_add_test( TARGET saber_test_dirac_parallel_hybrid_ratio_stddev_5-1
+ecbuild_add_test( TARGET saber_dirac_parallel_hybrid_ratio_stddev_5-1
                   MPI ${mpi}
                   OMP ${omp}
                   COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
