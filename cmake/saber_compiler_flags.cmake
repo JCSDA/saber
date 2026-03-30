@@ -1,65 +1,30 @@
-# (C) Copyright 2019 UCAR
+# (C) Copyright 2026 UCAR
 #
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED ON)
-set(CMAKE_C_EXTENSIONS OFF)
-set(CMAKE_FORTRAN_STANDARD 08)
-set(CMAKE_FORTRAN_STANDARD_REQUIRED ON)
-set(CMAKE_FORTRAN_EXTENSIONS OFF)
-set(FORTRAN_LINKER_LANGUAGE "Fortran") 
 
-if( NOT CMAKE_BUILD_TYPE MATCHES "Debug" )
-  add_definitions( -DNDEBUG )
-endif( )
+# Set compiler flags for basic build types,
+# for compilers where this is not provided by ecbuild.
+include(build_type_compiler_flags)
 
-#######################################################################################
-# Fortran
-#######################################################################################
+# Set JEDI's common compiler flags
+include(jedi_common_compiler_flags)
 
-if( CMAKE_Fortran_COMPILER_ID MATCHES "GNU" )
-  include( compiler_flags_GNU_Fortran )
-elseif( CMAKE_Fortran_COMPILER_ID MATCHES "Intel" )
-  include( compiler_flags_Intel_Fortran )
-elseif( CMAKE_Fortran_COMPILER_ID MATCHES "XL" )
-  include( compiler_flags_XL_Fortran )
-elseif( CMAKE_Fortran_COMPILER_ID MATCHES "Cray" )
-  include( compiler_flags_Cray_Fortran )
-elseif( CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC" )
-  include( compiler_flags_NVHPC_Fortran )
-elseif( CMAKE_Fortran_COMPILER_ID MATCHES "NAG" )
-  include( compiler_flags_NAG_Fortran )
-else()
-  message( STATUS "Fortran compiler with ID ${CMAKE_CXX_COMPILER_ID} will be used with CMake default options")
+# Set SABER-specific compiler flags
+if(CMAKE_Fortran_COMPILER_ID STREQUAL GNU)
+  list(APPEND _gnu_fortran_debug_flags
+    "-fcheck=all"
+    "-fimplicit-none"
+    "-ffpe-trap=invalid,zero,overflow,denormal"
+    "-finit-derived"
+    "-finit-integer=-999"
+    "-finit-real=snan")
+  string(JOIN " " _gnu_fortran_debug_flags ${_gnu_fortran_debug_flags})
+  ecbuild_add_fortran_flags("${_gnu_fortran_debug_flags}" BUILD DEBUG)
 endif()
-
-#######################################################################################
-# C
-#######################################################################################
-
-# todo
-
-#######################################################################################
-# C++
-#######################################################################################
-
-if( CMAKE_CXX_COMPILER_ID MATCHES "GNU" )
-  include( compiler_flags_GNU_CXX )
-elseif( CMAKE_CXX_COMPILER_ID MATCHES "Intel" )
-  include( compiler_flags_Intel_CXX )
-elseif( CMAKE_CXX_COMPILER_ID MATCHES "XL" )
-  include( compiler_flags_XL_CXX )
-elseif( CMAKE_CXX_COMPILER_ID MATCHES "Cray" )
-  include( compiler_flags_Cray_CXX )
-elseif( CMAKE_CXX_COMPILER_ID MATCHES "Clang" )
-  include( compiler_flags_Clang_CXX )
-elseif( CMAKE_CXX_COMPILER_ID MATCHES "NVHPC" )
-  include( compiler_flags_NVHPC_CXX )
-else()
-  message( STATUS "C++ compiler with ID ${CMAKE_CXX_COMPILER_ID} will be used with CMake default options")
+if(HAVE_WARNING)
+  if(CMAKE_Fortran_COMPILER_ID STREQUAL GNU)
+    ecbuild_add_fortran_flags("-Wall -Wextra")
+  endif()
 endif()
