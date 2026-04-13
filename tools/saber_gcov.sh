@@ -26,29 +26,20 @@ else
 fi
 
 # Hard-coded parameters
-build_dir=${HOME}/build/gnu_10.3.0/bundle_debug
+build_dir=${HOME}/build/jedi-bundle_codecov
 saber_dirs="
+bifourier
+blocks
 bump
-external
+diffusion
+fastlam
+generic
 gsi
 interpolation
 oops
 spectralb
 util
 vader"
-
-# Process output with gcov
-for dir in ${saber_dirs}; do   
-   cd ${build_dir}/saber/src/saber/CMakeFiles/saber.dir/${dir}
-   for file in $(ls *.F90.gcda *.F90.gcno); do
-      newfile=$(echo ${file} | sed -e 's/\.F90\././1')
-      if [ ! -f ${newfile} ]; then
-        ln -sf ${file} ${newfile}
-      fi
-   done
-   ln -sf ${build_dir}/saber/src/saber/${dir}/*.F90 .
-   gcov *.F90
-done
 
 # Process output with lcov
 cd ${build_dir}/saber/src/saber/CMakeFiles/saber.dir
@@ -63,7 +54,7 @@ if [[ ${final_tar} == "true" ]]; then
    tar -cf coverage.tar html
 elif [[ ${final_tar} == "false" ]]; then
    # Open html with firefox
-   firefox html/saber/src/saber/bump/index.html
+   firefox html/index.html
 else
    # Wrong final_tar argument
    echo "Error: wrong final_tar argument, should be true or false"

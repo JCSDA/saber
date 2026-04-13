@@ -128,6 +128,17 @@ else()
     message( STATUS "SABER block SPECTRALB is NOT enabled" )
 endif()
 
+if( BUILD_TESTING AND ENABLE_OFFLINE_CODECOV )
+    ## Code coverage
+    message( STATUS "Offline code coverage is enabled" )
+    set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
+    set( CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -fprofile-arcs -ftest-coverage")
+    set( CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fprofile-arcs -ftest-coverage")
+    set( CMAKE_Fortran_LINK_FLAGS "${CMAKE_Fortran_LINK_FLAGS} -fprofile-arcs -ftest-coverage")
+else()
+    message( STATUS "Offline code coverage is not enabled" )
+endif()
+
 ## Sources
 add_subdirectory( src/saber )
 add_subdirectory( tools )
@@ -151,36 +162,25 @@ else()
 endif()
 
 if( BUILD_TESTING )
-  # Test data
-  find_package( jedi-model-data 1.0.0 QUIET )
+    # Test data
+    find_package( jedi-model-data 1.0.0 QUIET )
 
-  ## Code coverage
-  if ( ENABLE_OFFLINE_CODECOV )
-      message( STATUS "Offline code coverage is enabled" )
-      set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
-      set( CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -fprofile-arcs -ftest-coverage")
-      set( CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fprofile-arcs -ftest-coverage")
-      set( CMAKE_Fortran_LINK_FLAGS "${CMAKE_Fortran_LINK_FLAGS} -fprofile-arcs -ftest-coverage")
-  else()
-      message( STATUS "Offline code coverage is not enabled" )
-  endif()
+    # If test data repo found build the tests
+    if( jedi-model-data_FOUND )
+        message( STATUS "jedi-model-data found; building saber tests" )
+        add_subdirectory( test )
+    else()
+        message( STATUS "jedi-model-data not found; skipping saber tests" )
+    endif()
 
-  # If test data repo found build the tests
-  if( jedi-model-data_FOUND )
-      message( STATUS "jedi-model-data found; building saber tests" )
-      add_subdirectory( test )
-  else()
-      message( STATUS "jedi-model-data not found; skipping saber tests" )
-  endif()
-
-  ## Global tests
-  ecbuild_add_test( TARGET saber_coding_norms_src
-                    TYPE SCRIPT
-                    COMMAND ${CMAKE_BINARY_DIR}/bin/${PROJECT_NAME}_cpplint.py
-                    ARGS --quiet --recursive ${CMAKE_SOURCE_DIR}/${PROJECT_NAME}/src )
+    ## Global tests
+    ecbuild_add_test( TARGET saber_coding_norms_src
+                      TYPE SCRIPT
+                      COMMAND ${CMAKE_BINARY_DIR}/bin/${PROJECT_NAME}_cpplint.py
+                      ARGS --quiet --recursive ${CMAKE_SOURCE_DIR}/${PROJECT_NAME}/src )
 endif()
 if( ENABLE_QUENCH )
-  add_subdirectory( quench )
+    add_subdirectory( quench )
 endif()
 
 ## Package Config
