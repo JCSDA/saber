@@ -1,0 +1,112 @@
+geometry:
+  quench:
+    function space: NodeColumns
+    grid:
+      name: CS-LFR-15
+    partitioner: cubedsphere
+    halo: 1
+    groups:
+    - variables:
+      - air_temperature
+      levels: 2
+    halo: 1
+  quench2:
+    function space: StructuredColumns
+    grid:
+      type: regular_gaussian
+      N: 10
+    groups:
+    - variables: &vars
+      - air_horizontal_streamfunction
+      - air_horizontal_velocity_potential
+      levels: &levels 10
+    halo: 1
+
+  quench exclude variables:
+  - air_horizontal_streamfunction
+  - air_horizontal_velocity_potential
+  quench2 exclude variables:
+  - air_temperature
+background:
+  quench:
+    date: 2010-01-01T12:00:00Z
+    state variables:
+    - air_temperature
+  quench2:
+    date: 2010-01-01T12:00:00Z
+    state variables:
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+
+background error:
+  covariance model: SABER coupled
+  interpolation:
+    quench:
+      local interpolator type: oops unstructured grid interpolator
+    quench2:
+      local interpolator type: oops unstructured grid interpolator
+  common outer blocks:
+  - saber block name: StdDev
+    standard deviations:
+    - variable: air_horizontal_streamfunction
+      stddev: 2.0
+    - variable: air_horizontal_velocity_potential
+      stddev: 2.0
+    - variable: air_temperature
+      stddev: 2.0
+  quench:
+    saber central block:
+      saber block name: ID
+  quench2:
+    saber central block:
+      saber block name: diffusion
+      read:
+        groups:
+        - variables: *vars
+          horizontal:
+            filepath: testdata/error_covariance_training_diffusion_2/hz-_MPI_-_OMP_
+          vertical:
+            levels: *levels
+            filepath: testdata/error_covariance_training_diffusion_2/vt-_MPI_-_OMP_
+dirac:
+  quench:
+    lon:
+    - 0.0
+    lat:
+    - -4.38894
+    level:
+    - 1
+    variable:
+    - air_temperature
+  quench2:
+    lon:
+    - 0.01
+    - 180.01
+    lat:
+    - 0.01
+    - 88.01
+    level:
+    - 1
+    - 1
+    variable:
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+output dirac:
+  quench:
+    mpi pattern: '%MPI%'
+    filepath: testdata/coupled_dirac_id/%MPI%_dirac_%id%
+  quench2:
+    mpi pattern: '%MPI%'
+    filepath: testdata/coupled_dirac_id/%MPI%_dirac2_%id%
+output variance:
+  quench:
+    mpi pattern: '%MPI%'
+    filepath: testdata/coupled_dirac_id/%MPI%_variance
+    formats: [default, gmsh]
+  quench2:
+    mpi pattern: '%MPI%'
+    filepath: testdata/coupled_dirac_id/%MPI%_variance2
+    formats: [default, gmsh]
+test:
+  reference filename: testref/coupled_dirac_id.ref
+  test output filename: testref/coupled_dirac_id.out

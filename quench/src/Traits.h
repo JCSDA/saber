@@ -40,4 +40,19 @@ struct Traits {
   typedef quench::VariableChange       VariableChange;
 };
 
+struct Traits2 {
+  static std::string name()
+    {return "quench2";}
+  static std::string nameCovar()
+    {return "quenchCovariance2";}
+
+  typedef quench::Covariance           Covariance;
+  typedef quench::Geometry             Geometry;
+  typedef quench::Increment            Increment;
+  typedef quench::LinearVariableChange LinearVariableChange;
+  typedef quench::ModelData            ModelData;
+  typedef quench::State                State;
+  typedef quench::VariableChange       VariableChange;
+};
+
 }  // namespace quench

@@ -10,6 +10,7 @@
 
 #include <ostream>
 #include <string>
+#include <vector>
 
 #include "eckit/config/LocalConfiguration.h"
 
@@ -35,6 +36,11 @@ class ModelData : public util::Printable,
 
   // Model data accessor
   const eckit::LocalConfiguration modelData() const {return modelData_;}
+
+  static const oops::Variables defaultVariables() {
+    return oops::Variables(std::vector<std::string>{"air_horizontal_streamfunction",
+                            "air_horizontal_velocity_potential", "air_temperature"});
+  }
 
  private:
   // Print
