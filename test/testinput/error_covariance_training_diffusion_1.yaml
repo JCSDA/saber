@@ -25,12 +25,12 @@ background error:
       - horizontal:
           fixed value: 10000.0e3
         write:
-          filepath: testdata/error_covariance_training_diffusion_1/hz-_MPI_-_OMP_
+          filepath: testdata/error_covariance_training_diffusion_1/_MPI_-_OMP__hz
       - vertical:
           levels: *levels
           fixed value: 1.0
           as gaussian: true
         write:
-          filepath: testdata/error_covariance_training_diffusion_1/vt-_MPI_-_OMP_
+          filepath: testdata/error_covariance_training_diffusion_1/_MPI_-_OMP__vt
 test:
   reference filename: testref/error_covariance_training_diffusion_1.ref

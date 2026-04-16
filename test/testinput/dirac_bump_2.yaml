@@ -158,6 +158,7 @@ background error:
                 read local nicas: true
     weight:
       value: 0.5
+parallel subwindows: false
 dirac:
 - lon:
   - 0.0
@@ -170,9 +171,7 @@ dirac:
 - {}
 output dirac:
   states:
-  - mpi pattern: '%MPI%'
-    filepath: testdata/dirac_bump_2/%MPI%_dirac_%id%_12
-  - mpi pattern: '%MPI%'
-    filepath: testdata/dirac_bump_2/%MPI%_dirac_%id%_18
+  - filepath: testdata/dirac_bump_2/_MPI_-_OMP__dirac_%id%_12
+  - filepath: testdata/dirac_bump_2/_MPI_-_OMP__dirac_%id%_18
 test:
   reference filename: testref/dirac_bump_2.ref

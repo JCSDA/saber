@@ -20,10 +20,10 @@ background error:
       groups:
       - variables: *vars
         horizontal:
-          filepath: testdata/error_covariance_training_diffusion_2/hz-_MPI_-_OMP_
+          filepath: testdata/error_covariance_training_diffusion_2/_MPI_-_OMP__hz
         vertical:
           levels: *levels
-          filepath: testdata/error_covariance_training_diffusion_2/vt-_MPI_-_OMP_
+          filepath: testdata/error_covariance_training_diffusion_2/_MPI_-_OMP__vt
   randomization size: 10
 
 output perturbations:

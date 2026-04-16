@@ -75,7 +75,6 @@ diagnostic points:
   - var4
   - var6
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_spectralb_duplicate_variables/%MPI%_dirac_%id%
+  filepath: testdata/dirac_spectralb_duplicate_variables/_MPI_-_OMP__dirac_%id%
 test:
   reference filename: testref/dirac_spectralb_duplicate_variables.ref

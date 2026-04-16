@@ -49,11 +49,10 @@ background error:
     - northward_wind
     - unbalanced_pressure_levels_minus_one
 
-output variance:  # This section is optional
-  mpi pattern: '%MPI%'
-  filepath: testdata/randomization_sqrtspectralb_1/variance_%MPI%pes
+output variance:
+  filepath: testdata/randomization_sqrtspectralb_1/_MPI_-_OMP__variance
 output perturbations:
   member pattern: '%MEM%'
-  filepath: testdata/randomization_sqrtspectralb_1/randomized_gauss_mb%MEM%
+  filepath: testdata/randomization_sqrtspectralb_1/_MPI_-_OMP__randomized_gauss_mb%MEM%
 test:
   reference filename: testref/randomization_sqrtspectralb_1.ref

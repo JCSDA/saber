@@ -20,17 +20,17 @@ bands:
         groups:
         - variables: *vars
           horizontal:
-            filepath: testdata/error_covariance_training_diffusion_3/hz-1-1
+            filepath: testdata/error_covariance_training_diffusion_3/_MPI_-_OMP__hz
           vertical:
             levels: *levels
-            filepath: testdata/error_covariance_training_diffusion_3/vt-1-1
+            filepath: testdata/error_covariance_training_diffusion_3/_MPI_-_OMP__vt
   output:
     model write:
-      filepath: testdata/process_perts_diffusion_1/filtered_pert_mb%MEM%_wb1
+      filepath: testdata/process_perts_diffusion_1/_MPI_-_OMP__filtered_pert_mb%MEM%_wb1
       member pattern: '%MEM%'
 - output:
     model write:
-      filepath: testdata/process_perts_diffusion_1/filtered_pert_mb%MEM%_wb2
+      filepath: testdata/process_perts_diffusion_1/_MPI_-_OMP__filtered_pert_mb%MEM%_wb2
       member pattern: '%MEM%'
 
 recursive filters: true
@@ -41,7 +41,7 @@ ensemble pert:
     nmembers: 2
     pattern: '%MEM%'
     template:
-      filepath: testdata/randomization_diffusion_2/1-1_member_pert_%MEM%
+      filepath: testdata/randomization_diffusion_2/_MPI_-_OMP__member_pert_%MEM%
       variables: *vars
 
 input variables: *vars

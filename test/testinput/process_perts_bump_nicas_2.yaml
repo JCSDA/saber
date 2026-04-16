@@ -27,11 +27,11 @@ bands:
           read local nicas: true
   output:
     model write:
-      filepath: testdata/process_perts_bump_nicas_2/filtered_pert_mb%MEM%_wb1
+      filepath: testdata/process_perts_bump_nicas_2/_MPI_-_OMP__filtered_pert_mb%MEM%_wb1
       member pattern: '%MEM%'
 - output:
     model write:
-      filepath: testdata/process_perts_bump_nicas_2/filtered_pert_mb%MEM%_wb2
+      filepath: testdata/process_perts_bump_nicas_2/_MPI_-_OMP__filtered_pert_mb%MEM%_wb2
       member pattern: '%MEM%'
 recursive filters: true
 ensemble pert:
@@ -40,7 +40,7 @@ ensemble pert:
     nmembers: 2
     pattern: '%MEM%'
     template:
-      filepath: testdata/randomization_diffusion_2/1-1_member_pert_%MEM%
+      filepath: testdata/randomization_diffusion_2/_MPI_-_OMP__member_pert_%MEM%
       variables: *vars
 input variables: *vars
 test:

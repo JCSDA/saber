@@ -63,7 +63,6 @@ dirac:
   variable:
   - snow_depth
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_bump_8/%MPI%_dirac_%id%
+  filepath: testdata/dirac_bump_8/_MPI_-_OMP__dirac_%id%
 test:
   reference filename: testref/dirac_bump_8.ref

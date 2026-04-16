@@ -219,9 +219,11 @@ void SpectralCovariance::write() const {
   writeParams.serialize(writeConfig);
 
   const std::string filepath{writeParams.filePath};
-  const std::string mpi_pattern = writeParams.mpiPattern;
-  const std::string mpi_size = std::to_string(eckit::mpi::comm().size());
-  ::util::seekAndReplace(writeConfig, mpi_pattern, mpi_size);
+  if (writeParams.mpiPattern.value()) {
+    const std::string mpi_pattern = *writeParams.mpiPattern.value();
+    const std::string mpi_size = std::to_string(eckit::mpi::comm().size());
+    ::util::seekAndReplace(writeConfig, mpi_pattern, mpi_size);
+  }
   const std::string ncfilepath = "./" + writeConfig.getString("file path");
 
   using atlas::array::make_view;
@@ -230,10 +232,13 @@ void SpectralCovariance::write() const {
   // The spectralVerticalCovariances that we write should be a gathered version of
   // the one in memory  ... it should not affect the internal version.
   // gather and sum on pe 0
+  // When converting old covariances into new ones we just use the original version
+  // (which will have the same information on each MPI rank)
   const std::size_t root(0);
-  atlas::FieldSet spectralVertCovToWrite = util::gatherSumFieldSet(geometryData().comm(),
-                                                                   root,
-                                                                   spectralVerticalCovariances_);
+  atlas::FieldSet spectralVertCovToWrite = writeConfig.has("old new netcdf conversion mode") ?
+    spectralVerticalCovariances_ : util::gatherSumFieldSet(geometryData().comm(),
+                                                           root,
+                                                           spectralVerticalCovariances_);
   const std::vector<std::string> dim_names{"binning_index",
                                            "levels_index_1",
                                            "levels_index_2"};

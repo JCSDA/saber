@@ -59,14 +59,13 @@ dirac:
   - unbalanced_pressure_levels_minus_one
 
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_spectralb_covariance_profiles/%MPI%_dirac_%id%
+  filepath: testdata/dirac_spectralb_covariance_profiles/_MPI_-_OMP__dirac_%id%
 
 covariance profile:
   # Relevant for isotropic covariance models, or to quantify isotropy
   maximum distance: 1700e3  # (im m)
   remove duplicate distances: true
-  output filepath: testdata/dirac_spectralb_covariance_profiles/_MPI__covariance_profiles.nc
+  output filepath: testdata/dirac_spectralb_covariance_profiles/_MPI_-_OMP__covariance_profiles.nc
 
 test:
   reference filename: testref/dirac_spectralb_covariance_profiles.ref

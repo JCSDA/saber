@@ -97,7 +97,7 @@ background error:
     members from template:
       template:
         date: 2010-01-01T12:00:00Z
-        filepath: testdata/randomization_sqrtspectralb_4/randomized_gauss_mb%mem%
+        filepath: testdata/randomization_sqrtspectralb_4/_MPI_-_OMP__randomized_gauss_mb%mem%
       pattern: '%mem%'
       nmembers: 2
   saber central block:
@@ -109,9 +109,8 @@ background error:
     - unbalanced_pressure_levels_minus_one
     calibration:
       write:
-        covariance name: "specvertcov3"
-        mpi pattern: '%MPI%'
-        file path: testdata/error_covariance_training_spectralb_3/spectralvertcov_%MPI%.nc
+        covariance name: specvertcov3
+        file path: testdata/error_covariance_training_spectralb_3/_MPI_-_OMP__spectralvertcov.nc
   saber outer blocks:
   - saber block name: spectral to gauss
     active variables:
@@ -136,21 +135,19 @@ background error:
     - variable 1: northward_wind
       variable 2: unbalanced_pressure_levels_minus_one
     binning:
-      type: "horizontal global average"
-      mpi rank pattern: '%MPI%'
-      file path: testdata/error_covariance_training_spectralb_3/hor_glo_ave_%MPI%.nc
+      type: horizontal global average
+      file path: testdata/error_covariance_training_spectralb_3/_MPI_-_OMP__hor_glo_ave.nc
     calibration:
       write:
-        covariance name: "controlvariables"
-        mpi pattern: '%MPI%'
-        file path: testdata/error_covariance_training_spectralb_3/cntlvertcov_%MPI%.nc
+        covariance name: controlvariables
+        file path: testdata/error_covariance_training_spectralb_3/_MPI_-_OMP__cntlvertcov.nc
     field names:
     - eastward_wind
     - mu
     - northward_wind
     - unbalanced_pressure_levels_minus_one
     save NetCDF file: true
-    statistics type:  "vertical covariance"
+    statistics type:  vertical covariance
   - saber block name: mo_hydrostatic_pressure_levels_minus_one
     calibration read:
       covariance file path: testdata/FPstats.nc
@@ -169,21 +166,19 @@ background error:
     moisture incrementing operator file: testdata/MIO_coefficients.nc
     calibration:
       coefficient filling value: median
-      output file: testdata/error_covariance_training_spectralb_3/MIO_coefficients_new.nc
+      output file: testdata/error_covariance_training_spectralb_3/_MPI_-_OMP__MIO_coefficients_new.nc
   - saber block name: mo_dry_air_density_from_exnerm1
     calibration: true
   - saber block name: write variances
     binning:
-      type: "horizontal global average"
-      mpi rank pattern: '%MPI%'
-      file path: testdata/error_covariance_training_spectralb_3/hor_glo_ave_%MPI%.nc
+      type: horizontal global average
+      file path: testdata/error_covariance_training_spectralb_3/_MPI_-_OMP__hor_glo_ave.nc
     calibration:
       write:
-        covariance name: "model_variables"
-        mpi pattern: '%MPI%'
-        file path: testdata/error_covariance_training_spectralb_3/model_vertcov_%MPI%.nc
+        covariance name: model_variables
+        file path: testdata/error_covariance_training_spectralb_3/_MPI_-_OMP__model_vertcov.nc
     field names: *incrvars
     save NetCDF file: true
-    statistics type:  "vertical covariance"
+    statistics type:  vertical covariance
 test:
   reference filename: testref/error_covariance_training_spectralb_3.ref

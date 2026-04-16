@@ -34,7 +34,7 @@ background error:
         - saber block name: StdDev
           read:
             model file:
-              filepath: testdata/error_covariance_training_stddev_1/2-_OMP__stddev
+              filepath: testdata/error_covariance_training_stddev_1/2-1_stddev
     - weight:
         value: 0.5
       covariance:
@@ -44,7 +44,7 @@ background error:
         - saber block name: StdDev
           read:
             model file:
-              filepath: testdata/error_covariance_training_stddev_2/2-_OMP__stddev
+              filepath: testdata/error_covariance_training_stddev_2/2-1_stddev
   saber outer blocks:
   - saber block name: write fields
     save netCDF file: false
@@ -63,8 +63,7 @@ dirac: &dirac
 diagnostic points: *dirac
 
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_parallel_hybrid_ratio_stddev/%MPI%_dirac_%id%
+  filepath: testdata/dirac_parallel_hybrid_ratio_stddev/_MPI_-_OMP__dirac_%id%
 
 # The result from this should be the same as dirac_parallel_hybrid_stddev.ref
 # as all we are doing is splitting the communicator in a different way

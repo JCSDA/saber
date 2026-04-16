@@ -70,7 +70,6 @@ dirac:
   variable:
   - snow_depth
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_shadowlevels_2/%MPI%_dirac_%id%
+  filepath: testdata/dirac_shadowlevels_2/_MPI_-_OMP__dirac_%id%
 test:
   reference filename: testref/dirac_shadowlevels_2.ref

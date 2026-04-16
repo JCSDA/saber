@@ -31,11 +31,9 @@ dirac:
   variable:
   - air_horizontal_streamfunction
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_id/%MPI%_dirac_%id%
+  filepath: testdata/dirac_id/_MPI_-_OMP__dirac_%id%
 output variance:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_id/%MPI%_variance
+  filepath: testdata/dirac_id/_MPI_-_OMP__variance
   formats: [default, gmsh]
 test:
   reference filename: testref/dirac_id.ref

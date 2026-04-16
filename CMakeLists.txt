@@ -176,9 +176,11 @@ if( BUILD_TESTING )
     ## Global tests
     ecbuild_add_test( TARGET saber_coding_norms_src
                       TYPE SCRIPT
+                      LABELS tier2
                       COMMAND ${CMAKE_BINARY_DIR}/bin/${PROJECT_NAME}_cpplint.py
                       ARGS --quiet --recursive ${CMAKE_SOURCE_DIR}/${PROJECT_NAME}/src )
 endif()
+
 if( ENABLE_QUENCH )
     add_subdirectory( quench )
 endif()

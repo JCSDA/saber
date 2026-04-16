@@ -85,7 +85,6 @@ dirac:
   - log_of_air_pressure_at_surface
   - water_vapor_mixing_ratio_wrt_moist_air
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/convertcov_bifourier_balance_3/%MPI%_dirac_%id%
+  filepath: testdata/convertcov_bifourier_balance_3/_MPI_-_OMP__dirac_%id%
 test:
   reference filename: testref/convertcov_bifourier_balance_3.ref

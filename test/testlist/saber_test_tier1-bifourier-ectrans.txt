@@ -1,4 +1,0 @@
-dirac_bifourier_ectrans
-dirac_bifourier_vordivtouv_ectrans_1
-dirac_bifourier_vordivtouv_ectrans_2
-error_covariance_training_bifourier_ectrans_1

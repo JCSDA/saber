@@ -94,7 +94,6 @@ dirac:
   variable:
   - air_temperature
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_bifourier_ectrans/%MPI%_dirac_%id%
+  filepath: testdata/dirac_bifourier_ectrans/_MPI_-_OMP__dirac_%id%
 test:
   reference filename: testref/dirac_bifourier_ectrans.ref

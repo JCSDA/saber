@@ -81,13 +81,13 @@ background error:
             - horizontal:
                 fixed value: 500.0e3
               write:
-                filepath: testdata/dirac_localization_mixed_1/hz-_MPI_-_OMP_
+                filepath: testdata/dirac_localization_mixed_1/_MPI_-_OMP__hz
             - vertical:
                 levels: 2
                 fixed value: 2.5
                 as gaussian: true
               write:
-                filepath: testdata/dirac_localization_mixed_1/vt-_MPI_-_OMP_
+                filepath: testdata/dirac_localization_mixed_1/_MPI_-_OMP__vt
 dirac:
   lon:
   - 0.01
@@ -102,7 +102,6 @@ dirac:
   - eastward_wind
   - air_horizontal_streamfunction
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_localization_mixed_1/%MPI%_dirac_%id%
+  filepath: testdata/dirac_localization_mixed_1/_MPI_-_OMP__dirac_%id%
 test:
   reference filename: testref/dirac_localization_mixed_1.ref

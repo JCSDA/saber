@@ -60,7 +60,6 @@ diagnostic points:
   - eastward_wind
   - northward_wind
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_spectraltouv/%MPI%_dirac_%id%
+  filepath: testdata/dirac_spectraltouv/_MPI_-_OMP__dirac_%id%
 test:
   reference filename: testref/dirac_spectraltouv.ref

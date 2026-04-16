@@ -1,2 +1,0 @@
-error_covariance_training_bifourier_3
-randomization_bifourier

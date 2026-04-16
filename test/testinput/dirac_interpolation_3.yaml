@@ -52,7 +52,6 @@ dirac:
   variable:
   - air_horizontal_streamfunction
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_interpolation_3/dirac_%id%_%MPI%
+  filepath: testdata/dirac_interpolation_3/_MPI_-_OMP__dirac_%id%
 test:
   reference filename: testref/dirac_interpolation_3.ref

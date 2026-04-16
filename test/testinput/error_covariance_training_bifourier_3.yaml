@@ -109,7 +109,6 @@ dirac:
   variable:
   - air_temperature
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/error_covariance_training_bifourier_3/%MPI%_dirac_%id%
+  filepath: testdata/error_covariance_training_bifourier_3/_MPI_-_OMP__dirac_%id%
 test:
   reference filename: testref/error_covariance_training_bifourier_3.ref

@@ -12,6 +12,8 @@
 #include "eckit/config/LocalConfiguration.h"
 
 #include "oops/base/Variables.h"
+#include "oops/util/parameters/OptionalParameter.h"
+#include "oops/util/parameters/Parameter.h"
 #include "oops/util/parameters/Parameters.h"
 #include "oops/util/parameters/RequiredParameter.h"
 
@@ -23,7 +25,9 @@ class calibrationWriteParameters : public oops::Parameters {
  public:
   oops::RequiredParameter<std::string> covName{"covariance name",
     "covariance name global attribute", this};
-  oops::RequiredParameter<std::string> mpiPattern{"mpi pattern",
+  oops::Parameter<bool> oldNewNetCDFConversionMode{"old new netcdf conversion mode",
+    false, this};
+  oops::OptionalParameter<std::string> mpiPattern{"mpi pattern",
     "mpi pattern", this};
   oops::RequiredParameter<std::string> filePath{"file path",
     "Path to written file", this};

@@ -31,9 +31,9 @@ background error:
         - MU_inc_Uv_matrix 
         - aP_inc_Uv_matrix             
       write:
-        covariance name: "specvertcov1"
-        mpi pattern: '%MPI%'
-        file path: testdata/error_covariance_training_spectralb_1/spectralsabercov_%MPI%.nc
+        old new netcdf conversion mode: true
+        covariance name: specvertcov1
+        file path: testdata/error_covariance_training_spectralb_1/_MPI_-_OMP__spectralsabercov.nc
   saber outer blocks:
   - saber block name: spectral to gauss
     active variables: *vars

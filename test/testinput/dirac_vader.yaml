@@ -44,7 +44,6 @@ dirac:
   - virtual_temperature
   - water_vapor_mixing_ratio_wrt_moist_air
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_vader/%MPI%_dirac_%id%
+  filepath: testdata/dirac_vader/_MPI_-_OMP__dirac_%id%
 test:
   reference filename: testref/dirac_vader.ref

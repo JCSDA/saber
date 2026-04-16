@@ -78,7 +78,6 @@ diagnostic points:
   - mu
   - unbalanced_pressure_levels_minus_one
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_sqrtspectralb_correl_1/%MPI%_dirac_%id%
+  filepath: testdata/dirac_sqrtspectralb_correl_1/_MPI_-_OMP__dirac_%id%
 test:
   reference filename: testref/dirac_sqrtspectralb_correl_1.ref

@@ -139,9 +139,9 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
     // Define space and time communicators
     const eckit::mpi::Comm * commSpace = &this->getComm();
     const eckit::mpi::Comm * commTime = &oops::mpi::myself();
+    const size_t ntasks = this->getComm().size();
     if (nsubwin > 1) {
       // Define sub-windows
-      const size_t ntasks = this->getComm().size();
       size_t mysubwin = 0;
       size_t nsublocal = nsubwin;
       if (params.parallel && (ntasks % nsubwin == 0)) {
@@ -167,8 +167,7 @@ template <typename MODEL> class ErrorCovarianceToolbox : public oops::Applicatio
       ASSERT(commTime->size() == (nsubwin / nsublocal));
     }
 
-    // Get number of MPI tasks and OpenMP threads
-    size_t ntasks = commSpace->size();
+    // Get number of OpenMP threads
     size_t nthreads = 1;
 #ifdef _OPENMP
     # pragma omp parallel

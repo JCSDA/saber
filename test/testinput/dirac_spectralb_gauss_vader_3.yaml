@@ -70,7 +70,7 @@ background error:
           nmembers: 2
           template:
             date: 2016-01-01T16:00:00Z
-            filepath: testdata/process_perts_from_gauss_perts_1/filtered_pert_mb%MEM%_wb2
+            filepath: testdata/process_perts_spectralb_from_gauss_perts_1/_MPI_-_OMP__filtered_pert_mb%MEM%_wb2
             variables:
             - eastward_wind
             - mu
@@ -184,7 +184,6 @@ increment variables:
 - water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water
 
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_spectralb_gauss_vader_3/dirac_%id%_%MPI%
+  filepath: testdata/dirac_spectralb_gauss_vader_3/_MPI_-_OMP__dirac_%id%
 test:
   reference filename: testref/dirac_spectralb_gauss_vader_3.ref

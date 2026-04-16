@@ -50,8 +50,7 @@ dirac:
   variable:
   - dry_air_density_levels_minus_one
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_vertproj/dirac_%id%_%MPI%
+  filepath: testdata/dirac_vertproj/_MPI_-_OMP__dirac_%id%
 test:
   reference filename: testref/dirac_vertproj.ref
 

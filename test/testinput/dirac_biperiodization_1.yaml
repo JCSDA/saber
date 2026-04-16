@@ -53,7 +53,6 @@ dirac:
   variable:
   - air_horizontal_streamfunction
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_biperiodization_1/%MPI%_dirac_%id%
+  filepath: testdata/dirac_biperiodization_1/_MPI_-_OMP__dirac_%id%
 test:
   reference filename: testref/dirac_biperiodization_1.ref

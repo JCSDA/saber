@@ -106,10 +106,8 @@ dirac:
   - air_horizontal_streamfunction
   - air_horizontal_streamfunction
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_fastlam_7/%MPI%_dirac_%id%
+  filepath: testdata/dirac_fastlam_7/_MPI_-_OMP__dirac_%id%
 output variance:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_fastlam_7/%MPI%_variance
+  filepath: testdata/dirac_fastlam_7/_MPI_-_OMP__variance
 test:
   reference filename: testref/dirac_fastlam_7.ref

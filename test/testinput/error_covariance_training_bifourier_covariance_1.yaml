@@ -80,7 +80,6 @@ dirac:
   variable:
   - air_temperature_and_log_of_air_pressure_at_surface
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/error_covariance_training_bifourier_covariance_1/%MPI%_dirac_%id%
+  filepath: testdata/error_covariance_training_bifourier_covariance_1/_MPI_-_OMP__dirac_%id%
 test:
   reference filename: testref/error_covariance_training_bifourier_covariance_1.ref

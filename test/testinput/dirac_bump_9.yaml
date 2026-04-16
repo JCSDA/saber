@@ -61,6 +61,7 @@ background error:
         read global psichitouv: true
       psichitouv:
         dipole test: true
+parallel subwindows: false
 dirac:
 - lon:
   - 0.0
@@ -73,9 +74,7 @@ dirac:
 - {}
 output dirac:
   states:
-  - mpi pattern: '%MPI%'
-    filepath: testdata/dirac_bump_9/%MPI%_dirac_%id%_12
-  - mpi pattern: '%MPI%'
-    filepath: testdata/dirac_bump_9/%MPI%_dirac_%id%_18
+  - filepath: testdata/dirac_bump_9/_MPI_-_OMP__dirac_%id%_12
+  - filepath: testdata/dirac_bump_9/_MPI_-_OMP__dirac_%id%_18
 test:
   reference filename: testref/dirac_bump_9.ref

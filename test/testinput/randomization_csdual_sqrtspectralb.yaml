@@ -39,6 +39,6 @@ background error:
     active variables: *vars
 output states:
   member pattern: '%MEM%'
-  filepath: testdata/randomization_csdual_sqrtspectralb/_MPI__randomized_csdual_mb%MEM%
+  filepath: testdata/randomization_csdual_sqrtspectralb/_MPI_-_OMP__randomized_csdual_mb%MEM%
 test:
   reference filename: testref/randomization_csdual_sqrtspectralb.ref

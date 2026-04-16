@@ -58,8 +58,7 @@ background:
   - air_temperature
   - air_pressure_at_surface
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_gsi_gfs_global/%MPI%_dirac_%id%
+  filepath: testdata/dirac_gsi_gfs_global/_MPI_-_OMP__dirac_%id%
 test:
   float relative tolerance: 1.5e-06
   reference filename: testref/dirac_gsi_gfs_global.ref

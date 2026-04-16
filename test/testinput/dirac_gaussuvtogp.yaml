@@ -37,7 +37,6 @@ dirac:
   variable:
   - geostrophic_pressure_levels_minus_one
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_gaussuvtogp/%MPI%_dirac_%id%
+  filepath: testdata/dirac_gaussuvtogp/_MPI_-_OMP__dirac_%id%
 test:
   reference filename: testref/dirac_gaussuvtogp.ref

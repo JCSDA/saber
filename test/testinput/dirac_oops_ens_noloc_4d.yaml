@@ -65,9 +65,7 @@ diagnostic points:
     - air_horizontal_streamfunction
 output dirac:
   states:
-  - mpi pattern: '%MPI%'
-    filepath: testdata/dirac_oops_ens_noloc_4d/%MPI%_dirac_%id%_12
-  - mpi pattern: '%MPI%'
-    filepath: testdata/dirac_oops_ens_noloc_4d/%MPI%_dirac_%id%_18
+  - filepath: testdata/dirac_oops_ens_noloc_4d/_MPI_-_OMP__dirac_%id%_12
+  - filepath: testdata/dirac_oops_ens_noloc_4d/_MPI_-_OMP__dirac_%id%_18
 test:
   reference filename: testref/dirac_oops_ens_noloc_4d.ref

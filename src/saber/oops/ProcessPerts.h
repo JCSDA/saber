@@ -180,13 +180,26 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
 // -----------------------------------------------------------------------------
 
   int execute(const eckit::Configuration & fullConfig) const override {
-    // Deserialize parameters
-    ProcessPertsParameters_ params;
-    params.deserialize(fullConfig);
-
     // Define space and time communicators
     const eckit::mpi::Comm * commSpace = &this->getComm();
     const eckit::mpi::Comm * commTime = &oops::mpi::myself();
+
+    // Replace patterns in full configuration and deserialize parameters
+    eckit::LocalConfiguration fullConfigUpdated(fullConfig);
+    const size_t ntasks = commSpace->size();
+    size_t nthreads = 1;
+#ifdef _OPENMP
+    # pragma omp parallel
+    {
+      nthreads = omp_get_num_threads();
+    }
+#endif
+    util::seekAndReplace(fullConfigUpdated, "_MPI_", std::to_string(ntasks));
+    util::seekAndReplace(fullConfigUpdated, "_OMP_", std::to_string(nthreads));
+
+    // Deserialize parameters
+    ProcessPertsParameters_ params;
+    params.deserialize(fullConfigUpdated);
 
     // Setup geometry
     const Geometry_ geom(params.geometry, *commSpace, *commTime);
@@ -223,12 +236,12 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
     oops::FieldSets fsetEnsI = readEnsemble<MODEL>(geom,
                                                    incVars,
                                                    xx.times(), xx.commTime(), xx.commEns(),
-                                                   fullConfig);
+                                                   fullConfigUpdated);
     int nincrements = fsetEnsI.ens_size();
 
     const std::size_t nbands = params.bands.value().size();
     const std::vector<eckit::LocalConfiguration> bandsConfs
-      = fullConfig.getSubConfigurations("bands");
+      = fullConfigUpdated.getSubConfigurations("bands");
     const bool recursiveFilters = params.recursiveFilters.value();
 
     // need to create a vectors of saber block chains to use later
@@ -364,7 +377,7 @@ template <typename MODEL> class ProcessPerts : public oops::Application {
         if (auto it{genericWriteConfs.find(b)}; it != std::end(genericWriteConfs)) {
           eckit::LocalConfiguration gconf = it->second;
           util::setMember(gconf, jm+1);
-          setConcatenatedString(fullConfig,
+          setConcatenatedString(fullConfigUpdated,
                                 std::vector<std::string>{"geometry", "grid"},
                                 "grid pattern",
                                 gconf);

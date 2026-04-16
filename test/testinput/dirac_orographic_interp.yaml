@@ -67,7 +67,6 @@ dirac:
   - air_temperature_1
   - air_temperature_2
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_orographic_interp/%MPI%_dirac_%id%
+  filepath: testdata/dirac_orographic_interp/_MPI_-_OMP__dirac_%id%
 test:
   reference filename: testref/dirac_orographic_interp.ref

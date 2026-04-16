@@ -67,7 +67,7 @@ background error:
       input model files:
       - parameter: gsi_ref
         file:
-          filepath: testdata/dirac_gsi_geos_global_opt_1/_MPI__dirac_SABER
+          filepath: testdata/dirac_gsi_geos_global_opt_1/_MPI_-_OMP__dirac_SABER
       output model files:
       - parameter: dirac_diag_cor
         file:

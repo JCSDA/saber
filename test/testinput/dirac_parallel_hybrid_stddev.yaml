@@ -31,7 +31,7 @@ background error:
         - saber block name: StdDev
           read:
             model file:
-              filepath: testdata/error_covariance_training_stddev_1/2-_OMP__stddev
+              filepath: testdata/error_covariance_training_stddev_1/2-1_stddev
     - weight:
         value: 0.5
       covariance:
@@ -41,7 +41,7 @@ background error:
         - saber block name: StdDev
           read:
             model file:
-              filepath: testdata/error_covariance_training_stddev_2/2-_OMP__stddev
+              filepath: testdata/error_covariance_training_stddev_2/2-1_stddev
   saber outer blocks:
   - saber block name: write fields
     save netCDF file: false
@@ -61,8 +61,7 @@ dirac: &dirac
 diagnostic points: *dirac
 
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_parallel_hybrid_stddev/%MPI%_dirac_%id%
+  filepath: testdata/dirac_parallel_hybrid_stddev/_MPI_-_OMP__dirac_%id%
 
 test:
   reference filename: testref/dirac_parallel_hybrid_stddev.ref

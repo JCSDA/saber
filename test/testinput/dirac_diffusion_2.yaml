@@ -24,10 +24,10 @@ background error:
       groups:
       - variables: *vars
         horizontal:
-          filepath: testdata/error_covariance_training_diffusion_2/hz-_MPI_-_OMP_
+          filepath: testdata/error_covariance_training_diffusion_2/_MPI_-_OMP__hz
         vertical:
           levels: *levels
-          filepath: testdata/error_covariance_training_diffusion_2/vt-_MPI_-_OMP_
+          filepath: testdata/error_covariance_training_diffusion_2/_MPI_-_OMP__vt
 dirac:
   lon:
   - 0.01
@@ -40,8 +40,7 @@ dirac:
   - 1
   variable: [air_horizontal_streamfunction, air_horizontal_velocity_potential]
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_diffusion_2/%MPI%_dirac_%id%
+  filepath: testdata/dirac_diffusion_2/_MPI_-_OMP__dirac_%id%
 
 test:
   reference filename: testref/dirac_diffusion_2.ref

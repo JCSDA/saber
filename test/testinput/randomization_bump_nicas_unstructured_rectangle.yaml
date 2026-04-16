@@ -617,8 +617,8 @@ background error:
           value: 3.0
   randomization size: 25
 output states:
-  filepath: testdata/randomization_bump_nicas_unstructured_rectangle/member
+  filepath: testdata/randomization_bump_nicas_unstructured_rectangle/_MPI_-_OMP__member
 output perturbations:
-  filepath: testdata/randomization_bump_nicas_unstructured_rectangle/member_pert
+  filepath: testdata/randomization_bump_nicas_unstructured_rectangle/_MPI_-_OMP__member_pert
 test:
   reference filename: testref/randomization_bump_nicas_unstructured_rectangle.ref

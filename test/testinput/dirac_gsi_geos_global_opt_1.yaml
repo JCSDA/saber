@@ -78,7 +78,6 @@ background:
   - air_horizontal_velocity_potential
   - air_pressure_at_surface
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_gsi_geos_global_opt_1/%MPI%_dirac_%id%
+  filepath: testdata/dirac_gsi_geos_global_opt_1/_MPI_-_OMP__dirac_%id%
 test:
   reference filename: testref/dirac_gsi_geos_global_opt_1.ref

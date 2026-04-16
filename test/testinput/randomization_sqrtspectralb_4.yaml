@@ -84,7 +84,7 @@ background error:
     - mu
     - unbalanced_pressure_levels_minus_one
     read:
-      covariance_file: testdata/error_covariance_training_spectralb_1/spectralsabercov_1.nc
+      covariance_file: testdata/error_covariance_training_spectralb_1/_MPI_-_OMP__spectralsabercov.nc
   - saber block name: spectral to gauss
     active variables:
     - air_horizontal_streamfunction
@@ -128,7 +128,7 @@ background:
 
 output perturbations:
   member pattern: '%MEM%'
-  filepath: testdata/randomization_sqrtspectralb_4/randomized_gauss_mb%MEM%
+  filepath: testdata/randomization_sqrtspectralb_4/_MPI_-_OMP__randomized_gauss_mb%MEM%
 
 test:
   reference filename: testref/randomization_sqrtspectralb_4.ref

@@ -58,7 +58,6 @@ dirac:
   variable:
   - eastward_wind
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_bifourier_vordivtouv_3/%MPI%_dirac_%id%
+  filepath: testdata/dirac_bifourier_vordivtouv_3/_MPI_-_OMP__dirac_%id%
 test:
   reference filename: testref/dirac_bifourier_vordivtouv_3.ref

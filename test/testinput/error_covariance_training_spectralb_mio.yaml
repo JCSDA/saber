@@ -65,7 +65,7 @@ background error:
       nmembers: 1
       template:
         date: *date
-        filepath: testdata/randomization_sqrtspectralb_2/randomized_gauss_mb%MEM%
+        filepath: testdata/randomization_sqrtspectralb_2/_MPI_-_OMP__randomized_gauss_mb%MEM%
         variables: *inc_vars
   saber central block:
     saber block name: ID
@@ -81,7 +81,7 @@ background error:
     moisture incrementing operator file: testdata/MIO_coefficients.nc
     calibration:
       coefficient filling value: median
-      output file: testdata/error_covariance_training_spectralb_mio/MIO_coefficients_new.nc
+      output file: testdata/error_covariance_training_spectralb_mio/_MPI_-_OMP__MIO_coefficients_new.nc
 
 background:
   date: *date

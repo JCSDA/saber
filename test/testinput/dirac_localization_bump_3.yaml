@@ -248,7 +248,6 @@ dirac:
   variable:
   - eastward_wind
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_localization_bump_3/%MPI%_dirac_%id%
+  filepath: testdata/dirac_localization_bump_3/_MPI_-_OMP__dirac_%id%
 test:
   reference filename: testref/dirac_localization_bump_3.ref

@@ -45,8 +45,7 @@ dirac: &dirac
 diagnostic points: *dirac
 
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_parallel_hybrid_id/%MPI%_dirac_%id%
+  filepath: testdata/dirac_parallel_hybrid_id/_MPI_-_OMP__dirac_%id%
 
 test:
   reference filename: testref/dirac_parallel_hybrid_id.ref

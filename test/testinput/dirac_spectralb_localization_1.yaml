@@ -43,7 +43,7 @@ background error:
       pressure field name in pressure file: Prho_bar_Mean
     number of vertical modes: 10
     renormalize to unit diagonal: true
-    output file name: testdata/dirac_spectralb_localization_1/vertical_localization.nc
+    output file name: testdata/dirac_spectralb_localization_1/_MPI_-_OMP__vertical_localization.nc
   - saber block name: mo vertical interpolation for localization
     inner vertical levels: 70
 dirac:
@@ -94,8 +94,7 @@ diagnostic points:
   - var1_levels
   - var2
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_spectralb_localization_1/%MPI%_dirac_%id%
+  filepath: testdata/dirac_spectralb_localization_1/_MPI_-_OMP__dirac_%id%
 
 test:
   reference filename: testref/dirac_spectralb_localization_1.ref

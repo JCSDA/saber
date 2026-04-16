@@ -25,7 +25,7 @@ background error:
   saber central block:
     saber block name: spectral covariance
     read:
-      covariance_file: testdata/error_covariance_training_spectralb_1/spectralsabercov_1.nc
+      covariance_file: testdata/error_covariance_training_spectralb_1/_MPI_-_OMP__spectralsabercov.nc
   saber outer blocks:
   - saber block name: spectral to gauss
 dirac:
@@ -71,7 +71,6 @@ diagnostic points:
   - unbalanced_pressure_levels_minus_one
   - mu
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_spectralb_from_saber_file_3/%MPI%_dirac_%id%
+  filepath: testdata/dirac_spectralb_from_saber_file_3/_MPI_-_OMP__dirac_%id%
 test:
   reference filename: testref/dirac_spectralb_from_saber_file_3.ref

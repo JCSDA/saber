@@ -142,7 +142,7 @@ background error:
     inner inverse tolerance: 0.2
     outer inverse tolerance: 0.2
     gauss grid uid: F15
-    interpolation type: "structured-bicubic"
+    interpolation type: structured-bicubic
     active variables:
     - eastward_wind
     - mu

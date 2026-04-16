@@ -45,7 +45,7 @@ background error:
   - saber block name: square root of spectral covariance
     skip inverse test: true
     read:
-      covariance_file: testdata/error_covariance_training_spectralb_1/spectralsabercov_1.nc
+      covariance_file: testdata/error_covariance_training_spectralb_1/_MPI_-_OMP__spectralsabercov.nc
     active variables:
     - air_horizontal_streamfunction
     - air_horizontal_velocity_potential
@@ -67,11 +67,10 @@ background error:
       covariance file path: testdata/FPstats.nc
       number of covariance latitude rings: 481
       gp regression bins: 18
-output variance:  # This section is optional
-  mpi pattern: '%MPI%'
-  filepath: testdata/randomization_sqrtspectralb_3/variance_%MPI%pes
+output variance:
+  filepath: testdata/randomization_sqrtspectralb_3/_MPI_-_OMP__variance
 output perturbations:
   member pattern: '%MEM%'
-  filepath: testdata/randomization_sqrtspectralb_3/randomized_gauss_mb%MEM%
+  filepath: testdata/randomization_sqrtspectralb_3/_MPI_-_OMP__randomized_gauss_mb%MEM%
 test:
   reference filename: testref/randomization_sqrtspectralb_3.ref

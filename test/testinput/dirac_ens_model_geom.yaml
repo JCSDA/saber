@@ -28,7 +28,7 @@ background error:
       nmembers: 2
       template:
         date: *date
-        filepath: testdata/process_perts_from_csdual_states_2/wb1_CS-LFR-14_mb%MEM%_inc
+        filepath: testdata/process_perts_spectralb_from_csdual_states_2/_MPI_-_OMP__wb1_CS-LFR-14_mb%MEM%_inc
         variables: *vars
 
 dirac: &dirac
@@ -46,9 +46,8 @@ diagnostic points: *dirac
 increment variables: *vars
 
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_ens_model_geom/dirac_%id%_%MPI%
+  filepath: testdata/dirac_ens_model_geom/_MPI_-_OMP__dirac_%id%
 
 test:
-  float relative tolerance: 2e-3  # Due to process_perts_from_csdual_states_2 outputs differing on 1/2 MPI tasks
+  float relative tolerance: 2e-3  # Due to process_perts_spectralb_from_csdual_states_2 outputs differing on 1/2 MPI tasks
   reference filename: testref/dirac_ens_model_geom.ref

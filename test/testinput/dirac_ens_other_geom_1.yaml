@@ -2,7 +2,7 @@
 # MODEL geometry.
 #
 # The input perturbations have been generated in the test
-# `process_perts_from_csdual_states_2` and written to disk twice: on a Gaussian grid
+# `process_perts_spectralb_from_csdual_states_2` and written to disk twice: on a Gaussian grid
 # (F14, perturbation x_gauss) and on a cubed-sphere dual grid (CS-LFR-14,
 # perturbation x_cs). The pairs of perturbations x_cs and x_gauss are related via
 # x_cs = U x_gauss, where U is the interpolation from F14 to CS-LFR-14.
@@ -55,7 +55,7 @@ background error:
       nmembers: 2
       template:
         date: *date
-        filepath: testdata/process_perts_from_csdual_states_2/wb1_F14_inc_%MEM%
+        filepath: testdata/process_perts_spectralb_from_csdual_states_2/wb1_F14_inc_%MEM%
         variables: *vars
   # FunctionSpace-specific localization, not on model Geometry.
   localization:
@@ -89,9 +89,8 @@ diagnostic points: *dirac
 increment variables: *vars
 
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_ens_other_geom_1/dirac_%id%_%MPI%
+  filepath: testdata/dirac_ens_other_geom_1/_MPI_-_OMP__dirac_%id%
 
 test:
-  float relative tolerance: 4e-3  # Due to process_perts_from_csdual_states_2 outputs differing on 1/2 MPI tasks
+  float relative tolerance: 4e-3  # Due to process_perts_spectralb_from_csdual_states_2 outputs differing on 1/2 MPI tasks
   reference filename: testref/dirac_ens_other_geom_1.ref

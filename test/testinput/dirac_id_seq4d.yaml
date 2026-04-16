@@ -58,15 +58,11 @@ diagnostic points:
     - air_horizontal_streamfunction
 output dirac:
   states:
-  - mpi pattern: '%MPI%'
-    filepath: testdata/dirac_id_seq4d/%MPI%_dirac_%id%_12
-  - mpi pattern: '%MPI%'
-    filepath: testdata/dirac_id_seq4d/%MPI%_dirac_%id%_18
+  - filepath: testdata/dirac_id_seq4d/_MPI_-_OMP__dirac_%id%_12
+  - filepath: testdata/dirac_id_seq4d/_MPI_-_OMP__dirac_%id%_18
 output variance:
   states:
-  - mpi pattern: '%MPI%'
-    filepath: testdata/dirac_id_seq4d/%MPI%_variance_12
-  - mpi pattern: '%MPI%'
-    filepath: testdata/dirac_id_seq4d/%MPI%_variance_18
+  - filepath: testdata/dirac_id_seq4d/_MPI_-_OMP__variance_12
+  - filepath: testdata/dirac_id_seq4d/_MPI_-_OMP__variance_18
 test:
   reference filename: testref/dirac_id_seq4d.ref

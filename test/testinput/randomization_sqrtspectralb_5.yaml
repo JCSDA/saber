@@ -36,10 +36,9 @@ background error:
     active variables: *vars
 
 output variance:  # This section is optional
-  mpi pattern: '%MPI%'
-  filepath: testdata/randomization_sqrtspectralb_5/variance_%MPI%pes
+  filepath: testdata/randomization_sqrtspectralb_5/_MPI_-_OMP__variance
 output perturbations:
   member pattern: '%MEM%'
-  filepath: testdata/randomization_sqrtspectralb_5/randomized_gauss_mb%MEM%
+  filepath: testdata/randomization_sqrtspectralb_5/_MPI_-_OMP__randomized_gauss_mb%MEM%
 test:
   reference filename: testref/randomization_sqrtspectralb_5.ref

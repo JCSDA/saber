@@ -35,8 +35,7 @@ dirac: &dirac
   - air_horizontal_streamfunction
 diagnostic points: *dirac
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_stddev_1/%MPI%_stddev_%id%
+  filepath: testdata/dirac_stddev_1/_MPI_-_OMP__stddev_%id%
 test:
   reference filename: testref/dirac_stddev_1.ref
 

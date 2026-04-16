@@ -32,7 +32,7 @@ background error:
     members from template:
       template:
         date: 2010-01-01T12:00:00Z
-        filepath: testdata/randomization_sqrtspectralb_3/randomized_gauss_mb%mem%
+        filepath: testdata/randomization_sqrtspectralb_3/_MPI_-_OMP__randomized_gauss_mb%mem%
       pattern: '%mem%'
       nmembers: 10
   saber central block:
@@ -44,9 +44,8 @@ background error:
     - unbalanced_pressure_levels_minus_one
     calibration:
       write:
-        covariance name: "specvertcov2"
-        mpi pattern: '%MPI%'
-        file path: testdata/error_covariance_training_spectralb_2/spectralvertcov_%MPI%.nc
+        covariance name: specvertcov2
+        file path: testdata/error_covariance_training_spectralb_2/_MPI_-_OMP__spectralvertcov.nc
   saber outer blocks:
   - saber block name: spectral to gauss
     active variables: *vars
@@ -59,28 +58,25 @@ background error:
     - variable 1: northward_wind
       variable 2: mu
     binning:
-      type: "horizontal global average"
+      type: horizontal global average
     calibration:
       write:
-        covariance name: "randomization with F12 mesh"
-        mpi pattern: '%MPI%'
-        file path: testdata/error_covariance_training_spectralb_2/variances_1_%MPI%.nc
+        covariance name: randomization with F12 mesh
+        file path: testdata/error_covariance_training_spectralb_2/_MPI_-_OMP__variances.nc
     field names: *inputvars
     save NetCDF file: true
-    statistics type:  "variance"
+    statistics type:  variance
   - saber block name: write variances
     field names: *inputvars
     binning:
-      type: "horizontal grid point"
-      mpi rank pattern: '%MPI%'
-      file path: testdata/error_covariance_training_spectralb_2/hor_gri_ave_%MPI%.nc
+      type: horizontal grid point
+      file path: testdata/error_covariance_training_spectralb_2/_MPI_-_OMP__hor_gri_ave.nc
     calibration:
       write:
-        covariance name: "randomization with F12 mesh"
-        mpi pattern: '%MPI%'
-        file path: testdata/error_covariance_training_spectralb_2/variances_2_%MPI%.nc
+        covariance name: randomization with F12 mesh
+        file path: testdata/error_covariance_training_spectralb_2/_MPI_-_OMP__variances_2.nc
     save NetCDF file: true
-    statistics type:  "variance"
+    statistics type:  variance
   - saber block name: write variances
     additional cross covariances:
     - variable 1: eastward_wind
@@ -90,17 +86,15 @@ background error:
     - variable 1: northward_wind
       variable 2: mu
     binning:
-      type: "horizontal global average"
-      mpi rank pattern: '%MPI%'
-      file path: testdata/error_covariance_training_spectralb_2/hor_glo_ave_%MPI%.nc
+      type: horizontal global average
+      file path: testdata/error_covariance_training_spectralb_2/_MPI_-_OMP__hor_glo_ave.nc
     calibration:
       write:
-        covariance name: "randomization with F12 mesh"
-        mpi pattern: '%MPI%'
-        file path: testdata/error_covariance_training_spectralb_2/vertcov_1_%MPI%.nc
+        covariance name: randomization with F12 mesh
+        file path: testdata/error_covariance_training_spectralb_2/_MPI_-_OMP__vertcov.nc
     field names: *inputvars
     save NetCDF file: true
-    statistics type:  "vertical covariance"
+    statistics type:  vertical covariance
   - saber block name: write variances
     additional cross covariances:
     - variable 1: eastward_wind
@@ -110,17 +104,15 @@ background error:
     - variable 1: northward_wind
       variable 2: mu
     binning:
-      type: "overlapping area-weighted latitude bands"
+      type: overlapping area-weighted latitude bands
       no of bins: 7
-      mpi rank pattern: '%MPI%'
-      file path: testdata/error_covariance_training_spectralb_2/lat_overlap_%MPI%.nc
+      file path: testdata/error_covariance_training_spectralb_2/_MPI_-_OMP__lat_overlap.nc
     calibration:
       write:
-        covariance name: "randomization with F12 mesh"
-        mpi pattern: '%MPI%'
-        file path: testdata/error_covariance_training_spectralb_2/lat_overlap_vertcov_1_%MPI%.nc
+        covariance name: randomization with F12 mesh
+        file path: testdata/error_covariance_training_spectralb_2/_MPI_-_OMP__lat_overlap_vertcov.nc
     field names: *inputvars
     save NetCDF file: true
-    statistics type:  "vertical covariance"
+    statistics type:  vertical covariance
 test:
   reference filename: testref/error_covariance_training_spectralb_2.ref

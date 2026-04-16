@@ -43,7 +43,7 @@ background error:
             nmembers: 2
             template:
               date: *date
-              filepath: testdata/process_perts_from_csdual_states_2/wb1_F14_inc_%MEM%
+              filepath: testdata/process_perts_spectralb_from_csdual_states_2/wb1_F14_inc_%MEM%
               variables: *vars
         # FunctionSpace-specific localization, not on model Geometry.
         localization:
@@ -82,7 +82,7 @@ background error:
             nmembers: 2
             template:
               date: *date
-              filepath: testdata/process_perts_from_csdual_states_2/wb2_F14_inc_%MEM%
+              filepath: testdata/process_perts_spectralb_from_csdual_states_2/wb2_F14_inc_%MEM%
               variables: *vars
         # FunctionSpace-specific localization, not on model Geometry.
         localization:
@@ -112,7 +112,7 @@ background error:
             nmembers: 2
             template:
               date: *date
-              filepath: testdata/process_perts_from_csdual_states_2/wb3_CS-LFR-14_mb%MEM%_inc
+              filepath: testdata/process_perts_spectralb_from_csdual_states_2/_MPI_-_OMP__wb3_CS-LFR-14_mb%MEM%_inc
               variables: *vars
         # FunctionSpace-specific localization, on model Geometry.
         localization:
@@ -145,9 +145,8 @@ diagnostic points: *dirac
 increment variables: *vars
 
 output dirac:
-  mpi pattern: '%MPI%'
-  filepath: testdata/dirac_ens_other_geom_2/dirac_%id%_%MPI%
+  filepath: testdata/dirac_ens_other_geom_2/_MPI_-_OMP__dirac_%id%
 
 test:
-  float relative tolerance: 2e-3  # Due to process_perts_from_csdual_states_2 outputs differing on 1/2 MPI tasks
+  float relative tolerance: 2e-3  # Due to process_perts_spectralb_from_csdual_states_2 outputs differing on 1/2 MPI tasks
   reference filename: testref/dirac_ens_other_geom_2.ref

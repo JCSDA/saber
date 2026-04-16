@@ -207,9 +207,11 @@ void SpectralCorrelation::write() const {
   writeParams.serialize(writeConfig);
 
   const std::string filepath{writeParams.filePath};
-  const std::string mpi_pattern = writeParams.mpiPattern;
-  const std::string mpi_size = std::to_string(geometryData().comm().size());
-  ::util::seekAndReplace(writeConfig, mpi_pattern, mpi_size);
+  if (writeParams.mpiPattern.value()) {
+    const std::string mpi_pattern = *writeParams.mpiPattern.value();
+    const std::string mpi_size = std::to_string(geometryData().comm().size());
+    ::util::seekAndReplace(writeConfig, mpi_pattern, mpi_size);
+  }
   const std::string ncfilepath = "./" + writeConfig.getString("file path");
 
   using atlas::array::make_view;

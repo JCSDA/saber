@@ -21,8 +21,7 @@ background error:
     saber block name: ID
   randomization size: 1
 output perturbations:
-  mpi pattern: '%MPI%'
   member pattern: '%MEM%'
-  filepath: testdata/%MPI%_pert_%MEM%
+  filepath: testdata/_MPI_-_OMP__pert_%MEM%
 test:
   reference filename: testref/randomization_increment_variables.ref

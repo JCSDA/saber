@@ -58,18 +58,14 @@ diagnostic points:
 output dirac:
   states:
   - date: 2010-01-01T12:00:00Z
-    mpi pattern: '%MPI%'
-    filepath: testdata/dirac_id_4d/%MPI%_dirac_%id%
+    filepath: testdata/dirac_id_4d/_MPI_-_OMP__dirac_%id%
   - date: 2010-01-01T18:00:00Z
-    mpi pattern: '%MPI%'
-    filepath: testdata/dirac_id_4d/%MPI%_dirac_%id%
+    filepath: testdata/dirac_id_4d/_MPI_-_OMP__dirac_%id%
 output variance:
   states:
   - date: 2010-01-01T12:00:00Z
-    mpi pattern: '%MPI%'
-    filepath: testdata/dirac_id_4d/%MPI%_variance_%id%
+    filepath: testdata/dirac_id_4d/_MPI_-_OMP__variance_%id%
   - date: 2010-01-01T18:00:00Z
-    mpi pattern: '%MPI%'
-    filepath: testdata/dirac_id_4d/%MPI%_variance_%id%
+    filepath: testdata/dirac_id_4d/_MPI_-_OMP__variance_%id%
 test:
   reference filename: testref/dirac_id_4d.ref
