@@ -380,6 +380,7 @@ MoistIncrOp::MoistIncrOp(const oops::GeometryData & outerGeometryData,
                          const oops::FieldSet3D & fg)
   : SaberOuterBlockBase(params, xb.validTime(), outerGeometryData, outerVars),
     innerGeometryData_(outerGeometryData),
+    fspace_(outerGeometryData.functionSpace()),
     innerVars_(getUnionOfInnerActiveAndOuterVars(params, outerVars)),
     activeOuterVars_(params.activeOuterVars(outerVars)),
     innerOnlyVars_(getInnerOnlyVars(params, outerVars)),
@@ -423,7 +424,7 @@ void MoistIncrOp::multiply(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiply starting" << std::endl;
   // Allocate output fields if they are not already present, e.g when randomizing.
   allocateMissingFields(fset, activeOuterVars_, activeOuterVars_,
-                        innerGeometryData_.functionSpace());
+                        fspace_);
 
   // Populate output fields.
   eval_moisture_incrementing_operator_tl(fset.fieldSet(), augmentedStateFieldSet_);
@@ -439,8 +440,9 @@ void MoistIncrOp::multiplyAD(oops::FieldSet3D & fset) const {
   oops::Log::trace() << classname() << "::multiplyAD starting" << std::endl;
   // Allocate inner-only variables
   checkFieldsAreNotAllocated(fset, innerOnlyVars_);
+
   allocateMissingFields(fset, innerOnlyVars_, innerOnlyVars_,
-                        innerGeometryData_.functionSpace());
+                        fspace_);
 
   eval_moisture_incrementing_operator_ad(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::multiplyAD done" << std::endl;
@@ -462,7 +464,7 @@ void MoistIncrOp::leftInverseMultiply(oops::FieldSet3D & fset) const {
   innerOnlyVarsForInversion -= innerOnlyVarsForInversion["air_temperature"];
   checkFieldsAreNotAllocated(fset, innerOnlyVarsForInversion);
   allocateMissingFields(fset, innerOnlyVarsForInversion, innerOnlyVarsForInversion,
-                        innerGeometryData_.functionSpace());
+                        fspace_);
 
   eval_total_water_tl(fset.fieldSet(), augmentedStateFieldSet_);
   oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
@@ -604,7 +606,7 @@ void MoistIncrOp::directCalibration(const oops::FieldSets & fsets) {
 
   const std::size_t root(0);
 
-  if (oops::mpi::world().rank() == root) {
+  if (eckit::mpi::comm().rank() == root) {
     // remove missing value from coefficients with choice of values
     // and set output file
     const auto & calibparams = blockparams_.calibrationParams.value();

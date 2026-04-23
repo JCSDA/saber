@@ -1,6 +1,6 @@
 /*
  * (C) Copyright 2022- UCAR
- * (C) Crown Copyright 2022-2024 Met Office
+ * (C) Crown Copyright 2022-2026 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -295,7 +295,12 @@ SpectralToGauss::SpectralToGauss(const oops::GeometryData & outerGeometryData,
     useWindTransform_(outerVars.has("eastward_wind") && outerVars.has("northward_wind")),
     innerVars_(createInnerVars(outerVars, activeVars_, useWindTransform_)),
     gaussFunctionSpace_(outerGeometryData.functionSpace()),
-    specFunctionSpace_(2 * atlas::GaussianGrid(gaussFunctionSpace_.grid()).N() - 1),
+    specFunctionSpace_([&]() {
+      // Ensure that the MPI communicator is set correctly, for when Trans is initialised.
+      eckit::mpi::setCommDefault(outerGeometryData.comm().name());
+      return atlas::functionspace::Spectral(
+          2 * atlas::GaussianGrid(gaussFunctionSpace_.grid()).N() - 1);
+    }()),
     trans_(gaussFunctionSpace_, specFunctionSpace_),
     innerGeometryData_(atlas::FunctionSpace(specFunctionSpace_),
                        outerGeometryData.fieldSet(),

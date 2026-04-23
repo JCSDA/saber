@@ -169,6 +169,56 @@ saber_add_test( TARGET saber_dirac_spectralb_gauss_vader_6_1-2
                 ARGS testinput/dirac_spectralb_gauss_vader_6.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x )
 
+# dirac_spectralb_gauss_vader_7
+saber_add_test( TARGET saber_dirac_spectralb_gauss_vader_7_1-1
+                MPI 1
+                OMP 1
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/dirac_spectralb_gauss_vader_7.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x
+                TEST_DEPENDS saber_process_perts_spectralb_from_gauss_perts_1_1-1 )
+
+saber_add_test( TARGET saber_dirac_spectralb_gauss_vader_7_2-1
+                MPI 2
+                OMP 1
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/dirac_spectralb_gauss_vader_7.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x
+                TEST_DEPENDS saber_process_perts_spectralb_from_gauss_perts_1_2-1 )
+
+saber_add_test( TARGET saber_dirac_spectralb_gauss_vader_7_1-2
+                MPI 1
+                OMP 2
+		LABELS   tier2
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/dirac_spectralb_gauss_vader_7.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x
+                TEST_DEPENDS saber_process_perts_spectralb_from_gauss_perts_1_1-2 )
+
+
+# NOTE: This test relies on Atlas 0.46.0, because earlier versions do not support
+#       using ectrans on a split communicator.
+if( ATLAS_SUPPORTS_SPECTRAL_ON_SPLIT_COMM )
+  # dirac_spectral_parallel_gauss_vader_6
+  # (should give similar results to dirac_spectral_gauss_vader_6_2_1)
+  saber_add_test( TARGET saber_dirac_spectralb_parallel_gauss_vader_6_4-2
+                  MPI 4
+                  OMP 2
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_spectralb_parallel_gauss_vader_6.yaml
+                  DEPENDS saber_quench_error_covariance_toolbox.x )
+
+  # dirac_spectral_parallel_gauss_vader_7
+  # (should give similar results to dirac_spectral_gauss_vader_7_1_1)
+  saber_add_test( TARGET saber_dirac_spectralb_parallel_gauss_vader_7_7-1
+                  MPI 7
+                  OMP 1
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_subcomm_error_covariance_toolbox.x
+                  ARGS testinput/dirac_spectralb_parallel_gauss_vader_7.yaml
+                  DEPENDS saber_quench_subcomm_error_covariance_toolbox.x
+                  TEST_DEPENDS saber_process_perts_spectralb_from_gauss_perts_1_1-1 )
+endif()
+
 # dirac_write_fields
 saber_add_test( TARGET saber_dirac_write_fields_1-1
                 MPI 1

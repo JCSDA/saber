@@ -44,6 +44,7 @@
 #include "saber/blocks/SaberOuterBlockBase.h"
 #include "saber/interpolation/AtlasInterpWrapper.h"
 #include "saber/oops/Utilities.h"
+#include "saber/util/defines.h"
 
 
 #define ERR(e) {throw eckit::Exception(nc_strerror(e), Here());}
@@ -55,11 +56,15 @@ namespace {
 
 
 double normfield(const eckit::mpi::Comm & comm, const atlas::Field& fld) {
-  auto view = atlas::array::make_view<double, 2>(fld);
+  auto view = atlas::array::make_view<const double, 2>(fld);
 
   std::size_t i(0);
   double zz(0.0);
-  const atlas::idx_t sizeOwned = util::getSizeOwned(fld.functionspace());
+
+  const atlas::idx_t sizeOwned =
+    fld.functionspace().type() == "PointCloud" ?
+    fld.functionspace().size() :
+    util::getSizeOwned(fld.functionspace());
 
   for (atlas::idx_t jn = 0; jn < sizeOwned; ++jn) {
     for (atlas::idx_t jl = 0; jl < fld.shape(1); ++jl, ++i) {
@@ -191,14 +196,15 @@ atlas::FieldSet populateFields(const atlas::FieldSet & geomfields,
 
 // -----------------------------------------------------------------------------
 
-auto createPointCloud(const atlas::Grid& grid,
+auto createPointCloud(const eckit::mpi::Comm & comm,
+                      const atlas::Grid& grid,
                       const atlas::grid::Partitioner& partitioner) {
     const auto distribution = atlas::grid::Distribution(grid, partitioner);
 
     auto lonLats = std::vector<atlas::PointXY>{};
     auto idx = atlas::gidx_t{0};
     for (const auto& lonLat : grid.lonlat()) {
-        if (distribution.partition(idx++) == atlas::mpi::rank()) {
+        if (distribution.partition(idx++) == comm.rank()) {
             lonLats.emplace_back(lonLat.data());
         }
     }
@@ -212,22 +218,22 @@ void interpolateCSToGauss(const oops::GeometryData & outerGeometryData,
                           atlas::FieldSet & gfields) {
   std::string s("dry_air_density_levels_minus_one");
 
+  const std::string startComm = eckit::mpi::comm().name();
+  // Ensure this is being done on the outerGeometryData comm.
+  eckit::mpi::setCommDefault(outerGeometryData.comm().name());
+
   const auto srcFunctionspace =
       atlas::functionspace::NodeColumns(csfields[s].functionspace());
-
   const auto srcPartitioner = atlas::grid::MatchingPartitioner(srcFunctionspace.mesh(),
                            atlas::util::Config("type", "cubedsphere"));
-
   const auto targetFunctionspace =
       atlas::functionspace::StructuredColumns(outerGeometryData.functionSpace());
-
   const auto targetGrid = targetFunctionspace.grid();
-
   const auto targetPartitioner = atlas::grid::Partitioner(targetFunctionspace.distribution());
-
-  const auto step1Functionspace = createPointCloud(targetGrid, srcPartitioner);
-
-  const auto step2Functionspace = createPointCloud(targetGrid, targetPartitioner);
+  const auto step1Functionspace =
+    createPointCloud(outerGeometryData.comm(), targetGrid, srcPartitioner);
+  const auto step2Functionspace =
+    createPointCloud(outerGeometryData.comm(), targetGrid, targetPartitioner);
 
   // Set up interpolation object.
   const auto scheme = atlas::util::Config("type", "cubedsphere-bilinear") |
@@ -249,7 +255,6 @@ void interpolateCSToGauss(const oops::GeometryData & outerGeometryData,
   // Redistribute to intermediate PointCloud 2
   auto step2Field = step2Functionspace.createField<double>(
               field_options | atlas::option::halo(0));
-
   redistr.execute(step1Field, step2Field);
 
   // Copy to target StructuredColumns
@@ -260,6 +265,8 @@ void interpolateCSToGauss(const oops::GeometryData & outerGeometryData,
              atlas::array::make_view<double, 2>(step2Field));
 
   gfields.add(gaussField);
+
+  eckit::mpi::setCommDefault(startComm);
 }
 
 // -----------------------------------------------------------------------------
@@ -343,6 +350,9 @@ atlas::FieldSet createAugmentedState(const oops::GeometryData & outerGeometryDat
     throw eckit::Exception(error_message, Here());
   }
 
+  // Ensure comm is set to the outerGeometryData comm.
+  eckit::mpi::setCommDefault(outerGeometryData.comm().name());
+
   // Get and check model grid name
   enum ModelGrid { gauss, cubedsphere, unknown};
   ModelGrid modelGrid = unknown;
@@ -364,13 +374,24 @@ atlas::FieldSet createAugmentedState(const oops::GeometryData & outerGeometryDat
     throw eckit::FunctionalityNotSupported(error_message, Here());
   }
 
+  // Atlas issue #186, prior to 0.46.0.
+  // Ensure comm is still set to the outerGeometryData comm.
+  if constexpr (!SABER_ATLAS_SCOPE_ISSUE_RESOLVED) {
+    eckit::mpi::setCommDefault(outerGeometryData.comm().name());
+  }
+
   // Populate field "s"
   atlas::FieldSet modelFields;
-  if (normfield(outerGeometryData.comm(), xb[s]) <= tolerance) {
+
+  const bool lPopulateFields = (normfield(outerGeometryData.comm(), xb[s]) <= tolerance);
+
+  if (lPopulateFields) {
     modelFields = populateFields(outerGeometryData.fieldSet(), xb);
   } else {
     modelFields.add(xb[s]);
   }
+  modelFields[s].set_dirty();
+  modelFields.haloExchange();
 
   // Interpolate to Gauss
   atlas::FieldSet gaussFields;
@@ -387,6 +408,7 @@ atlas::FieldSet createAugmentedState(const oops::GeometryData & outerGeometryDat
 
   // Add Coriolis term
   gaussFields.add(createCoriolis(gaussFields[s]));
+
 
   return gaussFields;
 }

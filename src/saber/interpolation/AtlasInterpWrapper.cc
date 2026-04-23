@@ -8,6 +8,7 @@
 
 #include "saber/interpolation/AtlasInterpWrapper.h"
 #include "saber/interpolation/VectorFieldMetadata.h"
+#include "saber/util/defines.h"
 
 #include "atlas/array.h"
 #include "atlas/field.h"
@@ -39,10 +40,20 @@ AtlasInterpWrapper::AtlasInterpWrapper(const atlas::grid::Partitioner & srcParti
     includingVectorInterpolation_(includingVectorInterpolation) {
   oops::Log::trace() << classname() << "::AtlasInterpWrapper starting" << std::endl;
 
+  const auto startMPIComm = eckit::mpi::comm().name();
+
   // Get or compute source mesh
   atlas::Mesh srcMesh;
   if (srcFspace.type() == "StructuredColumns") {
     const atlas::functionspace::StructuredColumns fs(srcFspace);
+
+    // NOTE(@mo-joshuacolclough): **Prior to Atlas 0.46.0**
+    //                            StructuredColumns erroneously resets the MPI communicator to
+    //                            one at a higher "MPI scope". See Atlas issue #186.
+    if constexpr (!SABER_ATLAS_SCOPE_ISSUE_RESOLVED) {
+      eckit::mpi::setCommDefault(startMPIComm);
+    }
+
     srcMesh = atlas::MeshGenerator("structured").generate(fs.grid(), srcPartitioner);
   } else if (srcFspace.type() == "NodeColumns") {
     const atlas::functionspace::NodeColumns fs(srcFspace);
@@ -50,6 +61,10 @@ AtlasInterpWrapper::AtlasInterpWrapper(const atlas::grid::Partitioner & srcParti
   } else {
     throw eckit::NotImplemented(srcFspace.type()
       + " source function space not supported yet", Here());
+  }
+
+  if constexpr (!SABER_ATLAS_SCOPE_ISSUE_RESOLVED) {
+    eckit::mpi::setCommDefault(startMPIComm);
   }
 
   // Get target partitioner from source mesh
@@ -76,6 +91,11 @@ AtlasInterpWrapper::AtlasInterpWrapper(const atlas::grid::Partitioner & srcParti
   } else {
     throw eckit::NotImplemented(dstFspace.type()
       + " destination function space type not supported yet", Here());
+  }
+
+  // Ensure comm definitely set correctly prior to interpolation.
+  if constexpr (!SABER_ATLAS_SCOPE_ISSUE_RESOLVED) {
+    eckit::mpi::setCommDefault(startMPIComm);
   }
 
   // Interpolation

@@ -114,11 +114,11 @@ class GaussToCS : public SaberOuterBlockBase {
   /// Interpolation type
   std::string interpType_;
 
-  /// Gaussian (inner) functionspace
-  const atlas::functionspace::StructuredColumns gaussFunctionSpace_;
-
   /// Gaussian Partitioner
   const atlas::grid::Partitioner gaussPartitioner_;
+
+  /// Gaussian (inner) functionspace
+  const atlas::functionspace::StructuredColumns gaussFunctionSpace_;
 
   /// Cubed-sphere grid (destination grid)
   const atlas::Grid csgrid_;

@@ -19,6 +19,7 @@
 #include "saber/interpolation/GaussToCS.h"
 #include "saber/interpolation/Rescaling.h"
 #include "saber/interpolation/VectorFieldMetadata.h"
+#include "saber/util/defines.h"
 
 using atlas::grid::detail::partitioner::TransPartitioner;
 using atlas::grid::detail::partitioner::MatchingMeshPartitionerCubedSphere;
@@ -41,12 +42,23 @@ int getHalo(const std::string & interpType) {
 
 atlas::functionspace::StructuredColumns
     createGaussFunctionSpace(const atlas::StructuredGrid & gaussGrid,
+                             const atlas::grid::Partitioner& partitioner,
                              const int halo) {
   oops::Log::trace() << "::GaussToCS::createGaussFunctionSpace" << std::endl;
-  return atlas::functionspace::StructuredColumns(
-    gaussGrid,
-    atlas::grid::Partitioner(new TransPartitioner()),
-    atlas::option::halo(halo));
+
+  const std::string startCommName = eckit::mpi::comm().name();
+
+  const auto gaussFSpace = atlas::functionspace::StructuredColumns(
+      gaussGrid,
+      partitioner,
+      atlas::option::halo(halo));
+
+  // NOTE(@mo-joshuacolclough): Atlas has an mpi::Scope object which incorrectly resets the
+  //                            communicator in StructuredColumns. Fixed in Atlas 0.46.0.
+  if constexpr (!SABER_ATLAS_SCOPE_ISSUE_RESOLVED) {
+    eckit::mpi::setCommDefault(startCommName);
+  }
+  return gaussFSpace;
 }
 
 // -----------------------------------------------------------------------------
@@ -77,6 +89,9 @@ auto createInverseInterpolation(const bool initializeInverseInterpolation,
                                 const std::string & interpType,
                                 const bool includingVectorInterpolation) {
   oops::Log::trace()  << "::GaussToCS::createInverseInterpolation" << std::endl;
+  // Ensure the communicator is matching the cubedsphere.
+  eckit::mpi::setCommDefault(csFunctionSpace.mpi_comm());
+
   CS2Gauss inverseInterpolation;
 
   if (!initializeInverseInterpolation || hasSinglePE) {
@@ -349,13 +364,28 @@ GaussToCS::GaussToCS(const oops::GeometryData & outerGeometryData,
     CSFunctionSpace_(outerGeometryData.functionSpace()),
     gaussGrid_(params.gaussGridUid.value()),
     interpType_(params.interpType.value()),
+    gaussPartitioner_([&]() {
+      // Ensure that ectrans is setup on the correct MPI communicator.
+      // Also ensures that the comm is set correctly for setting up the
+      // functionspace.
+      eckit::mpi::setCommDefault(outerGeometryData.comm().name());
+      return new TransPartitioner();
+    }()),
     gaussFunctionSpace_(createGaussFunctionSpace(gaussGrid_,
+                                                 gaussPartitioner_,
                                                  getHalo(params.interpType.value()))),
-    gaussPartitioner_(new TransPartitioner()),
     csgrid_(CSFunctionSpace_.mesh().grid()),
     includingVectorInterpolation_(params.skipVectorInterpolation == false),
-    interp_(gaussPartitioner_, gaussFunctionSpace_, csgrid_, CSFunctionSpace_,
-            params.interpType.value(), includingVectorInterpolation_),
+    interp_([&]() {
+      // Ensure on the correct comm.
+      eckit::mpi::setCommDefault(outerGeometryData.comm().name());
+      return saber::interpolation::AtlasInterpWrapper(gaussPartitioner_,
+                                                      gaussFunctionSpace_,
+                                                      csgrid_,
+                                                      CSFunctionSpace_,
+                                                      params.interpType.value(),
+                                                      includingVectorInterpolation_);
+    }()),
     inverseInterpolation_(createInverseInterpolation(
                               params.initializeInverseInterpolation.value(),
                               outerGeometryData.comm().size() == 1,

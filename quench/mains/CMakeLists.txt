@@ -31,6 +31,13 @@ ecbuild_add_executable( TARGET  saber_quench_coupled_error_covariance_toolbox.x
                                 ${gsibec_LIBRARIES}
                                 saber )
 
+ecbuild_add_executable( TARGET  saber_quench_subcomm_error_covariance_toolbox.x
+                        SOURCES quenchSubCommErrorCovarianceToolbox.cc
+                        LIBS    quench
+                                vader
+                                ${gsibec_LIBRARIES}
+                                saber )			
+
 # Add RPATH for Torch libraries if found
 if( Torch_FOUND AND DEFINED Torch_ROOT )
     foreach(target saber_quench_error_covariance_toolbox.x saber_quench_process_perts.x saber_quench_convertstate.x saber_quench_coupled_error_covariance_toolbox.x)

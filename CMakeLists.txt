@@ -73,6 +73,17 @@ if( atlas_VERSION VERSION_GREATER_EQUAL "0.44.0" )
     add_definitions(-DATLAS_SUPPORTS_SPHERICAL_VECTOR_INTERP_META)
 endif()
 
+# Flag to set if an issue in Atlas regarding the use of atlas::mpi::Scope
+# is resolved, and so extra calls to `eckit::mpi::setCommDefault` are not needed.
+# This is because sometimes Atlas used to erroneously set the MPI communicator.
+# See Atlas issue #186.
+if ( atlas_VERSION VERSION_GREATER_EQUAL "0.46.0" )
+  add_definitions(-DATLAS_SCOPE_ISSUE_RESOLVED)
+  set( ATLAS_SUPPORTS_SPECTRAL_ON_SPLIT_COMM ON )
+else()
+  set( ATLAS_SUPPORTS_SPECTRAL_ON_SPLIT_COMM OFF )
+endif()
+
 if( ENABLE_MKL )
     find_package( MKL )
 endif()

@@ -89,6 +89,11 @@ class SaberHybridBlockChainParameters: public ErrorCovarianceParametersBase {
   // Resource weighting for each hybrid component.
   oops::OptionalParameter<std::vector<double>> parallelCovarRelativeCPUWeight{
       "parallel covariance relative cpu weight", this};
+
+  // Which method to use in the atlas field redistribution between subcommunicator
+  // and parent communicator.
+  oops::Parameter<std::string> commRedistributionMethod{"comm redistribution method",
+      "straight", this};
 };
 
 /// Hybrid covariance block chain implementation
@@ -140,6 +145,10 @@ class SaberHybridBlockChain : public SaberBlockChainBase {
   size_t myComponent_;
   /// local geometry for parallel Hybrid block (type-erased)
   std::shared_ptr<atlas::FunctionSpace> localHybridFs_, globalHybridFs_;
+
+  /// Which method to use for comm redistribution, if any.
+  std::string redistributionMethod_;
+
   std::unique_ptr<oops::Geometry<MODEL>> localHybridGeom_;
 };
 
@@ -152,7 +161,9 @@ SaberHybridBlockChain<MODEL>::SaberHybridBlockChain(const oops::Geometry<MODEL> 
                        oops::FieldSet4D & fset4dFg,
                        const eckit::Configuration & conf)
   : outerFunctionSpace_(geom.functionSpace()), outerVariables_(outerVars),
-    parallelHybrid_(false), myComponent_(0) {
+    parallelHybrid_(false), myComponent_(0),
+    redistributionMethod_{""}
+{
   oops::Log::trace() << "SaberHybridBlockChain ctor starting" << std::endl;
 
   // Deserialize parameters and fill configuration with missing values
@@ -178,9 +189,12 @@ SaberHybridBlockChain<MODEL>::SaberHybridBlockChain(const oops::Geometry<MODEL> 
 
   // Hybrid central block
   parallelHybrid_ = params.runInParallel;
+  redistributionMethod_ = params.commRedistributionMethod;
+
   const eckit::mpi::Comm & defaultSpaceComm = geom.getComm();
   const size_t ntasks = defaultSpaceComm.size();
   const size_t nComponents = params.components.value().size();
+  globalHybridFs_.reset(new atlas::FunctionSpace(geom.functionSpace()));
 
   std::vector<double> parallelCovRelativeCpuWeight;
   if (params.parallelCovarRelativeCPUWeight.value()) {
@@ -258,7 +272,7 @@ SaberHybridBlockChain<MODEL>::SaberHybridBlockChain(const oops::Geometry<MODEL> 
     // Set up default MPI communicator for atlas
     eckit::mpi::setCommDefault(localSpaceComm.name().c_str());
 
-    // Create block geometry
+    // Create block geometry (needed for ensemble reading and local geometries)
     if (params.hybridGeometry.value() == boost::none) {
       throw eckit::UserError("Parallel hybrid block requires geometry key", Here());
     }
@@ -269,7 +283,6 @@ SaberHybridBlockChain<MODEL>::SaberHybridBlockChain(const oops::Geometry<MODEL> 
     localHybridGeom_ =
         std::make_unique<oops::Geometry<MODEL>>(geomConf, localSpaceComm, geom.timeComm());
     localHybridFs_.reset(new atlas::FunctionSpace(localHybridGeom_->functionSpace()));
-    globalHybridFs_.reset(new atlas::FunctionSpace(geom.functionSpace()));
     // Copy and redistribute the background and first guess
     oops::FieldSet4D localFset4dXb(fset4dXb.times(), fset4dXb.commTime(),
                                    localSpaceComm, *localHybridFs_, fset4dXb.variables());
@@ -277,17 +290,13 @@ SaberHybridBlockChain<MODEL>::SaberHybridBlockChain(const oops::Geometry<MODEL> 
                                    localSpaceComm, *localHybridFs_, fset4dFg.variables());
 
     for (size_t jtime = 0; jtime < fset4dXb.size(); jtime++) {
-      util::redistributeToSubcommunicator(fset4dXb[jtime].fieldSet(),
+      util::redistributeToSubcommunicator(redistributionMethod_,
+                                          fset4dXb[jtime].fieldSet(),
                                           localFset4dXb[jtime].fieldSet(),
-                                          defaultSpaceComm,
-                                          localSpaceComm,
-                                          geom.functionSpace(),
                                           *localHybridFs_);
-      util::redistributeToSubcommunicator(fset4dFg[jtime].fieldSet(),
+      util::redistributeToSubcommunicator(redistributionMethod_,
+                                          fset4dFg[jtime].fieldSet(),
                                           localFset4dFg[jtime].fieldSet(),
-                                          defaultSpaceComm,
-                                          localSpaceComm,
-                                          geom.functionSpace(),
                                           *localHybridFs_);
     }
     defaultSpaceComm.barrier();
@@ -443,12 +452,11 @@ void SaberHybridBlockChain<MODEL>::randomize(oops::FieldSet4D & fset4d) const {
 
     for (size_t jtime = 0; jtime < fset4dCmp.size(); jtime++) {
       // Redistribute to global communicator and sum
-       util::gatherAndSumFromSubcommunicator(fset4dCmp[jtime].fieldSet(),
-                                             fset4d[jtime].fieldSet(),
-                                             localSpaceComm,
-                                             defaultSpaceComm,
-                                             *localHybridFs_,
-                                             *globalHybridFs_);
+      util::gatherAndSumFromSubcommunicator(redistributionMethod_,
+                                            fset4dCmp[jtime].fieldSet(),
+                                            fset4d[jtime].fieldSet(),
+                                            *localHybridFs_,
+                                            *globalHybridFs_);
     }
 
     // Restore atlas MPI to previous
@@ -515,11 +523,9 @@ void SaberHybridBlockChain<MODEL>::multiply(oops::FieldSet4D & fset4d) const {
     // Create temporary FieldSet copy on communicator of this component
     oops::FieldSet4D fset4dCmp(fset4d.times(), fset4d.commTime(), localSpaceComm);
     for (size_t jtime = 0; jtime < fset4dCmp.size(); jtime++) {
-      util::redistributeToSubcommunicator(fset4d[jtime].fieldSet(),
+      util::redistributeToSubcommunicator(redistributionMethod_,
+                                          fset4d[jtime].fieldSet(),
                                           fset4dCmp[jtime].fieldSet(),
-                                          defaultSpaceComm,
-                                          localSpaceComm,
-                                          *globalHybridFs_,
                                           *localHybridFs_);
     }
 
@@ -554,10 +560,9 @@ void SaberHybridBlockChain<MODEL>::multiply(oops::FieldSet4D & fset4d) const {
 
     // Gather and sum data across components
     for (size_t jtime = 0; jtime < fset4dCmp.size(); jtime++) {
-      util::gatherAndSumFromSubcommunicator(fset4dCmp[jtime].fieldSet(),
+      util::gatherAndSumFromSubcommunicator(redistributionMethod_,
+                                            fset4dCmp[jtime].fieldSet(),
                                             fset4dSum[jtime].fieldSet(),
-                                            localSpaceComm,
-                                            defaultSpaceComm,
                                             *localHybridFs_,
                                             *globalHybridFs_);
     }

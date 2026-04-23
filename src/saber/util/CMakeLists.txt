@@ -9,6 +9,7 @@ BinnedFieldSetHelpers.cc
 BinnedFieldSetHelpers.h
 Calibration.cc
 Calibration.h
+defines.h
 HorizontalProfiles.cc
 HorizontalProfiles.h
 mo_cvtcoord_mod.F90

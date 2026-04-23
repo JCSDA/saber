@@ -516,6 +516,20 @@ saber_add_test( TARGET saber_dirac_ens_other_geom_2_1-2
                 DEPENDS saber_quench_error_covariance_toolbox.x
                 TEST_DEPENDS saber_process_perts_spectralb_from_csdual_states_2_1-2 )
 
+# NOTE: These tests rely on Atlas 0.46.0, because earlier versions do not support
+#       using ectrans on a split communicator.
+if( ATLAS_SUPPORTS_SPECTRAL_ON_SPLIT_COMM )
+  # This should give similar results to dirac_ens_other_geom_2
+  saber_add_test( TARGET saber_dirac_ens_parallel_other_geom_2_6-2
+                  MPI 6
+                  OMP 2
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                  ARGS testinput/dirac_ens_parallel_other_geom_2.yaml
+		  LABELS   tier2
+                  DEPENDS saber_quench_error_covariance_toolbox.x
+                  TEST_DEPENDS saber_process_perts_spectralb_from_csdual_states_2_1-2 )	
+endif()
+
 # dirac_interpolation_1
 saber_add_test( TARGET saber_dirac_interpolation_1_1-1
                 MPI 1

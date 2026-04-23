@@ -7,7 +7,7 @@ background:
   - air_horizontal_streamfunction
   - air_horizontal_velocity_potential
 
-geometry:
+geometry: &geom
   function space: NodeColumns
   grid:
     name: CS-LFR-14
@@ -20,7 +20,17 @@ geometry:
 background error:
   covariance model: SABER
   covariance type: hybrid
-  run components recursively: true
+  run components recursively: false
+  adjoint test: false
+  inverse test: false
+  run components recursively: false
+  run in parallel: true
+  comm redistribution method: straight
+  parallel covariance relative cpu weight:
+  - 0.166666
+  - 0.333333
+  - 0.5
+  geometry: *geom
   components:
   ###########################################################################
   # Waveband 1 - F14 grid
@@ -112,7 +122,7 @@ background error:
           nmembers: 2
           template:
             date: *date
-            filepath: testdata/process_perts_spectralb_from_csdual_states_2/_MPI_-_OMP__wb3_CS-LFR-14_mb%MEM%_inc
+            filepath: testdata/process_perts_spectralb_from_csdual_states_2/1-2_wb3_CS-LFR-14_mb%MEM%_inc
             variables: *vars
       # FunctionSpace-specific localization, on model Geometry.
       localization:
@@ -145,8 +155,7 @@ diagnostic points: *dirac
 increment variables: *vars
 
 output dirac:
-  filepath: testdata/dirac_ens_other_geom_2/_MPI_-_OMP__dirac_%id%
+  filepath: testdata/dirac_ens_parallel_other_geom_2/_MPI_-_OMP__dirac_%id%
 
 test:
-  float relative tolerance: 2e-3  # Due to process_perts_spectralb_from_csdual_states_2 outputs differing on 1/2 MPI tasks
-  reference filename: testref/dirac_ens_other_geom_2.ref
+  reference filename: testref/dirac_ens_parallel_other_geom_2.ref
