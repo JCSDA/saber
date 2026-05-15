@@ -1,0 +1,44 @@
+geometry:
+  function space: NodeColumns
+  grid:
+    name: CS-LFR-12
+  partitioner: cubedsphere
+  groups:
+  - variables: &vars
+    - air_horizontal_streamfunction
+    levels: &levels 10
+  # TODO: why does Diffusion only work when cubed-sphere halo is 0?
+  halo: 0
+
+background:
+  states:
+  - date: 2010-01-01T12:00:00Z
+    state variables: *vars
+
+background error:
+  covariance model: SABER
+  adjoint test: true
+  saber central block:
+    saber block name: diffusion
+    read:
+      groups:
+      - variables: *vars
+        horizontal:
+          filepath: testdata/error_covariance_training_diffusion_implicit_vt/_MPI_-_OMP__hz
+        vertical:
+          levels: *levels
+          filepath: testdata/error_covariance_training_diffusion_implicit_vt/_MPI_-_OMP__vt
+          method: implicit
+          iterations: 4
+dirac:
+  lon:
+  - 0.01
+  lat:
+  - 0.01
+  level:
+  - 5
+  variable: [air_horizontal_streamfunction]
+output dirac:
+  filepath: testdata/dirac_diffusion_implicit_vt/_MPI_-_OMP__dirac_%id%
+test:
+  reference filename: testref/dirac_diffusion_implicit_vt.ref

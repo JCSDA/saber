@@ -58,6 +58,47 @@ class FieldStats {
 std::ostream &operator<< (std::ostream &os, const FieldStats &fs) {fs.print(os); return os;}
 
 // --------------------------------------------------------------------------------
+/// Parse the vertical numerical scheme from the "vertical:" block of YAML and
+/// apply it (plus the precomputed scales) to a Diffusion instance. The YAML keys
+/// are optional; defaults preserve the pre-existing explicit-scheme behavior:
+///    vertical:
+///      method: explicit | implicit    # default "explicit"
+///      iterations: 4                  # only used when method: implicit, must be even
+///
+/// The input length scale is interpreted as the Daley length scale of the
+/// output kernel. createScales() applies the optional GC-half-width to Daley
+/// length conversion (1/3.67) beforehand when "as gaussian: false" (the
+/// default), so this routine can be shape-agnostic.
+void configureDiffusion(oops::Diffusion & diffusion,
+                        const atlas::FieldSet & scales,
+                        const oops::OptionalParameter<eckit::LocalConfiguration> & vtConf) {
+  std::string methodStr = "explicit";
+  int implicitIterations = 4;
+  if (vtConf.value() != boost::none) {
+    methodStr = (*vtConf.value()).getString("method", "explicit");
+    implicitIterations = (*vtConf.value()).getInt("iterations", 4);
+  }
+
+  if (methodStr == "explicit") {
+    diffusion.setParameters(scales);
+  } else if (methodStr == "implicit") {
+    if (implicitIterations <= 0 || implicitIterations % 2 != 0)
+      throw eckit::Exception("saber::Diffusion: vertical \"iterations\" must be a positive"
+                             " even integer, got: " + std::to_string(implicitIterations));
+    oops::Log::info() << "  vertical method: implicit (iterations: "
+                      << implicitIterations
+                      << ", length scale interpreted as Daley length)"
+                      << std::endl;
+    diffusion.setParameters(scales,
+                            oops::Diffusion::VerticalMethod::Implicit,
+                            implicitIterations);
+  } else {
+    throw eckit::Exception("saber::Diffusion: vertical \"method\" must be"
+                           " \"explicit\" or \"implicit\", got: " + methodStr);
+  }
+}
+
+// --------------------------------------------------------------------------------
 // helper function to read / generate scales. The method of specifying scales is the
 // same for horizontal and vertical scales
 
@@ -106,11 +147,17 @@ void createScales(const oops::GeometryData & geom,
     }
   }
 
-  // apply optional conversion from GC half width to gaussian sigma. oops::Diffusion
-  // assumes values are Gaussian sigma. Input to saber::Diffusion by default assumes
-  // Gaspari-Cohn half width instead.
+  // apply optional conversion from GC half width to Daley length scale.
+  // oops::Diffusion (both explicit and implicit methods) interprets the scale
+  // it receives as the Daley length scale of the output kernel. Input to
+  // saber::Diffusion, by default, assumes a Gaspari-Cohn compact half-width
+  // instead; the 1/3.67 factor converts that to a Daley length, which is then
+  // a shape-agnostic length parameter that works for both Gaussian-like
+  // (explicit) and Matern-like (implicit) output kernels. The factor is an
+  // empirical match rather than an exact conversion -- the kernel shape is
+  // never actually GC, just tuned to a similar effective range.
   const bool isGaussian = conf.getBool("as gaussian", false);
-  oops::Log::info() << "  scale type: " << (isGaussian ? "Gaussian" : "Gaspari-Cohn")
+  oops::Log::info() << "  scale type: " << (isGaussian ? "Gaussian / Daley" : "Gaspari-Cohn")
                       << std::endl;
   if (!isGaussian) {
     atlas::FieldSet fset;
@@ -435,8 +482,8 @@ void read(const oops::GeometryData & geom,
       }
     }
 
-    // set the diffusion scales
-    group.diffusion->setParameters(diffusionParams);
+    // set the diffusion scales (and select vertical scheme if configured)
+    configureDiffusion(*group.diffusion, diffusionParams, groupConf.vertical);
   }
   oops::Log::info()
     << "==================================================================================\n\n";
@@ -542,7 +589,8 @@ void directCalibration(const oops::GeometryData & geom,
     }
 
     // done specifying scales. Pass them to oops::Diffusion
-    group.diffusion->setParameters(scales);
+    // (and select vertical scheme if configured)
+    configureDiffusion(*group.diffusion, scales, groupConf.vertical);
 
     // ------------------------------------------------------------------------------------
     // Calculate horizontal normalization. This is done using a randomization method that

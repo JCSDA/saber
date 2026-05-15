@@ -50,6 +50,18 @@ saber_add_test( TARGET saber_dirac_diffusion_2_1-2
                 DEPENDS saber_quench_error_covariance_toolbox.x
                 TEST_DEPENDS saber_error_covariance_training_diffusion_2_1-2 )
 
+# dirac_diffusion_implicit_vt
+# implicit-vertical diffusion is a per-column 1D Cholesky solve with no
+# horizontal MPI communication, so a single MPI/OMP config exercises the
+# new numerics; horizontal parallelism is covered by the explicit-vt tests.
+saber_add_test( TARGET saber_dirac_diffusion_implicit_vt_1-1
+                MPI 1
+                OMP 1
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/dirac_diffusion_implicit_vt.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x
+                TEST_DEPENDS saber_error_covariance_training_diffusion_implicit_vt_1-1 )
+
 # dirac_id
 saber_add_test( TARGET saber_dirac_id_1-1
                 MPI 1
@@ -340,6 +352,14 @@ saber_add_test( TARGET saber_error_covariance_training_diffusion_3_1-2
                 LABELS   tier2
                 COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
                 ARGS testinput/error_covariance_training_diffusion_3.yaml
+                DEPENDS saber_quench_error_covariance_toolbox.x )
+
+# error_covariance_training_diffusion_implicit_vt
+saber_add_test( TARGET saber_error_covariance_training_diffusion_implicit_vt_1-1
+                MPI 1
+                OMP 1
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_error_covariance_toolbox.x
+                ARGS testinput/error_covariance_training_diffusion_implicit_vt.yaml
                 DEPENDS saber_quench_error_covariance_toolbox.x )
 
 # process_perts_diffusion_1
