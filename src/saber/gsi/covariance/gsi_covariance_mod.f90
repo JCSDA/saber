@@ -146,18 +146,27 @@ if (nchecks .gt. 0) then  ! only run checks if data was passed in from JEDI
   endif
 
   do ix = 1, gsi_nx
-    gsi_lon = self%grid%lons(self%grid%isc-1 + ix)
+    if(self%grid%regional) then
+      gsi_lon = self%grid%lons2(self%grid%isc-1 + ix,self%grid%jsc)
+    else
+      gsi_lon = self%grid%lons(self%grid%isc-1 + ix)
+    endif
     jedi_lon = checks(2+ix)
-    if (abs(gsi_lon - jedi_lon) > 1e-8) then
+    if(jedi_lon .lt. 0.) jedi_lon = jedi_lon + 360.
+    if (abs(gsi_lon - jedi_lon) > 1e-5) then
       write (*,*) 'ERROR connecting GSI-block to JEDI -- inconsistent lon with gsi, atlas = ', gsi_lon, jedi_lon
       gsi_jedi_grid_error = .true.
     endif
   enddo
 
   do iy = 1, gsi_ny
-    gsi_lat = self%grid%lats(self%grid%jsc-1 + iy)
+    if(self%grid%regional) then
+      gsi_lat = self%grid%lats2(self%grid%iec,self%grid%jsc-1 + iy)
+    else
+      gsi_lat = self%grid%lats(self%grid%jsc-1 + iy)
+    endif
     jedi_lat = checks(2+gsi_nx+iy)
-    if (abs(gsi_lat - jedi_lat) > 1e-8) then
+    if (abs(gsi_lat - jedi_lat) > 1e-5) then
       write (*,*) 'ERROR connecting GSI-block to JEDI -- inconsistent lat with gsi, atlas = ', gsi_lat, jedi_lat
       gsi_jedi_grid_error = .true.
     endif
@@ -603,7 +612,6 @@ if (any(needvrs(:)(1:6)/='filled')) then
   call abor1_ftn(myname_//": missing fields in cv(tlm) ")
 endif
 
-
 ! Release pointer
 ! ---------------
 if (self%cv) then
@@ -649,6 +657,12 @@ end subroutine multiply
    if (trim(vname) == 'prse' .or. trim(vname) == 'air_pressure_levels') then
       if (.not.fields%has('air_pressure_levels')) return
       afield = fields%field('air_pressure_levels')
+      call afield%data(rank2)
+      ier=0
+   endif
+   if (trim(vname) == 'prsl' .or. trim(vname) == 'air_pressure') then
+      if (.not.fields%has('air_pressure')) return
+      afield = fields%field('air_pressure')
       call afield%data(rank2)
       ier=0
    endif

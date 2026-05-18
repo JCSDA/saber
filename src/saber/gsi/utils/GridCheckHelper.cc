@@ -39,7 +39,7 @@ std::vector<double> functionspaceToGridChecks(const atlas::FunctionSpace & fspac
       gridChecks[2 + (i - ib)] = lonlatView(index, 0);
     }
     for (int j = jb; j < je; ++j) {
-      const int index = sc.index(ie, j);
+      const int index = sc.index(ie-1, j);
       gridChecks[2 + nx + (j - jb)] = lonlatView(index, 1);
     }
   } else {

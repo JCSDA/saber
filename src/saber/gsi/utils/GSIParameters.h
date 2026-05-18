@@ -42,6 +42,9 @@ class GSIParameters : public oops::Parameters {
   oops::Parameter<bool> debugMode{"debugging mode", false, this};
   oops::Parameter<bool> bypassGSI{"debugging bypass gsi", false, this};
   oops::Parameter<bool> bypassGSIbe{"debugging deep bypass gsi B error", false, this};
+
+  // Regional mode
+  oops::OptionalParameter<bool> regionalMode{"regional mode", this};
 };
 
 // -----------------------------------------------------------------------------
