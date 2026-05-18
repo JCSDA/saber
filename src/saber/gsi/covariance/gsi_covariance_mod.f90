@@ -798,36 +798,56 @@ end subroutine multiply
    real(kind=kind_real),intent(in) :: rank(:)
    real(kind=kind_real),intent(inout):: var(:,:)
    integer ii,jj,jnode
-   integer mylat2,mylon2
+   integer mylat2,mylon2,sizeofrank
+   sizeofrank=size(rank)
    mylat2 = size(var,1)
    mylon2 = size(var,2)
-   jnode=1
    var = missing_value(1.0_kind_real)  ! debug: this should be overwritten with physical values
+   
+   jnode=1
    do jj=2,mylat2-1
       do ii=2,mylon2-1
          var(jj,ii) = rank(jnode)
          jnode = jnode + 1
       enddo
    enddo
+   if(mylon2*mylat2.le.sizeofrank) then  !in global domain, or regional, the subdomains are of the laterary boundaries
+                                         ! and the halo points are not "complete"/absent along the laterary boundies of the whole
+                                         ! domain
+                                         !for simplicity, in that situation, the halo points would be defined by adjacent inner
+                                         !points
    ! fill in halos
    ! atlas inserts halos in this order:
    ! - all x @ ymin
    ! - pairs of (xmin, xmax) @ each y from (ymin+1, ymax-1)
    ! - all x @ ymax
-   do ii=1,mylon2
-       var(1,ii) = rank(jnode)
-       jnode = jnode + 1
-   enddo
-   do jj=2,mylat2-1
-       var(jj,1) = rank(jnode)
-       jnode = jnode + 1
-       var(jj,mylon2) = rank(jnode)
-       jnode = jnode + 1
-   enddo
-   do ii=1,mylon2
-       var(mylat2,ii) = rank(jnode)
-       jnode = jnode + 1
-   enddo
+      do ii=1,mylon2
+          var(1,ii) = rank(jnode)
+          jnode = jnode + 1
+      enddo
+      do jj=2,mylat2-1
+          var(jj,1) = rank(jnode)
+          jnode = jnode + 1
+          var(jj,mylon2) = rank(jnode)
+          jnode = jnode + 1
+      enddo
+      do ii=1,mylon2
+          var(mylat2,ii) = rank(jnode)
+          jnode = jnode + 1
+      enddo
+   else
+      do ii=2,mylon2-1
+          var(1,ii) = var(2,ii)
+          var(mylat2,ii) = var(mylat2-1,ii)
+      enddo
+      do jj=2,mylat2-1
+          var(jj,1) = var(jj,2)
+          var(jj,mylon2) = var(jj,mylon2-1)
+      enddo
+      var(1,1)=var(2,2);var(1,mylon2)=var(2,mylon2-1)
+      var(mylat2,1)=var(mylat2-1,2)
+      var(mylat2,mylon2)=var(mylat2-1,mylon2-1)
+   endif
    end subroutine atlas_to_gsi_
 
    ! copy GSI array into atlas array
