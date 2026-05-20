@@ -1,3 +1,5 @@
+message( STATUS "- BIFOURIER" )
+
 # convertcov_bifourier_balance_1
 saber_add_test( TARGET saber_convertcov_bifourier_balance_1_1-1
                 MPI 1

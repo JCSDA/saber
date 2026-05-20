@@ -1,3 +1,5 @@
+message( STATUS "- BIFOURIER ECTRANS" )
+
 # dirac_bifourier_ectrans
 saber_add_test( TARGET saber_dirac_bifourier_ectrans_1-1
                 MPI 1

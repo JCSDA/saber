@@ -1,3 +1,5 @@
+message( STATUS "- COUPLED" )
+
 # coupled_dirac_id
 saber_add_test( TARGET saber_coupled_dirac_id_1-1
                 MPI 1

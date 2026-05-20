@@ -1,3 +1,5 @@
+message( STATUS "- FASTLAM REGIONAL INTERPOLATION" )
+
 # dirac_fastlam_10
 saber_add_test( TARGET saber_dirac_fastlam_10_1-1
                 MPI 1

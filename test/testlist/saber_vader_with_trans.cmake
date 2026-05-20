@@ -1,3 +1,5 @@
+message( STATUS "- VADER WITH TRANS" )
+
 # dirac_gaussuvtogp
 saber_add_test( TARGET saber_dirac_gaussuvtogp_1-1
                 MPI 1

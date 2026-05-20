@@ -1,3 +1,5 @@
+message( STATUS "- SPECTRALB VADER" )
+
 # RANDOMIZATION TESTS NEEDED FOR THIS CMAKE
 
 # randomization_sqrtspectralb_2

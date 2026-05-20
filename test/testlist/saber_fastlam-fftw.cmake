@@ -1,3 +1,5 @@
+message( STATUS "- FASTLAM FFTW" )
+
 # dirac_fastlam-fftw_1
 saber_add_test( TARGET saber_dirac_fastlam-fftw_1_1-1
                 MPI 1

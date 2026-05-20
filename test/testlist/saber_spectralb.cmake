@@ -1,3 +1,5 @@
+message( STATUS "- SPECTRALB" )
+
 # Order here is set so that "ctest -V -R spectralb" will work
 
 # ENSURING REFERENCES ARE CONSISTENT BETWEEN TESTS

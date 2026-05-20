@@ -1,3 +1,5 @@
+message( STATUS "- TORCHBALANCE" )
+
 # dirac_torchbalance
 saber_add_test( TARGET saber_dirac_torchbalance_1-1
                 MPI 1

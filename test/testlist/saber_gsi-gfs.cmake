@@ -1,3 +1,5 @@
+message( STATUS "- GSI GFS" )
+
 # dirac_gsi_gfs_global
 saber_add_test( TARGET saber_dirac_gsi_gfs_global_1-1
                 MPI 1

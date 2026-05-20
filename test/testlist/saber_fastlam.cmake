@@ -1,3 +1,5 @@
+message( STATUS "- FASTLAM" )
+
 # convertstate_lam
 saber_add_test( TARGET saber_convertstate_lam
                 MPI 1

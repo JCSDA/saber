@@ -1,3 +1,5 @@
+message( STATUS "- BUMP" )
+
 # convertstate_constant
 saber_add_test( TARGET saber_convertstate_constant
                 MPI 1

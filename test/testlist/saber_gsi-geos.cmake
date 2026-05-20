@@ -1,3 +1,5 @@
+message( STATUS "- GSI GEOS" )
+
 # dirac_gsi_geos_global
 saber_add_test( TARGET saber_dirac_gsi_geos_global_1-1
                 MPI 1
