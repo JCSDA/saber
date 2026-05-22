@@ -58,10 +58,6 @@ void SaberEnsembleBlockChain::multiply(oops::FieldSet4D & fset4d) const {
     // ensemble members distributed across MPI tasks.
   }
 
-  // Normalize result
-  const double rk = 1.0/static_cast<double>(ensemble_->ens_size()-1);
-  fset4d *= rk;
-
   // Outer blocks forward multiplication
   if (outerBlockChain_) {
     outerBlockChain_->applyOuterBlocks(fset4d);
@@ -110,10 +106,6 @@ void SaberEnsembleBlockChain::randomize(oops::FieldSet4D & fset4d) const {
     fset4d += fset4dMem;
   }
 
-  // Normalize result
-  const double rk = 1.0/sqrt(static_cast<double>(ensemble_->ens_size()-1));
-  fset4d *= rk;
-
   // Outer blocks forward multiplication
   if (outerBlockChain_) {
     outerBlockChain_->applyOuterBlocks(fset4d);
@@ -160,10 +152,6 @@ void SaberEnsembleBlockChain::multiplySqrt(const atlas::Field & cv,
     fset4d += fset4dMem;
   }
 
-  // Normalize result
-  const double rk = 1.0/std::sqrt(static_cast<double>(ensemble_->ens_size()-1));
-  fset4d *= rk;
-
   // Outer blocks forward multiplication
   if (outerBlockChain_) {
     outerBlockChain_->applyOuterBlocks(fset4d);
@@ -188,10 +176,6 @@ void SaberEnsembleBlockChain::multiplySqrtAD(const oops::FieldSet4D & fset4d,
   if (outerBlockChain_) {
     outerBlockChain_->applyOuterBlocksAD(fset4dInit);
   }
-
-  // Normalize initial fieldset
-  const double rk = 1.0/std::sqrt(static_cast<double>(ensemble_->ens_size()-1));
-  fset4dInit *= rk;
 
   // Initialization
   size_t index = offset;

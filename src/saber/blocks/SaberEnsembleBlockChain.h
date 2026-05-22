@@ -68,6 +68,10 @@ class SaberEnsembleBlockChainParameters: public ErrorCovarianceParametersBase {
   // Inflation value
   oops::Parameter<double> inflationValue{"inflation value", 1.0, this};
 
+  // Denominator for normalizing ensemble covariance (optional, default is to use ensemble size - 1)
+  oops::OptionalParameter<double> denominatorForNormalizingEnsembleCovariance{
+                        "denominator for normalizing ensemble covariance", this};
+
   // Ensemble
   oops::OptionalParameter<eckit::LocalConfiguration> ensemble{"ensemble", this};
   oops::OptionalParameter<eckit::LocalConfiguration> ensemblePert{"ensemble pert", this};
@@ -146,8 +150,8 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
   ErrorCovarianceParametersBase paramsBase;
   paramsBase.deserialize(fullConf);
 
-  // Read ensemble (for non-iterative ensemble loading)
-  ensemble_ = std::make_unique<oops::FieldSets>(readEnsemble(geom,
+  // Read ensemble and apply scaling (for non-iterative ensemble loading)
+  ensemble_ = std::make_unique<oops::FieldSets>(readAndScaleEnsemble(geom,
                 outerVars,
                 fset4dXb.times(), fset4dXb.commTime(), fset4dXb.commEns(),
                 fullConf));

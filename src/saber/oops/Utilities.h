@@ -254,6 +254,36 @@ oops::FieldSets readEnsemble(const oops::Geometry<MODEL> & geom,
 
 // -------------------------------------------------------------------------------------------------
 
+/// Scale all ensemble members by 1/sqrt(denom) in place.
+inline void scaleEnsemble(oops::FieldSets & ensemble, const double denom) {
+  ensemble *= 1.0/std::sqrt(denom);
+}
+
+// -------------------------------------------------------------------------------------------------
+
+/// Read ensemble and immediately scale members by 1/sqrt(scaling).
+/// If "denominator for normalizing ensemble covariance" is present in inputConf, uses that value;
+/// otherwise defaults to ensemble size - 1.
+template<typename MODEL>
+oops::FieldSets readAndScaleEnsemble(const oops::Geometry<MODEL> & geom,
+                                     const oops::Variables & modelvars,
+                                     const std::vector<util::DateTime> & times,
+                                     const eckit::mpi::Comm & commTime,
+                                     const eckit::mpi::Comm & commEns,
+                                     const eckit::Configuration & inputConf) {
+  oops::Log::trace() << "readAndScaleEnsemble starting" << std::endl;
+  oops::FieldSets ensemble = readEnsemble(geom, modelvars, times, commTime, commEns, inputConf);
+  double denom = static_cast<double>(ensemble.ens_size() - 1);
+  if (inputConf.has("denominator for normalizing ensemble covariance")) {
+    denom = inputConf.getDouble("denominator for normalizing ensemble covariance");
+  }
+  scaleEnsemble(ensemble, denom);
+  oops::Log::trace() << "readAndScaleEnsemble done" << std::endl;
+  return ensemble;
+}
+
+// -------------------------------------------------------------------------------------------------
+
 template<typename MODEL>
 void readHybridWeight(const oops::Geometry<MODEL> & geom,
                       const oops::Variables & vars,
