@@ -2,14 +2,14 @@
 ! (C) Crown Copyright 2022 Met Office.
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
-! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0. 
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 !-------------------------------------------------------------------------------
 ! Purpose : in the training data
 !-------------------------------------------------------------------------------
 
 module mo_netcdf_mod
 
-use iso_c_binding, only: c_int, c_float
+use, intrinsic :: iso_c_binding, only: c_int, c_float
 use fckit_log_module, only : fckit_log
 use mo_cvtcoord_mod, only: cvt_coordinate_type
 
@@ -45,7 +45,7 @@ external                       ::    abor1_ftn
 
 ! Exit with error code 2 when a NetCDF failure occurs.
 if (nf /= nf90_noerr) then
-  WRITE(message,'(A)') RoutineName // " " // trim(adjustl(tag)) //" " // &
+  WRITE(message,"(A)") RoutineName // " " // trim(adjustl(tag)) //" " // &
     trim(adjustl(nf90_strerror(nf) ) )
 
   call abor1_ftn(message)
@@ -206,7 +206,7 @@ valid_time_local  = ""
 
 if (present(long_name)) long_name = ""
 
-write(output_message,*) 'entering ' // RoutineName // " " // trim(short_name)
+write(output_message,*) "entering " // RoutineName // " " // trim(short_name)
 call fckit_log % debug(output_message)
 
 nf = nf90_open(InFile, nf90_nowrite, ncid)
@@ -254,8 +254,9 @@ if (present(valid_time)) then
 
   ErrorString = nf90_strerror(nf)
   if ((ErrorString(1:27) == "NetCDF: Attribute not found") .OR. &
-      (ErrorString(1:19) == "Attribute not found"))             &
+      (ErrorString(1:19) == "Attribute not found")) then
     valid_time = "NetCDF: Attribute empty"
+  end if
 
 end if
 
@@ -265,8 +266,9 @@ if (present(start_bin)) then
 
   ErrorString = nf90_strerror(nf)
   if ((ErrorString(1:27) == "NetCDF: Attribute not found") .OR. &
-      (ErrorString(1:19) == "Attribute not found"))             &
+      (ErrorString(1:19) == "Attribute not found")) then
     start_bin = -99
+  end if
 end if
 
 if (present(final_bin)) then
@@ -275,8 +277,9 @@ if (present(final_bin)) then
 
   ErrorString = nf90_strerror(nf)
   if ((ErrorString(1:27) == "NetCDF: Attribute not found") .OR. &
-      (ErrorString(1:19) == "Attribute not found"))             &
+      (ErrorString(1:19) == "Attribute not found")) then
     final_bin = -99
+  end if
 end if
 
 if (present(TimeEnsBinning)) then
@@ -285,8 +288,9 @@ if (present(TimeEnsBinning)) then
 
   ErrorString = nf90_strerror(nf)
   if ((ErrorString(1:27) ==  "NetCDF: Attribute not found") .OR. &
-      (ErrorString(1:19) == "Attribute not found"))              &
+      (ErrorString(1:19) == "Attribute not found")) then
     TimeEnsBinning = "NetCDF: Attribute empty"
+  end if
 end if
 
 if (present(grid_mapping)) then
@@ -295,8 +299,9 @@ if (present(grid_mapping)) then
 
   ErrorString = nf90_strerror(nf)
   if ((ErrorString(1:27) ==  "NetCDF: Attribute not found") .OR. &
-      (ErrorString(1:19) == "Attribute not found"))              &
+      (ErrorString(1:19) == "Attribute not found")) then
     grid_mapping = "NetCDF: Attribute empty"
+  end if
 end if
 
 
@@ -417,7 +422,7 @@ DO i = 1, numatts
     end if
 
   case default
-    write(output_message,*) RoutineName, ' not reading attribute ', temp_name
+    write(output_message,*) RoutineName, " not reading attribute ", temp_name
     call fckit_log % info(output_message)
   end select
 end DO
@@ -509,7 +514,7 @@ end if
 nf = nf90_close(ncid)
 call cvt_nc_err_rpt(nf, "close file " // trim(InFile))
 
-write(output_message,*) 'exiting '//RoutineName//' '//trim(short_name)
+write(output_message,*) "exiting "//RoutineName//" "//trim(short_name)
 call fckit_log % debug(output_message)
 
 end subroutine cvt_nc_read_field_from_file

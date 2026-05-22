@@ -5,10 +5,10 @@
 !------------------------------------------------------------------------------
 
 subroutine c_calculatingSqrtB(N, inBoutU) &
- & bind(c,name='calculatingSqrtB_f90')
+ & bind(c,name="calculatingSqrtB_f90")
 
 use fckit_log_module, only: fckit_log
-use iso_c_binding, only : c_int, c_double
+use, intrinsic :: iso_c_binding, only : c_int, c_double
 
 implicit none
 
@@ -22,25 +22,24 @@ integer :: info
 ! so if one wants just the matrix L one has to filter out
 ! the upper non-diagonal triangular entries.
 ! Note Fortran data ordering is throughout
-call dpotrf('L', N, inBoutU, N, info);
+call dpotrf("L", N, inBoutU, N, info)
 
 if (info /= 0) then
-  call fckit_log%error('c_calculatingSqrtB LAPACK routine dpotrf failed')
-  call abor1_ftn('c_calculatingSqrtB LAPACK routine dpotrf failed')
-endif
+  call fckit_log%error("c_calculatingSqrtB LAPACK routine dpotrf failed")
+  call abor1_ftn("c_calculatingSqrtB LAPACK routine dpotrf failed")
+end if
 
 end subroutine c_calculatingSqrtB
 
 subroutine c_covSpectralBinsLevels(c_conf, &
  & varname_length, c_netcdfvarname, &
  & bins, levels) &
- & bind(c,name='covSpectralBinsLevels_f90')
+ & bind(c,name="covSpectralBinsLevels_f90")
 
-use iso_c_binding, only : c_ptr, c_int, c_char
+use, intrinsic :: iso_c_binding, only : c_ptr, c_int, c_char
 use fckit_configuration_module, only: fckit_configuration
 use netcdf, only: nf90_max_name
-use kinds
-use string_f_c_mod
+use string_f_c_mod, only: c_f_string
 use mo_netcdf_mod, only : cvt_nc_read_field_from_file
 
 implicit none
@@ -96,13 +95,12 @@ end subroutine c_covSpectralBinsLevels
 subroutine c_covSpectralBins(c_conf, &
  & varname_length, c_netcdfvarname, &
  & bins) &
- & bind(c,name='covSpectralBins_f90')
+ & bind(c,name="covSpectralBins_f90")
 
-use iso_c_binding, only : c_ptr, c_int, c_char
+use, intrinsic :: iso_c_binding, only : c_ptr, c_int, c_char
 use fckit_configuration_module, only: fckit_configuration
 use netcdf, only: nf90_max_name
-use kinds
-use string_f_c_mod
+use string_f_c_mod, only: c_f_string
 use mo_netcdf_mod, only : cvt_nc_read_field_from_file
 
 implicit none
@@ -150,13 +148,12 @@ end subroutine c_covSpectralBins
 subroutine c_covSpectralUMatrix(c_conf, &
  & varname_length, c_netcdfvarname, &
  & bins, values_size, values) &
- & bind(c,name='covSpectralUMatrix_f90')
+ & bind(c,name="covSpectralUMatrix_f90")
 
-use iso_c_binding, only : c_ptr, c_int, c_float, c_char
+use, intrinsic :: iso_c_binding, only : c_ptr, c_int, c_float, c_char
 use fckit_configuration_module, only: fckit_configuration
 use netcdf, only: nf90_max_name
-use kinds
-use string_f_c_mod
+use string_f_c_mod, only: c_f_string
 use mo_netcdf_mod, only : cvt_nc_read_field_from_file
 
 implicit none

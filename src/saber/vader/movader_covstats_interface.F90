@@ -8,12 +8,12 @@
 subroutine c_covRegressionMatrices(filename_length, &
  & c_filename, &
  & model_level, bins, values_size, values) &
- & bind(c,name='covRegressionMatrices_f90')
+ & bind(c,name="covRegressionMatrices_f90")
 
-use iso_c_binding, only : c_int, c_float, c_char
+use, intrinsic :: iso_c_binding, only : c_int, c_float, c_char
 use mo_netcdf_mod, only : cvt_nc_read_field_from_file
 use netcdf, only: nf90_max_name
-use string_f_c_mod
+use string_f_c_mod, only: c_f_string
 
 implicit none
 
@@ -63,13 +63,13 @@ end subroutine c_covRegressionMatrices
 subroutine c_covRegressionWeights(filename_length, c_filename, &
  & covGlobalNlats, nBins, weightSize, &
  & startVec, lenVec, covLatitudesVec, regressionWeights1D) &
- & bind(c,name='covRegressionWeights_f90')
+ & bind(c,name="covRegressionWeights_f90")
 
-use iso_c_binding, only: c_int, c_float, c_char
+use, intrinsic :: iso_c_binding, only: c_int, c_float, c_char
 use mo_cvtcoord_mod, only: cvt_coordinate_type, cvt_initialiseadjustordealloccoord, cvt_create3dcoordinate
 use mo_netcdf_mod, only: cvt_nc_read_field_from_file
 use netcdf, only: nf90_max_name
-use string_f_c_mod
+use string_f_c_mod, only: c_f_string
 
 implicit none
 
@@ -160,12 +160,12 @@ subroutine c_covMuStats(filename_length, &
  & shortname_length, &
  & c_shortname, &
  & modelLevels, muBins, sizeVec, mustats) &
- & bind(c,name='covMuStats_f90')
+ & bind(c,name="covMuStats_f90")
 
-use iso_c_binding, only: c_int, c_float, c_char
+use, intrinsic :: iso_c_binding, only: c_int, c_float, c_char
 use mo_netcdf_mod, only : cvt_nc_read_field_from_file
 use netcdf, only: nf90_max_name
-use string_f_c_mod
+use string_f_c_mod, only: c_f_string
 
 implicit none
 
@@ -212,6 +212,7 @@ end subroutine c_covMuStats
 !-------------------------------------------------------------------
 
 subroutine err_report(err_value, str_mess)
+  implicit none
 
   !use unifiedmodel_constants_mod, only : error_string_length
   integer, parameter               :: error_string_length=800
@@ -223,7 +224,7 @@ subroutine err_report(err_value, str_mess)
   character(len=error_string_length) :: err_msg
 
   if (err_value /= 0) then
-    write(err_msg,'(2a,i0)') trim(str_mess), " failed with error code ", err_value
+    write(err_msg,"(2a,i0)") trim(str_mess), " failed with error code ", err_value
     call abor1_ftn(err_msg)
   end if
 
@@ -233,12 +234,14 @@ end subroutine err_report
 
 subroutine c_oldCovMIOStats(filename_length, c_filename, &
                        & fieldname_length, c_fieldname, nbins, nlevels, &
-                       & values) bind(c, name='oldCovMIOStats_f90')
+                       & values) bind(c, name="oldCovMIOStats_f90")
 
-  use iso_c_binding
-  use netcdf
-  use kinds
-  use string_f_c_mod
+  use, intrinsic :: iso_c_binding, only: c_char, c_double, c_int
+  use netcdf, only: &
+    nf90_close, nf90_get_var, nf90_inq_varid, nf90_nowrite, nf90_open
+  use string_f_c_mod, only: c_f_string
+
+  implicit none
 
   integer, parameter :: char_length = 800
 

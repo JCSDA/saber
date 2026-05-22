@@ -13,14 +13,14 @@ TESTSUITE(fctest_nicas_sqrt)
 ! -----------------------------------------------------------------------------
 
 TESTSUITE_INIT
-  use atlas_module
+  use atlas_module, only: atlas_library
   call atlas_library%initialise()
 END_TESTSUITE_INIT
 
 ! -----------------------------------------------------------------------------
 
 TESTSUITE_FINALIZE
-  use atlas_module
+  use atlas_module, only: atlas_library
   call atlas_library%finalise()
 END_TESTSUITE_FINALIZE
 
@@ -55,10 +55,10 @@ TEST( test_nicas_sqrt )
   type(fckit_configuration) :: rh(1),rv(1)
 
   ! Initialize communicator
-  f_comm = fckit_mpi_comm('world')
+  f_comm = fckit_mpi_comm("world")
 
   ! Create output grid
-  grid_out = atlas_structuredgrid('F10')
+  grid_out = atlas_structuredgrid("F10")
 
   ! Create output function space
   fspace_out = atlas_functionspace_structuredcolumns(grid_out)
@@ -68,21 +68,21 @@ TEST( test_nicas_sqrt )
 
   ! Create configuration
   conf = fckit_configuration()
-  call conf%set('drivers.multivariate strategy','crossed')
-  call conf%set('drivers.compute nicas',.true.)
-  call conf%set('model.variables',(/'var1','var2'/))
-  call conf%set('model.nl0',5)
-  call conf%set('nicas.resolution',4.0_kind_real)
-  call conf%set('nicas.min effective resolution',1.0_kind_real)
-  call conf%set('nicas.explicit length-scales',.true.)
+  call conf%set("drivers.multivariate strategy","crossed")
+  call conf%set("drivers.compute nicas",.true.)
+  call conf%set("model.variables",["var1","var2"])
+  call conf%set("model.nl0",5)
+  call conf%set("nicas.resolution",4.0_kind_real)
+  call conf%set("nicas.min effective resolution",1.0_kind_real)
+  call conf%set("nicas.explicit length-scales",.true.)
   rh(1) = fckit_configuration()
-  call rh(1)%set('variables',(/'var1','var2'/))
-  call rh(1)%set('value',1000.0e3_kind_real)
-  call conf%set('nicas.horizontal length-scale',rh)
+  call rh(1)%set("variables",["var1","var2"])
+  call rh(1)%set("value",1000.0e3_kind_real)
+  call conf%set("nicas.horizontal length-scale",rh)
   rv(1) = fckit_configuration()
-  call rv(1)%set('variables',(/'var1','var2'/))
-  call rv(1)%set('value',3.0_kind_real)
-  call conf%set('nicas.vertical length-scale',rv)
+  call rv(1)%set("variables",["var1","var2"])
+  call rv(1)%set("value",3.0_kind_real)
+  call conf%set("nicas.vertical length-scale",rv)
 
   ! Create BUMP
   call bump%create(f_comm,fspace_out,fset,conf)
@@ -97,8 +97,8 @@ TEST( test_nicas_sqrt )
   call bump%get_cv_size(n)
 
   ! Initialize control variables
-  cv_1 = atlas_field("cv1", atlas_real(kind_real), (/n/))
-  cv_2 = atlas_field("cv2", atlas_real(kind_real), (/n/))
+  cv_1 = atlas_field("cv1", atlas_real(kind_real), [n])
+  cv_2 = atlas_field("cv2", atlas_real(kind_real), [n])
   call cv_1%data(ptr_1)
   call cv_2%data(ptr_2)
   call bump%rng%rand_gau(ptr_1)

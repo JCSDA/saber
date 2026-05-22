@@ -7,11 +7,11 @@
 module gsi_covariance_interface_mod
 
 ! iso
-use iso_c_binding
+use, intrinsic :: iso_c_binding, only: c_double, c_int, c_ptr
 
 ! oops
 use kinds,                      only: kind_real
-use datetime_mod
+use datetime_mod,               only: c_f_datetime, datetime
 
 ! atlas
 use atlas_module,               only: atlas_functionspace, atlas_fieldset
@@ -51,7 +51,7 @@ contains
 ! --------------------------------------------------------------------------------------------------
 
 subroutine gsi_covariance_create_cpp(c_self, c_comm, c_conf, c_ntimes, c_bg, c_fg, c_valid_times, c_nchecks, c_checks) &
-           bind(c, name='gsi_covariance_create_f90')
+           bind(c, name="gsi_covariance_create_f90")
 
 ! Arguments
 integer(c_int),     intent(inout) :: c_self
@@ -91,7 +91,7 @@ do itime = 1, ntimes
   f_bg(itime) = atlas_fieldset(c_bg(itime))
   f_fg(itime) = atlas_fieldset(c_fg(itime))
   call c_f_datetime(c_valid_times(itime), f_valid_times(itime))
-enddo
+end do
 
 nchecks = c_nchecks
 allocate(f_checks(nchecks))
@@ -106,7 +106,7 @@ call f_self%create(f_comm, f_conf, ntimes, f_bg, f_fg, f_valid_times, nchecks, f
 do itime = 1, ntimes
   call f_bg(itime)%final()
   call f_fg(itime)%final()
-enddo
+end do
 deallocate(f_bg, f_fg, f_valid_times)
 call f_conf%final()
 call f_comm%final()
@@ -117,7 +117,7 @@ end subroutine gsi_covariance_create_cpp
 ! --------------------------------------------------------------------------------------------------
 
 subroutine gsi_covariance_delete_cpp(c_self) &
-           bind(c, name='gsi_covariance_delete_f90')
+           bind(c, name="gsi_covariance_delete_f90")
 
 ! Arguments
 integer(c_int), intent(inout)  :: c_self
@@ -142,7 +142,7 @@ end subroutine gsi_covariance_delete_cpp
 ! --------------------------------------------------------------------------------------------------
 
 subroutine gsi_covariance_randomize_cpp(c_self, c_inc) &
-           bind(c,name='gsi_covariance_randomize_f90')
+           bind(c,name="gsi_covariance_randomize_f90")
 
 implicit none
 
@@ -174,7 +174,7 @@ end subroutine gsi_covariance_randomize_cpp
 ! --------------------------------------------------------------------------------------------------
 
 subroutine gsi_covariance_multiply_cpp(c_self, c_ntimes, c_inc) &
-           bind(c,name='gsi_covariance_multiply_f90')
+           bind(c,name="gsi_covariance_multiply_f90")
 
 implicit none
 
@@ -197,7 +197,7 @@ ntimes = c_ntimes
 allocate(f_inc(ntimes))
 do itime = 1, ntimes
   f_inc(itime) = atlas_fieldset(c_inc(itime))
-enddo
+end do
 
 ! Call implementation
 ! -------------------
@@ -207,7 +207,7 @@ call f_self%multiply(ntimes, f_inc)
 ! --------------
 do itime = 1, ntimes
   call f_inc(itime)%final
-enddo
+end do
 deallocate(f_inc)
 
 end subroutine gsi_covariance_multiply_cpp

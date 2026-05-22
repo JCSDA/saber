@@ -54,145 +54,146 @@ call conf%get_or_die("input file",str)
 cdfile = str
 
 ! Open file
-open(iultmp,file=cdfile,form='unformatted',convert='big_endian')
+open(iultmp,file=cdfile,form="unformatted",convert="big_endian")
 
 ! Read and check clid
 read(iultmp) clid
-write(*,'(a,a)') 'Info     : - GSA ID: ',clid
-if (clid /= 'ALADIN98') call abor1_ftn('bad id in gsa file')
+write(*,"(a,a)") "Info     : - GSA ID: ",clid
+if (clid /= "ALADIN98") call abor1_ftn("bad id in gsa file")
 
 ! Read description
 read(iultmp) clcom
-write(*,'(a,a)') 'Info     : - Description : ',clcom
+write(*,"(a,a)") "Info     : - Description : ",clcom
 
 ! Read center and date
 read(iultmp) iorig,idate,itime,inbset
-write(*,'(a,i3)') 'Info     : - Center: ',iorig
-write(*,'(a,i8,a,i6)') 'Info     : - Date/time: ',idate,' / ',itime
+write(*,"(a,i3)") "Info     : - Center: ",iorig
+write(*,"(a,i8,a,i6)") "Info     : - Date/time: ",idate," / ",itime
 
 ! Read gsa set 0: model geometry definition
-write(*,'(a)') 'Info     : - Reading gsa set 0: model geometry definition'
+write(*,"(a)") "Info     : - Reading gsa set 0: model geometry definition"
 read(iultmp) inbmat,iweight,itypmat,isetdist,ilendef
 read(iultmp) idim1,idim2,ipar1,ipar2,itypdi1,itypdi2
 read(iultmp)
 read(iultmp)
-if (itypmat /= 0) call abor1_ftn('no model geometry description')
-if ((idim1 /= 1).or.(idim2 /= 13).or.(ipar1 /= 50).or.(ipar2 /= 0).or.(itypdi1 /= 0).or.(itypdi2 /= 0)) &
- & call abor1_ftn('nonexpected parameters for model geometry description')
+if (itypmat /= 0) call abor1_ftn("no model geometry description")
+if ((idim1 /= 1).or.(idim2 /= 13).or.(ipar1 /= 50).or.(ipar2 /= 0).or.(itypdi1 /= 0).or.(itypdi2 /= 0)) then
+  call abor1_ftn("nonexpected parameters for model geometry description")
+end if
 read(iultmp) zlon1,zlat1,zlon2,zlat2,zlon0,zlat0,idgl,idlon,idgux,idlux,ksmax,kmsmax,kflevg,itestwd
-if (itestwd /= ichkwd) call abor1_ftn('bad gsa control word')
-write(*,'(a,i5,a,i3)') 'Info     : - File geometry : nsmax =',ksmax,' / nflev =',kflevg
+if (itestwd /= ichkwd) call abor1_ftn("bad gsa control word")
+write(*,"(a,i5,a,i3)") "Info     : - File geometry : nsmax =",ksmax," / nflev =",kflevg
 
 ! Read gsa set 1: header
-write(*,'(a)') 'Info     : - Reading gsa set 1: fact1'
+write(*,"(a)") "Info     : - Reading gsa set 1: fact1"
 read(iultmp) inbmat,iweight,itypmat,isetdist,ilendef
 read(iultmp) idim1,idim2,ipar1,ipar2,itypdi1,itypdi2
 read(iultmp)
 read(iultmp)
-if (itypmat /= 4) call abor1_ftn('no horizontal balance in gsa set 1')
+if (itypmat /= 4) call abor1_ftn("no horizontal balance in gsa set 1")
 
 ! Check size
-if (idim2 /= nial) call abor1_ftn('inconsistent number of wavenumbers in fact1 file')
+if (idim2 /= nial) call abor1_ftn("inconsistent number of wavenumbers in fact1 file")
 
 ! Read gsa set 1: fact1
 read(iultmp)
 read(iultmp) (fact1(jj),jj=1,idim2),itestwd
-if (itestwd /= ichkwd) call abor1_ftn('bad gsa control word')
+if (itestwd /= ichkwd) call abor1_ftn("bad gsa control word")
 
 ! Read gsa set 2: header
-write(*,'(a)') 'Info     : - Reading gsa set 2: sdivpb'
+write(*,"(a)") "Info     : - Reading gsa set 2: sdivpb"
 read(iultmp) inbmat,iweight,itypmat,isetdist,ilendef
 read(iultmp) idim1,idim2,ipar1,ipar2,itypdi1,itypdi2
 read(iultmp)
 read(iultmp)
-if (itypmat /= 5) call abor1_ftn('not vert balance in gsa set 2')
-if ((idim1 /= kflevg).or.(idim2/=kflevg)) call abor1_ftn('bad vertical resolution in gsa set 2')
-if ((ipar1 /= 11).or.(ipar2 /= 15)) call abor1_ftn('not pb->divb operator in gsa set 2')
+if (itypmat /= 5) call abor1_ftn("not vert balance in gsa set 2")
+if ((idim1 /= kflevg).or.(idim2/=kflevg)) call abor1_ftn("bad vertical resolution in gsa set 2")
+if ((ipar1 /= 11).or.(ipar2 /= 15)) call abor1_ftn("not pb->divb operator in gsa set 2")
 
 ! Check sizes
-if (kflevg /= nflev) call abor1_ftn('inconsistent number of levels in balance file')
-if (ksmax+1 /= nwglb) call abor1_ftn('inconsistent number of total wavenumbers in balance file')
+if (kflevg /= nflev) call abor1_ftn("inconsistent number of levels in balance file")
+if (ksmax+1 /= nwglb) call abor1_ftn("inconsistent number of total wavenumbers in balance file")
 
 ! Read gsa set 2: sdivpb
 do jn=1,ksmax+1
   read(iultmp)
   read(iultmp) ((sdivpb((jn-1)*kflevg*kflevg+(jk-1)*kflevg+jj),jk=1,kflevg),jj=1,kflevg),itestwd
-  if (itestwd /= ichkwd) call abor1_ftn('bad gsa control word')
+  if (itestwd /= ichkwd) call abor1_ftn("bad gsa control word")
 end do
 
 ! Read gsa set 3: header
-write(*,'(a)') 'Info     : - Reading gsa set 3: stpspb'
+write(*,"(a)") "Info     : - Reading gsa set 3: stpspb"
 read(iultmp) inbmat,iweight,itypmat,isetdist,ilendef
 read(iultmp) idim1,idim2,ipar1,ipar2,itypdi1,itypdi2
 read(iultmp)
 read(iultmp)
-if ((ipar1 /= 13).or.(ipar2 /= 15)) call abor1_ftn('no pb->tpsb operator in gsa set 3')
+if ((ipar1 /= 13).or.(ipar2 /= 15)) call abor1_ftn("no pb->tpsb operator in gsa set 3")
 
 ! Read gsa set 3: stpspb
 do jn=1,ksmax+1
   read(iultmp)
   read(iultmp) ((stpspb((jn-1)*kflevg*(kflevg+1)+(jk-1)*(kflevg+1)+jj),jk=1,kflevg),jj=1,kflevg+1),itestwd
-  if(itestwd /= ichkwd) call abor1_ftn('bad gsa control word')
+  if(itestwd /= ichkwd) call abor1_ftn("bad gsa control word")
 end do
 
 ! Read gsa set 4: header
-write(*,'(a)') 'Info     : - Reading gsa set 4: stpsdivu'
+write(*,"(a)") "Info     : - Reading gsa set 4: stpsdivu"
 read(iultmp) inbmat,iweight,itypmat,isetdist,ilendef
 read(iultmp) idim1,idim2,ipar1,ipar2,itypdi1,itypdi2
 read(iultmp)
 read(iultmp)
-if ((ipar1 /= 13).or.(ipar2 /= 12)) call abor1_ftn('not divu->tpsb operator in gsa set 4')
+if ((ipar1 /= 13).or.(ipar2 /= 12)) call abor1_ftn("not divu->tpsb operator in gsa set 4")
 
 ! Read gsa set 4: stpsdivu
 do jn=1,ksmax+1
   read(iultmp)
   read(iultmp) ((stpsdivu((jn-1)*kflevg*(kflevg+1)+(jk-1)*(kflevg+1)+jj),jk=1,kflevg),jj=1,kflevg+1),itestwd
-  if(itestwd /= ichkwd) call abor1_ftn('bad gsa control word')
+  if(itestwd /= ichkwd) call abor1_ftn("bad gsa control word")
 end do
 
 ! Read gsa set 5: header
-write(*,'(a)') 'Info     : - Reading gsa set 5: sqpb'
+write(*,"(a)") "Info     : - Reading gsa set 5: sqpb"
 read(iultmp) inbmat,iweight,itypmat,isetdist,ilendef
 read(iultmp) idim1,idim2,ipar1,ipar2,itypdi1,itypdi2
 read(iultmp)
 read(iultmp)
-if ((ipar1 /= 16).or.(ipar2 /= 15)) call abor1_ftn('no pb->qb operator in gsa set 5')
+if ((ipar1 /= 16).or.(ipar2 /= 15)) call abor1_ftn("no pb->qb operator in gsa set 5")
 
 ! Read gsa set 5: sqpb
 do jn=1,ksmax+1
   read(iultmp)
   read(iultmp) ((sqpb((jn-1)*kflevg*kflevg+(jk-1)*kflevg+jj),jk=1,kflevg),jj=1,kflevg),itestwd
-  if (itestwd /= ichkwd) call abor1_ftn('bad gsa control word')
+  if (itestwd /= ichkwd) call abor1_ftn("bad gsa control word")
 end do
 
 ! Read gsa set 6: header
-write(*,'(a)') 'Info     : - Reading gsa set 6: sqdivu'
+write(*,"(a)") "Info     : - Reading gsa set 6: sqdivu"
 read(iultmp) inbmat,iweight,itypmat,isetdist,ilendef
 read(iultmp) idim1,idim2,ipar1,ipar2,itypdi1,itypdi2
 read(iultmp)
 read(iultmp)
-if ((ipar1 /= 16).or.(ipar2 /= 12)) call abor1_ftn('no divu->qb operator in gsa set 6')
+if ((ipar1 /= 16).or.(ipar2 /= 12)) call abor1_ftn("no divu->qb operator in gsa set 6")
 
 ! Read gsa set 6: sqdivu
 do jn=1,ksmax+1
   read(iultmp)
   read(iultmp) ((sqdivu((jn-1)*kflevg*kflevg+(jk-1)*kflevg+jj),jk=1,kflevg),jj=1,kflevg),itestwd
-  if (itestwd /= ichkwd) call abor1_ftn('bad gsa control word')
+  if (itestwd /= ichkwd) call abor1_ftn("bad gsa control word")
 end do
 
 ! Read gsa set 7: header
-write(*,'(a)') 'Info     : - Reading gsa set 7: sqtpsu'
+write(*,"(a)") "Info     : - Reading gsa set 7: sqtpsu"
 read(iultmp) inbmat,iweight,itypmat,isetdist,ilendef
 read(iultmp) idim1,idim2,ipar1,ipar2,itypdi1,itypdi2
 read(iultmp)
 read(iultmp)
-if ((ipar1 /= 16).or.(ipar2 /= 14)) call abor1_ftn('no tpsu->qb operator in gsa set 7')
+if ((ipar1 /= 16).or.(ipar2 /= 14)) call abor1_ftn("no tpsu->qb operator in gsa set 7")
 
 ! Read gsa set 7: sqtpsu
 do jn=1,ksmax+1
   read(iultmp)
   read(iultmp) ((sqtpsu((jn-1)*(kflevg+1)*kflevg+(jk-1)*kflevg+jj),jk=1,kflevg+1),jj=1,kflevg),itestwd
-  if(itestwd /= ichkwd) call abor1_ftn('bad gsa control word')
+  if(itestwd /= ichkwd) call abor1_ftn("bad gsa control word")
 end do
 
 ! Close file
@@ -260,14 +261,14 @@ idlux = 0
 kmsmax = 0
 
 ! Open file
-open(iultmp,file=cdfile,form='unformatted',convert='big_endian')
+open(iultmp,file=cdfile,form="unformatted",convert="big_endian")
 
 ! Write clid
-clid = 'ALADIN98'
+clid = "ALADIN98"
 write(iultmp) clid
 
 ! Write description
-clcom = ' Balanced statistcs for a LAM, after L. Berre 1998'
+clcom = " Balanced statistcs for a LAM, after L. Berre 1998"
 write(iultmp) clcom
 
 
@@ -275,7 +276,7 @@ write(iultmp) clcom
 write(iultmp) 85,idate,itime,8
 
 ! Write gsa set 0: model geometry definition
-write(*,'(a)') 'Info     : - Writing gsa set 0: model geometry definition'
+write(*,"(a)") "Info     : - Writing gsa set 0: model geometry definition"
 write(iultmp) 1,iweight,0,1,0
 write(iultmp) 1,13,50,0,0,0
 write(iultmp)
@@ -283,7 +284,7 @@ write(iultmp)
 write(iultmp) zlon1,zlat1,zlon2,zlat2,zlon0,zlat0,idgl,idlon,idgux,idlux,ksmax,kmsmax,kflevg,ichkwd
 
 ! Write gsa set 1: header
-write(*,'(a)') 'Info     : - Writing gsa set 1: fact1'
+write(*,"(a)") "Info     : - Writing gsa set 1: fact1"
 write(iultmp) 1,iweight,4,4,1
 write(iultmp) 1,kspec2g,15,4,0,3
 write(iultmp)
@@ -292,10 +293,10 @@ write(iultmp)
 ! Write gsa set 1: fact1
 write(iultmp) real(1,kind=kind_real)
 write(iultmp) (fact1(jj),jj=1,kspec2g),ichkwd
-if (ichkwd/=ichkwd) call abor1_ftn('bad gsa control word')
+if (ichkwd/=ichkwd) call abor1_ftn("bad gsa control word")
 
 ! Write gsa set 2: header
-write(*,'(a)') 'Info     : - Writing gsa set 2: sdivpb'
+write(*,"(a)") "Info     : - Writing gsa set 2: sdivpb"
 write(iultmp) ksmax+1,iweight,5,2,1
 write(iultmp) nflev,nflev,11,15,1,1
 write(iultmp) (zpres(jj),jj=1,nflev)
@@ -308,7 +309,7 @@ do jn=1,ksmax+1
 end do
 
 ! Write gsa set 3: header
-write(*,'(a)') 'Info     : - Writing gsa set 3: stpspb'
+write(*,"(a)") "Info     : - Writing gsa set 3: stpspb"
 write(iultmp) ksmax+1,iweight,5,2,1
 write(iultmp) nflev+1,nflev,13,15,1,1
 write(iultmp) (zpres(jj),jj=1,nflev+1)
@@ -321,7 +322,7 @@ do jn=1,ksmax+1
 end do
 
 ! Write gsa set 4: header
-write(*,'(a)') 'Info     : - Writing gsa set 4: stpsdivu'
+write(*,"(a)") "Info     : - Writing gsa set 4: stpsdivu"
 write(iultmp) ksmax+1,iweight,5,2,1
 write(iultmp) nflev+1,nflev,13,12,1,1
 write(iultmp) (zpres(jj),jj=1,nflev+1)
@@ -334,7 +335,7 @@ do jn=1,ksmax+1
 end do
 
 ! Write gsa set 5: header
-write(*,'(a)') 'Info     : - Writing gsa set 5: sqpb'
+write(*,"(a)") "Info     : - Writing gsa set 5: sqpb"
 write(iultmp) ksmax+1,iweight,5,2,1
 write(iultmp) nflev,nflev,16,15,1,1
 write(iultmp) (zpres(jj),jj=1,nflev)
@@ -347,7 +348,7 @@ do jn=1,ksmax+1
 end do
 
 ! Write gsa set 6: header
-write(*,'(a)') 'Info     : - Writing gsa set 6: sqdivu'
+write(*,"(a)") "Info     : - Writing gsa set 6: sqdivu"
 write(iultmp) ksmax+1,iweight,5,2,1
 write(iultmp) nflev,nflev,16,12,1,1
 write(iultmp) (zpres(jj),jj=1,nflev)
@@ -360,7 +361,7 @@ do jn=1,ksmax+1
 end do
 
 ! Write gsa set 7: header
-write(*,'(a)') 'Info     : - Writing gsa set 7: sqtpsu'
+write(*,"(a)") "Info     : - Writing gsa set 7: sqtpsu"
 write(iultmp) ksmax+1,iweight,5,2,1
 write(iultmp) nflev,nflev+1,16,14,1,1
 write(iultmp) (zpres(jj),jj=1,nflev)
@@ -408,102 +409,103 @@ call conf%get_or_die("input file",str)
 cdfile = str
 
 ! Open file
-open(iultmp,file=cdfile,form='unformatted',convert='big_endian')
+open(iultmp,file=cdfile,form="unformatted",convert="big_endian")
 
 ! Read and check clid
 read(iultmp) clid
-write(*,'(a,a)') 'Info     : - GSA ID: ',clid
-if (clid /= 'ALADIN98') call abor1_ftn('bad id in gsa file')
+write(*,"(a,a)") "Info     : - GSA ID: ",clid
+if (clid /= "ALADIN98") call abor1_ftn("bad id in gsa file")
 
 ! Read description
 read(iultmp) clcom
-write(*,'(a,a)') 'Info     : - Description : ',clcom
+write(*,"(a,a)") "Info     : - Description : ",clcom
 
 ! Read center and date
 read(iultmp) iorig,idate,itime,inbset
-write(*,'(a,i3)') 'Info     : - Center: ',iorig
-write(*,'(a,i8,a,i6)') 'Info     : - Date/time: ',idate,' / ',itime
+write(*,"(a,i3)") "Info     : - Center: ",iorig
+write(*,"(a,i8,a,i6)") "Info     : - Date/time: ",idate," / ",itime
 
 ! Read gsa set 0: model geometry definition
-write(*,'(a)') 'Info     : - Reading gsa set 0: model geometry definition'
+write(*,"(a)") "Info     : - Reading gsa set 0: model geometry definition"
 read(iultmp) inbmat,iweight,itypmat,isetdist,ilendef
 read(iultmp) idim1,idim2,ipar1,ipar2,itypdi1,itypdi2
 read(iultmp)
 read(iultmp)
-if (itypmat /= 0) call abor1_ftn('no model geometry description')
-if ((idim1 /= 1).or.(idim2 /= 13).or.(ipar1 /= 50).or.(ipar2 /= 0).or.(itypdi1 /= 0).or.(itypdi2 /= 0)) &
- & call abor1_ftn('nonexpected parameters for model geometry description')
+if (itypmat /= 0) call abor1_ftn("no model geometry description")
+if ((idim1 /= 1).or.(idim2 /= 13).or.(ipar1 /= 50).or.(ipar2 /= 0).or.(itypdi1 /= 0).or.(itypdi2 /= 0)) then
+  call abor1_ftn("nonexpected parameters for model geometry description")
+end if
 read(iultmp) zlon1,zlat1,zlon2,zlat2,zlon0,zlat0,idgl,idlon,idgux,idlux,ksmax,kmsmax,kflevg,itestwd
-if (itestwd /= ichkwd) call abor1_ftn('bad gsa control word')
-write(*,'(a,i5,a,i3)') 'Info     : - File geometry : nsmax =',ksmax,' / nflev =',kflevg
+if (itestwd /= ichkwd) call abor1_ftn("bad gsa control word")
+write(*,"(a,i5,a,i3)") "Info     : - File geometry : nsmax =",ksmax," / nflev =",kflevg
 
 ! Check sizes
-if (kflevg /= nflev) call abor1_ftn('inconsistent number of levels in covariance file')
-if (ksmax+1 /= nwglb) call abor1_ftn('inconsistent number of total wavenumbers in covariance file')
+if (kflevg /= nflev) call abor1_ftn("inconsistent number of levels in covariance file")
+if (ksmax+1 /= nwglb) call abor1_ftn("inconsistent number of total wavenumbers in covariance file")
 
 ! Read gsa set 1: header
-write(*,'(a)') 'Info     : - Reading gsa set 1: vorCov'
+write(*,"(a)") "Info     : - Reading gsa set 1: vorCov"
 read(iultmp) inbmat,iweight,itypmat,isetdist,ilendef
 read(iultmp) idim1,idim2,ipar1,ipar2,itypdi1,itypdi2
 read(iultmp)
 read(iultmp)
-if ((idim1 /= idim2).or.(ipar1 /= ipar2).or.(itypdi1 /= itypdi2)) call abor1_ftn('nonsymmetric matrix')
-if (idim1 <= 0) call abor1_ftn('bad matrix dimensions')
-if (idim1 /= kflevg) call abor1_ftn('code/data dim mismatch')
-if (itypdi1 /= 1) call abor1_ftn('matrix not on pressure levels')
-if (ipar1 /= 4) call abor1_ftn('not vorticity in gsa set 1')
+if ((idim1 /= idim2).or.(ipar1 /= ipar2).or.(itypdi1 /= itypdi2)) call abor1_ftn("nonsymmetric matrix")
+if (idim1 <= 0) call abor1_ftn("bad matrix dimensions")
+if (idim1 /= kflevg) call abor1_ftn("code/data dim mismatch")
+if (itypdi1 /= 1) call abor1_ftn("matrix not on pressure levels")
+if (ipar1 /= 4) call abor1_ftn("not vorticity in gsa set 1")
 
 ! Read gsa set 1: vorCov
 do jn=1,ksmax+1
   read(iultmp) zdummy
   read(iultmp) ((vorcov((jn-1)*kflevg*kflevg+(jk-1)*kflevg+jj),jj=1,kflevg),jk=1,kflevg),itestwd
-  if (itestwd /= ichkwd) call abor1_ftn('bad gsa control word')
+  if (itestwd /= ichkwd) call abor1_ftn("bad gsa control word")
 end do
 
 ! Read gsa set 2: header
-write(*,'(a)') 'Info     : - Reading gsa set 2: divuCov'
+write(*,"(a)") "Info     : - Reading gsa set 2: divuCov"
 read(iultmp)
 read(iultmp) idim1,idim2,ipar1,ipar2,itypdi1,itypdi2
 read(iultmp)
 read(iultmp)
-if (ipar1 /= 12) call abor1_ftn('not unbal div in gsa set 2')
+if (ipar1 /= 12) call abor1_ftn("not unbal div in gsa set 2")
 
 ! Read gsa set 2: divuCov
 do jn=1,ksmax+1
   read(iultmp) zdummy
   read(iultmp) ((divuCov((jn-1)*kflevg*kflevg+(jk-1)*kflevg+jj),jj=1,kflevg),jk=1,kflevg),itestwd
-  if (itestwd /= ichkwd) call abor1_ftn('bad gsa control word')
+  if (itestwd /= ichkwd) call abor1_ftn("bad gsa control word")
 end do
 
 ! Read gsa set 3: header
-write(*,'(a)') 'Info     : - Reading gsa set 3: tPsuCov'
+write(*,"(a)") "Info     : - Reading gsa set 3: tPsuCov"
 read(iultmp)
 read(iultmp) idim1,idim2,ipar1,ipar2,itypdi1,itypdi2
 read(iultmp) (zpdat(jj),jj=1,idim1)
 read(iultmp)
-if (ipar1 /= 14) call abor1_ftn('not unbal t,lnps in gsa set 3')
-if (idim1 /= kflevg+1) call abor1_ftn('code/data dim mismatch')
+if (ipar1 /= 14) call abor1_ftn("not unbal t,lnps in gsa set 3")
+if (idim1 /= kflevg+1) call abor1_ftn("code/data dim mismatch")
 
 ! Read gsa set 3: tPsuCov
 do jn=1,ksmax+1
   read(iultmp) zdummy
   read(iultmp) ((tPsuCov((jn-1)*(kflevg+1)*(kflevg+1)+(jk-1)*(kflevg+1)+jj),jj=1,kflevg+1),jk=1,kflevg+1),itestwd
-  if(itestwd /= ichkwd) call abor1_ftn('bad gsa control word')
+  if(itestwd /= ichkwd) call abor1_ftn("bad gsa control word")
 end do
 
 ! Read gsa set 4: header
-write(*,'(a)') 'Info     : - Reading gsa set 4: quCov'
+write(*,"(a)") "Info     : - Reading gsa set 4: quCov"
 read(iultmp)
 read(iultmp) idim1,idim2,ipar1,ipar2,itypdi1,itypdi2
 read(iultmp)
 read(iultmp)
-if (ipar1 /= 17) call abor1_ftn('not unbal q in gsa set 4')
+if (ipar1 /= 17) call abor1_ftn("not unbal q in gsa set 4")
 
 ! Read gsa set 4: quCov
 do jn=1,ksmax+1
   read(iultmp) zdummy
   read(iultmp) ((quCov((jn-1)*kflevg*kflevg+(jk-1)*kflevg+jj),jj=1,kflevg),jk=1,kflevg),itestwd
-  if(itestwd /= ichkwd) call abor1_ftn('bad gsa control word')
+  if(itestwd /= ichkwd) call abor1_ftn("bad gsa control word")
 end do
 
 ! Close file
@@ -566,21 +568,21 @@ idlux = 0
 kmsmax = 0
 
 ! Open file
-open(iultmp,file=cdfile,form='unformatted',convert='big_endian')
+open(iultmp,file=cdfile,form="unformatted",convert="big_endian")
 
 ! Write clid
-clid = 'ALADIN98'
+clid = "ALADIN98"
 write(iultmp) clid
 
 ! Write description
-clcom = ' Balanced statistcs for a LAM, after L. Berre 1998'
+clcom = " Balanced statistcs for a LAM, after L. Berre 1998"
 write(iultmp) clcom
 
 ! Write center and date
 write(iultmp) 85,idate,itime,8
 
 ! Write gsa set 0: model geometry definition
-write(*,'(a)') 'Info     : - Writing gsa set 0: model geometry definition'
+write(*,"(a)") "Info     : - Writing gsa set 0: model geometry definition"
 write(iultmp) 1,iweight,0,1,0
 write(iultmp) 1,13,50,0,0,0
 write(iultmp)
@@ -588,7 +590,7 @@ write(iultmp)
 write(iultmp) zlon1,zlat1,zlon2,zlat2,zlon0,zlat0,idgl,idlon,idgux,idlux,ksmax,kmsmax,kflevg,ichkwd
 
 ! Write gsa set 1: header
-write(*,'(a)') 'Info     : - Writing gsa set 1: vorCov'
+write(*,"(a)") "Info     : - Writing gsa set 1: vorCov"
 write(iultmp) ksmax+1,45,1,2,1
 write(iultmp) nflev,nflev,4,4,1,1
 write(iultmp)
@@ -601,7 +603,7 @@ do jn=1,ksmax+1
 end do
 
 ! Write gsa set 2: header
-write(*,'(a)') 'Info     : - Writing gsa set 2: divuCov'
+write(*,"(a)") "Info     : - Writing gsa set 2: divuCov"
 write(iultmp) ksmax+1,45,1,2,1
 write(iultmp) nflev,nflev,12,12,1,1
 write(iultmp) (zpres(jj),jj=1,nflev)
@@ -614,7 +616,7 @@ do jn=1,ksmax+1
 end do
 
 ! Write gsa set 3: header
-write(*,'(a)') 'Info     : - Writing gsa set 3: tPsuCov'
+write(*,"(a)") "Info     : - Writing gsa set 3: tPsuCov"
 write(iultmp) ksmax+1,45,1,2,1
 write(iultmp) nflev+1,nflev+1,14,14,1,1
 write(iultmp) (zpres(jj),jj=1,nflev+1)
@@ -627,7 +629,7 @@ do jn=1,ksmax+1
 end do
 
 ! Write gsa set 4: header
-write(*,'(a)') 'Info     : - Writing gsa set 4: quCov'
+write(*,"(a)") "Info     : - Writing gsa set 4: quCov"
 write(iultmp) ksmax+1,45,1,2,1
 write(iultmp) nflev,nflev,17,17,1,1
 write(iultmp) (zpres(jj),jj=1,nflev)
@@ -637,7 +639,7 @@ write(iultmp) (zpres(jj),jj=1,nflev)
 do jn=1,ksmax+1
   write(iultmp) real(jn-1,kind=kind_real)
   write(iultmp) ((quCov((jn-1)*kflevg*kflevg+(jk-1)*kflevg+jj),jj=1,kflevg),jk=1,kflevg),ichkwd
-  if(ichkwd /= ichkwd) call abor1_ftn('bad gsa control word')
+  if(ichkwd /= ichkwd) call abor1_ftn("bad gsa control word")
 end do
 
 ! Close file

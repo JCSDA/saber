@@ -7,7 +7,7 @@
 module bifourier_arome_legacy_interface
 
 use fckit_configuration_module, only: fckit_configuration
-use iso_c_binding, only: c_ptr, c_int, c_double
+use, intrinsic :: iso_c_binding, only: c_ptr, c_int, c_double
 use bifourier_arome_legacy_mod, only: bifourier_arome_legacy_read_balance, bifourier_arome_legacy_write_balance, &
  & bifourier_arome_legacy_read_covariance, bifourier_arome_legacy_write_covariance
 
@@ -20,7 +20,7 @@ contains
 !----------------------------------------------------------------------
 
 subroutine bifourier_arome_legacy_read_balance_c(c_conf,nwglb,nflev,sdivpb,stpspb,stpsdivu,sqpb,sqdivu,sqtpsu,nial,fact1) &
- & bind(c,name='bifourier_arome_legacy_read_balance_f90')
+ & bind(c,name="bifourier_arome_legacy_read_balance_f90")
 
 implicit none
 
@@ -54,7 +54,7 @@ end subroutine bifourier_arome_legacy_read_balance_c
 !----------------------------------------------------------------------
 
 subroutine bifourier_arome_legacy_write_balance_c(c_conf,nwglb,nflev,sdivpb,stpspb,stpsdivu,sqpb,sqdivu,sqtpsu,nial,fact1) &
- & bind(c,name='bifourier_arome_legacy_write_balance_f90')
+ & bind(c,name="bifourier_arome_legacy_write_balance_f90")
 
 implicit none
 
@@ -88,7 +88,7 @@ end subroutine bifourier_arome_legacy_write_balance_c
 !----------------------------------------------------------------------
 
 subroutine bifourier_arome_legacy_read_covariance_c(c_conf,nwglb,nflev,vorcov,divucov,tpsucov,qucov) &
- & bind(c,name='bifourier_arome_legacy_read_covariance_f90')
+ & bind(c,name="bifourier_arome_legacy_read_covariance_f90")
 
 implicit none
 
@@ -119,7 +119,7 @@ end subroutine bifourier_arome_legacy_read_covariance_c
 !----------------------------------------------------------------------
 
 subroutine bifourier_arome_legacy_write_covariance_c(c_conf,nwglb,nflev,vorcov,divucov,tpsucov,qucov) &
- & bind(c,name='bifourier_arome_legacy_write_covariance_f90')
+ & bind(c,name="bifourier_arome_legacy_write_covariance_f90")
 
 implicit none
 

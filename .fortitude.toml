@@ -1,0 +1,21 @@
+[check]
+target-std="f2008"
+line-length=133
+
+[check.per-file-ignores]
+"src/saber/gsi/covariance/gsi_covariance_mod.f90" = [
+    "C072", # assumed-size-character-intent
+    "C082", # pointer-initialisation-in-declaration
+]
+"src/saber/spectralb/spectralb_covstats_interface.F90" = [
+    "C092", # procedure-not-in-module
+]
+"src/saber/util/mo_netcdf_mod.F90" = [
+    "C091", # external-procedure
+]
+"src/saber/vader/movader_covstats_interface.F90" = [
+    "C092", # procedure-not-in-module
+]
+"test/fctest/fctest_nicas_sqrt.F90" = [
+    "E001", # syntax-error
+]

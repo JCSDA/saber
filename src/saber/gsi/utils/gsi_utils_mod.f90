@@ -7,7 +7,7 @@
 module gsi_utils_mod
 
 ! netcdf
-use netcdf
+use netcdf, only: nf90_noerr, nf90_strerror
 
 implicit none
 private
@@ -22,8 +22,8 @@ contains
 subroutine nccheck(status, iam)
 
  implicit none
- integer, intent ( in) :: status
- character(len=*), optional :: iam
+ integer, intent (in) :: status
+ character(len=*), optional, intent(in) :: iam
 
  character(len=1024) :: error_descr
 
@@ -33,7 +33,7 @@ subroutine nccheck(status, iam)
 
    if (present(iam)) then
      error_descr = trim(error_descr)//", "//trim(iam)
-   endif
+   end if
 
    error_descr = trim(error_descr)//". Error code: "//trim(nf90_strerror(status))
 

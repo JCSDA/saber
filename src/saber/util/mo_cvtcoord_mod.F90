@@ -9,7 +9,7 @@
 
 module mo_cvtcoord_mod
 
-use iso_c_binding, only : c_int, c_int32_t, c_float
+use, intrinsic :: iso_c_binding, only : c_int, c_int32_t, c_float
 use netcdf, only: nf90_max_name
 
 ! -----------------------------------------------------------------------------
@@ -126,12 +126,12 @@ else
   else
     ! 2.2 Set Default CoordOut structure when CoordTemplate not present
 
-    CoordOut % CoName        = ''
-    CoordOut % long_name     = ''
+    CoordOut % CoName        = ""
+    CoordOut % long_name     = ""
 
     ! default unit is dimensonless which is denoted by '1'
-    CoordOut % units         = '1'
-    CoordOut % positive      = ''
+    CoordOut % units         = "1"
+    CoordOut % positive      = ""
     CoordOut % CoSize        = CoSize
     CoordOut % dimid         = 0
     CoordOut % varid         = 0
