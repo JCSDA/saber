@@ -619,8 +619,6 @@ class NICASSection : public oops::Parameters {
   oops::Parameter<double> nicas_si_factor = param(def.nicas_si_factor, this);
   // Normalization randomization size
   oops::Parameter<int> norm_rand_size = param(def.norm_rand_size, this);
-  // Positive-definiteness test
-  oops::Parameter<bool> pos_def_test = param(def.pos_def_test, this);
   // Horizontal NICAS interpolation test
   oops::Parameter<bool> interp_test = param(def.interp_test, this);
   // Overriding component in file

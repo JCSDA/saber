@@ -71,12 +71,11 @@ contains
    procedure :: apply_vbal_inv => bump_apply_vbal_inv
    procedure :: apply_stddev => bump_apply_stddev
    procedure :: apply_stddev_inv => bump_apply_stddev_inv
-   procedure :: apply_nicas => bump_apply_nicas
    procedure :: apply_nicas_filter => bump_apply_nicas_filter
    procedure :: get_cv_size => bump_get_cv_size
+   procedure :: random_cv => bump_random_cv
    procedure :: apply_nicas_sqrt => bump_apply_nicas_sqrt
    procedure :: apply_nicas_sqrt_ad => bump_apply_nicas_sqrt_ad
-   procedure :: randomize => bump_randomize
    procedure :: psichi_to_uv => bump_psichi_to_uv
    procedure :: psichi_to_uv_ad => bump_psichi_to_uv_ad
    procedure :: get_parameter => bump_get_parameter
@@ -1123,47 +1122,6 @@ call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
 end subroutine bump_apply_stddev_inv
 
 !----------------------------------------------------------------------
-! Subroutine: bump_apply_nicas
-!> NICAS application
-!----------------------------------------------------------------------
-subroutine bump_apply_nicas(bump,fieldset)
-
-implicit none
-
-! Passed variables
-class(bump_type),intent(inout) :: bump        !< BUMP
-type(fieldset_type),intent(inout) :: fieldset !< Fieldset
-
-! Local variable
-real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
-
-! Set name
-@:set_name(bump_apply_nicas)
-
-! Get instance
-@:get_instance(bump)
-
-! Probe in
-@:probe_in()
-
-! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%ilev2d,bump%nam%var2d)
-
-! Fieldset to Fortran on subset Sc0
-call bump%geom%fieldset_to_c0(bump%mpl,bump%nam,fieldset,fld_c0a)
-
-! Apply NICAS
-call bump%nicas%apply(bump%mpl,bump%nam,bump%geom,fld_c0a)
-
-! Fortran array on subset Sc0 to fieldset
-call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
-
-! Probe out
-@:probe_out()
-
-end subroutine bump_apply_nicas
-
-!----------------------------------------------------------------------
 ! Subroutine: bump_apply_nicas_filter
 !> NICAS application
 !----------------------------------------------------------------------
@@ -1238,6 +1196,42 @@ n = cv%n
 @:probe_out()
 
 end subroutine bump_get_cv_size
+
+!----------------------------------------------------------------------
+! Subroutine: bump_random_cv
+!> NICAS random control vector
+!----------------------------------------------------------------------
+subroutine bump_random_cv(bump,acv,offset)
+
+implicit none
+
+! Passed variables
+class(bump_type),intent(inout) :: bump !< BUMP
+type(atlas_field),intent(inout) :: acv !< ATLAS field control vector
+integer,intent(in) :: offset           !< Control vector offset
+
+! Local variable
+type(cv_type) :: cv
+
+! Set name
+@:set_name(bump_random_cv)
+
+! Get instance
+@:get_instance(bump)
+
+! Probe in
+@:probe_in()
+
+! Generate random control vector
+call bump%nicas%random_cv(bump%mpl,bump%rng,bump%nam,bump%geom,cv)
+
+! Pack control variable
+call cv%pack(acv,offset)
+
+! Probe out
+@:probe_out()
+
+end subroutine bump_random_cv
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_apply_nicas_sqrt
@@ -1339,48 +1333,6 @@ call cv%pack(acv,offset)
 @:probe_out()
 
 end subroutine bump_apply_nicas_sqrt_ad
-
-!----------------------------------------------------------------------
-! Subroutine: bump_randomize
-!> NICAS randomization
-!----------------------------------------------------------------------
-subroutine bump_randomize(bump,fieldset)
-
-implicit none
-
-! Passed variables
-class(bump_type),intent(inout) :: bump        !< BUMP
-type(fieldset_type),intent(inout) :: fieldset !< Fieldset
-
-! Local variable
-real(kind_real) :: fld_c0a(bump%geom%nc0a,bump%geom%nl0,bump%nam%nv)
-type(cv_type) :: cv
-
-! Set name
-@:set_name(bump_randomize)
-
-! Get instance
-@:get_instance(bump)
-
-! Probe in
-@:probe_in()
-
-! Generate random control vector
-call bump%nicas%random_cv(bump%mpl,bump%rng,bump%nam,bump%geom,cv)
-
-! Apply NICAS square-root
-call bump%nicas%apply_sqrt(bump%mpl,bump%nam,bump%geom,cv,fld_c0a)
-
-! Set fieldset metadata
-call fieldset%set_metadata(bump%mpl,bump%geom%gmask_mga,bump%nam%variables(1:bump%nam%nv),bump%nam%ilev2d,bump%nam%var2d)
-
-! Fortran array on subset Sc0 to fieldset
-call bump%geom%c0_to_fieldset(bump%mpl,bump%nam,fld_c0a,fieldset)
-
-! Probe out
-@:probe_out()
-
-end subroutine bump_randomize
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_psichi_to_uv

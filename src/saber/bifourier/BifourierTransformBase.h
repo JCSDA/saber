@@ -291,6 +291,11 @@ class BifourierTransformBase : public util::Printable,
   size_t ctlVecSize() const
     {return ctlVecSize_;}
 
+  // Random control vector
+  void randomCtlVec(atlas::Field &,
+                    const oops::Variables &,
+                    const size_t &) const;
+
   // Convert control vector to spectral FieldSet
   void cv2fset(const atlas::Field &,
                atlas::FieldSet &,

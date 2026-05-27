@@ -551,10 +551,6 @@ struct NICASDef {
   std::pair<const char *, int> norm_rand_size =
     std::make_pair("normalization randomization size", 0);
 
-  // Positive-definiteness test
-  std::pair<const char *, bool> pos_def_test =
-    std::make_pair("positive-definiteness test", false);
-
   // Horizontal NICAS interpolation test
   std::pair<const char *, bool> interp_test =
     std::make_pair("horizontal interpolation test", false);

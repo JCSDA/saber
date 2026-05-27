@@ -21,7 +21,8 @@
 #include "oops/util/ConfigFunctions.h"
 #include "oops/util/Logger.h"
 #include "oops/util/missingValues.h"
-#include "oops/util/RandomField.h"
+
+#include "saber/util/Randomization.h"
 
 #define ERR(e) {throw eckit::Exception(nc_strerror(e), Here());}
 
@@ -133,105 +134,25 @@ FastLAM::~FastLAM() {
 
 // -----------------------------------------------------------------------------
 
-void FastLAM::randomize(oops::FieldSet3D & fset) const {
-  oops::Log::trace() << classname() << "::randomize starting" << std::endl;
+void FastLAM::randomCtlVec(atlas::Field & cv,
+                           const size_t & offset) const {
+  oops::Log::trace() << classname() << "::randomCtlVec starting" << std::endl;
 
-  // Create control vector
-  atlas::Field cv("genericCtlVec", atlas::array::make_datatype<double>(),
-    atlas::array::make_shape(ctlVecSize()));
+  // Create local control vector
+  atlas::Field cvTmp("genericCtlVec", atlas::array::make_datatype<double>(),
+    atlas::array::make_shape(ctlVecSize_));
 
-  // Sizes, sendcounts and displs
-  std::vector<int> sendcounts(comm_.size());
-  comm_.allGather(static_cast<int>(ctlVecSize()), sendcounts.begin(), sendcounts.end());
-  size_t ctlVecSizeGlb = 0;
-  for (const auto ctlVecSize : sendcounts) {
-    ctlVecSizeGlb += ctlVecSize;
-  }
-  std::vector<int> displs(comm_.size());
-  displs[0] = 0;
-  for (size_t jt = 0; jt < comm_.size()-1; ++jt) {
-    displs[jt+1] = displs[jt]+sendcounts[jt];
-  }
+  // Random local control vector
+  util::randomCtlVec(comm_, glbIndex_, cvTmp);
 
-  // Generate global random vector
-  std::vector<double> rand_vec_glb;
-  if (comm_.rank() == 0) {
-    util::NormalDistributionField dist(ctlVecSizeGlb, 0.0, 1.0);
-    rand_vec_glb.resize(ctlVecSizeGlb);
-    for (size_t jcv = 0; jcv < ctlVecSizeGlb; ++jcv) {
-      rand_vec_glb[jcv] = dist[jcv];
-    }
-  }
-
-  // Scatter random vector
-  std::vector<double> rand_vec(ctlVecSize());
-  comm_.scatterv(rand_vec_glb.begin(), rand_vec_glb.end(), sendcounts, displs,
-    rand_vec.begin(), rand_vec.end(), 0);
-
-  // Fill control vector
+  // Fill control vector values
+  const auto cvTmpView = atlas::array::make_view<double, 1>(cvTmp);
   auto cvView = atlas::array::make_view<double, 1>(cv);
-  for (size_t jcv = 0; jcv < ctlVecSize(); ++jcv) {
-    cvView(jcv) = rand_vec[jcv];
+  for (size_t jcv = 0; jcv < ctlVecSize_; ++jcv) {
+    cvView(jcv+offset) = cvTmpView(jcv);
   }
 
-  // Square-root multiplication
-  const size_t index = 0;
-  multiplySqrt(cv, fset, index);
-
-  oops::Log::trace() << classname() << "::randomize done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-void FastLAM::multiply(oops::FieldSet3D & fset) const {
-  oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-
-  // Create control vector
-  atlas::Field cv("genericCtlVec", atlas::array::make_datatype<double>(),
-    atlas::array::make_shape(ctlVecSize()));
-  const size_t index = 0;
-
-  // Square-root multiplication, adjoint
-  multiplySqrtAD(fset, cv, index);
-
-  // Square-root multiplication
-  multiplySqrt(cv, fset, index);
-
-  oops::Log::trace() << classname() << "::multiply done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-size_t FastLAM::ctlVecSize() const {
-  oops::Log::trace() << classname() << "::ctlVecSize starting" << std::endl;
-
-  // Loop over bins
-  size_t ctlVecSize = 0;
-  for (size_t jBin = 0; jBin < weight_.size(); ++jBin) {
-    // Loop over groups
-    for (size_t jg = 0; jg < groups_.size(); ++jg) {
-      if (params_.strategy.value() == "univariate") {
-        // Univariate strategy
-        ctlVecSize += data_[jg][jBin]->ctlVecSize()*groups_[jg].variables_.size();
-      } else if (params_.strategy.value() == "duplicated") {
-        // Duplicated strategy
-        ctlVecSize += data_[jg][jBin]->ctlVecSize();
-      } else if (params_.strategy.value() == "crossed") {
-        // Crossed strategy
-        if (jg == 0) {
-          ctlVecSize += data_[jg][jBin]->ctlVecSize();
-        } else {
-          ASSERT(data_[jg][jBin]->ctlVecSize() == data_[0][jBin]->ctlVecSize());
-        }
-      } else {
-        // Wrong multivariate strategy
-        throw eckit::UserError("wrong multivariate strategy: " + params_.strategy.value(), Here());
-      }
-    }
-  }
-
-  oops::Log::trace() << classname() << "::ctlVecSize done" << std::endl;
-  return ctlVecSize;
+  oops::Log::trace() << classname() << "::randomCtlVec done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------
@@ -846,6 +767,12 @@ void FastLAM::directCalibration(const oops::FieldSets &) {
     weight_[jBin]->sqrt();
   }
 
+  // Setup control vector size
+  setupCtlVecSize();
+
+  // Setup remote index
+  setupGlbIndex();
+
   oops::Log::trace() << classname() << "::calibration done" << std::endl;
 }
 
@@ -930,6 +857,12 @@ void FastLAM::read() {
   for (size_t jBin = 0; jBin < weight_.size(); ++jBin) {
     weight_[jBin]->sqrt();
   }
+
+  // Setup control vector size
+  setupCtlVecSize();
+
+  // Setup remote index
+  setupGlbIndex();
 
   oops::Log::trace() << classname() << "::read done" << std::endl;
 }
@@ -1487,6 +1420,96 @@ void FastLAM::setupReductionFactors() {
   }
 
   oops::Log::trace() << classname() << "::setupReductionFactors done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void FastLAM::setupCtlVecSize() {
+  oops::Log::trace() << classname() << "::setupCtlVecSize starting" << std::endl;
+
+  // Initialization
+  ctlVecSize_ = 0;
+
+  // Loop over bins
+  for (size_t jBin = 0; jBin < weight_.size(); ++jBin) {
+    // Loop over groups
+    for (size_t jg = 0; jg < groups_.size(); ++jg) {
+      if (params_.strategy.value() == "univariate") {
+        // Univariate strategy
+        ctlVecSize_ += data_[jg][jBin]->ctlVecSize()*groups_[jg].variables_.size();
+      } else if (params_.strategy.value() == "duplicated") {
+        // Duplicated strategy
+        ctlVecSize_ += data_[jg][jBin]->ctlVecSize();
+      } else if (params_.strategy.value() == "crossed") {
+        // Crossed strategy
+        if (jg == 0) {
+          ctlVecSize_ += data_[jg][jBin]->ctlVecSize();
+        } else {
+          ASSERT(data_[jg][jBin]->ctlVecSize() == data_[0][jBin]->ctlVecSize());
+        }
+      } else {
+        // Wrong multivariate strategy
+        throw eckit::UserError("wrong multivariate strategy: " + params_.strategy.value(), Here());
+      }
+    }
+  }
+
+  oops::Log::trace() << classname() << "::setupCtlVecSize done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void FastLAM::setupGlbIndex() {
+  oops::Log::trace() << classname() << "::setupGlbIndex starting" << std::endl;
+
+  // Initialize offset
+  int offset = 0;
+
+  // Loop over bins
+  for (size_t jBin = 0; jBin < weight_.size(); ++jBin) {
+    // Loop over groups
+    for (size_t jg = 0; jg < groups_.size(); ++jg) {
+      // Get partial remote index
+      std::vector<int> partialGlbIndex = data_[jg][jBin]->ctlVecGlbIndex();
+
+      // Get global control vector size
+      int ctlVecGlbSize;
+      comm_.allReduce(static_cast<int>(data_[jg][jBin]->ctlVecSize()), ctlVecGlbSize,
+        eckit::mpi::sum());
+
+      if (params_.strategy.value() == "univariate") {
+        // Univariate strategy
+        for (size_t jvar = 0; jvar < groups_[jg].variables_.size(); ++jvar) {
+          for (size_t jcv = 0; jcv < data_[jg][jBin]->ctlVecSize(); ++jcv) {
+            glbIndex_.push_back(partialGlbIndex[jcv]+offset);
+          }
+          offset += ctlVecGlbSize;
+        }
+      } else if (params_.strategy.value() == "duplicated") {
+        // Duplicated strategy
+        for (size_t jcv = 0; jcv < data_[jg][jBin]->ctlVecSize(); ++jcv) {
+         glbIndex_.push_back(partialGlbIndex[jcv]+offset);
+        }
+        offset += ctlVecGlbSize;
+      } else if (params_.strategy.value() == "crossed") {
+        // Crossed strategy
+        if (jg == 0) {
+          for (size_t jcv = 0; jcv < data_[jg][jBin]->ctlVecSize(); ++jcv) {
+            glbIndex_.push_back(partialGlbIndex[jcv]+offset);
+          }
+          offset += ctlVecGlbSize;
+        }
+      } else {
+        // Wrong multivariate strategy
+        throw eckit::UserError("wrong multivariate strategy: " + params_.strategy.value(), Here());
+      }
+    }
+  }
+
+  // Check final size
+  ASSERT(glbIndex_.size() == ctlVecSize_);
+
+  oops::Log::trace() << classname() << "::setupGlbIndex done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

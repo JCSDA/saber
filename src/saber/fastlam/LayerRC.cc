@@ -396,6 +396,27 @@ void LayerRC::extractConvolution(const size_t & nxHalf,
 
 // -----------------------------------------------------------------------------
 
+std::vector<int> LayerRC::ctlVecGlbIndex() const {
+  oops::Log::trace() << classname() << "::ctlVecGlbIndex starting" << std::endl;
+
+  // Compute remote index
+  std::vector<int> ctlVecGlbIndex(ctlVecSize());
+  size_t index = 0;
+  for (size_t jx = 0; jx < nxPerTask_[myrank_]; ++jx) {
+    for (size_t jy = 0; jy < ny_; ++jy) {
+      for (size_t jz = 0; jz < nz_; ++jz) {
+        ctlVecGlbIndex[index] = ((nxStart_[myrank_]+jx)*ny_+jy)*nz_+jz;
+        ++index;
+      }
+    }
+  }
+
+  oops::Log::trace() << classname() << "::ctlVecGlbIndex done" << std::endl;
+  return ctlVecGlbIndex;
+}
+
+// -----------------------------------------------------------------------------
+
 void LayerRC::multiplySqrt(const atlas::Field & cv,
                            atlas::Field & modelField,
                            const size_t & offset) const {

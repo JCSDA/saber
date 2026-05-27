@@ -361,34 +361,6 @@ call f_fieldset%final()
 end subroutine bump_apply_stddev_inv_c
 
 !----------------------------------------------------------------------
-! Subroutine: bump_apply_nicas_c
-!> NICAS application
-!----------------------------------------------------------------------
-subroutine bump_apply_nicas_c(key_bump,c_afieldset) bind(c,name="bump_apply_nicas_f90")
-
-implicit none
-
-! Passed variables
-integer(c_int),intent(in) :: key_bump       !< BUMP
-type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
-
-! Local variables
-type(bump_type),pointer :: bump
-type(fieldset_type) :: f_fieldset
-
-! Interface
-call bump_registry%get(key_bump,bump)
-f_fieldset = atlas_fieldset(c_afieldset)
-
-! Call Fortran
-call bump%apply_nicas(f_fieldset)
-
-! Release memory
-call f_fieldset%final()
-
-end subroutine bump_apply_nicas_c
-
-!----------------------------------------------------------------------
 ! Subroutine: bump_apply_nicas_filter_c
 !> NICAS application
 !----------------------------------------------------------------------
@@ -438,6 +410,35 @@ call bump_registry%get(key_bump,bump)
 call bump%get_cv_size(n)
 
 end subroutine bump_get_cv_size_c
+
+!----------------------------------------------------------------------
+! Subroutine: bump_random_cv_c
+!> NICAS randomization
+!----------------------------------------------------------------------
+subroutine bump_random_cv_c(key_bump,c_afield,offset) bind(c,name="bump_random_cv_f90")
+
+implicit none
+
+! Passed variables
+integer(c_int),intent(in) :: key_bump    !< BUMP
+type(c_ptr),intent(in),value :: c_afield !< ATLAS field pointer
+integer(c_int),intent(in) :: offset      !< Control vector offset
+
+! Local variables
+type(bump_type),pointer :: bump
+type(atlas_field) :: f_acv
+
+! Interface
+call bump_registry%get(key_bump,bump)
+f_acv = atlas_field(c_afield)
+
+! Call Fortran
+call bump%random_cv(f_acv,offset)
+
+! Release memory
+call f_acv%final()
+
+end subroutine bump_random_cv_c
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_apply_nicas_sqrt_c
@@ -504,34 +505,6 @@ call f_acv%final()
 call f_fieldset%final()
 
 end subroutine bump_apply_nicas_sqrt_ad_c
-
-!----------------------------------------------------------------------
-! Subroutine: bump_randomize_c
-!> NICAS randomization
-!----------------------------------------------------------------------
-subroutine bump_randomize_c(key_bump,c_afieldset) bind(c,name="bump_randomize_f90")
-
-implicit none
-
-! Passed variables
-integer(c_int),intent(in) :: key_bump       !< BUMP
-type(c_ptr),intent(in),value :: c_afieldset !< ATLAS fieldset pointer
-
-! Local variables
-type(bump_type),pointer :: bump
-type(fieldset_type) :: f_fieldset
-
-! Interface
-call bump_registry%get(key_bump,bump)
-f_fieldset = atlas_fieldset(c_afieldset)
-
-! Call Fortran
-call bump%randomize(f_fieldset)
-
-! Release memory
-call f_fieldset%final()
-
-end subroutine bump_randomize_c
 
 !----------------------------------------------------------------------
 ! Subroutine: bump_psichi_to_uv_c

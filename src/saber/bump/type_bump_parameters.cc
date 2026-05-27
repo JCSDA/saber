@@ -310,8 +310,6 @@ void bump_config_init_f90(eckit::LocalConfiguration * config) {
   param(nicasDef.nicas_si_factor, nicasConf);
   // Normalization randomization size
   param(nicasDef.norm_rand_size, nicasConf);
-  // Positive-definiteness test
-  param(nicasDef.pos_def_test, nicasConf);
   // Horizontal NICAS interpolation test
   param(nicasDef.interp_test, nicasConf);
   // Overriding component in file

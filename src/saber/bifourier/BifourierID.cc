@@ -40,37 +40,6 @@ BifourierID::~BifourierID() {
 
 // -----------------------------------------------------------------------------
 
-void BifourierID::randomize(oops::FieldSet3D & fset) const {
-  oops::Log::trace() << classname() << "::randomize starting" << std::endl;
-
-  // Create random spectral vector
-  trans_->createRandomFieldSet(fset.fieldSet(), centralVars());
-
-  oops::Log::trace() << classname() << "::randomize done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-void BifourierID::multiply(oops::FieldSet3D & fset) const {
-  oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-
-  // Define control vector
-  atlas::Field cv("cv", make_datatype<double>(), make_shape(ctlVecSize()));
-
-  // No offset
-  const size_t offset = 0;
-
-  // Square-root adjoint multiply
-  multiplySqrtAD(fset, cv, offset);
-
-  // Square-root multiply
-  multiplySqrt(cv, fset, offset);
-
-  oops::Log::trace() << classname() << "::multiply done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
 void BifourierID::multiplySqrt(const atlas::Field & cv,
                                oops::FieldSet3D & fset,
                                const size_t & offset) const {

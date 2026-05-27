@@ -55,9 +55,6 @@ class NICAS : public SaberCentralBlockBase {
         const oops::FieldSet3D &);
   virtual ~NICAS();
 
-  void randomize(oops::FieldSet3D &) const override;
-  void multiply(oops::FieldSet3D &) const override;
-
   std::vector<std::pair<std::string, eckit::LocalConfiguration>> getReadConfs() const override;
   void setReadFields(const std::vector<oops::FieldSet3D> &) override;
 
@@ -74,6 +71,7 @@ class NICAS : public SaberCentralBlockBase {
     override;
 
   size_t ctlVecSize() const override {return bump_->getCvSize();}
+  void randomCtlVec(atlas::Field &, const size_t &) const override;
   void multiplySqrt(const atlas::Field &, oops::FieldSet3D &, const size_t &) const override;
   void multiplySqrtAD(const oops::FieldSet3D &, atlas::Field &, const size_t &) const override;
 

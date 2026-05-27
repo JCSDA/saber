@@ -25,7 +25,7 @@ background error:
         testing: true
       io:
         data directory: testdata
-        files prefix: randomization_bump_nicas_L12L10/_MPI_-_OMP_
+        files prefix: randomization_bump_nicas_L12L2/_MPI_-_OMP_
       drivers:
         multivariate strategy: univariate
         compute nicas: true

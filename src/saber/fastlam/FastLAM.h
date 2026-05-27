@@ -58,10 +58,9 @@ class FastLAM : public SaberCentralBlockBase {
 
   virtual ~FastLAM();
 
-  void randomize(oops::FieldSet3D &) const override;
-  void multiply(oops::FieldSet3D &) const override;
-
-  size_t ctlVecSize() const override;
+  size_t ctlVecSize() const override {return ctlVecSize_;}
+  void randomCtlVec(atlas::Field &,
+                    const size_t &) const override;
   void multiplySqrt(const atlas::Field &,
                     oops::FieldSet3D &,
                     const size_t &) const override;
@@ -114,6 +113,12 @@ class FastLAM : public SaberCentralBlockBase {
   size_t ny0_;
   size_t nodes0_;
 
+  // Control vector size
+  size_t ctlVecSize_;
+
+  // Remote index
+  std::vector<int> glbIndex_;
+
   // Setup length-scales
   void setupLengthScales();
 
@@ -128,6 +133,12 @@ class FastLAM : public SaberCentralBlockBase {
 
   // Setup reduction factors
   void setupReductionFactors();
+
+  // Setup control vector size
+  void setupCtlVecSize();
+
+  // Setup remote index
+  void setupGlbIndex();
 
   // Utilities
   size_t getGroupIndex(const std::string &) const;

@@ -776,6 +776,49 @@ size_t SaberCentralBlock::ctlVecSize() const {
 
 // -----------------------------------------------------------------------------
 
+void SaberCentralBlock::randomCtlVec(atlas::Field & cv,
+                                     const size_t & offset) const {
+  oops::Log::trace() << "SaberCentralBlock::randomCtlVec starting" << std::endl;
+
+  if (strategy_ == "deprecated") {
+    // Deprecated mode
+    groupCentralBlocks_[0]->randomCtlVec(cv, offset);
+  } else {
+    // Initialize index
+    size_t index = offset;
+
+    if ((strategy_ == "univariate") || (strategy_ == "duplicated and weighted")) {
+      // Univariate or duplicated and weighted strategy
+      for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
+        for (size_t jvar = 0; jvar < groupInputVars_[igroup].size(); ++jvar) {
+          // Apply localization
+          groupCentralBlocks_[igroup]->randomCtlVec(cv, index);
+
+          // Update index
+          index += groupCentralBlocks_[igroup]->ctlVecSize();
+        }
+      }
+    } else if ((strategy_ == "duplicated") || (strategy_ == "crossed")) {
+      // Duplicated strategy or crossed strategy
+      for (size_t igroup = 0; igroup < ngroup_; ++igroup) {
+        // Apply localization
+        groupCentralBlocks_[igroup]->randomCtlVec(cv, index);
+
+        if (strategy_ == "duplicated") {
+          // Update index
+          index += groupCentralBlocks_[igroup]->ctlVecSize();
+        }
+      }
+    } else {
+      throw eckit::Exception("invalid multivariate strategy", Here());
+    }
+  }
+
+  oops::Log::trace() << "SaberCentralBlock::randomCtlVec done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
 void SaberCentralBlock::multiplySqrt(const atlas::Field & cv,
                                      oops::FieldSet3D & fset3d,
                                      const size_t & offset) const {

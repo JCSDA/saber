@@ -1261,27 +1261,11 @@ type(cv_type) :: cv
 ! Probe in
 @:probe_in()
 
-if (nam%pos_def_test) then
-   ! Save field for positivity test
-   allocate(fld_save(geom%nc0a,geom%nl0,nam%nv))
-   fld_save = fld
-end if
-
 ! Apply square-root adjoint
 call nicas%apply_sqrt_ad(mpl,nam,geom,fld,cv)
 
 ! Apply square-root
 call nicas%apply_sqrt(mpl,nam,geom,cv,fld)
-
-if (nam%pos_def_test) then
-   ! Positivity test
-   prod = zss_sum(fld_save*fld)
-   call mpl%f_comm%allreduce(prod,fckit_mpi_sum())
-   if (prod<zero) call mpl%abort('${subr}$','negative result in nicas_apply')
-
-   ! Release memory
-   deallocate(fld_save)
-end if
 
 ! Probe out
 @:probe_out()

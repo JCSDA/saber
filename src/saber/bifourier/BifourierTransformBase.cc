@@ -16,9 +16,9 @@
 #include "oops/util/FieldSetOperations.h"
 #include "oops/util/FloatCompare.h"
 #include "oops/util/Logger.h"
-#include "oops/util/RandomField.h"
 
 #include "saber/bifourier/BifourierUtilities.h"
+#include "saber/util/Randomization.h"
 
 using atlas::array::make_datatype;
 using atlas::array::make_indexview;
@@ -716,32 +716,19 @@ void BifourierTransformBase::createRandomFieldSet(atlas::FieldSet & spFset,
   }
   ASSERT(nvz == nvz_);
 
-  // Global vector
-  std::vector<double> rand_vec_glb;
-
-  if (myrank_ == 0) {
-    // Generate global random vector
-    rand_vec_glb.resize(nsGlb_*nvz_);
-    util::NormalDistributionField dist(nsGlb_*nvz_, 0.0, 1.0);
-    for (size_t jsGlb = 0; jsGlb < nsGlb_; ++jsGlb) {
-      for (size_t jvz = 0; jvz < nvz_; ++jvz) {
-        const size_t jj = jsGlb*nvz_ + jvz;
-        const size_t jjOrdered = sMapping_[jsGlb]*nvz_ + jvz;
-        rand_vec_glb[jj] = dist[jjOrdered];
-      }
+  // Create remote index
+  std::vector<int> glbIndex(ns_*nvz_);
+  for (size_t js = 0; js < ns_; ++js) {
+    for (size_t jvz = 0; jvz < nvz_; ++jvz) {
+      const size_t jj = js*nvz_ + jvz;
+      const size_t jjOrdered = sToSGlb_[js]*nvz_ + jvz;
+      glbIndex[jj] = jjOrdered;
     }
   }
 
-  // Scatter random vector
-  std::vector<int> counts = sCounts_;
-  std::vector<int> displs = sDispls_;
-  for (size_t jt = 0; jt < comm_.size(); ++jt) {
-    counts[jt] *= nvz_;
-    displs[jt] *= nvz_;
-  }
-  std::vector<double> rand_vec_loc(ns_*nvz_);
-  comm_.scatterv(rand_vec_glb.cbegin(), rand_vec_glb.cend(), counts, displs,
-    rand_vec_loc.begin(), rand_vec_loc.end(), 0);
+  // Create random vector
+  std::vector<double> randomVec(ns_*nvz_);
+  util::randomCtlVec(comm_, glbIndex, randomVec);
 
   // Prepare spectral FieldSet
   for (const auto & var : activeVars) {
@@ -783,7 +770,7 @@ void BifourierTransformBase::createRandomFieldSet(atlas::FieldSet & spFset,
         const size_t jr = js*nvz_ + jvz;
 
         // Copy data
-        spView(js, jz) = rand_vec_loc[jr];
+        spView(js, jz) = randomVec[jr];
       }
     }
 
@@ -886,6 +873,25 @@ void BifourierTransformBase::inverseLaplacian(atlas::Field & field) const {
     }
   }
   oops::Log::trace() << classname() << "::inverseLaplacian done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
+void BifourierTransformBase::randomCtlVec(atlas::Field & cv,
+                                          const oops::Variables & activeVars,
+                                          const size_t & offset) const {
+  oops::Log::trace() << classname() << "::randomCtlVec starting" << std::endl;
+
+  // Create empty FieldSet
+  atlas::FieldSet fset;
+
+  // Create random spectral vector
+  createRandomFieldSet(fset, activeVars);
+
+  // Convert spectral FieldSet to control vector
+  fset2cv(fset, cv, activeVars, offset);
+
+  oops::Log::trace() << classname() << "::randomCtlVec done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

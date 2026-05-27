@@ -99,7 +99,7 @@ class SaberEnsembleBlockChain : public SaberBlockChainBase {
   /// @brief Multiply the increment by this B matrix.
   void multiply(oops::FieldSet4D &) const;
   /// @brief Get this B matrix square-root control vector size.
-  size_t ctlVecSize() const {return ctlVecSize_;}
+  size_t ctlVecSize() const;
   /// @brief Multiply the control vector by this B matrix square-root.
   void multiplySqrt(const atlas::Field &, oops::FieldSet4D &, const size_t &) const;
   /// @brief Multiply the increment by this B matrix square-root adjoint.
@@ -161,6 +161,7 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
     throw eckit::BadParameter("Ensemble for SaberEnsembleBlockChain has to have at least"
                               " two members.", Here());
   }
+
   // Create outer blocks if needed
   if (params.saberOuterBlocksParams.value()) {
     outerBlockChain_ = std::make_unique<SaberOuterBlockChain>(geom, outerVars,
@@ -316,15 +317,6 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
   // Direct calibration
   oops::Log::info() << "Info     : Direct calibration" << std::endl;
 
-  // Get control vector size
-  if (locBlockChain_) {
-    // With localization
-    ctlVecSize_ = ensemble_->ens_size()*locBlockChain_->ctlVecSize();
-  } else {
-    // Without localization
-    ctlVecSize_ = ensemble_->ens_size();
-  }
-
   // Adjoint test
   // TODO(AS): this is now a copy of the test in SaberCentralBlock; needs to be generalized.
   // (Perhaps the adjoint[s] test can be moved to SaberBlockChainBase.
@@ -382,11 +374,10 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
     // Create control vector
     oops::Log::info() << "Info     : Control vector size for block Ensemble: "
                       << ctlVecSize() << std::endl;
-    atlas::Field ctlVec = atlas::Field("genericCtlVec",
-                                       atlas::array::make_datatype<double>(),
-                                       atlas::array::make_shape(this->ctlVecSize()));
-    size_t seed = 7;  // To avoid impact on future random generator calls
-    util::NormalDistribution<double> dist(this->ctlVecSize(), 0.0, 1.0, seed);
+    atlas::Field cv = atlas::Field("genericCtlVec",
+                                   atlas::array::make_datatype<double>(),
+                                   atlas::array::make_shape(this->ctlVecSize()));
+    util::NormalDistribution<double> dist(this->ctlVecSize(), 0.0, 1.0, seed_);
     std::vector<double> randVec;
     for (size_t jnode = 0; jnode < this->ctlVecSize(); ++jnode) {
       randVec.push_back(dist[jnode]);
@@ -394,7 +385,7 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
     if (!locBlockChain_) {
       currentOuterGeom.comm().broadcast(randVec, 0);
     }
-    auto view = atlas::array::make_view<double, 1>(ctlVec);
+    auto view = atlas::array::make_view<double, 1>(cv);
     for (size_t jnode = 0; jnode < this->ctlVecSize(); ++jnode) {
       view(jnode) = randVec[jnode];
     }
@@ -410,7 +401,7 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
     this->multiplySqrt(ctlVecSave, fset4d, 0);
 
     // Apply square-root adjoint multiplication
-    this->multiplySqrtAD(fset4dSave, ctlVec, 0);
+    this->multiplySqrtAD(fset4dSave, cv, 0);
 
     // Compute adjoint test
     const double dp1 = fset4d.dot_product_with(fset4dSave, activeVars);
@@ -428,7 +419,7 @@ SaberEnsembleBlockChain::SaberEnsembleBlockChain(const oops::Geometry<MODEL> & g
     const bool adjComparison = (std::abs(dp1-dp2)/std::abs(0.5*(dp1+dp2)) < localSqrtTolerance);
 
     // Apply square-root multiplication
-    this->multiplySqrt(ctlVec, fset4d, 0);
+    this->multiplySqrt(cv, fset4d, 0);
 
     // Apply full multiplication
     this->multiply(fset4dSave);

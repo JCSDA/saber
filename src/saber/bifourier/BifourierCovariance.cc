@@ -57,49 +57,6 @@ BifourierCovariance::~BifourierCovariance() {
 
 // -----------------------------------------------------------------------------
 
-void BifourierCovariance::randomize(oops::FieldSet3D & fset) const {
-  oops::Log::trace() << classname() << "::randomize starting" << std::endl;
-
-  // Create random spectral vector
-  trans_->createRandomFieldSet(fset.fieldSet(), centralVars());
-
-  // Define control vector
-  atlas::Field cv("cv", make_datatype<double>(), make_shape(ctlVecSize()));
-
-  // No offset
-  const size_t offset = 0;
-
-  // Convert spectral FieldSet to control vector
-  trans_->fset2cv(fset.fieldSet(), cv, centralVars(), offset);
-
-  // Square-root multiply
-  multiplySqrt(cv, fset, offset);
-
-  oops::Log::trace() << classname() << "::randomize done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
-void BifourierCovariance::multiply(oops::FieldSet3D & fset) const {
-  oops::Log::trace() << classname() << "::multiply starting" << std::endl;
-
-  // Define control vector
-  atlas::Field cv("cv", make_datatype<double>(), make_shape(ctlVecSize()));
-
-  // No offset
-  const size_t offset = 0;
-
-  // Square-root adjoint multiply
-  multiplySqrtAD(fset, cv, offset);
-
-  // Square-root multiply
-  multiplySqrt(cv, fset, offset);
-
-  oops::Log::trace() << classname() << "::multiply done" << std::endl;
-}
-
-// -----------------------------------------------------------------------------
-
 void BifourierCovariance::multiplySqrt(const atlas::Field & cv,
                                        oops::FieldSet3D & fset,
                                        const size_t & offset) const {

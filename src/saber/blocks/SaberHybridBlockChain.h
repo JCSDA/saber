@@ -113,11 +113,14 @@ class SaberHybridBlockChain : public SaberBlockChainBase {
   void multiply(oops::FieldSet4D &) const override;
 
   /// @brief Control vector size
-  size_t ctlVecSize() const override {return 0;}
+  size_t ctlVecSize() const override
+    {throw eckit::NotImplemented("ctlVecSize not implemented yet", Here());}
   /// @brief Square-root multiplication
-  void multiplySqrt(const atlas::Field &, oops::FieldSet4D &, const size_t &) const override {}
+  void multiplySqrt(const atlas::Field &, oops::FieldSet4D &, const size_t &) const override
+    {throw eckit::NotImplemented("multiplySqrt not implemented yet", Here());}
   /// @brief Adjoint of square-root multiplication
-  void multiplySqrtAD(const oops::FieldSet4D &, atlas::Field &, const size_t &) const override {}
+  void multiplySqrtAD(const oops::FieldSet4D &, atlas::Field &, const size_t &) const override
+    {throw eckit::NotImplemented("multiplySqrtAD not implemented yet", Here());}
 
   /// @brief Accessor to outer function space
   const atlas::FunctionSpace & outerFunctionSpace() const override {return outerFunctionSpace_;}

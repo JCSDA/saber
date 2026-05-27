@@ -137,6 +137,7 @@ class SaberCentralBlock : public util::Printable {
 
   // Square-root formulation
   size_t ctlVecSize() const;
+  void randomCtlVec(atlas::Field &, const size_t &) const;
   void multiplySqrt(const atlas::Field &, oops::FieldSet3D &, const size_t &) const;
   void multiplySqrtAD(const oops::FieldSet3D &, atlas::Field &, const size_t &) const;
 

@@ -54,7 +54,6 @@ background error:
           column variables:
           - air_horizontal_velocity_potential
           value: 0.5
-        positive-definiteness test: true
         horizontal interpolation test: true
       dirac:
       - longitude: 150.0

@@ -142,12 +142,11 @@ class BifourierCovariance : public SaberCentralBlockBase {
                       const oops::FieldSet3D &);
   virtual ~BifourierCovariance();
 
-  void randomize(oops::FieldSet3D &) const override;
-  void multiply(oops::FieldSet3D &) const override;
-
   size_t ctlVecSize() const override
     {return trans_->ctlVecSize();}
-
+  void randomCtlVec(atlas::Field & cv,
+                    const size_t & offset) const override
+    {trans_->randomCtlVec(cv, centralVars(), offset);}
   void multiplySqrt(const atlas::Field &,
                     oops::FieldSet3D &,
                     const size_t &) const override;

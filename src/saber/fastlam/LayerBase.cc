@@ -722,7 +722,7 @@ void LayerBase::testInterpolation(const std::vector<double> & zCoord) const {
   auto redViewAD = atlas::array::make_view<double, 2>(redFieldAD);
 
   // Generate random fields
-  size_t seed = 7;  // To avoid impact on future random generator calls
+  const size_t seed = 7;  // To avoid impact on future random generator calls
   util::NormalDistribution<double> dist(rSize_*nz_+mSize_*nz0_, 0.0, 1.0, seed);
   for (size_t jnode = 0; jnode < rSize_; ++jnode) {
     for (size_t jz = 0; jz < nz_; ++jz) {
