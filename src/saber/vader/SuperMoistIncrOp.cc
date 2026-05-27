@@ -99,6 +99,15 @@ void SuperMoistIncrOp::leftInverseMultiply(oops::FieldSet3D & fset) const {
 
 // -----------------------------------------------------------------------------
 
+void SuperMoistIncrOp::rightInverseMultiply(oops::FieldSet3D & fset) const {
+  oops::Log::trace() << classname() << "::rightInverseMultiply starting" << std::endl;
+  oops::Log::info() << classname() << "using leftInverse as rightInverse" << std::endl;
+  leftInverseMultiply(fset);
+  oops::Log::trace() << classname() << "::rightInverseMultiply done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
 void SuperMoistIncrOp::directCalibration(const oops::FieldSets & fsets) {
   oops::Log::trace() << classname() << "::directCalibration starting" << std::endl;
 

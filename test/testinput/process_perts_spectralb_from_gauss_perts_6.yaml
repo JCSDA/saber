@@ -1,0 +1,296 @@
+# starting from randomization_sqrtspectralb_4
+#
+geometry:
+  function space: StructuredColumns
+  grid:
+    type: regular_gaussian
+    N: 12
+  groups:
+  - variables:
+    - air_horizontal_streamfunction
+    - air_horizontal_velocity_potential
+    - air_potential_temperature
+    - air_pressure
+    - air_pressure_levels_minus_one
+    - cfeff
+    - cleff
+    - cloud_ice_mixing_ratio_wrt_dry_air
+    - cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water
+    - cloud_liquid_water_mixing_ratio_wrt_dry_air
+    - cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water
+    - dimensionless_exner_function
+    - dimensionless_exner_function_levels_minus_one
+    - dlsvpdT
+    - dry_air_density_levels_minus_one
+    - eastward_wind
+    - geostrophic_pressure_levels_minus_one
+    - height_above_mean_sea_level
+    - hydrostatic_pressure_levels_minus_one
+    - ice_cloud_volume_fraction_in_atmosphere_layer
+    - liquid_cloud_volume_fraction_in_atmosphere_layer
+    - qrain
+    - qsat
+    - qt
+    - rht
+    - svp
+    - mu
+    - muA
+    - muH1
+    - muRecipDeterminant
+    - muRow1Column1
+    - muRow1Column2
+    - muRow2Column1
+    - muRow2Column2
+    - northward_wind
+    - rain_mixing_ratio_wrt_dry_air
+    - total_water_mixing_ratio_wrt_dry_air
+    - total_water_mixing_ratio_wrt_moist_air_and_condensed_water
+    - unbalanced_pressure_levels_minus_one
+    - virtual_potential_temperature
+    - water_vapor_mixing_ratio_wrt_dry_air
+    - water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water
+    levels: 70
+  - variables:
+    - air_pressure_levels
+    - height_above_mean_sea_level_levels
+    - hydrostatic_exner_levels
+    - hydrostatic_pressure_levels
+    levels: 71
+  partitioner: ectrans
+  halo: 1
+
+background:
+  date: &date 2010-01-01T16:00:00Z
+  state variables:
+  - air_potential_temperature
+  - air_pressure
+  - air_pressure_levels_minus_one
+  - cloud_ice_mixing_ratio_wrt_dry_air
+  - cloud_liquid_water_mixing_ratio_wrt_dry_air
+  - dimensionless_exner_function
+  - dimensionless_exner_function_levels_minus_one
+  - dry_air_density_levels_minus_one
+  - height_above_mean_sea_level
+  - height_above_mean_sea_level_levels
+  - ice_cloud_volume_fraction_in_atmosphere_layer
+  - liquid_cloud_volume_fraction_in_atmosphere_layer
+  - rain_mixing_ratio_wrt_dry_air
+  - water_vapor_mixing_ratio_wrt_dry_air
+  filepath: testdata/gauss_state
+
+input variables: &vars
+  - air_potential_temperature
+  - cloud_ice_mixing_ratio_wrt_dry_air
+  - cloud_liquid_water_mixing_ratio_wrt_dry_air
+  - dimensionless_exner_function_levels_minus_one
+  - dry_air_density_levels_minus_one
+  - eastward_wind
+  - northward_wind
+  - water_vapor_mixing_ratio_wrt_dry_air
+
+bands:
+- band:
+    filter:
+    - saber block name: mo_dry_mio
+      right inverse: true
+      reuse already created block: true
+    - saber block name: write fields
+      output path: testdata/process_perts_spectralb_from_gauss_perts_6/
+      multiply fset filename: init_anal_F12_inc
+      field names: &analvars
+      - air_potential_temperature
+      - cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water
+      - cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water
+      - dimensionless_exner_function_levels_minus_one
+      - dry_air_density_levels_minus_one
+      - eastward_wind
+      - northward_wind
+      - water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water
+    - saber block name: mo_super_mio
+      moisture incrementing operator file: testdata/MIO_coefficients.nc
+      right inverse: true
+      reuse already created block: true
+    - saber block name: mo_moisture_control
+      right inverse: true
+      reuse already created block: true
+    - saber block name: mo_hydro_bal2
+      right inverse: true
+      reuse already created block: true
+    - saber block name: mo_hp_lvlsm1_to_hexner_lvls
+      right inverse: true
+      reuse already created block: true
+    - saber block name: write fields
+      output path: testdata/process_perts_spectralb_from_gauss_perts_6/
+      multiply fset filename: init_cntl_F12_inc
+      field names: &cntlvars
+      - eastward_wind
+      - northward_wind
+      - hydrostatic_pressure_levels_minus_one 
+      - mu
+      parallel IO: true
+    - saber block name: spectral to gauss
+      right inverse: true
+      reuse already created block: true
+      active variables: &spectralvars
+      - eastward_wind
+      - northward_wind
+      - air_horizontal_streamfunction
+      - air_horizontal_velocity_potential
+      - hydrostatic_pressure_levels_minus_one 
+      - mu
+    - saber block name: spectral analytical filter
+      function:
+        shape: waveband filter
+        waveband min: 0
+        waveband peak: 1
+        waveband max: 3
+      preserving variance: true
+      active variables: &innervars
+      - air_horizontal_streamfunction
+      - air_horizontal_velocity_potential
+      - mu
+      - hydrostatic_pressure_levels_minus_one
+    - saber block name: spectral to gauss
+      active variables: *spectralvars
+    - saber block name: write fields
+      output path: testdata/process_perts_spectralb_from_gauss_perts_6/
+      multiply fset filename: wb1_cntl_F12_inc
+      field names: *cntlvars
+    - saber block name: mo_hp_lvlsm1_to_hexner_lvls
+    - saber block name: mo_hydro_bal2
+    - saber block name: mo_moisture_control
+      read:
+        covariance file path: testdata/MUstats.nc
+    - saber block name: mo_super_mio
+      moisture incrementing operator file: testdata/MIO_coefficients.nc
+    - saber block name: mo_dry_air_density_from_exnerm1
+    - saber block name: write fields
+      output path: testdata/process_perts_spectralb_from_gauss_perts_6/
+      multiply fset filename: wb1_analvars_F12_inc
+      field names: *analvars
+    - saber block name: mo_dry_mio
+- band:
+    filter:
+    - saber block name: mo_dry_mio
+      right inverse: true
+      reuse already created block: true
+    - saber block name: mo_super_mio
+      moisture incrementing operator file: testdata/MIO_coefficients.nc
+      right inverse: true
+      reuse already created block: true
+    - saber block name: mo_moisture_control
+      right inverse: true
+      reuse already created block: true
+    - saber block name: mo_hydro_bal2
+      right inverse: true
+      reuse already created block: true
+    - saber block name: mo_hp_lvlsm1_to_hexner_lvls
+      right inverse: true
+      reuse already created block: true
+    - saber block name: spectral to gauss
+      right inverse: true
+      reuse already created block: true
+      active variables: *spectralvars
+    - saber block name: spectral analytical filter
+      function:
+        shape: waveband filter
+        waveband min: 1
+        waveband peak: 3
+        waveband max: 9
+      preserving variance: true
+      active variables: *innervars
+    - saber block name: spectral to gauss
+      active variables: *spectralvars
+    - saber block name: write fields
+      output path: testdata/process_perts_spectralb_from_gauss_perts_6/
+      multiply fset filename: wb2_cntl_F12_inc
+      field names: *cntlvars
+    - saber block name: mo_hp_lvlsm1_to_hexner_lvls
+    - saber block name: mo_hydro_bal2
+    - saber block name: mo_moisture_control
+      read:
+        covariance file path: testdata/MUstats.nc
+    - saber block name: mo_super_mio
+      moisture incrementing operator file: testdata/MIO_coefficients.nc
+    - saber block name: mo_dry_air_density_from_exnerm1
+    - saber block name: write fields
+      output path: testdata/process_perts_spectralb_from_gauss_perts_6/
+      multiply fset filename: wb2_analvars_F12_inc
+      field names: *analvars
+    - saber block name: mo_dry_mio
+- band:
+    filter:
+    - saber block name: mo_dry_mio
+      right inverse: true
+      reuse already created block: true
+    - saber block name: mo_super_mio
+      moisture incrementing operator file: testdata/MIO_coefficients.nc
+      right inverse: true
+      reuse already created block: true
+    - saber block name: mo_moisture_control
+      right inverse: true
+      reuse already created block: true
+    - saber block name: mo_hydro_bal2
+      right inverse: true
+      reuse already created block: true
+    - saber block name: mo_hp_lvlsm1_to_hexner_lvls
+      right inverse: true
+      reuse already created block: true
+    - saber block name: spectral to gauss
+      right inverse: true
+      reuse already created block: true
+      active variables: *spectralvars
+    - saber block name: spectral analytical filter
+      function:
+        shape: waveband filter
+        waveband min: 3
+        waveband peak: 9
+        waveband max: 23
+      preserving variance: true
+      complement filter: true
+      active variables: *innervars
+    - saber block name: spectral to gauss
+      active variables: *spectralvars
+    - saber block name: residual fields
+      input path: testdata/process_perts_spectralb_from_gauss_perts_6/
+      multiply fset filename: init_cntl_F12_inc
+      field names: *cntlvars
+      parallel IO: true
+    - saber block name: write fields
+      output path: testdata/process_perts_spectralb_from_gauss_perts_6/
+      multiply fset filename: wb3_cntl_F12_inc
+      field names: *cntlvars
+    - saber block name: mo_hp_lvlsm1_to_hexner_lvls
+    - saber block name: mo_hydro_bal2
+    - saber block name: mo_moisture_control
+      read:
+        covariance file path: testdata/MUstats.nc
+    - saber block name: mo_super_mio
+      moisture incrementing operator file: testdata/MIO_coefficients.nc
+    - saber block name: mo_dry_air_density_from_exnerm1
+    - saber block name: write fields
+      output path: testdata/process_perts_spectralb_from_gauss_perts_6/
+      multiply fset filename: wb3_analvars_F12_inc
+      field names: *analvars
+    - saber block name: mo_dry_mio
+
+ensemble pert:
+  date: *date
+  members from template:
+    nmembers: 2
+    pattern: '%MEM%'
+    template:
+      filepath: testdata/randomization_sqrtspectralb_4/_MPI_-_OMP__randomized_gauss_mb%MEM%
+      variables:
+       - air_potential_temperature
+       - cloud_ice_mixing_ratio_wrt_dry_air
+       - cloud_liquid_water_mixing_ratio_wrt_dry_air
+       - dimensionless_exner_function_levels_minus_one
+       - dry_air_density_levels_minus_one
+       - eastward_wind
+       - northward_wind
+       - water_vapor_mixing_ratio_wrt_dry_air
+
+test:
+  test output filename: testref/process_perts_spectralb_from_gauss_perts_6.out
+  reference filename: testref/process_perts_spectralb_from_gauss_perts_6.ref

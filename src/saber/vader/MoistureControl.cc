@@ -257,15 +257,15 @@ void MoistureControl::multiplyAD(oops::FieldSet3D & fset) const {
 
 // -----------------------------------------------------------------------------
 
-void MoistureControl::leftInverseMultiply(oops::FieldSet3D & fset) const {
-  oops::Log::trace() << classname() << "::leftInverseMultiply starting" << std::endl;
+void MoistureControl::inverseMultiply(oops::FieldSet3D & fset) const {
+  oops::Log::trace() << classname() << "::inverseMultiply starting" << std::endl;
   // Allocate inner-only variables
   checkFieldsAreNotAllocated(fset, innerOnlyVars_);
   allocateMissingFields(fset, innerOnlyVars_, innerOnlyVars_,
                         innerGeometryData_.functionSpace());
 
   eval_moisture_control_tl(fset.fieldSet(), augmentedStateFieldSet_);
-  oops::Log::trace() << classname() << "::leftInverseMultiply done" << std::endl;
+  oops::Log::trace() << classname() << "::inverseMultiply done" << std::endl;
 }
 
 // -----------------------------------------------------------------------------

@@ -16,6 +16,10 @@ ID.cc
 OrographicInterp.h
 OrographicInterp.cc
 
+# Residual fields block
+ResidualFields.h
+ResidualFields.cc
+
 # Shadow levels block
 ShadowLevels.h
 ShadowLevels.cc

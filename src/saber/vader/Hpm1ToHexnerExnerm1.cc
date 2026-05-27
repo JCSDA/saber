@@ -212,6 +212,15 @@ void Hpm1ToHexnerExnerm1::leftInverseMultiply(oops::FieldSet3D & fset) const {
 
 // -----------------------------------------------------------------------------
 
+void Hpm1ToHexnerExnerm1::rightInverseMultiply(oops::FieldSet3D & fset) const {
+  oops::Log::trace() << classname() << "::rightInverseMultiply starting" << std::endl;
+  oops::Log::info() << classname() << "using leftInverse as rightInverse" << std::endl;
+  leftInverseMultiply(fset);
+  oops::Log::trace() << classname() << "::rightInverseMultiply done" << std::endl;
+}
+
+// -----------------------------------------------------------------------------
+
 void Hpm1ToHexnerExnerm1::directCalibration(const oops::FieldSets & fset) {
   oops::Log::trace() << classname() << "::directCalibration start" << std::endl;
   oops::Log::info() << classname() << "::directCalibration (empty step)" << std::endl;

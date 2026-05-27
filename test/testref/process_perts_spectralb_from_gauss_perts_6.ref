@@ -1,0 +1,136 @@
+Norm of perturbation: member 1: 1.3249655136980580e+03
+Wrote file testdata/process_perts_spectralb_from_gauss_perts_6//init_anal_F12_inc_1.nc
+Fields:
+  air_potential_temperature: 1.2501263546943178e+03
+  dimensionless_exner_function_levels_minus_one: 2.6908287048016805e-02
+  dry_air_density_levels_minus_one: 2.9201428988613126e-01
+  eastward_wind: 3.1124947973002946e+02
+  northward_wind: 3.0958259605739153e+02
+  water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water: 3.6448182098825901e-02
+  cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water: 6.2980783070540260e-04
+  cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water: 3.8074209897071915e-04
+Wrote file testdata/process_perts_spectralb_from_gauss_perts_6//init_cntl_F12_inc_1.nc
+Fields:
+  eastward_wind: 3.1124947973002946e+02
+  northward_wind: 3.0958259605739153e+02
+  mu: 1.1072489235059504e+02
+  hydrostatic_pressure_levels_minus_one: 5.4229420304511368e+03
+Wrote file testdata/process_perts_spectralb_from_gauss_perts_6//wb1_cntl_F12_inc_1.nc
+Fields:
+  eastward_wind: 5.2548660574634432e+01
+  northward_wind: 5.5538866567422019e+01
+  mu: 2.2215330589345278e+01
+  hydrostatic_pressure_levels_minus_one: 2.0099235008406636e+03
+Wrote file testdata/process_perts_spectralb_from_gauss_perts_6//wb1_analvars_F12_inc_1.nc
+Fields:
+  air_potential_temperature: 2.4423964307297976e+02
+  dimensionless_exner_function_levels_minus_one: 9.5247611620613917e-03
+  dry_air_density_levels_minus_one: 7.8917765393870978e-02
+  water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water: 4.8146995566497519e-03
+  cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water: 1.5082861698985186e-04
+  cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water: 7.5859562709334105e-05
+  eastward_wind: 5.2548660574634432e+01
+  northward_wind: 5.5538866567422019e+01
+Norm of band perturbation: member 1: band 1: 2.5592760112770324e+02
+Wrote file testdata/process_perts_spectralb_from_gauss_perts_6//wb2_cntl_F12_inc_1.nc
+Fields:
+  eastward_wind: 1.2203223696279983e+02
+  northward_wind: 1.1822851529793499e+02
+  mu: 3.9352612908646741e+01
+  hydrostatic_pressure_levels_minus_one: 2.5120805585824960e+03
+Wrote file testdata/process_perts_spectralb_from_gauss_perts_6//wb2_analvars_F12_inc_1.nc
+Fields:
+  air_potential_temperature: 4.3202980251154906e+02
+  dimensionless_exner_function_levels_minus_one: 1.2482195954630754e-02
+  dry_air_density_levels_minus_one: 1.4727349997474709e-01
+  water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water: 1.1548071543839647e-02
+  cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water: 2.3165188974366387e-04
+  cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water: 1.5277532441156254e-04
+  eastward_wind: 1.2203223696279983e+02
+  northward_wind: 1.1822851529793499e+02
+Norm of band perturbation: member 1: band 2: 4.6424090828983606e+02
+Wrote file testdata/process_perts_spectralb_from_gauss_perts_6//wb3_cntl_F12_inc_1.nc
+Fields:
+  eastward_wind: 2.8202878000640430e+02
+  northward_wind: 2.8104215299935248e+02
+  mu: 1.0091046394098120e+02
+  hydrostatic_pressure_levels_minus_one: 4.1272718203953655e+03
+Wrote file testdata/process_perts_spectralb_from_gauss_perts_6//wb3_analvars_F12_inc_1.nc
+Fields:
+  air_potential_temperature: 1.1516183920194758e+03
+  dimensionless_exner_function_levels_minus_one: 2.1064234690336692e-02
+  dry_air_density_levels_minus_one: 2.2760613040608837e-01
+  water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water: 3.4280262573572917e-02
+  cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water: 6.1484366352748774e-04
+  cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water: 3.3327246352639849e-04
+  eastward_wind: 2.8202878000640430e+02
+  northward_wind: 2.8104215299935248e+02
+Norm of band perturbation: member 1: band 3: 1.2185031386166547e+03
+Norm of perturbation: member 2: 1.2962324885054015e+03
+Wrote file testdata/process_perts_spectralb_from_gauss_perts_6//init_anal_F12_inc_2.nc
+Fields:
+  air_potential_temperature: 1.2168846924393763e+03
+  dimensionless_exner_function_levels_minus_one: 3.0819376798147363e-02
+  dry_air_density_levels_minus_one: 3.0089454593377513e-01
+  eastward_wind: 3.1203305902229113e+02
+  northward_wind: 3.1944574919483597e+02
+  water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water: 3.7725051929940030e-02
+  cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water: 7.7820233659288299e-04
+  cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water: 4.0227808625857878e-04
+Wrote file testdata/process_perts_spectralb_from_gauss_perts_6//init_cntl_F12_inc_2.nc
+Fields:
+  eastward_wind: 3.1203305902229113e+02
+  northward_wind: 3.1944574919483597e+02
+  mu: 1.1147695959020383e+02
+  hydrostatic_pressure_levels_minus_one: 6.2020148211292053e+03
+Wrote file testdata/process_perts_spectralb_from_gauss_perts_6//wb1_cntl_F12_inc_2.nc
+Fields:
+  eastward_wind: 5.4023300158164453e+01
+  northward_wind: 5.1253535004969351e+01
+  mu: 1.9472895314649683e+01
+  hydrostatic_pressure_levels_minus_one: 1.8309575413861091e+03
+Wrote file testdata/process_perts_spectralb_from_gauss_perts_6//wb1_analvars_F12_inc_2.nc
+Fields:
+  air_potential_temperature: 1.9358807938757019e+02
+  dimensionless_exner_function_levels_minus_one: 9.5546054849265979e-03
+  dry_air_density_levels_minus_one: 8.0367962987693109e-02
+  water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water: 6.3513719285692005e-03
+  cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water: 2.1160823846886682e-04
+  cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water: 7.3102980655830336e-05
+  eastward_wind: 5.4023300158164453e+01
+  northward_wind: 5.1253535004969351e+01
+Norm of band perturbation: member 2: band 1: 2.0741695418559380e+02
+Wrote file testdata/process_perts_spectralb_from_gauss_perts_6//wb2_cntl_F12_inc_2.nc
+Fields:
+  eastward_wind: 1.1538196651770492e+02
+  northward_wind: 1.2725391925132602e+02
+  mu: 4.3023176426261827e+01
+  hydrostatic_pressure_levels_minus_one: 3.5039146036515199e+03
+Wrote file testdata/process_perts_spectralb_from_gauss_perts_6//wb2_analvars_F12_inc_2.nc
+Fields:
+  air_potential_temperature: 4.3834214485384683e+02
+  dimensionless_exner_function_levels_minus_one: 1.7067154349701835e-02
+  dry_air_density_levels_minus_one: 1.4961748214168935e-01
+  water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water: 1.1709107566305683e-02
+  cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water: 3.1170780329294544e-04
+  cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water: 1.4791275358163884e-04
+  eastward_wind: 1.1538196651770492e+02
+  northward_wind: 1.2725391925132602e+02
+Norm of band perturbation: member 2: band 2: 4.7079763905146177e+02
+Wrote file testdata/process_perts_spectralb_from_gauss_perts_6//wb3_cntl_F12_inc_2.nc
+Fields:
+  eastward_wind: 2.8662058289455706e+02
+  northward_wind: 2.8855902885721110e+02
+  mu: 1.0118266792957273e+02
+  hydrostatic_pressure_levels_minus_one: 4.6300265181604618e+03
+Wrote file testdata/process_perts_spectralb_from_gauss_perts_6//wb3_analvars_F12_inc_2.nc
+Fields:
+  air_potential_temperature: 1.1144310883716144e+03
+  dimensionless_exner_function_levels_minus_one: 2.3143999004627495e-02
+  dry_air_density_levels_minus_one: 2.3929779185188510e-01
+  water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water: 3.5219452646173807e-02
+  cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water: 6.5860231732367449e-04
+  cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water: 3.6441295543166032e-04
+  eastward_wind: 2.8662058289455706e+02
+  northward_wind: 2.8855902885721110e+02
+Norm of band perturbation: member 2: band 3: 1.1863281086982361e+03

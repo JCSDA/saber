@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2025 Met Office
+ * (C) Crown Copyright 2026 Met Office
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -36,35 +36,45 @@ namespace vader {
 
 // -----------------------------------------------------------------------------
 
-class Hpm1ToHexnerExnerm1Parameters : public SaberBlockParametersBase {
-  OOPS_CONCRETE_PARAMETERS(Hpm1ToHexnerExnerm1Parameters, SaberBlockParametersBase)
+class DryMoistIncrOpParameters : public SaberBlockParametersBase {
+  OOPS_CONCRETE_PARAMETERS(DryMoistIncrOpParameters, SaberBlockParametersBase)
 
  public:
   oops::Variables mandatoryActiveVars() const override {return oops::Variables({
     std::vector<std::string>{
-    "dimensionless_exner_function_levels_minus_one",
-    "hydrostatic_exner_levels",
-    "hydrostatic_pressure_levels_minus_one"}});}
+    "water_vapor_mixing_ratio_wrt_dry_air",
+    "water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water",
+    "cloud_liquid_water_mixing_ratio_wrt_dry_air",
+    "cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water",
+    "cloud_ice_mixing_ratio_wrt_dry_air",
+    "cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water"
+    }});}
 
   const oops::Variables mandatoryStateVars() const override {
-    return oops::Variables({"air_pressure_levels",
-                            "dimensionless_exner_function_levels_minus_one",
-                            "hydrostatic_exner_levels",
-                            "hydrostatic_pressure_levels"});
+    return oops::Variables({
+      "water_vapor_mixing_ratio_wrt_dry_air",
+      "cloud_liquid_water_mixing_ratio_wrt_dry_air",
+      "cloud_ice_mixing_ratio_wrt_dry_air",
+      "total_water_mixing_ratio_wrt_dry_air"});
   }
 
   oops::Variables activeInnerVars(const oops::Variables& outerVars) const override {
-    const int modelLevels = outerVars["dimensionless_exner_function_levels_minus_one"].getLevels();
+    const int modelLevels = outerVars["water_vapor_mixing_ratio_wrt_dry_air"].getLevels();
     eckit::LocalConfiguration conf;
     conf.set("levels", modelLevels);
     oops::Variables vars;
-    vars.push_back({"hydrostatic_pressure_levels_minus_one", conf});
+    vars.push_back({"water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water", conf});
+    vars.push_back({"cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water", conf});
+    vars.push_back({"cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water", conf});
+
     return vars;
   }
 
   oops::Variables activeOuterVars(const oops::Variables& outerVars) const override {
-    oops::Variables vars({outerVars["hydrostatic_exner_levels"],
-                          outerVars["dimensionless_exner_function_levels_minus_one"]});
+    oops::Variables vars({outerVars["water_vapor_mixing_ratio_wrt_dry_air"],
+                          outerVars["cloud_liquid_water_mixing_ratio_wrt_dry_air"],
+                          outerVars["cloud_ice_mixing_ratio_wrt_dry_air"]
+                         });
     return vars;
   }
 };
@@ -74,32 +84,34 @@ class Hpm1ToHexnerExnerm1Parameters : public SaberBlockParametersBase {
 ///        dimensionless_exner_function_levels_minus_one and hydrostatic_pressure_levels into
 ///        air_pressure_levels
 
-class Hpm1ToHexnerExnerm1 : public SaberOuterBlockBase {
+class DryMoistIncrOp : public SaberOuterBlockBase {
  public:
-  static const std::string classname() {return "saber::vader::Hpm1ToHexnerExnerm1";}
+  static const std::string classname() {return "saber::vader::DryMoistIncrOp";}
 
-  typedef Hpm1ToHexnerExnerm1Parameters Parameters_;
+  typedef DryMoistIncrOpParameters Parameters_;
 
-  Hpm1ToHexnerExnerm1(const oops::GeometryData &,
-                     const oops::Variables &,
-                     const eckit::Configuration &,
-                     const Parameters_ &,
-                     const oops::FieldSet3D &,
-                     const oops::FieldSet3D &);
-  virtual ~Hpm1ToHexnerExnerm1();
+  DryMoistIncrOp(const oops::GeometryData &,
+                 const oops::Variables &,
+                 const eckit::Configuration &,
+                 const Parameters_ &,
+                 const oops::FieldSet3D &,
+                 const oops::FieldSet3D &);
+  virtual ~DryMoistIncrOp();
 
   const oops::GeometryData & innerGeometryData() const override {return innerGeometryData_;}
   const oops::Variables & innerVars() const override {return innerVars_;}
 
   void multiply(oops::FieldSet3D &) const override;
   void multiplyAD(oops::FieldSet3D &) const override;
-  void leftInverseMultiply(oops::FieldSet3D &) const override;
-  void rightInverseMultiply(oops::FieldSet3D &) const override;
-
-  void directCalibration(const oops::FieldSets & fset) override;
+  void leftInverseMultiply(oops::FieldSet3D & fset) const override
+    {inverseMultiply(fset);}
+  void rightInverseMultiply(oops::FieldSet3D & fset) const override
+    {inverseMultiply(fset);}
+  void directCalibration(const oops::FieldSets &) override;
 
  private:
   void print(std::ostream &) const override;
+  void inverseMultiply(oops::FieldSet3D &) const;
   const oops::GeometryData & innerGeometryData_;
   const oops::Variables innerVars_;
   const oops::Variables activeOuterVars_;

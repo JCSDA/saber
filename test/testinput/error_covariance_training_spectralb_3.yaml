@@ -82,13 +82,13 @@ background:
 
 increment variables: &incrvars
 - air_potential_temperature
-- cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water
-- cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water
+- cloud_ice_mixing_ratio_wrt_dry_air
+- cloud_liquid_water_mixing_ratio_wrt_dry_air
 - dimensionless_exner_function_levels_minus_one
 - dry_air_density_levels_minus_one
 - eastward_wind
 - northward_wind
-- water_vapor_mixing_ratio_wrt_moist_air_and_condensed_water
+- water_vapor_mixing_ratio_wrt_dry_air
 
 background error:
   covariance model: SABER
@@ -180,5 +180,8 @@ background error:
     field names: *incrvars
     save NetCDF file: true
     statistics type:  vertical covariance
+  - saber block name: mo_dry_mio
+    calibration: true
 test:
+  test output file: testref/error_covariance_training_spectralb_3.out
   reference filename: testref/error_covariance_training_spectralb_3.ref

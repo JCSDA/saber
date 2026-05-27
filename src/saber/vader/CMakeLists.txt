@@ -14,6 +14,8 @@ DryAirDensity.cc
 DryAirDensity.h
 DryAirDensityFromExnerm1.cc
 DryAirDensityFromExnerm1.h
+DryMoistIncrOp.cc
+DryMoistIncrOp.h
 GpToHp.cc
 GpToHp.h
 GpToHpm1.cc

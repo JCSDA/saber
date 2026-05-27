@@ -113,13 +113,17 @@ class MoistureControl : public SaberOuterBlockBase {
 
   void multiply(oops::FieldSet3D &) const override;
   void multiplyAD(oops::FieldSet3D &) const override;
-  void leftInverseMultiply(oops::FieldSet3D & fset) const override;
+  void leftInverseMultiply(oops::FieldSet3D & fset) const override
+    {inverseMultiply(fset);}
+  void rightInverseMultiply(oops::FieldSet3D & fset) const override
+    {inverseMultiply(fset);}
   void read() override;
   void directCalibration(const oops::FieldSets & fset) override;
   void write() const override;
 
  private:
   void print(std::ostream &) const override;
+  void inverseMultiply(oops::FieldSet3D &) const;
   const oops::GeometryData & innerGeometryData_;
   const oops::Variables innerVars_;
   const oops::Variables activeOuterVars_;

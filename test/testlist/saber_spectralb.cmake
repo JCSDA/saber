@@ -410,6 +410,32 @@ saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_5_1-2
                 DEPENDS saber_quench_process_perts.x
                 TEST_DEPENDS saber_randomization_sqrtspectralb_5_1-2 )
 
+# process_perts_spectralb_from_gauss_perts_5
+saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_6_1-1
+                MPI 1
+                OMP 1
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
+                ARGS testinput/process_perts_spectralb_from_gauss_perts_6.yaml
+                DEPENDS saber_quench_process_perts.x
+                TEST_DEPENDS saber_randomization_sqrtspectralb_4_1-1 )
+
+saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_6_2-1
+                MPI 2
+                OMP 1
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
+                ARGS testinput/process_perts_spectralb_from_gauss_perts_6.yaml
+                DEPENDS saber_quench_process_perts.x
+                TEST_DEPENDS saber_randomization_sqrtspectralb_4_2-1 )
+
+saber_add_test( TARGET saber_process_perts_spectralb_from_gauss_perts_6_1-2
+                MPI 1
+                OMP 2
+                LABELS   tier2
+                COMMAND ${CMAKE_BINARY_DIR}/bin/saber_quench_process_perts.x
+                ARGS testinput/process_perts_spectralb_from_gauss_perts_6.yaml
+                DEPENDS saber_quench_process_perts.x
+                TEST_DEPENDS saber_randomization_sqrtspectralb_4_1-2 )
+
 
 
 # DIRAC TESTS
